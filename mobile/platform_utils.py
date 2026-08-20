@@ -229,7 +229,13 @@ def create_display(vsync=True, mode=None):
         surface = pygame.display.set_mode((0, 0) if TOUCH_MODE else
                                           (LOGICAL_WIDTH, LOGICAL_HEIGHT),
                                           flags)
-        render = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT)).convert()
+        # PENTING: buffer render dibuat TANPA kanal alpha
+        # (mask alpha = 0). Kalau permukaan tujuan punya kanal alpha,
+        # SDL memakai blitter generik per-piksel yang di ARM bisa
+        # ~200x lebih lambat. XRGB8888 membuka jalur cepat.
+        render = pygame.Surface(
+            (LOGICAL_WIDTH, LOGICAL_HEIGHT), 0, 32,
+            (0x00FF0000, 0x0000FF00, 0x000000FF, 0))
     else:
         flags = pygame.SCALED
         if TOUCH_MODE:

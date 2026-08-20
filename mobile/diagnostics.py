@@ -125,6 +125,20 @@ def run_benchmark(screen, quick=True):
         for i in range(100):
             screen.blit(small_conv, (i * 3 % 900, i * 5 % 500))
 
+    # ══ UJI KUNCI ══
+    # Kalau permukaan TUJUAN punya kanal alpha, SDL memakai blitter
+    # generik per-piksel (lambat). Kalau tujuannya XRGB8888 (tanpa
+    # alpha), SDL bisa memakai jalur yang jauh lebih cepat.
+    # Kita ukur keduanya supaya tahu harus pakai yang mana.
+    try:
+        noalpha = pygame.Surface((w, h), 0, 32,
+                                 (0x00FF0000, 0x0000FF00, 0x000000FF, 0))
+        res["blit_alpha_KE_noalpha"] = _t(
+            lambda: noalpha.blit(alpha, (0, 0)), n)
+        res["_dst_alpha_mask"] = screen.get_masks()[3]
+    except Exception as exc:
+        print("[DIAG] uji noalpha gagal: %s" % exc)
+
     res["100x_blit_kecil"] = _t(_blit_small, n)
     res["100x_blit_kecil_conv"] = _t(_blit_small_conv, n)
 
@@ -162,6 +176,18 @@ def run_benchmark(screen, quick=True):
                        "%.1f ms setelah convert_alpha() -> pakai convert."
                        % (res["blit_penuh_alpha"],
                           res["blit_penuh_alpha_conv"]))
+    na = res.get("blit_alpha_KE_noalpha")
+    if na is not None and res["blit_penuh_alpha"] > na * 2:
+        verdict.append("SOLUSINYA KETEMU: blit ke surface TANPA kanal "
+                       "alpha %.0f ms vs %.0f ms ke layar. Game akan "
+                       "menggambar ke buffer tanpa alpha."
+                       % (na, res["blit_penuh_alpha"]))
+    if res["blit_penuh_alpha"] > 30:
+        verdict.append("ALPHA BLIT SANGAT MAHAL: %.0f ms untuk satu layar "
+                       "penuh (~%.0f ns/piksel). Semua efek overlay "
+                       "transparan dimatikan otomatis."
+                       % (res["blit_penuh_alpha"],
+                          res["blit_penuh_alpha"] * 1e6 / (1280 * 720)))
     if res["200x_draw.circle"] > 12:
         verdict.append("CPU GAMBAR LAMBAT: 200 lingkaran %.1f ms -> turunkan "
                        "preset kualitas / kurangi efek."
@@ -179,6 +205,13 @@ def run_benchmark(screen, quick=True):
     for v in verdict:
         print("[DIAG] * " + v)
     print("════════════════════════════════════════")
+
+    # Terapkan profil kualitas berdasar kemampuan NYATA perangkat
+    try:
+        from mobile.perf import apply_device_profile
+        apply_device_profile(res)
+    except Exception as exc:
+        print("[DIAG] gagal menerapkan profil: %s" % exc)
 
     RESULTS["bench"] = res
     RESULTS["verdict"] = verdict

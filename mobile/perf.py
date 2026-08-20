@@ -282,6 +282,23 @@ def cached_render(key, width, height, draw_func):
     return surf
 
 
+def blit_overlay(dst, overlay, rect=None, pos=(0, 0)):
+    """
+    Blit overlay transparan HANYA pada kotak yang perlu.
+
+    Blit alpha dihitung per piksel; membatasi areanya adalah cara
+    paling ampuh mempercepatnya di HP. `rect` adalah kotak (dalam
+    koordinat overlay) yang benar-benar berisi gambar.
+    """
+    if rect is None:
+        dst.blit(overlay, pos)
+        return
+    rect = pygame.Rect(rect).clip(overlay.get_rect())
+    if rect.width <= 0 or rect.height <= 0:
+        return
+    dst.blit(overlay, (pos[0] + rect.x, pos[1] + rect.y), rect)
+
+
 def clear_static_caches():
     _static_cache.clear()
     _overlay_cache.clear()
@@ -341,6 +358,14 @@ class _Quality:
         # + blit surface tambahan justru mahal. Biarkan False.
         # Detail: mobile/spritecache.py
         self.sprite_cache = False
+
+        # ── ALPHA BLIT MAHAL? ──
+        # Diisi otomatis oleh apply_device_profile() dari hasil
+        # benchmark di HP. Kalau True: JANGAN pernah blit surface
+        # ber-alpha seukuran layar; pakai darken()/fill() atau
+        # gambar langsung tanpa transparansi.
+        self.cheap_alpha = True      # True = alpha blit murah (PC)
+        self.max_alpha_px = 1_000_000
         self.floating_decor = not low
         self.max_damage_numbers = 8 if low else (16 if med else 32)
         self.target_fps = 30 if low else 60
@@ -352,6 +377,46 @@ class _Quality:
 
 
 Quality = _Quality()
+
+
+# ═══════════════════════════════════════════════════════
+# PROFIL PERANGKAT DARI HASIL BENCHMARK
+#
+# Temuan lapangan (Infinix X6880 / Cortex-A53, Android 15):
+#     blit layar penuh ber-alpha = 204 ms   (di PC 0,35 ms)
+#     pygame.draw.circle 200x    = 1 ms     (normal)
+# pygame-ce 2.4.1 tidak punya blitter NEON untuk ARM, jadi alpha
+# blit jatuh ke loop C generik per-piksel: ~222 ns/piksel.
+#
+# Konsekuensinya SATU overlay layar penuh = 6 frame terlewat.
+# Jadi kalau perangkat terdeteksi seperti ini, semua efek berbasis
+# "surface transparan besar" harus dimatikan.
+# ═══════════════════════════════════════════════════════
+def apply_device_profile(bench):
+    """Terima dict hasil diagnostics.run_benchmark(), sesuaikan Quality."""
+    if not bench:
+        return Quality.level
+    full = bench.get("blit_penuh_alpha")
+    if full is None:
+        return Quality.level
+
+    px = 1280 * 720
+    ns_per_px = full * 1e6 / px
+
+    if full > 30:            # >30 ms untuk satu layar penuh
+        Quality.apply(LOW)
+        Quality.cheap_alpha = False
+        # berapa piksel alpha yang muat dalam 8 ms per frame
+        Quality.max_alpha_px = max(20000, int(8.0 / (ns_per_px / 1e6)))
+        print("[PERF] Alpha blit MAHAL di perangkat ini "
+              "(%.0f ms layar penuh = %.0f ns/piksel)." % (full, ns_per_px))
+        print("[PERF] -> mode hemat-alpha: overlay layar penuh, vignette, "
+              "glow, dan aura dimatikan. Anggaran %d piksel alpha/frame."
+              % Quality.max_alpha_px)
+    else:
+        Quality.cheap_alpha = True
+        Quality.max_alpha_px = 1_000_000
+    return Quality.level
 
 
 def auto_detect_quality(is_android):
