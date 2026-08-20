@@ -14,6 +14,18 @@ name: Build Android
 #     KEYALIAS_PASSWORD    : password alias
 # ═══════════════════════════════════════════════════════
 
+# ═══════════════════════════════════════════════════════
+# VERSI PYTHON DIKUNCI 3.11.9
+# python-for-android develop sekarang memakai Python 3.14, tetapi
+# pygame-ce 2.4.1 hanya mendukung 3.8-3.12 dan berkas _sdl2-nya
+# dibuat oleh Cython 3.0.0 yang belum mengenal 3.13/3.14
+# (tp_print, _PyLong_AsByteArray, _PyGen_Send, dst. sudah dihapus).
+#
+# Recipe.version di p4a membaca env VERSION_<nama_recipe>, jadi dua
+# variabel di bawah mengubah python3 DAN hostpython3 sekaligus.
+# Keduanya WAJIB sama - hostpython3 punya pemeriksaan versi.
+# ═══════════════════════════════════════════════════════
+
 on:
   push:
     branches: [main]
@@ -26,6 +38,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+
+    env:
+      # ── SATU-SATUNYA TEMPAT MENGATUR VERSI PYTHON ──
+      # Kalau build gagal di tahap "Building python3", ganti KEDUANYA
+      # ke 3.10.14 (harus selalu sama - hostpython3 memeriksanya).
+      # Rentang yang didukung pygame-ce 2.4.1: 3.8 - 3.12
+      VERSION_python3: 3.11.9
+      VERSION_hostpython3: 3.11.9
 
     steps:
       - name: Checkout kode
@@ -51,7 +71,7 @@ jobs:
             build-essential ccache libltdl-dev
 
       # Cache = pembeda antara build 60 menit dan build 8 menit.
-      # CACHE_VERSION: naikkan angkanya (v2 -> v3 -> ...) kalau perlu
+      # CACHE_VERSION: naikkan angkanya (v3 -> v4 -> ...) kalau perlu
       # memaksa build bersih. restore-keys sengaja ikut memakai versi
       # ini supaya cache LAMA tidak ikut dipulihkan - kalau ikut, sumber
       # pygame-ce versi lama yang sudah terbongkar akan dipakai ulang
@@ -63,9 +83,9 @@ jobs:
           path: |
             ~/.buildozer
             .buildozer
-          key: buildozer-v2-${{ runner.os }}-${{ hashFiles('buildozer.spec', 'p4a-recipes/**') }}
+          key: buildozer-v3-py311-${{ runner.os }}-${{ hashFiles('buildozer.spec', 'p4a-recipes/**') }}
           restore-keys: |
-            buildozer-v2-${{ runner.os }}-
+            buildozer-v3-py311-${{ runner.os }}-
 
       - name: Install buildozer
         run: |
@@ -81,8 +101,14 @@ jobs:
           grep -E "^(version|android\.(api|minapi|ndk_api|archs|release_artifact))" buildozer.spec
           echo "--- resep pygame-ce ---"
           grep -E "^\s+(version|url) = " p4a-recipes/pygame-ce/__init__.py
+          echo "--- versi Python yang dipaksa ---"
+          echo "VERSION_python3     = $VERSION_python3"
+          echo "VERSION_hostpython3 = $VERSION_hostpython3"
           echo "======================================================="
-          echo "HARUS terlihat: version = \"2.4.1\"  dan  android.archs = arm64-v8a"
+          echo "HARUS terlihat:"
+          echo "  pygame-ce version = 2.4.1"
+          echo "  android.archs     = arm64-v8a"
+          echo "  VERSION_python3   = 3.11.9   (BUKAN 3.14)"
           echo "======================================================="
 
       # Jaring pengaman: p4a melewati unpack kalau folder sumber sudah ada
@@ -92,7 +118,10 @@ jobs:
         run: |
           rm -rf .buildozer/android/platform/build-*/other_builds/pygame-ce* || true
           rm -rf .buildozer/android/platform/build-*/packages/pygame-ce* || true
-          echo "sisa build pygame-ce dibersihkan"
+          # python3/hostpython3 juga: versinya berubah 3.14 -> 3.11
+          rm -rf .buildozer/android/platform/build-*/other_builds/python3* || true
+          rm -rf .buildozer/android/platform/build-*/other_builds/hostpython3* || true
+          echo "sisa build pygame-ce + python3 lama dibersihkan"
 
       # ─────────────── DEBUG (APK) ───────────────
       - name: Build APK debug
