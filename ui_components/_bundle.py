@@ -2706,10 +2706,15 @@ class _NS_overlay:
                     pygame.draw.line(surf, (10, 10, 20, alpha),
                                      (0, i), (SCREEN_WIDTH, i))
 
-            surface.blit(cached_render(("end_gradient", SCREEN_WIDTH,
-                                        SCREEN_HEIGHT),
-                                       SCREEN_WIDTH, SCREEN_HEIGHT,
-                                       _paint_gradient), (0, 0))
+            from mobile.perf import Quality as _Q, darken
+            if _Q.cheap_alpha:
+                surface.blit(cached_render(("end_gradient", SCREEN_WIDTH,
+                                            SCREEN_HEIGHT),
+                                           SCREEN_WIDTH, SCREEN_HEIGHT,
+                                           _paint_gradient), (0, 0))
+            else:
+                # fill+BLEND jauh lebih murah daripada alpha blit
+                darken(surface, 170)
 
             cx = SCREEN_WIDTH // 2
             cy = SCREEN_HEIGHT // 2
@@ -2766,7 +2771,9 @@ class _NS_overlay:
 
         def _draw_rays(self, surface, cx, cy, color, t):
             """Draw rotating rays"""
-            from mobile.perf import POOL as _POOL
+            from mobile.perf import POOL as _POOL, Quality as _Q
+            if not _Q.cheap_alpha:
+                return          # efek dekoratif, terlalu mahal di HP
             ray_surf = _POOL.get(SCREEN_WIDTH, SCREEN_HEIGHT)
 
             for i in range(12):
@@ -2790,7 +2797,12 @@ class _NS_overlay:
 
         def _draw_central_glow(self, surface, cx, cy, color):
             """Draw central glow circles"""
-            from mobile.perf import POOL as _POOL
+            from mobile.perf import POOL as _POOL, Quality as _Q
+            if not _Q.cheap_alpha:
+                # 8 lingkaran alpha besar = ~1,3 juta piksel = 280 ms
+                pygame.draw.circle(surface, color, (cx, cy), 120, 3)
+                pygame.draw.circle(surface, color, (cx, cy), 190, 2)
+                return
             for r in range(200, 50, -20):
                 alpha = int((200 - r) / 200 * 60)
                 glow_surf = _POOL.get(r * 2, r * 2)
@@ -2814,8 +2826,10 @@ class _NS_overlay:
             except:
                 title_font = self.ui.font_huge
 
-            # Shadow layers (depth effect)
-            for offset in range(5, 0, -1):
+            # Shadow layers (5 lapis teks 96px = 130.000 px alpha =
+            # 29 ms di HP; cukup 1 lapis)
+            from mobile.perf import Quality as _Q
+            for offset in (range(5, 0, -1) if _Q.cheap_alpha else (3,)):
                 shadow = title_font.render(title, True, (0, 0, 0))
                 shadow.set_alpha(60)
                 shadow_rect = shadow.get_rect(
@@ -2877,14 +2891,26 @@ class _NS_overlay:
             panel_y = cy - 100
 
             # Panel BG
-            panel_surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-            pygame.draw.rect(panel_surf, (20, 20, 30, 200),
-                             (0, 0, panel_w, panel_h),
-                             border_radius=8)
-            pygame.draw.rect(panel_surf, color,
-                             (0, 0, panel_w, panel_h), 2,
-                             border_radius=8)
-            surface.blit(panel_surf, (panel_x, panel_y))
+            from mobile.perf import Quality as _Q
+            if _Q.cheap_alpha:
+                panel_surf = pygame.Surface((panel_w, panel_h),
+                                            pygame.SRCALPHA)
+                pygame.draw.rect(panel_surf, (20, 20, 30, 200),
+                                 (0, 0, panel_w, panel_h),
+                                 border_radius=8)
+                pygame.draw.rect(panel_surf, color,
+                                 (0, 0, panel_w, panel_h), 2,
+                                 border_radius=8)
+                surface.blit(panel_surf, (panel_x, panel_y))
+            else:
+                # panel 400x200 ber-alpha = 18 ms; digambar langsung
+                # (tanpa transparansi) hanya ~0,5 ms
+                pygame.draw.rect(surface, (20, 20, 30),
+                                 (panel_x, panel_y, panel_w, panel_h),
+                                 border_radius=8)
+                pygame.draw.rect(surface, color,
+                                 (panel_x, panel_y, panel_w, panel_h), 2,
+                                 border_radius=8)
 
             # Draw stat rows
             for i, (label, value, is_new_best) in enumerate(stats):
