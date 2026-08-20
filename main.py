@@ -40,6 +40,7 @@ adaptive = perf.install_all(is_android=plat.IS_ANDROID)
 from mobile import touch as touch_mod              # noqa: E402
 from mobile import hud as hud_mod                  # noqa: E402
 from mobile import debug as debug_mod              # noqa: E402
+from mobile import diagnostics as diag_mod         # noqa: E402
 
 debug_mod.install_crash_handler()
 
@@ -47,6 +48,10 @@ debug_mod.install_crash_handler()
 # 3. LAYAR (SCALED = koordinat tetap 1280x720, GPU yang scaling)
 # ═══════════════════════════════════════════════════════
 screen = plat.create_display(vsync=True)
+
+# Cetak info layar + uji-diri performa (otomatis di Android).
+# Hasilnya masuk logcat: adb logcat -s python:*
+diag_mod.run_all(screen)
 
 # ═══════════════════════════════════════════════════════
 # 4. MODUL GAME
@@ -317,6 +322,8 @@ def main():
         frame_timer.stop()
 
         # ─────────────────────────────── FPS
+        # Preset kualitas menentukan batas atas FPS di HP (LOW = 30).
+        # Setting pemain hanya boleh MENURUNKAN, bukan menaikkan.
         try:
             from game_settings import GameSettings
             limit = GameSettings().fps_limit
@@ -324,6 +331,8 @@ def main():
             limit = 0
         if not limit or limit <= 0:
             limit = perf.Quality.target_fps
+        elif plat.TOUCH_MODE:
+            limit = min(limit, perf.Quality.target_fps)
         clock.tick(limit)
         adaptive.update(clock.get_fps())
 
