@@ -35,23 +35,23 @@ pygame.init()
 from mobile import platform_utils as plat          # noqa: E402
 from mobile import perf                            # noqa: E402
 
-adaptive = perf.install_all(is_android=plat.IS_ANDROID)
+adaptive = perf.install_all(is_android=plat.TOUCH_MODE)
 
 from mobile import touch as touch_mod              # noqa: E402
 from mobile import hud as hud_mod                  # noqa: E402
 from mobile import debug as debug_mod              # noqa: E402
 from mobile import diagnostics as diag_mod         # noqa: E402
+from mobile import bootcheck as bootcheck_mod      # noqa: E402
 
 debug_mod.install_crash_handler()
 
 # ═══════════════════════════════════════════════════════
 # 3. LAYAR (SCALED = koordinat tetap 1280x720, GPU yang scaling)
 # ═══════════════════════════════════════════════════════
+# create_display() mengembalikan permukaan yang HARUS digambari game.
+# Di mode "native" itu surface 720p terpisah; plat.present() yang
+# menyalinnya ke layar. Di mode "scaled" keduanya sama.
 screen = plat.create_display(vsync=True)
-
-# Cetak info layar + uji-diri performa (otomatis di Android).
-# Hasilnya masuk logcat: adb logcat -s python:*
-diag_mod.run_all(screen)
 
 # ═══════════════════════════════════════════════════════
 # 4. MODUL GAME
@@ -133,6 +133,17 @@ def main():
     touch = touch_mod.TouchManager()
     hud = hud_mod.TouchHUD(get_font)
     debug = debug_mod.DebugOverlay(get_font, frame_timer)
+
+    # ═══ LAYAR DIAGNOSTIK (Android / MYSTIC_BOOTCHECK=1) ═══
+    # Menampilkan info tampilan, benchmark, dan penghitung sentuhan.
+    # Bisa dimatikan permanen dari dalam layarnya.
+    if bootcheck_mod.should_show():
+        if not bootcheck_mod.run(screen, get_font, touch):
+            pygame.quit()
+            sys.exit()
+        touch.cancel()
+    else:
+        diag_mod.run_all(screen)
 
     menu = Menu(screen)
     menu.controller_mgr = None          # tidak ada controller di HP
@@ -318,7 +329,7 @@ def main():
         debug.draw(screen, clock, game, touch)
 
         frame_timer.start("flip")
-        pygame.display.flip()
+        plat.present()
         frame_timer.stop()
 
         # ─────────────────────────────── FPS
