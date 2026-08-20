@@ -31,9 +31,9 @@ LEVEL_1 = {
 
     # ═══ BOSSES ═══
     "mini_bosses": {
-        1: "gornak",
-        2: "morgath",
-        3: "drakar",
+        10: "gornak",
+        15: "morgath",
+        25: "drakar",
     },
     "true_boss": "abaddon",
 
