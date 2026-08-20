@@ -5517,16 +5517,23 @@ class DynamicRenderer:
             Quality = None
 
         self.update(t)
+
+        # LOW = hanya lapisan yang memengaruhi keterbacaan gameplay.
+        # Kabut, animasi sungai, kilau & asap toko, partikel, dan obor
+        # semuanya murni dekoratif: dimatikan di HP kelas bawah.
+        _low = Quality is not None and Quality.level == "low"
+
         if Quality is None or Quality.fog:
             self._draw_fog(surface, t)
-        self._draw_river_animation(surface, t)
-        self._draw_shop_glow(surface, t)
-        # Asap toko murni dekoratif -> dimatikan saat kualitas LOW
+        if not _low:
+            self._draw_river_animation(surface, t)
+            self._draw_shop_glow(surface, t)
         if Quality is None or Quality.floating_decor:
             self._draw_shop_smoke(surface, t)
         if Quality is None or Quality.particles:
             self._draw_particles(surface, t)
-        self._draw_torches(surface, t)
+        if not _low:
+            self._draw_torches(surface, t)
 
     # ═══════════════════════════════════════
     # FOG
