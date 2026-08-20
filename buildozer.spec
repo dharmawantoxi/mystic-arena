@@ -50,13 +50,16 @@ android.permissions = android.permission.VIBRATE,android.permission.WAKE_LOCK
 # TARGET ANDROID
 #   api 36   -> WAJIB untuk submission baru mulai 31 Agustus 2026
 #   minapi 24 -> Android 7.0, mencakup >98% perangkat aktif
-#   arch: WAJIB ada arm64-v8a (64-bit). armeabi-v7a opsional
-#         (HP lama); hapus kalau mau ukuran APK lebih kecil.
+#   arch: WAJIB ada arm64-v8a (64-bit).
+#         armeabi-v7a (HP 32-bit lama) SENGAJA dimatikan dulu: tiap
+#         arch dikompilasi terpisah, jadi 2 arch = 2x waktu build.
+#         Aktifkan lagi menjelang rilis dengan:
+#             android.archs = arm64-v8a
 # ═══════════════════════════════════════════════════════
 android.api = 36
 android.minapi = 24
 android.ndk_api = 24
-android.archs = arm64-v8a,armeabi-v7a
+android.archs = arm64-v8a
 android.accept_sdk_license = True
 android.allow_backup = True
 
