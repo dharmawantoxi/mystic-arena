@@ -801,15 +801,16 @@ class ComboCounter:
                                        display_color)
         count_rect = count_text.get_rect(center=(cx, cy))
 
-        # Shadow
-        for dx in [-2, 0, 2]:
-            for dy in [-2, 0, 2]:
-                if dx == 0 and dy == 0:
-                    continue
-                shadow = count_font.render(f"x{self.count}", True,
-                                           (0, 0, 0))
-                surface.blit(shadow,
-                             (count_rect.x + dx, count_rect.y + dy))
+        # Shadow (8 arah -> 1 arah saja kalau alpha blit mahal)
+        from mobile.perf import Quality as _Q
+        _offsets = ([(dx, dy) for dx in (-2, 0, 2) for dy in (-2, 0, 2)
+                     if (dx, dy) != (0, 0)] if _Q.cheap_alpha
+                    else [(2, 2)])
+        for dx, dy in _offsets:
+            shadow = count_font.render(f"x{self.count}", True,
+                                       (0, 0, 0))
+            surface.blit(shadow,
+                         (count_rect.x + dx, count_rect.y + dy))
 
         surface.blit(count_text, count_rect)
 
@@ -1852,7 +1853,8 @@ class BossDeathAnimation:
 
         # ═══ "BOSS DEFEATED!" ═══
         # Big shadow
-        for offset in range(6, 0, -1):
+        from mobile.perf import Quality as _Qz
+        for offset in (range(6, 0, -1) if _Qz.cheap_alpha else (3,)):
             shadow = self.font_huge.render(
                 "BOSS DEFEATED!", True, (0, 0, 0))
             shadow.set_alpha(min(text_alpha, 80))
@@ -2161,7 +2163,13 @@ class BossIntroCinematic:
                     aura_surf,
                     (*self.entrance_color, alpha),
                     (aura_r, aura_r), r)
-        surface.blit(aura_surf, (cx - aura_r, cy - aura_r))
+        from mobile.perf import Quality as _Q0
+        if _Q0.cheap_alpha:
+            surface.blit(aura_surf, (cx - aura_r, cy - aura_r))
+        else:
+            # aura 280x280 ber-alpha = 17 ms di HP; ganti 2 lingkaran
+            pygame.draw.circle(surface, self.boss_entrance_color,
+                               (cx, cy), int(aura_r * 0.7), 2)
 
         # ═══ BOSS SILHOUETTE (simplified body) ═══
         # Draw big silhouette shape based on boss class
@@ -2190,7 +2198,9 @@ class BossIntroCinematic:
             ey = cy + int(math.sin(angle) * 200)
             pygame.draw.line(ray_overlay, (*self.entrance_color, 60),
                              (sx, sy), (ex, ey), 3)
-        surface.blit(ray_overlay, (0, 0))
+        from mobile.perf import blit_overlay
+        blit_overlay(surface, ray_overlay,
+                     pygame.Rect(cx - 210, cy - 210, 420, 420))
         _POOL.release(ray_overlay)
 
     def _draw_true_boss_silhouette(self, surface, cx, cy, alpha):
@@ -2365,7 +2375,8 @@ class BossIntroCinematic:
 
         # ═══ BOSS NAME (huge) ═══
         # Multiple shadow layers untuk dramatic effect
-        for offset in range(5, 0, -1):
+        from mobile.perf import Quality as _Qz
+        for offset in (range(5, 0, -1) if _Qz.cheap_alpha else (3,)):
             shadow = self.font_huge.render(
                 self.boss_name, True, (0, 0, 0))
             shadow.set_alpha(min(alpha, 100))
@@ -2659,7 +2670,19 @@ class LevelIntroScreen:
         else:  # forest
             tint.fill((20, 40, 20, theme_tint_alpha))
 
-        surface.blit(tint, (0, 0))
+        # OPTIMASI HP: blit surface ber-alpha seukuran layar = 204 ms
+        # di Cortex-A53. fill() dengan BLEND_RGB_MULT memberi efek
+        # pewarnaan yang mirip dengan biaya ~2 ms.
+        from mobile.perf import Quality as _Q
+        if _Q.cheap_alpha:
+            surface.blit(tint, (0, 0))
+        else:
+            _c = tint.get_at((0, 0))
+            _a = max(0, min(255, _c[3])) / 255.0
+            surface.fill((int(255 - (255 - _c[0]) * _a),
+                          int(255 - (255 - _c[1]) * _a),
+                          int(255 - (255 - _c[2]) * _a)),
+                         special_flags=pygame.BLEND_RGB_MULT)
 
         # ═══ VIGNETTE (darker corners) ═══
         # OPTIMASI: bentuk vignette selalu sama, hanya alpha global
@@ -2673,12 +2696,14 @@ class LevelIntroScreen:
                                   self.screen_w - i * 2,
                                   self.screen_h - i * 2), 1)
 
-        vignette = cached_render(("vignette", self.screen_w,
-                                  self.screen_h),
-                                 self.screen_w, self.screen_h,
-                                 _paint_vignette)
-        vignette.set_alpha(fade_alpha)
-        surface.blit(vignette, (0, 0))
+        from mobile.perf import Quality as _Q
+        if _Q.cheap_alpha:
+            vignette = cached_render(("vignette", self.screen_w,
+                                      self.screen_h),
+                                     self.screen_w, self.screen_h,
+                                     _paint_vignette)
+            vignette.set_alpha(fade_alpha)
+            surface.blit(vignette, (0, 0))
 
         # ═══ SPLIT DIVIDER (vertical line di tengah) ═══
         divider_x = self.screen_w // 2
@@ -2721,8 +2746,11 @@ class LevelIntroScreen:
         # ═══ BIG LEVEL NUMBER ═══
         lvl_num_font = title_font(200)
 
-        # Multi-layer shadow
-        for offset in range(6, 0, -1):
+        # Multi-layer shadow (di HP cukup 1 lapis: tiap lapis =
+        # satu alpha blit besar, 6 lapis bisa 43 ms sendiri)
+        from mobile.perf import Quality as _Q
+        _layers = range(6, 0, -1) if _Q.cheap_alpha else (3,)
+        for offset in _layers:
             shadow = lvl_num_font.render(
                 str(self.level_num), True, (0, 0, 0))
             shadow.set_alpha(min(alpha, 60))
@@ -2873,7 +2901,8 @@ class LevelIntroScreen:
         name_y = cy + 180
 
         # Multi-layer shadow
-        for offset in range(5, 0, -1):
+        from mobile.perf import Quality as _Q1
+        for offset in (range(5, 0, -1) if _Q1.cheap_alpha else (3,)):
             shadow = self.font_big.render(
                 self.boss_name, True, (0, 0, 0))
             shadow.set_alpha(min(alpha, 80))
@@ -2943,11 +2972,14 @@ class LevelIntroScreen:
         # Di HP ini saja bisa 40-60 ms/frame.
         # Sekarang: 1 overlay dari pool, digambar sekali.
         # ═══════════════════════════════════════════════════
-        from mobile.perf import POOL as _POOL
+        from mobile.perf import POOL as _POOL, Quality as _QS
         overlay = _POOL.get(self.screen_w, self.screen_h)
 
         # ═══ RADIATING RAYS ═══
-        num_rays = 12
+        # Sinar menjangkau r=180 sehingga kotak blit ikut membesar.
+        # Di HP dengan alpha mahal, sinarnya dilewati saja supaya
+        # kotaknya cukup sebesar badan boss.
+        num_rays = 12 if _QS.cheap_alpha else 0
         ray_alpha = int(50 * (alpha / 255))
         ticks = pygame.time.get_ticks()
         for i in range(num_rays):
@@ -2991,7 +3023,13 @@ class LevelIntroScreen:
                 (spike_x + 6, spike_y),
             ])
 
-        surface.blit(overlay, (0, 0))
+        # Blit HANYA kotak yang benar-benar tergambar. Di HP,
+        # alpha blit dihitung per piksel (~222 ns/px di Cortex-A53),
+        # jadi 1280x720 = 204 ms sedangkan 460x300 = 30 ms.
+        from mobile.perf import blit_overlay
+        _box = (pygame.Rect(cx - 230, cy - 160, 460, 300) if _QS.cheap_alpha
+                else pygame.Rect(cx - 90, cy - 130, 180, 230))
+        blit_overlay(surface, overlay, _box)
         _POOL.release(overlay)
 
         # ═══ GLOWING EYES ═══
