@@ -1,0 +1,446 @@
+# ================================
+# mobile/perf.py
+# Optimasi performa lintas-file TANPA mengubah 60.000 baris kode lama.
+#
+# Isinya 4 hal:
+#   1. install_font_cache()  - cache objek Font + cache hasil .render()
+#   2. SurfacePool           - pakai ulang Surface(SRCALPHA) sementara
+#   3. Quality               - preset kualitas (LOW/MEDIUM/HIGH) + auto
+#   4. FrameTimer            - ukur ms update vs draw untuk overlay debug
+#
+# Kenapa ini penting di Android:
+#   - CPU HP ~3-5x lebih lambat dari PC untuk kode Python murni.
+#   - Game ini menggambar SEMUA sprite secara vektor tiap frame.
+#   - Profil di PC menunjukkan 2 pemborosan besar:
+#       * pygame.font.Font(None, 18) dibuat ULANG tiap frame
+#         (buka file font dari disk 4x per frame!)
+#       * font.render() teks statis dipanggil ulang tiap frame
+#     Keduanya hilang total dengan install_font_cache().
+# ================================
+
+import gc
+import time
+from collections import OrderedDict
+
+import pygame
+
+# ═══════════════════════════════════════════════════════
+# 1. CACHE FONT + CACHE TEKS
+# ═══════════════════════════════════════════════════════
+
+_ORIG_FONT_CLASS = pygame.font.Font
+_ORIG_SYSFONT = pygame.font.SysFont
+
+_font_instances = {}
+_TEXT_CACHE_LIMIT = 1500
+
+_stats = {
+    "font_created": 0,
+    "font_reused": 0,
+    "text_rendered": 0,
+    "text_cached": 0,
+    "surf_pool_hit": 0,
+    "surf_pool_new": 0,
+}
+
+
+class CachedFont(_ORIG_FONT_CLASS):
+    """Font dengan cache hasil render. Drop-in, API sama persis."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._text_cache = OrderedDict()
+
+    def render(self, text, antialias=True, color=(255, 255, 255),
+               background=None, **kwargs):
+        # Argumen tak biasa (wraplength dsb.) -> lewati cache, biar aman
+        if kwargs:
+            _stats["text_rendered"] += 1
+            return super().render(text, antialias, color, background,
+                                  **kwargs)
+
+        key = (text, bool(antialias),
+               tuple(color) if not isinstance(color, (int, str)) else color,
+               tuple(background) if isinstance(background, (tuple, list))
+               else background,
+               self.get_bold(), self.get_italic(), self.get_underline())
+
+        cached = self._text_cache.get(key)
+        if cached is not None:
+            self._text_cache.move_to_end(key)
+            _stats["text_cached"] += 1
+            return cached
+
+        surf = super().render(text, antialias, color, background)
+        _stats["text_rendered"] += 1
+
+        self._text_cache[key] = surf
+        if len(self._text_cache) > _TEXT_CACHE_LIMIT:
+            self._text_cache.popitem(last=False)
+        return surf
+
+
+def _cached_font_factory(path_or_none, size=None, **kwargs):
+    """Pengganti pygame.font.Font: objek Font dipakai ulang."""
+    if size is None:
+        size = 20
+    try:
+        size = int(size)
+    except Exception:
+        size = 20
+    key = ("file", path_or_none, size, tuple(sorted(kwargs.items())))
+    font = _font_instances.get(key)
+    if font is None:
+        font = CachedFont(path_or_none, size, **kwargs)
+        _font_instances[key] = font
+        _stats["font_created"] += 1
+    else:
+        _stats["font_reused"] += 1
+    return font
+
+
+def _cached_sysfont(name, size, bold=False, italic=False):
+    """Pengganti pygame.font.SysFont, tetap mengembalikan CachedFont."""
+    key = ("sys", name, int(size), bool(bold), bool(italic))
+    font = _font_instances.get(key)
+    if font is not None:
+        _stats["font_reused"] += 1
+        return font
+    try:
+        path = pygame.font.match_font(name, bold=bold, italic=italic)
+    except Exception:
+        path = None
+    if path:
+        font = CachedFont(path, int(size))
+        font.set_bold(bold)
+        font.set_italic(italic)
+    else:
+        font = _ORIG_SYSFONT(name, size, bold, italic)
+    _font_instances[key] = font
+    _stats["font_created"] += 1
+    return font
+
+
+_font_patch_installed = False
+
+
+def install_font_cache():
+    """
+    Pasang cache font global. WAJIB dipanggil SEBELUM modul game
+    di-import, karena sebagian modul membuat font saat import.
+    """
+    global _font_patch_installed
+    if _font_patch_installed:
+        return
+    if not pygame.font.get_init():
+        pygame.font.init()
+    pygame.font.Font = _cached_font_factory
+    pygame.font.SysFont = _cached_sysfont
+    _font_patch_installed = True
+    print("[PERF] Font cache aktif (Font + render di-cache).")
+
+
+def clear_text_caches():
+    """Kosongkan cache teks (dipanggil saat ganti level / memori sesak)."""
+    for font in _font_instances.values():
+        cache = getattr(font, "_text_cache", None)
+        if cache is not None:
+            cache.clear()
+    gc.collect()
+
+
+def font_cache_stats():
+    return dict(_stats)
+
+
+# ═══════════════════════════════════════════════════════
+# 2. SURFACE POOL
+#    Alokasi Surface(SRCALPHA) tiap frame = alokasi memori + GC.
+#    Ada ~1.400 pemakaian SRCALPHA di kode ini.
+# ═══════════════════════════════════════════════════════
+class SurfacePool:
+    """Pakai-ulang surface sementara berdasar ukuran."""
+
+    def __init__(self, max_per_size=6):
+        self._pool = {}
+        self._max = max_per_size
+
+    def get(self, width, height, clear=True):
+        width = max(1, int(width))
+        height = max(1, int(height))
+        bucket = self._pool.get((width, height))
+        if bucket:
+            surf = bucket.pop()
+            _stats["surf_pool_hit"] += 1
+            if clear:
+                surf.fill((0, 0, 0, 0))
+            return surf
+        _stats["surf_pool_new"] += 1
+        return pygame.Surface((width, height), pygame.SRCALPHA)
+
+    def release(self, surf):
+        if surf is None:
+            return
+        key = surf.get_size()
+        bucket = self._pool.setdefault(key, [])
+        if len(bucket) < self._max:
+            bucket.append(surf)
+
+    def clear(self):
+        self._pool.clear()
+
+
+POOL = SurfacePool()
+
+
+# ═══════════════════════════════════════════════════════
+# 2b. OVERLAY WARNA SOLID (di-cache)
+#     Pola "buat Surface layar penuh -> fill -> blit" muncul di
+#     belasan tempat dan dijalankan TIAP FRAME. Surface-nya selalu
+#     sama; yang berubah cuma alpha. Jadi cukup dibuat sekali.
+# ═══════════════════════════════════════════════════════
+_overlay_cache = {}
+_OVERLAY_CACHE_MAX = 6      # surface layar penuh = 3,5 MB/entri!
+
+
+def darken(target, alpha):
+    """
+    Gelapkan seluruh permukaan - setara blit persegi hitam beralpha,
+    tapi TANPA surface tambahan.
+
+    Diukur pada 1280x720:
+        alokasi + fill + blit  : 1,10 ms
+        blit surface di-cache  : 0,35 ms
+        darken() (fill BLEND)  : 0,17 ms   <-- ini
+    """
+    a = max(0, min(255, int(alpha)))
+    if a <= 0:
+        return
+    k = 255 - a
+    target.fill((k, k, k), special_flags=pygame.BLEND_RGB_MULT)
+
+
+def flash(target, alpha, color=(255, 255, 255)):
+    """Kilat terang seukuran layar tanpa surface tambahan (additive)."""
+    a = max(0, min(255, int(alpha)))
+    if a <= 0:
+        return
+    r, g, b = color[:3]
+    target.fill((r * a // 255, g * a // 255, b * a // 255),
+                special_flags=pygame.BLEND_RGB_ADD)
+
+
+def solid_overlay(width, height, rgb, alpha=255):
+    """
+    Surface polos berwarna dengan alpha yang sudah dipanggang.
+    Untuk area KECIL. Untuk overlay layar penuh pakai darken()/flash()
+    - jauh lebih cepat dan tidak memakan RAM.
+    """
+    a = ((max(0, min(255, int(alpha))) + 4) // 8) * 8
+    key = (int(width), int(height), tuple(rgb[:3]), a)
+    surf = _overlay_cache.get(key)
+    if surf is None:
+        surf = pygame.Surface((int(width), int(height)), pygame.SRCALPHA)
+        surf.fill((rgb[0], rgb[1], rgb[2], a))
+        if len(_overlay_cache) >= _OVERLAY_CACHE_MAX:
+            _overlay_cache.clear()
+        _overlay_cache[key] = surf
+    return surf
+
+
+_static_cache = {}
+
+
+def cached_render(key, width, height, draw_func):
+    """
+    Cache hasil gambar statis (vignette, gradien, dsb).
+
+        surf = perf.cached_render(("vignette", w, h), w, h, gambar)
+        surf.set_alpha(a)
+        target.blit(surf, (0, 0))
+
+    `draw_func(surface)` hanya dipanggil sekali per key.
+    """
+    surf = _static_cache.get(key)
+    if surf is None:
+        surf = pygame.Surface((int(width), int(height)), pygame.SRCALPHA)
+        draw_func(surf)
+        _static_cache[key] = surf
+    return surf
+
+
+def clear_static_caches():
+    _static_cache.clear()
+    _overlay_cache.clear()
+    POOL.clear()
+
+
+# ═══════════════════════════════════════════════════════
+# 3. PRESET KUALITAS
+#    Modul gambar bisa membaca flag ini untuk melewati efek berat.
+#    Contoh pemakaian di kode gambar:
+#        from mobile.perf import Quality
+#        if Quality.particles:
+#            ...gambar partikel...
+# ═══════════════════════════════════════════════════════
+LOW, MEDIUM, HIGH = "low", "medium", "high"
+
+# ── Saklar anti-aliasing global ──────────────────────────
+# pygame.draw.aacircle jauh lebih mahal daripada draw.circle dan
+# dipakai puluhan kali per unit di 57 berkas renderer. Daripada
+# mengedit semuanya, cukup tukar fungsinya saat kualitas LOW.
+_ORIG_AACIRCLE = getattr(pygame.draw, "aacircle", None)
+
+
+def _apply_aa_switch(use_aa):
+    if _ORIG_AACIRCLE is None:
+        return
+    if use_aa:
+        if pygame.draw.aacircle is not _ORIG_AACIRCLE:
+            pygame.draw.aacircle = _ORIG_AACIRCLE
+    else:
+        if pygame.draw.aacircle is _ORIG_AACIRCLE:
+            pygame.draw.aacircle = pygame.draw.circle
+
+
+class _Quality:
+    def __init__(self):
+        self.level = HIGH
+        self.apply(HIGH)
+
+    def apply(self, level):
+        self.level = level
+        low = level == LOW
+        med = level == MEDIUM
+
+        # Efek yang boleh dimatikan tanpa merusak gameplay
+        self.particles = not low
+        self.particle_ratio = 0.35 if low else (0.65 if med else 1.0)
+        self.fog = not low
+        self.shadows = True
+        self.soft_shadows = not (low or med)
+        self.glow = not low
+        self.screen_shake = True
+        self.aa_circles = not low          # pakai draw.circle biasa saat LOW
+        # Cache sprite minion: SUDAH DIUKUR TERNYATA LEBIH LAMBAT
+        # (60 minion: 0,66 ms tanpa cache vs 1,07 ms dengan cache),
+        # karena renderer minion memang sudah murah sementara alokasi
+        # + blit surface tambahan justru mahal. Biarkan False.
+        # Detail: mobile/spritecache.py
+        self.sprite_cache = False
+        self.floating_decor = not low
+        self.max_damage_numbers = 8 if low else (16 if med else 32)
+        self.target_fps = 30 if low else 60
+
+        _apply_aa_switch(self.aa_circles)
+
+    def __repr__(self):
+        return "<Quality %s>" % self.level
+
+
+Quality = _Quality()
+
+
+def auto_detect_quality(is_android):
+    """
+    Tebakan awal kualitas. Di Android default MEDIUM; kalau RAM kecil
+    atau CPU sedikit -> LOW. Pemain tetap bisa mengubah di menu Settings.
+    """
+    if not is_android:
+        Quality.apply(HIGH)
+        return Quality.level
+    level = MEDIUM
+    try:
+        import multiprocessing
+        cores = multiprocessing.cpu_count()
+        if cores <= 4:
+            level = LOW
+    except Exception:
+        pass
+    Quality.apply(level)
+    return level
+
+
+class AdaptiveQuality:
+    """
+    Turunkan kualitas otomatis kalau FPS rata-rata jeblok,
+    naikkan lagi kalau lancar. Cegah 'lag spiral' di HP kentang.
+    """
+
+    def __init__(self, enabled=True, low_fps=26, high_fps=52, window=90):
+        self.enabled = enabled
+        self.low_fps = low_fps
+        self.high_fps = high_fps
+        self.window = window
+        self._samples = []
+        self._cooldown = 0
+
+    def update(self, fps):
+        if not self.enabled:
+            return
+        if self._cooldown > 0:
+            self._cooldown -= 1
+            return
+        self._samples.append(fps)
+        if len(self._samples) < self.window:
+            return
+        avg = sum(self._samples) / len(self._samples)
+        self._samples.clear()
+
+        if avg < self.low_fps and Quality.level != LOW:
+            Quality.apply(LOW if Quality.level == MEDIUM else MEDIUM)
+            self._cooldown = 180
+            print("[PERF] FPS %.1f -> turunkan kualitas ke %s"
+                  % (avg, Quality.level))
+        elif avg > self.high_fps and Quality.level != HIGH:
+            Quality.apply(HIGH if Quality.level == MEDIUM else MEDIUM)
+            self._cooldown = 300
+            print("[PERF] FPS %.1f -> naikkan kualitas ke %s"
+                  % (avg, Quality.level))
+
+
+# ═══════════════════════════════════════════════════════
+# 4. PENGUKUR WAKTU FRAME
+# ═══════════════════════════════════════════════════════
+class FrameTimer:
+    """Ukur ms untuk tiap fase frame: event / update / draw / flip."""
+
+    def __init__(self, smooth=0.9):
+        self.smooth = smooth
+        self.marks = {}
+        self.avg = {}
+        self._t0 = None
+        self._phase = None
+
+    def start(self, phase):
+        now = time.perf_counter()
+        if self._phase is not None:
+            self._close(now)
+        self._phase = phase
+        self._t0 = now
+
+    def _close(self, now):
+        ms = (now - self._t0) * 1000.0
+        self.marks[self._phase] = ms
+        prev = self.avg.get(self._phase, ms)
+        self.avg[self._phase] = prev * self.smooth + ms * (1 - self.smooth)
+
+    def stop(self):
+        if self._phase is not None:
+            self._close(time.perf_counter())
+            self._phase = None
+
+    def report(self):
+        return dict(self.avg)
+
+
+# ═══════════════════════════════════════════════════════
+# PEMASANGAN SEKALIGUS
+# ═══════════════════════════════════════════════════════
+def install_all(is_android=False, adaptive=True):
+    """Panggil sekali di awal main.py, sebelum import modul game."""
+    install_font_cache()
+    auto_detect_quality(is_android)
+    print("[PERF] Preset kualitas: %s (target %d FPS)"
+          % (Quality.level, Quality.target_fps))
+    return AdaptiveQuality(enabled=adaptive)
