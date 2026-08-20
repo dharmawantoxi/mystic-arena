@@ -113,6 +113,40 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
                 sdl_mixer_includes=sdl_mixer_includes,
                 freetype_includes="",
             )
+            # ═══════════════════════════════════════════════
+            # BUANG MODUL _sdl2.*  (INI YANG MEMBUAT BUILD LOLOS)
+            #
+            # Kelima berkas src_c/_sdl2/*.c adalah hasil generate
+            # **Cython 3.0.0**, dan hanya berkas itulah yang gagal
+            # dikompilasi: isinya penuh API CPython yang sudah
+            # dihapus (tp_print 50x, _PyLong_AsByteArray 46x,
+            # _PyGen_Send, Py_OptimizeFlag, ...). Modul C pygame
+            # yang ditulis tangan tidak bermasalah.
+            #
+            # Game ini TIDAK memakai pygame._sdl2 sama sekali
+            # (0 rujukan), dan pygame/__init__.py hanya mengimpornya
+            # pada build statis (cabang `pygame_static`), bukan pada
+            # build normal. Jadi modul-modul ini aman dibuang, dan
+            # build jadi lebih cepat + kebal terhadap masalah versi
+            # Cython/Python.
+            #
+            # Kalau suatu saat butuh pygame._sdl2 (mis. pygame.Window
+            # atau controller API baru), hapus blok ini dan pastikan
+            # memakai pygame-ce >= 2.5.6 dengan resep MesonRecipe.
+            # ═══════════════════════════════════════════════
+            kept, skipped = [], []
+            for line in setup_file.splitlines():
+                if line.startswith("_sdl2."):
+                    skipped.append(line.split()[0])
+                    kept.append("# [p4a] dilewati (Cython, tak dipakai): "
+                                + line)
+                else:
+                    kept.append(line)
+            setup_file = "\n".join(kept) + "\n"
+
+            from pythonforandroid.logger import info
+            info("pygame-ce: modul dilewati -> %s" % ", ".join(skipped))
+
             with open("Setup", "w") as fh:
                 fh.write(setup_file)
 
