@@ -79,11 +79,31 @@ class TouchManager:
     """
 
     def __init__(self, use_finger_events=None):
-        # Di Android SDL mengirim FINGER *dan* MOUSE (sintesis).
-        # Kita pilih satu supaya tidak dobel.
+        # ══════════════════════════════════════════════════
+        # KENAPA MOUSE, BUKAN FINGER, YANG DIPAKAI DI ANDROID
+        #
+        # SDL mengirim FINGERDOWN *dan* MOUSEBUTTONDOWN sintesis
+        # untuk sentuhan yang sama. Dulu kita pakai FINGER, tapi:
+        #   - koordinat FINGER ternormalisasi (0..1) terhadap
+        #     JENDELA, jadi harus dipetakan manual melewati
+        #     letterbox pygame.SCALED. Sedikit saja salah, tombol
+        #     di tepi layar (FPS, jeda) tidak pernah kena.
+        #   - koordinat MOUSE sudah diterjemahkan SDL ke ruang
+        #     logis 1280x720 -> nol perhitungan, nol risiko.
+        # Multi-touch memang hilang, tapi game ini tidak
+        # membutuhkannya.
+        #
+        # FINGER tetap dihitung (untuk diagnostik) dan bisa
+        # dipaksa dengan MYSTIC_USE_FINGER=1.
+        # ══════════════════════════════════════════════════
         if use_finger_events is None:
-            use_finger_events = plat.IS_ANDROID
+            import os
+            use_finger_events = os.environ.get("MYSTIC_USE_FINGER") == "1"
         self.use_finger = use_finger_events
+        # penghitung untuk layar diagnostik
+        self.counts = {"finger": 0, "mouse": 0, "tap": 0}
+        self.last_raw = None
+        self.last_logical = None
         self.points = {}
         self._actions = []
         self._last_tap_time = 0.0
@@ -108,6 +128,13 @@ class TouchManager:
             return False
 
         t = event.type
+
+        # hitung dulu untuk diagnostik (tanpa memengaruhi logika)
+        if t in (pygame.FINGERDOWN, pygame.FINGERUP, pygame.FINGERMOTION):
+            self.counts["finger"] += 1
+        elif t in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
+            self.counts["mouse"] += 1
+
         if self.use_finger:
             if t == pygame.FINGERDOWN:
                 pos = plat.finger_to_logical(event.x, event.y)
@@ -127,22 +154,25 @@ class TouchManager:
                 return True
             return False
 
-        # ── mode desktop / uji coba di PC ──
+        # ── jalur MOUSE (dipakai desktop DAN Android) ──
         if t == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            self._down(0, event.pos)
+            self.last_raw = event.pos
+            pos = plat.pointer_to_logical(event.pos)
+            self.last_logical = pos
+            self._down(0, pos)
             return True
         if t == pygame.MOUSEMOTION and event.buttons and event.buttons[0]:
-            self._motion(0, event.pos)
+            self._motion(0, plat.pointer_to_logical(event.pos))
             return True
         if t == pygame.MOUSEBUTTONUP and event.button == 1:
-            self._up(0, event.pos)
+            self._up(0, plat.pointer_to_logical(event.pos))
             return True
         if t == pygame.MOUSEBUTTONDOWN and event.button in (4, 5):
-            self._emit("scroll", event.pos, value=-1 if event.button == 4
-                       else 1)
+            self._emit("scroll", plat.pointer_to_logical(event.pos),
+                       value=-1 if event.button == 4 else 1)
             return True
         if t == pygame.MOUSEBUTTONDOWN and event.button == 3:
-            self._emit("long_press", event.pos)
+            self._emit("long_press", plat.pointer_to_logical(event.pos))
             return True
         return False
 
@@ -195,6 +225,7 @@ class TouchManager:
             is_double = ((now - self._last_tap_time) * 1000.0 < DOUBLE_TAP_MS
                          and abs(pos[0] - self._last_tap_pos[0]) < 40
                          and abs(pos[1] - self._last_tap_pos[1]) < 40)
+            self.counts["tap"] += 1
             if is_double:
                 self._emit("double_tap", pos, tid=tid)
                 self._last_tap_time = 0.0

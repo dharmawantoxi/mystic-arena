@@ -160,47 +160,105 @@ def vibrate(ms=25):
 # SETUP LAYAR
 # ═══════════════════════════════════════════════════════
 _display_state = {
-    "surface": None,
+    "surface": None,          # permukaan yang benar-benar dipresentasikan
+    "render": None,           # permukaan yang digambari game (bisa sama)
+    "mode": "scaled_vsync",
     "window_size": (LOGICAL_WIDTH, LOGICAL_HEIGHT),
     "scale": 1.0,
     "offset": (0, 0),
-    "safe_area": (0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT),
 }
 
+# ═══════════════════════════════════════════════════════
+# MODE TAMPILAN
+#
+# scaled_vsync : set_mode(720p, SCALED|FULLSCREEN, vsync=1)
+#                SDL yang menskalakan ke layar HP (idealnya GPU).
+# scaled       : sama, tanpa vsync. Coba kalau vsync bikin tersendat.
+# native       : jendela seukuran layar asli; game menggambar ke
+#                surface 720p terpisah lalu kita sendiri yang
+#                men-scale sekali per frame. Dipakai kalau SCALED
+#                justru jatuh ke software renderer.
+#
+# Mode tersimpan di <folder tulis>/display_mode.txt supaya pilihan
+# di layar diagnostik ikut terpakai saat start berikutnya.
+# ═══════════════════════════════════════════════════════
+DISPLAY_MODES = ("scaled_vsync", "scaled", "native")
 
-def create_display(vsync=True):
-    """
-    Buat jendela/permukaan game.
 
-    Android : fullscreen resolusi asli layar, tetapi surface yang
-              dipakai game tetap 1280x720 berkat pygame.SCALED.
-              -> Semua koordinat lama tetap valid.
-              -> Scaling dilakukan GPU, bukan Python (cepat).
-    Desktop : jendela 1280x720 biasa.
-    """
-    flags = pygame.SCALED
+def _mode_file():
+    return os.path.join(get_writable_dir(), "display_mode.txt")
 
-    if TOUCH_MODE:
-        flags |= pygame.FULLSCREEN
 
+def load_display_mode():
+    env = os.environ.get("MYSTIC_DISPLAY_MODE")
+    if env in DISPLAY_MODES:
+        return env
     try:
-        surface = pygame.display.set_mode(
-            (LOGICAL_WIDTH, LOGICAL_HEIGHT), flags, vsync=1 if vsync else 0)
-    except pygame.error:
-        # vsync tidak didukung sebagian device -> ulangi tanpa vsync
-        surface = pygame.display.set_mode(
-            (LOGICAL_WIDTH, LOGICAL_HEIGHT), flags)
+        with open(_mode_file()) as fh:
+            mode = fh.read().strip()
+        if mode in DISPLAY_MODES:
+            return mode
+    except Exception:
+        pass
+    return "scaled_vsync"
 
+
+def save_display_mode(mode):
+    try:
+        with open(_mode_file(), "w") as fh:
+            fh.write(mode)
+        return True
+    except Exception:
+        return False
+
+
+def create_display(vsync=True, mode=None):
+    """
+    Kembalikan permukaan yang HARUS digambari game (render surface).
+
+    Untuk mode scaled_* nilainya sama dengan permukaan display.
+    Untuk mode native, ini surface 720p terpisah dan `present()`
+    yang menyalinnya ke layar.
+    """
+    mode = mode or load_display_mode()
+    if mode not in DISPLAY_MODES:
+        mode = "scaled_vsync"
+
+    if mode == "native":
+        flags = pygame.FULLSCREEN if TOUCH_MODE else 0
+        surface = pygame.display.set_mode((0, 0) if TOUCH_MODE else
+                                          (LOGICAL_WIDTH, LOGICAL_HEIGHT),
+                                          flags)
+        render = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT)).convert()
+    else:
+        flags = pygame.SCALED
+        if TOUCH_MODE:
+            flags |= pygame.FULLSCREEN
+        want_vsync = 1 if (vsync and mode == "scaled_vsync") else 0
+        try:
+            surface = pygame.display.set_mode(
+                (LOGICAL_WIDTH, LOGICAL_HEIGHT), flags, vsync=want_vsync)
+        except pygame.error:
+            surface = pygame.display.set_mode(
+                (LOGICAL_WIDTH, LOGICAL_HEIGHT), flags)
+        render = surface
+
+    _display_state["mode"] = mode
+    _display_state["render"] = render
     _refresh_display_metrics(surface)
 
     if IS_ANDROID:
         enable_immersive_mode()
         keep_screen_on(True)
 
-    return surface
+    print("[DISPLAY] mode=%s window=%s render=%s scale=%.3f"
+          % (mode, _display_state["window_size"], render.get_size(),
+             _display_state["scale"]))
+    return render
 
 
 def _refresh_display_metrics(surface):
+    """Hitung skala & offset letterbox dari ukuran jendela nyata."""
     try:
         win_w, win_h = pygame.display.get_window_size()
     except Exception:
@@ -214,6 +272,46 @@ def _refresh_display_metrics(surface):
     _display_state["window_size"] = (win_w, win_h)
     _display_state["scale"] = scale
     _display_state["offset"] = (off_x, off_y)
+
+
+def get_render_surface():
+    return _display_state["render"]
+
+
+def get_mode():
+    return _display_state["mode"]
+
+
+def present():
+    """Tampilkan frame. Ganti semua pemanggilan pygame.display.flip()."""
+    if _display_state["mode"] == "native":
+        src = _display_state["render"]
+        dst = _display_state["surface"]
+        scale = _display_state["scale"]
+        off = _display_state["offset"]
+        tw = max(1, int(LOGICAL_WIDTH * scale))
+        th = max(1, int(LOGICAL_HEIGHT * scale))
+
+        buf = _display_state.get("scale_buf")
+        if buf is None or buf.get_size() != (tw, th):
+            buf = pygame.Surface((tw, th)).convert()
+            _display_state["scale_buf"] = buf
+            dst.fill((0, 0, 0))
+        pygame.transform.scale(src, (tw, th), buf)
+        dst.blit(buf, (int(off[0]), int(off[1])))
+    pygame.display.flip()
+
+
+def pointer_to_logical(pos):
+    """
+    Koordinat penunjuk (mouse / sentuh sintesis) -> koordinat logis.
+
+    Mode scaled_* : SDL SUDAH menerjemahkannya -> kembalikan apa adanya.
+    Mode native   : koordinatnya piksel jendela -> perlu dipetakan.
+    """
+    if _display_state["mode"] == "native":
+        return window_to_logical(pos[0], pos[1])
+    return (float(pos[0]), float(pos[1]))
 
 
 def window_to_logical(x, y):
