@@ -29,6 +29,16 @@ android.numeric_version = 1
 # ═══════════════════════════════════════════════════════
 requirements = python3,pygame-ce,pyjnius,android
 
+# ⚠ VERSI PYTHON DIKUNCI DI LUAR BERKAS INI
+# p4a develop memakai Python 3.14; pygame-ce 2.4.1 hanya mendukung
+# 3.8-3.12. Versi dipaksa lewat variabel lingkungan (buildozer.spec
+# tidak punya opsi untuk ini):
+#     export VERSION_python3=3.11.9
+#     export VERSION_hostpython3=3.11.9
+# Sudah diatur otomatis di .github/workflows/build-android.yml dan
+# tools/build_apk.sh. Kalau menjalankan `buildozer` manual, pakai
+# skrip itu — jangan panggil buildozer langsung.
+
 # ═══════════════════════════════════════════════════════
 # TAMPILAN
 # ═══════════════════════════════════════════════════════
