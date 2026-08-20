@@ -6,6 +6,26 @@
 import os
 import sys
 
+# ═══════════════════════════════════════════════════════
+# HINT SDL - HARUS diset SEBELUM pygame.init()
+#
+# SDL_RENDER_DRIVER=opengles2
+#     Paksa scaling 720p -> layar HP dikerjakan GPU. Kalau SDL
+#     jatuh ke renderer "software", CPU yang menskalakan tiap
+#     frame dan game langsung tidak playable (splash pun berat).
+#
+# SDL_HINT_RENDER_SCALE_QUALITY=0
+#     0 = nearest (paling murah). Default "linear" memaksa
+#     penyaringan bilinear saat upscale - mahal di GPU lemah.
+#
+# SDL_HINT_FRAMEBUFFER_ACCELERATION=1
+#     Minta framebuffer berakselerasi bila tersedia.
+# ═══════════════════════════════════════════════════════
+os.environ.setdefault("SDL_RENDER_DRIVER", "opengles2")
+os.environ.setdefault("SDL_HINT_RENDER_SCALE_QUALITY", "0")
+os.environ.setdefault("SDL_RENDER_SCALE_QUALITY", "0")
+os.environ.setdefault("SDL_HINT_FRAMEBUFFER_ACCELERATION", "1")
+
 import pygame
 
 # ═══════════════════════════════════════════════════════

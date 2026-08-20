@@ -72,6 +72,13 @@ class CachedFont(_ORIG_FONT_CLASS):
             return cached
 
         surf = super().render(text, antialias, color, background)
+        # Samakan format piksel dengan layar. Tanpa ini setiap blit
+        # teks mengonversi format - mahal sekali di Android.
+        try:
+            if pygame.display.get_init() and pygame.display.get_surface():
+                surf = surf.convert_alpha()
+        except Exception:
+            pass
         _stats["text_rendered"] += 1
 
         self._text_cache[key] = surf
@@ -176,7 +183,13 @@ class SurfacePool:
                 surf.fill((0, 0, 0, 0))
             return surf
         _stats["surf_pool_new"] += 1
-        return pygame.Surface((width, height), pygame.SRCALPHA)
+        surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        try:
+            if pygame.display.get_init() and pygame.display.get_surface():
+                surf = surf.convert_alpha()
+        except Exception:
+            pass
+        return surf
 
     def release(self, surf):
         if surf is None:
@@ -349,16 +362,11 @@ def auto_detect_quality(is_android):
     if not is_android:
         Quality.apply(HIGH)
         return Quality.level
-    level = MEDIUM
-    try:
-        import multiprocessing
-        cores = multiprocessing.cpu_count()
-        if cores <= 4:
-            level = LOW
-    except Exception:
-        pass
-    Quality.apply(level)
-    return level
+    # Di Android mulai dari LOW: lebih baik 30 FPS stabil sejak
+    # detik pertama, lalu pemain menaikkan sendiri di Settings,
+    # daripada pengalaman pertama yang patah-patah.
+    Quality.apply(LOW)
+    return LOW
 
 
 class AdaptiveQuality:
