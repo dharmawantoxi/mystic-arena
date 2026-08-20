@@ -1,0 +1,30 @@
+# ═══ Python ═══
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ═══ Buildozer / python-for-android ═══
+.buildozer/
+bin/
+*.apk
+*.aab
+*.keystore
+*.jks
+keystore.properties
+
+# ═══ Save game & log (jangan ikut ke repo) ═══
+savegame*.json
+save_slot*.json
+crash_log.txt
+*.log
+
+# ═══ Editor / OS ═══
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Save game hasil uji coba
+saves/
