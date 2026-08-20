@@ -3,15 +3,37 @@ p4a-recipes/pygame-ce/__init__.py
 
 Resep python-for-android untuk pygame-ce (Community Edition).
 
-Kenapa resep lokal?
-  Resep `pygame` bawaan p4a masih menunjuk pygame 2.1.0 dan ditandai
-  "broken" oleh maintainer. pygame-ce 2.5.x sudah punya berkas
-  buildconfig/Setup.Android.SDL2.in yang siap dipakai lintas-kompilasi.
+═══════════════════════════════════════════════════════════════
+KENAPA VERSINYA DIKUNCI DI 2.4.1 — JANGAN DINAIKKAN SEMBARANGAN
+═══════════════════════════════════════════════════════════════
+pygame-ce 2.5.0 ke atas berpindah ke sistem build **meson-python**
+(`build-backend = 'mesonpy'` di pyproject.toml).
 
-Cara menaikkan versi:
-  1. Ubah `version` di bawah ke rilis pygame-ce terbaru yang stabil.
-  2. Hapus cache: rm -rf .buildozer/android/platform/build-*
-  3. buildozer android debug
+python-for-android memasang paket dengan `pip install .`, dan pip
+menuruti pyproject.toml itu -> meson dijalankan sebagai **native
+build**, bukan cross build. Meson lalu mengompilasi berkas uji
+dengan clang NDK (menghasilkan biner ARM) dan mencoba
+menjalankannya di runner x86_64, sehingga gagal:
+
+    ERROR: Could not invoke sanity test executable:
+    [Errno 8] Exec format error: .../sanitycheckc.exe
+
+pygame-ce **2.4.1** adalah rilis terakhir yang memakai setup.py
+(tidak punya pyproject.toml), sehingga jalur klasik p4a — meng-
+generate berkas `Setup` dari `buildconfig/Setup.Android.SDL2.in` —
+tetap berfungsi. Ini juga pendekatan yang dipakai resep `pygame`
+bawaan p4a.
+
+Efek ke game ini: **tidak ada**. Satu-satunya API 2.5+ yang dipakai
+kode adalah `pygame.draw.aacircle`, dan seluruh 231 pemakaiannya
+sudah dijaga `HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")`
+dengan fallback ke `pygame.draw.circle` — yang justru lebih cepat
+di HP.
+
+Kalau suatu saat ingin memakai 2.5+, jalurnya adalah menulis ulang
+resep ini sebagai subclass `MesonRecipe` milik p4a (yang menulis
+berkas cross-file meson), plus menyediakan SDL2 lewat pkg-config.
+Itu pekerjaan riset tersendiri — jangan dicoba menjelang rilis.
 """
 
 from os.path import join
@@ -21,9 +43,9 @@ from pythonforandroid.toolchain import current_directory
 
 
 class PygameCERecipe(CompiledComponentsPythonRecipe):
-    version = "2.5.3"
-    url = ("https://github.com/pygame-community/pygame-ce/archive/"
-           "refs/tags/{version}.tar.gz")
+    version = "2.4.1"
+    url = ("https://files.pythonhosted.org/packages/source/p/pygame-ce/"
+           "pygame-ce-{version}.tar.gz")
 
     name = "pygame-ce"
     site_packages_name = "pygame"
@@ -68,10 +90,18 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
                                        self.ctx).get_include_dirs(arch):
                 sdl_image_includes += "-I%s " % inc
 
+            # Template 2.4.1 memakai 5 placeholder:
+            #   sdl_includes, sdl_ttf_includes, sdl_image_includes,
+            #   sdl_mixer_includes, freetype_includes
+            # Modul _freetype sudah dikomentari di template, jadi
+            # freetype/harfbuzz tidak perlu ada. Path -L untuk png &
+            # jpeg dititipkan lewat sdl_includes (seperti resep p4a).
             setup_file = setup_template.format(
                 sdl_includes=(
                     " -I" + join(self.ctx.bootstrap.build_dir, "jni", "SDL",
                                  "include")
+                    + " -I" + png_inc_dir
+                    + " -I" + jpeg_inc_dir
                     + " -L" + join(self.ctx.bootstrap.build_dir, "libs",
                                    str(arch))
                     + " -L" + png_lib_dir
@@ -81,8 +111,6 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
                                              "jni", "SDL2_ttf"),
                 sdl_image_includes=sdl_image_includes,
                 sdl_mixer_includes=sdl_mixer_includes,
-                jpeg_includes="-I" + jpeg_inc_dir,
-                png_includes="-I" + png_inc_dir,
                 freetype_includes="",
             )
             with open("Setup", "w") as fh:
