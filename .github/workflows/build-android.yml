@@ -51,20 +51,48 @@ jobs:
             build-essential ccache libltdl-dev
 
       # Cache = pembeda antara build 60 menit dan build 8 menit.
+      # CACHE_VERSION: naikkan angkanya (v2 -> v3 -> ...) kalau perlu
+      # memaksa build bersih. restore-keys sengaja ikut memakai versi
+      # ini supaya cache LAMA tidak ikut dipulihkan - kalau ikut, sumber
+      # pygame-ce versi lama yang sudah terbongkar akan dipakai ulang
+      # oleh p4a ("is already unpacked, skipping") dan error yang sama
+      # terulang walau resepnya sudah diperbaiki.
       - name: Cache SDK/NDK & build p4a
         uses: actions/cache@v4
         with:
           path: |
             ~/.buildozer
             .buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec', 'p4a-recipes/**') }}
+          key: buildozer-v2-${{ runner.os }}-${{ hashFiles('buildozer.spec', 'p4a-recipes/**') }}
           restore-keys: |
-            buildozer-${{ runner.os }}-
+            buildozer-v2-${{ runner.os }}-
 
       - name: Install buildozer
         run: |
           python -m pip install --upgrade pip
           pip install buildozer==1.5.0 "cython<3.0" virtualenv
+
+      # Cetak konfigurasi yang BENAR-BENAR dipakai. Kalau baris di bawah
+      # tidak sesuai harapan, berarti Anda menjalankan commit yang salah.
+      - name: Konfigurasi yang dipakai build ini
+        run: |
+          echo "commit   : $GITHUB_SHA"
+          echo "--- buildozer.spec ---"
+          grep -E "^(version|android\.(api|minapi|ndk_api|archs|release_artifact))" buildozer.spec
+          echo "--- resep pygame-ce ---"
+          grep -E "^\s+(version|url) = " p4a-recipes/pygame-ce/__init__.py
+          echo "======================================================="
+          echo "HARUS terlihat: version = \"2.4.1\"  dan  android.archs = arm64-v8a"
+          echo "======================================================="
+
+      # Jaring pengaman: p4a melewati unpack kalau folder sumber sudah ada
+      # ("is already unpacked, skipping"). Kalau cache lama sempat ikut
+      # terpulihkan, sisa pygame-ce versi lama harus dibuang dulu.
+      - name: Buang sisa sumber pygame-ce lama dari cache
+        run: |
+          rm -rf .buildozer/android/platform/build-*/other_builds/pygame-ce* || true
+          rm -rf .buildozer/android/platform/build-*/packages/pygame-ce* || true
+          echo "sisa build pygame-ce dibersihkan"
 
       # ─────────────── DEBUG (APK) ───────────────
       - name: Build APK debug
