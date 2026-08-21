@@ -213,6 +213,7 @@ def main():
     while running:
         # ─────────────────────────────── EVENT
         frame_timer.start("event")
+        perf.new_frame_budget()      # jatah konversi sprite frame ini
         touch.update()
         ctx = {"game": game, "menu": menu, "debug": debug,
                "request_pause": False}

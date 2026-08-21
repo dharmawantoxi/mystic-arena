@@ -1898,19 +1898,23 @@ class Game:
         self.ui_buttons = {}
         self.ui.draw_build_slots(draw_target)
 
-        # Entities
-        _PH.mark("entity")
+        # Entities (dipecah supaya ketahuan siapa yang mahal)
+        _PH.mark("e.base")
         for b in self.bases:
             b.draw(draw_target)
+        _PH.mark("e.tower")
         for t in self.towers:
             t.draw(draw_target)
+        _PH.mark("e.minion")
         for m in self.minions:
             if FrustumCuller.is_visible(m.x, m.y, m.radius):
                 m.draw(draw_target)
+        _PH.mark("e.hero")
         for h in self.get_all_heroes():
             if FrustumCuller.is_visible(h.x, h.y, h.radius):
                 h.draw(draw_target)
 
+        _PH.mark("e.boss")
         # ═══ DRAW BOSS (di luar hero loop!) ═══
         if self.active_boss and self.active_boss.alive:
             if FrustumCuller.is_visible(self.active_boss.x,
