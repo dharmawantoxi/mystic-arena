@@ -153,6 +153,12 @@ def run(screen, get_font, touch):
             "%s | Android %s (API %s) | pygame %s"
             % (dev["model"], dev["android_release"], dev["api_level"],
                dev["pygame"]), True, DIM), (36, y))
+        y += 22
+        try:
+            from mobile.buildinfo import label as _blabel
+            screen.blit(f_head.render(_blabel(), True, OK), (36, y))
+        except Exception:
+            pass
         y += 26
 
         # ── kolom kiri: display ──
@@ -176,6 +182,7 @@ def run(screen, get_font, touch):
                     (560, y))
         yy = y + 26
         batas = {"flip": 3.0, "fill_layar": 2.0, "blit_penuh_alpha": 3.0,
+                 "blit_alpha_KE_noalpha": 3.0,
                  "200x_draw.circle": 6.0, "alokasi_surface_penuh": 4.0}
         for k, limit in batas.items():
             v = bench.get(k)

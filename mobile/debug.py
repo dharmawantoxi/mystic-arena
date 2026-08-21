@@ -30,6 +30,14 @@ BAD = (255, 110, 110)
 TXT = (225, 228, 240)
 
 
+def _build_label():
+    try:
+        from mobile.buildinfo import label
+        return label()
+    except Exception:
+        return "BUILD ?"
+
+
 def _color_for_fps(fps):
     if fps >= 50:
         return OK
@@ -176,6 +184,7 @@ class DebugOverlay:
             ("mem %s   gc %s   surfpool hit %d/new %d"
              % (self._memory_str(), gc.get_count(),
                 fstats["surf_pool_hit"], fstats["surf_pool_new"]), TXT),
+            (_build_label(), (140, 230, 160)),
             ("%s | Android %s (API %s) | pygame %s / SDL %s"
              % (self.device["model"], self.device["android_release"],
                 self.device["api_level"], self.device["pygame"],
