@@ -68,9 +68,10 @@ class TouchHUD:
         self._get_font = get_font
         self.buttons = {}
         self.visible = True
-        # Tombol FPS terpisah default MATI; overlay debug dibuka
-        # dengan menahan tombol jeda (lihat main.py).
-        self.show_debug_button = False
+        # Tombol FPS tampil lagi (permintaan pemain), diletakkan di
+        # bawah panel gold. Menahan tombol jeda tetap bisa dipakai
+        # sebagai jalan pintas.
+        self.show_debug_button = True
         self._build_layout()
 
     # ── tata letak ────────────────────────────────────
@@ -105,19 +106,20 @@ class TouchHUD:
         # pemain. Toko sudah bisa dibuka dengan mengetuk bangunan
         # HERO SHOP di peta, jadi tombol ini mubazir.
 
-        # ═══ Kanan atas: hanya SATU tombol kecil ═══
-        # Sebelumnya dua tombol besar (jeda + FPS) menutupi kastil
-        # musuh. Sekarang: satu tombol jeda 44 px menempel di pojok.
-        # Overlay debug dibuka dengan MENAHAN tombol jeda.
+        # ═══ KIRI ATAS, TEPAT DI BAWAH PANEL GOLD ═══
+        # Panel gold ada di (22, 30) berukuran 168x38, jadi sisi
+        # bawahnya di y=68. Dua tombol diletakkan di bawahnya supaya
+        # menyatu dengan zona HUD dan TIDAK menutupi kastil (kiri
+        # bawah) maupun kastil musuh (kanan atas).
+        _bx = max(22, safe.left + 6)
+        _by = 76
         self.buttons["pause"] = TouchButton(
-            "pause", pygame.Rect(right - 48, safe.top + 2, 44, 44),
+            "pause", pygame.Rect(_bx, _by, 44, 44),
             "II", shape="round", font_size=20)
 
-        # Tombol FPS terpisah: default TIDAK tampil (menghalangi).
         self.buttons["debug"] = TouchButton(
-            "debug", pygame.Rect(right - 100, safe.top + 2, 44, 44),
-            "FPS", shape="round", font_size=15, color=(120, 200, 255),
-            visible=False)
+            "debug", pygame.Rect(_bx + 52, _by, 44, 44),
+            "FPS", shape="round", font_size=15, color=(120, 200, 255))
 
         # ═══ Tombol kontekstual ═══
         self.buttons["skip"] = TouchButton(

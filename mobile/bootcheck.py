@@ -171,6 +171,9 @@ def run(screen, get_font, touch):
             ("jendela", info.get("window_size", "?")),
             ("surface", info.get("surface_size", "?")),
             ("bitsize", info.get("bitsize", "?")),
+            ("arch", "%s / %s-bit" % (info.get("arch", "?"),
+                                      info.get("bits", "?"))),
+            ("SIMD bisa?", info.get("simd_mungkin", "?")),
             ("skala", info.get("scale_factor", "?")),
         ]
         for k, v in rows:
@@ -182,7 +185,7 @@ def run(screen, get_font, touch):
                     (560, y))
         yy = y + 26
         batas = {"flip": 3.0, "fill_layar": 2.0, "blit_penuh_alpha": 3.0,
-                 "blit_alpha_KE_noalpha": 3.0,
+                 "blit_alpha_mask_SAMA": 3.0,
                  "100x_blit_kecil": 3.0, "100x_blit_kecil_colorkey": 3.0,
                  "200x_draw.circle": 6.0, "alokasi_surface_penuh": 4.0}
         for k, limit in batas.items():

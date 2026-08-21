@@ -71,6 +71,16 @@ def log_display_info(screen):
     info["HWSURFACE"] = bool(flags & pygame.HWSURFACE)
     info["DOUBLEBUF"] = bool(flags & pygame.DOUBLEBUF)
     info["scale_factor"] = round(plat.get_scale(), 3)
+    # ══ PENENTU JALUR CEPAT NEON ══
+    # pygame-ce hanya mengompilasi blitter SIMD kalau __aarch64__
+    # terdefinisi. Kalau APK berjalan 32-bit (armv7l), SELURUH SIMD
+    # mati -> alpha blit jatuh ke loop C generik.
+    import platform as _pf
+    import sys as _sys
+    info["arch"] = _pf.machine()
+    info["bits"] = 64 if _sys.maxsize > 2 ** 32 else 32
+    info["simd_mungkin"] = (info["arch"] in ("aarch64", "arm64", "x86_64")
+                            and info["bits"] == 64)
     info["env_RENDER_DRIVER"] = os.environ.get("SDL_RENDER_DRIVER", "-")
     info["env_SCALE_QUALITY"] = os.environ.get(
         "SDL_HINT_RENDER_SCALE_QUALITY", "-")
@@ -139,6 +149,25 @@ def run_benchmark(screen, quick=True):
     except Exception as exc:
         print("[DIAG] uji noalpha gagal: %s" % exc)
 
+    # ══ UJI PENENTU ══
+    # alphablit.c memakai jalur SIMD hanya kalau Rmask/Gmask/Bmask
+    # sumber SAMA PERSIS dengan tujuan. Kita buat surface dengan mask
+    # layar lalu ukur; kalau ini jauh lebih cepat, penyebabnya
+    # ketidakcocokan format - dan itu bisa kita perbaiki di kode.
+    try:
+        dm = screen.get_masks()
+        matched = pygame.Surface((w, h), pygame.SRCALPHA, 32,
+                                 (dm[0], dm[1], dm[2], 0xFF000000))
+        matched.fill((10, 20, 30, 120))
+        res["blit_alpha_mask_SAMA"] = _t(
+            lambda: screen.blit(matched, (0, 0)), n)
+        res["_src_masks"] = matched.get_masks()
+        res["_dst_masks"] = dm
+        print("[DIAG] mask layar  = %s" % (dm,))
+        print("[DIAG] mask sumber = %s" % (matched.get_masks(),))
+    except Exception as exc:
+        print("[DIAG] uji mask sama gagal: %s" % exc)
+
     res["100x_blit_kecil"] = _t(_blit_small, n)
     res["100x_blit_kecil_conv"] = _t(_blit_small_conv, n)
 
@@ -190,6 +219,21 @@ def run_benchmark(screen, quick=True):
                        "%.1f ms setelah convert_alpha() -> pakai convert."
                        % (res["blit_penuh_alpha"],
                           res["blit_penuh_alpha_conv"]))
+    ms = res.get("blit_alpha_mask_SAMA")
+    if ms and res["blit_penuh_alpha"] > ms * 3:
+        verdict.append("PENYEBAB DITEMUKAN: blit alpha dengan mask warna "
+                       "SAMA %.0f ms vs %.0f ms (beda mask) = %.0fx. "
+                       "Jalur SIMD/NEON pygame hanya aktif kalau mask "
+                       "cocok -> semua surface akan disamakan formatnya."
+                       % (ms, res["blit_penuh_alpha"],
+                          res["blit_penuh_alpha"] / ms))
+    arch = RESULTS.get("display", {}).get("arch")
+    if arch and arch not in ("aarch64", "arm64", "x86_64"):
+        verdict.append("APK BERJALAN 32-BIT (%s): pygame-ce hanya "
+                       "mengompilasi blitter NEON untuk arm64. Bangun "
+                       "ulang dengan android.archs = arm64-v8a saja."
+                       % arch)
+
     ck = res.get("100x_blit_kecil_colorkey")
     ab = res.get("100x_blit_kecil")
     if ck and ab and ck * 3 < ab:
@@ -227,6 +271,16 @@ def run_benchmark(screen, quick=True):
     for v in verdict:
         print("[DIAG] * " + v)
     print("════════════════════════════════════════")
+
+    # Kalau blit dengan mask sama jauh lebih cepat, seragamkan format
+    # SEMUA surface alpha supaya jalur SIMD/NEON pygame terpakai.
+    try:
+        ms = res.get("blit_alpha_mask_SAMA")
+        if ms and res.get("blit_penuh_alpha", 0) > ms * 3:
+            from mobile.perf import install_surface_format_fix
+            install_surface_format_fix(screen)
+    except Exception as exc:
+        print("[DIAG] gagal menyeragamkan format: %s" % exc)
 
     # Terapkan profil kualitas berdasar kemampuan NYATA perangkat
     try:

@@ -308,6 +308,85 @@ def blit_overlay(dst, overlay, rect=None, pos=(0, 0)):
     dst.blit(overlay, (pos[0] + rect.x, pos[1] + rect.y), rect)
 
 
+# ═══════════════════════════════════════════════════════
+# PENYERAGAM FORMAT SURFACE
+#
+# alphablit.c pygame-ce hanya memakai blitter SIMD/NEON kalau
+# Rmask/Gmask/Bmask SUMBER sama persis dengan TUJUAN:
+#
+#     src->BytesPerPixel == 4 && dst->BytesPerPixel == 4 &&
+#     src->Rmask == dst->Rmask && ... && pg_HasSSE_NEON()
+#
+# Kalau tidak cocok -> alphablit() generik per-piksel (lambat).
+# Kode game membuat ~1.500 Surface(SRCALPHA) dengan format bawaan
+# pygame, yang belum tentu sama dengan format layar Android.
+#
+# install_surface_format_fix() mengganti pygame.Surface dengan
+# pabrik yang otomatis memakai mask layar untuk setiap permintaan
+# SRCALPHA -> syarat SIMD terpenuhi tanpa mengubah satu pun
+# pemanggilan di kode lama.
+# ═══════════════════════════════════════════════════════
+_ORIG_SURFACE = pygame.Surface
+_matched_masks = None
+_surface_patch_installed = False
+
+
+def display_alpha_masks(screen=None):
+    """(R, G, B, A) untuk surface alpha yang cocok dengan layar."""
+    try:
+        surf = screen or pygame.display.get_surface()
+        if surf is None:
+            return None
+        r, g, b, a = surf.get_masks()
+        if not a:
+            # layar tanpa kanal alpha -> pakai byte sisa untuk alpha
+            used = r | g | b
+            a = (~used) & 0xFFFFFFFF
+            if a == 0:
+                a = 0xFF000000
+        return (r, g, b, a)
+    except Exception:
+        return None
+
+
+def matched_alpha_surface(width, height):
+    """Surface SRCALPHA dengan format yang memicu jalur SIMD."""
+    if _matched_masks:
+        return _ORIG_SURFACE((int(width), int(height)), pygame.SRCALPHA,
+                             32, _matched_masks)
+    return _ORIG_SURFACE((int(width), int(height)), pygame.SRCALPHA)
+
+
+def _surface_factory(size, flags=0, depth=0, masks=None):
+    # Hanya permintaan SRCALPHA tanpa mask eksplisit yang diseragamkan.
+    if (masks is None and _matched_masks
+            and (flags & pygame.SRCALPHA) and depth in (0, 32)):
+        return _ORIG_SURFACE(size, flags, 32, _matched_masks)
+    if masks is not None:
+        return _ORIG_SURFACE(size, flags, depth, masks)
+    if depth:
+        return _ORIG_SURFACE(size, flags, depth)
+    return _ORIG_SURFACE(size, flags)
+
+
+def install_surface_format_fix(screen=None):
+    """
+    Samakan format SEMUA Surface(SRCALPHA) dengan format layar.
+    Dipanggil otomatis kalau benchmark menemukan mask tidak cocok.
+    """
+    global _matched_masks, _surface_patch_installed
+    masks = display_alpha_masks(screen)
+    if not masks:
+        return False
+    _matched_masks = masks
+    if not _surface_patch_installed:
+        pygame.Surface = _surface_factory
+        _surface_patch_installed = True
+    print("[PERF] Format surface diseragamkan ke mask layar %s "
+          "-> syarat jalur SIMD/NEON terpenuhi" % (masks,))
+    return True
+
+
 COLORKEY = (255, 0, 255)
 
 
