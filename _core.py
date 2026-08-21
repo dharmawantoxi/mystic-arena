@@ -1048,11 +1048,21 @@ class Game:
         return self.heroes + self.ai.heroes
 
     def update_waves(self):
+        # ══════════════════════════════════════════════════
+        # BUG LAMA: `return` di sini memblokir SELURUH proses spawn
+        # selama wave_timer berjalan (1500 frame = 25 DETIK).
+        # Akibatnya banner "WAVE N" muncul, lalu layar sepi 25 detik,
+        # baru minionnya menetes satu per satu - dan kalau wave
+        # berikutnya keburu dipicu, hanya sebagian kecil (kadang 1)
+        # minion yang sempat keluar.
+        #
+        # Sekarang wave_timer hanya menahan MAJUNYA WAVE BERIKUTNYA;
+        # antrean spawn tetap jalan sehingga minion langsung keluar
+        # setelah banner.
+        # ══════════════════════════════════════════════════
         if self.wave_timer > 0:
             self.wave_timer -= 1
-            return
-
-        if len(self.spawn_queue_blue) == 0 and len(self.spawn_queue_red) == 0:
+        elif len(self.spawn_queue_blue) == 0 and len(self.spawn_queue_red) == 0:
             # ═══ SINKRON WAVE ═══
             # Wave baru hanya maju kalau wave sebelumnya sudah bersih
             # dari layar, supaya banner "WAVE N" selalu muncul

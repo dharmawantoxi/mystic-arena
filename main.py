@@ -136,7 +136,9 @@ def main():
     # Tombol FPS: TAMPIL selama masih menyetel performa.
     # Untuk rilis Play Store, ganti baris ini jadi:
     #     hud.show_debug_button = False
-    hud.show_debug_button = os.environ.get("MYSTIC_DEBUG") != "0"
+    # Tombol FPS terpisah hanya kalau MYSTIC_DEBUG=1.
+    # Cara normal membuka overlay: TAHAN tombol jeda.
+    hud.show_debug_button = os.environ.get("MYSTIC_DEBUG") == "1"
     debug = debug_mod.DebugOverlay(get_font, frame_timer)
 
     # ═══ LAYAR DIAGNOSTIK (Android / MYSTIC_BOOTCHECK=1) ═══
@@ -248,6 +250,15 @@ def main():
 
         for action in touch.collect():
             tid = action.touch_id
+
+            # Tahan tombol jeda = buka/tutup overlay debug.
+            # (dicek sebelum filter `claimed` karena sentuhan yang
+            #  sama sudah diklaim HUD saat "down")
+            if action.kind == "long_press" and current_state == STATE_GAME:
+                if hud.buttons["pause"].contains(action.pos):
+                    debug.toggle()
+                    plat.vibrate(30)
+                    continue
 
             if action.kind == "down":
                 hit = hud.hit_test(action.pos) if (
