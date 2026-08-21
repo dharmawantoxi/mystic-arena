@@ -72,11 +72,20 @@ class CachedFont(_ORIG_FONT_CLASS):
             return cached
 
         surf = super().render(text, antialias, color, background)
-        # Samakan format piksel dengan layar. Tanpa ini setiap blit
-        # teks mengonversi format - mahal sekali di Android.
         try:
             if pygame.display.get_init() and pygame.display.get_surface():
-                surf = surf.convert_alpha()
+                if Quality.cheap_alpha:
+                    surf = surf.convert_alpha()
+                else:
+                    # ══ PERUBAHAN TERBESAR UNTUK HP ══
+                    # Diukur di Infinix X6880:
+                    #   100 blit kecil ber-alpha  = 106,05 ms
+                    #   100 blit kecil colorkey   =   0,41 ms  (257x)
+                    # Setiap potong teks yang di-blit (angka damage,
+                    # label, HUD, menu) kena biaya itu. Teks disimpan
+                    # sebagai sprite colorkey; tepinya jadi keras,
+                    # tetapi terbaca dan ratusan kali lebih murah.
+                    surf = to_colorkey_sprite(surf)
         except Exception:
             pass
         _stats["text_rendered"] += 1

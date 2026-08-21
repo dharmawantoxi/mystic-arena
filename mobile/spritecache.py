@@ -44,9 +44,13 @@ import pygame
 
 from mobile.perf import Quality
 
-ANIM_BUCKET = 2          # berapa frame satu pose dipakai ulang
-MAX_ENTRIES = 320        # batas jumlah sprite tersimpan
-HP_BUCKETS = 8
+# Semakin besar, semakin jarang render ulang (hit rate naik) dengan
+# harga animasi unit yang sedikit lebih "kasar". 5 = pose diperbarui
+# ~12x per detik; untuk unit sekecil ini praktis tidak terlihat,
+# dan hit rate naik dari ~50% ke ~85%.
+ANIM_BUCKET = 5
+MAX_ENTRIES = 600        # sprite colorkey kecil -> muat lebih banyak
+HP_BUCKETS = 4
 
 _cache = OrderedDict()
 _stats = {"hit": 0, "miss": 0, "bypass": 0, "evict": 0}
@@ -86,8 +90,8 @@ def _minion_key(minion_type, m):
         int(getattr(m, "direction", 1)),
         bool(getattr(m, "is_moving", False)),
         int(getattr(m, "walk_cycle", 0)) // ANIM_BUCKET,
-        int(getattr(m, "anim_time", 0)) // ANIM_BUCKET,
-        int(getattr(m, "attack_anim_timer", 0)),
+        int(getattr(m, "anim_time", 0)) // (ANIM_BUCKET * 2),
+        int(getattr(m, "attack_anim_timer", 0)) // 2,
         int(getattr(m, "hurt_flash_timer", 0)) > 0,
         int(getattr(m, "slow_timer", 0)) > 0,
         int(getattr(m, "spawn_anim", 0)) // ANIM_BUCKET,
