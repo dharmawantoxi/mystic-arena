@@ -146,6 +146,14 @@ class DebugOverlay:
         return bagian
 
     @staticmethod
+    def _audio_line():
+        try:
+            from mobile import combat_audio
+            return combat_audio.ringkas()
+        except Exception:
+            return "suara: -"
+
+    @staticmethod
     def _memori_line():
         """Rincian pemakaian memori - 491 MB terukur di HP uji."""
         bagian = []
@@ -291,6 +299,7 @@ class DebugOverlay:
              (200, 190, 140)),
             (self._fastblit_line(), self._fastblit_color()),
             (self._memori_line(), (190, 190, 220)),
+            (self._audio_line(), (200, 180, 230)),
             ("font new %d / reuse %d   text render %d / cache %d"
              % (fstats["font_created"], fstats["font_reused"],
                 fstats["text_rendered"], fstats["text_cached"]), TXT),

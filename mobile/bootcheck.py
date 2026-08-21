@@ -76,6 +76,17 @@ def run(screen, get_font, touch):
     clock = pygame.time.Clock()
 
     info = diag.log_display_info(screen)
+
+    # Audio disiapkan DI SINI, sebelum layar digambar, supaya bagian
+    # AUDIO menampilkan keadaan yang sebenarnya. Kalau menunggu
+    # main.py, laporannya masih kosong saat layar ini tampil dan
+    # terlihat seolah tidak ada berkas suara sama sekali.
+    try:
+        from mobile import combat_audio as _ca
+        _ca.init()
+    except Exception as exc:
+        print("[BOOTCHECK] init audio gagal: %s" % exc)
+
     bench = {}
     verdict = ["mengukur..."]
     try:
@@ -90,13 +101,18 @@ def run(screen, get_font, touch):
     f_small = get_font(14, "body")
 
     W, H = plat.LOGICAL_WIDTH, plat.LOGICAL_HEIGHT
+    # Jarak antar tombol >= 24 px: area sentuhnya dilebarkan 20 px
+    # per sisi, jadi kalau terlalu rapat ketukan bisa salah tombol.
     buttons = [
-        _Btn((W - 330, H - 78, 200, 56), "MULAI GAME", "start", OK),
-        _Btn((40, H - 78, 260, 56), "GANTI MODE TAMPILAN", "mode"),
-        _Btn((320, H - 78, 250, 56), "JANGAN TAMPILKAN LAGI",
+        _Btn((W - 210, H - 82, 190, 60), "MULAI GAME", "start", OK),
+        _Btn((30, H - 82, 250, 60), "GANTI MODE", "mode"),
+        _Btn((305, H - 82, 250, 60), "JANGAN TAMPILKAN LAGI",
              "never", DIM),
-        _Btn((590, H - 78, 150, 56), "UJI ULANG", "bench", DIM),
+        _Btn((580, H - 82, 150, 60), "UJI ULANG", "bench", DIM),
+        _Btn((755, H - 82, 160, 60), "UJI SUARA", "audio",
+             (180, 160, 255)),
     ]
+    uji_audio_hasil = ""
 
     mode = plat.get_mode()
     taps = []
@@ -136,6 +152,23 @@ def run(screen, get_font, touch):
                         elif b.action == "bench":
                             bench = diag.run_benchmark(screen, quick=True)
                             verdict = diag.RESULTS.get("verdict", [])
+                        elif b.action == "audio":
+                            # Bunyikan satu contoh tiap jenis serangan
+                            # secara berurutan. Kalau ada yang tidak
+                            # terdengar, jenis itu yang bermasalah -
+                            # tidak perlu masuk permainan dulu.
+                            try:
+                                from mobile import combat_audio as _ca
+                                _ca.init(paksa=True)
+                                hasil = _ca.uji_semua()
+                                ok_n = sum(1 for _, o in hasil if o)
+                                uji_audio_hasil = (
+                                    "uji suara: %d/%d berbunyi -> %s"
+                                    % (ok_n, len(hasil),
+                                       ", ".join(k for k, o in hasil
+                                                 if not o) or "semua OK"))
+                            except Exception as exc:
+                                uji_audio_hasil = "uji suara gagal: %s" % exc
                         break
 
         if sisa <= 0:
@@ -280,18 +313,59 @@ def run(screen, get_font, touch):
                 pygame.draw.line(screen, (255, 255, 255),
                                  (pos[0], pos[1] - 10), (pos[0], pos[1] + 10))
 
+        # ══ AUDIO ══
+        # Bagian ini menjawab "kenapa suaranya tidak keluar" tanpa
+        # perlu adb dan tanpa tebak-tebakan: terlihat langsung apakah
+        # foldernya ada, berapa berkas yang benar-benar ditemukan di
+        # dalam APK, dan berkas mana yang dipakai tiap jenis serangan.
+        ya = yb + 76
+        try:
+            from mobile import combat_audio as _ca
+            lap = _ca.LAPORAN
+            ada = lap.get("dir_ada")
+            n_berkas = len(lap.get("berkas") or [])
+            warna = OK if (ada and n_berkas) else BAD
+            screen.blit(f_head.render("AUDIO", True, FG), (36, ya))
+            ya += 24
+            screen.blit(f.render(
+                "folder %s   berkas %d   mixer %s"
+                % ("ADA" if ada else "TIDAK ADA", n_berkas,
+                   lap.get("mixer", "?")), True, warna), (48, ya))
+            ya += 20
+            pj = lap.get("per_jenis") or {}
+            if pj:
+                ringkas = "  ".join(
+                    "%s %d" % (k.replace("_attack", "").replace("_shoot", ""),
+                               len(v)) for k, v in pj.items())
+                kosong = [k for k, v in pj.items() if not v]
+                screen.blit(f_small.render(ringkas, True,
+                                           WARN if kosong else OK),
+                            (48, ya))
+                ya += 18
+            for baris in _wrap(lap.get("catatan", ""), 68)[:2]:
+                screen.blit(f_small.render(baris, True, DIM), (48, ya))
+                ya += 17
+            if uji_audio_hasil:
+                screen.blit(f_small.render(uji_audio_hasil, True, ACCENT),
+                            (48, ya))
+                ya += 17
+        except Exception as exc:
+            screen.blit(f_small.render("audio: %s" % exc, True, BAD),
+                        (48, ya))
+            ya += 17
+
         # ── kesimpulan ──
         # Ditaruh di KOLOM KIRI (bukan melintang penuh) karena kolom
         # kanan sekarang berisi 5 grup pengukuran dan tumbuh sampai
         # sekitar y=600. Melintang penuh membuat keduanya bertabrakan.
-        yv = yb + 76
+        yv = ya + 10
         screen.blit(f_head.render("KESIMPULAN", True, FG), (36, yv))
         yv += 24
         pairs = diag.RESULTS.get("verdict_pairs")
         if not pairs:
             pairs = [("WARN", v) for v in verdict]
         warna_map = {"OK": OK, "WARN": WARN, "BAD": BAD}
-        batas_y = H - 96
+        batas_y = H - 112
         for lv, line in pairs:
             if yv > batas_y:
                 break

@@ -51,6 +51,36 @@ _KONFIG = {
 VARIASI = 3
 MAKS_PER_FRAME = 4
 
+# ═══ PENEMUAN BERKAS OTOMATIS ═══
+# Repo ini sudah punya koleksi suara dengan penamaan sendiri
+# (goblin_attack.wav, tower_shoot.wav, slash.wav, ...) yang dipakai
+# SoundManager untuk BGM/UI. Cakupannya belum lengkap: menara hanya
+# archer, pasukan hanya goblin, hero tidak ada sama sekali.
+#
+# Daripada memaksa satu skema penamaan, tiap jenis punya DAFTAR POLA
+# berurut. Semua berkas yang cocok dikumpulkan jadi satu kolam
+# variasi, jadi:
+#   - berkas milik Anda tetap terpakai
+#   - berkas sintesis mengisi yang belum ada
+#   - kalau nanti Anda menambah berkas baru dengan nama yang cocok,
+#     otomatis ikut terpakai tanpa mengubah kode
+POLA = {
+    HERO_MELEE:  ["hero_melee_*", "hero_melee", "slash", "slash_*",
+                  "sword*", "hero_attack*", "melee*"],
+    HERO_RANGED: ["hero_ranged_*", "hero_ranged", "arrow*", "bow*",
+                  "hero_shoot*", "ranged*", "magic_bolt*"],
+    TOWER:       ["tower_shoot_*", "tower_shoot", "tower_attack*",
+                  "archer*", "arrow_shoot*"],
+    MINION:      ["minion_attack_*", "minion_attack", "goblin_attack",
+                  "goblin_attack_*", "minion_hit*"],
+    MINIBOSS:    ["miniboss_attack_*", "miniboss_attack",
+                  "mini_boss*", "miniboss*"],
+    BOSS:        ["boss_attack_*", "boss_attack", "true_boss*",
+                  "boss_hit*"],
+}
+
+EKSTENSI = (".wav", ".ogg", ".mp3")
+
 _bank = {}            # jenis -> [Sound, ...]
 _terakhir = {}        # jenis -> ticks terakhir berbunyi
 _sisa_frame = [MAKS_PER_FRAME]
@@ -58,61 +88,135 @@ _siap = [False]
 _mati = [False]
 _stats = {"main": 0, "tolak_jeda": 0, "tolak_anggaran": 0, "tolak_channel": 0}
 
+# Laporan lengkap untuk layar diagnostik. Inilah yang menjawab
+# pertanyaan "kenapa suaranya tidak keluar" tanpa menebak.
+LAPORAN = {
+    "dir": "",
+    "dir_ada": False,
+    "mixer": "belum",
+    "berkas": [],          # semua berkas audio yang ditemukan
+    "per_jenis": {},       # jenis -> [nama berkas terpakai]
+    "gagal": [],           # berkas yang ada tapi gagal dimuat
+    "catatan": "",
+}
+
 
 def _dir_suara():
     akar = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(akar, "assets", "sounds")
 
 
-def init():
-    """
-    Muat semua berkas. Aman dipanggil berkali-kali.
+def _cocok(nama_tanpa_ext, pola):
+    import fnmatch
+    return fnmatch.fnmatch(nama_tanpa_ext, pola)
 
-    Kalau mixer mati atau berkasnya tidak ada, modul MENONAKTIFKAN
-    DIRI dengan tenang - game tetap jalan tanpa suara, tidak crash.
+
+def init(paksa=False):
     """
+    Temukan dan muat semua berkas suara tempur.
+
+    Aman dipanggil berkali-kali. Kalau mixer mati atau tidak ada
+    berkas sama sekali, modul MENONAKTIFKAN DIRI dengan tenang -
+    game tetap jalan tanpa suara, tidak pernah crash.
+    """
+    if paksa:
+        _siap[0] = False
+        _mati[0] = False
+        _bank.clear()
     if _siap[0] or _mati[0]:
         return _siap[0]
+
+    d = _dir_suara()
+    LAPORAN["dir"] = d
+    LAPORAN["dir_ada"] = os.path.isdir(d)
+    LAPORAN["berkas"] = []
+    LAPORAN["per_jenis"] = {}
+    LAPORAN["gagal"] = []
+
     try:
         if not pygame.mixer.get_init():
             pygame.mixer.init()
+        info = pygame.mixer.get_init()
+        LAPORAN["mixer"] = ("%d Hz, %d kanal" % (info[0], info[2])
+                            if info else "gagal")
     except Exception as exc:
+        LAPORAN["mixer"] = "gagal: %s" % exc
+        LAPORAN["catatan"] = "mixer tidak bisa dinyalakan"
         print("[AUDIO] mixer tidak tersedia: %s" % exc)
         _mati[0] = True
         return False
 
-    d = _dir_suara()
-    total = 0
-    for jenis in _KONFIG:
-        daftar = []
-        for i in range(1, VARIASI + 1):
-            path = os.path.join(d, "%s_%d.wav" % (jenis, i))
-            if not os.path.exists(path):
-                continue
-            try:
-                daftar.append(pygame.mixer.Sound(path))
-            except Exception as exc:
-                print("[AUDIO] gagal memuat %s: %s" % (path, exc))
-        if daftar:
-            _bank[jenis] = daftar
-            total += len(daftar)
-
-    if not _bank:
-        print("[AUDIO] tidak ada berkas suara di %s - suara tempur mati. "
-              "Jalankan: python3 tools/gen_sounds.py" % d)
+    if not LAPORAN["dir_ada"]:
+        LAPORAN["catatan"] = "folder assets/sounds TIDAK ADA di APK"
+        print("[AUDIO] %s tidak ada" % d)
         _mati[0] = True
         return False
 
-    # Sisakan channel untuk BGM/UI: suara tempur maksimal 12 channel.
+    try:
+        semua = sorted(os.listdir(d))
+    except OSError as exc:
+        LAPORAN["catatan"] = "folder tidak terbaca: %s" % exc
+        _mati[0] = True
+        return False
+
+    berkas = [f for f in semua if f.lower().endswith(EKSTENSI)]
+    LAPORAN["berkas"] = berkas
+    if not berkas:
+        LAPORAN["catatan"] = ("folder ada tapi KOSONG - berkas .wav "
+                              "belum ikut terunggah / tidak masuk APK")
+        print("[AUDIO] tidak ada berkas audio di %s" % d)
+        _mati[0] = True
+        return False
+
+    tanpa_ext = {}
+    for f in berkas:
+        tanpa_ext.setdefault(os.path.splitext(f)[0], f)
+
+    total = 0
+    for jenis, pola_list in POLA.items():
+        terpilih = []
+        for pola in pola_list:
+            for nama in sorted(tanpa_ext):
+                if nama in [os.path.splitext(x)[0] for x in terpilih]:
+                    continue
+                if _cocok(nama, pola):
+                    terpilih.append(tanpa_ext[nama])
+        daftar = []
+        dipakai = []
+        for f in terpilih:
+            try:
+                daftar.append(pygame.mixer.Sound(os.path.join(d, f)))
+                dipakai.append(f)
+            except Exception as exc:
+                LAPORAN["gagal"].append("%s (%s)" % (f, exc))
+        if daftar:
+            _bank[jenis] = daftar
+            total += len(daftar)
+        LAPORAN["per_jenis"][jenis] = dipakai
+
+    if not _bank:
+        LAPORAN["catatan"] = ("%d berkas audio ada, tapi tidak satu pun "
+                              "cocok dengan pola nama" % len(berkas))
+        print("[AUDIO] %s" % LAPORAN["catatan"])
+        _mati[0] = True
+        return False
+
     try:
         if pygame.mixer.get_num_channels() < 24:
             pygame.mixer.set_num_channels(24)
     except Exception:
         pass
 
+    kosong = [k for k in POLA if not LAPORAN["per_jenis"].get(k)]
+    LAPORAN["catatan"] = ("siap - %d berkas dipakai dari %d yang ada"
+                          % (total, len(berkas)))
+    if kosong:
+        LAPORAN["catatan"] += "; belum ada suara untuk: " + ", ".join(kosong)
+
     _siap[0] = True
-    print("[AUDIO] suara tempur siap: %d berkas, %d jenis"
-          % (total, len(_bank)))
+    print("[AUDIO] %s" % LAPORAN["catatan"])
+    for jenis, files in LAPORAN["per_jenis"].items():
+        print("[AUDIO]   %-16s <- %s" % (jenis, ", ".join(files) or "(kosong)"))
     return True
 
 
@@ -212,3 +316,26 @@ def ringkas():
     return ("suara: main %d  ditolak %d (jeda %d / anggaran %d / kanal %d)"
             % (s["main"], total_tolak, s["tolak_jeda"],
                s["tolak_anggaran"], s["tolak_channel"]))
+
+
+def uji_semua(jeda_ms=520):
+    """
+    Bunyikan satu contoh tiap jenis, berurutan.
+
+    Dipakai tombol "UJI SUARA" di layar diagnostik supaya bisa
+    memastikan audio hidup TANPA harus masuk permainan dulu.
+    Mengembalikan daftar (jenis, berhasil).
+    """
+    hasil = []
+    if not _siap[0]:
+        init()
+    for jenis in (HERO_MELEE, HERO_RANGED, TOWER, MINION, MINIBOSS, BOSS):
+        _terakhir.pop(jenis, None)
+        _sisa_frame[0] = MAKS_PER_FRAME
+        ok = play(jenis, volume_mult=1.0)
+        hasil.append((jenis, ok))
+        try:
+            pygame.time.wait(jeda_ms)
+        except Exception:
+            pass
+    return hasil
