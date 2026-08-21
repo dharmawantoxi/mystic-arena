@@ -36,10 +36,17 @@ berkas cross-file meson), plus menyediakan SDL2 lewat pkg-config.
 Itu pekerjaan riset tersendiri — jangan dicoba menjelang rilis.
 """
 
+import os
 from os.path import join
 
 from pythonforandroid.recipe import CompiledComponentsPythonRecipe
 from pythonforandroid.toolchain import current_directory
+
+# Penanda resep. WAJIB dinaikkan setiap kali isi resep ini berubah.
+# Nilainya ditanam ke dalam paket pygame yang terpasang dan bisa
+# dibaca di HP lewat layar diagnostik (pygame.version.P4A_MARK),
+# sehingga selalu jelas apakah tambalan benar-benar ikut dikompilasi.
+RECIPE_MARK = "r21-neon-all+O3"
 
 
 class PygameCERecipe(CompiledComponentsPythonRecipe):
@@ -85,30 +92,90 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
         Semua CPU ARMv8-A WAJIB punya NEON, jadi pada arm64 pemeriksaan
         itu aman diganti dengan `return 1`.
         """
-        path = "src_c/simd_shared.h"
+        # ── KOREKSI v21 ──
+        # Ternyata pemeriksaan NEON ADA DI DUA TEMPAT, bukan satu:
+        #
+        #   src_c/simd_shared.h            -> pg_HasSSE_NEON()
+        #                                     dipakai alphablit.c
+        #   src_c/simd_surface_fill_sse2.c -> _pg_HasSSE_NEON()
+        #                                     dipakai surface_fill.c
+        #
+        # v20 hanya menambal yang pertama, jadi jalur fill/blend tetap
+        # memakai SDL_HasNEON(). Sekarang SEMUA berkas src_c disapu.
+        needle = "return SDL_HasNEON();"
+        patched = ("return 1; /* p4a: ARMv8-A selalu punya NEON, "
+                   "SDL_HasNEON() bisa false-negative di Android */")
+
+        hits = []
+        for root, _dirs, files in os.walk("src_c"):
+            # jangan sentuh header pihak ketiga (sse2neon.h dsb)
+            if os.path.basename(root) == "include":
+                continue
+            for fn in files:
+                if not fn.endswith((".c", ".h")):
+                    continue
+                p = join(root, fn)
+                try:
+                    with open(p) as fh:
+                        src = fh.read()
+                except OSError:
+                    continue
+                if needle not in src:
+                    continue
+                n = src.count(needle)
+                with open(p, "w") as fh:
+                    fh.write(src.replace(needle, patched))
+                hits.append("%s (%dx)" % (p, n))
+
+        if hits:
+            print("[pygame-ce] TAMBALAN NEON: %s -> dipaksa true"
+                  % ", ".join(hits))
+        else:
+            print("[pygame-ce] PERINGATAN: pola SDL_HasNEON tidak "
+                  "ditemukan sama sekali - tambalan NEON TIDAK jalan")
+        self._neon_patch_report = hits
+
+    def _stamp_marker(self, arch):
+        """
+        Tempelkan penanda ke dalam paket pygame yang TERPASANG.
+
+        Kenapa: berkali-kali kita mengira sebuah tambalan resep sudah
+        masuk APK padahal p4a melewati kompilasi pygame karena paketnya
+        sudah ada di site-packages hasil cache. Dengan penanda ini,
+        layar diagnostik di HP bisa menyebutkan persis versi resep yang
+        benar-benar dikompilasi - tidak ada lagi tebak-tebakan.
+        """
+        path = join("src_py", "version.py")
         try:
             with open(path) as fh:
                 src = fh.read()
         except OSError:
+            print("[pygame-ce] src_py/version.py tidak ada - "
+                  "penanda dilewati")
             return
-        needle = "return SDL_HasNEON();"
-        if needle not in src:
-            print("[pygame-ce] pola SDL_HasNEON tidak ditemukan - "
-                  "lewati tambalan")
+        if "P4A_MARK" in src:
             return
-        patched = ("return 1; /* p4a: ARMv8-A selalu punya NEON, "
-                   "SDL_HasNEON() bisa false-negative di Android */")
-        src = src.replace(needle, patched, 1)
-        with open(path, "w") as fh:
-            fh.write(src)
-        print("[pygame-ce] TAMBALAN: pg_HasSSE_NEON() dipaksa true "
-              "-> blitter NEON dipakai")
+        extra = (
+            "\n\n# ── ditambahkan oleh resep p4a Mystic Arena ──\n"
+            "P4A_MARK = %r\n"
+            "P4A_ARCH = %r\n"
+            "P4A_NEON_PATCH = %r\n"
+            "P4A_CFLAGS = %r\n"
+        ) % (RECIPE_MARK, arch.arch,
+             getattr(self, "_neon_patch_report", []),
+             getattr(self, "_cflags_report", ""))
+        with open(path, "a") as fh:
+            fh.write(extra)
+        print("[pygame-ce] PENANDA dipasang: pygame.version.P4A_MARK = %s"
+              % RECIPE_MARK)
 
     def prebuild_arch(self, arch):
         super().prebuild_arch(arch)
         with current_directory(self.get_build_dir(arch.arch)):
             if arch.arch in ("arm64-v8a", "x86_64"):
                 self._patch_neon_runtime_check()
+            else:
+                self._neon_patch_report = []
             template_path = join("buildconfig", "Setup.Android.SDL2.in")
             with open(template_path) as fh:
                 setup_template = fh.read()
@@ -193,11 +260,34 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
             with open("Setup", "w") as fh:
                 fh.write(setup_file)
 
+            # Penanda ditulis PALING AKHIR supaya laporan tambalan &
+            # CFLAGS sudah terisi.
+            self._stamp_marker(arch)
+
     def get_recipe_env(self, arch):
         env = super().get_recipe_env(arch)
         env["USE_SDL2"] = "1"
         env["PYGAME_CROSS_COMPILE"] = "TRUE"
         env["PYGAME_ANDROID"] = "TRUE"
+
+        # ═══════════════════════════════════════════════
+        # OPTIMISASI KOMPILATOR - JANGAN DIHAPUS
+        #
+        # Blitter pygame (alphablit.c, surface_fill.c,
+        # simd_blitters_sse2.c) adalah loop per-piksel yang isinya
+        # makro + intrinsik. Tanpa -O2/-O3, sse2neon.h berubah dari
+        # instruksi NEON tunggal menjadi pemanggilan fungsi biasa
+        # dengan bolak-balik ke stack -> jalur "SIMD" jadi lebih
+        # lambat daripada loop generik.
+        #
+        # Ditaruh di AKHIR string supaya menang atas -O apa pun yang
+        # sudah ada sebelumnya (clang memakai flag -O terakhir).
+        # ═══════════════════════════════════════════════
+        extra = "-O3 -DNDEBUG -fno-math-errno -funroll-loops"
+        env["CFLAGS"] = (env.get("CFLAGS", "") + " " + extra).strip()
+        self._cflags_report = env["CFLAGS"]
+
+        print("[pygame-ce] CFLAGS FINAL = %s" % env["CFLAGS"])
         return env
 
 
