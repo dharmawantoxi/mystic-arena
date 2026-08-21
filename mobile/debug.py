@@ -145,10 +145,21 @@ class DebugOverlay:
             self._draw_touch(surface, touch)
 
     def _panel(self, surface, x, y, w, h):
-        panel = pygame.Surface((w, h), pygame.SRCALPHA)
-        panel.fill(BG)
-        pygame.draw.rect(panel, (90, 90, 120), panel.get_rect(), 1)
-        surface.blit(panel, (x, y))
+        # Panel ber-alpha seukuran ini = ~33 ms di HP (244 ns/piksel).
+        # Alat ukur tidak boleh lebih mahal dari yang diukur.
+        try:
+            from mobile.perf import Quality
+            cheap = Quality.cheap_alpha
+        except Exception:
+            cheap = True
+        if cheap:
+            panel = pygame.Surface((w, h), pygame.SRCALPHA)
+            panel.fill(BG)
+            pygame.draw.rect(panel, (90, 90, 120), panel.get_rect(), 1)
+            surface.blit(panel, (x, y))
+        else:
+            pygame.draw.rect(surface, (8, 8, 14), (x, y, w, h))
+            pygame.draw.rect(surface, (90, 90, 120), (x, y, w, h), 1)
 
     def _draw_mini(self, surface, clock):
         fps = clock.get_fps()
@@ -225,10 +236,37 @@ class DebugOverlay:
         w = max(font.size(s)[0] for s, _ in lines) + 18
         h = len(lines) * 19 + 12
         x, y = safe.left + 4, safe.top + 4
-        self._panel(surface, x, y, w, h)
-        for i, (text, color) in enumerate(lines):
-            surface.blit(font.render(text, True, color),
-                         (x + 8, y + 6 + i * 19))
+
+        try:
+            from mobile.perf import Quality
+            cheap = Quality.cheap_alpha
+        except Exception:
+            cheap = True
+
+        if cheap:
+            self._panel(surface, x, y, w, h)
+            for i, (text, color) in enumerate(lines):
+                surface.blit(font.render(text, True, color),
+                             (x + 8, y + 6 + i * 19))
+            return
+
+        # ── Jalur HP ──
+        # 11 blit teks ber-alpha + 1 panel besar = ~60 ms/frame,
+        # cukup untuk mengaburkan angka yang sedang diukur.
+        # Semua digambar SEKALI ke surface opaque, lalu di-blit
+        # (jalur cepat), dan hanya dibangun ulang tiap 10 frame.
+        self._panel_age = getattr(self, "_panel_age", 99) + 1
+        buf = getattr(self, "_panel_buf", None)
+        if buf is None or buf.get_size() != (w, h) or self._panel_age >= 10:
+            if buf is None or buf.get_size() != (w, h):
+                buf = pygame.Surface((w, h)).convert()
+                self._panel_buf = buf
+            buf.fill((8, 8, 14))
+            pygame.draw.rect(buf, (90, 90, 120), buf.get_rect(), 1)
+            for i, (text, color) in enumerate(lines):
+                buf.blit(font.render(text, True, color), (8, 6 + i * 19))
+            self._panel_age = 0
+        surface.blit(buf, (x, y))
 
     def _draw_graph(self, surface):
         safe = plat.get_safe_area()

@@ -208,19 +208,29 @@ class TouchHUD:
         r = btn.rect.width // 2
         press = int(btn.press_anim * 3)
 
-        base = pygame.Surface((r * 2 + 8, r * 2 + 8), pygame.SRCALPHA)
-        c = r + 4
-        pygame.draw.circle(base, BG_ACTIVE if btn.press_anim else BG, (c, c),
-                           r)
-        ring = btn.color if btn.enabled else GREY
-        pygame.draw.circle(base, ring, (c, c), r, 3)
-        surface.blit(base, (cx - c, cy - c))
+        if not Quality.cheap_alpha:
+            # Gambar langsung: hindari surface sementara + alpha blit
+            pygame.draw.circle(surface, (16, 14, 22), (cx, cy), r)
+            pygame.draw.circle(surface, btn.color if btn.enabled else GREY,
+                               (cx, cy), r, 3)
+        else:
+            base = pygame.Surface((r * 2 + 8, r * 2 + 8), pygame.SRCALPHA)
+            c = r + 4
+            pygame.draw.circle(base, BG_ACTIVE if btn.press_anim else BG,
+                               (c, c), r)
+            ring = btn.color if btn.enabled else GREY
+            pygame.draw.circle(base, ring, (c, c), r, 3)
+            surface.blit(base, (cx - c, cy - c))
 
         # busur cooldown (searah jarum jam, sisa waktu)
         if btn.cooldown > 0.001:
-            shade = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
-            pygame.draw.circle(shade, (0, 0, 0, 150), (r, r), r)
-            surface.blit(shade, (cx - r, cy - r))
+            if Quality.cheap_alpha:
+                shade = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+                pygame.draw.circle(shade, (0, 0, 0, 150), (r, r), r)
+                surface.blit(shade, (cx - r, cy - r))
+            else:
+                pygame.draw.circle(surface, (22, 20, 28), (cx, cy),
+                                   int(r * btn.cooldown))
             end = -math.pi / 2 + (1.0 - btn.cooldown) * math.tau
             try:
                 pygame.draw.arc(surface, btn.color,
@@ -243,12 +253,18 @@ class TouchHUD:
     def _draw_capsule(self, surface, btn):
         rect = btn.rect
         radius = rect.height // 2
-        panel = pygame.Surface(rect.size, pygame.SRCALPHA)
-        pygame.draw.rect(panel, BG_ACTIVE if btn.press_anim else BG,
-                         panel.get_rect(), border_radius=radius)
-        pygame.draw.rect(panel, btn.color if btn.enabled else GREY,
-                         panel.get_rect(), 2, border_radius=radius)
-        surface.blit(panel, rect.topleft)
+        if not Quality.cheap_alpha:
+            pygame.draw.rect(surface, (16, 14, 22), rect,
+                             border_radius=radius)
+            pygame.draw.rect(surface, btn.color if btn.enabled else GREY,
+                             rect, 2, border_radius=radius)
+        else:
+            panel = pygame.Surface(rect.size, pygame.SRCALPHA)
+            pygame.draw.rect(panel, BG_ACTIVE if btn.press_anim else BG,
+                             panel.get_rect(), border_radius=radius)
+            pygame.draw.rect(panel, btn.color if btn.enabled else GREY,
+                             panel.get_rect(), 2, border_radius=radius)
+            surface.blit(panel, rect.topleft)
 
         font = self._get_font(btn.font_size, "body_bold")
         txt = font.render(btn.label, True, WHITE)
