@@ -125,6 +125,7 @@ jobs:
           grep -E "^(version|android\.(api|minapi|ndk_api|archs|release_artifact))" buildozer.spec
           echo "--- resep pygame-ce ---"
           grep -E "^\s+(version|url) = " p4a-recipes/pygame-ce/__init__.py
+          grep -E "^RECIPE_MARK" p4a-recipes/pygame-ce/__init__.py
           echo "--- penanda build di dalam APK ---"
           grep -E "^BUILD_(ID|DATE)" mobile/buildinfo.py
           echo "--- versi Python yang dipaksa ---"
@@ -137,17 +138,35 @@ jobs:
           echo "  VERSION_python3   = 3.11.9   (BUKAN 3.14)"
           echo "======================================================="
 
-      # Jaring pengaman: p4a melewati unpack kalau folder sumber sudah ada
-      # ("is already unpacked, skipping"). Kalau cache lama sempat ikut
-      # terpulihkan, sisa pygame-ce versi lama harus dibuang dulu.
-      - name: Buang sisa sumber pygame-ce lama dari cache
+      # ═══════════════════════════════════════════════════════
+      # PAKSA pygame-ce DIKOMPILASI ULANG SETIAP BUILD
+      #
+      # Ini memperbaiki kegagalan yang berulang tiga kali:
+      # python-for-android melewati kompilasi sebuah paket kalau
+      # paketnya SUDAH ADA di site-packages ("apparently already in
+      # site-packages"). Menghapus folder sumber saja TIDAK cukup —
+      # hasil pasangnya tetap dipakai ulang dari cache, sehingga
+      # tambalan resep tidak pernah masuk APK dan hasil pengukuran
+      # di HP terlihat "tidak berubah sama sekali".
+      #
+      # Biaya: ±6-8 menit per build. Jauh lebih murah daripada satu
+      # putaran uji yang menyesatkan.
+      # ═══════════════════════════════════════════════════════
+      - name: Paksa pygame-ce dikompilasi ulang
         run: |
-          rm -rf .buildozer/android/platform/build-*/other_builds/pygame-ce* || true
-          rm -rf .buildozer/android/platform/build-*/packages/pygame-ce* || true
-          # python3/hostpython3 juga: versinya berubah 3.14 -> 3.11
-          rm -rf .buildozer/android/platform/build-*/other_builds/python3* || true
-          rm -rf .buildozer/android/platform/build-*/other_builds/hostpython3* || true
-          echo "sisa build pygame-ce + python3 lama dibersihkan"
+          B=.buildozer/android/platform
+          rm -rf $B/build-*/other_builds/pygame-ce* || true
+          rm -rf $B/build-*/packages/pygame-ce* || true
+          # ← INI yang dulu terlewat: hasil pasang di site-packages
+          rm -rf $B/build-*/python-installs/*/*/site-packages/pygame || true
+          rm -rf $B/build-*/python-installs/*/*/site-packages/pygame_ce* || true
+          rm -rf $B/build-*/python-installs/*/*/site-packages/pygame-*.dist-info || true
+          # python3/hostpython3: versinya pernah berubah 3.14 -> 3.11
+          rm -rf $B/build-*/other_builds/python3* || true
+          rm -rf $B/build-*/other_builds/hostpython3* || true
+          echo "sisa pygame-ce (sumber + site-packages) dan python3 lama dibersihkan"
+          echo "--- isi site-packages setelah dibersihkan ---"
+          ls $B/build-*/python-installs/*/*/site-packages/ 2>/dev/null | head -40 || true
 
       # ─────────────── DEBUG (APK) ───────────────
       - name: Build APK debug
