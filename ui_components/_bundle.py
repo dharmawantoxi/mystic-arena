@@ -1058,6 +1058,21 @@ class _NS_hero_panel:
                 px = 20
                 py = SCREEN_HEIGHT - panel_h - 20
 
+            # ═══ SATU SUMBER KEBENARAN UNTUK POSISI ═══
+            # Dulu penangan klik MENGHITUNG ULANG posisi panel ini
+            # dengan angka tetap (px=20, kiri bawah). Begitu panelnya
+            # pindah ke kanan, gambarnya di tempat baru tapi klik masih
+            # diperiksa di tempat lama -> semua tombolnya mati.
+            # Sekarang posisinya disimpan di sini dan dibaca penangan
+            # klik, jadi keduanya tidak mungkin berbeda lagi.
+            try:
+                if not hasattr(g, "ui_rects"):
+                    g.ui_rects = {}
+                g.ui_rects["hero_panel"] = pygame.Rect(
+                    px, py, panel_w, panel_h)
+            except Exception:
+                pass
+
             # Shadow
             shadow_surf = pygame.Surface((panel_w + 10, panel_h + 10),
                                          pygame.SRCALPHA)
@@ -3447,10 +3462,14 @@ class _NS_popup_renderer:
                 if py < TOP_BAR_HEIGHT + 10:
                     py = int(target.y) + 40
 
-            # Line pointer ke target
-            pygame.draw.line(surface, GOLD,
-                             (px + popup_w // 2, py + popup_h),
-                             (int(target.x), int(target.y) - 10), 2)
+            # Garis penunjuk ke target - HANYA kalau popup masih di
+            # atas peta. Saat popup pindah ke panel kanan, garis ini
+            # membentang dari castle sampai ke panel dan malah terlihat
+            # seperti cacat gambar.
+            if _pp is None:
+                pygame.draw.line(surface, GOLD,
+                                 (px + popup_w // 2, py + popup_h),
+                                 (int(target.x), int(target.y) - 10), 2)
 
             # Shadow
             shadow_surf = pygame.Surface((popup_w + 10, popup_h + 10),

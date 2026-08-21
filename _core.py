@@ -1467,16 +1467,9 @@ class Game:
                     current_combo = self.effects.combo_counter.count
                     if current_combo > self.max_combo:
                         self.max_combo = current_combo
-                        # Tampilkan di panel kanan (kalau ada) supaya
-                        # tidak lagi melintas menutupi tengah arena.
-                        if current_combo >= 3:
-                            try:
-                                from mobile import sidepanel as _sp
-                                _sp.beri_tahu_global(
-                                    "COMBO x%d" % current_combo,
-                                    (255, 205, 90))
-                            except Exception:
-                                pass
+                        # (notifikasi combo dikirim dari
+                        #  ComboCounter.add_kill di _render.py, di
+                        #  ambang tier saja - lihat komentar di sana)
 
                         if current_combo == 5:
                             self._unlock_achievement(
@@ -2665,7 +2658,7 @@ class Menu:
         mx, my = pygame.mouse.get_pos()
         self.hover_button = None
         for btn_id, rect in self.buttons.items():
-            if rect.collidepoint(mx, my):
+            if self._kena(rect, mx, my):
                 self.hover_button = btn_id
                 break
 
@@ -2757,7 +2750,7 @@ class Menu:
 
         mx, my = pos
         for btn_id, rect in self.buttons.items():
-            if rect.collidepoint(mx, my):
+            if self._kena(rect, mx, my):
                 self._on_button_click(btn_id)
                 SoundManager().play('ui_click', volume_mult=0.6)
                 return
@@ -5222,12 +5215,15 @@ class InputHandler:
 
         # ═══ 0. Panel hero info (paling prioritas) ═══
         if g.selected_hero and g.selected_hero.alive:
-            panel_w = 260
-            panel_h = 165  # ← dari 140 → 165 (sync dengan hero_panel.py)
-            px = 20
-            py = SCREEN_HEIGHT - panel_h - 20
+            # Posisi diambil dari yang BENAR-BENAR digambar
+            # (lihat HeroPanel.draw). Angka tetap di bawah hanya
+            # cadangan untuk frame pertama sebelum panel sempat
+            # digambar sekali.
+            _hp = getattr(g, "ui_rects", {}).get("hero_panel")
+            if _hp is None:
+                _hp = pygame.Rect(20, SCREEN_HEIGHT - 185, 260, 165)
 
-            if px <= mx <= px + panel_w and py <= my <= py + panel_h:
+            if _hp.collidepoint(mx, my):
                 if self.handle_hero_panel_click(mx, my, button):
                     return
                 return  # klik di panel = jangan trigger yang lain
@@ -5271,6 +5267,13 @@ class InputHandler:
     # ═══════════════════════════════════════
 
     def _handle_left_click(self, mx, my):
+        # ═══ KLIK DI LUAR ARENA DIABAIKAN ═══
+        # Dipanggil SETELAH semua tombol UI (popup upgrade, popup
+        # tower, popup castle) diperiksa di handle_click. Kalau sampai
+        # ke sini berarti ketukan mengenai ruang kosong; kalau itu ada
+        # di panel kanan, jangan diartikan sebagai perintah gerak hero.
+        if mx >= SCREEN_WIDTH or my >= SCREEN_HEIGHT:
+            return
         """Handle klik kiri di world"""
         g = self.game
 
@@ -5384,6 +5387,18 @@ class InputHandler:
     # POPUP HANDLERS
     # ═══════════════════════════════════════
 
+    @staticmethod
+    def _kena(rect, mx, my, longgar=22):
+        """
+        Uji sentuh dengan pelonggaran.
+
+        Beberapa tombol popup sangat kecil - tombol tutup (X) hanya
+        20x20 px, sekitar 12dp, jauh di bawah standar sentuh 48dp.
+        Melebarkan area ujinya jauh lebih aman daripada mengubah
+        gambarnya satu per satu.
+        """
+        return rect.inflate(longgar, longgar).collidepoint(mx, my)
+
     def handle_hero_panel_click(self, mx, my, button):
         """Klik di panel hero info (bottom-left)"""
         if button != 1:
@@ -5394,7 +5409,7 @@ class InputHandler:
         for btn_id, rect in list(g.ui_buttons.items()):
             # Close button (X)
             if btn_id == 'hero_close':
-                if rect.collidepoint(mx, my):
+                if self._kena(rect, mx, my):
                     if g.selected_hero:
                         g.selected_hero.selected = False
                         g.selected_hero = None
@@ -5403,7 +5418,7 @@ class InputHandler:
 
             # Upgrade button
             elif btn_id == 'popup_upgrade_hero':
-                if rect.collidepoint(mx, my):
+                if self._kena(rect, mx, my):
                     self._try_upgrade_hero()
                     return True
 
@@ -5414,7 +5429,7 @@ class InputHandler:
                 # auto-cast akan membuat skill hero tidak pernah
                 # keluar sama sekali - jebakan, bukan pilihan.
                 # Tombolnya dipertahankan sebagai penanda status.
-                if rect.collidepoint(mx, my):
+                if self._kena(rect, mx, my):
                     if g.selected_hero:
                         g.selected_hero.auto_cast_enabled = True
                     return True
@@ -5456,7 +5471,7 @@ class InputHandler:
         for btn_id, rect in list(g.ui_buttons.items()):
             if not btn_id.startswith('build_'):
                 continue
-            if rect.collidepoint(mx, my):
+            if self._kena(rect, mx, my):
                 action = btn_id.replace('build_', '')
 
                 if action == 'close':
@@ -5478,7 +5493,7 @@ class InputHandler:
         for btn_id, rect in list(g.ui_buttons.items()):
             if not btn_id.startswith('popup_'):
                 continue
-            if rect.collidepoint(mx, my):
+            if self._kena(rect, mx, my):
                 action = btn_id.replace('popup_', '')
 
                 if action == 'close':

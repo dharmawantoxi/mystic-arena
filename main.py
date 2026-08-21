@@ -140,7 +140,11 @@ def main():
     #     hud.show_debug_button = False
     # Tombol FPS tampil (di bawah panel gold). Untuk rilis Play Store
     # cukup set MYSTIC_DEBUG=0 atau ubah baris ini jadi False.
-    hud.show_debug_button = os.environ.get("MYSTIC_DEBUG") != "0"
+    # Tombol FPS DIMATIKAN secara default (v30): game sudah lancar,
+    # dan panel debug itu sendiri memakan 4 ms dari 12,5 ms waktu
+    # gambar. Masih bisa dinyalakan untuk diagnosa dengan
+    # MYSTIC_DEBUG=1, atau tekan-tahan tombol JEDA.
+    hud.show_debug_button = os.environ.get("MYSTIC_DEBUG") == "1"
     debug = debug_mod.DebugOverlay(get_font, frame_timer)
 
     # ═══ LAYAR DIAGNOSTIK (Android / MYSTIC_BOOTCHECK=1) ═══
@@ -322,10 +326,18 @@ def main():
                 if hit:
                     claimed.add(tid)
                     hud_mod.apply_hud_action(hit, ctx)
-                elif side.blocks(action.pos):
-                    # Ketukan di area panel tidak boleh tembus ke peta
-                    # (mis. malah memerintahkan hero berjalan).
-                    claimed.add(tid)
+                # CATATAN v30: dulu di sini ada `elif side.blocks(...)`
+                # yang mengklaim SEMUA sentuhan di area panel supaya
+                # tidak tembus ke peta. Itu BUG: sejak popup upgrade
+                # hero, popup tower, dan popup castle pindah ke panel,
+                # klaim itu justru memblokir tombol-tombolnya sendiri -
+                # semuanya jadi tidak bisa ditekan.
+                #
+                # Sekarang sentuhan di panel diteruskan seperti biasa
+                # ke Game.handle_click(); yang mencegah "tembus ke
+                # peta" adalah penjaga di _handle_left_click, yang
+                # menolak klik di luar arena SETELAH semua tombol UI
+                # diperiksa.
                 continue
 
             if tid in claimed:

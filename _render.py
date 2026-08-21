@@ -679,21 +679,45 @@ class EffectManager:
 
     def draw_ui(self, surface, screen_w, screen_h):
         """Draw UI-space effects (tidak ikut shake)"""
-        self.combo_counter.draw(surface, screen_w, screen_h)
+        # Combo & kill feed pindah ke panel kanan kalau tersedia -
+        # keduanya dulu melintas di tengah/atas arena.
+        try:
+            from mobile import sidepanel as _sp
+            _panel = _sp.panel_aktif()
+        except Exception:
+            _panel = False
+        if not _panel:
+            self.combo_counter.draw(surface, screen_w, screen_h)
         self.wave_announcer.draw(surface, screen_w, screen_h)
-        self.kill_feed.draw(surface, screen_w, screen_h)
-        self.achievement.draw(surface, screen_w, screen_h)
+        if not _panel:
+            self.kill_feed.draw(surface, screen_w, screen_h)
+        # Achievement juga pindah ke panel kanan kalau tersedia.
+        if not _panel:
+            self.achievement.draw(surface, screen_w, screen_h)
 
     # ═══ TIER 2 HELPER METHODS ═══
     def unlock_achievement(self, title, description, icon="star"):
         """Unlock an achievement"""
         self.achievement.unlock(title, description, icon)
+        try:
+            from mobile import sidepanel as _sp
+            _sp.beri_tahu_global("★ %s" % title, (255, 205, 90), 3600)
+        except Exception:
+            pass
 
     def register_kill(self, killer_name="Tower", victim_name="Enemy",
                       killer_team="blue"):
         """Register a kill (untuk combo + kill feed)"""
         self.combo_counter.add_kill()
         self.kill_feed.add_kill(killer_name, victim_name, killer_team)
+        # Salin ke panel kanan kalau ada; di sana tempatnya tetap dan
+        # tidak menutupi arena. Kill feed di atas peta tetap jalan
+        # untuk layar tanpa panel.
+        try:
+            from mobile import sidepanel as _sp
+            _sp.catat_kill_global(killer_name, victim_name, killer_team)
+        except Exception:
+            pass
 
     def announce_wave(self, wave_num):
         """Trigger wave announcement"""
@@ -726,6 +750,27 @@ class ComboCounter:
         self.timer = self.max_timer
         self.target_scale = 1.3
         self.color_flash = 20
+
+        # ═══ LABEL TIER KE PANEL KANAN ═══
+        # Hanya saat MELEWATI ambang, bukan tiap kill - kalau tidak,
+        # panel akan dibanjiri baris yang sama.
+        _tier = None
+        if self.count == 5:
+            _tier = ("KILLING SPREE!", (100, 255, 100))
+        elif self.count == 10:
+            _tier = ("RAMPAGE!", (255, 200, 50))
+        elif self.count == 15:
+            _tier = ("UNSTOPPABLE!", (255, 100, 50))
+        elif self.count == 20:
+            _tier = ("GODLIKE!", (255, 50, 50))
+        elif self.count == 3:
+            _tier = ("COMBO x3", (255, 255, 255))
+        if _tier:
+            try:
+                from mobile import sidepanel as _sp
+                _sp.beri_tahu_global(_tier[0], _tier[1], 3000)
+            except Exception:
+                pass
 
     def update(self):
         # Timer countdown

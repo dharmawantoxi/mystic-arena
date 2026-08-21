@@ -475,20 +475,39 @@ def panel_popup_pos(w, h, atas=12):
     return (x, y)
 
 
-def panel_pos_bawah(w, h, sisakan=74):
-    """
-    Posisi di BAGIAN BAWAH panel, menyisakan ruang untuk notifikasi.
+# ═══ PEMBAGIAN ZONA PANEL KANAN ═══
+# Panel dibagi jadi empat jalur tetap supaya isinya tidak pernah
+# saling menimpa. Angkanya relatif terhadap sisi atas panel:
+#
+#     0 ..  76   tombol JEDA
+#    84 .. 176   STATUS (emas, level, wave)
+#   186 .. 346   daftar HERO (maksimal 3 baris)
+#   356 .. 521   popup terpilih (panel upgrade hero, 165 px)
+#   530 .. 720   notifikasi + umpan pembunuhan
+#
+# Dulu popup ditempel ke sisi bawah panel dan menimpa umpan
+# pembunuhan - terlihat sebagai potongan teks yang muncul dari balik
+# panel upgrade.
+ZONA_POPUP_Y = 356
+ZONA_BAWAH_H = 190
 
-    Dipakai panel hero terpilih supaya tidak menimpa daftar hero yang
-    ada di bagian atas panel.
+
+def panel_pos_bawah(w, h, sisakan=None):
+    """
+    Posisi popup di jalur khusus popup (lihat pembagian zona di atas).
+
+    Namanya tetap `panel_pos_bawah` supaya pemanggil lama tidak perlu
+    diubah, tetapi posisinya kini SLOT TETAP, bukan menempel ke dasar
+    panel.
     """
     p = _display_state.get("panel")
     if p is None or w > p.width - 8:
         return None
     x = p.x + (p.width - w) // 2
-    y = p.bottom - h - sisakan
-    if y < p.y + 8:
-        return None
+    y = p.y + ZONA_POPUP_Y
+    # kalau panelnya pendek, dorong ke atas seperlunya
+    if y + h > p.bottom - ZONA_BAWAH_H:
+        y = max(p.y + 8, p.bottom - ZONA_BAWAH_H - h)
     return (x, y)
 
 

@@ -42,12 +42,22 @@ UNGU = (190, 165, 255)
 JEDA_SEGAR_MS = 250
 MIN_TAP = 80
 
+# Tinggi zona bawah panel (notifikasi + umpan pembunuhan).
+# Diambil dari platform_utils supaya SATU sumber angka: kalau zona
+# digeser, popup dan notifikasi ikut bergeser bersama-sama.
+try:
+    from mobile.platform_utils import ZONA_BAWAH_H as ZONA_BAWAH
+except Exception:
+    ZONA_BAWAH = 190
+
 
 class PanelButton:
-    def __init__(self, action, rect, label, warna=EMAS, font_size=20):
+    def __init__(self, action, rect, label, warna=EMAS, font_size=20,
+                 ikon=None):
         self.action = action
         self.rect = pygame.Rect(rect)
         self.label = label
+        self.ikon = ikon
         self.warna = warna
         self.font_size = font_size
         self.visible = True
@@ -63,6 +73,8 @@ class PanelButton:
 class SidePanel:
     """Menggambar dan menangani sentuhan pada panel kanan."""
 
+    ZONA_BAWAH = ZONA_BAWAH
+
     def __init__(self, get_font):
         self.get_font = get_font
         self.rect = None
@@ -73,7 +85,8 @@ class SidePanel:
         self._isi_buf = None
         self._isi_at = 0
         self._notif_kotor = False
-        self.notifikasi = []        # [(teks, warna, sisa_ms)]
+        self.notifikasi = []
+        self.kill_feed = []        # [(teks, warna, sisa_ms)]
         self.aktif = False
         self._rebuild()
 
@@ -88,14 +101,13 @@ class SidePanel:
 
         r = self.rect
         pad = 14
-        by = 16
-        bw = (r.width - pad * 3) // 2
-        bw = max(60, min(bw, 130))
 
+        # Hanya tombol JEDA, digambar sebagai IKON (dua batang), bukan
+        # tulisan - sesuai bentuk aslinya sebelum panel ada.
+        # Tombol FPS dihapus: game sudah lancar dan panel debug justru
+        # memakan 4 ms dari 12,5 ms waktu gambar.
         self.buttons["pause"] = PanelButton(
-            "pause", (r.x + pad, by, bw, 58), "JEDA", EMAS, 20)
-        self.buttons["debug"] = PanelButton(
-            "debug", (r.right - pad - bw, by, bw, 58), "FPS", BIRU, 18)
+            "pause", (r.x + pad, 14, 58, 58), "", EMAS, 20, ikon="pause")
 
         # Simpan latar batu supaya bisa dipulihkan tiap frame tanpa
         # menggambar ulang ratusan bata.
@@ -122,6 +134,21 @@ class SidePanel:
     def blocks(self, pos):
         """True kalau titik ini milik panel (bukan peta)."""
         return bool(self.aktif and self.rect.collidepoint(pos))
+
+    # ── umpan pembunuhan ──────────────────────────────
+    def catat_kill(self, pembunuh, korban, tim="blue"):
+        """
+        Baris "Blue Tower >> Goblin" yang dulu melintas di atas peta.
+
+        Disimpan terpisah dari notifikasi supaya keduanya tidak
+        berebut tempat: kill feed di tengah panel, notifikasi besar
+        (combo/achievement) di bawah.
+        """
+        warna = BIRU if str(tim).startswith("blue") else BAHAYA
+        self.kill_feed.append([str(pembunuh)[:14], str(korban)[:14],
+                               warna, 3400])
+        del self.kill_feed[:-6]
+        self._notif_kotor = True
 
     # ── notifikasi ────────────────────────────────────
     def beri_tahu(self, teks, warna=EMAS, durasi_ms=2600):
@@ -167,7 +194,7 @@ class SidePanel:
             else:
                 buf.fill((18, 16, 26))
             self._gambar_tombol(buf)
-            y = 88
+            y = 84
             y = self._gambar_status(buf, game, y)
             y = self._gambar_hero(buf, game, y)
             self._isi_at = sekarang
@@ -188,13 +215,12 @@ class SidePanel:
 
         # Notifikasi berubah tiap frame, jadi hanya JALURNYA yang
         # dipulihkan dari cache lalu digambar ulang.
-        jalur = pygame.Rect(r.x, r.y + r.height // 2,
-                            r.width, r.height // 2)
-        if self.notifikasi or self._notif_kotor:
+        zona_y = r.height - self.ZONA_BAWAH
+        if self.notifikasi or self.kill_feed or self._notif_kotor:
             full.blit(self._isi_buf,
-                      jalur.topleft,
-                      pygame.Rect(0, r.height // 2, r.width, r.height // 2))
-            self._notif_kotor = bool(self.notifikasi)
+                      (r.x, r.y + zona_y),
+                      pygame.Rect(0, zona_y, r.width, self.ZONA_BAWAH))
+            self._notif_kotor = bool(self.notifikasi or self.kill_feed)
         self._gambar_notifikasi(full, r, dt_ms)
 
     def _ada_animasi_tombol(self):
@@ -215,8 +241,16 @@ class SidePanel:
                 warna_isi = (30 + k, 27 + k, 44 + k)
             pygame.draw.rect(full, warna_isi, rr, border_radius=10)
             pygame.draw.rect(full, b.warna, rr, 2, border_radius=10)
-            t = f.render(b.label, True, b.warna)
-            full.blit(t, t.get_rect(center=rr.center))
+            if b.ikon == "pause":
+                bw2, bh2, sela = 7, 24, 7
+                cx, cy = rr.center
+                for dx in (-(sela // 2) - bw2, sela // 2):
+                    pygame.draw.rect(full, b.warna,
+                                     (cx + dx, cy - bh2 // 2, bw2, bh2),
+                                     border_radius=2)
+            elif b.label:
+                t = f.render(b.label, True, b.warna)
+                full.blit(t, t.get_rect(center=rr.center))
 
     def _kotak(self, full, x, y, w, h, judul=None):
         pygame.draw.rect(full, (22, 19, 32), (x, y, w, h), border_radius=8)
@@ -263,14 +297,21 @@ class SidePanel:
         pahlawan = []
         if game is not None:
             try:
-                pahlawan = [h for h in game.get_all_heroes()
-                            if getattr(h, "team", "blue") == "blue"][:5]
+                semua = [h for h in game.get_all_heroes()
+                         if getattr(h, "team", "blue") == "blue"]
+                # Maksimal 3 baris: jalur HERO tingginya 160 px dan
+                # tidak boleh melebar sampai menabrak jalur popup.
+                pahlawan = semua[:3]
+                self._hero_lebih = max(0, len(semua) - 3)
             except Exception:
                 pahlawan = []
+                self._hero_lebih = 0
 
         tinggi_baris = 46
         h = 24 + max(1, len(pahlawan)) * tinggi_baris
-        h = min(h, r.height - y - 120)
+        if getattr(self, "_hero_lebih", 0):
+            h += 16
+        h = min(h, 168)
         if h < 40:
             return y
         self._kotak(full, x, y, w, h, "HERO")
@@ -323,30 +364,56 @@ class SidePanel:
                 pygame.draw.circle(full, warna, (dx + 5, byy + 18), 4)
                 dx += 14
             by += tinggi_baris
+        if getattr(self, "_hero_lebih", 0) and by + 14 <= y + h:
+            f_kecil2 = self.get_font(12, "body")
+            full.blit(f_kecil2.render("+%d hero lagi" % self._hero_lebih,
+                                      True, DIM), (x + 9, by - 2))
         return y + h + 10
 
     def _gambar_notifikasi(self, full, r, dt_ms):
-        if not self.notifikasi:
+        """
+        Zona bawah panel, disusun dari bawah ke atas:
+
+            [notifikasi besar]   combo / achievement / killing spree
+            [umpan pembunuhan]   Blue Tower >> Goblin
+
+        Keduanya dipisah supaya tidak berebut tempat. Batas atasnya
+        dijaga di ZONA_BAWAH agar tidak menabrak panel upgrade hero.
+        """
+        # kurangi umur
+        for daftar in (self.notifikasi, self.kill_feed):
+            for item in daftar:
+                item[-1] -= dt_ms
+        self.notifikasi = [i for i in self.notifikasi if i[-1] > 0]
+        self.kill_feed = [i for i in self.kill_feed if i[-1] > 0]
+        if not self.notifikasi and not self.kill_feed:
             return
-        f = self.get_font(16, "body_bold")
-        y = r.bottom - 16
-        hidup = []
-        for item in self.notifikasi:
-            item[2] -= dt_ms
-            if item[2] <= 0:
-                continue
-            hidup.append(item)
-        self.notifikasi = hidup
+
+        batas_atas = r.bottom - self.ZONA_BAWAH
+        y = r.bottom - 12
+
+        # ── notifikasi besar (paling bawah, paling menonjol) ──
+        f = self.get_font(17, "body_bold")
         for teks, warna, sisa in reversed(self.notifikasi):
             t = f.render(str(teks), True, warna)
-            y -= t.get_height() + 8
-            if y < r.y + 100:
+            y -= t.get_height() + 10
+            if y < batas_atas:
                 break
-            kotak = pygame.Rect(r.x + 10, y - 4, r.width - 20,
-                                t.get_height() + 8)
+            kotak = pygame.Rect(r.x + 10, y - 5, r.width - 20,
+                                t.get_height() + 10)
             pygame.draw.rect(full, (26, 22, 38), kotak, border_radius=6)
             pygame.draw.rect(full, warna, kotak, 1, border_radius=6)
             full.blit(t, t.get_rect(center=kotak.center))
+
+        # ── umpan pembunuhan (di atasnya, lebih kecil) ──
+        fk = self.get_font(13, "body")
+        for pembunuh, korban, warna, sisa in reversed(self.kill_feed):
+            baris = "%s  »  %s" % (pembunuh, korban)
+            t = fk.render(baris, True, warna)
+            y -= t.get_height() + 5
+            if y < batas_atas:
+                break
+            full.blit(t, (r.x + 14, y))
 
 
 # ═══════════════════════════════════════════════════════
@@ -373,5 +440,13 @@ def beri_tahu_global(teks, warna=EMAS, durasi_ms=2600):
     p = _PANEL[0]
     if p is not None and p.aktif:
         p.beri_tahu(teks, warna, durasi_ms)
+        return True
+    return False
+
+
+def catat_kill_global(pembunuh, korban, tim="blue"):
+    p = _PANEL[0]
+    if p is not None and p.aktif:
+        p.catat_kill(pembunuh, korban, tim)
         return True
     return False
