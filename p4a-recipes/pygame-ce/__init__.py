@@ -46,7 +46,7 @@ from pythonforandroid.toolchain import current_directory
 # Nilainya ditanam ke dalam paket pygame yang terpasang dan bisa
 # dibaca di HP lewat layar diagnostik (pygame.version.P4A_MARK),
 # sehingga selalu jelas apakah tambalan benar-benar ikut dikompilasi.
-RECIPE_MARK = "r21-neon-all+O3"
+RECIPE_MARK = "r22-neonforce+O3"
 
 
 class PygameCERecipe(CompiledComponentsPythonRecipe):
@@ -69,6 +69,22 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
 
     call_hostpython_via_targetpython = False   # butuh setuptools host
     install_in_hostpython = False
+
+    def should_build(self, arch):
+        """
+        SELALU bangun ulang pygame.
+
+        python-for-android melewati kompilasi paket yang sudah ada di
+        site-packages. Karena cache GitHub Actions memulihkan hasil
+        pasang dari build sebelumnya, tambalan di resep ini berkali-kali
+        TIDAK pernah masuk APK - dan hasil pengukuran di HP terlihat
+        "tidak berubah sama sekali" sehingga hipotesis yang benar pun
+        ikut tervonis salah.
+
+        Tambahan waktu ~6-8 menit per build. Jauh lebih murah daripada
+        satu putaran uji yang menyesatkan.
+        """
+        return True
 
     def _patch_neon_runtime_check(self):
         """
@@ -135,6 +151,59 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
                   "ditemukan sama sekali - tambalan NEON TIDAK jalan")
         self._neon_patch_report = hits
 
+    def _inject_probe(self):
+        """
+        Tanam pemeriksa waktu-kompilasi ke dalam sumber.
+
+        Tambalan runtime v20 (`pg_HasSSE_NEON() -> return 1`) TIDAK
+        mengubah apa pun. Kemungkinan besar karena seluruh blok SIMD
+        dibuang oleh praprosesor:
+
+            #if PG_ENABLE_SSE_NEON
+            if (pg_HasSSE_NEON() ...) { ...SIMD... }
+            #endif
+
+        Kalau PG_ENABLE_SSE_NEON bernilai 0, menambal fungsinya sia-sia
+        karena kode pemanggilnya tidak ikut dikompilasi - dan tidak ada
+        satu pun pesan galat yang muncul. #warning di bawah memaksa
+        kompilator MELAPORKAN nilai sebenarnya ke log build.
+        """
+        probe = (
+            "\n/* p4a probe - jangan dihapus */\n"
+            "#if defined(__aarch64__)\n"
+            "#warning \"P4A-CHECK aarch64=1\"\n"
+            "#else\n"
+            "#warning \"P4A-CHECK aarch64=0\"\n"
+            "#endif\n"
+            "#if defined(PG_ENABLE_ARM_NEON) && PG_ENABLE_ARM_NEON\n"
+            "#warning \"P4A-CHECK ARM_NEON=1\"\n"
+            "#else\n"
+            "#warning \"P4A-CHECK ARM_NEON=0\"\n"
+            "#endif\n"
+            "#if PG_ENABLE_SSE_NEON\n"
+            "#warning \"P4A-CHECK SSE_NEON=1 (jalur SIMD IKUT dikompilasi)\"\n"
+            "#else\n"
+            "#warning \"P4A-CHECK SSE_NEON=0 (jalur SIMD DIBUANG)\"\n"
+            "#endif\n"
+        )
+        path = join("src_c", "alphablit.c")
+        try:
+            with open(path) as fh:
+                src = fh.read()
+        except OSError:
+            return
+        if "P4A-CHECK" in src:
+            return
+        anchor = '#include "simd_blitters.h"'
+        if anchor not in src:
+            print("[pygame-ce] jangkar probe tidak ditemukan")
+            return
+        src = src.replace(anchor, anchor + probe, 1)
+        with open(path, "w") as fh:
+            fh.write(src)
+        print("[pygame-ce] PROBE dipasang di alphablit.c "
+              "-> cari 'P4A-CHECK' di log build")
+
     def _stamp_marker(self, arch):
         """
         Tempelkan penanda ke dalam paket pygame yang TERPASANG.
@@ -176,6 +245,7 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
                 self._patch_neon_runtime_check()
             else:
                 self._neon_patch_report = []
+            self._inject_probe()
             template_path = join("buildconfig", "Setup.Android.SDL2.in")
             with open(template_path) as fh:
                 setup_template = fh.read()
@@ -284,6 +354,14 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
         # sudah ada sebelumnya (clang memakai flag -O terakhir).
         # ═══════════════════════════════════════════════
         extra = "-O3 -DNDEBUG -fno-math-errno -funroll-loops"
+        if arch.arch == "arm64-v8a":
+            # Paksa makro dari baris perintah. Header pygame hanya
+            # menyalakannya lewat `#if !defined(PG_ENABLE_ARM_NEON) &&
+            # defined(__aarch64__)`; kalau karena satu dan lain hal
+            # cabang itu tidak jalan, SELURUH jalur SIMD hilang tanpa
+            # pesan galat apa pun. Semua CPU ARMv8-A punya NEON, jadi
+            # menyalakannya paksa selalu aman di arm64-v8a.
+            extra += " -DPG_ENABLE_ARM_NEON=1"
         env["CFLAGS"] = (env.get("CFLAGS", "") + " " + extra).strip()
         self._cflags_report = env["CFLAGS"]
 
