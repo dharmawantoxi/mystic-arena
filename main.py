@@ -328,6 +328,13 @@ def main():
         debug.update(clock, game)
         debug.draw(screen, clock, game, touch)
 
+        try:
+            from mobile import blitwatch
+            if blitwatch.enabled():
+                blitwatch.new_frame()
+        except Exception:
+            pass
+
         frame_timer.start("flip")
         plat.present()
         frame_timer.stop()

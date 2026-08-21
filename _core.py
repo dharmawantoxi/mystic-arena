@@ -1872,14 +1872,19 @@ class Game:
             draw_target = self.screen
 
         # ═══ WORLD LAYER (kena shake) ═══
+        from mobile.perf import PHASES as _PH
+        _PH.mark("bg.fill")
         draw_target.fill(GRASS_DARK)
+        _PH.mark("map")
         self.map_renderer.draw(draw_target, self.animation_time)
 
         # Build slots
+        _PH.mark("slots")
         self.ui_buttons = {}
         self.ui.draw_build_slots(draw_target)
 
         # Entities
+        _PH.mark("entity")
         for b in self.bases:
             b.draw(draw_target)
         for t in self.towers:
@@ -1899,7 +1904,9 @@ class Game:
                 self.active_boss.draw(draw_target)
 
         # Effects
+        _PH.mark("effects")
         self.effects.draw(draw_target, self.animation_time)
+        _PH.mark("hover")
         self.ui.draw_hover_indicators(draw_target)
 
         # Apply shake
@@ -1908,8 +1915,11 @@ class Game:
             self.screen.blit(temp_surface, (shake_x, shake_y))
 
         # ═══ UI LAYER (tanpa shake) ═══
+        _PH.mark("ui.hints")
         self.ui.draw_shop_hints(self.screen)
+        _PH.mark("ui.gold")
         self._draw_gold_hud(self.screen)
+        _PH.mark("ui.rest")
         # Boss intro banner (ringkas, di atas) digambar SEBELUM
         # effects.draw_ui supaya wave announcer tidak pernah
         # tertutup banner boss.
@@ -1928,7 +1938,9 @@ class Game:
             self.ui.draw_hero_info(self.screen)
 
         # Dev UI (paling atas)
+        _PH.mark("dev")
         self.dev.draw(self.screen)
+        _PH.end()
 
         if self.state == "victory":
             from levels import get_next_level
@@ -3116,12 +3128,18 @@ class Menu:
         t = getattr(self, 'animation_time', 0)
 
         # ── Kabut bergerak (2 lapis parallax) ──
-        for li, (fog, speed, alpha) in enumerate(self._fog_layers):
-            fw = fog.get_width()
-            off = int((t * speed) % fw)
-            fog.set_alpha(max(8, min(80, alpha + int(5 * math.sin(t * 0.008 + li * 2)))))
-            self.screen.blit(fog, (-off, 0))
-            self.screen.blit(fog, (fw - off, 0))
+        # PENYEBAB UTAMA LAG DI HP: tiap lapis di-blit 2x (untuk
+        # sambungan) dan lebarnya ~1,5x layar -> 4 alpha blit x
+        # 667.000 piksel = 2,7 juta piksel = 593 ms/frame.
+        # Latar statisnya sendiri sudah di-cache dan tetap tampil.
+        from mobile.perf import Quality as _Qb
+        if _Qb.cheap_alpha:
+            for li, (fog, speed, alpha) in enumerate(self._fog_layers):
+                fw = fog.get_width()
+                off = int((t * speed) % fw)
+                fog.set_alpha(max(8, min(80, alpha + int(5 * math.sin(t * 0.008 + li * 2)))))
+                self.screen.blit(fog, (-off, 0))
+                self.screen.blit(fog, (fw - off, 0))
 
         # ── Partikel (ember naik + arcane melayang, glow lembut) ──
         for p in self.particles:
@@ -3438,16 +3456,20 @@ class Menu:
 
         # ═══ TITLE (gradasi emas + glow + outline) ═══
         title_y = 124 + int(math.sin(t) * 3)
-        glow_t = pygame.Surface((640, 130), pygame.SRCALPHA)
-        pygame.draw.ellipse(glow_t,
-                            (255, 205, 100, int(46 + 22 * math.sin(t))),
-                            (0, 12, 640, 104))
-        self.screen.blit(glow_t, (cx - 320, title_y - 62))
+        from mobile.perf import Quality as _Qt2
+        if _Qt2.cheap_alpha:
+            glow_t = pygame.Surface((640, 130), pygame.SRCALPHA)
+            pygame.draw.ellipse(glow_t,
+                                (255, 205, 100, int(46 + 22 * math.sin(t))),
+                                (0, 12, 640, 104))
+            self.screen.blit(glow_t, (cx - 320, title_y - 62))
         out = self.font_title.render("MYSTIC ARENA", True, (12, 10, 24))
         o_rect = out.get_rect(center=(cx, title_y))
-        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2),
-                       (-2, -2), (2, 2), (-2, 2), (2, -2)):
-            self.screen.blit(out, (o_rect.x + dx, o_rect.y + dy))
+        # outline 8 arah = 8 alpha blit teks besar (224.000 px = 50 ms)
+        if _Qt2.cheap_alpha:
+            for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2),
+                           (-2, -2), (2, 2), (-2, 2), (2, -2)):
+                self.screen.blit(out, (o_rect.x + dx, o_rect.y + dy))
         grad = self._render_gradient_text(
             self.font_title, "MYSTIC ARENA",
             (255, 242, 175), (196, 138, 40))
@@ -4018,6 +4040,7 @@ class Menu:
         """Tombol menu dark-fantasy: panel kaca gelap + aksen warna +
         ikon primitif + sudut emas, dengan efek hover glow.
         label_font_size: opsional, ukuran font label (default font_button)."""
+        from mobile.perf import Quality as _Qg
         is_hover = self.hover_button == btn_id
 
         rect = pygame.Rect(cx - width // 2, cy - height // 2,
@@ -4027,21 +4050,29 @@ class Menu:
 
         # ── Glow hover ──
         if is_hover:
-            glow = pygame.Surface((rect.width + 28, rect.height + 28),
-                                  pygame.SRCALPHA)
-            pygame.draw.rect(glow, (*color, 70),
-                             (0, 0, glow.get_width(), glow.get_height()),
-                             border_radius=16)
-            self.screen.blit(glow, (rect.x - 14, rect.y - 14))
+            if _Qg.cheap_alpha:
+                glow = pygame.Surface((rect.width + 28, rect.height + 28),
+                                      pygame.SRCALPHA)
+                pygame.draw.rect(glow, (*color, 70),
+                                 (0, 0, glow.get_width(),
+                                  glow.get_height()),
+                                 border_radius=16)
+                self.screen.blit(glow, (rect.x - 14, rect.y - 14))
+            else:
+                pygame.draw.rect(self.screen, color,
+                                 rect.inflate(10, 10), 2, border_radius=14)
 
         # ── Shadow ──
         sh = rect.copy()
         sh.move_ip(4, 5)
-        shadow_surf = pygame.Surface((sh.width, sh.height),
-                                     pygame.SRCALPHA)
-        pygame.draw.rect(shadow_surf, (0, 0, 0, 110),
-                         (0, 0, sh.width, sh.height), border_radius=12)
-        self.screen.blit(shadow_surf, sh.topleft)
+        if _Qg.cheap_alpha:
+            shadow_surf = pygame.Surface((sh.width, sh.height),
+                                         pygame.SRCALPHA)
+            pygame.draw.rect(shadow_surf, (0, 0, 0, 110),
+                             (0, 0, sh.width, sh.height), border_radius=12)
+            self.screen.blit(shadow_surf, sh.topleft)
+        else:
+            pygame.draw.rect(self.screen, (8, 6, 14), sh, border_radius=12)
 
         # ── Panel ──
         base = (26, 32, 52) if is_hover else (17, 21, 36)
@@ -4085,9 +4116,10 @@ class Menu:
         label_font = self.font_button
         if label_font_size:
             label_font = get_font(label_font_size, "body_bold")
-        sh_text = label_font.render(label, True, (0, 0, 0))
-        self.screen.blit(sh_text, sh_text.get_rect(
-            center=(text_cx + 2, rect.centery + 2)))
+        if _Qg.cheap_alpha:
+            sh_text = label_font.render(label, True, (0, 0, 0))
+            self.screen.blit(sh_text, sh_text.get_rect(
+                center=(text_cx + 2, rect.centery + 2)))
         text = label_font.render(label, True, WHITE)
         self.screen.blit(text, text.get_rect(
             center=(text_cx, rect.centery)))

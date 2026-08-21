@@ -201,12 +201,24 @@ class MapRenderer:
         # dialokasi + di-fill tiap frame (~0.5 ms terbuang).
         tint = self.theme.get("ambient_tint")
         if tint:
-            if getattr(self, '_tint_surface', None) is None:
-                self._tint_surface = pygame.Surface(
-                    (self.map_width, self.map_height),
-                    pygame.SRCALPHA)
-                self._tint_surface.fill(tint)
-            surface.blit(self._tint_surface, (0, 0))
+            # BOM WAKTU: ini blit SRCALPHA SEUKURAN LAYAR setiap frame.
+            # Di HP = 204 ms/frame (3 FPS) untuk semua tema yang punya
+            # ambient_tint. Diganti fill BLEND_RGB_MULT (~2 ms) yang
+            # memberi efek pewarnaan setara.
+            from mobile.perf import Quality as _Qt
+            if _Qt.cheap_alpha:
+                if getattr(self, '_tint_surface', None) is None:
+                    self._tint_surface = pygame.Surface(
+                        (self.map_width, self.map_height),
+                        pygame.SRCALPHA)
+                    self._tint_surface.fill(tint)
+                surface.blit(self._tint_surface, (0, 0))
+            else:
+                _a = (tint[3] if len(tint) > 3 else 255) / 255.0
+                surface.fill((int(255 - (255 - tint[0]) * _a),
+                              int(255 - (255 - tint[1]) * _a),
+                              int(255 - (255 - tint[2]) * _a)),
+                             special_flags=pygame.BLEND_RGB_MULT)
 
     def get_lane_path(self, lane_name):
         """Get lane path points"""

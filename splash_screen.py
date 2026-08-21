@@ -287,8 +287,14 @@ class SplashScreen:
             return
         rect = text_surf.get_rect(center=(cx, cy))
 
-        # Glow berlapis
-        for layer, spread in [(24, 1), (14, 2), (8, 3)]:
+        # Glow berlapis (3 lapis + smoothscale = 24 ms/frame di HP)
+        try:
+            from mobile.perf import Quality as _Qs
+            _cheap = _Qs.cheap_alpha
+        except Exception:
+            _cheap = True
+        for layer, spread in ([(24, 1), (14, 2), (8, 3)] if _cheap
+                              else []):
             glow = pygame.Surface(
                 (rect.w + layer * 2, rect.h + layer * 2), pygame.SRCALPHA)
             glow.blit(text_surf, (layer, layer))
