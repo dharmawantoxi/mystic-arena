@@ -30,6 +30,10 @@ WHITE = (235, 235, 245)
 GREY = (120, 120, 135)
 RED = (210, 70, 70)
 
+# Sisi minimum area sentuh, dalam piksel logis 1280x720.
+# 80 px logis x skala 1,5 = 120 px fisik = ~48dp di layar 404 dpi.
+MIN_TAP = 80
+
 SKILL_LABELS = {"q": "Q", "w": "W", "e": "E", "r": "R"}
 SKILL_NAMES = {"q": "SKILL 1", "w": "SKILL 2", "e": "SKILL 3", "r": "ULTI"}
 
@@ -50,8 +54,20 @@ class TouchButton:
         self.enabled = True
         self.cooldown = 0.0        # 0..1 (1 = belum siap)
         self.press_anim = 0.0
-        # area sentuh diperbesar 12 px di tiap sisi (jempol tidak presisi)
+        # ═══ AREA SENTUH MINIMUM (v27) ═══
+        # Panduan Android: target sentuh minimal 48dp. Di HP uji
+        # (2436x1080, ~404 dpi, skala 1,5) itu setara ~80 px logis.
+        # Tombol lama 44x44 = hanya ~26dp - jauh di bawah standar dan
+        # memang susah ditekan.
+        #
+        # Yang diperbesar adalah AREA SENTUHnya, bukan gambarnya:
+        # tombol tetap terlihat ringkas, tapi jempol yang meleset
+        # beberapa piksel tetap terbaca. Teknik baku di aplikasi mobile.
         self.hit_rect = self.rect.inflate(24, 24)
+        if self.hit_rect.width < MIN_TAP or self.hit_rect.height < MIN_TAP:
+            self.hit_rect = self.rect.inflate(
+                max(0, MIN_TAP - self.rect.width),
+                max(0, MIN_TAP - self.rect.height))
 
     def contains(self, pos):
         return self.visible and self.hit_rect.collidepoint(pos)
@@ -80,26 +96,14 @@ class TouchHUD:
         right = safe.right
         bottom = safe.bottom
 
-        # ═══ 4 tombol skill, pola kipas di kanan bawah ═══
-        r_big = 46
-        r_small = 38
-        cx, cy = right - 92, bottom - 92
-
-        self.buttons["skill_r"] = TouchButton(
-            "skill_r", pygame.Rect(cx - r_big, cy - r_big,
-                                   r_big * 2, r_big * 2),
-            "R", "ULTI", color=(255, 140, 60), font_size=30)
-
-        positions = {
-            "skill_e": (cx - 108, cy - 6),
-            "skill_w": (cx - 74, cy - 100),
-            "skill_q": (cx + 12, cy - 128),
-        }
-        for act, (bx, by) in positions.items():
-            self.buttons[act] = TouchButton(
-                act, pygame.Rect(bx - r_small, by - r_small,
-                                 r_small * 2, r_small * 2),
-                SKILL_LABELS[act[-1]], SKILL_NAMES[act[-1]])
+        # ═══ TOMBOL SKILL QWER DIHAPUS (v27) ═══
+        # Semua skill hero kini dicor otomatis oleh
+        # Hero._try_auto_cast(). Empat tombol besar di sudut kanan
+        # bawah tidak lagi punya fungsi, dan menghapusnya membebaskan
+        # area yang selama ini bertabrakan dengan gerakan geser peta.
+        #
+        # Kalau suatu saat ingin dikembalikan: hidupkan lagi blok ini
+        # dan set Hero.auto_cast_enabled = False di _entity.py.
 
         # ═══ Tombol SHOP DIHAPUS ═══
         # Dulu ada kapsul "SHOP" di kiri bawah, tepat menutupi kastil
@@ -113,33 +117,42 @@ class TouchHUD:
         # bawah) maupun kastil musuh (kanan atas).
         _bx = max(22, safe.left + 6)
         _by = 76
+        # 44 -> 52 px terlihat, area sentuh otomatis jadi 80 px.
+        # Jaraknya dinaikkan ke 84 supaya dua area sentuh tidak
+        # bertumpuk dan salah tekan.
         self.buttons["pause"] = TouchButton(
-            "pause", pygame.Rect(_bx, _by, 44, 44),
-            "II", shape="round", font_size=20)
+            "pause", pygame.Rect(_bx, _by, 52, 52),
+            "II", shape="round", font_size=22)
 
         self.buttons["debug"] = TouchButton(
-            "debug", pygame.Rect(_bx + 52, _by, 44, 44),
-            "FPS", shape="round", font_size=15, color=(120, 200, 255))
+            "debug", pygame.Rect(_bx + 84, _by, 52, 52),
+            "FPS", shape="round", font_size=16, color=(120, 200, 255))
 
         # ═══ Tombol kontekstual ═══
+        # CATATAN JARAK: ketiga tombol layar kemenangan tampil
+        # BERSAMAAN. Karena tiap area sentuh melebar 12 px per sisi,
+        # jarak antar-tombol harus >= 24 px agar area sentuhnya tidak
+        # bertumpuk - kalau bertumpuk, ketukan di celahnya bisa
+        # memicu tombol yang salah (mis. "MENU" padahal maksudnya
+        # "NEXT LEVEL"). Diperiksa oleh tools/test_hud_layout.py.
         self.buttons["skip"] = TouchButton(
-            "skip", pygame.Rect(right - 150, bottom - 60, 140, 48),
+            "skip", pygame.Rect(right - 170, bottom - 74, 160, 58),
             "LEWATI  >>", shape="capsule", font_size=20, visible=False)
 
         mid = plat.LOGICAL_WIDTH // 2
         self.buttons["replay"] = TouchButton(
-            "replay", pygame.Rect(mid - 250, bottom - 96, 150, 56),
+            "replay", pygame.Rect(mid - 310, bottom - 100, 165, 62),
             "ULANGI", shape="capsule", font_size=22, visible=False)
         self.buttons["next_level"] = TouchButton(
-            "next_level", pygame.Rect(mid - 80, bottom - 96, 190, 56),
+            "next_level", pygame.Rect(mid - 115, bottom - 100, 200, 62),
             "LEVEL LANJUT", shape="capsule", font_size=20, visible=False,
             color=(120, 230, 140))
         self.buttons["menu"] = TouchButton(
-            "menu", pygame.Rect(mid + 130, bottom - 96, 150, 56),
+            "menu", pygame.Rect(mid + 115, bottom - 100, 165, 62),
             "MENU", shape="capsule", font_size=22, visible=False)
 
         self.buttons["back"] = TouchButton(
-            "back", pygame.Rect(safe.left + 8, safe.top + 6, 92, 50),
+            "back", pygame.Rect(safe.left + 8, safe.top + 6, 104, 58),
             "< BACK", shape="capsule", font_size=20, visible=False)
 
     # ── sinkronisasi dengan kondisi game ──────────────
@@ -150,18 +163,6 @@ class TouchHUD:
         playing = in_game and getattr(game, "state", "") == "playing"
         ended = in_game and getattr(game, "state", "") in ("victory",
                                                            "defeat")
-
-        for key in ("skill_q", "skill_w", "skill_e", "skill_r"):
-            btn = self.buttons[key]
-            btn.visible = bool(playing and hero and hero.alive
-                               and not cinematic_active)
-            if btn.visible:
-                try:
-                    cds = hero.get_skill_cooldowns()
-                    btn.cooldown = max(0.0, min(1.0, cds.get(key[-1], 0.0)))
-                    btn.enabled = hero.is_skill_ready(key[-1])
-                except Exception:
-                    btn.cooldown, btn.enabled = 0.0, True
 
 
         self.buttons["pause"].visible = bool(playing and not cinematic_active)
@@ -291,15 +292,6 @@ def apply_hud_action(action, ctx):
     """
     game = ctx.get("game")
     menu = ctx.get("menu")
-
-    if action in ("skill_q", "skill_w", "skill_e", "skill_r"):
-        if game is None:
-            return False
-        key = {"skill_q": pygame.K_q, "skill_w": pygame.K_w,
-               "skill_e": pygame.K_e, "skill_r": pygame.K_r}[action]
-        game.handle_key(key)
-        plat.vibrate(18)
-        return True
 
     if action == "pause":
         ctx["request_pause"] = True

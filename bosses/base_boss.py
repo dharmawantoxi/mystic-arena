@@ -292,6 +292,7 @@ class Boss:
 
     def __init__(self, boss_type, lane_path=None):
         self.boss_type = boss_type
+        self._suara_tier = None
         self.team = "red"
 
         all_bosses = get_all_boss_types()
@@ -349,6 +350,26 @@ class Boss:
         self.entrance_timer = 180 if self.boss_class == "true" else 120
         self.ability_active = False
         self.ability_active_timer = 0
+
+    def _tier_suara(self):
+        """
+        Kembalikan jenis suara serangan: mini boss atau true boss.
+
+        Dihitung SEKALI per boss lalu disimpan - boss_data.py berisi
+        ribuan entri dan tidak boleh dicari ulang tiap serangan.
+        """
+        if self._suara_tier is not None:
+            return self._suara_tier
+        from mobile import combat_audio as _ca
+        tier = _ca.BOSS
+        try:
+            from bosses.boss_data import MINI_BOSS_TYPES
+            if self.boss_type in MINI_BOSS_TYPES:
+                tier = _ca.MINIBOSS
+        except Exception:
+            pass
+        self._suara_tier = tier
+        return tier
 
     def update(self, all_units, all_towers, all_bases):
         if not self.alive:
@@ -409,6 +430,15 @@ class Boss:
                 if self.timer == 0:
                     self.target.take_damage(self.damage, self.team)
                     self.timer = self.attack_cooldown
+                    # Mini boss dan true boss punya suara berbeda:
+                    # yang satu ayunan berat, yang satu hentakan
+                    # sub-bass. Tier-nya dihitung sekali lalu
+                    # disimpan (lihat _tier_suara).
+                    try:
+                        from mobile import combat_audio as _ca
+                        _ca.play(self._tier_suara())
+                    except Exception:
+                        pass
 
                 # ═══ SMART AI per boss type ═══
                 if self.boss_type == "abaddon":

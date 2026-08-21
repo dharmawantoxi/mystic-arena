@@ -468,7 +468,12 @@ class SoundManager:
 
         path = _sound_path(filename)
         if not os.path.exists(path):
-            print(f"[WARNING] Sound '{path}' tidak ditemukan!")
+            # Dikumpulkan lalu dilaporkan SEKALI di akhir load_all().
+            # Sebelumnya tiap berkas hilang mencetak satu baris; karena
+            # assets/sounds pernah kosong total, log startup dipenuhi
+            # puluhan peringatan yang mengubur pesan penting.
+            self._hilang = getattr(self, "_hilang", [])
+            self._hilang.append(filename)
             return
 
         try:
@@ -485,6 +490,7 @@ class SoundManager:
         """Load semua sounds"""
         if not self.enabled:
             return
+        self._hilang = []
 
         # Goblin
         self.load('goblin_spawn', 'goblin_spawn.wav', 'voice')
@@ -516,6 +522,13 @@ class SoundManager:
         # Hero
         self.load('hero_skill', 'hero_skill.wav', 'sfx')
         self.load('hero_spawn', 'hero_spawn.wav', 'sfx')
+
+        hilang = getattr(self, "_hilang", [])
+        if hilang:
+            print("[AUDIO] %d berkas SoundManager belum ada (BGM/UI): %s%s"
+                  % (len(hilang), ", ".join(hilang[:4]),
+                     " ..." if len(hilang) > 4 else ""))
+        print("[AUDIO] SoundManager memuat %d berkas" % len(self.sounds))
 
     def play(self, name, volume_mult=1.0):
         """Play sound dengan throttle"""

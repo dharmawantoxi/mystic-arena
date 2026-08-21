@@ -598,8 +598,14 @@ class Tower:
         if not self.target:
             return
 
-        if SOUND_ENABLED and self.team == "blue":
-            SoundManager().play('tower_shoot', volume_mult=0.3)
+        # Dulu memanggil SoundManager('tower_shoot') yang berkasnya
+        # tidak pernah ada, jadi tidak pernah berbunyi.
+        try:
+            from mobile import combat_audio as _ca
+            _ca.play(_ca.TOWER, volume_mult=0.9 if self.team == "blue"
+                     else 0.55)
+        except Exception:
+            pass
 
         if self.tower_type == "archer":
             self._shoot_archer(enemies)
@@ -930,7 +936,12 @@ class Tower:
             from _render import get_font
             lvl_font = get_font(14)
             lvl_text = lvl_font.render(f"{self.level}", True, YELLOW)
-            lvl_surf = pygame.Surface((12, bar_h + 2), pygame.SRCALPHA)
+            # BUG LAMA: lebar kotak dipatok 12 px. Begitu level dua
+            # angka ("10"), teksnya lebih lebar dari kotaknya dan
+            # terpotong. Sekarang kotak mengikuti lebar teks.
+            _lw = max(12, lvl_text.get_width() + 6)
+            _lh = max(bar_h + 2, lvl_text.get_height() + 2)
+            lvl_surf = pygame.Surface((_lw, _lh), pygame.SRCALPHA)
             lvl_bg = lvl_surf.get_rect()
             pygame.draw.rect(lvl_surf, (0, 0, 0), lvl_bg,
                              border_radius=2)
@@ -938,7 +949,11 @@ class Tower:
                              border_radius=2)
             lvl_surf.blit(lvl_text, lvl_text.get_rect(center=lvl_bg.center))
             _TOWER_SPRITE_CACHE[key] = lvl_surf
-        surface.blit(lvl_surf, (bx - 14, by - 1))
+        # Ditempel rapat di kiri bar, mengikuti lebar kotak yang
+        # sebenarnya (dulu selalu -14 walau kotaknya berubah).
+        surface.blit(lvl_surf,
+                     (bx - lvl_surf.get_width() - 2,
+                      by + (bar_h - lvl_surf.get_height()) // 2))
 
         # Regen indicator
         if self.no_damage_timer >= TOWER_SHIELD_REGEN_DELAY:
@@ -2891,8 +2906,18 @@ class Hero:
         # ═══ PROJECTILE SYSTEM (untuk ranged heroes) ═══
         self.projectiles = []
         # ═══ AUTO-CAST SETTINGS ═══
-        self.auto_cast_enabled = False  # default: manual
-        self.auto_cast_check_timer = 0  # throttle auto-cast check (60 fps → tiap 20 frame)
+        # ═══ AUTO-CAST SELALU AKTIF (v27) ═══
+        # Dulu default False dan pemain harus menekan Q/W/E/R sendiri.
+        # Di layar sentuh itu merepotkan: empat tombol besar menutupi
+        # sudut kanan bawah sementara jari yang sama dipakai menggeser
+        # peta. Semua skill sekarang dicor otomatis oleh
+        # _try_auto_cast(), yang hanya menembak kalau ADA musuh hidup
+        # di dalam skill_range - jadi tidak ada skill terbuang.
+        self.auto_cast_enabled = True
+        # Pemeriksaan auto-cast dijadwal ulang tiap 20 langkah simulasi
+        # (~0,33 detik). Dulu 40 langkah; terlalu lambat begitu skill
+        # jadi satu-satunya jalur serangan khusus.
+        self.auto_cast_check_timer = 0
         # ═══ UNIVERSAL SKILL STATE (BALANCED) ═══
         self.w_cooldown = 0
         self.w_cooldown_max = 240  # 4 detik (dari 3)
@@ -3085,7 +3110,7 @@ class Hero:
         if self.auto_cast_enabled:
             self.auto_cast_check_timer -= 1
             if self.auto_cast_check_timer <= 0:
-                self.auto_cast_check_timer = 40  # cek tiap 20 frame
+                self.auto_cast_check_timer = 20
                 self._try_auto_cast(all_units, all_towers, all_bases)
         if self.skill_timer > 0:
             self.skill_timer -= 1
@@ -3438,6 +3463,15 @@ class Hero:
 
             self.attack_timer = self.attack_cooldown
 
+            # Suara serangan dasar: tebasan (melee) atau
+            # petikan busur / lesatan sihir (ranged), dipilih
+            # otomatis dari jangkauan hero.
+            try:
+                from mobile import combat_audio as _ca
+                _ca.play_hero_basic(self)
+            except Exception:
+                pass
+
             # Visual crit indicator
             if is_crit:
                 try:
@@ -3629,12 +3663,17 @@ class Hero:
             name_lbl = font.render(f"{self.name}", True, WHITE)
             star_w = (self.level * 10) if self.level <= 5 else 18
             bw = max(name_lbl.get_width(), star_w) + 8
-            bh = 26
+            # BUG LAMA: tinggi kotak hitam dipatok 14 px sementara
+            # font 14 menghasilkan teks ~17-18 px, jadi tulisannya
+            # meluber ke atas kotak dan terlihat tidak sejajar.
+            # Sekarang kotak mengikuti tinggi teks dan teksnya
+            # benar-benar di tengah.
+            nh = name_lbl.get_height() + 4
+            bh = 12 + nh
             badge = pygame.Surface((bw, bh), pygame.SRCALPHA)
-            nx = bw // 2 - name_lbl.get_width() // 2
-            pygame.draw.rect(badge, (0, 0, 0),
-                             (0, bh - 16, bw, 14), border_radius=2)
-            badge.blit(name_lbl, (nx, bh - 15))
+            name_box = pygame.Rect(0, bh - nh, bw, nh)
+            pygame.draw.rect(badge, (0, 0, 0), name_box, border_radius=2)
+            badge.blit(name_lbl, name_lbl.get_rect(center=name_box.center))
 
             def _star(sx, sy, color=YELLOW):
                 pygame.draw.polygon(badge, color, [
@@ -4129,6 +4168,11 @@ class Minion:
                     self.timer = self.attack_cooldown
                     self.attack_anim_timer = self.attack_anim_max  # trigger attack anim
                     self._spawn_slash_effect()
+                    try:
+                        from mobile import combat_audio as _ca
+                        _ca.play(_ca.MINION)
+                    except Exception:
+                        pass
             else:
                 self._move_toward(self.target.x, self.target.y)
         else:

@@ -163,6 +163,8 @@ _display_state = {
     "surface": None,          # permukaan yang benar-benar dipresentasikan
     "render": None,           # permukaan yang digambari game (bisa sama)
     "mode": "scaled_vsync",
+    "full": None,             # permukaan display seutuhnya (bisa > 1280)
+    "game_offset": (0, 0),    # posisi area main di dalam permukaan penuh
     "window_size": (LOGICAL_WIDTH, LOGICAL_HEIGHT),
     "scale": 1.0,
     "offset": (0, 0),
@@ -218,6 +220,58 @@ def save_display_mode(mode):
         return False
 
 
+def _gambar_panel_samping(surface, lebar):
+    """
+    Isi bar kiri-kanan dengan panel batu bergaya peta.
+
+    Digambar SEKALI saat layar dibuat. Area main adalah subsurface
+    yang tidak pernah menyentuh piksel di sini, jadi panel tidak
+    perlu digambar ulang - biayanya benar-benar 0 ms per frame.
+    """
+    tinggi = surface.get_height()
+    kanan_x = surface.get_width() - lebar
+
+    dasar = (16, 14, 24)
+    batu_gelap = (26, 23, 38)
+    batu = (34, 30, 48)
+    garis = (58, 50, 78)
+    emas = (150, 120, 60)
+
+    for x0 in (0, kanan_x):
+        panel = pygame.Rect(x0, 0, lebar, tinggi)
+        pygame.draw.rect(surface, dasar, panel)
+
+        # susunan bata: baris berselang-seling supaya tidak terlihat
+        # seperti kotak-kotak kaku
+        bh = 34
+        bw = max(28, lebar // 3)
+        for i, y in enumerate(range(-bh, tinggi + bh, bh)):
+            geser = (bw // 2) if (i % 2) else 0
+            for x in range(x0 - bw, x0 + lebar + bw, bw):
+                r = pygame.Rect(x + geser + 1, y + 1, bw - 2, bh - 2)
+                r = r.clip(panel)
+                if r.width <= 0 or r.height <= 0:
+                    continue
+                pygame.draw.rect(surface, batu if (i + x) % 3 else
+                                 batu_gelap, r)
+                pygame.draw.rect(surface, garis, r, 1)
+
+        # bayangan gelap ke arah tengah supaya area main terasa
+        # menyatu, bukan seperti ditempel
+        arah = 1 if x0 == 0 else -1
+        tepi = (x0 + lebar - 1) if x0 == 0 else x0
+        for i in range(18):
+            a = 1.0 - (i / 18.0)
+            warna = (int(dasar[0] * a), int(dasar[1] * a), int(dasar[2] * a))
+            gx = tepi - arah * i
+            pygame.draw.line(surface, warna, (gx, 0), (gx, tinggi))
+
+        # garis emas tipis sebagai bingkai arena
+        bingkai_x = (x0 + lebar - 2) if x0 == 0 else (x0 + 1)
+        pygame.draw.line(surface, emas, (bingkai_x, 0),
+                         (bingkai_x, tinggi), 2)
+
+
 def create_display(vsync=True, mode=None):
     """
     Kembalikan permukaan yang HARUS digambari game (render surface).
@@ -257,13 +311,72 @@ def create_display(vsync=True, mode=None):
         if TOUCH_MODE:
             flags |= pygame.FULLSCREEN
         want_vsync = 1 if (vsync and mode == "scaled_vsync") else 0
+
+        # ═══ LAYAR PENUH TANPA STRETCH & TANPA TERPOTONG ═══
+        # Layar HP uji 2436x1080 (rasio 2,256), game 1280x720
+        # (rasio 1,778). Kalau permukaannya tetap 16:9, SDL memberi
+        # bar hitam di kiri-kanan selebar 258 px fisik masing-masing.
+        #
+        # Tiga cara mengisinya, dan hanya satu yang benar:
+        #   - regangkan  -> gambar jadi gepeng   (ditolak)
+        #   - perbesar   -> peta terpotong        (ditolak)
+        #   - PERLEBAR PERMUKAAN -> tidak ada yang berubah bentuk
+        #
+        # Yang dipakai: permukaan display dibuat selebar rasio layar
+        # (mis. 1624x720), lalu game diberi SUBSURFACE 1280x720 tepat
+        # di tengahnya. Seluruh kode game tetap memakai koordinat
+        # 1280x720 - tidak ada satu baris pun logika yang berubah,
+        # jadi tidak ada risiko regresi gameplay. Sisa ruang kiri-kanan
+        # diisi panel hiasan yang digambar SEKALI (0 ms per frame).
+        lebar_penuh = LOGICAL_WIDTH
         try:
-            surface = pygame.display.set_mode(
-                (LOGICAL_WIDTH, LOGICAL_HEIGHT), flags, vsync=want_vsync)
-        except pygame.error:
-            surface = pygame.display.set_mode(
-                (LOGICAL_WIDTH, LOGICAL_HEIGHT), flags)
-        render = surface
+            if TOUCH_MODE:
+                info = pygame.display.Info()
+                rasio = info.current_w / float(max(1, info.current_h))
+                usul = int(round(LOGICAL_HEIGHT * rasio))
+                # dibatasi supaya tidak konyol di layar sangat lebar,
+                # dan digenapkan ke bilangan genap
+                lebar_penuh = max(LOGICAL_WIDTH, min(2200, usul))
+                lebar_penuh -= lebar_penuh % 2
+        except Exception:
+            lebar_penuh = LOGICAL_WIDTH
+
+        def _pasang(lebar):
+            try:
+                return pygame.display.set_mode(
+                    (lebar, LOGICAL_HEIGHT), flags, vsync=want_vsync)
+            except pygame.error:
+                return pygame.display.set_mode(
+                    (lebar, LOGICAL_HEIGHT), flags)
+
+        try:
+            surface = _pasang(lebar_penuh)
+        except Exception as exc:
+            print("[DISPLAY] lebar %d ditolak (%s) - kembali ke %d"
+                  % (lebar_penuh, exc, LOGICAL_WIDTH))
+            lebar_penuh = LOGICAL_WIDTH
+            surface = _pasang(LOGICAL_WIDTH)
+
+        ox = max(0, (surface.get_width() - LOGICAL_WIDTH) // 2)
+        _display_state["full"] = surface
+        _display_state["game_offset"] = (ox, 0)
+
+        if ox > 0:
+            try:
+                render = surface.subsurface(
+                    (ox, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT))
+                _gambar_panel_samping(surface, ox)
+                print("[DISPLAY] layar penuh %dx%d, area main %dx%d "
+                      "di offset %d (panel samping %d px)"
+                      % (surface.get_width(), surface.get_height(),
+                         LOGICAL_WIDTH, LOGICAL_HEIGHT, ox, ox))
+            except (ValueError, pygame.error) as exc:
+                print("[DISPLAY] subsurface gagal (%s) - pakai layar utuh"
+                      % exc)
+                _display_state["game_offset"] = (0, 0)
+                render = surface
+        else:
+            render = surface
 
         # ═══ BUFFER RENDER JALUR CEPAT ═══
         # Kalau jalur alpha SDL sudah terbukti menang (fastblit.AKTIF,
@@ -276,6 +389,10 @@ def create_display(vsync=True, mode=None):
             if fastblit.AKTIF and fastblit.tersedia():
                 render = fastblit.buat_buffer(LOGICAL_WIDTH, LOGICAL_HEIGHT,
                                               surface.get_masks()[:3] + (0,))
+                # Buffer RAM menggantikan subsurface: area main
+                # kembali ke koordinat 0,0 dan panel samping tidak
+                # dipakai pada jalur ini.
+                _display_state["game_offset"] = (0, 0)
                 print("[DISPLAY] buffer render jalur cepat AKTIF "
                       "(alpha lewat blitter SDL)")
         except Exception as exc:
@@ -283,6 +400,11 @@ def create_display(vsync=True, mode=None):
 
     _display_state["mode"] = mode
     _display_state["render"] = render
+    # True hanya kalau render adalah buffer RAM terpisah yang harus
+    # disalin ke layar oleh present(). Subsurface TIDAK termasuk.
+    _display_state["render_is_buffer"] = (
+        mode != "native" and render is not surface
+        and _display_state.get("game_offset", (0, 0)) == (0, 0))
     _refresh_display_metrics(surface)
 
     if IS_ANDROID:
@@ -316,6 +438,15 @@ def get_render_surface():
     return _display_state["render"]
 
 
+def get_full_surface():
+    """Permukaan display seutuhnya (termasuk panel samping)."""
+    return _display_state.get("full") or _display_state["render"]
+
+
+def get_game_offset():
+    return _display_state.get("game_offset", (0, 0))
+
+
 def get_mode():
     return _display_state["mode"]
 
@@ -337,12 +468,18 @@ def present():
             dst.fill((0, 0, 0))
         pygame.transform.scale(src, (tw, th), buf)
         dst.blit(buf, (int(off[0]), int(off[1])))
-    else:
-        # Mode scaled_* dengan buffer render terpisah (jalur cepat):
-        # salin 1:1 ke permukaan layar, SDL yang menskalakan saat flip.
+    elif _display_state.get("render_is_buffer"):
+        # Mode scaled_* dengan buffer render TERPISAH di RAM
+        # (dipakai jalur cepat alpha): salin 1:1 ke permukaan layar,
+        # SDL yang menskalakan saat flip.
+        #
+        # PENTING: syaratnya harus penanda eksplisit, bukan
+        # `src is not dst`. Saat panel samping aktif, render adalah
+        # SUBSURFACE dari layar - menyalinnya ke induknya sendiri
+        # memicu "Surfaces must not be locked during blit".
         src = _display_state["render"]
         dst = _display_state["surface"]
-        if src is not dst and dst is not None:
+        if src is not None and dst is not None and src is not dst:
             dst.blit(src, (0, 0))
     pygame.display.flip()
 
@@ -356,7 +493,13 @@ def pointer_to_logical(pos):
     """
     if _display_state["mode"] == "native":
         return window_to_logical(pos[0], pos[1])
-    return (float(pos[0]), float(pos[1]))
+    # Mode scaled_*: SDL sudah menerjemahkan ke koordinat permukaan
+    # display. Kalau permukaan itu lebih lebar dari area main (panel
+    # samping aktif), offset area main harus dikurangi supaya
+    # koordinatnya kembali ke ruang 1280x720 yang dipakai seluruh
+    # kode game dan tombol HUD.
+    ox, oy = _display_state.get("game_offset", (0, 0))
+    return (float(pos[0]) - ox, float(pos[1]) - oy)
 
 
 def window_to_logical(x, y):

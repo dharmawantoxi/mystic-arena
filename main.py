@@ -42,6 +42,7 @@ from mobile import hud as hud_mod                  # noqa: E402
 from mobile import debug as debug_mod              # noqa: E402
 from mobile import diagnostics as diag_mod         # noqa: E402
 from mobile import bootcheck as bootcheck_mod      # noqa: E402
+from mobile import combat_audio as audio_mod       # noqa: E402
 
 debug_mod.install_crash_handler()
 
@@ -172,6 +173,13 @@ def main():
     except Exception as exc:
         print("[DISPLAY] gagal memasang pelacak: %s" % exc)
 
+    # Suara tempur dimuat SETELAH layar siap supaya tidak menambah
+    # waktu tampil splash. Gagal memuat tidak menghentikan game.
+    try:
+        audio_mod.init()
+    except Exception as exc:
+        print("[AUDIO] init gagal: %s" % exc)
+
     menu = Menu(screen)
     menu.controller_mgr = None          # tidak ada controller di HP
     splash = SplashScreen(screen)
@@ -222,6 +230,7 @@ def main():
         # ─────────────────────────────── EVENT
         frame_timer.start("event")
         perf.new_frame_budget()      # jatah konversi sprite frame ini
+        audio_mod.new_frame()        # jatah suara tempur frame ini
         touch.update()
         ctx = {"game": game, "menu": menu, "debug": debug,
                "request_pause": False}
