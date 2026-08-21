@@ -3413,10 +3413,15 @@ class Menu:
         pygame.draw.circle(bg, (255, 255, 255), (x, y - 2), 2)
     def _draw_pause_background(self):
         """Dark overlay untuk pause menu (game masih visible di background)"""
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT),
-                                 pygame.SRCALPHA)
-        overlay.fill((10, 10, 20, 200))
-        self.screen.blit(overlay, (0, 0))
+        # Alokasi + blit alpha layar penuh = ~244 ms/frame di HP.
+        from mobile.perf import Quality as _Qp, darken
+        if _Qp.cheap_alpha:
+            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT),
+                                     pygame.SRCALPHA)
+            overlay.fill((10, 10, 20, 200))
+            self.screen.blit(overlay, (0, 0))
+        else:
+            darken(self.screen, 200)
 
     # ═══════════════════════════════════════
     # MAIN MENU

@@ -181,38 +181,61 @@ class SplashScreen:
         if a <= 0.001:
             return
 
-        # ── Background: gradient gelap ──
-        bg = pygame.Surface((self.w, self.h))
-        top = (8, 8, 18)
-        mid = (22, 16, 38)
-        bot = (6, 6, 14)
-        step_h = max(1, self.h // 48)
-        for i in range(0, self.h, step_h):
-            f = i / self.h
-            if f < 0.55:
-                f2 = f / 0.55
-                c = [int(top[j] + (mid[j] - top[j]) * f2) for j in range(3)]
-            else:
-                f2 = (f - 0.55) / 0.45
-                c = [int(mid[j] + (bot[j] - mid[j]) * f2) for j in range(3)]
-            pygame.draw.rect(bg, tuple(c), (0, i, self.w, step_h))
+        # ══════════════════════════════════════════════════
+        # LATAR SPLASH  (dulu penyebab utama splash lambat)
+        #
+        # Versi lama, SETIAP FRAME:
+        #   - alokasi 2 surface layar penuh   (2 x 6,3 ms di HP)
+        #   - 48 batang gradien + 70 persegi ber-alpha untuk vignette
+        #   - satu blit ber-alpha layar penuh bg.blit(vig)  = 237 ms
+        # Total ratusan ms hanya untuk latar yang TIDAK PERNAH berubah.
+        # (Luput dari pelacak alpha-blit karena blitnya ke surface
+        #  perantara, bukan ke layar.)
+        #
+        # Sekarang: gradien + vignette dipanggang SEKALI ke satu
+        # surface opaque; per frame cukup satu blit cepat, partikel
+        # digambar langsung di atasnya.
+        # ══════════════════════════════════════════════════
+        bg = getattr(self, "_bg_cache", None)
+        if bg is None or bg.get_size() != (self.w, self.h):
+            bg = pygame.Surface((self.w, self.h))
+            top = (8, 8, 18)
+            mid = (22, 16, 38)
+            bot = (6, 6, 14)
+            step_h = max(1, self.h // 48)
+            for i in range(0, self.h, step_h):
+                f = i / self.h
+                if f < 0.55:
+                    f2 = f / 0.55
+                    c = [int(top[j] + (mid[j] - top[j]) * f2)
+                         for j in range(3)]
+                else:
+                    f2 = (f - 0.55) / 0.45
+                    c = [int(mid[j] + (bot[j] - mid[j]) * f2)
+                         for j in range(3)]
+                pygame.draw.rect(bg, tuple(c), (0, i, self.w, step_h))
 
-        # ── Partikel latar ──
+            vig = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+            for i in range(140, 0, -2):
+                alpha = min(255, int(2.2 * (140 - i)))
+                pygame.draw.rect(vig, (0, 0, 0, alpha),
+                                 (i, i, self.w - 2 * i, self.h - 2 * i))
+            bg.blit(vig, (0, 0))
+            try:
+                bg = bg.convert()
+            except Exception:
+                pass
+            self._bg_cache = bg
+
+        surf.blit(bg, (0, 0))
+
+        # ── Partikel latar (langsung ke layar, bukan ke surface baru) ──
         for p in self.particles:
             tw = 0.5 + 0.5 * math.sin(self.elapsed * 2.5 + p["phase"])
             col = tuple(int(ch * (0.35 + 0.65 * tw)) for ch in p["color"])
-            pygame.draw.circle(bg, col,
-                               (int(p["x"]), int(p["y"])), max(1, int(p["r"])))
-
-        # ── Vignette ──
-        vig = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
-        for i in range(140, 0, -2):
-            alpha = min(255, int(2.2 * (140 - i)))
-            pygame.draw.rect(vig, (0, 0, 0, alpha),
-                             (i, i, self.w - 2 * i, self.h - 2 * i))
-        bg.blit(vig, (0, 0))
-
-        surf.blit(bg, (0, 0))
+            pygame.draw.circle(surf, col,
+                               (int(p["x"]), int(p["y"])),
+                               max(1, int(p["r"])))
 
         # ── Konten utama ──
         cx = self.w // 2
@@ -242,12 +265,23 @@ class SplashScreen:
                         320.0 / img.get_height(), 1.0)
             w = max(1, int(img.get_width() * scale))
             h = max(1, int(img.get_height() * scale))
-            img2 = pygame.transform.smoothscale(img, (w, h))
-            # Scale-in saat muncul + glow
+            # smoothscale tidak punya jalur SIMD di ARM -> di-cache.
+            cache = getattr(self, "_logo_cache", None)
+            if cache is None:
+                cache = self._logo_cache = {}
+            img2 = cache.get(("base", w, h))
+            if img2 is None:
+                img2 = pygame.transform.smoothscale(img, (w, h))
+                cache[("base", w, h)] = img2
             grow = min(1.0, self.elapsed / 0.9)
-            ww = max(1, int(w * (0.85 + 0.15 * grow)))
-            hh = max(1, int(h * (0.85 + 0.15 * grow)))
-            img3 = pygame.transform.smoothscale(img2, (ww, hh))
+            # kuantisasi 5% supaya animasi tumbuh hanya perlu 4 ukuran
+            gq = round((0.85 + 0.15 * grow) * 20) / 20.0
+            ww = max(1, int(w * gq))
+            hh = max(1, int(h * gq))
+            img3 = cache.get(("grow", ww, hh))
+            if img3 is None:
+                img3 = pygame.transform.smoothscale(img2, (ww, hh))
+                cache[("grow", ww, hh)] = img3
             img3.set_alpha(ta)
             rect = img3.get_rect(center=(cx, base_y))
             # glow lembut di belakang logo
