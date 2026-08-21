@@ -120,6 +120,7 @@ def _handle_background(sound_mgr):
 
 
 def main():
+    global screen
     # ═══ SUARA ═══
     from sound_manager import SoundManager
     sound_mgr = SoundManager()
@@ -144,6 +145,18 @@ def main():
         touch.cancel()
     else:
         diag_mod.run_all(screen)
+
+    # Benchmark baru saja menentukan Quality.cheap_alpha. Buffer render
+    # dibuat SEBELUM itu, jadi pelacak alpha-blit belum sempat dipasang.
+    # Buat ulang sekarang supaya pelacaknya aktif di perangkat lambat.
+    try:
+        from mobile import blitwatch
+        if blitwatch.enabled() and not isinstance(
+                screen, blitwatch.WatchedSurface):
+            screen = plat.create_display(vsync=True)
+            print("[DISPLAY] buffer render dibuat ulang + pelacak aktif")
+    except Exception as exc:
+        print("[DISPLAY] gagal memasang pelacak: %s" % exc)
 
     menu = Menu(screen)
     menu.controller_mgr = None          # tidak ada controller di HP

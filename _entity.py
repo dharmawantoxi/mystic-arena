@@ -1389,19 +1389,47 @@ class Castle:
                                 ch - 20, palette)
             self._render_cache[cache_key] = castle_canvas
 
-        canvas = self._render_cache[cache_key].copy()
-
-        _render_dynamic_effects(canvas, self, palette)
-
-        # ═══ SCALE DOWN 15% ═══
         SCALE = 0.85  # Perkecil 15%
         new_w = int(cw * SCALE)
         new_h = int(ch * SCALE)
-        scaled = pygame.transform.smoothscale(canvas, (new_w, new_h))
+
+        try:
+            from mobile.perf import Quality as _Qc
+            _cheap = _Qc.cheap_alpha
+        except Exception:
+            _cheap = True
+
+        if _cheap:
+            # ── Jalur asli (PC): salin, efek dinamis, lalu skala ──
+            canvas = self._render_cache[cache_key].copy()
+            _render_dynamic_effects(canvas, self, palette)
+            scaled = pygame.transform.smoothscale(canvas, (new_w, new_h))
+        else:
+            # ── Jalur HP ──
+            # Dulu TIAP FRAME: copy 180x160 + efek + smoothscale.
+            # smoothscale tidak punya jalur SIMD di ARM sehingga
+            # memakan belasan ms; dua kastil saja = 47 ms/frame
+            # padahal tidak ada unit lain di layar.
+            # Sekarang hasil skala di-cache per (tim, level).
+            skey = (self.team, lvl, new_w, new_h)
+            scaled = _CASTLE_SCALED_CACHE.get(skey)
+            if scaled is None:
+                scaled = pygame.transform.smoothscale(
+                    self._render_cache[cache_key], (new_w, new_h))
+                _CASTLE_SCALED_CACHE[skey] = scaled
 
         final_x = int(self.x - new_w // 2)
         final_y = int(self.y - new_h + 35)
         surface.blit(scaled, (final_x, final_y))
+
+        if not _cheap:
+            # Efek dinamis (obor lvl4+, aura lvl6) digambar langsung
+            # ke layar, bukan lewat canvas+skala.
+            try:
+                _render_dynamic_effects_direct(
+                    surface, self, palette, final_x, final_y, SCALE)
+            except Exception:
+                pass
 
         self._draw_hp_bar(surface)
 
@@ -2575,6 +2603,30 @@ def _draw_center_royal_tower(canvas, cx, cy, palette):
 # ═══════════════════════════════════════════════════════
 # DYNAMIC EFFECTS
 # ═══════════════════════════════════════════════════════
+
+_CASTLE_SCALED_CACHE = {}
+
+
+def _render_dynamic_effects_direct(surface, castle, palette,
+                                   off_x, off_y, scale):
+    """Efek dinamis kastil langsung ke layar (tanpa canvas + skala)."""
+    lvl = castle.level
+    if lvl < 4:
+        return
+    timer = castle.timer
+    cw, ch = 180, 160
+    cx = int(off_x + (cw // 2) * scale)
+    cy_base = int(off_y + (ch - 45) * scale)
+    if lvl >= 4:
+        _draw_gate_torch(surface, cx - int(16 * scale),
+                         cy_base - int(5 * scale), timer, palette)
+        _draw_gate_torch(surface, cx + int(16 * scale),
+                         cy_base - int(5 * scale), timer, palette,
+                         offset=5)
+    if lvl >= 6:
+        _draw_castle_magic_aura(surface, cx, cy_base - int(40 * scale),
+                                palette, timer)
+
 
 def _render_dynamic_effects(canvas, castle, palette):
     """Torches + magic aura per level"""
