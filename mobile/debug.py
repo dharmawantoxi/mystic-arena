@@ -128,8 +128,19 @@ class DebugOverlay:
             c = spritecache.stats()
             total = c["hit"] + c["miss"]
             if total:
-                bagian += ("   cache sprite hit %d%% (%d/%d)"
-                           % (100 * c["hit"] // total, c["hit"], total))
+                bagian += ("   minion %d%%" % (100 * c["hit"] // total))
+        except Exception:
+            pass
+        # Cache HERO adalah penentu terbesar: satu miss = render penuh
+        # + get_bounding_rect + smoothscale (~98 ms/hero saat v22).
+        try:
+            import heroes
+            h = heroes.hero_cache_stats()
+            tot = h.get("hits", 0) + h.get("misses", 0)
+            if tot:
+                bagian += ("   cache HERO hit %d%% (%d miss, %d entri)"
+                           % (100 * h["hits"] // tot, h["misses"],
+                              h.get("entries", 0)))
         except Exception:
             pass
         return bagian

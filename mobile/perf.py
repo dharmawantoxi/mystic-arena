@@ -74,7 +74,7 @@ class CachedFont(_ORIG_FONT_CLASS):
         surf = super().render(text, antialias, color, background)
         try:
             if pygame.display.get_init() and pygame.display.get_surface():
-                if Quality.cheap_alpha:
+                if not Quality.use_colorkey_sprites:
                     surf = surf.convert_alpha()
                 else:
                     # ══ PERUBAHAN TERBESAR UNTUK HP ══
@@ -501,6 +501,10 @@ class _Quality:
         # ditimpa oleh apply(); preset kualitas mengatur efek, bukan
         # kemampuan perangkat.
         self.cheap_alpha = True        # True = alpha blit murah (PC)
+        # Sprite colorkey membuat tepi jadi KERAS (mask ambang 127),
+        # jadi hanya dipakai kalau alpha benar-benar tak terjangkau.
+        # Begitu jalur cepat SDL aktif, tepi lembut dikembalikan.
+        self.use_colorkey_sprites = False
         self.max_alpha_px = 1_000_000
         self.colorkey_gain = 1.0       # colorkey vs alpha, hasil ukur
         self.sprite_cache = False      # cache sprite unit (colorkey)
@@ -587,6 +591,7 @@ def apply_device_profile(bench):
     # alpha blit bawaan pygame, seluruh gambar dialihkan ke sana.
     # Selisih warnanya 3/255 (uji tools/test_fastblit.py) - tidak
     # terlihat, dan gaya grafik sama sekali tidak berubah.
+    efektif = full           # biaya nyata satu layar penuh alpha, ms
     try:
         from mobile import fastblit
         a_layar = bench.get("alpha_COCOK_ke_layar") or full
@@ -594,24 +599,89 @@ def apply_device_profile(bench):
         if s2 and a_layar and s2 * 2.0 < a_layar:
             fastblit.aktifkan("%.0f ms -> %.0f ms untuk satu layar penuh "
                               "(%.0fx)" % (a_layar, s2, a_layar / s2))
-            # Alpha tidak mahal lagi -> efek transparan boleh hidup dan
-            # sprite tidak perlu dipaksa jadi colorkey.
-            Quality.cheap_alpha = True
-            Quality.max_alpha_px = 1_000_000
+            efektif = s2
         elif s2:
             print("[PERF] BLEND_ALPHA_SDL2 tidak membantu (%.1f vs %.1f ms)"
                   % (s2, a_layar))
     except Exception as exc:
         print("[PERF] gagal menilai jalur cepat: %s" % exc)
 
+    # ═══ KEPUTUSAN MODE HEMAT (KOREKSI v23) ═══
+    # v22 menyalakan seluruh efek begitu jalur cepat aktif. Itu SALAH
+    # dan terukur di perangkat:
+    #
+    #     v21 hemat:ON   e.hero   2 ms (1 hero)
+    #     v22 hemat:off  e.hero 294 ms (3 hero) = 98 ms per hero
+    #
+    # Penyebabnya bukan efeknya saja. `cheap_alpha` juga mengatur
+    # kuantisasi kunci cache sprite hero (heroes/__init__.py:
+    # `_q = 1 if cheap_alpha else 2`). Menyalakannya membuat jumlah
+    # kunci berlipat, cache hero meleset terus, dan setiap meleset
+    # berarti render penuh + get_bounding_rect + smoothscale.
+    #
+    # Jadi ambangnya sekarang berdasar ANGGARAN FRAME, bukan tebakan:
+    # satu overlay layar penuh tidak boleh melebihi 5 ms (15% dari
+    # frame 33 ms @30 FPS). Di HP uji jalur cepat memberi 14,9 ms -
+    # jauh lebih baik dari 203 ms, tapi masih terlalu mahal untuk
+    # menyalakan semua efek. Mode hemat tetap ON.
+    ANGGARAN_OVERLAY_MS = 5.0
+    Quality.cheap_alpha = efektif <= ANGGARAN_OVERLAY_MS
+    ns_efektif = efektif * 1e6 / px
+    Quality.max_alpha_px = max(20000, int(8.0 / (ns_efektif / 1e6)))
+    print("[PERF] biaya alpha efektif %.1f ms/layar (%.0f ns/piksel) "
+          "-> mode hemat %s, anggaran %d piksel alpha/frame"
+          % (efektif, ns_efektif,
+             "MATI" if Quality.cheap_alpha else "AKTIF",
+             Quality.max_alpha_px))
+
+    # ═══ TEPI LEMBUT DIKEMBALIKAN ═══
+    # Konversi colorkey memakai mask ambang 127: piksel setengah
+    # transparan dipaksa jadi penuh atau hilang, sehingga tepi sprite
+    # dan teks menjadi bergerigi. Itu harga yang dulu terpaksa dibayar
+    # karena alpha 257 ns/piksel.
+    #
+    # Dengan jalur cepat 16 ns/piksel, satu sprite hero 120x160
+    # hanya 0,3 ms. Menghemat 0,29 ms per hero tidak sebanding dengan
+    # merusak tepi gambar - apalagi grafik asli adalah prioritas.
+    try:
+        from mobile import fastblit
+        _cepat = fastblit.AKTIF
+    except Exception:
+        _cepat = False
+    Quality.use_colorkey_sprites = (not Quality.cheap_alpha) and not _cepat
+    print("[PERF] sprite colorkey (tepi keras): %s"
+          % ("DIPAKAI" if Quality.use_colorkey_sprites
+             else "tidak - tepi lembut dipertahankan"))
+
     # Seberapa untung memakai sprite colorkey di perangkat ini?
     # (dihitung SETELAH apply() supaya tidak tertimpa)
-    a = bench.get("100x_blit_kecil")
+    # Untung-rugi colorkey dihitung terhadap biaya alpha EFEKTIF
+    # (yaitu lewat jalur cepat kalau aktif), bukan terhadap alpha
+    # lama yang sudah tidak dipakai.
+    a = bench.get("100x_kecil_SDL2alpha") or bench.get("100x_blit_kecil")
     ck = bench.get("100x_blit_kecil_colorkey")
     if a and ck and ck > 0:
         Quality.colorkey_gain = a / ck
         Quality.sprite_cache = (Quality.colorkey_gain >= 4.0
                                 and not Quality.cheap_alpha)
+
+        # ═══ CACHE MINION: MATIKAN KALAU JALUR CEPAT AKTIF ═══
+        # Terukur di perangkat, bukan diperkirakan:
+        #     v21 cache minion ON : e.minion 54 ms / 14 unit = 3,9 ms
+        #     v22 cache minion off: e.minion  5 ms / 40 unit = 0,13 ms
+        # Renderer minion memang sudah murah; alokasi surface + blit
+        # tambahan dari cache justru lebih mahal daripada menggambar
+        # ulang. Cache hero TETAP hidup (dikelola heroes/__init__.py)
+        # karena di sana untungnya terbalik: 98 ms -> 2 ms per hero.
+        try:
+            from mobile import fastblit
+            if fastblit.AKTIF:
+                Quality.sprite_cache = False
+                print("[PERF] cache sprite MINION dimatikan - terukur "
+                      "lebih cepat tanpa cache saat jalur cepat aktif "
+                      "(0,13 vs 3,9 ms per unit)")
+        except Exception:
+            pass
         print("[PERF] blit kecil: alpha %.2f ms vs colorkey %.2f ms "
               "(%.1fx) -> cache sprite unit %s"
               % (a, ck, Quality.colorkey_gain,
