@@ -133,6 +133,10 @@ def main():
 
     touch = touch_mod.TouchManager()
     hud = hud_mod.TouchHUD(get_font)
+    # Tombol FPS: TAMPIL selama masih menyetel performa.
+    # Untuk rilis Play Store, ganti baris ini jadi:
+    #     hud.show_debug_button = False
+    hud.show_debug_button = os.environ.get("MYSTIC_DEBUG") != "0"
     debug = debug_mod.DebugOverlay(get_font, frame_timer)
 
     # ═══ LAYAR DIAGNOSTIK (Android / MYSTIC_BOOTCHECK=1) ═══
@@ -199,9 +203,10 @@ def main():
     # kematian" saat ada hentakan panjang (mis. GC atau loading).
     # ═══════════════════════════════════════════════════════
     FIXED_DT_MS = 1000.0 / 60.0
-    MAX_CATCHUP = 6
+    MAX_CATCHUP = 8          # 8 langkah = frame 133 ms masih terkejar
     sim_acc = 0.0
     sim_steps = 0
+    sim_capped = 0           # berapa kali mentok (waktu game tertinggal)
 
     while running:
         # ─────────────────────────────── EVENT
@@ -322,8 +327,14 @@ def main():
                 sim_acc -= FIXED_DT_MS
                 sim_steps += 1
             if sim_steps >= MAX_CATCHUP:
-                sim_acc = 0.0          # terlalu jauh tertinggal
-            debug.extra["sim"] = "%dx/frame" % sim_steps
+                # Mentok: frame ini lebih lambat dari 8 langkah.
+                # Sisa akumulator TIDAK dibuang total (itu bikin waktu
+                # game melompat/tersendat); disisakan setengah supaya
+                # kejaran berlanjut halus di frame berikutnya.
+                sim_acc = min(sim_acc * 0.5, FIXED_DT_MS * 3)
+                sim_capped += 1
+            debug.extra["sim"] = "%dx/frame  mentok %d" % (sim_steps,
+                                                           sim_capped)
 
             frame_timer.start("draw")
             game.draw()

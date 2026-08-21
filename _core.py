@@ -1874,7 +1874,12 @@ class Game:
         # ═══ WORLD LAYER (kena shake) ═══
         from mobile.perf import PHASES as _PH
         _PH.mark("bg.fill")
-        draw_target.fill(GRASS_DARK)
+        # Peta statis menutupi SELURUH layar, jadi fill ini tidak
+        # pernah terlihat - murni 3 ms/frame terbuang di HP.
+        # Tetap dijalankan sekali di awal untuk jaga-jaga.
+        if getattr(self, "_bg_filled_once", 0) < 3:
+            draw_target.fill(GRASS_DARK)
+            self._bg_filled_once = getattr(self, "_bg_filled_once", 0) + 1
         _PH.mark("map")
         self.map_renderer.draw(draw_target, self.animation_time)
 
