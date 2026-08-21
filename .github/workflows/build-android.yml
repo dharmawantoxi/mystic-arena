@@ -99,9 +99,15 @@ jobs:
       # pygame-ce versi lama yang sudah terbongkar akan dipakai ulang
       # oleh p4a ("is already unpacked, skipping") dan error yang sama
       # terulang walau resepnya sudah diperbaiki.
-      - name: Cache SDK/NDK & build p4a
+      # Pulih dan simpan DIPISAH. Sebelumnya keduanya satu langkah
+      # dengan `if: !clean_cache`, sehingga build "bersihkan cache"
+      # tidak menyimpan apa pun - dan build berikutnya justru memulihkan
+      # cache yang jauh lebih tua. Itu membuat hasil build v20 yang
+      # benar tidak pernah terwariskan.
+      - name: Pulihkan cache SDK/NDK & build p4a
+        id: cache_restore
         if: ${{ !inputs.clean_cache }}
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.buildozer
@@ -152,23 +158,44 @@ jobs:
       # Biaya: ±6-8 menit per build. Jauh lebih murah daripada satu
       # putaran uji yang menyesatkan.
       # ═══════════════════════════════════════════════════════
-      - name: Paksa pygame-ce dikompilasi ulang
+      # ═══ PENYEBAB SEBENARNYA: DIST YANG DI-CACHE ═══
+      # python-for-android TIDAK menjalankan resep apa pun kalau "dist"
+      # (hasil rakitan akhir) sudah ada. Ia hanya mengemas ulang kode
+      # Python ke dalam dist lama itu.
+      #
+      # Itulah kenapa selama lima build:
+      #   - BUILD_ID di layar SELALU berubah   (kode Python dikemas ulang)
+      #   - angka pygame TIDAK PERNAH berubah  (pygame dari dist lama)
+      #   - log tidak memuat satu pun keluaran resep
+      #
+      # Menghapus folder sumber & site-packages pygame tidak cukup,
+      # karena p4a bahkan tidak sampai memeriksanya. Yang harus dihapus
+      # adalah DIST-nya.
+      - name: Paksa p4a merakit ulang (hapus dist + pygame)
+        shell: bash
         run: |
           B=.buildozer/android/platform
+          echo "--- dist yang ada sebelum dibersihkan ---"
+          ls -d $B/build-*/dists/* 2>/dev/null || echo "(tidak ada)"
+
+          # 1. DIST - tanpa ini, semua langkah di bawah percuma
+          rm -rf $B/build-*/dists || true
+
+          # 2. pygame: sumber, paket unduhan, dan hasil pasang
           rm -rf $B/build-*/other_builds/pygame-ce* || true
           rm -rf $B/build-*/packages/pygame-ce* || true
-          # ← INI yang dulu terlewat: hasil pasang di site-packages
-          # sapu MENYELURUH: folder/berkas pygame di mana pun dalam cache
           find .buildozer ~/.buildozer -maxdepth 12 \
                \( -name 'pygame' -o -name 'pygame_ce*' \
                   -o -name 'pygame-*.dist-info' -o -name 'pygame-*.egg-info' \) \
                -not -path '*/p4a-recipes/*' -prune -exec rm -rf {} + 2>/dev/null || true
-          # python3/hostpython3: versinya pernah berubah 3.14 -> 3.11
-          rm -rf $B/build-*/other_builds/python3* || true
-          rm -rf $B/build-*/other_builds/hostpython3* || true
-          echo "sisa pygame-ce (sumber + site-packages) dan python3 lama dibersihkan"
-          echo "--- isi site-packages setelah dibersihkan ---"
-          ls $B/build-*/python-installs/*/*/site-packages/ 2>/dev/null | head -40 || true
+
+          # CATATAN: python3/hostpython3 SENGAJA TIDAK dihapus lagi.
+          # Dulu perlu karena versinya berubah 3.14 -> 3.11; sekarang
+          # versinya dikunci lewat env dan ikut dalam kunci cache.
+          # Membangun ulang Python memakan ~15 menit tanpa manfaat.
+
+          echo "--- dist setelah dibersihkan ---"
+          ls -d $B/build-*/dists/* 2>/dev/null || echo "(kosong - p4a akan merakit ulang)"
 
       # ─────────────── DEBUG (APK) ───────────────
       - name: Build APK debug
@@ -199,7 +226,17 @@ jobs:
             | tee -a $GITHUB_STEP_SUMMARY || true
           echo '```' >> $GITHUB_STEP_SUMMARY
           if ! grep -q "PENANDA dipasang" build.log; then
-            echo "::error::pygame TIDAK dikompilasi ulang - APK ini akan berisi pygame lama dari cache. Build digagalkan supaya tidak menghasilkan pengukuran palsu."
+            echo "════════ DIAGNOSA: kenapa resep tidak jalan ════════"
+            echo "-- apakah p4a membangun pygame sama sekali? --"
+            grep -m3 "Building pygame-ce\|pygame-ce.*already built" build.log \
+              || echo "TIDAK ADA baris 'Building pygame-ce' -> p4a memakai dist lama"
+            echo "-- apakah p4a memakai dist yang sudah ada? --"
+            grep -m3 -i "dist.*already\|already exists\|Didn.t need to" build.log \
+              || echo "(tidak ada petunjuk dist)"
+            echo "-- keluaran resep yang sempat muncul --"
+            grep -m5 "\[pygame-ce\]" build.log || echo "(tidak ada sama sekali)"
+            echo "═══════════════════════════════════════════════════"
+            echo "::error::pygame TIDAK dikompilasi ulang. APK ini akan berisi pygame lama, jadi build sengaja digagalkan daripada menghasilkan pengukuran palsu. Lihat blok DIAGNOSA di atas."
             exit 1
           fi
           echo "OK: pygame dikompilasi ulang oleh resep."
@@ -240,6 +277,19 @@ jobs:
         with:
           files: bin/*.aab
           generate_release_notes: true
+
+      # Selalu disimpan, termasuk pada build "bersihkan cache", supaya
+      # hasil build yang benar diwariskan ke build berikutnya.
+      # run_id dipakai agar kunci selalu unik; restore-keys di atas
+      # mengambil yang terbaru berdasarkan awalan.
+      - name: Simpan cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: buildozer-v3-py311-${{ runner.os }}-${{ hashFiles('buildozer.spec', 'p4a-recipes/**') }}-${{ github.run_id }}
 
       - name: Ringkasan
         if: always()
