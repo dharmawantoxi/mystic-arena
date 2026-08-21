@@ -182,6 +182,27 @@ def main():
     splash_last = pygame.time.get_ticks()
     running = True
 
+    # ═══════════════════════════════════════════════════════
+    # LANGKAH SIMULASI TETAP (fixed timestep)
+    #
+    # Logika game ini berbasis FRAME: sekali update() = satu langkah
+    # yang dirancang untuk 60 langkah/detik. Kalau render hanya
+    # sanggup 17 FPS, dulu update juga cuma 17x/detik sehingga
+    # SEMUANYA bergerak 28% kecepatan -> terasa "slow motion",
+    # bukan sekadar patah-patah.
+    #
+    # Sekarang waktu nyata diakumulasi dan update() dijalankan
+    # sebanyak yang diperlukan untuk mengejar. update() hanya
+    # 0,5 ms (render 52 ms), jadi mengejar 3-4 langkah nyaris gratis.
+    #
+    # MAX_CATCHUP membatasi kejaran supaya tidak terjadi "spiral
+    # kematian" saat ada hentakan panjang (mis. GC atau loading).
+    # ═══════════════════════════════════════════════════════
+    FIXED_DT_MS = 1000.0 / 60.0
+    MAX_CATCHUP = 6
+    sim_acc = 0.0
+    sim_steps = 0
+
     while running:
         # ─────────────────────────────── EVENT
         frame_timer.start("event")
@@ -270,7 +291,14 @@ def main():
                 current_state = STATE_MENU
 
         elif current_state == STATE_MENU:
-            menu.update()
+            sim_acc += min(clock.get_time(), 250)
+            _n = 0
+            while sim_acc >= FIXED_DT_MS and _n < MAX_CATCHUP:
+                menu.update()
+                sim_acc -= FIXED_DT_MS
+                _n += 1
+            if _n == 0:
+                pass
             frame_timer.start("draw")
             menu.draw()
 
@@ -286,7 +314,17 @@ def main():
                 running = False
 
         elif current_state == STATE_GAME:
-            game.update()
+            # Kejar waktu nyata: 1 langkah = 1/60 detik
+            sim_acc += min(clock.get_time(), 250)   # buang hentakan
+            sim_steps = 0
+            while sim_acc >= FIXED_DT_MS and sim_steps < MAX_CATCHUP:
+                game.update()
+                sim_acc -= FIXED_DT_MS
+                sim_steps += 1
+            if sim_steps >= MAX_CATCHUP:
+                sim_acc = 0.0          # terlalu jauh tertinggal
+            debug.extra["sim"] = "%dx/frame" % sim_steps
+
             frame_timer.start("draw")
             game.draw()
             perf.PHASES.mark("hud")
@@ -324,7 +362,12 @@ def main():
             frame_timer.start("draw")
             if game:
                 game.draw()
-            menu.update()
+            sim_acc += min(clock.get_time(), 250)
+            _n = 0
+            while sim_acc >= FIXED_DT_MS and _n < MAX_CATCHUP:
+                menu.update()
+                sim_acc -= FIXED_DT_MS
+                _n += 1
             menu.draw()
 
             if menu.action == "resume":

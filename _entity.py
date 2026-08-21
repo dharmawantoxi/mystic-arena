@@ -975,6 +975,22 @@ class Tower:
         alpha_b = base_alpha // 15
         ratio_b = 0 if shield_ratio <= 0.3 else (1 if shield_ratio <= 0.5
                                                  else 2)
+        # Gelembung perisai transparan: 5 tower = 6 ms/frame di HP.
+        # Colorkey tidak cocok (efeknya memang harus tembus pandang),
+        # jadi di perangkat lambat digambar sebagai 2 lingkaran garis.
+        try:
+            from mobile.perf import Quality as _Qs
+            _cheap_s = _Qs.cheap_alpha
+        except Exception:
+            _cheap_s = True
+        if not _cheap_s:
+            col = (120, 200, 255) if self.team == "blue" else (255, 160, 140)
+            pygame.draw.circle(surface, col, (x, bubble_cy), bubble_r, 2)
+            if shield_ratio > 0.5:
+                pygame.draw.circle(surface, col, (x, bubble_cy),
+                                   bubble_r + 3, 1)
+            return
+
         key = ("tower_shield", bubble_r, self.team, alpha_b, ratio_b)
         bubble_surf = _TOWER_SPRITE_CACHE.get(key)
         if bubble_surf is None:
