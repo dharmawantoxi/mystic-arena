@@ -212,13 +212,13 @@ def run(screen, get_font, touch):
             groups = diag.RESULTS.get("groups") or bc.GROUPS
             for judul, keys in groups:
                 screen.blit(f_small.render(judul, True, ACCENT), (575, yb2))
-                yb2 += 18
+                yb2 += 17
                 for k in keys:
                     v = bench.get(k)
                     if v is None:
                         screen.blit(f_small.render("  %-24s GAGAL" % k,
                                                    True, BAD), (583, yb2))
-                        yb2 += 17
+                        yb2 += 16
                         continue
                     nsp = bc.ns_per_px(bench, k)
                     if nsp is None:
@@ -230,7 +230,7 @@ def run(screen, get_font, touch):
                         teks = "  %-24s %7.2f ms %7.1f ns/px" % (k, v, nsp)
                     screen.blit(f_small.render(teks, True, warna),
                                 (583, yb2))
-                    yb2 += 17
+                    yb2 += 16
         except Exception as exc:
             screen.blit(f_small.render("gagal menampilkan: %s" % exc,
                                        True, BAD), (583, yb2))
@@ -281,23 +281,27 @@ def run(screen, get_font, touch):
                                  (pos[0], pos[1] - 10), (pos[0], pos[1] + 10))
 
         # ── kesimpulan ──
-        yv = max(500, yb + 96)
+        # Ditaruh di KOLOM KIRI (bukan melintang penuh) karena kolom
+        # kanan sekarang berisi 5 grup pengukuran dan tumbuh sampai
+        # sekitar y=600. Melintang penuh membuat keduanya bertabrakan.
+        yv = yb + 76
         screen.blit(f_head.render("KESIMPULAN", True, FG), (36, yv))
         yv += 24
         pairs = diag.RESULTS.get("verdict_pairs")
         if not pairs:
             pairs = [("WARN", v) for v in verdict]
         warna_map = {"OK": OK, "WARN": WARN, "BAD": BAD}
-        for lv, line in pairs[:7]:
-            for chunk in _wrap(line, 150):
+        batas_y = H - 96
+        for lv, line in pairs:
+            if yv > batas_y:
+                break
+            for chunk in _wrap(line, 68):
+                if yv > batas_y:
+                    break
                 screen.blit(f_small.render(chunk, True,
                                            warna_map.get(lv, WARN)),
                             (48, yv))
-                yv += 16
-                if yv > H - 110:
-                    break
-            if yv > H - 110:
-                break
+                yv += 15
 
         # ── tombol ──
         for b in buttons:

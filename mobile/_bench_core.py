@@ -238,6 +238,29 @@ def run(screen):
     g3.append("100x_kecil_alpha")
     GROUPS.append(("[PYG] jalur ALPHA BLIT - tersangka utama", g3))
 
+    # ═══ JALUR CEPAT: alpha lewat blitter SDL ═══
+    # BLEND_ALPHA_SDL2 membuang alphablit.c milik pygame dan memakai
+    # SDL_BlitSurface - blitter yang sama yang sudah terbukti 1,0
+    # ns/piksel untuk salinan opaque di perangkat ini.
+    g5 = []
+    A2 = getattr(pygame, "BLEND_ALPHA_SDL2", 0)
+    if A2:
+        bench(res, "SDL2alpha_ke_layar",
+              lambda: scr.blit(s["a_cocok"], (0, 0), None, A2), PX)
+        g5.append("SDL2alpha_ke_layar")
+        bench(res, "SDL2alpha_ke_RAM",
+              lambda: ram_o.blit(s["a_cocok"], (0, 0), None, A2), PX)
+        g5.append("SDL2alpha_ke_RAM")
+
+        def _small_sdl2():
+            for i in range(100):
+                scr.blit(s["k_alpha"], (i * 3 % 900, i * 5 % 500), None, A2)
+
+        bench(res, "100x_kecil_SDL2alpha", _small_sdl2, KPX)
+        g5.append("100x_kecil_SDL2alpha")
+        GROUPS.append(("[SDL] alpha lewat BLEND_ALPHA_SDL2 - jalur cepat",
+                       g5))
+
     # nama lama supaya apply_device_profile() tetap jalan
     res["blit_penuh_alpha"] = res.get("alpha_mentah_ke_layar")
     res["blit_alpha_mask_SAMA"] = res.get("alpha_COCOK_ke_layar")
@@ -367,6 +390,25 @@ def verdict(res):
                         "ns/piksel) -> biaya ada di kode blit-nya, bukan "
                         "di jenis memori tujuan."
                         % (alpha_ram, alpha_cocok)))
+
+    # ── penentu 3b: JALUR CEPAT BLEND_ALPHA_SDL2 ──
+    sdl2 = n("SDL2alpha_ke_layar")
+    sdl2k = n("100x_kecil_SDL2alpha")
+    alpha_k = n("100x_kecil_alpha")
+    if sdl2 and alpha_cocok:
+        if sdl2 * 2.0 < alpha_cocok:
+            out.append(("OK",
+                        "JALUR CEPAT BERHASIL: alpha lewat blitter SDL "
+                        "%.1f ns/piksel vs %.0f lewat pygame = %.0fx lebih "
+                        "cepat. Sprite kecil %.1f vs %.0f ns/piksel. "
+                        "Diaktifkan otomatis - grafik tetap sama."
+                        % (sdl2, alpha_cocok, alpha_cocok / sdl2,
+                           sdl2k or 0.0, alpha_k or 0.0)))
+        else:
+            out.append(("BAD",
+                        "JALUR CEPAT TIDAK MEMBANTU: BLEND_ALPHA_SDL2 "
+                        "%.0f ns/piksel vs alpha biasa %.0f."
+                        % (sdl2, alpha_cocok)))
 
     # ── penentu 4: premultiplied sebagai jalan pintas ──
     pre = n("alpha_PREMULTIPLIED")

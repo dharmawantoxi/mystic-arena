@@ -106,6 +106,43 @@ class DebugOverlay:
         return sum(seq) / len(seq) if seq else 0.0
 
     @staticmethod
+    def _fastblit_line():
+        """
+        Status jalur cepat alpha + cache sprite dalam satu baris.
+
+        Ini yang membedakan "perbaikannya tidak berhasil" dari
+        "perbaikannya tidak pernah menyala" - dua hal yang sudah
+        berkali-kali tertukar dalam proyek ini.
+        """
+        try:
+            from mobile import fastblit
+            bagian = ("jalur cepat alpha(SDL): %s"
+                      % ("ON" if fastblit.AKTIF else "off"))
+            st = fastblit.stats()
+            if st["sdl2"] or st["lewat"]:
+                bagian += " %d/%d" % (st["sdl2"], st["sdl2"] + st["lewat"])
+        except Exception:
+            bagian = "jalur cepat alpha: ?"
+        try:
+            from mobile import spritecache
+            c = spritecache.stats()
+            total = c["hit"] + c["miss"]
+            if total:
+                bagian += ("   cache sprite hit %d%% (%d/%d)"
+                           % (100 * c["hit"] // total, c["hit"], total))
+        except Exception:
+            pass
+        return bagian
+
+    @staticmethod
+    def _fastblit_color():
+        try:
+            from mobile import fastblit
+            return (120, 235, 140) if fastblit.AKTIF else (255, 205, 90)
+        except Exception:
+            return (200, 190, 140)
+
+    @staticmethod
     def _entity_counts(game):
         if game is None:
             return "-"
@@ -196,6 +233,7 @@ class DebugOverlay:
              % (perf.convert_stats(), perf.Quality.colorkey_gain and
                 "gain %.0fx" % perf.Quality.colorkey_gain or "-"),
              (200, 190, 140)),
+            (self._fastblit_line(), self._fastblit_color()),
             ("font new %d / reuse %d   text render %d / cache %d"
              % (fstats["font_created"], fstats["font_reused"],
                 fstats["text_rendered"], fstats["text_cached"]), TXT),

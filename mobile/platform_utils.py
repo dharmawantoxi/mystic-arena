@@ -265,6 +265,22 @@ def create_display(vsync=True, mode=None):
                 (LOGICAL_WIDTH, LOGICAL_HEIGHT), flags)
         render = surface
 
+        # ═══ BUFFER RENDER JALUR CEPAT ═══
+        # Kalau jalur alpha SDL sudah terbukti menang (fastblit.AKTIF,
+        # ditentukan oleh benchmark), game menggambar ke buffer RAM
+        # yang blit alpha-nya dialihkan ke blitter SDL, lalu buffer itu
+        # disalin sekali per frame ke layar. Biaya salinan terukur
+        # 0,95 ms; penghematannya puluhan milidetik.
+        try:
+            from mobile import fastblit
+            if fastblit.AKTIF and fastblit.tersedia():
+                render = fastblit.buat_buffer(LOGICAL_WIDTH, LOGICAL_HEIGHT,
+                                              surface.get_masks()[:3] + (0,))
+                print("[DISPLAY] buffer render jalur cepat AKTIF "
+                      "(alpha lewat blitter SDL)")
+        except Exception as exc:
+            print("[DISPLAY] buffer jalur cepat gagal: %s" % exc)
+
     _display_state["mode"] = mode
     _display_state["render"] = render
     _refresh_display_metrics(surface)
@@ -321,6 +337,13 @@ def present():
             dst.fill((0, 0, 0))
         pygame.transform.scale(src, (tw, th), buf)
         dst.blit(buf, (int(off[0]), int(off[1])))
+    else:
+        # Mode scaled_* dengan buffer render terpisah (jalur cepat):
+        # salin 1:1 ke permukaan layar, SDL yang menskalakan saat flip.
+        src = _display_state["render"]
+        dst = _display_state["surface"]
+        if src is not dst and dst is not None:
+            dst.blit(src, (0, 0))
     pygame.display.flip()
 
 

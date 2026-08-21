@@ -582,6 +582,28 @@ def apply_device_profile(bench):
         Quality.cheap_alpha = True
         Quality.max_alpha_px = 1_000_000
 
+    # ═══ JALUR CEPAT: alpha lewat blitter SDL ═══
+    # Kalau BLEND_ALPHA_SDL2 terbukti minimal 2x lebih cepat daripada
+    # alpha blit bawaan pygame, seluruh gambar dialihkan ke sana.
+    # Selisih warnanya 3/255 (uji tools/test_fastblit.py) - tidak
+    # terlihat, dan gaya grafik sama sekali tidak berubah.
+    try:
+        from mobile import fastblit
+        a_layar = bench.get("alpha_COCOK_ke_layar") or full
+        s2 = bench.get("SDL2alpha_ke_layar")
+        if s2 and a_layar and s2 * 2.0 < a_layar:
+            fastblit.aktifkan("%.0f ms -> %.0f ms untuk satu layar penuh "
+                              "(%.0fx)" % (a_layar, s2, a_layar / s2))
+            # Alpha tidak mahal lagi -> efek transparan boleh hidup dan
+            # sprite tidak perlu dipaksa jadi colorkey.
+            Quality.cheap_alpha = True
+            Quality.max_alpha_px = 1_000_000
+        elif s2:
+            print("[PERF] BLEND_ALPHA_SDL2 tidak membantu (%.1f vs %.1f ms)"
+                  % (s2, a_layar))
+    except Exception as exc:
+        print("[PERF] gagal menilai jalur cepat: %s" % exc)
+
     # Seberapa untung memakai sprite colorkey di perangkat ini?
     # (dihitung SETELAH apply() supaya tidak tertimpa)
     a = bench.get("100x_blit_kecil")
