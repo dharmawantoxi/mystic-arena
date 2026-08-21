@@ -754,9 +754,29 @@ def _canvas_size_for(hero):
 # Matikan kalau mau render langsung (debug).
 HERO_CACHE_ENABLED = True
 
-_hero_sprite_cache = {}
+# ═══ LRU, BUKAN FIFO (v26) ═══
+# Dulu dict biasa dan pembuangan memakai `pop(next(iter(...)))` =
+# FIFO. Menyimpan ulang kunci yang sudah ada TIDAK memindahkannya ke
+# belakang, jadi pose yang paling sering dipakai justru bisa terbuang
+# lebih dulu. Terukur di HP: hit rate 77% dengan 600 entri penuh.
+# OrderedDict + move_to_end memberi LRU sejati: ukuran cache sama,
+# hit rate naik, tanpa perubahan tampilan sama sekali.
+from collections import OrderedDict as _OD
+_hero_sprite_cache = _OD()
 _HERO_CACHE_MAX = 600
 _hero_cache_stats = {'hits': 0, 'misses': 0}
+
+
+def hero_cache_bytes():
+    """Perkiraan pemakaian memori cache sprite hero, dalam MB."""
+    total = 0
+    for entry in _hero_sprite_cache.values():
+        try:
+            surf = entry[0]
+            total += surf.get_width() * surf.get_height() * 4
+        except Exception:
+            pass
+    return total / (1024.0 * 1024.0)
 
 
 def hero_cache_stats():
@@ -952,6 +972,7 @@ def render_hero(hero_type, surface, hero, x, y):
             except Exception:
                 pass
         _hero_sprite_cache[key] = (sprite, ax, ay, uses + 1)
+        _hero_sprite_cache.move_to_end(key)      # LRU: tandai baru dipakai
 
         surface.blit(sprite, (int(x - ax), int(y - ay)))
     else:

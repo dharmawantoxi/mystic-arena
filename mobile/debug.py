@@ -146,6 +146,23 @@ class DebugOverlay:
         return bagian
 
     @staticmethod
+    def _memori_line():
+        """Rincian pemakaian memori - 491 MB terukur di HP uji."""
+        bagian = []
+        try:
+            import heroes
+            bagian.append("cache hero %.0fMB" % heroes.hero_cache_bytes())
+        except Exception:
+            pass
+        try:
+            from mobile import spritecache
+            bagian.append("cache unit %d entri"
+                          % spritecache.stats().get("entries", 0))
+        except Exception:
+            pass
+        return "memori: " + "  ".join(bagian) if bagian else "memori: -"
+
+    @staticmethod
     def _fastblit_color():
         try:
             from mobile import fastblit
@@ -221,11 +238,39 @@ class DebugOverlay:
                     surf.get_height() + 8)
         surface.blit(surf, (x + 2, y + 1))
 
+    # ═══ ALAT UKUR TIDAK BOLEH MENGGANGGU YANG DIUKUR ═══
+    # Terukur di HP: overlay ini sendiri memakan 14 ms dari 38 ms
+    # total draw - 36% dari yang sedang diukur.
+    #
+    # Penyebabnya bukan panel atau blit, melainkan TEKSNYA. Setiap
+    # baris memuat angka yang berubah tiap frame, jadi string-nya
+    # selalu baru dan cache teks selalu meleset -> 14 render font
+    # per frame.
+    #
+    # Isi baris cukup diperbarui 4x per detik. Selain jauh lebih
+    # murah, angkanya juga jadi terbaca (sebelumnya berkedip 23x
+    # per detik).
+    JEDA_SEGAR_MS = 250
+    _lines_cache = None
+    _lines_at = 0.0
+    _panel_buf = None
+    _panel_lines = None
+
     def _draw_full(self, surface, clock, game):
+        import time as _t
+        sekarang = _t.perf_counter() * 1000.0
+        if (self._lines_cache is None
+                or sekarang - self._lines_at >= self.JEDA_SEGAR_MS):
+            self._lines_cache = self._build_lines(clock, game)
+            self._lines_at = sekarang
+        lines = self._lines_cache
+        safe = plat.get_safe_area()
+        self._render_lines(surface, lines, safe)
+
+    def _build_lines(self, clock, game):
         fps = clock.get_fps()
         t = self.timer.report()
         fstats = perf.font_cache_stats()
-        safe = plat.get_safe_area()
 
         lines = [
             ("%3.0f FPS   frame %4.1f ms   peak %4.1f ms"
@@ -245,6 +290,7 @@ class DebugOverlay:
                 "gain %.0fx" % perf.Quality.colorkey_gain or "-"),
              (200, 190, 140)),
             (self._fastblit_line(), self._fastblit_color()),
+            (self._memori_line(), (190, 190, 220)),
             ("font new %d / reuse %d   text render %d / cache %d"
              % (fstats["font_created"], fstats["font_reused"],
                 fstats["text_rendered"], fstats["text_cached"]), TXT),
@@ -288,40 +334,35 @@ class DebugOverlay:
         for key, val in self.extra.items():
             lines.append(("%s: %s" % (key, val), (200, 190, 140)))
 
+        return lines
+
+    def _render_lines(self, surface, lines, safe):
+        """
+        SELALU lewat buffer opaque yang di-cache.
+
+        Versi lama hanya memakai buffer ini di perangkat lambat
+        (cheap_alpha False). Setelah NEON hidup, cheap_alpha jadi True
+        dan overlay kembali ke jalur naif: panel ber-alpha + 14 render
+        font setiap frame = 14 ms. Buffer ini murah di kedua kondisi,
+        jadi tidak ada alasan memisahkan jalurnya.
+        """
         font = self._get_font(16, "body")
-        w = max(font.size(s)[0] for s, _ in lines) + 18
+        w = max(font.size(t)[0] for t, _ in lines) + 18
         h = len(lines) * 19 + 12
         x, y = safe.left + 4, safe.top + 4
 
-        try:
-            from mobile.perf import Quality
-            cheap = Quality.cheap_alpha
-        except Exception:
-            cheap = True
-
-        if cheap:
-            self._panel(surface, x, y, w, h)
-            for i, (text, color) in enumerate(lines):
-                surface.blit(font.render(text, True, color),
-                             (x + 8, y + 6 + i * 19))
-            return
-
-        # ── Jalur HP ──
-        # 11 blit teks ber-alpha + 1 panel besar = ~60 ms/frame,
-        # cukup untuk mengaburkan angka yang sedang diukur.
-        # Semua digambar SEKALI ke surface opaque, lalu di-blit
-        # (jalur cepat), dan hanya dibangun ulang tiap 10 frame.
-        self._panel_age = getattr(self, "_panel_age", 99) + 1
         buf = getattr(self, "_panel_buf", None)
-        if buf is None or buf.get_size() != (w, h) or self._panel_age >= 10:
+        perlu = (buf is None or buf.get_size() != (w, h)
+                 or getattr(self, "_panel_lines", None) is not lines)
+        if perlu:
             if buf is None or buf.get_size() != (w, h):
                 buf = pygame.Surface((w, h)).convert()
                 self._panel_buf = buf
             buf.fill((8, 8, 14))
             pygame.draw.rect(buf, (90, 90, 120), buf.get_rect(), 1)
-            for i, (text, color) in enumerate(lines):
-                buf.blit(font.render(text, True, color), (8, 6 + i * 19))
-            self._panel_age = 0
+            for idx, (text, color) in enumerate(lines):
+                buf.blit(font.render(text, True, color), (8, 6 + idx * 19))
+            self._panel_lines = lines
         surface.blit(buf, (x, y))
 
     def _draw_graph(self, surface):

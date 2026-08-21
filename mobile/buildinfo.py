@@ -10,7 +10,7 @@
 import os
 
 # Naikkan setiap kali ada perubahan kode yang dikirim ke perangkat.
-BUILD_ID = "v25-binerpatch"
+BUILD_ID = "v26-ukurjujur"
 BUILD_DATE = "2026-08-21"
 
 _KEY_FILES = (
