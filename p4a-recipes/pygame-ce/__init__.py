@@ -46,7 +46,7 @@ from pythonforandroid.toolchain import current_directory
 # Nilainya ditanam ke dalam paket pygame yang terpasang dan bisa
 # dibaca di HP lewat layar diagnostik (pygame.version.P4A_MARK),
 # sehingga selalu jelas apakah tambalan benar-benar ikut dikompilasi.
-RECIPE_MARK = "r22-neonforce+O3"
+RECIPE_MARK = "r24-distfix"
 
 
 class PygameCERecipe(CompiledComponentsPythonRecipe):
@@ -223,6 +223,11 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
                   "penanda dilewati")
             return
         if "P4A_MARK" in src:
+            # JANGAN diam-diam. Gerbang mutu di workflow mencari baris
+            # "PENANDA dipasang"; kalau fungsi ini pulang tanpa suara,
+            # build yang sebenarnya benar bisa ikut divonis gagal.
+            print("[pygame-ce] PENANDA dipasang (sudah ada sebelumnya): "
+                  "%s" % RECIPE_MARK)
             return
         extra = (
             "\n\n# ── ditambahkan oleh resep p4a Mystic Arena ──\n"
