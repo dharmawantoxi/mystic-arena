@@ -797,12 +797,20 @@ def _hero_cache_key(hero_type, hero):
     facing = 1 if getattr(hero, 'facing', 1) >= 0 else -1
     team = getattr(hero, 'team', 'blue')
 
+    # Di perangkat lambat, kuantisasi digandakan: pose diperbarui
+    # lebih jarang -> hit rate naik, render penuh jauh berkurang.
+    try:
+        from mobile.perf import Quality as _Qk
+        _q = 1 if _Qk.cheap_alpha else 2
+    except Exception:
+        _q = 1
+
     if skill:
         return (hero_type, team, level, facing, 'skill', skill,
-                skill_t // HERO_SKILL_QUANT)
+                skill_t // (HERO_SKILL_QUANT * _q))
     if timer > 0:
         return (hero_type, team, level, facing, 'atk',
-                timer // HERO_ATK_QUANT)
+                timer // (HERO_ATK_QUANT * _q))
 
     phase = int(getattr(hero, 'pulse', 0.0) * 2.0) % HERO_ANIM_PHASES
     return (hero_type, team, level, facing, 'idle', phase,
@@ -970,6 +978,16 @@ def render_hero(hero_type, surface, hero, x, y):
 
             if len(_hero_sprite_cache) >= _HERO_CACHE_MAX:
                 _hero_sprite_cache.pop(next(iter(_hero_sprite_cache)))
+
+            # Di HP, blit per-piksel-alpha ~250 ns/piksel. Sprite hero
+            # 100x140 = 14.000 piksel -> 3,5 ms PER HERO per frame,
+            # padahal sudah di-cache. Colorkey memakai jalur RLE.
+            try:
+                from mobile.perf import Quality as _Qh, to_colorkey_sprite
+                if not _Qh.cheap_alpha:
+                    sub = to_colorkey_sprite(sub)
+            except Exception:
+                pass
 
             _hero_sprite_cache[key] = (sub, ax, ay)
             surface.blit(sub, (int(x - ax), int(y - ay)))
