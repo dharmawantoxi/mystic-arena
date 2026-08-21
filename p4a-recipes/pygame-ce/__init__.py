@@ -46,7 +46,7 @@ from pythonforandroid.toolchain import current_directory
 # Nilainya ditanam ke dalam paket pygame yang terpasang dan bisa
 # dibaca di HP lewat layar diagnostik (pygame.version.P4A_MARK),
 # sehingga selalu jelas apakah tambalan benar-benar ikut dikompilasi.
-RECIPE_MARK = "r24-distfix"
+RECIPE_MARK = "r25-binerpatch"
 
 
 class PygameCERecipe(CompiledComponentsPythonRecipe):
@@ -118,11 +118,18 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
         #
         # v20 hanya menambal yang pertama, jadi jalur fill/blend tetap
         # memakai SDL_HasNEON(). Sekarang SEMUA berkas src_c disapu.
-        needle = "return SDL_HasNEON();"
-        patched = ("return 1; /* p4a: ARMv8-A selalu punya NEON, "
-                   "SDL_HasNEON() bisa false-negative di Android */")
+        # BINER, BUKAN TEKS.
+        # src_c/SDL_gfx/SDL_gfxPrimitives_font.h adalah tabel font
+        # bitmap berisi byte mentah (0x80 di posisi 30322) dan BUKAN
+        # UTF-8. Membacanya sebagai teks membuat seluruh build mati
+        # dengan UnicodeDecodeError. Penambalan ini murni cari-ganti
+        # deretan byte ASCII, jadi tidak perlu men-decode apa pun.
+        needle = b"return SDL_HasNEON();"
+        patched = (b"return 1; /* p4a: ARMv8-A selalu punya NEON, "
+                   b"SDL_HasNEON() bisa false-negative di Android */")
 
         hits = []
+        sudah = []          # sudah tertambal di jalannya yang sebelumnya
         for root, _dirs, files in os.walk("src_c"):
             # jangan sentuh header pihak ketiga (sse2neon.h dsb)
             if os.path.basename(root) == "include":
@@ -130,22 +137,29 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
             for fn in files:
                 if not fn.endswith((".c", ".h")):
                     continue
-                p = join(root, fn)
+                path = join(root, fn)
                 try:
-                    with open(p) as fh:
-                        src = fh.read()
-                except OSError:
-                    continue
-                if needle not in src:
-                    continue
-                n = src.count(needle)
-                with open(p, "w") as fh:
-                    fh.write(src.replace(needle, patched))
-                hits.append("%s (%dx)" % (p, n))
+                    with open(path, "rb") as fh:
+                        raw = fh.read()
+                    if needle not in raw:
+                        if b"p4a: ARMv8-A selalu punya NEON" in raw:
+                            sudah.append(path)
+                        continue
+                    n = raw.count(needle)
+                    with open(path, "wb") as fh:
+                        fh.write(raw.replace(needle, patched))
+                    hits.append("%s (%dx)" % (path, n))
+                except OSError as exc:
+                    print("[pygame-ce] lewati %s: %s" % (path, exc))
 
         if hits:
             print("[pygame-ce] TAMBALAN NEON: %s -> dipaksa true"
                   % ", ".join(hits))
+        elif sudah:
+            # prebuild_arch bisa dipanggil lebih dari sekali; ini normal.
+            print("[pygame-ce] TAMBALAN NEON: sudah terpasang "
+                  "sebelumnya (%s)" % ", ".join(sudah))
+            hits = sudah
         else:
             print("[pygame-ce] PERINGATAN: pola SDL_HasNEON tidak "
                   "ditemukan sama sekali - tambalan NEON TIDAK jalan")
@@ -188,19 +202,18 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
         )
         path = join("src_c", "alphablit.c")
         try:
-            with open(path) as fh:
-                src = fh.read()
+            with open(path, "rb") as fh:
+                raw = fh.read()
         except OSError:
             return
-        if "P4A-CHECK" in src:
+        if b"P4A-CHECK" in raw:
             return
-        anchor = '#include "simd_blitters.h"'
-        if anchor not in src:
+        anchor = b'#include "simd_blitters.h"'
+        if anchor not in raw:
             print("[pygame-ce] jangkar probe tidak ditemukan")
             return
-        src = src.replace(anchor, anchor + probe, 1)
-        with open(path, "w") as fh:
-            fh.write(src)
+        with open(path, "wb") as fh:
+            fh.write(raw.replace(anchor, anchor + probe.encode("ascii"), 1))
         print("[pygame-ce] PROBE dipasang di alphablit.c "
               "-> cari 'P4A-CHECK' di log build")
 
@@ -216,13 +229,13 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
         """
         path = join("src_py", "version.py")
         try:
-            with open(path) as fh:
-                src = fh.read()
+            with open(path, "rb") as fh:
+                raw = fh.read()
         except OSError:
             print("[pygame-ce] src_py/version.py tidak ada - "
                   "penanda dilewati")
             return
-        if "P4A_MARK" in src:
+        if b"P4A_MARK" in raw:
             # JANGAN diam-diam. Gerbang mutu di workflow mencari baris
             # "PENANDA dipasang"; kalau fungsi ini pulang tanpa suara,
             # build yang sebenarnya benar bisa ikut divonis gagal.
@@ -230,7 +243,7 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
                   "%s" % RECIPE_MARK)
             return
         extra = (
-            "\n\n# ── ditambahkan oleh resep p4a Mystic Arena ──\n"
+            "\n\n# -- ditambahkan oleh resep p4a Mystic Arena --\n"
             "P4A_MARK = %r\n"
             "P4A_ARCH = %r\n"
             "P4A_NEON_PATCH = %r\n"
@@ -238,8 +251,8 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
         ) % (RECIPE_MARK, arch.arch,
              getattr(self, "_neon_patch_report", []),
              getattr(self, "_cflags_report", ""))
-        with open(path, "a") as fh:
-            fh.write(extra)
+        with open(path, "ab") as fh:
+            fh.write(extra.encode("utf-8"))
         print("[pygame-ce] PENANDA dipasang: pygame.version.P4A_MARK = %s"
               % RECIPE_MARK)
 
