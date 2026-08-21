@@ -1055,6 +1055,15 @@ class Tower:
             rect = canvas.get_bounding_rect(min_alpha=8)
             if rect.width > 0 and rect.height > 0:
                 sub = canvas.subsurface(rect).copy()
+                # Di HP, blit per-piksel-alpha ~244 ns/piksel. Sprite
+                # yang sudah di-cache pun jadi mahal. Colorkey memakai
+                # jalur RLE yang ~20x lebih murah.
+                try:
+                    from mobile.perf import Quality as _Qt, to_colorkey_sprite
+                    if not _Qt.cheap_alpha:
+                        sub = to_colorkey_sprite(sub)
+                except Exception:
+                    pass
                 ent = (sub, 110 - rect.x, 110 - rect.y)
                 if len(_TOWER_SPRITE_CACHE) > 500:
                     _TOWER_SPRITE_CACHE.pop(next(iter(_TOWER_SPRITE_CACHE)))
@@ -1416,6 +1425,11 @@ class Castle:
             if scaled is None:
                 scaled = pygame.transform.smoothscale(
                     self._render_cache[cache_key], (new_w, new_h))
+                try:
+                    from mobile.perf import to_colorkey_sprite
+                    scaled = to_colorkey_sprite(scaled)
+                except Exception:
+                    pass
                 _CASTLE_SCALED_CACHE[skey] = scaled
 
         final_x = int(self.x - new_w // 2)
