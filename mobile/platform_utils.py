@@ -220,56 +220,44 @@ def save_display_mode(mode):
         return False
 
 
-def _gambar_panel_samping(surface, lebar):
+def _gambar_panel_samping(surface, panel):
     """
-    Isi bar kiri-kanan dengan panel batu bergaya peta.
+    Latar panel kanan: dinding batu bergaya peta.
 
-    Digambar SEKALI saat layar dibuat. Area main adalah subsurface
-    yang tidak pernah menyentuh piksel di sini, jadi panel tidak
-    perlu digambar ulang - biayanya benar-benar 0 ms per frame.
+    Digambar SEKALI saat layar dibuat. Isi dinamis (tombol, combo,
+    daftar hero) digambar di atasnya tiap frame oleh mobile/sidepanel.py,
+    yang menyimpan salinan latar ini untuk menghapus jejak frame lalu.
     """
     tinggi = surface.get_height()
-    kanan_x = surface.get_width() - lebar
-
     dasar = (16, 14, 24)
     batu_gelap = (26, 23, 38)
     batu = (34, 30, 48)
     garis = (58, 50, 78)
     emas = (150, 120, 60)
 
-    for x0 in (0, kanan_x):
-        panel = pygame.Rect(x0, 0, lebar, tinggi)
-        pygame.draw.rect(surface, dasar, panel)
+    pygame.draw.rect(surface, dasar, panel)
 
-        # susunan bata: baris berselang-seling supaya tidak terlihat
-        # seperti kotak-kotak kaku
-        bh = 34
-        bw = max(28, lebar // 3)
-        for i, y in enumerate(range(-bh, tinggi + bh, bh)):
-            geser = (bw // 2) if (i % 2) else 0
-            for x in range(x0 - bw, x0 + lebar + bw, bw):
-                r = pygame.Rect(x + geser + 1, y + 1, bw - 2, bh - 2)
-                r = r.clip(panel)
-                if r.width <= 0 or r.height <= 0:
-                    continue
-                pygame.draw.rect(surface, batu if (i + x) % 3 else
-                                 batu_gelap, r)
-                pygame.draw.rect(surface, garis, r, 1)
+    bh = 34
+    bw = max(28, panel.width // 4)
+    for i, y in enumerate(range(-bh, tinggi + bh, bh)):
+        geser = (bw // 2) if (i % 2) else 0
+        for x in range(panel.x - bw, panel.right + bw, bw):
+            r = pygame.Rect(x + geser + 1, y + 1, bw - 2, bh - 2).clip(panel)
+            if r.width <= 0 or r.height <= 0:
+                continue
+            pygame.draw.rect(surface, batu if (i + x) % 3 else batu_gelap, r)
+            pygame.draw.rect(surface, garis, r, 1)
 
-        # bayangan gelap ke arah tengah supaya area main terasa
-        # menyatu, bukan seperti ditempel
-        arah = 1 if x0 == 0 else -1
-        tepi = (x0 + lebar - 1) if x0 == 0 else x0
-        for i in range(18):
-            a = 1.0 - (i / 18.0)
-            warna = (int(dasar[0] * a), int(dasar[1] * a), int(dasar[2] * a))
-            gx = tepi - arah * i
-            pygame.draw.line(surface, warna, (gx, 0), (gx, tinggi))
+    # gradasi gelap di sisi kiri panel supaya menyatu dengan arena
+    for i in range(20):
+        a = 1.0 - (i / 20.0)
+        warna = (int(dasar[0] * a), int(dasar[1] * a), int(dasar[2] * a))
+        gx = panel.x + i
+        pygame.draw.line(surface, warna, (gx, 0), (gx, tinggi))
 
-        # garis emas tipis sebagai bingkai arena
-        bingkai_x = (x0 + lebar - 2) if x0 == 0 else (x0 + 1)
-        pygame.draw.line(surface, emas, (bingkai_x, 0),
-                         (bingkai_x, tinggi), 2)
+    # bingkai emas pemisah arena
+    pygame.draw.line(surface, emas, (panel.x + 1, 0),
+                     (panel.x + 1, tinggi), 2)
 
 
 def create_display(vsync=True, mode=None):
@@ -357,26 +345,43 @@ def create_display(vsync=True, mode=None):
             lebar_penuh = LOGICAL_WIDTH
             surface = _pasang(LOGICAL_WIDTH)
 
-        ox = max(0, (surface.get_width() - LOGICAL_WIDTH) // 2)
+        # ═══ TATA LETAK ASIMETRIS ═══
+        # Seluruh ruang sisa dikumpulkan di KANAN, bukan dibagi dua.
+        # Alasannya konkret: popup upgrade hero butuh 260-300 px.
+        # Dibagi dua (172+172) popup tidak muat dan tetap menutupi
+        # peta - masalah yang justru ingin diselesaikan. Dikumpulkan
+        # jadi satu, panelnya 344 px dan popup muat utuh.
+        #
+        # Keuntungan tambahan yang tidak disengaja: area main jadi
+        # rata kiri di (0,0), sehingga koordinat game dan koordinat
+        # layar penuh SAMA PERSIS. Tidak perlu translasi apa pun untuk
+        # sentuhan - satu ruang koordinat untuk peta dan panel.
+        sisa = max(0, surface.get_width() - LOGICAL_WIDTH)
         _display_state["full"] = surface
-        _display_state["game_offset"] = (ox, 0)
+        _display_state["game_offset"] = (0, 0)
+        _display_state["panel"] = None
 
-        if ox > 0:
+        if sisa >= 120:      # di bawah ini panel terlalu sempit, tidak berguna
             try:
                 render = surface.subsurface(
-                    (ox, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT))
-                _gambar_panel_samping(surface, ox)
-                print("[DISPLAY] layar penuh %dx%d, area main %dx%d "
-                      "di offset %d (panel samping %d px)"
+                    (0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT))
+                _display_state["panel"] = pygame.Rect(
+                    LOGICAL_WIDTH, 0, sisa, LOGICAL_HEIGHT)
+                _gambar_panel_samping(surface,
+                                      _display_state["panel"])
+                print("[DISPLAY] layar penuh %dx%d, area main %dx%d, "
+                      "panel kanan %d px"
                       % (surface.get_width(), surface.get_height(),
-                         LOGICAL_WIDTH, LOGICAL_HEIGHT, ox, ox))
+                         LOGICAL_WIDTH, LOGICAL_HEIGHT, sisa))
             except (ValueError, pygame.error) as exc:
                 print("[DISPLAY] subsurface gagal (%s) - pakai layar utuh"
                       % exc)
-                _display_state["game_offset"] = (0, 0)
                 render = surface
         else:
             render = surface
+            if sisa:
+                print("[DISPLAY] sisa %d px terlalu sempit untuk panel"
+                      % sisa)
 
         # ═══ BUFFER RENDER JALUR CEPAT ═══
         # Kalau jalur alpha SDL sudah terbukti menang (fastblit.AKTIF,
@@ -402,9 +407,11 @@ def create_display(vsync=True, mode=None):
     _display_state["render"] = render
     # True hanya kalau render adalah buffer RAM terpisah yang harus
     # disalin ke layar oleh present(). Subsurface TIDAK termasuk.
-    _display_state["render_is_buffer"] = (
+    # Ditentukan eksplisit, bukan disimpulkan: subsurface JUGA
+    # "render is not surface" tetapi TIDAK boleh disalin ke induknya.
+    _display_state["render_is_buffer"] = bool(
         mode != "native" and render is not surface
-        and _display_state.get("game_offset", (0, 0)) == (0, 0))
+        and _display_state.get("panel") is None)
     _refresh_display_metrics(surface)
 
     if IS_ANDROID:
@@ -445,6 +452,44 @@ def get_full_surface():
 
 def get_game_offset():
     return _display_state.get("game_offset", (0, 0))
+
+
+def get_panel_rect():
+    """Rect panel kanan pada permukaan penuh, atau None kalau tidak ada."""
+    return _display_state.get("panel")
+
+
+def panel_popup_pos(w, h, atas=12):
+    """
+    Posisi popup di dalam panel kanan, atau None kalau tidak muat.
+
+    Dipakai popup upgrade/build supaya tidak lagi menutupi peta.
+    Kalau layar terlalu sempit (mis. tablet 4:3), kembalikan None dan
+    popup memakai posisi lamanya - jadi perangkat apa pun tetap jalan.
+    """
+    p = _display_state.get("panel")
+    if p is None or w > p.width - 8:
+        return None
+    x = p.x + (p.width - w) // 2
+    y = max(atas, min(p.height - h - 12, (p.height - h) // 2))
+    return (x, y)
+
+
+def panel_pos_bawah(w, h, sisakan=74):
+    """
+    Posisi di BAGIAN BAWAH panel, menyisakan ruang untuk notifikasi.
+
+    Dipakai panel hero terpilih supaya tidak menimpa daftar hero yang
+    ada di bagian atas panel.
+    """
+    p = _display_state.get("panel")
+    if p is None or w > p.width - 8:
+        return None
+    x = p.x + (p.width - w) // 2
+    y = p.bottom - h - sisakan
+    if y < p.y + 8:
+        return None
+    return (x, y)
 
 
 def get_mode():
@@ -498,8 +543,9 @@ def pointer_to_logical(pos):
     # samping aktif), offset area main harus dikurangi supaya
     # koordinatnya kembali ke ruang 1280x720 yang dipakai seluruh
     # kode game dan tombol HUD.
-    ox, oy = _display_state.get("game_offset", (0, 0))
-    return (float(pos[0]) - ox, float(pos[1]) - oy)
+    # Area main rata kiri di (0,0), jadi koordinat game = koordinat
+    # layar penuh. Panel kanan cukup dikenali dari x >= LOGICAL_WIDTH.
+    return (float(pos[0]), float(pos[1]))
 
 
 def window_to_logical(x, y):

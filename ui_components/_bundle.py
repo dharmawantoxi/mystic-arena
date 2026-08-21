@@ -39,6 +39,27 @@ from settings import *
 
 
 
+
+# ═══ POPUP KE PANEL KANAN ═══
+# Popup upgrade/build dulu muncul di atas peta, tepat menutupi bagian
+# yang justru perlu dilihat pemain saat memutuskan upgrade.
+#
+# Kalau layar menyediakan panel kanan (rasio lebih lebar dari 16:9),
+# popup dipindah ke sana dan peta tidak tertutup sama sekali. Di layar
+# 16:9 fungsi ini mengembalikan None dan popup memakai posisi lamanya -
+# jadi perangkat apa pun tetap berjalan seperti semula.
+def _popup_di_panel(w, h):
+    """Kembalikan (surface, x, y) di panel kanan, atau None."""
+    try:
+        from mobile import platform_utils as _plat
+        pos = _plat.panel_popup_pos(w, h)
+        if pos is None:
+            return None
+        return (_plat.get_full_surface(), pos[0], pos[1])
+    except Exception:
+        return None
+
+
 class BaseUIComponent:
     """
     Base class untuk semua UI component.
@@ -656,21 +677,26 @@ class _NS_build_popup:
             popup_w = 300
             popup_h = 200
 
-            px = int(slot['x']) - popup_w // 2
-            py = int(slot['y']) - popup_h - 30
+            _pp = _popup_di_panel(popup_w, popup_h)
+            if _pp is not None:
+                surface, px, py = _pp
+            else:
+                px = int(slot['x']) - popup_w // 2
+                py = int(slot['y']) - popup_h - 30
 
-            # Clamp posisi
-            if px < 10:
-                px = 10
-            if px + popup_w > SCREEN_WIDTH - 10:
-                px = SCREEN_WIDTH - popup_w - 10
-            if py < 10:
-                py = int(slot['y']) + 30
+                # Clamp posisi (hanya kalau popup masih di atas peta)
+                if px < 10:
+                    px = 10
+                if px + popup_w > SCREEN_WIDTH - 10:
+                    px = SCREEN_WIDTH - popup_w - 10
+                if py < 10:
+                    py = int(slot['y']) + 30
 
-            # Line pointer ke slot
-            pygame.draw.line(surface, GOLD,
-                             (px + popup_w // 2, py + popup_h),
-                             (int(slot['x']), int(slot['y']) - 10), 2)
+                # Garis penunjuk ke slot - hanya berguna kalau popup
+                # berada di atas peta.
+                pygame.draw.line(surface, GOLD,
+                                 (px + popup_w // 2, py + popup_h),
+                                 (int(slot['x']), int(slot['y']) - 10), 2)
 
             # Shadow
             shadow_surf = pygame.Surface((popup_w + 10, popup_h + 10),
@@ -1010,8 +1036,27 @@ class _NS_hero_panel:
 
             panel_w = 260
             panel_h = 165
-            px = 20
-            py = SCREEN_HEIGHT - panel_h - 20
+
+            # ═══ PINDAH KE PANEL KANAN ═══
+            # Inilah panel yang dikeluhkan: dulu selalu di kiri bawah
+            # peta (px=20), tepat menutupi jalur bawah dan kastil
+            # pemain justru saat pemain sedang menimbang upgrade.
+            # Kalau layar punya panel kanan, panel ini pindah ke sana.
+            _pp = None
+            try:
+                from mobile import platform_utils as _plat
+                _q = _plat.panel_pos_bawah(panel_w, panel_h)
+                if _q is not None:
+                    surface = _plat.get_full_surface()
+                    _pp = _q
+            except Exception:
+                _pp = None
+
+            if _pp is not None:
+                px, py = _pp
+            else:
+                px = 20
+                py = SCREEN_HEIGHT - panel_h - 20
 
             # Shadow
             shadow_surf = pygame.Surface((panel_w + 10, panel_h + 10),
@@ -1134,7 +1179,7 @@ class _NS_hero_panel:
             if is_auto:
                 bg_color = (60, 180, 80)  # green (ON)
                 border_col = (100, 220, 100)
-                label = "⚡ AUTO-CAST: ON"
+                label = "⚡ AUTO-CAST"
                 text_color = WHITE
             else:
                 bg_color = (60, 60, 70)  # gray (OFF)
@@ -3387,16 +3432,20 @@ class _NS_popup_renderer:
             popup_w = 260
             popup_h = 260
 
-            px = int(target.x) - popup_w // 2
-            py = int(target.y) - popup_h - 40
+            _pp = _popup_di_panel(popup_w, popup_h)
+            if _pp is not None:
+                surface, px, py = _pp
+            else:
+                px = int(target.x) - popup_w // 2
+                py = int(target.y) - popup_h - 40
 
-            # Clamp posisi
-            if px < 10:
-                px = 10
-            if px + popup_w > SCREEN_WIDTH - 10:
-                px = SCREEN_WIDTH - popup_w - 10
-            if py < TOP_BAR_HEIGHT + 10:
-                py = int(target.y) + 40
+                # Clamp posisi (hanya kalau popup masih di atas peta)
+                if px < 10:
+                    px = 10
+                if px + popup_w > SCREEN_WIDTH - 10:
+                    px = SCREEN_WIDTH - popup_w - 10
+                if py < TOP_BAR_HEIGHT + 10:
+                    py = int(target.y) + 40
 
             # Line pointer ke target
             pygame.draw.line(surface, GOLD,

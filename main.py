@@ -43,6 +43,7 @@ from mobile import debug as debug_mod              # noqa: E402
 from mobile import diagnostics as diag_mod         # noqa: E402
 from mobile import bootcheck as bootcheck_mod      # noqa: E402
 from mobile import combat_audio as audio_mod       # noqa: E402
+from mobile import sidepanel as panel_mod          # noqa: E402
 
 debug_mod.install_crash_handler()
 
@@ -180,6 +181,34 @@ def main():
     except Exception as exc:
         print("[AUDIO] init gagal: %s" % exc)
 
+    # Panel kanan (kalau layarnya lebih lebar dari 16:9).
+    side = panel_mod.SidePanel(get_font)
+    panel_mod.daftarkan(side)
+    if side.aktif:
+        print("[PANEL] panel kanan aktif: %s" % (side.rect,))
+
+    def _gambar_panel(g=None):
+        """
+        Panel kanan digambar SEBELUM game supaya popup yang pindah ke
+        panel (panel hero, popup upgrade) tergambar DI ATASNYA.
+        """
+        if not side.aktif:
+            return
+        perf.PHASES.mark("panel")
+        try:
+            # Ada popup yang menggambar ke dalam panel? Kalau ya, panel
+            # harus dipulihkan penuh tiap frame.
+            paksa = bool(g is not None and (
+                getattr(g, "selected_hero", None)
+                or getattr(g, "popup_target", None)
+                or getattr(g, "build_popup_slot", None)))
+            side.draw(plat.get_full_surface(), g, clock,
+                      clock.get_time(), paksa_blit=paksa)
+        except Exception as exc:
+            print("[PANEL] gagal menggambar: %s" % exc)
+            side.aktif = False
+        perf.PHASES.end()
+
     menu = Menu(screen)
     menu.controller_mgr = None          # tidak ada controller di HP
     splash = SplashScreen(screen)
@@ -273,17 +302,30 @@ def main():
             # (dicek sebelum filter `claimed` karena sentuhan yang
             #  sama sudah diklaim HUD saat "down")
             if action.kind == "long_press" and current_state == STATE_GAME:
-                if hud.buttons["pause"].contains(action.pos):
+                _pb = side.buttons.get("pause") if side.aktif else None
+                if ((_pb is not None and _pb.contains(action.pos))
+                        or hud.buttons["pause"].contains(action.pos)):
                     debug.toggle()
                     plat.vibrate(30)
                     continue
 
             if action.kind == "down":
-                hit = hud.hit_test(action.pos) if (
-                    current_state == STATE_GAME) else None
+                hit = None
+                if current_state == STATE_GAME:
+                    # Panel diperiksa DULU: koordinatnya di luar peta,
+                    # jadi tidak mungkin bentrok dengan tombol HUD.
+                    hit = side.hit_test(action.pos)
+                    if hit:
+                        plat.vibrate(15)
+                    if not hit:
+                        hit = hud.hit_test(action.pos)
                 if hit:
                     claimed.add(tid)
                     hud_mod.apply_hud_action(hit, ctx)
+                elif side.blocks(action.pos):
+                    # Ketukan di area panel tidak boleh tembus ke peta
+                    # (mis. malah memerintahkan hero berjalan).
+                    claimed.add(tid)
                 continue
 
             if tid in claimed:
@@ -319,6 +361,7 @@ def main():
             dt = min(0.05, (now - splash_last) / 1000.0)
             splash_last = now
             splash.update(dt)
+            _gambar_panel()
             frame_timer.start("draw")
             splash.draw()
             if splash.is_done():
@@ -333,6 +376,7 @@ def main():
                 _n += 1
             if _n == 0:
                 pass
+            _gambar_panel()
             frame_timer.start("draw")
             menu.draw()
 
@@ -365,6 +409,7 @@ def main():
             debug.extra["sim"] = "%dx/frame  mentok %d" % (sim_steps,
                                                            sim_capped)
 
+            _gambar_panel(game)
             frame_timer.start("draw")
             game.draw()
             perf.PHASES.mark("hud")

@@ -115,6 +115,10 @@ class TouchHUD:
         # bawahnya di y=68. Dua tombol diletakkan di bawahnya supaya
         # menyatu dengan zona HUD dan TIDAK menutupi kastil (kiri
         # bawah) maupun kastil musuh (kanan atas).
+        # Kalau panel kanan tersedia, tombol jeda & FPS pindah ke sana
+        # (lihat mobile/sidepanel.py) dan yang di sini disembunyikan -
+        # sudut kiri atas peta jadi bersih.
+        self._panel_ada = plat.get_panel_rect() is not None
         _bx = max(22, safe.left + 6)
         _by = 76
         # 44 -> 52 px terlihat, area sentuh otomatis jadi 80 px.
@@ -165,9 +169,11 @@ class TouchHUD:
                                                            "defeat")
 
 
-        self.buttons["pause"].visible = bool(playing and not cinematic_active)
-        self.buttons["debug"].visible = bool(self.show_debug_button
-                                             and not cinematic_active)
+        panel = getattr(self, "_panel_ada", False)
+        self.buttons["pause"].visible = bool(
+            playing and not cinematic_active and not panel)
+        self.buttons["debug"].visible = bool(
+            self.show_debug_button and not cinematic_active and not panel)
         self.buttons["skip"].visible = bool(cinematic_active)
 
         self.buttons["replay"].visible = ended

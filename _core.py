@@ -52,6 +52,15 @@ SHIELD_COLOR_BLUE = (100, 180, 255)
 SHIELD_COLOR_RED = (255, 100, 100)
 
 # ── LAYAR ──
+def _PANEL_AKTIF():
+    """True kalau panel kanan tersedia (layar lebih lebar dari 16:9)."""
+    try:
+        from mobile import platform_utils as _p
+        return _p.get_panel_rect() is not None
+    except Exception:
+        return False
+
+
 SCREEN_WIDTH  = 1280
 SCREEN_HEIGHT = 720
 TOP_BAR_HEIGHT = 40   # tinggi top bar info
@@ -1458,6 +1467,16 @@ class Game:
                     current_combo = self.effects.combo_counter.count
                     if current_combo > self.max_combo:
                         self.max_combo = current_combo
+                        # Tampilkan di panel kanan (kalau ada) supaya
+                        # tidak lagi melintas menutupi tengah arena.
+                        if current_combo >= 3:
+                            try:
+                                from mobile import sidepanel as _sp
+                                _sp.beri_tahu_global(
+                                    "COMBO x%d" % current_combo,
+                                    (255, 205, 90))
+                            except Exception:
+                                pass
 
                         if current_combo == 5:
                             self._unlock_achievement(
@@ -1944,7 +1963,10 @@ class Game:
         _PH.mark("ui.hints")
         self.ui.draw_shop_hints(self.screen)
         _PH.mark("ui.gold")
-        self._draw_gold_hud(self.screen)
+        # Kalau panel kanan aktif, emas & wave sudah tampil di sana.
+        # Panel melayang di atas peta jadi mubazir dan menutupi arena.
+        if not _PANEL_AKTIF():
+            self._draw_gold_hud(self.screen)
         _PH.mark("ui.rest")
         # Boss intro banner (ringkas, di atas) digambar SEBELUM
         # effects.draw_ui supaya wave announcer tidak pernah
@@ -5387,14 +5409,14 @@ class InputHandler:
 
             # ═══ AUTO-CAST TOGGLE ═══
             elif btn_id == 'toggle_autocast':
+                # ═══ TIDAK LAGI BISA DIMATIKAN (v29) ═══
+                # Tombol Q/W/E/R sudah dihapus, jadi mematikan
+                # auto-cast akan membuat skill hero tidak pernah
+                # keluar sama sekali - jebakan, bukan pilihan.
+                # Tombolnya dipertahankan sebagai penanda status.
                 if rect.collidepoint(mx, my):
                     if g.selected_hero:
-                        g.selected_hero.auto_cast_enabled = \
-                            not g.selected_hero.auto_cast_enabled
-                        status = "ON" if g.selected_hero.auto_cast_enabled \
-                            else "OFF"
-                        print(f"[AUTO-CAST] {g.selected_hero.name}: {status}")
-                        SoundManager().play('ui_click', volume_mult=0.5)
+                        g.selected_hero.auto_cast_enabled = True
                     return True
 
         return False
@@ -5873,7 +5895,19 @@ class UIRenderer:
             self.notification_component.draw(surface)
 
     def add_notification(self, text, color=(255, 255, 255)):
-        """Add notification"""
+        """
+        Tambahkan notifikasi.
+
+        Kalau panel kanan tersedia, notifikasi dikirim ke sana supaya
+        tidak lagi melintas menutupi arena. Di layar tanpa panel,
+        perilakunya persis seperti semula.
+        """
+        try:
+            from mobile import sidepanel as _sp
+            if _sp.beri_tahu_global(text, color):
+                return
+        except Exception:
+            pass
         if self.notification_component:
             self.notification_component.add_notification(text, color)
 
