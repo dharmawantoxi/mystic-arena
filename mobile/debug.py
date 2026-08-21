@@ -186,9 +186,12 @@ class DebugOverlay:
             ("event %4.1f | update %4.1f | draw %4.1f | flip %4.1f ms"
              % (t.get("event", 0), t.get("update", 0),
                 t.get("draw", 0), t.get("flip", 0)), TXT),
-            ("entity %s   quality %s   slowframe %d/%d"
+            ("entity %s  quality %s  hemat:%s  sprite:%s  slow %d/%d"
              % (self._entity_counts(game), perf.Quality.level,
-                self._slow_frames, self._frames), TXT),
+                "ON" if not perf.Quality.cheap_alpha else "off",
+                "ON" if perf.Quality.sprite_cache else "off",
+                self._slow_frames, self._frames),
+             OK if not perf.Quality.cheap_alpha else WARN),
             ("font new %d / reuse %d   text render %d / cache %d"
              % (fstats["font_created"], fstats["font_reused"],
                 fstats["text_rendered"], fstats["text_cached"]), TXT),

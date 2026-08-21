@@ -33,12 +33,16 @@ RESULTS = {}
 
 
 def _t(fn, n):
-    """Jalankan fn() n kali, kembalikan ms rata-rata."""
-    fn()                      # pemanasan
-    t0 = time.perf_counter()
-    for _ in range(n):
-        fn()
-    return (time.perf_counter() - t0) / n * 1000.0
+    """Jalankan fn() n kali, kembalikan ms rata-rata (0.0 kalau gagal)."""
+    try:
+        fn()                  # pemanasan
+        t0 = time.perf_counter()
+        for _ in range(n):
+            fn()
+        return (time.perf_counter() - t0) / n * 1000.0
+    except Exception as exc:
+        print("[DIAG] pengukuran gagal: %s: %s" % (type(exc).__name__, exc))
+        return 0.0
 
 
 def log_display_info(screen):
@@ -161,8 +165,10 @@ def run_benchmark(screen, quick=True):
         matched.fill((10, 20, 30, 120))
         res["blit_alpha_mask_SAMA"] = _t(
             lambda: screen.blit(matched, (0, 0)), n)
-        res["_src_masks"] = matched.get_masks()
-        res["_dst_masks"] = dm
+        # CATATAN: dict `res` HANYA boleh berisi angka - isinya
+        # dicetak dengan %f dan ditampilkan sebagai ms. Data lain
+        # (mask, dsb) disimpan di RESULTS, bukan di sini.
+        RESULTS["masks"] = {"src": matched.get_masks(), "dst": dm}
         print("[DIAG] mask layar  = %s" % (dm,))
         print("[DIAG] mask sumber = %s" % (matched.get_masks(),))
     except Exception as exc:
@@ -207,6 +213,8 @@ def run_benchmark(screen, quick=True):
 
     print("═══════════ DIAG: BENCHMARK (ms) ═══════════")
     for k, v in res.items():
+        if not isinstance(v, (int, float)):
+            continue                     # lewati apa pun yang bukan angka
         print("[DIAG] %-24s = %7.2f ms" % (k, v))
 
     # ── kesimpulan otomatis ──
@@ -304,9 +312,37 @@ def should_run():
 
 
 def run_all(screen):
+    """
+    Info layar + uji-diri. Dibuat SANGAT defensif: kegagalan di sini
+    dulu membuat apply_device_profile() tidak pernah jalan, sehingga
+    seluruh optimasi perangkat lambat ikut mati (bug v18).
+    """
     try:
         log_display_info(screen)
-        if should_run():
-            run_benchmark(screen)
-    except Exception as exc:                       # jangan sampai crash
-        print("[DIAG] gagal: %s: %s" % (type(exc).__name__, exc))
+    except Exception as exc:
+        print("[DIAG] info layar gagal: %s: %s" % (type(exc).__name__, exc))
+
+    if not should_run():
+        return
+
+    res = {}
+    try:
+        res = run_benchmark(screen)
+    except Exception as exc:
+        print("[DIAG] benchmark gagal: %s: %s" % (type(exc).__name__, exc))
+
+    # Jaring pengaman: kalau benchmark gagal total, perangkat Android
+    # tetap dianggap lambat supaya jalur hemat menyala.
+    try:
+        from mobile.perf import apply_device_profile, Quality, LOW
+        if res:
+            apply_device_profile(res)
+        elif plat.IS_ANDROID:
+            Quality.apply(LOW)
+            Quality.cheap_alpha = False
+            Quality.sprite_cache = True
+            print("[PERF] Benchmark gagal -> paksa mode hemat "
+                  "(cheap_alpha=False, sprite_cache=True)")
+    except Exception as exc:
+        print("[DIAG] profil perangkat gagal: %s: %s"
+              % (type(exc).__name__, exc))

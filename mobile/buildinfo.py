@@ -10,7 +10,7 @@
 import os
 
 # Naikkan setiap kali ada perubahan kode yang dikirim ke perangkat.
-BUILD_ID = "v18-hudpos"
+BUILD_ID = "v19-fixbench"
 BUILD_DATE = "2026-08-21"
 
 _KEY_FILES = (

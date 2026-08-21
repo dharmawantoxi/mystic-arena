@@ -178,7 +178,7 @@ def run(screen, get_font, touch):
         ]
         for k, v in rows:
             screen.blit(f.render("%-11s %s" % (k, v), True, FG), (48, yy))
-            yy += 22
+            yy += 20
 
         # ── kolom kanan: benchmark ──
         screen.blit(f_head.render("BIAYA OPERASI DASAR (ms)", True, FG),
@@ -197,8 +197,22 @@ def run(screen, get_font, touch):
                                  % (k, v, limit), True, warna), (572, yy))
             yy += 22
 
+        # ── status optimasi (biar kegagalan langsung kelihatan) ──
+        try:
+            from mobile.perf import Quality as _Q
+            _on = not _Q.cheap_alpha
+            txt = ("MODE HEMAT: %s   |   cache sprite unit: %s   |   "
+                   "kualitas: %s"
+                   % ("AKTIF" if _on else "MATI",
+                      "AKTIF" if _Q.sprite_cache else "mati", _Q.level))
+            screen.blit(f_head.render(txt, True, OK if _on else BAD),
+                        (36, yy + 10))
+            yy += 34
+        except Exception:
+            pass
+
         # ── sentuhan ──
-        yb = 300
+        yb = max(300, yy + 16)
         screen.blit(f_head.render("SENTUHAN", True, FG), (36, yb))
         c = touch.counts
         warna = OK if (c["mouse"] + c["finger"]) else BAD
@@ -229,7 +243,7 @@ def run(screen, get_font, touch):
                                  (pos[0], pos[1] - 10), (pos[0], pos[1] + 10))
 
         # ── kesimpulan ──
-        yv = 400
+        yv = max(400, yb + 96)
         screen.blit(f_head.render("KESIMPULAN", True, FG), (36, yv))
         yv += 26
         for line in verdict[:4]:
