@@ -1874,8 +1874,15 @@ class Game:
             if getattr(self, '_shake_surface', None) is None or \
                     self._shake_surface.get_size() != \
                     self.screen.get_size():
-                self._shake_surface = pygame.Surface(
-                    self.screen.get_size())
+                # Ikut jalur cepat alpha kalau aktif, supaya saat layar
+                # bergetar performanya tidak jatuh kembali.
+                try:
+                    from mobile import fastblit
+                    self._shake_surface = fastblit.bungkus_seperti(
+                        self.screen)
+                except Exception:
+                    self._shake_surface = pygame.Surface(
+                        self.screen.get_size())
             temp_surface = self._shake_surface
             draw_target = temp_surface
         else:

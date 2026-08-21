@@ -157,10 +157,18 @@ def main():
     # Buat ulang sekarang supaya pelacaknya aktif di perangkat lambat.
     try:
         from mobile import blitwatch
+        from mobile import fastblit
+        perlu_ulang = False
         if blitwatch.enabled() and not isinstance(
                 screen, blitwatch.WatchedSurface):
+            perlu_ulang = True
+        # Jalur cepat alpha baru diputuskan oleh benchmark barusan.
+        if fastblit.AKTIF and not isinstance(screen, fastblit.FastSurface):
+            perlu_ulang = True
+        if perlu_ulang:
             screen = plat.create_display(vsync=True)
-            print("[DISPLAY] buffer render dibuat ulang + pelacak aktif")
+            print("[DISPLAY] buffer render dibuat ulang "
+                  "(jalur cepat=%s)" % fastblit.AKTIF)
     except Exception as exc:
         print("[DISPLAY] gagal memasang pelacak: %s" % exc)
 
