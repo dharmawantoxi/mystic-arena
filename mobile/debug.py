@@ -181,6 +181,26 @@ class DebugOverlay:
                 self.device["api_level"], self.device["pygame"],
                 self.device["sdl"]), (150, 170, 210)),
         ]
+        try:
+            from mobile import blitwatch
+            if blitwatch.enabled() and blitwatch.FRAMES[0] > 5:
+                lines.append(("ALPHA BLIT ~%.0f ms/frame:"
+                              % blitwatch.total_ms(), (255, 140, 140)))
+                for key, px, ms in blitwatch.top(3):
+                    lines.append(("   %-42s %6.0fpx %5.1fms"
+                                  % (key[:42], px, ms), (255, 170, 150)))
+        except Exception:
+            pass
+
+        try:
+            from mobile.perf import PHASES
+            top = PHASES.top(6)
+            if top:
+                lines.append(("DRAW: " + "  ".join(
+                    "%s %.0f" % (k, v) for k, v in top), (255, 190, 120)))
+        except Exception:
+            pass
+
         for key, val in self.extra.items():
             lines.append(("%s: %s" % (key, val), (200, 190, 140)))
 

@@ -475,6 +475,51 @@ class AdaptiveQuality:
 # ═══════════════════════════════════════════════════════
 # 4. PENGUKUR WAKTU FRAME
 # ═══════════════════════════════════════════════════════
+class PhaseTimer:
+    """
+    Pengukur fase yang sangat ringan (dipakai DI DALAM Game.draw).
+
+        from mobile.perf import PHASES
+        PHASES.mark("map")      # tutup fase sebelumnya, buka "map"
+        ...
+        PHASES.end()            # tutup fase terakhir
+
+    Hasil rata-rata dibaca overlay debug -> kelihatan di layar HP
+    bagian mana yang memakan waktu.
+    """
+
+    def __init__(self, smooth=0.9):
+        self.avg = {}
+        self.order = []
+        self._name = None
+        self._t0 = 0.0
+        self.enabled = True
+
+    def mark(self, name):
+        if not self.enabled:
+            return
+        now = time.perf_counter()
+        if self._name is not None:
+            ms = (now - self._t0) * 1000.0
+            prev = self.avg.get(self._name)
+            self.avg[self._name] = ms if prev is None else prev * 0.9 + ms * 0.1
+        if name not in self.order:
+            self.order.append(name)
+        self._name = name
+        self._t0 = now
+
+    def end(self):
+        self.mark(None)
+        self._name = None
+
+    def top(self, n=6):
+        items = sorted(self.avg.items(), key=lambda kv: -kv[1])[:n]
+        return items
+
+
+PHASES = PhaseTimer()
+
+
 class FrameTimer:
     """Ukur ms untuk tiap fase frame: event / update / draw / flip."""
 
