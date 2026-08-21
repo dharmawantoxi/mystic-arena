@@ -865,6 +865,12 @@ class _NS_build_slots:
             pygame.draw.rect(s, GOLD, cost_bg, 1, border_radius=3)
             s.blit(cost_text,
                    cost_text.get_rect(center=cost_bg.center))
+            try:
+                from mobile.perf import Quality as _Qb, to_colorkey_sprite
+                if not _Qb.cheap_alpha:
+                    s = to_colorkey_sprite(s)
+            except Exception:
+                pass
             return s
 
         def _render_red_slot_surface(self):
@@ -877,6 +883,12 @@ class _NS_build_slots:
                              (17, 16), (23, 22), 1)
             pygame.draw.line(s, (200, 80, 80),
                              (23, 16), (17, 22), 1)
+            try:
+                from mobile.perf import Quality as _Qr, to_colorkey_sprite
+                if not _Qr.cheap_alpha:
+                    s = to_colorkey_sprite(s)
+            except Exception:
+                pass
             return s
 
         # ═══════════════════════════════════════
@@ -3797,17 +3809,23 @@ class _NS_shop_hints:
             hint_rect = hint_text.get_rect(center=(sx, hint_y))
             bg_rect = hint_rect.inflate(14, 6)
 
-            # Glow
-            glow_surf = pygame.Surface(
-                (bg_rect.width + 10, bg_rect.height + 10),
-                pygame.SRCALPHA)
-            pygame.draw.rect(glow_surf,
-                             (255, 200, 50, 30),
-                             (0, 0, glow_surf.get_width(),
-                              glow_surf.get_height()),
-                             border_radius=8)
-            surface.blit(glow_surf,
-                         (bg_rect.x - 5, bg_rect.y - 5))
+            # Glow (surface transparan tiap frame -> mahal di HP)
+            from mobile.perf import Quality as _Qh
+            if _Qh.cheap_alpha:
+                glow_surf = pygame.Surface(
+                    (bg_rect.width + 10, bg_rect.height + 10),
+                    pygame.SRCALPHA)
+                pygame.draw.rect(glow_surf,
+                                 (255, 200, 50, 30),
+                                 (0, 0, glow_surf.get_width(),
+                                  glow_surf.get_height()),
+                                 border_radius=8)
+                surface.blit(glow_surf,
+                             (bg_rect.x - 5, bg_rect.y - 5))
+            else:
+                pygame.draw.rect(surface, (60, 48, 16),
+                                 bg_rect.inflate(10, 10),
+                                 border_radius=8)
 
             pygame.draw.rect(surface, (20, 15, 5),
                              bg_rect, border_radius=5)
