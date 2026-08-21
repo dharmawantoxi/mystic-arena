@@ -183,6 +183,7 @@ def run(screen, get_font, touch):
         yy = y + 26
         batas = {"flip": 3.0, "fill_layar": 2.0, "blit_penuh_alpha": 3.0,
                  "blit_alpha_KE_noalpha": 3.0,
+                 "100x_blit_kecil": 3.0, "100x_blit_kecil_colorkey": 3.0,
                  "200x_draw.circle": 6.0, "alokasi_surface_penuh": 4.0}
         for k, limit in batas.items():
             v = bench.get(k)

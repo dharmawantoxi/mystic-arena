@@ -58,6 +58,8 @@ def enabled():
         return True
     if env == "0":
         return False
+    # Quality.sprite_cache diisi apply_device_profile() berdasarkan
+    # hasil ukur colorkey vs alpha DI PERANGKAT ITU SENDIRI.
     return bool(getattr(Quality, "sprite_cache", False))
 
 
@@ -138,6 +140,17 @@ def render_minion_cached(minion_type, renderer, surface, minion, x, y):
         # Renderer tidak cocok dengan cache -> jangan pakai cache lagi
         _stats["bypass"] += 1
         return False
+
+    # Di perangkat dengan alpha blit mahal, simpan sebagai sprite
+    # COLORKEY: blitnya memakai jalur cepat (RLE), ~25x lebih murah
+    # daripada per-piksel-alpha, dan juga lebih murah daripada
+    # menggambar ulang ~370 panggilan draw per unit.
+    if not Quality.cheap_alpha:
+        try:
+            from mobile.perf import to_colorkey_sprite
+            sprite = to_colorkey_sprite(sprite)
+        except Exception:
+            pass
 
     _cache[key] = (sprite, left, top)
     _stats["miss"] += 1

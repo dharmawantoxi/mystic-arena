@@ -142,6 +142,20 @@ def run_benchmark(screen, quick=True):
     res["100x_blit_kecil"] = _t(_blit_small, n)
     res["100x_blit_kecil_conv"] = _t(_blit_small_conv, n)
 
+    # Sprite colorkey: jalur blit tanpa kanal alpha. Inilah yang
+    # menentukan apakah cache sprite unit menguntungkan.
+    try:
+        from mobile.perf import to_colorkey_sprite
+        small_ck = to_colorkey_sprite(small)
+
+        def _blit_small_ck():
+            for i in range(100):
+                screen.blit(small_ck, (i * 3 % 900, i * 5 % 500))
+
+        res["100x_blit_kecil_colorkey"] = _t(_blit_small_ck, n)
+    except Exception as exc:
+        print("[DIAG] uji colorkey gagal: %s" % exc)
+
     def _circles():
         for i in range(200):
             pygame.draw.circle(screen, (200, 100, 50),
@@ -176,6 +190,14 @@ def run_benchmark(screen, quick=True):
                        "%.1f ms setelah convert_alpha() -> pakai convert."
                        % (res["blit_penuh_alpha"],
                           res["blit_penuh_alpha_conv"]))
+    ck = res.get("100x_blit_kecil_colorkey")
+    ab = res.get("100x_blit_kecil")
+    if ck and ab and ck * 3 < ab:
+        verdict.append("SPRITE COLORKEY MENANG: 100 blit kecil %.1f ms "
+                       "(alpha) vs %.1f ms (colorkey) = %.1fx -> cache "
+                       "sprite unit diaktifkan."
+                       % (ab, ck, ab / ck))
+
     na = res.get("blit_alpha_KE_noalpha")
     if na is not None and res["blit_penuh_alpha"] > na * 2:
         verdict.append("SOLUSINYA KETEMU: blit ke surface TANPA kanal "

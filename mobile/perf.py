@@ -299,6 +299,41 @@ def blit_overlay(dst, overlay, rect=None, pos=(0, 0)):
     dst.blit(overlay, (pos[0] + rect.x, pos[1] + rect.y), rect)
 
 
+COLORKEY = (255, 0, 255)
+
+
+def to_colorkey_sprite(surf, bg=(0, 0, 0)):
+    """
+    Ubah surface ber-alpha menjadi surface COLORKEY (tanpa kanal alpha).
+
+    Kenapa: di ARM tanpa SIMD, blit per-piksel-alpha ~244 ns/piksel,
+    sedangkan blit colorkey memakai jalur cepat (RLE) yang ~25x lebih
+    murah. Piksel semi-transparan dikomposit ke `bg` lebih dulu, jadi
+    tepiannya jadi keras - dapat diterima untuk gaya pixel-art dan
+    hanya dipakai di perangkat lambat.
+    """
+    w, h = surf.get_size()
+    out = None
+    try:
+        # Jalur terbaik: ambang alpha lewat mask (kode C, cepat).
+        # Piksel dengan alpha <= 127 (bayangan lembut, tepi halus)
+        # menjadi transparan penuh; sisanya disalin apa adanya.
+        mask = pygame.mask.from_surface(surf, 127)
+        out = mask.to_surface(setsurface=surf, unsetcolor=COLORKEY)
+    except Exception:
+        out = None
+    if out is None:
+        out = pygame.Surface((w, h))
+        out.fill(COLORKEY)
+        out.blit(surf, (0, 0))
+    try:
+        out = out.convert()
+    except Exception:
+        pass
+    out.set_colorkey(COLORKEY, pygame.RLEACCEL)
+    return out
+
+
 def clear_static_caches():
     _static_cache.clear()
     _overlay_cache.clear()
@@ -336,6 +371,14 @@ def _apply_aa_switch(use_aa):
 class _Quality:
     def __init__(self):
         self.level = HIGH
+        # ══ PROPERTI PERANGKAT ══
+        # Diukur SEKALI oleh apply_device_profile() dan TIDAK boleh
+        # ditimpa oleh apply(); preset kualitas mengatur efek, bukan
+        # kemampuan perangkat.
+        self.cheap_alpha = True        # True = alpha blit murah (PC)
+        self.max_alpha_px = 1_000_000
+        self.colorkey_gain = 1.0       # colorkey vs alpha, hasil ukur
+        self.sprite_cache = False      # cache sprite unit (colorkey)
         self.apply(HIGH)
 
     def apply(self, level):
@@ -357,15 +400,12 @@ class _Quality:
         # karena renderer minion memang sudah murah sementara alokasi
         # + blit surface tambahan justru mahal. Biarkan False.
         # Detail: mobile/spritecache.py
-        self.sprite_cache = False
-
         # ── ALPHA BLIT MAHAL? ──
         # Diisi otomatis oleh apply_device_profile() dari hasil
         # benchmark di HP. Kalau True: JANGAN pernah blit surface
         # ber-alpha seukuran layar; pakai darken()/fill() atau
         # gambar langsung tanpa transparansi.
-        self.cheap_alpha = True      # True = alpha blit murah (PC)
-        self.max_alpha_px = 1_000_000
+
         self.floating_decor = not low
         self.max_damage_numbers = 8 if low else (16 if med else 32)
         self.target_fps = 30 if low else 60
@@ -416,6 +456,19 @@ def apply_device_profile(bench):
     else:
         Quality.cheap_alpha = True
         Quality.max_alpha_px = 1_000_000
+
+    # Seberapa untung memakai sprite colorkey di perangkat ini?
+    # (dihitung SETELAH apply() supaya tidak tertimpa)
+    a = bench.get("100x_blit_kecil")
+    ck = bench.get("100x_blit_kecil_colorkey")
+    if a and ck and ck > 0:
+        Quality.colorkey_gain = a / ck
+        Quality.sprite_cache = (Quality.colorkey_gain >= 4.0
+                                and not Quality.cheap_alpha)
+        print("[PERF] blit kecil: alpha %.2f ms vs colorkey %.2f ms "
+              "(%.1fx) -> cache sprite unit %s"
+              % (a, ck, Quality.colorkey_gain,
+                 "AKTIF" if Quality.sprite_cache else "mati"))
     return Quality.level
 
 
