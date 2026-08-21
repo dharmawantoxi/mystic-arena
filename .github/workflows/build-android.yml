@@ -1,38 +1,51 @@
 name: Build Android
 
 # ═══════════════════════════════════════════════════════
-# APA YANG DILAKUKAN WORKFLOW INI
-#   push ke main / PR  -> build APK debug  (bisa langsung di-install)
-#   push tag v*        -> build AAB release, ditandatangani, siap
-#                          diunggah ke Google Play Console
+# BUILD MANUAL SAJA
 #
-# SECRET yang harus dibuat di GitHub
-#   Settings > Secrets and variables > Actions > New repository secret
-#     KEYSTORE_BASE64      : hasil `base64 -w0 mystic.keystore`
-#     KEYSTORE_PASSWORD    : password keystore
-#     KEYALIAS             : nama alias key (mis. mystic)
-#     KEYALIAS_PASSWORD    : password alias
-# ═══════════════════════════════════════════════════════
-
-# ═══════════════════════════════════════════════════════
-# VERSI PYTHON DIKUNCI 3.11.9
-# python-for-android develop sekarang memakai Python 3.14, tetapi
-# pygame-ce 2.4.1 hanya mendukung 3.8-3.12 dan berkas _sdl2-nya
-# dibuat oleh Cython 3.0.0 yang belum mengenal 3.13/3.14
-# (tp_print, _PyLong_AsByteArray, _PyGen_Send, dst. sudah dihapus).
+# Workflow ini TIDAK lagi jalan otomatis saat push/upload berkas.
+# Alasannya: mengunggah berkas satu per satu lewat web memicu satu
+# build (±50 menit) untuk SETIAP berkas dan menghabiskan kuota
+# GitHub Actions.
 #
-# Recipe.version di p4a membaca env VERSION_<nama_recipe>, jadi dua
-# variabel di bawah mengubah python3 DAN hostpython3 sekaligus.
-# Keduanya WAJIB sama - hostpython3 punya pemeriksaan versi.
+# Cara menjalankan:
+#   Tab Actions -> "Build Android" -> tombol "Run workflow"
+#     - Jenis build : debug (APK) atau release (AAB)
+#     - Bersihkan cache : centang kalau ingin build benar-benar
+#       dari nol (mis. setelah mengubah buildozer.spec / resep p4a)
+#
+# Satu-satunya pemicu otomatis yang tersisa adalah tag versi
+# (git tag v1.0.0 && git push origin v1.0.0) -> build AAB release.
+# Hapus blok `push:` di bawah kalau itu pun tidak diinginkan.
+#
+# SECRET untuk build release:
+#   KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEYALIAS, KEYALIAS_PASSWORD
 # ═══════════════════════════════════════════════════════
 
 on:
-  push:
-    branches: [main]
-    tags: ['v*']
-  pull_request:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Jenis build'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+      clean_cache:
+        description: 'Bersihkan cache (build dari nol, ±50 menit)'
+        required: false
+        default: false
+        type: boolean
+
+  push:
+    tags: ['v*']
+
+# Build baru membatalkan build lama yang masih jalan di branch sama
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -50,6 +63,16 @@ jobs:
     steps:
       - name: Checkout kode
         uses: actions/checkout@v4
+
+      - name: Tentukan jenis build
+        id: cfg
+        run: |
+          if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+            echo "type=release" >> $GITHUB_OUTPUT
+          else
+            echo "type=${{ inputs.build_type || 'debug' }}" >> $GITHUB_OUTPUT
+          fi
+          echo "Jenis build: $(cat $GITHUB_OUTPUT)"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -70,7 +93,6 @@ jobs:
             zlib1g-dev libncurses-dev cmake libffi-dev libssl-dev \
             build-essential ccache libltdl-dev
 
-      # Cache = pembeda antara build 60 menit dan build 8 menit.
       # CACHE_VERSION: naikkan angkanya (v3 -> v4 -> ...) kalau perlu
       # memaksa build bersih. restore-keys sengaja ikut memakai versi
       # ini supaya cache LAMA tidak ikut dipulihkan - kalau ikut, sumber
@@ -78,6 +100,7 @@ jobs:
       # oleh p4a ("is already unpacked, skipping") dan error yang sama
       # terulang walau resepnya sudah diperbaiki.
       - name: Cache SDK/NDK & build p4a
+        if: ${{ !inputs.clean_cache }}
         uses: actions/cache@v4
         with:
           path: |
@@ -96,11 +119,14 @@ jobs:
       # tidak sesuai harapan, berarti Anda menjalankan commit yang salah.
       - name: Konfigurasi yang dipakai build ini
         run: |
-          echo "commit   : $GITHUB_SHA"
+          echo "commit     : $GITHUB_SHA"
+          echo "jenis build: ${{ steps.cfg.outputs.type }}"
           echo "--- buildozer.spec ---"
           grep -E "^(version|android\.(api|minapi|ndk_api|archs|release_artifact))" buildozer.spec
           echo "--- resep pygame-ce ---"
           grep -E "^\s+(version|url) = " p4a-recipes/pygame-ce/__init__.py
+          echo "--- penanda build di dalam APK ---"
+          grep -E "^BUILD_(ID|DATE)" mobile/buildinfo.py
           echo "--- versi Python yang dipaksa ---"
           echo "VERSION_python3     = $VERSION_python3"
           echo "VERSION_hostpython3 = $VERSION_hostpython3"
@@ -125,11 +151,11 @@ jobs:
 
       # ─────────────── DEBUG (APK) ───────────────
       - name: Build APK debug
-        if: "!startsWith(github.ref, 'refs/tags/v')"
+        if: steps.cfg.outputs.type == 'debug'
         run: buildozer -v android debug
 
       - name: Unggah artefak APK
-        if: "!startsWith(github.ref, 'refs/tags/v')"
+        if: steps.cfg.outputs.type == 'debug'
         uses: actions/upload-artifact@v4
         with:
           name: mystic-arena-debug-apk
@@ -138,11 +164,11 @@ jobs:
 
       # ─────────────── RELEASE (AAB) ───────────────
       - name: Siapkan keystore
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.cfg.outputs.type == 'release'
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$HOME/mystic.keystore"
 
       - name: Build AAB release (ditandatangani)
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.cfg.outputs.type == 'release'
         env:
           P4A_RELEASE_KEYSTORE: /home/runner/mystic.keystore
           P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -151,7 +177,7 @@ jobs:
         run: buildozer -v android release
 
       - name: Unggah artefak AAB
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.cfg.outputs.type == 'release'
         uses: actions/upload-artifact@v4
         with:
           name: mystic-arena-release-aab
@@ -164,3 +190,18 @@ jobs:
         with:
           files: bin/*.aab
           generate_release_notes: true
+
+      - name: Ringkasan
+        if: always()
+        run: |
+          {
+            echo "### Build Android"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Jenis | ${{ steps.cfg.outputs.type }} |"
+            echo "| Commit | \`${GITHUB_SHA:0:7}\` |"
+            echo "| Penanda build | $(grep -oP 'BUILD_ID = \"\K[^\"]+' mobile/buildinfo.py) |"
+            echo ""
+            echo "Unduh hasilnya di bagian **Artifacts** di halaman ini."
+          } >> $GITHUB_STEP_SUMMARY
