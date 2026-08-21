@@ -934,7 +934,22 @@ def render_hero(hero_type, surface, hero, x, y):
     entry = _hero_sprite_cache.get(key)
     if entry is not None:
         _hero_cache_stats['hits'] += 1
-        sprite, ax, ay = entry
+        sprite, ax, ay = entry[0], entry[1], entry[2]
+        uses = entry[3] if len(entry) > 3 else 1
+
+        # Konversi colorkey ditunda sampai pose terbukti dipakai ulang
+        # (konversi = 1 operasi per-piksel, ~3,6 ms untuk sprite hero
+        # di HP uji). Ada juga anggaran per frame.
+        if uses == 1:
+            try:
+                from mobile.perf import (Quality as _Qh, can_convert,
+                                         to_colorkey_sprite)
+                if not _Qh.cheap_alpha and can_convert():
+                    sprite = to_colorkey_sprite(sprite)
+            except Exception:
+                pass
+        _hero_sprite_cache[key] = (sprite, ax, ay, uses + 1)
+
         surface.blit(sprite, (int(x - ax), int(y - ay)))
     else:
         # Cache miss -> render ke canvas sendiri, simpan
@@ -979,17 +994,9 @@ def render_hero(hero_type, surface, hero, x, y):
             if len(_hero_sprite_cache) >= _HERO_CACHE_MAX:
                 _hero_sprite_cache.pop(next(iter(_hero_sprite_cache)))
 
-            # Di HP, blit per-piksel-alpha ~250 ns/piksel. Sprite hero
-            # 100x140 = 14.000 piksel -> 3,5 ms PER HERO per frame,
-            # padahal sudah di-cache. Colorkey memakai jalur RLE.
-            try:
-                from mobile.perf import Quality as _Qh, to_colorkey_sprite
-                if not _Qh.cheap_alpha:
-                    sub = to_colorkey_sprite(sub)
-            except Exception:
-                pass
-
-            _hero_sprite_cache[key] = (sub, ax, ay)
+            # Simpan apa adanya dulu; konversi colorkey menyusul pada
+            # pemakaian kedua (lihat jalur "hit" di atas).
+            _hero_sprite_cache[key] = (sub, ax, ay, 1)
             surface.blit(sub, (int(x - ax), int(y - ay)))
 
     # ═══ BEAM PASS LIVE (hero ranged seperti morgath) ═══
