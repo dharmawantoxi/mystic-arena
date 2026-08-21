@@ -158,9 +158,11 @@ jobs:
           rm -rf $B/build-*/other_builds/pygame-ce* || true
           rm -rf $B/build-*/packages/pygame-ce* || true
           # ← INI yang dulu terlewat: hasil pasang di site-packages
-          rm -rf $B/build-*/python-installs/*/*/site-packages/pygame || true
-          rm -rf $B/build-*/python-installs/*/*/site-packages/pygame_ce* || true
-          rm -rf $B/build-*/python-installs/*/*/site-packages/pygame-*.dist-info || true
+          # sapu MENYELURUH: folder/berkas pygame di mana pun dalam cache
+          find .buildozer ~/.buildozer -maxdepth 12 \
+               \( -name 'pygame' -o -name 'pygame_ce*' \
+                  -o -name 'pygame-*.dist-info' -o -name 'pygame-*.egg-info' \) \
+               -not -path '*/p4a-recipes/*' -prune -exec rm -rf {} + 2>/dev/null || true
           # python3/hostpython3: versinya pernah berubah 3.14 -> 3.11
           rm -rf $B/build-*/other_builds/python3* || true
           rm -rf $B/build-*/other_builds/hostpython3* || true
@@ -171,7 +173,36 @@ jobs:
       # ─────────────── DEBUG (APK) ───────────────
       - name: Build APK debug
         if: steps.cfg.outputs.type == 'debug'
-        run: buildozer -v android debug
+        shell: bash
+        run: |
+          set -o pipefail
+          buildozer -v android debug 2>&1 | tee build.log
+
+      # ═══ GERBANG MUTU ═══
+      # Build DIGAGALKAN kalau pygame tidak benar-benar dikompilasi
+      # ulang. Tanpa gerbang ini, APK bisa berisi pygame lama dari
+      # cache sementara kita mengira tambalan resep sudah teruji -
+      # itu sudah tiga kali membuang satu putaran uji penuh.
+      - name: Pastikan pygame benar-benar dikompilasi ulang
+        if: steps.cfg.outputs.type == 'debug'
+        shell: bash
+        run: |
+          echo "### Bukti kompilasi pygame" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -o "P4A-CHECK [A-Za-z0-9_]*=[01][^\"]*" build.log \
+            | sort -u | tee -a $GITHUB_STEP_SUMMARY || true
+          grep -m1 "TAMBALAN NEON:" build.log \
+            | tee -a $GITHUB_STEP_SUMMARY || true
+          grep -m1 "CFLAGS FINAL" build.log \
+            | cut -c1-200 | tee -a $GITHUB_STEP_SUMMARY || true
+          grep -m1 "PENANDA dipasang" build.log \
+            | tee -a $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if ! grep -q "PENANDA dipasang" build.log; then
+            echo "::error::pygame TIDAK dikompilasi ulang - APK ini akan berisi pygame lama dari cache. Build digagalkan supaya tidak menghasilkan pengukuran palsu."
+            exit 1
+          fi
+          echo "OK: pygame dikompilasi ulang oleh resep."
 
       - name: Unggah artefak APK
         if: steps.cfg.outputs.type == 'debug'
