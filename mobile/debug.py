@@ -203,10 +203,18 @@ class DebugOverlay:
 
         try:
             from mobile.perf import PHASES
-            top = PHASES.top(6)
+            top = PHASES.top(20)
             if top:
-                lines.append(("DRAW: " + "  ".join(
-                    "%s %.0f" % (k, v) for k, v in top), (255, 190, 120)))
+                tot = sum(v for _, v in top)
+                shown = top[:6]
+                txt = "  ".join("%s %.0f" % (k, v) for k, v in shown)
+                lines.append(("DRAW(%0.f ms): %s" % (tot, txt),
+                              (255, 190, 120)))
+                rest = top[6:]
+                if rest:
+                    lines.append(("  ...: " + "  ".join(
+                        "%s %.0f" % (k, v) for k, v in rest[:6]),
+                        (230, 170, 110)))
         except Exception:
             pass
 
