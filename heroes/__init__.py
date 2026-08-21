@@ -944,7 +944,10 @@ def render_hero(hero_type, surface, hero, x, y):
             try:
                 from mobile.perf import (Quality as _Qh, can_convert,
                                          to_colorkey_sprite)
-                if not _Qh.cheap_alpha and can_convert():
+                # v23: hanya kalau alpha memang tak terjangkau.
+                # Jalur cepat SDL membuat konversi ini merugikan -
+                # menghemat 0,29 ms per hero tapi merusak tepi sprite.
+                if _Qh.use_colorkey_sprites and can_convert():
                     sprite = to_colorkey_sprite(sprite)
             except Exception:
                 pass
