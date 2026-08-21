@@ -63,9 +63,52 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
     call_hostpython_via_targetpython = False   # butuh setuptools host
     install_in_hostpython = False
 
+    def _patch_neon_runtime_check(self):
+        """
+        Paksa jalur SIMD/NEON aktif di arm64.
+
+        Bukti dari perangkat uji (Infinix X6880, aarch64, Android 15):
+            blit_penuh_alpha      236,23 ms
+            blit_alpha_mask_SAMA  235,65 ms   <- menyamakan mask tidak
+                                                 membantu sama sekali
+
+        Artinya syarat format sudah benar, tetapi gerbang RUNTIME
+        di alphablit.c gagal:
+
+            #if PG_ENABLE_SSE_NEON
+            if ((pg_HasSSE_NEON()) && (src != dst)) { ...SIMD... }
+
+        pg_HasSSE_NEON() memanggil SDL_HasNEON(), yang pada beberapa
+        build SDL di Android mengembalikan false untuk aarch64 karena
+        memeriksa HWCAP_NEON (nama ARMv7) alih-alih HWCAP_ASIMD.
+
+        Semua CPU ARMv8-A WAJIB punya NEON, jadi pada arm64 pemeriksaan
+        itu aman diganti dengan `return 1`.
+        """
+        path = "src_c/simd_shared.h"
+        try:
+            with open(path) as fh:
+                src = fh.read()
+        except OSError:
+            return
+        needle = "return SDL_HasNEON();"
+        if needle not in src:
+            print("[pygame-ce] pola SDL_HasNEON tidak ditemukan - "
+                  "lewati tambalan")
+            return
+        patched = ("return 1; /* p4a: ARMv8-A selalu punya NEON, "
+                   "SDL_HasNEON() bisa false-negative di Android */")
+        src = src.replace(needle, patched, 1)
+        with open(path, "w") as fh:
+            fh.write(src)
+        print("[pygame-ce] TAMBALAN: pg_HasSSE_NEON() dipaksa true "
+              "-> blitter NEON dipakai")
+
     def prebuild_arch(self, arch):
         super().prebuild_arch(arch)
         with current_directory(self.get_build_dir(arch.arch)):
+            if arch.arch in ("arm64-v8a", "x86_64"):
+                self._patch_neon_runtime_check()
             template_path = join("buildconfig", "Setup.Android.SDL2.in")
             with open(template_path) as fh:
                 setup_template = fh.read()
