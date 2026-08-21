@@ -10,7 +10,7 @@
 import os
 
 # Naikkan setiap kali ada perubahan kode yang dikirim ke perangkat.
-BUILD_ID = "v13-textkey"
+BUILD_ID = "v14-realtime"
 BUILD_DATE = "2026-08-21"
 
 _KEY_FILES = (
