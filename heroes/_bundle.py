@@ -226,32 +226,40 @@ class _NS_grimjaw:
         previous = int(getattr(hero, "_gj_prev_timer", -1))
         active = bool(getattr(hero, "_gj_attack_active", False))
 
-        trigger = False
-        if previous < 0:
-            pass
-        elif timer >= cooldown - 1 and previous < cooldown - 1:
-            trigger = True
-        elif previous >= cooldown - 2 and timer <= 1:
-            trigger = True
+        # ═══ PERBAIKAN v21 - SWING TERLIHAT TIDAK NATURAL ═══
+        # attack_timer adalah hitung MUNDUR: di-set ke attack_cooldown
+        # saat menyerang, lalu berkurang 1 tiap langkah simulasi.
+        #
+        # Deteksi lama mensyaratkan fungsi ini - yang dipanggil dari
+        # DRAW - melihat timer tepat pada nilai puncaknya. Itu hanya
+        # terjadi kalau 1 frame gambar = 1 langkah simulasi, yaitu di
+        # 60 FPS. Dengan fixed timestep di HP, satu frame gambar
+        # mencakup 4-12 langkah simulasi, sehingga nilai puncak tidak
+        # pernah terlihat -> animasi swing nyaris tidak pernah dipicu
+        # dan yang tampak hanya potongan pose acak.
+        #
+        # Serangan baru = timer NAIK. Itu benar untuk berapa pun
+        # jumlah langkah simulasi yang terlewat antar-gambar.
+        trigger = previous >= 0 and timer > previous
 
-        if trigger and not active:
+        if trigger:
             hero._gj_attack_active = True
-            hero._gj_attack_frame = 0
-            # Roll for critical strike passive (25% chance)
             hero._gj_crit_active = random.random() < 0.25
             active = True
 
-        if active:
-            hero._gj_attack_frame = int(getattr(hero, "_gj_attack_frame", 0)) + 1
-            if hero._gj_attack_frame > cooldown:
-                hero._gj_attack_active = False
-                hero._gj_attack_frame = 0
-                hero._gj_crit_active = False
-                active = False
+        if active and timer <= 0:
+            hero._gj_attack_active = False
+            hero._gj_crit_active = False
+            active = False
 
         hero._gj_prev_timer = timer
+
+        # Progres diturunkan LANGSUNG dari timer simulasi, bukan dari
+        # penghitung frame gambar. Durasi swing jadi identik di 60 FPS
+        # maupun 8 FPS.
+        hero._gj_attack_frame = max(0, cooldown - timer) if active else 0
         hero._gj_attack_progress = (
-            min(1.0, getattr(hero, "_gj_attack_frame", 0) / max(1, cooldown - 1))
+            min(1.0, hero._gj_attack_frame / max(1, cooldown - 1))
             if active else 0.0
         )
 
@@ -2095,29 +2103,38 @@ class _NS_sylara:
         previous = int(getattr(boss, "_sy_prev_timer", -1))
         active = bool(getattr(boss, "_sy_attack_active", False))
 
-        trigger = False
-        if previous < 0:
-            pass
-        elif timer >= cooldown - 1 and previous < cooldown - 1:
-            trigger = True
-        elif previous >= cooldown - 2 and timer <= 1:
-            trigger = True
+        # ═══ PERBAIKAN v21 - SWING TERLIHAT TIDAK NATURAL ═══
+        # attack_timer adalah hitung MUNDUR: di-set ke attack_cooldown
+        # saat menyerang, lalu berkurang 1 tiap langkah simulasi.
+        #
+        # Deteksi lama mensyaratkan fungsi ini - yang dipanggil dari
+        # DRAW - melihat timer tepat pada nilai puncaknya. Itu hanya
+        # terjadi kalau 1 frame gambar = 1 langkah simulasi, yaitu di
+        # 60 FPS. Dengan fixed timestep di HP, satu frame gambar
+        # mencakup 4-12 langkah simulasi, sehingga nilai puncak tidak
+        # pernah terlihat -> animasi swing nyaris tidak pernah dipicu
+        # dan yang tampak hanya potongan pose acak.
+        #
+        # Serangan baru = timer NAIK. Itu benar untuk berapa pun
+        # jumlah langkah simulasi yang terlewat antar-gambar.
+        trigger = previous >= 0 and timer > previous
 
-        if trigger and not active:
+        if trigger:
             boss._sy_attack_active = True
-            boss._sy_attack_frame = 0
             active = True
 
-        if active:
-            boss._sy_attack_frame = int(getattr(boss, "_sy_attack_frame", 0)) + 1
-            if boss._sy_attack_frame > cooldown:
-                boss._sy_attack_active = False
-                boss._sy_attack_frame = 0
-                active = False
+        if active and timer <= 0:
+            boss._sy_attack_active = False
+            active = False
 
         boss._sy_prev_timer = timer
+
+        # Progres diturunkan LANGSUNG dari timer simulasi, bukan dari
+        # penghitung frame gambar. Durasi swing jadi identik di 60 FPS
+        # maupun 8 FPS.
+        boss._sy_attack_frame = max(0, cooldown - timer) if active else 0
         boss._sy_attack_progress = (
-            min(1.0, getattr(boss, "_sy_attack_frame", 0) / max(1, cooldown - 1))
+            min(1.0, boss._sy_attack_frame / max(1, cooldown - 1))
             if active else 0.0
         )
 
@@ -3772,35 +3789,44 @@ class _NS_kaizen:
 
 
     def _update_attack_anim(boss):
-        """Track melee attack animation timeline."""
+        """Track attack animation timeline."""
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 45)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_kz_prev_timer", -1))
         active = bool(getattr(boss, "_kz_attack_active", False))
 
-        trigger = False
-        if previous < 0:
-            pass
-        elif timer >= cooldown - 1 and previous < cooldown - 1:
-            trigger = True
-        elif previous >= cooldown - 2 and timer <= 1:
-            trigger = True
+        # ═══ PERBAIKAN v21 - SWING TERLIHAT TIDAK NATURAL ═══
+        # attack_timer adalah hitung MUNDUR: di-set ke attack_cooldown
+        # saat menyerang, lalu berkurang 1 tiap langkah simulasi.
+        #
+        # Deteksi lama mensyaratkan fungsi ini - yang dipanggil dari
+        # DRAW - melihat timer tepat pada nilai puncaknya. Itu hanya
+        # terjadi kalau 1 frame gambar = 1 langkah simulasi, yaitu di
+        # 60 FPS. Dengan fixed timestep di HP, satu frame gambar
+        # mencakup 4-12 langkah simulasi, sehingga nilai puncak tidak
+        # pernah terlihat -> animasi swing nyaris tidak pernah dipicu
+        # dan yang tampak hanya potongan pose acak.
+        #
+        # Serangan baru = timer NAIK. Itu benar untuk berapa pun
+        # jumlah langkah simulasi yang terlewat antar-gambar.
+        trigger = previous >= 0 and timer > previous
 
-        if trigger and not active:
+        if trigger:
             boss._kz_attack_active = True
-            boss._kz_attack_frame = 0
             active = True
 
-        if active:
-            boss._kz_attack_frame = int(getattr(boss, "_kz_attack_frame", 0)) + 1
-            if boss._kz_attack_frame > cooldown:
-                boss._kz_attack_active = False
-                boss._kz_attack_frame = 0
-                active = False
+        if active and timer <= 0:
+            boss._kz_attack_active = False
+            active = False
 
         boss._kz_prev_timer = timer
+
+        # Progres diturunkan LANGSUNG dari timer simulasi, bukan dari
+        # penghitung frame gambar. Durasi swing jadi identik di 60 FPS
+        # maupun 8 FPS.
+        boss._kz_attack_frame = max(0, cooldown - timer) if active else 0
         boss._kz_attack_progress = (
-            min(1.0, getattr(boss, "_kz_attack_frame", 0) / max(1, cooldown - 1))
+            min(1.0, boss._kz_attack_frame / max(1, cooldown - 1))
             if active else 0.0
         )
 
@@ -5459,35 +5485,44 @@ class _NS_thorne:
 
 
     def _update_attack_anim(boss):
-        """Track melee club attack animation timeline."""
+        """Track attack animation timeline."""
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 45)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_th_prev_timer", -1))
         active = bool(getattr(boss, "_th_attack_active", False))
 
-        trigger = False
-        if previous < 0:
-            pass
-        elif timer >= cooldown - 1 and previous < cooldown - 1:
-            trigger = True
-        elif previous >= cooldown - 2 and timer <= 1:
-            trigger = True
+        # ═══ PERBAIKAN v21 - SWING TERLIHAT TIDAK NATURAL ═══
+        # attack_timer adalah hitung MUNDUR: di-set ke attack_cooldown
+        # saat menyerang, lalu berkurang 1 tiap langkah simulasi.
+        #
+        # Deteksi lama mensyaratkan fungsi ini - yang dipanggil dari
+        # DRAW - melihat timer tepat pada nilai puncaknya. Itu hanya
+        # terjadi kalau 1 frame gambar = 1 langkah simulasi, yaitu di
+        # 60 FPS. Dengan fixed timestep di HP, satu frame gambar
+        # mencakup 4-12 langkah simulasi, sehingga nilai puncak tidak
+        # pernah terlihat -> animasi swing nyaris tidak pernah dipicu
+        # dan yang tampak hanya potongan pose acak.
+        #
+        # Serangan baru = timer NAIK. Itu benar untuk berapa pun
+        # jumlah langkah simulasi yang terlewat antar-gambar.
+        trigger = previous >= 0 and timer > previous
 
-        if trigger and not active:
+        if trigger:
             boss._th_attack_active = True
-            boss._th_attack_frame = 0
             active = True
 
-        if active:
-            boss._th_attack_frame = int(getattr(boss, "_th_attack_frame", 0)) + 1
-            if boss._th_attack_frame > cooldown:
-                boss._th_attack_active = False
-                boss._th_attack_frame = 0
-                active = False
+        if active and timer <= 0:
+            boss._th_attack_active = False
+            active = False
 
         boss._th_prev_timer = timer
+
+        # Progres diturunkan LANGSUNG dari timer simulasi, bukan dari
+        # penghitung frame gambar. Durasi swing jadi identik di 60 FPS
+        # maupun 8 FPS.
+        boss._th_attack_frame = max(0, cooldown - timer) if active else 0
         boss._th_attack_progress = (
-            min(1.0, getattr(boss, "_th_attack_frame", 0) / max(1, cooldown - 1))
+            min(1.0, boss._th_attack_frame / max(1, cooldown - 1))
             if active else 0.0
         )
 
@@ -7133,35 +7168,44 @@ class _NS_vex:
 
 
     def _update_attack_anim(boss):
-        """Track ranged attack animation timeline."""
+        """Track attack animation timeline."""
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_vx_prev_timer", -1))
         active = bool(getattr(boss, "_vx_attack_active", False))
 
-        trigger = False
-        if previous < 0:
-            pass
-        elif timer >= cooldown - 1 and previous < cooldown - 1:
-            trigger = True
-        elif previous >= cooldown - 2 and timer <= 1:
-            trigger = True
+        # ═══ PERBAIKAN v21 - SWING TERLIHAT TIDAK NATURAL ═══
+        # attack_timer adalah hitung MUNDUR: di-set ke attack_cooldown
+        # saat menyerang, lalu berkurang 1 tiap langkah simulasi.
+        #
+        # Deteksi lama mensyaratkan fungsi ini - yang dipanggil dari
+        # DRAW - melihat timer tepat pada nilai puncaknya. Itu hanya
+        # terjadi kalau 1 frame gambar = 1 langkah simulasi, yaitu di
+        # 60 FPS. Dengan fixed timestep di HP, satu frame gambar
+        # mencakup 4-12 langkah simulasi, sehingga nilai puncak tidak
+        # pernah terlihat -> animasi swing nyaris tidak pernah dipicu
+        # dan yang tampak hanya potongan pose acak.
+        #
+        # Serangan baru = timer NAIK. Itu benar untuk berapa pun
+        # jumlah langkah simulasi yang terlewat antar-gambar.
+        trigger = previous >= 0 and timer > previous
 
-        if trigger and not active:
+        if trigger:
             boss._vx_attack_active = True
-            boss._vx_attack_frame = 0
             active = True
 
-        if active:
-            boss._vx_attack_frame = int(getattr(boss, "_vx_attack_frame", 0)) + 1
-            if boss._vx_attack_frame > cooldown:
-                boss._vx_attack_active = False
-                boss._vx_attack_frame = 0
-                active = False
+        if active and timer <= 0:
+            boss._vx_attack_active = False
+            active = False
 
         boss._vx_prev_timer = timer
+
+        # Progres diturunkan LANGSUNG dari timer simulasi, bukan dari
+        # penghitung frame gambar. Durasi swing jadi identik di 60 FPS
+        # maupun 8 FPS.
+        boss._vx_attack_frame = max(0, cooldown - timer) if active else 0
         boss._vx_attack_progress = (
-            min(1.0, getattr(boss, "_vx_attack_frame", 0) / max(1, cooldown - 1))
+            min(1.0, boss._vx_attack_frame / max(1, cooldown - 1))
             if active else 0.0
         )
 
@@ -8808,34 +8852,44 @@ class _NS_zephyr:
 
 
     def _update_attack_anim(boss):
+        """Track attack animation timeline."""
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 42)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_zp_prev_timer", -1))
         active = bool(getattr(boss, "_zp_attack_active", False))
 
-        trigger = False
-        if previous < 0:
-            pass
-        elif timer >= cooldown - 1 and previous < cooldown - 1:
-            trigger = True
-        elif previous >= cooldown - 2 and timer <= 1:
-            trigger = True
+        # ═══ PERBAIKAN v21 - SWING TERLIHAT TIDAK NATURAL ═══
+        # attack_timer adalah hitung MUNDUR: di-set ke attack_cooldown
+        # saat menyerang, lalu berkurang 1 tiap langkah simulasi.
+        #
+        # Deteksi lama mensyaratkan fungsi ini - yang dipanggil dari
+        # DRAW - melihat timer tepat pada nilai puncaknya. Itu hanya
+        # terjadi kalau 1 frame gambar = 1 langkah simulasi, yaitu di
+        # 60 FPS. Dengan fixed timestep di HP, satu frame gambar
+        # mencakup 4-12 langkah simulasi, sehingga nilai puncak tidak
+        # pernah terlihat -> animasi swing nyaris tidak pernah dipicu
+        # dan yang tampak hanya potongan pose acak.
+        #
+        # Serangan baru = timer NAIK. Itu benar untuk berapa pun
+        # jumlah langkah simulasi yang terlewat antar-gambar.
+        trigger = previous >= 0 and timer > previous
 
-        if trigger and not active:
+        if trigger:
             boss._zp_attack_active = True
-            boss._zp_attack_frame = 0
             active = True
 
-        if active:
-            boss._zp_attack_frame = int(getattr(boss, "_zp_attack_frame", 0)) + 1
-            if boss._zp_attack_frame > cooldown:
-                boss._zp_attack_active = False
-                boss._zp_attack_frame = 0
-                active = False
+        if active and timer <= 0:
+            boss._zp_attack_active = False
+            active = False
 
         boss._zp_prev_timer = timer
+
+        # Progres diturunkan LANGSUNG dari timer simulasi, bukan dari
+        # penghitung frame gambar. Durasi swing jadi identik di 60 FPS
+        # maupun 8 FPS.
+        boss._zp_attack_frame = max(0, cooldown - timer) if active else 0
         boss._zp_attack_progress = (
-            min(1.0, getattr(boss, "_zp_attack_frame", 0) / max(1, cooldown - 1))
+            min(1.0, boss._zp_attack_frame / max(1, cooldown - 1))
             if active else 0.0
         )
 
