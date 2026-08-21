@@ -192,6 +192,10 @@ class DebugOverlay:
                 "ON" if perf.Quality.sprite_cache else "off",
                 self._slow_frames, self._frames),
              OK if not perf.Quality.cheap_alpha else WARN),
+            ("konversi sprite: %s   |   %s"
+             % (perf.convert_stats(), perf.Quality.colorkey_gain and
+                "gain %.0fx" % perf.Quality.colorkey_gain or "-"),
+             (200, 190, 140)),
             ("font new %d / reuse %d   text render %d / cache %d"
              % (fstats["font_created"], fstats["font_reused"],
                 fstats["text_rendered"], fstats["text_cached"]), TXT),

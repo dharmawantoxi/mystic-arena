@@ -128,8 +128,18 @@ def render_minion_cached(minion_type, renderer, surface, minion, x, y):
     entry = _cache.get(key)
     if entry is not None:
         _cache.move_to_end(key)
-        sprite, off_x, off_y = entry
+        sprite, off_x, off_y, uses = entry
         _stats["hit"] += 1
+
+        # Konversi colorkey ditunda sampai sprite TERBUKTI dipakai
+        # ulang. Konversi sendiri memakan ~1 blit alpha, jadi kalau
+        # pose cuma muncul sekali, mengonversinya rugi.
+        if uses == 1 and not Quality.cheap_alpha:
+            from mobile.perf import can_convert, to_colorkey_sprite
+            if can_convert():
+                sprite = to_colorkey_sprite(sprite)
+        _cache[key] = (sprite, off_x, off_y, uses + 1)
+
         surface.blit(sprite, (x - off_x, y - off_y))
         return True
 
@@ -145,18 +155,10 @@ def render_minion_cached(minion_type, renderer, surface, minion, x, y):
         _stats["bypass"] += 1
         return False
 
-    # Di perangkat dengan alpha blit mahal, simpan sebagai sprite
-    # COLORKEY: blitnya memakai jalur cepat (RLE), ~25x lebih murah
-    # daripada per-piksel-alpha, dan juga lebih murah daripada
-    # menggambar ulang ~370 panggilan draw per unit.
-    if not Quality.cheap_alpha:
-        try:
-            from mobile.perf import to_colorkey_sprite
-            sprite = to_colorkey_sprite(sprite)
-        except Exception:
-            pass
-
-    _cache[key] = (sprite, left, top)
+    # Sprite baru disimpan APA ADANYA dulu (alpha). Konversi ke
+    # colorkey terjadi pada pemakaian KEDUA - lihat jalur "hit" di
+    # atas. Ini mencegah badai konversi saat pose berganti terus.
+    _cache[key] = (sprite, left, top, 1)
     _stats["miss"] += 1
     if len(_cache) > MAX_ENTRIES:
         _cache.popitem(last=False)

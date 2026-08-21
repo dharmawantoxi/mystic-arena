@@ -389,6 +389,43 @@ def install_surface_format_fix(screen=None):
 
 COLORKEY = (255, 0, 255)
 
+# ═══════════════════════════════════════════════════════
+# ANGGARAN KONVERSI PER FRAME
+#
+# Mengubah sprite jadi colorkey = satu operasi per-piksel. Di HP uji
+# ~256 ns/piksel, jadi sprite hero 100x140 (14.000 piksel) = 3,6 ms
+# SEKALI konversi. Kalau posenya berubah terus, konversi berulang
+# jadi LEBIH MAHAL daripada untungnya - persis yang terjadi di v19
+# (entity 273 ms untuk 11 unit).
+#
+# Dua pengaman:
+#   1. konversi hanya untuk sprite yang sudah dipakai >= 2 kali
+#      (terbukti dipakai ulang)  -> lihat should_convert()
+#   2. maksimal N konversi per frame
+# ═══════════════════════════════════════════════════════
+MAX_CONVERT_PER_FRAME = 2
+_convert_budget = [MAX_CONVERT_PER_FRAME]
+_convert_stats = {"done": 0, "skipped": 0}
+
+
+def new_frame_budget():
+    """Panggil sekali per frame (dari main loop)."""
+    _convert_budget[0] = MAX_CONVERT_PER_FRAME
+
+
+def can_convert():
+    """True kalau masih ada jatah konversi di frame ini."""
+    if _convert_budget[0] > 0:
+        _convert_budget[0] -= 1
+        _convert_stats["done"] += 1
+        return True
+    _convert_stats["skipped"] += 1
+    return False
+
+
+def convert_stats():
+    return dict(_convert_stats)
+
 
 def to_colorkey_sprite(surf, bg=(0, 0, 0)):
     """
