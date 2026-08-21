@@ -1,0 +1,257 @@
+name: Build Android
+
+# ═══════════════════════════════════════════════════════
+# BUILD MANUAL SAJA
+#
+# Workflow ini TIDAK lagi jalan otomatis saat push/upload berkas.
+# Alasannya: mengunggah berkas satu per satu lewat web memicu satu
+# build (±50 menit) untuk SETIAP berkas dan menghabiskan kuota
+# GitHub Actions.
+#
+# Cara menjalankan:
+#   Tab Actions -> "Build Android" -> tombol "Run workflow"
+#     - Jenis build : debug (APK) atau release (AAB)
+#     - Bersihkan cache : centang kalau ingin build benar-benar
+#       dari nol (mis. setelah mengubah buildozer.spec / resep p4a)
+#
+# Satu-satunya pemicu otomatis yang tersisa adalah tag versi
+# (git tag v1.0.0 && git push origin v1.0.0) -> build AAB release.
+# Hapus blok `push:` di bawah kalau itu pun tidak diinginkan.
+#
+# SECRET untuk build release:
+#   KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEYALIAS, KEYALIAS_PASSWORD
+# ═══════════════════════════════════════════════════════
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Jenis build'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+      clean_cache:
+        description: 'Bersihkan cache (build dari nol, ±50 menit)'
+        required: false
+        default: false
+        type: boolean
+
+  push:
+    tags: ['v*']
+
+# Build baru membatalkan build lama yang masih jalan di branch sama
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    env:
+      # ── SATU-SATUNYA TEMPAT MENGATUR VERSI PYTHON ──
+      # Kalau build gagal di tahap "Building python3", ganti KEDUANYA
+      # ke 3.10.14 (harus selalu sama - hostpython3 memeriksanya).
+      # Rentang yang didukung pygame-ce 2.4.1: 3.8 - 3.12
+      VERSION_python3: 3.11.9
+      VERSION_hostpython3: 3.11.9
+
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Tentukan jenis build
+        id: cfg
+        run: |
+          if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+            echo "type=release" >> $GITHUB_OUTPUT
+          else
+            echo "type=${{ inputs.build_type || 'debug' }}" >> $GITHUB_OUTPUT
+          fi
+          echo "Jenis build: $(cat $GITHUB_OUTPUT)"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Paket sistem yang dibutuhkan p4a
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip autoconf libtool pkg-config \
+            zlib1g-dev libncurses-dev cmake libffi-dev libssl-dev \
+            build-essential ccache libltdl-dev
+
+      # CACHE_VERSION: naikkan angkanya (v3 -> v4 -> ...) kalau perlu
+      # memaksa build bersih. restore-keys sengaja ikut memakai versi
+      # ini supaya cache LAMA tidak ikut dipulihkan - kalau ikut, sumber
+      # pygame-ce versi lama yang sudah terbongkar akan dipakai ulang
+      # oleh p4a ("is already unpacked, skipping") dan error yang sama
+      # terulang walau resepnya sudah diperbaiki.
+      - name: Cache SDK/NDK & build p4a
+        if: ${{ !inputs.clean_cache }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: buildozer-v3-py311-${{ runner.os }}-${{ hashFiles('buildozer.spec', 'p4a-recipes/**') }}
+          restore-keys: |
+            buildozer-v3-py311-${{ runner.os }}-
+
+      - name: Install buildozer
+        run: |
+          python -m pip install --upgrade pip
+          pip install buildozer==1.5.0 "cython<3.0" virtualenv
+
+      # Cetak konfigurasi yang BENAR-BENAR dipakai. Kalau baris di bawah
+      # tidak sesuai harapan, berarti Anda menjalankan commit yang salah.
+      - name: Konfigurasi yang dipakai build ini
+        run: |
+          echo "commit     : $GITHUB_SHA"
+          echo "jenis build: ${{ steps.cfg.outputs.type }}"
+          echo "--- buildozer.spec ---"
+          grep -E "^(version|android\.(api|minapi|ndk_api|archs|release_artifact))" buildozer.spec
+          echo "--- resep pygame-ce ---"
+          grep -E "^\s+(version|url) = " p4a-recipes/pygame-ce/__init__.py
+          grep -E "^RECIPE_MARK" p4a-recipes/pygame-ce/__init__.py
+          echo "--- penanda build di dalam APK ---"
+          grep -E "^BUILD_(ID|DATE)" mobile/buildinfo.py
+          echo "--- versi Python yang dipaksa ---"
+          echo "VERSION_python3     = $VERSION_python3"
+          echo "VERSION_hostpython3 = $VERSION_hostpython3"
+          echo "======================================================="
+          echo "HARUS terlihat:"
+          echo "  pygame-ce version = 2.4.1"
+          echo "  android.archs     = arm64-v8a"
+          echo "  VERSION_python3   = 3.11.9   (BUKAN 3.14)"
+          echo "======================================================="
+
+      # ═══════════════════════════════════════════════════════
+      # PAKSA pygame-ce DIKOMPILASI ULANG SETIAP BUILD
+      #
+      # Ini memperbaiki kegagalan yang berulang tiga kali:
+      # python-for-android melewati kompilasi sebuah paket kalau
+      # paketnya SUDAH ADA di site-packages ("apparently already in
+      # site-packages"). Menghapus folder sumber saja TIDAK cukup —
+      # hasil pasangnya tetap dipakai ulang dari cache, sehingga
+      # tambalan resep tidak pernah masuk APK dan hasil pengukuran
+      # di HP terlihat "tidak berubah sama sekali".
+      #
+      # Biaya: ±6-8 menit per build. Jauh lebih murah daripada satu
+      # putaran uji yang menyesatkan.
+      # ═══════════════════════════════════════════════════════
+      - name: Paksa pygame-ce dikompilasi ulang
+        run: |
+          B=.buildozer/android/platform
+          rm -rf $B/build-*/other_builds/pygame-ce* || true
+          rm -rf $B/build-*/packages/pygame-ce* || true
+          # ← INI yang dulu terlewat: hasil pasang di site-packages
+          # sapu MENYELURUH: folder/berkas pygame di mana pun dalam cache
+          find .buildozer ~/.buildozer -maxdepth 12 \
+               \( -name 'pygame' -o -name 'pygame_ce*' \
+                  -o -name 'pygame-*.dist-info' -o -name 'pygame-*.egg-info' \) \
+               -not -path '*/p4a-recipes/*' -prune -exec rm -rf {} + 2>/dev/null || true
+          # python3/hostpython3: versinya pernah berubah 3.14 -> 3.11
+          rm -rf $B/build-*/other_builds/python3* || true
+          rm -rf $B/build-*/other_builds/hostpython3* || true
+          echo "sisa pygame-ce (sumber + site-packages) dan python3 lama dibersihkan"
+          echo "--- isi site-packages setelah dibersihkan ---"
+          ls $B/build-*/python-installs/*/*/site-packages/ 2>/dev/null | head -40 || true
+
+      # ─────────────── DEBUG (APK) ───────────────
+      - name: Build APK debug
+        if: steps.cfg.outputs.type == 'debug'
+        shell: bash
+        run: |
+          set -o pipefail
+          buildozer -v android debug 2>&1 | tee build.log
+
+      # ═══ GERBANG MUTU ═══
+      # Build DIGAGALKAN kalau pygame tidak benar-benar dikompilasi
+      # ulang. Tanpa gerbang ini, APK bisa berisi pygame lama dari
+      # cache sementara kita mengira tambalan resep sudah teruji -
+      # itu sudah tiga kali membuang satu putaran uji penuh.
+      - name: Pastikan pygame benar-benar dikompilasi ulang
+        if: steps.cfg.outputs.type == 'debug'
+        shell: bash
+        run: |
+          echo "### Bukti kompilasi pygame" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -o "P4A-CHECK [A-Za-z0-9_]*=[01][^\"]*" build.log \
+            | sort -u | tee -a $GITHUB_STEP_SUMMARY || true
+          grep -m1 "TAMBALAN NEON:" build.log \
+            | tee -a $GITHUB_STEP_SUMMARY || true
+          grep -m1 "CFLAGS FINAL" build.log \
+            | cut -c1-200 | tee -a $GITHUB_STEP_SUMMARY || true
+          grep -m1 "PENANDA dipasang" build.log \
+            | tee -a $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if ! grep -q "PENANDA dipasang" build.log; then
+            echo "::error::pygame TIDAK dikompilasi ulang - APK ini akan berisi pygame lama dari cache. Build digagalkan supaya tidak menghasilkan pengukuran palsu."
+            exit 1
+          fi
+          echo "OK: pygame dikompilasi ulang oleh resep."
+
+      - name: Unggah artefak APK
+        if: steps.cfg.outputs.type == 'debug'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mystic-arena-debug-apk
+          path: bin/*.apk
+          retention-days: 14
+
+      # ─────────────── RELEASE (AAB) ───────────────
+      - name: Siapkan keystore
+        if: steps.cfg.outputs.type == 'release'
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$HOME/mystic.keystore"
+
+      - name: Build AAB release (ditandatangani)
+        if: steps.cfg.outputs.type == 'release'
+        env:
+          P4A_RELEASE_KEYSTORE: /home/runner/mystic.keystore
+          P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.KEYSTORE_PASSWORD }}
+          P4A_RELEASE_KEYALIAS: ${{ secrets.KEYALIAS }}
+          P4A_RELEASE_KEYALIAS_PASSWD: ${{ secrets.KEYALIAS_PASSWORD }}
+        run: buildozer -v android release
+
+      - name: Unggah artefak AAB
+        if: steps.cfg.outputs.type == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mystic-arena-release-aab
+          path: bin/*.aab
+          retention-days: 90
+
+      - name: Buat GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bin/*.aab
+          generate_release_notes: true
+
+      - name: Ringkasan
+        if: always()
+        run: |
+          {
+            echo "### Build Android"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Jenis | ${{ steps.cfg.outputs.type }} |"
+            echo "| Commit | \`${GITHUB_SHA:0:7}\` |"
+            echo "| Penanda build | $(grep -oP 'BUILD_ID = \"\K[^\"]+' mobile/buildinfo.py) |"
+            echo ""
+            echo "Unduh hasilnya di bagian **Artifacts** di halaman ini."
+          } >> $GITHUB_STEP_SUMMARY
