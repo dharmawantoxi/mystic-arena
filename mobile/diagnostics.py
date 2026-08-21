@@ -98,199 +98,46 @@ def log_display_info(screen):
 
 def run_benchmark(screen, quick=True):
     """
-    Ukur biaya operasi dasar DI HP INI. Semua angka dalam ms.
+    Ukur biaya operasi dasar DI HP INI (mesin: mobile/_bench_core.py).
 
-    Patokan kasar HP kelas menengah yang SEHAT:
-        flip                 < 3 ms
-        fill layar penuh     < 2 ms
-        blit layar penuh     < 3 ms
-        200x draw.circle     < 6 ms
-    Kalau flip sendiri sudah > 10 ms -> scaling jatuh ke software.
+    v21: seluruh matriks pengukuran dipindah ke _bench_core supaya
+    SETIAP angka yang diukur pasti ikut ditampilkan di layar. Versi
+    lama mengukur 15 hal tapi hanya menampilkan 7 - angka penentunya
+    justru yang dibuang.
     """
-    w, h = screen.get_size()
-    n = 12 if quick else 40
+    from mobile import _bench_core as bc
 
-    plain = pygame.Surface((w, h))
-    plain_conv = plain.convert()
-    alpha = pygame.Surface((w, h), pygame.SRCALPHA)
-    alpha.fill((0, 0, 0, 120))
-    alpha_conv = alpha.convert_alpha()
-    small = pygame.Surface((64, 64), pygame.SRCALPHA)
-    small.fill((255, 255, 255, 180))
-    small_conv = small.convert_alpha()
+    res = bc.run(screen)
 
-    res = {}
-    res["flip"] = _t(pygame.display.flip, n)
-    res["fill_layar"] = _t(lambda: screen.fill((10, 10, 20)), n)
-    res["fill_BLEND(darken)"] = _t(
-        lambda: screen.fill((120, 120, 120),
-                            special_flags=pygame.BLEND_RGB_MULT), n)
-    res["blit_penuh_polos"] = _t(lambda: screen.blit(plain, (0, 0)), n)
-    res["blit_penuh_convert"] = _t(lambda: screen.blit(plain_conv, (0, 0)), n)
-    res["blit_penuh_alpha"] = _t(lambda: screen.blit(alpha, (0, 0)), n)
-    res["blit_penuh_alpha_conv"] = _t(
-        lambda: screen.blit(alpha_conv, (0, 0)), n)
+    print("\u2550\u2550\u2550\u2550\u2550 DIAG: BENCHMARK v21 \u2550\u2550\u2550\u2550\u2550")
+    for judul, keys in bc.GROUPS:
+        print("[DIAG] -- %s" % judul)
+        for k in keys:
+            v = res.get(k)
+            if v is None:
+                print("[DIAG]    %-26s GAGAL" % k)
+                continue
+            nsp = bc.ns_per_px(res, k)
+            if nsp is None:
+                print("[DIAG]    %-26s %8.2f ms" % (k, v))
+            else:
+                print("[DIAG]    %-26s %8.2f ms  %7.1f ns/piksel"
+                      % (k, v, nsp))
 
-    def _blit_small():
-        for i in range(100):
-            screen.blit(small, (i * 3 % 900, i * 5 % 500))
+    verdict_pairs = bc.verdict(res)
+    verdict = ["%s%s" % ("" if lv == "OK" else "! ", txt)
+               for lv, txt in verdict_pairs]
 
-    def _blit_small_conv():
-        for i in range(100):
-            screen.blit(small_conv, (i * 3 % 900, i * 5 % 500))
+    print("\u2550\u2550\u2550\u2550\u2550 DIAG: KESIMPULAN \u2550\u2550\u2550\u2550\u2550")
+    for lv, txt in verdict_pairs:
+        print("[DIAG] [%-4s] %s" % (lv, txt))
+    print("\u2550" * 40)
 
-    # ══ UJI KUNCI ══
-    # Kalau permukaan TUJUAN punya kanal alpha, SDL memakai blitter
-    # generik per-piksel (lambat). Kalau tujuannya XRGB8888 (tanpa
-    # alpha), SDL bisa memakai jalur yang jauh lebih cepat.
-    # Kita ukur keduanya supaya tahu harus pakai yang mana.
-    try:
-        noalpha = pygame.Surface((w, h), 0, 32,
-                                 (0x00FF0000, 0x0000FF00, 0x000000FF, 0))
-        res["blit_alpha_KE_noalpha"] = _t(
-            lambda: noalpha.blit(alpha, (0, 0)), n)
-        res["_dst_alpha_mask"] = screen.get_masks()[3]
-    except Exception as exc:
-        print("[DIAG] uji noalpha gagal: %s" % exc)
-
-    # ══ UJI PENENTU ══
-    # alphablit.c memakai jalur SIMD hanya kalau Rmask/Gmask/Bmask
-    # sumber SAMA PERSIS dengan tujuan. Kita buat surface dengan mask
-    # layar lalu ukur; kalau ini jauh lebih cepat, penyebabnya
-    # ketidakcocokan format - dan itu bisa kita perbaiki di kode.
-    try:
-        dm = screen.get_masks()
-        matched = pygame.Surface((w, h), pygame.SRCALPHA, 32,
-                                 (dm[0], dm[1], dm[2], 0xFF000000))
-        matched.fill((10, 20, 30, 120))
-        res["blit_alpha_mask_SAMA"] = _t(
-            lambda: screen.blit(matched, (0, 0)), n)
-        # CATATAN: dict `res` HANYA boleh berisi angka - isinya
-        # dicetak dengan %f dan ditampilkan sebagai ms. Data lain
-        # (mask, dsb) disimpan di RESULTS, bukan di sini.
-        RESULTS["masks"] = {"src": matched.get_masks(), "dst": dm}
-        print("[DIAG] mask layar  = %s" % (dm,))
-        print("[DIAG] mask sumber = %s" % (matched.get_masks(),))
-    except Exception as exc:
-        print("[DIAG] uji mask sama gagal: %s" % exc)
-
-    res["100x_blit_kecil"] = _t(_blit_small, n)
-    res["100x_blit_kecil_conv"] = _t(_blit_small_conv, n)
-
-    # Sprite colorkey: jalur blit tanpa kanal alpha. Inilah yang
-    # menentukan apakah cache sprite unit menguntungkan.
-    try:
-        from mobile.perf import to_colorkey_sprite
-        small_ck = to_colorkey_sprite(small)
-
-        def _blit_small_ck():
-            for i in range(100):
-                screen.blit(small_ck, (i * 3 % 900, i * 5 % 500))
-
-        res["100x_blit_kecil_colorkey"] = _t(_blit_small_ck, n)
-    except Exception as exc:
-        print("[DIAG] uji colorkey gagal: %s" % exc)
-
-    def _circles():
-        for i in range(200):
-            pygame.draw.circle(screen, (200, 100, 50),
-                               (i * 6 % 1200, i * 11 % 700), 12)
-
-    res["200x_draw.circle"] = _t(_circles, n)
-
-    def _rects():
-        for i in range(200):
-            pygame.draw.rect(screen, (60, 80, 160),
-                             (i * 6 % 1200, i * 11 % 700, 30, 20))
-
-    res["200x_draw.rect"] = _t(_rects, n)
-
-    def _newsurf():
-        s = pygame.Surface((w, h), pygame.SRCALPHA)
-        s.fill((0, 0, 0, 0))
-
-    res["alokasi_surface_penuh"] = _t(_newsurf, max(4, n // 3))
-
-    print("═══════════ DIAG: BENCHMARK (ms) ═══════════")
-    for k, v in res.items():
-        if not isinstance(v, (int, float)):
-            continue                     # lewati apa pun yang bukan angka
-        print("[DIAG] %-24s = %7.2f ms" % (k, v))
-
-    # ── kesimpulan otomatis ──
-    verdict = []
-    if res["flip"] > 10:
-        verdict.append("PRESENTASI LAMBAT: flip() %.1f ms. Scaling 720p "
-                       "kemungkinan dikerjakan CPU, bukan GPU." % res["flip"])
-    if res["blit_penuh_alpha"] > res["blit_penuh_alpha_conv"] * 1.6:
-        verdict.append("FORMAT PIKSEL TIDAK COCOK: blit alpha %.1f ms vs "
-                       "%.1f ms setelah convert_alpha() -> pakai convert."
-                       % (res["blit_penuh_alpha"],
-                          res["blit_penuh_alpha_conv"]))
-    ms = res.get("blit_alpha_mask_SAMA")
-    if ms and res["blit_penuh_alpha"] > ms * 3:
-        verdict.append("PENYEBAB DITEMUKAN: blit alpha dengan mask warna "
-                       "SAMA %.0f ms vs %.0f ms (beda mask) = %.0fx. "
-                       "Jalur SIMD/NEON pygame hanya aktif kalau mask "
-                       "cocok -> semua surface akan disamakan formatnya."
-                       % (ms, res["blit_penuh_alpha"],
-                          res["blit_penuh_alpha"] / ms))
-    arch = RESULTS.get("display", {}).get("arch")
-    if arch and arch not in ("aarch64", "arm64", "x86_64"):
-        verdict.append("APK BERJALAN 32-BIT (%s): pygame-ce hanya "
-                       "mengompilasi blitter NEON untuk arm64. Bangun "
-                       "ulang dengan android.archs = arm64-v8a saja."
-                       % arch)
-
-    ck = res.get("100x_blit_kecil_colorkey")
-    ab = res.get("100x_blit_kecil")
-    if ck and ab and ck * 3 < ab:
-        verdict.append("SPRITE COLORKEY MENANG: 100 blit kecil %.1f ms "
-                       "(alpha) vs %.1f ms (colorkey) = %.1fx -> cache "
-                       "sprite unit diaktifkan."
-                       % (ab, ck, ab / ck))
-
-    na = res.get("blit_alpha_KE_noalpha")
-    if na is not None and res["blit_penuh_alpha"] > na * 2:
-        verdict.append("SOLUSINYA KETEMU: blit ke surface TANPA kanal "
-                       "alpha %.0f ms vs %.0f ms ke layar. Game akan "
-                       "menggambar ke buffer tanpa alpha."
-                       % (na, res["blit_penuh_alpha"]))
-    if res["blit_penuh_alpha"] > 30:
-        verdict.append("ALPHA BLIT SANGAT MAHAL: %.0f ms untuk satu layar "
-                       "penuh (~%.0f ns/piksel). Semua efek overlay "
-                       "transparan dimatikan otomatis."
-                       % (res["blit_penuh_alpha"],
-                          res["blit_penuh_alpha"] * 1e6 / (1280 * 720)))
-    if res["200x_draw.circle"] > 12:
-        verdict.append("CPU GAMBAR LAMBAT: 200 lingkaran %.1f ms -> turunkan "
-                       "preset kualitas / kurangi efek."
-                       % res["200x_draw.circle"])
-    if res["alokasi_surface_penuh"] > 4:
-        verdict.append("ALOKASI SURFACE MAHAL: %.1f ms per surface layar "
-                       "penuh -> hindari bikin surface tiap frame."
-                       % res["alokasi_surface_penuh"])
-    if not verdict:
-        verdict.append("Operasi dasar terlihat normal. Kalau game tetap "
-                       "lambat, penyebabnya jumlah panggilan gambar per "
-                       "frame (lihat overlay debug: draw ms).")
-
-    print("═══════════ DIAG: KESIMPULAN ═══════════")
-    for v in verdict:
-        print("[DIAG] * " + v)
-    print("════════════════════════════════════════")
-
-    # Kalau blit dengan mask sama jauh lebih cepat, seragamkan format
-    # SEMUA surface alpha supaya jalur SIMD/NEON pygame terpakai.
-    try:
-        ms = res.get("blit_alpha_mask_SAMA")
-        if ms and res.get("blit_penuh_alpha", 0) > ms * 3:
-            from mobile.perf import install_surface_format_fix
-            install_surface_format_fix(screen)
-    except Exception as exc:
-        print("[DIAG] gagal menyeragamkan format: %s" % exc)
-
-    # Terapkan profil kualitas berdasar kemampuan NYATA perangkat
+    # Terapkan profil kualitas berdasar kemampuan NYATA perangkat.
+    # CATATAN v21: install_surface_format_fix() TIDAK lagi dipanggil.
+    # Pengukuran v19/v20 membuktikan menyamakan mask tidak mengubah
+    # apa pun (235,17 vs 236,23 ms), sementara menambal pygame.Surface
+    # secara global menambah risiko tanpa manfaat terukur.
     try:
         from mobile.perf import apply_device_profile
         apply_device_profile(res)
@@ -299,7 +146,10 @@ def run_benchmark(screen, quick=True):
 
     RESULTS["bench"] = res
     RESULTS["verdict"] = verdict
-    screen.fill((0, 0, 0))
+    RESULTS["verdict_pairs"] = verdict_pairs
+    RESULTS["groups"] = bc.GROUPS
+    RESULTS["pygame_mark"] = bc.pygame_mark()
+    RESULTS["neon_patch"] = bc.neon_patch_report()
     return res
 
 

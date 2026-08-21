@@ -163,7 +163,7 @@ def run(screen, get_font, touch):
 
         # ── kolom kiri: display ──
         screen.blit(f_head.render("TAMPILAN", True, FG), (36, y))
-        yy = y + 26
+        yy = y + 24
         rows = [
             ("mode aktif", mode),
             ("driver", info.get("video_driver", "?")),
@@ -173,46 +173,84 @@ def run(screen, get_font, touch):
             ("bitsize", info.get("bitsize", "?")),
             ("arch", "%s / %s-bit" % (info.get("arch", "?"),
                                       info.get("bits", "?"))),
-            ("SIMD bisa?", info.get("simd_mungkin", "?")),
             ("skala", info.get("scale_factor", "?")),
         ]
         for k, v in rows:
             screen.blit(f.render("%-11s %s" % (k, v), True, FG), (48, yy))
-            yy += 20
+            yy += 19
 
-        # ── kolom kanan: benchmark ──
-        screen.blit(f_head.render("BIAYA OPERASI DASAR (ms)", True, FG),
-                    (560, y))
-        yy = y + 26
-        batas = {"flip": 3.0, "fill_layar": 2.0, "blit_penuh_alpha": 3.0,
-                 "blit_alpha_mask_SAMA": 3.0,
-                 "100x_blit_kecil": 3.0, "100x_blit_kecil_colorkey": 3.0,
-                 "200x_draw.circle": 6.0, "alokasi_surface_penuh": 4.0}
-        for k, limit in batas.items():
-            v = bench.get(k)
-            if v is None:
-                continue
-            warna = OK if v <= limit else (WARN if v <= limit * 2.5 else BAD)
-            screen.blit(f.render("%-22s %7.2f  (sehat < %.0f)"
-                                 % (k, v, limit), True, warna), (572, yy))
-            yy += 22
+        # ── PENANDA RESEP PYGAME ──
+        # Menjawab satu pertanyaan yang tiga kali menyesatkan kita:
+        # "apakah pygame di APK ini benar-benar hasil kompilasi resep
+        # terbaru, atau diambil lagi dari cache?"
+        mark = diag.RESULTS.get("pygame_mark")
+        if mark:
+            screen.blit(f.render("resep pygame  %s" % mark, True, OK),
+                        (48, yy))
+        else:
+            # Di PC ini wajar (pygame dari pip). Di HP ini ALARM:
+            # berarti pygame diambil dari cache, bukan dikompilasi.
+            w_mark = BAD if plat.IS_ANDROID else DIM
+            screen.blit(f.render("resep pygame  TANPA PENANDA%s"
+                                 % (" (CACHE!)" if plat.IS_ANDROID else ""),
+                                 True, w_mark), (48, yy))
+        yy += 19
+        npatch = diag.RESULTS.get("neon_patch")
+        if npatch is not None:
+            screen.blit(f_small.render(
+                "tambalan NEON: %s"
+                % (", ".join(npatch) if npatch else "TIDAK ADA"),
+                True, OK if npatch else BAD), (48, yy))
+            yy += 18
+
+        # ── kolom kanan: benchmark (SEMUA angka, ternormalkan) ──
+        screen.blit(f_head.render("BIAYA OPERASI   ms | ns per piksel",
+                                  True, FG), (575, y))
+        yb2 = y + 24
+        try:
+            from mobile import _bench_core as bc
+            groups = diag.RESULTS.get("groups") or bc.GROUPS
+            for judul, keys in groups:
+                screen.blit(f_small.render(judul, True, ACCENT), (575, yb2))
+                yb2 += 18
+                for k in keys:
+                    v = bench.get(k)
+                    if v is None:
+                        screen.blit(f_small.render("  %-24s GAGAL" % k,
+                                                   True, BAD), (583, yb2))
+                        yb2 += 17
+                        continue
+                    nsp = bc.ns_per_px(bench, k)
+                    if nsp is None:
+                        warna = OK if v < 4 else (WARN if v < 10 else BAD)
+                        teks = "  %-24s %7.2f ms" % (k, v)
+                    else:
+                        warna = (OK if nsp <= bc.NS_SEHAT else
+                                 (WARN if nsp < bc.NS_CURIGA else BAD))
+                        teks = "  %-24s %7.2f ms %7.1f ns/px" % (k, v, nsp)
+                    screen.blit(f_small.render(teks, True, warna),
+                                (583, yb2))
+                    yb2 += 17
+        except Exception as exc:
+            screen.blit(f_small.render("gagal menampilkan: %s" % exc,
+                                       True, BAD), (583, yb2))
+            yb2 += 17
 
         # ── status optimasi (biar kegagalan langsung kelihatan) ──
         try:
             from mobile.perf import Quality as _Q
             _on = not _Q.cheap_alpha
-            txt = ("MODE HEMAT: %s   |   cache sprite unit: %s   |   "
-                   "kualitas: %s"
+            txt = ("MODE HEMAT: %s | sprite cache: %s | kualitas: %s"
                    % ("AKTIF" if _on else "MATI",
                       "AKTIF" if _Q.sprite_cache else "mati", _Q.level))
-            screen.blit(f_head.render(txt, True, OK if _on else BAD),
-                        (36, yy + 10))
-            yy += 34
+            screen.blit(f.render(txt, True, OK if _on else BAD),
+                        (36, yy + 8))
+            yy += 32
         except Exception:
             pass
 
         # ── sentuhan ──
-        yb = max(300, yy + 16)
+        yb = yy + 10
         screen.blit(f_head.render("SENTUHAN", True, FG), (36, yb))
         c = touch.counts
         warna = OK if (c["mouse"] + c["finger"]) else BAD
@@ -243,13 +281,23 @@ def run(screen, get_font, touch):
                                  (pos[0], pos[1] - 10), (pos[0], pos[1] + 10))
 
         # ── kesimpulan ──
-        yv = max(400, yb + 96)
+        yv = max(500, yb + 96)
         screen.blit(f_head.render("KESIMPULAN", True, FG), (36, yv))
-        yv += 26
-        for line in verdict[:4]:
-            for chunk in _wrap(line, 108):
-                screen.blit(f_small.render(chunk, True, WARN), (48, yv))
-                yv += 18
+        yv += 24
+        pairs = diag.RESULTS.get("verdict_pairs")
+        if not pairs:
+            pairs = [("WARN", v) for v in verdict]
+        warna_map = {"OK": OK, "WARN": WARN, "BAD": BAD}
+        for lv, line in pairs[:7]:
+            for chunk in _wrap(line, 150):
+                screen.blit(f_small.render(chunk, True,
+                                           warna_map.get(lv, WARN)),
+                            (48, yv))
+                yv += 16
+                if yv > H - 110:
+                    break
+            if yv > H - 110:
+                break
 
         # ── tombol ──
         for b in buttons:
