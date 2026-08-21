@@ -182,10 +182,13 @@ _display_state = {
 # Mode tersimpan di <folder tulis>/display_mode.txt supaya pilihan
 # di layar diagnostik ikut terpakai saat start berikutnya.
 # ═══════════════════════════════════════════════════════
-# Urutan tombol GANTI MODE. "scaled" jadi default karena pada
-# perangkat uji (Infinix X6880): flip 4,9 ms (scaled) vs 13,8 ms
-# (scaled_vsync) vs 19,8 ms efektif (native, CPU yang menskalakan).
-DISPLAY_MODES = ("scaled", "scaled_vsync", "native")
+# Urutan tombol GANTI MODE.
+# Catatan lapangan: walaupun benchmark memberi angka flip lebih kecil
+# untuk "scaled", pemain melaporkan FPS NYATA lebih tinggi dengan
+# "scaled_vsync" (vsync mencegah frame setengah jadi dan antrean
+# tampilan yang menumpuk). Pengalaman nyata menang atas mikro-benchmark,
+# jadi scaled_vsync dijadikan default.
+DISPLAY_MODES = ("scaled_vsync", "scaled", "native")
 
 
 def _mode_file():
@@ -203,7 +206,7 @@ def load_display_mode():
             return mode
     except Exception:
         pass
-    return "scaled"
+    return "scaled_vsync"
 
 
 def save_display_mode(mode):
@@ -225,7 +228,7 @@ def create_display(vsync=True, mode=None):
     """
     mode = mode or load_display_mode()
     if mode not in DISPLAY_MODES:
-        mode = "scaled"
+        mode = "scaled_vsync"
 
     if mode == "native":
         flags = pygame.FULLSCREEN if TOUCH_MODE else 0

@@ -68,7 +68,9 @@ class TouchHUD:
         self._get_font = get_font
         self.buttons = {}
         self.visible = True
-        self.show_debug_button = True
+        # Tombol FPS terpisah default MATI; overlay debug dibuka
+        # dengan menahan tombol jeda (lihat main.py).
+        self.show_debug_button = False
         self._build_layout()
 
     # ── tata letak ────────────────────────────────────
@@ -98,19 +100,24 @@ class TouchHUD:
                                  r_small * 2, r_small * 2),
                 SKILL_LABELS[act[-1]], SKILL_NAMES[act[-1]])
 
-        # ═══ Tombol aksi kiri bawah ═══
-        self.buttons["shop"] = TouchButton(
-            "shop", pygame.Rect(safe.left + 8, bottom - 68, 108, 52),
-            "SHOP", shape="capsule", font_size=22)
+        # ═══ Tombol SHOP DIHAPUS ═══
+        # Dulu ada kapsul "SHOP" di kiri bawah, tepat menutupi kastil
+        # pemain. Toko sudah bisa dibuka dengan mengetuk bangunan
+        # HERO SHOP di peta, jadi tombol ini mubazir.
 
-        # ═══ Kanan atas: jeda + debug ═══
+        # ═══ Kanan atas: hanya SATU tombol kecil ═══
+        # Sebelumnya dua tombol besar (jeda + FPS) menutupi kastil
+        # musuh. Sekarang: satu tombol jeda 44 px menempel di pojok.
+        # Overlay debug dibuka dengan MENAHAN tombol jeda.
         self.buttons["pause"] = TouchButton(
-            "pause", pygame.Rect(right - 62, safe.top + 6, 54, 54),
-            "II", shape="round", font_size=26)
+            "pause", pygame.Rect(right - 48, safe.top + 2, 44, 44),
+            "II", shape="round", font_size=20)
 
+        # Tombol FPS terpisah: default TIDAK tampil (menghalangi).
         self.buttons["debug"] = TouchButton(
-            "debug", pygame.Rect(right - 128, safe.top + 6, 54, 54),
-            "FPS", shape="round", font_size=17, color=(120, 200, 255))
+            "debug", pygame.Rect(right - 100, safe.top + 2, 44, 44),
+            "FPS", shape="round", font_size=15, color=(120, 200, 255),
+            visible=False)
 
         # ═══ Tombol kontekstual ═══
         self.buttons["skip"] = TouchButton(
@@ -154,7 +161,7 @@ class TouchHUD:
                 except Exception:
                     btn.cooldown, btn.enabled = 0.0, True
 
-        self.buttons["shop"].visible = bool(playing and not cinematic_active)
+
         self.buttons["pause"].visible = bool(playing and not cinematic_active)
         self.buttons["debug"].visible = bool(self.show_debug_button
                                              and not cinematic_active)
@@ -290,10 +297,6 @@ def apply_hud_action(action, ctx):
                "skill_e": pygame.K_e, "skill_r": pygame.K_r}[action]
         game.handle_key(key)
         plat.vibrate(18)
-        return True
-
-    if action == "shop" and game is not None:
-        game.shop_open = not game.shop_open
         return True
 
     if action == "pause":
