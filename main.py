@@ -136,9 +136,9 @@ def main():
     # Tombol FPS: TAMPIL selama masih menyetel performa.
     # Untuk rilis Play Store, ganti baris ini jadi:
     #     hud.show_debug_button = False
-    # Tombol FPS terpisah hanya kalau MYSTIC_DEBUG=1.
-    # Cara normal membuka overlay: TAHAN tombol jeda.
-    hud.show_debug_button = os.environ.get("MYSTIC_DEBUG") == "1"
+    # Tombol FPS tampil (di bawah panel gold). Untuk rilis Play Store
+    # cukup set MYSTIC_DEBUG=0 atau ubah baris ini jadi False.
+    hud.show_debug_button = os.environ.get("MYSTIC_DEBUG") != "0"
     debug = debug_mod.DebugOverlay(get_font, frame_timer)
 
     # ═══ LAYAR DIAGNOSTIK (Android / MYSTIC_BOOTCHECK=1) ═══
