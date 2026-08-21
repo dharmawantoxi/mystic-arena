@@ -289,7 +289,9 @@ def main():
             game.update()
             frame_timer.start("draw")
             game.draw()
+            perf.PHASES.mark("hud")
             hud.draw(screen, getattr(game, "animation_time", 0))
+            perf.PHASES.end()
 
             if getattr(game, 'next_level_requested', False):
                 from levels import get_next_level
@@ -339,7 +341,9 @@ def main():
 
         # ─────────────────────────────── OVERLAY DEBUG
         debug.update(clock, game)
+        perf.PHASES.mark("overlay")
         debug.draw(screen, clock, game, touch)
+        perf.PHASES.end()
 
         try:
             from mobile import blitwatch

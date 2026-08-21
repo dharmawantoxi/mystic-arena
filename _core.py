@@ -1940,7 +1940,7 @@ class Game:
         # Dev UI (paling atas)
         _PH.mark("dev")
         self.dev.draw(self.screen)
-        _PH.end()
+        _PH.mark("tail")   # overlay menang/kalah, hint bar, intro, dst
 
         if self.state == "victory":
             from levels import get_next_level
@@ -1987,6 +1987,7 @@ class Game:
         # ═══ BOSS DEATH ANIMATION + CELEBRATION ═══
         if self.boss_death and self.boss_death.is_active():
             self.boss_death.draw(self.screen)
+        _PH.end()
 
 
 
