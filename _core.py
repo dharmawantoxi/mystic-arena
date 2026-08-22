@@ -2649,6 +2649,17 @@ class Menu:
     # MAIN UPDATE & DRAW
     # ═══════════════════════════════════════
 
+    @staticmethod
+    def _kena(rect, mx, my, longgar=22):
+        """
+        Uji sentuh dengan pelonggaran.
+
+        Sama seperti helper di InputHandler. Tombol menu dibuat 300x55
+        sehingga pelonggaran hanya memperbesar area tujuannya sedikit,
+        memudahkan ketukan jari di layar sentuh.
+        """
+        return rect.inflate(longgar, longgar).collidepoint(mx, my)
+
     def update(self):
         """Update menu logic"""
         self.animation_time += 1

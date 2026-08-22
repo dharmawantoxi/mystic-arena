@@ -10,8 +10,8 @@
 import os
 
 # Naikkan setiap kali ada perubahan kode yang dikirim ke perangkat.
-BUILD_ID = "v30-panel-rapi"
-BUILD_DATE = "2026-08-21"
+BUILD_ID = "v31-menu-kena"
+BUILD_DATE = "2026-08-22"
 
 _KEY_FILES = (
     "_core.py", "_render.py", "splash_screen.py", "main.py",
