@@ -1,0 +1,74 @@
+============================================================
+ PAKET SUARA BARU — CARA PASANG
+============================================================
+
+APA ISI PAKET INI
+-----------------
+38 berkas .wav siap pakai di folder assets/sounds/ :
+
+  A. 19 berkas inti (dipanggil SoundManager):
+     goblin_spawn / goblin_attack / goblin_death
+     ambient_forest (loop hutan)
+     slash, tower_shoot, bullet_hit, explosion, nexus_hit
+     ui_click, ui_buy, ui_upgrade, ui_error, ui_sell
+     wave_start, victory, defeat
+     hero_skill, hero_spawn
+
+  B. 1 BGM: bgm_battle.wav (musik pertarungan, diputar di menu & game)
+
+  C. 18 berkas varian suara tempur (dipakai panel suara otomatis):
+     hero_melee_1..3, hero_ranged_1..3,
+     tower_shoot_1..3, minion_attack_1..3,
+     miniboss_attack_1..3, boss_attack_1..3
+
+Semua nama berkas PERSIS sesuai yang dicari kode. TIDAK perlu
+mengubah satu baris kode pun.
+
+CARA PASANG (github.dev / web UI, tanpa git CLI)
+------------------------------------------------
+1. Buka repo di github.dev (tekan tombol "." di halaman repo, atau
+   edit di web UI).
+2. Buka folder assets/sounds/.
+3. HAPUS 18 berkas lama (hero_melee_1.wav dst. hasil sintesis lama)
+   kalau ada, atau biarkan saja — berkas baru akan MENIMPA yang
+   bernama sama.
+4. Upload SEMUA 38 berkas .wav dari paket ini ke assets/sounds/.
+   Tips github.dev: seret (drag & drop) seluruh isi folder
+   assets/sounds/ dari paket ini ke panel file explorer github.dev.
+5. Commit + sync (tombol Source Control -> commit -> Sync).
+
+PENTING: jangan lupa ikut meng-upload 2 berkas dokumentasi ini juga
+(LISENSI_DAN_SUMBER.txt dan CARA_PASANG.txt) ke folder assets/sounds/
+atau ke root repo — berguna untuk rilis Play Store nanti.
+
+LALU REBUILD APK
+----------------
+Suara ikut dikemas saat build, jadi WAJIB rebuild:
+1. Buka tab Actions di GitHub.
+2. Jalankan workflow build manual (workflow_dispatch) — seperti biasa.
+3. Pasang APK baru.
+
+CARA MEMASTIKAN SUARA BARU TERPASANG
+------------------------------------
+Buka layar diagnostik (bootcheck), lihat bagian AUDIO. Harus muncul:
+
+  folder ADA   berkas 38   mixer 44100 Hz, 2 kanal
+  hero_melee 4 hero_ranged 3 tower 4 minion 4 miniboss 3 boss 3
+  siap - 21 berkas dipakai dari 38 yang ada
+
+Dan baris di atasnya: "[AUDIO] SoundManager memuat 19 berkas"
+(sebelumnya 0 karena berkasnya belum ada).
+Tekan tombol UJI SUARA -> harus berbunyi 6/6.
+
+Kalau angka tidak berubah (masih 18/38 dsb.), berarti APK lama atau
+upload belum masuk — bukan salah berkas suaranya.
+
+CATATAN
+-------
+- Kalau ada satu suara yang kurang cocok (mis. suara goblin), cukup
+  tukar isi berkasnya: nama berkas tetap, ganti isinya dengan file
+  WAV lain. Tidak perlu ubah kode.
+- Pemetaan goblin: spawn=berkas asli goblin-11, attack=goblin-3,
+  death=goblin-1. Bisa dipertukarkan dengan goblin-4/9/12 kalau
+  ternyata lebih pas di telinga Anda (lihat LISENSI_DAN_SUMBER.txt).
+- Volume BGM diatur di _core.py -> SoundManager.bgm_volume (0.35).

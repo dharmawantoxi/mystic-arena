@@ -1,0 +1,95 @@
+============================================================
+ MYSTIC ARENA — ASET SUARA BARU
+ Lisensi & Sumber
+============================================================
+
+SEMUA berkas di paket ini boleh dipakai untuk KEPERLUAN KOMERSIAL
+(termasuk rilis Google Play Store). Sebagian besar CC0 (public
+domain, tidak wajib atribusi); satu pun tidak mengharuskan atribusi.
+Mencantumkan sumber di bawah tetap disarankan sebagai itikad baik
+dan agar mudah dilacak kalau nanti mau diperbarui.
+
+------------------------------------------------------------
+ RINGKASAN LISENSI
+------------------------------------------------------------
+- 36 berkas efek suara (SFX) : CC0 / Public Domain
+- ambient_forest.wav         : CC0 (TinyWorlds, OpenGameArt)
+- bgm_battle.wav             : CC0 (cynicmusic, OpenGameArt)
+
+=> Tidak ada kewajiban atribusi. Aman untuk rilis komersial.
+
+------------------------------------------------------------
+ SUMBER PER BERKAS
+------------------------------------------------------------
+
+A) Kenney.nl — paket audio (semua CC0 1.0)
+   https://kenney.nl/assets/interface-sounds   (UI: klik, error, konfirmasi)
+   https://kenney.nl/assets/impact-sounds      (benturan)
+   https://kenney.nl/assets/sci-fi-sounds      (ledakan)
+   https://kenney.nl/assets/rpg-audio          (iris pedang, dll.)
+   Dipakai untuk:
+     ui_click.wav      <- interface/click_001.ogg
+     ui_error.wav      <- interface/error_003.ogg
+     bullet_hit.wav    <- impact/impactGeneric_light_000.ogg
+     nexus_hit.wav     <- impact/impactBell_heavy_000.ogg
+     explosion.wav     <- sci-fi/lowFrequency_explosion_000.ogg
+     slash.wav         <- rpg/knifeSlice.ogg
+
+B) OpenGameArt.org — "80 CC0 RPG SFX" oleh rubberduck (CC0)
+   https://opengameart.org/content/80-cc0-rpg-sfx
+   Dipakai untuk:
+     ui_buy.wav        <- item_coins_01.ogg
+     ui_sell.wav       <- item_coins_02.ogg
+     ui_upgrade.wav    <- item_gem_01.ogg
+     hero_skill.wav    <- spell_fire_01.ogg
+     hero_spawn.wav    <- spell_01.ogg
+     hero_melee_1..3   <- blade_01..03.ogg
+     hero_ranged_1..3  <- spell_fire_01/02/04.ogg
+     miniboss_attack_1..3 <- creature_roar_01..03.ogg
+     boss_attack_1.wav <- creature_monster_03.ogg
+     boss_attack_2..3  <- creature_roar_02/03 (pitch diturunkan)
+
+C) OpenGameArt.org — "Goblins Sound Pack" oleh artisticdude (CC0)
+   https://opengameart.org/content/goblins-sound-pack
+   Dipakai untuk:
+     goblin_spawn.wav   <- goblin-11.wav
+     goblin_attack.wav  <- goblin-3.wav
+     goblin_death.wav   <- goblin-1.wav
+     minion_attack_1..3 <- goblin-4 / goblin-9 / goblin-12.wav
+
+D) OpenGameArt.org — "Swish bamboo stick weapon swhoshes" oleh qubodup (CC0)
+   https://opengameart.org/content/swish-bamboo-stick-weapon-swhoshes
+   Dipakai untuk:
+     tower_shoot.wav    <- swosh-03.flac
+     tower_shoot_1..3   <- swosh-03 / swosh-01 / swosh-04.flac
+
+E) OpenGameArt.org — "Forest Ambience" oleh TinyWorlds (CC0)
+   https://opengameart.org/content/forest-ambience
+   Dipakai untuk:
+     ambient_forest.wav <- Forest_Ambience.mp3 (loop mulus 45 detik)
+
+F) OpenGameArt.org — "CC0 Scraps" (CC0)
+   https://opengameart.org/content/cc0-scraps
+   Dipakai untuk:
+     wave_start.wav    <- "untitled trumpet.mp3" (dipotong 3 detik)
+     victory.wav       <- "level up theme.wav"   (dipotong 5 detik)
+     defeat.wav        <- "GUILTY.mp3"           (dipotong 4,5 detik)
+
+G) OpenGameArt.org — "Battle Theme A" oleh cynicmusic (CC0)
+   https://opengameart.org/content/battle-theme-a
+   Dipakai untuk:
+     bgm_battle.wav    <- battleThemeA.mp3 (loop pertarungan ~1:36)
+
+------------------------------------------------------------
+ CATATAN TEKNIS
+------------------------------------------------------------
+- Semua berkas dikonversi ke WAV PCM 16-bit 44.100 Hz supaya
+  PASTI didukung pygame/SDL_mixer di Android (WAV = format paling
+  aman, tanpa bergantung codec tambahan).
+- Level kenyaringan dinormalkan agar konsisten (mayoritas puncak
+  ~-1 dB; ambient dibiarkan lebih pelan karena volumenya diatur
+  game 0.25x; bgm tidak diubah).
+- bgm_battle.wav sengaja stereo (17 MB) demi kualitas musik.
+  Kalau ingin APK lebih kecil, bisa minta versi mono/OGG.
+- Alternatif BGM rock (juga CC0) kalau mau nuansa lebih "energik":
+  https://opengameart.org/content/jrpg-epic-rock-battle-theme-1
