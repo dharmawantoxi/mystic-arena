@@ -1,0 +1,48 @@
+============================================================
+ MYSTIC ARENA — ASET SUARA
+ Lisensi & Sumber  (v35)
+============================================================
+
+SUARA TEMPUR (minion, menara, hero, boss) DISEDIAKAN SENDIRI OLEH
+PEMILIK PROYEK — lihat PANDUAN_SUARA.md di root repo untuk daftar
+nama berkas yang harus diisi.
+
+Berkas di bawah ini MASIH disediakan pengembang (boleh dipakai
+komersial; semuanya CC0 / public domain):
+
+  bgm_battle.wav       CC0 — cynicmusic "Battle Theme A"
+                       https://opengameart.org/content/battle-theme-a
+  ambient_forest.wav   CC0 — TinyWorlds "Forest Ambience"
+                       https://opengameart.org/content/forest-ambience
+  ui_click.wav         CC0 — Kenney Interface Sounds (click_001)
+  ui_error.wav         CC0 — Kenney Interface Sounds (error_003)
+  ui_buy.wav           CC0 — 80 CC0 RPG SFX (item_coins_01)
+  ui_sell.wav          CC0 — 80 CC0 RPG SFX (item_coins_02)
+  ui_upgrade.wav       CC0 — 80 CC0 RPG SFX (item_gem_01)
+  hero_skill.wav       CC0 — RPG Sound Pack (battle/magic1)
+  hero_spawn.wav       CC0 — RPG Sound Pack (battle/spell)
+  bullet_hit.wav       CC0 — RPG Sound Pack (inventory/wood-small)
+  explosion.wav        CC0 — Kenney Sci-Fi Sounds (lowFrequency_explosion)
+  nexus_hit.wav        CC0 — Kenney Impact Sounds (impactBell_heavy)
+  goblin_spawn.wav     CC0 — Goblins Sound Pack (goblin-11)
+  wave_start.wav       CC0 — CC0 Scraps ("untitled trumpet")
+  victory.wav          CC0 — CC0 Scraps ("level up theme")
+  defeat.wav           CC0 — CC0 Scraps ("GUILTY")
+
+Pustaka sumber:
+  https://kenney.nl/assets
+  https://opengameart.org/content/80-cc0-rpg-sfx
+  https://opengameart.org/content/rpg-sound-pack
+  https://opengameart.org/content/goblins-sound-pack
+  https://opengameart.org/content/cc0-scraps
+
+BERKAS SUARA TEMPUR YANG HARUS ANDA ISI (nama persis):
+  minion_hit.wav         pukulan minion (global, semua jenis)
+  minion_death.wav       kematian minion (global)
+  tower_archer.wav       tembakan menara Archer
+  tower_cannon.wav       tembakan menara Cannon
+  tower_ice.wav          tembakan menara Ice
+  tower_mage.wav         tembakan menara Mage
+  tower_destroyed.wav    menara hancur (global, semua jenis)
+  hero_melee.wav         tebasan melee (hero & boss melee)
+  hero_ranged.wav        serangan ranged (hero & boss ranged)
