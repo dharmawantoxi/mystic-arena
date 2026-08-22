@@ -284,11 +284,44 @@ def _get_boss_draw_func(boss_type):
     return func
 
 
-class Boss:
+class Boss(TowerDebuffMixin):
     """
     Boss entity - bisa mini boss atau true boss.
     Jalan di lane, punya ability, kalau kalah unlock hero.
+
+    Boss (mini MAUPUN true) kena semua debuff menara Ice/Mage/Cannon
+    lewat TowerDebuffMixin (dulu true boss kebal slow - sekarang tidak,
+    sesuai desain terbaru: efek menara berlaku untuk SEMUA unit).
+
+    Property `speed` di-override supaya SEMUA titik pergerakan boss
+    (jalan lane, chase, retreat, dash) otomatis melambat saat kena
+    slow - tanpa mengubah satu pun call site. Skill speed-boost tetap
+    jalan karena mereka menulis base speed lewat setter.
     """
+
+    @property
+    def speed(self):
+        base = self._speed_value
+        if getattr(self, 'slow_timer', 0) > 0:
+            return base * (1.0 - getattr(self, 'slow_amount', 0.0))
+        return base
+
+    @speed.setter
+    def speed(self, value):
+        self._speed_value = value
+
+    # Skill/ability damage dipotong saat kena debuff Mage Tower
+    @property
+    def ability_damage(self):
+        base = self._ability_damage_value
+        if getattr(self, 'skill_down_timer', 0) > 0:
+            f = max(0.0, 1.0 - getattr(self, 'skill_down_amount', 0.0))
+            return int(round(base * f))
+        return base
+
+    @ability_damage.setter
+    def ability_damage(self, value):
+        self._ability_damage_value = value
 
     def __init__(self, boss_type, lane_path=None):
         self.boss_type = boss_type
@@ -351,6 +384,11 @@ class Boss:
         self.ability_active = False
         self.ability_active_timer = 0
 
+        # ═══ DEBUFF MENARA (Ice/Mage/Cannon) ═══
+        # slow gerak+serang, skill down, anti-heal, burn - semuanya
+        # berlaku untuk mini boss dan true boss.
+        self._init_tower_debuffs()
+
     def _suara_serangan(self):
         """
         Kembalikan jenis suara serangan boss: melee atau ranged.
@@ -372,6 +410,10 @@ class Boss:
 
         self.anim_time += 1
         self.pulse += 0.05
+
+        # ═══ TICK DEBUFF MENARA (Ice/Mage/Cannon) ═══
+        # slow, atk_slow, skill_down, anti_heal, burn (mini & true boss)
+        self._tick_tower_debuffs()
 
         if self.hurt_flash_timer > 0:
             self.hurt_flash_timer -= 1
@@ -424,7 +466,9 @@ class Boss:
             if dist <= self.range:
                 if self.timer == 0:
                     self.target.take_damage(self.damage, self.team)
-                    self.timer = self.attack_cooldown
+                    # Attack cooldown efektif (dipanjangkan saat kena
+                    # debuff attack-speed dari Ice Tower)
+                    self.timer = self._eff_attack_cd(self.attack_cooldown)
                     # Boss memakai DUA suara global yang sama seperti
                     # hero: melee vs ranged (lihat _suara_serangan).
                     try:
@@ -4901,10 +4945,26 @@ class Boss:
             self.alive = False
 
     def _get_boss_stats(self):
-        """Helper - get stats dari boss_data"""
+        """Helper - get stats dari boss_data.
+
+        Saat boss kena debuff SKILL-DOWN (Mage Tower), SEMUA key numerik
+        ber-*damage* (skill_q_damage, skill_w_damage, ability_damage,
+        dst.) dikembalikan dalam versi scaled copy - SEMUA skill boss di
+        file ini membaca lewat helper ini, jadi debuff otomatis berlaku
+        ke seluruh skill tanpa mengubah satu pun fungsi cast.
+        """
         from bosses.boss_data import get_all_boss_types
         all_bosses = get_all_boss_types()
-        return all_bosses.get(self.boss_type, {})
+        stats = all_bosses.get(self.boss_type, {})
+        if getattr(self, 'skill_down_timer', 0) > 0 and stats:
+            mult = max(0.0, 1.0 - getattr(self, 'skill_down_amount', 0.0))
+            scaled = dict(stats)
+            for k, v in stats.items():
+                if isinstance(v, (int, float)) and not isinstance(v, bool) \
+                        and 'damage' in k:
+                    scaled[k] = int(round(v * mult))
+            return scaled
+        return stats
 
     def _shake_screen(self, intensity):
         """Screen shake helper"""
@@ -4937,7 +4997,7 @@ class Boss:
         except Exception:
             pass
 
-    def take_damage(self, damage, from_team):
+    def take_damage(self, damage, from_team, damage_type='normal'):
         self.hp -= damage
         self.hurt_flash_timer = 8
 
@@ -4948,7 +5008,8 @@ class Boss:
                 game.effects.add_damage_number(
                     self.x, self.y - self.radius - 10,
                     damage,
-                    is_critical=(damage > self.max_hp * 0.03))
+                    is_critical=(damage > self.max_hp * 0.03),
+                    damage_type=damage_type)
                 game.effects.add_hit_particles(
                     self.x, self.y, team=self.team, count=6)
         except Exception:
@@ -4958,6 +5019,8 @@ class Boss:
             self.hp = 0
             self.alive = False
             self.defeated = True
+            # Bersihkan semua debuff (burn/slow/dll.) saat mati
+            self.clear_tower_debuffs()
 
             try:
                 import __main__
@@ -4970,8 +5033,10 @@ class Boss:
             except Exception:
                 pass
 
-    def apply_slow(self, amount, duration):
-        pass  # Boss kebal slow
+    # CATATAN: dulu ada override `apply_slow = pass` (boss kebal slow).
+    # Sudah DIHAPUS - sesuai desain terbaru, debuff menara berlaku untuk
+    # SEMUA unit termasuk mini boss & true boss, jadi boss sekarang
+    # memakai apply_slow() bawaan TowerDebuffMixin.
 
     def draw(self, surface):
         if not self.alive:
@@ -5010,6 +5075,9 @@ class Boss:
         shadow_w = r * 2 + (10 if is_true else 0)
         pygame.draw.ellipse(surface, (0, 0, 0, 120),
                             (x - shadow_w // 2, y + r - 5, shadow_w, 12))
+
+        # ═══ INDIKATOR DEBUFF MENARA (slow ring, burn api, pip ikon) ═══
+        self._draw_tower_debuff_fx(surface, x, y, r)
 
         # ═══ DISPATCH RENDER PER BOSS TYPE ═══
         # OPTIMASI: dulu rantai 215 cabang if/elif dengan 215 impor

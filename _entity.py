@@ -150,8 +150,16 @@ class Bullet:
 
         # ─── SPECIAL EFFECTS ───
         if self.bullet_type == "cannon":
-            # Splash damage
+            # Splash damage + BURNING (debuff burn berlaku ke target
+            # utama DAN semua unit yang kena splash)
             splash_radius = self.special_data.get('splash', 40)
+            burn_dps = self.special_data.get('burn_dps', 0)
+            burn_duration = self.special_data.get('burn_duration', 0)
+
+            if burn_dps > 0 and hasattr(self.target, 'apply_debuff'):
+                self.target.apply_debuff('burn', burn_dps, burn_duration,
+                                         source_team=self.team)
+
             if all_units:
                 for u in all_units:
                     if u == self.target:
@@ -161,15 +169,22 @@ class Bullet:
                     d = math.hypot(u.x - self.target.x, u.y - self.target.y)
                     if d <= splash_radius:
                         u.take_damage(int(self.damage * 0.6), self.team)
+                        if burn_dps > 0 and hasattr(u, 'apply_debuff'):
+                            u.apply_debuff('burn', burn_dps, burn_duration,
+                                           source_team=self.team)
 
         elif self.bullet_type == "ice":
-            # Apply slow
+            # Apply slow gerak (lama) + slow ATTACK SPEED (baru)
             slow_amount = self.special_data.get('slow', 0.2)
             slow_duration = self.special_data.get('slow_duration', 90)
+            atk_slow = self.special_data.get('atk_slow', 0)
             if hasattr(self.target, 'apply_slow'):
                 self.target.apply_slow(slow_amount, slow_duration)
+            if atk_slow > 0 and hasattr(self.target, 'apply_debuff'):
+                self.target.apply_debuff('atk_slow', atk_slow,
+                                         slow_duration)
 
-            # AOE slow di level 6
+            # AOE slow di level 6 (gerak + attack speed)
             if 'slow_aoe' in self.special_data and all_units:
                 aoe = self.special_data['slow_aoe']
                 for u in all_units:
@@ -177,8 +192,26 @@ class Bullet:
                         continue
                     d = math.hypot(u.x - self.target.x,
                                    u.y - self.target.y)
-                    if d <= aoe and hasattr(u, 'apply_slow'):
-                        u.apply_slow(slow_amount, slow_duration)
+                    if d <= aoe:
+                        if hasattr(u, 'apply_slow'):
+                            u.apply_slow(slow_amount, slow_duration)
+                        if atk_slow > 0 and hasattr(u, 'apply_debuff'):
+                            u.apply_debuff('atk_slow', atk_slow,
+                                           slow_duration)
+
+        elif self.bullet_type == "mage":
+            # Debuff SKILL DAMAGE + ANTI-HEAL ke target (tiap bolt chain
+            # adalah Bullet terpisah, jadi semua target chain kena).
+            skill_down = self.special_data.get('skill_down', 0)
+            anti_heal = self.special_data.get('anti_heal', 0)
+            debuff_duration = self.special_data.get('debuff_duration', 120)
+            if hasattr(self.target, 'apply_debuff'):
+                if skill_down > 0:
+                    self.target.apply_debuff('skill_down', skill_down,
+                                             debuff_duration)
+                if anti_heal > 0:
+                    self.target.apply_debuff('anti_heal', anti_heal,
+                                             debuff_duration)
 
         # Sound impact. Dulu hanya tim biru dan volume 0,25 (nyaris
         # tak terdengar). Sekarang SEMUA tim berbunyi dan lebih keras
@@ -454,6 +487,17 @@ class Tower:
         self.chain = stats.get("chain", 1)
         self.double_shot = stats.get("double_shot", False)
 
+        # ═══ DEBUFF BARU (berlaku untuk pemain & AI enemy) ═══
+        # Ice: debuff attack speed. Mage: skill damage down + anti-heal.
+        # Cannon: burning (damage over time). Nilainya diskala per level
+        # di tabel CANNON/ICE/MAGE_LEVELS (_core.py).
+        self.atk_slow = stats.get("atk_slow", 0)
+        self.skill_down = stats.get("skill_down", 0)
+        self.anti_heal = stats.get("anti_heal", 0)
+        self.debuff_duration = stats.get("debuff_duration", 0)
+        self.burn_dps = stats.get("burn_dps", 0)
+        self.burn_duration = stats.get("burn_duration", 0)
+
         # Colors
         colors = TOWER_TYPE_COLORS[self.tower_type]
         self.color = colors["main"]
@@ -696,9 +740,14 @@ class Tower:
         bx, by = get_cannon_muzzle_position(
             self.x, self.y, self.level, face, recoil)
 
+        special = {'splash': self.splash}
+        if self.burn_dps > 0:
+            special['burn_dps'] = self.burn_dps
+            special['burn_duration'] = self.burn_duration
+
         self.bullets.append(Bullet(bx, by, self.target, self.damage,
                                    self.team, "cannon",
-                                   {'splash': self.splash}))
+                                   special))
 
         self.shoot_flash_timer = 10
         # Suara tembak menara kini GLOBAL: semua jenis menara (archer,
@@ -724,6 +773,9 @@ class Tower:
             'slow': self.slow,
             'slow_duration': self.slow_duration,
         }
+        # Debuff attack speed (buff baru ice tower)
+        if self.atk_slow > 0:
+            special['atk_slow'] = self.atk_slow
         if self.slow_aoe > 0:
             special['slow_aoe'] = self.slow_aoe
 
@@ -754,9 +806,18 @@ class Tower:
             if dist <= self.range:
                 targets.append(e)
 
+        # Debuff skill damage down + anti-heal (buff baru mage tower)
+        special = {}
+        if self.skill_down > 0:
+            special['skill_down'] = self.skill_down
+        if self.anti_heal > 0:
+            special['anti_heal'] = self.anti_heal
+        if special:
+            special['debuff_duration'] = self.debuff_duration
+
         for tgt in targets:
             self.bullets.append(Bullet(bx, by, tgt, self.damage,
-                                       self.team, "mage"))
+                                       self.team, "mage", special))
 
         self.shoot_flash_timer = 8
 
@@ -2851,7 +2912,22 @@ from _system import SoundManager
 _HERO_UI_CACHE = {}
 
 
-class Hero:
+class Hero(TowerDebuffMixin):
+    # ── Property: skill_damage dipotong saat kena debuff Mage Tower ──
+    # Semua skill (274 call site di hero_skills/ + Blade Fury di sini)
+    # MEMBACA self.skill_damage, jadi debuff otomatis berlaku ke semua.
+    @property
+    def skill_damage(self):
+        base = self._skill_damage_value
+        if getattr(self, 'skill_down_timer', 0) > 0:
+            f = max(0.0, 1.0 - getattr(self, 'skill_down_amount', 0.0))
+            return int(round(base * f))
+        return base
+
+    @skill_damage.setter
+    def skill_damage(self, value):
+        self._skill_damage_value = value
+
     def __init__(self, hero_type, team, x=None, y=None):
         self.hero_type = hero_type
         self.team = team
@@ -2970,6 +3046,11 @@ class Hero:
         self.base_heal_rate = 3.0          # HP regen per frame saat di base
         self.passive_heal_rate = 0.15      # HP regen per frame di luar base (sangat kecil)
         self.is_retreating = False         # flag retreat state
+
+        # ═══ DEBUFF MENARA (Ice/Mage/Cannon) ═══
+        # Berlaku untuk hero starter maupun hero unlock (boss hero),
+        # baik hero pemain maupun hero AI enemy.
+        self._init_tower_debuffs()
 
     def _apply_level_stats(self):
         # Safety clamp level
@@ -3141,8 +3222,10 @@ class Hero:
         dy = ty - self.y
         dist = math.hypot(dx, dy)
         if dist > 1:
-            self.x += self.speed * dx / dist
-            self.y += self.speed * dy / dist
+            # _eff_speed: movement melambat saat kena slow Ice Tower
+            sp = self._eff_speed()
+            self.x += sp * dx / dist
+            self.y += sp * dy / dist
             self.facing = 1 if dx > 0 else -1
 
     # ═══════════════════════════════════════
@@ -3154,6 +3237,8 @@ class Hero:
             return
 
         self.pulse += 0.1
+        # ═══ TICK DEBUFF MENARA (Ice/Mage/Cannon) ═══
+        self._tick_tower_debuffs()
         # ═══ AUTO-CAST SKILLS (jika enabled) ═══
         if self.auto_cast_enabled:
             self.auto_cast_check_timer -= 1
@@ -3346,8 +3431,9 @@ class Hero:
                 self.destination = None
                 self.destination_auto = False
             else:
-                self.x += self.speed * dx / dist
-                self.y += self.speed * dy / dist
+                sp = self._eff_speed()
+                self.x += sp * dx / dist
+                self.y += sp * dy / dist
                 self.facing = 1 if dx > 0 else -1
 
             # Sambil jalan, tetap serang musuh dalam range
@@ -3368,8 +3454,9 @@ class Hero:
                 self.facing = 1 if dx > 0 else -1
                 self._do_attack()
             else:
-                self.x += self.speed * dx / dist
-                self.y += self.speed * dy / dist
+                sp = self._eff_speed()
+                self.x += sp * dx / dist
+                self.y += sp * dy / dist
                 self.facing = 1 if dx > 0 else -1
             return
 
@@ -3409,8 +3496,9 @@ class Hero:
                 self.facing = 1 if dx > 0 else -1
                 self._do_attack()
             else:
-                self.x += self.speed * dx / dist
-                self.y += self.speed * dy / dist
+                sp = self._eff_speed()
+                self.x += sp * dx / dist
+                self.y += sp * dy / dist
                 self.facing = 1 if dx > 0 else -1
             return
 
@@ -3426,8 +3514,9 @@ class Hero:
         dist = math.hypot(dx, dy)
 
         if dist > 80:
-            self.x += self.speed * 0.6 * dx / dist
-            self.y += self.speed * 0.6 * dy / dist
+            sp = self._eff_speed()
+            self.x += sp * 0.6 * dx / dist
+            self.y += sp * 0.6 * dy / dist
             self.facing = 1 if dx > 0 else -1
 
     def _try_auto_cast(self, all_units, all_towers, all_bases):
@@ -3549,7 +3638,9 @@ class Hero:
                     except Exception:
                         pass
 
-            self.attack_timer = self.attack_cooldown
+            # Attack cooldown efektif (dipanjangkan saat kena debuff
+            # attack-speed dari Ice Tower)
+            self.attack_timer = self._eff_attack_cd(self.attack_cooldown)
 
             # Suara serangan dasar: tebasan (melee) atau
             # petikan busur / lesatan sihir (ranged), dipilih
@@ -3624,14 +3715,33 @@ class Hero:
         self._spawn_projectile(0, is_crit=False, speed=speed,
                                target=target, hero_type=hero_type)
 
-    def take_damage(self, damage, from_team):
+    def take_damage(self, damage, from_team, damage_type='normal'):
         self.hp -= damage
+
+        # Popup kecil untuk burn (Cannon Tower) supaya pemain sadar
+        # hero-nya sedang terbakar. Damage biasa tetap silent seperti
+        # desain lama (hero tidak menampilkan damage number).
+        if damage_type == 'fire' and self.alive:
+            try:
+                import __main__
+                if hasattr(__main__, 'game_instance'):
+                    __main__.game_instance.effects.add_damage_number(
+                        self.x, self.y - self.radius - 12,
+                        damage, damage_type='fire')
+            except Exception:
+                pass
+
         if self.hp <= 0:
             self.hp = 0
             self.alive = False
             self.deaths += 1
+            # Bersihkan semua debuff (burn/slow/dll.) saat mati
+            self.clear_tower_debuffs()
 
     def respawn(self):
+        # Bersihkan debuff DULU supaya set hp penuh tidak kepotong
+        # anti-heal yang tersisa dari kehidupan sebelumnya.
+        self.clear_tower_debuffs()
         self.alive = True
         self.hp = self.max_hp
         self.is_retreating = False
@@ -3699,6 +3809,9 @@ class Hero:
         pygame.draw.ellipse(surface, (0, 0, 0, 100),
                             (x - self.radius, y + self.radius - 4,
                              self.radius * 2, 8))
+
+        # ═══ INDIKATOR DEBUFF MENARA (slow ring, burn api, pip ikon) ═══
+        self._draw_tower_debuff_fx(surface, x, y, self.radius)
 
         # ═══ SKILL SPIN EFFECT (kalau active, surface di-cache) ═══
         if self.skill_active:
@@ -4190,7 +4303,7 @@ import pygame
 import math
 from _system import SoundManager
 
-class Minion:
+class Minion(TowerDebuffMixin):
     def __init__(self, minion_type, team, lane, nexus_level=1, lane_path=None):
         self.minion_type = minion_type
         self.team = team
@@ -4213,9 +4326,9 @@ class Minion:
         self.color = stats["color"]
         self.name = stats["name"]
         self.regen = stats.get("regen", 0) * scale
-        # Slow effect (dari Ice Tower)
-        self.slow_amount = 0  # 0.0 - 1.0
-        self.slow_timer = 0
+        # Slow effect (dari Ice Tower) + semua debuff menara lain:
+        # atk_slow (Ice), skill_down & anti_heal (Mage), burn (Cannon)
+        self._init_tower_debuffs()
         self.base_speed = self.speed
 
         # ═══ WAYPOINT PATHING ═══
@@ -4299,9 +4412,13 @@ class Minion:
                 self.death_anim = 20
             return
 
-        # Slow effect update
+        # Tick semua debuff menara (slow, atk_slow, skill_down,
+        # anti_heal, burn). Countdown timer dikelola mixin; di sini
+        # tinggal pakai hasilnya.
+        self._tick_tower_debuffs()
+
+        # Slow movement effect update
         if self.slow_timer > 0:
-            self.slow_timer -= 1
             self.speed = self.base_speed * (1 - self.slow_amount)
         else:
             self.slow_amount = 0
@@ -4353,7 +4470,9 @@ class Minion:
             if dist <= self.range:
                 if self.timer == 0:
                     self.target.take_damage(self.damage, self.team)
-                    self.timer = self.attack_cooldown
+                    # Attack cooldown efektif (dipanjangkan saat kena
+                    # debuff attack-speed dari Ice Tower)
+                    self.timer = self._eff_attack_cd(self.attack_cooldown)
                     self.attack_anim_timer = self.attack_anim_max  # trigger attack anim
                     self._spawn_slash_effect()
                     try:
@@ -4534,7 +4653,7 @@ class Minion:
             self.x += self.speed * dx / dist
             self.y += self.speed * dy / dist
 
-    def take_damage(self, damage, from_team):
+    def take_damage(self, damage, from_team, damage_type='normal'):
         self.hp -= damage
 
         # ═══ TAMBAH: Damage number popup ═══
@@ -4548,7 +4667,8 @@ class Minion:
                 is_crit = damage > self.max_hp * 0.2  # 20%+ = crit
                 game.effects.add_damage_number(
                     self.x, self.y - self.radius - 5,
-                    damage, is_critical=is_crit)
+                    damage, is_critical=is_crit,
+                    damage_type=damage_type)
 
                 # Hit particles
                 game.effects.add_hit_particles(
@@ -4559,6 +4679,8 @@ class Minion:
         if self.hp <= 0:
             self.hp = 0
             self.alive = False
+            # Bersihkan semua debuff (burn/slow/dll.) saat mati
+            self.clear_tower_debuffs()
             # Suara kematian GLOBAL: semua jenis minion (goblin, orc,
             # troll, undead, dark_rider) memakai satu suara yang sama.
             SoundManager().play('minion_death', volume_mult=0.7)
@@ -4610,6 +4732,11 @@ class Minion:
                 ix = x + int(math.cos(angle) * (self.radius + 3))
                 iy = y + int(math.sin(angle) * (self.radius + 3))
                 pygame.draw.rect(surface, (200, 240, 255), (ix, iy, 2, 2))
+
+        # ═══ INDIKATOR DEBUFF MENARA (burn api + pip ikon) ═══
+        # include_rings=False: aura es minion sudah digambar di atas.
+        self._draw_tower_debuff_fx(surface, x, y, self.radius,
+                                   include_rings=False)
 
         # ═══ DELEGATE ke module minions/ (SELALU di-call) ═══
         from minions import render_minion
