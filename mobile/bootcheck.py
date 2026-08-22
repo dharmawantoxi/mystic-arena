@@ -39,14 +39,7 @@ def _flag_file():
 
 
 def should_show():
-    env = os.environ.get("MYSTIC_BOOTCHECK")
-    if env == "1":
-        return True
-    if env == "0":
-        return False
-    if os.path.exists(_flag_file()):
-        return False
-    return plat.IS_ANDROID
+    return os.environ.get("MYSTIC_BOOTCHECK") == "1"
 
 
 def _disable_forever():
