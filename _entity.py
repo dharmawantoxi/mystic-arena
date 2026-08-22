@@ -3464,11 +3464,12 @@ class Hero:
         hp_ratio = self.hp / self.max_hp
 
         # ═══ PRIORITY R (Ultimate) ═══
-        # Cast R HANYA kalau banyak enemy DAN HP kritis
+        # Ultimate tidak boleh menunggu kondisi yang hampir tidak pernah
+        # terjadi (3 musuh + HP kritis). Ini penyebab R terlihat tidak
+        # pernah dipakai, terutama pada hero summon/boss hero. Selama ada
+        # target valid dalam jangkauan dan cooldown siap, gunakan R.
         if self.is_skill_ready('r'):
-            if nearby_count >= 3 and hp_ratio < 0.5:
-                self.cast_skill(all_units, all_towers,
-                                all_bases, 'r')
+            if self.cast_skill(all_units, all_towers, all_bases, 'r'):
                 return
 
         # ═══ PRIORITY E ═══
@@ -4849,38 +4850,15 @@ class AIPlayer:
             if not hero.alive:
                 continue
 
+            # AI harus memakai jalur auto-cast yang sama dengan pemain.
+            # Jalur lama memanggil cast_skill() tanpa key, yang default-nya
+            # selalu Q; akibatnya W/E/R hero enemy tidak pernah dipilih.
             if hero.skill_timer == 0:
-                enemy_count = hero.count_enemies_in_range(
-                    all_minions + all_heroes,
-                    all_towers, all_bases,
-                    hero.skill_range)
-
-                should_cast = False
-
-                if enemy_count >= AI_SKILL_USE_MIN_ENEMIES:
-                    should_cast = True
-
-                if hero.hp / hero.max_hp < 0.3 and enemy_count >= 1:
-                    should_cast = True
-
-                for h in all_heroes:
-                    if h.team != self.team and h.alive:
-                        dist = math.hypot(h.x - hero.x, h.y - hero.y)
-                        if dist <= hero.skill_range:
-                            should_cast = True
-                            break
-
-                for t in all_towers:
-                    if t.team != self.team and t.alive:
-                        dist = math.hypot(t.x - hero.x, t.y - hero.y)
-                        if dist <= hero.skill_range and t.hp / t.max_hp < 0.3:
-                            should_cast = True
-                            break
-
-                if should_cast:
-                    if hero.cast_skill(all_minions + all_heroes,
-                                       all_towers, all_bases):
-                        self.total_skills_cast += 1
+                before = hero.active_skill_timer
+                hero._try_auto_cast(all_minions + all_heroes,
+                                     all_towers, all_bases)
+                if hero.active_skill_timer > before:
+                    self.total_skills_cast += 1
 
             if not hero.target and not hero.destination:
                 self._assign_hero_lane(hero, all_minions, all_heroes, all_towers)
@@ -4941,6 +4919,7 @@ class AIPlayer:
         """Pool hero AI: starter + boss hero dari level DI BAWAH
         level saat ini (level 1 = hanya starter)."""
         pool = list(AI_HERO_PREFERENCES)
+        boss_pool = []
         if getattr(self, "level_number", 1) >= 2:
             try:
                 from levels import get_level_config
@@ -4956,11 +4935,15 @@ class AIPlayer:
                     for bt in bosses:
                         if (bt in catalog
                                 and catalog[bt].get("is_boss_hero")
-                                and bt not in pool):
-                            pool.append(bt)
+                                and bt not in pool
+                                and bt not in boss_pool):
+                            boss_pool.append(bt)
             except Exception:
                 pass
-        return pool
+        # Boss hero level sebelumnya diprioritaskan agar level 2 benar-benar
+        # membawa mini boss/true boss level 1 sebagai summon hero, bukan
+        # hanya kadang terbeli karena pilihan acak.
+        return boss_pool + pool
 
     def _try_buy_hero(self):
         owned_types = [h.hero_type for h in self.heroes]
