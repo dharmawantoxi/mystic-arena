@@ -698,8 +698,11 @@ class Tower:
                                    {'splash': self.splash}))
 
         self.shoot_flash_timer = 10
-        if SOUND_ENABLED and self.team == "blue":
-            SoundManager().play('explosion', volume_mult=0.4)
+        # Suara tembak menara kini GLOBAL: semua jenis menara (archer,
+        # cannon, ice, mage) memakai suara yang sama lewat
+        # combat_audio.play(TOWER) di _shoot(). Dulu cannon punya
+        # ledakan TAMBAHAN yang hanya berbunyi untuk tim biru -
+        # tim merah bisu dan antar-menara tidak konsisten.
 
     def _shoot_ice(self):
         face = 1
@@ -4210,13 +4213,12 @@ class Minion:
             'distance': self.radius + 8,
         })
 
-        # ═══ Play sounds ═══
-        if self.minion_type == "goblin":
-            SoundManager().play('slash', volume_mult=0.5)
-            # 30% chance teriak saat attack (biar nggak spammy)
-            import random
-            if random.random() < 0.3:
-                SoundManager().play('goblin_attack', volume_mult=0.6)
+        # Suara serangan minion TIDAK dimainkan di sini. Dulu hanya
+        # goblin yang berbunyi (slash + teriakan goblin), sehingga
+        # orc/troll/undead/dark_rider terdengar bisu. Sekarang SEMUA
+        # minion memakai satu suara global yang sama, diputar lewat
+        # combat_audio.play(MINION) tepat di blok serangan update().
+        # Visual slash effect tetap berlaku untuk semua jenis.
 
     def _get_enemies(self, all_units, all_towers, all_bases):
         """Nearby enemy lookup; avoids scanning every minion for every minion."""
@@ -4372,9 +4374,9 @@ class Minion:
         if self.hp <= 0:
             self.hp = 0
             self.alive = False
-            # Play death sound
-            if self.minion_type == "goblin":
-                SoundManager().play('goblin_death', volume_mult=0.7)
+            # Suara kematian GLOBAL: semua jenis minion (goblin, orc,
+            # troll, undead, dark_rider) memakai satu suara yang sama.
+            SoundManager().play('minion_death', volume_mult=0.7)
 
             # ═══ TAMBAH: Death explosion ═══
             try:

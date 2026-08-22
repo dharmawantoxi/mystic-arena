@@ -52,18 +52,14 @@ VARIASI = 3
 MAKS_PER_FRAME = 4
 
 # ═══ PENEMUAN BERKAS OTOMATIS ═══
-# Repo ini sudah punya koleksi suara dengan penamaan sendiri
-# (goblin_attack.wav, tower_shoot.wav, slash.wav, ...) yang dipakai
-# SoundManager untuk BGM/UI. Cakupannya belum lengkap: menara hanya
-# archer, pasukan hanya goblin, hero tidak ada sama sekali.
-#
-# Daripada memaksa satu skema penamaan, tiap jenis punya DAFTAR POLA
-# berurut. Semua berkas yang cocok dikumpulkan jadi satu kolam
-# variasi, jadi:
-#   - berkas milik Anda tetap terpakai
-#   - berkas sintesis mengisi yang belum ada
-#   - kalau nanti Anda menambah berkas baru dengan nama yang cocok,
-#     otomatis ikut terpakai tanpa mengubah kode
+# Tiap jenis suara tempur punya DAFTAR POLA berurut. Semua berkas
+# yang cocok dikumpulkan jadi satu kolam variasi. Skema "global":
+#   - SEMUA minion memakai satu suara serangan yang sama (minion_attack_*)
+#   - SEMUA menara memakai satu suara tembak yang sama (tower_shoot_*)
+#   - SEMUA hero memakai satu suara serangan dasar, dibedakan
+#     melee (hero_melee_*) vs ranged (hero_ranged_*)
+#   - mini boss (miniboss_attack_*) vs true boss (boss_attack_*)
+# Menambah berkas baru dengan nama yang cocok otomatis ikut terpakai.
 POLA = {
     HERO_MELEE:  ["hero_melee_*", "hero_melee", "slash", "slash_*",
                   "sword*", "hero_attack*", "melee*"],
@@ -71,8 +67,7 @@ POLA = {
                   "hero_shoot*", "ranged*", "magic_bolt*"],
     TOWER:       ["tower_shoot_*", "tower_shoot", "tower_attack*",
                   "archer*", "arrow_shoot*"],
-    MINION:      ["minion_attack_*", "minion_attack", "goblin_attack",
-                  "goblin_attack_*", "minion_hit*"],
+    MINION:      ["minion_attack_*", "minion_attack", "minion_hit*"],
     MINIBOSS:    ["miniboss_attack_*", "miniboss_attack",
                   "mini_boss*", "miniboss*"],
     BOSS:        ["boss_attack_*", "boss_attack", "true_boss*",

@@ -10,7 +10,7 @@
 import os
 
 # Naikkan setiap kali ada perubahan kode yang dikirim ke perangkat.
-BUILD_ID = "v31-menu-kena"
+BUILD_ID = "v32-suara-global"
 BUILD_DATE = "2026-08-22"
 
 _KEY_FILES = (

@@ -455,6 +455,7 @@ class SoundManager:
             'goblin_attack': 400,
             'goblin_spawn': 200,
             'goblin_death': 150,
+            'minion_death': 120,
             'tower_shoot': 60,
             'bullet_hit': 40,
             'nexus_hit': 300,
@@ -506,6 +507,7 @@ class SoundManager:
         self.load('bullet_hit', 'bullet_hit.wav', 'sfx')
         self.load('explosion', 'explosion.wav', 'sfx')
         self.load('nexus_hit', 'nexus_hit.wav', 'sfx')
+        self.load('minion_death', 'minion_death.wav', 'sfx')
 
         # UI
         self.load('ui_click', 'ui_click.wav', 'sfx')
