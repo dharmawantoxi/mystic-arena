@@ -1836,7 +1836,8 @@ class _NS_sylara:
     # ---------------------------------------------------------------------------
     class WindArrowProjectile:
         """Basic wind arrow projectile."""
-        def __init__(self, sx, sy, tx, ty, speed=9.0, powered=False):
+        def __init__(self, sx, sy, tx, ty, speed=9.0, powered=False,
+                     target=None, damage=0, team=None):
             self.x = float(sx)
             self.y = float(sy)
             self.tx = float(tx)
@@ -1846,6 +1847,11 @@ class _NS_sylara:
             self.alive = True
             self.age = 0
             self.trail = []
+            # Homing: target/damage/team (visual-only; damage otoritatif
+            # ada di hero_skills). Kalau target hidup, kejar tiap frame.
+            self.target = target
+            self.damage = damage
+            self.team = team
             dx = tx - sx
             dy = ty - sy
             self.angle = math.atan2(dy, dx)
@@ -1854,9 +1860,15 @@ class _NS_sylara:
             if not self.alive:
                 return
             self.age += 1
+            # Homing tiap frame ke target yang bergerak (terarah)
+            if self.target is not None and getattr(self.target, 'alive', False):
+                self.tx = float(self.target.x)
+                self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
+            if dist > 0:
+                self.angle = math.atan2(dy, dx)
             if dist < self.speed + 4:
                 self.alive = False
                 return
@@ -1984,7 +1996,8 @@ class _NS_sylara:
 
     class ShackleProjectile:
         """Shackle shot - arrow that binds enemies with vines/wind."""
-        def __init__(self, sx, sy, tx, ty, speed=8.0):
+        def __init__(self, sx, sy, tx, ty, speed=8.0,
+                     target=None, damage=0, team=None):
             self.x = float(sx)
             self.y = float(sy)
             self.tx = float(tx)
@@ -1993,6 +2006,9 @@ class _NS_sylara:
             self.alive = True
             self.age = 0
             self.trail = []
+            self.target = target
+            self.damage = damage
+            self.team = team
             dx = tx - sx
             dy = ty - sy
             self.angle = math.atan2(dy, dx)
@@ -2001,9 +2017,15 @@ class _NS_sylara:
             if not self.alive:
                 return
             self.age += 1
+            # Homing tiap frame ke target (terarah)
+            if self.target is not None and getattr(self.target, 'alive', False):
+                self.tx = float(self.target.x)
+                self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
+            if dist > 0:
+                self.angle = math.atan2(dy, dx)
             if dist < self.speed + 4:
                 self.alive = False
                 return
@@ -2157,8 +2179,10 @@ class _NS_sylara:
         sx = x + 22 * facing
         sy = y - 8
         speed = 10.0 if powered else 8.5
-        boss._sy_projectiles.append(_NS_sylara.WindArrowProjectile(sx, sy, tx, ty,
-                                                        speed=speed, powered=powered))
+        tgt = getattr(boss, "target", None)
+        boss._sy_projectiles.append(_NS_sylara.WindArrowProjectile(
+            sx, sy, tx, ty, speed=speed, powered=powered,
+            target=tgt, damage=0, team=getattr(boss, "team", None)))
 
 
     def _spawn_shackle(boss, x, y):
@@ -2168,29 +2192,36 @@ class _NS_sylara:
         facing = getattr(boss, "direction", 1)
         sx = x + 22 * facing
         sy = y - 8
-        boss._sy_projectiles.append(_NS_sylara.ShackleProjectile(sx, sy, tx, ty, speed=8.0))
+        tgt = getattr(boss, "target", None)
+        boss._sy_projectiles.append(_NS_sylara.ShackleProjectile(
+            sx, sy, tx, ty, speed=8.0,
+            target=tgt, damage=0, team=getattr(boss, "team", None)))
 
 
     def _spawn_focus_fire_volley(boss, x, y):
-        """Focus Fire - many arrows in fan pattern."""
+        """Focus Fire - many arrows homing ke target (fan sangat rapat)."""
         if not hasattr(boss, "_sy_projectiles"):
             boss._sy_projectiles = []
         tx, ty = _NS_sylara._target_position(boss, x, y)
         facing = getattr(boss, "direction", 1)
         sx = x + 22 * facing
         sy = y - 8
+        tgt = getattr(boss, "target", None)
 
         # Base angle to target
         base_angle = math.atan2(ty - sy, tx - sx)
 
-        # Fan of 5 arrows
+        # Fan of 5 arrows - spread DIPERSEMPIT 0.18 -> 0.06 supaya
+        # terarah, & SEMUA homing ke target yang sama.
         for i in range(5):
-            spread = (i - 2) * 0.18  # angle spread
+            spread = (i - 2) * 0.06  # angle spread (dulu 0.18)
             angle = base_angle + spread
             ex = sx + math.cos(angle) * 400
             ey = sy + math.sin(angle) * 400
             boss._sy_projectiles.append(
-                _NS_sylara.WindArrowProjectile(sx, sy, ex, ey, speed=11.0, powered=False))
+                _NS_sylara.WindArrowProjectile(
+                    sx, sy, ex, ey, speed=11.0, powered=False,
+                    target=tgt, damage=0, team=getattr(boss, "team", None)))
 
 
     # ===================================================================
@@ -2275,7 +2306,13 @@ class _NS_sylara:
         release_start = 0.55 if powered else 0.5
         release_end = 0.65 if powered else 0.6
 
-        if release_start < progress < release_end and not getattr(boss, "_sy_arrow_spawned", False):
+        # Basic attack TIDAK spawn renderer projectile - pakai sistem
+        # generic (_entity.py) yang homing & terarah saja supaya tidak
+        # ada efek ganda. Renderer arrow hanya saat skill aktif.
+        active_skill = getattr(boss, "active_skill", None)
+        if (active_skill is not None
+                and release_start < progress < release_end
+                and not getattr(boss, "_sy_arrow_spawned", False)):
             _NS_sylara._spawn_arrow(boss, x, y, powered=powered)
             boss._sy_arrow_spawned = True
         if progress < 0.15 or progress > 0.9:
@@ -3689,7 +3726,8 @@ class _NS_kaizen:
     # ---------------------------------------------------------------------------
     class WindSlashProjectile:
         """Crescent wind slash projectile (Steel Wind)."""
-        def __init__(self, sx, sy, tx, ty, speed=8.0):
+        def __init__(self, sx, sy, tx, ty, speed=8.0,
+                     target=None, damage=0, team=None):
             self.x = float(sx)
             self.y = float(sy)
             self.tx = float(tx)
@@ -3698,6 +3736,9 @@ class _NS_kaizen:
             self.alive = True
             self.age = 0
             self.trail = []
+            self.target = target
+            self.damage = damage
+            self.team = team
             dx = tx - sx
             dy = ty - sy
             self.angle = math.atan2(dy, dx)
@@ -3706,9 +3747,15 @@ class _NS_kaizen:
             if not self.alive:
                 return
             self.age += 1
+            # Homing tiap frame ke target (terarah)
+            if self.target is not None and getattr(self.target, 'alive', False):
+                self.tx = float(self.target.x)
+                self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
+            if dist > 0:
+                self.angle = math.atan2(dy, dx)
             if dist < self.speed + 4:
                 self.alive = False
                 return
@@ -3847,7 +3894,10 @@ class _NS_kaizen:
         facing = getattr(boss, "direction", 1)
         sx = x + 24 * facing
         sy = y - 8
-        boss._kz_projectiles.append(_NS_kaizen.WindSlashProjectile(sx, sy, tx, ty, speed=8.0))
+        tgt = getattr(boss, "target", None)
+        boss._kz_projectiles.append(_NS_kaizen.WindSlashProjectile(
+            sx, sy, tx, ty, speed=8.0,
+            target=tgt, damage=0, team=getattr(boss, "team", None)))
 
 
     # ===================================================================
@@ -5376,7 +5426,8 @@ class _NS_thorne:
 
     class GooProjectile:
         """Green viscous goo blob (Viscous Nose)."""
-        def __init__(self, sx, sy, tx, ty, speed=5.5):
+        def __init__(self, sx, sy, tx, ty, speed=5.5,
+                     target=None, damage=0, team=None):
             self.x = float(sx)
             self.y = float(sy)
             self.tx = float(tx)
@@ -5385,6 +5436,9 @@ class _NS_thorne:
             self.alive = True
             self.age = 0
             self.trail = []
+            self.target = target
+            self.damage = damage
+            self.team = team
             dx = tx - sx
             dy = ty - sy
             self.angle = math.atan2(dy, dx)
@@ -5399,9 +5453,15 @@ class _NS_thorne:
                     self.alive = False
                 return
 
+            # Homing tiap frame ke target selama masih terbang (terarah)
+            if self.target is not None and getattr(self.target, 'alive', False):
+                self.tx = float(self.target.x)
+                self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
+            if dist > 0:
+                self.angle = math.atan2(dy, dx)
             if dist < self.speed + 6:
                 self.impact_frame = self.age
                 return
@@ -5544,7 +5604,10 @@ class _NS_thorne:
         # Goo from snout
         sx = x + 20 * facing
         sy = y - 20
-        boss._th_projectiles.append(_NS_thorne.GooProjectile(sx, sy, tx, ty, speed=5.5))
+        tgt = getattr(boss, "target", None)
+        boss._th_projectiles.append(_NS_thorne.GooProjectile(
+            sx, sy, tx, ty, speed=5.5,
+            target=tgt, damage=0, team=getattr(boss, "team", None)))
 
 
     def _spawn_quill_spray(boss, x, y):
@@ -6948,7 +7011,8 @@ class _NS_vex:
     # ---------------------------------------------------------------------------
     class ArcaneOrbProjectile:
         """Basic teal arcane orb attack."""
-        def __init__(self, sx, sy, tx, ty, speed=6.5):
+        def __init__(self, sx, sy, tx, ty, speed=6.5,
+                     target=None, damage=0, team=None):
             self.x = float(sx)
             self.y = float(sy)
             self.tx = float(tx)
@@ -6957,6 +7021,9 @@ class _NS_vex:
             self.alive = True
             self.age = 0
             self.trail = []
+            self.target = target
+            self.damage = damage
+            self.team = team
             dx = tx - sx
             dy = ty - sy
             self.angle = math.atan2(dy, dx)
@@ -6965,9 +7032,15 @@ class _NS_vex:
             if not self.alive:
                 return
             self.age += 1
+            # Homing tiap frame ke target (terarah)
+            if self.target is not None and getattr(self.target, 'alive', False):
+                self.tx = float(self.target.x)
+                self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
+            if dist > 0:
+                self.angle = math.atan2(dy, dx)
             if dist < self.speed + 4:
                 self.alive = False
                 return
@@ -7020,7 +7093,8 @@ class _NS_vex:
 
     class AstralOrbProjectile:
         """Astral Imprisonment purple orb - travels then creates bubble prison."""
-        def __init__(self, sx, sy, tx, ty, speed=7.0):
+        def __init__(self, sx, sy, tx, ty, speed=7.0,
+                     target=None, damage=0, team=None):
             self.x = float(sx)
             self.y = float(sy)
             self.tx = float(tx)
@@ -7029,6 +7103,9 @@ class _NS_vex:
             self.alive = True
             self.age = 0
             self.trail = []
+            self.target = target
+            self.damage = damage
+            self.team = team
             self.impact_frame = -1
             dx = tx - sx
             dy = ty - sy
@@ -7045,9 +7122,15 @@ class _NS_vex:
                     self.alive = False
                 return
 
+            # Homing tiap frame ke target selama terbang (terarah)
+            if self.target is not None and getattr(self.target, 'alive', False):
+                self.tx = float(self.target.x)
+                self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
+            if dist > 0:
+                self.angle = math.atan2(dy, dx)
             if dist < self.speed + 4:
                 self.impact_frame = self.age
                 return
@@ -7228,7 +7311,10 @@ class _NS_vex:
         # Orb spawns from staff tip
         sx = x + 26 * facing
         sy = y - 20
-        boss._vx_projectiles.append(_NS_vex.ArcaneOrbProjectile(sx, sy, tx, ty, speed=6.5))
+        tgt = getattr(boss, "target", None)
+        boss._vx_projectiles.append(_NS_vex.ArcaneOrbProjectile(
+            sx, sy, tx, ty, speed=6.5,
+            target=tgt, damage=0, team=getattr(boss, "team", None)))
 
 
     def _spawn_astral_orb(boss, x, y):
@@ -7238,7 +7324,10 @@ class _NS_vex:
         facing = getattr(boss, "direction", 1)
         sx = x + 26 * facing
         sy = y - 20
-        boss._vx_projectiles.append(_NS_vex.AstralOrbProjectile(sx, sy, tx, ty, speed=7.0))
+        tgt = getattr(boss, "target", None)
+        boss._vx_projectiles.append(_NS_vex.AstralOrbProjectile(
+            sx, sy, tx, ty, speed=7.0,
+            target=tgt, damage=0, team=getattr(boss, "team", None)))
 
 
     # ===================================================================
@@ -7315,7 +7404,12 @@ class _NS_vex:
         progress = getattr(boss, "_vx_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
 
-        if 0.5 < progress < 0.6 and not getattr(boss, "_vx_proj_spawned", False):
+        # Basic attack TIDAK spawn renderer projectile (pakai generic
+        # _entity.py yang homing & terarah). Arcane orb renderer hanya
+        # saat skill aktif.
+        if (getattr(boss, "active_skill", None) is not None
+                and 0.5 < progress < 0.6
+                and not getattr(boss, "_vx_proj_spawned", False)):
             _NS_vex._spawn_arcane_orb(boss, x, y)
             boss._vx_proj_spawned = True
         if progress < 0.15 or progress > 0.9:
@@ -8623,7 +8717,8 @@ class _NS_zephyr:
     # ---------------------------------------------------------------------------
     class MagicBoltProjectile:
         """Pink magic bolt basic attack."""
-        def __init__(self, sx, sy, tx, ty, speed=7.5):
+        def __init__(self, sx, sy, tx, ty, speed=7.5,
+                     target=None, damage=0, team=None):
             self.x = float(sx)
             self.y = float(sy)
             self.tx = float(tx)
@@ -8632,6 +8727,9 @@ class _NS_zephyr:
             self.alive = True
             self.age = 0
             self.trail = []
+            self.target = target
+            self.damage = damage
+            self.team = team
             dx = tx - sx
             dy = ty - sy
             self.angle = math.atan2(dy, dx)
@@ -8640,9 +8738,15 @@ class _NS_zephyr:
             if not self.alive:
                 return
             self.age += 1
+            # Homing tiap frame ke target (terarah)
+            if self.target is not None and getattr(self.target, 'alive', False):
+                self.tx = float(self.target.x)
+                self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
+            if dist > 0:
+                self.angle = math.atan2(dy, dx)
             if dist < self.speed + 4:
                 self.alive = False
                 return
@@ -8705,7 +8809,8 @@ class _NS_zephyr:
 
     class CasketProjectile:
         """Casket Curse - flying skull that traps target."""
-        def __init__(self, sx, sy, tx, ty, speed=5.5):
+        def __init__(self, sx, sy, tx, ty, speed=5.5,
+                     target=None, damage=0, team=None):
             self.x = float(sx)
             self.y = float(sy)
             self.tx = float(tx)
@@ -8714,6 +8819,9 @@ class _NS_zephyr:
             self.alive = True
             self.age = 0
             self.trail = []
+            self.target = target
+            self.damage = damage
+            self.team = team
             self.impact_frame = -1
             dx = tx - sx
             dy = ty - sy
@@ -8729,9 +8837,15 @@ class _NS_zephyr:
                     self.alive = False
                 return
 
+            # Homing tiap frame ke target selama terbang (terarah)
+            if self.target is not None and getattr(self.target, 'alive', False):
+                self.tx = float(self.target.x)
+                self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
+            if dist > 0:
+                self.angle = math.atan2(dy, dx)
             if dist < self.speed + 4:
                 self.impact_frame = self.age
                 return
@@ -8912,7 +9026,10 @@ class _NS_zephyr:
         # From staff orb
         sx = x + 22 * facing
         sy = y - 8
-        boss._zp_projectiles.append(_NS_zephyr.MagicBoltProjectile(sx, sy, tx, ty, speed=7.5))
+        tgt = getattr(boss, "target", None)
+        boss._zp_projectiles.append(_NS_zephyr.MagicBoltProjectile(
+            sx, sy, tx, ty, speed=7.5,
+            target=tgt, damage=0, team=getattr(boss, "team", None)))
 
 
     def _spawn_casket(boss, x, y):
@@ -8922,7 +9039,10 @@ class _NS_zephyr:
         facing = getattr(boss, "direction", 1)
         sx = x + 22 * facing
         sy = y - 8
-        boss._zp_projectiles.append(_NS_zephyr.CasketProjectile(sx, sy, tx, ty, speed=5.5))
+        tgt = getattr(boss, "target", None)
+        boss._zp_projectiles.append(_NS_zephyr.CasketProjectile(
+            sx, sy, tx, ty, speed=5.5,
+            target=tgt, damage=0, team=getattr(boss, "team", None)))
 
 
     # ===================================================================
@@ -9001,7 +9121,12 @@ class _NS_zephyr:
         progress = getattr(boss, "_zp_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
 
-        if 0.5 < progress < 0.6 and not getattr(boss, "_zp_proj_spawned", False):
+        # Basic attack TIDAK spawn renderer projectile (pakai generic
+        # _entity.py yang homing & terarah). Magic bolt renderer hanya
+        # saat skill aktif.
+        if (getattr(boss, "active_skill", None) is not None
+                and 0.5 < progress < 0.6
+                and not getattr(boss, "_zp_proj_spawned", False)):
             _NS_zephyr._spawn_magic_bolt(boss, x, y)
             boss._zp_proj_spawned = True
         if progress < 0.15 or progress > 0.9:

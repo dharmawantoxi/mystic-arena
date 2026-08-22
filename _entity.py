@@ -3163,44 +3163,57 @@ class Hero:
         if self.skill_timer > 0:
             self.skill_timer -= 1
         # ═══ UPDATE PROJECTILES ═══
+        # Projectile homing: tiap frame arah dihitung ulang ke posisi
+        # target terbaru (tx, ty) lalu angle disimpan & dipakai renderer
+        # supaya selalu terarah ke target (fix "projectile tidak terarah").
         for proj in self.projectiles:
             if not proj['alive']:
                 continue
 
             target = proj['target']
-            if not target or not target.alive:
+            if target is None or not getattr(target, 'alive', False):
                 proj['alive'] = False
                 continue
 
-            # Move toward target
-            dx = target.x - proj['x']
-            dy = target.y - proj['y']
+            proj['age'] = proj.get('age', 0) + 1
+
+            # Homing tiap frame ke target yang bergerak
+            tx = target.x
+            ty = target.y
+            dx = tx - proj['x']
+            dy = ty - proj['y']
             dist = math.hypot(dx, dy)
 
+            # Simpan angle (dipakai renderer utk orientasi ujung)
+            if dist > 0:
+                proj['angle'] = math.atan2(dy, dx)
+
             if dist < proj['speed'] + 5:
-                # HIT!
-                target.take_damage(proj['damage'], proj['team'])
-                proj['alive'] = False
+                # HIT! (hanya damage > 0 yang mengenai target & bersuara;
+                # projectile visual-only skill damage=0 diam saja)
+                if proj['damage'] > 0:
+                    target.take_damage(proj['damage'], proj['team'])
 
-                # Suara hentakan proyektil (panah/sihir hero ranged).
-                # Dulu TIDAK ada sama sekali - serangan jarak jauh
-                # hero terdengar bisu saat mengenai sasaran.
-                try:
-                    SoundManager().play('bullet_hit', volume_mult=0.6)
-                except Exception:
-                    pass
-
-                # Visual feedback
-                if proj['is_crit']:
+                    # Suara hentakan proyektil (panah/sihir hero ranged).
+                    # Dulu TIDAK ada sama sekali - serangan jarak jauh
+                    # hero terdengar bisu saat mengenai sasaran.
                     try:
-                        import __main__
-                        if hasattr(__main__, 'game_instance'):
-                            game = __main__.game_instance
-                            game.effects.add_damage_number(
-                                target.x, target.y - 30,
-                                f"CRIT!", is_critical=True)
+                        SoundManager().play('bullet_hit', volume_mult=0.6)
                     except Exception:
                         pass
+
+                    # Visual feedback
+                    if proj['is_crit']:
+                        try:
+                            import __main__
+                            if hasattr(__main__, 'game_instance'):
+                                game = __main__.game_instance
+                                game.effects.add_damage_number(
+                                    target.x, target.y - 30,
+                                    f"CRIT!", is_critical=True)
+                        except Exception:
+                            pass
+                proj['alive'] = False
             else:
                 proj['x'] += proj['speed'] * dx / dist
                 proj['y'] += proj['speed'] * dy / dist
@@ -3561,22 +3574,54 @@ class Hero:
     # ═══════════════════════════════════════
     # DAMAGE & RESPAWN
     # ═══════════════════════════════════════
-    def _spawn_projectile(self, damage, is_crit=False):
-        """Spawn visual projectile yang terbang ke target"""
-        if not self.target or not self.target.alive:
+    def _spawn_projectile(self, damage, is_crit=False, speed=None,
+                          target=None, hero_type=None):
+        """Spawn projectile homing yang terbang & MENGENAI target.
+
+        Kecepatan default 9.5 (basic attack; dulu 6 terlalu lambat &
+        terlihat melayang). Skill memakai 12-13 lewat param ``speed``.
+        Tiap frame arah dihitung ulang ke posisi target terbaru
+        (homing) jadi projectile selalu terarah & tidak meleset walau
+        target bergerak. ``angle`` & ``age`` disimpan supaya renderer
+        bisa menggambar ujung tepat di (px,py) mengarah ke target.
+        """
+        tgt = target if target is not None else self.target
+        if tgt is None or not getattr(tgt, 'alive', False):
             return
+        if speed is None:
+            speed = 9.5
+
+        # Arah awal langsung ke target (bukan facing hero) supaya
+        # sejak frame pertama projectile sudah terarah.
+        dx = tgt.x - self.x
+        dy = (tgt.y - 5) - self.y
+        start_angle = math.atan2(dy, dx) if (dx or dy) else 0.0
 
         self.projectiles.append({
             'x': float(self.x),
             'y': float(self.y - 5),  # sedikit di atas hero
-            'target': self.target,
+            'target': tgt,
             'damage': damage,
-            'speed': 6,
+            'speed': float(speed),
             'is_crit': is_crit,
             'alive': True,
-            'hero_type': self.hero_type,
+            'hero_type': hero_type or self.hero_type,
             'team': self.team,
+            'angle': start_angle,
+            'age': 0,
         })
+
+    def _spawn_skill_projectile(self, target, speed=13.0, hero_type=None):
+        """Spawn projectile skill (visual homing, tanpa damage).
+
+        Dipakai hero_skills supaya skill ranged hero punya visual
+        ``terarah``: sebuah projectile homing terbang ke target skill.
+        damage = 0 agar TIDAK menumpuk dengan damage instan skill
+        (damage otoritatif tetap di hero_skills/_bundle.py); renderer
+        update loop melewatkan efek hit saat damage == 0.
+        """
+        self._spawn_projectile(0, is_crit=False, speed=speed,
+                               target=target, hero_type=hero_type)
 
     def take_damage(self, damage, from_team):
         self.hp -= damage
@@ -3811,34 +3856,32 @@ class Hero:
         self._badge_level = self.level
 
     def _draw_projectile(self, surface, proj):
-        """Draw projectile berdasarkan hero type"""
+        """Draw projectile berdasarkan hero type.
+
+        Pakai ``angle`` yang sudah dihitung & disimpan saat update
+        (homing tiap frame) supaya orientasi ujung selalu mengarah ke
+        target. Ujung (tip) digambar TEPAT di (px, py) - bukan
+        di-offset dari tengah - jadi projectile terlihat menyentuh
+        target saat hit (tidak ``terpotong`` beberapa px sebelum target).
+        """
         px = int(proj['x'])
         py = int(proj['y'])
 
         target = proj['target']
-        if not target or not target.alive:
+        if target is None or not getattr(target, 'alive', False):
             return
 
-        # Direction untuk orientasi
-        dx = target.x - proj['x']
-        dy = target.y - proj['y']
-        dist = math.hypot(dx, dy)
-        if dist > 0:
-            dx /= dist
-            dy /= dist
-        else:
-            dx, dy = 1, 0
-
-        angle = math.atan2(dy, dx)
+        angle = proj.get('angle', 0.0)
+        age = proj.get('age', 0)
 
         if proj['hero_type'] == 'sylara':
             self._draw_arrow_projectile(surface, px, py, angle)
         elif proj['hero_type'] == 'vex':
-            self._draw_magic_orb_projectile(surface, px, py)
+            self._draw_magic_orb_projectile(surface, px, py, angle, age)
         elif proj['hero_type'] == 'zephyr':
-            self._draw_magic_bolt_projectile(surface, px, py)
+            self._draw_magic_bolt_projectile(surface, px, py, angle, age)
         elif proj['hero_type'] == 'morgath':
-            self._draw_lightning_projectile(surface, px, py, angle)
+            self._draw_lightning_projectile(surface, px, py, angle, age)
         elif proj['hero_type'] == 'ancient_apparition':
             self._draw_ice_shard_projectile(surface, px, py, angle)
         else:
@@ -3846,20 +3889,19 @@ class Hero:
             pygame.draw.circle(surface, self.color, (px, py), 3)
 
     def _draw_arrow_projectile(self, surface, px, py, angle):
-        """Green arrow projectile (Sylara)"""
+        """Green arrow projectile (Sylara) - ujung TEPAT di (px,py)."""
         import pygame.gfxdraw
 
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
 
-        # Arrow length
-        arrow_len = 10
+        # Ujung (tip) TEPAT di (px, py); badan panah memanjang ke
+        # belakang, jadi projectile menyentuh target tepat saat
+        # (px,py) sampai - tidak terpotong / melayang di depannya.
+        arrow_len = 11
 
-        # Tip
-        tip_x = px + int(cos_a * arrow_len)
-        tip_y = py + int(sin_a * arrow_len)
-
-        # Tail
+        tip_x = px
+        tip_y = py
         tail_x = px - int(cos_a * arrow_len)
         tail_y = py - int(sin_a * arrow_len)
 
@@ -3884,16 +3926,16 @@ class Hero:
         pygame.draw.line(surface, (150, 105, 55),
                          (tail_x, tail_y), (tip_x, tip_y), 1)
 
-        # ─── ARROWHEAD (green glowing) ───
+        # ─── ARROWHEAD (green glowing) - tip di (px,py) ───
         perp_x = -sin_a
         perp_y = cos_a
 
         head_pts = [
             (tip_x, tip_y),
-            (int(tip_x - cos_a * 4 + perp_x * 3),
-             int(tip_y - sin_a * 4 + perp_y * 3)),
-            (int(tip_x - cos_a * 4 - perp_x * 3),
-             int(tip_y - sin_a * 4 - perp_y * 3)),
+            (int(tip_x - cos_a * 5 + perp_x * 3),
+             int(tip_y - sin_a * 5 + perp_y * 3)),
+            (int(tip_x - cos_a * 5 - perp_x * 3),
+             int(tip_y - sin_a * 5 - perp_y * 3)),
         ]
 
         pygame.draw.polygon(surface, (60, 140, 60), head_pts)
@@ -3931,9 +3973,26 @@ class Hero:
                            (8, 8), 6)
         surface.blit(glow_surf, (px - 8, py - 8))
 
-    def _draw_magic_orb_projectile(self, surface, px, py):
-        """Purple magic orb (Vex)"""
+    def _draw_magic_orb_projectile(self, surface, px, py, angle=0.0, age=0):
+        """Purple magic orb (Vex) - core di (px,py) + trail belakang."""
         import pygame.gfxdraw
+
+        cos_a = math.cos(angle)
+        sin_a = math.sin(angle)
+
+        # ─── TRAIL (jejak orb bercahaya ke arah belakang) ───
+        for i in range(5):
+            off = (i + 1) * 3
+            trail_x = px - int(cos_a * off)
+            trail_y = py - int(sin_a * off)
+            trail_alpha = 120 - i * 22
+            if trail_alpha > 0:
+                trail_surf = pygame.Surface((8, 8), pygame.SRCALPHA)
+                pygame.draw.circle(trail_surf,
+                                   (180, 100, 240, trail_alpha),
+                                   (4, 4), max(1, 3 - i // 2))
+                surface.blit(trail_surf,
+                             (trail_x - 4, trail_y - 4))
 
         # Glow
         glow_surf = pygame.Surface((16, 16), pygame.SRCALPHA)
@@ -3948,12 +4007,29 @@ class Hero:
                     pass
         surface.blit(glow_surf, (px - 8, py - 8))
 
-        # Core
+        # Core di (px, py)
         pygame.draw.circle(surface, (220, 180, 255), (px, py), 3)
         pygame.draw.circle(surface, (255, 255, 255), (px, py), 1)
 
-    def _draw_magic_bolt_projectile(self, surface, px, py):
-        """Pink magic bolt (Zephyr)"""
+    def _draw_magic_bolt_projectile(self, surface, px, py, angle=0.0, age=0):
+        """Pink magic bolt (Zephyr) - core di (px,py) + trail belakang."""
+        cos_a = math.cos(angle)
+        sin_a = math.sin(angle)
+
+        # ─── TRAIL (jejak bolt ke arah belakang) ───
+        for i in range(5):
+            off = (i + 1) * 3
+            trail_x = px - int(cos_a * off)
+            trail_y = py - int(sin_a * off)
+            trail_alpha = 130 - i * 24
+            if trail_alpha > 0:
+                trail_surf = pygame.Surface((8, 8), pygame.SRCALPHA)
+                pygame.draw.circle(trail_surf,
+                                   (230, 80, 200, trail_alpha),
+                                   (4, 4), max(1, 3 - i // 2))
+                surface.blit(trail_surf,
+                             (trail_x - 4, trail_y - 4))
+
         # Glow
         glow_surf = pygame.Surface((14, 14), pygame.SRCALPHA)
         pygame.draw.circle(glow_surf, (230, 80, 200, 120),
@@ -3963,16 +4039,21 @@ class Hero:
         pygame.draw.circle(surface, (255, 130, 230), (px, py), 3)
         pygame.draw.circle(surface, (255, 255, 255), (px, py), 1)
 
-    def _draw_lightning_projectile(self, surface, px, py, angle):
-        """Lightning bolt (Morgath)"""
-        import random as _rnd
+    def _draw_lightning_projectile(self, surface, px, py, angle, age=0):
+        """Lightning bolt (Morgath) - zigzag deterministik sin(age).
+
+        Dulu memakai ``random`` tiap frame -> kilat berkedip/loncat
+        acak & terlihat tidak terarah. Sekarang offset memakai
+        ``sin(age)`` yang deterministik, jadi kilat stabil & tetap
+        mengarah ke target. Titik awal (px,py) = ujung depan.
+        """
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
 
-        # Zigzag lightning
+        # Zigzag lightning (deterministik via sin(age))
         points = [(px, py)]
         for i in range(3):
-            offset = _rnd.randint(-3, 3)
+            offset = int(math.sin(age * 0.6 + i * 1.7) * 3)
             nx = px + int(cos_a * (i + 1) * 5) + int(-sin_a * offset)
             ny = py + int(sin_a * (i + 1) * 5) + int(cos_a * offset)
             points.append((nx, ny))
@@ -3990,25 +4071,32 @@ class Hero:
         surface.blit(glow_surf, (px - 7, py - 7))
 
     def _draw_ice_shard_projectile(self, surface, px, py, angle):
-        """Ice shard (Ancient Apparition)"""
+        """Ice shard (Ancient Apparition) - ujung TEPAT di (px,py)."""
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
         perp_x = -sin_a
         perp_y = cos_a
 
-        # Diamond shape
+        # Ujung (tip) di (px, py); shard melebar ke belakang.
+        tip_x = px
+        tip_y = py
+        base_x = px - int(cos_a * 10)
+        base_y = py - int(sin_a * 10)
+
         shard_pts = [
-            (px + int(cos_a * 5), py + int(sin_a * 5)),
-            (px + int(perp_x * 3), py + int(perp_y * 3)),
-            (px - int(cos_a * 5), py - int(sin_a * 5)),
-            (px - int(perp_x * 3), py - int(perp_y * 3)),
+            (tip_x, tip_y),
+            (base_x + int(perp_x * 3), base_y + int(perp_y * 3)),
+            (base_x, base_y),
+            (base_x - int(perp_x * 3), base_y - int(perp_y * 3)),
         ]
 
         pygame.draw.polygon(surface, (100, 180, 240), shard_pts)
         pygame.draw.polygon(surface, (200, 230, 255), [
-            (px + int(cos_a * 4), py + int(sin_a * 4)),
-            (px + int(perp_x * 2), py + int(perp_y * 2)),
-            (px, py),
+            (tip_x, tip_y),
+            (base_x + int(perp_x * 2) + int(cos_a * 4),
+             base_y + int(perp_y * 2) + int(sin_a * 4)),
+            (base_x + int(cos_a * 4),
+             base_y + int(sin_a * 4)),
         ])
         pygame.draw.rect(surface, (255, 255, 255), (px, py, 1, 1))
 
