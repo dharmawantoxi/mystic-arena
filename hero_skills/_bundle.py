@@ -4062,6 +4062,11 @@ class _NS_sylara_skills:
             h.attack_cooldown = max(20,
                                      int(h.attack_cooldown / 1.7))
 
+            # Visual: projectile homing terarah ke target utama via
+            # sistem generic _entity.py (damage=0, cuma visual).
+            if h.target and getattr(h.target, 'alive', False):
+                h._spawn_skill_projectile(h.target, speed=13.0)
+
             # Piercing damage (single line)
             if h.target:
                 dx = h.target.x - h.x
@@ -4083,7 +4088,7 @@ class _NS_sylara_skills:
                         proj = ex * dx + ey * dy
                         if 0 < proj < skill_range:
                             perp_dist = abs(ex * (-dy) + ey * dx)
-                            if perp_dist < 25:
+                            if perp_dist < 15:
                                 # Damage falloff per hit
                                 damage_falloff = max(0.5,
                                                       1.0 - hit_count * 0.15)
@@ -4214,9 +4219,9 @@ class _NS_sylara_skills:
             else:
                 dx, dy = h.facing, 0
 
-            # 5 arrows dalam cone 45°, range 300
+            # 5 arrows dalam cone 30°, range 300
             num_arrows = 5
-            cone_angle = math.pi / 4  # 45°
+            cone_angle = math.pi / 6  # 30° (dulu 45° - terlalu lebar)
             max_range = 300
 
             # Track enemies hit (avoid double-count)
@@ -4246,6 +4251,9 @@ class _NS_sylara_skills:
                             damage = int(h.skill_damage * 1.0 * distance_falloff)
                             e.take_damage(damage, h.team)
                             hit_enemies.add(id(e))
+                            # Visual: projectile homing terarah ke musuh
+                            # kena (via sistem generic _entity.py).
+                            h._spawn_skill_projectile(e, speed=13.0)
 
 # ====================================================================
 # thorne_skills.py
@@ -4592,6 +4600,11 @@ class _NS_vex_skills:
             if not h.target:
                 return False
 
+            # Visual: arcane orb homing terarah ke target (via sistem
+            # generic _entity.py; damage=0, cuma visual).
+            if getattr(h.target, 'alive', False):
+                h._spawn_skill_projectile(h.target, speed=13.0)
+
             # Big single-target damage
             h.target.take_damage(
                 int(h.skill_damage * 1.2), h.team)
@@ -4613,7 +4626,7 @@ class _NS_vex_skills:
                     proj = ex * dx + ey * dy
                     if 0 < proj < dist:
                         perp_dist = abs(ex * (-dy) + ey * dx)
-                        if perp_dist < 20:
+                        if perp_dist < 18:
                             e.take_damage(
                                 int(h.skill_damage * 0.5), h.team)
 
@@ -4691,6 +4704,10 @@ class _NS_vex_skills:
                 h._astral_prison_active = True
                 h._astral_prison_timer = 150  # 2.5 detik
                 h._astral_prison_target = target
+
+                # Visual: astral orb homing terarah ke target (via
+                # sistem generic _entity.py; damage=0, cuma visual).
+                h._spawn_skill_projectile(target, speed=13.0)
 
                 # Initial damage
                 target.take_damage(
@@ -4931,6 +4948,10 @@ class _NS_zephyr_skills:
                 h._curse_active = True
                 h._curse_timer = 180  # 3 detik
                 h._curse_target = target
+
+                # Visual: casket skull homing terarah ke target (via
+                # sistem generic _entity.py; damage=0, cuma visual).
+                h._spawn_skill_projectile(target, speed=13.0)
 
                 # Initial damage
                 target.take_damage(
