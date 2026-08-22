@@ -481,15 +481,21 @@ def panel_popup_pos(w, h, atas=12):
 #
 #     0 ..  76   tombol JEDA
 #    84 .. 176   STATUS (emas, level, wave)
-#   186 .. 346   daftar HERO (maksimal 3 baris)
-#   356 .. 521   popup terpilih (panel upgrade hero, 165 px)
-#   530 .. 720   notifikasi + umpan pembunuhan
+#   186 .. 422   daftar HERO (maksimal 5 baris x 42 px)
+#   430 .. 595   popup terpilih (panel upgrade hero, 165 px)
+#   600 .. 720   notifikasi + umpan pembunuhan
 #
 # Dulu popup ditempel ke sisi bawah panel dan menimpa umpan
 # pembunuhan - terlihat sebagai potongan teks yang muncul dari balik
 # panel upgrade.
-ZONA_POPUP_Y = 356
-ZONA_BAWAH_H = 190
+#
+# REVISI 5 HERO: daftar hero dulu dibatasi 3 baris supaya tidak
+# menabrak jalur popup. Begitu pemain summon 5 hero, 2 nama terakhir
+# hilang. Jalur hero sekarang diperlebar (5 x 42 + kepala), jalur
+# popup dipindah ke 430, dan zona notifikasi diringkas jadi 120 px
+# (masih muat 1 notifikasi besar + ±4 baris umpan pembunuhan).
+ZONA_POPUP_Y = 430
+ZONA_BAWAH_H = 120
 
 
 def panel_pos_bawah(w, h, sisakan=None):

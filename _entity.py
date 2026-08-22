@@ -2900,6 +2900,13 @@ class Hero:
         self.radius = 16
 
         self.destination = None
+        # ═══ JENIS DESTINATION ═══
+        # False = perintah manual pemain (ketuk peta) - WAJIB ditaati.
+        # True  = dipasang otak AI (mis. _assign_hero_lane) - BOLEH
+        #         dibatalkan begitu ada musuh dalam aggro range,
+        #         supaya hero AI tidak "berjalan ke titik tertentu
+        #         dulu baru peduli target".
+        self.destination_auto = False
         self.follow_target = None
 
         self.skill_active = False
@@ -2947,7 +2954,16 @@ class Hero:
             self.skills.init_state()
 
         # ═══ AGGRO / HUNT / HEAL SETTINGS ═══
-        self.hunt_range = 600
+        # hunt_range: radius hero mencari target saat menganggur.
+        # Dulu 600 - lebarnya cuma separuh peta, jadi hero yang baru
+        # di-summon sering "berjalan ke titik tertentu" (dorongan
+        # PUSH ke base musuh) dulu sebelum menyadari ada target.
+        # 900 menutupi hampir seluruh area bermain (diagonal penuh
+        # peta ≈ 1200 px), tapi hero di base sendiri tetap TIDAK
+        # mengejar minion yang baru spawn di base musuh (jarak
+        # base-ke-base 1199 px > 900) - tidak ada bunuh diri
+        # menembus map.
+        self.hunt_range = 900
         self.aggro_range = 250
         self.retreat_hp_ratio = 0.20       # mulai retreat saat HP < 20%
         self.heal_target_ratio = 0.80      # heal sampai 80% baru keluar lagi
@@ -2987,8 +3003,9 @@ class Hero:
             return 0
         return HERO_LEVELS[self.level]["upgrade_cost"]
 
-    def move_to(self, x, y):
+    def move_to(self, x, y, auto=False):
         self.destination = (x, y)
+        self.destination_auto = bool(auto)
         self.follow_target = None
         # Player command overrides retreat
         self.is_retreating = False
@@ -3065,6 +3082,23 @@ class Hero:
                 best_dist = dist
                 best = e
 
+        return best
+
+    def _find_aggro_target(self, enemies):
+        """Cari musuh TERDEKAT dalam aggro_range.
+
+        Dipakai untuk MEMBATALKAN destination auto (perintah dari
+        otak AI, bukan ketukan pemain) begitu ada musuh yang
+        cukup dekat - supaya hero AI langsung menyergap target
+        di jalannya, bukan berbaris dulu ke titik tujuan.
+        """
+        best = None
+        best_dist = self.aggro_range
+        for e in enemies:
+            dist = math.hypot(e.x - self.x, e.y - self.y)
+            if dist <= best_dist:
+                best_dist = dist
+                best = e
         return best
 
     def count_enemies_in_range(self, all_units, all_towers, all_bases,
@@ -3271,7 +3305,24 @@ class Hero:
                     self._do_attack()
             return
 
-        # ── 2. PLAYER COMMAND: move to destination ──
+        # ── 2. COMMAND: move to destination ──
+        # ═══ FIX: destination AUTO dibatalkan oleh aggro ═══
+        # BUG LAMA: destination (yang dipasang otak AI lewat
+        # _assign_hero_lane) diprioritaskan di atas SEMUA state
+        # combat. Hero AI jadi berbaris lurus ke titik lane
+        # (mis. x=600 atau posisi minion saat itu) sambil melewati
+        # musuh-musuh di sekitarnya, dan BARU mulai mengejar target
+        # setelah sampai di titik itu - persis keluhan
+        # "hero pergi ke tempat tertentu dulu baru ke target".
+        # Sekarang: kalau destination datang dari AI (auto) dan ada
+        # musuh dalam aggro_range, destination dibuang dan hero
+        # langsung lanjut ke state ATTACK/HUNT di frame yang sama.
+        # Destination MANUAL (ketukan pemain) tetap ditaati penuh.
+        if self.destination and self.destination_auto:
+            if self._find_aggro_target(enemies) is not None:
+                self.destination = None
+                self.destination_auto = False
+
         if self.destination:
             dx = self.destination[0] - self.x
             dy = self.destination[1] - self.y
@@ -3280,6 +3331,7 @@ class Hero:
             if dist < self.speed:
                 self.x, self.y = self.destination
                 self.destination = None
+                self.destination_auto = False
             else:
                 self.x += self.speed * dx / dist
                 self.y += self.speed * dy / dist
@@ -3547,6 +3599,7 @@ class Hero:
         self.skill_timer = 0
         self.follow_target = None
         self.destination = None
+        self.destination_auto = False
         self.target = None
 
         # Reset visual skill state biar efek tidak "nyangkut"
@@ -3641,27 +3694,20 @@ class Hero:
             sprite_top = self.radius
         label_anchor = y - max(self.radius, sprite_top) - 6
 
-        # ═══ RETREAT INDICATOR (surface di-cache) ═══
-        if self.is_retreating:
-            retreat_surf = _HERO_UI_CACHE.get("retreat")
-            if retreat_surf is None:
-                from _render import get_font
-                retreat_text = get_font(18).render(
-                    "HEAL", True, (100, 255, 100))
-                bg_rect = retreat_text.get_rect().inflate(6, 2)
-                s = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
-                pygame.draw.rect(s, (0, 60, 0),
-                                 s.get_rect(), border_radius=3)
-                pygame.draw.rect(s, (100, 255, 100),
-                                 s.get_rect(), 1, border_radius=3)
-                s.blit(retreat_text, (3, 1))
-                _HERO_UI_CACHE["retreat"] = s
-                retreat_surf = s
-            surface.blit(retreat_surf,
-                         (x - retreat_surf.get_width() // 2,
-                          label_anchor - 34 - retreat_surf.get_height() // 2))
+        # ═══ NAME BADGE DIBANGUN DULUAN ═══
+        # Dipindah ke atas blok HP bar supaya posisi papan nama dan
+        # indikator HEAL bisa dihitung DARI tinggi badge yang asli.
+        # BUG LAMA: badge di-blit di "by - 24" padahal tingginya
+        # 12 + (tinggi teks + 4) ≈ 33 px, jadi kotak hitam nama turun
+        # sampai ±9 px DI ATAS HP bar dan menutupinya - HP bar hero
+        # (termasuk hero musuh) jadi tidak kelihatan sama sekali.
+        from _render import get_font
+        if getattr(self, '_badge_level', None) != self.level:
+            self._build_name_badge(get_font)
 
         # ═══ HP BAR ═══
+        # Sengaja digambar SEBELUM papan nama (lihat blit badge di
+        # bawah) dan posisinya jadi jangkar utama semua label.
         bar_w = 45
         bar_h = 6
         bx = x - bar_w // 2
@@ -3676,51 +3722,37 @@ class Hero:
             pygame.draw.rect(surface, hp_color, (bx, by, fill, bar_h))
         pygame.draw.rect(surface, WHITE, (bx, by, bar_w, bar_h), 1)
 
-        # ═══ NAME + LEVEL LABEL (di-cache - font.render mahal) ═══
-        # Nama + bintang level digambar SEKALI ke surface kecil lalu
-        # di-blit tiap frame. Invalidasi otomatis saat level naik.
-        from _render import get_font
-        if getattr(self, '_badge_level', None) != self.level:
-            font = get_font(14)
-            name_lbl = font.render(f"{self.name}", True, WHITE)
-            star_w = (self.level * 10) if self.level <= 5 else 18
-            bw = max(name_lbl.get_width(), star_w) + 8
-            # BUG LAMA: tinggi kotak hitam dipatok 14 px sementara
-            # font 14 menghasilkan teks ~17-18 px, jadi tulisannya
-            # meluber ke atas kotak dan terlihat tidak sejajar.
-            # Sekarang kotak mengikuti tinggi teks dan teksnya
-            # benar-benar di tengah.
-            nh = name_lbl.get_height() + 4
-            bh = 12 + nh
-            badge = pygame.Surface((bw, bh), pygame.SRCALPHA)
-            name_box = pygame.Rect(0, bh - nh, bw, nh)
-            pygame.draw.rect(badge, (0, 0, 0), name_box, border_radius=2)
-            badge.blit(name_lbl, name_lbl.get_rect(center=name_box.center))
+        # ═══ PAPAN NAMA + BINTANG: TEPAT di atas HP bar ═══
+        badge = getattr(self, '_badge_surf', None)
+        badge_top = 0
+        if badge is not None:
+            # celah 3 px: bawah papan nama TIDAK PERNAH menyentuh
+            # HP bar lagi
+            badge_top = by - badge.get_height() - 3
+            surface.blit(badge,
+                         (x - badge.get_width() // 2, badge_top))
 
-            def _star(sx, sy, color=YELLOW):
-                pygame.draw.polygon(badge, color, [
-                    (sx, sy - 3), (sx + 2, sy),
-                    (sx + 4, sy), (sx + 2, sy + 2),
-                    (sx + 3, sy + 5), (sx, sy + 3),
-                    (sx - 3, sy + 5), (sx - 2, sy + 2),
-                    (sx - 4, sy), (sx - 2, sy),
-                ])
-
-            if self.level <= 5:
-                for i in range(self.level):
-                    sx = bw // 2 - (self.level - 1) * 5 + i * 10
-                    _star(sx, 5)
-            else:
-                lvl_font = get_font(13)
-                lvl_txt = lvl_font.render(f"x{self.level}", True, YELLOW)
-                total_w = 9 + lvl_txt.get_width()
-                _star(bw // 2 - total_w // 2 + 4, 5)
-                badge.blit(lvl_txt, (bw // 2 - total_w // 2 + 11, 0))
-            self._badge_surf = badge
-            self._badge_level = self.level
-
-        surface.blit(self._badge_surf,
-                     (x - self._badge_surf.get_width() // 2, by - 24))
+        # ═══ RETREAT INDICATOR (surface di-cache) ═══
+        # Digambar DI ATAS papan nama (bukan offset tetap yang bisa
+        # menimpa HP bar / nama).
+        if self.is_retreating:
+            retreat_surf = _HERO_UI_CACHE.get("retreat")
+            if retreat_surf is None:
+                retreat_text = get_font(18).render(
+                    "HEAL", True, (100, 255, 100))
+                bg_rect = retreat_text.get_rect().inflate(6, 2)
+                s = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+                pygame.draw.rect(s, (0, 60, 0),
+                                 s.get_rect(), border_radius=3)
+                pygame.draw.rect(s, (100, 255, 100),
+                                 s.get_rect(), 1, border_radius=3)
+                s.blit(retreat_text, (3, 1))
+                _HERO_UI_CACHE["retreat"] = s
+                retreat_surf = s
+            surface.blit(
+                retreat_surf,
+                (x - retreat_surf.get_width() // 2,
+                 badge_top - 3 - retreat_surf.get_height()))
 
         # ═══ SKILL COOLDOWN BAR ═══
         if self.skill_timer > 0:
@@ -3732,6 +3764,51 @@ class Hero:
         else:
             pygame.draw.rect(surface, YELLOW,
                              (bx, y + self.radius + 8, 45, 3))
+
+    def _build_name_badge(self, get_font):
+        """Bangun (ulang) papan nama + bintang level.
+
+        Nama + bintang level digambar SEKALI ke surface kecil lalu
+        di-blit tiap frame. Invalidasi otomatis saat level naik
+        (draw() memanggil ini hanya kalau _badge_level != level).
+
+        Kotak hitam mengikuti tinggi teks asli (bukan dipatok 14 px),
+        dan draw() meletakkannya TEPAT di atas HP bar memakai tinggi
+        surface ini - jadi papan nama tidak pernah lagi menutupi
+        HP bar.
+        """
+        font = get_font(14)
+        name_lbl = font.render(f"{self.name}", True, WHITE)
+        star_w = (self.level * 10) if self.level <= 5 else 18
+        bw = max(name_lbl.get_width(), star_w) + 8
+        nh = name_lbl.get_height() + 4
+        bh = 12 + nh
+        badge = pygame.Surface((bw, bh), pygame.SRCALPHA)
+        name_box = pygame.Rect(0, bh - nh, bw, nh)
+        pygame.draw.rect(badge, (0, 0, 0), name_box, border_radius=2)
+        badge.blit(name_lbl, name_lbl.get_rect(center=name_box.center))
+
+        def _star(sx, sy, color=YELLOW):
+            pygame.draw.polygon(badge, color, [
+                (sx, sy - 3), (sx + 2, sy),
+                (sx + 4, sy), (sx + 2, sy + 2),
+                (sx + 3, sy + 5), (sx, sy + 3),
+                (sx - 3, sy + 5), (sx - 2, sy + 2),
+                (sx - 4, sy), (sx - 2, sy),
+            ])
+
+        if self.level <= 5:
+            for i in range(self.level):
+                sx = bw // 2 - (self.level - 1) * 5 + i * 10
+                _star(sx, 5)
+        else:
+            lvl_font = get_font(13)
+            lvl_txt = lvl_font.render(f"x{self.level}", True, YELLOW)
+            total_w = 9 + lvl_txt.get_width()
+            _star(bw // 2 - total_w // 2 + 4, 5)
+            badge.blit(lvl_txt, (bw // 2 - total_w // 2 + 11, 0))
+        self._badge_surf = badge
+        self._badge_level = self.level
 
     def _draw_projectile(self, surface, proj):
         """Draw projectile berdasarkan hero type"""
@@ -4738,11 +4815,21 @@ class AIPlayer:
                                 if m.team == "blue" and m.alive
                                 and m.lane == max_lane[0]]
                 if lane_minions:
-                    lane_minions.sort(key=lambda m: m.x, reverse=True)
+                    # ═══ FIX JALUR AI ═══
+                    # Dulu diurutkan by x (reverse) -> hero berlari ke
+                    # minion PALING DALAM, melewati semua musuh lain
+                    # (terlihat seperti "pergi ke tempat tertentu dulu
+                    # baru ke target"). Sekarang pilih minion TERDEKAT
+                    # dari posisi hero di lane itu, dan tandai `auto`
+                    # supaya hero tetap menyergap musuh yang ditemui
+                    # di perjalanan (lihat Hero.update state 2).
+                    lane_minions.sort(
+                        key=lambda m: math.hypot(
+                            m.x - hero.x, m.y - hero.y))
                     target_x = lane_minions[0].x
-                    hero.move_to(target_x, target_y)
+                    hero.move_to(target_x, target_y, auto=True)
                 else:
-                    hero.move_to(600, target_y)
+                    hero.move_to(600, target_y, auto=True)
         else:
             if self.team == "red":
                 # Cari blue tower terdekat sebagai target
@@ -4760,7 +4847,7 @@ class AIPlayer:
                     if dist > 0:
                         offset_x = target.x + (dx / dist) * 60
                         offset_y = target.y + (dy / dist) * 60
-                        hero.move_to(offset_x, offset_y)
+                        hero.move_to(offset_x, offset_y, auto=True)
 
     def _get_hero_pool(self):
         """Pool hero AI: starter + boss hero dari level DI BAWAH

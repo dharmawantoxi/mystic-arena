@@ -48,7 +48,7 @@ MIN_TAP = 80
 try:
     from mobile.platform_utils import ZONA_BAWAH_H as ZONA_BAWAH
 except Exception:
-    ZONA_BAWAH = 190
+    ZONA_BAWAH = 120
 
 
 class PanelButton:
@@ -299,19 +299,24 @@ class SidePanel:
             try:
                 semua = [h for h in game.get_all_heroes()
                          if getattr(h, "team", "blue") == "blue"]
-                # Maksimal 3 baris: jalur HERO tingginya 160 px dan
-                # tidak boleh melebar sampai menabrak jalur popup.
-                pahlawan = semua[:3]
-                self._hero_lebih = max(0, len(semua) - 3)
+                # ═══ MAKSIMAL 5 BARIS ═══
+                # BUG LAMA: dipotong 3 (semua[:3]) padahal pemain bisa
+                # memiliki 5 hero (MAX_HEROES_OWNED = 5) - hero ke-4
+                # dan ke-5 tidak pernah muncul di panel walau sudah
+                # di-summon. Sekarang semua 5 ditampilkan; barisnya
+                # dipadatkan (46 -> 42 px) dan jalur popup/notifikasi
+                # di platform_utils digeser supaya tidak bertabrakan.
+                pahlawan = semua[:5]
+                self._hero_lebih = max(0, len(semua) - 5)
             except Exception:
                 pahlawan = []
                 self._hero_lebih = 0
 
-        tinggi_baris = 46
-        h = 24 + max(1, len(pahlawan)) * tinggi_baris
+        tinggi_baris = 42
+        h = 22 + max(1, len(pahlawan)) * tinggi_baris
         if getattr(self, "_hero_lebih", 0):
-            h += 16
-        h = min(h, 168)
+            h += 14
+        h = min(h, 236)
         if h < 40:
             return y
         self._kotak(full, x, y, w, h, "HERO")
@@ -338,8 +343,8 @@ class SidePanel:
                 full.blit(t, (x + w - 10 - t.get_width(), by + 2))
 
             # bar HP
-            bx, bw2, bh2 = x + 9, w - 18, 7
-            byy = by + 20
+            bx, bw2, bh2 = x + 9, w - 18, 6
+            byy = by + 19
             pygame.draw.rect(full, (48, 14, 14), (bx, byy, bw2, bh2))
             try:
                 rasio = max(0.0, min(1.0, hero.hp / float(hero.max_hp)))
@@ -352,7 +357,7 @@ class SidePanel:
                                  (bx, byy, int(bw2 * rasio), bh2))
             pygame.draw.rect(full, (90, 84, 110), (bx, byy, bw2, bh2), 1)
 
-            # titik kesiapan skill
+            # titik kesiapan skill (dinaikkan supaya muat di baris 42)
             try:
                 siap = [k for k in ("q", "w", "e", "r")
                         if hero.is_skill_ready(k)]
@@ -361,7 +366,7 @@ class SidePanel:
             dx = bx
             for k in ("q", "w", "e", "r"):
                 warna = UNGU if k in siap else (60, 56, 78)
-                pygame.draw.circle(full, warna, (dx + 5, byy + 18), 4)
+                pygame.draw.circle(full, warna, (dx + 5, byy + 13), 4)
                 dx += 14
             by += tinggi_baris
         if getattr(self, "_hero_lebih", 0) and by + 14 <= y + h:
