@@ -1,28 +1,32 @@
 # ================================
 # mobile/combat_audio.py
-# LAPISAN SUARA TEMPUR
+# LAPISAN SUARA TEMPUR — SKEMA FINAL (v35)
 #
-# Kenapa lapisan tersendiri, bukan SoundManager.play() bertebaran
-# ─────────────────────────────────────────────────────────────────
-# Di layar bisa ada 40 minion, 8 menara, 5 hero, dan seekor boss yang
-# semuanya menyerang. Kalau setiap serangan langsung memutar suara:
+# Skema SEDERHANA, tanpa suara tercampur dari pengembang. Pemilik
+# proyek mengisi sendiri berkas suaranya di assets/sounds/ dengan
+# nama di bawah; modul ini hanya menyatukannya ke dalam game.
 #
-#   - bunyinya jadi kebisingan, bukan umpan balik
-#   - channel mixer habis, suara penting (boss) kalah oleh minion
-#   - biaya mixing naik dan FPS yang susah payah dikejar ikut turun
+# JENIS SUARA (7):
+#   hero_melee      -> tebasan SEMUA unit jarak dekat
+#                      (hero summon/musuh + boss melee)
+#   hero_ranged     -> serangan SEMUA unit jarak jauh
+#                      (hero summon/musuh + boss ranged)
+#   tower_archer    -> tembakan menara ARCHER
+#   tower_cannon    -> tembakan menara CANNON
+#   tower_ice       -> tembakan menara ICE
+#   tower_mage      -> tembakan menara MAGE
+#   minion_hit      -> pukulan SEMUA minion (goblin, orc, troll,
+#                      undead, dark_rider)
 #
-# Modul ini menaruh tiga pengaman di antara game dan mixer:
+# Suara kematian & ledakan & UI tetap lewat SoundManager (berkas
+# .wav bernama tetap: minion_death.wav, tower_destroyed.wav, dll.)
 #
-#   1. JEDA PER JENIS    - satu jenis suara tidak boleh berbunyi lebih
-#                          rapat dari jedanya (minion 140 ms, boss 320 ms)
-#   2. ANGGARAN PER FRAME - maksimal 4 suara baru per frame, apa pun
-#                          yang terjadi di layar
-#   3. PRIORITAS         - saat channel penuh, boss/mini boss boleh
-#                          merebut channel; minion tidak pernah
-#
-# Berkas suaranya dibuat oleh tools/gen_sounds.py (sintesis, bebas
-# lisensi). Tiap jenis punya 3 variasi yang dipilih acak supaya
-# serangan beruntun tidak terdengar seperti mesin tik.
+# Tiga pengaman tetap dipasang supaya ramai tidak jadi kebisingan:
+#   1. JEDA PER JENIS   - satu jenis tidak berbunyi lebih rapat
+#                         dari jedanya (minion 140 ms, tower 110 ms)
+#   2. ANGGARAN/FRAME   - maksimal 4 suara baru per frame
+#   3. PRIORITAS        - boss/hero tidak pernah direbut; suara
+#                         penting selalu terdengar
 # ================================
 
 import os
@@ -33,69 +37,58 @@ import pygame
 # ── jenis suara ──
 HERO_MELEE = "hero_melee"
 HERO_RANGED = "hero_ranged"
-TOWER = "tower_shoot"
-MINION = "minion_attack"
-MINIBOSS = "miniboss_attack"
-BOSS = "boss_attack"
+TOWER_ARCHER = "tower_archer"
+TOWER_CANNON = "tower_cannon"
+TOWER_ICE = "tower_ice"
+TOWER_MAGE = "tower_mage"
+MINION_HIT = "minion_hit"
 
 # jenis -> (volume dasar, jeda minimum ms, boleh rebut channel)
-# Volume dasar dinaikkan (v33): sebelumnya minion 0,26 dan tower 0,40
-# dikali lagi master(0,7)*sfx(0,6)=0,42, sehingga efektif hanya ~0,11
-# dan ~0,17 - tenggelam di bawah BGM di speaker HP. Sekarang efektif
-# ~0,21-0,33, cukup keras terdengar tapi tidak menutup BGM.
 _KONFIG = {
-    HERO_MELEE:  (0.78, 90, False),
-    HERO_RANGED: (0.72, 90, False),
-    TOWER:       (0.62, 110, False),
-    MINION:      (0.50, 140, False),   # paling pelan: jumlahnya paling banyak
-    MINIBOSS:    (0.85, 260, True),
-    BOSS:        (1.00, 320, True),
+    HERO_MELEE:    (0.78, 90, False),
+    HERO_RANGED:   (0.72, 90, False),
+    TOWER_ARCHER:  (0.62, 110, False),
+    TOWER_CANNON:  (0.62, 110, False),
+    TOWER_ICE:     (0.62, 110, False),
+    TOWER_MAGE:    (0.62, 110, False),
+    MINION_HIT:    (0.50, 140, False),
 }
 
-VARIASI = 3
-MAKS_PER_FRAME = 4
+# Ambang jarak serang (sama untuk hero dan boss):
+#   jarak >= AMBANG  -> ranged
+#   jarak <  AMBANG  -> melee
+AMBANG_RANGED = 100
 
-# ═══ PENEMUAN BERKAS OTOMATIS ═══
-# Tiap jenis suara tempur punya DAFTAR POLA berurut. Semua berkas
-# yang cocok dikumpulkan jadi satu kolam variasi. Skema "global":
-#   - SEMUA minion memakai satu suara serangan yang sama (minion_attack_*)
-#   - SEMUA menara memakai satu suara tembak yang sama (tower_shoot_*)
-#   - SEMUA hero memakai satu suara serangan dasar, dibedakan
-#     melee (hero_melee_*) vs ranged (hero_ranged_*)
-#   - mini boss (miniboss_attack_*) vs true boss (boss_attack_*)
-# Menambah berkas baru dengan nama yang cocok otomatis ikut terpakai.
+# ═══ PENEMUAN BERKAS ═══
+# Nama pokoknya cukup SATU berkas (mis. hero_melee.wav). Kalau ada
+# variasi bernomor (_1, _2, _3 ...), semuanya ikut dikumpulkan dan
+# dipilih acak supaya serangan beruntun tidak monoton.
 POLA = {
-    HERO_MELEE:  ["hero_melee_*", "hero_melee", "slash", "slash_*",
-                  "sword*", "hero_attack*", "melee*"],
-    HERO_RANGED: ["hero_ranged_*", "hero_ranged", "arrow*", "bow*",
-                  "hero_shoot*", "ranged*", "magic_bolt*"],
-    TOWER:       ["tower_shoot_*", "tower_shoot", "tower_attack*",
-                  "archer*", "arrow_shoot*"],
-    MINION:      ["minion_attack_*", "minion_attack", "minion_hit*"],
-    MINIBOSS:    ["miniboss_attack_*", "miniboss_attack",
-                  "mini_boss*", "miniboss*"],
-    BOSS:        ["boss_attack_*", "boss_attack", "true_boss*",
-                  "boss_hit*"],
+    HERO_MELEE:    ["hero_melee", "hero_melee_*"],
+    HERO_RANGED:   ["hero_ranged", "hero_ranged_*"],
+    TOWER_ARCHER:  ["tower_archer", "tower_archer_*"],
+    TOWER_CANNON:  ["tower_cannon", "tower_cannon_*"],
+    TOWER_ICE:     ["tower_ice", "tower_ice_*"],
+    TOWER_MAGE:    ["tower_mage", "tower_mage_*"],
+    MINION_HIT:    ["minion_hit", "minion_hit_*"],
 }
 
 EKSTENSI = (".wav", ".ogg", ".mp3")
 
 _bank = {}            # jenis -> [Sound, ...]
 _terakhir = {}        # jenis -> ticks terakhir berbunyi
-_sisa_frame = [MAKS_PER_FRAME]
+_sisa_frame = [4]
 _siap = [False]
 _mati = [False]
 _stats = {"main": 0, "tolak_jeda": 0, "tolak_anggaran": 0, "tolak_channel": 0}
 
-# Laporan lengkap untuk layar diagnostik. Inilah yang menjawab
-# pertanyaan "kenapa suaranya tidak keluar" tanpa menebak.
 LAPORAN = {
     "dir": "",
     "dir_ada": False,
     "mixer": "belum",
-    "berkas": [],          # semua berkas audio yang ditemukan
-    "per_jenis": {},       # jenis -> [nama berkas terpakai]
-    "gagal": [],           # berkas yang ada tapi gagal dimuat
+    "berkas": [],
+    "per_jenis": {},
+    "gagal": [],
     "catatan": "",
 }
 
@@ -111,13 +104,8 @@ def _cocok(nama_tanpa_ext, pola):
 
 
 def init(paksa=False):
-    """
-    Temukan dan muat semua berkas suara tempur.
-
-    Aman dipanggil berkali-kali. Kalau mixer mati atau tidak ada
-    berkas sama sekali, modul MENONAKTIFKAN DIRI dengan tenang -
-    game tetap jalan tanpa suara, tidak pernah crash.
-    """
+    """Temukan & muat semua berkas suara tempur. Aman dipanggil
+    berkali-kali; gagal = modul menonaktifkan diri dengan tenang."""
     if paksa:
         _siap[0] = False
         _mati[0] = False
@@ -161,8 +149,8 @@ def init(paksa=False):
     berkas = [f for f in semua if f.lower().endswith(EKSTENSI)]
     LAPORAN["berkas"] = berkas
     if not berkas:
-        LAPORAN["catatan"] = ("folder ada tapi KOSONG - berkas .wav "
-                              "belum ikut terunggah / tidak masuk APK")
+        LAPORAN["catatan"] = ("folder ada tapi KOSONG - berkas audio "
+                              "belum terunggah / tidak masuk APK")
         print("[AUDIO] tidak ada berkas audio di %s" % d)
         _mati[0] = True
         return False
@@ -195,7 +183,8 @@ def init(paksa=False):
 
     if not _bank:
         LAPORAN["catatan"] = ("%d berkas audio ada, tapi tidak satu pun "
-                              "cocok dengan pola nama" % len(berkas))
+                              "cocok dengan pola nama suara tempur"
+                              % len(berkas))
         print("[AUDIO] %s" % LAPORAN["catatan"])
         _mati[0] = True
         return False
@@ -221,11 +210,10 @@ def init(paksa=False):
 
 def new_frame():
     """Panggil sekali per frame dari main loop."""
-    _sisa_frame[0] = MAKS_PER_FRAME
+    _sisa_frame[0] = 4
 
 
 def _volume_global():
-    """Ikut pengaturan volume pemain kalau SoundManager tersedia."""
     try:
         from _system import SoundManager
         sm = SoundManager()
@@ -237,13 +225,7 @@ def _volume_global():
 
 
 def play(jenis, volume_mult=1.0):
-    """
-    Bunyikan suara serangan. Kembalikan True kalau benar-benar bunyi.
-
-    Dirancang supaya AMAN dipanggil dari mana saja di jalur update -
-    semua kegagalan ditelan, tidak ada pengecualian yang bocor ke
-    logika permainan.
-    """
+    """Bunyikan suara jenis tertentu. Aman dipanggil dari mana saja."""
     if _mati[0]:
         return False
     if not _siap[0] and not init():
@@ -263,8 +245,6 @@ def play(jenis, volume_mult=1.0):
         _stats["tolak_jeda"] += 1
         return False
 
-    # Suara boss selalu boleh lewat anggaran frame: kalau boss
-    # menghantam, itu informasi yang harus terdengar.
     if not boleh_rebut and _sisa_frame[0] <= 0:
         _stats["tolak_anggaran"] += 1
         return False
@@ -289,20 +269,28 @@ def play(jenis, volume_mult=1.0):
     return True
 
 
-def play_hero_basic(hero):
-    """
-    Suara serangan dasar hero, dipilih dari JANGKAUANNYA.
-
-    Hero jarak dekat (Grimjaw range 25, Kaizen 30, Thorne 28) mendapat
-    tebasan; hero jarak jauh (Sylara 150, Vex 165, Zephyr 180) mendapat
-    petikan busur / lesatan sihir. Ambang 100 memisahkan keduanya
-    dengan jarak aman - tidak ada hero di antara 35 dan 150.
-    """
+def jenis_serangan(jarak):
+    """Melee vs ranged dari jarak serang. Dipakai hero DAN boss."""
     try:
-        jarak = float(getattr(hero, "range", 40) or 40)
+        jarak = float(jarak or 0)
     except Exception:
-        jarak = 40.0
-    return play(HERO_RANGED if jarak >= 100 else HERO_MELEE)
+        jarak = 0.0
+    return HERO_RANGED if jarak >= AMBANG_RANGED else HERO_MELEE
+
+
+def jenis_tower(tower_type):
+    """Jenis suara tembakan berdasarkan tipe menara."""
+    return {
+        "archer": TOWER_ARCHER,
+        "cannon": TOWER_CANNON,
+        "ice": TOWER_ICE,
+        "mage": TOWER_MAGE,
+    }.get(tower_type, TOWER_ARCHER)
+
+
+def play_hero_basic(hero):
+    """Suara serangan dasar hero (melee/ranged dari jangkauan)."""
+    return play(jenis_serangan(getattr(hero, "range", 40)))
 
 
 def stats():
@@ -318,19 +306,15 @@ def ringkas():
 
 
 def uji_semua(jeda_ms=520):
-    """
-    Bunyikan satu contoh tiap jenis, berurutan.
-
-    Dipakai tombol "UJI SUARA" di layar diagnostik supaya bisa
-    memastikan audio hidup TANPA harus masuk permainan dulu.
-    Mengembalikan daftar (jenis, berhasil).
-    """
+    """Bunyikan satu contoh tiap jenis, berurutan (tombol UJI SUARA)."""
     hasil = []
     if not _siap[0]:
         init()
-    for jenis in (HERO_MELEE, HERO_RANGED, TOWER, MINION, MINIBOSS, BOSS):
+    urutan = (HERO_MELEE, HERO_RANGED, TOWER_ARCHER, TOWER_CANNON,
+              TOWER_ICE, TOWER_MAGE, MINION_HIT)
+    for jenis in urutan:
         _terakhir.pop(jenis, None)
-        _sisa_frame[0] = MAKS_PER_FRAME
+        _sisa_frame[0] = 4
         ok = play(jenis, volume_mult=1.0)
         hasil.append((jenis, ok))
         try:

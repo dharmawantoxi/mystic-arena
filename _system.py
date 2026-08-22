@@ -451,12 +451,9 @@ class SoundManager:
 
         # Throttle
         self.throttle_ms = {
-            'slash': 80,
-            'goblin_attack': 400,
             'goblin_spawn': 200,
-            'goblin_death': 150,
             'minion_death': 120,
-            'tower_shoot': 60,
+            'tower_destroyed': 300,
             'bullet_hit': 40,
             'nexus_hit': 300,
             'ui_click': 50,
@@ -493,21 +490,18 @@ class SoundManager:
             return
         self._hilang = []
 
-        # Goblin
+        # Minion
         self.load('goblin_spawn', 'goblin_spawn.wav', 'voice')
-        self.load('goblin_attack', 'goblin_attack.wav', 'voice')
-        self.load('goblin_death', 'goblin_death.wav', 'voice')
 
         # Ambient
         self.load('ambient_forest', 'ambient_forest.wav', 'ambient')
 
         # Combat
-        self.load('slash', 'slash.wav', 'sfx')
-        self.load('tower_shoot', 'tower_shoot.wav', 'sfx')
         self.load('bullet_hit', 'bullet_hit.wav', 'sfx')
         self.load('explosion', 'explosion.wav', 'sfx')
         self.load('nexus_hit', 'nexus_hit.wav', 'sfx')
         self.load('minion_death', 'minion_death.wav', 'sfx')
+        self.load('tower_destroyed', 'tower_destroyed.wav', 'sfx')
 
         # UI
         self.load('ui_click', 'ui_click.wav', 'sfx')

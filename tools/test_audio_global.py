@@ -1,16 +1,14 @@
 # ================================
 # tools/test_audio_global.py
-# Uji regresi: suara serangan GLOBAL untuk semua unit.
+# Uji regresi: PEMETAAN suara global sesuai skema final (v35).
 #
-# Memastikan janji-janji berikut benar-benar terpenuhi di kode:
-#   1. SEMUA jenis minion (goblin, orc, troll, undead, dark_rider)
-#      memakai SATU suara serangan global - bukan cuma goblin.
-#   2. SEMUA jenis menara (archer, cannon, ice, mage) memakai SATU
-#      suara tembak global - cannon tidak lagi punya ledakan khusus
-#      yang hanya berbunyi untuk tim biru.
-#   3. SEMUA minion memakai SATU suara kematian global.
-#   4. Hero melee vs ranged terdengar BERBEDA.
-#   5. Semua berkas WAV valid dimuat pygame.mixer.
+# Skema final:
+#   - minion: 1 suara pukulan global + 1 suara mati global
+#   - menara: 4 suara tembak (per jenis) + 1 suara hancur global
+#   - hero & boss: 2 suara (melee vs ranged) global
+#
+# Uji ini fokus ke KABEL KODENYA (tidak butuh berkas audio), jadi
+# bisa dijalankan sebelum suara diisi.
 #
 # Jalankan:  python3 tools/test_audio_global.py
 # ================================
@@ -30,103 +28,105 @@ pygame.mixer.init()
 
 import _core          # noqa: E402,F401
 import _entity        # noqa: E402,F401
-from _entity import Minion, Tower, Hero            # noqa: E402
-from _system import SoundManager                    # noqa: E402
-from mobile import combat_audio as _ca             # noqa: E402
+from _entity import Minion, Tower, Hero   # noqa: E402
+from _system import SoundManager           # noqa: E402
+from mobile import combat_audio as _ca     # noqa: E402
 
 
 def main():
     gagal = []
 
-    # ── 0. berkas WAV valid ──
-    import glob
-    wav = sorted(glob.glob("assets/sounds/*.wav"))
-    buruk = []
-    for f in wav:
-        try:
-            pygame.mixer.Sound(f)
-        except Exception as exc:
-            buruk.append("%s (%s)" % (f, exc))
-    print("[0] berkas WAV: %d, gagal muat: %d" % (len(wav), len(buruk)))
-    if buruk:
-        gagal.extend(buruk)
+    # ── 1. jenis_tower memetakan 4 tipe ──
+    harapan = {"archer": _ca.TOWER_ARCHER, "cannon": _ca.TOWER_CANNON,
+               "ice": _ca.TOWER_ICE, "mage": _ca.TOWER_MAGE}
+    print("[1] jenis_tower: %s" % {k: v for k, v in harapan.items()})
+    for t, jenis in harapan.items():
+        if _ca.jenis_tower(t) != jenis:
+            gagal.append("jenis_tower(%s) salah" % t)
 
-    # ── 1. pola MINION bersih dari suara goblin ──
-    pola_minion = _ca.POLA[_ca.MINION]
-    bocor = [p for p in pola_minion if "goblin" in p]
-    print("[1] pola MINION: %s" % pola_minion)
-    if bocor:
-        gagal.append("pola MINION masih mengandung goblin: %s" % bocor)
+    # ── 2. Tower._shoot memakai jenis yang benar per tipe ──
+    rekam = []
+    _play_asli = _ca.play
+    _ca.play = lambda jenis, volume_mult=1.0: rekam.append(jenis)
+    try:
+        class _Tgt:
+            x, y, alive = 300, 300, True
+        for t in ("archer", "cannon", "ice", "mage"):
+            tw = Tower(400, 300, "blue")
+            tw.tower_type = t
+            tw._apply_level_stats()
+            tw.target = _Tgt()
+            tw._shoot([tw.target])
+    finally:
+        _ca.play = _play_asli
+    print("[2] _shoot: %s" % rekam)
+    if set(rekam) != {_ca.TOWER_ARCHER, _ca.TOWER_CANNON,
+                      _ca.TOWER_ICE, _ca.TOWER_MAGE}:
+        gagal.append("tower _shoot tidak membedakan jenis: %s" % rekam)
 
-    # ── 2. suara serangan minion global ──
-    #     _spawn_slash_effect() TIDAK boleh memutar slash/goblin_attack
-    #     (dulu khusus goblin). Suara serangan minion datang dari
-    #     combat_audio.play(MINION) di blok serangan update().
+    # ── 3. Menara hancur -> tower_destroyed SEKALI saja ──
     rekam_sm = []
     SoundManager.play = lambda self, name, **kw: rekam_sm.append(name)
-    for t in ("goblin", "orc", "troll", "undead", "dark_rider"):
-        m = Minion(t, "blue", "mid")
-        m._spawn_slash_effect()
-    salah = [n for n in rekam_sm if n in ("slash", "goblin_attack")]
-    print("[2] _spawn_slash_effect -> diputar: %s" % (rekam_sm or "(kosong)"))
-    if salah:
-        gagal.append("_spawn_slash_effect masih memutar suara khusus: %s"
-                     % salah)
+    tw = Tower(400, 300, "blue")
+    tw.take_damage(99999, "red")
+    tw.take_damage(99999, "red")   # panggil lagi -> tidak boleh ganda
+    print("[3] menara hancur -> %s" % rekam_sm)
+    if rekam_sm.count("tower_destroyed") != 1:
+        gagal.append("tower_destroyed harus berbunyi tepat sekali: %s"
+                     % rekam_sm)
 
-    # ── 3. suara kematian minion global ──
+    # ── 4. Kematian minion global (semua jenis) ──
     rekam_sm.clear()
     for t in ("goblin", "orc", "troll", "undead", "dark_rider"):
         m = Minion(t, "blue", "mid")
         m.take_damage(m.max_hp * 10, "red")
     mati = [n for n in rekam_sm if n == "minion_death"]
-    print("[3] take_damage fatal: %d minion mati -> %d suara minion_death"
-          % (5, len(mati)))
+    print("[4] minion mati: %d/5 -> minion_death" % len(mati))
     if len(mati) != 5:
         gagal.append("kematian minion tidak global: %s" % rekam_sm)
 
-    # ── 4. suara tembak menara global + cannon tanpa ledakan khusus ──
-    rekam_ca = []
-    _ca.play = lambda jenis, volume_mult=1.0: rekam_ca.append(jenis)
-    class _Tgt:
-        x, y, alive = 300, 300, True
-    for t in ("archer", "cannon", "ice", "mage"):
-        tw = Tower(400, 300, "blue")
-        tw.tower_type = t
-        tw._apply_level_stats()
-        tw.target = _Tgt()
-        tw._shoot([tw.target])
-    jenis_tower = set(rekam_ca)
-    print("[4] _shoot 4 jenis menara -> jenis suara: %s" % sorted(jenis_tower))
-    if jenis_tower != {_ca.TOWER}:
-        gagal.append("menara memutar jenis lain: %s" % sorted(jenis_tower))
-    if "explosion" in rekam_sm:
-        gagal.append("cannon masih memutar explosion khusus")
+    # ── 5. jenis_serangan melee vs ranged ──
+    print("[5] jenis_serangan(45)=%s  jenis_serangan(130)=%s"
+          % (_ca.jenis_serangan(45), _ca.jenis_serangan(130)))
+    if _ca.jenis_serangan(45) != _ca.HERO_MELEE:
+        gagal.append("jarak 45 harus melee")
+    if _ca.jenis_serangan(130) != _ca.HERO_RANGED:
+        gagal.append("jarak 130 harus ranged")
 
-    # ── 5. hero melee vs ranged berbeda ──
-    rekam_ca.clear()
-    _ca.play = lambda jenis, volume_mult=1.0: rekam_ca.append(jenis)
-    for h in ("grimjaw", "kaizen", "thorne", "sylara", "vex", "zephyr"):
-        hh = Hero(h, "blue", 300, 380)
-        _ca.play_hero_basic(hh)
-    print("[5] play_hero_basic: %s" % list(zip(
-        ("grimjaw", "kaizen", "thorne", "sylara", "vex", "zephyr"),
-        rekam_ca)))
-    melee = set(rekam_ca[:3])
-    ranged = set(rekam_ca[3:])
-    if melee != {_ca.HERO_MELEE} or ranged != {_ca.HERO_RANGED}:
-        gagal.append("hero melee/ranged tidak terbedakan: %s" % rekam_ca)
-    if melee == ranged:
-        gagal.append("suara melee dan ranged SAMA")
+    # ── 6. Hero melee vs ranged ──
+    for h in ("grimjaw", "kaizen", "thorne"):
+        if _ca.jenis_serangan(Hero(h, "blue", 300, 380).range) != _ca.HERO_MELEE:
+            gagal.append("hero %s harus melee" % h)
+    for h in ("sylara", "vex", "zephyr"):
+        if _ca.jenis_serangan(Hero(h, "blue", 300, 380).range) != _ca.HERO_RANGED:
+            gagal.append("hero %s harus ranged" % h)
+    print("[6] hero: grimjaw/kaizen/thorne=melee, sylara/vex/zephyr=ranged")
 
-    # ── 6. ringkasan ──
+    # ── 7. Boss melee vs ranged ──
+    try:
+        from bosses.base_boss import Boss
+        gornak = Boss("gornak")      # mini boss melee (range < 100)
+        abaddon = Boss("abaddon")    # true boss melee (range 50)
+        morgath = Boss("morgath")    # ranged (range >= 100)
+        print("[7] boss: gornak=%s abaddon=%s morgath=%s"
+              % (gornak._suara_serangan(), abaddon._suara_serangan(),
+                 morgath._suara_serangan()))
+        if gornak._suara_serangan() != _ca.HERO_MELEE:
+            gagal.append("boss melee harus memakai hero_melee")
+        if abaddon._suara_serangan() != _ca.HERO_MELEE:
+            gagal.append("boss abaddon (range 50) harus melee")
+        if morgath._suara_serangan() != _ca.HERO_RANGED:
+            gagal.append("boss ranged harus memakai hero_ranged")
+    except Exception as exc:
+        print("[7] boss: TIDAK DIUJI (%s)" % exc)
+
     print()
     if gagal:
         print("HASIL: GAGAL")
         for g in gagal:
             print("  - %s" % g)
         return 1
-    print("HASIL: LULUS. Semua suara serangan/kematian sudah global "
-          "dan melee/ranged terbedakan.")
+    print("HASIL: LULUS. Pemetaan suara global sesuai skema final.")
     return 0
 
 

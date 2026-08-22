@@ -10,7 +10,7 @@
 import os
 
 # Naikkan setiap kali ada perubahan kode yang dikirim ke perangkat.
-BUILD_ID = "v33-suara-jelas"
+BUILD_ID = "v35-skema-final"
 BUILD_DATE = "2026-08-22"
 
 _KEY_FILES = (

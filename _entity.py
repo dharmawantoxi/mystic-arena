@@ -600,14 +600,13 @@ class Tower:
         if not self.target:
             return
 
-        # Dulu memanggil SoundManager('tower_shoot') yang berkasnya
-        # tidak pernah ada, jadi tidak pernah berbunyi. Sekarang SEMUA
-        # jenis menara memakai satu suara tembak global. Tim biru
-        # (punya pemain) sedikit lebih keras daripada tim merah.
+        # Suara tembak PER JENIS menara: archer, cannon, ice, mage
+        # masing-masing punya suara sendiri (lihat combat_audio.py).
+        # Tim biru (punya pemain) sedikit lebih keras daripada tim merah.
         try:
             from mobile import combat_audio as _ca
-            _ca.play(_ca.TOWER, volume_mult=1.0 if self.team == "blue"
-                     else 0.8)
+            _ca.play(_ca.jenis_tower(self.tower_type),
+                     volume_mult=1.0 if self.team == "blue" else 0.8)
         except Exception:
             pass
 
@@ -781,7 +780,15 @@ class Tower:
             self.hp -= remaining_damage
             if self.hp <= 0:
                 self.hp = 0
-                self.alive = False
+                if self.alive:
+                    self.alive = False
+                    # Menara HANCUR: satu suara global untuk SEMUA
+                    # jenis (archer/cannon/ice/mage sama).
+                    try:
+                        SoundManager().play('tower_destroyed',
+                                            volume_mult=0.8)
+                    except Exception:
+                        pass
 
     def draw(self, surface):
         if not self.alive:
@@ -4185,7 +4192,7 @@ class Minion:
                     self._spawn_slash_effect()
                     try:
                         from mobile import combat_audio as _ca
-                        _ca.play(_ca.MINION)
+                        _ca.play(_ca.MINION_HIT)
                     except Exception:
                         pass
             else:

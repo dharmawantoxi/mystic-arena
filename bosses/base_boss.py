@@ -292,7 +292,7 @@ class Boss:
 
     def __init__(self, boss_type, lane_path=None):
         self.boss_type = boss_type
-        self._suara_tier = None
+        self._jenis_suara = None
         self.team = "red"
 
         all_bosses = get_all_boss_types()
@@ -351,25 +351,20 @@ class Boss:
         self.ability_active = False
         self.ability_active_timer = 0
 
-    def _tier_suara(self):
+    def _suara_serangan(self):
         """
-        Kembalikan jenis suara serangan: mini boss atau true boss.
+        Kembalikan jenis suara serangan boss: melee atau ranged.
 
-        Dihitung SEKALI per boss lalu disimpan - boss_data.py berisi
-        ribuan entri dan tidak boleh dicari ulang tiap serangan.
+        Sama seperti hero — mini boss maupun true boss memakai DUA
+        jenis suara global yang sama (hero_melee / hero_ranged),
+        dipilih dari jangkauan serangnya. Dihitung SEKALI lalu
+        disimpan karena boss_data.py berisi ribuan entri.
         """
-        if self._suara_tier is not None:
-            return self._suara_tier
+        if self._jenis_suara is not None:
+            return self._jenis_suara
         from mobile import combat_audio as _ca
-        tier = _ca.BOSS
-        try:
-            from bosses.boss_data import MINI_BOSS_TYPES
-            if self.boss_type in MINI_BOSS_TYPES:
-                tier = _ca.MINIBOSS
-        except Exception:
-            pass
-        self._suara_tier = tier
-        return tier
+        self._jenis_suara = _ca.jenis_serangan(getattr(self, "range", 40))
+        return self._jenis_suara
 
     def update(self, all_units, all_towers, all_bases):
         if not self.alive:
@@ -430,13 +425,11 @@ class Boss:
                 if self.timer == 0:
                     self.target.take_damage(self.damage, self.team)
                     self.timer = self.attack_cooldown
-                    # Mini boss dan true boss punya suara berbeda:
-                    # yang satu ayunan berat, yang satu hentakan
-                    # sub-bass. Tier-nya dihitung sekali lalu
-                    # disimpan (lihat _tier_suara).
+                    # Boss memakai DUA suara global yang sama seperti
+                    # hero: melee vs ranged (lihat _suara_serangan).
                     try:
                         from mobile import combat_audio as _ca
-                        _ca.play(self._tier_suara())
+                        _ca.play(self._suara_serangan())
                     except Exception:
                         pass
 
