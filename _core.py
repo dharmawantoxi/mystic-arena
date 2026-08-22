@@ -537,45 +537,68 @@ ARCHER_LEVELS = {
         "desc": "DOUBLE SHOT!", "double_shot": True},
 }
 
-# ═══ CANNON PATH (High AOE damage) ═══
+# ═══ CANNON PATH (High AOE damage + BURNING) ═══
+# BUFF: attack speed sedikit dinaikkan (cd turun ~10%) dan semua tembakan
+# menimbulkan BURNING (damage over time) ke target utama + kena splash.
+# burn_dps = damage burn per detik; burn_duration dalam frame (60fps).
 CANNON_LEVELS = {
-    2: {"hp": 1200, "damage": 45,  "range": 160, "cd": 55, "cost": 175,
-        "desc": "Splash damage", "splash": 45},
-    3: {"hp": 1500, "damage": 65,  "range": 170, "cd": 52, "cost": 325,
-        "desc": "Bigger boom", "splash": 55},
-    4: {"hp": 1900, "damage": 90,  "range": 180, "cd": 48, "cost": 550,
-        "desc": "Heavy cannon", "splash": 65},
-    5: {"hp": 2400, "damage": 125, "range": 190, "cd": 45, "cost": 850,
-        "desc": "Siege engine", "splash": 80},
-    6: {"hp": 3000, "damage": 170, "range": 200, "cd": 42, "cost": 1300,
-        "desc": "DEVASTATOR!", "splash": 100},
+    2: {"hp": 1200, "damage": 45,  "range": 160, "cd": 50, "cost": 175,
+        "desc": "Splash + Burn 8/s", "splash": 45,
+        "burn_dps": 8,  "burn_duration": 120},
+    3: {"hp": 1500, "damage": 65,  "range": 170, "cd": 48, "cost": 325,
+        "desc": "Bigger boom + Burn 12/s", "splash": 55,
+        "burn_dps": 12, "burn_duration": 150},
+    4: {"hp": 1900, "damage": 90,  "range": 180, "cd": 45, "cost": 550,
+        "desc": "Heavy cannon + Burn 16/s", "splash": 65,
+        "burn_dps": 16, "burn_duration": 150},
+    5: {"hp": 2400, "damage": 125, "range": 190, "cd": 42, "cost": 850,
+        "desc": "Siege engine + Burn 22/s", "splash": 80,
+        "burn_dps": 22, "burn_duration": 180},
+    6: {"hp": 3000, "damage": 170, "range": 200, "cd": 39, "cost": 1300,
+        "desc": "DEVASTATOR! Burn 30/s", "splash": 100,
+        "burn_dps": 30, "burn_duration": 180},
 }
-# ═══ ICE PATH (Crowd control) ═══
+# ═══ ICE PATH (Crowd control: slow gerak + slow serang) ═══
+# BUFF: selain debuff movement speed (lama), ice sekarang juga memberi
+# debuff ATTACK SPEED (atk_slow = fraksi attack speed musuh yang hilang).
 ICE_LEVELS = {
     2: {"hp": 950,  "damage": 22,  "range": 170, "cd": 36, "cost": 175,
-        "desc": "Slow 25%", "slow": 0.25, "slow_duration": 90},
+        "desc": "Slow 25% & Atk -15%", "slow": 0.25, "slow_duration": 90,
+        "atk_slow": 0.15},
     3: {"hp": 1250, "damage": 35,  "range": 180, "cd": 34, "cost": 325,
-        "desc": "Slow 35%", "slow": 0.35, "slow_duration": 100},
+        "desc": "Slow 35% & Atk -20%", "slow": 0.35, "slow_duration": 100,
+        "atk_slow": 0.20},
     4: {"hp": 1600, "damage": 50,  "range": 190, "cd": 30, "cost": 550,
-        "desc": "Slow 45%", "slow": 0.45, "slow_duration": 110},
+        "desc": "Slow 45% & Atk -25%", "slow": 0.45, "slow_duration": 110,
+        "atk_slow": 0.25},
     5: {"hp": 2050, "damage": 70,  "range": 200, "cd": 28, "cost": 850,
-        "desc": "Slow 55%", "slow": 0.55, "slow_duration": 120},
+        "desc": "Slow 55% & Atk -30%", "slow": 0.55, "slow_duration": 120,
+        "atk_slow": 0.30},
     6: {"hp": 2600, "damage": 95,  "range": 220, "cd": 25, "cost": 1300,
-        "desc": "FREEZE! AOE slow", "slow": 0.65, "slow_duration": 150,
-        "slow_aoe": 80},
+        "desc": "FREEZE! AOE slow & Atk -40%", "slow": 0.65,
+        "slow_duration": 150, "slow_aoe": 80, "atk_slow": 0.40},
 }
-# ═══ MAGE PATH (Multi-target chain) ═══
+# ═══ MAGE PATH (Multi-target chain + skill down + ANTI-HEAL) ═══
+# BUFF: tiap tembakan mage memberi debuff SKILL DAMAGE (skill_down =
+# fraksi damage skill/ability musuh yang hilang) dan ANTI-HEAL
+# (anti_heal = fraksi heal yang ditolak; 1.0 = heal benar-benar mentok).
+# debuff_duration dalam frame (60fps).
 MAGE_LEVELS = {
     2: {"hp": 850,  "damage": 18,  "range": 180, "cd": 28, "cost": 175,
-        "desc": "Hit 2 targets", "chain": 2},
+        "desc": "Hit 2, Skill -20% & Anti-heal 40%", "chain": 2,
+        "skill_down": 0.20, "anti_heal": 0.40, "debuff_duration": 120},
     3: {"hp": 1100, "damage": 28,  "range": 190, "cd": 26, "cost": 325,
-        "desc": "Stronger magic", "chain": 2},
+        "desc": "Skill -25% & Anti-heal 50%", "chain": 2,
+        "skill_down": 0.25, "anti_heal": 0.50, "debuff_duration": 130},
     4: {"hp": 1450, "damage": 42,  "range": 200, "cd": 24, "cost": 550,
-        "desc": "Hit 3 targets", "chain": 3},
+        "desc": "Hit 3, Skill -30% & Anti-heal 60%", "chain": 3,
+        "skill_down": 0.30, "anti_heal": 0.60, "debuff_duration": 140},
     5: {"hp": 1850, "damage": 60,  "range": 210, "cd": 22, "cost": 850,
-        "desc": "Arcane mastery", "chain": 3},
+        "desc": "Skill -40% & Anti-heal 75%", "chain": 3,
+        "skill_down": 0.40, "anti_heal": 0.75, "debuff_duration": 150},
     6: {"hp": 2350, "damage": 82,  "range": 230, "cd": 20, "cost": 1300,
-        "desc": "CHAIN LIGHTNING!", "chain": 4},
+        "desc": "CHAIN! Skill -50% & Anti-heal 100%", "chain": 4,
+        "skill_down": 0.50, "anti_heal": 1.00, "debuff_duration": 180},
 }
 
 # Lookup dictionary
@@ -597,22 +620,250 @@ TOWER_TYPE_INFO = {
     "cannon": {
         "name": "Cannon Tower",
         "icon": "💣",
-        "desc": "Slow but massive AOE damage.",
-        "special": "Splash damage all levels",
+        "desc": "AOE damage + BURNING. Sekarang menembak lebih cepat.",
+        "special": "Burn (damage over time) + splash, attack speed up",
     },
     "ice": {
         "name": "Ice Tower",
         "icon": "❄️",
-        "desc": "Slows enemies. Perfect for crowd control.",
-        "special": "Slow effect + AOE at max",
+        "desc": "Debuff movement DAN attack speed musuh. Crowd control.",
+        "special": "Slow gerak + slow serang, AOE di level max",
     },
     "mage": {
         "name": "Mage Tower",
         "icon": "🔮",
-        "desc": "Attacks multiple targets simultaneously.",
-        "special": "Chain up to 4 targets at max",
+        "desc": "Multi-target + debuff skill damage dan ANTI-HEAL.",
+        "special": "Skill damage down + anti-heal (100% di level max)",
     },
 }
+
+# ═══════════════════════════════════════
+# TOWER DEBUFF / STATUS EFFECT SYSTEM
+# ═══════════════════════════════════════
+# BUFF menara Ice / Mage / Cannon:
+#   ❄  Ice    : debuff movement speed (lama) + debuff ATTACK SPEED (baru)
+#   🔮 Mage  : debuff SKILL DAMAGE + ANTI-HEAL (semua heal musuh dipotong)
+#   💣 Cannon : BURNING (damage over time) + attack speed menara naik
+#
+# Efek berlaku untuk SEMUA unit: minion, hero starter, hero unlock,
+# mini boss, maupun true boss. Dan karena class Tower/Bullet/Minion/
+# Hero/Boss dipakai bersama oleh pemain (blue) maupun AI enemy (red),
+# seluruh fitur ini OTOMATIS juga berlaku penuh untuk tower milik AI:
+# AI enemy menerima buff yang sama persis seperti pemain.
+#
+# Mixin di bawah ini dipakai Minion & Hero (_entity.py) serta Boss
+# (bosses/base_boss.py lewat `from settings import *`), jadi HARUS
+# tetap berada di zona "settings" (sebelum snapshot alias di bawah).
+
+TOWER_DEBUFF_BURN_TICK = 30   # jeda tick damage burn (frame, ~60fps)
+TOWER_DEBUFF_FPS = 60.0       # konversi burn_dps -> damage per frame
+
+
+class TowerDebuffMixin:
+    """Status-effect universal (debuff dari menara Ice/Mage/Cannon).
+
+    Menyediakan:
+      slow       - movement speed turun        (Ice, kompatibel API lama)
+      atk_slow   - attack speed turun          (Ice, BARU)
+      skill_down - skill/ability damage turun  (Mage, BARU)
+      anti_heal  - heal yang diterima dipotong (Mage, BARU)
+      burn       - damage per detik            (Cannon, BARU)
+
+    Anti-heal diimplementasikan lewat property `hp`: SETIAP penulisan
+    `unit.hp = ...` yang MENAIKKAN hp saat debuff aktif otomatis dipotong
+    (anti_heal 1.0 = heal tidak masuk sama sekali). Ini menangkap semua
+    jalur heal: regen minion, heal base/passive hero, skill heal hero di
+    hero_skills/, maupun puluhan heal di AI boss - tanpa mengubah satu
+    pun call site.
+    """
+
+    # ── INIT ──
+    def _init_tower_debuffs(self):
+        # Movement slow (nama field sama dgn sistem lama Minion)
+        self.slow_amount = 0.0
+        self.slow_timer = 0
+        # Attack speed slow
+        self.atk_slow_amount = 0.0
+        self.atk_slow_timer = 0
+        # Skill damage down
+        self.skill_down_amount = 0.0
+        self.skill_down_timer = 0
+        # Anti-heal (0.0 - 1.0)
+        self.anti_heal_amount = 0.0
+        self.anti_heal_timer = 0
+        # Burning (damage over time)
+        self.burn_dps = 0.0
+        self.burn_timer = 0
+        self.burn_accum = 0.0
+        self.burn_tick_cd = TOWER_DEBUFF_BURN_TICK
+        self.burn_team = None
+
+    # ── PROPERTY: hp dengan anti-heal ──
+    @property
+    def hp(self):
+        # AttributeError alami kalau belum pernah di-set, supaya pola
+        # `hasattr(self, 'hp')` di Hero._apply_level_stats tetap benar.
+        return self._hp_value
+
+    @hp.setter
+    def hp(self, value):
+        old = getattr(self, "_hp_value", None)
+        if (old is not None and value > old
+                and getattr(self, "anti_heal_timer", 0) > 0):
+            # ANTI-HEAL: kenaikan HP dipotong sesuai besar debuff
+            value = old + (value - old) * (1.0 - self.anti_heal_amount)
+        self._hp_value = value
+
+    # ── APPLY DEBUFF ──
+    def apply_slow(self, amount, duration):
+        """Debuff movement speed (signature lama, dipakai juga hero skill)."""
+        if not getattr(self, "alive", True):
+            return
+        if amount > getattr(self, "slow_amount", 0.0) or \
+                getattr(self, "slow_timer", 0) < duration:
+            self.slow_amount = amount
+            self.slow_timer = duration
+
+    def apply_debuff(self, kind, amount, duration, source_team=None):
+        """Apply debuff menara. Stack rule: terkuat menang, durasi refresh."""
+        if not getattr(self, "alive", True):
+            return
+        if kind == "slow":
+            self.apply_slow(amount, duration)
+        elif kind == "atk_slow":
+            if amount > self.atk_slow_amount or \
+                    self.atk_slow_timer < duration:
+                self.atk_slow_amount = amount
+                self.atk_slow_timer = duration
+        elif kind == "skill_down":
+            if amount > self.skill_down_amount or \
+                    self.skill_down_timer < duration:
+                self.skill_down_amount = amount
+                self.skill_down_timer = duration
+        elif kind == "anti_heal":
+            if amount > self.anti_heal_amount or \
+                    self.anti_heal_timer < duration:
+                self.anti_heal_amount = amount
+                self.anti_heal_timer = duration
+        elif kind == "burn":
+            if self.burn_timer <= 0:
+                self.burn_dps = amount
+                self.burn_accum = 0.0
+                self.burn_tick_cd = TOWER_DEBUFF_BURN_TICK
+            else:
+                self.burn_dps = max(self.burn_dps, amount)
+            self.burn_timer = max(self.burn_timer, duration)
+            if source_team is not None:
+                self.burn_team = source_team
+
+    def clear_tower_debuffs(self):
+        """Reset semua debuff (dipakai saat mati / respawn)."""
+        self._init_tower_debuffs()
+
+    # ── HELPER EFEKTIF ──
+    def _eff_speed(self):
+        """Speed efektif setelah movement slow (dipakai manual di Hero)."""
+        sp = self.speed
+        if getattr(self, "slow_timer", 0) > 0:
+            sp *= (1.0 - getattr(self, "slow_amount", 0.0))
+        return sp
+
+    def _eff_attack_cd(self, base_cd):
+        """Attack cooldown efektif setelah debuff attack speed (Ice)."""
+        if getattr(self, "atk_slow_timer", 0) > 0:
+            f = max(0.05, 1.0 - getattr(self, "atk_slow_amount", 0.0))
+            return max(1, int(round(base_cd / f)))
+        return base_cd
+
+    # ── TICK per frame (dipanggil di update masing-masing class) ──
+    def _tick_tower_debuffs(self):
+        if self.slow_timer > 0:
+            self.slow_timer -= 1
+            if self.slow_timer <= 0:
+                self.slow_amount = 0.0
+        if self.atk_slow_timer > 0:
+            self.atk_slow_timer -= 1
+            if self.atk_slow_timer <= 0:
+                self.atk_slow_amount = 0.0
+        if self.skill_down_timer > 0:
+            self.skill_down_timer -= 1
+            if self.skill_down_timer <= 0:
+                self.skill_down_amount = 0.0
+        if self.anti_heal_timer > 0:
+            self.anti_heal_timer -= 1
+            if self.anti_heal_timer <= 0:
+                self.anti_heal_amount = 0.0
+
+        # Burning: damage diakumulasi per frame, ditembakkan per tick
+        # (bukan tiap frame, supaya damage number tidak spam).
+        if self.burn_timer > 0:
+            self.burn_timer -= 1
+            self.burn_accum += self.burn_dps / TOWER_DEBUFF_FPS
+            self.burn_tick_cd -= 1
+            if self.burn_tick_cd <= 0:
+                self.burn_tick_cd = TOWER_DEBUFF_BURN_TICK
+                dmg = int(self.burn_accum)
+                if dmg > 0 and getattr(self, "alive", False):
+                    self.burn_accum -= dmg
+                    self.take_damage(dmg, self.burn_team or self.team,
+                                     "fire")
+            if self.burn_timer <= 0:
+                self.burn_dps = 0.0
+                self.burn_accum = 0.0
+
+    # ── VISUAL ringkas: aura api + pip ikon debuff ──
+    def _draw_tower_debuff_fx(self, surface, x, y, radius=14,
+                              include_rings=True):
+        """Gambar indikator debuff. Dipanggil dari draw() tiap class."""
+        if not getattr(self, "alive", True):
+            return
+
+        x = int(x)
+        y = int(y)
+        radius = int(radius)
+
+        # ── Ring slow di kaki (hero/boss; minion punya aura es sendiri) ──
+        if include_rings and getattr(self, "slow_timer", 0) > 0:
+            pygame.draw.ellipse(surface, (150, 220, 255),
+                                (x - radius - 2, y + radius - 7,
+                                 (radius + 2) * 2, 10), 1)
+
+        # ── BURN: lidah api flicker di sekitar badan ──
+        if getattr(self, "burn_timer", 0) > 0:
+            anim = getattr(self, "anim_time",
+                           getattr(self, "pulse", 0))
+            flick = int(1.5 + 1.5 * math.sin(anim * 0.6))
+            flames = ((-radius + 2, -radius - 2, 2 + flick),
+                      (radius - 2, -radius - 3, 2),
+                      (0, -radius - 6, 3 + flick))
+            for ox, oy, fr in flames:
+                pygame.draw.circle(surface, (255, 140, 40),
+                                   (x + ox, y + oy), fr)
+                pygame.draw.circle(surface, (255, 220, 90),
+                                   (x + ox, y + oy), max(1, fr - 1))
+
+        # ── Pip ikon debuff (baris kecil di bawah kaki) ──
+        pips = []
+        if getattr(self, "slow_timer", 0) > 0:
+            pips.append((150, 220, 255))    # ice - move slow
+        if getattr(self, "atk_slow_timer", 0) > 0:
+            pips.append((90, 160, 255))     # ice - attack slow
+        if getattr(self, "skill_down_timer", 0) > 0:
+            pips.append((200, 120, 255))    # mage - skill down
+        if getattr(self, "anti_heal_timer", 0) > 0:
+            pips.append((255, 90, 140))     # mage - anti heal
+        if getattr(self, "burn_timer", 0) > 0:
+            pips.append((255, 130, 40))     # cannon - burn
+        if pips:
+            pip_y = y + radius + 12
+            total_w = len(pips) * 5 - 1
+            px = x - total_w // 2
+            for c in pips:
+                pygame.draw.rect(surface, (10, 10, 14),
+                                 (px - 1, pip_y - 1, 5, 5))
+                pygame.draw.rect(surface, c, (px, pip_y, 4, 4))
+                px += 5
+
 
 # ── AI SETTINGS ──
 AI_THINK_INTERVAL = 90
