@@ -180,9 +180,11 @@ class Bullet:
                     if d <= aoe and hasattr(u, 'apply_slow'):
                         u.apply_slow(slow_amount, slow_duration)
 
-        # Sound impact
-        if SOUND_ENABLED and self.team == "blue":
-            SoundManager().play('bullet_hit', volume_mult=0.25)
+        # Sound impact. Dulu hanya tim biru dan volume 0,25 (nyaris
+        # tak terdengar). Sekarang SEMUA tim berbunyi dan lebih keras
+        # supaya "kena panah" jelas terdengar.
+        if SOUND_ENABLED:
+            SoundManager().play('bullet_hit', volume_mult=0.55)
 
     def draw(self, surface):
         if not self.active:
@@ -599,11 +601,13 @@ class Tower:
             return
 
         # Dulu memanggil SoundManager('tower_shoot') yang berkasnya
-        # tidak pernah ada, jadi tidak pernah berbunyi.
+        # tidak pernah ada, jadi tidak pernah berbunyi. Sekarang SEMUA
+        # jenis menara memakai satu suara tembak global. Tim biru
+        # (punya pemain) sedikit lebih keras daripada tim merah.
         try:
             from mobile import combat_audio as _ca
-            _ca.play(_ca.TOWER, volume_mult=0.9 if self.team == "blue"
-                     else 0.55)
+            _ca.play(_ca.TOWER, volume_mult=1.0 if self.team == "blue"
+                     else 0.8)
         except Exception:
             pass
 
@@ -3136,6 +3140,14 @@ class Hero:
                 # HIT!
                 target.take_damage(proj['damage'], proj['team'])
                 proj['alive'] = False
+
+                # Suara hentakan proyektil (panah/sihir hero ranged).
+                # Dulu TIDAK ada sama sekali - serangan jarak jauh
+                # hero terdengar bisu saat mengenai sasaran.
+                try:
+                    SoundManager().play('bullet_hit', volume_mult=0.6)
+                except Exception:
+                    pass
 
                 # Visual feedback
                 if proj['is_crit']:

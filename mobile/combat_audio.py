@@ -39,13 +39,17 @@ MINIBOSS = "miniboss_attack"
 BOSS = "boss_attack"
 
 # jenis -> (volume dasar, jeda minimum ms, boleh rebut channel)
+# Volume dasar dinaikkan (v33): sebelumnya minion 0,26 dan tower 0,40
+# dikali lagi master(0,7)*sfx(0,6)=0,42, sehingga efektif hanya ~0,11
+# dan ~0,17 - tenggelam di bawah BGM di speaker HP. Sekarang efektif
+# ~0,21-0,33, cukup keras terdengar tapi tidak menutup BGM.
 _KONFIG = {
-    HERO_MELEE:  (0.55, 90, False),
-    HERO_RANGED: (0.50, 90, False),
-    TOWER:       (0.40, 110, False),
-    MINION:      (0.26, 140, False),   # paling pelan: jumlahnya paling banyak
-    MINIBOSS:    (0.70, 260, True),
-    BOSS:        (0.90, 320, True),
+    HERO_MELEE:  (0.78, 90, False),
+    HERO_RANGED: (0.72, 90, False),
+    TOWER:       (0.62, 110, False),
+    MINION:      (0.50, 140, False),   # paling pelan: jumlahnya paling banyak
+    MINIBOSS:    (0.85, 260, True),
+    BOSS:        (1.00, 320, True),
 }
 
 VARIASI = 3
