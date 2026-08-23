@@ -5077,10 +5077,7 @@ class AIPlayer:
         tick berpikir. Tanpa ini AI akan "stuck" / datar di level 20,
         sehingga level 21-54 terasa membosankan. Rentang elite mengikuti
         jumlah level game (54) supaya kepintaran terus naik sampai akhir.
-        Hanya aktif jika enemy_scaling_enabled == True (Hard Mode).
         """
-        if not getattr(self, "enemy_scaling_enabled", False):
-            return 0.0
         lvl = max(1, int(getattr(self, "level_number", 1) or 1))
         elite_start = 20
         try:
