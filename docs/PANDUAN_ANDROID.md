@@ -413,7 +413,7 @@ Overlay debug juga mencetak ringkasan tiap 5 detik:
 menulis traceback ke `crash_log.txt` di folder privat aplikasi:
 
 ```bash
-adb shell run-as com.gantidomainanda.mysticarena cat files/crash_log.txt
+adb shell run-as io.github.dharmawantoxi.mysticarena cat files/crash_log.txt
 ```
 
 ### 4.4 Uji tanpa perangkat fisik
@@ -701,7 +701,7 @@ adb logcat -c && adb logcat -s python:*
 git tag v1.0.1 && git push origin v1.0.1
 
 # Ambil crash log dari HP
-adb shell run-as com.gantidomainanda.mysticarena cat files/crash_log.txt
+adb shell run-as io.github.dharmawantoxi.mysticarena cat files/crash_log.txt
 ```
 
 ## Lampiran B — Checklist sebelum upload pertama

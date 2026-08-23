@@ -2,14 +2,17 @@
 
 # ═══════════════════════════════════════════════════════
 # IDENTITAS APLIKASI
-# GANTI package.domain dengan domain Anda (dibalik).
 # applicationId final = <package.domain>.<package.name>
-#   contoh: com.rezastudio.mysticarena
-# Nilai ini TIDAK BISA diubah setelah rilis di Play Store!
+#   = io.github.dharmawantoxi.mysticarena
+# Berbasis username GitHub (dharmawantoxi) — unik sedunia, tidak
+# perlu punya domain sungguhan.
+# Nilai ini TIDAK BISA diubah setelah rilis di Play Store, dan
+# Android Auto Backup diikat ke applicationId ini — mengubahnya
+# berarti backup lama pemain tidak akan di-restore!
 # ═══════════════════════════════════════════════════════
 title = Mystic Arena
 package.name = mysticarena
-package.domain = com.gantidomainanda
+package.domain = io.github.dharmawantoxi
 
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,ttf,otf,wav,ogg,mp3,json,txt
