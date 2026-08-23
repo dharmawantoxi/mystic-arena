@@ -376,6 +376,28 @@ class Boss(TowerDebuffMixin):
         self.target = None
         self.defeated = False
 
+        # ═══ BOSS RESILIENCE & MECHANICS ═══
+        # Inherent damage reduction (True Boss: 30%, Mini Boss: 20%)
+        self.damage_reduction = 0.30 if self.boss_class == "true" else 0.20
+        # Tenacity: slow magnitude & duration reduced by 50%
+        self.tenacity = 0.50
+        # Anti-burst single hit damage cap (True: 8%, Mini: 12% max HP)
+        self.max_damage_per_hit = int(self.max_hp * (0.08 if self.boss_class == "true" else 0.12))
+
+        # Enrage / Frenzy State
+        self.is_enraged = False
+        self.enrage_triggered = False
+        self.enrage_pulse = 0.0
+
+        # Cleave attack
+        self.cleave_radius = 80
+        self.cleave_ratio = 0.40
+
+        # Scaling multipliers (Hard mode)
+        self.hp_scaling_mult = 1.0
+        self.dmg_scaling_mult = 1.0
+        self.spd_scaling_mult = 1.0
+
         # Animation
         self.anim_time = 0
         self.pulse = 0
@@ -388,6 +410,45 @@ class Boss(TowerDebuffMixin):
         # slow gerak+serang, skill down, anti-heal, burn - semuanya
         # berlaku untuk mini boss dan true boss.
         self._init_tower_debuffs()
+
+    def apply_scaling(self, hp_mult=1.0, dmg_mult=1.0, spd_mult=1.0):
+        """Apply difficulty scaling (Hard Mode)"""
+        self.hp_scaling_mult = hp_mult
+        self.dmg_scaling_mult = dmg_mult
+        self.spd_scaling_mult = spd_mult
+
+        self.max_hp = int(self.max_hp * hp_mult)
+        self.hp = self.max_hp
+        self.damage = int(self.damage * dmg_mult)
+        self.base_damage = self.damage
+        self.ability_damage = int(self.ability_damage * dmg_mult)
+        self.speed = self.speed * spd_mult
+        self.base_speed = self.speed
+        self.max_damage_per_hit = int(self.max_hp * (0.08 if self.boss_class == "true" else 0.12))
+
+    def apply_slow(self, amount, duration):
+        """Tenacity: resist 50% of slow magnitude and duration, max 35% slow."""
+        if not getattr(self, "alive", True):
+            return
+        tenacity = getattr(self, "tenacity", 0.50)
+        reduced_amount = min(0.35, amount * (1.0 - tenacity))
+        reduced_duration = int(duration * (1.0 - tenacity))
+        if reduced_amount > getattr(self, "slow_amount", 0.0) or \
+                getattr(self, "slow_timer", 0) < reduced_duration:
+            self.slow_amount = reduced_amount
+            self.slow_timer = reduced_duration
+
+    def apply_debuff(self, kind, amount, duration, source_team=None):
+        if not getattr(self, "alive", True):
+            return
+        if kind == "slow":
+            self.apply_slow(amount, duration)
+            return
+        elif kind == "atk_slow":
+            tenacity = getattr(self, "tenacity", 0.50)
+            amount = min(0.35, amount * (1.0 - tenacity))
+            duration = int(duration * (1.0 - tenacity))
+        super().apply_debuff(kind, amount, duration, source_team=source_team)
 
     def _suara_serangan(self):
         """
@@ -421,6 +482,48 @@ class Boss(TowerDebuffMixin):
         if self.entrance_timer > 0:
             self.entrance_timer -= 1
             return
+
+        # ═══ ENRAGE / FRENZY CHECK ═══
+        if not self.enrage_triggered:
+            if self.boss_class == "true" and self.hp <= self.max_hp * 0.50:
+                self.enrage_triggered = True
+                self.is_enraged = True
+                self.speed = self.speed * 1.25
+                self.damage = int(self.damage * 1.25)
+                self.attack_cooldown = max(18, int(self.attack_cooldown * 0.75))
+                self._shake_screen(25)
+                try:
+                    import __main__
+                    if hasattr(__main__, 'game_instance'):
+                        __main__.game_instance.effects.add_damage_number(
+                            self.x, self.y - self.radius - 30,
+                            "ENRAGED!", is_critical=True, damage_type='crit')
+                except Exception:
+                    pass
+            elif self.boss_class == "mini" and self.hp <= self.max_hp * 0.40:
+                self.enrage_triggered = True
+                self.is_enraged = True
+                self.speed = self.speed * 1.15
+                self.damage = int(self.damage * 1.20)
+                self.attack_cooldown = max(20, int(self.attack_cooldown * 0.80))
+                self._shake_screen(15)
+                try:
+                    import __main__
+                    if hasattr(__main__, 'game_instance'):
+                        __main__.game_instance.effects.add_damage_number(
+                            self.x, self.y - self.radius - 30,
+                            "FRENZY!", is_critical=True, damage_type='fire')
+                except Exception:
+                    pass
+
+        if self.is_enraged:
+            self.enrage_pulse += 0.08
+            # Faster cooldown recovery when enraged
+            if self.anim_time % 2 == 0:
+                if self.timer > 0:
+                    self.timer -= 1
+                if self.ability_timer > 0:
+                    self.ability_timer -= 1
 
         if self.timer > 0:
             self.timer -= 1
@@ -466,6 +569,13 @@ class Boss(TowerDebuffMixin):
             if dist <= self.range:
                 if self.timer == 0:
                     self.target.take_damage(self.damage, self.team)
+                    # Cleave splash damage to nearby enemy units
+                    cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
+                    if cleave_dmg > 0:
+                        c_rad = getattr(self, 'cleave_radius', 80)
+                        for near_e in enemies:
+                            if near_e != self.target and math.hypot(near_e.x - self.x, near_e.y - self.y) <= c_rad:
+                                near_e.take_damage(cleave_dmg, self.team)
                     # Attack cooldown efektif (dipanjangkan saat kena
                     # debuff attack-speed dari Ice Tower)
                     self.timer = self._eff_attack_cd(self.attack_cooldown)
@@ -4936,28 +5046,26 @@ class Boss(TowerDebuffMixin):
 
     def take_damage_with_defense(self, damage, from_team):
         """Override take_damage untuk defense boost"""
-        if getattr(self, 'defense_boost', False):
-            damage = int(damage * 0.7)  # -30% damage
-        # Call original take_damage
-        self.hp -= damage
-        if self.hp <= 0:
-            self.hp = 0
-            self.alive = False
+        self.take_damage(damage, from_team)
 
     def _get_boss_stats(self):
         """Helper - get stats dari boss_data.
 
         Saat boss kena debuff SKILL-DOWN (Mage Tower), SEMUA key numerik
-        ber-*damage* (skill_q_damage, skill_w_damage, ability_damage,
-        dst.) dikembalikan dalam versi scaled copy - SEMUA skill boss di
-        file ini membaca lewat helper ini, jadi debuff otomatis berlaku
-        ke seluruh skill tanpa mengubah satu pun fungsi cast.
+        ber-*damage* dikembalikan dalam versi scaled copy.
+        Juga menerapkan scaling difficulty & multiplier Enrage.
         """
         from bosses.boss_data import get_all_boss_types
         all_bosses = get_all_boss_types()
         stats = all_bosses.get(self.boss_type, {})
-        if getattr(self, 'skill_down_timer', 0) > 0 and stats:
-            mult = max(0.0, 1.0 - getattr(self, 'skill_down_amount', 0.0))
+        mult = 1.0
+        if getattr(self, 'skill_down_timer', 0) > 0:
+            mult *= max(0.0, 1.0 - getattr(self, 'skill_down_amount', 0.0))
+        if getattr(self, 'dmg_scaling_mult', 1.0) != 1.0:
+            mult *= getattr(self, 'dmg_scaling_mult', 1.0)
+        if getattr(self, 'is_enraged', False):
+            mult *= 1.25
+        if mult != 1.0 and stats:
             scaled = dict(stats)
             for k, v in stats.items():
                 if isinstance(v, (int, float)) and not isinstance(v, bool) \
@@ -4998,7 +5106,21 @@ class Boss(TowerDebuffMixin):
             pass
 
     def take_damage(self, damage, from_team, damage_type='normal'):
-        self.hp -= damage
+        # ═══ INHERENT BOSS RESILIENCE (True Boss: 30%, Mini Boss: 20%) ═══
+        resilience = getattr(self, 'damage_reduction', 0.20)
+        if getattr(self, 'defense_boost', False):
+            resilience = max(resilience, 0.45)
+
+        effective_damage = int(damage * (1.0 - resilience))
+
+        # ═══ ANTI-BURST PROTECTION ═══
+        # Cap single hit damage so bosses cannot be 1-shot
+        cap = getattr(self, 'max_damage_per_hit', int(self.max_hp * 0.10))
+        if effective_damage > cap:
+            effective_damage = cap
+
+        effective_damage = max(1, effective_damage)
+        self.hp -= effective_damage
         self.hurt_flash_timer = 8
 
         try:
@@ -5007,8 +5129,8 @@ class Boss(TowerDebuffMixin):
                 game = __main__.game_instance
                 game.effects.add_damage_number(
                     self.x, self.y - self.radius - 10,
-                    damage,
-                    is_critical=(damage > self.max_hp * 0.03),
+                    effective_damage,
+                    is_critical=(effective_damage > self.max_hp * 0.03),
                     damage_type=damage_type)
                 game.effects.add_hit_particles(
                     self.x, self.y, team=self.team, count=6)
@@ -5028,7 +5150,7 @@ class Boss(TowerDebuffMixin):
                     game = __main__.game_instance
                     game.effects.add_death_explosion(
                         self.x, self.y, team=self.team, size='large')
-                    shake = 25 if self.boss_class == "true" else 20
+                    shake = 28 if self.boss_class == "true" else 20
                     game.effects.shake_screen(shake)
             except Exception:
                 pass
@@ -5067,6 +5189,10 @@ class Boss(TowerDebuffMixin):
                                        (aura_r, aura_r), ar)
             surface.blit(aura_surf, (x - aura_r, y - aura_r))
 
+        # ═══ ENRAGE / FRENZY AURA ═══
+        if getattr(self, 'is_enraged', False):
+            self._draw_enrage_aura(surface, x, y)
+
         # ═══ TRUE BOSS EXTRA AURA ═══
         if is_true:
             self._draw_true_boss_aura(surface, x, y)
@@ -5093,15 +5219,19 @@ class Boss(TowerDebuffMixin):
 
         # ═══ LABEL ═══
         prefix = "TRUE BOSS" if is_true else "BOSS"
+        if getattr(self, 'is_enraged', False):
+            enrage_tag = " [ENRAGED]" if is_true else " [FRENZY]"
+        else:
+            enrage_tag = ""
         font = get_font(18 if not is_true else 20, "body_bold")
-        label_color = (255, 100, 100) if is_true else (255, 220, 100)
-        name_text = font.render(f"{prefix}: {self.name}", True,
+        label_color = (255, 60, 60) if self.is_enraged else ((255, 100, 100) if is_true else (255, 220, 100))
+        name_text = font.render(f"{prefix}: {self.name}{enrage_tag}", True,
                                 label_color)
         name_rect = name_text.get_rect(center=(x, y - r - 25))
         bg_rect = name_rect.inflate(8, 4)
         pygame.draw.rect(surface, (0, 0, 0), bg_rect,
                          border_radius=3)
-        border_c = (255, 100, 100) if is_true else (255, 200, 50)
+        border_c = (255, 60, 60) if self.is_enraged else ((255, 100, 100) if is_true else (255, 200, 50))
         pygame.draw.rect(surface, border_c, bg_rect, 1,
                          border_radius=3)
         surface.blit(name_text, name_rect)
@@ -5126,6 +5256,23 @@ class Boss(TowerDebuffMixin):
             pygame.draw.rect(surface, hpc, (bx, by, fill, bar_h))
         pygame.draw.rect(surface, border_c,
                          (bx, by, bar_w, bar_h), 1)
+
+    def _draw_enrage_aura(self, surface, x, y):
+        """Enrage / Frenzy visual aura"""
+        pulse = math.sin(getattr(self, 'enrage_pulse', 0.0)) * 0.3 + 0.7
+        aura_r = self.radius + int(14 * pulse)
+        aura_surf = pygame.Surface(
+            (aura_r * 2 + 10, aura_r * 2 + 10), pygame.SRCALPHA)
+        center = aura_r + 5
+        color = (255, 50, 40) if self.boss_class == "true" else (255, 140, 30)
+
+        for r_off in range(aura_r, max(5, aura_r - 18), -3):
+            alpha = max(0, min(200, int((aura_r - r_off) * 12 * pulse)))
+            if alpha > 0:
+                pygame.draw.circle(aura_surf, (*color, alpha),
+                                   (center, center), r_off, 2)
+
+        surface.blit(aura_surf, (x - center, y - center))
 
     def _draw_generic_body(self, surface, x, y, is_true):
         """Generic boss body (dipakai boss yang belum punya custom render)"""

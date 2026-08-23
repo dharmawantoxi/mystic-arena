@@ -288,7 +288,13 @@ class SidePanel:
             f_besar_small = self.get_font(18, "body_bold")
             t = f_besar_small.render(emas_str, True, EMAS)
         full.blit(t, (x + 10, y + 22))
-        full.blit(f.render("GOLD", True, DIM), (x + 10, y + 48))
+        full.blit(f.render("GOLD", True, DIM), (x + 10, y + 46))
+
+        # Mode Tag
+        is_hard = getattr(game, "enemy_scaling_enabled", False) if game else False
+        mode_str = "HARD [SCALE ON]" if is_hard else "NORMAL [SCALE OFF]"
+        mode_col = BAHAYA if is_hard else OK
+        full.blit(f_small.render(mode_str, True, mode_col), (x + 10, y + 68))
 
         wave = getattr(game, "wave_number", None) if game else None
         if wave is None and game is not None:
