@@ -71,7 +71,24 @@ android.minapi = 24
 android.ndk_api = 24
 android.archs = arm64-v8a
 android.accept_sdk_license = True
+
+# ═══════════════════════════════════════════════════════
+# AUTO BACKUP (Google Drive) — progres selamat dari uninstall
+# Save game disimpan di $ANDROID_PRIVATE/saves (lihat
+# storage_paths.py) dan di-backup otomatis ke Google Drive milik
+# pemain. Saat install ulang / pindah HP dengan akun Google yang
+# sama, Android me-restore folder itu SEBELUM game pertama dibuka.
+#
+# Aturan backup dibatasi HANYA ke folder saves/ — tanpa ini seluruh
+# files/ (kode + aset hasil ekstrak p4a) ikut ter-backup dan hampir
+# pasti melebihi kuota 25 MB, yang membuat backup GAGAL total.
+#   backup_rules.xml            -> Android <= 11 (fullBackupContent)
+#   data_extraction_rules.xml   -> Android 12+   (dataExtractionRules)
+# ═══════════════════════════════════════════════════════
 android.allow_backup = True
+android.backup_rules = backup_rules.xml
+android.res_xml = data_extraction_rules.xml
+android.extra_manifest_application_arguments = manifest_application_arguments.xml
 
 # aab untuk Play Store, apk untuk uji manual
 android.release_artifact = aab

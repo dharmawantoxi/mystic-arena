@@ -1,0 +1,1 @@
+android:dataExtractionRules="@xml/data_extraction_rules"

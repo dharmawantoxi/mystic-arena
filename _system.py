@@ -687,8 +687,8 @@ import json
 import os
 import time
 
+from storage_paths import SAVE_DIR
 
-SAVE_DIR = "saves"
 NUM_SLOTS = 3
 LEGACY_SAVE_FILE = os.path.join(SAVE_DIR, "progress.json")
 

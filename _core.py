@@ -6753,8 +6753,10 @@ class DevMode:
 import json
 import os
 
+from storage_paths import SAVE_DIR
 
-SETTINGS_FILE = os.path.join("saves", "settings.json")
+
+SETTINGS_FILE = os.path.join(SAVE_DIR, "settings.json")
 
 
 class GameSettings:
@@ -6819,7 +6821,7 @@ class GameSettings:
     def save(self):
         """Save settings ke file"""
         try:
-            os.makedirs("saves", exist_ok=True)
+            os.makedirs(SAVE_DIR, exist_ok=True)
 
             data = {
                 'master_volume': self.master_volume,
