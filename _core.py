@@ -1184,8 +1184,7 @@ class Game:
             self.enemy_damage_mult = 1.0
             self.enemy_speed_mult = 1.0
 
-        self.ai = AIPlayer("red", level_number=self.level_number,
-                           enemy_scaling_enabled=self.enemy_scaling_enabled)
+        self.ai = AIPlayer("red", level_number=self.level_number)
         self.gold_timer = 0
         self.minions = []
         self.towers = []
@@ -1544,12 +1543,9 @@ class Game:
     def _auto_scale_ai_castle(self):
         """
         AI castle auto-upgrade berdasarkan wave untuk balancing.
-        Hanya aktif di Mode HARD (enemy scaling ON). Di Mode NORMAL (scaling OFF),
-        AI castle tidak auto-upgrade melebihi level awal.
+        Player harus proactive upgrade sendiri.
+        Aktif di Mode Normal dan Mode Hard.
         """
-        if not getattr(self, "enemy_scaling_enabled", False):
-            return
-
         target_level = 1
         if self.wave_number >= 4:
             target_level = 2
@@ -1575,10 +1571,6 @@ class Game:
 
         # Base composition dari castle level
         base_comp = NEXUS_WAVE_COMPOSITION[castle_level].copy()
-
-        # Jika tim merah dan scaling OFF (Normal mode), jangan beri extra red units di atas base
-        if team == "red" and not getattr(self, "enemy_scaling_enabled", False):
-            return base_comp
 
         # ═══ SCALING per WAVE NUMBER ═══
         if self.wave_number <= 3:
