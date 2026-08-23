@@ -1420,7 +1420,8 @@ class Game:
                     pass
                 SoundManager().play('wave_start', volume_mult=0.6)
                 # ═══ MINI BOSS CHECK (pending-safe, WAVE DIACAK) ═══
-                # Wave kemunculan mini boss diacak tiap run (lihat
+                # Wave kemunculan mini boss diacak tiap run di rentang
+                # 11..30 — selalu SETELAH wave 10 (lihat
                 # _roll_mini_boss_schedule di reset). Jumlah & tipe boss
                 # tetap sama, hanya WAVE-nya yang berubah.
                 mini_bosses = getattr(self, "_mini_boss_schedule", None)
@@ -1520,12 +1521,13 @@ class Game:
         print(f"[MINI BOSS] {self.active_boss.name} spawned (scaling={getattr(self, 'enemy_scaling_enabled', False)})")
 
     def _roll_mini_boss_schedule(self):
-        """Acak wave kemunculan mini boss tiap run.
+        """Acak wave kemunculan mini boss tiap run — SETELAH wave 10.
 
         Jumlah & TIPE boss mengikuti level config (biasanya 3 mini boss),
-        tapi NOMOR WAVE-nya diacak di rentang 6..30 (tidak lagi tetap
-        10/18/25). Boss terkuat tetap muncul di wave terakhir dari jadwal
-        supaya progresif. True boss (level config) tidak terkena ini.
+        tapi NOMOR WAVE-nya diacak di rentang 11..30, jadi mini boss
+        paling cepat muncul di wave 11 (tidak pernah sebelum itu).
+        Boss terkuat tetap muncul di wave terakhir dari jadwal supaya
+        progresif. True boss (level config) tidak terkena ini.
         """
         import random as _r
         src = self.level_config.get("mini_bosses", {})
@@ -1533,7 +1535,7 @@ class Game:
             return {}
         bosses = list(src.values())   # tipe boss dipertahankan urutannya
         n = len(bosses)
-        low, high = 6, 30
+        low, high = 11, 30
         # Pastikan rentang cukup untuk N wave berbeda
         if high - low + 1 < n:
             high = low + n * 5
