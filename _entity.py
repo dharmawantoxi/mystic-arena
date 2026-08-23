@@ -450,6 +450,10 @@ class Tower:
         self.no_damage_timer = 0
         self.shield_regen_flash = 0
         self.hp_regen_flash = 0
+        # ═══ REGEN SHIELD (fitur berbayar) ═══
+        # False default; aktif setelah pemain/AI membayar
+        # (Tower.activate_regen_shield()). Saat aktif, shield regen.
+        self.regen_shield_active = False
 
     def _apply_level_stats(self):
         """Apply stats berdasarkan tower_type & level"""
@@ -560,7 +564,36 @@ class Tower:
             if lvl in path:
                 total += path[lvl]["cost"]
 
+        # Refund separuh dari biaya Regen Shield kalau sudah dibeli.
+        if getattr(self, "regen_shield_active", False):
+            total += TOWER_REGEN_SHIELD_COST
+
         return int(total * 0.5)
+
+    # ═══════════════════════════════════════
+    # REGEN SHIELD (fitur berbayar)
+    # ═══════════════════════════════════════
+    def can_activate_regen_shield(self):
+        """True kalau tower level cukup & regen shield belum aktif."""
+        return (TOWER_REGEN_SHIELD_ENABLED
+                and self.level >= TOWER_REGEN_SHIELD_MIN_LEVEL
+                and not getattr(self, "regen_shield_active", False)
+                and self.alive)
+
+    def regen_shield_cost(self):
+        """Harga aktivasi Regen Shield (setara upgrade tower level 5)."""
+        return TOWER_REGEN_SHIELD_COST
+
+    def activate_regen_shield(self):
+        """Aktifkan regen shield. Kembalikan True kalau berhasil."""
+        if not self.can_activate_regen_shield():
+            return False
+        self.regen_shield_active = True
+        # Langsung isi shield penuh saat diaktifkan (efek instan).
+        self.shield = self.shield_max
+        self.shield_regen_flash = 6
+        self.upgrade_flash = 30
+        return True
 
     def update(self, all_units, all_towers, all_bases):
         if not self.alive:
@@ -629,6 +662,17 @@ class Tower:
                     self.hp = min(max_regen_hp,
                                   self.hp + TOWER_HP_REGEN_RATE)
                     self.hp_regen_flash = 3
+
+        # ═══ REGEN SHIELD (fitur berbayar) ═══
+        # Shield regen otomatis setelah jeda tanpa damage, HANYA kalau
+        # pemain/AI sudah membayar aktivasi Regen Shield.
+        if (TOWER_REGEN_SHIELD_ENABLED
+                and getattr(self, "regen_shield_active", False)):
+            if self.no_damage_timer >= TOWER_REGEN_SHIELD_DELAY:
+                if self.shield < self.shield_max:
+                    self.shield = min(self.shield_max,
+                                      self.shield + TOWER_REGEN_SHIELD_RATE)
+                    self.shield_regen_flash = 3
 
     def _find_target(self, enemies):
         best = None
@@ -882,6 +926,16 @@ class Tower:
         # Shield bubble effect
         if TOWER_SHIELD_ENABLED and self.shield > 0:
             self._draw_shield_bubble(surface, x, y)
+
+        # ═══ REGEN SHIELD indicator (pulsing green ring) ═══
+        if getattr(self, "regen_shield_active", False):
+            pulse = math.sin(self.timer * 0.15) * 2
+            rr = int(34 + self.level + pulse)
+            try:
+                pygame.draw.circle(surface, (120, 255, 140),
+                                   (int(x), int(y)), rr, 2)
+            except Exception:
+                pass
 
         # Draw tower body
         self._draw_tower_body(surface, x, y)
@@ -3246,7 +3300,12 @@ class Hero(TowerDebuffMixin):
     def upgrade_cost(self):
         if self.level >= MAX_HERO_LEVEL:
             return 0
-        return HERO_LEVELS[self.level]["upgrade_cost"]
+        base = HERO_LEVELS[self.level]["upgrade_cost"]
+        # BOSS HERO (unlock) UPGRADE LEBIH MAHAL daripada starter hero.
+        # Berlaku sama untuk pemain & AI (parity).
+        if self.skill_data.get("is_boss_hero"):
+            base = int(base * BOSS_HERO_UPGRADE_COST_MULT)
+        return base
 
     def move_to(self, x, y, auto=False):
         self.destination = (x, y)
@@ -5024,7 +5083,10 @@ class AIPlayer:
 
     def _ai_reserve(self):
         """Gold cadangan AI (semakin pintar semakin tipis cadangannya)."""
-        return int(AI_MIN_GOLD_RESERVE * (1.0 - 0.6 * self._ai_brain()))
+        # Handicap dikurangi: cadangan dasar lebih kecil supaya AI
+        # menggunakan semua fitur (termasuk Regen Shield) lebih agresif,
+        # setara dengan kemampuan pemain.
+        return int(AI_MIN_GOLD_RESERVE * (0.6 - 0.5 * self._ai_brain()))
 
     def update(self, all_towers, all_minions, all_heroes, my_nexus,
                all_bases, build_slots=None):
@@ -5067,6 +5129,14 @@ class AIPlayer:
         if my_towers and random.random() < min(0.9, AI_UPGRADE_TOWER_CHANCE + 0.5 * brain):
             if self._try_upgrade_tower_new(my_towers):
                 return
+
+        # Priority 3b: Activate Regen Shield on eligible towers (parity).
+        # Pakai SEMUA tower tim (bukan hanya yang bisa di-upgrade), karena
+        # tower level 6 (max) tetap bisa beli Regen Shield.
+        all_my_towers = [t for t in all_towers
+                         if t.team == self.team and t.alive]
+        if all_my_towers and self._try_activate_regen_shield(all_my_towers):
+            return
 
         # Priority 4: Upgrade nexus
         if random.random() < AI_NEXUS_UPGRADE_PRIORITY * (0.7 + 0.6 * brain):
@@ -5134,6 +5204,23 @@ class AIPlayer:
                         self.total_upgraded += 1
                         return True
 
+        return False
+
+    def _try_activate_regen_shield(self, my_towers):
+        """AI beli Regen Shield untuk tower yang eligible (lvl 4+, parity)."""
+        # Hanya tower level 4+ yang belum punya regen shield.
+        candidates = [t for t in my_towers
+                      if t.can_activate_regen_shield()]
+        if not candidates:
+            return False
+        # Prioritaskan tower paling banyak kill (paling berharga).
+        candidates.sort(key=lambda t: -t.kills)
+        for tower in candidates:
+            cost = tower.regen_shield_cost()
+            if self.gold >= cost + self._ai_reserve():
+                if tower.activate_regen_shield():
+                    self.gold -= cost
+                    return True
         return False
 
     def _control_heroes(self, all_minions, all_heroes, all_towers, all_bases):

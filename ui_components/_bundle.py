@@ -3442,7 +3442,7 @@ class _NS_popup_renderer:
                 return
 
             popup_w = 300
-            popup_h = 320
+            popup_h = 360
 
             _pp = _popup_di_panel(popup_w, popup_h)
             if _pp is not None:
@@ -3653,6 +3653,11 @@ class _NS_popup_renderer:
                 surface.blit(info_t, info_rect)
                 return
 
+            # ═══ REGEN SHIELD section (player towers level 4+) ═══
+            if getattr(tower, "level", 0) >= TOWER_REGEN_SHIELD_MIN_LEVEL:
+                self._draw_regen_shield_section(
+                    surface, px, py + 256, popup_w, tower)
+
             if not tower.can_upgrade():
                 self._draw_tower_max_level(surface, px, popup_w, tower, y)
                 return
@@ -3661,6 +3666,42 @@ class _NS_popup_renderer:
                 self._draw_tower_path_buttons(surface, px, y, popup_w, tower)
             else:
                 self._draw_tower_upgrade_button(surface, px, y, popup_w, tower)
+
+        def _draw_regen_shield_section(self, surface, px, y, popup_w, tower):
+            """Regen Shield status / activation button (tower level 4+)."""
+            g = self.game
+
+            # Sudah aktif -> tampilkan status hijau
+            if getattr(tower, "regen_shield_active", False):
+                status_rect = pygame.Rect(px + 15, y, popup_w - 30, 30)
+                pygame.draw.rect(surface, (25, 70, 30), status_rect,
+                                 border_radius=6)
+                pygame.draw.rect(surface, (120, 255, 140), status_rect, 2,
+                                 border_radius=6)
+                txt = self.ui.font_tiny.render(
+                    "REGEN SHIELD: ON", True, (150, 255, 170))
+                txt_rect = txt.get_rect(center=status_rect.center)
+                surface.blit(txt, txt_rect)
+                return
+
+            # Bisa dibeli (level cukup) -> tombol beli
+            if tower.can_activate_regen_shield():
+                cost = tower.regen_shield_cost()
+                can_buy = g.gold >= cost
+                btn_rect = pygame.Rect(px + 15, y, popup_w - 30, 30)
+
+                label = "REGEN SHIELD (%dG)" % cost
+                bg = (60, 160, 90) if can_buy else DARK_GRAY
+                border = WHITE if can_buy else GRAY
+                txt_color = WHITE if can_buy else GRAY
+
+                pygame.draw.rect(surface, bg, btn_rect, border_radius=6)
+                pygame.draw.rect(surface, border, btn_rect, 2,
+                                 border_radius=6)
+                btn_t = self.ui.font_tiny.render(label, True, txt_color)
+                btn_text_rect = btn_t.get_rect(center=btn_rect.center)
+                surface.blit(btn_t, btn_text_rect)
+                g.ui_buttons['popup_regen_shield'] = btn_rect
 
         def _get_tower_specials(self, tower):
             """Special abilities - English, short"""

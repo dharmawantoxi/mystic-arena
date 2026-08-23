@@ -51,6 +51,19 @@ TOWER_HP_REGEN_MAX_RATIO = 1.0     # Regen bisa sampai 100% HP
 SHIELD_COLOR_BLUE = (100, 180, 255)
 SHIELD_COLOR_RED = (255, 100, 100)
 
+# ═══════════════════════════════════════
+# TOWER REGEN SHIELD (fitur berbayar)
+# Tower level 4+ bisa membeli "Regen Shield": sekali diaktifkan, shield
+# tower akan REGENERASI otomatis (seperti regen HP). Harga setara tower
+# level 5 (lihat ARCHER/CANNON/ICE/MAGE_LEVELS[5]["cost"] = 850).
+# Berlaku untuk tower pemain MAUPUN tower AI (parity).
+# ═══════════════════════════════════════
+TOWER_REGEN_SHIELD_ENABLED = True
+TOWER_REGEN_SHIELD_MIN_LEVEL = 4      # baru bisa dibeli saat tower lvl 4+
+TOWER_REGEN_SHIELD_COST = 850         # setara upgrade tower ke level 5
+TOWER_REGEN_SHIELD_DELAY = 180        # 3 detik tanpa damage -> regen shield
+TOWER_REGEN_SHIELD_RATE = 1.8         # shield/frame saat regen
+
 # ── LAYAR ──
 def _PANEL_AKTIF():
     """True kalau panel kanan tersedia (layar lebih lebar dari 16:9)."""
@@ -195,10 +208,10 @@ MINION_TYPES = {
     "goblin": {
         "name": "Goblin",
         "hp": 45,
-        "damage": 3,          # 4 → 3
+        "damage": 5,          # BUFF 3 → 5 (+67%)
         "speed": 1.5,
         "range": 25,
-        "attack_cooldown": 45, # 40 → 45 (lebih lambat)
+        "attack_cooldown": 45,
         "gold_reward": 8,
         "radius": 9,
         "color": GOBLIN_COLOR
@@ -206,10 +219,10 @@ MINION_TYPES = {
     "orc": {
         "name": "Orc",
         "hp": 110,
-        "damage": 8,          # 10 → 8
+        "damage": 13,         # BUFF 8 → 13 (+63%)
         "speed": 0.95,
         "range": 30,
-        "attack_cooldown": 60, # 55 → 60
+        "attack_cooldown": 60,
         "gold_reward": 18,
         "radius": 12,
         "color": ORC_COLOR
@@ -217,10 +230,10 @@ MINION_TYPES = {
     "troll": {
         "name": "Troll",
         "hp": 320,
-        "damage": 11,         # 14 → 11
+        "damage": 18,         # BUFF 11 → 18 (+64%)
         "speed": 0.65,
         "range": 28,
-        "attack_cooldown": 75, # 70 → 75
+        "attack_cooldown": 75,
         "gold_reward": 45,
         "radius": 14,
         "color": TROLL_COLOR,
@@ -229,10 +242,10 @@ MINION_TYPES = {
     "undead": {
         "name": "Undead",
         "hp": 65,
-        "damage": 7,          # 9 → 7
+        "damage": 11,         # BUFF 7 → 11 (+57%)
         "speed": 0.85,
         "range": 100,
-        "attack_cooldown": 60, # 55 → 60
+        "attack_cooldown": 60,
         "gold_reward": 16,
         "radius": 10,
         "color": UNDEAD_COLOR
@@ -240,10 +253,10 @@ MINION_TYPES = {
     "dark_rider": {
         "name": "Dark Rider",
         "hp": 280,
-        "damage": 20,         # 28 → 20 (paling deadly, nerf paling banyak)
+        "damage": 32,         # BUFF 20 → 32 (+60%)
         "speed": 2.0,
         "range": 35,
-        "attack_cooldown": 50, # 45 → 50
+        "attack_cooldown": 50,
         "gold_reward": 65,
         "radius": 13,
         "color": DARK_RIDER_COLOR
@@ -485,9 +498,23 @@ HERO_LEVELS = {
     9:  {"hp_mult": 5.6,  "dmg_mult": 4.7,  "skill_mult": 4.0,
          "upgrade_cost": 6200},
     10: {"hp_mult": 6.5,  "dmg_mult": 5.4,  "skill_mult": 4.6,
+         "upgrade_cost": 8000},
+    # Level 11-15: MAX LEVEL diperpanjang dari 10 → 15.
+    # Kurva dilanjutkan dengan ritme yang sama (tiap level +~0.9
+    # multiplier). Cost naik tajam supaya late-game tetap punya
+    # sink emas yang berarti.
+    11: {"hp_mult": 7.5,  "dmg_mult": 6.2,  "skill_mult": 5.2,
+         "upgrade_cost": 10200},
+    12: {"hp_mult": 8.6,  "dmg_mult": 7.0,  "skill_mult": 5.9,
+         "upgrade_cost": 12800},
+    13: {"hp_mult": 9.8,  "dmg_mult": 7.9,  "skill_mult": 6.6,
+         "upgrade_cost": 15800},
+    14: {"hp_mult": 11.1, "dmg_mult": 8.9,  "skill_mult": 7.4,
+         "upgrade_cost": 19200},
+    15: {"hp_mult": 12.5, "dmg_mult": 10.0, "skill_mult": 8.2,
          "upgrade_cost": 0},   # 0 = MAX, tidak bisa upgrade lagi
 }
-MAX_HERO_LEVEL = 10
+MAX_HERO_LEVEL = 15
 
 BLUE_HERO_SPAWN_X = 160
 BLUE_HERO_SPAWN_Y = 600   # dekat blue base baru
@@ -496,6 +523,14 @@ RED_HERO_SPAWN_Y  = 120   # dekat red base baru
 HERO_SPAWN_Y = 600        # default (blue side)
 
 MAX_HEROES_OWNED = 5
+
+# ═══════════════════════════════════════
+# BOSS HERO UPGRADE COST POLICY
+# Hero unlock (boss/mini/true) punya biaya UPGRADE LEVEL in-game yang
+# LEBIH MAHAL daripada starter hero. Multiplier diterapkan di
+# Hero.upgrade_cost(). Berlaku sama untuk pemain maupun AI (parity).
+# ═══════════════════════════════════════
+BOSS_HERO_UPGRADE_COST_MULT = 1.6   # boss hero 60% lebih mahal per level
 
 # ═══════════════════════════════════════
 # TOWER SYSTEM (Archer base + 3 upgrade paths)
@@ -1190,6 +1225,10 @@ class Game:
         self.active_boss = None
         self.pending_mini_bosses = []
         self.true_boss_spawned = False
+        # ═══ ACAK KEMUNCULAN MINI BOSS ═══
+        # Alih-alih wave tetap (10/18/25), wave kemunculan diacak tiap run.
+        # Jumlah & tipe boss tetap, hanya nomor wave-nya yang berubah.
+        self._mini_boss_schedule = self._roll_mini_boss_schedule()
 
         # ═══ LEVEL SYSTEM ═══
         self.meta_reward_earned = 0
@@ -1354,8 +1393,13 @@ class Game:
                 except Exception:
                     pass
                 SoundManager().play('wave_start', volume_mult=0.6)
-                # ═══ MINI BOSS CHECK (pending-safe) ═══
-                mini_bosses = self.level_config.get("mini_bosses", {})
+                # ═══ MINI BOSS CHECK (pending-safe, WAVE DIACAK) ═══
+                # Wave kemunculan mini boss diacak tiap run (lihat
+                # _roll_mini_boss_schedule di reset). Jumlah & tipe boss
+                # tetap sama, hanya WAVE-nya yang berubah.
+                mini_bosses = getattr(self, "_mini_boss_schedule", None)
+                if not mini_bosses:
+                    mini_bosses = self.level_config.get("mini_bosses", {})
                 if self.wave_number in mini_bosses:
                     self.pending_mini_bosses.append(
                         (self.wave_number, mini_bosses[self.wave_number]))
@@ -1446,6 +1490,27 @@ class Game:
         self.boss_intro = BossIntroCinematic(
             self.active_boss, SCREEN_WIDTH, SCREEN_HEIGHT)
         print(f"[MINI BOSS] {self.active_boss.name} spawned")
+
+    def _roll_mini_boss_schedule(self):
+        """Acak wave kemunculan mini boss tiap run.
+
+        Jumlah & TIPE boss mengikuti level config (biasanya 3 mini boss),
+        tapi NOMOR WAVE-nya diacak di rentang 6..30 (tidak lagi tetap
+        10/18/25). Boss terkuat tetap muncul di wave terakhir dari jadwal
+        supaya progresif. True boss (level config) tidak terkena ini.
+        """
+        import random as _r
+        src = self.level_config.get("mini_bosses", {})
+        if not src:
+            return {}
+        bosses = list(src.values())   # tipe boss dipertahankan urutannya
+        n = len(bosses)
+        low, high = 6, 30
+        # Pastikan rentang cukup untuk N wave berbeda
+        if high - low + 1 < n:
+            high = low + n * 5
+        waves = sorted(_r.sample(range(low, high + 1), n))
+        return dict(zip(waves, bosses))
 
     def _auto_scale_ai_castle(self):
         """
@@ -5789,6 +5854,10 @@ class InputHandler:
                     self._try_sell_tower()
                     return True
 
+                elif action == 'regen_shield':
+                    self._try_activate_regen_shield()
+                    return True
+
                 elif action == 'upgrade_hero':
                     self._try_upgrade_hero()
                     return True
@@ -5848,6 +5917,32 @@ class InputHandler:
         g.towers.remove(g.selected_tower)
         SoundManager().play('ui_sell')
         g.close_popup()
+
+    def _try_activate_regen_shield(self):
+        """Beli & aktifkan Regen Shield untuk tower yang dipilih."""
+        g = self.game
+
+        if not (g.selected_tower and g.selected_tower.is_player_built):
+            return
+        tower = g.selected_tower
+        if not tower.can_activate_regen_shield():
+            SoundManager().play('ui_error')
+            return
+
+        cost = tower.regen_shield_cost()
+        if g.gold < cost:
+            SoundManager().play('ui_error')
+            return
+
+        if tower.activate_regen_shield():
+            g.gold -= cost
+            SoundManager().play('ui_upgrade')
+            try:
+                g.effects.add_damage_number(
+                    int(tower.x), int(tower.y - 30),
+                    "REGEN SHIELD!", is_critical=True)
+            except Exception:
+                pass
 
     def handle_shop_click(self, mx, my, button):
         """Klik di hero shop — pakai registered buttons"""
