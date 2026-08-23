@@ -1368,7 +1368,7 @@ def _get_palette(team):
 # ═══════════════════════════════════════════════════════
 
 class Castle:
-    """Castle - evolusi visual per level"""
+    """Castle - evolution visual per level + early shield (wave <10)"""
 
     def __init__(self, x, y, team):
         self.x = x
@@ -1386,6 +1386,28 @@ class Castle:
         self.pulse = 0
 
         self._render_cache = {}
+
+        # ═══ CASTLE SHIELD SYSTEM (anti-smurf) ═══
+        # Shield active before wave threshold, reduces damage and shows bubble.
+        # Both teams get it - feature parity.
+        try:
+            self.shield_max = int(self.max_hp * CASTLE_SHIELD_HP_RATIO)
+        except Exception:
+            self.shield_max = int(self.max_hp * 0.6)
+        self.shield = self.shield_max
+        self.shield_active = True  # Will be updated by Game based on wave
+        self.shield_no_damage_timer = 0
+        self.shield_regen_flash = 0
+        self.early_wave_threshold = 10
+        try:
+            self.early_wave_threshold = CASTLE_SHIELD_WAVE_THRESHOLD
+        except Exception:
+            pass
+        self.damage_reduction = 0.75
+        try:
+            self.damage_reduction = CASTLE_SHIELD_DAMAGE_REDUCTION
+        except Exception:
+            pass
 
     def _apply_level_stats(self):
         data = NEXUS_LEVELS[self.level]
@@ -1430,6 +1452,12 @@ class Castle:
         if self.timer > 0:
             self.timer -= 1
 
+        # ═══ Update castle shield regen ═══
+        self._update_castle_shield()
+
+        if getattr(self, 'shield_regen_flash', 0) > 0:
+            self.shield_regen_flash -= 1
+
         for b in self.bullets:
             b.update()
         self.bullets = [b for b in self.bullets if b.active]
@@ -1448,6 +1476,37 @@ class Castle:
                 self._shoot(self.target)
                 self.timer = self.attack_cooldown
 
+    def _update_castle_shield(self):
+        """Regen shield when not taking damage, only if shield active"""
+        if not getattr(self, 'shield_active', False):
+            return
+        self.shield_no_damage_timer += 1
+        try:
+            delay = CASTLE_SHIELD_REGEN_DELAY
+        except Exception:
+            delay = 120
+        try:
+            rate = CASTLE_SHIELD_REGEN_RATE
+        except Exception:
+            rate = 2.0
+        if self.shield_no_damage_timer >= delay:
+            if self.shield < self.shield_max:
+                self.shield = min(self.shield_max, self.shield + rate)
+                self.shield_regen_flash = 4
+
+    def set_wave(self, wave_number):
+        """Called by Game to enable/disable early shield"""
+        try:
+            thr = CASTLE_SHIELD_WAVE_THRESHOLD
+        except Exception:
+            thr = 10
+        # Shield active before threshold
+        was_active = getattr(self, 'shield_active', True)
+        self.shield_active = wave_number < thr
+        # When shield just expired, clear shield HP
+        if was_active and not self.shield_active:
+            self.shield = 0
+
     def _find_target(self, enemies):
         best = None
         best_dist = self.range
@@ -1464,19 +1523,57 @@ class Castle:
             Bullet(self.x, self.y - 25, target, self.damage, self.team)
         )
 
-    def take_damage(self, damage, from_team):
-        self.hp -= damage
+    def take_damage(self, damage, from_team, damage_type='normal'):
+        # ═══ CASTLE SHIELD LOGIC (anti-smurf, wave <10) ═══
+        # Both player and AI castles have shield before wave 10
+        effective_damage = damage
+        shield_absorbed = 0
+
+        if getattr(self, 'shield_active', False):
+            # Reset regen timer
+            self.shield_no_damage_timer = 0
+
+            # Shield absorbs first
+            if getattr(self, 'shield', 0) > 0:
+                if self.shield >= effective_damage:
+                    shield_absorbed = effective_damage
+                    self.shield -= effective_damage
+                    effective_damage = 0
+                else:
+                    shield_absorbed = self.shield
+                    effective_damage -= self.shield
+                    self.shield = 0
+
+            # Remaining damage reduced by % if shield still considered active
+            # Even if shield HP depleted, early protection still reduces damage
+            if effective_damage > 0:
+                try:
+                    reduction = CASTLE_SHIELD_DAMAGE_REDUCTION
+                except Exception:
+                    reduction = getattr(self, 'damage_reduction', 0.75)
+                effective_damage = int(effective_damage * (1.0 - reduction))
+
+        self.hp -= effective_damage
 
         try:
             import __main__
             if hasattr(__main__, 'game_instance'):
                 game = __main__.game_instance
-                game.effects.add_damage_number(
-                    self.x, self.y - 40,
-                    damage, is_critical=True,
-                    damage_type='fire')
-                shake_intensity = min(15, damage / 20)
-                game.effects.shake_screen(shake_intensity)
+                # Show shield absorb number if absorbed
+                if shield_absorbed > 0:
+                    game.effects.add_damage_number(
+                        self.x, self.y - 60,
+                        f"SHIELD -{shield_absorbed}",
+                        is_critical=False,
+                        damage_type='ice')
+                if effective_damage > 0:
+                    game.effects.add_damage_number(
+                        self.x, self.y - 40,
+                        effective_damage, is_critical=True,
+                        damage_type='fire')
+                shake_intensity = min(15, effective_damage / 20) if effective_damage > 0 else 0
+                if shake_intensity > 1:
+                    game.effects.shake_screen(shake_intensity)
                 game.effects.add_hit_particles(
                     self.x, self.y, team=self.team, count=10)
         except Exception:
@@ -1542,9 +1639,11 @@ class Castle:
         final_y = int(self.y - new_h + 35)
         surface.blit(scaled, (final_x, final_y))
 
+        # ═══ CASTLE SHIELD BUBBLE (before wave 10) ═══
+        if getattr(self, 'shield_active', False) and getattr(self, 'shield', 0) > 0:
+            self._draw_castle_shield(surface, final_x + new_w//2, final_y + new_h//2)
+
         if not _cheap:
-            # Efek dinamis (obor lvl4+, aura lvl6) digambar langsung
-            # ke layar, bukan lewat canvas+skala.
             try:
                 _render_dynamic_effects_direct(
                     surface, self, palette, final_x, final_y, SCALE)
@@ -1556,9 +1655,74 @@ class Castle:
         for b in self.bullets:
             b.draw(surface)
 
+    def _draw_castle_shield(self, surface, cx, cy):
+        """Draw protective shield bubble around castle - English visual"""
+        if not getattr(self, 'shield_active', False):
+            return
+        shield_ratio = self.shield / max(1, self.shield_max)
+        if shield_ratio <= 0:
+            return
+        # Shield bubble - pulsating
+        pulse = math.sin(self.pulse * 1.2) * 0.15 + 0.85
+        r = int(90 + self.level * 6)
+        try:
+            col = CASTLE_SHIELD_COLOR_BLUE if self.team == "blue" else CASTLE_SHIELD_COLOR_RED
+        except Exception:
+            col = (100, 200, 255) if self.team == "blue" else (255, 120, 120)
+
+        alpha = int(70 * shield_ratio * pulse)
+        if getattr(self, 'shield_regen_flash', 0) > 0:
+            alpha = min(140, alpha + 50)
+
+        # Draw multiple rings
+        for i in range(3):
+            ring_r = r + i * 6
+            ring_alpha = max(0, alpha - i * 20)
+            if ring_alpha <= 0:
+                continue
+            pygame.draw.circle(surface, (*col, ring_alpha) if len(col)==3 else col, (cx, cy), ring_r, 2)
+
+        # Inner glow
+        glow_surf = pygame.Surface((r*2, r*2), pygame.SRCALPHA)
+        pygame.draw.circle(glow_surf, (*col, int(alpha*0.5)), (r, r), r)
+        surface.blit(glow_surf, (cx - r, cy - r))
+
+        # Shield text indicator - English
+        if shield_ratio > 0.3:
+            try:
+                from _render import get_font
+                f = get_font(12, 'body_bold')
+                txt = f.render("SHIELD", True, col)
+                surface.blit(txt, (cx - txt.get_width()//2, cy - r - 18))
+            except Exception:
+                pass
+
     def _draw_hp_bar(self, surface):
-        """Kept blank - info via popup"""
-        pass
+        """HP bar + shield bar - fixed layout no overlap"""
+        # Draw shield bar above castle if active
+        if getattr(self, 'shield_active', False) and getattr(self, 'shield_max', 0) > 0:
+            bar_w = 60
+            bar_h = 6
+            bx = int(self.x - bar_w//2)
+            by = int(self.y - 80)
+            pygame.draw.rect(surface, (30, 30, 50), (bx, by, bar_w, bar_h), border_radius=3)
+            ratio = self.shield / max(1, self.shield_max)
+            fill = int(bar_w * ratio)
+            if fill > 0:
+                try:
+                    col = CASTLE_SHIELD_COLOR_BLUE if self.team == "blue" else CASTLE_SHIELD_COLOR_RED
+                except Exception:
+                    col = (100, 200, 255) if self.team == "blue" else (255, 120, 120)
+                pygame.draw.rect(surface, col, (bx, by, fill, bar_h), border_radius=3)
+            pygame.draw.rect(surface, (0,0,0), (bx, by, bar_w, bar_h), 1, border_radius=3)
+            # Label
+            try:
+                from _render import get_font
+                f = get_font(10, 'body_bold')
+                label = f.render(f"SHIELD {int(ratio*100)}%", True, (200,220,255))
+                surface.blit(label, (bx, by - 12))
+            except Exception:
+                pass
 # ═══════════════════════════════════════════════════════
 # CASTLE FULL RENDER (dispatch per level)
 # ═══════════════════════════════════════════════════════

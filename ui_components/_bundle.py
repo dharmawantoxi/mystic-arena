@@ -662,20 +662,20 @@ class _NS_build_popup:
 
     class BuildPopup(BaseUIComponent):
         """
-        Popup dengan 4 button pilih tower type:
-        Archer, Cannon, Ice, Mage
+        Build tower popup - 4 tower types, clean English layout
+        Fixed: increased height, reduced font overlap, clear spacing
         """
 
         def draw(self, surface):
-            """Draw build popup"""
+            """Draw build popup - English, no overlap"""
             g = self.game
             slot = g.build_popup_slot
 
             if not slot:
                 return
 
-            popup_w = 300
-            popup_h = 200
+            popup_w = 320
+            popup_h = 230
 
             _pp = _popup_di_panel(popup_w, popup_h)
             if _pp is not None:
@@ -684,7 +684,6 @@ class _NS_build_popup:
                 px = int(slot['x']) - popup_w // 2
                 py = int(slot['y']) - popup_h - 30
 
-                # Clamp posisi (hanya kalau popup masih di atas peta)
                 if px < 10:
                     px = 10
                 if px + popup_w > SCREEN_WIDTH - 10:
@@ -692,8 +691,6 @@ class _NS_build_popup:
                 if py < 10:
                     py = int(slot['y']) + 30
 
-                # Garis penunjuk ke slot - hanya berguna kalau popup
-                # berada di atas peta.
                 pygame.draw.line(surface, GOLD,
                                  (px + popup_w // 2, py + popup_h),
                                  (int(slot['x']), int(slot['y']) - 10), 2)
@@ -713,79 +710,86 @@ class _NS_build_popup:
                              (px, py, popup_w, popup_h),
                              2, border_radius=8)
 
-            # Title
+            # Title - centered, English
             title = self.ui.font_medium.render(
                 "BUILD TOWER", True, YELLOW)
             title_rect = title.get_rect(
-                center=(px + popup_w // 2, py + 18))
+                center=(px + popup_w // 2, py + 16))
             surface.blit(title, title_rect)
 
-            # Gold info
+            # Gold info - left aligned, English
             gold_font = pygame.font.Font(None, 16)
-            gold_text = gold_font.render(f"Your Gold: {g.gold}G",
+            gold_text = gold_font.render(f"Gold: {g.gold} (Cost: 100)",
                                          True, GOLD)
-            surface.blit(gold_text, (px + 15, py + 40))
+            surface.blit(gold_text, (px + 15, py + 32))
 
             # Close button (X)
             self._draw_close_button(surface,
-                                     px + popup_w - 25, py + 5,
-                                     size=20,
+                                     px + popup_w - 26, py + 6,
+                                     size=22,
                                      button_id='build_close',
                                      style='rect')
 
-            # Tower type buttons (2x2 grid)
+            # Tower type buttons (2x2 grid) - fixed spacing
             self._draw_tower_buttons(surface, px, py, popup_w)
 
         def _draw_tower_buttons(self, surface, px, py, popup_w):
-            """Draw 4 tower type buttons"""
+            """Draw 4 tower buttons - clean layout, no text overlap"""
             g = self.game
 
             tower_types = [
-                ('archer', 'Archer', 'Fast, single target',
+                ('archer', 'Archer', 'Fast single',
                  TOWER_TYPE_COLORS['archer']['main']),
-                ('cannon', 'Cannon', 'AOE splash damage',
+                ('cannon', 'Cannon', 'AOE + Burn',
                  TOWER_TYPE_COLORS['cannon']['main']),
-                ('ice', 'Ice', 'Slow enemies',
+                ('ice', 'Ice', 'Slow move+atk',
                  TOWER_TYPE_COLORS['ice']['main']),
-                ('mage', 'Mage', 'Multi-target chain',
+                ('mage', 'Mage', 'Chain + Debuff',
                  TOWER_TYPE_COLORS['mage']['main']),
             ]
 
             cost = 100
             can_afford = g.gold >= cost
 
-            btn_w = (popup_w - 40) // 2
-            btn_h = 55
+            btn_w = (popup_w - 50) // 2
+            btn_h = 58
+            start_y = py + 56
 
             for i, (ttype, name, desc, color) in enumerate(tower_types):
                 col = i % 2
                 row = i // 2
 
-                bx = px + 15 + col * (btn_w + 10)
-                by = py + 60 + row * (btn_h + 8)
+                bx = px + 15 + col * (btn_w + 12)
+                by = start_y + row * (btn_h + 10)
 
                 bg_color = color if can_afford else DARK_GRAY
                 btn_rect = pygame.Rect(bx, by, btn_w, btn_h)
+                # Button bg
                 pygame.draw.rect(surface, bg_color, btn_rect,
-                                 border_radius=4)
-                pygame.draw.rect(surface, WHITE, btn_rect, 2,
-                                 border_radius=4)
+                                 border_radius=6)
+                pygame.draw.rect(surface, WHITE if can_afford else GRAY,
+                                 btn_rect, 2, border_radius=6)
 
-                # Name
-                name_font = pygame.font.Font(None, 20)
+                # Name - bold, truncated
+                name_font = pygame.font.Font(None, 18)
                 name_t = name_font.render(name, True,
                                           WHITE if can_afford else GRAY)
-                surface.blit(name_t, (bx + 8, by + 5))
+                surface.blit(name_t, (bx + 8, by + 6))
 
-                # Description
-                desc_font = pygame.font.Font(None, 13)
+                # Description - smaller, no overlap
+                desc_font = pygame.font.Font(None, 12)
+                # Truncate desc if too wide
+                if desc_font.size(desc)[0] > btn_w - 16:
+                    while desc_font.size(desc + "..")[0] > btn_w - 16 and len(desc) > 4:
+                        desc = desc[:-1]
+                    desc += ".."
                 desc_t = desc_font.render(desc, True,
-                                          WHITE if can_afford else GRAY)
+                                          (220,220,220) if can_afford else GRAY)
                 surface.blit(desc_t, (bx + 8, by + 24))
 
-                # Cost
-                cost_font = pygame.font.Font(None, 16)
-                cost_t = cost_font.render(f"{cost}G", True,
+                # Cost - bottom
+                cost_font = pygame.font.Font(None, 13)
+                cost_t = cost_font.render(f"{cost} Gold", True,
                                           GOLD if can_afford else GRAY)
                 surface.blit(cost_t, (bx + 8, by + 38))
 
@@ -1027,21 +1031,16 @@ class _NS_hero_panel:
         """
 
         def draw(self, surface):
-            """Draw hero panel"""
+            """Draw hero panel - English, fixed no overlap"""
             g = self.game
             h = g.selected_hero
 
             if not h or not h.alive:
                 return
 
-            panel_w = 260
-            panel_h = 165
+            panel_w = 280
+            panel_h = 200
 
-            # ═══ PINDAH KE PANEL KANAN ═══
-            # Inilah panel yang dikeluhkan: dulu selalu di kiri bawah
-            # peta (px=20), tepat menutupi jalur bawah dan kastil
-            # pemain justru saat pemain sedang menimbang upgrade.
-            # Kalau layar punya panel kanan, panel ini pindah ke sana.
             _pp = None
             try:
                 from mobile import platform_utils as _plat
@@ -1058,13 +1057,6 @@ class _NS_hero_panel:
                 px = 20
                 py = SCREEN_HEIGHT - panel_h - 20
 
-            # ═══ SATU SUMBER KEBENARAN UNTUK POSISI ═══
-            # Dulu penangan klik MENGHITUNG ULANG posisi panel ini
-            # dengan angka tetap (px=20, kiri bawah). Begitu panelnya
-            # pindah ke kanan, gambarnya di tempat baru tapi klik masih
-            # diperiksa di tempat lama -> semua tombolnya mati.
-            # Sekarang posisinya disimpan di sini dan dibaca penangan
-            # klik, jadi keduanya tidak mungkin berbeda lagi.
             try:
                 if not hasattr(g, "ui_rects"):
                     g.ui_rects = {}
@@ -1083,39 +1075,44 @@ class _NS_hero_panel:
             # Background
             pygame.draw.rect(surface, (25, 30, 45),
                              (px, py, panel_w, panel_h),
-                             border_radius=8)
+                             border_radius=10)
             pygame.draw.rect(surface, h.color,
                              (px, py, panel_w, panel_h),
-                             2, border_radius=8)
+                             2, border_radius=10)
 
-            # Title
-            title = self.ui.font_small.render(
-                f"{h.name} Lv.{h.level}", True, WHITE)
-            surface.blit(title, (px + 10, py + 8))
+            # Title - truncate to avoid overlap with close button
+            title_text = f"{h.name} Lv.{h.level}"
+            # Ensure title fits: max width = panel_w - 50 (close btn)
+            if self.ui.font_small.size(title_text)[0] > panel_w - 50:
+                while self.ui.font_small.size(title_text + "..")[0] > panel_w - 50 and len(title_text) > 5:
+                    title_text = title_text[:-1]
+                title_text += ".."
+            title = self.ui.font_small.render(title_text, True, WHITE)
+            surface.blit(title, (px + 12, py + 10))
 
-            # Close button (X)
+            # Close button (X) - larger, easier to tap
             self._draw_close_button(surface,
-                                     px + panel_w - 25, py + 5,
-                                     size=20,
+                                     px + panel_w - 26, py + 6,
+                                     size=22,
                                      button_id='hero_close',
                                      style='rect')
 
             # HP bar
-            y = py + 28
-            bar_w = panel_w - 20
-            self._draw_hp_bar(surface, px + 10, y, bar_w, 6,
+            y = py + 34
+            bar_w = panel_w - 24
+            self._draw_hp_bar(surface, px + 12, y, bar_w, 8,
                                h.hp / h.max_hp)
 
-            # HP text
+            # HP text - smaller, below bar
             hp_t = self.ui.font_tiny.render(
-                f"{int(h.hp)}/{h.max_hp}", True, WHITE)
-            surface.blit(hp_t, (px + 10, y + 8))
+                f"{int(h.hp)}/{h.max_hp}", True, (200,200,200))
+            surface.blit(hp_t, (px + 12, y + 12))
 
-            # 4 skill slots (Q, W, E, R)
-            y += 22
-            skill_size = 40
-            skill_gap = 8
-            start_x = px + 10
+            # 4 skill slots (Q, W, E, R) - more spacing
+            y += 32
+            skill_size = 38
+            skill_gap = 10
+            start_x = px + 14
 
             is_auto = h.auto_cast_enabled
 
@@ -1147,12 +1144,12 @@ class _NS_hero_panel:
                                   is_ultimate=True,
                                   is_auto=is_auto)
 
-            # ═══ AUTO-CAST TOGGLE ═══
-            y += skill_size + 8
+            # Auto-cast toggle - below skills with gap
+            y += skill_size + 14
             self._draw_autocast_toggle(surface, px, y, panel_w, h)
 
-            # Upgrade button
-            y += 28
+            # Upgrade button - bottom with gap
+            y += 32
             self._draw_upgrade_button(surface, px, y, panel_w, h)
 
         def _draw_upgrade_button(self, surface, px, y, panel_w, hero):
@@ -3437,15 +3434,15 @@ class _NS_popup_renderer:
         """
 
         def draw(self, surface):
-            """Main popup dispatcher"""
+            """Main popup dispatcher - English, fixed overlap"""
             g = self.game
             target = g.popup_target
 
             if not target:
                 return
 
-            popup_w = 260
-            popup_h = 260
+            popup_w = 300
+            popup_h = 320
 
             _pp = _popup_di_panel(popup_w, popup_h)
             if _pp is not None:
@@ -3454,7 +3451,6 @@ class _NS_popup_renderer:
                 px = int(target.x) - popup_w // 2
                 py = int(target.y) - popup_h - 40
 
-                # Clamp posisi (hanya kalau popup masih di atas peta)
                 if px < 10:
                     px = 10
                 if px + popup_w > SCREEN_WIDTH - 10:
@@ -3462,10 +3458,6 @@ class _NS_popup_renderer:
                 if py < TOP_BAR_HEIGHT + 10:
                     py = int(target.y) + 40
 
-            # Garis penunjuk ke target - HANYA kalau popup masih di
-            # atas peta. Saat popup pindah ke panel kanan, garis ini
-            # membentang dari castle sampai ke panel dan malah terlihat
-            # seperti cacat gambar.
             if _pp is None:
                 pygame.draw.line(surface, GOLD,
                                  (px + popup_w // 2, py + popup_h),
@@ -3475,21 +3467,21 @@ class _NS_popup_renderer:
             shadow_surf = pygame.Surface((popup_w + 10, popup_h + 10),
                                          pygame.SRCALPHA)
             pygame.draw.rect(shadow_surf, (0, 0, 0, 150),
-                             (5, 5, popup_w, popup_h), border_radius=8)
+                             (5, 5, popup_w, popup_h), border_radius=10)
             surface.blit(shadow_surf, (px - 5, py - 5))
 
             # BG
             pygame.draw.rect(surface, (25, 30, 45),
                              (px, py, popup_w, popup_h),
-                             border_radius=8)
+                             border_radius=10)
             pygame.draw.rect(surface, GOLD,
                              (px, py, popup_w, popup_h),
-                             2, border_radius=8)
+                             2, border_radius=10)
 
-            # Close button (X)
+            # Close button (X) - larger
             self._draw_close_button(surface,
-                                     px + popup_w - 25, py + 5,
-                                     size=20,
+                                     px + popup_w - 26, py + 6,
+                                     size=22,
                                      button_id='popup_close',
                                      style='rect')
 
@@ -3509,7 +3501,7 @@ class _NS_popup_renderer:
 
         def _draw_nexus_content(self, surface, px, py, popup_w, nexus,
                                  is_own):
-            """Content popup castle/nexus"""
+            """Castle popup - English, clean, no overlap"""
             g = self.game
             team_color = BLUE_LIGHT if is_own else RED_LIGHT
 
@@ -3519,59 +3511,60 @@ class _NS_popup_renderer:
             }
             name = castle_names.get(nexus.level, "CITADEL")
 
-            # Title
-            title = self.ui.font_medium.render(
-                f"{name} Lv.{nexus.level}", True, team_color)
-            surface.blit(title, (px + 15, py + 8))
+            title_text = f"{name} Lv.{nexus.level}"
+            if self.ui.font_medium.size(title_text)[0] > popup_w - 50:
+                title_text = f"Lv.{nexus.level}"
+            title = self.ui.font_medium.render(title_text, True, team_color)
+            surface.blit(title, (px + 15, py + 10))
 
-            y = py + 40
+            y = py + 44
 
-            # HP text
+            # Shield indicator
+            if getattr(nexus, 'shield_active', False):
+                try:
+                    ratio = getattr(nexus, 'shield', 0) / max(1, getattr(nexus, 'shield_max', 1))
+                    sf = pygame.font.Font(None, 13)
+                    s_lbl = sf.render(f"SHIELD {int(ratio*100)}% | Wave <10", True, (100, 220, 255))
+                    surface.blit(s_lbl, (px + 15, y))
+                    y += 16
+                except Exception:
+                    pass
+
             hp_lbl = self.ui.font_small.render(
-                f"HP: {nexus.hp}/{nexus.max_hp}", True, WHITE)
+                f"HP: {int(nexus.hp)}/{nexus.max_hp}", True, WHITE)
             surface.blit(hp_lbl, (px + 15, y))
-            y += 20
+            y += 18
 
-            # HP bar
             bar_w = popup_w - 30
-            self._draw_hp_bar(surface, px + 15, y, bar_w, 8,
-                               nexus.hp / nexus.max_hp)
-            y += 15
-
-            # Stats
-            nx_data = NEXUS_LEVELS[nexus.level]
-            stats_t = self.ui.font_tiny.render(
-                f"Minion Scale: x{nx_data['minion_scale']}",
-                True, LIGHT_GRAY)
-            surface.blit(stats_t, (px + 15, y))
-            y += 14
-
-            ai_t = self.ui.font_tiny.render(
-                f"AI Level: {nx_data['minion_ai_level']}/5",
-                True, LIGHT_GRAY)
-            surface.blit(ai_t, (px + 15, y))
-            y += 14
-
-            dmg_t = self.ui.font_tiny.render(
-                f"Damage: {nexus.damage}  Range: {nexus.range}",
-                True, LIGHT_GRAY)
-            surface.blit(dmg_t, (px + 15, y))
+            self._draw_hp_bar(surface, px + 15, y, bar_w, 10,
+                               max(0, nexus.hp / nexus.max_hp))
             y += 20
 
-            # Upgrade button (hanya own castle)
+            nx_data = NEXUS_LEVELS[nexus.level]
+            for line in [
+                f"Minion Power: x{nx_data['minion_scale']}",
+                f"AI Level: {nx_data['minion_ai_level']}/5",
+                f"DMG: {nexus.damage}  RNG: {nexus.range}",
+            ]:
+                t = self.ui.font_tiny.render(line, True, LIGHT_GRAY)
+                surface.blit(t, (px + 15, y))
+                y += 15
+
+            y += 8
+
             if is_own:
                 self._draw_nexus_upgrade(surface, px, py, popup_w,
                                           nexus, y, castle_names)
             else:
                 info_t = self.ui.font_tiny.render(
-                    "[Enemy Castle - Destroy to Win!]", True, RED_LIGHT)
+                    "Enemy Castle - Destroy to Win!", True, RED_LIGHT)
                 info_rect = info_t.get_rect(
                     center=(px + popup_w // 2, y + 10))
                 surface.blit(info_t, info_rect)
 
         def _draw_nexus_upgrade(self, surface, px, py, popup_w, nexus, y,
                                   castle_names):
-            """Draw upgrade button untuk nexus"""
+            """Castle upgrade - English, clean"""
             g = self.game
 
             if nexus.level < MAX_NEXUS_LEVEL:
@@ -3579,31 +3572,29 @@ class _NS_popup_renderer:
                 can_up = g.gold >= cost
                 bg = (100, 200, 255) if can_up else DARK_GRAY
 
-                # Next level preview
                 next_name = castle_names.get(nexus.level + 1, "CITADEL")
                 preview_t = self.ui.font_tiny.render(
-                    f"Upgrade to: {next_name}", True, CYAN)
+                    f"Next: {next_name}", True, CYAN)
                 surface.blit(preview_t, (px + 15, y))
-                y += 16
+                y += 18
 
-                btn_rect = pygame.Rect(px + 15, y, popup_w - 30, 32)
-                pygame.draw.rect(surface, bg, btn_rect,
-                                 border_radius=4)
-                pygame.draw.rect(surface, WHITE, btn_rect,
-                                 2, border_radius=4)
+                btn_rect = pygame.Rect(px + 15, y, popup_w - 30, 36)
+                pygame.draw.rect(surface, bg, btn_rect, border_radius=6)
+                pygame.draw.rect(surface, WHITE if can_up else GRAY,
+                                 btn_rect, 2, border_radius=6)
 
                 btn_t = self.ui.font_small.render(
-                    f"UPGRADE ({cost}G)",
-                    True, WHITE if can_up else GRAY)
+                    f"UPGRADE {cost}G", True,
+                    WHITE if can_up else GRAY)
                 btn_text_rect = btn_t.get_rect(center=btn_rect.center)
                 surface.blit(btn_t, btn_text_rect)
 
                 g.ui_buttons['popup_upgrade_nexus'] = btn_rect
             else:
                 max_t = self.ui.font_small.render(
-                    "★ MAX LEVEL - CITADEL ★", True, YELLOW)
+                    "MAX LEVEL - CITADEL", True, YELLOW)
                 max_rect = max_t.get_rect(
-                    center=(px + popup_w // 2, y + 15))
+                    center=(px + popup_w // 2, y + 14))
                 surface.blit(max_t, max_rect)
 
         # ═══════════════════════════════════════
@@ -3611,105 +3602,100 @@ class _NS_popup_renderer:
         # ═══════════════════════════════════════
 
         def _draw_tower_content(self, surface, px, py, popup_w, tower):
-            """Content popup tower"""
+            """Tower popup - English, fixed no overlap"""
             g = self.game
 
-            # Title
             title_text = f"{tower.name} Lv.{tower.level}"
+            if self.ui.font_medium.size(title_text)[0] > popup_w - 50:
+                title_text = f"Lv.{tower.level} {tower.tower_type.title()}"
             title = self.ui.font_medium.render(title_text, True, tower.color)
-            surface.blit(title, (px + 15, py + 8))
+            surface.blit(title, (px + 15, py + 10))
 
-            y = py + 40
+            y = py + 44
 
-            # HP
             hp_lbl = self.ui.font_small.render(
-                f"HP: {tower.hp}/{tower.max_hp}", True, WHITE)
+                f"HP: {int(tower.hp)}/{tower.max_hp}", True, WHITE)
             surface.blit(hp_lbl, (px + 15, y))
             y += 18
 
-            # HP bar
             bar_w = popup_w - 30
-            self._draw_hp_bar(surface, px + 15, y, bar_w, 6,
-                               tower.hp / tower.max_hp)
-            y += 12
+            self._draw_hp_bar(surface, px + 15, y, bar_w, 8,
+                               max(0, tower.hp / tower.max_hp))
+            y += 18
 
-            # Stats
             stats_lines = [
-                f"DMG: {tower.damage}  RNG: {tower.range}",
+                f"DMG: {tower.damage}  Range: {tower.range}",
                 f"Kills: {tower.kills}  Lane: {tower.lane.upper() if tower.lane else '-'}",
             ]
             for line in stats_lines:
+                if self.ui.font_tiny.size(line)[0] > popup_w - 30:
+                    line = line[:30] + ".."
                 t = self.ui.font_tiny.render(line, True, LIGHT_GRAY)
                 surface.blit(t, (px + 15, y))
-                y += 13
+                y += 15
 
-            # Special abilities
             special = self._get_tower_specials(tower)
             if special:
                 sp_text = " | ".join(special)
+                if self.ui.font_tiny.size(sp_text)[0] > popup_w - 30:
+                    sp_text = sp_text[:36] + ".."
                 sp_t = self.ui.font_tiny.render(sp_text, True, YELLOW)
                 surface.blit(sp_t, (px + 15, y))
-                y += 14
+                y += 18
 
-            y += 4
+            y += 6
 
-            # Enemy tower info
             if not tower.is_player_built:
                 info_t = self.ui.font_tiny.render(
-                    "[Enemy Tower]", True, RED_LIGHT)
+                    "Enemy Tower", True, RED_LIGHT)
                 info_rect = info_t.get_rect(
-                    center=(px + popup_w // 2, y + 10))
+                    center=(px + popup_w // 2, y + 12))
                 surface.blit(info_t, info_rect)
                 return
 
-            # Max level
             if not tower.can_upgrade():
                 self._draw_tower_max_level(surface, px, popup_w, tower, y)
                 return
 
-            # ═══ UPGRADE OPTIONS ═══
-            # Level 1 → 2: pilih path (4 buttons)
             if tower.level == 1:
-                self._draw_tower_path_buttons(surface, px, y, popup_w,
-                                                tower)
-            # Level 2+: upgrade + sell buttons
+                self._draw_tower_path_buttons(surface, px, y, popup_w, tower)
             else:
-                self._draw_tower_upgrade_button(surface, px, y, popup_w,
-                                                  tower)
+                self._draw_tower_upgrade_button(surface, px, y, popup_w, tower)
 
         def _get_tower_specials(self, tower):
-            """Get list special abilities untuk tower"""
+            """Special abilities - English, short"""
             special = []
             if tower.splash > 0:
-                special.append(f"Splash: {tower.splash}")
+                special.append(f"Splash {tower.splash}")
             if tower.slow > 0:
-                special.append(f"Slow: {int(tower.slow * 100)}%")
+                special.append(f"Slow {int(tower.slow*100)}%")
             if tower.chain > 1:
-                special.append(f"Chain: {tower.chain}")
+                special.append(f"Chain x{tower.chain}")
             if tower.double_shot:
-                special.append("DOUBLE SHOT")
+                special.append("Double Shot")
+            if getattr(tower, 'burn_dps', 0) > 0:
+                special.append(f"Burn {tower.burn_dps}/s")
+            if getattr(tower, 'atk_slow', 0) > 0:
+                special.append(f"AtkSlow {int(tower.atk_slow*100)}%")
+            if getattr(tower, 'skill_down', 0) > 0:
+                special.append(f"SkillDown {int(tower.skill_down*100)}%")
             return special
 
         def _draw_tower_max_level(self, surface, px, popup_w, tower, y):
-            """Draw max level info + sell button"""
+            """Max level + sell - English centered"""
             g = self.game
 
-            max_t = self.ui.font_small.render(
-                "★ MAX LEVEL ★", True, YELLOW)
-            max_rect = max_t.get_rect(
-                center=(px + popup_w // 2, y + 15))
+            max_t = self.ui.font_small.render("MAX LEVEL", True, YELLOW)
+            max_rect = max_t.get_rect(center=(px + popup_w // 2, y + 12))
             surface.blit(max_t, max_rect)
 
-            y += 30
+            y += 32
             sell_val = tower.sell_value()
             if sell_val > 0:
-                sell_rect = pygame.Rect(px + 60, y, 100, 24)
-                pygame.draw.rect(surface, RED_DARK, sell_rect,
-                                 border_radius=3)
-                pygame.draw.rect(surface, WHITE, sell_rect, 1,
-                                 border_radius=3)
-                sell_t = self.ui.font_tiny.render(
-                    f"SELL {sell_val}G", True, WHITE)
+                sell_rect = pygame.Rect(px + (popup_w-110)//2, y, 110, 30)
+                pygame.draw.rect(surface, RED_DARK, sell_rect, border_radius=6)
+                pygame.draw.rect(surface, WHITE, sell_rect, 1, border_radius=6)
+                sell_t = self.ui.font_tiny.render(f"SELL {sell_val}G", True, WHITE)
                 sell_text_rect = sell_t.get_rect(center=sell_rect.center)
                 surface.blit(sell_t, sell_text_rect)
                 g.ui_buttons['popup_sell_tower'] = sell_rect
@@ -3719,33 +3705,26 @@ class _NS_popup_renderer:
         # ═══════════════════════════════════════
 
         def _draw_tower_path_buttons(self, surface, px, y, popup_w, tower):
-            """Draw 4 tower path buttons (untuk lvl 1→2)"""
-            g = self.game
-
-            title_up = self.ui.font_tiny.render(
-                "CHOOSE UPGRADE PATH:", True, YELLOW)
+            """4 path buttons - English clean"""
+            title_up = self.ui.font_tiny.render("CHOOSE PATH:", True, YELLOW)
             surface.blit(title_up, (px + 15, y))
-            y += 16
+            y += 18
 
-            btn_w = (popup_w - 40) // 2
-            btn_h = 42
+            btn_w = (popup_w - 46) // 2
+            btn_h = 48
 
             paths = ["archer", "cannon", "ice", "mage"]
             for i, path_type in enumerate(paths):
                 col = i % 2
                 row = i // 2
-
-                bx = px + 15 + col * (btn_w + 10)
-                by = y + row * (btn_h + 6)
-
-                self._draw_single_path_button(surface, bx, by, btn_w,
-                                                btn_h, path_type, tower)
+                bx = px + 15 + col * (btn_w + 12)
+                by = y + row * (btn_h + 8)
+                self._draw_single_path_button(surface, bx, by, btn_w, btn_h, path_type, tower)
 
         def _draw_single_path_button(self, surface, bx, by, btn_w, btn_h,
                                         path_type, tower):
-            """Draw satu path button"""
+            """Path button - English, no overlap"""
             g = self.game
-
             info = TOWER_TYPE_INFO[path_type]
             colors = TOWER_TYPE_COLORS[path_type]
             cost = tower.upgrade_cost(path_type)
@@ -3753,25 +3732,30 @@ class _NS_popup_renderer:
 
             btn_rect = pygame.Rect(bx, by, btn_w, btn_h)
             bg = colors["main"] if can_afford else DARK_GRAY
+            pygame.draw.rect(surface, bg, btn_rect, border_radius=6)
+            pygame.draw.rect(surface, WHITE if can_afford else GRAY,
+                             btn_rect, 2, border_radius=6)
 
-            pygame.draw.rect(surface, bg, btn_rect,
-                             border_radius=3)
-            pygame.draw.rect(surface, WHITE, btn_rect,
-                             2, border_radius=3)
+            name_font = pygame.font.Font(None, 14)
+            name_text = info["name"].replace(" Tower", "")
+            if name_font.size(name_text)[0] > btn_w - 10:
+                name_text = name_text[:10]
+            name_t = name_font.render(name_text, True,
+                WHITE if can_afford else GRAY)
+            surface.blit(name_t, (bx + 6, by + 5))
 
-            name_t = self.ui.font_tiny.render(
-                info["name"].replace(" Tower", ""),
-                True, WHITE if can_afford else GRAY)
-            surface.blit(name_t, (bx + 5, by + 3))
+            cost_font = pygame.font.Font(None, 12)
+            cost_t = cost_font.render(f"{cost}G", True,
+                GOLD if can_afford else GRAY)
+            surface.blit(cost_t, (bx + 6, by + 20))
 
-            cost_t = self.ui.font_tiny.render(
-                f"{cost}G", True, WHITE if can_afford else GRAY)
-            surface.blit(cost_t, (bx + 5, by + 17))
-
-            spec_t = pygame.font.Font(None, 12).render(
-                info["special"][:15],
-                True, WHITE if can_afford else GRAY)
-            surface.blit(spec_t, (bx + 5, by + 30))
+            spec_font = pygame.font.Font(None, 10)
+            spec_text = info["special"][:18]
+            if spec_font.size(spec_text)[0] > btn_w - 10:
+                spec_text = spec_text[:14] + ".."
+            spec_t = spec_font.render(spec_text, True,
+                (220,220,220) if can_afford else GRAY)
+            surface.blit(spec_t, (bx + 6, by + 33))
 
             g.ui_buttons[f'popup_upgrade_path_{path_type}'] = btn_rect
 
@@ -3781,52 +3765,48 @@ class _NS_popup_renderer:
 
         def _draw_tower_upgrade_button(self, surface, px, y, popup_w,
                                          tower):
-            """Draw upgrade + sell button (untuk lvl 2+)"""
+            """Upgrade + Sell - English, no overlap"""
             g = self.game
-
             cost = tower.upgrade_cost()
             can_up = g.gold >= cost
-
             next_lvl = tower.level + 1
-            next_stats = TOWER_UPGRADE_PATHS[tower.tower_type][next_lvl]
+            try:
+                next_stats = TOWER_UPGRADE_PATHS[tower.tower_type][next_lvl]
+            except Exception:
+                next_stats = {"damage": "?", "hp": "?", "desc": ""}
 
-            # Preview
-            preview_t = self.ui.font_tiny.render(
-                f"Next Lv.{next_lvl}: DMG {next_stats['damage']} | HP {next_stats['hp']}",
-                True, CYAN)
+            preview_text = f"Lv{next_lvl}: DMG {next_stats.get('damage','?')} HP {next_stats.get('hp','?')}"
+            if self.ui.font_tiny.size(preview_text)[0] > popup_w - 30:
+                preview_text = f"Lv{next_lvl}: DMG {next_stats.get('damage','?')}"
+            preview_t = self.ui.font_tiny.render(preview_text, True, CYAN)
             surface.blit(preview_t, (px + 15, y))
-            y += 14
-
-            desc_t = self.ui.font_tiny.render(
-                next_stats.get('desc', ''), True, YELLOW)
-            surface.blit(desc_t, (px + 15, y))
             y += 16
 
-            btn_w = (popup_w - 40) // 2
+            desc = next_stats.get('desc', '')
+            if self.ui.font_tiny.size(desc)[0] > popup_w - 30:
+                desc = desc[:36] + ".."
+            desc_t = self.ui.font_tiny.render(desc, True, YELLOW)
+            surface.blit(desc_t, (px + 15, y))
+            y += 22
 
-            # Upgrade button
-            up_rect = pygame.Rect(px + 15, y, btn_w, 28)
-            bg = CYAN if can_up else DARK_GRAY
-            pygame.draw.rect(surface, bg, up_rect,
-                             border_radius=4)
-            pygame.draw.rect(surface, WHITE, up_rect, 1,
-                             border_radius=4)
-            up_t = self.ui.font_tiny.render(
-                f"UPGRADE ({cost}G)",
-                True, WHITE if can_up else GRAY)
+            btn_w = (popup_w - 46) // 2
+
+            up_rect = pygame.Rect(px + 15, y, btn_w, 34)
+            bg = (80, 180, 220) if can_up else DARK_GRAY
+            pygame.draw.rect(surface, bg, up_rect, border_radius=6)
+            pygame.draw.rect(surface, WHITE if can_up else GRAY,
+                             up_rect, 2, border_radius=6)
+            up_t = self.ui.font_tiny.render(f"UPGRADE {cost}G", True,
+                WHITE if can_up else GRAY)
             up_text_rect = up_t.get_rect(center=up_rect.center)
             surface.blit(up_t, up_text_rect)
             g.ui_buttons['popup_upgrade_tower'] = up_rect
 
-            # Sell button
             sell_val = tower.sell_value()
-            sell_rect = pygame.Rect(px + 25 + btn_w, y, btn_w, 28)
-            pygame.draw.rect(surface, RED_DARK, sell_rect,
-                             border_radius=4)
-            pygame.draw.rect(surface, WHITE, sell_rect, 1,
-                             border_radius=4)
-            sell_t = self.ui.font_tiny.render(
-                f"SELL ({sell_val}G)", True, WHITE)
+            sell_rect = pygame.Rect(px + 27 + btn_w, y, btn_w, 34)
+            pygame.draw.rect(surface, RED_DARK, sell_rect, border_radius=6)
+            pygame.draw.rect(surface, WHITE, sell_rect, 1, border_radius=6)
+            sell_t = self.ui.font_tiny.render(f"SELL {sell_val}G", True, WHITE)
             sell_text_rect = sell_t.get_rect(center=sell_rect.center)
             surface.blit(sell_t, sell_text_rect)
             g.ui_buttons['popup_sell_tower'] = sell_rect
