@@ -419,6 +419,72 @@ class Bullet:
 _TOWER_SPRITE_CACHE = {}
 
 
+def _build_armor_crest(size, base_color, fill_ratio, bright):
+    """Bangun sprite ARMOR CREST kecil (perisai heraldik) sebagai
+    indikator shield — pengganti gelembung transparan yang jelek.
+
+    size       : tinggi crest dalam pixel
+    base_color : warna tim (biru/merah)
+    fill_ratio : isi shield 0..1 (crest terisi dari bawah ke atas)
+    bright     : True saat regen flash (crest menyala lebih terang)
+    """
+    w = int(size * 0.82)
+    h = size
+    surf = pygame.Surface((w + 4, h + 4), pygame.SRCALPHA)
+    ox, oy = 2, 2
+
+    # Outline crest: atas rata, sisi lurus, meruncing ke bawah
+    pts = [
+        (ox, oy),                      # kiri-atas
+        (ox + w, oy),                  # kanan-atas
+        (ox + w, oy + int(h * 0.55)),  # kanan-tengah
+        (ox + w // 2, oy + h),         # ujung bawah
+        (ox, oy + int(h * 0.55)),      # kiri-tengah
+    ]
+
+    dark = tuple(max(0, c - 90) for c in base_color)
+    lite = tuple(min(255, c + (90 if bright else 40)) for c in base_color)
+
+    # Plat dasar (gelap = bagian shield yang habis)
+    pygame.draw.polygon(surf, (*dark, 235), pts)
+
+    # Isi shield dari bawah sesuai ratio (clip pakai subsurface-rect)
+    if fill_ratio > 0:
+        fill_h = max(1, int(h * fill_ratio))
+        clip = pygame.Rect(0, oy + h - fill_h, w + 4, fill_h + 2)
+        surf.set_clip(clip)
+        pygame.draw.polygon(surf, (*base_color, 245), pts)
+        surf.set_clip(None)
+
+    # Emblem: garis silang kecil di tengah crest
+    cx0 = ox + w // 2
+    cy0 = oy + int(h * 0.42)
+    arm = max(2, size // 6)
+    pygame.draw.line(surf, (*lite, 230), (cx0 - arm, cy0), (cx0 + arm, cy0), 2)
+    pygame.draw.line(surf, (*lite, 230), (cx0, cy0 - arm), (cx0, cy0 + arm), 2)
+
+    # Border crest
+    pygame.draw.polygon(surf, (*lite, 255), pts, 2)
+    return surf
+
+
+def _draw_armor_crest(surface, cx, cy, size, base_color, fill_ratio,
+                      bright=False):
+    """Gambar armor crest kecil berpusat di (cx, cy). Di-cache per
+    (size, warna, bucket ratio, bright) — jauh lebih murah daripada
+    gelembung alpha lama."""
+    ratio_b = min(10, max(0, int(fill_ratio * 10 + 0.5)))  # bucket 0..10
+    key = ("armor_crest", size, base_color, ratio_b, bool(bright))
+    crest = _TOWER_SPRITE_CACHE.get(key)
+    if crest is None:
+        crest = _build_armor_crest(size, base_color, ratio_b / 10.0, bright)
+        if len(_TOWER_SPRITE_CACHE) > 500:
+            _TOWER_SPRITE_CACHE.pop(next(iter(_TOWER_SPRITE_CACHE)))
+        _TOWER_SPRITE_CACHE[key] = crest
+    surface.blit(crest, (int(cx) - crest.get_width() // 2,
+                         int(cy) - crest.get_height() // 2))
+
+
 class Tower:
     def __init__(self, x, y, team, tower_kind="outer", lane=None):
         self.x = x
@@ -923,9 +989,9 @@ class Tower:
                                (40, 40), 30)
             surface.blit(flash_surf, (x - 40, y - 40))
 
-        # Shield bubble effect
+        # Shield armor crest (pengganti bubble jelek)
         if TOWER_SHIELD_ENABLED and self.shield > 0:
-            self._draw_shield_bubble(surface, x, y)
+            self._draw_shield_crest(surface, x, y)
 
         # ═══ REGEN SHIELD indicator (pulsing green ring) ═══
         if getattr(self, "regen_shield_active", False):
@@ -1092,86 +1158,30 @@ class Tower:
         for b in self.bullets:
             b.draw(surface)
 
-    def _draw_shield_bubble(self, surface, x, y):
-        """Draw shield bubble effect around tower"""
-        if self.shield <= 0:
+    def _draw_shield_crest(self, surface, x, y):
+        """ARMOR CREST kecil di samping tower sebagai indikator shield.
+
+        Menggantikan gelembung transparan lama (jelek & mahal render).
+        Crest terisi sesuai sisa shield dan menyala saat regen.
+        """
+        if self.shield <= 0 or self.shield_max <= 0:
             return
 
         shield_ratio = self.shield / self.shield_max
         if shield_ratio <= 0:
             return
 
-        bubble_r = 30 + self.level * 2
-        bubble_cy = y - 15
-
         base_color = (SHIELD_COLOR_BLUE if self.team == "blue"
                       else SHIELD_COLOR_RED)
 
-        pulse = math.sin(self.timer * 0.15) * 0.15 + 0.85
-        base_alpha = int(60 * shield_ratio * pulse)
+        # Posisi: sedikit di kanan-atas badan tower, dekat HP bar
+        crest_size = 14
+        crest_x = x + 26
+        crest_y = y - 28 - self.level
 
-        if self.shield_regen_flash > 0:
-            base_alpha = min(120, base_alpha + 40)
-
-        # Bubble di-cache: sama persis selama (radius, tim, alpha
-        # bucket, level ratio) tidak berubah. Pulse hanya bergeser
-        # beberapa bucket per detik -> hemat alokasi + 10+ draw call.
-        alpha_b = base_alpha // 15
-        ratio_b = 0 if shield_ratio <= 0.3 else (1 if shield_ratio <= 0.5
-                                                 else 2)
-        # Gelembung perisai transparan: 5 tower = 6 ms/frame di HP.
-        # Colorkey tidak cocok (efeknya memang harus tembus pandang),
-        # jadi di perangkat lambat digambar sebagai 2 lingkaran garis.
-        try:
-            from mobile.perf import Quality as _Qs
-            _cheap_s = _Qs.cheap_alpha
-        except Exception:
-            _cheap_s = True
-        if not _cheap_s:
-            col = (120, 200, 255) if self.team == "blue" else (255, 160, 140)
-            pygame.draw.circle(surface, col, (x, bubble_cy), bubble_r, 2)
-            if shield_ratio > 0.5:
-                pygame.draw.circle(surface, col, (x, bubble_cy),
-                                   bubble_r + 3, 1)
-            return
-
-        key = ("tower_shield", bubble_r, self.team, alpha_b, ratio_b)
-        bubble_surf = _TOWER_SPRITE_CACHE.get(key)
-        if bubble_surf is None:
-            bubble_surf = pygame.Surface(
-                (bubble_r * 2 + 10, bubble_r * 2 + 10), pygame.SRCALPHA)
-            base_alpha_q = alpha_b * 15
-            for i in range(5):
-                r = bubble_r + i * 2
-                alpha = max(0, base_alpha_q - i * 12)
-                if alpha > 0:
-                    pygame.draw.circle(bubble_surf,
-                                       (*base_color, alpha),
-                                       (bubble_r + 5, bubble_r + 5),
-                                       r, 1)
-
-            if ratio_b >= 1:
-                pygame.draw.circle(bubble_surf,
-                                   (*base_color, base_alpha_q + 40),
-                                   (bubble_r + 5, bubble_r + 5),
-                                   bubble_r, 2)
-
-            if ratio_b >= 2:
-                hex_alpha = int(30 * shield_ratio * pulse)
-                for hex_angle in range(0, 360, 60):
-                    hx = bubble_r + 5 + int(math.cos(
-                        math.radians(hex_angle)) * bubble_r * 0.7)
-                    hy = bubble_r + 5 + int(math.sin(
-                        math.radians(hex_angle)) * bubble_r * 0.7)
-                    pygame.draw.circle(bubble_surf,
-                                       (255, 255, 255, hex_alpha),
-                                       (hx, hy), 3)
-            if len(_TOWER_SPRITE_CACHE) > 500:
-                _TOWER_SPRITE_CACHE.pop(next(iter(_TOWER_SPRITE_CACHE)))
-            _TOWER_SPRITE_CACHE[key] = bubble_surf
-
-        surface.blit(bubble_surf,
-                     (x - bubble_r - 5, bubble_cy - bubble_r - 5))
+        _draw_armor_crest(surface, crest_x, crest_y, crest_size,
+                          base_color, shield_ratio,
+                          bright=self.shield_regen_flash > 0)
 
     def _draw_regen_indicator(self, surface, x, y):
         """Small green plus icon showing regen active"""
@@ -1693,9 +1703,9 @@ class Castle:
         final_y = int(self.y - new_h + 35)
         surface.blit(scaled, (final_x, final_y))
 
-        # ═══ CASTLE SHIELD BUBBLE (before wave 10) ═══
+        # ═══ CASTLE SHIELD CREST (before wave 10) ═══
         if getattr(self, 'shield_active', False) and getattr(self, 'shield', 0) > 0:
-            self._draw_castle_shield(surface, final_x + new_w//2, final_y + new_h//2)
+            self._draw_castle_shield(surface, final_x + new_w//2, final_y - 10)
 
         if not _cheap:
             try:
@@ -1710,46 +1720,30 @@ class Castle:
             b.draw(surface)
 
     def _draw_castle_shield(self, surface, cx, cy):
-        """Draw protective shield bubble around castle - English visual"""
+        """ARMOR CREST kecil di atas castle sebagai indikator shield.
+
+        Menggantikan gelembung multi-ring + glow lama yang jelek dan
+        mahal render. Crest terisi sesuai sisa shield, berdenyut halus,
+        dan menyala saat regen.
+        """
         if not getattr(self, 'shield_active', False):
             return
         shield_ratio = self.shield / max(1, self.shield_max)
         if shield_ratio <= 0:
             return
-        # Shield bubble - pulsating
-        pulse = math.sin(self.pulse * 1.2) * 0.15 + 0.85
-        r = int(90 + self.level * 6)
+
         try:
             col = CASTLE_SHIELD_COLOR_BLUE if self.team == "blue" else CASTLE_SHIELD_COLOR_RED
         except Exception:
             col = (100, 200, 255) if self.team == "blue" else (255, 120, 120)
 
-        alpha = int(70 * shield_ratio * pulse)
-        if getattr(self, 'shield_regen_flash', 0) > 0:
-            alpha = min(140, alpha + 50)
+        # Denyut halus posisi vertikal (bukan alpha mahal)
+        bob = int(math.sin(self.pulse * 1.2) * 2)
+        crest_size = 18
+        bright = getattr(self, 'shield_regen_flash', 0) > 0
 
-        # Draw multiple rings
-        for i in range(3):
-            ring_r = r + i * 6
-            ring_alpha = max(0, alpha - i * 20)
-            if ring_alpha <= 0:
-                continue
-            pygame.draw.circle(surface, (*col, ring_alpha) if len(col)==3 else col, (cx, cy), ring_r, 2)
-
-        # Inner glow
-        glow_surf = pygame.Surface((r*2, r*2), pygame.SRCALPHA)
-        pygame.draw.circle(glow_surf, (*col, int(alpha*0.5)), (r, r), r)
-        surface.blit(glow_surf, (cx - r, cy - r))
-
-        # Shield text indicator - English
-        if shield_ratio > 0.3:
-            try:
-                from _render import get_font
-                f = get_font(12, 'body_bold')
-                txt = f.render("SHIELD", True, col)
-                surface.blit(txt, (cx - txt.get_width()//2, cy - r - 18))
-            except Exception:
-                pass
+        _draw_armor_crest(surface, cx, cy + bob, crest_size,
+                          tuple(col), shield_ratio, bright=bright)
 
     def _draw_hp_bar(self, surface):
         """HP bar + shield bar - fixed layout no overlap"""

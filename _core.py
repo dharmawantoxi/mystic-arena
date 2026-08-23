@@ -572,21 +572,21 @@ ARCHER_LEVELS = {
         "desc": "DOUBLE SHOT!", "double_shot": True},
 }
 
-# ═══ CANNON PATH (High AOE + BURNING) - BUFFED attack speed slightly ═══
+# ═══ CANNON PATH (High AOE + BURNING) - BUFFED attack speed & RANGE ═══
 CANNON_LEVELS = {
-    2: {"hp": 1200, "damage": 45,  "range": 160, "cd": 44, "cost": 175,
+    2: {"hp": 1200, "damage": 45,  "range": 200, "cd": 44, "cost": 175,
         "desc": "Splash + Burn 8/s", "splash": 45,
         "burn_dps": 8,  "burn_duration": 120},
-    3: {"hp": 1500, "damage": 65,  "range": 170, "cd": 40, "cost": 325,
+    3: {"hp": 1500, "damage": 65,  "range": 215, "cd": 40, "cost": 325,
         "desc": "Big Boom + Burn 12/s", "splash": 55,
         "burn_dps": 12, "burn_duration": 150},
-    4: {"hp": 1900, "damage": 90,  "range": 180, "cd": 36, "cost": 550,
+    4: {"hp": 1900, "damage": 90,  "range": 230, "cd": 36, "cost": 550,
         "desc": "Heavy Cannon + Burn 16/s", "splash": 65,
         "burn_dps": 16, "burn_duration": 150},
-    5: {"hp": 2400, "damage": 125, "range": 190, "cd": 32, "cost": 850,
+    5: {"hp": 2400, "damage": 125, "range": 245, "cd": 32, "cost": 850,
         "desc": "Siege + Burn 22/s", "splash": 80,
         "burn_dps": 22, "burn_duration": 180},
-    6: {"hp": 3000, "damage": 170, "range": 200, "cd": 28, "cost": 1300,
+    6: {"hp": 3000, "damage": 170, "range": 260, "cd": 28, "cost": 1300,
         "desc": "DEVASTATOR! Burn 30/s", "splash": 100,
         "burn_dps": 30, "burn_duration": 180},
 }
@@ -646,8 +646,8 @@ TOWER_TYPE_INFO = {
     "cannon": {
         "name": "Cannon Tower",
         "icon": "💣",
-        "desc": "AOE + Burning DOT. Buffed speed.",
-        "special": "Burn DOT + Splash AOE",
+        "desc": "Long-range AOE + Burning DOT.",
+        "special": "Burn DOT + Splash AOE + Range",
     },
     "ice": {
         "name": "Ice Tower",
@@ -909,10 +909,10 @@ AI_MAX_HEROES = 5  # AI max 5 heroes (including boss heroes) - matches player li
 # ═══════════════════════════════════════
 CASTLE_SHIELD_ENABLED = True
 CASTLE_SHIELD_WAVE_THRESHOLD = 10      # Shield active before wave 10
-CASTLE_SHIELD_DAMAGE_REDUCTION = 0.75 # 75% damage reduction before wave 10
-CASTLE_SHIELD_HP_RATIO = 0.6          # Shield HP = 60% max HP
+CASTLE_SHIELD_DAMAGE_REDUCTION = 0.88 # 88% damage reduction before wave 10 (boosted)
+CASTLE_SHIELD_HP_RATIO = 1.0          # Shield HP = 100% max HP (boosted)
 CASTLE_SHIELD_REGEN_DELAY = 120       # 2 sec no damage -> regen
-CASTLE_SHIELD_REGEN_RATE = 2.0        # Shield regen per frame
+CASTLE_SHIELD_REGEN_RATE = 3.5        # Shield regen per frame (boosted)
 CASTLE_SHIELD_COLOR_BLUE = (100, 200, 255)
 CASTLE_SHIELD_COLOR_RED = (255, 120, 120)
 
