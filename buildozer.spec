@@ -91,7 +91,11 @@ android.accept_sdk_license = True
 android.allow_backup = True
 android.backup_rules = backup_rules.xml
 android.res_xml = data_extraction_rules.xml
-android.extra_manifest_application_arguments = manifest_application_arguments.xml
+# JANGAN pakai android.extra_manifest_application_arguments untuk
+# dataExtractionRules di Buildozer 1.5.0: argumennya dikutip sebagai
+# teks literal dan membuat AndroidManifest.xml tidak valid. Atribut
+# Android 12+ itu ditambahkan oleh p4a.hook di bawah setelah manifest
+# dirender oleh python-for-android.
 
 # aab untuk Play Store, apk untuk uji manual
 android.release_artifact = aab
@@ -104,6 +108,7 @@ android.debug_artifact = apk
 # ═══════════════════════════════════════════════════════
 p4a.bootstrap = sdl2
 p4a.local_recipes = ./p4a-recipes
+p4a.hook = tools/p4a_hooks.py
 
 # Opsional: matikan logcat spam dari SDL
 android.logcat_filters = *:S python:D SDL:D
