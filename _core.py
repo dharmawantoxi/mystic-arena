@@ -64,6 +64,13 @@ TOWER_REGEN_SHIELD_COST = 850         # setara upgrade tower ke level 5
 TOWER_REGEN_SHIELD_DELAY = 180        # 3 detik tanpa damage -> regen shield
 TOWER_REGEN_SHIELD_RATE = 1.8         # shield/frame saat regen
 
+# ═══ REPLAY REWARD BERULANG (UNLIMITED) ═══
+# Replay menang PERTAMA : meta_gold_reward_replay (1500) — sekali saja.
+# Replay menang BERIKUTNYA: bonus di bawah, SETIAP replay win, tanpa
+# batas jumlah (dulu 0 gold). Bisa dioverride per-level lewat
+# "meta_gold_reward_replay_repeat" di konfigurasi level.
+META_REPLAY_REPEAT_REWARD = 200
+
 # ── LAYAR ──
 def _PANEL_AKTIF():
     """True kalau panel kanan tersedia (layar lebih lebar dari 16:9)."""
@@ -1942,13 +1949,15 @@ class Game:
         # - Kalah                          : 0 gold
         # - Menang pertama kali level ini  : 3000 gold (dari level config)
         # - Replay menang (pertama kali)   : 1500 gold (sekali saja)
-        # - Replay menang berikutnya       : 0 gold
+        # - Replay menang berikutnya       : 200 gold (UNLIMITED)
         if not victory:
             reward = 0
         else:
             cfg = self.level_config or {}
             win_reward = int(cfg.get("meta_gold_reward_win", 3000))
             replay_reward = int(cfg.get("meta_gold_reward_replay", 1500))
+            repeat_reward = int(cfg.get("meta_gold_reward_replay_repeat",
+                                        META_REPLAY_REPEAT_REWARD))
             completed = self.save_data.setdefault('completed_levels', [])
             replay_counts = self.save_data.setdefault(
                 "replay_reward_counts", {})
@@ -1956,7 +1965,8 @@ class Game:
             replay_count = int(replay_counts.get(replay_key, 0))
             if getattr(self, "is_replay", False) or \
                     self.level_number in completed:
-                reward = replay_reward if replay_count == 0 else 0
+                reward = (replay_reward if replay_count == 0
+                          else repeat_reward)
                 replay_counts[replay_key] = replay_count + 1
             else:
                 reward = win_reward
