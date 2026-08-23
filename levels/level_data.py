@@ -237,9 +237,9 @@ LEVEL_7 = {
 
     # Mini boss
     "mini_bosses": {
-        1: "malzareth",  # Wave 10: Malzareth (The Chainbound)
-        2: "akashari",   # Wave 18: Akashari (The Painbringer)
-        3: "vorenmarr",  # Wave 25: Vorenmarr (The Chaos Binder)
+        10: "malzareth",  # Wave 10: Malzareth (The Chainbound)
+        15: "akashari",   # Wave 18: Akashari (The Painbringer)
+        25: "vorenmarr",  # Wave 25: Vorenmarr (The Chaos Binder)
     },
 
     # True boss
