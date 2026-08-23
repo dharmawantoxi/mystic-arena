@@ -992,16 +992,10 @@ class Tower:
         # Shield armor crest (pengganti bubble jelek)
         if TOWER_SHIELD_ENABLED and self.shield > 0:
             self._draw_shield_crest(surface, x, y)
-
-        # ═══ REGEN SHIELD indicator (pulsing green ring) ═══
-        if getattr(self, "regen_shield_active", False):
-            pulse = math.sin(self.timer * 0.15) * 2
-            rr = int(34 + self.level + pulse)
-            try:
-                pygame.draw.circle(surface, (120, 255, 140),
-                                   (int(x), int(y)), rr, 2)
-            except Exception:
-                pass
+        # CATATAN: dulu ada pulsing green ring saat regen_shield aktif —
+        # dihapus karena mengganggu visual (lihat git history). Indikator
+        # regen kini cukup lewat armor crest yang menyala (bright) + tanda
+        # plus kecil di samping HP bar.
 
         # Draw tower body
         self._draw_tower_body(surface, x, y)

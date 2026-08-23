@@ -64,6 +64,13 @@ TOWER_REGEN_SHIELD_COST = 850         # setara upgrade tower ke level 5
 TOWER_REGEN_SHIELD_DELAY = 180        # 3 detik tanpa damage -> regen shield
 TOWER_REGEN_SHIELD_RATE = 1.8         # shield/frame saat regen
 
+# ═══ REPLAY REWARD BERULANG (UNLIMITED) ═══
+# Replay menang PERTAMA : meta_gold_reward_replay (1500) — sekali saja.
+# Replay menang BERIKUTNYA: bonus di bawah, SETIAP replay win, tanpa
+# batas jumlah (dulu 0 gold). Bisa dioverride per-level lewat
+# "meta_gold_reward_replay_repeat" di konfigurasi level.
+META_REPLAY_REPEAT_REWARD = 200
+
 # ── LAYAR ──
 def _PANEL_AKTIF():
     """True kalau panel kanan tersedia (layar lebih lebar dari 16:9)."""
@@ -572,21 +579,24 @@ ARCHER_LEVELS = {
         "desc": "DOUBLE SHOT!", "double_shot": True},
 }
 
-# ═══ CANNON PATH (High AOE + BURNING) - BUFFED attack speed & RANGE ═══
+# ═══ CANNON PATH (High AOE + BURNING) - REBALANCED: range DIPOTONG ═══
+# Nerf 2026-08: range cannon dulu 200..260 (terpanjang di game + damage
+# tertinggi + splash + burn = OP). Sekarang 165..210 — cannon jadi
+# siege AOE jarak MENENGAH; Archer (230) tetap raja range single-target.
 CANNON_LEVELS = {
-    2: {"hp": 1200, "damage": 45,  "range": 200, "cd": 44, "cost": 175,
+    2: {"hp": 1200, "damage": 45,  "range": 165, "cd": 44, "cost": 175,
         "desc": "Splash + Burn 8/s", "splash": 45,
         "burn_dps": 8,  "burn_duration": 120},
-    3: {"hp": 1500, "damage": 65,  "range": 215, "cd": 40, "cost": 325,
+    3: {"hp": 1500, "damage": 65,  "range": 175, "cd": 40, "cost": 325,
         "desc": "Big Boom + Burn 12/s", "splash": 55,
         "burn_dps": 12, "burn_duration": 150},
-    4: {"hp": 1900, "damage": 90,  "range": 230, "cd": 36, "cost": 550,
+    4: {"hp": 1900, "damage": 90,  "range": 185, "cd": 36, "cost": 550,
         "desc": "Heavy Cannon + Burn 16/s", "splash": 65,
         "burn_dps": 16, "burn_duration": 150},
-    5: {"hp": 2400, "damage": 125, "range": 245, "cd": 32, "cost": 850,
+    5: {"hp": 2400, "damage": 125, "range": 195, "cd": 32, "cost": 850,
         "desc": "Siege + Burn 22/s", "splash": 80,
         "burn_dps": 22, "burn_duration": 180},
-    6: {"hp": 3000, "damage": 170, "range": 260, "cd": 28, "cost": 1300,
+    6: {"hp": 3000, "damage": 170, "range": 210, "cd": 28, "cost": 1300,
         "desc": "DEVASTATOR! Burn 30/s", "splash": 100,
         "burn_dps": 30, "burn_duration": 180},
 }
@@ -646,8 +656,8 @@ TOWER_TYPE_INFO = {
     "cannon": {
         "name": "Cannon Tower",
         "icon": "💣",
-        "desc": "Long-range AOE + Burning DOT.",
-        "special": "Burn DOT + Splash AOE + Range",
+        "desc": "Mid-range AOE + Burning DOT.",
+        "special": "Burn DOT + Splash AOE",
     },
     "ice": {
         "name": "Ice Tower",
@@ -1939,13 +1949,15 @@ class Game:
         # - Kalah                          : 0 gold
         # - Menang pertama kali level ini  : 3000 gold (dari level config)
         # - Replay menang (pertama kali)   : 1500 gold (sekali saja)
-        # - Replay menang berikutnya       : 0 gold
+        # - Replay menang berikutnya       : 200 gold (UNLIMITED)
         if not victory:
             reward = 0
         else:
             cfg = self.level_config or {}
             win_reward = int(cfg.get("meta_gold_reward_win", 3000))
             replay_reward = int(cfg.get("meta_gold_reward_replay", 1500))
+            repeat_reward = int(cfg.get("meta_gold_reward_replay_repeat",
+                                        META_REPLAY_REPEAT_REWARD))
             completed = self.save_data.setdefault('completed_levels', [])
             replay_counts = self.save_data.setdefault(
                 "replay_reward_counts", {})
@@ -1953,7 +1965,8 @@ class Game:
             replay_count = int(replay_counts.get(replay_key, 0))
             if getattr(self, "is_replay", False) or \
                     self.level_number in completed:
-                reward = replay_reward if replay_count == 0 else 0
+                reward = (replay_reward if replay_count == 0
+                          else repeat_reward)
                 replay_counts[replay_key] = replay_count + 1
             else:
                 reward = win_reward
