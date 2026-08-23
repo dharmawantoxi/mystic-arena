@@ -11449,6 +11449,87 @@ TRUE_BOSS_TYPES = {
 }
 
 
+def _apply_boss_rebalancing():
+    """
+    Rebalance semua mini boss dan true boss:
+    - Mini Boss: HP & damage di-boost terutama di level awal/menengah agar
+      tidak terlalu mudah dikalahkan oleh tower dan hero pemain.
+    - True Boss: HP & damage di-boost signifikan agar menjadi pertempuran akhir
+      yang epik, menantang, dan seimbang.
+    - hero_unlock tetap dipertahankan sesuai aslinya untuk hero unlock pemain.
+    """
+    # Rebalance Mini Bosses
+    for btype, bdata in MINI_BOSS_TYPES.items():
+        hu = bdata.get("hero_unlock")
+        hp = bdata.get("hp", 3000)
+        dmg = bdata.get("damage", 50)
+        ab_dmg = bdata.get("ability_damage", 100)
+
+        if hp < 10000:
+            new_hp = max(7500, int(hp * 2.2))
+        elif hp < 20000:
+            new_hp = int(hp * 1.6)
+        elif hp < 40000:
+            new_hp = int(hp * 1.4)
+        else:
+            new_hp = int(hp * 1.3)
+
+        if dmg < 100:
+            new_dmg = max(85, int(dmg * 1.4))
+        elif dmg < 200:
+            new_dmg = int(dmg * 1.25)
+        else:
+            new_dmg = int(dmg * 1.2)
+
+        bdata["hp"] = new_hp
+        bdata["damage"] = new_dmg
+        bdata["ability_damage"] = max(ab_dmg, int(ab_dmg * 1.25))
+
+        for k in ["skill_q_damage", "skill_w_damage", "skill_e_damage", "skill_r_damage"]:
+            if k in bdata and bdata[k] > 0:
+                bdata[k] = int(bdata[k] * 1.25)
+
+        if hu:
+            bdata["hero_unlock"] = hu
+
+    # Rebalance True Bosses
+    for btype, bdata in TRUE_BOSS_TYPES.items():
+        hu = bdata.get("hero_unlock")
+        hp = bdata.get("hp", 15000)
+        dmg = bdata.get("damage", 100)
+        ab_dmg = bdata.get("ability_damage", 200)
+
+        if hp < 20000:
+            new_hp = max(36000, int(hp * 2.4))
+        elif hp < 40000:
+            new_hp = int(hp * 2.0)
+        elif hp < 70000:
+            new_hp = int(hp * 1.6)
+        else:
+            new_hp = int(hp * 1.45)
+
+        if dmg < 120:
+            new_dmg = max(145, int(dmg * 1.5))
+        elif dmg < 250:
+            new_dmg = int(dmg * 1.3)
+        else:
+            new_dmg = int(dmg * 1.25)
+
+        bdata["hp"] = new_hp
+        bdata["damage"] = new_dmg
+        bdata["ability_damage"] = max(ab_dmg, int(ab_dmg * 1.35))
+
+        for k in ["skill_q_damage", "skill_w_damage", "skill_e_damage", "skill_r_damage"]:
+            if k in bdata and bdata[k] > 0:
+                bdata[k] = int(bdata[k] * 1.35)
+
+        if hu:
+            bdata["hero_unlock"] = hu
+
+
+_apply_boss_rebalancing()
+
+
 def get_all_boss_types():
     """Get gabungan semua boss types"""
     all_bosses = {}

@@ -5042,9 +5042,10 @@ import math
 
 
 class AIPlayer:
-    def __init__(self, team="red", level_number=1):
+    def __init__(self, team="red", level_number=1, enemy_scaling_enabled=False):
         self.team = team
         self.level_number = level_number
+        self.enemy_scaling_enabled = enemy_scaling_enabled
         self.gold = STARTING_GOLD
 
         self.think_timer = AI_THINK_INTERVAL

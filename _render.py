@@ -2855,14 +2855,26 @@ class LevelIntroScreen:
 
         # ═══ DIFFICULTY BARS ═══
         diff_y = cy_start + 370
+        try:
+            from _core import GameSettings
+            is_hard = GameSettings().is_hard_mode()
+        except Exception:
+            is_hard = False
+
+        if is_hard:
+            diff_title = f"DIFFICULTY: HARD (SCALING ON)"
+            diff_level = min(5, max(1, int(self.hp_mult * 2.5)))
+            diff_color = (255, 120, 100)
+        else:
+            diff_title = "DIFFICULTY: NORMAL (SCALING OFF)"
+            diff_level = 1
+            diff_color = (100, 220, 150)
+
         diff_label = self.font_tiny.render(
-            "DIFFICULTY", True, (150, 170, 190))
+            diff_title, True, diff_color)
         diff_label.set_alpha(alpha)
         diff_label_rect = diff_label.get_rect(center=(cx, diff_y))
         surface.blit(diff_label, diff_label_rect)
-
-        # Difficulty level (based on hp_mult)
-        diff_level = min(5, int(self.hp_mult * 2.5))
 
         bar_start_x = cx - (5 * 22) // 2
         for i in range(5):

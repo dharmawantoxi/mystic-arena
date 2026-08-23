@@ -1169,6 +1169,21 @@ class Game:
 
         self.gold = cfg["starting_gold"]
         self.score = 0
+
+        # ═══ DIFFICULTY MODE & ENEMY SCALING ═══
+        self.settings = GameSettings()
+        self.difficulty = self.settings.difficulty  # "normal" or "hard"
+        self.enemy_scaling_enabled = (self.difficulty == "hard")
+
+        if self.enemy_scaling_enabled:
+            self.enemy_hp_mult = cfg.get("enemy_hp_mult", 1.0) * 1.15
+            self.enemy_damage_mult = cfg.get("enemy_damage_mult", 1.0) * 1.10
+            self.enemy_speed_mult = cfg.get("enemy_speed_mult", 1.0)
+        else:
+            self.enemy_hp_mult = 1.0
+            self.enemy_damage_mult = 1.0
+            self.enemy_speed_mult = 1.0
+
         self.ai = AIPlayer("red", level_number=self.level_number)
         self.gold_timer = 0
         self.minions = []
@@ -1189,7 +1204,8 @@ class Game:
         # Apply castle levels dari config
         while self.blue_base.level < cfg["starting_castle_level"]:
             self.blue_base.upgrade()
-        while self.red_base.level < cfg["castle_start_level"]:
+        red_castle_start = cfg["castle_start_level"] if self.enemy_scaling_enabled else 1
+        while self.red_base.level < red_castle_start:
             self.red_base.upgrade()
 
         self.bases = [self.blue_base, self.red_base]
@@ -1453,13 +1469,13 @@ class Game:
             m = Minion(mtype, "red", lane,
                        self.red_base.level, lane_path)
 
-            # ═══ APPLY LEVEL SCALING (enemy only) ═══
-            cfg = self.level_config
-            m.max_hp = int(m.max_hp * cfg["enemy_hp_mult"])
-            m.hp = m.max_hp
-            m.damage = int(m.damage * cfg["enemy_damage_mult"])
-            m.speed *= cfg["enemy_speed_mult"]
-            m.base_speed = m.speed
+            # ═══ APPLY LEVEL SCALING (enemy only - Hard mode only) ═══
+            if getattr(self, "enemy_scaling_enabled", False):
+                m.max_hp = int(m.max_hp * self.enemy_hp_mult)
+                m.hp = m.max_hp
+                m.damage = int(m.damage * self.enemy_damage_mult)
+                m.speed *= self.enemy_speed_mult
+                m.base_speed = m.speed
 
             self.minions.append(m)
 
@@ -1495,11 +1511,13 @@ class Game:
         from bosses.base_boss import Boss
         lane_path = self.map_renderer.get_lane_path("mid")
         self.active_boss = Boss(boss_type, lane_path)
+        if getattr(self, "enemy_scaling_enabled", False):
+            self.active_boss.apply_scaling(self.enemy_hp_mult, self.enemy_damage_mult, self.enemy_speed_mult)
 
         from _render import BossIntroCinematic
         self.boss_intro = BossIntroCinematic(
             self.active_boss, SCREEN_WIDTH, SCREEN_HEIGHT)
-        print(f"[MINI BOSS] {self.active_boss.name} spawned")
+        print(f"[MINI BOSS] {self.active_boss.name} spawned (scaling={getattr(self, 'enemy_scaling_enabled', False)})")
 
     def _roll_mini_boss_schedule(self):
         """Acak wave kemunculan mini boss tiap run.
@@ -1526,6 +1544,7 @@ class Game:
         """
         AI castle auto-upgrade berdasarkan wave untuk balancing.
         Player harus proactive upgrade sendiri.
+        Aktif di Mode Normal dan Mode Hard.
         """
         target_level = 1
         if self.wave_number >= 4:
@@ -1706,9 +1725,11 @@ class Game:
                     from bosses.base_boss import Boss
                     lane_path = self.map_renderer.get_lane_path("mid")
                     self.active_boss = Boss(true_boss_type, lane_path)
+                    if getattr(self, "enemy_scaling_enabled", False):
+                        self.active_boss.apply_scaling(self.enemy_hp_mult, self.enemy_damage_mult, self.enemy_speed_mult)
                     self.true_boss_spawned = True
                     print(f"[TRUE BOSS Lv.{self.level_number}] "
-                          f"{self.active_boss.name} spawned!")
+                          f"{self.active_boss.name} spawned! (scaling={getattr(self, 'enemy_scaling_enabled', False)})")
 
                     # ═══ TRIGGER BOSS INTRO (TRUE BOSS) ═══
                     from _render import BossIntroCinematic
@@ -2210,8 +2231,8 @@ class Game:
         font = get_font(20)
         # Calculate needed width: icon 30 + text width + padding
         needed_w = 40 + font.size(gold_str)[0] + 20
-        width = max(140, min(200, needed_w))
-        height = 42
+        width = max(155, min(225, needed_w))
+        height = 56
 
         panel = pygame.Surface((width, height), pygame.SRCALPHA)
         panel.fill((8, 7, 12, 225))
@@ -2231,7 +2252,14 @@ class Game:
 
         # Income on second line, left aligned under gold
         income = small_font.render(f"+{GOLD_PER_SECOND}/s income", True, (196, 241, 168))
-        surface.blit(income, (x + 38, y + 26))
+        surface.blit(income, (x + 38, y + 25))
+
+        # Difficulty mode badge on third line
+        is_hard = getattr(self, "enemy_scaling_enabled", False)
+        mode_str = "HARD (Scaling ON)" if is_hard else "NORMAL (Scaling OFF)"
+        mode_col = (255, 120, 120) if is_hard else (120, 230, 150)
+        mode_badge = small_font.render(mode_str, True, mode_col)
+        surface.blit(mode_badge, (x + 38, y + 39))
 
     def draw(self):
         """Main draw method - delegate ke UI Renderer"""
@@ -3138,9 +3166,18 @@ class Menu:
         # ═══ TITLE (lebih kecil & atas) ═══
         _tf_lvl = title_font(72)
         title = _tf_lvl.render("SELECT LEVEL", True, (255, 220, 100))
-        title_rect = title.get_rect(center=(cx, 60))
+        title_rect = title.get_rect(center=(cx, 52))
         self._blit_shadow(self.screen, title, title_rect.topleft)
         self.screen.blit(title, title_rect)
+
+        # ═══ DIFFICULTY MODE SELECTOR ═══
+        is_hard = GameSettings().is_hard_mode()
+        diff_text = "⚔ MODE: HARD (ENEMY SCALING ON)" if is_hard else "🛡 MODE: NORMAL (ENEMY SCALING OFF)"
+        diff_color = (255, 95, 95) if is_hard else (90, 225, 140)
+        self._draw_menu_button("toggle_level_difficulty", diff_text,
+                               cx, 98,
+                               diff_color, width=440, height=32,
+                               label_font_size=20)
 
         # ═══ PROGRESS INFO ═══
         total = len(ALL_LEVELS)
@@ -3148,14 +3185,14 @@ class Menu:
         progress_text = self.font_small.render(
             f"COMPLETED: {done_count} / {total}",
             True, (150, 220, 255))
-        progress_rect = progress_text.get_rect(center=(cx, 140))
+        progress_rect = progress_text.get_rect(center=(cx, 138))
         self.screen.blit(progress_text, progress_rect)
 
         # Progress bar
         bar_w = 300
         bar_h = 6
         bx = cx - bar_w // 2
-        by = 155
+        by = 153
 
         pygame.draw.rect(self.screen, (40, 45, 60),
                          (bx, by, bar_w, bar_h), border_radius=3)
@@ -3372,13 +3409,21 @@ class Menu:
         if is_unlocked:
             info_y = sep_y + 8
 
-            # Difficulty
-            diff_label = self.font_tiny.render(
-                "DIFFICULTY", True, (150, 160, 180))
-            self.screen.blit(diff_label, (x + 15, info_y))
-
-            hp_mult = level.get("enemy_hp_mult", 1.0)
-            diff_level = min(5, int(hp_mult * 2.5))
+            # Difficulty (Normal vs Hard)
+            is_hard = GameSettings().is_hard_mode()
+            if is_hard:
+                hp_mult = level.get("enemy_hp_mult", 1.0)
+                scaling_pct = int(round((hp_mult - 1.0) * 100))
+                diff_title = f"HARD (+{scaling_pct}%)" if scaling_pct > 0 else "HARD (ON)"
+                diff_label = self.font_tiny.render(
+                    diff_title, True, (255, 120, 100))
+                self.screen.blit(diff_label, (x + 15, info_y))
+                diff_level = min(5, max(1, int(hp_mult * 2.5)))
+            else:
+                diff_label = self.font_tiny.render(
+                    "NORMAL (OFF)", True, (100, 220, 150))
+                self.screen.blit(diff_label, (x + 15, info_y))
+                diff_level = 1
 
             for i in range(5):
                 bar_x = x + 15 + i * 18
@@ -4707,8 +4752,17 @@ class Menu:
 
         settings = GameSettings()
 
-        # Screen Shake toggle
+        # Difficulty Mode
         y = gameplay_y + 45
+        self._draw_option_setting(
+            col2_x, y, 340,
+            "Difficulty",
+            "HARD (ON)" if settings.is_hard_mode() else "NORMAL (OFF)",
+            "difficulty",
+            value_w=140)
+
+        # Screen Shake toggle
+        y += 50
         self._draw_toggle_setting(
             col2_x, y, 340,
             "Screen Shake",
@@ -4724,7 +4778,7 @@ class Menu:
             "toggle_damage")
 
         # Game Speed
-        y += 60
+        y += 50
         self._draw_option_setting(
             col2_x, y, 340,
             "Game Speed",
@@ -4853,14 +4907,14 @@ class Menu:
         self.buttons[setting_id] = toggle_rect
 
     def _draw_option_setting(self, x, y, width, label, current_value,
-                             setting_id):
+                             setting_id, value_w=120):
         """Draw option cycler setting (dengan tombol < >)"""
         # Label
         label_text = self.font_small.render(label, True, WHITE)
         self.screen.blit(label_text, (x, y + 10))
 
         # Value display (tengah)
-        value_bg_w = 120
+        value_bg_w = value_w
         value_bg_h = 30
         value_bg_x = x + width - value_bg_w - 40
         value_bg_y = y + 6
@@ -5192,9 +5246,16 @@ class Menu:
 
         # Title
         title = self.font_title.render("PAUSED", True, (255, 220, 100))
-        title_rect = title.get_rect(center=(cx, panel_y + 62))
+        title_rect = title.get_rect(center=(cx, panel_y + 55))
         self._blit_shadow(self.screen, title, title_rect.topleft)
         self.screen.blit(title, title_rect)
+
+        # Mode Badge
+        is_hard = GameSettings().is_hard_mode()
+        mode_str = "MODE: HARD (SCALING ON)" if is_hard else "MODE: NORMAL (SCALING OFF)"
+        mode_col = (255, 120, 120) if is_hard else (100, 220, 150)
+        mode_surf = self.font_tiny.render(mode_str, True, mode_col)
+        self.screen.blit(mode_surf, mode_surf.get_rect(center=(cx, panel_y + 98)))
 
         # Decorative line
         pygame.draw.line(self.screen, (255, 220, 100),
@@ -5320,6 +5381,11 @@ class Menu:
                 pass
 
         # ═══ TOGGLES ═══
+        elif btn_id in ("difficulty_prev", "difficulty_next", "toggle_difficulty", "toggle_level_difficulty"):
+            settings = GameSettings()
+            settings.toggle_difficulty()
+            SoundManager().play('ui_click', volume_mult=0.4)
+
         elif btn_id == "toggle_shake":
             settings = GameSettings()
             settings.set_screen_shake(not settings.screen_shake_enabled)
@@ -6715,9 +6781,7 @@ class GameSettings:
         self.voice_volume = 0.5
 
         # Gameplay
-        # Screen shake DEFAULT OFF: efeknya menambah ~1.3-1.8 ms
-        # per frame (render lewat Surface perantara + blit ulang
-        # full-screen). Bisa dinyalakan lagi di menu Settings.
+        self.difficulty = "normal"  # "normal" (Scaling OFF) or "hard" (Scaling ON)
         self.screen_shake_enabled = False
         self.damage_numbers_enabled = True
         self.game_speed = 1.0  # 0.5, 1.0, 1.5, 2.0
@@ -6739,6 +6803,7 @@ class GameSettings:
                 self.bgm_volume = data.get('bgm_volume', 0.35)
                 self.voice_volume = data.get('voice_volume', 0.5)
 
+                self.difficulty = data.get('difficulty', 'normal')
                 self.screen_shake_enabled = data.get(
                     'screen_shake_enabled', False)
                 self.damage_numbers_enabled = data.get(
@@ -6761,6 +6826,7 @@ class GameSettings:
                 'sfx_volume': self.sfx_volume,
                 'bgm_volume': self.bgm_volume,
                 'voice_volume': self.voice_volume,
+                'difficulty': self.difficulty,
                 'screen_shake_enabled': self.screen_shake_enabled,
                 'damage_numbers_enabled':
                     self.damage_numbers_enabled,
@@ -6777,6 +6843,25 @@ class GameSettings:
     # ═══════════════════════════════════════
     # SETTERS (dengan auto-save)
     # ═══════════════════════════════════════
+
+    def set_difficulty(self, diff):
+        if diff in ["normal", "hard"]:
+            self.difficulty = diff
+            self.save()
+
+    def toggle_difficulty(self):
+        self.difficulty = "hard" if self.difficulty == "normal" else "normal"
+        self.save()
+        return self.difficulty
+
+    def get_difficulty_label(self):
+        return "HARD (Scaling ON)" if self.difficulty == "hard" else "NORMAL (Scaling OFF)"
+
+    def is_hard_mode(self):
+        return self.difficulty == "hard"
+
+    def is_scaling_on(self):
+        return self.difficulty == "hard"
 
     def set_screen_shake(self, enabled):
         self.screen_shake_enabled = enabled
