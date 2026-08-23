@@ -450,6 +450,10 @@ class Tower:
         self.no_damage_timer = 0
         self.shield_regen_flash = 0
         self.hp_regen_flash = 0
+        # ═══ REGEN SHIELD (fitur berbayar) ═══
+        # False default; aktif setelah pemain/AI membayar
+        # (Tower.activate_regen_shield()). Saat aktif, shield regen.
+        self.regen_shield_active = False
 
     def _apply_level_stats(self):
         """Apply stats berdasarkan tower_type & level"""
@@ -560,7 +564,36 @@ class Tower:
             if lvl in path:
                 total += path[lvl]["cost"]
 
+        # Refund separuh dari biaya Regen Shield kalau sudah dibeli.
+        if getattr(self, "regen_shield_active", False):
+            total += TOWER_REGEN_SHIELD_COST
+
         return int(total * 0.5)
+
+    # ═══════════════════════════════════════
+    # REGEN SHIELD (fitur berbayar)
+    # ═══════════════════════════════════════
+    def can_activate_regen_shield(self):
+        """True kalau tower level cukup & regen shield belum aktif."""
+        return (TOWER_REGEN_SHIELD_ENABLED
+                and self.level >= TOWER_REGEN_SHIELD_MIN_LEVEL
+                and not getattr(self, "regen_shield_active", False)
+                and self.alive)
+
+    def regen_shield_cost(self):
+        """Harga aktivasi Regen Shield (setara upgrade tower level 5)."""
+        return TOWER_REGEN_SHIELD_COST
+
+    def activate_regen_shield(self):
+        """Aktifkan regen shield. Kembalikan True kalau berhasil."""
+        if not self.can_activate_regen_shield():
+            return False
+        self.regen_shield_active = True
+        # Langsung isi shield penuh saat diaktifkan (efek instan).
+        self.shield = self.shield_max
+        self.shield_regen_flash = 6
+        self.upgrade_flash = 30
+        return True
 
     def update(self, all_units, all_towers, all_bases):
         if not self.alive:
@@ -629,6 +662,17 @@ class Tower:
                     self.hp = min(max_regen_hp,
                                   self.hp + TOWER_HP_REGEN_RATE)
                     self.hp_regen_flash = 3
+
+        # ═══ REGEN SHIELD (fitur berbayar) ═══
+        # Shield regen otomatis setelah jeda tanpa damage, HANYA kalau
+        # pemain/AI sudah membayar aktivasi Regen Shield.
+        if (TOWER_REGEN_SHIELD_ENABLED
+                and getattr(self, "regen_shield_active", False)):
+            if self.no_damage_timer >= TOWER_REGEN_SHIELD_DELAY:
+                if self.shield < self.shield_max:
+                    self.shield = min(self.shield_max,
+                                      self.shield + TOWER_REGEN_SHIELD_RATE)
+                    self.shield_regen_flash = 3
 
     def _find_target(self, enemies):
         best = None
@@ -882,6 +926,16 @@ class Tower:
         # Shield bubble effect
         if TOWER_SHIELD_ENABLED and self.shield > 0:
             self._draw_shield_bubble(surface, x, y)
+
+        # ═══ REGEN SHIELD indicator (pulsing green ring) ═══
+        if getattr(self, "regen_shield_active", False):
+            pulse = math.sin(self.timer * 0.15) * 2
+            rr = int(34 + self.level + pulse)
+            try:
+                pygame.draw.circle(surface, (120, 255, 140),
+                                   (int(x), int(y)), rr, 2)
+            except Exception:
+                pass
 
         # Draw tower body
         self._draw_tower_body(surface, x, y)
@@ -3246,7 +3300,12 @@ class Hero(TowerDebuffMixin):
     def upgrade_cost(self):
         if self.level >= MAX_HERO_LEVEL:
             return 0
-        return HERO_LEVELS[self.level]["upgrade_cost"]
+        base = HERO_LEVELS[self.level]["upgrade_cost"]
+        # BOSS HERO (unlock) UPGRADE LEBIH MAHAL daripada starter hero.
+        # Berlaku sama untuk pemain & AI (parity).
+        if self.skill_data.get("is_boss_hero"):
+            base = int(base * BOSS_HERO_UPGRADE_COST_MULT)
+        return base
 
     def move_to(self, x, y, auto=False):
         self.destination = (x, y)
@@ -5013,18 +5072,41 @@ class AIPlayer:
         self.heroes = []
 
     def _ai_brain(self):
-        """Tingkat kecerdasan AI: 0.0 (level 1, polos) -> 1.0 (pintar).
+        """Tingkat kecerdasan DASAR AI: 0.0 (level 1) -> 1.0 (level ~20).
 
-        Semakin tinggi level, AI: berpikir lebih cepat, membangun
-        lebih agresif, membeli hero lebih rajin, dan menahan lebih
-        sedikit gold cadangan.
+        Mengatur peluang build/upgrade/beli hero. BUKAN batas akhir
+        kepintaran AI - lihat _ai_elite() untuk peningkatan di level 20+.
         """
         lvl = max(1, int(getattr(self, "level_number", 1) or 1))
         return min(1.0, (lvl - 1) / 19.0)
 
+    def _ai_elite(self):
+        """Tingkat ELITE AI: 0.0 (level 20) -> 1.0 (level terakhir).
+
+        AI terus berkembang MELEBIHI otak dasar setelah level 20:
+        berpikir makin cepat & melakukan beberapa aksi sekaligus per
+        tick berpikir. Tanpa ini AI akan "stuck" / datar di level 20,
+        sehingga level 21-54 terasa membosankan. Rentang elite mengikuti
+        jumlah level game (54) supaya kepintaran terus naik sampai akhir.
+        """
+        lvl = max(1, int(getattr(self, "level_number", 1) or 1))
+        elite_start = 20
+        try:
+            from levels import get_level_count
+            elite_end = max(elite_start + 1, get_level_count())
+        except Exception:
+            elite_end = 54
+        if lvl <= elite_start:
+            return 0.0
+        return min(1.0, (lvl - elite_start) /
+                   max(1, (elite_end - elite_start)))
+
     def _ai_reserve(self):
-        """Gold cadangan AI (semakin pintar semakin tipis cadangannya)."""
-        return int(AI_MIN_GOLD_RESERVE * (1.0 - 0.6 * self._ai_brain()))
+        """Gold cadangan AI. HANDICAP DIHAPUS SEPENUHNYA: AI memakai
+        SELURUH emasnya untuk semua fitur (build, hero, upgrade,
+        Regen Shield), sama seperti pemain - tidak menahan emas sama
+        sekali."""
+        return 0
 
     def update(self, all_towers, all_minions, all_heroes, my_nexus,
                all_bases, build_slots=None):
@@ -5034,44 +5116,81 @@ class AIPlayer:
         if self.think_timer > 0:
             return
 
-        # AI pintar berpikir lebih cepat (interval 90 -> ~30 di level 20)
         brain = self._ai_brain()
-        self.think_timer = max(
-            25, int(AI_THINK_INTERVAL * (1.0 - 0.65 * brain)))
+        elite = self._ai_elite()
 
-        # Filter red towers yang bisa di-upgrade
+        # AI makin pintar makin cepat berpikir. AI ELITE (level 20+)
+        # berpikir JAUH lebih cepat lagi - lantai interval diturunkan
+        # oleh elite - supaya level 21-54 tetap menantang (tidak datar).
+        self.think_timer = max(
+            8, int(AI_THINK_INTERVAL * (1.0 - 0.65 * brain)
+                   - 22 * elite))
+
+        # AI ELITE bisa melakukan beberapa aksi sekaligus per tick
+        # berpikir (level 20 = 1 aksi, level terakhir = 3 aksi). Ini
+        # membuat AI terus bertambah tangguh sepanjang 50+ level,
+        # bukan mentok di level 20.
+        actions = 1 + int(round(2 * elite))
+        for _ in range(actions):
+            if not self._ai_step(all_towers, build_slots,
+                                 my_nexus, brain, elite):
+                break
+
+    def _ai_step(self, all_towers, build_slots, my_nexus, brain, elite):
+        """Satu putar prioritas AI. Return True kalau ada aksi yang
+        dilakukan, False kalau tidak ada yang layak dikerjakan.
+
+        Peluang tiap aksi DITINGKATKAN oleh tier ELITE (level 20+)
+        supaya AI bertindak lebih pasti / decisive di level tinggi -
+        tidak lagi membuang peluang secara acak.
+        """
         my_towers = [t for t in all_towers
                      if t.team == self.team and t.alive and t.can_upgrade()]
+        all_my_towers = [t for t in all_towers
+                         if t.team == self.team and t.alive]
 
-        # ═══ Priority 0: Build new tower kalau ada slot kosong ═══
+        # Elite menambah peluang setiap aksi (cap 0.98 supaya tetap
+        # ada sedikit variasi, bukan robot sempurna).
+        def roll(base):
+            return random.random() < min(0.98, base + 0.45 * elite)
+
+        # ═══ Priority 0: Build new tower ═══
         if build_slots:
-            empty_slots = [s for s in build_slots
-                           if not s['taken']]
+            empty_slots = [s for s in build_slots if not s['taken']]
             if empty_slots and self.gold >= 150:
-                if random.random() < 0.4 + 0.45 * brain:
+                if roll(0.4 + 0.45 * brain):
                     if self._try_build_tower(empty_slots):
-                        return
+                        return True
 
-        # Priority 1: Buy hero (maksimal AI_MAX_HEROES) - rajin di level tinggi
+        # Priority 1: Buy hero (maks AI_MAX_HEROES)
         if len(self.heroes) < AI_MAX_HEROES:
-            if random.random() < AI_HERO_BUY_PRIORITY * (0.55 + 0.9 * brain):
+            if roll(AI_HERO_BUY_PRIORITY * (0.55 + 0.9 * brain)):
                 if self._try_buy_hero():
-                    return
+                    return True
 
         # Priority 2: Upgrade hero
-        if self.heroes and random.random() < AI_HERO_UPGRADE_PRIORITY * (0.7 + 0.6 * brain):
+        if self.heroes and roll(AI_HERO_UPGRADE_PRIORITY
+                                * (0.7 + 0.6 * brain)):
             if self._try_upgrade_hero():
-                return
+                return True
 
         # Priority 3: Upgrade tower
-        if my_towers and random.random() < min(0.9, AI_UPGRADE_TOWER_CHANCE + 0.5 * brain):
+        if my_towers and roll(AI_UPGRADE_TOWER_CHANCE + 0.5 * brain):
             if self._try_upgrade_tower_new(my_towers):
-                return
+                return True
+
+        # Priority 3b: Regen Shield (lvl 4+, parity dengan pemain).
+        # Pakai SEMUA tower tim karena tower level 6 (max) tetap bisa
+        # beli Regen Shield.
+        if all_my_towers and self._try_activate_regen_shield(all_my_towers):
+            return True
 
         # Priority 4: Upgrade nexus
-        if random.random() < AI_NEXUS_UPGRADE_PRIORITY * (0.7 + 0.6 * brain):
+        if roll(AI_NEXUS_UPGRADE_PRIORITY * (0.7 + 0.6 * brain)):
             if self._try_upgrade_nexus(my_nexus):
-                return
+                return True
+
+        return False
 
     def _try_build_tower(self, empty_slots):
         """AI build tower di slot random"""
@@ -5134,6 +5253,23 @@ class AIPlayer:
                         self.total_upgraded += 1
                         return True
 
+        return False
+
+    def _try_activate_regen_shield(self, my_towers):
+        """AI beli Regen Shield untuk tower yang eligible (lvl 4+, parity)."""
+        # Hanya tower level 4+ yang belum punya regen shield.
+        candidates = [t for t in my_towers
+                      if t.can_activate_regen_shield()]
+        if not candidates:
+            return False
+        # Prioritaskan tower paling banyak kill (paling berharga).
+        candidates.sort(key=lambda t: -t.kills)
+        for tower in candidates:
+            cost = tower.regen_shield_cost()
+            if self.gold >= cost + self._ai_reserve():
+                if tower.activate_regen_shield():
+                    self.gold -= cost
+                    return True
         return False
 
     def _control_heroes(self, all_minions, all_heroes, all_towers, all_bases):
