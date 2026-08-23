@@ -572,21 +572,24 @@ ARCHER_LEVELS = {
         "desc": "DOUBLE SHOT!", "double_shot": True},
 }
 
-# ═══ CANNON PATH (High AOE + BURNING) - BUFFED attack speed & RANGE ═══
+# ═══ CANNON PATH (High AOE + BURNING) - REBALANCED: range DIPOTONG ═══
+# Nerf 2026-08: range cannon dulu 200..260 (terpanjang di game + damage
+# tertinggi + splash + burn = OP). Sekarang 165..210 — cannon jadi
+# siege AOE jarak MENENGAH; Archer (230) tetap raja range single-target.
 CANNON_LEVELS = {
-    2: {"hp": 1200, "damage": 45,  "range": 200, "cd": 44, "cost": 175,
+    2: {"hp": 1200, "damage": 45,  "range": 165, "cd": 44, "cost": 175,
         "desc": "Splash + Burn 8/s", "splash": 45,
         "burn_dps": 8,  "burn_duration": 120},
-    3: {"hp": 1500, "damage": 65,  "range": 215, "cd": 40, "cost": 325,
+    3: {"hp": 1500, "damage": 65,  "range": 175, "cd": 40, "cost": 325,
         "desc": "Big Boom + Burn 12/s", "splash": 55,
         "burn_dps": 12, "burn_duration": 150},
-    4: {"hp": 1900, "damage": 90,  "range": 230, "cd": 36, "cost": 550,
+    4: {"hp": 1900, "damage": 90,  "range": 185, "cd": 36, "cost": 550,
         "desc": "Heavy Cannon + Burn 16/s", "splash": 65,
         "burn_dps": 16, "burn_duration": 150},
-    5: {"hp": 2400, "damage": 125, "range": 245, "cd": 32, "cost": 850,
+    5: {"hp": 2400, "damage": 125, "range": 195, "cd": 32, "cost": 850,
         "desc": "Siege + Burn 22/s", "splash": 80,
         "burn_dps": 22, "burn_duration": 180},
-    6: {"hp": 3000, "damage": 170, "range": 260, "cd": 28, "cost": 1300,
+    6: {"hp": 3000, "damage": 170, "range": 210, "cd": 28, "cost": 1300,
         "desc": "DEVASTATOR! Burn 30/s", "splash": 100,
         "burn_dps": 30, "burn_duration": 180},
 }
@@ -646,8 +649,8 @@ TOWER_TYPE_INFO = {
     "cannon": {
         "name": "Cannon Tower",
         "icon": "💣",
-        "desc": "Long-range AOE + Burning DOT.",
-        "special": "Burn DOT + Splash AOE + Range",
+        "desc": "Mid-range AOE + Burning DOT.",
+        "special": "Burn DOT + Splash AOE",
     },
     "ice": {
         "name": "Ice Tower",
