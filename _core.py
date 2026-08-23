@@ -63,8 +63,8 @@ def _PANEL_AKTIF():
 
 SCREEN_WIDTH  = 1280
 SCREEN_HEIGHT = 720
-TOP_BAR_HEIGHT = 40   # tinggi top bar info
-TITLE = "MOBA Tower Defense"
+TOP_BAR_HEIGHT = 40   # top bar height
+TITLE = "Mystic Arena"
 FPS   = 60
 
 # ── WARNA DASAR ──
@@ -359,7 +359,7 @@ HERO_TYPES = {
         "skill_cooldown": 300,
         "skill_damage": 65,    # ← 50 → 65
         "skill_range": 100,
-        "description": "Samurai lincah",
+        "description": "Agile samurai assassin",
     },
     "grimjaw": {
         "name": "Grimjaw",
@@ -398,35 +398,35 @@ HERO_TYPES = {
         "skill_cooldown": 360,
         "skill_damage": 90,    # ← 70 → 90
         "skill_range": 180,
-        "description": "Archer jarak menengah",
+        "description": "Mid-range marksman",
     },
     "vex": {
         "name": "Vex",
         "title": "The Void Harbinger",
         "role": "Mage",
         "cost": 420,
-        "hp": 500,             # ← 350 → 500
-        "damage": 30,          # ← 22 → 30
+        "hp": 500,
+        "damage": 30,
         "speed": 1.3,
         "range": 130,
         "attack_cooldown": 46,
         "color": (100, 200, 150),
         "color_dark": (30, 100, 70),
         "skill_name": "Arcane Orb",
-        "skill_desc": "Long-range magic missile + line damage",
+        "skill_desc": "Long-range missile + line",
         "skill_cooldown": 330,
-        "skill_damage": 85,    # ← 65 → 85
+        "skill_damage": 85,
         "skill_range": 250,
         "skill_aoe": 80,
-        "description": "Harbinger of the Void",
+        "description": "Void mage, high burst",
     },
     "thorne": {
         "name": "Thorne",
         "title": "The Quill Sprayer",
         "role": "Bruiser",
         "cost": 500,
-        "hp": 1400,            # ← 1000 → 1400
-        "damage": 28,          # ← 20 → 28
+        "hp": 1400,
+        "damage": 28,
         "speed": 1.3,
         "range": 55,
         "attack_cooldown": 40,
@@ -435,30 +435,30 @@ HERO_TYPES = {
         "skill_name": "Viscous Nose",
         "skill_desc": "Goop cone + slow",
         "skill_cooldown": 300,
-        "skill_damage": 60,    # ← 45 → 60
+        "skill_damage": 60,
         "skill_range": 100,
         "skill_stun_duration": 60,
-        "description": "Porcupine warrior tanky",
+        "description": "Tanky porcupine warrior",
     },
     "zephyr": {
         "name": "Zephyr",
         "title": "Meander of Mischief",
         "role": "Mage/Trickster",
         "cost": 420,
-        "hp": 520,             # ← 380 → 520
-        "damage": 25,          # ← 18 → 25
+        "hp": 520,
+        "damage": 25,
         "speed": 1.6,
         "range": 130,
         "attack_cooldown": 30,
         "color": (215, 60, 90),
         "color_dark": (100, 20, 40),
         "skill_name": "Bramble Maze",
-        "skill_desc": "Thorn ring trap + slow",
+        "skill_desc": "Thorn trap + slow",
         "skill_cooldown": 300,
-        "skill_damage": 65,    # ← 50 → 65
+        "skill_damage": 65,
         "skill_range": 150,
         "skill_chain_count": 4,
-        "description": "Fairy trickster gelap",
+        "description": "Dark fairy trickster",
     },
 }
 HERO_LEVELS = {
@@ -537,67 +537,58 @@ ARCHER_LEVELS = {
         "desc": "DOUBLE SHOT!", "double_shot": True},
 }
 
-# ═══ CANNON PATH (High AOE damage + BURNING) ═══
-# BUFF: attack speed sedikit dinaikkan (cd turun ~10%) dan semua tembakan
-# menimbulkan BURNING (damage over time) ke target utama + kena splash.
-# burn_dps = damage burn per detik; burn_duration dalam frame (60fps).
+# ═══ CANNON PATH (High AOE + BURNING) - BUFFED attack speed slightly ═══
 CANNON_LEVELS = {
-    2: {"hp": 1200, "damage": 45,  "range": 160, "cd": 50, "cost": 175,
+    2: {"hp": 1200, "damage": 45,  "range": 160, "cd": 44, "cost": 175,
         "desc": "Splash + Burn 8/s", "splash": 45,
         "burn_dps": 8,  "burn_duration": 120},
-    3: {"hp": 1500, "damage": 65,  "range": 170, "cd": 48, "cost": 325,
-        "desc": "Bigger boom + Burn 12/s", "splash": 55,
+    3: {"hp": 1500, "damage": 65,  "range": 170, "cd": 40, "cost": 325,
+        "desc": "Big Boom + Burn 12/s", "splash": 55,
         "burn_dps": 12, "burn_duration": 150},
-    4: {"hp": 1900, "damage": 90,  "range": 180, "cd": 45, "cost": 550,
-        "desc": "Heavy cannon + Burn 16/s", "splash": 65,
+    4: {"hp": 1900, "damage": 90,  "range": 180, "cd": 36, "cost": 550,
+        "desc": "Heavy Cannon + Burn 16/s", "splash": 65,
         "burn_dps": 16, "burn_duration": 150},
-    5: {"hp": 2400, "damage": 125, "range": 190, "cd": 42, "cost": 850,
-        "desc": "Siege engine + Burn 22/s", "splash": 80,
+    5: {"hp": 2400, "damage": 125, "range": 190, "cd": 32, "cost": 850,
+        "desc": "Siege + Burn 22/s", "splash": 80,
         "burn_dps": 22, "burn_duration": 180},
-    6: {"hp": 3000, "damage": 170, "range": 200, "cd": 39, "cost": 1300,
+    6: {"hp": 3000, "damage": 170, "range": 200, "cd": 28, "cost": 1300,
         "desc": "DEVASTATOR! Burn 30/s", "splash": 100,
         "burn_dps": 30, "burn_duration": 180},
 }
-# ═══ ICE PATH (Crowd control: slow gerak + slow serang) ═══
-# BUFF: selain debuff movement speed (lama), ice sekarang juga memberi
-# debuff ATTACK SPEED (atk_slow = fraksi attack speed musuh yang hilang).
+# ═══ ICE PATH (Crowd Control: movement + attack slow) - BUFFED attack speed ═══
 ICE_LEVELS = {
-    2: {"hp": 950,  "damage": 22,  "range": 170, "cd": 36, "cost": 175,
+    2: {"hp": 950,  "damage": 22,  "range": 170, "cd": 26, "cost": 175,
         "desc": "Slow 25% & Atk -15%", "slow": 0.25, "slow_duration": 90,
         "atk_slow": 0.15},
-    3: {"hp": 1250, "damage": 35,  "range": 180, "cd": 34, "cost": 325,
+    3: {"hp": 1250, "damage": 35,  "range": 180, "cd": 22, "cost": 325,
         "desc": "Slow 35% & Atk -20%", "slow": 0.35, "slow_duration": 100,
         "atk_slow": 0.20},
-    4: {"hp": 1600, "damage": 50,  "range": 190, "cd": 30, "cost": 550,
+    4: {"hp": 1600, "damage": 50,  "range": 190, "cd": 18, "cost": 550,
         "desc": "Slow 45% & Atk -25%", "slow": 0.45, "slow_duration": 110,
         "atk_slow": 0.25},
-    5: {"hp": 2050, "damage": 70,  "range": 200, "cd": 28, "cost": 850,
+    5: {"hp": 2050, "damage": 70,  "range": 200, "cd": 16, "cost": 850,
         "desc": "Slow 55% & Atk -30%", "slow": 0.55, "slow_duration": 120,
         "atk_slow": 0.30},
-    6: {"hp": 2600, "damage": 95,  "range": 220, "cd": 25, "cost": 1300,
-        "desc": "FREEZE! AOE slow & Atk -40%", "slow": 0.65,
+    6: {"hp": 2600, "damage": 95,  "range": 220, "cd": 14, "cost": 1300,
+        "desc": "FREEZE! AOE + Atk -40%", "slow": 0.65,
         "slow_duration": 150, "slow_aoe": 80, "atk_slow": 0.40},
 }
-# ═══ MAGE PATH (Multi-target chain + skill down + ANTI-HEAL) ═══
-# BUFF: tiap tembakan mage memberi debuff SKILL DAMAGE (skill_down =
-# fraksi damage skill/ability musuh yang hilang) dan ANTI-HEAL
-# (anti_heal = fraksi heal yang ditolak; 1.0 = heal benar-benar mentok).
-# debuff_duration dalam frame (60fps).
+# ═══ MAGE PATH (Chain + Skill Down + Anti-Heal) - BUFFED attack speed ═══
 MAGE_LEVELS = {
-    2: {"hp": 850,  "damage": 18,  "range": 180, "cd": 28, "cost": 175,
-        "desc": "Hit 2, Skill -20% & Anti-heal 40%", "chain": 2,
+    2: {"hp": 850,  "damage": 18,  "range": 180, "cd": 20, "cost": 175,
+        "desc": "Hit 2, Skill -20%, Heal -40%", "chain": 2,
         "skill_down": 0.20, "anti_heal": 0.40, "debuff_duration": 120},
-    3: {"hp": 1100, "damage": 28,  "range": 190, "cd": 26, "cost": 325,
-        "desc": "Skill -25% & Anti-heal 50%", "chain": 2,
+    3: {"hp": 1100, "damage": 28,  "range": 190, "cd": 18, "cost": 325,
+        "desc": "Skill -25%, Heal -50%", "chain": 2,
         "skill_down": 0.25, "anti_heal": 0.50, "debuff_duration": 130},
-    4: {"hp": 1450, "damage": 42,  "range": 200, "cd": 24, "cost": 550,
-        "desc": "Hit 3, Skill -30% & Anti-heal 60%", "chain": 3,
+    4: {"hp": 1450, "damage": 42,  "range": 200, "cd": 16, "cost": 550,
+        "desc": "Hit 3, Skill -30%, Heal -60%", "chain": 3,
         "skill_down": 0.30, "anti_heal": 0.60, "debuff_duration": 140},
-    5: {"hp": 1850, "damage": 60,  "range": 210, "cd": 22, "cost": 850,
-        "desc": "Skill -40% & Anti-heal 75%", "chain": 3,
+    5: {"hp": 1850, "damage": 60,  "range": 210, "cd": 14, "cost": 850,
+        "desc": "Skill -40%, Heal -75%", "chain": 3,
         "skill_down": 0.40, "anti_heal": 0.75, "debuff_duration": 150},
-    6: {"hp": 2350, "damage": 82,  "range": 230, "cd": 20, "cost": 1300,
-        "desc": "CHAIN! Skill -50% & Anti-heal 100%", "chain": 4,
+    6: {"hp": 2350, "damage": 82,  "range": 230, "cd": 12, "cost": 1300,
+        "desc": "CHAIN! Skill -50%, Heal -100%", "chain": 4,
         "skill_down": 0.50, "anti_heal": 1.00, "debuff_duration": 180},
 }
 
@@ -609,31 +600,31 @@ TOWER_UPGRADE_PATHS = {
     "mage": MAGE_LEVELS,
 }
 
-# Tower descriptions untuk UI
+# Tower descriptions for UI - English, concise, no overlap
 TOWER_TYPE_INFO = {
     "archer": {
         "name": "Archer Tower",
         "icon": "🏹",
-        "desc": "Fast single-target attacks. Balanced offense.",
-        "special": "Level 6: DOUBLE SHOT",
+        "desc": "Fast single-target. Balanced DPS.",
+        "special": "Lv6: Double Shot",
     },
     "cannon": {
         "name": "Cannon Tower",
         "icon": "💣",
-        "desc": "AOE damage + BURNING. Sekarang menembak lebih cepat.",
-        "special": "Burn (damage over time) + splash, attack speed up",
+        "desc": "AOE + Burning DOT. Buffed speed.",
+        "special": "Burn DOT + Splash AOE",
     },
     "ice": {
         "name": "Ice Tower",
         "icon": "❄️",
-        "desc": "Debuff movement DAN attack speed musuh. Crowd control.",
-        "special": "Slow gerak + slow serang, AOE di level max",
+        "desc": "Slows move & attack speed. CC.",
+        "special": "Move + Atk Slow, AOE at max",
     },
     "mage": {
         "name": "Mage Tower",
         "icon": "🔮",
-        "desc": "Multi-target + debuff skill damage dan ANTI-HEAL.",
-        "special": "Skill damage down + anti-heal (100% di level max)",
+        "desc": "Chain + Skill Down + Anti-Heal.",
+        "special": "Skill -50%, Heal block 100%",
     },
 }
 
@@ -875,7 +866,20 @@ AI_HERO_BUY_PRIORITY = 0.45
 AI_HERO_UPGRADE_PRIORITY = 0.40
 AI_SKILL_USE_MIN_ENEMIES = 2
 AI_HERO_PREFERENCES = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
-AI_MAX_HEROES = 3  # AI maksimal 3 hero (termasuk boss hero)
+AI_MAX_HEROES = 5  # AI max 5 heroes (including boss heroes) - matches player limit
+
+# ═══════════════════════════════════════
+# CASTLE SHIELD SYSTEM (Anti-smurf / anti-premature destruction)
+# Before wave 10, castle has protective shield that reduces damage
+# ═══════════════════════════════════════
+CASTLE_SHIELD_ENABLED = True
+CASTLE_SHIELD_WAVE_THRESHOLD = 10      # Shield active before wave 10
+CASTLE_SHIELD_DAMAGE_REDUCTION = 0.75 # 75% damage reduction before wave 10
+CASTLE_SHIELD_HP_RATIO = 0.6          # Shield HP = 60% max HP
+CASTLE_SHIELD_REGEN_DELAY = 120       # 2 sec no damage -> regen
+CASTLE_SHIELD_REGEN_RATE = 2.0        # Shield regen per frame
+CASTLE_SHIELD_COLOR_BLUE = (100, 200, 255)
+CASTLE_SHIELD_COLOR_RED = (255, 120, 120)
 
 # ═══════════════════════════════════════
 # CASTLE ALIAS (nama baru untuk Nexus)
@@ -1147,6 +1151,12 @@ class Game:
         self._blue_nexus_last_hp = self.blue_base.hp
         self.wave_number = 0
         self.wave_timer = 300
+        # Initialize castle shields (active before wave 10)
+        try:
+            self.blue_base.set_wave(self.wave_number)
+            self.red_base.set_wave(self.wave_number)
+        except Exception:
+            pass
         self.spawn_queue_blue = []
         self.spawn_queue_red = []
         self.spawn_timer_blue = 0
@@ -1331,6 +1341,18 @@ class Game:
             field_clear = not any(m.alive for m in self.minions)
             if field_clear:
                 self.wave_number += 1
+                # Update castle shield status based on new wave
+                try:
+                    self.blue_base.set_wave(self.wave_number)
+                    self.red_base.set_wave(self.wave_number)
+                    if self.wave_number == CASTLE_SHIELD_WAVE_THRESHOLD:
+                        # Shield just expired - notify player
+                        self.effects.unlock_achievement(
+                            "Castle Shield Down!",
+                            f"Wave {self.wave_number}: Castles vulnerable!",
+                            "shield")
+                except Exception:
+                    pass
                 SoundManager().play('wave_start', volume_mult=0.6)
                 # ═══ MINI BOSS CHECK (pending-safe) ═══
                 mini_bosses = self.level_config.get("mini_bosses", {})
@@ -1566,7 +1588,8 @@ class Game:
             self.gold += GOLD_PER_SECOND
             # AI income naik tiap wave supaya AI bisa menabung untuk
             # membeli boss hero dari level-level di bawahnya.
-            self.ai.gold += GOLD_PER_SECOND + max(0, self.wave_number // 2)
+            # AI gets same base income + wave bonus to afford boss heroes (parity)
+            self.ai.gold += GOLD_PER_SECOND + max(0, self.wave_number)
         # ═══ TAMBAH: Gold achievements ═══
         if self.gold >= 1000:
             self._unlock_achievement(
@@ -2102,28 +2125,35 @@ class Game:
         return fallback.get(gameplay_action, '?')
 
     def _draw_gold_hud(self, surface):
-        """Gold in-game HUD permanen di world UI layer."""
+        """Gold HUD - English, fixed no overlap, responsive width"""
+        x, y = 18, 22
+        # Dynamic width based on gold amount
+        gold_str = f"{self.gold:,}"
+        font = get_font(20)
+        # Calculate needed width: icon 30 + text width + padding
+        needed_w = 40 + font.size(gold_str)[0] + 20
+        width = max(140, min(200, needed_w))
+        height = 42
 
-        x, y = 22, 30
-        width, height = 168, 38
         panel = pygame.Surface((width, height), pygame.SRCALPHA)
         panel.fill((8, 7, 12, 225))
-        pygame.draw.rect(panel, (125, 90, 25), panel.get_rect(), 2, border_radius=7)
+        pygame.draw.rect(panel, (125, 90, 25), panel.get_rect(), 2, border_radius=8)
         pygame.draw.rect(panel, (255, 205, 70), (2, 2, width - 4, 2), border_radius=3)
 
-        # Coin icon.
-        pygame.draw.circle(panel, (110, 70, 12), (22, 19), 11)
-        pygame.draw.circle(panel, (245, 190, 52), (21, 18), 9)
-        pygame.draw.circle(panel, (255, 235, 125), (18, 15), 3)
-        pygame.draw.line(panel, (167, 112, 24), (21, 12), (21, 25), 2)
+        # Coin icon
+        pygame.draw.circle(panel, (110, 70, 12), (20, 20), 11)
+        pygame.draw.circle(panel, (245, 190, 52), (19, 19), 9)
+        pygame.draw.circle(panel, (255, 235, 125), (16, 16), 3)
+        pygame.draw.line(panel, (167, 112, 24), (19, 13), (19, 26), 2)
 
-        font = get_font(22)
-        small_font = get_font(13)
-        gold_text = font.render(f"{self.gold:,}", True, (255, 231, 133))
+        small_font = get_font(12)
+        gold_text = font.render(gold_str, True, (255, 231, 133))
         surface.blit(panel, (x, y))
-        surface.blit(gold_text, (x + 39, y + 6))
-        income = small_font.render(f"+{GOLD_PER_SECOND}/s", True, (196, 241, 168))
-        surface.blit(income, (x + 101, y + 22))
+        surface.blit(gold_text, (x + 38, y + 5))
+
+        # Income on second line, left aligned under gold
+        income = small_font.render(f"+{GOLD_PER_SECOND}/s income", True, (196, 241, 168))
+        surface.blit(income, (x + 38, y + 26))
 
     def draw(self):
         """Main draw method - delegate ke UI Renderer"""
@@ -3292,61 +3322,47 @@ class Menu:
             stats_y = info_y + 32
 
             if level_stats['total_attempts'] > 0:
-                # Row 1: Best Score + Best Time
-                stat_font = get_font(13)
-                val_font = get_font(17)
+                # Row 1 & 2 - fixed layout, no overlap, English
+                stat_font = get_font(11)
+                val_font = get_font(14)
+                val_font_bold = get_font(15, 'body_bold')
 
-                # Best Score (kiri)
-                stat_font_surf = stat_font.render(
-                    "BEST SCORE", True, (130, 140, 160))
-                self.screen.blit(stat_font_surf, (x + 15, stats_y))
-                score_surf = val_font.render(
-                    f"{level_stats['best_score']:,}",
-                    True, (255, 220, 100))
-                self.screen.blit(score_surf, (x + 15, stats_y + 12))
+                # Best Score (left)
+                self.screen.blit(stat_font.render("BEST SCORE", True, (130, 140, 160)), (x + 12, stats_y))
+                score_val = level_stats['best_score']
+                # Format to avoid overflow: 12345 -> 12.3K
+                if score_val >= 10000:
+                    score_str = f"{score_val/1000:.1f}K"
+                else:
+                    score_str = f"{score_val:,}"
+                if val_font.size(score_str)[0] > w//2 - 20:
+                    score_str = score_str[:8]
+                self.screen.blit(val_font_bold.render(score_str, True, (255, 220, 100)), (x + 12, stats_y + 12))
 
-                # Best Time (kanan)
-                stat_font_surf2 = stat_font.render(
-                    "BEST TIME", True, (130, 140, 160))
-                self.screen.blit(stat_font_surf2, (x + w // 2 + 5, stats_y))
+                # Best Time (right) - ensure not overlapping
+                self.screen.blit(stat_font.render("BEST TIME", True, (130, 140, 160)), (x + w//2 + 8, stats_y))
+                time_str = SaveManager.format_time(level_stats['best_time_seconds'])
+                if val_font.size(time_str)[0] > w//2 - 20:
+                    time_str = time_str[:8]
+                self.screen.blit(val_font.render(time_str, True, (100, 220, 255)), (x + w//2 + 8, stats_y + 12))
 
-                time_str = SaveManager.format_time(
-                    level_stats['best_time_seconds'])
-                time_color = (100, 220, 255)
-                time_surf = val_font.render(time_str, True, time_color)
-                self.screen.blit(time_surf, (x + w // 2 + 5, stats_y + 12))
-
-                # Row 2: Attempts + Win Rate
-                row2_y = stats_y + 30
+                # Row 2: Attempts + Win Rate - more spacing
+                row2_y = stats_y + 32
 
                 wins = level_stats['wins']
                 attempts = level_stats['total_attempts']
                 win_rate = int((wins / attempts) * 100) if attempts > 0 else 0
 
-                attempt_label = stat_font.render(
-                    "ATTEMPTS", True, (130, 140, 160))
-                self.screen.blit(attempt_label, (x + 15, row2_y))
-                attempt_val = val_font.render(
-                    f"{wins}W / {attempts}", True, (200, 220, 240))
-                self.screen.blit(attempt_val, (x + 15, row2_y + 12))
+                self.screen.blit(stat_font.render("ATTEMPTS", True, (130, 140, 160)), (x + 12, row2_y))
+                attempt_str = f"{wins}W/{attempts}"
+                self.screen.blit(val_font.render(attempt_str, True, (200, 220, 240)), (x + 12, row2_y + 12))
 
-                wr_label = stat_font.render(
-                    "WIN RATE", True, (130, 140, 160))
-                self.screen.blit(wr_label, (x + w // 2 + 5, row2_y))
-
-                if win_rate >= 75:
-                    wr_color = (100, 255, 100)
-                elif win_rate >= 50:
-                    wr_color = (255, 220, 100)
-                else:
-                    wr_color = (255, 150, 100)
-
-                wr_val = val_font.render(f"{win_rate}%", True, wr_color)
-                self.screen.blit(wr_val, (x + w // 2 + 5, row2_y + 12))
+                self.screen.blit(stat_font.render("WIN RATE", True, (130, 140, 160)), (x + w//2 + 8, row2_y))
+                wr_color = (100, 255, 100) if win_rate >= 75 else ((255, 220, 100) if win_rate >= 50 else (255, 150, 100))
+                self.screen.blit(val_font_bold.render(f"{win_rate}%", True, wr_color), (x + w//2 + 8, row2_y + 12))
             else:
-                no_stats = self.font_tiny.render(
-                    "No stats yet", True, (120, 140, 160))
-                no_rect = no_stats.get_rect(center=(x + w // 2, stats_y + 15))
+                no_stats = self.font_tiny.render("No stats yet", True, (120, 140, 160))
+                no_rect = no_stats.get_rect(center=(x + w // 2, stats_y + 14))
                 self.screen.blit(no_stats, no_rect)
 
         elif not is_unlocked:
@@ -4485,13 +4501,12 @@ class Menu:
         self._blit_shadow(self.screen, title, title_rect.topleft)
         self.screen.blit(title, title_rect)
 
-        # Content panel
+        # Content panel - larger, English, no overlap
         panel_w = 900
-        panel_h = 450
+        panel_h = 500
         panel_x = cx - panel_w // 2
-        panel_y = 150
+        panel_y = 130
 
-        # Panel background
         panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
         pygame.draw.rect(panel, (20, 25, 40, 220),
                          (0, 0, panel_w, panel_h),
@@ -4501,38 +4516,33 @@ class Menu:
                          (panel_x, panel_y, panel_w, panel_h),
                          2, border_radius=12)
 
-        # Content sections
         sections = [
-            ("🎯 OBJECTIVE",
+            ("OBJECTIVE",
              "Destroy the enemy castle before they destroy yours!",
              (255, 220, 100)),
-            ("🏰 BUILDING TOWERS",
-             "Tap empty build slots (+) to construct towers. "
-             "Each costs 100 gold.",
+            ("BUILDING TOWERS",
+             "Tap empty build slots (+) to build towers. Cost: 100 gold.",
              (100, 200, 255)),
-            ("⚔️ HEROES",
-             "Buy heroes from the Hero Shop (H). "
-             "Tap to select, tap enemy to attack, "
-             "click ground to move.",
+            ("HEROES",
+             "Buy heroes from Hero Shop. Tap to select, tap enemy to attack.",
              (100, 255, 100)),
-            ("🔥 SKILLS",
-             "Q, W, E, R - Cast hero skills (each has cooldown). "
-             "R = Ultimate skill (most powerful!)",
+            ("SKILLS",
+             "Q,W,E,R auto-cast when enemies nearby. R = Ultimate!",
              (255, 150, 100)),
-            ("💰 UPGRADES",
-             "Tap your towers/castle/hero to upgrade them. "
-             "Stronger units = better chance to win!",
+            ("UPGRADES",
+             "Tap towers, castle, or hero to upgrade. Stronger = win!",
              (200, 150, 255)),
+            ("CASTLE SHIELD",
+             "Castle has shield before Wave 10. Prevents early loss.",
+             (100, 220, 255)),
         ]
 
-        y = panel_y + 30
+        y = panel_y + 20
         for icon_title, desc, color in sections:
-            # Section title
             title_text = self.font_medium.render(icon_title, True, color)
             self.screen.blit(title_text, (panel_x + 30, y))
-            y += 30
+            y += 26
 
-            # Description (word wrap)
             words = desc.split()
             line = ""
             line_y = y
@@ -4540,17 +4550,17 @@ class Menu:
                 test_line = line + word + " "
                 if self.font_small.size(test_line)[0] > panel_w - 80:
                     text = self.font_small.render(line, True, (200, 200, 220))
-                    self.screen.blit(text, (panel_x + 50, line_y))
-                    line_y += 22
+                    self.screen.blit(text, (panel_x + 40, line_y))
+                    line_y += 20
                     line = word + " "
                 else:
                     line = test_line
             if line:
                 text = self.font_small.render(line, True, (200, 200, 220))
-                self.screen.blit(text, (panel_x + 50, line_y))
-                line_y += 22
+                self.screen.blit(text, (panel_x + 40, line_y))
+                line_y += 20
 
-            y = line_y + 15
+            y = line_y + 12
 
         # Back button
         self._draw_menu_button("back_to_main", "BACK", cx,
@@ -4678,7 +4688,7 @@ class Menu:
                          reset_btn_rect, 2, border_radius=6)
 
         reset_text = self.font_small.render(
-            "🗑  RESET CURRENT SAVE SLOT",
+            "RESET SAVE SLOT",
             True, (255, 220, 220))
         reset_text_rect = reset_text.get_rect(
             center=reset_btn_rect.center)
@@ -7496,10 +7506,8 @@ class ControllerManager:
 
     def get_hints(self, context='game'):
         """
-        List (label, keterangan) untuk hint bar di layar.
-
-        context: 'game' | 'menu' | 'pause' | 'shop' | 'victory'
-                 | 'defeat' | 'cinematic'
+        List of (label, description) for hint bar.
+        All English, clean layout.
         """
         A = self.get_action_label
 
@@ -7508,56 +7516,54 @@ class ControllerManager:
 
         if context == 'menu':
             return [
-                (A('select'), 'Pilih'),
-                (A('back'), 'Kembali'),
-                (self.get_button_label('dpad'), 'Navigasi'),
+                (A('select'), 'Select'),
+                (A('back'), 'Back'),
+                (self.get_button_label('dpad'), 'Navigate'),
             ]
 
         if context == 'pause':
             return [
-                (A('select'), 'Pilih'),
-                (A('pause'), 'Lanjut'),
+                (A('select'), 'Select'),
+                (A('pause'), 'Resume'),
             ]
 
         if context == 'shop':
             if self.is_controller_mode():
-                # D-pad disebut juga: jaring pengaman kalau stick
-                # kanan tidak terdeteksi di driver tertentu.
                 return [
-                    (A('select'), 'Beli'),
-                    (A('back'), 'Tutup'),
+                    (A('select'), 'Buy'),
+                    (A('back'), 'Close'),
                     (self.get_button_label('right_stick') + '/' +
                      self.get_button_label('dpad'), 'Scroll'),
-                    (A('snap'), 'Snap tombol'),
+                    (A('snap'), 'Snap'),
                 ]
             return [
-                (A('select'), 'Beli'),
-                (A('back'), 'Tutup'),
+                (A('select'), 'Buy'),
+                (A('back'), 'Close'),
                 (A('scroll'), 'Scroll'),
-                (A('snap'), 'Snap tombol'),
+                (A('snap'), 'Snap'),
             ]
 
         if context == 'victory':
             return [
-                (A('next_level'), 'Level berikutnya'),
-                (A('replay'), 'Ulangi'),
+                (A('next_level'), 'Next Level'),
+                (A('replay'), 'Replay'),
                 (A('to_menu'), 'Menu'),
             ]
 
         if context == 'defeat':
             return [
-                (A('replay'), 'Ulangi'),
+                (A('replay'), 'Replay'),
                 (A('to_menu'), 'Menu'),
             ]
 
-        # default: gameplay
+        # default: gameplay - English
         return [
             (self.get_button_label('skill_q'), 'Q'),
             (self.get_button_label('skill_w'), 'W'),
             (self.get_button_label('skill_e'), 'E'),
             (self.get_button_label('skill_r'), 'R'),
             (A('shop'), 'Shop'),
-            (A('move_hero'), 'Gerak hero'),
+            (A('move_hero'), 'Move Hero'),
             (A('pause'), 'Pause'),
         ]
 

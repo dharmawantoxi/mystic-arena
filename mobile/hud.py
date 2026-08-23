@@ -7,9 +7,9 @@
 #   H              -> tombol SHOP
 #   ESC            -> tombol JEDA (kanan atas)
 #   F8 / debug     -> tombol kecil FPS (bisa dimatikan di rilis)
-#   R (replay)     -> tombol ULANGI di layar kalah/menang
-#   N (next level) -> tombol LEVEL BERIKUTNYA
-#   SPACE (skip)   -> tombol LEWATI saat cinematic
+#   R (replay)     -> REPLAY button on victory/defeat screen
+#   N (next level) -> NEXT LEVEL button
+#   SPACE (skip)   -> SKIP button during cinematic
 #
 # Semua tombol memakai ukuran >= 48x48 dp (rekomendasi Google) dan
 # berada di dalam safe-area supaya tidak tertutup poni/gesture bar.
@@ -141,15 +141,15 @@ class TouchHUD:
         # "NEXT LEVEL"). Diperiksa oleh tools/test_hud_layout.py.
         self.buttons["skip"] = TouchButton(
             "skip", pygame.Rect(right - 170, bottom - 74, 160, 58),
-            "LEWATI  >>", shape="capsule", font_size=20, visible=False)
+            "SKIP  >>", shape="capsule", font_size=20, visible=False)
 
         mid = plat.LOGICAL_WIDTH // 2
         self.buttons["replay"] = TouchButton(
             "replay", pygame.Rect(mid - 310, bottom - 100, 165, 62),
-            "ULANGI", shape="capsule", font_size=22, visible=False)
+            "REPLAY", shape="capsule", font_size=20, visible=False)
         self.buttons["next_level"] = TouchButton(
             "next_level", pygame.Rect(mid - 115, bottom - 100, 200, 62),
-            "LEVEL LANJUT", shape="capsule", font_size=20, visible=False,
+            "NEXT LEVEL", shape="capsule", font_size=18, visible=False,
             color=(120, 230, 140))
         self.buttons["menu"] = TouchButton(
             "menu", pygame.Rect(mid + 115, bottom - 100, 165, 62),

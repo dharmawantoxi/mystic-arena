@@ -264,28 +264,71 @@ class SidePanel:
         pad = 14
         w = r.width - pad * 2
         x = pad
-        h = 92
+        h = 96
         self._kotak(full, x, y, w, h, "STATUS")
 
-        f_besar = self.get_font(26, "body_bold")
-        f = self.get_font(15, "body")
+        f_besar = self.get_font(22, "body_bold")
+        f_mid = self.get_font(16, "body_bold")
+        f = self.get_font(13, "body")
+        f_small = self.get_font(12, "body")
 
         emas = int(getattr(game, "gold", 0) or 0) if game else 0
-        t = f_besar.render("%d" % emas, True, EMAS)
+        # Format gold to avoid overlap: 1234 -> 1.2K, but keep full if small
+        if emas >= 10000:
+            emas_str = f"{emas/1000:.1f}K"
+        else:
+            emas_str = f"{emas:,}"
+
+        # Gold on left, avoid overlap with right side
+        t = f_besar.render(emas_str, True, EMAS)
+        # Truncate if too wide
+        max_gold_w = int(w * 0.55)
+        if t.get_width() > max_gold_w:
+            # Reduce font
+            f_besar_small = self.get_font(18, "body_bold")
+            t = f_besar_small.render(emas_str, True, EMAS)
         full.blit(t, (x + 10, y + 22))
-        full.blit(f.render("emas", True, DIM), (x + 12, y + 52))
+        full.blit(f.render("GOLD", True, DIM), (x + 10, y + 48))
 
         wave = getattr(game, "wave_number", None) if game else None
         if wave is None and game is not None:
             wave = getattr(game, "current_wave", None)
         lvl = getattr(game, "level_number", None) if game else None
         kanan = x + w - 10
+
+        # Right side - Level and Wave with proper spacing, no overlap
+        ry = y + 24
         if lvl is not None:
-            t = f.render("LV %s" % lvl, True, FG)
-            full.blit(t, (kanan - t.get_width(), y + 26))
+            # Shield indicator if active
+            try:
+                shield_active = False
+                if game:
+                    shield_active = getattr(game.blue_base, 'shield_active', False)
+                if shield_active and wave is not None and wave < 10:
+                    lvl_text = f"LV {lvl} [SHIELDED]"
+                    t = f_small.render(lvl_text, True, (100, 200, 255))
+                else:
+                    t = f_mid.render(f"LV {lvl}", True, FG)
+            except Exception:
+                t = f_mid.render(f"LV {lvl}", True, FG)
+            full.blit(t, (kanan - t.get_width(), ry))
+            ry += 20
+
         if wave is not None:
-            t = f.render("wave %s" % wave, True, DIM)
-            full.blit(t, (kanan - t.get_width(), y + 48))
+            # Wave with shield warning
+            try:
+                if wave < 10:
+                    wave_str = f"Wave {wave} (Shield)"
+                    wave_color = (100, 200, 255)
+                else:
+                    wave_str = f"Wave {wave}"
+                    wave_color = DIM
+            except Exception:
+                wave_str = f"Wave {wave}"
+                wave_color = DIM
+            t = f.render(wave_str, True, wave_color)
+            full.blit(t, (kanan - t.get_width(), ry))
+
         return y + h + 10
 
     def _gambar_hero(self, full, game, y):
@@ -319,11 +362,11 @@ class SidePanel:
         h = min(h, 236)
         if h < 40:
             return y
-        self._kotak(full, x, y, w, h, "HERO")
+        self._kotak(full, x, y, w, h, "HEROES")
 
         if not pahlawan:
             f = self.get_font(14, "body")
-            full.blit(f.render("belum ada hero", True, DIM), (x + 10, y + 30))
+            full.blit(f.render("No heroes", True, DIM), (x + 10, y + 30))
             return y + h + 10
 
         f_nama = self.get_font(15, "body_bold")
@@ -371,7 +414,7 @@ class SidePanel:
             by += tinggi_baris
         if getattr(self, "_hero_lebih", 0) and by + 14 <= y + h:
             f_kecil2 = self.get_font(12, "body")
-            full.blit(f_kecil2.render("+%d hero lagi" % self._hero_lebih,
+            full.blit(f_kecil2.render("+%d more" % self._hero_lebih,
                                       True, DIM), (x + 9, by - 2))
         return y + h + 10
 
