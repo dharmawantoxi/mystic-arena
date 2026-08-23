@@ -5072,21 +5072,41 @@ class AIPlayer:
         self.heroes = []
 
     def _ai_brain(self):
-        """Tingkat kecerdasan AI: 0.0 (level 1, polos) -> 1.0 (pintar).
+        """Tingkat kecerdasan DASAR AI: 0.0 (level 1) -> 1.0 (level ~20).
 
-        Semakin tinggi level, AI: berpikir lebih cepat, membangun
-        lebih agresif, membeli hero lebih rajin, dan menahan lebih
-        sedikit gold cadangan.
+        Mengatur peluang build/upgrade/beli hero. BUKAN batas akhir
+        kepintaran AI - lihat _ai_elite() untuk peningkatan di level 20+.
         """
         lvl = max(1, int(getattr(self, "level_number", 1) or 1))
         return min(1.0, (lvl - 1) / 19.0)
 
+    def _ai_elite(self):
+        """Tingkat ELITE AI: 0.0 (level 20) -> 1.0 (level terakhir).
+
+        AI terus berkembang MELEBIHI otak dasar setelah level 20:
+        berpikir makin cepat & melakukan beberapa aksi sekaligus per
+        tick berpikir. Tanpa ini AI akan "stuck" / datar di level 20,
+        sehingga level 21-54 terasa membosankan. Rentang elite mengikuti
+        jumlah level game (54) supaya kepintaran terus naik sampai akhir.
+        """
+        lvl = max(1, int(getattr(self, "level_number", 1) or 1))
+        elite_start = 20
+        try:
+            from levels import get_level_count
+            elite_end = max(elite_start + 1, get_level_count())
+        except Exception:
+            elite_end = 54
+        if lvl <= elite_start:
+            return 0.0
+        return min(1.0, (lvl - elite_start) /
+                   max(1, (elite_end - elite_start)))
+
     def _ai_reserve(self):
-        """Gold cadangan AI (semakin pintar semakin tipis cadangannya)."""
-        # Handicap dikurangi: cadangan dasar lebih kecil supaya AI
-        # menggunakan semua fitur (termasuk Regen Shield) lebih agresif,
-        # setara dengan kemampuan pemain.
-        return int(AI_MIN_GOLD_RESERVE * (0.6 - 0.5 * self._ai_brain()))
+        """Gold cadangan AI. HANDICAP DIHAPUS SEPENUHNYA: AI memakai
+        SELURUH emasnya untuk semua fitur (build, hero, upgrade,
+        Regen Shield), sama seperti pemain - tidak menahan emas sama
+        sekali."""
+        return 0
 
     def update(self, all_towers, all_minions, all_heroes, my_nexus,
                all_bases, build_slots=None):
@@ -5096,52 +5116,81 @@ class AIPlayer:
         if self.think_timer > 0:
             return
 
-        # AI pintar berpikir lebih cepat (interval 90 -> ~30 di level 20)
         brain = self._ai_brain()
-        self.think_timer = max(
-            25, int(AI_THINK_INTERVAL * (1.0 - 0.65 * brain)))
+        elite = self._ai_elite()
 
-        # Filter red towers yang bisa di-upgrade
+        # AI makin pintar makin cepat berpikir. AI ELITE (level 20+)
+        # berpikir JAUH lebih cepat lagi - lantai interval diturunkan
+        # oleh elite - supaya level 21-54 tetap menantang (tidak datar).
+        self.think_timer = max(
+            8, int(AI_THINK_INTERVAL * (1.0 - 0.65 * brain)
+                   - 22 * elite))
+
+        # AI ELITE bisa melakukan beberapa aksi sekaligus per tick
+        # berpikir (level 20 = 1 aksi, level terakhir = 3 aksi). Ini
+        # membuat AI terus bertambah tangguh sepanjang 50+ level,
+        # bukan mentok di level 20.
+        actions = 1 + int(round(2 * elite))
+        for _ in range(actions):
+            if not self._ai_step(all_towers, build_slots,
+                                 my_nexus, brain, elite):
+                break
+
+    def _ai_step(self, all_towers, build_slots, my_nexus, brain, elite):
+        """Satu putar prioritas AI. Return True kalau ada aksi yang
+        dilakukan, False kalau tidak ada yang layak dikerjakan.
+
+        Peluang tiap aksi DITINGKATKAN oleh tier ELITE (level 20+)
+        supaya AI bertindak lebih pasti / decisive di level tinggi -
+        tidak lagi membuang peluang secara acak.
+        """
         my_towers = [t for t in all_towers
                      if t.team == self.team and t.alive and t.can_upgrade()]
-
-        # ═══ Priority 0: Build new tower kalau ada slot kosong ═══
-        if build_slots:
-            empty_slots = [s for s in build_slots
-                           if not s['taken']]
-            if empty_slots and self.gold >= 150:
-                if random.random() < 0.4 + 0.45 * brain:
-                    if self._try_build_tower(empty_slots):
-                        return
-
-        # Priority 1: Buy hero (maksimal AI_MAX_HEROES) - rajin di level tinggi
-        if len(self.heroes) < AI_MAX_HEROES:
-            if random.random() < AI_HERO_BUY_PRIORITY * (0.55 + 0.9 * brain):
-                if self._try_buy_hero():
-                    return
-
-        # Priority 2: Upgrade hero
-        if self.heroes and random.random() < AI_HERO_UPGRADE_PRIORITY * (0.7 + 0.6 * brain):
-            if self._try_upgrade_hero():
-                return
-
-        # Priority 3: Upgrade tower
-        if my_towers and random.random() < min(0.9, AI_UPGRADE_TOWER_CHANCE + 0.5 * brain):
-            if self._try_upgrade_tower_new(my_towers):
-                return
-
-        # Priority 3b: Activate Regen Shield on eligible towers (parity).
-        # Pakai SEMUA tower tim (bukan hanya yang bisa di-upgrade), karena
-        # tower level 6 (max) tetap bisa beli Regen Shield.
         all_my_towers = [t for t in all_towers
                          if t.team == self.team and t.alive]
+
+        # Elite menambah peluang setiap aksi (cap 0.98 supaya tetap
+        # ada sedikit variasi, bukan robot sempurna).
+        def roll(base):
+            return random.random() < min(0.98, base + 0.45 * elite)
+
+        # ═══ Priority 0: Build new tower ═══
+        if build_slots:
+            empty_slots = [s for s in build_slots if not s['taken']]
+            if empty_slots and self.gold >= 150:
+                if roll(0.4 + 0.45 * brain):
+                    if self._try_build_tower(empty_slots):
+                        return True
+
+        # Priority 1: Buy hero (maks AI_MAX_HEROES)
+        if len(self.heroes) < AI_MAX_HEROES:
+            if roll(AI_HERO_BUY_PRIORITY * (0.55 + 0.9 * brain)):
+                if self._try_buy_hero():
+                    return True
+
+        # Priority 2: Upgrade hero
+        if self.heroes and roll(AI_HERO_UPGRADE_PRIORITY
+                                * (0.7 + 0.6 * brain)):
+            if self._try_upgrade_hero():
+                return True
+
+        # Priority 3: Upgrade tower
+        if my_towers and roll(AI_UPGRADE_TOWER_CHANCE + 0.5 * brain):
+            if self._try_upgrade_tower_new(my_towers):
+                return True
+
+        # Priority 3b: Regen Shield (lvl 4+, parity dengan pemain).
+        # Pakai SEMUA tower tim karena tower level 6 (max) tetap bisa
+        # beli Regen Shield.
         if all_my_towers and self._try_activate_regen_shield(all_my_towers):
-            return
+            return True
 
         # Priority 4: Upgrade nexus
-        if random.random() < AI_NEXUS_UPGRADE_PRIORITY * (0.7 + 0.6 * brain):
+        if roll(AI_NEXUS_UPGRADE_PRIORITY * (0.7 + 0.6 * brain)):
             if self._try_upgrade_nexus(my_nexus):
-                return
+                return True
+
+        return False
 
     def _try_build_tower(self, empty_slots):
         """AI build tower di slot random"""
