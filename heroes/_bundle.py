@@ -5962,13 +5962,21 @@ class _NS_thorne:
         _NS_thorne._rect(surface, _NS_thorne.PALETTE["gold_mid"], (cx - 2, cy + 1, 4, 3))
         _NS_thorne._rect(surface, _NS_thorne.PALETTE["gold_light"], (cx - 1, cy + 2, 2, 1))
 
-        # Fur wisps on bottom (floating hint)
-        for i in range(5):
-            wx = cx - 10 + i * 5
-            wy = cy + 24
-            wl = 3 + int(math.sin(phase + i) * 1)
-            _NS_thorne._aaline(surface, _NS_thorne.PALETTE["fur_dark"],
-                    (wx, wy), (wx + int(math.sin(phase + i) * 2), wy + wl), 1)
+        # Heavy clawed feet: Thorne is a ground bruiser, so the sprite
+        # needs a broad, weighty stance instead of a floating fur fade.
+        for side in (-1, 1):
+            fx = cx + side * 8
+            _NS_thorne._rect(surface, _NS_thorne.PALETTE["fur_darkest"],
+                              (fx - 5, cy + 22, 10, 8), border_radius=2)
+            _NS_thorne._rect(surface, _NS_thorne.PALETTE["fur_dark"],
+                              (fx - 4, cy + 23, 9, 6), border_radius=2)
+            _NS_thorne._rect(surface, _NS_thorne.PALETTE["fur_mid"],
+                              (fx - 3, cy + 23, 4, 3), border_radius=1)
+            for claw in (-2, 1, 4):
+                _NS_thorne._poly(surface, _NS_thorne.PALETTE["quill_tip"], [
+                    (fx + claw, cy + 29), (fx + claw + 2, cy + 29),
+                    (fx + claw + 1, cy + 32),
+                ])
 
 
     def _draw_torso(surface, cx, cy, facing, phase, warpath=False):
