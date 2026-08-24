@@ -40,11 +40,18 @@ ekonomi game ini:
  23. Solar Brand      (terinspirasi dari Radiance)
  24. Runic Gavel      (terinspirasi dari Khanda)
 
+Item ORISINAL (bukan adaptasi Dota) - kemampuan inti anti-heal:
+
+ 25. Searbrand        - aura Cauterize 300px: musuh di dekat HILANG
+                        50% kemampuan heal-nya (anti-heal permanen)
+                        + bakar 6 dmg/dtk; Brand Burst saat >=2 musuh
+                        dekat (110 magic dmg + bakar 22 dmg/dtk 3 dtk).
+
 Crimson Guard TIDAK diduplikasi: di Tier II sudah ada "Scarlet
 Bulwark" yang merupakan adaptasi langsung item tersebut.
 
-Toko ITEM FORGE kini 3 halaman (tab TIER I / TIER II / TIER III di
-bawah info hero) karena katalog berisi 24 item.
+Toko ITEM FORGE kini 4 halaman (tab TIER I / TIER II / TIER III di
+bawah info hero) karena katalog berisi 25 item.
 
 ITEM FORGE tidak lagi mewajibkan klik hero di peta dulu: grid item
 selalu ditampilkan, dan ada strip "BUY FOR" berisi daftar hero yang
@@ -102,6 +109,7 @@ CATEGORY_REACH    = "reach"      # jarak tembak + mobilitas (Hurricane Pike)
 CATEGORY_POISON   = "poison"     # racun % HP + multi-tembak (Hydra's Breath)
 CATEGORY_INFERNO  = "inferno"    # bakar area (Radiance)
 CATEGORY_ARCANE   = "arcane"     # damage + CDR + proc magic (Khanda)
+CATEGORY_MORTAL   = "mortal"     # anti-heal area (Searbrand - orisinal)
 
 # ════════════════════════════════════════════════════════════
 # MIASMA TRACKER (Basilisk Breath - racun % Max HP per tick)
@@ -927,6 +935,60 @@ ITEM_CATALOG = {
                     "target (Empower Strike)."),
         "flavor": "Palu runik yang menyimpan muatan sihir tiap hembusan.",
     },
+
+    # ════════════════════════════════════════════════════════
+    # ITEM ORISINAL (bukan adaptasi Dota): Searbrand
+    # Kemampuan inti: MENGHAPUS HEAL musuh (anti-heal area).
+    # ════════════════════════════════════════════════════════
+    "searbrand": {
+        "name": "Searbrand",
+        "category": CATEGORY_MORTAL,
+        "cost": 5750,
+        "icon": "searbrand.png",
+        "color": (235, 95, 60),
+        "glow": (255, 150, 110),
+        "stats": {
+            "damage": 12,
+            "hp": 320,
+            "hp_regen": 6,
+            "cooldown_reduction": 0.15,
+        },
+        "aura": {
+            # Cauterize (KEMAMPUAN UTAMA): musuh di sekitar
+            # KEHILANGAN 50% kemampuan heal-nya. Berlaku pasif
+            # terus-menerus, tanpa syarat & tanpa cooldown.
+            "name": "Cauterize",
+            "enemy_radius": 300,
+            "enemy_anti_heal": 0.50,
+            "burn_dps": 6,
+        },
+        "active": {
+            # Brand Burst: ledakan api area saat >=2 musuh dekat
+            # (damage + burn lanjutan). Anti-heal UTAMA sudah
+            # ditanggung aura Cauterize.
+            "name": "Brand Burst",
+            "trigger_enemies": 2,
+            "radius": 320,
+            "damage": 110,
+            "burn_dps": 22,
+            "burn_duration": 180,  # 3 detik
+            "cooldown": 1080,      # 18 detik
+        },
+        "melee_only": False,
+        "drops_on_death": False,
+        "desc": ("+12 Damage, +320 HP, +6 HP/reg, 15% CDR. AURA "
+                 "CAUTERIZE (300px): musuh di dekat HILANG 50% "
+                 "kemampuan heal-nya + bakar 6 dmg/dtk. Saat >=2 "
+                 "musuh dekat: Brand Burst, 110 magic dmg + bakar "
+                 "22 dmg/dtk selama 3 dtk (CD 18 dtk)."),
+        "desc_en": ("+12 Damage, +320 HP, +6 HP regen, 15% CDR. "
+                    "CAUTERIZE AURA (300px): nearby enemies LOSE 50% "
+                    "of their healing + take 6 dmg/s burn. When 2+ "
+                    "enemies are near: Brand Burst deals 110 magic "
+                    "dmg and burns 22 dmg/s for 3s (18s CD)."),
+        "flavor": ("Besi berpijar yang mencauter luka - apa pun yang "
+                   "menerima bekasnya tak akan pernah utuh kembali."),
+    },
 }
 
 # Urutan tampil di toko (sama dengan urutan permintaan pengguna)
@@ -958,6 +1020,8 @@ ITEM_SHOP_ORDER = [
     "basilisk_breath",
     "solar_brand",
     "runic_gavel",
+    # ── Halaman 4 (TIER III - lanjutan) ──
+    "searbrand",
 ]
 
 # Jumlah item per halaman toko (grid 4x2). 16 item = 2 halaman.
@@ -988,6 +1052,7 @@ CATEGORY_INFO = {
     CATEGORY_POISON:    ("POISON",     (190, 255, 130)),
     CATEGORY_INFERNO:   ("INFERNO",    (255, 210, 120)),
     CATEGORY_ARCANE:    ("ARCANE",     (235, 180, 255)),
+    CATEGORY_MORTAL:    ("MORTAL",     (255, 140, 100)),
 }
 
 
@@ -1108,6 +1173,8 @@ class HeroItemInventory:
         # Runic Gavel (Empower Strike charge)
         self.empower_charge = ITEM_CATALOG["runic_gavel"]["passive"][
             "charge_time"]
+        # Searbrand (Brand Burst)
+        self.searbrand_cd = 0
 
     # ── Manajemen slot ────────────────────────────────────
     def count(self, item_id):
@@ -1193,6 +1260,7 @@ class HeroItemInventory:
         self.gale_timer = 0
         self.gale_cd = 0
         self.pierce_bash_cd = 0
+        self.searbrand_cd = 0
         if self.has("runic_gavel"):
             self.empower_charge = ITEM_CATALOG["runic_gavel"][
                 "passive"]["charge_time"]
@@ -1418,7 +1486,8 @@ class HeroItemInventory:
                      "static_tick",
                      # Tier III
                      "thorn_timer", "thorn_cd", "arctic_cd",
-                     "gale_timer", "gale_cd", "pierce_bash_cd"):
+                     "gale_timer", "gale_cd", "pierce_bash_cd",
+                     "searbrand_cd"):
             if getattr(self, attr, 0) > 0:
                 setattr(self, attr, getattr(self, attr) - dt)
         if self.rend_timer <= 0:
@@ -1582,6 +1651,33 @@ class HeroItemInventory:
                         h.x -= h.facing * act["dash_distance"]
                     _fx_notify(h, "GALE LEAP!",
                                ITEM_CATALOG["gale_pike"]["glow"])
+            # Searbrand - Brand Burst saat >=2 musuh dekat
+            if self.has("searbrand") and self.searbrand_cd <= 0 \
+                    and enemies:
+                act = ITEM_CATALOG["searbrand"]["active"]
+                near = [e for e in enemies
+                        if getattr(e, "alive", False)
+                        and math.hypot(e.x - h.x, e.y - h.y)
+                        <= act["radius"]]
+                if len(near) >= act["trigger_enemies"]:
+                    self.searbrand_cd = act["cooldown"]
+                    for e in near:
+                        try:
+                            e.take_damage(act["damage"], h.team,
+                                          "magic")
+                        except TypeError:
+                            e.take_damage(act["damage"], h.team)
+                        try:
+                            e.apply_debuff("burn",
+                                           act["burn_dps"],
+                                           act["burn_duration"],
+                                           source_team=h.team)
+                        except Exception:
+                            pass
+                    _fx_notify(h, "BRAND BURST!",
+                               ITEM_CATALOG["searbrand"]["glow"])
+                    _fx_chain(h, near,
+                              ITEM_CATALOG["searbrand"]["color"])
 
         # HP regen (base item regen + Leviathan out-of-combat +
         # Octarine small regen sudah termasuk angka stat).
@@ -1939,7 +2035,8 @@ def update_auras(all_heroes):
                         inv.aura_guard_block = blk
 
     # ═══ EVERFROST GUARD: Freezing Aura (musuh: atk slow + heal
-    #     reduction) & SOLAR BRAND: Scorched Earth (bakar + blind).
+    #     reduction), SOLAR BRAND: Scorched Earth (bakar + blind),
+    #     SEARBRAND: Cauterize (anti-heal 50% + bakar ringan).
     #     Aura ini mengenai SEMUA unit musuh (minion/hero/boss),
     #     bukan hanya hero, jadi ditaruh di loop terpisah. ═══
     frost_sources = [h for h in all_heroes
@@ -1950,7 +2047,11 @@ def update_auras(all_heroes):
                      if getattr(h, "alive", False)
                      and getattr(h, "items", None) is not None
                      and h.items.has("solar_brand")]
-    if frost_sources or solar_sources:
+    sear_sources = [h for h in all_heroes
+                    if getattr(h, "alive", False)
+                    and getattr(h, "items", None) is not None
+                    and h.items.has("searbrand")]
+    if frost_sources or solar_sources or sear_sources:
         f_r = ITEM_CATALOG["everfrost_guard"]["aura"]["enemy_radius"]
         f_as = ITEM_CATALOG["everfrost_guard"]["aura"][
             "enemy_atk_slow"]
@@ -1959,6 +2060,9 @@ def update_auras(all_heroes):
         s_r = ITEM_CATALOG["solar_brand"]["aura"]["enemy_radius"]
         s_burn = ITEM_CATALOG["solar_brand"]["aura"]["burn_dps"]
         s_blind = ITEM_CATALOG["solar_brand"]["aura"]["blind"]
+        se_r = ITEM_CATALOG["searbrand"]["aura"]["enemy_radius"]
+        se_heal = ITEM_CATALOG["searbrand"]["aura"]["enemy_anti_heal"]
+        se_burn = ITEM_CATALOG["searbrand"]["aura"]["burn_dps"]
         for u in all_units:
             if not getattr(u, "alive", False):
                 continue
@@ -1991,6 +2095,18 @@ def update_auras(all_heroes):
                             u.apply_miss_chance(s_blind, 30)
                         except Exception:
                             pass
+                    break
+            # Searbrand - Cauterize (anti-heal 50% + bakar ringan)
+            for src in sear_sources:
+                if u_team == src.team:
+                    continue
+                if math.hypot(u.x - src.x, u.y - src.y) <= se_r:
+                    try:
+                        u.apply_debuff("anti_heal", se_heal, 30)
+                        u.apply_debuff("burn", se_burn, 30,
+                                       source_team=src.team)
+                    except Exception:
+                        pass
                     break
 
     # Cari semua pemegang Steel Aegis
@@ -2073,27 +2189,29 @@ def suggest_item_for_hero(hero, owned):
     # Tier II ikut masuk pool sesuai peran, supaya AI juga membeli
     # item legendary baru (Scarlet Bulwark, Monarch Wings, dst.).
     if "tank" in role or "bruiser" in role or "fighter" in role:
-        pool = ["leviathan_heart", "scarlet_bulwark", "razor_carapace",
-                "everfrost_guard", "steel_aegis", "abyss_breaker",
-                "solar_brand", "demon_maw", "corroder", "fenrir_chain",
-                "octarine_core", "moon_shard"]
+        pool = ["leviathan_heart", "scarlet_bulwark", "searbrand",
+                "razor_carapace", "everfrost_guard", "steel_aegis",
+                "abyss_breaker", "solar_brand", "demon_maw",
+                "corroder", "fenrir_chain", "octarine_core",
+                "moon_shard"]
     elif "marksman" in role or "assassin" in role:
         pool = ["dead_edge", "basilisk_breath", "gale_pike",
-                "frostbound_eye", "sundering_cudgel", "monarch_wings",
-                "thunder_coil", "sanguine_thorn", "moon_shard",
-                "runic_gavel", "corroder", "demon_maw",
+                "frostbound_eye", "sundering_cudgel", "searbrand",
+                "monarch_wings", "thunder_coil", "sanguine_thorn",
+                "moon_shard", "runic_gavel", "corroder", "demon_maw",
                 "octarine_core", "steel_aegis"]
     elif "mage" in role or "trickster" in role:
-        pool = ["octarine_core", "runic_gavel", "solar_brand",
-                "frostbound_eye", "everfrost_guard", "tempest_vane",
-                "corroder", "moon_shard", "thunder_coil",
-                "steel_aegis", "demon_maw", "dead_edge"]
+        pool = ["octarine_core", "runic_gavel", "searbrand",
+                "solar_brand", "frostbound_eye", "everfrost_guard",
+                "tempest_vane", "corroder", "moon_shard",
+                "thunder_coil", "steel_aegis", "demon_maw",
+                "dead_edge"]
     else:
-        pool = ["steel_aegis", "sundering_cudgel", "frostbound_eye",
-                "razor_carapace", "moon_shard", "demon_maw",
-                "leviathan_heart", "scarlet_bulwark", "solar_brand",
-                "thunder_coil", "monarch_wings", "octarine_core",
-                "gale_pike", "dead_edge", "corroder",
+        pool = ["steel_aegis", "searbrand", "sundering_cudgel",
+                "frostbound_eye", "razor_carapace", "moon_shard",
+                "demon_maw", "leviathan_heart", "scarlet_bulwark",
+                "solar_brand", "thunder_coil", "monarch_wings",
+                "octarine_core", "gale_pike", "dead_edge", "corroder",
                 "everfrost_guard"]
 
     if is_melee:
@@ -2153,7 +2271,11 @@ class HeroItemRenderer:
                     or (sid == "thunder_coil" and inv.static_timer > 0)
                     or (sid == "sanguine_thorn" and inv.rend_timer > 0)
                     or (sid == "razor_carapace" and inv.thorn_timer > 0)
-                    or (sid == "gale_pike" and inv.gale_timer > 0))
+                    or (sid == "gale_pike" and inv.gale_timer > 0)
+                    or (sid == "searbrand" and inv.searbrand_cd > 0
+                        and inv.searbrand_cd
+                        > ITEM_CATALOG["searbrand"]["active"]["cooldown"]
+                        - 30))
                 if _active:
                     g = pygame.Surface(
                         (cls.SLOT_SIZE + 6, cls.SLOT_SIZE + 6),
@@ -2559,7 +2681,7 @@ class ItemShopUI:
             lf = pygame.font.Font(None, 19)
             label = "TIER I - CORE" if i == 0 else \
                     "TIER II - LEGENDARY" if i == 1 \
-                    else "TIER III - MYTHIC" if i == 2 \
+                    else "TIER III - MYTHIC" if i in (2, 3) \
                     else tr("shop_page_label", page=i + 1)
             t = lf.render(label, True, (255, 225, 130) if active
                           else (170, 180, 205))
