@@ -7412,6 +7412,9 @@ class _NS_vex:
         )
 
         # ---------- Background layers ----------
+        # Cyan rim-light keeps the crown, shoulder spikes, and staff orb
+        # legible against dark terrain while preserving pixel edges.
+        _NS_vex._draw_void_silhouette_glow(surface, x, y - 12, pulse)
         _NS_vex._draw_void_aura(surface, x, y, pulse)
         _NS_vex._draw_void_platform(surface, x, y + 40, pulse, active_skill)
 
@@ -8132,6 +8135,20 @@ class _NS_vex:
             )
         pygame.draw.ellipse(shadow, (*_NS_vex.PALETTE["void_darkest"], 60), (8, 4, 84, 10))
         surface.blit(shadow, (x - 50, y - 10))
+
+
+    def _draw_void_silhouette_glow(surface, x, y, phase):
+        """Layered cyan rim light for Vex's tall void-mage silhouette."""
+        pulse = .72 + math.sin(phase * 1.4) * .16
+        halo = pygame.Surface((104, 116), pygame.SRCALPHA)
+        for radius, alpha in ((44, 9), (34, 15), (25, 22)):
+            _NS_vex._aacircle(halo, (*_NS_vex.PALETTE["void_dark"],
+                                      int(alpha * pulse)), (52, 58), radius)
+        _NS_vex._aaline(halo, (*_NS_vex.PALETTE["void_mid"], int(40 * pulse)),
+                         (36, 74), (21, 36), 2)
+        _NS_vex._aaline(halo, (*_NS_vex.PALETTE["void_mid"], int(34 * pulse)),
+                         (68, 57), (86, 32), 1)
+        surface.blit(halo, (x - 52, y - 58))
 
 
     def _draw_void_aura(surface, x, y, phase):
