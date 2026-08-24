@@ -54,7 +54,7 @@ except Exception:
 
 class PanelButton:
     def __init__(self, action, rect, label, warna=EMAS, font_size=20,
-                 ikon=None):
+                 ikon=None, tap_pad=None):
         self.action = action
         self.rect = pygame.Rect(rect)
         self.label = label
@@ -63,9 +63,19 @@ class PanelButton:
         self.font_size = font_size
         self.visible = True
         self.press_anim = 0.0
-        self.hit_rect = self.rect.inflate(
-            max(0, MIN_TAP - self.rect.width),
-            max(0, MIN_TAP - self.rect.height))
+        # tap_pad=None -> perilaku lama: dilebarkan sampai MIN_TAP
+        # (cocok untuk tombol tunggal seperti JEDA).
+        # tap_pad=N -> hit box diberi bantalan N px tiap sisi. Dipakai
+        # tombol-tombol sempit yang rapat (tactical commands): bantalan
+        # MIN_TAP=80 pada tombol setinggi 32 px membuat area sentuhnya
+        # menutupi tombol di atas/bawah, sehingga ketukan "tembus" ke
+        # tombol lain - atau ke tombol yang lagi tertutup popup.
+        if tap_pad is None:
+            self.hit_rect = self.rect.inflate(
+                max(0, MIN_TAP - self.rect.width),
+                max(0, MIN_TAP - self.rect.height))
+        else:
+            self.hit_rect = self.rect.inflate(tap_pad * 2, tap_pad * 2)
 
     def contains(self, pos):
         return self.visible and self.hit_rect.collidepoint(pos)
@@ -89,6 +99,13 @@ class SidePanel:
         self.notifikasi = []
         self.kill_feed = []        # [(teks, warna, sisa_ms)]
         self.aktif = False
+        # True hanya saat isi panel memang sedang ditampilkan
+        # (dalam gameplay). Notifikasi di luar gameplay tidak
+        # disimpan supaya tidak "menunggu" lalu muncul belakangan.
+        self.dalam_gameplay = False
+        # (id(game), state) terakhir yang digambar - dipakai untuk
+        # memaksa isi cache segar saat status game berganti.
+        self._kunci_state = None
         self._rebuild()
 
     # ── penyiapan ─────────────────────────────────────
@@ -110,12 +127,11 @@ class SidePanel:
         self.buttons["pause"] = PanelButton(
             "pause", (r.x + pad, 14, 58, 58), "", EMAS, 20, ikon="pause")
 
-        # Tactical buttons akan dibuat dinamis di _gambar_tactical,
-        # tapi buat placeholder di sini supaya hit_test langsung bisa
-        # dipakai sejak frame pertama (sebelum draw pertama).
-        # Posisi placeholder akan di-update di draw.
-        # Kita buat di koordinat yang kira-kira sama dengan posisi
-        # akhirnya (di bawah HEROES).
+        # Tombol tactical dibuat dinamis di _gambar_tactical karena
+        # posisinya bergantung pada tinggi daftar hero. Placeholder
+        # dibuat di sini supaya tombolnya SUDAH ADA (dan tidak "hantu")
+        # sebelum draw pertama; posisinya akan di-update di draw dan
+        # tombolnya baru boleh ditekan setelah benar-benar digambar.
         tac_y_base = 84 + 96 + 10 + 236 + 10  # status + heroes + gap
         tac_btn_h = 32
         tac_gap = 6
@@ -126,10 +142,17 @@ class SidePanel:
             ("attack_boss", "ATTACK BOSS [B]", BAHAYA),
         ]):
             by = tac_y_base + i * (tac_btn_h + tac_gap)
-            # Placeholder rect - akan di-update di _gambar_tactical
-            self.buttons[act] = PanelButton(
+            # Placeholder rect - akan di-update di _gambar_tactical.
+            # Bantalan sentuh kecil (3 px) supaya hit box tidak menutupi
+            # tombol tetangga (jarak antar tombol 38 px).
+            tombol = PanelButton(
                 act, (r.x + pad + 6, r.y + by, r.width - pad*2 - 12, tac_btn_h),
-                lbl, col, 13)
+                lbl, col, 13, tap_pad=3)
+            # Sembunyikan sampai digambar sungguhan: posisinya di atas
+            # belum final (tergantung jumlah hero), jadi tidak boleh
+            # bisa ditekan sebelum draw pertama (hindari "tombol hantu").
+            tombol.visible = False
+            self.buttons[act] = tombol
 
         # Simpan latar batu supaya bisa dipulihkan tiap frame tanpa
         # menggambar ulang ratusan bata.
@@ -143,11 +166,65 @@ class SidePanel:
         if self.rect is None or self.rect != plat.get_panel_rect():
             self._rebuild()
 
+    def _bersihkan_panel(self, full):
+        """
+        Kosongkan isi panel (dipakai di luar gameplay: splash, menu).
+
+        Latar batu dipulihkan, semua tombol disembunyikan, cache isi
+        dibuang, dan sisa notifikasi/kill feed dibersihkan supaya tidak
+        "menunggu" lalu muncul lagi setelah gameplay dimulai.
+        """
+        r = self.rect
+        if self._latar is not None:
+            full.blit(self._latar, r.topleft)
+        else:
+            full.fill((18, 16, 26), r)
+        for b in self.buttons.values():
+            b.visible = False
+        self._isi_buf = None
+        self._isi_at = 0.0
+        self.notifikasi = []
+        self.kill_feed = []
+        self._notif_kotor = False
+        self.dalam_gameplay = False
+
     # ── input ─────────────────────────────────────────
-    def hit_test(self, pos):
+    @staticmethod
+    def ada_popup_game(game):
+        """
+        True kalau game punya overlay yang digambar DI ATAS area panel:
+
+          - popup tower/nexus   (popup_target)
+          - popup build tower   (build_popup_slot)
+          - panel hero terpilih (selected_hero)
+
+        Popup itu menutupi tombol command, jadi ketukan di wilayah
+        popup harus sampai ke popup - bukan "tembus" ke tombol command
+        yang kebetulan berada di baliknya.
+        """
+        if game is None:
+            return False
+        if getattr(game, "popup_target", None) is not None:
+            return True
+        if getattr(game, "build_popup_slot", None) is not None:
+            return True
+        hero = getattr(game, "selected_hero", None)
+        if hero is not None and getattr(hero, "alive", True):
+            return True
+        return False
+
+    def hit_test(self, pos, game=None):
         if not self.aktif:
             return None
+        popup_terbuka = self.ada_popup_game(game)
         for b in self.buttons.values():
+            # Saat popup menutupi panel, hanya tombol JEDA yang boleh
+            # merespons (posisinya di jalur atas, tidak kena popup).
+            # Tombol command dilewati supaya klik yang sedang menimpa
+            # popup (mis. tombol UPGRADE tower) tidak "tembus" ke
+            # command di baliknya.
+            if popup_terbuka and b.action != "pause":
+                continue
             if b.contains(pos):
                 b.press_anim = 1.0
                 return b.action
@@ -166,6 +243,8 @@ class SidePanel:
         berebut tempat: kill feed di tengah panel, notifikasi besar
         (combo/achievement) di bawah.
         """
+        if not self.dalam_gameplay:
+            return
         warna = BIRU if str(tim).startswith("blue") else BAHAYA
         self.kill_feed.append([str(pembunuh)[:14], str(korban)[:14],
                                warna, 3400])
@@ -174,6 +253,8 @@ class SidePanel:
 
     # ── notifikasi ────────────────────────────────────
     def beri_tahu(self, teks, warna=EMAS, durasi_ms=2600):
+        if not self.dalam_gameplay:
+            return
         self.notifikasi.append([str(teks), warna, durasi_ms])
         del self.notifikasi[:-5]
         self._notif_kotor = True
@@ -199,6 +280,29 @@ class SidePanel:
             return
         r = self.rect
 
+        # ═══ ISI PANEL HANYA SAAT GAMEPLAY ═══
+        # Panel kanan menampilkan STATUS / HERO / TACTICAL COMMANDS.
+        # Itu semua informasi IN-GAME. Di splash screen atau menu,
+        # game=None sehingga angka-angka itu kosong/menghalu (gold 0,
+        # "No heroes") - terlihat seperti bocor dari dalam game.
+        # Karena itu di luar gameplay panel dikosongkan: kembali ke
+        # latar batu polos dan semua tombol disembunyikan.
+        dalam_gp = (game is not None
+                    and getattr(game, "state", "playing") in
+                    ("playing", "victory", "defeat"))
+        if not dalam_gp:
+            self.dalam_gameplay = False
+            self._bersihkan_panel(full)
+            return
+
+        self.dalam_gameplay = True
+
+        # Tombol JEDA selalu hidup selama gameplay (di luar gameplay
+        # dia ikut disembunyikan oleh _bersihkan_panel).
+        jeda = self.buttons.get("pause")
+        if jeda is not None:
+            jeda.visible = True
+
         try:
             sekarang = pygame.time.get_ticks()
         except Exception:
@@ -207,6 +311,17 @@ class SidePanel:
         perlu = (self._isi_buf is None
                  or sekarang - self._isi_at >= JEDA_SEGAR_MS
                  or self._ada_animasi_tombol())
+        if not perlu:
+            # Ganti isi cache SEKARANG juga saat status game berubah
+            # (playing -> victory/defeat, game baru dari menu, dst.).
+            # Kalau hanya mengandalkan JEDA_SEGAR_MS, tombol command
+            # bisa tetap "hidup" sampai 250 ms setelah layar
+            # menang/kalah muncul - lalu bisa ditekan lewat layar
+            # overlay yang menggambar di atas peta.
+            kunci = (id(game), getattr(game, "state", ""))
+            if kunci != self._kunci_state:
+                perlu = True
+        self._kunci_state = (id(game), getattr(game, "state", ""))
         if perlu:
             if self._isi_buf is None or self._isi_buf.get_size() != r.size:
                 self._isi_buf = pygame.Surface(r.size).convert()
@@ -447,11 +562,29 @@ class SidePanel:
                                       True, DIM), (x + 9, by - 2))
         return y + h + 10
 
+    TACTICAL_KEYS = ("gather", "protect_tower", "protect_castle",
+                     "attack_boss")
+
+    def _tactical_sembunyikan(self):
+        """
+        Tombol command tidak digambar frame ini -> matikan juga
+        area sentuhnya. Kalau tidak, tombol lama (posisinya bahkan
+        bisa belum final) tetap "hidup" dan ketukan di mana pun di
+        panel bisa tembus ke command - misalnya saat layar menang/
+        kalah atau saat panel belum sempat digambar.
+        """
+        for k in self.TACTICAL_KEYS:
+            b = self.buttons.get(k)
+            if b is not None:
+                b.visible = False
+
     def _gambar_tactical(self, full, game, y):
         """Tactical command buttons: GATHER, PROTECT TOWER, PROTECT CASTLE, ATTACK BOSS"""
         if game is None:
+            self._tactical_sembunyikan()
             return y
         if getattr(game, 'state', '') != 'playing':
+            self._tactical_sembunyikan()
             return y
 
         r = self.rect
@@ -470,6 +603,7 @@ class SidePanel:
         h = 26 + num_btns * (btn_h + gap) - gap
         # Jangan gambar kalau tidak ada ruang (zona bawah)
         if y + h > r.height - self.ZONA_BAWAH - 8:
+            self._tactical_sembunyikan()
             return y
 
         self._kotak(full, x, y, w, h, "TACTICAL COMMANDS")
@@ -493,7 +627,12 @@ class SidePanel:
             # Jadi kita buat rect di koordinat layar penuh untuk hit_test, lalu convert ke buffer
             screen_rect = pygame.Rect(r.x + x + 6, r.y + by, w - 12, btn_h)
             # Simpan untuk hit_test (pakai koordinat layar)
-            btn = PanelButton(action, screen_rect, label, warna, 13)
+            # tap_pad=3: bantalan sentuh kecil. Bantalan MIN_TAP=80
+            # (24 px ke atas & bawah tombol 32 px) membuat tombol
+            # saling menelan klik satu sama lain DAN menelan klik
+            # popup yang digambar di atasnya (upgrade tower, dll).
+            btn = PanelButton(action, screen_rect, label, warna, 13,
+                              tap_pad=3)
             # Hanya di side panel, jika tidak enabled (misal no boss) → hidden / disabled
             # Attack Boss hanya muncul saat ada boss, sesuai permintaan visual sesaat
             btn.visible = bool(enabled)
