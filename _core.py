@@ -1921,6 +1921,19 @@ class Game:
 
         for h in to_respawn:
             h.respawn()
+            # Pesanan Item Forge yang dibeli ketika hero mati baru
+            # masuk inventory setelah proses respawn selesai.
+            try:
+                from hero_items import deliver_pending_forge_items, ITEM_CATALOG
+                from localization import tr
+                delivered = deliver_pending_forge_items(h)
+                if delivered:
+                    names = ", ".join(ITEM_CATALOG[sid]["name"] for sid in delivered)
+                    self.ui.add_notification(
+                        tr("forge_delivered", hero=h.name, items=names),
+                        (150, 255, 170))
+            except Exception as exc:
+                print(f"[ITEM_SHOP] pending delivery error: {exc}")
             del self.hero_respawn_timers[h]
 
         for m in self.minions:
@@ -5082,8 +5095,17 @@ class Menu:
             settings.get_speed_label(),
             "speed")
 
+        # Interface language
+        from localization import tr, get_language_label
+        y += 50
+        self._draw_option_setting(
+            col2_x, y, 340,
+            tr("language"),
+            get_language_label(settings.language),
+            "language")
+
         # ═══ GRAPHICS SECTION ═══
-        graphics_y = gameplay_y + 240
+        graphics_y = gameplay_y + 290
         self._draw_settings_section_header(
             col2_x, graphics_y, "🖥 GRAPHICS", (255, 180, 100))
 
@@ -5971,6 +5993,18 @@ class Menu:
                 settings.set_game_speed(1.0)
             SoundManager().play('ui_click', volume_mult=0.4)
 
+        # ═══ LANGUAGE CYCLER ═══
+        elif btn_id in ("language_prev", "language_next"):
+            settings = GameSettings()
+            languages = ["id", "en"]
+            try:
+                idx = languages.index(settings.language)
+            except ValueError:
+                idx = 0
+            delta = -1 if btn_id == "language_prev" else 1
+            settings.set_language(languages[(idx + delta) % len(languages)])
+            SoundManager().play('ui_click', volume_mult=0.4)
+
         # ═══ FPS LIMIT CYCLER ═══
         elif btn_id == "fps_prev":
             settings = GameSettings()
@@ -6499,16 +6533,22 @@ class InputHandler:
     # ═══════════════════════════════════════
 
     @staticmethod
-    def _kena(rect, mx, my, longgar=22):
-        """
-        Uji sentuh dengan pelonggaran.
+    def _touch_rect(rect, minimum=48, padding=6):
+        """Area sentuh ramah jari tanpa mengubah posisi visual tombol.
 
-        Beberapa tombol popup sangat kecil - tombol tutup (X) hanya
-        20x20 px, sekitar 12dp, jauh di bawah standar sentuh 48dp.
-        Melebarkan area ujinya jauh lebih aman daripada mengubah
-        gambarnya satu per satu.
+        Seluruh tombol gameplay memakai target minimum 48×48 logical px
+        (standar sentuh mobile). Tombol besar hanya mendapat bantalan
+        kecil agar area antar-tombol tidak terlalu banyak bertabrakan.
         """
-        return rect.inflate(longgar, longgar).collidepoint(mx, my)
+        width = max(rect.width + padding * 2, minimum)
+        height = max(rect.height + padding * 2, minimum)
+        return pygame.Rect(0, 0, width, height).move(
+            rect.centerx - width // 2, rect.centery - height // 2)
+
+    @classmethod
+    def _kena(cls, rect, mx, my, longgar=6):
+        """Uji sentuh dengan target minimum 48px untuk semua popup."""
+        return cls._touch_rect(rect, minimum=48, padding=longgar).collidepoint(mx, my)
 
     def handle_hero_panel_click(self, mx, my, button):
         """Klik di panel hero info (bottom-left)"""
@@ -6761,7 +6801,7 @@ class InputHandler:
 
         # Cek semua button di ui_buttons
         for btn_id, rect in list(g.ui_buttons.items()):
-            if not rect.collidepoint(mx, my):
+            if not self._kena(rect, mx, my):
                 continue
 
             # Close button
@@ -7560,6 +7600,8 @@ class GameSettings:
             cls._instance = super().__new__(cls)
             cls._instance._init_defaults()
             cls._instance._load()
+            from localization import set_language
+            set_language(cls._instance.language)
         return cls._instance
 
     def _init_defaults(self):
@@ -7578,6 +7620,9 @@ class GameSettings:
 
         # Graphics
         self.fps_limit = 60  # 30, 60, 120 (0 = unlimited)
+
+        # Interface language: Bahasa Indonesia (default) or English.
+        self.language = "id"
 
     def _load(self):
         """Load settings dari file"""
@@ -7601,6 +7646,11 @@ class GameSettings:
                 self.game_speed = data.get('game_speed', 1.0)
 
                 self.fps_limit = data.get('fps_limit', 60)
+                self.language = data.get('language', 'id')
+                if self.language not in ('id', 'en'):
+                    self.language = 'id'
+                from localization import set_language
+                set_language(self.language)
 
                 print("[SETTINGS] Loaded")
         except Exception as e:
@@ -7622,6 +7672,7 @@ class GameSettings:
                     self.damage_numbers_enabled,
                 'game_speed': self.game_speed,
                 'fps_limit': self.fps_limit,
+                'language': self.language,
             }
 
             with open(SETTINGS_FILE, 'w') as f:
@@ -7664,6 +7715,14 @@ class GameSettings:
     def set_game_speed(self, speed):
         self.game_speed = max(0.5, min(2.0, speed))
         self.save()
+
+    def set_language(self, language):
+        """Set bahasa antarmuka dan simpan preferensi global."""
+        if language in ('id', 'en'):
+            self.language = language
+            from localization import set_language
+            set_language(language)
+            self.save()
 
     def set_fps_limit(self, fps):
         # Valid: 30, 60, 120, 0 (unlimited)

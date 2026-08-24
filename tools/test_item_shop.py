@@ -96,21 +96,27 @@ assert handle_item_shop_click(g, 10, 10, 1)
 assert not g.item_shop_open
 print("T5 OK  - klik dalam panel aman, klik luar panel menutup")
 
-# ── T6: hero target mati -> fallback ke hero hidup lain ─────────────
+# ── T6: hero mati tetap bisa dipilih dan item masuk antrean ─────────
 g.item_shop_open = True
 h2.alive = False
 g.ui_buttons = {}
 ItemShopUI.draw(surf, g)
-assert g.itemshop_target_hero is h1, "target harus pindah ke hero hidup"
-print("T6 OK  - target mati -> fallback otomatis ke", h1.name)
+assert g.itemshop_target_hero is h2, "target mati tidak boleh diganti otomatis"
+rect = g.ui_buttons["itemshop_buy_dead_edge"]
+gold_before = g.gold
+assert handle_item_shop_click(g, rect.centerx, rect.centery, 1)
+assert not h2.items.has("dead_edge"), "item belum masuk sebelum respawn"
+assert h2._pending_forge_items == ["dead_edge"]
+assert g.gold == gold_before - ITEM_CATALOG["dead_edge"]["cost"]
+print("T6 OK  - item hero mati diantrikan sampai respawn")
 
-# ── T7: semua hero mati -> grid tetap tampil, BUY mati ──────────────
+# ── T7: semua hero mati tetap dapat forge untuk antrean ──────────────
 h1.alive = False
 g.ui_buttons = {}
 ItemShopUI.draw(surf, g)
-assert not any(k.startswith("itemshop_buy_") for k in g.ui_buttons)
-assert g.itemshop_target_hero is None
-print("T7 OK  - semua hero mati: item tetap kelihatan, BUY nonaktif")
+assert any(k.startswith("itemshop_buy_") for k in g.ui_buttons)
+assert g.itemshop_target_hero is h2
+print("T7 OK  - semua hero mati: forge tetap aktif untuk antrean")
 
 # ── T8: gold kurang -> tidak ada tombol BUY aktif ───────────────────
 h1.alive = True
@@ -120,25 +126,30 @@ ItemShopUI.draw(surf, g)
 assert not any(k.startswith("itemshop_buy_") for k in g.ui_buttons)
 print("T8 OK  - gold tidak cukup -> BUY nonaktif")
 
-# ── T9: drop item dari inventory target (bukan selected_hero) ───────
+# ── T9: item antrean dikirim setelah respawn ─────────────────────────
+from hero_items import deliver_pending_forge_items
+delivered = deliver_pending_forge_items(h2)
+assert delivered == ["dead_edge"]
+assert h2.items.has("dead_edge")
+print("T9 OK  - item antrean masuk inventory setelah respawn")
+
+# ── T10: drop item dari inventory target (bukan selected_hero) ──────
 g.gold = 20000
-g.ui_buttons = {}
-ItemShopUI.draw(surf, g)
-rect = g.ui_buttons["itemshop_slot_0"]
-# h1 target; beri item manual lalu drop
+g.itemshop_target_hero = h1
 h1.items.add("dead_edge")
+g.ui_buttons = {}
 ItemShopUI.draw(surf, g)
 rect = g.ui_buttons["itemshop_slot_0"]
 assert handle_item_shop_click(g, rect.centerx, rect.centery, 3)
 assert not h1.items.has("dead_edge")
-print("T9 OK  - drop item dari slot target di toko")
+print("T10 OK - drop item dari slot target di toko")
 
-# ── T10: _resolve_shop_target hormati selected_hero ─────────────────
+# ── T11: _resolve_shop_target hormati selected_hero ─────────────────
 g.selected_hero = h2
 h2.alive = True
 g.itemshop_target_hero = None
 t = _resolve_shop_target(g)
 assert t is h2, "selected hero hidup harus jadi target awal"
-print("T10 OK - hero terseleksi di peta otomatis jadi target awal")
+print("T11 OK - hero terseleksi di peta otomatis jadi target awal")
 
 print("\nSEMUA TEST LULUS ✔")
