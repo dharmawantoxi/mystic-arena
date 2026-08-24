@@ -807,6 +807,17 @@ class SaveManager:
             with open(slot_file, 'w') as f:
                 json.dump(data, f, indent=2)
             print(f"[SAVE] Slot {slot_num} saved!")
+
+            # ── AUTO-EXPORT BACKUP LOKAL ──
+            # Tiap slot ditulis, salinan backup ikut ditulis ke folder
+            # publik Download/MysticArena (lihat backup_manager.py).
+            # Non-blocking, tanpa dialog; gagal export tidak boleh
+            # mengganggu proses save.
+            try:
+                from backup_manager import auto_export
+                auto_export()
+            except Exception as e:
+                print(f"[SAVE] Auto-export skipped: {e}")
         except Exception as e:
             print(f"[SAVE] Failed: {e}")
 

@@ -2483,6 +2483,25 @@ class Menu:
         self.slot_delete_confirm = None  # slot yang mau dihapus (None kalau tidak ada)
         self.reset_confirm = False
 
+        # ── BACKUP LOKAL (export/import ke folder Download) ──
+        self.restore_prompt = None   # (payload, summary) backup saat startup
+        self.import_confirm = None   # (payload, summary) menunggu konfirmasi import
+        self.export_confirm = None   # summary backup lebih baru, konfirmasi timpa
+        self.backup_status = None    # (teks, warna, frame_expire) pesan di Settings
+
+        # Install ulang? (semua slot kosong) -> cari backup lokal di
+        # background; kalau ketemu, dialog restore muncul di main menu.
+        try:
+            import backup_manager as _bm
+
+            def _on_backup_found(payload, summary):
+                # Dipanggil dari thread worker: hanya set state.
+                self.restore_prompt = (payload, summary)
+
+            _bm.check_restore_on_startup(_on_backup_found)
+        except Exception as e:
+            print(f"[BACKUP] Startup check unavailable: {e}")
+
         # State
         self.state = MenuState.MAIN
         self.active = True  # menu aktif atau tidak
@@ -3536,6 +3555,10 @@ class Menu:
         """Handle keyboard"""
         if key == pygame.K_ESCAPE:
             if self.state == MenuState.MAIN:
+                # Tutup dialog restore backup dulu kalau ada
+                if getattr(self, 'restore_prompt', None) is not None:
+                    self.restore_prompt = None
+                    return
                 self.action = "quit"
             elif self.state in [MenuState.HOW_TO_PLAY,
                                 MenuState.SETTINGS,
@@ -3552,6 +3575,14 @@ class Menu:
                 # Cancel reset confirm dulu kalau ada
                 if getattr(self, 'reset_confirm', False):
                     self.reset_confirm = False
+                    return
+
+                # Cancel dialog backup (import/export) dulu kalau ada
+                if getattr(self, 'import_confirm', None) is not None:
+                    self.import_confirm = None
+                    return
+                if getattr(self, 'export_confirm', None) is not None:
+                    self.export_confirm = None
                     return
 
                 self.state = MenuState.MAIN
@@ -3992,6 +4023,115 @@ class Menu:
             "v2.0  -  MOBA Tower Defense", True, (105, 110, 140))
         self.screen.blit(version, version.get_rect(
             center=(cx, SCREEN_HEIGHT - 20)))
+
+        # ═══ DIALOG RESTORE BACKUP (deteksi install ulang) ═══
+        if self.restore_prompt is not None and not self.pause_mode:
+            self._draw_restore_prompt_dialog()
+
+    def _draw_restore_prompt_dialog(self):
+        """
+        Dialog 'Backup ditemukan' saat semua slot kosong tapi ada
+        backup lokal di Download/MysticArena. Satu ketukan RESTORE
+        memulihkan semua slot + settings.
+        """
+        _, summary = self.restore_prompt
+        cx = SCREEN_WIDTH // 2
+        cy = SCREEN_HEIGHT // 2
+
+        # Dark overlay
+        from mobile.perf import darken
+        darken(self.screen, 200)
+
+        # Dialog modal: tombol menu di belakang tidak boleh bisa
+        # diketuk. buttons cache dikosongkan lalu diisi tombol dialog.
+        self.buttons = {}
+
+        dialog_w = 560
+        dialog_h = 280
+        dialog_x = cx - dialog_w // 2
+        dialog_y = cy - dialog_h // 2
+
+        # Shadow
+        shadow_surf = pygame.Surface(
+            (dialog_w + 10, dialog_h + 10), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 150),
+                         (5, 5, dialog_w, dialog_h), border_radius=12)
+        self.screen.blit(shadow_surf, (dialog_x - 5, dialog_y - 5))
+
+        # Bg (nada hijau: kabar baik, bukan bahaya)
+        pygame.draw.rect(self.screen, (22, 38, 30),
+                         (dialog_x, dialog_y, dialog_w, dialog_h),
+                         border_radius=12)
+        pygame.draw.rect(self.screen, (110, 220, 130),
+                         (dialog_x, dialog_y, dialog_w, dialog_h),
+                         3, border_radius=12)
+
+        # Title
+        icon_font = get_font(40)
+        title_text = icon_font.render(
+            "BACKUP FOUND!", True, (140, 255, 160))
+        title_rect = title_text.get_rect(center=(cx, dialog_y + 42))
+        self.screen.blit(title_text, title_rect)
+
+        # Info backup (level / gold / tanggal)
+        info_line = (f"Level {summary['highest_level']}  •  "
+                     f"Gold {summary['meta_gold']:,}  •  "
+                     f"{summary['slot_count']} slot(s)")
+        info_text = self.font_medium.render(
+            info_line, True, (255, 255, 255))
+        self.screen.blit(info_text,
+                         info_text.get_rect(center=(cx, dialog_y + 92)))
+
+        date_text = self.font_small.render(
+            f"Exported: {summary['exported_at_str']}",
+            True, (180, 220, 190))
+        self.screen.blit(date_text,
+                         date_text.get_rect(center=(cx, dialog_y + 122)))
+
+        ask_text = self.font_small.render(
+            "Restore all save slots & settings from this backup?",
+            True, (200, 230, 210))
+        self.screen.blit(ask_text,
+                         ask_text.get_rect(center=(cx, dialog_y + 152)))
+
+        # Buttons
+        btn_y = dialog_y + dialog_h - 62
+        btn_w = 220
+        btn_h = 46
+        btn_gap = 24
+
+        mx, my = pygame.mouse.get_pos()
+
+        # RESTORE (aksi utama, kiri)
+        yes_rect = pygame.Rect(cx - btn_w - btn_gap // 2, btn_y,
+                               btn_w, btn_h)
+        yes_hover = yes_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (60, 190, 90) if yes_hover else (45, 150, 70),
+                         yes_rect, border_radius=8)
+        pygame.draw.rect(self.screen,
+                         (150, 255, 170) if yes_hover else (100, 220, 130),
+                         yes_rect, 2, border_radius=8)
+        yes_text = self.font_medium.render(
+            "RESTORE", True, (255, 255, 255))
+        self.screen.blit(yes_text,
+                         yes_text.get_rect(center=yes_rect.center))
+        self.buttons["restore_backup_yes"] = yes_rect
+
+        # NOT NOW (kanan)
+        no_rect = pygame.Rect(cx + btn_gap // 2, btn_y, btn_w, btn_h)
+        no_hover = no_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (85, 90, 105) if no_hover else (60, 65, 80),
+                         no_rect, border_radius=8)
+        pygame.draw.rect(self.screen,
+                         (170, 180, 200) if no_hover else (120, 130, 150),
+                         no_rect, 2, border_radius=8)
+        no_text = self.font_medium.render(
+            "NOT NOW", True, (230, 230, 235))
+        self.screen.blit(no_text,
+                         no_text.get_rect(center=no_rect.center))
+        self.buttons["restore_backup_no"] = no_rect
     def _draw_hero_shop(self):
         cx = SCREEN_WIDTH // 2
 
@@ -4800,6 +4940,12 @@ class Menu:
             settings.get_fps_label(),
             "fps")
 
+        # ═══ BACKUP SECTION (kolom 1, di bawah audio) ═══
+        backup_y = panel_y + 340
+        self._draw_settings_section_header(
+            col1_x, backup_y, "💾 BACKUP", (120, 200, 255))
+        self._draw_backup_buttons(col1_x, backup_y + 40, 340)
+
         # ═══ DANGER ZONE SECTION ═══
         danger_y = panel_y + panel_h - 100
         self._draw_settings_section_header(
@@ -4839,6 +4985,245 @@ class Menu:
         # Reset confirmation dialog (kalau ada)
         if hasattr(self, 'reset_confirm') and self.reset_confirm:
             self._draw_reset_confirm_dialog()
+
+        # Dialog konfirmasi backup (import / export timpa)
+        if getattr(self, 'import_confirm', None) is not None:
+            self._draw_import_confirm_dialog()
+        elif getattr(self, 'export_confirm', None) is not None:
+            self._draw_export_confirm_dialog()
+
+    def _draw_backup_buttons(self, x, y, width):
+        """
+        Tombol EXPORT & IMPORT backup lokal + pesan status.
+        Ukuran tombol >= 40px tinggi supaya nyaman diketuk (TOUCH_MODE
+        juga dapat pelonggaran dari _kena()).
+        """
+        btn_h = 40
+        gap = 10
+        btn_w = (width - gap) // 2
+
+        mx, my = pygame.mouse.get_pos()
+
+        # EXPORT (kiri, biru)
+        exp_rect = pygame.Rect(x, y, btn_w, btn_h)
+        exp_hover = exp_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (40, 90, 150) if exp_hover else (30, 65, 110),
+                         exp_rect, border_radius=6)
+        pygame.draw.rect(self.screen,
+                         (120, 190, 255) if exp_hover else (80, 140, 200),
+                         exp_rect, 2, border_radius=6)
+        exp_text = self.font_small.render(
+            "EXPORT BACKUP", True, (210, 235, 255))
+        self.screen.blit(exp_text,
+                         exp_text.get_rect(center=exp_rect.center))
+        self.buttons['backup_export'] = exp_rect
+
+        # IMPORT (kanan, hijau)
+        imp_rect = pygame.Rect(x + btn_w + gap, y, btn_w, btn_h)
+        imp_hover = imp_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (40, 130, 70) if imp_hover else (30, 95, 55),
+                         imp_rect, border_radius=6)
+        pygame.draw.rect(self.screen,
+                         (130, 230, 150) if imp_hover else (90, 180, 110),
+                         imp_rect, 2, border_radius=6)
+        imp_text = self.font_small.render(
+            "IMPORT BACKUP", True, (215, 255, 225))
+        self.screen.blit(imp_text,
+                         imp_text.get_rect(center=imp_rect.center))
+        self.buttons['backup_import'] = imp_rect
+
+        # Baris status (sukses/gagal) ATAU lokasi file backup
+        status = getattr(self, 'backup_status', None)
+        if status is not None and self.animation_time < status[2]:
+            line, color = status[0], status[1]
+        else:
+            self.backup_status = None
+            try:
+                import backup_manager as _bm
+                line = "File: " + _bm.backup_location_label()
+            except Exception:
+                line = "File: Download/MysticArena/"
+            color = (140, 150, 175)
+
+        info_text = get_font(15).render(line, True, color)
+        # Clamp supaya tidak keluar panel
+        self.screen.blit(info_text, (x, y + btn_h + 8))
+
+    def _draw_import_confirm_dialog(self):
+        """
+        Konfirmasi IMPORT: menimpa semua save lokal dengan isi backup.
+        """
+        _, summary = self.import_confirm
+        cx = SCREEN_WIDTH // 2
+        cy = SCREEN_HEIGHT // 2
+
+        from mobile.perf import darken
+        darken(self.screen, 200)
+
+        # Modal: hanya tombol dialog yang bisa diketuk
+        self.buttons = {}
+
+        dialog_w = 560
+        dialog_h = 270
+        dialog_x = cx - dialog_w // 2
+        dialog_y = cy - dialog_h // 2
+
+        shadow_surf = pygame.Surface(
+            (dialog_w + 10, dialog_h + 10), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 150),
+                         (5, 5, dialog_w, dialog_h), border_radius=12)
+        self.screen.blit(shadow_surf, (dialog_x - 5, dialog_y - 5))
+
+        pygame.draw.rect(self.screen, (40, 32, 22),
+                         (dialog_x, dialog_y, dialog_w, dialog_h),
+                         border_radius=12)
+        pygame.draw.rect(self.screen, (255, 190, 80),
+                         (dialog_x, dialog_y, dialog_w, dialog_h),
+                         3, border_radius=12)
+
+        title_text = get_font(40).render(
+            "⚠  IMPORT BACKUP?", True, (255, 200, 100))
+        self.screen.blit(title_text,
+                         title_text.get_rect(center=(cx, dialog_y + 42)))
+
+        info_line = (f"Level {summary['highest_level']}  •  "
+                     f"Gold {summary['meta_gold']:,}  •  "
+                     f"{summary['exported_at_str']}")
+        info_text = self.font_medium.render(
+            info_line, True, (255, 255, 255))
+        self.screen.blit(info_text,
+                         info_text.get_rect(center=(cx, dialog_y + 92)))
+
+        warn_text = self.font_small.render(
+            "This will OVERWRITE all current save slots & settings!",
+            True, (255, 210, 170))
+        self.screen.blit(warn_text,
+                         warn_text.get_rect(center=(cx, dialog_y + 128)))
+
+        warn2_text = self.font_small.render(
+            "Current progress will be replaced by the backup.",
+            True, (220, 190, 160))
+        self.screen.blit(warn2_text,
+                         warn2_text.get_rect(center=(cx, dialog_y + 152)))
+
+        self._draw_confirm_buttons(
+            cx, dialog_y + dialog_h - 60,
+            "YES, IMPORT", "import_confirm_yes",
+            "CANCEL", "import_confirm_no",
+            yes_color=((200, 140, 40), (160, 110, 30),
+                       (255, 210, 120), (220, 170, 90)))
+
+    def _draw_export_confirm_dialog(self):
+        """
+        Konfirmasi EXPORT saat file backup di Download berisi data
+        LEBIH BARU daripada save lokal (mis. habis install ulang dan
+        belum restore). Tanpa konfirmasi ini backup itu bisa hilang.
+        """
+        summary = self.export_confirm
+        cx = SCREEN_WIDTH // 2
+        cy = SCREEN_HEIGHT // 2
+
+        from mobile.perf import darken
+        darken(self.screen, 200)
+
+        self.buttons = {}
+
+        dialog_w = 580
+        dialog_h = 260
+        dialog_x = cx - dialog_w // 2
+        dialog_y = cy - dialog_h // 2
+
+        shadow_surf = pygame.Surface(
+            (dialog_w + 10, dialog_h + 10), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 150),
+                         (5, 5, dialog_w, dialog_h), border_radius=12)
+        self.screen.blit(shadow_surf, (dialog_x - 5, dialog_y - 5))
+
+        pygame.draw.rect(self.screen, (40, 25, 30),
+                         (dialog_x, dialog_y, dialog_w, dialog_h),
+                         border_radius=12)
+        pygame.draw.rect(self.screen, (220, 60, 60),
+                         (dialog_x, dialog_y, dialog_w, dialog_h),
+                         3, border_radius=12)
+
+        title_text = get_font(38).render(
+            "⚠  OVERWRITE NEWER BACKUP?", True, (255, 120, 120))
+        self.screen.blit(title_text,
+                         title_text.get_rect(center=(cx, dialog_y + 42)))
+
+        info_line = (f"Backup on disk: Level {summary['highest_level']}"
+                     f"  •  Gold {summary['meta_gold']:,}"
+                     f"  •  {summary['exported_at_str']}")
+        info_text = self.font_small.render(
+            info_line, True, (255, 255, 255))
+        self.screen.blit(info_text,
+                         info_text.get_rect(center=(cx, dialog_y + 88)))
+
+        warn_text = self.font_small.render(
+            "The backup file contains NEWER progress than this device.",
+            True, (255, 190, 190))
+        self.screen.blit(warn_text,
+                         warn_text.get_rect(center=(cx, dialog_y + 120)))
+
+        warn2_text = self.font_small.render(
+            "Export anyway and replace it?", True, (230, 200, 200))
+        self.screen.blit(warn2_text,
+                         warn2_text.get_rect(center=(cx, dialog_y + 144)))
+
+        self._draw_confirm_buttons(
+            cx, dialog_y + dialog_h - 60,
+            "OVERWRITE", "export_overwrite_yes",
+            "CANCEL", "export_overwrite_no",
+            yes_color=((200, 50, 50), (160, 40, 40),
+                       (255, 100, 100), (200, 80, 80)))
+
+    def _draw_confirm_buttons(self, cx, btn_y, yes_label, yes_id,
+                              no_label, no_id, yes_color):
+        """
+        Sepasang tombol YES/NO untuk dialog konfirmasi backup.
+        yes_color = (bg_hover, bg, border_hover, border).
+        """
+        btn_w = 210
+        btn_h = 44
+        btn_gap = 24
+
+        mx, my = pygame.mouse.get_pos()
+
+        yes_rect = pygame.Rect(cx - btn_w - btn_gap // 2, btn_y,
+                               btn_w, btn_h)
+        yes_hover = yes_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         yes_color[0] if yes_hover else yes_color[1],
+                         yes_rect, border_radius=6)
+        pygame.draw.rect(self.screen,
+                         yes_color[2] if yes_hover else yes_color[3],
+                         yes_rect, 2, border_radius=6)
+        yes_text = self.font_medium.render(
+            yes_label, True, (255, 255, 255))
+        self.screen.blit(yes_text,
+                         yes_text.get_rect(center=yes_rect.center))
+        self.buttons[yes_id] = yes_rect
+
+        no_rect = pygame.Rect(cx + btn_gap // 2, btn_y, btn_w, btn_h)
+        no_hover = no_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (85, 90, 105) if no_hover else (60, 65, 80),
+                         no_rect, border_radius=6)
+        pygame.draw.rect(self.screen,
+                         (170, 180, 200) if no_hover else (120, 130, 150),
+                         no_rect, 2, border_radius=6)
+        no_text = self.font_medium.render(
+            no_label, True, (230, 230, 235))
+        self.screen.blit(no_text,
+                         no_text.get_rect(center=no_rect.center))
+        self.buttons[no_id] = no_rect
+
+    def _set_backup_status(self, text, color, duration_frames=300):
+        """Pesan status backup di layar Settings (±5 detik @60fps)."""
+        self.backup_status = (text, color,
+                              self.animation_time + duration_frames)
 
     def _draw_settings_section_header(self, x, y, title, color):
         """Draw section header dengan garis dekoratif"""
@@ -5472,6 +5857,43 @@ class Menu:
             self.reset_confirm = False
             SoundManager().play('ui_click', volume_mult=0.4)
 
+        # ═══ BACKUP LOKAL (EXPORT / IMPORT / RESTORE) ═══
+        elif btn_id == "backup_export":
+            self._do_backup_export(force=False)
+
+        elif btn_id == "export_overwrite_yes":
+            self.export_confirm = None
+            self._do_backup_export(force=True)
+
+        elif btn_id == "export_overwrite_no":
+            self.export_confirm = None
+            SoundManager().play('ui_click', volume_mult=0.4)
+
+        elif btn_id == "backup_import":
+            self._do_backup_import_check()
+
+        elif btn_id == "import_confirm_yes":
+            payload = self.import_confirm[0] \
+                if self.import_confirm else None
+            self.import_confirm = None
+            if payload is not None:
+                self._apply_backup_payload(payload)
+
+        elif btn_id == "import_confirm_no":
+            self.import_confirm = None
+            SoundManager().play('ui_click', volume_mult=0.4)
+
+        elif btn_id == "restore_backup_yes":
+            payload = self.restore_prompt[0] \
+                if self.restore_prompt else None
+            self.restore_prompt = None
+            if payload is not None:
+                self._apply_backup_payload(payload)
+
+        elif btn_id == "restore_backup_no":
+            self.restore_prompt = None
+            SoundManager().play('ui_click', volume_mult=0.4)
+
         # Volume adjustments
         elif btn_id.startswith('vol_') and btn_id.endswith('_plus'):
             self._adjust_volume(btn_id[4:-5], 0.1)
@@ -5512,6 +5934,103 @@ class Menu:
         elif btn_id == "slot_back":
             self.state = MenuState.MAIN
             SoundManager().play('ui_click', volume_mult=0.4)
+
+    # ═══════════════════════════════════════
+    # BACKUP LOKAL (aksi tombol)
+    # ═══════════════════════════════════════
+
+    def _do_backup_export(self, force=False):
+        """
+        Tombol EXPORT manual. Sinkron (file kecil, sekali klik),
+        semua kegagalan jadi pesan status — tidak pernah crash.
+        """
+        try:
+            import backup_manager as _bm
+
+            status, detail = _bm.export_backup(force=force)
+            if status == "ok":
+                self._set_backup_status(
+                    "Backup exported to Download/MysticArena",
+                    (130, 230, 150))
+                SoundManager().play('ui_upgrade', volume_mult=0.5)
+            elif status == "no_data":
+                self._set_backup_status(
+                    "No save data to export yet",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+            elif status == "no_permission":
+                # Android 7-9: minta izin lewat dialog sistem, user
+                # tinggal mengetuk EXPORT lagi setelah memberi izin.
+                _bm.request_storage_permission()
+                self._set_backup_status(
+                    "Allow storage access, then tap EXPORT again",
+                    (255, 200, 120))
+            elif status == "conflict":
+                # Backup di disk lebih baru -> konfirmasi dulu
+                self.export_confirm = detail
+            else:
+                self._set_backup_status(
+                    f"Export failed: {detail}", (255, 130, 130))
+                SoundManager().play('ui_error', volume_mult=0.4)
+        except Exception as e:
+            print(f"[BACKUP] Export button failed: {e}")
+            self._set_backup_status(
+                "Export failed (see log)", (255, 130, 130))
+
+    def _do_backup_import_check(self):
+        """
+        Tombol IMPORT manual: baca + validasi file backup, lalu
+        tampilkan dialog konfirmasi (menimpa save yang ada).
+        """
+        try:
+            import backup_manager as _bm
+
+            if not _bm.has_storage_permission():
+                _bm.request_storage_permission()
+                self._set_backup_status(
+                    "Allow storage access, then tap IMPORT again",
+                    (255, 200, 120))
+                return
+
+            payload, summary, err = _bm.find_backup()
+            if payload is not None:
+                self.import_confirm = (payload, summary)
+                SoundManager().play('ui_click', volume_mult=0.4)
+            elif err:
+                # File ada tapi rusak / bukan backup kita
+                self._set_backup_status(
+                    f"{err}", (255, 130, 130))
+                SoundManager().play('ui_error', volume_mult=0.4)
+            else:
+                self._set_backup_status(
+                    "No backup file found in Download/MysticArena",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+        except Exception as e:
+            print(f"[BACKUP] Import button failed: {e}")
+            self._set_backup_status(
+                "Import failed (see log)", (255, 130, 130))
+
+    def _apply_backup_payload(self, payload):
+        """Pulihkan semua slot + settings dari payload backup."""
+        try:
+            import backup_manager as _bm
+
+            ok, err = _bm.apply_backup(payload)
+            if ok:
+                self.reload_progress()
+                self._set_backup_status(
+                    "Backup restored successfully!",
+                    (130, 230, 150))
+                SoundManager().play('ui_upgrade', volume_mult=0.6)
+            else:
+                self._set_backup_status(
+                    f"Restore failed: {err}", (255, 130, 130))
+                SoundManager().play('ui_error', volume_mult=0.4)
+        except Exception as e:
+            print(f"[BACKUP] Restore failed: {e}")
+            self._set_backup_status(
+                "Restore failed (see log)", (255, 130, 130))
 
     def _toggle_input_mode(self):
         """Toggle antara keyboard & controller"""

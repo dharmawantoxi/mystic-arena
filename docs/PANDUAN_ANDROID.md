@@ -717,3 +717,44 @@ adb shell run-as io.github.dharmawantoxi.mysticarena cat files/crash_log.txt
 - [ ] Keystore dicadangkan di 2 tempat
 - [ ] Kebijakan privasi online dan URL-nya valid
 - [ ] `android.numeric_version` unik untuk tiap upload
+
+## Lampiran C — Backup save lokal (export/import)
+
+Selain Android Auto Backup (Google Drive), game punya backup lokal
+**tanpa internet** ke folder publik:
+
+```
+Download/MysticArena/mystic_arena_backup.json
+```
+
+Implementasi: `backup_manager.py` (format file, checksum sha256,
+semua backend tulis/baca). Tiga fitur:
+
+1. **Auto-export** — tiap `SaveManager.save()` menulis salinan backup
+   di background (non-blocking, tanpa dialog, gagal = hanya log).
+   - Android 10+ : `MediaStore.Downloads` via pyjnius, tanpa permission.
+   - Android 7-9 : path publik + `WRITE_EXTERNAL_STORAGE`
+     (dideklarasikan `maxSdkVersion=28`, jadi tidak pernah diminta di
+     Android 10+). Auto-export **tidak pernah** memunculkan dialog
+     izin — kalau izin belum ada, export dilewati.
+   - Desktop : folder `~/Downloads` (override: env `MYSTIC_BACKUP_DIR`).
+2. **Deteksi restore** — saat game dibuka dan semua slot kosong
+   (indikasi install ulang), backup dicari di background; kalau ada,
+   dialog "BACKUP FOUND" muncul di main menu — satu ketukan RESTORE
+   memulihkan semua slot + settings.
+3. **Tombol manual** — Settings → bagian **BACKUP**: EXPORT (dengan
+   konfirmasi kalau backup di disk berisi data lebih baru) dan IMPORT
+   (selalu konfirmasi karena menimpa save yang ada; file korup /
+   checksum salah ditolak dengan pesan jelas).
+
+Catatan jujur soal scoped storage: di Android 10+, setelah UNINSTALL
+kepemilikan file MediaStore hilang, sehingga install baru tidak selalu
+bisa membacanya kembali — di kasus itu Auto Backup Google Drive adalah
+jalur restore utama, dan file Download tetap berguna sebagai arsip
+yang bisa dipindah manual (file manager / PC).
+
+Uji tanpa HP:
+
+```bash
+python3 tools/test_backup_manager.py   # 44 pemeriksaan, headless
+```

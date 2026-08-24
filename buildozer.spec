@@ -55,9 +55,15 @@ icon.filename = %(source.dir)s/assets/icon.png
 # PERMISSION (sedikit = review Play Store lebih mudah)
 #   VIBRATE   -> feedback tombol skill
 #   WAKE_LOCK -> layar tidak mati saat menonton cinematic
+#   WRITE/READ_EXTERNAL_STORAGE (maxSdkVersion=28)
+#             -> HANYA Android 7-9: backup lokal ke folder publik
+#                Download/MysticArena (lihat backup_manager.py).
+#                Android 10+ memakai MediaStore.Downloads yang TIDAK
+#                butuh permission, jadi izin ini tidak pernah muncul
+#                di perangkat modern.
 # JANGAN tambah INTERNET kalau game tidak butuh jaringan.
 # ═══════════════════════════════════════════════════════
-android.permissions = android.permission.VIBRATE,android.permission.WAKE_LOCK
+android.permissions = android.permission.VIBRATE,android.permission.WAKE_LOCK,(name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=28),(name=android.permission.READ_EXTERNAL_STORAGE;maxSdkVersion=28)
 
 # ═══════════════════════════════════════════════════════
 # TARGET ANDROID
