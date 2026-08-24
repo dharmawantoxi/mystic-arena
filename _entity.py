@@ -3454,6 +3454,8 @@ class Hero(TowerDebuffMixin):
         """Attack cooldown efektif: debuff attack-slow (Ice) +
         bonus attack speed dari ITEM (Moon Shard, Steel Aegis,
         Octarine tidak ikut)."""
+        if getattr(self, "stun_timer", 0) > 0:
+            return 9999  # stunned: tidak bisa menyerang
         cd = base_cd
         inv = getattr(self, "items", None)
         if inv is not None:
@@ -3555,12 +3557,16 @@ class Hero(TowerDebuffMixin):
         self.pulse += 0.1
         # ═══ TICK DEBUFF MENARA (Ice/Mage/Cannon) ═══
         self._tick_tower_debuffs()
-        # ═══ TICK ITEM (regen, lifesteal cooldown, aura timer) ═══
+        # ═══ TICK ITEM (regen, lifesteal cooldown, aura timer,
+        # auto-trigger Tier II) ═══
         inv = getattr(self, "items", None)
+        _disabled = getattr(self, "stun_timer", 0) > 0 or \
+            (inv is not None and inv.is_veiled())
         if inv is not None:
-            inv.update()
-        # ═══ AUTO-CAST SKILLS (jika enabled) ═══
-        if self.auto_cast_enabled:
+            inv.update(1, enemies=self._get_all_enemies(
+                all_units, all_towers, all_bases))
+        # ═══ AUTO-CAST SKILLS (jika enabled & tidak stun/veil) ═══
+        if self.auto_cast_enabled and not _disabled:
             self.auto_cast_check_timer -= 1
             if self.auto_cast_check_timer <= 0:
                 self.auto_cast_check_timer = 20
@@ -3905,13 +3911,37 @@ class Hero(TowerDebuffMixin):
                             all_bases, 'q')
             return
 
+    def _collect_onhit_units(self):
+        """Semua unit musuh-potensial untuk efek on-hit item (cleave/
+        chain lightning). None kalau game instance tidak tersedia."""
+        try:
+            import __main__
+            if hasattr(__main__, 'game_instance'):
+                gi = __main__.game_instance
+                units = (list(getattr(gi, "minions", []))
+                         + list(gi.get_all_heroes()))
+                if getattr(gi, "active_boss", None) and \
+                        getattr(gi.active_boss, "alive", False):
+                    units.append(gi.active_boss)
+                return units
+        except Exception:
+            pass
+        return None
+
     def _do_attack(self):
         """Lakukan serangan ke self.target jika dalam range"""
         if not self.target or not self.target.alive:
             return
 
+        # ═══ DISABLED: stun / Tempest Veil tidak bisa menyerang ═══
+        if getattr(self, "stun_timer", 0) > 0:
+            return
+        _inv = getattr(self, "items", None)
+        if _inv is not None and _inv.is_veiled():
+            return
+
         dist = math.hypot(self.target.x - self.x,
-                           self.target.y - self.y)
+                          self.target.y - self.y)
 
         # ═══ VISUAL FEEDBACK saat target out of range ═══
         if dist <= self.range and self.attack_timer == 0:
@@ -3926,6 +3956,13 @@ class Hero(TowerDebuffMixin):
             if getattr(self, '_crit_buff_active', False):
                 damage = int(damage * 2)
                 is_crit = True
+
+            # ═══ SOUL REND (Sanguine Thorn): crit pasti 150% ═══
+            if inv is not None and not is_crit:
+                rm = inv.get_rend_crit()
+                if rm and self.target is inv.rend_target:
+                    damage = int(damage * rm)
+                    is_crit = True
 
             # ═══ ITEM CRIT (Dead Edge) ═══
             if inv is not None and not is_crit:
@@ -3960,6 +3997,13 @@ class Hero(TowerDebuffMixin):
                     self.hp = min(self.max_hp,
                                   self.hp + int(damage *
                                                 inv.get_lifesteal_pct()))
+                # ═══ ON-HIT TIER II ranged ═══
+                # Corrosion (shred), Bash, Arc chain - tanpa
+                # lifesteal/cleave (sudah ditangani di atas).
+                if inv is not None:
+                    inv.on_ranged_attack_hit(
+                        self.target, damage,
+                        self._collect_onhit_units())
             else:
                 # Melee / boss hero → instant damage
                 self.target.take_damage(damage, self.team)
@@ -4071,26 +4115,82 @@ class Hero(TowerDebuffMixin):
                                target=target, hero_type=hero_type)
 
     def take_damage(self, damage, from_team, damage_type='normal'):
+        inv = getattr(self, "items", None)
+
+        # ═══ TEMPEST VEIL (Wind Waker): kebal semua damage ═══
+        if inv is not None and damage > 0 and inv.is_veiled():
+            try:
+                import __main__
+                if hasattr(__main__, 'game_instance'):
+                    __main__.game_instance.effects.add_damage_number(
+                        self.x, self.y - self.radius - 12,
+                        "IMMUNE", is_critical=False,
+                        damage_type='ice')
+            except Exception:
+                pass
+            return
+
+        # ═══ EVASION (Monarch Wings): menghindari serangan fisik ═══
+        if damage_type == 'normal' and damage > 0 and inv is not None:
+            ev = inv.get_evasion()
+            if ev > 0 and random.random() < ev:
+                try:
+                    import __main__
+                    if hasattr(__main__, 'game_instance'):
+                        __main__.game_instance.effects.add_damage_number(
+                            self.x, self.y - self.radius - 12,
+                            "MISS", is_critical=False,
+                            damage_type='ice')
+                except Exception:
+                    pass
+                return
+
+        # ═══ DAMAGE AMP (Soul Rend): +% damage diterima ═══
+        if damage > 0 and getattr(self, "dmg_amp_timer", 0) > 0:
+            damage = int(round(
+                damage * (1.0 + self.dmg_amp_amount)))
+
         # ═══ ARMOR (item Steel Aegis/Demon Maw) ═══
         # Damage fisik biasa dikurangi dengan formula gaya MOBA:
         #   pengurang = armor * 0.06 / (1 + armor * 0.06)
-        # Damage api/sihir tidak terpengaruh.
+        # Armor dikikis oleh Corroder (armor_shred). Damage api/sihir
+        # tidak terpengaruh armor.
         if damage_type != 'fire' and damage > 0:
-            inv = getattr(self, "items", None)
-            armor = inv.get_armor() if inv is not None else 0
+            armor = (inv.get_armor() if inv is not None else 0)
+            armor -= getattr(self, "armor_shred_amount", 0.0)
             if armor > 0:
                 reduction = armor * 0.06 / (1.0 + armor * 0.06)
                 damage = max(1, int(round(damage * (1.0 - reduction))))
             elif armor < 0:
-                # Armor negatif (aura musuh) menambah damage 6% per
-                # poin, sampai +100%.
+                # Armor negatif (aura musuh / corrosion) menambah
+                # damage 6% per poin, sampai +100%.
                 bonus = min(1.0, -armor * 0.06)
                 damage = int(round(damage * (1.0 + bonus)))
 
+            # ═══ DAMAGE BLOCK (Scarlet Bulwark) ═══
+            # Block pasif (peluang) + aura Bulwark Guard (pasti).
+            block_amt = 0
+            if inv is not None:
+                blk = inv.get_block()
+                if blk and random.random() < blk[0]:
+                    block_amt = blk[1]
+                if getattr(inv, "aura_guard_block", 0) > block_amt:
+                    block_amt = inv.aura_guard_block
+            if block_amt > 0:
+                damage = max(0, damage - block_amt)
+                try:
+                    import __main__
+                    if hasattr(__main__, 'game_instance'):
+                        __main__.game_instance.effects.add_damage_number(
+                            self.x, self.y - self.radius - 24,
+                            "BLOCK", is_critical=False,
+                            damage_type='heal')
+                except Exception:
+                    pass
+
         self.hp -= damage
 
-        # ═══ NOTIFY ITEM (Leviathan combat timer) ═══
-        inv = getattr(self, "items", None)
+        # ═══ NOTIFY ITEM (Leviathan combat timer + Static Charge) ═══
         if inv is not None and damage > 0:
             inv.notify_damage_taken()
 
@@ -4818,6 +4918,12 @@ class Minion(TowerDebuffMixin):
             self.slow_amount = 0
             self.speed = self.base_speed
 
+        # ═══ STUN (item Tier II: Abyss Breaker / Fenrir Chain) ═══
+        # Diam total & tidak menyerang selama stun.
+        if self.stun_timer > 0:
+            self.speed = 0.0
+            return
+
         if self.timer > 0:
             self.timer -= 1
 
@@ -5048,6 +5154,15 @@ class Minion(TowerDebuffMixin):
             self.y += self.speed * dy / dist
 
     def take_damage(self, damage, from_team, damage_type='normal'):
+        # ═══ STATUS ITEM TIER II: Soul Rend amp + Corroder shred ═══
+        if damage > 0:
+            if getattr(self, "dmg_amp_timer", 0) > 0:
+                damage = int(round(
+                    damage * (1.0 + self.dmg_amp_amount)))
+            shred = getattr(self, "armor_shred_amount", 0.0)
+            if damage_type != 'fire' and shred > 0:
+                damage = int(round(
+                    damage * (1.0 + min(1.0, shred * 0.06))))
         self.hp -= damage
 
         # ═══ TAMBAH: Damage number popup ═══

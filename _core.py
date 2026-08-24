@@ -733,6 +733,20 @@ class TowerDebuffMixin:
         self.burn_accum = 0.0
         self.burn_tick_cd = TOWER_DEBUFF_BURN_TICK
         self.burn_team = None
+        # ═══ STATUS ITEM TIER II (hero_items.py) ═══
+        # stun   - tidak bisa gerak/serang/cast (Abyss Breaker,
+        #          Fenrir Chain). Boss punya resist bawaan.
+        self.stun_timer = 0
+        # armor_shred - armor dikurangi N poin (Corroder); target
+        # menerima damage lebih besar (rumus sama dgn armor negatif)
+        self.armor_shred_amount = 0.0
+        self.armor_shred_timer = 0
+        # dmg_amp - +% damage yang diterima (Soul Rend)
+        self.dmg_amp_amount = 0.0
+        self.dmg_amp_timer = 0
+        # heal_amp - +% heal yang diterima (Abyss Breaker)
+        self.heal_amp_amount = 0.0
+        self.heal_amp_timer = 0
 
     # ── PROPERTY: hp dengan anti-heal ──
     @property
@@ -748,6 +762,10 @@ class TowerDebuffMixin:
                 and getattr(self, "anti_heal_timer", 0) > 0):
             # ANTI-HEAL: kenaikan HP dipotong sesuai besar debuff
             value = old + (value - old) * (1.0 - self.anti_heal_amount)
+        if (old is not None and value > old
+                and getattr(self, "heal_amp_timer", 0) > 0):
+            # HEAL AMP (Abyss Breaker): kenaikan HP diperbesar
+            value = old + (value - old) * (1.0 + self.heal_amp_amount)
         self._hp_value = value
 
     # ── APPLY DEBUFF ──
@@ -755,10 +773,57 @@ class TowerDebuffMixin:
         """Debuff movement speed (signature lama, dipakai juga hero skill)."""
         if not getattr(self, "alive", True):
             return
+        # SLOW RESIST (Abyss Breaker): kurangi besar slow yang masuk
+        inv = getattr(self, "items", None)
+        if inv is not None:
+            try:
+                amount *= (1.0 - inv.get_slow_resist())
+            except Exception:
+                pass
         if amount > getattr(self, "slow_amount", 0.0) or \
                 getattr(self, "slow_timer", 0) < duration:
             self.slow_amount = amount
             self.slow_timer = duration
+
+    # ── STATUS ITEM TIER II ──
+    def apply_stun(self, duration):
+        """Stun/root penuh: tidak bisa gerak & serang. Boss (mini/true)
+        punya resist 55% (durasi dipotong) supaya tidak di-stunlock."""
+        if not getattr(self, "alive", True):
+            return
+        if getattr(self, "boss_class", None):
+            duration = int(duration * 0.45)
+        if duration <= 0:
+            return
+        if duration > self.stun_timer:
+            self.stun_timer = duration
+
+    def apply_armor_shred(self, amount, duration):
+        """Kikis armor target (Corroder). Stack: terkuat menang."""
+        if not getattr(self, "alive", True):
+            return
+        if amount > self.armor_shred_amount or \
+                self.armor_shred_timer < duration:
+            self.armor_shred_amount = amount
+            self.armor_shred_timer = duration
+
+    def apply_damage_amp(self, amount, duration):
+        """+% damage diterima (Soul Rend). Stack: terkuat menang."""
+        if not getattr(self, "alive", True):
+            return
+        if amount > self.dmg_amp_amount or \
+                self.dmg_amp_timer < duration:
+            self.dmg_amp_amount = amount
+            self.dmg_amp_timer = duration
+
+    def apply_heal_amp(self, amount, duration):
+        """+% heal diterima (Abyss Breaker pada pemiliknya)."""
+        if not getattr(self, "alive", True):
+            return
+        if amount > self.heal_amp_amount or \
+                self.heal_amp_timer < duration:
+            self.heal_amp_amount = amount
+            self.heal_amp_timer = duration
 
     def apply_debuff(self, kind, amount, duration, source_team=None):
         """Apply debuff menara. Stack rule: terkuat menang, durasi refresh."""
@@ -802,10 +867,22 @@ class TowerDebuffMixin:
         sp = self.speed
         if getattr(self, "slow_timer", 0) > 0:
             sp *= (1.0 - getattr(self, "slow_amount", 0.0))
+        # ITEM: bonus move speed persen (Tempest Vane)
+        inv = getattr(self, "items", None)
+        if inv is not None:
+            try:
+                sp *= (1.0 + inv.get_move_speed_pct())
+            except Exception:
+                pass
+        # STUN (Abyss Breaker / Fenrir Chain): diam total
+        if getattr(self, "stun_timer", 0) > 0:
+            sp = 0.0
         return sp
 
     def _eff_attack_cd(self, base_cd):
         """Attack cooldown efektif setelah debuff attack speed (Ice)."""
+        if getattr(self, "stun_timer", 0) > 0:
+            return 9999  # stunned: tidak bisa menyerang
         if getattr(self, "atk_slow_timer", 0) > 0:
             f = max(0.05, 1.0 - getattr(self, "atk_slow_amount", 0.0))
             return max(1, int(round(base_cd / f)))
@@ -829,6 +906,21 @@ class TowerDebuffMixin:
             self.anti_heal_timer -= 1
             if self.anti_heal_timer <= 0:
                 self.anti_heal_amount = 0.0
+        # Status item Tier II
+        if self.stun_timer > 0:
+            self.stun_timer -= 1
+        if self.armor_shred_timer > 0:
+            self.armor_shred_timer -= 1
+            if self.armor_shred_timer <= 0:
+                self.armor_shred_amount = 0.0
+        if self.dmg_amp_timer > 0:
+            self.dmg_amp_timer -= 1
+            if self.dmg_amp_timer <= 0:
+                self.dmg_amp_amount = 0.0
+        if self.heal_amp_timer > 0:
+            self.heal_amp_timer -= 1
+            if self.heal_amp_timer <= 0:
+                self.heal_amp_amount = 0.0
 
         # Burning: damage diakumulasi per frame, ditembakkan per tick
         # (bukan tiap frame, supaya damage number tidak spam).
@@ -1132,8 +1224,11 @@ class Game:
         self.effects = EffectManager()
         # ═══ UI STATE ═══
         self.shop_open = False
-        # Item shop (8 item penguat hero - lihat hero_items.py)
+        # Item shop (16 item penguat hero, 2 halaman TIER I/II -
+        # lihat hero_items.py)
         self.item_shop_open = False
+        # Halaman aktif toko item (0 = TIER I, 1 = TIER II)
+        self.itemshop_page = 0
         # Hero penerima pembelian di Item Forge (dipilih dari strip
         # "BUY FOR"; None = auto: hero terseleksi / hero hidup pertama)
         self.itemshop_target_hero = None
@@ -6935,7 +7030,7 @@ class UIRenderer:
             self.hero_shop_component.draw(surface)
 
     def draw_item_shop(self, surface):
-        """Item forge overlay (8 item penguat hero)."""
+        """Item forge overlay (16 item penguat hero, 2 halaman)."""
         try:
             from hero_items import ItemShopUI
             ItemShopUI.draw(surface, self.game)
