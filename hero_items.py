@@ -32,9 +32,10 @@ import random
 import pygame
 
 # Konstanta gameplay
-MAX_ITEM_SLOTS = 3
-# Harga semua item diseragamkan (12000G)
-ITEM_FLAT_COST = 12000
+MAX_ITEM_SLOTS = 6
+# Harga semua item diseragamkan (4500G - sebanding dengan upgrade
+# hero level 7-8, terjangkau di mid-late game 12-15 menit).
+ITEM_FLAT_COST = 4500
 
 # Kategori item (dipakai AI & sorting UI)
 CATEGORY_CRIT     = "crit"
@@ -62,13 +63,13 @@ ITEM_CATALOG = {
         "color": (220, 60, 60),
         "glow": (255, 90, 90),
         "stats": {
-            "damage": 80,
-            "crit_chance": 0.30,
-            "crit_mult": 2.25,
+            "damage": 45,
+            "crit_chance": 0.25,
+            "crit_mult": 2.0,
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": "+80 Damage. 30% peluang Critical Strike (225% damage).",
+        "desc": "+45 Damage. 25% peluang Critical Strike (200% damage).",
         "flavor": "Tebasan maut yang berdentang di ujung setiap medan tempur.",
     },
 
@@ -80,13 +81,13 @@ ITEM_CATALOG = {
         "color": (255, 220, 80),
         "glow": (255, 245, 150),
         "stats": {
-            "damage": 300,
+            "damage": 120,
         },
         "melee_only": False,
         # Rapier suci RONTOK saat pemilik tumbang - tidak bisa diambil
         # kembali (sesuai sifat aslinya).
         "drops_on_death": True,
-        "desc": "+300 Damage. HILANG saat hero mati (tidak dijatuhkan).",
+        "desc": "+120 Damage. HILANG saat hero mati (tidak dijatuhkan).",
         "flavor": "Kilau cahaya yang hanya pantas dipegang oleh yang hidup.",
     },
 
@@ -98,22 +99,22 @@ ITEM_CATALOG = {
         "color": (180, 30, 30),
         "glow": (255, 70, 70),
         "stats": {
-            "damage": 25,
-            "armor": 5,
-            "lifesteal": 0.25,
+            "damage": 20,
+            "armor": 4,
+            "lifesteal": 0.20,
         },
         "active": {
             # Unholy Rage otomatis menyala saat HP kritis
             "name": "Blood Frenzy",
             "hp_threshold": 0.35,
-            "lifesteal_bonus": 1.50,   # total 25% + 150% = 175%
+            "lifesteal_bonus": 1.20,   # total 20% + 120% = 140%
             "duration": 300,           # 5 detik
             "cooldown": 1500,          # 25 detik
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": ("+25 Damage, +5 Armor, 25% Lifesteal. "
-                 "Saat HP < 35%: aktif Blood Frenzy, lifesteal 175% "
+        "desc": ("+20 Damage, +4 Armor, 20% Lifesteal. "
+                 "Saat HP < 35%: aktif Blood Frenzy, lifesteal 140% "
                  "selama 5 detik."),
         "flavor": "Topeng iblis yang lapar akan darah lawan.",
     },
@@ -126,20 +127,20 @@ ITEM_CATALOG = {
         "color": (80, 220, 120),
         "glow": (130, 255, 160),
         "stats": {
-            "hp": 1000,
-            "hp_regen": 8.0,
+            "hp_pct": 0.35,
+            "hp_regen": 6.0,
         },
-        # Pasif kedua: regen besar (2% max HP/detik) jika tidak
+        # Pasif kedua: regen besar (1.5% max HP/detik) jika tidak
         # menerima damage selama 5 detik.
         "passive": {
             "name": "Leviathan Vitality",
-            "out_of_combat_regen_pct": 0.02,
+            "out_of_combat_regen_pct": 0.015,
             "combat_timeout": 300,
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": ("+1000 HP, +8 HP/reg. Di luar pertempuran (5 dtk tanpa "
-                 "damage): regenerasi 2% Max HP per detik."),
+        "desc": ("+35% Max HP, +6 HP/reg. Di luar pertempuran (5 dtk "
+                 "tanpa damage): regenerasi 1.5% Max HP per detik."),
         "flavor": "Jantung purba yang berdegup menyamai lautan.",
     },
 
@@ -151,18 +152,18 @@ ITEM_CATALOG = {
         "color": (200, 220, 240),
         "glow": (150, 210, 255),
         "stats": {
-            "damage": 55,
-            "hp_regen": 4.0,
+            "damage": 30,
+            "hp_regen": 3.0,
         },
         "passive": {
             "name": "Cleave",
-            "cleave_pct": 0.60,
-            "cleave_radius": 120,
+            "cleave_pct": 0.50,
+            "cleave_radius": 110,
         },
         "melee_only": True,
         "drops_on_death": False,
-        "desc": ("+55 Damage, +4 HP/reg. Serangan melee membelah: 60% "
-                 "damage ke musuh dalam radius 120 (hanya melee)."),
+        "desc": ("+30 Damage, +3 HP/reg. Serangan melee membelah: 50% "
+                 "damage ke musuh dalam radius 110 (hanya melee)."),
         "flavor": "Kapak berukir yang menebas apapun di depannya.",
     },
 
@@ -174,23 +175,23 @@ ITEM_CATALOG = {
         "color": (180, 200, 230),
         "glow": (120, 170, 255),
         "stats": {
-            "armor": 6,
-            "attack_speed": 45,
+            "armor": 4,
+            "attack_speed": 30,
         },
         "aura": {
             # Aura diratakan oleh update_auras()
             "name": "Steel Aura",
-            "ally_radius": 350,
+            "ally_radius": 320,
             "ally_armor": 2,
-            "ally_attack_speed": 15,
-            "enemy_radius": 350,
-            "enemy_armor_reduction": 3,
+            "ally_attack_speed": 10,
+            "enemy_radius": 320,
+            "enemy_armor_reduction": 2,
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": ("+6 Armor, +45 Attack Speed. Aura: sekutu di dekat "
-                 "dapat +2 Armor & +15 AS; musuh di dekat kehilangan "
-                 "3 Armor."),
+        "desc": ("+4 Armor, +30 Attack Speed. Aura: sekutu di dekat "
+                 "dapat +2 Armor & +10 AS; musuh di dekat kehilangan "
+                 "2 Armor."),
         "flavor": "Zirah baja yang berdenyut memberi semangat kawan.",
     },
 
@@ -202,11 +203,11 @@ ITEM_CATALOG = {
         "color": (130, 220, 255),
         "glow": (180, 240, 255),
         "stats": {
-            "attack_speed": 120,
+            "attack_speed": 60,
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": "+120 Attack Speed. Serangan secepat cahaya bulan.",
+        "desc": "+60 Attack Speed. Serangan secepat cahaya bulan.",
         "flavor": "Serpihan rembulan yang membeku jadi kristal.",
     },
 
@@ -218,15 +219,15 @@ ITEM_CATALOG = {
         "color": (180, 80, 230),
         "glow": (220, 130, 255),
         "stats": {
-            "hp": 450,
-            "cooldown_reduction": 0.20,
-            "spell_vamp": 0.15,
+            "hp": 300,
+            "cooldown_reduction": 0.15,
+            "spell_vamp": 0.10,
             "hp_regen": 2.0,
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": ("+450 HP, +2 HP/reg, 20% Cooldown Reduction, 15% Spell "
-                 "Lifesteal (heal = 15% damage skill yang dikeluarkan)."),
+        "desc": ("+300 HP, +2 HP/reg, 15% Cooldown Reduction, 10% Spell "
+                 "Lifesteal (heal = 10% damage skill yang dikeluarkan)."),
         "flavor": "Inti ungu yang berputar dengan kekuatan arcane.",
     },
 }
@@ -401,7 +402,12 @@ class HeroItemInventory:
         return self._sum_stat("damage")
 
     def get_bonus_hp(self):
+        """Bonus HP flat dari item (tidak termasuk persentase)."""
         return self._sum_stat("hp")
+
+    def get_hp_pct(self):
+        """Total bonus HP persentase dari item (mis. Leviathan Heart)."""
+        return self._sum_stat("hp_pct")
 
     def get_armor(self):
         return (self._sum_stat("armor")
@@ -412,10 +418,16 @@ class HeroItemInventory:
         return self._sum_stat("hp_regen")
 
     def get_max_hp(self):
-        """Max HP = base (setelah level) + bonus item."""
+        """Max HP = (base setelah level + bonus flat) * (1 + hp_pct).
+
+        Bonus persentase (Leviathan Heart 35%) ikut membesar saat
+        hero naik level, sesuai desain item pertahanan berskala.
+        """
         base = int(getattr(self.hero, "base_hp", 0)
                    * _hero_level_mult(self.hero))
-        return base + self.get_bonus_hp()
+        flat = self.get_bonus_hp()
+        pct = self.get_hp_pct()
+        return int((base + flat) * (1.0 + pct))
 
     def get_attack_speed_mult(self):
         """Pengali attack speed (1.0 = normal).

@@ -3270,20 +3270,16 @@ class Hero(TowerDebuffMixin):
         self._recalc_item_stats()
 
     def _recalc_item_stats(self):
-        """Hitung ulang max_hp + damage dasar + skill damage
-        setelah item berubah / naik level."""
-        # max_hp ditambahi bonus item
+        """Hitung ulang max_hp setelah item berubah / naik level.
+
+        Menggunakan ``HeroItemInventory.get_max_hp()`` yang sudah
+        memperhitungkan bonus flat DAN persentase (mis. Leviathan
+        Heart +35% Max HP).
+        """
         inv = getattr(self, "items", None)
         if inv is None:
             return
-        bonus_hp = inv.get_bonus_hp()
-        # base max hp (setelah level multiplier)
-        try:
-            from _core import HERO_LEVELS
-            lvl = HERO_LEVELS[self.level]
-            new_max = int(self.base_hp * lvl["hp_mult"]) + bonus_hp
-        except Exception:
-            new_max = self.base_hp + bonus_hp
+        new_max = inv.get_max_hp()
         old_max = getattr(self, "max_hp", new_max)
         self.max_hp = new_max
         if not hasattr(self, "hp") or self.hp is None:
@@ -3301,16 +3297,34 @@ class Hero(TowerDebuffMixin):
 
         lvl_data = HERO_LEVELS[self.level]
 
-        self.max_hp = int(self.base_hp * lvl_data["hp_mult"])
+        # Damage & skill damage tidak dipengaruhi item (bonus item
+        # dijumlahkan saat attack/cast), jadi langsung set.
         self.damage = int(self.base_damage * lvl_data["dmg_mult"])
-        self.skill_damage = int(self.skill_damage_base * lvl_data["skill_mult"])
+        self.skill_damage = int(self.skill_damage_base
+                                * lvl_data["skill_mult"])
 
-        if not hasattr(self, 'hp'):
-            self.hp = self.max_hp
+        # max_hp: set dulu ke base menurut level, lalu biarkan
+        # _recalc_item_stats() menambah bonus item (flat + persen)
+        # DAN menyesuaikan hp saat ini. Kita tidak menyentuh self.hp
+        # di sini supaya old_max di _recalc_item_stats adalah max_hp
+        # sebelum level naik, bukan base baru.
+        base_max = int(self.base_hp * lvl_data["hp_mult"])
+        if not hasattr(self, 'items'):
+            # Belum ada inventory (dipanggil pertama kali di __init__
+            # sebelum items dibuat).
+            old_max = getattr(self, "max_hp", base_max)
+            self.max_hp = base_max
+            if not hasattr(self, 'hp'):
+                self.hp = base_max
+            else:
+                if base_max > old_max:
+                    self.hp = min(base_max, self.hp + (base_max - old_max))
+                elif self.hp > base_max:
+                    self.hp = base_max
         else:
-            old_max = getattr(self, '_prev_max_hp', self.max_hp)
-            hp_gained = self.max_hp - old_max
-            self.hp = min(self.max_hp, self.hp + hp_gained)
+            # max_hp sementara = base; _recalc_item_stats akan
+            # menghitung ulang dengan bonus item.
+            self.max_hp = base_max
 
         self._prev_max_hp = self.max_hp
         # ═══ ITEM BONUS: setelah level naik, max_hp dasar berubah;
