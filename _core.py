@@ -1132,6 +1132,8 @@ class Game:
         self.effects = EffectManager()
         # ═══ UI STATE ═══
         self.shop_open = False
+        # Item shop (8 item penguat hero - lihat hero_items.py)
+        self.item_shop_open = False
         self.popup_target = None
         self.popup_type = None
         self.ui_buttons = {}
@@ -1227,6 +1229,7 @@ class Game:
         self.selected_hero = None
         self.placing_tower_type = None
         self.shop_open = False
+        self.item_shop_open = False
         self.popup_target = None
         self.popup_type = None
         self.ui_buttons = {}
@@ -1716,6 +1719,13 @@ class Game:
 
         for h in all_heroes:
             h.update(all_units, self.towers, self.bases)
+
+        # ═══ ITEM AURAS (Steel Aegis) - dihitung sekali per frame ═══
+        try:
+            from hero_items import update_auras
+            update_auras(all_heroes)
+        except Exception:
+            pass
 
         # ═══ TRUE BOSS CHECK (dari level config) ═══
         if not self.true_boss_spawned and self.wave_number >= 5:
@@ -2366,6 +2376,9 @@ class Game:
             self.ui.draw_hero_shop(self.screen)
         if self.selected_hero and self.selected_hero.alive:
             self.ui.draw_hero_info(self.screen)
+        # ═══ ITEM SHOP (overlay, paling atas sebelum dev UI) ═══
+        if getattr(self, "item_shop_open", False):
+            self.ui.draw_item_shop(self.screen)
 
         # Dev UI (paling atas)
         _PH.mark("dev")
@@ -6150,6 +6163,16 @@ class InputHandler:
                     SoundManager().play('ui_click', volume_mult=0.7)
                     return
 
+        # ═══ ITEM SHOP (paling atas; buka dari tombol ITEM di panel) ═══
+        if getattr(g, "item_shop_open", False):
+            from hero_items import handle_item_shop_click
+            if handle_item_shop_click(g, mx, my, button):
+                return
+            # Klik kiri di area kosong dalam item shop = tetap
+            # tertangkap (jangan sampai jalan ke world).
+            if button == 1:
+                return
+
         # ═══ 0. Panel hero info (paling prioritas) ═══
         if g.selected_hero and g.selected_hero.alive:
             # Posisi diambil dari yang BENAR-BENAR digambar
@@ -6214,8 +6237,17 @@ class InputHandler:
         """Handle klik kiri di world"""
         g = self.game
 
-        # 1. Shop building
-        if g.map_renderer.is_click_on_shop(mx, my):
+        # 1. Shop building.
+        #    Radiant (dekat base biru) = ITEM FORGE
+        #    Dire    (dekat base merah)= HERO SHOP
+        which = g.map_renderer.get_clicked_shop(mx, my)
+        if which == 'item':
+            g.shop_open = False
+            g.item_shop_open = True
+            SoundManager().play('ui_click', volume_mult=0.5)
+            return
+        if which == 'hero':
+            g.item_shop_open = False
             g.shop_open = True
             SoundManager().play('ui_click', volume_mult=0.5)
             return
@@ -6357,6 +6389,43 @@ class InputHandler:
             elif btn_id == 'popup_upgrade_hero':
                 if self._kena(rect, mx, my):
                     self._try_upgrade_hero()
+                    return True
+
+            # ═══ BUKA ITEM FORGE ═══
+            elif btn_id == 'hero_open_items':
+                if self._kena(rect, mx, my):
+                    g.item_shop_open = True
+                    SoundManager().play('ui_click', volume_mult=0.4)
+                    return True
+
+            # ═══ DROP ITEM DARI SLOT DI PANEL (klik kanan) ═══
+            elif btn_id.startswith('hero_item_slot_'):
+                if self._kena(rect, mx, my):
+                    if button == 3:
+                        try:
+                            idx = int(
+                                btn_id.replace('hero_item_slot_', ''))
+                            h = g.selected_hero
+                            if h is not None and getattr(h, "items", None):
+                                dropped = h.items.remove(idx)
+                                if dropped:
+                                    from hero_items import ITEM_CATALOG
+                                    data = ITEM_CATALOG.get(dropped, {})
+                                    try:
+                                        g.ui.add_notification(
+                                            f"Melepas "
+                                            f"{data.get('name', 'item')}",
+                                            (255, 200, 120))
+                                    except Exception:
+                                        pass
+                                    SoundManager().play(
+                                        'ui_click', volume_mult=0.4)
+                        except Exception:
+                            pass
+                    else:
+                        # Klik kiri slot = buka toko item
+                        g.item_shop_open = True
+                        SoundManager().play('ui_click', volume_mult=0.4)
                     return True
 
             # ═══ AUTO-CAST TOGGLE ═══
@@ -6860,6 +6929,14 @@ class UIRenderer:
         """Modern hero shop overlay"""
         if self.hero_shop_component:
             self.hero_shop_component.draw(surface)
+
+    def draw_item_shop(self, surface):
+        """Item forge overlay (8 item penguat hero)."""
+        try:
+            from hero_items import ItemShopUI
+            ItemShopUI.draw(surface, self.game)
+        except Exception as e:
+            print(f"[ITEM_SHOP] draw error: {e}")
 
     # ═══════════════════════════════════════
     # OVERLAY (Victory/Defeat)

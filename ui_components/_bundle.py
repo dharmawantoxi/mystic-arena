@@ -1039,7 +1039,7 @@ class _NS_hero_panel:
                 return
 
             panel_w = 280
-            panel_h = 200
+            panel_h = 276
 
             _pp = None
             try:
@@ -1148,9 +1148,42 @@ class _NS_hero_panel:
             y += skill_size + 14
             self._draw_autocast_toggle(surface, px, y, panel_w, h)
 
+            # ═══ ITEM SLOTS (6) - row tipis di atas tombol ═══
+            y += 30
+            try:
+                from hero_items import HeroItemRenderer
+                HeroItemRenderer.draw(surface, h, px, y, panel_w)
+            except Exception:
+                pass
+
+            # ═══ TOMBOL ITEM FORGE (buka toko item) ═══
+            y += 38
+            self._draw_item_shop_button(surface, px, y, panel_w, g, h)
+
             # Upgrade button - bottom with gap
-            y += 32
+            y += 28
             self._draw_upgrade_button(surface, px, y, panel_w, h)
+
+        def _draw_item_shop_button(self, surface, px, y, panel_w, g, hero):
+            """Tombol ITEM untuk membuka toko item hero."""
+            from hero_items import MAX_ITEM_SLOTS
+            inv = getattr(hero, "items", None)
+            used = 0
+            if inv is not None:
+                used = sum(1 for s in inv.slots if s is not None)
+            rect = pygame.Rect(px + 10, y, panel_w - 20, 22)
+            mx, my = pygame.mouse.get_pos()
+            hover = rect.collidepoint(mx, my)
+            bg = (90, 60, 170) if hover else (70, 45, 130)
+            pygame.draw.rect(surface, bg, rect, border_radius=3)
+            pygame.draw.rect(surface, (190, 150, 255), rect, 1,
+                             border_radius=3)
+            t = self.ui.font_tiny.render(
+                f"ITEM FORGE  ({used}/{MAX_ITEM_SLOTS})",
+                True, (235, 220, 255))
+            tr = t.get_rect(center=rect.center)
+            surface.blit(t, tr)
+            g.ui_buttons['hero_open_items'] = rect
 
         def _draw_upgrade_button(self, surface, px, y, panel_w, hero):
             """Draw upgrade hero button"""
@@ -3877,12 +3910,16 @@ class _NS_shop_hints:
         """
 
         def draw(self, surface):
-            """Draw hints di semua shop building"""
+            """Draw hints di semua shop building.
+
+            Radiant (dekat base biru) = ITEM FORGE (toko item hero)
+            Dire (dekat base merah)   = HERO SHOP
+            """
             g = self.game
             pulse = math.sin(g.animation_time * 0.06) * 3
 
             for shop_pos, label in [
-                (g.map_renderer.radiant_shop_pos, "HERO SHOP"),
+                (g.map_renderer.radiant_shop_pos, "ITEM FORGE"),
                 (g.map_renderer.dire_shop_pos, "HERO SHOP"),
             ]:
                 self._draw_single_hint(surface, shop_pos, label, pulse)

@@ -231,7 +231,10 @@ class MapRenderer:
         return []
 
     def get_shop_positions(self):
-        """Get shop positions"""
+        """Get shop positions.
+        radiant (dekat base biru) = ITEM FORGE
+        dire (dekat base merah)   = HERO SHOP
+        """
         return {
             'radiant': self.radiant_shop_pos,
             'dire': self.dire_shop_pos,
@@ -239,11 +242,23 @@ class MapRenderer:
         }
 
     def is_click_on_shop(self, mx, my):
-        """Check if click is on shop building"""
+        """True kalau klik mengenai salah satu dari dua bangunan toko."""
         for pos in [self.radiant_shop_pos, self.dire_shop_pos]:
             if math.hypot(mx - pos[0], my - pos[1]) <= self.shop_size:
                 return True
         return False
+
+    def get_clicked_shop(self, mx, my):
+        """Kembalikan 'item' (Radiant/ITEM FORGE), 'hero' (Dire/HERO
+        SHOP), atau None. Radiant dekat base biru dipakai pemain,
+        jadi kami jadikan ITEM FORGE; Dire tetap HERO SHOP."""
+        for label, pos in (
+            ('item', self.radiant_shop_pos),
+            ('hero', self.dire_shop_pos),
+        ):
+            if math.hypot(mx - pos[0], my - pos[1]) <= self.shop_size:
+                return label
+        return None
 
 
 
