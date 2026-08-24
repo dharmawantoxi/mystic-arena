@@ -9062,6 +9062,10 @@ class _NS_zephyr:
         )
 
         # ---------- Background layers ----------
+        # Siluet cahaya lembut membuat Zephyr tetap terbaca di atas
+        # terrain yang ramai, seperti sprite-sheet referensi: magenta
+        # berada di belakang karakter, bukan menutupi detail wajahnya.
+        _NS_zephyr._draw_fey_silhouette_glow(surface, x, y - 12, pulse)
         _NS_zephyr._draw_fey_aura(surface, x, y, pulse)
         _NS_zephyr._draw_fey_platform(surface, x, y + 40, pulse, active_skill)
 
@@ -9226,11 +9230,22 @@ class _NS_zephyr:
                 (cx + side * 3, cy),
             ])
 
-            # Wing vein highlights
+            # Vein structure: referensi punya sayap daun yang jelas,
+            # bukan hanya bidang ungu datar. Garis tipis ini menambah
+            # siluet pixel-art tanpa menaikkan ukuran hitbox karakter.
+            root_x, root_y = cx + side * 4, cy - 4
             _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_light"], 200),
-                    (cx + side * 4, cy - 4), (u_tip_x, u_tip_y), 1)
+                    (root_x, root_y), (u_tip_x, u_tip_y), 1)
+            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_mid"], 175),
+                    (root_x, root_y), (u_mid_x, u_mid_y), 1)
+            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_light"], 145),
+                    (u_mid_x, u_mid_y),
+                    (u_tip_x - side * 4, u_tip_y + 8), 1)
             _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_light"], 180),
                     (cx + side * 4, cy - 2), (l_tip_x, l_tip_y), 1)
+            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_mid"], 145),
+                    (cx + side * 4, cy - 2),
+                    (l_tip_x - side * 3, l_tip_y - 2), 1)
 
             # Tip shine
             _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["wing_shine"], 220),
@@ -9559,6 +9574,17 @@ class _NS_zephyr:
                   (orb_x - 1, orb_y - 1), max(1, orb_size - 3))
         _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["white"], (orb_x - 1, orb_y - 1), 1)
 
+        # Bintang empat arah membuat orb terasa seperti fokus sihir
+        # (bukan bola warna polos), mengikuti projectile di referensi.
+        star_alpha = 150 if not casting else 220
+        star_r = max(3, orb_size + 2)
+        _NS_zephyr._aaline(surface,
+                (*_NS_zephyr.PALETTE["magic_bright"], star_alpha),
+                (orb_x - star_r, orb_y), (orb_x + star_r, orb_y), 1)
+        _NS_zephyr._aaline(surface,
+                (*_NS_zephyr.PALETTE["magic_hot"], star_alpha),
+                (orb_x, orb_y - star_r), (orb_x, orb_y + star_r), 1)
+
         # Sparkle particles around
         for i in range(3):
             a = phase * 2 + i * math.pi * 2 / 3
@@ -9655,11 +9681,13 @@ class _NS_zephyr:
         if layer == "back":
             # Back layer (larger petals framing head)
             back_petals = [
-                (-8, -2, 12, -math.pi / 2 - 0.9),
-                (-6, -4, 14, -math.pi / 2 - 0.5),
-                (8, -2, 12, -math.pi / 2 + 0.9),
-                (6, -4, 14, -math.pi / 2 + 0.5),
-                (0, -3, 10, math.pi / 2 + 3.14),
+                # Kelopak samping lebih lebar menciptakan mane berduri
+                # khas referensi Dark Willow, sekaligus membingkai wajah.
+                (-10, -1, 13, -math.pi / 2 - 1.00),
+                (-7, -4, 15, -math.pi / 2 - 0.55),
+                (10, -1, 13, -math.pi / 2 + 1.00),
+                (7, -4, 15, -math.pi / 2 + 0.55),
+                (0, -3, 11, math.pi / 2 + 3.14),
             ]
             for bx, by, sz, ang in back_petals:
                 flicker = int(math.sin(phase * 2 + bx * 0.1) * 1)
@@ -9801,6 +9829,30 @@ class _NS_zephyr:
             )
         pygame.draw.ellipse(shadow, (*_NS_zephyr.PALETTE["magic_dark"], 40), (8, 4, 84, 10))
         surface.blit(shadow, (x - 50, y - 10))
+
+
+    def _draw_fey_silhouette_glow(surface, x, y, phase):
+        """Halo magenta rendah-kontras khusus untuk Zephyr.
+
+        Diletakkan sebelum tubuh dan aura normal agar rim light memisahkan
+        rambut, sayap, serta staff dari peta, sambil tetap mempertahankan
+        tepi pixel-art yang tajam. Ukuran kecil juga aman untuk Android.
+        """
+        pulse = 0.70 + math.sin(phase * 1.35) * 0.16
+        halo = pygame.Surface((92, 104), pygame.SRCALPHA)
+        center = (46, 51)
+        for radius, alpha in ((41, 10), (32, 15), (24, 23)):
+            _NS_zephyr._aacircle(
+                halo, (*_NS_zephyr.PALETTE["magic_dark"],
+                       int(alpha * pulse)), center, radius)
+        # Dua kilau vertikal mengisyaratkan sayap tanpa menggambar ulang.
+        _NS_zephyr._aaline(halo, (*_NS_zephyr.PALETTE["magic_mid"],
+                                  int(35 * pulse)),
+                            (26, 60), (17, 30), 2)
+        _NS_zephyr._aaline(halo, (*_NS_zephyr.PALETTE["magic_mid"],
+                                  int(35 * pulse)),
+                            (66, 60), (75, 30), 2)
+        surface.blit(halo, (x - 46, y - 51))
 
 
     def _draw_fey_aura(surface, x, y, phase):
