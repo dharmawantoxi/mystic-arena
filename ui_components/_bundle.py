@@ -110,7 +110,7 @@ class BaseUIComponent:
 
         pygame.draw.rect(surface, WHITE, (x, y, w, h), 1)
 
-    def _draw_close_button(self, surface, x, y, size=20,
+    def _draw_close_button(self, surface, x, y, size=44,
                             button_id='close', style='rect'):
         """
         Reusable close button (X).
@@ -1714,7 +1714,7 @@ class _NS_hero_shop:
             """Round close button (X) di corner"""
             g = self.game
 
-            close_size = 32
+            close_size = 44
             close_rect = pygame.Rect(
                 panel_x + panel_w - close_size - 15,
                 panel_y - 15,

@@ -6533,16 +6533,22 @@ class InputHandler:
     # ═══════════════════════════════════════
 
     @staticmethod
-    def _kena(rect, mx, my, longgar=22):
-        """
-        Uji sentuh dengan pelonggaran.
+    def _touch_rect(rect, minimum=48, padding=6):
+        """Area sentuh ramah jari tanpa mengubah posisi visual tombol.
 
-        Beberapa tombol popup sangat kecil - tombol tutup (X) hanya
-        20x20 px, sekitar 12dp, jauh di bawah standar sentuh 48dp.
-        Melebarkan area ujinya jauh lebih aman daripada mengubah
-        gambarnya satu per satu.
+        Seluruh tombol gameplay memakai target minimum 48×48 logical px
+        (standar sentuh mobile). Tombol besar hanya mendapat bantalan
+        kecil agar area antar-tombol tidak terlalu banyak bertabrakan.
         """
-        return rect.inflate(longgar, longgar).collidepoint(mx, my)
+        width = max(rect.width + padding * 2, minimum)
+        height = max(rect.height + padding * 2, minimum)
+        return pygame.Rect(0, 0, width, height).move(
+            rect.centerx - width // 2, rect.centery - height // 2)
+
+    @classmethod
+    def _kena(cls, rect, mx, my, longgar=6):
+        """Uji sentuh dengan target minimum 48px untuk semua popup."""
+        return cls._touch_rect(rect, minimum=48, padding=longgar).collidepoint(mx, my)
 
     def handle_hero_panel_click(self, mx, my, button):
         """Klik di panel hero info (bottom-left)"""
@@ -6795,7 +6801,7 @@ class InputHandler:
 
         # Cek semua button di ui_buttons
         for btn_id, rect in list(g.ui_buttons.items()):
-            if not rect.collidepoint(mx, my):
+            if not self._kena(rect, mx, my):
                 continue
 
             # Close button

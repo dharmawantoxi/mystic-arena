@@ -1619,7 +1619,7 @@ class ItemShopUI:
         area_w = px + cls.PANEL_W - 20 - area_x
         gap = 8
         chip_w = max(96, min(158, (area_w - gap * (n - 1)) // n))
-        chip_h = 36
+        chip_h = 42
         cy = py + 54
         for i, h in enumerate(heroes):
             x = area_x + i * (chip_w + gap)
@@ -1750,8 +1750,8 @@ class ItemShopUI:
     def _draw_owned_slots(cls, surface, game, hero, px, py):
         # 6 slot dimiliki di bawah panel
         inv = hero.items
-        size = 44
-        gap = 6
+        size = 50
+        gap = 7
         total_w = size * MAX_ITEM_SLOTS + gap * (MAX_ITEM_SLOTS - 1)
         sx = px + (cls.PANEL_W - total_w) // 2
         sy = py + cls.PANEL_H - 68
@@ -1781,7 +1781,7 @@ class ItemShopUI:
 
     @classmethod
     def _draw_close(cls, surface, game, px, py):
-        size = 32
+        size = 44
         rect = pygame.Rect(px + cls.PANEL_W - size - 12,
                            py - 14, size, size)
         mx, my = pygame.mouse.get_pos()
@@ -1810,7 +1810,7 @@ class ItemShopUI:
         if not (0 <= cur < pages):
             cur = 0
         tw = 150
-        th = 22
+        th = 30
         gap = 8
         total = pages * tw + (pages - 1) * gap
         sx = px + (cls.PANEL_W - total) // 2
@@ -1823,7 +1823,7 @@ class ItemShopUI:
             pygame.draw.rect(surface, bg, rect, border_radius=6)
             pygame.draw.rect(surface, border, rect, 2,
                              border_radius=6)
-            lf = pygame.font.Font(None, 16)
+            lf = pygame.font.Font(None, 19)
             label = "TIER I - CORE" if i == 0 else \
                     f"TIER II - LEGENDARY" if i == 1 \
                     else f"HAL {i + 1}"
@@ -1900,18 +1900,18 @@ class ItemShopUI:
             surface.blit(icon, (x + 10, y + 10))
 
         # Nama
-        nf = pygame.font.Font(None, 22)
+        nf = pygame.font.Font(None, 25)
         nt = nf.render(data["name"], True, data["glow"])
         surface.blit(nt, (x + icon_size + 18, y + 12))
 
         # Category badge
         cat_label, cat_color = CATEGORY_INFO[data["category"]]
-        cf = pygame.font.Font(None, 15)
+        cf = pygame.font.Font(None, 17)
         ct = cf.render(cat_label, True, cat_color)
         surface.blit(ct, (x + icon_size + 18, y + 36))
 
         # Harga
-        costf = pygame.font.Font(None, 20)
+        costf = pygame.font.Font(None, 22)
         cost_color = (255, 220, 100) if can_buy else (200, 80, 80)
         costt = costf.render(f"{data['cost']}G", True, cost_color)
         surface.blit(costt, (x + icon_size + 18, y + 54))
@@ -1924,7 +1924,7 @@ class ItemShopUI:
             surface.blit(ot, (x + w - 80, y + 56))
 
         # Deskripsi (wrap sederhana)
-        df = pygame.font.Font(None, 15)
+        df = pygame.font.Font(None, 16)
         lines = cls._wrap_text(data["desc"], df, w - 20)
         ty = y + 74
         for line in lines[:4]:
@@ -1933,7 +1933,7 @@ class ItemShopUI:
             ty += 15
 
         # Tombol BUY
-        btn_rect = pygame.Rect(x + 10, y + h - 30, w - 20, 24)
+        btn_rect = pygame.Rect(x + 10, y + h - 40, w - 20, 36)
         melee_warn = has_hero and data.get("melee_only") and not is_melee
         if not has_hero:
             # Item tetap terlihat, tapi belum ada hero penerimanya.
@@ -1955,7 +1955,7 @@ class ItemShopUI:
         pygame.draw.rect(surface, btn_color, btn_rect, border_radius=4)
         pygame.draw.rect(surface, (255, 255, 255), btn_rect, 1,
                          border_radius=4)
-        bf = pygame.font.Font(None, 18)
+        bf = pygame.font.Font(None, 21)
         bt = bf.render(label, True, label_color)
         surface.blit(bt, bt.get_rect(center=btn_rect.center))
         # Daftarkan tombol (hanya kalau bisa di-klik)
@@ -1983,13 +1983,22 @@ class ItemShopUI:
 # ════════════════════════════════════════════════════════════
 # CLICK HANDLER untuk ItemShopUI (dipanggil dari InputHandler)
 # ════════════════════════════════════════════════════════════
+def _touch_hit(rect, mx, my, minimum=48, padding=6):
+    """Target sentuh minimum 48px untuk kontrol Item Forge."""
+    width = max(rect.width + padding * 2, minimum)
+    height = max(rect.height + padding * 2, minimum)
+    hit = pygame.Rect(0, 0, width, height)
+    hit.center = rect.center
+    return hit.collidepoint(mx, my)
+
+
 def handle_item_shop_click(game, mx, my, button):
     """Proses klik di toko item. Return True kalau klik tertangani."""
     if not getattr(game, "item_shop_open", False):
         return False
 
     for btn_id, rect in list(game.ui_buttons.items()):
-        if not rect.collidepoint(mx, my):
+        if not _touch_hit(rect, mx, my):
             continue
         if btn_id == "itemshop_close":
             game.item_shop_open = False
