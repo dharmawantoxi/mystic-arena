@@ -4130,6 +4130,22 @@ class Hero(TowerDebuffMixin):
                 pass
             return
 
+        # ═══ SYLARA — WINDRUN ═══
+        # Windrun adalah dash defensif: serangan normal mempunyai peluang
+        # besar untuk meleset selama jejak angin aktif. Damage sihir tetap
+        # bisa mengenai agar status ini tidak menjadi invulnerability penuh.
+        if (getattr(self, "_windrun_active", False) and damage > 0
+                and damage_type == 'normal' and random.random() < 0.75):
+            try:
+                import __main__
+                if hasattr(__main__, 'game_instance'):
+                    __main__.game_instance.effects.add_damage_number(
+                        self.x, self.y - self.radius - 12,
+                        "WIND", is_critical=False, damage_type='ice')
+            except Exception:
+                pass
+            return
+
         inv = getattr(self, "items", None)
 
         # ═══ TEMPEST VEIL (Wind Waker): kebal semua damage ═══

@@ -3413,7 +3413,7 @@ class _NS_sylara:
     def _draw_shackle_ground(surface, boss, x, y, timer, pulse):
         """Line indicator to target for shackle shot."""
         tx, ty = _NS_sylara._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 50))
+        progress = max(0.0, min(1.0, 1 - timer / 150))
 
         # Dashed line indicator
         steps = 20
@@ -3441,7 +3441,7 @@ class _NS_sylara:
     # ===================================================================
     def _draw_focus_fire_ground(surface, boss, x, y, timer, phase):
         """Ground rune for focus fire."""
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        progress = max(0.0, min(1.0, 1 - timer / 180))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
         radius = int(40 + progress * 15)
 
@@ -3465,7 +3465,7 @@ class _NS_sylara:
 
     def _draw_focus_fire_effect(surface, boss, x, y, timer, phase):
         """Rapid arrow volley animation."""
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        progress = max(0.0, min(1.0, 1 - timer / 180))
 
         # Fire arrows in bursts
         fire_interval = 8  # every 8 frames

@@ -3937,12 +3937,10 @@ class _NS_sylara_skills:
         - R: Powershot (charge → release 5-arrow cone)
         """
 
-        # Durasi animasi skill, dicocokkan dengan pembagi
-        # `1 - timer / N` di renderer.
-        # heroes/sylara.py: focus_fire 80 (L1806/L1832) / shackle 50 (L1777)
-        #                   powershot_charge 60 (L1701)
-        # Q = Focus Fire, R = Powershot (lihat fix mapping di sylara.py)
-        SKILL_VISUAL_DURATION = {"q": 80, "w": 180, "e": 50, "r": 60}
+        # Efek channel/bind harus terlihat selama status gameplay aktif.
+        # Q Focus Fire = 3 dtk dan E Shackle = 2.5 dtk; R tetap memakai
+        # 1 dtk charge agar panah dilepas tepat pada akhir animasi.
+        SKILL_VISUAL_DURATION = {"q": 180, "w": 180, "e": 150, "r": 60}
 
         def init_state(self):
             """Init state variables khusus Sylara"""
@@ -4062,10 +4060,9 @@ class _NS_sylara_skills:
             h.attack_cooldown = max(20,
                                      int(h.attack_cooldown / 1.7))
 
-            # Visual: projectile homing terarah ke target utama via
-            # sistem generic _entity.py (damage=0, cuma visual).
-            if h.target and getattr(h.target, 'alive', False):
-                h._spawn_skill_projectile(h.target, speed=13.0)
+            # Volley visual dibuat oleh renderer Sylara selama channel.
+            # Tidak spawn projectile generik di awal, supaya satu Focus
+            # Fire tidak menghasilkan panah duplikat.
 
             # Piercing damage (single line)
             if h.target:
