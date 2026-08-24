@@ -1134,6 +1134,9 @@ class Game:
         self.shop_open = False
         # Item shop (8 item penguat hero - lihat hero_items.py)
         self.item_shop_open = False
+        # Hero penerima pembelian di Item Forge (dipilih dari strip
+        # "BUY FOR"; None = auto: hero terseleksi / hero hidup pertama)
+        self.itemshop_target_hero = None
         self.popup_target = None
         self.popup_type = None
         self.ui_buttons = {}
@@ -1230,6 +1233,7 @@ class Game:
         self.placing_tower_type = None
         self.shop_open = False
         self.item_shop_open = False
+        self.itemshop_target_hero = None
         self.popup_target = None
         self.popup_type = None
         self.ui_buttons = {}

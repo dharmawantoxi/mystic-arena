@@ -14,6 +14,12 @@ hak cipta:
   7. Moon Shard       (nama generik, terinspirasi dari Moon Shard)
   8. Octarine Core    (nama generik, terinspirasi dari Octarine Core)
 
+ITEM FORGE tidak lagi mewajibkan klik hero di peta dulu: grid item
+selalu ditampilkan, dan ada strip "BUY FOR" berisi daftar hero yang
+sudah di-summon (masih hidup). Klik chip hero di strip untuk memilih
+siapa penerima pembelian berikutnya - jadi Moon Shard dkk. bisa dibeli
+langsung dari toko untuk hero mana pun.
+
 Tiap hero punya 3 slot item. Item beli pakai GOLD in-game, bisa didrop
 (klik kanan slot di panel item), dan HILANG saat hero mati KECUALI Holy
 Rapier yang memang rontok (tidak balik).
@@ -21,7 +27,7 @@ Rapier yang memang rontok (tidak balik).
 Modul ini menengahi:
   - ITEM_CATALOG       data stat/harga/deskripsi
   - HeroItemInventory  logika stat + pasif
-  - ItemShopUI         panel toko item di dalam HeroPanel
+  - ItemShopUI         overlay toko item (bisa tanpa hero terseleksi)
   - HeroItemRenderer   gambar 3 slot di HeroPanel
 """
 
@@ -338,6 +344,10 @@ class HeroItemInventory:
 
     def has(self, item_id):
         return item_id in self.slots
+
+    def used_slots(self):
+        """Jumlah slot yang terisi (0..MAX_ITEM_SLOTS)."""
+        return sum(1 for s in self.slots if s is not None)
 
     def add(self, item_id):
         """Tambah item ke slot kosong. Return True jika berhasil."""
@@ -761,11 +771,43 @@ def _get_game():
         return None
 
 
+def _alive_player_heroes(game):
+    """Hero milik pemain (tim blue) yang SUDAH DI-SUMMON dan masih
+    hidup - sumber daftar 'BUY FOR' di Item Forge."""
+    return [h for h in getattr(game, "heroes", [])
+            if getattr(h, "alive", False)]
+
+
+def _resolve_shop_target(game, alive=None):
+    """Tentukan hero penerima pembelian.
+
+    Prioritas: target yang tersimpan di toko (masih hidup) → hero
+    terseleksi di peta (masih hidup) → hero hidup pertama. None kalau
+    tidak ada hero hidup sama sekali.
+    """
+    if alive is None:
+        alive = _alive_player_heroes(game)
+    if not alive:
+        return None
+    saved = getattr(game, "itemshop_target_hero", None)
+    if saved in alive:
+        return saved
+    sel = getattr(game, "selected_hero", None)
+    if sel in alive:
+        return sel
+    return alive[0]
+
+
 # ════════════════════════════════════════════════════════════
-# UI: ITEM SHOP OVERLAY (dibuka dari tombol di HeroPanel)
+# UI: ITEM SHOP OVERLAY (bisa dibuka kapan pun - tanpa klik hero)
 # ════════════════════════════════════════════════════════════
 class ItemShopUI:
-    """Overlay toko item yang berhubungan dengan hero terpilih.
+    """Overlay toko item.
+
+    Grid item SELALU ditampilkan, walau pemain belum meng-klik hero di
+    peta. Hero penerima item dipilih lewat strip "BUY FOR" di bawah
+    judul (daftar semua hero yang sudah di-summon & hidup); bila ada
+    hero terseleksi di peta, dia otomatis jadi target awal.
 
     Pemakaian:
         game.item_shop_open = True/False
@@ -779,7 +821,16 @@ class ItemShopUI:
     def draw(cls, surface, game):
         if not getattr(game, "item_shop_open", False):
             return
-        hero = game.selected_hero
+
+        # ═══ TARGET PEMBELIAN (tidak wajib klik hero dulu) ═══
+        alive = _alive_player_heroes(game)
+        hero = _resolve_shop_target(game, alive)
+        try:
+            # Disinkronkan sekali per frame supaya handler klik memakai
+            # hero yang sama dengan yang digambar.
+            game.itemshop_target_hero = hero
+        except Exception:
+            pass
 
         # Overlay gelap
         from mobile.perf import darken
@@ -791,29 +842,89 @@ class ItemShopUI:
         # Panel
         cls._draw_panel(surface, px, py)
         cls._draw_header(surface, game, px, py)
-        if hero is not None and getattr(hero, "alive", False):
+        cls._draw_hero_strip(surface, game, alive, hero, px, py)
+        if hero is not None:
             cls._draw_hero_info(surface, hero, px, py)
-            cls._draw_item_grid(surface, game, hero, px, py)
-            cls._draw_owned_slots(surface, hero, px, py)
         else:
-            cls._draw_no_hero(surface, game, px, py)
+            cls._draw_no_hero_banner(surface, game, px, py)
+        # Item SELALU digambar - walau belum memilih hero.
+        cls._draw_item_grid(surface, game, hero, px, py)
+        if hero is not None:
+            cls._draw_owned_slots(surface, game, hero, px, py)
         cls._draw_close(surface, game, px, py)
 
     @classmethod
-    def _draw_no_hero(cls, surface, game, px, py):
-        """Ditampilkan kalau pemain mengetuk ITEM FORGE tanpa memilih
-        hero dulu. Jendela langsung menutup sendiri saat pemain
-        meng-klik di mana pun (ditangani handle_item_shop_click)."""
-        f = pygame.font.Font(None, 28)
-        t1 = f.render("PILIH HERO DULU", True, (255, 200, 200))
-        surface.blit(t1, t1.get_rect(
-            center=(px + cls.PANEL_W // 2, py + cls.PANEL_H // 2 - 16)))
-        sf = pygame.font.Font(None, 18)
-        t2 = sf.render(
-            "Klik hero di peta, lalu ketuk bangunan ITEM FORGE lagi.",
-            True, (200, 210, 230))
-        surface.blit(t2, t2.get_rect(
-            center=(px + cls.PANEL_W // 2, py + cls.PANEL_H // 2 + 16)))
+    def _draw_hero_strip(cls, surface, game, alive, target, px, py):
+        """Bar pilih hero penerima item (daftar 'BUY FOR').
+
+        Berisi semua hero yang sudah di-summon dan masih hidup; klik
+        chip untuk mengganti penerima pembelian berikutnya. Jadi item
+        (mis. Moon Shard) bisa dibeli langsung dari forge tanpa harus
+        klik hero di peta dulu.
+        """
+        lf = pygame.font.Font(None, 20)
+        lt = lf.render("BUY FOR:", True, (255, 220, 100))
+        surface.blit(lt, (px + 22, py + 62))
+
+        if not alive:
+            sf = pygame.font.Font(None, 18)
+            t = sf.render(
+                "(belum ada hero hidup - summon dulu di HERO SHOP)",
+                True, (255, 150, 150))
+            surface.blit(t, (px + 112, py + 63))
+            return
+
+        n = len(alive)
+        area_x = px + 112
+        area_w = px + cls.PANEL_W - 20 - area_x
+        gap = 8
+        chip_w = max(96, min(158, (area_w - gap * (n - 1)) // n))
+        chip_h = 36
+        cy = py + 54
+        for i, h in enumerate(alive):
+            x = area_x + i * (chip_w + gap)
+            rect = pygame.Rect(x, cy, chip_w, chip_h)
+            is_target = (h is target)
+            bg = (48, 64, 100) if is_target else (26, 30, 48)
+            border = h.color if is_target else (70, 80, 110)
+            pygame.draw.rect(surface, bg, rect, border_radius=8)
+            pygame.draw.rect(surface, border, rect, 2, border_radius=8)
+            pygame.draw.circle(surface, h.color,
+                               (rect.x + 14, rect.centery), 6)
+            # Nama (dipangkas kalau kepanjangan)
+            nf = pygame.font.Font(None, 19)
+            nm_txt = h.name
+            while nf.size(nm_txt)[0] > chip_w - 52 and len(nm_txt) > 3:
+                nm_txt = nm_txt[:-1]
+            if nm_txt != h.name:
+                nm_txt += "…"
+            nt = nf.render(nm_txt, True, (240, 245, 255))
+            surface.blit(nt, (rect.x + 26, rect.y + 2))
+            inv = getattr(h, "items", None)
+            used = inv.used_slots() if inv is not None else 0
+            sf2 = pygame.font.Font(None, 15)
+            st = sf2.render(
+                f"Lv.{h.level}  Item {used}/{MAX_ITEM_SLOTS}",
+                True, (170, 180, 205))
+            surface.blit(st, (rect.x + 26, rect.y + 20))
+            game.ui_buttons[f"itemshop_hero_{i}"] = rect
+
+    @classmethod
+    def _draw_no_hero_banner(cls, surface, game, px, py):
+        """Banner kecil saat TIDAK ada hero hidup sama sekali.
+
+        Item di bawah tetap terlihat dan bisa dibaca; hanya tombol BUY
+        yang dimatikan sampai ada hero yang di-summon.
+        """
+        box = pygame.Rect(px + 20, py + 96, cls.PANEL_W - 40, 48)
+        pygame.draw.rect(surface, (40, 28, 28), box, border_radius=8)
+        pygame.draw.rect(surface, (200, 90, 90), box, 2, border_radius=8)
+        f = pygame.font.Font(None, 20)
+        t = f.render(
+            "TIDAK ADA HERO HIDUP - summon hero di HERO SHOP dulu; "
+            "item di bawah tetap bisa dilihat.",
+            True, (255, 190, 190))
+        surface.blit(t, t.get_rect(center=box.center))
 
     # ── Helpers ──────────────────────────────────────────
     @classmethod
@@ -857,8 +968,8 @@ class ItemShopUI:
 
     @classmethod
     def _draw_hero_info(cls, surface, hero, px, py):
-        # Kotak info hero di bawah header
-        box = pygame.Rect(px + 20, py + 60, cls.PANEL_W - 40, 50)
+        # Kotak info hero (target BUY FOR) di bawah strip hero
+        box = pygame.Rect(px + 20, py + 96, cls.PANEL_W - 40, 48)
         pygame.draw.rect(surface, (30, 36, 58), box, border_radius=8)
         pygame.draw.rect(surface, hero.color, box, 2, border_radius=8)
         f = pygame.font.Font(None, 22)
@@ -884,7 +995,7 @@ class ItemShopUI:
         surface.blit(it, (box.x + 12, box.y + 28))
 
     @classmethod
-    def _draw_owned_slots(cls, surface, hero, px, py):
+    def _draw_owned_slots(cls, surface, game, hero, px, py):
         # 6 slot dimiliki di bawah panel
         inv = hero.items
         size = 44
@@ -912,10 +1023,9 @@ class ItemShopUI:
                 if icon is not None:
                     surface.blit(icon, (rect.x + 3, rect.y + 3))
             pygame.draw.rect(surface, border, rect, 2, border_radius=5)
-            # Daftarkan klik untuk drop
-            g = _get_game()
-            if g is not None:
-                g.ui_buttons[f"itemshop_slot_{i}"] = rect
+            # Daftarkan klik untuk drop (langsung di game yang digambar)
+            if game is not None:
+                game.ui_buttons[f"itemshop_slot_{i}"] = rect
 
     @classmethod
     def _draw_close(cls, surface, game, px, py):
@@ -935,19 +1045,24 @@ class ItemShopUI:
 
     @classmethod
     def _draw_item_grid(cls, surface, game, hero, px, py):
-        # Grid 4 kolom x 2 baris
+        # Grid 4 kolom x 2 baris - SELALU digambar; hero boleh None
+        # (item tetap tampil walau belum memilih hero, hanya tombol
+        # BUY-nya yang dimatikan).
         cols = 4
         card_w = 225
-        card_h = 190
+        card_h = 186
         gap_x = 10
         gap_y = 12
         grid_w = cols * card_w + (cols - 1) * gap_x
         start_x = px + (cls.PANEL_W - grid_w) // 2
-        start_y = py + 125
+        start_y = py + 152
 
-        inv = hero.items
-        rng = getattr(hero, "range", 0) or 0
-        is_melee = rng <= 80
+        inv = None
+        is_melee = False
+        if hero is not None:
+            inv = getattr(hero, "items", None)
+            rng = getattr(hero, "range", 0) or 0
+            is_melee = rng <= 80
 
         for idx, sid in enumerate(ITEM_SHOP_ORDER):
             row = idx // cols
@@ -955,18 +1070,20 @@ class ItemShopUI:
             x = start_x + col * (card_w + gap_x)
             y = start_y + row * (card_h + gap_y)
             data = ITEM_CATALOG[sid]
-            owned_count = inv.count(sid)
+            owned_count = inv.count(sid) if inv is not None else 0
             can_afford = game.gold >= data["cost"]
-            slot_full = all(s is not None for s in inv.slots)
+            slot_full = (inv is not None
+                         and inv.used_slots() >= MAX_ITEM_SLOTS)
             melee_ok = (not data.get("melee_only")) or is_melee
-            can_buy = can_afford and not slot_full and melee_ok
+            can_buy = (inv is not None and can_afford
+                       and not slot_full and melee_ok)
             cls._draw_item_card(surface, game, data, sid, x, y,
                                 card_w, card_h, owned_count, can_buy,
-                                is_melee)
+                                is_melee, has_hero=inv is not None)
 
     @classmethod
     def _draw_item_card(cls, surface, game, data, sid, x, y, w, h,
-                         owned_count, can_buy, is_melee):
+                         owned_count, can_buy, is_melee, has_hero=True):
         # Card
         bg = (28, 33, 54) if can_buy else (24, 22, 30)
         pygame.draw.rect(surface, bg, (x, y, w, h), border_radius=8)
@@ -1015,8 +1132,13 @@ class ItemShopUI:
 
         # Tombol BUY
         btn_rect = pygame.Rect(x + 10, y + h - 30, w - 20, 24)
-        melee_warn = data.get("melee_only") and not is_melee
-        if melee_warn:
+        melee_warn = has_hero and data.get("melee_only") and not is_melee
+        if not has_hero:
+            # Item tetap terlihat, tapi belum ada hero penerimanya.
+            btn_color = (60, 60, 70)
+            label = "NEED HERO"
+            label_color = (220, 150, 150)
+        elif melee_warn:
             btn_color = (90, 60, 60)
             label = "MELEE ONLY"
             label_color = (255, 180, 180)
@@ -1071,6 +1193,20 @@ def handle_item_shop_click(game, mx, my, button):
             game.item_shop_open = False
             _play_click()
             return True
+        if btn_id.startswith("itemshop_hero_"):
+            # ═══ PILIH HERO PENERIMA (BUY FOR list) ═══
+            try:
+                idx = int(btn_id.replace("itemshop_hero_", ""))
+            except ValueError:
+                return True
+            alive = _alive_player_heroes(game)
+            if 0 <= idx < len(alive):
+                game.itemshop_target_hero = alive[idx]
+                _play_click()
+                _notify(game, f"BUY FOR: {alive[idx].name}",
+                        getattr(alive[idx], "color",
+                                (255, 220, 100)))
+            return True
         if btn_id.startswith("itemshop_buy_"):
             sid = btn_id.replace("itemshop_buy_", "")
             _try_buy(game, sid)
@@ -1082,17 +1218,37 @@ def handle_item_shop_click(game, mx, my, button):
             if button in (1, 3):
                 _try_drop(game, idx)
             return True
-    # Klik di luar panel / kanan = tutup. Pada "pilih hero dulu"
-    # layar apa pun klik menutup.
-    if button in (1, 3):
+
+    # Klik kanan di mana pun = tutup.
+    if button == 3:
         game.item_shop_open = False
+        return True
+    # Klik kiri di DALAM panel = tetap di toko (aman untuk sekadar
+    # melihat-lihat item walau belum punya hero). Klik DI LUAR panel
+    # = tutup.
+    if button == 1:
+        px = (1280 - ItemShopUI.PANEL_W) // 2
+        py = (720 - ItemShopUI.PANEL_H) // 2
+        panel = pygame.Rect(px, py, ItemShopUI.PANEL_W,
+                            ItemShopUI.PANEL_H)
+        if not panel.collidepoint(mx, my):
+            game.item_shop_open = False
         return True
     return False
 
 
 def _try_buy(game, sid):
-    hero = game.selected_hero
+    # Beli untuk hero target toko (hasil strip BUY FOR / hero
+    # terseleksi / hero hidup pertama) - TIDAK lagi mewajibkan
+    # selected_hero.
+    hero = getattr(game, "itemshop_target_hero", None)
+    alive = _alive_player_heroes(game)
+    if hero not in alive:
+        hero = alive[0] if alive else None
     if hero is None or not hero.alive:
+        _play_error()
+        _notify(game, "Tidak ada hero hidup untuk menerima item.",
+                (255, 150, 150))
         return
     data = ITEM_CATALOG.get(sid)
     if not data:
@@ -1104,12 +1260,16 @@ def _try_buy(game, sid):
         _play_error()
         return
     game.gold -= data["cost"]
+    game.itemshop_target_hero = hero
     _play_buy()
     _notify(game, f"{hero.name} membeli {data['name']}!", data["glow"])
 
 
 def _try_drop(game, slot_index):
-    hero = game.selected_hero
+    hero = getattr(game, "itemshop_target_hero", None)
+    alive = _alive_player_heroes(game)
+    if hero not in alive:
+        hero = alive[0] if alive else None
     if hero is None:
         return
     dropped = hero.items.remove(slot_index)
