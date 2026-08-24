@@ -689,7 +689,7 @@ ITEM_CATALOG = {
         "stats": {
             "armor": 10,
             "hp_regen": 5,
-            "mana_regen": 4,
+            "cooldown_reduction": 0.10,
         },
         "aura": {
             # Freezing Aura: musuh di dekat lambat attack speed &
@@ -712,10 +712,10 @@ ITEM_CATALOG = {
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": ("+10 Armor, +5 HP/reg, +4 Mana/reg. Aura: musuh "
+        "desc": ("+10 Armor, +5 HP/reg, 10% CDR. Aura: musuh "
                  "dekat -30% AS & heal -40%. Saat >=2 musuh dekat: "
                  "Arctic Blast 130 dmg + slow 45% (3.5 dtk)."),
-        "desc_en": ("+10 Armor, +5 HP regen, +4 Mana regen. Aura: "
+        "desc_en": ("+10 Armor, +5 HP regen, 10% CDR. Aura: "
                     "nearby enemies lose 30% AS & 40% healing. When "
                     "2+ enemies are near: Arctic Blast 130 dmg + 45% "
                     "slow for 3.5s."),
@@ -1310,9 +1310,6 @@ class HeroItemInventory:
         if rng <= 80:
             return 0
         return self._sum_stat("range_bonus")
-
-    def get_mana_regen(self):
-        return self._sum_stat("mana_regen")
 
     def has_true_strike(self):
         """True kalau pemilik punya Sundering Cudgel (tidak miss)."""
