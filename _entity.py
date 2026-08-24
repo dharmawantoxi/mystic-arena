@@ -3258,6 +3258,42 @@ class Hero(TowerDebuffMixin):
         # baik hero pemain maupun hero AI enemy.
         self._init_tower_debuffs()
 
+        # ═══ ITEM SYSTEM (Dead Edge, Holy Rapier, Demon Maw, dll) ═══
+        # Inventaris 6 slot. Stat item otomatis ikut dihitung di
+        # get_bonus_damage(), max_hp, _eff_attack_cd, take_damage,
+        # dan _do_attack (crit/lifesteal/cleave).
+        from hero_items import HeroItemInventory
+        self.items = HeroItemInventory(self)
+        # Pertama kali: max_hp hero = base_hp*mult. _apply_level_stats
+        # sudah dipanggil di atas sebelum items dibuat, jadi
+        # terapkan ulang supaya bonus HP item ikut terhitung.
+        self._recalc_item_stats()
+
+    def _recalc_item_stats(self):
+        """Hitung ulang max_hp + damage dasar + skill damage
+        setelah item berubah / naik level."""
+        # max_hp ditambahi bonus item
+        inv = getattr(self, "items", None)
+        if inv is None:
+            return
+        bonus_hp = inv.get_bonus_hp()
+        # base max hp (setelah level multiplier)
+        try:
+            from _core import HERO_LEVELS
+            lvl = HERO_LEVELS[self.level]
+            new_max = int(self.base_hp * lvl["hp_mult"]) + bonus_hp
+        except Exception:
+            new_max = self.base_hp + bonus_hp
+        old_max = getattr(self, "max_hp", new_max)
+        self.max_hp = new_max
+        if not hasattr(self, "hp") or self.hp is None:
+            self.hp = new_max
+        else:
+            if new_max > old_max:
+                self.hp = min(new_max, self.hp + (new_max - old_max))
+            elif self.hp > new_max:
+                self.hp = new_max
+
     def _apply_level_stats(self):
         # Safety clamp level
         if self.level > MAX_HERO_LEVEL:
@@ -3277,6 +3313,10 @@ class Hero(TowerDebuffMixin):
             self.hp = min(self.max_hp, self.hp + hp_gained)
 
         self._prev_max_hp = self.max_hp
+        # ═══ ITEM BONUS: setelah level naik, max_hp dasar berubah;
+        # terapkan bonus HP item supaya tidak hilang.
+        if hasattr(self, "items"):
+            self._recalc_item_stats()
 
     def upgrade(self):
         if self.level >= MAX_HERO_LEVEL:
@@ -3321,17 +3361,53 @@ class Hero(TowerDebuffMixin):
             print(f"[WARNING] No skill handler for {self.hero_type}")
             return False
 
+        # ═══ COOLDOWN REDUCTION (Octarine Core) ═══
+        # Kami tidak bisa mengubah cooldown yang DITETAPKAN handler
+        # skill secara langsung, jadi sebelum cast kita catat timer
+        # cooldown yang sekarang, lalu setelah cast kurangi selisih
+        # cooldown baru dengan persentase CDR.
+        inv = getattr(self, "items", None)
+        cdr = inv.get_cooldown_reduction() if inv is not None else 0.0
+        cd_map = {
+            'q': 'skill_timer',
+            'w': 'w_cooldown',
+            'e': 'e_cooldown',
+            'r': 'r_cooldown',
+        }
+        cd_attr = cd_map.get(skill_key)
+        before = getattr(self, cd_attr, 0) if cd_attr else 0
+
         # Delegate ke handler
         if skill_key == 'q':
-            return self.skills.cast_q(all_units, all_towers, all_bases)
+            result = self.skills.cast_q(all_units, all_towers, all_bases)
         elif skill_key == 'w':
-            return self.skills.cast_w(all_units, all_towers, all_bases)
+            result = self.skills.cast_w(all_units, all_towers, all_bases)
         elif skill_key == 'e':
-            return self.skills.cast_e(all_units, all_towers, all_bases)
+            result = self.skills.cast_e(all_units, all_towers, all_bases)
         elif skill_key == 'r':
-            return self.skills.cast_r(all_units, all_towers, all_bases)
+            result = self.skills.cast_r(all_units, all_towers, all_bases)
+        else:
+            return False
 
-        return False
+        if result:
+            # Terapkan cooldown reduction
+            if cdr > 0 and cd_attr is not None:
+                after = getattr(self, cd_attr, 0)
+                added = after - before
+                if added > 0:
+                    setattr(self, cd_attr,
+                            max(0, int(round(after - added * cdr))))
+            # ═══ SPELL VAMP (Octarine Core) ═══
+            # Heal instan sebesar persentase dari skill_damage hero
+            # (aproksimasi, karena damage aktual skill tergantung
+            # multiplier masing-masing).
+            if inv is not None:
+                sv = inv.get_spell_vamp()
+                if sv > 0:
+                    heal = int(self.skill_damage * sv)
+                    if heal > 0:
+                        self.hp = min(self.max_hp, self.hp + heal)
+        return result
     # ═══════════════════════════════════════
     # ENEMY DETECTION
     # ═══════════════════════════════════════
@@ -3359,6 +3435,21 @@ class Hero(TowerDebuffMixin):
                 best_dist = dist
                 best = e
         return best
+
+    def _eff_attack_cd(self, base_cd):
+        """Attack cooldown efektif: debuff attack-slow (Ice) +
+        bonus attack speed dari ITEM (Moon Shard, Steel Aegis,
+        Octarine tidak ikut)."""
+        cd = base_cd
+        inv = getattr(self, "items", None)
+        if inv is not None:
+            mult = inv.get_attack_speed_mult()
+            if mult > 0:
+                cd = cd / mult
+        if getattr(self, "atk_slow_timer", 0) > 0:
+            f = max(0.05, 1.0 - getattr(self, "atk_slow_amount", 0.0))
+            cd = cd / f
+        return max(1, int(round(cd)))
 
     def _find_hunt_target(self, enemies):
         """
@@ -3450,6 +3541,10 @@ class Hero(TowerDebuffMixin):
         self.pulse += 0.1
         # ═══ TICK DEBUFF MENARA (Ice/Mage/Cannon) ═══
         self._tick_tower_debuffs()
+        # ═══ TICK ITEM (regen, lifesteal cooldown, aura timer) ═══
+        inv = getattr(self, "items", None)
+        if inv is not None:
+            inv.update()
         # ═══ AUTO-CAST SKILLS (jika enabled) ═══
         if self.auto_cast_enabled:
             self.auto_cast_check_timer -= 1
@@ -3807,12 +3902,23 @@ class Hero(TowerDebuffMixin):
         # ═══ VISUAL FEEDBACK saat target out of range ═══
         if dist <= self.range and self.attack_timer == 0:
             # ═══ DAMAGE MODIFIER ═══
+            # Base damage + bonus item (Dead Edge, Holy Rapier, dll)
             damage = self.damage
+            inv = getattr(self, "items", None)
+            if inv is not None:
+                damage += inv.get_bonus_damage()
             is_crit = False
 
             if getattr(self, '_crit_buff_active', False):
                 damage = int(damage * 2)
                 is_crit = True
+
+            # ═══ ITEM CRIT (Dead Edge) ═══
+            if inv is not None and not is_crit:
+                crit_ok, crit_mult = inv.roll_crit()
+                if crit_ok:
+                    damage = int(damage * crit_mult)
+                    is_crit = True
 
             # ═══ KUNCI ARAH SERANGAN (anti swing kacau) ═══
             # Dipakai heroes/_adapt_hero_to_boss supaya pose serang
@@ -3834,6 +3940,12 @@ class Hero(TowerDebuffMixin):
                                   'morgath', 'ancient_apparition') \
                     and not is_boss_hero:
                 self._spawn_projectile(damage, is_crit)
+                # Lifesteal untuk ranged: terapkan saat proyektil
+                # dilepas (perkiraan damage yang akan mendarat).
+                if inv is not None and inv.get_lifesteal_pct() > 0:
+                    self.hp = min(self.max_hp,
+                                  self.hp + int(damage *
+                                                inv.get_lifesteal_pct()))
             else:
                 # Melee / boss hero → instant damage
                 self.target.take_damage(damage, self.team)
@@ -3848,6 +3960,24 @@ class Hero(TowerDebuffMixin):
                                 f"CRIT!", is_critical=True)
                     except Exception:
                         pass
+
+                # ═══ ON-HIT ITEM (lifesteal melee + cleave) ═══
+                if inv is not None:
+                    try:
+                        import __main__
+                        _all_units = []
+                        if hasattr(__main__, 'game_instance'):
+                            gi = __main__.game_instance
+                            _all_units = (list(getattr(gi, "minions", []))
+                                          + list(gi.get_all_heroes()))
+                            if getattr(gi, "active_boss", None) and \
+                                    gi.active_boss.alive:
+                                _all_units.append(gi.active_boss)
+                        inv.on_basic_attack_hit(self.target, damage,
+                                                _all_units)
+                    except Exception:
+                        inv.on_basic_attack_hit(self.target, damage,
+                                                None)
 
             # Attack cooldown efektif (dipanjangkan saat kena debuff
             # attack-speed dari Ice Tower)
@@ -3927,7 +4057,28 @@ class Hero(TowerDebuffMixin):
                                target=target, hero_type=hero_type)
 
     def take_damage(self, damage, from_team, damage_type='normal'):
+        # ═══ ARMOR (item Steel Aegis/Demon Maw) ═══
+        # Damage fisik biasa dikurangi dengan formula gaya MOBA:
+        #   pengurang = armor * 0.06 / (1 + armor * 0.06)
+        # Damage api/sihir tidak terpengaruh.
+        if damage_type != 'fire' and damage > 0:
+            inv = getattr(self, "items", None)
+            armor = inv.get_armor() if inv is not None else 0
+            if armor > 0:
+                reduction = armor * 0.06 / (1.0 + armor * 0.06)
+                damage = max(1, int(round(damage * (1.0 - reduction))))
+            elif armor < 0:
+                # Armor negatif (aura musuh) menambah damage 6% per
+                # poin, sampai +100%.
+                bonus = min(1.0, -armor * 0.06)
+                damage = int(round(damage * (1.0 + bonus)))
+
         self.hp -= damage
+
+        # ═══ NOTIFY ITEM (Leviathan combat timer) ═══
+        inv = getattr(self, "items", None)
+        if inv is not None and damage > 0:
+            inv.notify_damage_taken()
 
         # Popup kecil untuk burn (Cannon Tower) supaya pemain sadar
         # hero-nya sedang terbakar. Damage biasa tetap silent seperti
@@ -3948,12 +4099,30 @@ class Hero(TowerDebuffMixin):
             self.deaths += 1
             # Bersihkan semua debuff (burn/slow/dll.) saat mati
             self.clear_tower_debuffs()
+            # ═══ HOLY RAPIER RONTOK ═══
+            if inv is not None and inv.clear_on_death():
+                try:
+                    import __main__
+                    if hasattr(__main__, 'game_instance'):
+                        gi = __main__.game_instance
+                        ui = getattr(gi, "ui", None)
+                        if ui is not None and hasattr(ui,
+                                                       "add_notification"):
+                            ui.add_notification(
+                                f"{self.name} menjatuhkan Holy Rapier!",
+                                (255, 220, 100))
+                except Exception:
+                    pass
 
     def respawn(self):
         # Bersihkan debuff DULU supaya set hp penuh tidak kepotong
         # anti-heal yang tersisa dari kehidupan sebelumnya.
         self.clear_tower_debuffs()
         self.alive = True
+        # Pastikan max_hp sudah memperhitungkan item (Holy Rapier
+        # hilang saat mati, jadi max_hp bisa berubah).
+        if hasattr(self, "items"):
+            self._recalc_item_stats()
         self.hp = self.max_hp
         self.is_retreating = False
         if self.team == "blue":
@@ -5163,6 +5332,12 @@ class AIPlayer:
             if self._try_upgrade_hero():
                 return True
 
+        # Priority 2b: Beli ITEM hero (parity dengan pemain).
+        # AI makin sering beli item di level tinggi.
+        if self.heroes and roll(0.35 + 0.4 * brain + 0.2 * elite):
+            if self._try_buy_item():
+                return True
+
         # Priority 3: Upgrade tower
         if my_towers and roll(AI_UPGRADE_TOWER_CHANCE + 0.5 * brain):
             if self._try_upgrade_tower_new(my_towers):
@@ -5403,6 +5578,43 @@ class AIPlayer:
                     self.total_hero_upgrades += 1
                     return True
 
+        return False
+
+    def _try_buy_item(self):
+        """AI membeli item untuk hero yang paling layak.
+
+        Mengikuti saran dari hero_items.suggest_item_for_hero,
+        sesuai role & tipe serangan (melee/ranged).
+        """
+        try:
+            from hero_items import (
+                ITEM_CATALOG, MAX_ITEM_SLOTS, suggest_item_for_hero)
+        except Exception:
+            return False
+
+        # Pilih hero dengan slot kosong; prioritas kill/level tinggi
+        candidates = [h for h in self.heroes
+                      if getattr(h, "alive", False)
+                      and getattr(h, "items", None) is not None
+                      and sum(1 for s in h.items.slots if s is not None)
+                      < MAX_ITEM_SLOTS]
+        if not candidates:
+            return False
+        candidates.sort(key=lambda h: (h.kills, h.level), reverse=True)
+
+        for hero in candidates:
+            owned = set(s for s in hero.items.slots if s is not None)
+            sid = suggest_item_for_hero(hero, owned)
+            if not sid:
+                continue
+            data = ITEM_CATALOG.get(sid)
+            if not data:
+                continue
+            cost = data["cost"]
+            if self.gold >= cost + self._ai_reserve():
+                if hero.items.add(sid):
+                    self.gold -= cost
+                    return True
         return False
 
     def _try_upgrade_nexus(self, nexus):
