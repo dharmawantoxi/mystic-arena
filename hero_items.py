@@ -52,7 +52,7 @@ import math
 import random
 
 import pygame
-from localization import tr
+from localization import tr, get_language
 
 # Konstanta gameplay
 MAX_ITEM_SLOTS = 6
@@ -101,6 +101,7 @@ ITEM_CATALOG = {
         "melee_only": False,
         "drops_on_death": False,
         "desc": "+45 Damage. 25% peluang Critical Strike (200% damage).",
+        "desc_en": "+45 Damage. 25% chance to Critical Strike (200% damage).",
         "flavor": "Tebasan maut yang berdentang di ujung setiap medan tempur.",
     },
 
@@ -119,6 +120,7 @@ ITEM_CATALOG = {
         # kembali (sesuai sifat aslinya).
         "drops_on_death": True,
         "desc": "+120 Damage. HILANG saat hero mati (tidak dijatuhkan).",
+        "desc_en": "+120 Damage. LOST when the hero dies (not dropped).",
         "flavor": "Kilau cahaya yang hanya pantas dipegang oleh yang hidup.",
     },
 
@@ -147,6 +149,9 @@ ITEM_CATALOG = {
         "desc": ("+20 Damage, +4 Armor, 20% Lifesteal. "
                  "Saat HP < 35%: aktif Blood Frenzy, lifesteal 140% "
                  "selama 5 detik."),
+        "desc_en": ("+20 Damage, +4 Armor, 20% Lifesteal. "
+                    "Below 35% HP: Blood Frenzy activates, "
+                    "140% lifesteal for 5 seconds."),
         "flavor": "Topeng iblis yang lapar akan darah lawan.",
     },
 
@@ -172,6 +177,9 @@ ITEM_CATALOG = {
         "drops_on_death": False,
         "desc": ("+35% Max HP, +6 HP/reg. Di luar pertempuran (5 dtk "
                  "tanpa damage): regenerasi 1.5% Max HP per detik."),
+        "desc_en": ("+35% Max HP, +6 HP regen. Out of combat (5s "
+                    "without damage): regenerate 1.5% Max HP per "
+                    "second."),
         "flavor": "Jantung purba yang berdegup menyamai lautan.",
     },
 
@@ -195,6 +203,9 @@ ITEM_CATALOG = {
         "drops_on_death": False,
         "desc": ("+30 Damage, +3 HP/reg. Serangan melee membelah: 50% "
                  "damage ke musuh dalam radius 110 (hanya melee)."),
+        "desc_en": ("+30 Damage, +3 HP regen. Melee attacks cleave: "
+                    "50% damage to enemies within 110 radius (melee "
+                    "only)."),
         "flavor": "Kapak berukir yang menebas apapun di depannya.",
     },
 
@@ -223,6 +234,9 @@ ITEM_CATALOG = {
         "desc": ("+4 Armor, +30 Attack Speed. Aura: sekutu di dekat "
                  "dapat +2 Armor & +10 AS; musuh di dekat kehilangan "
                  "2 Armor."),
+        "desc_en": ("+4 Armor, +30 Attack Speed. Aura: nearby allies "
+                    "gain +2 Armor & +10 AS; nearby enemies lose 2 "
+                    "Armor."),
         "flavor": "Zirah baja yang berdenyut memberi semangat kawan.",
     },
 
@@ -239,6 +253,7 @@ ITEM_CATALOG = {
         "melee_only": False,
         "drops_on_death": False,
         "desc": "+60 Attack Speed. Serangan secepat cahaya bulan.",
+        "desc_en": "+60 Attack Speed. Strikes as fast as moonlight.",
         "flavor": "Serpihan rembulan yang membeku jadi kristal.",
     },
 
@@ -259,6 +274,9 @@ ITEM_CATALOG = {
         "drops_on_death": False,
         "desc": ("+300 HP, +2 HP/reg, 15% Cooldown Reduction, 10% Spell "
                  "Lifesteal (heal = 10% damage skill yang dikeluarkan)."),
+        "desc_en": ("+300 HP, +2 HP regen, 15% Cooldown Reduction, 10% "
+                    "Spell Lifesteal (heal = 10% of skill damage "
+                    "dealt)."),
         "flavor": "Inti ungu yang berputar dengan kekuatan arcane.",
     },
 
@@ -300,6 +318,9 @@ ITEM_CATALOG = {
         "desc": ("+250 HP, +8 HP/reg, +6 Armor. Blok pasif 55% (25 "
                  "dmg). Saat HP < 45%: Guard 7 dtk, kamu & sekutu "
                  "dekat blokir 35+2% Max HP per serangan."),
+        "desc_en": ("+250 HP, +8 HP regen, +6 Armor. Passive block 55% "
+                    "(25 dmg). Below 45% HP: Guard for 7s, you & "
+                    "nearby allies block 35 + 2% Max HP per attack."),
         "flavor": "Perisai kirmizi penahan amukan Tahun Kegelapan.",
     },
 
@@ -319,6 +340,8 @@ ITEM_CATALOG = {
         "drops_on_death": False,
         "desc": ("+35 Damage, +30 Attack Speed, 28% Evasion (peluang "
                  "menghindari serangan fisik sepenuhnya)."),
+        "desc_en": ("+35 Damage, +30 Attack Speed, 28% Evasion (chance "
+                    "to fully dodge physical attacks)."),
         "flavor": "Sayap raja kupu-kupu yang menolak setiap bilah.",
     },
 
@@ -344,6 +367,8 @@ ITEM_CATALOG = {
         "desc": ("+42 Damage. Serangan mengikis 6 Armor target "
                  "selama 6 detik (target menerima damage lebih "
                  "besar)."),
+        "desc_en": ("+42 Damage. Attacks shred 6 Armor from the target "
+                    "for 6 seconds (target takes more damage)."),
         "flavor": "Bilah berkarat yang melarutkan zirah dan daging.",
     },
 
@@ -372,6 +397,9 @@ ITEM_CATALOG = {
         "desc": ("+250 HP, +4 HP/reg, +12% Move Speed. Saat HP < "
                  "40%: kebal semua damage 2.5 dtk (tidak bisa "
                  "menyerang), cooldown 30 dtk."),
+        "desc_en": ("+250 HP, +4 HP regen, +12% Move Speed. Below 40% "
+                    "HP: immune to all damage for 2.5s (cannot "
+                    "attack), 30s cooldown."),
         "flavor": "Baling-baling angin yang menyembunyikan pemakainya.",
     },
 
@@ -412,6 +440,9 @@ ITEM_CATALOG = {
         "desc": ("+30 Damage, +30 AS, +250 HP. 20% serangan menyambar "
                  "3 musuh (45 dmg). Saat >=2 musuh dekat: rantai "
                  "mengikat mereka 1.2 dtk + 80 dmg."),
+        "desc_en": ("+30 Damage, +30 AS, +250 HP. 20% of attacks chain "
+                    "to 3 enemies (45 dmg). When 2+ enemies are near: "
+                    "chains root them for 1.2s + 80 dmg."),
         "flavor": "Rantai para dewa yang membelenggu serigala purba.",
     },
 
@@ -442,6 +473,9 @@ ITEM_CATALOG = {
         "desc": ("+25 Damage, +60 AS, +5 HP/reg. Soul Rend (auto): "
                  "silence target 5 dtk, seranganmu ke target crit "
                  "150%, target menerima +30% damage."),
+        "desc_en": ("+25 Damage, +60 AS, +5 HP regen. Soul Rend (auto): "
+                    "silences the target for 5s, your attacks on it "
+                    "crit for 150%, target takes +30% damage."),
         "flavor": "Duri darah yang menagih nyawa setiap korbannya.",
     },
 
@@ -477,6 +511,9 @@ ITEM_CATALOG = {
         "desc": ("+35 Damage, +300 HP, +16% heal diterima, +30% "
                  "tahan slow. Bash 22%: stun 0.9 dtk + 55 dmg. "
                  "Overwhelm (auto): stun target 1.2 dtk."),
+        "desc_en": ("+35 Damage, +300 HP, +16% incoming heal, +30% "
+                    "slow resist. Bash 22%: stun 0.9s + 55 dmg. "
+                    "Overwhelm (auto): stuns the target for 1.2s."),
         "flavor": "Pedang Komandan Jurang yang memutus jiwa.",
     },
 
@@ -516,6 +553,10 @@ ITEM_CATALOG = {
         "desc": ("+25 Damage, +65 AS. 22% serangan menyambar 3 musuh "
                  "(40 dmg). Saat dipukul: 20% perisai statis 8 dtk, "
                  "menyambar 4 musuh tiap 0.5 dtk (65 dmg)."),
+        "desc_en": ("+25 Damage, +65 AS. 22% of attacks chain to 3 "
+                    "enemies (40 dmg). When hit: 20% chance of a "
+                    "static shield for 8s, zapping 4 enemies every "
+                    "0.5s (65 dmg)."),
         "flavor": "Kumparan badai yang ditempa palu dewa guntur.",
     },
 }
@@ -1609,7 +1650,7 @@ class ItemShopUI:
         if not heroes:
             sf = pygame.font.Font(None, 18)
             t = sf.render(
-                "(belum ada hero - summon dulu di HERO SHOP)",
+                tr("shop_no_hero_yet"),
                 True, (255, 150, 150))
             surface.blit(t, (px + 112, py + 63))
             return
@@ -1664,10 +1705,8 @@ class ItemShopUI:
         pygame.draw.rect(surface, (40, 28, 28), box, border_radius=8)
         pygame.draw.rect(surface, (200, 90, 90), box, 2, border_radius=8)
         f = pygame.font.Font(None, 20)
-        t = f.render(
-            "TIDAK ADA HERO HIDUP - summon hero di HERO SHOP dulu; "
-            "item di bawah tetap bisa dilihat.",
-            True, (255, 190, 190))
+        t = f.render(tr("shop_no_hero_banner"),
+                     True, (255, 190, 190))
         surface.blit(t, t.get_rect(center=box.center))
 
     # ── Helpers ──────────────────────────────────────────
@@ -1826,7 +1865,7 @@ class ItemShopUI:
             lf = pygame.font.Font(None, 19)
             label = "TIER I - CORE" if i == 0 else \
                     f"TIER II - LEGENDARY" if i == 1 \
-                    else f"HAL {i + 1}"
+                    else tr("shop_page_label", page=i + 1)
             t = lf.render(label, True, (255, 225, 130) if active
                           else (170, 180, 205))
             surface.blit(t, t.get_rect(center=rect.center))
@@ -1923,9 +1962,9 @@ class ItemShopUI:
                            (150, 255, 170))
             surface.blit(ot, (x + w - 80, y + 56))
 
-        # Deskripsi (wrap sederhana)
+        # Deskripsi (wrap sederhana) - ikuti bahasa aktif (id/en)
         df = pygame.font.Font(None, 16)
-        lines = cls._wrap_text(data["desc"], df, w - 20)
+        lines = cls._wrap_text(cls._localized_desc(data), df, w - 20)
         ty = y + 74
         for line in lines[:4]:
             t = df.render(line, True, (200, 210, 230))
@@ -1961,6 +2000,13 @@ class ItemShopUI:
         # Daftarkan tombol (hanya kalau bisa di-klik)
         if can_buy:
             game.ui_buttons[f"itemshop_buy_{sid}"] = btn_rect
+
+    @staticmethod
+    def _localized_desc(data):
+        """Deskripsi item sesuai bahasa aktif (en -> desc_en)."""
+        if get_language() == "en":
+            return data.get("desc_en") or data.get("desc", "")
+        return data.get("desc", "")
 
     @staticmethod
     def _wrap_text(text, font, max_w):
@@ -2104,7 +2150,7 @@ def _try_drop(game, slot_index):
     if dropped:
         data = ITEM_CATALOG.get(dropped, {})
         _notify(game,
-                f"Melepas {data.get('name', 'item')} (tanpa refund)",
+                tr("item_dropped", item=data.get("name", "item")),
                 (255, 200, 120))
         _play_click()
 
