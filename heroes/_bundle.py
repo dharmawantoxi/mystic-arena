@@ -3974,6 +3974,9 @@ class _NS_kaizen:
         )
 
         # ---------- Background layers ----------
+        # Procedural pixel rim-light: keeps the compact swordsman silhouette
+        # crisp on dark terrain without relying on a sprite sheet.
+        _NS_kaizen._draw_swordsman_rim_light(surface, x, y - 10, pulse)
         _NS_kaizen._draw_wind_aura(surface, x, y, pulse)
         _NS_kaizen._draw_wind_platform(surface, x, y + 40, pulse, active_skill)
 
@@ -4879,6 +4882,20 @@ class _NS_kaizen:
             )
         pygame.draw.ellipse(shadow, (*_NS_kaizen.PALETTE["wind_darkest"], 40), (8, 4, 84, 10))
         surface.blit(shadow, (x - 50, y - 10))
+
+
+    def _draw_swordsman_rim_light(surface, x, y, phase):
+        """Small code-drawn blue rim light around scarf, katana, and hair."""
+        pulse = .72 + math.sin(phase * 1.3) * .16
+        halo = pygame.Surface((88, 98), pygame.SRCALPHA)
+        for radius, alpha in ((38, 9), (29, 14), (20, 20)):
+            _NS_kaizen._aacircle(halo, (*_NS_kaizen.PALETTE["wind_dark"],
+                                         int(alpha * pulse)), (44, 49), radius)
+        _NS_kaizen._aaline(halo, (*_NS_kaizen.PALETTE["wind_mid"], int(38 * pulse)),
+                            (28, 57), (12, 64), 2)
+        _NS_kaizen._aaline(halo, (*_NS_kaizen.PALETTE["wind_light"], int(34 * pulse)),
+                            (55, 56), (78, 45), 1)
+        surface.blit(halo, (x - 44, y - 49))
 
 
     def _draw_wind_aura(surface, x, y, phase):
