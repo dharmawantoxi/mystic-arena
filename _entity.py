@@ -3446,9 +3446,9 @@ class Hero(TowerDebuffMixin):
         return enemies
 
     def _find_attack_target(self, enemies):
-        """Cari musuh dalam attack range"""
+        """Cari musuh dalam attack range (termasuk bonus item)."""
         best = None
-        best_dist = self.range
+        best_dist = self._eff_attack_range()
         for e in enemies:
             dist = math.hypot(e.x - self.x, e.y - self.y)
             if dist <= best_dist:
@@ -3472,6 +3472,18 @@ class Hero(TowerDebuffMixin):
             f = max(0.05, 1.0 - getattr(self, "atk_slow_amount", 0.0))
             cd = cd / f
         return max(1, int(round(cd)))
+
+    def _eff_attack_range(self):
+        """Jangkauan serang efektif, termasuk bonus item (Gale Pike,
+        Basilisk Breath - hanya untuk hero ranged)."""
+        rng = self.range
+        inv = getattr(self, "items", None)
+        if inv is not None:
+            try:
+                rng += inv.get_range_bonus()
+            except Exception:
+                pass
+        return rng
 
     def _find_hunt_target(self, enemies):
         """
@@ -3609,7 +3621,8 @@ class Hero(TowerDebuffMixin):
                 # HIT! (hanya damage > 0 yang mengenai target & bersuara;
                 # projectile visual-only skill damage=0 diam saja)
                 if proj['damage'] > 0:
-                    target.take_damage(proj['damage'], proj['team'])
+                    target.take_damage(proj['damage'], proj['team'],
+                                       source=proj.get('source'))
 
                     # Suara hentakan proyektil (panah/sihir hero ranged).
                     # Dulu TIDAK ada sama sekali - serangan jarak jauh
@@ -3782,7 +3795,7 @@ class Hero(TowerDebuffMixin):
             dy = self.target.y - self.y
             dist = math.hypot(dx, dy)
 
-            if dist <= self.range:
+            if dist <= self._eff_attack_range():
                 self.facing = 1 if dx > 0 else -1
                 self._do_attack()
             else:
@@ -3824,7 +3837,7 @@ class Hero(TowerDebuffMixin):
             dy = hunt_target.y - self.y
             dist = math.hypot(dx, dy)
 
-            if dist <= self.range:
+            if dist <= self._eff_attack_range():
                 self.facing = 1 if dx > 0 else -1
                 self._do_attack()
             else:
@@ -3950,7 +3963,7 @@ class Hero(TowerDebuffMixin):
                           self.target.y - self.y)
 
         # ═══ VISUAL FEEDBACK saat target out of range ═══
-        if dist <= self.range and self.attack_timer == 0:
+        if dist <= self._eff_attack_range() and self.attack_timer == 0:
             # ═══ DAMAGE MODIFIER ═══
             # Base damage + bonus item (Dead Edge, Holy Rapier, dll)
             damage = self.damage
@@ -4012,7 +4025,7 @@ class Hero(TowerDebuffMixin):
                         self._collect_onhit_units())
             else:
                 # Melee / boss hero → instant damage
-                self.target.take_damage(damage, self.team)
+                self.target.take_damage(damage, self.team, source=self)
 
                 if is_crit:
                     try:
@@ -4106,6 +4119,7 @@ class Hero(TowerDebuffMixin):
             'team': self.team,
             'angle': start_angle,
             'age': 0,
+            'source': self,
         })
 
     def _spawn_skill_projectile(self, target, speed=13.0, hero_type=None):
@@ -4120,7 +4134,8 @@ class Hero(TowerDebuffMixin):
         self._spawn_projectile(0, is_crit=False, speed=speed,
                                target=target, hero_type=hero_type)
 
-    def take_damage(self, damage, from_team, damage_type='normal'):
+    def take_damage(self, damage, from_team, damage_type='normal',
+                    source=None):
         # ═══ ZEPHYR — SHADOW REALM ═══
         # Status ini sebelumnya hanya menyalakan renderer gelembung dan
         # heal. Dengan guard ini Zephyr benar-benar tidak bisa terkena
@@ -4167,20 +4182,40 @@ class Hero(TowerDebuffMixin):
                 pass
             return
 
-        # ═══ EVASION (Monarch Wings): menghindari serangan fisik ═══
-        if damage_type == 'normal' and damage > 0 and inv is not None:
-            ev = inv.get_evasion()
-            if ev > 0 and random.random() < ev:
-                try:
-                    import __main__
-                    if hasattr(__main__, 'game_instance'):
-                        __main__.game_instance.effects.add_damage_number(
-                            self.x, self.y - self.radius - 12,
-                            "MISS", is_critical=False,
-                            damage_type='ice')
-                except Exception:
-                    pass
-                return
+        # ═══ EVASION (Monarch Wings) + BLIND (Solar Brand aura) ═══
+        # Evasion  = peluang bertahan (di DIRI SENDIRI / defender).
+        # Blind    = peluang SERANGAN PENYERANG meleset (di SOURCE).
+        # True Strike (Sundering Cudgel pada penyerang) MENEMBUS
+        # keduanya, jadi serangan basic-nya selalu mendarat.
+        if damage_type == 'normal' and damage > 0:
+            true_strike = False
+            if source is not None:
+                src_inv = getattr(source, "items", None)
+                if src_inv is not None:
+                    try:
+                        true_strike = src_inv.has_true_strike()
+                    except Exception:
+                        true_strike = False
+            if not true_strike:
+                # Evasion pada defender
+                ev = inv.get_evasion() if inv is not None else 0.0
+                # Blind pada penyerang (aura Scorched Earth)
+                blind = 0.0
+                if source is not None and getattr(
+                        source, "blind_timer", 0) > 0:
+                    blind = getattr(source, "blind_amount", 0.0)
+                miss_chance = max(ev, blind)
+                if miss_chance > 0 and random.random() < miss_chance:
+                    try:
+                        import __main__
+                        if hasattr(__main__, 'game_instance'):
+                            __main__.game_instance.effects.add_damage_number(
+                                self.x, self.y - self.radius - 12,
+                                "MISS", is_critical=False,
+                                damage_type='ice')
+                    except Exception:
+                        pass
+                    return
 
         # ═══ DAMAGE AMP (Soul Rend): +% damage diterima ═══
         if damage > 0 and getattr(self, "dmg_amp_timer", 0) > 0:
@@ -4227,9 +4262,10 @@ class Hero(TowerDebuffMixin):
 
         self.hp -= damage
 
-        # ═══ NOTIFY ITEM (Leviathan combat timer + Static Charge) ═══
+        # ═══ NOTIFY ITEM (Leviathan combat timer + Static Charge +
+        #     Thornmail reflect) ═══
         if inv is not None and damage > 0:
-            inv.notify_damage_taken()
+            inv.notify_damage_taken(damage=damage, source=source)
 
         # Popup kecil untuk burn (Cannon Tower) supaya pemain sadar
         # hero-nya sedang terbakar. Damage biasa tetap silent seperti
@@ -4318,23 +4354,24 @@ class Hero(TowerDebuffMixin):
                                  (self.radius + 3) * 2, 10), 2)
 
             # Range circle - surface di-cache per (range, color)
-            key = ("range", self.range, self.color)
+            _rng = self._eff_attack_range()
+            key = ("range", _rng, self.color)
             range_surf = _HERO_UI_CACHE.get(key)
             if range_surf is None:
-                range_d = self.range * 2
+                range_d = _rng * 2
                 range_surf = pygame.Surface((range_d + 4, range_d + 4),
                                             pygame.SRCALPHA)
                 r_color = (*self.color, 30)
                 border_c = (*self.color, 100)
                 pygame.draw.circle(range_surf, r_color,
-                                   (self.range + 2, self.range + 2),
-                                   self.range)
+                                   (_rng + 2, _rng + 2),
+                                   _rng)
                 pygame.draw.circle(range_surf, border_c,
-                                   (self.range + 2, self.range + 2),
-                                   self.range, 2)
+                                   (_rng + 2, _rng + 2),
+                                   _rng, 2)
                 _HERO_UI_CACHE[key] = range_surf
             surface.blit(range_surf,
-                         (x - self.range - 2, y - self.range - 2))
+                         (x - _rng - 2, y - _rng - 2))
 
         # ═══ GROUND SHADOW ═══
         pygame.draw.ellipse(surface, (0, 0, 0, 100),

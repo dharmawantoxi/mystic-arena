@@ -747,6 +747,10 @@ class TowerDebuffMixin:
         # heal_amp - +% heal yang diterima (Abyss Breaker)
         self.heal_amp_amount = 0.0
         self.heal_amp_timer = 0
+        # blind - peluang serangan fisik yang masuk meleset
+        # (Solar Brand aura). Diset oleh item Tier III.
+        self.blind_amount = 0.0
+        self.blind_timer = 0
 
     # ── PROPERTY: hp dengan anti-heal ──
     @property
@@ -824,6 +828,15 @@ class TowerDebuffMixin:
                 self.heal_amp_timer < duration:
             self.heal_amp_amount = amount
             self.heal_amp_timer = duration
+
+    def apply_miss_chance(self, amount, duration):
+        """Buta: peluang serangan FISIK yang masuk meleset. Dipakai
+        aura Scorched Earth (Solar Brand)."""
+        if not getattr(self, "alive", True):
+            return
+        if amount > self.blind_amount or self.blind_timer < duration:
+            self.blind_amount = amount
+            self.blind_timer = duration
 
     def apply_debuff(self, kind, amount, duration, source_team=None):
         """Apply debuff menara. Stack rule: terkuat menang, durasi refresh."""
@@ -921,6 +934,10 @@ class TowerDebuffMixin:
             self.heal_amp_timer -= 1
             if self.heal_amp_timer <= 0:
                 self.heal_amp_amount = 0.0
+        if self.blind_timer > 0:
+            self.blind_timer -= 1
+            if self.blind_timer <= 0:
+                self.blind_amount = 0.0
 
         # Burning: damage diakumulasi per frame, ditembakkan per tick
         # (bukan tiap frame, supaya damage number tidak spam).

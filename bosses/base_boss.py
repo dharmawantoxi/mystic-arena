@@ -574,7 +574,8 @@ class Boss(TowerDebuffMixin):
 
             if dist <= self.range:
                 if self.timer == 0:
-                    self.target.take_damage(self.damage, self.team)
+                    self.target.take_damage(self.damage, self.team,
+                                            source=self)
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -5111,7 +5112,24 @@ class Boss(TowerDebuffMixin):
         except Exception:
             pass
 
-    def take_damage(self, damage, from_team, damage_type='normal'):
+    def take_damage(self, damage, from_team, damage_type='normal',
+                    source=None):
+        # ═══ BLIND (Solar Brand aura): serangan fisik penyerang
+        #     yang sedang buta berpeluang meleset. Boss tidak
+        #     mempunyai evasion sendiri. ═══
+        if damage_type == 'normal' and damage > 0 and source is not None:
+            true_strike = False
+            src_inv = getattr(source, "items", None)
+            if src_inv is not None:
+                try:
+                    true_strike = src_inv.has_true_strike()
+                except Exception:
+                    true_strike = False
+            if (not true_strike and getattr(source, "blind_timer", 0) > 0
+                    and random.random()
+                    < getattr(source, "blind_amount", 0.0)):
+                return
+
         # ═══ STATUS ITEM TIER II: Soul Rend amp + Corroder shred ═══
         if damage > 0:
             if getattr(self, "dmg_amp_timer", 0) > 0:
