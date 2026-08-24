@@ -6237,8 +6237,17 @@ class InputHandler:
         """Handle klik kiri di world"""
         g = self.game
 
-        # 1. Shop building
-        if g.map_renderer.is_click_on_shop(mx, my):
+        # 1. Shop building.
+        #    Radiant (dekat base biru) = ITEM FORGE
+        #    Dire    (dekat base merah)= HERO SHOP
+        which = g.map_renderer.get_clicked_shop(mx, my)
+        if which == 'item':
+            g.shop_open = False
+            g.item_shop_open = True
+            SoundManager().play('ui_click', volume_mult=0.5)
+            return
+        if which == 'hero':
+            g.item_shop_open = False
             g.shop_open = True
             SoundManager().play('ui_click', volume_mult=0.5)
             return

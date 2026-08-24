@@ -14,7 +14,7 @@ hak cipta:
   7. Moon Shard       (nama generik, terinspirasi dari Moon Shard)
   8. Octarine Core    (nama generik, terinspirasi dari Octarine Core)
 
-Tiap hero punya 6 slot item. Item beli pakai GOLD in-game, bisa didrop
+Tiap hero punya 3 slot item. Item beli pakai GOLD in-game, bisa didrop
 (klik kanan slot di panel item), dan HILANG saat hero mati KECUALI Holy
 Rapier yang memang rontok (tidak balik).
 
@@ -22,7 +22,7 @@ Modul ini menengahi:
   - ITEM_CATALOG       data stat/harga/deskripsi
   - HeroItemInventory  logika stat + pasif
   - ItemShopUI         panel toko item di dalam HeroPanel
-  - HeroItemRenderer   gambar 6 slot di HeroPanel
+  - HeroItemRenderer   gambar 3 slot di HeroPanel
 """
 
 import os
@@ -32,7 +32,9 @@ import random
 import pygame
 
 # Konstanta gameplay
-MAX_ITEM_SLOTS = 6
+MAX_ITEM_SLOTS = 3
+# Harga semua item diseragamkan (12000G)
+ITEM_FLAT_COST = 12000
 
 # Kategori item (dipakai AI & sorting UI)
 CATEGORY_CRIT     = "crit"
@@ -55,7 +57,7 @@ ITEM_CATALOG = {
     "dead_edge": {
         "name": "Dead Edge",
         "category": CATEGORY_CRIT,
-        "cost": 2800,
+        "cost": ITEM_FLAT_COST,
         "icon": "dead_edge.png",
         "color": (220, 60, 60),
         "glow": (255, 90, 90),
@@ -73,7 +75,7 @@ ITEM_CATALOG = {
     "holy_rapier": {
         "name": "Holy Rapier",
         "category": CATEGORY_DAMAGE,
-        "cost": 3000,
+        "cost": ITEM_FLAT_COST,
         "icon": "holy_rapier.png",
         "color": (255, 220, 80),
         "glow": (255, 245, 150),
@@ -91,7 +93,7 @@ ITEM_CATALOG = {
     "demon_maw": {
         "name": "Demon Maw",
         "category": CATEGORY_LIFESTEAL,
-        "cost": 2900,
+        "cost": ITEM_FLAT_COST,
         "icon": "demon_maw.png",
         "color": (180, 30, 30),
         "glow": (255, 70, 70),
@@ -119,7 +121,7 @@ ITEM_CATALOG = {
     "leviathan_heart": {
         "name": "Leviathan Heart",
         "category": CATEGORY_TANK,
-        "cost": 2700,
+        "cost": ITEM_FLAT_COST,
         "icon": "leviathan_heart.png",
         "color": (80, 220, 120),
         "glow": (130, 255, 160),
@@ -144,7 +146,7 @@ ITEM_CATALOG = {
     "cleave_axe": {
         "name": "Cleave Axe",
         "category": CATEGORY_SPLASH,
-        "cost": 2600,
+        "cost": ITEM_FLAT_COST,
         "icon": "cleave_axe.png",
         "color": (200, 220, 240),
         "glow": (150, 210, 255),
@@ -167,7 +169,7 @@ ITEM_CATALOG = {
     "steel_aegis": {
         "name": "Steel Aegis",
         "category": CATEGORY_AS_ARMOR,
-        "cost": 2800,
+        "cost": ITEM_FLAT_COST,
         "icon": "steel_aegis.png",
         "color": (180, 200, 230),
         "glow": (120, 170, 255),
@@ -195,7 +197,7 @@ ITEM_CATALOG = {
     "moon_shard": {
         "name": "Moon Shard",
         "category": CATEGORY_AS,
-        "cost": 2500,
+        "cost": ITEM_FLAT_COST,
         "icon": "moon_shard.png",
         "color": (130, 220, 255),
         "glow": (180, 240, 255),
@@ -211,7 +213,7 @@ ITEM_CATALOG = {
     "octarine_core": {
         "name": "Octarine Core",
         "category": CATEGORY_CASTER,
-        "cost": 2900,
+        "cost": ITEM_FLAT_COST,
         "icon": "octarine_core.png",
         "color": (180, 80, 230),
         "glow": (220, 130, 255),
@@ -766,9 +768,6 @@ class ItemShopUI:
         if not getattr(game, "item_shop_open", False):
             return
         hero = game.selected_hero
-        if hero is None or not getattr(hero, "alive", False):
-            game.item_shop_open = False
-            return
 
         # Overlay gelap
         from mobile.perf import darken
@@ -780,10 +779,29 @@ class ItemShopUI:
         # Panel
         cls._draw_panel(surface, px, py)
         cls._draw_header(surface, game, px, py)
-        cls._draw_hero_info(surface, hero, px, py)
-        cls._draw_item_grid(surface, game, hero, px, py)
-        cls._draw_owned_slots(surface, hero, px, py)
+        if hero is not None and getattr(hero, "alive", False):
+            cls._draw_hero_info(surface, hero, px, py)
+            cls._draw_item_grid(surface, game, hero, px, py)
+            cls._draw_owned_slots(surface, hero, px, py)
+        else:
+            cls._draw_no_hero(surface, game, px, py)
         cls._draw_close(surface, game, px, py)
+
+    @classmethod
+    def _draw_no_hero(cls, surface, game, px, py):
+        """Ditampilkan kalau pemain mengetuk ITEM FORGE tanpa memilih
+        hero dulu. Jendela langsung menutup sendiri saat pemain
+        meng-klik di mana pun (ditangani handle_item_shop_click)."""
+        f = pygame.font.Font(None, 28)
+        t1 = f.render("PILIH HERO DULU", True, (255, 200, 200))
+        surface.blit(t1, t1.get_rect(
+            center=(px + cls.PANEL_W // 2, py + cls.PANEL_H // 2 - 16)))
+        sf = pygame.font.Font(None, 18)
+        t2 = sf.render(
+            "Klik hero di peta, lalu ketuk bangunan ITEM FORGE lagi.",
+            True, (200, 210, 230))
+        surface.blit(t2, t2.get_rect(
+            center=(px + cls.PANEL_W // 2, py + cls.PANEL_H // 2 + 16)))
 
     # ── Helpers ──────────────────────────────────────────
     @classmethod
@@ -1052,8 +1070,9 @@ def handle_item_shop_click(game, mx, my, button):
             if button in (1, 3):
                 _try_drop(game, idx)
             return True
-    # Klik di luar panel / kanan = tutup
-    if button == 3:
+    # Klik di luar panel / kanan = tutup. Pada "pilih hero dulu"
+    # layar apa pun klik menutup.
+    if button in (1, 3):
         game.item_shop_open = False
         return True
     return False

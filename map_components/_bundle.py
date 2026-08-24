@@ -7156,18 +7156,42 @@ class _NS_shop_renderer:
 
 
     class ShopRenderer:
-        """Draw shop buildings (dark fantasy style)"""
+        """Draw shop buildings (dark fantasy style)
+
+        radiant_pos -> ITEM FORGE (ungu, toko item hero)
+        dire_pos    -> HERO SHOP  (merah, toko hero)
+        """
 
         @staticmethod
         def draw(surf, radiant_pos, dire_pos):
             """Draw both shop buildings"""
-            _NS_shop_renderer.ShopRenderer._draw_building(surf, radiant_pos, 'radiant')
-            _NS_shop_renderer.ShopRenderer._draw_building(surf, dire_pos, 'dire')
+            _NS_shop_renderer.ShopRenderer._draw_building(
+                surf, radiant_pos, 'item')
+            _NS_shop_renderer.ShopRenderer._draw_building(
+                surf, dire_pos, 'hero')
 
         @staticmethod
-        def _draw_building(surf, pos, side):
-            """Single dark fantasy shop building"""
+        def _draw_building(surf, pos, kind):
+            """Single dark fantasy shop building.
+
+            kind: 'hero'  -> Dire/HERO SHOP (tampilan asli merah)
+                  'item'  -> Radiant/ITEM FORGE (tampilan ungu)
+            """
             cx, cy = pos
+
+            # Warna tema per jenis toko
+            if kind == 'item':
+                roof_color = (70, 40, 100)
+                roof_light = (120, 70, 160)
+                win_color = (180, 120, 255)
+                sign_color = (180, 120, 255)
+                sign_text = "ITEM"
+            else:
+                roof_color = (80, 30, 30)
+                roof_light = (130, 50, 50)
+                win_color = (255, 100, 100)
+                sign_color = (200, 160, 40)
+                sign_text = "SHOP"
 
             # Ground platform
             platform_w = 70
@@ -7239,10 +7263,9 @@ class _NS_shop_renderer:
                 pygame.draw.rect(surf, OUTLINE,
                                  (win_x - 1, win_y - 1, 10, 10))
 
-                win_color = (100, 200, 255) if side == 'radiant' \
-                    else (255, 100, 100)
+                win_color_local = win_color
 
-                pygame.draw.rect(surf, win_color,
+                pygame.draw.rect(surf, win_color_local,
                                  (win_x, win_y, 8, 8))
                 pygame.draw.rect(surf, (255, 255, 255),
                                  (win_x, win_y, 4, 4))
@@ -7256,11 +7279,6 @@ class _NS_shop_renderer:
             # Roof
             roof_h = 24
             roof_top_y = wall_y - roof_h
-
-            roof_color = (60, 40, 60) if side == 'radiant' \
-                else (80, 30, 30)
-            roof_light = (100, 70, 100) if side == 'radiant' \
-                else (130, 50, 50)
 
             # Shadow
             pygame.draw.polygon(surf, OUTLINE, [
@@ -7317,14 +7335,20 @@ class _NS_shop_renderer:
             pygame.draw.rect(surf, OUTLINE,
                              (sign_x - 1, sign_y - 1,
                               sign_w + 2, sign_h + 2))
-            pygame.draw.rect(surf, (60, 40, 30),
-                             (sign_x, sign_y, sign_w, sign_h))
-            pygame.draw.rect(surf, (90, 60, 40),
-                             (sign_x, sign_y, sign_w, 3))
+            if kind == 'item':
+                pygame.draw.rect(surf, (40, 25, 60),
+                                 (sign_x, sign_y, sign_w, sign_h))
+                pygame.draw.rect(surf, (70, 45, 110),
+                                 (sign_x, sign_y, sign_w, 3))
+            else:
+                pygame.draw.rect(surf, (60, 40, 30),
+                                 (sign_x, sign_y, sign_w, sign_h))
+                pygame.draw.rect(surf, (90, 60, 40),
+                                 (sign_x, sign_y, sign_w, 3))
 
             text_y = sign_y + 4
             _NS_shop_renderer.ShopRenderer._draw_pixel_text(
-                surf, "SHOP", sign_x + 6, text_y, (200, 160, 40))
+                surf, sign_text, sign_x + 6, text_y, sign_color)
 
             pygame.draw.rect(surf, OUTLINE,
                              (sign_x, sign_y, sign_w, sign_h), 2)
@@ -7345,6 +7369,18 @@ class _NS_shop_renderer:
                 'P': [(1, 1, 1, 1, 0), (1, 0, 0, 0, 1),
                       (1, 1, 1, 1, 0), (1, 0, 0, 0, 0),
                       (1, 0, 0, 0, 0)],
+                'I': [(1, 1, 1, 1, 1), (0, 0, 1, 0, 0),
+                      (0, 0, 1, 0, 0), (0, 0, 1, 0, 0),
+                      (1, 1, 1, 1, 1)],
+                'T': [(1, 1, 1, 1, 1), (0, 0, 1, 0, 0),
+                      (0, 0, 1, 0, 0), (0, 0, 1, 0, 0),
+                      (0, 0, 1, 0, 0)],
+                'E': [(1, 1, 1, 1, 1), (1, 0, 0, 0, 0),
+                      (1, 1, 1, 1, 0), (1, 0, 0, 0, 0),
+                      (1, 1, 1, 1, 1)],
+                'M': [(1, 0, 0, 0, 1), (1, 1, 0, 1, 1),
+                      (1, 0, 1, 0, 1), (1, 0, 0, 0, 1),
+                      (1, 0, 0, 0, 1)],
             }
             for i, char in enumerate(text):
                 if char in letters:

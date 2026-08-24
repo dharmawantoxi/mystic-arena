@@ -3910,12 +3910,16 @@ class _NS_shop_hints:
         """
 
         def draw(self, surface):
-            """Draw hints di semua shop building"""
+            """Draw hints di semua shop building.
+
+            Radiant (dekat base biru) = ITEM FORGE (toko item hero)
+            Dire (dekat base merah)   = HERO SHOP
+            """
             g = self.game
             pulse = math.sin(g.animation_time * 0.06) * 3
 
             for shop_pos, label in [
-                (g.map_renderer.radiant_shop_pos, "HERO SHOP"),
+                (g.map_renderer.radiant_shop_pos, "ITEM FORGE"),
                 (g.map_renderer.dire_shop_pos, "HERO SHOP"),
             ]:
                 self._draw_single_hint(surface, shop_pos, label, pulse)
