@@ -11,6 +11,7 @@
 #   - tombol jeda & FPS         (dulu menutupi sudut kiri atas peta)
 #   - emas, wave, waktu         (dulu panel melayang di atas peta)
 #   - daftar hero + HP + skill  (dulu harus ketuk hero satu per satu)
+#   - tactical commands         (GATHER, PROTECT TOWER/CASTLE, ATTACK BOSS)
 #   - notifikasi combo          (dulu melintas di tengah layar)
 #   - popup upgrade hero        (dulu menutupi peta persis saat
 #                                pemain perlu melihat peta)
@@ -109,6 +110,27 @@ class SidePanel:
         self.buttons["pause"] = PanelButton(
             "pause", (r.x + pad, 14, 58, 58), "", EMAS, 20, ikon="pause")
 
+        # Tactical buttons akan dibuat dinamis di _gambar_tactical,
+        # tapi buat placeholder di sini supaya hit_test langsung bisa
+        # dipakai sejak frame pertama (sebelum draw pertama).
+        # Posisi placeholder akan di-update di draw.
+        # Kita buat di koordinat yang kira-kira sama dengan posisi
+        # akhirnya (di bawah HEROES).
+        tac_y_base = 84 + 96 + 10 + 236 + 10  # status + heroes + gap
+        tac_btn_h = 32
+        tac_gap = 6
+        for i, (act, lbl, col) in enumerate([
+            ("gather", "GATHER [G]", BIRU),
+            ("protect_tower", "PROTECT TOWER [T]", OK),
+            ("protect_castle", "PROTECT CASTLE [C]", EMAS),
+            ("attack_boss", "ATTACK BOSS [B]", BAHAYA),
+        ]):
+            by = tac_y_base + i * (tac_btn_h + tac_gap)
+            # Placeholder rect - akan di-update di _gambar_tactical
+            self.buttons[act] = PanelButton(
+                act, (r.x + pad + 6, r.y + by, r.width - pad*2 - 12, tac_btn_h),
+                lbl, col, 13)
+
         # Simpan latar batu supaya bisa dipulihkan tiap frame tanpa
         # menggambar ulang ratusan bata.
         try:
@@ -197,6 +219,7 @@ class SidePanel:
             y = 84
             y = self._gambar_status(buf, game, y)
             y = self._gambar_hero(buf, game, y)
+            y = self._gambar_tactical(buf, game, y)
             self._isi_at = sekarang
 
         # ═══ HANYA DI-BLIT SAAT PERLU ═══
@@ -422,6 +445,85 @@ class SidePanel:
             f_kecil2 = self.get_font(12, "body")
             full.blit(f_kecil2.render("+%d more" % self._hero_lebih,
                                       True, DIM), (x + 9, by - 2))
+        return y + h + 10
+
+    def _gambar_tactical(self, full, game, y):
+        """Tactical command buttons: GATHER, PROTECT TOWER, PROTECT CASTLE, ATTACK BOSS"""
+        if game is None:
+            return y
+        if getattr(game, 'state', '') != 'playing':
+            return y
+
+        r = self.rect
+        pad = 14
+        w = r.width - pad * 2
+        x = pad
+
+        # Cek kondisi
+        alive_heroes = [h for h in getattr(game, 'heroes', []) if getattr(h, 'alive', False)]
+        has_boss = getattr(game, 'active_boss', None) and getattr(game.active_boss, 'alive', False)
+
+        # Hitung tinggi kotak: judul 22 + 4 baris tombol (32+gap)
+        btn_h = 32
+        gap = 6
+        num_btns = 4
+        h = 26 + num_btns * (btn_h + gap) - gap
+        # Jangan gambar kalau tidak ada ruang (zona bawah)
+        if y + h > r.height - self.ZONA_BAWAH - 8:
+            return y
+
+        self._kotak(full, x, y, w, h, "TACTICAL COMMANDS")
+
+        f_btn = self.get_font(13, "body_bold")
+        f_small = self.get_font(11, "body")
+
+        # Definisi tombol
+        tactical_defs = [
+            ("gather", "GATHER [G]", BIRU, len(alive_heroes) > 0, "Semua hero kumpul & serang bersama"),
+            ("protect_tower", "PROTECT TOWER [T]", OK, len(alive_heroes) >= 1, "Min 2 hero lindungi tower"),
+            ("protect_castle", "PROTECT CASTLE [C]", EMAS, len(alive_heroes) > 0, "Semua hero lindungi castle"),
+            ("attack_boss", "ATTACK BOSS [B]", BAHAYA, has_boss, "Semua hero serang boss"),
+        ]
+
+        by = y + 24
+        ox, oy = self.rect.topleft
+
+        for action, label, warna, enabled, desc in tactical_defs:
+            # Posisi tombol relatif terhadap panel buffer (full), tapi hit_test pakai koordinat layar penuh
+            # Jadi kita buat rect di koordinat layar penuh untuk hit_test, lalu convert ke buffer
+            screen_rect = pygame.Rect(r.x + x + 6, r.y + by, w - 12, btn_h)
+            # Simpan untuk hit_test (pakai koordinat layar)
+            self.buttons[action] = PanelButton(action, screen_rect, label, warna, 13)
+
+            # Gambar di buffer (koordinat relatif)
+            buf_rect = pygame.Rect(x + 6, by, w - 12, btn_h)
+
+            if not enabled:
+                bg = (45, 45, 50)
+                border = (80, 80, 85)
+                txt_col = (120, 120, 125)
+            else:
+                # Animasi tekan
+                btn_obj = self.buttons.get(action)
+                press = getattr(btn_obj, 'press_anim', 0) if btn_obj else 0
+                if press > 0:
+                    k = int(25 * press)
+                    bg = (warna[0]//3 + k, warna[1]//3 + k, warna[2]//3 + k)
+                    border = (255, 255, 255)
+                    txt_col = (255, 255, 255)
+                else:
+                    bg = (warna[0]//4, warna[1]//4, warna[2]//4)
+                    border = warna
+                    txt_col = warna
+
+            pygame.draw.rect(full, bg, buf_rect, border_radius=6)
+            pygame.draw.rect(full, border, buf_rect, 2, border_radius=6)
+
+            txt = f_btn.render(label, True, txt_col)
+            full.blit(txt, txt.get_rect(center=buf_rect.center))
+
+            by += btn_h + gap
+
         return y + h + 10
 
     def _gambar_notifikasi(self, full, r, dt_ms):

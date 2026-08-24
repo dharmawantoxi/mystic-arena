@@ -143,6 +143,30 @@ class TouchHUD:
             "skip", pygame.Rect(right - 170, bottom - 74, 160, 58),
             "SKIP  >>", shape="capsule", font_size=20, visible=False)
 
+        # ═══ TACTICAL COMMAND BUTTONS (GATHER, PROTECT TOWER, PROTECT CASTLE, ATTACK BOSS) ═══
+        # Diletakkan di tengah bawah, di atas area hero panel (yang di kiri bawah)
+        # Jika panel kanan ada, tactical buttons pindah ke sidepanel jadi yang di sini disembunyikan
+        # Layout: 4 tombol kecil horizontal, mudah dijangkau jempol
+        tac_y = bottom - 90
+        tac_w = 120
+        tac_h = 44
+        tac_gap = 8
+        tac_total = 4 * tac_w + 3 * tac_gap
+        tac_start_x = (plat.LOGICAL_WIDTH - tac_total) // 2
+
+        self.buttons["gather"] = TouchButton(
+            "gather", pygame.Rect(tac_start_x, tac_y, tac_w, tac_h),
+            "GATHER", shape="capsule", font_size=16, color=(100, 200, 255), visible=False)
+        self.buttons["protect_tower"] = TouchButton(
+            "protect_tower", pygame.Rect(tac_start_x + (tac_w + tac_gap), tac_y, tac_w, tac_h),
+            "DEF TOWER", shape="capsule", font_size=14, color=(100, 255, 100), visible=False)
+        self.buttons["protect_castle"] = TouchButton(
+            "protect_castle", pygame.Rect(tac_start_x + (tac_w + tac_gap)*2, tac_y, tac_w, tac_h),
+            "DEF CASTLE", shape="capsule", font_size=14, color=(255, 220, 50), visible=False)
+        self.buttons["attack_boss"] = TouchButton(
+            "attack_boss", pygame.Rect(tac_start_x + (tac_w + tac_gap)*3, tac_y, tac_w, tac_h),
+            "ATTACK BOSS", shape="capsule", font_size=13, color=(255, 100, 100), visible=False)
+
         mid = plat.LOGICAL_WIDTH // 2
         self.buttons["replay"] = TouchButton(
             "replay", pygame.Rect(mid - 310, bottom - 100, 165, 62),
@@ -175,6 +199,29 @@ class TouchHUD:
         self.buttons["debug"].visible = bool(
             self.show_debug_button and not cinematic_active and not panel)
         self.buttons["skip"].visible = bool(cinematic_active)
+
+        # Tactical buttons - hanya saat playing, tidak cinematic, dan tidak ada panel kanan
+        # (kalau panel kanan ada, tactical buttons ada di sidepanel)
+        has_heroes = False
+        has_boss = False
+        if game:
+            try:
+                has_heroes = any(getattr(h, 'alive', False) for h in getattr(game, 'heroes', []))
+                has_boss = getattr(game, 'active_boss', None) and getattr(game.active_boss, 'alive', False)
+            except Exception:
+                pass
+
+        show_tactical = bool(playing and not cinematic_active and not panel and not game.shop_open and not game.item_shop_open)
+        self.buttons["gather"].visible = show_tactical and has_heroes
+        self.buttons["protect_tower"].visible = show_tactical and has_heroes
+        self.buttons["protect_castle"].visible = show_tactical and has_heroes
+        self.buttons["attack_boss"].visible = show_tactical and has_boss
+
+        # Enable/disable based on availability
+        self.buttons["gather"].enabled = has_heroes
+        self.buttons["protect_tower"].enabled = has_heroes
+        self.buttons["protect_castle"].enabled = has_heroes
+        self.buttons["attack_boss"].enabled = has_boss
 
         self.buttons["replay"].visible = ended
         self.buttons["menu"].visible = ended
@@ -283,7 +330,7 @@ class TouchHUD:
             surface.blit(panel, rect.topleft)
 
         font = self._get_font(btn.font_size, "body_bold")
-        txt = font.render(btn.label, True, WHITE)
+        txt = font.render(btn.label, True, WHITE if btn.enabled else (170, 170, 180))
         surface.blit(txt, txt.get_rect(center=rect.center))
 
 
@@ -336,5 +383,24 @@ def apply_hud_action(action, ctx):
     if action == "back" and menu is not None:
         menu.handle_key(pygame.K_ESCAPE)
         return True
+
+    # ═══ TACTICAL COMMANDS ═══
+    if game is not None and getattr(game, 'tactical', None):
+        if action == "gather":
+            game.tactical.command_gather()
+            return True
+        elif action == "protect_tower":
+            # Jika ada tower selected, protect itu
+            if game.selected_tower and game.selected_tower.team == "blue":
+                game.tactical.command_protect_tower(game.selected_tower)
+            else:
+                game.tactical.command_protect_tower()
+            return True
+        elif action == "protect_castle":
+            game.tactical.command_protect_castle()
+            return True
+        elif action == "attack_boss":
+            game.tactical.command_attack_boss()
+            return True
 
     return False
