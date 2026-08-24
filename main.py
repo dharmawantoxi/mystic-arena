@@ -318,7 +318,11 @@ def main():
                 if current_state == STATE_GAME:
                     # Panel diperiksa DULU: koordinatnya di luar peta,
                     # jadi tidak mungkin bentrok dengan tombol HUD.
-                    hit = side.hit_test(action.pos)
+                    # `game` ikut dikirim supaya panel tahu saat ada
+                    # popup (upgrade tower, build, panel hero) yang
+                    # menutupi tombol command - kalau tertutup, klik
+                    # harus sampai ke popup, bukan "tembus" ke command.
+                    hit = side.hit_test(action.pos, game=game)
                     if hit:
                         plat.vibrate(15)
                     if not hit:
