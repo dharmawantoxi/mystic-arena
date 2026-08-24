@@ -1481,31 +1481,60 @@ def _get_game():
         return None
 
 
+def _player_heroes(game):
+    """Semua hero pemain yang sudah di-summon, hidup maupun mati."""
+    return list(getattr(game, "heroes", []))
+
+
 def _alive_player_heroes(game):
-    """Hero milik pemain (tim blue) yang SUDAH DI-SUMMON dan masih
-    hidup - sumber daftar 'BUY FOR' di Item Forge."""
-    return [h for h in getattr(game, "heroes", [])
-            if getattr(h, "alive", False)]
+    """Compatibility helper untuk pemanggil lama yang hanya perlu hero hidup."""
+    return [h for h in _player_heroes(game) if getattr(h, "alive", False)]
 
 
-def _resolve_shop_target(game, alive=None):
-    """Tentukan hero penerima pembelian.
+def pending_forge_items(hero):
+    """Antrian item yang dibeli saat ``hero`` mati.
 
-    Prioritas: target yang tersimpan di toko (masih hidup) → hero
-    terseleksi di peta (masih hidup) → hero hidup pertama. None kalau
-    tidak ada hero hidup sama sekali.
+    Antrian melekat pada hero agar item tidak pernah tertukar dengan hero
+    lain dan baru dipindahkan ke inventory setelah respawn.
     """
-    if alive is None:
-        alive = _alive_player_heroes(game)
-    if not alive:
+    pending = getattr(hero, "_pending_forge_items", None)
+    if pending is None:
+        pending = []
+        setattr(hero, "_pending_forge_items", pending)
+    return pending
+
+
+def deliver_pending_forge_items(hero):
+    """Kirim semua pesanan Forge tertunda ke inventory hero.
+
+    Dipanggil tepat setelah respawn. Return daftar ID item yang berhasil
+    dikirim; item yang tidak muat tetap diantrikan sebagai pengaman.
+    """
+    pending = pending_forge_items(hero)
+    delivered = []
+    while pending and hero.items.add(pending[0]):
+        delivered.append(pending.pop(0))
+    return delivered
+
+
+def _resolve_shop_target(game, heroes=None):
+    """Tentukan penerima pembelian, termasuk hero yang sedang mati.
+
+    Prioritas target tersimpan → hero terseleksi → hero hidup pertama →
+    hero mati pertama. Membeli untuk hero mati membuat pesanan tertunda
+    yang otomatis dikirim ketika ia respawn.
+    """
+    if heroes is None:
+        heroes = _player_heroes(game)
+    if not heroes:
         return None
     saved = getattr(game, "itemshop_target_hero", None)
-    if saved in alive:
+    if saved in heroes:
         return saved
     sel = getattr(game, "selected_hero", None)
-    if sel in alive:
+    if sel in heroes:
         return sel
-    return alive[0]
+    return next((h for h in heroes if getattr(h, "alive", False)), heroes[0])
 
 
 # ════════════════════════════════════════════════════════════
@@ -1533,8 +1562,8 @@ class ItemShopUI:
             return
 
         # ═══ TARGET PEMBELIAN (tidak wajib klik hero dulu) ═══
-        alive = _alive_player_heroes(game)
-        hero = _resolve_shop_target(game, alive)
+        heroes = _player_heroes(game)
+        hero = _resolve_shop_target(game, heroes)
         try:
             # Disinkronkan sekali per frame supaya handler klik memakai
             # hero yang sama dengan yang digambar.
@@ -1552,7 +1581,7 @@ class ItemShopUI:
         # Panel
         cls._draw_panel(surface, px, py)
         cls._draw_header(surface, game, px, py)
-        cls._draw_hero_strip(surface, game, alive, hero, px, py)
+        cls._draw_hero_strip(surface, game, heroes, hero, px, py)
         if hero is not None:
             cls._draw_hero_info(surface, hero, px, py)
         else:
@@ -1566,34 +1595,32 @@ class ItemShopUI:
         cls._draw_close(surface, game, px, py)
 
     @classmethod
-    def _draw_hero_strip(cls, surface, game, alive, target, px, py):
+    def _draw_hero_strip(cls, surface, game, heroes, target, px, py):
         """Bar pilih hero penerima item (daftar 'BUY FOR').
 
-        Berisi semua hero yang sudah di-summon dan masih hidup; klik
-        chip untuk mengganti penerima pembelian berikutnya. Jadi item
-        (mis. Moon Shard) bisa dibeli langsung dari forge tanpa harus
-        klik hero di peta dulu.
+        Berisi semua hero yang sudah di-summon, termasuk yang mati. Item
+        untuk hero mati diantrikan dan dikirim otomatis setelah respawn.
         """
         lf = pygame.font.Font(None, 20)
         lt = lf.render("BUY FOR:", True, (255, 220, 100))
         surface.blit(lt, (px + 22, py + 62))
 
-        if not alive:
+        if not heroes:
             sf = pygame.font.Font(None, 18)
             t = sf.render(
-                "(belum ada hero hidup - summon dulu di HERO SHOP)",
+                "(belum ada hero - summon dulu di HERO SHOP)",
                 True, (255, 150, 150))
             surface.blit(t, (px + 112, py + 63))
             return
 
-        n = len(alive)
+        n = len(heroes)
         area_x = px + 112
         area_w = px + cls.PANEL_W - 20 - area_x
         gap = 8
         chip_w = max(96, min(158, (area_w - gap * (n - 1)) // n))
         chip_h = 36
         cy = py + 54
-        for i, h in enumerate(alive):
+        for i, h in enumerate(heroes):
             x = area_x + i * (chip_w + gap)
             rect = pygame.Rect(x, cy, chip_w, chip_h)
             is_target = (h is target)
@@ -1615,9 +1642,12 @@ class ItemShopUI:
             inv = getattr(h, "items", None)
             used = inv.used_slots() if inv is not None else 0
             sf2 = pygame.font.Font(None, 15)
+            pending = len(pending_forge_items(h))
+            status = "DEAD" if not getattr(h, "alive", False) else f"Lv.{h.level}"
+            queue = f" +{pending} queued" if pending else ""
             st = sf2.render(
-                f"Lv.{h.level}  Item {used}/{MAX_ITEM_SLOTS}",
-                True, (170, 180, 205))
+                f"{status}  Item {used}/{MAX_ITEM_SLOTS}{queue}",
+                True, (255, 175, 175) if status == "DEAD" else (170, 180, 205))
             surface.blit(st, (rect.x + 26, rect.y + 20))
             game.ui_buttons[f"itemshop_hero_{i}"] = rect
 
@@ -1705,6 +1735,14 @@ class ItemShopUI:
                 f"CDR {cdr}%")
         it = sf.render(info, True, (200, 210, 230))
         surface.blit(it, (box.x + 12, box.y + 28))
+        if not getattr(hero, "alive", False):
+            pending = len(pending_forge_items(hero))
+            qf = pygame.font.Font(None, 18)
+            msg = "DEAD — pembelian baru dikirim setelah respawn"
+            if pending:
+                msg += f" ({pending} item diantrikan)"
+            qt = qf.render(msg, True, (255, 175, 175))
+            surface.blit(qt, (box.right - qt.get_width() - 12, box.y + 6))
 
     @classmethod
     def _draw_owned_slots(cls, surface, game, hero, px, py):
@@ -1833,8 +1871,9 @@ class ItemShopUI:
             data = ITEM_CATALOG[sid]
             owned_count = inv.count(sid) if inv is not None else 0
             can_afford = game.gold >= data["cost"]
+            queued = len(pending_forge_items(hero)) if hero is not None else 0
             slot_full = (inv is not None
-                         and inv.used_slots() >= MAX_ITEM_SLOTS)
+                         and inv.used_slots() + queued >= MAX_ITEM_SLOTS)
             melee_ok = (not data.get("melee_only")) or is_melee
             can_buy = (inv is not None and can_afford
                        and not slot_full and melee_ok)
@@ -1960,13 +1999,14 @@ def handle_item_shop_click(game, mx, my, button):
                 idx = int(btn_id.replace("itemshop_hero_", ""))
             except ValueError:
                 return True
-            alive = _alive_player_heroes(game)
-            if 0 <= idx < len(alive):
-                game.itemshop_target_hero = alive[idx]
+            heroes = _player_heroes(game)
+            if 0 <= idx < len(heroes):
+                game.itemshop_target_hero = heroes[idx]
+                target = heroes[idx]
                 _play_click()
-                _notify(game, f"BUY FOR: {alive[idx].name}",
-                        getattr(alive[idx], "color",
-                                (255, 220, 100)))
+                suffix = " (dikirim setelah respawn)" if not getattr(target, "alive", False) else ""
+                _notify(game, f"BUY FOR: {target.name}{suffix}",
+                        getattr(target, "color", (255, 220, 100)))
             return True
         if btn_id.startswith("itemshop_page_"):
             # ═══ GANTI HALAMAN TIER I / TIER II ═══
@@ -2009,17 +2049,11 @@ def handle_item_shop_click(game, mx, my, button):
 
 
 def _try_buy(game, sid):
-    # Beli untuk hero target toko (hasil strip BUY FOR / hero
-    # terseleksi / hero hidup pertama) - TIDAK lagi mewajibkan
-    # selected_hero.
-    hero = getattr(game, "itemshop_target_hero", None)
-    alive = _alive_player_heroes(game)
-    if hero not in alive:
-        hero = alive[0] if alive else None
-    if hero is None or not hero.alive:
+    """Beli langsung untuk hero hidup atau antrekan untuk hero mati."""
+    hero = _resolve_shop_target(game, _player_heroes(game))
+    if hero is None:
         _play_error()
-        _notify(game, "Tidak ada hero hidup untuk menerima item.",
-                (255, 150, 150))
+        _notify(game, "Tidak ada hero untuk menerima item.", (255, 150, 150))
         return
     data = ITEM_CATALOG.get(sid)
     if not data:
@@ -2027,20 +2061,32 @@ def _try_buy(game, sid):
     if game.gold < data["cost"]:
         _play_error()
         return
-    if not hero.items.add(sid):
+    if hero.items.used_slots() + len(pending_forge_items(hero)) >= MAX_ITEM_SLOTS:
+        _play_error()
+        _notify(game, f"Inventory {hero.name} penuh.", (255, 150, 150))
+        return
+    if data.get("melee_only") and (getattr(hero, "range", 0) or 0) > 80:
         _play_error()
         return
+    if getattr(hero, "alive", False):
+        if not hero.items.add(sid):
+            _play_error()
+            return
+        message = f"{hero.name} membeli {data['name']}!"
+    else:
+        pending_forge_items(hero).append(sid)
+        message = f"{data['name']} untuk {hero.name} dikirim setelah respawn!"
     game.gold -= data["cost"]
     game.itemshop_target_hero = hero
     _play_buy()
-    _notify(game, f"{hero.name} membeli {data['name']}!", data["glow"])
+    _notify(game, message, data["glow"])
 
 
 def _try_drop(game, slot_index):
     hero = getattr(game, "itemshop_target_hero", None)
-    alive = _alive_player_heroes(game)
-    if hero not in alive:
-        hero = alive[0] if alive else None
+    heroes = _player_heroes(game)
+    if hero not in heroes:
+        hero = _resolve_shop_target(game, heroes)
     if hero is None:
         return
     dropped = hero.items.remove(slot_index)

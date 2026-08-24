@@ -1921,6 +1921,18 @@ class Game:
 
         for h in to_respawn:
             h.respawn()
+            # Pesanan Item Forge yang dibeli ketika hero mati baru
+            # masuk inventory setelah proses respawn selesai.
+            try:
+                from hero_items import deliver_pending_forge_items, ITEM_CATALOG
+                delivered = deliver_pending_forge_items(h)
+                if delivered:
+                    names = ", ".join(ITEM_CATALOG[sid]["name"] for sid in delivered)
+                    self.ui.add_notification(
+                        f"Item Forge dikirim ke {h.name}: {names}!",
+                        (150, 255, 170))
+            except Exception as exc:
+                print(f"[ITEM_SHOP] pending delivery error: {exc}")
             del self.hero_respawn_timers[h]
 
         for m in self.minions:
