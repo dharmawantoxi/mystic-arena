@@ -52,6 +52,7 @@ import math
 import random
 
 import pygame
+from localization import tr
 
 # Konstanta gameplay
 MAX_ITEM_SLOTS = 6
@@ -1643,11 +1644,12 @@ class ItemShopUI:
             used = inv.used_slots() if inv is not None else 0
             sf2 = pygame.font.Font(None, 15)
             pending = len(pending_forge_items(h))
-            status = "DEAD" if not getattr(h, "alive", False) else f"Lv.{h.level}"
-            queue = f" +{pending} queued" if pending else ""
+            is_dead = not getattr(h, "alive", False)
+            status = tr("dead") if is_dead else f"Lv.{h.level}"
+            queue = f" {tr('queued', count=pending)}" if pending else ""
             st = sf2.render(
                 f"{status}  Item {used}/{MAX_ITEM_SLOTS}{queue}",
-                True, (255, 175, 175) if status == "DEAD" else (170, 180, 205))
+                True, (255, 175, 175) if is_dead else (170, 180, 205))
             surface.blit(st, (rect.x + 26, rect.y + 20))
             game.ui_buttons[f"itemshop_hero_{i}"] = rect
 
@@ -1738,9 +1740,9 @@ class ItemShopUI:
         if not getattr(hero, "alive", False):
             pending = len(pending_forge_items(hero))
             qf = pygame.font.Font(None, 18)
-            msg = "DEAD — pembelian baru dikirim setelah respawn"
+            msg = tr("dead_delivery_hint")
             if pending:
-                msg += f" ({pending} item diantrikan)"
+                msg += " " + tr("queued_item_count", count=pending)
             qt = qf.render(msg, True, (255, 175, 175))
             surface.blit(qt, (box.right - qt.get_width() - 12, box.y + 6))
 
@@ -2004,7 +2006,7 @@ def handle_item_shop_click(game, mx, my, button):
                 game.itemshop_target_hero = heroes[idx]
                 target = heroes[idx]
                 _play_click()
-                suffix = " (dikirim setelah respawn)" if not getattr(target, "alive", False) else ""
+                suffix = " " + tr("delivery_after_respawn") if not getattr(target, "alive", False) else ""
                 _notify(game, f"BUY FOR: {target.name}{suffix}",
                         getattr(target, "color", (255, 220, 100)))
             return True
@@ -2053,7 +2055,7 @@ def _try_buy(game, sid):
     hero = _resolve_shop_target(game, _player_heroes(game))
     if hero is None:
         _play_error()
-        _notify(game, "Tidak ada hero untuk menerima item.", (255, 150, 150))
+        _notify(game, tr("no_hero"), (255, 150, 150))
         return
     data = ITEM_CATALOG.get(sid)
     if not data:
@@ -2063,7 +2065,7 @@ def _try_buy(game, sid):
         return
     if hero.items.used_slots() + len(pending_forge_items(hero)) >= MAX_ITEM_SLOTS:
         _play_error()
-        _notify(game, f"Inventory {hero.name} penuh.", (255, 150, 150))
+        _notify(game, tr("inventory_full", hero=hero.name), (255, 150, 150))
         return
     if data.get("melee_only") and (getattr(hero, "range", 0) or 0) > 80:
         _play_error()
@@ -2072,10 +2074,10 @@ def _try_buy(game, sid):
         if not hero.items.add(sid):
             _play_error()
             return
-        message = f"{hero.name} membeli {data['name']}!"
+        message = tr("forge_purchase", hero=hero.name, item=data["name"])
     else:
         pending_forge_items(hero).append(sid)
-        message = f"{data['name']} untuk {hero.name} dikirim setelah respawn!"
+        message = tr("forge_queued", hero=hero.name, item=data["name"])
     game.gold -= data["cost"]
     game.itemshop_target_hero = hero
     _play_buy()

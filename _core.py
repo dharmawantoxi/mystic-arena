@@ -1925,11 +1925,12 @@ class Game:
             # masuk inventory setelah proses respawn selesai.
             try:
                 from hero_items import deliver_pending_forge_items, ITEM_CATALOG
+                from localization import tr
                 delivered = deliver_pending_forge_items(h)
                 if delivered:
                     names = ", ".join(ITEM_CATALOG[sid]["name"] for sid in delivered)
                     self.ui.add_notification(
-                        f"Item Forge dikirim ke {h.name}: {names}!",
+                        tr("forge_delivered", hero=h.name, items=names),
                         (150, 255, 170))
             except Exception as exc:
                 print(f"[ITEM_SHOP] pending delivery error: {exc}")
@@ -5094,8 +5095,17 @@ class Menu:
             settings.get_speed_label(),
             "speed")
 
+        # Interface language
+        from localization import tr, get_language_label
+        y += 50
+        self._draw_option_setting(
+            col2_x, y, 340,
+            tr("language"),
+            get_language_label(settings.language),
+            "language")
+
         # ═══ GRAPHICS SECTION ═══
-        graphics_y = gameplay_y + 240
+        graphics_y = gameplay_y + 290
         self._draw_settings_section_header(
             col2_x, graphics_y, "🖥 GRAPHICS", (255, 180, 100))
 
@@ -5981,6 +5991,18 @@ class Menu:
                 settings.set_game_speed(speeds[new_idx])
             except ValueError:
                 settings.set_game_speed(1.0)
+            SoundManager().play('ui_click', volume_mult=0.4)
+
+        # ═══ LANGUAGE CYCLER ═══
+        elif btn_id in ("language_prev", "language_next"):
+            settings = GameSettings()
+            languages = ["id", "en"]
+            try:
+                idx = languages.index(settings.language)
+            except ValueError:
+                idx = 0
+            delta = -1 if btn_id == "language_prev" else 1
+            settings.set_language(languages[(idx + delta) % len(languages)])
             SoundManager().play('ui_click', volume_mult=0.4)
 
         # ═══ FPS LIMIT CYCLER ═══
@@ -7572,6 +7594,8 @@ class GameSettings:
             cls._instance = super().__new__(cls)
             cls._instance._init_defaults()
             cls._instance._load()
+            from localization import set_language
+            set_language(cls._instance.language)
         return cls._instance
 
     def _init_defaults(self):
@@ -7590,6 +7614,9 @@ class GameSettings:
 
         # Graphics
         self.fps_limit = 60  # 30, 60, 120 (0 = unlimited)
+
+        # Interface language: Bahasa Indonesia (default) or English.
+        self.language = "id"
 
     def _load(self):
         """Load settings dari file"""
@@ -7613,6 +7640,11 @@ class GameSettings:
                 self.game_speed = data.get('game_speed', 1.0)
 
                 self.fps_limit = data.get('fps_limit', 60)
+                self.language = data.get('language', 'id')
+                if self.language not in ('id', 'en'):
+                    self.language = 'id'
+                from localization import set_language
+                set_language(self.language)
 
                 print("[SETTINGS] Loaded")
         except Exception as e:
@@ -7634,6 +7666,7 @@ class GameSettings:
                     self.damage_numbers_enabled,
                 'game_speed': self.game_speed,
                 'fps_limit': self.fps_limit,
+                'language': self.language,
             }
 
             with open(SETTINGS_FILE, 'w') as f:
@@ -7676,6 +7709,14 @@ class GameSettings:
     def set_game_speed(self, speed):
         self.game_speed = max(0.5, min(2.0, speed))
         self.save()
+
+    def set_language(self, language):
+        """Set bahasa antarmuka dan simpan preferensi global."""
+        if language in ('id', 'en'):
+            self.language = language
+            from localization import set_language
+            set_language(language)
+            self.save()
 
     def set_fps_limit(self, fps):
         # Valid: 30, 60, 120, 0 (unlimited)
