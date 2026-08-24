@@ -25,6 +25,12 @@ _TEXT = {
         "forge_purchase": "{hero} membeli {item}!",
         "forge_queued": "{item} untuk {hero} dikirim setelah respawn!",
         "forge_delivered": "Item Forge dikirim ke {hero}: {items}!",
+        "shop_no_hero_yet": "(belum ada hero - summon dulu di HERO SHOP)",
+        "shop_no_hero_banner": ("TIDAK ADA HERO HIDUP - summon hero di HERO SHOP "
+                                "dulu; item di bawah tetap bisa dilihat."),
+        "shop_page_label": "HAL {page}",
+        "item_dropped": "Melepas {item} (tanpa refund)",
+        "item_dropped_short": "Melepas {item}",
     },
     "en": {
         "language": "Language",
@@ -38,6 +44,12 @@ _TEXT = {
         "forge_purchase": "{hero} purchased {item}!",
         "forge_queued": "{item} for {hero} will be delivered after respawn!",
         "forge_delivered": "Forge items delivered to {hero}: {items}!",
+        "shop_no_hero_yet": "(no heroes yet - summon one at HERO SHOP first)",
+        "shop_no_hero_banner": ("NO HEROES ALIVE - summon a hero at HERO SHOP "
+                                "first; items below can still be browsed."),
+        "shop_page_label": "PAGE {page}",
+        "item_dropped": "Dropped {item} (no refund)",
+        "item_dropped_short": "Dropped {item}",
     },
 }
 

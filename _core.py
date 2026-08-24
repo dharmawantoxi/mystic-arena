@@ -6592,11 +6592,13 @@ class InputHandler:
                                 dropped = h.items.remove(idx)
                                 if dropped:
                                     from hero_items import ITEM_CATALOG
+                                    from localization import tr
                                     data = ITEM_CATALOG.get(dropped, {})
                                     try:
                                         g.ui.add_notification(
-                                            f"Melepas "
-                                            f"{data.get('name', 'item')}",
+                                            tr("item_dropped_short",
+                                               item=data.get("name",
+                                                             "item")),
                                             (255, 200, 120))
                                     except Exception:
                                         pass
