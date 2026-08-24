@@ -2241,6 +2241,9 @@ class _NS_sylara:
         )
 
         # ---------- Background layers ----------
+        # Rim-light hijau lembut memisahkan cape dan rambut merah dari
+        # terrain gelap, seperti presentation sprite pada referensi.
+        _NS_sylara._draw_ranger_silhouette_glow(surface, x, y - 10, pulse)
         _NS_sylara._draw_wind_aura(surface, x, y, pulse)
         _NS_sylara._draw_wind_platform(surface, x, y + 40, pulse, active_skill)
 
@@ -2378,6 +2381,29 @@ class _NS_sylara:
         wave = math.sin(phase * 0.9) * 3
         wave2 = math.sin(phase * 1.2 + 0.5) * 2
         trail = -facing  # trails opposite to facing
+
+        # Cape tail panjang, dibentuk terpisah supaya Sylara punya siluet
+        # archer ber-cape yang jelas saat menghadap samping.
+        tail_tip_x = cx + trail * (30 + int(wave * 1.5))
+        tail = [
+            (cx + trail * 7, cy - 11),
+            (cx + trail * 19, cy - 5),
+            (tail_tip_x, cy + 7),
+            (cx + trail * 24, cy + 16),
+            (cx + trail * 13, cy + 19),
+            (cx + trail * 8, cy + 8),
+        ]
+        _NS_sylara._poly(surface, _NS_sylara.PALETTE["shadow_deep"],
+                          [(px + 2, py + 2) for px, py in tail])
+        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloak_darkest"], tail)
+        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloak_dark"], [
+            (cx + trail * 8, cy - 9), (cx + trail * 18, cy - 3),
+            (tail_tip_x - trail * 2, cy + 7), (cx + trail * 22, cy + 14),
+            (cx + trail * 13, cy + 16), (cx + trail * 9, cy + 7),
+        ])
+        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["cloak_light"],
+                            (cx + trail * 10, cy - 7),
+                            (tail_tip_x - trail * 2, cy + 7), 1)
 
         # Main cloak body
         cloak = [
@@ -2541,11 +2567,23 @@ class _NS_sylara:
                 (lx + 1, cy + 24), (lx - 1, cy + 24),
             ])
 
-        # Fade to wind at bottom (no boots since floating)
-        for i in range(5):
-            alpha = 200 - i * 40
-            _NS_sylara._ellipse(surface, (*_NS_sylara.PALETTE["wind_mid"], alpha),
-                     (cx - 8 + i, cy + 24 + i, 16 - i * 2, 4))
+        # Leather boots memberi pijakan yang tegas seperti ranger pada
+        # referensi, menggantikan fade mengambang yang membuat siluetnya
+        # terasa seperti mage. Tetap ada satu puff angin tipis di tumit.
+        for side in (-1, 1):
+            bx = cx + side * 5
+            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_darkest"],
+                              (bx - 3, cy + 24, 6, 8), border_radius=1)
+            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_dark"],
+                              (bx - 2, cy + 25, 5, 6), border_radius=1)
+            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_mid"],
+                              (bx - 2, cy + 25, 2, 4))
+            _NS_sylara._rect(surface, _NS_sylara.PALETTE["shadow_deep"],
+                              (bx - 4, cy + 30, 8, 3), border_radius=1)
+            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_light"],
+                              (bx - 3, cy + 30, 4, 1))
+        _NS_sylara._ellipse(surface, (*_NS_sylara.PALETTE["wind_mid"], 90),
+                             (cx - 13, cy + 31, 26, 4))
 
         # Belt with buckle
         _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_darkest"], (cx - 14, cy - 1, 28, 5))
@@ -3253,6 +3291,25 @@ class _NS_sylara:
             )
         pygame.draw.ellipse(shadow, (*_NS_sylara.PALETTE["wind_darkest"], 40), (8, 4, 84, 10))
         surface.blit(shadow, (x - 50, y - 10))
+
+
+    def _draw_ranger_silhouette_glow(surface, x, y, phase):
+        """Subtle green rim light behind Sylara's hood, cape, and bow."""
+        pulse = 0.72 + math.sin(phase * 1.25) * 0.15
+        halo = pygame.Surface((104, 104), pygame.SRCALPHA)
+        center = (52, 52)
+        for radius, alpha in ((42, 9), (33, 14), (24, 21)):
+            _NS_sylara._aacircle(halo,
+                (*_NS_sylara.PALETTE["wind_dark"], int(alpha * pulse)),
+                center, radius)
+        # Echo the cape and bow line without softening the pixel silhouette.
+        _NS_sylara._aaline(halo,
+            (*_NS_sylara.PALETTE["wind_mid"], int(34 * pulse)),
+            (28, 64), (14, 52), 2)
+        _NS_sylara._aaline(halo,
+            (*_NS_sylara.PALETTE["wind_mid"], int(30 * pulse)),
+            (68, 51), (85, 38), 1)
+        surface.blit(halo, (x - 52, y - 52))
 
 
     def _draw_wind_aura(surface, x, y, phase):
