@@ -1806,19 +1806,25 @@ def _draw_castle_ground(canvas, cx, cy, palette):
                             (0, 0, w, h))
         canvas.blit(shadow_surf, (cx - w // 2, cy - h // 2 + 3))
 
-    # Ground base (dirt)
-    pygame.draw.ellipse(canvas, palette['ground_dark'],
+    # ═══ THEME-BLENDING GROUND TRANSITION ═══
+    # Outer rings use the grass palette, so the castle does not read as
+    # a separate perfect dirt island when placed on forest terrain.
+    # The smaller dirt clearing remains only under the structure.
+    pygame.draw.ellipse(canvas, palette['grass_dark'],
                         (cx - ground_w // 2, cy,
                          ground_w, ground_h))
+    pygame.draw.ellipse(canvas, palette['grass_mid'],
+                        (cx - ground_w // 2 + 4, cy + 3,
+                         ground_w - 8, ground_h - 7))
+    dirt_w, dirt_h = ground_w - 34, ground_h - 12
+    pygame.draw.ellipse(canvas, palette['ground_dark'],
+                        (cx - dirt_w // 2, cy + 6, dirt_w, dirt_h))
     pygame.draw.ellipse(canvas, palette['ground_mid'],
-                        (cx - ground_w // 2 + 3, cy + 2,
-                         ground_w - 6, ground_h - 6))
+                        (cx - dirt_w // 2 + 4, cy + 8,
+                         dirt_w - 8, dirt_h - 4))
     pygame.draw.ellipse(canvas, palette['ground_light'],
-                        (cx - ground_w // 2 + 6, cy + 4,
-                         ground_w - 12, ground_h - 10))
-    pygame.draw.ellipse(canvas, palette['ground_high'],
-                        (cx - ground_w // 2 + 10, cy + 6,
-                         ground_w - 20, ground_h - 16))
+                        (cx - dirt_w // 2 + 11, cy + 9,
+                         dirt_w - 22, max(3, dirt_h - 8)))
 
     # Cobblestone path
     random.seed(42)
@@ -4115,6 +4121,37 @@ class Hero(TowerDebuffMixin):
                                target=target, hero_type=hero_type)
 
     def take_damage(self, damage, from_team, damage_type='normal'):
+        # ═══ ZEPHYR — SHADOW REALM ═══
+        # Status ini sebelumnya hanya menyalakan renderer gelembung dan
+        # heal. Dengan guard ini Zephyr benar-benar tidak bisa terkena
+        # serangan selama berada di realm, sesuai bahasa visualnya.
+        if getattr(self, "_shadow_realm_active", False) and damage > 0:
+            try:
+                import __main__
+                if hasattr(__main__, 'game_instance'):
+                    __main__.game_instance.effects.add_damage_number(
+                        self.x, self.y - self.radius - 12,
+                        "SHADOW", is_critical=False, damage_type='ice')
+            except Exception:
+                pass
+            return
+
+        # ═══ SYLARA — WINDRUN ═══
+        # Windrun adalah dash defensif: serangan normal mempunyai peluang
+        # besar untuk meleset selama jejak angin aktif. Damage sihir tetap
+        # bisa mengenai agar status ini tidak menjadi invulnerability penuh.
+        if (getattr(self, "_windrun_active", False) and damage > 0
+                and damage_type == 'normal' and random.random() < 0.75):
+            try:
+                import __main__
+                if hasattr(__main__, 'game_instance'):
+                    __main__.game_instance.effects.add_damage_number(
+                        self.x, self.y - self.radius - 12,
+                        "WIND", is_critical=False, damage_type='ice')
+            except Exception:
+                pass
+            return
+
         inv = getattr(self, "items", None)
 
         # ═══ TEMPEST VEIL (Wind Waker): kebal semua damage ═══

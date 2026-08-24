@@ -3937,12 +3937,10 @@ class _NS_sylara_skills:
         - R: Powershot (charge → release 5-arrow cone)
         """
 
-        # Durasi animasi skill, dicocokkan dengan pembagi
-        # `1 - timer / N` di renderer.
-        # heroes/sylara.py: focus_fire 80 (L1806/L1832) / shackle 50 (L1777)
-        #                   powershot_charge 60 (L1701)
-        # Q = Focus Fire, R = Powershot (lihat fix mapping di sylara.py)
-        SKILL_VISUAL_DURATION = {"q": 80, "w": 180, "e": 50, "r": 60}
+        # Efek channel/bind harus terlihat selama status gameplay aktif.
+        # Q Focus Fire = 3 dtk dan E Shackle = 2.5 dtk; R tetap memakai
+        # 1 dtk charge agar panah dilepas tepat pada akhir animasi.
+        SKILL_VISUAL_DURATION = {"q": 180, "w": 180, "e": 150, "r": 60}
 
         def init_state(self):
             """Init state variables khusus Sylara"""
@@ -4062,10 +4060,9 @@ class _NS_sylara_skills:
             h.attack_cooldown = max(20,
                                      int(h.attack_cooldown / 1.7))
 
-            # Visual: projectile homing terarah ke target utama via
-            # sistem generic _entity.py (damage=0, cuma visual).
-            if h.target and getattr(h.target, 'alive', False):
-                h._spawn_skill_projectile(h.target, speed=13.0)
+            # Volley visual dibuat oleh renderer Sylara selama channel.
+            # Tidak spawn projectile generik di awal, supaya satu Focus
+            # Fire tidak menghasilkan panah duplikat.
 
             # Piercing damage (single line)
             if h.target:
@@ -4770,11 +4767,10 @@ class _NS_zephyr_skills:
         - R: Bedlam (clones spin around + damage AOE)
         """
 
-        # Durasi animasi skill, dicocokkan dengan pembagi
-        # `1 - timer / N` di renderer.
-        # heroes/zephyr.py: bramble 80 (L1404/L1418) / shadow_realm 100 (L1501/L1525)
-        #                   bedlam 100 (L1613/L1641)
-        SKILL_VISUAL_DURATION = {"q": 80, "w": 100, "e": 60, "r": 100}
+        # Visual harus hidup sepanjang status gameplay. Sebelumnya efek
+        # lenyap di tengah durasi damage/buff sehingga terasa tidak sinkron.
+        # Renderer Zephyr memakai angka yang sama untuk progress 0.0 -> 1.0.
+        SKILL_VISUAL_DURATION = {"q": 240, "w": 180, "e": 180, "r": 240}
 
         def init_state(self):
             """Init state variables khusus Zephyr"""
@@ -4783,6 +4779,9 @@ class _NS_zephyr_skills:
             # Q - Bramble Maze
             h._bramble_active = False
             h._bramble_timer = 0
+            # Snapshot titik cast: Bramble adalah perangkap di tanah,
+            # jadi tidak ikut bergerak saat target berpindah.
+            h._bramble_origin = None
 
             # W - Shadow Realm (invisibility)
             h._shadow_realm_active = False
@@ -4808,14 +4807,16 @@ class _NS_zephyr_skills:
                 if h._bramble_timer % 20 == 0:
                     enemies = self._get_enemies(
                         all_units, all_towers, all_bases)
+                    ox, oy = h._bramble_origin or (h.x, h.y)
                     for e in enemies:
-                        dist = math.hypot(e.x - h.x, e.y - h.y)
-                        if 40 < dist <= 60:  # ring damage
+                        dist = math.hypot(e.x - ox, e.y - oy)
+                        if 40 < dist <= 60:  # ring damage pada lokasi trap
                             e.take_damage(
                                 int(h.skill_damage * 0.3), h.team)
                             self._apply_slow(e, 0.5, 60)
                 if h._bramble_timer <= 0:
                     h._bramble_active = False
+                    h._bramble_origin = None
 
             # ═══ SHADOW REALM (W) - invisibility + heal ═══
             if h._shadow_realm_timer > 0:
@@ -4874,13 +4875,20 @@ class _NS_zephyr_skills:
                 return False
 
             h = self.hero
+            # Kunci posisi target ketika Q ditekan. Ini menyamakan titik
+            # duri yang digambar dengan titik damage yang diterapkan.
+            target = self._acquire_target(all_units, all_towers, all_bases)
+            if target is None:
+                return False
+            h._bramble_origin = (float(target.x), float(target.y))
             h._bramble_active = True
             h._bramble_timer = 240  # 4 detik
 
-            # Initial damage
+            # Initial damage tepat di pusat perangkap, bukan di tubuh hero.
+            ox, oy = h._bramble_origin
             enemies = self._get_enemies(all_units, all_towers, all_bases)
             for e in enemies:
-                dist = math.hypot(e.x - h.x, e.y - h.y)
+                dist = math.hypot(e.x - ox, e.y - oy)
                 if dist <= 60:
                     e.take_damage(
                         int(h.skill_damage * 0.8), h.team)
@@ -4949,9 +4957,9 @@ class _NS_zephyr_skills:
                 h._curse_timer = 180  # 3 detik
                 h._curse_target = target
 
-                # Visual: casket skull homing terarah ke target (via
-                # sistem generic _entity.py; damage=0, cuma visual).
-                h._spawn_skill_projectile(target, speed=13.0)
+                # Visual CasketProjectile dibuat oleh renderer Zephyr.
+                # Jangan spawn projectile generik di sini: sebelumnya dua
+                # tengkorak terbang untuk satu cast dan terlihat berantakan.
 
                 # Initial damage
                 target.take_damage(

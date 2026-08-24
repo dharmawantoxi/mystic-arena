@@ -2241,6 +2241,9 @@ class _NS_sylara:
         )
 
         # ---------- Background layers ----------
+        # Rim-light hijau lembut memisahkan cape dan rambut merah dari
+        # terrain gelap, seperti presentation sprite pada referensi.
+        _NS_sylara._draw_ranger_silhouette_glow(surface, x, y - 10, pulse)
         _NS_sylara._draw_wind_aura(surface, x, y, pulse)
         _NS_sylara._draw_wind_platform(surface, x, y + 40, pulse, active_skill)
 
@@ -2378,6 +2381,29 @@ class _NS_sylara:
         wave = math.sin(phase * 0.9) * 3
         wave2 = math.sin(phase * 1.2 + 0.5) * 2
         trail = -facing  # trails opposite to facing
+
+        # Cape tail panjang, dibentuk terpisah supaya Sylara punya siluet
+        # archer ber-cape yang jelas saat menghadap samping.
+        tail_tip_x = cx + trail * (30 + int(wave * 1.5))
+        tail = [
+            (cx + trail * 7, cy - 11),
+            (cx + trail * 19, cy - 5),
+            (tail_tip_x, cy + 7),
+            (cx + trail * 24, cy + 16),
+            (cx + trail * 13, cy + 19),
+            (cx + trail * 8, cy + 8),
+        ]
+        _NS_sylara._poly(surface, _NS_sylara.PALETTE["shadow_deep"],
+                          [(px + 2, py + 2) for px, py in tail])
+        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloak_darkest"], tail)
+        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloak_dark"], [
+            (cx + trail * 8, cy - 9), (cx + trail * 18, cy - 3),
+            (tail_tip_x - trail * 2, cy + 7), (cx + trail * 22, cy + 14),
+            (cx + trail * 13, cy + 16), (cx + trail * 9, cy + 7),
+        ])
+        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["cloak_light"],
+                            (cx + trail * 10, cy - 7),
+                            (tail_tip_x - trail * 2, cy + 7), 1)
 
         # Main cloak body
         cloak = [
@@ -2541,11 +2567,23 @@ class _NS_sylara:
                 (lx + 1, cy + 24), (lx - 1, cy + 24),
             ])
 
-        # Fade to wind at bottom (no boots since floating)
-        for i in range(5):
-            alpha = 200 - i * 40
-            _NS_sylara._ellipse(surface, (*_NS_sylara.PALETTE["wind_mid"], alpha),
-                     (cx - 8 + i, cy + 24 + i, 16 - i * 2, 4))
+        # Leather boots memberi pijakan yang tegas seperti ranger pada
+        # referensi, menggantikan fade mengambang yang membuat siluetnya
+        # terasa seperti mage. Tetap ada satu puff angin tipis di tumit.
+        for side in (-1, 1):
+            bx = cx + side * 5
+            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_darkest"],
+                              (bx - 3, cy + 24, 6, 8), border_radius=1)
+            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_dark"],
+                              (bx - 2, cy + 25, 5, 6), border_radius=1)
+            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_mid"],
+                              (bx - 2, cy + 25, 2, 4))
+            _NS_sylara._rect(surface, _NS_sylara.PALETTE["shadow_deep"],
+                              (bx - 4, cy + 30, 8, 3), border_radius=1)
+            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_light"],
+                              (bx - 3, cy + 30, 4, 1))
+        _NS_sylara._ellipse(surface, (*_NS_sylara.PALETTE["wind_mid"], 90),
+                             (cx - 13, cy + 31, 26, 4))
 
         # Belt with buckle
         _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_darkest"], (cx - 14, cy - 1, 28, 5))
@@ -3255,6 +3293,25 @@ class _NS_sylara:
         surface.blit(shadow, (x - 50, y - 10))
 
 
+    def _draw_ranger_silhouette_glow(surface, x, y, phase):
+        """Subtle green rim light behind Sylara's hood, cape, and bow."""
+        pulse = 0.72 + math.sin(phase * 1.25) * 0.15
+        halo = pygame.Surface((104, 104), pygame.SRCALPHA)
+        center = (52, 52)
+        for radius, alpha in ((42, 9), (33, 14), (24, 21)):
+            _NS_sylara._aacircle(halo,
+                (*_NS_sylara.PALETTE["wind_dark"], int(alpha * pulse)),
+                center, radius)
+        # Echo the cape and bow line without softening the pixel silhouette.
+        _NS_sylara._aaline(halo,
+            (*_NS_sylara.PALETTE["wind_mid"], int(34 * pulse)),
+            (28, 64), (14, 52), 2)
+        _NS_sylara._aaline(halo,
+            (*_NS_sylara.PALETTE["wind_mid"], int(30 * pulse)),
+            (68, 51), (85, 38), 1)
+        surface.blit(halo, (x - 52, y - 52))
+
+
     def _draw_wind_aura(surface, x, y, phase):
         """Large background aura."""
         pulse = math.sin(phase * 0.4) * 0.25 + 0.75
@@ -3413,7 +3470,7 @@ class _NS_sylara:
     def _draw_shackle_ground(surface, boss, x, y, timer, pulse):
         """Line indicator to target for shackle shot."""
         tx, ty = _NS_sylara._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 50))
+        progress = max(0.0, min(1.0, 1 - timer / 150))
 
         # Dashed line indicator
         steps = 20
@@ -3441,7 +3498,7 @@ class _NS_sylara:
     # ===================================================================
     def _draw_focus_fire_ground(surface, boss, x, y, timer, phase):
         """Ground rune for focus fire."""
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        progress = max(0.0, min(1.0, 1 - timer / 180))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
         radius = int(40 + progress * 15)
 
@@ -3465,7 +3522,7 @@ class _NS_sylara:
 
     def _draw_focus_fire_effect(surface, boss, x, y, timer, phase):
         """Rapid arrow volley animation."""
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        progress = max(0.0, min(1.0, 1 - timer / 180))
 
         # Fire arrows in bursts
         fire_interval = 8  # every 8 frames
@@ -3917,6 +3974,9 @@ class _NS_kaizen:
         )
 
         # ---------- Background layers ----------
+        # Procedural pixel rim-light: keeps the compact swordsman silhouette
+        # crisp on dark terrain without relying on a sprite sheet.
+        _NS_kaizen._draw_swordsman_rim_light(surface, x, y - 10, pulse)
         _NS_kaizen._draw_wind_aura(surface, x, y, pulse)
         _NS_kaizen._draw_wind_platform(surface, x, y + 40, pulse, active_skill)
 
@@ -4822,6 +4882,20 @@ class _NS_kaizen:
             )
         pygame.draw.ellipse(shadow, (*_NS_kaizen.PALETTE["wind_darkest"], 40), (8, 4, 84, 10))
         surface.blit(shadow, (x - 50, y - 10))
+
+
+    def _draw_swordsman_rim_light(surface, x, y, phase):
+        """Small code-drawn blue rim light around scarf, katana, and hair."""
+        pulse = .72 + math.sin(phase * 1.3) * .16
+        halo = pygame.Surface((88, 98), pygame.SRCALPHA)
+        for radius, alpha in ((38, 9), (29, 14), (20, 20)):
+            _NS_kaizen._aacircle(halo, (*_NS_kaizen.PALETTE["wind_dark"],
+                                         int(alpha * pulse)), (44, 49), radius)
+        _NS_kaizen._aaline(halo, (*_NS_kaizen.PALETTE["wind_mid"], int(38 * pulse)),
+                            (28, 57), (12, 64), 2)
+        _NS_kaizen._aaline(halo, (*_NS_kaizen.PALETTE["wind_light"], int(34 * pulse)),
+                            (55, 56), (78, 45), 1)
+        surface.blit(halo, (x - 44, y - 49))
 
 
     def _draw_wind_aura(surface, x, y, phase):
@@ -5905,13 +5979,21 @@ class _NS_thorne:
         _NS_thorne._rect(surface, _NS_thorne.PALETTE["gold_mid"], (cx - 2, cy + 1, 4, 3))
         _NS_thorne._rect(surface, _NS_thorne.PALETTE["gold_light"], (cx - 1, cy + 2, 2, 1))
 
-        # Fur wisps on bottom (floating hint)
-        for i in range(5):
-            wx = cx - 10 + i * 5
-            wy = cy + 24
-            wl = 3 + int(math.sin(phase + i) * 1)
-            _NS_thorne._aaline(surface, _NS_thorne.PALETTE["fur_dark"],
-                    (wx, wy), (wx + int(math.sin(phase + i) * 2), wy + wl), 1)
+        # Heavy clawed feet: Thorne is a ground bruiser, so the sprite
+        # needs a broad, weighty stance instead of a floating fur fade.
+        for side in (-1, 1):
+            fx = cx + side * 8
+            _NS_thorne._rect(surface, _NS_thorne.PALETTE["fur_darkest"],
+                              (fx - 5, cy + 22, 10, 8), border_radius=2)
+            _NS_thorne._rect(surface, _NS_thorne.PALETTE["fur_dark"],
+                              (fx - 4, cy + 23, 9, 6), border_radius=2)
+            _NS_thorne._rect(surface, _NS_thorne.PALETTE["fur_mid"],
+                              (fx - 3, cy + 23, 4, 3), border_radius=1)
+            for claw in (-2, 1, 4):
+                _NS_thorne._poly(surface, _NS_thorne.PALETTE["quill_tip"], [
+                    (fx + claw, cy + 29), (fx + claw + 2, cy + 29),
+                    (fx + claw + 1, cy + 32),
+                ])
 
 
     def _draw_torso(surface, cx, cy, facing, phase, warpath=False):
@@ -7347,6 +7429,9 @@ class _NS_vex:
         )
 
         # ---------- Background layers ----------
+        # Cyan rim-light keeps the crown, shoulder spikes, and staff orb
+        # legible against dark terrain while preserving pixel edges.
+        _NS_vex._draw_void_silhouette_glow(surface, x, y - 12, pulse)
         _NS_vex._draw_void_aura(surface, x, y, pulse)
         _NS_vex._draw_void_platform(surface, x, y + 40, pulse, active_skill)
 
@@ -8067,6 +8152,20 @@ class _NS_vex:
             )
         pygame.draw.ellipse(shadow, (*_NS_vex.PALETTE["void_darkest"], 60), (8, 4, 84, 10))
         surface.blit(shadow, (x - 50, y - 10))
+
+
+    def _draw_void_silhouette_glow(surface, x, y, phase):
+        """Layered cyan rim light for Vex's tall void-mage silhouette."""
+        pulse = .72 + math.sin(phase * 1.4) * .16
+        halo = pygame.Surface((104, 116), pygame.SRCALPHA)
+        for radius, alpha in ((44, 9), (34, 15), (25, 22)):
+            _NS_vex._aacircle(halo, (*_NS_vex.PALETTE["void_dark"],
+                                      int(alpha * pulse)), (52, 58), radius)
+        _NS_vex._aaline(halo, (*_NS_vex.PALETTE["void_mid"], int(40 * pulse)),
+                         (36, 74), (21, 36), 2)
+        _NS_vex._aaline(halo, (*_NS_vex.PALETTE["void_mid"], int(34 * pulse)),
+                         (68, 57), (86, 32), 1)
+        surface.blit(halo, (x - 52, y - 58))
 
 
     def _draw_void_aura(surface, x, y, phase):
@@ -9062,6 +9161,10 @@ class _NS_zephyr:
         )
 
         # ---------- Background layers ----------
+        # Siluet cahaya lembut membuat Zephyr tetap terbaca di atas
+        # terrain yang ramai, seperti sprite-sheet referensi: magenta
+        # berada di belakang karakter, bukan menutupi detail wajahnya.
+        _NS_zephyr._draw_fey_silhouette_glow(surface, x, y - 12, pulse)
         _NS_zephyr._draw_fey_aura(surface, x, y, pulse)
         _NS_zephyr._draw_fey_platform(surface, x, y + 40, pulse, active_skill)
 
@@ -9226,11 +9329,22 @@ class _NS_zephyr:
                 (cx + side * 3, cy),
             ])
 
-            # Wing vein highlights
+            # Vein structure: referensi punya sayap daun yang jelas,
+            # bukan hanya bidang ungu datar. Garis tipis ini menambah
+            # siluet pixel-art tanpa menaikkan ukuran hitbox karakter.
+            root_x, root_y = cx + side * 4, cy - 4
             _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_light"], 200),
-                    (cx + side * 4, cy - 4), (u_tip_x, u_tip_y), 1)
+                    (root_x, root_y), (u_tip_x, u_tip_y), 1)
+            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_mid"], 175),
+                    (root_x, root_y), (u_mid_x, u_mid_y), 1)
+            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_light"], 145),
+                    (u_mid_x, u_mid_y),
+                    (u_tip_x - side * 4, u_tip_y + 8), 1)
             _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_light"], 180),
                     (cx + side * 4, cy - 2), (l_tip_x, l_tip_y), 1)
+            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_mid"], 145),
+                    (cx + side * 4, cy - 2),
+                    (l_tip_x - side * 3, l_tip_y - 2), 1)
 
             # Tip shine
             _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["wing_shine"], 220),
@@ -9559,6 +9673,17 @@ class _NS_zephyr:
                   (orb_x - 1, orb_y - 1), max(1, orb_size - 3))
         _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["white"], (orb_x - 1, orb_y - 1), 1)
 
+        # Bintang empat arah membuat orb terasa seperti fokus sihir
+        # (bukan bola warna polos), mengikuti projectile di referensi.
+        star_alpha = 150 if not casting else 220
+        star_r = max(3, orb_size + 2)
+        _NS_zephyr._aaline(surface,
+                (*_NS_zephyr.PALETTE["magic_bright"], star_alpha),
+                (orb_x - star_r, orb_y), (orb_x + star_r, orb_y), 1)
+        _NS_zephyr._aaline(surface,
+                (*_NS_zephyr.PALETTE["magic_hot"], star_alpha),
+                (orb_x, orb_y - star_r), (orb_x, orb_y + star_r), 1)
+
         # Sparkle particles around
         for i in range(3):
             a = phase * 2 + i * math.pi * 2 / 3
@@ -9655,11 +9780,13 @@ class _NS_zephyr:
         if layer == "back":
             # Back layer (larger petals framing head)
             back_petals = [
-                (-8, -2, 12, -math.pi / 2 - 0.9),
-                (-6, -4, 14, -math.pi / 2 - 0.5),
-                (8, -2, 12, -math.pi / 2 + 0.9),
-                (6, -4, 14, -math.pi / 2 + 0.5),
-                (0, -3, 10, math.pi / 2 + 3.14),
+                # Kelopak samping lebih lebar menciptakan mane berduri
+                # khas referensi Dark Willow, sekaligus membingkai wajah.
+                (-10, -1, 13, -math.pi / 2 - 1.00),
+                (-7, -4, 15, -math.pi / 2 - 0.55),
+                (10, -1, 13, -math.pi / 2 + 1.00),
+                (7, -4, 15, -math.pi / 2 + 0.55),
+                (0, -3, 11, math.pi / 2 + 3.14),
             ]
             for bx, by, sz, ang in back_petals:
                 flicker = int(math.sin(phase * 2 + bx * 0.1) * 1)
@@ -9803,6 +9930,30 @@ class _NS_zephyr:
         surface.blit(shadow, (x - 50, y - 10))
 
 
+    def _draw_fey_silhouette_glow(surface, x, y, phase):
+        """Halo magenta rendah-kontras khusus untuk Zephyr.
+
+        Diletakkan sebelum tubuh dan aura normal agar rim light memisahkan
+        rambut, sayap, serta staff dari peta, sambil tetap mempertahankan
+        tepi pixel-art yang tajam. Ukuran kecil juga aman untuk Android.
+        """
+        pulse = 0.70 + math.sin(phase * 1.35) * 0.16
+        halo = pygame.Surface((92, 104), pygame.SRCALPHA)
+        center = (46, 51)
+        for radius, alpha in ((41, 10), (32, 15), (24, 23)):
+            _NS_zephyr._aacircle(
+                halo, (*_NS_zephyr.PALETTE["magic_dark"],
+                       int(alpha * pulse)), center, radius)
+        # Dua kilau vertikal mengisyaratkan sayap tanpa menggambar ulang.
+        _NS_zephyr._aaline(halo, (*_NS_zephyr.PALETTE["magic_mid"],
+                                  int(35 * pulse)),
+                            (26, 60), (17, 30), 2)
+        _NS_zephyr._aaline(halo, (*_NS_zephyr.PALETTE["magic_mid"],
+                                  int(35 * pulse)),
+                            (66, 60), (75, 30), 2)
+        surface.blit(halo, (x - 46, y - 51))
+
+
     def _draw_fey_aura(surface, x, y, phase):
         """Background aura - dark pink."""
         pulse = math.sin(phase * 0.4) * 0.25 + 0.75
@@ -9884,8 +10035,9 @@ class _NS_zephyr:
     # ===================================================================
     def _draw_bramble_ground(surface, boss, x, y, timer, phase):
         """Ground indicator - dark spot at target."""
-        tx, ty = _NS_zephyr._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        tx, ty = getattr(boss, "_bramble_origin", None) or \
+            _NS_zephyr._target_position(boss, x, y)
+        progress = max(0.0, min(1.0, 1 - timer / 240))
 
         if progress < 0.2:
             # Warning shadow spot
@@ -9898,8 +10050,9 @@ class _NS_zephyr:
 
     def _draw_bramble_maze(surface, boss, x, y, timer, phase):
         """Thorny brambles/vines erupting from ground."""
-        tx, ty = _NS_zephyr._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        tx, ty = getattr(boss, "_bramble_origin", None) or \
+            _NS_zephyr._target_position(boss, x, y)
+        progress = max(0.0, min(1.0, 1 - timer / 240))
 
         if progress < 0.2:
             # Growing shadow (drawn on ground above)
@@ -9981,7 +10134,7 @@ class _NS_zephyr:
     # ===================================================================
     def _draw_shadow_realm_ground(surface, boss, x, y, timer, phase):
         """Ground bubble indicator around Zephyr."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 180))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
         radius = int(30 + progress * 15)
 
@@ -10005,7 +10158,7 @@ class _NS_zephyr:
 
     def _draw_shadow_realm(surface, boss, x, y, timer, phase):
         """Purple bubble prison around Zephyr - invisibility/dodge effect."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 180))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
 
         # Bubble radius
@@ -10093,7 +10246,7 @@ class _NS_zephyr:
     # ===================================================================
     def _draw_bedlam_ground(surface, boss, x, y, timer, phase):
         """Ground swirl for bedlam."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 240))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
         radius = int(45 + progress * 15)
 
@@ -10121,10 +10274,10 @@ class _NS_zephyr:
 
     def _draw_bedlam(surface, boss, x, y, timer, phase):
         """Multiple mini duplicates spinning around Zephyr."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 240))
 
         # Spawn several mini fairy silhouettes orbiting
-        num_dupes = 4
+        num_dupes = 6
         for i in range(num_dupes):
             angle = phase * 2 + i * math.pi * 2 / num_dupes
             orbit_r = 40 + int(math.sin(phase + i) * 5)
