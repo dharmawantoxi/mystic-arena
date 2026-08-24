@@ -4115,6 +4115,21 @@ class Hero(TowerDebuffMixin):
                                target=target, hero_type=hero_type)
 
     def take_damage(self, damage, from_team, damage_type='normal'):
+        # ═══ ZEPHYR — SHADOW REALM ═══
+        # Status ini sebelumnya hanya menyalakan renderer gelembung dan
+        # heal. Dengan guard ini Zephyr benar-benar tidak bisa terkena
+        # serangan selama berada di realm, sesuai bahasa visualnya.
+        if getattr(self, "_shadow_realm_active", False) and damage > 0:
+            try:
+                import __main__
+                if hasattr(__main__, 'game_instance'):
+                    __main__.game_instance.effects.add_damage_number(
+                        self.x, self.y - self.radius - 12,
+                        "SHADOW", is_critical=False, damage_type='ice')
+            except Exception:
+                pass
+            return
+
         inv = getattr(self, "items", None)
 
         # ═══ TEMPEST VEIL (Wind Waker): kebal semua damage ═══

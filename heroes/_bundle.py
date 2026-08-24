@@ -9936,8 +9936,9 @@ class _NS_zephyr:
     # ===================================================================
     def _draw_bramble_ground(surface, boss, x, y, timer, phase):
         """Ground indicator - dark spot at target."""
-        tx, ty = _NS_zephyr._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        tx, ty = getattr(boss, "_bramble_origin", None) or \
+            _NS_zephyr._target_position(boss, x, y)
+        progress = max(0.0, min(1.0, 1 - timer / 240))
 
         if progress < 0.2:
             # Warning shadow spot
@@ -9950,8 +9951,9 @@ class _NS_zephyr:
 
     def _draw_bramble_maze(surface, boss, x, y, timer, phase):
         """Thorny brambles/vines erupting from ground."""
-        tx, ty = _NS_zephyr._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        tx, ty = getattr(boss, "_bramble_origin", None) or \
+            _NS_zephyr._target_position(boss, x, y)
+        progress = max(0.0, min(1.0, 1 - timer / 240))
 
         if progress < 0.2:
             # Growing shadow (drawn on ground above)
@@ -10033,7 +10035,7 @@ class _NS_zephyr:
     # ===================================================================
     def _draw_shadow_realm_ground(surface, boss, x, y, timer, phase):
         """Ground bubble indicator around Zephyr."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 180))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
         radius = int(30 + progress * 15)
 
@@ -10057,7 +10059,7 @@ class _NS_zephyr:
 
     def _draw_shadow_realm(surface, boss, x, y, timer, phase):
         """Purple bubble prison around Zephyr - invisibility/dodge effect."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 180))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
 
         # Bubble radius
@@ -10145,7 +10147,7 @@ class _NS_zephyr:
     # ===================================================================
     def _draw_bedlam_ground(surface, boss, x, y, timer, phase):
         """Ground swirl for bedlam."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 240))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
         radius = int(45 + progress * 15)
 
@@ -10173,10 +10175,10 @@ class _NS_zephyr:
 
     def _draw_bedlam(surface, boss, x, y, timer, phase):
         """Multiple mini duplicates spinning around Zephyr."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 240))
 
         # Spawn several mini fairy silhouettes orbiting
-        num_dupes = 4
+        num_dupes = 6
         for i in range(num_dupes):
             angle = phase * 2 + i * math.pi * 2 / num_dupes
             orbit_r = 40 + int(math.sin(phase + i) * 5)
