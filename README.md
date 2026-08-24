@@ -43,6 +43,34 @@ bosses/_boss_index.py    peta boss→modul (dibuat tools/gen_boss_index.py)
 tools/                   benchmark, uji cache sprite, generator indeks
 ```
 
+## Item Forge (16 item, 2 halaman TIER I / TIER II)
+
+Hero punya 6 slot item yang dibeli dengan GOLD di **ITEM FORGE**.
+Semua item terinspirasi item MOBA legendaris dengan nama diganti
+bebas hak cipta; lihat [hero_items.py](hero_items.py).
+
+| TIER I (4500G) | TIER II (4500-6000G) |
+|---|---|
+| Dead Edge (crit) | Scarlet Bulwark — block + aura Guard tim |
+| Holy Rapier (rontok saat mati) | Monarch Wings — evasion 28% |
+| Demon Maw (lifesteal + Blood Frenzy) | Corroder — kikis 6 armor target |
+| Leviathan Heart (+35% HP, regen) | Tempest Vane — kebal 2.5 dtk saat kritis |
+| Cleave Axe (splash melee) | Fenrir Chain — root AOE + sambaran petir |
+| Steel Aegis (aura armor/AS) | Sanguine Thorn — Soul Rend: silence + crit pasti |
+| Moon Shard (+60 AS) | Abyss Breaker — bash stun + Overwhelm |
+| Octarine Core (CDR + spell vamp) | Thunder Coil — chain lightning + Static Charge |
+
+Mekanik baru yang didukung engine: `evasion`, `damage block`,
+`armor shred`, `damage amp`, `heal amp`, `slow resist`, `stun/root`
+(boss punya resist 55%), dan `move speed` — semua lewat
+`TowerDebuffMixin` di [_core.py](_core.py). Screenshot toko:
+[docs/item_forge_tier1.png](docs/item_forge_tier1.png) &
+[docs/item_forge_tier2.png](docs/item_forge_tier2.png).
+
+Uji: `python tools/test_item_shop.py`,
+`python tools/test_item_tier2.py`,
+`python tools/test_tier2_ingame.py`.
+
 ## Menjalankan di PC
 
 ```bash

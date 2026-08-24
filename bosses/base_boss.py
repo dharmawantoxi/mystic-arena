@@ -476,6 +476,12 @@ class Boss(TowerDebuffMixin):
         # slow, atk_slow, skill_down, anti_heal, burn (mini & true boss)
         self._tick_tower_debuffs()
 
+        # ═══ STUN (item Tier II: Abyss Breaker / Fenrir Chain) ═══
+        # Boss membeku (durasi sudah dipotong 55% oleh apply_stun
+        # supaya true boss tidak di-stunlock).
+        if self.stun_timer > 0:
+            return
+
         if self.hurt_flash_timer > 0:
             self.hurt_flash_timer -= 1
 
@@ -5106,6 +5112,16 @@ class Boss(TowerDebuffMixin):
             pass
 
     def take_damage(self, damage, from_team, damage_type='normal'):
+        # ═══ STATUS ITEM TIER II: Soul Rend amp + Corroder shred ═══
+        if damage > 0:
+            if getattr(self, "dmg_amp_timer", 0) > 0:
+                damage = int(round(
+                    damage * (1.0 + self.dmg_amp_amount)))
+            shred = getattr(self, "armor_shred_amount", 0.0)
+            if damage_type != 'fire' and shred > 0:
+                damage = int(round(
+                    damage * (1.0 + min(1.0, shred * 0.06))))
+
         # ═══ INHERENT BOSS RESILIENCE (True Boss: 30%, Mini Boss: 20%) ═══
         resilience = getattr(self, 'damage_reduction', 0.20)
         if getattr(self, 'defense_boost', False):
