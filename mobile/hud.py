@@ -3,13 +3,14 @@
 # HUD sentuh: pengganti SEMUA tombol keyboard & controller
 #
 # Peta pengganti:
-#   Q / W / E / R  -> 4 tombol skill bulat (kanan bawah)
-#   H              -> tombol SHOP
+#   Q / W / E / R  -> 4 tombol skill bulat (kanan bawah) - DIHAPUS v27 auto-cast
+#   H              -> tombol SHOP (buka via bangunan HERO SHOP)
 #   ESC            -> tombol JEDA (kanan atas)
-#   F8 / debug     -> tombol kecil FPS (bisa dimatikan di rilis)
+#   F8 / debug     -> tombol kecil FPS
 #   R (replay)     -> REPLAY button on victory/defeat screen
 #   N (next level) -> NEXT LEVEL button
 #   SPACE (skip)   -> SKIP button during cinematic
+#   G,T,C,B        -> Tactical commands HANYA di side panel (sesuai request user)
 #
 # Semua tombol memakai ukuran >= 48x48 dp (rekomendasi Google) dan
 # berada di dalam safe-area supaya tidak tertutup poni/gesture bar.
@@ -31,7 +32,6 @@ GREY = (120, 120, 135)
 RED = (210, 70, 70)
 
 # Sisi minimum area sentuh, dalam piksel logis 1280x720.
-# 80 px logis x skala 1,5 = 120 px fisik = ~48dp di layar 404 dpi.
 MIN_TAP = 80
 
 SKILL_LABELS = {"q": "Q", "w": "W", "e": "E", "r": "R"}
@@ -52,17 +52,8 @@ class TouchButton:
         self.font_size = font_size
         self.visible = visible
         self.enabled = True
-        self.cooldown = 0.0        # 0..1 (1 = belum siap)
+        self.cooldown = 0.0
         self.press_anim = 0.0
-        # ═══ AREA SENTUH MINIMUM (v27) ═══
-        # Panduan Android: target sentuh minimal 48dp. Di HP uji
-        # (2436x1080, ~404 dpi, skala 1,5) itu setara ~80 px logis.
-        # Tombol lama 44x44 = hanya ~26dp - jauh di bawah standar dan
-        # memang susah ditekan.
-        #
-        # Yang diperbesar adalah AREA SENTUHnya, bukan gambarnya:
-        # tombol tetap terlihat ringkas, tapi jempol yang meleset
-        # beberapa piksel tetap terbaca. Teknik baku di aplikasi mobile.
         self.hit_rect = self.rect.inflate(24, 24)
         if self.hit_rect.width < MIN_TAP or self.hit_rect.height < MIN_TAP:
             self.hit_rect = self.rect.inflate(
@@ -80,13 +71,9 @@ class TouchHUD:
     """Kumpulan tombol layar + logika gambarnya."""
 
     def __init__(self, get_font):
-        """get_font(size, style) -> pygame.font.Font (pakai cache game)."""
         self._get_font = get_font
         self.buttons = {}
         self.visible = True
-        # Tombol FPS tampil lagi (permintaan pemain), diletakkan di
-        # bawah panel gold. Menahan tombol jeda tetap bisa dipakai
-        # sebagai jalan pintas.
         self.show_debug_button = True
         self._build_layout()
 
@@ -96,34 +83,11 @@ class TouchHUD:
         right = safe.right
         bottom = safe.bottom
 
-        # ═══ TOMBOL SKILL QWER DIHAPUS (v27) ═══
-        # Semua skill hero kini dicor otomatis oleh
-        # Hero._try_auto_cast(). Empat tombol besar di sudut kanan
-        # bawah tidak lagi punya fungsi, dan menghapusnya membebaskan
-        # area yang selama ini bertabrakan dengan gerakan geser peta.
-        #
-        # Kalau suatu saat ingin dikembalikan: hidupkan lagi blok ini
-        # dan set Hero.auto_cast_enabled = False di _entity.py.
-
-        # ═══ Tombol SHOP DIHAPUS ═══
-        # Dulu ada kapsul "SHOP" di kiri bawah, tepat menutupi kastil
-        # pemain. Toko sudah bisa dibuka dengan mengetuk bangunan
-        # HERO SHOP di peta, jadi tombol ini mubazir.
-
-        # ═══ KIRI ATAS, TEPAT DI BAWAH PANEL GOLD ═══
-        # Panel gold ada di (22, 30) berukuran 168x38, jadi sisi
-        # bawahnya di y=68. Dua tombol diletakkan di bawahnya supaya
-        # menyatu dengan zona HUD dan TIDAK menutupi kastil (kiri
-        # bawah) maupun kastil musuh (kanan atas).
+        # KIRI ATAS, TEPAT DI BAWAH PANEL GOLD
         # Kalau panel kanan tersedia, tombol jeda & FPS pindah ke sana
-        # (lihat mobile/sidepanel.py) dan yang di sini disembunyikan -
-        # sudut kiri atas peta jadi bersih.
         self._panel_ada = plat.get_panel_rect() is not None
         _bx = max(22, safe.left + 6)
         _by = 76
-        # 44 -> 52 px terlihat, area sentuh otomatis jadi 80 px.
-        # Jaraknya dinaikkan ke 84 supaya dua area sentuh tidak
-        # bertumpuk dan salah tekan.
         self.buttons["pause"] = TouchButton(
             "pause", pygame.Rect(_bx, _by, 52, 52),
             "II", shape="round", font_size=22)
@@ -132,40 +96,10 @@ class TouchHUD:
             "debug", pygame.Rect(_bx + 84, _by, 52, 52),
             "FPS", shape="round", font_size=16, color=(120, 200, 255))
 
-        # ═══ Tombol kontekstual ═══
-        # CATATAN JARAK: ketiga tombol layar kemenangan tampil
-        # BERSAMAAN. Karena tiap area sentuh melebar 12 px per sisi,
-        # jarak antar-tombol harus >= 24 px agar area sentuhnya tidak
-        # bertumpuk - kalau bertumpuk, ketukan di celahnya bisa
-        # memicu tombol yang salah (mis. "MENU" padahal maksudnya
-        # "NEXT LEVEL"). Diperiksa oleh tools/test_hud_layout.py.
+        # Tombol kontekstual (victory/defeat/skip)
         self.buttons["skip"] = TouchButton(
             "skip", pygame.Rect(right - 170, bottom - 74, 160, 58),
             "SKIP  >>", shape="capsule", font_size=20, visible=False)
-
-        # ═══ TACTICAL COMMAND BUTTONS (GATHER, PROTECT TOWER, PROTECT CASTLE, ATTACK BOSS) ═══
-        # Diletakkan di tengah bawah, di atas area hero panel (yang di kiri bawah)
-        # Jika panel kanan ada, tactical buttons pindah ke sidepanel jadi yang di sini disembunyikan
-        # Layout: 4 tombol kecil horizontal, mudah dijangkau jempol
-        tac_y = bottom - 90
-        tac_w = 120
-        tac_h = 44
-        tac_gap = 8
-        tac_total = 4 * tac_w + 3 * tac_gap
-        tac_start_x = (plat.LOGICAL_WIDTH - tac_total) // 2
-
-        self.buttons["gather"] = TouchButton(
-            "gather", pygame.Rect(tac_start_x, tac_y, tac_w, tac_h),
-            "GATHER", shape="capsule", font_size=16, color=(100, 200, 255), visible=False)
-        self.buttons["protect_tower"] = TouchButton(
-            "protect_tower", pygame.Rect(tac_start_x + (tac_w + tac_gap), tac_y, tac_w, tac_h),
-            "DEF TOWER", shape="capsule", font_size=14, color=(100, 255, 100), visible=False)
-        self.buttons["protect_castle"] = TouchButton(
-            "protect_castle", pygame.Rect(tac_start_x + (tac_w + tac_gap)*2, tac_y, tac_w, tac_h),
-            "DEF CASTLE", shape="capsule", font_size=14, color=(255, 220, 50), visible=False)
-        self.buttons["attack_boss"] = TouchButton(
-            "attack_boss", pygame.Rect(tac_start_x + (tac_w + tac_gap)*3, tac_y, tac_w, tac_h),
-            "ATTACK BOSS", shape="capsule", font_size=13, color=(255, 100, 100), visible=False)
 
         mid = plat.LOGICAL_WIDTH // 2
         self.buttons["replay"] = TouchButton(
@@ -183,15 +117,16 @@ class TouchHUD:
             "back", pygame.Rect(safe.left + 8, safe.top + 6, 104, 58),
             "< BACK", shape="capsule", font_size=20, visible=False)
 
+        # CATATAN: Tombol tactical GATHER/PROTECT TOWER/CASTLE/ATTACK BOSS
+        # HANYA ada di side panel (mobile/sidepanel.py) sesuai permintaan user.
+        # Tidak lagi di HUD bawah agar map bersih, dan indikator hanya muncul
+        # sesaat di map saat command di-klik.
+
     # ── sinkronisasi dengan kondisi game ──────────────
     def sync(self, game, state, cinematic_active=False):
-        """Tentukan tombol mana yang tampil & status cooldown-nya."""
         in_game = state == "game" and game is not None
-        hero = getattr(game, "selected_hero", None) if in_game else None
         playing = in_game and getattr(game, "state", "") == "playing"
-        ended = in_game and getattr(game, "state", "") in ("victory",
-                                                           "defeat")
-
+        ended = in_game and getattr(game, "state", "") in ("victory", "defeat")
 
         panel = getattr(self, "_panel_ada", False)
         self.buttons["pause"].visible = bool(
@@ -199,29 +134,6 @@ class TouchHUD:
         self.buttons["debug"].visible = bool(
             self.show_debug_button and not cinematic_active and not panel)
         self.buttons["skip"].visible = bool(cinematic_active)
-
-        # Tactical buttons - hanya saat playing, tidak cinematic, dan tidak ada panel kanan
-        # (kalau panel kanan ada, tactical buttons ada di sidepanel)
-        has_heroes = False
-        has_boss = False
-        if game:
-            try:
-                has_heroes = any(getattr(h, 'alive', False) for h in getattr(game, 'heroes', []))
-                has_boss = getattr(game, 'active_boss', None) and getattr(game.active_boss, 'alive', False)
-            except Exception:
-                pass
-
-        show_tactical = bool(playing and not cinematic_active and not panel and not game.shop_open and not game.item_shop_open)
-        self.buttons["gather"].visible = show_tactical and has_heroes
-        self.buttons["protect_tower"].visible = show_tactical and has_heroes
-        self.buttons["protect_castle"].visible = show_tactical and has_heroes
-        self.buttons["attack_boss"].visible = show_tactical and has_boss
-
-        # Enable/disable based on availability
-        self.buttons["gather"].enabled = has_heroes
-        self.buttons["protect_tower"].enabled = has_heroes
-        self.buttons["protect_castle"].enabled = has_heroes
-        self.buttons["attack_boss"].enabled = has_boss
 
         self.buttons["replay"].visible = ended
         self.buttons["menu"].visible = ended
@@ -234,17 +146,14 @@ class TouchHUD:
                 show_next = False
         self.buttons["next_level"].visible = show_next
 
-        # animasi tekan
         for btn in self.buttons.values():
             if btn.press_anim > 0:
                 btn.press_anim = max(0.0, btn.press_anim - 0.12)
 
     # ── input ─────────────────────────────────────────
     def hit_test(self, pos):
-        """Kembalikan action id kalau titik sentuh mengenai tombol HUD."""
         if not self.visible:
             return None
-        # urutan terbalik: tombol terakhir digambar = paling atas
         for btn in reversed(list(self.buttons.values())):
             if btn.contains(pos):
                 btn.press()
@@ -272,7 +181,6 @@ class TouchHUD:
         press = int(btn.press_anim * 3)
 
         if not Quality.cheap_alpha:
-            # Gambar langsung: hindari surface sementara + alpha blit
             pygame.draw.circle(surface, (16, 14, 22), (cx, cy), r)
             pygame.draw.circle(surface, btn.color if btn.enabled else GREY,
                                (cx, cy), r, 3)
@@ -285,7 +193,6 @@ class TouchHUD:
             pygame.draw.circle(base, ring, (c, c), r, 3)
             surface.blit(base, (cx - c, cy - c))
 
-        # busur cooldown (searah jarum jam, sisa waktu)
         if btn.cooldown > 0.001:
             if Quality.cheap_alpha:
                 shade = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
@@ -338,11 +245,6 @@ class TouchHUD:
 # PENERJEMAH AKSI HUD -> API GAME LAMA
 # ═══════════════════════════════════════════════════════
 def apply_hud_action(action, ctx):
-    """
-    ctx adalah objek/namespace dengan atribut:
-        game, menu, state_ref (fungsi set state), fps_counter, debug
-    Kembalikan True kalau aksi tertangani.
-    """
     game = ctx.get("game")
     menu = ctx.get("menu")
 
@@ -384,13 +286,12 @@ def apply_hud_action(action, ctx):
         menu.handle_key(pygame.K_ESCAPE)
         return True
 
-    # ═══ TACTICAL COMMANDS ═══
+    # Tactical commands tetap didukung via sidepanel (action sama)
     if game is not None and getattr(game, 'tactical', None):
         if action == "gather":
             game.tactical.command_gather()
             return True
         elif action == "protect_tower":
-            # Jika ada tower selected, protect itu
             if game.selected_tower and game.selected_tower.team == "blue":
                 game.tactical.command_protect_tower(game.selected_tower)
             else:

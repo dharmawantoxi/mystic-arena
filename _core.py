@@ -6305,30 +6305,6 @@ class InputHandler:
                     SoundManager().play('ui_click', volume_mult=0.7)
                     return
 
-        # ═══ TACTICAL COMMAND BUTTONS (GATHER, PROTECT TOWER, PROTECT CASTLE, ATTACK BOSS) ═══
-        # Prioritas tinggi, cek sebelum shop/popup
-        if button == 1 and g.state == "playing":
-            for tac_id in ('tactical_gather', 'tactical_protect_tower', 'tactical_protect_castle', 'tactical_attack_boss'):
-                if tac_id in g.ui_buttons:
-                    if g.ui_buttons[tac_id].collidepoint(mx, my):
-                        if tac_id == 'tactical_gather':
-                            if getattr(g, 'tactical', None):
-                                # Gather di posisi mouse jika shift? Untuk sekarang di tengah / selected hero
-                                g.tactical.command_gather()
-                        elif tac_id == 'tactical_protect_tower':
-                            if getattr(g, 'tactical', None):
-                                if g.selected_tower and g.selected_tower.team == "blue":
-                                    g.tactical.command_protect_tower(g.selected_tower)
-                                else:
-                                    g.tactical.command_protect_tower()
-                        elif tac_id == 'tactical_protect_castle':
-                            if getattr(g, 'tactical', None):
-                                g.tactical.command_protect_castle()
-                        elif tac_id == 'tactical_attack_boss':
-                            if getattr(g, 'tactical', None):
-                                g.tactical.command_attack_boss()
-                        return
-
         # ═══ ITEM SHOP (paling atas; buka dari tombol ITEM di panel) ═══
         if getattr(g, "item_shop_open", False):
             from hero_items import handle_item_shop_click
@@ -7147,92 +7123,10 @@ class UIRenderer:
             print(f"[ITEM_SHOP] draw error: {e}")
 
     def draw_tactical_commands(self, surface):
-        """Tactical command bar: GATHER, PROTECT TOWER, PROTECT CASTLE, ATTACK BOSS"""
-        g = self.game
-        if g.state != "playing":
-            return
-        if g.shop_open or g.item_shop_open:
-            return
-        # Jika panel kanan aktif, tactical buttons pindah ke sidepanel
-        # untuk menghemat ruang HUD atas peta
-        try:
-            from mobile import platform_utils as _plat
-            if _plat.get_panel_rect() is not None:
-                return
-        except Exception:
-            pass
-
-        # Tombol taktis di atas tengah, di bawah feedback tactical
-        # Layout: 4 tombol horizontal
-        btn_w = 140
-        btn_h = 36
-        gap = 10
-        total_w = 4 * btn_w + 3 * gap
-        start_x = (SCREEN_WIDTH - total_w) // 2
-        y = 130  # di bawah feedback (90) + sedikit jarak
-
-        # Cek apakah ada hero hidup
-        alive_heroes = [h for h in g.heroes if getattr(h, 'alive', False)]
-        has_boss = getattr(g, 'active_boss', None) and getattr(g.active_boss, 'alive', False)
-
-        commands = [
-            ('tactical_gather', 'GATHER [G]', (100, 200, 255), len(alive_heroes) > 0, "Semua hero kumpul & serang bersama"),
-            ('tactical_protect_tower', 'PROTECT TOWER [T]', (100, 255, 100), len(alive_heroes) >= 1, "Min 2 hero lindungi tower"),
-            ('tactical_protect_castle', 'PROTECT CASTLE [C]', (255, 220, 50), len(alive_heroes) > 0, "Semua hero lindungi castle"),
-            ('tactical_attack_boss', 'ATTACK BOSS [B]', (255, 100, 100), has_boss, "Semua hero serang boss"),
-        ]
-
-        mx, my = pygame.mouse.get_pos()
-
-        for i, (btn_id, label, color, enabled, tooltip) in enumerate(commands):
-            bx = start_x + i * (btn_w + gap)
-            rect = pygame.Rect(bx, y, btn_w, btn_h)
-            g.ui_buttons[btn_id] = rect
-
-            is_hover = rect.collidepoint(mx, my)
-
-            # Background
-            if not enabled:
-                bg = (50, 50, 55)
-                border = (90, 90, 95)
-                txt_col = (130, 130, 135)
-            else:
-                if is_hover:
-                    bg = (color[0]//2 + 40, color[1]//2 + 40, color[2]//2 + 40)
-                    border = (255, 255, 255)
-                    txt_col = (255, 255, 255)
-                else:
-                    bg = (color[0]//3, color[1]//3, color[2]//3)
-                    border = color
-                    txt_col = color
-
-            # Shadow
-            shadow_rect = rect.move(2, 2)
-            pygame.draw.rect(surface, (0, 0, 0, 120), shadow_rect, border_radius=6)
-
-            pygame.draw.rect(surface, bg, rect, border_radius=6)
-            pygame.draw.rect(surface, border, rect, 2, border_radius=6)
-
-            # Label
-            try:
-                font = get_font(16, "body_bold")
-            except Exception:
-                font = pygame.font.Font(None, 18)
-            txt = font.render(label, True, txt_col)
-            surface.blit(txt, txt.get_rect(center=rect.center))
-
-            # Tooltip saat hover
-            if is_hover and enabled:
-                try:
-                    tip_font = get_font(13, "body")
-                except Exception:
-                    tip_font = pygame.font.Font(None, 14)
-                tip_surf = tip_font.render(tooltip, True, (220, 220, 230))
-                tip_bg = tip_surf.get_rect().inflate(10, 4)
-                tip_bg.midtop = (rect.centerx, rect.bottom + 6)
-                pygame.draw.rect(surface, (20, 20, 30), tip_bg, border_radius=4)
-                pygame.draw.rect(surface, border, tip_bg, 1, border_radius=4)
-                surface.blit(tip_surf, tip_surf.get_rect(center=tip_bg.center))
+        """Tactical command bar - DISABLED: hanya di side panel sesuai request user.
+        Indikator visual tetap muncul sesaat di map via TacticalCommandManager.draw_world/ui
+        """
+        return
 
     # ═══════════════════════════════════════
     # OVERLAY (Victory/Defeat)

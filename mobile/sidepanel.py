@@ -493,7 +493,11 @@ class SidePanel:
             # Jadi kita buat rect di koordinat layar penuh untuk hit_test, lalu convert ke buffer
             screen_rect = pygame.Rect(r.x + x + 6, r.y + by, w - 12, btn_h)
             # Simpan untuk hit_test (pakai koordinat layar)
-            self.buttons[action] = PanelButton(action, screen_rect, label, warna, 13)
+            btn = PanelButton(action, screen_rect, label, warna, 13)
+            # Hanya di side panel, jika tidak enabled (misal no boss) → hidden / disabled
+            # Attack Boss hanya muncul saat ada boss, sesuai permintaan visual sesaat
+            btn.visible = bool(enabled)
+            self.buttons[action] = btn
 
             # Gambar di buffer (koordinat relatif)
             buf_rect = pygame.Rect(x + 6, by, w - 12, btn_h)

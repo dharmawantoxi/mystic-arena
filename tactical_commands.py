@@ -129,7 +129,7 @@ class TacticalCommandManager:
         self.active_command = TacticalCommand.GATHER
         self.command_timer = 600  # 10 detik durasi command aktif
         self.gather_point = (gather_x, gather_y)
-        self.gather_point_timer = 360  # 6 detik visual
+        self.gather_point_timer = 150  # 2.5 detik visual sesaat di map (request user)
         self.cooldown = self.cooldown_max
 
         self._clear_hero_retreat(heroes)
@@ -198,6 +198,8 @@ class TacticalCommandManager:
         self.active_command = TacticalCommand.PROTECT_TOWER
         self.command_timer = 600
         self.command_target = target_tower
+        self.gather_point = (target_tower.x, target_tower.y)
+        self.gather_point_timer = 150  # sesaat di map
         self.cooldown = self.cooldown_max
 
         # Minimal 2 hero, maksimal semua jika ada 2 saja
@@ -261,7 +263,7 @@ class TacticalCommandManager:
         self.command_timer = 600
         self.command_target = castle
         self.gather_point = (castle.x, castle.y)
-        self.gather_point_timer = 360
+        self.gather_point_timer = 150  # sesaat di map
         self.cooldown = self.cooldown_max
 
         self._clear_hero_retreat(heroes)
@@ -326,7 +328,7 @@ class TacticalCommandManager:
         self.command_timer = 600
         self.command_target = boss
         self.gather_point = (boss.x, boss.y)
-        self.gather_point_timer = 360
+        self.gather_point_timer = 150  # sesaat di map
         self.cooldown = self.cooldown_max
 
         self._clear_hero_retreat(heroes)
@@ -599,7 +601,8 @@ class TacticalCommandManager:
         if not (self.gather_point and self.gather_point_timer > 0):
             return
         gx, gy = self.gather_point
-        alpha_ratio = self.gather_point_timer / 360.0
+        alpha_ratio = self.gather_point_timer / 150.0
+        alpha_ratio = max(0.0, min(1.0, alpha_ratio))
         import pygame
         pulse = (math.sin(pygame.time.get_ticks() * 0.008) * 0.3 + 0.7) * alpha_ratio
         col = self._get_command_color()
