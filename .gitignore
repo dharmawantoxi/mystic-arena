@@ -23,6 +23,9 @@ crash_log.txt
 # ═══ Konfigurasi build (kredensial / id proyek cloud) ═══
 android_games_app_id.txt
 
+# ═══ Batch kode voucher top up (jangan bocor ke repo) ═══
+voucher_codes.txt
+
 # ═══ Editor / OS ═══
 .vscode/
 .idea/

@@ -2774,6 +2774,11 @@ class Menu:
         # Currency display (auto-deteksi region pemain, di-resolve
         # saat dialog top up dibuka; None = belum dideteksi).
         self.topup_currency = None
+        # ── REDEEM CODE (fase "redeem" di dialog top up) ──
+        self.topup_redeem_input = ""    # isi input kode
+        self.topup_redeem_msg = None    # (teks, warna) pesan validasi
+        self.topup_redeem_code = None   # kode sukses terakhir
+        self.topup_last_method = None   # method transaksi terakhir
 
         # Particles background
         self.particles = self._init_particles()
@@ -3843,6 +3848,17 @@ class Menu:
 
     def handle_key(self, key):
         """Handle keyboard"""
+        # ── REDEEM CODE: semua key dimakan selama fase redeem ──
+        if getattr(self, "topup_open", False) and \
+                self.topup_phase == "redeem":
+            self._redeem_handle_key(key)
+            if key == pygame.K_ESCAPE:
+                # ESC pertama: kembali ke fase select (bukan keluar)
+                self.topup_phase = "select"
+                self.topup_redeem_input = ""
+                self.topup_redeem_msg = None
+            return
+
         if key == pygame.K_ESCAPE:
             if self.exit_confirm is not None:
                 self.exit_confirm = None
@@ -4856,13 +4872,18 @@ class Menu:
         pygame.draw.rect(self.screen, (255, 200, 80),
                          (dx, dy, dialog_w, dialog_h), 3, border_radius=16)
 
-        # Judul
+        # Judul (subtitle menyesuaikan fase agar tidak dobel teks)
         title = get_font(34, "body_bold").render(
             "TOP UP HERO GOLD", True, (255, 220, 100))
         self.screen.blit(title, title.get_rect(center=(cx, dy + 38)))
-        sub = self.font_tiny.render(
-            "Top up gold untuk membuka hero di HERO SHOP",
-            True, (160, 170, 190))
+        sub_text = {
+            "redeem": ("REDEEM CODE - enter the code you received "
+                       "from admin after paying"),
+            "processing": "Please wait - do not close the dialog",
+            "success": "Transaction complete",
+        }.get(self.topup_phase,
+              "Top up gold untuk membuka hero di HERO SHOP")
+        sub = self.font_tiny.render(sub_text, True, (160, 170, 190))
         self.screen.blit(sub, sub.get_rect(center=(cx, dy + 64)))
         pygame.draw.line(self.screen, (60, 70, 90),
                          (dx + 18, dy + 80), (dx + dialog_w - 18, dy + 80),
@@ -4872,6 +4893,8 @@ class Menu:
             self._draw_topup_select(dx, dy, dialog_w, dialog_h)
         elif self.topup_phase == "processing":
             self._draw_topup_processing(dx, dy, dialog_w, dialog_h)
+        elif self.topup_phase == "redeem":
+            self._draw_topup_redeem(dx, dy, dialog_w, dialog_h)
         else:
             self._draw_topup_success(dx, dy, dialog_w, dialog_h)
 
@@ -4976,6 +4999,26 @@ class Menu:
             self.screen.blit(lab, (rect.x + 40, rect.centery - 9))
             self.buttons[f"topup_method_{i}"] = rect
 
+        # Baris REDEEM CODE (untuk alur voucher manual/gateway)
+        rd_rect = pygame.Rect(meth_x, dy + 346, meth_w, 38)
+        rd_hover = self.hover_button == "topup_redeem"
+        pygame.draw.rect(self.screen,
+                         (56, 48, 22) if rd_hover else (40, 36, 20),
+                         rd_rect, border_radius=8)
+        pygame.draw.rect(self.screen,
+                         (255, 220, 130) if rd_hover else (190, 160, 80),
+                         rd_rect, 2, border_radius=8)
+        # Ikon "tiket" sederhana
+        tx, ty = rd_rect.x + 14, rd_rect.centery
+        pygame.draw.rect(self.screen, (255, 210, 110),
+                         (tx, ty - 6, 16, 12), border_radius=3)
+        pygame.draw.circle(self.screen, (40, 36, 20), (tx, ty), 3)
+        pygame.draw.circle(self.screen, (40, 36, 20),
+                           (tx + 16, ty), 3)
+        rd_lab = self.font_small.render("REDEEM CODE", True, (255, 225, 150))
+        self.screen.blit(rd_lab, (rd_rect.x + 40, rd_rect.centery - 9))
+        self.buttons["topup_redeem"] = rd_rect
+
         # ── RINGKASAN + CATATAN ──
         pkg = TOPUP_PACKAGES[self.topup_pkg_idx]
         total = int(pkg["gold"]) + int(pkg.get("bonus", 0))
@@ -5061,10 +5104,7 @@ class Menu:
                              (bar.x, bar.y, fill, bar_h), border_radius=5)
         pygame.draw.rect(self.screen, (90, 100, 130),
                          bar, 1, border_radius=5)
-
-        note = self.font_tiny.render(
-            "Please wait - do not close the dialog.", True, (120, 130, 150))
-        self.screen.blit(note, note.get_rect(center=(cx, cy + 110)))
+        # ("do not close" sudah ada di subtitle header dialog)
 
     def _draw_topup_success(self, dx, dy, dw, dh):
         """Fase 3: pembayaran sukses, gold sudah masuk."""
@@ -5080,16 +5120,24 @@ class Menu:
                           [(cx - 18, cy - 92), (cx - 4, cy - 76),
                            (cx + 20, cy - 106)], 6)
 
+        is_redeem = getattr(self, "topup_last_method", None) == "redeem"
         t1 = self.font_medium.render(
-            "TOP UP SUCCESSFUL!", True, (255, 220, 100))
+            "CODE REDEEMED!" if is_redeem else "TOP UP SUCCESSFUL!",
+            True, (255, 220, 100))
         self.screen.blit(t1, t1.get_rect(center=(cx, cy + 0)))
         t2 = self.font_medium.render(
             f"+{self.topup_last_total:,} HERO GOLD ADDED",
             True, GOLD)
         self.screen.blit(t2, t2.get_rect(center=(cx, cy + 36)))
-        tx_line = self.font_tiny.render(
-            f"TX ID: {self.topup_tx_id}   •   {method['label']}   •   "
-            f"{self._topup_price_str(pkg['price'])}", True, (150, 160, 180))
+        if is_redeem:
+            tx_line = self.font_tiny.render(
+                f"TX ID: {self.topup_tx_id}   •   CODE "
+                f"{self.topup_redeem_code}", True, (150, 160, 180))
+        else:
+            tx_line = self.font_tiny.render(
+                f"TX ID: {self.topup_tx_id}   •   {method['label']}   •   "
+                f"{self._topup_price_str(pkg['price'])}",
+                True, (150, 160, 180))
         self.screen.blit(tx_line, tx_line.get_rect(center=(cx, cy + 68)))
 
         back_rect = pygame.Rect(cx - 110, cy + 96, 220, 48)
@@ -5104,6 +5152,193 @@ class Menu:
         bt = self.font_medium.render("BACK", True, (255, 255, 255))
         self.screen.blit(bt, bt.get_rect(center=back_rect.center))
         self.buttons["topup_back"] = back_rect
+
+    # ═══════════════════════════════════════════════════════════════
+    # REDEEM CODE (fase di dalam dialog top up)
+    # ═══════════════════════════════════════════════════════════════
+
+    def _draw_topup_redeem(self, dx, dy, dw, dh):
+        """Fase redeem: input kode (keypad on-screen + keyboard PC).
+        Header/judul sudah digambar _draw_topup_dialog()."""
+        from topup_voucher import CODE_PREFIX, MAX_DIGITS
+        cx = dx + dw // 2
+
+        # Tombol kecil kembali ke fase select (kanan atas)
+        vback_rect = pygame.Rect(dx + dw - 92, dy + 22, 68, 30)
+        mx, my = pygame.mouse.get_pos()
+        vback_hover = vback_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (58, 62, 78) if vback_hover else (40, 44, 62),
+                         vback_rect, border_radius=8)
+        pygame.draw.rect(self.screen,
+                         (170, 180, 200) if vback_hover else (100, 110, 140),
+                         vback_rect, 1, border_radius=8)
+        vb_t = self.font_tiny.render("BACK", True, (220, 225, 235))
+        self.screen.blit(vb_t, vb_t.get_rect(center=vback_rect.center))
+        self.buttons["vback"] = vback_rect
+
+        # ── Kotak input ──
+        box = pygame.Rect(cx - 180, dy + 104, 360, 58)
+        pygame.draw.rect(self.screen, (14, 18, 30), box, border_radius=10)
+        pygame.draw.rect(self.screen, (255, 200, 80), box, 2, border_radius=10)
+        shown = self.topup_redeem_input
+        if not shown:
+            ph = self.font_button.render(
+                CODE_PREFIX + "_ " * (MAX_DIGITS - 1), True, (90, 100, 125))
+            self.screen.blit(ph, ph.get_rect(center=box.center))
+        else:
+            txt = self.font_button.render(shown, True, (255, 255, 255))
+            self.screen.blit(txt, txt.get_rect(center=box.center))
+            # Kursor berkedip di belakang teks (tanpa geser posisi teks)
+            if (self.animation_time // 30) % 2 == 0:
+                cur_x = box.centerx + txt.get_width() // 2 + 5
+                pygame.draw.rect(self.screen, (255, 200, 80),
+                                 (cur_x, box.centery - 14, 3, 28))
+
+        fmt_t = self.font_tiny.render(
+            f"Format: {CODE_PREFIX}123456  (4-{MAX_DIGITS} digits)",
+            True, (120, 130, 150))
+        self.screen.blit(fmt_t, fmt_t.get_rect(center=(cx, dy + 180)))
+
+        if self.topup_redeem_msg:
+            msg_t = self.font_small.render(self.topup_redeem_msg[0], True,
+                                           self.topup_redeem_msg[1])
+            self.screen.blit(msg_t, msg_t.get_rect(center=(cx, dy + 206)))
+
+        # ── Keypad 3 kolom x 4 baris: 1..9 / DEL 0 REDEEM ──
+        key_w, key_h, gap = 130, 58, 18
+        keys = [["1", "2", "3"],
+                ["4", "5", "6"],
+                ["7", "8", "9"],
+                ["del", "0", "redeem"]]
+        x0 = cx - (3 * key_w + 2 * gap) // 2
+        y0 = dy + 232
+        for r, row in enumerate(keys):
+            for c, k in enumerate(row):
+                rect = pygame.Rect(x0 + c * (key_w + gap),
+                                   y0 + r * (key_h + gap), key_w, key_h)
+                btn_id = f"vpk_{k}"
+                hover = self.hover_button == btn_id
+                if k == "redeem":
+                    bg = (30, 130, 72) if hover else (18, 98, 54)
+                    bd = (140, 255, 175) if hover else (85, 205, 125)
+                    fg = (255, 255, 255)
+                    label = "REDEEM"
+                elif k == "del":
+                    bg = (85, 90, 105) if hover else (58, 62, 78)
+                    bd = (170, 180, 200) if hover else (110, 120, 145)
+                    fg = (235, 235, 240)
+                    label = "DEL"
+                else:
+                    bg = (44, 52, 78) if hover else (33, 40, 62)
+                    bd = (130, 150, 200) if hover else (80, 95, 135)
+                    fg = (235, 240, 250)
+                    label = k
+                pygame.draw.rect(self.screen, bg, rect, border_radius=10)
+                pygame.draw.rect(self.screen, bd, rect, 2, border_radius=10)
+                kf = self.font_button if k.isdigit() else self.font_small
+                kt = kf.render(label, True, fg)
+                self.screen.blit(kt, kt.get_rect(center=rect.center))
+                self.buttons[btn_id] = rect
+
+    def _redeem_handle_key(self, key):
+        """Keyboard PC untuk fase redeem (mobile pakai keypad klik)."""
+        if pygame.K_0 <= key <= pygame.K_9:
+            self._redeem_append(str(key - pygame.K_0))
+        elif key in (pygame.K_BACKSPACE, pygame.K_DELETE):
+            self._redeem_backspace()
+        elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            self._redeem_submit()
+
+    def _redeem_append(self, ch):
+        """Tambah digit; prefix MA- otomatis disisipkan."""
+        from topup_voucher import CODE_PREFIX, MAX_DIGITS
+        if self.topup_phase != "redeem":
+            return
+        digits = self.topup_redeem_input.replace(CODE_PREFIX, "")
+        if len(digits) >= MAX_DIGITS:
+            return
+        if not self.topup_redeem_input.startswith(CODE_PREFIX):
+            self.topup_redeem_input = CODE_PREFIX
+        self.topup_redeem_input += ch
+        self.topup_redeem_msg = None
+        SoundManager().play('ui_click', volume_mult=0.25)
+
+    def _redeem_backspace(self):
+        from topup_voucher import CODE_PREFIX
+        if self.topup_phase != "redeem" or not self.topup_redeem_input:
+            return
+        if self.topup_redeem_input.startswith(CODE_PREFIX) and \
+                len(self.topup_redeem_input) == len(CODE_PREFIX):
+            self.topup_redeem_input = ""
+        else:
+            self.topup_redeem_input = self.topup_redeem_input[:-1]
+        self.topup_redeem_msg = None
+
+    def _redeem_submit(self):
+        """Validasi kode; gold masuk + tercatat di riwayat."""
+        import time
+        from topup_voucher import is_valid_format, load_vouchers
+
+        code = self.topup_redeem_input.strip().upper()
+        if not is_valid_format(code):
+            self.topup_redeem_msg = ("Invalid code. Format: MA-123456",
+                                     (255, 120, 120))
+            SoundManager().play('ui_error', volume_mult=0.5)
+            return
+
+        used = self.save_data.setdefault("redeemed_codes", [])
+        if code in used:
+            self.topup_redeem_msg = ("Code already redeemed.",
+                                     (255, 120, 120))
+            SoundManager().play('ui_error', volume_mult=0.5)
+            return
+
+        allow = load_vouchers()
+        if allow is not None and code not in allow:
+            self.topup_redeem_msg = ("Unknown code. Contact admin.",
+                                     (255, 120, 120))
+            SoundManager().play('ui_error', volume_mult=0.5)
+            return
+
+        # Nominal: nominal khusus dari file allowlist, kalau tidak ada
+        # = paket standar (paket pertama).
+        pkg = TOPUP_PACKAGES[0]
+        amount = (allow or {}).get(code)
+        if not amount:
+            amount = int(pkg["gold"]) + int(pkg.get("bonus", 0))
+
+        self.meta_gold += amount
+        self.save_data["meta_gold"] = self.meta_gold
+
+        tx_id = "MA-" + format(int(time.time() * 1000) % 10**10, "010d")
+        used.append(code)
+        if len(used) > 50:
+            self.save_data["redeemed_codes"] = used[-50:]
+        history = self.save_data.setdefault("topup_history", [])
+        history.append({
+            "tx": tx_id,
+            "pkg": "REDEEM",
+            "gold": amount,
+            "bonus": 0,
+            "price": 0,
+            "cur": "IDR",
+            "price_cur": 0,
+            "method": "redeem",
+            "code": code,
+            "ts": int(time.time()),
+        })
+        if len(history) > 50:
+            self.save_data["topup_history"] = history[-50:]
+        SaveManager.save(self.save_data)
+
+        self.topup_last_method = "redeem"
+        self.topup_redeem_code = code
+        self.topup_phase = "success"
+        self.topup_tx_id = tx_id
+        self.topup_last_total = amount
+        print(f"[REDEEM] +{amount:,} Hero Gold (kode {code})")
+        SoundManager().play('ui_buy', volume_mult=0.9)
 
     def topup_complete(self):
         """Pembayaran (SIMULASI) berhasil: gold masuk + riwayat disimpan.
@@ -5147,6 +5382,8 @@ class Menu:
         self.topup_phase = "success"
         self.topup_tx_id = tx_id
         self.topup_last_total = total
+        self.topup_last_method = method["id"]
+        self.topup_redeem_code = None
         print(f"[TOP UP] +{total:,} Hero Gold "
               f"({pkg['label']} via {method['label']}, "
               f"{cur} {round(price_cur, 2)}, simulasi)")
@@ -6379,6 +6616,8 @@ class Menu:
             self.reload_progress()
             self.shop_tab = 'starter'  # ← RESET tab saat masuk shop
             self.topup_open = False    # ← tutup dialog top up saat masuk
+            self.topup_redeem_input = ""
+            self.topup_redeem_msg = None
             self.state = MenuState.HERO_SHOP
 
         elif btn_id.startswith("tab_"):
@@ -6401,6 +6640,8 @@ class Menu:
             self.topup_open = True
             self.topup_phase = "select"
             self.topup_progress = 0.0
+            self.topup_redeem_input = ""
+            self.topup_redeem_msg = None
         elif btn_id == "topup_cancel":
             # Tidak boleh ditutup saat pembayaran sedang diproses.
             if self.topup_phase != "processing":
@@ -6423,6 +6664,25 @@ class Menu:
             if self.topup_phase == "select":
                 self.topup_phase = "processing"
                 self.topup_progress = 0.0
+
+        # ── REDEEM CODE ──
+        elif btn_id == "topup_redeem":
+            if self.topup_phase == "select":
+                self.topup_phase = "redeem"
+                self.topup_redeem_input = ""
+                self.topup_redeem_msg = None
+        elif btn_id == "vback":
+            self.topup_phase = "select"
+            self.topup_redeem_input = ""
+            self.topup_redeem_msg = None
+        elif btn_id.startswith("vpk_"):
+            if self.topup_phase == "redeem":
+                if btn_id == "vpk_del":
+                    self._redeem_backspace()
+                elif btn_id == "vpk_redeem":
+                    self._redeem_submit()
+                else:
+                    self._redeem_append(btn_id[4:])
 
         # ═══ TOGGLES ═══
         elif btn_id in ("difficulty_prev", "difficulty_next", "toggle_difficulty", "toggle_level_difficulty"):

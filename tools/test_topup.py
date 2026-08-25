@@ -160,6 +160,97 @@ def main():
     assert cur2 == "EUR" and abs(val - 10000 / IDR_PER_UNIT["EUR"]) < 1e-9
     print(f"OK 10: multi-currency OK (deteksi device = {cur})")
 
+    # ── 11. REDEEM CODE (alur voucher manual) ──
+    import topup_voucher as tv
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    vpath = os.path.join(root, tv.VOUCHER_FILE)
+    backup = None
+    if os.path.exists(vpath):
+        with open(vpath) as f:
+            backup = f.read()
+    try:
+        with open(vpath, "w") as f:
+            f.write("# batch test\nMA-111111\nMA-222222=75000\n")
+
+        menu._on_button_click("topup_open")
+        menu.draw()
+        assert "topup_redeem" in menu.buttons, "baris REDEEM CODE tidak ada"
+        menu._on_button_click("topup_redeem")
+        assert menu.topup_phase == "redeem"
+        menu.draw()
+        for k in "0123456789":
+            assert f"vpk_{k}" in menu.buttons, f"keypad {k} tidak ada"
+        for b in ("vpk_del", "vpk_redeem", "vback"):
+            assert b in menu.buttons, f"{b} tidak ada"
+
+        # Input via keypad + keyboard
+        for k in "987":
+            menu._on_button_click(f"vpk_{k}")
+        assert menu.topup_redeem_input == "MA-987"
+        menu._on_button_click("vpk_del")
+        assert menu.topup_redeem_input == "MA-98"
+        menu.handle_key(pygame.K_9)
+        menu.handle_key(pygame.K_BACKSPACE)
+        assert menu.topup_redeem_input == "MA-98"
+
+        # Format tidak valid (2 digit) -> ditolak, tetap di fase redeem
+        menu._on_button_click("vpk_redeem")
+        assert menu.topup_phase == "redeem"
+        assert menu.topup_redeem_msg, "harus ada pesan error"
+
+        # Kode valid dari allowlist -> gold masuk
+        menu._on_button_click("vback")
+        menu._on_button_click("topup_redeem")
+        gold_b = menu.meta_gold
+        for k in "111111":
+            menu._on_button_click(f"vpk_{k}")
+        menu._on_button_click("vpk_redeem")
+        assert menu.topup_phase == "success"
+        assert menu.meta_gold == gold_b + 50000
+        h = menu.save_data["topup_history"][-1]
+        assert h["method"] == "redeem" and h["code"] == "MA-111111"
+        assert h["gold"] == 50000
+        assert "MA-111111" in menu.save_data["redeemed_codes"]
+        print("OK 11a: redeem kode valid, +50,000 gold, riwayat tercatat")
+
+        # Double redeem -> ditolak
+        menu.draw()
+        menu._on_button_click("topup_back")
+        assert not menu.topup_open
+        menu._on_button_click("topup_open")
+        menu.draw()
+        menu._on_button_click("topup_redeem")
+        menu.draw()
+        for k in "111111":
+            menu._on_button_click(f"vpk_{k}")
+        menu._on_button_click("vpk_redeem")
+        assert menu.topup_phase == "redeem"
+        assert "already redeemed" in menu.topup_redeem_msg[0]
+        print("OK 11b: double-redeem ditolak")
+
+        # Kode nominal khusus (MA-222222=75000)
+        menu._on_button_click("vback")
+        menu._on_button_click("topup_redeem")
+        menu.draw()
+        for k in "222222":
+            menu._on_button_click(f"vpk_{k}")
+        menu._on_button_click("vpk_redeem")
+        assert menu.topup_phase == "success"
+        assert menu.meta_gold == gold_b + 50000 + 75000
+        print("OK 11c: redeem nominal khusus (+75,000) benar")
+
+        # Generator voucher
+        codes = tv.generate(10)
+        assert len(set(codes)) == 10
+        assert all(tv.is_valid_format(c) for c in codes)
+        print("OK 11d: generator voucher + validasi format OK")
+    finally:
+        if backup is None:
+            os.remove(vpath)
+        else:
+            with open(vpath, "w") as f:
+                f.write(backup)
+
     print("\nSEMUA TES TOP UP LULUS")
 
 
