@@ -3557,7 +3557,7 @@ class _NS_popup_renderer:
                 try:
                     ratio = getattr(nexus, 'shield', 0) / max(1, getattr(nexus, 'shield_max', 1))
                     sf = pygame.font.Font(None, 13)
-                    s_lbl = sf.render(f"SHIELD {int(ratio*100)}% | Wave <10", True, (100, 220, 255))
+                    s_lbl = sf.render(f"CASTLE SHIELD {int(ratio*100)}%", True, (100, 220, 255))
                     surface.blit(s_lbl, (px + 15, y))
                     y += 16
                 except Exception:
@@ -3586,6 +3586,8 @@ class _NS_popup_renderer:
             y += 8
 
             if is_own:
+                y = self._draw_castle_shield_section(
+                    surface, px, popup_w, nexus, y)
                 self._draw_nexus_upgrade(surface, px, py, popup_w,
                                           nexus, y, castle_names)
             else:
@@ -3594,6 +3596,41 @@ class _NS_popup_renderer:
                 info_rect = info_t.get_rect(
                     center=(px + popup_w // 2, y + 10))
                 surface.blit(info_t, info_rect)
+
+        def _draw_castle_shield_section(self, surface, px, popup_w,
+                                        nexus, y):
+            """Status/tombol Castle Shield untuk castle pemain level 4+."""
+            g = self.game
+            if getattr(nexus, "castle_shield_purchased", False):
+                rect = pygame.Rect(px + 15, y, popup_w - 30, 30)
+                pygame.draw.rect(surface, (25, 70, 30), rect, border_radius=6)
+                pygame.draw.rect(surface, (120, 255, 140), rect, 2, border_radius=6)
+                text = self.ui.font_tiny.render(
+                    "CASTLE SHIELD: ON", True, (150, 255, 170))
+                surface.blit(text, text.get_rect(center=rect.center))
+                return y + 38
+
+            if nexus.can_activate_castle_shield():
+                cost = nexus.castle_shield_cost()
+                can_buy = g.gold >= cost
+                rect = pygame.Rect(px + 15, y, popup_w - 30, 30)
+                pygame.draw.rect(surface, (60, 160, 90) if can_buy else DARK_GRAY,
+                                 rect, border_radius=6)
+                pygame.draw.rect(surface, WHITE if can_buy else GRAY, rect, 2,
+                                 border_radius=6)
+                text = self.ui.font_tiny.render(
+                    "CASTLE SHIELD (%dG)" % cost, True,
+                    WHITE if can_buy else GRAY)
+                surface.blit(text, text.get_rect(center=rect.center))
+                g.ui_buttons['popup_castle_shield'] = rect
+                return y + 38
+
+            if nexus.level < CASTLE_SHIELD_MIN_LEVEL:
+                text = self.ui.font_tiny.render(
+                    "Castle Shield unlocks at Lv.4", True, GRAY)
+                surface.blit(text, (px + 15, y))
+                return y + 18
+            return y
 
         def _draw_nexus_upgrade(self, surface, px, py, popup_w, nexus, y,
                                   castle_names):

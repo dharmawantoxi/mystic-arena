@@ -1023,15 +1023,17 @@ AI_HERO_PREFERENCES = ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"]
 AI_MAX_HEROES = 5  # AI max 5 heroes (including boss heroes) - matches player limit
 
 # ═══════════════════════════════════════
-# CASTLE SHIELD SYSTEM (Anti-smurf / anti-premature destruction)
-# Before wave 10, castle has protective shield that reduces damage
+# CASTLE SHIELD (fitur berbayar)
+# Castle level 4+ dapat membeli shield permanen, setara Regen Shield
+# tower. Harganya sama dengan upgrade tower ke level 5 (850 gold).
 # ═══════════════════════════════════════
 CASTLE_SHIELD_ENABLED = True
-CASTLE_SHIELD_WAVE_THRESHOLD = 10      # Shield active before wave 10
-CASTLE_SHIELD_DAMAGE_REDUCTION = 0.88 # 88% damage reduction before wave 10 (boosted)
-CASTLE_SHIELD_HP_RATIO = 1.0          # Shield HP = 100% max HP (boosted)
+CASTLE_SHIELD_MIN_LEVEL = 4
+CASTLE_SHIELD_COST = TOWER_REGEN_SHIELD_COST
+CASTLE_SHIELD_DAMAGE_REDUCTION = 0.88 # 88% damage reduction while active
+CASTLE_SHIELD_HP_RATIO = 1.0          # Shield HP = 100% max HP
 CASTLE_SHIELD_REGEN_DELAY = 120       # 2 sec no damage -> regen
-CASTLE_SHIELD_REGEN_RATE = 3.5        # Shield regen per frame (boosted)
+CASTLE_SHIELD_REGEN_RATE = 3.5        # Shield regen per frame
 CASTLE_SHIELD_COLOR_BLUE = (100, 200, 255)
 CASTLE_SHIELD_COLOR_RED = (255, 120, 120)
 
@@ -1333,7 +1335,7 @@ class Game:
         self._blue_nexus_last_hp = self.blue_base.hp
         self.wave_number = 0
         self.wave_timer = 300
-        # Initialize castle shields (active before wave 10)
+        # Sinkronkan status Castle Shield (belum aktif sampai dibeli).
         try:
             self.blue_base.set_wave(self.wave_number)
             self.red_base.set_wave(self.wave_number)
@@ -1545,12 +1547,6 @@ class Game:
                 try:
                     self.blue_base.set_wave(self.wave_number)
                     self.red_base.set_wave(self.wave_number)
-                    if self.wave_number == CASTLE_SHIELD_WAVE_THRESHOLD:
-                        # Shield just expired - notify player
-                        self.effects.unlock_achievement(
-                            "Castle Shield Down!",
-                            f"Wave {self.wave_number}: Castles vulnerable!",
-                            "shield")
                 except Exception:
                     pass
                 SoundManager().play('wave_start', volume_mult=0.6)
@@ -2308,6 +2304,26 @@ class Game:
         self.shop_open = False
         SoundManager().play('ui_buy')
         SoundManager().play('hero_spawn')
+
+    def try_activate_castle_shield(self):
+        """Beli Castle Shield untuk castle pemain yang levelnya cukup."""
+        castle = self.blue_base
+        if not castle.can_activate_castle_shield():
+            SoundManager().play('ui_error')
+            return
+        cost = castle.castle_shield_cost()
+        if self.gold < cost:
+            SoundManager().play('ui_error')
+            return
+        if castle.activate_castle_shield():
+            self.gold -= cost
+            SoundManager().play('ui_upgrade')
+            try:
+                self.effects.add_damage_number(
+                    int(castle.x), int(castle.y - 55),
+                    "CASTLE SHIELD!", is_critical=True)
+            except Exception:
+                pass
 
     def try_upgrade_nexus(self):
         if self.blue_base.level >= MAX_NEXUS_LEVEL:
@@ -4995,7 +5011,7 @@ class Menu:
              "Tap towers, castle, or hero to upgrade. Stronger = win!",
              (200, 150, 255)),
             ("CASTLE SHIELD",
-             "Castle has shield before Wave 10. Prevents early loss.",
+             "At Castle Level 4, buy a permanent shield for 850 gold.",
              (100, 220, 255)),
         ]
 
@@ -6721,6 +6737,10 @@ class InputHandler:
 
                 elif action == 'upgrade_nexus':
                     g.try_upgrade_nexus()
+                    return True
+
+                elif action == 'castle_shield':
+                    g.try_activate_castle_shield()
                     return True
 
                 elif action == 'upgrade_tower':
