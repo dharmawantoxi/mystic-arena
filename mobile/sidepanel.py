@@ -499,7 +499,18 @@ class SidePanel:
                 pahlawan = []
                 self._hero_lebih = 0
 
-        tinggi_baris = 42
+        # ═══ BARIS KOMPAK SAAT 5 HERO ═══
+        # BUG LAMA: begitu hero ke-5 di-summon, kotak HEROES tumbuh
+        # ke 232 px (5 x 42) dan mendorong TACTICAL COMMANDS ke y=432.
+        # Kotak tactical (172 px) lalu berakhir di 604 - melewati batas
+        # aman 592 (di atas zona notifikasi) - sehingga _gambar_tactical
+        # MENYEMBUNYIKAN SEMUA tombol command. Panel kanan kelihatan
+        # "kehilangan" tactical commands padahal cuma tidak muat.
+        # Sekarang tinggi baris menyesuaikan: 4 hero ke bawah tetap
+        # 42 px (lega), 5 hero dipadatkan ke 38 px supaya kotak
+        # tactical mendapat tempat penuh lagi (412..584, di atas batas).
+        tinggi_baris = 38 if (len(pahlawan) >= 5
+                              or getattr(self, "_hero_lebih", 0)) else 42
         h = 22 + max(1, len(pahlawan)) * tinggi_baris
         if getattr(self, "_hero_lebih", 0):
             h += 14
