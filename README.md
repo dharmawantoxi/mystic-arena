@@ -120,6 +120,12 @@ MYSTIC_CLOUD_URL=https://myserver.example.com buildozer android debug
 | `MYSTIC_CLOUD_API_KEY` | Kunci bersama (sama di server & game). Disarankan untuk internet. |
 | `MYSTIC_CLOUD_PLAYER_ID` | Paksa identitas pemain (email Google / kode). Kalau kosong, game memakai akun Google di HP. |
 
+**Server** (di `tools/cloud_server/server.py`) mendukung storage
+**Cloudflare R2** (S3-compatible) selain folder lokal — R2 gratis
+untuk menyimpan save tetap awet walaupun host (mis. Render Free)
+restart. Konfigurasinya ada di
+**[docs/DEPLOY_CLOUD_SERVER.md](docs/DEPLOY_CLOUD_SERVER.md)**.
+
 Kalau `MYSTIC_CLOUD_URL` belum diisi, aplikasi tetap jalan — cloud
 NONAKTIF, save lokal + Android Auto Backup (Google Drive) tetap
 dipakai.

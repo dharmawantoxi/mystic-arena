@@ -771,8 +771,9 @@ Bagian kode:
 - `mobile/cloud_save.py` — manajer cloud: identitas pemain, auto-upload
   tiap save di thread background, upload/download, validasi checksum &
   pemulihan. Berjalan aman (no-op) di PC/CI kalau URL belum diset.
-- `tools/cloud_server/server.py` — contoh server cloud (Python stdlib,
-  tanpa `pip install`).
+- `tools/cloud_server/server.py` — contoh server cloud. Tanpa dependency
+  untuk storage lokal; untuk **Cloudflare R2** butuh `boto3`
+  (`tools/cloud_server/requirements.txt`).
 - `_system.py` — `SaveManager.save()` memanggil auto-upload cloud
   setelah menulis save lokal (non-blocking, gagal hanya log).
 - `_core.py` — Settings → **☁ CLOUD SAVE** (koneksi / UPLOAD /

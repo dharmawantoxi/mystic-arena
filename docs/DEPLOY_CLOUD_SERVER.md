@@ -34,7 +34,13 @@ git push origin main
 2. Pilih repo GitHub `mystic-arena`.
 3. Render membaca `render.yaml` di root dan membuat service
    **mystic-arena-cloud** (plan **Free**).
-4. Klik **Apply / Deploy**. Tunggu build ±1-2 menit.
+4. Klik **Apply / Deploy**.
+   - Saat diminta variable `MYSTIC_CLOUD_R2_*` (sync: false), gunakan
+     nilai dari bucket R2 yang kamu buat (lihat Bagian 5). Kalau kamu
+     tidak pakai R2, hapus/masukkan nilai kosong — server tetap jalan,
+     tapi file disimpan sementara di filesystem Render.
+5. Tunggu build ±1-2 menit (Render akan `pip install` boto3 dari
+   `tools/cloud_server/requirements.txt`).
 
 Setelah selesai, Render memberi URL, misalnya:
 ```
@@ -49,7 +55,7 @@ curl https://mystic-arena-cloud.onrender.com/health
 
 > Kalau tidak memakai Blueprint, cukup buat **New → Web Service**,
 > pilih repo, set:
-> - Build command: `(kosong)`
+> - Build command: `pip install -r tools/cloud_server/requirements.txt`
 > - Start command: `python tools/cloud_server/server.py`
 > - Instance type: **Free**
 
@@ -111,26 +117,25 @@ pemberitahuan. Artinya, kalau hanya mengandalkan `cloud_data` lokal,
 save cloud bisa hilang — **tidak ideal untuk tujuan "save tidak
 hilang"**.
 
-**Solusi yang disarankan:**
+**Solusi GRATIS yang sudah didukung (disarankan):**
 
-1. **Tetap pentingkan Android Auto Backup + save lokal** — game sudah
-   punya ini. Cloud server hanya lapisan tambahan.
-2. **Pakai persistent disk (berbayar)** — Render hanya mendukung
-   persistent disk di instance **berbayar** (Starter ~$7/bln). Setelah
-   upgrade, tambahkan disk dengan mount path `cloud_data`.
-3. **Pakai object storage gratis (disarankan untuk `$0`)** — mis.
-   Cloudflare **R2** (10 GB gratis) atau Supabase Storage gratis.
-   Server menyimpan envelope cloud ke bucket, bukan ke disk server.
-   (Implementasi ini belum ada di `tools/cloud_server/server.py`; bisa
-   ditambahkan kalau kamu mau lanjut.)
+✅ **Cloudflare R2** — object storage S3-compatible dengan **10 GB
+gratis/tagihan** dan **tanpa biaya egress**. `server.py` sekarang
+bisa menyimpan save langsung ke bucket R2, jadi walau Render restart /
+redeploy / spin-down, save tetap ada di R2. Lihat **Bagian 5** di bawah.
 
-### Kalau hanya mau uji sebentar
+Solusi lain (tidak dipilih karena berbayar):
+2. **Persistent disk (berbayar)** — Render hanya mendukung persistent
+   disk di instance **berbayar** (Starter ~$7/bln), mount path
+   `cloud_data`.
+3. **Supabase Storage** — opsi gratis lain, tapi butuh project
+   Supabase + kredensial terpisah; R2 dianggap lebih sederhana.
+
+### Kalau hanya mau uji sebentar (tanpa R2)
 
 Render free cukup untuk demo/testing dengan pengguna sedikit, tapi
-ingat bahwa save bisa hilang saat server restart. Untuk jaminan
-produk, kombinasi terbaik saat belum mau bayar adalah:
-**save lokal + Android Auto Backup + server Render yang di-upgrade ke
-persistent disk nanti.**
+ingat bahwa save bisa hilang saat server restart/redeploy. Untuk
+jaminan produk gratis, gunakan **R2** (Bagian 5).
 
 ---
 
@@ -140,5 +145,58 @@ persistent disk nanti.**
 |---|---|---|
 | `HOST` | Alamat bind | `0.0.0.0` |
 | `PORT` | Port (diisi otomatis Render/Railway) | `8080` |
-| `MYSTIC_CLOUD_DATA_DIR` | Folder tempat menyimpan file save | `./cloud_data` |
+| `MYSTIC_CLOUD_DATA_DIR` | Folder storage lokal | `./cloud_data` |
 | `MYSTIC_CLOUD_API_KEY` | Kunci bersama; kalau kosong, server tanpa auth | kosong |
+| `MYSTIC_CLOUD_R2_ENDPOINT` | R2 endpoint S3 | kosong (= storage lokal) |
+| `MYSTIC_CLOUD_R2_BUCKET` | Nama bucket R2 | kosong |
+| `MYSTIC_CLOUD_R2_ACCESS_KEY_ID` | R2 Access Key ID | kosong |
+| `MYSTIC_CLOUD_R2_SECRET_ACCESS_KEY` | R2 Secret Access Key | kosong |
+| `MYSTIC_CLOUD_R2_PREFIX` | Prefix object di bucket | `mystic_arena` |
+
+`/health` melaporkan storage aktif:
+`{"storage": "r2"}` = menyimpan ke Cloudflare R2;
+`{"storage": "local"}` = menyimpan ke filesystem server;
+`{"storage": "r2-missing-boto3"}` = R2 dikonfigurasi tapi `boto3`
+belum terpasang (jalankan `pip install -r tools/cloud_server/requirements.txt`).
+
+## 5. Setup Cloudflare R2 (GRATIS, agar save awet)
+
+R2 punya **10 GB gratis/bulan** dan **tanpa biaya transfer keluar**,
+jadi cocok untuk menyimpan file save walaupun server Render Free
+sering restart.
+
+### Langkah di Cloudflare
+
+1. Buka <https://dash.cloudflare.com> → **R2** → **Create bucket**.
+   - Name: `mystic-arena` (atau nama bebas).
+   - Location: bebas (mis. `auto` / `APAC`).
+2. Buka bucket → **Settings** → salin **Endpoint** (format
+   `https://<accountid>.r2.cloudflarestorage.com`).
+3. Di dashboard R2 → **Manage R2 API Tokens** → **Create API token**.
+   - Permission: **Object Read & Write** untuk bucket `mystic-arena`.
+   - Salin **Access Key ID** dan **Secret Access Key**.
+
+### Isi ke Render
+
+Di Render → service **mystic-arena-cloud** → **Environment**:
+
+| Key | Nilai |
+|---|---|
+| `MYSTIC_CLOUD_R2_ENDPOINT` | `https://<accountid>.r2.cloudflarestorage.com` |
+| `MYSTIC_CLOUD_R2_BUCKET` | `mystic-arena` |
+| `MYSTIC_CLOUD_R2_ACCESS_KEY_ID` | `<Access Key ID>` |
+| `MYSTIC_CLOUD_R2_SECRET_ACCESS_KEY` | `<Secret Access Key>` |
+
+Render akan build ulang dengan `boto3` (dari
+`tools/cloud_server/requirements.txt`).
+
+### Verifikasi
+
+```bash
+curl https://mystic-arena-cloud.onrender.com/health
+# harus ada "storage":"r2"
+```
+
+Lalu main game → Settings → ☁ CLOUD SAVE → UPLOAD. Save disimpan di
+bucket R2, bukan di filesystem Render, sehingga tetap ada saat Render
+free restart / redeploy / spin-down.
