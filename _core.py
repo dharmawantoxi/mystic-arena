@@ -1024,11 +1024,13 @@ AI_MAX_HEROES = 5  # AI max 5 heroes (including boss heroes) - matches player li
 
 # ═══════════════════════════════════════
 # CASTLE SHIELD (fitur berbayar)
-# Castle level 4+ dapat membeli shield permanen, setara Regen Shield
-# tower. Harganya sama dengan upgrade tower ke level 5 (850 gold).
+# Castle dilindungi gratis sampai wave 10. Setelah perlindungan awal habis,
+# shield permanen dapat dibeli dengan gold (setara Regen Shield tower).
 # ═══════════════════════════════════════
 CASTLE_SHIELD_ENABLED = True
-CASTLE_SHIELD_MIN_LEVEL = 4
+# Castle mendapat perlindungan gratis pada 10 wave pertama. Sesudah itu
+# shield hanya dapat diaktifkan kembali dengan gold.
+CASTLE_SHIELD_FREE_WAVES = 10
 CASTLE_SHIELD_COST = TOWER_REGEN_SHIELD_COST
 CASTLE_SHIELD_DAMAGE_REDUCTION = 0.88 # 88% damage reduction while active
 CASTLE_SHIELD_HP_RATIO = 1.0          # Shield HP = 100% max HP
@@ -2730,6 +2732,8 @@ class Menu:
 
         # Result untuk komunikasi dengan main.py
         self.action = None  # "play", "quit", "resume", "main_menu"
+        # Aksi keluar tidak pernah dijalankan tanpa persetujuan pemain.
+        self.exit_confirm = None  # "quit" atau "main_menu"
 
         # Particles background
         self.particles = self._init_particles()
@@ -3349,6 +3353,10 @@ class Menu:
         elif self.state == MenuState.SLOT_SELECT:
             self._draw_slot_select()
 
+        # Selalu tampilkan paling akhir agar klik tidak bisa menembus dialog.
+        if self.exit_confirm is not None:
+            self._draw_exit_confirm_dialog()
+
     # ================================
     # Di menu.py → handle_click(), TAMBAHKAN:
     # ================================
@@ -3390,7 +3398,13 @@ class Menu:
             return
 
         mx, my = pos
-        for btn_id, rect in self.buttons.items():
+        # Dialog keluar bersifat modal: jangan biarkan klik menyentuh tombol
+        # menu yang kebetulan berada di belakangnya.
+        button_items = self.buttons.items()
+        if self.exit_confirm is not None:
+            button_items = ((btn_id, rect) for btn_id, rect in self.buttons.items()
+                            if btn_id in ("exit_confirm_yes", "exit_confirm_no"))
+        for btn_id, rect in button_items:
             if self._kena(rect, mx, my):
                 self._on_button_click(btn_id)
                 SoundManager().play('ui_click', volume_mult=0.6)
@@ -3776,12 +3790,15 @@ class Menu:
     def handle_key(self, key):
         """Handle keyboard"""
         if key == pygame.K_ESCAPE:
+            if self.exit_confirm is not None:
+                self.exit_confirm = None
+                return
             if self.state == MenuState.MAIN:
                 # Tutup dialog restore cloud dulu kalau ada
                 if getattr(self, 'cloud_restore_prompt', None) is not None:
                     self.cloud_restore_prompt = None
                     return
-                self.action = "quit"
+                self.exit_confirm = "quit"
             elif self.state in [MenuState.HOW_TO_PLAY,
                                 MenuState.SETTINGS,
                                 MenuState.CREDITS,
@@ -4967,7 +4984,7 @@ class Menu:
         panel_w = 900
         panel_h = 570
         panel_x = cx - panel_w // 2
-        panel_y = 118
+        panel_y = 100
 
         panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
         pygame.draw.rect(panel, (20, 25, 40, 225),
@@ -5018,8 +5035,8 @@ class Menu:
             "difficulty",
             value_w=140)
 
-        # Screen Shake toggle
-        y += 50
+        # Beri jarak ekstra agar tiap pilihan mudah disentuh di gameplay.
+        y += 58
         self._draw_toggle_setting(
             col2_x, y, 340,
             "Screen Shake",
@@ -5027,7 +5044,7 @@ class Menu:
             "toggle_shake")
 
         # Damage Numbers toggle
-        y += 50
+        y += 58
         self._draw_toggle_setting(
             col2_x, y, 340,
             "Damage Numbers",
@@ -5035,7 +5052,7 @@ class Menu:
             "toggle_damage")
 
         # Game Speed
-        y += 50
+        y += 58
         self._draw_option_setting(
             col2_x, y, 340,
             "Game Speed",
@@ -5044,7 +5061,7 @@ class Menu:
 
         # Interface language
         from localization import tr, get_language_label
-        y += 50
+        y += 58
         self._draw_option_setting(
             col2_x, y, 340,
             tr("language"),
@@ -5052,7 +5069,7 @@ class Menu:
             "language")
 
         # ═══ GRAPHICS SECTION ═══
-        graphics_y = gameplay_y + 290
+        graphics_y = gameplay_y + 315
         self._draw_settings_section_header(
             col2_x, graphics_y, "🖥 GRAPHICS", (255, 180, 100))
 
@@ -5064,20 +5081,22 @@ class Menu:
             settings.get_fps_label(),
             "fps")
 
-        # ═══ CLOUD SAVE SECTION (kolom 2, di bawah graphics) ═══
-        cloud_y = panel_y + 375
+        # ═══ CLOUD SAVE SECTION ═══
+        # Dipindah ke bawah Audio agar tidak bertumpuk dengan Graphics.
+        cloud_y = panel_y + 330
         self._draw_settings_section_header(
-            col2_x, cloud_y, "☁  CLOUD SAVE", (150, 220, 255))
-        self._draw_cloud_buttons(col2_x, cloud_y + 40, 340)
+            col1_x, cloud_y, "☁  CLOUD SAVE", (150, 220, 255))
+        self._draw_cloud_buttons(col1_x, cloud_y + 40, 340)
 
         # ═══ DANGER ZONE SECTION ═══
-        danger_y = panel_y + panel_h - 100
+        # Kolom kanan menjaga tombol reset terpisah dari Cloud Save.
+        danger_y = panel_y + 450
         self._draw_settings_section_header(
-            col1_x, danger_y, "⚠  DANGER ZONE", (255, 100, 100))
+            col2_x, danger_y, "⚠  DANGER ZONE", (255, 100, 100))
 
         # Reset button
         reset_btn_rect = pygame.Rect(
-            col1_x, danger_y + 40, 340, 40)
+            col2_x, danger_y + 40, 340, 40)
 
         mx, my = pygame.mouse.get_pos()
         reset_hover = reset_btn_rect.collidepoint(mx, my)
@@ -5359,6 +5378,29 @@ class Menu:
         self.screen.blit(no_text,
                          no_text.get_rect(center=no_rect.center))
         self.buttons["cloud_restore_no"] = no_rect
+
+    def _draw_exit_confirm_dialog(self):
+        """Konfirmasi eksplisit sebelum keluar game atau meninggalkan match."""
+        cx, cy = SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2
+        is_quit = self.exit_confirm == "quit"
+        title = "QUIT GAME?" if is_quit else "RETURN TO MAIN MENU?"
+        message = ("Are you sure you want to close the game?" if is_quit
+                   else "Your current game will be abandoned.")
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, (0, 0))
+        rect = pygame.Rect(cx - 260, cy - 130, 520, 260)
+        pygame.draw.rect(self.screen, (28, 32, 48), rect, border_radius=14)
+        pygame.draw.rect(self.screen, (255, 190, 90) if not is_quit else (255, 105, 105),
+                         rect, 3, border_radius=14)
+        title_s = self.font_title.render(title, True, (255, 220, 130))
+        self.screen.blit(title_s, title_s.get_rect(center=(cx, cy - 65)))
+        msg_s = self.font_small.render(message, True, (225, 230, 240))
+        self.screen.blit(msg_s, msg_s.get_rect(center=(cx, cy - 18)))
+        self._draw_confirm_buttons(
+            cx, cy + 38, "YES, EXIT" if is_quit else "YES, RETURN",
+            "exit_confirm_yes", "NO, STAY", "exit_confirm_no",
+            ((190, 75, 75), (140, 48, 48), (255, 145, 145), (220, 90, 90)))
 
     def _draw_confirm_buttons(self, cx, btn_y, yes_label, yes_id,
                               no_label, no_id, yes_color):
@@ -5913,11 +5955,16 @@ class Menu:
         elif btn_id == "credits":
             self.state = MenuState.CREDITS
         elif btn_id == "quit":
-            self.action = "quit"
+            self.exit_confirm = "quit"
         elif btn_id == "resume":
             self.action = "resume"
         elif btn_id == "main_menu":
-            self.action = "main_menu"
+            self.exit_confirm = "main_menu"
+        elif btn_id == "exit_confirm_yes":
+            self.action = self.exit_confirm
+            self.exit_confirm = None
+        elif btn_id == "exit_confirm_no":
+            self.exit_confirm = None
         elif btn_id == "back_to_main":
             if self.pause_mode:
                 self.state = MenuState.PAUSE

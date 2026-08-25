@@ -1447,7 +1447,7 @@ def _get_palette(team):
 # ═══════════════════════════════════════════════════════
 
 class Castle:
-    """Castle - evolution visual per level + Castle Shield berbayar."""
+    """Castle dengan shield gratis sampai wave 10 lalu shield berbayar."""
 
     def __init__(self, x, y, team):
         self.x = x
@@ -1474,10 +1474,12 @@ class Castle:
         except Exception:
             self.shield_max = int(self.max_hp * 0.6)
         self.shield = 0
-        # Shield harus dibeli setelah castle mencapai level 4, sama seperti
-        # Regen Shield pada tower. Tidak lagi aktif otomatis per-wave.
+        # Perlindungan gratis aktif dari awal sampai wave 10.
+        # Setelah itu pemain dapat membeli shield kembali dengan gold.
         self.castle_shield_purchased = False
-        self.shield_active = False
+        self.free_shield_active = True
+        self.shield_active = True
+        self.shield = self.shield_max
         self.shield_no_damage_timer = 0
         self.shield_regen_flash = 0
         self.damage_reduction = 0.75
@@ -1528,9 +1530,9 @@ class Castle:
         return NEXUS_LEVELS[self.level]["upgrade_cost"]
 
     def can_activate_castle_shield(self):
-        """True jika Castle Shield dapat dibeli pada castle level 4+."""
+        """True bila shield dapat dibeli setelah perlindungan wave 10 habis."""
         return (CASTLE_SHIELD_ENABLED
-                and self.level >= CASTLE_SHIELD_MIN_LEVEL
+                and not getattr(self, 'free_shield_active', False)
                 and not getattr(self, 'castle_shield_purchased', False))
 
     def castle_shield_cost(self):
@@ -1542,6 +1544,7 @@ class Castle:
         if not self.can_activate_castle_shield():
             return False
         self.castle_shield_purchased = True
+        self.free_shield_active = False
         self.shield_active = True
         self.shield_max = int(self.max_hp * CASTLE_SHIELD_HP_RATIO)
         self.shield = self.shield_max
@@ -1603,9 +1606,19 @@ class Castle:
                 self.shield_regen_flash = 4
 
     def set_wave(self, wave_number):
-        """Kompatibilitas pemanggil lama; shield tidak lagi bergantung wave."""
-        # Castle Shield tetap aktif setelah dibeli, pada wave berapa pun.
-        self.shield_active = bool(getattr(self, 'castle_shield_purchased', False))
+        """Aktifkan shield gratis sampai wave 10, lalu lepaskan otomatis."""
+        free_active = wave_number <= CASTLE_SHIELD_FREE_WAVES
+        self.free_shield_active = free_active
+        if free_active:
+            self.shield_active = True
+            # Shield awal selalu penuh selama periode perlindungan gratis.
+            if self.shield <= 0:
+                self.shield = self.shield_max
+        elif not getattr(self, 'castle_shield_purchased', False):
+            self.shield_active = False
+            self.shield = 0
+        else:
+            self.shield_active = True
 
     def _find_target(self, enemies):
         best = None
@@ -5869,7 +5882,7 @@ class AIPlayer:
         return False
 
     def _try_activate_castle_shield(self, nexus):
-        """AI membeli Castle Shield pada level 4+, parity dengan pemain."""
+        """AI membeli Castle Shield setelah perlindungan gratis wave 10 habis."""
         if not nexus.can_activate_castle_shield():
             return False
         cost = nexus.castle_shield_cost()
