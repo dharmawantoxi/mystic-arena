@@ -75,20 +75,25 @@ Uji: `python tools/test_item_shop.py`,
 `python tools/test_item_tier2.py`,
 `python tools/test_tier2_ingame.py`.
 
-## Cloud Save (Google Play Games Saved Games)
+## Save — Google Play Games (satu-satunya fitur save)
 
-Save tidak hilang saat **uninstall / ganti HP**. Setiap kali game
-menyimpan (`SaveManager.save`), salinan dikirim otomatis ke **Google
-Play Games Saved Games** milik akun Google pemain — sama seperti game
-komersial. Saat game dibuka di HP baru dengan akun Google yang sama,
-game mendeteksi slot lokal kosong lalu menawarkan **RESTORE** dari
-cloud.
+Save pemain **hanya** lewat **Google Play Games Saved Games** — sama
+seperti game komersial. Fitur save lokal lama (backup export/import
+ke folder Download, Android Auto Backup ke Google Drive) sudah
+dihapus/dimatikan:
 
-Fitur ini memakai:
 - `mobile/cloud_save.py` — logika Python (status, auto-upload, poll).
 - `src/io/github/dharmawantoxi/mysticarena/CloudSaveBridge.java` —
   bridge Java ke Snapshots API (Play Games Services v2).
-- `buildozer.spec` — dependency `play-services-games-v2` + `src`.
+- `buildozer.spec` — dependency `play-services-games-v2` + `src`;
+  `android.allow_backup = False` (Auto Backup Drive mati supaya
+  restore selalu datang dari Play Games).
+
+Alurnya: tiap `SaveManager.save`, isi slot working copy lokal
+diunggah otomatis ke **Google Play Games Saved Games** milik akun
+Google pemain. Saat game dibuka di HP baru dengan akun Google yang
+sama, game mendeteksi slot kosong lalu menawarkan **RESTORE** dari
+cloud.
 
 ### Cara mengaktifkan (direncanakan saat rilis ke Play Store)
 
@@ -108,8 +113,8 @@ Play Console** saat game selesai:
      (atau file `android_games_app_id.txt` yang di-ignore Git + env
      `MYSTIC_GAMES_PROJECT_ID_FILE` menunjuk ke file itu).
 5. Build APK/AAB seperti biasa. Kalau Project ID belum diisi, aplikasi
-   tetap jalan — cloud NONAKTIF, save lokal + Auto Backup (Google
-   Drive) tetap dipakai.
+   tetap jalan — cloud NONAKTIF (game bisa dimainkan, tapi tanpa
+   save cloud).
 
 ### Tombol di dalam game
 
@@ -119,7 +124,7 @@ Settings → **☁ CLOUD SAVE**:
 - **DOWNLOAD SAVE DARI CLOUD** — ambil progres cloud (dengan konfirmasi).
 
 Auto-upload berjalan di background setiap save; kegagalan cloud tidak
-pernah menghilangkan save lokal.
+pernah menghilangkan working copy lokal.
 
 ## Menjalankan di PC
 

@@ -1,6 +1,6 @@
 # ================================
 # storage_paths.py
-# Lokasi folder data permanen (save slot & settings)
+# Lokasi folder working copy save (slot & settings)
 #
 # MASALAH YANG DISELESAIKAN
 # -------------------------
@@ -17,11 +17,12 @@
 # Simpan di $ANDROID_PRIVATE (= Context.getFilesDir(), .../files)
 # yang berada DI LUAR folder "app", sehingga:
 #   1. Selamat dari update aplikasi (p4a tidak menyentuhnya).
-#   2. Ikut Android Auto Backup ke Google Drive, jadi progres
-#      otomatis kembali saat install ulang atau pindah HP dengan
-#      akun Google yang sama. Aturan backup-nya dibatasi hanya ke
-#      folder saves/ — lihat backup_rules.xml (Android <= 11) dan
-#      data_extraction_rules.xml (Android 12+) di root repo.
+#   2. Jadi working copy untuk Cloud Save Google Play Games
+#      (mobile/cloud_save.py): isi folder ini diunggah ke snapshot
+#      Play Games tiap save, dan dipulihkan dari sana saat ganti
+#      HP/install ulang. Android Auto Backup sengaja DIMATIKAN
+#      (buildozer.spec: android.allow_backup = False) supaya
+#      Google Play Games menjadi satu-satunya mekanisme save.
 #
 # Di desktop (Windows/Linux/macOS) perilaku lama dipertahankan:
 # folder "saves/" relatif terhadap folder game.
@@ -81,8 +82,9 @@ def get_save_dir():
 
     Android : <writable_dir>/saves
               (writable_dir = Context.getFilesDir(), DI LUAR folder
-              'app' hasil ekstrak p4a, jadi selamat dari update dan
-              ikut Android Auto Backup ke Google Drive)
+              'app' hasil ekstrak p4a, jadi selamat dari update;
+              isinya hanya working copy yang disinkronkan ke Google
+              Play Games — Auto Backup Android dimatikan)
     Desktop : <project_root>/saves
               (TIDAK lagi relatif ke cwd — inilah penyebab save
               "hilang" saat game dibuka dari folder/directory berbeda)
@@ -128,8 +130,7 @@ def _migrate_from_wiped_location():
         for name in os.listdir(old_dir):
             src = os.path.join(old_dir, name)
             dst = os.path.join(new_dir, name)
-            # Jangan timpa file di lokasi baru (misal hasil restore
-            # Auto Backup) dengan file lama.
+            # Jangan timpa file di lokasi baru dengan file lama.
             if os.path.isfile(src) and not os.path.exists(dst):
                 shutil.copy2(src, dst)
                 print(f"[STORAGE] Migrated {name} -> {new_dir}")

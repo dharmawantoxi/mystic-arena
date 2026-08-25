@@ -1,15 +1,7 @@
 """
 python-for-android hooks for Mystic Arena.
 
-1) Android 12+ backup rules:
-   Buildozer 1.5.0 currently quotes
-   android.extra_manifest_application_arguments incorrectly when it
-   calls p4a through subprocess(list). To keep Android 12+ backup
-   rules without editing the GitHub workflow, the build uses this p4a
-   hook: after p4a renders AndroidManifest.xml, add
-   android:dataExtractionRules to the <application> element directly.
-
-2) Cloud Save (Google Play Games Saved Games):
+Cloud Save (Google Play Games Saved Games):
    PGS v2 memerlukan meta-data
        <meta-data android:name="com.google.android.gms.games.APP_ID"
                   android:value="@string/game_services_project_id"/>
@@ -27,7 +19,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-DATA_EXTRACTION_ATTR = 'android:dataExtractionRules="@xml/data_extraction_rules"'
 GAMES_META_DATA = (
     '<meta-data android:name="com.google.android.gms.games.APP_ID" '
     'android:value="@string/game_services_project_id"/>'
@@ -86,21 +77,7 @@ def _patch_manifest() -> None:
 
     text = manifest.read_text(encoding="utf-8")
 
-    # ── 1) Android 12+ dataExtractionRules ──
-    if "android:dataExtractionRules=" not in text:
-        app_pos = text.find("<application")
-        if app_pos < 0:
-            raise RuntimeError(
-                "Tag <application> tidak ditemukan di AndroidManifest.xml")
-        tag_end = text.find(">", app_pos)
-        if tag_end < 0:
-            raise RuntimeError(
-                "Tag <application> tidak tertutup di AndroidManifest.xml")
-        text = (text[:tag_end] + f"\n                 {DATA_EXTRACTION_ATTR}"
-                + text[tag_end:])
-        print(f"[p4a-hook] Menambahkan {DATA_EXTRACTION_ATTR} ke {manifest}")
-
-    # ── 2) Cloud Save: Play Games APP_ID meta-data ──
+    # ── Cloud Save: Play Games APP_ID meta-data ──
     project_id = _read_games_project_id()
     if project_id:
         _write_games_strings(project_id)

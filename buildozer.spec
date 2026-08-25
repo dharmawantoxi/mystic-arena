@@ -6,9 +6,9 @@
 #   = io.github.dharmawantoxi.mysticarena
 # Berbasis username GitHub (dharmawantoxi) — unik sedunia, tidak
 # perlu punya domain sungguhan.
-# Nilai ini TIDAK BISA diubah setelah rilis di Play Store, dan
-# Android Auto Backup diikat ke applicationId ini — mengubahnya
-# berarti backup lama pemain tidak akan di-restore!
+# Nilai ini TIDAK BISA diubah setelah rilis di Play Store — Google
+# Play Games Saved Games mengikat snapshot ke applicationId ini;
+# mengubahnya berarti save cloud pemain tidak akan ditemukan lagi.
 # ═══════════════════════════════════════════════════════
 title = Mystic Arena
 package.name = mysticarena
@@ -71,18 +71,14 @@ icon.filename = %(source.dir)s/assets/icon.png
 # PERMISSION (sedikit = review Play Store lebih mudah)
 #   VIBRATE   -> feedback tombol skill
 #   WAKE_LOCK -> layar tidak mati saat menonton cinematic
-#   WRITE/READ_EXTERNAL_STORAGE (maxSdkVersion=28)
-#             -> HANYA Android 7-9: backup lokal ke folder publik
-#                Download/MysticArena (lihat backup_manager.py).
-#                Android 10+ memakai MediaStore.Downloads yang TIDAK
-#                butuh permission, jadi izin ini tidak pernah muncul
-#                di perangkat modern.
 #   INTERNET + ACCESS_NETWORK_STATE
 #             -> Cloud Save Google Play Games (upload/download save
 #                ke akun Google). Google Play Games memerlukan izin
 #                jaringan.
+#   (Izin storage TIDAK dipakai lagi — fitur save lokal ke folder
+#    Download sudah dihapus; save hanya lewat Google Play Games.)
 # ═══════════════════════════════════════════════════════
-android.permissions = android.permission.VIBRATE,android.permission.WAKE_LOCK,android.permission.INTERNET,android.permission.ACCESS_NETWORK_STATE,(name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=28),(name=android.permission.READ_EXTERNAL_STORAGE;maxSdkVersion=28)
+android.permissions = android.permission.VIBRATE,android.permission.WAKE_LOCK,android.permission.INTERNET,android.permission.ACCESS_NETWORK_STATE
 
 # ═══════════════════════════════════════════════════════
 # TARGET ANDROID
@@ -101,26 +97,19 @@ android.archs = arm64-v8a
 android.accept_sdk_license = True
 
 # ═══════════════════════════════════════════════════════
-# AUTO BACKUP (Google Drive) — progres selamat dari uninstall
-# Save game disimpan di $ANDROID_PRIVATE/saves (lihat
-# storage_paths.py) dan di-backup otomatis ke Google Drive milik
-# pemain. Saat install ulang / pindah HP dengan akun Google yang
-# sama, Android me-restore folder itu SEBELUM game pertama dibuka.
+# SAVE — HANYA Google Play Games (Android Auto Backup DIMATIKAN)
+# Fitur save lokal (export/import ke folder Download) dan Android
+# Auto Backup (Google Drive) sudah dihapus. Satu-satunya mekanisme
+# save/restore pemain adalah Google Play Games Saved Games
+# (mobile/cloud_save.py + CloudSaveBridge.java).
 #
-# Aturan backup dibatasi HANYA ke folder saves/ — tanpa ini seluruh
-# files/ (kode + aset hasil ekstrak p4a) ikut ter-backup dan hampir
-# pasti melebihi kuota 25 MB, yang membuat backup GAGAL total.
-#   backup_rules.xml            -> Android <= 11 (fullBackupContent)
-#   data_extraction_rules.xml   -> Android 12+   (dataExtractionRules)
+# android.allow_backup = False  -> Android TIDAK menyalin data app
+# (termasuk folder saves/ working copy) ke Google Drive. Ini penting
+# supaya setelah install ulang, slot working copy benar-benar kosong
+# dan dialog "restore dari cloud" (Google Play Games) yang muncul —
+# bukan data Drive yang mungkin lebih lama.
 # ═══════════════════════════════════════════════════════
-android.allow_backup = True
-android.backup_rules = backup_rules.xml
-android.res_xml = data_extraction_rules.xml
-# JANGAN pakai android.extra_manifest_application_arguments untuk
-# dataExtractionRules di Buildozer 1.5.0: argumennya dikutip sebagai
-# teks literal dan membuat AndroidManifest.xml tidak valid. Atribut
-# Android 12+ itu ditambahkan oleh p4a.hook di bawah setelah manifest
-# dirender oleh python-for-android.
+android.allow_backup = False
 
 # aab untuk Play Store, apk untuk uji manual
 android.release_artifact = aab
