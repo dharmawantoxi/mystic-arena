@@ -1,0 +1,26 @@
+# ================================================================
+# render.yaml — Blueprint Render untuk Cloud Save Mystic Arena
+#
+# Deploy ke tier GRATIS (free web service). Render sudah memasang
+# variable PORT, dan server.py memakai PORT secara otomatis.
+#
+# ⚠ PENTING: Render FREE memakai filesystem sementara. File di
+# ./cloud_data hilang saat service restart/redeploy/spin-down.
+# Lihat docs/DEPLOY_CLOUD_SERVER.md untuk solusi penyimpanan
+# yang lebih tahan lama (persistent disk berbayar / object storage
+# gratis seperti Cloudflare R2).
+# ================================================================
+services:
+  - type: web
+    name: mystic-arena-cloud
+    runtime: python
+    plan: free
+    buildCommand: ""
+    startCommand: python tools/cloud_server/server.py
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: MYSTIC_CLOUD_API_KEY
+        generateValue: true

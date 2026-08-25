@@ -107,6 +107,11 @@ MYSTIC_CLOUD_URL=http://127.0.0.1:8080 python main.py
 MYSTIC_CLOUD_URL=https://myserver.example.com buildozer android debug
 ```
 
+> Ingin langsung di-hosting gratis tanpa ngoprek? Buka
+> **[docs/DEPLOY_CLOUD_SERVER.md](docs/DEPLOY_CLOUD_SERVER.md)**
+> (Render Free adalah opsi GRATIS yang disarankan; Railway hanya
+> trial + Hobby berbayar).
+
 ### Konfigurasi opsional
 
 | Environment | Fungsi |

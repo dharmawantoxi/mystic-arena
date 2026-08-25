@@ -785,6 +785,11 @@ Bagian kode:
 python3 tools/cloud_server/server.py
 ```
 
+> **Ingin deploy gratis?** Lihat
+> [DEPLOY_CLOUD_SERVER.md](DEPLOY_CLOUD_SERVER.md).
+> Opsi GRATIS yang disarankan = **Render Free** (Railway hanya punya
+> kredit trial, bukan tier gratis permanen).
+
 - Data tersimpan di `./cloud_data` (ubah dengan `MYSTIC_CLOUD_DATA_DIR`).
 - Kalau untuk internet, set kunci bersama:
   ```bash
