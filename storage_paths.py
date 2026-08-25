@@ -30,6 +30,13 @@
 import os
 import shutil
 
+# Root folder game (folder tempat storage_paths.py berada / tempat
+# main.py & _system.py). Di desktop, save DIKUNCI ke root ini, bukan
+# ke "current working directory" (cwd), supaya save tetap ketemu walau
+# game dijalankan dari folder lain (shortcut, IDE, terminal dari `/tmp`,
+# dll.)
+_PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
 
 def get_save_dir():
     """
@@ -37,12 +44,18 @@ def get_save_dir():
 
     Android : $ANDROID_PRIVATE/saves  (persisten antar update,
               ikut Auto Backup ke Google Drive)
-    Desktop : ./saves                 (perilaku lama, tidak berubah)
+    Desktop : <project_root>/saves   (TIDAK lagi relatif ke cwd —
+              inilah penyebab save "hilang" saat game dibuka dari
+              folder/directory yang berbeda)
     """
     android_private = os.environ.get("ANDROID_PRIVATE")
     if android_private and os.path.isdir(android_private):
         return os.path.join(android_private, "saves")
-    return "saves"
+    # Override eksplisit (dipakai test/CI agar tidak menulis ke repo).
+    override = os.environ.get("MYSTIC_SAVE_DIR", "").strip()
+    if override:
+        return os.path.abspath(override)
+    return os.path.join(_PROJECT_ROOT, "saves")
 
 
 SAVE_DIR = get_save_dir()
