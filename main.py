@@ -74,6 +74,38 @@ STATE_SPLASH, STATE_MENU, STATE_GAME, STATE_PAUSE = (
 APP_BG = getattr(pygame, "APP_WILLENTERBACKGROUND", -1)
 APP_FG = getattr(pygame, "APP_DIDENTERFOREGROUND", -2)
 
+# ═══════════════════════════════════════════════════════════
+# Penjaga frame: satu frame update/draw yang gagal tidak boleh
+# menutup seluruh aplikasi. Traceback dicatat (rate-limited) supaya
+# log tidak dibanjiri ratusan baris per detik saat error berulang.
+# ═══════════════════════════════════════════════════════════
+_FRAME_ERR_LAST = {"update": 0.0, "draw": 0.0}
+_FRAME_ERR_COOLDOWN = 2.0  # detik antar pencatatan
+
+
+def _log_frame_error(kind):
+    """Catat traceback frame error dengan jeda antar catatan.
+
+    Ditulis ke stdout (logcat di Android) DAN ditambahkan ke
+    crash_log.txt supaya tetap bisa dibaca walau tidak tersambung adb.
+    """
+    import time
+    import traceback
+    now = pygame.time.get_ticks() / 1000.0
+    if now - _FRAME_ERR_LAST.get(kind, 0.0) < _FRAME_ERR_COOLDOWN:
+        return
+    _FRAME_ERR_LAST[kind] = now
+    text = "[FRAME ERROR:%s]\n%s" % (kind, traceback.format_exc())
+    print(text)
+    try:
+        log_dir = plat.get_writable_dir()
+        with open(os.path.join(log_dir, "crash_log.txt"), "a",
+                  encoding="utf-8") as fh:
+            fh.write("\n===== %s =====\n%s"
+                     % (time.strftime("%Y-%m-%d %H:%M:%S"), text))
+    except Exception:
+        pass
+
 
 def _cinematic_active(game):
     if game is None:
@@ -412,7 +444,15 @@ def main():
             sim_acc += min(clock.get_time(), 250)   # buang hentakan
             sim_steps = 0
             while sim_acc >= FIXED_DT_MS and sim_steps < MAX_CATCHUP:
-                game.update()
+                try:
+                    game.update()
+                except Exception:
+                    # ═══ JANGAN FORCE-CLOSE KARENA SATU FRAME ERROR ═══
+                    # Satu langkah simulasi yang gagal (mis. interaksi
+                    # tower vs unit tertentu) tidak boleh menutup
+                    # seluruh game. Catat traceback (rate-limited) lalu
+                    # lanjutkan ke langkah berikutnya.
+                    _log_frame_error("update")
                 sim_acc -= FIXED_DT_MS
                 sim_steps += 1
             if sim_steps >= MAX_CATCHUP:
@@ -427,7 +467,12 @@ def main():
 
             _gambar_panel(game)
             frame_timer.start("draw")
-            game.draw()
+            try:
+                game.draw()
+            except Exception:
+                # Sama seperti update: render satu frame gagal tidak
+                # boleh menutup aplikasi. Log lalu lanjutkan.
+                _log_frame_error("draw")
             perf.PHASES.mark("hud")
             hud.draw(screen, getattr(game, "animation_time", 0))
             perf.PHASES.end()
