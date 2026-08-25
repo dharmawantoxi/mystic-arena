@@ -71,6 +71,24 @@ Mekanik baru yang didukung engine: `evasion`, `damage block`,
 [docs/item_forge_tier1.png](docs/item_forge_tier1.png) &
 [docs/item_forge_tier2.png](docs/item_forge_tier2.png).
 
+## Tactical Commands & Achievement
+
+Perintah taktis untuk semua hero biru (tombol di panel kanan /
+hotkey): **GATHER [G]**, **PROTECT TOWER [T]**, **PROTECT CASTLE
+[C]**, **ATTACK BOSS [B]**, dan **ATTACK DAMAGE DEALER [D]** —
+semua hero fokus menyerang hero musuh dengan total damage terbanyak
+(ditrack lewat `hero.damage_dealt` di [_entity.py](_entity.py)).
+
+Achievement hanya dihitung saat **hero membunuh hero lain, mini
+boss, atau true boss** (pukulan terakhir harus dari hero). Popup
+achievement & combo muncul **di map** (arena), bukan di panel —
+kotak notifikasi & kill feed sudah dihapus, panel kanan berisi
+command saja. Lihat [tactical_commands.py](tactical_commands.py).
+
+Uji: `python tools/test_gale_morgath.py`,
+`python tools/test_achievement_command.py`,
+`python tools/test_sidepanel.py`.
+
 Uji: `python tools/test_item_shop.py`,
 `python tools/test_item_tier2.py`,
 `python tools/test_tier2_ingame.py`.

@@ -805,7 +805,8 @@ ITEM_CATALOG = {
             "attack_speed": 25,
             "hp": 200,
             "hp_regen": 3,
-            "range_bonus": 130,    # hanya untuk hero ranged
+            "range_bonus": 90,     # hanya untuk hero ranged
+                 # (dulu 130 - terlalu OP untuk hero ranged; di-nerf)
         },
         "active": {
             # Gale Leap: otomatis saat HP < 40% - dorong diri ke
@@ -819,10 +820,10 @@ ITEM_CATALOG = {
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": ("+18 Damage, +25 AS, +200 HP, +3 HP/reg, +130 "
+        "desc": ("+18 Damage, +25 AS, +200 HP, +3 HP/reg, +90 "
                  "jangkauan (ranged). Saat HP < 40%: Gale Leap - "
                  "mundur 130px + +55 AS selama 3 dtk (CD 25 dtk)."),
-        "desc_en": ("+18 Damage, +25 AS, +200 HP, +3 HP regen, +130 "
+        "desc_en": ("+18 Damage, +25 AS, +200 HP, +3 HP regen, +90 "
                     "attack range (ranged). Below 40% HP: Gale Leap - "
                     "dash back 130px + +55 AS for 3s (25s CD)."),
         "flavor": "Tombak angin yang mengulur jarak secepat kilat.",

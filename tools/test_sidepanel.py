@@ -25,11 +25,14 @@ dilaporkan pemain:
 
 3. TACTICAL COMMANDS HILANG SAAT 5 HERO DI-SUMMON
    Daftar HERO dulu selalu memakai baris 42 px, jadi 5 hero membuat
-   kotak HEROES 232 px dan mendorong kotak tactical ke bawah sampai
-   melewati batas zona notifikasi - lalu SEMUA tombol command
-   disembunyikan oleh _gambar_tactical. Sekarang: saat 5 hero,
-   baris dipadatkan ke 38 px dan keempat tombol tactical tetap
-   tampil di atas zona notifikasi.
+   kotak HEROES 232 px dan mendorong kotak tactical ke bawah. Sekarang
+   baris dipadatkan ke 38 px dan LIMA tombol tactical (termasuk
+   ATTACK DMG DEALER [D]) tetap tampil.
+
+4. NOTIFIKASI & KILL FEED DIHAPUS (request user)
+   Zona bawah panel kini berisi COMMAND saja - kotak notifikasi dan
+   kill feed tidak lagi digambar; beri_tahu()/catat_kill() jadi
+   no-op dan tombol command boleh memakai ruang zona bawah.
 
 Jalankan:  python3 tools/test_sidepanel.py
 """
@@ -97,7 +100,9 @@ class FakeGame:
         self.enemy_scaling_enabled = False
         self.blue_base = type("B", (), {"shield_active": False})()
         self.heroes = [FakeHero("Kai"), FakeHero("Zia")]
-        self.active_boss = FakeBoss()          # biar 4 tombol tampil
+        self.active_boss = FakeBoss()          # biar tombol boss tampil
+        # Hero musuh hidup -> tombol ATTACK DMG DEALER tampil
+        self.ai = type("A", (), {"heroes": [FakeHero("Musuh")]})()
         self.popup_target = None
         self.build_popup_slot = None
         self.selected_hero = None
@@ -154,7 +159,7 @@ def main():
     cek("gold/level/wave tergambar (panel tidak polos)",
         not sama_pixel(area_panel(), latar))
     for k in ("pause", "gather", "protect_tower", "protect_castle",
-              "attack_boss"):
+              "attack_boss", "attack_damage_dealer"):
         cek("tombol %s visible" % k, panel.buttons[k].visible)
 
     # 4 tombol command terlihat -> posisi final dari draw, bukan
@@ -164,7 +169,8 @@ def main():
         g_rect.y < 430)
 
     print("\n3. TIDAK ADA TOMBOL YANG MENELAN KLIK TETANGGANYA")
-    for k in ("gather", "protect_tower", "protect_castle", "attack_boss"):
+    for k in ("gather", "protect_tower", "protect_castle", "attack_boss",
+              "attack_damage_dealer"):
         hasil = panel.hit_test(pusat(panel.buttons[k].rect), game=game)
         cek("tengah %s -> '%s'" % (k, k), hasil == k)
 
@@ -172,7 +178,8 @@ def main():
     print("   bukan tembus ke command di baliknya")
     game.popup_target = object()          # popup upgrade tower (300x360)
     panel.draw(FULL, game, None, 16)      # gambar ulang dgn popup terbuka
-    for k in ("gather", "protect_tower", "protect_castle", "attack_boss"):
+    for k in ("gather", "protect_tower", "protect_castle", "attack_boss",
+              "attack_damage_dealer"):
         hasil = panel.hit_test(pusat(panel.buttons[k].rect), game=game)
         cek("tengah %s saat popup terbuka -> None" % k, hasil is None)
     cek("tombol JEDA tetap hidup saat popup terbuka",
@@ -208,7 +215,7 @@ def main():
     cek("tactical hidden saat victory",
         all(not panel.buttons[k].visible
             for k in ("gather", "protect_tower", "protect_castle",
-                      "attack_boss")))
+                      "attack_boss", "attack_damage_dealer")))
     for k in ("gather", "protect_tower"):
         hasil = panel.hit_test(pusat(panel.buttons[k].rect), game=game)
         cek("tengah %s saat victory -> None" % k, hasil is None)
@@ -232,11 +239,13 @@ def main():
     game.heroes = [FakeHero("H%d" % i) for i in range(5)]
     panel._isi_at = 0.0          # paksa segar (draw di-throttle 250 ms)
     panel.draw(FULL, game, None, 16)
-    batas = PANEL.bottom - P.ZONA_BAWAH - 8
-    for k in ("gather", "protect_tower", "protect_castle", "attack_boss"):
+    # Zona notifikasi sudah dihapus - tombol boleh sampai dasar panel
+    batas = PANEL.bottom - 8
+    for k in ("gather", "protect_tower", "protect_castle", "attack_boss",
+              "attack_damage_dealer"):
         b = panel.buttons[k]
         cek("tombol %s visible dengan 5 hero" % k, b.visible)
-        cek("tombol %s di atas zona notifikasi" % k,
+        cek("tombol %s di dalam panel" % k,
             b.rect.bottom <= batas)
         hasil = panel.hit_test(pusat(b.rect), game=game)
         cek("tengah %s -> '%s' dengan 5 hero" % (k, k), hasil == k)

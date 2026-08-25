@@ -5159,6 +5159,13 @@ class Boss(TowerDebuffMixin):
         self.hp -= effective_damage
         self.hurt_flash_timer = 8
 
+        # Catat damage dealer (command taktis ATTACK DAMAGE DEALER).
+        try:
+            from _entity import credit_hero_damage
+            credit_hero_damage(source, effective_damage)
+        except Exception:
+            pass
+
         try:
             import __main__
             if hasattr(__main__, 'game_instance'):
@@ -5177,6 +5184,9 @@ class Boss(TowerDebuffMixin):
             self.hp = 0
             self.alive = False
             self.defeated = True
+            # Atribusi kill untuk achievement (hero kill mini boss /
+            # true boss): simpan siapa yang memberi pukulan terakhir.
+            self._killed_by = source
             # Bersihkan semua debuff (burn/slow/dll.) saat mati
             self.clear_tower_debuffs()
 

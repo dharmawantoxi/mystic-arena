@@ -694,45 +694,28 @@ class EffectManager:
 
     def draw_ui(self, surface, screen_w, screen_h):
         """Draw UI-space effects (tidak ikut shake)"""
-        # Combo & kill feed pindah ke panel kanan kalau tersedia -
-        # keduanya dulu melintas di tengah/atas arena.
-        try:
-            from mobile import sidepanel as _sp
-            _panel = _sp.panel_aktif()
-        except Exception:
-            _panel = False
-        if not _panel:
-            self.combo_counter.draw(surface, screen_w, screen_h)
+        # ═══ NOTIFIKASI DIHAPUS (request user) ═══
+        # Panel kanan kini berisi COMMAND saja - kill feed & kotak
+        # notifikasi tidak lagi digambar di sana. Combo counter dan
+        # popup ACHIEVEMENT tetap tampil DI MAP (layar arena), sama
+        # seperti feedback command taktis.
+        self.combo_counter.draw(surface, screen_w, screen_h)
         self.wave_announcer.draw(surface, screen_w, screen_h)
-        if not _panel:
-            self.kill_feed.draw(surface, screen_w, screen_h)
-        # Achievement juga pindah ke panel kanan kalau tersedia.
-        if not _panel:
-            self.achievement.draw(surface, screen_w, screen_h)
+        self.achievement.draw(surface, screen_w, screen_h)
 
     # ═══ TIER 2 HELPER METHODS ═══
     def unlock_achievement(self, title, description, icon="star"):
-        """Unlock an achievement"""
+        """Unlock an achievement - popup tampil DI MAP (bukan panel)."""
         self.achievement.unlock(title, description, icon)
-        try:
-            from mobile import sidepanel as _sp
-            _sp.beri_tahu_global("★ %s" % title, (255, 205, 90), 3600)
-        except Exception:
-            pass
 
     def register_kill(self, killer_name="Tower", victim_name="Enemy",
                       killer_team="blue"):
-        """Register a kill (untuk combo + kill feed)"""
+        """Register a kill (combo counter di map).
+
+        Kill feed DIHAPUS (request user: notifikasi dihapus, panel
+        diisi command saja) - method tetap ada untuk combo counter.
+        """
         self.combo_counter.add_kill()
-        self.kill_feed.add_kill(killer_name, victim_name, killer_team)
-        # Salin ke panel kanan kalau ada; di sana tempatnya tetap dan
-        # tidak menutupi arena. Kill feed di atas peta tetap jalan
-        # untuk layar tanpa panel.
-        try:
-            from mobile import sidepanel as _sp
-            _sp.catat_kill_global(killer_name, victim_name, killer_team)
-        except Exception:
-            pass
 
     def announce_wave(self, wave_num):
         """Trigger wave announcement"""

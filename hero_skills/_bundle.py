@@ -111,7 +111,9 @@ class BaseSkill:
             dist = math.hypot(e.x - self.hero.x, e.y - self.hero.y)
             if dist <= range_val:
                 damage = int(self.hero.skill_damage * damage_multiplier)
-                e.take_damage(damage, self.hero.team)
+                # source=hero supaya damage skill ikut tercatat di
+                # hero.damage_dealt (command ATTACK DAMAGE DEALER).
+                e.take_damage(damage, self.hero.team, source=self.hero)
                 hit_count += 1
         return hit_count
 

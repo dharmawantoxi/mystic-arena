@@ -36,6 +36,25 @@ except ImportError:
 _BULLET_SPRITE_CACHE = {}
 
 
+def credit_hero_damage(source, amount):
+    """Catat damage yang dihasilkan seorang HERO di ``source.damage_dealt``.
+
+    Dipanggil dari ``take_damage()`` semua entitas (hero, minion,
+    tower, castle, boss) ketika penyerangnya diketahui hero - dipakai
+    command taktis ATTACK DAMAGE DEALER untuk mencari hero musuh
+    dengan damage terbanyak. Damage skill yang tidak meneruskan
+    ``source=`` tidak tercatat; basic attack / projectile / on-hit /
+    AOE skill sudah cukup mewakili "damage dealer" sebenarnya.
+    """
+    if not amount or amount <= 0 or source is None:
+        return
+    try:
+        source.damage_dealt = getattr(source, "damage_dealt", 0) \
+            + int(amount)
+    except Exception:
+        pass
+
+
 class _DummyBulletTarget:
     __slots__ = ("x", "y", "alive")
 
@@ -970,10 +989,14 @@ class Tower:
         # Then HP
         if remaining_damage > 0:
             self.hp -= remaining_damage
+            # Catat damage dealer (command ATTACK DAMAGE DEALER).
+            credit_hero_damage(source, remaining_damage)
             if self.hp <= 0:
                 self.hp = 0
                 if self.alive:
                     self.alive = False
+                    # Atribusi kill (achievement hanya untuk hero).
+                    self._killed_by = source
                     # Menara HANCUR: satu suara global untuk SEMUA
                     # jenis (archer/cannon/ice/mage sama).
                     try:
@@ -1668,6 +1691,9 @@ class Castle:
                 effective_damage = int(effective_damage * (1.0 - reduction))
 
         self.hp -= effective_damage
+
+        # Catat damage dealer (command ATTACK DAMAGE DEALER).
+        credit_hero_damage(source, effective_damage)
 
         try:
             import __main__
@@ -3189,7 +3215,13 @@ class Hero(TowerDebuffMixin):
 
         self.kills = 0
         self.deaths = 0
-        # ═══ PROJECTILE SYSTEM (untuk ranged heroes) ═══
+        # Total damage yang dihasilkan hero ini (basic attack +
+        # projectile + on-hit + AOE skill) - dipakai command taktis
+        # ATTACK DAMAGE DEALER untuk fokus ke damage dealer musuh.
+        self.damage_dealt = 0
+        # Hero yang memberikan pukulan terakhir (atribusi kill
+        # achievement: hero kill hero / mini boss / true boss).
+        self._killed_by = None
         self.projectiles = []
         # ═══ AUTO-CAST SETTINGS ═══
         # ═══ AUTO-CAST SELALU AKTIF (v27) ═══
@@ -4034,8 +4066,15 @@ class Hero(TowerDebuffMixin):
                                                 None)
 
             # Attack cooldown efektif (dipanjangkan saat kena debuff
-            # attack-speed dari Ice Tower)
-            self.attack_timer = self._eff_attack_cd(self.attack_cooldown)
+            # attack-speed dari Ice Tower). Dihitung dari BASE
+            # (_base_attack_cd), lalu snapshot-nya disimpan ke
+            # _attack_cd_effective supaya renderer boss-hero (pola
+            # ``timer >= attack_cooldown - 1``) tetap mendeteksi
+            # serangan walau item attack speed memperpendek reload.
+            _eff_cd = self._eff_attack_cd(
+                getattr(self, "_base_attack_cd", self.attack_cooldown))
+            self.attack_timer = _eff_cd
+            self._attack_cd_effective = _eff_cd
 
             # Suara serangan dasar: tebasan (melee) atau
             # petikan busur / lesatan sihir (ranged), dipilih
@@ -4239,6 +4278,9 @@ class Hero(TowerDebuffMixin):
 
         self.hp -= damage
 
+        # ═══ CATAT DAMAGE DEALER (command ATTACK DAMAGE DEALER) ═══
+        credit_hero_damage(source, damage)
+
         # ═══ NOTIFY ITEM (Leviathan combat timer + Static Charge +
         #     Thornmail reflect) ═══
         if inv is not None and damage > 0:
@@ -4261,6 +4303,10 @@ class Hero(TowerDebuffMixin):
             self.hp = 0
             self.alive = False
             self.deaths += 1
+            # Atribusi kill untuk achievement (hero kill hero):
+            # simpan siapa yang memberi pukulan terakhir.
+            if source is not None and source is not self:
+                self._killed_by = source
             # Bersihkan semua debuff (burn/slow/dll.) saat mati
             self.clear_tower_debuffs()
             # ═══ HOLY RAPIER RONTOK ═══
@@ -4283,6 +4329,8 @@ class Hero(TowerDebuffMixin):
         # anti-heal yang tersisa dari kehidupan sebelumnya.
         self.clear_tower_debuffs()
         self.alive = True
+        # Atribusi kill kehidupan sebelumnya tidak berlaku lagi.
+        self._killed_by = None
         # Pastikan max_hp sudah memperhitungkan item (Holy Rapier
         # hilang saat mati, jadi max_hp bisa berubah).
         if hasattr(self, "items"):
@@ -4790,6 +4838,28 @@ class Hero(TowerDebuffMixin):
     def timer(self, value):
         self.attack_timer = value
 
+    # ═══ ATTACK COOLDOWN RENDER-FACING ═══
+    # Renderer boss-hero (mis. beam petir Morgath) mendeteksi
+    # serangan dengan pola ``timer >= attack_cooldown - 1``.
+    # ``timer`` (alias attack_timer) diisi nilai reload EFEKTIF
+    # (base + attack-speed item: Gale Pike, Moon Shard, dll) saat
+    # hero menyerang - BISA LEBIH PENDEK dari base. Kalau atribut
+    # ini masih menampilkan nilai base, kondisi deteksi tidak
+    # pernah terpenuhi -> animasi serangan + projectile boss-hero
+    # (ranged) HILANG setelah memakai item attack speed.
+    # Jadi: getter mengembalikan snapshot reload efektif terakhir
+    # (di-update di _do_attack), setter menyimpan nilai base yang
+    # dipakai skill buff (Focus Fire, Warpath) & _eff_attack_cd.
+    @property
+    def attack_cooldown(self):
+        """Reload efektif serangan terakhir (kompatibel Boss)."""
+        return (getattr(self, "_attack_cd_effective", 0)
+                or getattr(self, "_base_attack_cd", 45))
+
+    @attack_cooldown.setter
+    def attack_cooldown(self, value):
+        self._base_attack_cd = value
+
     @property
     def boss_type(self):
         """Alias Boss.boss_type -> Hero.hero_type"""
@@ -5217,6 +5287,9 @@ class Minion(TowerDebuffMixin):
                     damage * (1.0 + min(1.0, shred * 0.06))))
         self.hp -= damage
 
+        # Catat damage dealer (command ATTACK DAMAGE DEALER).
+        credit_hero_damage(source, damage)
+
         # ═══ TAMBAH: Damage number popup ═══
         # Import dilakukan lazily untuk avoid circular import
         try:
@@ -5240,6 +5313,8 @@ class Minion(TowerDebuffMixin):
         if self.hp <= 0:
             self.hp = 0
             self.alive = False
+            # Atribusi kill (achievement hanya untuk hero pembunuh).
+            self._killed_by = source
             # Bersihkan semua debuff (burn/slow/dll.) saat mati
             self.clear_tower_debuffs()
             # Suara kematian GLOBAL: semua jenis minion (goblin, orc,
