@@ -20,9 +20,6 @@ save_slot*.json
 crash_log.txt
 *.log
 
-# ═══ Konfigurasi build (kredensial / id proyek cloud) ═══
-android_games_app_id.txt
-
 # ═══ Editor / OS ═══
 .vscode/
 .idea/

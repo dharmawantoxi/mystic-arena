@@ -819,10 +819,11 @@ class SaveManager:
             except Exception as e:
                 print(f"[SAVE] Auto-export skipped: {e}")
 
-            # ── AUTO-UPLOAD CLOUD (Google Play Games Saved Games) ──
-            # Setiap save lokal juga dikirim ke cloud kalau pemain sudah
-            # masuk Play Games. Non-blocking & tanpa dialog; kegagalan
-            # cloud TIDAK boleh menggagalkan atau menghilangkan save.
+            # ── AUTO-UPLOAD CLOUD (server REST milik pemain) ──
+            # Setiap save lokal juga dikirim ke cloud server kalau
+            # MYSTIC_CLOUD_URL sudah diset. Non-blocking & tanpa dialog;
+            # kegagalan cloud TIDAK boleh menggagalkan atau menghilangkan
+            # save lokal.
             try:
                 from mobile.cloud_save import manager as _cloud
                 _cloud.auto_upload()

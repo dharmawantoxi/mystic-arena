@@ -1,52 +1,59 @@
 # ================================================================
 # mobile/cloud_save.py
-# Cloud Save Mystic Arena → Google Play Games Saved Games (Snapshots).
+# Cloud Save Mystic Arena → backend HTTP/REST yang kamu kontrol.
 #
-# ARSITEKTUR
-# ----------
-#   Python (modul ini)  <-- file-->  Java CloudSaveBridge  →  Play Games v2
+# KENAPA SERVER REST, BUKAN GOOGLE PLAY GAMES?
+# --------------------------------------------
+# Google Play Games Saved Games WAJIB punya Google Play Console.
+# Karena tidak memakai Play Console, cloud save memakai server REST
+# sederhana yang dijalankan sendiri:
+#     tools/cloud_server/server.py   (Python stdlib, tanpa dependency)
 #
-#   * Python tidak perlu meng-implementasikan interface Java.
-#   * Java menulis hasil setiap operasi ke:
-#         <workdir>/cloud_status.json
-#     Python mem-poll file itu saat frame game (murah, <1 KB).
-#   * File save sementara (upload/download) juga ditaruh di <workdir>.
+# ALUR
+# ----
+#   1. Game membaca:
+#        MYSTIC_CLOUD_URL        -> mis. https://myserver.example.com
+#        MYSTIC_CLOUD_API_KEY    -> (opsional) kunci bersama server
+#        MYSTIC_CLOUD_PLAYER_ID  -> (opsional) identitas pemain
+#   2. Kalau MYSTIC_CLOUD_URL belum diisi, cloud NONAKTIF (ame tetap
+#      jalan; save lokal + Android Auto Backup tetap dipakai).
+#   3. Identitas pemain:
+#        - Android: akun Google utama di HP (via AccountManager).
+#        - Desktop/CI: MYSTIC_CLOUD_PLAYER_ID, atau ID stabil yang
+#          dibuat otomatis di folder save.
+#   4. auto_upload() dipanggil tiap SaveManager.save(); upload dijalankan
+#      di thread background supaya game tidak berhenti.
+#   5. upload_payload/download_payload dipanggil tombol manual di UI.
+#   6. poll() dipanggil tiap frame untuk menyampaikan hasil operasi ke
+#      callback UI.
 #
-# PERILAKU
-# --------
-#   1. start()  : init bridge Android. Kalau Play Games / APP_ID belum
-#      siap, fitur dianggap NONAKTIF (game tetap jalan, save lokal &
-#      Auto Backup tetap dipakai seperti biasa).
-#   2. check_auth(): cek apakah pemain sudah masuk Play Games
-#      (v2 melakukan sign-in otomatis saat game diluncurkan).
-#   3. auto_upload(): dipanggil setiap SaveManager.save() (dipicu dari
-#      _system.py) — non-blocking, hanya jalan kalau sudah masuk.
-#   4. download_payload()/upload_payload(): tombol manual di Settings.
-#   5. poll(): baca status dari bridge; harus dipanggil dari frame
-#      game (Menu.update) supaya callback/percobaan cloud jalan.
-#
-# TANPA ANDROID / TANPA GOOGLE PLAY GAMES -> semua metode jadi no-op
-# yang aman dan tidak pernah melempar exception. Save lokal tidak akan
-# pernah dirusak oleh fitur ini.
+# GARANSI KEAMANAN SAVE LOKAL
+# ---------------------------
+#   - Semua operasi cloud NON-BLOCKING di thread, dan selalu try/except.
+#   - Gagal upload/download TIDAK pernah menghapus save lokal.
+#   - Payload hanya berisi data save; magic + checksum divalidasi
+#     (reuse backup_manager) supaya file rusak ditolak.
 # ================================================================
 
+import hashlib
 import json
 import os
 import sys
-import tempfile
 import threading
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 
 CLOUD_MAGIC = "MYSTIC_ARENA_CLOUD"
 CLOUD_VERSION = 1
 
-SNAPSHOT_NAME = "mystic_arena_main"
-STATUS_FILENAME = "cloud_status.json"
-BRIDGE_CLASS = "io.github.dharmawantoxi.mysticarena.CloudSaveBridge"
-
 # Bisa dimatikan total: MYSTIC_CLOUD_SAVE=0
 _DEFAULT_ENABLED = os.environ.get("MYSTIC_CLOUD_SAVE", "1") != "0"
+
+# Untuk jalur Google (hanya identitas; bukan Play Console)
+GOOGLE_ACCOUNT_TYPE = "com.google"
 
 
 def is_android():
@@ -57,15 +64,27 @@ def is_android():
     return hasattr(sys, "getandroidapilevel")
 
 
-def work_dir():
-    """Folder boleh-tulis untuk status file + file sementara cloud.
+def _env(name, default=""):
+    return (os.environ.get(name, default) or "").strip()
 
-    Di Android: <ANDROID_PRIVATE>/cloud_save (di luar folder 'app'
-    hasil ekstrak p4a, jadi selamat dari update).
-    Di desktop: folder temp — hanya dipakai untuk uji.
-    """
-    base = os.environ.get("ANDROID_PRIVATE") or tempfile.gettempdir()
-    d = os.path.join(base, "mystic_cloud")
+
+def server_url():
+    """Base URL server cloud. Tanpa ini cloud tidak aktif."""
+    return _env("MYSTIC_CLOUD_URL").rstrip("/")
+
+
+def api_key():
+    return _env("MYSTIC_CLOUD_API_KEY")
+
+
+def is_configured():
+    return bool(server_url())
+
+
+def _stable_dir():
+    """Folder tempat menyimpan cloud_player_id.txt (stabil antar update)."""
+    base = os.environ.get("ANDROID_PRIVATE") or os.getcwd()
+    d = os.path.join(base, "saves")
     try:
         os.makedirs(d, exist_ok=True)
         return d
@@ -73,68 +92,187 @@ def work_dir():
         return base
 
 
-def status_file():
-    return os.path.join(work_dir(), STATUS_FILENAME)
-
-
-def _read_json(path):
+def _google_account_email():
+    """Akun Google utama di HP (Android) — tanpa Play Console."""
+    if not is_android():
+        return ""
     try:
-        with open(path, "r", encoding="utf-8") as fh:
-            return json.load(fh)
-    except Exception:
-        return None
-
-
-# ================================================================
-# BRIDGE ANDROID (pyjnius)
-# ================================================================
-
-class _AndroidBridge:
-    """Pembungkus tipis di atas CloudSaveBridge.java (pyjnius)."""
-
-    def __init__(self):
-        self._bridge = None
-        self._activity = None
-        self._workdir = None
-
-    def init(self):
         from jnius import autoclass
         PythonActivity = autoclass("org.kivy.android.PythonActivity")
-        self._activity = PythonActivity.mActivity
-        bridge = autoclass(BRIDGE_CLASS)
-        self._bridge = bridge
-        self._workdir = work_dir()
-        bridge.init(self._activity, self._workdir)
-        # Tersedia hanya kalau kelas ada DAN Play Games benar-benar
-        # berhasil diinisialisasi (APP_ID & Play Services tersedia).
-        available = bool(bridge.isAvailable())
-        initialized = False
+        AccountManager = autoclass("android.accounts.AccountManager")
+        activity = PythonActivity.mActivity
+        mgr = AccountManager.get(activity)
+        accounts = mgr.getAccountsByType(GOOGLE_ACCOUNT_TYPE)
+        if accounts is not None and len(accounts) > 0:
+            email = getattr(accounts[0], "name", None)
+            if email:
+                return str(email)
+    except Exception as exc:
+        print("[CLOUD] baca akun Google gagal: %s" % exc)
+    return ""
+
+
+def has_account_permission():
+    """Cek izin GET_ACCOUNTS di Android (desktop: True)."""
+    if not is_android():
+        return True
+    try:
+        from jnius import autoclass
+        PythonActivity = autoclass("org.kivy.android.PythonActivity")
+        activity = PythonActivity.mActivity
+        granted = activity.checkSelfPermission(
+            "android.permission.GET_ACCOUNTS")
+        return int(granted) == 0
+    except Exception as exc:
+        print("[CLOUD] cek izin akun gagal: %s" % exc)
+        return False
+
+
+def request_account_permission():
+    """
+    Minta izin GET_ACCOUNTS (dialog sistem). Hasilnya dipakai pada
+    pengecekan berikutnya (pemain mengetuk lagi setelah memberi izin).
+    Di desktop: False (tidak perlu).
+    """
+    if not is_android():
+        return False
+    try:
+        from jnius import autoclass
+        PythonActivity = autoclass("org.kivy.android.PythonActivity")
+        activity = PythonActivity.mActivity
+        activity.requestPermissions(
+            ["android.permission.GET_ACCOUNTS"], 4123)
+        return True
+    except Exception as exc:
+        print("[CLOUD] minta izin akun gagal: %s" % exc)
+        return False
+
+
+def player_id():
+    """
+    Identitas pemain untuk server.
+    Prioritas: env MYSTIC_CLOUD_PLAYER_ID > akun Google Android >
+    ID stabil lokal (dashboard/test).
+    """
+    override = _env("MYSTIC_CLOUD_PLAYER_ID")
+    if override:
+        return override
+    gmail = _google_account_email()
+    if gmail:
+        return "g:" + gmail
+    return _stable_fallback_id()
+
+
+def _stable_fallback_id():
+    try:
+        path = os.path.join(_stable_dir(), "cloud_player_id.txt")
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as fh:
+                value = fh.read().strip()
+                if value:
+                    return value
+        value = "local-" + uuid.uuid4().hex[:12]
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(value)
+        return value
+    except Exception:
+        return "local-unknown"
+
+
+# ================================================================
+# HTTP INDEPENDENT (stdlib, dipakai di Android & desktop)
+# ================================================================
+
+def _http_request(method, url, body=None, headers=None, timeout=15):
+    headers = headers or {}
+    data = None
+    if body is not None:
+        if isinstance(body, (dict, list)):
+            data = json.dumps(body).encode("utf-8")
+        elif isinstance(body, str):
+            data = body.encode("utf-8")
+        else:
+            data = body
+        headers.setdefault("Content-Type", "application/json")
+    req = urllib.request.Request(url, data=data, method=method,
+                                 headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read()
+            status = getattr(resp, "status", 200)
+            content_type = resp.headers.get("Content-Type", "")
+            try:
+                decoded = raw.decode("utf-8")
+            except Exception:
+                decoded = raw
+            if "json" in content_type and decoded:
+                try:
+                    return status, json.loads(decoded)
+                except Exception:
+                    return status, decoded
+            return status, decoded
+    except urllib.error.HTTPError as e:
         try:
-            initialized = bool(bridge.isInitialized())
+            body = e.read().decode("utf-8", "replace")
         except Exception:
-            pass
-        return bool(available and initialized)
+            body = ""
+        return e.code, body
+    except Exception as exc:
+        return -1, str(exc)
 
-    def is_signed_in(self):
+
+def _headers_for(pid):
+    headers = {
+        "X-Mystic-Player-Id": pid,
+        "Accept": "application/json",
+    }
+    key = api_key()
+    if key:
+        headers["X-Mystic-Api-Key"] = key
+    return headers
+
+
+def upload_to_server(payload, pid):
+    """
+    PUT /api/v1/save dengan body = envelope cloud.
+    Return (status, message). status 200/201 = sukses.
+    """
+    if not server_url():
+        return 0, "MYSTIC_CLOUD_URL belum diset"
+    envelope = {
+        "magic": CLOUD_MAGIC,
+        "version": CLOUD_VERSION,
+        "exported_at": time.time(),
+        "payload": payload,
+    }
+    url = server_url() + "/api/v1/save"
+    status, body = _http_request(
+        "PUT", url, body=envelope, headers=_headers_for(pid))
+    if status in (200, 201):
+        return status, "Save terunggah ke cloud"
+    return status, ("Upload gagal (%s): %s" % (status, body
+                                               if isinstance(body, str)
+                                               else str(body)))
+
+
+def download_from_server(pid):
+    """
+    GET /api/v1/save?player_id=<pid>. Return (status, json/payload).
+    """
+    if not server_url():
+        return 0, "MYSTIC_CLOUD_URL belum diset"
+    url = server_url() + "/api/v1/save?player_id=" + urllib.parse.quote(pid)
+    status, body = _http_request("GET", url, headers=_headers_for(pid))
+    if status == 200:
+        if isinstance(body, dict):
+            return status, body
         try:
-            return bool(self._bridge.isSignedIn())
+            return status, json.loads(body)
         except Exception:
-            return False
-
-    def check_auth(self, op_id):
-        self._bridge.checkAuthAsync(op_id)
-
-    def sign_in(self, op_id):
-        self._bridge.signInAsync(op_id)
-
-    def upload(self, src_path, op_id):
-        self._bridge.uploadAsync(src_path, op_id)
-
-    def download(self, dst_path, op_id):
-        self._bridge.downloadAsync(dst_path, op_id)
-
-    def read_status(self):
-        return _read_json(status_file())
+            return 400, "Respons server bukan JSON"
+    if status == 404:
+        return 404, "Tidak ada save cloud untuk akun ini"
+    return status, ("Download gagal (%s): %s" % (status, body))
 
 
 # ================================================================
@@ -173,9 +311,9 @@ class CloudSaveManager:
     """
     Satu instance global (di-export sebagai `manager` di bawah).
 
-    Semua operasi berjalan asinkron lewat Java (Task Play Games);
-    Python hanya mengirim perintah dan menunggu `poll()` menyelesaikan
-    operasi yang sedang berjalan.
+    Operasi upload/download berjalan di thread background; hasilnya
+    disimpan di antrean kecil dan disampaikan ke callback oleh poll()
+    (dipanggil tiap frame dari Menu.update / main.py).
     """
 
     def __init__(self, enabled=True):
@@ -183,22 +321,14 @@ class CloudSaveManager:
         self._inited = False
         self._available = False
         self._signed_in = False
+        self._pid = ""
+        self._url = ""
 
-        self._bridge = _AndroidBridge() if is_android() else None
         self._lock = threading.Lock()
-
-        # operasi yang sedang berjalan (maksimum 1)
         self._busy = False
-        self._op_id = None
-        self._op_kind = None
-        self._op_callback = None
-        self._op_aux = None
-
-        # status ops yang sudah diproses (anti double-poll)
-        self._seen_ops = set()
-
-        # pesan terakhir untuk UI
-        self._last_message = "Cloud save: siap digunakan di Android"
+        self._pending = []          # (callback, result) menunggu poll
+        self._last_auto_ts = 0.0
+        self._last_message = "Cloud: belum dikonfigurasi"
         self._last_ok = True
 
     # ------------------------------------------------------------
@@ -220,147 +350,124 @@ class CloudSaveManager:
     def last_ok(self):
         return bool(self._last_ok)
 
+    def player_id(self):
+        return self._pid
+
     # ------------------------------------------------------------
     # INIT
     # ------------------------------------------------------------
 
     def start(self):
-        """Init bridge Android sekali. Tidak pernah melempar exception."""
+        """Baca konfigurasi cloud sekali. Tidak pernah crash."""
         if self._inited:
             return self._available
         self._inited = True
         if not self.enabled:
             self._available = False
-            self._set_status(True, "Cloud save dimatikan (MYSTIC_CLOUD_SAVE=0)")
+            self._signed_in = False
+            self._last_message = "Cloud dimatikan (MYSTIC_CLOUD_SAVE=0)"
             return False
-        if self._bridge is None:
-            self._available = False
-            self._set_status(True, "Cloud save: hanya aktif di Android")
-            return False
-        try:
-            ok = self._bridge.init()
-            self._available = bool(ok)
-            self._signed_in = bool(
-                self._bridge.is_signed_in()) if ok else False
-            if ok:
-                self._set_status(
-                    True, "Cloud save siap (Google Play Games)")
-            else:
-                self._set_status(
-                    False, "Cloud save belum tersedia — cek Play Games / APP_ID")
-        except Exception as e:
+
+        self._url = server_url()
+        self._pid = player_id()
+
+        if not self._url:
             self._available = False
             self._signed_in = False
-            self._set_status(False, "Cloud save tidak tersedia: %s" % e)
-        return self._available
+            self._last_message = "Cloud: MYSTIC_CLOUD_URL belum diset"
+            print("[CLOUD] URL server belum diset — cloud NONAKTIF")
+            return False
+
+        if not self._pid:
+            self._available = False
+            self._signed_in = False
+            self._last_message = "Cloud: identitas pemain belum tersedia"
+            return False
+
+        self._available = True
+        self._signed_in = True
+        self._last_message = "Cloud server siap"
+        print("[CLOUD] URL=%s player=%s" % (self._url, self._pid))
+        return True
 
     # ------------------------------------------------------------
-    # AUTH
+    # AUTH (server REST: tidak ada dialog; identitas sudah siap)
     # ------------------------------------------------------------
 
     def check_auth(self, callback=None):
-        if not self._ready():
-            if callback:
+        """Cek konfigurasi + identitas. Tidak memanggil server."""
+        if callback:
+            if not self._ready():
                 callback(_err_result("check", 1, self._last_message))
-            return
-        op_id = self._start_op("check", callback)
-        if op_id:
-            try:
-                self._bridge.check_auth(op_id)
-            except Exception as e:
-                self._fail_op("check", op_id, 2, str(e))
+            else:
+                callback(_ok_result("check", "Cloud server siap"))
 
     def sign_in(self, callback=None):
-        if not self._ready():
-            if callback:
-                callback(_err_result("signin", 1, self._last_message))
-            return
-        op_id = self._start_op("signin", callback)
-        if op_id:
-            try:
-                self._bridge.sign_in(op_id)
-            except Exception as e:
-                self._fail_op("signin", op_id, 3, str(e))
+        """Di server REST tidak ada 'sign-in' dialog; panggil check_auth."""
+        self.check_auth(callback)
+
+    def has_account_permission(self):
+        return has_account_permission()
+
+    def request_account_permission(self):
+        return request_account_permission()
 
     # ------------------------------------------------------------
     # UPLOAD / DOWNLOAD PAYLOAD
     # ------------------------------------------------------------
 
     def upload_payload(self, payload, callback=None):
-        """
-        Unggah payload (dict backup lokal) sebagai snapshot cloud.
-        Payload dibungkus envelope cloud untuk validasi saat download.
-        """
         if not self._ready():
             if callback:
                 callback(_err_result("upload", 1, self._last_message))
-            return
-        if not self._signed_in:
-            if callback:
-                callback(_err_result(
-                    "upload", 4, "Masuk ke Google Play Games dulu"))
             return
         if not payload or (not payload.get("slots")
                            and not payload.get("settings")):
             if callback:
                 callback(_err_result(
-                    "upload", 5, "Tidak ada save untuk diunggah"))
+                    "upload", 2, "Tidak ada save untuk diunggah"))
             return
-
-        op_id = self._start_op("upload", callback)
-        if not op_id:
+        if self._busy:
+            if callback:
+                callback(_err_result(
+                    "upload", 3, "Operasi cloud lain sedang berjalan"))
             return
-        dst = os.path.join(work_dir(), "upload_%s.json" % op_id)
-        self._op_aux = {"file": dst, "delete": True}
-        try:
-            envelope = {
-                "magic": CLOUD_MAGIC,
-                "version": CLOUD_VERSION,
-                "exported_at": time.time(),
-                "payload": payload,
-            }
-            with open(dst, "w", encoding="utf-8") as fh:
-                json.dump(envelope, fh, ensure_ascii=False)
-            self._bridge.upload(dst, op_id)
-        except Exception as e:
-            self._fail_op("upload", op_id, 6, str(e))
+        self._set_busy(True)
+        self._last_message = "Mengunggah save ke cloud…"
+        self._start_thread("upload", payload, callback)
 
     def download_payload(self, callback=None, apply=False):
-        """
-        Unduh snapshot cloud ke file sementara lalu (opsional) terapkan
-        ke save lokal. Callback selalu menerima dict result.
-        """
         if not self._ready():
             if callback:
                 callback(_err_result("download", 1, self._last_message))
             return
-        if not self._signed_in:
+        if self._busy:
             if callback:
                 callback(_err_result(
-                    "download", 7, "Masuk ke Google Play Games dulu"))
+                    "download", 3, "Operasi cloud lain sedang berjalan"))
             return
+        self._set_busy(True)
+        self._last_message = "Mengunduh save dari cloud…"
+        self._start_thread("download", {"apply": bool(apply)}, callback)
 
-        op_id = self._start_op("download", callback)
-        if not op_id:
-            return
-        dst = os.path.join(work_dir(), "download_%s.json" % op_id)
-        self._op_aux = {"file": dst, "apply": bool(apply), "delete": True}
-        try:
-            self._bridge.download(dst, op_id)
-        except Exception as e:
-            self._fail_op("download", op_id, 8, str(e))
-
-    def auto_upload(self, callback=None):
+    def auto_upload(self, callback=None, debounce=8.0):
         """
-        Dipanggil dari SaveManager.save() tiap kali save lokal ditulis.
-        Non-blocking, tidak mengganggu alur save.
+        Dipanggil SaveManager.save(). Upload di background.
+        'debounce' mencegah upload lebih dari 1x per N detik (save
+        bisa dipanggil beberapa kali dalam sesi). Manual upload tidak
+        dibatasi.
         """
         try:
             if not self._inited:
                 self.start()
-            if not self._available or not self._signed_in or self._busy:
+            if not self._available or self._signed_in is False \
+                    or self._busy:
                 return False
-            import backup_manager as bm  # lazy import (hindari siklus)
+            now = time.time()
+            if debounce > 0 and (now - self._last_auto_ts) < debounce:
+                return False
+            self._last_auto_ts = now
+            import backup_manager as bm
             payload = bm.build_backup_payload()
             if payload is None or (not payload.get("slots")
                                    and not payload.get("settings")):
@@ -372,50 +479,20 @@ class CloudSaveManager:
             return False
 
     # ------------------------------------------------------------
-    # POLL (harus dipanggil dari frame game)
+    # POLL
     # ------------------------------------------------------------
 
     def poll(self):
-        if not self._inited or self._bridge is None:
-            return
-        try:
-            status = self._bridge.read_status()
-        except Exception:
-            return
-        if not isinstance(status, dict):
-            return
-        op_id = str(status.get("op_id", "") or "")
-        if not op_id or op_id in self._seen_ops:
-            return
-        self._seen_ops.add(op_id)
-        if len(self._seen_ops) > 32:
-            # Buang yang paling lama; operasi yang sedang jalan
-            # disimpan terakhir karena baru saja ditambah.
-            self._seen_ops = set(list(self._seen_ops)[-16:])
-
-        # Selalu ikuti perubahan status masuk.
-        if "signed_in" in status:
-            signed = bool(status.get("signed_in"))
-            if signed != self._signed_in:
-                self._signed_in = signed
-                if not signed:
-                    self._set_status(
-                        False, "Belum masuk ke Google Play Games")
-
+        """Sampaikan hasil operasi thread ke callback (dari frame game)."""
         with self._lock:
-            matches = (self._busy and op_id == self._op_id)
-            kind = self._op_kind
-            callback = self._op_callback
-            aux = self._op_aux
-
-        if matches:
-            with self._lock:
-                self._busy = False
-                self._op_id = None
-                self._op_kind = None
-                self._op_callback = None
-                self._op_aux = None
-            self._dispatch_result(kind, status, callback, aux)
+            pending = self._pending
+            self._pending = []
+        for callback, result in pending:
+            if callback:
+                try:
+                    callback(result)
+                except Exception as exc:
+                    print("[CLOUD] callback gagal: %s" % exc)
 
     # ------------------------------------------------------------
     # INTERNALS
@@ -424,139 +501,80 @@ class CloudSaveManager:
     def _ready(self):
         if not self._inited:
             self.start()
-        return self._available and self._bridge is not None
+        return self._available and bool(self._pid)
+
+    def _set_busy(self, value):
+        with self._lock:
+            self._busy = bool(value)
 
     def _set_status(self, ok, message):
         self._last_ok = bool(ok)
         self._last_message = message
 
-    def _start_op(self, kind, callback):
-        with self._lock:
-            if self._busy:
-                if callback:
-                    callback(_err_result(
-                        kind, 9, "Operasi cloud lain sedang berjalan"))
-                return None
-            op_id = "op-%s-%s-%s" % (
-                kind, int(time.time() * 1000), uuid.uuid4().hex[:6])
-            self._busy = True
-            self._op_id = op_id
-            self._op_kind = kind
-            self._op_callback = callback
-            self._op_aux = None
-            return op_id
-
-    def _fail_op(self, kind, op_id, code, message):
-        # Panggil saat perintah tidak sampai ke Java (mis. import gagal).
-        self._set_status(False, message)
-        with self._lock:
-            callback = self._op_callback
-            aux = self._op_aux
-            self._busy = False
-            self._op_id = None
-            self._op_kind = None
-            self._op_callback = None
-            self._op_aux = None
-        if callback:
-            callback(_err_result(kind, code, message))
-        if aux:
-            self._cleanup_aux(aux)
-
-    def _cleanup_aux(self, aux):
-        if not isinstance(aux, dict):
-            return
-        if aux.get("delete") and aux.get("file"):
+    def _start_thread(self, kind, payload, callback):
+        def worker():
             try:
-                os.remove(aux["file"])
-            except Exception:
-                pass
-
-    def _dispatch_result(self, kind, status, callback, aux):
-        ok = bool(status.get("ok"))
-        code = int(status.get("code", 0) or 0)
-        message = status.get("message", "") or ""
-
-        if not ok:
-            self._set_status(False, message)
-            if callback:
-                callback(_err_result(kind, code, message))
-            self._cleanup_aux(aux)
-            return
-
-        if kind == "download":
-            self._handle_download_ok(aux, callback, message)
-        else:
-            self._set_status(True, message)
-            if callback:
-                callback(_ok_result(
-                    kind, message=message,
-                    path=status.get("file_path") or None))
-            self._cleanup_aux(aux)
-
-    def _handle_download_ok(self, aux, callback, message):
-        dst = (aux or {}).get("file")
-        apply_now = bool((aux or {}).get("apply"))
-        payload = None
-        summary = None
-        err = None
-
-        try:
-            if not dst or not os.path.exists(dst):
-                err = "File cloud tidak ditemukan"
-            else:
-                with open(dst, "r", encoding="utf-8") as fh:
-                    envelope = json.load(fh)
-                if envelope.get("magic") != CLOUD_MAGIC:
-                    err = "Bukan file cloud Mystic Arena"
-                elif envelope.get("version", 0) > CLOUD_VERSION:
-                    err = "Versi cloud lebih baru dari game"
+                if kind == "upload":
+                    status, msg = upload_to_server(payload, self._pid)
+                    result = (_ok_result("upload", msg)
+                              if status in (200, 201)
+                              else _err_result("upload", status, msg))
                 else:
-                    payload = envelope.get("payload")
-                    if not isinstance(payload, dict):
-                        err = "Payload cloud rusak"
+                    status, body = download_from_server(self._pid)
+                    if status != 200:
+                        result = _err_result("download", status,
+                                             str(body))
                     else:
-                        import backup_manager as bm
-                        text = json.dumps(payload, ensure_ascii=False)
-                        parsed, parse_err = bm.parse_backup_text(text)
-                        if parsed is None:
-                            err = parse_err or "Validasi cloud gagal"
-                        else:
-                            payload = parsed
-                            summary = bm.get_backup_summary(parsed)
-        except Exception as e:
-            err = "Baca cloud gagal: %s" % e
+                        result = self._parse_download(body, payload.get(
+                            "apply", False) if isinstance(payload, dict)
+                            else False)
+                self._set_status(result.get("ok", False),
+                                 result.get("message", ""))
+            except Exception as exc:
+                self._set_status(False, "Cloud gagal: %s" % exc)
+                result = _err_result(kind, -2, "Cloud gagal: %s" % exc)
+            finally:
+                self._set_busy(False)
+                with self._lock:
+                    self._pending.append((callback, result))
 
-        if err:
-            self._set_status(False, err)
-            if callback:
-                callback(_err_result("download", 10, err))
-        else:
-            applied = False
-            if apply_now:
-                try:
-                    import backup_manager as bm
-                    ok_apply, apply_err = bm.apply_backup(payload)
-                    if ok_apply:
-                        applied = True
-                    else:
-                        err = "Terapkan cloud gagal: %s" % apply_err
-                except Exception as e:
-                    err = "Terapkan cloud gagal: %s" % e
+        t = threading.Thread(target=worker, name="mystic-cloud-http",
+                             daemon=True)
+        t.start()
 
-            if err:
-                self._set_status(False, err)
-                if callback:
-                    callback(_err_result("download", 11, err))
-            else:
-                msg = ("Cloud restored!" if applied
-                       else "Cloud save ditemukan")
-                self._set_status(True, msg)
-                if callback:
-                    callback(_ok_result(
-                        "download", message=msg,
-                        payload=payload, summary=summary,
-                        path=dst))
-        self._cleanup_aux(aux)
+    def _parse_download(self, body, apply):
+        try:
+            if not isinstance(body, dict):
+                return _err_result("download", 10,
+                                   "Respons server bukan JSON")
+            if body.get("magic") != CLOUD_MAGIC:
+                return _err_result("download", 11,
+                                   "Bukan data cloud Mystic Arena")
+            if body.get("version", 0) > CLOUD_VERSION:
+                return _err_result("download", 12,
+                                   "Versi cloud lebih baru dari game")
+            payload = body.get("payload")
+            if not isinstance(payload, dict):
+                return _err_result("download", 13, "Payload cloud rusak")
+
+            import backup_manager as bm
+            text = json.dumps(payload, ensure_ascii=False)
+            parsed, err = bm.parse_backup_text(text)
+            if parsed is None:
+                return _err_result("download", 14, err or "Validasi gagal")
+            summary = bm.get_backup_summary(parsed)
+
+            if apply:
+                ok, apply_err = bm.apply_backup(parsed)
+                if not ok:
+                    return _err_result("download", 15,
+                                       "Terapkan cloud gagal: %s" % apply_err)
+                return _ok_result("download", "Cloud restored!",
+                                  payload=parsed, summary=summary)
+            return _ok_result("download", "Cloud save ditemukan",
+                              payload=parsed, summary=summary)
+        except Exception as exc:
+            return _err_result("download", 16, "Baca cloud gagal: %s" % exc)
 
 
 # instance global yang dipakai game

@@ -13,4 +13,5 @@
 #     ...
 # ================================
 
-__all__ = ["platform_utils", "perf", "touch", "hud", "debug"]
+__all__ = ["platform_utils", "perf", "touch", "hud", "debug",
+           "cloud_save"]

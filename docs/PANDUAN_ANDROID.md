@@ -759,60 +759,73 @@ Uji tanpa HP:
 python3 tools/test_backup_manager.py   # 44 pemeriksaan, headless
 ```
 
-## Lampiran D — Cloud Save (Google Play Games Saved Games)
+## Lampiran D — Cloud Save (server milik kamu)
 
 Cloud save melengkapi Auto Backup: selain backup lokal & Auto Backup
-Google Drive, progres juga disimpan ke **Google Play Games Saved
-Games** milik akun Google. Ini yang membuat save tetap ada setelah
-UNINSTALL dan bisa dipulihkan di HP baru (dengan akun Google yang
-sama).
+Google Drive, progres juga disimpan ke **server REST yang kamu
+jalankan sendiri**. Cara ini tidak membutuhkan **Google Play Console**
+sama sekali.
 
 Bagian kode:
 
-- `mobile/cloud_save.py` — manajer cloud: init bridge, cek sign-in,
-  auto-upload tiap save, upload/download payload, conflict check, poll
-  status file dari Java. Berjalan aman (no-op) di PC/CI.
-- `src/io/github/dharmawantoxi/mysticarena/CloudSaveBridge.java` —
-  bridge Java: Play Games Services v2 (`PlayGamesSdk`,
-  `GamesSignInClient`, `SnapshotsClient`). Semua operasi async lewat
-  Task, hasilnya ditulis ke file `cloud_status.json` yang di-poll
-  Python — tidak perlu listener/interface Java dari Python.
+- `mobile/cloud_save.py` — manajer cloud: identitas pemain, auto-upload
+  tiap save di thread background, upload/download, validasi checksum &
+  pemulihan. Berjalan aman (no-op) di PC/CI kalau URL belum diset.
+- `tools/cloud_server/server.py` — contoh server cloud (Python stdlib,
+  tanpa `pip install`).
 - `_system.py` — `SaveManager.save()` memanggil auto-upload cloud
   setelah menulis save lokal (non-blocking, gagal hanya log).
-- `_core.py` — Settings → **☁ CLOUD SAVE** (SIGN IN / UPLOAD /
+- `_core.py` — Settings → **☁ CLOUD SAVE** (koneksi / UPLOAD /
   DOWNLOAD) + dialog restore cloud saat slot lokal kosong.
 
-### Setup di Google Play Console (sekali, ~10 menit)
+### Menjalankan server
 
-1. **Play Console → Game services** (atau buat game di
-   <https://play.google.com/console> → Game services) → pilih game.
-2. Aktifkan **Saved Games** (toggle di tab Features/Configuration).
-3. Salin **Project ID** (angka, di halaman **Configuration**).
-4. Pastikan **OAuth clients** sudah ada:
-   - Android client dengan *package name*
-     `io.github.dharmawantoxi.mysticarena` (sesuai `buildozer.spec`).
-   - SHA1 yang dipakai harus mencocokkan **App signing key** di Play
-     Console (untuk release) atau **debug keystore** (untuk APK uji).
-     Kalau tidak cocok, sign-in akan gagal di perangkat.
+```bash
+# di PC / VPS / Render / Railway — jalan tanpa dependency
+python3 tools/cloud_server/server.py
+```
 
-### Memberikan Project ID ke build
-
-p4a hook (`tools/p4a_hooks.py`) menaruh meta-data
-`com.google.android.gms.games.APP_ID` + resource `game_services_project_id`
-hanya jika Project ID tersedia:
-
-- **GitHub Actions**: tambahkan **repository secret**
-  `MYSTIC_GAMES_PROJECT_ID` (nilai: angka Project ID). Build berikutnya
-  otomatis memakainya.
-- **Build lokal**:
+- Data tersimpan di `./cloud_data` (ubah dengan `MYSTIC_CLOUD_DATA_DIR`).
+- Kalau untuk internet, set kunci bersama:
   ```bash
-  MYSTIC_GAMES_PROJECT_ID=123456789012 buildozer android debug
-  # atau
-  MYSTIC_GAMES_PROJECT_ID_FILE=~/mystic_games_id.txt buildozer android debug
+  MYSTIC_CLOUD_API_KEY=SESUATU_RAHASIA python3 tools/cloud_server/server.py
   ```
+- Server mendengarkan `0.0.0.0:8080` (bisa diganti `HOST` / `PORT`).
 
-Jika tidak diset, aplikasi tetap build & jalan; cloud dalam mode
+### Menghubungkan game
+
+| Environment | Fungsi |
+|---|---|
+| `MYSTIC_CLOUD_URL` | **Wajib** agar cloud aktif. URL server, tanpa slash di akhir. |
+| `MYSTIC_CLOUD_API_KEY` | Kunci bersama — harus sama dengan yang dipakai server. |
+| `MYSTIC_CLOUD_PLAYER_ID` | (opsional) paksa identitas pemain (email Google / kode). |
+
+PC (uji lokal):
+
+```bash
+MYSTIC_CLOUD_URL=http://127.0.0.1:8080 python main.py
+```
+
+Build Android (URL harus bisa diakses HP):
+
+```bash
+MYSTIC_CLOUD_URL=http://<IP-atau-domain>:8080 buildozer android debug
+```
+
+Kalau tidak diset, aplikasi tetap build & jalan; cloud dalam mode
 NONAKTIF (tidak crash) dan 3 jalur penyimpanan lama tetap dipakai.
+
+### Identitas pemain (ganti HP)
+
+1. Game mencoba memakai **akun Google utama di HP** sebagai identitas
+   (`g:<email>`). Saat tombol → ☁ CLOUD SAVE pertama kali diketuk di
+   Android, game meminta izin **akun/kontak** (GET_ACCOUNTS) satu kali.
+   Kalau HP tidak punya akun Google / izin ditolak, fallback ke **ID
+   lokal stabil** yang ditampilkan di Settings (baris `ID: ...`).
+2. Untuk sync antar-perangkat dengan ID lokal, salin ID yang sama ke
+   HP baru lewat `MYSTIC_CLOUD_PLAYER_ID` saat build, atau ubah file
+   `saves/cloud_player_id.txt`.
+3. Kalau memakai akun Google, cukup pakai akun yang sama di HP baru.
 
 ### Uji
 
@@ -821,6 +834,7 @@ python3 tools/test_cloud_save.py      # 18 pemeriksaan headless (desktop)
 python3 tools/test_backup_manager.py  # backup lokal tidak terpengaruh
 ```
 
-Untuk uji di HP: masuk Play Games → buka game → tampilkan Settings →
-☁ CLOUD SAVE → SIGN IN → UPLOAD → hapus aplikasi → pasang ulang →
-masuk akun sama → dialog "CLOUD SAVE FOUND" → RESTORE.
+Untuk uji end-to-end lokal: jalankan server → set `MYSTIC_CLOUD_URL`
+→ main → Settings → ☁ CLOUD SAVE → UPLOAD → hapus folder `saves/`
+(simulasi HP baru) → DOWNLOAD → dialog "CLOUD SAVE FOUND" → RESTORE.
+

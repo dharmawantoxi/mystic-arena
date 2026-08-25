@@ -43,20 +43,15 @@ requirements = python3,pygame-ce,pyjnius,android
 # skrip itu — jangan panggil buildozer langsung.
 
 # ═══════════════════════════════════════════════════════
-# CLOUD SAVE (Google Play Games Saved Games / Snapshots)
-#   - android.add_src       : CloudSaveBridge.java (bridge Python↔Java)
-#   - android.gradle_dependencies : Play Games Services v2 SDK.
-#     Setelah PLAY CONSOLE disiapkan (Saved Games ON + APP_ID),
-#     buildozer otomatis menaruh meta-data APP_ID lewat
-#     tools/p4a_hooks.py (dibaca dari env MYSTIC_GAMES_PROJECT_ID
-#     atau file android_games_app_id.txt).
-#   - Kalau APP_ID belum diisi, fitur cloud NONAKTIF (tidak crash).
+# CLOUD SAVE (server REST milik pemain)
+#   - Tidak perlu Google Play Console / Play Games SDK.
+#   - Game menyimpan save ke server yang kamu jalankan
+#     (contoh: tools/cloud_server/server.py).
+#   - URL server diisi saat build/jalankan:
+#       MYSTIC_CLOUD_URL=http://<host>:8080
+#     Kalau belum diisi, cloud NONAKTIF (tidak crash); save lokal &
+#     Android Auto Backup tetap dipakai.
 # ═══════════════════════════════════════════════════════
-android.add_src = %(source.dir)s/src
-android.gradle_dependencies = com.google.android.gms:play-services-games-v2:+
-# Play Games v2 memakai library AndroidX (transitif) — wajib dinyalakan
-# supaya Gradle tidak gagal dengan "Dependency requires AndroidX".
-android.enable_androidx = True
 
 # ═══════════════════════════════════════════════════════
 # TAMPILAN
@@ -78,11 +73,14 @@ icon.filename = %(source.dir)s/assets/icon.png
 #                butuh permission, jadi izin ini tidak pernah muncul
 #                di perangkat modern.
 #   INTERNET + ACCESS_NETWORK_STATE
-#             -> Cloud Save Google Play Games (upload/download save
-#                ke akun Google). Google Play Games memerlukan izin
-#                jaringan.
+#             -> Cloud Save (server REST milik pemain) untuk
+#                upload/download save ke server.
+#   GET_ACCOUNTS
+#             -> Identitas pemain memakai akun Google utama di HP
+#                (diminta runtime saat tombol CHECK CLOUD / di Settings;
+#                kalau ditolak, game pakai ID lokal stabil).
 # ═══════════════════════════════════════════════════════
-android.permissions = android.permission.VIBRATE,android.permission.WAKE_LOCK,android.permission.INTERNET,android.permission.ACCESS_NETWORK_STATE,(name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=28),(name=android.permission.READ_EXTERNAL_STORAGE;maxSdkVersion=28)
+android.permissions = android.permission.VIBRATE,android.permission.WAKE_LOCK,android.permission.INTERNET,android.permission.ACCESS_NETWORK_STATE,android.permission.GET_ACCOUNTS,(name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=28),(name=android.permission.READ_EXTERNAL_STORAGE;maxSdkVersion=28)
 
 # ═══════════════════════════════════════════════════════
 # TARGET ANDROID
