@@ -21,6 +21,7 @@ class TacticalCommand:
     PROTECT_TOWER = "protect_tower"
     PROTECT_CASTLE = "protect_castle"
     ATTACK_BOSS = "attack_boss"
+    ATTACK_DAMAGE_DEALER = "attack_damage_dealer"
 
 
 class TacticalCommandManager:
@@ -30,6 +31,8 @@ class TacticalCommandManager:
     - PROTECT_TOWER: minimal 2 hero melindungi tower
     - PROTECT_CASTLE: semua hero melindungi castle
     - ATTACK_BOSS: semua hero menyerang mini boss / true boss
+    - ATTACK_DAMAGE_DEALER: semua hero fokus ke hero musuh dengan
+      total damage terbanyak (damage_dealt)
     """
 
     def __init__(self, game):
@@ -361,6 +364,84 @@ class TacticalCommandManager:
 
         return True
 
+    # ───────────────────────────────────────
+    # ATTACK DAMAGE DEALER: fokus hero musuh dengan damage terbanyak
+    # ───────────────────────────────────────
+    def _find_enemy_damage_dealer(self):
+        """Hero musuh (merah) hidup dengan total damage terbanyak.
+
+        ``damage_dealt`` diakumulasi di take_damage() semua entitas
+        (basic attack, projectile, on-hit, AOE skill) - lihat
+        _entity.credit_hero_damage.
+        """
+        ai = getattr(self.game, 'ai', None)
+        candidates = [h for h in getattr(ai, 'heroes', [])
+                      if getattr(h, 'alive', False)]
+        if not candidates:
+            return None
+        return max(candidates,
+                   key=lambda h: getattr(h, 'damage_dealt', 0))
+
+    def command_attack_damage_dealer(self):
+        """
+        ATTACK DAMAGE DEALER - Semua hero biru fokus menyerang hero
+        musuh dengan total damage terbanyak (damage dealer utama
+        tim lawan).
+        """
+        if not self.can_issue():
+            return False
+
+        heroes = self._get_alive_blue_heroes()
+        if not heroes:
+            self._set_feedback("No heroes alive!", (255, 100, 100))
+            return False
+
+        dealer = self._find_enemy_damage_dealer()
+        if dealer is None:
+            self._set_feedback("No enemy heroes!", (255, 150, 100))
+            print("[TACTICAL] ATTACK DAMAGE DEALER - no enemy hero")
+            return False
+
+        self.active_command = TacticalCommand.ATTACK_DAMAGE_DEALER
+        self.command_timer = 600
+        self.command_target = dealer
+        self.gather_point = (dealer.x, dealer.y)
+        self.gather_point_timer = 150  # sesaat di map
+        self.cooldown = self.cooldown_max
+
+        self._clear_hero_retreat(heroes)
+
+        for i, hero in enumerate(heroes):
+            # Semua hero mengunci follow ke damage dealer
+            hero.follow_target = dealer
+            hero.destination = None
+            hero.destination_auto = False
+            hero.target = dealer
+            # Dekati dengan spread supaya tidak numpuk
+            angle = (i / len(heroes)) * math.pi * 2
+            spread = hero.range * 0.5 + i * 8
+            tx = dealer.x + math.cos(angle) * spread
+            ty = dealer.y + math.sin(angle) * spread
+            hero.move_to(tx, ty, auto=False)
+            # move_to menghapus follow_target - pasang lagi
+            hero.follow_target = dealer
+
+        try:
+            from _system import SoundManager
+            SoundManager().play('hero_skill', volume_mult=0.9)
+        except Exception:
+            pass
+
+        dmg = int(getattr(dealer, 'damage_dealt', 0))
+        self._set_feedback(
+            f"ATTACK DAMAGE DEALER! Focus {dealer.name} ({dmg} dmg)!",
+            (255, 130, 255))
+        print(f"[TACTICAL] ATTACK DAMAGE DEALER {dealer.name} "
+              f"({dmg} dmg) at ({int(dealer.x)}, {int(dealer.y)}) - "
+              f"{len(heroes)} heroes")
+
+        return True
+
     # ═══════════════════════════════════════
     # HELPERS
     # ═══════════════════════════════════════
@@ -592,6 +673,8 @@ class TacticalCommandManager:
             return (255, 220, 50)
         elif self.active_command == TacticalCommand.ATTACK_BOSS:
             return (255, 100, 100)
+        elif self.active_command == TacticalCommand.ATTACK_DAMAGE_DEALER:
+            return (255, 130, 255)
         return (255, 220, 100)
 
     def draw_world(self, surface):

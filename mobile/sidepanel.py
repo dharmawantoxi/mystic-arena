@@ -140,6 +140,7 @@ class SidePanel:
             ("protect_tower", "PROTECT TOWER [T]", OK),
             ("protect_castle", "PROTECT CASTLE [C]", EMAS),
             ("attack_boss", "ATTACK BOSS [B]", BAHAYA),
+            ("attack_damage_dealer", "ATTACK DMG DEALER [D]", UNGU),
         ]):
             by = tac_y_base + i * (tac_btn_h + tac_gap)
             # Placeholder rect - akan di-update di _gambar_tactical.
@@ -234,30 +235,17 @@ class SidePanel:
         """True kalau titik ini milik panel (bukan peta)."""
         return bool(self.aktif and self.rect.collidepoint(pos))
 
-    # ── umpan pembunuhan ──────────────────────────────
+    # ── umpan pembunuhan & notifikasi: DIHAPUS (request user) ──
+    # Kill feed + kotak notifikasi tidak lagi tampil di panel;
+    # zona bawah panel diisi COMMAND saja. Method tetap ada sebagai
+    # no-op supaya pemanggil lama (game, _render, tactical) aman.
     def catat_kill(self, pembunuh, korban, tim="blue"):
-        """
-        Baris "Blue Tower >> Goblin" yang dulu melintas di atas peta.
+        """No-op: kill feed dihapus dari panel."""
+        return
 
-        Disimpan terpisah dari notifikasi supaya keduanya tidak
-        berebut tempat: kill feed di tengah panel, notifikasi besar
-        (combo/achievement) di bawah.
-        """
-        if not self.dalam_gameplay:
-            return
-        warna = BIRU if str(tim).startswith("blue") else BAHAYA
-        self.kill_feed.append([str(pembunuh)[:14], str(korban)[:14],
-                               warna, 3400])
-        del self.kill_feed[:-6]
-        self._notif_kotor = True
-
-    # ── notifikasi ────────────────────────────────────
     def beri_tahu(self, teks, warna=EMAS, durasi_ms=2600):
-        if not self.dalam_gameplay:
-            return
-        self.notifikasi.append([str(teks), warna, durasi_ms])
-        del self.notifikasi[:-5]
-        self._notif_kotor = True
+        """No-op: notifikasi dihapus dari panel (muncul di map)."""
+        return
 
     # ── gambar ────────────────────────────────────────
     def draw(self, full, game, clock, dt_ms=16, paksa_blit=False):
@@ -271,7 +259,8 @@ class SidePanel:
         60x per detik; 4x per detik sudah lebih dari cukup dan
         justru lebih terbaca.
 
-        Notifikasi tetap digambar langsung supaya animasinya mulus.
+        (Notifikasi & kill feed dihapus dari panel - zona bawah
+        sekarang dipakai kotak TACTICAL COMMANDS yang lebih tinggi.)
         """
         if not self.aktif:
             return
@@ -349,17 +338,12 @@ class SidePanel:
         # tertinggal saat popup ditutup.
         if perlu or paksa_blit:
             full.blit(self._isi_buf, r.topleft)
-            self._notif_kotor = True
 
-        # Notifikasi berubah tiap frame, jadi hanya JALURNYA yang
-        # dipulihkan dari cache lalu digambar ulang.
-        zona_y = r.height - self.ZONA_BAWAH
-        if self.notifikasi or self.kill_feed or self._notif_kotor:
-            full.blit(self._isi_buf,
-                      (r.x, r.y + zona_y),
-                      pygame.Rect(0, zona_y, r.width, self.ZONA_BAWAH))
-            self._notif_kotor = bool(self.notifikasi or self.kill_feed)
-        self._gambar_notifikasi(full, r, dt_ms)
+        # ═══ NOTIFIKASI & KILL FEED DIHAPUS (request user) ═══
+        # Zona bawah panel dulu memuat kotak notifikasi besar
+        # (combo/achievement) + umpan pembunuhan. Keduanya tidak
+        # lagi digambar: achievement & combo tampil DI MAP, panel
+        # kanan diisi COMMAND saja (lihat _gambar_tactical).
 
     def _ada_animasi_tombol(self):
         return any(b.press_anim > 0 for b in self.buttons.values())
@@ -574,7 +558,7 @@ class SidePanel:
         return y + h + 10
 
     TACTICAL_KEYS = ("gather", "protect_tower", "protect_castle",
-                     "attack_boss")
+                     "attack_boss", "attack_damage_dealer")
 
     def _tactical_sembunyikan(self):
         """
@@ -606,14 +590,20 @@ class SidePanel:
         # Cek kondisi
         alive_heroes = [h for h in getattr(game, 'heroes', []) if getattr(h, 'alive', False)]
         has_boss = getattr(game, 'active_boss', None) and getattr(game.active_boss, 'alive', False)
+        # Hero musuh hidup (untuk ATTACK DMG DEALER)
+        _ai = getattr(game, 'ai', None)
+        has_enemy_hero = any(getattr(h, 'alive', False)
+                             for h in getattr(_ai, 'heroes', []))
 
-        # Hitung tinggi kotak: judul 22 + 4 baris tombol (32+gap)
+        # Hitung tinggi kotak: judul 22 + 5 baris tombol (32+gap).
+        # (Zona bawah panel kini kosong - notifikasi & kill feed
+        #  DIHAPUS, panel diisi COMMAND saja - request user.)
         btn_h = 32
         gap = 6
-        num_btns = 4
+        num_btns = 5
         h = 26 + num_btns * (btn_h + gap) - gap
         # Jangan gambar kalau tidak ada ruang (zona bawah)
-        if y + h > r.height - self.ZONA_BAWAH - 8:
+        if y + h > r.height - 24:
             self._tactical_sembunyikan()
             return y
 
@@ -628,6 +618,7 @@ class SidePanel:
             ("protect_tower", "PROTECT TOWER [T]", OK, len(alive_heroes) >= 1, "Min 2 hero lindungi tower"),
             ("protect_castle", "PROTECT CASTLE [C]", EMAS, len(alive_heroes) > 0, "Semua hero lindungi castle"),
             ("attack_boss", "ATTACK BOSS [B]", BAHAYA, has_boss, "Semua hero serang boss"),
+            ("attack_damage_dealer", "ATTACK DMG DEALER [D]", UNGU, has_enemy_hero, "Fokus hero musuh damage terbesar"),
         ]
 
         by = y + 24
@@ -680,51 +671,6 @@ class SidePanel:
 
         return y + h + 10
 
-    def _gambar_notifikasi(self, full, r, dt_ms):
-        """
-        Zona bawah panel, disusun dari bawah ke atas:
-
-            [notifikasi besar]   combo / achievement / killing spree
-            [umpan pembunuhan]   Blue Tower >> Goblin
-
-        Keduanya dipisah supaya tidak berebut tempat. Batas atasnya
-        dijaga di ZONA_BAWAH agar tidak menabrak panel upgrade hero.
-        """
-        # kurangi umur
-        for daftar in (self.notifikasi, self.kill_feed):
-            for item in daftar:
-                item[-1] -= dt_ms
-        self.notifikasi = [i for i in self.notifikasi if i[-1] > 0]
-        self.kill_feed = [i for i in self.kill_feed if i[-1] > 0]
-        if not self.notifikasi and not self.kill_feed:
-            return
-
-        batas_atas = r.bottom - self.ZONA_BAWAH
-        y = r.bottom - 12
-
-        # ── notifikasi besar (paling bawah, paling menonjol) ──
-        f = self.get_font(17, "body_bold")
-        for teks, warna, sisa in reversed(self.notifikasi):
-            t = f.render(str(teks), True, warna)
-            y -= t.get_height() + 10
-            if y < batas_atas:
-                break
-            kotak = pygame.Rect(r.x + 10, y - 5, r.width - 20,
-                                t.get_height() + 10)
-            pygame.draw.rect(full, (26, 22, 38), kotak, border_radius=6)
-            pygame.draw.rect(full, warna, kotak, 1, border_radius=6)
-            full.blit(t, t.get_rect(center=kotak.center))
-
-        # ── umpan pembunuhan (di atasnya, lebih kecil) ──
-        fk = self.get_font(13, "body")
-        for pembunuh, korban, warna, sisa in reversed(self.kill_feed):
-            baris = "%s  »  %s" % (pembunuh, korban)
-            t = fk.render(baris, True, warna)
-            y -= t.get_height() + 5
-            if y < batas_atas:
-                break
-            full.blit(t, (r.x + 14, y))
-
 
 # ═══════════════════════════════════════════════════════
 # AKSES GLOBAL
@@ -746,17 +692,13 @@ def panel_aktif():
     return p is not None and p.aktif
 
 
+# ═══ NOTIFIKASI DIHAPUS (request user) ═══
+# Fungsi global tetap ada (dipanggil dari banyak tempat) tapi tidak
+# lagi menampilkan apa pun di panel - selalu False supaya pemanggil
+# tahu tidak ada panel notifikasi yang menerima pesan.
 def beri_tahu_global(teks, warna=EMAS, durasi_ms=2600):
-    p = _PANEL[0]
-    if p is not None and p.aktif:
-        p.beri_tahu(teks, warna, durasi_ms)
-        return True
     return False
 
 
 def catat_kill_global(pembunuh, korban, tim="blue"):
-    p = _PANEL[0]
-    if p is not None and p.aktif:
-        p.catat_kill(pembunuh, korban, tim)
-        return True
     return False

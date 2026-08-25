@@ -1266,9 +1266,16 @@ class Game:
         self.mouse_y = 0
         self.hovered_tower = None
         self.hovered_slot = None
-        # ═══ TIER 3: Achievement tracking ═══
+        # ═══ ACHIEVEMENT TRACKING (rework) ═══
+        # Achievement HANYA untuk hero yang membunuh hero lain,
+        # mini boss, dan true boss (request user) - achievement
+        # wave/gold/kill/combo yang lama dihapus.
         self.achievements_unlocked = set()
-        self.first_blood = False
+        self.hero_kill_count = 0
+        self.miniboss_kill_count = 0
+        self.trueboss_kill_count = 0
+        # Stat match (dipakai layar menang/kalah + save), bukan
+        # achievement.
         self.total_kills = 0
         self.max_combo = 0
         # ═══ DEVELOPER MODE (dari game_dev.py) ═══
@@ -1364,7 +1371,9 @@ class Game:
         self.wave_notification_text = ""
         self.build_popup_slot = None
         self.achievements_unlocked = set()
-        self.first_blood = False
+        self.hero_kill_count = 0
+        self.miniboss_kill_count = 0
+        self.trueboss_kill_count = 0
         self.total_kills = 0
         self.max_combo = 0
         # ═══ MATCH STATS TRACKING (untuk level stats) ═══
@@ -1613,19 +1622,8 @@ class Game:
 
             self.minions.append(m)
 
-            # ═══ TAMBAH: Wave achievements ═══
-        if self.wave_number == 5:
-            self._unlock_achievement(
-                "wave_5", "Survivor",
-                "Reached wave 5", "shield")
-        elif self.wave_number == 10:
-            self._unlock_achievement(
-                "wave_10", "Veteran",
-                "Reached wave 10", "shield")
-        elif self.wave_number == 20:
-            self._unlock_achievement(
-                "wave_20", "Endless Warrior",
-                "Reached wave 20", "shield")
+            # (Achievement wave 5/10/20 DIHAPUS - achievement hanya
+            #  untuk hero kill hero / mini boss / true boss.)
 
     def _try_spawn_pending_mini_boss(self):
         """Spawn mini boss tertunda saat boss sebelumnya sudah selesai.
@@ -1819,15 +1817,8 @@ class Game:
             # membeli boss hero dari level-level di bawahnya.
             # AI gets same base income + wave bonus to afford boss heroes (parity)
             self.ai.gold += GOLD_PER_SECOND + max(0, self.wave_number)
-        # ═══ TAMBAH: Gold achievements ═══
-        if self.gold >= 1000:
-            self._unlock_achievement(
-                "gold_1000", "Wealthy",
-                "Accumulated 1000 gold", "gold")
-        if self.gold >= 5000:
-            self._unlock_achievement(
-                "gold_5000", "Rich",
-                "Accumulated 5000 gold", "gold")
+        # (Achievement gold DIHAPUS - achievement hanya untuk hero
+        #  kill hero / mini boss / true boss.)
         self.update_waves()
 
         all_heroes = self.get_all_heroes()
@@ -1889,6 +1880,10 @@ class Game:
             boss = self.active_boss
             boss_type = boss.boss_type
 
+            # ═══ ATRIBUSI KILL: achievement hanya kalau pukulan
+            #     terakhir dari HERO (mini boss / true boss) ═══
+            self._process_boss_kill(boss)
+
             # ═══ TRIGGER DEATH ANIMATION ═══
             from _render import BossDeathAnimation
             self.boss_death = BossDeathAnimation(
@@ -1925,6 +1920,8 @@ class Game:
         for h in all_heroes:
             if not h.alive and h not in self.hero_respawn_timers:
                 self.hero_respawn_timers[h] = 600
+                # ═══ ATRIBUSI KILL: achievement hero kill hero ═══
+                self._process_hero_kill(h)
 
         to_respawn = []
         for h, timer in list(self.hero_respawn_timers.items()):
@@ -1958,85 +1955,20 @@ class Game:
                     self.gold += m.gold_reward
                     self.score += m.gold_reward
                     self.effects.add_gold_popup(m.x, m.y, m.gold_reward)
-                    # ═══ ACHIEVEMENT TRACKING ═══
+                    # ═══ STAT MATCH (achievement kill minion dihapus -
+                    #  achievement hanya untuk hero kill hero / mini
+                    #  boss / true boss) ═══
                     self.total_kills += 1
 
-                    # First Blood
-                    if not self.first_blood:
-                        self.first_blood = True
-                        self._unlock_achievement(
-                            "first_blood",
-                            "First Blood!",
-                            "Killed your first enemy",
-                            "sword")
-
-                    # Kill milestones
-                    if self.total_kills == 10:
-                        self._unlock_achievement(
-                            "10_kills", "Getting Started",
-                            "Killed 10 enemies", "skull")
-                    elif self.total_kills == 50:
-                        self._unlock_achievement(
-                            "50_kills", "Slayer",
-                            "Killed 50 enemies", "skull")
-                    elif self.total_kills == 100:
-                        self._unlock_achievement(
-                            "100_kills", "Executioner",
-                            "Killed 100 enemies", "skull")
-                    elif self.total_kills == 250:
-                        self._unlock_achievement(
-                            "250_kills", "Warlord",
-                            "Killed 250 enemies", "skull")
-
-                    # Combo tracking
+                    # Combo terbesar disimpan untuk layar statistik.
                     current_combo = self.effects.combo_counter.count
                     if current_combo > self.max_combo:
                         self.max_combo = current_combo
-                        # (notifikasi combo dikirim dari
-                        #  ComboCounter.add_kill di _render.py, di
-                        #  ambang tier saja - lihat komentar di sana)
 
-                        if current_combo == 5:
-                            self._unlock_achievement(
-                                "combo_5", "Combo Master",
-                                "Achieved 5 kill combo", "star")
-                        elif current_combo == 10:
-                            self._unlock_achievement(
-                                "combo_10", "Killing Spree",
-                                "Achieved 10 kill combo", "star")
-                        elif current_combo == 20:
-                            self._unlock_achievement(
-                                "combo_20", "GODLIKE!",
-                                "Achieved 20 kill combo!", "star")
-
-                    # ═══ TAMBAH: Combo & Kill Feed ═══
-                    minion_names = {
-                        'goblin': 'Goblin',
-                        'orc': 'Orc',
-                        'troll': 'Troll',
-                        'undead': 'Undead',
-                        'dark_rider': 'Dark Rider',
-                    }
-                    victim_name = minion_names.get(m.minion_type,
-                                                   m.minion_type.title())
-                    self.effects.register_kill(
-                        killer_name="Blue Tower",
-                        victim_name=victim_name,
-                        killer_team="blue")
+                    # Combo counter (tampil di map, bukan panel).
+                    self.effects.combo_counter.add_kill()
                 else:
                     self.ai.gold += m.gold_reward
-                    # AI kill feed
-                    minion_names = {
-                        'goblin': 'Goblin', 'orc': 'Orc',
-                        'troll': 'Troll', 'undead': 'Undead',
-                        'dark_rider': 'Dark Rider',
-                    }
-                    victim_name = minion_names.get(m.minion_type,
-                                                   m.minion_type.title())
-                    self.effects.register_kill(
-                        killer_name="Red Tower",
-                        victim_name=victim_name,
-                        killer_team="red")
 
         for t in self.towers:
             if not t.alive and not getattr(t, "_rewarded", False):
@@ -2206,13 +2138,92 @@ class Game:
         self._meta_reward_granted = True
 
     def _unlock_achievement(self, achievement_id, title, description,
-                            icon="star"):
-        """Unlock achievement if not already unlocked"""
+                            icon="star", map_x=None, map_y=None):
+        """Unlock achievement if not already unlocked.
+
+        Achievement TIDAK lagi dikirim ke panel kanan - muncul di
+        MAP (popup di layar arena + teks melayang di lokasi kejadian,
+        sama seperti feedback command taktis).
+        """
         if achievement_id in self.achievements_unlocked:
             return
         self.achievements_unlocked.add(achievement_id)
         self.effects.unlock_achievement(title, description, icon)
+        # Banner di map (seperti feedback command), kalau posisi
+        # kejadian diketahui.
+        if map_x is not None and map_y is not None:
+            try:
+                self.effects.add_damage_number(
+                    map_x, map_y, f"★ {title}", is_critical=True)
+            except Exception:
+                pass
         SoundManager().play('ui_upgrade', volume_mult=0.5)
+
+    # ═══════════════════════════════════════
+    # ATRIBUSI KILL (achievement hero kill)
+    # ═══════════════════════════════════════
+
+    @staticmethod
+    def _killer_is_hero(killer, victim):
+        """True kalau killer valid: hero hidup-bertipe dari tim lain."""
+        if killer is None or killer is victim:
+            return False
+        if getattr(killer, "team", None) == getattr(victim, "team", None):
+            return False
+        # Harus hero sungguhan (bukan tower/minion/castle).
+        return hasattr(killer, "hero_type") and hasattr(killer, "skills")
+
+    def _process_hero_kill(self, victim):
+        """Achievement: HERO membunuh HERO lain.
+
+        Dipanggil sekali saat hero mati (sebelum respawn). Kill oleh
+        tower/minion/castle tidak dihitung.
+        """
+        killer = getattr(victim, "_killed_by", None)
+        if not self._killer_is_hero(killer, victim):
+            return
+
+        killer.kills = getattr(killer, "kills", 0) + 1
+
+        # Achievement hanya untuk tim pemain (blue).
+        if killer.team == "blue":
+            self.hero_kill_count += 1
+            self._unlock_achievement(
+                f"hero_kill_{self.hero_kill_count}",
+                "HERO SLAYER!",
+                f"{killer.name} killed {victim.name}",
+                "sword", map_x=victim.x, map_y=victim.y - 30)
+
+    def _process_boss_kill(self, boss):
+        """Achievement: HERO membunuh MINI BOSS / TRUE BOSS.
+
+        Dipanggil sekali saat boss kalah. Kill oleh tower/minion
+        tidak dihitung - harus pukulan terakhir dari hero.
+        """
+        killer = getattr(boss, "_killed_by", None)
+        if not self._killer_is_hero(killer, boss):
+            return
+
+        killer.kills = getattr(killer, "kills", 0) + 1
+
+        if killer.team != "blue":
+            return
+
+        is_true = getattr(boss, "boss_class", "mini") == "true"
+        if is_true:
+            self.trueboss_kill_count += 1
+            self._unlock_achievement(
+                f"trueboss_kill_{self.trueboss_kill_count}",
+                "TRUE BOSS SLAYER!",
+                f"{killer.name} slew TRUE BOSS {boss.name}",
+                "skull", map_x=boss.x, map_y=boss.y - 40)
+        else:
+            self.miniboss_kill_count += 1
+            self._unlock_achievement(
+                f"miniboss_kill_{self.miniboss_kill_count}",
+                "MINI BOSS SLAYER!",
+                f"{killer.name} slew {boss.name}",
+                "skull", map_x=boss.x, map_y=boss.y - 40)
 
     def handle_click(self, pos, button):
         """Delegate ke InputHandler"""
@@ -8070,7 +8081,8 @@ class InputHandler:
             # Toggle shop
             g.shop_open = not g.shop_open
 
-        # ═══ TACTICAL COMMANDS (GATHER, PROTECT TOWER, PROTECT CASTLE, ATTACK BOSS) ═══
+        # ═══ TACTICAL COMMANDS (GATHER, PROTECT TOWER, PROTECT CASTLE,
+        #     ATTACK BOSS, ATTACK DAMAGE DEALER) ═══
         elif key == pygame.K_g:
             # GATHER - semua hero berkumpul dan menyerang bersama
             # Jika mouse di dalam arena, kumpul di posisi mouse; else di selected hero / tengah
@@ -8100,6 +8112,12 @@ class InputHandler:
             # ATTACK BOSS - semua hero menyerang boss
             if getattr(g, 'tactical', None):
                 g.tactical.command_attack_boss()
+            return
+        elif key == pygame.K_d:
+            # ATTACK DAMAGE DEALER - semua hero fokus ke hero musuh
+            # dengan total damage terbanyak
+            if getattr(g, 'tactical', None):
+                g.tactical.command_attack_damage_dealer()
             return
         elif key == pygame.K_f:
             # Shortcut alternatif: F untuk gather di posisi mouse
@@ -8360,26 +8378,18 @@ class UIRenderer:
                                          subtitle, action)
 
     def draw_notifications(self, surface):
-        """Draw notification popups"""
-        if self.notification_component:
-            self.notification_component.draw(surface)
+        """Draw notification popups (kosong - notifikasi DIHAPUS)."""
+        return
 
     def add_notification(self, text, color=(255, 255, 255)):
         """
-        Tambahkan notifikasi.
-
-        Kalau panel kanan tersedia, notifikasi dikirim ke sana supaya
-        tidak lagi melintas menutupi arena. Di layar tanpa panel,
-        perilakunya persis seperti semula.
+        DIHAPUS (request user): sistem notifikasi in-game tidak lagi
+        dipakai - informasi penting kini tampil DI MAP (banner
+        command, popup achievement) dan panel kanan diisi COMMAND
+        saja. Method tetap ada supaya pemanggil lama (item forge,
+        tactical feedback, dll) tidak crash - jadi no-op diam-diam.
         """
-        try:
-            from mobile import sidepanel as _sp
-            if _sp.beri_tahu_global(text, color):
-                return
-        except Exception:
-            pass
-        if self.notification_component:
-            self.notification_component.add_notification(text, color)
+        return
 
 
 # ====================================================================

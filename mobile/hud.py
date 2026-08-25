@@ -10,7 +10,9 @@
 #   R (replay)     -> REPLAY button on victory/defeat screen
 #   N (next level) -> NEXT LEVEL button
 #   SPACE (skip)   -> SKIP button during cinematic
-#   G,T,C,B        -> Tactical commands HANYA di side panel (sesuai request user)
+#   G,T,C,B,D      -> Tactical commands HANYA di side panel (sesuai request user)
+#                     D = ATTACK DAMAGE DEALER (fokus hero musuh
+#                     dengan damage terbanyak)
 #
 # Semua tombol memakai ukuran >= 48x48 dp (rekomendasi Google) dan
 # berada di dalam safe-area supaya tidak tertutup poni/gesture bar.
@@ -302,6 +304,9 @@ def apply_hud_action(action, ctx):
             return True
         elif action == "attack_boss":
             game.tactical.command_attack_boss()
+            return True
+        elif action == "attack_damage_dealer":
+            game.tactical.command_attack_damage_dealer()
             return True
 
     return False
