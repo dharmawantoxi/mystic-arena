@@ -3599,10 +3599,18 @@ class _NS_popup_renderer:
 
         def _draw_castle_shield_section(self, surface, px, popup_w,
                                         nexus, y):
-            """Status/tombol Castle Shield untuk castle pemain level 4+."""
+            """Status shield gratis wave 1-10 dan pembelian setelahnya."""
             g = self.game
+            rect = pygame.Rect(px + 15, y, popup_w - 30, 30)
+            if getattr(nexus, "free_shield_active", False):
+                pygame.draw.rect(surface, (25, 70, 80), rect, border_radius=6)
+                pygame.draw.rect(surface, (120, 220, 255), rect, 2, border_radius=6)
+                text = self.ui.font_tiny.render(
+                    "CASTLE SHIELD: FREE (WAVE 1-10)", True, (170, 240, 255))
+                surface.blit(text, text.get_rect(center=rect.center))
+                return y + 38
+
             if getattr(nexus, "castle_shield_purchased", False):
-                rect = pygame.Rect(px + 15, y, popup_w - 30, 30)
                 pygame.draw.rect(surface, (25, 70, 30), rect, border_radius=6)
                 pygame.draw.rect(surface, (120, 255, 140), rect, 2, border_radius=6)
                 text = self.ui.font_tiny.render(
@@ -3613,23 +3621,16 @@ class _NS_popup_renderer:
             if nexus.can_activate_castle_shield():
                 cost = nexus.castle_shield_cost()
                 can_buy = g.gold >= cost
-                rect = pygame.Rect(px + 15, y, popup_w - 30, 30)
                 pygame.draw.rect(surface, (60, 160, 90) if can_buy else DARK_GRAY,
                                  rect, border_radius=6)
                 pygame.draw.rect(surface, WHITE if can_buy else GRAY, rect, 2,
                                  border_radius=6)
                 text = self.ui.font_tiny.render(
-                    "CASTLE SHIELD (%dG)" % cost, True,
+                    "ACTIVATE SHIELD (%d GOLD)" % cost, True,
                     WHITE if can_buy else GRAY)
                 surface.blit(text, text.get_rect(center=rect.center))
                 g.ui_buttons['popup_castle_shield'] = rect
                 return y + 38
-
-            if nexus.level < CASTLE_SHIELD_MIN_LEVEL:
-                text = self.ui.font_tiny.render(
-                    "Castle Shield unlocks at Lv.4", True, GRAY)
-                surface.blit(text, (px + 15, y))
-                return y + 18
             return y
 
         def _draw_nexus_upgrade(self, surface, px, py, popup_w, nexus, y,
