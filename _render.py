@@ -2855,14 +2855,18 @@ class LevelIntroScreen:
         diff_y = cy_start + 370
         try:
             from _core import GameSettings
-            is_hard = GameSettings().is_hard_mode()
+            difficulty = GameSettings().difficulty
         except Exception:
-            is_hard = False
+            difficulty = "normal"
 
-        if is_hard:
-            diff_title = f"DIFFICULTY: HARD (SCALING ON)"
+        if difficulty == "hard":
+            diff_title = "DIFFICULTY: HARD (SCALING ON)"
             diff_level = min(5, max(1, int(self.hp_mult * 2.5)))
             diff_color = (255, 120, 100)
+        elif difficulty == "easy":
+            diff_title = "DIFFICULTY: EASY (BOSS WAVE 20-40, SCALING OFF)"
+            diff_level = 1
+            diff_color = (100, 210, 255)
         else:
             diff_title = "DIFFICULTY: NORMAL (SCALING OFF)"
             diff_level = 1

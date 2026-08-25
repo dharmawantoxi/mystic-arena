@@ -3310,13 +3310,28 @@ class _NS_overlay:
                 boss_name, True, boss_entrance)
             surface.blit(boss_name_surf, (boss_info_x, popup_y + 118))
 
-            # Difficulty preview - DIPERBESAR 12->16
+            # Difficulty preview
+            try:
+                from _core import GameSettings
+                difficulty = GameSettings().difficulty
+            except Exception:
+                difficulty = "normal"
+            if difficulty == "hard":
+                diff_text = "HARD · SCALE ON"
+                hp_mult = next_config.get("enemy_hp_mult", 1.0)
+                diff_level = min(5, max(1, int(hp_mult * 2.5)))
+                diff_color = (255, 120, 100)
+            elif difficulty == "easy":
+                diff_text = "EASY · BOSS 20-40"
+                diff_level = 1
+                diff_color = (100, 210, 255)
+            else:
+                diff_text = "NORMAL · SCALE OFF"
+                diff_level = 1
+                diff_color = (100, 220, 150)
             diff_label = pygame.font.Font(None, 16).render(
-                "DIFFICULTY", True, (150, 170, 190))
+                diff_text, True, diff_color)
             surface.blit(diff_label, (boss_info_x, popup_y + 145))
-
-            hp_mult = next_config.get("enemy_hp_mult", 1.0)
-            diff_level = min(5, int(hp_mult * 2.5))
 
             for i in range(5):
                 bar_x = boss_info_x + i * 14
