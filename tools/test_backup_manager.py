@@ -48,8 +48,10 @@ os.makedirs(WORK_DIR, exist_ok=True)
 os.environ.pop("ANDROID_ARGUMENT", None)
 os.environ.pop("ANDROID_PRIVATE", None)
 os.environ["MYSTIC_BACKUP_DIR"] = DOWNLOAD_DIR
+# Save lokal diarahkan ke sandbox (bukan ke repo) walau cwd berubah.
+os.environ["MYSTIC_SAVE_DIR"] = os.path.join(WORK_DIR, "saves")
 
-os.chdir(WORK_DIR)  # storage_paths -> SAVE_DIR = "saves" relatif sini
+os.chdir(WORK_DIR)  # storage_paths -> SAVE_DIR mengikuti MYSTIC_SAVE_DIR
 sys.path.insert(0, REPO_ROOT)
 
 import backup_manager as bm  # noqa: E402

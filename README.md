@@ -23,11 +23,15 @@ splash_screen.py         splash pembuka
 
 mobile/                  ◀ LAPISAN BARU KHUSUS ANDROID
 ├── platform_utils.py    deteksi Android, display SCALED, safe area, jnius
+├── cloud_save.py        Cloud Save -> Google Play Games Saved Games
 ├── touch.py             mesin gesture: tap / long-press / drag / fling
 ├── hud.py               tombol layar: skill QWER, shop, pause, skip
 ├── debug.py             overlay FPS + crash handler ke file
 ├── perf.py              cache font/teks, darken/flash, pool, preset kualitas
 └── spritecache.py       cache sprite (opsional - lihat catatan hasil ukur)
+
+src/                     Java bridge Cloud Save (dikompilasi oleh p4a)
+└── io/github/.../CloudSaveBridge.java  Play Games v2 Snapshots API
 
 bosses/                  base_boss, boss_data, level1..level54
 heroes/ hero_skills/     renderer & skill hero
@@ -70,6 +74,52 @@ Mekanik baru yang didukung engine: `evasion`, `damage block`,
 Uji: `python tools/test_item_shop.py`,
 `python tools/test_item_tier2.py`,
 `python tools/test_tier2_ingame.py`.
+
+## Cloud Save (Google Play Games Saved Games)
+
+Save tidak hilang saat **uninstall / ganti HP**. Setiap kali game
+menyimpan (`SaveManager.save`), salinan dikirim otomatis ke **Google
+Play Games Saved Games** milik akun Google pemain — sama seperti game
+komersial. Saat game dibuka di HP baru dengan akun Google yang sama,
+game mendeteksi slot lokal kosong lalu menawarkan **RESTORE** dari
+cloud.
+
+Fitur ini memakai:
+- `mobile/cloud_save.py` — logika Python (status, auto-upload, poll).
+- `src/io/github/dharmawantoxi/mysticarena/CloudSaveBridge.java` —
+  bridge Java ke Snapshots API (Play Games Services v2).
+- `buildozer.spec` — dependency `play-services-games-v2` + `src`.
+
+### Cara mengaktifkan (direncanakan saat rilis ke Play Store)
+
+Kamu sudah siap rilis ke Play Store nanti; cukup siapkan akun **Google
+Play Console** saat game selesai:
+
+1. **Google Play Console → Game services →** game ini → aktifkan
+   **Saved Games**.
+2. Salin **Project ID** (angka di halaman Configuration).
+3. Sambungkan OAuth client Android (`package name` =
+   `io.github.dharmawantoxi.mysticarena`, SHA1 ikut **App signing
+   keystore** yang dipakai Play Console).
+4. Masukkan Project ID saat build:
+   - GitHub Actions: tambah **secret/repository variable**
+     `MYSTIC_GAMES_PROJECT_ID`.
+   - Build lokal: `MYSTIC_GAMES_PROJECT_ID=123456789012 buildozer android debug`
+     (atau file `android_games_app_id.txt` yang di-ignore Git + env
+     `MYSTIC_GAMES_PROJECT_ID_FILE` menunjuk ke file itu).
+5. Build APK/AAB seperti biasa. Kalau Project ID belum diisi, aplikasi
+   tetap jalan — cloud NONAKTIF, save lokal + Auto Backup (Google
+   Drive) tetap dipakai.
+
+### Tombol di dalam game
+
+Settings → **☁ CLOUD SAVE**:
+- **SIGN IN TO CLOUD** — masuk Google Play Games.
+- **UPLOAD SAVE KE CLOUD** — kirim progres saat ini (dengan konfirmasi).
+- **DOWNLOAD SAVE DARI CLOUD** — ambil progres cloud (dengan konfirmasi).
+
+Auto-upload berjalan di background setiap save; kegagalan cloud tidak
+pernah menghilangkan save lokal.
 
 ## Menjalankan di PC
 

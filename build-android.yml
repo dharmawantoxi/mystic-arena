@@ -174,6 +174,10 @@ jobs:
       - name: Build APK debug
         if: steps.cfg.outputs.type == 'debug'
         shell: bash
+        env:
+          # Project ID Play Games (Cloud Save). Kosong kalau belum diset
+          # -> p4a hook melewati meta-data, cloud tetap NONAKTIF.
+          MYSTIC_GAMES_PROJECT_ID: ${{ secrets.MYSTIC_GAMES_PROJECT_ID }}
         run: |
           set -o pipefail
           buildozer -v android debug 2>&1 | tee build.log
@@ -224,6 +228,8 @@ jobs:
           P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.KEYSTORE_PASSWORD }}
           P4A_RELEASE_KEYALIAS: ${{ secrets.KEYALIAS }}
           P4A_RELEASE_KEYALIAS_PASSWD: ${{ secrets.KEYALIAS_PASSWORD }}
+          # Project ID Play Games (Cloud Save) — opsional; kosong kalau belum diset.
+          MYSTIC_GAMES_PROJECT_ID: ${{ secrets.MYSTIC_GAMES_PROJECT_ID }}
         run: buildozer -v android release
 
       - name: Unggah artefak AAB

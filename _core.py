@@ -2712,6 +2712,28 @@ class Menu:
         except Exception as e:
             print(f"[BACKUP] Startup check unavailable: {e}")
 
+        # ── CLOUD SAVE (Google Play Games Saved Games) ──
+        # Otomatis unggah tiap save, tombol manual di Settings, dan
+        # kalau semua slot lokal kosong (baru ganti HP) + ada save
+        # cloud, tampilkan prompt untuk memulihkan progres.
+        self.cloud_available = False
+        self.cloud_signed_in = False
+        self.cloud_status = None       # (text, color, frame_expire)
+        self.cloud_confirm = None      # "upload"/"download" menunggu konfirmasi
+        self.cloud_restore_prompt = None   # (payload, summary) save cloud
+        self._cloud_restore_done = False
+        self._cloud_auth_done = False
+        try:
+            from mobile import cloud_save as _cs
+            self.cloud_save = _cs
+            _cs.manager.start()
+            self.cloud_available = _cs.manager.available()
+            self.cloud_signed_in = _cs.manager.signed_in()
+            _cs.manager.check_auth(self._on_cloud_auth)
+        except Exception as e:
+            print(f"[CLOUD] Init unavailable: {e}")
+            self.cloud_available = False
+
         # State
         self.state = MenuState.MAIN
         self.active = True  # menu aktif atau tidak
@@ -3282,6 +3304,14 @@ class Menu:
         """Update menu logic"""
         self.animation_time += 1
         self._update_particles()
+
+        # ── CLOUD SAVE: proses status operasi async Play Games ──
+        try:
+            from mobile.cloud_save import manager as _cloud
+            _cloud.poll()
+            self._poll_cloud_restore()
+        except Exception as e:
+            print(f"[CLOUD] poll failed: {e}")
 
         # Hover detection
         mx, my = pygame.mouse.get_pos()
@@ -4237,6 +4267,13 @@ class Menu:
         # ═══ DIALOG RESTORE BACKUP (deteksi install ulang) ═══
         if self.restore_prompt is not None and not self.pause_mode:
             self._draw_restore_prompt_dialog()
+        # ═══ DIALOG RESTORE CLOUD (save cloud saat ganti HP) ═══
+        # Kalau backup lokal Download sudah ditemukan, backup lokal
+        # lebih diutamakan (dua dialog tidak boleh tumpang tindih).
+        if (self.cloud_restore_prompt is not None
+                and self.restore_prompt is None
+                and not self.pause_mode):
+            self._draw_cloud_restore_prompt_dialog()
 
     def _draw_restore_prompt_dialog(self):
         """
@@ -5162,6 +5199,12 @@ class Menu:
             settings.get_fps_label(),
             "fps")
 
+        # ═══ CLOUD SAVE SECTION (kolom 2, di bawah graphics) ═══
+        cloud_y = panel_y + 375
+        self._draw_settings_section_header(
+            col2_x, cloud_y, "☁  CLOUD SAVE", (150, 220, 255))
+        self._draw_cloud_buttons(col2_x, cloud_y + 40, 340)
+
         # ═══ BACKUP SECTION (kolom 1, di bawah audio) ═══
         backup_y = panel_y + 340
         self._draw_settings_section_header(
@@ -5213,6 +5256,10 @@ class Menu:
             self._draw_import_confirm_dialog()
         elif getattr(self, 'export_confirm', None) is not None:
             self._draw_export_confirm_dialog()
+
+        # Dialog konfirmasi CLOUD (upload / download manual)
+        if getattr(self, 'cloud_confirm', None) is not None:
+            self._draw_cloud_confirm_dialog()
 
     def _draw_backup_buttons(self, x, y, width):
         """
@@ -5272,6 +5319,252 @@ class Menu:
         info_text = get_font(15).render(line, True, color)
         # Clamp supaya tidak keluar panel
         self.screen.blit(info_text, (x, y + btn_h + 8))
+
+    def _draw_cloud_buttons(self, x, y, width):
+        """
+        Tombol CLOUD SAVE: SIGN IN, UPLOAD, DOWNLOAD + baris status.
+        Ukuran tombol >= 32px (TOUCH_MODE dapat pelonggaran dari _kena).
+        """
+        btn_h = 30
+        gap = 6
+        mx, my = pygame.mouse.get_pos()
+
+        available = getattr(self, 'cloud_available', False)
+        signed_in = getattr(self, 'cloud_signed_in', False)
+
+        # 1) SIGN IN / status koneksi
+        if not available:
+            label = "CLOUD: OFF (PC / belum diset)"
+            fg = (175, 175, 185)
+            bg, bg_h = (45, 45, 55), (55, 55, 65)
+            bd, bd_h = (110, 110, 120), (130, 130, 140)
+        elif signed_in:
+            label = "SIGNED IN TO GOOGLE PLAY GAMES  ✓"
+            fg = (225, 255, 230)
+            bg, bg_h = (40, 130, 70), (55, 170, 90)
+            bd, bd_h = (120, 230, 150), (160, 255, 180)
+        else:
+            label = "SIGN IN TO CLOUD"
+            fg = (225, 235, 255)
+            bg, bg_h = (55, 85, 145), (75, 115, 190)
+            bd, bd_h = (120, 180, 255), (160, 210, 255)
+
+        rect = pygame.Rect(x, y, width, btn_h)
+        hover = rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen, bg_h if hover else bg,
+                         rect, border_radius=6)
+        pygame.draw.rect(self.screen, bd_h if hover else bd,
+                         rect, 2, border_radius=6)
+        text = get_font(16, "body_bold").render(label, True, fg)
+        self.screen.blit(text, text.get_rect(center=rect.center))
+        self.buttons['cloud_signin'] = rect
+
+        y += btn_h + gap
+
+        # 2) UPLOAD (kiri-atas)
+        up_rect = pygame.Rect(x, y, width, btn_h)
+        up_hover = up_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (32, 74, 120) if up_hover else (24, 55, 92),
+                         up_rect, border_radius=6)
+        pygame.draw.rect(self.screen,
+                         (110, 190, 255) if up_hover else (75, 140, 205),
+                         up_rect, 2, border_radius=6)
+        up_text = self.font_tiny.render(
+            "UPLOAD SAVE KE CLOUD", True, (215, 235, 255))
+        self.screen.blit(up_text,
+                         up_text.get_rect(center=up_rect.center))
+        self.buttons['cloud_upload'] = up_rect
+
+        y += btn_h + gap
+
+        # 3) DOWNLOAD (full)
+        dl_rect = pygame.Rect(x, y, width, btn_h)
+        dl_hover = dl_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (32, 112, 62) if dl_hover else (24, 84, 48),
+                         dl_rect, border_radius=6)
+        pygame.draw.rect(self.screen,
+                         (120, 230, 150) if dl_hover else (85, 180, 115),
+                         dl_rect, 2, border_radius=6)
+        dl_text = self.font_tiny.render(
+            "DOWNLOAD SAVE DARI CLOUD", True, (218, 255, 228))
+        self.screen.blit(dl_text,
+                         dl_text.get_rect(center=dl_rect.center))
+        self.buttons['cloud_download'] = dl_rect
+
+        y += btn_h + gap
+
+        # Baris status
+        status = getattr(self, 'cloud_status', None)
+        if status is not None and self.animation_time < status[2]:
+            line, color = status[0], status[1]
+        else:
+            self.cloud_status = None
+            if not available:
+                line = "Cloud disinkronkan via akun Google (Android)"
+            elif signed_in:
+                line = "Aktif — save ikut akun Google kamu"
+            else:
+                line = "Tap SIGN IN untuk mengaktifkan cloud"
+            color = (140, 150, 175)
+
+        info_text = get_font(14).render(line, True, color)
+        self.screen.blit(info_text, (x, y - gap + 4))
+
+    def _draw_cloud_confirm_dialog(self):
+        """
+        Dialog konfirmasi aksi CLOUD (upload kalah / download timpa).
+        """
+        mode = getattr(self, 'cloud_confirm', "download")
+        cx = SCREEN_WIDTH // 2
+        cy = SCREEN_HEIGHT // 2
+
+        from mobile.perf import darken
+        darken(self.screen, 200)
+        self.buttons = {}
+
+        dialog_w = 580
+        dialog_h = 260
+        dialog_x = cx - dialog_w // 2
+        dialog_y = cy - dialog_h // 2
+
+        shadow_surf = pygame.Surface(
+            (dialog_w + 10, dialog_h + 10), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 150),
+                         (5, 5, dialog_w, dialog_h), border_radius=12)
+        self.screen.blit(shadow_surf, (dialog_x - 5, dialog_y - 5))
+
+        border = (120, 190, 255) if mode == "upload" else (255, 190, 80)
+        bg = (26, 30, 48) if mode == "upload" else (42, 34, 24)
+        pygame.draw.rect(self.screen, bg,
+                         (dialog_x, dialog_y, dialog_w, dialog_h),
+                         border_radius=12)
+        pygame.draw.rect(self.screen, border,
+                         (dialog_x, dialog_y, dialog_w, dialog_h),
+                         3, border_radius=12)
+
+        title = ("☁  UPLOAD TO CLOUD?"
+                 if mode == "upload" else "☁  DOWNLOAD FROM CLOUD?")
+        title_text = get_font(38).render(title, True, (230, 235, 255))
+        self.screen.blit(title_text,
+                         title_text.get_rect(center=(cx, dialog_y + 42)))
+
+        if mode == "upload":
+            warn = "This will REPLACE the cloud copy with this device's save."
+            warn2 = "Cloud save akan menimpa progres cloud yang ada."
+        else:
+            warn = "This will REPLACE all local slots & settings."
+            warn2 = "Progres di HP ini akan diganti isi cloud."
+        w1 = self.font_small.render(warn, True, (255, 220, 180))
+        self.screen.blit(w1, w1.get_rect(center=(cx, dialog_y + 96)))
+        w2 = self.font_tiny.render(warn2, True, (210, 190, 170))
+        self.screen.blit(w2, w2.get_rect(center=(cx, dialog_y + 126)))
+
+        if mode == "upload":
+            yes = ((90, 150, 220), (60, 110, 175),
+                   (150, 210, 255), (110, 170, 230))
+        else:
+            yes = ((200, 140, 40), (160, 110, 30),
+                   (255, 210, 120), (220, 170, 90))
+        self._draw_confirm_buttons(
+            cx, dialog_y + dialog_h - 60,
+            "CONFIRM", "cloud_confirm_yes",
+            "CANCEL", "cloud_confirm_no",
+            yes_color=yes)
+
+    def _draw_cloud_restore_prompt_dialog(self):
+        """
+        Dialog 'Cloud save ditemukan' saat semua slot lokal kosong
+        (baru install ulang / ganti HP) tapi ada save di Google Play.
+        """
+        _, summary = self.cloud_restore_prompt
+        cx = SCREEN_WIDTH // 2
+        cy = SCREEN_HEIGHT // 2
+
+        from mobile.perf import darken
+        darken(self.screen, 200)
+        self.buttons = {}
+
+        dialog_w = 560
+        dialog_h = 280
+        dialog_x = cx - dialog_w // 2
+        dialog_y = cy - dialog_h // 2
+
+        shadow_surf = pygame.Surface(
+            (dialog_w + 10, dialog_h + 10), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 150),
+                         (5, 5, dialog_w, dialog_h), border_radius=12)
+        self.screen.blit(shadow_surf, (dialog_x - 5, dialog_y - 5))
+
+        pygame.draw.rect(self.screen, (24, 38, 48),
+                         (dialog_x, dialog_y, dialog_w, dialog_h),
+                         border_radius=12)
+        pygame.draw.rect(self.screen, (120, 200, 255),
+                         (dialog_x, dialog_y, dialog_w, dialog_h),
+                         3, border_radius=12)
+
+        title_text = get_font(38).render(
+            "CLOUD SAVE FOUND!", True, (150, 220, 255))
+        self.screen.blit(title_text,
+                         title_text.get_rect(center=(cx, dialog_y + 42)))
+
+        level = summary.get("highest_level", 0) if summary else 0
+        gold = summary.get("meta_gold", 0) if summary else 0
+        slots = summary.get("slot_count", 0) if summary else 0
+        info_line = (f"Level {level}  •  Gold {gold:,}  •  "
+                     f"{slots} slot(s)")
+        info_text = self.font_medium.render(
+            info_line, True, (255, 255, 255))
+        self.screen.blit(info_text,
+                         info_text.get_rect(center=(cx, dialog_y + 92)))
+
+        ask_text = self.font_small.render(
+            "Restore your cloud save to this device?",
+            True, (200, 230, 240))
+        self.screen.blit(ask_text,
+                         ask_text.get_rect(center=(cx, dialog_y + 128)))
+
+        ask2_text = self.font_tiny.render(
+            "Local slots are empty — ready for a new phone.",
+            True, (170, 200, 215))
+        self.screen.blit(ask2_text,
+                         ask2_text.get_rect(center=(cx, dialog_y + 156)))
+
+        btn_y = dialog_y + dialog_h - 62
+        btn_w = 220
+        btn_h = 46
+        btn_gap = 24
+        mx, my = pygame.mouse.get_pos()
+
+        yes_rect = pygame.Rect(cx - btn_w - btn_gap // 2, btn_y,
+                               btn_w, btn_h)
+        yes_hover = yes_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (60, 140, 200) if yes_hover else (45, 110, 170),
+                         yes_rect, border_radius=8)
+        pygame.draw.rect(self.screen,
+                         (150, 220, 255) if yes_hover else (100, 180, 240),
+                         yes_rect, 2, border_radius=8)
+        yes_text = self.font_medium.render(
+            "RESTORE", True, (255, 255, 255))
+        self.screen.blit(yes_text,
+                         yes_text.get_rect(center=yes_rect.center))
+        self.buttons["cloud_restore_yes"] = yes_rect
+
+        no_rect = pygame.Rect(cx + btn_gap // 2, btn_y, btn_w, btn_h)
+        no_hover = no_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (85, 90, 105) if no_hover else (60, 65, 80),
+                         no_rect, border_radius=8)
+        pygame.draw.rect(self.screen,
+                         (170, 180, 200) if no_hover else (120, 130, 150),
+                         no_rect, 2, border_radius=8)
+        no_text = self.font_medium.render(
+            "NOT NOW", True, (230, 230, 235))
+        self.screen.blit(no_text,
+                         no_text.get_rect(center=no_rect.center))
+        self.buttons["cloud_restore_no"] = no_rect
 
     def _draw_import_confirm_dialog(self):
         """
@@ -6128,6 +6421,67 @@ class Menu:
             self.restore_prompt = None
             SoundManager().play('ui_click', volume_mult=0.4)
 
+        # ═══ CLOUD SAVE (Google Play Games Saved Games) ═══
+        elif btn_id == "cloud_signin":
+            self._do_cloud_signin()
+
+        elif btn_id == "cloud_upload":
+            if not self.cloud_available:
+                self._set_cloud_status(
+                    "Cloud hanya aktif di Android + Google Play Games",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+            elif not self.cloud_signed_in:
+                self._set_cloud_status(
+                    "Masuk ke Google Play Games dulu",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+            else:
+                self.cloud_confirm = "upload"
+                SoundManager().play('ui_click', volume_mult=0.4)
+
+        elif btn_id == "cloud_download":
+            if not self.cloud_available:
+                self._set_cloud_status(
+                    "Cloud hanya aktif di Android + Google Play Games",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+            elif not self.cloud_signed_in:
+                self._set_cloud_status(
+                    "Masuk ke Google Play Games dulu",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+            elif self._all_slots_empty():
+                self._do_cloud_download()
+            else:
+                self.cloud_confirm = "download"
+                SoundManager().play('ui_click', volume_mult=0.4)
+
+        elif btn_id == "cloud_confirm_yes":
+            mode = self.cloud_confirm
+            self.cloud_confirm = None
+            if mode == "upload":
+                self._do_cloud_upload()
+            elif mode == "download":
+                self._do_cloud_download()
+
+        elif btn_id == "cloud_confirm_no":
+            self.cloud_confirm = None
+            SoundManager().play('ui_click', volume_mult=0.4)
+
+        elif btn_id == "cloud_restore_yes":
+            payload = self.cloud_restore_prompt[0] \
+                if self.cloud_restore_prompt else None
+            self.cloud_restore_prompt = None
+            if payload is not None:
+                self._apply_backup_payload(payload)
+                self._set_cloud_status("Cloud save restored!",
+                                       (130, 230, 150))
+
+        elif btn_id == "cloud_restore_no":
+            self.cloud_restore_prompt = None
+            SoundManager().play('ui_click', volume_mult=0.4)
+
         # Volume adjustments
         elif btn_id.startswith('vol_') and btn_id.endswith('_plus'):
             self._adjust_volume(btn_id[4:-5], 0.1)
@@ -6265,6 +6619,173 @@ class Menu:
             print(f"[BACKUP] Restore failed: {e}")
             self._set_backup_status(
                 "Restore failed (see log)", (255, 130, 130))
+
+    # ═══════════════════════════════════════
+    # CLOUD SAVE (aksi tombol + callback async)
+    # ═══════════════════════════════════════
+
+    def _set_cloud_status(self, text, color, duration_frames=300):
+        """Pesan status cloud di layar Settings (±5 detik @60fps)."""
+        self.cloud_status = (text, color,
+                             (getattr(self, 'animation_time', 0)
+                              + duration_frames))
+
+    def _all_slots_empty(self):
+        try:
+            import backup_manager as _bm
+            return _bm.all_slots_empty()
+        except Exception:
+            return False
+
+    def _do_cloud_signin(self):
+        try:
+            from mobile.cloud_save import manager as _m
+            if not _m.available():
+                self._set_cloud_status(
+                    "Cloud hanya aktif di Android + Google Play Games",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+                return
+            self._set_cloud_status(
+                "Menghubungkan ke Google Play Games…",
+                (180, 200, 255))
+            _m.sign_in(self._on_cloud_auth)
+        except Exception as e:
+            print(f"[CLOUD] Sign-in failed: {e}")
+            self._set_cloud_status("Sign-in gagal (lihat log)",
+                                   (255, 130, 130))
+
+    def _do_cloud_upload(self):
+        try:
+            from mobile.cloud_save import manager as _m
+            if not _m.available():
+                self._set_cloud_status(
+                    "Cloud hanya aktif di Android + Google Play Games",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+                return
+            if not _m.signed_in():
+                self._set_cloud_status(
+                    "Masuk ke Google Play Games dulu",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+                return
+            import backup_manager as _bm
+            payload = _bm.build_backup_payload()
+            if payload is None or (not payload.get("slots")
+                                   and not payload.get("settings")):
+                self._set_cloud_status(
+                    "Tidak ada save untuk diunggah", (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+                return
+            self._set_cloud_status(
+                "Mengunggah save ke cloud…", (180, 200, 255))
+            _m.upload_payload(payload, self._on_cloud_upload)
+        except Exception as e:
+            print(f"[CLOUD] Upload failed: {e}")
+            self._set_cloud_status("Upload gagal (lihat log)",
+                                   (255, 130, 130))
+
+    def _do_cloud_download(self):
+        try:
+            from mobile.cloud_save import manager as _m
+            if not _m.available():
+                self._set_cloud_status(
+                    "Cloud hanya aktif di Android + Google Play Games",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+                return
+            if not _m.signed_in():
+                self._set_cloud_status(
+                    "Masuk ke Google Play Games dulu",
+                    (255, 200, 120))
+                SoundManager().play('ui_error', volume_mult=0.4)
+                return
+            self._set_cloud_status(
+                "Mengunduh save dari cloud…", (180, 200, 255))
+            _m.download_payload(self._on_cloud_download, apply=True)
+        except Exception as e:
+            print(f"[CLOUD] Download failed: {e}")
+            self._set_cloud_status("Download gagal (lihat log)",
+                                   (255, 130, 130))
+
+    def _on_cloud_auth(self, result):
+        """Callback hasil check_auth / sign_in (dipanggil dari poll)."""
+        try:
+            from mobile.cloud_save import manager as _m
+            self.cloud_available = _m.available()
+            self.cloud_signed_in = _m.signed_in()
+        except Exception:
+            pass
+        self._cloud_auth_done = True
+        if result:
+            if result.get("ok"):
+                if self.cloud_signed_in:
+                    self._set_cloud_status(
+                        "Terhubung ke Google Play Games  ✓",
+                        (130, 230, 150))
+                else:
+                    self._set_cloud_status(
+                        "Belum masuk — tap SIGN IN untuk mengaktifkan",
+                        (180, 200, 255))
+            else:
+                self._set_cloud_status(
+                    result.get("message", "Cloud belum siap"),
+                    (255, 160, 120))
+
+    def _on_cloud_upload(self, result):
+        if result and result.get("ok"):
+            self._set_cloud_status("Save terunggah ke cloud!",
+                                   (130, 230, 150))
+            SoundManager().play('ui_upgrade', volume_mult=0.6)
+        else:
+            self._set_cloud_status(
+                (result or {}).get("message", "Upload gagal"),
+                (255, 130, 130))
+            SoundManager().play('ui_error', volume_mult=0.4)
+
+    def _on_cloud_download(self, result):
+        if result and result.get("ok"):
+            self.reload_progress()
+            self._set_cloud_status("Cloud save berhasil dipulihkan!",
+                                   (130, 230, 150))
+            SoundManager().play('ui_upgrade', volume_mult=0.6)
+        else:
+            self._set_cloud_status(
+                (result or {}).get("message", "Download gagal"),
+                (255, 130, 130))
+            SoundManager().play('ui_error', volume_mult=0.4)
+
+    def _on_cloud_peek(self, result):
+        """Callback peek cloud saat startup (slot lokal kosong)."""
+        if result and result.get("ok") and result.get("payload"):
+            self.cloud_restore_prompt = (result["payload"],
+                                         result.get("summary"))
+        # Gagal / belum ada save cloud = tidak menampilkan apa-apa.
+
+    def _poll_cloud_restore(self):
+        """
+        Setelah auth selesai, kalau semua slot lokal kosong (baru
+        install ulang / ganti HP), cek apakah ada save cloud untuk
+        ditawarkan kembali.
+        """
+        if self._cloud_restore_done or not self._cloud_auth_done:
+            return
+        self._cloud_restore_done = True
+        if not self.cloud_signed_in or not self.cloud_available:
+            return
+        if not self._all_slots_empty():
+            return
+        # Jangan bersaing dengan dialog restore backup lokal.
+        if getattr(self, "restore_prompt", None) is not None:
+            return
+        try:
+            from mobile.cloud_save import manager as _m
+            if _m.busy():
+                return
+            _m.download_payload(self._on_cloud_peek, apply=False)
+        except Exception as e:
+            print(f"[CLOUD] Peek restore gagal: {e}")
 
     def _toggle_input_mode(self):
         """Toggle antara keyboard & controller"""

@@ -758,3 +758,70 @@ Uji tanpa HP:
 ```bash
 python3 tools/test_backup_manager.py   # 44 pemeriksaan, headless
 ```
+
+## Lampiran D — Cloud Save (Google Play Games Saved Games)
+
+Cloud save melengkapi Auto Backup: selain backup lokal & Auto Backup
+Google Drive, progres juga disimpan ke **Google Play Games Saved
+Games** milik akun Google. Ini yang membuat save tetap ada setelah
+UNINSTALL dan bisa dipulihkan di HP baru (dengan akun Google yang
+sama).
+
+Bagian kode:
+
+- `mobile/cloud_save.py` — manajer cloud: init bridge, cek sign-in,
+  auto-upload tiap save, upload/download payload, conflict check, poll
+  status file dari Java. Berjalan aman (no-op) di PC/CI.
+- `src/io/github/dharmawantoxi/mysticarena/CloudSaveBridge.java` —
+  bridge Java: Play Games Services v2 (`PlayGamesSdk`,
+  `GamesSignInClient`, `SnapshotsClient`). Semua operasi async lewat
+  Task, hasilnya ditulis ke file `cloud_status.json` yang di-poll
+  Python — tidak perlu listener/interface Java dari Python.
+- `_system.py` — `SaveManager.save()` memanggil auto-upload cloud
+  setelah menulis save lokal (non-blocking, gagal hanya log).
+- `_core.py` — Settings → **☁ CLOUD SAVE** (SIGN IN / UPLOAD /
+  DOWNLOAD) + dialog restore cloud saat slot lokal kosong.
+
+### Setup di Google Play Console (saat siap rilis ke Play Store)
+
+1. **Play Console → Game services** (atau buat game di
+   <https://play.google.com/console> → Game services) → pilih game.
+2. Aktifkan **Saved Games** (toggle di tab Features/Configuration).
+3. Salin **Project ID** (angka, di halaman **Configuration**).
+4. Pastikan **OAuth clients** sudah ada:
+   - Android client dengan *package name*
+     `io.github.dharmawantoxi.mysticarena` (sesuai `buildozer.spec`).
+   - SHA1 yang dipakai harus mencocokkan **App signing key** di Play
+     Console (untuk release) atau **debug keystore** (untuk APK uji).
+     Kalau tidak cocok, sign-in akan gagal di perangkat.
+
+### Memberikan Project ID ke build
+
+p4a hook (`tools/p4a_hooks.py`) menaruh meta-data
+`com.google.android.gms.games.APP_ID` + resource `game_services_project_id`
+hanya jika Project ID tersedia:
+
+- **GitHub Actions**: tambahkan **repository secret**
+  `MYSTIC_GAMES_PROJECT_ID` (nilai: angka Project ID). Build berikutnya
+  otomatis memakainya.
+- **Build lokal**:
+  ```bash
+  MYSTIC_GAMES_PROJECT_ID=123456789012 buildozer android debug
+  # atau
+  MYSTIC_GAMES_PROJECT_ID_FILE=~/mystic_games_id.txt buildozer android debug
+  ```
+
+Jika tidak diset, aplikasi tetap build & jalan; cloud dalam mode
+NONAKTIF (tidak crash) dan 3 jalur penyimpanan lama tetap dipakai.
+
+### Uji
+
+```bash
+python3 tools/test_cloud_save.py      # 18 pemeriksaan headless (desktop)
+python3 tools/test_backup_manager.py  # backup lokal tidak terpengaruh
+```
+
+Untuk uji di HP (setelah APP_ID diset): masuk Play Games → buka game →
+tampilkan Settings → ☁ CLOUD SAVE → SIGN IN → UPLOAD → hapus aplikasi →
+pasang ulang → masuk akun sama → dialog "CLOUD SAVE FOUND" → RESTORE.
+
