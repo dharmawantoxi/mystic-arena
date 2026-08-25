@@ -1,7 +1,8 @@
 """Headless test paket item TIER II (8 item legendary terinspirasi Dota 2).
 
 Mengetes:
-  - integritas katalog (16 item, ikon ada di disk, field lengkap)
+  - integritas katalog (25 item = 8 Tier I + 8 Tier II + 9 Tier III,
+    ikon ada di disk, field lengkap)
   - pagination toko (tab TIER I / TIER II, BUY per halaman)
   - stat getter inventory (evasion, block, shred, bash, AS, dll.)
   - mekanik via Hero ASLI: evasion, block, veil, shred, rend, stun,
@@ -26,25 +27,38 @@ from hero_items import (ItemShopUI, HeroItemInventory,  # noqa: E402
 TIER2 = ["scarlet_bulwark", "monarch_wings", "corroder", "tempest_vane",
          "fenrir_chain", "sanguine_thorn", "abyss_breaker", "thunder_coil"]
 
-# ── T1: katalog lengkap 16 item + ikon di disk ─────────────
-assert len(ITEM_CATALOG) == 16, f"katalog harus 16 item, ada {len(ITEM_CATALOG)}"
-assert len(ITEM_SHOP_ORDER) == 16
+TIER3 = ["razor_carapace", "everfrost_guard", "sundering_cudgel",
+         "frostbound_eye", "gale_pike", "basilisk_breath",
+         "solar_brand", "runic_gavel", "searbrand"]
+
+# ── T1: katalog lengkap 25 item + ikon di disk ─────────────
+assert len(ITEM_CATALOG) == 25, \
+    f"katalog harus 25 item, ada {len(ITEM_CATALOG)}"
+assert len(ITEM_SHOP_ORDER) == 25
 assert set(ITEM_SHOP_ORDER) == set(ITEM_CATALOG.keys())
+assert set(TIER2) | set(TIER3) <= set(ITEM_CATALOG)
 icons_dir = os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "assets", "items")
-for sid in TIER2:
+for sid in ITEM_CATALOG:
     d = ITEM_CATALOG[sid]
     for k in ("name", "cost", "icon", "color", "glow", "stats",
               "desc", "flavor", "category"):
         assert k in d, f"{sid} kurang field {k}"
-    assert os.path.exists(os.path.join(icons_dir, d["icon"])), \
-        f"ikon {d['icon']} tidak ada"
+    ipath = os.path.join(icons_dir, d["icon"])
+    assert os.path.exists(ipath), f"ikon {d['icon']} tidak ada"
+    # Ikon harus artwork asli (bukan placeholder 64x64 kasar):
+    # semua ikon Tier II & Tier III minimal 256x256.
+    if sid in TIER2 or sid in TIER3:
+        raw = pygame.image.load(ipath)
+        assert raw.get_width() >= 256 and raw.get_height() >= 256, \
+            f"ikon {d['icon']} masih placeholder kecil {raw.get_size()}"
     # Nama harus berbeda dari nama asli Dota 2 (anti copyright)
     for banned in ("crimson guard", "butterfly", "desolator",
                    "wind waker", "gleipnir", "bloodthorn",
                    "abyssal blade", "mjollnir", "mjolnir"):
         assert d["name"].lower() != banned, f"{sid} memakai nama Dota"
-print("T1 OK  - 16 item, ikon ada, nama bebas copyright")
+print("T1 OK  - 25 item, ikon ada (Tier II & III >= 256x256), "
+      "nama bebas copyright")
 
 # ── T2: pagination toko + BUY item Tier II ─────────────────
 class FakeHero:

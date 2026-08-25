@@ -931,8 +931,14 @@ class Tower:
 
         self.shoot_flash_timer = 8
 
-    def take_damage(self, damage, from_team):
-        """Damage sistem dengan shield absorb"""
+    def take_damage(self, damage, from_team, damage_type='normal',
+                    source=None):
+        """Damage sistem dengan shield absorb.
+
+        ``damage_type``/``source`` diterima supaya pemanggil umum
+        (serangan hero/boss, proyektil skill yang meneruskan
+        ``source=``) tidak crash saat targetnya menara.
+        """
         self.no_damage_timer = 0
 
         remaining_damage = damage
@@ -1581,7 +1587,8 @@ class Castle:
             Bullet(self.x, self.y - 25, target, self.damage, self.team)
         )
 
-    def take_damage(self, damage, from_team, damage_type='normal'):
+    def take_damage(self, damage, from_team, damage_type='normal',
+                    source=None):
         # ═══ CASTLE SHIELD LOGIC (anti-smurf, wave <10) ═══
         # Both player and AI castles have shield before wave 10
         effective_damage = damage
@@ -5227,7 +5234,8 @@ class Minion(TowerDebuffMixin):
             self.x += self.speed * dx / dist
             self.y += self.speed * dy / dist
 
-    def take_damage(self, damage, from_team, damage_type='normal'):
+    def take_damage(self, damage, from_team, damage_type='normal',
+                    source=None):
         # ═══ STATUS ITEM TIER II: Soul Rend amp + Corroder shred ═══
         if damage > 0:
             if getattr(self, "dmg_amp_timer", 0) > 0:
