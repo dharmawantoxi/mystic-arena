@@ -1,19 +1,81 @@
 """
 python-for-android hooks for Mystic Arena.
 
-Buildozer 1.5.0 currently quotes android.extra_manifest_application_arguments
-incorrectly when it calls p4a through subprocess(list). To keep Android 12+
-backup rules without editing the GitHub workflow, the build uses this p4a hook
-instead: after p4a renders AndroidManifest.xml, add
-android:dataExtractionRules to the <application> element directly.
+1) Android 12+ backup rules:
+   Buildozer 1.5.0 currently quotes
+   android.extra_manifest_application_arguments incorrectly when it
+   calls p4a through subprocess(list). To keep Android 12+ backup
+   rules without editing the GitHub workflow, the build uses this p4a
+   hook: after p4a renders AndroidManifest.xml, add
+   android:dataExtractionRules to the <application> element directly.
+
+2) Cloud Save (Google Play Games Saved Games):
+   PGS v2 memerlukan meta-data
+       <meta-data android:name="com.google.android.gms.games.APP_ID"
+                  android:value="@string/game_services_project_id"/>
+   dan string resource `game_services_project_id` di res/values.
+
+   Hook membaca Project ID dari:
+       - env MYSTIC_GAMES_PROJECT_ID  (disarankan untuk CI / GitHub Actions)
+       - path file dari env MYSTIC_GAMES_PROJECT_ID_FILE (fallback)
+   Kalau tidak diset, meta-data TIDAK ditambahkan -> fitur cloud NONAKTIF
+   (bridge Java menangkap error dan game tetap jalan).
 """
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
-
 DATA_EXTRACTION_ATTR = 'android:dataExtractionRules="@xml/data_extraction_rules"'
+GAMES_META_DATA = (
+    '<meta-data android:name="com.google.android.gms.games.APP_ID" '
+    'android:value="@string/game_services_project_id"/>'
+)
+GAMES_STRING_NAME = "game_services_project_id"
+
+
+def _read_games_project_id() -> str | None:
+    """Project ID Play Games (numeric). Prioritas: env → file env → file repo."""
+    value = os.environ.get("MYSTIC_GAMES_PROJECT_ID", "").strip()
+    if value:
+        return value
+    file_env = os.environ.get("MYSTIC_GAMES_PROJECT_ID_FILE", "").strip()
+    if file_env:
+        try:
+            p = Path(file_env)
+            if p.is_file():
+                value = p.read_text(encoding="utf-8").strip()
+                if value:
+                    return value
+        except Exception as exc:
+            print(f"[p4a-hook] baca project id gagal: {exc}")
+    # Fallback: file di root repo yang di-ignore Git (aman untuk build lokal).
+    try:
+        local = Path("android_games_app_id.txt")
+        if local.is_file():
+            value = local.read_text(encoding="utf-8").strip()
+            if value:
+                return value
+    except Exception as exc:
+        print(f"[p4a-hook] baca android_games_app_id.txt gagal: {exc}")
+    return None
+
+
+def _write_games_strings(project_id: str) -> None:
+    """Tulis res/values/mystic_games.xml berisi string project id."""
+    values = Path("src/main/res/values")
+    values.mkdir(parents=True, exist_ok=True)
+    out = values / "mystic_games.xml"
+    content = (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        "<resources>\n"
+        f'    <string translatable="false" name="{GAMES_STRING_NAME}">'
+        f'{project_id}</string>\n'
+        "</resources>\n"
+    )
+    out.write_text(content, encoding="utf-8")
+    print(f"[p4a-hook] Tulis {GAMES_STRING_NAME}={project_id} ke {out}")
 
 
 def _patch_manifest() -> None:
@@ -23,21 +85,42 @@ def _patch_manifest() -> None:
         return
 
     text = manifest.read_text(encoding="utf-8")
-    if "android:dataExtractionRules=" in text:
-        print("[p4a-hook] android:dataExtractionRules sudah ada di manifest")
-        return
 
-    app_pos = text.find("<application")
-    if app_pos < 0:
-        raise RuntimeError("Tag <application> tidak ditemukan di AndroidManifest.xml")
+    # ── 1) Android 12+ dataExtractionRules ──
+    if "android:dataExtractionRules=" not in text:
+        app_pos = text.find("<application")
+        if app_pos < 0:
+            raise RuntimeError(
+                "Tag <application> tidak ditemukan di AndroidManifest.xml")
+        tag_end = text.find(">", app_pos)
+        if tag_end < 0:
+            raise RuntimeError(
+                "Tag <application> tidak tertutup di AndroidManifest.xml")
+        text = (text[:tag_end] + f"\n                 {DATA_EXTRACTION_ATTR}"
+                + text[tag_end:])
+        print(f"[p4a-hook] Menambahkan {DATA_EXTRACTION_ATTR} ke {manifest}")
 
-    tag_end = text.find(">", app_pos)
-    if tag_end < 0:
-        raise RuntimeError("Tag <application> tidak tertutup di AndroidManifest.xml")
+    # ── 2) Cloud Save: Play Games APP_ID meta-data ──
+    project_id = _read_games_project_id()
+    if project_id:
+        _write_games_strings(project_id)
+        if "com.google.android.gms.games.APP_ID" not in text:
+            app_pos = text.find("<application")
+            insert_at = text.find(">", app_pos) + 1 if app_pos >= 0 else -1
+            if insert_at > 0:
+                text = (text[:insert_at] + "\n                 " + GAMES_META_DATA
+                        + text[insert_at:])
+                print(f"[p4a-hook] Menambahkan {GAMES_META_DATA} ke {manifest}")
+            else:
+                print("[p4a-hook] Tag <application> tidak ditemukan, "
+                      "meta-data Play Games dilewati")
+        else:
+            print("[p4a-hook] Play Games APP_ID meta-data sudah ada")
+    else:
+        print("[p4a-hook] MYSTIC_GAMES_PROJECT_ID tidak diset — "
+              "Cloud Save Play Games dalam mode NONAKTIF")
 
-    text = text[:tag_end] + f"\n                 {DATA_EXTRACTION_ATTR}" + text[tag_end:]
     manifest.write_text(text, encoding="utf-8")
-    print(f"[p4a-hook] Menambahkan {DATA_EXTRACTION_ATTR} ke {manifest}")
 
 
 def after_apk_build(toolchain) -> None:
