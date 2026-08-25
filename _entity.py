@@ -146,7 +146,15 @@ class Bullet:
         if not self.target or not self.target.alive:
             return
 
-        self.target.take_damage(self.damage, self.team)
+        try:
+            self.target.take_damage(self.damage, self.team)
+        except Exception:
+            # Target berada dalam state tidak konsisten (mis. hero yang
+            # baru saja mati/respawn di frame yang sama). Jangan biarkan
+            # satu peluru membuat seluruh game force-close — cukup
+            # matikan peluru ini.
+            self.active = False
+            return
 
         # ─── SPECIAL EFFECTS ───
         if self.bullet_type == "cannon":
@@ -168,10 +176,17 @@ class Bullet:
                         continue
                     d = math.hypot(u.x - self.target.x, u.y - self.target.y)
                     if d <= splash_radius:
-                        u.take_damage(int(self.damage * 0.6), self.team)
+                        try:
+                            u.take_damage(int(self.damage * 0.6), self.team)
+                        except Exception:
+                            continue
                         if burn_dps > 0 and hasattr(u, 'apply_debuff'):
-                            u.apply_debuff('burn', burn_dps, burn_duration,
-                                           source_team=self.team)
+                            try:
+                                u.apply_debuff('burn', burn_dps,
+                                               burn_duration,
+                                               source_team=self.team)
+                            except Exception:
+                                pass
 
         elif self.bullet_type == "ice":
             # Apply slow gerak (lama) + slow ATTACK SPEED (baru)

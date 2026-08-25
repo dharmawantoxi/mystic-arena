@@ -2071,6 +2071,18 @@ class Game:
                         if m.alive or (hasattr(m, 'death_anim') and m.death_anim > 0)]
         self.towers = [t for t in self.towers if t.alive]
 
+        # ═══ AUTO-CLOSE POPUP KALAU TOWER YANG DIPILIH SUDAH MATI ═══
+        # Popup tower/nexus tetap terbuka walau towernya hancur, dan
+        # `selected_tower`/`popup_target` masih menunjuk tower mati
+        # yang sudah terbuang dari `self.towers`. Akibatnya tombol
+        # SELL/UPGRADE bisa menyentuh tower "hantu" -> ValueError /
+        # state UI kotor. Tutup popup segera supaya UI selalu konsisten
+        # dengan daftar tower hidup.
+        if self.selected_tower is not None:
+            _st = self.selected_tower
+            if not getattr(_st, "alive", False) or _st not in self.towers:
+                self.close_popup()
+
         for h in all_heroes:
             if h.alive and getattr(h, "_rewarded", False):
                 h._rewarded = False
@@ -6769,22 +6781,34 @@ class InputHandler:
         """Jual tower yang selected"""
         g = self.game
 
-        if not (g.selected_tower and g.selected_tower.is_player_built):
+        tower = g.selected_tower
+        if not (tower and tower.is_player_built):
             return
 
-        sell_val = g.selected_tower.sell_value()
+        # ═══ GUARD ANTI-CRASH (sell tower) ═══
+        # Tower bisa saja sudah hancur (alive=False) saat popup masih
+        # terbuka. Di akhir `Game.update()`, daftar `g.towers` difilter
+        # menjadi hanya tower hidup, sehingga tower itu TIDAK lagi ada
+        # di `g.towers`. Kalau tetap dipaksa `g.towers.remove(tower)`,
+        # Python melempar ValueError("list.remove(x): x not in list")
+        # dan game force-close. Jadi kalau tower sudah tidak ada di
+        # daftar (mati / sudah dijual), cukup tutup popup tanpa crash.
+        if tower not in g.towers:
+            g.close_popup()
+            return
+
+        sell_val = tower.sell_value()
         if sell_val == 0:
             sell_val = 50  # refund 50% dari 100G
         g.gold += sell_val
 
         # Mark slot as available lagi
         for slot in g.build_slots_blue:
-            if slot['x'] == g.selected_tower.x and \
-                    slot['y'] == g.selected_tower.y:
+            if slot['x'] == tower.x and slot['y'] == tower.y:
                 slot['taken'] = False
                 break
 
-        g.towers.remove(g.selected_tower)
+        g.towers.remove(tower)
         SoundManager().play('ui_sell')
         g.close_popup()
 
