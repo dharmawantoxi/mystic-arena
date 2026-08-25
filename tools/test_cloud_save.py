@@ -12,7 +12,7 @@ Yang diperiksa
   2. upload_payload: mengirim file temp ke bridge, status selesai
      diproses oleh poll(), callback dapat hasil OK, file temp dihapus.
   3. download_payload(apply=True): file yang diunduh dibungkus ulang,
-     divalidasi magic/checksum, lalu apply_backup() memulihkan slot +
+     divalidasi magic/checksum, lalu apply_payload() memulihkan slot +
      settings lokal.
   4. download dengan envelope rusak (magic salah) ditolak, callback
      error, save lokal tidak terhapus.
@@ -46,7 +46,6 @@ os.environ["MYSTIC_SAVE_DIR"] = os.path.join(WORK_DIR, "saves")
 os.chdir(WORK_DIR)  # storage_paths -> SAVE_DIR mengikuti MYSTIC_SAVE_DIR
 sys.path.insert(0, REPO_ROOT)
 
-import backup_manager as bm  # noqa: E402
 import mobile.cloud_save as cs  # noqa: E402
 
 SAVE_DIR = os.path.join(WORK_DIR, "saves")
@@ -189,7 +188,7 @@ make_slot(1)
 make_slot(2)
 make_slot(3)
 make_settings()
-payload = bm.build_backup_payload()
+payload = cs.build_payload()
 results = []
 f1 = fresh_ready()
 cs.manager.upload_payload(payload, results.append)
@@ -210,7 +209,7 @@ make_slot(1, level=5, gold=1200)
 make_slot(2)
 make_slot(3)
 make_settings()
-cloud_payload = bm.build_backup_payload()
+cloud_payload = cs.build_payload()
 wipe_saves()
 make_settings()       # settings lokal masih ada; apply menimpanya
 env = {"magic": "MYSTIC_ARENA_CLOUD", "version": 1,

@@ -14,9 +14,12 @@
 #
 # PERILAKU
 # --------
+#   Modul ini ADALAH satu-satunya fitur save/restore pemain. Slot save
+#   lokal (slot_*.json) hanya dipakai sebagai working copy sementara —
+#   sumber kebenaran progres ada di Google Play Games Saved Games.
 #   1. start()  : init bridge Android. Kalau Play Games / APP_ID belum
-#      siap, fitur dianggap NONAKTIF (game tetap jalan, save lokal &
-#      Auto Backup tetap dipakai seperti biasa).
+#      siap, fitur dianggap NONAKTIF (game tetap jalan dengan working
+#      copy lokal; tidak ada save cloud baru).
 #   2. check_auth(): cek apakah pemain sudah masuk Play Games
 #      (v2 melakukan sign-in otomatis saat game diluncurkan).
 #   3. auto_upload(): dipanggil setiap SaveManager.save() (dipicu dari
@@ -26,10 +29,11 @@
 #      game (Menu.update) supaya callback/percobaan cloud jalan.
 #
 # TANPA ANDROID / TANPA GOOGLE PLAY GAMES -> semua metode jadi no-op
-# yang aman dan tidak pernah melempar exception. Save lokal tidak akan
-# pernah dirusak oleh fitur ini.
+# yang aman dan tidak pernah melempar exception. Working copy lokal
+# tidak akan pernah dirusak oleh fitur ini.
 # ================================================================
 
+import hashlib
 import json
 import os
 import sys
@@ -37,6 +41,8 @@ import tempfile
 import threading
 import time
 import uuid
+
+import storage_paths
 
 CLOUD_MAGIC = "MYSTIC_ARENA_CLOUD"
 CLOUD_VERSION = 1
@@ -166,6 +172,221 @@ def _err_result(kind, code, message):
 
 
 # ================================================================
+# PAYLOAD SAVE (working copy lokal <-> cloud)
+#
+# Payload berisi SEMUA slot save + settings dalam satu dict, dengan
+# checksum sha256. Magic-nya sengaja dipertahankan sebagai
+# "MYSTIC_ARENA_BACKUP" (bukan diganti) supaya snapshot cloud yang
+# sudah pernah diunggah oleh versi lama tetap bisa dipulihkan.
+# ================================================================
+
+PAYLOAD_MAGIC = "MYSTIC_ARENA_BACKUP"  # dijaga untuk kompatibilitas
+PAYLOAD_VERSION = 1
+NUM_SLOTS = 3  # sinkron dengan _system.SaveManager.NUM_SLOTS
+
+
+def _save_dir():
+    # Dibaca dinamis supaya tes bisa mengganti storage_paths.SAVE_DIR
+    # tanpa reload modul ini.
+    return storage_paths.SAVE_DIR
+
+
+def _slot_file(slot_num):
+    return os.path.join(_save_dir(), "slot_%d.json" % slot_num)
+
+
+def _settings_file():
+    return os.path.join(_save_dir(), "settings.json")
+
+
+def _read_json(path):
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def all_slots_empty():
+    """True kalau TIDAK ADA satu pun slot save (indikasi install ulang)."""
+    for i in range(1, NUM_SLOTS + 1):
+        if os.path.exists(_slot_file(i)):
+            return False
+    return True
+
+
+def compute_checksum(payload):
+    """sha256 dari JSON kanonis payload TANPA field 'checksum'."""
+    body = {k: v for k, v in payload.items() if k != "checksum"}
+    canonical = json.dumps(body, sort_keys=True,
+                           separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def build_payload():
+    """
+    Kumpulkan semua slot + settings jadi satu payload untuk diunggah.
+    Return None kalau tidak ada satu pun slot terisi.
+    """
+    slots = {}
+    for i in range(1, NUM_SLOTS + 1):
+        path = _slot_file(i)
+        if not os.path.exists(path):
+            continue
+        try:
+            slots[str(i)] = _read_json(path)
+        except Exception as e:
+            # Slot korup dilewati; jangan gagalkan seluruh payload.
+            print("[CLOUD] Slot %d unreadable, skipped: %s" % (i, e))
+
+    if not slots:
+        return None
+
+    settings = {}
+    try:
+        if os.path.exists(_settings_file()):
+            settings = _read_json(_settings_file())
+    except Exception as e:
+        print("[CLOUD] Settings unreadable, skipped: %s" % e)
+
+    payload = {
+        "magic": PAYLOAD_MAGIC,
+        "version": PAYLOAD_VERSION,
+        "exported_at": time.time(),
+        "slots": slots,
+        "settings": settings,
+    }
+    payload["checksum"] = compute_checksum(payload)
+    return payload
+
+
+def parse_payload(text):
+    """
+    Parse + validasi payload cloud.
+    Return (payload, None) kalau sah, (None, pesan_error) kalau tidak.
+    """
+    try:
+        payload = json.loads(text)
+    except Exception:
+        return None, "File corrupt (not valid JSON)"
+
+    if not isinstance(payload, dict):
+        return None, "File corrupt (unexpected structure)"
+    if payload.get("magic") != PAYLOAD_MAGIC:
+        return None, "Not a Mystic Arena save file"
+    try:
+        version = int(payload.get("version", 0))
+    except Exception:
+        return None, "File corrupt (bad version)"
+    if version < 1 or version > PAYLOAD_VERSION:
+        return None, "Save version %s not supported" % version
+    if not isinstance(payload.get("slots"), dict) or \
+            not payload["slots"]:
+        return None, "Save contains no data"
+    if payload.get("checksum") != compute_checksum(payload):
+        return None, "File corrupt (checksum mismatch)"
+    return payload, None
+
+
+def get_payload_summary(payload):
+    """
+    Ringkasan untuk dialog konfirmasi:
+    level tertinggi, gold terbanyak, tanggal export, jumlah slot.
+    """
+    highest_level = 0
+    best_gold = 0
+    newest_played = 0.0
+    for data in payload.get("slots", {}).values():
+        try:
+            completed = data.get("completed_levels", []) or []
+            if completed:
+                highest_level = max(highest_level, max(completed))
+            best_gold = max(best_gold, int(data.get("meta_gold", 0)))
+            newest_played = max(
+                newest_played,
+                float(data.get("slot_last_played", 0) or 0))
+        except Exception:
+            continue
+
+    exported_at = float(payload.get("exported_at", 0) or 0)
+    try:
+        date_str = time.strftime("%d %b %Y %H:%M",
+                                 time.localtime(exported_at))
+    except Exception:
+        date_str = "?"
+
+    return {
+        "highest_level": highest_level,
+        "meta_gold": best_gold,
+        "slot_count": len(payload.get("slots", {})),
+        "exported_at": exported_at,
+        "exported_at_str": date_str,
+        "newest_played": newest_played,
+    }
+
+
+def apply_payload(payload):
+    """
+    Pulihkan SEMUA slot + settings dari payload (payload diasumsikan
+    sudah lolos parse_payload). Menimpa working copy lokal.
+    Return (ok, error_msg).
+    """
+    try:
+        save_dir = _save_dir()
+        os.makedirs(save_dir, exist_ok=True)
+
+        for i in range(1, NUM_SLOTS + 1):
+            slot_data = payload.get("slots", {}).get(str(i))
+            path = _slot_file(i)
+            if slot_data is None:
+                # Slot kosong di cloud -> kosongkan juga di lokal
+                # supaya hasil restore = kondisi saat upload.
+                if os.path.exists(path):
+                    os.remove(path)
+                continue
+            tmp = path + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(slot_data, f, indent=2)
+            os.replace(tmp, path)
+
+        settings = payload.get("settings") or {}
+        if settings:
+            tmp = _settings_file() + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(settings, f, indent=2)
+            os.replace(tmp, _settings_file())
+
+        _reload_runtime_settings()
+        print("[CLOUD] Restore selesai (%d slot)"
+              % len(payload.get("slots", {})))
+        return True, None
+    except Exception as e:
+        print("[CLOUD] Restore gagal: %s" % e)
+        return False, str(e)
+
+
+def _reload_runtime_settings():
+    """
+    Setelah settings.json ditimpa, muat ulang singleton GameSettings
+    dan sinkronkan volume ke SoundManager. Best-effort: kalau game
+    belum memuat modul-modul itu (mis. saat tes CLI), lewati saja.
+    """
+    try:
+        from game_settings import GameSettings
+        s = GameSettings()
+        s._load()
+    except Exception:
+        return
+    try:
+        from sound_manager import SoundManager
+        sm = SoundManager()
+        sm.sfx_volume = s.sfx_volume
+        sm.bgm_volume = s.bgm_volume
+        sm.voice_volume = s.voice_volume
+        sm.set_master_volume(s.master_volume)
+        sm.update_bgm_volume()
+    except Exception:
+        pass
+
+
+# ================================================================
 # CLOUD SAVE MANAGER
 # ================================================================
 
@@ -288,7 +509,7 @@ class CloudSaveManager:
 
     def upload_payload(self, payload, callback=None):
         """
-        Unggah payload (dict backup lokal) sebagai snapshot cloud.
+        Unggah payload (working copy lokal) sebagai snapshot cloud.
         Payload dibungkus envelope cloud untuk validasi saat download.
         """
         if not self._ready():
@@ -328,7 +549,7 @@ class CloudSaveManager:
     def download_payload(self, callback=None, apply=False):
         """
         Unduh snapshot cloud ke file sementara lalu (opsional) terapkan
-        ke save lokal. Callback selalu menerima dict result.
+        ke working copy lokal. Callback selalu menerima dict result.
         """
         if not self._ready():
             if callback:
@@ -352,16 +573,15 @@ class CloudSaveManager:
 
     def auto_upload(self, callback=None):
         """
-        Dipanggil dari SaveManager.save() tiap kali save lokal ditulis.
-        Non-blocking, tidak mengganggu alur save.
+        Dipanggil dari SaveManager.save() tiap kali working copy lokal
+        ditulis. Non-blocking, tidak mengganggu alur save.
         """
         try:
             if not self._inited:
                 self.start()
             if not self._available or not self._signed_in or self._busy:
                 return False
-            import backup_manager as bm  # lazy import (hindari siklus)
-            payload = bm.build_backup_payload()
+            payload = build_payload()
             if payload is None or (not payload.get("slots")
                                    and not payload.get("settings")):
                 return False
@@ -515,14 +735,13 @@ class CloudSaveManager:
                     if not isinstance(payload, dict):
                         err = "Payload cloud rusak"
                     else:
-                        import backup_manager as bm
                         text = json.dumps(payload, ensure_ascii=False)
-                        parsed, parse_err = bm.parse_backup_text(text)
+                        parsed, parse_err = parse_payload(text)
                         if parsed is None:
                             err = parse_err or "Validasi cloud gagal"
                         else:
                             payload = parsed
-                            summary = bm.get_backup_summary(parsed)
+                            summary = get_payload_summary(parsed)
         except Exception as e:
             err = "Baca cloud gagal: %s" % e
 
@@ -534,8 +753,7 @@ class CloudSaveManager:
             applied = False
             if apply_now:
                 try:
-                    import backup_manager as bm
-                    ok_apply, apply_err = bm.apply_backup(payload)
+                    ok_apply, apply_err = apply_payload(payload)
                     if ok_apply:
                         applied = True
                     else:
