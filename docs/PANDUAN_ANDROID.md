@@ -506,7 +506,21 @@ Langkah aktivasi:
 2. Tambahkan 4 secret di **Settings → Secrets and variables → Actions**:
    `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEYALIAS`,
    `KEYALIAS_PASSWORD` (lihat bagian 8).
-3. Buka tab **Actions**, jalankan workflow secara manual sekali
+3. **(Disarankan)** Tambahkan secret `DEBUG_KEYSTORE_BASE64` supaya
+   semua APK debug dari CI punya tanda tangan yang sama. Ambil dari
+   PC yang sudah pernah build debug:
+   ```bash
+   base64 -w0 ~/.android/debug.keystore   # Linux/macOS
+   ```
+   Tanpa secret ini, **tiap build debug dari GitHub Actions ditandatangani
+   keystore debug baru** (runner selalu baru) → menginstall APK debug
+   build terbaru di atas yang lama gagal dengan *"App not installed as
+   package conflicts with an existing package"*. Kalau secret belum
+   diisi, workflow otomatis mengunggah artefak `debug-keystore` — unduh
+   sekali, simpan sebagai secret. Jangan lupa uninstall dulu APK lama
+   saat beralih dari tanda tangan lama ke baru (save bisa dipulihkan
+   lewat ☁ CLOUD SAVE / BACKUP).
+4. Buka tab **Actions**, jalankan workflow secara manual sekali
    (`Run workflow`) untuk memanaskan cache.
 
 Catatan: build pertama di CI ±50-70 menit; setelah cache SDK/NDK
@@ -677,6 +691,7 @@ berkasnya. Isi juga `KEYSTORE_PASSWORD`, `KEYALIAS`, `KEYALIAS_PASSWORD`.
 | Suara pecah / delay | Naikkan buffer `pre_init(..., buffer=2048)`, kurangi jumlah channel, konversi wav → ogg |
 | Game lag setelah main 10 menit | Kebocoran surface/cache. Panggil `perf.clear_text_caches()` saat ganti level (sudah dipasang) dan cek daftar partikel yang tidak pernah dibersihkan |
 | Aplikasi crash saat kembali dari background | Sudah ditangani `_handle_background()` di `main.py`; pastikan tidak ada kode lain yang mengakses surface saat app di background |
+| Pasang APK gagal: `App not installed as package conflicts with an existing package` | **Tanda tangan (signature) APK baru ≠ APK yang sudah terpasang.** Penyebab umum: (a) dulu pasang APK **debug**, sekarang install APK **release** (atau sebaliknya); (b) APK debug di-build di **mesin berbeda** — termasuk **setiap build dari GitHub Actions**: runner selalu baru sehingga `~/.android/debug.keystore` dibuat ulang dan tiap APK debug CI punya tanda tangan berbeda; (c) keystore dibuat ulang/berubah; (d) build release tanpa `P4A_RELEASE_*` → Buildozer memakai keystore debug acak. Solusi cepat: simpan save dulu (Settings → ☁ CLOUD SAVE → UPLOAD, atau BACKUP → EXPORT), **uninstall** aplikasi lama, install APK baru, lalu restore. Solusi permanen agar `adb install -r` bisa update debug APK: isi secret **`DEBUG_KEYSTORE_BASE64`** (base64 `~/.android/debug.keystore`) — lihat bagian 6. Untuk release, selalu pakai keystore yang sama (`P4A_RELEASE_*` / `KEYSTORE_BASE64`) dan naikkan `android.numeric_version` tiap rilis |
 | Play Console: "App bundle not signed" | Variabel `P4A_RELEASE_*` tidak terbaca saat `buildozer android release` |
 | Play Console: "Target API level" | `android.api = 36` dan build ulang (bukan hanya ubah spec) |
 
@@ -717,6 +732,8 @@ adb shell run-as io.github.dharmawantoxi.mysticarena cat files/crash_log.txt
 - [ ] Keystore dicadangkan di 2 tempat
 - [ ] Kebijakan privasi online dan URL-nya valid
 - [ ] `android.numeric_version` unik untuk tiap upload
+- [ ] Secret `DEBUG_KEYSTORE_BASE64` diisi (supaya APK debug dari CI
+      bisa di-update dengan `adb install -r` tanpa uninstall)
 
 ## Lampiran C — Backup save lokal (export/import)
 
