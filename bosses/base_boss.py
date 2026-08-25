@@ -2249,8 +2249,10 @@ class Boss(TowerDebuffMixin):
 
         hp_ratio = self.hp / self.max_hp
 
-        # ═══ PRIORITY 1: HP kritis + banyak enemy → R (Mana Void ultimate) ═══
-        if hp_ratio < 0.4 and nearby_count >= 2 and self.r_timer == 0:
+        # ═══ PRIORITY 1: HP kritis → R (Mana Void ultimate) ═══
+        # Mana Void tidak lagi menunggu musuh berkerumun. Begitu HP Gornak
+        # kritis dan ultimate siap, ia langsung mengeluarkannya.
+        if hp_ratio < 0.4 and self.r_timer == 0:
             self._cast_r_mana_void(enemies)
             return
 
