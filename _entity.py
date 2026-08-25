@@ -1826,11 +1826,11 @@ class Castle:
 # ═══════════════════════════════════════════════════════
 
 def _render_castle_full(canvas, castle, cx, cy, palette):
-    """Render castle berdasarkan level"""
+    """Render castle berdasarkan level - TANPA ground tanah/rumput"""
     lvl = castle.level
 
-    # Ground base (semua level)
-    _draw_castle_ground(canvas, cx, cy, palette)
+    # Ground base DIHAPUS: hanya castle saja, tidak ada tanah/rumput
+    # _draw_castle_ground(canvas, cx, cy, palette)  # disabled
 
     if lvl == 1:
         _render_castle_lvl1(canvas, cx, cy - 15, palette)
@@ -1846,88 +1846,9 @@ def _render_castle_full(canvas, castle, cx, cy, palette):
         _render_castle_lvl6(canvas, cx, cy - 15, palette)
 
 def _draw_castle_ground(canvas, cx, cy, palette):
-    """Ground base - SMALLER"""
-    ground_w = 160  # dari 200
-    ground_h = 26   # dari 32
-
-    # Shadow (soft)
-    for i in range(5):
-        alpha = 90 - i * 15
-        if alpha <= 0:
-            break
-        w = ground_w + i * 4
-        h = ground_h + i * 2
-        shadow_surf = pygame.Surface((w, h), pygame.SRCALPHA)
-        pygame.draw.ellipse(shadow_surf, (0, 0, 0, alpha),
-                            (0, 0, w, h))
-        canvas.blit(shadow_surf, (cx - w // 2, cy - h // 2 + 3))
-
-    # ═══ THEME-BLENDING GROUND TRANSITION ═══
-    # Outer rings use the grass palette, so the castle does not read as
-    # a separate perfect dirt island when placed on forest terrain.
-    # The smaller dirt clearing remains only under the structure.
-    pygame.draw.ellipse(canvas, palette['grass_dark'],
-                        (cx - ground_w // 2, cy,
-                         ground_w, ground_h))
-    pygame.draw.ellipse(canvas, palette['grass_mid'],
-                        (cx - ground_w // 2 + 4, cy + 3,
-                         ground_w - 8, ground_h - 7))
-    dirt_w, dirt_h = ground_w - 34, ground_h - 12
-    pygame.draw.ellipse(canvas, palette['ground_dark'],
-                        (cx - dirt_w // 2, cy + 6, dirt_w, dirt_h))
-    pygame.draw.ellipse(canvas, palette['ground_mid'],
-                        (cx - dirt_w // 2 + 4, cy + 8,
-                         dirt_w - 8, dirt_h - 4))
-    pygame.draw.ellipse(canvas, palette['ground_light'],
-                        (cx - dirt_w // 2 + 11, cy + 9,
-                         dirt_w - 22, max(3, dirt_h - 8)))
-
-    # Cobblestone path
-    random.seed(42)
-    for _ in range(25):
-        px = cx + random.randint(-ground_w // 2 + 8, ground_w // 2 - 8)
-        py = cy + random.randint(4, ground_h - 6)
-        s = random.randint(2, 5)
-        pygame.draw.rect(canvas, palette['s_shadow'],
-                         (px, py, s + 1, s // 2 + 2))
-        pygame.draw.rect(canvas, palette['s_dark'],
-                         (px, py, s, s // 2 + 1))
-        pygame.draw.rect(canvas, palette['s_mid'],
-                         (px, py, s - 1, s // 2))
-        pygame.draw.rect(canvas, palette['s_light'],
-                         (px, py, s - 2, 1))
-
-    # Grass tufts (di edges)
-    for _ in range(18):
-        angle = random.uniform(0, math.pi * 2)
-        r = random.uniform(ground_w // 2 - 15, ground_w // 2 - 3)
-        gx = cx + int(math.cos(angle) * r)
-        gy = cy + int(math.sin(angle) * ground_h // 3) + 5
-
-        for blade_offset in [-1, 0, 1]:
-            bx = gx + blade_offset
-            pygame.draw.rect(canvas, palette['grass_dark'],
-                             (bx, gy, 1, 3))
-            pygame.draw.rect(canvas, palette['grass_mid'],
-                             (bx, gy, 1, 2))
-            pygame.draw.rect(canvas, palette['grass_light'],
-                             (bx, gy, 1, 1))
-        pygame.draw.rect(canvas, palette['grass_high'],
-                         (gx, gy, 1, 1))
-
-    # Small rocks
-    for _ in range(10):
-        rx = cx + random.randint(-ground_w // 2 + 5, ground_w // 2 - 5)
-        ry = cy + random.randint(5, ground_h - 5)
-        pygame.draw.rect(canvas, palette['s_shadow'],
-                         (rx + 1, ry + 1, 3, 2))
-        pygame.draw.rect(canvas, palette['s_dark'],
-                         (rx, ry, 3, 2))
-        pygame.draw.rect(canvas, palette['s_mid'],
-                         (rx, ry, 2, 1))
-        pygame.draw.rect(canvas, palette['s_lightest'],
-                         (rx, ry, 1, 1))
-    random.seed()
+    """Ground base - DIHAPUS sesuai permintaan: hanya castle saja, tanpa tanah/rumput."""
+    # Sengaja kosong: tidak menggambar ground tanah atau rumput sama sekali.
+    return
 # ═══════════════════════════════════════════════════════
 # LEVEL 1: OUTPOST (Simple wooden fort)
 # ═══════════════════════════════════════════════════════

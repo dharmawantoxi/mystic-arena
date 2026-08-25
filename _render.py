@@ -867,7 +867,7 @@ class ComboCounter:
             return
 
         count_font = get_font(count_size, 'body_bold')
-        label_font = get_font(18)
+        label_font = get_font(24)  # 18->24
 
         count_text = count_font.render(f"x{self.count}", True,
                                        display_color)
@@ -1055,7 +1055,7 @@ class KillFeed:
         base_x = screen_w - 20
         base_y = 250  # di bawah combo counter
 
-        font = get_font(16, 'body_medium')
+        font = get_font(22, 'body_medium')  # 16->22
 
         for i, entry in enumerate(self.entries):
             # Alpha (fade in first 15 frames, fade out last 45)
@@ -1356,10 +1356,10 @@ class AchievementPopup:
         self._draw_icon(panel_surf, icon_x, icon_y,
                         self.current['icon_type'], alpha)
 
-        # "ACHIEVEMENT UNLOCKED" text (kecil, atas)
-        small_font = get_font(12)
-        title_font = get_font(18, 'body_semibold')
-        desc_font = get_font(14)
+        # "ACHIEVEMENT UNLOCKED" text (kecil, atas) - DIPERBESAR
+        small_font = get_font(24)  # 18->24  # 12->18
+        title_font = get_font(24, 'body_semibold')  # 18->24
+        desc_font = get_font(20)  # 14->20
 
         header = small_font.render("ACHIEVEMENT UNLOCKED",
                                    True, (255, 220, 50))
@@ -1464,13 +1464,13 @@ class AchievementPopup:
         elif icon_type == "gold":
             # Gold coin
             pygame.draw.circle(surface, (200, 150, 20),
-                               (cx, cy), 8)
+                               (cx, cy), 10)
             pygame.draw.circle(surface, (255, 220, 50),
-                               (cx, cy), 7)
+                               (cx, cy), 9)
             pygame.draw.circle(surface, (255, 250, 180),
-                               (cx - 2, cy - 2), 3)
-            # $ symbol
-            small_font = get_font(14)
+                               (cx - 2, cy - 2), 4)
+            # $ symbol - DIPERBESAR 14->20
+            small_font = get_font(20)
             dollar = small_font.render("$", True, (100, 60, 10))
             dollar_rect = dollar.get_rect(center=(cx, cy))
             surface.blit(dollar, dollar_rect)
@@ -1594,17 +1594,17 @@ class BossDeathAnimation:
         self.celebration_duration = 120  # 2 detik after death
         self.celebration_active = False
 
-        # Fonts (profesional: Cinzel judul, Barlow body)
+        # Fonts (profesional: Cinzel judul, Barlow body) - DIPERBESAR
         try:
             self.font_huge = title_font(66)
-            self.font_big = title_font(44)
-            self.font_medium = get_font(28, "body_semibold")
-            self.font_small = get_font(20, "body_medium")
+            self.font_big = title_font(46)  # 44->46
+            self.font_medium = get_font(32, "body_semibold")  # 28->32
+            self.font_small = get_font(24, "body_medium")     # 20->24
         except:
             self.font_huge = title_font(66)
-            self.font_big = title_font(44)
-            self.font_medium = get_font(28, "body_semibold")
-            self.font_small = get_font(20, "body_medium")
+            self.font_big = title_font(46)
+            self.font_medium = get_font(32, "body_semibold")
+            self.font_small = get_font(24, "body_medium")
 
     def _init_fragments(self):
         """Init shatter fragments dari boss body"""
@@ -1987,7 +1987,7 @@ class BossDeathAnimation:
             pygame.draw.circle(surface, (200, 150, 30),
                                (reward_rect.left - 30, reward_rect.centery),
                                10, 2)
-            coin_font = get_font(16, 'body_bold')
+            coin_font = get_font(22, 'body_bold')  # 16->22
             dollar = coin_font.render("$", True, (100, 60, 10))
             dollar_rect = dollar.get_rect(
                 center=(reward_rect.left - 30, reward_rect.centery))
@@ -2096,17 +2096,17 @@ class BossIntroCinematic:
         self._sound_played = False
 
     def _init_fonts(self):
-        """Init fonts (profesional)"""
+        """Init fonts (profesional) - DIPERBESAR"""
         try:
             self.font_huge = title_font(66)
-            self.font_big = title_font(44)
-            self.font_medium = get_font(28, "body_semibold")
-            self.font_small = get_font(20, "body_medium")
+            self.font_big = title_font(46)  # 44->46
+            self.font_medium = get_font(32, "body_semibold")  # 28->32
+            self.font_small = get_font(24, "body_medium")     # 20->24
         except:
             self.font_huge = title_font(66)
-            self.font_big = title_font(44)
-            self.font_medium = get_font(28, "body_semibold")
-            self.font_small = get_font(20, "body_medium")
+            self.font_big = title_font(46)
+            self.font_medium = get_font(32, "body_semibold")
+            self.font_small = get_font(24, "body_medium")
 
     def update(self):
         """Update timer & check skip input"""
@@ -2614,12 +2614,12 @@ class LevelIntroScreen:
             "entrance_color", (150, 100, 200))
         self.boss_class = boss_data.get("boss_class", "true")
 
-        # Fonts (profesional)
+        # Fonts (profesional) - DIPERBESAR
         self.font_huge = title_font(66)
-        self.font_big = title_font(44)
-        self.font_medium = get_font(28, "body_semibold")
-        self.font_small = get_font(20, "body_medium")
-        self.font_tiny = get_font(16, "body")
+        self.font_big = title_font(46)  # 44->46
+        self.font_medium = get_font(32, "body_semibold")  # 28->32
+        self.font_small = get_font(24, "body_medium")     # 20->24
+        self.font_tiny = get_font(20, "body")             # 16->20
 
         # Sound
         self._sound_played = False
@@ -2928,7 +2928,7 @@ class LevelIntroScreen:
         pygame.draw.circle(surface, (200, 150, 30),
                            (coin_x, coin_y), 12, 2)
 
-        coin_font = get_font(18, 'body_bold')
+        coin_font = get_font(24, 'body_bold')  # 18->24
         dollar = coin_font.render("$", True, (100, 60, 10))
         dollar_rect = dollar.get_rect(center=(coin_x, coin_y))
         surface.blit(dollar, dollar_rect)

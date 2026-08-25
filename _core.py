@@ -2438,7 +2438,7 @@ class Game:
         pygame.draw.circle(panel, (255, 235, 125), (16, 16), 3)
         pygame.draw.line(panel, (167, 112, 24), (19, 13), (19, 26), 2)
 
-        small_font = get_font(12)
+        small_font = get_font(24)
         gold_text = font.render(gold_str, True, (255, 231, 133))
         surface.blit(panel, (x, y))
         surface.blit(gold_text, (x + 38, y + 5))
@@ -2718,11 +2718,11 @@ class Menu:
         # 72 = ukuran aman utk layar 1280x720 (Cinzel 96 terlalu besar
         # & membuat teks keluar layar / bertabrakan)
         self.font_title = title_font(72)
-        self.font_subtitle = get_font(32, "body_semibold")
-        self.font_button = get_font(42, "body_bold")
-        self.font_medium = get_font(26, "body_semibold")
-        self.font_small = get_font(20, "body_medium")
-        self.font_tiny = get_font(16, "body")
+        self.font_subtitle = get_font(34, "body_semibold")
+        self.font_button = get_font(44, "body_bold")
+        self.font_medium = get_font(30, "body_semibold")
+        self.font_small = get_font(24, "body_medium")
+        self.font_tiny = get_font(20, "body")
 
         self.controller_mgr = None
         self.save_data = SaveManager.load()
@@ -2979,7 +2979,7 @@ class Menu:
         self.screen.blit(empty_text, empty_rect)
 
         # Sub text
-        hint_font = get_font(18)
+        hint_font = get_font(24)
         hint_text = hint_font.render(
             "Tap to start new game",
             True, (120, 140, 170))
@@ -3002,7 +3002,7 @@ class Menu:
             level_name = level_config['name'] if level_config \
                 else "Unknown"
 
-            lvl_label = get_font(15).render(
+            lvl_label = get_font(22).render(
                 "HIGHEST LEVEL COMPLETED", True, (150, 170, 190))
             lvl_label_rect = lvl_label.get_rect(
                 center=(cx, content_y))
@@ -3046,7 +3046,7 @@ class Menu:
         pygame.draw.circle(self.screen, (200, 150, 30),
                            (coin_x, gold_y + 3), 10, 2)
 
-        coin_font = get_font(16)
+        coin_font = get_font(22)
         dollar = coin_font.render("$", True, (100, 60, 10))
         dollar_rect = dollar.get_rect(center=(coin_x, gold_y + 3))
         self.screen.blit(dollar, dollar_rect)
@@ -3078,7 +3078,7 @@ class Menu:
         # ═══ LAST PLAYED ═══
         last_played_y = bosses_y + 30
 
-        last_played_font = get_font(15)
+        last_played_font = get_font(22)
         last_played_label = last_played_font.render(
             "LAST PLAYED", True, (140, 160, 180))
         last_played_label_rect = last_played_label.get_rect(
@@ -3087,7 +3087,7 @@ class Menu:
 
         last_played_str = SaveManager.format_last_played(
             slot_info['slot_last_played'])
-        last_played_text = get_font(18).render(
+        last_played_text = get_font(24).render(
             last_played_str, True, (200, 200, 220))
         last_played_rect = last_played_text.get_rect(
             center=(cx, last_played_y + 18))
@@ -3162,7 +3162,7 @@ class Menu:
             pygame.draw.rect(self.screen, del_border,
                              del_btn_rect, 2, border_radius=5)
 
-            del_font = get_font(18)
+            del_font = get_font(24)
             del_text = del_font.render(
                 "🗑  DELETE SAVE", True, (255, 200, 200))
             del_rect = del_text.get_rect(center=del_btn_rect.center)
@@ -3720,7 +3720,7 @@ class Menu:
         self.screen.blit(name, name_rect)
 
         # Description (1 line, truncated)
-        desc_font = get_font(14)
+        desc_font = get_font(20)
         desc_text = level["description"]
         if desc_font.size(desc_text)[0] > w - 30:
             while desc_font.size(desc_text + "...")[0] > w - 30 and len(desc_text) > 10:
@@ -3790,8 +3790,8 @@ class Menu:
             if level_stats['total_attempts'] > 0:
                 # Row 1 & 2 - fixed layout, no overlap, English
                 stat_font = get_font(11)
-                val_font = get_font(14)
-                val_font_bold = get_font(15, 'body_bold')
+                val_font = get_font(20)
+                val_font_bold = get_font(22, 'body_bold')
 
                 # Best Score (left)
                 self.screen.blit(stat_font.render("BEST SCORE", True, (130, 140, 160)), (x + 12, stats_y))
@@ -4480,7 +4480,7 @@ class Menu:
 
         # ═══ DEVELOPER TOP UP (testing only) ═══
         if DEV_TOPUP_ENABLED:
-            topup_title = get_font(14).render(
+            topup_title = get_font(20).render(
                 "DEV TOP UP", True, (255, 190, 80))
             topup_x = panel_x + panel_w - 355
             topup_y = panel_y + 7
@@ -4704,7 +4704,7 @@ class Menu:
         pygame.draw.rect(self.screen, (0, 0, 0), role_bg, border_radius=9)
         pygame.draw.rect(self.screen, border_color, role_bg, 1,
                          border_radius=9)
-        role_font = get_font(13)
+        role_font = get_font(20)
         role = role_font.render(stats["role"].upper(), True, border_color)
         role_rect = role.get_rect(center=role_bg.center)
         self.screen.blit(role, role_rect)
@@ -4738,13 +4738,13 @@ class Menu:
                 "🔒 LOCKED", True, (255, 120, 120))
             self.screen.blit(lock_text, (info_x, status_y))
 
-            req_font = get_font(14)
+            req_font = get_font(20)
             req_text = req_font.render(
                 f"Defeat: {req_name}", True, (200, 160, 160))
             self.screen.blit(req_text, (info_x, status_y + 18))
 
         else:
-            cost_label = get_font(13).render(
+            cost_label = get_font(20).render(
                 "UNLOCK COST", True, (140, 150, 170))
             self.screen.blit(cost_label, (info_x, status_y))
 
@@ -6087,7 +6087,7 @@ class Menu:
                          rect, border_radius=6)
         pygame.draw.rect(self.screen, bd_h if hover else bd,
                          rect, 2, border_radius=6)
-        text = get_font(16, "body_bold").render(label, True, fg)
+        text = get_font(22, "body_bold").render(label, True, fg)
         self.screen.blit(text, text.get_rect(center=rect.center))
         self.buttons['cloud_signin'] = rect
 
@@ -6141,7 +6141,7 @@ class Menu:
                 line = "Tap SIGN IN untuk mengaktifkan cloud"
             color = (140, 150, 175)
 
-        info_text = get_font(14).render(line, True, color)
+        info_text = get_font(20).render(line, True, color)
         self.screen.blit(info_text, (x, y - gap + 4))
 
     def _draw_cloud_confirm_dialog(self):
@@ -6423,7 +6423,7 @@ class Menu:
                            knob_size // 2)
 
         # ON/OFF text
-        on_off_text = get_font(14).render(
+        on_off_text = get_font(20).render(
             "ON" if is_on else "OFF", True, WHITE)
         on_off_rect = on_off_text.get_rect(center=toggle_rect.center)
         self.screen.blit(on_off_text, on_off_rect)
@@ -8241,12 +8241,14 @@ class UIRenderer:
         self._init_components()
 
     def _init_fonts(self):
-        """Init shared fonts untuk semua UI (profesional)"""
+        """Init shared fonts untuk semua UI (profesional) - DIPERBESAR"""
         self.font_huge = title_font(72)
         self.font_big = title_font(42)
-        self.font_medium = get_font(26, "body_semibold")
-        self.font_small = get_font(20, "body_medium")
-        self.font_tiny = get_font(16, "body")
+        self.font_medium = get_font(30, "body_semibold")
+        self.font_small = get_font(24, "body_medium")
+        self.font_tiny = get_font(20, "body")
+        self.font_popup = get_font(22, "body_medium")
+        self.font_popup_small = get_font(24, "body")
 
     def _init_components(self):
         """Init semua UI components"""
@@ -8593,7 +8595,7 @@ class DevMode:
 
         pulse = math.sin(self.game.animation_time * 0.1) * 0.3 + 0.7
 
-        ind_font = get_font(18)
+        ind_font = get_font(24)
         text = ind_font.render("🔧 DEV MODE", True, (0, 255, 100))
         text_rect = text.get_rect()
 
@@ -8644,7 +8646,7 @@ class DevMode:
         surface.blit(title, (px + 15, py + 12))
 
         # Status
-        status_font = get_font(16)
+        status_font = get_font(22)
         status_text = "DEV MODE: ON" if self.enabled else "DEV MODE: OFF"
         status_color = (100, 255, 100) if self.enabled else (255, 100, 100)
         status = status_font.render(status_text, True, status_color)
@@ -8686,8 +8688,8 @@ class DevMode:
         ]
 
         y = py + 75
-        line_font = get_font(15)
-        header_font = get_font(16)
+        line_font = get_font(22)
+        header_font = get_font(22)
 
         for text, color, is_header in cheats:
             if not text:
@@ -8738,11 +8740,11 @@ class DevMode:
                          1, border_radius=5)
         surface.blit(bg, (box_x, box_y))
 
-        title_font = get_font(16)
+        title_font = get_font(22)
         title = title_font.render("🔧 DEBUG INFO", True, (0, 255, 100))
         surface.blit(title, (box_x + 8, box_y + 5))
 
-        info_font = get_font(14)
+        info_font = get_font(20)
         for i, line in enumerate(info_lines):
             text = info_font.render(line, True, (200, 255, 200))
             surface.blit(text, (box_x + 8, box_y + 22 + i * 16))
