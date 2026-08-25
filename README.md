@@ -93,6 +93,22 @@ Uji: `python tools/test_item_shop.py`,
 `python tools/test_item_tier2.py`,
 `python tools/test_tier2_ingame.py`.
 
+## Difficulty & AI Hero Pool
+
+- **Easy** — enemy scaling OFF; tiga mini boss level muncul pada wave
+  unik yang diacak di rentang **20-40** setiap run.
+- **Normal** — enemy scaling OFF; mini boss diacak pada wave **11-30**.
+- **Hard** — enemy scaling ON; mini boss diacak pada wave **11-30**.
+
+Pada Level N, pool summon hero AI berisi semua starter hero serta semua
+mini boss dan true boss dari Level 1 sampai N-1. AI memilih starter secara
+acak, menjamin draft boss pertamanya berasal dari level terbaru yang sudah
+lewat, lalu memilih dari seluruh pool lama dengan bobot ke level yang lebih
+baru. AI menabung gold untuk target itu agar tidak selalu membeli boss Level
+1 yang paling murah.
+
+Uji regresi: `python tools/test_easy_mode_ai_pool.py`.
+
 ## Save — Google Play Games (satu-satunya fitur save)
 
 Save pemain **hanya** lewat **Google Play Games Saved Games** — sama

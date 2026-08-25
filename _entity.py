@@ -5485,6 +5485,13 @@ class AIPlayer:
 
         self.heroes = []
 
+        # Draft hero berikutnya disimpan sampai gold cukup. Tanpa target
+        # persisten AI selalu membeli hero termurah di awal pool, sehingga
+        # pada level tinggi roster-nya tetap berisi boss Level 1.
+        self._hero_purchase_target = None
+        self._hero_purchase_target_cost = 0
+        self._hero_source_levels = {}
+
     def _ai_brain(self):
         """Tingkat kecerdasan DASAR AI: 0.0 (level 1) -> 1.0 (level ~20).
 
@@ -5516,11 +5523,16 @@ class AIPlayer:
                    max(1, (elite_end - elite_start)))
 
     def _ai_reserve(self):
-        """Gold cadangan AI. HANDICAP DIHAPUS SEPENUHNYA: AI memakai
-        SELURUH emasnya untuk semua fitur (build, hero, upgrade,
-        Regen Shield), sama seperti pemain - tidak menahan emas sama
-        sekali."""
-        return 0
+        """Gold yang sedang ditabung untuk draft hero berikutnya.
+
+        Ini bukan bonus/handicap: gold tetap diperoleh dan dibayar dengan
+        aturan yang sama seperti pemain. AI hanya tidak menghabiskan tabungan
+        target hero untuk tower/item sebelum biaya summon-nya terkumpul.
+        """
+        if not getattr(self, "_hero_purchase_target", None):
+            return 0
+        return max(0, int(getattr(
+            self, "_hero_purchase_target_cost", 0) or 0))
 
     def update(self, all_towers, all_minions, all_heroes, my_nexus,
                all_bases, build_slots=None):
@@ -5767,41 +5779,110 @@ class AIPlayer:
                         hero.move_to(offset_x, offset_y, auto=True)
 
     def _get_hero_pool(self):
-        """Pool hero AI: starter + boss hero dari level DI BAWAH
-        level saat ini (level 1 = hanya starter)."""
-        pool = list(AI_HERO_PREFERENCES)
+        """Pool summon AI untuk level ini.
+
+        Level 1 hanya memakai seluruh starter hero. Mulai Level 2, pool
+        bertambah dengan SEMUA mini boss dan true boss dari setiap level di
+        bawah level yang sedang dimainkan. Boss level saat ini tidak ikut,
+        karena pemain belum menaklukkannya pada titik tersebut.
+        """
+        starter_pool = list(AI_HERO_PREFERENCES)
         boss_pool = []
+        source_levels = {}
+
         if getattr(self, "level_number", 1) >= 2:
             try:
                 from levels import get_level_config
                 catalog = get_all_hero_types()
-                for n in range(1, self.level_number):
-                    cfg = get_level_config(n)
+                for level_no in range(1, self.level_number):
+                    cfg = get_level_config(level_no)
                     if not cfg:
                         continue
                     bosses = list(cfg.get("mini_bosses", {}).values())
-                    tb = cfg.get("true_boss")
-                    if tb:
-                        bosses.append(tb)
-                    for bt in bosses:
-                        if (bt in catalog
-                                and catalog[bt].get("is_boss_hero")
-                                and bt not in pool
-                                and bt not in boss_pool):
-                            boss_pool.append(bt)
-            except Exception:
-                pass
-        # Boss hero level sebelumnya diprioritaskan agar level 2 benar-benar
-        # membawa mini boss/true boss level 1 sebagai summon hero, bukan
-        # hanya kadang terbeli karena pilihan acak.
-        return boss_pool + pool
+                    true_boss = cfg.get("true_boss")
+                    if true_boss:
+                        bosses.append(true_boss)
+                    for boss_type in bosses:
+                        if (boss_type in catalog
+                                and catalog[boss_type].get("is_boss_hero")
+                                and boss_type not in starter_pool
+                                and boss_type not in boss_pool):
+                            boss_pool.append(boss_type)
+                            source_levels[boss_type] = level_no
+            except Exception as exc:
+                # Jangan diam-diam menyamarkan registry boss yang rusak.
+                if not getattr(self, "_hero_pool_error_reported", False):
+                    print(f"[AI HERO POOL] Failed to build pool: {exc}")
+                    self._hero_pool_error_reported = True
+
+        self._hero_source_levels = source_levels
+        return boss_pool + starter_pool
+
+    def _choose_hero_purchase_target(self, available, catalog):
+        """Pilih draft dari seluruh pool, bukan item pertama di list.
+
+        Satu starter menjadi fondasi roster. Draft boss pertama selalu berasal
+        dari level terbaru yang sudah lewat agar kenaikan level langsung
+        terlihat. Slot boss berikutnya tetap dapat mengambil hero dari SEMUA
+        level sebelumnya, dengan bobot lebih besar untuk level yang lebih baru.
+        """
+        starter_options = [
+            hero_type for hero_type in available
+            if not catalog.get(hero_type, {}).get("is_boss_hero")
+        ]
+        boss_options = [
+            hero_type for hero_type in available
+            if catalog.get(hero_type, {}).get("is_boss_hero")
+        ]
+
+        # Roster AI selalu punya setidaknya satu starter, seperti roster
+        # pemain. Urutannya diacak agar starter yang muncul tidak itu-itu saja.
+        has_starter = any(
+            not catalog.get(hero.hero_type, {}).get("is_boss_hero")
+            for hero in self.heroes
+        )
+        if not has_starter and starter_options:
+            return random.choice(starter_options)
+
+        if boss_options:
+            has_boss = any(
+                catalog.get(hero.hero_type, {}).get("is_boss_hero")
+                for hero in self.heroes
+            )
+            if not has_boss:
+                newest_level = max(
+                    self._hero_source_levels.get(hero_type, 0)
+                    for hero_type in boss_options
+                )
+                newest_options = [
+                    hero_type for hero_type in boss_options
+                    if self._hero_source_levels.get(hero_type, 0)
+                    == newest_level
+                ]
+                return random.choice(newest_options)
+
+            # Semua level lama tetap mungkin terpilih; level baru mendapat
+            # bobot lebih besar agar roster berkembang seiring progres level.
+            weights = [
+                max(1, self._hero_source_levels.get(hero_type, 1))
+                for hero_type in boss_options
+            ]
+            return random.choices(boss_options, weights=weights, k=1)[0]
+
+        if starter_options:
+            return random.choice(starter_options)
+        return None
 
     def _try_buy_hero(self):
-        owned_types = [h.hero_type for h in self.heroes]
-        available = [ht for ht in self._get_hero_pool()
-                     if ht not in owned_types]
+        owned_types = [hero.hero_type for hero in self.heroes]
+        available = [
+            hero_type for hero_type in self._get_hero_pool()
+            if hero_type not in owned_types
+        ]
 
         if not available:
+            self._hero_purchase_target = None
+            self._hero_purchase_target_cost = 0
             return False
 
         try:
@@ -5809,19 +5890,36 @@ class AIPlayer:
         except Exception:
             catalog = {}
 
-        for hero_type in available:
-            stats = catalog.get(hero_type) or HERO_TYPES.get(                hero_type, {})
-            cost = stats.get("cost", 400)
-            if self.gold >= cost + self._ai_reserve():
-                offset = len(self.heroes) * 40 - 40
-                new_hero = Hero(hero_type, self.team,
-                                RED_BASE_X - 60, RED_BASE_Y + 30 + offset)
-                self.heroes.append(new_hero)
-                self.gold -= cost
-                self.total_heroes_bought += 1
-                return True
+        hero_type = getattr(self, "_hero_purchase_target", None)
+        if hero_type not in available:
+            hero_type = self._choose_hero_purchase_target(available, catalog)
+            self._hero_purchase_target = hero_type
 
-        return False
+        if not hero_type:
+            self._hero_purchase_target_cost = 0
+            return False
+
+        stats = catalog.get(hero_type) or HERO_TYPES.get(hero_type, {})
+        cost = int(stats.get("cost", 400))
+        self._hero_purchase_target_cost = cost
+
+        # Target dipertahankan dan gold dicadangkan sampai cukup. Bug lama
+        # selalu mengambil hero termurah pertama (umumnya boss Level 1), jadi
+        # pool memang bertambah tetapi tidak pernah benar-benar digunakan.
+        if self.gold < cost:
+            return False
+
+        offset = len(self.heroes) * 40 - 40
+        new_hero = Hero(
+            hero_type, self.team,
+            RED_BASE_X - 60, RED_BASE_Y + 30 + offset
+        )
+        self.heroes.append(new_hero)
+        self.gold -= cost
+        self.total_heroes_bought += 1
+        self._hero_purchase_target = None
+        self._hero_purchase_target_cost = 0
+        return True
 
     def _try_upgrade_hero(self):
         upgradeable = [h for h in self.heroes if h.level < MAX_HERO_LEVEL]

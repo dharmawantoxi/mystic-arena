@@ -1304,7 +1304,10 @@ class Game:
 
         # ═══ DIFFICULTY MODE & ENEMY SCALING ═══
         self.settings = GameSettings()
-        self.difficulty = self.settings.difficulty  # "normal" or "hard"
+        # easy   : scaling OFF, mini boss di wave acak 20..40
+        # normal : scaling OFF, mini boss di wave acak 11..30
+        # hard   : scaling ON,  mini boss di wave acak 11..30
+        self.difficulty = self.settings.difficulty
         self.enemy_scaling_enabled = (self.difficulty == "hard")
 
         if self.enemy_scaling_enabled:
@@ -1316,7 +1319,10 @@ class Game:
             self.enemy_damage_mult = 1.0
             self.enemy_speed_mult = 1.0
 
-        self.ai = AIPlayer("red", level_number=self.level_number)
+        self.ai = AIPlayer(
+            "red", level_number=self.level_number,
+            enemy_scaling_enabled=self.enemy_scaling_enabled
+        )
         self.gold_timer = 0
         self.minions = []
         self.towers = []
@@ -1562,10 +1568,9 @@ class Game:
                     pass
                 SoundManager().play('wave_start', volume_mult=0.6)
                 # ═══ MINI BOSS CHECK (pending-safe, WAVE DIACAK) ═══
-                # Wave kemunculan mini boss diacak tiap run di rentang
-                # 11..30 — selalu SETELAH wave 10 (lihat
-                # _roll_mini_boss_schedule di reset). Jumlah & tipe boss
-                # tetap sama, hanya WAVE-nya yang berubah.
+                # Easy: wave 20..40. Normal/Hard: wave 11..30.
+                # Jumlah dan tipe boss tetap sama; hanya wave-nya yang
+                # berubah pada setiap run (lihat jadwal di reset).
                 mini_bosses = getattr(self, "_mini_boss_schedule", None)
                 if not mini_bosses:
                     mini_bosses = self.level_config.get("mini_bosses", {})
@@ -1652,25 +1657,29 @@ class Game:
         print(f"[MINI BOSS] {self.active_boss.name} spawned (scaling={getattr(self, 'enemy_scaling_enabled', False)})")
 
     def _roll_mini_boss_schedule(self):
-        """Acak wave kemunculan mini boss tiap run — SETELAH wave 10.
+        """Acak wave mini boss sesuai mode pada setiap run.
 
-        Jumlah & TIPE boss mengikuti level config (biasanya 3 mini boss),
-        tapi NOMOR WAVE-nya diacak di rentang 11..30, jadi mini boss
-        paling cepat muncul di wave 11 (tidak pernah sebelum itu).
-        Boss terkuat tetap muncul di wave terakhir dari jadwal supaya
-        progresif. True boss (level config) tidak terkena ini.
+        Easy menunda semua mini boss ke wave unik dalam rentang 20..40.
+        Normal dan Hard mempertahankan rentang 11..30. Jumlah, tipe, dan
+        urutan kekuatan boss tetap mengikuti level config; true boss tidak
+        dipengaruhi jadwal ini.
         """
         import random as _r
         src = self.level_config.get("mini_bosses", {})
         if not src:
             return {}
-        bosses = list(src.values())   # tipe boss dipertahankan urutannya
-        n = len(bosses)
-        low, high = 11, 30
-        # Pastikan rentang cukup untuk N wave berbeda
-        if high - low + 1 < n:
-            high = low + n * 5
-        waves = sorted(_r.sample(range(low, high + 1), n))
+
+        bosses = list(src.values())
+        boss_count = len(bosses)
+        if getattr(self, "difficulty", "normal") == "easy":
+            low, high = 20, 40
+        else:
+            low, high = 11, 30
+
+        # Pastikan rentang cukup jika suatu level kelak punya banyak mini boss.
+        if high - low + 1 < boss_count:
+            high = low + boss_count * 5
+        waves = sorted(_r.sample(range(low, high + 1), boss_count))
         return dict(zip(waves, bosses))
 
     def _auto_scale_ai_castle(self):
@@ -2459,9 +2468,16 @@ class Game:
         surface.blit(income, (x + 38, y + 25))
 
         # Difficulty mode badge on third line
-        is_hard = getattr(self, "enemy_scaling_enabled", False)
-        mode_str = "HARD (Scaling ON)" if is_hard else "NORMAL (Scaling OFF)"
-        mode_col = (255, 120, 120) if is_hard else (120, 230, 150)
+        difficulty = getattr(self, "difficulty", "normal")
+        if difficulty == "easy":
+            mode_str = "EASY · BOSS 20-40"
+            mode_col = (100, 210, 255)
+        elif difficulty == "hard":
+            mode_str = "HARD · SCALE ON"
+            mode_col = (255, 120, 120)
+        else:
+            mode_str = "NORMAL · SCALE OFF"
+            mode_col = (120, 230, 150)
         mode_badge = small_font.render(mode_str, True, mode_col)
         surface.blit(mode_badge, (x + 38, y + 39))
 
@@ -3525,13 +3541,20 @@ class Menu:
         self.screen.blit(title, title_rect)
 
         # ═══ DIFFICULTY MODE SELECTOR ═══
-        is_hard = GameSettings().is_hard_mode()
-        diff_text = "⚔ MODE: HARD (ENEMY SCALING ON)" if is_hard else "🛡 MODE: NORMAL (ENEMY SCALING OFF)"
-        diff_color = (255, 95, 95) if is_hard else (90, 225, 140)
-        self._draw_menu_button("toggle_level_difficulty", diff_text,
-                               cx, 98,
-                               diff_color, width=440, height=32,
-                               label_font_size=20)
+        difficulty = GameSettings().difficulty
+        if difficulty == "easy":
+            diff_text = "MODE: EASY (BOSS WAVE 20-40, SCALING OFF)"
+            diff_color = (100, 210, 255)
+        elif difficulty == "hard":
+            diff_text = "MODE: HARD (ENEMY SCALING ON)"
+            diff_color = (255, 95, 95)
+        else:
+            diff_text = "MODE: NORMAL (ENEMY SCALING OFF)"
+            diff_color = (90, 225, 140)
+        self._draw_menu_button(
+            "toggle_level_difficulty", diff_text, cx, 98,
+            diff_color, width=520, height=32, label_font_size=20
+        )
 
         # ═══ PROGRESS INFO ═══
         total = len(ALL_LEVELS)
@@ -3763,25 +3786,30 @@ class Menu:
         if is_unlocked:
             info_y = sep_y + 8
 
-            # Difficulty (Normal vs Hard)
-            is_hard = GameSettings().is_hard_mode()
-            if is_hard:
+            # Difficulty (Easy / Normal / Hard)
+            difficulty = GameSettings().difficulty
+            if difficulty == "hard":
                 hp_mult = level.get("enemy_hp_mult", 1.0)
                 scaling_pct = int(round((hp_mult - 1.0) * 100))
-                diff_title = f"HARD (+{scaling_pct}%)" if scaling_pct > 0 else "HARD (ON)"
-                diff_label = self.font_tiny.render(
-                    diff_title, True, (255, 120, 100))
-                self.screen.blit(diff_label, (x + 15, info_y))
+                diff_title = (f"HARD (+{scaling_pct}%)"
+                              if scaling_pct > 0 else "HARD (ON)")
+                diff_color = (255, 120, 100)
                 diff_level = min(5, max(1, int(hp_mult * 2.5)))
-            else:
-                diff_label = self.font_tiny.render(
-                    "NORMAL (OFF)", True, (100, 220, 150))
-                self.screen.blit(diff_label, (x + 15, info_y))
+            elif difficulty == "easy":
+                diff_title = "EASY (BOSS 20-40)"
+                diff_color = (100, 210, 255)
                 diff_level = 1
+            else:
+                diff_title = "NORMAL (OFF)"
+                diff_color = (100, 220, 150)
+                diff_level = 1
+            diff_label = self.font_tiny.render(
+                diff_title, True, diff_color)
+            self.screen.blit(diff_label, (x + 15, info_y))
 
             for i in range(5):
                 bar_x = x + 15 + i * 18
-                bar_y_pos = info_y + 16
+                bar_y_pos = info_y + 20
                 if i < diff_level:
                     bar_col = (255, 100, 80) if i >= 3 else (
                         (255, 200, 80) if i >= 1 else (100, 220, 100))
@@ -5961,7 +5989,7 @@ class Menu:
         self._draw_option_setting(
             col2_x, y, 340,
             "Difficulty",
-            "HARD (ON)" if settings.is_hard_mode() else "NORMAL (OFF)",
+            settings.get_difficulty_short_label(),
             "difficulty",
             value_w=140)
 
@@ -6786,9 +6814,16 @@ class Menu:
         self.screen.blit(title, title_rect)
 
         # Mode Badge
-        is_hard = GameSettings().is_hard_mode()
-        mode_str = "MODE: HARD (SCALING ON)" if is_hard else "MODE: NORMAL (SCALING OFF)"
-        mode_col = (255, 120, 120) if is_hard else (100, 220, 150)
+        difficulty = GameSettings().difficulty
+        if difficulty == "easy":
+            mode_str = "MODE: EASY (BOSS WAVE 20-40, SCALING OFF)"
+            mode_col = (100, 210, 255)
+        elif difficulty == "hard":
+            mode_str = "MODE: HARD (SCALING ON)"
+            mode_col = (255, 120, 120)
+        else:
+            mode_str = "MODE: NORMAL (SCALING OFF)"
+            mode_col = (100, 220, 150)
         mode_surf = self.font_tiny.render(mode_str, True, mode_col)
         self.screen.blit(mode_surf, mode_surf.get_rect(center=(cx, panel_y + 98)))
 
@@ -7009,9 +7044,13 @@ class Menu:
                     self._redeem_append(btn_id[4:])
 
         # ═══ TOGGLES ═══
-        elif btn_id in ("difficulty_prev", "difficulty_next", "toggle_difficulty", "toggle_level_difficulty"):
+        elif btn_id in ("difficulty_prev", "difficulty_next",
+                        "toggle_difficulty", "toggle_level_difficulty"):
             settings = GameSettings()
-            settings.toggle_difficulty()
+            if btn_id == "difficulty_prev":
+                settings.cycle_difficulty(-1)
+            else:
+                settings.cycle_difficulty(1)
             SoundManager().play('ui_click', volume_mult=0.4)
 
         elif btn_id == "toggle_shake":
@@ -8785,6 +8824,7 @@ class GameSettings:
     """
 
     _instance = None
+    DIFFICULTY_MODES = ("easy", "normal", "hard")
 
     def __new__(cls):
         if cls._instance is None:
@@ -8804,7 +8844,10 @@ class GameSettings:
         self.voice_volume = 0.5
 
         # Gameplay
-        self.difficulty = "normal"  # "normal" (Scaling OFF) or "hard" (Scaling ON)
+        # easy: scaling OFF + mini boss wave 20-40
+        # normal: scaling OFF + mini boss wave 11-30
+        # hard: scaling ON + mini boss wave 11-30
+        self.difficulty = "normal"
         self.screen_shake_enabled = False
         self.damage_numbers_enabled = True
         self.game_speed = 1.0  # 0.5, 1.0, 1.5, 2.0
@@ -8830,6 +8873,8 @@ class GameSettings:
                 self.voice_volume = data.get('voice_volume', 0.5)
 
                 self.difficulty = data.get('difficulty', 'normal')
+                if self.difficulty not in self.DIFFICULTY_MODES:
+                    self.difficulty = 'normal'
                 self.screen_shake_enabled = data.get(
                     'screen_shake_enabled', False)
                 self.damage_numbers_enabled = data.get(
@@ -8877,17 +8922,43 @@ class GameSettings:
     # ═══════════════════════════════════════
 
     def set_difficulty(self, diff):
-        if diff in ["normal", "hard"]:
+        if diff in self.DIFFICULTY_MODES:
             self.difficulty = diff
             self.save()
 
-    def toggle_difficulty(self):
-        self.difficulty = "hard" if self.difficulty == "normal" else "normal"
+    def cycle_difficulty(self, direction=1):
+        """Geser Easy <-> Normal <-> Hard dan simpan pilihan."""
+        try:
+            index = self.DIFFICULTY_MODES.index(self.difficulty)
+        except ValueError:
+            index = self.DIFFICULTY_MODES.index("normal")
+        step = -1 if direction < 0 else 1
+        self.difficulty = self.DIFFICULTY_MODES[
+            (index + step) % len(self.DIFFICULTY_MODES)
+        ]
         self.save()
         return self.difficulty
 
+    def toggle_difficulty(self):
+        """Kompatibilitas tombol lama: cycle maju ke mode berikutnya."""
+        return self.cycle_difficulty(1)
+
     def get_difficulty_label(self):
-        return "HARD (Scaling ON)" if self.difficulty == "hard" else "NORMAL (Scaling OFF)"
+        return {
+            "easy": "EASY (Boss Wave 20-40, Scaling OFF)",
+            "normal": "NORMAL (Scaling OFF)",
+            "hard": "HARD (Scaling ON)",
+        }.get(self.difficulty, "NORMAL (Scaling OFF)")
+
+    def get_difficulty_short_label(self):
+        return {
+            "easy": "EASY (20-40)",
+            "normal": "NORMAL (OFF)",
+            "hard": "HARD (ON)",
+        }.get(self.difficulty, "NORMAL (OFF)")
+
+    def is_easy_mode(self):
+        return self.difficulty == "easy"
 
     def is_hard_mode(self):
         return self.difficulty == "hard"

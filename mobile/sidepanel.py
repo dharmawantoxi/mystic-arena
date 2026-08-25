@@ -413,9 +413,16 @@ class SidePanel:
         full.blit(f.render("GOLD", True, DIM), (x + 10, y + 46))
 
         # Mode Tag
-        is_hard = getattr(game, "enemy_scaling_enabled", False) if game else False
-        mode_str = "HARD [SCALE ON]" if is_hard else "NORMAL [SCALE OFF]"
-        mode_col = BAHAYA if is_hard else OK
+        difficulty = getattr(game, "difficulty", "normal") if game else "normal"
+        if difficulty == "easy":
+            mode_str = "EASY [BOSS 20-40]"
+            mode_col = (100, 210, 255)
+        elif difficulty == "hard":
+            mode_str = "HARD [SCALE ON]"
+            mode_col = BAHAYA
+        else:
+            mode_str = "NORMAL [SCALE OFF]"
+            mode_col = OK
         full.blit(f_small.render(mode_str, True, mode_col), (x + 10, y + 68))
 
         wave = getattr(game, "wave_number", None) if game else None
