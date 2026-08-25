@@ -59,6 +59,7 @@ screen = plat.create_display(vsync=True)
 # 4. MODUL GAME
 # ═══════════════════════════════════════════════════════
 import _core                                        # noqa: E402,F401
+from storage_paths import SAVE_DIR                  # noqa: E402
 from settings import TITLE                          # noqa: E402
 from game import Game                               # noqa: E402
 from menu import Menu                               # noqa: E402
@@ -261,6 +262,7 @@ def main():
     print("  device : %s" % info["model"])
     print("  android: %s (API %s)" % (info["android_release"],
                                       info["api_level"]))
+    print("  save   : %s" % SAVE_DIR)
     print("  input  : %s" % ("TOUCH" if plat.TOUCH_MODE else "MOUSE/KEYBOARD"))
     print("  quality: %s" % perf.Quality.level)
     print("=" * 60)

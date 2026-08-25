@@ -634,9 +634,15 @@ def get_writable_dir():
     Desktop : folder game
     """
     if IS_ANDROID:
-        path = os.environ.get("ANDROID_PRIVATE") or os.environ.get(
-            "ANDROID_APP_PATH")
-        if path:
-            return path
+        for var in ("ANDROID_PRIVATE", "ANDROID_APP_PATH"):
+            path = os.environ.get(var, "").strip()
+            if path:
+                return os.path.abspath(path)
+        try:
+            from jnius import autoclass
+            PythonActivity = autoclass("org.kivy.android.PythonActivity")
+            return PythonActivity.mActivity.getFilesDir().getAbsolutePath()
+        except Exception as exc:
+            print("[MOBILE] getFilesDir gagal:", exc)
         return os.path.expanduser("~")
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

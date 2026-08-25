@@ -29,6 +29,7 @@
 
 import os
 import shutil
+import sys
 
 # Root folder game (folder tempat storage_paths.py berada / tempat
 # main.py & _system.py). Di desktop, save DIKUNCI ke root ini, bukan
@@ -38,19 +39,56 @@ import shutil
 _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
+def _is_android():
+    if "ANDROID_ARGUMENT" in os.environ:
+        return True
+    if "ANDROID_PRIVATE" in os.environ:
+        return True
+    if hasattr(sys, "getandroidapilevel"):
+        return True
+    return False
+
+
+def _android_writable_dir():
+    """
+    Folder write-android yang benar (DI LUAR folder 'app' hasil ekstrak
+    p4a, sehingga selamat dari update aplikasi).
+
+    Urutan:
+      1. env ANDROID_PRIVATE   (dipasang python-for-android)
+      2. env ANDROID_APP_PATH  (fallback beberapa bootstrap lama)
+      3. PythonActivity.getFilesDir() via pyjnius
+      4. home user (terakhir, kalau semuanya gagal)
+    """
+    for var in ("ANDROID_PRIVATE", "ANDROID_APP_PATH"):
+        path = os.environ.get(var, "").strip()
+        if path:
+            return os.path.abspath(path)
+    try:
+        from jnius import autoclass
+        PythonActivity = autoclass("org.kivy.android.PythonActivity")
+        activity = PythonActivity.mActivity
+        files_dir = activity.getFilesDir()
+        return files_dir.getAbsolutePath()
+    except Exception as exc:
+        print("[STORAGE] getFilesDir gagal: %s" % exc)
+    return os.path.expanduser("~")
+
+
 def get_save_dir():
     """
     Folder penyimpanan permanen untuk slot_*.json & settings.json.
 
-    Android : $ANDROID_PRIVATE/saves  (persisten antar update,
-              ikut Auto Backup ke Google Drive)
-    Desktop : <project_root>/saves   (TIDAK lagi relatif ke cwd —
-              inilah penyebab save "hilang" saat game dibuka dari
-              folder/directory yang berbeda)
+    Android : <writable_dir>/saves
+              (writable_dir = Context.getFilesDir(), DI LUAR folder
+              'app' hasil ekstrak p4a, jadi selamat dari update dan
+              ikut Android Auto Backup ke Google Drive)
+    Desktop : <project_root>/saves
+              (TIDAK lagi relatif ke cwd — inilah penyebab save
+              "hilang" saat game dibuka dari folder/directory berbeda)
     """
-    android_private = os.environ.get("ANDROID_PRIVATE")
-    if android_private and os.path.isdir(android_private):
-        return os.path.join(android_private, "saves")
+    if _is_android():
+        return os.path.join(_android_writable_dir(), "saves")
     # Override eksplisit (dipakai test/CI agar tidak menulis ke repo).
     override = os.environ.get("MYSTIC_SAVE_DIR", "").strip()
     if override:
@@ -59,6 +97,8 @@ def get_save_dir():
 
 
 SAVE_DIR = get_save_dir()
+# Log ke stderr supaya tidak mengganggu program yang membaca stdout.
+print("[STORAGE] save dir: %s" % SAVE_DIR, file=sys.stderr)
 
 # Lokasi lama (relatif cwd). Di Android = .../files/app/saves —
 # folder yang di-wipe p4a saat update aplikasi.
