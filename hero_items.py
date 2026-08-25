@@ -1097,7 +1097,7 @@ def get_icon(item_id, size=48):
         pygame.draw.rect(surf, data["glow"],
                          (2, 2, size - 4, size - 4), 2, border_radius=6)
         try:
-            f = pygame.font.Font(None, 11)
+            f = pygame.font.Font(None, 16)  # 11->16 agar kebaca
             t = f.render(data["name"][:5], True, (255, 255, 255))
             surf.blit(t, t.get_rect(center=(size // 2, size // 2)))
         except Exception:
@@ -2409,8 +2409,8 @@ class ItemShopUI:
         game.ui.draw_item_shop(screen)
     """
 
-    PANEL_W = 980
-    PANEL_H = 640
+    PANEL_W = 1100  # 980->1100 agar muat font besar & card 250px
+    PANEL_H = 720   # 640->720
 
     @classmethod
     def draw(cls, surface, game):
@@ -2452,17 +2452,13 @@ class ItemShopUI:
 
     @classmethod
     def _draw_hero_strip(cls, surface, game, heroes, target, px, py):
-        """Bar pilih hero penerima item (daftar 'BUY FOR').
-
-        Berisi semua hero yang sudah di-summon, termasuk yang mati. Item
-        untuk hero mati diantrikan dan dikirim otomatis setelah respawn.
-        """
-        lf = pygame.font.Font(None, 20)
+        """Bar pilih hero penerima item (daftar 'BUY FOR') - FONT DIPERBESAR."""
+        lf = pygame.font.Font(None, 26)  # 20->26
         lt = lf.render("BUY FOR:", True, (255, 220, 100))
         surface.blit(lt, (px + 22, py + 62))
 
         if not heroes:
-            sf = pygame.font.Font(None, 18)
+            sf = pygame.font.Font(None, 22)  # 18->22
             t = sf.render(
                 tr("shop_no_hero_yet"),
                 True, (255, 150, 150))
@@ -2473,8 +2469,8 @@ class ItemShopUI:
         area_x = px + 112
         area_w = px + cls.PANEL_W - 20 - area_x
         gap = 8
-        chip_w = max(96, min(158, (area_w - gap * (n - 1)) // n))
-        chip_h = 42
+        chip_w = max(110, min(180, (area_w - gap * (n - 1)) // n))
+        chip_h = 48  # 42->48
         cy = py + 54
         for i, h in enumerate(heroes):
             x = area_x + i * (chip_w + gap)
@@ -2486,18 +2482,18 @@ class ItemShopUI:
             pygame.draw.rect(surface, border, rect, 2, border_radius=8)
             pygame.draw.circle(surface, h.color,
                                (rect.x + 14, rect.centery), 6)
-            # Nama (dipangkas kalau kepanjangan)
-            nf = pygame.font.Font(None, 19)
+            # Nama (dipangkas kalau kepanjangan) - DIPERBESAR
+            nf = pygame.font.Font(None, 24)  # 19->24
             nm_txt = h.name
             while nf.size(nm_txt)[0] > chip_w - 52 and len(nm_txt) > 3:
                 nm_txt = nm_txt[:-1]
             if nm_txt != h.name:
                 nm_txt += "…"
             nt = nf.render(nm_txt, True, (240, 245, 255))
-            surface.blit(nt, (rect.x + 26, rect.y + 2))
+            surface.blit(nt, (rect.x + 26, rect.y + 4))
             inv = getattr(h, "items", None)
             used = inv.used_slots() if inv is not None else 0
-            sf2 = pygame.font.Font(None, 15)
+            sf2 = pygame.font.Font(None, 20)  # 15->20
             pending = len(pending_forge_items(h))
             is_dead = not getattr(h, "alive", False)
             status = tr("dead") if is_dead else f"Lv.{h.level}"
@@ -2505,20 +2501,16 @@ class ItemShopUI:
             st = sf2.render(
                 f"{status}  Item {used}/{MAX_ITEM_SLOTS}{queue}",
                 True, (255, 175, 175) if is_dead else (170, 180, 205))
-            surface.blit(st, (rect.x + 26, rect.y + 20))
+            surface.blit(st, (rect.x + 26, rect.y + 24))
             game.ui_buttons[f"itemshop_hero_{i}"] = rect
 
     @classmethod
     def _draw_no_hero_banner(cls, surface, game, px, py):
-        """Banner kecil saat TIDAK ada hero hidup sama sekali.
-
-        Item di bawah tetap terlihat dan bisa dibaca; hanya tombol BUY
-        yang dimatikan sampai ada hero yang di-summon.
-        """
-        box = pygame.Rect(px + 20, py + 96, cls.PANEL_W - 40, 48)
+        """Banner kecil saat TIDAK ada hero hidup sama sekali - DIPERBESAR."""
+        box = pygame.Rect(px + 20, py + 96, cls.PANEL_W - 40, 52)
         pygame.draw.rect(surface, (40, 28, 28), box, border_radius=8)
         pygame.draw.rect(surface, (200, 90, 90), box, 2, border_radius=8)
-        f = pygame.font.Font(None, 20)
+        f = pygame.font.Font(None, 26)  # 20->26
         t = f.render(tr("shop_no_hero_banner"),
                      True, (255, 190, 190))
         surface.blit(t, t.get_rect(center=box.center))
@@ -2547,33 +2539,33 @@ class ItemShopUI:
 
     @classmethod
     def _draw_header(cls, surface, game, px, py):
-        # Judul
-        f = pygame.font.Font(None, 38)
+        # Judul - DIPERBESAR
+        f = pygame.font.Font(None, 46)  # 38->46
         t = f.render("ITEM FORGE", True, (255, 220, 100))
         surface.blit(t, t.get_rect(center=(px + cls.PANEL_W // 2,
                                            py + 32)))
         # Gold badge kiri
-        gold_bg = pygame.Rect(px + 20, py + 18, 180, 28)
+        gold_bg = pygame.Rect(px + 20, py + 18, 200, 32)
         pygame.draw.rect(surface, (40, 30, 10), gold_bg, border_radius=14)
         pygame.draw.rect(surface, (255, 200, 50), gold_bg, 2,
                          border_radius=14)
         pygame.draw.circle(surface, (255, 200, 50),
                            (px + 38, py + 32), 7)
-        gf = pygame.font.Font(None, 20)
+        gf = pygame.font.Font(None, 26)  # 20->26
         gt = gf.render(f"GOLD: {game.gold:,}", True, (255, 220, 100))
         surface.blit(gt, (px + 52, py + 24))
 
     @classmethod
     def _draw_hero_info(cls, surface, hero, px, py):
-        # Kotak info hero (target BUY FOR) di bawah strip hero
-        box = pygame.Rect(px + 20, py + 96, cls.PANEL_W - 40, 48)
+        # Kotak info hero (target BUY FOR) di bawah strip hero - FONT DIPERBESAR
+        box = pygame.Rect(px + 20, py + 96, cls.PANEL_W - 40, 56)
         pygame.draw.rect(surface, (30, 36, 58), box, border_radius=8)
         pygame.draw.rect(surface, hero.color, box, 2, border_radius=8)
-        f = pygame.font.Font(None, 22)
+        f = pygame.font.Font(None, 28)  # 22->28
         name = f.render(f"{hero.name}  Lv.{hero.level}", True,
                         hero.color)
         surface.blit(name, (box.x + 12, box.y + 6))
-        sf = pygame.font.Font(None, 18)
+        sf = pygame.font.Font(None, 22)  # 18->22
         rng = getattr(hero, "range", 0) or 0
         kind = "MELEE" if rng <= 80 else "RANGED"
         dmg = int(hero.damage)
@@ -2591,10 +2583,10 @@ class ItemShopUI:
                 f"Armor {armor}   AS x{as_mult:.2f}   LS {ls}%   "
                 f"CDR {cdr}%{range_txt}")
         it = sf.render(info, True, (200, 210, 230))
-        surface.blit(it, (box.x + 12, box.y + 28))
+        surface.blit(it, (box.x + 12, box.y + 32))
         if not getattr(hero, "alive", False):
             pending = len(pending_forge_items(hero))
-            qf = pygame.font.Font(None, 18)
+            qf = pygame.font.Font(None, 22)  # 18->22
             msg = tr("dead_delivery_hint")
             if pending:
                 msg += " " + tr("queued_item_count", count=pending)
@@ -2603,19 +2595,19 @@ class ItemShopUI:
 
     @classmethod
     def _draw_owned_slots(cls, surface, game, hero, px, py):
-        # 6 slot dimiliki di bawah panel
+        # 6 slot dimiliki di bawah panel - FONT DIPERBESAR
         inv = hero.items
-        size = 50
-        gap = 7
+        size = 54  # 50->54 sedikit lebih besar
+        gap = 8
         total_w = size * MAX_ITEM_SLOTS + gap * (MAX_ITEM_SLOTS - 1)
         sx = px + (cls.PANEL_W - total_w) // 2
-        sy = py + cls.PANEL_H - 68
+        sy = py + cls.PANEL_H - 72
 
-        f = pygame.font.Font(None, 18)
+        f = pygame.font.Font(None, 22)  # 18->22
         label = f.render("INVENTORY  (click a slot to drop it)", True,
                          (180, 190, 220))
         surface.blit(label, label.get_rect(
-            center=(px + cls.PANEL_W // 2, sy - 14)))
+            center=(px + cls.PANEL_W // 2, sy - 16)))
 
         for i in range(MAX_ITEM_SLOTS):
             rect = pygame.Rect(sx + i * (size + gap), sy, size, size)
@@ -2645,7 +2637,7 @@ class ItemShopUI:
         pygame.draw.circle(surface, glow, rect.center, size // 2)
         pygame.draw.circle(surface, (255, 255, 255), rect.center,
                            size // 2, 2)
-        xf = pygame.font.Font(None, 22)
+        xf = pygame.font.Font(None, 28)  # 22->28
         xt = xf.render("X", True, (255, 255, 255))
         surface.blit(xt, xt.get_rect(center=rect.center))
         game.ui_buttons["itemshop_close"] = rect
@@ -2657,19 +2649,19 @@ class ItemShopUI:
 
     @classmethod
     def _draw_page_tabs(cls, surface, game, px, py):
-        """Tab TIER I / TIER II di bawah info hero (16 item = 2 hal)."""
+        """Tab TIER I / TIER II di bawah info hero (16 item = 2 hal) - DIPERBESAR."""
         pages = cls._page_count()
         if pages <= 1:
             return
         cur = getattr(game, "itemshop_page", 0)
         if not (0 <= cur < pages):
             cur = 0
-        tw = 150
-        th = 30
-        gap = 8
+        tw = 180  # 150->180
+        th = 36   # 30->36
+        gap = 10
         total = pages * tw + (pages - 1) * gap
         sx = px + (cls.PANEL_W - total) // 2
-        sy = py + 144
+        sy = py + 156  # 144->156 karena hero_info box lebih tinggi
         for i in range(pages):
             rect = pygame.Rect(sx + i * (tw + gap), sy, tw, th)
             active = (i == cur)
@@ -2678,7 +2670,7 @@ class ItemShopUI:
             pygame.draw.rect(surface, bg, rect, border_radius=6)
             pygame.draw.rect(surface, border, rect, 2,
                              border_radius=6)
-            lf = pygame.font.Font(None, 19)
+            lf = pygame.font.Font(None, 24)  # 19->24
             label = "TIER I - CORE" if i == 0 else \
                     "TIER II - LEGENDARY" if i == 1 \
                     else "TIER III - MYTHIC" if i in (2, 3) \
@@ -2690,18 +2682,15 @@ class ItemShopUI:
 
     @classmethod
     def _draw_item_grid(cls, surface, game, hero, px, py):
-        # Grid 4 kolom x 2 baris per HALAMAN - SELALU digambar; hero
-        # boleh None (item tetap tampil walau belum memilih hero,
-        # hanya tombol BUY-nya yang dimatikan). Halaman aktif diambil
-        # dari game.itemshop_page (tab TIER I / TIER II).
+        # Grid 4 kolom x 2 baris per HALAMAN - SELALU digambar - DIPERBESAR
         cols = 4
-        card_w = 225
-        card_h = 178
-        gap_x = 10
-        gap_y = 12
+        card_w = 250  # 225->250 agar muat font besar
+        card_h = 210  # 178->210
+        gap_x = 12
+        gap_y = 14
         grid_w = cols * card_w + (cols - 1) * gap_x
         start_x = px + (cls.PANEL_W - grid_w) // 2
-        start_y = py + 172
+        start_y = py + 200  # 172->200 karena tab lebih besar
 
         pages = cls._page_count()
         cur = getattr(game, "itemshop_page", 0)
@@ -2742,57 +2731,56 @@ class ItemShopUI:
     @classmethod
     def _draw_item_card(cls, surface, game, data, sid, x, y, w, h,
                          owned_count, can_buy, is_melee, has_hero=True):
-        # Card
+        # Card - DIPERBESAR
         bg = (28, 33, 54) if can_buy else (24, 22, 30)
         pygame.draw.rect(surface, bg, (x, y, w, h), border_radius=8)
         border = data["color"] if can_buy else (70, 70, 80)
         pygame.draw.rect(surface, border, (x, y, w, h), 2,
                          border_radius=8)
 
-        # Icon
-        icon_size = 52
+        # Icon - sedikit lebih besar
+        icon_size = 56  # 52->56
         icon = get_icon(sid, icon_size)
         if icon is not None:
             surface.blit(icon, (x + 10, y + 10))
 
-        # Nama
-        nf = pygame.font.Font(None, 25)
+        # Nama - DIPERBESAR 25->32
+        nf = pygame.font.Font(None, 32)
         nt = nf.render(data["name"], True, data["glow"])
         surface.blit(nt, (x + icon_size + 18, y + 12))
 
-        # Category badge
+        # Category badge - DIPERBESAR 17->22
         cat_label, cat_color = CATEGORY_INFO[data["category"]]
-        cf = pygame.font.Font(None, 17)
+        cf = pygame.font.Font(None, 22)
         ct = cf.render(cat_label, True, cat_color)
-        surface.blit(ct, (x + icon_size + 18, y + 36))
+        surface.blit(ct, (x + icon_size + 18, y + 38))
 
-        # Harga
-        costf = pygame.font.Font(None, 22)
+        # Harga - DIPERBESAR 22->28
+        costf = pygame.font.Font(None, 28)
         cost_color = (255, 220, 100) if can_buy else (200, 80, 80)
         costt = costf.render(f"{data['cost']}G", True, cost_color)
-        surface.blit(costt, (x + icon_size + 18, y + 54))
+        surface.blit(costt, (x + icon_size + 18, y + 60))
 
-        # Owned count
+        # Owned count - DIPERBESAR 16->22
         if owned_count > 0:
-            of = pygame.font.Font(None, 16)
+            of = pygame.font.Font(None, 22)
             ot = of.render(f"Owned: {owned_count}", True,
                            (150, 255, 170))
-            surface.blit(ot, (x + w - 80, y + 56))
+            surface.blit(ot, (x + w - 90, y + 62))
 
-        # Deskripsi (wrap sederhana) - ikuti bahasa aktif (id/en)
-        df = pygame.font.Font(None, 16)
+        # Deskripsi (wrap sederhana) - ikuti bahasa aktif (id/en) - DIPERBESAR 16->22
+        df = pygame.font.Font(None, 22)
         lines = cls._wrap_text(cls._localized_desc(data), df, w - 20)
-        ty = y + 74
+        ty = y + 88
         for line in lines[:4]:
             t = df.render(line, True, (200, 210, 230))
             surface.blit(t, (x + 10, ty))
-            ty += 15
+            ty += 20  # 15->20
 
-        # Tombol BUY
-        btn_rect = pygame.Rect(x + 10, y + h - 40, w - 20, 36)
+        # Tombol BUY - DIPERBESAR
+        btn_rect = pygame.Rect(x + 10, y + h - 44, w - 20, 40)
         melee_warn = has_hero and data.get("melee_only") and not is_melee
         if not has_hero:
-            # Item tetap terlihat, tapi belum ada hero penerimanya.
             btn_color = (60, 60, 70)
             label = "NEED HERO"
             label_color = (220, 150, 150)
@@ -2811,7 +2799,7 @@ class ItemShopUI:
         pygame.draw.rect(surface, btn_color, btn_rect, border_radius=4)
         pygame.draw.rect(surface, (255, 255, 255), btn_rect, 1,
                          border_radius=4)
-        bf = pygame.font.Font(None, 21)
+        bf = pygame.font.Font(None, 26)  # 21->26
         bt = bf.render(label, True, label_color)
         surface.blit(bt, bt.get_rect(center=btn_rect.center))
         # Daftarkan tombol (hanya kalau bisa di-klik)
