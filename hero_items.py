@@ -27,8 +27,31 @@ ekonomi game ini:
  15. Abyss Breaker    (terinspirasi dari Abyssal Blade)
  16. Thunder Coil     (terinspirasi dari Mjollnir)
 
-Toko ITEM FORGE kini 2 halaman (tab TIER I / TIER II di bawah info
-hero) karena katalog berisi 16 item.
+Paket item MYTHIC (Tier III) - 8 item tambahan terinspirasi Dota 2,
+nama diganti supaya bebas hak cipta, stat & pasif direbalance ke
+ekonomi game ini:
+
+ 17. Razor Carapace   (terinspirasi dari Blade Mail)
+ 18. Everfrost Guard  (terinspirasi dari Shiva's Guard)
+ 19. Sundering Cudgel (terinspirasi dari Monkey King Bar)
+ 20. Frostbound Eye   (terinspirasi dari Eye of Skadi)
+ 21. Gale Pike        (terinspirasi dari Hurricane Pike)
+ 22. Basilisk Breath  (terinspirasi dari Hydra's Breath)
+ 23. Solar Brand      (terinspirasi dari Radiance)
+ 24. Runic Gavel      (terinspirasi dari Khanda)
+
+Item ORISINAL (bukan adaptasi Dota) - kemampuan inti anti-heal:
+
+ 25. Searbrand        - aura Cauterize 300px: musuh di dekat HILANG
+                        50% kemampuan heal-nya (anti-heal permanen)
+                        + bakar 6 dmg/dtk; Brand Burst saat >=2 musuh
+                        dekat (110 magic dmg + bakar 22 dmg/dtk 3 dtk).
+
+Crimson Guard TIDAK diduplikasi: di Tier II sudah ada "Scarlet
+Bulwark" yang merupakan adaptasi langsung item tersebut.
+
+Toko ITEM FORGE kini 4 halaman (tab TIER I / TIER II / TIER III di
+bawah info hero) karena katalog berisi 25 item.
 
 ITEM FORGE tidak lagi mewajibkan klik hero di peta dulu: grid item
 selalu ditampilkan, dan ada strip "BUY FOR" berisi daftar hero yang
@@ -77,6 +100,72 @@ CATEGORY_UTILITY  = "utility"    # mobilitas / kebal sesaat
 CATEGORY_CONTROL  = "control"    # stun / root
 CATEGORY_BURST    = "burst"      # amplifikasi damage
 CATEGORY_STATIC   = "static"     # sambaran petir
+# Kategori Tier III (paket mythic - terinspirasi Dota 2, nama orisinal)
+CATEGORY_THORN    = "thorn"      # balikin damage (Blade Mail)
+CATEGORY_FROST    = "frost"      # armor + slow aura (Shiva's Guard)
+CATEGORY_PIERCE   = "pierce"     # tembus evasion + mini stun (MKB)
+CATEGORY_ICE      = "ice"        # slow + anti-heal on-hit (Eye of Skadi)
+CATEGORY_REACH    = "reach"      # jarak tembak + mobilitas (Hurricane Pike)
+CATEGORY_POISON   = "poison"     # racun % HP + multi-tembak (Hydra's Breath)
+CATEGORY_INFERNO  = "inferno"    # bakar area (Radiance)
+CATEGORY_ARCANE   = "arcane"     # damage + CDR + proc magic (Khanda)
+CATEGORY_MORTAL   = "mortal"     # anti-heal area (Searbrand - orisinal)
+
+# ════════════════════════════════════════════════════════════
+# MIASMA TRACKER (Basilisk Breath - racun % Max HP per tick)
+# Disimpan di module-level keyed by id(target) supaya tidak perlu
+# menambah field apa pun ke Hero/Minion/Boss. Setiap tracker
+# memiliki: source (pemilik item), timer, tick_cd, damage.
+# ════════════════════════════════════════════════════════════
+_MIASMA = {}
+
+
+def _apply_miasma(target, source, data):
+    """Pasang/perbarui racun Miasma pada ``target``."""
+    if target is None or not getattr(target, "alive", False):
+        return
+    key = id(target)
+    prev = _MIASMA.get(key)
+    dmg = int(getattr(target, "max_hp", 0)
+              * data["max_hp_pct_per_tick"])
+    dmg = max(6, min(data.get("cap_damage", 9999), dmg))
+    if prev is None:
+        _MIASMA[key] = {"target": target, "source": source,
+                        "damage": dmg, "timer": data["duration"],
+                        "tick_cd": data["tick"]}
+    else:
+        prev["source"] = source
+        prev["damage"] = max(prev["damage"], dmg)
+        prev["timer"] = max(prev["timer"], data["duration"])
+        prev["tick_cd"] = min(prev["tick_cd"], data["tick"])
+
+
+def _tick_miasma(dt=1):
+    """Kurangi timer semua racun aktif & terapkan damage per tick."""
+    if not _MIASMA:
+        return
+    expired = []
+    for key, m in _MIASMA.items():
+        tgt = m["target"]
+        if tgt is None or not getattr(tgt, "alive", False):
+            expired.append(key)
+            continue
+        m["timer"] -= dt
+        m["tick_cd"] -= dt
+        if m["tick_cd"] <= 0:
+            m["tick_cd"] = 30
+            src = m["source"]
+            team = getattr(src, "team", None)
+            try:
+                tgt.take_damage(m["damage"], team, "magic")
+            except TypeError:
+                tgt.take_damage(m["damage"], team)
+            _fx_notify(tgt, "POISON", (140, 220, 90))
+        if m["timer"] <= 0:
+            expired.append(key)
+    for key in expired:
+        _MIASMA.pop(key, None)
+
 
 # ════════════════════════════════════════════════════════════
 # KATALOG ITEM
@@ -559,6 +648,347 @@ ITEM_CATALOG = {
                     "0.5s (65 dmg)."),
         "flavor": "Kumparan badai yang ditempa palu dewa guntur.",
     },
+
+    # ════════════════════════════════════════════════════════
+    # TIER III - ITEM MYTHIC (paket Dota 2 7.41, direbalance)
+    # Catatan: Crimson Guard SUDAH ada sebagai "Scarlet Bulwark"
+    # di Tier II, jadi tidak diduplikasi di sini.
+    # ════════════════════════════════════════════════════════
+    "razor_carapace": {
+        "name": "Razor Carapace",
+        "category": CATEGORY_THORN,
+        "cost": 5000,
+        "icon": "razor_carapace.png",
+        "color": (180, 180, 200),
+        "glow": (230, 230, 255),
+        "stats": {
+            "damage": 18,
+            "armor": 8,
+            "cooldown_reduction": 0.10,
+        },
+        "active": {
+            # Thornmail: otomatis menyala saat HP < 55% - semua
+            # damage yang DITERIMA dipantulkan 85% ke penyerang
+            # (magic damage, dikurangi per perhitungan game ini).
+            "name": "Thornmail",
+            "hp_threshold": 0.55,
+            "reflect_pct": 0.85,
+            "duration": 270,       # 4.5 detik
+            "cooldown": 1500,      # 25 detik
+        },
+        "melee_only": False,
+        "drops_on_death": False,
+        "desc": ("+18 Damage, +8 Armor, 10% CDR. Saat HP < 55%: "
+                 "Thornmail 4.5 dtk - pantulkan 85% damage yang "
+                 "kamu terima ke penyerang."),
+        "desc_en": ("+18 Damage, +8 Armor, 10% CDR. Below 55% HP: "
+                    "Thornmail for 4.5s - reflect 85% of damage you "
+                    "take back to the attacker."),
+        "flavor": "Cangkang bergerigi yang membalas setiap luka.",
+    },
+
+    "everfrost_guard": {
+        "name": "Everfrost Guard",
+        "category": CATEGORY_FROST,
+        "cost": 5500,
+        "icon": "everfrost_guard.png",
+        "color": (120, 190, 230),
+        "glow": (180, 230, 255),
+        "stats": {
+            "armor": 10,
+            "hp_regen": 5,
+            "cooldown_reduction": 0.10,
+        },
+        "aura": {
+            # Freezing Aura: musuh di dekat lambat attack speed &
+            # heal-nya dipotong (tanpa mengubah kode inti).
+            "name": "Freezing Aura",
+            "enemy_radius": 300,
+            "enemy_atk_slow": 0.30,
+            "enemy_anti_heal": 0.40,
+        },
+        "active": {
+            # Arctic Blast: otomatis saat >= 2 musuh dekat -
+            # ledakan es yang melukai + memperlambat.
+            "name": "Arctic Blast",
+            "trigger_enemies": 2,
+            "radius": 280,
+            "damage": 130,
+            "slow": 0.45,
+            "slow_duration": 210,  # 3.5 detik
+            "cooldown": 1440,      # 24 detik
+        },
+        "melee_only": False,
+        "drops_on_death": False,
+        "desc": ("+10 Armor, +5 HP/reg, 10% CDR. Aura: musuh "
+                 "dekat -30% AS & heal -40%. Saat >=2 musuh dekat: "
+                 "Arctic Blast 130 dmg + slow 45% (3.5 dtk)."),
+        "desc_en": ("+10 Armor, +5 HP regen, 10% CDR. Aura: "
+                    "nearby enemies lose 30% AS & 40% healing. When "
+                    "2+ enemies are near: Arctic Blast 130 dmg + 45% "
+                    "slow for 3.5s."),
+        "flavor": "Bongkahan es abadi yang membekukan setiap denyut nadi.",
+    },
+
+    "sundering_cudgel": {
+        "name": "Sundering Cudgel",
+        "category": CATEGORY_PIERCE,
+        "cost": 5000,
+        "icon": "sundering_cudgel.png",
+        "color": (230, 180, 70),
+        "glow": (255, 220, 130),
+        "stats": {
+            "damage": 45,
+            "attack_speed": 25,
+        },
+        "bash": {
+            # Piercing Bash: peluang mini-stun + bonus damage.
+            # TRUE STRIKE (tembus evasion) selalu aktif di pemilik.
+            "name": "Piercing Bash",
+            "chance": 0.28,
+            "damage": 55,
+            "stun": 15,            # 0.25 detik
+            "cooldown": 120,       # 2 detik internal
+        },
+        "melee_only": False,
+        "drops_on_death": False,
+        "desc": ("+45 Damage, +25 AS. Serangan TIDAK PERNAH meleset "
+                 "(True Strike). 28% serangan memukul mundir target: "
+                 "stun 0.25 dtk + 55 dmg (CD 2 dtk)."),
+        "desc_en": ("+45 Damage, +25 AS. Your attacks NEVER miss "
+                    "(True Strike). 28% of attacks bash the target: "
+                    "0.25s stun + 55 dmg (2s cooldown)."),
+        "flavor": "Tongkat pemukul legendaris yang menembus segala kilah.",
+    },
+
+    "frostbound_eye": {
+        "name": "Frostbound Eye",
+        "category": CATEGORY_ICE,
+        "cost": 5250,
+        "icon": "frostbound_eye.png",
+        "color": (120, 200, 220),
+        "glow": (180, 240, 255),
+        "stats": {
+            "damage": 20,
+            "hp": 250,
+            "hp_regen": 4,
+        },
+        "on_attack": {
+            # Frostbite: tiap serangan basic memperlambat target &
+            # memotong heal yang diterimanya.
+            "name": "Frostbite",
+            "slow": 0.28,
+            "atk_slow": 0.28,
+            "anti_heal": 0.45,
+            "duration": 180,       # 3 detik
+        },
+        "melee_only": False,
+        "drops_on_death": False,
+        "desc": ("+20 Damage, +250 HP, +4 HP/reg. Tiap serangan "
+                 "memperlambat 28% (gerak & serang) + anti-heal 45% "
+                 "selama 3 detik."),
+        "desc_en": ("+20 Damage, +250 HP, +4 HP regen. Each attack "
+                    "slows by 28% (move & attack) and applies 45% "
+                    "anti-heal for 3 seconds."),
+        "flavor": "Mata es yang membekukan darah di setiap luka.",
+    },
+
+    "gale_pike": {
+        "name": "Gale Pike",
+        "category": CATEGORY_REACH,
+        "cost": 5250,
+        "icon": "gale_pike.png",
+        "color": (150, 230, 200),
+        "glow": (200, 255, 230),
+        "stats": {
+            "damage": 18,
+            "attack_speed": 25,
+            "hp": 200,
+            "hp_regen": 3,
+            "range_bonus": 130,    # hanya untuk hero ranged
+        },
+        "active": {
+            # Gale Leap: otomatis saat HP < 40% - dorong diri ke
+            # arah berlawanan target (mundur) + bonus attack speed.
+            "name": "Gale Leap",
+            "hp_threshold": 0.40,
+            "dash_distance": 130,
+            "as_bonus": 55,
+            "duration": 180,       # 3 detik
+            "cooldown": 1500,      # 25 detik
+        },
+        "melee_only": False,
+        "drops_on_death": False,
+        "desc": ("+18 Damage, +25 AS, +200 HP, +3 HP/reg, +130 "
+                 "jangkauan (ranged). Saat HP < 40%: Gale Leap - "
+                 "mundur 130px + +55 AS selama 3 dtk (CD 25 dtk)."),
+        "desc_en": ("+18 Damage, +25 AS, +200 HP, +3 HP regen, +130 "
+                    "attack range (ranged). Below 40% HP: Gale Leap - "
+                    "dash back 130px + +55 AS for 3s (25s CD)."),
+        "flavor": "Tombak angin yang mengulur jarak secepat kilat.",
+    },
+
+    "basilisk_breath": {
+        "name": "Basilisk Breath",
+        "category": CATEGORY_POISON,
+        "cost": 5750,
+        "icon": "basilisk_breath.png",
+        "color": (140, 210, 90),
+        "glow": (190, 255, 130),
+        "stats": {
+            "damage": 22,
+            "attack_speed": 30,
+            "hp": 180,
+            "range_bonus": 120,    # hanya untuk hero ranged
+        },
+        "on_attack": {
+            # Miasma: racun yang berdenyut berdasarkan Max HP
+            # target. Tick 0.5 dtk, dibatasi 60/tick supaya boss
+            # tidak meleleh seketika.
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 30,            # 0.5 detik
+            "duration": 180,       # 3 detik
+            "cap_damage": 60,
+        },
+        "multishot": {
+            # Polycephaly: peluang menembak 2 musuh lain di dekat
+            # target dengan 70% damage (magic). Hanya ranged.
+            "name": "Polycephaly",
+            "chance": 0.30,
+            "targets": 2,
+            "radius": 200,
+            "damage_pct": 0.70,
+        },
+        "melee_only": False,
+        "drops_on_death": False,
+        "desc": ("+22 Damage, +30 AS, +180 HP, +120 jangkauan "
+                 "(ranged). Serangan meracuni: 2.2% Max HP/0.5 dtk "
+                 "selama 3 dtk (maks 60/tick). 30% tembakan menyambar "
+                 "2 musuh lain (70% dmg)."),
+        "desc_en": ("+22 Damage, +30 AS, +180 HP, +120 range (ranged). "
+                    "Attacks poison: 2.2% Max HP per 0.5s for 3s (cap "
+                    "60/tick). 30% of shots hit 2 other enemies (70% "
+                    "damage)."),
+        "flavor": "Embun racun hydra yang merayap di setiap anak panah.",
+    },
+
+    "solar_brand": {
+        "name": "Solar Brand",
+        "category": CATEGORY_INFERNO,
+        "cost": 5500,
+        "icon": "solar_brand.png",
+        "color": (255, 190, 60),
+        "glow": (255, 230, 140),
+        "stats": {
+            "damage": 30,
+            "hp": 280,
+            "hp_regen": 5,
+        },
+        "aura": {
+            # Scorched Earth: bakar musuh di dekat tiap 0.5 dtk &
+            # kecilkan peluang serangannya (buta ringan).
+            "name": "Scorched Earth",
+            "enemy_radius": 280,
+            "burn_dps": 28,
+            "blind": 0.18,
+        },
+        "melee_only": False,
+        "drops_on_death": False,
+        "desc": ("+30 Damage, +280 HP, +5 HP/reg. Aura: musuh dalam "
+                 "280px terbakar 28 dmg/dtk & serangannya 18% lebih "
+                 "sering meleset."),
+        "desc_en": ("+30 Damage, +280 HP, +5 HP regen. Aura: enemies "
+                    "within 280px burn for 28 dmg/s and have 18% more "
+                    "chance to miss."),
+        "flavor": "Cap matahari yang membakar apa pun yang mendekat.",
+    },
+
+    "runic_gavel": {
+        "name": "Runic Gavel",
+        "category": CATEGORY_ARCANE,
+        "cost": 5250,
+        "icon": "runic_gavel.png",
+        "color": (200, 130, 240),
+        "glow": (235, 180, 255),
+        "stats": {
+            "damage": 28,
+            "hp": 250,
+            "hp_regen": 4,
+            "cooldown_reduction": 0.15,
+        },
+        "passive": {
+            # Empower Strike: serangan berikutnya setiap 9 detik
+            # menambah damage sihir ke target (versi sederhana dari
+            # Empower Spell Khanda, tanpa mengubah rumus skill).
+            "name": "Empower Strike",
+            "charge_time": 540,     # 9 detik
+            "damage": 130,
+        },
+        "melee_only": False,
+        "drops_on_death": False,
+        "desc": ("+28 Damage, +250 HP, +4 HP/reg, 15% CDR. Setiap 9 "
+                 "dtk: serangan berikutnya menambah 130 magic damage "
+                 "ke target (Empower Strike)."),
+        "desc_en": ("+28 Damage, +250 HP, +4 HP regen, 15% CDR. Every "
+                    "9s your next attack adds 130 magic damage to the "
+                    "target (Empower Strike)."),
+        "flavor": "Palu runik yang menyimpan muatan sihir tiap hembusan.",
+    },
+
+    # ════════════════════════════════════════════════════════
+    # ITEM ORISINAL (bukan adaptasi Dota): Searbrand
+    # Kemampuan inti: MENGHAPUS HEAL musuh (anti-heal area).
+    # ════════════════════════════════════════════════════════
+    "searbrand": {
+        "name": "Searbrand",
+        "category": CATEGORY_MORTAL,
+        "cost": 5750,
+        "icon": "searbrand.png",
+        "color": (235, 95, 60),
+        "glow": (255, 150, 110),
+        "stats": {
+            "damage": 12,
+            "hp": 320,
+            "hp_regen": 6,
+            "cooldown_reduction": 0.15,
+        },
+        "aura": {
+            # Cauterize (KEMAMPUAN UTAMA): musuh di sekitar
+            # KEHILANGAN 50% kemampuan heal-nya. Berlaku pasif
+            # terus-menerus, tanpa syarat & tanpa cooldown.
+            "name": "Cauterize",
+            "enemy_radius": 300,
+            "enemy_anti_heal": 0.50,
+            "burn_dps": 6,
+        },
+        "active": {
+            # Brand Burst: ledakan api area saat >=2 musuh dekat
+            # (damage + burn lanjutan). Anti-heal UTAMA sudah
+            # ditanggung aura Cauterize.
+            "name": "Brand Burst",
+            "trigger_enemies": 2,
+            "radius": 320,
+            "damage": 110,
+            "burn_dps": 22,
+            "burn_duration": 180,  # 3 detik
+            "cooldown": 1080,      # 18 detik
+        },
+        "melee_only": False,
+        "drops_on_death": False,
+        "desc": ("+12 Damage, +320 HP, +6 HP/reg, 15% CDR. AURA "
+                 "CAUTERIZE (300px): musuh di dekat HILANG 50% "
+                 "kemampuan heal-nya + bakar 6 dmg/dtk. Saat >=2 "
+                 "musuh dekat: Brand Burst, 110 magic dmg + bakar "
+                 "22 dmg/dtk selama 3 dtk (CD 18 dtk)."),
+        "desc_en": ("+12 Damage, +320 HP, +6 HP regen, 15% CDR. "
+                    "CAUTERIZE AURA (300px): nearby enemies LOSE 50% "
+                    "of their healing + take 6 dmg/s burn. When 2+ "
+                    "enemies are near: Brand Burst deals 110 magic "
+                    "dmg and burns 22 dmg/s for 3s (18s CD)."),
+        "flavor": ("Besi berpijar yang mencauter luka - apa pun yang "
+                   "menerima bekasnya tak akan pernah utuh kembali."),
+    },
 }
 
 # Urutan tampil di toko (sama dengan urutan permintaan pengguna)
@@ -581,6 +1011,17 @@ ITEM_SHOP_ORDER = [
     "sanguine_thorn",
     "abyss_breaker",
     "thunder_coil",
+    # ── Halaman 3 (TIER III - paket mythic) ──
+    "razor_carapace",
+    "everfrost_guard",
+    "sundering_cudgel",
+    "frostbound_eye",
+    "gale_pike",
+    "basilisk_breath",
+    "solar_brand",
+    "runic_gavel",
+    # ── Halaman 4 (TIER III - lanjutan) ──
+    "searbrand",
 ]
 
 # Jumlah item per halaman toko (grid 4x2). 16 item = 2 halaman.
@@ -603,6 +1044,15 @@ CATEGORY_INFO = {
     CATEGORY_CONTROL:   ("CONTROL",    (255, 200, 110)),
     CATEGORY_BURST:     ("BURST",      (255, 120, 160)),
     CATEGORY_STATIC:    ("STATIC",     (255, 245, 160)),
+    CATEGORY_THORN:     ("THORN",      (230, 230, 255)),
+    CATEGORY_FROST:     ("FROST",      (180, 230, 255)),
+    CATEGORY_PIERCE:    ("PIERCE",     (255, 220, 130)),
+    CATEGORY_ICE:       ("ICE",        (180, 240, 255)),
+    CATEGORY_REACH:     ("REACH",      (200, 255, 230)),
+    CATEGORY_POISON:    ("POISON",     (190, 255, 130)),
+    CATEGORY_INFERNO:   ("INFERNO",    (255, 210, 120)),
+    CATEGORY_ARCANE:    ("ARCANE",     (235, 180, 255)),
+    CATEGORY_MORTAL:    ("MORTAL",     (255, 140, 100)),
 }
 
 
@@ -703,6 +1153,28 @@ class HeroItemInventory:
         self.static_timer = 0
         self.static_cd = 0
         self.static_tick = 0
+        # ═══ TIER III: timer item mythic ═══
+        # Razor Carapace (Thornmail - pantulkan damage)
+        self.thorn_timer = 0
+        self.thorn_cd = 0
+        # Everfrost Guard (Arctic Blast)
+        self.arctic_cd = 0
+        self.arctic_aura_tick = 0
+        # Sundering Cudgel (Piercing Bash internal cooldown)
+        self.pierce_bash_cd = 0
+        # Gale Pike (Gale Leap)
+        self.gale_timer = 0       # buff AS aktif
+        self.gale_cd = 0
+        # Basilisk Breath (Polycephaly tidak punya CD; Miasma
+        # disimpan per-target lewat _MiasmaTracker)
+        # Solar Brand (aura Scorched Earth - diterapkan via
+        # update_auras supaya menara & boss juga bisa kena)
+        self.scorch_tick = 0
+        # Runic Gavel (Empower Strike charge)
+        self.empower_charge = ITEM_CATALOG["runic_gavel"]["passive"][
+            "charge_time"]
+        # Searbrand (Brand Burst)
+        self.searbrand_cd = 0
 
     # ── Manajemen slot ────────────────────────────────────
     def count(self, item_id):
@@ -781,6 +1253,17 @@ class HeroItemInventory:
         self.rend_target = None
         self.static_timer = 0
         self.static_cd = 0
+        # Tier III
+        self.thorn_timer = 0
+        self.thorn_cd = 0
+        self.arctic_cd = 0
+        self.gale_timer = 0
+        self.gale_cd = 0
+        self.pierce_bash_cd = 0
+        self.searbrand_cd = 0
+        if self.has("runic_gavel"):
+            self.empower_charge = ITEM_CATALOG["runic_gavel"][
+                "passive"]["charge_time"]
         return dropped_rapier
 
     # ── Agregasi stat ─────────────────────────────────────
@@ -830,7 +1313,8 @@ class HeroItemInventory:
         (setara +100 AS) supaya attack_cooldown tidak jadi 1.
         """
         as_total = (self._sum_stat("attack_speed")
-                    + getattr(self, "aura_as", 0))
+                    + getattr(self, "aura_as", 0)
+                    + self.get_gale_as_bonus())
         mult = 1.0 + as_total / 100.0
         return max(0.2, min(2.5, mult))
 
@@ -886,6 +1370,40 @@ class HeroItemInventory:
     def get_slow_resist(self):
         """Pengurang besar slow yang diterima (cap 60%)."""
         return min(0.6, self._sum_stat("slow_resist"))
+
+    # ── Getter stat Tier III ──
+    def get_range_bonus(self):
+        """Bonus jangkauan serang (hanya berlaku untuk hero ranged)."""
+        rng = getattr(self.hero, "range", 100) or 100
+        if rng <= 80:
+            return 0
+        return self._sum_stat("range_bonus")
+
+    def has_true_strike(self):
+        """True kalau pemilik punya Sundering Cudgel (tidak miss)."""
+        return self.has("sundering_cudgel")
+
+    def get_reflect_pct(self):
+        """Persen pantulan damage saat Thornmail aktif."""
+        if self.thorn_timer > 0 and self.has("razor_carapace"):
+            return ITEM_CATALOG["razor_carapace"]["active"][
+                "reflect_pct"]
+        return 0.0
+
+    def get_gale_as_bonus(self):
+        """Bonus attack speed sementara dari Gale Leap."""
+        if self.gale_timer > 0 and self.has("gale_pike"):
+            return ITEM_CATALOG["gale_pike"]["active"]["as_bonus"]
+        return 0
+
+    def consume_empower_strike(self):
+        """Kembalikan bonus magic damage Runic Gavel & reset charge."""
+        if self.has("runic_gavel") and self.empower_charge <= 0:
+            dmg = ITEM_CATALOG["runic_gavel"]["passive"]["damage"]
+            self.empower_charge = ITEM_CATALOG["runic_gavel"]["passive"][
+                "charge_time"]
+            return dmg
+        return 0
 
     def get_block(self):
         """Return (chance, amount) damage block pasif, atau None.
@@ -965,11 +1483,22 @@ class HeroItemInventory:
         for attr in ("guard_timer", "guard_cd", "veil_timer", "veil_cd",
                      "chains_cd", "rend_timer", "rend_cd", "bash_cd",
                      "overwhelm_cd", "static_timer", "static_cd",
-                     "static_tick"):
+                     "static_tick",
+                     # Tier III
+                     "thorn_timer", "thorn_cd", "arctic_cd",
+                     "gale_timer", "gale_cd", "pierce_bash_cd",
+                     "searbrand_cd"):
             if getattr(self, attr, 0) > 0:
                 setattr(self, attr, getattr(self, attr) - dt)
         if self.rend_timer <= 0:
             self.rend_target = None
+
+        # Runic Gavel charge (terisi otomatis seiring waktu)
+        if self.has("runic_gavel") and self.empower_charge > 0:
+            self.empower_charge = max(0, self.empower_charge - dt)
+
+        # Tick racun Miasma (Basilisk Breath)
+        _tick_miasma(dt)
 
         h = self.hero
 
@@ -1070,6 +1599,86 @@ class HeroItemInventory:
                         _fx_chain(h, near[:act["targets"]],
                                   ITEM_CATALOG["thunder_coil"]["color"])
 
+            # ═══ TIER III AUTO-TRIGGERS ═══
+            # Razor Carapace - Thornmail saat HP kritis
+            if self.has("razor_carapace") and self.thorn_cd <= 0:
+                act = ITEM_CATALOG["razor_carapace"]["active"]
+                if ratio < act["hp_threshold"]:
+                    self.thorn_timer = act["duration"]
+                    self.thorn_cd = act["cooldown"]
+                    _fx_notify(h, "THORNMAIL!",
+                               ITEM_CATALOG["razor_carapace"]["glow"])
+            # Everfrost Guard - Arctic Blast saat >=2 musuh dekat
+            if self.has("everfrost_guard") and self.arctic_cd <= 0 \
+                    and enemies:
+                act = ITEM_CATALOG["everfrost_guard"]["active"]
+                near = [e for e in enemies
+                        if getattr(e, "alive", False)
+                        and math.hypot(e.x - h.x, e.y - h.y)
+                        <= act["radius"]]
+                if len(near) >= act["trigger_enemies"]:
+                    self.arctic_cd = act["cooldown"]
+                    for e in near:
+                        try:
+                            e.take_damage(act["damage"], h.team,
+                                          "magic")
+                        except TypeError:
+                            e.take_damage(act["damage"], h.team)
+                        if hasattr(e, "apply_slow"):
+                            e.apply_slow(act["slow"],
+                                         act["slow_duration"])
+                    _fx_notify(h, "ARCTIC BLAST!",
+                               ITEM_CATALOG["everfrost_guard"]["glow"])
+                    _fx_chain(h, near,
+                              ITEM_CATALOG["everfrost_guard"]["color"])
+            # Gale Pike - Gale Leap saat HP kritis (mundur)
+            if self.has("gale_pike") and self.gale_cd <= 0:
+                act = ITEM_CATALOG["gale_pike"]["active"]
+                if ratio < act["hp_threshold"]:
+                    self.gale_timer = act["duration"]
+                    self.gale_cd = act["cooldown"]
+                    tgt = getattr(h, "target", None)
+                    if tgt is not None and getattr(tgt, "alive",
+                                                   False):
+                        dx = h.x - tgt.x
+                        dy = h.y - tgt.y
+                        d = math.hypot(dx, dy) or 1.0
+                        h.x += dx / d * act["dash_distance"]
+                        h.y += dy / d * act["dash_distance"]
+                    else:
+                        # Tidak ada target: dorong ke belakang
+                        # sesuai arah hadap.
+                        h.x -= h.facing * act["dash_distance"]
+                    _fx_notify(h, "GALE LEAP!",
+                               ITEM_CATALOG["gale_pike"]["glow"])
+            # Searbrand - Brand Burst saat >=2 musuh dekat
+            if self.has("searbrand") and self.searbrand_cd <= 0 \
+                    and enemies:
+                act = ITEM_CATALOG["searbrand"]["active"]
+                near = [e for e in enemies
+                        if getattr(e, "alive", False)
+                        and math.hypot(e.x - h.x, e.y - h.y)
+                        <= act["radius"]]
+                if len(near) >= act["trigger_enemies"]:
+                    self.searbrand_cd = act["cooldown"]
+                    for e in near:
+                        try:
+                            e.take_damage(act["damage"], h.team,
+                                          "magic")
+                        except TypeError:
+                            e.take_damage(act["damage"], h.team)
+                        try:
+                            e.apply_debuff("burn",
+                                           act["burn_dps"],
+                                           act["burn_duration"],
+                                           source_team=h.team)
+                        except Exception:
+                            pass
+                    _fx_notify(h, "BRAND BURST!",
+                               ITEM_CATALOG["searbrand"]["glow"])
+                    _fx_chain(h, near,
+                              ITEM_CATALOG["searbrand"]["color"])
+
         # HP regen (base item regen + Leviathan out-of-combat +
         # Octarine small regen sudah termasuk angka stat).
         if h.alive and h.max_hp > 0 and h.hp < h.max_hp:
@@ -1082,9 +1691,12 @@ class HeroItemInventory:
             if regen > 0:
                 h.hp = min(h.max_hp, h.hp + regen)
 
-    def notify_damage_taken(self, rng=None):
-        """Dipanggil dari Hero.take_damage untuk reset timer combat
-        + peluang memicu Static Charge (Thunder Coil)."""
+    def notify_damage_taken(self, rng=None, damage=0, source=None):
+        """Dipanggil dari Hero.take_damage untuk reset timer combat,
+        peluang Static Charge (Thunder Coil) DAN pantulan Thornmail
+        (Razor Carapace). ``damage`` adalah damage SETELAH armor/block
+        yang benar-benar mengurangi HP pemilik.
+        """
         if self.has("leviathan_heart"):
             p = ITEM_CATALOG["leviathan_heart"]["passive"]
             self.last_damage_timer = p["combat_timeout"]
@@ -1098,6 +1710,21 @@ class HeroItemInventory:
                 self.static_cd = act["cooldown"]
                 _fx_notify(self.hero, "STATIC CHARGE!",
                            ITEM_CATALOG["thunder_coil"]["glow"])
+
+        # ═══ RAZOR CARAPACE: Thornmail reflect ═══
+        refl = self.get_reflect_pct()
+        if (refl > 0 and damage > 0 and source is not None
+                and getattr(source, "alive", False)
+                and getattr(source, "team", self.hero.team)
+                != self.hero.team):
+            dmg = int(damage * refl)
+            if dmg > 0:
+                try:
+                    source.take_damage(dmg, self.hero.team, "magic")
+                except TypeError:
+                    source.take_damage(dmg, self.hero.team)
+                _fx_notify(source, f"-{dmg}",
+                           ITEM_CATALOG["razor_carapace"]["glow"])
 
     # ── Helper on-hit (crit/lifesteal/cleave) ─────────────
     def roll_crit(self, rng=None):
@@ -1199,6 +1826,80 @@ class HeroItemInventory:
                 _fx_chain(h, hit, ITEM_CATALOG[
                     "thunder_coil" if self.has("thunder_coil")
                     else "fenrir_chain"]["color"])
+
+        # ═══ TIER III ON-HIT ═══
+        if target is None or not getattr(target, "alive", False):
+            return
+
+        # ── Sundering Cudgel: Piercing Bash (mini stun) ──
+        if self.has("sundering_cudgel") and self.pierce_bash_cd <= 0:
+            b = ITEM_CATALOG["sundering_cudgel"]["bash"]
+            if random.random() < b["chance"]:
+                self.pierce_bash_cd = b["cooldown"]
+                _apply_stun_to(target, b["stun"])
+                try:
+                    target.take_damage(b["damage"], h.team, "magic")
+                except TypeError:
+                    target.take_damage(b["damage"], h.team)
+                _fx_notify(target, "PIERCE!",
+                           ITEM_CATALOG["sundering_cudgel"]["glow"])
+
+        # ── Frostbound Eye: Frostbite (slow + anti-heal) ──
+        if self.has("frostbound_eye"):
+            oa = ITEM_CATALOG["frostbound_eye"]["on_attack"]
+            if hasattr(target, "apply_slow"):
+                target.apply_slow(oa["slow"], oa["duration"])
+            try:
+                target.apply_debuff("atk_slow", oa["atk_slow"],
+                                    oa["duration"])
+                target.apply_debuff("anti_heal", oa["anti_heal"],
+                                    oa["duration"])
+            except Exception:
+                pass
+
+        # ── Basilisk Breath: Miasma (racun % Max HP) ──
+        if self.has("basilisk_breath"):
+            _apply_miasma(target, h,
+                          ITEM_CATALOG["basilisk_breath"]["on_attack"])
+            # Polycephaly: tembakan ekstra ke musuh terdekat
+            ms = ITEM_CATALOG["basilisk_breath"]["multishot"]
+            is_ranged = (getattr(h, "range", 100) or 100) > 80
+            if is_ranged and all_units is not None \
+                    and random.random() < ms["chance"]:
+                extras = []
+                for u in all_units:
+                    if u is target or not getattr(u, "alive",
+                                                  False):
+                        continue
+                    if getattr(u, "team", None) == h.team:
+                        continue
+                    d = math.hypot(u.x - target.x, u.y - target.y)
+                    if d <= ms["radius"]:
+                        extras.append((d, u))
+                extras.sort(key=lambda x: x[0])
+                for _, u in extras[:ms["targets"]]:
+                    dmg = int(damage * ms["damage_pct"])
+                    try:
+                        u.take_damage(dmg, h.team, "magic")
+                    except TypeError:
+                        u.take_damage(dmg, h.team)
+                    _apply_miasma(u, h, ITEM_CATALOG[
+                        "basilisk_breath"]["on_attack"])
+                if extras:
+                    _fx_chain(h, [u for _, u in
+                                  extras[:ms["targets"]]],
+                              ITEM_CATALOG["basilisk_breath"]["color"])
+
+        # ── Runic Gavel: Empower Strike (bonus magic damage) ──
+        if self.has("runic_gavel") and self.empower_charge <= 0:
+            bonus = self.consume_empower_strike()
+            if bonus > 0:
+                try:
+                    target.take_damage(bonus, h.team, "magic")
+                except TypeError:
+                    target.take_damage(bonus, h.team)
+                _fx_notify(target, "EMPOWER!",
+                           ITEM_CATALOG["runic_gavel"]["glow"])
 
     def on_ranged_attack_hit(self, target, damage, all_units=None):
         """On-hit Tier II untuk hero ranged (tanpa lifesteal/cleave -
@@ -1302,6 +2003,10 @@ def update_auras(all_heroes):
             inv.aura_armor_reduction = 0
             inv.aura_guard_block = 0
 
+    # Kumpulkan SEMUA unit hidup (minion + hero + boss) supaya aura
+    # milik item Tier III bisa mengenai lebih dari sekadar hero.
+    all_units = _collect_all_units(all_heroes)
+
     # ═══ SCARLET BULWARK: aura Bulwark Guard ═══
     # (dihitung DULUAN - tidak tergantung aura Steel Aegis)
     guards = [h for h in all_heroes
@@ -1328,6 +2033,81 @@ def update_auras(all_heroes):
                         * act["max_hp_block_pct"])
                     if blk > inv.aura_guard_block:
                         inv.aura_guard_block = blk
+
+    # ═══ EVERFROST GUARD: Freezing Aura (musuh: atk slow + heal
+    #     reduction), SOLAR BRAND: Scorched Earth (bakar + blind),
+    #     SEARBRAND: Cauterize (anti-heal 50% + bakar ringan).
+    #     Aura ini mengenai SEMUA unit musuh (minion/hero/boss),
+    #     bukan hanya hero, jadi ditaruh di loop terpisah. ═══
+    frost_sources = [h for h in all_heroes
+                     if getattr(h, "alive", False)
+                     and getattr(h, "items", None) is not None
+                     and h.items.has("everfrost_guard")]
+    solar_sources = [h for h in all_heroes
+                     if getattr(h, "alive", False)
+                     and getattr(h, "items", None) is not None
+                     and h.items.has("solar_brand")]
+    sear_sources = [h for h in all_heroes
+                    if getattr(h, "alive", False)
+                    and getattr(h, "items", None) is not None
+                    and h.items.has("searbrand")]
+    if frost_sources or solar_sources or sear_sources:
+        f_r = ITEM_CATALOG["everfrost_guard"]["aura"]["enemy_radius"]
+        f_as = ITEM_CATALOG["everfrost_guard"]["aura"][
+            "enemy_atk_slow"]
+        f_heal = ITEM_CATALOG["everfrost_guard"]["aura"][
+            "enemy_anti_heal"]
+        s_r = ITEM_CATALOG["solar_brand"]["aura"]["enemy_radius"]
+        s_burn = ITEM_CATALOG["solar_brand"]["aura"]["burn_dps"]
+        s_blind = ITEM_CATALOG["solar_brand"]["aura"]["blind"]
+        se_r = ITEM_CATALOG["searbrand"]["aura"]["enemy_radius"]
+        se_heal = ITEM_CATALOG["searbrand"]["aura"]["enemy_anti_heal"]
+        se_burn = ITEM_CATALOG["searbrand"]["aura"]["burn_dps"]
+        for u in all_units:
+            if not getattr(u, "alive", False):
+                continue
+            u_team = getattr(u, "team", None)
+            # Everfrost
+            for src in frost_sources:
+                if u_team == src.team:
+                    continue
+                if math.hypot(u.x - src.x, u.y - src.y) <= f_r:
+                    try:
+                        u.apply_debuff("atk_slow", f_as, 30)
+                        u.apply_debuff("anti_heal", f_heal, 30)
+                    except Exception:
+                        pass
+                    break
+            # Solar Brand - burn tick (28 dps, refresh 30 frame)
+            for src in solar_sources:
+                if u_team == src.team:
+                    continue
+                if math.hypot(u.x - src.x, u.y - src.y) <= s_r:
+                    try:
+                        u.apply_debuff("burn", s_burn, 30,
+                                       source_team=src.team)
+                    except Exception:
+                        pass
+                    # Blind: tandai lewat atk_slow kecil yang
+                    # dipakai bersama; dipisah atribut kalau ada.
+                    if hasattr(u, "apply_miss_chance"):
+                        try:
+                            u.apply_miss_chance(s_blind, 30)
+                        except Exception:
+                            pass
+                    break
+            # Searbrand - Cauterize (anti-heal 50% + bakar ringan)
+            for src in sear_sources:
+                if u_team == src.team:
+                    continue
+                if math.hypot(u.x - src.x, u.y - src.y) <= se_r:
+                    try:
+                        u.apply_debuff("anti_heal", se_heal, 30)
+                        u.apply_debuff("burn", se_burn, 30,
+                                       source_team=src.team)
+                    except Exception:
+                        pass
+                    break
 
     # Cari semua pemegang Steel Aegis
     sources = [h for h in all_heroes
@@ -1366,6 +2146,26 @@ def update_auras(all_heroes):
                     inv.aura_armor_reduction += e_red
 
 
+def _collect_all_units(all_heroes):
+    """Kumpulkan semua unit hidup (hero + minion + boss) untuk
+    perhitungan aura Tier III. Aman dipanggil tanpa konteks game.
+    """
+    units = list(all_heroes)
+    try:
+        import __main__
+        g = getattr(__main__, "game_instance", None)
+        if g is not None:
+            for m in getattr(g, "minions", []) or []:
+                if m is not None:
+                    units.append(m)
+            boss = getattr(g, "active_boss", None)
+            if boss is not None and getattr(boss, "alive", False):
+                units.append(boss)
+    except Exception:
+        pass
+    return units
+
+
 # ════════════════════════════════════════════════════════════
 # AI HELPER: saran item untuk hero
 # ════════════════════════════════════════════════════════════
@@ -1389,22 +2189,30 @@ def suggest_item_for_hero(hero, owned):
     # Tier II ikut masuk pool sesuai peran, supaya AI juga membeli
     # item legendary baru (Scarlet Bulwark, Monarch Wings, dst.).
     if "tank" in role or "bruiser" in role or "fighter" in role:
-        pool = ["leviathan_heart", "scarlet_bulwark", "steel_aegis",
-                "abyss_breaker", "demon_maw", "corroder",
-                "fenrir_chain", "octarine_core", "moon_shard"]
+        pool = ["leviathan_heart", "scarlet_bulwark", "searbrand",
+                "razor_carapace", "everfrost_guard", "steel_aegis",
+                "abyss_breaker", "solar_brand", "demon_maw",
+                "corroder", "fenrir_chain", "octarine_core",
+                "moon_shard"]
     elif "marksman" in role or "assassin" in role:
-        pool = ["dead_edge", "monarch_wings", "thunder_coil",
-                "sanguine_thorn", "moon_shard", "corroder",
-                "demon_maw", "octarine_core", "steel_aegis"]
+        pool = ["dead_edge", "basilisk_breath", "gale_pike",
+                "frostbound_eye", "sundering_cudgel", "searbrand",
+                "monarch_wings", "thunder_coil", "sanguine_thorn",
+                "moon_shard", "runic_gavel", "corroder", "demon_maw",
+                "octarine_core", "steel_aegis"]
     elif "mage" in role or "trickster" in role:
-        pool = ["octarine_core", "tempest_vane", "corroder",
-                "moon_shard", "thunder_coil", "steel_aegis",
-                "demon_maw", "dead_edge"]
+        pool = ["octarine_core", "runic_gavel", "searbrand",
+                "solar_brand", "frostbound_eye", "everfrost_guard",
+                "tempest_vane", "corroder", "moon_shard",
+                "thunder_coil", "steel_aegis", "demon_maw",
+                "dead_edge"]
     else:
-        pool = ["steel_aegis", "moon_shard", "demon_maw",
-                "leviathan_heart", "scarlet_bulwark", "thunder_coil",
-                "monarch_wings", "octarine_core", "dead_edge",
-                "corroder"]
+        pool = ["steel_aegis", "searbrand", "sundering_cudgel",
+                "frostbound_eye", "razor_carapace", "moon_shard",
+                "demon_maw", "leviathan_heart", "scarlet_bulwark",
+                "solar_brand", "thunder_coil", "monarch_wings",
+                "octarine_core", "gale_pike", "dead_edge", "corroder",
+                "everfrost_guard"]
 
     if is_melee:
         # Masukkan cleave & rapier di urutan belakang
@@ -1461,7 +2269,13 @@ class HeroItemRenderer:
                     or (sid == "scarlet_bulwark" and inv.guard_timer > 0)
                     or (sid == "tempest_vane" and inv.veil_timer > 0)
                     or (sid == "thunder_coil" and inv.static_timer > 0)
-                    or (sid == "sanguine_thorn" and inv.rend_timer > 0))
+                    or (sid == "sanguine_thorn" and inv.rend_timer > 0)
+                    or (sid == "razor_carapace" and inv.thorn_timer > 0)
+                    or (sid == "gale_pike" and inv.gale_timer > 0)
+                    or (sid == "searbrand" and inv.searbrand_cd > 0
+                        and inv.searbrand_cd
+                        > ITEM_CATALOG["searbrand"]["active"]["cooldown"]
+                        - 30))
                 if _active:
                     g = pygame.Surface(
                         (cls.SLOT_SIZE + 6, cls.SLOT_SIZE + 6),
@@ -1771,9 +2585,11 @@ class ItemShopUI:
         ls = int(inv.get_lifesteal_pct() * 100)
         as_mult = inv.get_attack_speed_mult()
         cdr = int(inv.get_cooldown_reduction() * 100)
+        range_bonus = inv.get_range_bonus()
+        range_txt = f"   RNG +{range_bonus}" if range_bonus > 0 else ""
         info = (f"{kind}   DMG {dmg}->{total_dmg}   HP {total_hp}   "
                 f"Armor {armor}   AS x{as_mult:.2f}   LS {ls}%   "
-                f"CDR {cdr}%")
+                f"CDR {cdr}%{range_txt}")
         it = sf.render(info, True, (200, 210, 230))
         surface.blit(it, (box.x + 12, box.y + 28))
         if not getattr(hero, "alive", False):
@@ -1864,7 +2680,8 @@ class ItemShopUI:
                              border_radius=6)
             lf = pygame.font.Font(None, 19)
             label = "TIER I - CORE" if i == 0 else \
-                    f"TIER II - LEGENDARY" if i == 1 \
+                    "TIER II - LEGENDARY" if i == 1 \
+                    else "TIER III - MYTHIC" if i in (2, 3) \
                     else tr("shop_page_label", page=i + 1)
             t = lf.render(label, True, (255, 225, 130) if active
                           else (170, 180, 205))
