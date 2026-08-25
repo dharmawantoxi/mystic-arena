@@ -2655,6 +2655,31 @@ from ui_components.hero_portraits import HeroPortraits
 DEV_UNLIMITED_HERO_GOLD = globals().get("DEV_UNLIMITED_HERO_GOLD", False)
 DEV_TOPUP_ENABLED = globals().get("DEV_TOPUP_ENABLED", False)
 
+# ── FITUR TOP UP HERO GOLD ─────────────────────────────────────────
+# Paket yang bisa dibeli pemain. `bonus` = bonus gold ekstra
+# (0 = tanpa bonus). `price` = harga Rupiah (display-only).
+# Pembayaran saat ini DISIMULASIKAN — untuk menyambungkan ke gateway
+# pembayaran nyata, ganti alur di Menu._topup_complete() dengan
+# panggilan API gateway Anda (lihat catatan di sana).
+TOPUP_PACKAGES = (
+    {"label": "PAKET 50K", "gold": 50000, "bonus": 0, "price": 10_000},
+)
+# Metode pembayaran yang ditawarkan (nama display, tanpa gateway).
+TOPUP_PAYMENT_METHODS = (
+    {"id": "gopay",     "label": "GOPAY"},
+    {"id": "ovo",       "label": "OVO"},
+    {"id": "dana",      "label": "DANA"},
+    {"id": "shopeepay", "label": "SHOPEEPAY"},
+    {"id": "bank",      "label": "BANK TRANSFER"},
+)
+# Durasi animasi "pembayaran diproses" dalam detik (kosmetik saja).
+TOPUP_PROCESSING_SECONDS = 1.6
+
+
+def fmt_idr(amount):
+    """Format Rupiah ala Indonesia: 120000 -> 'Rp 120.000'."""
+    return f"Rp {int(amount):,}".replace(",", ".")
+
 class MenuState:
     """State constants untuk menu"""
     MAIN = "main"
@@ -2734,6 +2759,21 @@ class Menu:
         self.action = None  # "play", "quit", "resume", "main_menu"
         # Aksi keluar tidak pernah dijalankan tanpa persetujuan pemain.
         self.exit_confirm = None  # "quit" atau "main_menu"
+
+        # ── TOP UP HERO GOLD (alur pembayaran simulasi) ──
+        # topup_open  : dialog sedang tampil.
+        # topup_phase : "select" -> "processing" -> "success".
+        # Tombol dialog tidak bisa ditutup saat "processing".
+        self.topup_open = False
+        self.topup_phase = "select"
+        self.topup_pkg_idx = 0        # default: paket pertama
+        self.topup_method_idx = 0     # default: GOPAY
+        self.topup_progress = 0.0     # 0..1 animasi proses pembayaran
+        self.topup_tx_id = None       # ID transaksi hasil sukses
+        self.topup_last_total = 0     # total gold transaksi terakhir
+        # Currency display (auto-deteksi region pemain, di-resolve
+        # saat dialog top up dibuka; None = belum dideteksi).
+        self.topup_currency = None
 
         # Particles background
         self.particles = self._init_particles()
@@ -3299,6 +3339,14 @@ class Menu:
         except Exception as e:
             print(f"[CLOUD] poll failed: {e}")
 
+        # ── TOP UP: animasi proses pembayaran (simulasi, asumsi 60 fps) ──
+        if getattr(self, "topup_open", False) and \
+                self.topup_phase == "processing":
+            self.topup_progress += 1.0 / max(
+                1, int(60 * TOPUP_PROCESSING_SECONDS))
+            if self.topup_progress >= 1.0:
+                self.topup_complete()
+
         # Hover detection
         mx, my = pygame.mouse.get_pos()
         self.hover_button = None
@@ -3356,6 +3404,12 @@ class Menu:
         # Selalu tampilkan paling akhir agar klik tidak bisa menembus dialog.
         if self.exit_confirm is not None:
             self._draw_exit_confirm_dialog()
+
+        # Dialog top up (modal, hanya di Hero Shop).
+        if (self.state == MenuState.HERO_SHOP
+                and getattr(self, "topup_open", False)
+                and self.exit_confirm is None):
+            self._draw_topup_dialog()
 
     # ================================
     # Di menu.py → handle_click(), TAMBAHKAN:
@@ -4296,6 +4350,21 @@ class Menu:
             f"HERO GOLD: {self.meta_gold:,}", True, GOLD)
         self.screen.blit(gold_text, (gold_bg.x + 32, gold_bg.y + 6))
 
+        # Tombol TOP UP (di samping badge gold) -> buka dialog top up.
+        topup_btn = pygame.Rect(gold_bg.right + 12, 18, 118, 32)
+        topup_hover = self.hover_button == "topup_open"
+        pygame.draw.rect(self.screen,
+                         (22, 92, 58) if topup_hover else (12, 58, 38),
+                         topup_btn, border_radius=16)
+        pygame.draw.rect(self.screen,
+                         (140, 255, 170) if topup_hover
+                         else (80, 200, 120),
+                         topup_btn, 2, border_radius=16)
+        topup_txt = self.font_small.render("+ TOP UP", True, (215, 255, 225))
+        self.screen.blit(topup_txt,
+                         topup_txt.get_rect(center=topup_btn.center))
+        self.buttons["topup_open"] = topup_btn
+
         # Bosses (kanan)
         boss_count = len(self.save_data.get("unlocked_bosses", []))
         boss_bg = pygame.Rect(SCREEN_WIDTH - 240, 20, 210, 28)
@@ -4746,6 +4815,342 @@ class Menu:
         SaveManager.save(self.save_data)
         SoundManager().play('ui_buy', volume_mult=0.5)
         print(f"[DEV TOP UP] +{amount:,} Hero Gold")
+
+    # ═══════════════════════════════════════════════════════════════
+    # TOP UP HERO GOLD (pembayaran simulasi)
+    # ═══════════════════════════════════════════════════════════════
+
+    def _topup_price_str(self, amount_idr):
+        """Harga paket dalam currency pemain (auto-deteksi region)."""
+        from topup_currency import format_price
+        return format_price(amount_idr, self.topup_currency or "IDR")
+
+    def _draw_topup_dialog(self):
+        """Dialog TOP UP HERO GOLD. Modal: cache tombol di-clear supaya
+        klik tidak bisa menembus ke tombol shop di belakangnya (pola
+        sama dengan dialog restore cloud)."""
+        from mobile.perf import darken
+        if self.topup_currency is None:
+            from topup_currency import detect_currency
+            try:
+                self.topup_currency = detect_currency()
+            except Exception as e:
+                print(f"[TOP UP] currency detect gagal: {e}")
+                self.topup_currency = "USD"
+        darken(self.screen, 205)
+        self.buttons = {}  # ← kunci klik hanya ke tombol dialog ini
+
+        cx = SCREEN_WIDTH // 2
+        cy = SCREEN_HEIGHT // 2
+        dialog_w, dialog_h = 920, 580
+        dx, dy = cx - dialog_w // 2, cy - dialog_h // 2
+
+        # Bayangan + badan dialog
+        shadow = pygame.Surface((dialog_w + 12, dialog_h + 12),
+                                pygame.SRCALPHA)
+        pygame.draw.rect(shadow, (0, 0, 0, 160),
+                         (6, 6, dialog_w, dialog_h), border_radius=16)
+        self.screen.blit(shadow, (dx - 6, dy - 6))
+        pygame.draw.rect(self.screen, (22, 28, 44),
+                         (dx, dy, dialog_w, dialog_h), border_radius=16)
+        pygame.draw.rect(self.screen, (255, 200, 80),
+                         (dx, dy, dialog_w, dialog_h), 3, border_radius=16)
+
+        # Judul
+        title = get_font(34, "body_bold").render(
+            "TOP UP HERO GOLD", True, (255, 220, 100))
+        self.screen.blit(title, title.get_rect(center=(cx, dy + 38)))
+        sub = self.font_tiny.render(
+            "Top up gold untuk membuka hero di HERO SHOP",
+            True, (160, 170, 190))
+        self.screen.blit(sub, sub.get_rect(center=(cx, dy + 64)))
+        pygame.draw.line(self.screen, (60, 70, 90),
+                         (dx + 18, dy + 80), (dx + dialog_w - 18, dy + 80),
+                         1)
+
+        if self.topup_phase == "select":
+            self._draw_topup_select(dx, dy, dialog_w, dialog_h)
+        elif self.topup_phase == "processing":
+            self._draw_topup_processing(dx, dy, dialog_w, dialog_h)
+        else:
+            self._draw_topup_success(dx, dy, dialog_w, dialog_h)
+
+    def _draw_topup_select(self, dx, dy, dw, dh):
+        """Fase 1: pilih paket gold + metode pembayaran."""
+        # ── KIRI: kartu paket (1 kartu besar kalau cuma 1 paket,
+        #     grid 2 kolom kalau lebih) ──
+        col_x = dx + 24
+        label1 = self.font_tiny.render(
+            "1. CHOOSE PACKAGE", True, (140, 190, 150))
+        self.screen.blit(label1, (col_x, dy + 92))
+
+        n_pkg = len(TOPUP_PACKAGES)
+        cols = 2 if n_pkg > 1 else 1
+        card_w = 504 if cols == 1 else 246
+        card_h = 92
+        gap_x, gap_y = 12, 10
+        if cols == 1:
+            # Pusatkan kartu tunggal di area kiri (atas -> garis ringkasan).
+            area_top, area_bottom = dy + 112, dy + 430
+            y0 = area_top + (area_bottom - area_top - card_h) // 2
+        else:
+            y0 = dy + 112
+        for i, pkg in enumerate(TOPUP_PACKAGES):
+            r, c = divmod(i, cols)
+            x = col_x + c * (card_w + gap_x)
+            y = y0 + r * (card_h + gap_y)
+            rect = pygame.Rect(x, y, card_w, card_h)
+            selected = i == self.topup_pkg_idx
+            hover = self.hover_button == f"topup_pkg_{i}"
+
+            bg = (22, 66, 44) if selected else (
+                (34, 44, 68) if hover else (28, 34, 54))
+            pygame.draw.rect(self.screen, bg, rect, border_radius=10)
+            pygame.draw.rect(self.screen,
+                             (120, 255, 160) if selected
+                             else (120, 230, 150) if hover
+                             else (75, 85, 110),
+                             rect, 3 if selected else 1, border_radius=10)
+
+            lb = self.font_tiny.render(pkg["label"], True,
+                                        (255, 220, 130) if selected
+                                        else (170, 180, 200))
+            self.screen.blit(lb, (rect.x + 12, rect.y + 9))
+
+            pr = self.font_small.render(
+                self._topup_price_str(pkg["price"]), True,
+                (255, 255, 255) if selected else (200, 205, 220))
+            self.screen.blit(pr, pr.get_rect(topright=(rect.right - 12,
+                                                       rect.y + 9)))
+
+            total = int(pkg["gold"]) + int(pkg.get("bonus", 0))
+            gl = self.font_medium.render(
+                f"+{total:,}", True, (255, 200, 50))
+            gl_u = self.font_tiny.render("GOLD", True, (200, 160, 60))
+            gl_rect = gl.get_rect(midleft=(rect.x + 12, rect.y + 52))
+            self.screen.blit(gl, gl_rect)
+            self.screen.blit(gl_u, gl_u.get_rect(
+                midleft=(gl_rect.right + 6, gl_rect.centery)))
+
+            if int(pkg.get("bonus", 0)) > 0:
+                bn = self.font_tiny.render(
+                    f"incl. +{int(pkg['bonus']):,} BONUS",
+                    True, (120, 235, 150))
+                self.screen.blit(bn, (rect.x + 12, rect.bottom - 22))
+
+            self.buttons[f"topup_pkg_{i}"] = rect
+
+        # ── KANAN: metode pembayaran ──
+        meth_x = dx + 556
+        meth_w = dw - (meth_x - dx) - 24
+        label2 = self.font_tiny.render(
+            "2. PAYMENT METHOD", True, (140, 190, 150))
+        self.screen.blit(label2, (meth_x, dy + 92))
+
+        for i, m in enumerate(TOPUP_PAYMENT_METHODS):
+            y = dy + 112 + i * 46
+            rect = pygame.Rect(meth_x, y, meth_w, 38)
+            selected = i == self.topup_method_idx
+            hover = self.hover_button == f"topup_method_{i}"
+
+            bg = (22, 66, 44) if selected else (
+                (34, 44, 68) if hover else (28, 34, 54))
+            pygame.draw.rect(self.screen, bg, rect, border_radius=8)
+            pygame.draw.rect(self.screen,
+                             (120, 255, 160) if selected
+                             else (120, 230, 150) if hover
+                             else (75, 85, 110),
+                             rect, 2 if selected else 1, border_radius=8)
+
+            # Radio circle
+            cr_c = (rect.x + 21, rect.centery)
+            pygame.draw.circle(self.screen,
+                               (120, 255, 160) if selected
+                               else (90, 100, 125),
+                               cr_c, 8)
+            if selected:
+                pygame.draw.circle(self.screen, (10, 40, 24), cr_c, 4)
+            lab = self.font_small.render(
+                m["label"], True,
+                (235, 255, 240) if selected else (190, 200, 215))
+            self.screen.blit(lab, (rect.x + 40, rect.centery - 9))
+            self.buttons[f"topup_method_{i}"] = rect
+
+        # ── RINGKASAN + CATATAN ──
+        pkg = TOPUP_PACKAGES[self.topup_pkg_idx]
+        total = int(pkg["gold"]) + int(pkg.get("bonus", 0))
+        pygame.draw.line(self.screen, (60, 70, 90),
+                         (dx + 18, dy + 430), (dx + dw - 18, dy + 430),
+                         1)
+        tot_t = self.font_small.render(
+            "TOTAL GOLD: ", True, (170, 180, 200))
+        tot_t_rect = tot_t.get_rect(topleft=(dx + 24, dy + 448))
+        tot_v = self.font_medium.render(f"+{total:,}", True, GOLD)
+        self.screen.blit(tot_t, (dx + 24, dy + 448))
+        self.screen.blit(tot_v, tot_v.get_rect(
+            midleft=(tot_t_rect.right + 4, dy + 452)))
+        pr_t = self.font_medium.render(
+            self._topup_price_str(pkg["price"]), True, (255, 255, 255))
+        self.screen.blit(pr_t, pr_t.get_rect(
+            topright=(dx + dw - 24, dy + 446)))
+        note = self.font_tiny.render(
+            "Simulated payment - no real charge.", True, (120, 130, 150))
+        self.screen.blit(note, (dx + 24, dy + 474))
+
+        # ── TOMBOL BAWAH ──
+        btn_y, btn_h = dy + 496, 52
+        mx, my = pygame.mouse.get_pos()
+
+        cancel_rect = pygame.Rect(dx + 24, btn_y, 170, btn_h)
+        cancel_hover = cancel_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (85, 90, 105) if cancel_hover else (58, 62, 78),
+                         cancel_rect, border_radius=10)
+        pygame.draw.rect(self.screen,
+                         (170, 180, 200) if cancel_hover else (110, 120, 145),
+                         cancel_rect, 2, border_radius=10)
+        ct = self.font_medium.render("CANCEL", True, (230, 230, 235))
+        self.screen.blit(ct, ct.get_rect(center=cancel_rect.center))
+        self.buttons["topup_cancel"] = cancel_rect
+
+        pay_w = 340
+        pay_rect = pygame.Rect(dx + dw - 24 - pay_w, btn_y, pay_w, btn_h)
+        pay_hover = pay_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (30, 130, 72) if pay_hover else (18, 98, 54),
+                         pay_rect, border_radius=10)
+        pygame.draw.rect(self.screen,
+                         (140, 255, 175) if pay_hover else (85, 205, 125),
+                         pay_rect, 2, border_radius=10)
+        pt = self.font_medium.render(
+            f"PAY NOW  •  {self._topup_price_str(pkg['price'])}",
+            True, (255, 255, 255))
+        self.screen.blit(pt, pt.get_rect(center=pay_rect.center))
+        self.buttons["topup_pay"] = pay_rect
+
+    def _draw_topup_processing(self, dx, dy, dw, dh):
+        """Fase 2: animasi pembayaran diproses (simulasi)."""
+        cx, cy = dx + dw // 2, dy + dh // 2
+        pkg = TOPUP_PACKAGES[self.topup_pkg_idx]
+        method = TOPUP_PAYMENT_METHODS[self.topup_method_idx]
+
+        # Spinner (3 busur berputar)
+        base_angle = (self.animation_time % 60) / 60.0 * math.tau
+        for k in range(3):
+            start = base_angle + math.tau * k / 3.0
+            rect = pygame.Rect(0, 0, 96, 96)
+            rect.center = (cx, cy - 70)
+            pygame.draw.arc(self.screen, (120, 255, 160), rect,
+                            start, start + math.tau / 4.0, 5)
+
+        t1 = self.font_medium.render(
+            "PROCESSING PAYMENT...", True, (240, 245, 250))
+        self.screen.blit(t1, t1.get_rect(center=(cx, cy + 10)))
+        t2 = self.font_small.render(
+            f"via {method['label']}  •  {self._topup_price_str(pkg['price'])}",
+            True, (170, 180, 200))
+        self.screen.blit(t2, t2.get_rect(center=(cx, cy + 42)))
+
+        # Progress bar
+        bar_w, bar_h = 360, 10
+        bar = pygame.Rect(cx - bar_w // 2, cy + 72, bar_w, bar_h)
+        pygame.draw.rect(self.screen, (40, 48, 68), bar, border_radius=5)
+        fill = int(bar_w * min(1.0, self.topup_progress))
+        if fill > 4:
+            pygame.draw.rect(self.screen, (120, 255, 160),
+                             (bar.x, bar.y, fill, bar_h), border_radius=5)
+        pygame.draw.rect(self.screen, (90, 100, 130),
+                         bar, 1, border_radius=5)
+
+        note = self.font_tiny.render(
+            "Please wait - do not close the dialog.", True, (120, 130, 150))
+        self.screen.blit(note, note.get_rect(center=(cx, cy + 110)))
+
+    def _draw_topup_success(self, dx, dy, dw, dh):
+        """Fase 3: pembayaran sukses, gold sudah masuk."""
+        cx, cy = dx + dw // 2, dy + dh // 2
+        pkg = TOPUP_PACKAGES[self.topup_pkg_idx]
+        method = TOPUP_PAYMENT_METHODS[self.topup_method_idx]
+
+        # Lingkaran centang
+        pygame.draw.circle(self.screen, (16, 60, 36), (cx, cy - 90), 46,
+                           width=6)
+        pygame.draw.circle(self.screen, (30, 120, 66), (cx, cy - 90), 40)
+        pygame.draw.lines(self.screen, (140, 255, 175), False,
+                          [(cx - 18, cy - 92), (cx - 4, cy - 76),
+                           (cx + 20, cy - 106)], 6)
+
+        t1 = self.font_medium.render(
+            "TOP UP SUCCESSFUL!", True, (255, 220, 100))
+        self.screen.blit(t1, t1.get_rect(center=(cx, cy + 0)))
+        t2 = self.font_medium.render(
+            f"+{self.topup_last_total:,} HERO GOLD ADDED",
+            True, GOLD)
+        self.screen.blit(t2, t2.get_rect(center=(cx, cy + 36)))
+        tx_line = self.font_tiny.render(
+            f"TX ID: {self.topup_tx_id}   •   {method['label']}   •   "
+            f"{self._topup_price_str(pkg['price'])}", True, (150, 160, 180))
+        self.screen.blit(tx_line, tx_line.get_rect(center=(cx, cy + 68)))
+
+        back_rect = pygame.Rect(cx - 110, cy + 96, 220, 48)
+        mx, my = pygame.mouse.get_pos()
+        hover = back_rect.collidepoint(mx, my)
+        pygame.draw.rect(self.screen,
+                         (48, 58, 88) if hover else (36, 44, 66),
+                         back_rect, border_radius=10)
+        pygame.draw.rect(self.screen,
+                         (150, 200, 255) if hover else (100, 160, 220),
+                         back_rect, 2, border_radius=10)
+        bt = self.font_medium.render("BACK", True, (255, 255, 255))
+        self.screen.blit(bt, bt.get_rect(center=back_rect.center))
+        self.buttons["topup_back"] = back_rect
+
+    def topup_complete(self):
+        """Pembayaran (SIMULASI) berhasil: gold masuk + riwayat disimpan.
+
+        TODO (gateway nyata): ganti blok simulasi ini dengan panggilan
+        ke API payment gateway (mis. Midtrans/Xendit): buat invoice ->
+        cek status transaksi di callback/cek webhook -> baru tambah
+        gold di sini, lalu simpan payload invoice/QR di tx["raw"].
+        """
+        pkg = TOPUP_PACKAGES[self.topup_pkg_idx]
+        method = TOPUP_PAYMENT_METHODS[self.topup_method_idx]
+        total = int(pkg["gold"]) + int(pkg.get("bonus", 0))
+
+        self.meta_gold += total
+        self.save_data["meta_gold"] = self.meta_gold
+
+        import time
+        from topup_currency import convert_idr
+        tx_id = "MA-" + format(int(time.time() * 1000) % 10**10, "010d")
+        cur = self.topup_currency or "IDR"
+        price_cur, _ = convert_idr(pkg["price"], cur)
+        history = self.save_data.setdefault("topup_history", [])
+        history.append({
+            "tx": tx_id,
+            "pkg": pkg["label"],
+            "gold": int(pkg["gold"]),
+            "bonus": int(pkg.get("bonus", 0)),
+            # price = base IDR (source of truth); price_cur = nilai
+            # yang ditampilkan pemain saat beli (currency cur).
+            "price": int(pkg["price"]),
+            "cur": cur,
+            "price_cur": round(price_cur, 2),
+            "method": method["id"],
+            "ts": int(time.time()),
+        })
+        # Batasi riwayat 50 transaksi terakhir.
+        if len(history) > 50:
+            self.save_data["topup_history"] = history[-50:]
+        SaveManager.save(self.save_data)
+
+        self.topup_phase = "success"
+        self.topup_tx_id = tx_id
+        self.topup_last_total = total
+        print(f"[TOP UP] +{total:,} Hero Gold "
+              f"({pkg['label']} via {method['label']}, "
+              f"{cur} {round(price_cur, 2)}, simulasi)")
+        SoundManager().play('ui_buy', volume_mult=0.9)
 
     def _blit_shadow(self, surf, text_surf, topleft, offset=(2, 2)):
         """Blit teks dengan bayangan gelap lembut di belakangnya."""
@@ -5973,6 +6378,7 @@ class Menu:
         elif btn_id == "hero_shop":
             self.reload_progress()
             self.shop_tab = 'starter'  # ← RESET tab saat masuk shop
+            self.topup_open = False    # ← tutup dialog top up saat masuk
             self.state = MenuState.HERO_SHOP
 
         elif btn_id.startswith("tab_"):
@@ -5989,6 +6395,34 @@ class Menu:
                 self._dev_topup_gold(amount)
             except ValueError:
                 pass
+
+        # ═══ TOP UP HERO GOLD (pembayaran simulasi) ═══
+        elif btn_id == "topup_open":
+            self.topup_open = True
+            self.topup_phase = "select"
+            self.topup_progress = 0.0
+        elif btn_id == "topup_cancel":
+            # Tidak boleh ditutup saat pembayaran sedang diproses.
+            if self.topup_phase != "processing":
+                self.topup_open = False
+        elif btn_id == "topup_back":
+            self.topup_open = False
+        elif btn_id.startswith("topup_pkg_"):
+            if self.topup_phase == "select":
+                try:
+                    self.topup_pkg_idx = int(btn_id.rsplit("_", 1)[-1])
+                except ValueError:
+                    pass
+        elif btn_id.startswith("topup_method_"):
+            if self.topup_phase == "select":
+                try:
+                    self.topup_method_idx = int(btn_id.rsplit("_", 1)[-1])
+                except ValueError:
+                    pass
+        elif btn_id == "topup_pay":
+            if self.topup_phase == "select":
+                self.topup_phase = "processing"
+                self.topup_progress = 0.0
 
         # ═══ TOGGLES ═══
         elif btn_id in ("difficulty_prev", "difficulty_next", "toggle_difficulty", "toggle_level_difficulty"):
