@@ -34,3 +34,6 @@ Thumbs.db
 
 # Save game hasil uji coba
 saves/
+
+# DB runtime server top up (transaksi - jangan commit)
+server/topup.db

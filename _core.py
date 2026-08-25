@@ -2646,6 +2646,7 @@ class Game:
 
 import pygame
 import math
+import os
 import sys
 from _system import SoundManager
 from _system import SaveManager
@@ -2679,6 +2680,16 @@ TOPUP_PROCESSING_SECONDS = 1.6
 def fmt_idr(amount):
     """Format Rupiah ala Indonesia: 120000 -> 'Rp 120.000'."""
     return f"Rp {int(amount):,}".replace(",", ".")
+
+
+# ── TOP UP: SERVER (opsional, mengotomatiskan pembayaran) ──
+# Kosong = MODE SIMULASI (gold langsung masuk, tanpa pembayaran).
+# Isi dengan URL server top up (server/app.py) untuk alur nyata:
+#     TOPUP_SERVER_URL = "https://topup.namagame.com"
+# Atau via env var MYSTIC_TOPUP_URL. Saat server aktif: klik PAY
+# NOW -> dialog QRIS -> game poll status -> gold OTOMATIS masuk
+# setelah pembayaran ter-settle (kode di-issue server).
+TOPUP_SERVER_URL = os.environ.get("MYSTIC_TOPUP_URL", "")
 
 class MenuState:
     """State constants untuk menu"""
@@ -2779,6 +2790,17 @@ class Menu:
         self.topup_redeem_msg = None    # (teks, warna) pesan validasi
         self.topup_redeem_code = None   # kode sukses terakhir
         self.topup_last_method = None   # method transaksi terakhir
+        # ── TOP UP SERVER (fase "paying": QRIS + poll otomatis) ──
+        self.topup_server_url = TOPUP_SERVER_URL
+        self.topup_pay_state = "idle"   # idle|creating|awaiting|error
+        self.topup_pay_msg = None
+        self.topup_invoice = None       # data invoice dari server
+        self._topup_http_thread = None
+        self._topup_http_result = None
+        self._topup_http_purpose = None
+        self._topup_poll_next = 0
+        self._topup_qr_bytes = None
+        self._topup_qr_surf = None
 
         # Particles background
         self.particles = self._init_particles()
@@ -3351,6 +3373,11 @@ class Menu:
                 1, int(60 * TOPUP_PROCESSING_SECONDS))
             if self.topup_progress >= 1.0:
                 self.topup_complete()
+
+        # ── TOP UP: state machine pembayaran server (QRIS + poll) ──
+        if getattr(self, "topup_open", False) and \
+                self.topup_phase == "paying":
+            self._topup_server_tick()
 
         # Hover detection
         mx, my = pygame.mouse.get_pos()
@@ -4841,6 +4868,241 @@ class Menu:
         from topup_currency import format_price
         return format_price(amount_idr, self.topup_currency or "IDR")
 
+    # ═══════════════════════════════════════════════════════════════
+    # TOP UP SERVER: HTTP async + state machine (fase "paying")
+    # ═══════════════════════════════════════════════════════════════
+
+    def _topup_http(self, method, path, payload=None):
+        """HTTP async di thread daemon (jangan freeze game loop).
+        Hasil disimpan ke _topup_http_result, dibaca oleh
+        _topup_server_tick(). HANYA satu request aktif sekaligus."""
+        import json
+        import threading
+        import urllib.request
+
+        def work():
+            try:
+                url = self.topup_server_url.rstrip("/") + path
+                data = None
+                if payload is not None:
+                    data = json.dumps(payload).encode()
+                req = urllib.request.Request(url, data=data,
+                                              method=method)
+                if data is not None:
+                    req.add_header("Content-Type", "application/json")
+                with urllib.request.urlopen(req, timeout=6) as r:
+                    self._topup_http_result = (True, r.status, r.read())
+            except Exception as e:
+                self._topup_http_result = (False, None, str(e).encode())
+
+        self._topup_http_result = None
+        self._topup_http_thread = threading.Thread(
+            target=work, daemon=True)
+        self._topup_http_thread.start()
+
+    def _topup_send_create(self):
+        pkg = TOPUP_PACKAGES[self.topup_pkg_idx]
+        self._topup_http_purpose = "create"
+        self._topup_http("POST", "/api/topup/create", {"pkg": pkg["label"]})
+
+    def _topup_send_poll(self):
+        if self.topup_invoice:
+            self._topup_http("GET",
+                             f"/api/topup/status/{self.topup_invoice['id']}")
+
+    def _topup_server_tick(self):
+        """Dipanggil tiap frame saat fase paying (lihat Menu.update).
+        Membaca hasil HTTP & menjadwalkan langkah berikutnya."""
+        import json
+
+        def _json(body):
+            try:
+                return json.loads(body or b"{}")
+            except Exception:
+                return {}
+
+        th = self._topup_http_thread
+        if th is not None:
+            if th.is_alive():
+                return
+            th.join(timeout=0)
+            self._topup_http_thread = None
+            ok, _code, body = self._topup_http_result or (False, None, b"")
+            self._topup_http_result = None
+            purpose = self._topup_http_purpose
+            self._topup_http_purpose = None
+            data = _json(body)
+            if purpose == "create":
+                if ok and data.get("id"):
+                    self.topup_invoice = data
+                    self.topup_pay_state = "awaiting"
+                    self.topup_pay_msg = None
+                    # Ambil QR dulu (1 request), poll menyusul.
+                    self._topup_http_purpose = "qr"
+                    self._topup_http("GET",
+                                     f"/api/topup/qr/{data['id']}")
+                    self._topup_poll_next = self.animation_time + 60
+                else:
+                    self._topup_pay_fail(
+                        "Top up server tidak terjangkau.\n"
+                        "Periksa koneksi lalu coba lagi.")
+            elif purpose == "qr":
+                if ok and body and body[:4] == b"\x89PNG":
+                    self._topup_qr_bytes = body
+                    self._topup_qr_surf = None
+                # QR gagal bukan fatal; polling tetap jalan.
+            elif purpose == "poll":
+                if data.get("status") == "settled" and data.get("code"):
+                    self.topup_pay_state = "idle"
+                    if not self._redeem_grant(
+                            data["code"],
+                            data.get("gold")
+                            or TOPUP_PACKAGES[0]["gold"]):
+                        # Edge: kode sudah pernah dipakai (race).
+                        self.topup_phase = "select"
+                        self.topup_pay_msg = None
+                elif data.get("status") in ("expired", "cancel"):
+                    self._topup_pay_fail(
+                        "Pembayaran tidak selesai.\nSilakan coba lagi.")
+                else:
+                    self._topup_poll_next = self.animation_time + 120
+            return
+
+        # Tidak ada request in-flight: jadwalkan poll berikutnya.
+        if self.topup_pay_state == "awaiting" and \
+                self.animation_time >= self._topup_poll_next:
+            self._topup_http_purpose = "poll"
+            self._topup_send_poll()
+
+    def _topup_pay_fail(self, msg):
+        self.topup_pay_state = "error"
+        self.topup_pay_msg = msg
+        SoundManager().play('ui_error', volume_mult=0.5)
+
+    def _draw_topup_paying(self, dx, dy, dw, dh):
+        """Fase paying (server): QRIS + status polling."""
+        cx = dx + dw // 2
+        st = self.topup_pay_state
+        pkg = TOPUP_PACKAGES[self.topup_pkg_idx]
+
+        if st == "creating":
+            base = (self.animation_time % 60) / 60.0 * math.tau
+            for k in range(3):
+                s = base + math.tau * k / 3.0
+                rect = pygame.Rect(0, 0, 96, 96)
+                rect.center = (cx, dy + 250)
+                pygame.draw.arc(self.screen, (120, 255, 160), rect,
+                                s, s + math.tau / 4.0, 5)
+            t = self.font_medium.render(
+                "PREPARING PAYMENT...", True, (240, 245, 250))
+            self.screen.blit(t, t.get_rect(center=(cx, dy + 350)))
+            return
+
+        if st == "error":
+            for i, ln in enumerate(
+                    (self.topup_pay_msg or "Payment failed.").split("\n")):
+                mt = self.font_small.render(ln, True, (255, 150, 150))
+                self.screen.blit(
+                    mt, mt.get_rect(center=(cx, dy + 240 + i * 26)))
+            self._draw_paying_button_row(
+                dx, dy, dw,
+                ("topup_retry", "TRY AGAIN", True),
+                ("topup_cancel_pay", "BACK", False))
+            return
+
+        # ── QR (kiri) ──
+        qr_box = pygame.Rect(dx + 60, dy + 118, 220, 220)
+        pygame.draw.rect(self.screen, (248, 248, 248), qr_box,
+                         border_radius=10)
+        if self._topup_qr_bytes:
+            if self._topup_qr_surf is None:
+                import io
+                # .convert(): PNG qrcode bisa 1-bit/palette;
+                # smoothscale butuh 24/32-bit.
+                self._topup_qr_surf = pygame.image.load(
+                    io.BytesIO(self._topup_qr_bytes)).convert()
+            qr = pygame.transform.smoothscale(self._topup_qr_surf,
+                                              (192, 192))
+            self.screen.blit(qr,
+                             (qr_box.centerx - 96, qr_box.centery - 96))
+        else:
+            qt = self.font_small.render("QR...", True, (120, 120, 130))
+            self.screen.blit(qt, qt.get_rect(center=qr_box.center))
+        cap = self.font_tiny.render(
+            "SCAN WITH ANY QRIS APP", True, (170, 180, 200))
+        self.screen.blit(cap, cap.get_rect(midtop=(qr_box.centerx,
+                                                   qr_box.bottom + 10)))
+
+        # ── Info (kanan) ──
+        ix = dx + 340
+        self.screen.blit(self.font_tiny.render("INVOICE", True,
+                                               (140, 150, 175)),
+                         (ix, dy + 128))
+        amt_t = self.font_medium.render(
+            self._topup_price_str(pkg["price"]), True, (255, 255, 255))
+        self.screen.blit(amt_t, (ix, dy + 150))
+        _tot = int(pkg["gold"]) + int(pkg.get("bonus", 0))
+        pkg_t = self.font_small.render(
+            f"{pkg['label']}  (+{_tot:,} GOLD)", True, (170, 180, 200))
+        self.screen.blit(pkg_t, (ix, dy + 182))
+        if self.topup_invoice:
+            id_t = self.font_tiny.render(
+                f"ID: {self.topup_invoice.get('id', '-')}",
+                True, (120, 130, 150))
+            self.screen.blit(id_t, (ix, dy + 208))
+        if self.topup_invoice and self.topup_invoice.get("mock"):
+            mb = pygame.Rect(ix, dy + 232, 300, 26)
+            pygame.draw.rect(self.screen, (60, 45, 15), mb,
+                             border_radius=6)
+            pygame.draw.rect(self.screen, (255, 190, 80), mb, 1,
+                             border_radius=6)
+            mk_t = self.font_tiny.render(
+                "MOCK MODE - simulated payment", True, (255, 190, 80))
+            self.screen.blit(mk_t, (mb.x + 10, mb.y + 5))
+        # Status "menunggu" dengan titik berdenyut
+        pulse = (self.animation_time % 60) / 60.0
+        r = 4 + int(3 * pulse)
+        pygame.draw.circle(self.screen, (120, 255, 160),
+                           (ix + r, dy + 282), r)
+        st_t = self.font_small.render("AWAITING PAYMENT...", True,
+                                      (200, 255, 215))
+        self.screen.blit(st_t, (ix + 18 + r, dy + 272))
+        note = self.font_tiny.render(
+            "Pembayaran via QRIS / GoPay / OVO / DANA / VA bank.",
+            True, (130, 140, 160))
+        self.screen.blit(note, (ix, dy + 306))
+        note2 = self.font_tiny.render(
+            "Gold masuk otomatis setelah pembayaran terverifikasi.",
+            True, (130, 140, 160))
+        self.screen.blit(note2, (ix, dy + 326))
+
+        self._draw_paying_button_row(
+            dx, dy, dw,
+            ("topup_paid", "I'VE PAID", True),
+            ("topup_cancel_pay", "CANCEL", False))
+
+    def _draw_paying_button_row(self, dx, dy, dw, b1, b2):
+        """Baris 2 tombol fase paying: (btn_id, label, hijau?) x2."""
+        btn_y, btn_h = dy + 496, 52
+        mx, my = pygame.mouse.get_pos()
+        rects = [
+            (b1, pygame.Rect(dx + 24, btn_y, 210, btn_h)),
+            (b2, pygame.Rect(dx + 24 + 222, btn_y, 170, btn_h)),
+        ]
+        for (btn_id, label, green), rect in rects:
+            hover = rect.collidepoint(mx, my)
+            if green:
+                bg = (30, 130, 72) if hover else (18, 98, 54)
+                bd = (140, 255, 175) if hover else (85, 205, 125)
+            else:
+                bg = (85, 90, 105) if hover else (58, 62, 78)
+                bd = (170, 180, 200) if hover else (110, 120, 145)
+            pygame.draw.rect(self.screen, bg, rect, border_radius=10)
+            pygame.draw.rect(self.screen, bd, rect, 2, border_radius=10)
+            lt = self.font_medium.render(label, True, (255, 255, 255))
+            self.screen.blit(lt, lt.get_rect(center=rect.center))
+            self.buttons[btn_id] = rect
+
     def _draw_topup_dialog(self):
         """Dialog TOP UP HERO GOLD. Modal: cache tombol di-clear supaya
         klik tidak bisa menembus ke tombol shop di belakangnya (pola
@@ -4893,6 +5155,8 @@ class Menu:
             self._draw_topup_select(dx, dy, dialog_w, dialog_h)
         elif self.topup_phase == "processing":
             self._draw_topup_processing(dx, dy, dialog_w, dialog_h)
+        elif self.topup_phase == "paying":
+            self._draw_topup_paying(dx, dy, dialog_w, dialog_h)
         elif self.topup_phase == "redeem":
             self._draw_topup_redeem(dx, dy, dialog_w, dialog_h)
         else:
@@ -5036,8 +5300,11 @@ class Menu:
             self._topup_price_str(pkg["price"]), True, (255, 255, 255))
         self.screen.blit(pr_t, pr_t.get_rect(
             topright=(dx + dw - 24, dy + 446)))
-        note = self.font_tiny.render(
-            "Simulated payment - no real charge.", True, (120, 130, 150))
+        if self.topup_server_url:
+            note_txt = "Payment via QRIS / e-wallet / VA bank."
+        else:
+            note_txt = "Simulated payment - no real charge."
+        note = self.font_tiny.render(note_txt, True, (120, 130, 150))
         self.screen.blit(note, (dx + 24, dy + 474))
 
         # ── TOMBOL BAWAH ──
@@ -5277,7 +5544,6 @@ class Menu:
 
     def _redeem_submit(self):
         """Validasi kode; gold masuk + tercatat di riwayat."""
-        import time
         from topup_voucher import is_valid_format, load_vouchers
 
         code = self.topup_redeem_input.strip().upper()
@@ -5308,9 +5574,20 @@ class Menu:
         if not amount:
             amount = int(pkg["gold"]) + int(pkg.get("bonus", 0))
 
+        self._redeem_grant(code, amount)
+
+    def _redeem_grant(self, code, amount):
+        """Beri gold untuk kode yang sudah terverifikasi. Dipakai dua
+        alur: redeem manual (validasi di _redeem_submit) dan otomatis
+        dari server setelah pembayaran settle (_topup_server_tick).
+        Return False kalau kode sudah pernah dipakai (anti duplikat)."""
+        import time
+        used = self.save_data.setdefault("redeemed_codes", [])
+        if code in used:
+            return False
+        amount = int(amount)
         self.meta_gold += amount
         self.save_data["meta_gold"] = self.meta_gold
-
         tx_id = "MA-" + format(int(time.time() * 1000) % 10**10, "010d")
         used.append(code)
         if len(used) > 50:
@@ -5331,7 +5608,6 @@ class Menu:
         if len(history) > 50:
             self.save_data["topup_history"] = history[-50:]
         SaveManager.save(self.save_data)
-
         self.topup_last_method = "redeem"
         self.topup_redeem_code = code
         self.topup_phase = "success"
@@ -5339,6 +5615,7 @@ class Menu:
         self.topup_last_total = amount
         print(f"[REDEEM] +{amount:,} Hero Gold (kode {code})")
         SoundManager().play('ui_buy', volume_mult=0.9)
+        return True
 
     def topup_complete(self):
         """Pembayaran (SIMULASI) berhasil: gold masuk + riwayat disimpan.
@@ -6642,6 +6919,11 @@ class Menu:
             self.topup_progress = 0.0
             self.topup_redeem_input = ""
             self.topup_redeem_msg = None
+            self.topup_pay_state = "idle"
+            self.topup_pay_msg = None
+            self.topup_invoice = None
+            self._topup_qr_bytes = None
+            self._topup_qr_surf = None
         elif btn_id == "topup_cancel":
             # Tidak boleh ditutup saat pembayaran sedang diproses.
             if self.topup_phase != "processing":
@@ -6662,8 +6944,39 @@ class Menu:
                     pass
         elif btn_id == "topup_pay":
             if self.topup_phase == "select":
-                self.topup_phase = "processing"
                 self.topup_progress = 0.0
+                if self.topup_server_url:
+                    # Alur nyata: server cetak invoice -> fase paying
+                    self.topup_phase = "paying"
+                    self.topup_pay_state = "creating"
+                    self.topup_pay_msg = None
+                    self.topup_invoice = None
+                    self._topup_send_create()
+                else:
+                    # Mode simulasi (tanpa server)
+                    self.topup_phase = "processing"
+        elif btn_id == "topup_paid":
+            # Cek status sekarang (pemain baru selesai bayar)
+            if self.topup_phase == "paying" and \
+                    self.topup_pay_state == "awaiting" and \
+                    self._topup_http_thread is None:
+                self._topup_http_purpose = "poll"
+                self._topup_send_poll()
+        elif btn_id == "topup_cancel_pay":
+            if self.topup_phase == "paying" and \
+                    self.topup_pay_state in ("error", "awaiting"):
+                self.topup_pay_state = "idle"
+                self.topup_invoice = None
+                self._topup_qr_bytes = None
+                self._topup_qr_surf = None
+                self.topup_phase = "select"
+        elif btn_id == "topup_retry":
+            if self.topup_phase == "paying" and \
+                    self.topup_pay_state == "error":
+                self.topup_pay_state = "creating"
+                self.topup_pay_msg = None
+                self.topup_invoice = None
+                self._topup_send_create()
 
         # ── REDEEM CODE ──
         elif btn_id == "topup_redeem":
