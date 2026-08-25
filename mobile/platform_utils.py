@@ -494,6 +494,13 @@ def panel_popup_pos(w, h, atas=12):
 # hilang. Jalur hero sekarang diperlebar (5 x 42 + kepala), jalur
 # popup dipindah ke 430, dan zona notifikasi diringkas jadi 120 px
 # (masih muat 1 notifikasi besar + ±4 baris umpan pembunuhan).
+#
+# CATATAN TACTICAL: kotak TACTICAL COMMANDS digambar SETELAH daftar
+# hero (bukan zona tetap). Dengan 5 hero barisnya dipadatkan ke
+# 38 px (mobile/sidepanel.py) sehingga kotak tactical muat di
+# ±412..584 - masih di atas zona notifikasi. Popup upgrade (430..595)
+# memang menimpa sebagian kotak itu saat terbuka; itulah sebabnya
+# hit_test hanya mengizinkan tombol JEDA selama popup terbuka.
 ZONA_POPUP_Y = 430
 ZONA_BAWAH_H = 120
 

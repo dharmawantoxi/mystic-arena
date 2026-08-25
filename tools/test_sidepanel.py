@@ -1,7 +1,7 @@
 """
 tools/test_sidepanel.py
 
-Uji regresi panel kanan (mobile/sidepanel.py) untuk dua bug yang
+Uji regresi panel kanan (mobile/sidepanel.py) untuk tiga bug yang
 dilaporkan pemain:
 
 1. ISI PANEL MUNCUL DI LUAR GAMEPLAY
@@ -22,6 +22,14 @@ dilaporkan pemain:
        tombol JEDA - sisanya dilewati supaya klik sampai ke popup;
      - tombol yang tidak digambar (belum sempat digambar, layar
        menang/kalah, ruang tidak cukup) tidak bisa ditekan.
+
+3. TACTICAL COMMANDS HILANG SAAT 5 HERO DI-SUMMON
+   Daftar HERO dulu selalu memakai baris 42 px, jadi 5 hero membuat
+   kotak HEROES 232 px dan mendorong kotak tactical ke bawah sampai
+   melewati batas zona notifikasi - lalu SEMUA tombol command
+   disembunyikan oleh _gambar_tactical. Sekarang: saat 5 hero,
+   baris dipadatkan ke 38 px dan keempat tombol tactical tetap
+   tampil di atas zona notifikasi.
 
 Jalankan:  python3 tools/test_sidepanel.py
 """
@@ -219,6 +227,23 @@ def main():
     panel.draw(FULL, game, None, 16)       # mainkan lagi
     hasil = panel.hit_test(pusat(panel.buttons["gather"].rect))
     cek("hit_test(pos) lama tetap menjawab", hasil == "gather")
+
+    print("\n10. LIMA HERO DI-SUMMON: tactical TIDAK boleh hilang")
+    game.heroes = [FakeHero("H%d" % i) for i in range(5)]
+    panel._isi_at = 0.0          # paksa segar (draw di-throttle 250 ms)
+    panel.draw(FULL, game, None, 16)
+    batas = PANEL.bottom - P.ZONA_BAWAH - 8
+    for k in ("gather", "protect_tower", "protect_castle", "attack_boss"):
+        b = panel.buttons[k]
+        cek("tombol %s visible dengan 5 hero" % k, b.visible)
+        cek("tombol %s di atas zona notifikasi" % k,
+            b.rect.bottom <= batas)
+        hasil = panel.hit_test(pusat(b.rect), game=game)
+        cek("tengah %s -> '%s' dengan 5 hero" % (k, k), hasil == k)
+    g_rect = panel.buttons["gather"].rect
+    cek("gather di bawah daftar 5 hero (bukan di posisi hantu)",
+        400 < g_rect.y < 460)
+    game.heroes = [FakeHero("Kai"), FakeHero("Zia")]
 
     print()
     if GAGAL:
