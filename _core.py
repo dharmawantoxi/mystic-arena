@@ -2712,7 +2712,7 @@ class Menu:
         except Exception as e:
             print(f"[BACKUP] Startup check unavailable: {e}")
 
-        # ── CLOUD SAVE (server REST milik pemain) ──
+        # ── CLOUD SAVE (Google Play Games Saved Games) ──
         # Otomatis unggah tiap save, tombol manual di Settings, dan
         # kalau semua slot lokal kosong (baru ganti HP) + ada save
         # cloud, tampilkan prompt untuk memulihkan progres.
@@ -3305,7 +3305,7 @@ class Menu:
         self.animation_time += 1
         self._update_particles()
 
-        # ── CLOUD SAVE: proses hasil upload/download thread background ──
+        # ── CLOUD SAVE: proses status operasi async Play Games ──
         try:
             from mobile.cloud_save import manager as _cloud
             _cloud.poll()
@@ -5334,17 +5334,17 @@ class Menu:
 
         # 1) SIGN IN / status koneksi
         if not available:
-            label = "CLOUD: OFF (URL belum diset)"
+            label = "CLOUD: OFF (PC / belum diset)"
             fg = (175, 175, 185)
             bg, bg_h = (45, 45, 55), (55, 55, 65)
             bd, bd_h = (110, 110, 120), (130, 130, 140)
         elif signed_in:
-            label = "CLOUD SERVER: AKTIF  ✓"
+            label = "SIGNED IN TO GOOGLE PLAY GAMES  ✓"
             fg = (225, 255, 230)
             bg, bg_h = (40, 130, 70), (55, 170, 90)
             bd, bd_h = (120, 230, 150), (160, 255, 180)
         else:
-            label = "CHECK CLOUD CONNECTION"
+            label = "SIGN IN TO CLOUD"
             fg = (225, 235, 255)
             bg, bg_h = (55, 85, 145), (75, 115, 190)
             bd, bd_h = (120, 180, 255), (160, 210, 255)
@@ -5402,19 +5402,11 @@ class Menu:
         else:
             self.cloud_status = None
             if not available:
-                line = "Set MYSTIC_CLOUD_URL untuk mengaktifkan cloud"
+                line = "Cloud disinkronkan via akun Google (Android)"
             elif signed_in:
-                pid = ""
-                try:
-                    from mobile.cloud_save import manager as _cm
-                    pid = _cm.player_id()
-                except Exception:
-                    pid = ""
-                pid_short = pid if len(pid) <= 40 else pid[:37] + "..."
-                line = ("Aktif  •  ID: " + pid_short) if pid_short else \
-                    "Aktif — save ikut server cloud kamu"
+                line = "Aktif — save ikut akun Google kamu"
             else:
-                line = "Tekan CLOUD SERVER untuk memeriksa cloud"
+                line = "Tap SIGN IN untuk mengaktifkan cloud"
             color = (140, 150, 175)
 
         info_text = get_font(14).render(line, True, color)
@@ -5484,7 +5476,7 @@ class Menu:
     def _draw_cloud_restore_prompt_dialog(self):
         """
         Dialog 'Cloud save ditemukan' saat semua slot lokal kosong
-        (baru install ulang / ganti HP) tapi ada save di cloud server.
+        (baru install ulang / ganti HP) tapi ada save di Google Play.
         """
         _, summary = self.cloud_restore_prompt
         cx = SCREEN_WIDTH // 2
@@ -6429,19 +6421,19 @@ class Menu:
             self.restore_prompt = None
             SoundManager().play('ui_click', volume_mult=0.4)
 
-        # ═══ CLOUD SAVE (server REST milik pemain) ═══
+        # ═══ CLOUD SAVE (Google Play Games Saved Games) ═══
         elif btn_id == "cloud_signin":
             self._do_cloud_signin()
 
         elif btn_id == "cloud_upload":
             if not self.cloud_available:
                 self._set_cloud_status(
-                    "Cloud belum aktif — atur MYSTIC_CLOUD_URL",
+                    "Cloud hanya aktif di Android + Google Play Games",
                     (255, 200, 120))
                 SoundManager().play('ui_error', volume_mult=0.4)
             elif not self.cloud_signed_in:
                 self._set_cloud_status(
-                    "Cloud server belum siap — cek konfigurasi",
+                    "Masuk ke Google Play Games dulu",
                     (255, 200, 120))
                 SoundManager().play('ui_error', volume_mult=0.4)
             else:
@@ -6451,12 +6443,12 @@ class Menu:
         elif btn_id == "cloud_download":
             if not self.cloud_available:
                 self._set_cloud_status(
-                    "Cloud belum aktif — atur MYSTIC_CLOUD_URL",
+                    "Cloud hanya aktif di Android + Google Play Games",
                     (255, 200, 120))
                 SoundManager().play('ui_error', volume_mult=0.4)
             elif not self.cloud_signed_in:
                 self._set_cloud_status(
-                    "Cloud server belum siap — cek konfigurasi",
+                    "Masuk ke Google Play Games dulu",
                     (255, 200, 120))
                 SoundManager().play('ui_error', volume_mult=0.4)
             elif self._all_slots_empty():
@@ -6650,24 +6642,12 @@ class Menu:
             from mobile.cloud_save import manager as _m
             if not _m.available():
                 self._set_cloud_status(
-                    "Cloud belum aktif — atur MYSTIC_CLOUD_URL",
+                    "Cloud hanya aktif di Android + Google Play Games",
                     (255, 200, 120))
                 SoundManager().play('ui_error', volume_mult=0.4)
                 return
-
-            # Di Android, kalau identitas bukan akun Google karena izin
-            # belum diberi, minta izin dulu (dialog sistem).
-            pid = _m.player_id() or ""
-            if not pid.startswith("g:") and not _m.has_account_permission():
-                _m.request_account_permission()
-                self._set_cloud_status(
-                    "Izinkan akses akun Google, lalu tekan lagi",
-                    (255, 200, 120))
-                SoundManager().play('ui_click', volume_mult=0.4)
-                return
-
             self._set_cloud_status(
-                "Memeriksa cloud server…",
+                "Menghubungkan ke Google Play Games…",
                 (180, 200, 255))
             _m.sign_in(self._on_cloud_auth)
         except Exception as e:
@@ -6680,13 +6660,13 @@ class Menu:
             from mobile.cloud_save import manager as _m
             if not _m.available():
                 self._set_cloud_status(
-                    "Cloud belum aktif — atur MYSTIC_CLOUD_URL",
+                    "Cloud hanya aktif di Android + Google Play Games",
                     (255, 200, 120))
                 SoundManager().play('ui_error', volume_mult=0.4)
                 return
             if not _m.signed_in():
                 self._set_cloud_status(
-                    "Cloud server belum siap — cek konfigurasi",
+                    "Masuk ke Google Play Games dulu",
                     (255, 200, 120))
                 SoundManager().play('ui_error', volume_mult=0.4)
                 return
@@ -6711,13 +6691,13 @@ class Menu:
             from mobile.cloud_save import manager as _m
             if not _m.available():
                 self._set_cloud_status(
-                    "Cloud belum aktif — atur MYSTIC_CLOUD_URL",
+                    "Cloud hanya aktif di Android + Google Play Games",
                     (255, 200, 120))
                 SoundManager().play('ui_error', volume_mult=0.4)
                 return
             if not _m.signed_in():
                 self._set_cloud_status(
-                    "Cloud server belum siap — cek konfigurasi",
+                    "Masuk ke Google Play Games dulu",
                     (255, 200, 120))
                 SoundManager().play('ui_error', volume_mult=0.4)
                 return
@@ -6741,21 +6721,12 @@ class Menu:
         if result:
             if result.get("ok"):
                 if self.cloud_signed_in:
-                    pid = ""
-                    try:
-                        from mobile.cloud_save import manager as _cm
-                        pid = _cm.player_id()
-                    except Exception:
-                        pass
-                    if len(pid) > 34:
-                        pid = pid[:31] + "..."
                     self._set_cloud_status(
-                        ("Cloud server terhubung  ✓  ID: %s" % pid)
-                        if pid else "Cloud server terhubung  ✓",
+                        "Terhubung ke Google Play Games  ✓",
                         (130, 230, 150))
                 else:
                     self._set_cloud_status(
-                        "Cloud: periksa URL / koneksi server",
+                        "Belum masuk — tap SIGN IN untuk mengaktifkan",
                         (180, 200, 255))
             else:
                 self._set_cloud_status(

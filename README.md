@@ -23,12 +23,15 @@ splash_screen.py         splash pembuka
 
 mobile/                  ◀ LAPISAN BARU KHUSUS ANDROID
 ├── platform_utils.py    deteksi Android, display SCALED, safe area, jnius
-├── cloud_save.py        Cloud Save -> server REST milik pemain
+├── cloud_save.py        Cloud Save -> Google Play Games Saved Games
 ├── touch.py             mesin gesture: tap / long-press / drag / fling
 ├── hud.py               tombol layar: skill QWER, shop, pause, skip
 ├── debug.py             overlay FPS + crash handler ke file
 ├── perf.py              cache font/teks, darken/flash, pool, preset kualitas
 └── spritecache.py       cache sprite (opsional - lihat catatan hasil ukur)
+
+src/                     Java bridge Cloud Save (dikompilasi oleh p4a)
+└── io/github/.../CloudSaveBridge.java  Play Games v2 Snapshots API
 
 bosses/                  base_boss, boss_data, level1..level54
 heroes/ hero_skills/     renderer & skill hero
@@ -42,7 +45,6 @@ p4a-recipes/pygame-ce/   resep kompilasi pygame-ce untuk Android
 .github/workflows/       CI: APK debug tiap push, AAB release tiap tag
 bosses/_boss_index.py    peta boss→modul (dibuat tools/gen_boss_index.py)
 tools/                   benchmark, uji cache sprite, generator indeks
-└── cloud_server/        contoh server Cloud Save (Python stdlib)
 ```
 
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
@@ -73,71 +75,46 @@ Uji: `python tools/test_item_shop.py`,
 `python tools/test_item_tier2.py`,
 `python tools/test_tier2_ingame.py`.
 
-## Cloud Save (server milik kamu)
+## Cloud Save (Google Play Games Saved Games)
 
 Save tidak hilang saat **uninstall / ganti HP**. Setiap kali game
-menyimpan (`SaveManager.save`), salinan dikirim otomatis ke **server
-REST yang kamu kontrol**. Saat game dibuka di HP baru, game mendeteksi
-slot lokal kosong lalu menawarkan **RESTORE** dari cloud.
+menyimpan (`SaveManager.save`), salinan dikirim otomatis ke **Google
+Play Games Saved Games** milik akun Google pemain — sama seperti game
+komersial. Saat game dibuka di HP baru dengan akun Google yang sama,
+game mendeteksi slot lokal kosong lalu menawarkan **RESTORE** dari
+cloud.
 
-Fitur ini **tidak butuh Google Play Console**:
+Fitur ini memakai:
+- `mobile/cloud_save.py` — logika Python (status, auto-upload, poll).
+- `src/io/github/dharmawantoxi/mysticarena/CloudSaveBridge.java` —
+  bridge Java ke Snapshots API (Play Games Services v2).
+- `buildozer.spec` — dependency `play-services-games-v2` + `src`.
 
-- `mobile/cloud_save.py` — logika Python: identitas pemain, auto-upload
-  (thread background), upload/download, validasi & pemulihan.
-- `tools/cloud_server/server.py` — contoh server (Python stdlib, tanpa
-  dependency; jalankan di PC/VPS/Render/Railway).
-- Save diidentifikasi dengan **akun Google di HP** (kalau dapat dibaca)
-  atau **ID lokal stabil** yang ditampilkan di Settings (bisa disalin
-  ke HP lain lewat `MYSTIC_CLOUD_PLAYER_ID`).
+### Cara mengaktifkan (direncanakan saat rilis ke Play Store)
 
-### Menjalankan server (contoh)
+Kamu sudah siap rilis ke Play Store nanti; cukup siapkan akun **Google
+Play Console** saat game selesai:
 
-```bash
-python3 tools/cloud_server/server.py
-# listen http://0.0.0.0:8080, data di ./cloud_data
-```
-
-Setelah itu arahkan game ke server:
-
-```bash
-# PC (uji lokal)
-MYSTIC_CLOUD_URL=http://127.0.0.1:8080 python main.py
-
-# Build Android: masukkan URL server (WAJIB bisa diakses HP)
-MYSTIC_CLOUD_URL=https://myserver.example.com buildozer android debug
-```
-
-> Ingin langsung di-hosting gratis tanpa ngoprek? Buka
-> **[docs/DEPLOY_CLOUD_SERVER.md](docs/DEPLOY_CLOUD_SERVER.md)**
-> (Render Free adalah opsi GRATIS yang disarankan; Railway hanya
-> trial + Hobby berbayar).
-
-### Konfigurasi opsional
-
-| Environment | Fungsi |
-|---|---|
-| `MYSTIC_CLOUD_URL` | URL server, tanpa trailing slash. **Wajib** agar cloud aktif. |
-| `MYSTIC_CLOUD_API_KEY` | Kunci bersama (sama di server & game). Disarankan untuk internet. |
-| `MYSTIC_CLOUD_PLAYER_ID` | Paksa identitas pemain (email Google / kode). Kalau kosong, game memakai akun Google di HP. |
-
-**Server** (di `tools/cloud_server/server.py`) mendukung storage
-**Cloudflare R2** (S3-compatible) selain folder lokal — R2 gratis
-untuk menyimpan save tetap awet walaupun host (mis. Render Free)
-restart. Konfigurasinya ada di
-**[docs/DEPLOY_CLOUD_SERVER.md](docs/DEPLOY_CLOUD_SERVER.md)**.
-
-Kalau `MYSTIC_CLOUD_URL` belum diisi, aplikasi tetap jalan — cloud
-NONAKTIF, save lokal + Android Auto Backup (Google Drive) tetap
-dipakai.
-
-> Di Android, saat memakai identitas akun Google, game akan menampilkan
-> dialog izin **kontak/akun** sekali. Kalau ditolak, game memakai ID
-> lokal (tetap bisa disinkronkan dengan `MYSTIC_CLOUD_PLAYER_ID`).
+1. **Google Play Console → Game services →** game ini → aktifkan
+   **Saved Games**.
+2. Salin **Project ID** (angka di halaman Configuration).
+3. Sambungkan OAuth client Android (`package name` =
+   `io.github.dharmawantoxi.mysticarena`, SHA1 ikut **App signing
+   keystore** yang dipakai Play Console).
+4. Masukkan Project ID saat build:
+   - GitHub Actions: tambah **secret/repository variable**
+     `MYSTIC_GAMES_PROJECT_ID`.
+   - Build lokal: `MYSTIC_GAMES_PROJECT_ID=123456789012 buildozer android debug`
+     (atau file `android_games_app_id.txt` yang di-ignore Git + env
+     `MYSTIC_GAMES_PROJECT_ID_FILE` menunjuk ke file itu).
+5. Build APK/AAB seperti biasa. Kalau Project ID belum diisi, aplikasi
+   tetap jalan — cloud NONAKTIF, save lokal + Auto Backup (Google
+   Drive) tetap dipakai.
 
 ### Tombol di dalam game
 
 Settings → **☁ CLOUD SAVE**:
-- **CLOUD SERVER: AKTIF** / **CHECK CLOUD CONNECTION** — cek koneksi.
+- **SIGN IN TO CLOUD** — masuk Google Play Games.
 - **UPLOAD SAVE KE CLOUD** — kirim progres saat ini (dengan konfirmasi).
 - **DOWNLOAD SAVE DARI CLOUD** — ambil progres cloud (dengan konfirmasi).
 

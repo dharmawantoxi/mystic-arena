@@ -1,4 +1,0 @@
-# Cloudflare R2 (S3-compatible) untuk server cloud save.
-# Opsional: kalau R2 tidak dipakai, server tetap jalan tanpa dependency ini.
-# Render/Railway akan meng-install otomatis dari file ini.
-boto3>=1.34.0
