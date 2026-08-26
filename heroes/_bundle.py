@@ -217,7 +217,11 @@ class _NS_grimjaw:
         dy = abs(hero.y - hero._gj_last_y)
         hero._gj_last_x = hero.x
         hero._gj_last_y = hero.y
-        return dx + dy > 0.3
+        moving = dx + dy > 0.3
+        # v27: dipakai _hero_cache_key — dulu tidak pernah di-set sehingga
+        # pose idle & walk saling menimpa di cache (pose "loncat").
+        hero._moving_cached = moving
+        return moving
 
 
     def _update_attack_anim(hero):
@@ -2116,7 +2120,10 @@ class _NS_sylara:
         dy = abs(boss.y - boss._sy_last_y)
         boss._sy_last_x = boss.x
         boss._sy_last_y = boss.y
-        return dx + dy > 0.3
+        moving = dx + dy > 0.3
+        # v27: dipakai _hero_cache_key (lihat catatan di _NS_grimjaw).
+        boss._moving_cached = moving
+        return moving
 
 
     def _update_attack_anim(boss):
@@ -3636,12 +3643,20 @@ class _NS_kaizen:
         }
 
     def _kaizen_idle_fidget_frame(phase):
-        """Weight-shift nyata: pakai walk art di tengah loop idle."""
+        """Weight-shift nyata: pakai walk art di tengah loop idle.
+
+        v27: dengan 6 frame jalan, fidget kini berjalan 2 -> 3 -> 4 ->
+        3 (langkah kecil maju-mundur) lalu kembali ke pose idle.
+        """
         sample = int((float(phase) % _NS_kaizen.KAIZEN_IDLE_CYCLE) * 4.0) % 24
-        if 5 <= sample < 11:
-            return 0
-        if 11 <= sample < 17:
-            return 1
+        if 4 <= sample < 7:
+            return 2
+        if 7 <= sample < 10:
+            return 3
+        if 10 <= sample < 13:
+            return 4
+        if 13 <= sample < 16:
+            return 3
         return None
 
     def _load_kaizen_sprite(pose, facing=1):
@@ -3716,11 +3731,15 @@ class _NS_kaizen:
         return True
 
     # ---------------------------------------------------------------------------
-    # HD WALK CYCLE (kaizen_walk_<0..N>.png — stride <-> plant)
+    # HD WALK CYCLE (kaizen_walk_0..5.png — Kingdom Wars style)
     #
-    # Kalau file cycle tidak ada, renderer ping-pong pose walk/idle.
+    # 6 pose siklus jalan nyata: contact -> passing -> contact ->
+    # passing -> stride -> recoil. Dibake tools/make_hd_walkcycle.py
+    # dari strip AI (_raw/kaizen_walkcycle_raw.png). Kalau file tidak
+    # ada, loader frame return None dan renderer ping-pong pose
+    # walk/idle seperti dulu.
     # ---------------------------------------------------------------------------
-    _KAIZEN_WALK_FRAME_COUNT = 2
+    _KAIZEN_WALK_FRAME_COUNT = 6
     _KAIZEN_WALK_CACHE = {}
     _KAIZEN_WALK_MISSING = set()
 
@@ -3850,6 +3869,95 @@ class _NS_kaizen:
             return _NS_kaizen._blit_kaizen_walk_frame(surface, idx, facing, x, foot_y, bob, tilt, scale_x, scale_y)
 
     # ---------------------------------------------------------------------------
+    # KINGDOM WARS WALK MOTION (v27)
+    #
+    # Resep animasi ala Kingdom Wars / stickman-war:
+    #   1. Fase siklus DIKUNCI ke bucket cache hero (lihat catatan di
+    #      _kaizen_walk_cycle) -> tidak ada lagi pose "loncat" tiap
+    #      detik saat cache idle loop berulang.
+    #   2. 6 pose diskrit yang terbaca jelas (bukan 2 pose di-fade).
+    #   3. Body lean ke arah gerak + squash saat berbalik arah.
+    #   4. Debu kecil tiap kaki mendarat (foot plant) supaya hero
+    #      terasa menapak tanah, bukan stiker melayang.
+    # ---------------------------------------------------------------------------
+    KAIZEN_WALK_DUST = (150, 132, 104)
+    # Siklus jalan per loop idle-cache. HARUS bilangan bulat supaya
+    # loop cache == loop animasi (tidak ada snap). 2 = langkah gesit
+    # (12 pose/detik) cocok untuk laju gerak hero ~150 px/s.
+    KAIZEN_WALK_CYCLES_PER_LOOP = 2.0
+
+    def _kaizen_walk_cycle(pulse):
+        """Fase siklus jalan 0..1 (satu siklus penuh = 2 langkah kaki).
+
+        PENTING: fase HARUS diturunkan dari bucket cache yang sama
+        dengan _hero_cache_key (int(pulse*4) % 24).  Versi lama pakai
+        pulse mentah (pulse*2.0): 12 rad per loop tidak habis dibagi
+        2*pi, jadi pose pada bucket cache yang sama BERBEDA tiap loop
+        -> sprite terlihat snap/kaku setiap ~1 detik.  Dengan
+        bucket/24 * N (N bulat), loop cache == loop animasi.
+        """
+        bucket = int(pulse * 4.0) % 24
+        return ((bucket / 24.0) * _NS_kaizen.KAIZEN_WALK_CYCLES_PER_LOOP) % 1.0
+
+    def _kaizen_walk_motion(boss):
+        """Seluruh gerak siklus jalan HD — deterministik & cache-locked."""
+        pulse = float(getattr(boss, "pulse", 0.0))
+        t = _NS_kaizen._kaizen_walk_cycle(pulse)
+        n = max(1, _NS_kaizen._KAIZEN_WALK_FRAME_COUNT)
+        # Frame pakai aritmetika INTEGER dari bucket supaya bebas jitter
+        # float pada batas pembulatan (frame "tersendat" 1 bucket).
+        c = int(_NS_kaizen.KAIZEN_WALK_CYCLES_PER_LOOP)
+        frame = ((2 * (int(pulse * 4.0) % 24) * c * n + 24) // 48) % n
+
+        # Dua ayunan kaki per siklus; badan naik saat passing, turun saat
+        # contact (t=0 / t=0.5).
+        stride = math.sin(t * 2.0 * math.pi * 2.0)
+        lift = (1.0 - abs(math.cos(t * 2.0 * math.pi))) * 4.6
+        bob = int(round(lift + math.sin(t * 4.0 * math.pi * 2.0) * 0.7))
+        sway = int(round(math.sin(t * 2.0 * math.pi * 2.0 + 0.6) * 2.6))
+        tilt = stride * 7.5
+
+        # Lean ke arah gerak (dari _detect_moving).
+        vx = float(getattr(boss, "_kz_vel_x", 0.0) or 0.0)
+        vx_n = max(-1.0, min(1.0, vx / 2.6))
+        tilt += -5.5 * vx_n
+
+        # Squash singkat saat berbalik arah (turn hop).
+        turn_age = pulse - float(getattr(boss, "_kz_turn_pulse", -99.0))
+        sx = sy = 1.0
+        if 0.0 <= turn_age < 0.5:
+            k = math.sin(math.pi * (turn_age / 0.5))
+            sx = 1.0 - 0.26 * k
+            sy = 1.0 + 0.09 * k
+
+        plant_t = abs(stride)
+        scale_x = sx * (1.0 + plant_t * 0.030)
+        scale_y = sy * (1.0 - plant_t * 0.038)
+        return {
+            "t": t, "frame": frame, "bob": bob, "sway": sway,
+            "tilt": tilt, "scale_x": scale_x, "scale_y": scale_y,
+            "shadow_scale": 1.0 + plant_t * 0.14,
+            "speed_n": abs(vx_n),
+        }
+
+    def _kaizen_footstep_dust(surface, cx, foot_y, t, facing, intensity=1.0):
+        """Puff debu kecil sesaat setelah kaki mendarat (t=0 / 0.5)."""
+        for contact in (0.0, 0.5):
+            d = (t - contact) % 1.0
+            if d >= 0.16:
+                continue
+            k = 1.0 - d / 0.16
+            for i, spread in enumerate((1.0, 1.7, 2.5)):
+                a = int((92 - i * 24) * k * intensity)
+                if a < 8:
+                    continue
+                r = 1 + i + int(d * 34 * (0.5 + i * 0.4))
+                px = int(cx - facing * spread * (3.0 + d * 30.0))
+                py = int(foot_y - 1.0 - d * (7.0 + i * 3.0))
+                _NS_kaizen._aacircle(
+                    surface, (*_NS_kaizen.KAIZEN_WALK_DUST, a), (px, py), r)
+
+    # ---------------------------------------------------------------------------
     # HD SWING FRAMES (multi-frame iai slash, gaya baris idle/walk/attack)
     #
     # assets/heroes/kaizen_swing_<0..N>.png adalah pose HD TERPISAH
@@ -3924,6 +4032,49 @@ class _NS_kaizen:
         return True
 
     # ---------------------------------------------------------------------------
+    def _blit_kaizen_swing_ghost(surface, idx, facing, x, foot_y, alpha,
+                                 dx=0, dy=0, tilt=0.0,
+                                 scale_x=1.0, scale_y=1.0):
+        """Afterimage pose swing (motion smear ala Kingdom Wars).
+
+        Digambar SEBELUM pose utama dengan alpha rendah sehingga ayunan
+        cepat meninggalkan jejak, bukan teleport antar pose.
+        """
+        if alpha <= 6:
+            return
+        spr = _NS_kaizen._load_kaizen_swing_frame(idx, facing)
+        if spr is None:
+            return
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr, (max(8, int(round(sw * scale_x))),
+                      max(8, int(round(sh * scale_y)))))
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        spr.set_alpha(int(alpha))
+        surface.blit(spr, spr.get_rect(
+            midbottom=(int(x + dx), int(foot_y + dy))))
+
+    def _kaizen_strike_dust(surface, cx, foot_y, progress, facing):
+        """Ledakan debu kecil saat pukulan mendarat (progress ~0.5)."""
+        d = progress - 0.48
+        if d < 0.0 or d > 0.22:
+            return
+        k = 1.0 - d / 0.22
+        for i in range(6):
+            ang = math.pi * (0.15 + 0.7 * i / 5.0)
+            r = 6.0 + d * 60.0
+            px = cx + facing * math.cos(ang) * r
+            py = foot_y - 1.0 - math.sin(ang) * r * 0.35
+            a = int(85 * k)
+            if a > 8:
+                _NS_kaizen._aacircle(
+                    surface, (*_NS_kaizen.KAIZEN_WALK_DUST, a),
+                    (int(px), int(py)), 1 + int(d * 6))
+
     # HD SKILL FX SPRITES (Q/W/E/R - gaya yang sama dengan icon item / kastil HD)
     #
     # assets/heroes/kaizen_skill_<q/w/e/r>.png adalah render transparan dari
@@ -4345,12 +4496,34 @@ class _NS_kaizen:
         if not hasattr(boss, "_kz_last_x"):
             boss._kz_last_x = boss.x
             boss._kz_last_y = boss.y
+            # Init arah hadap juga di jalur pertama supaya flip PERTAMA
+            # (setelah spawn) tetap terdeteksi sebagai turn hop.
+            boss._kz_facing_prev = 1 if getattr(boss, "direction", 1) >= 0 else -1
+            boss._moving_cached = False
             return False
-        dx = abs(boss.x - boss._kz_last_x)
-        dy = abs(boss.y - boss._kz_last_y)
+        vx = boss.x - boss._kz_last_x
+        vy = boss.y - boss._kz_last_y
+        dx = abs(vx)
+        dy = abs(vy)
         boss._kz_last_x = boss.x
         boss._kz_last_y = boss.y
-        return dx + dy > 0.3
+        moving = dx + dy > 0.3
+
+        # ═══ v27: STATE UNTUK CACHE KEY + MOTION ═══
+        # _moving_cached DIPAKAI _hero_cache_key (heroes/__init__.py)
+        # tetapi dulu tidak pernah di-set -> pose idle & walk saling
+        # menimpa di entri cache yang sama dan hero "loncat" pose.
+        boss._moving_cached = moving
+        # Kecepatan per draw untuk lean & intensitas debu (Kaizen).
+        boss._kz_vel_x = vx
+        boss._kz_vel_y = vy
+        # Turn hop: catat pulse saat arah hadap berbalik -> squash singkat.
+        direction = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        prev = getattr(boss, "_kz_facing_prev", None)
+        if prev is not None and prev != direction:
+            boss._kz_turn_pulse = float(getattr(boss, "pulse", 0.0))
+        boss._kz_facing_prev = direction
+        return moving
 
 
     def _update_attack_anim(boss):
@@ -4536,37 +4709,39 @@ class _NS_kaizen:
 
 
     def _draw_kaizen_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.0
-        stride = math.sin(phase * 1.2)
-        # More pronounced walk bob like grimjaw/sylara
-        bob = int(abs(stride) * 5.5 + math.sin(phase * 2.4) * 0.8)
-        sway = int(math.sin(phase) * 3.2 + math.sin(phase * 0.5) * 0.8)
-        tilt = stride * 8.5 + math.sin(phase * 0.7) * 1.2
-        plant_t = abs(stride)
-        scale_y = 1.0 - plant_t * 0.045 + math.sin(phase * 1.2) * 0.015
-        scale_x = 1.0 + plant_t * 0.035 - math.sin(phase * 1.2) * 0.010
-        shadow_squash = 1.0 + plant_t * 0.12
+        # ═══ KINGDOM WARS WALK (v27) ═══
+        # 6 pose jalan nyata + lean + debu kaki.  Fase dikunci ke bucket
+        # cache (lihat _kaizen_walk_cycle) sehingga loop mulus tanpa snap.
+        m = _NS_kaizen._kaizen_walk_motion(boss)
         facing = boss.direction
-        # Blend factor 0..1 for smooth walk transition (not hard snap)
-        blend = (stride + 1.0) * 0.5
-        _NS_kaizen._draw_shadow(surface, x + sway, y + 48, scale=shadow_squash)
-        _NS_kaizen._draw_floating_wind(surface, x + sway, y + 35, phase, trail=True, facing=facing)
-        _NS_kaizen._draw_scarf_back(surface, x + sway, y - bob, facing, phase, "walk")
-        used = _NS_kaizen._blit_kaizen_walk_blended(
-            surface, facing, x + sway, y + 44, blend, bob=-bob, tilt=tilt,
-            scale_x=scale_x, scale_y=scale_y)
+        _NS_kaizen._draw_shadow(surface, x + m["sway"], y + 48,
+                                scale=m["shadow_scale"])
+        _NS_kaizen._draw_floating_wind(surface, x + m["sway"], y + 35,
+                                       boss.pulse, trail=True, facing=facing)
+        _NS_kaizen._kaizen_footstep_dust(
+            surface, x + m["sway"], y + 44, m["t"], facing,
+            intensity=0.6 + 0.4 * m["speed_n"])
+        _NS_kaizen._draw_scarf_back(surface, x + m["sway"], y - m["bob"],
+                                    facing, boss.pulse, "walk")
+        used = _NS_kaizen._blit_kaizen_walk_frame(
+            surface, m["frame"], facing, x + m["sway"], y + 44,
+            bob=-m["bob"], tilt=m["tilt"],
+            scale_x=m["scale_x"], scale_y=m["scale_y"])
         if not used:
-            pose = "walk" if stride >= 0 else "idle"
             used = _NS_kaizen._blit_kaizen_sprite(
-                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt,
-                scale_x=scale_x, scale_y=scale_y)
+                surface, "walk", facing, x + m["sway"], y + 44,
+                bob=-m["bob"], tilt=m["tilt"],
+                scale_x=m["scale_x"], scale_y=m["scale_y"])
         if used:
-            _NS_kaizen._draw_scarf_front(surface, x + sway, y - bob - 2, facing, phase)
-            _NS_kaizen._draw_body_particles(surface, x + sway, y - bob, phase)
+            _NS_kaizen._draw_scarf_front(surface, x + m["sway"],
+                                         y - m["bob"] - 2, facing, boss.pulse)
+            _NS_kaizen._draw_body_particles(surface, x + m["sway"],
+                                            y - m["bob"], boss.pulse)
         else:
-            _NS_kaizen._draw_kaizen_body(surface, x + sway, y - bob, facing, phase, "walk")
+            _NS_kaizen._draw_kaizen_body(surface, x + m["sway"], y - m["bob"],
+                                         facing, boss.pulse, "walk")
         _NS_kaizen._draw_kaizen_ground_contact(
-            surface, x + sway, y + 44 - bob, phase, facing)
+            surface, x + m["sway"], y + 44 - m["bob"], boss.pulse, facing)
 
 
     def _draw_kaizen_attack(surface, boss, x, y):
@@ -4607,9 +4782,28 @@ class _NS_kaizen:
 
         _NS_kaizen._draw_shadow(surface, x + step, y + 48, scale=shadow_scale)
         _NS_kaizen._draw_floating_wind(surface, x + step, y + 35, boss.pulse, intense=True)
+        _NS_kaizen._kaizen_strike_dust(
+            surface, x + step, y + 46, progress, boss.direction)
         tilt = -math.sin(progress * math.pi) * 12 * boss.direction + math.sin(progress * math.pi * 2) * 2
 
         frame_idx = int(round((max(1, _NS_kaizen._KAIZEN_SWING_FRAME_COUNT) - 1) * progress))
+
+        # ═══ MOTION SMEAR (v27) ═══ Fase ayunan cepat (0.28-0.62)
+        # meninggalkan jejak 2 pose sebelumnya -> serangan terasa
+        # menghantam, bukan berganti gambar.
+        if 0.28 <= progress <= 0.62:
+            fade = math.sin((progress - 0.28) / 0.34 * math.pi)
+            _NS_kaizen._blit_kaizen_swing_ghost(
+                surface, frame_idx - 2, boss.direction, x + step, y + 44,
+                alpha=int(52 * fade), dx=-10 * boss.direction, dy=-2,
+                tilt=tilt * 1.15, scale_x=scale_x * 0.98,
+                scale_y=scale_y * 0.98)
+            _NS_kaizen._blit_kaizen_swing_ghost(
+                surface, frame_idx - 1, boss.direction, x + step, y + 44,
+                alpha=int(84 * fade), dx=-5 * boss.direction, dy=-1,
+                tilt=tilt * 1.07, scale_x=scale_x * 0.99,
+                scale_y=scale_y * 0.99)
+
         used_swing = _NS_kaizen._blit_kaizen_swing_frame(
             surface, frame_idx, boss.direction, x + step, y + 44, tilt=tilt,
             scale_x=scale_x, scale_y=scale_y)
@@ -5906,12 +6100,18 @@ class _NS_thorne:
         the already baked stride/plant art for the middle of the idle loop so
         the legs and club make a real secondary motion.  ``None`` means use
         the relaxed idle pose.
+
+        v27: dengan 6 frame jalan, fidget kini langkah kecil 2 -> 3 -> 4 -> 3.
         """
         sample = int((float(phase) % _NS_thorne.THORNE_IDLE_CYCLE) * 4.0) % 24
-        if 6 <= sample < 12:
-            return 0
-        if 12 <= sample < 18:
-            return 1
+        if 5 <= sample < 8:
+            return 2
+        if 8 <= sample < 11:
+            return 3
+        if 11 <= sample < 14:
+            return 4
+        if 14 <= sample < 17:
+            return 3
         return None
 
     def _load_thorne_sprite(pose, facing=1):
@@ -5982,11 +6182,12 @@ class _NS_thorne:
         return True
 
     # ---------------------------------------------------------------------------
-    # HD WALK CYCLE (thorne_walk_<0..N>.png — stride <-> plant)
+    # HD WALK CYCLE (thorne_walk_0..5.png — Kingdom Wars style)
     #
-    # Kalau file cycle tidak ada, renderer ping-pong pose walk/idle.
+    # 6 pose siklus jalan berat: contact -> passing -> contact ->
+    # passing -> stride -> recoil. Dibake tools/make_hd_walkcycle.py.
     # ---------------------------------------------------------------------------
-    _THORNE_WALK_FRAME_COUNT = 2
+    _THORNE_WALK_FRAME_COUNT = 6
     _THORNE_WALK_CACHE = {}
     _THORNE_WALK_MISSING = set()
 
@@ -6105,6 +6306,72 @@ class _NS_thorne:
             return _NS_thorne._blit_thorne_walk_frame(surface, idx, facing, x, foot_y, bob, tilt, scale_x, scale_y)
 
     # ---------------------------------------------------------------------------
+    # KINGDOM WARS WALK MOTION (v27) — lihat catatan lengkap di _NS_kaizen.
+    # Thorne: langkah BERAT — bob lebih dalam, debu lebih besar.
+    # ---------------------------------------------------------------------------
+    THORNE_WALK_DUST = (163, 128, 88)
+    THORNE_WALK_CYCLES_PER_LOOP = 2.0
+
+    def _thorne_walk_cycle(pulse):
+        """Fase siklus jalan 0..1 terkunci bucket cache (lihat kaizen)."""
+        bucket = int(pulse * 4.0) % 24
+        return ((bucket / 24.0) * _NS_thorne.THORNE_WALK_CYCLES_PER_LOOP) % 1.0
+
+    def _thorne_walk_motion(boss):
+        """Gerak siklus jalan HD Thorne — deterministik & cache-locked."""
+        pulse = float(getattr(boss, "pulse", 0.0))
+        t = _NS_thorne._thorne_walk_cycle(pulse)
+        n = max(1, _NS_thorne._THORNE_WALK_FRAME_COUNT)
+        # Frame via aritmetika integer dari bucket (bebas jitter float).
+        c = int(_NS_thorne.THORNE_WALK_CYCLES_PER_LOOP)
+        frame = ((2 * (int(pulse * 4.0) % 24) * c * n + 24) // 48) % n
+
+        stride = math.sin(t * 2.0 * math.pi * 2.0)
+        # Bob berat: badan turun dalam tiap contact, naik saat passing.
+        lift = (1.0 - abs(math.cos(t * 2.0 * math.pi))) * 6.4
+        bob = int(round(lift + math.sin(t * 4.0 * math.pi * 2.0) * 0.9))
+        sway = int(round(math.sin(t * 2.0 * math.pi * 2.0 + 0.6) * 3.2))
+        tilt = stride * 9.0
+
+        vx = float(getattr(boss, "_th_vel_x", 0.0) or 0.0)
+        vx_n = max(-1.0, min(1.0, vx / 2.6))
+        tilt += -6.0 * vx_n
+
+        turn_age = pulse - float(getattr(boss, "_th_turn_pulse", -99.0))
+        sx = sy = 1.0
+        if 0.0 <= turn_age < 0.5:
+            k = math.sin(math.pi * (turn_age / 0.5))
+            sx = 1.0 - 0.24 * k
+            sy = 1.0 + 0.08 * k
+
+        plant_t = abs(stride)
+        scale_x = sx * (1.0 + plant_t * 0.035)
+        scale_y = sy * (1.0 - plant_t * 0.048)
+        return {
+            "t": t, "frame": frame, "bob": bob, "sway": sway,
+            "tilt": tilt, "scale_x": scale_x, "scale_y": scale_y,
+            "shadow_scale": 1.0 + plant_t * 0.17,
+            "speed_n": abs(vx_n),
+        }
+
+    def _thorne_footstep_dust(surface, cx, foot_y, t, facing, intensity=1.0):
+        """Debu langkah berat: puff lebih besar & lebih lama dari kaizen."""
+        for contact in (0.0, 0.5):
+            d = (t - contact) % 1.0
+            if d >= 0.20:
+                continue
+            k = 1.0 - d / 0.20
+            for i, spread in enumerate((1.0, 1.8, 2.7)):
+                a = int((104 - i * 26) * k * intensity)
+                if a < 8:
+                    continue
+                r = 1 + i + int(d * 44 * (0.5 + i * 0.4))
+                px = int(cx - facing * spread * (3.0 + d * 34.0))
+                py = int(foot_y - 1.0 - d * (8.0 + i * 3.5))
+                _NS_thorne._aacircle(
+                    surface, (*_NS_thorne.THORNE_WALK_DUST, a), (px, py), r)
+
+    # ---------------------------------------------------------------------------
     # HD SWING FRAMES (multi-frame swing animation, gaya baris idle/walk/attack)
     #
     # assets/heroes/thorne_swing_<0..N>.png adalah pose HD TERPISAH
@@ -6184,6 +6451,45 @@ class _NS_thorne:
         return True
 
     # ---------------------------------------------------------------------------
+    def _blit_thorne_swing_ghost(surface, idx, facing, x, foot_y, alpha,
+                                 dx=0, dy=0, tilt=0.0,
+                                 scale_x=1.0, scale_y=1.0):
+        """Afterimage swing club — motion smear ala Kingdom Wars."""
+        if alpha <= 6:
+            return
+        spr = _NS_thorne._load_thorne_swing_frame(idx, facing)
+        if spr is None:
+            return
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr, (max(8, int(round(sw * scale_x))),
+                      max(8, int(round(sh * scale_y)))))
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        spr.set_alpha(int(alpha))
+        surface.blit(spr, spr.get_rect(
+            midbottom=(int(x + dx), int(foot_y + dy))))
+
+    def _thorne_strike_dust(surface, cx, foot_y, progress, facing):
+        """Debu hantaman club ke tanah (progress ~0.5)."""
+        d = progress - 0.48
+        if d < 0.0 or d > 0.26:
+            return
+        k = 1.0 - d / 0.26
+        for i in range(7):
+            ang = math.pi * (0.10 + 0.8 * i / 6.0)
+            r = 7.0 + d * 74.0
+            px = cx + facing * math.cos(ang) * r
+            py = foot_y - 1.0 - math.sin(ang) * r * 0.32
+            a = int(98 * k)
+            if a > 8:
+                _NS_thorne._aacircle(
+                    surface, (*_NS_thorne.THORNE_WALK_DUST, a),
+                    (int(px), int(py)), 2 + int(d * 7))
+
     # HD SKILL FX SPRITES (Q/W/E/R - gaya yang sama dengan icon item / kastil HD)
     #
     # assets/heroes/thorne_skill_<q/w/e/r>.png adalah render transparan dari
@@ -6642,12 +6948,29 @@ class _NS_thorne:
         if not hasattr(boss, "_th_last_x"):
             boss._th_last_x = boss.x
             boss._th_last_y = boss.y
+            # Init arah hadap juga di jalur pertama supaya flip PERTAMA
+            # (setelah spawn) tetap terdeteksi sebagai turn hop.
+            boss._th_facing_prev = 1 if getattr(boss, "direction", 1) >= 0 else -1
+            boss._moving_cached = False
             return False
-        dx = abs(boss.x - boss._th_last_x)
-        dy = abs(boss.y - boss._th_last_y)
+        vx = boss.x - boss._th_last_x
+        vy = boss.y - boss._th_last_y
+        dx = abs(vx)
+        dy = abs(vy)
         boss._th_last_x = boss.x
         boss._th_last_y = boss.y
-        return dx + dy > 0.3
+        moving = dx + dy > 0.3
+
+        # v27: state untuk cache key + lean + turn hop (lihat kaizen).
+        boss._moving_cached = moving
+        boss._th_vel_x = vx
+        boss._th_vel_y = vy
+        direction = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        prev = getattr(boss, "_th_facing_prev", None)
+        if prev is not None and prev != direction:
+            boss._th_turn_pulse = float(getattr(boss, "pulse", 0.0))
+        boss._th_facing_prev = direction
+        return moving
 
 
     def _update_attack_anim(boss):
@@ -6879,32 +7202,36 @@ class _NS_thorne:
 
 
     def _draw_thorne_walk(surface, boss, x, y, warpath=False):
-        phase = boss.pulse * 2.0
-        stride = math.sin(phase * 1.2)
-        bob = int(abs(stride) * 7.5 + math.sin(phase * 2.4) * 1.0)
-        sway = int(math.sin(phase) * 4.0 + math.sin(phase * 0.6) * 1.0)
-        tilt = stride * 11 + math.sin(phase * 0.8) * 1.5
-        plant_t = abs(stride)
-        scale_y = 1.0 - plant_t * 0.055 + math.sin(phase * 1.2) * 0.018
-        scale_x = 1.0 + plant_t * 0.045 - math.sin(phase * 1.2) * 0.012
-        shadow_squash = 1.0 + plant_t * 0.18
+        # ═══ KINGDOM WARS WALK (v27) ═══ 6 pose + lean + debu berat.
+        m = _NS_thorne._thorne_walk_motion(boss)
         facing = boss.direction
-        blend = (stride + 1.0) * 0.5
-        _NS_thorne._draw_shadow(surface, x + sway, y + 48, scale=shadow_squash)
-        _NS_thorne._draw_floating_dust(surface, x + sway, y + 35, phase, trail=True, facing=facing, warpath=warpath)
-        used = _NS_thorne._blit_thorne_walk_blended(
-            surface, facing, x + sway, y + 44, blend, bob=-bob, tilt=tilt,
-            scale_x=scale_x, scale_y=scale_y)
+        _NS_thorne._draw_shadow(surface, x + m["sway"], y + 48,
+                                scale=m["shadow_scale"])
+        _NS_thorne._draw_floating_dust(surface, x + m["sway"], y + 35,
+                                       boss.pulse, trail=True, facing=facing,
+                                       warpath=warpath)
+        _NS_thorne._thorne_footstep_dust(
+            surface, x + m["sway"], y + 44, m["t"], facing,
+            intensity=0.6 + 0.4 * m["speed_n"])
+        used = _NS_thorne._blit_thorne_walk_frame(
+            surface, m["frame"], facing, x + m["sway"], y + 44,
+            bob=-m["bob"], tilt=m["tilt"],
+            scale_x=m["scale_x"], scale_y=m["scale_y"])
         if not used:
-            pose = "walk" if stride >= 0 else "idle"
             used = _NS_thorne._blit_thorne_sprite(
-                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt,
-                scale_x=scale_x, scale_y=scale_y)
+                surface, "walk", facing, x + m["sway"], y + 44,
+                bob=-m["bob"], tilt=m["tilt"],
+                scale_x=m["scale_x"], scale_y=m["scale_y"])
         if used:
-            _NS_thorne._draw_body_particles(surface, x + sway, y - bob, phase, warpath=warpath)
+            _NS_thorne._draw_body_particles(surface, x + m["sway"],
+                                            y - m["bob"], boss.pulse,
+                                            warpath=warpath)
         else:
-            _NS_thorne._draw_thorne_body(surface, x + sway, y - bob, facing, phase, "walk", warpath=warpath)
-        _NS_thorne._draw_thorne_ground_contact(surface, x + sway, y + 44 - bob, phase, facing)
+            _NS_thorne._draw_thorne_body(surface, x + m["sway"], y - m["bob"],
+                                         facing, boss.pulse, "walk",
+                                         warpath=warpath)
+        _NS_thorne._draw_thorne_ground_contact(
+            surface, x + m["sway"], y + 44 - m["bob"], boss.pulse, facing)
 
 
     def _swing_angle(progress):
@@ -6950,9 +7277,26 @@ class _NS_thorne:
 
         _NS_thorne._draw_shadow(surface, x + step, y + 48, scale=shadow_scale)
         _NS_thorne._draw_floating_dust(surface, x + step, y + 35, boss.pulse, intense=True, warpath=warpath)
+        _NS_thorne._thorne_strike_dust(
+            surface, x + step, y + 46, progress, boss.direction)
         tilt = -math.sin(progress * math.pi) * 14 * boss.direction + math.sin(progress * math.pi * 2) * 2.5
 
         frame_idx = int(round((max(1, _NS_thorne._THORNE_SWING_FRAME_COUNT) - 1) * progress))
+
+        # ═══ MOTION SMEAR (v27) ═══ jejak 2 pose saat ayunan club cepat.
+        if 0.28 <= progress <= 0.62:
+            fade = math.sin((progress - 0.28) / 0.34 * math.pi)
+            _NS_thorne._blit_thorne_swing_ghost(
+                surface, frame_idx - 2, boss.direction, x + step, y + 44,
+                alpha=int(56 * fade), dx=-12 * boss.direction, dy=-2,
+                tilt=tilt * 1.15, scale_x=scale_x * 0.98,
+                scale_y=scale_y * 0.98)
+            _NS_thorne._blit_thorne_swing_ghost(
+                surface, frame_idx - 1, boss.direction, x + step, y + 44,
+                alpha=int(88 * fade), dx=-6 * boss.direction, dy=-1,
+                tilt=tilt * 1.07, scale_x=scale_x * 0.99,
+                scale_y=scale_y * 0.99)
+
         used_swing = _NS_thorne._blit_thorne_swing_frame(
             surface, frame_idx, boss.direction, x + step, y + 44, tilt=tilt,
             scale_x=scale_x, scale_y=scale_y)
@@ -8613,7 +8957,10 @@ class _NS_vex:
         dy = abs(boss.y - boss._vx_last_y)
         boss._vx_last_x = boss.x
         boss._vx_last_y = boss.y
-        return dx + dy > 0.3
+        moving = dx + dy > 0.3
+        # v27: dipakai _hero_cache_key (lihat catatan di _NS_grimjaw).
+        boss._moving_cached = moving
+        return moving
 
 
     def _update_attack_anim(boss):
@@ -9898,12 +10245,19 @@ class _NS_zephyr:
         }
 
     def _zephyr_idle_fidget_frame(phase):
-        """Fairy hover shift - pakai walk art di tengah idle."""
+        """Fairy hover shift - pakai walk art di tengah idle.
+
+        v27: 6 pose float -> fidget drift 2 -> 3 -> 4 -> 3.
+        """
         sample = int((float(phase) % _NS_zephyr.ZEPHYR_IDLE_CYCLE) * 4.0) % 24
-        if 6 <= sample < 12:
-            return 0
-        if 12 <= sample < 18:
-            return 1
+        if 5 <= sample < 8:
+            return 2
+        if 8 <= sample < 11:
+            return 3
+        if 11 <= sample < 14:
+            return 4
+        if 14 <= sample < 17:
+            return 3
         return None
 
     def _load_zephyr_sprite(pose, facing=1):
@@ -9974,13 +10328,64 @@ class _NS_zephyr:
         return True
 
     # ---------------------------------------------------------------------------
-    # HD WALK CYCLE (zephyr_walk_<0..N>.png — stride <-> plant)
+    # HD WALK CYCLE (zephyr_walk_0..5.png — Kingdom Wars style)
     #
-    # Kalau file cycle tidak ada, renderer ping-pong pose walk/idle.
+    # 6 pose siklus melayang: glide -> naik -> drift -> turun -> lean ->
+    # recoil. Dibake tools/make_hd_walkcycle.py. Zephyr tidak berkaki,
+    # jadi "walk" = float cycle (bob + sayap), bukan langkah kaki.
     # ---------------------------------------------------------------------------
-    _ZEPHYR_WALK_FRAME_COUNT = 2
+    _ZEPHYR_WALK_FRAME_COUNT = 6
     _ZEPHYR_WALK_CACHE = {}
     _ZEPHYR_WALK_MISSING = set()
+
+    # ---------------------------------------------------------------------------
+    # KINGDOM WARS FLOAT MOTION (v27) — lihat catatan lengkap di _NS_kaizen.
+    # Zephyr: melayang -> 1 siklus per loop cache, tilt lembut, jejak
+    # kelopak, TANPA debu kaki.
+    # ---------------------------------------------------------------------------
+    ZEPHYR_WALK_CYCLES_PER_LOOP = 1.0
+
+    def _zephyr_walk_cycle(pulse):
+        """Fase float cycle 0..1 terkunci bucket cache (lihat kaizen)."""
+        bucket = int(pulse * 4.0) % 24
+        return ((bucket / 24.0) * _NS_zephyr.ZEPHYR_WALK_CYCLES_PER_LOOP) % 1.0
+
+    def _zephyr_walk_motion(boss):
+        """Gerak float HD Zephyr — deterministik & cache-locked."""
+        pulse = float(getattr(boss, "pulse", 0.0))
+        t = _NS_zephyr._zephyr_walk_cycle(pulse)
+        n = max(1, _NS_zephyr._ZEPHYR_WALK_FRAME_COUNT)
+        # Frame via aritmetika integer dari bucket (bebas jitter float).
+        c = int(_NS_zephyr.ZEPHYR_WALK_CYCLES_PER_LOOP)
+        frame = ((2 * (int(pulse * 4.0) % 24) * c * n + 24) // 48) % n
+
+        # Bob mengapung: satu gelombang halus per siklus + osilasi kecil.
+        wave = math.sin(t * 2.0 * math.pi)
+        bob = int(round(wave * 4.6 + math.sin(t * 4.0 * math.pi) * 1.1))
+        sway = int(round(math.sin(t * 2.0 * math.pi + 0.9) * 3.4))
+        tilt = math.sin(t * 2.0 * math.pi + 0.4) * 6.5
+
+        # Lean lembut ke arah gerak (fairy miring saat meluncur).
+        vx = float(getattr(boss, "_zp_vel_x", 0.0) or 0.0)
+        vx_n = max(-1.0, min(1.0, vx / 2.6))
+        tilt += -4.0 * vx_n
+
+        # Turn: fairy berputar ringan, squash sangat kecil.
+        turn_age = pulse - float(getattr(boss, "_zp_turn_pulse", -99.0))
+        sx = sy = 1.0
+        if 0.0 <= turn_age < 0.5:
+            k = math.sin(math.pi * (turn_age / 0.5))
+            sx = 1.0 - 0.16 * k
+            sy = 1.0 + 0.05 * k
+
+        scale_x = sx * (1.0 + abs(wave) * 0.020)
+        scale_y = sy * (1.0 - abs(wave) * 0.026)
+        return {
+            "t": t, "frame": frame, "bob": bob, "sway": sway,
+            "tilt": tilt, "scale_x": scale_x, "scale_y": scale_y,
+            "shadow_scale": 1.0 - abs(wave) * 0.10,
+            "speed_n": abs(vx_n),
+        }
 
     def _load_zephyr_walk_frame(idx, facing=1):
         """Muat + cache satu frame walk HD. None = fallback pose walk/idle."""
@@ -10747,12 +11152,29 @@ class _NS_zephyr:
         if not hasattr(boss, "_zp_last_x"):
             boss._zp_last_x = boss.x
             boss._zp_last_y = boss.y
+            # Init arah hadap juga di jalur pertama supaya flip PERTAMA
+            # (setelah spawn) tetap terdeteksi sebagai turn hop.
+            boss._zp_facing_prev = 1 if getattr(boss, "direction", 1) >= 0 else -1
+            boss._moving_cached = False
             return False
-        dx = abs(boss.x - boss._zp_last_x)
-        dy = abs(boss.y - boss._zp_last_y)
+        vx = boss.x - boss._zp_last_x
+        vy = boss.y - boss._zp_last_y
+        dx = abs(vx)
+        dy = abs(vy)
         boss._zp_last_x = boss.x
         boss._zp_last_y = boss.y
-        return dx + dy > 0.3
+        moving = dx + dy > 0.3
+
+        # v27: state untuk cache key + lean + turn (lihat kaizen).
+        boss._moving_cached = moving
+        boss._zp_vel_x = vx
+        boss._zp_vel_y = vy
+        direction = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        prev = getattr(boss, "_zp_facing_prev", None)
+        if prev is not None and prev != direction:
+            boss._zp_turn_pulse = float(getattr(boss, "pulse", 0.0))
+        boss._zp_facing_prev = direction
+        return moving
 
 
     def _update_attack_anim(boss):
@@ -10950,34 +11372,35 @@ class _NS_zephyr:
 
 
     def _draw_zephyr_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.0
-        stride = math.sin(phase * 1.2)
-        bob = int(abs(stride) * 6.0 + math.sin(phase * 2.5) * 1.0)
-        sway = int(math.sin(phase) * 4.0 + math.sin(phase * 0.55) * 1.0)
-        tilt = stride * 11 + math.sin(phase * 0.75) * 1.6
-        plant_t = abs(stride)
-        scale_y = 1.0 - plant_t * 0.055 + math.sin(phase * 1.2) * 0.020
-        scale_x = 1.0 + plant_t * 0.045 - math.sin(phase * 1.2) * 0.014
-        shadow_squash = 1.0 + plant_t * 0.20
+        # ═══ KINGDOM WARS FLOAT (v27) ═══ 6 pose melayang + lean lembut.
+        m = _NS_zephyr._zephyr_walk_motion(boss)
         facing = boss.direction
-        blend = (stride + 1.0) * 0.5
-        _NS_zephyr._draw_shadow(surface, x + sway, y + 48, scale=shadow_squash)
-        _NS_zephyr._draw_floating_sparkles(surface, x + sway, y + 35, phase, trail=True, facing=facing)
-        _NS_zephyr._draw_wings(surface, x + sway, y - bob - 3, phase)
-        used = _NS_zephyr._blit_zephyr_walk_blended(
-            surface, facing, x + sway, y + 44, blend, bob=-bob, tilt=tilt,
-            scale_x=scale_x, scale_y=scale_y)
+        _NS_zephyr._draw_shadow(surface, x + m["sway"], y + 48,
+                                scale=m["shadow_scale"])
+        _NS_zephyr._draw_floating_sparkles(surface, x + m["sway"], y + 35,
+                                           boss.pulse, trail=True,
+                                           facing=facing)
+        _NS_zephyr._draw_wings(surface, x + m["sway"], y - m["bob"] - 3,
+                               boss.pulse)
+        used = _NS_zephyr._blit_zephyr_walk_frame(
+            surface, m["frame"], facing, x + m["sway"], y + 44,
+            bob=-m["bob"], tilt=m["tilt"],
+            scale_x=m["scale_x"], scale_y=m["scale_y"])
         if not used:
-            pose = "walk" if stride >= 0 else "idle"
             used = _NS_zephyr._blit_zephyr_sprite(
-                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt,
-                scale_x=scale_x, scale_y=scale_y)
+                surface, "walk", facing, x + m["sway"], y + 44,
+                bob=-m["bob"], tilt=m["tilt"],
+                scale_x=m["scale_x"], scale_y=m["scale_y"])
         if used:
-            _NS_zephyr._draw_petal_skirt(surface, x + sway, y - bob + 6, phase)
-            _NS_zephyr._draw_body_particles(surface, x + sway, y - bob, phase)
+            _NS_zephyr._draw_petal_skirt(surface, x + m["sway"],
+                                         y - m["bob"] + 6, boss.pulse)
+            _NS_zephyr._draw_body_particles(surface, x + m["sway"],
+                                            y - m["bob"], boss.pulse)
         else:
-            _NS_zephyr._draw_zephyr_body(surface, x + sway, y - bob, facing, phase, "walk")
-        _NS_zephyr._draw_zephyr_ground_contact(surface, x + sway, y + 44 - bob, phase, facing)
+            _NS_zephyr._draw_zephyr_body(surface, x + m["sway"], y - m["bob"],
+                                         facing, boss.pulse, "walk")
+        _NS_zephyr._draw_zephyr_ground_contact(
+            surface, x + m["sway"], y + 44 - m["bob"], boss.pulse, facing)
 
 
     def _draw_zephyr_attack(surface, boss, x, y):
@@ -11019,6 +11442,21 @@ class _NS_zephyr:
         tilt = -math.sin(progress * math.pi) * 14 * boss.direction + math.sin(progress * math.pi * 2) * 3
 
         frame_idx = int(round((max(1, _NS_zephyr._ZEPHYR_SWING_FRAME_COUNT) - 1) * progress))
+
+        # ═══ MOTION SMEAR (v27) ═══ jejak lembut pose cast (fairy).
+        if 0.28 <= progress <= 0.62:
+            fade = math.sin((progress - 0.28) / 0.34 * math.pi)
+            spr_g = _NS_zephyr._load_zephyr_swing_frame(
+                frame_idx - 1, boss.direction)
+            if spr_g is not None:
+                tmp = spr_g.copy()
+                if abs(tilt) > 0.5:
+                    tmp = pygame.transform.rotate(tmp, tilt * 1.1)
+                tmp.set_alpha(int(70 * fade))
+                surface.blit(tmp, tmp.get_rect(
+                    midbottom=(int(x + recoil - 6 * boss.direction),
+                               int(y + 44 - 1))))
+
         used_swing = _NS_zephyr._blit_zephyr_swing_frame(
             surface, frame_idx, boss.direction, x + recoil, y + 44, tilt=tilt,
             scale_x=scale_x, scale_y=scale_y)
