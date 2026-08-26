@@ -21,13 +21,28 @@ assets/
 ├── castles/                    sprite kastil HD (blue/red L1-L5, PNG transparan)
 ├── items/                      ikon item ITEM FORGE (25 PNG)
 └── heroes/
-    └── thorne_<pose>.png       sprite HD hero Thorne (idle/walk/attack)
+    ├── thorne_<pose>.png        sprite HD hero Thorne (idle/walk)
+    ├── thorne_swing_<0..7>.png  frame animasi swing attack Thorne (8 frame)
+    └── thorne_skill_<q/w/e/r>.png  efek skill HD Thorne (icon-item style)
 ```
 
 Sprite HD (castles & heroes) adalah render digital transparan gaya
 icon item. Kalau berkasnya tidak ada, game otomatis fallback ke
 render prosedural lama - build tanpa aset tidak rusak. Sprite hero
 diproses dari render mentah lewat `tools/make_thorne_hd_sprites.py`.
+
+Frame swing & efek skill Thorne dibake dari renderer prosedural lewat
+`tools/make_thorne_skill_sprites.py`:
+
+```
+python tools/make_thorne_skill_sprites.py
+# -> assets/heroes/thorne_swing_<0..7>.png
+# -> assets/heroes/thorne_skill_<q/w/e/r>.png
+```
+
+Saat runtime, swing memakai `thorne_swing_<N>.png` per progress serangan
+(fallback: `thorne_attack.png` -> prosedural), dan efek skill Q/W/E/R
+memakai `thorne_skill_<key>.png` sebagai lapisan HD (fallback: prosedural).
 
 ## Catatan penting
 

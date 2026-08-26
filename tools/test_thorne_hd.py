@@ -61,6 +61,8 @@ def dark_bg(w, h):
 # ── T1: semua pose + arah memakai sprite HD ─────────────────────
 NS._THORNE_SPRITE_CACHE.clear()
 NS._THORNE_SPRITE_MISSING.clear()
+NS._THORNE_SWING_CACHE.clear()
+NS._THORNE_SWING_MISSING.clear()
 
 surf = dark_bg(400, 200)
 p = Probe(1)
@@ -74,17 +76,31 @@ NS._draw_thorne_walk(surf, p2, 250, 100)
 NS._draw_thorne_attack(surf, p2, 250, 100)
 
 poses_loaded = {k[0] for k in NS._THORNE_SPRITE_CACHE}
-assert poses_loaded == {"idle", "walk", "attack"}, \
-    "sprite HD harus ter-load untuk idle/walk/attack, dapat: %s" % poses_loaded
+assert poses_loaded == {"idle", "walk"}, \
+    "sprite HD harus ter-load untuk idle/walk, dapat: %s" % poses_loaded
 dirs_loaded = {k[1] for k in NS._THORNE_SPRITE_CACHE}
 assert dirs_loaded == {1, -1}, "dua arah harus ter-cache, dapat: %s" % dirs_loaded
-print("T1 OK  - sprite HD (idle/walk/attack, 2 arah) ter-load & dipakai")
+# Attack dipakai lewat multi-frame swing (thorne_swing_<N>.png).
+assert len(NS._THORNE_SWING_CACHE) > 0, \
+    "frame swing HD harus ter-load (gunakan thorne_swing_<N>.png)"
+assert {k[0] for k in NS._THORNE_SWING_CACHE} <= \
+    set(range(NS._THORNE_SWING_FRAME_COUNT)), \
+    "index frame swing harus dalam rentang 0..%d" % NS._THORNE_SWING_FRAME_COUNT
+assert 1 in {k[1] for k in NS._THORNE_SWING_CACHE}, \
+    "arah menghadap kanan harus ter-cache"
+assert -1 in {k[1] for k in NS._THORNE_SWING_CACHE}, \
+    "arah menghadap kiri harus ter-cache"
+print("T1 OK  - sprite HD (idle/walk, 2 arah) + frame swing (2 arah) ter-load & dipakai")
 
 # ── T2: fallback prosedural kalau aset tidak ada ────────────────
 orig_dir = NS._THORNE_ASSET_DIR
 NS._THORNE_ASSET_DIR = os.path.join(orig_dir, "..", "heroes_TIDAK_ADA")
 NS._THORNE_SPRITE_CACHE.clear()
 NS._THORNE_SPRITE_MISSING.clear()
+NS._THORNE_SWING_CACHE.clear()
+NS._THORNE_SWING_MISSING.clear()
+NS._THORNE_SKILL_CACHE.clear()
+NS._THORNE_SKILL_MISSING.clear()
 
 surf2 = dark_bg(400, 200)
 NS._draw_thorne_idle(surf2, Probe(1), 100, 100)
@@ -94,10 +110,18 @@ p3._th_attack_progress = 0.45
 NS._draw_thorne_attack(surf2, p3, 100, 100)
 assert not NS._THORNE_SPRITE_CACHE, \
     "tanpa aset tidak boleh ada sprite ter-cache (fallback prosedural)"
+assert not NS._THORNE_SWING_CACHE, \
+    "tanpa aset tidak boleh ada frame swing ter-cache (fallback prosedural)"
+assert not NS._THORNE_SKILL_CACHE, \
+    "tanpa aset tidak boleh ada sprite skill ter-cache (fallback prosedural)"
 
 NS._THORNE_ASSET_DIR = orig_dir
 NS._THORNE_SPRITE_CACHE.clear()
 NS._THORNE_SPRITE_MISSING.clear()
+NS._THORNE_SWING_CACHE.clear()
+NS._THORNE_SWING_MISSING.clear()
+NS._THORNE_SKILL_CACHE.clear()
+NS._THORNE_SKILL_MISSING.clear()
 print("T2 OK  - fallback prosedural berfungsi tanpa aset")
 
 # ── T3: pipeline penuh render_hero + preview visual ─────────────
