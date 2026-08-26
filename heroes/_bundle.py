@@ -3575,6 +3575,353 @@ class _NS_kaizen:
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
     # ---------------------------------------------------------------------------
+    # HD SPRITE ASSETS (gaya sama dgn icon item / kastil / hero Thorne)
+    #
+    # assets/heroes/kaizen_<pose>.png adalah render digital transparan
+    # (idle / walk / attack). Kalau file tidak ada atau gagal dimuat,
+    # game tetap jalan dengan render prosedural lama di bawah - build
+    # tanpa aset tidak rusak.
+    # ---------------------------------------------------------------------------
+    _KAIZEN_ASSET_DIR = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "assets", "heroes")
+    _KAIZEN_SPRITE_CACHE = {}
+    _KAIZEN_SPRITE_MISSING = set()
+    # Tinggi native sprite di canvas hero - disesuaikan dengan footprint
+    # badan prosedural lama (ponytail s/d ujung hakama ~110 px).
+    KAIZEN_SPRITE_HEIGHT = 110
+
+    # ---------------------------------------------------------------------------
+    # IDLE LIFE / MICRO-MOTION
+    # ---------------------------------------------------------------------------
+    # Kaizen's HD art is a single transparent sprite, so a completely static
+    # blit makes the swordsman look like a sticker.  Keep the movement small
+    # and grounded: a gentle breath-bob, a slight sway of the hakama and a
+    # tiny tilt of the shoulders.  The hero cache repeats an idle key every
+    # 6 pulse units (12 samples at 2 samples per pulse).  Matching that
+    # period prevents a visible snap when the cached idle loop starts over.
+    KAIZEN_IDLE_CYCLE = 6.0
+    KAIZEN_IDLE_BREATH_SPEED = 2.0 * math.pi / KAIZEN_IDLE_CYCLE
+    KAIZEN_IDLE_SWAY_SPEED = 2.0 * math.pi / KAIZEN_IDLE_CYCLE
+
+    def _kaizen_idle_motion(phase):
+        """Return subtle idle motion for the HD sprite and fallback renderer.
+
+        The values are in native renderer pixels and are intentionally kept
+        small.  The renderer is also used by the hero sprite cache, so this
+        function must stay deterministic: the same pulse always produces the
+        same pose.
+        """
+        phase = float(phase) % _NS_kaizen.KAIZEN_IDLE_CYCLE
+        breath = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_BREATH_SPEED - 0.45)
+        breath_fine = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_BREATH_SPEED * 2.0 + 0.35)
+        weight_shift = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_SWAY_SPEED + 0.60)
+        weight_fine = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_SWAY_SPEED * 2.0 - 0.20)
+
+        bob = breath * 1.1 + breath_fine * 0.25
+        sway = weight_shift * 1.0 + weight_fine * 0.20
+        tilt = weight_shift * 1.1 + weight_fine * 0.20
+
+        # A tiny squash/stretch makes the breath read even at small scale.
+        scale_y = 1.0 + breath * 0.012 + breath_fine * 0.003
+        scale_x = 1.0 - breath * 0.005 - breath_fine * 0.001
+        shadow_scale = max(0.94, min(1.06, 1.0 + bob * 0.030))
+        return {
+            "bob": bob,
+            "sway": sway,
+            "tilt": tilt,
+            "scale_x": scale_x,
+            "scale_y": scale_y,
+            "shadow_scale": shadow_scale,
+        }
+
+    def _load_kaizen_sprite(pose, facing=1):
+        """Muat + cache sprite HD kaizen untuk (pose, arah).
+
+        Return pygame.Surface (SRCALPHA) siap blit, atau None kalau
+        aset tidak tersedia (caller harus fallback prosedural).
+        """
+        key = (pose, 1 if facing >= 0 else -1)
+        if key in _NS_kaizen._KAIZEN_SPRITE_CACHE:
+            return _NS_kaizen._KAIZEN_SPRITE_CACHE[key]
+        if key in _NS_kaizen._KAIZEN_SPRITE_MISSING:
+            return None
+        path = os.path.join(_NS_kaizen._KAIZEN_ASSET_DIR,
+                            "kaizen_%s.png" % pose)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_kaizen.KAIZEN_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+                if key[1] < 0:
+                    surf = pygame.transform.flip(surf, True, False)
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_kaizen._KAIZEN_SPRITE_MISSING.add(key)
+            return None
+        _NS_kaizen._KAIZEN_SPRITE_CACHE[key] = surf
+        return surf
+
+    def _blit_kaizen_sprite(surface, pose, facing, x, foot_y,
+                            bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
+        """Blit sprite HD dengan anchor tengah-bawah di (x, foot_y).
+
+        ``scale_x`` dan ``scale_y`` dipakai oleh idle micro-motion untuk
+        memberi efek napas ringan.  Sprite cache dasar tidak pernah diubah;
+        transform hanya dibuat pada saat pose baru dirender.
+
+        Return True kalau sprite terpakai; False berarti caller harus
+        fallback ke render prosedural.
+        """
+        spr = _NS_kaizen._load_kaizen_sprite(pose, facing)
+        if spr is None:
+            return False
+
+        scale_x = max(0.90, min(1.10, float(scale_x)))
+        scale_y = max(0.90, min(1.10, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr,
+                (
+                    max(8, int(round(sw * scale_x))),
+                    max(8, int(round(sh * scale_y))),
+                ),
+            )
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
+    # HD WALK CYCLE (kaizen_walk_<0..N>.png — stride <-> plant)
+    #
+    # Kalau file cycle tidak ada, renderer ping-pong pose walk/idle.
+    # ---------------------------------------------------------------------------
+    _KAIZEN_WALK_FRAME_COUNT = 2
+    _KAIZEN_WALK_CACHE = {}
+    _KAIZEN_WALK_MISSING = set()
+
+    def _load_kaizen_walk_frame(idx, facing=1):
+        """Muat + cache satu frame walk HD. None = fallback pose walk/idle."""
+        idx = int(idx) % max(1, _NS_kaizen._KAIZEN_WALK_FRAME_COUNT)
+        key = (idx, 1 if facing >= 0 else -1)
+        if key in _NS_kaizen._KAIZEN_WALK_CACHE:
+            return _NS_kaizen._KAIZEN_WALK_CACHE[key]
+        if key in _NS_kaizen._KAIZEN_WALK_MISSING:
+            return None
+        path = os.path.join(_NS_kaizen._KAIZEN_ASSET_DIR,
+                            "kaizen_walk_%d.png" % idx)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_kaizen.KAIZEN_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+                if key[1] < 0:
+                    surf = pygame.transform.flip(surf, True, False)
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_kaizen._KAIZEN_WALK_MISSING.add(key)
+            return None
+        _NS_kaizen._KAIZEN_WALK_CACHE[key] = surf
+        return surf
+
+    def _blit_kaizen_walk_frame(surface, idx, facing, x, foot_y,
+                                bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
+        spr = _NS_kaizen._load_kaizen_walk_frame(idx, facing)
+        if spr is None:
+            return False
+        scale_x = max(0.90, min(1.10, float(scale_x)))
+        scale_y = max(0.90, min(1.10, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr,
+                (
+                    max(8, int(round(sw * scale_x))),
+                    max(8, int(round(sh * scale_y))),
+                ),
+            )
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
+    # HD SWING FRAMES (multi-frame iai slash, gaya baris idle/walk/attack)
+    #
+    # assets/heroes/kaizen_swing_<0..N>.png adalah pose HD TERPISAH
+    # (katana santai -> windup -> slash diagonal -> recovery). Kalau file
+    # tidak ada / gagal dimuat, renderer jatuh ke pose attack statis lalu ke
+    # render prosedural lama.
+    # ---------------------------------------------------------------------------
+    _KAIZEN_SWING_FRAME_COUNT = 8
+    _KAIZEN_SWING_CACHE = {}
+    _KAIZEN_SWING_MISSING = set()
+
+    def _load_kaizen_swing_frame(idx, facing=1):
+        """Muat + cache satu frame swing HD. None = fallback pose attack."""
+        idx = int(idx) % max(1, _NS_kaizen._KAIZEN_SWING_FRAME_COUNT)
+        key = (idx, 1 if facing >= 0 else -1)
+        if key in _NS_kaizen._KAIZEN_SWING_CACHE:
+            return _NS_kaizen._KAIZEN_SWING_CACHE[key]
+        if key in _NS_kaizen._KAIZEN_SWING_MISSING:
+            return None
+        path = os.path.join(_NS_kaizen._KAIZEN_ASSET_DIR,
+                            "kaizen_swing_%d.png" % idx)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_kaizen.KAIZEN_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+                if key[1] < 0:
+                    surf = pygame.transform.flip(surf, True, False)
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_kaizen._KAIZEN_SWING_MISSING.add(key)
+            return None
+        _NS_kaizen._KAIZEN_SWING_CACHE[key] = surf
+        return surf
+
+    def _blit_kaizen_swing_frame(surface, idx, facing, x, foot_y,
+                                 bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
+        spr = _NS_kaizen._load_kaizen_swing_frame(idx, facing)
+        if spr is None:
+            return False
+        scale_x = max(0.90, min(1.10, float(scale_x)))
+        scale_y = max(0.90, min(1.10, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr,
+                (
+                    max(8, int(round(sw * scale_x))),
+                    max(8, int(round(sh * scale_y))),
+                ),
+            )
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
+    # HD SKILL FX SPRITES (Q/W/E/R - gaya yang sama dengan icon item / kastil HD)
+    #
+    # assets/heroes/kaizen_skill_<q/w/e/r>.png adalah render transparan dari
+    # efek skill Kaizen.  Q (Steel Wind) digambar di tengah jalur dash,
+    # W (Wind Wall) di depan karakter, E (Sweep) di kaki karakter, dan
+    # R (Tornado) di posisi target.  Mana pun key yang tidak punya sprite
+    # otomatis fallback ke efek prosedural lama.
+    # ---------------------------------------------------------------------------
+    _KAIZEN_SKILL_CACHE = {}
+    _KAIZEN_SKILL_MISSING = set()
+    KAIZEN_SKILL_SPRITE_HEIGHT = 168
+
+    def _load_kaizen_skill_sprite(key):
+        """Muat + cache sprite HD efek skill untuk key q/w/e/r.
+
+        Return pygame.Surface (SRCALPHA) siap blit, atau None kalau aset
+        tidak tersedia (caller lanjut ke efek prosedural).
+        """
+        key = str(key).lower()
+        if key not in ("q", "w", "e", "r"):
+            return None
+        if key in _NS_kaizen._KAIZEN_SKILL_CACHE:
+            return _NS_kaizen._KAIZEN_SKILL_CACHE[key]
+        if key in _NS_kaizen._KAIZEN_SKILL_MISSING:
+            return None
+        path = os.path.join(_NS_kaizen._KAIZEN_ASSET_DIR,
+                            "kaizen_skill_%s.png" % key)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_kaizen.KAIZEN_SKILL_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_kaizen._KAIZEN_SKILL_MISSING.add(key)
+            return None
+        _NS_kaizen._KAIZEN_SKILL_CACHE[key] = surf
+        return surf
+
+    def _blit_kaizen_skill(surface, key, x, y, alpha=255):
+        """Blit sprite HD efek skill dengan anchor tengah di (x, y).
+
+        Return True kalau sprite terpakai; False berarti caller harus
+        melanjutkan ke efek prosedural.
+        """
+        spr = _NS_kaizen._load_kaizen_skill_sprite(key)
+        if spr is None:
+            return False
+        if 0 <= alpha < 255:
+            try:
+                spr = spr.copy()
+                spr.set_alpha(alpha)
+            except Exception:
+                pass
+        rect = spr.get_rect(center=(int(x), int(y)))
+        surface.blit(spr, rect)
+        return True
+
+    def _draw_kaizen_slash_flash(surface, x, y, facing, progress):
+        """Kilatan slash kecil di depan Kaizen saat swing HD memukul.
+
+        Peran yang sama dengan _draw_cast_flash milik Zephyr: memberi
+        feedback "impact" di atas sprite HD tanpa menimpa gambarnya.
+        """
+        if not (0.30 < progress < 0.62):
+            return
+        t = (progress - 0.30) / 0.32
+        alpha = int(200 * math.sin(t * math.pi))
+        if alpha <= 8:
+            return
+        fx = x + facing * 30
+        fy = y - 14
+        _NS_kaizen._draw_wind_arc(surface, fx, fy, 16 + t * 10,
+                                  -0.9 if facing >= 0 else math.pi + 0.9,
+                                  0.9 if facing >= 0 else math.pi - 0.9,
+                                  (*_NS_kaizen.PALETTE["wind_white"], alpha),
+                                  width=2, segments=10)
+        _NS_kaizen._aacircle(surface,
+                             (*_NS_kaizen.PALETTE["wind_bright"], alpha // 2),
+                             (int(fx + facing * 6), int(fy - 4)),
+                             int(3 + t * 3))
+
+    # ---------------------------------------------------------------------------
     # HD Color Palette - Yasuo inspired
     # ---------------------------------------------------------------------------
     PALETTE = {
@@ -4015,20 +4362,57 @@ class _NS_kaizen:
     # POSE MODES
     # ===================================================================
     def _draw_kaizen_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_kaizen._draw_shadow(surface, x, y + 48)
-        _NS_kaizen._draw_floating_wind(surface, x, y + 35, boss.pulse)
-        _NS_kaizen._draw_kaizen_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+        # HD idle gets the same gentle breath/weight-shift as the
+        # procedural fallback.  Using the shared motion values keeps both
+        # render paths visually consistent when an asset is missing.
+        motion = _NS_kaizen._kaizen_idle_motion(
+            getattr(boss, "pulse", 0.0))
+        draw_x = int(round(x + motion["sway"]))
+        draw_y = int(round(y + motion["bob"]))
+        shadow_x = int(round(x + motion["sway"] * 0.35))
+
+        _NS_kaizen._draw_shadow(surface, shadow_x, y + 48,
+                                scale=motion["shadow_scale"])
+        _NS_kaizen._draw_floating_wind(surface, draw_x, y + 35, boss.pulse)
+
+        used = _NS_kaizen._blit_kaizen_sprite(
+            surface, "idle", boss.direction, draw_x, y + 44,
+            bob=motion["bob"], tilt=motion["tilt"],
+            scale_x=motion["scale_x"], scale_y=motion["scale_y"])
+        if used:
+            # Ambient wind particles keep the HD cutout alive; scarf &
+            # ponytail motion are already inside the sprite.
+            _NS_kaizen._draw_body_particles(
+                surface, draw_x, draw_y, boss.pulse)
+        else:
+            _NS_kaizen._draw_kaizen_body(
+                surface, draw_x, draw_y, boss.direction, boss.pulse, "idle")
 
 
     def _draw_kaizen_walk(surface, boss, x, y):
         phase = boss.pulse * 2.0
-        bob = int(abs(math.sin(phase * 1.2)) * 3)
+        stride = math.sin(phase * 1.2)
+        bob = int(abs(stride) * 3)
         sway = int(math.sin(phase) * 2)
+        # Condong ke arah langkah, scarf/bahu ikut bergoyang.
+        tilt = stride * 5
+        facing = boss.direction
+        nwalk = max(1, _NS_kaizen._KAIZEN_WALK_FRAME_COUNT)
+        frame_idx = int((phase * 0.85) % nwalk)
         _NS_kaizen._draw_shadow(surface, x + sway, y + 48)
         _NS_kaizen._draw_floating_wind(surface, x + sway, y + 35, phase, trail=True,
-                           facing=boss.direction)
-        _NS_kaizen._draw_kaizen_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
+                           facing=facing)
+        used = _NS_kaizen._blit_kaizen_walk_frame(
+            surface, frame_idx, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+        if not used:
+            pose = "walk" if stride >= 0 else "idle"
+            used = _NS_kaizen._blit_kaizen_sprite(
+                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+        if used:
+            _NS_kaizen._draw_body_particles(surface, x + sway, y, phase)
+        else:
+            _NS_kaizen._draw_kaizen_body(
+                surface, x + sway, y - bob, facing, phase, "walk")
 
 
     def _draw_kaizen_attack(surface, boss, x, y):
@@ -4050,8 +4434,30 @@ class _NS_kaizen:
         step = int(math.sin(progress * math.pi) * 3) * boss.direction
         _NS_kaizen._draw_shadow(surface, x + step, y + 48)
         _NS_kaizen._draw_floating_wind(surface, x + step, y + 35, boss.pulse, intense=True)
-        _NS_kaizen._draw_kaizen_body(surface, x + step, y, boss.direction, boss.pulse,
-                          "attack", progress)
+        # Condong ke arah slash saat mengayun (rotate CCW positif)
+        tilt = -math.sin(progress * math.pi) * 5 * boss.direction
+
+        # 1) Multi-frame iai slash HD (kalau kaizen_swing_<N>.png ada)
+        frame_idx = int(round((max(1, _NS_kaizen._KAIZEN_SWING_FRAME_COUNT) - 1)
+                              * progress))
+        used_swing = _NS_kaizen._blit_kaizen_swing_frame(
+            surface, frame_idx, boss.direction, x + step, y + 44, tilt=tilt)
+
+        if used_swing:
+            # Kilatan slash di atas sprite HD swing
+            _NS_kaizen._draw_kaizen_slash_flash(
+                surface, x + step, y, boss.direction, progress)
+            _NS_kaizen._draw_body_particles(surface, x + step, y, boss.pulse)
+        elif _NS_kaizen._blit_kaizen_sprite(surface, "attack", boss.direction,
+                                            x + step, y + 44, tilt=tilt):
+            # 2) Pose attack statis HD (legacy kaizen_attack.png)
+            _NS_kaizen._draw_kaizen_slash_flash(
+                surface, x + step, y, boss.direction, progress)
+            _NS_kaizen._draw_body_particles(surface, x + step, y, boss.pulse)
+        else:
+            # 3) Render prosedural lama
+            _NS_kaizen._draw_kaizen_body(surface, x + step, y, boss.direction,
+                              boss.pulse, "attack", progress)
 
 
     # ===================================================================
@@ -4872,8 +5278,9 @@ class _NS_kaizen:
                           (sx, sy), max(2, 5 - i))
 
 
-    def _draw_shadow(surface, x, y):
-        """Ground shadow."""
+    def _draw_shadow(surface, x, y, scale=1.0):
+        """Ground shadow, with a tiny width response to body weight."""
+        scale = max(0.80, min(1.20, float(scale)))
         shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
         for radius in range(10, 0, -1):
             alpha = max(0, (10 - radius) * 16)
@@ -4882,7 +5289,10 @@ class _NS_kaizen:
                 (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
             )
         pygame.draw.ellipse(shadow, (*_NS_kaizen.PALETTE["wind_darkest"], 40), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
+        if abs(scale - 1.0) > 0.001:
+            shadow = pygame.transform.smoothscale(
+                shadow, (max(1, int(round(100 * scale))), 20))
+        surface.blit(shadow, (int(x - shadow.get_width() / 2), int(y - 10)))
 
 
     def _draw_swordsman_rim_light(surface, x, y, phase):
@@ -4960,6 +5370,12 @@ class _NS_kaizen:
         tx, ty = _NS_kaizen._target_position(boss, x, y)
         progress = max(0.0, min(1.0, 1 - timer / 60))
 
+        # HD base layer (steel wind slash) di tengah jalur dash
+        mx, my = (x + tx) // 2, (y + ty) // 2
+        _NS_kaizen._blit_kaizen_skill(
+            surface, "q", mx, my - 6,
+            alpha=int(255 * (1.0 - progress * 0.55)))
+
         # Multiple after-images along dash path
         for i in range(6):
             t = i / 5.0
@@ -5012,6 +5428,13 @@ class _NS_kaizen:
             wall_top = y + 35 - h
         else:
             pass
+
+        # HD base layer (wind wall) menutupi area wall penuh.  Saat wall
+        # masih tumbuh, sprite di-clip via alpha agar terlihat naik.
+        if _NS_kaizen._blit_kaizen_skill(
+                surface, "w", wall_x, y - 5,
+                alpha=255 if progress >= 0.2 else int(255 * (progress / 0.2))):
+            return
 
         wall_width = 6
 
@@ -5072,6 +5495,11 @@ class _NS_kaizen:
         """Upward sweep - wind uplift."""
         progress = max(0.0, min(1.0, 1 - timer / 60))
 
+        # HD base layer (ring tanah + bilah angin naik)
+        _NS_kaizen._blit_kaizen_skill(
+            surface, "e", x, y + 8,
+            alpha=int(255 * math.sin(progress * math.pi) ** 0.5))
+
         # Wind pillars rising in ring
         for i in range(10):
             angle = i * math.pi / 5 + phase * 0.2
@@ -5128,6 +5556,27 @@ class _NS_kaizen:
             grow = progress / 0.3
         else:
             grow = 1.0
+
+        # HD base layer (tornado funnel) di posisi target.  Alpha naik saat
+        # grow dan memudar menjelang selesai.  Kalau sprite HD terpakai,
+        # hanya partikel serpihan bergerak yang ditambahkan supaya funnel
+        # terasa hidup (efek prosedural penuh terlalu ramai di atasnya).
+        if _NS_kaizen._blit_kaizen_skill(
+                surface, "r", tx, ty - 20,
+                alpha=int(255 * grow * min(1.0, (1.0 - progress) * 4 + 0.35))):
+            base_y = ty + 25
+            height = int((base_y - (ty - 60)) * grow)
+            for i in range(8):
+                t = ((phase * 0.3 + i * 0.12) % 1.0)
+                py = int(base_y - t * height)
+                radius = 5 + t * 22
+                angle = phase * 3 + i * math.pi / 4
+                px = tx + int(math.cos(angle) * radius)
+                alpha = int(220 * (1 - t * 0.5))
+                _NS_kaizen._aacircle(
+                    surface, (*_NS_kaizen.PALETTE["wind_white"], alpha),
+                    (px, py), 2)
+            return
 
         base_y = ty + 25
         top_y = ty - 60
