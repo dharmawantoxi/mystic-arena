@@ -9133,6 +9133,329 @@ class _NS_zephyr:
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
     # ---------------------------------------------------------------------------
+    # HD SPRITE ASSETS (gaya sama dgn icon item / kastil / hero Thorne)
+    #
+    # assets/heroes/zephyr_<pose>.png adalah render digital transparan
+    # (idle / walk / attack). Kalau file tidak ada atau gagal dimuat,
+    # game tetap jalan dengan render prosedural lama di bawah - build
+    # tanpa aset tidak rusak.
+    # ---------------------------------------------------------------------------
+    _ZEPHYR_ASSET_DIR = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "assets", "heroes")
+    _ZEPHYR_SPRITE_CACHE = {}
+    _ZEPHYR_SPRITE_MISSING = set()
+    # Tinggi native sprite di canvas hero - disesuaikan dengan footprint
+    # badan prosedural lama (puncak rambut api s/d ujung rok ~110 px).
+    ZEPHYR_SPRITE_HEIGHT = 110
+
+    # ---------------------------------------------------------------------------
+    # IDLE LIFE / MICRO-MOTION
+    # ---------------------------------------------------------------------------
+    # Zephyr's HD art is a single transparent sprite, so a completely static
+    # blit makes the fairy look like a sticker.  Keep the movement small and
+    # airy: a gentle float-bob, a slight sway of the skirt and a tiny tilt.
+    # The hero cache repeats an idle key every 6 pulse units (24 samples at
+    # 4 samples per pulse).  Matching that period prevents a visible snap
+    # when the cached floating loop starts over.
+    ZEPHYR_IDLE_CYCLE = 6.0
+    ZEPHYR_IDLE_BREATH_SPEED = 2.0 * math.pi / ZEPHYR_IDLE_CYCLE
+    ZEPHYR_IDLE_SWAY_SPEED = 2.0 * math.pi / ZEPHYR_IDLE_CYCLE
+
+    def _zephyr_idle_motion(phase):
+        """Return subtle idle motion for the HD sprite and fallback renderer.
+
+        The values are in native renderer pixels and are intentionally kept
+        small.  The renderer is also used by the hero sprite cache, so this
+        function must stay deterministic: the same pulse always produces the
+        same pose.
+        """
+        phase = float(phase) % _NS_zephyr.ZEPHYR_IDLE_CYCLE
+        breath = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_BREATH_SPEED - 0.45)
+        breath_fine = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_BREATH_SPEED * 2.0 + 0.35)
+        weight_shift = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_SWAY_SPEED + 0.60)
+        weight_fine = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_SWAY_SPEED * 2.0 - 0.20)
+
+        bob = breath * 1.2 + breath_fine * 0.25
+        sway = weight_shift * 1.1 + weight_fine * 0.20
+        tilt = weight_shift * 1.0 + weight_fine * 0.20
+
+        # A tiny squash/stretch makes the float read even at small scale.
+        scale_y = 1.0 + breath * 0.012 + breath_fine * 0.003
+        scale_x = 1.0 - breath * 0.005 - breath_fine * 0.001
+        shadow_scale = max(0.94, min(1.06, 1.0 + bob * 0.030))
+        return {
+            "bob": bob,
+            "sway": sway,
+            "tilt": tilt,
+            "scale_x": scale_x,
+            "scale_y": scale_y,
+            "shadow_scale": shadow_scale,
+        }
+
+    def _load_zephyr_sprite(pose, facing=1):
+        """Muat + cache sprite HD zephyr untuk (pose, arah).
+
+        Return pygame.Surface (SRCALPHA) siap blit, atau None kalau
+        aset tidak tersedia (caller harus fallback prosedural).
+        """
+        key = (pose, 1 if facing >= 0 else -1)
+        if key in _NS_zephyr._ZEPHYR_SPRITE_CACHE:
+            return _NS_zephyr._ZEPHYR_SPRITE_CACHE[key]
+        if key in _NS_zephyr._ZEPHYR_SPRITE_MISSING:
+            return None
+        path = os.path.join(_NS_zephyr._ZEPHYR_ASSET_DIR,
+                            "zephyr_%s.png" % pose)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_zephyr.ZEPHYR_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+                if key[1] < 0:
+                    surf = pygame.transform.flip(surf, True, False)
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_zephyr._ZEPHYR_SPRITE_MISSING.add(key)
+            return None
+        _NS_zephyr._ZEPHYR_SPRITE_CACHE[key] = surf
+        return surf
+
+    def _blit_zephyr_sprite(surface, pose, facing, x, foot_y,
+                            bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
+        """Blit sprite HD dengan anchor tengah-bawah di (x, foot_y).
+
+        ``scale_x`` dan ``scale_y`` dipakai oleh idle micro-motion untuk
+        memberi efek napas ringan.  Sprite cache dasar tidak pernah diubah;
+        transform hanya dibuat pada saat pose baru dirender.
+
+        Return True kalau sprite terpakai; False berarti caller harus
+        fallback ke render prosedural.
+        """
+        spr = _NS_zephyr._load_zephyr_sprite(pose, facing)
+        if spr is None:
+            return False
+
+        scale_x = max(0.90, min(1.10, float(scale_x)))
+        scale_y = max(0.90, min(1.10, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr,
+                (
+                    max(8, int(round(sw * scale_x))),
+                    max(8, int(round(sh * scale_y))),
+                ),
+            )
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
+    # HD WALK CYCLE (zephyr_walk_<0..N>.png — stride <-> plant)
+    #
+    # Kalau file cycle tidak ada, renderer ping-pong pose walk/idle.
+    # ---------------------------------------------------------------------------
+    _ZEPHYR_WALK_FRAME_COUNT = 2
+    _ZEPHYR_WALK_CACHE = {}
+    _ZEPHYR_WALK_MISSING = set()
+
+    def _load_zephyr_walk_frame(idx, facing=1):
+        """Muat + cache satu frame walk HD. None = fallback pose walk/idle."""
+        idx = int(idx) % max(1, _NS_zephyr._ZEPHYR_WALK_FRAME_COUNT)
+        key = (idx, 1 if facing >= 0 else -1)
+        if key in _NS_zephyr._ZEPHYR_WALK_CACHE:
+            return _NS_zephyr._ZEPHYR_WALK_CACHE[key]
+        if key in _NS_zephyr._ZEPHYR_WALK_MISSING:
+            return None
+        path = os.path.join(_NS_zephyr._ZEPHYR_ASSET_DIR,
+                            "zephyr_walk_%d.png" % idx)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_zephyr.ZEPHYR_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+                if key[1] < 0:
+                    surf = pygame.transform.flip(surf, True, False)
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_zephyr._ZEPHYR_WALK_MISSING.add(key)
+            return None
+        _NS_zephyr._ZEPHYR_WALK_CACHE[key] = surf
+        return surf
+
+    def _blit_zephyr_walk_frame(surface, idx, facing, x, foot_y,
+                                bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
+        spr = _NS_zephyr._load_zephyr_walk_frame(idx, facing)
+        if spr is None:
+            return False
+        scale_x = max(0.90, min(1.10, float(scale_x)))
+        scale_y = max(0.90, min(1.10, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr,
+                (
+                    max(8, int(round(sw * scale_x))),
+                    max(8, int(round(sh * scale_y))),
+                ),
+            )
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
+    # HD SWING FRAMES (multi-frame swing animation, gaya baris idle/walk/attack)
+    #
+    # assets/heroes/zephyr_swing_<0..N>.png adalah pose HD TERPISAH
+    # (staff di sisi -> diangkat -> ditusuk ke depan -> kembali). Kalau file
+    # tidak ada / gagal dimuat, renderer jatuh ke pose attack statis lalu ke
+    # render prosedural lama.
+    # ---------------------------------------------------------------------------
+    _ZEPHYR_SWING_FRAME_COUNT = 8
+    _ZEPHYR_SWING_CACHE = {}
+    _ZEPHYR_SWING_MISSING = set()
+
+    def _load_zephyr_swing_frame(idx, facing=1):
+        """Muat + cache satu frame swing HD. None = fallback pose attack."""
+        idx = int(idx) % max(1, _NS_zephyr._ZEPHYR_SWING_FRAME_COUNT)
+        key = (idx, 1 if facing >= 0 else -1)
+        if key in _NS_zephyr._ZEPHYR_SWING_CACHE:
+            return _NS_zephyr._ZEPHYR_SWING_CACHE[key]
+        if key in _NS_zephyr._ZEPHYR_SWING_MISSING:
+            return None
+        path = os.path.join(_NS_zephyr._ZEPHYR_ASSET_DIR,
+                            "zephyr_swing_%d.png" % idx)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_zephyr.ZEPHYR_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+                if key[1] < 0:
+                    surf = pygame.transform.flip(surf, True, False)
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_zephyr._ZEPHYR_SWING_MISSING.add(key)
+            return None
+        _NS_zephyr._ZEPHYR_SWING_CACHE[key] = surf
+        return surf
+
+    def _blit_zephyr_swing_frame(surface, idx, facing, x, foot_y,
+                                 bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
+        spr = _NS_zephyr._load_zephyr_swing_frame(idx, facing)
+        if spr is None:
+            return False
+        scale_x = max(0.90, min(1.10, float(scale_x)))
+        scale_y = max(0.90, min(1.10, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr,
+                (
+                    max(8, int(round(sw * scale_x))),
+                    max(8, int(round(sh * scale_y))),
+                ),
+            )
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
+    # HD SKILL FX SPRITES (Q/W/E/R - gaya yang sama dengan icon item / kastil HD)
+    #
+    # assets/heroes/zephyr_skill_<q/w/e/r>.png adalah render transparan dari
+    # efek skill Zephyr yang ber-anchor di badan (W Shadow Realm, R Bedlam).
+    # Q (Bramble Maze) & E (Casket Curse) menarget area di depan karakter,
+    # sehingga tidak dibuat sprite statis dan tetap digambar prosedural
+    # (mana pun key yang tidak punya sprite otomatis fallback prosedural).
+    # ---------------------------------------------------------------------------
+    _ZEPHYR_SKILL_CACHE = {}
+    _ZEPHYR_SKILL_MISSING = set()
+    ZEPHYR_SKILL_SPRITE_HEIGHT = 168
+
+    def _load_zephyr_skill_sprite(key):
+        """Muat + cache sprite HD efek skill untuk key q/w/e/r.
+
+        Return pygame.Surface (SRCALPHA) siap blit, atau None kalau aset
+        tidak tersedia (caller lanjut ke efek prosedural).
+        """
+        key = str(key).lower()
+        if key not in ("q", "w", "e", "r"):
+            return None
+        if key in _NS_zephyr._ZEPHYR_SKILL_CACHE:
+            return _NS_zephyr._ZEPHYR_SKILL_CACHE[key]
+        if key in _NS_zephyr._ZEPHYR_SKILL_MISSING:
+            return None
+        path = os.path.join(_NS_zephyr._ZEPHYR_ASSET_DIR,
+                            "zephyr_skill_%s.png" % key)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_zephyr.ZEPHYR_SKILL_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_zephyr._ZEPHYR_SKILL_MISSING.add(key)
+            return None
+        _NS_zephyr._ZEPHYR_SKILL_CACHE[key] = surf
+        return surf
+
+    def _blit_zephyr_skill(surface, key, x, y, alpha=255):
+        """Blit sprite HD efek skill di atas karakter (anchor tengah).
+
+        Return True kalau sprite terpakai; False berarti caller harus
+        melanjutkan ke efek prosedural.
+        """
+        spr = _NS_zephyr._load_zephyr_skill_sprite(key)
+        if spr is None:
+            return False
+        if 0 <= alpha < 255:
+            try:
+                spr = spr.copy()
+                spr.set_alpha(alpha)
+            except Exception:
+                pass
+        rect = spr.get_rect(center=(int(x), int(y - 12)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
     # HD Color Palette - Dark Willow inspired (pink/magenta fey)
     # ---------------------------------------------------------------------------
     PALETTE = {
@@ -9539,6 +9862,12 @@ class _NS_zephyr:
             if self.impact_frame >= 0:
                 elapsed = self.age - self.impact_frame
                 t = elapsed / 30.0
+                # HD base layer (icon-item style) — casket skull meledak
+                alpha = int(255 * max(0.0, min(1.0, 1.0 - t * 1.6)))
+                if alpha > 0:
+                    _NS_zephyr._blit_zephyr_skill(surface, "e",
+                                                  int(self.tx), int(self.ty - 20),
+                                                  alpha=alpha)
 
                 # Explosion star burst
                 _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_dark"], int(200 * (1 - t))),
@@ -9784,20 +10113,58 @@ class _NS_zephyr:
     # POSE MODES
     # ===================================================================
     def _draw_zephyr_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 3)
-        _NS_zephyr._draw_shadow(surface, x, y + 48)
-        _NS_zephyr._draw_floating_sparkles(surface, x, y + 35, boss.pulse)
-        _NS_zephyr._draw_zephyr_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+        # HD idle gets the same gentle float/breath as the procedural
+        # fallback.  Using the shared motion values keeps both render paths
+        # visually consistent when an asset is missing.
+        motion = _NS_zephyr._zephyr_idle_motion(
+            getattr(boss, "pulse", 0.0))
+        draw_x = int(round(x + motion["sway"]))
+        draw_y = int(round(y + motion["bob"]))
+        shadow_x = int(round(x + motion["sway"] * 0.35))
+
+        _NS_zephyr._draw_shadow(surface, shadow_x, y + 48,
+                                scale=motion["shadow_scale"])
+        _NS_zephyr._draw_floating_sparkles(
+            surface, draw_x, draw_y + 35, boss.pulse)
+
+        used = _NS_zephyr._blit_zephyr_sprite(
+            surface, "idle", boss.direction, draw_x, y + 44,
+            bob=motion["bob"], tilt=motion["tilt"],
+            scale_x=motion["scale_x"], scale_y=motion["scale_y"])
+        if used:
+            # Foreground ambient particles (bug / petals / sparkles) keep
+            # the HD cutout alive; wings & skirt are inside the sprite.
+            _NS_zephyr._draw_body_particles(
+                surface, draw_x, draw_y, boss.pulse)
+        else:
+            _NS_zephyr._draw_zephyr_body(
+                surface, draw_x, draw_y, boss.direction, boss.pulse, "idle")
 
 
     def _draw_zephyr_walk(surface, boss, x, y):
         phase = boss.pulse * 2.0
-        bob = int(abs(math.sin(phase * 1.2)) * 3)
-        sway = int(math.sin(phase) * 2)
+        stride = math.sin(phase * 1.2)
+        bob = int(abs(stride) * 4)
+        sway = int(math.sin(phase) * 3)
+        # Condong ke arah langkah, staff/bahu ikut bergoyang.
+        tilt = stride * 7
+        facing = boss.direction
+        nwalk = max(1, _NS_zephyr._ZEPHYR_WALK_FRAME_COUNT)
+        frame_idx = int((phase * 0.85) % nwalk)
         _NS_zephyr._draw_shadow(surface, x + sway, y + 48)
         _NS_zephyr._draw_floating_sparkles(surface, x + sway, y + 35, phase, trail=True,
-                                facing=boss.direction)
-        _NS_zephyr._draw_zephyr_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
+                                facing=facing)
+        used = _NS_zephyr._blit_zephyr_walk_frame(
+            surface, frame_idx, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+        if not used:
+            pose = "walk" if stride >= 0 else "idle"
+            used = _NS_zephyr._blit_zephyr_sprite(
+                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+        if used:
+            _NS_zephyr._draw_body_particles(surface, x + sway, y, phase)
+        else:
+            _NS_zephyr._draw_zephyr_body(
+                surface, x + sway, y - bob, facing, phase, "walk")
 
 
     def _draw_zephyr_attack(surface, boss, x, y):
@@ -9818,9 +10185,29 @@ class _NS_zephyr:
         recoil = int(math.sin(progress * math.pi) * 2) * -boss.direction
         _NS_zephyr._draw_shadow(surface, x + recoil, y + 48)
         _NS_zephyr._draw_floating_sparkles(surface, x + recoil, y + 35, boss.pulse, intense=True)
-        _NS_zephyr._draw_zephyr_body(surface, x + recoil, y, boss.direction, boss.pulse,
-                          "attack", progress)
-        _NS_zephyr._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
+        # Condong ke arah hadap saat menembak (rotate CCW positif)
+        tilt = -math.sin(progress * math.pi) * 5 * boss.direction
+
+        # 1) Multi-frame swing HD (kalau zephyr_swing_<N>.png ada)
+        frame_idx = int(round((max(1, _NS_zephyr._ZEPHYR_SWING_FRAME_COUNT) - 1)
+                              * progress))
+        used_swing = _NS_zephyr._blit_zephyr_swing_frame(
+            surface, frame_idx, boss.direction, x + recoil, y + 44, tilt=tilt)
+
+        if used_swing:
+            # Cast flash staff di atas sprite HD swing
+            _NS_zephyr._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
+            _NS_zephyr._draw_body_particles(surface, x + recoil, y, boss.pulse)
+        elif _NS_zephyr._blit_zephyr_sprite(surface, "attack", boss.direction,
+                                            x + recoil, y + 44, tilt=tilt):
+            # 2) Pose attack statis HD (legacy zephyr_attack.png)
+            _NS_zephyr._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
+            _NS_zephyr._draw_body_particles(surface, x + recoil, y, boss.pulse)
+        else:
+            # 3) Render prosedural lama
+            _NS_zephyr._draw_zephyr_body(surface, x + recoil, y, boss.direction,
+                              boss.pulse, "attack", progress)
+            _NS_zephyr._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
 
 
     # ===================================================================
@@ -10497,17 +10884,24 @@ class _NS_zephyr:
                           (sx, sy), max(2, 5 - i))
 
 
-    def _draw_shadow(surface, x, y):
+    def _draw_shadow(surface, x, y, scale=1.0):
         """Ground shadow."""
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
+        scale = max(0.90, min(1.10, float(scale)))
+        sw = int(100 * scale)
+        sx = int(80 * scale)
+        # Saat badan naik, bayangan menyempit sedikit; ini menjaga agar
+        # pergeseran berat tetap terasa "jejak di tanah" bukan melayang.
+        shadow = pygame.Surface((sw, 20), pygame.SRCALPHA)
         for radius in range(10, 0, -1):
             alpha = max(0, (10 - radius) * 16)
             pygame.draw.ellipse(
                 shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
+                (int((10 - radius) * scale), 10 - radius,
+                 int((80 + radius * 2) * scale), radius * 2),
             )
-        pygame.draw.ellipse(shadow, (*_NS_zephyr.PALETTE["magic_dark"], 40), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
+        pygame.draw.ellipse(shadow, (*_NS_zephyr.PALETTE["magic_dark"], 40),
+                            (int(8 * scale), 4, sx, 10))
+        surface.blit(shadow, (int(x - sw / 2), y - 10))
 
 
     def _draw_fey_silhouette_glow(surface, x, y, phase):
@@ -10633,6 +11027,12 @@ class _NS_zephyr:
         tx, ty = getattr(boss, "_bramble_origin", None) or \
             _NS_zephyr._target_position(boss, x, y)
         progress = max(0.0, min(1.0, 1 - timer / 240))
+        # HD base layer (icon-item style) di lokasi target; sprite tumbuh
+        # mengikuti progress supaya tidak "pop" begitu skill aktif.
+        alpha = int(255 * max(0.0, min(1.0, (progress - 0.15) / 0.45)))
+        if alpha > 0:
+            _NS_zephyr._blit_zephyr_skill(surface, "q", int(tx), int(ty + 30),
+                                          alpha=alpha)
 
         if progress < 0.2:
             # Growing shadow (drawn on ground above)
@@ -10740,6 +11140,8 @@ class _NS_zephyr:
         """Purple bubble prison around Zephyr - invisibility/dodge effect."""
         progress = max(0.0, min(1.0, 1 - timer / 180))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
+        # HD base layer (icon-item style) di atas karakter
+        _NS_zephyr._blit_zephyr_skill(surface, "w", x, y)
 
         # Bubble radius
         if progress < 0.15:
@@ -10855,6 +11257,8 @@ class _NS_zephyr:
     def _draw_bedlam(surface, boss, x, y, timer, phase):
         """Multiple mini duplicates spinning around Zephyr."""
         progress = max(0.0, min(1.0, 1 - timer / 240))
+        # HD base layer (icon-item style) di atas karakter
+        _NS_zephyr._blit_zephyr_skill(surface, "r", x, y)
 
         # Spawn several mini fairy silhouettes orbiting
         num_dupes = 6
