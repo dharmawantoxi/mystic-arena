@@ -3604,27 +3604,28 @@ class _NS_kaizen:
     KAIZEN_IDLE_SWAY_SPEED = 2.0 * math.pi / KAIZEN_IDLE_CYCLE
 
     def _kaizen_idle_motion(phase):
-        """Return subtle idle motion for the HD sprite and fallback renderer.
+        """Return organic idle motion for HD sprite - anti sticker.
 
-        The values are in native renderer pixels and are intentionally kept
-        small.  The renderer is also used by the hero sprite cache, so this
-        function must stay deterministic: the same pulse always produces the
-        same pose.
+        Dibuat lebih hidup seperti hero code base (grimjaw/sylara):
+        bob/sway/tilt digandakan, tambah secondary wave dengan frekuensi
+        integer (period tetap 6.0 agar cache loop mulus), squash/stretch
+        lebih terasa, shadow lebih reaktif. Tetap deterministik.
         """
         phase = float(phase) % _NS_kaizen.KAIZEN_IDLE_CYCLE
         breath = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_BREATH_SPEED - 0.45)
         breath_fine = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_BREATH_SPEED * 2.0 + 0.35)
+        breath_mid = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_BREATH_SPEED * 1.0 + 1.8)
         weight_shift = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_SWAY_SPEED + 0.60)
         weight_fine = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_SWAY_SPEED * 2.0 - 0.20)
+        weight_mid = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_SWAY_SPEED * 3.0 + 0.9)
 
-        bob = breath * 1.1 + breath_fine * 0.25
-        sway = weight_shift * 1.0 + weight_fine * 0.20
-        tilt = weight_shift * 1.1 + weight_fine * 0.20
+        bob = breath * 2.6 + breath_fine * 0.65 + weight_shift * 0.50 + breath_mid * 0.40
+        sway = weight_shift * 2.8 + weight_fine * 0.65 + breath * 0.38 + weight_mid * 0.45
+        tilt = weight_shift * 3.6 + weight_fine * 0.75 + breath * 0.45 + weight_mid * 0.55
 
-        # A tiny squash/stretch makes the breath read even at small scale.
-        scale_y = 1.0 + breath * 0.012 + breath_fine * 0.003
-        scale_x = 1.0 - breath * 0.005 - breath_fine * 0.001
-        shadow_scale = max(0.94, min(1.06, 1.0 + bob * 0.030))
+        scale_y = 1.0 + breath * 0.034 + breath_fine * 0.012 + breath_mid * 0.010
+        scale_x = 1.0 - breath * 0.020 - breath_fine * 0.006 + weight_shift * 0.014 + weight_mid * 0.007
+        shadow_scale = max(0.80, min(1.22, 1.0 + bob * 0.068 + weight_shift * 0.022))
         return {
             "bob": bob,
             "sway": sway,
@@ -3633,6 +3634,15 @@ class _NS_kaizen:
             "scale_y": scale_y,
             "shadow_scale": shadow_scale,
         }
+
+    def _kaizen_idle_fidget_frame(phase):
+        """Weight-shift nyata: pakai walk art di tengah loop idle."""
+        sample = int((float(phase) % _NS_kaizen.KAIZEN_IDLE_CYCLE) * 4.0) % 24
+        if 5 <= sample < 11:
+            return 0
+        if 11 <= sample < 17:
+            return 1
+        return None
 
     def _load_kaizen_sprite(pose, facing=1):
         """Muat + cache sprite HD kaizen untuk (pose, arah).
@@ -3671,21 +3681,16 @@ class _NS_kaizen:
 
     def _blit_kaizen_sprite(surface, pose, facing, x, foot_y,
                             bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
-        """Blit sprite HD dengan anchor tengah-bawah di (x, foot_y).
+        """Blit sprite HD Kaizen dengan integrasi tanah - anti sticker.
 
-        ``scale_x`` dan ``scale_y`` dipakai oleh idle micro-motion untuk
-        memberi efek napas ringan.  Sprite cache dasar tidak pernah diubah;
-        transform hanya dibuat pada saat pose baru dirender.
-
-        Return True kalau sprite terpakai; False berarti caller harus
-        fallback ke render prosedural.
+        Tambah soft drop-shadow di belakang sprite dan jaga anchor kaki.
         """
         spr = _NS_kaizen._load_kaizen_sprite(pose, facing)
         if spr is None:
             return False
 
-        scale_x = max(0.90, min(1.10, float(scale_x)))
-        scale_y = max(0.90, min(1.10, float(scale_y)))
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
         if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
             sw, sh = spr.get_size()
             spr = pygame.transform.smoothscale(
@@ -3697,6 +3702,15 @@ class _NS_kaizen:
             )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
+        # Soft drop-shadow behind to avoid flat sticker look
+        try:
+            shadow = spr.copy()
+            shadow.fill((0, 0, 0, 70), special_flags=pygame.BLEND_RGBA_MULT)
+            shadow.set_alpha(85)
+            rect_s = shadow.get_rect(midbottom=(int(x + 1), int(foot_y + bob + 2)))
+            surface.blit(shadow, rect_s)
+        except Exception:
+            pass
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
         surface.blit(spr, rect)
         return True
@@ -3747,8 +3761,8 @@ class _NS_kaizen:
         spr = _NS_kaizen._load_kaizen_walk_frame(idx, facing)
         if spr is None:
             return False
-        scale_x = max(0.90, min(1.10, float(scale_x)))
-        scale_y = max(0.90, min(1.10, float(scale_y)))
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
         if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
             sw, sh = spr.get_size()
             spr = pygame.transform.smoothscale(
@@ -3760,9 +3774,80 @@ class _NS_kaizen:
             )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
+        try:
+            shadow = spr.copy()
+            shadow.fill((0, 0, 0, 65), special_flags=pygame.BLEND_RGBA_MULT)
+            shadow.set_alpha(80)
+            rect_s = shadow.get_rect(midbottom=(int(x + 1), int(foot_y + bob + 2)))
+            surface.blit(shadow, rect_s)
+        except Exception:
+            pass
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
         surface.blit(spr, rect)
         return True
+
+    def _blit_kaizen_walk_blended(surface, facing, x, foot_y, blend, bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
+        """Blend walk_0 and walk_1 smoothly - anti kaku 2-frame snap."""
+        blend = max(0.0, min(1.0, float(blend)))
+        s0 = _NS_kaizen._load_kaizen_walk_frame(0, facing)
+        s1 = _NS_kaizen._load_kaizen_walk_frame(1, facing)
+        if s0 is None and s1 is None:
+            return False
+        if s0 is None:
+            return _NS_kaizen._blit_kaizen_walk_frame(surface, 1, facing, x, foot_y, bob, tilt, scale_x, scale_y)
+        if s1 is None:
+            return _NS_kaizen._blit_kaizen_walk_frame(surface, 0, facing, x, foot_y, bob, tilt, scale_x, scale_y)
+
+        # Scale both
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            for s in (s0, s1):
+                sw, sh = s.get_size()
+                ns = pygame.transform.smoothscale(s, (max(8, int(round(sw * scale_x))), max(8, int(round(sh * scale_y)))))
+                if s is s0:
+                    s0 = ns
+                else:
+                    s1 = ns
+
+        if tilt:
+            s0 = pygame.transform.rotate(s0, tilt)
+            s1 = pygame.transform.rotate(s1, tilt)
+
+        # Blend
+        try:
+            # Create blended surface
+            bw = max(s0.get_width(), s1.get_width())
+            bh = max(s0.get_height(), s1.get_height())
+            blended = pygame.Surface((bw, bh), pygame.SRCALPHA)
+            # Draw s0 with (1-blend) alpha
+            tmp0 = s0.copy()
+            tmp0.set_alpha(int(255 * (1.0 - blend)))
+            tmp1 = s1.copy()
+            tmp1.set_alpha(int(255 * blend))
+            # Anchor both to center-bottom of blended canvas
+            r0 = tmp0.get_rect(midbottom=(bw // 2, bh))
+            r1 = tmp1.get_rect(midbottom=(bw // 2, bh))
+            blended.blit(tmp0, r0)
+            blended.blit(tmp1, r1)
+
+            # Drop shadow behind blended
+            try:
+                shad = blended.copy()
+                shad.fill((0, 0, 0, 65), special_flags=pygame.BLEND_RGBA_MULT)
+                shad.set_alpha(80)
+                rs = shad.get_rect(midbottom=(int(x + 1), int(foot_y + bob + 2)))
+                surface.blit(shad, rs)
+            except Exception:
+                pass
+
+            rect = blended.get_rect(midbottom=(int(x), int(foot_y + bob)))
+            surface.blit(blended, rect)
+            return True
+        except Exception:
+            # Fallback to hard frame
+            idx = 0 if blend < 0.5 else 1
+            return _NS_kaizen._blit_kaizen_walk_frame(surface, idx, facing, x, foot_y, bob, tilt, scale_x, scale_y)
 
     # ---------------------------------------------------------------------------
     # HD SWING FRAMES (multi-frame iai slash, gaya baris idle/walk/attack)
@@ -3813,8 +3898,8 @@ class _NS_kaizen:
         spr = _NS_kaizen._load_kaizen_swing_frame(idx, facing)
         if spr is None:
             return False
-        scale_x = max(0.90, min(1.10, float(scale_x)))
-        scale_y = max(0.90, min(1.10, float(scale_y)))
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
         if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
             sw, sh = spr.get_size()
             spr = pygame.transform.smoothscale(
@@ -3826,6 +3911,14 @@ class _NS_kaizen:
             )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
+        try:
+            shadow = spr.copy()
+            shadow.fill((0, 0, 0, 75), special_flags=pygame.BLEND_RGBA_MULT)
+            shadow.set_alpha(90)
+            rect_s = shadow.get_rect(midbottom=(int(x + 2), int(foot_y + bob + 3)))
+            surface.blit(shadow, rect_s)
+        except Exception:
+            pass
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
         surface.blit(spr, rect)
         return True
@@ -3898,28 +3991,48 @@ class _NS_kaizen:
         return True
 
     def _draw_kaizen_slash_flash(surface, x, y, facing, progress):
-        """Kilatan slash kecil di depan Kaizen saat swing HD memukul.
+        """Kilatan iai slash organik di depan Kaizen - anti kaku.
 
-        Peran yang sama dengan _draw_cast_flash milik Zephyr: memberi
-        feedback "impact" di atas sprite HD tanpa menimpa gambarnya.
+        Dibuat seperti grimjaw fire slash: multi-layer crescent + core
+        glow + sparkles, timing ikut progress serangan.
         """
-        if not (0.30 < progress < 0.62):
+        if not (0.22 < progress < 0.75):
             return
-        t = (progress - 0.30) / 0.32
-        alpha = int(200 * math.sin(t * math.pi))
-        if alpha <= 8:
+        t = (progress - 0.22) / 0.53
+        alpha_base = math.sin(t * math.pi)
+        if alpha_base <= 0.05:
             return
-        fx = x + facing * 30
-        fy = y - 14
-        _NS_kaizen._draw_wind_arc(surface, fx, fy, 16 + t * 10,
-                                  -0.9 if facing >= 0 else math.pi + 0.9,
-                                  0.9 if facing >= 0 else math.pi - 0.9,
-                                  (*_NS_kaizen.PALETTE["wind_white"], alpha),
-                                  width=2, segments=10)
-        _NS_kaizen._aacircle(surface,
-                             (*_NS_kaizen.PALETTE["wind_bright"], alpha // 2),
-                             (int(fx + facing * 6), int(fy - 4)),
-                             int(3 + t * 3))
+
+        fx = x + facing * 32
+        fy = y - 12 - int(math.sin(progress * math.pi) * 3)
+
+        # Multi-layer wind crescent - like code base slash
+        for i in range(14):
+            arc_t = i / 13.0
+            ang = -1.1 + arc_t * 2.2
+            if facing < 0:
+                ang = math.pi - ang
+            r = 22 + t * 18 + math.sin(arc_t * math.pi) * 6
+            a = int((220 - i * 10) * alpha_base)
+            if a <= 0:
+                continue
+            px = fx + math.cos(ang) * r * facing
+            py = fy + math.sin(ang) * r * 0.7
+            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_dark"], a // 3), (int(px), int(py)), 5)
+            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_mid"], a // 2), (int(px), int(py)), 3)
+            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_bright"], a), (int(px), int(py)), 2)
+            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_white"], a), (int(px), int(py)), 1)
+
+        # Core impact glow at peak
+        if 0.35 < progress < 0.65:
+            impact_t = (progress - 0.35) / 0.30
+            impact_alpha = int(240 * math.sin(impact_t * math.pi))
+            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_bright"], impact_alpha // 2),
+                                 (int(fx + facing * 8), int(fy - 2)), int(6 + impact_t * 6))
+            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_white"], impact_alpha),
+                                 (int(fx + facing * 8), int(fy - 2)), int(3 + impact_t * 3))
+            _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["white"],
+                                 (int(fx + facing * 8), int(fy - 2)), 1)
 
     # ---------------------------------------------------------------------------
     # HD Color Palette - Yasuo inspired
@@ -4361,10 +4474,30 @@ class _NS_kaizen:
     # ===================================================================
     # POSE MODES
     # ===================================================================
+    def _draw_kaizen_ground_contact(surface, cx, foot_y, phase, facing=1):
+        """Blend Kaizen's feet into ground - anti sticker."""
+        phase = float(phase)
+        foot_y = int(round(foot_y))
+        # Contact shadow - thin dark line under feet
+        contact = pygame.Surface((96, 10), pygame.SRCALPHA)
+        pressure = math.sin(phase * _NS_kaizen.KAIZEN_IDLE_BREATH_SPEED - 0.45)
+        shadow_alpha = max(32, min(85, int(58 + pressure * 14)))
+        pygame.draw.ellipse(contact, (10, 12, 20, shadow_alpha), (6, 1, 84, 7))
+        pygame.draw.ellipse(contact, (40, 60, 110, 28), (10, 0, 76, 6), 1)
+        surface.blit(contact, (int(cx - 48), foot_y - 2))
+
+        # Tiny wind puffs at feet on weight shift
+        for i, side in enumerate((-1, 1, -1)):
+            wave = (math.sin(phase * _NS_kaizen.KAIZEN_IDLE_BREATH_SPEED + i * 1.7 + 0.6) + 1.0) * 0.5
+            drift = 2.0 + wave * 5.0
+            px = int(round(cx + side * (10.0 + drift)))
+            py = int(round(foot_y - 1.0 - wave * 3.0 + math.sin(phase * 0.9 + i) * 0.5))
+            alpha = int(55.0 * (1.0 - wave))
+            if alpha > 8:
+                _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_mid"], alpha), (px, py), 1 + (i % 2))
+
     def _draw_kaizen_idle(surface, boss, x, y):
-        # HD idle gets the same gentle breath/weight-shift as the
-        # procedural fallback.  Using the shared motion values keeps both
-        # render paths visually consistent when an asset is missing.
+        # Organic idle like hero code base: breath + weight shift + fidget + secondary scarf
         motion = _NS_kaizen._kaizen_idle_motion(
             getattr(boss, "pulse", 0.0))
         draw_x = int(round(x + motion["sway"]))
@@ -4375,51 +4508,71 @@ class _NS_kaizen:
                                 scale=motion["shadow_scale"])
         _NS_kaizen._draw_floating_wind(surface, draw_x, y + 35, boss.pulse)
 
-        used = _NS_kaizen._blit_kaizen_sprite(
-            surface, "idle", boss.direction, draw_x, y + 44,
-            bob=motion["bob"], tilt=motion["tilt"],
-            scale_x=motion["scale_x"], scale_y=motion["scale_y"])
+        # Scarf behind BEFORE sprite - secondary motion even with HD
+        _NS_kaizen._draw_scarf_back(surface, draw_x, draw_y, boss.direction, boss.pulse, "idle")
+
+        # Fidget: occasional real foot shift using walk frames - breaks sticker wobble
+        fidget = _NS_kaizen._kaizen_idle_fidget_frame(boss.pulse)
+        used = False
+        if fidget is not None:
+            used = _NS_kaizen._blit_kaizen_walk_frame(
+                surface, fidget, boss.direction, draw_x, y + 44,
+                bob=motion["bob"], tilt=motion["tilt"],
+                scale_x=motion["scale_x"], scale_y=motion["scale_y"])
+        if not used:
+            used = _NS_kaizen._blit_kaizen_sprite(
+                surface, "idle", boss.direction, draw_x, y + 44,
+                bob=motion["bob"], tilt=motion["tilt"],
+                scale_x=motion["scale_x"], scale_y=motion["scale_y"])
         if used:
-            # Ambient wind particles keep the HD cutout alive; scarf &
-            # ponytail motion are already inside the sprite.
-            _NS_kaizen._draw_body_particles(
-                surface, draw_x, draw_y, boss.pulse)
+            _NS_kaizen._draw_scarf_front(surface, draw_x, draw_y - 2, boss.direction, boss.pulse)
+            _NS_kaizen._draw_body_particles(surface, draw_x, draw_y, boss.pulse)
         else:
             _NS_kaizen._draw_kaizen_body(
                 surface, draw_x, draw_y, boss.direction, boss.pulse, "idle")
+
+        _NS_kaizen._draw_kaizen_ground_contact(
+            surface, draw_x, y + 44 + motion["bob"], boss.pulse, boss.direction)
 
 
     def _draw_kaizen_walk(surface, boss, x, y):
         phase = boss.pulse * 2.0
         stride = math.sin(phase * 1.2)
-        bob = int(abs(stride) * 3)
-        sway = int(math.sin(phase) * 2)
-        # Condong ke arah langkah, scarf/bahu ikut bergoyang.
-        tilt = stride * 5
+        # More pronounced walk bob like grimjaw/sylara
+        bob = int(abs(stride) * 5.5 + math.sin(phase * 2.4) * 0.8)
+        sway = int(math.sin(phase) * 3.2 + math.sin(phase * 0.5) * 0.8)
+        tilt = stride * 8.5 + math.sin(phase * 0.7) * 1.2
+        plant_t = abs(stride)
+        scale_y = 1.0 - plant_t * 0.045 + math.sin(phase * 1.2) * 0.015
+        scale_x = 1.0 + plant_t * 0.035 - math.sin(phase * 1.2) * 0.010
+        shadow_squash = 1.0 + plant_t * 0.12
         facing = boss.direction
-        nwalk = max(1, _NS_kaizen._KAIZEN_WALK_FRAME_COUNT)
-        frame_idx = int((phase * 0.85) % nwalk)
-        _NS_kaizen._draw_shadow(surface, x + sway, y + 48)
-        _NS_kaizen._draw_floating_wind(surface, x + sway, y + 35, phase, trail=True,
-                           facing=facing)
-        used = _NS_kaizen._blit_kaizen_walk_frame(
-            surface, frame_idx, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+        # Blend factor 0..1 for smooth walk transition (not hard snap)
+        blend = (stride + 1.0) * 0.5
+        _NS_kaizen._draw_shadow(surface, x + sway, y + 48, scale=shadow_squash)
+        _NS_kaizen._draw_floating_wind(surface, x + sway, y + 35, phase, trail=True, facing=facing)
+        _NS_kaizen._draw_scarf_back(surface, x + sway, y - bob, facing, phase, "walk")
+        used = _NS_kaizen._blit_kaizen_walk_blended(
+            surface, facing, x + sway, y + 44, blend, bob=-bob, tilt=tilt,
+            scale_x=scale_x, scale_y=scale_y)
         if not used:
             pose = "walk" if stride >= 0 else "idle"
             used = _NS_kaizen._blit_kaizen_sprite(
-                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt,
+                scale_x=scale_x, scale_y=scale_y)
         if used:
-            _NS_kaizen._draw_body_particles(surface, x + sway, y, phase)
+            _NS_kaizen._draw_scarf_front(surface, x + sway, y - bob - 2, facing, phase)
+            _NS_kaizen._draw_body_particles(surface, x + sway, y - bob, phase)
         else:
-            _NS_kaizen._draw_kaizen_body(
-                surface, x + sway, y - bob, facing, phase, "walk")
+            _NS_kaizen._draw_kaizen_body(surface, x + sway, y - bob, facing, phase, "walk")
+        _NS_kaizen._draw_kaizen_ground_contact(
+            surface, x + sway, y + 44 - bob, phase, facing)
 
 
     def _draw_kaizen_attack(surface, boss, x, y):
         progress = getattr(boss, "_kz_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
 
-        # Spawn wind slash projectile at mid-swing (ranged variant)
         range_val = getattr(boss, "range", 150)
         is_ranged = range_val > 80
 
@@ -4430,34 +4583,50 @@ class _NS_kaizen:
             if progress < 0.15 or progress > 0.9:
                 boss._kz_proj_spawned = False
 
-        # Slight step forward during swing
-        step = int(math.sin(progress * math.pi) * 3) * boss.direction
-        _NS_kaizen._draw_shadow(surface, x + step, y + 48)
-        _NS_kaizen._draw_floating_wind(surface, x + step, y + 35, boss.pulse, intense=True)
-        # Condong ke arah slash saat mengayun (rotate CCW positif)
-        tilt = -math.sin(progress * math.pi) * 5 * boss.direction
+        # Dramatic lunge like grimjaw: windup back, then thrust forward
+        if progress < 0.25:
+            p = progress / 0.25
+            step = int(-p * 4) * boss.direction
+            scale_y = 1.0 + p * 0.04
+            scale_x = 1.0 - p * 0.03
+            shadow_scale = 1.0 - p * 0.15
+        elif progress < 0.55:
+            p = (progress - 0.25) / 0.30
+            ease = p * p * (3 - 2 * p)
+            step = int((-4 + ease * 14)) * boss.direction
+            scale_y = 1.04 - ease * 0.08
+            scale_x = 0.97 + ease * 0.10
+            shadow_scale = 0.85 + ease * 0.35
+        else:
+            p = (progress - 0.55) / 0.45
+            ease = 1 - (1 - p) * (1 - p)
+            step = int((10 - ease * 10)) * boss.direction
+            scale_y = 0.96 + ease * 0.04
+            scale_x = 1.07 - ease * 0.07
+            shadow_scale = 1.20 - ease * 0.20
 
-        # 1) Multi-frame iai slash HD (kalau kaizen_swing_<N>.png ada)
-        frame_idx = int(round((max(1, _NS_kaizen._KAIZEN_SWING_FRAME_COUNT) - 1)
-                              * progress))
+        _NS_kaizen._draw_shadow(surface, x + step, y + 48, scale=shadow_scale)
+        _NS_kaizen._draw_floating_wind(surface, x + step, y + 35, boss.pulse, intense=True)
+        tilt = -math.sin(progress * math.pi) * 12 * boss.direction + math.sin(progress * math.pi * 2) * 2
+
+        frame_idx = int(round((max(1, _NS_kaizen._KAIZEN_SWING_FRAME_COUNT) - 1) * progress))
         used_swing = _NS_kaizen._blit_kaizen_swing_frame(
-            surface, frame_idx, boss.direction, x + step, y + 44, tilt=tilt)
+            surface, frame_idx, boss.direction, x + step, y + 44, tilt=tilt,
+            scale_x=scale_x, scale_y=scale_y)
 
         if used_swing:
-            # Kilatan slash di atas sprite HD swing
-            _NS_kaizen._draw_kaizen_slash_flash(
-                surface, x + step, y, boss.direction, progress)
+            _NS_kaizen._draw_kaizen_slash_flash(surface, x + step, y, boss.direction, progress)
             _NS_kaizen._draw_body_particles(surface, x + step, y, boss.pulse)
         elif _NS_kaizen._blit_kaizen_sprite(surface, "attack", boss.direction,
-                                            x + step, y + 44, tilt=tilt):
-            # 2) Pose attack statis HD (legacy kaizen_attack.png)
-            _NS_kaizen._draw_kaizen_slash_flash(
-                surface, x + step, y, boss.direction, progress)
+                                            x + step, y + 44, tilt=tilt,
+                                            scale_x=scale_x, scale_y=scale_y):
+            _NS_kaizen._draw_kaizen_slash_flash(surface, x + step, y, boss.direction, progress)
             _NS_kaizen._draw_body_particles(surface, x + step, y, boss.pulse)
         else:
-            # 3) Render prosedural lama
-            _NS_kaizen._draw_kaizen_body(surface, x + step, y, boss.direction,
-                              boss.pulse, "attack", progress)
+            _NS_kaizen._draw_kaizen_body(surface, x + step, y, boss.direction, boss.pulse, "attack", progress)
+
+        _NS_kaizen._draw_kaizen_ground_contact(
+            surface, x + step, y + 44, boss.pulse, boss.direction)
 
 
     # ===================================================================
@@ -5701,31 +5870,26 @@ class _NS_thorne:
     THORNE_IDLE_SWAY_SPEED = 2.0 * math.pi / THORNE_IDLE_CYCLE
 
     def _thorne_idle_motion(phase):
-        """Return subtle idle motion for the HD sprite and fallback renderer.
+        """Return organic idle motion for HD bruiser - anti sticker.
 
-        The values are in native renderer pixels and are intentionally kept
-        below two pixels for position changes.  The renderer is also used by
-        the hero sprite cache, so this function must stay deterministic: the
-        same pulse always produces the same pose.
+        Thorne berat: bob dalam, sway lebar, tilt menjual massa. Semua
+        frekuensi integer agar loop 6.0 mulus dengan cache 24 fase.
         """
         phase = float(phase) % _NS_thorne.THORNE_IDLE_CYCLE
         breath = math.sin(phase * _NS_thorne.THORNE_IDLE_BREATH_SPEED - 0.45)
         breath_fine = math.sin(phase * _NS_thorne.THORNE_IDLE_BREATH_SPEED * 2.0 + 0.35)
+        breath_mid = math.sin(phase * _NS_thorne.THORNE_IDLE_BREATH_SPEED * 1.0 + 1.1)
         weight_shift = math.sin(phase * _NS_thorne.THORNE_IDLE_SWAY_SPEED + 0.60)
         weight_fine = math.sin(phase * _NS_thorne.THORNE_IDLE_SWAY_SPEED * 2.0 - 0.20)
+        weight_mid = math.sin(phase * _NS_thorne.THORNE_IDLE_SWAY_SPEED * 3.0 + 0.8)
 
-        bob = breath * 1.15 + breath_fine * 0.25
-        sway = weight_shift * 1.25 + weight_fine * 0.20
-        tilt = weight_shift * 1.35 + weight_fine * 0.20
+        bob = breath * 2.8 + breath_fine * 0.75 + weight_shift * 0.55 + breath_mid * 0.45
+        sway = weight_shift * 3.0 + weight_fine * 0.70 + breath * 0.45 + weight_mid * 0.60
+        tilt = weight_shift * 4.2 + weight_fine * 0.80 + breath * 0.55 + weight_mid * 0.75
 
-        # A tiny squash/stretch makes the breath read even when the sprite is
-        # viewed at the small in-game scale.  Keep the feet anchored below.
-        scale_y = 1.0 + breath * 0.014 + breath_fine * 0.003
-        scale_x = 1.0 - breath * 0.006 - breath_fine * 0.001
-
-        # When the body rises, its contact shadow narrows slightly; this keeps
-        # the weight shift grounded rather than looking like a hover animation.
-        shadow_scale = max(0.94, min(1.06, 1.0 + bob * 0.035))
+        scale_y = 1.0 + breath * 0.038 + breath_fine * 0.014 + breath_mid * 0.012
+        scale_x = 1.0 - breath * 0.022 - breath_fine * 0.007 + weight_shift * 0.016 + weight_mid * 0.009
+        shadow_scale = max(0.78, min(1.24, 1.0 + bob * 0.072 + weight_shift * 0.028))
         return {
             "bob": bob,
             "sway": sway,
@@ -5787,21 +5951,13 @@ class _NS_thorne:
 
     def _blit_thorne_sprite(surface, pose, facing, x, foot_y,
                             bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
-        """Blit sprite HD dengan anchor tengah-bawah di (x, foot_y).
-
-        ``scale_x`` dan ``scale_y`` dipakai oleh idle micro-motion untuk
-        memberi efek napas ringan.  Sprite cache dasar tidak pernah diubah;
-        transform hanya dibuat pada saat pose baru dirender.
-
-        Return True kalau sprite terpakai; False berarti caller harus
-        fallback ke render prosedural.
-        """
+        """Blit sprite HD Thorne dengan integrasi tanah - anti sticker."""
         spr = _NS_thorne._load_thorne_sprite(pose, facing)
         if spr is None:
             return False
 
-        scale_x = max(0.90, min(1.10, float(scale_x)))
-        scale_y = max(0.90, min(1.10, float(scale_y)))
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
         if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
             sw, sh = spr.get_size()
             spr = pygame.transform.smoothscale(
@@ -5813,6 +5969,14 @@ class _NS_thorne:
             )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
+        try:
+            shadow = spr.copy()
+            shadow.fill((0, 0, 0, 70), special_flags=pygame.BLEND_RGBA_MULT)
+            shadow.set_alpha(85)
+            rect_s = shadow.get_rect(midbottom=(int(x + 1), int(foot_y + bob + 2)))
+            surface.blit(shadow, rect_s)
+        except Exception:
+            pass
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
         surface.blit(spr, rect)
         return True
@@ -5863,8 +6027,8 @@ class _NS_thorne:
         spr = _NS_thorne._load_thorne_walk_frame(idx, facing)
         if spr is None:
             return False
-        scale_x = max(0.90, min(1.10, float(scale_x)))
-        scale_y = max(0.90, min(1.10, float(scale_y)))
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
         if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
             sw, sh = spr.get_size()
             spr = pygame.transform.smoothscale(
@@ -5876,9 +6040,69 @@ class _NS_thorne:
             )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
+        try:
+            shadow = spr.copy()
+            shadow.fill((0, 0, 0, 65), special_flags=pygame.BLEND_RGBA_MULT)
+            shadow.set_alpha(80)
+            rect_s = shadow.get_rect(midbottom=(int(x + 1), int(foot_y + bob + 2)))
+            surface.blit(shadow, rect_s)
+        except Exception:
+            pass
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
         surface.blit(spr, rect)
         return True
+
+    def _blit_thorne_walk_blended(surface, facing, x, foot_y, blend, bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
+        """Blend walk frames smoothly - anti 2-frame kaku."""
+        blend = max(0.0, min(1.0, float(blend)))
+        s0 = _NS_thorne._load_thorne_walk_frame(0, facing)
+        s1 = _NS_thorne._load_thorne_walk_frame(1, facing)
+        if s0 is None and s1 is None:
+            return False
+        if s0 is None:
+            return _NS_thorne._blit_thorne_walk_frame(surface, 1, facing, x, foot_y, bob, tilt, scale_x, scale_y)
+        if s1 is None:
+            return _NS_thorne._blit_thorne_walk_frame(surface, 0, facing, x, foot_y, bob, tilt, scale_x, scale_y)
+
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            for s in (s0, s1):
+                sw, sh = s.get_size()
+                ns = pygame.transform.smoothscale(s, (max(8, int(round(sw * scale_x))), max(8, int(round(sh * scale_y)))))
+                if s is s0:
+                    s0 = ns
+                else:
+                    s1 = ns
+        if tilt:
+            s0 = pygame.transform.rotate(s0, tilt)
+            s1 = pygame.transform.rotate(s1, tilt)
+        try:
+            bw = max(s0.get_width(), s1.get_width())
+            bh = max(s0.get_height(), s1.get_height())
+            blended = pygame.Surface((bw, bh), pygame.SRCALPHA)
+            tmp0 = s0.copy()
+            tmp0.set_alpha(int(255 * (1.0 - blend)))
+            tmp1 = s1.copy()
+            tmp1.set_alpha(int(255 * blend))
+            r0 = tmp0.get_rect(midbottom=(bw // 2, bh))
+            r1 = tmp1.get_rect(midbottom=(bw // 2, bh))
+            blended.blit(tmp0, r0)
+            blended.blit(tmp1, r1)
+            try:
+                shad = blended.copy()
+                shad.fill((0, 0, 0, 65), special_flags=pygame.BLEND_RGBA_MULT)
+                shad.set_alpha(80)
+                rs = shad.get_rect(midbottom=(int(x + 1), int(foot_y + bob + 2)))
+                surface.blit(shad, rs)
+            except Exception:
+                pass
+            rect = blended.get_rect(midbottom=(int(x), int(foot_y + bob)))
+            surface.blit(blended, rect)
+            return True
+        except Exception:
+            idx = 0 if blend < 0.5 else 1
+            return _NS_thorne._blit_thorne_walk_frame(surface, idx, facing, x, foot_y, bob, tilt, scale_x, scale_y)
 
     # ---------------------------------------------------------------------------
     # HD SWING FRAMES (multi-frame swing animation, gaya baris idle/walk/attack)
@@ -5929,17 +6153,32 @@ class _NS_thorne:
         return surf
 
     def _blit_thorne_swing_frame(surface, idx, facing, x, foot_y,
-                                 bob=0, tilt=0.0):
-        """Blit satu frame swing HD dengan anchor tengah-bawah di (x, foot_y).
-
-        Return True kalau frame terpakai; False berarti caller harus
-        fallback ke pose attack statis / prosedural.
-        """
+                                 bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
+        """Blit swing HD Thorne dengan squash/stretch - anti kaku."""
         spr = _NS_thorne._load_thorne_swing_frame(idx, facing)
         if spr is None:
             return False
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr,
+                (
+                    max(8, int(round(sw * scale_x))),
+                    max(8, int(round(sh * scale_y))),
+                ),
+            )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
+        try:
+            shadow = spr.copy()
+            shadow.fill((0, 0, 0, 75), special_flags=pygame.BLEND_RGBA_MULT)
+            shadow.set_alpha(90)
+            rect_s = shadow.get_rect(midbottom=(int(x + 2), int(foot_y + bob + 3)))
+            surface.blit(shadow, rect_s)
+        except Exception:
+            pass
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
         surface.blit(spr, rect)
         return True
@@ -6642,30 +6881,30 @@ class _NS_thorne:
     def _draw_thorne_walk(surface, boss, x, y, warpath=False):
         phase = boss.pulse * 2.0
         stride = math.sin(phase * 1.2)
-        bob = int(abs(stride) * 5)
-        sway = int(math.sin(phase) * 3)
-        # Condong ke langkah, club/bahu ikut bergoyang.
-        tilt = stride * 8
+        bob = int(abs(stride) * 7.5 + math.sin(phase * 2.4) * 1.0)
+        sway = int(math.sin(phase) * 4.0 + math.sin(phase * 0.6) * 1.0)
+        tilt = stride * 11 + math.sin(phase * 0.8) * 1.5
+        plant_t = abs(stride)
+        scale_y = 1.0 - plant_t * 0.055 + math.sin(phase * 1.2) * 0.018
+        scale_x = 1.0 + plant_t * 0.045 - math.sin(phase * 1.2) * 0.012
+        shadow_squash = 1.0 + plant_t * 0.18
         facing = boss.direction
-        nwalk = max(1, _NS_thorne._THORNE_WALK_FRAME_COUNT)
-        frame_idx = int((phase * 0.85) % nwalk)
-        _NS_thorne._draw_shadow(surface, x + sway, y + 48)
-        _NS_thorne._draw_floating_dust(surface, x + sway, y + 35, phase, trail=True,
-                           facing=facing, warpath=warpath)
-        used = _NS_thorne._blit_thorne_walk_frame(
-            surface, frame_idx, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+        blend = (stride + 1.0) * 0.5
+        _NS_thorne._draw_shadow(surface, x + sway, y + 48, scale=shadow_squash)
+        _NS_thorne._draw_floating_dust(surface, x + sway, y + 35, phase, trail=True, facing=facing, warpath=warpath)
+        used = _NS_thorne._blit_thorne_walk_blended(
+            surface, facing, x + sway, y + 44, blend, bob=-bob, tilt=tilt,
+            scale_x=scale_x, scale_y=scale_y)
         if not used:
             pose = "walk" if stride >= 0 else "idle"
             used = _NS_thorne._blit_thorne_sprite(
-                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt,
+                scale_x=scale_x, scale_y=scale_y)
         if used:
-            _NS_thorne._draw_body_particles(surface, x + sway, y, phase,
-                                            warpath=warpath)
+            _NS_thorne._draw_body_particles(surface, x + sway, y - bob, phase, warpath=warpath)
         else:
-            _NS_thorne._draw_thorne_body(surface, x + sway, y - bob,
-                              facing, phase, "walk", warpath=warpath)
-        _NS_thorne._draw_thorne_ground_contact(
-            surface, x + sway, y + 44 - bob, phase, facing)
+            _NS_thorne._draw_thorne_body(surface, x + sway, y - bob, facing, phase, "walk", warpath=warpath)
+        _NS_thorne._draw_thorne_ground_contact(surface, x + sway, y + 44 - bob, phase, facing)
 
 
     def _swing_angle(progress):
@@ -6687,83 +6926,99 @@ class _NS_thorne:
         progress = getattr(boss, "_th_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
 
-        # Slight step forward during swing
-        step = int(math.sin(progress * math.pi) * 3) * boss.direction
-        _NS_thorne._draw_shadow(surface, x + step, y + 48)
-        _NS_thorne._draw_floating_dust(surface, x + step, y + 35, boss.pulse, intense=True,
-                           warpath=warpath)
-        # Condong ke arah hadap saat mengayun (rotate CCW positif)
-        tilt = -math.sin(progress * math.pi) * 6 * boss.direction
+        # Dramatic attack like grimjaw - windup, lunge, recovery with squash
+        if progress < 0.25:
+            p = progress / 0.25
+            step = int(-p * 5) * boss.direction
+            scale_y = 1.0 + p * 0.05
+            scale_x = 1.0 - p * 0.04
+            shadow_scale = 1.0 - p * 0.18
+        elif progress < 0.60:
+            p = (progress - 0.25) / 0.35
+            ease = p * p * (3 - 2 * p)
+            step = int((-5 + ease * 16)) * boss.direction
+            scale_y = 1.05 - ease * 0.10
+            scale_x = 0.96 + ease * 0.12
+            shadow_scale = 0.82 + ease * 0.45
+        else:
+            p = (progress - 0.60) / 0.40
+            ease = 1 - (1 - p) * (1 - p)
+            step = int((11 - ease * 11)) * boss.direction
+            scale_y = 0.95 + ease * 0.05
+            scale_x = 1.08 - ease * 0.08
+            shadow_scale = 1.27 - ease * 0.27
 
-        # 1) Multi-frame swing HD (kalau thorne_swing_<N>.png ada)
-        frame_idx = int(round((max(1, _NS_thorne._THORNE_SWING_FRAME_COUNT) - 1)
-                              * progress))
+        _NS_thorne._draw_shadow(surface, x + step, y + 48, scale=shadow_scale)
+        _NS_thorne._draw_floating_dust(surface, x + step, y + 35, boss.pulse, intense=True, warpath=warpath)
+        tilt = -math.sin(progress * math.pi) * 14 * boss.direction + math.sin(progress * math.pi * 2) * 2.5
+
+        frame_idx = int(round((max(1, _NS_thorne._THORNE_SWING_FRAME_COUNT) - 1) * progress))
         used_swing = _NS_thorne._blit_thorne_swing_frame(
-            surface, frame_idx, boss.direction, x + step, y + 44, tilt=tilt)
+            surface, frame_idx, boss.direction, x + step, y + 44, tilt=tilt,
+            scale_x=scale_x, scale_y=scale_y)
 
         if used_swing:
-            # Motion trail ayunan club di atas sprite HD swing
-            _NS_thorne._draw_thorne_swing_arc(surface, x + step, y,
-                                              boss.direction, progress)
-            _NS_thorne._draw_body_particles(surface, x + step, y, boss.pulse,
-                                            warpath=warpath)
+            _NS_thorne._draw_thorne_swing_arc(surface, x + step, y, boss.direction, progress)
+            _NS_thorne._draw_body_particles(surface, x + step, y, boss.pulse, warpath=warpath)
         elif _NS_thorne._blit_thorne_sprite(surface, "attack", boss.direction,
-                                            x + step, y + 44, tilt=tilt):
-            # 2) Pose attack statis HD (legacy thorne_attack.png)
-            _NS_thorne._draw_thorne_swing_arc(surface, x + step, y,
-                                              boss.direction, progress)
-            _NS_thorne._draw_body_particles(surface, x + step, y, boss.pulse,
-                                            warpath=warpath)
+                                            x + step, y + 44, tilt=tilt,
+                                            scale_x=scale_x, scale_y=scale_y):
+            _NS_thorne._draw_thorne_swing_arc(surface, x + step, y, boss.direction, progress)
+            _NS_thorne._draw_body_particles(surface, x + step, y, boss.pulse, warpath=warpath)
         else:
-            # 3) Render prosedural lama
-            _NS_thorne._draw_thorne_body(surface, x + step, y, boss.direction,
-                              boss.pulse, "attack", progress, warpath=warpath)
+            _NS_thorne._draw_thorne_body(surface, x + step, y, boss.direction, boss.pulse, "attack", progress, warpath=warpath)
 
-        _NS_thorne._draw_thorne_ground_contact(
-            surface, x + step, y + 44, boss.pulse, boss.direction)
+        _NS_thorne._draw_thorne_ground_contact(surface, x + step, y + 44, boss.pulse, boss.direction)
 
 
     def _draw_thorne_swing_arc(surface, x, y, facing, progress):
-        """Busur ayunan club besar & terang, berpusat ke bahu.
-
-        Trail lama (_draw_club_swing_trail) digambar di y-6 (sekitar perut) dan
-        radius-nya kecil, sehingga tidak terbaca sebagai ayunan untuk sprite HD
-        yang tingginya 104 px. Helper ini menggambar sapuan sabit keemasan yang
-        besar, berpusat di bahu (sedikit di atas gaya mid-bottom y+44), dan
-        menyapu dari belakang ke depan mengikuti timing _swing_angle. Semua
-        alpha memakai _aaline (aman untuk Android & pygame-ce).
-        """
-        if not (0.22 < progress < 0.72):
+        """Busur ayunan club organik - seperti grimjaw fire slash, anti kaku."""
+        if not (0.18 < progress < 0.78):
             return
-        t = (progress - 0.22) / 0.50
-
-        # Alpa puncak di tengah sweep, memudar di ujung.
-        alpha = int(230 * math.sin(t * math.pi))
-        if alpha < 18:
+        t = (progress - 0.18) / 0.60
+        alpha_base = math.sin(t * math.pi)
+        if alpha_base < 0.08:
             return
 
-        # Bahu / grip pada sprite HD (mid-bottom = y+44, tinggi 104).
-        cx = x + facing * 6
-        cy = y - 2 - int(math.sin(progress * math.pi) * 2)
+        cx = x + facing * 8
+        cy = y - 4 - int(math.sin(progress * math.pi) * 3)
 
         end = _NS_thorne._swing_angle(progress)
-        start = end - 1.2
-        R = 52
+        start = end - 1.4
+        R = 58
 
-        segs = 24
-        layers = ((R, 3, (255, 214, 120)),
-                  (int(R * 0.70), 2, (255, 235, 170)),
-                  (int(R * 0.45), 1, (255, 250, 210)))
-        for rr, wd, col in layers:
-            for i in range(segs):
-                a0 = start + (end - start) * (i / segs)
-                a1 = start + (end - start) * ((i + 1) / segs)
-                x0 = cx + math.cos(a0) * rr * facing
-                y0 = cy + math.sin(a0) * rr
-                x1 = cx + math.cos(a1) * rr * facing
-                y1 = cy + math.sin(a1) * rr
-                _NS_thorne._aaline(surface, (col[0], col[1], col[2], alpha),
-                                   (x0, y0), (x1, y1), wd)
+        # Multi-layer golden slash like code base
+        for i in range(18):
+            arc_t = i / 17.0
+            a = start + (end - start) * arc_t
+            r = R + math.sin(arc_t * math.pi) * 8 + t * 10
+            alpha = int((230 - i * 8) * alpha_base)
+            if alpha <= 0:
+                continue
+            px = cx + math.cos(a) * r * facing
+            py = cy + math.sin(a) * r
+            _NS_thorne._aacircle(surface, (80, 60, 30, alpha // 4), (int(px), int(py)), 6)
+            _NS_thorne._aacircle(surface, (200, 160, 60, alpha // 2), (int(px), int(py)), 4)
+            _NS_thorne._aacircle(surface, (255, 220, 120, alpha), (int(px), int(py)), 2)
+            _NS_thorne._aacircle(surface, (255, 245, 200, alpha), (int(px), int(py)), 1)
+
+        # Impact burst at peak
+        if 0.40 < progress < 0.65:
+            burst_t = (progress - 0.40) / 0.25
+            burst_alpha = int(255 * math.sin(burst_t * math.pi))
+            bx = cx + facing * (R + 12)
+            by = cy + 6
+            for ang_deg in (0, 45, 90, 135):
+                ang = math.radians(ang_deg)
+                r_star = int(5 + burst_t * 10)
+                x1 = bx + math.cos(ang) * r_star
+                y1 = by + math.sin(ang) * r_star
+                x2 = bx - math.cos(ang) * r_star
+                y2 = by - math.sin(ang) * r_star
+                _NS_thorne._aaline(surface, (200, 160, 60, burst_alpha), (x1, y1), (x2, y2), 3)
+                _NS_thorne._aaline(surface, (255, 230, 140, burst_alpha), (x1, y1), (x2, y2), 1)
+            _NS_thorne._aacircle(surface, (255, 240, 160, burst_alpha), (int(bx), int(by)), 4)
+            _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["white"], (int(bx), int(by)), 1)
 
 
     # ===================================================================
@@ -9611,27 +9866,28 @@ class _NS_zephyr:
     ZEPHYR_IDLE_SWAY_SPEED = 2.0 * math.pi / ZEPHYR_IDLE_CYCLE
 
     def _zephyr_idle_motion(phase):
-        """Return subtle idle motion for the HD sprite and fallback renderer.
+        """Return organic idle motion for HD fairy - anti sticker.
 
-        The values are in native renderer pixels and are intentionally kept
-        small.  The renderer is also used by the hero sprite cache, so this
-        function must stay deterministic: the same pulse always produces the
-        same pose.
+        Zephyr melayang: bob tinggi, sway lebar, tilt ekspresif,
+        squash/stretch membuat napas peri terbaca. Semua frekuensi
+        integer (period 6.0) agar cache loop mulus.
         """
         phase = float(phase) % _NS_zephyr.ZEPHYR_IDLE_CYCLE
         breath = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_BREATH_SPEED - 0.45)
         breath_fine = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_BREATH_SPEED * 2.0 + 0.35)
+        breath_mid = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_BREATH_SPEED * 3.0 + 0.8)
         weight_shift = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_SWAY_SPEED + 0.60)
         weight_fine = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_SWAY_SPEED * 2.0 - 0.20)
+        weight_mid = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_SWAY_SPEED * 3.0 + 1.2)
+        float_wave = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_BREATH_SPEED * 1.0 + 1.5)
 
-        bob = breath * 1.2 + breath_fine * 0.25
-        sway = weight_shift * 1.1 + weight_fine * 0.20
-        tilt = weight_shift * 1.0 + weight_fine * 0.20
+        bob = breath * 3.0 + breath_fine * 0.85 + weight_shift * 0.55 + breath_mid * 0.50 + float_wave * 0.65
+        sway = weight_shift * 3.0 + weight_fine * 0.70 + breath * 0.45 + weight_mid * 0.65 + float_wave * 0.35
+        tilt = weight_shift * 4.0 + weight_fine * 0.85 + breath * 0.55 + float_wave * 0.9
 
-        # A tiny squash/stretch makes the float read even at small scale.
-        scale_y = 1.0 + breath * 0.012 + breath_fine * 0.003
-        scale_x = 1.0 - breath * 0.005 - breath_fine * 0.001
-        shadow_scale = max(0.94, min(1.06, 1.0 + bob * 0.030))
+        scale_y = 1.0 + breath * 0.040 + breath_fine * 0.014 + breath_mid * 0.012 + float_wave * 0.010
+        scale_x = 1.0 - breath * 0.024 - breath_fine * 0.007 + weight_shift * 0.016 + weight_mid * 0.009
+        shadow_scale = max(0.78, min(1.24, 1.0 + bob * 0.060 + weight_shift * 0.022))
         return {
             "bob": bob,
             "sway": sway,
@@ -9640,6 +9896,15 @@ class _NS_zephyr:
             "scale_y": scale_y,
             "shadow_scale": shadow_scale,
         }
+
+    def _zephyr_idle_fidget_frame(phase):
+        """Fairy hover shift - pakai walk art di tengah idle."""
+        sample = int((float(phase) % _NS_zephyr.ZEPHYR_IDLE_CYCLE) * 4.0) % 24
+        if 6 <= sample < 12:
+            return 0
+        if 12 <= sample < 18:
+            return 1
+        return None
 
     def _load_zephyr_sprite(pose, facing=1):
         """Muat + cache sprite HD zephyr untuk (pose, arah).
@@ -9678,21 +9943,13 @@ class _NS_zephyr:
 
     def _blit_zephyr_sprite(surface, pose, facing, x, foot_y,
                             bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
-        """Blit sprite HD dengan anchor tengah-bawah di (x, foot_y).
-
-        ``scale_x`` dan ``scale_y`` dipakai oleh idle micro-motion untuk
-        memberi efek napas ringan.  Sprite cache dasar tidak pernah diubah;
-        transform hanya dibuat pada saat pose baru dirender.
-
-        Return True kalau sprite terpakai; False berarti caller harus
-        fallback ke render prosedural.
-        """
+        """Blit sprite HD Zephyr dengan drop-shadow - anti sticker."""
         spr = _NS_zephyr._load_zephyr_sprite(pose, facing)
         if spr is None:
             return False
 
-        scale_x = max(0.90, min(1.10, float(scale_x)))
-        scale_y = max(0.90, min(1.10, float(scale_y)))
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
         if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
             sw, sh = spr.get_size()
             spr = pygame.transform.smoothscale(
@@ -9704,6 +9961,14 @@ class _NS_zephyr:
             )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
+        try:
+            shadow = spr.copy()
+            shadow.fill((0, 0, 0, 65), special_flags=pygame.BLEND_RGBA_MULT)
+            shadow.set_alpha(75)
+            rect_s = shadow.get_rect(midbottom=(int(x + 1), int(foot_y + bob + 2)))
+            surface.blit(shadow, rect_s)
+        except Exception:
+            pass
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
         surface.blit(spr, rect)
         return True
@@ -9754,8 +10019,8 @@ class _NS_zephyr:
         spr = _NS_zephyr._load_zephyr_walk_frame(idx, facing)
         if spr is None:
             return False
-        scale_x = max(0.90, min(1.10, float(scale_x)))
-        scale_y = max(0.90, min(1.10, float(scale_y)))
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
         if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
             sw, sh = spr.get_size()
             spr = pygame.transform.smoothscale(
@@ -9767,9 +10032,69 @@ class _NS_zephyr:
             )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
+        try:
+            shadow = spr.copy()
+            shadow.fill((0, 0, 0, 60), special_flags=pygame.BLEND_RGBA_MULT)
+            shadow.set_alpha(70)
+            rect_s = shadow.get_rect(midbottom=(int(x + 1), int(foot_y + bob + 2)))
+            surface.blit(shadow, rect_s)
+        except Exception:
+            pass
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
         surface.blit(spr, rect)
         return True
+
+    def _blit_zephyr_walk_blended(surface, facing, x, foot_y, blend, bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
+        """Blend walk frames smoothly - fairy hover, anti kaku."""
+        blend = max(0.0, min(1.0, float(blend)))
+        s0 = _NS_zephyr._load_zephyr_walk_frame(0, facing)
+        s1 = _NS_zephyr._load_zephyr_walk_frame(1, facing)
+        if s0 is None and s1 is None:
+            return False
+        if s0 is None:
+            return _NS_zephyr._blit_zephyr_walk_frame(surface, 1, facing, x, foot_y, bob, tilt, scale_x, scale_y)
+        if s1 is None:
+            return _NS_zephyr._blit_zephyr_walk_frame(surface, 0, facing, x, foot_y, bob, tilt, scale_x, scale_y)
+
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            for s in (s0, s1):
+                sw, sh = s.get_size()
+                ns = pygame.transform.smoothscale(s, (max(8, int(round(sw * scale_x))), max(8, int(round(sh * scale_y)))))
+                if s is s0:
+                    s0 = ns
+                else:
+                    s1 = ns
+        if tilt:
+            s0 = pygame.transform.rotate(s0, tilt)
+            s1 = pygame.transform.rotate(s1, tilt)
+        try:
+            bw = max(s0.get_width(), s1.get_width())
+            bh = max(s0.get_height(), s1.get_height())
+            blended = pygame.Surface((bw, bh), pygame.SRCALPHA)
+            tmp0 = s0.copy()
+            tmp0.set_alpha(int(255 * (1.0 - blend)))
+            tmp1 = s1.copy()
+            tmp1.set_alpha(int(255 * blend))
+            r0 = tmp0.get_rect(midbottom=(bw // 2, bh))
+            r1 = tmp1.get_rect(midbottom=(bw // 2, bh))
+            blended.blit(tmp0, r0)
+            blended.blit(tmp1, r1)
+            try:
+                shad = blended.copy()
+                shad.fill((0, 0, 0, 60), special_flags=pygame.BLEND_RGBA_MULT)
+                shad.set_alpha(70)
+                rs = shad.get_rect(midbottom=(int(x + 1), int(foot_y + bob + 2)))
+                surface.blit(shad, rs)
+            except Exception:
+                pass
+            rect = blended.get_rect(midbottom=(int(x), int(foot_y + bob)))
+            surface.blit(blended, rect)
+            return True
+        except Exception:
+            idx = 0 if blend < 0.5 else 1
+            return _NS_zephyr._blit_zephyr_walk_frame(surface, idx, facing, x, foot_y, bob, tilt, scale_x, scale_y)
 
     # ---------------------------------------------------------------------------
     # HD SWING FRAMES (multi-frame swing animation, gaya baris idle/walk/attack)
@@ -9820,8 +10145,8 @@ class _NS_zephyr:
         spr = _NS_zephyr._load_zephyr_swing_frame(idx, facing)
         if spr is None:
             return False
-        scale_x = max(0.90, min(1.10, float(scale_x)))
-        scale_y = max(0.90, min(1.10, float(scale_y)))
+        scale_x = max(0.78, min(1.22, float(scale_x)))
+        scale_y = max(0.78, min(1.22, float(scale_y)))
         if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
             sw, sh = spr.get_size()
             spr = pygame.transform.smoothscale(
@@ -9833,6 +10158,14 @@ class _NS_zephyr:
             )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
+        try:
+            shadow = spr.copy()
+            shadow.fill((0, 0, 0, 70), special_flags=pygame.BLEND_RGBA_MULT)
+            shadow.set_alpha(85)
+            rect_s = shadow.get_rect(midbottom=(int(x + 2), int(foot_y + bob + 3)))
+            surface.blit(shadow, rect_s)
+        except Exception:
+            pass
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
         surface.blit(spr, rect)
         return True
@@ -10561,68 +10894,96 @@ class _NS_zephyr:
     # ===================================================================
     # POSE MODES
     # ===================================================================
+    def _draw_zephyr_ground_contact(surface, cx, foot_y, phase, facing=1):
+        """Blend Zephyr's feet into ground - anti sticker, fairy landing."""
+        phase = float(phase)
+        foot_y = int(round(foot_y))
+        contact = pygame.Surface((88, 10), pygame.SRCALPHA)
+        pressure = math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_BREATH_SPEED - 0.45)
+        shadow_alpha = max(28, min(80, int(54 + pressure * 12)))
+        pygame.draw.ellipse(contact, (10, 6, 18, shadow_alpha), (6, 1, 76, 7))
+        pygame.draw.ellipse(contact, (120, 60, 150, 26), (10, 0, 68, 6), 1)
+        surface.blit(contact, (int(cx - 44), foot_y - 2))
+        for i, side in enumerate((-1, 1, -1)):
+            wave = (math.sin(phase * _NS_zephyr.ZEPHYR_IDLE_BREATH_SPEED + i * 1.6 + 0.7) + 1.0) * 0.5
+            drift = 2.0 + wave * 5.0
+            px = int(round(cx + side * (9.0 + drift)))
+            py = int(round(foot_y - 1.0 - wave * 3.0 + math.sin(phase * 0.9 + i) * 0.5))
+            alpha = int(50.0 * (1.0 - wave))
+            if alpha > 8:
+                _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_mid"], alpha), (px, py), 1 + (i % 2))
+
     def _draw_zephyr_idle(surface, boss, x, y):
-        # HD idle gets the same gentle float/breath as the procedural
-        # fallback.  Using the shared motion values keeps both render paths
-        # visually consistent when an asset is missing.
+        # Organic idle like hero code base - stronger float + fidget + secondary wings
         motion = _NS_zephyr._zephyr_idle_motion(
             getattr(boss, "pulse", 0.0))
         draw_x = int(round(x + motion["sway"]))
         draw_y = int(round(y + motion["bob"]))
         shadow_x = int(round(x + motion["sway"] * 0.35))
 
-        _NS_zephyr._draw_shadow(surface, shadow_x, y + 48,
-                                scale=motion["shadow_scale"])
-        _NS_zephyr._draw_floating_sparkles(
-            surface, draw_x, draw_y + 35, boss.pulse)
+        _NS_zephyr._draw_shadow(surface, shadow_x, y + 48, scale=motion["shadow_scale"])
+        _NS_zephyr._draw_floating_sparkles(surface, draw_x, draw_y + 35, boss.pulse)
 
-        used = _NS_zephyr._blit_zephyr_sprite(
-            surface, "idle", boss.direction, draw_x, y + 44,
-            bob=motion["bob"], tilt=motion["tilt"],
-            scale_x=motion["scale_x"], scale_y=motion["scale_y"])
+        # Wings behind BEFORE sprite - secondary flap even with HD
+        _NS_zephyr._draw_wings(surface, draw_x, draw_y - 3, boss.pulse)
+
+        fidget = _NS_zephyr._zephyr_idle_fidget_frame(boss.pulse)
+        used = False
+        if fidget is not None:
+            used = _NS_zephyr._blit_zephyr_walk_frame(
+                surface, fidget, boss.direction, draw_x, y + 44,
+                bob=motion["bob"], tilt=motion["tilt"],
+                scale_x=motion["scale_x"], scale_y=motion["scale_y"])
+        if not used:
+            used = _NS_zephyr._blit_zephyr_sprite(
+                surface, "idle", boss.direction, draw_x, y + 44,
+                bob=motion["bob"], tilt=motion["tilt"],
+                scale_x=motion["scale_x"], scale_y=motion["scale_y"])
         if used:
-            # Foreground ambient particles (bug / petals / sparkles) keep
-            # the HD cutout alive; wings & skirt are inside the sprite.
-            _NS_zephyr._draw_body_particles(
-                surface, draw_x, draw_y, boss.pulse)
+            _NS_zephyr._draw_petal_skirt(surface, draw_x, draw_y + 6, boss.pulse)
+            _NS_zephyr._draw_body_particles(surface, draw_x, draw_y, boss.pulse)
         else:
-            _NS_zephyr._draw_zephyr_body(
-                surface, draw_x, draw_y, boss.direction, boss.pulse, "idle")
+            _NS_zephyr._draw_zephyr_body(surface, draw_x, draw_y, boss.direction, boss.pulse, "idle")
+
+        _NS_zephyr._draw_zephyr_ground_contact(
+            surface, draw_x, y + 44 + motion["bob"], boss.pulse, boss.direction)
 
 
     def _draw_zephyr_walk(surface, boss, x, y):
         phase = boss.pulse * 2.0
         stride = math.sin(phase * 1.2)
-        bob = int(abs(stride) * 4)
-        sway = int(math.sin(phase) * 3)
-        # Condong ke arah langkah, staff/bahu ikut bergoyang.
-        tilt = stride * 7
+        bob = int(abs(stride) * 6.0 + math.sin(phase * 2.5) * 1.0)
+        sway = int(math.sin(phase) * 4.0 + math.sin(phase * 0.55) * 1.0)
+        tilt = stride * 11 + math.sin(phase * 0.75) * 1.6
+        plant_t = abs(stride)
+        scale_y = 1.0 - plant_t * 0.055 + math.sin(phase * 1.2) * 0.020
+        scale_x = 1.0 + plant_t * 0.045 - math.sin(phase * 1.2) * 0.014
+        shadow_squash = 1.0 + plant_t * 0.20
         facing = boss.direction
-        nwalk = max(1, _NS_zephyr._ZEPHYR_WALK_FRAME_COUNT)
-        frame_idx = int((phase * 0.85) % nwalk)
-        _NS_zephyr._draw_shadow(surface, x + sway, y + 48)
-        _NS_zephyr._draw_floating_sparkles(surface, x + sway, y + 35, phase, trail=True,
-                                facing=facing)
-        used = _NS_zephyr._blit_zephyr_walk_frame(
-            surface, frame_idx, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+        blend = (stride + 1.0) * 0.5
+        _NS_zephyr._draw_shadow(surface, x + sway, y + 48, scale=shadow_squash)
+        _NS_zephyr._draw_floating_sparkles(surface, x + sway, y + 35, phase, trail=True, facing=facing)
+        _NS_zephyr._draw_wings(surface, x + sway, y - bob - 3, phase)
+        used = _NS_zephyr._blit_zephyr_walk_blended(
+            surface, facing, x + sway, y + 44, blend, bob=-bob, tilt=tilt,
+            scale_x=scale_x, scale_y=scale_y)
         if not used:
             pose = "walk" if stride >= 0 else "idle"
             used = _NS_zephyr._blit_zephyr_sprite(
-                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt,
+                scale_x=scale_x, scale_y=scale_y)
         if used:
-            _NS_zephyr._draw_body_particles(surface, x + sway, y, phase)
+            _NS_zephyr._draw_petal_skirt(surface, x + sway, y - bob + 6, phase)
+            _NS_zephyr._draw_body_particles(surface, x + sway, y - bob, phase)
         else:
-            _NS_zephyr._draw_zephyr_body(
-                surface, x + sway, y - bob, facing, phase, "walk")
+            _NS_zephyr._draw_zephyr_body(surface, x + sway, y - bob, facing, phase, "walk")
+        _NS_zephyr._draw_zephyr_ground_contact(surface, x + sway, y + 44 - bob, phase, facing)
 
 
     def _draw_zephyr_attack(surface, boss, x, y):
         progress = getattr(boss, "_zp_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
 
-        # Basic attack TIDAK spawn renderer projectile (pakai generic
-        # _entity.py yang homing & terarah). Magic bolt renderer hanya
-        # saat skill aktif.
         if (getattr(boss, "active_skill", None) is not None
                 and 0.5 < progress < 0.6
                 and not getattr(boss, "_zp_proj_spawned", False)):
@@ -10631,32 +10992,50 @@ class _NS_zephyr:
         if progress < 0.15 or progress > 0.9:
             boss._zp_proj_spawned = False
 
-        recoil = int(math.sin(progress * math.pi) * 2) * -boss.direction
-        _NS_zephyr._draw_shadow(surface, x + recoil, y + 48)
-        _NS_zephyr._draw_floating_sparkles(surface, x + recoil, y + 35, boss.pulse, intense=True)
-        # Condong ke arah hadap saat menembak (rotate CCW positif)
-        tilt = -math.sin(progress * math.pi) * 5 * boss.direction
+        # Dramatic attack - lunge + squash like grimjaw
+        if progress < 0.25:
+            p = progress / 0.25
+            recoil = int(-p * 5) * boss.direction
+            scale_y = 1.0 + p * 0.05
+            scale_x = 1.0 - p * 0.04
+            shadow_scale = 1.0 - p * 0.18
+        elif progress < 0.55:
+            p = (progress - 0.25) / 0.30
+            ease = p * p * (3 - 2 * p)
+            recoil = int((-5 + ease * 14)) * boss.direction
+            scale_y = 1.05 - ease * 0.10
+            scale_x = 0.96 + ease * 0.14
+            shadow_scale = 0.82 + ease * 0.45
+        else:
+            p = (progress - 0.55) / 0.45
+            ease = 1 - (1 - p) * (1 - p)
+            recoil = int((9 - ease * 9)) * boss.direction
+            scale_y = 0.95 + ease * 0.05
+            scale_x = 1.10 - ease * 0.10
+            shadow_scale = 1.27 - ease * 0.27
 
-        # 1) Multi-frame swing HD (kalau zephyr_swing_<N>.png ada)
-        frame_idx = int(round((max(1, _NS_zephyr._ZEPHYR_SWING_FRAME_COUNT) - 1)
-                              * progress))
+        _NS_zephyr._draw_shadow(surface, x + recoil, y + 48, scale=shadow_scale)
+        _NS_zephyr._draw_floating_sparkles(surface, x + recoil, y + 35, boss.pulse, intense=True)
+        tilt = -math.sin(progress * math.pi) * 14 * boss.direction + math.sin(progress * math.pi * 2) * 3
+
+        frame_idx = int(round((max(1, _NS_zephyr._ZEPHYR_SWING_FRAME_COUNT) - 1) * progress))
         used_swing = _NS_zephyr._blit_zephyr_swing_frame(
-            surface, frame_idx, boss.direction, x + recoil, y + 44, tilt=tilt)
+            surface, frame_idx, boss.direction, x + recoil, y + 44, tilt=tilt,
+            scale_x=scale_x, scale_y=scale_y)
 
         if used_swing:
-            # Cast flash staff di atas sprite HD swing
             _NS_zephyr._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
             _NS_zephyr._draw_body_particles(surface, x + recoil, y, boss.pulse)
         elif _NS_zephyr._blit_zephyr_sprite(surface, "attack", boss.direction,
-                                            x + recoil, y + 44, tilt=tilt):
-            # 2) Pose attack statis HD (legacy zephyr_attack.png)
+                                            x + recoil, y + 44, tilt=tilt,
+                                            scale_x=scale_x, scale_y=scale_y):
             _NS_zephyr._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
             _NS_zephyr._draw_body_particles(surface, x + recoil, y, boss.pulse)
         else:
-            # 3) Render prosedural lama
-            _NS_zephyr._draw_zephyr_body(surface, x + recoil, y, boss.direction,
-                              boss.pulse, "attack", progress)
+            _NS_zephyr._draw_zephyr_body(surface, x + recoil, y, boss.direction, boss.pulse, "attack", progress)
             _NS_zephyr._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
+
+        _NS_zephyr._draw_zephyr_ground_contact(surface, x + recoil, y + 44, boss.pulse, boss.direction)
 
 
     # ===================================================================
@@ -11334,12 +11713,10 @@ class _NS_zephyr:
 
 
     def _draw_shadow(surface, x, y, scale=1.0):
-        """Ground shadow."""
-        scale = max(0.90, min(1.10, float(scale)))
+        """Ground shadow - more reactive, anti sticker."""
+        scale = max(0.78, min(1.25, float(scale)))
         sw = int(100 * scale)
         sx = int(80 * scale)
-        # Saat badan naik, bayangan menyempit sedikit; ini menjaga agar
-        # pergeseran berat tetap terasa "jejak di tanah" bukan melayang.
         shadow = pygame.Surface((sw, 20), pygame.SRCALPHA)
         for radius in range(10, 0, -1):
             alpha = max(0, (10 - radius) * 16)
@@ -11348,7 +11725,7 @@ class _NS_zephyr:
                 (int((10 - radius) * scale), 10 - radius,
                  int((80 + radius * 2) * scale), radius * 2),
             )
-        pygame.draw.ellipse(shadow, (*_NS_zephyr.PALETTE["magic_dark"], 40),
+        pygame.draw.ellipse(shadow, (*_NS_zephyr.PALETTE["magic_dark"], 50),
                             (int(8 * scale), 4, sx, 10))
         surface.blit(shadow, (int(x - sw / 2), y - 10))
 
@@ -11423,34 +11800,51 @@ class _NS_zephyr:
 
 
     def _draw_cast_flash(surface, x, y, facing, progress):
-        """Cast flash at staff orb."""
-        if progress < 0.4 or progress > 0.7:
+        """Cast flash organik di staff orb - anti kaku, seperti vex orb release."""
+        if progress < 0.25 or progress > 0.80:
             return
-        t = (progress - 0.4) / 0.3
+        t = (progress - 0.25) / 0.55
         intensity = math.sin(t * math.pi)
+        if intensity < 0.06:
+            return
 
-        flash_x = x + 22 * facing
-        flash_y = y - 8
+        flash_x = x + 24 * facing + int(math.sin(progress * math.pi) * 4 * facing)
+        flash_y = y - 10 - int(math.sin(progress * math.pi) * 2)
 
-        alpha = int(200 * intensity)
-        radius = int(5 + intensity * 14)
+        alpha = int(220 * intensity)
+        radius = int(6 + intensity * 18)
 
+        # Multi-layer glow like code base
+        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_darkest"], alpha // 3),
+                  (flash_x, flash_y), radius + 10)
         _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_dark"], alpha // 2),
                   (flash_x, flash_y), radius + 6)
         _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_mid"], alpha),
                   (flash_x, flash_y), radius)
+        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_bright"], alpha),
+                  (flash_x, flash_y), radius // 2 + 1)
         _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_hot"], alpha),
-                  (flash_x, flash_y), radius // 2)
+                  (flash_x, flash_y), max(2, radius // 3))
         _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["white"],
                   (flash_x, flash_y), max(1, radius // 4))
 
-        # Star rays
-        for i in range(5):
-            angle = progress * 5 + i * math.pi * 2 / 5
-            ex = flash_x + int(math.cos(angle) * radius * 1.5)
-            ey = flash_y + int(math.sin(angle) * radius * 1.5)
+        # Star rays - more organic, like vex
+        for i in range(6):
+            angle = progress * 6 + i * math.pi * 2 / 6 + math.sin(progress * 3 + i) * 0.3
+            ex = flash_x + int(math.cos(angle) * radius * 1.8)
+            ey = flash_y + int(math.sin(angle) * radius * 1.8)
             _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["magic_bright"], alpha),
+                    (flash_x, flash_y), (ex, ey), 2)
+            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["magic_white"], alpha),
                     (flash_x, flash_y), (ex, ey), 1)
+
+        # Small sparkle burst
+        for i in range(4):
+            ang = i * math.pi / 2 + progress * 4
+            sx = flash_x + int(math.cos(ang) * (radius + 4))
+            sy = flash_y + int(math.sin(ang) * (radius + 4) * 0.6)
+            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_hot"], alpha // 2), (sx, sy), 2)
+            _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["white"], (sx, sy), 1)
 
 
     # ===================================================================

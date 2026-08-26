@@ -829,18 +829,25 @@ def _hero_cache_key(hero_type, hero):
     except Exception:
         _q = 1
 
+    # HD heroes (kaizen/thorne/zephyr) need finer granularity - otherwise
+    # their PNG-based animation looks choppy/sticker. Use quant 1 for
+    # attack/skill and 24 idle phases for all HD heroes.
+    _HD_HEROES = {"kaizen", "thorne", "zephyr"}
+    is_hd = hero_type in _HD_HEROES
+
     if skill:
+        q_skill = 1 if is_hd else HERO_SKILL_QUANT
         return (hero_type, team, level, facing, 'skill', skill,
-                skill_t // (HERO_SKILL_QUANT * _q))
+                skill_t // (q_skill * _q))
     if timer > 0:
+        q_atk = 1 if is_hd else HERO_ATK_QUANT
         return (hero_type, team, level, facing, 'atk',
-                timer // (HERO_ATK_QUANT * _q))
+                timer // (q_atk * _q))
 
     pulse = float(getattr(hero, 'pulse', 0.0) or 0.0)
-    if hero_type == "thorne":
-        # Thorne's breathing/weight-shift needs twice the idle samples to
-        # avoid looking like a 6 FPS pose swap.  The cycle duration remains
-        # the same; only the temporal resolution is improved.
+    if hero_type in ("thorne", "kaizen", "zephyr"):
+        # HD heroes need twice the idle samples to avoid 6 FPS pose swap
+        # sticker impression. Cycle stays 6.0, only temporal resolution up.
         phase = int(pulse * 4.0) % _THORNE_IDLE_PHASES
     else:
         phase = int(pulse * 2.0) % HERO_ANIM_PHASES
