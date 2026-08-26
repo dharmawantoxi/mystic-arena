@@ -63,6 +63,8 @@ NS._THORNE_SPRITE_CACHE.clear()
 NS._THORNE_SPRITE_MISSING.clear()
 NS._THORNE_SWING_CACHE.clear()
 NS._THORNE_SWING_MISSING.clear()
+NS._THORNE_WALK_CACHE.clear()
+NS._THORNE_WALK_MISSING.clear()
 
 surf = dark_bg(400, 200)
 p = Probe(1)
@@ -76,10 +78,14 @@ NS._draw_thorne_walk(surf, p2, 250, 100)
 NS._draw_thorne_attack(surf, p2, 250, 100)
 
 poses_loaded = {k[0] for k in NS._THORNE_SPRITE_CACHE}
-assert poses_loaded == {"idle", "walk"}, \
-    "sprite HD harus ter-load untuk idle/walk, dapat: %s" % poses_loaded
-dirs_loaded = {k[1] for k in NS._THORNE_SPRITE_CACHE}
-assert dirs_loaded == {1, -1}, "dua arah harus ter-cache, dapat: %s" % dirs_loaded
+assert "idle" in poses_loaded, \
+    "sprite HD idle harus ter-load, dapat: %s" % poses_loaded
+has_walk = ("walk" in poses_loaded) or len(NS._THORNE_WALK_CACHE) > 0
+assert has_walk, "walk cycle HD (thorne_walk_N / pose walk) harus ter-load"
+dirs_loaded = {k[1] for k in NS._THORNE_SPRITE_CACHE} | \
+              {k[1] for k in NS._THORNE_WALK_CACHE}
+assert 1 in dirs_loaded and -1 in dirs_loaded, \
+    "dua arah harus ter-cache, dapat: %s" % dirs_loaded
 # Attack dipakai lewat multi-frame swing (thorne_swing_<N>.png).
 assert len(NS._THORNE_SWING_CACHE) > 0, \
     "frame swing HD harus ter-load (gunakan thorne_swing_<N>.png)"
@@ -99,6 +105,8 @@ NS._THORNE_SPRITE_CACHE.clear()
 NS._THORNE_SPRITE_MISSING.clear()
 NS._THORNE_SWING_CACHE.clear()
 NS._THORNE_SWING_MISSING.clear()
+NS._THORNE_WALK_CACHE.clear()
+NS._THORNE_WALK_MISSING.clear()
 NS._THORNE_SKILL_CACHE.clear()
 NS._THORNE_SKILL_MISSING.clear()
 
@@ -112,6 +120,8 @@ assert not NS._THORNE_SPRITE_CACHE, \
     "tanpa aset tidak boleh ada sprite ter-cache (fallback prosedural)"
 assert not NS._THORNE_SWING_CACHE, \
     "tanpa aset tidak boleh ada frame swing ter-cache (fallback prosedural)"
+assert not NS._THORNE_WALK_CACHE, \
+    "tanpa aset tidak boleh ada frame walk ter-cache (fallback prosedural)"
 assert not NS._THORNE_SKILL_CACHE, \
     "tanpa aset tidak boleh ada sprite skill ter-cache (fallback prosedural)"
 
@@ -120,6 +130,8 @@ NS._THORNE_SPRITE_CACHE.clear()
 NS._THORNE_SPRITE_MISSING.clear()
 NS._THORNE_SWING_CACHE.clear()
 NS._THORNE_SWING_MISSING.clear()
+NS._THORNE_WALK_CACHE.clear()
+NS._THORNE_WALK_MISSING.clear()
 NS._THORNE_SKILL_CACHE.clear()
 NS._THORNE_SKILL_MISSING.clear()
 print("T2 OK  - fallback prosedural berfungsi tanpa aset")
