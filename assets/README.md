@@ -19,46 +19,15 @@ assets/
 ├── presplash.png               1280x720 layar pembuka saat Python dimuat
 ├── logo.png                    (opsional) logo di splash screen game
 ├── castles/                    sprite kastil HD (blue/red L1-L5, PNG transparan)
-├── items/                      ikon item ITEM FORGE (25 PNG)
-└── heroes/
-    ├── thorne_<pose>.png        sprite HD hero Thorne (idle/walk/attack)
-    ├── thorne_swing_<0..7>.png  frame animasi swing attack Thorne (8 frame)
-    ├── thorne_skill_<q/w/e/r>.png  efek skill HD Thorne (icon-item style)
-    ├── zephyr_<pose>.png        sprite HD hero Zephyr (idle/walk/attack)
-    ├── zephyr_walk_<0..1>.png   cycle jalan Zephyr (stride <-> plant)
-    ├── zephyr_swing_<0..7>.png  frame animasi cast staff Zephyr (8 frame)
-    ├── zephyr_skill_<q/w/e/r>.png  efek skill HD Zephyr
-    ├── kaizen_<pose>.png        sprite HD hero Kaizen (idle/walk/attack)
-    ├── kaizen_walk_<0..1>.png   cycle jalan Kaizen (stride <-> plant)
-    ├── kaizen_swing_<0..7>.png  frame animasi iai slash Kaizen (8 frame)
-    └── kaizen_skill_<q/w/e/r>.png  efek skill HD Kaizen (steel wind/wall/sweep/tornado)
+└── items/                      ikon item ITEM FORGE (25 PNG)
 ```
 
-Sprite HD (castles & heroes) adalah render digital transparan gaya
-icon item. Kalau berkasnya tidak ada, game otomatis fallback ke
-render prosedural lama - build tanpa aset tidak rusak. Sprite hero
-diproses dari render mentah lewat `tools/make_thorne_hd_sprites.py`.
+Sprite kastil HD adalah render digital transparan gaya icon item. Kalau
+berkasnya tidak ada, game otomatis fallback ke render prosedural lama -
+build tanpa aset tidak rusak.
 
-Frame swing & efek skill Thorne dibake dari renderer prosedural lewat
-`tools/make_thorne_skill_sprites.py`:
-
-```
-python tools/make_thorne_skill_sprites.py
-# -> assets/heroes/thorne_swing_<0..7>.png
-# -> assets/heroes/thorne_skill_<q/w/e/r>.png
-```
-
-Zephyr dan Kaizen dibake dari render mentah HD (latar hitam) di
-`assets/heroes/_raw/` (di-ignore git) lewat:
-
-```
-python tools/process_zephyr_anim.py   # -> zephyr_idle/walk/attack, walk_0..1, swing_0..7, skill_qwer
-python tools/process_kaizen_anim.py   # -> kaizen_idle/walk/attack, walk_0..1, swing_0..7, skill_qwer
-```
-
-Saat runtime, swing memakai `<hero>_swing_<N>.png` per progress serangan
-(fallback: `<hero>_attack.png` -> prosedural), dan efek skill Q/W/E/R
-memakai `<hero>_<key>.png` sebagai lapisan HD (fallback: prosedural).
+Hero menggunakan rendering prosedural murni berbasis kode (code base hero)
+sehingga ringan, konsisten, dan tidak bergantung pada sprite eksternal.
 
 ## Catatan penting
 
