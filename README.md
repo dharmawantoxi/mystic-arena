@@ -37,6 +37,7 @@ bosses/                  base_boss, boss_data, level1..level54
 heroes/ hero_skills/     renderer & skill hero
 levels/                  konfigurasi 54 level
 map_components/          palet, tema, generator, renderer peta
+                         + sprite_tiles.py (rendering peta gaya sprite/item)
 minions/ towers/         renderer unit & menara
 ui_components/           panel, popup, shop, notifikasi
 
@@ -70,6 +71,43 @@ Mekanik baru yang didukung engine: `evasion`, `damage block`,
 `TowerDebuffMixin` di [_core.py](_core.py). Screenshot toko:
 [docs/item_forge_tier1.png](docs/item_forge_tier1.png) &
 [docs/item_forge_tier2.png](docs/item_forge_tier2.png).
+
+## Rendering Peta Gaya Sprite (seperti ikon item)
+
+Peta dirender dengan prinsip yang sama dengan ikon item:
+setiap elemen (tile, lane, sungai, dinding, dekorasi, toko)
+di-render **sekali** menjadi sprite ter-cache, lalu di-blit ke
+peta statis. Shading halus (gradien diagonal + lightmap
+mottling skala besar + bevel 3D pada lane/sungai) membuat peta
+terasa "dilukis", bukan kisi-kisi kotak. Semua warna tetap dari
+palet tema, jadi **semua 54 level** otomatis dapat tampilan baru
+tanpa aset PNG tambahan.
+
+Implementasi: `map_components/sprite_tiles.py` (dipanggil dari
+`MapRenderer._render_static_map_sprites()` di
+[_render.py](_render.py)). Pipeline lama tetap tersedia sebagai
+fallback otomatis; paksa dengan `MYSTIC_LEGACY_MAP=1`.
+
+Sebelum → sesudah (lihat folder docs/):
+
+| Tema | Sebelum | Sesudah |
+|---|---|---|
+| Forest | [before](docs/map_sprite_forest_before.png) | [after](docs/map_sprite_forest_after.png) |
+| Desert | [before](docs/map_sprite_desert_before.png) | [after](docs/map_sprite_desert_after.png) |
+| Ice | [before](docs/map_sprite_ice_before.png) | [after](docs/map_sprite_ice_after.png) |
+| Cosmic | [before](docs/map_sprite_cosmic_before.png) | [after](docs/map_sprite_cosmic_after.png) |
+
+Konteks gameplay (unit + HUD di atas peta baru):
+[forest](docs/map_sprite_ingame_forest.png) &
+[royal](docs/map_sprite_ingame_royal.png).
+
+**Performa** (headless, CPU desktop): render peta statis
+sprite rata-rata **12,4 ms** vs **18,1 ms** pipeline lama
+(±30% lebih cepat — ribuan blit sprite kecil vs ratusan ribu
+draw call per tile). Build lightmap pertama per tema ±10 ms
+sekali saja (di-cache LRU untuk retry tema sama). Biaya
+per-frame **tidak berubah** (tetap 1 blit peta statis +
+elemen dinamis), jadi tidak ada dampak pada FPS gameplay.
 
 ## Tactical Commands & Achievement
 
@@ -196,6 +234,7 @@ python tools/bench_heavy.py        # benchmark gameplay (--quality low/high)
 python tools/bench_minions.py      # skala jumlah minion
 python tools/test_spritecache.py   # uji kebenaran cache sprite (piksel)
 python tools/gen_boss_index.py     # regenerasi indeks boss setelah tambah boss
+python tools/preview_map_sprites.py  # preview + benchmark peta sprite (docs/)
 ```
 
 ## Aset yang harus ada

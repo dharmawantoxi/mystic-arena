@@ -145,7 +145,70 @@ class MapRenderer:
         self.dynamic = DynamicRenderer(self)
 
     def _render_static_map(self):
-        """Pre-render static map ke cached surface"""
+        """Pre-render static map ke cached surface.
+
+        Default: PIPELINE SPRITE (map_components/sprite_tiles.py) —
+        setiap tile/dekorasi dirender sekali jadi sprite ter-cache,
+        prinsip yang sama dengan ikon item (assets/items/*.png).
+        Kalau MYSTIC_LEGACY_MAP=1 (atau sprite pipeline error),
+        otomatis kembali ke pipeline lama yang sudah terbukti.
+        """
+        if _os.environ.get("MYSTIC_LEGACY_MAP") != "1":
+            try:
+                return self._render_static_map_sprites()
+            except Exception as exc:
+                print("[MAP] sprite pipeline gagal, fallback legacy:",
+                      exc)
+        return self._render_static_map_legacy()
+
+    def _render_static_map_sprites(self):
+        """Peta statis berbasis sprite (gaya ikon item).
+
+        Urutan layer sama persis dengan pipeline lama, hanya
+        sumbernya kini sprite ter-cache per tile/dekorasi.
+        """
+        from map_components.static_renderer import StaticRenderer
+        from map_components.sprite_tiles import (
+            MapTileSprites, DecorSpriteCache)
+
+        surf = pygame.Surface((self.map_width, self.map_height))
+        tiles = MapTileSprites(self.theme)
+        decor = DecorSpriteCache(self.theme)
+
+        # Layer 1: Terrain (sprite tile)
+        tiles.blit_terrain(surf, self.map_width, self.map_height)
+        StaticRenderer.draw_terrain_details(surf, self.map_width,
+                                            self.map_height, self.theme)
+
+        # Layer 2: River (sprite)
+        tiles.blit_river(surf, self.river_points,
+                         self.map_width, self.map_height)
+
+        # Layer 3: Lanes (sprite)
+        tiles.blit_lane(surf, self.top_lane_points,
+                        self.map_width, self.map_height)
+        tiles.blit_lane(surf, self.mid_lane_points,
+                        self.map_width, self.map_height)
+        tiles.blit_lane(surf, self.bot_lane_points,
+                        self.map_width, self.map_height)
+
+        # Layer 4: Decorations (sprite)
+        decor.draw_all(surf, self)
+
+        # Layer 5: Shops (sprite)
+        decor.blit_shops(surf, self)
+
+        # Layer 6: Border wall (sprite)
+        tiles.blit_border(surf, self.map_width, self.map_height)
+
+        # Layer 7: Lightmap (shading halus skala besar — gradien
+        # diagonal + mottling, dikombinasikan sekali di sini).
+        tiles.apply_light(surf, self.map_width, self.map_height)
+
+        return surf
+
+    def _render_static_map_legacy(self):
+        """Pipeline lama (draw call per tile) — fallback."""
         from map_components.static_renderer import StaticRenderer
         from map_components.decoration_renderer import DecorationRenderer
         from map_components.shop_renderer import ShopRenderer
