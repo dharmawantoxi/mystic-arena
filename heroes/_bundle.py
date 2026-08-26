@@ -5286,6 +5286,21 @@ class _NS_thorne:
             "shadow_scale": shadow_scale,
         }
 
+    def _thorne_idle_fidget_frame(phase):
+        """Occasional planted weight-shift using the real walk poses.
+
+        A whole-sprite bob alone still reads like a card being moved.  Reuse
+        the already baked stride/plant art for the middle of the idle loop so
+        the legs and club make a real secondary motion.  ``None`` means use
+        the relaxed idle pose.
+        """
+        sample = int((float(phase) % _NS_thorne.THORNE_IDLE_CYCLE) * 4.0) % 24
+        if 6 <= sample < 12:
+            return 0
+        if 12 <= sample < 18:
+            return 1
+        return None
+
     def _load_thorne_sprite(pose, facing=1):
         """Muat + cache sprite HD thorne untuk (pose, arah).
 
@@ -5395,10 +5410,21 @@ class _NS_thorne:
         return surf
 
     def _blit_thorne_walk_frame(surface, idx, facing, x, foot_y,
-                                bob=0, tilt=0.0):
+                                bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
         spr = _NS_thorne._load_thorne_walk_frame(idx, facing)
         if spr is None:
             return False
+        scale_x = max(0.90, min(1.10, float(scale_x)))
+        scale_y = max(0.90, min(1.10, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr,
+                (
+                    max(8, int(round(sw * scale_x))),
+                    max(8, int(round(sh * scale_y))),
+                ),
+            )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
@@ -6090,10 +6116,24 @@ class _NS_thorne:
                                 scale=motion["shadow_scale"])
         _NS_thorne._draw_floating_dust(
             surface, draw_x, draw_y + 35, boss.pulse, warpath=warpath)
-        if _NS_thorne._blit_thorne_sprite(
+
+        # Once per idle loop Thorne shifts his planted stance.  This uses
+        # actual foot/club artwork rather than only rotating the complete
+        # cutout, which removes the "sticker being wobbled" impression.
+        fidget_frame = _NS_thorne._thorne_idle_fidget_frame(boss.pulse)
+        used = False
+        if fidget_frame is not None:
+            used = _NS_thorne._blit_thorne_walk_frame(
+                surface, fidget_frame, boss.direction, draw_x, y + 44,
+                bob=motion["bob"], tilt=motion["tilt"],
+                scale_x=motion["scale_x"], scale_y=motion["scale_y"])
+        if not used:
+            used = _NS_thorne._blit_thorne_sprite(
                 surface, "idle", boss.direction, draw_x, y + 44,
                 bob=motion["bob"], tilt=motion["tilt"],
-                scale_x=motion["scale_x"], scale_y=motion["scale_y"]):
+                scale_x=motion["scale_x"], scale_y=motion["scale_y"])
+
+        if used:
             _NS_thorne._draw_body_particles(
                 surface, draw_x, draw_y, boss.pulse, warpath=warpath)
             _NS_thorne._draw_thorne_breath(
@@ -6104,6 +6144,50 @@ class _NS_thorne:
                 "idle", warpath=warpath)
             _NS_thorne._draw_thorne_breath(
                 surface, draw_x, draw_y, boss.direction, boss.pulse)
+
+        # A very thin foreground contact pass lets the feet sit *inside* the
+        # ground instead of on top of an isolated oval.  It is intentionally
+        # drawn after the cutout and before skill FX, so skill effects can
+        # still own the foreground when they are active.
+        _NS_thorne._draw_thorne_ground_contact(
+            surface, draw_x, y + 44 + motion["bob"], boss.pulse,
+            boss.direction)
+
+
+    def _draw_thorne_ground_contact(surface, cx, foot_y, phase, facing=1):
+        """Blend Thorne's feet into the floor with dust and contact shade."""
+        phase = float(phase)
+        foot_y = int(round(foot_y))
+        # The dark contact line is only a few pixels high: it hides the hard
+        # rectangular end of the PNG without visibly burying his feet.
+        contact = pygame.Surface((112, 12), pygame.SRCALPHA)
+        pressure = math.sin(phase * _NS_thorne.THORNE_IDLE_BREATH_SPEED - 0.45)
+        shadow_alpha = max(28, min(78, int(52 + pressure * 12)))
+        pygame.draw.ellipse(
+            contact, (*_NS_thorne.PALETTE["fur_darkest"], shadow_alpha),
+            (8, 2, 96, 8))
+        pygame.draw.ellipse(
+            contact, (*_NS_thorne.PALETTE["fur_light"], 26),
+            (14, 1, 84, 5), 1)
+        surface.blit(contact, (int(cx - 56), foot_y - 3))
+
+        # Tiny puffs are released asymmetrically as he shifts his weight.
+        # They are local to the feet, unlike the ambient motes around the
+        # body, so the hero feels connected to the same ground layer.
+        for i, side in enumerate((-1, 1, -1, 1)):
+            wave = (math.sin(
+                phase * _NS_thorne.THORNE_IDLE_BREATH_SPEED
+                + i * 1.65 + 0.8) + 1.0) * 0.5
+            drift = 3.0 + wave * 7.0
+            px = int(round(cx + side * (13.0 + drift)))
+            py = int(round(foot_y - 1.0 - wave * 4.0
+                          + math.sin(phase * 0.9 + i) * 0.6))
+            alpha = int(62.0 * (1.0 - wave))
+            if alpha > 6:
+                _NS_thorne._aacircle(
+                    surface,
+                    (*_NS_thorne.PALETTE["fur_mid"], alpha),
+                    (px, py), 1 + (i % 2))
 
 
     def _draw_thorne_walk(surface, boss, x, y, warpath=False):
@@ -6131,6 +6215,8 @@ class _NS_thorne:
         else:
             _NS_thorne._draw_thorne_body(surface, x + sway, y - bob,
                               facing, phase, "walk", warpath=warpath)
+        _NS_thorne._draw_thorne_ground_contact(
+            surface, x + sway, y + 44 - bob, phase, facing)
 
 
     def _swing_angle(progress):
@@ -6183,6 +6269,9 @@ class _NS_thorne:
             # 3) Render prosedural lama
             _NS_thorne._draw_thorne_body(surface, x + step, y, boss.direction,
                               boss.pulse, "attack", progress, warpath=warpath)
+
+        _NS_thorne._draw_thorne_ground_contact(
+            surface, x + step, y + 44, boss.pulse, boss.direction)
 
 
     def _draw_thorne_swing_arc(surface, x, y, facing, progress):
@@ -7123,6 +7212,13 @@ class _NS_thorne:
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
         ring = pygame.Surface((130, 44), pygame.SRCALPHA)
 
+        # Soft filled soil patch behind the feet.  The old outline-only ring
+        # read like a separate badge under the PNG; this low-alpha fill gives
+        # the sprite a shared ground plane before the contact pass is added.
+        pygame.draw.ellipse(ring, (*_NS_thorne.PALETTE["fur_darkest"], 72),
+                            (2, 8, 126, 28))
+        pygame.draw.ellipse(ring, (*_NS_thorne.PALETTE["fur_dark"], 58),
+                            (12, 12, 106, 20))
         pygame.draw.ellipse(ring, (*_NS_thorne.PALETTE["fur_darkest"], 180),
                             (5, 10, 120, 24), 3)
         pygame.draw.ellipse(ring, (*_NS_thorne.PALETTE["fur_dark"], 200),
