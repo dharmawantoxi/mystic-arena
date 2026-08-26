@@ -1882,10 +1882,10 @@ class Game:
                 print(f"[TRUE BOSS Lv.{self.level_number}] "
                       f"{self.active_boss.name} spawned! (scaling={getattr(self, 'enemy_scaling_enabled', False)})")
 
-                    # ═══ TRIGGER BOSS INTRO (TRUE BOSS) ═══
-                    from _render import BossIntroCinematic
-                    self.boss_intro = BossIntroCinematic(
-                        self.active_boss, SCREEN_WIDTH, SCREEN_HEIGHT)
+                # ═══ TRIGGER BOSS INTRO (TRUE BOSS) ═══
+                from _render import BossIntroCinematic
+                self.boss_intro = BossIntroCinematic(
+                    self.active_boss, SCREEN_WIDTH, SCREEN_HEIGHT)
 
         # ═══ BOSS UPDATE (DI LUAR loop!) ═══
         if self.active_boss and self.active_boss.alive:
