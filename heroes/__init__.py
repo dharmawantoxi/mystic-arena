@@ -748,8 +748,25 @@ _HERO_CANVAS = 240
 # beam di tepinya -> serangan terlihat "terpotong" tidak sampai
 # target. Maka canvas diperbesar mengikuti range hero.
 def _canvas_size_for(hero):
+    """Ukuran canvas harus menjangkau target TERTJAUH di range serang.
+
+    BUGFIX (orb acak / projectile terpotong): canvas hero di-blit
+    dengan skala _render_scale, jadi 1 px canvas = _render_scale px
+    dunia. Target berjarak ``range`` (dunia) berada di
+    ``range / _render_scale`` px canvas dari pusat. Rumus lama
+    ``2*(range+60)`` px canvas TIDAK cukup untuk hero yang
+    menyusut banyak (mis. Zephyr scale 0.612: range 130 dunia butuh
+    212 px canvas, padahal canvas cuma 190) -> proyektil renderer
+    terpotong di tepi canvas & terlihat "melayang ke tempat random".
+    Minimum canvas tetap 240 px (2 x max(120, ...)).
+    """
     rng = int(getattr(hero, 'range', 50) or 50)
-    return max(_HERO_CANVAS, 2 * (rng + 60))
+    try:
+        scale = _get_hero_scale(getattr(hero, 'hero_type', '') or '') or 1.0
+    except Exception:
+        scale = 1.0
+    half = max(120, int(rng / scale) + 40)
+    return 2 * half
 
 # Matikan kalau mau render langsung (debug).
 HERO_CACHE_ENABLED = True
