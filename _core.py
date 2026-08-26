@@ -1858,20 +1858,29 @@ class Game:
             pass
 
         # ═══ TRUE BOSS CHECK (dari level config) ═══
-        if not self.true_boss_spawned and self.wave_number >= 5:
-            red_towers_alive = sum(1 for t in self.towers
-                                   if t.team == "red" and t.alive)
-            if red_towers_alive <= 3 and not self.active_boss:
-                true_boss_type = self.level_config.get("true_boss")
-                if true_boss_type:
-                    from bosses.base_boss import Boss
-                    lane_path = self.map_renderer.get_lane_path("mid")
-                    self.active_boss = Boss(true_boss_type, lane_path)
-                    if getattr(self, "enemy_scaling_enabled", False):
-                        self.active_boss.apply_scaling(self.enemy_hp_mult, self.enemy_damage_mult, self.enemy_speed_mult)
-                    self.true_boss_spawned = True
-                    print(f"[TRUE BOSS Lv.{self.level_number}] "
-                          f"{self.active_boss.name} spawned! (scaling={getattr(self, 'enemy_scaling_enabled', False)})")
+        # Spawn true boss ONLY if player has destroyed >= 6 red towers
+        # AND wave is 5+. Both conditions must be met.
+        # Track initial red tower count at level start (only once)
+        if not hasattr(self, '_initial_red_towers_for_boss'):
+            self._initial_red_towers_for_boss = sum(1 for t in self.towers if t.team == "red")
+        
+        red_towers_alive = sum(1 for t in self.towers
+                               if t.team == "red" and t.alive)
+        towers_destroyed = self._initial_red_towers_for_boss - red_towers_alive
+        
+        # Both conditions: >= 6 towers destroyed AND wave >= 5
+        if (not self.true_boss_spawned and self.wave_number >= 5
+                and towers_destroyed >= 6 and not self.active_boss):
+            true_boss_type = self.level_config.get("true_boss")
+            if true_boss_type:
+                from bosses.base_boss import Boss
+                lane_path = self.map_renderer.get_lane_path("mid")
+                self.active_boss = Boss(true_boss_type, lane_path)
+                if getattr(self, "enemy_scaling_enabled", False):
+                    self.active_boss.apply_scaling(self.enemy_hp_mult, self.enemy_damage_mult, self.enemy_speed_mult)
+                self.true_boss_spawned = True
+                print(f"[TRUE BOSS Lv.{self.level_number}] "
+                      f"{self.active_boss.name} spawned! (scaling={getattr(self, 'enemy_scaling_enabled', False)})")
 
                     # ═══ TRIGGER BOSS INTRO (TRUE BOSS) ═══
                     from _render import BossIntroCinematic
