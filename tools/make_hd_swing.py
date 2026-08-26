@@ -1,40 +1,42 @@
 """Regenerate Thorne's HD swing frames from the HD attack sprite.
 
-Why this exists
----------------
+Context
+-------
 The previous ``assets/heroes/thorne_swing_<N>.png`` frames were baked from the
 PROCEDURAL renderer (``_NS_thorne._draw_thorne_body``), a small pixel-art boar.
 That clashes badly with the HD ``thorne_idle/walk/attack.png`` sprites (a large
 detailed boar-warrior). Because ``_draw_thorne_attack`` prioritizes the swing
 frames when they exist, the character visibly "switches" to the crude pixel-art
-version during every normal attack and the HD sprite disappears.
+version during every normal attack.
 
-This tool rebuilds the swing frames from the HD attack sprite and creates a real
-SWING arc:
+The HD ``thorne_attack.png`` is a single STATIC frame (club raised overhead,
+body hunched into the strike). It cannot be re-posed into a real club swing by
+rotating or sliding the sprite -- rotating the whole body reads as "pecking the
+ground", rotating the top band clips the club into the head, and moving only the
+club detaches it from the hands. The genuine swing motion is supplied by the
+RUNTIME: ``_draw_thorne_attack`` leans each frame with ``tilt``, lunges it with a
+forward ``step``, and draws a yellow ``_draw_club_swing_trail`` crescent over the
+body during the sweep.
 
-  * The whole body is ROTATED about a pivot near the feet so the character leans
-    back on the wind-up, whips forward through the sweep, and settles on the
-    recovery -- the club travels in a genuine arc, not just a horizontal slide.
-  * A small forward ``step`` (matching the runtime's ``step`` in
-    ``_draw_thorne_attack``) adds momentum.
-
-The runtime additionally leans each frame (``tilt``) around its own center when
-blitting, so keep the baked lean modest to avoid doubling it.
+So these frames keep the HD pose exactly and animate the TRANSLATION of the
+whole character across the swing:
+  * a forward lunge (the character plants forward on the sweep), and
+  * a subtle vertical bob (crouch on impact).
+Together with the runtime tilt + swing-trail this reads as a weighty HD club
+swing, and every frame genuinely differs (the character visibly travels).
 
 IMPORTANT: all frames are written at the SAME size and share one crop window so
-the loader's mid-bottom anchor preserves the relative transform between frames.
-Feet sit on a fixed ground line (mid-bottom anchor, matching how the loader
-blits with ``midbottom``), so the character stays planted while it swings.
+the loader's mid-bottom anchor keeps the horizontal travel aligned between
+frames.
 
 The loader scales every frame to ``THORNE_SPRITE_HEIGHT`` (104) on load, so the
 frames are baked at a modest resolution and then uniformly downscaled; because
-all frames share one size and one scale factor, the relative motion is preserved.
+all frames share one size and one scale factor, they stay consistent.
 
 Run:  python tools/make_hd_swing.py
 Output: assets/heroes/thorne_swing_<0..N>.png  (transparent, trimmed, same size)
 """
 import os
-import math
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -45,51 +47,19 @@ OUT = os.path.join(ROOT, "assets", "heroes")
 import pygame  # noqa: E402
 
 pygame.init()
-pygame.display.set_mode((1200, 1000))
+pygame.display.set_mode((1100, 900))
 
 N = 8
-# Pivot: fraction of the sprite width/height. Near the feet/centre so the
-# character leans about its base and the feet stay planted.
-PIVOT_X = 0.50
-PIVOT_Y = 0.95
-# Lean angle (degrees). The loader's own `tilt` is small (6 deg peak), so a
-# slightly larger baked arc reads clearly without looking broken.
-WINDUP_DEG = -10.0   # club drawn back (wind-up)
-SWEEP_DEG = 16.0     # whipped forward (sweep)
-# Small forward step (matches the runtime's `step` in _draw_thorne_attack).
-STEP_PX = 4
-# Padding so the swung sprite never touches the crop edge (0 alpha).
-PAD_X = 40
-PAD_TOP = 20
-PAD_BOTTOM = 10
+
+# Forward lunge of the whole character per frame (px). Wind-up pulls back, the
+# sweep drives forward, recovery settles back to neutral. In source space.
+FOLLOW = (-22, -14, -5, 4, 11, 9, 4, 0)
+# Vertical crouch/bob per frame (px), peaking at the sweep.
+BOB = (0, 2, 3, 4, 3, 2, 1, 0)
+
 # Output resolution: the loader scales everything to height 104 anyway, so bake
-# at a moderate height to keep PNG size small without losing swing readability.
-BAKE_HEIGHT = 340
-
-
-def lean_angle(progress):
-    """Body lean in degrees over a swing progress in [0, 1]."""
-    if progress < 0.25:
-        t = progress / 0.25
-        return WINDUP_DEG * t                    # wind-up: draw back
-    if progress < 0.6:
-        t = (progress - 0.25) / 0.35
-        return WINDUP_DEG + (SWEEP_DEG - WINDUP_DEG) * t   # sweep: whip forward
-    t = (progress - 0.6) / 0.4
-    return SWEEP_DEG * (1.0 - t)                 # recovery: settle back
-
-
-def rot_at_about(src, angle, pivot_xy):
-    """Rotate a SRCALPHA surface about a pivot (px in source coords), returning
-    (rotated_surface, pivot_pos_in_rotated)."""
-    pw, ph = pivot_xy
-    ox, oy = src.get_size()[0] / 2.0, src.get_size()[1] / 2.0
-    dx, dy = pw - ox, ph - oy
-    rot = pygame.transform.rotozoom(src, angle, 1.0)
-    ca, sa = math.cos(math.radians(angle)), math.sin(math.radians(angle))
-    ndx = dx * ca + dy * sa
-    ndy = -dx * sa + dy * ca
-    return rot, (rot.get_width() / 2.0 + ndx, rot.get_height() / 2.0 + ndy)
+# at a moderate height to keep PNG size small.
+BAKE_HEIGHT = 300
 
 
 def trim(surf):
@@ -103,40 +73,34 @@ def main():
     raw = pygame.image.load(os.path.join(OUT, "thorne_attack.png")).convert_alpha()
     src = trim(raw)
     w, h = src.get_size()
-    pivot = (w * PIVOT_X, h * PIVOT_Y)
 
-    # Build every frame on a canvas large enough for the rotate + step.
-    width = w + 2 * (PAD_X + STEP_PX + int(w * 0.2))
-    height = h + PAD_TOP + PAD_BOTTOM + int(h * 0.2)
-    ground = height - PAD_BOTTOM
+    # Canvas wide/tall enough for the whole lunge + bob, plus padding so the
+    # swung sprite never touches the crop edge (0 alpha).
+    pad_x = 40
+    pad_top = 20
+    pad_bottom = 10
+    width = w + 2 * (max(FOLLOW) - min(FOLLOW) + pad_x)
+    height = h + pad_top + pad_bottom
+    ground = height - pad_bottom
 
     frames = []
     spans = []
     for i in range(N):
-        progress = i / (N - 1.0)
-        angle = lean_angle(progress)
-        rot, pivot_pos = rot_at_about(src, angle, pivot)
-        step = int(math.sin(progress * math.pi) * STEP_PX)
-
         canvas = pygame.Surface((width, height), pygame.SRCALPHA)
-        # Place the pivot so the feet land on the ground line at canvas centre-x
-        # (+ step). This plants the feet while the body leans around them.
-        bx = int(width / 2.0 + step - pivot_pos[0])
-        by = int(ground - pivot_pos[1])
-        canvas.blit(rot, (bx, by))
+        rect = src.get_rect(midbottom=(width // 2 + FOLLOW[i], ground + BOB[i]))
+        canvas.blit(src, rect)
         frames.append(canvas)
         spans.append(canvas.get_bounding_rect())
 
     # One shared crop window = union of all frames, so every frame is the SAME
-    # size. This keeps the swing motion aligned when the loader re-anchors each
-    # frame at mid-bottom.
+    # size. This keeps the travel aligned when the loader re-anchors each frame at
+    # mid-bottom.
     left = min(r.left for r in spans)
     top = min(r.top for r in spans)
     right = max(r.right for r in spans)
     bottom = max(r.bottom for r in spans)
     crop = pygame.Rect(left, top, right - left, bottom - top)
 
-    # Uniform downscale factor so PNGs stay small.
     scale = BAKE_HEIGHT / float(crop.height)
     out_w = max(1, int(round(crop.width * scale)))
     out_h = max(1, int(round(crop.height * scale)))
