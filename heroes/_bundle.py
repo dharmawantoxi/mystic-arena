@@ -197,11 +197,49 @@ class _NS_grimjaw:
         pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
 
 
+    def _world_to_local(boss, x, y, wx, wy):
+        """Konversi titik koordinat DUNIA -> ruang gambar renderer.
+
+        BUGFIX (orb/ring "random" pada hero): saat dirender sebagai
+        HERO (heroes/__init__.py, jalur sprite-cache), renderer
+        dipanggil di (c, c) = PUSAT CANVAS, bukan koordinat dunia.
+        Canvas lalu di-scale _render_scale saat di-blit ke posisi
+        hero, sehingga 1 px canvas = _render_scale px dunia. Titik
+        dunia (wx, wy) jadi (x + (wx - hero.x) / scale, ...).
+
+        Boss asli tidak punya _render_scale (digambar langsung di
+        koordinat dunia) -> dikembalikan apa adanya (perilaku lama).
+
+        Hasil di-clamp ke dalam canvas (ukurannya mengikuti
+        ``range``, lihat _canvas_size_for) supaya efek tidak
+        terpotong di tepi canvas.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        # Clamp ke dalam canvas - rumus half sama dengan
+        # _canvas_size_for di heroes/__init__.py (jaga agar tetap sinkron).
+        rng = int(getattr(boss, "range", 130) or 130)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
+
     def _target_position(hero, x, y):
         target = getattr(hero, "target", None)
         if target is not None and getattr(target, "alive", True):
-            return int(target.x), int(target.y)
-        return int(x + 60 * getattr(hero, "direction", 1)), int(y)
+            return _NS_grimjaw._world_to_local(hero, x, y,
+                                            target.x, target.y)
+        # Tanpa target: terbang lurus ke arah hadap.
+        scale = getattr(hero, "_render_scale", None)
+        dist = 60 * (float(scale) if scale is not None else 1.0)
+        return int(x + dist * getattr(hero, "direction", 1)), int(y)
 
 
     # ---------------------------------------------------------------------------
@@ -1784,11 +1822,49 @@ class _NS_sylara:
         pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
 
 
+    def _world_to_local(boss, x, y, wx, wy):
+        """Konversi titik koordinat DUNIA -> ruang gambar renderer.
+
+        BUGFIX (orb/ring "random" pada hero): saat dirender sebagai
+        HERO (heroes/__init__.py, jalur sprite-cache), renderer
+        dipanggil di (c, c) = PUSAT CANVAS, bukan koordinat dunia.
+        Canvas lalu di-scale _render_scale saat di-blit ke posisi
+        hero, sehingga 1 px canvas = _render_scale px dunia. Titik
+        dunia (wx, wy) jadi (x + (wx - hero.x) / scale, ...).
+
+        Boss asli tidak punya _render_scale (digambar langsung di
+        koordinat dunia) -> dikembalikan apa adanya (perilaku lama).
+
+        Hasil di-clamp ke dalam canvas (ukurannya mengikuti
+        ``range``, lihat _canvas_size_for) supaya efek tidak
+        terpotong di tepi canvas.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        # Clamp ke dalam canvas - rumus half sama dengan
+        # _canvas_size_for di heroes/__init__.py (jaga agar tetap sinkron).
+        rng = int(getattr(boss, "range", 130) or 130)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
+
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
-            return int(target.x), int(target.y)
-        return int(x + 250 * getattr(boss, "direction", 1)), int(y)
+            return _NS_sylara._world_to_local(boss, x, y,
+                                            target.x, target.y)
+        # Tanpa target: terbang lurus ke arah hadap.
+        scale = getattr(boss, "_render_scale", None)
+        dist = 250 * (float(scale) if scale is not None else 1.0)
+        return int(x + dist * getattr(boss, "direction", 1)), int(y)
 
 
     # ---------------------------------------------------------------------------
@@ -1864,8 +1940,19 @@ class _NS_sylara:
             self.age += 1
             # Homing tiap frame ke target yang bergerak (terarah)
             if self.target is not None and getattr(self.target, 'alive', False):
-                self.tx = float(self.target.x)
-                self.ty = float(self.target.y)
+                # BUGFIX (orb random pada hero): re-home lama menulis
+                # koordinat DUNIA target ke tx/ty yang hidup dalam
+                # ruang canvas renderer -> arah kacau. Konversi
+                # lewat _world_to_local (source/cx/cy diisi saat
+                # spawn; boss asli tanpa _render_scale = perilaku lama).
+                src = getattr(self, "source", None)
+                if src is not None:
+                    self.tx, self.ty = _NS_sylara._world_to_local(
+                        src, self.cx, self.cy,
+                        self.target.x, self.target.y)
+                else:
+                    self.tx = float(self.target.x)
+                    self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
@@ -2021,8 +2108,19 @@ class _NS_sylara:
             self.age += 1
             # Homing tiap frame ke target (terarah)
             if self.target is not None and getattr(self.target, 'alive', False):
-                self.tx = float(self.target.x)
-                self.ty = float(self.target.y)
+                # BUGFIX (orb random pada hero): re-home lama menulis
+                # koordinat DUNIA target ke tx/ty yang hidup dalam
+                # ruang canvas renderer -> arah kacau. Konversi
+                # lewat _world_to_local (source/cx/cy diisi saat
+                # spawn; boss asli tanpa _render_scale = perilaku lama).
+                src = getattr(self, "source", None)
+                if src is not None:
+                    self.tx, self.ty = _NS_sylara._world_to_local(
+                        src, self.cx, self.cy,
+                        self.target.x, self.target.y)
+                else:
+                    self.tx = float(self.target.x)
+                    self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
@@ -2184,9 +2282,14 @@ class _NS_sylara:
         sy = y - 8
         speed = 10.0 if powered else 8.5
         tgt = getattr(boss, "target", None)
-        boss._sy_projectiles.append(_NS_sylara.WindArrowProjectile(
+        proj = _NS_sylara.WindArrowProjectile(
             sx, sy, tx, ty, speed=speed, powered=powered,
-            target=tgt, damage=0, team=getattr(boss, "team", None)))
+            target=tgt, damage=0, team=getattr(boss, "team", None))
+        # BUGFIX (orb random pada hero): simpan sumber hero
+        # + titik pusat frame gambar agar re-home bisa
+        # mengkonversi koordinat dunia -> lokal canvas.
+        proj.source, proj.cx, proj.cy = boss, x, y
+        boss._sy_projectiles.append(proj)
 
 
     def _spawn_shackle(boss, x, y):
@@ -2197,9 +2300,14 @@ class _NS_sylara:
         sx = x + 22 * facing
         sy = y - 8
         tgt = getattr(boss, "target", None)
-        boss._sy_projectiles.append(_NS_sylara.ShackleProjectile(
+        proj = _NS_sylara.ShackleProjectile(
             sx, sy, tx, ty, speed=8.0,
-            target=tgt, damage=0, team=getattr(boss, "team", None)))
+            target=tgt, damage=0, team=getattr(boss, "team", None))
+        # BUGFIX (orb random pada hero): simpan sumber hero
+        # + titik pusat frame gambar agar re-home bisa
+        # mengkonversi koordinat dunia -> lokal canvas.
+        proj.source, proj.cx, proj.cy = boss, x, y
+        boss._sy_projectiles.append(proj)
 
 
     def _spawn_focus_fire_volley(boss, x, y):
@@ -2222,10 +2330,12 @@ class _NS_sylara:
             angle = base_angle + spread
             ex = sx + math.cos(angle) * 400
             ey = sy + math.sin(angle) * 400
-            boss._sy_projectiles.append(
-                _NS_sylara.WindArrowProjectile(
-                    sx, sy, ex, ey, speed=11.0, powered=False,
-                    target=tgt, damage=0, team=getattr(boss, "team", None)))
+            proj = _NS_sylara.WindArrowProjectile(
+                sx, sy, ex, ey, speed=11.0, powered=False,
+                target=tgt, damage=0, team=getattr(boss, "team", None))
+            # BUGFIX (orb random pada hero): lihat _spawn_arrow.
+            proj.source, proj.cx, proj.cy = boss, x, y
+            boss._sy_projectiles.append(proj)
 
 
     # ===================================================================
@@ -3746,11 +3856,49 @@ class _NS_kaizen:
         pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
 
 
+    def _world_to_local(boss, x, y, wx, wy):
+        """Konversi titik koordinat DUNIA -> ruang gambar renderer.
+
+        BUGFIX (orb/ring "random" pada hero): saat dirender sebagai
+        HERO (heroes/__init__.py, jalur sprite-cache), renderer
+        dipanggil di (c, c) = PUSAT CANVAS, bukan koordinat dunia.
+        Canvas lalu di-scale _render_scale saat di-blit ke posisi
+        hero, sehingga 1 px canvas = _render_scale px dunia. Titik
+        dunia (wx, wy) jadi (x + (wx - hero.x) / scale, ...).
+
+        Boss asli tidak punya _render_scale (digambar langsung di
+        koordinat dunia) -> dikembalikan apa adanya (perilaku lama).
+
+        Hasil di-clamp ke dalam canvas (ukurannya mengikuti
+        ``range``, lihat _canvas_size_for) supaya efek tidak
+        terpotong di tepi canvas.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        # Clamp ke dalam canvas - rumus half sama dengan
+        # _canvas_size_for di heroes/__init__.py (jaga agar tetap sinkron).
+        rng = int(getattr(boss, "range", 130) or 130)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
+
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
-            return int(target.x), int(target.y)
-        return int(x + 150 * getattr(boss, "direction", 1)), int(y)
+            return _NS_kaizen._world_to_local(boss, x, y,
+                                            target.x, target.y)
+        # Tanpa target: terbang lurus ke arah hadap.
+        scale = getattr(boss, "_render_scale", None)
+        dist = 150 * (float(scale) if scale is not None else 1.0)
+        return int(x + dist * getattr(boss, "direction", 1)), int(y)
 
 
     # ---------------------------------------------------------------------------
@@ -3810,8 +3958,19 @@ class _NS_kaizen:
             self.age += 1
             # Homing tiap frame ke target (terarah)
             if self.target is not None and getattr(self.target, 'alive', False):
-                self.tx = float(self.target.x)
-                self.ty = float(self.target.y)
+                # BUGFIX (orb random pada hero): re-home lama menulis
+                # koordinat DUNIA target ke tx/ty yang hidup dalam
+                # ruang canvas renderer -> arah kacau. Konversi
+                # lewat _world_to_local (source/cx/cy diisi saat
+                # spawn; boss asli tanpa _render_scale = perilaku lama).
+                src = getattr(self, "source", None)
+                if src is not None:
+                    self.tx, self.ty = _NS_kaizen._world_to_local(
+                        src, self.cx, self.cy,
+                        self.target.x, self.target.y)
+                else:
+                    self.tx = float(self.target.x)
+                    self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
@@ -3958,9 +4117,14 @@ class _NS_kaizen:
         sx = x + 24 * facing
         sy = y - 8
         tgt = getattr(boss, "target", None)
-        boss._kz_projectiles.append(_NS_kaizen.WindSlashProjectile(
+        proj = _NS_kaizen.WindSlashProjectile(
             sx, sy, tx, ty, speed=8.0,
-            target=tgt, damage=0, team=getattr(boss, "team", None)))
+            target=tgt, damage=0, team=getattr(boss, "team", None))
+        # BUGFIX (orb random pada hero): simpan sumber hero
+        # + titik pusat frame gambar agar re-home bisa
+        # mengkonversi koordinat dunia -> lokal canvas.
+        proj.source, proj.cx, proj.cy = boss, x, y
+        boss._kz_projectiles.append(proj)
 
 
     # ===================================================================
@@ -5404,11 +5568,49 @@ class _NS_thorne:
         pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
 
 
+    def _world_to_local(boss, x, y, wx, wy):
+        """Konversi titik koordinat DUNIA -> ruang gambar renderer.
+
+        BUGFIX (orb/ring "random" pada hero): saat dirender sebagai
+        HERO (heroes/__init__.py, jalur sprite-cache), renderer
+        dipanggil di (c, c) = PUSAT CANVAS, bukan koordinat dunia.
+        Canvas lalu di-scale _render_scale saat di-blit ke posisi
+        hero, sehingga 1 px canvas = _render_scale px dunia. Titik
+        dunia (wx, wy) jadi (x + (wx - hero.x) / scale, ...).
+
+        Boss asli tidak punya _render_scale (digambar langsung di
+        koordinat dunia) -> dikembalikan apa adanya (perilaku lama).
+
+        Hasil di-clamp ke dalam canvas (ukurannya mengikuti
+        ``range``, lihat _canvas_size_for) supaya efek tidak
+        terpotong di tepi canvas.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        # Clamp ke dalam canvas - rumus half sama dengan
+        # _canvas_size_for di heroes/__init__.py (jaga agar tetap sinkron).
+        rng = int(getattr(boss, "range", 130) or 130)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
+
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
-            return int(target.x), int(target.y)
-        return int(x + 150 * getattr(boss, "direction", 1)), int(y)
+            return _NS_thorne._world_to_local(boss, x, y,
+                                            target.x, target.y)
+        # Tanpa target: terbang lurus ke arah hadap.
+        scale = getattr(boss, "_render_scale", None)
+        dist = 150 * (float(scale) if scale is not None else 1.0)
+        return int(x + dist * getattr(boss, "direction", 1)), int(y)
 
 
     # ---------------------------------------------------------------------------
@@ -5535,8 +5737,19 @@ class _NS_thorne:
 
             # Homing tiap frame ke target selama masih terbang (terarah)
             if self.target is not None and getattr(self.target, 'alive', False):
-                self.tx = float(self.target.x)
-                self.ty = float(self.target.y)
+                # BUGFIX (orb random pada hero): re-home lama menulis
+                # koordinat DUNIA target ke tx/ty yang hidup dalam
+                # ruang canvas renderer -> arah kacau. Konversi
+                # lewat _world_to_local (source/cx/cy diisi saat
+                # spawn; boss asli tanpa _render_scale = perilaku lama).
+                src = getattr(self, "source", None)
+                if src is not None:
+                    self.tx, self.ty = _NS_thorne._world_to_local(
+                        src, self.cx, self.cy,
+                        self.target.x, self.target.y)
+                else:
+                    self.tx = float(self.target.x)
+                    self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
@@ -5687,9 +5900,14 @@ class _NS_thorne:
         sx = x + 20 * facing
         sy = y - 20
         tgt = getattr(boss, "target", None)
-        boss._th_projectiles.append(_NS_thorne.GooProjectile(
+        proj = _NS_thorne.GooProjectile(
             sx, sy, tx, ty, speed=5.5,
-            target=tgt, damage=0, team=getattr(boss, "team", None)))
+            target=tgt, damage=0, team=getattr(boss, "team", None))
+        # BUGFIX (orb random pada hero): simpan sumber hero
+        # + titik pusat frame gambar agar re-home bisa
+        # mengkonversi koordinat dunia -> lokal canvas.
+        proj.source, proj.cx, proj.cy = boss, x, y
+        boss._th_projectiles.append(proj)
 
 
     def _spawn_quill_spray(boss, x, y):
@@ -7026,11 +7244,49 @@ class _NS_vex:
         pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
 
 
+    def _world_to_local(boss, x, y, wx, wy):
+        """Konversi titik koordinat DUNIA -> ruang gambar renderer.
+
+        BUGFIX (orb/ring "random" pada hero): saat dirender sebagai
+        HERO (heroes/__init__.py, jalur sprite-cache), renderer
+        dipanggil di (c, c) = PUSAT CANVAS, bukan koordinat dunia.
+        Canvas lalu di-scale _render_scale saat di-blit ke posisi
+        hero, sehingga 1 px canvas = _render_scale px dunia. Titik
+        dunia (wx, wy) jadi (x + (wx - hero.x) / scale, ...).
+
+        Boss asli tidak punya _render_scale (digambar langsung di
+        koordinat dunia) -> dikembalikan apa adanya (perilaku lama).
+
+        Hasil di-clamp ke dalam canvas (ukurannya mengikuti
+        ``range``, lihat _canvas_size_for) supaya efek tidak
+        terpotong di tepi canvas.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        # Clamp ke dalam canvas - rumus half sama dengan
+        # _canvas_size_for di heroes/__init__.py (jaga agar tetap sinkron).
+        rng = int(getattr(boss, "range", 130) or 130)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
+
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
-            return int(target.x), int(target.y)
-        return int(x + 250 * getattr(boss, "direction", 1)), int(y)
+            return _NS_vex._world_to_local(boss, x, y,
+                                            target.x, target.y)
+        # Tanpa target: terbang lurus ke arah hadap.
+        scale = getattr(boss, "_render_scale", None)
+        dist = 250 * (float(scale) if scale is not None else 1.0)
+        return int(x + dist * getattr(boss, "direction", 1)), int(y)
 
 
     # ---------------------------------------------------------------------------
@@ -7124,8 +7380,19 @@ class _NS_vex:
             self.age += 1
             # Homing tiap frame ke target (terarah)
             if self.target is not None and getattr(self.target, 'alive', False):
-                self.tx = float(self.target.x)
-                self.ty = float(self.target.y)
+                # BUGFIX (orb random pada hero): re-home lama menulis
+                # koordinat DUNIA target ke tx/ty yang hidup dalam
+                # ruang canvas renderer -> arah kacau. Konversi
+                # lewat _world_to_local (source/cx/cy diisi saat
+                # spawn; boss asli tanpa _render_scale = perilaku lama).
+                src = getattr(self, "source", None)
+                if src is not None:
+                    self.tx, self.ty = _NS_vex._world_to_local(
+                        src, self.cx, self.cy,
+                        self.target.x, self.target.y)
+                else:
+                    self.tx = float(self.target.x)
+                    self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
@@ -7214,8 +7481,19 @@ class _NS_vex:
 
             # Homing tiap frame ke target selama terbang (terarah)
             if self.target is not None and getattr(self.target, 'alive', False):
-                self.tx = float(self.target.x)
-                self.ty = float(self.target.y)
+                # BUGFIX (orb random pada hero): re-home lama menulis
+                # koordinat DUNIA target ke tx/ty yang hidup dalam
+                # ruang canvas renderer -> arah kacau. Konversi
+                # lewat _world_to_local (source/cx/cy diisi saat
+                # spawn; boss asli tanpa _render_scale = perilaku lama).
+                src = getattr(self, "source", None)
+                if src is not None:
+                    self.tx, self.ty = _NS_vex._world_to_local(
+                        src, self.cx, self.cy,
+                        self.target.x, self.target.y)
+                else:
+                    self.tx = float(self.target.x)
+                    self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
@@ -7404,9 +7682,14 @@ class _NS_vex:
         sx = x + 26 * facing
         sy = y - 20
         tgt = getattr(boss, "target", None)
-        boss._vx_projectiles.append(_NS_vex.ArcaneOrbProjectile(
+        proj = _NS_vex.ArcaneOrbProjectile(
             sx, sy, tx, ty, speed=6.5,
-            target=tgt, damage=0, team=getattr(boss, "team", None)))
+            target=tgt, damage=0, team=getattr(boss, "team", None))
+        # BUGFIX (orb random pada hero): simpan sumber hero
+        # + titik pusat frame gambar agar re-home bisa
+        # mengkonversi koordinat dunia -> lokal canvas.
+        proj.source, proj.cx, proj.cy = boss, x, y
+        boss._vx_projectiles.append(proj)
 
 
     def _spawn_astral_orb(boss, x, y):
@@ -7417,9 +7700,14 @@ class _NS_vex:
         sx = x + 26 * facing
         sy = y - 20
         tgt = getattr(boss, "target", None)
-        boss._vx_projectiles.append(_NS_vex.AstralOrbProjectile(
+        proj = _NS_vex.AstralOrbProjectile(
             sx, sy, tx, ty, speed=7.0,
-            target=tgt, damage=0, team=getattr(boss, "team", None)))
+            target=tgt, damage=0, team=getattr(boss, "team", None))
+        # BUGFIX (orb random pada hero): simpan sumber hero
+        # + titik pusat frame gambar agar re-home bisa
+        # mengkonversi koordinat dunia -> lokal canvas.
+        proj.source, proj.cx, proj.cy = boss, x, y
+        boss._vx_projectiles.append(proj)
 
 
     # ===================================================================
@@ -8736,11 +9024,49 @@ class _NS_zephyr:
         pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
 
 
+    def _world_to_local(boss, x, y, wx, wy):
+        """Konversi titik koordinat DUNIA -> ruang gambar renderer.
+
+        BUGFIX (orb/ring "random" pada hero): saat dirender sebagai
+        HERO (heroes/__init__.py, jalur sprite-cache), renderer
+        dipanggil di (c, c) = PUSAT CANVAS, bukan koordinat dunia.
+        Canvas lalu di-scale _render_scale saat di-blit ke posisi
+        hero, sehingga 1 px canvas = _render_scale px dunia. Titik
+        dunia (wx, wy) jadi (x + (wx - hero.x) / scale, ...).
+
+        Boss asli tidak punya _render_scale (digambar langsung di
+        koordinat dunia) -> dikembalikan apa adanya (perilaku lama).
+
+        Hasil di-clamp ke dalam canvas (ukurannya mengikuti
+        ``range``, lihat _canvas_size_for) supaya efek tidak
+        terpotong di tepi canvas.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        # Clamp ke dalam canvas - rumus half sama dengan
+        # _canvas_size_for di heroes/__init__.py (jaga agar tetap sinkron).
+        rng = int(getattr(boss, "range", 130) or 130)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
+
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
-            return int(target.x), int(target.y)
-        return int(x + 200 * getattr(boss, "direction", 1)), int(y)
+            return _NS_zephyr._world_to_local(boss, x, y,
+                                            target.x, target.y)
+        # Tanpa target: terbang lurus ke arah hadap.
+        scale = getattr(boss, "_render_scale", None)
+        dist = 200 * (float(scale) if scale is not None else 1.0)
+        return int(x + dist * getattr(boss, "direction", 1)), int(y)
 
 
     # ---------------------------------------------------------------------------
@@ -8849,8 +9175,19 @@ class _NS_zephyr:
             self.age += 1
             # Homing tiap frame ke target (terarah)
             if self.target is not None and getattr(self.target, 'alive', False):
-                self.tx = float(self.target.x)
-                self.ty = float(self.target.y)
+                # BUGFIX (orb random pada hero): re-home lama menulis
+                # koordinat DUNIA target ke tx/ty yang hidup dalam
+                # ruang canvas renderer -> arah kacau. Konversi
+                # lewat _world_to_local (source/cx/cy diisi saat
+                # spawn; boss asli tanpa _render_scale = perilaku lama).
+                src = getattr(self, "source", None)
+                if src is not None:
+                    self.tx, self.ty = _NS_zephyr._world_to_local(
+                        src, self.cx, self.cy,
+                        self.target.x, self.target.y)
+                else:
+                    self.tx = float(self.target.x)
+                    self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
@@ -8948,8 +9285,19 @@ class _NS_zephyr:
 
             # Homing tiap frame ke target selama terbang (terarah)
             if self.target is not None and getattr(self.target, 'alive', False):
-                self.tx = float(self.target.x)
-                self.ty = float(self.target.y)
+                # BUGFIX (orb random pada hero): re-home lama menulis
+                # koordinat DUNIA target ke tx/ty yang hidup dalam
+                # ruang canvas renderer -> arah kacau. Konversi
+                # lewat _world_to_local (source/cx/cy diisi saat
+                # spawn; boss asli tanpa _render_scale = perilaku lama).
+                src = getattr(self, "source", None)
+                if src is not None:
+                    self.tx, self.ty = _NS_zephyr._world_to_local(
+                        src, self.cx, self.cy,
+                        self.target.x, self.target.y)
+                else:
+                    self.tx = float(self.target.x)
+                    self.ty = float(self.target.y)
             dx = self.tx - self.x
             dy = self.ty - self.y
             dist = math.sqrt(dx * dx + dy * dy)
@@ -9138,9 +9486,14 @@ class _NS_zephyr:
         sx = x + 22 * facing
         sy = y - 8
         tgt = getattr(boss, "target", None)
-        boss._zp_projectiles.append(_NS_zephyr.MagicBoltProjectile(
+        proj = _NS_zephyr.MagicBoltProjectile(
             sx, sy, tx, ty, speed=7.5,
-            target=tgt, damage=0, team=getattr(boss, "team", None)))
+            target=tgt, damage=0, team=getattr(boss, "team", None))
+        # BUGFIX (orb random pada hero): simpan sumber hero
+        # + titik pusat frame gambar agar re-home bisa
+        # mengkonversi koordinat dunia -> lokal canvas.
+        proj.source, proj.cx, proj.cy = boss, x, y
+        boss._zp_projectiles.append(proj)
 
 
     def _spawn_casket(boss, x, y):
@@ -9151,9 +9504,14 @@ class _NS_zephyr:
         sx = x + 22 * facing
         sy = y - 8
         tgt = getattr(boss, "target", None)
-        boss._zp_projectiles.append(_NS_zephyr.CasketProjectile(
+        proj = _NS_zephyr.CasketProjectile(
             sx, sy, tx, ty, speed=5.5,
-            target=tgt, damage=0, team=getattr(boss, "team", None)))
+            target=tgt, damage=0, team=getattr(boss, "team", None))
+        # BUGFIX (orb random pada hero): simpan sumber hero
+        # + titik pusat frame gambar agar re-home bisa
+        # mengkonversi koordinat dunia -> lokal canvas.
+        proj.source, proj.cx, proj.cy = boss, x, y
+        boss._zp_projectiles.append(proj)
 
 
     # ===================================================================
@@ -10047,8 +10405,15 @@ class _NS_zephyr:
     # ===================================================================
     def _draw_bramble_ground(surface, boss, x, y, timer, phase):
         """Ground indicator - dark spot at target."""
-        tx, ty = getattr(boss, "_bramble_origin", None) or \
-            _NS_zephyr._target_position(boss, x, y)
+        origin = getattr(boss, "_bramble_origin", None)
+        if origin:
+            # BUGFIX (ring acak pada hero): _bramble_origin disimpan
+            # dalam koordinat DUNIA; (x, y) renderer = pusat canvas.
+            # Konversi dengan _world_to_local (lihat fungsi tersebut).
+            tx, ty = _NS_zephyr._world_to_local(boss, x, y,
+                                                origin[0], origin[1])
+        else:
+            tx, ty = _NS_zephyr._target_position(boss, x, y)
         progress = max(0.0, min(1.0, 1 - timer / 240))
 
         if progress < 0.2:
@@ -10062,8 +10427,13 @@ class _NS_zephyr:
 
     def _draw_bramble_maze(surface, boss, x, y, timer, phase):
         """Thorny brambles/vines erupting from ground."""
-        tx, ty = getattr(boss, "_bramble_origin", None) or \
-            _NS_zephyr._target_position(boss, x, y)
+        origin = getattr(boss, "_bramble_origin", None)
+        if origin:
+            # BUGFIX (ring acak pada hero): lihat _draw_bramble_ground.
+            tx, ty = _NS_zephyr._world_to_local(boss, x, y,
+                                                origin[0], origin[1])
+        else:
+            tx, ty = _NS_zephyr._target_position(boss, x, y)
         progress = max(0.0, min(1.0, 1 - timer / 240))
 
         if progress < 0.2:
