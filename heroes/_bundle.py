@@ -18,6 +18,7 @@ File asli dihapus; nama submodul didaftarkan ke
 sys.modules oleh __init__.py, jadi semua baris
 `from heroes.<modul> import ...` tetap jalan.
 """
+import os
 import math
 import random
 import pygame
@@ -5221,6 +5222,73 @@ class _NS_thorne:
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
     # ---------------------------------------------------------------------------
+    # HD SPRITE ASSETS (gaya sama dgn icon item & kastil HD)
+    #
+    # assets/heroes/thorne_<pose>.png adalah render digital transparan
+    # (idle / walk / attack). Kalau file tidak ada atau gagal dimuat,
+    # game tetap jalan dengan render prosedural lama di bawah - build
+    # tanpa aset tidak rusak.
+    # ---------------------------------------------------------------------------
+    _THORNE_ASSET_DIR = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "assets", "heroes")
+    _THORNE_SPRITE_CACHE = {}
+    _THORNE_SPRITE_MISSING = set()
+    # Tinggi native sprite di canvas hero - disesuaikan dengan footprint
+    # badan prosedural lama (puncak quill s/d kaki ~100 px).
+    THORNE_SPRITE_HEIGHT = 104
+
+    def _load_thorne_sprite(pose, facing=1):
+        """Muat + cache sprite HD thorne untuk (pose, arah).
+
+        Return pygame.Surface (SRCALPHA) siap blit, atau None kalau
+        aset tidak tersedia (caller harus fallback prosedural).
+        """
+        key = (pose, 1 if facing >= 0 else -1)
+        if key in _NS_thorne._THORNE_SPRITE_CACHE:
+            return _NS_thorne._THORNE_SPRITE_CACHE[key]
+        if key in _NS_thorne._THORNE_SPRITE_MISSING:
+            return None
+        path = os.path.join(_NS_thorne._THORNE_ASSET_DIR,
+                            "thorne_%s.png" % pose)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_thorne.THORNE_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+                if key[1] < 0:
+                    surf = pygame.transform.flip(surf, True, False)
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_thorne._THORNE_SPRITE_MISSING.add(key)
+            return None
+        _NS_thorne._THORNE_SPRITE_CACHE[key] = surf
+        return surf
+
+    def _blit_thorne_sprite(surface, pose, facing, x, foot_y,
+                            bob=0, tilt=0.0):
+        """Blit sprite HD dengan anchor tengah-bawah di (x, foot_y).
+
+        Return True kalau sprite terpakai; False berarti caller harus
+        fallback ke render prosedural.
+        """
+        spr = _NS_thorne._load_thorne_sprite(pose, facing)
+        if spr is None:
+            return False
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
     # HD Color Palette - Bristleback inspired
     # ---------------------------------------------------------------------------
     PALETTE = {
@@ -5762,8 +5830,13 @@ class _NS_thorne:
         bob = int(math.sin(boss.pulse * 0.7) * 2)
         _NS_thorne._draw_shadow(surface, x, y + 48)
         _NS_thorne._draw_floating_dust(surface, x, y + 35, boss.pulse, warpath=warpath)
-        _NS_thorne._draw_thorne_body(surface, x, y + bob, boss.direction, boss.pulse,
-                          "idle", warpath=warpath)
+        if _NS_thorne._blit_thorne_sprite(surface, "idle", boss.direction,
+                                          x, y + 44, bob=bob):
+            _NS_thorne._draw_body_particles(surface, x, y, boss.pulse,
+                                            warpath=warpath)
+        else:
+            _NS_thorne._draw_thorne_body(surface, x, y + bob, boss.direction,
+                              boss.pulse, "idle", warpath=warpath)
 
 
     def _draw_thorne_walk(surface, boss, x, y, warpath=False):
@@ -5773,9 +5846,29 @@ class _NS_thorne:
         _NS_thorne._draw_shadow(surface, x + sway, y + 48)
         _NS_thorne._draw_floating_dust(surface, x + sway, y + 35, phase, trail=True,
                            facing=boss.direction, warpath=warpath)
-        _NS_thorne._draw_thorne_body(surface, x + sway, y - bob, boss.direction, phase,
-                          "walk", warpath=warpath)
+        if _NS_thorne._blit_thorne_sprite(surface, "walk", boss.direction,
+                                          x + sway, y + 44, bob=-bob):
+            _NS_thorne._draw_body_particles(surface, x + sway, y, phase,
+                                            warpath=warpath)
+        else:
+            _NS_thorne._draw_thorne_body(surface, x + sway, y - bob,
+                              boss.direction, phase, "walk", warpath=warpath)
 
+
+    def _swing_angle(progress):
+        """Sudut ayunan club pada progress serangan 0..1.
+
+        Timing sama persis dengan _draw_attack_arms prosedural:
+        0.00-0.25 windup, 0.25-0.60 sweep, 0.60-1.00 recovery.
+        """
+        if progress < 0.25:
+            t = progress / 0.25
+            return -0.5 + t * -1.0
+        if progress < 0.6:
+            t = (progress - 0.25) / 0.35
+            return -1.5 + t * 2.8
+        t = (progress - 0.6) / 0.4
+        return 1.3 - t * 1.8
 
     def _draw_thorne_attack(surface, boss, x, y, warpath=False):
         progress = getattr(boss, "_th_attack_progress", 0.0)
@@ -5786,8 +5879,21 @@ class _NS_thorne:
         _NS_thorne._draw_shadow(surface, x + step, y + 48)
         _NS_thorne._draw_floating_dust(surface, x + step, y + 35, boss.pulse, intense=True,
                            warpath=warpath)
-        _NS_thorne._draw_thorne_body(surface, x + step, y, boss.direction, boss.pulse,
-                          "attack", progress, warpath=warpath)
+        # Condong ke arah hadap saat mengayun (rotate CCW positif)
+        tilt = -math.sin(progress * math.pi) * 6 * boss.direction
+        if _NS_thorne._blit_thorne_sprite(surface, "attack", boss.direction,
+                                          x + step, y + 44, tilt=tilt):
+            # Motion trail ayunan club di atas sprite HD
+            if 0.25 < progress < 0.7:
+                t = (progress - 0.25) / 0.45
+                _NS_thorne._draw_club_swing_trail(
+                    surface, x + step + boss.direction * 8, y - 6,
+                    boss.direction, _NS_thorne._swing_angle(progress), t)
+            _NS_thorne._draw_body_particles(surface, x + step, y, boss.pulse,
+                                            warpath=warpath)
+        else:
+            _NS_thorne._draw_thorne_body(surface, x + step, y, boss.direction,
+                              boss.pulse, "attack", progress, warpath=warpath)
 
 
     # ===================================================================
