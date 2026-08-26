@@ -5289,13 +5289,64 @@ class _NS_thorne:
         return True
 
     # ---------------------------------------------------------------------------
+    # HD WALK CYCLE (thorne_walk_<0..N>.png — stride <-> plant)
+    #
+    # Kalau file cycle tidak ada, renderer ping-pong pose walk/idle.
+    # ---------------------------------------------------------------------------
+    _THORNE_WALK_FRAME_COUNT = 2
+    _THORNE_WALK_CACHE = {}
+    _THORNE_WALK_MISSING = set()
+
+    def _load_thorne_walk_frame(idx, facing=1):
+        """Muat + cache satu frame walk HD. None = fallback pose walk/idle."""
+        idx = int(idx) % max(1, _NS_thorne._THORNE_WALK_FRAME_COUNT)
+        key = (idx, 1 if facing >= 0 else -1)
+        if key in _NS_thorne._THORNE_WALK_CACHE:
+            return _NS_thorne._THORNE_WALK_CACHE[key]
+        if key in _NS_thorne._THORNE_WALK_MISSING:
+            return None
+        path = os.path.join(_NS_thorne._THORNE_ASSET_DIR,
+                            "thorne_walk_%d.png" % idx)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_thorne.THORNE_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+                if key[1] < 0:
+                    surf = pygame.transform.flip(surf, True, False)
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_thorne._THORNE_WALK_MISSING.add(key)
+            return None
+        _NS_thorne._THORNE_WALK_CACHE[key] = surf
+        return surf
+
+    def _blit_thorne_walk_frame(surface, idx, facing, x, foot_y,
+                                bob=0, tilt=0.0):
+        spr = _NS_thorne._load_thorne_walk_frame(idx, facing)
+        if spr is None:
+            return False
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
     # HD SWING FRAMES (multi-frame swing animation, gaya baris idle/walk/attack)
     #
-    # assets/heroes/thorne_swing_<0..N>.png adalah render HD transparan
-    # dari pose serangan (windup -> sweep -> recovery) yang dibagi menjadi
-    # beberapa frame. Kalau file tidak ada / gagal dimuat, renderer jatuh
-    # kembali ke pose attack statis (thorne_attack.png) lalu ke render
-    # prosedural lama - build tanpa aset tetap jalan.
+    # assets/heroes/thorne_swing_<0..N>.png adalah pose HD TERPISAH
+    # (club di pinggul -> overhead -> vertikal -> hantam ke depan -> pinggul).
+    # Bukan 8 salinan pose overhead. Kalau file tidak ada / gagal dimuat,
+    # renderer jatuh ke pose attack statis lalu ke render prosedural lama.
     # ---------------------------------------------------------------------------
     _THORNE_SWING_FRAME_COUNT = 8
     _THORNE_SWING_CACHE = {}
@@ -5975,18 +6026,29 @@ class _NS_thorne:
 
     def _draw_thorne_walk(surface, boss, x, y, warpath=False):
         phase = boss.pulse * 2.0
-        bob = int(abs(math.sin(phase * 1.2)) * 3)
-        sway = int(math.sin(phase) * 2)
+        stride = math.sin(phase * 1.2)
+        bob = int(abs(stride) * 5)
+        sway = int(math.sin(phase) * 3)
+        # Condong ke langkah, club/bahu ikut bergoyang.
+        tilt = stride * 8
+        facing = boss.direction
+        nwalk = max(1, _NS_thorne._THORNE_WALK_FRAME_COUNT)
+        frame_idx = int((phase * 0.85) % nwalk)
         _NS_thorne._draw_shadow(surface, x + sway, y + 48)
         _NS_thorne._draw_floating_dust(surface, x + sway, y + 35, phase, trail=True,
-                           facing=boss.direction, warpath=warpath)
-        if _NS_thorne._blit_thorne_sprite(surface, "walk", boss.direction,
-                                          x + sway, y + 44, bob=-bob):
+                           facing=facing, warpath=warpath)
+        used = _NS_thorne._blit_thorne_walk_frame(
+            surface, frame_idx, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+        if not used:
+            pose = "walk" if stride >= 0 else "idle"
+            used = _NS_thorne._blit_thorne_sprite(
+                surface, pose, facing, x + sway, y + 44, bob=-bob, tilt=tilt)
+        if used:
             _NS_thorne._draw_body_particles(surface, x + sway, y, phase,
                                             warpath=warpath)
         else:
             _NS_thorne._draw_thorne_body(surface, x + sway, y - bob,
-                              boss.direction, phase, "walk", warpath=warpath)
+                              facing, phase, "walk", warpath=warpath)
 
 
     def _swing_angle(progress):
