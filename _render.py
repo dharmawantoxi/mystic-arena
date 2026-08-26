@@ -699,7 +699,7 @@ class EffectManager:
         # notifikasi tidak lagi digambar di sana. Combo counter dan
         # popup ACHIEVEMENT tetap tampil DI MAP (layar arena), sama
         # seperti feedback command taktis.
-        self.combo_counter.draw(surface, screen_w, screen_h)
+        # Combo/KILLING SPREE notification dihapus sesuai permintaan.
         self.wave_announcer.draw(surface, screen_w, screen_h)
         self.achievement.draw(surface, screen_w, screen_h)
 
@@ -715,7 +715,8 @@ class EffectManager:
         Kill feed DIHAPUS (request user: notifikasi dihapus, panel
         diisi command saja) - method tetap ada untuk combo counter.
         """
-        self.combo_counter.add_kill()
+        # Combo notification sengaja tidak ditampilkan lagi.
+        return
 
     def announce_wave(self, wave_num):
         """Trigger wave announcement"""

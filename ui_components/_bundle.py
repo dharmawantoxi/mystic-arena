@@ -677,6 +677,18 @@ class _NS_build_popup:
             popup_w = 400  # 320->400 agar muat font besar
             popup_h = 300  # 230->300
 
+            # Panel kanan pada layar lebar biasanya hanya sekitar 344 px.
+            # Jangan biarkan popup kembali ke map hanya karena ukuran
+            # desainnya lebih lebar dari panel; padatkan lebarnya agar
+            # tetap dirender di panel kanan.
+            try:
+                from mobile import platform_utils as _plat
+                _panel = _plat.get_panel_rect()
+                if _panel is not None:
+                    popup_w = min(popup_w, max(1, _panel.width - 16))
+            except Exception:
+                pass
+
             _pp = _popup_di_panel(popup_w, popup_h)
             if _pp is not None:
                 surface, px, py = _pp
@@ -3471,6 +3483,18 @@ class _NS_popup_renderer:
 
             popup_w = 380  # 300->380
             popup_h = 440  # 360->440 agar muat font besar
+
+            # Lebar panel kanan pada sebagian besar HP adalah 344 px.
+            # Popup castle/tower harus menyesuaikan lebar panel; jika tidak,
+            # _popup_di_panel() mengembalikan None dan popup jatuh kembali
+            # ke atas map.
+            try:
+                from mobile import platform_utils as _plat
+                _panel = _plat.get_panel_rect()
+                if _panel is not None:
+                    popup_w = min(popup_w, max(1, _panel.width - 16))
+            except Exception:
+                pass
 
             _pp = _popup_di_panel(popup_w, popup_h)
             if _pp is not None:
