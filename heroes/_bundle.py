@@ -5289,6 +5289,140 @@ class _NS_thorne:
         return True
 
     # ---------------------------------------------------------------------------
+    # HD SWING FRAMES (multi-frame swing animation, gaya baris idle/walk/attack)
+    #
+    # assets/heroes/thorne_swing_<0..N>.png adalah render HD transparan
+    # dari pose serangan (windup -> sweep -> recovery) yang dibagi menjadi
+    # beberapa frame. Kalau file tidak ada / gagal dimuat, renderer jatuh
+    # kembali ke pose attack statis (thorne_attack.png) lalu ke render
+    # prosedural lama - build tanpa aset tetap jalan.
+    # ---------------------------------------------------------------------------
+    _THORNE_SWING_FRAME_COUNT = 8
+    _THORNE_SWING_CACHE = {}
+    _THORNE_SWING_MISSING = set()
+
+    def _load_thorne_swing_frame(idx, facing=1):
+        """Muat + cache frame swing HD untuk (index, arah).
+
+        Return pygame.Surface (SRCALPHA) siap blit, atau None kalau
+        aset tidak tersedia (caller harus fallback ke pose attack).
+        """
+        idx = int(idx) % max(1, _NS_thorne._THORNE_SWING_FRAME_COUNT)
+        key = (idx, 1 if facing >= 0 else -1)
+        if key in _NS_thorne._THORNE_SWING_CACHE:
+            return _NS_thorne._THORNE_SWING_CACHE[key]
+        if key in _NS_thorne._THORNE_SWING_MISSING:
+            return None
+        path = os.path.join(_NS_thorne._THORNE_ASSET_DIR,
+                            "thorne_swing_%d.png" % idx)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_thorne.THORNE_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+                if key[1] < 0:
+                    surf = pygame.transform.flip(surf, True, False)
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_thorne._THORNE_SWING_MISSING.add(key)
+            return None
+        _NS_thorne._THORNE_SWING_CACHE[key] = surf
+        return surf
+
+    def _blit_thorne_swing_frame(surface, idx, facing, x, foot_y,
+                                 bob=0, tilt=0.0):
+        """Blit satu frame swing HD dengan anchor tengah-bawah di (x, foot_y).
+
+        Return True kalau frame terpakai; False berarti caller harus
+        fallback ke pose attack statis / prosedural.
+        """
+        spr = _NS_thorne._load_thorne_swing_frame(idx, facing)
+        if spr is None:
+            return False
+        if tilt:
+            spr = pygame.transform.rotate(spr, tilt)
+        rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
+    # HD SKILL FX SPRITES (Q/W/E/R - gaya yang sama dengan icon item / kastil HD)
+    #
+    # assets/heroes/thorne_skill_<q/w/e/r>.png adalah render transparan dari
+    # efek skill Thorne. Di-runtime di-load lewat cache + fallback prosedural,
+    # persis seperti get_icon() di hero_items.py (PNG kalau ada, prosedural
+    # kalau tidak).
+    # ---------------------------------------------------------------------------
+    _THORNE_SKILL_CACHE = {}
+    _THORNE_SKILL_MISSING = set()
+    # Tinggi render efek skill yang di-load (lebih besar dari karakter,
+    # karena efek menyebar keluar dari badan).
+    THORNE_SKILL_SPRITE_HEIGHT = 168
+
+    def _load_thorne_skill_sprite(key):
+        """Muat + cache sprite HD efek skill untuk key q/w/e/r.
+
+        Return pygame.Surface (SRCALPHA) siap blit, atau None kalau aset
+        tidak tersedia (caller lanjut ke efek prosedural).
+        """
+        key = str(key).lower()
+        if key not in ("q", "w", "e", "r"):
+            return None
+        if key in _NS_thorne._THORNE_SKILL_CACHE:
+            return _NS_thorne._THORNE_SKILL_CACHE[key]
+        if key in _NS_thorne._THORNE_SKILL_MISSING:
+            return None
+        path = os.path.join(_NS_thorne._THORNE_ASSET_DIR,
+                            "thorne_skill_%s.png" % key)
+        surf = None
+        if os.path.exists(path):
+            try:
+                raw = pygame.image.load(path)
+                try:
+                    raw = raw.convert_alpha()
+                except Exception:
+                    pass
+                w, h = raw.get_size()
+                th = _NS_thorne.THORNE_SKILL_SPRITE_HEIGHT
+                tw = max(8, int(round(w * th / float(h))))
+                surf = pygame.transform.smoothscale(raw, (tw, th))
+            except Exception:
+                surf = None
+        if surf is None:
+            _NS_thorne._THORNE_SKILL_MISSING.add(key)
+            return None
+        _NS_thorne._THORNE_SKILL_CACHE[key] = surf
+        return surf
+
+    def _blit_thorne_skill(surface, key, x, y, alpha=255):
+        """Blit sprite HD efek skill di atas karakter (anchor tengah).
+
+        Return True kalau sprite terpakai; False berarti caller harus
+        melanjutkan ke efek prosedural. Perubahan alpha ditumpuk lewat
+        surface.set_alpha (aman di pygame-ce).
+        """
+        spr = _NS_thorne._load_thorne_skill_sprite(key)
+        if spr is None:
+            return False
+        if 0 <= alpha < 255:
+            try:
+                spr = spr.copy()
+                spr.set_alpha(alpha)
+            except Exception:
+                pass
+        rect = spr.get_rect(center=(int(x), int(y - 14)))
+        surface.blit(spr, rect)
+        return True
+
+    # ---------------------------------------------------------------------------
     # HD Color Palette - Bristleback inspired
     # ---------------------------------------------------------------------------
     PALETTE = {
@@ -5881,9 +6015,25 @@ class _NS_thorne:
                            warpath=warpath)
         # Condong ke arah hadap saat mengayun (rotate CCW positif)
         tilt = -math.sin(progress * math.pi) * 6 * boss.direction
-        if _NS_thorne._blit_thorne_sprite(surface, "attack", boss.direction,
-                                          x + step, y + 44, tilt=tilt):
-            # Motion trail ayunan club di atas sprite HD
+
+        # 1) Multi-frame swing HD (kalau thorne_swing_<N>.png ada)
+        frame_idx = int(round((max(1, _NS_thorne._THORNE_SWING_FRAME_COUNT) - 1)
+                              * progress))
+        used_swing = _NS_thorne._blit_thorne_swing_frame(
+            surface, frame_idx, boss.direction, x + step, y + 44, tilt=tilt)
+
+        if used_swing:
+            # Motion trail ayunan club di atas sprite HD swing
+            if 0.25 < progress < 0.7:
+                t = (progress - 0.25) / 0.45
+                _NS_thorne._draw_club_swing_trail(
+                    surface, x + step + boss.direction * 8, y - 6,
+                    boss.direction, _NS_thorne._swing_angle(progress), t)
+            _NS_thorne._draw_body_particles(surface, x + step, y, boss.pulse,
+                                            warpath=warpath)
+        elif _NS_thorne._blit_thorne_sprite(surface, "attack", boss.direction,
+                                            x + step, y + 44, tilt=tilt):
+            # 2) Pose attack statis HD (legacy thorne_attack.png)
             if 0.25 < progress < 0.7:
                 t = (progress - 0.25) / 0.45
                 _NS_thorne._draw_club_swing_trail(
@@ -5892,6 +6042,7 @@ class _NS_thorne:
             _NS_thorne._draw_body_particles(surface, x + step, y, boss.pulse,
                                             warpath=warpath)
         else:
+            # 3) Render prosedural lama
             _NS_thorne._draw_thorne_body(surface, x + step, y, boss.direction,
                               boss.pulse, "attack", progress, warpath=warpath)
 
@@ -6793,6 +6944,8 @@ class _NS_thorne:
         """Charging goo at snout, then spits."""
         progress = max(0.0, min(1.0, 1 - timer / 40))
         facing = boss.direction
+        # HD base layer (icon-item style) di atas karakter
+        _NS_thorne._blit_thorne_skill(surface, "q", x, y)
 
         snout_x = x + 20 * facing
         snout_y = y - 20
@@ -6834,6 +6987,8 @@ class _NS_thorne:
         """Golden aura + quills sticking out more aggressively."""
         progress = max(0.0, min(1.0, 1 - timer / 100))
         pulse = math.sin(phase * 2) * 0.3 + 0.7
+        # HD base layer (icon-item style) di atas karakter
+        _NS_thorne._blit_thorne_skill(surface, "w", x, y)
 
         # Golden aura around body
         aura = pygame.Surface((120, 120), pygame.SRCALPHA)
@@ -6879,6 +7034,8 @@ class _NS_thorne:
     def _handle_quill_spray_skill(surface, boss, x, y, timer, phase):
         """Fires quills in bursts."""
         progress = max(0.0, min(1.0, 1 - timer / 60))
+        # HD base layer (icon-item style) di atas karakter
+        _NS_thorne._blit_thorne_skill(surface, "e", x, y)
 
         # Preparation - charging up (quills stand up more)
         if progress < 0.3:
@@ -6913,6 +7070,8 @@ class _NS_thorne:
         """Rage aura + shaking effect."""
         progress = max(0.0, min(1.0, 1 - timer / 120))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
+        # HD base layer (icon-item style) di atas karakter
+        _NS_thorne._blit_thorne_skill(surface, "r", x, y)
 
         # Rage circle
         for r in range(3):
