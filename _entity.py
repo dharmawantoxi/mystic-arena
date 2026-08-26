@@ -1801,6 +1801,12 @@ class Castle:
         final_x = int(self.x - new_w // 2)
         final_y = int(self.y - new_h + 35)
         surface.blit(scaled, (final_x, final_y))
+        # Sprite castle HD memiliki banyak piksel semi-transparan (glow,
+        # asap, dan tepi halus). Di atas tekstur map yang terang, hasilnya
+        # terlihat pudar. Blit kedua di posisi yang sama memperkuat warna
+        # tanpa menghilangkan alpha pada tepi sprite.
+        if use_asset:
+            surface.blit(scaled, (final_x, final_y))
 
         # ═══ CASTLE SHIELD CREST (setelah dibeli) ═══
         if getattr(self, 'shield_active', False) and getattr(self, 'shield', 0) > 0:
