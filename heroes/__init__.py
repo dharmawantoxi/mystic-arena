@@ -725,10 +725,6 @@ def _get_hero_scale(hero_type):
 # Berapa fase animasi idle yang di-cache per kombinasi.
 # Makin besar = animasi makin halus tapi cache makin banyak.
 HERO_ANIM_PHASES = 12
-# Thorne memakai pose idle yang sedikit lebih rapat agar napas dan
-# weight-shift HD tidak terlihat melompat tiap beberapa frame. Hero lain
-# tetap memakai budget cache yang sama seperti sebelumnya.
-_THORNE_IDLE_PHASES = 24
 
 # ═══ CACHE TERKUANTISASI UNTUK KOMBAT ═══
 # Sebelumnya hero yang sedang menyerang/cast skill TIDAK di-cache
@@ -829,28 +825,14 @@ def _hero_cache_key(hero_type, hero):
     except Exception:
         _q = 1
 
-    # HD heroes (kaizen/thorne/zephyr) need finer granularity - otherwise
-    # their PNG-based animation looks choppy/sticker. Use quant 1 for
-    # attack/skill and 24 idle phases for all HD heroes.
-    _HD_HEROES = {"kaizen", "thorne", "zephyr"}
-    is_hd = hero_type in _HD_HEROES
-
     if skill:
-        q_skill = 1 if is_hd else HERO_SKILL_QUANT
         return (hero_type, team, level, facing, 'skill', skill,
-                skill_t // (q_skill * _q))
+                skill_t // (HERO_SKILL_QUANT * _q))
     if timer > 0:
-        q_atk = 1 if is_hd else HERO_ATK_QUANT
         return (hero_type, team, level, facing, 'atk',
-                timer // (q_atk * _q))
+                timer // (HERO_ATK_QUANT * _q))
 
-    pulse = float(getattr(hero, 'pulse', 0.0) or 0.0)
-    if hero_type in ("thorne", "kaizen", "zephyr"):
-        # HD heroes need twice the idle samples to avoid 6 FPS pose swap
-        # sticker impression. Cycle stays 6.0, only temporal resolution up.
-        phase = int(pulse * 4.0) % _THORNE_IDLE_PHASES
-    else:
-        phase = int(pulse * 2.0) % HERO_ANIM_PHASES
+    phase = int(getattr(hero, 'pulse', 0.0) * 2.0) % HERO_ANIM_PHASES
     return (hero_type, team, level, facing, 'idle', phase,
             bool(getattr(hero, '_moving_cached', False)))
 

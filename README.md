@@ -109,29 +109,6 @@ baru. AI menabung gold untuk target itu agar tidak selalu membeli boss Level
 
 Uji regresi: `python tools/test_easy_mode_ai_pool.py`.
 
-## Animasi hero HD (gaya Kingdom Wars)
-
-Hero HD (kaizen / thorne / zephyr) memakai **walk cycle 6 frame nyata**
-(contact → passing → contact → passing → stride → recoil) — bukan 2 pose
-yang di-cross-fade — plus gerak ala game perang stickman:
-
-- **Fase dikunci ke bucket cache** (`_kaizen_walk_cycle` dkk.) sehingga
-  loop animasi == loop cache; pose tidak lagi "loncat" tiap detik.
-- **`_moving_cached` kini di-set semua hero** — dulu flag di key cache
-  tidak pernah diisi sehingga pose idle & walk saling menimpa di cache.
-- **Lean ke arah gerak**, **squash saat berbalik arah** (turn hop),
-  **debu tiap kaki mendarat** (footstep dust), dan **motion smear**
-  (afterimage 2 pose) saat ayunan serangan.
-
-Aset cycle dibake dari strip AI:
-`python tools/make_hd_walkcycle.py` (sumber
-`assets/heroes/_raw/<hero>_walkcycle_raw.png`, hasil
-`assets/heroes/<hero>_walk_0..5.png` + preview di `docs/`).
-
-Uji regresi: `python tools/test_hd_walkcycle.py`
-(aset, siklus 6 frame, determinisme cache antar-loop, pemisahan key
-idle/walk, lean/turn, smear serangan).
-
 ## Save — Google Play Games (satu-satunya fitur save)
 
 Save pemain **hanya** lewat **Google Play Games Saved Games** — sama

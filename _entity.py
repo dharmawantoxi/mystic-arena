@@ -1489,10 +1489,6 @@ class Castle:
         self.pulse = 0
 
         self._render_cache = {}
-        # True kalau canvas level ini pakai sprite HD (assets/castles)
-        # dan BUKAN render prosedural - efek dinamis torch prosedural
-        # dilewati karena api/glow sudah ada di gambarnya.
-        self._render_cache_is_asset = {}
 
         # ═══ CASTLE SHIELD SYSTEM (anti-smurf) ═══
         # Shield active before wave threshold, reduces damage and shows bubble.
@@ -1544,7 +1540,6 @@ class Castle:
             self.shield = int(self.shield_max * shield_ratio)
 
         self._render_cache = {}
-        self._render_cache_is_asset = {}
 
     def upgrade(self):
         if self.level >= MAX_NEXUS_LEVEL:
@@ -1743,23 +1738,9 @@ class Castle:
         cache_key = f"castle_{self.team}_L{lvl}"
         if cache_key not in self._render_cache:
             castle_canvas = pygame.Surface((cw, ch), pygame.SRCALPHA)
-            asset = _load_castle_asset(self.team, self.level)
-            if asset is not None:
-                # Sprite HD (gaya visual sama dengan icon Item Forge):
-                # di-anchor ke dasar canvas supaya kastil "berdiri" di
-                # titik yang sama dengan render prosedural. Api torch
-                # dan glow sudah digambar di asetnya.
-                castle_canvas.blit(
-                    asset, (cw // 2 - asset.get_width() // 2,
-                            ch - 15 - asset.get_height()))
-            else:
-                # Fallback: render prosedural legacy kalau aset tak ada.
-                _render_castle_full(castle_canvas, self, cw // 2,
-                                    ch - 20, palette)
+            _render_castle_full(castle_canvas, self, cw // 2,
+                                ch - 20, palette)
             self._render_cache[cache_key] = castle_canvas
-            self._render_cache_is_asset[cache_key] = asset is not None
-
-        use_asset = self._render_cache_is_asset.get(cache_key, False)
 
         SCALE = 0.85  # Perkecil 15%
         new_w = int(cw * SCALE)
@@ -1774,18 +1755,10 @@ class Castle:
         if _cheap:
             # ── Jalur asli (PC): salin, efek dinamis, lalu skala ──
             canvas = self._render_cache[cache_key].copy()
-            # Efek dinamis prosedural (torch) hanya untuk render
-            # prosedural; sprite HD sudah punya api & glow sendiri.
-            if not use_asset:
-                _render_dynamic_effects(canvas, self, palette)
+            _render_dynamic_effects(canvas, self, palette)
             scaled = pygame.transform.smoothscale(canvas, (new_w, new_h))
         else:
             # ── Jalur HP ──
-            # Dulu TIAP FRAME: copy 180x160 + efek + smoothscale.
-            # smoothscale tidak punya jalur SIMD di ARM sehingga
-            # memakan belasan ms; dua kastil saja = 47 ms/frame
-            # padahal tidak ada unit lain di layar.
-            # Sekarang hasil skala di-cache per (tim, level).
             skey = (self.team, lvl, new_w, new_h)
             scaled = _CASTLE_SCALED_CACHE.get(skey)
             if scaled is None:
@@ -1801,18 +1774,12 @@ class Castle:
         final_x = int(self.x - new_w // 2)
         final_y = int(self.y - new_h + 35)
         surface.blit(scaled, (final_x, final_y))
-        # Sprite castle HD memiliki banyak piksel semi-transparan (glow,
-        # asap, dan tepi halus). Di atas tekstur map yang terang, hasilnya
-        # terlihat pudar. Blit kedua di posisi yang sama memperkuat warna
-        # tanpa menghilangkan alpha pada tepi sprite.
-        if use_asset:
-            surface.blit(scaled, (final_x, final_y))
 
         # ═══ CASTLE SHIELD CREST (setelah dibeli) ═══
         if getattr(self, 'shield_active', False) and getattr(self, 'shield', 0) > 0:
             self._draw_castle_shield(surface, final_x + new_w//2, final_y - 10)
 
-        if not _cheap and not use_asset:
+        if not _cheap:
             try:
                 _render_dynamic_effects_direct(
                     surface, self, palette, final_x, final_y, SCALE)
@@ -1876,57 +1843,6 @@ class Castle:
                 surface.blit(label, (bx, by - 12))
             except Exception:
                 pass
-# ═══════════════════════════════════════════════════════
-# CASTLE HD ASSETS (sprite per tim+level, gaya sama dgn icon item)
-# ═══════════════════════════════════════════════════════
-# Aset PNG transparan hasil render digital di assets/castles/
-# (blue_L1..L5, red_L1..L5). Kalau file tidak ada atau gagal
-# dimuat, game tetap jalan dengan render prosedural lama
-# (_render_castle_full di bawah) - build tanpa aset tidak rusak.
-_CASTLE_ASSET_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "assets", "castles")
-_CASTLE_ASSET_CACHE = {}
-_CASTLE_ASSET_MISSING = set()
-
-
-def _load_castle_asset(team, lvl):
-    """Muat + cache sprite kastil HD untuk (team, level).
-
-    Return pygame.Surface (SRCALPHA) yang sudah di-skalakan agar
-    muat di canvas kastil (180x160) dengan margin, atau None kalau
-    aset tidak tersedia.
-    """
-    key = (team, lvl)
-    if key in _CASTLE_ASSET_CACHE:
-        return _CASTLE_ASSET_CACHE[key]
-    if key in _CASTLE_ASSET_MISSING:
-        return None
-    path = os.path.join(_CASTLE_ASSET_DIR, "%s_L%d.png" % (team, lvl))
-    if not os.path.exists(path):
-        _CASTLE_ASSET_MISSING.add(key)
-        return None
-    try:
-        raw = pygame.image.load(path)
-        # Aset kita PNG RGBA (sudah SRCALPHA); convert_alpha hanya
-        # mempercepat blit, dan butuh display mode aktif - jadi
-        # kalau gagal, biarkan saja (tetap bisa di-blit).
-        try:
-            raw = raw.convert_alpha()
-        except Exception:
-            pass
-        # Pas ke canvas kastil: lebar maks 176, tinggi maks 148
-        # (sisa canvas untuk bar/shield di atas dan tanah di bawah).
-        max_w, max_h = 176, 148
-        w, h = raw.get_size()
-        scale = min(max_w / float(w), max_h / float(h))
-        tw = max(8, int(w * scale))
-        th = max(8, int(h * scale))
-        scaled = pygame.transform.smoothscale(raw, (tw, th))
-        _CASTLE_ASSET_CACHE[key] = scaled
-        return scaled
-    except Exception:
-        _CASTLE_ASSET_MISSING.add(key)
-        return None
 
 
 # ═══════════════════════════════════════════════════════

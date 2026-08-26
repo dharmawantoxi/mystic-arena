@@ -35,8 +35,5 @@ Thumbs.db
 # Save game hasil uji coba
 saves/
 
-# Thorne HD raw generations (processed sprites live in assets/heroes/)
-assets/heroes/_raw/
-
 # DB runtime server top up (transaksi - jangan commit)
 server/topup.db
