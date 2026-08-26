@@ -6024,27 +6024,64 @@ class _NS_thorne:
 
         if used_swing:
             # Motion trail ayunan club di atas sprite HD swing
-            if 0.25 < progress < 0.7:
-                t = (progress - 0.25) / 0.45
-                _NS_thorne._draw_club_swing_trail(
-                    surface, x + step + boss.direction * 8, y - 6,
-                    boss.direction, _NS_thorne._swing_angle(progress), t)
+            _NS_thorne._draw_thorne_swing_arc(surface, x + step, y,
+                                              boss.direction, progress)
             _NS_thorne._draw_body_particles(surface, x + step, y, boss.pulse,
                                             warpath=warpath)
         elif _NS_thorne._blit_thorne_sprite(surface, "attack", boss.direction,
                                             x + step, y + 44, tilt=tilt):
             # 2) Pose attack statis HD (legacy thorne_attack.png)
-            if 0.25 < progress < 0.7:
-                t = (progress - 0.25) / 0.45
-                _NS_thorne._draw_club_swing_trail(
-                    surface, x + step + boss.direction * 8, y - 6,
-                    boss.direction, _NS_thorne._swing_angle(progress), t)
+            _NS_thorne._draw_thorne_swing_arc(surface, x + step, y,
+                                              boss.direction, progress)
             _NS_thorne._draw_body_particles(surface, x + step, y, boss.pulse,
                                             warpath=warpath)
         else:
             # 3) Render prosedural lama
             _NS_thorne._draw_thorne_body(surface, x + step, y, boss.direction,
                               boss.pulse, "attack", progress, warpath=warpath)
+
+
+    def _draw_thorne_swing_arc(surface, x, y, facing, progress):
+        """Busur ayunan club besar & terang, berpusat ke bahu.
+
+        Trail lama (_draw_club_swing_trail) digambar di y-6 (sekitar perut) dan
+        radius-nya kecil, sehingga tidak terbaca sebagai ayunan untuk sprite HD
+        yang tingginya 104 px. Helper ini menggambar sapuan sabit keemasan yang
+        besar, berpusat di bahu (sedikit di atas gaya mid-bottom y+44), dan
+        menyapu dari belakang ke depan mengikuti timing _swing_angle. Semua
+        alpha memakai _aaline (aman untuk Android & pygame-ce).
+        """
+        if not (0.22 < progress < 0.72):
+            return
+        t = (progress - 0.22) / 0.50
+
+        # Alpa puncak di tengah sweep, memudar di ujung.
+        alpha = int(230 * math.sin(t * math.pi))
+        if alpha < 18:
+            return
+
+        # Bahu / grip pada sprite HD (mid-bottom = y+44, tinggi 104).
+        cx = x + facing * 6
+        cy = y - 2 - int(math.sin(progress * math.pi) * 2)
+
+        end = _NS_thorne._swing_angle(progress)
+        start = end - 1.2
+        R = 52
+
+        segs = 24
+        layers = ((R, 3, (255, 214, 120)),
+                  (int(R * 0.70), 2, (255, 235, 170)),
+                  (int(R * 0.45), 1, (255, 250, 210)))
+        for rr, wd, col in layers:
+            for i in range(segs):
+                a0 = start + (end - start) * (i / segs)
+                a1 = start + (end - start) * ((i + 1) / segs)
+                x0 = cx + math.cos(a0) * rr * facing
+                y0 = cy + math.sin(a0) * rr
+                x1 = cx + math.cos(a1) * rr * facing
+                y1 = cy + math.sin(a1) * rr
+                _NS_thorne._aaline(surface, (col[0], col[1], col[2], alpha),
+                                   (x0, y0), (x1, y1), wd)
 
 
     # ===================================================================
