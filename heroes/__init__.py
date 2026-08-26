@@ -725,6 +725,10 @@ def _get_hero_scale(hero_type):
 # Berapa fase animasi idle yang di-cache per kombinasi.
 # Makin besar = animasi makin halus tapi cache makin banyak.
 HERO_ANIM_PHASES = 12
+# Thorne memakai pose idle yang sedikit lebih rapat agar napas dan
+# weight-shift HD tidak terlihat melompat tiap beberapa frame. Hero lain
+# tetap memakai budget cache yang sama seperti sebelumnya.
+_THORNE_IDLE_PHASES = 24
 
 # ═══ CACHE TERKUANTISASI UNTUK KOMBAT ═══
 # Sebelumnya hero yang sedang menyerang/cast skill TIDAK di-cache
@@ -832,7 +836,14 @@ def _hero_cache_key(hero_type, hero):
         return (hero_type, team, level, facing, 'atk',
                 timer // (HERO_ATK_QUANT * _q))
 
-    phase = int(getattr(hero, 'pulse', 0.0) * 2.0) % HERO_ANIM_PHASES
+    pulse = float(getattr(hero, 'pulse', 0.0) or 0.0)
+    if hero_type == "thorne":
+        # Thorne's breathing/weight-shift needs twice the idle samples to
+        # avoid looking like a 6 FPS pose swap.  The cycle duration remains
+        # the same; only the temporal resolution is improved.
+        phase = int(pulse * 4.0) % _THORNE_IDLE_PHASES
+    else:
+        phase = int(pulse * 2.0) % HERO_ANIM_PHASES
     return (hero_type, team, level, facing, 'idle', phase,
             bool(getattr(hero, '_moving_cached', False)))
 
