@@ -36,11 +36,14 @@ berkas cross-file meson), plus menyediakan SDL2 lewat pkg-config.
 Itu pekerjaan riset tersendiri — jangan dicoba menjelang rilis.
 """
 
+import hashlib
 import os
-from os.path import join
+import shutil
+from os.path import dirname, exists, join
 
 from pythonforandroid.recipe import CompiledComponentsPythonRecipe
 from pythonforandroid.toolchain import current_directory
+from pythonforandroid.util import ensure_dir
 
 # Penanda resep. WAJIB dinaikkan setiap kali isi resep ini berubah.
 # Nilainya ditanam ke dalam paket pygame yang terpasang dan bisa
@@ -53,6 +56,10 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
     version = "2.4.1"
     url = ("https://files.pythonhosted.org/packages/source/p/pygame-ce/"
            "pygame-ce-{version}.tar.gz")
+    # Sidik jari tarball resmi pygame-ce 2.4.1 dari PyPI. Dipakai p4a
+    # untuk memverifikasi berkas unduhan (dan salinan vendored di bawah).
+    sha256sum = ("70a84aa1417c633a0fd6754ffa5dc92ee1b9aeb70baaa52c8c8c94a7c6"
+                 "db9cf0")
 
     name = "pygame-ce"
     site_packages_name = "pygame"
@@ -85,6 +92,50 @@ class PygameCERecipe(CompiledComponentsPythonRecipe):
         satu putaran uji yang menyesatkan.
         """
         return True
+
+    def download_if_necessary(self):
+        """
+        JARING PENGAMAN UNDULAN: tarball vendored di dalam repo.
+
+        Workflow CI SENGAJA menghapus folder packages/pygame-ce setiap
+        build (supaya pygame pasti dikompilasi ulang), sehingga tarball
+        ini diunduh ulang dari PyPI SETIAP build. Kalau PyPI/CDN sedang
+        bermasalah — bahkan cuma beberapa menit — seluruh build mati di
+        menit pertama lewat rentetan:
+
+            Download failed: ...; retrying in 1/2/4/8 second(s)...
+
+        Untuk memutus ketergantungan itu, salinan resmi tarball 2.4.1
+        disimpan di samping resep ini (pygame-ce-2.4.1.tar.gz). Kalau
+        berkas unduhan belum ada, salinan itu dipakai; unduhan jaringan
+        hanya terjadi sebagai jalan terakhir. Sidik jari sha256 tetap
+        diverifikasi p4a (atribut `sha256sum` di atas), jadi berkas
+        vendored yang korup TIDAK akan pernah terpakai diam-diam.
+        """
+        filename = self.versioned_url.split("/")[-1]
+        pkg_dir = join(self.ctx.packages_path, self.name)
+        target = join(pkg_dir, filename)
+        marker = join(pkg_dir, ".mark-" + filename)
+        if not exists(target) or not exists(marker):
+            vendored = join(dirname(__file__), filename)
+            sha_ok = False
+            if exists(vendored):
+                h = hashlib.sha256()
+                with open(vendored, "rb") as fh:
+                    for chunk in iter(lambda: fh.read(1 << 20), b""):
+                        h.update(chunk)
+                sha_ok = (h.hexdigest() == self.sha256sum)
+                if not sha_ok:
+                    print("[pygame-ce] PERINGATAN: sha256 tarball vendored "
+                          "tidak cocok - berkas diabaikan")
+            if sha_ok:
+                ensure_dir(pkg_dir)
+                shutil.copyfile(vendored, target)
+                with open(marker, "w") as fh:
+                    fh.write("vendored\n")
+                print("[pygame-ce] memakai tarball vendored (tanpa "
+                      "unduhan): %s" % vendored)
+        super(PygameCERecipe, self).download_if_necessary()
 
     def _patch_neon_runtime_check(self):
         """

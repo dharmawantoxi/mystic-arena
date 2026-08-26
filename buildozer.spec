@@ -16,7 +16,10 @@ package.domain = io.github.dharmawantoxi
 
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,ttf,otf,wav,ogg,mp3,json,txt
-source.exclude_dirs = tools,tests,docs,.github,.buildozer,bin,__pycache__,.git
+# p4a-recipes ikut dikecualikan supaya tarball vendored pygame-ce
+# (14 MB, bahan build - bukan kode game) tidak pernah ikut terkemas
+# ke dalam APK, apa pun aturan ekstensi di atas.
+source.exclude_dirs = tools,tests,docs,.github,.buildozer,bin,__pycache__,.git,p4a-recipes
 source.exclude_patterns = main_desktop_legacy.py,smoke_test.py,*.spec.bak
 
 # version.code dinaikkan TIAP upload ke Play Console
@@ -53,7 +56,16 @@ requirements = python3,pygame-ce,pyjnius,android
 #   - Kalau APP_ID belum diisi, fitur cloud NONAKTIF (tidak crash).
 # ═══════════════════════════════════════════════════════
 android.add_src = %(source.dir)s/src
-android.gradle_dependencies = com.google.android.gms:play-services-games-v2:+
+# ⚠ VERSI DIPIN, BUKAN "+"
+# Dengan "+", Gradle mengambil versi TERBARU play-services-games-v2
+# SETIAP build (maven-metadata berubah-ubah). Rilis baru Google bisa
+# mengubah hasil resolusi dependensi tanpa satu pun perubahan kode —
+# build yang kemarin hijau tiba-tiba merah, dan gagal build di CI yang
+# cuma ~50 detik mustahil didiagnosa tanpa log lengkap.
+# 22.0.0 adalah versi yang dipakai build-build sukses terakhir
+# (rilis Google 29 Juli 2026). Naikkan DENGAN SENGAJA kalau memang
+# ingin pindah versi, lalu uji dulu.
+android.gradle_dependencies = com.google.android.gms:play-services-games-v2:22.0.0
 # Play Games v2 memakai library AndroidX (transitif) — wajib dinyalakan
 # supaya Gradle tidak gagal dengan "Dependency requires AndroidX".
 android.enable_androidx = True
@@ -119,8 +131,23 @@ android.debug_artifact = apk
 # PYTHON-FOR-ANDROID
 # Resep pygame-ce ada di folder p4a-recipes/ (resep bawaan p4a
 # masih menunjuk pygame 2.1.0 yang ditandai broken).
+#
+# ⚠ VERSI P4A DIKUNCI — JANGAN DIHAPUS
+# Buildozer default-nya meng-clone cabang `master` python-for-android
+# TANPA pin. Cabang master p4a sudah DIBEKUKAN upstream di commit
+# 58d21141 (rilis v2026.05.09); pengembangan pindah ke `develop`.
+# Tanpa pin eksplisit:
+#   - kalau upstream menghapus/memindahkan `master`, clone baru di CI
+#     gagal total dan build mati di menit pertama;
+#   - kalau `master` digerakkan lagi, build berubah tanpa kita ubah
+#     apa pun (pernah terjadi: default Python p4a develop naik ke 3.14
+#     dan merusak kompilasi pygame-ce).
+# p4a.commit memaksa `git reset --hard` ke commit ini setiap build,
+# jadi hasil clone lama (cache) maupun clone baru selalu identik.
 # ═══════════════════════════════════════════════════════
 p4a.bootstrap = sdl2
+p4a.branch = master
+p4a.commit = 58d21141f17c889bf8585f5665921d72028f8831
 p4a.local_recipes = ./p4a-recipes
 p4a.hook = tools/p4a_hooks.py
 
