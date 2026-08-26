@@ -66,6 +66,10 @@ NS._THORNE_SWING_MISSING.clear()
 NS._THORNE_WALK_CACHE.clear()
 NS._THORNE_WALK_MISSING.clear()
 
+# T0: idle loop mempunyai fidget nyata, bukan hanya transform satu PNG.
+assert [NS._thorne_idle_fidget_frame(v) for v in (0.0, 1.5, 3.0, 4.5)] == [None, 0, 1, None]
+assert NS._thorne_idle_motion(0.0) != NS._thorne_idle_motion(1.0)
+
 surf = dark_bg(400, 200)
 p = Probe(1)
 NS._draw_thorne_idle(surf, p, 100, 100)

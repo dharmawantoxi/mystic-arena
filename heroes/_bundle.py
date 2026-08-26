@@ -5237,6 +5237,70 @@ class _NS_thorne:
     # badan prosedural lama (puncak quill s/d kaki ~100 px).
     THORNE_SPRITE_HEIGHT = 104
 
+    # ---------------------------------------------------------------------------
+    # IDLE LIFE / MICRO-MOTION
+    # ---------------------------------------------------------------------------
+    # Thorne's HD art is a single transparent sprite, so a completely static
+    # blit makes the heavy bruiser look like a sticker.  Keep the movement
+    # deliberately small: a slow breath, a tiny weight shift and a little
+    # tilt are enough to sell mass without making him look like he is floating.
+    # The hero cache repeats an idle key every 6 pulse units (24 samples at
+    # 4 samples per pulse).  Matching that period prevents a visible snap
+    # when the cached breathing loop starts over.
+    THORNE_IDLE_CYCLE = 6.0
+    THORNE_IDLE_BREATH_SPEED = 2.0 * math.pi / THORNE_IDLE_CYCLE
+    THORNE_IDLE_SWAY_SPEED = 2.0 * math.pi / THORNE_IDLE_CYCLE
+
+    def _thorne_idle_motion(phase):
+        """Return subtle idle motion for the HD sprite and fallback renderer.
+
+        The values are in native renderer pixels and are intentionally kept
+        below two pixels for position changes.  The renderer is also used by
+        the hero sprite cache, so this function must stay deterministic: the
+        same pulse always produces the same pose.
+        """
+        phase = float(phase) % _NS_thorne.THORNE_IDLE_CYCLE
+        breath = math.sin(phase * _NS_thorne.THORNE_IDLE_BREATH_SPEED - 0.45)
+        breath_fine = math.sin(phase * _NS_thorne.THORNE_IDLE_BREATH_SPEED * 2.0 + 0.35)
+        weight_shift = math.sin(phase * _NS_thorne.THORNE_IDLE_SWAY_SPEED + 0.60)
+        weight_fine = math.sin(phase * _NS_thorne.THORNE_IDLE_SWAY_SPEED * 2.0 - 0.20)
+
+        bob = breath * 1.15 + breath_fine * 0.25
+        sway = weight_shift * 1.25 + weight_fine * 0.20
+        tilt = weight_shift * 1.35 + weight_fine * 0.20
+
+        # A tiny squash/stretch makes the breath read even when the sprite is
+        # viewed at the small in-game scale.  Keep the feet anchored below.
+        scale_y = 1.0 + breath * 0.014 + breath_fine * 0.003
+        scale_x = 1.0 - breath * 0.006 - breath_fine * 0.001
+
+        # When the body rises, its contact shadow narrows slightly; this keeps
+        # the weight shift grounded rather than looking like a hover animation.
+        shadow_scale = max(0.94, min(1.06, 1.0 + bob * 0.035))
+        return {
+            "bob": bob,
+            "sway": sway,
+            "tilt": tilt,
+            "scale_x": scale_x,
+            "scale_y": scale_y,
+            "shadow_scale": shadow_scale,
+        }
+
+    def _thorne_idle_fidget_frame(phase):
+        """Occasional planted weight-shift using the real walk poses.
+
+        A whole-sprite bob alone still reads like a card being moved.  Reuse
+        the already baked stride/plant art for the middle of the idle loop so
+        the legs and club make a real secondary motion.  ``None`` means use
+        the relaxed idle pose.
+        """
+        sample = int((float(phase) % _NS_thorne.THORNE_IDLE_CYCLE) * 4.0) % 24
+        if 6 <= sample < 12:
+            return 0
+        if 12 <= sample < 18:
+            return 1
+        return None
+
     def _load_thorne_sprite(pose, facing=1):
         """Muat + cache sprite HD thorne untuk (pose, arah).
 
@@ -5273,8 +5337,12 @@ class _NS_thorne:
         return surf
 
     def _blit_thorne_sprite(surface, pose, facing, x, foot_y,
-                            bob=0, tilt=0.0):
+                            bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
         """Blit sprite HD dengan anchor tengah-bawah di (x, foot_y).
+
+        ``scale_x`` dan ``scale_y`` dipakai oleh idle micro-motion untuk
+        memberi efek napas ringan.  Sprite cache dasar tidak pernah diubah;
+        transform hanya dibuat pada saat pose baru dirender.
 
         Return True kalau sprite terpakai; False berarti caller harus
         fallback ke render prosedural.
@@ -5282,6 +5350,18 @@ class _NS_thorne:
         spr = _NS_thorne._load_thorne_sprite(pose, facing)
         if spr is None:
             return False
+
+        scale_x = max(0.90, min(1.10, float(scale_x)))
+        scale_y = max(0.90, min(1.10, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr,
+                (
+                    max(8, int(round(sw * scale_x))),
+                    max(8, int(round(sh * scale_y))),
+                ),
+            )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
@@ -5330,10 +5410,21 @@ class _NS_thorne:
         return surf
 
     def _blit_thorne_walk_frame(surface, idx, facing, x, foot_y,
-                                bob=0, tilt=0.0):
+                                bob=0, tilt=0.0, scale_x=1.0, scale_y=1.0):
         spr = _NS_thorne._load_thorne_walk_frame(idx, facing)
         if spr is None:
             return False
+        scale_x = max(0.90, min(1.10, float(scale_x)))
+        scale_y = max(0.90, min(1.10, float(scale_y)))
+        if abs(scale_x - 1.0) > 0.001 or abs(scale_y - 1.0) > 0.001:
+            sw, sh = spr.get_size()
+            spr = pygame.transform.smoothscale(
+                spr,
+                (
+                    max(8, int(round(sw * scale_x))),
+                    max(8, int(round(sh * scale_y))),
+                ),
+            )
         if tilt:
             spr = pygame.transform.rotate(spr, tilt)
         rect = spr.get_rect(midbottom=(int(x), int(foot_y + bob)))
@@ -6012,16 +6103,91 @@ class _NS_thorne:
     # POSE MODES
     # ===================================================================
     def _draw_thorne_idle(surface, boss, x, y, warpath=False):
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_thorne._draw_shadow(surface, x, y + 48)
-        _NS_thorne._draw_floating_dust(surface, x, y + 35, boss.pulse, warpath=warpath)
-        if _NS_thorne._blit_thorne_sprite(surface, "idle", boss.direction,
-                                          x, y + 44, bob=bob):
-            _NS_thorne._draw_body_particles(surface, x, y, boss.pulse,
-                                            warpath=warpath)
+        # HD idle gets the same grounded breathing/weight shift as the
+        # procedural fallback.  Using the shared motion values keeps both
+        # render paths visually consistent when an asset is missing.
+        motion = _NS_thorne._thorne_idle_motion(
+            getattr(boss, "pulse", 0.0))
+        draw_x = int(round(x + motion["sway"]))
+        draw_y = int(round(y + motion["bob"]))
+        shadow_x = int(round(x + motion["sway"] * 0.35))
+
+        _NS_thorne._draw_shadow(surface, shadow_x, y + 48,
+                                scale=motion["shadow_scale"])
+        _NS_thorne._draw_floating_dust(
+            surface, draw_x, draw_y + 35, boss.pulse, warpath=warpath)
+
+        # Once per idle loop Thorne shifts his planted stance.  This uses
+        # actual foot/club artwork rather than only rotating the complete
+        # cutout, which removes the "sticker being wobbled" impression.
+        fidget_frame = _NS_thorne._thorne_idle_fidget_frame(boss.pulse)
+        used = False
+        if fidget_frame is not None:
+            used = _NS_thorne._blit_thorne_walk_frame(
+                surface, fidget_frame, boss.direction, draw_x, y + 44,
+                bob=motion["bob"], tilt=motion["tilt"],
+                scale_x=motion["scale_x"], scale_y=motion["scale_y"])
+        if not used:
+            used = _NS_thorne._blit_thorne_sprite(
+                surface, "idle", boss.direction, draw_x, y + 44,
+                bob=motion["bob"], tilt=motion["tilt"],
+                scale_x=motion["scale_x"], scale_y=motion["scale_y"])
+
+        if used:
+            _NS_thorne._draw_body_particles(
+                surface, draw_x, draw_y, boss.pulse, warpath=warpath)
+            _NS_thorne._draw_thorne_breath(
+                surface, draw_x, draw_y, boss.direction, boss.pulse)
         else:
-            _NS_thorne._draw_thorne_body(surface, x, y + bob, boss.direction,
-                              boss.pulse, "idle", warpath=warpath)
+            _NS_thorne._draw_thorne_body(
+                surface, draw_x, draw_y, boss.direction, boss.pulse,
+                "idle", warpath=warpath)
+            _NS_thorne._draw_thorne_breath(
+                surface, draw_x, draw_y, boss.direction, boss.pulse)
+
+        # A very thin foreground contact pass lets the feet sit *inside* the
+        # ground instead of on top of an isolated oval.  It is intentionally
+        # drawn after the cutout and before skill FX, so skill effects can
+        # still own the foreground when they are active.
+        _NS_thorne._draw_thorne_ground_contact(
+            surface, draw_x, y + 44 + motion["bob"], boss.pulse,
+            boss.direction)
+
+
+    def _draw_thorne_ground_contact(surface, cx, foot_y, phase, facing=1):
+        """Blend Thorne's feet into the floor with dust and contact shade."""
+        phase = float(phase)
+        foot_y = int(round(foot_y))
+        # The dark contact line is only a few pixels high: it hides the hard
+        # rectangular end of the PNG without visibly burying his feet.
+        contact = pygame.Surface((112, 12), pygame.SRCALPHA)
+        pressure = math.sin(phase * _NS_thorne.THORNE_IDLE_BREATH_SPEED - 0.45)
+        shadow_alpha = max(28, min(78, int(52 + pressure * 12)))
+        pygame.draw.ellipse(
+            contact, (*_NS_thorne.PALETTE["fur_darkest"], shadow_alpha),
+            (8, 2, 96, 8))
+        pygame.draw.ellipse(
+            contact, (*_NS_thorne.PALETTE["fur_light"], 26),
+            (14, 1, 84, 5), 1)
+        surface.blit(contact, (int(cx - 56), foot_y - 3))
+
+        # Tiny puffs are released asymmetrically as he shifts his weight.
+        # They are local to the feet, unlike the ambient motes around the
+        # body, so the hero feels connected to the same ground layer.
+        for i, side in enumerate((-1, 1, -1, 1)):
+            wave = (math.sin(
+                phase * _NS_thorne.THORNE_IDLE_BREATH_SPEED
+                + i * 1.65 + 0.8) + 1.0) * 0.5
+            drift = 3.0 + wave * 7.0
+            px = int(round(cx + side * (13.0 + drift)))
+            py = int(round(foot_y - 1.0 - wave * 4.0
+                          + math.sin(phase * 0.9 + i) * 0.6))
+            alpha = int(62.0 * (1.0 - wave))
+            if alpha > 6:
+                _NS_thorne._aacircle(
+                    surface,
+                    (*_NS_thorne.PALETTE["fur_mid"], alpha),
+                    (px, py), 1 + (i % 2))
 
 
     def _draw_thorne_walk(surface, boss, x, y, warpath=False):
@@ -6049,6 +6215,8 @@ class _NS_thorne:
         else:
             _NS_thorne._draw_thorne_body(surface, x + sway, y - bob,
                               facing, phase, "walk", warpath=warpath)
+        _NS_thorne._draw_thorne_ground_contact(
+            surface, x + sway, y + 44 - bob, phase, facing)
 
 
     def _swing_angle(progress):
@@ -6101,6 +6269,9 @@ class _NS_thorne:
             # 3) Render prosedural lama
             _NS_thorne._draw_thorne_body(surface, x + step, y, boss.direction,
                               boss.pulse, "attack", progress, warpath=warpath)
+
+        _NS_thorne._draw_thorne_ground_contact(
+            surface, x + step, y + 44, boss.pulse, boss.direction)
 
 
     def _draw_thorne_swing_arc(surface, x, y, facing, progress):
@@ -6871,6 +7042,38 @@ class _NS_thorne:
                 (cx - 2, cy - 4), (cx + 2, cy - 4), 1)
 
 
+    def _draw_thorne_breath(surface, cx, cy, facing, phase):
+        """Small warm breath puffs that make the idle pose feel inhabited.
+
+        Thorne is a boar-like bruiser, so a restrained exhale near the snout
+        reads more naturally than a generic sparkle effect.  The puffs are
+        kept faint and short-lived so they never compete with skill FX.
+        """
+        breath_wave = (math.sin(
+            float(phase) * _NS_thorne.THORNE_IDLE_BREATH_SPEED - 0.45) + 1.0) * 0.5
+        if breath_wave < 0.60:
+            return
+
+        progress = (breath_wave - 0.60) / 0.40
+        for i in range(2):
+            drift = progress * (4.0 + i * 2.0)
+            wobble = math.sin(float(phase) * 1.6 + i * 1.7) * 0.7
+            px = int(round(cx + facing * (15.0 + drift + i * 1.5) + wobble))
+            py = int(round(cy - 17.0 - progress * (5.0 + i * 1.5) - i * 3.0))
+            alpha = int(58.0 * (1.0 - progress) * (1.0 - i * 0.22))
+            radius = 1 + int(progress * 1.5) + i // 2
+            if alpha > 5:
+                _NS_thorne._aacircle(
+                    surface,
+                    (*_NS_thorne.PALETTE["belly_light"], alpha),
+                    (px, py), radius)
+                if radius > 1:
+                    _NS_thorne._aacircle(
+                        surface,
+                        (*_NS_thorne.PALETTE["quill_tip"], alpha // 2),
+                        (px - facing, py - 1), 1)
+
+
     def _draw_body_particles(surface, cx, cy, phase, warpath=False):
         """Ambient particles around body."""
         if warpath:
@@ -6961,8 +7164,9 @@ class _NS_thorne:
                           (sx, sy), max(2, 5 - i))
 
 
-    def _draw_shadow(surface, x, y):
-        """Ground shadow."""
+    def _draw_shadow(surface, x, y, scale=1.0):
+        """Ground shadow, with a tiny width response to body weight."""
+        scale = max(0.80, min(1.20, float(scale)))
         shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
         for radius in range(10, 0, -1):
             alpha = max(0, (10 - radius) * 16)
@@ -6970,8 +7174,13 @@ class _NS_thorne:
                 shadow, (0, 0, 0, alpha),
                 (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
             )
-        pygame.draw.ellipse(shadow, (*_NS_thorne.PALETTE["fur_darkest"], 60), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
+        pygame.draw.ellipse(
+            shadow, (*_NS_thorne.PALETTE["fur_darkest"], 60),
+            (8, 4, 84, 10))
+        if abs(scale - 1.0) > 0.001:
+            shadow = pygame.transform.smoothscale(
+                shadow, (max(1, int(round(100 * scale))), 20))
+        surface.blit(shadow, (int(x - shadow.get_width() / 2), int(y - 10)))
 
 
     def _draw_dust_aura(surface, x, y, phase):
@@ -7003,6 +7212,13 @@ class _NS_thorne:
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
         ring = pygame.Surface((130, 44), pygame.SRCALPHA)
 
+        # Soft filled soil patch behind the feet.  The old outline-only ring
+        # read like a separate badge under the PNG; this low-alpha fill gives
+        # the sprite a shared ground plane before the contact pass is added.
+        pygame.draw.ellipse(ring, (*_NS_thorne.PALETTE["fur_darkest"], 72),
+                            (2, 8, 126, 28))
+        pygame.draw.ellipse(ring, (*_NS_thorne.PALETTE["fur_dark"], 58),
+                            (12, 12, 106, 20))
         pygame.draw.ellipse(ring, (*_NS_thorne.PALETTE["fur_darkest"], 180),
                             (5, 10, 120, 24), 3)
         pygame.draw.ellipse(ring, (*_NS_thorne.PALETTE["fur_dark"], 200),
