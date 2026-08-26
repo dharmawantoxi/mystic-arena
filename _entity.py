@@ -4012,6 +4012,27 @@ class Hero(TowerDebuffMixin):
             # serang INSTAN seperti versi boss aslinya.
             is_boss_hero = bool(self.skill_data.get("is_boss_hero"))
 
+            # ═══ ATTACK COOLDOWN DIPASANG LEBIH DULU ═══
+            # Dihitung dari BASE (_base_attack_cd), dipanjangkan
+            # saat kena debuff attack-speed dari Ice Tower; snapshot
+            # disimpan ke _attack_cd_effective supaya renderer
+            # boss-hero (pola ``timer >= attack_cooldown - 1``) tetap
+            # mendeteksi serangan walau item attack speed
+            # memperpendek reload.
+            # BUGFIX (Frostbound Eye / Basilisk Breath & item
+            # on_attack lain): dulu cooldown di-set SETELAH callback
+            # on-hit item. Callback ranged (on_ranged_attack_hit)
+            # tidak dibungkus try/except - exception apa pun dari
+            # item menghentikan _do_attack SEBELUM attack_timer
+            # terisi, sehingga attack_timer tetap 0 dan hero ranged
+            # menyerang TIAP FRAME (attack speed tak masuk akal).
+            # Dengan cooldown terpasang dulu, serangan selalu
+            # "dibayar" cooldown-nya walau efek on-hit error.
+            _eff_cd = self._eff_attack_cd(
+                getattr(self, "_base_attack_cd", self.attack_cooldown))
+            self.attack_timer = _eff_cd
+            self._attack_cd_effective = _eff_cd
+
             # ═══ RANGED HEROES → spawn projectile ═══
             if self.hero_type in ('sylara', 'vex', 'zephyr',
                                   'morgath', 'ancient_apparition') \
@@ -4026,10 +4047,19 @@ class Hero(TowerDebuffMixin):
                 # ═══ ON-HIT TIER II ranged ═══
                 # Corrosion (shred), Bash, Arc chain - tanpa
                 # lifesteal/cleave (sudah ditangani di atas).
+                # Dibungkus try/except (paritas dengan jalur melee):
+                # efek on-hit item TIDAK BOLEH memutus alur serangan.
                 if inv is not None:
-                    inv.on_ranged_attack_hit(
-                        self.target, damage,
-                        self._collect_onhit_units())
+                    try:
+                        inv.on_ranged_attack_hit(
+                            self.target, damage,
+                            self._collect_onhit_units())
+                    except Exception:
+                        try:
+                            inv.on_ranged_attack_hit(self.target,
+                                                     damage, None)
+                        except Exception:
+                            pass
             else:
                 # Melee / boss hero → instant damage
                 self.target.take_damage(damage, self.team, source=self)
@@ -4062,17 +4092,6 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         inv.on_basic_attack_hit(self.target, damage,
                                                 None)
-
-            # Attack cooldown efektif (dipanjangkan saat kena debuff
-            # attack-speed dari Ice Tower). Dihitung dari BASE
-            # (_base_attack_cd), lalu snapshot-nya disimpan ke
-            # _attack_cd_effective supaya renderer boss-hero (pola
-            # ``timer >= attack_cooldown - 1``) tetap mendeteksi
-            # serangan walau item attack speed memperpendek reload.
-            _eff_cd = self._eff_attack_cd(
-                getattr(self, "_base_attack_cd", self.attack_cooldown))
-            self.attack_timer = _eff_cd
-            self._attack_cd_effective = _eff_cd
 
             # Suara serangan dasar: tebasan (melee) atau
             # petikan busur / lesatan sihir (ranged), dipilih

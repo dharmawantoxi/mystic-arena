@@ -1438,23 +1438,40 @@ class HeroItemInventory:
         return None
 
     def get_on_attack_chain(self):
-        """Return dict pasif sambaran listrik (Fenrir/Thunder)."""
+        """Return dict pasif sambaran listrik (Fenrir/Thunder).
+
+        BUGFIX: key ``on_attack`` kini juga dipakai pasif on-hit yang
+        BUKAN chain lightning (Frostbound Eye: Frostbite, Basilisk
+        Breath: Miasma). Dulu getter mengembalikan ``on_attack``
+        pertama dari slot mana pun, sehingga Frostbite/Miasma salah
+        dibaca sebagai chain lightning -> KeyError('chance') di
+        _on_hit_common -> pada hero ranged exception itu menghentikan
+        _do_attack SEBELUM attack_timer di-set -> hero menyerang tiap
+        frame (attack speed tak masuk akal). Sekarang hanya dict chain
+        asli (punya key "chance"/"targets"/"radius"/"damage") yang
+        dikembalikan.
+        """
         for sid in self.slots:
             if sid is None:
                 continue
             c = ITEM_CATALOG[sid].get("on_attack")
-            if c:
+            if c and ("chance" in c and "targets" in c
+                      and "radius" in c and "damage" in c):
                 return c
         return None
 
     def get_bash(self):
-        """Return dict bash pasif (Abyss Breaker) atau None."""
-        for sid in self.slots:
-            if sid is None:
-                continue
-            b = ITEM_CATALOG[sid].get("bash")
-            if b:
-                return b
+        """Return dict bash pasif (Abyss Breaker) atau None.
+
+        BUGFIX: Sundering Cudgel juga punya key ``bash`` tapi punya
+        cabang proc sendiri di _on_hit_common (Piercing Bash dengan
+        pierce_bash_cd). Dulu getter mengembalikan ``bash`` pertama
+        dari slot mana pun - kalau Cudgel ada di slot lebih depan,
+        cabang Abyss diam-diam memakai stat Cudgel (chance/stun/
+        cooldown salah) dan bash Abyss asli tidak pernah keluar.
+        """
+        if self.has("abyss_breaker"):
+            return ITEM_CATALOG["abyss_breaker"]["bash"]
         return None
 
     def is_veiled(self):
@@ -1802,8 +1819,11 @@ class HeroItemInventory:
                            ITEM_CATALOG["abyss_breaker"]["glow"])
 
         # ── Fenrir Chain / Thunder Coil: sambaran berantai ──
-        chain = self.get_on_attack_chain()
-        if chain and all_units is not None and target is not None \
+        # (.get() defensif supaya pasif on_attack non-chain tidak
+        #  pernah bisa memicu KeyError di jalur on-hit lagi)
+        chain = self.get_on_attack_chain() or {}
+        if chain.get("chance", 0) > 0 and all_units is not None \
+                and target is not None \
                 and random.random() < chain["chance"]:
             hit = [target] if getattr(target, "alive", False) else []
             for u in all_units:
