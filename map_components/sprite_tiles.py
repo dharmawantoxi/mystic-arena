@@ -878,103 +878,121 @@ class DecorSpriteCache:
             lambda s: ShopRenderer._draw_building(s, (ax, ay), kind))
         return surf, ax, ay
 
-    # ── DRAW ALL (mirror DecorationRenderer.draw_all) ──
+    # ── ITEMS (mirror filter & urutan DecorationRenderer.draw_all) ──
 
-    def draw_all(self, surf, mr):
+    def _items(self, mr):
+        """Yield (sprite, ax, ay, x, y) per dekorasi, urutan
+        painter's algorithm sama persis dengan pipeline lama."""
         theme = mr.theme
-
-        def blit_at(surf_ax, ax, ay, x, y):
-            surf.blit(surf_ax, (x - ax, y - ay))
-
-        if theme.get("has_ancient_ruins"):
-            for x, y, variant in mr.ancient_ruins:
-                s, ax, ay = self.ruin(variant)
-                blit_at(s, ax, ay, x, y)
+        yield from self._items_list(self.ruin, mr.ancient_ruins,
+                                    "has_ancient_ruins", theme,
+                                    lambda it: it[2])
+        # rocks (pilih sprite sesuai moss)
         if theme.get("has_rocks_mossy"):
             for x, y, size, has_moss in mr.rocks_mossy:
                 if has_moss:
                     s, ax, ay = self.rock(size)
                 else:
                     s, ax, ay = self.rock_nomoss(size)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
         if theme.get("has_gravestones"):
             s, ax, ay = self.gravestone()
             for x, y in mr.gravestones:
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
         if theme.get("has_bones"):
             for x, y, btype in mr.bones:
                 s, ax, ay = self.bone(btype)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
         if theme.get("has_dark_bushes"):
             for x, y, size in mr.dark_bushes:
                 s, ax, ay = self.bush(size)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
         if theme.get("has_spike_traps"):
             s, ax, ay = self.spike()
             for x, y in mr.spike_traps:
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
 
         # Dead/frozen trees
         if theme.get("has_frozen_trees"):
             for x, y, size in mr.dead_trees:
                 s, ax, ay = self.frozen_tree(size)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
         elif theme.get("has_dead_trees"):
             for x, y, size in mr.dead_trees:
                 s, ax, ay = self.dead_tree(size)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
 
         if theme.get("has_dark_trees"):
             for x, y, size, variant in mr.dark_trees:
                 s, ax, ay = self.dark_tree(size, variant)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
 
         if theme.get("has_mushrooms_dark"):
             for x, y, color in mr.mushrooms_dark:
                 s, ax, ay = self.mushroom(color)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
 
         if theme.get("has_crystals_blue"):
             for x, y, size in mr.crystals_blue:
                 s, ax, ay = self.crystal_blue(size)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
         if theme.get("has_crystals_red"):
             if theme["name"] == "Desert":
                 for x, y, size in mr.crystals_red:
                     s, ax, ay = self.crystal_amber(size)
-                    blit_at(s, ax, ay, x, y)
+                    yield s, ax, ay, x, y
             else:
                 for x, y, size in mr.crystals_red:
                     s, ax, ay = self.crystal_red(size)
-                    blit_at(s, ax, ay, x, y)
+                    yield s, ax, ay, x, y
 
         if theme.get("has_glow_flowers"):
             for x, y, color in mr.glow_flowers:
                 s, ax, ay = self.flower(color)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
 
         # ── Theme-specific ──
         if theme.get("has_cactus"):
             for x, y, size, variant in mr.dark_trees:
                 s, ax, ay = self.cactus(size, variant)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
         if theme.get("has_palm_trees"):
             for x, y, size in mr.dark_bushes:
                 s, ax, ay = self.palm(size)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
         if theme.get("has_sand_dunes"):
             for x, y, size, _has in mr.rocks_mossy[:12]:
                 s, ax, ay = self.dune(size)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
         if theme.get("has_ice_crystals"):
             for x, y, size in mr.crystals_blue[:8]:
                 s, ax, ay = self.ice_crystal(size)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
         if theme.get("has_snow_drifts"):
             for x, y, size in mr.dark_bushes:
                 s, ax, ay = self.snow_drift(size)
-                blit_at(s, ax, ay, x, y)
+                yield s, ax, ay, x, y
 
+    def _items_list(self, getter, positions, flag, theme, keyfn):
+        if not theme.get(flag):
+            return
+        for it in positions:
+            s, ax, ay = getter(keyfn(it))
+            yield s, ax, ay, it[0], it[1]
+
+    # ── BLIT ──
+
+    def blit_all_scaled(self, surf, mr, scale=1):
+        """Blit semua dekorasi; scale>1 = upscale sprite dulu
+        (untuk canvas supersample 2x: efek tepi halus/feather)."""
+        for s, ax, ay, x, y in self._items(mr):
+            if scale > 1:
+                s = pygame.transform.smoothscale(
+                    s, (s.get_width() * scale, s.get_height() * scale))
+            surf.blit(s, ((x - ax) * scale, (y - ay) * scale))
+
+    def draw_all(self, surf, mr):
+        self.blit_all_scaled(surf, mr, 1)
         # True-boss dressing: sedikit item, digambar langsung
         # (memakai fungsi asli agar art boss tetap persis).
         from map_components.decoration_renderer import DecorationRenderer

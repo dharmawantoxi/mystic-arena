@@ -1,4 +1,4 @@
-"""Preview + benchmark peta sprite (rendering gaya ikon item).
+"""Preview + benchmark peta HD (gaya sprite HD Thorne).
 
 Jalankan (tanpa layar):
 
@@ -6,13 +6,15 @@ Jalankan (tanpa layar):
 
 Hasil:
   * docs/map_sprite_<tema>_before.png  (pipeline lama)
-  * docs/map_sprite_<tema>_after.png   (pipeline sprite baru)
+  * docs/map_sprite_<tema>_after.png   (pipeline HD baru)
   * docs/map_sprite_contact_sheet.png  (grid 2x2 hasil baru)
   * timing init level (lama vs baru) di stdout.
 
 Perbandingan jujur: kedua pipeline diukur sebagai total waktu
-init MapRenderer (termasuk generate lane/dekorasi), jadi selisih
-= biaya render peta statis.
+init MapRenderer (termasuk generate lane/dekorasi). "Baru"
+termasuk build layer HD pertama per tema (di-cache; retry tema
+sama jauh lebih cepat — lihat timing pada pemanggilan kedua
+dalam satu proses).
 """
 import os
 import sys

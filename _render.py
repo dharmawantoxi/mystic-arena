@@ -147,19 +147,41 @@ class MapRenderer:
     def _render_static_map(self):
         """Pre-render static map ke cached surface.
 
-        Default: PIPELINE SPRITE (map_components/sprite_tiles.py) —
-        setiap tile/dekorasi dirender sekali jadi sprite ter-cache,
-        prinsip yang sama dengan ikon item (assets/items/*.png).
-        Kalau MYSTIC_LEGACY_MAP=1 (atau sprite pipeline error),
-        otomatis kembali ke pipeline lama yang sudah terbukti.
+        Pipeline (paling atas dulu, turun otomatis kalau error):
+          1. HD (map_components/hd_map.py) — gaya sprite HD Thorne:
+             terrain dilukis per-piksel + objek supersample 2x
+             (tepi anti-aliased/feathered). MYSTIC_MAP_HD=0
+             mematikan HD.
+          2. Sprite 1x (map_components/sprite_tiles.py) — gaya
+             ikon item.
+          3. Pipeline lama (draw call per tile).
+        MYSTIC_LEGACY_MAP=1 langsung ke pipeline lama.
         """
         if _os.environ.get("MYSTIC_LEGACY_MAP") != "1":
+            if _os.environ.get("MYSTIC_MAP_HD") != "0":
+                try:
+                    return self._render_static_map_hd()
+                except Exception as exc:
+                    print("[MAP] HD pipeline gagal, fallback sprite:",
+                          exc)
             try:
                 return self._render_static_map_sprites()
             except Exception as exc:
                 print("[MAP] sprite pipeline gagal, fallback legacy:",
                       exc)
         return self._render_static_map_legacy()
+
+    def _render_static_map_hd(self):
+        """Peta statis HD (gaya sprite HD Thorne).
+
+        Layer: terrain HD dilukis (per-piksel, value noise +
+        blend radiant/dire halus) -> objek (sungai, lane,
+        dekorasi, toko, dinding) supersample 2x -> lightmap.
+        Hasil di-cache per tema: level lain dengan tema sama
+        hampir tanpa biaya render ulang.
+        """
+        from map_components.hd_map import render_hd_static_map
+        return render_hd_static_map(self)
 
     def _render_static_map_sprites(self):
         """Peta statis berbasis sprite (gaya ikon item).

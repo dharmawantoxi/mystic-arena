@@ -37,7 +37,8 @@ bosses/                  base_boss, boss_data, level1..level54
 heroes/ hero_skills/     renderer & skill hero
 levels/                  konfigurasi 54 level
 map_components/          palet, tema, generator, renderer peta
-                         + sprite_tiles.py (rendering peta gaya sprite/item)
+                         + hd_map.py (peta HD gaya Thorne) +
+                         sprite_tiles.py (pipeline sprite 1x / fallback)
 minions/ towers/         renderer unit & menara
 ui_components/           panel, popup, shop, notifikasi
 
@@ -72,23 +73,41 @@ Mekanik baru yang didukung engine: `evasion`, `damage block`,
 [docs/item_forge_tier1.png](docs/item_forge_tier1.png) &
 [docs/item_forge_tier2.png](docs/item_forge_tier2.png).
 
-## Rendering Peta Gaya Sprite (seperti ikon item)
+## Rendering Peta HD (gaya sprite HD Thorne)
 
-Peta dirender dengan prinsip yang sama dengan ikon item:
-setiap elemen (tile, lane, sungai, dinding, dekorasi, toko)
-di-render **sekali** menjadi sprite ter-cache, lalu di-blit ke
-peta statis. Shading halus (gradien diagonal + lightmap
-mottling skala besar + bevel 3D pada lane/sungai) membuat peta
-terasa "dilukis", bukan kisi-kisi kotak. Semua warna tetap dari
-palet tema, jadi **semua 54 level** otomatis dapat tampilan baru
-tanpa aset PNG tambahan.
+Peta kini di-render dengan pendekatan yang sama seperti
+upgrade hero Thorne (code-based pixel → sprite HD, lihat
+[docs/thorne_before_after.png](docs/thorne_before_after.png)):
+render resolusi tinggi dengan **tepi halus (feathered)**,
+shading gradient kaya, lalu di-smoothscale ke ukuran tampil.
 
-Implementasi: `map_components/sprite_tiles.py` (dipanggil dari
-`MapRenderer._render_static_map_sprites()` di
-[_render.py](_render.py)). Pipeline lama tetap tersedia sebagai
-fallback otomatis; paksa dengan `MYSTIC_LEGACY_MAP=1`.
+Teknik (lihat `map_components/hd_map.py`):
 
-Sebelum → sesudah (lihat folder docs/):
+1. **Terrain HD** — permukaan *dilukis* per-piksel: value noise
+   2 oktaf + blend diagonal radiant/dire yang **halus** (bukan
+   garis keras) + stroke detail rumput/abu. Dibangun di
+   resolusi rendah lalu di-smoothscale (C, cepat).
+2. **Objek supersample 2x** — sungai & lane digambar ulang
+   sebagai **pita vektor mulus + kerikil batu terpisah +
+   retakan glow** (bukan grid slab 16px); dinding, toko, dan
+   detail lainnya memakai kode art asli yang koordinatnya
+   di-skalakan 2x via patch `pygame.draw` sementara. Semua
+   hasil di-smoothscale ke 1280x720 -> **tepi anti-aliased**.
+3. **Dekorasi & lightmap** — sprite ter-cache (pipeline
+   `sprite_tiles.py`) di-upscale 2x + lightmap skala besar
+   (gradien diagonal + mottling) untuk shading "dilukis".
+
+Semua warna tetap dari palet tema, jadi **semua 54 level**
+otomatis dapat tampilan HD tanpa aset PNG tambahan. Hasil
+di-cache per tema: tema pertama per sesi ±0,15 s, tema sama
+berikutnya (retry/level lain) hanya ±15 ms. Biaya per-frame
+**tidak berubah** (1 blit peta statis + elemen dinamis).
+
+Fallback berjenjang (otomatis kalau ada error):
+HD → sprite 1x → pipeline lama. Kontrol: `MYSTIC_MAP_HD=0`
+(memakai sprite 1x), `MYSTIC_LEGACY_MAP=1` (pipeline lama).
+
+Sebelum → sesudah HD (lihat folder docs/):
 
 | Tema | Sebelum | Sesudah |
 |---|---|---|
@@ -96,18 +115,12 @@ Sebelum → sesudah (lihat folder docs/):
 | Desert | [before](docs/map_sprite_desert_before.png) | [after](docs/map_sprite_desert_after.png) |
 | Ice | [before](docs/map_sprite_ice_before.png) | [after](docs/map_sprite_ice_after.png) |
 | Cosmic | [before](docs/map_sprite_cosmic_before.png) | [after](docs/map_sprite_cosmic_after.png) |
+| Royal | [before](docs/map_sprite_royal_before.png) | [after](docs/map_sprite_royal_after.png) |
+| Crimson | [before](docs/map_sprite_crimson_before.png) | [after](docs/map_sprite_crimson_after.png) |
 
-Konteks gameplay (unit + HUD di atas peta baru):
+Konteks gameplay (unit + HUD di atas peta HD):
 [forest](docs/map_sprite_ingame_forest.png) &
 [royal](docs/map_sprite_ingame_royal.png).
-
-**Performa** (headless, CPU desktop): render peta statis
-sprite rata-rata **12,4 ms** vs **18,1 ms** pipeline lama
-(±30% lebih cepat — ribuan blit sprite kecil vs ratusan ribu
-draw call per tile). Build lightmap pertama per tema ±10 ms
-sekali saja (di-cache LRU untuk retry tema sama). Biaya
-per-frame **tidak berubah** (tetap 1 blit peta statis +
-elemen dinamis), jadi tidak ada dampak pada FPS gameplay.
 
 ## Tactical Commands & Achievement
 
