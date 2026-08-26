@@ -21,9 +21,17 @@ assets/
 ├── castles/                    sprite kastil HD (blue/red L1-L5, PNG transparan)
 ├── items/                      ikon item ITEM FORGE (25 PNG)
 └── heroes/
-    ├── thorne_<pose>.png        sprite HD hero Thorne (idle/walk)
+    ├── thorne_<pose>.png        sprite HD hero Thorne (idle/walk/attack)
     ├── thorne_swing_<0..7>.png  frame animasi swing attack Thorne (8 frame)
-    └── thorne_skill_<q/w/e/r>.png  efek skill HD Thorne (icon-item style)
+    ├── thorne_skill_<q/w/e/r>.png  efek skill HD Thorne (icon-item style)
+    ├── zephyr_<pose>.png        sprite HD hero Zephyr (idle/walk/attack)
+    ├── zephyr_walk_<0..1>.png   cycle jalan Zephyr (stride <-> plant)
+    ├── zephyr_swing_<0..7>.png  frame animasi cast staff Zephyr (8 frame)
+    ├── zephyr_skill_<q/w/e/r>.png  efek skill HD Zephyr
+    ├── kaizen_<pose>.png        sprite HD hero Kaizen (idle/walk/attack)
+    ├── kaizen_walk_<0..1>.png   cycle jalan Kaizen (stride <-> plant)
+    ├── kaizen_swing_<0..7>.png  frame animasi iai slash Kaizen (8 frame)
+    └── kaizen_skill_<q/w/e/r>.png  efek skill HD Kaizen (steel wind/wall/sweep/tornado)
 ```
 
 Sprite HD (castles & heroes) adalah render digital transparan gaya
@@ -40,9 +48,17 @@ python tools/make_thorne_skill_sprites.py
 # -> assets/heroes/thorne_skill_<q/w/e/r>.png
 ```
 
-Saat runtime, swing memakai `thorne_swing_<N>.png` per progress serangan
-(fallback: `thorne_attack.png` -> prosedural), dan efek skill Q/W/E/R
-memakai `thorne_skill_<key>.png` sebagai lapisan HD (fallback: prosedural).
+Zephyr dan Kaizen dibake dari render mentah HD (latar hitam) di
+`assets/heroes/_raw/` (di-ignore git) lewat:
+
+```
+python tools/process_zephyr_anim.py   # -> zephyr_idle/walk/attack, walk_0..1, swing_0..7, skill_qwer
+python tools/process_kaizen_anim.py   # -> kaizen_idle/walk/attack, walk_0..1, swing_0..7, skill_qwer
+```
+
+Saat runtime, swing memakai `<hero>_swing_<N>.png` per progress serangan
+(fallback: `<hero>_attack.png` -> prosedural), dan efek skill Q/W/E/R
+memakai `<hero>_<key>.png` sebagai lapisan HD (fallback: prosedural).
 
 ## Catatan penting
 
