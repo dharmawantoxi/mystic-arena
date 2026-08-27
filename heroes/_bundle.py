@@ -6529,6 +6529,7 @@ class _NS_thorne:
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_thorne._detect_moving(boss)
         _NS_thorne._update_attack_anim(boss)
+        portrait_hd = bool(getattr(boss, "_portrait_hd", False))
 
         attacking = (
             getattr(boss, "_th_attack_active", False)
@@ -6539,11 +6540,15 @@ class _NS_thorne:
         bristleback_active = active_skill == "w"
 
         # ---------- Background layers ----------
-        if warpath_active:
-            _NS_thorne._draw_rage_aura(surface, x, y, pulse)
-        else:
-            _NS_thorne._draw_dust_aura(surface, x, y, pulse)
-        _NS_thorne._draw_ground_platform(surface, x, y + 40, pulse, active_skill)
+        # Portrait LOD sengaja menghilangkan aura/platform seukuran arena agar
+        # auto-crop mengisi portrait dengan wajah & material Thorne, bukan
+        # lingkaran efek 180 px.
+        if not portrait_hd:
+            if warpath_active:
+                _NS_thorne._draw_rage_aura(surface, x, y, pulse)
+            else:
+                _NS_thorne._draw_dust_aura(surface, x, y, pulse)
+            _NS_thorne._draw_ground_platform(surface, x, y + 40, pulse, active_skill)
 
         # ---------- Skill ground effects ----------
         if active_skill == "q":
@@ -6560,7 +6565,8 @@ class _NS_thorne:
             _NS_thorne._draw_thorne_idle(surface, boss, x, y, warpath_active)
 
         # ---------- Projectiles ----------
-        _NS_thorne._manage_projectiles(boss, surface, pulse)
+        if not portrait_hd:
+            _NS_thorne._manage_projectiles(boss, surface, pulse)
 
         # ---------- Skill foreground effects ----------
         if active_skill == "q":
@@ -6578,21 +6584,25 @@ class _NS_thorne:
     # ===================================================================
     def _draw_thorne_idle(surface, boss, x, y, warpath=False):
         bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_thorne._draw_shadow(surface, x, y + 48)
-        _NS_thorne._draw_floating_dust(surface, x, y + 35, boss.pulse, warpath=warpath)
+        if not getattr(boss, "_portrait_hd", False):
+            _NS_thorne._draw_shadow(surface, x, y + 48)
+            _NS_thorne._draw_floating_dust(surface, x, y + 35, boss.pulse, warpath=warpath)
         _NS_thorne._draw_thorne_body(surface, x, y + bob, boss.direction, boss.pulse,
-                          "idle", warpath=warpath)
+                          "idle", warpath=warpath,
+                          detail=getattr(boss, "_portrait_hd", False))
 
 
     def _draw_thorne_walk(surface, boss, x, y, warpath=False):
         phase = boss.pulse * 2.0
         bob = int(abs(math.sin(phase * 1.2)) * 3)
         sway = int(math.sin(phase) * 2)
-        _NS_thorne._draw_shadow(surface, x + sway, y + 48)
-        _NS_thorne._draw_floating_dust(surface, x + sway, y + 35, phase, trail=True,
-                           facing=boss.direction, warpath=warpath)
+        if not getattr(boss, "_portrait_hd", False):
+            _NS_thorne._draw_shadow(surface, x + sway, y + 48)
+            _NS_thorne._draw_floating_dust(surface, x + sway, y + 35, phase, trail=True,
+                               facing=boss.direction, warpath=warpath)
         _NS_thorne._draw_thorne_body(surface, x + sway, y - bob, boss.direction, phase,
-                          "walk", warpath=warpath)
+                          "walk", warpath=warpath,
+                          detail=getattr(boss, "_portrait_hd", False))
 
 
     def _draw_thorne_attack(surface, boss, x, y, warpath=False):
@@ -6601,39 +6611,454 @@ class _NS_thorne:
 
         # Slight step forward during swing
         step = int(math.sin(progress * math.pi) * 3) * boss.direction
-        _NS_thorne._draw_shadow(surface, x + step, y + 48)
-        _NS_thorne._draw_floating_dust(surface, x + step, y + 35, boss.pulse, intense=True,
-                           warpath=warpath)
+        if not getattr(boss, "_portrait_hd", False):
+            _NS_thorne._draw_shadow(surface, x + step, y + 48)
+            _NS_thorne._draw_floating_dust(surface, x + step, y + 35, boss.pulse, intense=True,
+                               warpath=warpath)
         _NS_thorne._draw_thorne_body(surface, x + step, y, boss.direction, boss.pulse,
-                          "attack", progress, warpath=warpath)
+                          "attack", progress, warpath=warpath,
+                          detail=getattr(boss, "_portrait_hd", False))
 
 
     # ===================================================================
     # BODY RENDERING - HD porcupine-boar warrior
     # ===================================================================
     def _draw_thorne_body(surface, cx, cy, facing, phase, action,
-                          attack_progress=0, warpath=False):
-        # Massive quill mane on top and back (drawn first, behind body)
-        _NS_thorne._draw_quill_mane(surface, cx, cy - 20, facing, phase, warpath=warpath)
+                          attack_progress=0, warpath=False, detail=False):
+        """Renderer tubuh Thorne kualitas maksimum, 100% procedural.
 
-        # Floating lower body (belly hanging)
-        _NS_thorne._draw_belly(surface, cx, cy + 5, phase, facing)
+        Dibangun sebagai bone rig 2D berlapis seperti Kaizen Masterwork:
+        surai quill berumbai yang beranimasi per-quill, stance berkaki
+        terpisah dengan cakar, perut berat ber-sabuk, vest perang sobek,
+        pauldron baja berlapis, kepala babi hutan ber-taring, serta gada
+        berduri yang posenya dihitung dari sendi/parameter animasi. Tidak
+        ada PNG, sprite sheet, ataupun image.load.
+        """
+        _NS_thorne._draw_thorne_elite(
+            surface, cx, cy, facing, phase, action, attack_progress,
+            detail=detail, warpath=warpath)
 
-        # Torso (thick body)
-        _NS_thorne._draw_torso(surface, cx, cy - 5, facing, phase, warpath=warpath)
 
-        # Arms & club
-        if action == "attack":
-            _NS_thorne._draw_attack_arms(surface, cx, cy - 5, facing, phase, attack_progress)
+    # ===================================================================
+    # MASTERWORK RIG - bone rig 2D berlapis (setara Kaizen Masterwork)
+    # ===================================================================
+    def _draw_elite_quill(surface, bx, by, angle, length, width,
+                          dark, mid, light, tip, wave=0.0, outline=True):
+        """Quill tapered prosedural: sheath gelap, inti, streak, ujung."""
+        a = angle + wave
+        ca, sa = math.cos(a), math.sin(a)
+        tx, ty = bx + ca * length, by + sa * length
+        px, py = -sa * width, ca * width
+        if outline:
+            _NS_thorne._poly(surface, _NS_thorne.PALETTE["shadow_deep"], [
+                (bx + px + 1, by + py + 1), (bx - px + 1, by - py + 1),
+                (tx + 1, ty + 1)])
+        _NS_thorne._poly(surface, dark, [
+            (bx + px, by + py), (bx - px, by - py), (tx, ty)])
+        _NS_thorne._poly(surface, mid, [
+            (bx + px * .55, by + py * .55), (bx - px * .55, by - py * .55),
+            (tx - ca * 1, ty - sa * 1)])
+        _NS_thorne._aaline(surface, light,
+                           (bx + px * .2, by + py * .2),
+                           (tx - ca * 2, ty - sa * 2), 1)
+        _NS_thorne._aacircle(surface, tip, (int(tx), int(ty)), 1)
+
+
+    def _draw_elite_club(surface, cx, cy, facing, hand, angle, phase,
+                         attacking=False):
+        """Gada besi berduri prosedural: gagang kayu, cincin pommel,
+        kepala flanged berlapis band, dan duri ber-rim dingin."""
+        p = _NS_thorne.PALETTE
+        f = 1 if facing >= 0 else -1
+        A = angle if f > 0 else math.pi - angle
+        ca, sa = math.cos(A), math.sin(A)
+        hx, hy = cx + hand[0] * f, cy + hand[1]
+        gx, gy = hx - ca * 6, hy - sa * 6
+        head_x, head_y = hx + ca * 26, hy + sa * 26
+
+        _NS_thorne._aaline(surface, p["shadow_deep"], (int(gx) + f, int(gy) + 1),
+                           (int(head_x) + f, int(head_y) + 1), 6)
+        _NS_thorne._aaline(surface, p["wood_dark"], (gx, gy), (head_x, head_y), 5)
+        _NS_thorne._aaline(surface, p["wood_mid"], (gx, gy), (head_x, head_y), 3)
+        _NS_thorne._aaline(surface, p["wood_light"], (gx, gy - 1),
+                           (head_x, head_y - 1), 1)
+        # leather grip wraps + pommel ring
+        for i in range(3):
+            _NS_thorne._aacircle(surface, p["leather_darkest"],
+                                 (int(hx - ca * i * 2.4), int(hy - sa * i * 2.4)), 3)
+        _NS_thorne._aacircle(surface, p["gold_dark"], (int(gx), int(gy)), 3)
+        _NS_thorne._aacircle(surface, p["gold_mid"], (int(gx), int(gy)), 2)
+
+        # flanged iron head: tiga band berlapis + rim dingin
+        perp = (-sa, ca)
+        for i, wdt in enumerate((8, 9, 7)):
+            off = (i - 1) * 5
+            mx, my = hx + ca * (30 + off), hy + sa * (30 + off)
+            cols = (p["armor_darkest"], p["armor_dark"], p["armor_mid"])[i]
+            _NS_thorne._poly(surface, cols, [
+                (mx - perp[0] * wdt, my - perp[1] * wdt),
+                (mx + perp[0] * wdt, my + perp[1] * wdt),
+                (mx + ca * 4 + perp[0] * wdt, my + sa * 4 + perp[1] * wdt),
+                (mx + ca * 4 - perp[0] * wdt, my + sa * 4 - perp[1] * wdt)])
+        bx, by = hx + ca * 30, hy + sa * 30
+        _NS_thorne._aaline(surface, p["armor_light"],
+                           (bx - perp[0] * 6, by - perp[1] * 6),
+                           (bx + perp[0] * 6, by + perp[1] * 6), 1)
+        # duri sekeliling kepala gada
+        for da, ln in ((0, 12), (-1.2, 9), (1.2, 9), (2.4, 8), (-2.4, 8)):
+            _NS_thorne._draw_elite_quill(surface, bx, by, A + da, ln, 2,
+                                         p["armor_darkest"], p["armor_dark"],
+                                         p["armor_light"], p["armor_shine"])
+        if attacking:
+            _NS_thorne._aacircle(surface, (*p["quill_shine"], 150),
+                                 (int(bx), int(by)), 5)
+
+
+    def _draw_thorne_masterwork_details(surface, pt, f):
+        """Micro-detail khusus portrait LOD. Di skala arena tanda-tanda ini
+        runtuh menjadi noise, jadi LOD mengeluarkannya dari cache gameplay."""
+        p = _NS_thorne.PALETTE
+        # barb ticks pada surai quill
+        for i in range(6):
+            _NS_thorne._aaline(surface, p["quill_light"],
+                               pt(-12 - i * 2, -34 - i * 2),
+                               pt(-16 - i * 2, -37 - i * 2), 1)
+        # serat bulu dada
+        for i in range(5):
+            _NS_thorne._aaline(surface, p["fur_high"],
+                               pt(-6 + i * 3, -11 + i % 2),
+                               pt(-5 + i * 3, -5 + i % 2), 1)
+        # kerut moncong & alur taring
+        _NS_thorne._aaline(surface, p["snout_light"], pt(10, -29), pt(14, -28), 1)
+        _NS_thorne._aaline(surface, p["tusk_dark"], pt(7, -26), pt(9, -31), 1)
+        # anyaman vest & jahitan hem
+        for yy in (-12, -7, -2):
+            _NS_thorne._aaline(surface, p["cloth_light"],
+                               pt(-10, yy), pt(-7, yy + 2), 1)
+        for xx in (-10, -6, 5, 9):
+            _NS_thorne._aacircle(surface, p["leather_light"], pt(xx, 8), 1)
+        # goresan pauldron + kilau rivet
+        for a in (-.7, -.2, .3):
+            _NS_thorne._aaline(surface, p["armor_mid"], pt(12, -14),
+                               pt(12 + math.cos(a) * 5, -14 + math.sin(a) * 5), 1)
+        _NS_thorne._aacircle(surface, p["armor_shine"], pt(13, -17), 1)
+        # highlight cakar kaki depan
+        _NS_thorne._aaline(surface, p["tusk_light"], pt(8, 41), pt(12, 41), 1)
+
+
+    def _draw_thorne_elite(surface, cx, cy, facing, phase, action,
+                           attack_progress=0.0, detail=False, warpath=False):
+        """Hand-authored pixel-art rig memakai primitive pygame saja."""
+        p = _NS_thorne.PALETTE
+        f = 1 if facing >= 0 else -1
+        walk = action == "walk"
+        attack = action == "attack"
+        ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
+        stride = math.sin(phase * 1.7)
+
+        # Whole-body root motion: napas, langkah menapak, lalu kompresi
+        # wind-up / lunge serangan. Semua lapisan memakai pt() sehingga
+        # surai, wajah, armor, dan tungkai tetap menempel pada rig.
+        lean = (3 if walk else 0) * f
+        root_y = int(math.sin(phase * .72) * .7)
+        if walk:
+            root_y -= int(abs(math.sin(phase * 1.7)) * 2)
+        if attack:
+            lean = int(math.sin(ap * math.pi) * 7) * f
+            root_y += int(math.sin(ap * math.pi) * 2)
+
+        def pt(dx, dy):
+            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+
+        def poly(color, points, outline=True):
+            pts = [pt(dx, dy) for dx, dy in points]
+            if outline:
+                _NS_thorne._poly(surface, p["shadow_deep"],
+                                 [(x + f, y + 1) for x, y in pts])
+            _NS_thorne._poly(surface, color, pts)
+            return pts
+
+        def limb(a, b, width, base, light=None):
+            aa, bb = pt(*a), pt(*b)
+            _NS_thorne._aaline(surface, p["shadow_deep"], aa, bb, width + 3)
+            _NS_thorne._aaline(surface, base, aa, bb, width)
+            if light:
+                off = -1 if f > 0 else 1
+                _NS_thorne._aaline(surface, light,
+                                   (aa[0] + off, aa[1] - 1),
+                                   (bb[0] + off, bb[1] - 1),
+                                   max(1, width // 3))
+
+        def qa(angle):
+            return angle if f > 0 else math.pi - angle
+
+        # ── surai quill: massa lebar lalu kunci quill beranimasi sendiri ──
+        if warpath:
+            q_darkest, q_dark = p["rage_dark"], p["quill_dark"]
+            q_mid, q_light, q_tip = p["quill_mid"], p["rage_bright"], p["quill_tip"]
         else:
-            _NS_thorne._draw_idle_arms(surface, cx, cy - 5, facing, phase, action)
+            q_darkest, q_dark = p["quill_darkest"], p["quill_dark"]
+            q_mid, q_light, q_tip = p["quill_mid"], p["quill_light"], p["quill_tip"]
 
-        # Head with tusks
-        _NS_thorne._draw_head(surface, cx, cy - 18, facing, phase, warpath=warpath)
+        wave = math.sin(phase * 1.25)
+        flare = 1.15 if attack and .15 < ap < .7 else 1.0
 
-        # Body dust particles
-        _NS_thorne._draw_body_particles(surface, cx, cy, phase, warpath=warpath)
+        poly(q_darkest, [(-2, -14), (-12, -22), (-20, -34), (-14, -44), (-4, -50),
+                         (6, -48), (11, -40), (9, -28), (3, -18)])
+        poly(q_dark, [(-1, -16), (-9, -23), (-16, -33), (-11, -41), (-3, -46),
+                      (5, -44), (9, -37), (7, -28), (2, -19)], False)
 
+        back_quills = ((-11, -22, -2.35, 24, 3), (-8, -27, -2.10, 28, 3),
+                       (-4, -32, -1.85, 32, 3), (0, -35, -1.60, 34, 3),
+                       (4, -36, -1.35, 32, 3), (7, -35, -1.10, 28, 3),
+                       (9, -31, -0.85, 24, 3))
+        for i, (rx, ry, ang, ln, wd) in enumerate(back_quills):
+            w = wave * .04 * (1 + i % 3)
+            _NS_thorne._draw_elite_quill(surface, *pt(rx, ry), qa(ang), ln * flare, wd,
+                                         q_darkest, q_dark, q_mid, q_light, wave=w)
+        mid_quills = ((-9, -20, -2.20, 18, 2), (-6, -25, -1.95, 22, 2),
+                      (-2, -29, -1.70, 25, 2), (2, -31, -1.45, 24, 2),
+                      (6, -30, -1.20, 21, 2), (8, -27, -0.95, 18, 2))
+        for i, (rx, ry, ang, ln, wd) in enumerate(mid_quills):
+            w = wave * .03 * (1 + i % 2)
+            _NS_thorne._draw_elite_quill(surface, *pt(rx, ry), qa(ang), ln * flare, wd,
+                                         q_dark, q_mid, q_light, q_tip, wave=w)
+        front_quills = ((-6, -18, -2.05, 12, 2), (-2, -22, -1.80, 15, 2),
+                        (2, -24, -1.55, 16, 2), (6, -23, -1.30, 14, 2))
+        for i, (rx, ry, ang, ln, wd) in enumerate(front_quills):
+            _NS_thorne._draw_elite_quill(surface, *pt(rx, ry), qa(ang), ln, wd,
+                                         q_mid, q_light, q_tip, q_tip, wave=wave * .02)
+        # bristle punggung mengarah ke belakang
+        for i in range(4):
+            by_off = 6 + i * 4
+            _NS_thorne._draw_elite_quill(surface, *pt(-10 - i, by_off),
+                                         qa(math.pi + .3 + i * .1), 13 - i * 2, 2,
+                                         q_dark, q_mid, q_light, q_tip)
+
+        # ── lengan belakang (seberang gada) ──
+        if attack:
+            rear_hand = (-4 + int(ap * 6), -6 + int(ap * 4))
+        else:
+            rear_hand = (-15, 4)
+        limb((-9, -12), (-15, -2), 8, p["fur_dark"], p["fur_light"])
+        limb((-15, -2), rear_hand, 7, p["fur_mid"], p["fur_high"])
+        rhx, rhy = pt(*rear_hand)
+        _NS_thorne._aacircle(surface, p["fur_darkest"], (rhx, rhy), 5)
+        _NS_thorne._aacircle(surface, p["fur_dark"], (rhx, rhy), 4)
+        for c in (-2, 1, 4):
+            _NS_thorne._poly(surface, p["tusk_mid"], [(rhx + c - 1, rhy + 3),
+                             (rhx + c + 1, rhy + 3), (rhx + c, rhy + 6)])
+        _NS_thorne._aaline(surface, p["leather_dark"], pt(-16, -4), pt(-14, 1), 4)
+        _NS_thorne._aaline(surface, p["leather_light"], pt(-16, -4), pt(-14, 1), 1)
+
+        # ── kaki: stance terpisah yang menapak, bukan massa melayang ──
+        leg_phase = stride if walk else 0.0
+        rear_foot = (-9 - int(leg_phase * 5), 40 - int(abs(leg_phase) * 2))
+        front_foot = (11 + int(leg_phase * 6), 40)
+        for hip, knee, foot, shade in (
+                ((-6, 10), (-10, 26), rear_foot, p["fur_darkest"]),
+                ((6, 10), (10, 25), front_foot, p["fur_dark"])):
+            poly(shade, [hip, (hip[0] + 8, hip[1]), (knee[0] + 6, knee[1]),
+                         (foot[0] + 5, foot[1] - 6), (foot[0] - 5, foot[1] - 6),
+                         (knee[0] - 4, knee[1])])
+            limb(knee, (foot[0], foot[1] - 6), 7, p["fur_mid"], p["fur_light"])
+            poly(p["fur_dark"], [(foot[0] - 6, foot[1] - 6), (foot[0] + 6, foot[1] - 6),
+                                 (foot[0] + 7, foot[1]), (foot[0] - 6, foot[1])], False)
+            for claw in (-4, 0, 4):
+                poly(p["tusk_mid"], [(foot[0] + claw, foot[1] - 1),
+                                     (foot[0] + claw + 3, foot[1] - 1),
+                                     (foot[0] + claw + 2, foot[1] + 3)], False)
+
+        # ── tubuh bawah: perut berat, sabuk, kantong, gesper ──
+        poly(p["fur_darkest"], [(-15, 4), (15, 4), (18, 12), (15, 22), (6, 27),
+                                (-6, 27), (-15, 22), (-18, 12)])
+        poly(p["fur_dark"], [(-13, 6), (13, 6), (15, 13), (12, 21), (4, 25),
+                             (-4, 25), (-12, 21), (-15, 13)], False)
+        poly(p["belly_dark"], [(-8, 9), (8, 9), (9, 16), (5, 22), (-5, 22),
+                               (-9, 16)], False)
+        poly(p["belly_mid"], [(-5, 11), (5, 11), (6, 16), (3, 20), (-3, 20),
+                              (-6, 16)], False)
+        _NS_thorne._aaline(surface, p["belly_light"], pt(-3, 13), pt(3, 13), 1)
+        _NS_thorne._aacircle(surface, p["fur_darkest"], pt(0, 17), 2)
+        _NS_thorne._aaline(surface, p["leather_darkest"], pt(-15, 6), pt(15, 6), 6)
+        _NS_thorne._aaline(surface, p["leather_dark"], pt(-15, 5), pt(15, 5), 4)
+        _NS_thorne._aaline(surface, p["leather_light"], pt(-14, 4), pt(14, 4), 1)
+        for dx in (-10, 7):
+            _NS_thorne._rect(surface, p["leather_darkest"],
+                             (pt(dx, 7)[0], pt(dx, 7)[1], 5, 6), 1)
+            _NS_thorne._rect(surface, p["leather_mid"],
+                             (pt(dx + 1, 8)[0], pt(dx + 1, 8)[1], 3, 4), 1)
+        _NS_thorne._rect(surface, p["gold_dark"], (pt(-3, 4)[0], pt(-3, 4)[1], 6, 6), 1)
+        _NS_thorne._rect(surface, p["gold_mid"], (pt(-2, 5)[0], pt(-2, 5)[1], 4, 4), 1)
+        _NS_thorne._rect(surface, p["gold_light"], (pt(-1, 6)[0], pt(-1, 6)[1], 2, 2))
+
+        # ── torso: dada fur berlapis + vest perang sobek ──
+        poly(p["fur_darkest"], [(-13, -18), (10, -20), (14, -8), (12, 8), (0, 12),
+                                (-12, 8), (-16, -6)])
+        poly(p["fur_dark"], [(-11, -16), (8, -18), (12, -8), (10, 7), (0, 10),
+                             (-10, 7), (-14, -6)], False)
+        poly(p["fur_mid"], [(-8, -14), (6, -16), (9, -8), (8, 5), (0, 8),
+                            (-8, 5), (-11, -6)], False)
+        poly(p["cloth_dark"], [(-12, -14), (-5, -16), (-4, 6), (-7, 9), (-11, 6),
+                               (-9, 2), (-12, -2)])
+        poly(p["cloth_mid"], [(-10, -12), (-6, -14), (-5, 4), (-8, 6), (-10, 3)], False)
+        poly(p["cloth_dark"], [(4, -16), (11, -13), (10, 5), (6, 8), (3, 5)])
+        poly(p["cloth_mid"], [(5, -14), (9, -12), (8, 3), (5, 5)], False)
+        for dx in (-11, -8, 5, 8):
+            _NS_thorne._aaline(surface, p["cloth_light"], pt(dx, 6), pt(dx + 1, 9), 1)
+        for i in range(4):
+            dx = -2 + i * 2
+            _NS_thorne._aaline(surface, p["fur_light"], pt(dx, -12), pt(dx + 1, -5), 1)
+        _NS_thorne._aaline(surface, p["leather_darkest"], pt(-11, -14), pt(11, 4), 5)
+        _NS_thorne._aaline(surface, p["leather_dark"], pt(-11, -14), pt(11, 4), 3)
+        for i in range(5):
+            t = i / 4.0
+            _NS_thorne._aaline(surface, p["leather_light"],
+                               pt(-11 + t * 22 - 1, -14 + t * 18),
+                               pt(-11 + t * 22 + 1, -13 + t * 18), 1)
+
+        # pauldron baja berlapis pada bahu gada
+        poly(p["armor_darkest"], [(6, -19), (13, -21), (19, -16), (18, -9),
+                                  (12, -6), (7, -10)])
+        poly(p["armor_dark"], [(8, -18), (13, -19), (17, -15), (16, -10),
+                               (11, -8), (8, -11)], False)
+        for i in range(3):
+            yy = -16 + i * 3
+            _NS_thorne._aaline(surface, p["armor_light"], pt(9, yy),
+                               pt(16 - i, yy + 1), 1)
+        _NS_thorne._aacircle(surface, p["gold_mid"], pt(12, -16), 2)
+        _NS_thorne._aacircle(surface, p["gold_light"], pt(12, -17), 1)
+        _NS_thorne._draw_elite_quill(surface, *pt(12, -21), qa(-1.9), 8, 2,
+                                     p["armor_darkest"], p["armor_dark"],
+                                     p["armor_light"], p["armor_shine"])
+
+        # ── kerah kulit ber-stud menambatkan kepala ──
+        poly(p["leather_dark"], [(-9, -22), (-4, -25), (6, -24), (10, -20),
+                                 (5, -18), (-6, -19)])
+        _NS_thorne._aacircle(surface, p["gold_mid"], pt(-5, -21), 1)
+        _NS_thorne._aacircle(surface, p["gold_mid"], pt(6, -21), 1)
+
+        # ── kepala: tengkorak babi hutan, moncong, taring ──
+        hy0 = -30
+        poly(p["fur_darkest"], [(-9, hy0 - 6), (2, hy0 - 8), (9, hy0 - 4),
+                                (11, hy0 + 2), (8, hy0 + 7), (0, hy0 + 8),
+                                (-7, hy0 + 5), (-10, hy0)])
+        poly(p["fur_dark"], [(-7, hy0 - 5), (2, hy0 - 6), (8, hy0 - 3), (9, hy0 + 2),
+                             (6, hy0 + 6), (0, hy0 + 6), (-6, hy0 + 4), (-8, hy0)], False)
+        poly(p["fur_mid"], [(-4, hy0 - 4), (2, hy0 - 5), (6, hy0 - 2), (7, hy0 + 2),
+                            (3, hy0 + 4), (-2, hy0 + 3), (-5, hy0)], False)
+        poly(p["snout_dark"], [(8, hy0 + 1), (14, hy0), (17, hy0 + 3), (16, hy0 + 6),
+                               (10, hy0 + 6), (8, hy0 + 4)])
+        poly(p["snout_mid"], [(9, hy0 + 2), (14, hy0 + 1), (16, hy0 + 3),
+                              (14, hy0 + 5), (10, hy0 + 5)], False)
+        _NS_thorne._aacircle(surface, p["fur_darkest"], pt(14, hy0 + 3), 1)
+        _NS_thorne._aacircle(surface, p["fur_darkest"], pt(14, hy0 + 1), 1)
+        _NS_thorne._aacircle(surface, p["snout_light"], pt(12, hy0 + 1), 1)
+        for off, ln in ((6, 9), (9, 7)):
+            bx2, by2 = pt(off, hy0 + 6)
+            tx2, ty2 = pt(off + 3, hy0 + 6 - ln)
+            _NS_thorne._aaline(surface, p["shadow_deep"], (bx2 + f, by2 + 1),
+                               (tx2 + f, ty2 + 1), 4)
+            _NS_thorne._aaline(surface, p["tusk_dark"], (bx2, by2), (tx2, ty2), 3)
+            _NS_thorne._aaline(surface, p["tusk_mid"], (bx2, by2), (tx2, ty2), 2)
+            _NS_thorne._aacircle(surface, p["tusk_light"], (tx2, ty2), 1)
+        ex, ey = pt(4, hy0 - 1)
+        if warpath:
+            _NS_thorne._rect(surface, p["rage_bright"], (ex - 2, ey - 1, 5, 3))
+            _NS_thorne._rect(surface, p["rage_light"], (ex - 1, ey, 3, 1))
+        else:
+            _NS_thorne._rect(surface, p["eye_iris"], (ex - 2, ey - 1, 5, 3))
+            _NS_thorne._rect(surface, p["eye_iris_light"], (ex - 1, ey - 1, 2, 2))
+        _NS_thorne._rect(surface, p["eye_pupil"], (ex, ey, 1, 1))
+        _NS_thorne._aaline(surface, p["fur_darkest"], pt(1, hy0 - 3), pt(8, hy0 - 2), 2)
+        poly(p["fur_darkest"], [(-4, hy0 - 6), (-7, hy0 - 10), (-2, hy0 - 9)], False)
+        poly(p["armor_darkest"], [(-5, hy0 - 7), (5, hy0 - 8), (4, hy0 - 4),
+                                  (-4, hy0 - 4)])
+        _NS_thorne._aaline(surface, p["armor_light"], pt(-3, hy0 - 7),
+                           pt(3, hy0 - 7), 1)
+        _NS_thorne._aacircle(surface, p["gold_mid"], pt(0, hy0 - 6), 1)
+        if warpath:
+            _NS_thorne._aaline(surface, p["rage_light"], pt(-6, hy0 + 2),
+                               pt(-3, hy0 + 6), 1)
+            _NS_thorne._aaline(surface, p["rage_bright"], pt(6, hy0 + 3),
+                               pt(9, hy0 + 6), 1)
+
+        # ── lengan gada, pose-driven ──
+        if attack:
+            if ap < .3:        # wind-up: angkat gada ke belakang bahu
+                t = ap / .3
+                hand = (12 - int(t * 3), -4 - int(t * 6))
+                angle = .72 - t * 2.9
+            elif ap < .62:     # smash cepat ke depan
+                t = (ap - .3) / .32
+                hand = (9 + int(t * 8), -10 + int(t * 12))
+                angle = -2.18 + t * 3.1
+            else:              # recovery kembali ke sikap sedia
+                t = (ap - .62) / .38
+                hand = (17 - int(t * 4), 2)
+                angle = .92 - t * .2
+        else:
+            hand = (13, 0)
+            angle = .72
+        elbow = ((hand[0] + 9) // 2, (hand[1] - 12) // 2)
+        limb((9, -14), elbow, 9, p["fur_dark"], p["fur_high"])
+        limb(elbow, hand, 8, p["fur_mid"], p["fur_light"])
+        hx, hy = pt(*hand)
+        _NS_thorne._aacircle(surface, p["fur_darkest"], (hx, hy), 5)
+        _NS_thorne._aacircle(surface, p["fur_mid"], (hx - 1, hy - 1), 3)
+        _NS_thorne._draw_elite_club(surface, cx + lean, cy + root_y, f,
+                                    hand, angle, phase, attack)
+
+        # ── secondary motion / contact feedback ──
+        if walk:
+            contact = max(0.0, abs(stride) - .55) / .45
+            if contact > 0:
+                planted = rear_foot if stride > 0 else front_foot
+                fx, fy = pt(planted[0], planted[1])
+                alpha = int(150 * contact)
+                for i in range(4):
+                    _NS_thorne._aacircle(
+                        surface, (*p["fur_mid"], max(15, alpha - i * 24)),
+                        (fx - f * (3 + i * 3), fy - i % 2), max(1, 3 - i // 2))
+            for i in range(3):
+                sy = cy - 7 + i * 9 + root_y
+                _NS_thorne._aaline(surface, (*p["fur_light"], 95 - i * 18),
+                                   (cx - f * (25 + i * 7), sy),
+                                   (cx - f * (12 + i * 5), sy - 1), 1)
+        elif attack:
+            impact = max(0.0, 1.0 - abs(ap - .52) / .18)
+            if impact > 0:
+                A = angle if f > 0 else math.pi - angle
+                bxw = cx + lean + f * hand[0] + math.cos(A) * 32
+                byw = cy + root_y + hand[1] + math.sin(A) * 32
+                for i in range(6):
+                    ang = -1.2 + i * .48
+                    length = 5 + int(impact * (8 + i % 2 * 4))
+                    _NS_thorne._aaline(surface,
+                                       (*p["quill_shine"], int(220 * impact)),
+                                       (int(bxw), int(byw)),
+                                       (int(bxw + math.cos(ang) * length * f),
+                                        int(byw + math.sin(ang) * length)),
+                                       1 if i % 2 else 2)
+        else:
+            for i in range(3):
+                t = (phase * .18 + i / 3.0) % 1.0
+                mx = cx + int(math.sin(phase + i * 2.1) * (18 + i * 3))
+                my = cy + 28 - int(t * 58)
+                _NS_thorne._aacircle(surface,
+                                     (*p["fur_high"], int(110 * (1 - t))),
+                                     (mx, my), 1)
+
+        if warpath and not detail:
+            for i in range(6):
+                a2 = phase * .6 + i * math.pi / 3
+                r = 30 + int(math.sin(phase + i) * 5)
+                _NS_thorne._aacircle(surface, (*p["rage_bright"], 140),
+                                     (cx + int(math.cos(a2) * r),
+                                      cy + int(math.sin(a2) * r * .45)), 1)
+
+        if detail:
+            _NS_thorne._draw_thorne_masterwork_details(surface, pt, f)
 
     def _draw_quill_mane(surface, cx, cy, facing, phase, warpath=False):
         """The huge yellow-orange quill mane."""

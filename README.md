@@ -80,6 +80,27 @@ Contact sheet rig idle/walk/attack:
 Uji regresi: `python tools/test_hero_hd_render.py` dan
 `python tools/test_kaizen_masterwork.py`.
 
+### Contoh maksimal kedua: Thorne Masterwork
+
+Thorne menerima perlakuan yang sama seperti Kaizen: tubuh lama dibangun
+ulang sebagai **bone rig 2D berlapis** — surai quill berumbai dengan
+animasi per-quill (flare saat smash), stance berkaki terpisah bercakar,
+perut berat ber-sabuk dengan kantong & gesper emas, vest perang sobek,
+pauldron baja berlapis dengan duri, kepala babi hutan ber-moncong &
+taring, serta gada flanged berduri yang posenya dihitung dari parameter
+animasi (wind-up, smash, recovery) lengkap dengan impact spark. Renderer
+memakai **LOD dua tingkat** yang sama: arena mempertahankan siluet yang
+bersih, sedangkan portrait menambah barb quill, serat bulu, kerut
+moncong, alur taring, anyaman vest, jahitan hem, dan goresan pauldron.
+Kedua LOD tetap 100% procedural.
+
+Preview karakter dan skill:
+[docs/thorne_masterwork_preview.png](docs/thorne_masterwork_preview.png).
+Contact sheet rig idle/walk/attack:
+[docs/thorne_animation_strip.png](docs/thorne_animation_strip.png).
+
+Uji regresi: `python tools/test_thorne_masterwork.py`.
+
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
 Hero punya 6 slot item yang dibeli dengan GOLD di **ITEM FORGE**.
