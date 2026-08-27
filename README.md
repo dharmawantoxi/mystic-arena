@@ -48,6 +48,38 @@ bosses/_boss_index.py    peta boss→modul (dibuat tools/gen_boss_index.py)
 tools/                   benchmark, uji cache sprite, generator indeks
 ```
 
+## Hero procedural HD
+
+Semua hero tetap dirender murni dari kode (tanpa sprite gambar eksternal),
+namun memakai **HD readability pass** setelah `smoothscale`: ukuran badan
+lebih mudah dibaca pada layar 720p dan outline solid 1 px dibentuk ulang
+setelah resize. Outline hanya dihitung saat cache miss, sehingga frame cache
+berikutnya tetap berupa satu operasi blit dan efek aura transparan tidak ikut
+menjadi tebal. Warna tepi memiliki bias biru/merah tipis agar kedua tim mudah
+dibedakan ketika unit bertumpuk.
+
+### Contoh maksimal: Kaizen Masterwork
+
+Kaizen menjadi hero pertama yang menerima renderer procedural tingkat lanjut.
+Tubuh lama dibangun ulang sebagai **bone rig 2D berlapis** dengan siluet
+3/4 samping: ponytail berumbai, scarf dinamis, stance berkaki terpisah dengan
+tabi/sandal, saya katana berlapis lacquer, obi braided, wajah ber-scar, serta
+katana melengkung dengan garis temper *hamon*. Pose idle, walk, attack dan
+arah katana dihitung dari sendi/parameter animasi; slash bertumpuk dan skill
+angin tetap dihasilkan dari primitive pygame dan masuk pipeline cache normal.
+Renderer memakai **LOD dua tingkat**: arena mempertahankan siluet/kontras yang
+bersih, sedangkan portrait Hero Shop/panel otomatis menambah serat rambut,
+bidang wajah, textile weave, jahitan hakama, dan engraving armor. Kedua LOD
+tetap 100% procedural.
+
+Preview karakter dan skill:
+[docs/kaizen_masterwork_preview.png](docs/kaizen_masterwork_preview.png).
+Contact sheet rig idle/walk/attack:
+[docs/kaizen_animation_strip.png](docs/kaizen_animation_strip.png).
+
+Uji regresi: `python tools/test_hero_hd_render.py` dan
+`python tools/test_kaizen_masterwork.py`.
+
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
 Hero punya 6 slot item yang dibeli dengan GOLD di **ITEM FORGE**.
