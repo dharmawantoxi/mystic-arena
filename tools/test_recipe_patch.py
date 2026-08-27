@@ -59,6 +59,12 @@ def muat_resep():
     recipe_mod = types.ModuleType("pythonforandroid.recipe")
     toolchain_mod = types.ModuleType("pythonforandroid.toolchain")
     logger_mod = types.ModuleType("pythonforandroid.logger")
+    util_mod = types.ModuleType("pythonforandroid.util")
+
+    def _ensure_dir(d):
+        os.makedirs(d, exist_ok=True)
+
+    util_mod.ensure_dir = _ensure_dir
 
     class _Recipe:
         def prebuild_arch(self, arch):
@@ -75,6 +81,7 @@ def muat_resep():
     sys.modules["pythonforandroid.recipe"] = recipe_mod
     sys.modules["pythonforandroid.toolchain"] = toolchain_mod
     sys.modules["pythonforandroid.logger"] = logger_mod
+    sys.modules["pythonforandroid.util"] = util_mod
 
     import importlib.util
     spec = importlib.util.spec_from_file_location("resep_pygame", RESEP)
