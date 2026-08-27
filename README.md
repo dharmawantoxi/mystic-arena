@@ -60,11 +60,13 @@ dibedakan ketika unit bertumpuk.
 
 ### Contoh maksimal: Kaizen Masterwork
 
-Kaizen menjadi hero pertama yang menerima detail procedural tingkat lanjut:
-stance berkaki terpisah dengan tabi/sandal, saya katana berlapis lacquer,
-pauldron tiga lapis, obi braided, bordir crest angin, scar/earring wajah,
-serta garis temper *hamon* pada katana. Semua pose idle, walk, attack, dan
-skill tetap dihasilkan dari primitive pygame dan masuk pipeline cache normal.
+Kaizen menjadi hero pertama yang menerima renderer procedural tingkat lanjut.
+Tubuh lama dibangun ulang sebagai **bone rig 2D berlapis** dengan siluet
+3/4 samping: ponytail berumbai, scarf dinamis, stance berkaki terpisah dengan
+tabi/sandal, saya katana berlapis lacquer, obi braided, wajah ber-scar, serta
+katana melengkung dengan garis temper *hamon*. Pose idle, walk, attack dan
+arah katana dihitung dari sendi/parameter animasi; slash bertumpuk dan skill
+angin tetap dihasilkan dari primitive pygame dan masuk pipeline cache normal.
 
 Preview: [docs/kaizen_masterwork_preview.png](docs/kaizen_masterwork_preview.png).
 

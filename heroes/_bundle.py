@@ -4258,6 +4258,18 @@ class _NS_kaizen:
     # ===================================================================
     def _draw_kaizen_body(surface, cx, cy, facing, phase, action,
                           attack_progress=0):
+        """Renderer tubuh Kaizen kualitas maksimum, 100% procedural.
+
+        Dibangun sebagai bone rig 2D berlapis: setiap pose mengubah lean,
+        langkah, sendi tangan, arah katana, rambut, dan scarf. Tidak ada PNG,
+        sprite sheet, ataupun image.load. Efek skill lama tetap kompatibel.
+        """
+        _NS_kaizen._draw_kaizen_elite(
+            surface, cx, cy, facing, phase, action, attack_progress)
+        return
+
+        # Renderer legacy dipertahankan sementara sebagai dokumentasi bentuk
+        # dan fallback pengembangan, tetapi jalur produksi memakai elite rig.
         # Scarf + lacquered saya behind the body.  The diagonal sheath
         # gives Kaizen a readable swordsman silhouette even at gameplay size.
         _NS_kaizen._draw_scarf_back(surface, cx, cy, facing, phase, action)
@@ -4289,6 +4301,275 @@ class _NS_kaizen:
 
         # Body wind particles
         _NS_kaizen._draw_body_particles(surface, cx, cy, phase)
+
+
+    def _draw_kaizen_elite(surface, cx, cy, facing, phase, action,
+                           attack_progress=0.0):
+        """Hand-authored pixel-art rig memakai primitive pygame saja."""
+        p = _NS_kaizen.PALETTE
+        f = 1 if facing >= 0 else -1
+        walk = action == "walk"
+        attack = action == "attack"
+        stride = math.sin(phase * 1.7)
+        lean = (3 if walk else 0) * f
+        if attack:
+            lean = int(math.sin(max(0.0, min(1.0, attack_progress)) *
+                                math.pi) * 7) * f
+
+        def pt(dx, dy):
+            return (int(cx + dx * f + lean), int(cy + dy))
+
+        def poly(color, points, outline=True):
+            pts = [pt(dx, dy) for dx, dy in points]
+            if outline:
+                _NS_kaizen._poly(surface, p["shadow_deep"],
+                                  [(x + f, y + 1) for x, y in pts])
+            _NS_kaizen._poly(surface, color, pts)
+            return pts
+
+        def limb(a, b, width, base, light=None):
+            aa, bb = pt(*a), pt(*b)
+            _NS_kaizen._aaline(surface, p["shadow_deep"], aa, bb, width + 3)
+            _NS_kaizen._aaline(surface, base, aa, bb, width)
+            if light:
+                off = -1 if f > 0 else 1
+                _NS_kaizen._aaline(surface, light,
+                                   (aa[0] + off, aa[1] - 1),
+                                   (bb[0] + off, bb[1] - 1),
+                                   max(1, width // 3))
+
+        # ── back hair: seven independently animated, tapered locks ──
+        hair_wave = math.sin(phase * 1.25)
+        tail_root = (-7, -34)
+        # Broad ponytail mass first, then separate pointed locks. This avoids
+        # the "thin broom" silhouette common in primitive-only renderers.
+        hw = int(hair_wave * 2)
+        poly(p["hair_darkest"], [(-5, -35), (-12, -48), (-24, -57 + hw),
+             (-21, -48 + hw), (-38, -51 + hw), (-29, -40 + hw),
+             (-45, -37 + hw), (-29, -31 + hw), (-41, -22 + hw),
+             (-21, -25 + hw), (-11, -30)])
+        poly(p["hair_dark"], [(-8, -36), (-14, -46), (-23, -53 + hw),
+             (-21, -44 + hw), (-34, -47 + hw), (-27, -38 + hw),
+             (-39, -36 + hw), (-25, -32 + hw), (-34, -26 + hw),
+             (-18, -28 + hw)], False)
+        poly(p["hair_mid"], [(-14, -43), (-22, -49 + hw),
+             (-20, -42 + hw), (-31, -43 + hw), (-24, -37 + hw)], False)
+        locks = [(-16, -47, -34, -42), (-17, -43, -39, -35),
+                 (-16, -39, -38, -27), (-13, -36, -33, -20),
+                 (-10, -34, -25, -16), (-15, -46, -29, -51),
+                 (-11, -49, -20, -57)]
+        for i, (mx, my, ex, ey) in enumerate(locks):
+            wave = int(hair_wave * (2 + i % 3))
+            shape = [tail_root, (mx, my + wave), (ex, ey + wave),
+                     (mx - 2, my + 5 + wave), (-8, -30)]
+            poly(p["hair_darkest"], shape)
+            inner = [(-8, -34), (mx, my + 1 + wave),
+                     (ex + 3, ey + 1 + wave), (mx + 1, my + 4 + wave)]
+            poly(p["hair_dark"], inner, False)
+            a, b = pt(mx + 1, my + 1 + wave), pt(ex + 4, ey + 1 + wave)
+            _NS_kaizen._aaline(surface, p["hair_mid"], a, b, 1)
+
+        # ── scarf tails behind torso ──
+        scarf_wave = int(math.sin(phase * 1.45) * 3)
+        scarf_boost = 7 if walk or attack else 0
+        poly(p["scarf_dark"], [(-5, -25), (-12, -22),
+             (-26 - scarf_boost, -17 + scarf_wave),
+             (-39 - scarf_boost, -7 + scarf_wave),
+             (-28, -5), (-14, -13)])
+        poly(p["scarf_mid"], [(-7, -23), (-15, -20),
+             (-29 - scarf_boost, -11 + scarf_wave),
+             (-35 - scarf_boost, -8 + scarf_wave), (-24, -7), (-12, -16)],
+             False)
+        _NS_kaizen._aaline(surface, p["scarf_light"], pt(-12, -20),
+                           pt(-31 - scarf_boost, -9 + scarf_wave), 2)
+
+        # ── lacquered saya behind hip ──
+        limb((-7, 7), (-31, 29), 7, (104, 27, 39), (190, 62, 70))
+        _NS_kaizen._aacircle(surface, p["gold_mid"], pt(-31, 29), 3)
+
+        # ── legs: true split stance, not one floating robe mass ──
+        leg_phase = stride if walk else 0.0
+        rear_foot = (-8 - int(leg_phase * 5), 40 - int(abs(leg_phase) * 2))
+        front_foot = (11 + int(leg_phase * 6), 40)
+        for hip, knee, foot, shade in (
+                ((-5, 12), (-9, 27), rear_foot, p["pants_dark"]),
+                ((6, 12), (9, 26), front_foot, p["pants_mid"])):
+            poly(shade, [hip, (hip[0] + 7, hip[1]),
+                         (knee[0] + 5, knee[1]), (foot[0] + 4, foot[1] - 5),
+                         (foot[0] - 4, foot[1] - 5),
+                         (knee[0] - 4, knee[1])])
+            # shin wrap / tabi
+            poly((204, 211, 216), [(foot[0] - 4, foot[1] - 10),
+                 (foot[0] + 4, foot[1] - 10), (foot[0] + 4, foot[1] - 4),
+                 (foot[0] - 4, foot[1] - 4)], False)
+            poly(p["leather_dark"], [(foot[0] - 5, foot[1] - 4),
+                 (foot[0] + 7, foot[1] - 4), (foot[0] + 8, foot[1]),
+                 (foot[0] - 5, foot[1])])
+            _NS_kaizen._aaline(surface, p["leather_light"],
+                               pt(foot[0] - 3, foot[1] - 3),
+                               pt(foot[0] + 5, foot[1] - 3), 1)
+
+        # Wide hakama panels keep volume while the feet remain readable.
+        poly(p["pants_dark"], [(-12, 5), (0, 7), (-2, 29),
+                               (-13, 30), (-17, 22)])
+        poly(p["pants_mid"], [(0, 7), (12, 5), (17, 22),
+                              (4, 29), (1, 18)])
+        poly(p["pants_light"], [(3, 9), (10, 8), (13, 21),
+                                (6, 25)], False)
+        for dx in (-8, 5, 12):
+            _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(dx, 10),
+                               pt(dx + (1 if dx > 0 else -1), 25), 1)
+
+        # ── torso: asymmetric open jacket + leather harness ──
+        poly(p["cloth_darkest"], [(-13, -17), (7, -20), (15, -10),
+             (12, 9), (2, 14), (-12, 8), (-16, -6)])
+        poly(p["cloth_mid"], [(-11, -15), (-2, -18), (-1, 10),
+                              (-10, 7), (-13, -5)], False)
+        poly(p["skin_dark"], [(-2, -18), (7, -18), (10, -9),
+                              (5, 8), (-1, 9)], False)
+        poly(p["skin_mid"], [(0, -16), (6, -16), (8, -8),
+                             (4, 5), (0, 7)], False)
+        _NS_kaizen._aaline(surface, p["leather_dark"], pt(-10, -14),
+                           pt(10, 5), 5)
+        _NS_kaizen._aaline(surface, p["leather_light"], pt(-10, -14),
+                           pt(10, 5), 1)
+        # braided obi
+        _NS_kaizen._aaline(surface, p["gold_dark"], pt(-13, 7), pt(13, 7), 5)
+        for dx in range(-10, 11, 4):
+            _NS_kaizen._aaline(surface, p["gold_light"], pt(dx - 1, 5),
+                               pt(dx + 1, 9), 1)
+
+        # ── rear arm / bracer ──
+        if attack:
+            prog = max(0.0, min(1.0, attack_progress))
+            rear_hand = (-2 + int(prog * 8), -3)
+        else:
+            rear_hand = (-14, 5)
+        limb((-10, -12), (-16, -2), 7, p["cloth_dark"], p["cloth_light"])
+        limb((-16, -2), rear_hand, 6, p["skin_dark"], p["skin_light"])
+        _NS_kaizen._rect(surface, p["wrap_mid"],
+                         (pt(*rear_hand)[0] - 3, pt(*rear_hand)[1] - 3, 7, 6), 1)
+
+        # ── neck and three-quarter head ──
+        poly(p["skin_dark"], [(-3, -23), (5, -23), (5, -16), (-3, -16)])
+        face = [(-8, -42), (4, -44), (10, -38), (11, -31),
+                (7, -23), (1, -20), (-6, -24), (-10, -33)]
+        poly(p["skin_dark"], face)
+        poly(p["skin_mid"], [(-6, -40), (3, -42), (8, -37),
+             (9, -32), (6, -25), (1, -22), (-4, -25), (-7, -33)], False)
+        poly(p["skin_light"], [(1, -40), (6, -37), (7, -33),
+                               (3, -29), (-1, -31)], False)
+        # nose, eye, brow, scar, mouth
+        poly(p["skin_light"], [(8, -35), (13, -33), (8, -31)], False)
+        _NS_kaizen._aaline(surface, p["hair_darkest"], pt(2, -36), pt(8, -35), 2)
+        _NS_kaizen._rect(surface, p["eye_iris_light"],
+                         (pt(6, -34)[0], pt(6, -34)[1], 2, 2))
+        _NS_kaizen._aaline(surface, (120, 48, 47), pt(-1, -33), pt(7, -27), 1)
+        _NS_kaizen._aaline(surface, p["skin_darkest"], pt(4, -25), pt(8, -26), 1)
+        _NS_kaizen._aacircle(surface, p["gold_light"], pt(-8, -27), 2)
+
+        # ── hair cap and crown spikes ──
+        poly(p["hair_darkest"], [(-10, -42), (-8, -50), (-3, -47),
+             (0, -54), (4, -48), (10, -49), (8, -43), (12, -40),
+             (6, -38), (1, -41), (-4, -38), (-9, -34)])
+        poly(p["hair_dark"], [(-7, -43), (-6, -48), (-2, -45),
+             (0, -51), (3, -46), (7, -47), (6, -42), (9, -40),
+             (4, -40), (1, -43), (-4, -40)], False)
+        _NS_kaizen._aaline(surface, p["hair_light"], pt(-3, -46), pt(0, -50), 1)
+
+        # Scarf collar sits above neck and anchors the long tail.
+        poly(p["scarf_dark"], [(-10, -24), (-7, -29), (7, -25),
+             (10, -20), (5, -16), (-7, -17)])
+        poly(p["scarf_mid"], [(-8, -24), (-5, -27), (6, -24),
+             (8, -21), (4, -19), (-6, -19)], False)
+        _NS_kaizen._aaline(surface, p["scarf_high"], pt(-5, -25), pt(6, -22), 1)
+
+        # ── sword arm and katana, pose-driven ──
+        if attack:
+            prog = max(0.0, min(1.0, attack_progress))
+            if prog < .28:       # wind-up behind head
+                t = prog / .28
+                hand = (10, -7 - int(t * 8))
+                angle = -2.15 + t * .45
+            elif prog < .62:     # fast horizontal cut
+                t = (prog - .28) / .34
+                hand = (12 + int(t * 8), -13 + int(t * 12))
+                angle = -1.70 + t * 1.85
+            else:                # low recovery
+                t = (prog - .62) / .38
+                hand = (20 - int(t * 7), -1 + int(t * 10))
+                angle = .15 + t * .65
+        else:
+            hand = (15, 1)
+            angle = .72
+        elbow = ((hand[0] + 10) // 2, (hand[1] - 10) // 2)
+        limb((10, -12), elbow, 8, p["cloth_mid"], p["cloth_high"])
+        limb(elbow, hand, 7, p["skin_dark"], p["skin_light"])
+        _NS_kaizen._draw_elite_katana(surface, cx + lean, cy, f,
+                                      hand, angle, phase, attack)
+
+        # Small wind crest and armor rivets remain legible at 50 px.
+        _NS_kaizen._draw_wind_arc(surface, *pt(2, 17), 5, .2, 4.6,
+                                   p["wind_light"], 1, 8)
+        for dx, dy in ((-10, -9), (-8, -4), (10, -7)):
+            _NS_kaizen._aacircle(surface, p["gold_mid"], pt(dx, dy), 1)
+
+
+    def _draw_elite_katana(surface, cx, cy, facing, hand, angle, phase,
+                           attacking=False):
+        """Procedural katana with curved silhouette, hamon, and slash arc."""
+        p = _NS_kaizen.PALETTE
+        f = 1 if facing >= 0 else -1
+        hx, hy = cx + hand[0] * f, cy + hand[1]
+        length = 42
+        ux, uy = math.cos(angle) * f, math.sin(angle)
+        tx, ty = hx + ux * length, hy + uy * length
+        px, py = -uy, ux
+        # wrapped grip behind guard
+        ex, ey = hx - ux * 12, hy - uy * 12
+        _NS_kaizen._aaline(surface, p["shadow_deep"], (hx, hy), (ex, ey), 7)
+        _NS_kaizen._aaline(surface, p["wrap_mid"], (hx, hy), (ex, ey), 4)
+        for t in (.25, .55, .85):
+            wx, wy = hx - ux * 12 * t, hy - uy * 12 * t
+            _NS_kaizen._aaline(surface, p["wrap_light"],
+                               (wx - px * 2, wy - py * 2),
+                               (wx + px * 2, wy + py * 2), 1)
+        _NS_kaizen._aaline(surface, p["gold_dark"],
+                           (hx - px * 6, hy - py * 6),
+                           (hx + px * 6, hy + py * 6), 4)
+        _NS_kaizen._aaline(surface, p["gold_light"],
+                           (hx - px * 5, hy - py * 5),
+                           (hx + px * 5, hy + py * 5), 1)
+        # subtly curved blade polygon
+        mx, my = hx + ux * 23 + px * 2, hy + uy * 23 + py * 2
+        blade = [(hx + px * 3, hy + py * 3),
+                 (mx + px * 2, my + py * 2), (tx, ty),
+                 (mx - px, my - py), (hx - px * 2, hy - py * 2)]
+        _NS_kaizen._poly(surface, p["shadow_deep"],
+                          [(x + f, y + 1) for x, y in blade])
+        _NS_kaizen._poly(surface, p["steel_dark"], blade)
+        _NS_kaizen._aaline(surface, p["steel_shine"],
+                           (hx + px * 2, hy + py * 2), (tx, ty), 2)
+        # wavy temper line
+        hamon = []
+        for i in range(1, 8):
+            t = i / 8.0
+            wave = math.sin(i * math.pi * .72 + phase * .2) * .8
+            hamon.append((hx + ux * length * t + px * wave,
+                          hy + uy * length * t + py * wave))
+        if len(hamon) > 1:
+            pygame.draw.aalines(surface, p["wind_mid"], False, hamon)
+        _NS_kaizen._aacircle(surface, p["steel_shine"], (int(tx), int(ty)), 2)
+
+        if attacking:
+            # layered crescent centered on the sword hand
+            start = angle - 1.25
+            for radius, color, width in ((48, (*p["wind_dark"], 90), 5),
+                                         (46, (*p["wind_light"], 170), 3),
+                                         (44, (*p["wind_white"], 235), 1)):
+                _NS_kaizen._draw_wind_arc(surface, hx, hy, radius,
+                                           start, angle + .25,
+                                           color, width, 18)
 
 
     def _draw_saya_back(surface, cx, cy, facing, phase):

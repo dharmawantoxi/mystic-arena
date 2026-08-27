@@ -41,6 +41,8 @@ def render_pose(attack=False):
 def test_masterwork_is_procedural():
     source = inspect.getsource(K)
     assert "pygame.image.load" not in source
+    assert callable(K._draw_kaizen_elite)
+    assert callable(K._draw_elite_katana)
     assert callable(K._draw_saya_back)
     assert callable(K._draw_masterwork_details)
 
@@ -51,8 +53,8 @@ def test_material_details_and_pose():
     palette = colors(idle)
 
     # Exact material swatches prove these layers reached the final render.
-    assert (205, 214, 220) in palette       # tabi socks
-    assert (105, 28, 40) in palette         # lacquered saya
+    assert (204, 211, 216) in palette       # tabi socks
+    assert (104, 27, 39) in palette         # lacquered saya
     assert K.PALETTE["gold_light"] in palette
     assert K.PALETTE["cloth_high"] in palette
 
