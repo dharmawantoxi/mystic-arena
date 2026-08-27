@@ -166,7 +166,10 @@ class Bullet:
             return
 
         try:
-            self.target.take_damage(self.damage, self.team)
+            # damage_type='projectile' → Kaizen Wind Wall bisa
+            # memantulkan peluru menara ini (Hero.take_damage).
+            self.target.take_damage(self.damage, self.team,
+                                    damage_type='projectile')
         except Exception:
             # Target berada dalam state tidak konsisten (mis. hero yang
             # baru saja mati/respawn di frame yang sama). Jangan biarkan
@@ -3628,7 +3631,10 @@ class Hero(TowerDebuffMixin):
                 # HIT! (hanya damage > 0 yang mengenai target & bersuara;
                 # projectile visual-only skill damage=0 diam saja)
                 if proj['damage'] > 0:
+                    # damage_type='projectile' → Kaizen Wind Wall
+                    # bisa memantulkannya (lihat Hero.take_damage).
                     target.take_damage(proj['damage'], proj['team'],
+                                       damage_type='projectile',
                                        source=proj.get('source'))
 
                     # Suara hentakan proyektil (panah/sihir hero ranged).
@@ -3681,19 +3687,10 @@ class Hero(TowerDebuffMixin):
         # ─── Passive heal (sangat kecil, selalu aktif) ───
         self._passive_heal()
 
-        # ─── Blade Fury active skill ───
-        if self.skill_active:
-            self.skill_active_timer -= 1
-            if self.skill_active_timer <= 0:
-                self.skill_active = False
-            else:
-                if self.skill_active_timer % 15 == 0:
-                    enemies = self._get_all_enemies(
-                        all_units, all_towers, all_bases)
-                    for e in enemies:
-                        dist = math.hypot(e.x - self.x, e.y - self.y)
-                        if dist <= self.skill_data["skill_range"]:
-                            e.take_damage(self.skill_damage, self.team)
+        # CATATAN: blok "Blade Fury" legacy (skill_active) dihapus —
+        # tidak ada kode yang men-set skill_active=True, jadi blok
+        # itu mati. Damage spin Q Grimjaw sepenuhnya di hero_skills/
+        # (GrimjawSkills.update_timers).
 
         # ─── Validasi follow_target ───
         if self.follow_target:
@@ -4195,14 +4192,35 @@ class Hero(TowerDebuffMixin):
         # Windrun adalah dash defensif: serangan normal mempunyai peluang
         # besar untuk meleset selama jejak angin aktif. Damage sihir tetap
         # bisa mengenai agar status ini tidak menjadi invulnerability penuh.
+        # 'projectile' diperlakukan seperti 'normal' (serangan fisik)
+        # untuk keperluan evasion — paritas dengan sebelum marker
+        # 'projectile' ada (marker hanya untuk Kaizen Wind Wall).
         if (getattr(self, "_windrun_active", False) and damage > 0
-                and damage_type == 'normal' and random.random() < 0.75):
+                and damage_type in ('normal', 'projectile')
+                and random.random() < 0.75):
             try:
                 import __main__
                 if hasattr(__main__, 'game_instance'):
                     __main__.game_instance.effects.add_damage_number(
                         self.x, self.y - self.radius - 12,
                         "WIND", is_critical=False, damage_type='ice')
+            except Exception:
+                pass
+            return
+
+        # ═══ KAIZEN — WIND WALL ═══
+        # Dinding angin memantulkan PROJECTILE (peluru menara &
+        # tembakan ranged musuh) selama durasinya. Serangan melee
+        # (tanpa projectile) dan skill AOE tetap bisa mengenai —
+        # wall bukan invulnerability.
+        if (getattr(self, "_wind_wall_timer", 0) > 0 and damage > 0
+                and damage_type == 'projectile'):
+            try:
+                import __main__
+                if hasattr(__main__, 'game_instance'):
+                    __main__.game_instance.effects.add_damage_number(
+                        self.x, self.y - self.radius - 12,
+                        "WALL", is_critical=False, damage_type='ice')
             except Exception:
                 pass
             return
@@ -4227,7 +4245,8 @@ class Hero(TowerDebuffMixin):
         # Blind    = peluang SERANGAN PENYERANG meleset (di SOURCE).
         # True Strike (Sundering Cudgel pada penyerang) MENEMBUS
         # keduanya, jadi serangan basic-nya selalu mendarat.
-        if damage_type == 'normal' and damage > 0:
+        # 'projectile' ikut (paritas: peluru = serangan fisik biasa).
+        if damage_type in ('normal', 'projectile') and damage > 0:
             true_strike = False
             if source is not None:
                 src_inv = getattr(source, "items", None)
@@ -4300,10 +4319,33 @@ class Hero(TowerDebuffMixin):
                 except Exception:
                     pass
 
+        # ═══ THORNE — BRISTLEBACK ═══
+        # Duri aktif: damage yang tersisa dikurangi 30% (armor
+        # duri). Refleksi 25% diterapkan SETELAH damage mendarat
+        # (di bawah), supaya mitigasi item di atas tetap jalan.
+        if getattr(self, "_bristleback_active", False) and damage > 0:
+            damage = max(1, int(round(damage * 0.70)))
+
         self.hp -= damage
 
         # ═══ CATAT DAMAGE DEALER (command ATTACK DAMAGE DEALER) ═══
         credit_hero_damage(source, damage)
+
+        # ═══ THORNE — BRISTLEBACK REFLECT ═══
+        # 25% damage yang mendarat dipantulkan ke penyerangnya.
+        # ``source=None`` di pemanggilan pantulan memutus kemungkinan
+        # loop tak hingga (hero musuh yang juga ber-Bristleback).
+        if (getattr(self, "_bristleback_active", False) and damage > 0
+                and source is not None and source is not self):
+            _src = source
+            if (getattr(_src, "alive", False)
+                    and hasattr(_src, "take_damage")
+                    and getattr(_src, "team", None) != self.team):
+                try:
+                    _src.take_damage(max(1, int(damage * 0.25)),
+                                     self.team, source=None)
+                except Exception:
+                    pass
 
         # ═══ NOTIFY ITEM (Leviathan combat timer + Static Charge +
         #     Thornmail reflect) ═══
