@@ -101,6 +101,35 @@ Contact sheet rig idle/walk/attack:
 
 Uji regresi: `python tools/test_thorne_masterwork.py`.
 
+### Contoh maksimal ketiga: Sylara Masterwork
+
+Sylara mendapat perlakuan yang sama, dan rig lamanya (torso/quiver/hood/
+lengan/busur sebagai fungsi terpisah) **dihapus total**, diganti satu
+**bone rig 2D berlapis**: cape hijau per-panel dengan lipatan & tepi
+robek yang beranimasi angin, quiver berisi anak panah berbulu, korset
+kulit-hijau ber-strap dengan gesper emas, boot tinggi bertali, hood
+runcing ber-brim dengan rambut merah menyembul, serta **busur recurve
+pose-driven**: limb melentur mengikuti tarikan, tali menegang ke nock,
+dan anak panah ternock hanya saat tali ditarik (`_bow_nock` menghitung
+posisi tangan penarik, jadi lengan benar-benar menempel pada tali).
+Seluruh siluet dirender ke buffer lalu diberi **outline gelap 1 px**
+seperti sprite sheet referensi. Pose yang tersedia: idle, walk, bow
+draw/release, dan windrun (stance dash + speed-line).
+
+**LOD dua tingkat** yang sama: arena memakai siluet bersih, portrait
+menambah helai rambut halus, bulu mata, jahitan hood, anyaman korset,
+rivet sabuk, serat fletching quiver, dan tali boot. Di portrait,
+aura/platform/proyektil dilewati supaya auto-crop terisi wajah &
+material, bukan lingkaran efek. Biaya render ±0.8 ms/frame (setara
+Thorne) dan tetap 100% procedural — tanpa PNG hero atau `image.load`.
+
+Preview karakter dan skill:
+[docs/sylara_masterwork_preview.png](docs/sylara_masterwork_preview.png).
+Contact sheet rig idle/walk/attack:
+[docs/sylara_animation_strip.png](docs/sylara_animation_strip.png).
+
+Uji regresi: `python tools/test_sylara_masterwork.py`.
+
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
 Hero punya 6 slot item yang dibeli dengan GOLD di **ITEM FORGE**.
