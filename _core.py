@@ -6073,7 +6073,9 @@ class Menu:
             label_font=label_font, value_font=value_font)
 
         # ═══ GRAPHICS SECTION ═══
-        graphics_y = gameplay_y + 315
+        # Language control berakhir sekitar panel_y+350. Posisi lama
+        # (gameplay_y+315) membuat judul GRAPHICS menabrak baris Language.
+        graphics_y = panel_y + 365
         ui_theme.section_header(self.screen, col2_x, graphics_y,
                                 "GRAPHICS", "monitor", ui_theme.ORANGE,
                                 get_font(22, "body_semibold"),
@@ -6100,7 +6102,7 @@ class Menu:
 
         # ═══ DANGER ZONE SECTION ═══
         # Kolom kanan menjaga tombol reset terpisah dari Cloud Save.
-        danger_y = panel_y + 450
+        danger_y = panel_y + 475
         ui_theme.section_header(self.screen, col2_x, danger_y,
                                 "DANGER ZONE", "warn", ui_theme.RED,
                                 get_font(22, "body_semibold"),
