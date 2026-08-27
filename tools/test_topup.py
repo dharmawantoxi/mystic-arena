@@ -33,6 +33,16 @@ def main():
                                       _core.SCREEN_HEIGHT))
     menu = Menu(screen)
 
+    # ── 0. Idempotensi: buang kode uji yang tersisa di save dari run
+    # sebelumnya, supaya redeem di bawah selalu dianggap kode baru.
+    # (Tanpa ini, run kedua gagal karena kode sudah "already redeemed".)
+    _used = menu.save_data.setdefault("redeemed_codes", [])
+    if "MA-111111" in _used or "MA-222222" in _used:
+        menu.save_data["redeemed_codes"] = [
+            c for c in _used if c not in ("MA-111111", "MA-222222")]
+        from _system import SaveManager
+        SaveManager.save(menu.save_data)
+
     # ── 1. Masuk hero shop: tombol + TOP UP harus ada ──
     menu.state = MenuState.HERO_SHOP
     screen.fill((0, 0, 0))

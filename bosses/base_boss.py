@@ -5,6 +5,7 @@
 
 import pygame
 import math
+import random
 from settings import *
 from bosses.boss_data import get_all_boss_types
 from _render import get_font

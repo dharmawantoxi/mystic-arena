@@ -838,6 +838,17 @@ class _NS_build_popup:
                 surface.blit(cost_t, (bx + 28, by + 53))
 
                 g.ui_buttons[f'build_{ttype}'] = btn_rect
+
+
+# ====================================================================
+# build_slots.py
+# ====================================================================
+class _NS_build_slots:
+    """Namespace build_slots - isi asli tidak diubah."""
+
+    # ui_components/build_slots.py
+    # ================================
+
     class BuildSlots(BaseUIComponent):
         """
         Draw empty build slot markers:
