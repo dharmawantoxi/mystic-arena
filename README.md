@@ -185,8 +185,12 @@ Preview karakter dan pose:
 [docs/grimjaw_masterwork_preview.png](docs/grimjaw_masterwork_preview.png).
 Portrait LOD Hero Shop:
 [docs/grimjaw_portrait_preview.png](docs/grimjaw_portrait_preview.png).
+Contact sheet rig idle/walk/attack:
+[docs/grimjaw_animation_strip.png](docs/grimjaw_animation_strip.png).
 
 Uji regresi: `python tools/test_grimjaw_masterwork.py`.
+Review sheet dirender ulang dengan
+`python tools/_shot_grimjaw_masterwork.py`.
 
 ### Contoh maksimal keenam: Vex Masterwork
 
@@ -212,8 +216,12 @@ Preview karakter dan pose:
 [docs/vex_masterwork_preview.png](docs/vex_masterwork_preview.png).
 Portrait LOD Hero Shop:
 [docs/vex_portrait_preview.png](docs/vex_portrait_preview.png).
+Contact sheet rig idle/walk/attack:
+[docs/vex_animation_strip.png](docs/vex_animation_strip.png).
 
 Uji regresi: `python tools/test_vex_masterwork.py`.
+Review sheet dirender ulang dengan
+`python tools/_shot_vex_masterwork.py`.
 
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
