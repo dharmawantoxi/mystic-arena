@@ -130,6 +130,34 @@ Contact sheet rig idle/walk/attack:
 
 Uji regresi: `python tools/test_sylara_masterwork.py`.
 
+### Contoh maksimal keempat: Zephyr Masterwork
+
+Zephyr kini menerima upgrade penuh yang sama: renderer tubuh lama berupa
+potongan torso/lengan/rok terpisah **dihapus** dan diganti satu **bone rig
+2D berlapis** bertema dark-fey. Rig baru memiliki mahkota rambut crimson
+berduri dengan helai individual, dua pasang sayap moth transparan berurat,
+mantel asimetris, gaun petal berpanel, tights dan ankle boot yang benar-benar
+menapak, korset ber-lacing/rune, serta staff blackwood hidup dengan sulur
+duri dan kristal amethyst. Posisi ujung staff dipakai bersama oleh tangan,
+cast flash, magic bolt, dan Casket Curse — jadi semua tetap tersambung ketika
+wind-up dan release, bukan dekorasi yang bergerak sendiri.
+
+Pose **idle**, **walk**, dan **cast** menghitung ulang akar tubuh, langkah,
+sayap, panel gaun, rambut, tangan, serta staff setiap frame. LOD arena
+mempertahankan siluet magenta yang bersih dan hemat; Hero Shop memakai pass
+portrait tambahan untuk jahitan hem, jewel, material sayap, circlet, detail
+wajah, dan embroidery. Q Bramble Maze, W Shadow Realm, E Casket Curse, dan
+R Bedlam tetap memakai timer gameplay yang sama, dengan efek visual baru
+yang dibangun penuh dari primitive pygame.
+
+Preview karakter dan skill:
+[docs/zephyr_masterwork_preview.png](docs/zephyr_masterwork_preview.png) dan
+[docs/zephyr_skills_preview.png](docs/zephyr_skills_preview.png).
+Contact sheet rig idle/walk/cast:
+[docs/zephyr_animation_strip.png](docs/zephyr_animation_strip.png).
+
+Uji regresi: `python tools/test_zephyr_masterwork.py`.
+
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
 Hero punya 6 slot item yang dibeli dengan GOLD di **ITEM FORGE**.
