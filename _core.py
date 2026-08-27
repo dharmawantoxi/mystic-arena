@@ -1865,8 +1865,8 @@ class Game:
             pass
 
         # ═══ TRUE BOSS CHECK (dari level config) ═══
-        # Spawn true boss ONLY if player has destroyed >= 6 red towers
-        # AND wave is 5+. Both conditions must be met.
+        # Spawn true boss BEGITU player menghancurkan >= 6 tower merah,
+        # berapa pun wave-nya (syarat wave 5+ dihapus sesuai permintaan).
         #
         # BUG LAMA: kondisi ini dihitung sebagai
         # `jumlah_awal_merah - jumlah_hidup_sekarang`. Itu rusak karena
@@ -1875,8 +1875,7 @@ class Game:
         # dan true boss tidak pernah spawn walau pemain sudah
         # menghancurkan 6+ tower. Sekarang pakai counter event
         # `red_towers_destroyed` yang dinaikkan saat tower merah mati.
-        # Both conditions: >= 6 towers destroyed AND wave >= 5
-        if (not self.true_boss_spawned and self.wave_number >= 5
+        if (not self.true_boss_spawned
                 and self.red_towers_destroyed >= 6
                 and not self.active_boss):
             true_boss_type = self.level_config.get("true_boss")
