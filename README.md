@@ -58,7 +58,18 @@ berikutnya tetap berupa satu operasi blit dan efek aura transparan tidak ikut
 menjadi tebal. Warna tepi memiliki bias biru/merah tipis agar kedua tim mudah
 dibedakan ketika unit bertumpuk.
 
-Uji regresi: `python tools/test_hero_hd_render.py`.
+### Contoh maksimal: Kaizen Masterwork
+
+Kaizen menjadi hero pertama yang menerima detail procedural tingkat lanjut:
+stance berkaki terpisah dengan tabi/sandal, saya katana berlapis lacquer,
+pauldron tiga lapis, obi braided, bordir crest angin, scar/earring wajah,
+serta garis temper *hamon* pada katana. Semua pose idle, walk, attack, dan
+skill tetap dihasilkan dari primitive pygame dan masuk pipeline cache normal.
+
+Preview: [docs/kaizen_masterwork_preview.png](docs/kaizen_masterwork_preview.png).
+
+Uji regresi: `python tools/test_hero_hd_render.py` dan
+`python tools/test_kaizen_masterwork.py`.
 
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
