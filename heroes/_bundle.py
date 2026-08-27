@@ -4167,6 +4167,7 @@ class _NS_kaizen:
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_kaizen._detect_moving(boss)
         _NS_kaizen._update_attack_anim(boss)
+        portrait_hd = bool(getattr(boss, "_portrait_hd", False))
 
         attacking = (
             getattr(boss, "_kz_attack_active", False)
@@ -4174,11 +4175,14 @@ class _NS_kaizen:
         )
 
         # ---------- Background layers ----------
-        # Procedural pixel rim-light: keeps the compact swordsman silhouette
-        # crisp on dark terrain without relying on a sprite sheet.
-        _NS_kaizen._draw_swordsman_rim_light(surface, x, y - 10, pulse)
-        _NS_kaizen._draw_wind_aura(surface, x, y, pulse)
-        _NS_kaizen._draw_wind_platform(surface, x, y + 40, pulse, active_skill)
+        # Portrait LOD intentionally omits arena-sized aura/platform. This
+        # lets auto-crop fill the portrait with Kaizen's face and materials
+        # instead of shrinking him to include a 180 px effect circle.
+        if not portrait_hd:
+            _NS_kaizen._draw_swordsman_rim_light(surface, x, y - 10, pulse)
+            _NS_kaizen._draw_wind_aura(surface, x, y, pulse)
+            _NS_kaizen._draw_wind_platform(
+                surface, x, y + 40, pulse, active_skill)
 
         # ---------- Skill ground effects ----------
         if active_skill == "q":
@@ -4197,7 +4201,8 @@ class _NS_kaizen:
             _NS_kaizen._draw_kaizen_idle(surface, boss, x, y)
 
         # ---------- Projectiles ----------
-        _NS_kaizen._manage_projectiles(boss, surface, pulse)
+        if not portrait_hd:
+            _NS_kaizen._manage_projectiles(boss, surface, pulse)
 
         # ---------- Skill foreground effects ----------
         if active_skill == "q":
@@ -4215,19 +4220,26 @@ class _NS_kaizen:
     # ===================================================================
     def _draw_kaizen_idle(surface, boss, x, y):
         bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_kaizen._draw_shadow(surface, x, y + 48)
-        _NS_kaizen._draw_floating_wind(surface, x, y + 35, boss.pulse)
-        _NS_kaizen._draw_kaizen_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+        if not getattr(boss, "_portrait_hd", False):
+            _NS_kaizen._draw_shadow(surface, x, y + 48)
+            _NS_kaizen._draw_floating_wind(surface, x, y + 35, boss.pulse)
+        _NS_kaizen._draw_kaizen_body(
+            surface, x, y + bob, boss.direction, boss.pulse, "idle",
+            detail=getattr(boss, "_portrait_hd", False))
 
 
     def _draw_kaizen_walk(surface, boss, x, y):
         phase = boss.pulse * 2.0
         bob = int(abs(math.sin(phase * 1.2)) * 3)
         sway = int(math.sin(phase) * 2)
-        _NS_kaizen._draw_shadow(surface, x + sway, y + 48)
-        _NS_kaizen._draw_floating_wind(surface, x + sway, y + 35, phase, trail=True,
-                           facing=boss.direction)
-        _NS_kaizen._draw_kaizen_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
+        if not getattr(boss, "_portrait_hd", False):
+            _NS_kaizen._draw_shadow(surface, x + sway, y + 48)
+            _NS_kaizen._draw_floating_wind(
+                surface, x + sway, y + 35, phase, trail=True,
+                facing=boss.direction)
+        _NS_kaizen._draw_kaizen_body(
+            surface, x + sway, y - bob, boss.direction, phase, "walk",
+            detail=getattr(boss, "_portrait_hd", False))
 
 
     def _draw_kaizen_attack(surface, boss, x, y):
@@ -4247,17 +4259,20 @@ class _NS_kaizen:
 
         # Slight step forward during swing
         step = int(math.sin(progress * math.pi) * 3) * boss.direction
-        _NS_kaizen._draw_shadow(surface, x + step, y + 48)
-        _NS_kaizen._draw_floating_wind(surface, x + step, y + 35, boss.pulse, intense=True)
-        _NS_kaizen._draw_kaizen_body(surface, x + step, y, boss.direction, boss.pulse,
-                          "attack", progress)
+        if not getattr(boss, "_portrait_hd", False):
+            _NS_kaizen._draw_shadow(surface, x + step, y + 48)
+            _NS_kaizen._draw_floating_wind(
+                surface, x + step, y + 35, boss.pulse, intense=True)
+        _NS_kaizen._draw_kaizen_body(
+            surface, x + step, y, boss.direction, boss.pulse,
+            "attack", progress, getattr(boss, "_portrait_hd", False))
 
 
     # ===================================================================
     # BODY RENDERING - HD samurai
     # ===================================================================
     def _draw_kaizen_body(surface, cx, cy, facing, phase, action,
-                          attack_progress=0):
+                          attack_progress=0, detail=False):
         """Renderer tubuh Kaizen kualitas maksimum, 100% procedural.
 
         Dibangun sebagai bone rig 2D berlapis: setiap pose mengubah lean,
@@ -4265,11 +4280,11 @@ class _NS_kaizen:
         sprite sheet, ataupun image.load. Efek skill lama tetap kompatibel.
         """
         _NS_kaizen._draw_kaizen_elite(
-            surface, cx, cy, facing, phase, action, attack_progress)
+            surface, cx, cy, facing, phase, action, attack_progress, detail)
 
 
     def _draw_kaizen_elite(surface, cx, cy, facing, phase, action,
-                           attack_progress=0.0):
+                           attack_progress=0.0, detail=False):
         """Hand-authored pixel-art rig memakai primitive pygame saja."""
         p = _NS_kaizen.PALETTE
         f = 1 if facing >= 0 else -1
@@ -4563,6 +4578,36 @@ class _NS_kaizen:
                 _NS_kaizen._aacircle(surface,
                                      (*p["wind_bright"], int(110 * (1 - t))),
                                      (mx, my), 1)
+
+        if detail:
+            # Portrait-only micro-detail. At arena scale these marks would
+            # collapse into noise, so LOD keeps them out of gameplay cache.
+            # Hair fibre groups
+            for i in range(5):
+                _NS_kaizen._aaline(
+                    surface, p["hair_light"],
+                    pt(-13 - i * 3, -43 + i * 3),
+                    pt(-24 - i * 3, -45 + i * 5), 1)
+            # Face planes, lower eyelid and lip highlight
+            _NS_kaizen._aaline(surface, p["skin_high"],
+                               pt(2, -39), pt(6, -37), 1)
+            _NS_kaizen._aaline(surface, p["skin_darkest"],
+                               pt(3, -32), pt(8, -31), 1)
+            _NS_kaizen._aaline(surface, p["skin_light"],
+                               pt(5, -24), pt(8, -25), 1)
+            # Fine textile weave and hakama hem stitching
+            for yy in (-11, -6, -1):
+                _NS_kaizen._aaline(surface, p["cloth_light"],
+                                   pt(-9, yy), pt(-5, yy + 2), 1)
+            for xx in (-10, -5, 5, 10):
+                _NS_kaizen._aacircle(surface, p["scarf_light"],
+                                      pt(xx, 24), 1)
+            # Engraved pauldron fan and tiny reflected rivet glints
+            for a in (-.7, -.2, .3):
+                _NS_kaizen._aaline(surface, p["steel_mid"], pt(12, -13),
+                                   pt(12 + math.cos(a) * 5,
+                                      -13 + math.sin(a) * 5), 1)
+            _NS_kaizen._aacircle(surface, p["wind_white"], pt(13, -16), 1)
 
 
     def _draw_elite_katana(surface, cx, cy, facing, hand, angle, phase,

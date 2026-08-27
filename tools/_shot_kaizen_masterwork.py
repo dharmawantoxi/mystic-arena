@@ -39,6 +39,7 @@ for i, label in enumerate(labels):
     h.pulse = 1.25
     h.direction = 1
     h.facing = 1
+    h._portrait_hd = True
     if i == 0:
         K._draw_swordsman_rim_light(native, 120, 125, h.pulse)
         K._draw_wind_platform(native, 120, 175, h.pulse, None)

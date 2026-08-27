@@ -63,6 +63,20 @@ def test_material_details_and_pose():
     assert pygame.image.tobytes(idle, "RGBA") != pygame.image.tobytes(attack, "RGBA")
 
 
+def test_portrait_lod_is_distinct():
+    ui_source = open(os.path.join(ROOT, "ui_components", "_bundle.py"),
+                     encoding="utf-8").read()
+    assert "fake._portrait_hd = True" in ui_source
+
+    normal = pygame.Surface((180, 180), pygame.SRCALPHA)
+    portrait = pygame.Surface((180, 180), pygame.SRCALPHA)
+    K._draw_kaizen_elite(normal, 90, 90, 1, .8, "idle", 0.0, False)
+    K._draw_kaizen_elite(portrait, 90, 90, 1, .8, "idle", 0.0, True)
+    assert pygame.image.tobytes(normal, "RGBA") != \
+        pygame.image.tobytes(portrait, "RGBA")
+    assert len(colors(portrait)) >= len(colors(normal))
+
+
 def test_rig_has_real_animation_frames():
     """Walk/attack harus mengubah sendi dan siluet, bukan sticker translation."""
     frames = set()
@@ -85,5 +99,6 @@ def test_rig_has_real_animation_frames():
 if __name__ == "__main__":
     test_masterwork_is_procedural()
     test_material_details_and_pose()
+    test_portrait_lod_is_distinct()
     test_rig_has_real_animation_frames()
-    print("OK - Kaizen masterwork procedural, material + 12 frame rig tervalidasi")
+    print("OK - Kaizen procedural: gameplay + portrait LOD dan 12 frame tervalidasi")

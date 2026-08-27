@@ -67,6 +67,10 @@ tabi/sandal, saya katana berlapis lacquer, obi braided, wajah ber-scar, serta
 katana melengkung dengan garis temper *hamon*. Pose idle, walk, attack dan
 arah katana dihitung dari sendi/parameter animasi; slash bertumpuk dan skill
 angin tetap dihasilkan dari primitive pygame dan masuk pipeline cache normal.
+Renderer memakai **LOD dua tingkat**: arena mempertahankan siluet/kontras yang
+bersih, sedangkan portrait Hero Shop/panel otomatis menambah serat rambut,
+bidang wajah, textile weave, jahitan hakama, dan engraving armor. Kedua LOD
+tetap 100% procedural.
 
 Preview karakter dan skill:
 [docs/kaizen_masterwork_preview.png](docs/kaizen_masterwork_preview.png).

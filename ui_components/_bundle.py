@@ -603,6 +603,8 @@ class _NS_hero_portraits:
         fake.walk_cycle = 0
         fake.is_moving = False
         fake.anim_time = 0
+        # LOD portrait ultra-detail; tetap procedural dan tanpa aset.
+        fake._portrait_hd = True
 
         # Hero-specific skill states (semua False/0)
         skill_attrs = [
