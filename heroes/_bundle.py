@@ -4266,41 +4266,6 @@ class _NS_kaizen:
         """
         _NS_kaizen._draw_kaizen_elite(
             surface, cx, cy, facing, phase, action, attack_progress)
-        return
-
-        # Renderer legacy dipertahankan sementara sebagai dokumentasi bentuk
-        # dan fallback pengembangan, tetapi jalur produksi memakai elite rig.
-        # Scarf + lacquered saya behind the body.  The diagonal sheath
-        # gives Kaizen a readable swordsman silhouette even at gameplay size.
-        _NS_kaizen._draw_scarf_back(surface, cx, cy, facing, phase, action)
-        _NS_kaizen._draw_saya_back(surface, cx, cy, facing, phase)
-
-        # Grounded split hakama, greaves, and sandals.
-        _NS_kaizen._draw_hakama(surface, cx, cy + 5, phase, facing)
-
-        # Torso
-        _NS_kaizen._draw_torso(surface, cx, cy - 8, facing, phase)
-
-        # Arms & sword
-        if action == "attack":
-            _NS_kaizen._draw_attack_arms(surface, cx, cy - 8, facing, phase, attack_progress)
-        else:
-            _NS_kaizen._draw_idle_arms(surface, cx, cy - 8, facing, phase, action)
-
-        # Scarf front (flowing over shoulder)
-        _NS_kaizen._draw_scarf_front(surface, cx, cy - 8, facing, phase)
-
-        # Final material pass: shoulder plates, rope knot, cloth embroidery,
-        # and hard rim accents are intentionally drawn after the limbs so the
-        # detail remains visible after the hero is reduced to arena size.
-        _NS_kaizen._draw_masterwork_details(
-            surface, cx, cy, facing, phase, action)
-
-        # Head with topknot/ponytail
-        _NS_kaizen._draw_head(surface, cx, cy - 28, facing, phase)
-
-        # Body wind particles
-        _NS_kaizen._draw_body_particles(surface, cx, cy, phase)
 
 
     def _draw_kaizen_elite(surface, cx, cy, facing, phase, action,
@@ -4312,12 +4277,19 @@ class _NS_kaizen:
         attack = action == "attack"
         stride = math.sin(phase * 1.7)
         lean = (3 if walk else 0) * f
+        # Whole-body root motion: breathing, planted walk bounce, then a
+        # compressed wind-up / explosive attack lunge. Because every layer
+        # uses pt(), hair, face, armor and limbs remain attached to the rig.
+        root_y = int(math.sin(phase * .72) * .7)
+        if walk:
+            root_y -= int(abs(math.sin(phase * 1.7)) * 2)
         if attack:
-            lean = int(math.sin(max(0.0, min(1.0, attack_progress)) *
-                                math.pi) * 7) * f
+            ap = max(0.0, min(1.0, attack_progress))
+            lean = int(math.sin(ap * math.pi) * 7) * f
+            root_y += int(math.sin(ap * math.pi) * 2)
 
         def pt(dx, dy):
-            return (int(cx + dx * f + lean), int(cy + dy))
+            return (int(cx + dx * f + lean), int(cy + dy + root_y))
 
         def poly(color, points, outline=True):
             pts = [pt(dx, dy) for dx, dy in points]
@@ -4439,6 +4411,30 @@ class _NS_kaizen:
             _NS_kaizen._aaline(surface, p["gold_light"], pt(dx - 1, 5),
                                pt(dx + 1, 9), 1)
 
+        # Layered steel-and-lacquer pauldron on the sword shoulder. Separate
+        # lames, rivets and a cold rim turn the upper body into a readable
+        # armored silhouette rather than a single blue polygon.
+        pauldron = [(7, -18), (13, -20), (19, -15), (18, -8),
+                    (13, -5), (8, -9)]
+        poly(p["steel_darkest"], pauldron)
+        poly(p["cloth_mid"], [(9, -17), (13, -18), (17, -14),
+                              (16, -10), (12, -8), (9, -10)], False)
+        for i in range(3):
+            yy = -15 + i * 3
+            _NS_kaizen._aaline(surface, p["cloth_light"],
+                               pt(10, yy), pt(17 - i, yy + 1), 1)
+        _NS_kaizen._aacircle(surface, p["gold_mid"], pt(12, -15), 2)
+        _NS_kaizen._aacircle(surface, p["gold_light"], pt(12, -16), 1)
+
+        # Jacket piping, stitches, and small wind crest.
+        _NS_kaizen._aaline(surface, p["cloth_high"], pt(-11, -13),
+                           pt(-10, 4), 1)
+        for yy in (-9, -4, 1):
+            _NS_kaizen._aaline(surface, p["scarf_light"],
+                               pt(-12, yy), pt(-9, yy + 1), 1)
+        _NS_kaizen._draw_wind_arc(surface, *pt(-5, -5), 4, .3, 4.4,
+                                   p["wind_mid"], 1, 7)
+
         # ── rear arm / bracer ──
         if attack:
             prog = max(0.0, min(1.0, attack_progress))
@@ -4447,8 +4443,13 @@ class _NS_kaizen:
             rear_hand = (-14, 5)
         limb((-10, -12), (-16, -2), 7, p["cloth_dark"], p["cloth_light"])
         limb((-16, -2), rear_hand, 6, p["skin_dark"], p["skin_light"])
-        _NS_kaizen._rect(surface, p["wrap_mid"],
-                         (pt(*rear_hand)[0] - 3, pt(*rear_hand)[1] - 3, 7, 6), 1)
+        rhx, rhy = pt(*rear_hand)
+        _NS_kaizen._rect(surface, p["wrap_dark"],
+                         (rhx - 4, rhy - 4, 8, 8), 2)
+        _NS_kaizen._aaline(surface, p["wrap_light"],
+                           (rhx - 3, rhy - 2), (rhx + 3, rhy + 1), 1)
+        _NS_kaizen._aaline(surface, p["gold_mid"],
+                           (rhx - 3, rhy + 2), (rhx + 3, rhy + 2), 1)
 
         # ── neck and three-quarter head ──
         poly(p["skin_dark"], [(-3, -23), (5, -23), (5, -16), (-3, -16)])
@@ -4476,6 +4477,13 @@ class _NS_kaizen:
              (0, -51), (3, -46), (7, -47), (6, -42), (9, -40),
              (4, -40), (1, -43), (-4, -40)], False)
         _NS_kaizen._aaline(surface, p["hair_light"], pt(-3, -46), pt(0, -50), 1)
+        # Narrow hachimaki under the fringe, with an embossed wind bead.
+        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-8, -40),
+                           pt(8, -39), 4)
+        _NS_kaizen._aaline(surface, p["scarf_mid"], pt(-7, -41),
+                           pt(8, -40), 2)
+        _NS_kaizen._aacircle(surface, p["wind_dark"], pt(5, -40), 2)
+        _NS_kaizen._aacircle(surface, p["wind_light"], pt(5, -41), 1)
 
         # Scarf collar sits above neck and anchors the long tail.
         poly(p["scarf_dark"], [(-10, -24), (-7, -29), (7, -25),
@@ -4513,6 +4521,48 @@ class _NS_kaizen:
                                    p["wind_light"], 1, 8)
         for dx, dy in ((-10, -9), (-8, -4), (10, -7)):
             _NS_kaizen._aacircle(surface, p["gold_mid"], pt(dx, dy), 1)
+
+        # ── secondary motion / contact feedback ──
+        if walk:
+            # Dust appears only near footfall (|stride| close to one), while
+            # speed lines trail opposite the facing direction.
+            contact = max(0.0, abs(stride) - .55) / .45
+            if contact > 0:
+                planted = rear_foot if stride > 0 else front_foot
+                fx, fy = pt(planted[0], planted[1])
+                alpha = int(150 * contact)
+                for i in range(4):
+                    _NS_kaizen._aacircle(
+                        surface, (*p["wind_mid"], max(15, alpha - i * 24)),
+                        (fx - f * (3 + i * 3), fy - i % 2), max(1, 3 - i // 2))
+            for i in range(3):
+                sy = cy - 7 + i * 9 + root_y
+                _NS_kaizen._aaline(surface, (*p["wind_light"], 95 - i * 18),
+                                   (cx - f * (25 + i * 7), sy),
+                                   (cx - f * (12 + i * 5), sy - 1), 1)
+        elif attack:
+            ap = max(0.0, min(1.0, attack_progress))
+            impact = max(0.0, 1.0 - abs(ap - .52) / .18)
+            if impact > 0:
+                ix, iy = pt(47, -3)
+                for i in range(6):
+                    ang = -1.2 + i * .48
+                    length = 5 + int(impact * (8 + i % 2 * 4))
+                    _NS_kaizen._aaline(surface,
+                                       (*p["wind_white"], int(220 * impact)),
+                                       (ix, iy),
+                                       (ix + math.cos(ang) * length * f,
+                                        iy + math.sin(ang) * length),
+                                       1 if i % 2 else 2)
+        else:
+            # Quiet idle motes make breathing visible without obscuring face.
+            for i in range(3):
+                t = (phase * .18 + i / 3.0) % 1.0
+                mx = cx + int(math.sin(phase + i * 2.1) * (18 + i * 3))
+                my = cy + 28 - int(t * 58)
+                _NS_kaizen._aacircle(surface,
+                                     (*p["wind_bright"], int(110 * (1 - t))),
+                                     (mx, my), 1)
 
 
     def _draw_elite_katana(surface, cx, cy, facing, hand, angle, phase,

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Render review sheet untuk contoh upgrade procedural Kaizen."""
+import math
 import os
 import sys
 
@@ -80,3 +81,38 @@ for j, text in enumerate(notes):
 out = os.path.join(ROOT, "docs", "kaizen_masterwork_preview.png")
 pygame.image.save(screen, out)
 print(out)
+
+# A second sheet proves that this is a real procedural animation rig rather
+# than one detailed pose moved as a sticker.
+SW, SH = 1280, 780
+strip = pygame.Surface((SW, SH))
+strip.fill((5, 9, 18))
+strip.blit(font_title.render("KAIZEN — PROCEDURAL ANIMATION RIG", True,
+                             (166, 218, 255)), (38, 24))
+strip.blit(font_small.render(
+    "Every frame below is recalculated from joints, phase, cloth and hair physics",
+    True, (132, 151, 181)), (40, 72))
+
+rows = (
+    ("IDLE / BREATH", 4, "idle"),
+    ("WALK / CONTACT", 6, "walk"),
+    ("ATTACK / ARC", 6, "attack"),
+)
+for row, (label, count, action) in enumerate(rows):
+    top = 112 + row * 218
+    strip.blit(font_label.render(label, True, (130, 199, 255)), (36, top + 70))
+    pygame.draw.line(strip, (42, 94, 145), (35, top + 104),
+                     (1240, top + 104), 1)
+    for i in range(count):
+        native = pygame.Surface((100, 108), pygame.SRCALPHA)
+        phase = (i / count) * math.pi * 2
+        progress = i / max(1, count - 1)
+        K._draw_kaizen_elite(native, 50, 58, 1, phase, action, progress)
+        frame = pygame.transform.scale(native, (160, 173))
+        fx = 190 + i * 170
+        strip.blit(frame, (fx, top))
+        pygame.draw.circle(strip, (95, 175, 235), (fx + 80, top + 188), 3)
+
+strip_out = os.path.join(ROOT, "docs", "kaizen_animation_strip.png")
+pygame.image.save(strip, strip_out)
+print(strip_out)

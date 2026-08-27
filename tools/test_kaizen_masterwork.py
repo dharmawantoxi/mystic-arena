@@ -63,7 +63,27 @@ def test_material_details_and_pose():
     assert pygame.image.tobytes(idle, "RGBA") != pygame.image.tobytes(attack, "RGBA")
 
 
+def test_rig_has_real_animation_frames():
+    """Walk/attack harus mengubah sendi dan siluet, bukan sticker translation."""
+    frames = set()
+    for i in range(6):
+        surface = pygame.Surface((180, 180), pygame.SRCALPHA)
+        K._draw_kaizen_elite(surface, 90, 90, 1,
+                             i * 1.047, "walk", i / 5.0)
+        frames.add(pygame.image.tobytes(surface, "RGBA"))
+    assert len(frames) == 6
+
+    attacks = set()
+    for i in range(6):
+        surface = pygame.Surface((220, 200), pygame.SRCALPHA)
+        K._draw_kaizen_elite(surface, 100, 100, 1,
+                             i * .3, "attack", i / 5.0)
+        attacks.add(pygame.image.tobytes(surface, "RGBA"))
+    assert len(attacks) == 6
+
+
 if __name__ == "__main__":
     test_masterwork_is_procedural()
     test_material_details_and_pose()
-    print("OK - Kaizen masterwork 100% procedural, detail material dan pose tervalidasi")
+    test_rig_has_real_animation_frames()
+    print("OK - Kaizen masterwork procedural, material + 12 frame rig tervalidasi")
