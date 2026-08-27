@@ -8732,32 +8732,40 @@ class _NS_vex:
                  (0, -44), (7, -40), (10, -34), (8, -28), (4, -22),
                  (-4, -22)], False)
             return
-        # Curved flame licks growing out of the void volume.
-        spikes = [
-            (-14, -30, -22, -42, 4), (-10, -33, -15, -50, 4),
-            (-5, -35, -7, -56, 5), (0, -36, 0, -60, 5),
-            (5, -35, 7, -56, 4), (10, -33, 15, -50, 4),
-            (14, -30, 22, -42, 3), (-17, -26, -26, -34, 3),
-            (17, -26, 26, -34, 3),
-        ]
-        for i, (bx, by, tx, ty, wd) in enumerate(spikes):
-            wig = int(math.sin(phase * 1.1 + i * .6) * (1 + i % 2))
-            tx2 = tx + wig
-            ty2 = ty + int(abs(wig) * .4)
-            mx = (bx + tx2) // 2 + (2 if bx >= 0 else -2)
-            my = (by + ty2) // 2
-            poly(p["void_darkest"], [(bx - wd, by), (mx - wd // 2, my),
-                 (tx2, ty2), (mx + wd // 2, my), (bx + wd, by)])
-            poly(p["void_dark"], [(bx - wd + 1, by), (tx2, ty2),
-                 (bx + wd - 1, by)], False)
-            poly(p["void_mid"], [(bx - wd // 2, by), (tx2, ty2),
-                 (bx + wd // 2, by)], False)
-            _NS_vex._aaline(surface, p["void_light"], pt(bx, by),
-                            pt(tx2, ty2), 1)
-            x, y = pt(tx2, ty2)
+        # ONE connected flaming crest silhouette (bukan jarum terpisah):
+        # gelombang api menyapu ke belakang dengan 4 puncakan berlekuk.
+        crest = [(-16, -26), (-18, -34), (-13, -40), (-11, -48),
+                 (-8, -41), (-5, -52), (-2, -43), (1, -56), (4, -44),
+                 (7, -50), (9, -40), (13, -44), (15, -34), (16, -26),
+                 (10, -20), (-10, -20)]
+        sway = int(math.sin(phase * 1.1) * 1)
+
+        def lift(q):
+            return (q[0] + (sway if q[1] < -40 else 0), q[1])
+
+        poly(p["void_darkest"], [lift(q) for q in crest])
+
+        def inner(scale):
+            out = []
+            for x, y in crest:
+                out.append((int(x * scale), int(-28 + (y + 28) * scale)))
+            return out
+
+        poly(p["void_dark"], inner(0.82), False)
+        poly(p["void_mid"], inner(0.62), False)
+        poly(p["void_light"], inner(0.40), False)
+        # flame licks on the two tallest notches + bright beads
+        for tx, ty in ((-5, -52), (1, -56)):
+            x, y = pt(tx + sway, ty)
             _NS_vex._aacircle(surface, p["crown_tip"], (x, y), 1)
-        _NS_vex._aaline(surface, p["crown_rim"], pt(-14, -30),
-                        pt(8, -32), 2)
+        # side horns curving out from the temples
+        for side in (-1, 1):
+            poly(p["void_darkest"], [(side * 14, -30), (side * 24, -27),
+                 (side * 20, -22), (side * 13, -24)])
+            poly(p["void_mid"], [(side * 15, -28), (side * 22, -26),
+                 (side * 18, -24)], False)
+        _NS_vex._aaline(surface, p["crown_rim"], pt(-12, -31),
+                        pt(6, -33), 1)
 
 
     # -------------------------------------------------------------------
