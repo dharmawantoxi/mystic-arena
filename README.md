@@ -138,7 +138,9 @@ potongan torso/lengan/rok terpisah **dihapus** dan diganti satu **bone rig
 berduri dengan helai individual, dua pasang sayap moth transparan berurat,
 mantel asimetris, gaun petal berpanel, tights dan ankle boot yang benar-benar
 menapak, korset ber-lacing/rune, serta staff blackwood hidup dengan sulur
-duri dan kristal amethyst. Posisi ujung staff dipakai bersama oleh tangan,
+duri dan kristal amethyst. Siluet rambut petal kini tersapu ke belakang dan
+orb staff berada di samping bahu (bukan melayang di atas kepala), mengikuti
+arah pose pada referensi Zephyr. Posisi ujung staff dipakai bersama oleh tangan,
 cast flash, magic bolt, dan Casket Curse — jadi semua tetap tersambung ketika
 wind-up dan release, bukan dekorasi yang bergerak sendiri.
 

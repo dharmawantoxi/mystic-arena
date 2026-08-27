@@ -9706,10 +9706,11 @@ class _NS_zephyr:
         "gold_mid":       (162, 112,  36),
         "gold_light":     (236, 194,  92),
 
-        # Ember-amber eyes and rose lips.
+        # Violet-pink eyes and rose lips; the cool glow echoes the reference
+        # while preserving a readable light iris at small arena scale.
         "eye_white":      (255, 236, 230),
-        "eye_iris":       (194,  72,  41),
-        "eye_iris_light": (255, 173,  73),
+        "eye_iris":       (153,  41, 104),
+        "eye_iris_light": (255, 157, 211),
         "eye_pupil":      ( 20,   7,  15),
         "lips_dark":      (134,  22,  62),
         "lips_mid":       (218,  69, 119),
@@ -10467,26 +10468,29 @@ class _NS_zephyr:
     def _staff_tip_local(phase, action="idle", attack_progress=0.0):
         """Pose-driven local orb position for Zephyr's thorn staff.
 
-        The tip is not a static decoration: wind-up pulls it back and up,
-        release carries it forward, and walk gives it a small pendulum sway.
-        This helper is shared by the rig, cast flash and renderer projectile
-        spawn point so all three stay visually attached.
+        Reference alignment: the crystal sits beside the face/forward
+        shoulder rather than hovering above her head.  The shaft therefore
+        reads as a crooked faerie wand in idle, then pulls back into the
+        silhouette before thrusting forward for a bolt release.
         """
         wave = math.sin(phase * 1.35) * 1.4
         if action == "attack":
             ap = max(0.0, min(1.0, attack_progress))
-            if ap < .42:
-                t = ap / .42
-                return (int(27 - 12 * t), int(-46 - 13 * t + wave))
+            if ap < .40:
+                # Wind-up: tuck the orb toward the hair and lift it.
+                t = ap / .40
+                return (int(42 - 22 * t), int(-19 - 18 * t + wave))
             if ap < .62:
-                t = (ap - .42) / .20
-                return (int(15 + 31 * t), int(-59 + 17 * t + wave))
+                # Release: an unmistakable forward-pointing wand pose.
+                t = (ap - .40) / .22
+                return (int(20 + 47 * t), int(-37 + 17 * t + wave))
+            # Recovery retains a slight forward reach instead of snapping.
             t = (ap - .62) / .38
-            return (int(46 - 16 * t), int(-42 + 6 * t + wave))
+            return (int(67 - 24 * t), int(-20 + 3 * t + wave))
         if action == "walk":
-            return (int(28 + math.sin(phase * 1.72) * 2),
-                    int(-45 + wave))
-        return (27, int(-45 + wave))
+            return (int(42 + math.sin(phase * 1.72) * 3),
+                    int(-19 + wave))
+        return (42, int(-19 + wave))
 
 
     def _staff_orb_position(cx, cy, facing, phase=0.0, action="idle",
@@ -10678,7 +10682,9 @@ class _NS_zephyr:
 
         # ── pose-driven thorn staff ──
         staff_top = _NS_zephyr._staff_tip_local(phase, action, ap)
-        staff_bottom = (10 + int(stride * 2 if walk else 0), 34)
+        # Crooked wand silhouette from the reference: low near the hip,
+        # crystal forward beside Zephyr's shoulder rather than a vertical pole.
+        staff_bottom = (2 + int(stride * 2 if walk else 0), 25)
         grip = (int(staff_bottom[0] * .48 + staff_top[0] * .52),
                 int(staff_bottom[1] * .48 + staff_top[1] * .52))
         _NS_zephyr._draw_elite_staff(surface, pt, f, staff_bottom, staff_top,
@@ -10892,7 +10898,12 @@ class _NS_zephyr:
 
 
     def _draw_zephyr_crown(surface, pt, f, phase, detail=False):
-        """Crimson thorn-crown hair mass with separately swaying locks."""
+        """Swept crimson petal-hair silhouette from the Zephyr reference.
+
+        The large mass flows backward from the face (negative local X), with
+        only a few forward thorns.  This keeps the sprite's 3/4 facing clear
+        instead of reading as a symmetric crown pasted above the head.
+        """
         p = _NS_zephyr.PALETTE
 
         def crown_poly(color, coords, outline=True):
@@ -10902,17 +10913,27 @@ class _NS_zephyr:
                                   [(x + f, y + 1) for x, y in pts])
             _NS_zephyr._poly(surface, color, pts)
 
-        crown_poly(p["hair_darkest"], [(-13, -47), (-20, -57),
-                   (-14, -69), (-5, -64), (1, -74), (8, -65),
-                   (18, -67), (16, -55), (12, -49), (4, -54),
-                   (-4, -52)])
-        crown_poly(p["hair_dark"], [(-11, -49), (-16, -57),
-                   (-12, -64), (-4, -61), (1, -69), (7, -62),
-                   (14, -63), (13, -56), (8, -51), (2, -55)], False)
-        spikes = [(-12, -55, -24, -69), (-9, -59, -16, -79),
-                  (-5, -61, -7, -83), (0, -63, 1, -88),
-                  (5, -61, 11, -82), (10, -58, 20, -76),
-                  (13, -54, 28, -66)]
+        # Broad petal mass curves away from the face just like a living fey
+        # plume; the outer silhouette remains dense at arena scale.
+        crown_poly(p["hair_darkest"], [(-13, -47), (-27, -48),
+                   (-35, -57), (-30, -66), (-38, -71), (-24, -74),
+                   (-25, -84), (-12, -79), (-6, -91), (3, -78),
+                   (12, -70), (16, -59), (11, -50), (3, -54),
+                   (-5, -52)])
+        crown_poly(p["hair_dark"], [(-11, -49), (-24, -51),
+                   (-30, -58), (-25, -64), (-31, -69), (-20, -70),
+                   (-20, -78), (-10, -74), (-5, -85), (1, -74),
+                   (9, -67), (12, -59), (8, -52), (1, -56)], False)
+        crown_poly(p["hair_mid"], [(-15, -52), (-25, -57),
+                   (-22, -65), (-14, -68), (-9, -79), (-4, -70),
+                   (3, -70), (7, -61), (3, -57)], False)
+
+        # Seven separate locks give the reference's bristling petals genuine
+        # secondary motion.  Most lean back; two retain the sharp front rim.
+        spikes = [(-13, -54, -32, -62), (-17, -57, -38, -75),
+                  (-15, -62, -29, -85), (-9, -65, -15, -90),
+                  (-2, -66, -4, -94), (4, -62, 8, -82),
+                  (9, -57, 20, -70)]
         for i, (sx, sy, ex, ey) in enumerate(spikes):
             wave = int(math.sin(phase * 1.18 + i * .73) * (1 + i % 3))
             crown_poly(p["hair_darkest"], [(sx - 3, sy + 2),
@@ -10925,23 +10946,25 @@ class _NS_zephyr:
             if i in (1, 3, 5):
                 _NS_zephyr._aacircle(surface, p["hair_tip"],
                                       pt(ex + wave, ey + 3), 1)
-        # thorn circlet grounds the wild hair in the costume design.
-        _NS_zephyr._aaline(surface, p["gold_dark"], pt(-10, -55),
-                            pt(12, -57), 3)
-        _NS_zephyr._aaline(surface, p["gold_mid"], pt(-9, -56),
-                            pt(11, -58), 1)
-        for dx in (-6, 0, 6):
-            bx, by = pt(dx, -56)
+
+        # A dark thorn circlet and amethyst pins retain the mischievous royal
+        # accent without competing with the magenta hair at gameplay scale.
+        _NS_zephyr._aaline(surface, p["gold_dark"], pt(-12, -56),
+                            pt(11, -58), 3)
+        _NS_zephyr._aaline(surface, p["gold_mid"], pt(-11, -57),
+                            pt(10, -59), 1)
+        for dx in (-7, -1, 6):
+            bx, by = pt(dx, -57)
             _NS_zephyr._poly(surface, p["thorn_dark"],
                               [(bx, by), (bx + f * 3, by - 5),
                                (bx + f * 5, by)])
             _NS_zephyr._aacircle(surface, p["jewel_light"],
                                   (bx + f, by), 1)
         if detail:
-            for dx in (-10, -4, 3, 10):
-                _NS_zephyr._aaline(surface, p["hair_shine"],
-                                    pt(dx, -61), pt(dx + 2, -68), 1)
-
+            for dx, dy in ((-24, -60), (-20, -69), (-13, -76),
+                           (-6, -82), (2, -73)):
+                _NS_zephyr._aaline(surface, p["hair_shine"], pt(dx, dy),
+                                    pt(dx + 3, dy - 5), 1)
 
     def _draw_elite_staff(surface, pt, f, bottom, top, phase, action,
                           detail=False):
