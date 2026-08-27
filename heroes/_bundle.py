@@ -1924,6 +1924,10 @@ class _NS_sylara:
             self.powered = powered  # Powershot variant
             self.alive = True
             self.age = 0
+            # BUGFIX (trail skill menempel permanen di hero): hitung
+            # mundur frame setelah kematian. age dibekukan saat mati,
+            # jadi filter pembersihan memakai counter ini, bukan age.
+            self.dead_frames = 0
             self.trail = []
             # Homing: target/damage/team (visual-only; damage otoritatif
             # ada di hero_skills). Kalau target hidup, kejar tiap frame.
@@ -1936,6 +1940,12 @@ class _NS_sylara:
 
         def update(self):
             if not self.alive:
+                # BUGFIX: age dibekukan setelah mati; tanpa counter
+                # ini filter `p.alive or p.age < 8` tidak pernah
+                # membuang projectile yang mati dengan age < 8 ->
+                # trail skill tergambar permanen di canvas hero
+                # (menempel, ikut bergerak bersama hero).
+                self.dead_frames += 1
                 return
             self.age += 1
             # Homing tiap frame ke target yang bergerak (terarah)
@@ -2094,6 +2104,10 @@ class _NS_sylara:
             self.speed = speed
             self.alive = True
             self.age = 0
+            # BUGFIX (trail skill menempel permanen di hero): hitung
+            # mundur frame setelah kematian. age dibekukan saat mati,
+            # jadi filter pembersihan memakai counter ini, bukan age.
+            self.dead_frames = 0
             self.trail = []
             self.target = target
             self.damage = damage
@@ -2104,6 +2118,12 @@ class _NS_sylara:
 
         def update(self):
             if not self.alive:
+                # BUGFIX: age dibekukan setelah mati; tanpa counter
+                # ini filter `p.alive or p.age < 8` tidak pernah
+                # membuang projectile yang mati dengan age < 8 ->
+                # trail skill tergambar permanen di canvas hero
+                # (menempel, ikut bergerak bersama hero).
+                self.dead_frames += 1
                 return
             self.age += 1
             # Homing tiap frame ke target (terarah)
@@ -2269,7 +2289,7 @@ class _NS_sylara:
         for proj in boss._sy_projectiles:
             proj.update()
             proj.draw(surface, phase)
-        boss._sy_projectiles = [p for p in boss._sy_projectiles if p.alive or p.age < 8]
+        boss._sy_projectiles = [p for p in boss._sy_projectiles if p.alive or p.dead_frames < 8]
 
 
     def _spawn_arrow(boss, x, y, powered=False):
@@ -3944,6 +3964,10 @@ class _NS_kaizen:
             self.speed = speed
             self.alive = True
             self.age = 0
+            # BUGFIX (trail skill menempel permanen di hero): hitung
+            # mundur frame setelah kematian. age dibekukan saat mati,
+            # jadi filter pembersihan memakai counter ini, bukan age.
+            self.dead_frames = 0
             self.trail = []
             self.target = target
             self.damage = damage
@@ -3954,6 +3978,12 @@ class _NS_kaizen:
 
         def update(self):
             if not self.alive:
+                # BUGFIX: age dibekukan setelah mati; tanpa counter
+                # ini filter `p.alive or p.age < 8` tidak pernah
+                # membuang projectile yang mati dengan age < 8 ->
+                # trail skill tergambar permanen di canvas hero
+                # (menempel, ikut bergerak bersama hero).
+                self.dead_frames += 1
                 return
             self.age += 1
             # Homing tiap frame ke target (terarah)
@@ -4106,7 +4136,7 @@ class _NS_kaizen:
         for proj in boss._kz_projectiles:
             proj.update()
             proj.draw(surface, phase)
-        boss._kz_projectiles = [p for p in boss._kz_projectiles if p.alive or p.age < 8]
+        boss._kz_projectiles = [p for p in boss._kz_projectiles if p.alive or p.dead_frames < 8]
 
 
     def _spawn_wind_slash(boss, x, y):
@@ -5674,11 +5704,21 @@ class _NS_thorne:
             self.speed = speed
             self.alive = True
             self.age = 0
+            # BUGFIX (trail skill menempel permanen di hero): hitung
+            # mundur frame setelah kematian. age dibekukan saat mati,
+            # jadi filter pembersihan memakai counter ini, bukan age.
+            self.dead_frames = 0
             self.trail = []
             self.max_life = 60
 
         def update(self):
             if not self.alive:
+                # BUGFIX: age dibekukan setelah mati; tanpa counter
+                # ini filter `p.alive or p.age < 8` tidak pernah
+                # membuang projectile yang mati dengan age < 8 ->
+                # trail skill tergambar permanen di canvas hero
+                # (menempel, ikut bergerak bersama hero).
+                self.dead_frames += 1
                 return
             self.age += 1
             if self.age > self.max_life:
@@ -5717,6 +5757,10 @@ class _NS_thorne:
             self.speed = speed
             self.alive = True
             self.age = 0
+            # BUGFIX (trail skill menempel permanen di hero): hitung
+            # mundur frame setelah kematian. age dibekukan saat mati,
+            # jadi filter pembersihan memakai counter ini, bukan age.
+            self.dead_frames = 0
             self.trail = []
             self.target = target
             self.damage = damage
@@ -5728,6 +5772,12 @@ class _NS_thorne:
 
         def update(self):
             if not self.alive:
+                # BUGFIX: age dibekukan setelah mati; tanpa counter
+                # ini filter `p.alive or p.age < 8` tidak pernah
+                # membuang projectile yang mati dengan age < 8 ->
+                # trail skill tergambar permanen di canvas hero
+                # (menempel, ikut bergerak bersama hero).
+                self.dead_frames += 1
                 return
             self.age += 1
             if self.impact_frame >= 0:
@@ -5888,7 +5938,7 @@ class _NS_thorne:
         for proj in boss._th_projectiles:
             proj.update()
             proj.draw(surface, phase)
-        boss._th_projectiles = [p for p in boss._th_projectiles if p.alive or p.age < 8]
+        boss._th_projectiles = [p for p in boss._th_projectiles if p.alive or p.dead_frames < 8]
 
 
     def _spawn_goo(boss, x, y):
@@ -7366,6 +7416,10 @@ class _NS_vex:
             self.speed = speed
             self.alive = True
             self.age = 0
+            # BUGFIX (trail skill menempel permanen di hero): hitung
+            # mundur frame setelah kematian. age dibekukan saat mati,
+            # jadi filter pembersihan memakai counter ini, bukan age.
+            self.dead_frames = 0
             self.trail = []
             self.target = target
             self.damage = damage
@@ -7376,6 +7430,12 @@ class _NS_vex:
 
         def update(self):
             if not self.alive:
+                # BUGFIX: age dibekukan setelah mati; tanpa counter
+                # ini filter `p.alive or p.age < 8` tidak pernah
+                # membuang projectile yang mati dengan age < 8 ->
+                # trail skill tergambar permanen di canvas hero
+                # (menempel, ikut bergerak bersama hero).
+                self.dead_frames += 1
                 return
             self.age += 1
             # Homing tiap frame ke target (terarah)
@@ -7459,6 +7519,10 @@ class _NS_vex:
             self.speed = speed
             self.alive = True
             self.age = 0
+            # BUGFIX (trail skill menempel permanen di hero): hitung
+            # mundur frame setelah kematian. age dibekukan saat mati,
+            # jadi filter pembersihan memakai counter ini, bukan age.
+            self.dead_frames = 0
             self.trail = []
             self.target = target
             self.damage = damage
@@ -7470,6 +7534,12 @@ class _NS_vex:
 
         def update(self):
             if not self.alive:
+                # BUGFIX: age dibekukan setelah mati; tanpa counter
+                # ini filter `p.alive or p.age < 8` tidak pernah
+                # membuang projectile yang mati dengan age < 8 ->
+                # trail skill tergambar permanen di canvas hero
+                # (menempel, ikut bergerak bersama hero).
+                self.dead_frames += 1
                 return
             self.age += 1
 
@@ -7670,7 +7740,7 @@ class _NS_vex:
             proj.update()
             proj.draw(surface, phase)
         boss._vx_projectiles = [p for p in boss._vx_projectiles
-                                if p.alive or p.age < 8]
+                                if p.alive or p.dead_frames < 8]
 
 
     def _spawn_arcane_orb(boss, x, y):
@@ -9161,6 +9231,10 @@ class _NS_zephyr:
             self.speed = speed
             self.alive = True
             self.age = 0
+            # BUGFIX (trail skill menempel permanen di hero): hitung
+            # mundur frame setelah kematian. age dibekukan saat mati,
+            # jadi filter pembersihan memakai counter ini, bukan age.
+            self.dead_frames = 0
             self.trail = []
             self.target = target
             self.damage = damage
@@ -9171,6 +9245,12 @@ class _NS_zephyr:
 
         def update(self):
             if not self.alive:
+                # BUGFIX: age dibekukan setelah mati; tanpa counter
+                # ini filter `p.alive or p.age < 8` tidak pernah
+                # membuang projectile yang mati dengan age < 8 ->
+                # trail skill tergambar permanen di canvas hero
+                # (menempel, ikut bergerak bersama hero).
+                self.dead_frames += 1
                 return
             self.age += 1
             # Homing tiap frame ke target (terarah)
@@ -9264,6 +9344,10 @@ class _NS_zephyr:
             self.speed = speed
             self.alive = True
             self.age = 0
+            # BUGFIX (trail skill menempel permanen di hero): hitung
+            # mundur frame setelah kematian. age dibekukan saat mati,
+            # jadi filter pembersihan memakai counter ini, bukan age.
+            self.dead_frames = 0
             self.trail = []
             self.target = target
             self.damage = damage
@@ -9275,6 +9359,12 @@ class _NS_zephyr:
 
         def update(self):
             if not self.alive:
+                # BUGFIX: age dibekukan setelah mati; tanpa counter
+                # ini filter `p.alive or p.age < 8` tidak pernah
+                # membuang projectile yang mati dengan age < 8 ->
+                # trail skill tergambar permanen di canvas hero
+                # (menempel, ikut bergerak bersama hero).
+                self.dead_frames += 1
                 return
             self.age += 1
 
@@ -9474,7 +9564,7 @@ class _NS_zephyr:
             proj.update()
             proj.draw(surface, phase)
         boss._zp_projectiles = [p for p in boss._zp_projectiles
-                                if p.alive or p.age < 8]
+                                if p.alive or p.dead_frames < 8]
 
 
     def _spawn_magic_bolt(boss, x, y):
