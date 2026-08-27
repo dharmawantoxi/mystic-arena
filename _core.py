@@ -1397,6 +1397,9 @@ class Game:
         self.active_boss = None
         self.pending_mini_bosses = []
         self.true_boss_spawned = False
+        # Dihitung dari EVENT tower merah hancur (dinaikkan di loop
+        # reward kematian), bukan selisih jumlah tower hidup.
+        self.red_towers_destroyed = 0
         # ═══ ACAK KEMUNCULAN MINI BOSS ═══
         # Alih-alih wave tetap (10/18/25), wave kemunculan diacak tiap run.
         # Jumlah & tipe boss tetap, hanya nomor wave-nya yang berubah.
@@ -1864,17 +1867,18 @@ class Game:
         # ═══ TRUE BOSS CHECK (dari level config) ═══
         # Spawn true boss ONLY if player has destroyed >= 6 red towers
         # AND wave is 5+. Both conditions must be met.
-        # Track initial red tower count at level start (only once)
-        if not hasattr(self, '_initial_red_towers_for_boss'):
-            self._initial_red_towers_for_boss = sum(1 for t in self.towers if t.team == "red")
-        
-        red_towers_alive = sum(1 for t in self.towers
-                               if t.team == "red" and t.alive)
-        towers_destroyed = self._initial_red_towers_for_boss - red_towers_alive
-        
+        #
+        # BUG LAMA: kondisi ini dihitung sebagai
+        # `jumlah_awal_merah - jumlah_hidup_sekarang`. Itu rusak karena
+        # tower mati DIBUANG dari `self.towers` tiap akhir frame dan AI
+        # terus membangun tower baru, sehingga selisihnya bisa negatif
+        # dan true boss tidak pernah spawn walau pemain sudah
+        # menghancurkan 6+ tower. Sekarang pakai counter event
+        # `red_towers_destroyed` yang dinaikkan saat tower merah mati.
         # Both conditions: >= 6 towers destroyed AND wave >= 5
         if (not self.true_boss_spawned and self.wave_number >= 5
-                and towers_destroyed >= 6 and not self.active_boss):
+                and self.red_towers_destroyed >= 6
+                and not self.active_boss):
             true_boss_type = self.level_config.get("true_boss")
             if true_boss_type:
                 from bosses.base_boss import Boss
@@ -1998,6 +2002,8 @@ class Game:
                 if t.team == "red":
                     self.gold += t.gold_reward
                     self.score += t.gold_reward
+                    # Syarat spawn true boss: >= 6 tower merah hancur.
+                    self.red_towers_destroyed += 1
                 else:
                     self.ai.gold += t.gold_reward
 
