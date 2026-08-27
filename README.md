@@ -160,6 +160,61 @@ Contact sheet rig idle/walk/cast:
 
 Uji regresi: `python tools/test_zephyr_masterwork.py`.
 
+### Contoh maksimal kelima: Grimjaw Masterwork
+
+Grimjaw (Juggernaut — *The Blade Fury*) kini menerima upgrade penuh yang
+sama: kumpulan body-part statis lama (torso/pauldron/head-mask/hair
+back-front/left-sword arm/fire sword) **dihapus** dan diganti satu
+**bone rig 2D berlapis**. Rig baru memiliki sare api menyala dengan helai
+individual, mask putih ber-strip darah, pauldron baja ber-gold dan spike,
+sabuk + loincloth merah, serta kaki dan boot perang yang benar-benar
+menapak. **Flame blade** menggantikan pedang garis lurus: bilah melengkung
+yang sudut, panjang, dan pegangan dihitung dari sendi (wind-up → swing →
+recovery), jadi ikut badan saat idle/walk/attack, bukan dekorasi yang
+bergeser sendiri.
+
+Pose **idle**, **walk**, **attack**, **Blade Fury (spin)**, dan
+**Omnislash** menghitung ulang akar tubuh, langkah, mane, lengan, dan bilah
+setiap frame. LOD arena mempertahankan siluet yang bersih dan hemat;
+Hero Shop memakai pass portrait tambahan untuk serat rambut, engraving
+pauldron, jahitan loincloth, dan ember api. Q Blade Fury, W Healing Ward,
+E Critical Strike, dan R Omnislash tetap memakai timer gameplay yang sama,
+dengan efek visual yang dibangun penuh dari primitive pygame.
+
+Preview karakter dan pose:
+[docs/grimjaw_masterwork_preview.png](docs/grimjaw_masterwork_preview.png).
+Portrait LOD Hero Shop:
+[docs/grimjaw_portrait_preview.png](docs/grimjaw_portrait_preview.png).
+
+Uji regresi: `python tools/test_grimjaw_masterwork.py`.
+
+### Contoh maksimal keenam: Vex Masterwork
+
+Vex (Outworld Destroyer — *Harbringer of the Void*) kini menerima upgrade
+penuh yang sama: kumpulan body-part statis lama (cloak/lower robe/torso/
+idle-attack arms/arm segment/hand/staff/head crown/body particles)
+**dihapus** dan diganti satu **bone rig 2D berlapis**. Rig baru memiliki
+crown void menyala dengan ujung cyan, hood berwajah shadow dengan celah
+mata menyala, pauldron armor spiky, robe robek yang mengambang (tanpa
+kaki), serta **staff surgawi diagonal** yang posisi orb dihitung dari
+sendi (wind-up → release → recovery) — jadi Arcane Orb dan Astral
+Imprisonment muncul tepat dari ujung staff, bukan dari pinggang.
+
+Pose **idle**, **walk**, dan **attack** menghitung ulang akar tubuh,
+crown, hood, lengan, dan orb staff setiap frame. LOD arena mempertahankan
+siluet yang bersih dan hemat; Hero Shop memakai pass portrait tambahan
+untuk rim crown, jahitan hood, rune robe, dan ember void. Q Arcane Orb,
+W Astral Imprisonment, E Sanity's Eclipse, dan R Essence Flux tetap
+memakai timer gameplay yang sama, dengan efek visual yang dibangun penuh
+dari primitive pygame.
+
+Preview karakter dan pose:
+[docs/vex_masterwork_preview.png](docs/vex_masterwork_preview.png).
+Portrait LOD Hero Shop:
+[docs/vex_portrait_preview.png](docs/vex_portrait_preview.png).
+
+Uji regresi: `python tools/test_vex_masterwork.py`.
+
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
 Hero punya 6 slot item yang dibeli dengan GOLD di **ITEM FORGE**.
