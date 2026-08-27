@@ -20,6 +20,7 @@ _entity.py               tower, castle, hero, minion, ai_player
 _render.py               map renderer, efek, cinematic, cache font
 _system.py               performance, fps, sound, save
 splash_screen.py         splash pembuka
+ui_theme.py              design system menu: palet, komponen premium, ikon vektor
 
 mobile/                  ◀ LAPISAN BARU KHUSUS ANDROID
 ├── platform_utils.py    deteksi Android, display SCALED, safe area, jnius
@@ -196,6 +197,9 @@ python tools/bench_heavy.py        # benchmark gameplay (--quality low/high)
 python tools/bench_minions.py      # skala jumlah minion
 python tools/test_spritecache.py   # uji kebenaran cache sprite (piksel)
 python tools/gen_boss_index.py     # regenerasi indeks boss setelah tambah boss
+python tools/_shot_ui.py           # screenshot headless semua layar menu
+python tools/_shot_game_ui.py      # screenshot headless UI in-game
+python tools/_shot_endgame.py      # screenshot victory/defeat/popup toko
 ```
 
 ## Aset yang harus ada

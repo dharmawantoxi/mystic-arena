@@ -125,11 +125,19 @@ def uji_layar(judul, lebar, tinggi):
     tombol = dict(g.ui_buttons)
     print("\n  panel hero: %d tombol" % len(tombol))
     for nama, rect in tombol.items():
+        # STATE YANG DIAMATI: gold, hero terpilih, level hero, DAN
+        # item shop (tombol slot/ITEM membuka toko = perubahan nyata).
+        # item_shop_open wajib ikut diukur: dulu tidak ikut, sehingga
+        # klik slot yang membuka toko dianggap "mati", dan sisa state
+        # toko terbuka menelan klik-klik berikutnya (modal item shop
+        # memang menangkap semua klik kiri).
         sebelum = (g.gold, g.selected_hero is not None,
-                   getattr(g.heroes[0], "level", 1))
+                   getattr(g.heroes[0], "level", 1),
+                   getattr(g, "item_shop_open", False))
         g.handle_click(rect.center, 1)
         sesudah = (g.gold, g.selected_hero is not None,
-                   getattr(g.heroes[0], "level", 1))
+                   getattr(g.heroes[0], "level", 1),
+                   getattr(g, "item_shop_open", False))
         berubah = sebelum != sesudah
         diam_disengaja = nama in SENGAJA_DIAM
         status = ("BERFUNGSI" if berubah
@@ -139,9 +147,11 @@ def uji_layar(judul, lebar, tinggi):
               % (nama, "pusat %s" % (rect.center,), status))
         if not berubah and not diam_disengaja:
             gagal.append("%s: %s tidak bereaksi" % (judul, nama))
-        # pulihkan keadaan
+        # pulihkan keadaan (termasuk modal toko: kalau dibiarkan
+        # terbuka, klik tombol berikutnya tertelan oleh item shop)
         g.selected_hero = g.heroes[0]
         g.gold = 99999
+        g.item_shop_open = False
         gambar(plat, g, side, full)
 
     # ── 2. ketukan kosong tidak boleh memerintah hero ──

@@ -24,6 +24,7 @@ import pygame
 
 from mobile import platform_utils as plat
 from mobile.perf import Quality
+import ui_theme
 
 GOLD = (255, 200, 70)
 GOLD_DIM = (150, 118, 40)
@@ -181,18 +182,24 @@ class TouchHUD:
         cx, cy = btn.rect.center
         r = btn.rect.width // 2
         press = int(btn.press_anim * 3)
+        ring = btn.color if btn.enabled else GREY
 
         if not Quality.cheap_alpha:
             pygame.draw.circle(surface, (16, 14, 22), (cx, cy), r)
-            pygame.draw.circle(surface, btn.color if btn.enabled else GREY,
-                               (cx, cy), r, 3)
+            pygame.draw.circle(surface, ring, (cx, cy), r, 3)
         else:
+            # Glow lembut di belakang tombol (cache -> murah)
+            surface.blit(ui_theme._radial(r * 2 + 44, r * 2 + 44,
+                                          btn.color, 46),
+                         (cx - r - 22, cy - r - 22))
             base = pygame.Surface((r * 2 + 8, r * 2 + 8), pygame.SRCALPHA)
             c = r + 4
             pygame.draw.circle(base, BG_ACTIVE if btn.press_anim else BG,
                                (c, c), r)
-            ring = btn.color if btn.enabled else GREY
             pygame.draw.circle(base, ring, (c, c), r, 3)
+            # Cincin dalam halus (identitas premium)
+            pygame.draw.circle(base, (255, 255, 255),
+                               (c, c), r - 6, 1)
             surface.blit(base, (cx - c, cy - c))
 
         if btn.cooldown > 0.001:
@@ -225,17 +232,26 @@ class TouchHUD:
     def _draw_capsule(self, surface, btn):
         rect = btn.rect
         radius = rect.height // 2
+        ring = btn.color if btn.enabled else GREY
         if not Quality.cheap_alpha:
             pygame.draw.rect(surface, (16, 14, 22), rect,
                              border_radius=radius)
-            pygame.draw.rect(surface, btn.color if btn.enabled else GREY,
+            pygame.draw.rect(surface, ring,
                              rect, 2, border_radius=radius)
         else:
+            # Glow lembut (cache)
+            surface.blit(ui_theme._radial(rect.w + 36, rect.h + 28,
+                                          btn.color, 40),
+                         (rect.x - 18, rect.y - 14))
             panel = pygame.Surface(rect.size, pygame.SRCALPHA)
             pygame.draw.rect(panel, BG_ACTIVE if btn.press_anim else BG,
                              panel.get_rect(), border_radius=radius)
-            pygame.draw.rect(panel, btn.color if btn.enabled else GREY,
+            pygame.draw.rect(panel, ring,
                              panel.get_rect(), 2, border_radius=radius)
+            # Sorot tepi atas (kedalaman)
+            pygame.draw.line(panel, (255, 255, 255),
+                             (rect.w // 4, 2),
+                             (rect.w * 3 // 4, 2), 1)
             surface.blit(panel, rect.topleft)
 
         font = self._get_font(btn.font_size, "body_bold")
