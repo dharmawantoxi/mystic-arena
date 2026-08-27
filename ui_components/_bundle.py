@@ -3436,15 +3436,62 @@ class _NS_overlay:
         # ═══════════════════════════════════════
 
         def _draw_action_hint(self, surface, cx, cy, action, t):
-            """Draw action hint dengan pulse"""
+            """Action hint premium: keycap chip (seragam hint bar),
+            bukan teks abu polos."""
+            import re
             action_y = cy + 200
-            hint_pulse = int(math.sin(t * 3) * 30 + 200)
-            hint_color = (hint_pulse, hint_pulse, hint_pulse)
+            font = get_font(22, "body_semibold")
 
-            action_font = get_font(26, "body_semibold")  # 22->26
-            action_surf = action_font.render(action, True, hint_color)
-            action_rect = action_surf.get_rect(center=(cx, action_y))
-            surface.blit(action_surf, action_rect)
+            tokens = re.findall(r"\[([^\]]+)\]\s*([^[\]]*)", action)
+            # sisa teks di luar pasangan [KEY] Desc (mis. "(You cleared
+            # all levels!)")
+            plain = re.sub(r"\[[^\]]+\]\s*[^[\]]*", "", action).strip()
+
+            gap, key_pad = 16, 7
+            items = []
+            total_w = 0
+            for key, desc in tokens:
+                desc = desc.strip()
+                ks = font.render(key, True, (255, 235, 140))
+                ds = font.render(desc, True, (205, 210, 225)) if desc \
+                    else None
+                w = ks.get_width() + key_pad * 2
+                if ds is not None:
+                    w += 6 + ds.get_width()
+                items.append((ks, ds, w))
+                total_w += w + gap
+            ps = None
+            if plain:
+                ps = font.render(plain, True, (150, 156, 180))
+                total_w += ps.get_width() + gap
+            total_w = max(0, total_w - gap)
+
+            # pulse halus pada border keycap
+            pulse = int(math.sin(t * 3) * 30 + 140)
+            border = (pulse, pulse + 10, pulse + 35)
+
+            x = cx - total_w // 2
+            for ks, ds, w in items:
+                kw = ks.get_width() + key_pad * 2
+                kh = font.get_height() + 8
+                ky = action_y - kh // 2
+                keycap = pygame.Surface((kw, kh), pygame.SRCALPHA)
+                keycap.fill((10, 12, 24, 160))
+                surface.blit(keycap, (x, ky))
+                pygame.draw.rect(surface, (48, 52, 70),
+                                 (x, ky, kw, kh), border_radius=6)
+                pygame.draw.rect(surface, border,
+                                 (x, ky, kw, kh), 1, border_radius=6)
+                surface.blit(ks, (x + key_pad,
+                                  action_y - ks.get_height() // 2))
+                x += kw
+                if ds is not None:
+                    surface.blit(ds, (x + 6,
+                                      action_y - ds.get_height() // 2))
+                    x += 6 + ds.get_width()
+                x += gap
+            if ps is not None:
+                surface.blit(ps, (x, action_y - ps.get_height() // 2))
 
         def _draw_achievements(self, surface, cx, cy):
             """Draw achievement count di bawah - DIPERBESAR"""

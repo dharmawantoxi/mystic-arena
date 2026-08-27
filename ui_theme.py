@@ -615,15 +615,28 @@ def button(screen, btns, bid, label, cx, cy, accent, font,
         pygame.draw.circle(screen, (12, 14, 26), (ic_x, ic_y), 17)
         pygame.draw.circle(screen, accent, (ic_x, ic_y), 17, 2)
         draw_icon(screen, icon, ic_x, ic_y, accent, s=0.9)
-        text_cx = base.x + w // 2 + 14
-    else:
-        text_cx = rect.centerx
 
     # Label
     if font_size:
         from _core import get_font as _gf
         font = _gf(font_size, "body_bold")
     text = letter(label) if letter_gap else label
+    if icon is not None:
+        # Clamp posisi label: jangan menimpa badge ikon dan jangan
+        # keluar tepi kanan tombol (dulu label di-center +14px saja
+        # sehingga tombol sempit membuat ikon bertabrakan dgn teks).
+        tw = font.size(text)[0]
+        left_min = rect.x + 56
+        right_max = rect.right - 10
+        text_cx = base.x + w // 2 + 14
+        if text_cx - tw / 2 < left_min:
+            text_cx = left_min + tw / 2
+        if text_cx + tw / 2 > right_max:
+            text_cx = right_max - tw / 2
+        if text_cx - tw / 2 < left_min:
+            text_cx = (left_min + right_max) / 2
+    else:
+        text_cx = rect.centerx
     draw_text(screen, font, text, TEXT_WHITE,
               center=(text_cx, rect.centery))
 
