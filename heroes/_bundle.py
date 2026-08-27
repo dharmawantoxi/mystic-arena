@@ -9628,82 +9628,98 @@ class _NS_zephyr:
     # HD Color Palette - Dark Willow inspired (pink/magenta fey)
     # ---------------------------------------------------------------------------
     PALETTE = {
-        # Skin - fair with warm undertone
-        "skin_darkest":   (140,  85,  75),
-        "skin_dark":      (195, 140, 115),
-        "skin_mid":       (230, 180, 150),
-        "skin_light":     (245, 210, 180),
-        "skin_high":      (255, 230, 205),
+        # Warm fey skin — contrast is deliberately strong enough to survive
+        # the arena downscale while retaining the reference's porcelain tone.
+        "skin_darkest":   ( 83,  38,  52),
+        "skin_dark":      (151,  76,  88),
+        "skin_mid":       (218, 135, 142),
+        "skin_light":     (248, 188, 181),
+        "skin_high":      (255, 220, 208),
 
-        # Hair - crimson/magenta petals
-        "hair_darkest":   ( 65,  15,  35),
-        "hair_dark":      (130,  30,  55),
-        "hair_mid":       (195,  50,  85),
-        "hair_light":     (235,  90, 130),
-        "hair_shine":     (255, 145, 175),
-        "hair_tip":       (255, 200, 220),
+        # Crimson thorn-crown hair.
+        "hair_darkest":   ( 50,   8,  28),
+        "hair_dark":      (111,  18,  51),
+        "hair_mid":       (181,  38,  78),
+        "hair_light":     (232,  82, 123),
+        "hair_shine":     (255, 142, 173),
+        "hair_tip":       (255, 202, 221),
 
-        # Dress - deep magenta/purple petals
-        "dress_darkest":  ( 35,  10,  40),
-        "dress_dark":     ( 75,  25,  75),
-        "dress_mid":      (125,  45, 115),
-        "dress_light":    (175,  75, 155),
-        "dress_high":     (215, 115, 190),
+        # Layered plum/pink gown and fitted corset.
+        "dress_darkest":  ( 25,   8,  38),
+        "dress_dark":     ( 55,  17,  69),
+        "dress_mid":      (108,  35, 112),
+        "dress_light":    (166,  63, 148),
+        "dress_high":     (220, 112, 188),
+        "corset_dark":    ( 20,   7,  31),
+        "corset_mid":     ( 59,  20,  70),
+        "corset_light":   (124,  54, 130),
+        "cloak_darkest":  ( 18,   7,  31),
+        "cloak_dark":     ( 48,  19,  69),
+        "cloak_mid":      ( 88,  41, 119),
+        "cloak_light":    (157,  93, 185),
+        "boot_darkest":   ( 19,  10,  30),
+        "boot_dark":      ( 48,  25,  61),
+        "boot_mid":       ( 91,  49, 104),
+        "boot_light":     (174, 111, 178),
+        "thread_light":   (240, 150, 210),
 
-        # Corset - darker purple
-        "corset_dark":    ( 30,  10,  35),
-        "corset_mid":     ( 65,  25,  70),
-        "corset_light":   (110,  50, 115),
+        # Moth wings: opaque ink rim plus translucent violet membranes.
+        "wing_darkest":   ( 34,  12,  58),
+        "wing_dark":      ( 76,  35, 119),
+        "wing_mid":       (137,  78, 180),
+        "wing_light":     (196, 135, 220),
+        "wing_shine":     (244, 198, 250),
+        "wing_vein":      ( 92,  45, 135),
+        "wing_glass":     (229, 176, 241),
 
-        # Wings - translucent purple/pink
-        "wing_darkest":   ( 60,  25,  85),
-        "wing_dark":      (115,  55, 155),
-        "wing_mid":       (175, 100, 215),
-        "wing_light":     (220, 165, 240),
-        "wing_shine":     (245, 215, 250),
+        # Living blackwood staff, amethyst jewel and thorn metal.
+        "staff_dark":     ( 29,  15,  38),
+        "staff_mid":      ( 72,  41,  70),
+        "staff_light":    (133,  90, 126),
+        "staff_vine":     (104,  43,  99),
+        "staff_glow":     (255, 155, 221),
+        "jewel_dark":     ( 80,  12,  73),
+        "jewel_mid":      (191,  44, 151),
+        "jewel_light":    (255, 159, 220),
+        "thorn_dark":     ( 45,  13,  57),
+        "thorn_mid":      ( 99,  35, 104),
+        "thorn_light":    (190,  80, 161),
+        # Retained names are used by established gameplay projectile code.
+        "bramble_dark":   ( 45,  13,  57),
+        "bramble_mid":    ( 99,  35, 104),
+        "bramble_light":  (190,  80, 161),
 
-        # Magic - hot pink/magenta glow
-        "magic_darkest":  ( 55,   5,  40),
-        "magic_dark":     (130,  20,  95),
-        "magic_mid":      (220,  55, 155),
-        "magic_light":    (255, 115, 200),
-        "magic_bright":   (255, 175, 225),
-        "magic_hot":      (255, 220, 240),
-        "magic_white":    (255, 245, 250),
+        # Spell and rune values.
+        "magic_darkest":  ( 42,   4,  42),
+        "magic_dark":     (103,  13,  86),
+        "magic_mid":      (181,  34, 141),
+        "magic_light":    (234,  83, 181),
+        "magic_bright":   (255, 139, 211),
+        "magic_hot":      (255, 203, 238),
+        "magic_white":    (255, 244, 252),
+        "rune_dark":      ( 70,  22,  92),
+        "rune_mid":       (157,  50, 156),
+        "rune_light":     (242, 138, 218),
 
-        # Bramble - dark thorny purple
-        "bramble_dark":   ( 40,  10,  50),
-        "bramble_mid":    ( 90,  30,  95),
-        "bramble_light":  (155,  70, 155),
+        # Antique gold circlet/corset hardware.
+        "gold_dark":      ( 84,  55,  18),
+        "gold_mid":       (162, 112,  36),
+        "gold_light":     (236, 194,  92),
 
-        # Staff wood
-        "staff_dark":     ( 35,  20,  40),
-        "staff_mid":      ( 75,  45,  75),
-        "staff_light":    (120,  85, 120),
+        # Violet-pink eyes and rose lips; the cool glow echoes the reference
+        # while preserving a readable light iris at small arena scale.
+        "eye_white":      (255, 236, 230),
+        "eye_iris":       (153,  41, 104),
+        "eye_iris_light": (255, 157, 211),
+        "eye_pupil":      ( 20,   7,  15),
+        "lips_dark":      (134,  22,  62),
+        "lips_mid":       (218,  69, 119),
 
-        # Gold - trim
-        "gold_dark":      ( 95,  70,  20),
-        "gold_mid":       (170, 130, 40),
-        "gold_light":     (230, 195, 90),
-
-        # Eyes - amber/orange (mischievous)
-        "eye_white":      (250, 240, 230),
-        "eye_iris":       (200, 105,  40),
-        "eye_iris_light": (245, 175,  80),
-        "eye_pupil":      ( 15,  10,   5),
-
-        # Lips
-        "lips_dark":      (155,  40,  70),
-        "lips_mid":       (215,  85, 120),
-
-        # Butterfly
-        "butterfly_dark": ( 60,  15,  55),
-        "butterfly_mid":  (170,  60, 150),
-        "butterfly_light":(240, 140, 220),
-
-        # Misc
+        "butterfly_dark": ( 59,  13,  68),
+        "butterfly_mid":  (159,  49, 143),
+        "butterfly_light":(245, 143, 218),
         "shadow":         (0,   0,   0),
-        "shadow_deep":    (4,   6,   15),
+        "shadow_deep":    (4,   5,  13),
         "white":          (255, 255, 255),
     }
 
@@ -10276,9 +10292,12 @@ class _NS_zephyr:
             boss._zp_projectiles = []
         tx, ty = _NS_zephyr._target_position(boss, x, y)
         facing = getattr(boss, "direction", 1)
-        # From staff orb
-        sx = x + 22 * facing
-        sy = y - 8
+        # The bolt starts at the same pose-driven orb the rig renders.
+        # Keeping this shared anchor prevents the spell from appearing to
+        # emerge from Zephyr's waist after the masterwork staff upgrade.
+        sx, sy = _NS_zephyr._staff_orb_position(
+            x, y, facing, float(getattr(boss, "pulse", 0.0)), "attack",
+            float(getattr(boss, "_zp_attack_progress", 0.0)))
         tgt = getattr(boss, "target", None)
         proj = _NS_zephyr.MagicBoltProjectile(
             sx, sy, tx, ty, speed=7.5,
@@ -10295,8 +10314,9 @@ class _NS_zephyr:
             boss._zp_projectiles = []
         tx, ty = _NS_zephyr._target_position(boss, x, y)
         facing = getattr(boss, "direction", 1)
-        sx = x + 22 * facing
-        sy = y - 8
+        sx, sy = _NS_zephyr._staff_orb_position(
+            x, y, facing, float(getattr(boss, "pulse", 0.0)), "attack",
+            float(getattr(boss, "_zp_attack_progress", 0.0)))
         tgt = getattr(boss, "target", None)
         proj = _NS_zephyr.CasketProjectile(
             sx, sy, tx, ty, speed=5.5,
@@ -10309,40 +10329,50 @@ class _NS_zephyr:
 
 
     # ===================================================================
-    # MAIN DRAW ENTRY POINT
+    # ZEPHYR MASTERWORK — MAIN DRAW ENTRY POINT
     # ===================================================================
     def draw_zephyr(surface, boss, x, y):
-        """Entry point for Boss.draw()."""
+        """Render Zephyr's procedural masterwork rig.
+
+        The gameplay contract (Q/W/E/R timers, casket projectile and cache
+        pipeline) intentionally stays unchanged.  Only the former collection
+        of independent body stickers is replaced by one pose-driven rig.
+        """
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_zephyr._detect_moving(boss)
         _NS_zephyr._update_attack_anim(boss)
+        portrait_hd = bool(getattr(boss, "_portrait_hd", False))
 
         attacking = (
             getattr(boss, "_zp_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 42) - 15
+            or getattr(boss, "timer", 0) >
+            getattr(boss, "attack_cooldown", 42) - 15
         )
 
-        # ---------- Background layers ----------
-        # Siluet cahaya lembut membuat Zephyr tetap terbaca di atas
-        # terrain yang ramai, seperti sprite-sheet referensi: magenta
-        # berada di belakang karakter, bukan menutupi detail wajahnya.
-        _NS_zephyr._draw_fey_silhouette_glow(surface, x, y - 12, pulse)
-        _NS_zephyr._draw_fey_aura(surface, x, y, pulse)
-        _NS_zephyr._draw_fey_platform(surface, x, y + 40, pulse, active_skill)
+        # Portraits deliberately contain only the character rig.  Auras and
+        # arena-sized skill effects would force auto-crop to shrink Zephyr's
+        # face, gown, wing material, and staff details.
+        if not portrait_hd:
+            _NS_zephyr._draw_fey_rim_light(surface, x, y - 13, pulse)
+            _NS_zephyr._draw_fey_aura(surface, x, y, pulse)
+            _NS_zephyr._draw_fey_platform(surface, x, y + 43, pulse,
+                                          active_skill)
 
-        # ---------- Skill ground effects ----------
-        if active_skill == "q":
-            _NS_zephyr._draw_bramble_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_zephyr._draw_shadow_realm_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_zephyr._draw_bedlam_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_zephyr._draw_casket_indicator(surface, boss, x, y, skill_timer, pulse)
+            if active_skill == "q":
+                _NS_zephyr._draw_bramble_ground(
+                    surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "w":
+                _NS_zephyr._draw_shadow_realm_ground(
+                    surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "r":
+                _NS_zephyr._draw_bedlam_ground(
+                    surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "e":
+                _NS_zephyr._draw_casket_indicator(
+                    surface, boss, x, y, skill_timer, pulse)
 
-        # ---------- Character body ----------
         if attacking:
             _NS_zephyr._draw_zephyr_attack(surface, boss, x, y)
         elif moving:
@@ -10350,1066 +10380,985 @@ class _NS_zephyr:
         else:
             _NS_zephyr._draw_zephyr_idle(surface, boss, x, y)
 
-        # ---------- Projectiles ----------
-        _NS_zephyr._manage_projectiles(boss, surface, pulse)
+        if not portrait_hd:
+            _NS_zephyr._manage_projectiles(boss, surface, pulse)
 
-        # ---------- Skill foreground effects ----------
-        if active_skill == "q":
-            _NS_zephyr._draw_bramble_maze(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_zephyr._draw_shadow_realm(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_zephyr._handle_casket_skill(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_zephyr._draw_bedlam(surface, boss, x, y, skill_timer, pulse)
+            if active_skill == "q":
+                _NS_zephyr._draw_bramble_maze(
+                    surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "w":
+                _NS_zephyr._draw_shadow_realm(
+                    surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "e":
+                _NS_zephyr._handle_casket_skill(
+                    surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "r":
+                _NS_zephyr._draw_bedlam(
+                    surface, boss, x, y, skill_timer, pulse)
 
 
     # ===================================================================
-    # POSE MODES
+    # POSE ENTRY POINTS
     # ===================================================================
     def _draw_zephyr_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 3)
-        _NS_zephyr._draw_shadow(surface, x, y + 48)
-        _NS_zephyr._draw_floating_sparkles(surface, x, y + 35, boss.pulse)
-        _NS_zephyr._draw_zephyr_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+        phase = float(getattr(boss, "pulse", 0.0))
+        bob = int(math.sin(phase * .78) * 2)
+        portrait_hd = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait_hd:
+            _NS_zephyr._draw_shadow(surface, x, y + 47)
+            _NS_zephyr._draw_floating_sparkles(surface, x, y + 34, phase)
+        _NS_zephyr._draw_zephyr_body(
+            surface, x, y + bob, getattr(boss, "direction", 1), phase,
+            "idle", detail=portrait_hd)
 
 
     def _draw_zephyr_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.0
-        bob = int(abs(math.sin(phase * 1.2)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_zephyr._draw_shadow(surface, x + sway, y + 48)
-        _NS_zephyr._draw_floating_sparkles(surface, x + sway, y + 35, phase, trail=True,
-                                facing=boss.direction)
-        _NS_zephyr._draw_zephyr_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
+        phase = float(getattr(boss, "pulse", 0.0)) * 2.0
+        stride = math.sin(phase * 1.72)
+        bob = int(abs(stride) * 3)
+        sway = int(stride * 2)
+        portrait_hd = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait_hd:
+            _NS_zephyr._draw_shadow(surface, x + sway, y + 47)
+            _NS_zephyr._draw_floating_sparkles(
+                surface, x + sway, y + 35, phase, trail=True,
+                facing=getattr(boss, "direction", 1))
+        _NS_zephyr._draw_zephyr_body(
+            surface, x + sway, y - bob, getattr(boss, "direction", 1),
+            phase, "walk", detail=portrait_hd)
 
 
     def _draw_zephyr_attack(surface, boss, x, y):
-        progress = getattr(boss, "_zp_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
+        progress = max(0.0, min(1.0,
+            float(getattr(boss, "_zp_attack_progress", 0.0))))
+        phase = float(getattr(boss, "pulse", 0.0))
+        facing = getattr(boss, "direction", 1)
+        portrait_hd = bool(getattr(boss, "_portrait_hd", False))
 
-        # Basic attack TIDAK spawn renderer projectile (pakai generic
-        # _entity.py yang homing & terarah). Magic bolt renderer hanya
-        # saat skill aktif.
+        # The gameplay projectile remains authoritative in _entity.py.  This
+        # renderer-only bolt is emitted only while a hero skill is active, so
+        # it cannot double the normal ranged attack visual.
         if (getattr(boss, "active_skill", None) is not None
-                and 0.5 < progress < 0.6
-                and not getattr(boss, "_zp_proj_spawned", False)):
+                and .48 < progress < .60
+                and not getattr(boss, "_zp_proj_spawned", False)
+                and not portrait_hd):
             _NS_zephyr._spawn_magic_bolt(boss, x, y)
             boss._zp_proj_spawned = True
-        if progress < 0.15 or progress > 0.9:
+        if progress < .15 or progress > .9:
             boss._zp_proj_spawned = False
 
-        recoil = int(math.sin(progress * math.pi) * 2) * -boss.direction
-        _NS_zephyr._draw_shadow(surface, x + recoil, y + 48)
-        _NS_zephyr._draw_floating_sparkles(surface, x + recoil, y + 35, boss.pulse, intense=True)
-        _NS_zephyr._draw_zephyr_body(surface, x + recoil, y, boss.direction, boss.pulse,
-                          "attack", progress)
-        _NS_zephyr._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
+        lunge = int(math.sin(progress * math.pi) * 4)
+        recoil = -lunge * (1 if facing >= 0 else -1)
+        if not portrait_hd:
+            _NS_zephyr._draw_shadow(surface, x + recoil, y + 47)
+            _NS_zephyr._draw_floating_sparkles(
+                surface, x + recoil, y + 34, phase, intense=True,
+                facing=facing)
+        _NS_zephyr._draw_zephyr_body(
+            surface, x + recoil, y, facing, phase, "attack", progress,
+            detail=portrait_hd)
+        if not portrait_hd:
+            _NS_zephyr._draw_cast_flash(surface, x + recoil, y, facing,
+                                        progress, phase)
 
 
     # ===================================================================
-    # BODY RENDERING - HD fairy fey
+    # MASTERWORK RIG
     # ===================================================================
-    def _draw_zephyr_body(surface, cx, cy, facing, phase, action,
-                          attack_progress=0):
-        # Wings behind body (biggest, drawn first)
-        _NS_zephyr._draw_wings(surface, cx, cy - 5, phase)
-
-        # Petal skirt (lower body - no legs, floating)
-        _NS_zephyr._draw_petal_skirt(surface, cx, cy + 5, phase)
-
-        # Torso with corset
-        _NS_zephyr._draw_torso(surface, cx, cy - 8, facing, phase)
-
-        # Arms & staff
-        if action == "attack":
-            _NS_zephyr._draw_attack_arms(surface, cx, cy - 8, facing, phase, attack_progress)
-        else:
-            _NS_zephyr._draw_idle_arms(surface, cx, cy - 8, facing, phase, action)
-
-        # Head with fiery petal hair
-        _NS_zephyr._draw_head(surface, cx, cy - 26, facing, phase)
-
-        # Ambient particles
-        _NS_zephyr._draw_body_particles(surface, cx, cy, phase)
-
-
-    def _draw_wings(surface, cx, cy, phase):
-        """Translucent fairy wings with 4 petal-like sections."""
-        wing_flap = math.sin(phase * 3) * 0.15 + 0.85
-
-        # Draw both wings (large, spread behind)
-        for side in (-1, 1):
-            # Upper wing (larger, extends up and out)
-            w_scale = wing_flap
-            u_tip_x = cx + side * int(22 * w_scale)
-            u_tip_y = cy - int(24 * w_scale)
-            u_mid_x = cx + side * int(15 * w_scale)
-            u_mid_y = cy - int(10 * w_scale)
-
-            # Upper wing outer edge (darker)
-            upper_wing = [
-                (cx + side * 3, cy - 5),
-                (cx + side * 8, cy - 15),
-                (u_tip_x, u_tip_y),
-                (u_tip_x - side * 5, u_tip_y + 8),
-                (u_mid_x, u_mid_y),
-                (cx + side * 2, cy - 3),
-            ]
-            _NS_zephyr._poly(surface, (*_NS_zephyr.PALETTE["wing_darkest"], 130), upper_wing)
-            _NS_zephyr._poly(surface, (*_NS_zephyr.PALETTE["wing_dark"], 150), [
-                (cx + side * 3, cy - 5),
-                (cx + side * 8, cy - 14),
-                (u_tip_x - side * 1, u_tip_y + 1),
-                (u_tip_x - side * 4, u_tip_y + 7),
-                (u_mid_x - side * 1, u_mid_y + 1),
-                (cx + side * 2, cy - 3),
-            ])
-            _NS_zephyr._poly(surface, (*_NS_zephyr.PALETTE["wing_mid"], 130), [
-                (cx + side * 4, cy - 5),
-                (cx + side * 9, cy - 13),
-                (u_tip_x - side * 3, u_tip_y + 3),
-                (u_tip_x - side * 5, u_tip_y + 6),
-                (u_mid_x - side * 2, u_mid_y + 2),
-                (cx + side * 3, cy - 3),
-            ])
-
-            # Lower wing (smaller, extends down and out)
-            l_tip_x = cx + side * int(16 * w_scale)
-            l_tip_y = cy + int(12 * w_scale)
-            lower_wing = [
-                (cx + side * 3, cy - 3),
-                (cx + side * 8, cy + 2),
-                (l_tip_x, l_tip_y),
-                (l_tip_x - side * 4, l_tip_y - 2),
-                (cx + side * 4, cy),
-            ]
-            _NS_zephyr._poly(surface, (*_NS_zephyr.PALETTE["wing_darkest"], 130), lower_wing)
-            _NS_zephyr._poly(surface, (*_NS_zephyr.PALETTE["wing_dark"], 150), [
-                (cx + side * 3, cy - 3),
-                (cx + side * 7, cy + 1),
-                (l_tip_x - side * 1, l_tip_y - 1),
-                (l_tip_x - side * 3, l_tip_y - 3),
-                (cx + side * 3, cy),
-            ])
-
-            # Vein structure: referensi punya sayap daun yang jelas,
-            # bukan hanya bidang ungu datar. Garis tipis ini menambah
-            # siluet pixel-art tanpa menaikkan ukuran hitbox karakter.
-            root_x, root_y = cx + side * 4, cy - 4
-            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_light"], 200),
-                    (root_x, root_y), (u_tip_x, u_tip_y), 1)
-            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_mid"], 175),
-                    (root_x, root_y), (u_mid_x, u_mid_y), 1)
-            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_light"], 145),
-                    (u_mid_x, u_mid_y),
-                    (u_tip_x - side * 4, u_tip_y + 8), 1)
-            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_light"], 180),
-                    (cx + side * 4, cy - 2), (l_tip_x, l_tip_y), 1)
-            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["wing_mid"], 145),
-                    (cx + side * 4, cy - 2),
-                    (l_tip_x - side * 3, l_tip_y - 2), 1)
-
-            # Tip shine
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["wing_shine"], 220),
-                      (u_tip_x, u_tip_y), 2)
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["wing_shine"], 200),
-                      (l_tip_x, l_tip_y), 1)
-
-            # Sparkle on wings
-            for i in range(2):
-                sa = phase * 1.5 + i * 2 + side
-                spx = cx + side * (10 + int(math.sin(sa) * 3))
-                spy = cy - 5 + int(math.cos(sa) * 6)
-                _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_hot"], 220), (spx, spy), 1)
-
-
-    def _draw_petal_skirt(surface, cx, cy, phase):
-        """Layered petal skirt (dress bottom)."""
-        sway = int(math.sin(phase * 0.6) * 2)
-
-        # Base dark layer (larger, outer petals)
-        outer_petals = [
-            (cx - 14, cy),
-            (cx + 14, cy),
-            (cx + 18 + sway, cy + 10),
-            (cx + 16, cy + 18),
-            (cx + 12, cy + 24),
-            (cx + 6, cy + 28),
-            (cx + 2, cy + 30),
-            (cx - 2, cy + 30),
-            (cx - 6, cy + 28),
-            (cx - 12, cy + 24),
-            (cx - 16, cy + 18),
-            (cx - 18 - sway, cy + 10),
-        ]
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in outer_petals])
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["dress_darkest"], outer_petals)
-
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["dress_dark"], [
-            (cx - 12, cy + 1),
-            (cx + 12, cy + 1),
-            (cx + 15 + sway, cy + 10),
-            (cx + 13, cy + 17),
-            (cx + 10, cy + 22),
-            (cx + 4, cy + 26),
-            (cx - 4, cy + 26),
-            (cx - 10, cy + 22),
-            (cx - 13, cy + 17),
-            (cx - 15 - sway, cy + 10),
-        ])
-
-        # Middle layer (individual petal tips)
-        for i, (px_off, py_off, size, ang) in enumerate([
-            (-13, 8, 12, math.pi / 2 + 0.4),
-            (-8, 14, 14, math.pi / 2 + 0.2),
-            (-3, 18, 15, math.pi / 2 + 0.05),
-            (3, 18, 15, math.pi / 2 - 0.05),
-            (8, 14, 14, math.pi / 2 - 0.2),
-            (13, 8, 12, math.pi / 2 - 0.4),
-        ]):
-            sway_off = int(math.sin(phase * 0.7 + i) * 1)
-            _NS_zephyr._draw_petal(surface, cx + px_off, cy + py_off,
-                        size + sway_off, ang,
-                        _NS_zephyr.PALETTE["dress_darkest"], _NS_zephyr.PALETTE["dress_dark"],
-                        _NS_zephyr.PALETTE["dress_mid"], _NS_zephyr.PALETTE["dress_light"])
-
-        # Top overlay (bright inner petals)
-        inner_petals = [
-            (cx - 9, cy + 4),
-            (cx + 9, cy + 4),
-            (cx + 11 + sway, cy + 10),
-            (cx + 8, cy + 16),
-            (cx + 3, cy + 20),
-            (cx - 3, cy + 20),
-            (cx - 8, cy + 16),
-            (cx - 11 - sway, cy + 10),
-        ]
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["dress_mid"], inner_petals)
-
-        # Highlight lines on inner
-        for i in range(3):
-            lx = cx - 6 + i * 6
-            _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["dress_light"],
-                    (lx, cy + 5), (lx + int(sway * 0.3), cy + 18), 1)
-
-        # Small petals at bottom hem (extra ruffle)
-        for i in range(5):
-            px = cx - 10 + i * 5
-            py = cy + 24 + int(math.sin(phase + i) * 1)
-            _NS_zephyr._draw_petal(surface, px, py, 4, math.pi / 2,
-                        _NS_zephyr.PALETTE["dress_darkest"], _NS_zephyr.PALETTE["dress_dark"],
-                        _NS_zephyr.PALETTE["dress_light"])
-
-        # Belt line
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["corset_dark"],
-                (cx - 12, cy + 1), (cx + 12, cy + 1), 2)
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["gold_dark"],
-                (cx - 10, cy + 1), (cx + 10, cy + 1), 1)
-
-
-    def _draw_torso(surface, cx, cy, facing, phase):
-        """Corset over petal top."""
-        # Shadow
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["shadow_deep"], [
-            (cx - 10 + 2, cy - 7 + 2), (cx + 10 + 2, cy - 7 + 2),
-            (cx + 9 + 2, cy + 13 + 2), (cx + 4 + 2, cy + 17 + 2),
-            (cx - 4 + 2, cy + 17 + 2), (cx - 9 + 2, cy + 13 + 2),
-        ])
-
-        # Petal top layer (dress upper - purple)
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["dress_darkest"], [
-            (cx - 10, cy - 7), (cx + 10, cy - 7),
-            (cx + 9, cy + 13), (cx + 4, cy + 17),
-            (cx - 4, cy + 17), (cx - 9, cy + 13),
-        ])
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["dress_dark"], [
-            (cx - 9, cy - 6), (cx + 9, cy - 6),
-            (cx + 7, cy + 11), (cx + 3, cy + 15),
-            (cx - 3, cy + 15), (cx - 7, cy + 11),
-        ])
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["dress_mid"], [
-            (cx - 6, cy - 4), (cx + 6, cy - 4),
-            (cx + 5, cy + 9), (cx + 2, cy + 11),
-            (cx - 2, cy + 11), (cx - 5, cy + 9),
-        ])
-
-        # Chest/skin (upper - V neck)
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["skin_dark"], [
-            (cx - 5, cy - 7), (cx + 5, cy - 7),
-            (cx + 2, cy - 2), (cx - 2, cy - 2),
-        ])
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["skin_mid"], [
-            (cx - 4, cy - 7), (cx + 4, cy - 7),
-            (cx + 2, cy - 3), (cx - 2, cy - 3),
-        ])
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["skin_light"],
-                (cx - 3, cy - 6), (cx + 3, cy - 6), 1)
-
-        # Corset over torso
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["corset_dark"], [
-            (cx - 8, cy - 2),
-            (cx + 8, cy - 2),
-            (cx + 7, cy + 11),
-            (cx + 3, cy + 14),
-            (cx - 3, cy + 14),
-            (cx - 7, cy + 11),
-        ])
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["corset_mid"], [
-            (cx - 7, cy - 1),
-            (cx + 7, cy - 1),
-            (cx + 6, cy + 10),
-            (cx + 2, cy + 13),
-            (cx - 2, cy + 13),
-            (cx - 6, cy + 10),
-        ])
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["corset_light"],
-                (cx - 6, cy), (cx - 5, cy + 11), 1)
-
-        # Corset lacing (X pattern)
-        for i in range(3):
-            y_off = cy + 1 + i * 3
-            _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["gold_mid"],
-                    (cx - 3, y_off), (cx + 3, y_off + 2), 1)
-            _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["gold_mid"],
-                    (cx + 3, y_off), (cx - 3, y_off + 2), 1)
-
-        # Center gem
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["magic_dark"], (cx, cy + 3), 2)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["magic_hot"], (cx, cy + 3), 1)
-
-        # Shoulder petal detail
-        for side in (-1, 1):
-            sx = cx + side * 9
-            sy = cy - 5
-            _NS_zephyr._draw_petal(surface, sx, sy, 6, -math.pi / 2 + side * 0.5,
-                        _NS_zephyr.PALETTE["dress_darkest"], _NS_zephyr.PALETTE["dress_dark"],
-                        _NS_zephyr.PALETTE["dress_light"])
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase, action):
-        """Idle - one hand holds staff, other rests."""
-        sway = int(math.sin(phase * 0.7) * 1)
-
-        # STAFF arm (facing side)
-        staff_side = facing
-        ss_x = cx + staff_side * 9
-        ss_y = cy + 2
-        se_x = ss_x + staff_side * 6
-        se_y = cy + 4 + sway
-        sh_x = se_x + staff_side * 4
-        sh_y = se_y + 2
-        _NS_zephyr._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_zephyr._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-        _NS_zephyr._draw_hand(surface, sh_x, sh_y)
-
-        _NS_zephyr._draw_staff(surface, sh_x, sh_y, phase, staff_side)
-
-        # OTHER arm (opposite - relaxed)
-        other_side = -facing
-        os_x = cx + other_side * 9
-        os_y = cy + 2
-        oe_x = os_x + other_side * 5
-        oe_y = cy + 10 + sway
-        oh_x = oe_x + other_side * 3
-        oh_y = oe_y + 7
-        _NS_zephyr._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_zephyr._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_zephyr._draw_hand(surface, oh_x, oh_y)
-
-
-    def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
-        """Attack - staff forward, casting bolt."""
-        sway = int(math.sin(phase * 0.7) * 1)
-
-        # STAFF arm extends forward
-        staff_side = facing
-        ss_x = cx + staff_side * 9
-        ss_y = cy + 2
-
-        # Windup / thrust / recover
-        if progress < 0.3:
-            t = progress / 0.3
-            ext = t * 0.4
-        elif progress < 0.55:
-            t = (progress - 0.3) / 0.25
-            ext = 0.4 + t * 0.6
-        else:
-            t = (progress - 0.55) / 0.45
-            ext = 1.0 - t * 0.6
-
-        aim_angle = -0.1
-        se_x = ss_x + int((6 + ext * 3) * math.cos(aim_angle)) * staff_side
-        se_y = ss_y + int((6 + ext * 3) * math.sin(aim_angle)) - 2
-        sh_x = se_x + int((6 + ext * 5) * math.cos(aim_angle)) * staff_side
-        sh_y = se_y + int((6 + ext * 5) * math.sin(aim_angle)) - 3
-
-        _NS_zephyr._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_zephyr._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-        _NS_zephyr._draw_hand(surface, sh_x, sh_y)
-        _NS_zephyr._draw_staff(surface, sh_x, sh_y, phase, staff_side, casting=True,
-                    progress=progress)
-
-        # OTHER arm - lifted / gesture
-        other_side = -facing
-        os_x = cx + other_side * 9
-        os_y = cy + 2
-        oe_x = os_x + other_side * 5
-        oe_y = cy + 4 + sway
-        oh_x = oe_x + other_side * 3
-        oh_y = oe_y + 3
-        _NS_zephyr._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_zephyr._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_zephyr._draw_hand(surface, oh_x, oh_y)
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Slim arm segment - fairy sized (skin visible + dress cloth)."""
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["shadow_deep"],
-                (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 4)
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["skin_darkest"], (x1, y1), (x2, y2), 3)
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["skin_dark"], (x1, y1), (x2, y2), 2)
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["skin_mid"], (x1, y1 - 1), (x2, y2 - 1), 1)
-
-
-    def _draw_hand(surface, x, y):
-        """Tiny fairy hand."""
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["skin_darkest"], (x, y), 2)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["skin_mid"], (x, y), 1)
-
-
-    def _draw_staff(surface, hx, hy, phase, side, casting=False, progress=0):
-        """Twisted magical staff with pink orb."""
-        # Staff pole
-        top_x = hx + side * 4
-        top_y = hy - 32
-        bot_x = hx - side * 2
-        bot_y = hy + 12
-
-        # Shadow
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["shadow_deep"],
-                (top_x + 2, top_y + 2), (bot_x + 2, bot_y + 2), 4)
-        # Wooden twisted staff
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["staff_dark"], (top_x, top_y), (bot_x, bot_y), 3)
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["staff_mid"], (top_x, top_y), (bot_x, bot_y), 2)
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["staff_light"], (top_x, top_y), (bot_x, bot_y), 1)
-
-        # Small vine wraps
-        for t in (0.3, 0.55, 0.8):
-            rx = int(top_x + (bot_x - top_x) * t)
-            ry = int(top_y + (bot_y - top_y) * t)
-            _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["dress_dark"], (rx, ry), 2)
-            _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["dress_mid"], (rx, ry), 1)
-
-        # Staff head - twisted claw holding orb
-        head_x, head_y = top_x, top_y - 2
-
-        # Curled tendrils holding the orb
-        for tendril_side in (-1, 1):
-            prev = (head_x, head_y + 3)
-            segments = 5
-            for i in range(1, segments + 1):
-                t = i / segments
-                tx = head_x + tendril_side * math.sin(t * math.pi) * 5
-                ty = head_y + 3 - t * 8
-                _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["staff_dark"], prev, (tx, ty), 2)
-                _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["staff_mid"], prev, (tx, ty), 1)
-                prev = (tx, ty)
-
-        # Main pink orb
-        orb_size = 5
-        if casting:
-            orb_size = 5 + int(math.sin(progress * math.pi) * 6)
-
-        orb_x, orb_y = head_x, head_y - 2
-
-        # Layered glow
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_dark"], 130),
-                  (orb_x, orb_y), orb_size + 6)
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_mid"], 180),
-                  (orb_x, orb_y), orb_size + 3)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["magic_mid"], (orb_x, orb_y), orb_size)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["magic_light"], (orb_x, orb_y), orb_size - 1)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["magic_bright"],
-                  (orb_x - 1, orb_y - 1), max(1, orb_size - 2))
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["magic_hot"],
-                  (orb_x - 1, orb_y - 1), max(1, orb_size - 3))
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["white"], (orb_x - 1, orb_y - 1), 1)
-
-        # Bintang empat arah membuat orb terasa seperti fokus sihir
-        # (bukan bola warna polos), mengikuti projectile di referensi.
-        star_alpha = 150 if not casting else 220
-        star_r = max(3, orb_size + 2)
-        _NS_zephyr._aaline(surface,
-                (*_NS_zephyr.PALETTE["magic_bright"], star_alpha),
-                (orb_x - star_r, orb_y), (orb_x + star_r, orb_y), 1)
-        _NS_zephyr._aaline(surface,
-                (*_NS_zephyr.PALETTE["magic_hot"], star_alpha),
-                (orb_x, orb_y - star_r), (orb_x, orb_y + star_r), 1)
-
-        # Sparkle particles around
-        for i in range(3):
-            a = phase * 2 + i * math.pi * 2 / 3
-            r = orb_size + 2
-            px = orb_x + int(math.cos(a) * r)
-            py = orb_y + int(math.sin(a) * r)
-            _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["magic_hot"], (px, py), 1)
-
-
-    def _draw_head(surface, cx, cy, facing, phase):
-        """Fairy head with fiery petal hair."""
-        # Fiery hair mane BEHIND head first
-        _NS_zephyr._draw_hair_mane(surface, cx, cy, phase, layer="back")
-
-        # Small heart-shaped face
-        face_points = [
-            (cx - 5, cy - 1),
-            (cx - 6, cy + 3),
-            (cx - 4, cy + 7),
-            (cx - 1, cy + 9),
-            (cx + 1, cy + 9),
-            (cx + 4, cy + 7),
-            (cx + 6, cy + 3),
-            (cx + 5, cy - 1),
-        ]
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["shadow_deep"],
-              [(p[0] + 1, p[1] + 1) for p in face_points])
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["skin_dark"], face_points)
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["skin_mid"], [
-            (cx - 4, cy),
-            (cx - 5, cy + 3),
-            (cx - 3, cy + 6),
-            (cx - 1, cy + 8),
-            (cx + 1, cy + 8),
-            (cx + 3, cy + 6),
-            (cx + 5, cy + 3),
-            (cx + 4, cy),
-        ])
-
-        # Cheek highlights (mischievous blush)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["hair_shine"], (cx - 3, cy + 4), 1)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["hair_shine"], (cx + 3, cy + 4), 1)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["skin_light"], (cx - 3, cy + 4), 1)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["skin_light"], (cx + 3, cy + 4), 1)
-
-        # Eyes (amber, mischievous grin)
-        for eye_x in (-2, 2):
-            _NS_zephyr._rect(surface, _NS_zephyr.PALETTE["eye_white"], (cx + eye_x - 1, cy + 2, 2, 2))
-            _NS_zephyr._rect(surface, _NS_zephyr.PALETTE["eye_iris"], (cx + eye_x - 1, cy + 2, 2, 2))
-            _NS_zephyr._rect(surface, _NS_zephyr.PALETTE["eye_iris_light"], (cx + eye_x, cy + 2, 1, 1))
-
-        # Brows (arched mischievous)
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["hair_darkest"],
-                (cx - 4, cy + 1), (cx - 1, cy), 1)
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["hair_darkest"],
-                (cx + 1, cy), (cx + 4, cy + 1), 1)
-
-        # Small nose
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["skin_darkest"], (cx, cy + 5), 1)
-
-        # Mischievous smile
-        _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["lips_dark"],
-                (cx - 2, cy + 7), (cx + 2, cy + 7), 1)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["lips_mid"], (cx, cy + 7), 1)
-
-        # Small pointed ears (elf/fey)
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["skin_dark"], [
-            (cx - 6, cy + 2),
-            (cx - 8, cy),
-            (cx - 6, cy + 5),
-        ])
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["skin_mid"], [
-            (cx - 6, cy + 3),
-            (cx - 7, cy + 1),
-            (cx - 6, cy + 4),
-        ])
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["skin_dark"], [
-            (cx + 6, cy + 2),
-            (cx + 8, cy),
-            (cx + 6, cy + 5),
-        ])
-        _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["skin_mid"], [
-            (cx + 6, cy + 3),
-            (cx + 7, cy + 1),
-            (cx + 6, cy + 4),
-        ])
-
-        # Fiery hair mane in FRONT/TOP
-        _NS_zephyr._draw_hair_mane(surface, cx, cy, phase, layer="front")
-
-
-    def _draw_hair_mane(surface, cx, cy, phase, layer="back"):
-        """Fiery petal-like hair mane (magenta/crimson going upward like flames)."""
-        if layer == "back":
-            # Back layer (larger petals framing head)
-            back_petals = [
-                # Kelopak samping lebih lebar menciptakan mane berduri
-                # khas referensi Dark Willow, sekaligus membingkai wajah.
-                (-10, -1, 13, -math.pi / 2 - 1.00),
-                (-7, -4, 15, -math.pi / 2 - 0.55),
-                (10, -1, 13, -math.pi / 2 + 1.00),
-                (7, -4, 15, -math.pi / 2 + 0.55),
-                (0, -3, 11, math.pi / 2 + 3.14),
-            ]
-            for bx, by, sz, ang in back_petals:
-                flicker = int(math.sin(phase * 2 + bx * 0.1) * 1)
-                _NS_zephyr._draw_petal(surface, cx + bx, cy + by, sz + flicker, ang,
-                            _NS_zephyr.PALETTE["hair_darkest"], _NS_zephyr.PALETTE["hair_dark"],
-                            _NS_zephyr.PALETTE["hair_mid"], _NS_zephyr.PALETTE["hair_shine"])
-        else:
-            # Front top layer - flame petals rising up
-            top_petals = [
-                (-6, -6, 12, -math.pi / 2 - 0.7),
-                (-3, -8, 15, -math.pi / 2 - 0.3),
-                ( 0, -9, 17, -math.pi / 2),
-                ( 3, -8, 15, -math.pi / 2 + 0.3),
-                ( 6, -6, 12, -math.pi / 2 + 0.7),
-            ]
-            for bx, by, sz, ang in top_petals:
-                flicker = int(math.sin(phase * 2 + bx * 0.2) * 1.5)
-                _NS_zephyr._draw_petal(surface, cx + bx, cy + by, sz + flicker, ang,
-                            _NS_zephyr.PALETTE["hair_dark"], _NS_zephyr.PALETTE["hair_mid"],
-                            _NS_zephyr.PALETTE["hair_light"], _NS_zephyr.PALETTE["hair_tip"])
-
-            # Small front bangs (over forehead)
-            _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["hair_dark"], [
-                (cx - 5, cy - 1),
-                (cx - 3, cy - 3),
-                (cx - 1, cy - 1),
-                (cx + 1, cy - 1),
-                (cx + 3, cy - 3),
-                (cx + 5, cy - 1),
-                (cx + 4, cy),
-                (cx - 4, cy),
-            ])
-            _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["hair_mid"], [
-                (cx - 4, cy - 1),
-                (cx - 2, cy - 2),
-                (cx + 2, cy - 2),
-                (cx + 4, cy - 1),
-                (cx + 3, cy - 1),
-                (cx - 3, cy - 1),
-            ])
-
-            # Tiny highlight strands
-            _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["hair_shine"],
-                    (cx - 2, cy - 4), (cx - 1, cy - 1), 1)
-            _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["hair_tip"],
-                    (cx + 1, cy - 5), (cx + 2, cy - 2), 1)
-
-
-    def _draw_body_particles(surface, cx, cy, phase):
-        """Sparkles and butterflies around body."""
-        # Sparkles
-        for i in range(8):
-            angle = phase * 0.5 + i * math.pi / 4
-            radius = 25 + int(math.sin(phase * 0.7 + i) * 6)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-            alpha = int(150 + math.sin(phase + i * 0.7) * 60)
-            alpha = max(0, min(255, alpha))
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_light"], alpha), (px, py), 1)
-
-        # Small butterflies (2 orbiting)
-        for i in range(2):
-            t = phase * 0.7 + i * math.pi
-            bx = cx + int(math.cos(t) * 30)
-            by = cy - 5 + int(math.sin(t * 1.3) * 10) - 8
-            _NS_zephyr._draw_butterfly(surface, bx, by, 3, phase + i)
-
-        # Falling petals
-        for i in range(3):
-            t = (phase * 0.3 + i * 0.35) % 1.0
-            fx = cx - 30 + int(t * 60) + int(math.sin(phase + i) * 3)
-            fy = cy - 30 + int(t * 70)
-            alpha = int(220 * math.sin(t * math.pi))
-            if alpha > 0:
-                a = phase * 1.5 + i
-                _NS_zephyr._draw_petal(surface, fx, fy, 3, a,
-                            (*_NS_zephyr.PALETTE["hair_dark"], alpha),
-                            (*_NS_zephyr.PALETTE["hair_mid"], alpha),
-                            (*_NS_zephyr.PALETTE["hair_shine"], alpha))
-
-
-    # ===================================================================
-    # FLOATING EFFECTS
-    # ===================================================================
-    def _draw_floating_sparkles(surface, cx, cy, phase, trail=False,
-                                 facing=1, intense=False):
-        """Fey mist beneath floating Zephyr."""
-        strength = 1.5 if intense else 1.0
-
-        mist = pygame.Surface((120, 40), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(30, 3, -4):
-            alpha = int((30 - radius) * 2.6 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_zephyr.PALETTE["magic_dark"], min(255, alpha)),
-                    (60 - radius * 2, 20 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 60, cy - 10))
-
-        # Rising magical dust
-        for i, offset in enumerate((-18, -6, 6, 18)):
-            t = (phase * 0.5 + i * 0.25) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 26)
-            alpha = max(0, min(255, int(220 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_dark"], alpha), (sx, sy), 4)
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_mid"], alpha), (sx, sy - 2), 3)
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_bright"], alpha), (sx, sy - 3), 1)
-
-        # Orbiting butterflies
-        for i in range(3):
-            angle = phase * 1.1 + i * math.pi * 2 / 3
-            r = 22 + int(math.sin(phase + i * 1.3) * 4)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 5)
-            _NS_zephyr._draw_butterfly(surface, sx, sy, 3, phase + i)
-
-        if trail:
-            for i in range(5):
-                sx = cx - (i + 1) * 10 * facing
-                sy = cy + int(math.sin(phase + i) * 2)
-                alpha = max(0, 130 - i * 24)
-                _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_mid"], alpha),
-                          (sx, sy), max(2, 5 - i))
-
-
-    def _draw_shadow(surface, x, y):
-        """Ground shadow."""
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_zephyr.PALETTE["magic_dark"], 40), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
-
-
-    def _draw_fey_silhouette_glow(surface, x, y, phase):
-        """Halo magenta rendah-kontras khusus untuk Zephyr.
-
-        Diletakkan sebelum tubuh dan aura normal agar rim light memisahkan
-        rambut, sayap, serta staff dari peta, sambil tetap mempertahankan
-        tepi pixel-art yang tajam. Ukuran kecil juga aman untuk Android.
+    def _staff_tip_local(phase, action="idle", attack_progress=0.0):
+        """Pose-driven local orb position for Zephyr's thorn staff.
+
+        Reference alignment: the crystal sits beside the face/forward
+        shoulder rather than hovering above her head.  The shaft therefore
+        reads as a crooked faerie wand in idle, then pulls back into the
+        silhouette before thrusting forward for a bolt release.
         """
-        pulse = 0.70 + math.sin(phase * 1.35) * 0.16
-        halo = pygame.Surface((92, 104), pygame.SRCALPHA)
-        center = (46, 51)
-        for radius, alpha in ((41, 10), (32, 15), (24, 23)):
-            _NS_zephyr._aacircle(
-                halo, (*_NS_zephyr.PALETTE["magic_dark"],
-                       int(alpha * pulse)), center, radius)
-        # Dua kilau vertikal mengisyaratkan sayap tanpa menggambar ulang.
-        _NS_zephyr._aaline(halo, (*_NS_zephyr.PALETTE["magic_mid"],
-                                  int(35 * pulse)),
-                            (26, 60), (17, 30), 2)
-        _NS_zephyr._aaline(halo, (*_NS_zephyr.PALETTE["magic_mid"],
-                                  int(35 * pulse)),
-                            (66, 60), (75, 30), 2)
-        surface.blit(halo, (x - 46, y - 51))
+        wave = math.sin(phase * 1.35) * 1.4
+        if action == "attack":
+            ap = max(0.0, min(1.0, attack_progress))
+            if ap < .40:
+                # Wind-up: tuck the orb toward the hair and lift it.
+                t = ap / .40
+                return (int(42 - 22 * t), int(-19 - 18 * t + wave))
+            if ap < .62:
+                # Release: an unmistakable forward-pointing wand pose.
+                t = (ap - .40) / .22
+                return (int(20 + 47 * t), int(-37 + 17 * t + wave))
+            # Recovery retains a slight forward reach instead of snapping.
+            t = (ap - .62) / .38
+            return (int(67 - 24 * t), int(-20 + 3 * t + wave))
+        if action == "walk":
+            return (int(42 + math.sin(phase * 1.72) * 3),
+                    int(-19 + wave))
+        return (42, int(-19 + wave))
+
+
+    def _staff_orb_position(cx, cy, facing, phase=0.0, action="idle",
+                            attack_progress=0.0):
+        """World/canvas position of the staff orb for spell effects."""
+        tx, ty = _NS_zephyr._staff_tip_local(phase, action, attack_progress)
+        f = 1 if facing >= 0 else -1
+        return int(cx + tx * f), int(cy + ty)
+
+
+    def _draw_zephyr_body(surface, cx, cy, facing, phase, action,
+                          attack_progress=0.0, detail=False):
+        """Render the replacement Zephyr masterwork body.
+
+        Every visible material is generated from pygame primitives.  Unlike
+        the retired torso/arms/skirt stickers, wings, hair, hands, gown and
+        staff share the same `pt()` transform and thus react together to the
+        walk, idle and casting pose.
+        """
+        _NS_zephyr._draw_zephyr_elite(
+            surface, cx, cy, facing, phase, action, attack_progress, detail)
+
+
+    def _draw_zephyr_rig(surface, cx, cy, facing, phase, action,
+                         attack_progress=0.0, detail=False):
+        """Explicit rig alias used by visual tooling and future cosmetics."""
+        _NS_zephyr._draw_zephyr_elite(
+            surface, cx, cy, facing, phase, action, attack_progress, detail)
+
+
+    def _draw_zephyr_elite(surface, cx, cy, facing, phase, action,
+                           attack_progress=0.0, detail=False):
+        """Layered dark-fey bone rig: crown, moth wings, gown and staff."""
+        p = _NS_zephyr.PALETTE
+        f = 1 if facing >= 0 else -1
+        walk = action == "walk"
+        attack = action == "attack"
+        ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
+        stride = math.sin(phase * 1.72)
+        breath = math.sin(phase * .78)
+
+        lean = int((3.5 * stride if walk else 0.0) +
+                   (math.sin(ap * math.pi) * 7.0 if attack else 0.0))
+        root_y = int(breath * .9)
+        if walk:
+            root_y -= int(abs(stride) * 2.5)
+        if attack:
+            root_y += int(math.sin(ap * math.pi) * 2)
+
+        def pt(dx, dy):
+            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+
+        def poly(color, coords, outline=True):
+            pts = [pt(dx, dy) for dx, dy in coords]
+            if outline:
+                _NS_zephyr._poly(surface, p["shadow_deep"],
+                                  [(qx + f, qy + 1) for qx, qy in pts])
+            _NS_zephyr._poly(surface, color, pts)
+            return pts
+
+        def limb(a, b, width, base, light=None):
+            aa, bb = pt(*a), pt(*b)
+            _NS_zephyr._aaline(surface, p["shadow_deep"],
+                                (aa[0] + f, aa[1] + 1),
+                                (bb[0] + f, bb[1] + 1), width + 3)
+            _NS_zephyr._aaline(surface, base, aa, bb, width)
+            if light:
+                off = -1 if f > 0 else 1
+                _NS_zephyr._aaline(surface, light,
+                                    (aa[0] + off, aa[1] - 1),
+                                    (bb[0] + off, bb[1] - 1),
+                                    max(1, width // 3))
+
+        # ── back layer: wings and animated thorn-hair silhouette ──
+        _NS_zephyr._draw_elite_wings(surface, pt, f, phase, action, detail)
+        _NS_zephyr._draw_zephyr_crown(surface, pt, f, phase, detail)
+
+        # A long asymmetric mantle makes the fairy readable from a 3/4 angle.
+        mantle_wave = int(math.sin(phase * 1.18) * 3)
+        mantle_push = 7 if walk or attack else 0
+        poly(p["cloak_darkest"], [(-8, -23), (-18, -16),
+             (-27 - mantle_push, -2 + mantle_wave),
+             (-31 - mantle_push, 19 + mantle_wave), (-21, 15),
+             (-10, 4), (-3, -12)])
+        poly(p["cloak_dark"], [(-9, -21), (-17, -14),
+             (-24 - mantle_push, 0 + mantle_wave),
+             (-26 - mantle_push, 14 + mantle_wave), (-18, 10),
+             (-8, 0)], False)
+        _NS_zephyr._aaline(surface, p["cloak_light"], pt(-13, -17),
+                            pt(-25 - mantle_push, 10 + mantle_wave), 1)
+
+        # ── planted legs, tights and ankle boots ──
+        front_step = int(stride * 4) if walk else 0
+        rear_step = -front_step
+        if attack:
+            front_step += int(ap * 5)
+            rear_step -= int(ap * 3)
+        legs = ((-7, rear_step, p["boot_dark"], p["boot_mid"]),
+                (7, front_step, p["boot_mid"], p["boot_light"]))
+        for i, (side, step, boot_base, boot_light) in enumerate(legs):
+            thigh_x = side + step
+            # visible striped tights above the boot
+            poly(p["dress_darkest"], [(thigh_x - 5, 15),
+                 (thigh_x + 5, 15), (thigh_x + 4, 29),
+                 (thigh_x - 4, 29)])
+            poly(p["dress_mid"], [(thigh_x - 3, 17),
+                 (thigh_x + 3, 17), (thigh_x + 2, 28),
+                 (thigh_x - 3, 28)], False)
+            _NS_zephyr._aaline(surface, p["dress_light"],
+                                pt(thigh_x - 1, 18), pt(thigh_x - 1, 27), 1)
+            # pointed cuff, heel and toe establish ground contact.
+            poly(p["boot_darkest"], [(thigh_x - 6, 27),
+                 (thigh_x + 5, 27), (thigh_x + 6, 40),
+                 (thigh_x - 5, 40)])
+            poly(boot_base, [(thigh_x - 4, 28), (thigh_x + 3, 28),
+                 (thigh_x + 4, 38), (thigh_x - 4, 38)], False)
+            _NS_zephyr._aaline(surface, boot_light,
+                                pt(thigh_x - 2, 30), pt(thigh_x - 1, 37), 1)
+            toe = 4 * f
+            foot = pt(thigh_x + (3 if f > 0 else -3), 40)
+            _NS_zephyr._aaline(surface, p["shadow_deep"],
+                                (foot[0] - toe, foot[1] + 1),
+                                (foot[0] + toe, foot[1] + 1), 4)
+            _NS_zephyr._aaline(surface, p["boot_light"],
+                                (foot[0] - toe, foot[1]),
+                                (foot[0] + toe, foot[1]), 2)
+
+        # ── four independent petal panels of the gown ──
+        skirt_wave = math.sin(phase * 1.1) * 2
+        for i, (base_x, width, length) in enumerate(
+                ((-13, 9, 27), (-4, 10, 31), (5, 10, 29), (14, 8, 24))):
+            sway = int(skirt_wave * (1.0 + (i % 2) * .35) +
+                       (stride * (i - 1.5) if walk else 0))
+            dark = p["dress_darkest"] if i in (0, 3) else p["dress_dark"]
+            mid = p["dress_mid"] if i != 1 else p["dress_light"]
+            panel = [(base_x - width // 2, 0), (base_x + width // 2, 0),
+                     (base_x + width // 2 + sway, length - 5),
+                     (base_x + sway, length),
+                     (base_x - width // 2 + sway - 2, length - 5)]
+            poly(dark, panel)
+            inset = [(base_x - width // 2 + 2, 2),
+                     (base_x + width // 2 - 2, 2),
+                     (base_x + width // 2 - 1 + sway, length - 7),
+                     (base_x + sway, length - 3),
+                     (base_x - width // 2 + 1 + sway, length - 7)]
+            poly(mid, inset, False)
+            _NS_zephyr._aaline(surface, p["dress_high"],
+                                pt(base_x - 1, 4),
+                                pt(base_x + sway, length - 5), 1)
+            if i == 1:
+                _NS_zephyr._aacircle(surface, p["jewel_light"],
+                                      pt(base_x, 13), 1)
+
+        # ── fitted torso, corset and shoulder mantle ──
+        poly(p["dress_darkest"], [(-12, -26), (-4, -31), (8, -30),
+             (14, -22), (11, 3), (4, 8), (-8, 6), (-13, -5)])
+        poly(p["dress_mid"], [(-9, -25), (-3, -28), (7, -28),
+             (11, -21), (8, 2), (2, 5), (-6, 4), (-10, -5)], False)
+        # armored petal shoulder / collar
+        poly(p["cloak_dark"], [(-13, -25), (-17, -31), (-12, -36),
+             (-4, -31), (-7, -24)])
+        poly(p["cloak_mid"], [(-13, -27), (-15, -31), (-11, -33),
+             (-6, -30), (-8, -26)], False)
+        poly(p["cloak_dark"], [(8, -29), (15, -33), (20, -28),
+             (16, -21), (10, -23)])
+        _NS_zephyr._aaline(surface, p["cloak_light"], pt(10, -29),
+                            pt(17, -28), 1)
+
+        # Corset is deliberately dark, then laced over high-value purple.
+        poly(p["corset_dark"], [(-7, -20), (8, -20), (8, 1),
+             (3, 5), (-5, 4), (-8, 0)])
+        poly(p["corset_mid"], [(-5, -18), (6, -18), (6, 0),
+             (2, 3), (-4, 2), (-6, 0)], False)
+        _NS_zephyr._aaline(surface, p["corset_light"], pt(-3, -17),
+                            pt(3, 1), 1)
+        for j in range(4):
+            yy = -15 + j * 4
+            _NS_zephyr._aaline(surface, p["rune_light"], pt(-3, yy),
+                                pt(3, yy + 2), 1)
+            _NS_zephyr._aaline(surface, p["rune_light"], pt(3, yy),
+                                pt(-3, yy + 2), 1)
+        _NS_zephyr._aaline(surface, p["gold_dark"], pt(-11, 4),
+                            pt(11, 4), 4)
+        _NS_zephyr._aaline(surface, p["gold_mid"], pt(-10, 4),
+                            pt(10, 4), 2)
+        buckle = pt(1, 4)
+        _NS_zephyr._aacircle(surface, p["gold_light"], buckle, 3)
+        _NS_zephyr._aacircle(surface, p["jewel_mid"], buckle, 1)
+
+        # ── pose-driven thorn staff ──
+        staff_top = _NS_zephyr._staff_tip_local(phase, action, ap)
+        # Crooked wand silhouette from the reference: low near the hip,
+        # crystal forward beside Zephyr's shoulder rather than a vertical pole.
+        staff_bottom = (2 + int(stride * 2 if walk else 0), 25)
+        grip = (int(staff_bottom[0] * .48 + staff_top[0] * .52),
+                int(staff_bottom[1] * .48 + staff_top[1] * .52))
+        _NS_zephyr._draw_elite_staff(surface, pt, f, staff_bottom, staff_top,
+                                     phase, action, detail)
+
+        # ── rear arm first: free hand becomes a casting claw ──
+        rear_shoulder = (-8, -22)
+        if attack:
+            rear_hand = (staff_top[0] - 7, staff_top[1] + 14)
+            rear_elbow = (rear_hand[0] - 10, rear_hand[1] + 7)
+        elif walk:
+            rear_hand = (-14, -3 + int(stride * 5))
+            rear_elbow = (-16, -13 - int(stride * 3))
+        else:
+            rear_hand = (-13, -3 + int(breath * 2))
+            rear_elbow = (-17, -14 + int(breath))
+        limb(rear_shoulder, rear_elbow, 6, p["cloak_dark"], p["cloak_mid"])
+        limb(rear_elbow, rear_hand, 5, p["skin_dark"], p["skin_mid"])
+        rhx, rhy = pt(*rear_hand)
+        _NS_zephyr._aacircle(surface, p["skin_darkest"], (rhx, rhy), 4)
+        _NS_zephyr._aacircle(surface, p["skin_mid"], (rhx, rhy), 3)
+        _NS_zephyr._aacircle(surface, p["skin_light"], (rhx - f, rhy - 1), 1)
+        # delicate fingers make the spellcasting silhouette legible.
+        for finger in (-2, 0, 2):
+            _NS_zephyr._aaline(surface, p["skin_light"],
+                                (rhx + f, rhy + finger),
+                                (rhx + f * 4, rhy + finger - 2), 1)
+
+        # ── head and expressive face ──
+        # Neck appears before face and collar to keep proportions grounded.
+        poly(p["skin_darkest"], [(-4, -33), (5, -33), (5, -24),
+                                  (-3, -23)])
+        poly(p["skin_mid"], [(-2, -33), (3, -33), (3, -25),
+                              (-1, -24)], False)
+        # Face is a 3/4 wedge: cheek and nose sit toward facing direction.
+        poly(p["skin_darkest"], [(-10, -52), (2, -57), (11, -51),
+             (13, -40), (8, -31), (-2, -29), (-10, -36), (-13, -45)])
+        poly(p["skin_dark"], [(-8, -50), (2, -54), (9, -49),
+             (10, -40), (6, -33), (-1, -31), (-8, -37), (-10, -45)],
+             False)
+        poly(p["skin_mid"], [(-5, -49), (2, -52), (7, -48),
+             (8, -41), (4, -34), (-1, -33), (-6, -38)], False)
+        poly(p["skin_light"], [(0, -50), (5, -48), (6, -42),
+             (2, -38), (-2, -40)], False)
+        # ear, nose, two bright amber eyes and mischievous mouth.
+        _NS_zephyr._aacircle(surface, p["skin_mid"], pt(-9, -42), 3)
+        _NS_zephyr._aacircle(surface, p["skin_light"], pt(-10, -43), 1)
+        for ex, ey, radius in ((-2, -43, 2), (6, -43, 3)):
+            px, py = pt(ex, ey)
+            _NS_zephyr._aacircle(surface, p["eye_white"], (px, py), radius)
+            _NS_zephyr._aacircle(surface, p["eye_iris"],
+                                  (px + f, py), max(1, radius - 1))
+            _NS_zephyr._aacircle(surface, p["eye_iris_light"],
+                                  (px + f, py - 1), 1)
+            _NS_zephyr._aacircle(surface, p["eye_pupil"],
+                                  (px + f, py), 1)
+            _NS_zephyr._aacircle(surface, p["white"],
+                                  (px, py - 1), 1)
+        _NS_zephyr._aaline(surface, p["hair_darkest"], pt(-5, -47),
+                            pt(1, -48), 1)
+        _NS_zephyr._aaline(surface, p["hair_darkest"], pt(3, -48),
+                            pt(10, -47), 1)
+        _NS_zephyr._aacircle(surface, p["skin_darkest"], pt(11, -39), 1)
+        _NS_zephyr._aaline(surface, p["lips_dark"], pt(3, -34),
+                            pt(8, -34), 2)
+        _NS_zephyr._aaline(surface, p["lips_mid"], pt(4, -34),
+                            pt(7, -34), 1)
+
+        # Fringe overlaps the brow while the crown remains behind it.
+        hair_sway = int(math.sin(phase * 1.28) * 2)
+        poly(p["hair_darkest"], [(-11, -52), (-7, -62), (1, -65),
+             (10, -59), (13, -51), (7, -48), (4, -52), (1, -47),
+             (-2, -53), (-6, -48)])
+        poly(p["hair_dark"], [(-8, -53), (-5, -60), (1, -62),
+             (8, -57), (10, -52), (5, -50), (1, -55), (-3, -50)], False)
+        # five irregular bangs avoid a helmet silhouette.
+        bangs = [(-7, -56, -8, -47), (-3, -59, -4, -49),
+                 (1, -61, 0, -49), (5, -58, 4, -48),
+                 (9, -55, 8, -48)]
+        for i, (sx, sy, ex, ey) in enumerate(bangs):
+            wiggle = hair_sway if i % 2 else -hair_sway
+            poly(p["hair_mid"], [(sx - 2, sy), (sx + 2, sy),
+                 (ex + wiggle, ey), (ex - 2 + wiggle, ey + 2)], False)
+            _NS_zephyr._aaline(surface, p["hair_light"], pt(sx, sy + 1),
+                                pt(ex + wiggle, ey), 1)
+        _NS_zephyr._aacircle(surface, p["hair_shine"], pt(2, -61), 1)
+
+        # ── front staff arm: grip is derived from staff endpoints ──
+        front_shoulder = (8, -22)
+        if attack:
+            front_elbow = (grip[0] - 5, grip[1] + 8)
+        elif walk:
+            front_elbow = (grip[0] - 7, grip[1] + 5 + int(stride * 2))
+        else:
+            front_elbow = (grip[0] - 7, grip[1] + 6)
+        limb(front_shoulder, front_elbow, 6, p["cloak_mid"], p["cloak_light"])
+        limb(front_elbow, grip, 5, p["skin_dark"], p["skin_light"])
+        ghx, ghy = pt(*grip)
+        _NS_zephyr._aacircle(surface, p["skin_darkest"], (ghx, ghy), 4)
+        _NS_zephyr._aacircle(surface, p["skin_mid"], (ghx, ghy), 3)
+        _NS_zephyr._aacircle(surface, p["skin_high"], (ghx - f, ghy - 1), 1)
+        # cuff and two rings on the staff hand.
+        _NS_zephyr._aaline(surface, p["gold_dark"],
+                            pt(front_elbow[0], front_elbow[1]),
+                            pt((front_elbow[0] + grip[0]) // 2,
+                               (front_elbow[1] + grip[1]) // 2), 4)
+        _NS_zephyr._aaline(surface, p["gold_light"],
+                            pt(front_elbow[0], front_elbow[1] - 1),
+                            pt((front_elbow[0] + grip[0]) // 2,
+                               (front_elbow[1] + grip[1]) // 2 - 1), 1)
+        _NS_zephyr._aacircle(surface, p["gold_light"],
+                              (ghx + f * 2, ghy), 1)
+
+        # foreground side locks and small thorn earrings.
+        poly(p["hair_dark"], [(-8, -49), (-13, -45),
+             (-17 - hair_sway, -31), (-11, -28), (-5, -39)], False)
+        _NS_zephyr._aaline(surface, p["hair_light"], pt(-10, -46),
+                            pt(-14 - hair_sway, -32), 1)
+        _NS_zephyr._aacircle(surface, p["jewel_light"], pt(-10, -39), 2)
+        _NS_zephyr._aacircle(surface, p["jewel_mid"], pt(-10, -39), 1)
+
+        # Clothing runes / body motes are lower-cost in arena and richer in
+        # portrait mode.  They are tied to the root transform, not screen.
+        for i in range(3 if not detail else 6):
+            t = (phase * .22 + i / 6.0) % 1.0
+            dx = -22 + i * 8 + int(math.sin(phase * 1.4 + i) * 2)
+            dy = 22 - int(t * 58)
+            _NS_zephyr._aacircle(surface,
+                                  (*p["magic_bright"], int(145 * (1 - t))),
+                                  pt(dx, dy), 1 if i % 2 else 2)
+        if attack:
+            orb_x, orb_y = pt(*staff_top)
+            for i in range(6):
+                ang = phase * 2.1 + i * math.pi / 3
+                r = 7 + int(math.sin(phase + i) * 2)
+                _NS_zephyr._aacircle(surface, (*p["magic_hot"], 190),
+                                      (orb_x + int(math.cos(ang) * r),
+                                       orb_y + int(math.sin(ang) * r)), 1)
+
+        if detail:
+            _NS_zephyr._draw_zephyr_masterwork_details(
+                surface, pt, f, phase, action)
+
+
+    def _draw_elite_wings(surface, pt, f, phase, action, detail=False):
+        """Two pairs of translucent moth wings with independently moving tips."""
+        p = _NS_zephyr.PALETTE
+        flap = math.sin(phase * 3.0) * .12 + .88
+        if action == "attack":
+            flap += .08
+        if action == "walk":
+            flap += math.sin(phase * 1.72) * .05
+
+        def wing_poly(color, coords, outline=True):
+            pts = [pt(dx, dy) for dx, dy in coords]
+            if outline:
+                _NS_zephyr._poly(surface, p["shadow_deep"],
+                                  [(x + f, y + 1) for x, y in pts])
+            _NS_zephyr._poly(surface, color, pts)
+
+        for side in (-1, 1):
+            lift = int((1.0 - flap) * 22)
+            # Tall upper wing: pointed like a thorned moth leaf.
+            upper = [(side * 3, -25), (side * 12, -44 + lift),
+                     (side * 28, -61 + lift), (side * 39, -53 + lift),
+                     (side * 33, -32), (side * 19, -17), (side * 6, -18)]
+            wing_poly(p["wing_darkest"], upper)
+            wing_poly((*p["wing_dark"], 220), [
+                (side * 5, -25), (side * 14, -43 + lift),
+                (side * 27, -57 + lift), (side * 34, -51 + lift),
+                (side * 29, -34), (side * 17, -20), (side * 7, -20)],
+                False)
+            wing_poly((*p["wing_mid"], 165), [
+                (side * 7, -25), (side * 17, -42 + lift),
+                (side * 27, -53 + lift), (side * 29, -46 + lift),
+                (side * 24, -34), (side * 15, -22)], False)
+            # Lower wing is shorter, rounder, and has a different cadence.
+            low_lift = int(math.sin(phase * 2.2 + side) * 2)
+            lower = [(side * 4, -17), (side * 20, -18 + low_lift),
+                     (side * 34, -5 + low_lift), (side * 28, 9),
+                     (side * 13, 8), (side * 5, -4)]
+            wing_poly(p["wing_darkest"], lower)
+            wing_poly((*p["wing_dark"], 220), [
+                (side * 6, -16), (side * 20, -16 + low_lift),
+                (side * 30, -5 + low_lift), (side * 25, 5),
+                (side * 14, 5), (side * 7, -4)], False)
+            wing_poly((*p["wing_mid"], 150), [
+                (side * 8, -14), (side * 20, -12 + low_lift),
+                (side * 26, -4 + low_lift), (side * 21, 2),
+                (side * 13, 1)], False)
+
+            root = pt(side * 5, -21)
+            tips = (pt(side * 28, -56 + lift),
+                    pt(side * 31, -8 + low_lift),
+                    pt(side * 24, -33 + lift))
+            for tx, ty in tips:
+                _NS_zephyr._aaline(surface, p["wing_vein"], root, (tx, ty), 2)
+                _NS_zephyr._aaline(surface, p["wing_light"],
+                                    (root[0] - f, root[1]),
+                                    (tx - f, ty), 1)
+            # A bright edge catches enough pixels to survive arena scaling.
+            edge_a = pt(side * 28, -56 + lift)
+            edge_b = pt(side * 34, -51 + lift)
+            _NS_zephyr._aaline(surface, p["wing_shine"], edge_a, edge_b, 1)
+            if detail:
+                for j in range(3):
+                    u = .32 + j * .18
+                    vx = int(root[0] + (tips[0][0] - root[0]) * u)
+                    vy = int(root[1] + (tips[0][1] - root[1]) * u)
+                    _NS_zephyr._aacircle(surface, p["wing_glass"], (vx, vy), 1)
+
+
+    def _draw_zephyr_crown(surface, pt, f, phase, detail=False):
+        """Swept crimson petal-hair silhouette from the Zephyr reference.
+
+        The large mass flows backward from the face (negative local X), with
+        only a few forward thorns.  This keeps the sprite's 3/4 facing clear
+        instead of reading as a symmetric crown pasted above the head.
+        """
+        p = _NS_zephyr.PALETTE
+
+        def crown_poly(color, coords, outline=True):
+            pts = [pt(dx, dy) for dx, dy in coords]
+            if outline:
+                _NS_zephyr._poly(surface, p["shadow_deep"],
+                                  [(x + f, y + 1) for x, y in pts])
+            _NS_zephyr._poly(surface, color, pts)
+
+        # Broad petal mass curves away from the face just like a living fey
+        # plume; the outer silhouette remains dense at arena scale.
+        crown_poly(p["hair_darkest"], [(-13, -47), (-27, -48),
+                   (-35, -57), (-30, -66), (-38, -71), (-24, -74),
+                   (-25, -84), (-12, -79), (-6, -91), (3, -78),
+                   (12, -70), (16, -59), (11, -50), (3, -54),
+                   (-5, -52)])
+        crown_poly(p["hair_dark"], [(-11, -49), (-24, -51),
+                   (-30, -58), (-25, -64), (-31, -69), (-20, -70),
+                   (-20, -78), (-10, -74), (-5, -85), (1, -74),
+                   (9, -67), (12, -59), (8, -52), (1, -56)], False)
+        crown_poly(p["hair_mid"], [(-15, -52), (-25, -57),
+                   (-22, -65), (-14, -68), (-9, -79), (-4, -70),
+                   (3, -70), (7, -61), (3, -57)], False)
+
+        # Seven separate locks give the reference's bristling petals genuine
+        # secondary motion.  Most lean back; two retain the sharp front rim.
+        spikes = [(-13, -54, -32, -62), (-17, -57, -38, -75),
+                  (-15, -62, -29, -85), (-9, -65, -15, -90),
+                  (-2, -66, -4, -94), (4, -62, 8, -82),
+                  (9, -57, 20, -70)]
+        for i, (sx, sy, ex, ey) in enumerate(spikes):
+            wave = int(math.sin(phase * 1.18 + i * .73) * (1 + i % 3))
+            crown_poly(p["hair_darkest"], [(sx - 3, sy + 2),
+                       (sx + 3, sy + 2), (ex + wave, ey),
+                       (sx + 1, sy - 4)])
+            crown_poly(p["hair_mid"], [(sx - 1, sy), (sx + 2, sy),
+                       (ex + wave, ey + 4), (sx, sy - 2)], False)
+            _NS_zephyr._aaline(surface, p["hair_light"], pt(sx, sy - 1),
+                                pt(ex + wave, ey + 4), 1)
+            if i in (1, 3, 5):
+                _NS_zephyr._aacircle(surface, p["hair_tip"],
+                                      pt(ex + wave, ey + 3), 1)
+
+        # A dark thorn circlet and amethyst pins retain the mischievous royal
+        # accent without competing with the magenta hair at gameplay scale.
+        _NS_zephyr._aaline(surface, p["gold_dark"], pt(-12, -56),
+                            pt(11, -58), 3)
+        _NS_zephyr._aaline(surface, p["gold_mid"], pt(-11, -57),
+                            pt(10, -59), 1)
+        for dx in (-7, -1, 6):
+            bx, by = pt(dx, -57)
+            _NS_zephyr._poly(surface, p["thorn_dark"],
+                              [(bx, by), (bx + f * 3, by - 5),
+                               (bx + f * 5, by)])
+            _NS_zephyr._aacircle(surface, p["jewel_light"],
+                                  (bx + f, by), 1)
+        if detail:
+            for dx, dy in ((-24, -60), (-20, -69), (-13, -76),
+                           (-6, -82), (2, -73)):
+                _NS_zephyr._aaline(surface, p["hair_shine"], pt(dx, dy),
+                                    pt(dx + 3, dy - 5), 1)
+
+    def _draw_elite_staff(surface, pt, f, bottom, top, phase, action,
+                          detail=False):
+        """Living thorn staff whose shaft and crystal are tied to the pose."""
+        p = _NS_zephyr.PALETTE
+        bx, by = pt(*bottom)
+        tx, ty = pt(*top)
+        _NS_zephyr._aaline(surface, p["shadow_deep"],
+                            (bx + f * 2, by + 1), (tx + f * 2, ty + 1), 8)
+        _NS_zephyr._aaline(surface, p["staff_dark"], (bx, by), (tx, ty), 6)
+        _NS_zephyr._aaline(surface, p["staff_mid"], (bx - f, by),
+                            (tx - f, ty), 4)
+        _NS_zephyr._aaline(surface, p["staff_light"], (bx - f * 2, by - 1),
+                            (tx - f * 2, ty - 1), 1)
+
+        dx, dy = tx - bx, ty - by
+        length = max(1.0, math.hypot(dx, dy))
+        nx, ny = -dy / length, dx / length
+        # A vine coils around the shaft and terminates in tiny thorns.
+        for i in range(5):
+            t = .14 + i * .15
+            sx, sy = bx + dx * t, by + dy * t
+            swirl = math.sin(phase * 1.8 + i * 1.7) * 2.0
+            ex, ey = sx + nx * (5 + swirl), sy + ny * (5 + swirl)
+            _NS_zephyr._aaline(surface, p["staff_vine"],
+                                (int(sx), int(sy)), (int(ex), int(ey)), 2)
+            _NS_zephyr._aaline(surface, p["thorn_light"],
+                                (int(ex), int(ey)),
+                                (int(ex + nx * 3 + dx / length * 2),
+                                 int(ey + ny * 3 + dy / length * 2)), 1)
+        # Crystal orb: dark halo -> faceted gem -> concentrated white core.
+        orb_pulse = .72 + math.sin(phase * 2.5) * .18
+        for radius, color, alpha in ((14, p["magic_dark"], 48),
+                                     (10, p["magic_mid"], 100),
+                                     (7, p["magic_bright"], 180)):
+            _NS_zephyr._aacircle(surface, (*color, int(alpha * orb_pulse)),
+                                  (tx, ty), radius)
+        _NS_zephyr._poly(surface, p["jewel_dark"],
+                          [(tx, ty - 7), (tx + f * 6, ty - 1),
+                           (tx + f * 2, ty + 7), (tx - f * 5, ty + 2)])
+        _NS_zephyr._poly(surface, p["jewel_mid"],
+                          [(tx, ty - 5), (tx + f * 4, ty - 1),
+                           (tx + f, ty + 5), (tx - f * 3, ty + 1)])
+        _NS_zephyr._aaline(surface, p["staff_glow"], (tx, ty - 5),
+                            (tx + f * 3, ty + 1), 2)
+        _NS_zephyr._aacircle(surface, p["jewel_light"],
+                              (tx - f * 2, ty - 2), 2)
+        _NS_zephyr._aacircle(surface, p["magic_white"],
+                              (tx - f * 2, ty - 3), 1)
+        # forked thorn crown around the orb
+        for side in (-1, 1):
+            _NS_zephyr._aaline(surface, p["thorn_dark"],
+                                (tx, ty + 3),
+                                (tx + f * side * 7, ty - 8), 3)
+            _NS_zephyr._aaline(surface, p["thorn_light"],
+                                (tx + f * side, ty + 1),
+                                (tx + f * side * 6, ty - 7), 1)
+        if detail:
+            for i in range(4):
+                t = .24 + i * .15
+                rx, ry = int(bx + dx * t), int(by + dy * t)
+                _NS_zephyr._aacircle(surface, p["rune_light"], (rx, ry), 1)
+
+
+    def _draw_zephyr_masterwork_details(surface, pt, f, phase, action):
+        """Portrait-only material pass: seams, wing spots and jewelry."""
+        p = _NS_zephyr.PALETTE
+        # fine corset stitching and embroidery on the central petal
+        for yy in range(-18, 2, 3):
+            _NS_zephyr._aacircle(surface, p["gold_light"], pt(0, yy), 1)
+        for i in range(3):
+            y = 10 + i * 6
+            _NS_zephyr._aaline(surface, p["dress_high"], pt(-3, y),
+                                pt(2, y + 3), 1)
+            _NS_zephyr._aacircle(surface, p["jewel_light"],
+                                  pt(3, y + 2), 1)
+        # collar rivets and wing-root jewelry
+        for dx, dy in ((-11, -25), (11, -24), (-5, -28), (6, -28)):
+            _NS_zephyr._aacircle(surface, p["gold_mid"], pt(dx, dy), 1)
+        _NS_zephyr._aacircle(surface, p["jewel_light"], pt(-13, -19), 2)
+        # face shadow, lashes and a tiny beauty mark retain the reference's
+        # mischievous personality when viewed in Hero Shop.
+        _NS_zephyr._aaline(surface, p["skin_high"], pt(1, -50),
+                            pt(5, -49), 1)
+        _NS_zephyr._aaline(surface, p["hair_darkest"], pt(5, -46),
+                            pt(10, -47), 1)
+        _NS_zephyr._aacircle(surface, p["lips_dark"], pt(8, -37), 1)
+        # hem stitch rhythm follows the moving gown rather than screen space.
+        hem_phase = int(math.sin(phase * 1.1) * 2)
+        for dx in (-12, -6, 0, 6, 12):
+            _NS_zephyr._aacircle(surface, p["thread_light"],
+                                  pt(dx + hem_phase, 26 + abs(dx) // 5), 1)
+
+
+    # ===================================================================
+    # ARENA AMBIENCE
+    # ===================================================================
+    def _draw_shadow(surface, x, y):
+        shadow = pygame.Surface((112, 28), pygame.SRCALPHA)
+        for radius in range(22, 3, -4):
+            alpha = max(0, int((24 - radius) * 4.5))
+            pygame.draw.ellipse(shadow, (0, 0, 0, alpha),
+                                (56 - radius * 2, 13 - radius // 3,
+                                 radius * 4, max(3, radius // 2)))
+        pygame.draw.ellipse(shadow, (*_NS_zephyr.PALETTE["magic_dark"], 38),
+                            (15, 10, 82, 10))
+        surface.blit(shadow, (int(x - 56), int(y - 14)))
+
+
+    def _draw_fey_rim_light(surface, x, y, phase):
+        """Low-alpha silhouette halo kept behind the wing material."""
+        p = _NS_zephyr.PALETTE
+        pulse = .72 + math.sin(phase * 1.25) * .16
+        halo = pygame.Surface((120, 132), pygame.SRCALPHA)
+        center = (60, 66)
+        for radius, alpha in ((54, 8), (43, 13), (31, 20)):
+            _NS_zephyr._aacircle(halo, (*p["magic_dark"], int(alpha * pulse)),
+                                  center, radius)
+        _NS_zephyr._aaline(halo, (*p["wing_mid"], int(36 * pulse)),
+                            (33, 84), (18, 36), 2)
+        _NS_zephyr._aaline(halo, (*p["wing_mid"], int(36 * pulse)),
+                            (87, 84), (102, 36), 2)
+        surface.blit(halo, (int(x - 60), int(y - 66)))
 
 
     def _draw_fey_aura(surface, x, y, phase):
-        """Background aura - dark pink."""
-        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(70, 5, -4):
-            alpha = int((70 - radius) * 1.2 * pulse)
+        p = _NS_zephyr.PALETTE
+        pulse = .72 + math.sin(phase * .55) * .20
+        aura = pygame.Surface((164, 142), pygame.SRCALPHA)
+        for radius in range(58, 7, -5):
+            alpha = int((61 - radius) * 1.15 * pulse)
             if alpha > 0:
-                _NS_zephyr._aacircle(aura, (*_NS_zephyr.PALETTE["magic_darkest"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
+                _NS_zephyr._aacircle(aura, (*p["magic_darkest"], alpha),
+                                      (82, 67), radius)
+        surface.blit(aura, (int(x - 82), int(y - 72)))
 
 
-    def _draw_fey_platform(surface, x, y, phase, skill):
-        """Fey circle platform."""
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_zephyr.PALETTE["magic_dark"], 150),
-                            (5, 10, 120, 24), 3)
-        pygame.draw.ellipse(ring, (*_NS_zephyr.PALETTE["magic_mid"], 180),
-                            (20, 14, 90, 16), 2)
-
-        # Swirling sparkles
-        for i in range(6):
-            angle = phase * 0.3 + i * math.pi / 3
-            x1 = 65 + int(math.cos(angle) * 20)
-            y1 = 22 + int(math.sin(angle) * 4)
-            x2 = 65 + int(math.cos(angle) * 55)
-            y2 = 22 + int(math.sin(angle) * 10)
-            pygame.draw.line(ring, (*_NS_zephyr.PALETTE["magic_bright"], 170),
-                             (x1, y1), (x2, y2), 1)
-
-        for angle_deg in (0, 90, 180, 270):
-            angle = math.radians(angle_deg) + phase * 0.15
-            sx = 65 + int(math.cos(angle) * 50)
-            sy = 22 + int(math.sin(angle) * 9)
-            pygame.draw.circle(ring, (*_NS_zephyr.PALETTE["magic_hot"], 220), (sx, sy), 2)
-
+    def _draw_fey_platform(surface, x, y, phase, skill=None):
+        p = _NS_zephyr.PALETTE
+        pulse = .76 + math.sin(phase * 1.2) * .18
+        ring = pygame.Surface((142, 48), pygame.SRCALPHA)
+        pygame.draw.ellipse(ring, (*p["magic_dark"], int(160 * pulse)),
+                            (4, 12, 134, 25), 3)
+        pygame.draw.ellipse(ring, (*p["rune_mid"], int(180 * pulse)),
+                            (17, 16, 108, 17), 2)
+        pygame.draw.ellipse(ring, (*p["magic_bright"], int(145 * pulse)),
+                            (29, 19, 84, 11), 1)
+        for i in range(8):
+            ang = phase * .7 + i * math.pi / 4
+            px = 71 + int(math.cos(ang) * 54)
+            py = 25 + int(math.sin(ang) * 9)
+            _NS_zephyr._aacircle(ring, p["rune_light"], (px, py), 1)
         if skill:
-            pygame.draw.ellipse(ring, (*_NS_zephyr.PALETTE["magic_bright"], int(100 * pulse)),
-                                (15, 8, 100, 28), 1)
+            pygame.draw.ellipse(ring, (*p["magic_hot"], int(150 * pulse)),
+                                (11, 9, 120, 30), 1)
+        surface.blit(ring, (int(x - 71), int(y - 24)))
 
-        surface.blit(ring, (x - 65, y - 22))
+
+    def _draw_floating_sparkles(surface, cx, cy, phase, trail=False,
+                                 facing=1, intense=False):
+        p = _NS_zephyr.PALETTE
+        strength = 1.5 if intense else 1.0
+        mist = pygame.Surface((118, 36), pygame.SRCALPHA)
+        for radius in range(25, 4, -4):
+            alpha = int((27 - radius) * 3.0 * strength)
+            pygame.draw.ellipse(mist, (*p["magic_dark"], alpha),
+                                (59 - radius * 2, 18 - radius // 3,
+                                 radius * 4, max(3, radius // 2)))
+        surface.blit(mist, (int(cx - 59), int(cy - 9)))
+        for i, offset in enumerate((-23, -10, 4, 18)):
+            t = (phase * .48 + i * .23) % 1.0
+            sx = int(cx + offset + math.sin(phase + i) * 3)
+            sy = int(cy + 5 - t * 31)
+            alpha = int(215 * (1 - t) * strength)
+            _NS_zephyr._aacircle(surface, (*p["magic_mid"], alpha),
+                                  (sx, sy), 3)
+            _NS_zephyr._aacircle(surface, (*p["magic_bright"], alpha),
+                                  (sx, sy - 1), 1)
+        for i in range(2):
+            angle = phase * 1.08 + i * math.pi
+            bx = int(cx + math.cos(angle) * 24)
+            by = int(cy - 6 + math.sin(angle * 1.3) * 8)
+            _NS_zephyr._draw_butterfly(surface, bx, by, 3, phase + i)
+        if trail:
+            f = 1 if facing >= 0 else -1
+            for i in range(5):
+                alpha = 140 - i * 23
+                _NS_zephyr._aacircle(surface, (*p["magic_mid"], alpha),
+                                      (int(cx - f * (13 + i * 10)),
+                                       int(cy + math.sin(phase + i) * 2)),
+                                      max(1, 4 - i // 2))
 
 
-    def _draw_cast_flash(surface, x, y, facing, progress):
-        """Cast flash at staff orb."""
-        if progress < 0.4 or progress > 0.7:
+    def _draw_cast_flash(surface, x, y, facing, progress, phase=0.0):
+        if progress < .37 or progress > .72:
             return
-        t = (progress - 0.4) / 0.3
+        p = _NS_zephyr.PALETTE
+        t = (progress - .37) / .35
         intensity = math.sin(t * math.pi)
-
-        flash_x = x + 22 * facing
-        flash_y = y - 8
-
-        alpha = int(200 * intensity)
-        radius = int(5 + intensity * 14)
-
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_dark"], alpha // 2),
-                  (flash_x, flash_y), radius + 6)
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_mid"], alpha),
-                  (flash_x, flash_y), radius)
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_hot"], alpha),
-                  (flash_x, flash_y), radius // 2)
-        _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["white"],
-                  (flash_x, flash_y), max(1, radius // 4))
-
-        # Star rays
-        for i in range(5):
-            angle = progress * 5 + i * math.pi * 2 / 5
-            ex = flash_x + int(math.cos(angle) * radius * 1.5)
-            ey = flash_y + int(math.sin(angle) * radius * 1.5)
-            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["magic_bright"], alpha),
-                    (flash_x, flash_y), (ex, ey), 1)
+        fx, fy = _NS_zephyr._staff_orb_position(
+            x, y, facing, phase, "attack", progress)
+        for radius, color, alpha in ((24, p["magic_dark"], 65),
+                                     (16, p["magic_mid"], 150),
+                                     (9, p["magic_bright"], 220)):
+            _NS_zephyr._aacircle(surface, (*color, int(alpha * intensity)),
+                                  (fx, fy), int(radius * intensity) + 1)
+        _NS_zephyr._aacircle(surface, p["magic_white"], (fx, fy),
+                              max(1, int(3 * intensity)))
+        for i in range(6):
+            angle = phase * 2.0 + i * math.pi / 3
+            ray = int(10 + 18 * intensity)
+            ex = fx + int(math.cos(angle) * ray)
+            ey = fy + int(math.sin(angle) * ray)
+            _NS_zephyr._aaline(surface, (*p["magic_hot"],
+                                          int(220 * intensity)),
+                                (fx, fy), (ex, ey), 1)
 
 
     # ===================================================================
-    # SKILL Q: BRAMBLE MAZE
+    # SKILL Q — BRAMBLE MAZE
     # ===================================================================
+    def _draw_fey_arc(surface, cx, cy, rx, ry, start, end, color,
+                      width=1, segments=18):
+        """Draw an elliptical procedural arc without relying on image assets."""
+        previous = None
+        for i in range(segments + 1):
+            t = i / float(max(1, segments))
+            angle = start + (end - start) * t
+            point = (int(cx + math.cos(angle) * rx),
+                     int(cy + math.sin(angle) * ry))
+            if previous is not None:
+                _NS_zephyr._aaline(surface, color, previous, point, width)
+            previous = point
+
+
     def _draw_bramble_ground(surface, boss, x, y, timer, phase):
-        """Ground indicator - dark spot at target."""
         origin = getattr(boss, "_bramble_origin", None)
         if origin:
-            # BUGFIX (ring acak pada hero): _bramble_origin disimpan
-            # dalam koordinat DUNIA; (x, y) renderer = pusat canvas.
-            # Konversi dengan _world_to_local (lihat fungsi tersebut).
             tx, ty = _NS_zephyr._world_to_local(boss, x, y,
-                                                origin[0], origin[1])
+                                                 origin[0], origin[1])
         else:
             tx, ty = _NS_zephyr._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 240))
-
-        if progress < 0.2:
-            # Warning shadow spot
-            radius = int(20 + progress * 30)
-            pulse = math.sin(phase * 3) * 0.3 + 0.7
-            _NS_zephyr._ellipse(surface, (*_NS_zephyr.PALETTE["magic_darkest"], int(150 * pulse)),
-                     (tx - radius, ty + 15 - radius // 3,
-                      radius * 2, radius * 2 // 3))
+        progress = max(0.0, min(1.0, 1 - timer / 240.0))
+        radius = int(22 + min(1.0, progress * 3.5) * 34)
+        pulse = .7 + math.sin(phase * 3.0) * .2
+        _NS_zephyr._ellipse(surface,
+                             (*_NS_zephyr.PALETTE["magic_darkest"],
+                              int(145 * pulse)),
+                             (int(tx - radius), int(ty + 15 - radius * .32),
+                              radius * 2, max(4, int(radius * .64))))
+        _NS_zephyr._draw_fey_arc(surface, tx, ty + 15, radius, int(radius * .32),
+                                  phase, phase + math.pi * 1.45,
+                                  (*_NS_zephyr.PALETTE["rune_mid"], 190), 2)
 
 
     def _draw_bramble_maze(surface, boss, x, y, timer, phase):
-        """Thorny brambles/vines erupting from ground."""
+        p = _NS_zephyr.PALETTE
         origin = getattr(boss, "_bramble_origin", None)
         if origin:
-            # BUGFIX (ring acak pada hero): lihat _draw_bramble_ground.
             tx, ty = _NS_zephyr._world_to_local(boss, x, y,
-                                                origin[0], origin[1])
+                                                 origin[0], origin[1])
         else:
             tx, ty = _NS_zephyr._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 240))
-
-        if progress < 0.2:
-            # Growing shadow (drawn on ground above)
+        progress = max(0.0, min(1.0, 1 - timer / 240.0))
+        grow = min(1.0, progress * 4.0)
+        fade = min(1.0, (1.0 - progress) * 7.0)
+        if grow <= .02:
             return
-
-        # Brambles growing
-        t = (progress - 0.2) / 0.8
-        grow = min(1.0, t * 2)
-
-        # Ring of thorny vines around target
-        num_vines = 10
-        for i in range(num_vines):
-            angle = i * math.pi * 2 / num_vines + phase * 0.05
-            base_r = 25
-            bx = tx + int(math.cos(angle) * base_r)
-            by = ty + 15 + int(math.sin(angle) * base_r * 0.4)
-
-            # Vine grows up and inward like a claw
-            vine_height = int(28 * grow)
-            if vine_height < 3:
-                continue
-
-            # Twisted vine points
-            curve = math.sin(angle) * 3
-            tip_x = bx + int(math.cos(angle - 0.3) * -8) + int(curve)
-            tip_y = by - vine_height
-
-            # Vine polygon (thick to thin)
-            px = -math.sin(angle - 0.3) * 3
-            py = math.cos(angle - 0.3) * 3
-
-            _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["bramble_dark"], [
-                (bx + px, by + py),
-                (bx - px, by - py),
-                (tip_x, tip_y),
-            ])
-            _NS_zephyr._poly(surface, _NS_zephyr.PALETTE["bramble_mid"], [
-                (bx + px * 0.7, by + py * 0.7),
-                (bx - px * 0.7, by - py * 0.7),
-                (tip_x, tip_y),
-            ])
-            _NS_zephyr._aaline(surface, _NS_zephyr.PALETTE["bramble_light"],
-                    (bx, by), (tip_x, tip_y), 1)
-
-            # Thorns along vine
-            for th in (0.3, 0.55, 0.8):
-                th_x = int(bx + (tip_x - bx) * th)
-                th_y = int(by + (tip_y - by) * th)
-                _NS_zephyr._draw_petal(surface, th_x, th_y, 4, angle + math.pi / 2,
-                            _NS_zephyr.PALETTE["bramble_dark"], _NS_zephyr.PALETTE["bramble_mid"],
-                            _NS_zephyr.PALETTE["bramble_light"])
-                _NS_zephyr._draw_petal(surface, th_x, th_y, 3, angle - math.pi / 2,
-                            _NS_zephyr.PALETTE["bramble_dark"], _NS_zephyr.PALETTE["bramble_mid"],
-                            _NS_zephyr.PALETTE["bramble_light"])
-
-            # Glow on tip
-            _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["magic_bright"], (tip_x, tip_y), 2)
-            _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["magic_hot"], (tip_x, tip_y), 1)
-
-        # Ground rune
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_dark"], 180),
-                  (tx, ty + 15), int(28 * grow), 2)
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_light"], 200),
-                  (tx, ty + 15), int(25 * grow), 1)
-
-        # Butterflies floating out
+        ring_r = int(30 + grow * 28)
+        for i in range(12):
+            angle = i * math.tau / 12.0 + phase * .10
+            bx = tx + int(math.cos(angle) * ring_r)
+            by = ty + 15 + int(math.sin(angle) * ring_r * .34)
+            # The vines lean inward, leaving a readable hostile ring.
+            curl = math.sin(phase * 1.8 + i * 1.7) * 4
+            tip_x = bx - int(math.cos(angle) * (10 + grow * 10)) + int(curl)
+            tip_y = by - int((24 + (i % 3) * 5) * grow)
+            px, py = -math.sin(angle) * 4, math.cos(angle) * 4
+            _NS_zephyr._poly(surface, p["thorn_dark"], [
+                (int(bx + px), int(by + py)), (int(bx - px), int(by - py)),
+                (tip_x, tip_y)])
+            _NS_zephyr._poly(surface, p["thorn_mid"], [
+                (int(bx + px * .62), int(by + py * .62)),
+                (int(bx - px * .62), int(by - py * .62)), (tip_x, tip_y)],)
+            _NS_zephyr._aaline(surface, p["thorn_light"], (bx, by),
+                                (tip_x, tip_y), 1)
+            for t in (.32, .58, .80):
+                vx = int(bx + (tip_x - bx) * t)
+                vy = int(by + (tip_y - by) * t)
+                side = -1 if i % 2 else 1
+                _NS_zephyr._draw_petal(surface, vx, vy, 5,
+                    angle + side * 1.6, p["thorn_dark"], p["thorn_mid"],
+                    p["thorn_light"], p["jewel_light"])
+            _NS_zephyr._aacircle(surface, p["jewel_mid"], (tip_x, tip_y), 3)
+            _NS_zephyr._aacircle(surface, p["jewel_light"],
+                                  (tip_x - 1, tip_y - 1), 1)
+        alpha = int(205 * fade)
+        _NS_zephyr._draw_fey_arc(surface, tx, ty + 15, ring_r + 4,
+                                  int((ring_r + 4) * .34), phase,
+                                  phase + math.tau, (*p["rune_mid"], alpha), 2)
+        _NS_zephyr._draw_fey_arc(surface, tx, ty + 15, ring_r - 5,
+                                  int((ring_r - 5) * .34), -phase,
+                                  -phase + math.tau, (*p["magic_bright"], alpha), 1)
         for i in range(4):
-            bt = (phase + i * 0.3) % 1.0
-            ba = i * math.pi / 2 + phase * 0.5
-            br = int(30 + bt * 20)
-            bx = tx + int(math.cos(ba) * br)
-            by = ty + 10 - int(bt * 25)
-            alpha = int(240 * (1 - bt))
-            _NS_zephyr._draw_butterfly(surface, bx, by, 3, phase + i, alpha=alpha)
+            t = (phase * .45 + i * .25) % 1.0
+            _NS_zephyr._draw_butterfly(surface,
+                int(tx + math.sin(phase + i) * (18 + t * 20)),
+                int(ty + 10 - t * 28), 3, phase + i,
+                alpha=int(220 * (1 - t)))
 
 
     # ===================================================================
-    # SKILL W: SHADOW REALM
+    # SKILL W — SHADOW REALM
     # ===================================================================
     def _draw_shadow_realm_ground(surface, boss, x, y, timer, phase):
-        """Ground bubble indicator around Zephyr."""
-        progress = max(0.0, min(1.0, 1 - timer / 180))
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-        radius = int(30 + progress * 15)
-
-        ring = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
-        cx, cy = radius + 10, (radius + 20) // 2
-
-        pygame.draw.ellipse(ring, (*_NS_zephyr.PALETTE["magic_dark"], int(180 * pulse)),
-                            (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(ring, (*_NS_zephyr.PALETTE["magic_mid"], int(200 * pulse)),
-                            (15, 8, radius * 2 - 10, radius + 4), 2)
-
-        # Rune sparkles
-        for i in range(8):
-            a = phase * 0.5 + i * math.pi / 4
-            px = cx + int(math.cos(a) * (radius - 3))
-            py = cy + int(math.sin(a) * (radius // 2 - 2))
-            pygame.draw.circle(ring, (*_NS_zephyr.PALETTE["magic_hot"], 220), (px, py), 2)
-
-        surface.blit(ring, (x - cx, y + 30 - cy))
+        p = _NS_zephyr.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 180.0))
+        radius = int(34 + min(1.0, progress * 5) * 17)
+        _NS_zephyr._ellipse(surface, (*p["magic_darkest"], 155),
+                             (x - radius, y + 31 - radius // 3,
+                              radius * 2, max(5, radius * 2 // 3)))
+        _NS_zephyr._draw_fey_arc(surface, x, y + 31, radius, radius * .32,
+                                  phase, phase + math.tau,
+                                  (*p["rune_mid"], 210), 2)
+        for i in range(6):
+            a = phase * .7 + i * math.tau / 6
+            _NS_zephyr._aacircle(surface, p["rune_light"],
+                                  (int(x + math.cos(a) * (radius - 5)),
+                                   int(y + 31 + math.sin(a) * radius * .30)), 1)
 
 
     def _draw_shadow_realm(surface, boss, x, y, timer, phase):
-        """Purple bubble prison around Zephyr - invisibility/dodge effect."""
-        progress = max(0.0, min(1.0, 1 - timer / 180))
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-
-        # Bubble radius
-        if progress < 0.15:
-            t = progress / 0.15
-            bubble_r = int(35 * t)
-        elif progress > 0.85:
-            t = (1 - progress) / 0.15
-            bubble_r = int(35 * t)
-        else:
-            bubble_r = 35
-
-        if bubble_r < 3:
+        p = _NS_zephyr.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 180.0))
+        envelope = min(1.0, progress * 8.0, (1.0 - progress) * 8.0)
+        radius = max(3, int(47 * envelope))
+        if radius <= 3:
             return
-
-        cx, cy = x, y - 10
-
-        # Bubble outline layers
-        for r_off in (0, 2, 4):
-            alpha = int(140 * pulse) - r_off * 30
-            if alpha > 0:
-                _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_light"], alpha),
-                          (cx, cy), bubble_r - r_off, 2)
-
-        # Inner shading
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_dark"], int(60 * pulse)),
-                  (cx, cy), bubble_r - 4, 3)
-
-        # Bubble highlight (top-left)
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_bright"], int(200 * pulse)),
-                  (cx - bubble_r // 2, cy - bubble_r // 2),
-                  max(1, bubble_r // 5))
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_hot"], int(220 * pulse)),
-                  (cx - bubble_r // 2, cy - bubble_r // 2),
-                  max(1, bubble_r // 8))
-
-        # Swirling energy inside
-        for i in range(6):
-            a = phase * 3 + i * math.pi / 3
-            r = int(bubble_r * 0.7)
-            px = cx + int(math.cos(a) * r)
-            py = cy + int(math.sin(a) * r * 0.6)
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_bright"], 200), (px, py), 2)
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_hot"], 220), (px, py), 1)
-
-        # Ground swirl
-        for i in range(4):
-            a = phase * 2 + i * math.pi / 2
-            rx = bubble_r - 5
-            px = cx + int(math.cos(a) * rx)
-            py = cy + 25 + int(math.sin(a) * 8)
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_bright"], 200), (px, py), 3)
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_hot"], 220), (px, py), 1)
-
-        # Rune ring on ground
-        _NS_zephyr._ellipse(surface, (*_NS_zephyr.PALETTE["magic_bright"], int(180 * pulse)),
-                 (cx - bubble_r, cy + 20, bubble_r * 2, 14), 2)
+        cx, cy = x, y - 12
+        pulse = .78 + math.sin(phase * 2.6) * .16
+        # The realm is a crescent glass dome, not an opaque circle over Zephyr.
+        _NS_zephyr._aacircle(surface, (*p["magic_dark"], int(42 * pulse)),
+                              (cx, cy), radius)
+        for off, alpha, width in ((0, 180, 2), (4, 120, 2), (9, 75, 1)):
+            _NS_zephyr._draw_fey_arc(surface, cx, cy, radius - off,
+                                      radius - off, .18, math.pi - .18,
+                                      (*p["magic_bright"], int(alpha * pulse)),
+                                      width, 22)
+        _NS_zephyr._draw_fey_arc(surface, cx, cy, radius - 3, radius - 3,
+                                  math.pi + .20, math.tau - .20,
+                                  (*p["wing_mid"], int(145 * pulse)), 1, 20)
+        # glass highlight and drifting petal reflections
+        _NS_zephyr._aacircle(surface, p["magic_hot"],
+                              (cx - radius // 2, cy - radius // 2), 3)
+        for i in range(7):
+            a = phase * 2.0 + i * math.tau / 7
+            r = radius * (.52 + (i % 2) * .16)
+            sx = int(cx + math.cos(a) * r)
+            sy = int(cy + math.sin(a) * r)
+            _NS_zephyr._aacircle(surface, (*p["wing_shine"], 170),
+                                  (sx, sy), 1 if i % 2 else 2)
+        _NS_zephyr._draw_fey_arc(surface, cx, cy + 30, radius,
+                                  radius * .22, phase, phase + math.pi,
+                                  (*p["rune_light"], 190), 1)
 
 
     # ===================================================================
-    # SKILL E: CASKET CURSE
+    # SKILL E — CASKET CURSE
     # ===================================================================
-    def _draw_casket_indicator(surface, boss, x, y, timer, pulse):
-        """Line to target for casket curse."""
+    def _draw_casket_indicator(surface, boss, x, y, timer, phase):
+        p = _NS_zephyr.PALETTE
         tx, ty = _NS_zephyr._target_position(boss, x, y)
-        for i in range(0, 20, 2):
-            t1 = i / 20
-            t2 = (i + 1) / 20
-            _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["magic_bright"], 150),
-                    (x + (tx - x) * t1, y + (ty - y) * t1 - 8),
-                    (x + (tx - x) * t2, y + (ty - y) * t2 - 8), 2)
+        sx, sy = _NS_zephyr._staff_orb_position(
+            x, y, getattr(boss, "direction", 1), phase)
+        # segmented thorn tether makes the target relationship explicit.
+        dx, dy = tx - sx, ty - sy
+        dist = max(1.0, math.hypot(dx, dy))
+        nx, ny = -dy / dist, dx / dist
+        for i in range(9):
+            t1 = i / 9.0
+            t2 = min(1.0, (i + .54) / 9.0)
+            wobble1 = math.sin(phase * 3 + i) * 3
+            wobble2 = math.sin(phase * 3 + i + .6) * 3
+            a = (int(sx + dx * t1 + nx * wobble1),
+                 int(sy + dy * t1 + ny * wobble1))
+            b = (int(sx + dx * t2 + nx * wobble2),
+                 int(sy + dy * t2 + ny * wobble2))
+            _NS_zephyr._aaline(surface, (*p["magic_dark"], 180), a, b, 3)
+            _NS_zephyr._aaline(surface, (*p["magic_bright"], 210), a, b, 1)
+        _NS_zephyr._aacircle(surface, (*p["jewel_mid"], 190), (tx, ty), 9, 2)
+        _NS_zephyr._aacircle(surface, p["jewel_light"], (tx, ty), 2)
 
 
     def _handle_casket_skill(surface, boss, x, y, timer, phase):
-        """Spawn casket once at cast start."""
         if not getattr(boss, "_zp_casket_spawned", False):
             _NS_zephyr._spawn_casket(boss, x, y)
             boss._zp_casket_spawned = True
@@ -11418,144 +11367,96 @@ class _NS_zephyr:
 
 
     # ===================================================================
-    # SKILL R: BEDLAM (many duplicates)
+    # SKILL R — BEDLAM
     # ===================================================================
     def _draw_bedlam_ground(surface, boss, x, y, timer, phase):
-        """Ground swirl for bedlam."""
-        progress = max(0.0, min(1.0, 1 - timer / 240))
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-        radius = int(45 + progress * 15)
-
-        ring = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
-        cx, cy = radius + 10, (radius + 20) // 2
-
-        # Multiple rotating rings
-        for r_off in range(3):
-            pygame.draw.ellipse(ring,
-                                (*_NS_zephyr.PALETTE["magic_mid"], int(150 * pulse) - r_off * 30),
-                                (5 + r_off * 5, 5 + r_off * 2,
-                                 radius * 2 + 10 - r_off * 10,
-                                 radius + 10 - r_off * 4), 2)
-
-        # Rune sparkles
+        p = _NS_zephyr.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 240.0))
+        radius = int(45 + min(1.0, progress * 4) * 20)
+        _NS_zephyr._ellipse(surface, (*p["magic_darkest"], 170),
+                             (x - radius, y + 31 - radius // 3,
+                              radius * 2, max(6, radius * 2 // 3)))
+        for i in range(3):
+            rr = radius - i * 9
+            _NS_zephyr._draw_fey_arc(surface, x, y + 31, rr, rr * .29,
+                                      phase * (1.0 + i * .25) + i,
+                                      phase * (1.0 + i * .25) + i + math.tau,
+                                      (*p["magic_mid"], 190 - i * 38),
+                                      2 if i == 0 else 1)
         for i in range(10):
-            a = phase * 0.8 + i * math.pi / 5
-            px = cx + int(math.cos(a) * (radius - 2))
-            py = cy + int(math.sin(a) * (radius // 2 - 2))
-            pygame.draw.circle(ring, (*_NS_zephyr.PALETTE["magic_hot"], 240), (px, py), 3)
-            pygame.draw.circle(ring, _NS_zephyr.PALETTE["white"], (px, py), 1)
-
-        surface.blit(ring, (x - cx, y + 30 - cy))
+            a = phase * .95 + i * math.tau / 10
+            _NS_zephyr._aacircle(surface, p["rune_light"],
+                                  (int(x + math.cos(a) * (radius - 4)),
+                                   int(y + 31 + math.sin(a) * radius * .28)), 2)
 
 
     def _draw_bedlam(surface, boss, x, y, timer, phase):
-        """Multiple mini duplicates spinning around Zephyr."""
-        progress = max(0.0, min(1.0, 1 - timer / 240))
-
-        # Spawn several mini fairy silhouettes orbiting
-        num_dupes = 6
-        for i in range(num_dupes):
-            angle = phase * 2 + i * math.pi * 2 / num_dupes
-            orbit_r = 40 + int(math.sin(phase + i) * 5)
-            dx = x + int(math.cos(angle) * orbit_r)
-            dy = y - 10 + int(math.sin(angle) * 12)
-
-            # Fading mini silhouette
-            alpha = int(180 + math.sin(phase * 2 + i) * 60)
-            alpha = max(0, min(240, alpha))
-            _NS_zephyr._draw_mini_fairy(surface, dx, dy, phase, alpha,
-                             facing=1 if math.cos(angle) > 0 else -1)
-
-            # Sparkle trail behind each dupe
-            for tr in range(3):
-                tra = angle - tr * 0.3
-                tx = x + int(math.cos(tra) * orbit_r)
-                ty = y - 10 + int(math.sin(tra) * 12)
-                a2 = alpha - tr * 40
-                if a2 > 0:
-                    _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_bright"], a2),
-                              (tx, ty), max(1, 3 - tr))
-
-        # Sparkles around
-        for i in range(12):
-            a = phase * 1.5 + i * math.pi / 6
-            r = 45 + int(math.sin(phase * 2 + i) * 8)
-            sx = x + int(math.cos(a) * r)
-            sy = y - 5 + int(math.sin(a) * r * 0.5)
-            alpha = int(200 + math.sin(phase * 3 + i) * 55)
-            alpha = max(0, min(255, alpha))
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["magic_hot"], alpha), (sx, sy), 2)
-            _NS_zephyr._aacircle(surface, _NS_zephyr.PALETTE["white"], (sx, sy), 1)
-
-        # Swirl connecting duplicates
+        p = _NS_zephyr.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 240.0))
+        envelope = min(1.0, progress * 5.0, (1.0 - progress) * 5.0)
+        for i in range(6):
+            angle = phase * 2.35 + i * math.tau / 6.0
+            orbit_r = 43 + int(math.sin(phase * 1.7 + i) * 6)
+            dx = int(x + math.cos(angle) * orbit_r)
+            dy = int(y - 11 + math.sin(angle) * orbit_r * .42)
+            alpha = max(50, min(235, int((174 + math.sin(phase * 2 + i) * 48)
+                                         * max(.28, envelope))))
+            _NS_zephyr._draw_mini_fairy(surface, dx, dy, phase + i * .33,
+                                         alpha,
+                                         facing=1 if math.cos(angle) >= 0 else -1)
+            # trailing glitter marks the orbit direction.
+            for tail in range(3):
+                ta = angle - .22 * (tail + 1)
+                _NS_zephyr._aacircle(surface,
+                    (*p["magic_bright"], max(20, alpha - tail * 55)),
+                    (int(x + math.cos(ta) * orbit_r),
+                     int(y - 11 + math.sin(ta) * orbit_r * .42)),
+                    max(1, 3 - tail))
+        # Three discontinuous spell ribbons make the clone circle feel alive.
         for i in range(3):
-            a_start = phase * 1.5 + i * math.pi * 2 / 3
-            a_end = a_start + math.pi * 1.2
-            segs = 12
-            for s in range(segs):
-                t1 = s / segs
-                t2 = (s + 1) / segs
-                ang1 = a_start + (a_end - a_start) * t1
-                ang2 = a_start + (a_end - a_start) * t2
-                r_o = 42
-                x1 = x + int(math.cos(ang1) * r_o)
-                y1 = y - 10 + int(math.sin(ang1) * r_o * 0.35)
-                x2 = x + int(math.cos(ang2) * r_o)
-                y2 = y - 10 + int(math.sin(ang2) * r_o * 0.35)
-                _NS_zephyr._aaline(surface, (*_NS_zephyr.PALETTE["magic_bright"], 180),
-                        (x1, y1), (x2, y2), 1)
+            _NS_zephyr._draw_fey_arc(surface, x, y - 10,
+                                      46 - i * 5, 16 - i * 2,
+                                      phase * 1.9 + i * 2.1,
+                                      phase * 1.9 + i * 2.1 + 1.52,
+                                      (*p["magic_hot"], 190 - i * 38), 1, 13)
+        for i in range(12):
+            a = phase * 1.4 + i * math.tau / 12
+            r = 49 + int(math.sin(phase * 2 + i) * 6)
+            _NS_zephyr._aacircle(surface, p["magic_white"],
+                                  (int(x + math.cos(a) * r),
+                                   int(y - 8 + math.sin(a) * r * .45)), 1)
 
 
     def _draw_mini_fairy(surface, cx, cy, phase, alpha, facing=1):
-        """Small silhouette of Zephyr for bedlam duplicates."""
-        # Wings
-        wing_flap = math.sin(phase * 3) * 0.15 + 0.85
+        """Compact masterwork silhouette used by the Bedlam orbit."""
+        p = _NS_zephyr.PALETTE
+        f = 1 if facing >= 0 else -1
+        flap = int(math.sin(phase * 3) * 2)
         for side in (-1, 1):
-            wp = int(6 * wing_flap)
-            _NS_zephyr._poly(surface, (*_NS_zephyr.PALETTE["wing_mid"], alpha // 2), [
-                (cx, cy - 3),
-                (cx + side * wp, cy - wp - 2),
-                (cx + side * wp // 2, cy - 3),
-            ])
-            _NS_zephyr._poly(surface, (*_NS_zephyr.PALETTE["wing_light"], alpha // 2), [
-                (cx, cy - 3),
-                (cx + side * wp, cy - wp - 1),
-                (cx + side * wp // 2, cy - 2),
-            ])
-
-        # Body (small petal skirt)
-        _NS_zephyr._poly(surface, (*_NS_zephyr.PALETTE["dress_dark"], alpha), [
-            (cx - 4, cy),
-            (cx + 4, cy),
-            (cx + 3, cy + 6),
-            (cx - 3, cy + 6),
-        ])
-        _NS_zephyr._poly(surface, (*_NS_zephyr.PALETTE["dress_mid"], alpha), [
-            (cx - 3, cy + 1),
-            (cx + 3, cy + 1),
-            (cx + 2, cy + 5),
-            (cx - 2, cy + 5),
-        ])
-
-        # Corset dark
-        _NS_zephyr._rect(surface, (*_NS_zephyr.PALETTE["corset_dark"], alpha), (cx - 3, cy - 3, 6, 4))
-        _NS_zephyr._rect(surface, (*_NS_zephyr.PALETTE["corset_mid"], alpha), (cx - 2, cy - 2, 4, 2))
-
-        # Head with tiny hair flame
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["skin_dark"], alpha), (cx, cy - 6), 3)
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["skin_mid"], alpha), (cx, cy - 6), 2)
-
-        # Hair flames on top
+            _NS_zephyr._poly(surface, (*p["wing_dark"], alpha // 2), [
+                (cx + f * 2, cy - 6), (cx + f * side * 11, cy - 16 + flap),
+                (cx + f * side * 14, cy - 8), (cx + f * side * 6, cy - 2)])
+            _NS_zephyr._aaline(surface, (*p["wing_shine"], alpha // 2),
+                                (cx + f * 2, cy - 6),
+                                (cx + f * side * 10, cy - 14 + flap), 1)
+        _NS_zephyr._poly(surface, (*p["dress_dark"], alpha), [
+            (cx - 5, cy - 2), (cx + 5, cy - 2), (cx + 7, cy + 10),
+            (cx, cy + 14), (cx - 6, cy + 9)])
+        _NS_zephyr._poly(surface, (*p["corset_mid"], alpha), [
+            (cx - 3, cy - 3), (cx + 3, cy - 3), (cx + 3, cy + 3),
+            (cx - 3, cy + 3)])
+        _NS_zephyr._aacircle(surface, (*p["skin_mid"], alpha),
+                              (cx + f, cy - 9), 5)
         for i in range(3):
-            a = -math.pi / 2 + (i - 1) * 0.5
-            tx = cx + int(math.cos(a) * 4)
-            ty = cy - 6 + int(math.sin(a) * 4)
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["hair_mid"], alpha), (tx, ty), 2)
-            _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["hair_shine"], alpha), (tx, ty), 1)
-
-        # Tiny eyes
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["eye_iris"], alpha), (cx - 1, cy - 6), 1)
-        _NS_zephyr._aacircle(surface, (*_NS_zephyr.PALETTE["eye_iris"], alpha), (cx + 1, cy - 6), 1)
+            _NS_zephyr._aaline(surface, (*p["hair_mid"], alpha),
+                                (cx + f * (i - 1), cy - 12),
+                                (cx + f * (i - 2), cy - 19 - (i % 2) * 2), 2)
+        _NS_zephyr._aacircle(surface, (*p["eye_iris_light"], alpha),
+                              (cx + f * 2, cy - 9), 1)
+        _NS_zephyr._aaline(surface, (*p["staff_light"], alpha),
+                            (cx + f * 5, cy + 8), (cx + f * 10, cy - 15), 2)
+        _NS_zephyr._aacircle(surface, (*p["jewel_light"], alpha),
+                              (cx + f * 10, cy - 16), 2)
 
 
     # ===================================================================
@@ -11563,4 +11464,3 @@ class _NS_zephyr:
     # ===================================================================
     def draw_boss(surface, boss, x, y):
         _NS_zephyr.draw_zephyr(surface, boss, x, y)
-
