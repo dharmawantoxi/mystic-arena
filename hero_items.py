@@ -2487,26 +2487,29 @@ class ItemShopUI:
 
     @classmethod
     def _draw_hero_strip(cls, surface, game, heroes, target, px, py):
-        """Bar pilih hero penerima item (daftar 'BUY FOR') - FONT DIPERBESAR."""
-        lf = get_font(26, "body_semibold")  # 20->26
+        """Bar pilih hero penerima item tanpa bertabrakan dengan chip."""
+        # Label mempunyai kolom sendiri. Sebelumnya font 26 px ditempatkan
+        # hanya 90 px dari chip sehingga tulisan "BUY FOR:" masuk ke chip.
+        label_w = 104
+        lf = get_font(20, "body_semibold")
         lt = lf.render("BUY FOR:", True, (255, 220, 100))
-        surface.blit(lt, (px + 22, py + 62))
+        surface.blit(lt, (px + 22, py + 69))
 
         if not heroes:
-            sf = get_font(22, "body_semibold")  # 18->22
+            sf = get_font(18, "body_semibold")
             t = sf.render(
                 tr("shop_no_hero_yet"),
                 True, (255, 150, 150))
-            surface.blit(t, (px + 112, py + 63))
+            surface.blit(t, (px + 22 + label_w, py + 69))
             return
 
         n = len(heroes)
-        area_x = px + 112
+        area_x = px + 22 + label_w
         area_w = px + cls.PANEL_W - 20 - area_x
         gap = 8
         chip_w = max(110, min(180, (area_w - gap * (n - 1)) // n))
-        chip_h = 48  # 42->48
-        cy = py + 56
+        chip_h = 42
+        cy = py + 57
         for i, h in enumerate(heroes):
             x = area_x + i * (chip_w + gap)
             rect = pygame.Rect(x, cy, chip_w, chip_h)
@@ -2517,18 +2520,18 @@ class ItemShopUI:
             pygame.draw.rect(surface, border, rect, 2, border_radius=8)
             pygame.draw.circle(surface, h.color,
                                (rect.x + 14, rect.centery), 6)
-            # Nama (dipangkas kalau kepanjangan) - DIPERBESAR
-            nf = get_font(24, "body_semibold")  # 19->24
+            # Dua baris harus benar-benar muat di dalam chip 42 px.
+            nf = get_font(19, "body_semibold")
             nm_txt = h.name
-            while nf.size(nm_txt)[0] > chip_w - 52 and len(nm_txt) > 3:
+            while nf.size(nm_txt)[0] > chip_w - 38 and len(nm_txt) > 3:
                 nm_txt = nm_txt[:-1]
             if nm_txt != h.name:
                 nm_txt += "…"
             nt = nf.render(nm_txt, True, (240, 245, 255))
-            surface.blit(nt, (rect.x + 26, rect.y + 4))
+            surface.blit(nt, (rect.x + 26, rect.y + 2))
             inv = getattr(h, "items", None)
             used = inv.used_slots() if inv is not None else 0
-            sf2 = get_font(20, "body_semibold")  # 15->20
+            sf2 = get_font(14, "body_semibold")
             pending = len(pending_forge_items(h))
             is_dead = not getattr(h, "alive", False)
             status = tr("dead") if is_dead else f"Lv.{h.level}"
@@ -2536,7 +2539,7 @@ class ItemShopUI:
             st = sf2.render(
                 f"{status}  Item {used}/{MAX_ITEM_SLOTS}{queue}",
                 True, (255, 175, 175) if is_dead else (170, 180, 205))
-            surface.blit(st, (rect.x + 26, rect.y + 24))
+            surface.blit(st, (rect.x + 26, rect.y + 23))
             game.ui_buttons[f"itemshop_hero_{i}"] = rect
 
     @classmethod
@@ -2595,15 +2598,17 @@ class ItemShopUI:
 
     @classmethod
     def _draw_hero_info(cls, surface, hero, px, py):
-        # Kotak info hero (target BUY FOR) di bawah strip hero - FONT DIPERBESAR
-        box = pygame.Rect(px + 20, py + 108, cls.PANEL_W - 40, 46)
+        # Ringkasan dua baris dengan tinggi dan leading eksplisit. Versi lama
+        # memakai font 28/22 di kotak 46 px sehingga baris statistik keluar
+        # dari kotak dan menimpa tab tier.
+        box = pygame.Rect(px + 20, py + 105, cls.PANEL_W - 40, 49)
         pygame.draw.rect(surface, (30, 36, 58), box, border_radius=8)
         pygame.draw.rect(surface, hero.color, box, 2, border_radius=8)
-        f = get_font(28, "body_semibold")  # 22->28
+        f = get_font(20, "body_semibold")
         name = f.render(f"{hero.name}  Lv.{hero.level}", True,
                         hero.color)
-        surface.blit(name, (box.x + 12, box.y + 6))
-        sf = get_font(22, "body_semibold")  # 18->22
+        surface.blit(name, (box.x + 12, box.y + 3))
+        sf = get_font(16, "body_semibold")
         rng = getattr(hero, "range", 0) or 0
         kind = "MELEE" if rng <= 80 else "RANGED"
         dmg = int(hero.damage)
@@ -2621,10 +2626,10 @@ class ItemShopUI:
                 f"Armor {armor}   AS x{as_mult:.2f}   LS {ls}%   "
                 f"CDR {cdr}%{range_txt}")
         it = sf.render(info, True, (200, 210, 230))
-        surface.blit(it, (box.x + 12, box.y + 32))
+        surface.blit(it, (box.x + 12, box.y + 26))
         if not getattr(hero, "alive", False):
             pending = len(pending_forge_items(hero))
-            qf = get_font(22, "body_semibold")  # 18->22
+            qf = get_font(16, "body_semibold")
             msg = tr("dead_delivery_hint")
             if pending:
                 msg += " " + tr("queued_item_count", count=pending)
