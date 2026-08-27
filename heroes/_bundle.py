@@ -7685,6 +7685,14 @@ class _NS_vex:
         "void_hot":       (200, 255, 245),
         "void_white":     (235, 255, 250),
 
+        # Masterwork detail & shadow-face swatches
+        "face_dark":      (16, 14, 28),
+        "crown_tip":      (235, 255, 250),
+        "crown_rim":      (95, 225, 220),
+        "orb_satellite":  (155, 245, 235),
+        "rune_trace":     (140, 235, 230),
+        "robe_weave":     (60, 48, 92),
+
         # Astral purple - E skill (imprisonment)
         "astral_darkest": ( 25,   8,  50),
         "astral_dark":    ( 60,  25, 110),
@@ -8258,9 +8266,10 @@ class _NS_vex:
             boss._vx_projectiles = []
         tx, ty = _NS_vex._target_position(boss, x, y)
         facing = getattr(boss, "direction", 1)
-        # Orb spawns from staff tip
-        sx = x + 26 * facing
-        sy = y - 20
+        # Orb spawns from the pose-driven staff tip (shared with the rig).
+        sx, sy = _NS_vex._staff_orb_position(
+            x, y, facing, float(getattr(boss, "pulse", 0.0)), "attack",
+            float(getattr(boss, "_vx_attack_progress", 0.0)))
         tgt = getattr(boss, "target", None)
         proj = _NS_vex.ArcaneOrbProjectile(
             sx, sy, tx, ty, speed=6.5,
@@ -8277,8 +8286,9 @@ class _NS_vex:
             boss._vx_projectiles = []
         tx, ty = _NS_vex._target_position(boss, x, y)
         facing = getattr(boss, "direction", 1)
-        sx = x + 26 * facing
-        sy = y - 20
+        sx, sy = _NS_vex._staff_orb_position(
+            x, y, facing, float(getattr(boss, "pulse", 0.0)), "attack",
+            float(getattr(boss, "_vx_attack_progress", 0.0)))
         tgt = getattr(boss, "target", None)
         proj = _NS_vex.AstralOrbProjectile(
             sx, sy, tx, ty, speed=7.0,
@@ -8300,26 +8310,31 @@ class _NS_vex:
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_vex._detect_moving(boss)
         _NS_vex._update_attack_anim(boss)
+        portrait_hd = bool(getattr(boss, "_portrait_hd", False))
 
         attacking = (
             getattr(boss, "_vx_attack_active", False)
             or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
         )
 
-        # ---------- Background layers ----------
-        # Cyan rim-light keeps the crown, shoulder spikes, and staff orb
-        # legible against dark terrain while preserving pixel edges.
-        _NS_vex._draw_void_silhouette_glow(surface, x, y - 12, pulse)
-        _NS_vex._draw_void_aura(surface, x, y, pulse)
-        _NS_vex._draw_void_platform(surface, x, y + 40, pulse, active_skill)
+        # Portraits deliberately contain only the character rig.  Auras and
+        # arena-sized skill effects would force the auto-crop to shrink the
+        # crown, hood, robe material, and staff orb.
+        if not portrait_hd:
+            # ---------- Background layers ----------
+            # Cyan rim-light keeps the crown, shoulder spikes, and staff orb
+            # legible against dark terrain while preserving pixel edges.
+            _NS_vex._draw_void_silhouette_glow(surface, x, y - 12, pulse)
+            _NS_vex._draw_void_aura(surface, x, y, pulse)
+            _NS_vex._draw_void_platform(surface, x, y + 40, pulse, active_skill)
 
-        # ---------- Skill ground effects ----------
-        if active_skill == "w":
-            _NS_vex._draw_sanity_eclipse_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_vex._draw_essence_flux_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_vex._draw_astral_indicator(surface, boss, x, y, skill_timer, pulse)
+            # ---------- Skill ground effects ----------
+            if active_skill == "w":
+                _NS_vex._draw_sanity_eclipse_ground(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "r":
+                _NS_vex._draw_essence_flux_ground(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "e":
+                _NS_vex._draw_astral_indicator(surface, boss, x, y, skill_timer, pulse)
 
         # ---------- Character body ----------
         if attacking:
@@ -8329,18 +8344,19 @@ class _NS_vex:
         else:
             _NS_vex._draw_vex_idle(surface, boss, x, y)
 
-        # ---------- Projectiles ----------
-        _NS_vex._manage_projectiles(boss, surface, pulse)
+        if not portrait_hd:
+            # ---------- Projectiles ----------
+            _NS_vex._manage_projectiles(boss, surface, pulse)
 
-        # ---------- Skill foreground effects ----------
-        if active_skill == "q":
-            _NS_vex._draw_arcane_orb_charge(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_vex._handle_astral_skill(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_vex._draw_sanity_eclipse(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_vex._draw_essence_flux(surface, boss, x, y, skill_timer, pulse)
+            # ---------- Skill foreground effects ----------
+            if active_skill == "q":
+                _NS_vex._draw_arcane_orb_charge(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "e":
+                _NS_vex._handle_astral_skill(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "w":
+                _NS_vex._draw_sanity_eclipse(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "r":
+                _NS_vex._draw_essence_flux(surface, boss, x, y, skill_timer, pulse)
 
 
     # ===================================================================
@@ -8348,625 +8364,448 @@ class _NS_vex:
     # ===================================================================
     def _draw_vex_idle(surface, boss, x, y):
         bob = int(math.sin(boss.pulse * 0.7) * 3)
-        _NS_vex._draw_shadow(surface, x, y + 48)
-        _NS_vex._draw_floating_void(surface, x, y + 35, boss.pulse)
-        _NS_vex._draw_vex_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            _NS_vex._draw_shadow(surface, x, y + 48)
+            _NS_vex._draw_floating_void(surface, x, y + 35, boss.pulse)
+        _NS_vex._draw_vex_body(surface, x, y + bob, boss.direction,
+                               boss.pulse, "idle", detail=portrait)
 
 
     def _draw_vex_walk(surface, boss, x, y):
         phase = boss.pulse * 2.0
         bob = int(abs(math.sin(phase * 1.2)) * 3)
         sway = int(math.sin(phase) * 2)
-        _NS_vex._draw_shadow(surface, x + sway, y + 48)
-        _NS_vex._draw_floating_void(surface, x + sway, y + 35, phase, trail=True,
-                           facing=boss.direction)
-        _NS_vex._draw_vex_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            _NS_vex._draw_shadow(surface, x + sway, y + 48)
+            _NS_vex._draw_floating_void(surface, x + sway, y + 35, phase, trail=True,
+                               facing=boss.direction)
+        _NS_vex._draw_vex_body(surface, x + sway, y - bob, boss.direction,
+                               phase, "walk", detail=portrait)
 
 
     def _draw_vex_attack(surface, boss, x, y):
         progress = getattr(boss, "_vx_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
 
         # Basic attack TIDAK spawn renderer projectile (pakai generic
         # _entity.py yang homing & terarah). Arcane orb renderer hanya
         # saat skill aktif.
         if (getattr(boss, "active_skill", None) is not None
                 and 0.5 < progress < 0.6
-                and not getattr(boss, "_vx_proj_spawned", False)):
+                and not getattr(boss, "_vx_proj_spawned", False)
+                and not portrait):
             _NS_vex._spawn_arcane_orb(boss, x, y)
             boss._vx_proj_spawned = True
         if progress < 0.15 or progress > 0.9:
             boss._vx_proj_spawned = False
 
         recoil = int(math.sin(progress * math.pi) * 2) * -boss.direction
-        _NS_vex._draw_shadow(surface, x + recoil, y + 48)
-        _NS_vex._draw_floating_void(surface, x + recoil, y + 35, boss.pulse, intense=True)
+        if not portrait:
+            _NS_vex._draw_shadow(surface, x + recoil, y + 48)
+            _NS_vex._draw_floating_void(surface, x + recoil, y + 35, boss.pulse, intense=True)
         _NS_vex._draw_vex_body(surface, x + recoil, y, boss.direction, boss.pulse,
-                       "attack", progress)
-        _NS_vex._draw_orb_release_flash(surface, x + recoil, y, boss.direction, progress)
+                       "attack", progress, detail=portrait)
+        if not portrait:
+            _NS_vex._draw_orb_release_flash(surface, x + recoil, y, boss.direction, progress)
 
 
     # ===================================================================
     # BODY RENDERING - HD void mage
     # ===================================================================
+
+    # ===================================================================
+    # MASTERWORK RIG - bone rig 2D berlapis (setara Kaizen/Thorne/Zephyr)
+    #
+    # Mengganti seluruh set "body-part sticker" lama (cloak, lower_robe,
+    # torso, idle/attack arms, arm_segment, hand, staff, head_crown,
+    # body_particles) dengan SATU rig pose-driven: crown void menyala
+    # dengan ujung cyan, hood berwajah shadow dengan celah mata menyala,
+    # pauldron spiky, robe robek yang mengambang, dan staff surgawi yang
+    # posisi orb dihitung dari sendi sehingga Arcane Orb / Astral
+    # Imprisonment muncul dari ujung staff (bukan pinggang). Semua 100%
+    # primitif pygame - tanpa PNG, sprite sheet, ataupun image.load.
+    # ===================================================================
     def _draw_vex_body(surface, cx, cy, facing, phase, action,
-                       attack_progress=0):
-        # Cloak/robe behind (tallest)
-        _NS_vex._draw_cloak(surface, cx, cy, facing, phase, action)
+                       attack_progress=0, detail=False):
+        """Wrapper agar idle/walk/attack/skill meneruskan setiap frame ke
+        satu rig tulang berlapis (bone rig) tanpa mengubah kontrak."""
+        _NS_vex._draw_vex_elite(
+            surface, cx, cy, facing, phase, action,
+            attack_progress, detail)
 
-        # Floating lower body (tattered robe)
-        _NS_vex._draw_lower_robe(surface, cx, cy + 5, phase)
 
-        # Torso with armor plating
-        _NS_vex._draw_torso(surface, cx, cy - 8, facing, phase)
+    # -------------------------------------------------------------------
+    # Pose helpers (deterministic; dipakai rig + anchor skill)
+    # -------------------------------------------------------------------
+    def _orb_tip_local(phase, action="idle", attack_progress=0.0):
+        """Posisi ujung orb staff (ruang lokal, forward = +x).
 
-        # Arms & staff
+        Menyambungkan staff ke sendi: saat wind-up orb ditarik ke
+        belakang/atas, saat release didorong ke depan, recovery kembali.
+        """
+        wave = math.sin(phase * 1.3) * 1.5
         if action == "attack":
-            _NS_vex._draw_attack_arms(surface, cx, cy - 8, facing, phase, attack_progress)
+            ap = max(0.0, min(1.0, attack_progress))
+            if ap < .38:
+                t = ap / .38
+                return (int(26 - 12 * t), int(-40 - 14 * t + wave))
+            if ap < .62:
+                t = (ap - .38) / .24
+                return (int(14 + 38 * t), int(-54 + 18 * t + wave))
+            t = (ap - .62) / .38
+            return (int(52 - 20 * t), int(-36 + 4 * t + wave))
+        if action == "walk":
+            return (int(32 + math.sin(phase * 1.72) * 3),
+                    int(-44 + wave))
+        return (32, int(-44 + wave))
+
+
+    def _staff_butt_local(phase, action="idle", attack_progress=0.0):
+        ox, oy = _NS_vex._orb_tip_local(phase, action, attack_progress)
+        return (int(ox - 30), int(oy + 40))
+
+
+    def _staff_grip_local(phase, action="idle", attack_progress=0.0):
+        ox, oy = _NS_vex._orb_tip_local(phase, action, attack_progress)
+        bx, by = _NS_vex._staff_butt_local(phase, action, attack_progress)
+        return (int(bx + (ox - bx) * .5), int(by + (oy - by) * .5))
+
+
+    def _staff_orb_position(cx, cy, facing, phase=0.0, action="idle",
+                            attack_progress=0.0):
+        """Posisi orb (ruang dunia/canvas) untuk efek skill."""
+        tx, ty = _NS_vex._orb_tip_local(phase, action, attack_progress)
+        f = 1 if facing >= 0 else -1
+        return int(cx + tx * f), int(cy + ty)
+
+
+    # -------------------------------------------------------------------
+    # The layered bone rig
+    # -------------------------------------------------------------------
+    def _draw_vex_elite(surface, cx, cy, facing, phase, action,
+                        attack_progress=0.0, detail=False):
+        p = _NS_vex.PALETTE
+        f = 1 if facing >= 0 else -1
+        walk = action == "walk"
+        attack = action == "attack"
+        ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
+        stride = math.sin(phase * 1.72)
+        breath = math.sin(phase * .8)
+
+        lean = int(stride * 2.0 if walk else 0.0)
+        if attack:
+            lean += int(math.sin(ap * math.pi) * 5.0)
+        root_y = int(breath * .8)
+        if walk:
+            root_y -= int(abs(stride) * 2.0)
+        if attack:
+            root_y += int(math.sin(ap * math.pi) * 2)
+
+        def pt(dx, dy):
+            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+
+        def poly(color, coords, outline=True):
+            pts = [pt(dx, dy) for dx, dy in coords]
+            if outline:
+                _NS_vex._poly(surface, p["shadow_deep"],
+                              [(qx + f, qy + 1) for qx, qy in pts])
+            _NS_vex._poly(surface, color, pts)
+            return pts
+
+        def limb(a, b, width, base, light=None):
+            aa, bb = pt(*a), pt(*b)
+            _NS_vex._aaline(surface, p["shadow_deep"],
+                            (aa[0] + f, aa[1] + 1),
+                            (bb[0] + f, bb[1] + 1), width + 3)
+            _NS_vex._aaline(surface, base, aa, bb, width)
+            if light:
+                off = -1 if f > 0 else 1
+                _NS_vex._aaline(surface, light,
+                                (aa[0] + off, aa[1] - 1),
+                                (bb[0] + off, bb[1] - 1),
+                                max(1, width // 3))
+
+        def dot(color, dx, dy, r, outline=True):
+            x, y = pt(dx, dy)
+            if outline:
+                _NS_vex._aacircle(surface, p["shadow_deep"],
+                                  (x + f, y + 1), r + 1)
+            _NS_vex._aacircle(surface, color, (x, y), r)
+
+        # Dark crown flames behind the hood.
+        _NS_vex._draw_elite_crown(surface, pt, poly, dot, f, phase,
+                                  action, back=True, detail=detail)
+
+        # Rear arm (free claw) behind the torso.
+        rear_shoulder = (-11, -14)
+        if attack:
+            rear_elbow = (-16, -2)
+            rear_hand = (-17, 9)
+        elif walk:
+            rear_elbow = (-16, int(stride * 4))
+            rear_hand = (-17, 9 + int(stride * 5))
         else:
-            _NS_vex._draw_idle_arms(surface, cx, cy - 8, facing, phase, action)
+            rear_elbow = (-16, 0)
+            rear_hand = (-17, 9 + int(breath * 2))
+        limb(rear_shoulder, rear_elbow, 6, p["robe_dark"], p["robe_mid"])
+        limb(rear_elbow, rear_hand, 5, p["skin_dark"], p["skin_mid"])
+        rhx, rhy = pt(*rear_hand)
+        _NS_vex._aacircle(surface, p["skin_darkest"], (rhx, rhy), 4)
+        _NS_vex._aacircle(surface, p["skin_mid"], (rhx, rhy), 3)
+        _NS_vex._aacircle(surface, p["skin_light"], (rhx - f, rhy - 1), 1)
+        for finger in (-2, 0, 2):
+            _NS_vex._aaline(surface, p["skin_light"],
+                            (rhx + f, rhy + finger),
+                            (rhx + f * 5, rhy + finger - 3), 1)
 
-        # Head with flaming void crown
-        _NS_vex._draw_head_crown(surface, cx, cy - 28, facing, phase)
+        # Tattered floating robe / ghost tail (no legs).
+        tail_wave = int(math.sin(phase * .9) * 2)
+        poly(p["robe_darkest"], [(-15, -8), (15, -8),
+             (16 + tail_wave, 10), (13, 24), (7, 36),
+             (2 + tail_wave, 44), (-3, 46), (-8, 38),
+             (-13, 24), (-16 + tail_wave, 10)])
+        poly(p["robe_dark"], [(-13, -6), (13, -6),
+             (13 + tail_wave, 10), (10, 22), (5, 33),
+             (0, 40), (-5, 34), (-9, 22),
+             (-13 + tail_wave, 10)], False)
+        poly(p["robe_mid"], [(-9, -4), (9, -4),
+             (8 + tail_wave, 8), (6, 18), (2, 28),
+             (-1, 33), (-4, 27), (-7, 16),
+             (-9 + tail_wave, 8)], False)
+        for i in range(7):
+            tx = -12 + i * 4
+            ty = 30 + int(math.sin(phase * 1.2 + i) * 2)
+            ln = 8 + (i % 3) * 3
+            poly(p["robe_darkest"], [(tx - 2, 26), (tx + 2, 26),
+                 (tx + 1, ty + ln), (tx - 1, ty + ln)], False)
+        # glowing runes down the robe front
+        for i, off in enumerate((-7, 0, 7)):
+            gx, gy = off, 14
+            _NS_vex._aaline(surface, (*p["void_mid"], 200),
+                            pt(gx, gy - 4), pt(gx, gy + 4), 1)
+            _NS_vex._aacircle(surface, p["void_hot"], pt(gx, gy), 2)
 
-        # Body void particles
-        _NS_vex._draw_body_particles(surface, cx, cy, phase)
+        # Torso armor with central void gem.
+        poly(p["armor_darkest"], [(-13, -18), (13, -18),
+             (12, 8), (5, 14), (-5, 14), (-12, 8)])
+        poly(p["armor_dark"], [(-11, -16), (11, -16),
+             (10, 6), (4, 12), (-4, 12), (-10, 6)], False)
+        poly(p["armor_mid"], [(-8, -13), (8, -13),
+             (7, 4), (3, 9), (-3, 9), (-7, 4)], False)
+        _NS_vex._aaline(surface, p["shadow_deep"], pt(-6, -15),
+                        pt(0, -2), 2)
+        _NS_vex._aaline(surface, p["shadow_deep"], pt(6, -15),
+                        pt(0, -2), 2)
+        gem_pulse = math.sin(phase * 1.5) * .3 + .7
+        dot(p["armor_darkest"], 0, 2, 5, False)
+        _NS_vex._aacircle(surface, (*p["void_dark"], int(200 * gem_pulse)),
+                          pt(0, 2), 4)
+        _NS_vex._aacircle(surface, (*p["void_mid"], int(235 * gem_pulse)),
+                          pt(0, 2), 3)
+        _NS_vex._aacircle(surface, p["void_hot"], pt(0, 1), 2)
+        _NS_vex._aacircle(surface, p["white"], pt(0, 1), 1)
 
-
-    def _draw_cloak(surface, cx, cy, facing, phase, action):
-        """Flowing tattered dark cloak."""
-        wave = math.sin(phase * 0.8) * 3
-        wave2 = math.sin(phase * 1.1 + 0.5) * 2
-
-        # Outer cloak - jagged tattered edges
-        cloak_outer = [
-            (cx - 18, cy - 12),
-            (cx - 24, cy),
-            (cx - 26, cy + 12),
-            (cx - 28 - int(wave), cy + 26),
-            (cx - 24 - int(wave2), cy + 40),
-            (cx - 15, cy + 46),
-            (cx - 8, cy + 44),
-            (cx, cy + 46),
-            (cx + 8, cy + 44),
-            (cx + 15, cy + 46),
-            (cx + 24 + int(wave2), cy + 40),
-            (cx + 28 + int(wave), cy + 26),
-            (cx + 26, cy + 12),
-            (cx + 24, cy),
-            (cx + 18, cy - 12),
-        ]
-        _NS_vex._poly(surface, _NS_vex.PALETTE["robe_darkest"], cloak_outer)
-
-        cloak_mid = [
-            (cx - 15, cy - 10),
-            (cx - 20, cy),
-            (cx - 22, cy + 12),
-            (cx - 24 - int(wave), cy + 24),
-            (cx - 20 - int(wave2), cy + 36),
-            (cx - 12, cy + 42),
-            (cx, cy + 42),
-            (cx + 12, cy + 42),
-            (cx + 20 + int(wave2), cy + 36),
-            (cx + 24 + int(wave), cy + 24),
-            (cx + 22, cy + 12),
-            (cx + 20, cy),
-            (cx + 15, cy - 10),
-        ]
-        _NS_vex._poly(surface, _NS_vex.PALETTE["robe_dark"], cloak_mid)
-
-        # Inner brighter layer
-        cloak_inner = [
-            (cx - 12, cy - 8),
-            (cx - 16, cy + 2),
-            (cx - 18, cy + 14),
-            (cx - 16, cy + 26),
-            (cx - 10, cy + 34),
-            (cx + 10, cy + 34),
-            (cx + 16, cy + 26),
-            (cx + 18, cy + 14),
-            (cx + 16, cy + 2),
-            (cx + 12, cy - 8),
-        ]
-        _NS_vex._poly(surface, _NS_vex.PALETTE["robe_mid"], cloak_inner)
-
-        # Cloak collar - spiky rising up on shoulders
+        # Spiky pauldrons (armor plating with rising spike + rune).
         for side in (-1, 1):
-            # Spikes rising up
-            for i in range(3):
-                spike_x = cx + side * (12 + i * 3)
-                spike_y = cy - 8
-                spike_h = 10 + i * 2
-                _NS_vex._poly(surface, _NS_vex.PALETTE["robe_darkest"], [
-                    (spike_x - 2, spike_y),
-                    (spike_x + 2, spike_y),
-                    (spike_x + side, spike_y - spike_h),
-                ])
-                _NS_vex._poly(surface, _NS_vex.PALETTE["robe_dark"], [
-                    (spike_x - 1, spike_y - 1),
-                    (spike_x + 1, spike_y - 1),
-                    (spike_x + side, spike_y - spike_h + 1),
-                ])
-                _NS_vex._aaline(surface, _NS_vex.PALETTE["robe_high"],
-                        (spike_x, spike_y - 2),
-                        (spike_x + side, spike_y - spike_h + 1), 1)
+            sx = side * 14
+            poly(p["armor_darkest"], [(sx - 6, -20), (sx + 6, -20),
+                 (sx + 7, -10), (sx, -6), (sx - 7, -10)])
+            poly(p["armor_dark"], [(sx - 5, -19), (sx + 5, -19),
+                 (sx + 6, -11), (sx, -8), (sx - 6, -11)], False)
+            poly(p["armor_mid"], [(sx - 3, -18), (sx + 3, -18),
+                 (sx + 4, -12), (sx, -10), (sx - 4, -12)], False)
+            poly(p["armor_darkest"], [(sx - 2, -20), (sx, -33),
+                 (sx + 2, -20)])
+            _NS_vex._aaline(surface, p["armor_shine"],
+                            pt(sx - 1, -20), pt(sx, -30), 1)
+            _NS_vex._aacircle(surface, (*p["void_bright"], 180),
+                              pt(sx, -13), 1)
 
-        # Void runes glowing on cloak edges
-        for i, (rx, ry) in enumerate([
-            (cx - 20, cy + 6), (cx - 22, cy + 22), (cx - 18, cy + 36),
-            (cx + 20, cy + 6), (cx + 22, cy + 22), (cx + 18, cy + 36),
-        ]):
-            pulse = math.sin(phase * 2 + i * 0.5) * 0.3 + 0.7
-            alpha = int(180 * pulse)
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_dark"], alpha), (rx, ry), 3)
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_mid"], alpha), (rx, ry), 2)
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_bright"], alpha), (rx, ry), 1)
+        # Neck.
+        poly(p["skin_darkest"], [(-4, -18), (4, -18), (4, -10), (-3, -10)])
+        poly(p["skin_mid"], [(-2, -18), (3, -18), (3, -11), (-2, -11)],
+             False)
 
+        # Pose-driven diagonal void staff.
+        butt = _NS_vex._staff_butt_local(phase, action, ap)
+        orb = _NS_vex._orb_tip_local(phase, action, ap)
+        grip = _NS_vex._staff_grip_local(phase, action, ap)
+        _NS_vex._draw_elite_staff(surface, pt, poly, dot, f, butt, orb,
+                                  grip, phase, detail)
 
-    def _draw_lower_robe(surface, cx, cy, phase):
-        """Floating tattered lower robe (no legs)."""
-        sway = int(math.sin(phase * 0.6) * 2)
-        wave = math.sin(phase * 0.9) * 2
-
-        # Base robe
-        robe = [
-            (cx - 14, cy),
-            (cx + 14, cy),
-            (cx + 18 + sway, cy + 12),
-            (cx + 14, cy + 22),
-            (cx + 8, cy + 28),
-            (cx + 2, cy + 30),
-            (cx - 2, cy + 30),
-            (cx - 8, cy + 28),
-            (cx - 14, cy + 22),
-            (cx - 18 - sway, cy + 12),
-        ]
-        _NS_vex._poly(surface, _NS_vex.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in robe])
-        _NS_vex._poly(surface, _NS_vex.PALETTE["robe_darkest"], robe)
-        _NS_vex._poly(surface, _NS_vex.PALETTE["robe_dark"], [
-            (cx - 12, cy + 1),
-            (cx + 12, cy + 1),
-            (cx + 15 + sway, cy + 12),
-            (cx + 11, cy + 20),
-            (cx + 5, cy + 26),
-            (cx - 5, cy + 26),
-            (cx - 11, cy + 20),
-            (cx - 15 - sway, cy + 12),
-        ])
-        _NS_vex._poly(surface, _NS_vex.PALETTE["robe_mid"], [
-            (cx - 9, cy + 3),
-            (cx + 9, cy + 3),
-            (cx + 11 + sway, cy + 12),
-            (cx + 6, cy + 20),
-            (cx - 6, cy + 20),
-            (cx - 11 - sway, cy + 12),
-        ])
-
-        # Highlight streaks
-        for i in range(3):
-            lx = cx - 8 + i * 8
-            _NS_vex._aaline(surface, _NS_vex.PALETTE["robe_light"],
-                    (lx, cy + 4), (lx + int(sway * 0.3), cy + 22), 1)
-
-        # Jagged tattered bottom
-        for i in range(8):
-            tx = cx - 14 + i * 4
-            ty = cy + 26 + int(math.sin(phase * 1.3 + i) * 3)
-            length = 6 + int(math.sin(phase + i) * 2)
-            _NS_vex._poly(surface, _NS_vex.PALETTE["robe_darkest"], [
-                (tx - 2, cy + 22),
-                (tx + 2, cy + 22),
-                (tx + 1, ty + length),
-                (tx - 1, ty + length),
-            ])
-
-        # Rune glyphs on robe front
-        for i, off in enumerate((-6, 0, 6)):
-            gx = cx + off
-            gy = cy + 10
-            pulse = math.sin(phase * 2 + i * 0.7) * 0.3 + 0.7
-            alpha = int(180 * pulse)
-            # Small vertical rune line
-            _NS_vex._aaline(surface, (*_NS_vex.PALETTE["void_mid"], alpha),
-                    (gx, gy - 3), (gx, gy + 3), 1)
-            _NS_vex._aaline(surface, (*_NS_vex.PALETTE["void_bright"], alpha),
-                    (gx, gy - 2), (gx, gy + 2), 1)
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_hot"], alpha), (gx, gy), 1)
-
-
-    def _draw_torso(surface, cx, cy, facing, phase):
-        """Armored torso with void gem in the center."""
-        # Shadow
-        _NS_vex._poly(surface, _NS_vex.PALETTE["shadow_deep"], [
-            (cx - 11 + 2, cy - 8 + 2), (cx + 11 + 2, cy - 8 + 2),
-            (cx + 10 + 2, cy + 14 + 2), (cx + 4 + 2, cy + 18 + 2),
-            (cx - 4 + 2, cy + 18 + 2), (cx - 10 + 2, cy + 14 + 2),
-        ])
-
-        # Base armor plate
-        _NS_vex._poly(surface, _NS_vex.PALETTE["armor_darkest"], [
-            (cx - 11, cy - 8), (cx + 11, cy - 8),
-            (cx + 10, cy + 14), (cx + 4, cy + 18),
-            (cx - 4, cy + 18), (cx - 10, cy + 14),
-        ])
-        _NS_vex._poly(surface, _NS_vex.PALETTE["armor_dark"], [
-            (cx - 10, cy - 7), (cx + 10, cy - 7),
-            (cx + 8, cy + 12), (cx + 3, cy + 16),
-            (cx - 3, cy + 16), (cx - 8, cy + 12),
-        ])
-
-        # Side highlight plating
-        _NS_vex._poly(surface, _NS_vex.PALETTE["armor_mid"], [
-            (cx - 7, cy - 5), (cx + 7, cy - 5),
-            (cx + 6, cy + 10), (cx + 2, cy + 12),
-            (cx - 2, cy + 12), (cx - 6, cy + 10),
-        ])
-
-        # Chest plate detail - V-shape armor grooves
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["armor_darkest"],
-                (cx - 6, cy - 6), (cx, cy + 2), 2)
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["armor_darkest"],
-                (cx + 6, cy - 6), (cx, cy + 2), 2)
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["armor_light"],
-                (cx - 6, cy - 5), (cx, cy + 3), 1)
-
-        # Central void gem (glowing teal)
-        gem_pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-        _NS_vex._aacircle(surface, _NS_vex.PALETTE["armor_darkest"], (cx, cy + 5), 5)
-        _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_dark"], int(220 * gem_pulse)),
-                  (cx, cy + 5), 4)
-        _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_mid"], int(240 * gem_pulse)),
-                  (cx, cy + 5), 3)
-        _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_bright"], int(240 * gem_pulse)),
-                  (cx - 1, cy + 4), 2)
-        _NS_vex._aacircle(surface, _NS_vex.PALETTE["void_hot"], (cx - 1, cy + 4), 1)
-
-        # Shoulder pauldrons - spiky protrusions
-        for side in (-1, 1):
-            px = cx + side * 12
-            py = cy - 6
-            # Pauldron dome
-            _NS_vex._poly(surface, _NS_vex.PALETTE["armor_darkest"], [
-                (px - 4, py - 2), (px + 4, py - 2),
-                (px + 5, py + 3), (px + 3, py + 8),
-                (px - 3, py + 8), (px - 5, py + 3),
-            ])
-            _NS_vex._poly(surface, _NS_vex.PALETTE["armor_dark"], [
-                (px - 3, py - 1), (px + 3, py - 1),
-                (px + 4, py + 3), (px + 2, py + 7),
-                (px - 2, py + 7), (px - 4, py + 3),
-            ])
-            _NS_vex._poly(surface, _NS_vex.PALETTE["armor_mid"], [
-                (px - 2, py), (px + 2, py),
-                (px + 3, py + 3), (px + 1, py + 6),
-                (px - 1, py + 6), (px - 3, py + 3),
-            ])
-            # Highlight
-            _NS_vex._aacircle(surface, _NS_vex.PALETTE["armor_shine"], (px - 1, py + 2), 1)
-            # Rune glow on pauldron
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_bright"], int(180 * gem_pulse)),
-                      (px, py + 4), 1)
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase, action):
-        """Idle - one hand holds staff, other rests."""
-        sway = int(math.sin(phase * 0.7) * 1)
-
-        # STAFF arm (facing side)
-        staff_side = facing
-        ss_x = cx + staff_side * 11
-        ss_y = cy + 2
-        se_x = ss_x + staff_side * 7
-        se_y = cy + 4 + sway
-        sh_x = se_x + staff_side * 4
-        sh_y = se_y + 2
-        _NS_vex._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_vex._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-        _NS_vex._draw_hand(surface, sh_x, sh_y)
-
-        # Staff
-        _NS_vex._draw_staff(surface, sh_x, sh_y, phase, staff_side)
-
-        # OTHER arm (opposite side - resting under cloak)
-        other_side = -facing
-        os_x = cx + other_side * 11
-        os_y = cy + 2
-        oe_x = os_x + other_side * 5
-        oe_y = cy + 10 + sway
-        oh_x = oe_x + other_side * 3
-        oh_y = oe_y + 8
-        _NS_vex._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_vex._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_vex._draw_hand(surface, oh_x, oh_y)
-
-
-    def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
-        """Attack - staff aimed forward for casting arcane orb."""
-        sway = int(math.sin(phase * 0.7) * 1)
-
-        # STAFF arm extends forward
-        staff_side = facing
-        ss_x = cx + staff_side * 11
-        ss_y = cy + 2
-
-        # Motion: windup -> thrust -> recover
-        if progress < 0.3:
-            t = progress / 0.3
-            ext = t * 0.4
-        elif progress < 0.55:
-            t = (progress - 0.3) / 0.25
-            ext = 0.4 + t * 0.6  # thrust
+        # Front staff arm: the fist is derived from the pose-driven grip.
+        front_shoulder = (11, -14)
+        if attack:
+            front_elbow = (grip[0] - 6, grip[1] + 6)
+        elif walk:
+            front_elbow = (grip[0] - 7, grip[1] + 5 + int(stride * 2))
         else:
-            t = (progress - 0.55) / 0.45
-            ext = 1.0 - t * 0.6
+            front_elbow = (grip[0] - 7, grip[1] + 6)
+        limb(front_shoulder, front_elbow, 6, p["robe_mid"], p["robe_light"])
+        limb(front_elbow, grip, 5, p["skin_dark"], p["skin_light"])
+        ghx, ghy = pt(*grip)
+        _NS_vex._aacircle(surface, p["skin_darkest"], (ghx, ghy), 4)
+        _NS_vex._aacircle(surface, p["skin_mid"], (ghx, ghy), 3)
 
-        aim_angle = -0.15
-        se_x = ss_x + int((6 + ext * 4) * math.cos(aim_angle)) * staff_side
-        se_y = ss_y + int((6 + ext * 4) * math.sin(aim_angle)) - 2
-        sh_x = se_x + int((6 + ext * 6) * math.cos(aim_angle)) * staff_side
-        sh_y = se_y + int((6 + ext * 6) * math.sin(aim_angle)) - 4
+        # Hooded head with shadowed face + glowing eye slit.
+        _NS_vex._draw_elite_hood(surface, pt, poly, dot, f, phase,
+                                 action, ap, detail)
 
-        _NS_vex._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_vex._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-        _NS_vex._draw_hand(surface, sh_x, sh_y)
-        _NS_vex._draw_staff(surface, sh_x, sh_y, phase, staff_side, casting=True,
-                    progress=progress)
+        # Bright front crown flames (cyan tips).
+        _NS_vex._draw_elite_crown(surface, pt, poly, dot, f, phase,
+                                  action, back=False, detail=detail)
 
-        # OTHER arm (steadying)
-        other_side = -facing
-        os_x = cx + other_side * 11
-        os_y = cy + 2
-        oe_x = os_x + other_side * 6
-        oe_y = cy + 6 + sway
-        oh_x = oe_x + other_side * 4
-        oh_y = oe_y + 6
-        _NS_vex._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_vex._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_vex._draw_hand(surface, oh_x, oh_y)
+        if detail:
+            _NS_vex._draw_vex_masterwork_details(
+                surface, pt, poly, dot, f, phase, action)
 
 
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Draw a robed arm segment."""
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["shadow_deep"], (x1 + 2, y1 + 2), (x2 + 2, y2 + 2), 7)
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["robe_darkest"], (x1, y1), (x2, y2), 6)
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["robe_dark"], (x1, y1), (x2, y2), 4)
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["robe_mid"], (x1, y1), (x2, y2), 2)
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["robe_light"], (x1, y1 - 1), (x2, y2 - 1), 1)
+    # -------------------------------------------------------------------
+    # Void-flame crown
+    # -------------------------------------------------------------------
+    def _draw_elite_crown(surface, pt, poly, dot, f, phase, action,
+                          back=False, detail=False):
+        """Jagged radiant void-flame crown (dark back layer / bright front)."""
+        p = _NS_vex.PALETTE
+        spikes = [
+            (-16, -28, -26, -50), (-11, -31, -18, -61),
+            (-6, -33, -9, -66), (0, -34, 0, -68),
+            (6, -33, 9, -66), (11, -31, 18, -61),
+            (16, -28, 26, -50), (-19, -24, -31, -41),
+            (19, -24, 31, -41),
+        ]
+        dark = p["void_darkest"] if not back else p["void_dark"]
+        mid = p["void_dark"] if not back else p["void_mid"]
+        for i, (bx, by, tx, ty) in enumerate(spikes):
+            wig = int(math.sin(phase * 1.1 + i * .6) * (2 + i % 3))
+            tx2 = tx + wig
+            ty2 = ty + int(abs(wig) * .4)
+            poly(dark, [(bx - 3, by), (tx2, ty2), (bx + 3, by)])
+            if not back:
+                poly(mid, [(bx - 1, by + 1), (tx2, ty2),
+                           (bx + 1, by + 1)], False)
+                _NS_vex._aaline(surface, p["void_light"],
+                                pt(bx, by), pt(tx2, ty2), 1)
+                x, y = pt(tx2, ty2)
+                _NS_vex._aacircle(surface, p["crown_tip"], (x, y), 2)
+                _NS_vex._aacircle(surface, p["white"], (x - 1, y - 1), 1)
+        if not back:
+            _NS_vex._aaline(surface, p["crown_rim"], pt(-16, -28),
+                            pt(6, -30), 2)
 
 
-    def _draw_hand(surface, x, y):
-        """Ashen skeletal hand."""
-        _NS_vex._aacircle(surface, _NS_vex.PALETTE["skin_darkest"], (x, y), 3)
-        _NS_vex._aacircle(surface, _NS_vex.PALETTE["skin_dark"], (x, y), 2)
-        _NS_vex._aacircle(surface, _NS_vex.PALETTE["skin_mid"], (x - 1, y - 1), 1)
-
-
-    def _draw_staff(surface, hx, hy, phase, side, casting=False, progress=0):
-        """The void staff with glowing orb."""
-        # Staff pole - long
-        top_x = hx + side * 4
-        top_y = hy - 42
-        bot_x = hx - side * 2
-        bot_y = hy + 18
-
-        # Shadow
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["shadow_deep"],
-                (top_x + 2, top_y + 2), (bot_x + 2, bot_y + 2), 5)
-        # Staff body
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["staff_dark"], (top_x, top_y), (bot_x, bot_y), 4)
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["staff_mid"], (top_x, top_y), (bot_x, bot_y), 3)
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["staff_light"], (top_x, top_y), (bot_x, bot_y), 1)
-
-        # Wraps and rings
-        for t in (0.3, 0.55, 0.8):
-            rx = int(top_x + (bot_x - top_x) * t)
-            ry = int(top_y + (bot_y - top_y) * t)
-            _NS_vex._aacircle(surface, _NS_vex.PALETTE["armor_darkest"], (rx, ry), 3)
-            _NS_vex._aacircle(surface, _NS_vex.PALETTE["armor_dark"], (rx, ry), 2)
-            # Rune bead
-            _NS_vex._aacircle(surface, _NS_vex.PALETTE["void_bright"], (rx, ry), 1)
-
-        # Staff head - crescent claw holder
-        head_x, head_y = top_x, top_y - 2
-
-        # Two curving claws forming a crescent that holds the orb
-        for claw_side in (-1, 1):
-            # Bezier-like curve
-            segments = 5
-            prev = (head_x, head_y + 4)
-            for i in range(1, segments + 1):
-                t = i / segments
-                # Curve outward and up
-                cx = head_x + claw_side * math.sin(t * math.pi) * 7
-                cy = head_y + 4 - t * 12
-                _NS_vex._aaline(surface, _NS_vex.PALETTE["staff_dark"], prev, (cx, cy), 4)
-                _NS_vex._aaline(surface, _NS_vex.PALETTE["staff_mid"], prev, (cx, cy), 3)
-                _NS_vex._aaline(surface, _NS_vex.PALETTE["staff_light"], prev, (cx, cy), 1)
-                prev = (cx, cy)
-            # Tip
-            _NS_vex._aacircle(surface, _NS_vex.PALETTE["staff_mid"], (int(prev[0]), int(prev[1])), 2)
-            _NS_vex._aacircle(surface, _NS_vex.PALETTE["armor_shine"],
-                      (int(prev[0]), int(prev[1])), 1)
-
-        # Main orb - glowing teal
-        orb_glow_size = 6
-        if casting:
-            orb_glow_size = 6 + int(math.sin(progress * math.pi) * 8)
-
-        orb_x, orb_y = head_x, head_y - 3
-
-        # Big outer glow
-        _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_dark"], 130),
-                  (orb_x, orb_y), orb_glow_size + 8)
-        _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_mid"], 180),
-                  (orb_x, orb_y), orb_glow_size + 4)
-        # Orb body
-        _NS_vex._aacircle(surface, _NS_vex.PALETTE["void_dark"], (orb_x, orb_y), orb_glow_size)
-        _NS_vex._aacircle(surface, _NS_vex.PALETTE["void_mid"], (orb_x, orb_y), orb_glow_size - 1)
-        _NS_vex._aacircle(surface, _NS_vex.PALETTE["void_light"], (orb_x, orb_y), orb_glow_size - 2)
-        _NS_vex._aacircle(surface, _NS_vex.PALETTE["void_hot"], (orb_x - 1, orb_y - 1),
-                  max(1, orb_glow_size - 3))
-        _NS_vex._aacircle(surface, _NS_vex.PALETTE["white"], (orb_x - 1, orb_y - 1),
-                  max(1, orb_glow_size - 4))
-
-        # Rune particles rotating around
+    # -------------------------------------------------------------------
+    # Diagonal void staff
+    # -------------------------------------------------------------------
+    def _draw_elite_staff(surface, pt, poly, dot, f, butt, orb, grip,
+                          phase, detail):
+        p = _NS_vex.PALETTE
+        bx, by = pt(*butt)
+        ox, oy = pt(*orb)
+        _NS_vex._aaline(surface, p["shadow_deep"], (bx + f * 2, by + 1),
+                        (ox + f * 2, oy + 1), 7)
+        _NS_vex._aaline(surface, p["staff_dark"], (bx, by), (ox, oy), 5)
+        _NS_vex._aaline(surface, p["staff_mid"], (bx, by), (ox, oy), 3)
+        _NS_vex._aaline(surface, p["staff_light"], (bx, by), (ox, oy), 1)
+        for t in (.3, .62):
+            rx = int(bx + (ox - bx) * t)
+            ry = int(by + (oy - by) * t)
+            _NS_vex._aacircle(surface, p["armor_darkest"], (rx, ry), 3)
+            _NS_vex._aacircle(surface, p["void_bright"], (rx, ry), 1)
+        # crescent claw cradle around the orb
+        for side in (-1, 1):
+            prev = (int(bx + (ox - bx) * .9), int(by + (oy - by) * .9))
+            for i in range(1, 6):
+                t = i / 5.0
+                cx2 = ox + side * math.sin(t * math.pi) * 8
+                cy2 = oy + (1 - t) * 12 - t * 2
+                _NS_vex._aaline(surface, p["staff_dark"], prev,
+                                (cx2 + f, cy2), 4)
+                _NS_vex._aaline(surface, p["staff_light"], prev,
+                                (cx2, cy2), 1)
+                prev = (cx2, cy2)
+        pulse = .72 + math.sin(phase * 2.5) * .18
+        for radius, color, alpha in ((13, p["void_dark"], 55),
+                                     (9, p["void_mid"], 110),
+                                     (6, p["void_light"], 185)):
+            _NS_vex._aacircle(surface, (*color, int(alpha * pulse)),
+                              (ox, oy), radius)
+        _NS_vex._aacircle(surface, p["void_hot"], (ox, oy), 4)
+        _NS_vex._aacircle(surface, p["void_white"], (ox - 1, oy - 1), 2)
+        _NS_vex._aacircle(surface, p["white"], (ox - f, oy - 1), 1)
         for i in range(3):
-            a = phase * 2 + i * math.pi * 2 / 3
-            r = orb_glow_size + 2
-            px = orb_x + int(math.cos(a) * r)
-            py = orb_y + int(math.sin(a) * r)
-            _NS_vex._aacircle(surface, _NS_vex.PALETTE["void_hot"], (px, py), 1)
-
-        # Pulsing bright halo
-        pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-        _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_bright"], int(120 * pulse)),
-                  (orb_x, orb_y), int(orb_glow_size + 2 * pulse), 1)
+            a = phase * 2 + i * math.tau / 3
+            sx = int(ox + math.cos(a) * 9)
+            sy = int(oy + math.sin(a) * 9)
+            _NS_vex._aacircle(surface, p["orb_satellite"], (sx, sy), 1)
 
 
-    def _draw_head_crown(surface, cx, cy, facing, phase):
-        """Dark hooded face with glowing eye slit and flame crown."""
-        # Hood outer
-        hood_outer = [
-            (cx - 12, cy - 4),
-            (cx - 14, cy + 4),
-            (cx - 12, cy + 12),
-            (cx - 6, cy + 15),
-            (cx + 6, cy + 15),
-            (cx + 12, cy + 12),
-            (cx + 14, cy + 4),
-            (cx + 12, cy - 4),
-            (cx + 8, cy - 12),
-            (cx - 8, cy - 12),
-        ]
-        _NS_vex._poly(surface, _NS_vex.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in hood_outer])
-        _NS_vex._poly(surface, _NS_vex.PALETTE["robe_darkest"], hood_outer)
-        _NS_vex._poly(surface, _NS_vex.PALETTE["robe_dark"], [
-            (cx - 11, cy - 3),
-            (cx - 13, cy + 4),
-            (cx - 11, cy + 11),
-            (cx - 6, cy + 14),
-            (cx + 6, cy + 14),
-            (cx + 11, cy + 11),
-            (cx + 13, cy + 4),
-            (cx + 11, cy - 3),
-            (cx + 7, cy - 11),
-            (cx - 7, cy - 11),
-        ])
-
-        # Deep shadow face area (inside hood)
-        face_area = [
-            (cx - 7, cy),
-            (cx - 8, cy + 4),
-            (cx - 6, cy + 8),
-            (cx - 3, cy + 11),
-            (cx + 3, cy + 11),
-            (cx + 6, cy + 8),
-            (cx + 8, cy + 4),
-            (cx + 7, cy),
-        ]
-        _NS_vex._poly(surface, _NS_vex.PALETTE["shadow"], face_area)
-        _NS_vex._poly(surface, _NS_vex.PALETTE["skin_darkest"], [
-            (cx - 6, cy + 1),
-            (cx - 7, cy + 4),
-            (cx - 5, cy + 8),
-            (cx - 2, cy + 10),
-            (cx + 2, cy + 10),
-            (cx + 5, cy + 8),
-            (cx + 7, cy + 4),
-            (cx + 6, cy + 1),
-        ])
-
-        # Glowing eyes (teal)
-        eye_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        for eye_x in (-3, 3):
-            # Glow halo
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_dark"], int(180 * eye_pulse)),
-                      (cx + eye_x, cy + 5), 3)
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_mid"], int(220 * eye_pulse)),
-                      (cx + eye_x, cy + 5), 2)
-            # Bright core
-            _NS_vex._aacircle(surface, _NS_vex.PALETTE["eye_glow"],
-                      (cx + eye_x, cy + 5), 1)
-            _NS_vex._aacircle(surface, _NS_vex.PALETTE["eye_bright"],
-                      (cx + eye_x, cy + 5), 1)
-
-        # Subtle mouth line (dark)
-        _NS_vex._aaline(surface, _NS_vex.PALETTE["shadow"],
-                (cx - 2, cy + 9), (cx + 2, cy + 9), 1)
-
-        # Hood front / cowl (inner peaked)
-        _NS_vex._poly(surface, _NS_vex.PALETTE["robe_darkest"], [
-            (cx - 10, cy - 2),
-            (cx - 6, cy - 8),
-            (cx, cy - 11),
-            (cx + 6, cy - 8),
-            (cx + 10, cy - 2),
-            (cx + 8, cy - 12),
-            (cx - 8, cy - 12),
-        ])
-        _NS_vex._poly(surface, _NS_vex.PALETTE["robe_dark"], [
-            (cx - 8, cy - 3),
-            (cx - 5, cy - 7),
-            (cx, cy - 10),
-            (cx + 5, cy - 7),
-            (cx + 8, cy - 3),
-            (cx + 6, cy - 11),
-            (cx - 6, cy - 11),
-        ])
-
-        # Void flame crown on top of hood (spiky flames of energy)
-        flame_positions = [
-            (-10, -10, 0.9, -math.pi / 2 - 0.7),
-            (-6, -13, 1.1, -math.pi / 2 - 0.4),
-            (-2, -15, 1.3, -math.pi / 2 - 0.1),
-            (2, -15, 1.3, -math.pi / 2 + 0.1),
-            (6, -13, 1.1, -math.pi / 2 + 0.4),
-            (10, -10, 0.9, -math.pi / 2 + 0.7),
-        ]
-        for fx, fy, scale, base_angle in flame_positions:
-            size = int(10 * scale + math.sin(phase * 2 + fx) * 1.5)
-            _NS_vex._draw_void_flame(surface, cx + fx, cy + fy, size,
-                             base_angle, phase)
-
-        # Backing flame layer (bigger, darker)
-        for fx, fy, scale, base_angle in flame_positions[::2]:
-            size = int(14 * scale)
-            _NS_vex._draw_void_flame(surface, cx + fx, cy + fy - 2, size,
-                             base_angle, phase,
-                             dark=_NS_vex.PALETTE["robe_darkest"],
-                             mid=_NS_vex.PALETTE["void_darkest"],
-                             light=_NS_vex.PALETTE["void_dark"],
-                             hot=_NS_vex.PALETTE["void_mid"])
-
-        # Small side flames on hood sides (going outward)
-        _NS_vex._draw_void_flame(surface, cx - 13, cy - 2, 8, math.pi + 0.3, phase)
-        _NS_vex._draw_void_flame(surface, cx + 13, cy - 2, 8, -0.3, phase)
+    # -------------------------------------------------------------------
+    # Hooded head + shadowed face
+    # -------------------------------------------------------------------
+    def _draw_elite_hood(surface, pt, poly, dot, f, phase, action, ap,
+                         detail):
+        p = _NS_vex.PALETTE
+        poly(p["robe_darkest"], [(-11, -46), (0, -52), (11, -46),
+             (15, -34), (14, -22), (7, -16), (0, -14),
+             (-7, -16), (-14, -22), (-15, -34)])
+        poly(p["robe_dark"], [(-9, -44), (0, -49), (9, -44),
+             (12, -34), (11, -24), (6, -19), (0, -17),
+             (-6, -19), (-11, -24), (-12, -34)], False)
+        poly(p["robe_mid"], [(-6, -42), (0, -46), (6, -42),
+             (8, -34), (7, -26), (2, -21), (-2, -21),
+             (-7, -26), (-8, -34)], False)
+        peak = int(math.sin(phase * 1.1) * 2)
+        poly(p["robe_darkest"], [(0, -51), (4, -54),
+             (-8, -53 + peak), (-16, -46 + peak), (-8, -44)])
+        # shadowed void face
+        poly(p["face_dark"], [(-7, -38), (0, -41), (7, -38),
+             (9, -30), (7, -24), (0, -22), (-7, -24), (-9, -30)])
+        # glowing cyan eye slit (brighter while attacking)
+        glow = action in ("attack",) or ap > .35
+        ex, ey = pt(0, -30)
+        _NS_vex._aacircle(surface, p["void_hot"], (ex, ey), 5)
+        _NS_vex._aacircle(surface, p["eye_glow"], (ex, ey), 3)
+        if glow:
+            _NS_vex._aacircle(surface, p["eye_bright"], (ex, ey), 2)
+            _NS_vex._aacircle(surface, p["white"], (ex - f, ey - 1), 1)
+        _NS_vex._aaline(surface, p["robe_darkest"], pt(-3, -24),
+                        pt(3, -24), 2)
 
 
-    def _draw_body_particles(surface, cx, cy, phase):
-        """Void particles floating around body."""
-        for i in range(10):
-            angle = phase * 0.5 + i * math.pi / 5
-            radius = 30 + int(math.sin(phase * 0.7 + i) * 8)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-            alpha = int(120 + math.sin(phase + i * 0.7) * 60)
-            alpha = max(0, min(255, alpha))
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_mid"], alpha), (px, py), 2)
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_bright"], alpha), (px, py), 1)
-
-        # Rising energy sparks
+    # -------------------------------------------------------------------
+    # Portrait-only LOD pass (extra material detail; arena LOD stays cheap)
+    # -------------------------------------------------------------------
+    def _draw_vex_masterwork_details(surface, pt, poly, dot, f, phase,
+                                     action):
+        p = _NS_vex.PALETTE
         for i in range(4):
-            t = (phase * 0.4 + i * 0.25) % 1.0
-            fx = cx - 25 + i * 15 + int(math.sin(phase + i) * 4)
-            fy = cy - 40 + int(t * 90)
-            alpha = int(200 * (1 - t))
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_dark"], alpha), (fx, fy), 3)
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_bright"], alpha), (fx, fy), 1)
-
-
+            _NS_vex._aaline(surface, p["crown_rim"],
+                            pt(-12 + i * 8, -29),
+                            pt(-12 + i * 8, -34 - (i % 2) * 5), 1)
+        for yy in (-40, -35, -30):
+            _NS_vex._aacircle(surface, p["robe_light"], pt(-9, yy), 1)
+            _NS_vex._aacircle(surface, p["robe_light"], pt(9, yy), 1)
+        for i in range(4):
+            y = 4 + i * 6
+            _NS_vex._aaline(surface, p["robe_mid"], pt(-6, y),
+                            pt(6, y + 2), 1)
+        for t in (.3, .62):
+            ox, oy = _NS_vex._orb_tip_local(phase, action)
+            bx, by = _NS_vex._staff_butt_local(phase, action)
+            rx = int(bx + (ox - bx) * t)
+            ry = int(by + (oy - by) * t)
+            _NS_vex._aacircle(surface, p["rune_trace"], pt(rx, ry), 1)
+        for i in range(4):
+            t = (phase * .4 + i / 4.0) % 1.0
+            dx = -10 + i * 6 + int(math.sin(phase * 1.3 + i) * 2)
+            dy = 10 - int(t * 48)
+            _NS_vex._aacircle(surface,
+                              (*p["void_bright"], int(180 * (1 - t))),
+                              pt(dx, dy), 1)
     # ===================================================================
     # FLOATING EFFECTS
     # ===================================================================
