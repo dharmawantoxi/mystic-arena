@@ -267,6 +267,8 @@ Preview karakter, pose, dan ukuran 1x di arena:
 Contact sheet rig idle/walk/attack:
 [docs/gornak_animation_strip.png](docs/gornak_animation_strip.png).
 Portrait LOD Hero Shop: [docs/gornak_portrait_preview.png](docs/gornak_portrait_preview.png).
+Perbandingan sebelum/sesudah (panel "sebelum" dirender dari kode pra-rewrite):
+[docs/gornak_before_after.png](docs/gornak_before_after.png).
 
 Uji regresi: `python tools/test_gornak_masterwork.py` (10 pemeriksaan: rig
 tunggal, kaki menapak, bilah tidak menembus dada, proc di ujung bilah,
