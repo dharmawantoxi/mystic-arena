@@ -8558,6 +8558,19 @@ class _NS_vex:
                                   (x + f, y + 1), r + 1)
             _NS_vex._aacircle(surface, color, (x, y), r)
 
+        # Tattered back-cape flare (balances the staff silhouette).
+        cape_wave = int(math.sin(phase * .8) * 2)
+        poly(p["robe_darkest"], [(-12, -16), (-4, -18), (-6, -2),
+             (-10 + cape_wave, 12), (-16, 26), (-22 + cape_wave, 34),
+             (-26, 26), (-24, 12), (-20 + cape_wave, -2)])
+        poly(p["robe_dark"], [(-11, -14), (-5, -16), (-7, -2),
+             (-11 + cape_wave, 10), (-16, 22), (-20 + cape_wave, 28),
+             (-23, 22), (-21, 10), (-18 + cape_wave, -2)], False)
+        _NS_vex._aaline(surface, p["robe_light"], pt(-19, 0),
+                        pt(-23 + cape_wave, 24), 1)
+        _NS_vex._aaline(surface, (*p["void_dark"], 160),
+                        pt(-21, 6), pt(-25 + cape_wave, 26), 1)
+
         # Dark crown flames behind the hood.
         _NS_vex._draw_elite_crown(surface, pt, poly, dot, f, phase,
                                   action, back=True, detail=detail)
@@ -8598,12 +8611,22 @@ class _NS_vex:
              (8 + tail_wave, 8), (6, 18), (2, 28),
              (-1, 33), (-4, 27), (-7, 16),
              (-9 + tail_wave, 8)], False)
+        _NS_vex._aaline(surface, p["robe_weave"], pt(-5, 0),
+                        pt(-4 + tail_wave, 20), 1)
+        _NS_vex._aaline(surface, p["robe_weave"], pt(5, 0),
+                        pt(4 + tail_wave, 20), 1)
+        _NS_vex._aaline(surface, p["robe_light"], pt(-13, -4),
+                        pt(-15 + tail_wave, 10), 1)
+        _NS_vex._aaline(surface, p["robe_high"], pt(-9, -2),
+                        pt(-11 + tail_wave, 8), 1)
         for i in range(7):
             tx = -12 + i * 4
             ty = 30 + int(math.sin(phase * 1.2 + i) * 2)
             ln = 8 + (i % 3) * 3
             poly(p["robe_darkest"], [(tx - 2, 26), (tx + 2, 26),
                  (tx + 1, ty + ln), (tx - 1, ty + ln)], False)
+            _NS_vex._aacircle(surface, (*p["void_dark"], 150),
+                              pt(tx, ty + ln), 1)
         # glowing runes down the robe front
         for i, off in enumerate((-7, 0, 7)):
             gx, gy = off, 14
@@ -8618,6 +8641,10 @@ class _NS_vex:
              (10, 6), (4, 12), (-4, 12), (-10, 6)], False)
         poly(p["armor_mid"], [(-8, -13), (8, -13),
              (7, 4), (3, 9), (-3, 9), (-7, 4)], False)
+        _NS_vex._aaline(surface, p["armor_light"], pt(-11, -16),
+                        pt(-10, 4), 1)
+        _NS_vex._aaline(surface, p["armor_shine"], pt(-9, -15),
+                        pt(-2, -15), 1)
         _NS_vex._aaline(surface, p["shadow_deep"], pt(-6, -15),
                         pt(0, -2), 2)
         _NS_vex._aaline(surface, p["shadow_deep"], pt(6, -15),
@@ -8691,33 +8718,46 @@ class _NS_vex:
     # -------------------------------------------------------------------
     def _draw_elite_crown(surface, pt, poly, dot, f, phase, action,
                           back=False, detail=False):
-        """Jagged radiant void-flame crown (dark back layer / bright front)."""
+        """Void-flame crown: connected burning crest hugging the hood."""
         p = _NS_vex.PALETTE
+        if back:
+            # Solid void volume behind the hood so the flames never float.
+            poly(p["void_darkest"], [(-15, -24), (-17, -34), (-12, -44),
+                 (0, -50), (12, -44), (17, -34), (15, -24), (8, -18),
+                 (-8, -18)])
+            poly(p["void_dark"], [(-12, -26), (-14, -34), (-10, -42),
+                 (0, -47), (10, -42), (14, -34), (12, -26), (6, -20),
+                 (-6, -20)], False)
+            poly(p["void_mid"], [(-8, -28), (-10, -34), (-7, -40),
+                 (0, -44), (7, -40), (10, -34), (8, -28), (4, -22),
+                 (-4, -22)], False)
+            return
+        # Curved flame licks growing out of the void volume.
         spikes = [
-            (-16, -28, -26, -50), (-11, -31, -18, -61),
-            (-6, -33, -9, -66), (0, -34, 0, -68),
-            (6, -33, 9, -66), (11, -31, 18, -61),
-            (16, -28, 26, -50), (-19, -24, -31, -41),
-            (19, -24, 31, -41),
+            (-14, -30, -22, -42, 4), (-10, -33, -15, -50, 4),
+            (-5, -35, -7, -56, 5), (0, -36, 0, -60, 5),
+            (5, -35, 7, -56, 4), (10, -33, 15, -50, 4),
+            (14, -30, 22, -42, 3), (-17, -26, -26, -34, 3),
+            (17, -26, 26, -34, 3),
         ]
-        dark = p["void_darkest"] if not back else p["void_dark"]
-        mid = p["void_dark"] if not back else p["void_mid"]
-        for i, (bx, by, tx, ty) in enumerate(spikes):
-            wig = int(math.sin(phase * 1.1 + i * .6) * (2 + i % 3))
+        for i, (bx, by, tx, ty, wd) in enumerate(spikes):
+            wig = int(math.sin(phase * 1.1 + i * .6) * (1 + i % 2))
             tx2 = tx + wig
             ty2 = ty + int(abs(wig) * .4)
-            poly(dark, [(bx - 3, by), (tx2, ty2), (bx + 3, by)])
-            if not back:
-                poly(mid, [(bx - 1, by + 1), (tx2, ty2),
-                           (bx + 1, by + 1)], False)
-                _NS_vex._aaline(surface, p["void_light"],
-                                pt(bx, by), pt(tx2, ty2), 1)
-                x, y = pt(tx2, ty2)
-                _NS_vex._aacircle(surface, p["crown_tip"], (x, y), 2)
-                _NS_vex._aacircle(surface, p["white"], (x - 1, y - 1), 1)
-        if not back:
-            _NS_vex._aaline(surface, p["crown_rim"], pt(-16, -28),
-                            pt(6, -30), 2)
+            mx = (bx + tx2) // 2 + (2 if bx >= 0 else -2)
+            my = (by + ty2) // 2
+            poly(p["void_darkest"], [(bx - wd, by), (mx - wd // 2, my),
+                 (tx2, ty2), (mx + wd // 2, my), (bx + wd, by)])
+            poly(p["void_dark"], [(bx - wd + 1, by), (tx2, ty2),
+                 (bx + wd - 1, by)], False)
+            poly(p["void_mid"], [(bx - wd // 2, by), (tx2, ty2),
+                 (bx + wd // 2, by)], False)
+            _NS_vex._aaline(surface, p["void_light"], pt(bx, by),
+                            pt(tx2, ty2), 1)
+            x, y = pt(tx2, ty2)
+            _NS_vex._aacircle(surface, p["crown_tip"], (x, y), 1)
+        _NS_vex._aaline(surface, p["crown_rim"], pt(-14, -30),
+                        pt(8, -32), 2)
 
 
     # -------------------------------------------------------------------
@@ -8733,30 +8773,32 @@ class _NS_vex:
         _NS_vex._aaline(surface, p["staff_dark"], (bx, by), (ox, oy), 5)
         _NS_vex._aaline(surface, p["staff_mid"], (bx, by), (ox, oy), 3)
         _NS_vex._aaline(surface, p["staff_light"], (bx, by), (ox, oy), 1)
+        _NS_vex._aaline(surface, (*p["rune_mid"], 170),
+                        (bx + f, by - 1), (ox + f, oy - 1), 1)
         for t in (.3, .62):
             rx = int(bx + (ox - bx) * t)
             ry = int(by + (oy - by) * t)
             _NS_vex._aacircle(surface, p["armor_darkest"], (rx, ry), 3)
             _NS_vex._aacircle(surface, p["void_bright"], (rx, ry), 1)
-        # crescent claw cradle around the orb
+        # crescent claw cradle around the orb (tight, hugging the gem)
         for side in (-1, 1):
             prev = (int(bx + (ox - bx) * .9), int(by + (oy - by) * .9))
             for i in range(1, 6):
                 t = i / 5.0
-                cx2 = ox + side * math.sin(t * math.pi) * 8
-                cy2 = oy + (1 - t) * 12 - t * 2
+                cx2 = ox + side * math.sin(t * math.pi) * 6
+                cy2 = oy + (1 - t) * 9 - t * 2
                 _NS_vex._aaline(surface, p["staff_dark"], prev,
-                                (cx2 + f, cy2), 4)
+                                (cx2 + f, cy2), 3)
                 _NS_vex._aaline(surface, p["staff_light"], prev,
                                 (cx2, cy2), 1)
                 prev = (cx2, cy2)
         pulse = .72 + math.sin(phase * 2.5) * .18
-        for radius, color, alpha in ((13, p["void_dark"], 55),
-                                     (9, p["void_mid"], 110),
-                                     (6, p["void_light"], 185)):
+        for radius, color, alpha in ((10, p["void_dark"], 50),
+                                     (7, p["void_mid"], 105),
+                                     (5, p["void_light"], 180)):
             _NS_vex._aacircle(surface, (*color, int(alpha * pulse)),
                               (ox, oy), radius)
-        _NS_vex._aacircle(surface, p["void_hot"], (ox, oy), 4)
+        _NS_vex._aacircle(surface, p["void_hot"], (ox, oy), 3)
         _NS_vex._aacircle(surface, p["void_white"], (ox - 1, oy - 1), 2)
         _NS_vex._aacircle(surface, p["white"], (ox - f, oy - 1), 1)
         for i in range(3):
@@ -8784,16 +8826,22 @@ class _NS_vex:
         peak = int(math.sin(phase * 1.1) * 2)
         poly(p["robe_darkest"], [(0, -51), (4, -54),
              (-8, -53 + peak), (-16, -46 + peak), (-8, -44)])
+        _NS_vex._aaline(surface, p["robe_light"], pt(-12, -34),
+                        pt(-7, -17), 1)
+        _NS_vex._aaline(surface, p["robe_high"], pt(-10, -42),
+                        pt(-13, -30), 1)
         # shadowed void face
         poly(p["face_dark"], [(-7, -38), (0, -41), (7, -38),
              (9, -30), (7, -24), (0, -22), (-7, -24), (-9, -30)])
-        # glowing cyan eye slit (brighter while attacking)
+        # glowing cyan eye SLIT (brighter while attacking)
         glow = action in ("attack",) or ap > .35
         ex, ey = pt(0, -30)
-        _NS_vex._aacircle(surface, p["void_hot"], (ex, ey), 5)
-        _NS_vex._aacircle(surface, p["eye_glow"], (ex, ey), 3)
+        _NS_vex._aacircle(surface, (*p["void_dark"], 140), (ex, ey), 5)
+        _NS_vex._aaline(surface, p["eye_glow"], pt(-4, -30), pt(4, -30), 3)
+        _NS_vex._aaline(surface, p["void_hot"], pt(-3, -30), pt(3, -30), 1)
         if glow:
-            _NS_vex._aacircle(surface, p["eye_bright"], (ex, ey), 2)
+            _NS_vex._aaline(surface, p["eye_bright"], pt(-2, -30),
+                            pt(2, -30), 1)
             _NS_vex._aacircle(surface, p["white"], (ex - f, ey - 1), 1)
         _NS_vex._aaline(surface, p["robe_darkest"], pt(-3, -24),
                         pt(3, -24), 2)
