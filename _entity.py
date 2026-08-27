@@ -4001,6 +4001,13 @@ class Hero(TowerDebuffMixin):
             # Dipakai heroes/_adapt_hero_to_boss supaya pose serang
             # tidak terbalik-balik kalau hero berbalik/retreat di
             # tengah animasi serangan.
+            # FIX: hadapkan hero ke arah target SEBELUM mengunci.
+            # Tanpa ini, hero yang sedang bergerak (retreat/destination)
+            # sambil menyerang akan menghadap ke arah gerak (base/tujuan),
+            # bukan ke target — terlihat "menyamping" saat menyerang.
+            _atk_dx = self.target.x - self.x
+            if _atk_dx != 0:
+                self.facing = 1 if _atk_dx > 0 else -1
             self._attack_facing = self.facing
 
             # Boss hero (morgath, ancient_apparition, dll.) render
@@ -5106,6 +5113,10 @@ class Minion(TowerDebuffMixin):
         if self.target:
             dist = self._distance_to(self.target)
             if dist <= self.range:
+                # Hadapkan minion ke arah target sebelum menyerang
+                _mdx = self.target.x - self.x
+                if _mdx != 0:
+                    self.direction = 1 if _mdx > 0 else -1
                 if self.timer == 0:
                     self.target.take_damage(self.damage, self.team)
                     # Attack cooldown efektif (dipanjangkan saat kena
@@ -5290,6 +5301,11 @@ class Minion(TowerDebuffMixin):
         if dist > 1:
             self.x += self.speed * dx / dist
             self.y += self.speed * dy / dist
+            # Hadapkan minion ke arah target (bukan tetap ke arah
+            # spawn). Supaya badan minion menghadap target saat
+            # mengejar, bukan menyamping.
+            if dx != 0:
+                self.direction = 1 if dx > 0 else -1
 
     def take_damage(self, damage, from_team, damage_type='normal',
                     source=None):
