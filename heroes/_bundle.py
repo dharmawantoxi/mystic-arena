@@ -117,6 +117,16 @@ class _NS_grimjaw:
         "white":          (255, 255, 255),
         "eye_glow":       (255, 45, 45),
         "dark_eye":       (25, 5, 10),
+        # Masterwork detail & boot swatches
+        "mask_line":      (95, 88, 78),
+        "hair_shine":     (255, 220, 130),
+        "cloth_stitch":   (72, 22, 26),
+        "ember":          (255, 190, 90),
+        "gold_engrave":   (255, 210, 120),
+        "boot_darkest":   (18, 14, 16),
+        "boot_dark":      (42, 30, 28),
+        "boot_mid":       (78, 52, 42),
+        "boot_light":     (120, 82, 60),
     }
 
 
@@ -314,6 +324,7 @@ class _NS_grimjaw:
         skill_timer = int(getattr(hero, "active_skill_timer", 0))
         moving = _NS_grimjaw._detect_moving(hero)
         _NS_grimjaw._update_attack_anim(hero)
+        portrait_hd = bool(getattr(hero, "_portrait_hd", False))
 
         attacking = (
             getattr(hero, "_gj_attack_active", False)
@@ -326,17 +337,21 @@ class _NS_grimjaw:
         is_healing_ward = active_skill == "w"
         is_omnislash = active_skill == "r"
 
-        # ---------- Background layers ----------
-        _NS_grimjaw._draw_fire_aura(surface, x, y, pulse)
-        _NS_grimjaw._draw_fire_platform(surface, x, y + 40, pulse, active_skill)
+        # Portraits deliberately contain only the character rig.  Auras and
+        # arena-sized skill effects would force the auto-crop to shrink the
+        # mask, mane and armor detail.
+        if not portrait_hd:
+            # ---------- Background layers ----------
+            _NS_grimjaw._draw_fire_aura(surface, x, y, pulse)
+            _NS_grimjaw._draw_fire_platform(surface, x, y + 40, pulse, active_skill)
 
-        # ---------- Healing Ward effect (background) ----------
-        if is_healing_ward:
-            _NS_grimjaw._draw_healing_ward_ground(surface, hero, x, y, skill_timer, pulse)
+            # ---------- Healing Ward effect (background) ----------
+            if is_healing_ward:
+                _NS_grimjaw._draw_healing_ward_ground(surface, hero, x, y, skill_timer, pulse)
 
-        # ---------- Omnislash effect (background sparks) ----------
-        if is_omnislash:
-            _NS_grimjaw._draw_omnislash_ground(surface, hero, x, y, skill_timer, pulse)
+            # ---------- Omnislash effect (background sparks) ----------
+            if is_omnislash:
+                _NS_grimjaw._draw_omnislash_ground(surface, hero, x, y, skill_timer, pulse)
 
         # ---------- Character body ----------
         if is_blade_fury:
@@ -350,17 +365,18 @@ class _NS_grimjaw:
         else:
             _NS_grimjaw._draw_grimjaw_idle(surface, hero, x, y)
 
-        # ---------- Skill foreground effects ----------
-        if is_blade_fury:
-            _NS_grimjaw._draw_blade_fury_rings(surface, x, y + 20, pulse)
-            _NS_grimjaw._draw_fire_particles_orbit(surface, x, y, pulse)
+        if not portrait_hd:
+            # ---------- Skill foreground effects ----------
+            if is_blade_fury:
+                _NS_grimjaw._draw_blade_fury_rings(surface, x, y + 20, pulse)
+                _NS_grimjaw._draw_fire_particles_orbit(surface, x, y, pulse)
 
-        if is_healing_ward:
-            _NS_grimjaw._draw_healing_ward_totem(surface, hero, x, y, skill_timer, pulse)
-            _NS_grimjaw._draw_heal_aura(surface, x, y, pulse)
+            if is_healing_ward:
+                _NS_grimjaw._draw_healing_ward_totem(surface, hero, x, y, skill_timer, pulse)
+                _NS_grimjaw._draw_heal_aura(surface, x, y, pulse)
 
-        if is_omnislash:
-            _NS_grimjaw._draw_omnislash_slashes(surface, hero, x, y, skill_timer, pulse)
+            if is_omnislash:
+                _NS_grimjaw._draw_omnislash_slashes(surface, hero, x, y, skill_timer, pulse)
 
 
     # ===================================================================
@@ -368,41 +384,50 @@ class _NS_grimjaw:
     # ===================================================================
     def _draw_grimjaw_idle(surface, hero, x, y):
         bob = int(math.sin(hero.pulse * 0.7) * 2)
-        _NS_grimjaw._draw_shadow(surface, x, y + 48)
-        _NS_grimjaw._draw_fire_mist(surface, x, y + 35, hero.pulse)
-        _NS_grimjaw._draw_grimjaw_body(surface, x, y + bob, hero.direction, hero.pulse, "idle")
+        portrait = bool(getattr(hero, "_portrait_hd", False))
+        if not portrait:
+            _NS_grimjaw._draw_shadow(surface, x, y + 48)
+            _NS_grimjaw._draw_fire_mist(surface, x, y + 35, hero.pulse)
+        _NS_grimjaw._draw_grimjaw_body(surface, x, y + bob, hero.direction,
+                                       hero.pulse, "idle", detail=portrait)
 
 
     def _draw_grimjaw_walk(surface, hero, x, y):
         phase = hero.pulse * 2.0
         bob = int(abs(math.sin(phase * 1.2)) * 3)
         sway = int(math.sin(phase) * 2)
-        _NS_grimjaw._draw_shadow(surface, x + sway, y + 48)
-        _NS_grimjaw._draw_fire_mist(surface, x + sway, y + 35, phase, trail=True,
-                        facing=hero.direction)
-        _NS_grimjaw._draw_grimjaw_body(surface, x + sway, y - bob, hero.direction, phase, "walk")
+        portrait = bool(getattr(hero, "_portrait_hd", False))
+        if not portrait:
+            _NS_grimjaw._draw_shadow(surface, x + sway, y + 48)
+            _NS_grimjaw._draw_fire_mist(surface, x + sway, y + 35, phase, trail=True,
+                            facing=hero.direction)
+        _NS_grimjaw._draw_grimjaw_body(surface, x + sway, y - bob, hero.direction,
+                                       phase, "walk", detail=portrait)
 
 
     def _draw_grimjaw_attack(surface, hero, x, y):
         progress = getattr(hero, "_gj_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
         crit = getattr(hero, "_gj_crit_active", False)
+        portrait = bool(getattr(hero, "_portrait_hd", False))
 
         # Body lunge forward
         lunge = int(math.sin(progress * math.pi) * 4) * hero.direction
 
-        _NS_grimjaw._draw_shadow(surface, x + lunge, y + 48)
-        _NS_grimjaw._draw_fire_mist(surface, x + lunge, y + 35, hero.pulse, intense=True)
+        if not portrait:
+            _NS_grimjaw._draw_shadow(surface, x + lunge, y + 48)
+            _NS_grimjaw._draw_fire_mist(surface, x + lunge, y + 35, hero.pulse, intense=True)
         _NS_grimjaw._draw_grimjaw_body(surface, x + lunge, y, hero.direction, hero.pulse,
-                           "attack", progress)
+                           "attack", progress, detail=portrait)
 
-        # Fire slash arc
-        _NS_grimjaw._draw_fire_slash_arc(surface, x + lunge, y, hero.direction, progress, crit)
+        if not portrait:
+            # Fire slash arc
+            _NS_grimjaw._draw_fire_slash_arc(surface, x + lunge, y, hero.direction, progress, crit)
 
-        # Critical strike burst
-        if crit and 0.5 < progress < 0.7:
-            _NS_grimjaw._draw_critical_strike_burst(surface, x + lunge, y, hero.direction,
-                                        progress)
+            # Critical strike burst
+            if crit and 0.5 < progress < 0.7:
+                _NS_grimjaw._draw_critical_strike_burst(surface, x + lunge, y, hero.direction,
+                                            progress)
 
 
     def _draw_grimjaw_blade_fury(surface, hero, x, y, timer, phase):
@@ -462,738 +487,519 @@ class _NS_grimjaw:
     # ===================================================================
     # BODY RENDERING - HD detailed Juggernaut
     # ===================================================================
+
+    # ===================================================================
+    # MASTERWORK RIG - bone rig 2D berlapis (setara Kaizen/Thorne/Zephyr)
+    #
+    # Mengganti seluruh set "body-part sticker" lama (torso, pauldron,
+    # head_mask, hair_back/front, left/sword arm, fire_sword) dengan SATU
+    # rig pose-driven: mane api menyala, mask putih ber-strip darah,
+    # sabuk + loincloth merah, kaki & boot yang benar-benar menapak, dan
+    # flame blade melengkung yang sudutnya dihitung dari sendi. Semua
+    # 100% primitif pygame - tanpa PNG, sprite sheet, ataupun image.load.
+    # ===================================================================
     def _draw_grimjaw_body(surface, cx, cy, facing, phase, action,
-                           attack_progress=0, spin_phase=0):
-        """Full warrior body render."""
-        # Body sway
-        if action == "walk":
-            body_sway = int(math.sin(phase * 2) * 1)
-            head_bob = int(math.sin(phase * 2 + math.pi / 4) * 1)
-        elif action in ("attack", "spin"):
-            body_sway = 0
-            head_bob = 0
-        else:
-            body_sway = int(math.sin(phase * 0.5) * 1)
-            head_bob = int(math.sin(phase * 0.6) * 1)
-
-        bx = cx + body_sway
-
-        # Draw order: back to front
-        # 1. Back hair
-        _NS_grimjaw._draw_hair_back(surface, bx, cy - 22 + head_bob, facing, phase, action)
-        # 2. Lower body (flowing red loincloth - no legs, floating style)
-        _NS_grimjaw._draw_lower_body_flowing(surface, bx, cy + 14, facing, phase, action)
-        # 3. Torso with armor
-        _NS_grimjaw._draw_torso(surface, bx, cy - 3, facing, phase)
-        # 4. Pauldrons
-        _NS_grimjaw._draw_pauldrons(surface, bx, cy - 8 + head_bob, facing)
-        # 5. Head with mask
-        _NS_grimjaw._draw_head_mask(surface, bx, cy - 22 + head_bob, facing,
-                        is_attacking=(action in ("attack", "spin")))
-        # 6. Front hair
-        _NS_grimjaw._draw_hair_front(surface, bx, cy - 22 + head_bob, facing, phase, action)
-        # 7. Left arm (empty)
-        _NS_grimjaw._draw_left_arm(surface, bx, cy + head_bob, facing, phase, action)
-        # 8. Right arm + sword (front)
-        _NS_grimjaw._draw_sword_arm(surface, bx, cy + head_bob, facing, phase, action,
-                        attack_progress, spin_phase)
-
-
-    # ═══════════════════════════════════════════════════════
-    # LOWER BODY (Red loincloth flowing - floating style)
-    # ═══════════════════════════════════════════════════════
-
-    def _draw_lower_body_flowing(surface, cx, cy, facing, phase, action):
-        """Red flowing loincloth with V-panel armor."""
-        sway1 = int(math.sin(phase * 0.7) * 2)
-        sway2 = int(math.sin(phase * 0.9 + 1) * 2)
-
-        # Skirt shape
-        lower_pts = [
-            (cx - 11, cy - 2),
-            (cx + 11, cy - 2),
-            (cx + 13, cy + 5),
-            (cx + 12 + sway1, cy + 12),
-            (cx + 8 + sway2, cy + 17),
-            (cx + 4 + sway1, cy + 19),
-            (cx + 2 + sway2, cy + 18),
-            (cx - 2 + sway1, cy + 18),
-            (cx - 4 + sway2, cy + 19),
-            (cx - 8 + sway1, cy + 17),
-            (cx - 12 + sway2, cy + 12),
-            (cx - 13, cy + 5),
-        ]
-
-        # Shadow
-        shadow_pts = [(p[0] + 2, p[1] + 2) for p in lower_pts]
-        _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["shadow_deep"], shadow_pts)
-
-        # Red loincloth layers
-        _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["red_darkest"], lower_pts)
-        _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["red_dark"], [
-            (cx - 10, cy - 1),
-            (cx + 10, cy - 1),
-            (cx + 12, cy + 5),
-            (cx + 11 + sway1, cy + 12),
-            (cx + 7 + sway2, cy + 16),
-            (cx - 7 + sway1, cy + 16),
-            (cx - 11 + sway2, cy + 12),
-            (cx - 12, cy + 5),
-        ])
-        _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["red_mid"], [
-            (cx - 9, cy),
-            (cx + 9, cy),
-            (cx + 11, cy + 5),
-            (cx + 9, cy + 12),
-            (cx + 4, cy + 15),
-            (cx - 4, cy + 15),
-            (cx - 9, cy + 12),
-            (cx - 11, cy + 5),
-        ])
-
-        # Center V-panel armor (brown leather)
-        v_panel_pts = [
-            (cx - 4, cy - 1),
-            (cx + 4, cy - 1),
-            (cx + 3, cy + 12),
-            (cx, cy + 15),
-            (cx - 3, cy + 12),
-        ]
-        _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["armor_darkest"], v_panel_pts)
-        _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["armor_dark"], [
-            (cx - 3, cy),
-            (cx + 3, cy),
-            (cx + 2, cy + 11),
-            (cx, cy + 14),
-            (cx - 2, cy + 11),
-        ])
-        _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["armor_mid"], [
-            (cx - 2, cy + 1),
-            (cx + 2, cy + 1),
-            (cx + 1, cy + 10),
-            (cx, cy + 12),
-            (cx - 1, cy + 10),
-        ])
-
-        # Gold trim on V-panel edges
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_dark"],
-                (cx - 4, cy - 1), (cx, cy + 15), 1)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_dark"],
-                (cx + 4, cy - 1), (cx, cy + 15), 1)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_mid"],
-                (cx - 3, cy), (cx, cy + 13), 1)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_mid"],
-                (cx + 3, cy), (cx, cy + 13), 1)
-
-        # Fabric folds
-        for fold_x_off in [-8, -3, 3, 8]:
-            fold_x = cx + fold_x_off
-            wave_offset = sway1 if fold_x_off < 0 else sway2
-            _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["red_darkest"],
-                    (fold_x, cy),
-                    (fold_x + wave_offset // 2, cy + 14), 1)
-
-        # Gold accents at bottom (tatter positions)
-        for tx_off, tw in [(-9, sway1), (-5, sway2), (0, sway1),
-                            (5, sway2), (9, sway1)]:
-            tty = cy + 16
-            _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["gold_dark"], (cx + tx_off + tw, tty, 2, 2))
-            _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["gold_mid"], (cx + tx_off + tw, tty, 1, 1))
-
-
-    # ═══════════════════════════════════════════════════════
-    # TORSO
-    # ═══════════════════════════════════════════════════════
-
-    def _draw_torso(surface, cx, cy, facing, phase):
-        """Armored torso with red center panel."""
-        body_w = 22
-        body_h = 24
-
-        # Shadow
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["shadow_deep"],
-              (cx - body_w // 2 + 2, cy + 2, body_w, body_h),
-              border_radius=3)
-
-        # Armor base (dark brown layers)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["armor_darkest"],
-              (cx - body_w // 2, cy, body_w, body_h), border_radius=3)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["armor_dark"],
-              (cx - body_w // 2, cy, body_w - 1, body_h - 2), border_radius=3)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["armor_mid"],
-              (cx - body_w // 2, cy, body_w - 2, body_h - 4), border_radius=3)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["armor_light"],
-              (cx - body_w // 2, cy, body_w // 2, body_h // 3), border_radius=3)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["armor_high"],
-              (cx - body_w // 2, cy, 5, 4), border_radius=2)
-
-        # Center RED panel (vertical stripe)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["red_darkest"],
-              (cx - 3, cy + 2, 7, body_h - 6))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["red_dark"],
-              (cx - 3, cy + 2, 6, body_h - 7))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["red_mid"],
-              (cx - 3, cy + 2, 5, body_h - 8))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["red_light"],
-              (cx - 3, cy + 2, 3, body_h - 10))
-
-        # Gold trim border on red panel
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_dark"],
-                (cx - 3, cy + 2), (cx - 3, cy + body_h - 5), 1)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_dark"],
-                (cx + 4, cy + 2), (cx + 4, cy + body_h - 5), 1)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_mid"],
-                (cx - 3, cy + 2), (cx + 4, cy + 2), 1)
-
-        # Shoulder straps (diagonal armor pieces)
-        for side in (-1, 1):
-            strap_pts = [
-                (cx + side * (body_w // 2 - 1), cy + 2),
-                (cx + side * (body_w // 2 - 1), cy + 9),
-                (cx + side * 3, cy + 11),
-                (cx + side * 3, cy + 4),
-            ]
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["armor_darkest"], strap_pts)
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["armor_dark"], [
-                (cx + side * (body_w // 2 - 2), cy + 3),
-                (cx + side * (body_w // 2 - 2), cy + 8),
-                (cx + side * 3, cy + 10),
-                (cx + side * 3, cy + 5),
-            ])
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["armor_mid"], [
-                (cx + side * (body_w // 2 - 3), cy + 4),
-                (cx + side * (body_w // 2 - 3), cy + 7),
-                (cx + side * 3, cy + 9),
-                (cx + side * 3, cy + 6),
-            ])
-            # Gold buckle on strap
-            _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["gold_dark"],
-                      (cx + side * 6, cy + 6), 2)
-            _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["gold_mid"],
-                      (cx + side * 6, cy + 6), 1)
-
-        # Belt (thick leather at bottom)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["armor_darkest"],
-              (cx - body_w // 2, cy + body_h - 5, body_w, 5))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["armor_dark"],
-              (cx - body_w // 2, cy + body_h - 5, body_w - 1, 4))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["armor_mid"],
-              (cx - body_w // 2, cy + body_h - 5, body_w - 2, 2))
-
-        # Big gold belt buckle
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["gold_darkest"],
-              (cx - 4, cy + body_h - 6, 8, 7), border_radius=1)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["gold_dark"],
-              (cx - 4, cy + body_h - 6, 7, 6))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["gold_mid"],
-              (cx - 4, cy + body_h - 6, 7, 4))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["gold_light"],
-              (cx - 4, cy + body_h - 6, 4, 3))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["gold_shine"],
-              (cx - 4, cy + body_h - 6, 1, 1))
-
-        # Center emblem on buckle
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_dark"], (cx, cy + body_h - 4, 1, 3))
-
-
-    # ═══════════════════════════════════════════════════════
-    # PAULDRONS (Spiked shoulder armor)
-    # ═══════════════════════════════════════════════════════
-
-    def _draw_pauldrons(surface, cx, cy, facing):
-        """Shoulder pauldrons with metal spikes."""
-        for side in (-1, 1):
-            sx = cx + side * 12
-            sy = cy + 2
-
-            pauldron_pts = [
-                (sx - 4, sy),
-                (sx + 4, sy),
-                (sx + 4, sy + 7),
-                (sx, sy + 9),
-                (sx - 4, sy + 7),
-            ]
-            # Shadow
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["shadow_deep"],
-                  [(p[0] + 1, p[1] + 1) for p in pauldron_pts])
-            # Armor layers
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["armor_darkest"], pauldron_pts)
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["armor_dark"], [
-                (sx - 3, sy + 1),
-                (sx + 3, sy + 1),
-                (sx + 3, sy + 6),
-                (sx, sy + 8),
-                (sx - 3, sy + 6),
-            ])
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["armor_mid"], [
-                (sx - 3, sy + 1),
-                (sx + 1, sy + 1),
-                (sx, sy + 6),
-                (sx - 3, sy + 5),
-            ])
-            _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["armor_high"],
-                  (sx - 3, sy + 1, 2, 1))
-
-            # Gold trim bottom
-            _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_mid"],
-                    (sx - 4, sy + 7), (sx + 4, sy + 7), 1)
-            _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_light"],
-                    (sx - 4, sy + 7), (sx, sy + 7), 1)
-
-            # Metal spike on top
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["shadow_deep"], [
-                (sx - 2, sy + 1),
-                (sx, sy - 6),
-                (sx + 2, sy + 1),
-            ])
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["metal_darkest"], [
-                (sx - 2, sy),
-                (sx, sy - 6),
-                (sx + 2, sy),
-            ])
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["metal_dark"], [
-                (sx - 1, sy),
-                (sx, sy - 5),
-                (sx + 1, sy),
-            ])
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["metal_mid"], [
-                (sx - 1, sy),
-                (sx, sy - 4),
-                (sx, sy),
-            ])
-            _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["metal_shine"], (sx, sy - 4, 1, 2))
-            _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["white"], (sx, sy - 3, 1, 1))
-
-
-    # ═══════════════════════════════════════════════════════
-    # HEAD + WHITE MASK with 3 blood stripes
-    # ═══════════════════════════════════════════════════════
-
-    def _draw_head_mask(surface, cx, cy, facing, is_attacking=False):
-        """White Juggernaut mask with 3 blood stripes."""
-        # Neck
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["skin_darkest"], (cx - 2, cy + 16, 4, 4))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["skin_dark"], (cx - 2, cy + 16, 3, 3))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["skin_mid"], (cx - 2, cy + 16, 2, 2))
-
-        # MASK BASE (rounded rectangle - white)
-        mask_x = cx - 7
-        mask_y = cy
-        mask_w = 14
-        mask_h = 18
-
-        # Shadow
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["mask_shadow"],
-              (mask_x + 1, mask_y + 1, mask_w, mask_h), border_radius=4)
-
-        # Multi-layer white mask
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["mask_shadow"],
-              (mask_x, mask_y, mask_w, mask_h), border_radius=4)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["mask_dark"],
-              (mask_x, mask_y, mask_w - 1, mask_h - 1), border_radius=4)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["mask_mid"],
-              (mask_x, mask_y, mask_w - 2, mask_h - 3), border_radius=3)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["mask_light"],
-              (mask_x + 1, mask_y, mask_w - 4, mask_h - 8), border_radius=3)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["mask_shine"],
-              (mask_x + 1, mask_y, 5, 6), border_radius=2)
-
-        # ═══ 3 BLOOD STRIPES (LEFT + CENTER + RIGHT) ═══
-        # LEFT stripe (thin)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_darkest"], (cx - 5, cy + 1, 2, 14))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_dark"], (cx - 5, cy + 1, 2, 12))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_mid"], (cx - 5, cy + 1, 1, 10))
-
-        # CENTER stripe (thickest, main feature)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_darkest"], (cx - 1, cy + 1, 3, 15))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_dark"], (cx - 1, cy + 1, 3, 13))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_mid"], (cx - 1, cy + 1, 2, 11))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_light"], (cx - 1, cy + 1, 1, 8))
-
-        # RIGHT stripe (medium)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_darkest"], (cx + 3, cy + 1, 2, 14))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_dark"], (cx + 3, cy + 1, 2, 12))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_mid"], (cx + 3, cy + 1, 1, 10))
-
-        # Blood drips at bottom
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_dark"], (cx, cy + 15, 1, 2))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["blood_mid"], (cx + 3, cy + 14, 1, 1))
-
-        # ═══ EYE HOLES (dark cutouts) ═══
-        for eye_x_off in (-5, 3):
-            eye_x = cx + eye_x_off
-            eye_y = cy + 6
-            _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["dark_eye"], (eye_x, eye_y, 3, 3))
-
-        # ═══ GLOWING RED EYES ═══
-        if is_attacking:
-            for eye_x_off in (-5, 3):
-                eye_x = cx + eye_x_off
-                eye_y = cy + 6
-                _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["eye_glow"], (eye_x, eye_y, 3, 3))
-                _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["white"], (eye_x, eye_y, 2, 2))
-                _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["fire_core"], (eye_x, eye_y, 1, 1))
-
-            # Glow aura behind eyes
-            glow_surf = pygame.Surface((26, 12), pygame.SRCALPHA)
-            for r in range(6, 0, -1):
-                alpha = min(255, max(0, 180 - r * 25))
-                _NS_grimjaw._aacircle(glow_surf, (255, 30, 30, alpha), (6, 6), r)
-                _NS_grimjaw._aacircle(glow_surf, (255, 30, 30, alpha), (20, 6), r)
-            surface.blit(glow_surf, (cx - 13, cy + 4))
-        else:
-            for eye_x_off in (-4, 4):
-                eye_x = cx + eye_x_off
-                eye_y = cy + 7
-                _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["eye_glow"], (eye_x, eye_y, 1, 1))
-                _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["white"], (eye_x, eye_y, 1, 1))
-
-        # ═══ NOSE (small) ═══
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["mask_shadow"], (cx, cy + 9, 1, 2))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["dark_eye"], (cx, cy + 11, 1, 1))
-
-        # ═══ MOUTH (teeth grille) ═══
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["shadow"], (cx - 3, cy + 12, 6, 3))
-        for tooth_x in (-3, -1, 1, 3):
-            _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["mask_light"],
-                  (cx + tooth_x, cy + 12, 1, 2))
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["mask_shadow"], (cx - 3, cy + 14, 6, 1))
-
-
-    # ═══════════════════════════════════════════════════════
-    # HAIR (Orange messy - back + front)
-    # ═══════════════════════════════════════════════════════
-
-    def _draw_hair_back(surface, cx, cy, facing, phase, action):
-        """Wild hair strands going back."""
-        wave_int = 3 if action in ("walk", "attack", "spin") else 1
-
-        strand_configs = [
-            (-7, 2, 12, -0.4),
-            (-5, 4, 14, -0.2),
-            (-2, 6, 16, 0),   # center longest
-            (0, 7, 15, 0.1),
-            (2, 6, 14, 0.2),
-            (5, 4, 12, 0.3),
-            (7, 2, 10, 0.4),
-        ]
-
-        for x_off, y_off, length, angle_off in strand_configs:
-            wave = int(math.sin(phase * 0.8 + x_off * 0.3) * wave_int)
-
-            strand_x = cx + x_off
-            strand_y = cy + y_off
-
-            tip_x = strand_x + int(math.sin(angle_off) * length) - facing * 2
-            tip_y = strand_y + length + wave
-
-            # Shadow
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["shadow_deep"], [
-                (strand_x - 2, strand_y + 1),
-                (tip_x, tip_y + 1),
-                (strand_x + 2, strand_y + 1),
-            ])
-            # Hair layers
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["hair_darkest"], [
-                (strand_x - 2, strand_y),
-                (tip_x, tip_y),
-                (strand_x + 2, strand_y),
-            ])
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["hair_dark"], [
-                (strand_x - 1, strand_y),
-                (tip_x, tip_y),
-                (strand_x + 1, strand_y),
-            ])
-            # Highlight
-            if length >= 12:
-                _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["hair_mid"],
-                        (strand_x, strand_y), (tip_x, tip_y), 1)
-
-
-    def _draw_hair_front(surface, cx, cy, facing, phase, action):
-        """Front hair spikes/tufts around mask."""
-        wave_int = 2 if action in ("walk", "attack", "spin") else 1
-        wave = int(math.sin(phase * 0.6) * wave_int)
-
-        # Top tufts (above mask)
-        tuft_configs = [
-            (-6, -2, 5),
-            (-3, -5, 6),
-            (1, -5, 6),
-            (5, -2, 5),
-        ]
-
-        for x_off, y_off, height in tuft_configs:
-            tx = cx + x_off + wave
-            ty = cy + y_off
-
-            # Shadow
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["shadow_deep"], [
-                (tx - 2, cy),
-                (tx, ty - height),
-                (tx + 2, cy),
-            ])
-
-            # Hair layers
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["hair_darkest"], [
-                (tx - 2, cy - 1),
-                (tx, ty - height),
-                (tx + 2, cy - 1),
-            ])
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["hair_dark"], [
-                (tx - 1, cy - 1),
-                (tx, ty - height),
-                (tx + 1, cy - 1),
-            ])
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["hair_mid"], [
-                (tx, cy - 1),
-                (tx, ty - height + 1),
-                (tx + 1, cy - 1),
-            ])
-
-            # Bright tip
-            if height >= 5:
-                _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["hair_light"],
-                      (tx, ty - height + 1, 1, 2))
-
-        # Side tufts around mask
-        for side in (-1, 1):
-            tuft_x = cx + side * 8
-            tuft_y = cy + 5
-
-            tuft_pts = [
-                (tuft_x, tuft_y),
-                (tuft_x - side * 2, tuft_y + 6),
-                (tuft_x + side * 2, tuft_y + 3),
-            ]
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["hair_darkest"], tuft_pts)
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["hair_dark"], [
-                (tuft_x, tuft_y),
-                (tuft_x - side, tuft_y + 5),
-                (tuft_x + side * 2, tuft_y + 3),
-            ])
-            _NS_grimjaw._poly(surface, _NS_grimjaw.PALETTE["hair_mid"], [
-                (tuft_x + side, tuft_y),
-                (tuft_x, tuft_y + 4),
-                (tuft_x + side * 2, tuft_y + 2),
-            ])
-
-
-    # ═══════════════════════════════════════════════════════
-    # ARMS + FIRE SWORD
-    # ═══════════════════════════════════════════════════════
-
-    def _draw_sword_arm(surface, cx, cy, facing, phase, action,
-                        attack_progress=0, spin_phase=0):
-        """Right arm holding fire sword with full swing animation."""
-
+                           attack_progress=0, spin_phase=0, detail=False):
+        """Thin wrapper that keeps the historical signature so the idle/walk/
+        attack/blade-fury/omnislash entry points continue to work and now
+        route every frame through the single layered bone rig."""
+        _NS_grimjaw._draw_grimjaw_elite(
+            surface, cx, cy, facing, phase, action,
+            attack_progress, spin_phase, detail)
+
+
+    # -------------------------------------------------------------------
+    # Pose helpers (deterministic - shared by rig + skill FX anchors)
+    # -------------------------------------------------------------------
+    def _blade_angle(phase, action, attack_progress=0.0, spin_phase=0.0):
+        """Radian dari garis lurus-bawah: 0 = blade menunjuk ke bawah;
+        +pi/2 = menunjuk lurus ke depan; negatif = wind-up ke belakang."""
         if action == "attack":
-            # Windup → swing → recovery
-            if attack_progress < 0.25:
-                t = attack_progress / 0.25
-                t = 1 - (1 - t) ** 2
-                swing = math.pi / 8 - t * math.pi * 0.7
-            elif attack_progress < 0.7:
-                t = (attack_progress - 0.25) / 0.45
-                t = t ** 1.5
-                swing = math.pi / 8 - math.pi * 0.7 + t * math.pi * 1.2
-            else:
-                swing = math.pi / 8 - math.pi * 0.7 + math.pi * 1.2
-
-        elif action == "spin":
-            swing = spin_phase * 0.5
-
-        elif action == "walk":
-            swing = math.pi / 6 + math.sin(phase * 2) * 0.15
-        else:
-            # Idle - sword held down at side
-            swing = math.pi / 4 + math.sin(phase * 0.5) * 0.05
-
-        # Shoulder position
-        shoulder_x = cx + 10 * facing
-        shoulder_y = cy - 3
-
-        arm_length = 12
-        hand_x = shoulder_x + int(math.cos(swing) * arm_length) * facing
-        hand_y = shoulder_y + int(math.sin(swing) * arm_length) + 3
-
-        # Elbow
-        elbow_x = (shoulder_x + hand_x) // 2 + int(math.cos(swing + 0.3) * 2) * facing
-        elbow_y = (shoulder_y + hand_y) // 2
-
-        # Upper arm (skin)
-        _NS_grimjaw._draw_muscular_arm(surface, shoulder_x, shoulder_y, elbow_x, elbow_y)
-        _NS_grimjaw._draw_muscular_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-
-        # Bracer
-        bracer_x = int(shoulder_x + (hand_x - shoulder_x) * 0.75)
-        bracer_y = int(shoulder_y + (hand_y - shoulder_y) * 0.75)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["armor_darkest"], (bracer_x, bracer_y), 4)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["armor_dark"], (bracer_x, bracer_y), 3)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["armor_mid"], (bracer_x - 1, bracer_y - 1), 2)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["gold_mid"], (bracer_x, bracer_y), 1)
-
-        # Fist
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["shadow"], (hand_x + 1, hand_y + 1), 4)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["skin_darkest"], (hand_x, hand_y), 4)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["skin_dark"], (hand_x, hand_y), 3)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["skin_mid"], (hand_x - 1, hand_y - 1), 2)
-
-        # Fire sword
-        _NS_grimjaw._draw_fire_sword(surface, hand_x, hand_y, swing, facing, phase, action)
-
-
-    def _draw_left_arm(surface, cx, cy, facing, phase, action):
-        """Left arm - empty fist."""
+            ap = max(0.0, min(1.0, attack_progress))
+            if ap < 0.25:
+                t = ap / 0.25
+                t = 1.0 - (1.0 - t) ** 2
+                return -0.5 - t * 1.05
+            if ap < 0.70:
+                t = (ap - 0.25) / 0.45
+                t = t ** 1.4
+                return -1.55 + t * 2.90
+            t = (ap - 0.70) / 0.30
+            return 1.35 - t * 1.42
+        if action == "spin":
+            return spin_phase * 0.5 + math.sin(phase * 1.2) * 0.06
         if action == "walk":
-            swing = math.pi / 2 + math.sin(phase * 2 + math.pi) * 0.15
-        elif action == "attack":
-            swing = math.pi / 2 - 0.2  # forward for balance
+            return 0.08 + math.sin(phase * 1.72) * 0.10
+        return 0.12 + math.sin(phase * 0.5) * 0.05
+
+
+    def _blade_grip_local(action, attack_progress=0.0, phase=0.0):
+        """Posisi gagang/pegangan blade (ruang lokal, forward = +x)."""
+        if action == "attack":
+            ap = max(0.0, min(1.0, attack_progress))
+            if ap < 0.25:
+                t = ap / 0.25
+                return (9 + int(5 * t), 1 - int(19 * t))
+            if ap < 0.70:
+                t = (ap - 0.25) / 0.45
+                return (15 + int(9 * t), -18 + int(23 * t))
+            t = (ap - 0.70) / 0.30
+            return (24 - int(7 * t), 5 - int(5 * t))
+        if action == "spin":
+            return (17, -3)
+        if action == "walk":
+            return (11 + int(math.sin(phase * 1.72) * 2), 2)
+        return (11, 2)
+
+
+    def _blade_len(action):
+        return 30 if action != "attack" else 35
+
+
+    def _blade_tip_local(phase, action, attack_progress=0.0, spin_phase=0.0):
+        """Posisi ujung blade (ruang lokal) - dipakai sebagai anchor FX."""
+        a = _NS_grimjaw._blade_angle(phase, action, attack_progress, spin_phase)
+        gx, gy = _NS_grimjaw._blade_grip_local(action, attack_progress, phase)
+        L = _NS_grimjaw._blade_len(action)
+        return (int(gx + math.sin(a) * L), int(gy + math.cos(a) * L))
+
+
+    # -------------------------------------------------------------------
+    # The layered bone rig
+    # -------------------------------------------------------------------
+    def _draw_grimjaw_elite(surface, cx, cy, facing, phase, action,
+                            attack_progress=0.0, spin_phase=0.0,
+                            detail=False):
+        p = _NS_grimjaw.PALETTE
+        f = 1 if facing >= 0 else -1
+        walk = action == "walk"
+        attack = action == "attack"
+        spin = action == "spin"
+        ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
+        stride = math.sin(phase * 1.72)
+        breath = math.sin(phase * 0.78)
+
+        # Root lean / bob translates the whole rig as one unit.
+        lean = int(stride * 2.5 if walk else 0.0)
+        if attack:
+            lean += int(math.sin(ap * math.pi) * 6.0)
+        root_y = int(breath * 0.8)
+        if walk:
+            root_y -= int(abs(stride) * 2.5)
+        if attack:
+            root_y += int(math.sin(ap * math.pi) * 2)
+        if spin:
+            root_y -= 2
+
+        def pt(dx, dy):
+            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+
+        def poly(color, coords, outline=True):
+            pts = [pt(dx, dy) for dx, dy in coords]
+            if outline:
+                _NS_grimjaw._poly(surface, p["shadow_deep"],
+                                  [(qx + f, qy + 1) for qx, qy in pts])
+            _NS_grimjaw._poly(surface, color, pts)
+            return pts
+
+        def limb(a, b, width, base, light=None):
+            aa, bb = pt(*a), pt(*b)
+            _NS_grimjaw._aaline(surface, p["shadow_deep"],
+                                (aa[0] + f, aa[1] + 1),
+                                (bb[0] + f, bb[1] + 1), width + 3)
+            _NS_grimjaw._aaline(surface, base, aa, bb, width)
+            if light:
+                off = -1 if f > 0 else 1
+                _NS_grimjaw._aaline(surface, light,
+                                    (aa[0] + off, aa[1] - 1),
+                                    (bb[0] + off, bb[1] - 1),
+                                    max(1, width // 3))
+
+        def dot(color, dx, dy, r, outline=True):
+            x, y = pt(dx, dy)
+            if outline:
+                _NS_grimjaw._aacircle(surface, p["shadow_deep"],
+                                      (x + f, y + 1), r + 1)
+            _NS_grimjaw._aacircle(surface, color, (x, y), r)
+
+        # Back flame mane is drawn first so it sits behind the torso, mask
+        # and arms while still reading as a crown of fire above the head.
+        _NS_grimjaw._draw_elite_flame_mane(surface, pt, poly, f, phase, action)
+
+        # Rear arm (free fist) drawn behind the torso.
+        rear_shoulder = (-11, -7)
+        if attack:
+            rear_elbow = (-17, 2)
+            rear_hand = (-19, 10)
+        elif walk:
+            rear_elbow = (-17, int(stride * 5))
+            rear_hand = (-19, 9 + int(stride * 6))
         else:
-            swing = math.pi / 2 + math.sin(phase * 0.5) * 0.03
+            rear_elbow = (-17, 0)
+            rear_hand = (-19, 9 + int(breath * 2))
+        limb(rear_shoulder, rear_elbow, 6, p["skin_darkest"], p["skin_mid"])
+        limb(rear_elbow, rear_hand, 5, p["skin_dark"], p["skin_mid"])
+        dot(p["armor_dark"], *rear_elbow, 4, outline=False)
+        dot(p["armor_light"], *rear_elbow, 2, outline=False)
+        dot(p["gold_mid"], *rear_elbow, 1, outline=False)
+        dot(p["skin_darkest"], *rear_hand, 4)
+        dot(p["skin_mid"], *rear_hand, 3)
+        dot(p["skin_high"], rear_hand[0] - 1, rear_hand[1] - 1, 1, False)
 
-        shoulder_x = cx - 10 * facing
-        shoulder_y = cy - 3
+        # Legs: dark trousers + planted boots (ground at local y ~= 44).
+        front_step = int(stride * 4) if walk else 0
+        rear_step = -front_step
+        if attack:
+            front_step += int(ap * 6)
+            rear_step -= int(ap * 3)
+        legs = ((-8, rear_step, p["boot_dark"]),
+                (8, front_step, p["boot_mid"]))
+        for side, step, boot in legs:
+            thigh_x = side + step
+            poly(p["armor_darkest"], [(thigh_x - 5, 16),
+                 (thigh_x + 5, 16), (thigh_x + 5, 30),
+                 (thigh_x - 5, 30)])
+            poly(p["armor_dark"], [(thigh_x - 4, 17),
+                 (thigh_x + 4, 17), (thigh_x + 4, 29),
+                 (thigh_x - 4, 29)], False)
+            poly(p["red_darkest"], [(thigh_x - 3, 18),
+                 (thigh_x + 3, 18), (thigh_x + 2, 28),
+                 (thigh_x - 3, 28)], False)
+            poly(p["metal_darkest"], [(thigh_x - 6, 29),
+                 (thigh_x + 5, 29), (thigh_x + 7, 42),
+                 (thigh_x - 5, 42)])
+            poly(boot, [(thigh_x - 5, 30), (thigh_x + 4, 30),
+                 (thigh_x + 5, 40), (thigh_x - 4, 40)], False)
+            _NS_grimjaw._aaline(surface, p["metal_light"],
+                                pt(thigh_x - 3, 31), pt(thigh_x - 2, 39), 1)
+            toe = 5 * f
+            foot = pt(thigh_x + (4 if f > 0 else -4), 42)
+            _NS_grimjaw._aaline(surface, p["shadow_deep"],
+                                (foot[0] - toe, foot[1] + 1),
+                                (foot[0] + toe, foot[1] + 1), 4)
+            _NS_grimjaw._aaline(surface, p["metal_light"],
+                                (foot[0] - toe, foot[1]),
+                                (foot[0] + toe, foot[1]), 2)
 
-        arm_length = 12
-        hand_x = shoulder_x + int(math.cos(swing) * arm_length) * -facing
-        hand_y = shoulder_y + int(math.sin(swing) * arm_length) + 3
+        # Torso: broad leather vest with a fiery red centre panel.
+        poly(p["armor_darkest"], [(-15, -8), (15, -8), (13, 16),
+             (-13, 16)])
+        poly(p["armor_dark"], [(-13, -6), (13, -6), (11, 14),
+             (-11, 14)], False)
+        poly(p["armor_mid"], [(-11, -4), (11, -4), (9, 12),
+             (-9, 12)], False)
+        poly(p["armor_light"], [(-9, -6), (9, -6), (6, 0), (-7, 0)], False)
+        poly(p["red_darkest"], [(-4, -5), (4, -5), (3, 14), (-3, 14)])
+        poly(p["red_dark"], [(-3, -4), (3, -4), (2, 13), (-2, 13)], False)
+        poly(p["red_mid"], [(-2, -3), (2, -3), (1, 12), (-1, 12)], False)
+        _NS_grimjaw._aaline(surface, p["red_light"], pt(-1, -3),
+                            pt(-1, 11), 1)
 
-        elbow_x = (shoulder_x + hand_x) // 2
-        elbow_y = (shoulder_y + hand_y) // 2
+        poly(p["armor_darkest"], [(-14, 12), (14, 12), (14, 17),
+             (-14, 17)])
+        poly(p["red_darkest"], [(-13, 13), (13, 13), (13, 16),
+             (-13, 16)], False)
+        dot(p["gold_darkest"], 1, 15, 4)
+        dot(p["gold_dark"], 1, 15, 3)
+        dot(p["gold_mid"], 1, 15, 2)
+        dot(p["gold_light"], 1, 15, 1)
+        _NS_grimjaw._aaline(surface, p["red_light"], pt(-6, 13),
+                            pt(-2, 16), 1)
 
-        _NS_grimjaw._draw_muscular_arm(surface, shoulder_x, shoulder_y, elbow_x, elbow_y)
-        _NS_grimjaw._draw_muscular_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
+        # Front loincloth panel (red sash hanging over the hips).
+        cloth_sway = int(math.sin(phase * 1.1) * 2)
+        poly(p["red_darkest"], [(-7, 16), (7, 16),
+             (8 + cloth_sway, 34), (2, 38),
+             (-4 + cloth_sway, 37), (-8, 32)])
+        poly(p["red_dark"], [(-6, 17), (6, 17),
+             (6 + cloth_sway, 33), (1, 36),
+             (-3 + cloth_sway, 35), (-6, 31)], False)
+        poly(p["red_mid"], [(-4, 18), (4, 18),
+             (3 + cloth_sway, 31), (0, 34),
+             (-2 + cloth_sway, 33), (-4, 30)], False)
+        _NS_grimjaw._aaline(surface, p["blood_dark"], pt(-4, 18),
+                            pt(2 + cloth_sway, 33), 1)
 
-        # Bracer
-        bracer_x = int(shoulder_x + (hand_x - shoulder_x) * 0.75)
-        bracer_y = int(shoulder_y + (hand_y - shoulder_y) * 0.75)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["armor_darkest"], (bracer_x, bracer_y), 4)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["armor_dark"], (bracer_x, bracer_y), 3)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["armor_mid"], (bracer_x - 1, bracer_y - 1), 2)
+        # Shoulder pauldrons (gold-rimmed rounded plates + spike).
+        for side in (-1, 1):
+            sx = side * 15
+            poly(p["metal_darkest"], [(sx - 6, -14), (sx + 6, -14),
+                 (sx + 6, -6), (sx, -4), (sx - 6, -6)])
+            poly(p["metal_dark"], [(sx - 5, -13), (sx + 5, -13),
+                 (sx + 5, -7), (sx, -5), (sx - 5, -7)], False)
+            poly(p["gold_mid"], [(sx - 6, -7), (sx + 6, -7),
+                 (sx + 2, -5), (sx - 2, -5)], False)
+            poly(p["metal_darkest"], [(sx - 2, -14), (sx, -22),
+                 (sx + 2, -14)])
+            poly(p["metal_dark"], [(sx - 1, -14), (sx, -21),
+                 (sx + 1, -14)], False)
+            dot(p["metal_shine"], sx, -18, 1, False)
 
-        # Fist
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["shadow"], (hand_x + 1, hand_y + 1), 4)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["skin_darkest"], (hand_x, hand_y), 4)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["skin_dark"], (hand_x, hand_y), 3)
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["skin_mid"], (hand_x - 1, hand_y - 1), 2)
+        # Neck.
+        poly(p["skin_darkest"], [(-4, -14), (4, -14), (4, -6), (-3, -6)])
+        poly(p["skin_mid"], [(-2, -14), (3, -14), (3, -7), (-2, -7)], False)
+
+        # Front blade arm: the fist is derived from the pose-driven grip.
+        grip = _NS_grimjaw._blade_grip_local(action, ap, phase)
+        front_shoulder = (11, -7)
+        if attack:
+            front_elbow = (grip[0] - 2, grip[1] + 6)
+        elif walk:
+            front_elbow = (grip[0] - 3, grip[1] + 5 + int(stride * 2))
+        else:
+            front_elbow = (grip[0] - 3, grip[1] + 6)
+        limb(front_shoulder, front_elbow, 6, p["skin_darkest"], p["skin_mid"])
+        limb(front_elbow, grip, 5, p["skin_dark"], p["skin_high"])
+        dot(p["skin_darkest"], *grip, 4)
+        dot(p["skin_mid"], *grip, 3)
+        dot(p["skin_high"], grip[0] - 1, grip[1] - f, 1, False)
+
+        # Pose-driven curved flame blade.
+        angle = _NS_grimjaw._blade_angle(phase, action, ap, spin_phase)
+        length = _NS_grimjaw._blade_len(action)
+        _NS_grimjaw._draw_elite_flame_blade(
+            surface, pt, f, grip, angle, length, phase, detail)
+
+        # White Juggernaut mask + head.
+        _NS_grimjaw._draw_elite_mask(surface, pt, poly, dot, f, phase,
+                                     action, ap, detail)
+
+        # Front fringe + side locks of the fire mane.
+        _NS_grimjaw._draw_elite_mane_front(surface, pt, poly, f, phase, action)
+
+        if detail:
+            _NS_grimjaw._draw_grimjaw_masterwork_details(
+                surface, pt, poly, f, phase, action)
 
 
-    def _draw_muscular_arm(surface, x1, y1, x2, y2):
-        """Skin-toned muscular arm segment."""
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["shadow"],
-                (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 5)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["skin_darkest"], (x1, y1), (x2, y2), 5)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["skin_dark"], (x1, y1), (x2, y2), 4)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["skin_mid"], (x1, y1), (x2, y2), 2)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["skin_light"], (x1, y1), (x2, y2), 1)
-
-
-    # ═══════════════════════════════════════════════════════
-    # FIRE SWORD
-    # ═══════════════════════════════════════════════════════
-
-    def _draw_fire_sword(surface, hand_x, hand_y, angle, facing, phase, action):
-        """Fire sword with glowing orange blade."""
-        # Handle
-        grip_len = 5
-        grip_end_x = hand_x + int(math.cos(angle) * grip_len) * facing
-        grip_end_y = hand_y + int(math.sin(angle) * grip_len)
-
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["shadow"],
-                (hand_x, hand_y), (grip_end_x, grip_end_y), 5)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["armor_darkest"],
-                (hand_x, hand_y), (grip_end_x, grip_end_y), 4)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["armor_dark"],
-                (hand_x, hand_y), (grip_end_x, grip_end_y), 2)
-
-        # Grip wraps
-        for wrap_i in range(2):
-            wt = 0.3 + wrap_i * 0.4
-            wx = int(hand_x + (grip_end_x - hand_x) * wt)
-            wy = int(hand_y + (grip_end_y - hand_y) * wt)
-            _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["armor_darkest"], (wx, wy), 2)
-
-        # Guard (cross-guard)
-        perp_angle = angle + math.pi / 2
-        guard_len = 4
-        gx1 = grip_end_x + int(math.cos(perp_angle) * guard_len)
-        gy1 = grip_end_y + int(math.sin(perp_angle) * guard_len)
-        gx2 = grip_end_x - int(math.cos(perp_angle) * guard_len)
-        gy2 = grip_end_y - int(math.sin(perp_angle) * guard_len)
-
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_darkest"], (gx1, gy1), (gx2, gy2), 4)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_dark"], (gx1, gy1), (gx2, gy2), 3)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_mid"], (gx1, gy1), (gx2, gy2), 2)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["gold_light"], (gx1, gy1), (gx2, gy2), 1)
-
-        # ═══ FIRE BLADE ═══
-        blade_len = 22 if action != "attack" else 28
-
-        tip_x = grip_end_x + int(math.cos(angle) * blade_len) * facing
-        tip_y = grip_end_y + int(math.sin(angle) * blade_len)
-
-        pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-
-        # Big glow behind blade
-        glow_size = 44
-        glow_surf = pygame.Surface((glow_size, glow_size), pygame.SRCALPHA)
-        gcx, gcy = glow_size // 2, glow_size // 2
-
-        blade_dx = tip_x - grip_end_x
-        blade_dy = tip_y - grip_end_y
-
-        gx_start = gcx - blade_dx // 2
-        gy_start = gcy - blade_dy // 2
-        gx_end = gcx + blade_dx // 2
-        gy_end = gcy + blade_dy // 2
-
-        glow_layers = [
-            (7, 60, _NS_grimjaw.PALETTE["fire_darkest"]),
-            (5, 100, _NS_grimjaw.PALETTE["fire_dark"]),
-            (4, 150, _NS_grimjaw.PALETTE["fire_mid"]),
-            (2, 200, _NS_grimjaw.PALETTE["fire_light"]),
+    # -------------------------------------------------------------------
+    # Flame mane (back crest) + front fringe + side locks
+    # -------------------------------------------------------------------
+    def _draw_elite_flame_mane(surface, pt, poly, f, phase, action):
+        p = _NS_grimjaw.PALETTE
+        wave = int(math.sin(phase * 1.2) * 2)
+        strands = [
+            (-10, -38, -17, -56, 4),
+            (-5, -39, -9, -64, 5),
+            (0, -40, -1, -68, 6),
+            (5, -39, 8, -62, 5),
+            (9, -38, 14, -54, 4),
+            (13, -36, 19, -48, 3),
         ]
-        for width, alpha, color in glow_layers:
-            pygame.draw.line(glow_surf, (*color, int(alpha * pulse)),
-                             (gx_start, gy_start), (gx_end, gy_end), width)
+        for bx, by, tx, ty, wd in strands:
+            tw = wave if bx > 0 else -wave
+            tx2 = tx + tw
+            ty2 = ty + int(abs(wave) * 0.4)
+            poly(p["hair_darkest"], [(bx - wd, by), (tx2, ty2),
+                 (bx + wd, by)])
+            poly(p["hair_dark"], [(bx - wd + 1, by + 1), (tx2, ty2),
+                 (bx + wd - 1, by + 1)], False)
+            poly(p["hair_mid"], [(bx - wd // 2, by), (tx2, ty2),
+                 (bx + wd // 2, by)], False)
+            _NS_grimjaw._aaline(surface, p["hair_light"], pt(bx - 1, by),
+                                pt(tx2, ty2), 1)
+            _NS_grimjaw._rect(surface, p["hair_high"],
+                              (pt(tx2, ty2)[0] - 1, pt(tx2, ty2)[1] - 1, 2, 2))
 
-        surface.blit(glow_surf,
-                     (int((grip_end_x + tip_x) / 2) - glow_size // 2,
-                      int((grip_end_y + tip_y) / 2) - glow_size // 2))
 
-        # Core blade
-        pygame.draw.line(surface, _NS_grimjaw.PALETTE["fire_dark"],
-                         (grip_end_x, grip_end_y), (tip_x, tip_y), 3)
-        pygame.draw.line(surface, _NS_grimjaw.PALETTE["fire_mid"],
-                         (grip_end_x, grip_end_y), (tip_x, tip_y), 2)
-        pygame.draw.line(surface, _NS_grimjaw.PALETTE["fire_light"],
-                         (grip_end_x, grip_end_y), (tip_x, tip_y), 1)
-        _NS_grimjaw._aaline(surface, _NS_grimjaw.PALETTE["fire_hot"],
-                (grip_end_x, grip_end_y), (tip_x, tip_y), 1)
+    def _draw_elite_mane_front(surface, pt, poly, f, phase, action):
+        p = _NS_grimjaw.PALETTE
+        wave = int(math.sin(phase * 1.2) * 2)
+        fringe = [(-7, -40, -9, -47), (-3, -41, -4, -50),
+                  (1, -42, 1, -50), (5, -41, 5, -49),
+                  (8, -40, 9, -47)]
+        for i, (sx, sy, ex, ey) in enumerate(fringe):
+            wig = wave if i % 2 else -wave
+            poly(p["hair_darkest"], [(sx - 2, sy), (sx + 2, sy),
+                 (ex + wig, ey), (ex - 2 + wig, ey + 2)], False)
+            poly(p["hair_mid"], [(sx - 1, sy), (sx + 1, sy),
+                 (ex + wig, ey), (ex + wig, ey + 1)], False)
+            _NS_grimjaw._aaline(surface, p["hair_light"], pt(sx, sy + 1),
+                                pt(ex + wig, ey), 1)
+        for side in (-1, 1):
+            sway = int(math.sin(phase * 1.0 + side) * 2)
+            sx = side * 12
+            poly(p["hair_darkest"], [(sx - 2, -28), (sx + 2, -28),
+                 (sx + 4 * side + sway, -10), (sx - 2 * side, -8),
+                 (sx - 4 * side, -12)], False)
+            poly(p["hair_dark"], [(sx - 1, -27), (sx + 1, -27),
+                 (sx + 3 * side + sway, -11), (sx, -9),
+                 (sx - 3 * side, -12)], False)
+            _NS_grimjaw._aaline(surface, p["hair_light"],
+                                pt(sx, -27), pt(sx + 2 * side + sway, -11), 1)
 
-        # Hot tip
-        tip_glow = pygame.Surface((18, 18), pygame.SRCALPHA)
-        for r in range(8, 0, -1):
-            alpha = min(255, max(0, int((8 - r) * 35 * pulse)))
+
+    # -------------------------------------------------------------------
+    # White Juggernaut mask
+    # -------------------------------------------------------------------
+    def _draw_elite_mask(surface, pt, poly, dot, f, phase, action, ap, detail):
+        p = _NS_grimjaw.PALETTE
+        eyes_glow = action in ("attack", "spin") or ap > 0.35
+        poly(p["mask_shadow"], [(-8, -40), (0, -42), (8, -40),
+             (12, -34), (13, -26), (11, -19), (6, -15),
+             (0, -14), (-6, -15), (-11, -19), (-13, -26),
+             (-12, -34)])
+        poly(p["mask_dark"], [(-7, -38), (0, -40), (7, -38),
+             (10, -33), (11, -26), (9, -20), (5, -17),
+             (0, -16), (-5, -17), (-9, -20), (-11, -26),
+             (-10, -33)], False)
+        poly(p["mask_mid"], [(-5, -37), (0, -39), (5, -37),
+             (8, -32), (9, -26), (7, -21), (4, -18),
+             (0, -17), (-4, -18), (-7, -21), (-9, -26),
+             (-8, -32)], False)
+        poly(p["mask_light"], [(-4, -35), (0, -37), (4, -35),
+             (6, -31), (6, -26), (5, -22), (2, -20),
+             (-2, -20), (-5, -22), (-6, -26), (-6, -31),
+             (-7, -35)], False)
+        _NS_grimjaw._aacircle(surface, p["mask_shine"], pt(2, -34), 3)
+        # Blood stripes: thick centre + two thin side slashes.
+        poly(p["blood_darkest"], [(-1, -39), (2, -39), (2, -17),
+             (-1, -17)])
+        poly(p["blood_dark"], [(-0, -38), (1, -38), (1, -18),
+             (-0, -18)], False)
+        _NS_grimjaw._aaline(surface, p["blood_dark"], pt(-8, -36),
+                            pt(-4, -23), 2)
+        _NS_grimjaw._aaline(surface, p["blood_mid"], pt(-7, -35),
+                            pt(-4, -24), 1)
+        _NS_grimjaw._aaline(surface, p["blood_dark"], pt(8, -36),
+                            pt(4, -23), 2)
+        _NS_grimjaw._aaline(surface, p["blood_mid"], pt(7, -35),
+                            pt(4, -24), 1)
+        # Eyes: dark sockets, glowing red while attacking.
+        for ex in (-5, 5):
+            x, y = pt(ex, -28)
+            _NS_grimjaw._aacircle(surface, p["dark_eye"], (x, y), 3)
+            if eyes_glow:
+                _NS_grimjaw._aacircle(surface, p["eye_glow"], (x, y), 2)
+                _NS_grimjaw._aacircle(surface, p["white"], (x - f, y - 1), 1)
+        # Mouth grille.
+        _NS_grimjaw._aaline(surface, p["shadow"], pt(-4, -19), pt(4, -19), 3)
+        for tx in (-3, -1, 1, 3):
+            _NS_grimjaw._aaline(surface, p["mask_light"], pt(tx, -20),
+                                pt(tx, -18), 1)
+
+
+    # -------------------------------------------------------------------
+    # Curved flame blade
+    # -------------------------------------------------------------------
+    def _draw_elite_flame_blade(surface, pt, f, grip, angle, length, phase,
+                                detail):
+        p = _NS_grimjaw.PALETTE
+        s = math.sin(angle)
+        c = math.cos(angle)
+        segs = 6
+        centers = []
+        for i in range(segs + 1):
+            t = i / segs
+            curve = 5.0 * (t * t)
+            centers.append((grip[0] + s * length * t + c * curve,
+                            grip[1] + c * length * t - s * curve))
+        n_x, n_y = c, -s
+        left, right = [], []
+        for i, (x, y) in enumerate(centers):
+            t = i / segs
+            wd = 6.2 * (1.0 - t) + 1.4 * t
+            left.append((x + n_x * wd, y + n_y * wd))
+            right.append((x - n_x * wd, y - n_y * wd))
+        outline = left + right[::-1]
+
+        grip_s = pt(*grip)
+
+        def scr(p_local):
+            return pt(*p_local)
+
+        flat = [scr(o) for o in outline]
+        _NS_grimjaw._poly(surface, p["shadow_deep"],
+                          [(x + f, y + 1) for x, y in flat])
+        _NS_grimjaw._poly(surface, p["fire_darkest"], flat)
+        # Bright gradient of fire layers, shrinking toward the grip so the
+        # blade stays a vivid orange flame instead of a dark silhouette.
+        for shrink, col in ((0.0, p["fire_dark"]),
+                            (0.10, p["fire_mid"]),
+                            (0.22, p["fire_light"])):
+            pts = []
+            for (x, y) in flat:
+                dx = (x - grip_s[0]) * shrink
+                dy = (y - grip_s[1]) * shrink
+                pts.append((int(x - dx), int(y - dy)))
+            _NS_grimjaw._poly(surface, col, pts)
+        # Hot core line.
+        core = [scr(q) for q in centers]
+        for i in range(len(core) - 1):
+            _NS_grimjaw._aaline(surface, p["fire_hot"], core[i], core[i + 1], 3)
+            _NS_grimjaw._aaline(surface, p["fire_core"], core[i], core[i + 1], 2)
+        # Leading-edge highlight.
+        edge = [scr(q) for q in left]
+        for i in range(len(edge) - 1):
+            _NS_grimjaw._aaline(surface, p["fire_hot"], edge[i],
+                                edge[i + 1], 1)
+            _NS_grimjaw._aaline(surface, p["white"], edge[i],
+                                edge[i + 1], 1)
+
+        gx, gy = grip_s
+        _NS_grimjaw._aacircle(surface, p["armor_darkest"], (gx, gy), 3)
+        _NS_grimjaw._aacircle(surface, p["gold_dark"], (gx, gy), 2)
+        _NS_grimjaw._aaline(surface, p["gold_mid"],
+                            pt(grip[0] - 4, grip[1] - 2),
+                            pt(grip[0] + 5, grip[1] + 2), 3)
+
+        # Ember particles + hot core read well in both the arena and the
+        # portrait LOD (they hug the blade tip, so they do not enlarge the
+        # portrait auto-crop the way an aura would).
+        pulse = math.sin(phase * 1.4) * 0.3 + 0.7
+        tip = scr(centers[-1])
+        for i in range(4 if not detail else 2):
+            t = (phase * 0.7 + i * 0.25) % 1.0
+            ex = tip[0] + int(math.sin(phase * 5 + i) * 3)
+            ey = tip[1] - int(t * 14)
+            alpha = max(0, int(190 * (1.0 - t) * pulse))
             if alpha > 0:
-                _NS_grimjaw._aacircle(tip_glow, (*_NS_grimjaw.PALETTE["fire_hot"], alpha), (9, 9), r)
-        surface.blit(tip_glow, (tip_x - 9, tip_y - 9))
-        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["fire_core"], (tip_x, tip_y), 2)
-        _NS_grimjaw._rect(surface, _NS_grimjaw.PALETTE["white"], (tip_x, tip_y, 1, 1))
+                _NS_grimjaw._aacircle(
+                    surface, (*p["fire_light"], alpha), (ex, ey), 2)
+                _NS_grimjaw._aacircle(
+                    surface, (*p["fire_hot"], alpha), (ex, ey), 1)
+        _NS_grimjaw._aacircle(surface, p["fire_core"], tip, 2)
+        _NS_grimjaw._aacircle(surface, p["white"], tip, 1)
 
-        # Fire particles rising from blade
+
+    # -------------------------------------------------------------------
+    # Portrait-only LOD pass (extra material detail; arena LOD stays cheap)
+    # -------------------------------------------------------------------
+    def _draw_grimjaw_masterwork_details(surface, pt, poly, f, phase, action):
+        p = _NS_grimjaw.PALETTE
+        for i in range(6):
+            bx = -12 + i * 5
+            by = -39
+            tx = bx - 3 - int(math.sin(phase + i) * 2)
+            ty = by - 18 - i
+            _NS_grimjaw._aaline(surface, p["hair_shine"], pt(bx, by),
+                                pt(tx, ty), 1)
+        _NS_grimjaw._aaline(surface, p["mask_line"], pt(-6, -27),
+                            pt(-2, -30), 1)
+        _NS_grimjaw._aaline(surface, p["mask_line"], pt(-2, -30),
+                            pt(1, -24), 1)
+        _NS_grimjaw._aaline(surface, p["mask_line"], pt(3, -31),
+                            pt(6, -27), 1)
         for i in range(3):
-            particle_phase = (phase * 2 + i * 0.5) % 1.0
-            pt = particle_phase
-            px = tip_x + int(math.sin(particle_phase * 6) * 3)
-            py = tip_y - int(pt * 10)
-            alpha = min(255, max(0, int(220 * (1 - pt))))
-            if alpha > 0:
-                _NS_grimjaw._aacircle(surface, (*_NS_grimjaw.PALETTE["fire_light"], alpha), (px, py), 2)
-                _NS_grimjaw._aacircle(surface, (*_NS_grimjaw.PALETTE["fire_hot"], alpha), (px, py), 1)
-
-
+            yy = 20 + i * 5
+            _NS_grimjaw._aaline(surface, p["cloth_stitch"],
+                                pt(-4, yy), pt(3, yy), 1)
+        for side in (-1, 1):
+            _NS_grimjaw._aaline(surface, p["gold_engrave"],
+                                pt(side * 12, -12), pt(side * 17, -13), 1)
+            _NS_grimjaw._aaline(surface, p["gold_engrave"],
+                                pt(side * 11, -9), pt(side * 16, -9), 1)
+        _NS_grimjaw._aacircle(surface, p["gold_engrave"], pt(1, 15), 1)
+        for i in range(2):
+            _NS_grimjaw._aaline(surface, p["armor_high"],
+                                pt(-12 + i * 8, 13), pt(-8 + i * 8, 16), 1)
+        for i in range(4):
+            t = (phase * 0.35 + i / 4.0) % 1.0
+            dx = -10 + i * 7 + int(math.sin(phase * 1.3 + i) * 2)
+            dy = 12 - int(t * 46)
+            _NS_grimjaw._aacircle(surface,
+                                  (*p["ember"], int(180 * (1 - t))),
+                                  pt(dx, dy), 1)
     # ===================================================================
     # FLOATING EFFECTS
     # ===================================================================
