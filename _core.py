@@ -527,11 +527,9 @@ HERO_LEVELS = {
 }
 MAX_HERO_LEVEL = 15
 
-BLUE_HERO_SPAWN_X = 160
-BLUE_HERO_SPAWN_Y = 600   # dekat blue base baru
-RED_HERO_SPAWN_X  = 1120
-RED_HERO_SPAWN_Y  = 120   # dekat red base baru
-HERO_SPAWN_Y = 600        # default (blue side)
+# CATATAN: konstanta spawn hero lama (BLUE/RED_HERO_SPAWN_X/Y,
+# HERO_SPAWN_Y) dihapus — tidak dipakai lagi. Hero spawn dari
+# offset base (Hero.__init__) atau posisi radiant shop (summon).
 
 MAX_HEROES_OWNED = 5
 

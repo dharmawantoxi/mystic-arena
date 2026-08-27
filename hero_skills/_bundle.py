@@ -22,7 +22,7 @@ sys.modules oleh __init__.py, jadi semua baris
 """
 import math
 from sound_manager import SoundManager
-from settings import HERO_TYPES
+from settings import HERO_TYPES, HERO_LEVELS
 
 
 # ====================================================================
@@ -3566,10 +3566,14 @@ class _NS_grimjaw_skills:
                 if h._blade_fury_timer % 15 == 0:
                     enemies = self._get_enemies(
                         all_units, all_towers, all_bases)
+                    # Radius spin diambil dari data hero (single
+                    # source of truth, sejajar guard auto-cast).
+                    spin_range = h.skill_data.get("skill_range", 80)
                     for e in enemies:
                         dist = math.hypot(e.x - h.x, e.y - h.y)
-                        if dist <= 80:  # spin range
-                            e.take_damage(h.skill_damage, h.team)
+                        if dist <= spin_range:
+                            e.take_damage(h.skill_damage, h.team,
+                                          source=h)
                 if h._blade_fury_timer <= 0:
                     h._blade_fury_active = False
 
@@ -3604,7 +3608,7 @@ class _NS_grimjaw_skills:
                     if h._omnislash_target and h._omnislash_target.alive:
                         h._omnislash_target.take_damage(
                             int(h.skill_damage * 0.6),
-                            h.team)
+                            h.team, source=h)
                 if h._omnislash_timer <= 0:
                     h._omnislash_active = False
                     h._omnislash_target = None
@@ -3966,9 +3970,6 @@ class _NS_sylara_skills:
             h._powershot_charging = False
             h._powershot_timer = 0
 
-            # Legacy traps
-            h._trap_positions = []
-
         def update_timers(self, all_units, all_towers, all_bases):
             """Update Sylara-specific timers per frame"""
             h = self.hero
@@ -4019,23 +4020,6 @@ class _NS_sylara_skills:
                     h._powershot_charging = False
                     self._release_powershot(
                         all_units, all_towers, all_bases)
-
-            # ═══ Legacy trap timer ═══
-            if h._trap_positions:
-                new_traps = []
-                for tx, ty, timer in h._trap_positions:
-                    if timer > 0:
-                        new_traps.append((tx, ty, timer - 1))
-                        for e in all_units:
-                            if e.team != h.team and e.alive:
-                                dist = math.hypot(e.x - tx, e.y - ty)
-                                if dist <= 40:
-                                    e.take_damage(
-                                        int(h.skill_damage * 1.5),
-                                        h.team)
-                                    if hasattr(e, 'apply_slow'):
-                                        e.apply_slow(0.4, 120)
-                h._trap_positions = new_traps
 
         # ═══════════════════════════════════════
         # Q - FOCUS FIRE (Attack speed buff + piercing)
@@ -4339,8 +4323,15 @@ class _NS_thorne_skills:
                 h._warpath_timer -= 1
                 if h._warpath_timer <= 0:
                     h._warpath_active = False
-                    # Reset stats
-                    h.damage = h._original_damage
+                    # Reset damage dari data level SEKARANG (bukan
+                    # snapshot _original_damage): kalau hero di-upgrade
+                    # saat buff aktif, bonus upgrade tidak hilang.
+                    # attack_cooldown tidak diskalakan per level, jadi
+                    # snapshot awal tetap benar.
+                    _lvl = HERO_LEVELS.get(h.level)
+                    if _lvl:
+                        h.damage = int(
+                            h.base_damage * _lvl["dmg_mult"])
                     h.attack_cooldown = h._original_attack_cd
 
         # ═══════════════════════════════════════
@@ -4550,7 +4541,8 @@ class _NS_vex_skills:
                         dist = math.hypot(e.x - h.x, e.y - h.y)
                         if 30 < dist <= 55:  # ring damage
                             e.take_damage(
-                                int(h.skill_damage * 0.4), h.team)
+                                int(h.skill_damage * 0.4), h.team,
+                                source=h)
                 if h._sanity_eclipse_timer <= 0:
                     h._sanity_eclipse_active = False
 
@@ -4564,7 +4556,8 @@ class _NS_vex_skills:
                     # Damage per tick
                     if h._astral_prison_timer % 10 == 0:
                         h._astral_prison_target.take_damage(
-                            int(h.skill_damage * 0.3), h.team)
+                            int(h.skill_damage * 0.3), h.team,
+                            source=h)
                 else:
                     h._astral_prison_active = False
                     h._astral_prison_target = None
@@ -4814,7 +4807,8 @@ class _NS_zephyr_skills:
                         dist = math.hypot(e.x - ox, e.y - oy)
                         if 40 < dist <= 60:  # ring damage pada lokasi trap
                             e.take_damage(
-                                int(h.skill_damage * 0.3), h.team)
+                                int(h.skill_damage * 0.3), h.team,
+                                source=h)
                             self._apply_slow(e, 0.5, 60)
                 if h._bramble_timer <= 0:
                     h._bramble_active = False
@@ -4837,7 +4831,8 @@ class _NS_zephyr_skills:
                     # Damage tick setiap 20 frames
                     if h._curse_timer % 20 == 0:
                         h._curse_target.take_damage(
-                            int(h.skill_damage * 0.35), h.team)
+                            int(h.skill_damage * 0.35), h.team,
+                            source=h)
                 else:
                     h._curse_active = False
                     h._curse_target = None
@@ -4857,7 +4852,8 @@ class _NS_zephyr_skills:
                         dist = math.hypot(e.x - h.x, e.y - h.y)
                         if dist <= 80:
                             e.take_damage(
-                                int(h.skill_damage * 0.5), h.team)
+                                int(h.skill_damage * 0.5), h.team,
+                                source=h)
                 if h._bedlam_timer <= 0:
                     h._bedlam_active = False
 
