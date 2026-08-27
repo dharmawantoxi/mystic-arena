@@ -353,25 +353,25 @@ class FloatingText:
             return
 
         # ← GUNAKAN CACHED FONT (bukan buat baru tiap frame!)
+        # body_bold: angka damage lebih tegas; kritis/ultimate lebih
+        # tebal lagi via scale.
         font_size = int(self.font_size * self.scale)
         font_size = max(8, min(font_size, 64))  # clamp
-        font = get_font(font_size)
+        style = "body_bold" if self.critical else "body_semibold"
+        font = get_font(font_size, style)
 
-        # Shadow
-        shadow_color = (0, 0, 0)
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                if dx == 0 and dy == 0:
-                    continue
-                shadow_surf = font.render(self.text, True, shadow_color)
-                shadow_surf.set_alpha(alpha)
-                shadow_rect = shadow_surf.get_rect(
-                    center=(int(self.x) + dx, int(self.y) + dy))
-                surface.blit(shadow_surf, shadow_rect)
+        cx, cy = int(self.x), int(self.y)
+
+        # Shadow (satu blit — dulu 9 blit per teks, boros saat combat
+        # ramai dan hasilnya nyaris sama)
+        shadow_surf = font.render(self.text, True, (8, 8, 14))
+        shadow_surf.set_alpha(min(220, alpha))
+        shadow_rect = shadow_surf.get_rect(center=(cx + 1, cy + 2))
+        surface.blit(shadow_surf, shadow_rect)
 
         text_surf = font.render(self.text, True, self.color)
         text_surf.set_alpha(alpha)
-        text_rect = text_surf.get_rect(center=(int(self.x), int(self.y)))
+        text_rect = text_surf.get_rect(center=(cx, cy))
         surface.blit(text_surf, text_rect)
 
 
@@ -931,7 +931,7 @@ class WaveAnnouncer:
         cx = screen_w // 2 + x_offset
         cy = screen_h // 3
 
-        # Background banner
+        # Background banner (gradasi premium + sudut emas)
         banner_w = 400
         banner_h = 80
 
@@ -941,7 +941,7 @@ class WaveAnnouncer:
         # Gradient background
         for i in range(banner_h):
             grad_alpha = int(alpha * (1 - abs(i - banner_h / 2) / (banner_h / 2) * 0.3))
-            color = (20, 20, 40, grad_alpha)
+            color = (16, 20, 40, grad_alpha)
             pygame.draw.rect(banner_surf, color,
                              (0, i, banner_w, 1))
 
@@ -960,33 +960,37 @@ class WaveAnnouncer:
 
         surface.blit(banner_surf, (cx - banner_w // 2, cy - banner_h // 2))
 
+        # Sudut emas (identitas premium)
+        if alpha > 60:
+            ui_theme.corner_ticks(
+                surface,
+                pygame.Rect(cx - banner_w // 2, cy - banner_h // 2,
+                            banner_w, banner_h),
+                (255, 220, 50), length=12, width=2, inset=5)
+
         # Text
         wave_font = title_font(46)
         sub_font = get_font(22)
 
-        # "WAVE X" text
-        wave_text = wave_font.render(f"WAVE {self.wave_num}", True,
-                                     (255, 220, 50))
+        # "WAVE X" — gradasi emas premium + shadow tipis
+        wave_text = ui_theme.gradient_text(
+            wave_font, f"WAVE {self.wave_num}",
+            (255, 242, 175), (196, 138, 40))
         wave_rect = wave_text.get_rect(center=(cx, cy - 8))
 
-        # Text shadow
         shadow = wave_font.render(f"WAVE {self.wave_num}", True,
-                                  (0, 0, 0))
-        for dx, dy in [(-2, -2), (2, 2), (-2, 2), (2, -2)]:
-            surface.blit(shadow, (wave_rect.x + dx, wave_rect.y + dy))
+                                  (8, 8, 14))
+        shadow.set_alpha(min(200, alpha))
+        surface.blit(shadow, (wave_rect.x + 2, wave_rect.y + 2))
 
-        # Set alpha
-        alpha_surf = pygame.Surface(wave_text.get_size(),
-                                    pygame.SRCALPHA)
-        alpha_surf.fill((255, 255, 255, alpha))
-        wave_text.blit(alpha_surf, (0, 0),
-                       special_flags=pygame.BLEND_RGBA_MULT)
+        wave_text.set_alpha(alpha)
         surface.blit(wave_text, wave_rect)
 
         # Subtitle
-        sub_text = sub_font.render("ENEMIES INCOMING!", True,
-                                   (200, 200, 220))
-        sub_rect = sub_text.get_rect(center=(cx, cy + 22))
+        sub_text = sub_font.render(ui_theme.letter(
+            "ENEMIES INCOMING"), True, (200, 200, 220))
+        sub_text.set_alpha(alpha)
+        sub_rect = sub_text.get_rect(center=(cx, cy + 24))
         surface.blit(sub_text, sub_rect)
 
 
@@ -1334,44 +1338,43 @@ class AchievementPopup:
                          (2, 2, panel_w - 4, panel_h - 4), 1,
                          border_radius=5)
 
+        # Sudut emas (identitas premium)
+        if alpha > 60:
+            ui_theme.corner_ticks(
+                panel_surf, pygame.Rect(0, 0, panel_w, panel_h),
+                (255, 220, 50), length=10, width=2, inset=4)
+
         # Draw icon (di kiri)
         icon_x = 15
         icon_y = panel_h // 2
         self._draw_icon(panel_surf, icon_x, icon_y,
                         self.current['icon_type'], alpha)
 
-        # "ACHIEVEMENT UNLOCKED" text (kecil, atas) - DIPERBESAR
-        small_font = get_font(24)  # 18->24  # 12->18
-        title_font = get_font(24, 'body_semibold')  # 18->24
-        desc_font = get_font(20)  # 14->20
+        # "ACHIEVEMENT UNLOCKED" text (kecil, atas)
+        small_font = get_font(16, 'body_semibold')
+        title_font = get_font(22, 'body_bold')
+        desc_font = get_font(17)
 
-        header = small_font.render("ACHIEVEMENT UNLOCKED",
-                                   True, (255, 220, 50))
-        header_alpha = pygame.Surface(header.get_size(),
-                                      pygame.SRCALPHA)
-        header_alpha.fill((255, 255, 255, alpha))
-        header.blit(header_alpha, (0, 0),
-                    special_flags=pygame.BLEND_RGBA_MULT)
-        panel_surf.blit(header, (55, 8))
+        max_w = panel_w - 55 - 12
 
-        # Title (bold, tengah)
-        title = title_font.render(self.current['title'], True,
-                                  (255, 255, 255))
-        title_alpha = pygame.Surface(title.get_size(),
-                                     pygame.SRCALPHA)
-        title_alpha.fill((255, 255, 255, alpha))
-        title.blit(title_alpha, (0, 0),
-                   special_flags=pygame.BLEND_RGBA_MULT)
-        panel_surf.blit(title, (55, 22))
+        header = small_font.render(ui_theme.letter(
+            "ACHIEVEMENT"), True, (255, 220, 50))
+        header.set_alpha(alpha)
+        panel_surf.blit(header, (55, 7))
 
-        # Description (kecil, bawah)
-        desc = desc_font.render(self.current['description'],
-                                True, (200, 200, 200))
-        desc_alpha = pygame.Surface(desc.get_size(), pygame.SRCALPHA)
-        desc_alpha.fill((255, 255, 255, alpha))
-        desc.blit(desc_alpha, (0, 0),
-                  special_flags=pygame.BLEND_RGBA_MULT)
-        panel_surf.blit(desc, (55, 42))
+        # Title (bold) — ellipsis kalau panjang
+        title_show = ui_theme.fit_ellipsis(
+            title_font, self.current['title'], max_w)
+        title = title_font.render(title_show, True, (255, 255, 255))
+        title.set_alpha(alpha)
+        panel_surf.blit(title, (55, 24))
+
+        # Description (kecil, bawah) — ellipsis kalau panjang
+        desc_show = ui_theme.fit_ellipsis(
+            desc_font, self.current['description'], max_w)
+        desc = desc_font.render(desc_show, True, (205, 210, 225))
+        desc.set_alpha(alpha)
+        panel_surf.blit(desc, (55, 45))
 
         # Blit panel
         surface.blit(panel_surf, (panel_x, panel_y))
@@ -1979,14 +1982,19 @@ class BossDeathAnimation:
 
             surface.blit(reward_text, reward_rect)
 
-            # Hero unlock hint
+            # Hero unlock hint (bintang vektor; ★ tak ada di Barlow)
             unlock_text = self.font_small.render(
-                "★ Hero Unlocked! ★",
+                ui_theme.letter("HERO UNLOCKED!"),
                 True, (255, 180, 220))
             unlock_text.set_alpha(reward_alpha)
             unlock_rect = unlock_text.get_rect(
                 center=(cx, cy + 170))
             surface.blit(unlock_text, unlock_rect)
+            star_col = tuple(int(c * reward_alpha / 255)
+                             for c in (255, 180, 220))
+            for sx in (unlock_rect.left - 18, unlock_rect.right + 18):
+                ui_theme.draw_icon(surface, "star", sx, cy + 170,
+                                   star_col, s=0.5)
 
         # ═══ DECORATIVE STARS ═══
         if progress > 0.4:
@@ -2161,6 +2169,13 @@ class BossIntroCinematic:
         pygame.draw.rect(bg, (*self.entrance_color, alpha),
                          (0, 0, banner_w, banner_h), 2, border_radius=10)
         surface.blit(bg, (banner_x, banner_y))
+
+        # Sudut emas (identitas premium, konsisten dgn panel lainnya)
+        if alpha > 60:
+            ui_theme.corner_ticks(
+                surface, pygame.Rect(banner_x, banner_y, banner_w,
+                                     banner_h),
+                (255, 220, 120), length=12, width=2, inset=5)
 
         # ── Class tag ──
         if self.boss_class == "true":
@@ -3005,18 +3020,23 @@ class LevelIntroScreen:
                      (title_rect.x + 2, title_rect.y + 2))
         surface.blit(title_surf, title_rect)
 
-        # ═══ WARNING TEXT ═══
+        # ═══ WARNING TEXT (ikon ⚠ vektor; glyph tak ada di Barlow) ═══
         warning_pulse = math.sin(
             pygame.time.get_ticks() * 0.005) * 0.3 + 0.7
 
         warning_text = self.font_small.render(
-            "⚠  PREPARE FOR BATTLE  ⚠",
-            True, (255, 100, 100))
+            ui_theme.letter("PREPARE FOR BATTLE"),
+            True, (255, 110, 100))
         warning_alpha = int(alpha * warning_pulse)
         warning_text.set_alpha(warning_alpha)
         warning_rect = warning_text.get_rect(
             center=(cx, name_y + 95))
         surface.blit(warning_text, warning_rect)
+        # Dua ikon peringatan di kiri-kanan teks
+        icon_col = tuple(int(c * warning_pulse) for c in (255, 100, 90))
+        for side_x in (warning_rect.left - 22, warning_rect.right + 22):
+            ui_theme.draw_icon(surface, "warn", side_x, name_y + 95,
+                               icon_col, s=0.6)
 
     def _draw_boss_silhouette(self, surface, cx, cy, alpha):
         """Draw big boss silhouette"""
@@ -3154,6 +3174,11 @@ class LevelIntroScreen:
         pygame.draw.rect(bar_surf, (255, 220, 100, int(220 * pulse)),
                          (0, 0, bar_w, bar_h), 2, border_radius=10)
         surface.blit(bar_surf, (bar_x, bar_y))
+        # Sudut emas (identitas premium)
+        if pulse > 0.5:
+            ui_theme.corner_ticks(
+                surface, pygame.Rect(bar_x, bar_y, bar_w, bar_h),
+                (255, 220, 120), length=10, width=2, inset=4)
 
         # Text
         _prompt_str = _begin_prompt_text()

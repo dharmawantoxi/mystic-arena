@@ -35,5 +35,10 @@ Thumbs.db
 # Save game hasil uji coba
 saves/
 
+# Screenshot review UI (hasil tools/_shot_ui.py dsb.)
+tools/shots/
+tools/shots_game/
+tools/shots_before/
+
 # DB runtime server top up (transaksi - jangan commit)
 server/topup.db

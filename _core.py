@@ -18,6 +18,10 @@ lain TETAP jalan tanpa perubahan.
 import pygame
 import math
 import random
+
+# Desain sistem menu (palet + komponen premium). Dipakai seluruh
+# fungsi gambar di kelas Menu di bawah.
+import ui_theme
 _globals_before_settings = set(globals())
 
 
@@ -2171,8 +2175,11 @@ class Game:
         # kejadian diketahui.
         if map_x is not None and map_y is not None:
             try:
+                # Teks melayang di map (glyph ★ tak ada di Barlow,
+                # jadi tanpa bintang - achievement popup utama tetap
+                # tampil terpisah dengan ikonnya).
                 self.effects.add_damage_number(
-                    map_x, map_y, f"★ {title}", is_critical=True)
+                    map_x, map_y, title, is_critical=True)
             except Exception:
                 pass
         SoundManager().play('ui_upgrade', volume_mult=0.5)
@@ -2446,49 +2453,67 @@ class Game:
         return fallback.get(gameplay_action, '?')
 
     def _draw_gold_hud(self, surface):
-        """Gold HUD - English, fixed no overlap, responsive width"""
+        """Gold HUD premium: chip emas (gold + income) + badge mode."""
         x, y = 18, 22
-        # Dynamic width based on gold amount
         gold_str = f"{self.gold:,}"
-        font = get_font(20)
-        # Calculate needed width: icon 30 + text width + padding
-        needed_w = 40 + font.size(gold_str)[0] + 20
-        width = max(155, min(225, needed_w))
-        height = 56
 
-        panel = pygame.Surface((width, height), pygame.SRCALPHA)
-        panel.fill((8, 7, 12, 225))
-        pygame.draw.rect(panel, (125, 90, 25), panel.get_rect(), 2, border_radius=8)
-        pygame.draw.rect(panel, (255, 205, 70), (2, 2, width - 4, 2), border_radius=3)
+        # ═══ CHIP EMAS (gold + income) ═══
+        val_font = get_font(24, "body_bold")
+        inc_font = get_font(17, "body_medium")
+        val_w = val_font.size(gold_str)[0]
+        inc_w = inc_font.size(f"+{GOLD_PER_SECOND}/s")[0]
+        width = max(150, val_w + inc_w + 78)
+        height = 40
+        chip = pygame.Rect(x, y, width, height)
+        if ui_theme.cheap_alpha():
+            surface.blit(ui_theme._vgrad(
+                width, height, (44, 38, 18), (24, 20, 9),
+                radius=height // 2), (chip.x, chip.y))
+        else:
+            pygame.draw.rect(surface, (26, 22, 10), chip,
+                             border_radius=height // 2)
+        pygame.draw.rect(surface, ui_theme.GOLD, chip, 2,
+                         border_radius=height // 2)
+        ui_theme.draw_icon(surface, "coin", chip.x + 24, chip.centery,
+                           ui_theme.GOLD, s=0.9)
+        gold_text = val_font.render(gold_str, True,
+                                    (255, 236, 160))
+        surface.blit(gold_text, (chip.x + 44, y + 5))
+        gx = chip.x + 44 + val_w + 12
+        # Pemisah hairline
+        pygame.draw.line(surface, (140, 110, 50),
+                         (gx - 6, y + 10), (gx - 6, y + height - 10), 1)
+        income = inc_font.render(f"+{GOLD_PER_SECOND}/s",
+                                 True, (196, 241, 168))
+        surface.blit(income, (gx, y + 11))
 
-        # Coin icon
-        pygame.draw.circle(panel, (110, 70, 12), (20, 20), 11)
-        pygame.draw.circle(panel, (245, 190, 52), (19, 19), 9)
-        pygame.draw.circle(panel, (255, 235, 125), (16, 16), 3)
-        pygame.draw.line(panel, (167, 112, 24), (19, 13), (19, 26), 2)
-
-        small_font = get_font(24)
-        gold_text = font.render(gold_str, True, (255, 231, 133))
-        surface.blit(panel, (x, y))
-        surface.blit(gold_text, (x + 38, y + 5))
-
-        # Income on second line, left aligned under gold
-        income = small_font.render(f"+{GOLD_PER_SECOND}/s income", True, (196, 241, 168))
-        surface.blit(income, (x + 38, y + 25))
-
-        # Difficulty mode badge on third line
+        # ═══ BADGE MODE (baris kedua) ═══
         difficulty = getattr(self, "difficulty", "normal")
         if difficulty == "easy":
-            mode_str = "EASY · BOSS 20-40"
+            mode_str = "EASY \u00b7 BOSS 20-40"
             mode_col = (100, 210, 255)
         elif difficulty == "hard":
-            mode_str = "HARD · SCALE ON"
+            mode_str = "HARD \u00b7 SCALE ON"
             mode_col = (255, 120, 120)
         else:
-            mode_str = "NORMAL · SCALE OFF"
+            mode_str = "NORMAL \u00b7 SCALE OFF"
             mode_col = (120, 230, 150)
-        mode_badge = small_font.render(mode_str, True, mode_col)
-        surface.blit(mode_badge, (x + 38, y + 39))
+        mf = get_font(18, "body_semibold")
+        mtext = mf.render(mode_str, True, mode_col)
+        mw = mtext.get_width() + 24
+        mb = pygame.Rect(x, y + height + 6, mw, 24)
+        if ui_theme.cheap_alpha():
+            surface.blit(ui_theme._vgrad(
+                mw, mb.h, (24, 28, 48), (14, 17, 32),
+                radius=mb.h // 2), (mb.x, mb.y))
+        else:
+            pygame.draw.rect(surface, (16, 19, 34), mb,
+                             border_radius=mb.h // 2)
+        pygame.draw.rect(surface, tuple(int(c * 0.6) for c in mode_col),
+                         mb, 1, border_radius=mb.h // 2)
+        ui_theme.draw_icon(surface, "swords", mb.x + 15, mb.centery,
+                           mode_col, s=0.55)
+        surface.blit(mtext, (mb.x + 27, mb.y + 4))
 
     def draw(self):
         """Main draw method - delegate ke UI Renderer"""
@@ -2882,10 +2907,9 @@ class Menu:
                                  card_w, card_h)
 
         # ═══ BACK BUTTON ═══
-        self._draw_menu_button("slot_back", "BACK",
-                               cx, SCREEN_HEIGHT - 40,
-                               (150, 150, 150),
-                               width=220, height=42)
+        ui_theme.back_button(self.screen, self.buttons, "slot_back",
+               cx, SCREEN_HEIGHT - 40,
+               hover=(self.hover_button == "slot_back"))
 
         # ═══ DELETE CONFIRMATION DIALOG ═══
         if self.slot_delete_confirm is not None:
@@ -3093,23 +3117,27 @@ class Menu:
             True, (255, 220, 100))
         self.screen.blit(gold_text, (coin_x + 15, gold_y - 5))
 
-        # ═══ HEROES UNLOCKED ═══
+        # ═══ HEROES UNLOCKED (ikon vektor, bukan emoji) ═══
         heroes_y = gold_y + 35
         heroes_count = len(slot_info['purchased_heroes'])
         heroes_text = self.font_small.render(
-            f"⚔ Heroes: {heroes_count}",
-            True, (150, 220, 255))
-        heroes_rect = heroes_text.get_rect(center=(cx, heroes_y))
-        self.screen.blit(heroes_text, heroes_rect)
+            f"Heroes: {heroes_count}", True, (150, 220, 255))
+        hx = cx - heroes_text.get_width() // 2 - 14
+        ui_theme.draw_icon(self.screen, "swords", hx, heroes_y,
+                           (150, 220, 255), s=0.6)
+        self.screen.blit(heroes_text,
+                         heroes_text.get_rect(center=(cx + 8, heroes_y)))
 
-        # ═══ BOSSES DEFEATED ═══
+        # ═══ BOSSES DEFEATED (ikon vektor) ═══
         bosses_y = heroes_y + 25
         bosses_count = len(slot_info['unlocked_bosses'])
         bosses_text = self.font_small.render(
-            f"💀 Bosses: {bosses_count}",
-            True, (255, 150, 150))
-        bosses_rect = bosses_text.get_rect(center=(cx, bosses_y))
-        self.screen.blit(bosses_text, bosses_rect)
+            f"Bosses: {bosses_count}", True, (255, 150, 150))
+        bx = cx - bosses_text.get_width() // 2 - 14
+        ui_theme.draw_icon(self.screen, "skull", bx, bosses_y,
+                           (255, 150, 150), s=0.6)
+        self.screen.blit(bosses_text,
+                         bosses_text.get_rect(center=(cx + 8, bosses_y)))
 
         # ═══ LAST PLAYED ═══
         last_played_y = bosses_y + 30
@@ -3199,9 +3227,15 @@ class Menu:
                              del_btn_rect, 2, border_radius=5)
 
             del_font = get_font(24)
-            del_text = del_font.render(
-                "🗑  DELETE SAVE", True, (255, 200, 200))
-            del_rect = del_text.get_rect(center=del_btn_rect.center)
+            del_text = del_font.render("DELETE SAVE",
+                                       True, (255, 200, 200))
+            total_w = del_text.get_width() + 26
+            del_rect = del_text.get_rect(
+                center=(del_btn_rect.centerx + 13,
+                        del_btn_rect.centery))
+            ui_theme.draw_icon(self.screen, "quit",
+                               del_btn_rect.centerx - total_w // 2 + 12,
+                               del_btn_rect.centery, (255, 160, 160), s=0.7)
             self.screen.blit(del_text, del_rect)
 
             self.buttons[f"slot_delete_{slot_num}"] = del_btn_rect
@@ -3241,9 +3275,12 @@ class Menu:
         # ═══ WARNING ICON ═══
         icon_font = get_font(48)
         warning_text = icon_font.render(
-            "⚠  DELETE SLOT?", True, (255, 100, 100))
+            "DELETE SLOT?", True, (255, 100, 100))
         warning_rect = warning_text.get_rect(
-            center=(cx, dialog_y + 45))
+            center=(cx + 16, dialog_y + 45))
+        ui_theme.draw_icon(self.screen, "warn",
+                           cx - warning_text.get_width() // 2 - 22,
+                           dialog_y + 45, (255, 100, 100), s=1.1)
         self.screen.blit(warning_text, warning_rect)
 
         # ═══ MESSAGE ═══
@@ -3542,12 +3579,9 @@ class Menu:
         cx = SCREEN_WIDTH // 2
         completed = self.save_data.get("completed_levels", [])
 
-        # ═══ TITLE (lebih kecil & atas) ═══
-        _tf_lvl = title_font(72)
-        title = _tf_lvl.render("SELECT LEVEL", True, (255, 220, 100))
-        title_rect = title.get_rect(center=(cx, 52))
-        self._blit_shadow(self.screen, title, title_rect.topleft)
-        self.screen.blit(title, title_rect)
+        # ═══ TITLE ═══
+        ui_theme.screen_title(self.screen, "SELECT LEVEL", cx, 48,
+                              ornament=False)
 
         # ═══ DIFFICULTY MODE SELECTOR ═══
         difficulty = GameSettings().difficulty
@@ -3560,34 +3594,25 @@ class Menu:
         else:
             diff_text = "MODE: NORMAL (ENEMY SCALING OFF)"
             diff_color = (90, 225, 140)
-        self._draw_menu_button(
-            "toggle_level_difficulty", diff_text, cx, 98,
-            diff_color, width=520, height=32, label_font_size=20
+        ui_theme.button(
+            self.screen, self.buttons, "toggle_level_difficulty",
+            diff_text, cx, 118, diff_color, None,
+            w=520, h=32, letter_gap=False,
+            hover=(self.hover_button == "toggle_level_difficulty"),
+            font_size=20
         )
 
         # ═══ PROGRESS INFO ═══
         total = len(ALL_LEVELS)
         done_count = len(completed)
-        progress_text = self.font_small.render(
-            f"COMPLETED: {done_count} / {total}",
-            True, (150, 220, 255))
-        progress_rect = progress_text.get_rect(center=(cx, 138))
-        self.screen.blit(progress_text, progress_rect)
+        ui_theme.draw_text(self.screen, get_font(22, "body_semibold"),
+                           f"COMPLETED: {done_count} / {total}",
+                           ui_theme.CYAN_SOFT, center=(cx, 156))
 
         # Progress bar
-        bar_w = 300
-        bar_h = 6
-        bx = cx - bar_w // 2
-        by = 153
-
-        pygame.draw.rect(self.screen, (40, 45, 60),
-                         (bx, by, bar_w, bar_h), border_radius=3)
-        fill_w = int(bar_w * (done_count / max(1, total)))
-        if fill_w > 0:
-            pygame.draw.rect(self.screen, (100, 220, 100),
-                             (bx, by, fill_w, bar_h), border_radius=3)
-        pygame.draw.rect(self.screen, (100, 130, 180),
-                         (bx, by, bar_w, bar_h), 1, border_radius=3)
+        ui_theme.progress_bar(self.screen, cx - 150, 169, 300,
+                              done_count / max(1, total),
+                              color=ui_theme.GREEN, h=6)
 
         # ═══ SCROLL STATE ═══
         if not hasattr(self, '_level_scroll'):
@@ -3653,10 +3678,9 @@ class Menu:
                 content_height, self._level_scroll, max_scroll)
 
         # ═══ BACK BUTTON (fixed di bawah) ═══
-        self._draw_menu_button("level_back", "BACK",
-                               cx, SCREEN_HEIGHT - 32,
-                               (150, 150, 150),
-                               width=200, height=38)
+        ui_theme.back_button(self.screen, self.buttons, "level_back",
+               cx, SCREEN_HEIGHT - 32,
+               hover=(self.hover_button == "level_back"))
 
     def _draw_level_scroll_indicator(self, x, y, height,
                                      scroll_pos, max_scroll):
@@ -3686,7 +3710,7 @@ class Menu:
     # ================================
 
     def _draw_level_card(self, level, x, y, w, h, completed):
-        """Draw single level card - COMPACT"""
+        """Draw single level card - premium (gradasi + status konsisten)."""
         from levels import is_level_unlocked
 
         lvl_num = level["level_number"]
@@ -3698,104 +3722,114 @@ class Menu:
         card_rect = pygame.Rect(x, y, w, h)
         is_hover = card_rect.collidepoint(mx, my) and is_unlocked
 
-        # ═══ CARD BG ═══
+        # ═══ CARD BG (gradasi per status) ═══
         if not is_unlocked:
-            bg_color = (30, 20, 25)
-            border_color = (100, 60, 60)
+            top = ui_theme.LOCKED_BG_TOP
+            bot = ui_theme.LOCKED_BG_BOTTOM
+            edge = ui_theme.LOCKED_EDGE
         elif is_completed:
-            bg_color = (20, 45, 30)
-            border_color = (100, 220, 100)
+            top = ui_theme.DONE_BG_TOP
+            bot = ui_theme.DONE_BG_BOTTOM
+            edge = ui_theme.DONE_EDGE
         else:
-            bg_color = (25, 35, 55)
-            border_color = (100, 200, 255)
+            top = ui_theme.OPEN_BG_TOP
+            bot = ui_theme.OPEN_BG_BOTTOM
+            edge = ui_theme.OPEN_EDGE
 
-        # Shadow
-        shadow_surf = pygame.Surface((w + 6, h + 6), pygame.SRCALPHA)
-        pygame.draw.rect(shadow_surf, (0, 0, 0, 130),
-                         (3, 3, w, h), border_radius=10)
-        self.screen.blit(shadow_surf, (x - 3, y - 3))
+        # Bayangan + glow hover
+        if ui_theme.cheap_alpha():
+            self.screen.blit(ui_theme._shadow(w, h, radius=10, alpha=120,
+                                               spread=3), (x - 2, y - 2))
+            if is_hover:
+                self.screen.blit(ui_theme._radial(w + 26, h + 26, edge, 60),
+                                 (x - 13, y - 13))
+        else:
+            pygame.draw.rect(self.screen, (6, 7, 14),
+                             (x + 3, y + 4, w, h), border_radius=10)
 
-        # BG
-        pygame.draw.rect(self.screen, bg_color,
-                         (x, y, w, h), border_radius=10)
+        if ui_theme.cheap_alpha():
+            self.screen.blit(ui_theme._vgrad(w, h, top, bot, radius=10),
+                             (x, y))
+        else:
+            pygame.draw.rect(self.screen, bot, (x, y, w, h),
+                             border_radius=10)
 
-        # Hover glow
-        if is_hover:
-            glow_surf = pygame.Surface((w + 16, h + 16), pygame.SRCALPHA)
-            pygame.draw.rect(glow_surf, (*border_color, 70),
-                             (0, 0, w + 16, h + 16), border_radius=13)
-            self.screen.blit(glow_surf, (x - 8, y - 8))
-            border_color = (255, 255, 255)
-
-        # Border
-        border_w = 3 if is_hover else 2
-        pygame.draw.rect(self.screen, border_color,
+        hover_edge = tuple(min(255, c + 90) for c in edge)
+        border_w = 2
+        pygame.draw.rect(self.screen, hover_edge if is_hover else edge,
                          (x, y, w, h), border_w, border_radius=10)
+        if is_hover or is_completed:
+            ui_theme.corner_ticks(self.screen, card_rect,
+                                  ui_theme.GOLD, length=10)
 
-        # ═══ TOP SECTION: Level number + name (compact, rapi) ═══
-        # "LEVEL" label
-        label = self.font_tiny.render("LEVEL", True, (150, 160, 180))
-        label_rect = label.get_rect(center=(x + w // 2, y + 14))
-        self.screen.blit(label, label_rect)
+        # ═══ TOP SECTION: Level number + name ═══
+        ui_theme.draw_text(self.screen, get_font(18, "body_semibold"),
+                           ui_theme.letter("LEVEL"), ui_theme.TEXT_DIM,
+                           center=(x + w // 2, y + 18), shadow=False)
 
-        # Level number (lebih kecil agar tidak bertabrakan)
-        lvl_font = get_font(34, 'body_bold')
-        lvl_color = (150, 150, 150) if not is_unlocked else (
-            (100, 255, 100) if is_completed else (255, 220, 100))
+        if is_unlocked:
+            num_surf = ui_theme.gradient_text(
+                title_font(34), f"{lvl_num}",
+                ui_theme.GOLD_BRIGHT, (196, 138, 40))
+            self.screen.blit(num_surf,
+                             num_surf.get_rect(center=(x + w // 2, y + 50)))
+            name_color = ui_theme.TEXT_WHITE
+            name_sub = ui_theme.TEXT_DIM
+        else:
+            num_surf = title_font(34).render(
+                f"{lvl_num}", True, ui_theme.TEXT_FAINT)
+            self.screen.blit(num_surf,
+                             num_surf.get_rect(center=(x + w // 2, y + 50)))
+            name_color = (120, 124, 146)
+            name_sub = (84, 88, 110)
 
-        lvl_shadow = lvl_font.render(f"{lvl_num}", True, (0, 0, 0))
-        lvl_rect = lvl_shadow.get_rect(center=(x + w // 2, y + 48))
-        self.screen.blit(lvl_shadow, (lvl_rect.x + 2, lvl_rect.y + 2))
+        name_font = get_font(22, "body_semibold")
+        name_show = ui_theme.fit_ellipsis(name_font, str(level["name"]),
+                                           w - 30)
+        ui_theme.draw_text(self.screen, name_font, name_show, name_color,
+                           center=(x + w // 2, y + 84))
 
-        lvl_text = lvl_font.render(f"{lvl_num}", True, lvl_color)
-        self.screen.blit(lvl_text, lvl_rect)
-
-        # Level name (font lebih kecil + truncate supaya tidak meluber)
-        name_color = (200, 200, 220) if is_unlocked else (100, 100, 110)
-        name_font = get_font(22, 'body_semibold')
-        name_text = str(level["name"])
-        if name_font.size(name_text)[0] > w - 30:
-            while name_font.size(name_text + "...")[0] > w - 30 and len(name_text) > 5:
-                name_text = name_text[:-1]
-            name_text += "..."
-        name = name_font.render(name_text, True, name_color)
-        name_rect = name.get_rect(center=(x + w // 2, y + 82))
-        self.screen.blit(name, name_rect)
-
-        # Description (1 line, truncated)
-        desc_font = get_font(20)
-        desc_text = level["description"]
-        if desc_font.size(desc_text)[0] > w - 30:
-            while desc_font.size(desc_text + "...")[0] > w - 30 and len(desc_text) > 10:
-                desc_text = desc_text[:-1]
-            desc_text += "..."
-        desc_surf = desc_font.render(
-            desc_text, True,
-            (170, 180, 200) if is_unlocked else (80, 80, 100))
-        desc_rect = desc_surf.get_rect(center=(x + w // 2, y + 106))
-        self.screen.blit(desc_surf, desc_rect)
+        desc_font = get_font(18, "body_medium")
+        desc_show = ui_theme.fit_ellipsis(desc_font, level["description"],
+                                           w - 36)
+        ui_theme.draw_text(self.screen, desc_font, desc_show, name_sub,
+                           center=(x + w // 2, y + 108), shadow=False)
 
         # ═══ STATUS BADGE (top-right) ═══
         if is_completed:
-            badge_rect = pygame.Rect(x + w - 55, y + 8, 45, 18)
-            pygame.draw.rect(self.screen, (40, 100, 40),
-                             badge_rect, border_radius=9)
-            pygame.draw.rect(self.screen, (100, 220, 100),
-                             badge_rect, 1, border_radius=9)
-            chk = self.font_tiny.render("✓ DONE", True, WHITE)
-            chk_rect = chk.get_rect(center=badge_rect.center)
-            self.screen.blit(chk, chk_rect)
+            bfont = get_font(16, "body_bold")
+            label_w = bfont.size("DONE")[0]
+            badge_rect = pygame.Rect(x + w - 16 - 22 - label_w,
+                                     y + 10, 16 + label_w + 14, 24)
+            if ui_theme.cheap_alpha():
+                self.screen.blit(ui_theme._vgrad(
+                    badge_rect.w, badge_rect.h, (46, 128, 70),
+                    (24, 74, 40), radius=badge_rect.h // 2),
+                    (badge_rect.x, badge_rect.y))
+            else:
+                pygame.draw.rect(self.screen, (30, 96, 48), badge_rect,
+                                 border_radius=badge_rect.h // 2)
+            pygame.draw.rect(self.screen, ui_theme.GREEN, badge_rect, 1,
+                             border_radius=badge_rect.h // 2)
+            ui_theme.draw_icon(self.screen, "check",
+                               badge_rect.x + 14, badge_rect.centery,
+                               (214, 255, 222), s=0.55)
+            ui_theme.draw_text(self.screen, bfont, "DONE",
+                               (214, 255, 222),
+                               center=(badge_rect.centerx + 10,
+                                       badge_rect.centery),
+                               shadow=False)
 
         # ═══ SEPARATOR ═══
-        sep_y = y + 122
-        pygame.draw.line(self.screen, (60, 70, 90),
+        sep_y = y + 126
+        pygame.draw.line(self.screen, (52, 58, 84),
                          (x + 15, sep_y), (x + w - 15, sep_y), 1)
 
         # ═══ INFO SECTION (kalau unlocked) ═══
         if is_unlocked:
-            info_y = sep_y + 8
+            info_y = sep_y + 10
 
-            # Difficulty (Easy / Normal / Hard)
+            # Difficulty
             difficulty = GameSettings().difficulty
             if difficulty == "hard":
                 hp_mult = level.get("enemy_hp_mult", 1.0)
@@ -3806,24 +3840,24 @@ class Menu:
                 diff_level = min(5, max(1, int(hp_mult * 2.5)))
             elif difficulty == "easy":
                 diff_title = "EASY (BOSS 20-40)"
-                diff_color = (100, 210, 255)
+                diff_color = ui_theme.CYAN
                 diff_level = 1
             else:
                 diff_title = "NORMAL (OFF)"
-                diff_color = (100, 220, 150)
+                diff_color = ui_theme.GREEN
                 diff_level = 1
-            diff_label = self.font_tiny.render(
-                diff_title, True, diff_color)
-            self.screen.blit(diff_label, (x + 15, info_y))
+            ui_theme.draw_text(self.screen, get_font(16, "body_bold"),
+                               diff_title, diff_color,
+                               topleft=(x + 15, info_y), shadow=False)
 
             for i in range(5):
                 bar_x = x + 15 + i * 18
-                bar_y_pos = info_y + 20
+                bar_y_pos = info_y + 22
                 if i < diff_level:
                     bar_col = (255, 100, 80) if i >= 3 else (
-                        (255, 200, 80) if i >= 1 else (100, 220, 100))
+                        (255, 200, 80) if i >= 1 else ui_theme.GREEN)
                 else:
-                    bar_col = (50, 50, 60)
+                    bar_col = (46, 50, 66)
                 pygame.draw.rect(self.screen, bar_col,
                                  (bar_x, bar_y_pos, 14, 6),
                                  border_radius=2)
@@ -3833,92 +3867,86 @@ class Menu:
             level_stats = SaveManager.get_level_stats(
                 self.save_data, lvl_num)
 
-            stats_y = info_y + 32
+            stats_y = info_y + 36
+            stat_font = get_font(12, "body_semibold")
+            val_font = get_font(19, "body_medium")
+            val_font_bold = get_font(20, "body_bold")
+
+            def _stat(col_x, yy, label, value, vfont, vcolor):
+                ui_theme.draw_text(self.screen, stat_font,
+                                   ui_theme.letter(label),
+                                   ui_theme.TEXT_FAINT,
+                                   topleft=(col_x, yy), shadow=False)
+                ui_theme.draw_text(self.screen, vfont, value, vcolor,
+                                   topleft=(col_x, yy + 14), shadow=False)
 
             if level_stats['total_attempts'] > 0:
-                # Row 1 & 2 - fixed layout, no overlap, English
-                stat_font = get_font(11)
-                val_font = get_font(20)
-                val_font_bold = get_font(22, 'body_bold')
-
-                # Best Score (left)
-                self.screen.blit(stat_font.render("BEST SCORE", True, (130, 140, 160)), (x + 12, stats_y))
                 score_val = level_stats['best_score']
-                # Format to avoid overflow: 12345 -> 12.3K
-                if score_val >= 10000:
-                    score_str = f"{score_val/1000:.1f}K"
-                else:
-                    score_str = f"{score_val:,}"
-                if val_font.size(score_str)[0] > w//2 - 20:
+                score_str = (f"{score_val/1000:.1f}K"
+                             if score_val >= 10000
+                             else f"{score_val:,}")
+                if val_font.size(score_str)[0] > w // 2 - 20:
                     score_str = score_str[:8]
-                self.screen.blit(val_font_bold.render(score_str, True, (255, 220, 100)), (x + 12, stats_y + 12))
+                _stat(x + 12, stats_y, "BEST SCORE", score_str,
+                      val_font_bold, ui_theme.GOLD_TEXT)
 
-                # Best Time (right) - ensure not overlapping
-                self.screen.blit(stat_font.render("BEST TIME", True, (130, 140, 160)), (x + w//2 + 8, stats_y))
-                time_str = SaveManager.format_time(level_stats['best_time_seconds'])
-                if val_font.size(time_str)[0] > w//2 - 20:
+                time_str = SaveManager.format_time(
+                    level_stats['best_time_seconds'])
+                if val_font.size(time_str)[0] > w // 2 - 20:
                     time_str = time_str[:8]
-                self.screen.blit(val_font.render(time_str, True, (100, 220, 255)), (x + w//2 + 8, stats_y + 12))
+                _stat(x + w // 2 + 8, stats_y, "BEST TIME", time_str,
+                      val_font, ui_theme.CYAN_SOFT)
 
-                # Row 2: Attempts + Win Rate - more spacing
-                row2_y = stats_y + 32
-
+                row2_y = stats_y + 40
                 wins = level_stats['wins']
                 attempts = level_stats['total_attempts']
-                win_rate = int((wins / attempts) * 100) if attempts > 0 else 0
-
-                self.screen.blit(stat_font.render("ATTEMPTS", True, (130, 140, 160)), (x + 12, row2_y))
-                attempt_str = f"{wins}W/{attempts}"
-                self.screen.blit(val_font.render(attempt_str, True, (200, 220, 240)), (x + 12, row2_y + 12))
-
-                self.screen.blit(stat_font.render("WIN RATE", True, (130, 140, 160)), (x + w//2 + 8, row2_y))
-                wr_color = (100, 255, 100) if win_rate >= 75 else ((255, 220, 100) if win_rate >= 50 else (255, 150, 100))
-                self.screen.blit(val_font_bold.render(f"{win_rate}%", True, wr_color), (x + w//2 + 8, row2_y + 12))
+                win_rate = int((wins / attempts) * 100) if attempts else 0
+                _stat(x + 12, row2_y, "ATTEMPTS", f"{wins}W/{attempts}",
+                      val_font, ui_theme.TEXT_BODY)
+                wr_color = (ui_theme.GREEN if win_rate >= 75
+                            else (ui_theme.GOLD_TEXT if win_rate >= 50
+                                  else (255, 150, 100)))
+                _stat(x + w // 2 + 8, row2_y, "WIN RATE", f"{win_rate}%",
+                      val_font_bold, wr_color)
             else:
-                no_stats = self.font_tiny.render("No stats yet", True, (120, 140, 160))
-                no_rect = no_stats.get_rect(center=(x + w // 2, stats_y + 14))
-                self.screen.blit(no_stats, no_rect)
+                ui_theme.draw_text(self.screen, self.font_tiny,
+                                   "No stats yet", ui_theme.TEXT_FAINT,
+                                   center=(x + w // 2, stats_y + 16),
+                                   shadow=False)
 
         elif not is_unlocked:
-            # Locked message
-            lock_y = sep_y + 30
-            lock_font = get_font(28)
-            lock_text = lock_font.render("🔒 LOCKED", True, (180, 100, 100))
-            lock_rect = lock_text.get_rect(center=(x + w // 2, lock_y))
-            self.screen.blit(lock_text, lock_rect)
-
+            # Locked (netral gelap, bukan merah)
+            lock_cy = sep_y + 44
+            ui_theme.draw_icon(self.screen, "lock",
+                               x + w // 2, lock_cy - 14,
+                               (150, 154, 180), s=1.5)
+            ui_theme.draw_text(self.screen,
+                               get_font(22, "body_bold"),
+                               ui_theme.letter("LOCKED"),
+                               (160, 164, 190),
+                               center=(x + w // 2, lock_cy + 22))
             req_text = self.font_tiny.render(
-                f"Complete Level {level.get('unlock_after_level', '?')} first",
-                True, (150, 120, 120))
-            req_rect = req_text.get_rect(center=(x + w // 2, lock_y + 25))
-            self.screen.blit(req_text, req_rect)
+                f"Complete Level {level.get('unlock_after_level', '?')} "
+                f"first", True, ui_theme.TEXT_FAINT)
+            self.screen.blit(req_text, req_text.get_rect(
+                center=(x + w // 2, lock_cy + 46)))
 
-        # ═══ PLAY BUTTON (di bawah card) ═══
-        btn_y = y + h - 38
-        btn_rect = pygame.Rect(x + 15, btn_y, w - 30, 28)
+        # ═══ BUTTON (posisi sama di semua status) ═══
+        btn_rect = pygame.Rect(x + 15, y + h - 38, w - 30, 28)
 
         if not is_unlocked:
-            pygame.draw.rect(self.screen, (50, 25, 25),
-                             btn_rect, border_radius=5)
-            pygame.draw.rect(self.screen, (120, 60, 60),
-                             btn_rect, 2, border_radius=5)
-            btn_txt = self.font_small.render("LOCKED", True, (180, 120, 120))
-            btn_txt_rect = btn_txt.get_rect(center=btn_rect.center)
-            self.screen.blit(btn_txt, btn_txt_rect)
+            ui_theme.pill(self.screen, {}, "level_locked_%d" % lvl_num,
+                          "LOCKED", btn_rect, "locked",
+                          get_font(18, "body_bold"), enabled=False,
+                          icon="lock")
         else:
-            btn_color = (50, 180, 80) if is_hover else (40, 140, 60)
-            border = (150, 255, 150) if is_hover else (100, 220, 100)
-
-            pygame.draw.rect(self.screen, btn_color,
-                             btn_rect, border_radius=5)
-            pygame.draw.rect(self.screen, border,
-                             btn_rect, 2, border_radius=5)
-
-            label_text = "REPLAY" if is_completed else "PLAY"
-            btn_txt = self.font_small.render(label_text, True, WHITE)
-            btn_txt_rect = btn_txt.get_rect(center=btn_rect.center)
-            self.screen.blit(btn_txt, btn_txt_rect)
-
+            btn_kind = "success"
+            btn_label = "REPLAY" if is_completed else "PLAY"
+            ui_theme.pill(self.screen, self.buttons, f"level_{lvl_num}",
+                          btn_label, btn_rect, btn_kind,
+                          get_font(18, "body_bold"),
+                          hover=is_hover, icon="play")
+            # Rect klik = seluruh kartu (perilaku lama)
             self.buttons[f"level_{lvl_num}"] = card_rect
 
     def handle_key(self, key):
@@ -4311,68 +4339,60 @@ class Menu:
         # (Badge jumlah level/hero & HERO GOLD TIDAK tampil di main menu.
         #  HERO GOLD hanya muncul di layar HERO SHOP.)
 
-        # ═══ TITLE (gradasi emas + glow + outline) ═══
+        # ═══ TITLE (gradasi emas + glow denyut + outline) ═══
         title_y = 124 + int(math.sin(t) * 3)
-        from mobile.perf import Quality as _Qt2
-        if _Qt2.cheap_alpha:
-            glow_t = pygame.Surface((640, 130), pygame.SRCALPHA)
-            pygame.draw.ellipse(glow_t,
-                                (255, 205, 100, int(46 + 22 * math.sin(t))),
-                                (0, 12, 640, 104))
-            self.screen.blit(glow_t, (cx - 320, title_y - 62))
-        out = self.font_title.render("MYSTIC ARENA", True, (12, 10, 24))
-        o_rect = out.get_rect(center=(cx, title_y))
-        # outline 8 arah = 8 alpha blit teks besar (224.000 px = 50 ms)
-        if _Qt2.cheap_alpha:
-            for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2),
-                           (-2, -2), (2, 2), (-2, 2), (2, -2)):
-                self.screen.blit(out, (o_rect.x + dx, o_rect.y + dy))
-        grad = self._render_gradient_text(
-            self.font_title, "MYSTIC ARENA",
-            (255, 242, 175), (196, 138, 40))
-        self.screen.blit(grad, grad.get_rect(center=(cx, title_y)))
+        if ui_theme.cheap_alpha():
+            self.screen.blit(ui_theme._radial(
+                660, 150, (255, 205, 90), int(40 + 20 * math.sin(t))),
+                (cx - 330, title_y - 66))
+        ui_theme.outline_text(self.screen, self.font_title,
+                              "MYSTIC ARENA", None,
+                              center=(cx, title_y))
 
         # ═══ SUBTITLE PLATE ═══
-        sub = self.font_subtitle.render(
-            "B A T T L E   A R E N A", True, (150, 195, 255))
-        plate = pygame.Rect(cx - (sub.get_width() + 56) // 2,
+        sub_font = get_font(32, "body_semibold")
+        sub = sub_font.render(ui_theme.letter("BATTLE ARENA"),
+                              True, (150, 195, 255))
+        plate = pygame.Rect(cx - (sub.get_width() + 60) // 2,
                             title_y + 66,
-                            sub.get_width() + 56,
-                            sub.get_height() + 14)
-        pygame.draw.rect(self.screen, (14, 18, 34), plate,
-                         border_radius=10)
-        pygame.draw.rect(self.screen, (255, 220, 100), plate, 1,
-                         border_radius=10)
+                            sub.get_width() + 60, 48)
+        ui_theme.panel_solid(self.screen, plate, border=ui_theme.EDGE_GOLD)
         self.screen.blit(sub, sub.get_rect(center=plate.center))
 
-        # Tagline (tanpa angka level/hero)
-        tag = self.font_small.render(
-            "Dark Fantasy MOBA  -  Battle Arena",
-            True, (150, 160, 185))
-        self.screen.blit(tag, tag.get_rect(center=(cx, plate.bottom + 20)))
+        # Tagline (tanpa angka level/hero, tanpa duplikasi "Arena")
+        tag = get_font(22, "body_medium").render(
+            "Dark Fantasy MOBA  \u2022  Tower Defense",
+            True, ui_theme.TEXT_DIM)
+        self.screen.blit(tag, tag.get_rect(center=(cx, plate.bottom + 22)))
 
         # ═══ FLOURISH (garis - wajik - garis) ═══
-        fy = plate.bottom + 46
-        pygame.draw.line(self.screen, (255, 220, 100),
+        fy = plate.bottom + 48
+        pygame.draw.line(self.screen, ui_theme.EDGE_GOLD,
                          (cx - 220, fy), (cx - 18, fy), 2)
-        pygame.draw.line(self.screen, (255, 220, 100),
+        pygame.draw.line(self.screen, ui_theme.EDGE_GOLD,
                          (cx + 18, fy), (cx + 220, fy), 2)
-        pygame.draw.polygon(self.screen, (255, 220, 100),
+        pygame.draw.polygon(self.screen, ui_theme.GOLD,
                             [(cx - 8, fy), (cx, fy - 7),
                              (cx + 8, fy), (cx, fy + 7)])
-        pygame.draw.circle(self.screen, (255, 240, 180),
+        pygame.draw.circle(self.screen, ui_theme.GOLD_BRIGHT,
                            (cx - 230, fy), 3)
-        pygame.draw.circle(self.screen, (255, 240, 180),
+        pygame.draw.circle(self.screen, ui_theme.GOLD_BRIGHT,
                            (cx + 230, fy), 3)
 
         # ═══ BUTTONS ═══
         # Baris pertama: CONTINUE (kiri) + PLAY GAME (kanan) sejajar
-        self._draw_menu_button("continue", "CONTINUE", cx - 170, 336,
-                               (140, 225, 255), width=300, height=50,
-                               icon="play", label_font_size=36)
-        self._draw_menu_button("play", "PLAY GAME", cx + 170, 336,
-                               (100, 220, 110), width=300, height=50,
-                               icon="play", label_font_size=36)
+        ui_theme.button(self.screen, self.buttons, "continue",
+                        "CONTINUE", cx - 170, 336,
+                        (140, 225, 255), None,
+                        w=300, h=50, icon="continue",
+                        hover=(self.hover_button == "continue"),
+                        font_size=36, letter_gap=False)
+        ui_theme.button(self.screen, self.buttons, "play",
+                        "PLAY GAME", cx + 170, 336,
+                        (100, 220, 110), None,
+                        w=300, h=50, icon="play",
+                        hover=(self.hover_button == "play"),
+                        font_size=36, letter_gap=False)
 
         # Baris berikutnya (tidak bergeser dari layout sebelumnya)
         buttons_data = [
@@ -4387,16 +4407,21 @@ class Menu:
         button_gap = 53
         for i, (btn_id, label, color, icon) in enumerate(buttons_data):
             y = button_y_start + i * button_gap
-            self._draw_menu_button(btn_id, label, cx, y, color,
-                                   width=360, height=50, icon=icon)
+            ui_theme.button(self.screen, self.buttons, btn_id, label,
+                            cx, y, color, self.font_button,
+                            w=360, h=50, icon=icon,
+                            hover=(self.hover_button == btn_id),
+                            letter_gap=False)
 
         # Input mode (kiri bawah) + version (kanan bawah)
-        mode = self.font_tiny.render(
-            getattr(self, '_input_label', 'INPUT: KEYBOARD + MOUSE'),
-            True, (110, 200, 210))
-        self.screen.blit(mode, (24, SCREEN_HEIGHT - 28))
+        ui_theme.draw_text(self.screen, self.font_tiny,
+                           getattr(self, '_input_label',
+                                   'INPUT: KEYBOARD + MOUSE'),
+                           (110, 200, 210),
+                           topleft=(24, SCREEN_HEIGHT - 28),
+                           shadow=False)
         version = self.font_tiny.render(
-            "v2.0  -  MOBA Tower Defense", True, (105, 110, 140))
+            "v2.0  \u2022  MOBA Tower Defense", True, ui_theme.TEXT_FAINT)
         self.screen.blit(version, version.get_rect(
             center=(cx, SCREEN_HEIGHT - 20)))
 
@@ -4415,116 +4440,73 @@ class Menu:
         if not hasattr(self, '_meta_shop_scroll'):
             self._meta_shop_scroll = 0
 
-        # ═══ TITLE (compact) ═══
-        _tf_shop = title_font(72)
-        title = _tf_shop.render("HERO SHOP", True, (255, 220, 100))
-        title_rect = title.get_rect(center=(cx, 55))
-        self._blit_shadow(self.screen, title, title_rect.topleft)
-        self.screen.blit(title, title_rect)
+        # ═══ TITLE ═══
+        ui_theme.screen_title(self.screen, "HERO SHOP", cx, 46,
+                              ornament=False)
 
-        # ═══ TOP BADGES (lebih kecil) ═══
-        # Gold (kiri)
-        gold_bg = pygame.Rect(30, 20, 200, 28)
-        pygame.draw.rect(self.screen, (40, 30, 10), gold_bg,
-                         border_radius=14)
-        pygame.draw.rect(self.screen, GOLD, gold_bg, 2,
-                         border_radius=14)
-        pygame.draw.circle(self.screen, (255, 200, 50),
-                           (gold_bg.x + 18, gold_bg.centery), 8)
-        pygame.draw.circle(self.screen, (200, 150, 30),
-                           (gold_bg.x + 18, gold_bg.centery), 8, 2)
-        dollar = self.font_tiny.render("$", True, (100, 60, 10))
-        dollar_rect = dollar.get_rect(
-            center=(gold_bg.x + 18, gold_bg.centery))
-        self.screen.blit(dollar, dollar_rect)
-        gold_text = self.font_small.render(
-            f"HERO GOLD: {self.meta_gold:,}", True, GOLD)
-        self.screen.blit(gold_text, (gold_bg.x + 32, gold_bg.y + 6))
+        # ═══ TOP BADGES (chip auto-size, tidak meluber layar) ═══
+        chip_font = get_font(20, "body_semibold")
+        gold_chip = ui_theme.chip(
+            self.screen, (26, 20), "HERO GOLD", ui_theme.GOLD,
+            chip_font, icon="coin",
+            value=f"{self.meta_gold:,}", value_color=ui_theme.GOLD_TEXT)
 
-        # Tombol TOP UP (di samping badge gold) -> buka dialog top up.
-        topup_btn = pygame.Rect(gold_bg.right + 12, 18, 118, 32)
-        topup_hover = self.hover_button == "topup_open"
-        pygame.draw.rect(self.screen,
-                         (22, 92, 58) if topup_hover else (12, 58, 38),
-                         topup_btn, border_radius=16)
-        pygame.draw.rect(self.screen,
-                         (140, 255, 170) if topup_hover
-                         else (80, 200, 120),
-                         topup_btn, 2, border_radius=16)
-        topup_txt = self.font_small.render("+ TOP UP", True, (215, 255, 225))
-        self.screen.blit(topup_txt,
-                         topup_txt.get_rect(center=topup_btn.center))
-        self.buttons["topup_open"] = topup_btn
+        # Tombol TOP UP (di samping chip gold) -> buka dialog top up.
+        topup_btn = pygame.Rect(gold_chip.right + 12, 18, 118, 34)
+        ui_theme.pill(self.screen, self.buttons, "topup_open",
+                      "TOP UP", topup_btn, "success",
+                      get_font(20, "body_bold"),
+                      hover=(self.hover_button == "topup_open"),
+                      icon="plus", letter_gap=False)
 
         # Bosses (kanan)
         boss_count = len(self.save_data.get("unlocked_bosses", []))
-        boss_bg = pygame.Rect(SCREEN_WIDTH - 240, 20, 210, 28)
-        pygame.draw.rect(self.screen, (20, 20, 40), boss_bg,
-                         border_radius=14)
-        pygame.draw.rect(self.screen, (150, 200, 255), boss_bg, 2,
-                         border_radius=14)
-        boss_text = self.font_small.render(
-            f"BOSSES DEFEATED: {boss_count}", True, (180, 220, 255))
-        self.screen.blit(boss_text, (boss_bg.x + 12, boss_bg.y + 6))
+        ui_theme.chip(
+            self.screen, (SCREEN_WIDTH - 26, 20), "BOSSES DEFEATED",
+            ui_theme.CYAN, chip_font, icon="skull",
+            value=str(boss_count), value_color=ui_theme.CYAN_SOFT,
+            align="right")
 
-        # ═══ TABS (compact) ═══
-        tab_y = 78
-        tab_h = 32
+        # ═══ TABS (lebar mengikuti teks) ═══
+        tab_y = 88
+        tab_h = 34
+        tab_font = get_font(22, "body_semibold")
         tabs = [
             ('starter', 'STARTER HEROES', (100, 200, 255)),
             ('mini_boss', 'MINI BOSSES', (255, 150, 100)),
             ('true_boss', 'TRUE BOSSES', (255, 80, 100)),
         ]
 
-        tab_w = 200
-        total_w = tab_w * len(tabs) + 8 * (len(tabs) - 1)
-        tab_start_x = cx - total_w // 2
+        tab_gap = 10
+        tab_ws = [ui_theme.tab_width(tab_font, label)
+                  for (_, label, _) in tabs]
+        total_w = sum(tab_ws) + tab_gap * (len(tabs) - 1)
+        tx = cx - total_w // 2
 
         for i, (tab_id, tab_label, tab_color) in enumerate(tabs):
-            tx = tab_start_x + i * (tab_w + 8)
-            tab_rect = pygame.Rect(tx, tab_y, tab_w, tab_h)
-
-            is_active = self.shop_tab == tab_id
-            is_hover = self.hover_button == f'tab_{tab_id}'
-
-            if is_active:
-                pygame.draw.rect(self.screen, (40, 50, 80),
-                                 tab_rect, border_radius=6)
-                pygame.draw.rect(self.screen, tab_color,
-                                 tab_rect, 3, border_radius=6)
-            else:
-                bg = (30, 35, 55) if is_hover else (20, 25, 40)
-                pygame.draw.rect(self.screen, bg,
-                                 tab_rect, border_radius=6)
-                pygame.draw.rect(self.screen, (80, 90, 110),
-                                 tab_rect, 2, border_radius=6)
-
-            text_color = tab_color if is_active else (150, 160, 180)
-            tab_text = self.font_small.render(tab_label, True, text_color)
-            tab_text_rect = tab_text.get_rect(center=tab_rect.center)
-            self.screen.blit(tab_text, tab_text_rect)
-
-            self.buttons[f'tab_{tab_id}'] = tab_rect
+            tab_rect = pygame.Rect(tx, tab_y, tab_ws[i], tab_h)
+            tx += tab_ws[i] + tab_gap
+            ui_theme.tab(self.screen, self.buttons, f'tab_{tab_id}',
+                         tab_rect, tab_label, tab_color, tab_font,
+                         active=(self.shop_tab == tab_id),
+                         hover=(self.hover_button == f'tab_{tab_id}'))
 
         # ═══ CONTENT PANEL ═══
         panel_w = 1220
-        panel_h = SCREEN_HEIGHT - 170  # Dynamic height
+        panel_h = SCREEN_HEIGHT - 184  # 132..668 (BACK tetap di 688)
         panel_x = cx - panel_w // 2
-        panel_y = 118
-
-        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-        pygame.draw.rect(panel, (20, 25, 40, 225),
-                         (0, 0, panel_w, panel_h), border_radius=12)
-        self.screen.blit(panel, (panel_x, panel_y))
+        panel_y = 132
 
         tab_border_color = {
             'starter': (100, 200, 255),
             'mini_boss': (255, 150, 100),
             'true_boss': (255, 80, 100),
         }[self.shop_tab]
-        pygame.draw.rect(self.screen, tab_border_color,
-                         (panel_x, panel_y, panel_w, panel_h),
-                         2, border_radius=12)
+        ui_theme.panel(self.screen,
+                       (panel_x, panel_y, panel_w, panel_h),
+                       border=tab_border_color,
+                       fill_top=(24, 30, 54), fill_bottom=(15, 19, 36),
+                       border_w=2)
 
         # ═══ DEVELOPER TOP UP (testing only) ═══
         if DEV_TOPUP_ENABLED:
@@ -4564,17 +4546,25 @@ class Menu:
 
         # ═══ SECTION HEADER ═══
         section_titles = {
-            'starter': 'Base Heroes - Available from the start',
-            'mini_boss': 'Mini Boss Heroes - Defeat wave bosses to unlock',
-            'true_boss': 'True Boss Heroes - Ultimate endgame rewards',
+            'starter': ('BASE HEROES', 'gem',
+                        'Available from the start'),
+            'mini_boss': ('MINI BOSS HEROES', 'skull',
+                          'Defeat wave bosses to unlock'),
+            'true_boss': ('TRUE BOSS HEROES', 'crown',
+                          'Ultimate endgame rewards'),
         }
-        section_desc = self.font_tiny.render(
-            section_titles[self.shop_tab], True, (180, 190, 210))
-        self.screen.blit(section_desc, (panel_x + 20, panel_y + 12))
-
-        pygame.draw.line(self.screen, (60, 70, 90),
-                         (panel_x + 15, panel_y + 30),
-                         (panel_x + panel_w - 15, panel_y + 30), 1)
+        sec_title, sec_icon, sec_desc = section_titles[self.shop_tab]
+        ui_theme.section_header(
+            self.screen, panel_x + 22, panel_y + 12, sec_title,
+            sec_icon, ui_theme.GOLD_TEXT,
+            get_font(22, "body_semibold"), rule_w=420)
+        ui_theme.draw_text(self.screen, get_font(18, "body_medium"),
+                           sec_desc, ui_theme.TEXT_DIM,
+                           topleft=(panel_x + 22, panel_y + 40),
+                           shadow=False)
+        pygame.draw.line(self.screen, (48, 54, 80),
+                         (panel_x + 15, panel_y + 66),
+                         (panel_x + panel_w - 15, panel_y + 66), 1)
 
         # ═══ EMPTY STATE ═══
         if not filtered_heroes:
@@ -4595,9 +4585,9 @@ class Menu:
             total_cards_w = cols * card_w + (cols - 1) * gap_x
             cards_start_x = cx - total_cards_w // 2
 
-            # Content area inside panel
-            content_top = panel_y + 38
-            content_bottom = panel_y + panel_h - 5
+            # Content area inside panel (di bawah header section)
+            content_top = panel_y + 78
+            content_bottom = panel_y + panel_h - 8
             content_height = content_bottom - content_top
 
             # Calculate scroll
@@ -4640,10 +4630,9 @@ class Menu:
                     self._meta_shop_scroll, max_scroll)
 
         # ═══ BACK BUTTON (fixed) ═══
-        self._draw_menu_button("back_to_main", "BACK",
-                               cx, SCREEN_HEIGHT - 32,
-                               (150, 150, 150),
-                               width=200, height=38)
+        ui_theme.back_button(self.screen, self.buttons, "back_to_main",
+               cx, SCREEN_HEIGHT - 32,
+               hover=(self.hover_button == "back_to_main"))
 
     def _draw_meta_scroll_indicator(self, x, y, height,
                                     scroll_pos, max_scroll):
@@ -4667,7 +4656,8 @@ class Menu:
     # ================================
 
     def _draw_meta_hero_card(self, hero_type, stats, x, y, w, h):
-        """Compact horizontal hero card for meta shop"""
+        """Hero card premium: gradasi per status + satu baris status
+        yang jelas (tanpa tumpukan label STARTER/UNLOCK COST/FREE)."""
         purchased = hero_type in self.save_data.get("purchased_heroes", [])
         boss_req = stats.get("unlock_require_boss")
         boss_ready = boss_req is None or \
@@ -4679,54 +4669,63 @@ class Menu:
         )
 
         color_main = stats["color"]
-        color_dark = stats["color_dark"]
 
-        # ═══ CARD BG ═══
+        # ═══ CARD BG (gradasi per status) ═══
         if purchased:
-            bg_color = (25, 42, 30)
+            top, bot, edge = (ui_theme.DONE_BG_TOP, ui_theme.DONE_BG_BOTTOM,
+                              ui_theme.DONE_EDGE)
         elif not boss_ready:
-            bg_color = (42, 22, 28)
+            top, bot, edge = (ui_theme.LOCKED_BG_TOP,
+                              ui_theme.LOCKED_BG_BOTTOM,
+                              ui_theme.LOCKED_EDGE)
         else:
-            bg_color = (25, 28, 48)
+            top, bot, edge = (ui_theme.OPEN_BG_TOP, ui_theme.OPEN_BG_BOTTOM,
+                              ui_theme.OPEN_EDGE)
 
-        # Shadow
-        shadow_surf = pygame.Surface((w + 6, h + 6), pygame.SRCALPHA)
-        pygame.draw.rect(shadow_surf, (0, 0, 0, 100),
-                         (3, 3, w, h), border_radius=8)
-        self.screen.blit(shadow_surf, (x - 3, y - 3))
+        card_rect = pygame.Rect(x, y, w, h)
+        is_hover = (self.hover_button == f"meta_unlock_{hero_type}"
+                    or card_rect.collidepoint(*pygame.mouse.get_pos()))
 
-        pygame.draw.rect(self.screen, bg_color,
-                         (x, y, w, h), border_radius=8)
-
-        # Border
-        if purchased:
-            border_color = (100, 220, 100)
-        elif not boss_ready:
-            border_color = (200, 80, 80)
-        elif can_unlock:
-            border_color = (255, 220, 100)
+        if ui_theme.cheap_alpha():
+            self.screen.blit(ui_theme._shadow(w, h, radius=8, alpha=100,
+                                               spread=3), (x - 2, y - 2))
+            if is_hover:
+                self.screen.blit(ui_theme._radial(w + 22, h + 22,
+                                                  color_main, 46),
+                                 (x - 11, y - 11))
         else:
-            border_color = (100, 130, 180)
-
-        pygame.draw.rect(self.screen, border_color,
+            pygame.draw.rect(self.screen, (6, 7, 14),
+                             (x + 3, y + 4, w, h), border_radius=8)
+        if ui_theme.cheap_alpha():
+            self.screen.blit(ui_theme._vgrad(w, h, top, bot, radius=8),
+                             (x, y))
+        else:
+            pygame.draw.rect(self.screen, bot, (x, y, w, h),
+                             border_radius=8)
+        hover_edge = tuple(min(255, c + 80) for c in edge)
+        pygame.draw.rect(self.screen, hover_edge if is_hover else edge,
                          (x, y, w, h), 2, border_radius=8)
+        if is_hover:
+            ui_theme.corner_ticks(self.screen, card_rect,
+                                  ui_theme.GOLD, length=9)
 
-        # ═══ LEFT: PORTRAIT (kecil) ═══
+        # ═══ LEFT: PORTRAIT ═══
         portrait_size = 72
-        portrait_x = x + 10
+        portrait_x = x + 12
         portrait_y = y + (h - portrait_size) // 2
-
-        # Portrait bg
-        pygame.draw.rect(self.screen, (12, 18, 28),
+        pygame.draw.rect(self.screen, (12, 16, 28),
+                         (portrait_x - 3, portrait_y - 3,
+                          portrait_size + 6, portrait_size + 6),
+                         border_radius=6)
+        pygame.draw.rect(self.screen, (12, 16, 28),
                          (portrait_x, portrait_y,
                           portrait_size, portrait_size),
                          border_radius=4)
-        portrait_border = color_main if boss_ready else (80, 80, 80)
+        portrait_border = color_main if boss_ready else (80, 84, 108)
         pygame.draw.rect(self.screen, portrait_border,
                          (portrait_x, portrait_y,
                           portrait_size, portrait_size),
-                         1, border_radius=4)
-
+                         2, border_radius=4)
         HeroPortraits.draw(
             self.screen, hero_type,
             portrait_x + portrait_size // 2,
@@ -4734,136 +4733,120 @@ class Menu:
             stats, owned=(not boss_ready))
 
         # ═══ CENTER: INFO ═══
-        info_x = x + 10 + portrait_size + 10
-        info_y = y + 8
+        info_x = x + 12 + portrait_size + 14
+        max_info_w = w - (info_x - x) - 118  # ruang tombol kanan
 
-        # Name
-        name_color = (255, 255, 255) if boss_ready else (160, 160, 160)
-        name_font = get_font(22)
-        name = name_font.render(stats["name"], True, name_color)
-        self.screen.blit(name, (info_x, info_y))
+        name_color = ui_theme.TEXT_WHITE if boss_ready else (150, 154, 178)
+        name_font = get_font(22, "body_bold")
+        name_show = ui_theme.fit_ellipsis(name_font, stats["name"],
+                                           max_info_w)
+        ui_theme.draw_text(self.screen, name_font, name_show, name_color,
+                           topleft=(info_x, y + 12))
 
-        # Title
-        title = self.font_tiny.render(stats["title"], True, (180, 190, 210))
-        self.screen.blit(title, (info_x, info_y + 20))
+        title_font2 = get_font(16, "body_medium")
+        title_show = ui_theme.fit_ellipsis(title_font2, stats["title"],
+                                            max_info_w)
+        ui_theme.draw_text(self.screen, title_font2, title_show,
+                           ui_theme.TEXT_DIM, topleft=(info_x, y + 38),
+                           shadow=False)
 
-        # Role badge (compact)
-        role_bg = pygame.Rect(info_x, info_y + 38, 120, 18)
-        pygame.draw.rect(self.screen, (0, 0, 0), role_bg, border_radius=9)
-        pygame.draw.rect(self.screen, border_color, role_bg, 1,
-                         border_radius=9)
-        role_font = get_font(20)
-        role = role_font.render(stats["role"].upper(), True, border_color)
-        role_rect = role.get_rect(center=role_bg.center)
-        self.screen.blit(role, role_rect)
+        # Role chip (auto-size)
+        role_font = get_font(14, "body_bold")
+        role_text = stats["role"].upper()
+        rw = role_font.size(role_text)[0] + 18
+        role_rect = pygame.Rect(info_x, y + 60, rw, 20)
+        pygame.draw.rect(self.screen, (14, 17, 30), role_rect,
+                         border_radius=role_rect.h // 2)
+        pygame.draw.rect(self.screen, color_main, role_rect, 1,
+                         border_radius=role_rect.h // 2)
+        ui_theme.draw_text(self.screen, role_font, role_text,
+                           tuple(min(255, c + 60) for c in color_main),
+                           center=role_rect.center, shadow=False)
 
-        # Category tag
+        # Category tag (ikon vektor, bukan simbol unicode)
+        tag_y = y + 88
         if stats.get("is_boss_hero"):
             if stats.get("boss_class") == "true":
-                tag_text = "★ TRUE BOSS"
-                tag_color = (255, 100, 100)
+                tag_icon, tag_text, tag_color = (
+                    "crown", "TRUE BOSS", (255, 110, 110))
             else:
-                tag_text = "◆ MINI BOSS"
-                tag_color = (255, 180, 100)
+                tag_icon, tag_text, tag_color = (
+                    "gem", "MINI BOSS", (255, 175, 100))
         else:
-            tag_text = "STARTER"
-            tag_color = (150, 200, 255)
+            tag_icon, tag_text, tag_color = (None, "STARTER",
+                                             ui_theme.TEXT_DIM)
+        tag_font = get_font(15, "body_bold")
+        if tag_icon:
+            ui_theme.draw_icon(self.screen, tag_icon, info_x + 8,
+                               tag_y + 8, tag_color, s=0.6)
+            ui_theme.draw_text(self.screen, tag_font,
+                               ui_theme.letter(tag_text), tag_color,
+                               topleft=(info_x + 20, tag_y), shadow=False)
+        else:
+            ui_theme.draw_text(self.screen, tag_font,
+                               ui_theme.letter(tag_text), tag_color,
+                               topleft=(info_x, tag_y), shadow=False)
 
-        tag_surf = self.font_tiny.render(tag_text, True, tag_color)
-        self.screen.blit(tag_surf, (info_x, info_y + 62))
-
-        # ═══ STATUS + COST (di bawah info) ═══
-        status_y = info_y + 82
-
+        # ═══ STATUS (satu baris, jelas) ═══
+        status_y = y + 108
+        status_font = get_font(17, "body_bold")
         if purchased:
-            status_text = self.font_small.render(
-                "✓ UNLOCKED", True, (100, 255, 100))
-            self.screen.blit(status_text, (info_x, status_y))
-
+            ui_theme.draw_icon(self.screen, "check", info_x + 8,
+                               status_y + 8, ui_theme.GREEN, s=0.55)
+            ui_theme.draw_text(self.screen, status_font,
+                               ui_theme.letter("OWNED"), ui_theme.GREEN,
+                               topleft=(info_x + 20, status_y),
+                               shadow=False)
         elif not boss_ready:
             req_name = stats.get("source_boss_name", hero_type.title())
-            lock_text = self.font_small.render(
-                "🔒 LOCKED", True, (255, 120, 120))
-            self.screen.blit(lock_text, (info_x, status_y))
-
-            req_font = get_font(20)
-            req_text = req_font.render(
-                f"Defeat: {req_name}", True, (200, 160, 160))
-            self.screen.blit(req_text, (info_x, status_y + 18))
-
+            req_show = ui_theme.fit_ellipsis(
+                get_font(16, "body_medium"), f"Defeat: {req_name}",
+                max_info_w)
+            ui_theme.draw_icon(self.screen, "lock", info_x + 8,
+                               status_y + 8, (200, 120, 120), s=0.55)
+            ui_theme.draw_text(self.screen, get_font(16, "body_medium"),
+                               req_show, (205, 150, 150),
+                               topleft=(info_x + 20, status_y),
+                               shadow=False)
         else:
-            cost_label = get_font(20).render(
-                "UNLOCK COST", True, (140, 150, 170))
-            self.screen.blit(cost_label, (info_x, status_y))
-
-            cost_color = (120, 255, 150) if can_unlock else (160, 160, 160)
             if DEV_UNLIMITED_HERO_GOLD:
-                cost_label_text = "DEV: UNLIMITED"
+                cost_text, cost_color = ("DEV: UNLIMITED",
+                                         ui_theme.TEXT_DIM)
             elif unlock_cost <= 0:
-                cost_label_text = "FREE"
+                cost_text, cost_color = ("FREE", ui_theme.GREEN)
             else:
-                cost_label_text = f"{unlock_cost:,} G"
-            cost_val = self.font_small.render(cost_label_text, True, cost_color)
-            self.screen.blit(cost_val, (info_x, status_y + 14))
+                cost_text, cost_color = (f"{unlock_cost:,} G",
+                                         ui_theme.GOLD_TEXT)
+            ui_theme.draw_icon(self.screen, "coin", info_x + 8,
+                               status_y + 8, ui_theme.GOLD, s=0.55)
+            ui_theme.draw_text(self.screen, status_font, cost_text,
+                               cost_color, topleft=(info_x + 20, status_y),
+                               shadow=False)
 
-        # ═══ RIGHT: BUTTON (kecil, vertical center) ═══
-        btn_w = 100
-        btn_h = 30
-        btn_x = x + w - btn_w - 12
-        btn_y = y + (h - btn_h) // 2
-
-        btn_rect = pygame.Rect(btn_x, btn_y, btn_w, btn_h)
+        # ═══ RIGHT: BUTTON ═══
+        btn_w = 104
+        btn_h = 34
+        btn_rect = pygame.Rect(x + w - btn_w - 12, y + (h - btn_h) // 2,
+                               btn_w, btn_h)
 
         if purchased:
-            pygame.draw.rect(self.screen, (35, 90, 35), btn_rect,
-                             border_radius=5)
-            pygame.draw.rect(self.screen, (100, 200, 100), btn_rect,
-                             2, border_radius=5)
-            txt = self.font_small.render("OWNED", True, (180, 255, 180))
-            txt_rect = txt.get_rect(center=btn_rect.center)
-            self.screen.blit(txt, txt_rect)
-
+            ui_theme.pill(self.screen, {}, "hero_owned_%s" % hero_type,
+                          "OWNED", btn_rect, "owned",
+                          get_font(17, "body_bold"), icon="check")
         elif not boss_ready:
-            pygame.draw.rect(self.screen, (65, 25, 25), btn_rect,
-                             border_radius=5)
-            pygame.draw.rect(self.screen, (160, 70, 70), btn_rect,
-                             2, border_radius=5)
-            txt = self.font_small.render("LOCKED", True, (200, 140, 140))
-            txt_rect = txt.get_rect(center=btn_rect.center)
-            self.screen.blit(txt, txt_rect)
-
+            ui_theme.pill(self.screen, {}, "hero_locked_%s" % hero_type,
+                          "LOCKED", btn_rect, "locked",
+                          get_font(16, "body_bold"), enabled=False,
+                          icon="lock")
         else:
-            is_hover = self.hover_button == f"meta_unlock_{hero_type}"
-
-            if can_unlock:
-                if is_hover:
-                    glow_surf = pygame.Surface(
-                        (btn_w + 8, btn_h + 8), pygame.SRCALPHA)
-                    pygame.draw.rect(glow_surf, (100, 255, 100, 90),
-                                     (0, 0, btn_w + 8, btn_h + 8),
-                                     border_radius=7)
-                    self.screen.blit(glow_surf,
-                                     (btn_rect.x - 4, btn_rect.y - 4))
-
-                btn_color = (45, 170, 50) if is_hover else (35, 130, 40)
-                border = (140, 255, 140) if is_hover else (100, 210, 100)
-            else:
-                btn_color = (55, 55, 55)
-                border = (110, 110, 110)
-
-            pygame.draw.rect(self.screen, btn_color, btn_rect,
-                             border_radius=5)
-            pygame.draw.rect(self.screen, border, btn_rect, 2,
-                             border_radius=5)
-
-            button_label = "DEV UNLOCK" if DEV_UNLIMITED_HERO_GOLD else (
-                "FREE" if unlock_cost <= 0 else "UNLOCK"
-            )
-            txt = self.font_small.render(button_label, True, WHITE)
-            txt_rect = txt.get_rect(center=btn_rect.center)
-            self.screen.blit(txt, txt_rect)
-
-            self.buttons[f"meta_unlock_{hero_type}"] = btn_rect
+            is_hover = (self.hover_button == f"meta_unlock_{hero_type}")
+            kind = "gold" if can_unlock else "neutral"
+            label = ("DEV UNLOCK" if DEV_UNLIMITED_HERO_GOLD
+                     else ("FREE" if unlock_cost <= 0 else "UNLOCK"))
+            ui_theme.pill(self.screen, self.buttons,
+                          f"meta_unlock_{hero_type}", label, btn_rect,
+                          kind, get_font(17, "body_bold"),
+                          hover=is_hover, icon="coin")
 
     def _unlock_hero_in_meta_shop(self, hero_type):
         hero_catalog = get_all_hero_types()
@@ -5138,18 +5121,12 @@ class Menu:
             (b2, pygame.Rect(dx + 24 + 222, btn_y, 170, btn_h)),
         ]
         for (btn_id, label, green), rect in rects:
-            hover = rect.collidepoint(mx, my)
-            if green:
-                bg = (30, 130, 72) if hover else (18, 98, 54)
-                bd = (140, 255, 175) if hover else (85, 205, 125)
-            else:
-                bg = (85, 90, 105) if hover else (58, 62, 78)
-                bd = (170, 180, 200) if hover else (110, 120, 145)
-            pygame.draw.rect(self.screen, bg, rect, border_radius=10)
-            pygame.draw.rect(self.screen, bd, rect, 2, border_radius=10)
-            lt = self.font_medium.render(label, True, (255, 255, 255))
-            self.screen.blit(lt, lt.get_rect(center=rect.center))
-            self.buttons[btn_id] = rect
+            ui_theme.pill(self.screen, self.buttons, btn_id,
+                          label, rect,
+                          "success" if green else "neutral",
+                          get_font(22, "body_bold"),
+                          hover=rect.collidepoint(mx, my),
+                          letter_gap=False)
 
     def _draw_topup_dialog(self):
         """Dialog TOP UP HERO GOLD. Modal: cache tombol di-clear supaya
@@ -5171,21 +5148,30 @@ class Menu:
         dialog_w, dialog_h = 920, 580
         dx, dy = cx - dialog_w // 2, cy - dialog_h // 2
 
-        # Bayangan + badan dialog
+        # Bayangan + badan dialog (premium: gradasi + sudut emas)
         shadow = pygame.Surface((dialog_w + 12, dialog_h + 12),
                                 pygame.SRCALPHA)
         pygame.draw.rect(shadow, (0, 0, 0, 160),
                          (6, 6, dialog_w, dialog_h), border_radius=16)
         self.screen.blit(shadow, (dx - 6, dy - 6))
-        pygame.draw.rect(self.screen, (22, 28, 44),
-                         (dx, dy, dialog_w, dialog_h), border_radius=16)
-        pygame.draw.rect(self.screen, (255, 200, 80),
-                         (dx, dy, dialog_w, dialog_h), 3, border_radius=16)
+        drect = pygame.Rect(dx, dy, dialog_w, dialog_h)
+        if ui_theme.cheap_alpha():
+            self.screen.blit(ui_theme._vgrad(dialog_w, dialog_h,
+                                             (32, 38, 66),
+                                             (16, 20, 38), radius=16),
+                             (dx, dy))
+        else:
+            pygame.draw.rect(self.screen, (22, 28, 44), drect,
+                             border_radius=16)
+        pygame.draw.rect(self.screen, (255, 200, 80), drect, 3,
+                         border_radius=16)
+        ui_theme.corner_ticks(self.screen, drect, ui_theme.GOLD_BRIGHT,
+                              length=16, width=2, inset=7)
 
-        # Judul (subtitle menyesuaikan fase agar tidak dobel teks)
-        title = get_font(34, "body_bold").render(
-            "TOP UP HERO GOLD", True, (255, 220, 100))
-        self.screen.blit(title, title.get_rect(center=(cx, dy + 38)))
+        # Judul (Cinzel gradasi emas) + subtitle menyesuaikan fase
+        ui_theme.outline_text(self.screen, title_font(34),
+                              "TOP UP HERO GOLD", None,
+                              center=(cx, dy + 38))
         sub_text = {
             "redeem": ("REDEEM CODE - enter the code you received "
                        "from admin after paying"),
@@ -5280,10 +5266,10 @@ class Menu:
         meth_w = dw - (meth_x - dx) - 24
         label2 = self.font_tiny.render(
             "2. PAYMENT METHOD", True, (140, 190, 150))
-        self.screen.blit(label2, (meth_x, dy + 92))
+        self.screen.blit(label2, (meth_x, dy + 88))
 
         for i, m in enumerate(TOPUP_PAYMENT_METHODS):
-            y = dy + 112 + i * 46
+            y = dy + 116 + i * 46
             rect = pygame.Rect(meth_x, y, meth_w, 38)
             selected = i == self.topup_method_idx
             hover = self.hover_button == f"topup_method_{i}"
@@ -5355,36 +5341,24 @@ class Menu:
         note = self.font_tiny.render(note_txt, True, (120, 130, 150))
         self.screen.blit(note, (dx + 24, dy + 474))
 
-        # ── TOMBOL BAWAH ──
+        # ── TOMBOL BAWAH (pill premium) ──
         btn_y, btn_h = dy + 496, 52
         mx, my = pygame.mouse.get_pos()
 
         cancel_rect = pygame.Rect(dx + 24, btn_y, 170, btn_h)
-        cancel_hover = cancel_rect.collidepoint(mx, my)
-        pygame.draw.rect(self.screen,
-                         (85, 90, 105) if cancel_hover else (58, 62, 78),
-                         cancel_rect, border_radius=10)
-        pygame.draw.rect(self.screen,
-                         (170, 180, 200) if cancel_hover else (110, 120, 145),
-                         cancel_rect, 2, border_radius=10)
-        ct = self.font_medium.render("CANCEL", True, (230, 230, 235))
-        self.screen.blit(ct, ct.get_rect(center=cancel_rect.center))
-        self.buttons["topup_cancel"] = cancel_rect
+        ui_theme.pill(self.screen, self.buttons, "topup_cancel",
+                      "CANCEL", cancel_rect, "neutral",
+                      get_font(24, "body_bold"),
+                      hover=cancel_rect.collidepoint(mx, my),
+                      letter_gap=False)
 
         pay_w = 340
         pay_rect = pygame.Rect(dx + dw - 24 - pay_w, btn_y, pay_w, btn_h)
-        pay_hover = pay_rect.collidepoint(mx, my)
-        pygame.draw.rect(self.screen,
-                         (30, 130, 72) if pay_hover else (18, 98, 54),
-                         pay_rect, border_radius=10)
-        pygame.draw.rect(self.screen,
-                         (140, 255, 175) if pay_hover else (85, 205, 125),
-                         pay_rect, 2, border_radius=10)
-        pt = self.font_medium.render(
-            f"PAY NOW  •  {self._topup_price_str(pkg['price'])}",
-            True, (255, 255, 255))
-        self.screen.blit(pt, pt.get_rect(center=pay_rect.center))
-        self.buttons["topup_pay"] = pay_rect
+        ui_theme.pill(self.screen, self.buttons, "topup_pay",
+                      f"PAY NOW  \u2022  {self._topup_price_str(pkg['price'])}",
+                      pay_rect, "success", get_font(24, "body_bold"),
+                      hover=pay_rect.collidepoint(mx, my),
+                      icon="coin", letter_gap=False)
 
     def _draw_topup_processing(self, dx, dy, dw, dh):
         """Fase 2: animasi pembayaran diproses (simulasi)."""
@@ -5720,256 +5694,112 @@ class Menu:
         sh.fill((0, 0, 0, 150), special_flags=pygame.BLEND_RGBA_MULT)
         surf.blit(sh, (topleft[0] + offset[0], topleft[1] + offset[1]))
 
-    def _draw_menu_button(self, btn_id, label, cx, cy,
-                          color, width=300, height=55, icon=None,
-                          label_font_size=None):
-        """Tombol menu dark-fantasy: panel kaca gelap + aksen warna +
-        ikon primitif + sudut emas, dengan efek hover glow.
-        label_font_size: opsional, ukuran font label (default font_button)."""
-        from mobile.perf import Quality as _Qg
-        is_hover = self.hover_button == btn_id
-
-        rect = pygame.Rect(cx - width // 2, cy - height // 2,
-                           width, height)
-        if is_hover:
-            rect.inflate_ip(18, 8)
-
-        # ── Glow hover ──
-        if is_hover:
-            if _Qg.cheap_alpha:
-                glow = pygame.Surface((rect.width + 28, rect.height + 28),
-                                      pygame.SRCALPHA)
-                pygame.draw.rect(glow, (*color, 70),
-                                 (0, 0, glow.get_width(),
-                                  glow.get_height()),
-                                 border_radius=16)
-                self.screen.blit(glow, (rect.x - 14, rect.y - 14))
-            else:
-                pygame.draw.rect(self.screen, color,
-                                 rect.inflate(10, 10), 2, border_radius=14)
-
-        # ── Shadow ──
-        sh = rect.copy()
-        sh.move_ip(4, 5)
-        if _Qg.cheap_alpha:
-            shadow_surf = pygame.Surface((sh.width, sh.height),
-                                         pygame.SRCALPHA)
-            pygame.draw.rect(shadow_surf, (0, 0, 0, 110),
-                             (0, 0, sh.width, sh.height), border_radius=12)
-            self.screen.blit(shadow_surf, sh.topleft)
-        else:
-            pygame.draw.rect(self.screen, (8, 6, 14), sh, border_radius=12)
-
-        # ── Panel ──
-        base = (26, 32, 52) if is_hover else (17, 21, 36)
-        pygame.draw.rect(self.screen, base, rect, border_radius=12)
-        hl = pygame.Surface((rect.width - 8, 6), pygame.SRCALPHA)
-        hl.fill((255, 255, 255, 36))
-        self.screen.blit(hl, (rect.x + 4, rect.y + 3))
-
-        # Aksen kiri warna identitas
-        pygame.draw.rect(self.screen, color,
-                         (rect.x + 6, rect.y + 10, 4,
-                          rect.height - 20), border_radius=2)
-
-        # Border
-        bcol = color if is_hover else (95, 105, 135)
-        pygame.draw.rect(self.screen, bcol, rect,
-                         2 if is_hover else 1, border_radius=12)
-
-        # ── Sudut emas ──
-        gold = (255, 220, 100)
-        c_len = 10
-        for (ax, ay, dx, dy) in ((rect.x + 2, rect.y + 2, 1, 1),
-                                 (rect.right - 2, rect.bottom - 2, -1, -1)):
-            pygame.draw.line(self.screen, gold,
-                             (ax, ay), (ax + dx * c_len, ay), 2)
-            pygame.draw.line(self.screen, gold,
-                             (ax, ay), (ax, ay + dy * c_len), 2)
-
-        # ── Ikon badge ──
-        if icon is not None:
-            ic_x = rect.x + 34
-            ic_y = rect.centery
-            pygame.draw.circle(self.screen, (10, 12, 22), (ic_x, ic_y), 17)
-            pygame.draw.circle(self.screen, color, (ic_x, ic_y), 17, 2)
-            self._draw_button_icon(self.screen, icon, ic_x, ic_y, color)
-            text_cx = rect.x + width // 2 + 14
-        else:
-            text_cx = rect.centerx
-
-        # ── Label (font bisa di-override per tombol) ──
-        label_font = self.font_button
-        if label_font_size:
-            label_font = get_font(label_font_size, "body_bold")
-        if _Qg.cheap_alpha:
-            sh_text = label_font.render(label, True, (0, 0, 0))
-            self.screen.blit(sh_text, sh_text.get_rect(
-                center=(text_cx + 2, rect.centery + 2)))
-        text = label_font.render(label, True, WHITE)
-        self.screen.blit(text, text.get_rect(
-            center=(text_cx, rect.centery)))
-
-        self.buttons[btn_id] = rect
-
-    def _draw_button_icon(self, surface, icon, cx, cy, color):
-        """Ikon tombol menu (digambar dengan primitif pygame)."""
-        if icon == "play":
-            pygame.draw.polygon(surface, color,
-                                [(cx - 7, cy - 11), (cx - 7, cy + 11),
-                                 (cx + 10, cy)])
-        elif icon == "coin":
-            pygame.draw.circle(surface, (255, 200, 60), (cx, cy), 9)
-            pygame.draw.circle(surface, (200, 140, 30), (cx, cy), 9, 2)
-            pygame.draw.circle(surface, (200, 140, 30), (cx, cy), 4)
-            pygame.draw.line(surface, (200, 140, 30),
-                             (cx, cy - 4), (cx, cy + 4), 2)
-        elif icon == "pad":
-            pygame.draw.rect(surface, color,
-                             (cx - 12, cy - 8, 24, 16), border_radius=7)
-            pygame.draw.circle(surface, (10, 12, 22), (cx - 7, cy + 7), 4)
-            pygame.draw.circle(surface, (10, 12, 22), (cx + 7, cy + 7), 4)
-        elif icon == "help":
-            txt = self.font_small.render("?", True, color)
-            surface.blit(txt, txt.get_rect(center=(cx, cy)))
-        elif icon == "gear":
-            pygame.draw.circle(surface, color, (cx, cy), 8, 2)
-            for i in range(6):
-                a = i * math.pi / 3
-                pygame.draw.line(
-                    surface, color,
-                    (cx + int(math.cos(a) * 8), cy + int(math.sin(a) * 8)),
-                    (cx + int(math.cos(a) * 12), cy + int(math.sin(a) * 12)),
-                    2)
-        elif icon == "star":
-            for (dx, dy) in ((1, 0), (0, 1), (1, 1), (1, -1)):
-                pygame.draw.line(surface, color,
-                                 (cx - dx * 9, cy - dy * 9),
-                                 (cx + dx * 9, cy + dy * 9), 2)
-            pygame.draw.circle(surface, color, (cx, cy), 3)
-        elif icon == "quit":
-            pygame.draw.line(surface, color,
-                             (cx - 7, cy - 7), (cx + 7, cy + 7), 3)
-            pygame.draw.line(surface, color,
-                             (cx + 7, cy - 7), (cx - 7, cy + 7), 3)
     def _draw_how_to_play(self):
-        """Tutorial screen"""
+        """Tutorial screen (header seragam emas + ikon vektor)."""
         cx = SCREEN_WIDTH // 2
 
         # Title
-        title = self.font_title.render("HOW TO PLAY", True, (100, 200, 255))
-        title_rect = title.get_rect(center=(cx, 80))
-        self._blit_shadow(self.screen, title, title_rect.topleft)
-        self.screen.blit(title, title_rect)
+        ui_theme.screen_title(self.screen, "HOW TO PLAY", cx, 48)
 
-        # Content panel - larger, English, no overlap
+        # Content panel
         panel_w = 900
         panel_h = 500
         panel_x = cx - panel_w // 2
         panel_y = 130
-
-        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-        pygame.draw.rect(panel, (20, 25, 40, 220),
-                         (0, 0, panel_w, panel_h),
-                         border_radius=12)
-        self.screen.blit(panel, (panel_x, panel_y))
-        pygame.draw.rect(self.screen, (100, 200, 255),
-                         (panel_x, panel_y, panel_w, panel_h),
-                         2, border_radius=12)
+        ui_theme.panel(self.screen, (panel_x, panel_y, panel_w,
+                                     panel_h),
+                       border=ui_theme.EDGE_GOLD, border_w=2)
 
         sections = [
-            ("OBJECTIVE",
-             "Destroy the enemy castle before they destroy yours!",
-             (255, 220, 100)),
-            ("BUILDING TOWERS",
-             "Tap empty build slots (+) to build towers. Cost: 100 gold.",
-             (100, 200, 255)),
-            ("HEROES",
-             "Buy heroes from Hero Shop. Tap to select, tap enemy to attack.",
-             (100, 255, 100)),
-            ("TACTICAL COMMANDS [NEW!]",
-             "G=GATHER all heroes together, T=PROTECT TOWER (min 2 heroes), C=PROTECT CASTLE (all heroes), B=ATTACK BOSS (all heroes vs mini/true boss)",
-             (255, 200, 50)),
-            ("SKILLS",
-             "Q,W,E,R auto-cast when enemies nearby. R = Ultimate!",
-             (255, 150, 100)),
-            ("UPGRADES",
-             "Tap towers, castle, or hero to upgrade. Stronger = win!",
-             (200, 150, 255)),
-            ("CASTLE SHIELD",
-             "At Castle Level 4, buy a permanent shield for 850 gold.",
-             (100, 220, 255)),
+            ("OBJECTIVE", "shield", [
+                "Destroy the enemy castle before they destroy yours!",
+            ]),
+            ("BUILDING TOWERS", "gem", [
+                "Tap empty build slots (+) to build towers. Cost: 100 gold.",
+            ]),
+            ("HEROES", "crown", [
+                "Buy heroes from Hero Shop. Tap to select, tap enemy to attack.",
+            ]),
+            ("TACTICAL COMMANDS", "swords", [
+                "G = GATHER all heroes together",
+                "T = PROTECT TOWER (min 2)   |   C = PROTECT CASTLE (all)",
+                "B = ATTACK BOSS (all)   |   D = ATTACK TOP DEALER (all)",
+            ]),
+            ("SKILLS", "bolt", [
+                "Q, W, E, R auto-cast when enemies nearby. R = Ultimate!",
+            ]),
+            ("UPGRADES", "plus", [
+                "Tap towers, castle, or hero to upgrade. Stronger = win!",
+            ]),
+            ("CASTLE SHIELD", "shield", [
+                "At Castle Level 4, buy a permanent shield for 850 gold.",
+            ]),
         ]
 
-        y = panel_y + 20
-        for icon_title, desc, color in sections:
-            title_text = self.font_medium.render(icon_title, True, color)
-            self.screen.blit(title_text, (panel_x + 30, y))
-            y += 26
+        head_font = get_font(21, "body_bold")
+        body_font = get_font(19, "body_medium")
+        max_w = panel_w - 96
 
-            words = desc.split()
-            line = ""
-            line_y = y
-            for word in words:
-                test_line = line + word + " "
-                if self.font_small.size(test_line)[0] > panel_w - 80:
-                    text = self.font_small.render(line, True, (200, 200, 220))
-                    self.screen.blit(text, (panel_x + 40, line_y))
-                    line_y += 20
-                    line = word + " "
-                else:
-                    line = test_line
-            if line:
-                text = self.font_small.render(line, True, (200, 200, 220))
-                self.screen.blit(text, (panel_x + 40, line_y))
-                line_y += 20
-
-            y = line_y + 12
+        y = panel_y + 22
+        for sec_title, sec_icon, body_lines in sections:
+            ui_theme.draw_icon(self.screen, sec_icon, panel_x + 40,
+                               y + 10, ui_theme.GOLD, s=0.8)
+            ui_theme.draw_text(self.screen, head_font,
+                               ui_theme.letter(sec_title),
+                               ui_theme.GOLD_TEXT,
+                               topleft=(panel_x + 58, y))
+            y += 30
+            for bl in body_lines:
+                bl_show = ui_theme.fit_ellipsis(body_font, bl, max_w - 30)
+                ui_theme.draw_text(self.screen, body_font, bl_show,
+                                   ui_theme.TEXT_BODY,
+                                   topleft=(panel_x + 58, y),
+                                   shadow=False)
+                y += 21
+            y += 11
 
         # Back button
-        self._draw_menu_button("back_to_main", "BACK", cx,
-                                SCREEN_HEIGHT - 60,
-                                (150, 150, 150),
-                                width=200, height=45)
+        ui_theme.back_button(self.screen, self.buttons, "back_to_main",
+                             cx, SCREEN_HEIGHT - 60,
+                             hover=(self.hover_button == "back_to_main"))
+
+    # ═══════════════════════════════════════
+    # SETTINGS
+    # ═══════════════════════════════════════
 
     # ═══════════════════════════════════════
     # SETTINGS
     # ═══════════════════════════════════════
 
     def _draw_settings(self):
-        """Settings screen dengan categorized sections"""
+        """Settings screen dengan categorized sections (tema premium)."""
         cx = SCREEN_WIDTH // 2
 
         # Title
-        title = self.font_title.render(
-            "SETTINGS", True, (200, 180, 100))
-        title_rect = title.get_rect(center=(cx, 58))
-        self._blit_shadow(self.screen, title, title_rect.topleft)
-        self.screen.blit(title, title_rect)
+        ui_theme.screen_title(self.screen, "SETTINGS", cx, 48,
+                              ornament=False)
 
         # Panel
         panel_w = 900
         panel_h = 570
         panel_x = cx - panel_w // 2
         panel_y = 100
-
-        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-        pygame.draw.rect(panel, (20, 25, 40, 225),
-                         (0, 0, panel_w, panel_h),
-                         border_radius=12)
-        self.screen.blit(panel, (panel_x, panel_y))
-        pygame.draw.rect(self.screen, (200, 180, 100),
-                         (panel_x, panel_y, panel_w, panel_h),
-                         2, border_radius=12)
+        ui_theme.panel(self.screen, (panel_x, panel_y, panel_w,
+                                     panel_h),
+                       border=ui_theme.EDGE_GOLD, border_w=2)
 
         # Split into 2 columns
         col1_x = panel_x + 40
         col2_x = panel_x + panel_w // 2 + 20
+        label_font = get_font(22, "body_medium")
+        value_font = get_font(22, "body_semibold")
 
         # ═══ COLUMN 1: AUDIO SETTINGS ═══
         audio_y = panel_y + 30
-        self._draw_settings_section_header(
-            col1_x, audio_y, "🔊 AUDIO", (100, 220, 255))
+        ui_theme.section_header(self.screen, col1_x, audio_y, "AUDIO",
+                                "speaker", ui_theme.CYAN,
+                                get_font(22, "body_semibold"),
+                                rule_w=250)
 
         sound_mgr = SoundManager()
         audio_settings = [
@@ -5988,8 +5818,11 @@ class Menu:
 
         # ═══ COLUMN 2: GAMEPLAY SETTINGS ═══
         gameplay_y = panel_y + 30
-        self._draw_settings_section_header(
-            col2_x, gameplay_y, "⚔ GAMEPLAY", (100, 255, 150))
+        ui_theme.section_header(self.screen, col2_x, gameplay_y,
+                                "GAMEPLAY", "swords",
+                                (110, 235, 160),
+                                get_font(22, "body_semibold"),
+                                rule_w=250)
 
         settings = GameSettings()
 
@@ -6000,7 +5833,7 @@ class Menu:
             "Difficulty",
             settings.get_difficulty_short_label(),
             "difficulty",
-            value_w=140)
+            label_font=label_font, value_font=value_font)
 
         # Beri jarak ekstra agar tiap pilihan mudah disentuh di gameplay.
         y += 58
@@ -6024,7 +5857,8 @@ class Menu:
             col2_x, y, 340,
             "Game Speed",
             settings.get_speed_label(),
-            "speed")
+            "speed",
+            label_font=label_font, value_font=value_font)
 
         # Interface language
         from localization import tr, get_language_label
@@ -6033,12 +5867,15 @@ class Menu:
             col2_x, y, 340,
             tr("language"),
             get_language_label(settings.language),
-            "language")
+            "language",
+            label_font=label_font, value_font=value_font)
 
         # ═══ GRAPHICS SECTION ═══
         graphics_y = gameplay_y + 315
-        self._draw_settings_section_header(
-            col2_x, graphics_y, "🖥 GRAPHICS", (255, 180, 100))
+        ui_theme.section_header(self.screen, col2_x, graphics_y,
+                                "GRAPHICS", "monitor", ui_theme.ORANGE,
+                                get_font(22, "body_semibold"),
+                                rule_w=250)
 
         # FPS Limit
         y = graphics_y + 45
@@ -6046,51 +5883,41 @@ class Menu:
             col2_x, y, 340,
             "FPS Limit",
             settings.get_fps_label(),
-            "fps")
+            "fps",
+            label_font=label_font, value_font=value_font)
 
         # ═══ CLOUD SAVE SECTION ═══
         # Dipindah ke bawah Audio agar tidak bertumpuk dengan Graphics.
         cloud_y = panel_y + 330
-        self._draw_settings_section_header(
-            col1_x, cloud_y, "☁  CLOUD SAVE", (150, 220, 255))
+        ui_theme.section_header(self.screen, col1_x, cloud_y,
+                                "CLOUD SAVE", "cloud",
+                                ui_theme.CYAN_SOFT,
+                                get_font(22, "body_semibold"),
+                                rule_w=250)
         self._draw_cloud_buttons(col1_x, cloud_y + 40, 340)
 
         # ═══ DANGER ZONE SECTION ═══
         # Kolom kanan menjaga tombol reset terpisah dari Cloud Save.
         danger_y = panel_y + 450
-        self._draw_settings_section_header(
-            col2_x, danger_y, "⚠  DANGER ZONE", (255, 100, 100))
+        ui_theme.section_header(self.screen, col2_x, danger_y,
+                                "DANGER ZONE", "warn", ui_theme.RED,
+                                get_font(22, "body_semibold"),
+                                rule_w=250)
 
         # Reset button
         reset_btn_rect = pygame.Rect(
             col2_x, danger_y + 40, 340, 40)
-
-        mx, my = pygame.mouse.get_pos()
-        reset_hover = reset_btn_rect.collidepoint(mx, my)
-
-        reset_color = (180, 40, 40) if reset_hover else (140, 30, 30)
-        reset_border = (255, 100, 100) if reset_hover \
-            else (200, 80, 80)
-
-        pygame.draw.rect(self.screen, reset_color,
-                         reset_btn_rect, border_radius=6)
-        pygame.draw.rect(self.screen, reset_border,
-                         reset_btn_rect, 2, border_radius=6)
-
-        reset_text = self.font_small.render(
-            "RESET SAVE SLOT",
-            True, (255, 220, 220))
-        reset_text_rect = reset_text.get_rect(
-            center=reset_btn_rect.center)
-        self.screen.blit(reset_text, reset_text_rect)
-
-        self.buttons['reset_save'] = reset_btn_rect
+        ui_theme.pill(self.screen, self.buttons, "reset_save",
+                      "RESET SAVE SLOT", reset_btn_rect, "danger",
+                      get_font(20, "body_bold"),
+                      hover=(self.hover_button == "reset_save"),
+                      icon="warn")
 
         # Back button
-        self._draw_menu_button("back_to_main", "BACK", cx,
-                               SCREEN_HEIGHT - 40,
-                               (150, 150, 150),
-                               width=200, height=42)
+        ui_theme.back_button(self.screen, self.buttons, "back_to_main",
+                             cx, SCREEN_HEIGHT - 40,
+                             hover=(self.hover_button == "back_to_main"))
+
 
         # Reset confirmation dialog (kalau ada)
         if hasattr(self, 'reset_confirm') and self.reset_confirm:
@@ -6107,72 +5934,43 @@ class Menu:
         """
         btn_h = 30
         gap = 6
-        mx, my = pygame.mouse.get_pos()
 
         available = getattr(self, 'cloud_available', False)
         signed_in = getattr(self, 'cloud_signed_in', False)
 
+        cfont = get_font(18, "body_bold")
         # 1) SIGN IN / status koneksi
         if not available:
             label = "CLOUD: OFF (PC / belum diset)"
-            fg = (175, 175, 185)
-            bg, bg_h = (45, 45, 55), (55, 55, 65)
-            bd, bd_h = (110, 110, 120), (130, 130, 140)
+            kind, icon = "locked", "cloud"
         elif signed_in:
-            label = "SIGNED IN TO GOOGLE PLAY GAMES  ✓"
-            fg = (225, 255, 230)
-            bg, bg_h = (40, 130, 70), (55, 170, 90)
-            bd, bd_h = (120, 230, 150), (160, 255, 180)
+            label = "SIGNED IN TO GOOGLE PLAY GAMES"
+            kind, icon = "owned", "check"
         else:
             label = "SIGN IN TO CLOUD"
-            fg = (225, 235, 255)
-            bg, bg_h = (55, 85, 145), (75, 115, 190)
-            bd, bd_h = (120, 180, 255), (160, 210, 255)
-
+            kind, icon = "neutral", "cloud"
         rect = pygame.Rect(x, y, width, btn_h)
-        hover = rect.collidepoint(mx, my)
-        pygame.draw.rect(self.screen, bg_h if hover else bg,
-                         rect, border_radius=6)
-        pygame.draw.rect(self.screen, bd_h if hover else bd,
-                         rect, 2, border_radius=6)
-        text = get_font(22, "body_bold").render(label, True, fg)
-        self.screen.blit(text, text.get_rect(center=rect.center))
-        self.buttons['cloud_signin'] = rect
-
+        ui_theme.pill(self.screen, self.buttons, "cloud_signin",
+                      label, rect, kind, cfont,
+                      hover=(self.hover_button == "cloud_signin"),
+                      icon=icon, letter_gap=False)
         y += btn_h + gap
 
-        # 2) UPLOAD (kiri-atas)
+        # 2) UPLOAD
         up_rect = pygame.Rect(x, y, width, btn_h)
-        up_hover = up_rect.collidepoint(mx, my)
-        pygame.draw.rect(self.screen,
-                         (32, 74, 120) if up_hover else (24, 55, 92),
-                         up_rect, border_radius=6)
-        pygame.draw.rect(self.screen,
-                         (110, 190, 255) if up_hover else (75, 140, 205),
-                         up_rect, 2, border_radius=6)
-        up_text = self.font_tiny.render(
-            "UPLOAD SAVE KE CLOUD", True, (215, 235, 255))
-        self.screen.blit(up_text,
-                         up_text.get_rect(center=up_rect.center))
-        self.buttons['cloud_upload'] = up_rect
-
+        ui_theme.pill(self.screen, self.buttons, "cloud_upload",
+                      "UPLOAD SAVE KE CLOUD", up_rect, "neutral", cfont,
+                      hover=(self.hover_button == "cloud_upload"),
+                      icon="upload", letter_gap=False)
         y += btn_h + gap
 
-        # 3) DOWNLOAD (full)
+        # 3) DOWNLOAD
         dl_rect = pygame.Rect(x, y, width, btn_h)
-        dl_hover = dl_rect.collidepoint(mx, my)
-        pygame.draw.rect(self.screen,
-                         (32, 112, 62) if dl_hover else (24, 84, 48),
-                         dl_rect, border_radius=6)
-        pygame.draw.rect(self.screen,
-                         (120, 230, 150) if dl_hover else (85, 180, 115),
-                         dl_rect, 2, border_radius=6)
-        dl_text = self.font_tiny.render(
-            "DOWNLOAD SAVE DARI CLOUD", True, (218, 255, 228))
-        self.screen.blit(dl_text,
-                         dl_text.get_rect(center=dl_rect.center))
-        self.buttons['cloud_download'] = dl_rect
-
+        ui_theme.pill(self.screen, self.buttons, "cloud_download",
+                      "DOWNLOAD SAVE DARI CLOUD", dl_rect, "success",
+                      cfont,
+                      hover=(self.hover_button == "cloud_download"),
+                      icon="download", letter_gap=False)
         y += btn_h + gap
 
         # Baris status
@@ -6189,8 +5987,9 @@ class Menu:
                 line = "Tap SIGN IN untuk mengaktifkan cloud"
             color = (140, 150, 175)
 
-        info_text = get_font(20).render(line, True, color)
-        self.screen.blit(info_text, (x, y - gap + 4))
+        ui_theme.draw_text(self.screen, get_font(18, "body_medium"),
+                           line, color, topleft=(x, y - gap + 4),
+                           shadow=False)
 
     def _draw_cloud_confirm_dialog(self):
         """
@@ -6224,11 +6023,15 @@ class Menu:
                          (dialog_x, dialog_y, dialog_w, dialog_h),
                          3, border_radius=12)
 
-        title = ("☁  UPLOAD TO CLOUD?"
-                 if mode == "upload" else "☁  DOWNLOAD FROM CLOUD?")
+        title = ("UPLOAD TO CLOUD?"
+                 if mode == "upload" else "DOWNLOAD FROM CLOUD?")
         title_text = get_font(38).render(title, True, (230, 235, 255))
         self.screen.blit(title_text,
-                         title_text.get_rect(center=(cx, dialog_y + 42)))
+                         title_text.get_rect(center=(cx + 12,
+                                                     dialog_y + 42)))
+        ui_theme.draw_icon(self.screen, "cloud",
+                           cx - title_text.get_width() // 2 - 22,
+                           dialog_y + 42, (150, 220, 255), s=0.9)
 
         if mode == "upload":
             warn = "This will REPLACE the cloud copy with this device's save."
@@ -6410,141 +6213,30 @@ class Menu:
                          no_text.get_rect(center=no_rect.center))
         self.buttons[no_id] = no_rect
 
-    def _draw_settings_section_header(self, x, y, title, color):
-        """Draw section header dengan garis dekoratif"""
-        # Title
-        header_text = self.font_medium.render(title, True, color)
-        self.screen.blit(header_text, (x, y))
-
-        # Underline
-        text_width = self.font_medium.size(title)[0]
-        pygame.draw.line(self.screen, color,
-                         (x, y + 30),
-                         (x + text_width + 10, y + 30), 2)
-
     def _draw_toggle_setting(self, x, y, width, label, is_on,
                              setting_id):
-        """Draw toggle switch setting"""
-        # Label
-        label_text = self.font_small.render(label, True, WHITE)
-        self.screen.blit(label_text, (x, y + 10))
-
-        # Toggle switch (di kanan)
-        toggle_w = 60
-        toggle_h = 26
-        toggle_x = x + width - toggle_w
-        toggle_y = y + 8
-
-        toggle_rect = pygame.Rect(
-            toggle_x, toggle_y, toggle_w, toggle_h)
-
-        # Hover
-        mx, my = pygame.mouse.get_pos()
-        is_hover = toggle_rect.collidepoint(mx, my)
-
-        # Bg color
-        if is_on:
-            bg_color = (60, 180, 80) if not is_hover else (80, 220, 100)
-            border_col = (100, 220, 100) if not is_hover \
-                else (150, 255, 150)
-        else:
-            bg_color = (80, 80, 80) if not is_hover else (100, 100, 100)
-            border_col = (150, 150, 150) if not is_hover \
-                else (200, 200, 200)
-
-        pygame.draw.rect(self.screen, bg_color,
-                         toggle_rect, border_radius=13)
-        pygame.draw.rect(self.screen, border_col,
-                         toggle_rect, 2, border_radius=13)
-
-        # Knob
-        knob_size = 20
-        if is_on:
-            knob_x = toggle_x + toggle_w - knob_size - 3
-        else:
-            knob_x = toggle_x + 3
-        knob_y = toggle_y + 3
-
-        pygame.draw.circle(self.screen, WHITE,
-                           (knob_x + knob_size // 2,
-                            knob_y + knob_size // 2),
-                           knob_size // 2)
-
-        # ON/OFF text
-        on_off_text = get_font(20).render(
-            "ON" if is_on else "OFF", True, WHITE)
-        on_off_rect = on_off_text.get_rect(center=toggle_rect.center)
-        self.screen.blit(on_off_text, on_off_rect)
-
-        self.buttons[setting_id] = toggle_rect
+        """Toggle switch premium (pill + knob)."""
+        ui_theme.draw_text(self.screen, get_font(22, "body_medium"),
+                           label, ui_theme.TEXT_BODY,
+                           topleft=(x, y + 10), shadow=False)
+        toggle_rect = pygame.Rect(x + width - 60, y + 8, 60, 26)
+        ui_theme.toggle(self.screen, self.buttons, setting_id,
+                        toggle_rect, is_on, get_font(15, "body_bold"),
+                        hover=(self.hover_button == setting_id))
 
     def _draw_option_setting(self, x, y, width, label, current_value,
-                             setting_id, value_w=120):
-        """Draw option cycler setting (dengan tombol < >)"""
-        # Label
-        label_text = self.font_small.render(label, True, WHITE)
-        self.screen.blit(label_text, (x, y + 10))
-
-        # Value display (tengah)
-        value_bg_w = value_w
-        value_bg_h = 30
-        value_bg_x = x + width - value_bg_w - 40
-        value_bg_y = y + 6
-
-        pygame.draw.rect(self.screen, (30, 40, 60),
-                         (value_bg_x, value_bg_y,
-                          value_bg_w, value_bg_h),
-                         border_radius=4)
-        pygame.draw.rect(self.screen, (100, 130, 180),
-                         (value_bg_x, value_bg_y,
-                          value_bg_w, value_bg_h),
-                         2, border_radius=4)
-
-        value_text = self.font_small.render(
-            current_value, True, (255, 220, 100))
-        value_text_rect = value_text.get_rect(
-            center=(value_bg_x + value_bg_w // 2,
-                    value_bg_y + value_bg_h // 2))
-        self.screen.blit(value_text, value_text_rect)
-
-        # Left arrow (<)
-        left_rect = pygame.Rect(
-            value_bg_x - 32, value_bg_y, 26, value_bg_h)
-
-        mx, my = pygame.mouse.get_pos()
-        left_hover = left_rect.collidepoint(mx, my)
-
-        left_color = (100, 130, 180) if left_hover else (60, 80, 110)
-        pygame.draw.rect(self.screen, left_color,
-                         left_rect, border_radius=4)
-        pygame.draw.rect(self.screen, (150, 180, 220),
-                         left_rect, 1, border_radius=4)
-
-        left_arrow = self.font_medium.render("<", True, WHITE)
-        left_arrow_rect = left_arrow.get_rect(center=left_rect.center)
-        self.screen.blit(left_arrow, left_arrow_rect)
-
-        self.buttons[f'{setting_id}_prev'] = left_rect
-
-        # Right arrow (>)
-        right_rect = pygame.Rect(
-            value_bg_x + value_bg_w + 6, value_bg_y,
-            26, value_bg_h)
-
-        right_hover = right_rect.collidepoint(mx, my)
-        right_color = (100, 130, 180) if right_hover else (60, 80, 110)
-
-        pygame.draw.rect(self.screen, right_color,
-                         right_rect, border_radius=4)
-        pygame.draw.rect(self.screen, (150, 180, 220),
-                         right_rect, 1, border_radius=4)
-
-        right_arrow = self.font_medium.render(">", True, WHITE)
-        right_arrow_rect = right_arrow.get_rect(
-            center=right_rect.center)
-        self.screen.blit(right_arrow, right_arrow_rect)
-
-        self.buttons[f'{setting_id}_next'] = right_rect
+                             setting_id, value_w=120,
+                             label_font=None, value_font=None):
+        """Option cycler premium (kotak nilai auto-size: label bahasa
+        panjang tidak lagi terpotong)."""
+        if label_font is None:
+            label_font = get_font(22, "body_medium")
+        if value_font is None:
+            value_font = get_font(22, "body_semibold")
+        ui_theme.option_cycler(
+            self.screen, self.buttons, setting_id, label, current_value,
+            x, y, width, label_font, value_font,
+            hover=self.hover_button)
 
     def _draw_reset_confirm_dialog(self):
         """Confirmation dialog untuk reset save"""
@@ -6576,12 +6268,15 @@ class Menu:
                          (dialog_x, dialog_y, dialog_w, dialog_h),
                          3, border_radius=12)
 
-        # Warning
+        # Warning (ikon vektor, bukan emoji yang tidak ada di font)
         icon_font = get_font(48)
         warning_text = icon_font.render(
-            "⚠  RESET SAVE?", True, (255, 100, 100))
+            "RESET SAVE?", True, (255, 100, 100))
         warning_rect = warning_text.get_rect(
-            center=(cx, dialog_y + 45))
+            center=(cx + 16, dialog_y + 45))
+        ui_theme.draw_icon(self.screen, "warn",
+                           cx - warning_text.get_width() // 2 - 22,
+                           dialog_y + 45, (255, 100, 100), s=1.1)
         self.screen.blit(warning_text, warning_rect)
 
         # Get current slot
@@ -6657,140 +6352,107 @@ class Menu:
         self.buttons["reset_confirm_no"] = no_rect
 
     def _draw_volume_slider(self, x, y, width, label, value, setting_id):
-        """Draw volume slider dengan buttons +/-"""
-        # Label
-        label_text = self.font_small.render(label, True, WHITE)
-        self.screen.blit(label_text, (x, y))
+        """Volume slider premium (isi emas + knob ring + tombol +/-.)."""
+        ui_theme.draw_text(self.screen, get_font(22, "body_medium"),
+                           label, ui_theme.TEXT_BODY,
+                           topleft=(x, y), shadow=False)
+        val_font = get_font(22, "body_bold")
+        val = val_font.render(f"{int(value * 100)}%",
+                              True, ui_theme.GOLD_TEXT)
+        self.screen.blit(val, val.get_rect(topright=(x + width, y)))
 
-        # Value text
-        value_text = self.font_small.render(
-            f"{int(value * 100)}%", True, (255, 220, 100))
-        value_rect = value_text.get_rect(topright=(x + width, y))
-        self.screen.blit(value_text, value_rect)
-
-        # Slider bar
+        bar_w = width - 100
         bar_y = y + 30
-        bar_h = 8
-        pygame.draw.rect(self.screen, (60, 60, 70),
-                         (x, bar_y, width - 100, bar_h),
-                         border_radius=4)
+        knob_hover = self.hover_button in (
+            f'vol_{setting_id}_minus', f'vol_{setting_id}_plus')
+        ui_theme.slider(self.screen, x, bar_y, bar_w, value,
+                        knob_hover=knob_hover)
 
-        # Fill
-        fill_w = int((width - 100) * value)
-        if fill_w > 0:
-            pygame.draw.rect(self.screen, (100, 200, 255),
-                             (x, bar_y, fill_w, bar_h),
-                             border_radius=4)
-
-        # Border
-        pygame.draw.rect(self.screen, WHITE,
-                         (x, bar_y, width - 100, bar_h),
-                         1, border_radius=4)
-
-        # Slider knob
-        knob_x = x + fill_w
-        pygame.draw.circle(self.screen, WHITE,
-                           (knob_x, bar_y + bar_h // 2), 10)
-        pygame.draw.circle(self.screen, (100, 200, 255),
-                           (knob_x, bar_y + bar_h // 2), 8)
-
-        # Minus button
-        minus_rect = pygame.Rect(x + width - 80, bar_y - 6, 25, 25)
-        is_hover_minus = self.hover_button == f'vol_{setting_id}_minus'
-        color_minus = (255, 100, 100) if is_hover_minus else (200, 80, 80)
-        pygame.draw.rect(self.screen, color_minus, minus_rect,
-                         border_radius=4)
-        pygame.draw.rect(self.screen, WHITE, minus_rect, 1,
-                         border_radius=4)
-        minus_t = self.font_medium.render("-", True, WHITE)
-        minus_text_rect = minus_t.get_rect(center=minus_rect.center)
-        self.screen.blit(minus_t, minus_text_rect)
-        self.buttons[f'vol_{setting_id}_minus'] = minus_rect
-
-        # Plus button
-        plus_rect = pygame.Rect(x + width - 40, bar_y - 6, 25, 25)
-        is_hover_plus = self.hover_button == f'vol_{setting_id}_plus'
-        color_plus = (100, 255, 100) if is_hover_plus else (80, 200, 80)
-        pygame.draw.rect(self.screen, color_plus, plus_rect,
-                         border_radius=4)
-        pygame.draw.rect(self.screen, WHITE, plus_rect, 1,
-                         border_radius=4)
-        plus_t = self.font_medium.render("+", True, WHITE)
-        plus_text_rect = plus_t.get_rect(center=plus_rect.center)
-        self.screen.blit(plus_t, plus_text_rect)
-        self.buttons[f'vol_{setting_id}_plus'] = plus_rect
-
-    # ═══════════════════════════════════════
-    # CREDITS
-    # ═══════════════════════════════════════
+        # Tombol - / +
+        minus_rect = pygame.Rect(x + width - 80, bar_y - 7, 26, 26)
+        plus_rect = pygame.Rect(x + width - 40, bar_y - 7, 26, 26)
+        minus_hover = self.hover_button == f'vol_{setting_id}_minus'
+        plus_hover = self.hover_button == f'vol_{setting_id}_plus'
+        ui_theme.pill(self.screen, self.buttons,
+                      f'vol_{setting_id}_minus', "", minus_rect,
+                      "danger", val_font, hover=minus_hover, icon="minus")
+        ui_theme.pill(self.screen, self.buttons,
+                      f'vol_{setting_id}_plus', "", plus_rect,
+                      "success", val_font, hover=plus_hover, icon="plus")
 
     def _draw_credits(self):
-        """Credits screen"""
+        """Credits screen (panel premium + hati vektor)."""
         cx = SCREEN_WIDTH // 2
 
         # Title
-        title = self.font_title.render("CREDITS", True, (200, 120, 200))
-        title_rect = title.get_rect(center=(cx, 80))
-        self._blit_shadow(self.screen, title, title_rect.topleft)
-        self.screen.blit(title, title_rect)
+        ui_theme.screen_title(self.screen, "CREDITS", cx, 48)
 
         # Panel
         panel_w = 700
         panel_h = 450
         panel_x = cx - panel_w // 2
         panel_y = 150
+        ui_theme.panel(self.screen, (panel_x, panel_y, panel_w,
+                                     panel_h),
+                       border=ui_theme.EDGE_GOLD, border_w=2)
 
-        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-        pygame.draw.rect(panel, (20, 25, 40, 220),
-                         (0, 0, panel_w, panel_h),
-                         border_radius=12)
-        self.screen.blit(panel, (panel_x, panel_y))
-        pygame.draw.rect(self.screen, (200, 120, 200),
-                         (panel_x, panel_y, panel_w, panel_h),
-                         2, border_radius=12)
+        role_font = get_font(19, "body_semibold")
+        name_font = get_font(24, "body_bold")
+        title_font_credits = get_font(26, "body_bold")
 
-        # Credits content
         credits = [
-            ("Tower Defense Battle Arena", (255, 220, 100), self.font_medium),
-            ("", None, None),
-            ("Game Design & Programming", (100, 200, 255), self.font_small),
-            ("Dharmawan Toxi", WHITE, self.font_medium),
-            ("", None, None),
-            ("Art Direction", (100, 200, 255), self.font_small),
-            ("Retro Pixel Style", WHITE, self.font_medium),
-            ("", None, None),
-            ("Sound Effects & Music", (100, 200, 255), self.font_small),
-            ("Custom SFX Library", WHITE, self.font_medium),
-            ("", None, None),
-            ("Special Thanks", (100, 200, 255), self.font_small),
-            ("Pygame Community", WHITE, self.font_medium),
-            ("Python 3.10+", WHITE, self.font_medium),
-            ("", None, None),
-            ("Made with ❤️ using Pygame", (255, 150, 200), self.font_small),
+            ("title", "Tower Defense Battle Arena"),
+            ("gap",),
+            ("Game Design & Programming", "Dharmawan Toxi"),
+            ("gap",),
+            ("Art Direction", "Dark Fantasy Vector Style"),
+            ("gap",),
+            ("Sound Effects & Music", "Custom SFX Library"),
+            ("gap",),
+            ("Special Thanks", "Pygame Community  •  Python 3.10+"),
         ]
 
-        y = panel_y + 30
-        for text, color, font in credits:
-            if not text or not font:
-                y += 15
+        y = panel_y + 42
+        for item in credits:
+            if item[0] == "gap":
+                y += 14
                 continue
-            surf = font.render(text, True, color)
-            rect = surf.get_rect(center=(cx, y))
-            self.screen.blit(surf, rect)
+            if item[0] == "title":
+                surf = title_font_credits.render(
+                    item[1], True, ui_theme.GOLD_TEXT)
+                self.screen.blit(surf, surf.get_rect(center=(cx, y)))
+                y += 30
+                continue
+            role, name = item
+            r = role_font.render(ui_theme.letter(role),
+                                 True, ui_theme.TEXT_DIM)
+            self.screen.blit(r, r.get_rect(center=(cx, y)))
+            y += 26
+            n = name_font.render(name, True, ui_theme.TEXT_WHITE)
+            self.screen.blit(n, n.get_rect(center=(cx, y)))
             y += 30
 
-        # Back button
-        self._draw_menu_button("back_to_main", "BACK", cx,
-                                SCREEN_HEIGHT - 60,
-                                (150, 150, 150),
-                                width=200, height=45)
+        # "Made with ♥ using Pygame" (hati digambar, bukan emoji)
+        heart_y = panel_y + panel_h - 44
+        left = get_font(19, "body_medium").render(
+            "Made with ", True, (255, 150, 200))
+        right = get_font(19, "body_medium").render(
+            " using Pygame", True, (255, 150, 200))
+        total = left.get_width() + 18 + right.get_width()
+        self.screen.blit(left, (cx - total // 2, heart_y + 3))
+        ui_theme.draw_icon(self.screen, "heart",
+                           cx - total // 2 + left.get_width() + 9,
+                           heart_y + 12, (255, 120, 170), s=0.7)
+        self.screen.blit(right, (cx - total // 2 + left.get_width() + 18,
+                                 heart_y + 3))
 
-    # ═══════════════════════════════════════
-    # PAUSE MENU
-    # ═══════════════════════════════════════
+        # Back button
+        ui_theme.back_button(self.screen, self.buttons, "back_to_main",
+                             cx, SCREEN_HEIGHT - 60,
+                             hover=(self.hover_button == "back_to_main"))
 
     def _draw_pause_menu(self):
-        """In-game pause menu"""
+        """In-game pause menu (panel premium)."""
         cx = SCREEN_WIDTH // 2
         cy = SCREEN_HEIGHT // 2
 
@@ -6799,28 +6461,13 @@ class Menu:
         panel_h = 400
         panel_x = cx - panel_w // 2
         panel_y = cy - panel_h // 2
-
-        # Shadow
-        shadow = pygame.Surface((panel_w + 10, panel_h + 10),
-                                 pygame.SRCALPHA)
-        pygame.draw.rect(shadow, (0, 0, 0, 150),
-                         (5, 5, panel_w, panel_h),
-                         border_radius=15)
-        self.screen.blit(shadow, (panel_x - 5, panel_y - 5))
-
-        # Panel background
-        pygame.draw.rect(self.screen, (25, 30, 45),
-                         (panel_x, panel_y, panel_w, panel_h),
-                         border_radius=15)
-        pygame.draw.rect(self.screen, (255, 220, 100),
-                         (panel_x, panel_y, panel_w, panel_h),
-                         3, border_radius=15)
+        ui_theme.panel(self.screen, (panel_x, panel_y, panel_w,
+                                     panel_h),
+                       border=ui_theme.GOLD, border_w=2)
 
         # Title
-        title = self.font_title.render("PAUSED", True, (255, 220, 100))
-        title_rect = title.get_rect(center=(cx, panel_y + 55))
-        self._blit_shadow(self.screen, title, title_rect.topleft)
-        self.screen.blit(title, title_rect)
+        ui_theme.outline_text(self.screen, title_font(56), "PAUSED",
+                              None, center=(cx, panel_y + 55))
 
         # Mode Badge
         difficulty = GameSettings().difficulty
@@ -6832,12 +6479,13 @@ class Menu:
             mode_col = (255, 120, 120)
         else:
             mode_str = "MODE: NORMAL (SCALING OFF)"
-            mode_col = (100, 220, 150)
-        mode_surf = self.font_tiny.render(mode_str, True, mode_col)
-        self.screen.blit(mode_surf, mode_surf.get_rect(center=(cx, panel_y + 98)))
+            mode_col = (110, 225, 150)
+        ui_theme.draw_text(self.screen, get_font(16, "body_semibold"),
+                           ui_theme.letter(mode_str), mode_col,
+                           center=(cx, panel_y + 98), shadow=False)
 
         # Decorative line
-        pygame.draw.line(self.screen, (255, 220, 100),
+        pygame.draw.line(self.screen, ui_theme.EDGE_GOLD,
                          (panel_x + 40, panel_y + 122),
                          (panel_x + panel_w - 40, panel_y + 122), 2)
 
@@ -6846,20 +6494,19 @@ class Menu:
         button_gap = 60
 
         buttons_data = [
-            ("resume", "RESUME", (100, 200, 100)),
-            ("settings_pause", "SETTINGS", (200, 180, 100)),
-            ("main_menu", "MAIN MENU", (100, 180, 255)),
-            ("quit", "QUIT GAME", (220, 80, 80)),
+            ("resume", "RESUME", (100, 200, 100), "play"),
+            ("settings_pause", "SETTINGS", (200, 180, 100), "gear"),
+            ("main_menu", "MAIN MENU", (100, 180, 255), "back"),
+            ("quit", "QUIT GAME", (220, 80, 80), "quit"),
         ]
 
-        for i, (btn_id, label, color) in enumerate(buttons_data):
+        for i, (btn_id, label, color, icon) in enumerate(buttons_data):
             y = button_y_start + i * button_gap
-            self._draw_menu_button(btn_id, label, cx, y, color,
-                                    width=280, height=45)
-
-    # ═══════════════════════════════════════
-    # BUTTON ACTIONS
-    # ═══════════════════════════════════════
+            ui_theme.button(self.screen, self.buttons, btn_id, label,
+                            cx, y, color, self.font_button,
+                            w=280, h=45, icon=icon,
+                            hover=(self.hover_button == btn_id),
+                            letter_gap=False)
 
     def _get_continue_level(self):
         """Level untuk tombol CONTINUE:
@@ -7379,7 +7026,7 @@ class Menu:
             if result.get("ok"):
                 if self.cloud_signed_in:
                     self._set_cloud_status(
-                        "Terhubung ke Google Play Games  ✓",
+                        "Terhubung ke Google Play Games",
                         (130, 230, 150))
                 else:
                     self._set_cloud_status(
@@ -7800,14 +7447,18 @@ class InputHandler:
                     SoundManager().play('ui_click', volume_mult=0.4)
                     return True
 
-            # ═══ DROP ITEM DARI SLOT DI PANEL (klik kanan) ═══
+            # ═══ ITEM SLOT: klik kanan = drop, klik kiri = info/pasang ═══
             elif btn_id.startswith('hero_item_slot_'):
                 if self._kena(rect, mx, my):
+                    idx = 0
+                    try:
+                        idx = int(
+                            btn_id.replace('hero_item_slot_', ''))
+                    except ValueError:
+                        pass
+                    h = g.selected_hero
                     if button == 3:
                         try:
-                            idx = int(
-                                btn_id.replace('hero_item_slot_', ''))
-                            h = g.selected_hero
                             if h is not None and getattr(h, "items", None):
                                 dropped = h.items.remove(idx)
                                 if dropped:
@@ -7827,9 +7478,34 @@ class InputHandler:
                         except Exception:
                             pass
                     else:
-                        # Klik kiri slot = buka toko item
-                        g.item_shop_open = True
-                        SoundManager().play('ui_click', volume_mult=0.4)
+                        # Klik kiri: slot TERISI -> tampilkan info item
+                        # (tanpa membuka modal toko); slot KOSONG -> buka
+                        # Item Forge (jalan pintas untuk memasang item).
+                        sid = None
+                        try:
+                            if h is not None and \
+                                    getattr(h, "items", None) and \
+                                    0 <= idx < len(h.items.slots):
+                                sid = h.items.slots[idx]
+                        except Exception:
+                            sid = None
+                        if sid:
+                            try:
+                                from hero_items import ITEM_CATALOG
+                                data = ITEM_CATALOG.get(sid, {})
+                                g.ui.add_notification(
+                                    data.get("name", "Item"),
+                                    (255, 230, 160))
+                                SoundManager().play(
+                                    'ui_click', volume_mult=0.3)
+                            except Exception:
+                                g.item_shop_open = True
+                                SoundManager().play(
+                                    'ui_click', volume_mult=0.4)
+                        else:
+                            g.item_shop_open = True
+                            SoundManager().play(
+                                'ui_click', volume_mult=0.4)
                     return True
 
             # ═══ AUTO-CAST TOGGLE ═══
@@ -8654,7 +8330,7 @@ class DevMode:
         pulse = math.sin(self.game.animation_time * 0.1) * 0.3 + 0.7
 
         ind_font = get_font(24)
-        text = ind_font.render("🔧 DEV MODE", True, (0, 255, 100))
+        text = ind_font.render("DEV MODE", True, (0, 255, 100))
         text_rect = text.get_rect()
 
         bg_rect = text_rect.inflate(16, 8)
@@ -8700,7 +8376,7 @@ class DevMode:
 
         # Title
         title_font = get_font(28)
-        title = title_font.render("🔧 DEV PANEL", True, (0, 255, 100))
+        title = title_font.render("DEV PANEL", True, (0, 255, 100))
         surface.blit(title, (px + 15, py + 12))
 
         # Status
@@ -8799,7 +8475,7 @@ class DevMode:
         surface.blit(bg, (box_x, box_y))
 
         title_font = get_font(22)
-        title = title_font.render("🔧 DEBUG INFO", True, (0, 255, 100))
+        title = title_font.render("DEBUG INFO", True, (0, 255, 100))
         surface.blit(title, (box_x + 8, box_y + 5))
 
         info_font = get_font(20)
