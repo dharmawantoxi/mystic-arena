@@ -6073,7 +6073,9 @@ class Menu:
             label_font=label_font, value_font=value_font)
 
         # ═══ GRAPHICS SECTION ═══
-        graphics_y = gameplay_y + 315
+        # Language control berakhir sekitar panel_y+350. Posisi lama
+        # (gameplay_y+315) membuat judul GRAPHICS menabrak baris Language.
+        graphics_y = panel_y + 365
         ui_theme.section_header(self.screen, col2_x, graphics_y,
                                 "GRAPHICS", "monitor", ui_theme.ORANGE,
                                 get_font(22, "body_semibold"),
@@ -6100,7 +6102,7 @@ class Menu:
 
         # ═══ DANGER ZONE SECTION ═══
         # Kolom kanan menjaga tombol reset terpisah dari Cloud Save.
-        danger_y = panel_y + 450
+        danger_y = panel_y + 475
         ui_theme.section_header(self.screen, col2_x, danger_y,
                                 "DANGER ZONE", "warn", ui_theme.RED,
                                 get_font(22, "body_semibold"),
@@ -6564,20 +6566,31 @@ class Menu:
                            label, ui_theme.TEXT_BODY,
                            topleft=(x, y), shadow=False)
         val_font = get_font(22, "body_bold")
+
+        # Sisakan kolom tetap untuk stepper minus/plus. Kedua tombol dibuat
+        # sama besar, sejajar dengan slider, dan mempunyai jarak yang jelas.
+        control_size = 32
+        control_gap = 14
+        controls_w = control_size * 2 + control_gap
+        slider_gap = 18
+        bar_w = width - controls_w - slider_gap
+        # Nilai berada tepat di atas ujung slider, bukan di atas tombol +.
         val = val_font.render(f"{int(value * 100)}%",
                               True, ui_theme.GOLD_TEXT)
-        self.screen.blit(val, val.get_rect(topright=(x + width, y)))
-
-        bar_w = width - 100
+        self.screen.blit(val, val.get_rect(topright=(x + bar_w, y)))
         bar_y = y + 30
         knob_hover = self.hover_button in (
             f'vol_{setting_id}_minus', f'vol_{setting_id}_plus')
         ui_theme.slider(self.screen, x, bar_y, bar_w, value,
                         knob_hover=knob_hover)
 
-        # Tombol - / +
-        minus_rect = pygame.Rect(x + width - 80, bar_y - 7, 26, 26)
-        plus_rect = pygame.Rect(x + width - 40, bar_y - 7, 26, 26)
+        # Tombol - / +: satu garis tengah dengan knob slider.
+        controls_x = x + bar_w + slider_gap
+        control_y = bar_y - control_size // 2
+        minus_rect = pygame.Rect(controls_x, control_y,
+                                 control_size, control_size)
+        plus_rect = pygame.Rect(controls_x + control_size + control_gap,
+                                control_y, control_size, control_size)
         minus_hover = self.hover_button == f'vol_{setting_id}_minus'
         plus_hover = self.hover_button == f'vol_{setting_id}_plus'
         ui_theme.pill(self.screen, self.buttons,
