@@ -2876,15 +2876,15 @@ class LevelIntroScreen:
             difficulty = "normal"
 
         if difficulty == "hard":
-            diff_title = "DIFFICULTY: HARD (SCALING ON)"
+            diff_title = "DIFFICULTY: HARD"
             diff_level = min(5, max(1, int(self.hp_mult * 2.5)))
             diff_color = (255, 120, 100)
         elif difficulty == "easy":
-            diff_title = "DIFFICULTY: EASY (BOSS WAVE 20-40, SCALING OFF)"
+            diff_title = "DIFFICULTY: EASY"
             diff_level = 1
             diff_color = (100, 210, 255)
         else:
-            diff_title = "DIFFICULTY: NORMAL (SCALING OFF)"
+            diff_title = "DIFFICULTY: NORMAL"
             diff_level = 1
             diff_color = (100, 220, 150)
 

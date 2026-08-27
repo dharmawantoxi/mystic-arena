@@ -3346,16 +3346,16 @@ class _NS_overlay:
             except Exception:
                 difficulty = "normal"
             if difficulty == "hard":
-                diff_text = "HARD · SCALE ON"
+                diff_text = "HARD"
                 hp_mult = next_config.get("enemy_hp_mult", 1.0)
                 diff_level = min(5, max(1, int(hp_mult * 2.5)))
                 diff_color = (255, 120, 100)
             elif difficulty == "easy":
-                diff_text = "EASY · BOSS 20-40"
+                diff_text = "EASY"
                 diff_level = 1
                 diff_color = (100, 210, 255)
             else:
-                diff_text = "NORMAL · SCALE OFF"
+                diff_text = "NORMAL"
                 diff_level = 1
                 diff_color = (100, 220, 150)
             diff_label = get_font(16, "body_semibold").render(

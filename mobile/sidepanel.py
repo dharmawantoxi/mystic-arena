@@ -415,13 +415,13 @@ class SidePanel:
         # Mode Tag
         difficulty = getattr(game, "difficulty", "normal") if game else "normal"
         if difficulty == "easy":
-            mode_str = "EASY [BOSS 20-40]"
+            mode_str = "EASY"
             mode_col = (100, 210, 255)
         elif difficulty == "hard":
-            mode_str = "HARD [SCALE ON]"
+            mode_str = "HARD"
             mode_col = BAHAYA
         else:
-            mode_str = "NORMAL [SCALE OFF]"
+            mode_str = "NORMAL"
             mode_col = OK
         full.blit(f_small.render(mode_str, True, mode_col), (x + 10, y + 68))
 
