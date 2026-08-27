@@ -48,7 +48,7 @@ BOSS_LABEL_TOP = {
     "grondmauris": 85,
     "grimjack": 55,
     "grimstalker": 55,
-    "gornak": 51,
+    "gornak": 45,   # rig masterwork: ubun-ubun 37 px, + aman
     "broggmar": 60,
     "brumhar": 60,
     "grimkor": 75,

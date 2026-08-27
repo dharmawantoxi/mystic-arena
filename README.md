@@ -223,6 +223,57 @@ Uji regresi: `python tools/test_vex_masterwork.py`.
 Review sheet dirender ulang dengan
 `python tools/_shot_vex_masterwork.py`.
 
+### Contoh maksimal ketujuh: Gornak Masterwork
+
+Gornak (mini boss *The Warrior Against Magic* — sekaligus hero yang bisa
+di-unlock) adalah **boss pertama** yang menerima perlakuan yang sama. Renderer
+lamanya — `_draw_gnk_robe`, `_draw_leg`, `_draw_gnk_arm_back/front`,
+`_draw_blade`, `_draw_mohawk` (kumpulan body-part `pygame.draw.rect`
+berlapis) — **dihapus total** dan diganti satu **bone rig 2D berlapis** di
+`bosses/level1.py`.
+
+Yang berubah, dan kenapa:
+
+* **Siluet berhenti menjadi gumpalan.** Badan naik dari 48 px menjadi 81 px
+  (ubun-ubun ke sol) dengan kaki yang benar-benar **menapak di garis
+  bayangan** (`GROUND_DY`): telapak dipatok di tanah sementara torso tetap
+  bernapas/bob, jadi karakter berdiri — bukan duduk di atas lingkaran efek.
+* **Wajah berhenti terbaca seperti donat.** Cincin cokelat raksasa di
+  sekeliling kepala dan "sisir" mohawk melayang diganti: krist rambut satu
+  massa yang tumbuh dari dahi ke tengkuk dengan helai individual, rahang
+  bidang, jenggot kepang ber-manik kuningan, dan circlet besi ber-taring.
+* **Twin blade pose-driven.** Sudut bilah ditabel per-pose (bukan diturunkan
+  dari arah lengan) dan sapuan attack ditulis **monoton lewat atas kepala**
+  (-0.75 → -2.30 → -2.75 → -4.38 → recovery), jadi bilah tidak pernah
+  menyayat datar menembus dadanya sendiri. Ujung bilah adalah satu-satunya
+  sumber posisi untuk slash arc, proc Mana Break, dan kilau Counterspell —
+  efek menempel di senjata, bukan mengambang di pinggang.
+* **Slash = trail ujung bilah**, bukan busur titik-titik setebal 5 px.
+* **LOD dua tingkat.** Arena: siluet bersih & hemat. Portrait Hero Shop
+  (`_portrait_hd`): pass material (serat mohawk, grain kulit, jahitan
+  loincloth, ukiran pelat, garis hamon bilah, tato rune) **plus** aura/
+  platform/rune tanah dibuang supaya auto-crop mengisi wajah.
+* **Efek skill ditundukan.** Rune tanah dipangkas dari 110 px menjadi 44 px
+  lingkaran di bawah kaki; Counterspell jadi kubah heksagon yang memeluk
+  badan (bukan bola radius 42 yang menutupi lane); Blink memakai after-image
+  rig yang sama, bukan siluet kotak ber-alpha.
+* **Bonus:** `hurt_flash_timer` boss kini benar-benar dibaca (badan berkedip
+  terang saat kena hit), dan jalur hero tidak lagi di-*upscale* — hasil
+  pengukuran naik dari 45 px ke 53 px sehingga scale hero 1.13 (blur) menjadi
+  0.96, dan biaya render turun **1.15 → 0.96 ms/frame**.
+
+Preview karakter, pose, dan ukuran 1x di arena:
+[docs/gornak_masterwork_preview.png](docs/gornak_masterwork_preview.png).
+Contact sheet rig idle/walk/attack:
+[docs/gornak_animation_strip.png](docs/gornak_animation_strip.png).
+Portrait LOD Hero Shop: [docs/gornak_portrait_preview.png](docs/gornak_portrait_preview.png).
+
+Uji regresi: `python tools/test_gornak_masterwork.py` (10 pemeriksaan: rig
+tunggal, kaki menapak, bilah tidak menembus dada, proc di ujung bilah,
+outline, portrait LOD, frame per-sendi, Q/W/E/R jalur boss **dan** hero,
+skala hero, budget ms/frame). Review sheet dirender ulang dengan
+`python tools/_shot_gornak_masterwork.py`.
+
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
 Hero punya 6 slot item yang dibeli dengan GOLD di **ITEM FORGE**.
