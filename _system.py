@@ -845,7 +845,8 @@ class SaveManager:
                 data.setdefault('slot_created', time.time())
                 data.setdefault('slot_last_played', time.time())
                 data.setdefault('slot_playtime_seconds', 0)
-                data.setdefault('level_stats', {})  # ← BARU
+                data.setdefault('level_stats', {})
+                data.setdefault('run_difficulty', None)
 
                 return data
         except Exception as e:
@@ -866,7 +867,8 @@ class SaveManager:
             'slot_created': time.time(),
             'slot_last_played': time.time(),
             'slot_playtime_seconds': 0,
-            'level_stats': {},  # ← BARU: dict per level number
+            'level_stats': {},  # dict per level number
+            'run_difficulty': None,  # mode terkunci untuk run saat ini
         }
 
     @staticmethod

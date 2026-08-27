@@ -1311,6 +1311,24 @@ class Game:
         # easy   : scaling OFF, mini boss di wave acak 20..40
         # normal : scaling OFF, mini boss di wave acak 11..30
         # hard   : scaling ON,  mini boss di wave acak 11..30
+        # ── KUNCI MODE: player tidak bisa ganti mode di tengah jalan ──
+        # Jika run_difficulty ada di save, paksa difficulty ikut itu
+        try:
+            from _system import SaveManager
+            from levels import ALL_LEVELS
+            sd = SaveManager.load()
+            rd = sd.get("run_difficulty")
+            completed = sd.get("completed_levels", [])
+            total = len(ALL_LEVELS)
+            if rd is not None and len(completed) < total:
+                # Enforce locked difficulty
+                if self.settings.difficulty != rd:
+                    self.settings.difficulty = rd
+                    self.settings.save()
+                    print(f"[DIFFICULTY LOCK] Enforced locked mode: {rd.upper()}")
+        except Exception as e:
+            print(f"[DIFFICULTY LOCK] Game reset check failed: {e}")
+
         self.difficulty = self.settings.difficulty
         self.enemy_scaling_enabled = (self.difficulty == "hard")
 
@@ -2138,6 +2156,22 @@ class Game:
             # Update last played level
             self.save_data['last_played_level'] = self.level_number
 
+            # ── DIFFICULTY LOCK: cek apakah semua level selesai ──
+            try:
+                from levels import ALL_LEVELS
+                total = len(ALL_LEVELS)
+                if len(completed) >= total:
+                    # Semua level selesai — buka kunci mode
+                    if self.save_data.get("run_difficulty") is not None:
+                        print(f"[DIFFICULTY LOCK] All levels completed on {self.save_data.get('run_difficulty').upper()} — unlocking!")
+                        self.save_data["run_difficulty"] = None
+                else:
+                    # Pastikan run_difficulty terkunci ke mode saat ini jika belum ada
+                    if self.save_data.get("run_difficulty") is None:
+                        self.save_data["run_difficulty"] = getattr(self, "difficulty", "normal")
+            except Exception as e:
+                print(f"[DIFFICULTY LOCK] grant check failed: {e}")
+
         # ═══ SAVE LEVEL STATS ═══
         import time as _time
         from _system import SaveManager
@@ -2492,16 +2526,16 @@ class Game:
                                  True, (196, 241, 168))
         surface.blit(income, (gx, y + 11))
 
-        # ═══ BADGE MODE (baris kedua) ═══
+        # ═══ BADGE MODE (baris kedua) — hanya EASY/NORMAL/HARD ===
         difficulty = getattr(self, "difficulty", "normal")
         if difficulty == "easy":
-            mode_str = "EASY \u00b7 BOSS 20-40"
+            mode_str = "EASY"
             mode_col = (100, 210, 255)
         elif difficulty == "hard":
-            mode_str = "HARD \u00b7 SCALE ON"
+            mode_str = "HARD"
             mode_col = (255, 120, 120)
         else:
-            mode_str = "NORMAL \u00b7 SCALE OFF"
+            mode_str = "NORMAL"
             mode_col = (120, 230, 150)
         mf = get_font(18, "body_semibold")
         mtext = mf.render(mode_str, True, mode_col)
@@ -2867,6 +2901,11 @@ class Menu:
         self._topup_poll_next = 0
         self._topup_qr_bytes = None
         self._topup_qr_surf = None
+
+        # ── DIFFICULTY LOCK — player tidak bisa ganti mode di tengah jalan
+        # Jika pilih EASY maka kunci EASY sampai semua level selesai.
+        # Mengubah tingkat kesulitan => reset dari awal level.
+        self.difficulty_change_confirm = None  # pending new difficulty string
 
         # Particles background
         self.particles = self._init_particles()
@@ -3355,6 +3394,141 @@ class Menu:
         self.meta_gold = self.save_data.get("meta_gold", 0)
         # Auto set selected_level ke last_played
         self.selected_level = self.save_data.get("last_played_level", 1)
+        # Sinkronkan difficulty setting dengan run_difficulty yang terkunci (jika ada)
+        try:
+            rd = self.save_data.get("run_difficulty")
+            if rd is not None:
+                from levels import ALL_LEVELS
+                total = len(ALL_LEVELS)
+                completed = self.save_data.get("completed_levels", [])
+                if len(completed) < total:
+                    # Jika belum tamat semua, paksa setting ikut run_difficulty
+                    gs = GameSettings()
+                    if gs.difficulty != rd:
+                        gs.difficulty = rd
+                        gs.save()
+                else:
+                    # Sudah tamat semua — buka kunci untuk run berikutnya
+                    self.save_data["run_difficulty"] = None
+                    SaveManager.save(self.save_data)
+        except Exception as e:
+            print(f"[DIFFICULTY LOCK] sync failed: {e}")
+
+    def _is_difficulty_locked(self):
+        """True kalau mode terkunci — player tidak bisa ganti di tengah jalan."""
+        try:
+            from levels import ALL_LEVELS
+            total = len(ALL_LEVELS)
+            completed = self.save_data.get("completed_levels", [])
+            run_diff = self.save_data.get("run_difficulty")
+            if run_diff is None:
+                return False
+            if len(completed) >= total:
+                return False  # sudah tamat semua, boleh ganti
+            # Jika ada run_difficulty dan belum tamat, terkunci
+            return True
+        except Exception:
+            return False
+
+    def _get_locked_difficulty(self):
+        return self.save_data.get("run_difficulty")
+
+    def _confirm_difficulty_change(self, new_diff):
+        """Reset progres dari awal level dan ganti difficulty."""
+        try:
+            gs = GameSettings()
+            gs.set_difficulty(new_diff)
+            # Reset progres level
+            self.save_data["completed_levels"] = []
+            self.save_data["last_played_level"] = 1
+            self.save_data["level_stats"] = {}
+            self.save_data["replay_reward_counts"] = {}
+            self.save_data["run_difficulty"] = new_diff
+            SaveManager.save(self.save_data)
+            self.selected_level = 1
+            print(f"[DIFFICULTY] Changed to {new_diff.upper()} — progress reset to level 1")
+            # Jika sedang pause di tengah game, kembalikan ke main menu
+            # karena progres sudah di-reset ke awal
+            if getattr(self, "pause_mode", False):
+                self.exit_confirm = None
+                self.action = "main_menu"
+        except Exception as e:
+            print(f"[DIFFICULTY] confirm change failed: {e}")
+        finally:
+            self.difficulty_change_confirm = None
+
+    def _draw_difficulty_confirm_dialog(self):
+        """Dialog konfirmasi ganti difficulty — reset dari awal."""
+        pending = self.difficulty_change_confirm
+        if pending is None:
+            return
+        cx = SCREEN_WIDTH // 2
+        cy = SCREEN_HEIGHT // 2
+        from mobile.perf import darken
+        darken(self.screen, 200)
+
+        dialog_w = 560
+        dialog_h = 300
+        dialog_x = cx - dialog_w // 2
+        dialog_y = cy - dialog_h // 2
+
+        shadow_surf = pygame.Surface((dialog_w + 10, dialog_h + 10), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 150), (5, 5, dialog_w, dialog_h), border_radius=12)
+        self.screen.blit(shadow_surf, (dialog_x - 5, dialog_y - 5))
+
+        pygame.draw.rect(self.screen, (35, 30, 55), (dialog_x, dialog_y, dialog_w, dialog_h), border_radius=12)
+        pygame.draw.rect(self.screen, (255, 200, 100), (dialog_x, dialog_y, dialog_w, dialog_h), 3, border_radius=12)
+
+        # Title
+        title_font = get_font(32, "body_bold")
+        title = title_font.render("GANTI MODE KESULITAN?", True, (255, 220, 100))
+        self.screen.blit(title, title.get_rect(center=(cx, dialog_y + 40)))
+
+        # Current locked
+        locked = self._get_locked_difficulty() or GameSettings().difficulty
+        small = get_font(22, "body_medium")
+        txt1 = small.render(f"Mode saat ini terkunci: {locked.upper()} sampai semua level selesai.", True, (200, 220, 240))
+        self.screen.blit(txt1, txt1.get_rect(center=(cx, dialog_y + 90)))
+
+        txt2 = small.render(f"Ganti ke {pending.upper()} akan RESET progres ke Level 1.", True, (255, 180, 180))
+        self.screen.blit(txt2, txt2.get_rect(center=(cx, dialog_y + 120)))
+
+        txt3 = small.render("Lanjutkan?", True, (180, 200, 220))
+        self.screen.blit(txt3, txt3.get_rect(center=(cx, dialog_y + 150)))
+
+        # Buttons
+        btn_y = dialog_y + dialog_h - 60
+        btn_w = 200
+        btn_h = 42
+        gap = 20
+        yes_x = cx - btn_w - gap//2
+        no_x = cx + gap//2
+
+        yes_rect = pygame.Rect(yes_x, btn_y, btn_w, btn_h)
+        no_rect = pygame.Rect(no_x, btn_y, btn_w, btn_h)
+
+        mx, my = pygame.mouse.get_pos()
+        yes_hover = yes_rect.collidepoint(mx, my)
+        no_hover = no_rect.collidepoint(mx, my)
+
+        # YES — confirm reset
+        yes_col = (200, 80, 50) if yes_hover else (160, 60, 40)
+        yes_bdr = (255, 150, 100) if yes_hover else (200, 100, 80)
+        pygame.draw.rect(self.screen, yes_col, yes_rect, border_radius=8)
+        pygame.draw.rect(self.screen, yes_bdr, yes_rect, 2, border_radius=8)
+        ytxt = get_font(22, "body_bold").render("YA, RESET & GANTI", True, (255, 255, 255))
+        self.screen.blit(ytxt, ytxt.get_rect(center=yes_rect.center))
+        self.buttons["difficulty_confirm_yes"] = yes_rect
+
+        # NO — cancel
+        no_col = (60, 80, 100) if no_hover else (50, 70, 90)
+        no_bdr = (120, 160, 200) if no_hover else (100, 140, 180)
+        pygame.draw.rect(self.screen, no_col, no_rect, border_radius=8)
+        pygame.draw.rect(self.screen, no_bdr, no_rect, 2, border_radius=8)
+        ntxt = get_font(22, "body_bold").render("BATAL", True, (255, 255, 255))
+        self.screen.blit(ntxt, ntxt.get_rect(center=no_rect.center))
+        self.buttons["difficulty_confirm_no"] = no_rect
+
 
     def _init_particles(self):
         """Init floating particles: ember naik + arcane melayang (mystic)."""
@@ -3515,10 +3689,15 @@ class Menu:
         if self.exit_confirm is not None:
             self._draw_exit_confirm_dialog()
 
+        # Dialog konfirmasi ganti difficulty (modal, block semua)
+        if getattr(self, "difficulty_change_confirm", None) is not None and self.exit_confirm is None:
+            self._draw_difficulty_confirm_dialog()
+
         # Dialog top up (modal, hanya di Hero Shop).
         if (self.state == MenuState.HERO_SHOP
                 and getattr(self, "topup_open", False)
-                and self.exit_confirm is None):
+                and self.exit_confirm is None
+                and getattr(self, "difficulty_change_confirm", None) is None):
             self._draw_topup_dialog()
 
     # ================================
@@ -3568,6 +3747,10 @@ class Menu:
         if self.exit_confirm is not None:
             button_items = ((btn_id, rect) for btn_id, rect in self.buttons.items()
                             if btn_id in ("exit_confirm_yes", "exit_confirm_no"))
+        # Difficulty confirm juga modal
+        if getattr(self, "difficulty_change_confirm", None) is not None:
+            button_items = ((btn_id, rect) for btn_id, rect in self.buttons.items()
+                            if btn_id in ("difficulty_confirm_yes", "difficulty_confirm_no"))
         for btn_id, rect in button_items:
             if self._kena(rect, mx, my):
                 self._on_button_click(btn_id)
@@ -3588,16 +3771,19 @@ class Menu:
         ui_theme.screen_title(self.screen, "SELECT LEVEL", cx, 48,
                               ornament=False)
 
-        # ═══ DIFFICULTY MODE SELECTOR ═══
+        # ═══ DIFFICULTY MODE SELECTOR — hanya EASY/NORMAL/HARD, terkunci ===
         difficulty = GameSettings().difficulty
-        if difficulty == "easy":
-            diff_text = "MODE: EASY (BOSS WAVE 20-40, SCALING OFF)"
+        is_locked = self._is_difficulty_locked()
+        locked_diff = self._get_locked_difficulty() if is_locked else None
+        display_diff = locked_diff or difficulty
+        if display_diff == "easy":
+            diff_text = "MODE: EASY" + (" LOCKED" if is_locked else "")
             diff_color = (100, 210, 255)
-        elif difficulty == "hard":
-            diff_text = "MODE: HARD (ENEMY SCALING ON)"
+        elif display_diff == "hard":
+            diff_text = "MODE: HARD" + (" LOCKED" if is_locked else "")
             diff_color = (255, 95, 95)
         else:
-            diff_text = "MODE: NORMAL (ENEMY SCALING OFF)"
+            diff_text = "MODE: NORMAL" + (" LOCKED" if is_locked else "")
             diff_color = (90, 225, 140)
         ui_theme.button(
             self.screen, self.buttons, "toggle_level_difficulty",
@@ -3840,15 +4026,15 @@ class Menu:
                 hp_mult = level.get("enemy_hp_mult", 1.0)
                 scaling_pct = int(round((hp_mult - 1.0) * 100))
                 diff_title = (f"HARD (+{scaling_pct}%)"
-                              if scaling_pct > 0 else "HARD (ON)")
+                              if scaling_pct > 0 else "HARD")
                 diff_color = (255, 120, 100)
                 diff_level = min(5, max(1, int(hp_mult * 2.5)))
             elif difficulty == "easy":
-                diff_title = "EASY (BOSS 20-40)"
+                diff_title = "EASY"
                 diff_color = ui_theme.CYAN
                 diff_level = 1
             else:
-                diff_title = "NORMAL (OFF)"
+                diff_title = "NORMAL"
                 diff_color = ui_theme.GREEN
                 diff_level = 1
             ui_theme.draw_text(self.screen, get_font(16, "body_bold"),
@@ -5831,14 +6017,25 @@ class Menu:
 
         settings = GameSettings()
 
-        # Difficulty Mode
+        # Difficulty Mode — terkunci sampai semua level selesai
         y = gameplay_y + 45
+        diff_label = settings.get_difficulty_short_label()
+        if self._is_difficulty_locked():
+            locked = self._get_locked_difficulty() or settings.difficulty
+            diff_label = f"{locked.upper()} LOCKED"
         self._draw_option_setting(
             col2_x, y, 340,
             "Difficulty",
-            settings.get_difficulty_short_label(),
+            diff_label,
             "difficulty",
             label_font=label_font, value_font=value_font)
+
+        # Info lock di bawahnya
+        if self._is_difficulty_locked():
+            y_lock = y + 36
+            lock_font = get_font(16, "body_medium")
+            lock_txt = lock_font.render("Terkunci sampai semua level selesai", True, (255, 180, 120))
+            self.screen.blit(lock_txt, (col2_x, y_lock))
 
         # Beri jarak ekstra agar tiap pilihan mudah disentuh di gameplay.
         y += 58
@@ -5931,6 +6128,11 @@ class Menu:
         # Dialog konfirmasi CLOUD (upload / download manual)
         if getattr(self, 'cloud_confirm', None) is not None:
             self._draw_cloud_confirm_dialog()
+
+        # Dialog konfirmasi ganti difficulty (juga digambar di draw() global, tapi jaga-jaga)
+        if getattr(self, 'difficulty_change_confirm', None) is not None and self.state == MenuState.SETTINGS:
+            # akan digambar sebagai global modal di draw(), tidak perlu di sini
+            pass
 
     def _draw_cloud_buttons(self, x, y, width):
         """
@@ -6474,16 +6676,21 @@ class Menu:
         ui_theme.outline_text(self.screen, title_font(56), "PAUSED",
                               None, center=(cx, panel_y + 55))
 
-        # Mode Badge
+        # Mode Badge — hanya EASY/NORMAL/HARD, terkunci
         difficulty = GameSettings().difficulty
+        is_locked = False
+        try:
+            is_locked = self._is_difficulty_locked()
+        except Exception:
+            pass
         if difficulty == "easy":
-            mode_str = "MODE: EASY (BOSS WAVE 20-40, SCALING OFF)"
+            mode_str = "MODE: EASY" + (" LOCKED" if is_locked else "")
             mode_col = (100, 210, 255)
         elif difficulty == "hard":
-            mode_str = "MODE: HARD (SCALING ON)"
+            mode_str = "MODE: HARD" + (" LOCKED" if is_locked else "")
             mode_col = (255, 120, 120)
         else:
-            mode_str = "MODE: NORMAL (SCALING OFF)"
+            mode_str = "MODE: NORMAL" + (" LOCKED" if is_locked else "")
             mode_col = (110, 225, 150)
         ui_theme.draw_text(self.screen, get_font(16, "body_semibold"),
                            ui_theme.letter(mode_str), mode_col,
@@ -6535,6 +6742,13 @@ class Menu:
         """Handle button click actions"""
         if btn_id == "continue":
             # Lanjut dari level terakhir (bypass slot select)
+            # Kunci difficulty saat pertama kali main
+            try:
+                if self.save_data.get("run_difficulty") is None:
+                    self.save_data["run_difficulty"] = GameSettings().difficulty
+                    SaveManager.save(self.save_data)
+            except Exception:
+                pass
             self.selected_level = self._get_continue_level()
             self.action = "play"
         elif btn_id == "play":
@@ -6565,6 +6779,13 @@ class Menu:
             from levels import is_level_unlocked
             completed = self.save_data.get("completed_levels", [])
             if is_level_unlocked(lvl_num, completed):
+                # Kunci difficulty saat pertama kali pilih level jika belum terkunci
+                try:
+                    if self.save_data.get("run_difficulty") is None:
+                        self.save_data["run_difficulty"] = GameSettings().difficulty
+                        SaveManager.save(self.save_data)
+                except Exception:
+                    pass
                 self.selected_level = lvl_num
                 self.action = "play"
             else:
@@ -6704,14 +6925,58 @@ class Menu:
                 else:
                     self._redeem_append(btn_id[4:])
 
-        # ═══ TOGGLES ═══
+        # ═══ TOGGLES — DIFFICULTY LOCK ====
+        # Player tidak bisa berganti mode di tengah jalan.
+        # Jika pilih mode EASY maka kunci EASY sampai semua level selesai.
+        # Merubah tingkat kesulitan maka reset dari awal level.
         elif btn_id in ("difficulty_prev", "difficulty_next",
                         "toggle_difficulty", "toggle_level_difficulty"):
             settings = GameSettings()
-            if btn_id == "difficulty_prev":
-                settings.cycle_difficulty(-1)
+            # Hitung new difficulty tanpa save dulu
+            try:
+                idx = settings.DIFFICULTY_MODES.index(settings.difficulty)
+            except ValueError:
+                idx = settings.DIFFICULTY_MODES.index("normal")
+            step = -1 if btn_id == "difficulty_prev" else 1
+            new_diff = settings.DIFFICULTY_MODES[(idx + step) % len(settings.DIFFICULTY_MODES)]
+
+            # Jika terkunci dan beda dari run_difficulty => minta konfirmasi reset
+            if self._is_difficulty_locked():
+                locked = self._get_locked_difficulty()
+                if new_diff != locked:
+                    self.difficulty_change_confirm = new_diff
+                    SoundManager().play('ui_click', volume_mult=0.4)
+                else:
+                    # klik tapi sudah terkunci ke mode yang sama — beri feedback error ringan
+                    SoundManager().play('ui_error', volume_mult=0.3)
             else:
-                settings.cycle_difficulty(1)
+                # Tidak terkunci — boleh ganti langsung
+                if btn_id == "difficulty_prev":
+                    settings.cycle_difficulty(-1)
+                else:
+                    settings.cycle_difficulty(1)
+                SoundManager().play('ui_click', volume_mult=0.4)
+                # Jika sudah tamat semua level, set run_difficulty ke mode baru untuk run berikutnya
+                try:
+                    from levels import ALL_LEVELS
+                    total = len(ALL_LEVELS)
+                    completed = self.save_data.get("completed_levels", [])
+                    if len(completed) >= total:
+                        self.save_data["run_difficulty"] = settings.difficulty
+                        SaveManager.save(self.save_data)
+                except Exception:
+                    pass
+
+        elif btn_id == "difficulty_confirm_yes":
+            pending = getattr(self, "difficulty_change_confirm", None)
+            if pending:
+                self._confirm_difficulty_change(pending)
+                SoundManager().play('ui_upgrade', volume_mult=0.6)
+            else:
+                self.difficulty_change_confirm = None
+
+        elif btn_id == "difficulty_confirm_no":
+            self.difficulty_change_confirm = None
             SoundManager().play('ui_click', volume_mult=0.4)
 
         elif btn_id == "toggle_shake":
@@ -8635,17 +8900,17 @@ class GameSettings:
 
     def get_difficulty_label(self):
         return {
-            "easy": "EASY (Boss Wave 20-40, Scaling OFF)",
-            "normal": "NORMAL (Scaling OFF)",
-            "hard": "HARD (Scaling ON)",
-        }.get(self.difficulty, "NORMAL (Scaling OFF)")
+            "easy": "EASY",
+            "normal": "NORMAL",
+            "hard": "HARD",
+        }.get(self.difficulty, "NORMAL")
 
     def get_difficulty_short_label(self):
         return {
-            "easy": "EASY (20-40)",
-            "normal": "NORMAL (OFF)",
-            "hard": "HARD (ON)",
-        }.get(self.difficulty, "NORMAL (OFF)")
+            "easy": "EASY",
+            "normal": "NORMAL",
+            "hard": "HARD",
+        }.get(self.difficulty, "NORMAL")
 
     def is_easy_mode(self):
         return self.difficulty == "easy"
