@@ -48,6 +48,18 @@ bosses/_boss_index.py    peta boss→modul (dibuat tools/gen_boss_index.py)
 tools/                   benchmark, uji cache sprite, generator indeks
 ```
 
+## Hero procedural HD
+
+Semua hero tetap dirender murni dari kode (tanpa sprite gambar eksternal),
+namun memakai **HD readability pass** setelah `smoothscale`: ukuran badan
+lebih mudah dibaca pada layar 720p dan outline solid 1 px dibentuk ulang
+setelah resize. Outline hanya dihitung saat cache miss, sehingga frame cache
+berikutnya tetap berupa satu operasi blit dan efek aura transparan tidak ikut
+menjadi tebal. Warna tepi memiliki bias biru/merah tipis agar kedua tim mudah
+dibedakan ketika unit bertumpuk.
+
+Uji regresi: `python tools/test_hero_hd_render.py`.
+
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
 Hero punya 6 slot item yang dibeli dengan GOLD di **ITEM FORGE**.

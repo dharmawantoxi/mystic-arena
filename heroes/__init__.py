@@ -553,7 +553,13 @@ def clear_sprite_metrics_cache():
 #   1.0  = ukuran normal
 #   0.85 = 15% lebih kecil
 #   1.2  = 20% lebih besar
-HERO_GLOBAL_SCALE = 0.65
+#
+# HD readability pass: sebelumnya 0.65 membuat badan 65 px turun lagi
+# menjadi sekitar 42 px. Detail wajah, armor, dan senjata prosedural
+# akhirnya hilang saat dilihat di layar 720p. 0.78 menjaga hero tetap
+# kompak di lane, tetapi memberi sekitar 51 px badan agar detailnya
+# terbaca tanpa mengubah collision radius atau gameplay.
+HERO_GLOBAL_SCALE = 0.78
 
 # Tinggi BADAN (kepala sampai kaki) semua hero, dalam piksel.
 # Yang diukur hanya badan padat - efek tanah & aura tipis di atas
@@ -871,7 +877,8 @@ def _render_hero_raw(hero_type, surface, hero, x, y):
         c = canvas_w // 2
         hero._render_scale = scale
         renderer(canvas, hero, c, c)
-        _blit_scaled(surface, canvas, c, c, scale, x, y)
+        _blit_scaled(surface, canvas, c, c, scale, x, y,
+                     getattr(hero, 'team', 'blue'))
         return True
 
     boss_renderer = BOSS_RENDERERS.get(hero_type)
@@ -901,7 +908,8 @@ def _render_hero_raw(hero_type, surface, hero, x, y):
                 boss_renderer(canvas, hero, c, c)
             finally:
                 hero._skip_beam = False
-            _blit_scaled(surface, canvas, c, c, scale, x, y)
+            _blit_scaled(surface, canvas, c, c, scale, x, y,
+                     getattr(hero, 'team', 'blue'))
 
             # Offset target terkunci tersimpan dalam ruang DUNIA
             # (bosses/level1.py) - beam pass di layar memakainya
@@ -918,13 +926,69 @@ def _render_hero_raw(hero_type, surface, hero, x, y):
 
         hero._render_scale = scale
         boss_renderer(canvas, hero, c, c)
-        _blit_scaled(surface, canvas, c, c, scale, x, y)
+        _blit_scaled(surface, canvas, c, c, scale, x, y,
+                     getattr(hero, 'team', 'blue'))
         return True
 
     return False
 
 
-def _blit_scaled(surface, canvas, cx, cy, scale, x, y):
+# ═══════════════════════════════════════════════════════
+# HD EDGE PASS
+#
+# Renderer prosedural menggambar pada resolusi asli (umumnya 90-130 px)
+# lalu sprite diperkecil ke ukuran arena. Smoothscale memberi anti-alias
+# yang bagus, tetapi juga melembutkan outline gelap hingga menyatu dengan
+# map. Pass murah ini dijalankan HANYA saat cache miss: bentuk solid
+# (alpha >= 180, jadi aura/transparansi tidak ikut) diberi outline 1 px
+# setelah resize. Hasil akhirnya tetap procedural, tajam, dan cache hit
+# berikutnya tetap hanya satu blit.
+# ═══════════════════════════════════════════════════════
+HD_HERO_EDGE_ENABLED = True
+_HD_EDGE_ALPHA = 180
+
+
+def _finish_hd_sprite(sprite, team='blue'):
+    """Tambahkan outline pasca-scale tanpa mengubah isi/ukuran badan.
+
+    Return ``(surface, pad)``. ``pad`` dipakai untuk mengoreksi anchor
+    karena canvas hasil dibuat satu piksel lebih lebar di setiap sisi.
+    """
+    if not HD_HERO_EDGE_ENABLED or sprite.get_width() <= 1 or \
+            sprite.get_height() <= 1:
+        return sprite, 0
+
+    try:
+        solid = pygame.mask.from_surface(sprite, _HD_EDGE_ALPHA)
+        if solid.count() == 0:
+            return sprite, 0
+
+        w, h = sprite.get_size()
+        expanded = pygame.mask.Mask((w + 2, h + 2))
+        for ox, oy in ((0, 0), (1, 0), (2, 0),
+                       (0, 1),         (2, 1),
+                       (0, 2), (1, 2), (2, 2)):
+            expanded.draw(solid, (ox, oy))
+
+        core = pygame.mask.Mask((w + 2, h + 2))
+        core.draw(solid, (1, 1))
+        expanded.erase(core, (0, 0))
+
+        # Sedikit bias warna tim: tetap hampir hitam agar tidak
+        # mengubah desain hero, tetapi siluet biru/merah lebih mudah
+        # dibaca saat dua tim bertumpuk.
+        edge = (7, 22, 34, 235) if team != 'red' else (38, 8, 13, 235)
+        result = expanded.to_surface(
+            setcolor=edge, unsetcolor=(0, 0, 0, 0))
+        result.blit(sprite, (1, 1))
+        return result, 1
+    except (pygame.error, ValueError):
+        # Renderer tidak boleh gagal hanya karena backend SDL tertentu
+        # tidak mendukung operasi mask/to_surface.
+        return sprite, 0
+
+
+def _blit_scaled(surface, canvas, cx, cy, scale, x, y, team='blue'):
     """
     Scale canvas lalu blit sehingga titik (cx, cy) di canvas
     mendarat tepat di (x, y) pada surface.
@@ -940,10 +1004,12 @@ def _blit_scaled(surface, canvas, cx, cy, scale, x, y):
     nw = max(1, int(rect.width * scale))
     nh = max(1, int(rect.height * scale))
     scaled = pygame.transform.smoothscale(sub, (nw, nh))
+    scaled, edge_pad = _finish_hd_sprite(scaled, team)
 
-    # Offset anchor relatif terhadap titik tengah
-    off_x = (rect.x - cx) * scale
-    off_y = (rect.y - cy) * scale
+    # Offset anchor relatif terhadap titik tengah. HD edge menambah
+    # padding, jadi kurangi lagi agar anchor dunia tidak bergeser 1 px.
+    off_x = (rect.x - cx) * scale - edge_pad
+    off_y = (rect.y - cy) * scale - edge_pad
     surface.blit(scaled, (int(x + off_x), int(y + off_y)))
 
 
@@ -1028,9 +1094,15 @@ def render_hero(hero_type, surface, hero, x, y):
                 nh = max(1, int(rect.height * scale))
                 sub = pygame.transform.smoothscale(sub, (nw, nh))
 
-            # anchor = posisi titik (c, c) di dalam sprite hasil
-            ax = (c - rect.x) * scale
-            ay = (c - rect.y) * scale
+            # Outline dibuat SETELAH smoothscale agar tepinya benar-benar
+            # 1 px tajam pada resolusi layar, bukan ikut diredupkan resize.
+            sub, edge_pad = _finish_hd_sprite(
+                sub, getattr(hero, 'team', 'blue'))
+
+            # anchor = posisi titik (c, c) di dalam sprite hasil.
+            # Tambahkan padding edge supaya posisi kaki tidak bergeser.
+            ax = (c - rect.x) * scale + edge_pad
+            ay = (c - rect.y) * scale + edge_pad
 
             if len(_hero_sprite_cache) >= _HERO_CACHE_MAX:
                 _hero_sprite_cache.pop(next(iter(_hero_sprite_cache)))
