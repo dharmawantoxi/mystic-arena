@@ -1673,6 +1673,7 @@ class _NS_sylara:
         "cloak_light":    (100, 155,  80),
 
         # Hood - similar to cloak
+        "hood_darkest":   ( 18,  36,  20),
         "hood_dark":      ( 30,  55,  30),
         "hood_mid":       ( 55,  95,  50),
         "hood_light":     ( 85, 135,  70),
@@ -2368,6 +2369,7 @@ class _NS_sylara:
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_sylara._detect_moving(boss)
         _NS_sylara._update_attack_anim(boss)
+        portrait_hd = bool(getattr(boss, "_portrait_hd", False))
 
         attacking = (
             getattr(boss, "_sy_attack_active", False)
@@ -2377,9 +2379,13 @@ class _NS_sylara:
         # ---------- Background layers ----------
         # Rim-light hijau lembut memisahkan cape dan rambut merah dari
         # terrain gelap, seperti presentation sprite pada referensi.
-        _NS_sylara._draw_ranger_silhouette_glow(surface, x, y - 10, pulse)
-        _NS_sylara._draw_wind_aura(surface, x, y, pulse)
-        _NS_sylara._draw_wind_platform(surface, x, y + 40, pulse, active_skill)
+        # Portrait LOD sengaja melewati aura/platform seukuran arena agar
+        # auto-crop mengisi portrait dengan wajah & material Sylara, bukan
+        # lingkaran efek 180 px.
+        if not portrait_hd:
+            _NS_sylara._draw_ranger_silhouette_glow(surface, x, y - 10, pulse)
+            _NS_sylara._draw_wind_aura(surface, x, y, pulse)
+            _NS_sylara._draw_wind_platform(surface, x, y + 40, pulse, active_skill)
 
         # ---------- Skill ground effects ----------
         # Q = Focus Fire, W = Windrun, E = Shackle Shot, R = Powershot
@@ -2403,7 +2409,8 @@ class _NS_sylara:
             _NS_sylara._draw_sylara_idle(surface, boss, x, y)
 
         # ---------- Projectiles ----------
-        _NS_sylara._manage_projectiles(boss, surface, pulse)
+        if not portrait_hd:
+            _NS_sylara._manage_projectiles(boss, surface, pulse)
 
         # ---------- Skill foreground effects ----------
         if active_skill == "r":
@@ -2417,19 +2424,25 @@ class _NS_sylara:
     # ===================================================================
     def _draw_sylara_idle(surface, boss, x, y):
         bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_sylara._draw_shadow(surface, x, y + 48)
-        _NS_sylara._draw_floating_wind(surface, x, y + 35, boss.pulse)
-        _NS_sylara._draw_sylara_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+        if not getattr(boss, "_portrait_hd", False):
+            _NS_sylara._draw_shadow(surface, x, y + 48)
+            _NS_sylara._draw_floating_wind(surface, x, y + 35, boss.pulse)
+        _NS_sylara._draw_sylara_body(
+            surface, x, y + bob, boss.direction, boss.pulse, "idle",
+            detail=getattr(boss, "_portrait_hd", False))
 
 
     def _draw_sylara_walk(surface, boss, x, y):
         phase = boss.pulse * 2.0
         bob = int(abs(math.sin(phase * 1.2)) * 3)
         sway = int(math.sin(phase) * 2)
-        _NS_sylara._draw_shadow(surface, x + sway, y + 48)
-        _NS_sylara._draw_floating_wind(surface, x + sway, y + 35, phase, trail=True,
-                           facing=boss.direction)
-        _NS_sylara._draw_sylara_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
+        if not getattr(boss, "_portrait_hd", False):
+            _NS_sylara._draw_shadow(surface, x + sway, y + 48)
+            _NS_sylara._draw_floating_wind(surface, x + sway, y + 35, phase,
+                                           trail=True, facing=boss.direction)
+        _NS_sylara._draw_sylara_body(
+            surface, x + sway, y - bob, boss.direction, phase, "walk",
+            detail=getattr(boss, "_portrait_hd", False))
 
 
     def _draw_sylara_attack(surface, boss, x, y):
@@ -2461,905 +2474,626 @@ class _NS_sylara:
             t = (progress - release_start) / (1 - release_start)
             recoil = int(math.sin(t * math.pi) * 2) * -boss.direction
 
-        _NS_sylara._draw_shadow(surface, x + recoil, y + 48)
-        _NS_sylara._draw_floating_wind(surface, x + recoil, y + 35, boss.pulse, intense=True)
-        _NS_sylara._draw_sylara_body(surface, x + recoil, y, boss.direction, boss.pulse,
-                          "attack", progress, powered=powered)
-        _NS_sylara._draw_bow_release_flash(surface, x + recoil, y, boss.direction, progress)
+        portrait_hd = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait_hd:
+            _NS_sylara._draw_shadow(surface, x + recoil, y + 48)
+            _NS_sylara._draw_floating_wind(surface, x + recoil, y + 35,
+                                           boss.pulse, intense=True)
+        _NS_sylara._draw_sylara_body(surface, x + recoil, y, boss.direction,
+                                     boss.pulse, "attack", progress,
+                                     powered=powered, detail=portrait_hd)
+        if not portrait_hd:
+            _NS_sylara._draw_bow_release_flash(surface, x + recoil, y,
+                                               boss.direction, progress)
 
 
     def _draw_sylara_windrun(surface, boss, x, y, timer):
         """Fast dash pose during windrun."""
         phase = boss.pulse * 3.0
         bob = int(abs(math.sin(phase * 2)) * 2)
-        _NS_sylara._draw_shadow(surface, x, y + 48)
-        _NS_sylara._draw_windrun_trail(surface, x, y, boss.direction, phase)
-        _NS_sylara._draw_sylara_body(surface, x, y - bob, boss.direction, phase, "windrun")
+        if not getattr(boss, "_portrait_hd", False):
+            _NS_sylara._draw_shadow(surface, x, y + 48)
+            _NS_sylara._draw_windrun_trail(surface, x, y, boss.direction, phase)
+        _NS_sylara._draw_sylara_body(
+            surface, x, y - bob, boss.direction, phase, "windrun",
+            detail=getattr(boss, "_portrait_hd", False))
 
 
     # ===================================================================
     # BODY RENDERING - HD Wind Ranger
     # ===================================================================
     def _draw_sylara_body(surface, cx, cy, facing, phase, action,
-                          attack_progress=0, powered=False):
-        # Cloak behind
-        _NS_sylara._draw_cloak(surface, cx, cy, facing, phase, action)
+                          attack_progress=0, powered=False, detail=False):
+        """Renderer tubuh Sylara kualitas maksimum, 100% procedural.
 
-        # Quiver on back
-        _NS_sylara._draw_quiver(surface, cx, cy, facing, phase)
-
-        # Floating lower body (short skirt/pants)
-        _NS_sylara._draw_lower(surface, cx, cy + 5, phase, facing)
-
-        # Torso
-        _NS_sylara._draw_torso(surface, cx, cy - 8, facing, phase)
-
-        # Arms & bow
-        if action == "attack":
-            _NS_sylara._draw_attack_arms(surface, cx, cy - 8, facing, phase,
-                              attack_progress, powered)
-        elif action == "windrun":
-            _NS_sylara._draw_windrun_arms(surface, cx, cy - 8, facing, phase)
-        else:
-            _NS_sylara._draw_idle_arms(surface, cx, cy - 8, facing, phase, action)
-
-        # Head with hood
-        _NS_sylara._draw_head_hood(surface, cx, cy - 28, facing, phase)
-
-        # Body wind particles
-        _NS_sylara._draw_body_particles(surface, cx, cy, phase)
+        Dibangun sebagai bone rig 2D berlapis seperti Kaizen/Thorne
+        Masterwork: cape hijau per-panel yang beranimasi, quiver berisi
+        anak panah, korset kulit ber-strap, hood runcing dengan rambut
+        merah menyembul, dan busur recurve yang posenya dihitung dari
+        sendi (grip, nock, tarikan tali). Tidak ada PNG, sprite sheet,
+        ataupun image.load.
+        """
+        _NS_sylara._draw_sylara_elite(
+            surface, cx, cy, facing, phase, action, attack_progress,
+            powered=powered, detail=detail)
 
 
-    def _draw_cloak(surface, cx, cy, facing, phase, action):
-        """Flowing green cloak behind."""
-        wave = math.sin(phase * 0.9) * 3
-        wave2 = math.sin(phase * 1.2 + 0.5) * 2
-        trail = -facing  # trails opposite to facing
-
-        # Cape tail panjang, dibentuk terpisah supaya Sylara punya siluet
-        # archer ber-cape yang jelas saat menghadap samping.
-        tail_tip_x = cx + trail * (30 + int(wave * 1.5))
-        tail = [
-            (cx + trail * 7, cy - 11),
-            (cx + trail * 19, cy - 5),
-            (tail_tip_x, cy + 7),
-            (cx + trail * 24, cy + 16),
-            (cx + trail * 13, cy + 19),
-            (cx + trail * 8, cy + 8),
-        ]
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["shadow_deep"],
-                          [(px + 2, py + 2) for px, py in tail])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloak_darkest"], tail)
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloak_dark"], [
-            (cx + trail * 8, cy - 9), (cx + trail * 18, cy - 3),
-            (tail_tip_x - trail * 2, cy + 7), (cx + trail * 22, cy + 14),
-            (cx + trail * 13, cy + 16), (cx + trail * 9, cy + 7),
-        ])
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["cloak_light"],
-                            (cx + trail * 10, cy - 7),
-                            (tail_tip_x - trail * 2, cy + 7), 1)
-
-        # Main cloak body
-        cloak = [
-            (cx - 12, cy - 14),
-            (cx + 12, cy - 14),
-            (cx + 15, cy - 5),
-            (cx + 18, cy + 10),
-            (cx + 22 + int(wave) * trail, cy + 26),
-            (cx + 18 + int(wave2) * trail, cy + 40),
-            (cx + 8, cy + 44),
-            (cx - 8, cy + 44),
-            (cx - 18 - int(wave2) * trail, cy + 40),
-            (cx - 22 - int(wave) * trail, cy + 26),
-            (cx - 18, cy + 10),
-            (cx - 15, cy - 5),
-        ]
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in cloak])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloak_darkest"], cloak)
-
-        cloak_mid = [
-            (cx - 10, cy - 12),
-            (cx + 10, cy - 12),
-            (cx + 13, cy - 4),
-            (cx + 16, cy + 10),
-            (cx + 18 + int(wave * 0.7) * trail, cy + 24),
-            (cx + 14, cy + 38),
-            (cx, cy + 40),
-            (cx - 14, cy + 38),
-            (cx - 18 - int(wave * 0.7) * trail, cy + 24),
-            (cx - 16, cy + 10),
-            (cx - 13, cy - 4),
-        ]
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloak_dark"], cloak_mid)
-
-        # Inner brighter layer
-        cloak_inner = [
-            (cx - 8, cy - 10),
-            (cx + 8, cy - 10),
-            (cx + 11, cy - 2),
-            (cx + 13, cy + 10),
-            (cx + 12, cy + 24),
-            (cx + 8, cy + 32),
-            (cx - 8, cy + 32),
-            (cx - 12, cy + 24),
-            (cx - 13, cy + 10),
-            (cx - 11, cy - 2),
-        ]
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloak_mid"], cloak_inner)
-
-        # Highlight edge
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["cloak_light"],
-                (cx - 10, cy - 8), (cx - 15, cy + 24), 1)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["cloak_light"],
-                (cx + 10, cy - 8), (cx + 15, cy + 24), 1)
+    # ===================================================================
+    # MASTERWORK RIG - bone rig 2D berlapis (setara Kaizen Masterwork)
+    # ===================================================================
+    def _bow_frame(tilt):
+        """Basis lokal busur: (up, forward) untuk kemiringan `tilt`."""
+        return ((math.sin(tilt), -math.cos(tilt)),
+                (math.cos(tilt), math.sin(tilt)))
 
 
-    def _draw_quiver(surface, cx, cy, facing, phase):
-        """Quiver on back with arrows sticking out."""
-        # Position quiver on back (opposite of facing)
-        qx = cx - facing * 8
-        qy = cy - 4
-
-        # Quiver body (leather cylinder)
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_darkest"], (qx - 4, qy - 10, 8, 20))
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_dark"], (qx - 3, qy - 10, 6, 20))
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_mid"], (qx - 2, qy - 10, 4, 20))
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["leather_light"],
-                (qx - 2, qy - 8), (qx - 2, qy + 8), 1)
-
-        # Straps
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["leather_dark"],
-                (qx - 4, qy - 6), (qx + 4, qy - 6), 2)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["leather_dark"],
-                (qx - 4, qy + 4), (qx + 4, qy + 4), 2)
-        # Gold rivets
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["gold_mid"], (qx - 3, qy - 6), 1)
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["gold_mid"], (qx + 3, qy - 6), 1)
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["gold_mid"], (qx - 3, qy + 4), 1)
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["gold_mid"], (qx + 3, qy + 4), 1)
-
-        # Arrows sticking out top
-        for i, off in enumerate((-2, 0, 2)):
-            ax = qx + off
-            ay_top = qy - 22 - abs(off)
-            ay_bot = qy - 8
-            # Shaft
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["arrow_shaft_d"], (ax, ay_top), (ax, ay_bot), 2)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["arrow_shaft"], (ax, ay_top), (ax, ay_bot), 1)
-            # Arrowhead at top
-            _NS_sylara._poly(surface, _NS_sylara.PALETTE["arrow_head_d"], [
-                (ax, ay_top - 3), (ax - 2, ay_top), (ax + 2, ay_top),
-            ])
-            _NS_sylara._poly(surface, _NS_sylara.PALETTE["arrow_head"], [
-                (ax, ay_top - 2), (ax - 1, ay_top - 1), (ax + 1, ay_top - 1),
-            ])
-            # Fletching at bottom (near quiver)
-            _NS_sylara._poly(surface, _NS_sylara.PALETTE["arrow_feather"], [
-                (ax - 2, ay_bot - 3), (ax, ay_bot - 5),
-                (ax + 2, ay_bot - 3), (ax, ay_bot - 1),
-            ])
+    def _bow_point(grip, tilt, u, v):
+        """Titik pada bidang busur: u = sepanjang limb, v = ke depan."""
+        (ux, uy), (fx, fy) = _NS_sylara._bow_frame(tilt)
+        return (grip[0] + ux * u + fx * v, grip[1] + uy * u + fy * v)
 
 
-    def _draw_lower(surface, cx, cy, phase, facing):
-        """Floating lower body - short skirt with leggings."""
-        sway = int(math.sin(phase * 0.6) * 2)
-
-        # Short leather skirt
-        skirt = [
-            (cx - 12, cy),
-            (cx + 12, cy),
-            (cx + 14 + sway, cy + 8),
-            (cx + 10, cy + 16),
-            (cx + 4, cy + 20),
-            (cx - 4, cy + 20),
-            (cx - 10, cy + 16),
-            (cx - 14 - sway, cy + 8),
-        ]
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in skirt])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["leather_darkest"], skirt)
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["leather_dark"], [
-            (cx - 11, cy + 1),
-            (cx + 11, cy + 1),
-            (cx + 12 + sway, cy + 8),
-            (cx + 8, cy + 14),
-            (cx - 8, cy + 14),
-            (cx - 12 - sway, cy + 8),
-        ])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["leather_mid"], [
-            (cx - 9, cy + 3),
-            (cx + 9, cy + 3),
-            (cx + 9 + sway, cy + 8),
-            (cx + 6, cy + 12),
-            (cx - 6, cy + 12),
-            (cx - 9 - sway, cy + 8),
-        ])
-
-        # Leaf/scallop details on skirt bottom
-        for i, off in enumerate((-8, 0, 8)):
-            lx = cx + off
-            ly = cy + 18
-            _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloth_dark"], [
-                (lx - 3, ly - 2), (lx + 3, ly - 2),
-                (lx + 2, ly + 3), (lx, ly + 5), (lx - 2, ly + 3),
-            ])
-            _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloth_mid"], [
-                (lx - 2, ly - 1), (lx + 2, ly - 1),
-                (lx + 1, ly + 2), (lx, ly + 4), (lx - 1, ly + 2),
-            ])
-
-        # Leggings hint (tight cloth going down but fades to wind)
-        for i in range(2):
-            lx = cx - 4 + i * 8
-            _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloth_dark"], [
-                (lx - 2, cy + 16), (lx + 2, cy + 16),
-                (lx + 2, cy + 26), (lx - 2, cy + 26),
-            ])
-            _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloth_mid"], [
-                (lx - 1, cy + 17), (lx + 1, cy + 17),
-                (lx + 1, cy + 24), (lx - 1, cy + 24),
-            ])
-
-        # Leather boots memberi pijakan yang tegas seperti ranger pada
-        # referensi, menggantikan fade mengambang yang membuat siluetnya
-        # terasa seperti mage. Tetap ada satu puff angin tipis di tumit.
-        for side in (-1, 1):
-            bx = cx + side * 5
-            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_darkest"],
-                              (bx - 3, cy + 24, 6, 8), border_radius=1)
-            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_dark"],
-                              (bx - 2, cy + 25, 5, 6), border_radius=1)
-            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_mid"],
-                              (bx - 2, cy + 25, 2, 4))
-            _NS_sylara._rect(surface, _NS_sylara.PALETTE["shadow_deep"],
-                              (bx - 4, cy + 30, 8, 3), border_radius=1)
-            _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_light"],
-                              (bx - 3, cy + 30, 4, 1))
-        _NS_sylara._ellipse(surface, (*_NS_sylara.PALETTE["wind_mid"], 90),
-                             (cx - 13, cy + 31, 26, 4))
-
-        # Belt with buckle
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_darkest"], (cx - 14, cy - 1, 28, 5))
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_dark"], (cx - 13, cy, 26, 3))
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["leather_light"],
-                (cx - 12, cy + 1), (cx + 12, cy + 1), 1)
-
-        # Gold buckle
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["gold_dark"], (cx - 3, cy - 1, 6, 5))
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["gold_mid"], (cx - 2, cy, 4, 3))
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["gold_light"], (cx - 1, cy + 1, 2, 1))
+    def _bow_nock(grip, tilt, draw_amt):
+        """Posisi nock (tangan penarik) dalam koordinat lokal tubuh."""
+        return _NS_sylara._bow_point(grip, tilt, 0.0, -2.0 - draw_amt * 12.0)
 
 
-    def _draw_torso(surface, cx, cy, facing, phase):
-        """Green tunic/corset with leather."""
-        # Shadow
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["shadow_deep"], [
-            (cx - 11 + 2, cy - 8 + 2), (cx + 11 + 2, cy - 8 + 2),
-            (cx + 10 + 2, cy + 14 + 2), (cx + 4 + 2, cy + 18 + 2),
-            (cx - 4 + 2, cy + 18 + 2), (cx - 10 + 2, cy + 14 + 2),
-        ])
+    def _draw_elite_bow(surface, pt, f, grip, tilt, draw_amt, phase,
+                        powered=False, detail=False):
+        """Busur recurve kayu pose-driven: limb melengkung, tali menegang
+        mengikuti tarikan, anak panah ternock saat draw_amt > 0."""
+        p = _NS_sylara.PALETTE
+        bp = _NS_sylara._bow_point
+        flex = draw_amt * 0.55
 
-        # Body base (green tunic)
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloth_darkest"], [
-            (cx - 11, cy - 8), (cx + 11, cy - 8),
-            (cx + 10, cy + 14), (cx + 4, cy + 18),
-            (cx - 4, cy + 18), (cx - 10, cy + 14),
-        ])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloth_dark"], [
-            (cx - 10, cy - 7), (cx + 10, cy - 7),
-            (cx + 8, cy + 12), (cx + 3, cy + 16),
-            (cx - 3, cy + 16), (cx - 8, cy + 12),
-        ])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["cloth_mid"], [
-            (cx - 7, cy - 5), (cx + 7, cy - 5),
-            (cx + 6, cy + 10), (cx + 2, cy + 12),
-            (cx - 2, cy + 12), (cx - 6, cy + 10),
-        ])
+        def limb_points(sign):
+            pts = []
+            for i in range(7):
+                s = i / 6.0
+                u = sign * 24.0 * s
+                # perut busur maju, ujung recurve menekuk balik
+                v = 8.0 * s * s - 14.0 * (s ** 4) - flex * 6.0 * s * s
+                pts.append(bp(grip, tilt, u, v))
+            return pts
 
-        # Chest/skin area (small V-neck)
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["skin_dark"], [
-            (cx - 5, cy - 8), (cx + 5, cy - 8),
-            (cx + 2, cy - 3), (cx - 2, cy - 3),
-        ])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["skin_mid"], [
-            (cx - 4, cy - 8), (cx + 4, cy - 8),
-            (cx + 2, cy - 4), (cx - 2, cy - 4),
-        ])
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["skin_light"],
-                (cx - 3, cy - 7), (cx + 3, cy - 7), 1)
+        tips = []
+        for sign in (1, -1):
+            pts = limb_points(sign)
+            tips.append(pts[-1])
+            for i in range(len(pts) - 1):
+                w = 5 - int(i * 0.6)
+                a, b = pts[i], pts[i + 1]
+                _NS_sylara._aaline(surface, p["shadow_deep"],
+                                   pt(a[0] + 1, a[1] + 1),
+                                   pt(b[0] + 1, b[1] + 1), w + 2)
+                _NS_sylara._aaline(surface, p["wood_darkest"],
+                                   pt(*a), pt(*b), w)
+                _NS_sylara._aaline(surface, p["wood_mid"],
+                                   pt(*a), pt(*b), max(1, w - 2))
+                _NS_sylara._aaline(surface, p["wood_light"],
+                                   pt(a[0], a[1] - 1), pt(b[0], b[1] - 1), 1)
+                if detail and i % 2 == 0:
+                    _NS_sylara._aacircle(surface, p["wood_shine"],
+                                         pt(a[0], a[1] - 1), 1)
+            # ujung limb dibungkus kulit + ring emas
+            tip = pts[-1]
+            _NS_sylara._aacircle(surface, p["leather_dark"], pt(*tip), 2)
+            _NS_sylara._aacircle(surface, p["gold_mid"], pt(*tip), 1)
+            _NS_sylara._aacircle(surface, p["gold_light"],
+                                 pt(tip[0], tip[1] - 1), 1)
 
-        # Leather corset (over tunic)
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["leather_darkest"], [
-            (cx - 10, cy - 2),
-            (cx + 10, cy - 2),
-            (cx + 9, cy + 12),
-            (cx + 4, cy + 15),
-            (cx - 4, cy + 15),
-            (cx - 9, cy + 12),
-        ])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["leather_dark"], [
-            (cx - 9, cy - 1),
-            (cx + 9, cy - 1),
-            (cx + 8, cy + 11),
-            (cx + 3, cy + 14),
-            (cx - 3, cy + 14),
-            (cx - 8, cy + 11),
-        ])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["leather_mid"], [
-            (cx - 7, cy),
-            (cx + 7, cy),
-            (cx + 6, cy + 9),
-            (cx - 6, cy + 9),
-        ])
+        # grip kulit + lilitan
+        g_a = bp(grip, tilt, 6, 1)
+        g_b = bp(grip, tilt, -6, 1)
+        _NS_sylara._aaline(surface, p["leather_darkest"], pt(*g_a), pt(*g_b), 6)
+        _NS_sylara._aaline(surface, p["leather_mid"], pt(*g_a), pt(*g_b), 4)
+        for i in range(4):
+            s = -4 + i * 2.8
+            w_a = bp(grip, tilt, s, -1)
+            w_b = bp(grip, tilt, s + 1.4, 3)
+            _NS_sylara._aaline(surface, p["leather_light"],
+                               pt(*w_a), pt(*w_b), 1)
 
-        # Corset lacing (X pattern)
+        # tali: dua ruas menuju nock
+        nock = _NS_sylara._bow_nock(grip, tilt, draw_amt)
+        for col, w in ((p["shadow_deep"], 3), (p["string"], 2),
+                       (p["string_shine"], 1)):
+            _NS_sylara._aaline(surface, col, pt(*tips[0]), pt(*nock), w)
+            _NS_sylara._aaline(surface, col, pt(*tips[1]), pt(*nock), w)
+
+        if draw_amt > 0.05:
+            _NS_sylara._draw_elite_arrow(surface, pt, nock, tilt, draw_amt,
+                                         phase, powered, detail)
+        return nock
+
+
+    def _draw_elite_arrow(surface, pt, nock, tilt, draw_amt, phase,
+                          powered=False, detail=False):
+        """Anak panah ternock: shaft kayu, mata baja, bulu hijau."""
+        p = _NS_sylara.PALETTE
+        (_, _), (fx, fy) = _NS_sylara._bow_frame(tilt)
+        length = 32
+        tip = (nock[0] + fx * length, nock[1] + fy * length)
+        _NS_sylara._aaline(surface, p["shadow_deep"],
+                           pt(nock[0], nock[1] + 1), pt(tip[0], tip[1] + 1), 4)
+        _NS_sylara._aaline(surface, p["arrow_shaft_d"], pt(*nock), pt(*tip), 3)
+        _NS_sylara._aaline(surface, p["arrow_shaft"],
+                           pt(nock[0], nock[1] - 1), pt(tip[0], tip[1] - 1), 1)
+        # mata panah
+        head_b = (tip[0] - fx * 8, tip[1] - fy * 8)
+        _NS_sylara._poly(surface, p["arrow_head_d"], [
+            pt(*tip), pt(head_b[0], head_b[1] - 3), pt(head_b[0], head_b[1] + 3)])
+        _NS_sylara._poly(surface, p["arrow_head"], [
+            pt(tip[0] - fx, tip[1] - fy),
+            pt(head_b[0] + 1, head_b[1] - 2), pt(head_b[0] + 1, head_b[1] + 2)])
+        if detail:
+            _NS_sylara._aaline(surface, p["white"],
+                               pt(tip[0] - fx * 2, tip[1] - fy * 2 - 1),
+                               pt(head_b[0] + 2, head_b[1] - 1), 1)
+        # fletching
+        for side in (-3, 3):
+            _NS_sylara._poly(surface, p["arrow_feather_d"], [
+                pt(nock[0] + fx * 2, nock[1] + fy * 2),
+                pt(nock[0] + fx * 9, nock[1] + fy * 9 + side),
+                pt(nock[0] + fx * 9, nock[1] + fy * 9)])
+            _NS_sylara._poly(surface, p["arrow_feather"], [
+                pt(nock[0] + fx * 3, nock[1] + fy * 3),
+                pt(nock[0] + fx * 8, nock[1] + fy * 8 + side * .7),
+                pt(nock[0] + fx * 8, nock[1] + fy * 8)])
+        if powered or draw_amt > 0.75:
+            glow = p["wind_white"] if powered else p["wind_bright"]
+            alpha = int(200 * min(1.0, draw_amt))
+            for i in range(4):
+                gx = tip[0] + fx * (4 + i * 5)
+                gy = tip[1] + fy * (4 + i * 5)
+                _NS_sylara._aacircle(surface, (*glow, max(30, alpha - i * 45)),
+                                     pt(gx, gy), max(1, 3 - i))
+
+
+    def _draw_sylara_masterwork_details(surface, pt, f):
+        """Micro-detail khusus portrait LOD. Di skala arena tanda-tanda ini
+        runtuh jadi noise, jadi LOD mengeluarkannya dari cache gameplay."""
+        p = _NS_sylara.PALETTE
+        # helai rambut halus di pipi & tengkuk
+        for i in range(5):
+            _NS_sylara._aaline(surface, p["hair_shine"],
+                               pt(2 + i * 2, -37 + i),
+                               pt(-1 + i * 2, -32 + i), 1)
+        for i in range(4):
+            _NS_sylara._aaline(surface, p["hair_light"],
+                               pt(-8 - i * 3, -28 + i * 2),
+                               pt(-13 - i * 3, -22 + i * 2), 1)
+        # bulu mata, alis & kilau bibir
+        _NS_sylara._aaline(surface, p["hair_darkest"], pt(6, -33), pt(11, -33), 1)
+        _NS_sylara._aacircle(surface, p["lips_mid"], pt(10, -26), 1)
+        _NS_sylara._aacircle(surface, p["skin_high"], pt(7, -29), 1)
+        # jahitan tepi hood
+        for i in range(5):
+            _NS_sylara._aacircle(surface, p["cloth_high"],
+                                 pt(-6 + i * 4, -40 + abs(i - 2)), 1)
+        # anyaman korset & rivet sabuk
+        for yy in (-14, -10, -6):
+            _NS_sylara._aaline(surface, p["cloth_high"],
+                               pt(-4, yy), pt(4, yy + 2), 1)
+        for xx in (-6, 0, 6):
+            _NS_sylara._aacircle(surface, p["gold_light"], pt(xx, 2), 1)
+        # serat bulu fletching di quiver + kilau gesper bahu
         for i in range(3):
-            y_off = cy + 2 + i * 3
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["leather_light"],
-                    (cx - 3, y_off), (cx + 3, y_off + 2), 1)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["leather_light"],
-                    (cx + 3, y_off), (cx - 3, y_off + 2), 1)
-
-        # Gold clasp on chest
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["gold_dark"], (cx, cy - 1), 2)
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["gold_mid"], (cx, cy - 1), 1)
-
-        # Side highlight
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["cloth_light"],
-                (cx - 9, cy - 5), (cx - 8, cy + 12), 1)
+            _NS_sylara._aaline(surface, p["arrow_feather"],
+                               pt(-15 - i * 3, -31 - i * 2),
+                               pt(-18 - i * 3, -27 - i * 2), 1)
+        _NS_sylara._aacircle(surface, p["gold_light"], pt(-9, -18), 1)
+        # tali sepatu & lipatan sarung tangan
+        for yy in (26, 31, 36):
+            _NS_sylara._aaline(surface, p["leather_light"],
+                               pt(7, yy), pt(12, yy), 1)
 
 
-    def _draw_idle_arms(surface, cx, cy, facing, phase, action):
-        """Idle - one hand holds bow, other rests."""
-        sway = int(math.sin(phase * 0.7) * 1)
-
-        # BOW arm (facing side - holds bow forward)
-        bow_side = facing
-        bs_x = cx + bow_side * 10
-        bs_y = cy + 2
-        be_x = bs_x + bow_side * 6
-        be_y = cy + 4 + sway
-        bh_x = be_x + bow_side * 5
-        bh_y = be_y + 2
-        _NS_sylara._draw_arm_segment(surface, bs_x, bs_y, be_x, be_y)
-        _NS_sylara._draw_arm_segment(surface, be_x, be_y, bh_x, bh_y)
-        _NS_sylara._draw_hand(surface, bh_x, bh_y)
-
-        # Bow
-        _NS_sylara._draw_bow_idle(surface, bh_x, bh_y, facing, phase)
-
-        # OTHER arm (opposite - resting)
-        other_side = -facing
-        os_x = cx + other_side * 10
-        os_y = cy + 2
-        oe_x = os_x + other_side * 4
-        oe_y = cy + 10 + sway
-        oh_x = oe_x + other_side * 3
-        oh_y = oe_y + 8
-        _NS_sylara._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_sylara._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_sylara._draw_hand(surface, oh_x, oh_y)
+    # Buffer rig: cukup besar untuk cape, busur terentang, dan speed-line.
+    RIG_W, RIG_H = 156, 136
+    RIG_OX, RIG_OY = 66, 62
 
 
-    def _draw_attack_arms(surface, cx, cy, facing, phase, progress, powered=False):
-        """Attack - bow draw and release animation."""
-        # Animation phases:
-        # 0.0 - 0.15: raise bow
-        # 0.15 - 0.55 (or 0.6 for powered): draw string back
-        # 0.55 - 0.65: hold at full draw
-        # 0.65 - 1.0: release + recover
+    def _draw_sylara_elite(surface, cx, cy, facing, phase, action,
+                           attack_progress=0.0, powered=False, detail=False):
+        """Komposisi akhir: rig digambar ke buffer lalu diberi outline gelap
+        1 px seperti sprite sheet referensi, baru di-blit ke arena."""
+        buf = pygame.Surface((_NS_sylara.RIG_W, _NS_sylara.RIG_H),
+                             pygame.SRCALPHA)
+        _NS_sylara._draw_sylara_rig(buf, _NS_sylara.RIG_OX, _NS_sylara.RIG_OY,
+                                    facing, phase, action, attack_progress,
+                                    powered=powered, detail=detail)
+        silhouette = buf.copy()
+        silhouette.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        ox = int(cx) - _NS_sylara.RIG_OX
+        oy = int(cy) - _NS_sylara.RIG_OY
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(silhouette, (ox + dx, oy + dy))
+        surface.blit(buf, (ox, oy))
 
-        release_start = 0.55 if powered else 0.5
 
-        # Bow position (front hand)
-        bow_side = facing
-        bs_x = cx + bow_side * 10
-        bs_y = cy + 2
+    def _draw_sylara_rig(surface, cx, cy, facing, phase, action,
+                         attack_progress=0.0, powered=False, detail=False):
+        """Rig hand-authored meniru sprite sheet referensi Wind Ranger:
+        hood hijau runcing, rambut merah berkibar, cape robek, korset
+        kulit-hijau, quiver anak panah, dan busur recurve pose-driven."""
+        p = _NS_sylara.PALETTE
+        f = 1 if facing >= 0 else -1
+        walk = action == "walk"
+        attack = action == "attack"
+        windrun = action == "windrun"
+        ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
+        stride = math.sin(phase * 1.7)
 
-        # Bow extends forward, slightly up when drawing
-        if progress < 0.15:
-            t = progress / 0.15
-            arm_len = 10 + t * 4
-            aim_up = -0.1 * t
+        lean = (3 if walk else 0) * f
+        if windrun:
+            lean = 7 * f
+        root_y = int(math.sin(phase * .72) * .7)
+        if walk:
+            root_y -= int(abs(math.sin(phase * 1.7)) * 2)
+        if windrun:
+            root_y += 2 - int(abs(math.sin(phase * 2.0)) * 2)
+        if attack:
+            lean = int(math.sin(ap * math.pi) * 3) * f
+            root_y += int(math.sin(ap * math.pi) * 1.5)
+
+        def pt(dx, dy):
+            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+
+        def poly(color, points, outline=True):
+            pts = [pt(dx, dy) for dx, dy in points]
+            if outline:
+                _NS_sylara._poly(surface, p["shadow_deep"],
+                                 [(x + f, y + 1) for x, y in pts])
+            _NS_sylara._poly(surface, color, pts)
+            return pts
+
+        def limb(a, b, width, base, light=None):
+            aa, bb = pt(*a), pt(*b)
+            _NS_sylara._aaline(surface, p["shadow_deep"], aa, bb, width + 3)
+            _NS_sylara._aaline(surface, base, aa, bb, width)
+            if light:
+                off = -1 if f > 0 else 1
+                _NS_sylara._aaline(surface, light,
+                                   (aa[0] + off, aa[1] - 1),
+                                   (bb[0] + off, bb[1] - 1),
+                                   max(1, width // 3))
+
+        wave = math.sin(phase * 1.15)
+        wave2 = math.sin(phase * 1.45 + .8)
+        # angin: cape & rambut terhempas lebih jauh saat bergerak/menembak
+        gust = 0
+        if walk:
+            gust = 6
+        elif windrun:
+            gust = 16
+        elif attack:
+            gust = int(4 + 5 * math.sin(ap * math.pi))
+
+        # ═══ CAPE: panel gelap sempit di punggung + tepi robek ═══
+        cw = int(wave * 3)
+        cw2 = int(wave2 * 2)
+        poly(p["cloak_darkest"], [
+            (-3, -34), (-8, -35),
+            (-15 - gust, -24 + cw), (-20 - gust, -8 + cw),
+            (-17 - int(gust * .8), 6 + cw2), (-11, 18 + cw2),
+            (-4, 14), (-2, 0)])
+        poly(p["cloak_dark"], [
+            (-4, -32), (-8, -33),
+            (-13 - gust, -22 + cw), (-17 - gust, -7 + cw),
+            (-14 - int(gust * .8), 5 + cw2), (-9, 15 + cw2),
+            (-4, 12), (-2, 0)], False)
+        poly(p["cloak_mid"], [
+            (-6, -29), (-8, -29),
+            (-10 - int(gust * .6), -20 + cw), (-11 - gust, -8 + cw),
+            (-9, 2 + cw2), (-6, 9 + cw2), (-5, 4)], False)
+        # lipatan kain: garis vertikal supaya cape tidak jadi blok datar
+        for i, (tx0, ty0, tx1, ty1) in enumerate((
+                (-6, -28, -11 - gust, 2 + cw2),
+                (-9, -26, -14 - gust, -1 + cw),
+                (-12, -20, -16 - gust, 6 + cw2))):
+            _NS_sylara._aaline(surface, p["cloak_darkest"],
+                               pt(tx0, ty0), pt(tx1, ty1), 1)
+        # tepi robek (segitiga bawah) - siluet khas referensi
+        for i, (bx, by) in enumerate(((-16, 2), (-12, 8), (-7, 12))):
+            tear = int(wave2 * (1 + i))
+            poly(p["cloak_darkest"], [
+                (bx - int(gust * .5), by + cw2),
+                (bx + 5 - int(gust * .5), by + 2 + cw2),
+                (bx + 1 - int(gust * .5), by + 11 + tear + cw2)], False)
+        _NS_sylara._aaline(surface, p["cloak_light"],
+                           pt(-6, -31), pt(-14 - gust, -6 + cw), 1)
+        _NS_sylara._aaline(surface, p["cloak_light"],
+                           pt(-14 - gust, -6 + cw), pt(-9, 12 + cw2), 1)
+
+        # ═══ QUIVER di punggung + anak panah berbulu ═══
+        poly(p["leather_darkest"], [(-6, -24), (-13, -30), (-19, -18),
+                                    (-12, -8), (-6, -13)])
+        poly(p["leather_dark"], [(-7, -24), (-12, -28), (-17, -18),
+                                 (-11, -10), (-7, -14)], False)
+        poly(p["leather_mid"], [(-9, -24), (-12, -27), (-15, -19),
+                                (-11, -13)], False)
+        _NS_sylara._aaline(surface, p["leather_light"],
+                           pt(-13, -27), pt(-16, -19), 1)
+        _NS_sylara._aaline(surface, p["gold_mid"], pt(-8, -22), pt(-16, -21), 2)
+        for i, (ax, ay) in enumerate(((-13, -31), (-16, -29), (-10, -32))):
+            sway = int(wave * (1 + i % 2))
+            _NS_sylara._aaline(surface, p["arrow_shaft_d"],
+                               pt(ax, ay), pt(ax - 4, ay - 9 + sway), 2)
+            _NS_sylara._poly(surface, p["arrow_feather_d"], [
+                pt(ax - 4, ay - 9 + sway), pt(ax - 8, ay - 6 + sway),
+                pt(ax - 5, ay - 4 + sway)])
+            _NS_sylara._poly(surface, p["arrow_feather"], [
+                pt(ax - 4, ay - 9 + sway), pt(ax - 7, ay - 7 + sway),
+                pt(ax - 5, ay - 5 + sway)])
+
+        # ═══ RAMBUT BELAKANG: massa merah + helai berkibar ═══
+        hw = int(wave * 2) + gust // 3
+        poly(p["hair_darkest"], [(1, -42), (-5, -40), (-11 - hw, -33),
+                                 (-14 - hw, -23), (-8, -18), (-3, -26),
+                                 (-1, -34)])
+        poly(p["hair_dark"], [(0, -40), (-4, -38), (-9 - hw, -32),
+                              (-11 - hw, -24), (-6, -20), (-2, -27)], False)
+        for i, (mx, my, ex, ey) in enumerate(((-5, -37, -14, -33),
+                                              (-5, -32, -15, -25),
+                                              (-4, -27, -12, -18))):
+            sway = int(wave * (1 + i)) + gust // 3
+            poly(p["hair_mid"], [(-1, -39), (mx - sway, my - 1),
+                                 (ex - sway, ey), (ex - sway + 3, ey + 3),
+                                 (mx - sway, my + 5)], False)
+            _NS_sylara._aaline(surface, p["hair_light"],
+                               pt(mx - sway, my + 1), pt(ex - sway, ey + 1), 1)
+        _NS_sylara._aaline(surface, p["hair_shine"],
+                           pt(-3, -38), pt(-10 - hw, -30), 1)
+
+        # ═══ KAKI: paha ramping + boot kulit tinggi ═══
+        leg_phase = stride if (walk or windrun) else 0.0
+        if windrun:
+            rear_foot = (-13 - int(leg_phase * 7), 38)
+            front_foot = (14 + int(leg_phase * 8), 38)
         else:
-            arm_len = 14
-            aim_up = -0.1
+            rear_foot = (-7 - int(leg_phase * 5), 40 - int(abs(leg_phase) * 2))
+            front_foot = (9 + int(leg_phase * 6), 40)
+        for hip, knee, foot, shade in (
+                ((-6, 11), (-9, 26), rear_foot, p["cloth_darkest"]),
+                ((6, 11), (9, 25), front_foot, p["cloth_dark"])):
+            poly(shade, [hip, (hip[0] + 6, hip[1]),
+                         (knee[0] + 4, knee[1]), (foot[0] + 4, foot[1] - 6),
+                         (foot[0] - 4, foot[1] - 6), (knee[0] - 4, knee[1])])
+            limb(knee, (foot[0], foot[1] - 6), 6,
+                 p["leather_dark"], p["leather_mid"])
+            # boot: sol + lipatan atas + tali
+            poly(p["leather_darkest"], [(foot[0] - 5, foot[1] - 7),
+                                        (foot[0] + 5, foot[1] - 7),
+                                        (foot[0] + 6, foot[1] - 2),
+                                        (foot[0] - 5, foot[1] - 2)])
+            poly(p["leather_mid"], [(foot[0] - 4, foot[1] - 6),
+                                    (foot[0] + 4, foot[1] - 6),
+                                    (foot[0] + 5, foot[1] - 3),
+                                    (foot[0] - 4, foot[1] - 3)], False)
+            poly(p["leather_darkest"], [(foot[0] - 5, foot[1] - 2),
+                                        (foot[0] + 7, foot[1] - 2),
+                                        (foot[0] + 8, foot[1] + 1),
+                                        (foot[0] - 5, foot[1] + 1)])
+            _NS_sylara._aaline(surface, p["leather_light"],
+                               pt(foot[0] - 3, foot[1] - 5),
+                               pt(foot[0] + 4, foot[1] - 5), 1)
+            _NS_sylara._aaline(surface, p["gold_mid"],
+                               pt(knee[0] - 3, knee[1] + 1),
+                               pt(knee[0] + 3, knee[1] + 1), 1)
 
-        bh_x = bs_x + int(math.cos(aim_up) * arm_len) * bow_side
-        bh_y = bs_y + int(math.sin(aim_up) * arm_len) - 2
-        be_x = (bs_x + bh_x) // 2 - bow_side * 1
-        be_y = (bs_y + bh_y) // 2 - 2
+        # ═══ ROK/TASSET hijau pendek berlapis ═══
+        skirt = int(wave * 2) + gust // 3
+        poly(p["cloth_darkest"], [(-8, 4), (8, 4), (10, 13),
+                                  (4, 16), (-4, 16), (-9 - skirt, 12)])
+        poly(p["cloth_dark"], [(-7, 5), (7, 5), (8, 12),
+                               (3, 15), (-3, 15), (-7 - skirt, 11)], False)
+        poly(p["cloth_mid"], [(-5, 6), (5, 6), (6, 11), (2, 13),
+                              (-3, 13), (-5, 11)], False)
+        for i, sx in enumerate((-6, -1, 4)):
+            _NS_sylara._aaline(surface, p["cloth_light"],
+                               pt(sx, 7), pt(sx - 1 - i, 14), 1)
 
-        _NS_sylara._draw_arm_segment(surface, bs_x, bs_y, be_x, be_y)
-        _NS_sylara._draw_arm_segment(surface, be_x, be_y, bh_x, bh_y)
-        _NS_sylara._draw_hand(surface, bh_x, bh_y)
+        # ═══ TORSO: korset hijau + strap kulit + sabuk emas ═══
+        poly(p["cloth_darkest"], [(-8, -19), (8, -21), (11, -9),
+                                  (8, 5), (-7, 5), (-10, -8)])
+        poly(p["cloth_dark"], [(-6, -18), (7, -19), (9, -9),
+                               (7, 5), (-6, 5), (-8, -8)], False)
+        poly(p["cloth_mid"], [(-4, -16), (6, -17), (8, -9),
+                              (6, 3), (-4, 3), (-6, -8)], False)
+        poly(p["cloth_light"], [(0, -15), (5, -15), (7, -9),
+                                (4, -2), (0, -4)], False)
+        poly(p["cloth_high"], [(2, -13), (5, -13), (5, -8), (2, -7)], False)
+        # dada & garis leher V (ref)
+        poly(p["skin_dark"], [(0, -19), (7, -20), (6, -14), (1, -13)], False)
+        poly(p["skin_mid"], [(1, -18), (6, -19), (5, -15), (2, -14)], False)
+        _NS_sylara._aaline(surface, p["cloth_darkest"], pt(0, -20), pt(4, -13), 2)
+        # strap kulit menyilang
+        _NS_sylara._aaline(surface, p["leather_darkest"], pt(-9, -17), pt(9, -2), 4)
+        _NS_sylara._aaline(surface, p["leather_mid"], pt(-9, -17), pt(9, -2), 2)
+        _NS_sylara._aaline(surface, p["leather_light"], pt(-8, -17), pt(8, -3), 1)
+        # sabuk + gesper emas
+        _NS_sylara._aaline(surface, p["leather_darkest"], pt(-10, 3), pt(10, 3), 6)
+        _NS_sylara._aaline(surface, p["leather_dark"], pt(-10, 2), pt(10, 2), 4)
+        _NS_sylara._rect(surface, p["gold_dark"], (pt(-3, 0)[0], pt(-3, 0)[1], 7, 6), 1)
+        _NS_sylara._rect(surface, p["gold_mid"], (pt(-2, 1)[0], pt(-2, 1)[1], 5, 4), 1)
+        _NS_sylara._rect(surface, p["gold_light"], (pt(-1, 2)[0], pt(-1, 2)[1], 2, 2))
+        # pauldron kulit bahu belakang
+        poly(p["leather_dark"], [(-7, -20), (-13, -18), (-14, -12),
+                                 (-8, -11)], True)
+        poly(p["leather_mid"], [(-8, -19), (-12, -17), (-12, -13),
+                                (-9, -12)], False)
+        _NS_sylara._aacircle(surface, p["gold_mid"], pt(-11, -15), 2)
 
-        # DRAWING arm (back hand pulling string)
-        draw_side = -facing
-        ds_x = cx + draw_side * 10
-        ds_y = cy + 2
+        # bayangan leher supaya kepala tidak menyatu dengan torso
+        _NS_sylara._aaline(surface, p["cloth_darkest"], pt(1, -22), pt(8, -23), 3)
+        _NS_sylara._aaline(surface, p["skin_darkest"], pt(3, -24), pt(8, -25), 2)
 
-        # Compute draw amount
-        if progress < 0.15:
+        # ═══ POSE BUSUR & LENGAN ═══
+        if attack:
+            if ap < .45:
+                t = ap / .45
+                draw_amt = t * t * (3 - 2 * t)
+                grip = (19 - int(t * 2), -14)
+                tilt = .30 - t * .26
+            elif ap < .58:
+                t = (ap - .45) / .13
+                draw_amt = max(0.0, 1.0 - t * 1.4)
+                grip = (17 + int(t * 2), -14)
+                tilt = .04
+            else:
+                t = (ap - .58) / .42
+                draw_amt = 0.0
+                grip = (19 - int(t * 3), -14 + int(t * 4))
+                tilt = .04 + t * .40
+        elif windrun:
             draw_amt = 0.0
-        elif progress < release_start:
-            t = (progress - 0.15) / (release_start - 0.15)
-            # Ease out - slower at end
-            draw_amt = 1 - (1 - t) ** 2
-        elif progress < release_start + 0.1:
-            # Hold
-            draw_amt = 1.0
+            grip = (13, -2)
+            tilt = 1.25
         else:
-            # Release - snap forward
-            t = (progress - release_start - 0.1) / (1 - release_start - 0.1)
-            draw_amt = 1 - t * 1.3
-            draw_amt = max(0.0, draw_amt)
+            draw_amt = 0.0
+            grip = (17, -5 + int(wave))
+            tilt = .26 + wave * .05
 
-        # Draw arm goes back with string
-        max_draw = 14
-        string_back_x = bh_x - bow_side * int(draw_amt * max_draw)
-        string_back_y = bh_y
-
-        # Draw arm elbow (up and back)
-        de_x = ds_x + draw_side * 6
-        de_y = ds_y - int(draw_amt * 6)
-        dh_x = string_back_x
-        dh_y = string_back_y
-
-        _NS_sylara._draw_arm_segment(surface, ds_x, ds_y, de_x, de_y)
-        _NS_sylara._draw_arm_segment(surface, de_x, de_y, dh_x, dh_y)
-        _NS_sylara._draw_hand(surface, dh_x, dh_y)
-
-        # BOW itself (drawn with string based on draw_amt)
-        _NS_sylara._draw_bow_drawn(surface, bh_x, bh_y, facing, phase, draw_amt, powered)
-
-        # Nocked arrow (visible when drawing, gone after release)
-        if progress < release_start + 0.05 and draw_amt > 0.1:
-            _NS_sylara._draw_nocked_arrow(surface, bh_x, bh_y, string_back_x, string_back_y,
-                               facing, powered)
-
-
-    def _draw_windrun_arms(surface, cx, cy, facing, phase):
-        """Windrun - both arms swept back, bow in hand."""
-        sway = int(math.sin(phase * 2) * 2)
-
-        # Bow arm - swept back
-        bow_side = facing
-        bs_x = cx + bow_side * 10
-        bs_y = cy + 2
-        be_x = bs_x - bow_side * 4
-        be_y = cy + 8 + sway
-        bh_x = be_x - bow_side * 4
-        bh_y = be_y + 4
-        _NS_sylara._draw_arm_segment(surface, bs_x, bs_y, be_x, be_y)
-        _NS_sylara._draw_arm_segment(surface, be_x, be_y, bh_x, bh_y)
-        _NS_sylara._draw_hand(surface, bh_x, bh_y)
-        _NS_sylara._draw_bow_idle(surface, bh_x, bh_y, -facing, phase)  # bow flipped
-
-        # Other arm - forward
-        other_side = -facing
-        os_x = cx + other_side * 10
-        os_y = cy + 2
-        oe_x = os_x + other_side * 6
-        oe_y = cy + sway
-        oh_x = oe_x + other_side * 4
-        oh_y = oe_y - 2
-        _NS_sylara._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_sylara._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_sylara._draw_hand(surface, oh_x, oh_y)
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Draw a clothed arm segment."""
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["shadow_deep"], (x1 + 2, y1 + 2), (x2 + 2, y2 + 2), 6)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["cloth_darkest"], (x1, y1), (x2, y2), 5)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["cloth_dark"], (x1, y1), (x2, y2), 3)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["cloth_mid"], (x1, y1), (x2, y2), 1)
-
-
-    def _draw_hand(surface, x, y):
-        """Small skin-colored hand with glove hint."""
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["leather_dark"], (x, y), 3)
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["leather_mid"], (x, y), 2)
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["leather_light"], (x - 1, y - 1), 1)
-
-
-    def _draw_bow_idle(surface, hx, hy, facing, phase):
-        """Bow held at rest (unstrung tension)."""
-        # Bow curves - vertical, with slight arc
-        bow_h = 26
-        bow_arc = 5  # curve outward
-
-        top_y = hy - bow_h // 2
-        bot_y = hy + bow_h // 2
-
-        # Top limb curve points
-        top_pts = []
-        for i in range(6):
-            t = i / 5
-            y = hy - t * (bow_h // 2)
-            x = hx + facing * math.sin(t * math.pi / 2) * bow_arc
-            top_pts.append((x, y))
-
-        # Bottom limb curve points
-        bot_pts = []
-        for i in range(6):
-            t = i / 5
-            y = hy + t * (bow_h // 2)
-            x = hx + facing * math.sin(t * math.pi / 2) * bow_arc
-            bot_pts.append((x, y))
-
-        # Draw bow limbs
-        for i in range(len(top_pts) - 1):
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_darkest"],
-                    top_pts[i], top_pts[i + 1], 4)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_dark"],
-                    top_pts[i], top_pts[i + 1], 3)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_mid"],
-                    top_pts[i], top_pts[i + 1], 2)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_light"],
-                    top_pts[i], top_pts[i + 1], 1)
-        for i in range(len(bot_pts) - 1):
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_darkest"],
-                    bot_pts[i], bot_pts[i + 1], 4)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_dark"],
-                    bot_pts[i], bot_pts[i + 1], 3)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_mid"],
-                    bot_pts[i], bot_pts[i + 1], 2)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_light"],
-                    bot_pts[i], bot_pts[i + 1], 1)
-
-        # Bowstring (straight when not drawn)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["string"], top_pts[-1], bot_pts[-1], 1)
-
-        # Grip in middle
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_dark"], (hx - 2, hy - 4, 4, 8))
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_mid"], (hx - 1, hy - 3, 2, 6))
-
-        # Wing/leaf tips on bow ends
-        tip_top = top_pts[-1]
-        tip_bot = bot_pts[-1]
-        _NS_sylara._draw_leaf(surface, tip_top[0], tip_top[1] - 2, 3, -math.pi / 2,
-                   _NS_sylara.PALETTE["cloth_darkest"], _NS_sylara.PALETTE["cloth_mid"],
-                   _NS_sylara.PALETTE["cloth_light"])
-        _NS_sylara._draw_leaf(surface, tip_bot[0], tip_bot[1] + 2, 3, math.pi / 2,
-                   _NS_sylara.PALETTE["cloth_darkest"], _NS_sylara.PALETTE["cloth_mid"],
-                   _NS_sylara.PALETTE["cloth_light"])
-
-
-    def _draw_bow_drawn(surface, hx, hy, facing, phase, draw_amt, powered=False):
-        """Bow with string drawn back."""
-        bow_h = 28
-        bow_arc = 5 + draw_amt * 3  # curves more when drawn
-
-        top_y = hy - bow_h // 2
-        bot_y = hy + bow_h // 2
-
-        # Top limb curve
-        top_pts = []
-        for i in range(6):
-            t = i / 5
-            y = hy - t * (bow_h // 2)
-            x = hx + facing * math.sin(t * math.pi / 2) * bow_arc
-            top_pts.append((x, y))
-
-        # Bottom limb curve
-        bot_pts = []
-        for i in range(6):
-            t = i / 5
-            y = hy + t * (bow_h // 2)
-            x = hx + facing * math.sin(t * math.pi / 2) * bow_arc
-            bot_pts.append((x, y))
-
-        # Draw limbs
-        for i in range(len(top_pts) - 1):
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_darkest"],
-                    top_pts[i], top_pts[i + 1], 4)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_dark"],
-                    top_pts[i], top_pts[i + 1], 3)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_mid"],
-                    top_pts[i], top_pts[i + 1], 2)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_light"],
-                    top_pts[i], top_pts[i + 1], 1)
-        for i in range(len(bot_pts) - 1):
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_darkest"],
-                    bot_pts[i], bot_pts[i + 1], 4)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_dark"],
-                    bot_pts[i], bot_pts[i + 1], 3)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_mid"],
-                    bot_pts[i], bot_pts[i + 1], 2)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_light"],
-                    bot_pts[i], bot_pts[i + 1], 1)
-
-        # Bowstring - draws back at middle
-        string_back_x = hx - facing * int(draw_amt * 14)
-        string_back_y = hy
-
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["string"], top_pts[-1],
-                (string_back_x, string_back_y), 1)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["string"], bot_pts[-1],
-                (string_back_x, string_back_y), 1)
-        # Highlight on string
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["string_shine"], top_pts[-1],
-                (string_back_x, string_back_y - 1), 1)
-
-        # Grip
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_dark"], (hx - 2, hy - 4, 4, 8))
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["leather_mid"], (hx - 1, hy - 3, 2, 6))
-
-        # Wing tips
-        tip_top = top_pts[-1]
-        tip_bot = bot_pts[-1]
-        _NS_sylara._draw_leaf(surface, tip_top[0], tip_top[1] - 2, 3, -math.pi / 2,
-                   _NS_sylara.PALETTE["cloth_darkest"], _NS_sylara.PALETTE["cloth_mid"],
-                   _NS_sylara.PALETTE["cloth_light"])
-        _NS_sylara._draw_leaf(surface, tip_bot[0], tip_bot[1] + 2, 3, math.pi / 2,
-                   _NS_sylara.PALETTE["cloth_darkest"], _NS_sylara.PALETTE["cloth_mid"],
-                   _NS_sylara.PALETTE["cloth_light"])
-
-        # Charging glow when powered
-        if powered and draw_amt > 0.3:
-            glow_r = int(6 + draw_amt * 8)
-            alpha = int(150 * draw_amt)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha // 2),
-                      (hx, hy), glow_r + 3)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_light"], alpha),
-                      (hx, hy), glow_r)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_white"], alpha),
-                      (hx, hy), glow_r // 2)
-
-
-    def _draw_nocked_arrow(surface, bh_x, bh_y, tail_x, tail_y, facing, powered):
-        """Arrow nocked to bow (from string back to bow front)."""
-        tip_x = bh_x + facing * 8
-        tip_y = bh_y
-
-        angle = math.atan2(tip_y - tail_y, tip_x - tail_x)
-        ca, sa = math.cos(angle), math.sin(angle)
-
-        if powered:
-            # Glowing green energy arrow
-            _NS_sylara._aaline(surface, (*_NS_sylara.PALETTE["wind_bright"], 220),
-                    (tail_x, tail_y), (tip_x, tip_y), 3)
-            _NS_sylara._aaline(surface, (*_NS_sylara.PALETTE["wind_white"], 240),
-                    (tail_x, tail_y), (tip_x, tip_y), 2)
-            _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["wind_white"], (int(tip_x), int(tip_y)), 3)
+        # lengan belakang (penarik tali) digambar sebelum busur
+        nock = _NS_sylara._bow_nock(grip, tilt, draw_amt)
+        if attack and draw_amt > 0.05:
+            rear_hand = (nock[0], nock[1])
+            elbow = (rear_hand[0] - 7, rear_hand[1] + 7)
+        elif windrun:
+            rear_hand = (-9, 2)
+            elbow = (-11, -6)
         else:
-            # Wooden arrow shaft
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["arrow_shaft_d"],
-                    (tail_x, tail_y), (tip_x, tip_y), 2)
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["arrow_shaft"],
-                    (tail_x, tail_y), (tip_x, tip_y), 1)
-            # Arrowhead
-            perp_x = -sa * 2
-            perp_y = ca * 2
-            _NS_sylara._poly(surface, _NS_sylara.PALETTE["arrow_head_d"], [
-                (tip_x + ca * 3, tip_y + sa * 3),
-                (tip_x + perp_x, tip_y + perp_y),
-                (tip_x - perp_x, tip_y - perp_y),
-            ])
-            _NS_sylara._poly(surface, _NS_sylara.PALETTE["arrow_head"], [
-                (tip_x + ca * 2, tip_y + sa * 2),
-                (tip_x + perp_x * 0.5, tip_y + perp_y * 0.5),
-                (tip_x - perp_x * 0.5, tip_y - perp_y * 0.5),
-            ])
-            # Fletching
-            _NS_sylara._poly(surface, _NS_sylara.PALETTE["arrow_feather"], [
-                (tail_x, tail_y),
-                (tail_x + ca * 3, tail_y + sa * 3),
-                (tail_x + ca * 2 - sa * 2, tail_y + sa * 2 + ca * 2),
-            ])
+            rear_hand = (-8, 4 + int(wave))
+            elbow = (-11, -5)
+        limb((-6, -15), elbow, 6, p["cloth_dark"], p["cloth_mid"])
+        limb(elbow, rear_hand, 5, p["skin_dark"], p["skin_mid"])
+        rhx, rhy = pt(*rear_hand)
+        _NS_sylara._aacircle(surface, p["leather_darkest"], (rhx, rhy), 3)
+        _NS_sylara._aacircle(surface, p["leather_mid"], (rhx, rhy), 2)
+        _NS_sylara._aacircle(surface, p["leather_light"], (rhx - f, rhy - 1), 1)
 
+        # ═══ KEPALA: hood runcing, wajah, poni merah ═══
+        # dome hood (belakang kepala) sedikit lebih besar dari tengkorak
+        poly(p["hood_dark"], [(-1, -44), (5, -48), (13, -46), (16, -39),
+                              (14, -32), (8, -28), (-1, -30), (-5, -37)])
+        poly(p["hood_mid"], [(0, -43), (5, -46), (12, -44), (14, -38),
+                             (12, -33), (7, -30), (0, -31), (-3, -37)], False)
+        # puncak hood menjuntai ke belakang (ekor kain)
+        peak = int(wave * 2) + gust // 4
+        poly(p["hood_darkest"], [(0, -47), (4, -50), (-6, -50 + peak),
+                                 (-16 - peak, -43 + peak), (-9, -40)])
+        poly(p["hood_mid"], [(0, -46), (3, -48), (-6, -48 + peak),
+                             (-13 - peak, -43 + peak), (-7, -40)], False)
+        _NS_sylara._aaline(surface, p["hood_light"], pt(-1, -47),
+                           pt(-12 - peak, -43 + peak), 1)
+        # wajah
+        poly(p["skin_dark"], [(2, -41), (12, -42), (15, -35),
+                              (14, -28), (5, -26), (1, -33)])
+        poly(p["skin_mid"], [(3, -40), (11, -41), (14, -35),
+                             (12, -29), (6, -27), (2, -33)], False)
+        poly(p["skin_light"], [(5, -39), (10, -39), (12, -34),
+                               (9, -31), (5, -32)], False)
+        # mata besar bergaya sprite
+        ex, ey = pt(9, -34)
+        _NS_sylara._rect(surface, p["eye_white"], (ex - 2, ey - 2, 6, 5))
+        _NS_sylara._rect(surface, p["eye_iris"], (ex + 1, ey - 2, 3, 5))
+        _NS_sylara._rect(surface, p["eye_iris_light"], (ex + 1, ey - 1, 2, 2))
+        _NS_sylara._rect(surface, p["eye_pupil"], (ex + 2, ey - 1, 1, 3))
+        _NS_sylara._rect(surface, p["white"], (ex + 3, ey - 2, 1, 1))
+        _NS_sylara._aaline(surface, p["hair_darkest"], pt(7, -37), pt(13, -37), 1)
+        # hidung + bibir
+        _NS_sylara._aacircle(surface, p["skin_darkest"], pt(14, -32), 1)
+        _NS_sylara._aaline(surface, p["lips_dark"], pt(11, -28), pt(13, -28), 1)
+        # poni merah menyembul dari hood
+        poly(p["hair_dark"], [(0, -43), (10, -44), (15, -39), (10, -38),
+                              (4, -36), (-1, -38)], False)
+        poly(p["hair_mid"], [(1, -42), (9, -43), (13, -39), (7, -38),
+                             (2, -37)], False)
+        _NS_sylara._aaline(surface, p["hair_shine"], pt(3, -42), pt(11, -41), 1)
+        # brim hood: pita gelap lalu kilau kain, membingkai wajah
+        _NS_sylara._aaline(surface, p["hood_darkest"], pt(-2, -43), pt(14, -45), 4)
+        _NS_sylara._aaline(surface, p["hood_light"], pt(-1, -45), pt(14, -46), 2)
+        _NS_sylara._aaline(surface, p["cloth_high"], pt(0, -45), pt(12, -46), 1)
+        _NS_sylara._aacircle(surface, p["gold_mid"], pt(14, -43), 1)
+        # helai rambut samping menutupi leher
+        side_sway = int(wave * 2)
+        poly(p["hair_dark"], [(1, -36), (-4, -35), (-9 - side_sway, -25),
+                              (-4, -20), (0, -29)], False)
+        _NS_sylara._aaline(surface, p["hair_light"],
+                           pt(-1, -34), pt(-7 - side_sway, -24), 1)
 
-    def _draw_head_hood(surface, cx, cy, facing, phase):
-        """Head with green hood and red hair."""
-        # Hair (long, red, flowing) - behind head
-        _NS_sylara._draw_hair_back(surface, cx, cy, facing, phase)
+        # ═══ LENGAN DEPAN + BUSUR ═══
+        if attack:
+            bow_hand = (grip[0] - 1, grip[1] + 1)
+        elif windrun:
+            bow_hand = (grip[0] - 1, grip[1] - 2)
+        else:
+            bow_hand = (grip[0] - 2, grip[1] + 1)
+        f_elbow = ((bow_hand[0] + 6) // 2 + 2, (bow_hand[1] - 14) // 2 + 2)
+        limb((6, -15), f_elbow, 6, p["cloth_mid"], p["cloth_light"])
+        limb(f_elbow, bow_hand, 5, p["skin_mid"], p["skin_light"])
+        # vambrace kulit lengan busur
+        _NS_sylara._aaline(surface, p["leather_dark"],
+                           pt(f_elbow[0], f_elbow[1]),
+                           pt((f_elbow[0] + bow_hand[0]) // 2,
+                              (f_elbow[1] + bow_hand[1]) // 2), 4)
+        _NS_sylara._aaline(surface, p["leather_light"],
+                           pt(f_elbow[0], f_elbow[1] - 1),
+                           pt((f_elbow[0] + bow_hand[0]) // 2,
+                              (f_elbow[1] + bow_hand[1]) // 2 - 1), 1)
+        _NS_sylara._draw_elite_bow(surface, pt, f, grip, tilt, draw_amt,
+                                   phase, powered=powered, detail=detail)
+        bhx, bhy = pt(*bow_hand)
+        _NS_sylara._aacircle(surface, p["leather_darkest"], (bhx, bhy), 3)
+        _NS_sylara._aacircle(surface, p["leather_mid"], (bhx, bhy), 2)
+        _NS_sylara._aacircle(surface, p["leather_light"], (bhx + f, bhy - 1), 1)
 
-        # Face
-        face_points = [
-            (cx - 6, cy),
-            (cx - 7, cy + 4),
-            (cx - 5, cy + 8),
-            (cx - 2, cy + 10),
-            (cx + 2, cy + 10),
-            (cx + 5, cy + 8),
-            (cx + 7, cy + 4),
-            (cx + 6, cy),
-        ]
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["skin_darkest"],
-              [(p[0] + 1, p[1] + 1) for p in face_points])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["skin_dark"], face_points)
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["skin_mid"], [
-            (cx - 5, cy + 1),
-            (cx - 6, cy + 4),
-            (cx - 4, cy + 7),
-            (cx - 2, cy + 9),
-            (cx + 2, cy + 9),
-            (cx + 4, cy + 7),
-            (cx + 6, cy + 4),
-            (cx + 5, cy + 1),
-        ])
+        # ═══ secondary motion: angin, jejak langkah, kilau tarikan ═══
+        if walk or windrun:
+            speed = 3 if windrun else 2
+            for i in range(speed):
+                sy = cy - 12 + i * 11 + root_y
+                _NS_sylara._aaline(surface, (*p["wind_light"], 120 - i * 30),
+                                   (cx - f * (26 + i * 8), sy),
+                                   (cx - f * (12 + i * 5), sy - 1), 1)
+            contact = max(0.0, abs(stride) - .55) / .45
+            if contact > 0:
+                planted = rear_foot if stride > 0 else front_foot
+                fx2, fy2 = pt(planted[0], planted[1])
+                for i in range(3):
+                    _NS_sylara._aacircle(
+                        surface, (*p["wind_mid"], max(20, int(140 * contact) - i * 40)),
+                        (fx2 - f * (3 + i * 4), fy2 - i % 2), max(1, 3 - i))
+        elif attack and draw_amt > .35:
+            # energi angin terkumpul di tali saat tarikan penuh
+            nx, ny = pt(*nock)
+            for i in range(5):
+                a = phase * 1.4 + i * math.pi * .4
+                r = 4 + int(draw_amt * 7)
+                _NS_sylara._aacircle(
+                    surface, (*p["wind_bright"], int(190 * draw_amt)),
+                    (nx + int(math.cos(a) * r), ny + int(math.sin(a) * r * .8)), 1)
+        else:
+            for i in range(3):
+                t = (phase * .18 + i / 3.0) % 1.0
+                mx = cx + int(math.sin(phase + i * 2.1) * (16 + i * 4))
+                my = cy + 26 - int(t * 54)
+                _NS_sylara._aacircle(surface,
+                                     (*p["wind_light"], int(110 * (1 - t))),
+                                     (mx, my), 1)
 
-        # Cheek highlights
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["skin_light"], (cx - 3, cy + 5), 2)
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["skin_light"], (cx + 3, cy + 5), 2)
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["skin_high"], (cx - 3, cy + 5), 1)
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["skin_high"], (cx + 3, cy + 5), 1)
+        if windrun and not detail:
+            for i in range(6):
+                a2 = phase * .7 + i * math.pi / 3
+                r = 28 + int(math.sin(phase + i) * 6)
+                _NS_sylara._aacircle(surface, (*p["wind_bright"], 150),
+                                     (cx + int(math.cos(a2) * r),
+                                      cy + int(math.sin(a2) * r * .45)), 1)
 
-        # Hair bangs (red)
-        hair_bangs = [
-            (cx - 7, cy - 2),
-            (cx - 6, cy + 2),
-            (cx - 4, cy - 1),
-            (cx - 1, cy + 1),
-            (cx + 1, cy),
-            (cx + 4, cy + 1),
-            (cx + 6, cy - 1),
-            (cx + 7, cy - 2),
-            (cx + 5, cy - 4),
-            (cx - 5, cy - 4),
-        ]
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["hair_darkest"], hair_bangs)
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["hair_dark"], [
-            (cx - 6, cy - 2),
-            (cx - 5, cy + 1),
-            (cx - 3, cy),
-            (cx, cy + 1),
-            (cx + 3, cy),
-            (cx + 5, cy + 1),
-            (cx + 6, cy - 2),
-            (cx + 4, cy - 3),
-            (cx - 4, cy - 3),
-        ])
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["hair_mid"],
-                (cx - 4, cy - 2), (cx - 2, cy), 1)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["hair_light"],
-                (cx + 2, cy - 2), (cx + 4, cy - 1), 1)
+        if detail:
+            _NS_sylara._draw_sylara_masterwork_details(surface, pt, f)
 
-        # Eyes - green
-        for eye_x in (-3, 3):
-            _NS_sylara._rect(surface, _NS_sylara.PALETTE["eye_white"], (cx + eye_x - 1, cy + 3, 2, 2))
-            _NS_sylara._rect(surface, _NS_sylara.PALETTE["eye_iris"], (cx + eye_x - 1, cy + 3, 2, 2))
-            _NS_sylara._rect(surface, _NS_sylara.PALETTE["eye_iris_light"], (cx + eye_x, cy + 3, 1, 1))
-
-        # Brows (red)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["hair_darkest"],
-                (cx - 5, cy + 2), (cx - 1, cy + 2), 1)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["hair_darkest"],
-                (cx + 1, cy + 2), (cx + 5, cy + 2), 1)
-
-        # Nose
-        _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["skin_darkest"], (cx, cy + 6), 1)
-
-        # Lips
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["lips_dark"], (cx - 2, cy + 8, 4, 1))
-        _NS_sylara._rect(surface, _NS_sylara.PALETTE["lips_mid"], (cx - 1, cy + 8, 2, 1))
-
-        # Hood (over head)
-        hood_top = [
-            (cx - 10, cy - 3),
-            (cx - 12, cy - 1),
-            (cx - 9, cy + 3),
-            (cx - 8, cy - 2),
-            (cx - 6, cy - 6),
-            (cx - 3, cy - 8),
-            (cx, cy - 9),
-            (cx + 3, cy - 8),
-            (cx + 6, cy - 6),
-            (cx + 8, cy - 2),
-            (cx + 9, cy + 3),
-            (cx + 12, cy - 1),
-            (cx + 10, cy - 3),
-            (cx + 8, cy - 12),
-            (cx - 8, cy - 12),
-        ]
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["hood_dark"], hood_top)
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["hood_mid"], [
-            (cx - 9, cy - 2),
-            (cx - 10, cy - 1),
-            (cx - 8, cy + 1),
-            (cx - 7, cy - 2),
-            (cx - 5, cy - 5),
-            (cx, cy - 8),
-            (cx + 5, cy - 5),
-            (cx + 7, cy - 2),
-            (cx + 8, cy + 1),
-            (cx + 10, cy - 1),
-            (cx + 9, cy - 2),
-            (cx + 7, cy - 11),
-            (cx - 7, cy - 11),
-        ])
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["hood_light"],
-                (cx - 5, cy - 9), (cx + 5, cy - 9), 1)
-
-        # Hood tip (small pointed peak)
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["hood_dark"], [
-            (cx - 2, cy - 12), (cx + 2, cy - 12), (cx, cy - 15),
-        ])
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["hood_mid"], [
-            (cx - 1, cy - 12), (cx + 1, cy - 12), (cx, cy - 14),
-        ])
-
-        # Small leaf on hood
-        _NS_sylara._draw_leaf(surface, cx, cy - 14, 2, -math.pi / 2,
-                   _NS_sylara.PALETTE["cloth_dark"], _NS_sylara.PALETTE["cloth_mid"],
-                   _NS_sylara.PALETTE["cloth_light"])
-
-
-    def _draw_hair_back(surface, cx, cy, facing, phase):
-        """Long red hair flowing behind."""
-        wave = math.sin(phase * 0.9) * 2
-        wave2 = math.sin(phase * 1.3 + 0.5) * 2
-
-        # Main hair mass behind head
-        hair_pts = [
-            (cx - 8, cy - 4),
-            (cx - 11 + int(wave), cy + 4),
-            (cx - 12 + int(wave2), cy + 12),
-            (cx - 10 + int(wave), cy + 20),
-            (cx - 6, cy + 22),
-            (cx + 6, cy + 22),
-            (cx + 10 + int(wave), cy + 20),
-            (cx + 12 + int(wave2), cy + 12),
-            (cx + 11 + int(wave), cy + 4),
-            (cx + 8, cy - 4),
-        ]
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["hair_darkest"], hair_pts)
-        _NS_sylara._poly(surface, _NS_sylara.PALETTE["hair_dark"], [
-            (cx - 7, cy - 3),
-            (cx - 9 + int(wave), cy + 4),
-            (cx - 10 + int(wave2), cy + 12),
-            (cx - 8 + int(wave), cy + 18),
-            (cx - 3, cy + 20),
-            (cx + 3, cy + 20),
-            (cx + 8 + int(wave), cy + 18),
-            (cx + 10 + int(wave2), cy + 12),
-            (cx + 9 + int(wave), cy + 4),
-            (cx + 7, cy - 3),
-        ])
-
-        # Hair strands / highlights
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["hair_mid"],
-                (cx - 5, cy - 1), (cx - 7 + int(wave), cy + 15), 1)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["hair_light"],
-                (cx + 4, cy - 1), (cx + 6 + int(wave), cy + 15), 1)
-        _NS_sylara._aaline(surface, _NS_sylara.PALETTE["hair_mid"],
-                (cx - 2, cy + 2), (cx - 3 + int(wave2), cy + 18), 1)
-
-        # Wispy strands flying out
-        for i, off in enumerate((-8, 8)):
-            sx = cx + off
-            sy = cy + 4
-            ex = sx + int(math.sin(phase + i) * 5)
-            ey = sy - 8
-            _NS_sylara._aaline(surface, _NS_sylara.PALETTE["hair_dark"], (sx, sy), (ex, ey), 1)
-
-
-    def _draw_body_particles(surface, cx, cy, phase):
-        """Wind particles and leaves around body."""
-        for i in range(8):
-            angle = phase * 0.5 + i * math.pi / 4
-            radius = 28 + int(math.sin(phase * 0.7 + i) * 8)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-            alpha = int(120 + math.sin(phase + i * 0.7) * 60)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_light"], alpha), (px, py), 2)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_white"], alpha), (px, py), 1)
-
-        # Floating leaves
-        for i in range(3):
-            t = (phase * 0.3 + i * 0.35) % 1.0
-            fx = cx - 35 + int(t * 70)
-            fy = cy - 20 + int(math.sin(phase + i) * 8) + i * 6
-            alpha = int(220 * math.sin(t * math.pi))
-            if alpha > 0:
-                a = phase * 1.5 + i
-                _NS_sylara._draw_leaf(surface, fx, fy, 3, a,
-                           (*_NS_sylara.PALETTE["cloth_darkest"], alpha),
-                           (*_NS_sylara.PALETTE["cloth_mid"], alpha),
-                           (*_NS_sylara.PALETTE["cloth_light"], alpha))
 
 
     # ===================================================================
