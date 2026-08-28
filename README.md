@@ -356,6 +356,66 @@ terpisah, dan cakram cahaya tetap ada di lane).
 Review sheet: `python tools/_shot_gornak_masterwork.py` dan
 `python tools/_shot_gornak_before_after.py`.
 
+### Contoh maksimal kedelapan: Morgath Masterwork (mini boss + hero)
+
+Morgath — *Arc Warden*, mini boss level 1 yang juga bisa di-unlock jadi
+hero — menerima perlakuan yang sama dengan Gornak. Renderer lamanya
+(`_draw_mor_body` + `_draw_mor_cape/legs/robe/torso/arm_back/arm_front/head`
++ `_draw_crystal_orb`: tumpukan body-part statis) **dihapus total** dan
+diganti satu **bone rig 2D berlapis** di `bosses/level1.py`.
+
+Diukur dari render (bukan perasaan), yang salah waktu itu:
+
+| | sebelum | sesudah | catatan |
+|---|---|---|---|
+| badan padat boss 1x (alpha>=100) | 35 x 55 px | **49 x 84 px** | rujukan keluarga `morgath H82/W120` (bbox dgn FX), gornak H119 |
+| bbox dengan FX | 120 x 82 | **~73 x 92** | rune tanah 110->64 px: tidak lagi lebih lebar dari badan |
+| orb kepala | r=6, polos | **r=9 + cangkang + pusaran + 3 pecahan rune orbit** | focal point paling terang di sprite |
+| beam petir | mulai di `x+18f, y-2` (angka lepas) | **lahir dari telapak cast rig (`MOR_MUZZLE`)** | menempel di tangan di semua skala (boss 1x / lane hero) |
+| hem jubah | bob mengambang | **dipatok di `GROUND_DY` (jangkar bayangan)** | jubah tidak melayang saat napas/hover |
+| charge tell | tidak ada | **percikan melompat antar ujung antena saat wind-up** | bisa dibaca pemain sebelum beam keluar |
+| biaya render | ~1,1 ms/frame | **1,18 ms/frame** (idle+bayangan+rune+lighting) | — |
+
+Yang dilakukan (semua pola konsisten dengan standar Gornak):
+
+* **SATU rig, semua bagian lewat satu pemetaan koordinat.** `SCALE=0.9`,
+  `LIFT=4`, `FEET_DY=40` -> `GROUND_DY=32`; `pt()` ikut napas/lean,
+  `ptg()` mematok hem/telapak ke tanah. Gornak merujuk ukuran morgath di
+  tabelnya; sekarang morgath benar-benar memenuhi angka itu.
+* **Hierarki nilai dijaga:** orb kristal di tudung > arc FX > trim emas >
+  cuirass baja-biru > jubah ungu gelap. Siluet dibaca dari pauldron
+  berlapis + hem A-line lebar, bukan dari ketebalan tiang.
+* **Pose stance per skill:** Q `point` (menunjuk, wraith tumbuh di
+  telapak), W `channel`, E `erect`, R `ascend` (melayang -3 px, ujung
+  jubah berkibar); kurva serangan `_mor_attack_curve` memberi
+  anticipation -> thrust -> **impact hold** -> release, dan beam hanya
+  mengalir saat telapak sudah penuh ke depan.
+* **FX lama tetap hidup:** arc aura, rune tanah, 4 skill ground/foreground
+  dan clone Tempest tidak diubah perilakunya; anchor tangan Q dipindah ke
+  telapak rig (`_skill_hand_world`), clone Tempest kini me-render rig baru
+  (bukan fungsi tubuh lama yang sudah dihapus).
+* **Pass cahaya & outline:** buffer rig -> `lighting.apply_to_rig`
+  (GRAD_BOX tetap, tidak "berkedip") -> outline siluet 1 px 4 arah ->
+  blit. Jalur lane hero melewati `heroes._finish_hd_sprite` (pass cahaya
+  di-skip supaya tidak dobel; penanda `_MOR_LANE`), Hero Shop memakai LOD
+  portrait (`_portrait_hd`: FX arena dibuang, konten dipusatkan ke bbox).
+* **Normalisasi hero otomatis ikut:** pipeline HD mengukur badan native
+  baru lalu menurunkan `_render_scale`, jadi Morgath-as-hero mendarat
+  sekelas hero lain di lane tanpa tabel manual.
+
+Uji regresi: `python tools/test_morgath_masterwork.py` (11 pemeriksaan:
+rig tunggal & tanpa `image.load`, badan padat dalam band keluarga, hem
+menapak di semua pose, tidak ada pose yang terpotong buffer, pose benar-benar
+berbeda per-sendi, beam lahir dari telapak & tidak menggambar sebelum
+progres 0.55, kurva serangan monoton, outline siluet, portrait LOD
+terpusat tanpa FX tanah, jalur hero `render_hero` + beam pass, dan FX
+skill tetap terpasang). Tes silang `test_gornak_masterwork.py` (yang
+membandingkan bbox morgath) tetap hijau.
+Review sheet: `python tools/_shot_morgath_masterwork.py` ->
+[docs/morgath_masterwork_preview.png](docs/morgath_masterwork_preview.png),
+[docs/morgath_before_after.png](docs/morgath_before_after.png),
+[docs/morgath_portrait_preview.png](docs/morgath_portrait_preview.png).
+
 ## Pass cahaya bersama (lighting.py)
 
 Renderer prosedural membangun volume dengan blok nilai yang di-author manual
