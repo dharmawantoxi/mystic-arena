@@ -642,7 +642,7 @@ def _measure_native_size(hero_type, renderer):
     _adapt_hero_to_boss(probe)
 
     try:
-        renderer(canvas, probe, cx, cy)
+        _call_renderer_on_canvas(renderer, canvas, probe, cx, cy)
     except Exception:
         return None
 
@@ -830,6 +830,61 @@ def clear_hero_sprite_cache():
     _hero_cache_stats['misses'] = 0
 
 
+# ═══ PARK RENDERER PROJECTILES SAAT CANVAS CACHE ═══
+# Renderer boss/starter menyimpan FX di list bertanda `_` (mis.
+# `_sy_projectiles`, `_aa_beams`, `_vk_chain_orbs`). Saat hero
+# digambar ke canvas cache di pusat (c, c) — BUKAN koordinat dunia —
+# list itu ikut di-update & di-blit, lalu sprite di-cache. Akibatnya
+# orb/panah “acak” menempel di sekitar badan hero setiap cache hit.
+# Gameplay pakai `hero.projectiles` (tanpa `_`) yang digambar di
+# dunia oleh _entity.py; list itu JANGAN di-park.
+_RENDERER_FX_SUFFIXES = (
+    "_projectiles",
+    "_chain_orbs",
+    "_beams",
+    "_shards",
+)
+
+
+def _park_renderer_fx(entity):
+    """Kosongkan list FX renderer selama gambar ke canvas cache.
+
+    Return dict atribut yang di-park (untuk restore). Aman untuk
+    objek tanpa __dict__ (no-op).
+    """
+    parked = {}
+    try:
+        items = list(vars(entity).items())
+    except TypeError:
+        entity._skip_renderer_projectiles = True
+        return parked
+    for name, val in items:
+        if not name.startswith("_"):
+            continue
+        if not isinstance(val, list):
+            continue
+        if any(name.endswith(s) for s in _RENDERER_FX_SUFFIXES):
+            parked[name] = val
+            setattr(entity, name, [])
+    entity._skip_renderer_projectiles = True
+    return parked
+
+
+def _restore_renderer_fx(entity, parked):
+    for name, val in parked.items():
+        setattr(entity, name, val)
+    entity._skip_renderer_projectiles = False
+
+
+def _call_renderer_on_canvas(renderer, canvas, entity, x, y):
+    """Panggil renderer ke canvas cache tanpa FX projectile renderer."""
+    parked = _park_renderer_fx(entity)
+    try:
+        return renderer(canvas, entity, x, y)
+    finally:
+        _restore_renderer_fx(entity, parked)
+
+
 def _hero_cache_key(hero_type, hero):
     """
     Key cache. Hero dengan key sama = gambar identik.
@@ -884,7 +939,7 @@ def _render_hero_raw(hero_type, surface, hero, x, y):
         canvas = pygame.Surface((canvas_w, canvas_w), pygame.SRCALPHA)
         c = canvas_w // 2
         hero._render_scale = scale
-        renderer(canvas, hero, c, c)
+        _call_renderer_on_canvas(renderer, canvas, hero, c, c)
         _blit_scaled(surface, canvas, c, c, scale, x, y,
                      getattr(hero, 'team', 'blue'))
         return True
@@ -913,7 +968,7 @@ def _render_hero_raw(hero_type, surface, hero, x, y):
             hero._render_scale = scale
             hero._skip_beam = True
             try:
-                boss_renderer(canvas, hero, c, c)
+                _call_renderer_on_canvas(boss_renderer, canvas, hero, c, c)
             finally:
                 hero._skip_beam = False
             _blit_scaled(surface, canvas, c, c, scale, x, y,
@@ -933,7 +988,7 @@ def _render_hero_raw(hero_type, surface, hero, x, y):
             return True
 
         hero._render_scale = scale
-        boss_renderer(canvas, hero, c, c)
+        _call_renderer_on_canvas(boss_renderer, canvas, hero, c, c)
         _blit_scaled(surface, canvas, c, c, scale, x, y,
                      getattr(hero, 'team', 'blue'))
         return True
@@ -1107,7 +1162,7 @@ def render_hero(hero_type, surface, hero, x, y):
                 # Beam-pass hero: beam TIDAK ikut di-cache -
                 # digambar live (pixel-perfect seperti mini boss).
                 hero._skip_beam = hero_type in _BEAM_PASS_HEROES
-                renderer(canvas, hero, c, c)
+                _call_renderer_on_canvas(renderer, canvas, hero, c, c)
             except Exception:
                 _draw_generic_hero(surface, hero, x, y)
             finally:
