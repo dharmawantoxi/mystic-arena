@@ -2941,6 +2941,58 @@ class LevelIntroScreen:
         reward_text.set_alpha(alpha)
         surface.blit(reward_text, (coin_x + 18, coin_y - 12))
 
+        # ═══ STARTING GOLD (skala kesulitan + level) ═══
+        start_y = reward_y + 78
+
+        start_label = self.font_tiny.render(
+            "STARTING GOLD", True, (150, 170, 190))
+        start_label.set_alpha(alpha)
+        start_label_rect = start_label.get_rect(center=(cx, start_y))
+        surface.blit(start_label, start_label_rect)
+
+        # Gold coin icon
+        coin_x2 = cx - 60
+        coin_y2 = start_y + 30
+        pygame.draw.circle(surface, (255, 200, 50),
+                           (coin_x2, coin_y2), 12)
+        pygame.draw.circle(surface, (200, 150, 30),
+                           (coin_x2, coin_y2), 12, 2)
+
+        dollar2 = coin_font.render("$", True, (100, 60, 10))
+        dollar2_rect = dollar2.get_rect(center=(coin_x2, coin_y2))
+        surface.blit(dollar2, dollar2_rect)
+
+        # Pakai fungsi yang sama dengan Game.reset() supaya angka
+        # di intro selalu sama dengan gold yang diterima pemain.
+        try:
+            from _core import GameSettings, compute_starting_gold
+            sg = compute_starting_gold(
+                self.level_config, self.level_num,
+                GameSettings().difficulty)
+        except Exception:
+            sg = self.level_config.get("starting_gold", 1000)
+
+        start_text = self.font_medium.render(
+            f"{sg:,} GOLD", True, (255, 220, 100))
+        start_text.set_alpha(alpha)
+        surface.blit(start_text, (coin_x2 + 18, coin_y2 - 12))
+
+        # ═══ PASSIVE INCOME (gold/s, skala kesulitan + level) ═══
+        try:
+            from _core import (GameSettings, compute_gold_per_second,
+                               format_gold_rate)
+            rate = compute_gold_per_second(
+                self.level_num, GameSettings().difficulty)
+            inc_str = "PASSIVE +" + format_gold_rate(rate) + "/s"
+        except Exception:
+            inc_str = f"PASSIVE +{GOLD_PER_SECOND}/s"
+
+        inc_text = self.font_tiny.render(
+            inc_str, True, (196, 241, 168))
+        inc_text.set_alpha(alpha)
+        inc_rect = inc_text.get_rect(center=(cx, start_y + 58))
+        surface.blit(inc_text, inc_rect)
+
     def _draw_boss_preview(self, surface, alpha):
         """Draw right side: boss preview"""
         cx = self.screen_w * 3 // 4  # kanan tengah

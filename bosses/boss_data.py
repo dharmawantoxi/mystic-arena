@@ -11530,6 +11530,310 @@ def _apply_boss_rebalancing():
 _apply_boss_rebalancing()
 
 
+# ═══════════════════════════════════════════════════════════════
+# BALANCE PASS 2026-08: kurva progresi boss yang mulus
+# ═══════════════════════════════════════════════════════════════
+# Setelah boost piecewise di atas, sebagian boss justru LEBIH LEMAH
+# dari boss di level sebelumnya (kurva tidak monoton), mis. true boss
+# level 19 (64.000 HP) lebih lemah dari level 18 (78.000 HP), dan
+# mini boss level 15 melompat +43% dari level 14.
+#
+# Dua lapis perbaikan:
+#   1) _smooth_boss_progression()  — auto: HP/damage/ability boss
+#      dipaksa tidak pernah turun dari level sebelumnya (per slot
+#      wave untuk mini boss, per level untuk true boss).
+#   2) Override kurva eksplisit — true boss HP/damage/ability
+#      disesuaikan ke tren kurva (bukan sekadar plateau), dan mini
+#      boss level 13-14 dijembatani supaya transisi ke level 15
+#      tidak melompat curam.
+# Semua nilai baru KELIPATAN 100/angka bersih dan naik monoton.
+# hero_unlock (hero boss untuk pemain) TIDAK disentuh.
+
+def _slot_of_mini_wave(wave):
+    """Kelompokkan wave mini boss: 10-12 = awal, 13-21 = tengah,
+    22+ = akhir (sesuai pola wave 10/18/25 tiap level)."""
+    if wave <= 12:
+        return "w10"
+    if wave <= 21:
+        return "w18"
+    return "w25"
+
+
+def _smooth_boss_progression():
+    """Lapisan 1: paksa HP/damage/ability boss naik monoton per level."""
+    try:
+        from levels import get_level_config, get_level_count
+    except Exception:
+        return
+
+    n = get_level_count()
+
+    # Mini boss: monotonic per slot wave (w10 / w18 / w25)
+    prev_hp = {"w10": 0, "w18": 0, "w25": 0}
+    prev_dmg = {"w10": 0, "w18": 0, "w25": 0}
+    prev_ab = {"w10": 0, "w18": 0, "w25": 0}
+    for lvl in range(1, n + 1):
+        cfg = get_level_config(lvl) or {}
+        for wave, name in sorted((cfg.get("mini_bosses") or {}).items()):
+            s = _slot_of_mini_wave(wave)
+            b = MINI_BOSS_TYPES.get(name)
+            if not b:
+                continue
+            b["hp"] = max(int(b.get("hp", 0)), prev_hp[s])
+            b["damage"] = max(int(b.get("damage", 0)), prev_dmg[s])
+            b["ability_damage"] = max(
+                int(b.get("ability_damage", 0)), prev_ab[s])
+            prev_hp[s] = b["hp"]
+            prev_dmg[s] = b["damage"]
+            prev_ab[s] = b["ability_damage"]
+
+    # True boss: monotonic per level
+    prev_hp = prev_dmg = prev_ab = 0
+    for lvl in range(1, n + 1):
+        cfg = get_level_config(lvl) or {}
+        b = TRUE_BOSS_TYPES.get(cfg.get("true_boss"))
+        if not b:
+            continue
+        b["hp"] = max(int(b.get("hp", 0)), prev_hp)
+        b["damage"] = max(int(b.get("damage", 0)), prev_dmg)
+        b["ability_damage"] = max(
+            int(b.get("ability_damage", 0)), prev_ab)
+        prev_hp = b["hp"]
+        prev_dmg = b["damage"]
+        prev_ab = b["ability_damage"]
+
+
+# ── Lapisan 2: override kurva (tren, bukan plateau) ──
+# True boss HP: melanjutkan tren 36k (L1) → 78k (L18) → 109k (L31)
+# → 199k (L54). Nilai asli yang sudah mendekati tren tidak diubah.
+TRUE_BOSS_HP_CURVE = {
+    "krobellus": 52000,        # L5  (asli 44.400, di bawah tren)
+    "kunkka": 54000,           # L6  (asli 44.000)
+    "nyxarath": 56000,         # L7  (asli 52.000)
+    "naraka": 60000,           # L9  (asli 52.000)
+    "aurethzar": 62000,        # L10 (asli 56.000)
+    "thalakryon": 64000,       # L11 (asli 60.000)
+    "vaelindra": 80000,        # L19 (asli 64.000, DROP dari L18 78k)
+    "morthraxis": 83000,       # L20 (asli 65.600)
+    "nexthyrius": 85000,       # L21 (asli 72.000)
+    "molgravar": 88000,        # L22 (asli 75.200)
+    "seraphienne": 90000,      # L23 (asli 78.400)
+    "solareth": 92000,         # L24 (asli 81.600)
+    "okeanora": 95000,         # L25 (asli 84.800)
+    "vaelmyrra": 97000,        # L26 (asli 88.000)
+    "zarethyr": 99000,         # L27 (asli 91.200)
+    "nyrethzalv": 102000,      # L28 (asli 94.400)
+    "nyrellieth": 104000,      # L29 (asli 97.600)
+    "nyxharr": 106000,         # L30 (asli 104.000)
+    "malzeroth": 113000,       # L32 (asli 102.950, di bawah L31 108.8k)
+    "zharakzuul": 117000,      # L33 (asli 107.300)
+    "grondmauris": 121000,     # L34 (asli 111.650)
+    "lyssarethys": 124000,     # L35 (asli 116.000)
+    "kaerinya": 128000,        # L36 (asli 120.350)
+    "xelnarath": 132000,       # L37 (asli 124.700)
+    "kyrenzai": 136000,        # L38 (asli 129.050)
+    "xaelmoran": 140000,       # L39 (asli 133.400)
+    "thalryndel": 144000,      # L40 (asli 137.750)
+    "grimkor": 148000,         # L41 (asli 142.100)
+    "kaineroth": 152000,       # L42 (asli 146.450)
+    "zyvareth": 156000,        # L43 (asli 150.800)
+    "kagetsuka": 160000,       # L44 (asli 155.150)
+    "deidara": 164000,         # L45 (asli 159.500)
+    "sunakage": 167000,        # L46 (asli 163.850)
+}
+
+# True boss damage: perbaiki drop kecil supaya naik monoton.
+TRUE_BOSS_DMG_CURVE = {
+    "alchemist": 150,          # L2 (asli 145 < L1 150)
+    "ancient_apparition": 152, # L3 (asli 145)
+    "kunkka": 172,             # L6 (asli 162 < L5 172)
+    "nyxarath": 175,           # L7 (asli 169)
+    "solareth": 318,           # L24 (asli 312 < L23 318)
+}
+
+# True boss ability damage: jembatani kurva awal 405 → 513 (+27/level).
+TRUE_BOSS_ABILITY_CURVE = {
+    "ignis_drachorn": 423,     # L4 (asli 378)
+    "krobellus": 441,          # L5 (asli 351)
+    "kunkka": 459,             # L6 (asli 378)
+    "nyxarath": 477,           # L7 (asli 405)
+    "vhorethzir": 495,         # L8 (asli 432)
+}
+
+def _apply_boss_curve_overrides():
+    for name, hp in TRUE_BOSS_HP_CURVE.items():
+        b = TRUE_BOSS_TYPES.get(name)
+        if b:
+            b["hp"] = hp
+    for name, dmg in TRUE_BOSS_DMG_CURVE.items():
+        b = TRUE_BOSS_TYPES.get(name)
+        if b:
+            b["damage"] = dmg
+    for name, ab in TRUE_BOSS_ABILITY_CURVE.items():
+        b = TRUE_BOSS_TYPES.get(name)
+        if b:
+            b["ability_damage"] = ab
+
+
+_smooth_boss_progression()
+_apply_boss_curve_overrides()
+
+
+# ═══════════════════════════════════════════════════════════════
+# BALANCE PASS 2026-08: hero unlock (hero boss yang bisa direkrut)
+# ═══════════════════════════════════════════════════════════════
+# Stat hero_unlock diturunkan dari boss aslinya, jadi ikut masalah
+# kurva: skill_damage 0 (gorath — skill tidak berdamage), hero yang
+# LEBIH MAHAL kadang lebih lemah dari yang murah (tidak monoton),
+# dan outlier ekstrem dalam band cost yang sama (mis. thoraz 525
+# dps vs kazuren 691 dps, sama-sama cost 8600).
+#
+# Metode:
+#   1. Fix bug: skill_damage <= 0 diganti nilai dari trend.
+#   2. Clamp outlier: hp / dps / skill di luar [0.75, 1.30]x trend
+#      ditarik ke [0.85, 1.20]x trend. DPS dikonversi balik ke
+#      damage supaya attack_cooldown tiap hero tetap.
+#   3. Monotonic: running max per stat per class (urut cost).
+# Trend dihitung PER CLASS (mini vs true) supaya identitas tetap:
+# true boss hero = tankier (hp/gold lebih tinggi), mini boss hero =
+# dps lebih tinggi. cost, speed, range, attack_cooldown, skill
+# cooldown/range, warna & deskripsi TIDAK diubah. Pemain & AI
+# memakai stat yang sama (tanpa handicap).
+
+def _hero_unlock_trend(values_by_cost):
+    """Least-squares linear fit stat ~ cost (tanpa numpy)."""
+    n = len(values_by_cost)
+    if n == 0:
+        return 0.0, 0.0
+    costs = [c for c, _ in values_by_cost]
+    vals = [v for _, v in values_by_cost]
+    mx = sum(costs) / n
+    my = sum(vals) / n
+    sxx = sum((c - mx) ** 2 for c in costs)
+    sxy = sum((c - mx) * (v - my) for c, v in zip(costs, vals))
+    if sxx == 0:
+        return 0.0, my
+    a = sxy / sxx
+    return a, my - a * mx
+
+
+def _normalize_hero_unlock_stats():
+    for table in (MINI_BOSS_TYPES, TRUE_BOSS_TYPES):
+        heroes = [(bt, bd["hero_unlock"])
+                  for bt, bd in table.items() if bd.get("hero_unlock")]
+        heroes.sort(key=lambda h: h[1].get("cost", 0))
+
+        hp_fit = _hero_unlock_trend(
+            [(hu.get("cost", 0), hu.get("hp", 0)) for _, hu in heroes])
+        dps_fit = _hero_unlock_trend([(
+            hu.get("cost", 0),
+            hu.get("damage", 0) / max(1, hu.get("attack_cooldown", 30)) * 60.0
+        ) for _, hu in heroes])
+        sk_fit = _hero_unlock_trend([
+            (hu.get("cost", 0), hu.get("skill_damage", 0))
+            for _, hu in heroes])
+
+        def clamp(v, pred):
+            if pred <= 0:
+                return v
+            if v <= 0 or v < 0.70 * pred:
+                return max(v, 0.80 * pred)
+            if v > 1.30 * pred:
+                return min(v, 1.20 * pred)
+            return v
+
+        for _, hu in heroes:
+            cost = hu.get("cost", 0)
+            # 1) Fix skill_damage <= 0 + clamp skill
+            hu["skill_damage"] = int(round(
+                clamp(hu.get("skill_damage", 0), sk_fit[0] * cost + sk_fit[1])))
+            # 2) Clamp hp
+            hu["hp"] = int(round(
+                clamp(hu.get("hp", 0), hp_fit[0] * cost + hp_fit[1])))
+            # 3) Clamp dps -> konversi balik ke damage
+            cd = max(1, hu.get("attack_cooldown", 30))
+            cur_dps = hu.get("damage", 0) / cd * 60.0
+            new_dps = clamp(cur_dps, dps_fit[0] * cost + dps_fit[1])
+            if new_dps != cur_dps:
+                hu["damage"] = int(round(new_dps * cd / 60.0))
+
+        # 4) Monotonic dengan toleransi: hanya angkat kalau turun
+        #    >15% dari max sebelumnya (dip kecil = variasi desain,
+        #    dip besar = anomali nyata).
+        m_hp = m_dmg = m_sk = 0
+        for _, hu in heroes:
+            if hu["hp"] < 0.85 * m_hp:
+                hu["hp"] = m_hp
+            else:
+                m_hp = max(m_hp, hu["hp"])
+            if hu["damage"] < 0.85 * m_dmg:
+                hu["damage"] = m_dmg
+            else:
+                m_dmg = max(m_dmg, hu["damage"])
+            if hu["skill_damage"] < 0.85 * m_sk:
+                hu["skill_damage"] = m_sk
+            else:
+                m_sk = max(m_sk, hu["skill_damage"])
+
+
+_normalize_hero_unlock_stats()
+
+
+# ═══════════════════════════════════════════════════════════════
+# BALANCE PASS 2026-08: range hero unlock
+# ═══════════════════════════════════════════════════════════════
+# Data range hero_unlock mentah masih liar: 55 s/d 490 (mis.
+# "Moon Goddess" 490, "Fire Mage" 440) padahal di gameplay
+# Hero.__init__ meng-clamp ke 70 (melee) / 120..220 (ranged).
+# Akibatnya:
+#   - UI shop menampilkan "RNG 490" yang menyesatkan (padahal
+#     gameplay-nya 220).
+#   - Klasifikasi melee/ranged (range < 110) jadi salah: role
+#     melee dengan range mentah besar (Angelic Warrior 290,
+#     Flame Swordsman 220) menjadi RANGED di gameplay, dan role
+#     ranged dengan range kecil (Frost Sorcerer 100, Wyvern
+#     Rider 100) menjadi MELEE.
+#
+# Di sini data mentah dinormalisasi KONSISTEN dengan runtime:
+#   - Role melee (fighter/warrior/knight/swordsman/dll.) atau
+#     range asli <= 90  ->  range 70 (sama persis dengan nilai
+#     yang diterapkan Hero.__init__)
+#   - Sisanya (ranged)  ->  clamp 120..220
+#   - skill_range dipaksa >= range (skill selalu terjangkau)
+# Boss versi musuh (Boss class) TIDAK disentuh; pemain & AI
+# memakai hero yang sama (tanpa handicap).
+MELEE_ROLE_HINTS = (
+    "fighter", "warrior", "assassin", "berserker", "brawler",
+    "bruiser", "tank", "knight", "swordsman", "slayer", "ninja",
+    "shinigami", "kunoichi", "charger", "beast", "guardian",
+    "ghoul", "duelist", "warlord", "scorpion", "voidwalker",
+    "vampire", "demon lord", "tidehunter", "lancer", "terror",
+    "moon demon",
+)
+
+
+def _normalize_hero_unlock_range():
+    for table in (MINI_BOSS_TYPES, TRUE_BOSS_TYPES):
+        for bd in table.values():
+            hu = bd.get("hero_unlock")
+            if not hu:
+                continue
+            role = (hu.get("role") or "").lower()
+            orig = int(hu.get("range", 70) or 70)
+            is_melee = any(k in role for k in MELEE_ROLE_HINTS)
+            if is_melee or orig <= 90:
+                hu["range"] = 70
+            else:
+                hu["range"] = max(120, min(220, orig))
+            # Skill selalu bisa dijangkau (skill_range >= range)
+            sr = int(hu.get("skill_range", 0) or 0)
+            if sr and sr < hu["range"]:
+                hu["skill_range"] = hu["range"]
+
+
+_normalize_hero_unlock_range()
+
+
 def get_all_boss_types():
     """Get gabungan semua boss types"""
     all_bosses = {}

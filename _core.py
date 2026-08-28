@@ -214,6 +214,67 @@ BULLET_RADIUS = 4
 STARTING_GOLD = 350          # Cukup untuk 3 tower awal
 GOLD_PER_SECOND = 3          # 180 gold per menit passive
 
+# ═══ STARTING GOLD: skala kesulitan + level ═══
+# Starting gold pemain dihitung dari base level config, lalu
+# disesuaikan:
+#   - Difficulty : easy +25%, normal 0%, hard -25%
+#   - Level      : +100 gold per level di atas level 1
+# Karena base & bonus kelipatan 100 dan multiplier kelipatan 0.25,
+# hasil akhir selalu kelipatan 25 (angka bersih).
+DIFFICULTY_GOLD_MULT = {
+    "easy": 1.25,
+    "normal": 1.0,
+    "hard": 0.75,
+}
+GOLD_PER_LEVEL_BONUS = 100
+
+
+def compute_starting_gold(level_config, level_number, difficulty="normal"):
+    """Hitung starting gold pemain untuk sebuah level.
+
+    Rumus:
+        (base starting_gold dari level config + bonus per level)
+        × multiplier kesulitan
+
+    Dipakai bersama oleh Game.reset() dan LevelIntroScreen supaya
+    angka yang ditampilkan di layar intro SAMA dengan gold yang
+    benar-benar diterima pemain saat match dimulai.
+    """
+    base = int(level_config.get("starting_gold", 1000))
+    level = max(1, int(level_number or 1))
+    bonus = (level - 1) * GOLD_PER_LEVEL_BONUS
+    mult = DIFFICULTY_GOLD_MULT.get(difficulty, 1.0)
+    return int((base + bonus) * mult)
+
+
+# ═══ GOLD/S PASIF: skala kesulitan + level ═══
+# Pola sama dengan starting gold: easy +25%, normal 0%, hard -25%,
+# plus bonus +0.3/s per level di atas level 1 (10% dari base 3/s).
+GOLD_PER_SECOND_LEVEL_BONUS = 0.3
+
+
+def compute_gold_per_second(level_number, difficulty="normal"):
+    """Hitung passive gold income pemain (gold/detik).
+
+    Rumus:
+        (GOLD_PER_SECOND + bonus per level) × multiplier kesulitan
+
+    Hasilnya bisa pecahan (mis. 7.125); akumulasi pecahannya ditangani
+    Game via _gold_income_milli supaya saldo gold tetap angka bulat.
+    """
+    level = max(1, int(level_number or 1))
+    bonus = (level - 1) * GOLD_PER_SECOND_LEVEL_BONUS
+    mult = DIFFICULTY_GOLD_MULT.get(difficulty, 1.0)
+    return (GOLD_PER_SECOND + bonus) * mult
+
+
+def format_gold_rate(rate):
+    """Format laju gold per detik jadi teks HUD yang rapi.
+
+    3.0 -> "3", 5.7 -> "5.7", 3.75 -> "3.8" (satu desimal).
+    """
+    return f"{rate:.1f}".rstrip("0").rstrip(".")
+
 # ── MINION TYPES (Balanced) ──
 MINION_TYPES = {
     "goblin": {
@@ -381,7 +442,7 @@ HERO_TYPES = {
         "skill_name": "Wind Slash",
         "skill_desc": "Dash & slash AOE",
         "skill_cooldown": 300,
-        "skill_damage": 65,    # ← 50 → 65
+        "skill_damage": 70,    # ← 65 → 70
         "skill_range": 100,
         "description": "Agile samurai assassin",
     },
@@ -391,7 +452,7 @@ HERO_TYPES = {
         "role": "Fighter",
         "cost": 450,
         "hp": 800,             # ← 600 → 800
-        "damage": 30,          # ← 22 → 30
+        "damage": 33,          # ← 30 → 33
         "speed": 1.6,
         "range": 45,
         "attack_cooldown": 36,
@@ -400,7 +461,7 @@ HERO_TYPES = {
         "skill_name": "Blade Fury",
         "skill_desc": "Spin AOE damage",
         "skill_cooldown": 420,
-        "skill_damage": 22,    # ← 15 → 22
+        "skill_damage": 26,    # ← 22 → 26 (8 tick spin = 208 total)
         "skill_range": 70,
         "skill_duration": 120,
         "description": "Berserker spin blade",
@@ -410,8 +471,8 @@ HERO_TYPES = {
         "title": "The Wind Ranger",
         "role": "Marksman",
         "cost": 380,
-        "hp": 450,             # ← 320 → 450
-        "damage": 42,          # ← 32 → 42
+        "hp": 470,             # ← 450 → 470
+        "damage": 45,          # ← 42 → 45
         "speed": 1.5,
         "range": 130,
         "attack_cooldown": 52,
@@ -420,7 +481,7 @@ HERO_TYPES = {
         "skill_name": "Focus Fire",
         "skill_desc": "Attack speed buff + piercing shot",
         "skill_cooldown": 360,
-        "skill_damage": 90,    # ← 70 → 90
+        "skill_damage": 95,    # ← 90 → 95
         "skill_range": 180,
         "description": "Mid-range marksman",
     },
@@ -429,8 +490,8 @@ HERO_TYPES = {
         "title": "The Void Harbinger",
         "role": "Mage",
         "cost": 420,
-        "hp": 500,
-        "damage": 30,
+        "hp": 520,             # ← 500 → 520
+        "damage": 34,          # ← 30 → 34
         "speed": 1.3,
         "range": 130,
         "attack_cooldown": 46,
@@ -439,7 +500,7 @@ HERO_TYPES = {
         "skill_name": "Arcane Orb",
         "skill_desc": "Long-range missile + line",
         "skill_cooldown": 330,
-        "skill_damage": 85,
+        "skill_damage": 95,    # ← 85 → 95
         "skill_range": 250,
         "skill_aoe": 80,
         "description": "Void mage, high burst",
@@ -450,7 +511,7 @@ HERO_TYPES = {
         "role": "Bruiser",
         "cost": 500,
         "hp": 1400,
-        "damage": 28,
+        "damage": 32,          # ← 28 → 32
         "speed": 1.3,
         "range": 55,
         "attack_cooldown": 40,
@@ -459,7 +520,7 @@ HERO_TYPES = {
         "skill_name": "Viscous Nose",
         "skill_desc": "Goop cone + slow",
         "skill_cooldown": 300,
-        "skill_damage": 60,
+        "skill_damage": 70,    # ← 60 → 70
         "skill_range": 100,
         "skill_stun_duration": 60,
         "description": "Tanky porcupine warrior",
@@ -470,7 +531,7 @@ HERO_TYPES = {
         "role": "Mage/Trickster",
         "cost": 420,
         "hp": 520,
-        "damage": 25,
+        "damage": 27,          # ← 25 → 27
         "speed": 1.6,
         "range": 130,
         "attack_cooldown": 30,
@@ -479,7 +540,7 @@ HERO_TYPES = {
         "skill_name": "Bramble Maze",
         "skill_desc": "Thorn trap + slow",
         "skill_cooldown": 300,
-        "skill_damage": 65,
+        "skill_damage": 70,    # ← 65 → 70
         "skill_range": 150,
         "skill_chain_count": 4,
         "description": "Dark fairy trickster",
@@ -569,15 +630,15 @@ TOWER_BASE_STATS = {
 ARCHER_LEVELS = {
     1: {"hp": 800,  "damage": 20,  "range": 180, "cd": 35, "cost": 0,
         "desc": "Basic archer"},
-    2: {"hp": 1050, "damage": 32,  "range": 190, "cd": 33, "cost": 175,
+    2: {"hp": 1050, "damage": 33,  "range": 190, "cd": 32, "cost": 175,
         "desc": "Faster arrows"},
-    3: {"hp": 1350, "damage": 48,  "range": 200, "cd": 30, "cost": 325,
+    3: {"hp": 1350, "damage": 50,  "range": 200, "cd": 30, "cost": 325,
         "desc": "Better bow"},
-    4: {"hp": 1750, "damage": 68,  "range": 210, "cd": 27, "cost": 550,
+    4: {"hp": 1750, "damage": 72,  "range": 210, "cd": 27, "cost": 550,
         "desc": "Elite marksman"},
-    5: {"hp": 2200, "damage": 90,  "range": 220, "cd": 24, "cost": 850,
+    5: {"hp": 2200, "damage": 98,  "range": 220, "cd": 24, "cost": 850,
         "desc": "Master archer"},
-    6: {"hp": 2800, "damage": 120, "range": 230, "cd": 22, "cost": 1300,
+    6: {"hp": 2800, "damage": 130, "range": 230, "cd": 22, "cost": 1300,
         "desc": "DOUBLE SHOT!", "double_shot": True},
 }
 
@@ -585,56 +646,62 @@ ARCHER_LEVELS = {
 # Nerf 2026-08: range cannon dulu 200..260 (terpanjang di game + damage
 # tertinggi + splash + burn = OP). Sekarang 165..210 — cannon jadi
 # siege AOE jarak MENENGAH; Archer (230) tetap raja range single-target.
+# Balance pass 2026-08: damage diturunkan sedikit supaya DPS
+# single-target cannon < Archer (AOE + burn = nilai tambahnya).
 CANNON_LEVELS = {
-    2: {"hp": 1200, "damage": 45,  "range": 165, "cd": 44, "cost": 175,
+    2: {"hp": 1200, "damage": 42,  "range": 165, "cd": 44, "cost": 175,
         "desc": "Splash + Burn 8/s", "splash": 45,
         "burn_dps": 8,  "burn_duration": 120},
-    3: {"hp": 1500, "damage": 65,  "range": 175, "cd": 40, "cost": 325,
+    3: {"hp": 1500, "damage": 60,  "range": 175, "cd": 40, "cost": 325,
         "desc": "Big Boom + Burn 12/s", "splash": 55,
         "burn_dps": 12, "burn_duration": 150},
-    4: {"hp": 1900, "damage": 90,  "range": 185, "cd": 36, "cost": 550,
+    4: {"hp": 1900, "damage": 84,  "range": 185, "cd": 36, "cost": 550,
         "desc": "Heavy Cannon + Burn 16/s", "splash": 65,
         "burn_dps": 16, "burn_duration": 150},
-    5: {"hp": 2400, "damage": 125, "range": 195, "cd": 32, "cost": 850,
+    5: {"hp": 2400, "damage": 116, "range": 195, "cd": 32, "cost": 850,
         "desc": "Siege + Burn 22/s", "splash": 80,
         "burn_dps": 22, "burn_duration": 180},
-    6: {"hp": 3000, "damage": 170, "range": 210, "cd": 28, "cost": 1300,
+    6: {"hp": 3000, "damage": 155, "range": 210, "cd": 28, "cost": 1300,
         "desc": "DEVASTATOR! Burn 30/s", "splash": 100,
         "burn_dps": 30, "burn_duration": 180},
 }
 # ═══ ICE PATH (Crowd Control: movement + attack slow) - BUFFED attack speed ═══
+# Balance pass 2026-08: damage diturunkan ~10% tiap level supaya DPS
+# ice < archer (slow & freeze adalah nilai utamanya, bukan damage).
 ICE_LEVELS = {
-    2: {"hp": 950,  "damage": 22,  "range": 170, "cd": 26, "cost": 175,
+    2: {"hp": 950,  "damage": 20,  "range": 170, "cd": 26, "cost": 175,
         "desc": "Slow 25% & Atk -15%", "slow": 0.25, "slow_duration": 90,
         "atk_slow": 0.15},
-    3: {"hp": 1250, "damage": 35,  "range": 180, "cd": 22, "cost": 325,
+    3: {"hp": 1250, "damage": 32,  "range": 180, "cd": 22, "cost": 325,
         "desc": "Slow 35% & Atk -20%", "slow": 0.35, "slow_duration": 100,
         "atk_slow": 0.20},
-    4: {"hp": 1600, "damage": 50,  "range": 190, "cd": 18, "cost": 550,
+    4: {"hp": 1600, "damage": 45,  "range": 190, "cd": 18, "cost": 550,
         "desc": "Slow 45% & Atk -25%", "slow": 0.45, "slow_duration": 110,
         "atk_slow": 0.25},
-    5: {"hp": 2050, "damage": 70,  "range": 200, "cd": 16, "cost": 850,
+    5: {"hp": 2050, "damage": 60,  "range": 200, "cd": 16, "cost": 850,
         "desc": "Slow 55% & Atk -30%", "slow": 0.55, "slow_duration": 120,
         "atk_slow": 0.30},
-    6: {"hp": 2600, "damage": 95,  "range": 220, "cd": 14, "cost": 1300,
+    6: {"hp": 2600, "damage": 78,  "range": 220, "cd": 14, "cost": 1300,
         "desc": "FREEZE! AOE + Atk -40%", "slow": 0.65,
         "slow_duration": 150, "slow_aoe": 80, "atk_slow": 0.40},
 }
 # ═══ MAGE PATH (Chain + Skill Down + Anti-Heal) - BUFFED attack speed ═══
+# Balance pass 2026-08: damage diturunkan supaya DPS single-target mage
+# < archer; nilai mage ada di chain (serang banyak target) + debuff.
 MAGE_LEVELS = {
-    2: {"hp": 850,  "damage": 18,  "range": 180, "cd": 20, "cost": 175,
+    2: {"hp": 850,  "damage": 17,  "range": 180, "cd": 20, "cost": 175,
         "desc": "Hit 2, Skill -20%, Heal -40%", "chain": 2,
         "skill_down": 0.20, "anti_heal": 0.40, "debuff_duration": 120},
-    3: {"hp": 1100, "damage": 28,  "range": 190, "cd": 18, "cost": 325,
+    3: {"hp": 1100, "damage": 26,  "range": 190, "cd": 18, "cost": 325,
         "desc": "Skill -25%, Heal -50%", "chain": 2,
         "skill_down": 0.25, "anti_heal": 0.50, "debuff_duration": 130},
-    4: {"hp": 1450, "damage": 42,  "range": 200, "cd": 16, "cost": 550,
+    4: {"hp": 1450, "damage": 39,  "range": 200, "cd": 16, "cost": 550,
         "desc": "Hit 3, Skill -30%, Heal -60%", "chain": 3,
         "skill_down": 0.30, "anti_heal": 0.60, "debuff_duration": 140},
-    5: {"hp": 1850, "damage": 60,  "range": 210, "cd": 14, "cost": 850,
+    5: {"hp": 1850, "damage": 55,  "range": 210, "cd": 14, "cost": 850,
         "desc": "Skill -40%, Heal -75%", "chain": 3,
         "skill_down": 0.40, "anti_heal": 0.75, "debuff_duration": 150},
-    6: {"hp": 2350, "damage": 82,  "range": 230, "cd": 12, "cost": 1300,
+    6: {"hp": 2350, "damage": 70,  "range": 230, "cd": 12, "cost": 1300,
         "desc": "CHAIN! Skill -50%, Heal -100%", "chain": 4,
         "skill_down": 0.50, "anti_heal": 1.00, "debuff_duration": 180},
 }
@@ -1301,7 +1368,6 @@ class Game:
         except Exception:
             pass
 
-        self.gold = cfg["starting_gold"]
         self.score = 0
 
         # ═══ DIFFICULTY MODE & ENEMY SCALING ═══
@@ -1329,6 +1395,20 @@ class Game:
 
         self.difficulty = self.settings.difficulty
         self.enemy_scaling_enabled = (self.difficulty == "hard")
+
+        # ═══ STARTING GOLD: disesuaikan difficulty + level ═══
+        # easy = +25%, normal = 100%, hard = -25%, plus bonus
+        # +100/level. Nilai ini juga ditampilkan di LevelIntroScreen.
+        self.gold = compute_starting_gold(
+            cfg, self.level_number, self.difficulty)
+
+        # ═══ GOLD/S PASIF: disesuaikan difficulty + level ═══
+        # Pola sama dengan starting gold; pecahannya diakumulasi di
+        # _gold_income_milli (seperseribu gold, integer) supaya saldo
+        # tetap angka bulat tanpa drift float.
+        self.gold_per_second = compute_gold_per_second(
+            self.level_number, self.difficulty)
+        self._gold_income_milli = 0
 
         if self.enemy_scaling_enabled:
             self.enemy_hp_mult = cfg.get("enemy_hp_mult", 1.0) * 1.15
@@ -1844,7 +1924,16 @@ class Game:
         self.gold_timer += 1
         if self.gold_timer >= 60:
             self.gold_timer = 0
-            self.gold += GOLD_PER_SECOND
+            # Income pasif pemain: laju (bisa pecahan, mis. 7.125/s)
+            # diakumulasi dalam mili-gold integer, bagian ribuan-nya
+            # dipindah ke saldo supaya self.gold selalu angka bulat
+            # dan akumulasi tetap presisi (tanpa drift float).
+            self._gold_income_milli += int(round(
+                self.gold_per_second * 1000.0))
+            gain, self._gold_income_milli = divmod(
+                self._gold_income_milli, 1000)
+            if gain:
+                self.gold += gain
             # AI income naik tiap wave supaya AI bisa menabung untuk
             # membeli boss hero dari level-level di bawahnya.
             # AI gets same base income + wave bonus to afford boss heroes (parity)
@@ -2498,7 +2587,11 @@ class Game:
         val_font = get_font(24, "body_bold")
         inc_font = get_font(17, "body_medium")
         val_w = val_font.size(gold_str)[0]
-        inc_w = inc_font.size(f"+{GOLD_PER_SECOND}/s")[0]
+        # Income rate pemain (sudah diskala difficulty + level), bukan
+        # konstanta GOLD_PER_SECOND.
+        _rate = getattr(self, "gold_per_second", GOLD_PER_SECOND)
+        income_str = "+" + format_gold_rate(_rate) + "/s"
+        inc_w = inc_font.size(income_str)[0]
         width = max(150, val_w + inc_w + 78)
         height = 40
         chip = pygame.Rect(x, y, width, height)
@@ -2520,7 +2613,7 @@ class Game:
         # Pemisah hairline
         pygame.draw.line(surface, (140, 110, 50),
                          (gx - 6, y + 10), (gx - 6, y + height - 10), 1)
-        income = inc_font.render(f"+{GOLD_PER_SECOND}/s",
+        income = inc_font.render(income_str,
                                  True, (196, 241, 168))
         surface.blit(income, (gx, y + 11))
 
@@ -2609,6 +2702,14 @@ class Game:
         _PH.mark("e.hero")
         for h in self.get_all_heroes():
             if FrustumCuller.is_visible(h.x, h.y, h.radius):
+                h.draw(draw_target)
+            elif any(
+                    p.get('alive') and FrustumCuller.is_visible(
+                        p.get('x', 0), p.get('y', 0), 10)
+                    for p in getattr(h, 'projectiles', [])):
+                # Hero di luar layar tapi proyektilnya masih terbang di
+                # area terlihat: tetap gambar supaya proyektil tidak
+                # "menghilang" begitu hero keluar layar.
                 h.draw(draw_target)
 
         _PH.mark("e.boss")
