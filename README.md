@@ -429,7 +429,9 @@ Diukur dari render (alpha>=100), yang salah waktu itu:
 
 | | sebelum | sesudah | catatan |
 |---|---|---|---|
-| bbox solid idle | **190 x 138 px** | **99 x 147 px** | bbox lama menggelembung oleh puluhan partikel darah acak yang berserakan; badan aslinya blob kotak kecil. Baru: rapat badan, peringkat boss terbesar level 1 terjaga |
+| bbox solid idle | **190 x 138 px** | **104 x 150 px** | bbox lama menggelembung oleh puluhan partikel darah acak yang berserakan; badan aslinya blob kotak kecil. Baru: rapat badan, peringkat boss terbesar level 1 terjaga |
+| mood "Red Mist" | kabut merah tebal + bara beterbangan (bagus - dipertahankan) | **kabut lobus bergolak digambar langsung ke layar (alpha lapis < 100: tebal di arena, tidak pernah ikut terhitung badan padat)** + bara orbit + kolam darah gelap ber-rim menyala | presence lama kembali tanpa partikel acak yang menggelembungkan bbox |
+| kulit | merah terang kehitaman di sisi gelap (bagus - dipertahankan) | palet gelap nan duri: dominan `skin_dark/mid`, terang hanya wedge kecil sisi cahaya | tidak lagi terbaca pink |
 | kapak | poligon "kertas" melayang di samping tangan statis | **greataxe dua tangan**: kedua pergelangan lahir dari titik DI GAGANG (`_back_hand_u`), sudut dari tabel pose `_axe_angle` | kapak tidak pernah lepas dari tangan di semua pose |
 | pose | idle/walk/attack hampir identik | rest -> wind-up -> **cleave + impact hold** -> recovery; Q/W/E/R masing-masing stance sendiri | kurva `_attack_curve`: anticipation -> swing cepat -> HOLD -> rebound |
 | pita cleave | tidak ada | **lahir dari MATA KAPAK** (lintasan `_axe_head_local`) | senjata terbaca mengayun, bukan efek tempel |

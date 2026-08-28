@@ -3864,13 +3864,13 @@ class _NS_drakar:
     # attack/4 stance skill, dua LOD) + margin 4 px (outline digambar di
     # luar buffer, jadi tidak dihitung). Dikunci oleh
     # tools/test_drakar_masterwork.py.
-    RIG_W, RIG_H = 184, 184
-    RIG_OX, RIG_OY = 93, 118
+    RIG_W, RIG_H = 198, 184
+    RIG_OX, RIG_OY = 99, 118
 
     # Bidang acuan pass cahaya TETAP di dalam buffer (alasan sama dengan
     # GRAD_BOX gornak: kalau ikut bbox, arah cahaya bergeser tiap ganti
     # pose dan terbaca sebagai lampu berkedip).
-    GRAD_BOX = (RIG_OX - 42, RIG_OY - 66, 88, 118)
+    GRAD_BOX = (RIG_OX - 46, RIG_OY - 66, 92, 118)
 
     # Durasi status skill (frame) - HARUS sama dengan active_skill_timer
     # yang diisi AI boss (bosses/base_boss.py: q=90 w=45 e=60 r=60) dan
@@ -3886,11 +3886,11 @@ class _NS_drakar:
 
     PALETTE = {
         # Kulit merah bata (cahaya dari depan-atas)
-        "skin_darkest": (46, 12, 14),
-        "skin_dark": (104, 28, 26),
-        "skin_mid": (164, 52, 42),
-        "skin_light": (210, 94, 70),
-        "skin_shine": (242, 148, 110),
+        "skin_darkest": (28, 7, 10),
+        "skin_dark": (72, 16, 19),
+        "skin_mid": (122, 32, 28),
+        "skin_light": (172, 56, 42),
+        "skin_shine": (216, 100, 66),
 
         # Rambut / jenggot hitam kebiruan
         "hair_darkest": (7, 6, 10),
@@ -4830,20 +4830,21 @@ class _NS_drakar:
         poly_free(p["skin_mid"], [pt(-12 + twist, sh + 1),
                                   pt(11 + twist, sh + 1), pt(9, -2),
                                   pt(-10, -2)], outline=False)
-        # Blok cahaya di bahu-dada (satu bentuk besar, bukan garis halus)
-        poly_free(p["skin_light"], [pt(-11 + twist, sh + 1),
-                                    pt(8 + twist, sh + 1), pt(6, sh + 8),
-                                    pt(-10, sh + 7)], outline=False)
-        poly_free(p["skin_shine"], [pt(-9 + twist, sh + 2),
-                                    pt(4 + twist, sh + 2), pt(3, sh + 6),
-                                    pt(-8, sh + 6)], outline=False)
+        # Nilai dominan gelap; terang hanya wedge kecil sisi cahaya -
+        # kulit pink terang dulu membuat badan kehilangan mood nan duri.
+        poly_free(p["skin_light"], [pt(2 + twist, sh + 1),
+                                    pt(9 + twist, sh + 1), pt(6, sh + 6),
+                                    pt(1, sh + 6)], outline=False)
+        poly_free(p["skin_shine"], [pt(4 + twist, sh + 2),
+                                    pt(7 + twist, sh + 2), pt(5, sh + 5),
+                                    pt(4, sh + 5)], outline=False)
         # Bayangan miring di bawah pektoral + highlight mikro: dua nilai
         # ini yang membuat dada terbaca BERBUKUK.
         poly_free(p["skin_dark"], [pt(-11 + twist, sh + 8),
                                    pt(-1 + twist, sh + 9),
                                    pt(-2 + twist, sh + 11),
                                    pt(-11 + twist, sh + 10)], outline=False)
-        _NS_drakar._aaline(surface, p["skin_shine"],
+        _NS_drakar._aaline(surface, p["skin_light"],
                            pt(-9 + twist, sh + 5), pt(-2 + twist, sh + 5), 1)
         # Garis tengah + otot perut (nilai, bukan outline)
         _NS_drakar._aaline(surface, p["skin_dark"], pt(twist, sh + 4),
@@ -5049,12 +5050,12 @@ class _NS_drakar:
         # membaca sebagai "helm berkaca/visor"). Focal point = DUA mata
         # amber besar dengan cavum kecil per mata - bukan satu halo
         # tengah yang melebur jadi pita.
-        poly_free(p["skin_light"], [pt(hx - 7, hy + 1), pt(hx + 8, hy + 1),
-                                    pt(hx + 8, hy + 7), pt(hx - 3, hy + 8)],
+        poly_free(p["skin_light"], [pt(hx - 6, hy + 1), pt(hx + 8, hy + 1),
+                                    pt(hx + 8, hy + 7), pt(hx - 2, hy + 8)],
                   outline=False)
-        poly_free(p["skin_shine"], [pt(hx + 3, hy + 3), pt(hx + 8, hy + 3),
+        poly_free(p["skin_shine"], [pt(hx + 4, hy + 3), pt(hx + 8, hy + 3),
                                     pt(hx + 8, hy + 6),
-                                    pt(hx + 3, hy + 6)], outline=False)
+                                    pt(hx + 4, hy + 6)], outline=False)
         blink = ((phase * 0.6) % 4.2) < 0.16
         if not blink:
             # Urutan PENTING: halo dulu (glow latar), baru blok mata
@@ -5195,8 +5196,8 @@ class _NS_drakar:
 
         L = _NS_drakar._axe_len(action)
         # ── Gagang: dari pommel sampai lewat mata kapak
-        poly(p["leather_darkest"], [hpt(-9, -1.4), hpt(L + 2, -1.2),
-                                         hpt(L + 2, 1.2), hpt(-9, 1.4)])
+        poly(p["leather_darkest"], [hpt(-10, -2.1), hpt(L + 2, -1.7),
+                                         hpt(L + 2, 1.7), hpt(-10, 2.1)])
         poly(p["leather_dark"], [hpt(-8, -0.9), hpt(L + 2, -0.7),
                                       hpt(L + 2, 0.7), hpt(-8, 0.9)],
                   outline=False)
@@ -5228,17 +5229,17 @@ class _NS_drakar:
         #    daun putih kecil.
         b0 = su - 2
         blade = [
-            (b0, 1.8),            # pangkal bawah socket
-            (b0 + 2, 5),          # leher
-            (b0 + 1, 14),         # jenggar ke bawah (beard)
-            (b0 + 3, 23),         # ujung jenggot
-            (b0 + 7, 26),         # busur bawah
-            (b0 + 12, 23),        # sisi muka
-            (b0 + 16, 15),        # busur depan
-            (b0 + 17, 8),         # tanduk atas
-            (b0 + 14, 3),         # atas
-            (b0 + 8, 0.5),        # duduk di gagang
-            (b0 + 2, -1.4),       # pangkal atas
+            (b0, 2.2),            # pangkal bawah socket
+            (b0 + 2, 6),          # leher
+            (b0 + 1, 16),         # jenggar ke bawah (beard)
+            (b0 + 3, 26),         # ujung jenggot
+            (b0 + 8, 29),         # busur bawah
+            (b0 + 14, 26),        # sisi muka
+            (b0 + 18, 17),        # busur depan
+            (b0 + 19, 9),         # tanduk atas
+            (b0 + 16, 3),         # atas
+            (b0 + 9, 0.5),        # duduk di gagang
+            (b0 + 2, -1.6),       # pangkal atas
         ]
         poly_pts = [hpt(u, v) for u, v in blade]
         _NS_drakar._poly(surface, p["shadow_deep"],
@@ -5257,16 +5258,16 @@ class _NS_drakar:
         # SISI PEMOTONG: pita shine menempel busur luar (dari tanduk
         # atas sampai ujung jenggot) - dulu lapisan terang justru
         # menumpuk di dekat socket sehingga bilah terbaca kecil & redup.
-        edge_out = [(b0 + 3, 22.5), (b0 + 7, 25.6), (b0 + 12, 22.6),
-                    (b0 + 15.6, 15.4), (b0 + 16.6, 8.4)]
-        edge_in = [(u, v - 3.4) for (u, v) in edge_out]
+        edge_out = [(b0 + 3, 25.0), (b0 + 8, 28.5), (b0 + 14, 25.5),
+                    (b0 + 17.6, 17.0), (b0 + 18.6, 9.2)]
+        edge_in = [(u, v - 3.8) for (u, v) in edge_out]
         _NS_drakar._poly(surface, p["blade_shine"],
                          [hpt(u, v) for (u, v) in edge_out + edge_in[::-1]])
         # Garis kecerunan dari shine ke badan (anti-"stiker putih")
         _NS_drakar._aaline(surface, p["blade_light"],
                            hpt(b0 + 15.4, 10), hpt(b0 + 5.4, 22.6), 1)
         # Alur darah di bilah - menyala saat hot
-        groove = [hpt(b0 + 3, 7), hpt(b0 + 7, 15), hpt(b0 + 12, 18)]
+        groove = [hpt(b0 + 3, 8), hpt(b0 + 8, 17), hpt(b0 + 14, 20)]
         ga = _NS_drakar._alpha(90 + 165 * (1.0 if hot else 0.15) *
                                (0.75 + 0.25 * math.sin(phase * 2.6)))
         _NS_drakar._aaline(surface, p["blade_dark"], groove[0], groove[1], 1)
@@ -5276,9 +5277,9 @@ class _NS_drakar:
             _NS_drakar._aaline(surface, (*p["blood_hot"], ga), groove[1],
                                groove[2], 1)
         # Spike belakang (-v): pembacaan "senjata berat, dua arah"
-        poly(p["armor_darkest"], [hpt(b0 + 1, -1.5), hpt(b0 + 9, -3.5),
-                                       hpt(b0 + 10, -7), hpt(b0 + 5, -4.5),
-                                       hpt(b0 + 1, -3)])
+        poly(p["armor_darkest"], [hpt(b0 + 1, -1.8), hpt(b0 + 10, -4),
+                                       hpt(b0 + 11, -8), hpt(b0 + 5, -5),
+                                       hpt(b0 + 1, -3.4)])
         poly(p["armor_mid"], [hpt(b0 + 2, -2), hpt(b0 + 8, -4),
                                    hpt(b0 + 8.5, -6)], outline=False)
 
@@ -5300,8 +5301,8 @@ class _NS_drakar:
         _NS_drakar._aaline(surface, col, pt(-10, hy - 13), pt(0, hy - 15), 1)
         # Tepi pelat dada & sabuk
         _NS_drakar._aaline(surface, col, pt(14, sh + 1), pt(14, -8), 1)
-        _NS_drakar._aaline(surface, (*p["blood_hot"], a), pt(-13, 1),
-                           pt(13, 1), 1)
+        _NS_drakar._aaline(surface, (*p["blood_hot"], min(255, a + 30)),
+                           pt(-13, 1), pt(13, 1), 1)
         # Garis cahaya di lutut & ujung boot
         for sx in (-6, 11):
             _NS_drakar._aaline(surface, col, pt(sx, 24), pt(sx + 1, 32), 1)
@@ -5406,82 +5407,119 @@ class _NS_drakar:
         surface.blit(sh, (int(x) - bw // 2, int(y) - bh // 2))
 
     def _draw_rage_aura(surface, x, y, phase, skill):
-        """Cahaya merah MENEMPEL badan + bara mengorbit siluet.
+        """KABUT MERAH - identitas "The Might of the Red Mist".
 
-        Kabut rage lama adalah titik-titik merah acak yang berserakan
-        sampai ke luar frame. Sekarang: cakram glow rapat ke badan
-        (dibaca sebagai aura, bukan noise) + bara naik dengan orbit
-        deterministik di sekitar siluet.
+        Kabut digambar LANGSUNG ke surface dalam beberapa LOBUS yang
+        bergeser mengikuti fase (bukan satu oval geometris) supaya
+        terbaca sebagai kabut yang bergolak. Alpha tiap lapis < 100:
+        menumpuk tebal di layar, tapi di canvas SRCALPHA (pengukuran
+        skala hero) tidak pernah ikut terhitung badan padat.
         """
         p = _NS_drakar.PALETTE
         pulse = 1.0 if skill else math.sin(phase * 0.7) * 0.25 + 0.72
         K = _NS_drakar.SCALE
-        glow = pygame.Surface((int(88 * K), int(104 * K)), pygame.SRCALPHA)
-        cx, cy = int(44 * K), int(56 * K)
-        for rx, ry, col, a in ((int(34 * K), int(42 * K), "mist_darkest", 100),
-                               (int(26 * K), int(34 * K), "mist_dark", 120),
-                               (int(18 * K), int(25 * K), "mist_mid", 140)):
-            _NS_drakar._ellipse(glow, (*p[col], _NS_drakar._alpha(a * pulse)),
-                                (cx - rx, cy - ry, rx * 2, ry * 2))
-        _NS_drakar._ellipse(glow, (*p["mist_light"],
-                                   _NS_drakar._alpha(66 * pulse)),
-                            (cx - int(18 * K), cy - int(25 * K),
-                             int(36 * K), int(50 * K)), 1)
-        surface.blit(glow, (int(x) - cx, int(y) - cy + 8))
 
-        n = 6
+        # ── Lobus kabut bergolak: 4 gumpalan besar yang naik-turun &
+        #    bergeser dengan fase sendiri (organik, bukan kapsul)
+        lobes = ((-20, -18, 30, 38, 0.0), (16, -10, 28, 34, 1.7),
+                 (-4, 22, 32, 26, 3.1), (2, -44, 22, 20, 4.4))
+        for bx, by, rx, ry, seed in lobes:
+            dx = int(math.sin(phase * 0.8 + seed) * 4)
+            dy = int(math.sin(phase * 0.62 + seed * 1.3) * 3)
+            for k, (col, a) in enumerate((("mist_darkest", 85),
+                                          ("mist_dark", 72),
+                                          ("mist_mid", 62))):
+                shrink = 1 - k * 0.18
+                rxk, ryk = int(rx * K * shrink), int(ry * K * shrink)
+                _NS_drakar._ellipse(
+                    surface, (*p[col], _NS_drakar._alpha(a * pulse)),
+                    (int(x) + int(bx * K) + dx - rxk,
+                     int(y) + int(by * K) + dy - ryk, rxk * 2, ryk * 2))
+
+        # ── Inti gelap: siluet badan tetap POP dari kabutnya sendiri
+        _NS_drakar._ellipse(surface, (14, 2, 5, _NS_drakar._alpha(92 * pulse)),
+                            (int(x) - int(26 * K), int(y) - int(40 * K),
+                             int(52 * K), int(70 * K)))
+        # Rim menyala mengelilingi inti
+        _NS_drakar._ellipse(surface, (*p["mist_mid"],
+                                      _NS_drakar._alpha(92 * pulse)),
+                            (int(x) - int(26 * K), int(y) - int(40 * K),
+                             int(52 * K), int(70 * K)), 2)
+        _NS_drakar._ellipse(surface, (*p["mist_light"],
+                                      _NS_drakar._alpha(88 * pulse)),
+                            (int(x) - int(28 * K), int(y) - int(42 * K),
+                             int(56 * K), int(74 * K)), 1)
+
+        # ── Bara orbit: presence versi lama, alpha rendah
+        n = 13
         for i in range(n):
             t = ((phase * 0.33 + i / n) % 1.0)
             ang = t * math.tau
-            r = _NS_drakar._s(21) + int(math.sin(phase * 1.3 + i * 2) * 3)
-            sx = x + int(math.cos(ang) * r * 1.22)
-            sy = y + 4 - int(t * 22)
-            a = _NS_drakar._alpha(130 * (1 - t) + 60 *
+            r = _NS_drakar._s(24) + int(math.sin(phase * 1.3 + i * 2) * 4)
+            sx = int(x) + int(math.cos(ang) * r * 1.3)
+            sy = int(y) + 6 - int(t * 32)
+            a = _NS_drakar._alpha(110 * (1 - t) + 50 *
                                   math.sin(phase * 3 + i))
             if a <= 0:
                 continue
-            _NS_drakar._aacircle(surface, (*p["blood_mid"], a), (sx, sy), 2)
+            rad = 3 if i % 3 == 0 else 2
+            _NS_drakar._aacircle(surface, (*p["blood_mid"], a), (sx, sy), rad)
             _NS_drakar._aacircle(surface, (*p["blood_hot"], a), (sx, sy), 1)
+            if i % 3 == 0:
+                _NS_drakar._rect_st(surface, (*p["blood_shine"], a),
+                                    (sx, sy - 2, 1, 3))
 
     def _draw_ground_ring(surface, x, y, phase, skill):
-        """Cincin rune merah di bawah kaki - seukuran telapak, TAPI
-        terang (keluarga hero masterwork punya cincin yang jelas)."""
+        """Kolam darah + cincin rune di bawah kaki - gelap penuh dengan
+        rim menyala (jangkar visual boss, mood versi lama)."""
         p = _NS_drakar.PALETTE
         pulse = math.sin(phase * 1.1) * 0.25 + 0.75
         gy = y + _NS_drakar.GROUND_DY
         bright = 1.15 if skill else 0.95
-        rw, rh = _NS_drakar._s(24), _NS_drakar._s(6)
+        # Kolam gelap penuh (bukan ring) - jangkar visual boss
+        rw, rh = _NS_drakar._s(32), _NS_drakar._s(9)
+        _NS_drakar._ellipse(surface,
+                            (20, 2, 4, _NS_drakar._alpha(230 * pulse * bright)),
+                            (x - rw, gy - rh, rw * 2, rh * 2))
         _NS_drakar._ellipse(surface,
                             (*p["rune_dark"],
+                             _NS_drakar._alpha(210 * pulse * bright)),
+                            (x - rw + 3, gy - rh + 1, rw * 2 - 6,
+                             rh * 2 - 2))
+        # Kabut darah di atas kolam
+        rw3, rh3 = _NS_drakar._s(27), _NS_drakar._s(7)
+        _NS_drakar._ellipse(surface,
+                            (*p["mist_dark"],
                              _NS_drakar._alpha(150 * pulse * bright)),
-                            (x - rw, gy - rh, rw * 2, rh * 2), 2)
-        rw2, rh2 = _NS_drakar._s(16), _NS_drakar._s(4)
+                            (x - rw3, gy - rh3, rw3 * 2, rh3 * 2))
+        # Rim menyala + retakan rune
+        rw2, rh2 = _NS_drakar._s(25), _NS_drakar._s(6)
         _NS_drakar._ellipse(surface,
                             (*p["rune_mid"],
-                             _NS_drakar._alpha(140 * pulse * bright)),
-                            (x - rw2, gy - rh2, rw2 * 2, rh2 * 2), 1)
-        t0, t1 = _NS_drakar._s(20), _NS_drakar._s(26)
-        ty0, ty1 = _NS_drakar._s(5), _NS_drakar._s(6)
-        for i in range(6):
-            ang = phase * 0.4 + i * math.tau / 6
+                             _NS_drakar._alpha(210 * pulse * bright)),
+                            (x - rw2, gy - rh2, rw2 * 2, rh2 * 2), 2)
+        t0, t1 = _NS_drakar._s(23), _NS_drakar._s(31)
+        ty0, ty1 = _NS_drakar._s(5), _NS_drakar._s(8)
+        for i in range(8):
+            ang = phase * 0.4 + i * math.tau / 8
             _NS_drakar._aaline(
                 surface,
-                (*p["rune_light"], _NS_drakar._alpha(170 * pulse * bright)),
+                (*p["rune_light"], _NS_drakar._alpha(220 * pulse * bright)),
                 (x + int(math.cos(ang) * t0), gy + int(math.sin(ang) * ty0)),
                 (x + int(math.cos(ang) * t1), gy + int(math.sin(ang) * ty1)),
                 1)
-        irw, irh = _NS_drakar._s(12), _NS_drakar._s(3)
+        irw, irh = _NS_drakar._s(14), _NS_drakar._s(4)
         _NS_drakar._ellipse(surface,
                             (*p["rune_light"],
-                             _NS_drakar._alpha(150 * pulse * bright)),
+                             _NS_drakar._alpha(190 * pulse * bright)),
                             (x - irw, gy - irh, irw * 2, irh * 2), 1)
         _NS_drakar._aacircle(surface, (*p["rune_shine"],
-                                       _NS_drakar._alpha(200 * pulse)),
+                                       _NS_drakar._alpha(230 * pulse)),
                              (int(x), int(gy)), 2)
         if skill in ("e", "r"):
-            ew, eh = _NS_drakar._s(28), _NS_drakar._s(7)
+            ew, eh = _NS_drakar._s(34), _NS_drakar._s(9)
             _NS_drakar._ellipse(
-                surface, (*p["rune_shine"], _NS_drakar._alpha(120 * pulse)),
+                surface, (*p["rune_shine"], _NS_drakar._alpha(170 * pulse)),
                 (x - ew, gy - eh, ew * 2, eh * 2), 1)
 
     def _draw_footfall_dust(surface, x, y, facing, phase):
