@@ -11530,6 +11530,155 @@ def _apply_boss_rebalancing():
 _apply_boss_rebalancing()
 
 
+# ═══════════════════════════════════════════════════════════════
+# BALANCE PASS 2026-08: kurva progresi boss yang mulus
+# ═══════════════════════════════════════════════════════════════
+# Setelah boost piecewise di atas, sebagian boss justru LEBIH LEMAH
+# dari boss di level sebelumnya (kurva tidak monoton), mis. true boss
+# level 19 (64.000 HP) lebih lemah dari level 18 (78.000 HP), dan
+# mini boss level 15 melompat +43% dari level 14.
+#
+# Dua lapis perbaikan:
+#   1) _smooth_boss_progression()  — auto: HP/damage/ability boss
+#      dipaksa tidak pernah turun dari level sebelumnya (per slot
+#      wave untuk mini boss, per level untuk true boss).
+#   2) Override kurva eksplisit — true boss HP/damage/ability
+#      disesuaikan ke tren kurva (bukan sekadar plateau), dan mini
+#      boss level 13-14 dijembatani supaya transisi ke level 15
+#      tidak melompat curam.
+# Semua nilai baru KELIPATAN 100/angka bersih dan naik monoton.
+# hero_unlock (hero boss untuk pemain) TIDAK disentuh.
+
+def _slot_of_mini_wave(wave):
+    """Kelompokkan wave mini boss: 10-12 = awal, 13-21 = tengah,
+    22+ = akhir (sesuai pola wave 10/18/25 tiap level)."""
+    if wave <= 12:
+        return "w10"
+    if wave <= 21:
+        return "w18"
+    return "w25"
+
+
+def _smooth_boss_progression():
+    """Lapisan 1: paksa HP/damage/ability boss naik monoton per level."""
+    try:
+        from levels import get_level_config, get_level_count
+    except Exception:
+        return
+
+    n = get_level_count()
+
+    # Mini boss: monotonic per slot wave (w10 / w18 / w25)
+    prev_hp = {"w10": 0, "w18": 0, "w25": 0}
+    prev_dmg = {"w10": 0, "w18": 0, "w25": 0}
+    prev_ab = {"w10": 0, "w18": 0, "w25": 0}
+    for lvl in range(1, n + 1):
+        cfg = get_level_config(lvl) or {}
+        for wave, name in sorted((cfg.get("mini_bosses") or {}).items()):
+            s = _slot_of_mini_wave(wave)
+            b = MINI_BOSS_TYPES.get(name)
+            if not b:
+                continue
+            b["hp"] = max(int(b.get("hp", 0)), prev_hp[s])
+            b["damage"] = max(int(b.get("damage", 0)), prev_dmg[s])
+            b["ability_damage"] = max(
+                int(b.get("ability_damage", 0)), prev_ab[s])
+            prev_hp[s] = b["hp"]
+            prev_dmg[s] = b["damage"]
+            prev_ab[s] = b["ability_damage"]
+
+    # True boss: monotonic per level
+    prev_hp = prev_dmg = prev_ab = 0
+    for lvl in range(1, n + 1):
+        cfg = get_level_config(lvl) or {}
+        b = TRUE_BOSS_TYPES.get(cfg.get("true_boss"))
+        if not b:
+            continue
+        b["hp"] = max(int(b.get("hp", 0)), prev_hp)
+        b["damage"] = max(int(b.get("damage", 0)), prev_dmg)
+        b["ability_damage"] = max(
+            int(b.get("ability_damage", 0)), prev_ab)
+        prev_hp = b["hp"]
+        prev_dmg = b["damage"]
+        prev_ab = b["ability_damage"]
+
+
+# ── Lapisan 2: override kurva (tren, bukan plateau) ──
+# True boss HP: melanjutkan tren 36k (L1) → 78k (L18) → 109k (L31)
+# → 199k (L54). Nilai asli yang sudah mendekati tren tidak diubah.
+TRUE_BOSS_HP_CURVE = {
+    "krobellus": 52000,        # L5  (asli 44.400, di bawah tren)
+    "kunkka": 54000,           # L6  (asli 44.000)
+    "nyxarath": 56000,         # L7  (asli 52.000)
+    "naraka": 60000,           # L9  (asli 52.000)
+    "aurethzar": 62000,        # L10 (asli 56.000)
+    "thalakryon": 64000,       # L11 (asli 60.000)
+    "vaelindra": 80000,        # L19 (asli 64.000, DROP dari L18 78k)
+    "morthraxis": 83000,       # L20 (asli 65.600)
+    "nexthyrius": 85000,       # L21 (asli 72.000)
+    "molgravar": 88000,        # L22 (asli 75.200)
+    "seraphienne": 90000,      # L23 (asli 78.400)
+    "solareth": 92000,         # L24 (asli 81.600)
+    "okeanora": 95000,         # L25 (asli 84.800)
+    "vaelmyrra": 97000,        # L26 (asli 88.000)
+    "zarethyr": 99000,         # L27 (asli 91.200)
+    "nyrethzalv": 102000,      # L28 (asli 94.400)
+    "nyrellieth": 104000,      # L29 (asli 97.600)
+    "nyxharr": 106000,         # L30 (asli 104.000)
+    "malzeroth": 113000,       # L32 (asli 102.950, di bawah L31 108.8k)
+    "zharakzuul": 117000,      # L33 (asli 107.300)
+    "grondmauris": 121000,     # L34 (asli 111.650)
+    "lyssarethys": 124000,     # L35 (asli 116.000)
+    "kaerinya": 128000,        # L36 (asli 120.350)
+    "xelnarath": 132000,       # L37 (asli 124.700)
+    "kyrenzai": 136000,        # L38 (asli 129.050)
+    "xaelmoran": 140000,       # L39 (asli 133.400)
+    "thalryndel": 144000,      # L40 (asli 137.750)
+    "grimkor": 148000,         # L41 (asli 142.100)
+    "kaineroth": 152000,       # L42 (asli 146.450)
+    "zyvareth": 156000,        # L43 (asli 150.800)
+    "kagetsuka": 160000,       # L44 (asli 155.150)
+    "deidara": 164000,         # L45 (asli 159.500)
+    "sunakage": 167000,        # L46 (asli 163.850)
+}
+
+# True boss damage: perbaiki drop kecil supaya naik monoton.
+TRUE_BOSS_DMG_CURVE = {
+    "alchemist": 150,          # L2 (asli 145 < L1 150)
+    "ancient_apparition": 152, # L3 (asli 145)
+    "kunkka": 172,             # L6 (asli 162 < L5 172)
+    "nyxarath": 175,           # L7 (asli 169)
+    "solareth": 318,           # L24 (asli 312 < L23 318)
+}
+
+# True boss ability damage: jembatani kurva awal 405 → 513 (+27/level).
+TRUE_BOSS_ABILITY_CURVE = {
+    "ignis_drachorn": 423,     # L4 (asli 378)
+    "krobellus": 441,          # L5 (asli 351)
+    "kunkka": 459,             # L6 (asli 378)
+    "nyxarath": 477,           # L7 (asli 405)
+    "vhorethzir": 495,         # L8 (asli 432)
+}
+
+def _apply_boss_curve_overrides():
+    for name, hp in TRUE_BOSS_HP_CURVE.items():
+        b = TRUE_BOSS_TYPES.get(name)
+        if b:
+            b["hp"] = hp
+    for name, dmg in TRUE_BOSS_DMG_CURVE.items():
+        b = TRUE_BOSS_TYPES.get(name)
+        if b:
+            b["damage"] = dmg
+    for name, ab in TRUE_BOSS_ABILITY_CURVE.items():
+        b = TRUE_BOSS_TYPES.get(name)
+        if b:
+            b["ability_damage"] = ab
+
+
+_smooth_boss_progression()
+_apply_boss_curve_overrides()
+
+
 def get_all_boss_types():
     """Get gabungan semua boss types"""
     all_bosses = {}

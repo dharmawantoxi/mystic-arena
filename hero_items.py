@@ -195,14 +195,14 @@ ITEM_CATALOG = {
         "color": (220, 60, 60),
         "glow": (255, 90, 90),
         "stats": {
-            "damage": 45,
+            "damage": 52,
             "crit_chance": 0.25,
             "crit_mult": 2.0,
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": "+45 Damage. 25% peluang Critical Strike (200% damage).",
-        "desc_en": "+45 Damage. 25% chance to Critical Strike (200% damage).",
+        "desc": "+52 Damage. 25% peluang Critical Strike (200% damage).",
+        "desc_en": "+52 Damage. 25% chance to Critical Strike (200% damage).",
         "flavor": "Tebasan maut yang berdentang di ujung setiap medan tempur.",
     },
 
@@ -292,7 +292,7 @@ ITEM_CATALOG = {
         "color": (200, 220, 240),
         "glow": (150, 210, 255),
         "stats": {
-            "damage": 30,
+            "damage": 34,
             "hp_regen": 3.0,
         },
         "passive": {
@@ -302,9 +302,9 @@ ITEM_CATALOG = {
         },
         "melee_only": True,
         "drops_on_death": False,
-        "desc": ("+30 Damage, +3 HP/reg. Serangan melee membelah: 50% "
+        "desc": ("+34 Damage, +3 HP/reg. Serangan melee membelah: 50% "
                  "damage ke musuh dalam radius 110 (hanya melee)."),
-        "desc_en": ("+30 Damage, +3 HP regen. Melee attacks cleave: "
+        "desc_en": ("+34 Damage, +3 HP regen. Melee attacks cleave: "
                     "50% damage to enemies within 110 radius (melee "
                     "only)."),
         "flavor": "Kapak berukir yang menebas apapun di depannya.",
@@ -318,7 +318,7 @@ ITEM_CATALOG = {
         "color": (180, 200, 230),
         "glow": (120, 170, 255),
         "stats": {
-            "armor": 4,
+            "armor": 6,
             "attack_speed": 30,
         },
         "aura": {
@@ -349,12 +349,12 @@ ITEM_CATALOG = {
         "color": (130, 220, 255),
         "glow": (180, 240, 255),
         "stats": {
-            "attack_speed": 60,
+            "attack_speed": 75,
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": "+60 Attack Speed. Serangan secepat cahaya bulan.",
-        "desc_en": "+60 Attack Speed. Strikes as fast as moonlight.",
+        "desc": "+75 Attack Speed. Serangan secepat cahaya bulan.",
+        "desc_en": "+75 Attack Speed. Strikes as fast as moonlight.",
         "flavor": "Serpihan rembulan yang membeku jadi kristal.",
     },
 
@@ -433,15 +433,15 @@ ITEM_CATALOG = {
         "color": (230, 140, 220),
         "glow": (255, 190, 250),
         "stats": {
-            "damage": 35,
+            "damage": 38,
             "attack_speed": 30,
             "evasion": 0.28,
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": ("+35 Damage, +30 Attack Speed, 28% Evasion (peluang "
+        "desc": ("+38 Damage, +30 Attack Speed, 28% Evasion (peluang "
                  "menghindari serangan fisik sepenuhnya)."),
-        "desc_en": ("+35 Damage, +30 Attack Speed, 28% Evasion (chance "
+        "desc_en": ("+38 Damage, +30 Attack Speed, 28% Evasion (chance "
                     "to fully dodge physical attacks)."),
         "flavor": "Sayap raja kupu-kupu yang menolak setiap bilah.",
     },
@@ -454,7 +454,7 @@ ITEM_CATALOG = {
         "color": (140, 220, 90),
         "glow": (190, 255, 140),
         "stats": {
-            "damage": 42,
+            "damage": 65,
         },
         "passive": {
             # Serangan mengikis armor target (negatif = damage
@@ -465,10 +465,10 @@ ITEM_CATALOG = {
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": ("+42 Damage. Serangan mengikis 6 Armor target "
+        "desc": ("+65 Damage. Serangan mengikis 6 Armor target "
                  "selama 6 detik (target menerima damage lebih "
                  "besar)."),
-        "desc_en": ("+42 Damage. Attacks shred 6 Armor from the target "
+        "desc_en": ("+65 Damage. Attacks shred 6 Armor from the target "
                     "for 6 seconds (target takes more damage)."),
         "flavor": "Bilah berkarat yang melarutkan zirah dan daging.",
     },
@@ -750,7 +750,7 @@ ITEM_CATALOG = {
         "color": (230, 180, 70),
         "glow": (255, 220, 130),
         "stats": {
-            "damage": 45,
+            "damage": 48,
             "attack_speed": 25,
         },
         "bash": {
@@ -970,7 +970,7 @@ ITEM_CATALOG = {
         "color": (235, 95, 60),
         "glow": (255, 150, 110),
         "stats": {
-            "damage": 12,
+            "damage": 20,
             "hp": 320,
             "hp_regen": 6,
             "cooldown_reduction": 0.15,
