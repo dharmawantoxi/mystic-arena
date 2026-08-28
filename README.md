@@ -281,6 +281,9 @@ Contact sheet rig idle/walk/attack:
 Portrait LOD Hero Shop: [docs/gornak_portrait_preview.png](docs/gornak_portrait_preview.png).
 Perbandingan sebelum/sesudah (baris atas = renderer lama, zoom sama):
 [docs/gornak_before_after.png](docs/gornak_before_after.png).
+Khusus pass visual jalur hero (lane + Hero Shop, ukuran sengaja tidak
+diubah): [docs/gornak_hero_pass.png](docs/gornak_hero_pass.png) —
+dirender ulang dengan `python tools/_shot_gornak_hero_pass.py`.
 
 **Pass kedua — visual jalur HERO.** Setelah ukuran aman, keluhan berikutnya
 adalah Gornak-as-hero tetap kalah "hidup" dibanding grimjaw/kaizen/vex.
