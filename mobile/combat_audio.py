@@ -289,7 +289,15 @@ def jenis_tower(tower_type):
 
 
 def play_hero_basic(hero):
-    """Suara serangan dasar hero (melee/ranged dari jangkauan)."""
+    """Suara serangan dasar hero (melee/ranged).
+
+    Hero hasil balance pass punya flag ``is_melee_hero`` (range
+    melee di-normalisasi ke 70 yang AMBANG_RANGED=100 anggap melee
+    juga, tapi flag lebih eksplisit & tahan perubahan).
+    """
+    if getattr(hero, "is_melee_hero", None) is not None:
+        return play(HERO_MELEE if hero.is_melee_hero
+                    else HERO_RANGED)
     return play(jenis_serangan(getattr(hero, "range", 40)))
 
 

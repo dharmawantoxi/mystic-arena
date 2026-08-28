@@ -3161,6 +3161,50 @@ class Hero(TowerDebuffMixin):
         self.range = stats["range"]
         self.attack_cooldown = stats["attack_cooldown"]
 
+        # ════════════════════════════════════════════════════════
+        # BALANCE PASS 2026-08: range di-normalisasi & melee di-buff
+        # ----------------------------------------------------------------
+        # Masalah lama:
+        #  - Range hero unlock (boss) berkembang liar dari 120 s/d
+        #    490px (Nyxaris/Tsukiyora dkk.) - 3.7x jangkauan Sylara,
+        #    jadi melee praktis tidak pernah menyentuh.
+        #  - Sebaliknya hero melee mentok di 45-70px: begitu ranged
+        #    mulai menembak dari 130-490px, melee harus berjalan
+        #    ratusan piksel sambil ditembaki tanpa balas.
+        # Solusi (terpusat di sini, otomatis berlaku untuk hero
+        # starter DAN unlock, pemain biru maupun AI merah):
+        #  - Semua range di-clamp ke BAND yang konsisten:
+        #      MELEE : 40-75  -> 70  (semua melee punya jangkauan
+        #                              tebas yang sama)
+        #      RANGED: 110-220 -> clamp 120..220 (tidak ada lagi
+        #                              "artileri 490px")
+        #  - Hero melee dapat kompensasi +20% damage, +15% HP,
+        #    +18% move speed, dan -12% attack cooldown - mereka
+        #    harus bisa MENDEKAT & memenangkan bursa tukar pukulan.
+        # Boss versi musuh (Boss class) TIDAK terpengaruh - ini
+        # hanya untuk hero yang dimainkan.
+        self.is_melee_hero = self.range < 110
+        if self.is_melee_hero:
+            self.range = 70
+            self.base_hp = int(self.base_hp * 1.15)
+            self.base_damage = int(round(self.base_damage * 1.20))
+            self.speed = round(self.speed * 1.18, 2)
+            self.attack_cooldown = max(
+                18, int(round(self.attack_cooldown * 0.88)))
+        else:
+            # Ranged: satukan band 120..220 (starter 130 tidak
+            # tersentuh; nilai liar >220 diturunkan).
+            self.range = max(120, min(220, self.range))
+
+        # Ancient Apparition yang dimainkan: basic attack-nya
+        # memakai homing projectile layar dari sistem Hero, jadi
+        # shard internal renderer boss (di ruang canvas offscreen
+        # yang ter-scale & sering ter-clip) dimatikan - lihat
+        # guards di bosses/level3.py (_spawn_ice_shard).
+        if hero_type == "ancient_apparition":
+            self._aa_hero_basic_shard = True
+        # ════════════════════════════════════════════════════════
+
         self.color = stats["color"]
         self.color_dark = stats["color_dark"]
 
@@ -4038,9 +4082,26 @@ class Hero(TowerDebuffMixin):
             self._attack_cd_effective = _eff_cd
 
             # ═══ RANGED HEROES → spawn projectile ═══
-            if self.hero_type in ('sylara', 'vex', 'zephyr',
-                                  'morgath', 'ancient_apparition') \
-                    and not is_boss_hero:
+            # Semua hero RANGED menembakkan homing projectile yang
+            # terlihat terbang ke target. Dulu daftar ini hardcode
+            # (sylara/vex/zephyr) + pengecualian paksa ``not
+            # is_boss_hero``: Morgath selamat karena renderer boss-
+            # nya menggambar beam petir sendiri (beam-pass), TAPI
+            # Ancient Apparition & puluhan boss hero ranged lain
+            # (Cryssalia, Azureth, Luminar, dll.) jatuh ke jalur
+            # "instant damage" tanpa visual apa pun - serangan
+            # mereka tidak terlihat sama sekali. Kini:
+            #  - melee          -> instant (tidak ada peluru)
+            #  - morgath        -> beam pass renderer boss (tidak
+            #                      diubah, visual petirnya khas)
+            #  - ranged lainny  -> projectile renderer khusus kalau
+            #                      ada (ancient_apparition = ice
+            #                      shard), kalau tidak ada renderer
+            #                      khusus _draw_projectile memakai
+            #                      peluru generik berwarna hero.
+            _is_ranged_attack = not getattr(self, "is_melee_hero",
+                                            self.range < 110)
+            if _is_ranged_attack and self.hero_type != 'morgath':
                 self._spawn_projectile(damage, is_crit)
                 # Lifesteal untuk ranged: terapkan saat proyektil
                 # dilepas (perkiraan damage yang akan mendarat).
