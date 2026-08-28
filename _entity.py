@@ -3649,20 +3649,38 @@ class Hero(TowerDebuffMixin):
         # Projectile homing: tiap frame arah dihitung ulang ke posisi
         # target terbaru (tx, ty) lalu angle disimpan & dipakai renderer
         # supaya selalu terarah ke target (fix "projectile tidak terarah").
+        #
+        # BUG LAMA YANG DIPERBAIKI:
+        #  1. Proyektil mati SELALU ~speed+5 px SEBELUM target, jadi
+        #     secara visual "terpotong" di udara (panah hilang sebelum
+        #     menyentuh musuh). Sekarang saat masuk radius hit, posisi
+        #     proyektil di-snap ke target dan dibiarkan hidup 1 frame
+        #     lagi supaya frame terakhir menggambar proyektil MENEMPEL
+        #     di target.
+        #  2. Target mati (mis. dibunuh damage instan skill yang sama
+        #     di hero_skills) membuat proyektil langsung dihapus -> tak
+        #     pernah muncul. Sekarang proyektil tetap terbang ke POSISI
+        #     TERAKHIR target lalu selesai di sana (visual utuh).
         for proj in self.projectiles:
             if not proj['alive']:
                 continue
 
             target = proj['target']
             if target is None or not getattr(target, 'alive', False):
-                proj['alive'] = False
-                continue
+                # Target mati/hilang: lanjutkan ke posisi terakhir.
+                tx = proj.get('_last_tx', proj['x'])
+                ty = proj.get('_last_ty', proj['y'])
+                target_dead = True
+            else:
+                tx = target.x
+                ty = target.y
+                target_dead = False
+                proj['_last_tx'] = float(tx)
+                proj['_last_ty'] = float(ty)
 
             proj['age'] = proj.get('age', 0) + 1
 
             # Homing tiap frame ke target yang bergerak
-            tx = target.x
-            ty = target.y
             dx = tx - proj['x']
             dy = ty - proj['y']
             dist = math.hypot(dx, dy)
@@ -3672,9 +3690,19 @@ class Hero(TowerDebuffMixin):
                 proj['angle'] = math.atan2(dy, dx)
 
             if dist < proj['speed'] + 5:
+                if proj.get('_hit_applied'):
+                    # Frame kedua di posisi target -> bersihkan
+                    proj['alive'] = False
+                    continue
+                # Snap ke posisi target: frame terakhir menggambar
+                # proyektil menempel di target (tidak terpotong).
+                proj['x'] = float(tx)
+                proj['y'] = float(ty)
+                proj['_hit_applied'] = True
+
                 # HIT! (hanya damage > 0 yang mengenai target & bersuara;
                 # projectile visual-only skill damage=0 diam saja)
-                if proj['damage'] > 0:
+                if not target_dead and proj['damage'] > 0:
                     # damage_type='projectile' → Kaizen Wind Wall
                     # bisa memantulkannya (lihat Hero.take_damage).
                     target.take_damage(proj['damage'], proj['team'],
@@ -3700,7 +3728,7 @@ class Hero(TowerDebuffMixin):
                                     f"CRIT!", is_critical=True)
                         except Exception:
                             pass
-                proj['alive'] = False
+                continue
             else:
                 proj['x'] += proj['speed'] * dx / dist
                 proj['y'] += proj['speed'] * dy / dist
@@ -4701,9 +4729,10 @@ class Hero(TowerDebuffMixin):
         px = int(proj['x'])
         py = int(proj['y'])
 
-        target = proj['target']
-        if target is None or not getattr(target, 'alive', False):
-            return
+        # CATATAN: tidak ada early-return saat target mati lagi —
+        # proyektil yang terbang ke posisi terakhir targetnya tetap
+        # digambar (bug lama: proyektil hilang di udara begitu target
+        # mati, padahal visualnya harus selesai).
 
         angle = proj.get('angle', 0.0)
         age = proj.get('age', 0)
@@ -4719,8 +4748,22 @@ class Hero(TowerDebuffMixin):
         elif proj['hero_type'] == 'ancient_apparition':
             self._draw_ice_shard_projectile(surface, px, py, angle)
         else:
-            # Generic
-            pygame.draw.circle(surface, self.color, (px, py), 3)
+            # Generic — dipakai 200+ hero boss. Dulu lingkaran 3px
+            # nyaris tidak terlihat untuk sprite besar, sekarang
+            # ukurannya mengikuti hero + ada core putih & ekor tipis.
+            r = max(4, int(self.radius * 0.6))
+            trail = max(2, r // 2)
+            pygame.draw.line(
+                surface, self.color,
+                (px - int(math.cos(angle) * r * 2.5),
+                 py - int(math.sin(angle) * r * 2.5)),
+                (px, py), trail)
+            if proj.get('is_crit'):
+                pygame.draw.circle(surface, (255, 240, 120),
+                                   (px, py), r + 2)
+            pygame.draw.circle(surface, self.color, (px, py), r)
+            pygame.draw.circle(surface, (255, 255, 255),
+                               (px, py), max(2, r - 2))
 
     def _draw_arrow_projectile(self, surface, px, py, angle):
         """Green arrow projectile (Sylara) - ujung TEPAT di (px,py)."""

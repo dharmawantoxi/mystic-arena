@@ -2703,6 +2703,14 @@ class Game:
         for h in self.get_all_heroes():
             if FrustumCuller.is_visible(h.x, h.y, h.radius):
                 h.draw(draw_target)
+            elif any(
+                    p.get('alive') and FrustumCuller.is_visible(
+                        p.get('x', 0), p.get('y', 0), 10)
+                    for p in getattr(h, 'projectiles', [])):
+                # Hero di luar layar tapi proyektilnya masih terbang di
+                # area terlihat: tetap gambar supaya proyektil tidak
+                # "menghilang" begitu hero keluar layar.
+                h.draw(draw_target)
 
         _PH.mark("e.boss")
         # ═══ DRAW BOSS (di luar hero loop!) ═══
