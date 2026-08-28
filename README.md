@@ -322,7 +322,26 @@ hero 1x (render akhir, alpha>=100)   H    W   kaki di bawah posisi
 grimjaw 74x79 · kaizen 75x82 · vex 76x84 · gornak 83x84
 ```
 
-Uji regresi: `python tools/test_gornak_masterwork.py` (13 pemeriksaan: rig
+**Pass ketiga — timing & gerak sekunder.** Yang masih "kaku" setelah
+visualnya bagus adalah RITMENYA, jadi pass ini mengejar itu:
+
+* `_attack_curve()` memetakan progres mentah -> waktu pose dengan
+  **anticination diperlambat -> ayunan cepat -> HOLD 4-5 frame di impact ->
+  follow-through**, semuanya monoton naik (kurva sinus versi awal sempat
+  membuat bilah terlihat mundur sesaat - artefak baru).
+* `_head_bob()`: kepala tidak lagi direkat ke torso - kontrarotasi saat
+  langkah, menunduk saat ayunan, mikro weight-shift saat idle.
+* Debu langkah (`_draw_footfall_dust`) hanya muncul saat telapak MENYENTUH
+  tanah; titik kontak per boot ditambahkan ke bayangan.
+* Kedip berkala (1 frame tiap ~4 dtk, deterministik dari phase).
+* Kartu Hero Shop: mode portrait memakai pose "compact" (bilah ditarik
+  rapat) - karena `HeroPortraits` meng-crop bbox lalu men-scale-nya, figur
+  yang melebar justru TERKECIL di kartu; sekarang ~1.3x lebih besar.
+* Hierarki nilai diperbaiki: `blade_shine` 246 -> 214 supaya MATA (bukan
+  pedang) jadi piksel paling terang; garis break di pergelangan kaki;
+  bayangan miring di bawah pektoral; rim terang di tepi robek jubah.
+
+Uji regresi: `python tools/test_gornak_masterwork.py` (16 pemeriksaan: rig
 tunggal, kaki menapak, W/H dan **ukuran harus sama dengan keluarga**
 (boss vs morgath/drakar/abaddon, hero vs grimjaw/kaizen), bilah tidak
 menembus dada, proc di ujung bilah, outline, portrait LOD, frame per-sendi,

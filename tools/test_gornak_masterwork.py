@@ -201,8 +201,8 @@ def test_blade_geometry_is_pose_driven():
         FX-nya terpotong saat sprite di-cache).
     """
     tip_idle = G._tip_local("idle", 1.0, 0.0)
-    tip_wind = G._tip_local("attack", 1.0, 0.26)
-    tip_rel = G._tip_local("attack", 1.0, 0.52)
+    tip_wind = G._tip_local("attack", 1.0, G._attack_curve(0.14))
+    tip_rel = G._tip_local("attack", 1.0, G._attack_curve(0.62))
     # Wind-up: kedua bilah terangkat TINGGI (di depan/ belakang wajah),
     # tidak pernah lewat datar setinggi dada.
     assert tip_wind[1] < -18
@@ -229,8 +229,9 @@ def test_blade_geometry_is_pose_driven():
         return False
 
     chest = (-8, -11, 8, -4)                      # blok otot dada
+    assert not hasattr(G, "_blade_angle_legacy")
     for i in range(1, 21):
-        ap = i / 20.0
+        ap = G._attack_curve(i / 20.0)
         grip = G._front_grip_local("attack", ap, 1.0)
         tip = G._tip_local("attack", 1.0, ap)
         assert not blade_crosses_chest(grip, tip, chest), \
@@ -255,6 +256,32 @@ def test_blade_geometry_is_pose_driven():
     frames = {pygame.image.tobytes(render("attack", i / 9.0), "RGBA")
               for i in range(10)}
     assert len(frames) == 10
+
+
+def test_attack_timing_has_impact_hold():
+    """Anticipation -> ayunan cepat -> HOLD di impact -> follow-through.
+
+    Yang bikin serangan 2D terasa murah bukan jumlah frame, tapi tidak
+    adanya freeze 1-2 frame di impact. Diuji sebagai SIFAT kurva (bukan
+    angka segmen, supaya kurva masih boleh di-tune):
+      * monoton naik  -> bilah tidak pernah terlihat mundur
+      * ada jendela raw >= 0.10 yang pose-time-nya nyaris tidak bergerak
+      * laju maksimum > 4x laju di jendela hold itu
+      * endpoint 0 dan 1 (tidak ada snap di awal/akhir ayunan)
+    """
+    N = 400
+    seq = [G._attack_curve(i / N) for i in range(N + 1)]
+    assert all(b >= a - 1e-9 for a, b in zip(seq, seq[1:])), "kurva mundur"
+    assert abs(seq[0]) < 1e-9 and abs(seq[-1] - 1.0) < 0.02, (seq[0], seq[-1])
+
+    step = 3 / N                                   # ~3 frame @60fps
+    rate = [(seq[i + 1] - seq[i]) / step for i in range(N)]
+    lo, hi = min(rate), max(rate)
+    assert hi > 4.0 * max(lo, 1e-6), (lo, hi)      # ada kontras cepat/lambat
+    quiet = [i for i, r in enumerate(rate) if r <= hi * 0.25]
+    assert quiet, "tidak ada hold sama sekali"
+    span = (max(quiet) - min(quiet)) / N
+    assert span >= 0.08, f"jendela impact cuma {span:.3f} (perlu >= 0.08)"
 
 
 def test_mana_break_proc_starts_at_blade_tip():
@@ -326,6 +353,39 @@ def test_portrait_lod_is_distinct_and_clean():
     # ke ~1.0 dan test ini gagal.
     assert a_px > p_px * 1.18, \
         f"portrait harus membuang FX arena (painted {a_px} vs {p_px})"
+
+
+def test_secondary_motion_exists():
+    """Kepala, debu langkah, dan kedip: gerak sekunder yang memisahkan
+    rig "hidup" dari rig "menggeser sticker".
+    """
+    # (a) offset kepala berbeda untuk idle / walk / attack / void
+    heads = {a: G._head_bob(a, 2.1, 0.5)
+             for a in ("idle", "walk", "attack", "void", "ward")}
+    assert len(set(heads.values())) >= 4, heads
+    # walk mengayunkan kepala berlawanan arah langkah
+    assert heads["walk"][1] <= heads["idle"][1]
+    # (b) kepala TIDAK direkat ke torso: head bob harus mengubah posisi
+    # piksel wajah antar frame walk.
+    frames = set()
+    for i in range(5):
+        surf = pygame.Surface((240, 240), pygame.SRCALPHA)
+        G._draw_gnk_rig(surf, 120, 120, 1, 0.9 * i, "walk", 0.0, False)
+        frames.add(pygame.image.tobytes(
+            surf.subsurface(pygame.Rect(96, 60, 48, 34)), "RGBA"))
+    assert len(frames) >= 4, "kepala statis saat berjalan"
+    # (c) debu langkah hanya ada di walk, dan menghilang saat melayang
+    dust_walk = pygame.Surface((240, 240), pygame.SRCALPHA)
+    G._draw_footfall_dust(dust_walk, 120, 120, 1, 0.0)
+    assert dust_walk.get_bounding_rect(min_alpha=6).width > 8, \
+        "footfall dust tidak tergambar"
+    # fase di mana telapak TERANGKAT (|sin(phase*1.15)| ~ 1) -> tidak boleh
+    # ada debu, kalau tidak karakter meninggalkan jejak di udara.
+    import math as _m
+    lifted = _m.pi / 2 / 1.15
+    still = pygame.Surface((240, 240), pygame.SRCALPHA)
+    G._draw_footfall_dust(still, 120, 120, 1, lifted)
+    assert still.get_bounding_rect(min_alpha=6).width == 0
 
 
 def test_walk_frames_recalculate_joints():
@@ -432,17 +492,20 @@ def test_hero_visual_quality():
     assert box.left >= 2 and box.top >= 2, box
     assert box.right <= 158 and box.bottom <= 158, box
 
-    # (2) mata: swatch eye_glow / eye_light harus muncul di kotak kepala
-    head = pygame.Rect(box.centerx - 16, box.top + 4, 32, 24)
-    found = set()
-    for y in range(max(0, head.top), min(160, head.bottom)):
-        for x in range(max(0, head.left), min(160, head.right)):
+    # (2) mata: piksel hangat-terang harus ADA DI KEPALA (pita atas crop),
+    # bukan sekadar piksel terang di mana pun - bilah juga terang, tapi
+    # blade_shine dingin (r == g) sedangkan mata hangat (r > g). Dicari
+    # sebagai warna hasil blending, bukan swatch persih: mata digambar
+    # aaline di atas rongga gelap sehingga nilainya tercampur.
+    band_h = max(6, int(box.height * 0.42))
+    eyes = 0
+    for y in range(max(0, box.top), min(160, box.top + band_h)):
+        for x in range(max(0, box.left), min(160, box.right)):
             px = canvas.get_at((x, y))
-            if px.a:
-                found.add(px[:3])
-    eyes = {G.PALETTE["eye_glow"], G.PALETTE["eye_light"],
-            G.PALETTE["eye_mid"]}
-    assert found & eyes, "tidak ada piksel mata di area kepala"
+            if px.a > 120 and px.r >= 200 and px.b >= 200 \
+                    and px.r - px.g >= 12 and px.g >= 130:
+                eyes += 1
+    assert eyes >= 2, f"tidak ada piksel mata di area kepala ({eyes})"
 
     # (3) warna tema DI BADAN (portrait = tanpa FX arena, jadi ini bukti
     #     identitas ungu melekat pada karakter)
@@ -514,6 +577,8 @@ if __name__ == "__main__":
     test_hero_scale_is_no_longer_upsampled()
     test_skill_durations_match_ai_timers()
     test_hero_visual_quality()
+    test_attack_timing_has_impact_hold()
+    test_secondary_motion_exists()
     test_perf_budget()
     print("OK - Gornak masterwork: rig tunggal, kaki menapak, bilah "
           "pose-driven, proc di ujung bilah, outline, portrait LOD, "
