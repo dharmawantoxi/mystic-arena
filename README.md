@@ -489,15 +489,30 @@ hotkey): **GATHER [G]**, **PROTECT TOWER [T]**, **PROTECT CASTLE
 semua hero fokus menyerang hero musuh dengan total damage terbanyak
 (ditrack lewat `hero.damage_dealt` di [_entity.py](_entity.py)).
 
-Achievement hanya dihitung saat **hero membunuh hero lain, mini
-boss, atau true boss** (pukulan terakhir harus dari hero). Popup
-achievement & combo muncul **di map** (arena), bukan di panel —
-kotak notifikasi & kill feed sudah dihapus, panel kanan berisi
-command saja. Lihat [tactical_commands.py](tactical_commands.py).
+**Mode HOLD**: tombol/tuts bisa **ditahan** — selama ditahan,
+perintah terus aktif (diterbitkan ulang setiap 0,5 detik supaya hero
+terus menaatinya dan durasi 10 detiknya tidak habis), sampai
+tombol/tuts **dilepas**. Ketuk cepat tetap berperilaku seperti dulu
+(perintah aktif 10 detik). Menahan perintah yang syaratnya belum
+terpenuhi (mis. ATTACK BOSS sebelum boss muncul) akan
+"mempersenjatai"-nya: perintah langsung jalan begitu syarat
+terpenuhi. GATHER yang ditahan mengikuti kursor (keyboard) dan
+setelah regroup hero terus push bersama selama ditahan. API:
+`tactical.hold_start(nama)` / `tactical.hold_end(nama)` di
+[tactical_commands.py](tactical_commands.py).
+
+Achievement hanya dihitung saat **hero membunuh mini boss atau
+true boss** (pukulan terakhir harus dari hero). Popup achievement
+saat hero membunuh hero musuh (HERO SLAYER) sudah **dihapus**
+(request user) — kill hero hanya tercatat di statistik
+`killer.kills`. Popup achievement muncul **di map** (arena), bukan
+di panel — kotak notifikasi & kill feed sudah dihapus, panel kanan
+berisi command saja. Lihat [tactical_commands.py](tactical_commands.py).
 
 Uji: `python tools/test_gale_morgath.py`,
 `python tools/test_achievement_command.py`,
-`python tools/test_sidepanel.py`.
+`python tools/test_sidepanel.py`,
+`python tools/test_tactical_hold.py`.
 
 Uji: `python tools/test_item_shop.py`,
 `python tools/test_item_tier2.py`,

@@ -3,8 +3,9 @@
 Yang diuji:
   T1  Damage tracking: hero.damage_dealt terakumulasi saat hero
       menyerang hero/minion/boss (source= hero).
-  T2  Achievement HERO KILL HERO: pukulan terakhir hero biru pada
-      hero merah -> achievement + kills.
+  T2  HERO KILL HERO: popup achievement HERO SLAYER sudah DIHAPUS
+      (request user) - kill hanya menambah statistik killer.kills,
+      tanpa popup/banner/id achievement.
   T3  Achievement hero kill MINI BOSS & TRUE BOSS.
   T4  Achievement lama (wave/gold/kill minion/combo/first blood)
       TIDAK pernah muncul lagi.
@@ -55,19 +56,22 @@ assert h1.damage_dealt >= d0 + 120, \
     f"damage_dealt tidak tercatat: {h1.damage_dealt} (dari {d0})"
 print(f"T1 OK  - damage_dealt {d0} -> {h1.damage_dealt}")
 
-# ── T2: hero kill hero ─────────────────────────────────────
+# ── T2: hero kill hero -> popup achievement DIHAPUS ───────
 musuh.take_damage(99999, "blue", source=h1)
 for _ in range(3):
     g.update()
 assert not musuh.alive
 assert h1.kills == 1, f"kills hero: {h1.kills}"
-assert g.hero_kill_count == 1
-assert "hero_kill_1" in g.achievements_unlocked, \
+# Popup HERO SLAYER sudah dihapus dari game (request user):
+# tidak ada id hero_kill_* yang tercatat ...
+assert not any(a.startswith("hero_kill_")
+               for a in g.achievements_unlocked), \
     g.achievements_unlocked
-# Popup achievement tampil di map (queue renderer, bukan panel)
-assert g.effects.achievement.queue or \
-    g.effects.achievement.current
-print("T2 OK  - HERO SLAYER tercatat & popup di map")
+# ... dan antrean popup achievement di map tetap kosong.
+assert not g.effects.achievement.queue and \
+    not g.effects.achievement.current
+print("T2 OK  - kill hero hanya menambah kills; popup HERO SLAYER "
+      "sudah dihapus")
 
 # ── T3: hero kill mini boss & true boss ────────────────────
 lane = g.map_renderer.get_lane_path("mid")
@@ -103,15 +107,18 @@ assert not (LAMA & g.achievements_unlocked), \
 print("T4 OK  - achievement wave/gold/kill/combo tidak muncul")
 
 # ── T5: kill tanpa hero (tower) tidak dihitung ─────────────
-m_kredit = getattr(g, "hero_kill_count", 0)
+ach_sebelum = set(g.achievements_unlocked)
+kills_sebelum = sum(getattr(h, "kills", 0) for h in g.heroes)
 m2 = Hero("kaizen", "red", 500, 360)
 g.ai.heroes.append(m2)
 m2.take_damage(99999, "blue", source=None)   # tanpa source (tower)
 for _ in range(3):
     g.update()
 assert not m2.alive
-assert g.hero_kill_count == m_kredit, \
-    f"kill tanpa hero dihitung: {g.hero_kill_count}"
+assert g.achievements_unlocked == ach_sebelum, \
+    f"kill tanpa hero membuka achievement: {g.achievements_unlocked}"
+assert sum(getattr(h, "kills", 0) for h in g.heroes) == kills_sebelum, \
+    "kill tanpa hero menambah kills hero"
 print("T5 OK  - kill oleh tower/minion tidak dihitung")
 
 # ── T6: command ATTACK DAMAGE DEALER ───────────────────────
