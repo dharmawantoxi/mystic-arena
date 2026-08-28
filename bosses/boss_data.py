@@ -11779,6 +11779,61 @@ def _normalize_hero_unlock_stats():
 _normalize_hero_unlock_stats()
 
 
+# ═══════════════════════════════════════════════════════════════
+# BALANCE PASS 2026-08: range hero unlock
+# ═══════════════════════════════════════════════════════════════
+# Data range hero_unlock mentah masih liar: 55 s/d 490 (mis.
+# "Moon Goddess" 490, "Fire Mage" 440) padahal di gameplay
+# Hero.__init__ meng-clamp ke 70 (melee) / 120..220 (ranged).
+# Akibatnya:
+#   - UI shop menampilkan "RNG 490" yang menyesatkan (padahal
+#     gameplay-nya 220).
+#   - Klasifikasi melee/ranged (range < 110) jadi salah: role
+#     melee dengan range mentah besar (Angelic Warrior 290,
+#     Flame Swordsman 220) menjadi RANGED di gameplay, dan role
+#     ranged dengan range kecil (Frost Sorcerer 100, Wyvern
+#     Rider 100) menjadi MELEE.
+#
+# Di sini data mentah dinormalisasi KONSISTEN dengan runtime:
+#   - Role melee (fighter/warrior/knight/swordsman/dll.) atau
+#     range asli <= 90  ->  range 70 (sama persis dengan nilai
+#     yang diterapkan Hero.__init__)
+#   - Sisanya (ranged)  ->  clamp 120..220
+#   - skill_range dipaksa >= range (skill selalu terjangkau)
+# Boss versi musuh (Boss class) TIDAK disentuh; pemain & AI
+# memakai hero yang sama (tanpa handicap).
+MELEE_ROLE_HINTS = (
+    "fighter", "warrior", "assassin", "berserker", "brawler",
+    "bruiser", "tank", "knight", "swordsman", "slayer", "ninja",
+    "shinigami", "kunoichi", "charger", "beast", "guardian",
+    "ghoul", "duelist", "warlord", "scorpion", "voidwalker",
+    "vampire", "demon lord", "tidehunter", "lancer", "terror",
+    "moon demon",
+)
+
+
+def _normalize_hero_unlock_range():
+    for table in (MINI_BOSS_TYPES, TRUE_BOSS_TYPES):
+        for bd in table.values():
+            hu = bd.get("hero_unlock")
+            if not hu:
+                continue
+            role = (hu.get("role") or "").lower()
+            orig = int(hu.get("range", 70) or 70)
+            is_melee = any(k in role for k in MELEE_ROLE_HINTS)
+            if is_melee or orig <= 90:
+                hu["range"] = 70
+            else:
+                hu["range"] = max(120, min(220, orig))
+            # Skill selalu bisa dijangkau (skill_range >= range)
+            sr = int(hu.get("skill_range", 0) or 0)
+            if sr and sr < hu["range"]:
+                hu["skill_range"] = hu["range"]
+
+
+_normalize_hero_unlock_range()
+
+
 def get_all_boss_types():
     """Get gabungan semua boss types"""
     all_bosses = {}
