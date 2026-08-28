@@ -3,17 +3,44 @@
 # ================================
 # Implementasi untuk player team (blue).
 # Semua hero akan merespon sesuai perintah.
+#
+# MODE HOLD (request user)
+# ────────────────────────
+# Perintah bisa DITAHAN (tombol panel ditekan terus / tuts keyboard
+# ditahan): selama masih di-hold, perintah itu terus aktif - manager
+# menerbitkannya ulang setiap 0,5 detik supaya hero terus menaatinya
+# (tidak kembali ke AI masing-masing) dan durasi 10 detiknya tidak
+# pernah habis. Perintah berhenti ditegakkan begitu hold DILEPAS.
+#
+# TAP cepat (tekan-lepas < 0,33 detik) berperilaku seperti dulu:
+# perintah aktif selama durasi normalnya (10 detik).
+#
+# API:  hold_start(nama, *args, follow_mouse=False)  -> tekan/tahan
+#       hold_end(nama=None)                          -> lepas
+# Nama perintah sama dengan konstanta TacticalCommand / action panel:
+# "gather", "protect_tower", "protect_castle", "attack_boss",
+# "attack_damage_dealer".
 
 import math
 import random
 
 try:
-    from settings import BLUE_BASE_X, BLUE_BASE_Y, RED_BASE_X, RED_BASE_Y
+    from settings import (
+        BLUE_BASE_X, BLUE_BASE_Y, RED_BASE_X, RED_BASE_Y,
+        SCREEN_WIDTH, SCREEN_HEIGHT,
+    )
 except ImportError:
     BLUE_BASE_X = 100
     BLUE_BASE_Y = 620
     RED_BASE_X = 1180
     RED_BASE_Y = 100
+    SCREEN_WIDTH = 1280
+    SCREEN_HEIGHT = 720
+
+# ── Konstanta mode HOLD ──
+HOLD_TAP_MAX_FRAMES = 20       # tahan < 0,33 detik dihitung TAP cepat
+HOLD_RELEASE_TAIL = 30         # ekor 0,5 detik setelah hold dilepas
+GATHER_PUSH_DELAY_FRAMES = 240  # mulai cek push setelah 4 detik menahan
 
 
 class TacticalCommand:
@@ -53,6 +80,19 @@ class TacticalCommandManager:
         self.gather_point = None
         self.gather_point_timer = 0
 
+        # ── HOLD: perintah yang sedang DITAHAN ──
+        # Selama held_command terisi, update() menerbitkan ulang
+        # perintah itu setiap cooldown_max frame supaya terus ditaati
+        # hero (durasi 10 detiknya tidak pernah habis) sampai
+        # hold_end() dipanggil. Diisi oleh hold_start().
+        self.held_command = None       # nama perintah yang di-hold
+        self.hold_args = ()            # argumen saat hold_start
+        self.hold_kwargs = {}
+        self.hold_follow_mouse = False  # GATHER keyboard: ikut kursor
+        self.hold_elapsed = 0          # frame sejak hold_start
+        self._hold_has_fired = False   # sudah pernah sukses terbit?
+        self._gather_push_fired = False  # push GATHER sudah terpicu?
+
     # ═══════════════════════════════════════
     # CORE COMMAND ISSUERS
     # ═══════════════════════════════════════
@@ -91,20 +131,199 @@ class TacticalCommandManager:
             h.is_retreating = False
             h.destination_auto = False
 
+    # ═══════════════════════════════════════
+    # HOLD: tahan perintah supaya terus aktif
+    # ═══════════════════════════════════════
+
+    def _issuers(self):
+        return {
+            TacticalCommand.GATHER: self.command_gather,
+            TacticalCommand.PROTECT_TOWER: self.command_protect_tower,
+            TacticalCommand.PROTECT_CASTLE: self.command_protect_castle,
+            TacticalCommand.ATTACK_BOSS: self.command_attack_boss,
+            TacticalCommand.ATTACK_DAMAGE_DEALER:
+                self.command_attack_damage_dealer,
+        }
+
+    def hold_start(self, name, *args, follow_mouse=False, **kwargs):
+        """Mulai MENAHAN perintah taktis.
+
+        Perintah diterbitkan SEKARANG dengan umpan balik penuh
+        (suara + teks) seperti tekanan biasa, lalu update()
+        menerbitkannya ulang secara senyap setiap 0,5 detik selama
+        masih ditahan - sampai hold_end() dipanggil.
+
+        Kalau syarat belum terpenuhi saat ditekan (mis. belum ada
+        boss untuk ATTACK BOSS), hold tetap "dipersenjatai":
+        penerbitan ulang dicoba terus dan aktivasi PERTAMA yang
+        berhasil tetap bersuara. Dengan begitu pemain bisa menahan
+        tombol sambil menunggu boss muncul.
+
+        follow_mouse=True (GATHER via keyboard): titik kumpul mengikuti
+        kursor selama ditahan.
+        """
+        if name not in self._issuers():
+            return False
+        if name == self.held_command and self.hold_elapsed > 0:
+            # Penekanan berulang untuk hold yang sama (mis. key repeat /
+            # tombol controller yang ditahan) = masih menahan; jangan
+            # reset hitungan waktu dan jangan terbitkan ulang dengan
+            # suara penuh (anti spam).
+            return True
+        # Hold baru menggantikan hold lama (satu perintah aktif).
+        self.held_command = name
+        self.hold_args = args
+        self.hold_kwargs = dict(kwargs)
+        self.hold_follow_mouse = bool(follow_mouse)
+        self.hold_elapsed = 0
+        self._hold_has_fired = False
+        self._gather_push_fired = False
+        ok = self._issue_held(loud=True)
+        if ok:
+            self._hold_has_fired = True
+        return ok
+
+    def hold_end(self, name=None):
+        """Lepaskan hold.
+
+        - TAP cepat (< 0,33 detik): perintah berjalan sampai durasi
+          normalnya habis (10 detik) - perilaku tekan-sekali yang lama
+          tidak berubah.
+        - HOLD lama: penegakkan berhenti SAAT DILEPAS (request user);
+          perintah terakhir dibiarkan selesai sebentar (ekor 0,5
+          detik) lalu hero kembali ke AI masing-masing.
+
+        name=None  -> lepas apa pun yang sedang di-hold.
+        name cocok -> hanya lepas kalau perintah itu yang sedang
+                      di-hold (tombol lama yang dilepas tidak boleh
+                      membatalkan hold tombol yang lebih baru).
+        """
+        if self.held_command is None:
+            return
+        if name is not None and name != self.held_command:
+            return
+        elapsed = self.hold_elapsed
+        self.held_command = None
+        self.hold_args = ()
+        self.hold_kwargs = {}
+        self.hold_follow_mouse = False
+        self.hold_elapsed = 0
+        self._hold_has_fired = False
+        if elapsed >= HOLD_TAP_MAX_FRAMES and self.command_timer > 0:
+            # HOLD lama dilepas -> perintah tidak lagi ditegakkan.
+            self.command_timer = min(self.command_timer,
+                                     HOLD_RELEASE_TAIL)
+
+    def hold_active(self):
+        """True kalau ada perintah yang sedang ditahan."""
+        return self.held_command is not None
+
+    def _issue_held(self, loud):
+        """Terbitkan perintah yang sedang di-hold SEKALI.
+
+        loud=True  -> umpan balik penuh (aktivasi pertama).
+        loud=False -> senyap (refresh berkala selama ditahan) supaya
+                      suara/teks tidak berdentum tiap 0,5 detik.
+        """
+        name = self.held_command
+        if name is None:
+            return False
+        # GATHER yang SUDAH push (hero tiba & mulai menyerang bersama)
+        # tidak boleh diseret balik ke titik kumpul oleh refresh;
+        # selama di-hold yang dikunci ulang adalah target musuhnya.
+        if (name == TacticalCommand.GATHER and not loud
+                and self._gather_push_fired):
+            ok = self._gather_hold_push()
+            self.cooldown = self.cooldown_max
+            return ok
+        issuer = self._issuers().get(name)
+        if issuer is None:
+            return False
+        args = self.hold_args
+        kwargs = self.hold_kwargs
+        if name == TacticalCommand.GATHER and self.hold_follow_mouse:
+            # Titik kumpul mengikuti kursor selama ditahan.
+            mx = getattr(self.game, 'mouse_x', 0)
+            my = getattr(self.game, 'mouse_y', 0)
+            if 0 <= mx < SCREEN_WIDTH and 0 <= my < SCREEN_HEIGHT:
+                args = (mx, my)
+            else:
+                args = ()
+        ok = issuer(*args, silent=not loud, **kwargs)
+        if not ok:
+            # Syarat belum terpenuhi (mis. belum ada boss): pace
+            # percobaan ulang supaya tidak 60x/detik, tapi jangan
+            # kunci penuh supaya tombol lain masih cepat merespons.
+            self.cooldown = max(self.cooldown, self.cooldown_max // 2)
+        return ok
+
+    def _gather_hold_push(self):
+        """GATHER lanjutan selama di-hold: regroup sudah selesai dan
+        push sudah terpicu -> kunci ulang musuh terdekat dari titik
+        kumpul supaya semua hero terus menyerang bersama."""
+        heroes = self._get_alive_blue_heroes()
+        if not heroes or not self.gather_point:
+            return False
+        gx, gy = self.gather_point
+        target = self._find_nearest_enemy_target(gx, gy)
+        if target is None:
+            # Tidak ada musuh: tetap diam berkumpul di titik.
+            args = self.hold_args or (gx, gy)
+            return self.command_gather(*args, silent=True,
+                                       **self.hold_kwargs)
+        for hero in heroes:
+            hero.follow_target = target
+            hero.destination = None
+            hero.destination_auto = False
+            hero.is_retreating = False
+            hero.target = target
+        self.command_timer = 600       # jaga perintah tetap hidup
+        self.gather_point_timer = 150  # visual titik tetap tampak
+        return True
+
+    def _try_gather_push(self):
+        """Setelah regroup (>=60% hero tiba di titik), perintahkan
+        push bersama ke musuh terdekat. Return True kalau terpicu."""
+        heroes = self._get_alive_blue_heroes()
+        if not heroes or not self.gather_point:
+            return False
+        gx, gy = self.gather_point
+        arrived = 0
+        for h in heroes:
+            if math.hypot(h.x - gx, h.y - gy) < 100:
+                arrived += 1
+        if arrived < len(heroes) * 0.6:
+            return False
+        target = self._find_nearest_enemy_target(gx, gy)
+        if not target:
+            return False
+        for hero in heroes:
+            hero.follow_target = target
+            hero.destination = None
+        self._gather_push_fired = True
+        self._set_feedback(
+            f"GATHER ATTACK! {len(heroes)} heroes push together!",
+            (100, 220, 255))
+        return True
+
     # ───────────────────────────────────────
     # GATHER: semua hero berkumpul dan menyerang bersama
     # ───────────────────────────────────────
-    def command_gather(self, gather_x=None, gather_y=None):
+    def command_gather(self, gather_x=None, gather_y=None, silent=False):
         """
         GATHER - Semua hero berkumpul di satu titik dan menyerang bersama.
         Jika gather_x/y None, pakai posisi hero terpilih atau tengah peta.
+
+        silent=True dipakai refresh mode-HOLD: tanpa suara/feedback
+        (penerbitan ulang tiap 0,5 detik tidak boleh berisik).
         """
         if not self.can_issue():
             return False
 
         heroes = self._get_alive_blue_heroes()
         if not heroes:
-            self._set_feedback("No heroes alive!", (255, 100, 100))
+            if not silent:
+                self._set_feedback("No heroes alive!", (255, 100, 100))
             return False
 
         # Tentukan titik kumpul
@@ -134,6 +353,11 @@ class TacticalCommandManager:
         self.gather_point = (gather_x, gather_y)
         self.gather_point_timer = 150  # 2.5 detik visual sesaat di map (request user)
         self.cooldown = self.cooldown_max
+        if not silent:
+            # Perintah gather BARU -> push follow-up belum terpicu.
+            # (Refresh senyap mode-HOLD tidak mereset supaya push
+            #  yang sudah terpicu tidak batal.)
+            self._gather_push_fired = False
 
         self._clear_hero_retreat(heroes)
 
@@ -150,41 +374,49 @@ class TacticalCommandManager:
             hero.target = None
 
         # Sound & feedback
-        try:
-            from _system import SoundManager
-            SoundManager().play('ui_click', volume_mult=0.8)
-        except Exception:
-            pass
+        if not silent:
+            try:
+                from _system import SoundManager
+                SoundManager().play('ui_click', volume_mult=0.8)
+            except Exception:
+                pass
 
-        self._set_feedback(f"GATHER! {len(heroes)} heroes regrouping!", (100, 220, 255))
-        print(f"[TACTICAL] GATHER at ({int(gather_x)}, {int(gather_y)}) - {len(heroes)} heroes")
+            self._set_feedback(f"GATHER! {len(heroes)} heroes regrouping!", (100, 220, 255))
+            print(f"[TACTICAL] GATHER at ({int(gather_x)}, {int(gather_y)}) - {len(heroes)} heroes")
 
-        # Efek visual di titik kumpul
-        try:
-            self.game.effects.add_death_explosion(gather_x, gather_y, team="blue", size='small')
-        except Exception:
-            pass
+            # Efek visual di titik kumpul
+            try:
+                self.game.effects.add_death_explosion(gather_x, gather_y, team="blue", size='small')
+            except Exception:
+                pass
 
         return True
 
     # ───────────────────────────────────────
     # PROTECT TOWER: minimal 2 hero melindungi tower
     # ───────────────────────────────────────
-    def command_protect_tower(self, tower=None):
+    def command_protect_tower(self, tower=None, silent=False):
         """
         PROTECT TOWER - Minimal 2 hero melindungi tower yang terancam.
         Jika tower None, otomatis cari tower yang paling terancam.
+
+        silent=True dipakai refresh mode-HOLD (tanpa suara/feedback).
+        Tower yang sudah hancur dianggap None -> pilih ulang otomatis
+        (penting saat tower target hancur di tengah hold).
         """
         if not self.can_issue():
             return False
 
         heroes = self._get_alive_blue_heroes()
         if len(heroes) < 1:
-            self._set_feedback("No heroes alive!", (255, 100, 100))
+            if not silent:
+                self._set_feedback("No heroes alive!", (255, 100, 100))
             return False
 
         # Cari tower target
         target_tower = tower
+        if target_tower is not None and not getattr(target_tower, 'alive', False):
+            target_tower = None
         if target_tower is None:
             target_tower = self._find_most_threatened_tower()
 
@@ -192,7 +424,8 @@ class TacticalCommandManager:
             # Fallback: tower dengan HP terendah atau terdepan
             blue_towers = [t for t in getattr(self.game, 'towers', []) if t.team == "blue" and t.alive]
             if not blue_towers:
-                self._set_feedback("No tower to protect!", (255, 150, 100))
+                if not silent:
+                    self._set_feedback("No tower to protect!", (255, 150, 100))
                 return False
             # Pilih yang paling dekat ke musuh (x terbesar untuk blue)
             blue_towers.sort(key=lambda t: (-t.x, t.hp / max(1, t.max_hp)))
@@ -231,35 +464,40 @@ class TacticalCommandManager:
             hero.follow_target = None
             hero.target = None
 
-        try:
-            from _system import SoundManager
-            SoundManager().play('ui_click', volume_mult=0.8)
-        except Exception:
-            pass
+        if not silent:
+            try:
+                from _system import SoundManager
+                SoundManager().play('ui_click', volume_mult=0.8)
+            except Exception:
+                pass
 
-        self._set_feedback(f"PROTECT TOWER! {len(protectors)} heroes defending {target_tower.name}!", (100, 255, 100))
-        print(f"[TACTICAL] PROTECT TOWER {target_tower.name} at ({int(target_tower.x)}, {int(target_tower.y)}) - {len(protectors)} heroes, threat={self._count_enemies_near(target_tower.x, target_tower.y, 250)}")
+            self._set_feedback(f"PROTECT TOWER! {len(protectors)} heroes defending {target_tower.name}!", (100, 255, 100))
+            print(f"[TACTICAL] PROTECT TOWER {target_tower.name} at ({int(target_tower.x)}, {int(target_tower.y)}) - {len(protectors)} heroes, threat={self._count_enemies_near(target_tower.x, target_tower.y, 250)}")
 
         return True
 
     # ───────────────────────────────────────
     # PROTECT CASTLE: semua hero melindungi castle
     # ───────────────────────────────────────
-    def command_protect_castle(self):
+    def command_protect_castle(self, silent=False):
         """
         PROTECT CASTLE - Semua hero berkumpul dan melindungi castle (base biru)
+
+        silent=True dipakai refresh mode-HOLD (tanpa suara/feedback).
         """
         if not self.can_issue():
             return False
 
         heroes = self._get_alive_blue_heroes()
         if not heroes:
-            self._set_feedback("No heroes alive!", (255, 100, 100))
+            if not silent:
+                self._set_feedback("No heroes alive!", (255, 100, 100))
             return False
 
         castle = getattr(self.game, 'blue_base', None)
         if not castle or not getattr(castle, 'alive', False):
-            self._set_feedback("Castle destroyed!", (255, 100, 100))
+            if not silent:
+                self._set_feedback("Castle destroyed!", (255, 100, 100))
             return False
 
         self.active_command = TacticalCommand.PROTECT_CASTLE
@@ -285,46 +523,47 @@ class TacticalCommandManager:
             hero.follow_target = None
             hero.target = None
 
-        try:
-            from _system import SoundManager
-            SoundManager().play('ui_click', volume_mult=0.8)
-        except Exception:
-            pass
+        if not silent:
+            try:
+                from _system import SoundManager
+                SoundManager().play('ui_click', volume_mult=0.8)
+            except Exception:
+                pass
 
-        self._set_feedback(f"PROTECT CASTLE! {len(heroes)} heroes defending base!", (255, 220, 50))
-        print(f"[TACTICAL] PROTECT CASTLE at ({int(castle.x)}, {int(castle.y)}) - {len(heroes)} heroes")
+            self._set_feedback(f"PROTECT CASTLE! {len(heroes)} heroes defending base!", (255, 220, 50))
+            print(f"[TACTICAL] PROTECT CASTLE at ({int(castle.x)}, {int(castle.y)}) - {len(heroes)} heroes")
 
-        try:
-            self.game.effects.add_death_explosion(castle.x, castle.y, team="blue", size='small')
-        except Exception:
-            pass
+            try:
+                self.game.effects.add_death_explosion(castle.x, castle.y, team="blue", size='small')
+            except Exception:
+                pass
 
         return True
 
     # ───────────────────────────────────────
     # ATTACK BOSS: semua hero menyerang mini boss / true boss
     # ───────────────────────────────────────
-    def command_attack_boss(self):
+    def command_attack_boss(self, silent=False):
         """
         ATTACK BOSS - Semua hero menyerang mini boss atau true boss yang aktif
+
+        silent=True dipakai refresh mode-HOLD (tanpa suara/feedback).
         """
         if not self.can_issue():
             return False
 
         heroes = self._get_alive_blue_heroes()
         if not heroes:
-            self._set_feedback("No heroes alive!", (255, 100, 100))
+            if not silent:
+                self._set_feedback("No heroes alive!", (255, 100, 100))
             return False
 
         boss = getattr(self.game, 'active_boss', None)
         if not boss or not getattr(boss, 'alive', False):
-            # Coba cari boss dari minions? Atau cari musuh terdekat yang besar?
             # Untuk sekarang, feedback no boss
-            self._set_feedback("No boss active!", (255, 150, 100))
-            # Fallback: serang red base atau hero musuh terkuat?
-            # Kita coba cari red hero atau tower terdekat sebagai fallback
-            # tapi tetap kasih feedback no boss
-            print("[TACTICAL] ATTACK BOSS - No active boss found")
+            if not silent:
+                self._set_feedback("No boss active!", (255, 150, 100))
+                print("[TACTICAL] ATTACK BOSS - No active boss found")
             return False
 
         self.active_command = TacticalCommand.ATTACK_BOSS
@@ -352,15 +591,16 @@ class TacticalCommandManager:
             # Override lagi follow_target setelah move_to (move_to clear follow_target)
             hero.follow_target = boss
 
-        try:
-            from _system import SoundManager
-            SoundManager().play('hero_skill', volume_mult=0.9)
-        except Exception:
-            pass
+        if not silent:
+            try:
+                from _system import SoundManager
+                SoundManager().play('hero_skill', volume_mult=0.9)
+            except Exception:
+                pass
 
-        boss_name = getattr(boss, 'name', 'BOSS')
-        self._set_feedback(f"ATTACK BOSS! All heroes attack {boss_name}!", (255, 100, 100))
-        print(f"[TACTICAL] ATTACK BOSS {boss_name} at ({int(boss.x)}, {int(boss.y)}) - {len(heroes)} heroes")
+            boss_name = getattr(boss, 'name', 'BOSS')
+            self._set_feedback(f"ATTACK BOSS! All heroes attack {boss_name}!", (255, 100, 100))
+            print(f"[TACTICAL] ATTACK BOSS {boss_name} at ({int(boss.x)}, {int(boss.y)}) - {len(heroes)} heroes")
 
         return True
 
@@ -382,24 +622,30 @@ class TacticalCommandManager:
         return max(candidates,
                    key=lambda h: getattr(h, 'damage_dealt', 0))
 
-    def command_attack_damage_dealer(self):
+    def command_attack_damage_dealer(self, silent=False):
         """
         ATTACK DAMAGE DEALER - Semua hero biru fokus menyerang hero
         musuh dengan total damage terbanyak (damage dealer utama
         tim lawan).
+
+        silent=True dipakai refresh mode-HOLD (tanpa suara/feedback).
+        Target dievaluasi ulang tiap penerbitan - kalau damage
+        dealer terbanyak berganti, fokus hero ikut pindah.
         """
         if not self.can_issue():
             return False
 
         heroes = self._get_alive_blue_heroes()
         if not heroes:
-            self._set_feedback("No heroes alive!", (255, 100, 100))
+            if not silent:
+                self._set_feedback("No heroes alive!", (255, 100, 100))
             return False
 
         dealer = self._find_enemy_damage_dealer()
         if dealer is None:
-            self._set_feedback("No enemy heroes!", (255, 150, 100))
-            print("[TACTICAL] ATTACK DAMAGE DEALER - no enemy hero")
+            if not silent:
+                self._set_feedback("No enemy heroes!", (255, 150, 100))
+                print("[TACTICAL] ATTACK DAMAGE DEALER - no enemy hero")
             return False
 
         self.active_command = TacticalCommand.ATTACK_DAMAGE_DEALER
@@ -426,19 +672,20 @@ class TacticalCommandManager:
             # move_to menghapus follow_target - pasang lagi
             hero.follow_target = dealer
 
-        try:
-            from _system import SoundManager
-            SoundManager().play('hero_skill', volume_mult=0.9)
-        except Exception:
-            pass
+        if not silent:
+            try:
+                from _system import SoundManager
+                SoundManager().play('hero_skill', volume_mult=0.9)
+            except Exception:
+                pass
 
-        dmg = int(getattr(dealer, 'damage_dealt', 0))
-        self._set_feedback(
-            f"ATTACK DAMAGE DEALER! Focus {dealer.name} ({dmg} dmg)!",
-            (255, 130, 255))
-        print(f"[TACTICAL] ATTACK DAMAGE DEALER {dealer.name} "
-              f"({dmg} dmg) at ({int(dealer.x)}, {int(dealer.y)}) - "
-              f"{len(heroes)} heroes")
+            dmg = int(getattr(dealer, 'damage_dealt', 0))
+            self._set_feedback(
+                f"ATTACK DAMAGE DEALER! Focus {dealer.name} ({dmg} dmg)!",
+                (255, 130, 255))
+            print(f"[TACTICAL] ATTACK DAMAGE DEALER {dealer.name} "
+                  f"({dmg} dmg) at ({int(dealer.x)}, {int(dealer.y)}) - "
+                  f"{len(heroes)} heroes")
 
         return True
 
@@ -555,7 +802,7 @@ class TacticalCommandManager:
             return None
 
     def update(self):
-        """Update timers tiap frame + auto-protect logic"""
+        """Update timers tiap frame + penegakkan HOLD + auto-protect"""
         if self.cooldown > 0:
             self.cooldown -= 1
         if self.command_timer > 0:
@@ -570,27 +817,44 @@ class TacticalCommandManager:
         if self.feedback_timer > 0:
             self.feedback_timer -= 1
 
+        # ═══ HOLD: perintah yang ditahan terus ditegakkan ═══
+        # Selama tombol/tuts ditahan, terbitkan ulang perintahnya
+        # tiap cooldown_max frame (0,5 detik) - senyap - supaya:
+        #   1. durasi 10 detiknya tidak pernah habis (timer terisi
+        #      terus), dan
+        #   2. hero tidak kabur kembali ke AI masing-masing (perintah
+        #      di-refresh sebelum mereka selesai/beralih).
+        if self.held_command is not None \
+                and getattr(self.game, 'state', '') == 'playing':
+            self.hold_elapsed += 1
+            if self.cooldown <= 0:
+                # Refresh selalu SENYAP supaya tidak ada spam
+                # suara/teks tiap 0,5 detik (kegagalan bersenjata -
+                # mis. menunggu boss - pun diam saja). Pengecualian:
+                # keberhasilan PERTAMA diumumkan sekali lewat replay
+                # loud supaya pemain sadar perintahnya sudah jalan
+                # (mis. boss akhirnya muncul saat tombol ditahan).
+                ok = self._issue_held(loud=False)
+                if ok and not self._hold_has_fired:
+                    self.cooldown = 0
+                    self._issue_held(loud=True)
+                if ok:
+                    self._hold_has_fired = True
+
         # ═══ GATHER FOLLOW-UP: setelah berkumpul, serang bersama ═══
         if self.active_command == TacticalCommand.GATHER and self.gather_point:
             try:
-                # Ketika sudah setengah durasi gather, jika hero sudah dekat titik kumpul,
-                # perintahkan mereka menyerang bersama ke arah musuh
-                if self.command_timer == 300:  # tepat setengah dari 600
-                    heroes = self._get_alive_blue_heroes()
-                    gx, gy = self.gather_point
-                    # Hitung berapa hero yang sudah sampai dekat gather point
-                    arrived = 0
-                    for h in heroes:
-                        if math.hypot(h.x - gx, h.y - gy) < 100:
-                            arrived += 1
-                    if arrived >= len(heroes) * 0.6:  # 60% sudah sampai
-                        # Cari musuh terdekat dari gather point untuk serangan bersama
-                        target = self._find_nearest_enemy_target(gx, gy)
-                        if target:
-                            for hero in heroes:
-                                hero.follow_target = target
-                                hero.destination = None
-                            self._set_feedback(f"GATHER ATTACK! {len(heroes)} heroes push together!", (100, 220, 255))
+                if self.held_command == TacticalCommand.GATHER:
+                    # Mode HOLD: command_timer terus terisi ulang
+                    # sehingga tidak pernah menyentuh 300 - pakai
+                    # lama hold sebagai gantinya. Dicek TIAP frame
+                    # mulai detik ke-4 sampai benar-benar terpicu
+                    # (hero yang terlambat tiba tetap kebagian push).
+                    if (not self._gather_push_fired
+                            and self.hold_elapsed >= GATHER_PUSH_DELAY_FRAMES):
+                        self._try_gather_push()
+                elif self.command_timer == 300:  # tepat setengah dari 600
+                    self._try_gather_push()
             except Exception:
                 pass
 
@@ -774,9 +1038,14 @@ class TacticalCommandManager:
 
     def get_status_text(self):
         """Return status untuk debug / HUD"""
+        hold_tag = " [HOLD]" if self.held_command else ""
         if self.active_command:
             target_name = ""
             if self.command_target:
                 target_name = getattr(self.command_target, 'name', str(self.command_target))[:15]
-            return f"{self.active_command.upper()} {target_name} ({self.command_timer//60}s)"
+            return f"{self.active_command.upper()} {target_name} ({self.command_timer//60}s){hold_tag}"
+        if self.held_command:
+            # Sedang ditahan tapi syarat belum terpenuhi (mis. belum
+            # ada boss) - hold tetap dipersenjatai.
+            return f"{self.held_command.upper()} [HOLD] (menunggu syarat)"
         return "No tactical command"

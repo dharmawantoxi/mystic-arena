@@ -112,12 +112,23 @@ def main():
                                 or game.selected_tower):
                             current_state = STATE_PAUSE
                             menu.show_pause()
+                            # Lepas hold tactical (KEYUP bisa jatuh di
+                            # layar pause - jangan sampai nyangkut).
+                            if getattr(game, 'tactical', None):
+                                game.tactical.hold_end()
                         else:
                             game.handle_key(event.key)
                     else:
                         game.handle_key(event.key)
                 elif current_state == STATE_PAUSE:
                     menu.handle_key(event.key)
+
+            elif event.type == pygame.KEYUP:
+                # Lepas tactical command yang sedang di-hold lewat
+                # tuts G/T/C/B/D/F (perintah terus aktif selama
+                # tuts ditahan, berhenti saat dilepas).
+                if current_state == STATE_GAME and game:
+                    game.handle_key_up(event.key)
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # Mouse click hanya kalau bukan controller mode
@@ -266,6 +277,9 @@ def main():
                     elif action == 'start':
                         current_state = STATE_PAUSE
                         menu.show_pause()
+                        # Lepas hold tactical (jangan nyangkut di pause)
+                        if getattr(game, 'tactical', None):
+                            game.tactical.hold_end()
                     elif action == 'back':
                         # VIEW/SELECT = kembali ke menu (padanan ESC
                         # di layar victory/defeat)
@@ -274,6 +288,9 @@ def main():
                         else:
                             current_state = STATE_PAUSE
                             menu.show_pause()
+                            # Lepas hold tactical (jangan nyangkut)
+                            if getattr(game, 'tactical', None):
+                                game.tactical.hold_end()
                     elif action == 'left_trigger':
                         game.handle_key(pygame.K_h)
                     elif action == 'right_trigger':

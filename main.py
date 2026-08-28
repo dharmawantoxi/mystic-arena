@@ -268,6 +268,10 @@ def main():
     print("=" * 60)
 
     claimed = set()
+    # Sentuhan yang sedang MENAHAN tombol tactical di side panel:
+    # touch_id -> nama command. Perintah di-hold (terus aktif) sampai
+    # sentuhan "release" -> tactical.hold_end(). Lihat TACTICAL_ACTIONS.
+    held_tac = {}
     splash_last = pygame.time.get_ticks()
     running = True
 
@@ -308,6 +312,14 @@ def main():
                 continue
             if event.type == APP_BG:
                 touch.cancel()
+                # Lepas semua hold tactical: sentuhan dibatalkan tanpa
+                # event "release", jadi tanpa ini perintah akan
+                # "nyangkut" aktif selamanya setelah app kembali.
+                if held_tac:
+                    if game is not None and getattr(game, 'tactical', None):
+                        for _nm in held_tac.values():
+                            game.tactical.hold_end(_nm)
+                    held_tac.clear()
                 if not _handle_background(sound_mgr):
                     running = False
                 continue
@@ -328,6 +340,12 @@ def main():
                     game.handle_key(event.key)
                 elif current_state in (STATE_MENU, STATE_PAUSE):
                     menu.handle_key(event.key)
+
+            # KEYUP: lepas tactical command yang sedang di-hold lewat
+            # tuts G/T/C/B/D/F (perintah terus aktif selama ditahan).
+            if event.type == pygame.KEYUP:
+                if current_state == STATE_GAME and game:
+                    game.handle_key_up(event.key)
 
         # ─────────────────────────────── CLOUD SAVE POLL
         # Proses hasil operasi cloud (upload/download/sign-in) dari
@@ -373,6 +391,10 @@ def main():
                         hit = hud.hit_test(action.pos)
                 if hit:
                     claimed.add(tid)
+                    # Tombol tactical: DITAHAN -> perintah terus aktif
+                    # sampai sentuhan dilepas (lihat cabang release).
+                    if hit in hud_mod.TACTICAL_ACTIONS:
+                        held_tac[tid] = hit
                     hud_mod.apply_hud_action(hit, ctx)
                 # CATATAN v30: dulu di sini ada `elif side.blocks(...)`
                 # yang mengklaim SEMUA sentuhan di area panel supaya
@@ -391,6 +413,12 @@ def main():
             if tid in claimed:
                 if action.kind == "release":
                     claimed.discard(tid)
+                    # Lepas hold tactical command (kalau sentuhan ini
+                    # sedang menahan tombol GATHER/PROTECT/ATTACK).
+                    nama = held_tac.pop(tid, None)
+                    if (nama and game is not None
+                            and getattr(game, 'tactical', None)):
+                        game.tactical.hold_end(nama)
                 continue
 
             if current_state == STATE_SPLASH:
@@ -412,6 +440,14 @@ def main():
         if ctx.get("request_pause") and current_state == STATE_GAME:
             current_state = STATE_PAUSE
             menu.show_pause()
+            # Lepas semua hold tactical command: kalau pause terjadi
+            # saat tombol/tuts masih ditahan (mis. ESC di tengah
+            # menahan G), KEYUP/release-nya jatuh di layar pause dan
+            # tidak pernah sampai - tanpa ini hold "nyangkut" aktif
+            # begitu game dilanjutkan.
+            if game is not None and getattr(game, 'tactical', None):
+                game.tactical.hold_end()
+            held_tac.clear()
 
         # ─────────────────────────────── UPDATE + DRAW
         frame_timer.start("update")

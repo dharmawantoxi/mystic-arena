@@ -1336,11 +1336,11 @@ class Game:
         self.hovered_tower = None
         self.hovered_slot = None
         # ═══ ACHIEVEMENT TRACKING (rework) ═══
-        # Achievement HANYA untuk hero yang membunuh hero lain,
-        # mini boss, dan true boss (request user) - achievement
-        # wave/gold/kill/combo yang lama dihapus.
+        # Achievement HANYA untuk hero yang membunuh mini boss dan
+        # true boss (request user) - achievement wave/gold/kill/combo
+        # yang lama dihapus, dan popup HERO SLAYER (hero membunuh
+        # hero musuh) juga sudah DIHAPUS.
         self.achievements_unlocked = set()
-        self.hero_kill_count = 0
         self.miniboss_kill_count = 0
         self.trueboss_kill_count = 0
         # Stat match (dipakai layar menang/kalah + save), bukan
@@ -1477,7 +1477,6 @@ class Game:
         self.wave_notification_text = ""
         self.build_popup_slot = None
         self.achievements_unlocked = set()
-        self.hero_kill_count = 0
         self.miniboss_kill_count = 0
         self.trueboss_kill_count = 0
         self.total_kills = 0
@@ -2050,7 +2049,9 @@ class Game:
         for h in all_heroes:
             if not h.alive and h not in self.hero_respawn_timers:
                 self.hero_respawn_timers[h] = 600
-                # ═══ ATRIBUSI KILL: achievement hero kill hero ═══
+                # ═══ ATRIBUSI KILL: statistik kill hero ═══
+                # (popup achievement hero-kill-hero sudah dihapus -
+                #  lihat _process_hero_kill)
                 self._process_hero_kill(h)
 
         to_respawn = []
@@ -2325,25 +2326,23 @@ class Game:
         return hasattr(killer, "hero_type") and hasattr(killer, "skills")
 
     def _process_hero_kill(self, victim):
-        """Achievement: HERO membunuh HERO lain.
+        """Atribusi kill: HERO membunuh HERO lain.
 
         Dipanggil sekali saat hero mati (sebelum respawn). Kill oleh
         tower/minion/castle tidak dihitung.
+
+        CATATAN (request user): popup achievement HERO SLAYER saat
+        hero membunuh hero musuh sudah DIHAPUS dari game - kill hero
+        tidak lagi memunculkan popup/banner apa pun. Yang tersisa
+        hanya pencatatan statistik killer.kills (dipakai AI untuk
+        prioritas upgrade dan ditampilkan di panel hero).
+        Achievement bos (MINI/TRUE BOSS SLAYER) tidak terpengaruh.
         """
         killer = getattr(victim, "_killed_by", None)
         if not self._killer_is_hero(killer, victim):
             return
 
         killer.kills = getattr(killer, "kills", 0) + 1
-
-        # Achievement hanya untuk tim pemain (blue).
-        if killer.team == "blue":
-            self.hero_kill_count += 1
-            self._unlock_achievement(
-                f"hero_kill_{self.hero_kill_count}",
-                "HERO SLAYER!",
-                f"{killer.name} killed {victim.name}",
-                "sword", map_x=victim.x, map_y=victim.y - 30)
 
     def _process_boss_kill(self, boss):
         """Achievement: HERO membunuh MINI BOSS / TRUE BOSS.
@@ -2522,6 +2521,13 @@ class Game:
 
         # Normal keys
         self.input.handle_key(key)
+
+    def handle_key_up(self, key):
+        """Delegate KEYUP ke InputHandler (mode HOLD tactical command:
+        perintah berhenti ditegakkan begitu tuts diangkat)."""
+        inp = getattr(self, 'input', None)
+        if inp is not None:
+            inp.handle_key_up(key)
 
     def _draw_input_hints(self, surface):
         """
@@ -8069,6 +8075,9 @@ class InputHandler:
 
         # ═══ TACTICAL COMMANDS (GATHER, PROTECT TOWER, PROTECT CASTLE,
         #     ATTACK BOSS, ATTACK DAMAGE DEALER) ═══
+        # MODE HOLD: tuts ditahan -> perintah terus aktif sampai tuts
+        # dilepas (KEYUP -> InputHandler.handle_key_up -> hold_end).
+        # Tekan-lepas cepat (tap) berperilaku seperti dulu.
         elif key == pygame.K_g:
             # GATHER - semua hero berkumpul dan menyerang bersama
             # Jika mouse di dalam arena, kumpul di posisi mouse; else di selected hero / tengah
@@ -8076,34 +8085,36 @@ class InputHandler:
                 mx = getattr(g, 'mouse_x', 0)
                 my = getattr(g, 'mouse_y', 0)
                 if 0 <= mx < SCREEN_WIDTH and 0 <= my < SCREEN_HEIGHT:
-                    g.tactical.command_gather(mx, my)
+                    g.tactical.hold_start('gather', mx, my,
+                                          follow_mouse=True)
                 else:
-                    g.tactical.command_gather()
+                    g.tactical.hold_start('gather', follow_mouse=True)
             return
         elif key == pygame.K_t:
             # PROTECT TOWER - minimal 2 hero protect tower
             if getattr(g, 'tactical', None):
                 # Jika ada tower yang selected, protect tower itu
                 if g.selected_tower and g.selected_tower.team == "blue":
-                    g.tactical.command_protect_tower(g.selected_tower)
+                    g.tactical.hold_start('protect_tower',
+                                          g.selected_tower)
                 else:
-                    g.tactical.command_protect_tower()
+                    g.tactical.hold_start('protect_tower')
             return
         elif key == pygame.K_c:
             # PROTECT CASTLE - semua hero melindungi castle
             if getattr(g, 'tactical', None):
-                g.tactical.command_protect_castle()
+                g.tactical.hold_start('protect_castle')
             return
         elif key == pygame.K_b:
             # ATTACK BOSS - semua hero menyerang boss
             if getattr(g, 'tactical', None):
-                g.tactical.command_attack_boss()
+                g.tactical.hold_start('attack_boss')
             return
         elif key == pygame.K_d:
             # ATTACK DAMAGE DEALER - semua hero fokus ke hero musuh
             # dengan total damage terbanyak
             if getattr(g, 'tactical', None):
-                g.tactical.command_attack_damage_dealer()
+                g.tactical.hold_start('attack_damage_dealer')
             return
         elif key == pygame.K_f:
             # Shortcut alternatif: F untuk gather di posisi mouse
@@ -8111,9 +8122,10 @@ class InputHandler:
                 mx = getattr(g, 'mouse_x', 0)
                 my = getattr(g, 'mouse_y', 0)
                 if 0 <= mx < SCREEN_WIDTH and 0 <= my < SCREEN_HEIGHT:
-                    g.tactical.command_gather(mx, my)
+                    g.tactical.hold_start('gather', mx, my,
+                                          follow_mouse=True)
                 else:
-                    g.tactical.command_gather()
+                    g.tactical.hold_start('gather', follow_mouse=True)
             return
 
         # ═══ HERO SKILLS (Q, W, E, R) ═══
@@ -8159,6 +8171,36 @@ class InputHandler:
                 g.effects.shake_screen(15)
         else:
             SoundManager().play('ui_error', volume_mult=0.3)
+
+    # ══════════════════════════════════════
+    # KEYBOARD RELEASE (KEYUP)
+    # ═══════════════════════════════════════
+
+    # Tuts tactical -> nama command (dipakai saat KEYUP untuk
+    # melepas hold yang sedang aktif).
+    TACTICAL_KEY_TO_COMMAND = {
+        pygame.K_g: 'gather',
+        pygame.K_f: 'gather',
+        pygame.K_t: 'protect_tower',
+        pygame.K_c: 'protect_castle',
+        pygame.K_b: 'attack_boss',
+        pygame.K_d: 'attack_damage_dealer',
+    }
+
+    def handle_key_up(self, key):
+        """KEYUP: lepas tactical command yang sedang di-hold.
+
+        Pasangan dari mode HOLD di handle_key: selama tuts G/T/C/B/D/F
+        ditahan, perintahnya terus aktif; begitu tuts diangkat,
+        penegakkan perintah berhenti.
+        """
+        g = self.game
+        tactical = getattr(g, 'tactical', None)
+        if tactical is None:
+            return
+        name = self.TACTICAL_KEY_TO_COMMAND.get(key)
+        if name:
+            tactical.hold_end(name)
 
     # ═══════════════════════════════════════
     # HELPER METHODS

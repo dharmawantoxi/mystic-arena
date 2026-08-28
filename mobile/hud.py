@@ -40,6 +40,13 @@ MIN_TAP = 80
 SKILL_LABELS = {"q": "Q", "w": "W", "e": "E", "r": "R"}
 SKILL_NAMES = {"q": "SKILL 1", "w": "SKILL 2", "e": "SKILL 3", "r": "ULTI"}
 
+# Action tactical command (tombol side panel). Sama dengan konstanta
+# di tactical_commands.TacticalCommand; dipakai main.py untuk melacak
+# tombol yang sedang DITAHAN (mode HOLD: perintah terus aktif sampai
+# jari/tuts dilepas).
+TACTICAL_ACTIONS = ("gather", "protect_tower", "protect_castle",
+                    "attack_boss", "attack_damage_dealer")
+
 
 class TouchButton:
     """Tombol sentuh sederhana: lingkaran atau kapsul."""
@@ -304,25 +311,21 @@ def apply_hud_action(action, ctx):
         menu.handle_key(pygame.K_ESCAPE)
         return True
 
-    # Tactical commands tetap didukung via sidepanel (action sama)
+    # Tactical commands tetap didukung via sidepanel (action sama).
+    # MODE HOLD: penekanan tombol = MULAI menahan perintah; perintah
+    # terus aktif sampai jari/tuts dilepas (pelepasan ditangani
+    # main.py / KEYUP -> tactical.hold_end). Tap cepat tetap
+    # berperilaku seperti tekanan biasa.
     if game is not None and getattr(game, 'tactical', None):
-        if action == "gather":
-            game.tactical.command_gather()
-            return True
-        elif action == "protect_tower":
-            if game.selected_tower and game.selected_tower.team == "blue":
-                game.tactical.command_protect_tower(game.selected_tower)
+        if action in TACTICAL_ACTIONS:
+            if action == "protect_tower":
+                tower = getattr(game, 'selected_tower', None)
+                if tower is not None and tower.team == "blue":
+                    game.tactical.hold_start(action, tower)
+                else:
+                    game.tactical.hold_start(action)
             else:
-                game.tactical.command_protect_tower()
-            return True
-        elif action == "protect_castle":
-            game.tactical.command_protect_castle()
-            return True
-        elif action == "attack_boss":
-            game.tactical.command_attack_boss()
-            return True
-        elif action == "attack_damage_dealer":
-            game.tactical.command_attack_damage_dealer()
+                game.tactical.hold_start(action)
             return True
 
     return False

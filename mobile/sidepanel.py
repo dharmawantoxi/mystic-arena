@@ -614,10 +614,16 @@ class SidePanel:
             self._tactical_sembunyikan()
             return y
 
-        self._kotak(full, x, y, w, h, "TACTICAL COMMANDS")
+        self._kotak(full, x, y, w, h, "TACTICAL COMMANDS (HOLD)")
 
         f_btn = self.get_font(13, "body_bold")
         f_small = self.get_font(11, "body")
+
+        # Command yang sedang DITAHAN (perintah terus aktif sampai
+        # tombol dilepas) -> tombolnya diberi sorotan + chip "HOLD"
+        # supaya jelas kelihatan sedang menahan.
+        _tac = getattr(game, 'tactical', None)
+        held_cmd = getattr(_tac, 'held_command', None) if _tac else None
 
         # Definisi tombol
         tactical_defs = [
@@ -668,11 +674,35 @@ class SidePanel:
                     border = warna
                     txt_col = warna
 
+            di_hold = enabled and held_cmd == action
+            if di_hold:
+                # Sedang DITAHAN: tombol menyala terang supaya jelas
+                # perintahnya terus aktif sampai dilepas.
+                bg = (warna[0] // 2 + 26, warna[1] // 2 + 26,
+                      warna[2] // 2 + 26)
+                border = (255, 255, 255)
+                txt_col = (255, 255, 255)
+
             pygame.draw.rect(full, bg, buf_rect, border_radius=6)
             pygame.draw.rect(full, border, buf_rect, 2, border_radius=6)
+            if di_hold:
+                # Bingkai kedua di dalam menandakan "terus aktif".
+                pygame.draw.rect(full, warna, buf_rect.inflate(-4, -4),
+                                 1, border_radius=4)
 
             txt = f_btn.render(label, True, txt_col)
             full.blit(txt, txt.get_rect(center=buf_rect.center))
+
+            if di_hold:
+                # Chip kecil "HOLD" di kanan tombol.
+                chip = f_small.render("HOLD", True, (255, 255, 255))
+                cr = chip.get_rect(midright=(buf_rect.right - 8,
+                                             buf_rect.centery))
+                pad_c = cr.inflate(8, 4)
+                pygame.draw.rect(full, (20, 18, 30), pad_c,
+                                 border_radius=4)
+                pygame.draw.rect(full, warna, pad_c, 1, border_radius=4)
+                full.blit(chip, cr)
 
             by += btn_h + gap
 
