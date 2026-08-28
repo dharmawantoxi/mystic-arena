@@ -2977,6 +2977,22 @@ class LevelIntroScreen:
         start_text.set_alpha(alpha)
         surface.blit(start_text, (coin_x2 + 18, coin_y2 - 12))
 
+        # ═══ PASSIVE INCOME (gold/s, skala kesulitan + level) ═══
+        try:
+            from _core import (GameSettings, compute_gold_per_second,
+                               format_gold_rate)
+            rate = compute_gold_per_second(
+                self.level_num, GameSettings().difficulty)
+            inc_str = "PASSIVE +" + format_gold_rate(rate) + "/s"
+        except Exception:
+            inc_str = f"PASSIVE +{GOLD_PER_SECOND}/s"
+
+        inc_text = self.font_tiny.render(
+            inc_str, True, (196, 241, 168))
+        inc_text.set_alpha(alpha)
+        inc_rect = inc_text.get_rect(center=(cx, start_y + 58))
+        surface.blit(inc_text, inc_rect)
+
     def _draw_boss_preview(self, surface, alpha):
         """Draw right side: boss preview"""
         cx = self.screen_w * 3 // 4  # kanan tengah

@@ -246,6 +246,35 @@ def compute_starting_gold(level_config, level_number, difficulty="normal"):
     mult = DIFFICULTY_GOLD_MULT.get(difficulty, 1.0)
     return int((base + bonus) * mult)
 
+
+# ═══ GOLD/S PASIF: skala kesulitan + level ═══
+# Pola sama dengan starting gold: easy +25%, normal 0%, hard -25%,
+# plus bonus +0.3/s per level di atas level 1 (10% dari base 3/s).
+GOLD_PER_SECOND_LEVEL_BONUS = 0.3
+
+
+def compute_gold_per_second(level_number, difficulty="normal"):
+    """Hitung passive gold income pemain (gold/detik).
+
+    Rumus:
+        (GOLD_PER_SECOND + bonus per level) × multiplier kesulitan
+
+    Hasilnya bisa pecahan (mis. 7.125); akumulasi pecahannya ditangani
+    Game via _gold_income_milli supaya saldo gold tetap angka bulat.
+    """
+    level = max(1, int(level_number or 1))
+    bonus = (level - 1) * GOLD_PER_SECOND_LEVEL_BONUS
+    mult = DIFFICULTY_GOLD_MULT.get(difficulty, 1.0)
+    return (GOLD_PER_SECOND + bonus) * mult
+
+
+def format_gold_rate(rate):
+    """Format laju gold per detik jadi teks HUD yang rapi.
+
+    3.0 -> "3", 5.7 -> "5.7", 3.75 -> "3.8" (satu desimal).
+    """
+    return f"{rate:.1f}".rstrip("0").rstrip(".")
+
 # ── MINION TYPES (Balanced) ──
 MINION_TYPES = {
     "goblin": {
@@ -1367,6 +1396,14 @@ class Game:
         self.gold = compute_starting_gold(
             cfg, self.level_number, self.difficulty)
 
+        # ═══ GOLD/S PASIF: disesuaikan difficulty + level ═══
+        # Pola sama dengan starting gold; pecahannya diakumulasi di
+        # _gold_income_milli (seperseribu gold, integer) supaya saldo
+        # tetap angka bulat tanpa drift float.
+        self.gold_per_second = compute_gold_per_second(
+            self.level_number, self.difficulty)
+        self._gold_income_milli = 0
+
         if self.enemy_scaling_enabled:
             self.enemy_hp_mult = cfg.get("enemy_hp_mult", 1.0) * 1.15
             self.enemy_damage_mult = cfg.get("enemy_damage_mult", 1.0) * 1.10
@@ -1881,7 +1918,16 @@ class Game:
         self.gold_timer += 1
         if self.gold_timer >= 60:
             self.gold_timer = 0
-            self.gold += GOLD_PER_SECOND
+            # Income pasif pemain: laju (bisa pecahan, mis. 7.125/s)
+            # diakumulasi dalam mili-gold integer, bagian ribuan-nya
+            # dipindah ke saldo supaya self.gold selalu angka bulat
+            # dan akumulasi tetap presisi (tanpa drift float).
+            self._gold_income_milli += int(round(
+                self.gold_per_second * 1000.0))
+            gain, self._gold_income_milli = divmod(
+                self._gold_income_milli, 1000)
+            if gain:
+                self.gold += gain
             # AI income naik tiap wave supaya AI bisa menabung untuk
             # membeli boss hero dari level-level di bawahnya.
             # AI gets same base income + wave bonus to afford boss heroes (parity)
@@ -2535,7 +2581,11 @@ class Game:
         val_font = get_font(24, "body_bold")
         inc_font = get_font(17, "body_medium")
         val_w = val_font.size(gold_str)[0]
-        inc_w = inc_font.size(f"+{GOLD_PER_SECOND}/s")[0]
+        # Income rate pemain (sudah diskala difficulty + level), bukan
+        # konstanta GOLD_PER_SECOND.
+        _rate = getattr(self, "gold_per_second", GOLD_PER_SECOND)
+        income_str = "+" + format_gold_rate(_rate) + "/s"
+        inc_w = inc_font.size(income_str)[0]
         width = max(150, val_w + inc_w + 78)
         height = 40
         chip = pygame.Rect(x, y, width, height)
@@ -2557,7 +2607,7 @@ class Game:
         # Pemisah hairline
         pygame.draw.line(surface, (140, 110, 50),
                          (gx - 6, y + 10), (gx - 6, y + height - 10), 1)
-        income = inc_font.render(f"+{GOLD_PER_SECOND}/s",
+        income = inc_font.render(income_str,
                                  True, (196, 241, 168))
         surface.blit(income, (gx, y + 11))
 
