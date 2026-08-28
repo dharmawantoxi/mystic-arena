@@ -71,12 +71,33 @@ class _NS_gornak:
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
 
-    # Buffer rig: cukup luas untuk bilah terayun penuh + jubah belakang.
-    RIG_W, RIG_H = 140, 124
-    RIG_OX, RIG_OY = 70, 62
-    # Garis telapak kaki, relatif anchor boss. SAMAKAN dengan posisi
-    # bayangan supaya karakter terlihat menapak.
-    GROUND_DY = 44
+    # ── SKALA BADAN ───────────────────────────────────────────────
+    # Rujuran keluarga (diukur dari render, alpha>=100):
+    #   boss 1x : morgath H82/W120, drakar H138/W190, abaddon H122/W150
+    #   hero    : kaizen 75x83, grimjaw 74x79, vex 75x83, sylara 77x90
+    # Renderer lama hanya 87x53 (W/H 0.61) -> terlihat seperti tiang kecil
+    # di samping boss/hero lain. SCALE memperbesar rig, LIFT memindahkan
+    # jangkar ke bawah (kepala lebih tinggi di atas titik (x,y)) supaya
+    # pipeline HD hero menormalkan tingginya SAMA seperti hero lain, dan
+    # stance/blade spread membuat rasio W/H masuk ~1.0 seperti sepupunya.
+    SCALE = 1.32
+    # Jangkar boss = pusat hitbox; LIFT memindahkan badan ke bawah supaya
+    # wajah tidak tertutup HP bar boss (digambar di y-r-15..y-r-7) TAPI
+    # tinggi di atas jangkar tetap besar - itu yang dipakai pipeline HD hero
+    # untuk menormalkan ukuran, jadi hero Gornak tetap setinggi Kaizen/
+    # Grimjaw (75-77 px) alih-alih membesar 2x.
+    LIFT = 4
+    # Telapak dalam RUANG LOKAL; garis tanah dunia diturunkan dari sini
+    # supaya bayangan, rune tanah, dan telapak tidak pernah saling lepas.
+    FEET_DY = 44
+    GROUND_DY = int(round(FEET_DY * SCALE)) - LIFT        # ~ 46
+
+    # Buffer rig: dibatasi dari extents TERUKUR semua pose (idle/walk/
+    # attack/surge/ward/void/blink, dua LOD): anchor -> left -66, top -88,
+    # right +96, bottom +58, + margin 4 px. Buffer sekecil mungkin karena
+    # outline siluet meng-copy-nya 5x per frame.
+    RIG_W, RIG_H = 176, 160
+    RIG_OX, RIG_OY = 74, 96
 
     # Durasi status skill (frame) - HARUS sama dengan active_skill_timer yang
     # diisi AI boss (bosses/base_boss.py) dan skill hero
@@ -357,118 +378,98 @@ class _NS_gornak:
     HEAD_Y = -24
     SHOULDER_Y = -14
     # Sendi bahu (x = ke depan mengikuti arah hadap)
-    SHOULDER_FRONT = (11, SHOULDER_Y)
-    SHOULDER_BACK = (-10, SHOULDER_Y - 1)
+    SHOULDER_FRONT = (12, SHOULDER_Y)
+    SHOULDER_BACK = (-11, SHOULDER_Y - 1)
 
     def _blade_angle(phase, action, ap=0.0, back=False):
         """Sudut bilah (radian, dari garis lurus-bawah; + = ke depan).
 
-        0 = moncong bilah ke bawah, +pi/2 = lurus ke depan, +-pi = ke atas,
-        -pi/2 = lurus ke belakang.
-
-        Ditabel per-pose (BUKAN diturunkan dari arah lengan) dan untuk
-        bilah depan seluruh ayunan ditulis sebagai satu sapuan MONOTONIK
-        yang lewat ATAS kepala: -2.30 -> -2.75 -> -4.38 -> -5.83. Kalau
-        wind-up diinterpolasi biasa (mis. 0.45 -> -2.55) bilah singgah di
-        posisi "lurus ke belakang" setinggi dada dan terlihat menancap
-        menembus torso/leher sendiri - persis keluhan pada frame tengah
-        slash versi sebelumnya.
+        0 = moncong ke bawah, +pi/2 = lurus ke depan, ~pi = ke atas,
+        -pi/2 = lurus ke belakang. Ditabel per-pose, BUKAN diturunkan dari
+        arah lengan, supaya bilah tidak pernah menyayat menembus badannya
+        sendiri. Kedua bilah KIRI-KANAN SIMETRIS (depan +, belakang -):
+        itulah yang membuat siluet pemegang dua pedang melebar ke kedua sisi
+        alih-alih menumpuk jadi satu tiang sempit di belakang badan.
         """
         s = math.sin(phase * 1.72)
         if action == "attack":
-            if back:
-                # Bilah belakang digambar SEBELUM torso, jadi lintasannya
-                # tidak bisa menimpa badan; cukup diayun mengikuti badan.
-                if ap < 0.30:
-                    return -0.55 - 1.55 * ((ap / 0.30) ** 0.85)
-                if ap < 0.55:
-                    return -2.10 + 2.45 * (((ap - 0.30) / 0.25) ** 0.75)
-                return 0.35 - 0.90 * ((ap - 0.55) / 0.45)
-            if ap < 0.30:                      # wind-up: naik ke belakang-atas
+            # Angkat di depan wajah -> tebas diagonal ke depan-bawah -> pulih.
+            # Semua jalur rotasi ada di SISI DEPAN badan, jadi tidak ada
+            # satu frame pun bilah melintasi torso atau kepala.
+            if ap < 0.30:                       # wind-up (0.75 -> 2.90)
                 t = (ap / 0.30) ** 0.8
-                return -2.30 - 0.45 * t
-            if ap < 0.55:                      # chop: lewat ubun-ubun ke depan
+                return (0.75 + 2.15 * t, -0.75 - 2.15 * t)[back]
+            if ap < 0.55:                       # tebasan (2.90 -> 0.35)
                 t = (ap - 0.30) / 0.25
                 t = 1.0 - (1.0 - t) ** 1.25    # akselerasi, rem di impact
-                return -2.75 - 1.63 * t
-            t = (ap - 0.55) / 0.45             # recovery: turun ke posisi siap
-            return -4.38 - 2.65 * t            # (=-7.03 = -0.75 saat rest)
-        if action == "surge":                  # Q: tusukan mana mendatar
-            return (1.45, -0.80)[back]
-        if action == "ward":                   # E: bilah tegak sebagai garda
-            return (-2.95, 2.85)[back]
+                return (2.90 - 2.55 * t, -2.90 + 2.55 * t)[back]
+            t = (ap - 0.55) / 0.45             # recovery -> siap
+            return (0.35 + 0.40 * t, -0.35 - 0.40 * t)[back]
+        if action == "surge":                  # Q: tusukan mana medatar
+            return (1.45, -1.45)[back]
+        if action == "ward":                   # E: dua bilah tegak = garda
+            return (2.95, -2.95)[back]
         if action == "void":                   # R: kedua bilah dibuka ke atas
             return (2.40, -2.40)[back]
         if action == "blink":
-            return (0.25, -0.35)[back]
+            return (0.62, -0.62)[back]
         if action == "walk":
-            return (-0.85 - s * 0.10, -0.55 - s * 0.10)[back]
-        # Siap: kedua bilah menukik ke belakang-bawah (guard turun). Angka
-        # ini juga titik awal/akhir ayunan, jadi tidak ada frame "snap" di
-        # mana bilah menyilang dada.
-        return (-0.75 + math.sin(phase * 0.5) * 0.05,
-                -0.55 - math.sin(phase * 0.5) * 0.05)[back]
+            return (1.02 + s * 0.12, -1.02 - s * 0.12)[back]
+        # Siap: bilah depan ke depan-bawah, bilah belakang ke belakang-bawah.
+        w = math.sin(phase * 0.5) * 0.05
+        return (1.02 + w, -1.02 - w)[back]
 
     def _front_grip_local(action, ap=0.0, phase=0.0):
-        """Pergelangan tangan depan = pegangan bilah utama (ruang lokal)."""
-        rest = _NS_gornak.SHOULDER_Y + 16      # tangan santai di sisi pinggang
+        """Pergelangan tangan depan (pegangan bilah utama), ruang lokal."""
+        rest = _NS_gornak.SHOULDER_Y + 16
         if action == "attack":
+            # Tangan tetap di sisi depan badan sepanjang ayunan - x tidak
+            # pernah melewati garis tengah, jadi bilah tidak menutupi wajah.
             if ap < 0.30:
-                # Antisipasi: di frame pertama attack tangan SUDAH berada di
-                # posisi cocked (setinggi bahu, di belakang kepala) - sama
-                # seperti sprite 2D klasik yang punya 1 frame "tarik napas".
-                # Setelah itu tangan hanya naik sedikit sambil bilah diputar,
-                # sehingga bilah TIDAK PERNAH menyayat datar menembus dada.
-                t = min(1.0, ap / 0.30)
-                return (int(2 - 4 * t), int(_NS_gornak.SHOULDER_Y - 2 - 6 * t))
+                t = min(1.0, ap / 0.30) ** 0.85
+                return (int(15 + 7 * t), int(rest - 26 * t))
             if ap < 0.55:
-                t = (ap - 0.30) / 0.25
-                t = t ** 0.7
-                return (int(-2 + 25 * t), int(rest - 22 + 26 * t))
+                t = ((ap - 0.30) / 0.25) ** 0.75
+                return (int(22 + 4 * t), int(rest - 26 + 32 * t))
             t = (ap - 0.55) / 0.45
-            return (int(23 - 10 * t), int(rest + 4 - 4 * t))
+            return (int(26 - 11 * t), int(rest + 6 - 4 * t))
         if action == "surge":
-            return (21, rest + 3)
+            return (23, rest + 3)
         if action == "ward":
-            return (12, rest - 9)
+            return (14, rest - 9)
         if action == "void":
-            return (17, rest - 15)
+            return (19, rest - 15)
         if action == "blink":
-            return (15, rest - 2)
+            return (16, rest - 2)
         if action == "walk":
             s = math.sin(phase * 1.72)
-            return (int(13 + s * 2), int(rest - s * 2))
-        return (13, rest + int(math.sin(phase * 0.62)))
+            return (int(15 + s * 3), int(rest - s * 2))
+        return (15, rest + int(math.sin(phase * 0.62)))
 
     def _back_grip_local(action, ap=0.0, phase=0.0):
-        """Pergelangan tangan belakang (bilah pendek, grip terbalik).
-
-        Sengaja digeser lebih jauh ke belakang supaya tangan dan bilahnya
-        berada DI LUAR siluet badan - sebelumnya tangan belakang jatuh
-        tepat di tengah torso sehingga bilahnya terlihat melayang.
-        """
+        """Pergelangan tangan belakang (bilah pendek, grip terbalik)."""
         rest = _NS_gornak.SHOULDER_Y + 17
         if action == "attack":
             if ap < 0.30:
-                t = min(1.0, ap / 0.30)
-                return (int(-16 - 4 * t), int(rest - 13 * t))
+                t = min(1.0, ap / 0.30) ** 0.85
+                return (int(-19 - 5 * t), int(rest - 24 * t))
             if ap < 0.55:
-                t = (ap - 0.30) / 0.25
-                return (int(-20 + 14 * t), int(rest - 13 + 21 * t))
+                t = ((ap - 0.30) / 0.25) ** 0.75
+                return (int(-24 - 3 * t), int(rest - 24 + 30 * t))
             t = (ap - 0.55) / 0.45
-            return (int(-6 - 10 * t), int(rest + 8 - 8 * t))
+            return (int(-27 + 8 * t), int(rest + 6 - 3 * t))
         if action == "surge":
-            return (-19, rest - 3)
+            return (-21, rest - 3)
         if action == "ward":
-            return (-17, rest - 11)
+            return (-20, rest - 11)
         if action == "void":
-            return (-18, rest - 14)
+            return (-21, rest - 14)
         if action == "blink":
-            return (-18, rest - 1)
+            return (-20, rest - 1)
         if action == "walk":
             s = math.sin(phase * 1.72)
-            return (int(-17 + s * 3), int(rest + s * 2))
-        return (-17, rest + int(math.sin(phase * 0.62 + 1.1)))
+            return (int(-19 + s * 3), int(rest + s * 2))
+        return (-19, rest + int(math.sin(phase * 0.62 + 1.1)))
 
     def _elbow(a, b, bend):
         """Siku 2-tulang: titik tengah + offset tegak lurus.
@@ -489,9 +490,16 @@ class _NS_gornak:
         return elbow, _NS_gornak._blade_angle(phase, action, ap, back)
 
     def _blade_len(action, back=False):
+        # Panjang bilah adalah sumber LEBAR utamanya siluet: pedang yang
+        # dipegang menyamping membuat karakter pemegang dua bilah terbaca
+        # penuh, bukan setiinggi tiang.
         if back:
-            return 19 if action != "attack" else 22
-        return 31 if action not in ("attack", "surge") else 37
+            return 25 if action != "attack" else 29
+        if action == "attack":
+            return 42
+        if action == "surge":
+            return 44
+        return 36
 
     def _rig_shift(action, phase, ap):
         """(lean, root_y) badan; kaki TIDAK ikut bergeser (menapak)."""
@@ -514,12 +522,27 @@ class _NS_gornak:
             root_y -= 1
         return lean, root_y
 
+    def _s(v):
+        """Ukuran ruang lokal (lebar garis, radius) -> piksel layar."""
+        return max(1, int(round(v * _NS_gornak.SCALE)))
+
+    def _local_to_screen(cx, cy, facing, lean, root_y, lx, ly):
+        """SATU pemetaan lokal -> layar: skala, arah hadap, bob/lean.
+
+        Semua bagian tubuh dan semua titik jangkar efek (ujung bilah,
+        pergelangan tangan) melewati fungsi ini, jadi ukuran boleh diubah
+        lewat satu angka tanpa membuat efek lepas dari badan.
+        """
+        f = 1 if facing >= 0 else -1
+        k = _NS_gornak.SCALE
+        return (int(cx + (lx * f + lean * f) * k),
+                int(cy - _NS_gornak.LIFT + (ly + root_y) * k))
+
     def _local(boss, x, y, action, phase, ap, lx, ly):
         """Ruang lokal rig -> piksel surface (dipakai FX eksternal)."""
         facing = getattr(boss, "direction", 1) or 1
-        f = 1 if facing >= 0 else -1
         lean, root_y = _NS_gornak._rig_shift(action, phase, ap)
-        return (int(x + lx * f + lean * f), int(y + ly + root_y))
+        return _NS_gornak._local_to_screen(x, y, facing, lean, root_y, lx, ly)
 
     def _tip_local(action, phase, ap=0.0, back=False):
         """Ujung bilah dalam ruang lokal (rig & FX pakai angka yang sama)."""
@@ -710,11 +733,11 @@ class _NS_gornak:
 
         def pt(dx, dy):
             """Sendi badan (ikut bob/lean)."""
-            return (int(cx + dx * f + lean * f), int(cy + dy + root_y))
+            return _NS_gornak._local_to_screen(cx, cy, f, lean, root_y, dx, dy)
 
         def ptg(dx, dy):
             """Sendi yang terpatok tanah (telapak kaki tidak ikut bob)."""
-            return (int(cx + dx * f + lean * f), int(cy + dy))
+            return _NS_gornak._local_to_screen(cx, cy, f, lean, 0, dx, dy)
 
         def poly(color, coords, outline=True):
             pts = [pt(dx, dy) for dx, dy in coords]
@@ -732,22 +755,24 @@ class _NS_gornak:
 
         def dot(color, dx, dy, r, outline=True):
             sx, sy = pt(dx, dy)
+            rr = _NS_gornak._s(r)
             if outline:
                 _NS_gornak._aacircle(surface, p["shadow_deep"],
-                                     (sx + f, sy + 1), r + 1)
-            _NS_gornak._aacircle(surface, color, (sx, sy), r)
+                                     (sx + f, sy + 1), rr + 1)
+            _NS_gornak._aacircle(surface, color, (sx, sy), rr)
 
         def limb(a, b, width, base, light=None):
             aa, bb = pt(*a), pt(*b)
+            w = _NS_gornak._s(width)
             _NS_gornak._aaline(surface, p["shadow_deep"],
                                (aa[0] + f, aa[1] + 1),
-                               (bb[0] + f, bb[1] + 1), width + 2)
-            _NS_gornak._aaline(surface, base, aa, bb, width)
+                               (bb[0] + f, bb[1] + 1), w + 2)
+            _NS_gornak._aaline(surface, base, aa, bb, w)
             if light:
                 off = -1 if f > 0 else 1
                 _NS_gornak._aaline(surface, light, (aa[0] + off, aa[1] - 1),
                                    (bb[0] + off, bb[1] - 1),
-                                   max(1, width // 3))
+                                   max(1, _NS_gornak._s(width // 3)))
 
         breath = math.sin(phase * 0.62)
         stride = (math.sin(phase * 1.72) if action == "walk" else 0.0)
@@ -821,11 +846,11 @@ class _NS_gornak:
         sway = int(math.sin(phase * 1.05) * 2)
         if action in ("walk", "attack"):
             sway -= 2
-        outer = [(-12, -19), (-14, -6), (-16 + sway, 9), (-12 + sway, 15),
-                 (-8 + sway, 8), (-4 + sway, 14), (0, 6), (3, -8), (2, -19)]
+        outer = [(-15, -19), (-19, -6), (-22 + sway, 10), (-17 + sway, 17),
+                 (-11 + sway, 9), (-6 + sway, 16), (0, 7), (4, -8), (2, -19)]
         poly_free(p["robe_darkest"], [pt(*q) for q in outer])
-        inner = [(-11, -17), (-12, -6), (-14 + sway, 7), (-11 + sway, 12),
-                 (-7 + sway, 7), (-3 + sway, 11), (0, 5), (2, -8), (1, -17)]
+        inner = [(-14, -17), (-17, -6), (-20 + sway, 8), (-15 + sway, 14),
+                 (-10 + sway, 8), (-5 + sway, 13), (0, 6), (3, -8), (1, -17)]
         poly_free(p["robe_dark"], [pt(*q) for q in inner], outline=False)
         _NS_gornak._aaline(surface, p["robe_mid"], pt(-10, -14),
                            pt(-12 + sway, 4), 1)
@@ -839,22 +864,22 @@ class _NS_gornak:
         """
         p = _NS_gornak.PALETTE
         hip_y = 4
-        ground = _NS_gornak.GROUND_DY
+        ground = _NS_gornak.FEET_DY      # ruang lokal; pt/ptg yang menskala
         for side in (-1, 1):
             if action == "walk":
-                dx = int(stride * 7) * side
+                dx = int(stride * 8) * side
                 lift = int(max(0.0, -stride * side) * 4)
             elif action == "attack":
-                dx = 5 if side > 0 else -4
+                dx = 8 if side > 0 else -7
                 lift = 0
             elif action in ("surge", "void"):
-                dx = 4 if side > 0 else -4
+                dx = 7 if side > 0 else -7
                 lift = 0
             else:
-                dx = 1 if side > 0 else -2
+                dx = 4 if side > 0 else -6
                 lift = 0
             front = side > 0
-            hip_x = side * 6
+            hip_x = side * 7
             knee_x = hip_x + int(dx * 0.55) + side
             foot_x = hip_x + dx + side * 2
             knee_y = (hip_y + ground) // 2 - lift
@@ -1002,8 +1027,8 @@ class _NS_gornak:
         """Pauldron baja bertingkat + duri pendek; sisi depan lebih besar."""
         p = _NS_gornak.PALETTE
         sh = _NS_gornak.SHOULDER_Y
-        for side, scale in ((-1, 0.78), (1, 1.0)):
-            sx = side * 13
+        for side, scale in ((-1, 0.80), (1, 1.0)):
+            sx = side * 15
             sy = sh - 1 - int(breath if side > 0 else 0)
             w = max(4, int(8 * scale))
             h = max(3, int(6 * scale))
@@ -1280,23 +1305,28 @@ class _NS_gornak:
         """Bayangan kontak tunggal yang lembek (base_boss menggambar satu
         lagi; ini dipertipis supaya tidak jadi dua piringan hitam)."""
         p = _NS_gornak.PALETTE
-        sh = pygame.Surface((60, 18), pygame.SRCALPHA)
-        for i, (w, h, a) in enumerate(((42, 10, 70), (30, 7, 90),
-                                       (18, 4, 110))):
-            _NS_gornak._ellipse(sh, (0, 0, 0, a), (30 - w // 2, 9 - h // 2,
-                                                   w, h))
-        _NS_gornak._ellipse(sh, (*p["magic_darkest"], 60), (6, 3, 48, 12))
-        surface.blit(sh, (int(x) - 30, int(y) - 9))
+        K = _NS_gornak.SCALE
+        bw, bh = int(60 * K), int(18 * K)
+        sh = pygame.Surface((bw, bh), pygame.SRCALPHA)
+        for w, h, a in ((int(42 * K), int(10 * K), 70),
+                        (int(30 * K), int(7 * K), 90),
+                        (int(18 * K), int(4 * K), 110)):
+            _NS_gornak._ellipse(sh, (0, 0, 0, a),
+                                (bw // 2 - w // 2, bh // 2 - h // 2, w, h))
+        _NS_gornak._ellipse(sh, (*p["magic_darkest"], 60),
+                            (int(6 * K), int(3 * K), int(48 * K), int(12 * K)))
+        surface.blit(sh, (int(x) - bw // 2, int(y) - bh // 2))
 
     def _draw_anti_magic_field(surface, x, y, phase, skill):
         """Cahaya lembut MENEMPEL badan + percikan mengorbit siluet."""
         p = _NS_gornak.PALETTE
         pulse = 1.0 if skill else math.sin(phase * 0.7) * 0.25 + 0.72
-        glow = pygame.Surface((88, 104), pygame.SRCALPHA)
-        cx, cy = 44, 56
-        for rx, ry, col, a in ((30, 40, "magic_darkest", 55),
-                               (22, 32, "magic_dark", 50),
-                               (15, 24, "magic_mid", 34)):
+        K = _NS_gornak.SCALE
+        glow = pygame.Surface((int(88 * K), int(104 * K)), pygame.SRCALPHA)
+        cx, cy = int(44 * K), int(56 * K)
+        for rx, ry, col, a in ((int(30 * K), int(40 * K), "magic_darkest", 55),
+                               (int(22 * K), int(32 * K), "magic_dark", 50),
+                               (int(15 * K), int(24 * K), "magic_mid", 34)):
             _NS_gornak._ellipse(glow, (*p[col], _NS_gornak._alpha(a * pulse)),
                                 (cx - rx, cy - ry, rx * 2, ry * 2))
         surface.blit(glow, (int(x) - cx, int(y) - cy + 6))
@@ -1304,7 +1334,7 @@ class _NS_gornak:
         n = 6
         for i in range(n):
             ang = ((phase * 0.35 + i / n) % 1.0) * math.tau
-            r = 20 + int(math.sin(phase * 1.3 + i * 2) * 3)
+            r = _NS_gornak._s(20) + int(math.sin(phase * 1.3 + i * 2) * 3)
             sx = x + int(math.cos(ang) * r * 1.25)
             sy = y + 2 + int(math.sin(ang) * r * 0.8)
             a = _NS_gornak._alpha(120 + 80 * math.sin(phase * 3 + i))
@@ -1321,25 +1351,30 @@ class _NS_gornak:
         pulse = math.sin(phase * 1.1) * 0.25 + 0.75
         gy = y + _NS_gornak.GROUND_DY
         bright = 1.0 if skill else 0.8
+        rw, rh = _NS_gornak._s(22), _NS_gornak._s(6)
         _NS_gornak._ellipse(surface,
                             (*p["magic_darkest"],
                              _NS_gornak._alpha(150 * pulse * bright)),
-                            (x - 22, gy - 6, 44, 12), 2)
+                            (x - rw, gy - rh, rw * 2, rh * 2), 2)
+        rw2, rh2 = _NS_gornak._s(15), _NS_gornak._s(4)
         _NS_gornak._ellipse(surface,
                             (*p["magic_mid"],
                              _NS_gornak._alpha(140 * pulse * bright)),
-                            (x - 15, gy - 4, 30, 8), 1)
+                            (x - rw2, gy - rh2, rw2 * 2, rh2 * 2), 1)
+        t0, t1 = _NS_gornak._s(18), _NS_gornak._s(23)
+        ty0, ty1 = _NS_gornak._s(5), _NS_gornak._s(6)
         for i in range(6):
             ang = phase * 0.4 + i * math.tau / 6
             _NS_gornak._aaline(
                 surface,
                 (*p["magic_light"], _NS_gornak._alpha(140 * pulse)),
-                (x + int(math.cos(ang) * 18), gy + int(math.sin(ang) * 5)),
-                (x + int(math.cos(ang) * 23), gy + int(math.sin(ang) * 6)), 1)
+                (x + int(math.cos(ang) * t0), gy + int(math.sin(ang) * ty0)),
+                (x + int(math.cos(ang) * t1), gy + int(math.sin(ang) * ty1)), 1)
         if skill in ("e", "r"):
+            ew, eh = _NS_gornak._s(26), _NS_gornak._s(7)
             _NS_gornak._ellipse(
                 surface, (*p["magic_hot"], _NS_gornak._alpha(120 * pulse)),
-                (x - 26, gy - 7, 52, 14), 1)
+                (x - ew, gy - eh, ew * 2, eh * 2), 1)
 
     # ==================================================================
     # SLASH ARC - mengikuti lintasan ujung bilah yang sebenarnya
@@ -1349,20 +1384,21 @@ class _NS_gornak:
         if progress < 0.24 or progress > 0.92:
             return
         p = _NS_gornak.PALETTE
-        f = 1 if facing >= 0 else -1
         lean, root_y = _NS_gornak._rig_shift("attack", phase, progress)
 
+        def scr(lx, ly):
+            return _NS_gornak._local_to_screen(x, y, facing, lean, root_y,
+                                               lx, ly)
+
         def tip_at(ap):
-            lx, ly = _NS_gornak._tip_local("attack", phase, ap)
-            return (int(x + lx * f + lean * f), int(y + ly + root_y))
+            return scr(*_NS_gornak._tip_local("attack", phase, ap))
 
         steps = 7
         trail = []
         for i in range(steps):
             t = i / (steps - 1)
             trail.append(tip_at(max(0.0, min(1.0, progress - 0.30 + t * 0.30))))
-        pgx, pgy = _NS_gornak._front_grip_local("attack", progress, phase)
-        pivot = (int(x + pgx * f + lean * f), int(y + pgy + root_y))
+        pivot = scr(*_NS_gornak._front_grip_local("attack", progress, phase))
         fade = 1.0 - max(0.0, (progress - 0.70) / 0.22)
         alpha = _NS_gornak._alpha(230 * fade)
         if alpha <= 0:
@@ -1373,7 +1409,10 @@ class _NS_gornak:
             outer, inner = [], []
             for i, q in enumerate(trail):
                 t = i / (steps - 1)
-                w = max(0.6, (1 - abs(t - 0.8)) * off)
+                # Lebar pita memuncak dekat bilah dan menipis ke ekor,
+                # supaya trail terbaca menyatu dengan senjata (versi
+                # seragam menyisakan "serpihan" terpisah di ujung arc).
+                w = max(0.5, (1 - abs(t - 0.8)) * off * (0.35 + 0.65 * t))
                 vx, vy = q[0] - pivot[0], q[1] - pivot[1]
                 ln = math.hypot(vx, vy) or 1.0
                 nx, ny = -vy / ln, vx / ln
@@ -1511,8 +1550,8 @@ class _NS_gornak:
             grow = 0.55 + (progress / 0.16) * 0.45
         elif progress > 0.86:
             grow = 1.0 - (progress - 0.86) / 0.14 * 0.35
-        rx = int(24 * grow)
-        ry = int(33 * grow)
+        rx = int(_NS_gornak._s(24) * grow)
+        ry = int(_NS_gornak._s(33) * grow)
         cx0, cy0 = int(x), int(y) - 3
         breath = math.sin(phase * 2.4) * 1.2
         pts = []
@@ -1662,8 +1701,10 @@ class _NS_gornak:
                                      (px, py, 1, 1))
         # Rim violet di badan saat mengisi (badan tetap jadi subjek)
         rim = _NS_gornak._alpha(110 * min(1.0, progress * 3))
+        rw, rh = _NS_gornak._s(15), _NS_gornak._s(21)
         _NS_gornak._ellipse(surface, (*p["magic_light"], rim),
-                            (int(x) - 15, int(y) - 21, 30, 44), 1)
+                            (int(x) - rw, int(y) - rh - _NS_gornak.LIFT,
+                             rw * 2, rh * 2 + _NS_gornak._s(2)), 1)
 
 # ====================================================================
 # MORGATH (ARC WARDEN) - Mini Boss

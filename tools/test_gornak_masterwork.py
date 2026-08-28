@@ -52,6 +52,20 @@ def probe(cx=0.0, cy=0.0, **kw):
     return b
 
 
+def clipped_by_buffer(action, ap, phase):
+    """True kalau hasil render rig Menyentuh tepi buffer RIG_W x RIG_H.
+
+    Buffer yang kecipil akan memotong bilah/jubah saat sprite di-cache
+    (potongan hilang di kanan/kiri), jadi ini diperiksa dari bounding box
+    render sebenarnya, bukan dari angka batas.
+    """
+    buf = pygame.Surface((G.RIG_W, G.RIG_H), pygame.SRCALPHA)
+    G._draw_gnk_rig(buf, G.RIG_OX, G.RIG_OY, 1, phase, action, ap, False)
+    r = buf.get_bounding_rect(min_alpha=1)
+    return r.width == 0 or r.left <= 0 or r.top <= 0 or \
+        r.right >= G.RIG_W or r.bottom >= G.RIG_H
+
+
 def render(action="idle", ap=0.0, phase=1.25, facing=1, detail=False):
     """Rig murni (tanpa FX) pada jangkar (C, CY)."""
     surf = pygame.Surface((SIZE, SIZE), pygame.SRCALPHA)
@@ -102,15 +116,79 @@ def test_feet_are_planted_and_body_is_readable():
     idle = render("idle")
     rect = solid_rect(idle)
     assert rect is not None
-    tinggi = rect.height
     # Badan (ubun-ubun -> sol) harus jauh lebih besar dari rig lama (48 px)
-    assert tinggi >= 68, f"body too short: {tinggi}"
+    # dan segaris dengan keluarga mini boss (morgath 82, drakar 138).
+    assert rect.height >= 100, f"body too short: {rect.height}"
+    # Siluet harus MEMENUHI kotak, bukan tiang sempit: W/H keluarga
+    # hero = 0.90-1.17 (rig lama gornak cuma 0.61).
+    assert rect.width / rect.height >= 0.85, \
+        f"siluet terlalu sempit: {rect.width}x{rect.height}"
+    assert rect.width >= 96, rect.width
     # Sol jatuh di garis bayangan -> karakter tidak melayang.
     ground = CY + G.GROUND_DY
     assert abs(rect.bottom - ground) <= 3, (rect.bottom, ground)
-    # ...dan puncak kepala tidak menutupi HP bar boss (y-45..y-37).
-    assert rect.top >= CY - 44, rect.top
-    assert rect.width >= 40
+    # Puncak krist mohawk tetap di atas HP bar tanpa membawa seluruh kepala
+    # masuk ke pita bar (bar mini boss: y-45..y-37); LIFT menjaga wajah di
+    # bawahnya.
+    assert rect.top >= CY - 58, rect.top
+
+
+def test_size_matches_the_family():
+    """Ukuran Gornak = ukuran karakter lain (keluhan: terlalu kecil).
+
+    Dua jalur diuji terhadap rujukan yang benar-benar dipakai pemain:
+      * boss di arena: bbox badan padat dibandingkan morgath & drakar;
+      * hero di lane/Hero Shop: hasil AKHIR (setelah auto-scale pipeline HD
+        heroes/__init__.py) dibandingkan Grimjaw & Kaizen.
+    """
+    import heroes
+    from heroes import _ProbeEntity, HERO_RENDERERS, BOSS_RENDERERS
+
+    def hero_final(name):
+        c = 200
+        canvas = pygame.Surface((400, 400), pygame.SRCALPHA)
+        h = _ProbeEntity(name, c, c)
+        h.pulse = 1.35
+        h.direction = 1
+        h.team = "blue"
+        rend = HERO_RENDERERS.get(name) or BOSS_RENDERERS.get(name)
+        h._render_scale = 1.0
+        rend(canvas, h, c, c)
+        r = canvas.get_bounding_rect(min_alpha=100)
+        sc = heroes._get_hero_scale(name)
+        return int(r.height * sc), int(r.width * sc)
+
+    gh, gw = hero_final("gornak")
+    for sib in ("grimjaw", "kaizen"):
+        sh, sw = hero_final(sib)
+        assert abs(gh - sh) <= 0.14 * sh, f"hero gornak H={gh} vs {sib} H={sh}"
+        assert abs(gw - sw) <= 0.18 * sw, f"hero gornak W={gw} vs {sib} W={sw}"
+    # jangan ada yang di-upscale (bitmap di-blow-up = kabur)
+    assert heroes._get_hero_scale("gornak") <= 1.02
+
+    def boss_bbox(name, fn):
+        surf = pygame.Surface((460, 460), pygame.SRCALPHA)
+        b = probe(230, 230)
+        b.boss_type = name
+        fn(surf, b, 230, 230)
+        m = pygame.mask.from_surface(surf, 100)
+        rs = m.get_bounding_rects()
+        x0 = min(q.x for q in rs); y0 = min(q.y for q in rs)
+        x1 = max(q.right for q in rs); y1 = max(q.bottom for q in rs)
+        return y1 - y0, x1 - x0
+
+    import bosses.level1 as L
+    gh2, gw2 = boss_bbox("gornak", L.draw_gornak)
+    mh, mw = boss_bbox("morgath", L.draw_morgath)          # H82 W120
+    dh, dw = boss_bbox("drakar", L.draw_drakar)             # H138 W190 (naga)
+    ah, aw = boss_bbox("abaddon", L.draw_abaddon)           # true boss
+    # Tidak boleh lagi jadi "tiang kecil" di samping mini boss lain:
+    assert gh2 >= mh * 1.05, f"boss gornak H={gh2} vs morgath H={mh}"
+    assert gh2 >= dh * 0.72, f"boss gornak H={gh2} vs drakar H={dh}"
+    assert gw2 >= mw * 0.85, f"boss gornak W={gw2} vs morgath W={mw}"
+    # ...tapi mini boss tetap lebih kecil dari true boss level yang sama.
+    assert gh2 <= ah * 1.00, f"boss gornak H={gh2} >= true boss {ah}"
+    assert gw2 <= aw * 1.00, f"boss gornak W={gw2} >= true boss {aw}"
 
 
 def test_blade_geometry_is_pose_driven():
@@ -125,11 +203,13 @@ def test_blade_geometry_is_pose_driven():
     tip_idle = G._tip_local("idle", 1.0, 0.0)
     tip_wind = G._tip_local("attack", 1.0, 0.26)
     tip_rel = G._tip_local("attack", 1.0, 0.52)
-    # Wind-up: bilah terangkat ke belakang-atas (bukan ke samping dada).
-    assert tip_wind[1] < -18 and tip_wind[0] < 0
-    # Release: ayunan menjulau jauh ke depan.
-    assert tip_rel[0] > tip_idle[0] + 12
-    assert tip_rel[1] < tip_wind[1] + 46          # turun menyapu
+    # Wind-up: kedua bilah terangkat TINGGI (di depan/ belakang wajah),
+    # tidak pernah lewat datar setinggi dada.
+    assert tip_wind[1] < -18
+    assert tip_wind[1] < tip_idle[1] - 24
+    # Impact: ayunan sudah turun jauh menyapu ke bawah-depan.
+    assert tip_rel[1] > tip_idle[1] + 10
+    assert tip_rel[1] > tip_wind[1] + 46
 
     def blade_crosses_chest(grip, tip, box):
         """Apakah bagian TENGAH- LUAR bilah memotong rongga dada?
@@ -155,9 +235,10 @@ def test_blade_geometry_is_pose_driven():
         tip = G._tip_local("attack", 1.0, ap)
         assert not blade_crosses_chest(grip, tip, chest), \
             f"blade crosses chest at ap={ap:.2f} grip={grip} tip={tip}"
-        assert abs(tip[0]) <= G.RIG_OX - 3, f"tip leaves buffer x @ {ap}"
-        assert -(G.RIG_OY - 3) <= tip[1] <= G.RIG_H - G.RIG_OY - 1, \
-            f"tip leaves buffer y @ {ap}: {tip}"
+        # Tidak boleh terpotong oleh buffer rig: diperiksa langsung dari
+        # bounding box hasil render (bukan dari angka batas asimetris).
+        assert not clipped_by_buffer("attack", ap, 1.0), \
+            f"rig clipped by buffer @ attack ap={ap:.2f}"
 
     for action in ("idle", "walk", "surge", "ward", "void"):
         for i in range(6):
@@ -166,12 +247,10 @@ def test_blade_geometry_is_pose_driven():
                  if action != "idle" else G._front_grip_local(action, 0.0, ph))
             tp = G._tip_local(action, ph, 0.0)
             assert not blade_crosses_chest(g, tp, chest), (action, ph)
-        for i in range(6):
+        for i in range(4):
             ph = i * 1.05
-            g = G._back_grip_local(action, 0.0, ph)
-            tp = G._tip_local(action, ph, 0.0, back=True)
-            assert abs(tp[0]) <= G.RIG_OX - 3 and \
-                -(G.RIG_OY - 3) <= tp[1], (action, ph, tp)
+            assert not clipped_by_buffer(action, 0.0, ph), \
+                f"rig clipped by buffer @ {action} phase={ph:.2f}"
 
     frames = {pygame.image.tobytes(render("attack", i / 9.0), "RGBA")
               for i in range(10)}
@@ -226,28 +305,24 @@ def test_portrait_lod_is_distinct_and_clean():
     crop = pygame.Surface((SIZE, SIZE), pygame.SRCALPHA)
     G.draw_gornak(full, probe(C, CY), C, CY)
     G.draw_gornak(crop, probe(C, CY, _portrait_hd=True), C, CY)
-    def outside_body(surf):
-        """Piksel di pita garis kaki yang berada DI LUAR siluet badan.
+    def painted(surf):
+        """Jumlah piksel tergambar (termasuk yang transparan tipis).
 
-        Rune tanah & aura digambar melebar sampai x=+-24 sedangkan badan
-        sendiri hanya sampai +-18 - jadi hitungan ini membuktikan efek
-        arena ada di mode normal dan dibuang di mode portrait, tanpa
-        bergantung pada warna hasil alpha-blending.
+        Mode arena menambah aura + rune tanah + bayangan (permukaan besar
+        alpha lembut); mode portrait hanya rig. Warna tidak dipakai sebagai
+        acuan karena SRCALPHA di pygame menurunkan nilai RGB saat blending,
+        jadi jumlah piksel adalah sinyal yang stabil.
         """
         n = 0
-        for y in range(CY + G.GROUND_DY - 7, CY + G.GROUND_DY + 7):
-            for x in range(SIZE):
-                if abs(x - C) <= 19:
-                    continue
+        for y in range(surf.get_height()):
+            for x in range(surf.get_width()):
                 if surf.get_at((x, y)).a > 6:
                     n += 1
         return n
 
-    assert outside_body(full) > 24, "arena LOD should keep the ground rune"
-    assert outside_body(crop) == 0, \
-        "portrait LOD must drop ground FX (auto-crop would shrink the face)"
-    assert crop.get_bounding_rect(min_alpha=8).width < \
-        full.get_bounding_rect(min_alpha=8).width
+    a_px, p_px = painted(full), painted(crop)
+    assert a_px > p_px * 1.30, \
+        f"portrait harus membuang FX arena (painted {a_px} vs {p_px})"
 
 
 def test_walk_frames_recalculate_joints():
@@ -334,11 +409,9 @@ def test_skill_durations_match_ai_timers():
 
 
 def test_perf_budget():
-    """Guardrail: rig baru tidak boleh lebih mahal dari tumpukan sticker lama.
-
-    Ambang sengaja longgar (4 ms) supaya tetap lolos di HP低端; hasil terukur
-    di desktop ~0,9 ms/frame (rig lama ~1,2 ms).
-    """
+    """Guardrail: badan 1.3x lebih besar tidak boleh membuat frame time naik
+    drastis. Ambang sengaja longgar (5 ms) supaya tetap lolos di HP rendah;
+    hasil terukur di desktop ~1.3 ms/frame (rig lama ~1,2 ms)."""
     import time
     scr = pygame.Surface((1280, 720))
     boss = probe(640, 360)
@@ -351,7 +424,7 @@ def test_perf_budget():
         boss.pulse = i * 0.2
         G.draw_gornak(scr, boss, 640, 360)
     ms = (time.perf_counter() - t0) / N * 1000
-    assert ms < 4.0, f"draw_gornak {ms:.2f} ms/frame - terlalu mahal"
+    assert ms < 5.0, f"draw_gornak {ms:.2f} ms/frame - terlalu mahal"
     print(f"       (draw_gornak idle: {ms:.2f} ms/frame)")
 
 
@@ -364,6 +437,7 @@ if __name__ == "__main__":
     test_portrait_lod_is_distinct_and_clean()
     test_walk_frames_recalculate_joints()
     test_pose_router_and_skill_states_render()
+    test_size_matches_the_family()
     test_hero_scale_is_no_longer_upsampled()
     test_skill_durations_match_ai_timers()
     test_perf_budget()

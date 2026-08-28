@@ -31,9 +31,9 @@ PANEL_EDGE = (86, 52, 128)
 BG = (6, 7, 15)
 
 # Crop di sekitar jangkar: kaki (GROUND_DY) sampai pucuk mohawk muat semua.
-CROP_W, CROP_H = 118, 138
-CANVAS = 190
-ANCHOR = (CANVAS // 2, CANVAS // 2 + 24)   # (x, y) dunia di dalam canvas
+CROP_W, CROP_H = 158, 168
+CANVAS = 240
+ANCHOR = (CANVAS // 2, CANVAS // 2 + 8)   # (x, y) dunia di dalam canvas
 
 
 def probe(cx=0.0, cy=0.0, **kw):
@@ -53,9 +53,11 @@ def probe(cx=0.0, cy=0.0, **kw):
     return b
 
 
-def frame(boss, zoom=2.0, bg=PANEL, full=False, rig_only=None):
+def frame(boss, zoom=2.0, bg=None, full=True, rig_only=None):
     """Render lalu crop + zoom nearest (tetap tajam, tidak di-blur)."""
     surf = pygame.Surface((CANVAS, CANVAS), pygame.SRCALPHA)
+    if bg is not None:
+        surf.fill(bg + (255,))
     if rig_only is not None:
         action, phase, ap = rig_only
         cx, cy = ANCHOR
@@ -87,7 +89,7 @@ font_small = pygame.font.Font(None, 20)
 # ══════════════════════════════════════════════════════════════════
 # Sheet 1 - empat pose utama + barisan ukuran arena sebenarnya
 # ══════════════════════════════════════════════════════════════════
-W, H = 1280, 880
+W, H = 1280, 1120
 screen = pygame.Surface((W, H))
 screen.fill(BG)
 screen.blit(font_title.render("GORNAK — PROCEDURAL MASTERWORK", True, ACCENT),
@@ -97,16 +99,16 @@ screen.blit(font_small.render(
     "outline gelap 1 px • twin blade pose-driven", True, SUB), (40, 66))
 
 cases = []
-cases.append(("IDLE", probe(pulse=1.25), 2.4))
-cases.append(("WALK CYCLE", probe(pulse=2.35), 2.4))
+cases.append(("IDLE", probe(pulse=1.25), 2.1))
+cases.append(("WALK CYCLE", probe(pulse=2.35), 2.1))
 b = probe(pulse=1.15, timer=22)
 b._gnk_attack_active = True
 b._gnk_attack_progress = 0.52
-cases.append(("ATTACK — SLASH ARC", b, 2.4))
+cases.append(("ATTACK — SLASH ARC", b, 2.1))
 b = probe(pulse=1.15, active_skill="r", active_skill_timer=44)
 b.target = SimpleNamespace(x=float(ANCHOR[0] + 44), y=float(ANCHOR[1] - 14),
                            alive=True)
-cases.append(("R — MANA VOID", b, 2.4))
+cases.append(("R — MANA VOID", b, 2.1))
 
 PX, PY, PW_, PH_ = 26, 100, 296, 466
 notes = ("kaki menapak di garis\nbayangan; tiap bagian\npunya batas sendiri",
@@ -117,7 +119,7 @@ for i, (label, boss, zoom) in enumerate(cases):
     rect = pygame.Rect(PX + i * 310, PY, PW_, PH_)
     pygame.draw.rect(screen, PANEL, rect, border_radius=12)
     pygame.draw.rect(screen, PANEL_EDGE, rect, 2, border_radius=12)
-    img = frame(boss, zoom=zoom)
+    img = frame(boss, zoom=zoom, full=True)
     screen.blit(img, (rect.x + (rect.width - img.get_width()) // 2,
                       rect.y + 18))
     screen.blit(font_label.render(label, True, (232, 216, 255)),
@@ -127,8 +129,8 @@ for i, (label, boss, zoom) in enumerate(cases):
                     (rect.x + 14, rect.bottom + 12 + k * 15))
 
 # ── Barisan 1x: ukuran sebenarnya di lane (HP bar & label seperti game) ──
-STRIPO = 664
-pygame.draw.rect(screen, (24, 27, 22), (26, STRIPO, 1228, 196),
+STRIPO = 620
+pygame.draw.rect(screen, (24, 27, 22), (26, STRIPO, 1228, 244),
                  border_radius=10)
 screen.blit(font_small.render(
     "UKURAN ASLI 1x DI ARENA — bayangan, HP bar, dan label digambar pada "
@@ -142,7 +144,7 @@ mini = [("idle", {}), ("walk", {"pulse": 2.4}),
         ("hurt", {"hurt_flash_timer": 5})]
 for i, (name, kw) in enumerate(mini):
     cx = 100 + i * 152
-    cy = STRIPO + 132
+    cy = STRIPO + 150
     args = {k: v for k, v in kw.items() if k not in ("atk", "pulse")}
     b = probe(cx, cy, pulse=kw.get("pulse", 1.3), **args)
     if "atk" in kw:
@@ -159,7 +161,47 @@ for i, (name, kw) in enumerate(mini):
     lbl = font_small.render("BOSS: Gornak", True, (255, 220, 100))
     screen.blit(lbl, lbl.get_rect(center=(cx, cy - 55)))
     screen.blit(font_label.render(name, True, (240, 240, 240)),
-                (cx - 22, STRIPO + 168))
+                (cx - 24, STRIPO + 218))
+
+# ══════════════════════════════════════════════════════════════════
+# Barisan PARITAS UKURAN - rujukan yang dipakai saat menyesuaikan skala
+# ══════════════════════════════════════════════════════════════════
+PY2 = 888
+pygame.draw.rect(screen, (22, 25, 20), (26, PY2, 1228, 214), border_radius=10)
+screen.blit(font_small.render(
+    "PARITAS UKURAN 1x - kiri: mini boss sepupu (semua digambar dengan HP "
+    "bar & label aslinya) · kanan: hero masterwork lain di lane",
+    True, ACCENT), (44, PY2 + 8))
+import bosses.level1 as LB
+from heroes import _ProbeEntity, render_hero as RH, clear_hero_sprite_cache
+
+for i, (name, fn, r) in enumerate((("gornak", LB.draw_gornak, 30),
+                                   ("morgath", LB.draw_morgath, 30),
+                                   ("drakar", LB.draw_drakar, 32))):
+    bx, by = 120 + i * 190, PY2 + 96
+    bb = probe(bx, by)
+    bb.boss_type = name
+    bb.radius = r
+    pygame.draw.ellipse(screen, (0, 0, 0), (bx - r - 5, by + r - 5,
+                                            r * 2 + 10, 12))
+    fn(screen, bb, bx, by)
+    byy = by - r - 15
+    pygame.draw.rect(screen, (40, 0, 0), (bx - 30, byy, 60, 8))
+    pygame.draw.rect(screen, (100, 220, 100), (bx - 30, byy, 42, 8))
+    pygame.draw.rect(screen, (255, 200, 50), (bx - 30, byy, 60, 8), 1)
+    screen.blit(font_small.render(name, True, (255, 240, 200)), (bx - 24,
+                                                                 PY2 + 192))
+clear_hero_sprite_cache()
+for j, hname in enumerate(("grimjaw", "kaizen", "vex", "gornak")):
+    hx, hy = 780 + j * 118, PY2 + 132
+    hh = _ProbeEntity(hname, hx, hy)
+    hh.pulse = 1.35
+    hh.direction = 1
+    hh.team = "blue"
+    pygame.draw.ellipse(screen, (0, 0, 0), (hx - 26, hy + 4, 52, 10))
+    RH(hname, screen, hh, hx, hy)
+    screen.blit(font_small.render(hname, True, (210, 235, 210)), (hx - 24,
+                                                                  PY2 + 192))
 
 out = os.path.join(ROOT, "docs", "gornak_masterwork_preview.png")
 pygame.image.save(screen, out)
@@ -181,7 +223,7 @@ strip.blit(font_small.render(
 rows = (("IDLE / BREATH", 5, "idle"),
         ("WALK / STRIDE", 5, "walk"),
         ("ATTACK / SLASH", 5, "attack"))
-CELL = 150
+CELL = 168
 for row, (label, count, action) in enumerate(rows):
     top = 106 + row * 224
     strip.blit(font_label.render(label, True, ACCENT), (34, top + 96))
@@ -196,12 +238,12 @@ for row, (label, count, action) in enumerate(rows):
             progress = 0.0
         b = probe(pulse=ph)
         img = frame(b, zoom=1, rig_only=(action, ph, progress))
-        fx = 208 + i * (CELL + 12)
+        fx = 176 + i * (CELL + 12)
         pygame.draw.rect(strip, PANEL, (fx - 6, top - 6, CELL + 12, CELL + 12))
         strip.blit(img, (fx, top))
         strip.blit(font_small.render(
             ("p=%.2f" % progress) if action == "attack" else
-            ("φ=%.2f" % ph), True, NOTE), (fx + 4, top + CELL - 18))
+            ("φ=%.2f" % ph), True, NOTE), (fx + 4, top + CELL + 2))
 
 strip_out = os.path.join(ROOT, "docs", "gornak_animation_strip.png")
 pygame.image.save(strip, strip_out)
@@ -221,7 +263,7 @@ pygame.draw.rect(card, PANEL_EDGE, panel, 2, border_radius=12)
 
 buf = pygame.Surface((G.RIG_W, G.RIG_H), pygame.SRCALPHA)
 G._draw_gnk_rig(buf, G.RIG_OX, G.RIG_OY + 4, 1, 1.25, "idle", 0.0, True)
-Z = 5
+Z = 3
 big = pygame.transform.scale(buf, (G.RIG_W * Z, G.RIG_H * Z))
 edge = big.copy()
 edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
