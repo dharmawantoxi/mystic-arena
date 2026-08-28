@@ -849,10 +849,18 @@ ITEM_CATALOG = {
         "color": (140, 210, 90),
         "glow": (190, 255, 130),
         "stats": {
-            "damage": 22,
+            "damage": 26,
             "attack_speed": 30,
-            "hp": 180,
-            "range_bonus": 120,    # hanya untuk hero ranged
+            "hp": 260,
+            "hp_regen": 3,
+            # Dulu "range_bonus": 120 - DIHAPUS. Bonus jangkauan
+            # sebesar itu mendorong tumpuk-tumpuk range (Gale Pike
+            # +90 lagi = hero ranged menembak dari 340px, di luar
+            # jangkauan balas tower mana pun) sekaligus menutup
+            # celah hidup hero melee. Diganti regen 3 HP/frame yang
+            # mensinergikan tema racun (pemakai racun yang tangguh
+            # dalam bursa pukul panjang) - kini item juga layak
+            # dibeli hero MELEE, bukan cuma ranged.
         },
         "on_attack": {
             # Miasma: racun yang berdenyut berdasarkan Max HP
@@ -865,8 +873,9 @@ ITEM_CATALOG = {
             "cap_damage": 60,
         },
         "multishot": {
-            # Polycephaly: peluang menembak 2 musuh lain di dekat
-            # target dengan 70% damage (magic). Hanya ranged.
+            # Polycephaly: peluang menyambar 2 musuh lain di dekat
+            # target dengan 70% damage (magic). Hanya ranged;
+            # melee tetap menikmati Miasma + regen.
             "name": "Polycephaly",
             "chance": 0.30,
             "targets": 2,
@@ -875,15 +884,15 @@ ITEM_CATALOG = {
         },
         "melee_only": False,
         "drops_on_death": False,
-        "desc": ("+22 Damage, +30 AS, +180 HP, +120 jangkauan "
-                 "(ranged). Serangan meracuni: 2.2% Max HP/0.5 dtk "
-                 "selama 3 dtk (maks 60/tick). 30% tembakan menyambar "
-                 "2 musuh lain (70% dmg)."),
-        "desc_en": ("+22 Damage, +30 AS, +180 HP, +120 range (ranged). "
-                    "Attacks poison: 2.2% Max HP per 0.5s for 3s (cap "
-                    "60/tick). 30% of shots hit 2 other enemies (70% "
-                    "damage)."),
-        "flavor": "Embun racun hydra yang merayap di setiap anak panah.",
+        "desc": ("+26 Damage, +30 AS, +260 HP, +3 HP/reg. Serangan "
+                 "meracuni: 2.2% Max HP/0.5 dtk selama 3 dtk "
+                 "(maks 60/tick). 30% tembakan menyambar 2 musuh "
+                 "lain (70% dmg)."),
+        "desc_en": ("+26 Damage, +30 AS, +260 HP, +3 HP regen. "
+                    "Attacks poison: 2.2% Max HP per 0.5s for 3s "
+                    "(cap 60/tick). 30% of shots hit 2 other enemies "
+                    "(70% damage)."),
+        "flavor": "Embun racun hydra yang merayap di setiap luka.",
     },
 
     "solar_brand": {
@@ -1386,9 +1395,18 @@ class HeroItemInventory:
 
     # ── Getter stat Tier III ──
     def get_range_bonus(self):
-        """Bonus jangkauan serang (hanya berlaku untuk hero ranged)."""
-        rng = getattr(self.hero, "range", 100) or 100
-        if rng <= 80:
+        """Bonus jangkauan serang (hanya berlaku untuk hero ranged).
+
+        Gate lama ``range <= 80`` bocor setelah pass balance: range
+        melee mentok 70 tapi sebagian melee mentah 85-105 (treant,
+        dsb.) ikut ke-normalisasi 70 — yang benar kami pakai flag
+        eksplisit ``is_melee_hero``. Boss/unit lain tanpa flag
+        jatuh ke heuristik range 110 (AMBANG_RANGED gameplay).
+        """
+        is_melee = getattr(self.hero, "is_melee_hero", None)
+        if is_melee is None:
+            is_melee = (getattr(self.hero, "range", 100) or 100) < 110
+        if is_melee:
             return 0
         return self._sum_stat("range_bonus")
 
@@ -1896,7 +1914,9 @@ class HeroItemInventory:
                           ITEM_CATALOG["basilisk_breath"]["on_attack"])
             # Polycephaly: tembakan ekstra ke musuh terdekat
             ms = ITEM_CATALOG["basilisk_breath"]["multishot"]
-            is_ranged = (getattr(h, "range", 100) or 100) > 80
+            _im = getattr(h, "is_melee_hero", None)
+            is_ranged = (not _im) if _im is not None \
+                else ((getattr(h, "range", 100) or 100) >= 110)
             if is_ranged and all_units is not None \
                     and random.random() < ms["chance"]:
                 extras = []
@@ -2610,7 +2630,9 @@ class ItemShopUI:
         surface.blit(name, (box.x + 12, box.y + 3))
         sf = get_font(16, "body_semibold")
         rng = getattr(hero, "range", 0) or 0
-        kind = "MELEE" if rng <= 80 else "RANGED"
+        _im = getattr(hero, "is_melee_hero", None)
+        kind = "MELEE" if (_im if _im is not None else rng < 110) \
+            else "RANGED"
         dmg = int(hero.damage)
         hp = int(hero.max_hp)
         inv = hero.items

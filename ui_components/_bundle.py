@@ -4067,51 +4067,64 @@ class _NS_shop_hints:
 
             Radiant (dekat base biru) = ITEM FORGE (toko item hero)
             Dire (dekat base merah)   = HERO SHOP
+
+            Label sengaja KECIL & digeser ke sisi LUAR lane
+            (menjauhi jalur minion):
+            - ITEM FORGE (340,540): lane bot lewat di y~655 dan lane
+              mid melengkung di x~300,y~420, jadi label digeser ke
+              kanan-atas (x+82,y-30) - sisi berlawanan dari mid -
+              dengan jarak ~140px dari lane terdekat.
+            - HERO SHOP (940,180): lane top lewat lurus di (940,92) -
+              TEPAT di atas bangunan - dan lane mid datang dari
+              kanan-bawah, jadi label digeser ke kiri-bawah
+              (x-82,y+44) ke sudut kosong antara top & mid.
             """
             g = self.game
-            pulse = math.sin(g.animation_time * 0.06) * 3
+            pulse = int(math.sin(g.animation_time * 0.06) * 2)
 
-            for shop_pos, label in [
-                (g.map_renderer.radiant_shop_pos, "ITEM FORGE"),
-                (g.map_renderer.dire_shop_pos, "HERO SHOP"),
+            for shop_pos, label, anchor in [
+                (g.map_renderer.radiant_shop_pos, "ITEM FORGE",
+                 (82, -30)),
+                (g.map_renderer.dire_shop_pos, "HERO SHOP",
+                 (-82, 44)),
             ]:
-                self._draw_single_hint(surface, shop_pos, label, pulse)
+                self._draw_single_hint(surface, shop_pos, label,
+                                       pulse, anchor)
 # ====================================================================
 
-        def _draw_single_hint(self, surface, shop_pos, label, pulse):
-            """Hint premium di shop peta: pill emas + sub-hint."""
-            sx, sy = shop_pos
-            hint_y = sy - 68 + int(pulse)
+        def _draw_single_hint(self, surface, shop_pos, label, pulse,
+                              anchor=(0, 0)):
+            """Hint kecil di shop peta: pill emas ringkas.
 
-            lf = get_font(22, "body_bold")
+            Dulu font 22 + sub-teks 'TAP TO OPEN' font 16 membentuk
+            papan ~160x60px yang menutupi jalur minion (pill HERO
+            SHOP tepat melintang di lane top; pill ITEM FORGE
+            menimpa lengkungan lane mid). Sekarang font 14 TANPA
+            sub-teks, dan posisinya digeser ``anchor`` ke sisi luar
+            lane - bangunan toko tetap bisa diklik seperti biasa.
+            """
+            sx, sy = shop_pos
+            ax_off, ay_off = anchor
+            hint_x = sx + ax_off
+            hint_y = sy + ay_off + pulse
+
+            lf = get_font(14, "body_bold")
             hint_text = lf.render(ui_theme.letter(label),
                                   True, ui_theme.GOLD_TEXT)
-            hint_rect = hint_text.get_rect(center=(sx, hint_y))
-            bg_rect = hint_rect.inflate(28, 12)
+            hint_rect = hint_text.get_rect(center=(hint_x, hint_y))
+            bg_rect = hint_rect.inflate(16, 8)
 
             if ui_theme.cheap_alpha():
                 surface.blit(ui_theme._vgrad(
                     bg_rect.w, bg_rect.h, (48, 42, 20),
                     (24, 20, 9), radius=bg_rect.h // 2),
                     (bg_rect.x, bg_rect.y))
-                surface.blit(ui_theme._radial(
-                    bg_rect.w + 30, bg_rect.h + 24,
-                    (255, 205, 90), 40),
-                    (bg_rect.x - 15, bg_rect.y - 12))
             else:
                 pygame.draw.rect(surface, (30, 24, 10), bg_rect,
                                  border_radius=bg_rect.h // 2)
-            pygame.draw.rect(surface, ui_theme.GOLD, bg_rect, 2,
+            pygame.draw.rect(surface, ui_theme.GOLD, bg_rect, 1,
                              border_radius=bg_rect.h // 2)
-            ui_theme.corner_ticks(surface, bg_rect,
-                                  ui_theme.GOLD_BRIGHT, length=7)
             surface.blit(hint_text, hint_rect)
-
-            sub_text = get_font(16, "body_semibold").render(
-                ui_theme.letter("TAP TO OPEN"), True,
-                ui_theme.TEXT_DIM)
-            sub_rect = sub_text.get_rect(center=(sx, hint_y + 22))
-            surface.blit(sub_text, sub_rect)
 # DEDUPE: HeroPortraits
 # ====================================================================
 # hero_panel.py dulu punya salinan kelas HeroPortraits

@@ -5434,6 +5434,18 @@ class _NS_ancient_apparition:
 
 
     def _spawn_ice_shard(boss, sx, sy, tx, ty):
+        # Saat Ancient Apparition DIMAINKAN sebagai hero (class Hero),
+        # basic attack-nya sudah menembakkan homing ice shard dari
+        # sistem projectile Hero (Hero._do_attack -> _spawn_projectile,
+        # digambar _draw_ice_shard_projectile di koordinat layar).
+        # Shard internal renderer ini hidup di ruang canvas offscreen
+        # yang ikut di-scale & sering ter-clip: dulu basic attack AA
+        # yang dimainkan jadi tidak terlihat sama sekali, dan kalau
+        # dibiarkan kini malah ada DUA shard. Flag
+        # ``_aa_hero_basic_shard`` mematikannya untuk hero; versi TRUE
+        # BOSS musuh (class Boss) tetap memakai shard internal ini.
+        if getattr(boss, "_aa_hero_basic_shard", False):
+            return
         if not hasattr(boss, "_aa_projectiles"):
             boss._aa_projectiles = []
         boss._aa_projectiles.append(_NS_ancient_apparition.IceShardProjectile(sx, sy, tx, ty))
