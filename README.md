@@ -341,6 +341,10 @@ visualnya bagus adalah RITMENYA, jadi pass ini mengejar itu:
   pedang) jadi piksel paling terang; garis break di pergelangan kaki;
   bayangan miring di bawah pektoral; rim terang di tepi robek jubah.
 
+**Pass keempat — cahaya.** Gornak (jalur boss + Hero Shop) kini memakai pass
+cahaya bersama di `lighting.py`; lihat bagian *Pass cahaya bersama* di bawah
+untuk cara kerjanya dan test-nya.
+
 Uji regresi: `python tools/test_gornak_masterwork.py` (16 pemeriksaan: rig
 tunggal, kaki menapak, W/H dan **ukuran harus sama dengan keluarga**
 (boss vs morgath/drakar/abaddon, hero vs grimjaw/kaizen), bilah tidak
@@ -351,6 +355,47 @@ di kanvas 160, mata & warna tema harus muncul di badan, dua kaki tetap
 terpisah, dan cakram cahaya tetap ada di lane).
 Review sheet: `python tools/_shot_gornak_masterwork.py` dan
 `python tools/_shot_gornak_before_after.py`.
+
+## Pass cahaya bersama (lighting.py)
+
+Renderer prosedural membangun volume dengan blok nilai yang di-author manual
+(`skin_dark` -> `skin_mid` -> `skin_light`). Itu cukup di ukuran besar, tapi
+di 720p hasilnya tetap terbaca sebagai "tumpukan blok datar": tidak ada satu
+arah cahaya yang konsisten, dan tidak ada terminator di sepanjang siluet.
+
+`lighting.py` menambahkan tahap itu untuk SEMUA unit, tanpa satu pun sprite
+bitmap:
+
+| tahap | cara | biaya |
+|---|---|---|
+| gradien arah seluruh badan | kisi 28x28 pada sumbu cahaya, di-upscale sekali per ukuran lalu `BLEND_RGB_MULT` | 2 blit |
+| rim light kiri-atas | `mask - geser(mask, +1,+1)` -> `BLEND_RGB_ADD` | 2 operasi mask |
+| terminator kanan-bawah | `mask - geser(mask, -1,-1)` + band kedua 40% -> `BLEND_RGB_MULT` | 3 operasi mask |
+
+Pemasangannya di satu choke point: **`heroes._finish_hd_sprite`** (dijalankan
+hanya saat cache miss, di atas sprite HASIL resize, jadi rim-nya benar-benar
+1 px pada resolusi layar) — sehingga keenam hero masterwork langsung ikut.
+Boss yang menggambar sendiri ke layar (saat ini Gornak) memanggil
+`lighting.apply_to_rig()` dengan `box` **konstanta rig**, dan melewatinya saat
+dipakai sebagai hero (ada test yang mengunci ini: rim dobel = bingkai gelap
+2 px yang membuat karakter terlihat kotor).
+
+Yang dijamin test (`tools/test_hero_lighting.py`):
+
+* alpha sprite tidak berubah (outline HD & colorkey mobile bergantung pada
+  ini) dan ukuran/`pad` anchor tetap;
+* delta terarah — sisi cahaya > sisi bayangan, diukur sebagai SELISIH
+  sebelum/sesudah, karena luminance absolut tercemar art sprite itu sendiri
+  (pedang Kaizen yang terang ada di kanan-bawah);
+* tidak dobel di lane, tidak nol di Hero Shop;
+* cache gradien terbatas (<= 64 entri) dan `apply()` < 0,35 ms per panggilan;
+* kill switch `HD_LIGHTING_ENABLED = False` dan `import lighting` gagal sama
+  -samanya tidak bikin render crash.
+
+A/B untuk keluarga: `docs/lighting_ab.png` (regenerasi:
+`python tools/_shot_lighting_ab.py`) — tiap sel menampilkan KIRI tanpa pass,
+KANAN dengan pass, plus angka piksel yang berubah. Untuk Gornak sendiri:
+`docs/gornak_hero_pass.png`.
 
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 

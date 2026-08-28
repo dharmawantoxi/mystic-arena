@@ -7,6 +7,14 @@
 import pygame
 import math
 
+# Pass cahaya bersama untuk SEMUA sprite hero (dipakai _finish_hd_sprite).
+# Impornya di sini, bukan di tiap renderer: satu titik ubah untuk 200+ unit.
+try:
+    import lighting as _lighting
+except Exception:                            # pragma: no cover
+    _lighting = None
+    HD_LIGHTING_BROKEN = True
+
 # ═══ Hero renderers (starter heroes) ═══
 HERO_RENDERERS = {}
 
@@ -947,9 +955,24 @@ def _render_hero_raw(hero_type, surface, hero, x, y):
 HD_HERO_EDGE_ENABLED = True
 _HD_EDGE_ALPHA = 180
 
+# Pass cahaya (rim light + terminator) - lihat lighting.py. Dijalankan di
+# tempat yang sama seperti outline HD, yaitu HANYA saat cache miss dan di
+# atas sprite HASIL resize, sehingga rim-nya benar-benar 1 px pada resolusi
+# layar. Karena ditaruh di satu choke point ini, keenam hero masterwork dan
+# Gornak ikut terpenuhi tanpa satu pun renderer diubah.
+HD_LIGHTING_ENABLED = True
+_HD_RIM_ADD = (34, 30, 48)          # tim biru: rim dingin-netral
+_HD_SHADE_MUL = 162
+_HD_RIM_ADD_RED = (48, 26, 22)      # tim merah: rim lebih hangat
+_HD_SHADE_MUL_RED = 158
+
 
 def _finish_hd_sprite(sprite, team='blue'):
-    """Tambahkan outline pasca-scale tanpa mengubah isi/ukuran badan.
+    """Cahaya + outline pasca-scale tanpa mengubah isi/ukuran badan.
+
+    Urutan penting: LIGHTING dulu, outline belakangan. Kalau dibalik, rim
+    1 px muncul persis di piksel yang lalu ditimpa outline gelap, sehingga
+    hasilnya nol (ini terjadi pada percobaan pertama).
 
     Return ``(surface, pad)``. ``pad`` dipakai untuk mengoreksi anchor
     karena canvas hasil dibuat satu piksel lebih lebar di setiap sisi.
@@ -962,6 +985,13 @@ def _finish_hd_sprite(sprite, team='blue'):
         solid = pygame.mask.from_surface(sprite, _HD_EDGE_ALPHA)
         if solid.count() == 0:
             return sprite, 0
+
+        if HD_LIGHTING_ENABLED and _lighting is not None:
+            red = team == 'red'
+            _lighting.apply_to_rig(
+                sprite,
+                rim_add=_HD_RIM_ADD_RED if red else _HD_RIM_ADD,
+                shade_mul=_HD_SHADE_MUL_RED if red else _HD_SHADE_MUL)
 
         w, h = sprite.get_size()
         expanded = pygame.mask.Mask((w + 2, h + 2))

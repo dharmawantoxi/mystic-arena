@@ -38,6 +38,11 @@ _IS_LEVEL_BUNDLE = True
 import math
 import pygame
 
+try:                     # pass cahaya bersama; opsional supaya file boss
+    import lighting as _lighting          # tetap bisa di-load sendiri
+except Exception:        # pragma: no cover
+    _lighting = None
+
 
 class _NS_gornak:
     """Namespace gornak - Anti-Mage mini boss.
@@ -99,12 +104,25 @@ class _NS_gornak:
     RIG_W, RIG_H = 176, 160
     RIG_OX, RIG_OY = 74, 96
 
+    # Bidang acuan untuk pass cahaya (lighting.py): kotak TETAP di dalam
+    # buffer rig, bukan bbox hasil render per frame. Alasannya dua: (a) kalau
+    # acuan ikut bbox, arah cahaya bergeser tiap ganti pose dan terbaca
+    # sebagai lampu berkedip; (b) bbox yang berubah-buat membuat cache
+    # ukuran gradien miss tiap frame (+1,5 ms, terukur).
+    GRAD_BOX = (RIG_OX - 54, RIG_OY - 52, 126, 102)
+
     # Durasi status skill (frame) - HARUS sama dengan active_skill_timer yang
     # diisi AI boss (bosses/base_boss.py) dan skill hero
     # (hero_skills/_bundle.py). Kalau konstanta ini lebih kecil, pose skill
     # "menggantung" di frame terakhir; kalau lebih besar, animasinya
     # terpotong di tengah. Dikunci oleh tools/test_gornak_masterwork.py.
     SKILL_DUR = {"q": 40, "w": 25, "e": 60, "r": 90}
+
+    # Penanda "sedang di-render ke canvas hero" (lane). Dipasang per-frame
+    # oleh draw_gornak, dipakai _draw_gnk_rig_at untuk memutuskan siapa yang
+    # mengerjakan pass cahaya - hindari rim dobel di lane dan rim nol di shop.
+    class _HERO_LANE:
+        v = False
 
     PALETTE = {
         # Kulit sawo matang berdebu (cahaya dari depan-atas)
@@ -656,6 +674,10 @@ class _NS_gornak:
     # ==================================================================
     def draw_gornak(surface, boss, x, y):
         """Entry point Boss.draw() sekaligus heroes.render_hero()."""
+        # jalur hero (lane): heroes/__init__ men-set _render_scale sebelum
+        # memanggil renderer, dan _finish_hd_sprite sudah menambah
+        # rim/terminator -> pass di sini dilewati (lihat _draw_gnk_rig_at).
+        _NS_gornak._HERO_LANE.v = hasattr(boss, "_render_scale")
         _NS_gornak._update_gnk_attack_anim(boss)
         action, phase, ap = _NS_gornak._resolve_pose(
             boss, _NS_gornak._detect_moving(boss))
@@ -731,6 +753,25 @@ class _NS_gornak:
             lit.fill((255, 246, 255, 0), special_flags=pygame.BLEND_RGBA_MAX)
             lit.set_alpha(flash)
             buf.blit(lit, (0, 0))
+        # Jalur BOSS digambar langsung ke layar 1:1, jadi TIDAK melewati
+        # _finish_hd_sprite (yang sudah memberi rim+terminator ke hero).
+        # Di sinilah cahaya itu dipasang untuk boss. Saat hero-path
+        # (scale != 1.0) pass-nya dilewati supaya tidak dua kali; mode
+        # portrait tetap dipakai karena HeroPortraits tidak memanggil
+        # _finish_hd_sprite sama sekali.
+        # Aturan: pass cahaya dipasang di SINI hanya kalau sprite ini TIDAK
+        # akan dilewatkan ke heroes._finish_hd_sprite (yang sudah memasang
+        # pass yang sama):
+        #   * boss 1x (scale 1.0)          -> pasang di sini
+        #   * lane hero (scale != 1.0)      -> jangan (nanti dobel)
+        #   * Hero Shop (tanpa _render_scale, portrait) -> pasang di sini,
+        #     karena HeroPortraits tidak memanggil _finish_hd_sprite sama
+        #     sekali. Ciri mode shop: attribute hero TIDAK punya
+        #     _render_scale sama sekali (jalur lane selalu men-set-nya).
+        if _lighting is not None and not _NS_gornak._HERO_LANE.v:
+            _lighting.apply_to_rig(
+                buf, rim_add=(32, 26, 46), shade_mul=160,
+                box=_NS_gornak.GRAD_BOX if not detail else None)
         ox = int(x) - _NS_gornak.RIG_OX
         oy = int(y) - _NS_gornak.RIG_OY
         if detail:                      # portrait: pusatkan konten
