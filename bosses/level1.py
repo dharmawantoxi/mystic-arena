@@ -3857,20 +3857,20 @@ class _NS_drakar:
     LIFT = 6
     # Telapak dalam RUANG LOKAL; garis tanah dunia diturunkan dari sini
     # supaya bayangan, rune tanah, dan telapak tidak pernah saling lepas.
-    FEET_DY = 48
-    GROUND_DY = int(round(FEET_DY * SCALE)) - LIFT        # ~ 47
+    FEET_DY = 45
+    GROUND_DY = int(round(FEET_DY * SCALE)) - LIFT        # ~ 43
 
     # Buffer rig: dibatasi dari extents TERUKUR semua pose (idle/walk/
     # attack/4 stance skill, dua LOD) + margin 4 px (outline digambar di
     # luar buffer, jadi tidak dihitung). Dikunci oleh
     # tools/test_drakar_masterwork.py.
-    RIG_W, RIG_H = 198, 184
-    RIG_OX, RIG_OY = 99, 118
+    RIG_W, RIG_H = 224, 192
+    RIG_OX, RIG_OY = 110, 122
 
     # Bidang acuan pass cahaya TETAP di dalam buffer (alasan sama dengan
     # GRAD_BOX gornak: kalau ikut bbox, arah cahaya bergeser tiap ganti
     # pose dan terbaca sebagai lampu berkedip).
-    GRAD_BOX = (RIG_OX - 46, RIG_OY - 66, 92, 118)
+    GRAD_BOX = (RIG_OX - 60, RIG_OY - 70, 120, 124)
 
     # Durasi status skill (frame) - HARUS sama dengan active_skill_timer
     # yang diisi AI boss (bosses/base_boss.py: q=90 w=45 e=60 r=60) dan
@@ -4134,8 +4134,8 @@ class _NS_drakar:
     HEAD_Y = -58
     SHOULDER_Y = -34
     # Sendi bahu (x = ke depan mengikuti arah hadap)
-    SHOULDER_FRONT = (17, SHOULDER_Y + 1)
-    SHOULDER_BACK = (-15, SHOULDER_Y)
+    SHOULDER_FRONT = (24, SHOULDER_Y + 1)
+    SHOULDER_BACK = (-22, SHOULDER_Y)
 
     def _attack_curve(ap):
         """Remap progres mentah (0..1) -> waktu pose (0..1), MONOTON naik.
@@ -4213,16 +4213,16 @@ class _NS_drakar:
         return 1.74 + math.sin(phase * 0.55) * 0.06
 
     def _axe_len(action):
-        """Panjang gagang (grip -> mata kapak) per pose."""
+        """Panjang gagang (grip -> mata kapak) per pose - kapak BESAR."""
         if action == "attack":
-            return 46
+            return 50
         if action == "cull":
-            return 48
+            return 52
         if action in ("rage", "helix"):
-            return 44
-        if action == "call":
             return 46
-        return 42
+        if action == "call":
+            return 48
+        return 48
 
     def _front_grip_local(action, ap=0.0, phase=0.0, compact=False):
         """Tangan depan (pegangan utama gagang), ruang lokal.
@@ -4661,217 +4661,203 @@ class _NS_drakar:
     # ==================================================================
 
     def _draw_drk_pelt_back(surface, pt, poly_free, f, phase, action):
-        """Pelt bulu hitam berujung merah di punggung: MEMBINGKAI badan.
-
-        Menggantikan cape: tepi bawah bergerigi dan berayun oleh phase.
-        Ujung berwarna darah memberi tepi terbaca sebagai BULU (bukan
-        lubang gelap) di skala 1x.
-        """
+        """Pelt bulu hitam berujung merah di punggung: MEMBINGKAI badan
+        dan MELEBARKANNYA (bahu gempal). Tepi bawah bergerigi berayun;
+        ujung merah = bulu darah (terbaca BULU di skala 1x)."""
         p = _NS_drakar.PALETTE
         sway = int(math.sin(phase * 1.05) * 2)
         if action in ("walk", "attack", "cull"):
             sway -= 2
-        outer = [(-18, -24), (-24, -12), (-28 + sway, 4), (-22 + sway, 14),
-                 (-15 + sway, 7), (-8 + sway, 15), (-1, 6), (3, -10),
-                 (1, -24)]
+        outer = [(-22, -26), (-30, -12), (-34 + sway, 6), (-27 + sway, 16),
+                 (-18 + sway, 8), (-10 + sway, 17), (-1, 7), (4, -12),
+                 (2, -26)]
         poly_free(p["hair_darkest"], [pt(*q) for q in outer])
-        inner = [(-15, -22), (-19, -12), (-22 + sway, 3), (-17 + sway, 11),
-                 (-12 + sway, 6), (-7 + sway, 12), (-1, 4), (2, -10),
-                 (0, -22)]
+        inner = [(-20, -24), (-27, -12), (-30 + sway, 4), (-24 + sway, 13),
+                 (-16 + sway, 6), (-9 + sway, 13), (-1, 5), (2, -12),
+                 (0, -24)]
         poly_free(p["hair_dark"], [pt(*q) for q in inner], outline=False)
-        # Helai pelt: 3 segitiga gelap menjuntai
-        for i, (bx, by) in enumerate(((-19, 6), (-12, 8), (-4, 7))):
-            tipx = bx + sway - 2 + (i % 2)
-            poly_free(p["hair_darkest"], [pt(bx, by), pt(tipx, by + 9 + i),
-                                           pt(bx + 5, by)])
-        # Ujung merah: rim darah di tepi bawah pelt
-        hem = [(-20 + sway, 6), (-16 + sway, 12), (-11 + sway, 9),
-               (-6 + sway, 13), (-1, 6)]
+        # Helai pelt: 3 segitiga gelap menjuntai (panjang & tebal)
+        for i, (bx, by) in enumerate(((-24, 8), (-15, 10), (-5, 9))):
+            tipx = bx + sway - 3 + (i % 2)
+            poly_free(p["hair_darkest"], [pt(bx, by), pt(tipx, by + 12 + i),
+                                           pt(bx + 7, by)])
+        hem = [(-26 + sway, 8), (-21 + sway, 14), (-14 + sway, 10),
+               (-7 + sway, 15), (-1, 7)]
         for i in range(len(hem) - 1):
             _NS_drakar._aaline(surface, p["blood_dark"], pt(*hem[i]),
                                pt(*hem[i + 1]), 1)
-        _NS_drakar._aaline(surface, p["blood_mid"], pt(-16 + sway, 10),
-                           pt(-11 + sway, 9), 1)
+        _NS_drakar._aaline(surface, p["blood_mid"], pt(-21 + sway, 12),
+                           pt(-14 + sway, 11), 1)
 
     def _draw_drk_legs(surface, pt, ptg, poly_free, f, phase, action, stride):
-        """Dua kaki raksasa: paha merah -> pelindung lutut -> greave ->
-        boot berujung baja. Telapak DATAR di garis tanah."""
+        """Dua kaki GEMPAL: paha merah tebal, pelindung lutut besar,
+        greave kulit, boot berkap baja. Stance LEBAR + kaki pendek
+        (FEET_DY diturunkan) - kaki jenang dulu membuat dia kurus."""
         p = _NS_drakar.PALETTE
-        hip_y = 2
+        hip_y = 0
         ground = _NS_drakar.FEET_DY
         for side in (-1, 1):
             if action == "walk":
-                dx = int(stride * 9) * side
+                dx = int(stride * 10) * side
                 lift = int(max(0.0, -stride * side) * 5)
             elif action in ("attack", "cull"):
-                # Lunge: kaki depan melangkah, kaki belakang menahan
-                dx = 10 if side > 0 else -8
+                dx = 12 if side > 0 else -10
                 lift = 0
-            elif action in ("rage", "helix"):
-                dx = 8 if side > 0 else -8
-                lift = 0
-            elif action == "call":
-                dx = 9 if side > 0 else -9
+            elif action in ("rage", "helix", "call"):
+                dx = 10 if side > 0 else -10
                 lift = 0
             else:
-                dx = 8 if side > 0 else -10
+                dx = 10 if side > 0 else -12
                 lift = 0
             front = side > 0
-            hip_x = side * 9
+            hip_x = side * 11
             knee_x = hip_x + int(dx * 0.55) + side
             foot_x = hip_x + dx + side * 2
             knee_y = (hip_y + ground) // 2 - lift
             fy = ground - lift
-            # Paha merah: blok gelap + tengah + garis cahaya tipis
-            poly_free(p["skin_darkest"], [pt(hip_x - 7, hip_y),
-                                          pt(hip_x + 6, hip_y),
-                                          pt(knee_x + 5, knee_y),
-                                          pt(knee_x - 6, knee_y)])
+            # Paha merah GEMPAL (3 lapis nilai)
+            poly_free(p["skin_darkest"], [pt(hip_x - 9, hip_y),
+                                          pt(hip_x + 8, hip_y),
+                                          pt(knee_x + 7, knee_y),
+                                          pt(knee_x - 8, knee_y)])
             if front:
-                poly_free(p["skin_dark"], [pt(hip_x - 6, hip_y + 1),
-                                           pt(hip_x + 5, hip_y + 1),
-                                           pt(knee_x + 4, knee_y - 1),
-                                           pt(knee_x - 5, knee_y - 1)],
+                poly_free(p["skin_dark"], [pt(hip_x - 8, hip_y + 1),
+                                           pt(hip_x + 7, hip_y + 1),
+                                           pt(knee_x + 6, knee_y - 1),
+                                           pt(knee_x - 7, knee_y - 1)],
                           outline=False)
-                poly_free(p["skin_mid"], [pt(hip_x - 5, hip_y + 2),
-                                          pt(hip_x + 1, hip_y + 2),
-                                          pt(knee_x - 1, knee_y - 4),
-                                          pt(knee_x - 4, knee_y - 4)],
+                poly_free(p["skin_mid"], [pt(hip_x - 6, hip_y + 2),
+                                          pt(hip_x + 2, hip_y + 2),
+                                          pt(knee_x - 1, knee_y - 5),
+                                          pt(knee_x - 6, knee_y - 5)],
                           outline=False)
-            # Pembungkus kain kulit di paha (identik dengan loincloth)
-            poly_free(p["leather_dark"], [pt(hip_x - 6, hip_y + 8),
-                                          pt(hip_x + 5, hip_y + 8),
-                                          pt(hip_x + 5, hip_y + 15),
-                                          pt(hip_x - 6, hip_y + 15)])
+            # Pembungkus kain kulit di paha
+            poly_free(p["leather_dark"], [pt(hip_x - 8, hip_y + 9),
+                                          pt(hip_x + 7, hip_y + 9),
+                                          pt(hip_x + 7, hip_y + 17),
+                                          pt(hip_x - 8, hip_y + 17)])
             if front:
-                poly_free(p["leather_mid"], [pt(hip_x - 5, hip_y + 9),
-                                             pt(hip_x + 3, hip_y + 9),
-                                             pt(hip_x + 3, hip_y + 14),
-                                             pt(hip_x - 5, hip_y + 14)],
+                poly_free(p["leather_mid"], [pt(hip_x - 6, hip_y + 10),
+                                             pt(hip_x + 4, hip_y + 10),
+                                             pt(hip_x + 4, hip_y + 16),
+                                             pt(hip_x - 6, hip_y + 16)],
                           outline=False)
                 _NS_drakar._aaline(surface, p["leather_light"],
-                                   pt(hip_x - 5, hip_y + 9),
-                                   pt(hip_x + 3, hip_y + 9), 1)
-            # Pelindung lutut besi
-            poly_free(p["armor_darkest"], [pt(knee_x - 5, knee_y - 3),
-                                           pt(knee_x + 5, knee_y - 3),
-                                           pt(knee_x + 5, knee_y + 3),
-                                           pt(knee_x - 5, knee_y + 3)])
-            poly_free(p["armor_mid"], [pt(knee_x - 4, knee_y - 2),
-                                       pt(knee_x + 3, knee_y - 2),
-                                       pt(knee_x + 3, knee_y + 2),
-                                       pt(knee_x - 4, knee_y + 2)],
+                                   pt(hip_x - 6, hip_y + 10),
+                                   pt(hip_x + 4, hip_y + 10), 1)
+            # Pelindung lutut BESAR
+            poly_free(p["armor_darkest"], [pt(knee_x - 6, knee_y - 4),
+                                           pt(knee_x + 6, knee_y - 4),
+                                           pt(knee_x + 6, knee_y + 4),
+                                           pt(knee_x - 6, knee_y + 4)])
+            poly_free(p["armor_mid"], [pt(knee_x - 5, knee_y - 3),
+                                       pt(knee_x + 4, knee_y - 3),
+                                       pt(knee_x + 4, knee_y + 3),
+                                       pt(knee_x - 5, knee_y + 3)],
                       outline=False)
             _NS_drakar._aacircle(surface, p["armor_shine"],
                                  pt(knee_x - 1, knee_y - 1), 1)
-            # Betis kulit gelap + satu garis tepi cahaya
-            poly_free(p["leather_dark"], [pt(knee_x - 5, knee_y + 2),
-                                          pt(knee_x + 5, knee_y + 2),
-                                          ptg(foot_x + 5, fy - 8),
-                                          ptg(foot_x - 5, fy - 8)])
+            # Betis kulit gelap
+            poly_free(p["leather_dark"], [pt(knee_x - 6, knee_y + 3),
+                                          pt(knee_x + 6, knee_y + 3),
+                                          ptg(foot_x + 6, fy - 9),
+                                          ptg(foot_x - 6, fy - 9)])
             if front:
-                poly_free(p["leather_mid"], [pt(knee_x - 4, knee_y + 3),
-                                             pt(knee_x + 2, knee_y + 3),
-                                             ptg(foot_x + 2, fy - 9),
-                                             ptg(foot_x - 4, fy - 9)],
+                poly_free(p["leather_mid"], [pt(knee_x - 5, knee_y + 4),
+                                             pt(knee_x + 3, knee_y + 4),
+                                             ptg(foot_x + 3, fy - 10),
+                                             ptg(foot_x - 5, fy - 10)],
                           outline=False)
                 _NS_drakar._aaline(surface, p["leather_light"],
-                                   pt(knee_x - 3, knee_y + 4),
-                                   ptg(foot_x - 3, fy - 8), 1)
-            # Boot gelap + kap baja, sol DATAR di garis tanah
-            toe = 5 if f > 0 else -5
-            poly_free(p["leather_darkest"], [ptg(foot_x - 6, fy - 8),
-                                             ptg(foot_x + 6, fy - 8),
-                                             ptg(foot_x + toe + 3, fy - 2),
+                                   pt(knee_x - 3, knee_y + 5),
+                                   ptg(foot_x - 3, fy - 9), 1)
+            # Boot GEMPAL + kap baja, sol DATAR di garis tanah
+            toe = 7 if f > 0 else -7
+            poly_free(p["leather_darkest"], [ptg(foot_x - 8, fy - 9),
+                                             ptg(foot_x + 8, fy - 9),
+                                             ptg(foot_x + toe + 4, fy - 2),
                                              ptg(foot_x + toe, fy),
                                              ptg(foot_x - toe, fy),
-                                             ptg(foot_x - 7, fy - 3)])
-            poly_free(p["leather_mid"], [ptg(foot_x - 5, fy - 7),
-                                         ptg(foot_x + 5, fy - 7),
-                                         ptg(foot_x + toe + 2, fy - 3),
-                                         ptg(foot_x - 6, fy - 3)],
+                                             ptg(foot_x - 9, fy - 3)])
+            poly_free(p["leather_mid"], [ptg(foot_x - 7, fy - 8),
+                                         ptg(foot_x + 7, fy - 8),
+                                         ptg(foot_x + toe + 3, fy - 3),
+                                         ptg(foot_x - 8, fy - 3)],
                       outline=False)
-            # Kap baja di ujung boot: nilai BESI, bukan cokelat, supaya
-            # kedua kaki tetap terpisah dan terbaca di skala hero.
-            poly_free(p["armor_dark"], [ptg(foot_x + toe - 2, fy - 6),
-                                        ptg(foot_x + toe + 3, fy - 4),
-                                        ptg(foot_x + toe + 3, fy - 1),
+            poly_free(p["armor_dark"], [ptg(foot_x + toe - 2, fy - 7),
+                                        ptg(foot_x + toe + 4, fy - 4),
+                                        ptg(foot_x + toe + 4, fy - 1),
                                         ptg(foot_x + toe - 1, fy),
                                         ptg(foot_x + toe - 3, fy)],
                       outline=False)
-            # Garis break terang di pergelangan
             _NS_drakar._aaline(surface, p["leather_light"],
-                               ptg(foot_x - 6, fy - 8),
-                               ptg(foot_x + 5, fy - 8), 1)
+                               ptg(foot_x - 8, fy - 9),
+                               ptg(foot_x + 7, fy - 9), 1)
             if lift <= 0:
                 _NS_drakar._aaline(surface, p["shadow_deep"],
-                                   ptg(foot_x - 6, fy + 1),
-                                   ptg(foot_x + 6, fy + 1), 2)
+                                   ptg(foot_x - 8, fy + 1),
+                                   ptg(foot_x + 8, fy + 1), 2)
             else:
                 _NS_drakar._aaline(surface, (*p["shadow"], 80),
-                                   ptg(foot_x - 5, _NS_drakar.FEET_DY),
-                                   ptg(foot_x + 5, _NS_drakar.FEET_DY), 2)
+                                   ptg(foot_x - 7, _NS_drakar.FEET_DY),
+                                   ptg(foot_x + 7, _NS_drakar.FEET_DY), 2)
 
     def _draw_drk_torso(surface, pt, poly_free, dot, f, phase, breath, hot):
-        """Dada merah raksasa (V-taper) + harness kulit + permata rage.
-
-        Nilai dijaga: kulit merah dengan SATU blok terang di dada depan,
-        rongga gelap di bawah pektoral. Permata rage di tulang dada adalah
-        sinyal warna tema - menyala saat skill/attack (hot).
-        """
+        """Dada merah SANGAT LEBAR (sejajar jangkar pauldron) menirus ke
+        pinggang - bent V terbalik inilah yang membuat brute terbaca
+        'geram'. Nilai dominan gelap; terang hanya wedge sisi cahaya."""
         p = _NS_drakar.PALETTE
         sh = _NS_drakar.SHOULDER_Y
         twist = int(math.sin(phase * 1.05))
-        poly_free(p["skin_darkest"], [pt(-18 + twist, sh - 1),
-                                      pt(17 + twist, sh - 1), pt(13, 4),
-                                      pt(-14, 4)])
-        poly_free(p["skin_dark"], [pt(-16 + twist, sh), pt(15 + twist, sh),
-                                   pt(12, 3), pt(-13, 3)], outline=False)
-        poly_free(p["skin_mid"], [pt(-12 + twist, sh + 1),
-                                  pt(11 + twist, sh + 1), pt(9, -2),
-                                  pt(-10, -2)], outline=False)
-        # Nilai dominan gelap; terang hanya wedge kecil sisi cahaya -
-        # kulit pink terang dulu membuat badan kehilangan mood nan duri.
-        poly_free(p["skin_light"], [pt(2 + twist, sh + 1),
-                                    pt(9 + twist, sh + 1), pt(6, sh + 6),
-                                    pt(1, sh + 6)], outline=False)
-        poly_free(p["skin_shine"], [pt(4 + twist, sh + 2),
-                                    pt(7 + twist, sh + 2), pt(5, sh + 5),
-                                    pt(4, sh + 5)], outline=False)
-        # Bayangan miring di bawah pektoral + highlight mikro: dua nilai
-        # ini yang membuat dada terbaca BERBUKUK.
-        poly_free(p["skin_dark"], [pt(-11 + twist, sh + 8),
-                                   pt(-1 + twist, sh + 9),
-                                   pt(-2 + twist, sh + 11),
-                                   pt(-11 + twist, sh + 10)], outline=False)
-        _NS_drakar._aaline(surface, p["skin_light"],
-                           pt(-9 + twist, sh + 5), pt(-2 + twist, sh + 5), 1)
-        # Garis tengah + otot perut (nilai, bukan outline)
-        _NS_drakar._aaline(surface, p["skin_dark"], pt(twist, sh + 4),
-                           pt(0, 2), 1)
-        _NS_drakar._aaline(surface, p["skin_dark"], pt(-6, -2), pt(6, -2), 1)
-        _NS_drakar._aaline(surface, p["skin_dark"], pt(-5, 1), pt(5, 1), 1)
-        # Scar diagonal di dada (kenangan perang - satu nilai saja)
-        _NS_drakar._aaline(surface, p["skin_darkest"], pt(5 + twist, sh + 3),
-                           pt(9 + twist, sh + 9), 1)
-        # Harness kulit diagonal + pelat besi kecil
-        _NS_drakar._aaline(surface, p["leather_dark"], pt(14 + twist, sh),
-                           pt(-11, 3), 4)
-        _NS_drakar._aaline(surface, p["leather_light"], pt(14 + twist, sh),
-                           pt(-11, 3), 1)
-        poly_free(p["armor_darkest"], [pt(-2, sh + 5), pt(5, sh + 6),
-                                       pt(4, sh + 11), pt(-3, sh + 10)])
-        poly_free(p["armor_mid"], [pt(-1, sh + 6), pt(4, sh + 7),
-                                   pt(3, sh + 10), pt(-2, sh + 9)],
+        poly_free(p["skin_darkest"], [pt(-25 + twist, sh - 2),
+                                      pt(24 + twist, sh - 2), pt(14, 4),
+                                      pt(-15, 4)])
+        poly_free(p["skin_dark"], [pt(-23 + twist, sh - 1),
+                                   pt(22 + twist, sh - 1), pt(13, 3),
+                                   pt(-14, 3)], outline=False)
+        poly_free(p["skin_mid"], [pt(-20 + twist, sh),
+                                  pt(19 + twist, sh), pt(11, -2),
+                                  pt(-12, -2)], outline=False)
+        # Dua blok pektoral besar, garis tengah gelap di antaranya
+        poly_free(p["skin_mid"], [pt(-16 + twist, sh + 2),
+                                  pt(-2 + twist, sh + 2), pt(-3, sh + 9),
+                                  pt(-15, sh + 9)], outline=False)
+        poly_free(p["skin_dark"], [pt(1 + twist, sh + 2),
+                                   pt(15 + twist, sh + 2), pt(12, sh + 8),
+                                   pt(0, sh + 9)], outline=False)
+        # Wedge cahaya sisi depan (kecil, sengaja)
+        poly_free(p["skin_light"], [pt(6 + twist, sh + 1),
+                                    pt(14 + twist, sh + 1), pt(11, sh + 6),
+                                    pt(5, sh + 6)], outline=False)
+        poly_free(p["skin_shine"], [pt(9 + twist, sh + 2),
+                                    pt(12 + twist, sh + 2), pt(10, sh + 5),
+                                    pt(9, sh + 5)], outline=False)
+        # Garis tengah dada + otot perut
+        _NS_drakar._aaline(surface, p["skin_darkest"],
+                           pt(twist, sh + 2), pt(0, 2), 1)
+        _NS_drakar._aaline(surface, p["skin_dark"], pt(-7, -2), pt(7, -2), 1)
+        _NS_drakar._aaline(surface, p["skin_dark"], pt(-6, 1), pt(6, 1), 1)
+        # Scar diagonal
+        _NS_drakar._aaline(surface, p["skin_darkest"],
+                           pt(7 + twist, sh + 3), pt(11 + twist, sh + 9), 1)
+        # Harness kulit diagonal + pelat besi
+        _NS_drakar._aaline(surface, p["leather_dark"], pt(20 + twist, sh),
+                           pt(-13, 3), 5)
+        _NS_drakar._aaline(surface, p["leather_light"], pt(20 + twist, sh),
+                           pt(-13, 3), 1)
+        poly_free(p["armor_darkest"], [pt(-3, sh + 6), pt(6, sh + 7),
+                                       pt(5, sh + 13), pt(-4, sh + 12)])
+        poly_free(p["armor_mid"], [pt(-2, sh + 7), pt(5, sh + 8),
+                                   pt(4, sh + 12), pt(-3, sh + 11)],
                   outline=False)
-        for bx in (9, 2):
+        for bx in (12, 3):
             _NS_drakar._aacircle(surface, p["brass_mid"],
                                  pt(bx + twist, sh + 2), 1)
-        # Permata rage di tulang dada - SATU fokus terang per tubuh
+        # Permata rage di tulang dada
         ga = 0.35 + (0.65 if hot else 0.0)
         a = _NS_drakar._alpha(150 + 105 * ga *
                               (0.72 + 0.28 * math.sin(phase * 2.2)))
-        gemx, gemy = pt(-7, sh + 6)
+        gemx, gemy = pt(-9, sh + 7)
         _NS_drakar._aacircle(surface, (*p["blood_dark"], a), (gemx, gemy), 3)
         _NS_drakar._aacircle(surface, (*p["blood_mid"], min(255, a + 30)),
                              (gemx, gemy), 2)
@@ -4892,281 +4878,256 @@ class _NS_drakar:
                          (rx, ry, rw, rh))
 
     def _draw_drk_belt(surface, pt, poly_free, dot, f, phase, action, stride):
-        """Sabuk kulit lebar + gesper tengkorak + loincloth robek."""
+        """Sabuk kulit LEBAR + gesper tengkorak + loincloth robek."""
         p = _NS_drakar.PALETTE
         sway = int(math.sin(phase * 1.1) * 2)
         if action == "walk":
             sway += int(stride * 2)
-        poly_free(p["leather_dark"], [pt(-14, 1), pt(14, 1), pt(14, 8),
-                                      pt(-14, 8)])
-        poly_free(p["leather_mid"], [pt(-13, 2), pt(13, 2), pt(13, 7),
-                                     pt(-13, 7)], outline=False)
-        _NS_drakar._aaline(surface, p["leather_light"], pt(-13, 2),
-                           pt(13, 2), 1)
-        for bx in (-10, -4, 9):
-            _NS_drakar._aacircle(surface, p["brass_mid"], pt(bx, 4), 1)
-        # Gesper tengkorak: bidang tulang dengan dua rongga mata gelap
-        poly_free(p["bone_darkest"], [pt(-3, 0), pt(5, 0), pt(5, 9),
-                                      pt(-3, 9)])
-        poly_free(p["bone_mid"], [pt(-2, 1), pt(4, 1), pt(4, 8), pt(-2, 8)],
+        poly_free(p["leather_dark"], [pt(-17, 1), pt(17, 1), pt(17, 9),
+                                      pt(-17, 9)])
+        poly_free(p["leather_mid"], [pt(-16, 2), pt(16, 2), pt(16, 8),
+                                     pt(-16, 8)], outline=False)
+        _NS_drakar._aaline(surface, p["leather_light"], pt(-16, 2),
+                           pt(16, 2), 1)
+        for bx in (-12, -5, 11):
+            _NS_drakar._aacircle(surface, p["brass_mid"], pt(bx, 5), 1)
+        # Gesper tengkorak
+        poly_free(p["bone_darkest"], [pt(-4, 0), pt(6, 0), pt(6, 10),
+                                      pt(-4, 10)])
+        poly_free(p["bone_mid"], [pt(-3, 1), pt(5, 1), pt(5, 9), pt(-3, 9)],
                   outline=False)
-        _NS_drakar._aacircle(surface, p["bone_darkest"], pt(0, 3), 1)
-        _NS_drakar._aacircle(surface, p["bone_darkest"], pt(3, 3), 1)
-        _NS_drakar._aaline(surface, p["bone_dark"], pt(-1, 6), pt(3, 6), 1)
-        # Loincloth bertepi robek. Sengaja sempit: versi lebar mengubah
-        # kedua kaki jadi satu tiang dan menghapus siluet "berdiri".
-        outer = [(-9, 8), (4, 8), (5 + sway, 20), (2 + sway, 26), (-1, 20),
-                 (-2, 26), (-5, 20), (-6 + sway, 24), (-8 + sway, 18)]
+        _NS_drakar._aacircle(surface, p["bone_darkest"], pt(0, 4), 1)
+        _NS_drakar._aacircle(surface, p["bone_darkest"], pt(3, 4), 1)
+        _NS_drakar._aaline(surface, p["bone_dark"], pt(-1, 7), pt(4, 7), 1)
+        # Loincloth robek LEBAR
+        outer = [(-12, 10), (5, 10), (6 + sway, 23), (2 + sway, 29),
+                 (-1, 23), (-3, 29), (-7, 23), (-9 + sway, 27),
+                 (-11 + sway, 20)]
         poly_free(p["leather_darkest"], [pt(*q) for q in outer])
-        inner = [(-8, 9), (3, 9), (4 + sway, 19), (1 + sway, 23), (-2, 19),
-                 (-3, 23), (-6 + sway, 17)]
+        inner = [(-10, 11), (4, 11), (5 + sway, 22), (1 + sway, 26),
+                 (-2, 22), (-4, 26), (-8 + sway, 20)]
         poly_free(p["leather_dark"], [pt(*q) for q in inner], outline=False)
-        poly_free(p["leather_mid"], [pt(-4, 10), pt(3, 10), pt(3 + sway, 19),
-                                     pt(0, 23), pt(-4 + sway, 18)],
+        poly_free(p["leather_mid"], [pt(-5, 12), pt(4, 12), pt(4 + sway, 22),
+                                     pt(0, 26), pt(-5 + sway, 21)],
                   outline=False)
-        _NS_drakar._aaline(surface, p["blood_dark"], pt(-6, 10),
-                           pt(-8 + sway, 21), 1)
-        # Cincin tengkorak kecil di sisi sabuk
-        _NS_drakar._aacircle(surface, p["bone_dark"], pt(-11, 6), 2)
-        _NS_drakar._aacircle(surface, p["bone_light"], pt(-11, 6), 1)
+        _NS_drakar._aaline(surface, p["blood_dark"], pt(-8, 12),
+                           pt(-10 + sway, 24), 1)
+        _NS_drakar._aacircle(surface, p["bone_dark"], pt(-14, 7), 2)
+        _NS_drakar._aacircle(surface, p["bone_light"], pt(-14, 7), 1)
 
     def _draw_drk_pauldrons(surface, pt, poly_free, dot, f, phase, breath):
-        """Pauldron besi bertingkat MENEMPEL bahu + duri pendek tebal.
-
-        Versi pertama masterwork punya duri tulang tinggi di ujung luar
-        yang terbaca sebagai sayap kelelawar terpisah dari badan; sekarang
-        pelat duduk di garis bahu dan duri mengarah ke atas-depan, pendek.
-        """
+        """Pauldron besi RAKSASA bertingkat + duri - sumber lebar siluet
+        utama di kuadran atas (inilah yang membuat versi lama terbaca
+        'geram'). Sisi jauh gelap, sisi depan berkilau + rivet darah."""
         p = _NS_drakar.PALETTE
         sh = _NS_drakar.SHOULDER_Y
-        for side, scale in ((-1, 0.78), (1, 1.0)):
-            sx = side * 17
+        for side, scale in ((-1, 0.80), (1, 1.0)):
+            sx = side * 24
             sy = sh - 1 - int(breath if side > 0 else 0)
-            w = max(5, int(10 * scale))
-            h = max(3, int(6 * scale))
-            # Pelat utama: kubah rendah, tepi bawah menyatu ke lengan
+            w = max(7, int(13 * scale))
+            h = max(4, int(8 * scale))
             poly_free(p["armor_darkest"], [pt(sx - w, sy - h + 2),
                                            pt(sx + w, sy - h),
-                                           pt(sx + w + 1, sy + 3),
-                                           pt(sx, sy + h + 1),
-                                           pt(sx - w - 1, sy + 3)])
+                                           pt(sx + w + 2, sy + 4),
+                                           pt(sx, sy + h + 2),
+                                           pt(sx - w - 2, sy + 4)])
             poly_free(p["armor_mid"], [pt(sx - w + 1, sy - h + 3),
                                        pt(sx + w - 1, sy - h + 3),
-                                       pt(sx + w, sy + 1),
-                                       pt(sx, sy + h - 1),
-                                       pt(sx - w, sy + 1)], outline=False)
+                                       pt(sx + w, sy + 2),
+                                       pt(sx, sy + h),
+                                       pt(sx - w, sy + 2)], outline=False)
             lit = p["armor_light"] if side > 0 else p["armor_dark"]
             poly_free(lit, [pt(sx - w + 2, sy - h + 4),
                             pt(sx - 1, sy - h + 4),
-                            pt(sx - 1, sy),
-                            pt(sx - w + 2, sy)], outline=False)
+                            pt(sx - 1, sy + 1),
+                            pt(sx - w + 2, sy + 1)], outline=False)
             if side > 0:
                 _NS_drakar._aaline(surface, p["armor_shine"],
                                    pt(sx - w + 2, sy - h + 4),
                                    pt(sx + w - 1, sy - h + 3), 1)
-            # Duri pendek tebal ke atas-depan (bukan tanduk panjang)
-            spike = sy - h - (5 if side > 0 else 4)
-            poly_free(p["armor_darkest"], [pt(sx - 3, sy - h + 2),
+            # Duri besar ke atas-depan
+            spike = sy - h - (8 if side > 0 else 6)
+            poly_free(p["armor_darkest"], [pt(sx - 4, sy - h + 2),
                                            pt(sx + 1, spike),
-                                           pt(sx + 4, sy - h + 2)])
-            poly_free(p["armor_mid"], [pt(sx - 2, sy - h + 2),
+                                           pt(sx + 5, sy - h + 2)])
+            poly_free(p["armor_mid"], [pt(sx - 3, sy - h + 2),
                                        pt(sx + 1, spike + 1),
-                                       pt(sx + 3, sy - h + 2)],
+                                       pt(sx + 4, sy - h + 2)],
                       outline=False)
             _NS_drakar._aacircle(surface, p["brass_mid"],
-                                 pt(sx + side * 4, sy + 2), 1)
+                                 pt(sx + side * 5, sy + 3), 1)
             if side > 0:
-                # Rivet darah di pauldron depan: 2px, tema, tidak mencuri
-                # fokus dari mata.
                 _NS_drakar._aacircle(surface, p["blood_dark"],
-                                     pt(sx - 3, sy - 1), 2)
+                                     pt(sx - 4, sy), 2)
                 _NS_drakar._aacircle(surface, p["blood_mid"],
-                                     pt(sx - 3, sy - 1), 1)
+                                     pt(sx - 4, sy), 1)
 
     def _draw_drk_head(surface, pt, poly_free, dot, f, phase, action, rage,
                        call):
-        """KEPALA sebagai subjek: leher tebal terlihat, mane hitam yang
-        JATUH ke bahu (tidak ada rongga antara kepala dan torso), helm
-        setengah besi di atas (tidak menutupi mata), dua tanduk banteng
-        ke ATAS, wajah merah terang dengan mata amber menyala.
-
-        Versi pertama masterwork: kepala kecil melayang dengan rongga
-        gelap di leher, helm menutupi baris mata sehingga wajah terbaca
-        sebagai helm berkaca merah, dan tanduk mendatar terbaca sebagai
-        sayap. Semua itu dibetulkan di sini.
-        """
+        """KEPALA GEMPAL: leher tebal menyatu ke trapezius, mane jatuh ke
+        bahu, helm setengah + tanduk banteng TEBAL, rahang lebar ber-dua
+        taring besar, dan DUA mata amber menyala di bawah alis kuncir."""
         p = _NS_drakar.PALETTE
         hy = _NS_drakar.HEAD_Y + int(math.sin(phase * 0.55) * 0.9)
-        hx = 2 if action in ("attack", "cull") else 1
+        hx = 2
         sh = _NS_drakar.SHOULDER_Y
-
-        # Leher tebal: dari tengkorak SAMPAI di bawah garis bahu, jadi
-        # tidak pernah ada rongga antara kepala dan torso.
-        poly_free(p["skin_darkest"], [pt(-8, hy + 6), pt(8, hy + 6),
-                                      pt(11, sh + 6), pt(-11, sh + 6)])
-        poly_free(p["skin_dark"], [pt(-6, hy + 7), pt(6, hy + 7),
-                                   pt(9, sh + 5), pt(-9, sh + 5)],
+        # Leher & trapezius GEMPAL (menyatu badan - tanpa rongga leher)
+        poly_free(p["skin_darkest"], [pt(-11, hy + 6), pt(11, hy + 6),
+                                      pt(14, sh + 7), pt(-14, sh + 7)])
+        poly_free(p["skin_dark"], [pt(-9, hy + 7), pt(9, hy + 7),
+                                   pt(12, sh + 5), pt(-12, sh + 5)],
                   outline=False)
-        poly_free(p["skin_mid"], [pt(-4, hy + 8), pt(4, hy + 8),
-                                  pt(6, sh + 3), pt(-5, sh + 3)],
+        poly_free(p["skin_mid"], [pt(-6, hy + 8), pt(6, hy + 8),
+                                  pt(8, sh + 3), pt(-7, sh + 3)],
                   outline=False)
-
-        # Mane belakang: massa besar yang BERAKHIR di bahu (menimpa torso
-        # atas), berayun pelan.
+        # Mane belakang: massa besar berakhir di bahu
         wave = int(math.sin(phase * 1.35) * 1.5)
         if action in ("walk", "attack", "cull", "rage"):
             wave -= 2
-        mane = [(hx - 12, sh + 4), (hx - 16 + wave, hy - 1),
-                (hx - 14 + wave, hy - 13), (hx - 5, hy - 18),
-                (hx + 5, hy - 14), (hx + 10, hy - 3), (hx + 9, sh + 4)]
+        mane = [(hx - 14, sh + 6), (hx - 19 + wave, hy - 1),
+                (hx - 17 + wave, hy - 14), (hx - 6, hy - 20),
+                (hx + 6, hy - 15), (hx + 12, hy - 3), (hx + 11, sh + 6)]
         poly_free(p["hair_darkest"], [pt(*q) for q in mane])
-        mane_in = [(hx - 10, sh + 2), (hx - 13 + wave, hy - 1),
-                   (hx - 11 + wave, hy - 11), (hx - 4, hy - 15),
-                   (hx + 2, hy - 11), (hx + 7, hy - 2), (hx + 6, sh + 2)]
+        mane_in = [(hx - 12, sh + 4), (hx - 16 + wave, hy - 1),
+                   (hx - 14 + wave, hy - 12), (hx - 5, hy - 17),
+                   (hx + 3, hy - 12), (hx + 9, hy - 2), (hx + 8, sh + 4)]
         poly_free(p["hair_mid"], [pt(*q) for q in mane_in], outline=False)
-        # 3 duri mane - bentuk besar (helai 1 px hilang saat di-scale)
-        for i, (bx, bh) in enumerate(((-12, 10), (-4, 14), (4, 9))):
+        for i, (bx, bh) in enumerate(((-15, 12), (-5, 16), (5, 11))):
             tipx = hx + bx - 3 + wave
             tipy = hy - bh
-            poly_free(p["hair_light"], [pt(hx + bx - 2, hy - 4),
+            poly_free(p["hair_light"], [pt(hx + bx - 2, hy - 5),
                                         pt(tipx, tipy),
-                                        pt(hx + bx + 3, hy - 6)],
+                                        pt(hx + bx + 3, hy - 7)],
                       outline=False)
-            poly_free(p["hair_shine"], [pt(hx + bx, hy - 5),
+            poly_free(p["hair_shine"], [pt(hx + bx, hy - 6),
                                         pt(tipx + 1, tipy + 2),
-                                        pt(hx + bx + 2, hy - 6)],
+                                        pt(hx + bx + 2, hy - 7)],
                       outline=False)
-
-        # Tengkorak + rahang lebar (lebih besar dari versi pertama)
-        poly_free(p["skin_darkest"], [pt(hx - 10, hy - 7), pt(hx + 10, hy - 7),
-                                      pt(hx + 11, hy + 3), pt(hx + 9, hy + 11),
-                                      pt(hx - 4, hy + 12), pt(hx - 10, hy + 3)])
-        poly_free(p["skin_mid"], [pt(hx - 9, hy - 6), pt(hx + 9, hy - 6),
-                                  pt(hx + 10, hy + 3), pt(hx + 8, hy + 10),
-                                  pt(hx - 3, hy + 11), pt(hx - 9, hy + 2)],
+        # Tengkorak + rahang LEBAR
+        poly_free(p["skin_darkest"], [pt(hx - 11, hy - 8), pt(hx + 11, hy - 8),
+                                      pt(hx + 12, hy + 3), pt(hx + 10, hy + 12),
+                                      pt(hx - 5, hy + 13), pt(hx - 11, hy + 3)])
+        poly_free(p["skin_mid"], [pt(hx - 10, hy - 7), pt(hx + 10, hy - 7),
+                                  pt(hx + 11, hy + 3), pt(hx + 9, hy + 11),
+                                  pt(hx - 4, hy + 12), pt(hx - 10, hy + 2)],
                   outline=False)
-        # WAJAH: merah terang dari tulang pipi ke rahang; TANPA strip
-        # gelap selebar wajah dan TANPA blok shine lebar (keduanya dulu
-        # membaca sebagai "helm berkaca/visor"). Focal point = DUA mata
-        # amber besar dengan cavum kecil per mata - bukan satu halo
-        # tengah yang melebur jadi pita.
-        poly_free(p["skin_light"], [pt(hx - 6, hy + 1), pt(hx + 8, hy + 1),
-                                    pt(hx + 8, hy + 7), pt(hx - 2, hy + 8)],
+        # WAJAH: merah terang pipi -> rahang
+        poly_free(p["skin_light"], [pt(hx - 7, hy + 1), pt(hx + 9, hy + 1),
+                                    pt(hx + 9, hy + 8), pt(hx - 2, hy + 9)],
                   outline=False)
-        poly_free(p["skin_shine"], [pt(hx + 4, hy + 3), pt(hx + 8, hy + 3),
-                                    pt(hx + 8, hy + 6),
-                                    pt(hx + 4, hy + 6)], outline=False)
+        poly_free(p["skin_shine"], [pt(hx + 5, hy + 3), pt(hx + 9, hy + 3),
+                                    pt(hx + 9, hy + 6),
+                                    pt(hx + 5, hy + 6)], outline=False)
+        # Alis MENGERUT (sinyal marah - wajah tidak boleh datar)
+        poly_free(p["skin_darkest"], [pt(hx - 8, hy - 4), pt(hx + 10, hy - 5),
+                                      pt(hx + 10, hy - 2),
+                                      pt(hx - 8, hy - 1)], outline=False)
         blink = ((phase * 0.6) % 4.2) < 0.16
         if not blink:
-            # Urutan PENTING: halo dulu (glow latar), baru blok mata
-            # opaque - dulu halo digambar setelahnya dan MENIMPA mata
-            # dengan alpha rendah (draw pygame menimpa, bukan blend)
-            # sehingga kedua mata jadi totol redup yang melebur.
-            flare = 1.0 if (rage or call) else 0.6
-            for ex in (hx - 5, hx + 2):
+            flare = 1.0 if (rage or call) else 0.85
+            for ex in (hx - 7, hx + 2):
                 exx, exy = pt(ex, hy - 1)
                 _NS_drakar._aacircle(surface,
                                      (*p["eye_light"],
-                                      _NS_drakar._alpha(70 * flare)),
-                                     (exx + 1, exy + 1), 3)
+                                      _NS_drakar._alpha(95 * flare)),
+                                     (exx + 1, exy + 1), 4)
                 _NS_drakar._rect_st(surface, p["skin_darkest"],
-                                    (exx - 1, exy, 5, 4))
-                _NS_drakar._rect_st(surface, p["eye_mid"], (exx, exy, 3, 3))
-                _NS_drakar._rect_st(surface, p["eye_glow"], (exx, exy, 2, 2))
+                                    (exx - 1, exy, 7, 4))
+                _NS_drakar._rect_st(surface, p["eye_mid"], (exx, exy, 5, 3))
+                _NS_drakar._rect_st(surface, p["eye_glow"], (exx, exy, 3, 2))
         else:
-            for ex in (hx - 5, hx + 2):
+            for ex in (hx - 6, hx + 2):
                 exx, exy = pt(ex, hy)
                 _NS_drakar._rect_st(surface, p["skin_dark"],
-                                    (exx - 1, exy, 5, 2))
-        # Batang hidung pendek di antara mata
-        _NS_drakar._aaline(surface, p["skin_darkest"], pt(hx + 0, hy + 1),
-                           pt(hx + 0, hy + 3), 1)
-        # Hidung & mulut geram (dua taring tulang)
-        _NS_drakar._aaline(surface, p["skin_darkest"], pt(hx + 10, hy + 2),
-                           pt(hx + 10, hy + 5), 1)
-        _NS_drakar._aaline(surface, p["skin_darkest"], pt(hx + 4, hy + 8),
-                           pt(hx + 9, hy + 8), 1)
-        poly_free(p["bone_light"], [pt(hx + 3, hy + 8), pt(hx + 4, hy + 10),
-                                    pt(hx + 5, hy + 8)], outline=False)
-        poly_free(p["bone_light"], [pt(hx + 7, hy + 8), pt(hx + 8, hy + 10),
-                                    pt(hx + 9, hy + 8)], outline=False)
-
-        # Jenggot kepang: hanya RAHANG BAWAH (mulai di hy+8 supaya dagu
-        # merah terlihat) + satu kepang bercincin kuningan
-        poly_free(p["hair_darkest"], [pt(hx - 5, hy + 8), pt(hx + 8, hy + 8),
-                                      pt(hx + 7, hy + 13), pt(hx + 2, hy + 16),
-                                      pt(hx - 3, hy + 13)])
-        poly_free(p["hair_mid"], [pt(hx - 3, hy + 9), pt(hx + 6, hy + 9),
-                                  pt(hx + 5, hy + 12), pt(hx + 2, hy + 14),
-                                  pt(hx - 2, hy + 12)], outline=False)
-        _NS_drakar._aaline(surface, p["shadow_deep"], pt(hx - 5, hy + 14),
-                           pt(hx + 7, hy + 13), 1)
-        poly_free(p["hair_dark"], [pt(hx + 1, hy + 14), pt(hx + 5, hy + 14),
-                                   pt(hx + 4 + wave, hy + 20),
-                                   pt(hx + 1 + wave, hy + 21)],
+                                    (exx - 1, exy, 6, 2))
+        _NS_drakar._aaline(surface, p["skin_darkest"], pt(hx - 1, hy + 1),
+                           pt(hx - 1, hy + 3), 1)
+        # Mulut GERAM LEBAR: baris gelap + 4 gigi atas + 2 taring panjang
+        _NS_drakar._aaline(surface, p["skin_darkest"], pt(hx + 11, hy + 2),
+                           pt(hx + 11, hy + 5), 1)
+        _NS_drakar._aaline(surface, p["skin_darkest"], pt(hx - 2, hy + 9),
+                           pt(hx + 10, hy + 9), 2)
+        for gx in (hx + 1, hx + 4, hx + 7, hx + 10):
+            poly_free(p["bone_light"], [pt(gx, hy + 9), pt(gx + 1, hy + 11),
+                                        pt(gx + 2, hy + 9)], outline=False)
+        poly_free(p["bone_light"], [pt(hx - 1, hy + 9), pt(hx + 1, hy + 13),
+                                    pt(hx + 2, hy + 9)], outline=False)
+        poly_free(p["bone_light"], [pt(hx + 8, hy + 9), pt(hx + 10, hy + 13),
+                                    pt(hx + 11, hy + 9)], outline=False)
+        # Jenggot kepang + kepang bercincin kuningan
+        poly_free(p["hair_darkest"], [pt(hx - 6, hy + 9), pt(hx + 9, hy + 9),
+                                      pt(hx + 8, hy + 14), pt(hx + 2, hy + 17),
+                                      pt(hx - 4, hy + 14)])
+        poly_free(p["hair_mid"], [pt(hx - 4, hy + 10), pt(hx + 7, hy + 10),
+                                  pt(hx + 6, hy + 13), pt(hx + 2, hy + 15),
+                                  pt(hx - 3, hy + 13)], outline=False)
+        _NS_drakar._aaline(surface, p["shadow_deep"], pt(hx - 6, hy + 15),
+                           pt(hx + 8, hy + 14), 1)
+        poly_free(p["hair_dark"], [pt(hx + 1, hy + 15), pt(hx + 5, hy + 15),
+                                   pt(hx + 4 + wave, hy + 21),
+                                   pt(hx + 1 + wave, hy + 22)],
                   outline=False)
-        _NS_drakar._aacircle(surface, p["brass_mid"], pt(hx + 3, hy + 15), 1)
+        _NS_drakar._aacircle(surface, p["brass_mid"], pt(hx + 3, hy + 16), 1)
         for i in range(3):
             _NS_drakar._aaline(surface, p["hair_darkest"],
-                               pt(hx - 2 + i * 3, hy + 9),
-                               pt(hx - 1 + i * 3, hy + 15), 1)
-
-        # Helm setengah besi: HANYA dahi (hy-8..hy-5) - tidak menutupi
-        # baris mata. Rivet darah di pelipis.
-        poly_free(p["armor_darkest"], [pt(hx - 10, hy - 8), pt(hx + 10, hy - 8),
-                                       pt(hx + 10, hy - 6), pt(hx - 10, hy - 6)])
-        poly_free(p["armor_light"], [pt(hx - 9, hy - 7.5), pt(hx + 9, hy - 7.5),
-                                     pt(hx + 9, hy - 6.5),
-                                     pt(hx - 9, hy - 6.5)], outline=False)
-        _NS_drakar._aacircle(surface, p["blood_mid"], pt(hx + 8, hy - 7), 1)
-        _NS_drakar._aacircle(surface, p["blood_mid"], pt(hx - 8, hy - 7), 1)
-        # Dua tanduk BANTENG ke ATAS: pangkal tebal di pelipis, ujung
-        # menyipit melengkung sedikit ke depan. (Versi mendatar lama
-        # terbaca sebagai sayap kelelawar.)
+                               pt(hx - 3 + i * 3, hy + 10),
+                               pt(hx - 2 + i * 3, hy + 16), 1)
+        # Helm + rivet darah
+        poly_free(p["armor_darkest"], [pt(hx - 11, hy - 9),
+                                       pt(hx + 11, hy - 9),
+                                       pt(hx + 11, hy - 7),
+                                       pt(hx - 11, hy - 7)])
+        poly_free(p["armor_light"], [pt(hx - 10, hy - 8.5),
+                                     pt(hx + 10, hy - 8.5),
+                                     pt(hx + 10, hy - 7.5),
+                                     pt(hx - 10, hy - 7.5)], outline=False)
+        _NS_drakar._aacircle(surface, p["blood_mid"], pt(hx + 9, hy - 8), 1)
+        _NS_drakar._aacircle(surface, p["blood_mid"], pt(hx - 9, hy - 8), 1)
+        # Tanduk banteng TEBAL ke atas
         for sgn in (1, -1):
-            basex = hx + sgn * 9
-            tipx = basex + sgn * 5 + wave
-            midx = basex + sgn * 4
-            poly_free(p["bone_darkest"], [pt(basex - sgn * 2, hy - 6),
-                                          pt(midx, hy - 13),
-                                          pt(tipx, hy - 20),
-                                          pt(basex + sgn * 2, hy - 7)])
-            poly_free(p["bone_mid"], [pt(basex, hy - 7),
-                                      pt(midx - sgn, hy - 13),
-                                      pt(tipx + sgn * 0, hy - 18),
-                                      pt(tipx + sgn, hy - 19)],
+            basex = hx + sgn * 10
+            tipx = basex + sgn * 6 + wave
+            midx = basex + sgn * 5
+            poly_free(p["bone_darkest"], [pt(basex - sgn * 3, hy - 7),
+                                          pt(midx, hy - 14),
+                                          pt(tipx, hy - 22),
+                                          pt(basex + sgn * 2, hy - 8)])
+            poly_free(p["bone_mid"], [pt(basex, hy - 8),
+                                      pt(midx - sgn, hy - 14),
+                                      pt(tipx, hy - 20),
+                                      pt(tipx + sgn, hy - 21)],
                       outline=False)
-            poly_free(p["bone_light"], [pt(basex + sgn, hy - 7),
-                                        pt(midx - sgn * 0, hy - 13),
-                                        pt(tipx - sgn, hy - 18)],
+            poly_free(p["bone_light"], [pt(basex + sgn, hy - 8),
+                                        pt(midx, hy - 14),
+                                        pt(tipx - sgn, hy - 20)],
                       outline=False)
 
     def _draw_drk_arm(surface, pt, poly_free, dot, limb, f, phase, action, ap,
                       shoulder, elbow, grip, axe_angle, back=False, hot=False):
-        """Lengan 2-tulang merah + bracer besi + kepalan di gagang."""
+        """Lengan GEMPAL (biceps & lengan bawah tebal) + bracer besar +
+        kepalan bisul - lengan kurus dulu membuat Drakar terlihat kurus."""
         p = _NS_drakar.PALETTE
         base = p["skin_dark"] if back else p["skin_mid"]
         high = p["skin_mid"] if back else p["skin_light"]
-        limb(shoulder, elbow, 8 if back else 9, base, high)
-        limb(elbow, grip, 7 if back else 8, base, high)
-        # Bracer besi: satu blok di tengah lengan bawah + paku
+        limb(shoulder, elbow, 12 if back else 14, base, high)
+        limb(elbow, grip, 10 if back else 12, base, high)
+        # Bracer besi BESAR
         bx = int(elbow[0] * 0.4 + grip[0] * 0.6)
         by = int(elbow[1] * 0.4 + grip[1] * 0.6)
-        poly_free(p["armor_darkest"], [pt(bx - 4, by - 4), pt(bx + 4, by - 4),
-                                       pt(bx + 4, by + 4), pt(bx - 4, by + 4)])
-        poly_free(p["armor_mid"], [pt(bx - 3, by - 3), pt(bx + 2, by - 3),
-                                   pt(bx + 2, by + 3), pt(bx - 3, by + 3)],
+        poly_free(p["armor_darkest"], [pt(bx - 6, by - 6), pt(bx + 6, by - 6),
+                                       pt(bx + 6, by + 6), pt(bx - 6, by + 6)])
+        poly_free(p["armor_mid"], [pt(bx - 5, by - 5), pt(bx + 3, by - 5),
+                                   pt(bx + 3, by + 5), pt(bx - 5, by + 5)],
                   outline=False)
-        _NS_drakar._aaline(surface, p["armor_light"], pt(bx - 3, by - 2),
-                           pt(bx - 3, by + 2), 1)
-        _NS_drakar._aacircle(surface, p["brass_mid"], pt(bx + 1, by - 1), 1)
-        # Kepalan + highlight buku jari: tanpa ini gagang terlihat
-        # "menempel" di tangan, bukan digenggam.
-        dot(p["skin_darkest"], *grip, 4 if not back else 3)
-        dot(high, *grip, 3 if not back else 2)
+        _NS_drakar._aaline(surface, p["armor_light"], pt(bx - 4, by - 3),
+                           pt(bx - 4, by + 3), 1)
+        _NS_drakar._aacircle(surface, p["brass_mid"], pt(bx + 1, by - 2), 1)
+        # Kepalan BESAR + buku jari
+        dot(p["skin_darkest"], *grip, 6 if not back else 5)
+        dot(high, *grip, 4 if not back else 3)
         if not back:
             kx, ky = pt(grip[0] + 1, grip[1] - 2)
-            _NS_drakar._aacircle(surface, p["skin_shine"], (kx, ky), 2)
+            _NS_drakar._aacircle(surface, p["skin_shine"], (kx, ky), 3)
         if not back:
             _NS_drakar._draw_drk_axe(surface, pt, f, grip, axe_angle, phase,
                                       action, ap, hot)
@@ -5196,8 +5157,8 @@ class _NS_drakar:
 
         L = _NS_drakar._axe_len(action)
         # ── Gagang: dari pommel sampai lewat mata kapak
-        poly(p["leather_darkest"], [hpt(-10, -2.1), hpt(L + 2, -1.7),
-                                         hpt(L + 2, 1.7), hpt(-10, 2.1)])
+        poly(p["leather_darkest"], [hpt(-11, -2.5), hpt(L + 2, -2.0),
+                                         hpt(L + 2, 2.0), hpt(-11, 2.5)])
         poly(p["leather_dark"], [hpt(-8, -0.9), hpt(L + 2, -0.7),
                                       hpt(L + 2, 0.7), hpt(-8, 0.9)],
                   outline=False)
@@ -5214,13 +5175,13 @@ class _NS_drakar:
 
         # ── Mata kapak (socket) + polling belakang
         su = L - 7
-        poly(p["armor_darkest"], [hpt(su, -3.2), hpt(su + 5, -3.2),
-                                       hpt(su + 5, 3.2), hpt(su, 3.2)])
-        poly(p["armor_mid"], [hpt(su + 1, -2.2), hpt(su + 4, -2.2),
-                                   hpt(su + 4, 2.2), hpt(su + 1, 2.2)],
+        poly(p["armor_darkest"], [hpt(su, -4.0), hpt(su + 6, -4.0),
+                                       hpt(su + 6, 4.0), hpt(su, 4.0)])
+        poly(p["armor_mid"], [hpt(su + 1, -3.0), hpt(su + 5, -3.0),
+                                   hpt(su + 5, 3.0), hpt(su + 1, 3.0)],
                   outline=False)
-        _NS_drakar._aaline(surface, p["armor_shine"], hpt(su + 1, -2.0),
-                           hpt(su + 4, -2.0), 1)
+        _NS_drakar._aaline(surface, p["armor_shine"], hpt(su + 1, -2.6),
+                           hpt(su + 5, -2.6), 1)
         for ru in (su + 2,):
             _NS_drakar._aacircle(surface, p["brass_mid"], hpt(ru, 0), 1)
 
@@ -5229,17 +5190,17 @@ class _NS_drakar:
         #    daun putih kecil.
         b0 = su - 2
         blade = [
-            (b0, 2.2),            # pangkal bawah socket
-            (b0 + 2, 6),          # leher
-            (b0 + 1, 16),         # jenggar ke bawah (beard)
-            (b0 + 3, 26),         # ujung jenggot
-            (b0 + 8, 29),         # busur bawah
-            (b0 + 14, 26),        # sisi muka
-            (b0 + 18, 17),        # busur depan
-            (b0 + 19, 9),         # tanduk atas
-            (b0 + 16, 3),         # atas
-            (b0 + 9, 0.5),        # duduk di gagang
-            (b0 + 2, -1.6),       # pangkal atas
+            (b0, 2.6),            # pangkal bawah socket
+            (b0 + 2, 7),          # leher
+            (b0 + 1, 19),         # jenggar ke bawah (beard)
+            (b0 + 3, 30),         # ujung jenggot
+            (b0 + 9, 34),         # busur bawah
+            (b0 + 16, 30),        # sisi muka
+            (b0 + 21, 20),        # busur depan
+            (b0 + 22, 10),        # tanduk atas
+            (b0 + 18, 3),         # atas
+            (b0 + 10, 0.5),       # duduk di gagang
+            (b0 + 2, -1.8),       # pangkal atas
         ]
         poly_pts = [hpt(u, v) for u, v in blade]
         _NS_drakar._poly(surface, p["shadow_deep"],
@@ -5258,16 +5219,16 @@ class _NS_drakar:
         # SISI PEMOTONG: pita shine menempel busur luar (dari tanduk
         # atas sampai ujung jenggot) - dulu lapisan terang justru
         # menumpuk di dekat socket sehingga bilah terbaca kecil & redup.
-        edge_out = [(b0 + 3, 25.0), (b0 + 8, 28.5), (b0 + 14, 25.5),
-                    (b0 + 17.6, 17.0), (b0 + 18.6, 9.2)]
-        edge_in = [(u, v - 3.8) for (u, v) in edge_out]
+        edge_out = [(b0 + 3, 29.0), (b0 + 9, 32.8), (b0 + 16, 29.5),
+                    (b0 + 20.6, 19.6), (b0 + 21.6, 10.6)]
+        edge_in = [(u, v - 4.6) for (u, v) in edge_out]
         _NS_drakar._poly(surface, p["blade_shine"],
                          [hpt(u, v) for (u, v) in edge_out + edge_in[::-1]])
         # Garis kecerunan dari shine ke badan (anti-"stiker putih")
         _NS_drakar._aaline(surface, p["blade_light"],
                            hpt(b0 + 15.4, 10), hpt(b0 + 5.4, 22.6), 1)
         # Alur darah di bilah - menyala saat hot
-        groove = [hpt(b0 + 3, 8), hpt(b0 + 8, 17), hpt(b0 + 14, 20)]
+        groove = [hpt(b0 + 3, 9), hpt(b0 + 9, 19), hpt(b0 + 16, 23)]
         ga = _NS_drakar._alpha(90 + 165 * (1.0 if hot else 0.15) *
                                (0.75 + 0.25 * math.sin(phase * 2.6)))
         _NS_drakar._aaline(surface, p["blade_dark"], groove[0], groove[1], 1)
@@ -5277,9 +5238,9 @@ class _NS_drakar:
             _NS_drakar._aaline(surface, (*p["blood_hot"], ga), groove[1],
                                groove[2], 1)
         # Spike belakang (-v): pembacaan "senjata berat, dua arah"
-        poly(p["armor_darkest"], [hpt(b0 + 1, -1.8), hpt(b0 + 10, -4),
-                                       hpt(b0 + 11, -8), hpt(b0 + 5, -5),
-                                       hpt(b0 + 1, -3.4)])
+        poly(p["armor_darkest"], [hpt(b0 + 1, -2.2), hpt(b0 + 12, -4.6),
+                                       hpt(b0 + 13, -9.5), hpt(b0 + 6, -5.8),
+                                       hpt(b0 + 1, -4.0)])
         poly(p["armor_mid"], [hpt(b0 + 2, -2), hpt(b0 + 8, -4),
                                    hpt(b0 + 8.5, -6)], outline=False)
 
@@ -5385,25 +5346,24 @@ class _NS_drakar:
     # EFEK DASAR - ditundukan pada karakter
     # ==================================================================
     def _draw_shadow(surface, x, y):
-        """Bayangan kontak tunggal yang lembek (base_boss menggambar satu
-        lagi; ini dipertipis supaya tidak jadi dua piringan hitam)."""
+        """Bayangan kontak LEBAR (badan gempal) + titik per telapak."""
         p = _NS_drakar.PALETTE
         K = _NS_drakar.SCALE
-        bw, bh = int(66 * K), int(19 * K)
+        bw, bh = int(86 * K), int(21 * K)
         sh = pygame.Surface((bw, bh), pygame.SRCALPHA)
-        for w, h, a in ((int(48 * K), int(11 * K), 70),
-                        (int(34 * K), int(8 * K), 90),
-                        (int(20 * K), int(5 * K), 110)):
+        for w, h, a in ((int(62 * K), int(12 * K), 70),
+                        (int(44 * K), int(9 * K), 90),
+                        (int(26 * K), int(5 * K), 110)):
             _NS_drakar._ellipse(sh, (0, 0, 0, a),
                                 (bw // 2 - w // 2, bh // 2 - h // 2, w, h))
         _NS_drakar._ellipse(sh, (*p["mist_darkest"], 60),
-                            (int(8 * K), int(3 * K), int(50 * K), int(12 * K)))
-        # Titik kontak per telapak: badan "menekan" tanah, bukan mengapung
+                            (int(10 * K), int(4 * K), int(66 * K),
+                             int(13 * K)))
         for side in (-1, 1):
-            fx = bw // 2 + int(side * 10 * K)
+            fx = bw // 2 + int(side * 15 * K)
             _NS_drakar._ellipse(sh, (0, 0, 0, 130),
-                                (fx - int(6 * K), int(bh * 0.62),
-                                 int(12 * K), int(4 * K)))
+                                (fx - int(8 * K), int(bh * 0.62),
+                                 int(16 * K), int(4 * K)))
         surface.blit(sh, (int(x) - bw // 2, int(y) - bh // 2))
 
     def _draw_rage_aura(surface, x, y, phase, skill):
