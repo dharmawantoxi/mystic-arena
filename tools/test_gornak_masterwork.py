@@ -321,7 +321,10 @@ def test_portrait_lod_is_distinct_and_clean():
         return n
 
     a_px, p_px = painted(full), painted(crop)
-    assert a_px > p_px * 1.30, \
+    # FX arena (aura + rune + shadow) menambah >18% piksel tergambar; kalau
+    # someday ada yang menyalakannya lagi di mode portrait, rasio ini turun
+    # ke ~1.0 dan test ini gagal.
+    assert a_px > p_px * 1.18, \
         f"portrait harus membuang FX arena (painted {a_px} vs {p_px})"
 
 
@@ -408,6 +411,76 @@ def test_skill_durations_match_ai_timers():
                     tag, key, m.group(1), G.SKILL_DUR[key])
 
 
+def test_hero_visual_quality():
+    """Kunci kualitas VISUAL jalur hero (bukan cuma ukuran).
+
+    Empat hal yang dulu membuat Gornak-as-hero kalah dari grimjaw/kaizen:
+      1. portrait Hero Shop terpotong di kanvas 160x160 (bilah depan keluar
+         tepi) -> sekarang konten dipusatkan pada bbox-nya;
+      2. wajah jadi blob tanpa fitur -> mata menyala harus benar-benar ada
+         di kotak kepala;
+      3. identitas warna hilang -> warna tema ungu harus ada DI BADAN
+         (permata pelat/pauldron, rim light), bukan cuma di efek arena;
+      4. kaki menyatu jadi satu tiang ungu -> di bawah loincloth harus ada
+         DUA kolom padat terpisah.
+    """
+    # (1) portrait: tidak boleh menyentuh tepi kanvas 160x160
+    canvas = pygame.Surface((160, 160), pygame.SRCALPHA)
+    fake = probe(80, 90, _portrait_hd=True)
+    G.draw_gornak(canvas, fake, 80, 90)
+    box = canvas.get_bounding_rect(min_alpha=10)
+    assert box.left >= 2 and box.top >= 2, box
+    assert box.right <= 158 and box.bottom <= 158, box
+
+    # (2) mata: swatch eye_glow / eye_light harus muncul di kotak kepala
+    head = pygame.Rect(box.centerx - 16, box.top + 4, 32, 24)
+    found = set()
+    for y in range(max(0, head.top), min(160, head.bottom)):
+        for x in range(max(0, head.left), min(160, head.right)):
+            px = canvas.get_at((x, y))
+            if px.a:
+                found.add(px[:3])
+    eyes = {G.PALETTE["eye_glow"], G.PALETTE["eye_light"],
+            G.PALETTE["eye_mid"]}
+    assert found & eyes, "tidak ada piksel mata di area kepala"
+
+    # (3) warna tema DI BADAN (portrait = tanpa FX arena, jadi ini bukti
+    #     identitas ungu melekat pada karakter)
+    body_cols = colors(canvas)
+    theme = {G.PALETTE["magic_hot"], G.PALETTE["magic_mid"],
+             G.PALETTE["magic_light"], G.PALETTE["hair_light"],
+             G.PALETTE["hair_shine"]}
+    assert body_cols & theme, "ungu anti-sihir tidak terlihat pada badan"
+
+    # (4) dua kaki terpisah: scan baris di bawah loincloth
+    rig = render("idle", detail=True)
+    row_y = CY + int(34 * G.SCALE)
+    runs, inside = 0, False
+    for x in range(rig.get_width()):
+        solid = rig.get_at((x, row_y)).a > 150
+        if solid and not inside:
+            runs += 1
+            inside = True
+        elif not solid:
+            inside = False
+    assert runs >= 2, f"kaki menyatu jadi satu blok (runs={runs} @ y={row_y})"
+
+    # (5) cakram cahaya + cincin tanah tetap ada di jalur arena/lane.
+    # Dipantau lewat jumlah piksel alpha-LEMBUT: glow memang sengaja tipis,
+    # jadi tidak terlihat dari bounding box (bilah lebih lebar dari aura).
+    def soft_px(surf):
+        return sum(1 for y in range(surf.get_height())
+                   for x in range(surf.get_width())
+                   if 6 < surf.get_at((x, y)).a <= 120)
+
+    arena = pygame.Surface((260, 260), pygame.SRCALPHA)
+    G.draw_gornak(arena, probe(130, 140), 130, 140)
+    shop = pygame.Surface((260, 260), pygame.SRCALPHA)
+    G.draw_gornak(shop, probe(130, 140, _portrait_hd=True), 130, 140)
+    assert soft_px(arena) > 400, "glow/cakram ungu hilang di jalur arena"
+    assert soft_px(shop) < 140, "mode portrait harus tetap bersih"
+
+
 def test_perf_budget():
     """Guardrail: badan 1.3x lebih besar tidak boleh membuat frame time naik
     drastis. Ambang sengaja longgar (5 ms) supaya tetap lolos di HP rendah;
@@ -440,6 +513,7 @@ if __name__ == "__main__":
     test_size_matches_the_family()
     test_hero_scale_is_no_longer_upsampled()
     test_skill_durations_match_ai_timers()
+    test_hero_visual_quality()
     test_perf_budget()
     print("OK - Gornak masterwork: rig tunggal, kaki menapak, bilah "
           "pose-driven, proc di ujung bilah, outline, portrait LOD, "

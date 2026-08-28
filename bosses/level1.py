@@ -108,12 +108,12 @@ class _NS_gornak:
 
     PALETTE = {
         # Kulit sawo matang berdebu (cahaya dari depan-atas)
-        "skin_darkest": (38, 20, 13),
-        "skin_dark": (86, 47, 27),
-        "skin_mid": (146, 89, 51),
-        "skin_light": (190, 131, 83),
-        "skin_shine": (228, 178, 128),
-        "skin_high": (244, 208, 166),
+        "skin_darkest": (34, 17, 11),
+        "skin_dark": (84, 44, 25),
+        "skin_mid": (154, 94, 52),
+        "skin_light": (205, 148, 96),
+        "skin_shine": (240, 192, 142),
+        "skin_high": (252, 222, 182),
 
         # Mohawk (ungu sihir)
         "hair_darkest": (24, 8, 38),
@@ -135,11 +135,11 @@ class _NS_gornak:
         "robe_edge": (152, 116, 194),
 
         # Baja "spellbreaker"
-        "armor_darkest": (8, 7, 13),
-        "armor_dark": (27, 24, 37),
-        "armor_mid": (64, 58, 80),
-        "armor_light": (114, 106, 134),
-        "armor_shine": (182, 176, 206),
+        "armor_darkest": (7, 6, 12),
+        "armor_dark": (24, 22, 34),
+        "armor_mid": (74, 70, 96),
+        "armor_light": (138, 132, 164),
+        "armor_shine": (206, 202, 232),
 
         # Bilah silver-biru + garis temper
         "blade_dark": (36, 34, 52),
@@ -372,9 +372,9 @@ class _NS_gornak:
     # Tinggi badan dalam RUANG LOKAL (y=0 = garis pinggang, + = ke bawah).
     # Punggung bahu & pusat kepala dibuat konstanta supaya seluruh bagian
     # (dan semua anchor FX) ikut berubah konsisten saat dituning.
-    # Total badan: ubun-ubun -37 -> telapak +44 = 81 px, jadi mini boss
-    # terbaca jauh lebih besar dari hero (65 px) tanpa menutupi HP bar
-    # boss yang berada di y-45..y-37.
+    # Total badan (ruang lokal, sebelum SCALE): krist -40 -> telapak +44.
+    # Setelah SCALE x1.32 + LIFT: ~115 px tinggi, cukup untuk mini boss tapi
+    # wajah tetap di bawah HP bar boss (y-r-15..y-r-7).
     HEAD_Y = -24
     SHOULDER_Y = -14
     # Sendi bahu (x = ke depan mengikuti arah hadap)
@@ -387,37 +387,43 @@ class _NS_gornak:
         0 = moncong ke bawah, +pi/2 = lurus ke depan, ~pi = ke atas,
         -pi/2 = lurus ke belakang. Ditabel per-pose, BUKAN diturunkan dari
         arah lengan, supaya bilah tidak pernah menyayat menembus badannya
-        sendiri. Kedua bilah KIRI-KANAN SIMETRIS (depan +, belakang -):
-        itulah yang membuat siluet pemegang dua pedang melebar ke kedua sisi
-        alih-alih menumpuk jadi satu tiang sempit di belakang badan.
+        sendiri. Depan dan belakang sengaja TIDAK simetris: bilah depan
+        diangkat (memberi arah + massa di kuadran atas, seperti surai
+        Grimjam / ponytail Kaizen yang membuat hero lain terbaca di lane),
+        bilah belakang menukik ke bawah-belakang (menyeimbangkan bobot dan
+        tetap melebar ke kiri supaya siluet tidak jadi tiang sempit).
         """
         s = math.sin(phase * 1.72)
         if action == "attack":
-            # Angkat di depan wajah -> tebas diagonal ke depan-bawah -> pulih.
-            # Semua jalur rotasi ada di SISI DEPAN badan, jadi tidak ada
-            # satu frame pun bilah melintasi torso atau kepala.
-            if ap < 0.30:                       # wind-up (0.75 -> 2.90)
+            # Semua jalur rotasi ada di SISI DEPAN badan, jadi tidak ada satu
+            # frame pun bilah melintasi torso atau kepala.
+            if ap < 0.30:                       # wind-up (1.78 -> 2.92)
                 t = (ap / 0.30) ** 0.8
-                return (0.75 + 2.15 * t, -0.75 - 2.15 * t)[back]
-            if ap < 0.55:                       # tebasan (2.90 -> 0.35)
+                return (1.78 + 1.14 * t, -1.00 - 1.92 * t)[back]
+            if ap < 0.55:                       # tebasan (2.92 -> 0.30)
                 t = (ap - 0.30) / 0.25
                 t = 1.0 - (1.0 - t) ** 1.25    # akselerasi, rem di impact
-                return (2.90 - 2.55 * t, -2.90 + 2.55 * t)[back]
+                return (2.92 - 2.62 * t, -2.92 + 1.92 * t)[back]
             t = (ap - 0.55) / 0.45             # recovery -> siap
-            return (0.35 + 0.40 * t, -0.35 - 0.40 * t)[back]
+            return (0.30 + 1.48 * t, -1.00)[back]
         if action == "surge":                  # Q: tusukan mana medatar
             return (1.45, -1.45)[back]
         if action == "ward":                   # E: dua bilah tegak = garda
-            return (2.95, -2.95)[back]
+            return (3.02, -3.02)[back]
         if action == "void":                   # R: kedua bilah dibuka ke atas
             return (2.40, -2.40)[back]
         if action == "blink":
             return (0.62, -0.62)[back]
         if action == "walk":
-            return (1.02 + s * 0.12, -1.02 - s * 0.12)[back]
-        # Siap: bilah depan ke depan-bawah, bilah belakang ke belakang-bawah.
+            return (1.78 + s * 0.10, -1.00 - s * 0.10)[back]
+        # Siap: bilah DEPAN terangkat diagonal ke depan-atas, bilah belakang
+        # menukik ke belakang-bawah. Versi dua bilah sejajar horizontal
+        # terbaca sebagai "palang" putih lebar yang menenggelamkan badan di
+        # skala hero; sudut asimetris ini tetap menjaga lebar siluet
+        # (W/H ~1.05) tapi membuat kepala & dada jadi subjek. Nilai ini
+        # juga titik awal/akhir ayunan -> tidak ada frame "snap".
         w = math.sin(phase * 0.5) * 0.05
-        return (1.02 + w, -1.02 - w)[back]
+        return (1.78 + w, -1.00 - w)[back]
 
     def _front_grip_local(action, ap=0.0, phase=0.0):
         """Pergelangan tangan depan (pegangan bilah utama), ruang lokal."""
@@ -621,7 +627,14 @@ class _NS_gornak:
 
     def _draw_gnk_rig_at(surface, x, y, facing, phase, action, ap, detail,
                          flash=0):
-        """Rig -> buffer -> outline gelap 1 px -> satu blit murah."""
+        """Rig -> buffer -> outline gelap 1 px -> satu blit murah.
+
+        Mode portrait Hero Shop memakai kanvas kecil (160x160 di
+        ui_components HeroPortraits) dan meng-crop dari bbox: kalau badan
+        digambar dengan anchor di pinggang, bilah depan yang panjang
+        melewati tepi kanan dan TERPOTONG. Jadi di mode itu konten dipusatkan
+        pada bbox-nya sendiri; jalur boss (1x) tidak berubah sama sekali.
+        """
         buf = pygame.Surface((_NS_gornak.RIG_W, _NS_gornak.RIG_H),
                              pygame.SRCALPHA)
         _NS_gornak._draw_gnk_rig(buf, _NS_gornak.RIG_OX, _NS_gornak.RIG_OY,
@@ -633,6 +646,14 @@ class _NS_gornak:
             buf.blit(lit, (0, 0))
         ox = int(x) - _NS_gornak.RIG_OX
         oy = int(y) - _NS_gornak.RIG_OY
+        if detail:                      # portrait: pusatkan konten
+            used = buf.get_bounding_rect(min_alpha=1)
+            if used.width > 0:
+                ox = int(x) - (used.left + used.width // 2)
+                oy = int(y) - (used.top + used.height // 2)
+        # Outline siluet (4 arah) - sama seperti Sylara: jalur hero memang
+        # menambah satu tepi lagi di _finish_hd_sprite, dan hasilnya justru
+        # dipakai sebagai acuan keluarga, jadi tidak perlu di-skip.
         edge = buf.copy()
         edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
         for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
@@ -825,7 +846,10 @@ class _NS_gornak:
                                  _NS_gornak._blade_len(action), back=False,
                                  ward=ward, void=void, surge=surge)
 
-        # 9. Pass material portrait-only
+        # 9. Rim light ungu - sinyal warna tema (lihat docstring-nya)
+        _NS_gornak._draw_gnk_rimlight(surface, pt, f, phase, ward, void)
+
+        # 10. Pass material portrait-only
         if detail:
             _NS_gornak._draw_gnk_masterwork_details(surface, pt, f, phase,
                                                     action)
@@ -858,13 +882,15 @@ class _NS_gornak:
     def _draw_gnk_legs(surface, pt, ptg, poly_free, f, phase, action, stride):
         """Dua kaki berotot: paha -> pelindung lutut -> greave -> boot.
 
-        Telapak dipatok di ``GROUND_DY`` (tidak ikut bob badan) sehingga
-        karakter terlihat menapak; saat langkah, kaki ayun terangkat dan
-        yang tumpu tetap di tanah.
+        Pass hero-baru: blok tulang kering tidak lagi memakai armor_light
+        (di skala hero kaki terbaca sebagai dua balok abu-abu pucat yang
+        menyatu dengan loincloth). Sekarang paha & betis gelap dengan SATU
+        garis tepi terang di sisi cahaya + kap kuningan di ujung boot, jadi
+        kedua kaki terpisah dan tetap terbaca.
         """
         p = _NS_gornak.PALETTE
         hip_y = 4
-        ground = _NS_gornak.FEET_DY      # ruang lokal; pt/ptg yang menskala
+        ground = _NS_gornak.FEET_DY
         for side in (-1, 1):
             if action == "walk":
                 dx = int(stride * 8) * side
@@ -884,68 +910,95 @@ class _NS_gornak:
             foot_x = hip_x + dx + side * 2
             knee_y = (hip_y + ground) // 2 - lift
             fy = ground - lift
-            dark = p["skin_dark"] if front else p["skin_darkest"]
-            mid = p["skin_mid"] if front else p["skin_dark"]
-            # Paha
-            poly_free(dark, [pt(hip_x - 6, hip_y), pt(hip_x + 5, hip_y),
-                             pt(knee_x + 4, knee_y), pt(knee_x - 5, knee_y)])
-            poly_free(mid, [pt(hip_x - 4, hip_y + 1), pt(hip_x + 4, hip_y + 1),
-                            pt(knee_x + 2, knee_y - 1),
-                            pt(knee_x - 3, knee_y - 1)], outline=False)
+            # Paha: satu blok gelap + satu blok tengah + garis cahaya tipis
+            poly_free(p["skin_darkest"], [pt(hip_x - 6, hip_y),
+                                          pt(hip_x + 5, hip_y),
+                                          pt(knee_x + 4, knee_y),
+                                          pt(knee_x - 5, knee_y)])
             if front:
-                poly_free(p["skin_light"], [pt(hip_x - 3, hip_y + 2),
-                                            pt(hip_x + 1, hip_y + 2),
-                                            pt(knee_x - 1, knee_y - 4),
-                                            pt(knee_x - 3, knee_y - 4)],
+                poly_free(p["skin_dark"], [pt(hip_x - 5, hip_y + 1),
+                                          pt(hip_x + 4, hip_y + 1),
+                                          pt(knee_x + 3, knee_y - 1),
+                                          pt(knee_x - 4, knee_y - 1)],
+                          outline=False)
+                poly_free(p["skin_mid"], [pt(hip_x - 4, hip_y + 2),
+                                          pt(hip_x + 1, hip_y + 2),
+                                          pt(knee_x - 1, knee_y - 4),
+                                          pt(knee_x - 3, knee_y - 4)],
+                          outline=False)
+            # Pembungkus kain di paha (identik dengan loincloth -> kaki
+            # menyatu dengan badan, bukan dua tabung terpisah)
+            poly_free(p["robe_dark"], [pt(hip_x - 6, hip_y + 7),
+                                       pt(hip_x + 5, hip_y + 7),
+                                       pt(hip_x + 5, hip_y + 13),
+                                       pt(hip_x - 6, hip_y + 13)])
+            if front:
+                poly_free(p["robe_mid"], [pt(hip_x - 4, hip_y + 8),
+                                          pt(hip_x + 2, hip_y + 8),
+                                          pt(hip_x + 2, hip_y + 12),
+                                          pt(hip_x - 4, hip_y + 12)],
                           outline=False)
             # Pelindung lutut
             poly_free(p["armor_darkest"], [pt(knee_x - 4, knee_y - 3),
                                            pt(knee_x + 4, knee_y - 3),
                                            pt(knee_x + 4, knee_y + 3),
                                            pt(knee_x - 4, knee_y + 3)])
-            poly_free(p["armor_light"], [pt(knee_x - 3, knee_y - 2),
-                                         pt(knee_x + 1, knee_y - 2),
-                                         pt(knee_x + 1, knee_y + 1),
-                                         pt(knee_x - 3, knee_y + 1)],
+            poly_free(p["armor_mid"], [pt(knee_x - 3, knee_y - 2),
+                                       pt(knee_x + 2, knee_y - 2),
+                                       pt(knee_x + 2, knee_y + 2),
+                                       pt(knee_x - 3, knee_y + 2)],
                           outline=False)
-            # Shina + boot
+            _NS_gornak._aacircle(surface, p["armor_shine"], pt(knee_x - 1,
+                                                              knee_y - 1), 1)
+            # Shina gelap + satu garis tepi cahaya
             poly_free(p["armor_dark"], [pt(knee_x - 4, knee_y + 2),
                                         pt(knee_x + 4, knee_y + 2),
                                         ptg(foot_x + 4, fy - 7),
                                         ptg(foot_x - 4, fy - 7)])
-            poly_free(p["armor_mid"], [pt(knee_x - 3, knee_y + 3),
-                                       pt(knee_x + 2, knee_y + 3),
-                                       ptg(foot_x + 2, fy - 8),
-                                       ptg(foot_x - 2, fy - 8)], outline=False)
+            if front:
+                poly_free(p["armor_mid"], [pt(knee_x - 3, knee_y + 3),
+                                           pt(knee_x + 1, knee_y + 3),
+                                           ptg(foot_x + 1, fy - 8),
+                                           ptg(foot_x - 3, fy - 8)],
+                          outline=False)
+                _NS_gornak._aaline(surface, p["armor_light"],
+                                   pt(knee_x - 2, knee_y + 4),
+                                   ptg(foot_x - 2, fy - 7), 1)
+            # Boot gelap + kap kuningan, sol DATAR di garis tanah
             toe = 4 if f > 0 else -4
             poly_free(p["leather_dark"], [ptg(foot_x - 5, fy - 7),
                                           ptg(foot_x + 5, fy - 7),
-                                          ptg(foot_x + toe + 1, fy - 1),
+                                          ptg(foot_x + toe + 2, fy - 2),
                                           ptg(foot_x + toe, fy),
                                           ptg(foot_x - toe, fy),
                                           ptg(foot_x - 6, fy - 3)])
-            poly_free(p["leather_light"], [ptg(foot_x - 4, fy - 6),
-                                           ptg(foot_x + 4, fy - 6),
-                                           ptg(foot_x + toe, fy - 3),
-                                           ptg(foot_x - 5, fy - 3)],
-                          outline=False)
-            # Garis kontak tanah (hilang saat kaki terangkat)
+            poly_free(p["leather_mid"], [ptg(foot_x - 4, fy - 6),
+                                         ptg(foot_x + 4, fy - 6),
+                                         ptg(foot_x + toe + 1, fy - 3),
+                                         ptg(foot_x - 5, fy - 3)],
+                        outline=False)
+            _NS_gornak._aaline(surface, p["brass_mid"],
+                               ptg(foot_x + toe - 1, fy - 4),
+                               ptg(foot_x + toe + 2, fy - 2), 2)
             if lift <= 0:
                 _NS_gornak._aaline(surface, p["shadow_deep"],
                                    ptg(foot_x - 5, fy + 1),
                                    ptg(foot_x + 5, fy + 1), 2)
             else:
                 _NS_gornak._aaline(surface, (*p["shadow"], 80),
-                                   ptg(foot_x - 4, ground + 1),
-                                   ptg(foot_x + 4, ground + 1), 2)
+                                   ptg(foot_x - 4, _NS_gornak.FEET_DY),
+                                   ptg(foot_x + 4, _NS_gornak.FEET_DY), 2)
 
     def _draw_gnk_torso(surface, pt, poly_free, dot, f, phase, breath, ward,
                         void):
-        """Dada bidang (V-taper) + satu sabuk kulit + pelat spellbreaker.
+        """Dada bidang (V-taper) + pelat spellbreaker BERCAHAYA + rune ungu.
 
-        Sengaja minim garis: tiga garis otot 1 px di badan setinggi 80 px
-        hanya menjadi noise, jadi volume dada dibangun dari tiga blok
-        nilai (gelap -> tengah -> terang) seperti cat miniature.
+        Pass hero-baru: pelat baja dinaikkan ke armor_light/shine (sebelumnya
+        armor_mid yang di skala hero menyatu dengan kulit sehingga seluruh
+        badan jadi satu blob coklat), dan rantai pemutus sihir dibuat jadi
+        tiga titik magic_hot yang jelas - itu "sinyal warna" yang dipakai
+        Grimjaw (api) / Vex (void cyan) / Kaizen (angin biru) supaya unit
+        terbaca dari jauh.
         """
         p = _NS_gornak.PALETTE
         sh = _NS_gornak.SHOULDER_Y
@@ -955,119 +1008,155 @@ class _NS_gornak:
                                       pt(-11, 4)])
         poly_free(p["skin_dark"], [pt(-12 + twist, sh), pt(12 + twist, sh),
                                    pt(9, 3), pt(-10, 3)], outline=False)
-        poly_free(p["skin_mid"], [pt(-10 + twist, sh + 1), pt(9 + twist, sh + 1),
-                                  pt(7, -2), pt(-8, -2)], outline=False)
-        poly_free(p["skin_light"], [pt(-8 + twist, sh + 1), pt(5 + twist, sh + 1),
-                                    pt(3, sh + 6), pt(-7, sh + 6)],
-                  outline=False)
-        # Satu garis tengah dada + garis perut (nilai, bukan outline)
-        _NS_gornak._aaline(surface, p["skin_dark"], pt(twist, sh + 2),
+        poly_free(p["skin_mid"], [pt(-10 + twist, sh + 1),
+                                  pt(9 + twist, sh + 1), pt(7, -2),
+                                  pt(-8, -2)], outline=False)
+        # Blok cahaya di bahu-dada (satu bentuk besar, bukan garis halus)
+        poly_free(p["skin_light"], [pt(-9 + twist, sh + 1),
+                                    pt(6 + twist, sh + 1), pt(4, sh + 7),
+                                    pt(-8, sh + 6)], outline=False)
+        poly_free(p["skin_shine"], [pt(-7 + twist, sh + 2),
+                                    pt(2 + twist, sh + 2), pt(1, sh + 5),
+                                    pt(-6, sh + 5)], outline=False)
+        # Garis tengah + perut (nilai, bukan outline)
+        _NS_gornak._aaline(surface, p["skin_dark"], pt(twist, sh + 3),
                            pt(0, 2), 1)
-        _NS_gornak._aaline(surface, p["skin_dark"], pt(-5, -3), pt(5, -3), 1)
-        # Sabuk kulit diagonal (harness) - satu jalur saja
+        _NS_gornak._aaline(surface, p["skin_dark"], pt(-5, -2), pt(5, -2), 1)
+        _NS_gornak._aaline(surface, p["skin_dark"], pt(-4, 1), pt(4, 1), 1)
+        # Sabuk kulit diagonal - satu jalur tipis (dulu 5 px: jadi palang)
         _NS_gornak._aaline(surface, p["leather_dark"], pt(12 + twist, sh),
-                           pt(-9, 3), 4)
-        _NS_gornak._aaline(surface, p["leather_mid"], pt(12 + twist, sh),
-                           pt(-9, 3), 2)
-        # Pelat baja di dada, rune anti-sihir menyala saat skill
-        poly_free(p["armor_darkest"], [pt(-11, sh + 1), pt(0, sh + 2),
-                                       pt(1, -5), pt(-10, -6)])
-        poly_free(p["armor_mid"], [pt(-10, sh + 2), pt(-1, sh + 3),
-                                   pt(0, -5), pt(-9, -6)], outline=False)
-        poly_free(p["armor_light"], [pt(-9, sh + 3), pt(-4, sh + 4),
-                                      pt(-4, -2), pt(-9, -3)], outline=False)
-        hot = 0.30 + (0.70 if (ward or void) else 0.0)
-        a = _NS_gornak._alpha(105 + 150 * hot *
-                              (0.75 + 0.25 * math.sin(phase * 2.2)))
-        _NS_gornak._aaline(surface, (*p["magic_light"], a), pt(-9, -10),
-                           pt(-4, -7), 1)
-        _NS_gornak._aaline(surface, (*p["magic_light"], a), pt(-9, -8),
-                           pt(-4, -10), 1)
-        _NS_gornak._aacircle(surface, (*p["magic_shine"], a), pt(-6, -9), 1)
+                           pt(-9, 3), 3)
+        _NS_gornak._aaline(surface, p["leather_light"], pt(12 + twist, sh),
+                           pt(-9, 3), 1)
+        # Pelat spellbreaker: satu bentuk gelap dengan TEPI atas terang dan
+        # SATU permata ungu. Pass-pass sebelumnya menaruh garis silang +
+        # tiga titik rune di sini; di skala 720p itu terbaca sebagai noda
+        # lavender, bukan detail. Satu fokus terang = satu bacaan jelas.
+        poly_free(p["armor_darkest"], [pt(-12, sh + 1), pt(-1, sh + 2),
+                                       pt(0, -5), pt(-11, -6)])
+        poly_free(p["armor_mid"], [pt(-11, sh + 2), pt(-2, sh + 3),
+                                   pt(-1, -5), pt(-10, -6)], outline=False)
+        _NS_gornak._aaline(surface, p["armor_shine"], pt(-11, sh + 3),
+                           pt(-2, sh + 4), 2)
+        _NS_gornak._aaline(surface, p["armor_darkest"], pt(-1, sh + 3),
+                           pt(0, -5), 1)
+        hot = 0.40 + (0.60 if (ward or void) else 0.0)
+        a = _NS_gornak._alpha(150 + 105 * hot *
+                              (0.72 + 0.28 * math.sin(phase * 2.2)))
+        gemx, gemy = pt(-6, sh + 5)
+        _NS_gornak._aacircle(surface, (*p["magic_mid"], a), (gemx, gemy), 3)
+        _NS_gornak._aacircle(surface, (*p["magic_hot"], min(255, a + 40)),
+                             (gemx, gemy), 2)
+        _NS_gornak._rect(surface, (*p["magic_shine"], 255),
+                         (gemx - 1, gemy - 1, 2, 2))
         # Cincin kuningan di ujung harness
-        _NS_gornak._aacircle(surface, p["brass_dark"], pt(-8, 3), 3)
-        _NS_gornak._aacircle(surface, p["brass_mid"], pt(-8, 3), 2)
-        _NS_gornak._aacircle(surface, p["brass_light"], pt(-9, 2), 1)
+        dot(p["brass_dark"], 1, -8, 3)
+        dot(p["brass_mid"], 1, -8, 2)
+        _NS_gornak._aacircle(surface, p["brass_light"], pt(0, -9), 1)
 
     def _draw_gnk_belt(surface, pt, poly_free, dot, f, phase, action, stride):
-        """Sabuk + gesper, loincloth bertepi robek, rantai lempengan besi."""
+        """Sabuk + gesper berlian ungu, loincloth, rantai lempengan besi."""
         p = _NS_gornak.PALETTE
         sway = int(math.sin(phase * 1.1) * 2)
         if action == "walk":
             sway += int(stride * 2)
-        # Sabuk
         poly_free(p["leather_dark"], [pt(-12, 1), pt(12, 1), pt(12, 7),
                                       pt(-12, 7)])
         poly_free(p["leather_mid"], [pt(-11, 2), pt(11, 2), pt(11, 6),
                                      pt(-11, 6)], outline=False)
-        # Gesper besi + batu ungu
+        _NS_gornak._aaline(surface, p["leather_light"], pt(-11, 2), pt(11, 2),
+                           1)
+        for bx in (-8, -3, 7):
+            _NS_gornak._aacircle(surface, p["brass_mid"], pt(bx, 4), 1)
         poly_free(p["armor_darkest"], [pt(-3, 0), pt(4, 0), pt(4, 8),
                                        pt(-3, 8)])
-        poly_free(p["armor_light"], [pt(-2, 1), pt(2, 1), pt(2, 4),
-                                     pt(-2, 4)], outline=False)
-        _NS_gornak._aacircle(surface, p["magic_hot"], pt(0, 5), 1)
-        # Loincloth (satu massa, tepi robek 3 gigi)
-        outer = [(-7, 7), (7, 7), (8 + sway, 21), (5 + sway, 27), (2, 21),
-                 (0, 27), (-3, 21), (-6 + sway, 25), (-8 + sway, 19)]
+        poly_free(p["armor_light"], [pt(-2, 1), pt(3, 1), pt(3, 6), pt(-2, 6)],
+                  outline=False)
+        _NS_gornak._aacircle(surface, p["magic_hot"], pt(0, 4), 2)
+        _NS_gornak._aacircle(surface, p["magic_shine"], pt(0, 4), 1)
+        # Loincloth bertepi robek. Sengaja sempit (lebar 12, panjang 20):
+        # versi lebar mengubah kedua kaki jadi satu tiang ungu dan
+        # menghapus silhouette "berdiri".
+        outer = [(-6, 7), (6, 7), (7 + sway, 18), (4 + sway, 24), (1, 18),
+                 (0, 24), (-3, 18), (-5 + sway, 22), (-7 + sway, 16)]
         poly_free(p["robe_darkest"], [pt(*q) for q in outer])
-        inner = [(-6, 8), (6, 8), (7 + sway, 20), (4 + sway, 24), (1, 20),
-                 (-1, 24), (-4, 19), (-7 + sway, 18)]
+        inner = [(-5, 8), (5, 8), (6 + sway, 17), (3 + sway, 21), (0, 17),
+                 (-2, 21), (-4 + sway, 15)]
         poly_free(p["robe_dark"], [pt(*q) for q in inner], outline=False)
         poly_free(p["robe_mid"], [pt(-3, 9), pt(3, 9), pt(3 + sway, 18),
-                                  pt(0, 21), pt(-3 + sway, 17)],
+                                  pt(0, 22), pt(-3 + sway, 17)],
                   outline=False)
-        # Rantai lempengan pemutus sihir di pinggul depan
+        _NS_gornak._aaline(surface, p["robe_edge"], pt(-5, 9),
+                           pt(-6 + sway, 20), 1)
+        # Rantai lempengan pemutus sihir
         for i in range(3):
             yy = 9 + i * 4
-            _NS_gornak._aaline(surface, p["armor_light"], pt(8, yy),
-                               pt(10 + int(sway * 0.3), yy + 3), 1)
-            _NS_gornak._aacircle(surface, p["armor_mid"], pt(9, yy + 1), 1)
+            _NS_gornak._aaline(surface, p["armor_shine"], pt(9, yy),
+                               pt(11 + int(sway * 0.3), yy + 3), 1)
+            _NS_gornak._aacircle(surface, p["armor_light"], pt(10, yy + 1), 1)
+        # Kantong kulit
+        poly_free(p["leather_dark"], [pt(-13, 8), pt(-8, 8), pt(-7, 15),
+                                      pt(-13, 15)])
+        poly_free(p["leather_mid"], [pt(-12, 9), pt(-9, 9), pt(-8, 14),
+                                     pt(-12, 14)], outline=False)
 
     def _draw_gnk_pauldrons(surface, pt, poly_free, dot, f, phase, breath):
-        """Pauldron baja bertingkat + duri pendek; sisi depan lebih besar."""
+        """Pauldron baja bertingkat + duri + permata ungu di sisi belakang."""
         p = _NS_gornak.PALETTE
         sh = _NS_gornak.SHOULDER_Y
         for side, scale in ((-1, 0.80), (1, 1.0)):
             sx = side * 15
-            sy = sh - 1 - int(breath if side > 0 else 0)
+            sy = sh - 2 - int(breath if side > 0 else 0)
             w = max(4, int(8 * scale))
             h = max(3, int(6 * scale))
             poly_free(p["armor_darkest"], [pt(sx - w, sy - h + 2),
-                                           pt(sx + w, sy - h),
-                                           pt(sx + w + 1, sy + 2),
-                                           pt(sx, sy + h),
-                                           pt(sx - w - 1, sy + 2)])
+                                          pt(sx + w, sy - h),
+                                          pt(sx + w + 1, sy + 2),
+                                          pt(sx, sy + h),
+                                          pt(sx - w - 1, sy + 2)])
             poly_free(p["armor_mid"], [pt(sx - w + 1, sy - h + 3),
                                        pt(sx + w - 1, sy - h + 3),
                                        pt(sx + w, sy), pt(sx, sy + h - 2),
                                        pt(sx - w, sy)], outline=False)
-            poly_free(p["armor_light"], [pt(sx - w + 2, sy - h + 4),
-                                          pt(sx - 1, sy - h + 4),
-                                          pt(sx - 1, sy - 1),
-                                          pt(sx - w + 2, sy - 1)],
-                          outline=False)
-            # Duri pendek - 3 px supaya tidak jadi "sisir"
+            # Sisi JAUH dibiarkan gelap (dulu armor_light + shine: jadi
+            # "sayat" pucat yang mengungguli wajah). Cahaya dan permata
+            # tema ditaruh di sisi DEPAN, searah cahaya.
+            lit = p["armor_light"] if side > 0 else p["armor_dark"]
+            poly_free(lit, [pt(sx - w + 2, sy - h + 4),
+                            pt(sx - 1, sy - h + 4),
+                            pt(sx - 1, sy - 1),
+                            pt(sx - w + 2, sy - 1)], outline=False)
+            if side > 0:
+                _NS_gornak._aaline(surface, p["armor_shine"],
+                                   pt(sx - w + 2, sy - h + 4),
+                                   pt(sx + w - 1, sy - h + 3), 1)
+            spike = sy - h - (6 if side > 0 else 4)
             poly_free(p["armor_darkest"], [pt(sx - 2, sy - h + 1),
-                                           pt(sx + 1, sy - h - 4),
+                                           pt(sx + 1, spike),
                                            pt(sx + 3, sy - h + 1)])
             poly_free(p["armor_light"], [pt(sx - 1, sy - h + 1),
-                                         pt(sx + 1, sy - h - 3),
+                                         pt(sx + 1, spike + 1),
                                          pt(sx + 2, sy - h + 1)],
-                          outline=False)
-            if side < 0:
-                _NS_gornak._aacircle(surface, p["magic_mid"], pt(sx, sy - 1),
-                                     2)
-                _NS_gornak._aacircle(surface, p["magic_shine"], pt(sx, sy - 1),
-                                     1)
+                      outline=False)
+            _NS_gornak._aacircle(surface, p["brass_mid"], pt(sx + side * 4,
+                                                            sy + 2), 1)
+            if side > 0:
+                _NS_gornak._aacircle(surface, p["magic_mid"], pt(sx - 3,
+                                                                sy - 1), 3)
+                _NS_gornak._aacircle(surface, p["magic_hot"], pt(sx - 3,
+                                                                sy - 1), 2)
 
     def _draw_gnk_head(surface, pt, poly_free, dot, f, phase, action, ward,
                        void):
-        """Kepala: krist mohawk MENEMPEL tengkorak, wajah terang, jenggot.
+        """KEPALA sebagai subjek: krist mohawk solid, wajah terang, mata
+        menyala ber-halo ungu, jenggot kepang, circlet ber-taring.
 
-        Versi lama: cincin coklat raksasa mengelilingi wajah + garis-garis
-        vertikal melayang (terbaca seperti donat bersisir). Sekarang
-        rambut = satu massa yang tumbuh dari dahi ke tengkuk, dan wajah
-        justru blok TERANG di dalam rongga gelap supaya terbaca di lane.
+        Versi awal masterwork masih terlalu "halus": rongga mata selebar 1 px
+        dan helai rambut 1 px hilang setelah smoothscale jalur hero, sehingga
+        kepala terbaca sebagai blob gelap. Sekarang volume rambut jadi SATU
+        massa terang dengan 3 duri (bukan helaian), wajah blok TERANG, dan
+        mata dua garis tebal + halo - persis cara Grimjaw (mask putih) atau
+        Kaizen (ponytail) mempertahankan focal point di skala kecil.
         """
         p = _NS_gornak.PALETTE
         hy = _NS_gornak.HEAD_Y + int(math.sin(phase * 0.62) * 0.8)
@@ -1076,78 +1165,151 @@ class _NS_gornak:
 
         # Leher & trapezius
         poly_free(p["skin_darkest"], [pt(-6, sh + 1), pt(6, sh + 1),
-                                      pt(8, sh + 5), pt(-8, sh + 5)])
-        poly_free(p["skin_mid"], [pt(-4, sh + 2), pt(4, sh + 2), pt(5, sh + 5),
-                                  pt(-5, sh + 5)], outline=False)
+                                      pt(9, sh + 5), pt(-9, sh + 5)])
+        poly_free(p["skin_mid"], [pt(-4, sh + 2), pt(4, sh + 2),
+                                  pt(6, sh + 5), pt(-5, sh + 5)],
+                  outline=False)
 
-        # ── Krist rambut (di belakang tengkorak, lebih lebar dari kepala)
+        # Massa rambut belakang (krist) - lebih besar dari tengkorak
         wave = int(math.sin(phase * 1.35) * 1.5)
-        crest = [(hx - 8, hy + 5), (hx - 10 + wave, hy - 3),
-                 (hx - 8 + wave, hy - 11), (hx - 2, hy - 12),
-                 (hx + 5, hy - 7), (hx + 6, hy + 1), (hx + 4, hy + 6)]
+        if action in ("walk", "attack", "surge"):
+            wave -= 2
+        crest = [(hx - 10, hy + 6), (hx - 13 + wave, hy - 2),
+                 (hx - 11 + wave, hy - 12), (hx - 4, hy - 15),
+                 (hx + 4, hy - 11), (hx + 7, hy - 3), (hx + 6, hy + 6)]
         poly_free(p["hair_darkest"], [pt(*q) for q in crest])
-        crest_in = [(hx - 7, hy + 3), (hx - 8 + wave, hy - 3),
-                    (hx - 6 + wave, hy - 9), (hx - 2, hy - 10),
-                    (hx + 3, hy - 6), (hx + 4, hy + 1), (hx + 3, hy + 4)]
+        crest_in = [(hx - 9, hy + 4), (hx - 11 + wave, hy - 2),
+                    (hx - 9 + wave, hy - 10), (hx - 4, hy - 13),
+                    (hx + 2, hy - 9), (hx + 5, hy - 2), (hx + 4, hy + 4)]
         poly_free(p["hair_mid"], [pt(*q) for q in crest_in], outline=False)
-        # Pemisah helai: 3 garis gelap -> terbaca sebagai rumbai, bukan pilox
-        for i in range(3):
-            bx = hx - 6 + i * 3
-            _NS_gornak._aaline(surface, p["hair_darkest"], pt(bx, hy - 1),
-                               pt(bx - 2 + wave, hy - 8 - i), 1)
-        _NS_gornak._aaline(surface, p["hair_light"], pt(hx - 5, hy - 3),
-                           pt(hx - 6 + wave, hy - 10), 1)
+        # 3 duri krist - bentuk besar, BUKAN helai 1 px (hilang saat
+        # di-scale). Duri tengah sedikit lebih pendek dan tiap duri
+        # dipisah 1 px gelap supaya tidak jadi satu kerucut "topi penyihir".
+        for i, (bx, bh) in enumerate(((-10, 11), (-3, 13), (4, 9))):
+            tipx = hx + bx - 4 + wave
+            tipy = hy - bh
+            poly_free(p["hair_light"], [pt(hx + bx - 1, hy - 3), pt(tipx, tipy),
+                                       pt(hx + bx + 4, hy - 5)],
+                      outline=False)
+            poly_free(p["hair_shine"], [pt(hx + bx, hy - 4), pt(tipx + 1,
+                                                                tipy + 2),
+                                       pt(hx + bx + 2, hy - 5)],
+                      outline=False)
+        for bx in (-6, 1):
+            _NS_gornak._aaline(surface, p["hair_darkest"], pt(hx + bx, hy - 4),
+                               pt(hx + bx - 3 + wave, hy - 12), 1)
+        # Kuncir: pita rambut ramping yang keluar dari samping kepala dan
+        # diikat cincin kuningan - menambah massa di belakang kepala tanpa
+        # jadi gumpalan di atas bahu.
+        poly_free(p["hair_dark"], [pt(hx - 10, hy - 2), pt(hx - 15 + wave, hy - 1),
+                                   pt(hx - 16 + wave, hy + 5),
+                                   pt(hx - 12, hy + 4), pt(hx - 9, hy + 1)])
+        poly_free(p["hair_mid"], [pt(hx - 11, hy), pt(hx - 14 + wave, hy + 1),
+                                 pt(hx - 12, hy + 3)], outline=False)
+        _NS_gornak._aacircle(surface, p["brass_mid"], pt(hx - 10, hy), 2)
 
-        # ── Tengkorak + rahang bidang ─────────────────────────────
-        poly_free(p["skin_darkest"], [pt(hx - 7, hy - 6), pt(hx + 7, hy - 6),
-                                      pt(hx + 8, hy + 1), pt(hx + 6, hy + 7),
-                                      pt(hx - 4, hy + 8), pt(hx - 7, hy + 2)])
-        poly_free(p["skin_mid"], [pt(hx - 6, hy - 5), pt(hx + 6, hy - 5),
-                                  pt(hx + 7, hy + 1), pt(hx + 5, hy + 5),
-                                  pt(hx - 3, hy + 6), pt(hx - 6, hy + 1)],
+        # Tengkorak + rahang bidang
+        poly_free(p["skin_darkest"], [pt(hx - 8, hy - 7), pt(hx + 8, hy - 7),
+                                      pt(hx + 9, hy + 2), pt(hx + 7, hy + 9),
+                                      pt(hx - 4, hy + 10), pt(hx - 8, hy + 3)])
+        poly_free(p["skin_mid"], [pt(hx - 7, hy - 6), pt(hx + 7, hy - 6),
+                                  pt(hx + 8, hy + 2), pt(hx + 6, hy + 8),
+                                  pt(hx - 3, hy + 9), pt(hx - 7, hy + 2)],
                   outline=False)
-        poly_free(p["skin_light"], [pt(hx - 5, hy - 4), pt(hx + 5, hy - 4),
-                                    pt(hx + 5, hy - 1), pt(hx - 5, hy - 1)],
+        # WAJAH: terang di tulang pipi, gelap di rongga mata. Aturan yang
+        # dipakai Grimjam (mask putih) / Kaizen (belang biru): SATU blok
+        # terang kecil + SATU blok gelap, bukan gradasi lebar - kalau lebar,
+        # di skala hero wajah jadi "topeng merah muda" tanpa fitur.
+        poly_free(p["skin_light"], [pt(hx - 5, hy - 1), pt(hx + 6, hy - 1),
+                                    pt(hx + 5, hy + 3), pt(hx - 3, hy + 4)],
                   outline=False)
-        # Rongga mata gelap -> mata menyala di atasnya (kontras maksimal)
-        poly_free(p["skin_darkest"], [pt(hx - 6, hy - 3), pt(hx + 7, hy - 3),
-                                      pt(hx + 7, hy - 1), pt(hx - 6, hy - 1)],
+        poly_free(p["skin_shine"], [pt(hx + 1, hy + 1), pt(hx + 5, hy + 1),
+                                     pt(hx + 5, hy + 3),
+                                     pt(hx + 1, hy + 3)], outline=False)
+        # Dahi (terang, dipisah alis gelap) + cavum mata 4 px
+        poly_free(p["skin_mid"], [pt(hx - 6, hy - 6), pt(hx + 7, hy - 6),
+                                  pt(hx + 7, hy - 4),
+                                  pt(hx - 6, hy - 4)], outline=False)
+        poly_free(p["skin_darkest"], [pt(hx - 6, hy - 4), pt(hx + 7, hy - 4),
+                                      pt(hx + 7, hy + 0), pt(hx - 6, hy + 0)],
                   outline=False)
-        for ex in (hx + 1, hx + 5):
+        # Mata menyala: dua blok + halo ungu (bukan 1 px, jangan hilang
+        # setelah smoothscale jalur hero)
+        for ex in (hx, hx + 4):
             _NS_gornak._aaline(surface, p["eye_mid"], pt(ex - 1, hy - 2),
-                               pt(ex + 1, hy - 2), 2)
+                               pt(ex + 2, hy - 2), 3)
             _NS_gornak._aaline(surface, p["eye_glow"], pt(ex, hy - 2),
-                               pt(ex + 1, hy - 2), 1)
-        ga = _NS_gornak._alpha(60 + (110 if (ward or void) else 0))
-        gx, gy = pt(hx + 3, hy - 2)
-        _NS_gornak._aacircle(surface, (*p["eye_light"], ga), (gx, gy), 3)
-        # Rahang & mulut
-        _NS_gornak._aaline(surface, p["skin_darkest"], pt(hx + 6, hy + 3),
-                           pt(hx + 8, hy + 3), 1)
-        _NS_gornak._aaline(surface, p["skin_shine"], pt(hx - 4, hy + 1),
-                           pt(hx, hy + 3), 1)
+                               pt(ex + 1, hy - 2), 2)
+        ga = _NS_gornak._alpha(95 + (110 if (ward or void) else 0))
+        gx, gy = pt(hx + 2, hy - 2)
+        _NS_gornak._aacircle(surface, (*p["eye_light"], ga), (gx, gy), 4)
+        _NS_gornak._aacircle(surface, (*p["magic_hot"], ga // 2), (gx, gy), 6)
+        # War paint ungu di pipi (sinyal warna tema, terlihat di 1x)
+        wp = _NS_gornak._alpha(190)
+        _NS_gornak._aaline(surface, (*p["magic_light"], wp), pt(hx - 4, hy + 1),
+                           pt(hx - 1, hy + 3), 1)
+        _NS_gornak._aaline(surface, (*p["magic_light"], wp), pt(hx - 5, hy + 2),
+                           pt(hx - 2, hy + 4), 1)
+        # Hidung & mulut
+        _NS_gornak._aaline(surface, p["skin_darkest"], pt(hx + 8, hy + 1),
+                           pt(hx + 8, hy + 4), 1)
+        _NS_gornak._aaline(surface, p["skin_darkest"], pt(hx + 4, hy + 5),
+                           pt(hx + 7, hy + 5), 1)
 
-        # ── Jenggot kepang: hanya rahang bawah, tidak menutupi wajah
-        poly_free(p["beard_darkest"], [pt(hx - 5, hy + 3), pt(hx + 7, hy + 3),
+        # Jenggot kepang: hanya RAHANG BAWAH (dulu sampai hy+16 -> menyatu
+        # dengan leher & dada jadi satu massa gelap).
+        poly_free(p["beard_darkest"], [pt(hx - 5, hy + 5), pt(hx + 7, hy + 5),
                                        pt(hx + 6, hy + 10), pt(hx + 2, hy + 13),
                                        pt(hx - 3, hy + 10)])
-        poly_free(p["beard_mid"], [pt(hx - 3, hy + 5), pt(hx + 5, hy + 5),
+        poly_free(p["beard_mid"], [pt(hx - 3, hy + 6), pt(hx + 5, hy + 6),
                                    pt(hx + 4, hy + 9), pt(hx + 2, hy + 11),
                                    pt(hx - 2, hy + 9)], outline=False)
-        _NS_gornak._aaline(surface, p["beard_darkest"], pt(hx + 1, hy + 5),
-                           pt(hx + 2, hy + 12), 1)
+        for i in range(3):
+            _NS_gornak._aaline(surface, p["beard_darkest"],
+                               pt(hx - 2 + i * 3, hy + 6),
+                               pt(hx - 1 + i * 3, hy + 13), 1)
+        dot(p["brass_dark"], hx + 2, hy + 13, 2)
         _NS_gornak._aacircle(surface, p["brass_mid"], pt(hx + 2, hy + 13), 1)
 
-        # ── Circlet besi pemutus sihir ─────────────────────────────
-        poly_free(p["armor_darkest"], [pt(hx - 7, hy - 6), pt(hx + 7, hy - 6),
-                                       pt(hx + 7, hy - 4), pt(hx - 7, hy - 4)])
-        poly_free(p["armor_light"], [pt(hx - 6, hy - 5.5), pt(hx + 6, hy - 5.5),
-                                     pt(hx + 6, hy - 4.5),
-                                     pt(hx - 6, hy - 4.5)], outline=False)
-        _NS_gornak._aacircle(surface, p["magic_hot"], pt(hx + 6, hy - 5), 1)
-        # Taring besi di pelipis (siluet khas, 2 px)
-        poly_free(p["armor_mid"], [pt(hx - 8, hy - 5), pt(hx - 8, hy - 9),
-                                   pt(hx - 6, hy - 5)], outline=False)
+        # Circlet besi + taring pelipis + permata ungu di dahi
+        poly_free(p["armor_darkest"], [pt(hx - 8, hy - 7), pt(hx + 8, hy - 7),
+                                       pt(hx + 8, hy - 4), pt(hx - 8, hy - 4)])
+        poly_free(p["armor_light"], [pt(hx - 7, hy - 6.5), pt(hx + 7, hy - 6.5),
+                                     pt(hx + 7, hy - 5),
+                                     pt(hx - 7, hy - 5)], outline=False)
+        _NS_gornak._aacircle(surface, p["magic_hot"], pt(hx + 6, hy - 6), 1)
+        poly_free(p["armor_mid"], [pt(hx - 9, hy - 6), pt(hx - 9, hy - 11),
+                                   pt(hx - 7, hy - 6)], outline=False)
+        poly_free(p["armor_mid"], [pt(hx + 8, hy - 6), pt(hx + 9, hy - 11),
+                                   pt(hx + 7, hy - 6)], outline=False)
+
+    def _draw_gnk_rimlight(surface, pt, f, phase, ward, void):
+        """Rim light ungu tipis di tepi yang menghadap cahaya.
+
+        Ini yang paling hilang dari render sebelumnya: semua hero masterwork
+        lain punya "sinyal" warna di tepian (Grimjam api, Vex void cyan,
+        Kaizen angin biru) sehingga terbaca saat unit bertumpuk. Gornak
+        memakai ungu anti-sihir; 1 px saja, tapi di posisi yang tepat
+        (puncak bahu, tepi pelat, punggung bilah, ujung boot).
+        """
+        p = _NS_gornak.PALETTE
+        sh = _NS_gornak.SHOULDER_Y
+        hy = _NS_gornak.HEAD_Y + int(math.sin(phase * 0.62) * 0.8)
+        pulse = 1.0 if (ward or void) else (0.72 + 0.28 * math.sin(phase * 1.8))
+        a = _NS_gornak._alpha(150 * pulse)
+        col = (*p["magic_light"], a)
+        # Puncak bahu & circlet
+        _NS_gornak._aaline(surface, col, pt(-19, sh - 8), pt(-11, sh - 9), 1)
+        _NS_gornak._aaline(surface, col, pt(7, sh - 10), pt(19, sh - 9), 1)
+        _NS_gornak._aaline(surface, col, pt(-7, hy - 8), pt(7, hy - 8), 1)
+        # Tepi pelat dada & sabuk
+        _NS_gornak._aaline(surface, col, pt(-11, sh + 1), pt(-11, -5), 1)
+        _NS_gornak._aaline(surface, (*p["magic_hot"], a), pt(-12, 1),
+                           pt(12, 1), 1)
+        # Garis cahaya di lutut & ujung boot
+        for sx in (-5, 9):
+            _NS_gornak._aaline(surface, col, pt(sx, 22), pt(sx + 1, 30), 1)
+            _NS_gornak._aacircle(surface, col, pt(sx + 1, 41), 1)
 
     def _draw_gnk_arm(surface, pt, poly_free, dot, limb, f, phase, action, ap,
                       shoulder, elbow, grip, blade_angle, blade_len, back=False,
@@ -1157,8 +1319,11 @@ class _NS_gornak:
         p = _NS_gornak.PALETTE
         base = p["skin_dark"] if back else p["skin_mid"]
         high = p["skin_mid"] if back else p["skin_light"]
-        limb(shoulder, elbow, 5 if back else 6, base, high)
-        limb(elbow, grip, 4 if back else 5, base, high)
+        # Satu tingkat lebih berisi daripada pass sebelumnya: di skala hero
+        # bilah yang panjang+terang sempat mendominasi sampai lengan terlihat
+        # seperti ranting dan pedang seperti menempel sendiri di dada.
+        limb(shoulder, elbow, 6 if back else 7, base, high)
+        limb(elbow, grip, 5 if back else 6, base, high)
         # Bracer besi: satu blok di tengah lengan bawah
         bx = int(elbow[0] * 0.4 + grip[0] * 0.6)
         by = int(elbow[1] * 0.4 + grip[1] * 0.6)
@@ -1167,9 +1332,13 @@ class _NS_gornak:
         poly_free(p["armor_light"], [pt(bx - 2, by - 2), pt(bx + 1, by - 2),
                                      pt(bx + 1, by + 2), pt(bx - 2, by + 2)],
                   outline=False)
-        # Tangan
+        # Tangan + highlight buku jari: tanpa ini bilah terlihat "menempel"
+        # di dada, bukan digenggam.
         dot(p["skin_darkest"], *grip, 3 if back else 4)
         dot(high, *grip, 2 if back else 3)
+        if not back:
+            kx, ky = pt(grip[0] + 1, grip[1] - 2)
+            _NS_gornak._aacircle(surface, p["skin_shine"], (kx, ky), 2)
         _NS_gornak._draw_gnk_blade(surface, pt, f, grip, blade_angle,
                                    blade_len, phase, action, back=back,
                                    ward=ward, void=void, surge=surge)
@@ -1322,14 +1491,23 @@ class _NS_gornak:
         p = _NS_gornak.PALETTE
         pulse = 1.0 if skill else math.sin(phase * 0.7) * 0.25 + 0.72
         K = _NS_gornak.SCALE
-        glow = pygame.Surface((int(88 * K), int(104 * K)), pygame.SRCALPHA)
-        cx, cy = int(44 * K), int(56 * K)
-        for rx, ry, col, a in ((int(30 * K), int(40 * K), "magic_darkest", 55),
-                               (int(22 * K), int(32 * K), "magic_dark", 50),
-                               (int(15 * K), int(24 * K), "magic_mid", 34)):
+        # Cakram cahaya di belakang badan. Kaizen punya piringan biru, Vex
+        # cyan, Grimjam oranye - itu yang membuat mereka "menyala" di lane
+        # walau sprite-nya kecil. Pass sebelumnya alpha Gornak cuma 34-55
+        # sehingga hilang sama sekali di skala hero; sekarang 78-120 dengan
+        # radius lebih rapat ke badan (biar tidak jadi kabut lebar).
+        glow = pygame.Surface((int(80 * K), int(96 * K)), pygame.SRCALPHA)
+        cx, cy = int(40 * K), int(50 * K)
+        for rx, ry, col, a in ((int(30 * K), int(38 * K), "magic_darkest", 78),
+                               (int(23 * K), int(30 * K), "magic_dark", 96),
+                               (int(16 * K), int(22 * K), "magic_mid", 120)):
             _NS_gornak._ellipse(glow, (*p[col], _NS_gornak._alpha(a * pulse)),
                                 (cx - rx, cy - ry, rx * 2, ry * 2))
-        surface.blit(glow, (int(x) - cx, int(y) - cy + 6))
+        _NS_gornak._ellipse(glow, (*p["magic_light"],
+                                   _NS_gornak._alpha(70 * pulse)),
+                            (cx - int(16 * K), cy - int(22 * K),
+                             int(32 * K), int(44 * K)), 1)
+        surface.blit(glow, (int(x) - cx, int(y) - cy + 8))
 
         n = 6
         for i in range(n):
@@ -1342,15 +1520,18 @@ class _NS_gornak:
             _NS_gornak._aacircle(surface, (*p["magic_shine"], a), (sx, sy), 1)
 
     def _draw_ground_rune(surface, x, y, phase, skill):
-        """Lingkaran rune ringkas di bawah kaki.
+        """Cincin rune di bawah kaki - kecil TAPI terang.
 
-        Dulu 110 px lebarnya dan lebih terang dari badan; sekarang 44 px
-        supaya karakter tetap subjek utama di lane.
+        Dulu 110 px lebarnya dan lebih terang dari badan. Sekarang
+        seukuran telapak (radius ~29 px) dengan alpha tinggi: keluarga hero
+        masterwork (kaizen / vex / grimjam) punya cincin tanah yang jelas
+        terbaca di lane, dan versi redup sebelumnya membuat Gornak terlihat
+        "mati" di samping mereka.
         """
         p = _NS_gornak.PALETTE
         pulse = math.sin(phase * 1.1) * 0.25 + 0.75
         gy = y + _NS_gornak.GROUND_DY
-        bright = 1.0 if skill else 0.8
+        bright = 1.15 if skill else 0.95
         rw, rh = _NS_gornak._s(22), _NS_gornak._s(6)
         _NS_gornak._ellipse(surface,
                             (*p["magic_darkest"],
@@ -1361,15 +1542,25 @@ class _NS_gornak:
                             (*p["magic_mid"],
                              _NS_gornak._alpha(140 * pulse * bright)),
                             (x - rw2, gy - rh2, rw2 * 2, rh2 * 2), 1)
-        t0, t1 = _NS_gornak._s(18), _NS_gornak._s(23)
+        t0, t1 = _NS_gornak._s(18), _NS_gornak._s(24)
         ty0, ty1 = _NS_gornak._s(5), _NS_gornak._s(6)
         for i in range(6):
             ang = phase * 0.4 + i * math.tau / 6
             _NS_gornak._aaline(
                 surface,
-                (*p["magic_light"], _NS_gornak._alpha(140 * pulse)),
+                (*p["magic_light"], _NS_gornak._alpha(170 * pulse * bright)),
                 (x + int(math.cos(ang) * t0), gy + int(math.sin(ang) * ty0)),
                 (x + int(math.cos(ang) * t1), gy + int(math.sin(ang) * ty1)), 1)
+        # Ring dalam tipis: bikin cincin terbaca sebagai "lambang", bukan
+        # elips kabur, tanpa menambah lebar tapak.
+        irw, irh = _NS_gornak._s(11), _NS_gornak._s(3)
+        _NS_gornak._ellipse(surface,
+                            (*p["magic_light"],
+                             _NS_gornak._alpha(150 * pulse * bright)),
+                            (x - irw, gy - irh, irw * 2, irh * 2), 1)
+        _NS_gornak._aacircle(surface, (*p["magic_shine"],
+                                       _NS_gornak._alpha(200 * pulse)),
+                             (int(x), int(gy)), 2)
         if skill in ("e", "r"):
             ew, eh = _NS_gornak._s(26), _NS_gornak._s(7)
             _NS_gornak._ellipse(

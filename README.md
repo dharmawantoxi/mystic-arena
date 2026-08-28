@@ -282,11 +282,51 @@ Portrait LOD Hero Shop: [docs/gornak_portrait_preview.png](docs/gornak_portrait_
 Perbandingan sebelum/sesudah (baris atas = renderer lama, zoom sama):
 [docs/gornak_before_after.png](docs/gornak_before_after.png).
 
-Uji regresi: `python tools/test_gornak_masterwork.py` (12 pemeriksaan: rig
+**Pass kedua — visual jalur HERO.** Setelah ukuran aman, keluhan berikutnya
+adalah Gornak-as-hero tetap kalah "hidup" dibanding grimjaw/kaizen/vex.
+Diukur dengan me-render lewat pipeline yang sama seperti game
+(`render_hero` + cache untuk lane, dan `HeroPortraits` kanvas 160×160 untuk
+Hero Shop), ketemu 5 cacat dan semuanya diperbaiki:
+
+* **Wajah jadi subjek, bukan blob.** Pass pertama menaruh blok `skin_shine`
+  selebar 11 px + rongga mata 1 px -> setelah `smoothscale` jalur hero wajah
+  jadi "topeng merah muda" tanpa fitur. Sekarang aturan keluarga: satu blok
+  terang kecil + satu blok gelap (dahi / cavum mata 4 px) dan MATA dua garis
+  2-3 px ber-halo ungu, plus sapuan perang ungu di pipi.
+* **Krist mohawk jadi massa, bukan helaian.** Helai 1 px hilang di skala
+  hero; diganti tiga duri `hair_light`/`hair_shine` dengan 1 px pemisah, dan
+  kuncir ramping ber-cincin kuningan di belakang kepala.
+* **Satu titik fokus di dada.** Garis silang + tiga titik rune terbaca sebagai
+  noda lavender -> sekarang pelat gelap dengan tepi atas `armor_shine` dan
+  SATU permata `magic_hot` yang membesar saat Counterspell/Mana Void.
+* **Sisi jauh dibiarkan gelap.** Pauldron belakang sempat memakai
+  `armor_light`+`shine` sehingga muncul "sayap" pucat yang mengungguli wajah;
+  cahaya dan permata tema sekarang hanya di sisi depan.
+* **Anggota badan proporsional.** Dua bilah horizontal sejajar terbaca sebagai
+  "palang" yang menenggelamkan badan -> bilah depan diangkat diagonal
+  (+1.78 rad), belakang menukik (-1.00): lebar siluet tetap ~1.05 W/H tapi
+  kepala & dada yang jadi subjek. Loincloth dipersempit (dulu mengubah dua
+  kaki jadi satu tiang ungu) dan lengan dinaiki satu tingkat.
+* **Sinyal warna keluarga.** Kaizen/Vex/Grimjam punya piringan cahaya +
+  cincin tanah yang jelas; aura Gornak alpha 34-55 sehingga mati total di
+  lane. Sekarang cakram ungu 78-120 + cincin rune dalam + titik terang.
+* **Portrait Hero Shop tidak lagi terpotong.** Bilah depan (panjang +82 px
+  dari jangkar) melewati tepi kanvas 160×160 lalu di-crop; di mode portrait
+  konten dipusatkan pada bbox-nya sendiri, jalur boss 1× tidak berubah.
+
+```
+hero 1x (render akhir, alpha>=100)   H    W   kaki di bawah posisi
+grimjaw 74x79 · kaizen 75x82 · vex 76x84 · gornak 83x84
+```
+
+Uji regresi: `python tools/test_gornak_masterwork.py` (13 pemeriksaan: rig
 tunggal, kaki menapak, W/H dan **ukuran harus sama dengan keluarga**
 (boss vs morgath/drakar/abaddon, hero vs grimjaw/kaizen), bilah tidak
 menembus dada, proc di ujung bilah, outline, portrait LOD, frame per-sendi,
-Q/W/E/R jalur boss **dan** hero, tidak di-upscale, budget ms/frame).
+Q/W/E/R jalur boss **dan** hero, tidak di-upscale, budget ms/frame, plus
+`test_hero_visual_quality` yang mengunci jalur hero: portrait tidak terpotong
+di kanvas 160, mata & warna tema harus muncul di badan, dua kaki tetap
+terpisah, dan cakram cahaya tetap ada di lane).
 Review sheet: `python tools/_shot_gornak_masterwork.py` dan
 `python tools/_shot_gornak_before_after.py`.
 
