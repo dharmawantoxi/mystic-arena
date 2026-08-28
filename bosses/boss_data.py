@@ -11679,6 +11679,106 @@ _smooth_boss_progression()
 _apply_boss_curve_overrides()
 
 
+# ═══════════════════════════════════════════════════════════════
+# BALANCE PASS 2026-08: hero unlock (hero boss yang bisa direkrut)
+# ═══════════════════════════════════════════════════════════════
+# Stat hero_unlock diturunkan dari boss aslinya, jadi ikut masalah
+# kurva: skill_damage 0 (gorath — skill tidak berdamage), hero yang
+# LEBIH MAHAL kadang lebih lemah dari yang murah (tidak monoton),
+# dan outlier ekstrem dalam band cost yang sama (mis. thoraz 525
+# dps vs kazuren 691 dps, sama-sama cost 8600).
+#
+# Metode:
+#   1. Fix bug: skill_damage <= 0 diganti nilai dari trend.
+#   2. Clamp outlier: hp / dps / skill di luar [0.75, 1.30]x trend
+#      ditarik ke [0.85, 1.20]x trend. DPS dikonversi balik ke
+#      damage supaya attack_cooldown tiap hero tetap.
+#   3. Monotonic: running max per stat per class (urut cost).
+# Trend dihitung PER CLASS (mini vs true) supaya identitas tetap:
+# true boss hero = tankier (hp/gold lebih tinggi), mini boss hero =
+# dps lebih tinggi. cost, speed, range, attack_cooldown, skill
+# cooldown/range, warna & deskripsi TIDAK diubah. Pemain & AI
+# memakai stat yang sama (tanpa handicap).
+
+def _hero_unlock_trend(values_by_cost):
+    """Least-squares linear fit stat ~ cost (tanpa numpy)."""
+    n = len(values_by_cost)
+    if n == 0:
+        return 0.0, 0.0
+    costs = [c for c, _ in values_by_cost]
+    vals = [v for _, v in values_by_cost]
+    mx = sum(costs) / n
+    my = sum(vals) / n
+    sxx = sum((c - mx) ** 2 for c in costs)
+    sxy = sum((c - mx) * (v - my) for c, v in zip(costs, vals))
+    if sxx == 0:
+        return 0.0, my
+    a = sxy / sxx
+    return a, my - a * mx
+
+
+def _normalize_hero_unlock_stats():
+    for table in (MINI_BOSS_TYPES, TRUE_BOSS_TYPES):
+        heroes = [(bt, bd["hero_unlock"])
+                  for bt, bd in table.items() if bd.get("hero_unlock")]
+        heroes.sort(key=lambda h: h[1].get("cost", 0))
+
+        hp_fit = _hero_unlock_trend(
+            [(hu.get("cost", 0), hu.get("hp", 0)) for _, hu in heroes])
+        dps_fit = _hero_unlock_trend([(
+            hu.get("cost", 0),
+            hu.get("damage", 0) / max(1, hu.get("attack_cooldown", 30)) * 60.0
+        ) for _, hu in heroes])
+        sk_fit = _hero_unlock_trend([
+            (hu.get("cost", 0), hu.get("skill_damage", 0))
+            for _, hu in heroes])
+
+        def clamp(v, pred):
+            if pred <= 0:
+                return v
+            if v <= 0 or v < 0.70 * pred:
+                return max(v, 0.80 * pred)
+            if v > 1.30 * pred:
+                return min(v, 1.20 * pred)
+            return v
+
+        for _, hu in heroes:
+            cost = hu.get("cost", 0)
+            # 1) Fix skill_damage <= 0 + clamp skill
+            hu["skill_damage"] = int(round(
+                clamp(hu.get("skill_damage", 0), sk_fit[0] * cost + sk_fit[1])))
+            # 2) Clamp hp
+            hu["hp"] = int(round(
+                clamp(hu.get("hp", 0), hp_fit[0] * cost + hp_fit[1])))
+            # 3) Clamp dps -> konversi balik ke damage
+            cd = max(1, hu.get("attack_cooldown", 30))
+            cur_dps = hu.get("damage", 0) / cd * 60.0
+            new_dps = clamp(cur_dps, dps_fit[0] * cost + dps_fit[1])
+            if new_dps != cur_dps:
+                hu["damage"] = int(round(new_dps * cd / 60.0))
+
+        # 4) Monotonic dengan toleransi: hanya angkat kalau turun
+        #    >15% dari max sebelumnya (dip kecil = variasi desain,
+        #    dip besar = anomali nyata).
+        m_hp = m_dmg = m_sk = 0
+        for _, hu in heroes:
+            if hu["hp"] < 0.85 * m_hp:
+                hu["hp"] = m_hp
+            else:
+                m_hp = max(m_hp, hu["hp"])
+            if hu["damage"] < 0.85 * m_dmg:
+                hu["damage"] = m_dmg
+            else:
+                m_dmg = max(m_dmg, hu["damage"])
+            if hu["skill_damage"] < 0.85 * m_sk:
+                hu["skill_damage"] = m_sk
+            else:
+                m_sk = max(m_sk, hu["skill_damage"])
+
+
+_normalize_hero_unlock_stats()
+
+
 def get_all_boss_types():
     """Get gabungan semua boss types"""
     all_bosses = {}
