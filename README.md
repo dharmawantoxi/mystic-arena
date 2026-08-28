@@ -416,6 +416,60 @@ Review sheet: `python tools/_shot_morgath_masterwork.py` ->
 [docs/morgath_before_after.png](docs/morgath_before_after.png),
 [docs/morgath_portrait_preview.png](docs/morgath_portrait_preview.png).
 
+### Contoh maksimal kesembilan: Drakar Masterwork (mini boss + hero)
+
+Drakar — *The Might of the Red Mist*, mini boss berserker terbesar level 1
+yang juga bisa di-unlock jadi hero — adalah boss terakhir yang masih memakai
+renderer tumpukan body-part statis. Renderer lamanya
+(`_draw_drk_body/_legs/_waist/_torso/_arm_*/head/_wild_hair` + pose router
+lama) **dihapus total** dan diganti satu **bone rig 2D berlapis** di
+`bosses/level1.py`, para dengan Gornak & Morgath.
+
+Diukur dari render (alpha>=100), yang salah waktu itu:
+
+| | sebelum | sesudah | catatan |
+|---|---|---|---|
+| bbox solid idle | **190 x 138 px** | **99 x 147 px** | bbox lama menggelembung oleh puluhan partikel darah acak yang berserakan; badan aslinya blob kotak kecil. Baru: rapat badan, peringkat boss terbesar level 1 terjaga |
+| kapak | poligon "kertas" melayang di samping tangan statis | **greataxe dua tangan**: kedua pergelangan lahir dari titik DI GAGANG (`_back_hand_u`), sudut dari tabel pose `_axe_angle` | kapak tidak pernah lepas dari tangan di semua pose |
+| pose | idle/walk/attack hampir identik | rest -> wind-up -> **cleave + impact hold** -> recovery; Q/W/E/R masing-masing stance sendiri | kurva `_attack_curve`: anticipation -> swing cepat -> HOLD -> rebound |
+| pita cleave | tidak ada | **lahir dari MATA KAPAK** (lintasan `_axe_head_local`) | senjata terbaca mengayun, bukan efek tempel |
+| kepala | gumpalan merah + mata dua titik | leher tebal, mane jatuh ke bahu, helm setengah + **dua tanduk banteng ke atas**, **dua mata amber ber-halo** (halo digambar sebelum blok mata) | focal point wajah terbaca di skala 1x |
+| W Counter Helix | cincin elips 190 px meluber ke segala arah | piringan helix 108 px yang lahir dari sudut kapak + cincin tanah berputar | badan tetap subjek |
+| R Culling Blade | ledakan bola generik | charge di mata kapak -> **sabit eksekusi** lintasan kapak ke target -> mekar + bara jatuh | tiga babak yang terbaca |
+| biaya render | ~1,3 ms/frame | **1,76 ms/frame** (idle+aura+rune+lighting, boss 1x) | jalur hero ter-cache 0,009 ms/frame |
+
+Yang dilakukan (pola konsisten standar Gornak/Morgath):
+
+* **SATU rig, satu pemetaan koordinat.** `SCALE=1.10`, `LIFT=6`,
+  `FEET_DY=48` -> `GROUND_DY=47`; `pt()` ikut bob/lean, `ptg()` mematok
+  telapak ke tanah, semua FX lewat `_local_to_screen` yang sama.
+* **Sudut kapak DITABEL per pose** (bukan diturunkan dari lengan) supaya
+  bilah tidak pernah menyayat badannya sendiri; batas segmen wind-up/tebas/
+  recovery jatuh persis di batas `_attack_curve`.
+* **LOD dua tingkat:** arena mempertahankan siluet bersih; portrait Hero
+  Shop (`_portrait_hd`) membuang FX arena, memusatkan konten ke bbox, dan
+  menambah helai mane, serat jenggot, tato perang, serta ukiran rune di
+  bilah. Tetap 100% procedural — tanpa PNG atau `image.load`.
+* **Pass cahaya & outline:** buffer rig -> `lighting.apply_to_rig`
+  (GRAD_BOX tetap) -> outline siluet 1 px 4 arah -> blit. Jalur lane hero
+  melewati `heroes._finish_hd_sprite` (pass cahaya di-skip supaya tidak
+  dobel; penanda `_HERO_LANE`).
+* **SKILL_DUR dikunci ke timer AI**: q=90, w=45, e=60, r=60 (diuji
+  silang ke `bosses/base_boss.py` dan `hero_skills/_bundle.py`).
+
+Uji regresi: `python tools/test_drakar_masterwork.py` (14 pemeriksaan:
+rig tunggal & tanpa `image.load`, badan padat menapak garis bayangan,
+mata amber terbaca sebagai dua klaster, geometri kapak pose-driven &
+dua tangan di gagang, kurva serangan monoton dengan impact hold, pita
+cleave lahir dari mata kapak, outline siluet, portrait LOD terpusat tanpa
+FX tanah, gerak sekunder kepala/debu/kedip, frame walk dihitung per-sendi,
+router pose Q/W/E/R untuk jalur boss + hero, skala hero wajar, durasi
+skill sinkron, dan ukuran keluarga terjaga). Review sheet:
+`python tools/_shot_drakar_masterwork.py` ->
+[docs/drakar_masterwork_preview.png](docs/drakar_masterwork_preview.png),
+[docs/drakar_before_after.png](docs/drakar_before_after.png),
+[docs/drakar_portrait_preview.png](docs/drakar_portrait_preview.png).
+
 ## Pass cahaya bersama (lighting.py)
 
 Renderer prosedural membangun volume dengan blok nilai yang di-author manual

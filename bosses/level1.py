@@ -15,10 +15,11 @@ PALETTE, _aacircle, _draw_shadow, _target_position.
 Kode di dalam tiap namespace aslinya TIDAK diubah isinya; hanya
 referensi antar-simbol yang diberi prefix.
 
-KECUALI gornak: namespace-nya sudah dibangun ulang sebagai "Procedural
-Masterwork" (satu bone rig 2D berlapis + outline siluet + LOD portrait,
-bilah pose-driven). Regresinya: tools/test_gornak_masterwork.py dan
-sheet review-nya: tools/_shot_gornak_masterwork.py.
+KECUALI gornak dan drakar: kedua namespace-nya sudah dibangun ulang
+sebagai "Procedural Masterwork" (satu bone rig 2D berlapis + outline
+siluet + LOD portrait, senjata pose-driven). Regresi gornak:
+tools/test_gornak_masterwork.py, drakar: tools/test_drakar_masterwork.py;
+sheet review masing-masing: tools/_shot_*_masterwork.py.
 
 Entry point publik ada di bagian paling bawah file.
 """
@@ -3804,83 +3805,170 @@ class _NS_morgath:
                                          jitter=5, segments=6, width=1)
 
 # ====================================================================
-# DRAKAR (AXE) - Mini Boss HD (Redesigned)
+# DRAKAR (AXE) - PROCEDURAL MASTERWORK
+# ====================================================================
+# Rebuild total (para dengan gornak/morgath): SATU bone rig 2D berlapis.
+#
+# Drakar lama ditumpuk dari body-part statis (_draw_drk_body/_legs/_head):
+# badan kotak yang menyatu, kepala gumpalan, dan kapak "kertas" yang tidak
+# pernah tersambung ke tangan. Sekarang:
+#   * 100% prosedural - tanpa PNG / sprite sheet.
+#   * Semua bagian lahir dari SENDI di ruang lokal (y=0 = pinggul);
+#     kaki terpatok tanah (ptg), badan ikut bob/lean (pt).
+#   * Kapak dua tangan: kedua lengan menempel ke TITIK DI GAGANG yang
+#     dihitung dari sudut pose -> kapak tidak pernah lepas dari tangan.
+#   * Sudut kapak DITABEL per pose (bukan diturunkan dari lengan) supaya
+#     bilah tidak pernah menyayat badannya sendiri.
+#   * Outline siluet gelap 1 px (4 arah) -> unit tetap terpisah saat
+#     bertumpuk di lane.
+#   * LOD portrait: efek tanah/aura dibuang, konten dipusatkan ke bbox.
+#   * FX (cleave trail, helix, roar, culling) memakai pose yang SAMA
+#     dengan badan lewat _resolve_pose + _tip_screen.
+#
+# Regresi: tools/test_drakar_masterwork.py,
+# sheet   : tools/_shot_drakar_masterwork.py
 # ====================================================================
 import math
 import pygame
 
 
 class _NS_drakar:
-    """Namespace drakar - Axe berserker mini boss (HD scale)."""
+    """Namespace drakar - axe berserker mini boss (procedural masterwork).
+
+    "The Might of the Red Mist": berserker merah terbesar di keluarga
+    mini boss (rujukan H138). Sinyal warna keluarga: DARAH & EMBER
+    (crimson/oranye) - sama seperti Grimjam (api) / Vex (void cyan),
+    supaya terbaca dari jauh. Focal point: mata amber menyala + kapak
+    perang dua tangan yang selalu terbaca sebagai senjata.
+    """
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
 
+    # ------------------------------------------------------------------
+    # KALIBRASI KELUARGA (diukur dari render, alpha >= 100):
+    #   boss 1x : morgath H82/W120, drakar H138/W190, abaddon H122/W150
+    # Badan padat baru menarget ~H130-140 (boss terbesar se-level),
+    # rasio W/H ~1.0 lewat kapak-di-bahu + pauldron duri + pelt.
+    # ------------------------------------------------------------------
+    SCALE = 1.10
+    # Jangkar boss = pusat hitbox; LIFT menurunkan badan sedikit supaya
+    # dagu tidak menempel ke HP bar (y-r-15..y-r-7, r=32).
+    LIFT = 6
+    # Telapak dalam RUANG LOKAL; garis tanah dunia diturunkan dari sini
+    # supaya bayangan, rune tanah, dan telapak tidak pernah saling lepas.
+    FEET_DY = 48
+    GROUND_DY = int(round(FEET_DY * SCALE)) - LIFT        # ~ 47
+
+    # Buffer rig: dibatasi dari extents TERUKUR semua pose (idle/walk/
+    # attack/4 stance skill, dua LOD) + margin 4 px (outline digambar di
+    # luar buffer, jadi tidak dihitung). Dikunci oleh
+    # tools/test_drakar_masterwork.py.
+    RIG_W, RIG_H = 184, 184
+    RIG_OX, RIG_OY = 93, 118
+
+    # Bidang acuan pass cahaya TETAP di dalam buffer (alasan sama dengan
+    # GRAD_BOX gornak: kalau ikut bbox, arah cahaya bergeser tiap ganti
+    # pose dan terbaca sebagai lampu berkedip).
+    GRAD_BOX = (RIG_OX - 42, RIG_OY - 66, 88, 118)
+
+    # Durasi status skill (frame) - HARUS sama dengan active_skill_timer
+    # yang diisi AI boss (bosses/base_boss.py: q=90 w=45 e=60 r=60) dan
+    # skill hero (hero_skills/_bundle.py). Dikunci oleh
+    # tools/test_drakar_masterwork.py.
+    SKILL_DUR = {"q": 90, "w": 45, "e": 60, "r": 60}
+
+    # Penanda "sedang di-render ke canvas hero" (lane). Dipasang
+    # per-frame oleh draw_drakar, dipakai _draw_drk_rig_at untuk memutuskan
+    # siapa yang mengerjakan pass cahaya (hindari rim dobel di lane).
+    class _HERO_LANE:
+        v = False
+
     PALETTE = {
-        # Skin (red - main body color)
-        "skin_darkest": (55, 15, 15),
-        "skin_dark": (110, 30, 25),
-        "skin_mid": (170, 55, 40),
-        "skin_light": (215, 95, 70),
-        "skin_shine": (240, 145, 110),
+        # Kulit merah bata (cahaya dari depan-atas)
+        "skin_darkest": (46, 12, 14),
+        "skin_dark": (104, 28, 26),
+        "skin_mid": (164, 52, 42),
+        "skin_light": (210, 94, 70),
+        "skin_shine": (242, 148, 110),
 
-        # Hair / beard (black-dark)
-        "hair_darkest": (8, 6, 10),
-        "hair_dark": (28, 22, 28),
-        "hair_mid": (55, 45, 50),
-        "hair_light": (95, 80, 85),
+        # Rambut / jenggot hitam kebiruan
+        "hair_darkest": (7, 6, 10),
+        "hair_dark": (26, 22, 30),
+        "hair_mid": (52, 46, 58),
+        "hair_light": (94, 84, 96),
+        "hair_shine": (134, 124, 138),
 
-        # Leather (dark brown)
-        "leather_darkest": (22, 12, 6),
-        "leather_dark": (55, 32, 18),
-        "leather_mid": (95, 62, 38),
-        "leather_light": (140, 100, 65),
+        # Kulit (leather) cokelat gelap
+        "leather_darkest": (19, 11, 6),
+        "leather_dark": (52, 30, 17),
+        "leather_mid": (92, 60, 36),
+        "leather_light": (138, 98, 62),
+        "leather_edge": (178, 132, 84),
 
-        # Metal armor (dark iron)
-        "armor_darkest": (15, 12, 15),
-        "armor_dark": (42, 38, 45),
-        "armor_mid": (85, 78, 88),
-        "armor_light": (140, 132, 142),
-        "armor_shine": (200, 195, 205),
+        # Zirah besi gelap
+        "armor_darkest": (13, 11, 16),
+        "armor_dark": (40, 36, 48),
+        "armor_mid": (84, 78, 92),
+        "armor_light": (138, 130, 144),
+        "armor_shine": (204, 198, 212),
 
-        # Axe blade (steel)
-        "blade_darkest": (18, 15, 22),
-        "blade_dark": (55, 50, 62),
-        "blade_mid": (115, 108, 125),
-        "blade_light": (185, 178, 195),
-        "blade_shine": (240, 235, 250),
+        # Bilah kapak (baja)
+        "blade_darkest": (15, 12, 20),
+        "blade_dark": (50, 44, 60),
+        "blade_mid": (112, 104, 126),
+        "blade_light": (184, 176, 198),
+        "blade_shine": (242, 236, 252),
 
-        # Blood (bright red)
-        "blood_darkest": (45, 5, 10),
-        "blood_dark": (110, 15, 20),
-        "blood_mid": (185, 25, 35),
-        "blood_light": (235, 55, 60),
-        "blood_hot": (255, 100, 90),
-        "blood_shine": (255, 180, 160),
+        # Darah / rage (sinyal warna tema)
+        "blood_darkest": (56, 8, 10),
+        "blood_dark": (142, 24, 20),
+        "blood_mid": (218, 52, 32),
+        "blood_light": (252, 106, 56),
+        "blood_hot": (255, 172, 112),
+        "blood_shine": (255, 214, 168),
 
-        # Rage aura (crimson glow)
-        "rage_darkest": (60, 10, 5),
-        "rage_dark": (140, 30, 15),
-        "rage_mid": (220, 55, 30),
-        "rage_light": (255, 110, 60),
-        "rage_hot": (255, 180, 120),
+        # Kabut rage (aura)
+        "mist_darkest": (44, 6, 8),
+        "mist_dark": (116, 18, 18),
+        "mist_mid": (192, 40, 34),
+        "mist_light": (238, 84, 52),
+        "mist_shine": (255, 152, 110),
 
-        # Eye glow (yellow-red berserker)
-        "eye_dark": (80, 30, 10),
-        "eye_mid": (200, 90, 20),
-        "eye_light": (255, 180, 60),
-        "eye_glow": (255, 240, 180),
+        # Mata amber berserker
+        "eye_dark": (92, 32, 8),
+        "eye_mid": (214, 102, 22),
+        "eye_light": (255, 184, 62),
+        "eye_glow": (255, 242, 190),
 
-        # Ground rune
-        "rune_dark": (30, 8, 10),
-        "rune_mid": (140, 30, 30),
-        "rune_light": (230, 70, 60),
+        # Kuningan
+        "brass_dark": (72, 46, 16),
+        "brass_mid": (148, 102, 34),
+        "brass_light": (208, 162, 74),
+
+        # Tulang (tanduk helm, gesper tengkorak)
+        "bone_darkest": (50, 42, 34),
+        "bone_dark": (106, 94, 74),
+        "bone_mid": (170, 156, 126),
+        "bone_light": (224, 214, 184),
+
+        # Rune tanah
+        "rune_dark": (34, 6, 10),
+        "rune_mid": (166, 30, 30),
+        "rune_light": (234, 72, 56),
+        "rune_shine": (255, 142, 110),
+
+        # Debu langkah
+        "dust": (118, 86, 64),
 
         "shadow": (0, 0, 0),
         "shadow_deep": (3, 1, 2),
         "white": (255, 255, 255),
     }
 
+    # ------------------------------------------------------------------
+    # HELPER GAMBAR (aman terhadap warna rgba & backend tanpa aacircle)
+    # ------------------------------------------------------------------
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
 
@@ -3888,7 +3976,6 @@ class _NS_drakar:
         return max(0, min(255, int(v)))
 
     def _rgba(color, alpha):
-        """Safely build rgba tuple."""
         r, g, b = color[0], color[1], color[2]
         return (max(0, min(255, int(r))),
                 max(0, min(255, int(g))),
@@ -3930,73 +4017,41 @@ class _NS_drakar:
     def _poly(surface, color, points):
         pygame.draw.polygon(surface, _NS_drakar._clamp(color), points)
 
+    def _ellipse(surface, color, rect, width=0):
+        if width and len(color) == 4:
+            rx, ry, rw, rh = (int(rect[0]), int(rect[1]),
+                              int(rect[2]), int(rect[3]))
+            if rw <= 0 or rh <= 0:
+                return
+            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
+            pygame.draw.ellipse(temp, color, (2, 2, rw, rh), width)
+            surface.blit(temp, (rx - 2, ry - 2))
+            return
+        pygame.draw.ellipse(surface, _NS_drakar._clamp(color),
+                            (int(rect[0]), int(rect[1]),
+                             int(rect[2]), int(rect[3])), width)
+
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
             # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
+            # DENGAN kompensasi scale. Hero di-render ke canvas offscreen
+            # lalu di-scale saat blit (heroes/__init__.py), jadi titik
+            # canvas = (delta dunia)/scale supaya FX mendarat TEPAT di
+            # target setelah blit. Boss 1x (scale=1) tidak terpengaruh.
             scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
             tx = x + (target.x - getattr(boss, "x", x)) / scale
             ty = y + (target.y - getattr(boss, "y", y)) / scale
             return int(tx), int(ty)
-        return int(x + 220 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+        return (int(x + 120.0 / float(getattr(boss, "_render_scale", 1.0)
+                                 or 1.0) * getattr(boss, "direction", 1)),
+                int(y))
 
-    # ============================================================
-    # ENTRY POINT
-    # ============================================================
-    def draw_drakar(surface, boss, x, y):
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_drakar._detect_moving(boss)
-        _NS_drakar._update_drk_attack_anim(boss)
-        attacking = (
-            getattr(boss, "_drk_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 40) - 15
-        )
-
-        # Bigger ambient behind (Vhorethzir-scale)
-        _NS_drakar._draw_rage_aura(surface, x, y, pulse)
-        _NS_drakar._draw_ground_ring(surface, x, y + 76, pulse, active_skill)
-
-        # Skill ground FX
-        if active_skill == "q":
-            _NS_drakar._draw_battlehunger_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_drakar._draw_counterhelix_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_drakar._draw_berserkerscall_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_drakar._draw_cullingblade_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # Body
-        if active_skill == "w":
-            _NS_drakar._draw_drk_helix(surface, boss, x, y, skill_timer, pulse)
-        elif attacking:
-            _NS_drakar._draw_drk_attack(surface, boss, x, y)
-        elif moving:
-            _NS_drakar._draw_drk_walk(surface, boss, x, y)
-        else:
-            _NS_drakar._draw_drk_idle(surface, boss, x, y)
-
-        # Foreground FX
-        if active_skill == "q":
-            _NS_drakar._draw_battlehunger_foreground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_drakar._draw_berserkerscall_foreground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_drakar._draw_cullingblade_foreground(surface, boss, x, y, skill_timer, pulse)
-
-    # ============================================================
-    # ANIMATION STATE
-    # ============================================================
+    # ==================================================================
+    # STATE ANIMASI
+    # ==================================================================
     def _update_drk_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 48)))
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 46)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_drk_previous_timer", 0))
         active = bool(getattr(boss, "_drk_attack_active", False))
@@ -4004,15 +4059,14 @@ class _NS_drakar:
         if timer >= cooldown - 1 and previous <= 1:
             boss._drk_attack_active = True
             boss._drk_attack_frame = 0
-            # Kunci arah swing saat serangan dimulai. Sebelumnya
-            # swing pakai direction LIVE: hero (versi summon) yang
-            # kena hit lalu retreat/chase berbalik tiap frame,
-            # sehingga lunge, axe trail & impact burst ikut
-            # terbalik-balik -> swing kacau.
+            # Kunci arah swing saat serangan dimulai: hero (versi summon)
+            # yang kena hit lalu retreat/chase berbalik tiap frame, sehingga
+            # tanpa kunci ini lunge, trail & impact ikut terbalik-balik.
             boss._drk_attack_dir = int(getattr(boss, "direction", 1))
             active = True
         elif active and timer > 0:
-            boss._drk_attack_frame = int(getattr(boss, "_drk_attack_frame", 0)) + 1
+            boss._drk_attack_frame = int(getattr(boss, "_drk_attack_frame",
+                                                  0)) + 1
         elif timer <= 0:
             boss._drk_attack_active = False
             boss._drk_attack_frame = 0
@@ -4020,2179 +4074,1913 @@ class _NS_drakar:
 
         boss._drk_previous_timer = timer
         boss._drk_attack_progress = (
-            min(1.0, getattr(boss, "_drk_attack_frame", 0) / max(1, cooldown - 1))
+            min(1.0, boss._drk_attack_frame / max(1, cooldown - 1))
             if active else 0.0
         )
 
     def _detect_moving(boss):
+        cur_x = float(getattr(boss, "x", 0.0))
+        cur_y = float(getattr(boss, "y", 0.0))
         if not hasattr(boss, "_drk_last_x"):
-            boss._drk_last_x = boss.x
-            boss._drk_last_y = boss.y
+            boss._drk_last_x = cur_x
+            boss._drk_last_y = cur_y
             return False
-        dx = abs(boss.x - boss._drk_last_x)
-        dy = abs(boss.y - boss._drk_last_y)
-        boss._drk_last_x = boss.x
-        boss._drk_last_y = boss.y
-        return dx + dy > 0.3
+        moved = abs(cur_x - boss._drk_last_x) + abs(cur_y - boss._drk_last_y)
+        boss._drk_last_x = cur_x
+        boss._drk_last_y = cur_y
+        return moved > 0.3
 
-    # ============================================================
-    # POSE ROUTERS
-    # ============================================================
-    def _draw_drk_idle(surface, boss, x, y):
-        # Heavy breathing bob
-        bob = int(math.sin(boss.pulse * 0.5) * 6)
-        _NS_drakar._draw_shadow(surface, x, y + 80)
-        _NS_drakar._draw_rage_mist(surface, x, y + 60, boss.pulse)
-        _NS_drakar._draw_drk_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+    # ==================================================================
+    # POSE STATE - satu sumber kebenaran untuk rig DAN semua FX
+    # ==================================================================
+    ACTIONS = ("idle", "walk", "attack", "rage", "helix", "call", "cull")
 
-    def _draw_drk_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.0
-        bob = int(abs(math.sin(phase * 1.1)) * 5)
-        sway = int(math.sin(phase * 0.8) * 3)
-        _NS_drakar._draw_shadow(surface, x + sway, y + 80)
-        _NS_drakar._draw_rage_mist(surface, x + sway, y + 60, phase, trail=True,
-                                    facing=boss.direction)
-        _NS_drakar._draw_drk_body(surface, x + sway, y - bob + 2, boss.direction,
-                                   phase, "walk")
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, ap) - dipakai rig DAN anchor FX agar sinkron.
 
-    def _draw_drk_attack(surface, boss, x, y):
-        # Progress LIVE dari attack_timer (bukan counter frame yang
-        # hanya naik saat renderer dipanggil). Dengan body hero di-
-        # cache, renderer dipanggil tiap N frame; progress tetap maju
-        # tiap frame supaya fase swing tidak membeku.
-        t = int(getattr(boss, "timer", 0) or 0)
-        cd = max(2, int(getattr(boss, "attack_cooldown", 46)))
-        if getattr(boss, "_drk_attack_active", False) or t > cd - 15:
-            progress = max(0.0, min(1.0, (cd - 1 - t) / max(1.0, float(cd - 1))))
+        Murni/tanpa efek samping: boleh dipanggil ulang oleh fungsi efek.
+        """
+        active_skill = getattr(boss, "active_skill", None)
+        if active_skill == "e":
+            action = "call"
+        elif active_skill == "r":
+            action = "cull"
+        elif active_skill == "q":
+            action = "rage"
+        elif active_skill == "w":
+            action = "helix"
+        elif (getattr(boss, "_drk_attack_active", False)
+              or getattr(boss, "timer", 0) >
+              getattr(boss, "attack_cooldown", 46) - 15):
+            action = "attack"
+        elif moving:
+            action = "walk"
         else:
-            progress = 0.0
+            action = "idle"
 
-        # Arah swing terkunci saat serangan dimulai (lihat
-        # _update_drk_attack_anim). Fallback ke arah live kalau
-        # state kunci tidak ada.
-        facing = getattr(boss, "_drk_attack_dir", None)
-        if facing is None:
-            facing = boss.direction
-
-        # Two-handed swing has bigger body movement
-        if progress < 0.15:
-            # Anticipation - crouch
-            t = progress / 0.15
-            lunge = -int(t * 4) * facing
-            lift = -int(t * 4)
-        elif progress < 0.40:
-            # Wind-up - lean back, rise up
-            t = (progress - 0.15) / 0.25
-            lunge = -int(4 + t * 4) * facing
-            lift = int(-4 + t * 10)
-        elif progress < 0.55:
-            # EXPLOSIVE SWING - lunge forward hard
-            t = (progress - 0.40) / 0.15
-            t_ease = 1 - (1 - t) ** 2
-            lunge = int((-8 + t_ease * 28)) * facing
-            lift = int(6 - t_ease * 10)
-        elif progress < 0.70:
-            # Impact hold - screen shake feel
-            t = (progress - 0.55) / 0.15
-            shake_x = int(math.sin(t * 30) * 3 * (1 - t))
-            lunge = int(20 + shake_x) * facing
-            lift = int(-4 - t * 2)
-        else:
-            # Recovery
-            t = (progress - 0.70) / 0.30
-            t_ease = 1 - (1 - t) ** 2
-            lunge = int(20 * (1 - t_ease)) * facing
-            lift = int(-6 + t_ease * 6)
-
-        _NS_drakar._draw_shadow(surface, x + lunge, y + 80)
-        _NS_drakar._draw_rage_mist(surface, x + lunge, y + 60, boss.pulse, intense=True)
-        _NS_drakar._draw_drk_body(surface, x + lunge, y - lift, facing,
-                                   boss.pulse, "attack", progress)
-        _NS_drakar._draw_axe_slash_trail(surface, boss, x + lunge, y - lift, progress)
-        if 0.53 <= progress <= 0.70:
-            _NS_drakar._draw_impact_burst(surface, boss, x + lunge, y - lift, progress)
-
-    def _draw_drk_helix(surface, boss, x, y, timer, phase):
-        """Counter Helix - spinning."""
-        duration = 40
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        spin = progress * math.pi * 8
-
-        bob = int(math.sin(progress * math.pi) * -5)
-        _NS_drakar._draw_shadow(surface, x, y + 80)
-        _NS_drakar._draw_rage_mist(surface, x, y + 60, phase, intense=True)
-
-        # Big spinning red crescent slash around boss
-        slash_surf = pygame.Surface((280, 280), pygame.SRCALPHA)
-        center = (140, 140)
-        radius = 72
-
-        for arm_i in range(2):
-            arm_start = spin + arm_i * math.pi
-            arc_pts = []
-            steps = 24
-            arc_span = math.pi * 0.9
-            for i in range(steps + 1):
-                a = arm_start + arc_span * i / steps
-                px = center[0] + int(math.cos(a) * radius)
-                py = center[1] + int(math.sin(a) * radius * 0.7)
-                arc_pts.append((px, py))
-
-            for layer_i, (r_off, thick, color, a_mult) in enumerate([
-                (4, 10, _NS_drakar.PALETTE["blood_darkest"], 0.7),
-                (2, 8, _NS_drakar.PALETTE["blood_dark"], 0.85),
-                (0, 6, _NS_drakar.PALETTE["blood_mid"], 1.0),
-                (-1, 4, _NS_drakar.PALETTE["blood_light"], 1.0),
-                (-2, 2, _NS_drakar.PALETTE["blood_hot"], 1.0),
-            ]):
-                for k in range(len(arc_pts) - 1):
-                    fade = 1 - (k / len(arc_pts))
-                    alpha_val = _NS_drakar._alpha(240 * a_mult * fade)
-                    if alpha_val <= 0:
-                        continue
-                    pygame.draw.line(slash_surf,
-                                     _NS_drakar._rgba(color, alpha_val),
-                                     arc_pts[k], arc_pts[k + 1], thick)
-
-            if arc_pts:
-                tip = arc_pts[-1]
-                pygame.draw.rect(slash_surf,
-                                 _NS_drakar._rgba(_NS_drakar.PALETTE["blade_shine"], 255),
-                                 (tip[0], tip[1], 3, 3))
-                pygame.draw.rect(slash_surf,
-                                 _NS_drakar._rgba(_NS_drakar.PALETTE["white"], 255),
-                                 (tip[0], tip[1], 2, 2))
-
-        # Blood particles flying out
-        for i in range(28):
-            angle = spin * 0.5 + i * math.pi / 14
-            r_p = radius + int(math.sin(phase + i) * 12) - 8
-            px = center[0] + int(math.cos(angle) * r_p)
-            py = center[1] + int(math.sin(angle) * r_p * 0.7)
-            alpha = _NS_drakar._alpha(220)
-            pygame.draw.rect(slash_surf,
-                             _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                             (px, py, 3, 3))
-            pygame.draw.rect(slash_surf,
-                             _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], alpha),
-                             (px, py, 2, 2))
-
-        surface.blit(slash_surf, (x - 140, y - 140 + bob))
-
-        _NS_drakar._draw_drk_body(surface, x, y + bob, boss.direction, phase, "helix",
-                                   spin_angle=spin)
-
-    # ============================================================
-    # BODY (LARGER SCALE)
-    # ============================================================
-    def _draw_drk_body(surface, cx, cy, facing, phase, action, attack_progress=0,
-                       spin_angle=0):
-        """Draw bulky barbarian body (HD scale, two-handed axe)."""
-        # Legs (behind)
-        _NS_drakar._draw_drk_legs(surface, cx, cy + 28, facing, phase, action)
-
-        # Waist / belt
-        _NS_drakar._draw_drk_waist(surface, cx, cy + 14, facing, phase)
-
-        # Torso (bulky bare chest)
-        _NS_drakar._draw_drk_torso(surface, cx, cy - 6, facing, phase, action)
-
-        # Head
-        _NS_drakar._draw_drk_head(surface, cx, cy - 30, facing, phase, action)
-
-        # Compute axe grip positions FIRST (front hand + back hand on same handle)
-        grip_data = _NS_drakar._compute_two_handed_grip(cx, cy, facing, phase,
-                                                        action, attack_progress,
-                                                        spin_angle)
-
-        # Draw BACK arm reaching to grip (behind axe)
-        _NS_drakar._draw_drk_arm_two_handed_back(surface, cx, cy - 4, facing, phase,
-                                                  grip_data["back_hand"], action)
-
-        # Draw AXE (in front of back arm)
-        _NS_drakar._draw_axe(surface, grip_data["axe_head"][0],
-                             grip_data["axe_head"][1],
-                             facing, grip_data["axe_angle"], action,
-                             attack_progress,
-                             pommel_pos=grip_data["pommel"])
-
-        # Draw FRONT arm gripping (in front of axe)
-        _NS_drakar._draw_drk_arm_two_handed_front(surface, cx, cy - 4, facing, phase,
-                                                   grip_data["front_hand"], action,
-                                                   attack_progress)
-
-    def _draw_drk_legs(surface, cx, cy, facing, phase, action):
-        """Bulky legs, HD scale."""
+        phase = float(getattr(boss, "pulse", 0.0))
         if action == "walk":
-            stride = math.sin(phase * 2) * 5
-            back_lift = max(0, -math.sin(phase * 2)) * 4
-            front_lift = max(0, math.sin(phase * 2)) * 4
-        else:
-            stride = 0
-            back_lift = front_lift = 0
-
-        bx = cx - 9 + int(stride)
-        by = cy - int(back_lift)
-        _NS_drakar._draw_leg(surface, bx, by, facing, back=True)
-
-        fx = cx + 9 - int(stride)
-        fy = cy - int(front_lift)
-        _NS_drakar._draw_leg(surface, fx, fy, facing, back=False)
-
-    def _draw_leg(surface, cx, cy, facing, back=False):
-        """Big beefy leg (HD)."""
-        # Thigh (leather pants) - taller and wider
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx - 7, cy - 14, 15, 18))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_darkest"],
-                         (cx - 7, cy - 14, 14, 17))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_dark"],
-                         (cx - 6, cy - 14, 11, 16))
-        if not back:
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_mid"],
-                             (cx - 4, cy - 13, 7, 14))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_light"],
-                             (cx - 2, cy - 12, 2, 10))
-
-        # Straps around thigh
-        for strap_y in (cy - 10, cy - 4):
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_darkest"],
-                             (cx - 7, strap_y, 14, 2))
-            if not back:
-                pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_mid"],
-                                 (cx - 6, strap_y, 12, 1))
-            # Studs
-            for stud_x in (cx - 4, cx + 3):
-                pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"],
-                                 (stud_x, strap_y, 2, 2))
-                if not back:
-                    pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                                     (stud_x, strap_y, 1, 1))
-
-        # Knee guard (metal)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx - 6, cy + 4, 13, 6))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_darkest"],
-                         (cx - 6, cy + 4, 12, 6))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"],
-                         (cx - 5, cy + 4, 10, 5))
-        if not back:
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_mid"],
-                             (cx - 5, cy + 4, 8, 3))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                             (cx - 4, cy + 4, 5, 1))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_shine"],
-                             (cx - 3, cy + 4, 2, 1))
-
-        # Boot (heavy iron-plated)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx - 8, cy + 10, 18, 10))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_darkest"],
-                         (cx - 8, cy + 10, 17, 9))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_dark"],
-                         (cx - 7, cy + 10, 14, 8))
-        if not back:
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_mid"],
-                             (cx - 6, cy + 10, 10, 5))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_light"],
-                             (cx - 5, cy + 11, 6, 3))
-
-        # Metal boot cap / plates
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_darkest"],
-                         (cx - 8, cy + 15, 18, 4))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"],
-                         (cx - 8, cy + 15, 17, 3))
-        if not back:
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_mid"],
-                             (cx - 7, cy + 15, 15, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                             (cx - 6, cy + 15, 12, 1))
-
-        # Boot toe stud
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                         (cx + facing * 6, cy + 17, 2, 2))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_shine"],
-                         (cx + facing * 6, cy + 17, 1, 1))
-
-    def _draw_drk_waist(surface, cx, cy, facing, phase):
-        """Big belt with buckle + loincloth (HD)."""
-        # Thick belt
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx - 22, cy - 6, 45, 10))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_darkest"],
-                         (cx - 21, cy - 6, 43, 10))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_dark"],
-                         (cx - 21, cy - 6, 42, 8))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_mid"],
-                         (cx - 20, cy - 5, 40, 5))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_light"],
-                         (cx - 18, cy - 5, 6, 2))
-
-        # Belt studs
-        for sx_off in (-16, -10, -4, 8, 14):
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_darkest"],
-                             (cx + sx_off - 1, cy - 2, 4, 4))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"],
-                             (cx + sx_off, cy - 2, 3, 3))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_mid"],
-                             (cx + sx_off, cy - 2, 2, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                             (cx + sx_off, cy - 2, 1, 1))
-
-        # Big central buckle (skull/axe rune)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx - 6, cy - 6, 14, 11))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_darkest"],
-                         (cx - 6, cy - 6, 13, 11))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"],
-                         (cx - 5, cy - 6, 11, 10))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_mid"],
-                         (cx - 4, cy - 5, 9, 8))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                         (cx - 4, cy - 5, 3, 2))
-
-        # Rune on buckle (red glow)
-        rune_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        rune_alpha = _NS_drakar._alpha(240 * rune_pulse)
-        for r in range(5, 0, -1):
-            _NS_drakar._aacircle(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"],
-                                 _NS_drakar._alpha(120 * (5 - r) / 5 * rune_pulse)),
-                (cx + 1, cy), r)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_darkest"],
-                         (cx - 2, cy - 2, 6, 5))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_mid"],
-                         (cx - 1, cy - 1, 4, 3))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_hot"],
-                         (cx, cy, 2, 1))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_shine"],
-                         (cx, cy, 1, 1))
-
-        # Loincloth (bigger flap)
-        loin_pts = [
-            (cx - 9, cy + 3),
-            (cx + 9, cy + 3),
-            (cx + 7, cy + 12),
-            (cx + 3, cy + 16),
-            (cx - 3, cy + 16),
-            (cx - 7, cy + 12),
-        ]
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         [(px + 1, py + 1) for px, py in loin_pts])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["leather_darkest"], loin_pts)
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["leather_dark"], [
-            (cx - 7, cy + 3),
-            (cx + 7, cy + 3),
-            (cx + 5, cy + 12),
-            (cx, cy + 15),
-            (cx - 5, cy + 12),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["leather_mid"], [
-            (cx - 3, cy + 4),
-            (cx + 3, cy + 4),
-            (cx + 2, cy + 12),
-            (cx, cy + 14),
-            (cx - 2, cy + 12),
-        ])
-        # Fold line
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_darkest"],
-                         (cx, cy + 4), (cx, cy + 15), 1)
-        # Metal tip / spike on loincloth
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"],
-                         (cx - 1, cy + 15, 3, 2))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                         (cx, cy + 15, 1, 1))
-
-    def _draw_drk_torso(surface, cx, cy, facing, phase, action):
-        """MUSCULAR red torso (HD, big)."""
-        breath = math.sin(phase * 0.6) * 2
+            phase *= 2.0
+        ap = 0.0
         if action == "attack":
-            breath += math.sin(phase * 3) * 1
+            raw = max(0.0, min(1.0, float(
+                getattr(boss, "_drk_attack_progress", 0.0))))
+            # anticipation / impact hold / rebound - lihat _attack_curve
+            ap = _NS_drakar._attack_curve(raw)
+        return action, phase, ap
 
-        # Main torso shape (much bigger, wider chest)
-        torso_pts = [
-            (cx - 18, cy - 4),
-            (cx - 20, cy + 6),
-            (cx - 17, cy + 16),
-            (cx + 17, cy + 16),
-            (cx + 20, cy + 6),
-            (cx + 18, cy - 4),
-            (cx + 12, cy - 10),
-            (cx - 12, cy - 10),
-        ]
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         [(px + 2, py + 2) for px, py in torso_pts])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["skin_darkest"], torso_pts)
+    # Tinggi badan dalam RUANG LOKAL (y=0 = pinggul, + = ke bawah).
+    # Total badan: puncak tanduk -78 -> telapak +48 (sebelum SCALE).
+    HEAD_Y = -58
+    SHOULDER_Y = -34
+    # Sendi bahu (x = ke depan mengikuti arah hadap)
+    SHOULDER_FRONT = (17, SHOULDER_Y + 1)
+    SHOULDER_BACK = (-15, SHOULDER_Y)
 
-        # Mid skin
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["skin_dark"], [
-            (cx - 17, cy - 2 + int(breath)),
-            (cx - 19, cy + 6),
-            (cx - 15, cy + 15),
-            (cx + 15, cy + 15),
-            (cx + 19, cy + 6),
-            (cx + 17, cy - 2 + int(breath)),
-            (cx + 10, cy - 9),
-            (cx - 10, cy - 9),
-        ])
+    def _attack_curve(ap):
+        """Remap progres mentah (0..1) -> waktu pose (0..1), MONOTON naik.
 
-        # Highlight
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["skin_mid"], [
-            (cx - 14, cy + int(breath)),
-            (cx - 16, cy + 6),
-            (cx - 12, cy + 12),
-            (cx + 12, cy + 12),
-            (cx + 16, cy + 6),
-            (cx + 14, cy + int(breath)),
-            (cx + 8, cy - 7),
-            (cx - 8, cy - 7),
-        ])
-
-        # Pectoral definition
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["skin_light"], [
-            (cx - 10, cy + 1 + int(breath)),
-            (cx - 3, cy + 1 + int(breath)),
-            (cx - 5, cy + 8),
-            (cx - 10, cy + 6),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["skin_light"], [
-            (cx + 3, cy + 1 + int(breath)),
-            (cx + 10, cy + 1 + int(breath)),
-            (cx + 10, cy + 6),
-            (cx + 5, cy + 8),
-        ])
-        # Pec highlights
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_shine"],
-                         (cx - 8, cy + 2 + int(breath), 3, 1))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_shine"],
-                         (cx + 5, cy + 2 + int(breath), 3, 1))
-
-        # Central chest divide
-        pygame.draw.line(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (cx, cy - 5 + int(breath)), (cx, cy + 12), 2)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx, cy - 4 + int(breath)), (cx, cy + 11), 1)
-
-        # Ab muscles (6-pack style)
-        for i, y_off in enumerate((6, 10, 13)):
-            for x_side in (-1, 1):
-                pygame.draw.line(surface, _NS_drakar.PALETTE["skin_darkest"],
-                                 (cx + x_side * 2, cy + y_off),
-                                 (cx + x_side * 7, cy + y_off), 1)
-            # Highlights on abs
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_light"],
-                             (cx - 5, cy + y_off - 1, 2, 1))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_light"],
-                             (cx + 3, cy + y_off - 1, 2, 1))
-
-        # Scar on chest (diagonal)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (cx + 4, cy - 3 + int(breath)), (cx + 10, cy + 3), 1)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["skin_shine"],
-                         (cx + 5, cy - 2 + int(breath)), (cx + 9, cy + 2), 1)
-
-        # Leather bandolier strap
-        strap_start = (cx - 18, cy - 3)
-        strap_end = (cx + 18, cy + 15)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (strap_start[0] + 1, strap_start[1] + 1),
-                         (strap_end[0] + 1, strap_end[1] + 1), 6)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_darkest"],
-                         strap_start, strap_end, 5)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_dark"],
-                         strap_start, strap_end, 4)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_mid"],
-                         (strap_start[0], strap_start[1] - 1),
-                         (strap_end[0], strap_end[1] - 1), 2)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_light"],
-                         (strap_start[0], strap_start[1] - 2),
-                         (strap_end[0], strap_end[1] - 2), 1)
-
-        # SPIKED SHOULDER PAULDRON (iconic - big and dramatic)
-        _NS_drakar._draw_shoulder_pauldron(surface, cx - facing * 16, cy - 8, facing)
-
-        # Other shoulder (bare bulky muscle)
-        _NS_drakar._draw_bare_shoulder(surface, cx + facing * 14, cy - 8, facing)
-
-    def _draw_shoulder_pauldron(surface, cx, cy, facing):
-        """Big spiked iron shoulder guard."""
-        # Base dome (bigger)
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["shadow_deep"], [
-            (cx - 9, cy + 8),
-            (cx - 10, cy + 3),
-            (cx - 7, cy - 5),
-            (cx - 3, cy - 8),
-            (cx + 4, cy - 8),
-            (cx + 8, cy - 5),
-            (cx + 10, cy + 3),
-            (cx + 9, cy + 8),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["armor_darkest"], [
-            (cx - 8, cy + 7),
-            (cx - 9, cy + 3),
-            (cx - 6, cy - 4),
-            (cx - 3, cy - 7),
-            (cx + 4, cy - 7),
-            (cx + 7, cy - 4),
-            (cx + 9, cy + 3),
-            (cx + 8, cy + 7),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["armor_dark"], [
-            (cx - 7, cy + 6),
-            (cx - 8, cy + 3),
-            (cx - 5, cy - 3),
-            (cx - 2, cy - 6),
-            (cx + 3, cy - 6),
-            (cx + 6, cy - 3),
-            (cx + 8, cy + 3),
-            (cx + 7, cy + 6),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["armor_mid"], [
-            (cx - 5, cy + 5),
-            (cx - 7, cy + 2),
-            (cx - 4, cy - 2),
-            (cx - 1, cy - 5),
-            (cx + 2, cy - 5),
-            (cx + 5, cy - 2),
-            (cx + 7, cy + 2),
-            (cx + 5, cy + 5),
-        ])
-        # Highlight
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["armor_light"], [
-            (cx - 3, cy),
-            (cx - 1, cy - 3),
-            (cx + 1, cy - 3),
-            (cx + 2, cy),
-            (cx, cy + 2),
-            (cx - 2, cy + 2),
-        ])
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_shine"],
-                         (cx - 1, cy - 1, 2, 2))
-
-        # BIG SPIKES on top (3 tall spikes)
-        for i, (x_off, height) in enumerate([(-5, 6), (-1, 8), (4, 6)]):
-            spike_x = cx + x_off
-            spike_top_y = cy - 7 - height
-
-            # Shadow
-            _NS_drakar._poly(surface, _NS_drakar.PALETTE["shadow_deep"], [
-                (spike_x + 1, spike_top_y + 1),
-                (spike_x - 3 + 1, cy - 5 + 1),
-                (spike_x + 3 + 1, cy - 5 + 1),
-            ])
-            # Base
-            _NS_drakar._poly(surface, _NS_drakar.PALETTE["armor_darkest"], [
-                (spike_x, spike_top_y),
-                (spike_x - 3, cy - 5),
-                (spike_x + 3, cy - 5),
-            ])
-            _NS_drakar._poly(surface, _NS_drakar.PALETTE["armor_dark"], [
-                (spike_x, spike_top_y),
-                (spike_x - 2, cy - 5),
-                (spike_x + 2, cy - 5),
-            ])
-            _NS_drakar._poly(surface, _NS_drakar.PALETTE["armor_mid"], [
-                (spike_x, spike_top_y),
-                (spike_x - 1, cy - 5),
-                (spike_x + 2, cy - 5),
-            ])
-            # Tip highlight
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                             (spike_x, spike_top_y, 1, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_shine"],
-                             (spike_x, spike_top_y, 1, 1))
-
-        # Rivets on pauldron
-        for rx_off in (-6, 0, 6):
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_darkest"],
-                             (cx + rx_off - 1, cy + 4, 2, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                             (cx + rx_off, cy + 4, 1, 1))
-
-    def _draw_bare_shoulder(surface, cx, cy, facing):
-        """Big muscular bare shoulder (bicep)."""
-        # Deltoid muscle
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx - 5, cy - 4, 11, 12))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (cx - 5, cy - 4, 10, 11))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_dark"],
-                         (cx - 4, cy - 3, 9, 10))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_mid"],
-                         (cx - 3, cy - 2, 7, 8))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_light"],
-                         (cx - 1, cy - 1, 3, 5))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_shine"],
-                         (cx, cy, 1, 2))
-
-        # Muscle line curves
-        pygame.draw.line(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (cx - 2, cy + 2), (cx + 3, cy + 5), 1)
-
-    def _draw_drk_arm_two_handed_front(surface, cx, cy, facing, phase,
-                                        hand_pos, action, attack_progress=0):
-        """Front arm reaching up to grip axe (near blade end)."""
-        # Shoulder base
-        base_x = cx + facing * 15
-        base_y = cy + 2
-
-        hand_x, hand_y = hand_pos
-
-        # Compute elbow via IK (bent arm bending outward)
-        arm_length = 22  # total arm length
-        # Vector from shoulder to hand
-        vx = hand_x - base_x
-        vy = hand_y - base_y
-        dist = max(1, math.hypot(vx, vy))
-        dist = min(dist, arm_length * 0.98)
-
-        # Midpoint
-        mid_x = (base_x + hand_x) / 2
-        mid_y = (base_y + hand_y) / 2
-
-        # Perpendicular for elbow displacement (bend outward/downward)
-        perp_x = -vy / dist
-        perp_y = vx / dist
-        # Elbow bends forward-out
-        elbow_offset = math.sqrt(max(0, (arm_length / 2) ** 2 - (dist / 2) ** 2)) * 0.7
-        # Bend direction based on facing and action
-        bend_sign = facing
-        elbow_x = int(mid_x + perp_x * elbow_offset * bend_sign)
-        elbow_y = int(mid_y + perp_y * elbow_offset * bend_sign)
-
-        # Upper arm (muscular skin)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["shadow_deep"],
-                           (base_x + 2, base_y + 2), (elbow_x + 2, elbow_y + 2), 10)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["skin_darkest"],
-                           (base_x, base_y), (elbow_x, elbow_y), 9)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["skin_dark"],
-                           (base_x, base_y), (elbow_x, elbow_y), 7)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["skin_mid"],
-                           (base_x, base_y - 1), (elbow_x, elbow_y - 1), 4)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["skin_light"],
-                           (base_x, base_y - 2), (elbow_x, elbow_y - 2), 2)
-
-        # Bicep flex (bigger during swing)
-        mid_arm_x = int((base_x + elbow_x) / 2)
-        mid_arm_y = int((base_y + elbow_y) / 2)
-        bicep_flex = 1
-        if action == "attack" and 0.15 <= attack_progress <= 0.55:
-            bicep_flex = 2
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_dark"],
-                             (mid_arm_x + facing, mid_arm_y - 2), 5 + bicep_flex)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_mid"],
-                             (mid_arm_x + facing, mid_arm_y - 3), 3 + bicep_flex)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_light"],
-                             (mid_arm_x + facing, mid_arm_y - 3), 1 + bicep_flex)
-
-        # Forearm bracer (leather)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["shadow_deep"],
-                           (elbow_x + 2, elbow_y + 2), (hand_x + 2, hand_y + 2), 8)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["leather_darkest"],
-                           (elbow_x, elbow_y), (hand_x, hand_y), 7)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["leather_dark"],
-                           (elbow_x, elbow_y), (hand_x, hand_y), 5)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["leather_mid"],
-                           (elbow_x, elbow_y - 1), (hand_x, hand_y - 1), 3)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["leather_light"],
-                           (elbow_x, elbow_y - 2), (hand_x, hand_y - 2), 1)
-
-        # Bracer studs
-        for stud_t in (0.35, 0.65):
-            stud_x = int(elbow_x + (hand_x - elbow_x) * stud_t)
-            stud_y = int(elbow_y + (hand_y - elbow_y) * stud_t)
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"],
-                             (stud_x - 1, stud_y - 1, 3, 3))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_mid"],
-                             (stud_x, stud_y - 1, 2, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_shine"],
-                             (stud_x, stud_y - 1, 1, 1))
-
-        # FIST gripping handle
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["shadow_deep"],
-                             (hand_x + 1, hand_y + 1), 5)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_darkest"],
-                             (hand_x, hand_y), 5)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_dark"],
-                             (hand_x, hand_y), 4)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_mid"],
-                             (hand_x - facing, hand_y - 1), 3)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_light"],
-                             (hand_x - facing, hand_y - 1), 1)
-        # Knuckles
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (hand_x - 2, hand_y - 2, 1, 1))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (hand_x, hand_y - 2, 1, 1))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (hand_x + 2, hand_y - 2, 1, 1))
-
-    def _draw_drk_arm_two_handed_back(surface, cx, cy, facing, phase,
-                                       hand_pos, action):
-        """Back arm reaching across to grip axe handle (near pommel)."""
-        base_x = cx - facing * 12
-        base_y = cy + 2
-
-        hand_x, hand_y = hand_pos
-
-        # IK for elbow
-        arm_length = 22
-        vx = hand_x - base_x
-        vy = hand_y - base_y
-        dist = max(1, math.hypot(vx, vy))
-        dist = min(dist, arm_length * 0.98)
-
-        mid_x = (base_x + hand_x) / 2
-        mid_y = (base_y + hand_y) / 2
-
-        perp_x = -vy / dist
-        perp_y = vx / dist
-        elbow_offset = math.sqrt(max(0, (arm_length / 2) ** 2 - (dist / 2) ** 2)) * 0.7
-        # Back arm bends the opposite way (backward)
-        bend_sign = -facing
-        elbow_x = int(mid_x + perp_x * elbow_offset * bend_sign)
-        elbow_y = int(mid_y + perp_y * elbow_offset * bend_sign)
-
-        # Upper arm (skin - slightly darker for back-shading)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["shadow_deep"],
-                           (base_x + 2, base_y + 2), (elbow_x + 2, elbow_y + 2), 10)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["skin_darkest"],
-                           (base_x, base_y), (elbow_x, elbow_y), 9)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["skin_dark"],
-                           (base_x, base_y), (elbow_x, elbow_y), 7)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["skin_mid"],
-                           (base_x, base_y - 1), (elbow_x, elbow_y - 1), 3)
-
-        # Bicep (smaller/dimmer since back)
-        mid_arm_x = int((base_x + elbow_x) / 2)
-        mid_arm_y = int((base_y + elbow_y) / 2)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_darkest"],
-                             (mid_arm_x, mid_arm_y - 1), 5)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_dark"],
-                             (mid_arm_x, mid_arm_y - 2), 3)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_mid"],
-                             (mid_arm_x, mid_arm_y - 2), 1)
-
-        # Forearm bracer
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["shadow_deep"],
-                           (elbow_x + 2, elbow_y + 2), (hand_x + 2, hand_y + 2), 8)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["leather_darkest"],
-                           (elbow_x, elbow_y), (hand_x, hand_y), 7)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["leather_dark"],
-                           (elbow_x, elbow_y), (hand_x, hand_y), 5)
-        _NS_drakar._aaline(surface, _NS_drakar.PALETTE["leather_mid"],
-                           (elbow_x, elbow_y - 1), (hand_x, hand_y - 1), 2)
-
-        # Bracer studs
-        for stud_t in (0.35, 0.65):
-            stud_x = int(elbow_x + (hand_x - elbow_x) * stud_t)
-            stud_y = int(elbow_y + (hand_y - elbow_y) * stud_t)
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_darkest"],
-                             (stud_x - 1, stud_y - 1, 3, 3))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"],
-                             (stud_x, stud_y - 1, 2, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_mid"],
-                             (stud_x, stud_y - 1, 1, 1))
-
-        # Fist gripping handle
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["shadow_deep"],
-                             (hand_x + 1, hand_y + 1), 5)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_darkest"],
-                             (hand_x, hand_y), 5)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_dark"],
-                             (hand_x, hand_y), 4)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["skin_mid"],
-                             (hand_x - facing, hand_y - 1), 2)
-        # Knuckles
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (hand_x - 2, hand_y - 2, 1, 1))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (hand_x, hand_y - 2, 1, 1))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (hand_x + 2, hand_y - 2, 1, 1))
-
-    def _compute_two_handed_grip(cx, cy, facing, phase, action,
-                                  attack_progress=0, spin_angle=0):
-        """Compute positions for two-handed axe grip.
-        Returns: front_hand, back_hand, axe_head, pommel, axe_angle
+        Kapak besar butuh: (a) wind-up jelas (kapak diangkat jauh ke
+        belakang), (b) tebasan yang JAUH lebih cepat dari wind-up,
+        (c) HOLD singkat di impact (bobot kapak terasa), (d) recovery
+        yang tidak "menarik mundur". Batas segmen jatuh PERSIS di batas
+        fase _axe_angle / _front_grip_local: pose-time 0.26 = puncak
+        wind-up, 0.79 = impact.
         """
-        # Base position (chest-front of body)
-        base_x = cx + facing * 8
-        base_y = cy - 2
+        if ap <= 0.0:
+            return 0.0
+        if ap < 0.28:                       # anticipation: diperlambat
+            t = ap / 0.28
+            return 0.26 * (t ** 0.8)
+        if ap < 0.50:                       # tebasan: sangat cepat
+            t = (ap - 0.28) / 0.22
+            return 0.26 + 0.53 * (t ** 0.45)
+        if ap < 0.62:                       # IMPACT HOLD (nyaris beku)
+            t = (ap - 0.50) / 0.12
+            return 0.79 + 0.05 * t
+        t = (ap - 0.62) / 0.38              # follow-through -> siap
+        return 0.84 + 0.16 * (t ** 0.85)
 
-        # Determine axe angle based on action
+    def _portrait_axe_angle():
+        """Sudut kapak mode portrait: rapat ke badan, kepala di bahu.
+
+        HeroPortraits meng-crop bbox lalu men-scale ke kartu, jadi figur
+        yang LEBAR (kapak terentang) terKECIL di kartu. Kapak ditarik
+        masuk -> bbox menyempit -> figur ter-render lebih besar.
+        """
+        return 2.02
+
+    def _axe_angle(phase, action, ap=0.0):
+        """Sudut kapak (radian dari garis lurus-bawah; + = ke depan).
+
+        0 = mata kapak ke bawah, +pi/2 = lurus ke depan, ~pi = ke atas.
+        Ditabel per-pose, BUKAN diturunkan dari arah lengan, supaya bilah
+        tidak pernah menyayat menembus badannya sendiri. Batas segmen
+        attack mengikuti _attack_curve(): 0-0.26 angkat, 0.26-0.79 tebas
+        (HOLD di ~0.79), 0.79-1 recovery. Nilai idle = titik akhir
+        recovery -> tidak ada frame "snap".
+        """
         if action == "attack":
-            if attack_progress < 0.15:
-                # Anticipation
-                t = attack_progress / 0.15
-                axe_angle = (-math.pi * 0.15 - t * 0.4) * facing
-                grip_lean = -t * 4  # pull weapon back
-            elif attack_progress < 0.40:
-                # Wind up HIGH BACK (over shoulder, both hands raised)
-                t = (attack_progress - 0.15) / 0.25
-                t_ease = t * t
-                axe_angle = (-math.pi * 0.55 - t_ease * math.pi * 0.75) * facing
-                grip_lean = -4 - t * 3
-            elif attack_progress < 0.55:
-                # EXPLOSIVE SWING
-                t = (attack_progress - 0.40) / 0.15
-                t_ease = 1 - (1 - t) ** 2
-                start_a = -math.pi * 1.3 * facing
-                end_a = math.pi * 0.55 * facing
-                axe_angle = start_a + (end_a - start_a) * t_ease
-                grip_lean = -7 + t_ease * 14
-            elif attack_progress < 0.70:
-                # Impact hold
-                axe_angle = math.pi * 0.55 * facing
-                grip_lean = 7
-            else:
-                # Recovery
-                t = (attack_progress - 0.70) / 0.30
-                start_a = math.pi * 0.55 * facing
-                end_a = math.pi * 0.05 * facing
-                axe_angle = start_a + (end_a - start_a) * t
-                grip_lean = 7 * (1 - t)
+            if ap < 0.26:                       # wind-up (2.55 -> 3.42)
+                t = ap / 0.26
+                return 2.55 + 0.87 * t
+            if ap < 0.79:                       # tebasan (3.42 -> 0.42)
+                t = (ap - 0.26) / 0.53
+                return 3.42 - 3.00 * t
+            t = (ap - 0.79) / 0.21              # recovery -> siap
+            return 0.42 + 1.88 * t
+        if action == "cull":                    # R: eksekusi lebih dalam
+            if ap < 0.30:
+                t = ap / 0.30
+                return 2.55 + 1.00 * t
+            if ap < 0.74:
+                t = (ap - 0.30) / 0.44
+                return 3.55 - 3.25 * t
+            t = (ap - 0.74) / 0.26
+            return 0.30 + 1.10 * t
+        if action == "rage":                    # Q: kapak siap di samping
+            return 2.32 + math.sin(phase * 2.2) * 0.10
+        if action == "helix":                   # W: kapak mendatar
+            return 1.52 + math.sin(phase * 7.0) * 0.12
+        if action == "call":                    # E: kapak tertancap depan
+            return 0.42
+        if action == "walk":
+            return 1.80 + math.sin(phase * 1.66) * 0.10
+        # Siap: kapak istirahat di samping bahu, mata kapak ~sejajar
+        # dagu. Versi "digendong menyamping" membuat badan terbaca
+        # sebagai palang abu-abu; sudut diagonal ini menjaga kepala &
+        # dada sebagai subjek dan massa kapak mengisi kuadran atas.
+        return 1.74 + math.sin(phase * 0.55) * 0.06
+
+    def _axe_len(action):
+        """Panjang gagang (grip -> mata kapak) per pose."""
+        if action == "attack":
+            return 46
+        if action == "cull":
+            return 48
+        if action in ("rage", "helix"):
+            return 44
+        if action == "call":
+            return 46
+        return 42
+
+    def _front_grip_local(action, ap=0.0, phase=0.0, compact=False):
+        """Tangan depan (pegangan utama gagang), ruang lokal.
+
+        compact=True dipakai mode portrait (lihat _portrait_axe_angle).
+        """
+        rest = -14
+        if compact:
+            return (10, rest + 1)
+        if action == "attack":
+            # Tangan tetap di sisi depan badan sepanjang ayunan.
+            if ap < 0.26:
+                t = min(1.0, ap / 0.26) ** 0.9
+                return (int(13 - 6 * t), int(rest - 26 * t))
+            if ap < 0.79:
+                t = (ap - 0.26) / 0.53
+                return (int(7 + 17 * t), int(rest - 26 + 42 * t))
+            t = (ap - 0.79) / 0.18
+            return (int(24 - 13 * t), int(rest + 16 - 3 * t))
+        if action == "cull":
+            if ap < 0.30:
+                t = min(1.0, ap / 0.30) ** 0.9
+                return (int(12 - 7 * t), int(rest - 28 * t))
+            if ap < 0.74:
+                t = (ap - 0.30) / 0.44
+                return (int(5 + 19 * t), int(rest - 28 + 46 * t))
+            t = (ap - 0.74) / 0.26
+            return (int(24 - 14 * t), int(rest + 18 - 3 * t))
+        if action == "rage":
+            return (13, rest - 4)
+        if action == "helix":
+            return (14, rest - 2)
+        if action == "call":
+            return (13, rest + 8)
+        if action == "walk":
+            s = math.sin(phase * 1.66)
+            return (int(11 + s * 3), int(rest - abs(s) * 2))
+        return (11, rest + int(math.sin(phase * 0.55)))
+
+    def _back_hand_u(action, ap=0.0):
+        """Posisi tangan belakang DI sepanjang gagang (u dari grip; - =
+        ke arah gagang bawah/pommel). Kedua tangan DIJAMIN menempel ke
+        gagang karena lahir dari titik yang sama dengan kapak."""
+        if action == "call":
+            return -4                       # tangan bertumpuk di atas
+        if action == "rage":
+            return -10
+        if action in ("attack", "cull"):
+            return -11
+        if action == "helix":
+            return -12
+        return -9
+
+    def _back_grip_local(action, ap=0.0, phase=0.0, compact=False):
+        """Tangan belakang: titik di gagang + toleransi kecil ke badan."""
+        ang = (_NS_drakar._axe_angle(phase, action, ap)
+               if not compact else _NS_drakar._portrait_axe_angle())
+        gx, gy = _NS_drakar._front_grip_local(action, ap, phase,
+                                               compact=compact)
+        u = _NS_drakar._back_hand_u(action, ap)
+        return (int(gx - math.sin(ang) * u), int(gy - math.cos(ang) * u))
+
+    def _elbow(a, b, bend):
+        """Siku 2-tulang: titik tengah + offset tegak lurus.
+
+        Lengan selalu tersambung (tidak pernah "lepas" seperti stiker)
+        dan lengkungannya bisa diarahkan per sisi.
+        """
+        mx = (a[0] + b[0]) * 0.5
+        my = (a[1] + b[1]) * 0.5
+        dx = b[0] - a[0]
+        dy = b[1] - a[1]
+        ln = math.hypot(dx, dy) or 1.0
+        return (int(mx + (-dy / ln) * bend), int(my + (dx / ln) * bend))
+
+    def _arm_chain(shoulder, grip, phase, action, ap=0.0, back=False):
+        """(siku, sudut kapak) - siku dari lengan, sudut dari tabel pose."""
+        bend = 6.0 if back else -7.0
+        if action in ("rage", "cull") and not back:
+            bend = -4.0
+        elbow = _NS_drakar._elbow(shoulder, grip, bend)
+        return elbow, _NS_drakar._axe_angle(phase, action, ap)
+
+    def _head_bob(action, phase, ap):
+        """Offset kepala (dx, dy) ruang lokal.
+
+        Kepala TIDAK merekat mati ke torso: mengangkat saat langkah,
+        menunduk mengikuti tebasan, mendongak saat roar (call), dan
+        bergetar halus saat rage.
+        """
+        if action == "walk":
+            sw = math.sin(phase * 1.66)
+            return (int(-sw * 1.4), int(abs(math.sin(phase * 1.1)) * -1.6))
+        if action == "attack":
+            return (int(math.sin(ap * math.pi) * 2.6),
+                    int(math.sin(ap * math.pi) * 1.8))
+        if action == "cull":
+            return (int(math.sin(ap * math.pi) * 3.0),
+                    int(math.sin(ap * math.pi) * 2.2))
+        if action == "rage":
+            return (int(math.sin(phase * 5.5) * 0.8), -2)
+        if action == "call":
+            return (-1, -4)
+        if action == "helix":
+            return (int(math.sin(phase * 7.0) * 1.2), -1)
+        return (int(math.sin(phase * 0.31) * 1.0),
+                int(math.sin(phase * 0.55 + 0.8) * 0.9))
+
+    def _rig_shift(action, phase, ap):
+        """(lean, root_y) badan; kaki TIDAK ikut bergeser (menapak)."""
+        lean = 0
+        root_y = int(math.sin(phase * 0.55) * 1.3)
+        if action == "walk":
+            lean = int(math.sin(phase * 1.66) * 2.4)
+            root_y -= int(abs(math.sin(phase * 1.1)) * 2.8)
+        elif action == "attack":
+            t = math.sin(ap * math.pi)
+            lean = int(t * 7)
+            root_y += int(t * 2.5)
+        elif action == "cull":
+            t = math.sin(ap * math.pi)
+            lean = int(t * 9)
+            root_y += int(t * 4)
+        elif action == "rage":
+            lean = int(math.sin(phase * 9.0))
+            root_y -= 2
+        elif action == "call":
+            lean = 2
+            root_y -= 1
         elif action == "helix":
-            axe_angle = spin_angle * facing
-            grip_lean = 0
-        elif action == "walk":
-            axe_angle = math.pi * 0.05 * facing + math.sin(phase * 2) * 0.15
-            grip_lean = int(math.sin(phase * 2) * 2)
-        else:
-            # Idle - axe held horizontal across body (both hands ready)
-            axe_angle = math.pi * 0.05 * facing + math.sin(phase * 0.5) * 0.06
-            grip_lean = 0
+            lean = int(math.sin(phase * 7.0) * 2)
+            root_y -= 1
+        return lean, root_y
 
-        # Axe direction unit vector
-        dx = math.cos(axe_angle)
-        dy = math.sin(axe_angle)
+    def _s(v):
+        """Ukuran ruang lokal (lebar garis, radius) -> piksel layar."""
+        return max(1, int(round(v * _NS_drakar.SCALE)))
 
-        # Handle length and grip positions along the handle
-        handle_len = 42
-        # Front hand grips near the axe head (upper grip)
-        # Back hand grips near the pommel (lower grip)
+    def _local_to_screen(cx, cy, facing, lean, root_y, lx, ly):
+        """SATU pemetaan lokal -> layar: skala, arah hadap, bob/lean.
 
-        # Grip base center (in front of chest area, moves with attack)
-        grip_cx = base_x + grip_lean * facing
-        grip_cy = base_y + 2
-
-        # For attack phase, grip position shifts up during wind-up
-        if action == "attack":
-            if attack_progress < 0.40:
-                # Move grip up during wind-up
-                t = min(1.0, (attack_progress) / 0.40)
-                grip_cy = base_y + 2 - int(t * 8)
-            elif attack_progress < 0.55:
-                # Grip swings down during swing
-                t = (attack_progress - 0.40) / 0.15
-                t_ease = 1 - (1 - t) ** 2
-                grip_cy = base_y + 2 - int((1 - t_ease) * 8) + int(t_ease * 6)
-            elif attack_progress < 0.70:
-                # Impact - grip extended forward-down
-                grip_cy = base_y + 8
-            else:
-                # Recovery
-                t = (attack_progress - 0.70) / 0.30
-                grip_cy = base_y + 8 - int(t * 6)
-
-        # Front hand position (near axe head, ~70% along handle from pommel)
-        front_grip_t = 0.70
-        # Back hand position (near pommel, ~25% along handle from pommel)
-        back_grip_t = 0.25
-
-        # Compute along handle axis
-        pommel_x = int(grip_cx - dx * handle_len * 0.5) * (1 if facing > 0 else 1)
-        pommel_x = grip_cx + int(-dx * handle_len * 0.5) * facing
-        pommel_y = grip_cy + int(-dy * handle_len * 0.5)
-
-        axe_head_x = grip_cx + int(dx * handle_len * 0.5) * facing
-        axe_head_y = grip_cy + int(dy * handle_len * 0.5)
-
-        front_hand_x = pommel_x + int((axe_head_x - pommel_x) * front_grip_t)
-        front_hand_y = pommel_y + int((axe_head_y - pommel_y) * front_grip_t)
-
-        back_hand_x = pommel_x + int((axe_head_x - pommel_x) * back_grip_t)
-        back_hand_y = pommel_y + int((axe_head_y - pommel_y) * back_grip_t)
-
-        return {
-            "front_hand": (front_hand_x, front_hand_y),
-            "back_hand": (back_hand_x, back_hand_y),
-            "axe_head": (axe_head_x, axe_head_y),
-            "pommel": (pommel_x, pommel_y),
-            "axe_angle": axe_angle,
-        }
-
-    def _draw_axe(surface, cx, cy, facing, angle, action, attack_progress,
-                  pommel_pos=None):
-        """MASSIVE double-bladed axe (HD, two-handed).
-        cx, cy = axe HEAD position
-        pommel_pos = (x, y) of pommel end
+        Semua bagian tubuh dan semua titik jangkar efek (mata kapak,
+        pergelangan) melewati fungsi ini, jadi ukuran boleh diubah lewat
+        satu angka tanpa membuat efek lepas dari badan.
         """
-        dx = math.cos(angle)
-        dy = math.sin(angle)
+        f = 1 if facing >= 0 else -1
+        k = _NS_drakar.SCALE
+        return (int(cx + (lx * f + lean * f) * k),
+                int(cy - _NS_drakar.LIFT + (ly + root_y) * k))
 
-        # Head position
-        head_cx = cx
-        head_cy = cy
+    def _local(boss, x, y, action, phase, ap, lx, ly):
+        """Ruang lokal rig -> piksel surface (dipakai FX eksternal)."""
+        facing = getattr(boss, "direction", 1) or 1
+        lean, root_y = _NS_drakar._rig_shift(action, phase, ap)
+        return _NS_drakar._local_to_screen(x, y, facing, lean, root_y,
+                                            lx, ly)
 
-        # Pommel position (opposite end)
-        if pommel_pos is not None:
-            handle_back_x, handle_back_y = pommel_pos
-        else:
-            handle_len = 42
-            handle_back_x = cx - int(dx * handle_len) * facing
-            handle_back_y = cy - int(dy * handle_len)
+    def _axe_head_local(action, phase, ap=0.0):
+        """Mata kapak (pusat bilah) dalam ruang lokal - rig & FX pakai
+        angka yang sama, jadi trail selalu lahir dari ujung senjata."""
+        grip = _NS_drakar._front_grip_local(action, ap, phase)
+        ang = _NS_drakar._axe_angle(phase, action, ap)
+        L = _NS_drakar._axe_len(action)
+        return (int(grip[0] + math.sin(ang) * L),
+                int(grip[1] + math.cos(ang) * L))
 
-        # Wooden handle (thick)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (handle_back_x + 2, handle_back_y + 2),
-                         (head_cx + 2, head_cy + 2), 7)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_darkest"],
-                         (handle_back_x, handle_back_y),
-                         (head_cx, head_cy), 6)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_dark"],
-                         (handle_back_x, handle_back_y),
-                         (head_cx, head_cy), 4)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_mid"],
-                         (handle_back_x, handle_back_y - 1),
-                         (head_cx, head_cy - 1), 2)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_light"],
-                         (handle_back_x, handle_back_y - 2),
-                         (head_cx, head_cy - 2), 1)
+    def _tip_local(action, phase, ap=0.0):
+        """Ujung terjauh bilah (tepi luar) dalam ruang lokal."""
+        hx, hy = _NS_drakar._axe_head_local(action, phase, ap)
+        ang = _NS_drakar._axe_angle(phase, action, ap)
+        # Tepi terjauh bilah ~13 px di sisi +v dari mata kapak.
+        return (int(hx + math.cos(ang) * 13), int(hy - math.sin(ang) * 13))
 
-        # Leather wraps on grip (evenly spaced along the handle)
-        for i in range(5):
-            wrap_t = 0.1 + i * 0.16
-            wrap_x = int(handle_back_x + (head_cx - handle_back_x) * wrap_t)
-            wrap_y = int(handle_back_y + (head_cy - handle_back_y) * wrap_t)
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_darkest"],
-                             (wrap_x - 1, wrap_y - 1, 4, 4))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_dark"],
-                             (wrap_x, wrap_y, 3, 3))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_mid"],
-                             (wrap_x, wrap_y, 2, 2))
+    def _tip_screen(boss, x, y):
+        action, phase, ap = _NS_drakar._resolve_pose(boss)
+        # FX selalu memakai pose yang sama dengan badan (lihat
+        # _resolve_pose yang murni), jadi trail tidak pernah lepas.
+        return _NS_drakar._local(boss, x, y, action, phase, ap,
+                                 *_NS_drakar._tip_local(action, phase, ap))
 
-        # Pommel (bottom of handle - spiked knob)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["shadow_deep"],
-                             (handle_back_x + 1, handle_back_y + 1), 5)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["armor_darkest"],
-                             (handle_back_x, handle_back_y), 5)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["armor_dark"],
-                             (handle_back_x, handle_back_y), 4)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["armor_mid"],
-                             (handle_back_x, handle_back_y), 3)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["armor_light"],
-                             (handle_back_x, handle_back_y), 1)
-        # Small spike on pommel
-        pommel_spike_x = handle_back_x - int(dx * 4) * facing
-        pommel_spike_y = handle_back_y - int(dy * 4)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["armor_darkest"],
-                         (handle_back_x, handle_back_y),
-                         (pommel_spike_x, pommel_spike_y), 3)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["armor_mid"],
-                         (handle_back_x, handle_back_y),
-                         (pommel_spike_x, pommel_spike_y), 1)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_shine"],
-                         (pommel_spike_x, pommel_spike_y, 1, 1))
+    # ==================================================================
+    # ENTRY POINT
+    # ==================================================================
+    def draw_drakar(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus heroes.render_hero()."""
+        # jalur hero (lane): heroes/__init__ men-set _render_scale sebelum
+        # memanggil renderer, dan _finish_hd_sprite sudah menambah
+        # rim/terminator -> pass di sini dilewati (lihat _draw_drk_rig_at).
+        _NS_drakar._HERO_LANE.v = hasattr(boss, "_render_scale")
+        _NS_drakar._update_drk_attack_anim(boss)
+        action, phase, ap = _NS_drakar._resolve_pose(
+            boss, _NS_drakar._detect_moving(boss))
+        boss._drk_pose_action = action
+        skill = getattr(boss, "active_skill", None)
+        timer = int(getattr(boss, "active_skill_timer", 0))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        facing = getattr(boss, "direction", 1) or 1
+        flash = _NS_drakar._alpha(170 * (getattr(boss, "hurt_flash_timer", 0)
+                                         / 8.0))
 
-        # AXE HEAD (perpendicular direction)
-        perp_x = -dy
-        perp_y = dx
+        # ── Latar. Dibuang total saat portrait supaya auto-crop Hero Shop
+        #    terisi wajah & material, bukan lingkaran efek.
+        if not portrait:
+            _NS_drakar._draw_rage_aura(surface, x, y, phase, skill)
+            _NS_drakar._draw_ground_ring(surface, x, y, phase, skill)
+            if skill == "q":
+                _NS_drakar._draw_battlehunger_ground(surface, boss, x, y,
+                                                      timer, phase)
+            elif skill == "w":
+                _NS_drakar._draw_counterhelix_ground(surface, boss, x, y,
+                                                      timer, phase)
+            elif skill == "e":
+                _NS_drakar._draw_berserkerscall_ground(surface, boss, x, y,
+                                                        timer, phase)
+            elif skill == "r":
+                _NS_drakar._draw_cullingblade_ground(surface, boss, x, y,
+                                                      timer, phase)
 
-        blade_size = 22  # Even bigger for two-handed!
+        # ── Karakter
+        if not portrait:
+            _NS_drakar._draw_shadow(surface, x, y + _NS_drakar.GROUND_DY)
+        _NS_drakar._draw_drk_rig_at(surface, x, y, facing, phase, action,
+                                     ap, portrait, flash)
+        if not portrait:
+            if action == "attack":
+                # Pita cleave dari lintasan mata kapak yang sebenarnya.
+                _NS_drakar._draw_cleave_trail(surface, boss, x, y, facing,
+                                               phase, ap)
+            elif action == "walk":
+                # Debu langkah tepat saat telapak mendarat.
+                _NS_drakar._draw_footfall_dust(surface, x, y, facing, phase)
 
-        # Top blade (crescent)
-        top_tip_x = head_cx + int(perp_x * blade_size) * facing
-        top_tip_y = head_cy + int(perp_y * blade_size)
-        top_edge1_x = head_cx + int((perp_x * blade_size * 0.65 + dx * blade_size * 0.75)) * facing
-        top_edge1_y = head_cy + int((perp_y * blade_size * 0.65 + dy * blade_size * 0.75))
-        top_edge2_x = head_cx + int((perp_x * blade_size * 0.65 - dx * blade_size * 0.75)) * facing
-        top_edge2_y = head_cy + int((perp_y * blade_size * 0.65 - dy * blade_size * 0.75))
-        top_mid1_x = head_cx + int((perp_x * blade_size * 0.9 + dx * blade_size * 0.4)) * facing
-        top_mid1_y = head_cy + int((perp_y * blade_size * 0.9 + dy * blade_size * 0.4))
-        top_mid2_x = head_cx + int((perp_x * blade_size * 0.9 - dx * blade_size * 0.4)) * facing
-        top_mid2_y = head_cy + int((perp_y * blade_size * 0.9 - dy * blade_size * 0.4))
+        # ── Foreground FX
+        if not portrait:
+            if skill == "q":
+                _NS_drakar._draw_battlehunger_foreground(surface, boss, x, y,
+                                                          timer, phase)
+            elif skill == "w":
+                _NS_drakar._draw_counterhelix_foreground(surface, boss, x, y,
+                                                          timer, phase)
+            elif skill == "e":
+                _NS_drakar._draw_berserkerscall_foreground(surface, boss,
+                                                            x, y, timer,
+                                                            phase)
+            elif skill == "r":
+                _NS_drakar._draw_cullingblade_foreground(surface, boss, x, y,
+                                                          timer, phase)
 
-        # Bottom blade
-        bot_tip_x = head_cx - int(perp_x * blade_size) * facing
-        bot_tip_y = head_cy - int(perp_y * blade_size)
-        bot_edge1_x = head_cx - int((perp_x * blade_size * 0.65 - dx * blade_size * 0.75)) * facing
-        bot_edge1_y = head_cy - int((perp_y * blade_size * 0.65 - dy * blade_size * 0.75))
-        bot_edge2_x = head_cx - int((perp_x * blade_size * 0.65 + dx * blade_size * 0.75)) * facing
-        bot_edge2_y = head_cy - int((perp_y * blade_size * 0.65 + dy * blade_size * 0.75))
-        bot_mid1_x = head_cx - int((perp_x * blade_size * 0.9 - dx * blade_size * 0.4)) * facing
-        bot_mid1_y = head_cy - int((perp_y * blade_size * 0.9 - dy * blade_size * 0.4))
-        bot_mid2_x = head_cx - int((perp_x * blade_size * 0.9 + dx * blade_size * 0.4)) * facing
-        bot_mid2_y = head_cy - int((perp_y * blade_size * 0.9 + dy * blade_size * 0.4))
+    def _draw_drk_rig_at(surface, x, y, facing, phase, action, ap, detail,
+                         flash=0):
+        """Rig -> buffer -> outline gelap 1 px -> satu blit murah.
 
-        # Draw top blade (layered)
-        top_shape = [
-            (head_cx, head_cy),
-            (top_edge1_x, top_edge1_y),
-            (top_mid1_x, top_mid1_y),
-            (top_tip_x, top_tip_y),
-            (top_mid2_x, top_mid2_y),
-            (top_edge2_x, top_edge2_y),
-        ]
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         [(p[0] + 2, p[1] + 2) for p in top_shape])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["blade_darkest"], top_shape)
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["blade_dark"], [
-            (head_cx, head_cy),
-            (int((head_cx + top_edge1_x) / 2), int((head_cy + top_edge1_y) / 2)),
-            (top_mid1_x, top_mid1_y),
-            (top_tip_x, top_tip_y),
-            (top_mid2_x, top_mid2_y),
-            (int((head_cx + top_edge2_x) / 2), int((head_cy + top_edge2_y) / 2)),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["blade_mid"], [
-            (int(head_cx + perp_x * 4 * facing), int(head_cy + perp_y * 4)),
-            (top_mid1_x, top_mid1_y),
-            (top_tip_x, top_tip_y),
-            (top_mid2_x, top_mid2_y),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["blade_light"], [
-            (int(head_cx + perp_x * 8 * facing), int(head_cy + perp_y * 8)),
-            (int((top_mid1_x + top_tip_x) / 2), int((top_mid1_y + top_tip_y) / 2)),
-            (int((top_mid2_x + top_tip_x) / 2), int((top_mid2_y + top_tip_y) / 2)),
-        ])
-        # Bright edges
-        pygame.draw.line(surface, _NS_drakar.PALETTE["blade_shine"],
-                         (top_tip_x, top_tip_y), (top_mid1_x, top_mid1_y), 2)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["blade_shine"],
-                         (top_tip_x, top_tip_y), (top_mid2_x, top_mid2_y), 2)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["white"],
-                         (top_tip_x, top_tip_y), (top_mid1_x, top_mid1_y), 1)
+        Mode portrait Hero Shop memakai kanvas kecil (200x200 di
+        ui_components) dan meng-crop dari bbox: kalau badan digambar
+        dengan anchor di pinggul, mata kapak yang menjulang TERPOTONG.
+        Jadi di mode itu konten dipusatkan pada bbox-nya sendiri; jalur
+        boss (1x) tidak berubah sama sekali.
+        """
+        buf = pygame.Surface((_NS_drakar.RIG_W, _NS_drakar.RIG_H),
+                             pygame.SRCALPHA)
+        _NS_drakar._draw_drk_rig(buf, _NS_drakar.RIG_OX, _NS_drakar.RIG_OY,
+                                  facing, phase, action, ap, detail)
+        if flash > 0:
+            lit = buf.copy()
+            lit.fill((255, 246, 255, 0), special_flags=pygame.BLEND_RGBA_MAX)
+            lit.set_alpha(flash)
+            buf.blit(lit, (0, 0))
+        # Jalur BOSS digambar langsung ke layar 1:1, jadi TIDAK melewati
+        # _finish_hd_sprite (yang sudah memberi rim+terminator ke hero).
+        # Di sinilah cahaya itu dipasang untuk boss. Aturan: pass cahaya
+        # dipasang di SINI hanya kalau sprite ini TIDAK akan dilewatkan ke
+        # heroes._finish_hd_sprite:
+        #   * boss 1x (scale 1.0)      -> pasang di sini
+        #   * lane hero (scale != 1.0) -> jangan (nanti dobel)
+        #   * Hero Shop (portrait)     -> pasang di sini
+        if _lighting is not None and not _NS_drakar._HERO_LANE.v:
+            _lighting.apply_to_rig(
+                buf, rim_add=(46, 20, 22), shade_mul=160,
+                box=_NS_drakar.GRAD_BOX if not detail else None)
+        ox = int(x) - _NS_drakar.RIG_OX
+        oy = int(y) - _NS_drakar.RIG_OY
+        if detail:                      # portrait: pusatkan konten
+            used = buf.get_bounding_rect(min_alpha=1)
+            if used.width > 0:
+                ox = int(x) - (used.left + used.width // 2)
+                oy = int(y) - (used.top + used.height // 2)
+        # Outline siluet (4 arah) - bagian tetap terpisah saat unit
+        # bertumpuk di lane.
+        edge = buf.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + dx, oy + dy))
+        surface.blit(buf, (ox, oy))
+        return buf
 
-        # Draw bottom blade
-        bot_shape = [
-            (head_cx, head_cy),
-            (bot_edge1_x, bot_edge1_y),
-            (bot_mid1_x, bot_mid1_y),
-            (bot_tip_x, bot_tip_y),
-            (bot_mid2_x, bot_mid2_y),
-            (bot_edge2_x, bot_edge2_y),
-        ]
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         [(p[0] + 2, p[1] + 2) for p in bot_shape])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["blade_darkest"], bot_shape)
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["blade_dark"], [
-            (head_cx, head_cy),
-            (int((head_cx + bot_edge1_x) / 2), int((head_cy + bot_edge1_y) / 2)),
-            (bot_mid1_x, bot_mid1_y),
-            (bot_tip_x, bot_tip_y),
-            (bot_mid2_x, bot_mid2_y),
-            (int((head_cx + bot_edge2_x) / 2), int((head_cy + bot_edge2_y) / 2)),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["blade_mid"], [
-            (int(head_cx - perp_x * 4 * facing), int(head_cy - perp_y * 4)),
-            (bot_mid1_x, bot_mid1_y),
-            (bot_tip_x, bot_tip_y),
-            (bot_mid2_x, bot_mid2_y),
-        ])
-        pygame.draw.line(surface, _NS_drakar.PALETTE["blade_shine"],
-                         (bot_tip_x, bot_tip_y), (bot_mid1_x, bot_mid1_y), 2)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["blade_shine"],
-                         (bot_tip_x, bot_tip_y), (bot_mid2_x, bot_mid2_y), 2)
+    def _compose_outline(x, y, facing, phase, action, ap, detail):
+        """Rig + outline gelap 1 px sebagai SATU surface.
 
-        # Center hub (bigger for two-handed axe)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["shadow_deep"],
-                             (head_cx + 1, head_cy + 1), 7)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["armor_darkest"],
-                             (head_cx, head_cy), 7)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["armor_dark"],
-                             (head_cx, head_cy), 6)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["armor_mid"],
-                             (head_cx, head_cy), 4)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["armor_light"],
-                             (head_cx, head_cy), 2)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["armor_shine"],
-                             (head_cx - 1, head_cy - 1), 1)
+        Return ``(surface, anchor_x, anchor_y)``: titik dalam surface yang
+        jatuh tepat di dunia ``(x, y)``. Dipakai tool review.
+        """
+        buf = pygame.Surface((_NS_drakar.RIG_W, _NS_drakar.RIG_H),
+                             pygame.SRCALPHA)
+        _NS_drakar._draw_drk_rig(buf, _NS_drakar.RIG_OX, _NS_drakar.RIG_OY,
+                                  facing, phase, action, ap, detail)
+        pad = 1
+        out = pygame.Surface((_NS_drakar.RIG_W + pad * 2,
+                              _NS_drakar.RIG_H + pad * 2), pygame.SRCALPHA)
+        edge = buf.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            out.blit(edge, (pad + dx, pad + dy))
+        out.blit(buf, (pad, pad))
+        return out, _NS_drakar.RIG_OX + pad, _NS_drakar.RIG_OY + pad
 
-        # Spike at TOP of axe head (between the two blades, pointing up along handle dir)
-        spike_top_x = head_cx + int(dx * 8) * facing
-        spike_top_y = head_cy + int(dy * 8)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (head_cx + 1, head_cy + 1),
-                         (spike_top_x + 1, spike_top_y + 1), 4)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["blade_darkest"],
-                         (head_cx, head_cy),
-                         (spike_top_x, spike_top_y), 3)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["blade_mid"],
-                         (head_cx, head_cy),
-                         (spike_top_x, spike_top_y), 1)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["blade_shine"],
-                         (spike_top_x, spike_top_y, 1, 1))
+    def _draw_drk_rig(surface, cx, cy, facing, phase, action, ap=0.0,
+                      detail=False):
+        """BONE RIG 2D BERLAPIS - seluruh badan dihitung dari sendi.
 
-        # BLOOD DRIP on both tips (larger, more dramatic)
-        for tip_x, tip_y in [(top_tip_x, top_tip_y), (bot_tip_x, bot_tip_y)]:
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_darkest"],
-                             (tip_x - 1, tip_y, 4, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_dark"],
-                             (tip_x, tip_y, 3, 5))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_mid"],
-                             (tip_x, tip_y + 2, 2, 4))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_light"],
-                             (tip_x, tip_y + 5, 1, 2))
-            # Falling drop
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_mid"],
-                             (tip_x, tip_y + 8, 1, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_dark"],
-                             (tip_x, tip_y + 10, 1, 1))
+        ``cx, cy`` = anchor (pusat boss / garis pinggul). Urutan gambar
+        belakang -> depan: pelt -> kaki -> lengan belakang -> torso ->
+        sabuk -> pauldron -> kepala -> lengan depan + kapak -> rim.
+        """
+        p = _NS_drakar.PALETTE
+        f = 1 if facing >= 0 else -1
+        lean, root_y = _NS_drakar._rig_shift(action, phase, ap)
 
-    def _draw_drk_head(surface, cx, cy, facing, phase, action):
-        """Head with wild hair, beard, glowing eyes (HD)."""
-        # Neck (thick)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx - 5, cy + 10, 11, 8))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (cx - 5, cy + 10, 10, 8))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_dark"],
-                         (cx - 4, cy + 10, 8, 7))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_mid"],
-                         (cx - 2, cy + 10, 4, 5))
+        def pt(dx, dy):
+            """Sendi badan (ikut bob/lean)."""
+            return _NS_drakar._local_to_screen(cx, cy, f, lean, root_y,
+                                                dx, dy)
 
-        # HAIR / mane (behind head first)
-        _NS_drakar._draw_wild_hair(surface, cx, cy - 4, facing, phase)
+        def ptg(dx, dy):
+            """Sendi yang terpatok tanah (telapak kaki tidak ikut bob)."""
+            return _NS_drakar._local_to_screen(cx, cy, f, lean, 0, dx, dy)
 
-        # Head shape (bigger, broader jaw)
-        head_pts = [
-            (cx - 10, cy - 4),
-            (cx - 12, cy + 4),
-            (cx - 9, cy + 12),
-            (cx + 9, cy + 12),
-            (cx + 12, cy + 4),
-            (cx + 10, cy - 4),
-            (cx + 7, cy - 8),
-            (cx - 7, cy - 8),
-        ]
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         [(px + 2, py + 2) for px, py in head_pts])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["skin_darkest"], head_pts)
+        def poly_free(color, pts, outline=True):
+            if outline:
+                _NS_drakar._poly(surface, p["shadow_deep"],
+                                  [(q[0] + f, q[1] + 1) for q in pts])
+            _NS_drakar._poly(surface, color, pts)
 
-        # Mid tone
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["skin_dark"], [
-            (cx - 9, cy - 3),
-            (cx - 11, cy + 4),
-            (cx - 8, cy + 11),
-            (cx + 8, cy + 11),
-            (cx + 11, cy + 4),
-            (cx + 9, cy - 3),
-            (cx + 6, cy - 7),
-            (cx - 6, cy - 7),
-        ])
+        def dot(color, dx, dy, r, outline=True):
+            sx, sy = pt(dx, dy)
+            rr = _NS_drakar._s(r)
+            if outline:
+                _NS_drakar._aacircle(surface, p["shadow_deep"],
+                                     (sx + f, sy + 1), rr + 1)
+            _NS_drakar._aacircle(surface, color, (sx, sy), rr)
 
-        # Face highlight (top)
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["skin_mid"], [
-            (cx - 6, cy - 1),
-            (cx - 8, cy + 4),
-            (cx - 5, cy + 9),
-            (cx + 6, cy + 9),
-            (cx + 9, cy + 4),
-            (cx + 7, cy - 1),
-            (cx + 4, cy - 5),
-            (cx - 4, cy - 5),
-        ])
+        def limb(a, b, width, base, light=None, ground=False):
+            tf = ptg if ground else pt
+            aa, bb = tf(*a), tf(*b)
+            w = _NS_drakar._s(width)
+            _NS_drakar._aaline(surface, p["shadow_deep"],
+                               (aa[0] + f, aa[1] + 1),
+                               (bb[0] + f, bb[1] + 1), w + 2)
+            _NS_drakar._aaline(surface, base, aa, bb, w)
+            if light:
+                off = -1 if f > 0 else 1
+                _NS_drakar._aaline(surface, light,
+                                   (aa[0] + off, aa[1] - 1),
+                                   (bb[0] + off, bb[1] - 1),
+                                   max(1, _NS_drakar._s(width // 3)))
 
-        # Bright cheek (facing side)
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["skin_light"], [
-            (cx + facing * 2, cy - 2),
-            (cx + facing * 7, cy),
-            (cx + facing * 5, cy + 5),
-            (cx + facing * 2, cy + 3),
-        ])
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_shine"],
-                         (cx + facing * 5, cy + 1, 2, 2))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_shine"],
-                         (cx + facing * 5, cy + 1, 1, 1))
+        breath = math.sin(phase * 0.55)
+        stride = (math.sin(phase * 1.66) if action == "walk" else 0.0)
+        rage = action == "rage"
+        helix = action == "helix"
+        call = action == "call"
+        cull = action == "cull"
+        hot = rage or helix or call or cull or action == "attack"
 
-        # Forehead scar
-        pygame.draw.line(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (cx - 4, cy - 6), (cx + 3, cy - 3), 1)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["skin_shine"],
-                         (cx - 3, cy - 5), (cx + 2, cy - 3), 1)
+        portrait = bool(detail)
+        front_grip = _NS_drakar._front_grip_local(action, ap, phase,
+                                                   compact=portrait)
+        back_grip = _NS_drakar._back_grip_local(action, ap, phase,
+                                                 compact=portrait)
+        front_elbow, front_angle = _NS_drakar._arm_chain(
+            _NS_drakar.SHOULDER_FRONT, front_grip, phase, action, ap)
+        back_elbow, back_angle = _NS_drakar._arm_chain(
+            _NS_drakar.SHOULDER_BACK, back_grip, phase, action, ap, back=True)
+        if portrait:
+            front_angle = _NS_drakar._portrait_axe_angle()
 
-        # Angry eyebrows (thick, V-angled)
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_darkest"], [
-            (cx - 7, cy),
-            (cx - 1, cy - 2),
-            (cx - 1, cy + 1),
-            (cx - 7, cy + 2),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_darkest"], [
-            (cx + 7, cy),
-            (cx + 1, cy - 2),
-            (cx + 1, cy + 1),
-            (cx + 7, cy + 2),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_dark"], [
-            (cx - 6, cy),
-            (cx - 2, cy - 1),
-            (cx - 2, cy + 1),
-            (cx - 6, cy + 1),
-        ])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_dark"], [
-            (cx + 6, cy),
-            (cx + 2, cy - 1),
-            (cx + 2, cy + 1),
-            (cx + 6, cy + 1),
-        ])
+        # 1. Pelt bulu di punggung - membingkai badan, tidak melebarinya
+        _NS_drakar._draw_drk_pelt_back(surface, pt, poly_free, f, phase,
+                                        action)
 
-        # EYES (glowing yellow-orange)
-        eye_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        for eye_off in (-4, 4):
-            ex = cx + eye_off
-            ey = cy + 2
-            # Glow halo
-            for r in range(5, 0, -1):
-                alpha = _NS_drakar._alpha(140 * (5 - r) / 5 * eye_pulse)
+        # 2. Kaki - telapak dipatok di GROUND_DY
+        _NS_drakar._draw_drk_legs(surface, pt, ptg, poly_free, f, phase,
+                                   action, stride)
+
+        # 3. Tangan belakang (memegang gagang di bawah tangan depan)
+        _NS_drakar._draw_drk_arm(surface, pt, poly_free, dot, limb, f, phase,
+                                  action, ap, _NS_drakar.SHOULDER_BACK,
+                                  back_elbow, back_grip, back_angle, back=True)
+
+        # 4. Torso merah + harness kulit + permata rage
+        _NS_drakar._draw_drk_torso(surface, pt, poly_free, dot, f, phase,
+                                    breath, hot)
+
+        # 5. Sabuk, loincloth, buckle tengkorak
+        _NS_drakar._draw_drk_belt(surface, pt, poly_free, dot, f, phase,
+                                   action, stride)
+
+        # 6. Pauldron besi bertingkat + duri
+        _NS_drakar._draw_drk_pauldrons(surface, pt, poly_free, dot, f, phase,
+                                        breath)
+
+        # 7. Leher + kepala (mane hitam, tanduk helm, mata amber)
+        _NS_drakar._draw_drk_head(surface, pt, poly_free, dot, f, phase,
+                                   action, rage, call)
+
+        # 8. Tangan depan + KAPAK (paling depan)
+        _NS_drakar._draw_drk_arm(surface, pt, poly_free, dot, limb, f, phase,
+                                  action, ap, _NS_drakar.SHOULDER_FRONT,
+                                  front_elbow, front_grip, front_angle,
+                                  back=False, hot=hot)
+
+        # 9. Rim light merah - sinyal warna tema
+        _NS_drakar._draw_drk_rimlight(surface, pt, f, phase, rage, call, hot)
+
+        # 10. Pass material portrait-only
+        if portrait:
+            _NS_drakar._draw_drk_masterwork_details(surface, pt, f, phase,
+                                                     action)
+            _NS_drakar._draw_drk_weave(surface, pt, f)
+
+    # ==================================================================
+    # BAGIAN TUBUH
+    # ==================================================================
+    # Prinsip di 720p: yang dibaca hanyalah NILAI (terang/gelap) dan
+    # SILUET, bukan garis halus. Setiap bagian dibatasi 2-3 lapis nilai,
+    # dan garis penanda (otot, jahitan) hanya muncul di pass portrait.
+    # ==================================================================
+
+    def _draw_drk_pelt_back(surface, pt, poly_free, f, phase, action):
+        """Pelt bulu hitam berujung merah di punggung: MEMBINGKAI badan.
+
+        Menggantikan cape: tepi bawah bergerigi dan berayun oleh phase.
+        Ujung berwarna darah memberi tepi terbaca sebagai BULU (bukan
+        lubang gelap) di skala 1x.
+        """
+        p = _NS_drakar.PALETTE
+        sway = int(math.sin(phase * 1.05) * 2)
+        if action in ("walk", "attack", "cull"):
+            sway -= 2
+        outer = [(-18, -24), (-24, -12), (-28 + sway, 4), (-22 + sway, 14),
+                 (-15 + sway, 7), (-8 + sway, 15), (-1, 6), (3, -10),
+                 (1, -24)]
+        poly_free(p["hair_darkest"], [pt(*q) for q in outer])
+        inner = [(-15, -22), (-19, -12), (-22 + sway, 3), (-17 + sway, 11),
+                 (-12 + sway, 6), (-7 + sway, 12), (-1, 4), (2, -10),
+                 (0, -22)]
+        poly_free(p["hair_dark"], [pt(*q) for q in inner], outline=False)
+        # Helai pelt: 3 segitiga gelap menjuntai
+        for i, (bx, by) in enumerate(((-19, 6), (-12, 8), (-4, 7))):
+            tipx = bx + sway - 2 + (i % 2)
+            poly_free(p["hair_darkest"], [pt(bx, by), pt(tipx, by + 9 + i),
+                                           pt(bx + 5, by)])
+        # Ujung merah: rim darah di tepi bawah pelt
+        hem = [(-20 + sway, 6), (-16 + sway, 12), (-11 + sway, 9),
+               (-6 + sway, 13), (-1, 6)]
+        for i in range(len(hem) - 1):
+            _NS_drakar._aaline(surface, p["blood_dark"], pt(*hem[i]),
+                               pt(*hem[i + 1]), 1)
+        _NS_drakar._aaline(surface, p["blood_mid"], pt(-16 + sway, 10),
+                           pt(-11 + sway, 9), 1)
+
+    def _draw_drk_legs(surface, pt, ptg, poly_free, f, phase, action, stride):
+        """Dua kaki raksasa: paha merah -> pelindung lutut -> greave ->
+        boot berujung baja. Telapak DATAR di garis tanah."""
+        p = _NS_drakar.PALETTE
+        hip_y = 2
+        ground = _NS_drakar.FEET_DY
+        for side in (-1, 1):
+            if action == "walk":
+                dx = int(stride * 9) * side
+                lift = int(max(0.0, -stride * side) * 5)
+            elif action in ("attack", "cull"):
+                # Lunge: kaki depan melangkah, kaki belakang menahan
+                dx = 10 if side > 0 else -8
+                lift = 0
+            elif action in ("rage", "helix"):
+                dx = 8 if side > 0 else -8
+                lift = 0
+            elif action == "call":
+                dx = 9 if side > 0 else -9
+                lift = 0
+            else:
+                dx = 8 if side > 0 else -10
+                lift = 0
+            front = side > 0
+            hip_x = side * 9
+            knee_x = hip_x + int(dx * 0.55) + side
+            foot_x = hip_x + dx + side * 2
+            knee_y = (hip_y + ground) // 2 - lift
+            fy = ground - lift
+            # Paha merah: blok gelap + tengah + garis cahaya tipis
+            poly_free(p["skin_darkest"], [pt(hip_x - 7, hip_y),
+                                          pt(hip_x + 6, hip_y),
+                                          pt(knee_x + 5, knee_y),
+                                          pt(knee_x - 6, knee_y)])
+            if front:
+                poly_free(p["skin_dark"], [pt(hip_x - 6, hip_y + 1),
+                                           pt(hip_x + 5, hip_y + 1),
+                                           pt(knee_x + 4, knee_y - 1),
+                                           pt(knee_x - 5, knee_y - 1)],
+                          outline=False)
+                poly_free(p["skin_mid"], [pt(hip_x - 5, hip_y + 2),
+                                          pt(hip_x + 1, hip_y + 2),
+                                          pt(knee_x - 1, knee_y - 4),
+                                          pt(knee_x - 4, knee_y - 4)],
+                          outline=False)
+            # Pembungkus kain kulit di paha (identik dengan loincloth)
+            poly_free(p["leather_dark"], [pt(hip_x - 6, hip_y + 8),
+                                          pt(hip_x + 5, hip_y + 8),
+                                          pt(hip_x + 5, hip_y + 15),
+                                          pt(hip_x - 6, hip_y + 15)])
+            if front:
+                poly_free(p["leather_mid"], [pt(hip_x - 5, hip_y + 9),
+                                             pt(hip_x + 3, hip_y + 9),
+                                             pt(hip_x + 3, hip_y + 14),
+                                             pt(hip_x - 5, hip_y + 14)],
+                          outline=False)
+                _NS_drakar._aaline(surface, p["leather_light"],
+                                   pt(hip_x - 5, hip_y + 9),
+                                   pt(hip_x + 3, hip_y + 9), 1)
+            # Pelindung lutut besi
+            poly_free(p["armor_darkest"], [pt(knee_x - 5, knee_y - 3),
+                                           pt(knee_x + 5, knee_y - 3),
+                                           pt(knee_x + 5, knee_y + 3),
+                                           pt(knee_x - 5, knee_y + 3)])
+            poly_free(p["armor_mid"], [pt(knee_x - 4, knee_y - 2),
+                                       pt(knee_x + 3, knee_y - 2),
+                                       pt(knee_x + 3, knee_y + 2),
+                                       pt(knee_x - 4, knee_y + 2)],
+                      outline=False)
+            _NS_drakar._aacircle(surface, p["armor_shine"],
+                                 pt(knee_x - 1, knee_y - 1), 1)
+            # Betis kulit gelap + satu garis tepi cahaya
+            poly_free(p["leather_dark"], [pt(knee_x - 5, knee_y + 2),
+                                          pt(knee_x + 5, knee_y + 2),
+                                          ptg(foot_x + 5, fy - 8),
+                                          ptg(foot_x - 5, fy - 8)])
+            if front:
+                poly_free(p["leather_mid"], [pt(knee_x - 4, knee_y + 3),
+                                             pt(knee_x + 2, knee_y + 3),
+                                             ptg(foot_x + 2, fy - 9),
+                                             ptg(foot_x - 4, fy - 9)],
+                          outline=False)
+                _NS_drakar._aaline(surface, p["leather_light"],
+                                   pt(knee_x - 3, knee_y + 4),
+                                   ptg(foot_x - 3, fy - 8), 1)
+            # Boot gelap + kap baja, sol DATAR di garis tanah
+            toe = 5 if f > 0 else -5
+            poly_free(p["leather_darkest"], [ptg(foot_x - 6, fy - 8),
+                                             ptg(foot_x + 6, fy - 8),
+                                             ptg(foot_x + toe + 3, fy - 2),
+                                             ptg(foot_x + toe, fy),
+                                             ptg(foot_x - toe, fy),
+                                             ptg(foot_x - 7, fy - 3)])
+            poly_free(p["leather_mid"], [ptg(foot_x - 5, fy - 7),
+                                         ptg(foot_x + 5, fy - 7),
+                                         ptg(foot_x + toe + 2, fy - 3),
+                                         ptg(foot_x - 6, fy - 3)],
+                      outline=False)
+            # Kap baja di ujung boot: nilai BESI, bukan cokelat, supaya
+            # kedua kaki tetap terpisah dan terbaca di skala hero.
+            poly_free(p["armor_dark"], [ptg(foot_x + toe - 2, fy - 6),
+                                        ptg(foot_x + toe + 3, fy - 4),
+                                        ptg(foot_x + toe + 3, fy - 1),
+                                        ptg(foot_x + toe - 1, fy),
+                                        ptg(foot_x + toe - 3, fy)],
+                      outline=False)
+            # Garis break terang di pergelangan
+            _NS_drakar._aaline(surface, p["leather_light"],
+                               ptg(foot_x - 6, fy - 8),
+                               ptg(foot_x + 5, fy - 8), 1)
+            if lift <= 0:
+                _NS_drakar._aaline(surface, p["shadow_deep"],
+                                   ptg(foot_x - 6, fy + 1),
+                                   ptg(foot_x + 6, fy + 1), 2)
+            else:
+                _NS_drakar._aaline(surface, (*p["shadow"], 80),
+                                   ptg(foot_x - 5, _NS_drakar.FEET_DY),
+                                   ptg(foot_x + 5, _NS_drakar.FEET_DY), 2)
+
+    def _draw_drk_torso(surface, pt, poly_free, dot, f, phase, breath, hot):
+        """Dada merah raksasa (V-taper) + harness kulit + permata rage.
+
+        Nilai dijaga: kulit merah dengan SATU blok terang di dada depan,
+        rongga gelap di bawah pektoral. Permata rage di tulang dada adalah
+        sinyal warna tema - menyala saat skill/attack (hot).
+        """
+        p = _NS_drakar.PALETTE
+        sh = _NS_drakar.SHOULDER_Y
+        twist = int(math.sin(phase * 1.05))
+        poly_free(p["skin_darkest"], [pt(-18 + twist, sh - 1),
+                                      pt(17 + twist, sh - 1), pt(13, 4),
+                                      pt(-14, 4)])
+        poly_free(p["skin_dark"], [pt(-16 + twist, sh), pt(15 + twist, sh),
+                                   pt(12, 3), pt(-13, 3)], outline=False)
+        poly_free(p["skin_mid"], [pt(-12 + twist, sh + 1),
+                                  pt(11 + twist, sh + 1), pt(9, -2),
+                                  pt(-10, -2)], outline=False)
+        # Blok cahaya di bahu-dada (satu bentuk besar, bukan garis halus)
+        poly_free(p["skin_light"], [pt(-11 + twist, sh + 1),
+                                    pt(8 + twist, sh + 1), pt(6, sh + 8),
+                                    pt(-10, sh + 7)], outline=False)
+        poly_free(p["skin_shine"], [pt(-9 + twist, sh + 2),
+                                    pt(4 + twist, sh + 2), pt(3, sh + 6),
+                                    pt(-8, sh + 6)], outline=False)
+        # Bayangan miring di bawah pektoral + highlight mikro: dua nilai
+        # ini yang membuat dada terbaca BERBUKUK.
+        poly_free(p["skin_dark"], [pt(-11 + twist, sh + 8),
+                                   pt(-1 + twist, sh + 9),
+                                   pt(-2 + twist, sh + 11),
+                                   pt(-11 + twist, sh + 10)], outline=False)
+        _NS_drakar._aaline(surface, p["skin_shine"],
+                           pt(-9 + twist, sh + 5), pt(-2 + twist, sh + 5), 1)
+        # Garis tengah + otot perut (nilai, bukan outline)
+        _NS_drakar._aaline(surface, p["skin_dark"], pt(twist, sh + 4),
+                           pt(0, 2), 1)
+        _NS_drakar._aaline(surface, p["skin_dark"], pt(-6, -2), pt(6, -2), 1)
+        _NS_drakar._aaline(surface, p["skin_dark"], pt(-5, 1), pt(5, 1), 1)
+        # Scar diagonal di dada (kenangan perang - satu nilai saja)
+        _NS_drakar._aaline(surface, p["skin_darkest"], pt(5 + twist, sh + 3),
+                           pt(9 + twist, sh + 9), 1)
+        # Harness kulit diagonal + pelat besi kecil
+        _NS_drakar._aaline(surface, p["leather_dark"], pt(14 + twist, sh),
+                           pt(-11, 3), 4)
+        _NS_drakar._aaline(surface, p["leather_light"], pt(14 + twist, sh),
+                           pt(-11, 3), 1)
+        poly_free(p["armor_darkest"], [pt(-2, sh + 5), pt(5, sh + 6),
+                                       pt(4, sh + 11), pt(-3, sh + 10)])
+        poly_free(p["armor_mid"], [pt(-1, sh + 6), pt(4, sh + 7),
+                                   pt(3, sh + 10), pt(-2, sh + 9)],
+                  outline=False)
+        for bx in (9, 2):
+            _NS_drakar._aacircle(surface, p["brass_mid"],
+                                 pt(bx + twist, sh + 2), 1)
+        # Permata rage di tulang dada - SATU fokus terang per tubuh
+        ga = 0.35 + (0.65 if hot else 0.0)
+        a = _NS_drakar._alpha(150 + 105 * ga *
+                              (0.72 + 0.28 * math.sin(phase * 2.2)))
+        gemx, gemy = pt(-7, sh + 6)
+        _NS_drakar._aacircle(surface, (*p["blood_dark"], a), (gemx, gemy), 3)
+        _NS_drakar._aacircle(surface, (*p["blood_mid"], min(255, a + 30)),
+                             (gemx, gemy), 2)
+        _NS_drakar._rect_st(surface, (*p["blood_shine"], 255),
+                            (gemx - 1, gemy - 1, 2, 2))
+
+    def _rect_st(surface, color, rect):
+        """Rect kecil dengan alpha (nama berbeda dari closure _rect)."""
+        rx, ry, rw, rh = int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3])
+        if rw <= 0 or rh <= 0:
+            return
+        if len(color) == 4 and color[3] < 255:
+            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
+            pygame.draw.rect(temp, color, (2, 2, rw, rh))
+            surface.blit(temp, (rx - 2, ry - 2))
+            return
+        pygame.draw.rect(surface, _NS_drakar._clamp(color),
+                         (rx, ry, rw, rh))
+
+    def _draw_drk_belt(surface, pt, poly_free, dot, f, phase, action, stride):
+        """Sabuk kulit lebar + gesper tengkorak + loincloth robek."""
+        p = _NS_drakar.PALETTE
+        sway = int(math.sin(phase * 1.1) * 2)
+        if action == "walk":
+            sway += int(stride * 2)
+        poly_free(p["leather_dark"], [pt(-14, 1), pt(14, 1), pt(14, 8),
+                                      pt(-14, 8)])
+        poly_free(p["leather_mid"], [pt(-13, 2), pt(13, 2), pt(13, 7),
+                                     pt(-13, 7)], outline=False)
+        _NS_drakar._aaline(surface, p["leather_light"], pt(-13, 2),
+                           pt(13, 2), 1)
+        for bx in (-10, -4, 9):
+            _NS_drakar._aacircle(surface, p["brass_mid"], pt(bx, 4), 1)
+        # Gesper tengkorak: bidang tulang dengan dua rongga mata gelap
+        poly_free(p["bone_darkest"], [pt(-3, 0), pt(5, 0), pt(5, 9),
+                                      pt(-3, 9)])
+        poly_free(p["bone_mid"], [pt(-2, 1), pt(4, 1), pt(4, 8), pt(-2, 8)],
+                  outline=False)
+        _NS_drakar._aacircle(surface, p["bone_darkest"], pt(0, 3), 1)
+        _NS_drakar._aacircle(surface, p["bone_darkest"], pt(3, 3), 1)
+        _NS_drakar._aaline(surface, p["bone_dark"], pt(-1, 6), pt(3, 6), 1)
+        # Loincloth bertepi robek. Sengaja sempit: versi lebar mengubah
+        # kedua kaki jadi satu tiang dan menghapus siluet "berdiri".
+        outer = [(-9, 8), (4, 8), (5 + sway, 20), (2 + sway, 26), (-1, 20),
+                 (-2, 26), (-5, 20), (-6 + sway, 24), (-8 + sway, 18)]
+        poly_free(p["leather_darkest"], [pt(*q) for q in outer])
+        inner = [(-8, 9), (3, 9), (4 + sway, 19), (1 + sway, 23), (-2, 19),
+                 (-3, 23), (-6 + sway, 17)]
+        poly_free(p["leather_dark"], [pt(*q) for q in inner], outline=False)
+        poly_free(p["leather_mid"], [pt(-4, 10), pt(3, 10), pt(3 + sway, 19),
+                                     pt(0, 23), pt(-4 + sway, 18)],
+                  outline=False)
+        _NS_drakar._aaline(surface, p["blood_dark"], pt(-6, 10),
+                           pt(-8 + sway, 21), 1)
+        # Cincin tengkorak kecil di sisi sabuk
+        _NS_drakar._aacircle(surface, p["bone_dark"], pt(-11, 6), 2)
+        _NS_drakar._aacircle(surface, p["bone_light"], pt(-11, 6), 1)
+
+    def _draw_drk_pauldrons(surface, pt, poly_free, dot, f, phase, breath):
+        """Pauldron besi bertingkat MENEMPEL bahu + duri pendek tebal.
+
+        Versi pertama masterwork punya duri tulang tinggi di ujung luar
+        yang terbaca sebagai sayap kelelawar terpisah dari badan; sekarang
+        pelat duduk di garis bahu dan duri mengarah ke atas-depan, pendek.
+        """
+        p = _NS_drakar.PALETTE
+        sh = _NS_drakar.SHOULDER_Y
+        for side, scale in ((-1, 0.78), (1, 1.0)):
+            sx = side * 17
+            sy = sh - 1 - int(breath if side > 0 else 0)
+            w = max(5, int(10 * scale))
+            h = max(3, int(6 * scale))
+            # Pelat utama: kubah rendah, tepi bawah menyatu ke lengan
+            poly_free(p["armor_darkest"], [pt(sx - w, sy - h + 2),
+                                           pt(sx + w, sy - h),
+                                           pt(sx + w + 1, sy + 3),
+                                           pt(sx, sy + h + 1),
+                                           pt(sx - w - 1, sy + 3)])
+            poly_free(p["armor_mid"], [pt(sx - w + 1, sy - h + 3),
+                                       pt(sx + w - 1, sy - h + 3),
+                                       pt(sx + w, sy + 1),
+                                       pt(sx, sy + h - 1),
+                                       pt(sx - w, sy + 1)], outline=False)
+            lit = p["armor_light"] if side > 0 else p["armor_dark"]
+            poly_free(lit, [pt(sx - w + 2, sy - h + 4),
+                            pt(sx - 1, sy - h + 4),
+                            pt(sx - 1, sy),
+                            pt(sx - w + 2, sy)], outline=False)
+            if side > 0:
+                _NS_drakar._aaline(surface, p["armor_shine"],
+                                   pt(sx - w + 2, sy - h + 4),
+                                   pt(sx + w - 1, sy - h + 3), 1)
+            # Duri pendek tebal ke atas-depan (bukan tanduk panjang)
+            spike = sy - h - (5 if side > 0 else 4)
+            poly_free(p["armor_darkest"], [pt(sx - 3, sy - h + 2),
+                                           pt(sx + 1, spike),
+                                           pt(sx + 4, sy - h + 2)])
+            poly_free(p["armor_mid"], [pt(sx - 2, sy - h + 2),
+                                       pt(sx + 1, spike + 1),
+                                       pt(sx + 3, sy - h + 2)],
+                      outline=False)
+            _NS_drakar._aacircle(surface, p["brass_mid"],
+                                 pt(sx + side * 4, sy + 2), 1)
+            if side > 0:
+                # Rivet darah di pauldron depan: 2px, tema, tidak mencuri
+                # fokus dari mata.
+                _NS_drakar._aacircle(surface, p["blood_dark"],
+                                     pt(sx - 3, sy - 1), 2)
+                _NS_drakar._aacircle(surface, p["blood_mid"],
+                                     pt(sx - 3, sy - 1), 1)
+
+    def _draw_drk_head(surface, pt, poly_free, dot, f, phase, action, rage,
+                       call):
+        """KEPALA sebagai subjek: leher tebal terlihat, mane hitam yang
+        JATUH ke bahu (tidak ada rongga antara kepala dan torso), helm
+        setengah besi di atas (tidak menutupi mata), dua tanduk banteng
+        ke ATAS, wajah merah terang dengan mata amber menyala.
+
+        Versi pertama masterwork: kepala kecil melayang dengan rongga
+        gelap di leher, helm menutupi baris mata sehingga wajah terbaca
+        sebagai helm berkaca merah, dan tanduk mendatar terbaca sebagai
+        sayap. Semua itu dibetulkan di sini.
+        """
+        p = _NS_drakar.PALETTE
+        hy = _NS_drakar.HEAD_Y + int(math.sin(phase * 0.55) * 0.9)
+        hx = 2 if action in ("attack", "cull") else 1
+        sh = _NS_drakar.SHOULDER_Y
+
+        # Leher tebal: dari tengkorak SAMPAI di bawah garis bahu, jadi
+        # tidak pernah ada rongga antara kepala dan torso.
+        poly_free(p["skin_darkest"], [pt(-8, hy + 6), pt(8, hy + 6),
+                                      pt(11, sh + 6), pt(-11, sh + 6)])
+        poly_free(p["skin_dark"], [pt(-6, hy + 7), pt(6, hy + 7),
+                                   pt(9, sh + 5), pt(-9, sh + 5)],
+                  outline=False)
+        poly_free(p["skin_mid"], [pt(-4, hy + 8), pt(4, hy + 8),
+                                  pt(6, sh + 3), pt(-5, sh + 3)],
+                  outline=False)
+
+        # Mane belakang: massa besar yang BERAKHIR di bahu (menimpa torso
+        # atas), berayun pelan.
+        wave = int(math.sin(phase * 1.35) * 1.5)
+        if action in ("walk", "attack", "cull", "rage"):
+            wave -= 2
+        mane = [(hx - 12, sh + 4), (hx - 16 + wave, hy - 1),
+                (hx - 14 + wave, hy - 13), (hx - 5, hy - 18),
+                (hx + 5, hy - 14), (hx + 10, hy - 3), (hx + 9, sh + 4)]
+        poly_free(p["hair_darkest"], [pt(*q) for q in mane])
+        mane_in = [(hx - 10, sh + 2), (hx - 13 + wave, hy - 1),
+                   (hx - 11 + wave, hy - 11), (hx - 4, hy - 15),
+                   (hx + 2, hy - 11), (hx + 7, hy - 2), (hx + 6, sh + 2)]
+        poly_free(p["hair_mid"], [pt(*q) for q in mane_in], outline=False)
+        # 3 duri mane - bentuk besar (helai 1 px hilang saat di-scale)
+        for i, (bx, bh) in enumerate(((-12, 10), (-4, 14), (4, 9))):
+            tipx = hx + bx - 3 + wave
+            tipy = hy - bh
+            poly_free(p["hair_light"], [pt(hx + bx - 2, hy - 4),
+                                        pt(tipx, tipy),
+                                        pt(hx + bx + 3, hy - 6)],
+                      outline=False)
+            poly_free(p["hair_shine"], [pt(hx + bx, hy - 5),
+                                        pt(tipx + 1, tipy + 2),
+                                        pt(hx + bx + 2, hy - 6)],
+                      outline=False)
+
+        # Tengkorak + rahang lebar (lebih besar dari versi pertama)
+        poly_free(p["skin_darkest"], [pt(hx - 10, hy - 7), pt(hx + 10, hy - 7),
+                                      pt(hx + 11, hy + 3), pt(hx + 9, hy + 11),
+                                      pt(hx - 4, hy + 12), pt(hx - 10, hy + 3)])
+        poly_free(p["skin_mid"], [pt(hx - 9, hy - 6), pt(hx + 9, hy - 6),
+                                  pt(hx + 10, hy + 3), pt(hx + 8, hy + 10),
+                                  pt(hx - 3, hy + 11), pt(hx - 9, hy + 2)],
+                  outline=False)
+        # WAJAH: merah terang dari tulang pipi ke rahang; TANPA strip
+        # gelap selebar wajah dan TANPA blok shine lebar (keduanya dulu
+        # membaca sebagai "helm berkaca/visor"). Focal point = DUA mata
+        # amber besar dengan cavum kecil per mata - bukan satu halo
+        # tengah yang melebur jadi pita.
+        poly_free(p["skin_light"], [pt(hx - 7, hy + 1), pt(hx + 8, hy + 1),
+                                    pt(hx + 8, hy + 7), pt(hx - 3, hy + 8)],
+                  outline=False)
+        poly_free(p["skin_shine"], [pt(hx + 3, hy + 3), pt(hx + 8, hy + 3),
+                                    pt(hx + 8, hy + 6),
+                                    pt(hx + 3, hy + 6)], outline=False)
+        blink = ((phase * 0.6) % 4.2) < 0.16
+        if not blink:
+            # Urutan PENTING: halo dulu (glow latar), baru blok mata
+            # opaque - dulu halo digambar setelahnya dan MENIMPA mata
+            # dengan alpha rendah (draw pygame menimpa, bukan blend)
+            # sehingga kedua mata jadi totol redup yang melebur.
+            flare = 1.0 if (rage or call) else 0.6
+            for ex in (hx - 5, hx + 2):
+                exx, exy = pt(ex, hy - 1)
                 _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["eye_mid"], alpha),
-                    (ex, ey), r)
-            # Socket
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                             (ex - 2, ey - 1, 5, 3))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["eye_dark"],
-                             (ex - 1, ey - 1, 4, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["eye_mid"],
-                             (ex, ey - 1, 3, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["eye_light"],
-                             (ex + 1, ey - 1, 2, 1))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["eye_glow"],
-                             (ex + 1, ey - 1, 1, 1))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["white"],
-                             (ex + 1, ey - 1, 1, 1))
-
-        # Nose (broad flat)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx - 2, cy + 3, 5, 4))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (cx - 2, cy + 3, 4, 4))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_dark"],
-                         (cx - 1, cy + 3, 3, 3))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_mid"],
-                         (cx + facing, cy + 3, 1, 2))
-        # Nostrils
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx - 1, cy + 6, 1, 1))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx + 1, cy + 6, 1, 1))
-
-        # BEARD (thick, big)
-        _NS_drakar._draw_beard(surface, cx, cy + 7, facing, phase)
-
-        # Ear (small on far side)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"],
-                         (cx - facing * 10, cy + 2, 2, 5))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_dark"],
-                         (cx - facing * 10, cy + 3, 1, 3))
-        # Ear piercing (metal ring)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                         (cx - facing * 11, cy + 5, 1, 2))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_shine"],
-                         (cx - facing * 11, cy + 5, 1, 1))
-
-    def _draw_wild_hair(surface, cx, cy, facing, phase):
-        """Wild flowing black mane (bigger)."""
-        sway = math.sin(phase * 0.7) * 2
-
-        # Mane back (larger)
-        hair_pts = [
-            (cx - 10, cy - 4),
-            (cx - 12, cy),
-            (cx - 14, cy + 6),
-            (cx - 16 + int(sway), cy + 14),
-            (cx - 14 + int(sway), cy + 22),
-            (cx - 10 + int(sway), cy + 26),
-            (cx - 6, cy + 24),
-            (cx - 5, cy + 10),
-            (cx - 4, cy - 5),
-        ]
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         [(px + 2, py + 2) for px, py in hair_pts])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_darkest"], hair_pts)
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_dark"], [
-            (cx - 9, cy - 3),
-            (cx - 11, cy),
-            (cx - 13, cy + 6),
-            (cx - 14 + int(sway), cy + 13),
-            (cx - 12 + int(sway), cy + 20),
-            (cx - 8 + int(sway), cy + 24),
-            (cx - 6, cy + 22),
-            (cx - 5, cy + 10),
-            (cx - 3, cy - 4),
-        ])
-
-        # Hair strand highlights
-        for strand_x in (cx - 8, cx - 11, cx - 6):
-            pygame.draw.line(surface, _NS_drakar.PALETTE["hair_mid"],
-                             (strand_x, cy + 2),
-                             (strand_x + int(sway * 0.5), cy + 20), 1)
-
-        # Top spike hairs (mohawk style)
-        for i, (x_off, height) in enumerate([(-4, 6), (-1, 8), (2, 7), (5, 5)]):
-            spike_h = height + int(math.sin(phase + i) * 2)
-            spike_x = cx + x_off
-            _NS_drakar._poly(surface, _NS_drakar.PALETTE["shadow_deep"], [
-                (spike_x + 1, cy - spike_h + 1),
-                (spike_x - 3 + 1, cy + 1),
-                (spike_x + 3 + 1, cy + 1),
-            ])
-            _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_darkest"], [
-                (spike_x, cy - spike_h),
-                (spike_x - 3, cy),
-                (spike_x + 3, cy),
-            ])
-            _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_dark"], [
-                (spike_x, cy - spike_h),
-                (spike_x - 2, cy),
-                (spike_x + 2, cy),
-            ])
-            _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_mid"], [
-                (spike_x, cy - spike_h),
-                (spike_x - 1, cy),
-                (spike_x + 1, cy),
-            ])
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["hair_light"],
-                             (spike_x, cy - spike_h, 1, 2))
-
-    def _draw_beard(surface, cx, cy, facing, phase):
-        """Thick black beard."""
-        beard_pts = [
-            (cx - 9, cy - 1),
-            (cx - 11, cy + 3),
-            (cx - 8, cy + 10),
-            (cx - 4, cy + 13),
-            (cx + 4, cy + 13),
-            (cx + 8, cy + 10),
-            (cx + 11, cy + 3),
-            (cx + 9, cy - 1),
-            (cx + 5, cy),
-            (cx - 5, cy),
-        ]
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         [(px + 2, py + 2) for px, py in beard_pts])
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_darkest"], beard_pts)
-        _NS_drakar._poly(surface, _NS_drakar.PALETTE["hair_dark"], [
-            (cx - 8, cy),
-            (cx - 10, cy + 3),
-            (cx - 7, cy + 10),
-            (cx - 3, cy + 12),
-            (cx + 3, cy + 12),
-            (cx + 7, cy + 10),
-            (cx + 10, cy + 3),
-            (cx + 8, cy),
-        ])
-
-        # Beard highlights
-        pygame.draw.line(surface, _NS_drakar.PALETTE["hair_mid"],
-                         (cx + facing * 4, cy + 3), (cx + facing * 6, cy + 8), 2)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["hair_mid"],
-                         (cx - 5, cy + 4), (cx - 7, cy + 9), 1)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["hair_light"],
-                         (cx + facing * 5, cy + 5, 1, 1))
-
-        # Beard braids / details
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"],
-                         (cx - 2, cy + 11, 4, 2))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"],
-                         (cx - 1, cy + 11, 2, 1))
-
-        # Mouth (visible above beard - grimacing)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"],
-                         (cx - 3, cy - 2, 7, 2))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["hair_darkest"],
-                         (cx - 2, cy - 2, 5, 1))
-        # Tusks visible
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["blade_light"],
-                         (cx - 2, cy - 1, 1, 2))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["blade_light"],
-                         (cx + 2, cy - 1, 1, 2))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["blade_shine"],
-                         (cx - 2, cy - 1, 1, 1))
-
-    # ============================================================
-    # AXE SLASH TRAIL
-    # ============================================================
-    def _draw_axe_slash_trail(surface, boss, cx, cy, progress):
-        """Motion blur trail following axe arc (dramatic)."""
-        # Only show during actual swing phase
-        if progress < 0.42 or progress > 0.72:
-            return
-
-        facing = getattr(boss, "_drk_attack_dir", None)
-        if facing is None:
-            facing = boss.direction
-        # Swing phase: 0.40-0.55 (fast slash), 0.55-0.70 (impact fade)
-        if progress < 0.55:
-            swing_t = (progress - 0.42) / 0.13
+                                     (*p["eye_light"],
+                                      _NS_drakar._alpha(70 * flare)),
+                                     (exx + 1, exy + 1), 3)
+                _NS_drakar._rect_st(surface, p["skin_darkest"],
+                                    (exx - 1, exy, 5, 4))
+                _NS_drakar._rect_st(surface, p["eye_mid"], (exx, exy, 3, 3))
+                _NS_drakar._rect_st(surface, p["eye_glow"], (exx, exy, 2, 2))
         else:
-            swing_t = 1.0
-        swing_t = max(0.0, min(1.0, swing_t))
+            for ex in (hx - 5, hx + 2):
+                exx, exy = pt(ex, hy)
+                _NS_drakar._rect_st(surface, p["skin_dark"],
+                                    (exx - 1, exy, 5, 2))
+        # Batang hidung pendek di antara mata
+        _NS_drakar._aaline(surface, p["skin_darkest"], pt(hx + 0, hy + 1),
+                           pt(hx + 0, hy + 3), 1)
+        # Hidung & mulut geram (dua taring tulang)
+        _NS_drakar._aaline(surface, p["skin_darkest"], pt(hx + 10, hy + 2),
+                           pt(hx + 10, hy + 5), 1)
+        _NS_drakar._aaline(surface, p["skin_darkest"], pt(hx + 4, hy + 8),
+                           pt(hx + 9, hy + 8), 1)
+        poly_free(p["bone_light"], [pt(hx + 3, hy + 8), pt(hx + 4, hy + 10),
+                                    pt(hx + 5, hy + 8)], outline=False)
+        poly_free(p["bone_light"], [pt(hx + 7, hy + 8), pt(hx + 8, hy + 10),
+                                    pt(hx + 9, hy + 8)], outline=False)
 
-        # Fade out after impact
-        if progress > 0.55:
-            fade = 1 - (progress - 0.55) / 0.17
-            fade = max(0.0, fade)
-        else:
-            fade = 1.0
+        # Jenggot kepang: hanya RAHANG BAWAH (mulai di hy+8 supaya dagu
+        # merah terlihat) + satu kepang bercincin kuningan
+        poly_free(p["hair_darkest"], [pt(hx - 5, hy + 8), pt(hx + 8, hy + 8),
+                                      pt(hx + 7, hy + 13), pt(hx + 2, hy + 16),
+                                      pt(hx - 3, hy + 13)])
+        poly_free(p["hair_mid"], [pt(hx - 3, hy + 9), pt(hx + 6, hy + 9),
+                                  pt(hx + 5, hy + 12), pt(hx + 2, hy + 14),
+                                  pt(hx - 2, hy + 12)], outline=False)
+        _NS_drakar._aaline(surface, p["shadow_deep"], pt(hx - 5, hy + 14),
+                           pt(hx + 7, hy + 13), 1)
+        poly_free(p["hair_dark"], [pt(hx + 1, hy + 14), pt(hx + 5, hy + 14),
+                                   pt(hx + 4 + wave, hy + 20),
+                                   pt(hx + 1 + wave, hy + 21)],
+                  outline=False)
+        _NS_drakar._aacircle(surface, p["brass_mid"], pt(hx + 3, hy + 15), 1)
+        for i in range(3):
+            _NS_drakar._aaline(surface, p["hair_darkest"],
+                               pt(hx - 2 + i * 3, hy + 9),
+                               pt(hx - 1 + i * 3, hy + 15), 1)
 
-        # Slash arc center (in front of body)
-        slash_cx = cx + facing * 30
-        slash_cy = cy - 4
+        # Helm setengah besi: HANYA dahi (hy-8..hy-5) - tidak menutupi
+        # baris mata. Rivet darah di pelipis.
+        poly_free(p["armor_darkest"], [pt(hx - 10, hy - 8), pt(hx + 10, hy - 8),
+                                       pt(hx + 10, hy - 6), pt(hx - 10, hy - 6)])
+        poly_free(p["armor_light"], [pt(hx - 9, hy - 7.5), pt(hx + 9, hy - 7.5),
+                                     pt(hx + 9, hy - 6.5),
+                                     pt(hx - 9, hy - 6.5)], outline=False)
+        _NS_drakar._aacircle(surface, p["blood_mid"], pt(hx + 8, hy - 7), 1)
+        _NS_drakar._aacircle(surface, p["blood_mid"], pt(hx - 8, hy - 7), 1)
+        # Dua tanduk BANTENG ke ATAS: pangkal tebal di pelipis, ujung
+        # menyipit melengkung sedikit ke depan. (Versi mendatar lama
+        # terbaca sebagai sayap kelelawar.)
+        for sgn in (1, -1):
+            basex = hx + sgn * 9
+            tipx = basex + sgn * 5 + wave
+            midx = basex + sgn * 4
+            poly_free(p["bone_darkest"], [pt(basex - sgn * 2, hy - 6),
+                                          pt(midx, hy - 13),
+                                          pt(tipx, hy - 20),
+                                          pt(basex + sgn * 2, hy - 7)])
+            poly_free(p["bone_mid"], [pt(basex, hy - 7),
+                                      pt(midx - sgn, hy - 13),
+                                      pt(tipx + sgn * 0, hy - 18),
+                                      pt(tipx + sgn, hy - 19)],
+                      outline=False)
+            poly_free(p["bone_light"], [pt(basex + sgn, hy - 7),
+                                        pt(midx - sgn * 0, hy - 13),
+                                        pt(tipx - sgn, hy - 18)],
+                      outline=False)
 
-        slash_surf = pygame.Surface((220, 220), pygame.SRCALPHA)
-        center = (110, 110)
+    def _draw_drk_arm(surface, pt, poly_free, dot, limb, f, phase, action, ap,
+                      shoulder, elbow, grip, axe_angle, back=False, hot=False):
+        """Lengan 2-tulang merah + bracer besi + kepalan di gagang."""
+        p = _NS_drakar.PALETTE
+        base = p["skin_dark"] if back else p["skin_mid"]
+        high = p["skin_mid"] if back else p["skin_light"]
+        limb(shoulder, elbow, 8 if back else 9, base, high)
+        limb(elbow, grip, 7 if back else 8, base, high)
+        # Bracer besi: satu blok di tengah lengan bawah + paku
+        bx = int(elbow[0] * 0.4 + grip[0] * 0.6)
+        by = int(elbow[1] * 0.4 + grip[1] * 0.6)
+        poly_free(p["armor_darkest"], [pt(bx - 4, by - 4), pt(bx + 4, by - 4),
+                                       pt(bx + 4, by + 4), pt(bx - 4, by + 4)])
+        poly_free(p["armor_mid"], [pt(bx - 3, by - 3), pt(bx + 2, by - 3),
+                                   pt(bx + 2, by + 3), pt(bx - 3, by + 3)],
+                  outline=False)
+        _NS_drakar._aaline(surface, p["armor_light"], pt(bx - 3, by - 2),
+                           pt(bx - 3, by + 2), 1)
+        _NS_drakar._aacircle(surface, p["brass_mid"], pt(bx + 1, by - 1), 1)
+        # Kepalan + highlight buku jari: tanpa ini gagang terlihat
+        # "menempel" di tangan, bukan digenggam.
+        dot(p["skin_darkest"], *grip, 4 if not back else 3)
+        dot(high, *grip, 3 if not back else 2)
+        if not back:
+            kx, ky = pt(grip[0] + 1, grip[1] - 2)
+            _NS_drakar._aacircle(surface, p["skin_shine"], (kx, ky), 2)
+        if not back:
+            _NS_drakar._draw_drk_axe(surface, pt, f, grip, axe_angle, phase,
+                                      action, ap, hot)
 
-        # Axe arc parameters - matches swing (from back-up to front-down)
-        start_angle = -math.pi * 1.1  # axe way behind/above
-        end_angle = math.pi * 0.4    # axe front-down
+    def _draw_drk_axe(surface, pt, f, grip, ang, phase, action, ap, hot):
+        """KAPAK PERANG DUA TANGAN - dihitung dari grip + sudut pose.
 
-        # Number of trail steps (more = longer motion blur)
-        trail_steps = 12
-        # Current progress along arc
-        current_a = start_angle + (end_angle - start_angle) * swing_t
+        Semua titik digambar dalam frame gagang (u = sepanjang gagang ke
+        arah mata kapak, v = tegak lurus ke sisi bilah) lalu diputar ke
+        ruang lokal. Bilah dibuat TERANG (nilai tertinggi ke-2 setelah
+        mata) supaya senjata terbaca sebagai senjata, bukan tonjolan
+        gelap. Saat hot (attack/rage/cull) rune darah di bilah menyala.
+        """
+        p = _NS_drakar.PALETTE
+        s, c = math.sin(ang), math.cos(ang)
 
-        # Draw motion-blur trail from earlier positions
-        radius = 55
-        for step in range(trail_steps):
-            step_t = step / trail_steps
-            # Each step is a bit behind current position along the arc
-            trail_progress = max(0.0, swing_t - step_t * 0.35)
-            trail_a = start_angle + (end_angle - start_angle) * trail_progress
+        def poly(color, pts, outline=True):
+            if outline:
+                _NS_drakar._poly(surface, p["shadow_deep"],
+                                 [(q[0] + f, q[1] + 1) for q in pts])
+            _NS_drakar._poly(surface, color, pts)
 
-            # Position along arc
-            tip_x = center[0] + int(math.cos(trail_a) * radius) * facing
-            tip_y = center[1] + int(math.sin(trail_a) * radius)
+        def hpt(u, v):
+            lx = grip[0] + s * u + c * v
+            ly = grip[1] + c * u - s * v
+            return pt(lx, ly)
 
-            # Ghost axe blade curve
-            fade_step = (1 - step_t) * fade
-            alpha_step = _NS_drakar._alpha(240 * fade_step)
-            if alpha_step <= 0:
-                continue
+        L = _NS_drakar._axe_len(action)
+        # ── Gagang: dari pommel sampai lewat mata kapak
+        poly(p["leather_darkest"], [hpt(-9, -1.4), hpt(L + 2, -1.2),
+                                         hpt(L + 2, 1.2), hpt(-9, 1.4)])
+        poly(p["leather_dark"], [hpt(-8, -0.9), hpt(L + 2, -0.7),
+                                      hpt(L + 2, 0.7), hpt(-8, 0.9)],
+                  outline=False)
+        _NS_drakar._aaline(surface, p["leather_light"], hpt(-8, -0.7),
+                           hpt(L + 2, -0.5), 1)
+        # Lilitan kulit di gagang (3 band)
+        for gu in (-4, 0, 4):
+            _NS_drakar._aaline(surface, p["leather_edge"], hpt(gu, -1.6),
+                               hpt(gu, 1.6), 1)
+        # Pommel kuningan
+        px_, py_ = hpt(-9, 0)
+        _NS_drakar._aacircle(surface, p["brass_dark"], (px_, py_), 2)
+        _NS_drakar._aacircle(surface, p["brass_light"], (px_, py_), 1)
 
-            # Draw curved trail segment (crescent shape)
-            arc_pts = []
-            arc_span = 0.15  # width of each trail slice
-            steps_inner = 6
-            for i in range(steps_inner + 1):
-                a = trail_a - arc_span + (arc_span * 2) * i / steps_inner
-                # Slight radius variance for organic feel
-                r_var = radius + math.sin(step + i) * 2
-                px = center[0] + int(math.cos(a) * r_var) * facing
-                py = center[1] + int(math.sin(a) * r_var)
-                arc_pts.append((px, py))
+        # ── Mata kapak (socket) + polling belakang
+        su = L - 7
+        poly(p["armor_darkest"], [hpt(su, -3.2), hpt(su + 5, -3.2),
+                                       hpt(su + 5, 3.2), hpt(su, 3.2)])
+        poly(p["armor_mid"], [hpt(su + 1, -2.2), hpt(su + 4, -2.2),
+                                   hpt(su + 4, 2.2), hpt(su + 1, 2.2)],
+                  outline=False)
+        _NS_drakar._aaline(surface, p["armor_shine"], hpt(su + 1, -2.0),
+                           hpt(su + 4, -2.0), 1)
+        for ru in (su + 2,):
+            _NS_drakar._aacircle(surface, p["brass_mid"], hpt(ru, 0), 1)
 
-            # Draw layered arc (fatter for closer ghosts)
-            layer_thickness = max(2, int(10 * fade_step))
-            for layer_i, (r_off, thick_mult, color, a_mult) in enumerate([
-                (3, 1.2, _NS_drakar.PALETTE["blood_darkest"], 0.5),
-                (2, 1.0, _NS_drakar.PALETTE["blood_dark"], 0.7),
-                (0, 0.8, _NS_drakar.PALETTE["blood_mid"], 0.9),
-                (-1, 0.6, _NS_drakar.PALETTE["blood_light"], 1.0),
-                (-2, 0.4, _NS_drakar.PALETTE["blood_hot"], 1.0),
-            ]):
-                thick = max(1, int(layer_thickness * thick_mult))
-                actual_alpha = _NS_drakar._alpha(alpha_step * a_mult)
-                if actual_alpha <= 0:
-                    continue
-                for i in range(len(arc_pts) - 1):
-                    pygame.draw.line(slash_surf,
-                                     _NS_drakar._rgba(color, actual_alpha),
-                                     arc_pts[i], arc_pts[i + 1], thick)
+        # ── Bilah JENGGRANG (bearded axe) di sisi +v - lebar hampir
+        #    setengah panjang gagang supaya terbaca "kapak perang", bukan
+        #    daun putih kecil.
+        b0 = su - 2
+        blade = [
+            (b0, 1.8),            # pangkal bawah socket
+            (b0 + 2, 5),          # leher
+            (b0 + 1, 14),         # jenggar ke bawah (beard)
+            (b0 + 3, 23),         # ujung jenggot
+            (b0 + 7, 26),         # busur bawah
+            (b0 + 12, 23),        # sisi muka
+            (b0 + 16, 15),        # busur depan
+            (b0 + 17, 8),         # tanduk atas
+            (b0 + 14, 3),         # atas
+            (b0 + 8, 0.5),        # duduk di gagang
+            (b0 + 2, -1.4),       # pangkal atas
+        ]
+        poly_pts = [hpt(u, v) for u, v in blade]
+        _NS_drakar._poly(surface, p["shadow_deep"],
+                         [(q[0] + f, q[1] + 1) for q in poly_pts])
+        _NS_drakar._poly(surface, p["blade_mid"], poly_pts)
+        # Badan bilah satu tingkat terang (inset dari SEMUA sisi)
+        def inset(k):
+            out = []
+            for (u, v) in blade:
+                uu = b0 + (u - b0) * k
+                vv = v * k
+                out.append(hpt(uu, vv))
+            return out
 
-        # Leading edge (brightest, current position)
-        if swing_t > 0.05:
-            leading_pts = []
-            steps_lead = 10
-            arc_span_lead = 0.5
-            for i in range(steps_lead + 1):
-                a = current_a - arc_span_lead + (arc_span_lead * 2) * i / steps_lead
-                px = center[0] + int(math.cos(a) * radius) * facing
-                py = center[1] + int(math.sin(a) * radius)
-                leading_pts.append((px, py))
+        _NS_drakar._poly(surface, p["blade_light"], inset(0.72))
+        # SISI PEMOTONG: pita shine menempel busur luar (dari tanduk
+        # atas sampai ujung jenggot) - dulu lapisan terang justru
+        # menumpuk di dekat socket sehingga bilah terbaca kecil & redup.
+        edge_out = [(b0 + 3, 22.5), (b0 + 7, 25.6), (b0 + 12, 22.6),
+                    (b0 + 15.6, 15.4), (b0 + 16.6, 8.4)]
+        edge_in = [(u, v - 3.4) for (u, v) in edge_out]
+        _NS_drakar._poly(surface, p["blade_shine"],
+                         [hpt(u, v) for (u, v) in edge_out + edge_in[::-1]])
+        # Garis kecerunan dari shine ke badan (anti-"stiker putih")
+        _NS_drakar._aaline(surface, p["blade_light"],
+                           hpt(b0 + 15.4, 10), hpt(b0 + 5.4, 22.6), 1)
+        # Alur darah di bilah - menyala saat hot
+        groove = [hpt(b0 + 3, 7), hpt(b0 + 7, 15), hpt(b0 + 12, 18)]
+        ga = _NS_drakar._alpha(90 + 165 * (1.0 if hot else 0.15) *
+                               (0.75 + 0.25 * math.sin(phase * 2.6)))
+        _NS_drakar._aaline(surface, p["blade_dark"], groove[0], groove[1], 1)
+        _NS_drakar._aaline(surface, (*p["blood_mid"], ga), groove[0],
+                           groove[2], 1)
+        if hot:
+            _NS_drakar._aaline(surface, (*p["blood_hot"], ga), groove[1],
+                               groove[2], 1)
+        # Spike belakang (-v): pembacaan "senjata berat, dua arah"
+        poly(p["armor_darkest"], [hpt(b0 + 1, -1.5), hpt(b0 + 9, -3.5),
+                                       hpt(b0 + 10, -7), hpt(b0 + 5, -4.5),
+                                       hpt(b0 + 1, -3)])
+        poly(p["armor_mid"], [hpt(b0 + 2, -2), hpt(b0 + 8, -4),
+                                   hpt(b0 + 8.5, -6)], outline=False)
 
-            for layer_i, (thick, color) in enumerate([
-                (10, _NS_drakar.PALETTE["blood_darkest"]),
-                (8, _NS_drakar.PALETTE["blood_dark"]),
-                (6, _NS_drakar.PALETTE["blood_mid"]),
-                (4, _NS_drakar.PALETTE["blood_light"]),
-                (3, _NS_drakar.PALETTE["blood_hot"]),
-                (2, _NS_drakar.PALETTE["blood_shine"]),
-                (1, _NS_drakar.PALETTE["white"]),
-            ]):
-                alpha = _NS_drakar._alpha(255 * fade)
-                if alpha <= 0:
-                    continue
-                for i in range(len(leading_pts) - 1):
-                    pygame.draw.line(slash_surf,
-                                     _NS_drakar._rgba(color, alpha),
-                                     leading_pts[i], leading_pts[i + 1], thick)
+    def _draw_drk_rimlight(surface, pt, f, phase, rage, call, hot):
+        """Rim light merah tipis di tepi yang menghadap cahaya.
 
-        # Blood droplets flying outward from arc
-        for i in range(20):
-            drop_angle = start_angle + (end_angle - start_angle) * (i / 20) * swing_t
-            drop_r = radius + int(math.sin(swing_t * 8 + i) * 15) + 10
-            dx = center[0] + int(math.cos(drop_angle) * drop_r) * facing
-            dy = center[1] + int(math.sin(drop_angle) * drop_r)
-            drop_alpha = _NS_drakar._alpha(240 * fade * (i / 20))
-            if drop_alpha > 0:
-                pygame.draw.rect(slash_surf,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], drop_alpha),
-                    (dx, dy, 3, 3))
-                pygame.draw.rect(slash_surf,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], drop_alpha),
-                    (dx, dy, 2, 2))
-                pygame.draw.rect(slash_surf,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_shine"], drop_alpha),
-                    (dx, dy, 1, 1))
-                # Trail behind droplet
-                pygame.draw.rect(slash_surf,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], drop_alpha),
-                    (dx, dy + 3, 1, 3))
+        Semua unit masterwork lain punya "sinyal" warna di tepian
+        (Grimjam api, Vex void cyan, Gornak ungu) sehingga terbaca saat
+        bertumpuk. Drakar memakai darah/ember; 1 px saja tapi di posisi
+        yang tepat: puncak tanduk, tepi pauldron, mata kapak, ujung boot.
+        """
+        p = _NS_drakar.PALETTE
+        sh = _NS_drakar.SHOULDER_Y
+        hy = _NS_drakar.HEAD_Y + int(math.sin(phase * 0.55) * 0.9)
+        pulse = 1.0 if hot else (0.72 + 0.28 * math.sin(phase * 1.8))
+        a = _NS_drakar._alpha(150 * pulse)
+        col = (*p["blood_mid"], a)
+        # Puncak mane + tanduk depan
+        _NS_drakar._aaline(surface, col, pt(-10, hy - 13), pt(0, hy - 15), 1)
+        # Tepi pelat dada & sabuk
+        _NS_drakar._aaline(surface, col, pt(14, sh + 1), pt(14, -8), 1)
+        _NS_drakar._aaline(surface, (*p["blood_hot"], a), pt(-13, 1),
+                           pt(13, 1), 1)
+        # Garis cahaya di lutut & ujung boot
+        for sx in (-6, 11):
+            _NS_drakar._aaline(surface, col, pt(sx, 24), pt(sx + 1, 32), 1)
+            _NS_drakar._aacircle(surface, col, pt(sx + 1, 45), 1)
 
-        surface.blit(slash_surf, (slash_cx - 110, slash_cy - 110))
+    # ==================================================================
+    # PORTRAIT LOD - material tambahan (Hero Shop / panel)
+    # ==================================================================
+    def _draw_drk_weave(surface, pt, f):
+        """Tenun kain & grain kulit - HANYA portrait LOD.
 
-    def _draw_impact_burst(surface, boss, cx, cy, progress):
-        """Explosive burst FX when axe hits the ground (impact phase)."""
-        facing = getattr(boss, "_drk_attack_dir", None)
-        if facing is None:
-            facing = boss.direction
-        # Impact phase: 0.53-0.70
-        if progress < 0.53 or progress > 0.72:
-            return
+        Dither 1-px seperti ini justru jadi noise setelah jalur hero
+        men-smoothscale sprite, jadi dibatasi ke mode detail.
+        """
+        p = _NS_drakar.PALETTE
+        for i in range(9):
+            wx, wy = pt(-10 + (i % 4) * 4, 9 + (i // 4) * 4)
+            _NS_drakar._rect_st(surface, (*p["leather_light"], 90),
+                                (wx, wy, 1, 1))
+        for i in range(7):
+            x0, y0 = -12 + i * 4, -14 + (i % 3) * 6
+            _NS_drakar._rect_st(surface, (*p["skin_shine"], 70),
+                                (pt(x0, y0)[0], pt(x0, y0)[1], 1, 1))
 
-        t = (progress - 0.53) / 0.19
-        t = max(0.0, min(1.0, t))
-        intensity = math.sin(t * math.pi)  # peak at middle
-
-        # Impact point (where axe hits, front-down)
-        impact_x = cx + facing * 45
-        impact_y = cy + 20
-
-        # Ground shockwave rings
-        for ring_i in range(3):
-            ring_r = int(15 + t * 40 + ring_i * 8)
-            ring_alpha = _NS_drakar._alpha(220 * intensity * (1 - ring_i * 0.3))
-            if ring_alpha > 0:
-                pygame.draw.ellipse(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], ring_alpha),
-                    (impact_x - ring_r, impact_y - ring_r // 3,
-                     ring_r * 2, ring_r * 2 // 3), 3)
-                pygame.draw.ellipse(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], ring_alpha),
-                    (impact_x - ring_r + 3, impact_y - ring_r // 3 + 2,
-                     ring_r * 2 - 6, ring_r * 2 // 3 - 4), 2)
-                pygame.draw.ellipse(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], ring_alpha),
-                    (impact_x - ring_r + 6, impact_y - ring_r // 3 + 4,
-                     ring_r * 2 - 12, ring_r * 2 // 3 - 8), 1)
-
-        # Central bright flash
-        flash_r = int(15 + intensity * 12)
-        for r in range(flash_r, 0, -2):
-            alpha = _NS_drakar._alpha(220 * intensity * (flash_r - r) / flash_r)
-            _NS_drakar._aacircle(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], alpha),
-                (impact_x, impact_y), r)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["blood_shine"],
-                             (impact_x, impact_y), 5)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["white"],
-                             (impact_x, impact_y), 2)
-
-        # Radial blood spatter shooting outward
-        for i in range(14):
-            angle = i * math.pi / 7
-            spatter_len = int(20 + t * 40)
-            for step in range(4):
-                step_r = spatter_len * (0.3 + step * 0.25)
-                sx = impact_x + int(math.cos(angle) * step_r)
-                sy = impact_y + int(math.sin(angle) * step_r * 0.6)
-                alpha = _NS_drakar._alpha(240 * intensity * (1 - step * 0.2))
-                if alpha > 0:
-                    size = max(1, 4 - step)
-                    pygame.draw.rect(surface,
-                        _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], alpha),
-                        (sx, sy, size, size))
-                    pygame.draw.rect(surface,
-                        _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                        (sx, sy, max(1, size - 1), max(1, size - 1)))
-                    if step < 2:
-                        pygame.draw.rect(surface,
-                            _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], alpha),
-                            (sx, sy, 1, 1))
-
-        # Vertical debris chunks rising up
-        for i in range(6):
-            chunk_angle = -math.pi / 2 + (i - 3) * 0.3
-            chunk_t = min(1.0, t * 1.5)
-            chunk_r = int(chunk_t * 35)
-            cx_debris = impact_x + int(math.cos(chunk_angle) * chunk_r)
-            cy_debris = impact_y + int(math.sin(chunk_angle) * chunk_r * 0.8)
-            alpha = _NS_drakar._alpha(220 * (1 - chunk_t * 0.5))
-            if alpha > 0:
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["leather_darkest"], alpha),
-                    (cx_debris - 1, cy_debris - 1, 3, 3))
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["leather_dark"], alpha),
-                    (cx_debris, cy_debris, 2, 2))
-
-        # Ground crack lines radiating from impact
-        if intensity > 0.5:
-            for i in range(6):
-                crack_angle = i * math.pi / 3 + facing * 0.2
-                crack_len = int(20 + intensity * 20)
-                end_x = impact_x + int(math.cos(crack_angle) * crack_len)
-                end_y = impact_y + int(math.sin(crack_angle) * crack_len * 0.5)
-                # Jagged crack
-                prev = (impact_x, impact_y)
-                segments = 4
-                for seg in range(1, segments + 1):
-                    t_seg = seg / segments
-                    seg_x = int(impact_x + (end_x - impact_x) * t_seg
-                                + math.sin(seg + i) * 3)
-                    seg_y = int(impact_y + (end_y - impact_y) * t_seg
-                                + math.cos(seg + i) * 2)
-                    alpha = _NS_drakar._alpha(200 * intensity * (1 - t_seg * 0.5))
-                    pygame.draw.line(surface,
-                        _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], alpha),
-                        prev, (seg_x, seg_y), 3)
-                    pygame.draw.line(surface,
-                        _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], alpha),
-                        prev, (seg_x, seg_y), 2)
-                    pygame.draw.line(surface,
-                        _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                        prev, (seg_x, seg_y), 1)
-                    prev = (seg_x, seg_y)
-    # ============================================================
-    # RAGE MIST (like poison mist for Vhorethzir)
-    # ============================================================
-    def _draw_rage_mist(surface, cx, cy, phase, trail=False, facing=1, intense=False):
-        """Red rage mist floating around boss."""
-        strength = 1.5 if intense else 1.0
-
-        # Mist cloud
-        mist = pygame.Surface((240, 80), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
-        for radius in range(50, 3, -3):
-            alpha = _NS_drakar._alpha((50 - radius) * 2.2 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], alpha),
-                    (120 - radius * 2, 40 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        for radius in range(35, 3, -2):
-            alpha = _NS_drakar._alpha((35 - radius) * 3.5 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], alpha),
-                    (120 - radius, 40 - radius // 4,
-                     radius * 2, max(2, radius // 3)),
-                )
-        surface.blit(mist, (cx - 120, cy - 20))
-
-        # Rising red embers
-        for i, offset in enumerate((-36, -24, -12, 0, 12, 24, 36, -44, 44)):
-            t = (phase * 0.4 + i * 0.13) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 4)
-            sy = cy + 8 - int(t * 36)
-            alpha = _NS_drakar._alpha(220 * (1 - t) * strength)
-            if alpha <= 0:
-                continue
-            _NS_drakar._aacircle(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], alpha), (sx, sy), 4)
-            _NS_drakar._aacircle(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha), (sx, sy - 1), 3)
-            _NS_drakar._aacircle(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["rage_light"], alpha), (sx, sy - 1), 1)
-            pygame.draw.rect(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["rage_hot"], alpha),
-                (sx, sy - 2, 1, 1))
-
-        # Bright orange sparks
+    def _draw_drk_masterwork_details(surface, pt, f, phase, action):
+        """Detail frekuensi tinggi; di skala arena tanda-tanda ini hanya
+        menjadi noise, jadi hanya dinyalakan saat portrait."""
+        p = _NS_drakar.PALETTE
+        hx = 1 if f > 0 else -1
+        cy = _NS_drakar.HEAD_Y + int(math.sin(phase * 0.55) * 0.9)
+        # Helai mane ekstra di atas krist
+        for i in range(7):
+            bx = hx - 8 + i * 2
+            by = cy - 8 - abs(i - 3)
+            wx = bx - 3 + int(math.sin(phase * 1.4 + i) * 2)
+            _NS_drakar._aaline(surface, p["hair_shine"], pt(bx, by),
+                               pt(wx, by - 11 - (i % 3)), 1)
+        # Serat jenggot
+        for i in range(4):
+            _NS_drakar._aaline(surface, p["hair_mid"],
+                               pt(hx - 4 + i * 2, cy + 7),
+                               pt(hx - 3 + i * 2, cy + 14), 1)
+        # Alis tebal
+        _NS_drakar._aaline(surface, p["hair_darkest"], pt(hx - 2, cy - 4),
+                           pt(hx + 7, cy - 5), 1)
+        # Grain kulit pada bahu & dada
         for i in range(10):
-            spark_t = (phase * 0.6 + i * 0.12) % 1.0
-            ex = cx - 30 + i * 8 + int(math.sin(phase + i) * 5)
-            ey = cy + 6 - int(spark_t * 30)
-            alpha = _NS_drakar._alpha(230 * (1 - spark_t) * strength)
-            if alpha > 0:
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_mid"], alpha),
-                    (ex, ey, 2, 2))
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_hot"], alpha),
-                    (ex, ey, 1, 1))
+            dx = -10 + (i % 5) * 4
+            dy = -19 + (i // 5) * 8
+            _NS_drakar._aaline(surface, (*p["skin_shine"], 110), pt(dx, dy),
+                               pt(dx + 1, dy), 1)
+        # Otot leher
+        _NS_drakar._aaline(surface, p["skin_dark"], pt(hx - 4, -21),
+                           pt(hx - 1, -17), 1)
+        # Jahitan loincloth
+        for xx in (-5, 0, 5):
+            _NS_drakar._aaline(surface, (*p["leather_edge"], 120), pt(xx, 10),
+                               pt(xx + 1, 24), 1)
+        # Tato perang di lengan (dua garis merah)
+        for i in range(3):
+            _NS_drakar._aaline(surface, (*p["blood_mid"], 150),
+                               pt(10 + i * 2, -28 + i * 6),
+                               pt(13 + i * 2, -26 + i * 6), 1)
+        # Ukiran pelat & paku pauldron
+        _NS_drakar._aaline(surface, (*p["armor_shine"], 165), pt(9, -33),
+                           pt(15, -32), 1)
+        _NS_drakar._aaline(surface, (*p["armor_shine"], 165), pt(9, -29),
+                           pt(15, -28), 1)
+        for sx, sy in ((16, -40), (18, -36), (13, -35), (-16, -39)):
+            _NS_drakar._aacircle(surface, (*p["armor_shine"], 150),
+                                 pt(sx, sy), 1)
+        # Ukiran rune darah di bilah (di atas alur)
+        for i in range(4):
+            t = i / 4
+            _NS_drakar._aaline(surface, (*p["blood_light"], 170),
+                               pt(14 + int(t * 9), -6 - int(t * 12)),
+                               pt(15 + int(t * 9), -5 - int(t * 12)), 1)
 
-        # Trail behind
-        if trail:
-            for i in range(6):
-                sx = cx - (i + 1) * 18 * facing
-                sy = cy + int(math.sin(phase + i) * 3)
-                alpha = _NS_drakar._alpha(160 - i * 25)
-                if alpha <= 0:
-                    continue
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], alpha),
-                    (sx, sy), max(2, 8 - i))
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                    (sx, sy), max(1, 6 - i))
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_light"], alpha),
-                    (sx, sy - 1, 2, 2))
-
-    # ============================================================
-    # AMBIENT / GROUND
-    # ============================================================
+    # ==================================================================
+    # EFEK DASAR - ditundukan pada karakter
+    # ==================================================================
     def _draw_shadow(surface, x, y):
-        """Big shadow (Vhorethzir scale)."""
-        shadow = pygame.Surface((180, 40), pygame.SRCALPHA)
-        for radius in range(18, 0, -1):
-            alpha = max(0, (18 - radius) * 14)
-            pygame.draw.ellipse(shadow, (0, 0, 0, alpha),
-                                (12 - radius, 20 - radius,
-                                 156 + radius * 2, radius * 2))
-        pygame.draw.ellipse(shadow, (10, 3, 5, 190), (6, 12, 168, 16))
-        pygame.draw.ellipse(shadow, (40, 10, 15, 130), (14, 14, 152, 12))
-        surface.blit(shadow, (x - 90, y - 20))
+        """Bayangan kontak tunggal yang lembek (base_boss menggambar satu
+        lagi; ini dipertipis supaya tidak jadi dua piringan hitam)."""
+        p = _NS_drakar.PALETTE
+        K = _NS_drakar.SCALE
+        bw, bh = int(66 * K), int(19 * K)
+        sh = pygame.Surface((bw, bh), pygame.SRCALPHA)
+        for w, h, a in ((int(48 * K), int(11 * K), 70),
+                        (int(34 * K), int(8 * K), 90),
+                        (int(20 * K), int(5 * K), 110)):
+            _NS_drakar._ellipse(sh, (0, 0, 0, a),
+                                (bw // 2 - w // 2, bh // 2 - h // 2, w, h))
+        _NS_drakar._ellipse(sh, (*p["mist_darkest"], 60),
+                            (int(8 * K), int(3 * K), int(50 * K), int(12 * K)))
+        # Titik kontak per telapak: badan "menekan" tanah, bukan mengapung
+        for side in (-1, 1):
+            fx = bw // 2 + int(side * 10 * K)
+            _NS_drakar._ellipse(sh, (0, 0, 0, 130),
+                                (fx - int(6 * K), int(bh * 0.62),
+                                 int(12 * K), int(4 * K)))
+        surface.blit(sh, (int(x) - bw // 2, int(y) - bh // 2))
 
-    def _draw_rage_aura(surface, x, y, phase):
-        """Big red rage aura (Vhorethzir scale)."""
-        pulse = math.sin(phase * 0.5) * 0.25 + 0.75
+    def _draw_rage_aura(surface, x, y, phase, skill):
+        """Cahaya merah MENEMPEL badan + bara mengorbit siluet.
 
-        aura = pygame.Surface((260, 220), pygame.SRCALPHA)
-        for radius in range(110, 5, -5):
-            alpha = _NS_drakar._alpha((110 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_drakar._aacircle(aura,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], alpha),
-                    (130, 110), radius)
-        for radius in range(75, 5, -4):
-            alpha = _NS_drakar._alpha((75 - radius) * 1.4 * pulse)
-            if alpha > 0:
-                _NS_drakar._aacircle(aura,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_dark"], alpha),
-                    (130, 110), radius)
-        for radius in range(45, 5, -3):
-            alpha = _NS_drakar._alpha((45 - radius) * 1.6 * pulse)
-            if alpha > 0:
-                _NS_drakar._aacircle(aura,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_mid"], alpha),
-                    (130, 110), radius)
-        surface.blit(aura, (x - 130, y - 110))
+        Kabut rage lama adalah titik-titik merah acak yang berserakan
+        sampai ke luar frame. Sekarang: cakram glow rapat ke badan
+        (dibaca sebagai aura, bukan noise) + bara naik dengan orbit
+        deterministik di sekitar siluet.
+        """
+        p = _NS_drakar.PALETTE
+        pulse = 1.0 if skill else math.sin(phase * 0.7) * 0.25 + 0.72
+        K = _NS_drakar.SCALE
+        glow = pygame.Surface((int(88 * K), int(104 * K)), pygame.SRCALPHA)
+        cx, cy = int(44 * K), int(56 * K)
+        for rx, ry, col, a in ((int(34 * K), int(42 * K), "mist_darkest", 100),
+                               (int(26 * K), int(34 * K), "mist_dark", 120),
+                               (int(18 * K), int(25 * K), "mist_mid", 140)):
+            _NS_drakar._ellipse(glow, (*p[col], _NS_drakar._alpha(a * pulse)),
+                                (cx - rx, cy - ry, rx * 2, ry * 2))
+        _NS_drakar._ellipse(glow, (*p["mist_light"],
+                                   _NS_drakar._alpha(66 * pulse)),
+                            (cx - int(18 * K), cy - int(25 * K),
+                             int(36 * K), int(50 * K)), 1)
+        surface.blit(glow, (int(x) - cx, int(y) - cy + 8))
 
-        # Rising floating embers around
-        for i in range(16):
-            angle = phase * 0.3 + i * math.pi / 8
-            radius = 50 + int(math.sin(phase + i) * 14)
-            sx = x + int(math.cos(angle) * radius)
-            sy = y - 10 + int(math.sin(angle) * radius * 0.5)
-            color = _NS_drakar.PALETTE["blood_mid"] if i % 2 else _NS_drakar.PALETTE["rage_mid"]
-            hot_color = _NS_drakar.PALETTE["blood_hot"] if i % 2 else _NS_drakar.PALETTE["rage_hot"]
-            pygame.draw.rect(surface, color, (sx, sy, 3, 3))
-            pygame.draw.rect(surface, hot_color, (sx, sy, 2, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["white"], (sx, sy, 1, 1))
+        n = 6
+        for i in range(n):
+            t = ((phase * 0.33 + i / n) % 1.0)
+            ang = t * math.tau
+            r = _NS_drakar._s(21) + int(math.sin(phase * 1.3 + i * 2) * 3)
+            sx = x + int(math.cos(ang) * r * 1.22)
+            sy = y + 4 - int(t * 22)
+            a = _NS_drakar._alpha(130 * (1 - t) + 60 *
+                                  math.sin(phase * 3 + i))
+            if a <= 0:
+                continue
+            _NS_drakar._aacircle(surface, (*p["blood_mid"], a), (sx, sy), 2)
+            _NS_drakar._aacircle(surface, (*p["blood_hot"], a), (sx, sy), 1)
 
     def _draw_ground_ring(surface, x, y, phase, skill):
-        """Big red runic ground ring (Vhorethzir scale)."""
-        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
-        ring = pygame.Surface((200, 68), pygame.SRCALPHA)
-        pygame.draw.ellipse(ring,
-            _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], 200),
-            (5, 22, 190, 34), 4)
-        pygame.draw.ellipse(ring,
-            _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], 220),
-            (14, 26, 172, 28), 3)
-        pygame.draw.ellipse(ring,
-            _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], 230),
-            (30, 30, 140, 20), 2)
-        pygame.draw.ellipse(ring,
-            _NS_drakar._rgba(_NS_drakar.PALETTE["rage_dark"], 180),
-            (46, 32, 108, 16), 1)
+        """Cincin rune merah di bawah kaki - seukuran telapak, TAPI
+        terang (keluarga hero masterwork punya cincin yang jelas)."""
+        p = _NS_drakar.PALETTE
+        pulse = math.sin(phase * 1.1) * 0.25 + 0.75
+        gy = y + _NS_drakar.GROUND_DY
+        bright = 1.15 if skill else 0.95
+        rw, rh = _NS_drakar._s(24), _NS_drakar._s(6)
+        _NS_drakar._ellipse(surface,
+                            (*p["rune_dark"],
+                             _NS_drakar._alpha(150 * pulse * bright)),
+                            (x - rw, gy - rh, rw * 2, rh * 2), 2)
+        rw2, rh2 = _NS_drakar._s(16), _NS_drakar._s(4)
+        _NS_drakar._ellipse(surface,
+                            (*p["rune_mid"],
+                             _NS_drakar._alpha(140 * pulse * bright)),
+                            (x - rw2, gy - rh2, rw2 * 2, rh2 * 2), 1)
+        t0, t1 = _NS_drakar._s(20), _NS_drakar._s(26)
+        ty0, ty1 = _NS_drakar._s(5), _NS_drakar._s(6)
+        for i in range(6):
+            ang = phase * 0.4 + i * math.tau / 6
+            _NS_drakar._aaline(
+                surface,
+                (*p["rune_light"], _NS_drakar._alpha(170 * pulse * bright)),
+                (x + int(math.cos(ang) * t0), gy + int(math.sin(ang) * ty0)),
+                (x + int(math.cos(ang) * t1), gy + int(math.sin(ang) * ty1)),
+                1)
+        irw, irh = _NS_drakar._s(12), _NS_drakar._s(3)
+        _NS_drakar._ellipse(surface,
+                            (*p["rune_light"],
+                             _NS_drakar._alpha(150 * pulse * bright)),
+                            (x - irw, gy - irh, irw * 2, irh * 2), 1)
+        _NS_drakar._aacircle(surface, (*p["rune_shine"],
+                                       _NS_drakar._alpha(200 * pulse)),
+                             (int(x), int(gy)), 2)
+        if skill in ("e", "r"):
+            ew, eh = _NS_drakar._s(28), _NS_drakar._s(7)
+            _NS_drakar._ellipse(
+                surface, (*p["rune_shine"], _NS_drakar._alpha(120 * pulse)),
+                (x - ew, gy - eh, ew * 2, eh * 2), 1)
 
-        # Runes around
-        for i in range(12):
-            angle = phase * 0.3 + i * math.pi / 6
-            x1 = 100 + int(math.cos(angle) * 55)
-            y1 = 39 + int(math.sin(angle) * 10)
-            x2 = 100 + int(math.cos(angle) * 88)
-            y2 = 39 + int(math.sin(angle) * 15)
-            pygame.draw.line(ring,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_light"], 220),
-                (x1, y1), (x2, y2), 2)
-            pygame.draw.rect(ring,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], 240),
-                (x2, y2, 2, 2))
+    def _draw_footfall_dust(surface, x, y, facing, phase):
+        """Kepul debu di tapak yang mendarat (deterministik dari phase)."""
+        p = _NS_drakar.PALETTE
+        contact = abs(math.sin(phase * 1.1))
+        if contact > 0.72:
+            return
+        gy = y + _NS_drakar.GROUND_DY
+        k = _NS_drakar._s
+        for side in (-1, 1):
+            for i in range(3):
+                t = (contact + i * 0.3) % 1.0
+                a = _NS_drakar._alpha(150 * (1.0 - t) * (0.72 - contact))
+                if a <= 0:
+                    continue
+                px = x + side * k(8 + i * 2 + t * 6) + facing * k(t * 4)
+                py = gy - k(t * 5)
+                _NS_drakar._aacircle(surface, (*p["dust"], a), (px, py),
+                                     max(1, k(2 - t)))
+                _NS_drakar._rect_st(surface, (*p["white"], a // 2),
+                                    (px, py, 1, 1))
 
-        if skill:
-            pygame.draw.ellipse(ring,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"],
-                                 _NS_drakar._alpha(160 * pulse)),
-                (14, 16, 172, 44), 2)
-        surface.blit(ring, (x - 100, y - 34))
+    # ==================================================================
+    # CLEAVE TRAIL - mengikuti lintasan mata kapak yang sebenarnya
+    # ==================================================================
+    def _draw_cleave_trail(surface, boss, x, y, facing, phase, progress):
+        """Pita slash dari trail MATA KAPAK (bukan busur titik melayang).
 
-    # ============================================================
-    # SKILL Q: BATTLE HUNGER
-    # ============================================================
+        trail dihitung dari tabel sudut yang sama dengan rig, jadi pita
+        selalu menyatu dengan bilah dan otomatis benar saat kapak
+        diperbesar/dikecilkan.
+        """
+        if progress < 0.24 or progress > 0.92:
+            return
+        p = _NS_drakar.PALETTE
+        lean, root_y = _NS_drakar._rig_shift("attack", phase, progress)
+
+        def scr(lx, ly):
+            return _NS_drakar._local_to_screen(x, y, facing, lean, root_y,
+                                                lx, ly)
+
+        def tip_at(ap):
+            hx, hy = _NS_drakar._axe_head_local("attack", phase, ap)
+            ang = _NS_drakar._axe_angle(phase, "attack", ap)
+            tx = hx + math.cos(ang) * 13
+            ty = hy - math.sin(ang) * 13
+            return scr(tx, ty)
+
+        steps = 7
+        trail = []
+        for i in range(steps):
+            t = i / (steps - 1)
+            trail.append(tip_at(max(0.0, min(1.0,
+                                             progress - 0.30 + t * 0.30))))
+        pivot = scr(*_NS_drakar._front_grip_local("attack", progress, phase))
+        fade = 1.0 - max(0.0, (progress - 0.70) / 0.22)
+        alpha = _NS_drakar._alpha(230 * fade)
+        if alpha <= 0:
+            return
+        # Kapak = senjata berat: pita lebih lebar dari pedang gornak dan
+        # warna darah/ember (bukan ungu) supaya tema keluarga terbaca.
+        for col, off, mul in (("blood_darkest", 10, 0.62),
+                              ("blood_mid", 5, 0.9),
+                              ("blood_shine", 1, 1.0)):
+            outer, inner = [], []
+            for i, q in enumerate(trail):
+                t = i / (steps - 1)
+                w = max(0.5, (1 - abs(t - 0.8)) * off * (0.35 + 0.65 * t))
+                vx, vy = q[0] - pivot[0], q[1] - pivot[1]
+                ln = math.hypot(vx, vy) or 1.0
+                nx, ny = -vy / ln, vx / ln
+                outer.append((q[0] + nx * w, q[1] + ny * w))
+                inner.append((q[0] - nx * w * 0.55, q[1] - ny * w * 0.55))
+            _NS_drakar._poly(surface,
+                             (*p[col], _NS_drakar._alpha(alpha * mul)),
+                             outer + inner[::-1])
+        if 0.40 <= progress <= 0.62:
+            # Impact: percikan dari mata kapak + guncangan mikro
+            tip = trail[-1]
+            for i in range(5):
+                ang = -math.pi / 2 + i * math.pi / 4
+                ex = tip[0] + int(math.cos(ang) * 9)
+                ey = tip[1] + int(math.sin(ang) * 9)
+                _NS_drakar._aaline(surface, (*p["blood_hot"], alpha), tip,
+                                   (ex, ey), 1)
+
+    # ==================================================================
+    # SKILL Q - BATTLE HUNGER (rage self-buff, 90 frame)
+    # ==================================================================
     def _draw_battlehunger_ground(surface, boss, x, y, timer, phase):
-        tx, ty = _NS_drakar._target_position(boss, x, y)
-        duration = 80
+        """Rune tanah membakar lebih terang + bara merambat naik."""
+        p = _NS_drakar.PALETTE
+        duration = _NS_drakar.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        r = int(60 * min(1.0, progress * 3))
-        if r > 3:
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], 200),
-                (tx - r, ty - r // 3, r * 2, r * 2 // 3))
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], 180),
-                (tx - r + 4, ty - r // 3 + 3,
-                 r * 2 - 8, r * 2 // 3 - 6))
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["rage_mid"], 130),
-                (tx - r + 10, ty - r // 3 + 6,
-                 r * 2 - 20, r * 2 // 3 - 12))
+        intensity = math.sin(min(1.0, progress * 3) * math.pi * 0.5)
+        gy = y + _NS_drakar.GROUND_DY
+        rw = int(_NS_drakar._s(26) * (1 + 0.12 * math.sin(phase * 3)))
+        rh = int(rw * 0.25)
+        _NS_drakar._ellipse(surface, (*p["blood_dark"],
+                                      _NS_drakar._alpha(170 * intensity)),
+                            (x - rw, gy - rh, rw * 2, rh * 2), 2)
+        for i in range(8):
+            ang = i * math.tau / 8 + phase * 0.8
+            _NS_drakar._aaline(surface, (*p["blood_mid"],
+                                         _NS_drakar._alpha(190 * intensity)),
+                               (x + int(math.cos(ang) * rw * 0.55),
+                                gy + int(math.sin(ang) * rh * 0.55)),
+                               (x + int(math.cos(ang) * rw),
+                                gy + int(math.sin(ang) * rh)), 1)
+        # Bara merambat naik dari tanah ke badan
+        for i in range(5):
+            t = ((phase * 0.5 + i * 0.2) % 1.0)
+            px = x + int(math.sin(i * 2.1 + phase) * 10 * (1 - t))
+            py = gy - int(t * 60 * _NS_drakar.SCALE)
+            a = _NS_drakar._alpha(200 * intensity * (1 - t))
+            if a <= 0:
+                continue
+            _NS_drakar._aacircle(surface, (*p["blood_mid"], a), (px, py), 2)
+            _NS_drakar._aacircle(surface, (*p["blood_hot"], a), (px, py), 1)
 
     def _draw_battlehunger_foreground(surface, boss, x, y, timer, phase):
-        tx, ty = _NS_drakar._target_position(boss, x, y)
-        duration = 80
+        """Vortex bara mengorbit torso + mata membara (rig) + rim merah."""
+        p = _NS_drakar.PALETTE
+        duration = _NS_drakar.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        r = int(60 * min(1.0, progress * 3))
+        if progress > 0.92:
+            fade = (1.0 - progress) / 0.08
+        else:
+            fade = min(1.0, progress * 6)
+        # Orbit bara: dua lapis, radius napas
+        for layer, (rr, n) in enumerate(((_NS_drakar._s(20), 5),
+                                          (_NS_drakar._s(27), 7))):
+            for i in range(n):
+                t = ((phase * (0.55 + 0.12 * layer) + i / n) % 1.0)
+                ang = t * math.tau
+                rx = rr * (1.18 + 0.1 * math.sin(phase + i))
+                ry = rr * 0.8
+                px = x + int(math.cos(ang) * rx)
+                py = y - _NS_drakar._s(6) + int(math.sin(ang) * ry)
+                a = _NS_drakar._alpha(170 * fade * (1 - abs(t - 0.5) * 0.8))
+                if a <= 0:
+                    continue
+                _NS_drakar._aacircle(surface, (*p["blood_dark"], a),
+                                     (px, py), 2)
+                _NS_drakar._aacircle(surface, (*p["blood_light"], a),
+                                     (px, py), 1)
+                if i % 2 == 0:
+                    _NS_drakar._rect_st(surface, (*p["blood_shine"], a),
+                                        (px, py - 2, 1, 3))
+        # Rim merah di badan (badan tetap subjek)
+        rim = _NS_drakar._alpha(100 * fade)
+        rw, rh = _NS_drakar._s(16), _NS_drakar._s(22)
+        _NS_drakar._ellipse(surface, (*p["blood_mid"], rim),
+                            (int(x) - rw, int(y) - rh - _NS_drakar.LIFT,
+                             rw * 2, rh * 2 + _NS_drakar._s(2)), 1)
 
-        if r < 5:
-            return
-
-        # Flame columns
-        for i in range(8):
-            col_angle = i * math.pi * 2 / 8 + phase * 0.15
-            col_dist = int(r * 0.55)
-            col_x = tx + int(math.cos(col_angle) * col_dist)
-            col_y_base = ty + int(math.sin(col_angle) * col_dist * 0.4)
-
-            for layer in range(6):
-                layer_t = (phase * 0.7 + i * 0.3 + layer * 0.15) % 1.0
-                layer_y = col_y_base - int(layer_t * 36)
-                layer_alpha = _NS_drakar._alpha(220 * (1 - layer_t))
-                layer_w = int(6 + layer_t * 3)
-                layer_h = int(4 + layer_t * 3)
-
-                pygame.draw.ellipse(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], layer_alpha),
-                    (col_x - layer_w, layer_y - layer_h,
-                     layer_w * 2, layer_h * 2))
-                pygame.draw.ellipse(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], layer_alpha),
-                    (col_x - layer_w + 1, layer_y - layer_h + 1,
-                     max(1, layer_w * 2 - 2), max(1, layer_h * 2 - 2)))
-                pygame.draw.ellipse(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_mid"], layer_alpha),
-                    (col_x - layer_w + 2, layer_y - layer_h + 2,
-                     max(1, layer_w * 2 - 4), max(1, layer_h * 2 - 4)))
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_light"], layer_alpha),
-                    (col_x, layer_y - 1, 1, 1))
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_hot"], layer_alpha),
-                    (col_x, layer_y - 2, 1, 1))
-
-        # Central core
-        core_pulse = math.sin(phase * 3) * 0.4 + 0.6
-        for cr in range(10, 0, -1):
-            alpha = _NS_drakar._alpha(200 * (10 - cr) / 10 * core_pulse)
-            _NS_drakar._aacircle(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                (tx, ty), cr)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["rage_light"], (tx, ty), 3)
-        _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["rage_hot"], (tx, ty), 1)
-
-        # Blood spatters
-        for i in range(24):
-            angle = i * math.pi * 2 / 24 + phase * 0.4
-            sp_r = int(r * (0.4 + (i % 3) * 0.2))
-            sx = tx + int(math.cos(angle) * sp_r)
-            sy = ty + int(math.sin(angle) * sp_r * 0.4)
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_mid"], (sx, sy, 2, 2))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_light"], (sx, sy, 1, 1))
-
-    # ============================================================
-    # SKILL W: COUNTER HELIX
-    # ============================================================
+    # ==================================================================
+    # SKILL W - COUNTER HELIX (spin AOE, 45 frame)
+    # ==================================================================
     def _draw_counterhelix_ground(surface, boss, x, y, timer, phase):
-        duration = 40
+        """Cincin tanah berputar + retakan radial."""
+        p = _NS_drakar.PALETTE
+        duration = _NS_drakar.SKILL_DUR["w"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        r = int(60 + progress * 30)
-        alpha = _NS_drakar._alpha(240 * (1 - progress * 0.5))
-        pygame.draw.ellipse(surface,
-            _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], alpha),
-            (x - r, y + 76 - r // 3, r * 2, r * 2 // 3), 4)
-        pygame.draw.ellipse(surface,
-            _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-            (x - r + 5, y + 76 - r // 3 + 4,
-             r * 2 - 10, r * 2 // 3 - 8), 3)
-        pygame.draw.ellipse(surface,
-            _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], alpha),
-            (x - r + 10, y + 76 - r // 3 + 7,
-             r * 2 - 20, r * 2 // 3 - 14), 2)
+        grow = 1.0 if progress < 0.8 else (1.0 - progress) / 0.2
+        gy = y + _NS_drakar.GROUND_DY
+        r = int(_NS_drakar._s(24) * min(1.0, progress * 4) * grow) + 4
+        _NS_drakar._ellipse(surface, (*p["blood_darkest"],
+                                      _NS_drakar._alpha(150 * grow)),
+                            (x - r, gy - r // 3, r * 2, max(3, r * 2 // 3)), 2)
+        for i in range(10):
+            ang = phase * 5.2 + i * math.tau / 10
+            _NS_drakar._aaline(surface, (*p["blood_mid"],
+                                         _NS_drakar._alpha(200 * grow)),
+                               (x + int(math.cos(ang) * r * 0.45),
+                                gy + int(math.sin(ang) * r * 0.15)),
+                               (x + int(math.cos(ang) * r),
+                                gy + int(math.sin(ang) * r * 0.33)), 1)
 
-        # Spinning arc trails
-        spin = progress * math.pi * 6
+    def _draw_counterhelix_foreground(surface, boss, x, y, timer, phase):
+        """Piringan helix kapak: dua pita mengikuti MATA KAPAK yang
+        berputar + percikan di tepi depan.
+
+        Sudut putar memakai rumus yang sama dengan _axe_angle("helix"),
+        jadi pita selalu lahir dari bilah, bukan dari elips kosong.
+        """
+        p = _NS_drakar.PALETTE
+        duration = _NS_drakar.SKILL_DUR["w"]
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        if progress < 0.12:
+            grow = progress / 0.12
+        elif progress > 0.82:
+            grow = max(0.0, (1.0 - progress) / 0.18)
+        else:
+            grow = 1.0
+        if grow <= 0:
+            return
+        lean, root_y = _NS_drakar._rig_shift("helix", phase, 0.0)
+        facing = getattr(boss, "direction", 1) or 1
+        cy0 = y - _NS_drakar._s(4)
+
+        def scr(lx, ly):
+            return _NS_drakar._local_to_screen(x, y, facing, lean, root_y,
+                                                lx, ly)
+
+        grip = _NS_drakar._front_grip_local("helix", 0.0, phase)
+        L = _NS_drakar._axe_len("helix")
+        rx = _NS_drakar._s(L + 6) * (0.5 + 0.5 * grow)
+        ry = _NS_drakar._s(11) * (0.5 + 0.5 * grow)
+
+        def blade_point(spin):
+            """Mata kapak pada fase putaran spin (mengikuti pose rig)."""
+            ang0 = _NS_drakar._axe_angle(phase, "helix", 0.0)
+            hx = grip[0] + math.sin(ang0) * L
+            hy = grip[1] + math.cos(ang0) * L
+            # Orbit elips di sekitar dada - fase = spin
+            return scr(grip[0] + math.sin(spin) * (L + 6),
+                       grip[1] + math.cos(spin) * 11)
+
+        spin0 = phase * 7.0
+        steps = 9
+        for band, (col, off, mul) in enumerate(
+                (("blood_darkest", 9, 0.6), ("blood_mid", 4, 0.9),
+                 ("blood_shine", 1, 1.0))):
+            pts = []
+            for i in range(steps):
+                t = i / (steps - 1)
+                spin = spin0 - t * 1.5
+                pts.append(blade_point(spin))
+            alpha = _NS_drakar._alpha(220 * grow)
+            for i in range(len(pts) - 1):
+                t = 1 - i / (len(pts) - 1)
+                w = max(1, int(off * t * (0.4 + 0.6 * grow)))
+                _NS_drakar._aaline(surface,
+                                   (*p[col], _NS_drakar._alpha(alpha * mul * t)),
+                                   pts[i], pts[i + 1], w)
+        # Ujung depan: percik bara keluar dari arah putar
+        lead = blade_point(spin0)
         for i in range(4):
-            a = spin + i * math.pi / 2
-            arc_pts = []
-            for step in range(12):
-                st = step / 11
-                arc_a = a + st * math.pi / 3
-                ax = x + int(math.cos(arc_a) * (r - 6))
-                ay = y + 76 + int(math.sin(arc_a) * (r - 6) * 0.4)
-                arc_pts.append((ax, ay))
-            for k in range(len(arc_pts) - 1):
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_light"], alpha),
-                    arc_pts[k], arc_pts[k + 1], 3)
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], alpha),
-                    arc_pts[k], arc_pts[k + 1], 1)
+            ang = spin0 + i * 0.5
+            ex = lead[0] + int(math.cos(ang) * (7 + i * 3))
+            ey = lead[1] + int(math.sin(ang) * 3) - i * 2
+            a = _NS_drakar._alpha(200 * grow * (1 - i * 0.2))
+            _NS_drakar._aacircle(surface, (*p["blood_light"], a), (ex, ey), 2)
+            _NS_drakar._rect_st(surface, (*p["blood_shine"], a),
+                                (ex, ey, 1, 1))
+        # Goresan kecepatan di lingkar luar
+        for i in range(3):
+            t = ((phase * 1.6 + i / 3.0) % 1.0)
+            spin = spin0 - (0.6 + t * 2.4)
+            qx, qy = blade_point(spin)
+            vx = x + (qx - x) * 1.12
+            vy = cy0 + (qy - cy0) * 1.12
+            _NS_drakar._aaline(surface, (*p["blood_mid"],
+                                         _NS_drakar._alpha(120 * grow)),
+                               (qx, qy), (int(vx), int(vy)), 1)
 
-    # ============================================================
-    # SKILL E: BERSERKER'S CALL
-    # ============================================================
+    # ==================================================================
+    # SKILL E - BERSERKER'S CALL (roar taunt, 60 frame)
+    # ==================================================================
     def _draw_berserkerscall_ground(surface, boss, x, y, timer, phase):
-        duration = 70
+        """Rune meledak terang + retakan tanah radiasi."""
+        p = _NS_drakar.PALETTE
+        duration = _NS_drakar.SKILL_DUR["e"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
-
-        if progress > 0.2:
-            t = (progress - 0.2) / 0.8
-            r = int(45 + t * 80)
-            base_alpha = _NS_drakar._alpha(240 * (1 - t))
-            for i in range(3):
-                a = _NS_drakar._alpha(base_alpha - i * 60)
-                if a > 0:
-                    pygame.draw.ellipse(surface,
-                        _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], a),
-                        (x - r - i * 4, y + 76 - r // 3 - i,
-                         (r + i * 4) * 2, (r + i * 4) * 2 // 3), 3)
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], base_alpha),
-                (x - r + 5, y + 76 - r // 3 + 4,
-                 r * 2 - 10, r * 2 // 3 - 8), 2)
+        # Roar: denyut cepat di awal, mereda di akhir
+        punch = math.sin(min(1.0, progress * 3.5) * math.pi)
+        fade = 1.0 if progress < 0.78 else (1.0 - progress) / 0.22
+        gy = y + _NS_drakar.GROUND_DY
+        r = int(_NS_drakar._s(27) * (1 + 0.1 * math.sin(phase * 9)))
+        _NS_drakar._ellipse(surface, (*p["blood_dark"],
+                                      _NS_drakar._alpha((120 + 90 * punch)
+                                                        * fade)),
+                            (x - r, gy - r // 3, r * 2, max(3, r * 2 // 3)), 2)
+        _NS_drakar._ellipse(surface, (*p["rune_shine"],
+                                      _NS_drakar._alpha(110 * fade)),
+                            (x - r + 4, gy - r // 3 + 2, r * 2 - 8,
+                             max(2, r * 2 // 3 - 6)), 1)
+        # Retakan radiasi (deterministik)
+        for i in range(6):
+            ang = i * math.tau / 6 + 0.35
+            r1 = int(r * 0.7)
+            r2 = int(r * (1.25 + 0.12 * math.sin(phase * 6 + i)))
+            x1 = x + int(math.cos(ang) * r1)
+            y1 = gy + int(math.sin(ang) * r1 * 0.32)
+            x2 = x + int(math.cos(ang) * r2)
+            y2 = gy + int(math.sin(ang) * r2 * 0.32)
+            _NS_drakar._aaline(surface, (*p["blood_mid"],
+                                         _NS_drakar._alpha(180 * fade)),
+                               (x1, y1), (x2, y2), 1)
+            _NS_drakar._aacircle(surface, (*p["blood_hot"],
+                                           _NS_drakar._alpha(160 * fade)),
+                                 (x2, y2), 1)
 
     def _draw_berserkerscall_foreground(surface, boss, x, y, timer, phase):
-        duration = 70
+        """Gelombang roar dari mulut + getaran + debu terangkat.
+
+        2-3 busur memuai dari kepala (bukan lingkaran penuh yang
+        menenggelamkan badan), lalu memudar.
+        """
+        p = _NS_drakar.PALETTE
+        duration = _NS_drakar.SKILL_DUR["e"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
+        if progress > 0.72:
+            return
+        facing = getattr(boss, "direction", 1) or 1
+        head_y = y - _NS_drakar._s(_NS_drakar.HEAD_Y * -1) - 4
+        mouth_x = x + facing * _NS_drakar._s(8)
+        # Busur roar: 3 gelombang berjalan
+        for i in range(3):
+            t = ((progress * 2.6 + i * 0.24) % 1.0)
+            r = _NS_drakar._s(10) + t * _NS_drakar._s(30)
+            a = _NS_drakar._alpha(200 * (1 - t))
+            if a <= 0:
+                continue
+            rect = (int(mouth_x - r), int(head_y - r * 0.8),
+                    int(r * 2), int(r * 1.6))
+            temp = pygame.Surface((rect[2] + 6, rect[3] + 6), pygame.SRCALPHA)
+            ccx, ccy = rect[2] // 2 + 3, rect[3] // 2 + 3
+            # Busur setengah menghadap arah hadap (roar, bukan dome)
+            for wdt, mul in ((3, 0.6), (1, 1.0)):
+                _arc = []
+                for k in range(9):
+                    ang = -0.55 + k * (1.1 / 8)
+                    _arc.append((int(ccx + math.cos(ang) * (r - wdt)),
+                                 int(ccy + math.sin(ang) * (r * 0.8 - wdt))))
+                if facing < 0:
+                    _arc = [(rect[2] + 6 - qx, qy) for qx, qy in _arc]
+                _NS_drakar._aaline(surface,
+                                   (*p["blood_mid"],
+                                    _NS_drakar._alpha(a * mul)),
+                                   _arc[0], _arc[-1], wdt)
+                for qx, qy in _arc[1:-1]:
+                    _NS_drakar._aacircle(surface,
+                                         (*p["blood_light"],
+                                          _NS_drakar._alpha(a * mul * 0.7)),
+                                         (qx, qy), 1)
+        # Debu terangkat di kaki (gema langkah kencang)
+        gy = y + _NS_drakar.GROUND_DY
+        for i in range(6):
+            t = ((phase * 0.9 + i / 6.0) % 1.0)
+            px = x + int(math.sin(i * 2.4 + phase) * (14 + t * 22))
+            py = gy - int(t * 10)
+            a = _NS_drakar._alpha(140 * (1 - t))
+            if a > 0:
+                _NS_drakar._aacircle(surface, (*p["dust"], a), (px, py),
+                                     max(1, _NS_drakar._s(2 - t)))
 
-        if progress < 0.3:
-            t = progress / 0.3
-            glow_r = int(12 + t * 12)
-            for r in range(glow_r + 6, 0, -1):
-                alpha = _NS_drakar._alpha(180 * (glow_r + 6 - r) / (glow_r + 6) * t)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], alpha),
-                    (x, y - 4), r)
-            _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["blood_mid"], (x, y - 4), 10)
-            _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["rage_light"], (x, y - 4), 6)
-            _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["rage_hot"], (x, y - 4), 3)
-            _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["white"], (x, y - 4), 1)
-
-            for i in range(12):
-                angle = i * math.pi / 6
-                mist_x = x + int(math.cos(angle) * 30 * t)
-                mist_y = y - 8 + int(math.sin(angle) * 25 * t)
-                alpha = _NS_drakar._alpha(200 * t)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                    (mist_x, mist_y), 4)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_light"], alpha),
-                    (mist_x, mist_y), 2)
-        else:
-            t = (progress - 0.3) / 0.7
-            wave_r = int(t * 130)
-
-            for i in range(28):
-                angle = i * math.pi * 2 / 28
-                px = x + int(math.cos(angle) * wave_r)
-                py = y - 8 + int(math.sin(angle) * wave_r * 0.7)
-                alpha = _NS_drakar._alpha(240 * (1 - t))
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], alpha),
-                    (px, py), 5)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                    (px, py), 4)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_light"], alpha),
-                    (px, py), 2)
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_hot"], alpha),
-                    (px, py, 2, 2))
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["white"], alpha),
-                    (px, py, 1, 1))
-
-            for i in range(14):
-                angle = i * math.pi / 7
-                inner_r = int(wave_r * 0.65)
-                outer_r = wave_r
-                p1 = (x + int(math.cos(angle) * inner_r),
-                      y - 8 + int(math.sin(angle) * inner_r * 0.7))
-                p2 = (x + int(math.cos(angle) * outer_r),
-                      y - 8 + int(math.sin(angle) * outer_r * 0.7))
-                alpha = _NS_drakar._alpha(220 * (1 - t))
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_light"], alpha),
-                    p1, p2, 3)
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_hot"], alpha),
-                    p1, p2, 1)
-
-    # ============================================================
-    # SKILL R: CULLING BLADE
-    # ============================================================
+    # ==================================================================
+    # SKILL R - CULLING BLADE (eksekusi, 60 frame)
+    # ==================================================================
     def _draw_cullingblade_ground(surface, boss, x, y, timer, phase):
+        """Rune eksekusi di bawah TARGET + garis pengisian dari kapak."""
+        p = _NS_drakar.PALETTE
         tx, ty = _NS_drakar._target_position(boss, x, y)
-        duration = 90
+        duration = _NS_drakar.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
-
-        if progress < 0.4:
-            t = progress / 0.4
-            r = int(50 * t)
-            alpha = _NS_drakar._alpha(200 * t)
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], alpha),
-                (tx - r, ty - r // 3, r * 2, r * 2 // 3), 4)
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                (tx - r + 4, ty - r // 3 + 3,
-                 r * 2 - 8, r * 2 // 3 - 6), 3)
-            for i in range(10):
-                angle = i * math.pi / 5 + phase * 0.5
-                sx = tx + int(math.cos(angle) * r)
-                sy = ty + int(math.sin(angle) * r * 0.4)
-                pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_light"], (sx, sy, 3, 3))
-                pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_hot"], (sx, sy, 2, 2))
-        else:
-            t = (progress - 0.4) / 0.6
-            r = int(50 + t * 30)
-            alpha = _NS_drakar._alpha(240 * (1 - t * 0.5))
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], alpha),
-                (tx - r, ty - r // 3, r * 2, r * 2 // 3))
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], alpha),
-                (tx - r + 5, ty - r // 3 + 4,
-                 r * 2 - 10, r * 2 // 3 - 8))
+        t = min(1.0, progress * 2.5)
+        fade = 1.0 if progress < 0.8 else (1.0 - progress) / 0.2
+        rw = int(_NS_drakar._s(26) * t) + 2
+        rh = max(2, rw // 3)
+        _NS_drakar._ellipse(surface, (*p["blood_darkest"],
+                                      _NS_drakar._alpha(190 * t * fade)),
+                            (tx - rw, ty - rh + 4, rw * 2, rh * 2), 2)
+        _NS_drakar._ellipse(surface, (*p["blood_mid"],
+                                      _NS_drakar._alpha(170 * t * fade)),
+                            (tx - rw + 4, ty - rh + 6, rw * 2 - 8,
+                             max(1, rh * 2 - 8)), 1)
+        if progress < 0.55:
+            # Garis pengisian: dari mata kapak menuju target
+            tip = _NS_drakar._tip_screen(boss, x, y)
+            k = progress / 0.55
+            for i in range(6):
+                tt = (phase * 1.1 + i / 6.0) % 1.0 * k
+                px = int(tip[0] + (tx - tip[0]) * tt)
+                py = int(tip[1] + (ty - tip[1]) * tt)
+                a = _NS_drakar._alpha(200 * (1 - abs(tt - 0.5) * 1.4) * k)
+                if a > 0:
+                    _NS_drakar._aacircle(surface, (*p["blood_light"], a),
+                                         (px, py), 2)
+                    _NS_drakar._rect_st(surface, (*p["blood_shine"], a),
+                                        (px, py, 1, 1))
 
     def _draw_cullingblade_foreground(surface, boss, x, y, timer, phase):
+        """Tiga babak: (1) kapak membara terangkat, (2) tebasan raksasa
+        lintasan mata kapak -> target + kilat putih, (3) ledakan eksekusi
+        di target + bara yang jatuh."""
+        p = _NS_drakar.PALETTE
         tx, ty = _NS_drakar._target_position(boss, x, y)
-        duration = 90
+        duration = _NS_drakar.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
+        facing = getattr(boss, "direction", 1) or 1
+        tip = _NS_drakar._tip_screen(boss, x, y)
 
-        if progress < 0.4:
-            t = progress / 0.4
-            facing = boss.direction
-            charge_x = x + facing * 40
-            charge_y = y - 6
-            cr = int(8 + t * 10)
-            for r in range(cr + 7, 0, -1):
-                alpha = _NS_drakar._alpha(220 * (cr + 7 - r) / (cr + 7))
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], alpha),
-                    (charge_x, charge_y), r)
-            for r in range(cr, 0, -1):
-                alpha = _NS_drakar._alpha(240 * (cr - r + 1) / cr)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                    (charge_x, charge_y), r)
-            _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["blood_light"],
-                                 (charge_x, charge_y), max(1, cr - 3))
-            _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["rage_light"],
-                                 (charge_x, charge_y), max(1, cr - 5))
-            _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["rage_hot"],
-                                 (charge_x, charge_y), max(1, cr - 7))
-            _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["white"],
-                                 (charge_x, charge_y), max(1, cr - 9))
+        if progress < 0.42:
+            # (1) Charge: bara CONVERGE ke mata kapak (arah aliran jelas)
+            t = progress / 0.42
+            r_core = 3 + int(t * 6)
+            for k in range(r_core + 3, 0, -1):
+                a = _NS_drakar._alpha(190 * (r_core + 3 - k) / (r_core + 3)
+                                      * (0.4 + t))
+                _NS_drakar._aacircle(surface, (*p["blood_dark"], a),
+                                     (tip[0], tip[1]), k)
+            for col, rr in (("blood_mid", r_core),
+                            ("blood_light", max(1, r_core - 2)),
+                            ("blood_shine", max(1, r_core - 4))):
+                _NS_drakar._aacircle(surface, p[col], (tip[0], tip[1]), rr)
+            for i in range(6):
+                ang = phase * 4 + i * math.tau / 6
+                dist = (1 - t) * _NS_drakar._s(16) + 4
+                sx = tip[0] + int(math.cos(ang) * dist)
+                sy = tip[1] + int(math.sin(ang) * dist)
+                _NS_drakar._aaline(surface, (*p["blood_mid"], 190),
+                                   (sx, sy), (tip[0], tip[1]), 1)
+        elif progress < 0.62:
+            # (2) Cleave raksasa: SABIT melengkung melintasi target
+            # (busur radius dari grip, menyapu dari arah wind-up ke arah
+            # impact) - dulu kerucut lurus yang terbaca sebagai balok.
+            t = (progress - 0.42) / 0.20
+            lean, root_y = _NS_drakar._rig_shift("cull", phase, 0.6)
 
-            alpha_warn = _NS_drakar._alpha(180 * t)
-            _NS_drakar._aacircle(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], alpha_warn),
-                (tx, ty), 10, 2)
-
-        elif progress < 0.65:
-            t = (progress - 0.4) / 0.25
-            intensity = math.sin(t * math.pi)
-            slash_len = int(65 + t * 25)
-
-            for slash_dir in [(1, 1), (1, -1)]:
-                dx, dy = slash_dir
-                p1 = (tx - dx * slash_len, ty - dy * slash_len)
-                p2 = (tx + dx * slash_len, ty + dy * slash_len)
-
-                for layer_i, (thick, color, a_mult) in enumerate([
-                    (12, _NS_drakar.PALETTE["blood_darkest"], 0.6),
-                    (9, _NS_drakar.PALETTE["blood_dark"], 0.8),
-                    (6, _NS_drakar.PALETTE["blood_mid"], 1.0),
-                    (4, _NS_drakar.PALETTE["blood_light"], 1.0),
-                    (2, _NS_drakar.PALETTE["blood_hot"], 1.0),
-                    (1, _NS_drakar.PALETTE["blood_shine"], 1.0),
-                ]):
-                    alpha = _NS_drakar._alpha(255 * intensity * a_mult)
-                    if alpha <= 0:
-                        continue
-                    pygame.draw.line(surface,
-                        _NS_drakar._rgba(color, alpha), p1, p2, thick)
-
-            for r in range(25, 0, -1):
-                alpha = _NS_drakar._alpha(240 * intensity * (25 - r) / 25)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], alpha),
-                    (tx, ty), r)
-            _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["blood_shine"],
-                                 (tx, ty), 10)
-            _NS_drakar._aacircle(surface, _NS_drakar.PALETTE["white"], (tx, ty), 5)
-
-            for i in range(20):
-                angle = i * math.pi / 10
-                spatter_len = int(slash_len * 0.8)
-                sx = tx + int(math.cos(angle) * spatter_len)
-                sy = ty + int(math.sin(angle) * spatter_len)
-                alpha = _NS_drakar._alpha(240 * intensity)
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                    (sx, sy, 4, 4))
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], alpha),
-                    (sx, sy, 3, 3))
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_shine"], alpha),
-                    (sx, sy, 1, 1))
+            def scr(lx, ly):
+                return _NS_drakar._local_to_screen(x, y, facing, lean,
+                                                    root_y, lx, ly)
+            grip = scr(*_NS_drakar._front_grip_local("cull", 0.6, phase))
+            base = math.atan2(ty - grip[1], tx - grip[0])
+            sweep = 1.6 * (1.0 - t)          # busur menyusut saat selesai
+            a0 = base - sweep
+            r_in = _NS_drakar._s(22)
+            r_out = _NS_drakar._s(34) * (0.7 + 0.3 * (1 - t))
+            alpha = _NS_drakar._alpha(225 * (1 - t * 0.6))
+            seg = 10
+            span = (base + 0.35) - a0
+            for col, w_out, w_in, mul in (("blood_darkest", 6, 3, 0.55),
+                                          ("blood_mid", 4, 2, 0.85),
+                                          ("blood_shine", 2, 1, 1.0)):
+                outer, inner = [], []
+                for i in range(seg + 1):
+                    ang = a0 + span * i / seg
+                    # Lebar pita memuncak di dekat lead edge (sisi target)
+                    k = i / seg
+                    w = (w_in + (w_out - w_in) * k) * (0.5 + 0.5 * k)
+                    outer.append((grip[0] + math.cos(ang) *
+                                  (r_out + w), grip[1] + math.sin(ang) *
+                                  (r_out + w) * 0.92))
+                    inner.append((grip[0] + math.cos(ang) *
+                                  (r_out - w), grip[1] + math.sin(ang) *
+                                  (r_out - w) * 0.92))
+                _NS_drakar._poly(surface,
+                                 (*p[col], _NS_drakar._alpha(alpha * mul)),
+                                 outer + inner[::-1])
+            # Lead edge: kilat putih kecil tepat di depan target
+            lead = (int(grip[0] + math.cos(base + 0.2) * r_out),
+                    int(grip[1] + math.sin(base + 0.2) * r_out))
+            _NS_drakar._aacircle(surface, (*p["white"],
+                                           _NS_drakar._alpha(210 *
+                                                             (1 - t))),
+                                 lead, 3)
         else:
-            t = (progress - 0.65) / 0.35
-            for i in range(18):
-                fall_t = (phase * 0.5 + i * 0.1) % 1.0
-                rx = tx + int(math.sin(phase + i) * 40)
-                ry = ty - 24 + int(fall_t * 40)
-                alpha = _NS_drakar._alpha(220 * (1 - t) * (1 - fall_t * 0.5))
-                if alpha > 0:
-                    pygame.draw.rect(surface,
-                        _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], alpha),
-                        (rx, ry, 3, 4))
-                    pygame.draw.rect(surface,
-                        _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                        (rx, ry, 2, 3))
+            # (3) Eksekusi: busur mekar + sumbu radial + bara jatuh
+            t = (progress - 0.62) / 0.38
+            r = int(_NS_drakar._s(16) + t * _NS_drakar._s(22))
+            a = _NS_drakar._alpha(235 * (1 - t))
+            _NS_drakar._aacircle(surface, (*p["blood_darkest"], a),
+                                 (tx, ty), r + 3, 4)
+            _NS_drakar._aacircle(surface, (*p["blood_dark"], a),
+                                 (tx, ty), r, 3)
+            _NS_drakar._aacircle(surface, (*p["blood_mid"], a), (tx, ty),
+                                 max(1, r - 7), 2)
+            _NS_drakar._aacircle(surface, (*p["blood_shine"], a), (tx, ty),
+                                 max(1, int(r * 0.35)))
+            for i in range(12):
+                ang = i * math.tau / 12 + t * 0.4
+                ex = tx + int(math.cos(ang) * (r + 4))
+                ey = ty + int(math.sin(ang) * (r + 4) * 0.85)
+                _NS_drakar._aaline(surface, (*p["blood_hot"], a), (tx, ty),
+                                   (ex, ey), 2 if i % 3 == 0 else 1)
+                _NS_drakar._rect_st(surface, (*p["white"], a),
+                                    (ex, ey, 1, 1))
+            for i in range(8):
+                tt = (phase * 0.5 + i * 0.13) % 1.0
+                px = tx + int(math.sin(phase * 1.4 + i) * (12 + i))
+                py = ty - int(tt * 26)
+                aa = _NS_drakar._alpha(200 * (1 - t) * (1 - tt))
+                if aa > 0:
+                    _NS_drakar._aacircle(surface, (*p["blood_dark"], aa),
+                                         (px, py), 3)
+                    _NS_drakar._aacircle(surface, (*p["blood_mid"], aa),
+                                         (px, py), 2)
+                    _NS_drakar._rect_st(surface, (*p["blood_shine"], aa),
+                                        (px, py, 1, 1))
+        # Rim merah di badan saat mengisi (badan tetap subjek)
+        rim = _NS_drakar._alpha(110 * min(1.0, progress * 3))
+        rw, rh = _NS_drakar._s(16), _NS_drakar._s(23)
+        _NS_drakar._ellipse(surface, (*p["blood_mid"], rim),
+                            (int(x) - rw, int(y) - rh - _NS_drakar.LIFT,
+                             rw * 2, rh * 2 + _NS_drakar._s(2)), 1)
 
-            for slash_dir in [(1, 1), (1, -1)]:
-                dx, dy = slash_dir
-                slash_len = 40
-                p1 = (tx - dx * slash_len, ty - dy * slash_len)
-                p2 = (tx + dx * slash_len, ty + dy * slash_len)
-                alpha = _NS_drakar._alpha(150 * (1 - t))
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], alpha),
-                    p1, p2, 3)
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], alpha),
-                    p1, p2, 2)
 
 # ====================================================================
 # ABADDON
