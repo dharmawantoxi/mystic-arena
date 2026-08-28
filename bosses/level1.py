@@ -2283,44 +2283,61 @@ class _NS_morgath:
     # ENTRY POINT
     # ============================================================
     def draw_morgath(surface, boss, x, y):
-        """Entry point untuk Boss.draw()."""
+        """Entry point untuk Boss.draw() sekaligus heroes.render_hero()."""
         # Beam-only pass (hero): body sudah di-blit ter-scale oleh
         # heroes/__init__.py; di sini hanya beam yang digambar, pada
         # koordinat & skala dunia = identik dengan versi mini boss.
         if getattr(boss, "_beam_pass_only", False):
             _NS_morgath._draw_mor_beam_pass(surface, boss, x, y)
             return
-        pulse = float(getattr(boss, "pulse", 0.0))
+
+        # Jalur hero (lane): heroes/__init__ men-set _render_scale, dan
+        # _finish_hd_sprite sudah menambah rim/terminator -> pass cahaya
+        # di _draw_mor_rig_at dilewati (supaya tidak dobel).
+        _NS_morgath._MOR_LANE.v = hasattr(boss, "_render_scale")
+        _NS_morgath._update_mor_attack_anim(boss)
+        action, pulse, ap = _NS_morgath._resolve_mor_pose(
+            boss, _NS_morgath._detect_moving(boss))
+        boss._mor_pose_action = action
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_morgath._detect_moving(boss)
-        _NS_morgath._update_mor_attack_anim(boss)
-        attacking = (
-            getattr(boss, "_mor_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 40) - 15
-        )
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        facing = getattr(boss, "direction", 1) or 1
+        flash = _NS_morgath._alpha(170 * (getattr(boss, "hurt_flash_timer", 0)
+                                          / 8.0))
 
-        # Ambient
-        _NS_morgath._draw_arc_aura(surface, x, y, pulse)
-        _NS_morgath._draw_ground_rune(surface, x, y + 42, pulse, active_skill)
+        # ── Latar. Dibuang total saat portrait supaya auto-crop Hero
+        #    Shop terisi wajah & material (orb), bukan lingkaran efek.
+        if not portrait:
+            _NS_morgath._draw_arc_aura(surface, x, y, pulse)
+            _NS_morgath._draw_ground_rune(surface, x,
+                                          y + _NS_morgath.GROUND_DY,
+                                          pulse, active_skill)
+            if active_skill == "q":
+                _NS_morgath._draw_sparkwraith_ground(surface, boss, x, y,
+                                                      skill_timer, pulse)
+            elif active_skill == "w":
+                _NS_morgath._draw_flux_ground(surface, boss, x, y,
+                                               skill_timer, pulse)
+            elif active_skill == "e":
+                _NS_morgath._draw_magneticfield_ground(surface, boss, x, y,
+                                                        skill_timer, pulse)
+            elif active_skill == "r":
+                _NS_morgath._draw_tempest_ground(surface, boss, x, y,
+                                                  skill_timer, pulse)
 
-        # Ground FX per skill
-        if active_skill == "q":
-            _NS_morgath._draw_sparkwraith_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_morgath._draw_flux_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_morgath._draw_magneticfield_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_morgath._draw_tempest_ground(surface, boss, x, y, skill_timer, pulse)
+        # ── Karakter (SATU rig masterwork; hem dipatok di GROUND_DY)
+        if not portrait:
+            _NS_morgath._draw_shadow(surface, x, y + _NS_morgath.GROUND_DY)
+        _NS_morgath._draw_mor_rig_at(surface, x, y, facing, pulse, action,
+                                     ap, portrait, flash)
 
-        # Body
-        if attacking:
-            _NS_morgath._draw_mor_attack(surface, boss, x, y)
-        elif moving:
-            _NS_morgath._draw_mor_walk(surface, boss, x, y)
-        else:
-            _NS_morgath._draw_mor_idle(surface, boss, x, y)
+        # Beam petir lahir dari telapak cast (MOR_MUZZLE). Skip saat beam
+        # digambar terpisah langsung di layar skala 1.0 (heroes/__init__),
+        # supaya beam hero = persis beam mini boss (tidak kena smoothscale).
+        if action == "attack" and not getattr(boss, "_skip_beam", False):
+            _NS_morgath._draw_lightning_projectile(
+                surface, boss, x, y, _NS_morgath._mor_progress(boss))
 
         # Tempest Double clone
         if active_skill == "r":
@@ -2398,665 +2415,740 @@ class _NS_morgath:
     # ============================================================
     # POSE ROUTERS
     # ============================================================
-    def _draw_mor_idle(surface, boss, x, y):
-        # Slow float bob (mystical hover feel)
-        bob = int(math.sin(boss.pulse * 0.7) * 3)
-        _NS_morgath._draw_shadow(surface, x, y + 46)
-        _NS_morgath._draw_mor_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
-    def _draw_mor_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.0
-        bob = int(abs(math.sin(phase * 1.1)) * 3)
-        sway = int(math.sin(phase * 0.7) * 2)
-        _NS_morgath._draw_shadow(surface, x + sway, y + 46)
-        _NS_morgath._draw_mor_body(surface, x + sway, y - bob + 2,
-                                    boss.direction, phase, "walk")
-
-    def _mor_attack_pose(boss, progress):
-        """Arah + lean/lift pose serangan (dipakai body & beam pass)."""
-        # Arah terkunci saat serangan dimulai (lihat
-        # _update_mor_attack_anim). Fallback ke arah live kalau
-        # state kunci tidak ada (entity fake/portrait).
-        facing = getattr(boss, "_mor_attack_dir", None)
-        if facing is None:
-            facing = boss.direction
-
-        # Charge → cast → release (little forward lean, arm outstretched)
-        if progress < 0.4:
-            t = progress / 0.4
-            lean = int(t * 2) * facing * -1  # slight back charge
-            lift = int(t * 2)
-        elif progress < 0.7:
-            t = (progress - 0.4) / 0.3
-            lean = int((-2 + t * 6)) * facing
-            lift = int(2 - t * 3)
-        else:
-            t = (progress - 0.7) / 0.3
-            lean = int(4 * (1 - t)) * facing
-            lift = int(-1 + t)
-        return facing, lean, lift
-
     def _mor_progress(boss):
         # LIVE dari attack_timer (bukan counter frame yang cuma naik
-        # saat renderer dipanggil). Dengan body hero di-cache
-        # (renderer dipanggil tiap N frame), progress tetap maju tiap
-        # frame -> beam live tetap mulus 60fps.
+        # saat renderer dipanggil). Dengan body hero di-cache (renderer
+        # dipanggil tiap N frame), progress tetap maju tiap frame ->
+        # beam live tetap mulus 60fps.
         t = int(getattr(boss, "timer", 0) or 0)
         cd = max(2, int(getattr(boss, "attack_cooldown", 48)))
         if getattr(boss, "_mor_attack_active", False):
             return max(0.0, min(1.0, (cd - 1 - t) / max(1.0, float(cd - 1))))
         return 0.0
 
+    # ---- PROCEDURAL MASTERWORK RIG ----------------------------------
+    # Badan lama terukur hanya 35x55 px (alpha>=1) vs rujukan keluarga
+    # morgath H82/W120 (gornak 115x121, drakar 138x190): caster-nya
+    # terlihat seperti stik di samping mini boss lain, detailnya
+    # tenggelam. Rig ini membangun ulang tubuh sebagai SATU bone rig 2D
+    # berlapis: sendi bahu/siku/telapak dihitung per-pose, hem jubah
+    # DIPATOK di GROUND_DY (jubah tidak melayang), bahu melebar lewat
+    # pauldron berlapis, dan hierarki nilai dijaga: orb kepala paling
+    # terang (focal point), lalu arc FX, emas, armor, baru jubah.
+    # Kalibrasi ke keluarga: badan padat boss 1x ~= H84/W50 (rujukan
+    # "morgath H82/W120" di _NS_gornak diukur DENGAN FX; padat + arc
+    # aura + rune tanah = H~95/W~110 di sini). Di bawah gornak (119),
+    # sejajar urutan keluarga, dan jauh dari rig lama (35x55).
+    SCALE = 0.9
+    # Jangkar boss = pusat hitbox; LIFT menurunkan badan supaya wajah
+    # (orb) tidak tertutup HP bar (digambar di y-r-15..y-r-7, r=51).
+    LIFT = 4
+    # Hem jubah dalam RUANG LOKAL; garis tanah dunia diturunkan dari
+    # sini supaya bayangan/rune/hem tidak pernah saling lepas.
+    FEET_DY = 40
+    GROUND_DY = int(round(FEET_DY * SCALE)) - LIFT        # ~32
+
+    # Buffer rig: dibatasi dari extents TERUKUR semua pose (idle/walk/
+    # attack/4 stance skill, dua LOD) + margin 4 px (outline digambar
+    # di luar buffer, jadi tidak dihitung di sini). Dikunci
+    # tools/test_morgath_masterwork.py.
+    RIG_W, RIG_H = 74, 100
+    RIG_OX, RIG_OY = 33, 58
+
+    # Bidang acuan cahaya TETAP (alasan: sama seperti GRAD_BOX gornak -
+    # kalau ikut bbox, arah cahaya bergeser tiap pose = lampu berkedip).
+    GRAD_BOX = (RIG_OX - 28, RIG_OY - 46, 62, 92)
+
+    # Sendi dalam RUANG LOKAL (y=0 jangkar, + ke bawah).
+    WAIST_Y = -8
+    SHOULDER_Y = -22
+    SHOULDER_FRONT = (10, SHOULDER_Y)
+    SHOULDER_BACK = (-11, SHOULDER_Y - 1)
+    ORB_CENTER = (2, -31)
+    ORB_R = 9
+    CROWN_Y = -42
+
+    # Muzzle beam = telapak cast di puncak thrust. Beam lahir dari
+    # TELAPAK (bukan angka lepas) supaya selalu tersambung ke tangan.
+    MOR_MUZZLE = (27, -15)
+
+    # Penanda "render ke canvas hero" (lane). Dipasang per-frame oleh
+    # draw_morgath; dipakai _draw_mor_rig_at untuk pass cahaya.
+    class _MOR_LANE:
+        v = False
+
+    # ------------------------------------------------------------
+    # POSE
+    # ------------------------------------------------------------
+    def _mor_attack_curve(ap):
+        """Progres mentah 0..1 -> waktu pose 0..1, MONOTON naik.
+
+        Sama seperti kurva Gornak: yang membuat serangan 2D terasa
+        mahal adalah (a) anticipation jelas, (b) HOLD di impact,
+        (c) follow-through yang tidak ditarik balik. Batas segmen:
+        0.35 = puncak charge, 0.9 = tangan penuh ke depan & beam mulai
+        mengalir (beam live mulai di progres mentah 0.55 -> pose 0.77,
+        telapak praktis sudah di muzzle).
+        """
+        if ap <= 0.0:
+            return 0.0
+        if ap < 0.45:                       # charge: menarik bahu, diperlambat
+            t = ap / 0.45
+            return 0.35 * (t ** 0.7)
+        if ap < 0.62:                       # thrust: sangat cepat
+            t = (ap - 0.45) / 0.17
+            return 0.35 + 0.55 * (t ** 0.5)
+        if ap < 0.80:                       # IMPACT HOLD (nyaris beku)
+            t = (ap - 0.62) / 0.18
+            return 0.90 + 0.06 * t
+        t = (ap - 0.80) / 0.20              # release -> siap
+        return 0.96 + 0.04 * (t ** 0.8)
+
+    def _resolve_mor_pose(boss, moving=False):
+        """(action, phase, ap) - dipakai rig DAN jangkar FX agar sinkron."""
+        skill = getattr(boss, "active_skill", None)
+        if skill == "q":
+            action = "point"
+        elif skill == "w":
+            action = "channel"
+        elif skill == "e":
+            action = "erect"
+        elif skill == "r":
+            action = "ascend"
+        elif (getattr(boss, "_mor_attack_active", False)
+              or getattr(boss, "timer", 0) >
+              getattr(boss, "attack_cooldown", 40) - 15):
+            action = "attack"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+
+        phase = float(getattr(boss, "pulse", 0.0))
+        if action == "walk":
+            phase *= 2.0
+        ap = 0.0
+        if action == "attack":
+            ap = _NS_morgath._mor_attack_curve(_NS_morgath._mor_progress(boss))
+        return action, phase, ap
+
+    def _cast_hand_local(action, ap, phase):
+        """Telapak tangan depan (pe cast) dalam ruang lokal."""
+        bob = math.sin(phase * 0.9)
+        if action == "attack":
+            # idle -> tarik belakang (charge) -> muzzle (thrust/hold)
+            if ap < 0.35:
+                t = ap / 0.35
+                a, b = (15, -7), (7, -13)
+            elif ap < 0.9:
+                t = (ap - 0.35) / 0.55
+                a, b = (7, -13), _NS_morgath.MOR_MUZZLE
+            else:
+                t = 0.0
+                a = b = _NS_morgath.MOR_MUZZLE
+            e = t * t * (3.0 - 2.0 * t)
+            return (a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e)
+        if action == "point":                    # Q: menunjuk, summon wraith
+            return (22, -26 + bob)
+        if action == "channel":                  # W: kedua tangan menyalurkan
+            return (15, -3 + bob)
+        if action == "erect":                    # E: merentang mendirikan field
+            return (20, 1.0)
+        if action == "ascend":                   # R: mengangkat memanggil double
+            return (11, -32)
+        if action == "walk":
+            return (13 + math.sin(phase * 2.0) * 2.0, -7)
+        return (15, -7 + bob)                    # idle: tangan di sisi badan
+
+    def _back_hand_local(action, ap, phase):
+        bob = math.sin(phase * 0.9 + 0.6)
+        if action == "attack":
+            return (-17, -3)
+        if action == "channel":
+            return (-15, -3 + bob)
+        if action == "erect":
+            return (-20, 1.0)
+        if action == "ascend":
+            return (-12, -31)
+        if action == "walk":
+            return (-13 - math.sin(phase * 2.0) * 2.0, -5)
+        return (-15, -5 + bob)
+
+    def _mor_elbow(a, b, bend):
+        """Sendi siku: titik tengah digeser tegak-lurus sepanjang `bend`."""
+        mx, my = (a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        length = max(1.0, math.hypot(dx, dy))
+        return (mx - dy / length * bend, my + dx / length * bend)
+
+    def _mor_shift(action, phase, ap):
+        """(lean_x, root_y) - lean geser badan atas; root = napas pada
+        bagian ATAS hem (hem/telapak tetap dipatok di garis tanah)."""
+        bob = math.sin(phase * 0.9) * 1.3
+        lean, root = 0.0, bob
+        if action == "walk":
+            root = -abs(math.sin(phase * 2.0)) * 1.6
+            lean = math.sin(phase) * 0.8
+        elif action == "attack":
+            if ap < 0.35:
+                lean = -2.0 * (ap / 0.35)
+            elif ap < 0.9:
+                lean = -2.0 + 4.5 * ((ap - 0.35) / 0.55)
+            else:
+                lean = 2.5
+            root = 0.0
+        elif action == "ascend":
+            root = -3.0 - bob
+        return lean, root
+
+    def _muzzle_offset_world():
+        """(dx, dy) dunia dari jangkar ke muzzle (facing=+1)."""
+        k = _NS_morgath.SCALE
+        return (int(round(_NS_morgath.MOR_MUZZLE[0] * k)),
+                int(round(-_NS_morgath.LIFT +
+                          _NS_morgath.MOR_MUZZLE[1] * k)))
+
+    def _skill_hand_world(boss, x, y, skill):
+        """Posisi telapak cast dunia untuk stance skill - anchor FX skill
+        selalu menempel di tangan rig, di semua skala render."""
+        action = {"q": "point", "w": "channel", "e": "erect",
+                  "r": "ascend"}.get(skill, "idle")
+        phase = float(getattr(boss, "pulse", 0.0))
+        hx, hy = _NS_morgath._cast_hand_local(action, 0.0, phase)
+        f = getattr(boss, "direction", 1) or 1
+        k = _NS_morgath.SCALE
+        return (int(x + hx * f * k),
+                int(y - _NS_morgath.LIFT + hy * k))
+
+    # ------------------------------------------------------------
+    # POSE ROUTERS (wrapper tipis, kompatibel tool preview lama)
+    # ------------------------------------------------------------
+    def _draw_mor_idle(surface, boss, x, y):
+        _NS_morgath._draw_mor_rig_at(
+            surface, x, y, getattr(boss, "direction", 1) or 1,
+            float(getattr(boss, "pulse", 0.0)), "idle", 0.0, False)
+
+    def _draw_mor_walk(surface, boss, x, y):
+        _NS_morgath._draw_mor_rig_at(
+            surface, x, y, getattr(boss, "direction", 1) or 1,
+            float(getattr(boss, "pulse", 0.0)) * 2.0, "walk", 0.0, False)
+
     def _draw_mor_attack(surface, boss, x, y):
         progress = _NS_morgath._mor_progress(boss)
-        facing, lean, lift = _NS_morgath._mor_attack_pose(boss, progress)
-
-        _NS_morgath._draw_shadow(surface, x + lean, y + 46)
-        _NS_morgath._draw_mor_body(surface, x + lean, y - lift, facing,
-                                    boss.pulse, "attack", progress)
-        # Lightning bolt projectile. Skip saat beam digambar terpisah
-        # langsung di layar pada skala 1.0 (heroes/__init__.py) supaya
-        # beam hero = persis beam mini boss (tidak kena smoothscale).
+        _NS_morgath._draw_mor_rig_at(
+            surface, x, y, getattr(boss, "direction", 1) or 1,
+            float(getattr(boss, "pulse", 0.0)), "attack",
+            _NS_morgath._mor_attack_curve(progress), False)
         if not getattr(boss, "_skip_beam", False):
-            _NS_morgath._draw_lightning_projectile(surface, boss, x + lean, y - lift, progress)
+            _NS_morgath._draw_lightning_projectile(surface, boss, x, y,
+                                                    progress)
 
     def _draw_mor_beam_pass(surface, boss, x, y):
         """Gambar HANYA beam pada koordinat dunia (skala 1.0).
 
-        Dipanggil heroes/__init__.py setelah body hero di-blit
-        ter-scale. Hasilnya beam berukuran & berkecerahan persis
-        sama seperti saat entity ini jadi mini boss.
+        Dipanggil heroes/__init__.py setelah body hero di-blit ter-scale.
+        Hasilnya beam berukuran & berkecerahan persis sama seperti saat
+        entity ini jadi mini boss.
 
-        Catatan: _update_mor_attack_anim dipanggil di sini (tiap
-        frame, idempoten) supaya state kunci arah/target tetap
-        terinisialisasi walau frame pertama serangan kena cache
-        hit (body hero di-cache, renderer tidak selalu dipanggil).
+        Catatan: _update_mor_attack_anim dipanggil di sini (tiap frame,
+        idempoten) supaya state kunci arah/target tetap terinisialisasi
+        walau frame pertama serangan kena cache hit (body hero di-cache,
+        renderer tidak selalu dipanggil).
         """
         _NS_morgath._update_mor_attack_anim(boss)
-        progress = _NS_morgath._mor_progress(boss)
-        facing, lean, lift = _NS_morgath._mor_attack_pose(boss, progress)
-        _NS_morgath._draw_lightning_projectile(surface, boss, x + lean, y - lift, progress)
+        _NS_morgath._draw_lightning_projectile(
+            surface, boss, x, y, _NS_morgath._mor_progress(boss))
 
     # ============================================================
-    # BODY
+    # RIG RENDER
     # ============================================================
-    def _draw_mor_body(surface, cx, cy, facing, phase, action, attack_progress=0):
-        """Draw mystical hooded caster body."""
-        # Cape/robe back (visible behind)
-        _NS_morgath._draw_mor_cape(surface, cx, cy, facing, phase, action)
+    def _draw_mor_rig_at(surface, x, y, facing, phase, action, ap, detail,
+                         flash=0):
+        """Rig -> buffer -> outline gelap 1 px -> satu blit (pola Gornak).
 
-        # Legs / lower robe
-        _NS_morgath._draw_mor_legs(surface, cx, cy + 12, facing, phase, action)
+        Mode portrait Hero Shop meng-crop dari bbox: konten dipusatkan
+        pada bbox-nya sendiri; jalur boss (1x) tidak berubah.
+        """
+        buf = pygame.Surface((_NS_morgath.RIG_W, _NS_morgath.RIG_H),
+                             pygame.SRCALPHA)
+        _NS_morgath._draw_mor_rig(buf, _NS_morgath.RIG_OX,
+                                  _NS_morgath.RIG_OY, facing, phase,
+                                  action, ap, detail)
+        if flash > 0:
+            lit = buf.copy()
+            lit.fill((255, 240, 255, 0), special_flags=pygame.BLEND_RGBA_MAX)
+            lit.set_alpha(flash)
+            buf.blit(lit, (0, 0))
+        # Pass cahaya dipasang DI SINI hanya kalau sprite ini TIDAK akan
+        # dilewatkan ke heroes._finish_hd_sprite (jalur lane hero sudah
+        # memberi rim+terminator - dipasang dua kali jadi dobel).
+        #   * boss 1x (tanpa _render_scale)  -> pasang di sini
+        #   * lane hero (_render_scale di-set) -> jangan (nanti dobel)
+        #   * Hero Shop (portrait, tanpa _render_scale) -> pasang di sini
+        if _lighting is not None and not _NS_morgath._MOR_LANE.v:
+            _lighting.apply_to_rig(
+                buf, rim_add=(30, 34, 52), shade_mul=160,
+                box=_NS_morgath.GRAD_BOX if not detail else None)
+        ox = int(x) - _NS_morgath.RIG_OX
+        oy = int(y) - _NS_morgath.RIG_OY
+        if detail:                       # portrait: pusatkan konten
+            used = buf.get_bounding_rect(min_alpha=1)
+            if used.width > 0:
+                ox = int(x) - (used.left + used.width // 2)
+                oy = int(y) - (used.top + used.height // 2)
+        # Outline siluet (4 arah) - acuan keluarga masterwork.
+        edge = buf.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + ddx, oy + ddy))
+        surface.blit(buf, (ox, oy))
+        return buf
 
-        # Robe skirt
-        _NS_morgath._draw_mor_robe(surface, cx, cy + 4, facing, phase)
+    def _draw_mor_rig(surface, cx, cy, facing, phase, action, ap=0.0,
+                      detail=False):
+        """Satu bone rig 2D berlapis: cape -> lengan belakang -> sepatu ->
+        rok jubah -> torso -> sabuk -> pauldron belakang -> kepala ->
+        lengan cast -> pauldron depan. Semua titik lewat pt()/ptg()
+        supaya ukuran cukup diubah dari SATU konstanta SCALE."""
+        P = _NS_morgath.PALETTE
+        k = _NS_morgath.SCALE
+        f = 1 if facing >= 0 else -1
+        lean, root = _NS_morgath._mor_shift(action, phase, ap)
 
-        # Torso armor
-        _NS_morgath._draw_mor_torso(surface, cx, cy - 6, facing, phase)
+        def pt(dx, dy):
+            """Bagian yang ikut napas/lean (badan atas)."""
+            return (int(cx + (dx * f + lean * f) * k),
+                    int(cy - _NS_morgath.LIFT + (dy + root) * k))
 
-        # Back arm
-        _NS_morgath._draw_mor_arm_back(surface, cx, cy - 4, facing, phase, action, attack_progress)
+        def ptg(dx, dy):
+            """Bagian yang DIPATOK ke tanah (hem jubah, telapak)."""
+            return (int(cx + (dx * f + lean * f) * k),
+                    int(cy - _NS_morgath.LIFT + dy * k))
 
-        # Head (hood + orb helm)
-        _NS_morgath._draw_mor_head(surface, cx, cy - 18, facing, phase, action)
+        def _w(v):
+            return max(1, int(round(v * k)))
 
-        # Front arm (casts spells)
-        _NS_morgath._draw_mor_arm_front(surface, cx, cy - 4, facing, phase, action, attack_progress)
-
-    def _draw_mor_cape(surface, cx, cy, facing, phase, action):
-        """Flowing cape behind body."""
-        sway = math.sin(phase * 0.8) * 3
+        # ---- bagian tubuh, belakang -> depan ----
+        _NS_morgath._mor_draw_cape(surface, ptg, f, phase, action)
+        _NS_morgath._mor_draw_arm_back(surface, pt, _w, f, phase, action,
+                                       ap)
         if action == "walk":
-            sway += math.sin(phase * 1.5) * 2
+            _NS_morgath._mor_draw_boots(surface, ptg, f, phase)
+        _NS_morgath._mor_draw_skirt(surface, ptg, _w, f, phase, action)
+        _NS_morgath._mor_draw_torso(surface, pt, _w, f, phase)
+        _NS_morgath._mor_draw_belt(surface, ptg, _w, f, phase, action)
+        _NS_morgath._mor_draw_pauldron(surface, pt, _w, f, phase,
+                                       back=True)
+        _NS_morgath._mor_draw_head(surface, pt, _w, f, phase, action, ap)
+        _NS_morgath._mor_draw_arm_cast(surface, pt, _w, f, phase, action,
+                                       ap)
+        _NS_morgath._mor_draw_pauldron(surface, pt, _w, f, phase,
+                                       back=False)
 
-        # Cape shape (wide behind)
-        back_dir = -facing
-        cape_pts = [
-            (cx + back_dir * 3, cy - 8),
-            (cx + back_dir * 8, cy - 4 + int(sway)),
-            (cx + back_dir * 12, cy + 6 + int(sway * 1.3)),
-            (cx + back_dir * 14, cy + 16 + int(sway * 1.5)),
-            (cx + back_dir * 10, cy + 20 + int(sway * 1.5)),
-            (cx + back_dir * 4, cy + 22),
-            (cx + back_dir * 2, cy + 10),
-            (cx + back_dir * 1, cy - 5),
-        ]
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["shadow_deep"],
-                          [(px + 1, py + 1) for px, py in cape_pts])
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["robe_darkest"], cape_pts)
-
-        # Mid tone
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["robe_dark"], [
-            (cx + back_dir * 3, cy - 7),
-            (cx + back_dir * 7, cy - 3 + int(sway)),
-            (cx + back_dir * 10, cy + 6 + int(sway)),
-            (cx + back_dir * 11, cy + 15 + int(sway)),
-            (cx + back_dir * 8, cy + 19),
-            (cx + back_dir * 3, cy + 20),
-            (cx + back_dir * 2, cy + 10),
-            (cx + back_dir * 1, cy - 5),
-        ])
-
-        # Fold lines
-        for i in range(3):
-            fold_x = cx + back_dir * (5 + i * 3)
-            fold_y_top = cy - 4 + i * 2 + int(sway)
-            fold_y_bot = cy + 15 + i * 2 + int(sway)
-            pygame.draw.line(surface, _NS_morgath.PALETTE["robe_darkest"],
-                             (fold_x, fold_y_top), (fold_x + back_dir * 1, fold_y_bot), 1)
-
-        # Highlight edge
-        pygame.draw.line(surface, _NS_morgath.PALETTE["robe_mid"],
-                         (cx + back_dir * 1, cy - 5),
-                         (cx + back_dir * 3, cy + 20), 1)
-
-    def _draw_mor_legs(surface, cx, cy, facing, phase, action):
-        """Legs with armored greaves."""
+    # ------------------------------------------------------------
+    # BAGIAN TUBUH (ruang lokal: y=0 jangkar, + ke bawah; +x = depan)
+    # ------------------------------------------------------------
+    def _mor_draw_cape(surface, ptg, f, phase, action):
+        """Cape mengalir di belakang badan; hem ikut garis tanah."""
+        P = _NS_morgath.PALETTE
+        sway = math.sin(phase * 0.8) * 2.0
         if action == "walk":
-            back_lift = max(0, -math.sin(phase * 2)) * 2
-            front_lift = max(0, math.sin(phase * 2)) * 2
-            stride = math.sin(phase * 2) * 2
-        else:
-            back_lift = front_lift = 0
-            stride = 0
+            sway += math.sin(phase * 1.5) * 2.0
+        elif action == "ascend":
+            sway -= 2.5                       # jubah berkibar saat naik
 
-        # Back leg
-        bx = cx - 4 + int(stride)
-        by = cy - int(back_lift)
-        _NS_morgath._draw_leg(surface, bx, by, facing, back=True)
+        def cp(dx, dy):
+            # sway membesar ke arah hem (bawah), nol di bahu
+            grow = max(0.0, (dy + 24.0) / 62.0)
+            return ptg(dx - f * sway * grow, dy)
 
-        # Front leg
-        fx = cx + 4 - int(stride)
-        fy = cy - int(front_lift)
-        _NS_morgath._draw_leg(surface, fx, fy, facing, back=False)
+        # Siluet cape: dari bahu melebar ke hem belakang
+        panel = [(-9, -23), (10, -23), (13, -14), (8, 6),
+                 (2, 22), (-2, 34), (-6, 37), (-12, 39.5),
+                 (-18, 38.5), (-23, 39.5), (-27, 38),
+                 (-25, 26), (-21, 6), (-16, -10)]
+        _NS_morgath._poly(surface, P["shadow_deep"],
+                          [cp(x + 1, y + 1) for x, y in panel])
+        _NS_morgath._poly(surface, P["robe_darkest"],
+                          [cp(x, y) for x, y in panel])
+        # Bidang tengah
+        mid = [(-7, -22), (8, -22), (10, -12), (5, 8),
+               (0, 24), (-4, 35), (-10, 37), (-16, 36),
+               (-20, 30), (-17, 8), (-12, -8)]
+        _NS_morgath._poly(surface, P["robe_dark"], [cp(x, y) for x, y in mid])
+        # Garis lipatan (3 nada dari gelap ke tengah)
+        for i, tone in enumerate(("robe_darkest", "robe_darkest", "robe_mid")):
+            bx = -19 + i * 7
+            pygame.draw.line(surface, P[tone], cp(bx, -6 + i * 2),
+                             cp(bx - 2, 33 - i), 1)
+        # Tepi depan tertangkap cahaya orb
+        pygame.draw.line(surface, P["robe_light"], cp(10, -20), cp(11, -8), 1)
+        pygame.draw.line(surface, P["robe_mid"], cp(11, -8), cp(7, 10), 1)
 
-    def _draw_leg(surface, cx, cy, facing, back=False):
-        """Armored leg with greave and boot."""
-        # Thigh (dark robe)
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["shadow_deep"],
-                         (cx - 3, cy - 6, 7, 8))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["robe_darkest"],
-                         (cx - 3, cy - 6, 6, 8))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["robe_dark"],
-                         (cx - 2, cy - 6, 4, 7))
-        if not back:
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["robe_mid"],
-                             (cx - 1, cy - 5, 2, 5))
+    def _mor_draw_skirt(surface, ptg, _w, f, phase, action):
+        """Rok jubah A-line; hem lebar DIPATOK di FEET_DY (tidak melayang)."""
+        P = _NS_morgath.PALETTE
+        FE = _NS_morgath.FEET_DY
+        hem_sway = math.sin(phase * 1.7) * 1.2 if action == "walk" else 0.0
 
-        # Greave (metal shin)
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["shadow_deep"],
-                         (cx - 3, cy, 7, 4))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_darkest"],
-                         (cx - 3, cy, 6, 4))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_dark"],
-                         (cx - 2, cy, 5, 3))
-        if not back:
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_mid"],
-                             (cx - 2, cy, 4, 2))
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_light"],
-                             (cx - 1, cy, 2, 1))
+        def sp(dx, dy):
+            return ptg(dx + f * hem_sway * max(0.0, dy / FE), dy)
 
-        # Gold trim on greave
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["gold_dark"],
-                         (cx - 2, cy + 2, 4, 1))
-        if not back:
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["gold_mid"],
-                             (cx - 1, cy + 2, 2, 1))
+        # Siluet luar rok (pinggang -> hem bergigi/scallop)
+        skirt = [(-10, -8), (10, -8), (13, 2), (17, 16),
+                 (21, 28), (24, FE - 3), (22, FE),
+                 (16, FE - 1), (10, FE), (4, FE - 1),
+                 (-2, FE), (-8, FE - 1), (-14, FE),
+                 (-20, FE - 2), (-22, FE - 5), (-18, 16), (-13, 2)]
+        _NS_morgath._poly(surface, P["shadow_deep"],
+                          [sp(x + 1, y + 1) for x, y in skirt])
+        _NS_morgath._poly(surface, P["robe_mid"],
+                          [sp(x, y) for x, y in skirt])
+        # Bidang depan lebih terang (puncak jubah ke depan)
+        front = [(-6, -7), (10, -7), (12, 4), (16, 18),
+                 (20, FE - 4), (12, FE - 2), (6, FE - 1),
+                 (0, FE - 2), (-4, FE - 1), (-2, 16), (-5, 4)]
+        _NS_morgath._poly(surface, P["robe_light"],
+                          [sp(x, y) for x, y in front])
+        # Sisi belakang masuk bayangan
+        back = [(-6, -7), (-5, 4), (-2, 16), (-4, FE - 1),
+                (-12, FE - 2), (-18, FE - 4), (-14, 16), (-9, 4)]
+        _NS_morgath._poly(surface, P["robe_dark"],
+                          [sp(x, y) for x, y in back])
+        # Lipatan vertikal meruncing ke pinggang
+        for fx, tone in ((-2, "robe_mid"), (5, "robe_edge"),
+                         (-9, "robe_darkest"), (12, "robe_mid")):
+            pygame.draw.line(surface, P[tone], sp(fx, -4), sp(fx * 1.7, FE - 3), 1)
+        # Tabard tengah: pita logam gelap + trim emas + rune arc
+        tab = [(-4, -7), (4, -7), (5, 14), (3, 30), (0, 33), (-3, 30), (-5, 14)]
+        _NS_morgath._poly(surface, P["armor_darkest"], [sp(x, y) for x, y in tab])
+        pygame.draw.line(surface, P["gold_mid"], sp(-4, -6), sp(-5, 14), 1)
+        pygame.draw.line(surface, P["gold_mid"], sp(-5, 14), sp(-3, 30), 1)
+        pygame.draw.line(surface, P["gold_mid"], sp(4, -6), sp(5, 14), 1)
+        pygame.draw.line(surface, P["gold_mid"], sp(5, 14), sp(3, 30), 1)
+        rune = [(0, 12), (3, 16), (0, 20), (-3, 16)]
+        _NS_morgath._poly(surface, P["arc_mid"], [sp(x, y) for x, y in rune])
+        dot = sp(0, 16)
+        pygame.draw.rect(surface, P["arc_hot"], (dot[0], dot[1], _w(1), _w(1)))
+        # Pita hem emas redup + titik rune
+        pygame.draw.line(surface, P["gold_dark"], sp(-19, FE - 4), sp(21, FE - 4), 1)
+        for i in range(-2, 3):
+            rx = i * 7
+            pygame.draw.rect(surface, P["rune_mid"],
+                             (sp(rx, FE - 4)[0], sp(rx, FE - 4)[1], _w(1), _w(1)))
 
-        # Boot
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["shadow_deep"],
-                         (cx - 4, cy + 4, 9, 4))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_darkest"],
-                         (cx - 4, cy + 4, 8, 3))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_dark"],
-                         (cx - 3, cy + 4, 6, 2))
-        if not back:
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_mid"],
-                             (cx - 3, cy + 4, 5, 1))
+    def _mor_draw_boots(surface, ptg, f, phase):
+        """Ujung sepatu mengintip dari hem saat walk; TELAPAK DIPATOK."""
+        P = _NS_morgath.PALETTE
+        FE = _NS_morgath.FEET_DY
+        stride = math.sin(phase * 2.0) * 3.0
+        for sx, lift in ((8.0 + stride, 0.0), (-7.0 - stride, 0.0)):
+            toe = [(sx - 3, FE - 4 - lift), (sx + 4, FE - 4 - lift),
+                   (sx + 5, FE), (sx - 3, FE)]
+            _NS_morgath._poly(surface, P["armor_dark"],
+                              [ptg(x, y) for x, y in toe])
+            pygame.draw.line(surface, P["armor_mid"], ptg(sx - 2, FE - 4 - lift),
+                             ptg(sx + 3, FE - 4 - lift), 1)
 
-    def _draw_mor_robe(surface, cx, cy, facing, phase):
-        """Ornate robe skirt with tabard."""
-        sway = math.sin(phase * 0.7) * 1
+    def _mor_draw_torso(surface, pt, _w, f, phase):
+        """Cuirass dada: pelat baja-biru dengan trim emas & keystone arc."""
+        P = _NS_morgath.PALETTE
+        breath = math.sin(phase * 0.9) * 0.7
+        bw = 1.0 + breath * 0.06
 
-        # Robe shape (trapezoid, longer than gornak)
-        robe_pts = [
-            (cx - 8, cy - 4),
-            (cx + 8, cy - 4),
-            (cx + 12, cy + 8),
-            (cx + 6 + int(sway), cy + 14),
-            (cx - 6 + int(sway), cy + 14),
-            (cx - 12, cy + 8),
-        ]
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["shadow_deep"],
-                          [(px + 1, py + 1) for px, py in robe_pts])
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["robe_darkest"], robe_pts)
+        def tp(dx, dy):
+            if dy > -22:                     # lebar napas hanya di dada
+                dx *= bw
+            return pt(dx, dy)
 
-        # Mid tone
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["robe_dark"], [
-            (cx - 7, cy - 3),
-            (cx + 7, cy - 3),
-            (cx + 11, cy + 7),
-            (cx + 5 + int(sway), cy + 13),
-            (cx - 5 + int(sway), cy + 13),
-            (cx - 11, cy + 7),
-        ])
+        chest = [(-10, -23), (10, -23), (12, -14), (10, -5), (-10, -5), (-12, -14)]
+        _NS_morgath._poly(surface, P["armor_dark"],
+                          [tp(x + 1, y + 1) for x, y in chest])
+        _NS_morgath._poly(surface, P["armor_mid"], [tp(x, y) for x, y in chest])
+        # Pelat dada kiri-kanan (nada terang menangkap cahaya dari atas)
+        _NS_morgath._poly(surface, P["armor_light"],
+                          [tp(x, y) for x, y in
+                           [(-9, -22), (-1, -22), (-1, -10), (-4, -12), (-8, -14)]])
+        _NS_morgath._poly(surface, P["armor_light"],
+                          [tp(x, y) for x, y in
+                           [(1, -22), (9, -22), (8, -14), (4, -12), (1, -10)]])
+        _NS_morgath._poly(surface, P["armor_shine"],
+                          [tp(x, y) for x, y in
+                           [(-7, -21), (-2, -21), (-2, -16), (-6, -17)]])
+        _NS_morgath._poly(surface, P["armor_shine"],
+                          [tp(x, y) for x, y in
+                           [(2, -21), (7, -21), (6, -17), (2, -16)]])
+        # Garis tengah + jahitan pelat
+        pygame.draw.line(surface, P["armor_darkest"], tp(0, -22), tp(0, -6), 1)
+        pygame.draw.line(surface, P["armor_darkest"], tp(-10, -13), tp(10, -13), 1)
+        # Keystone arc di ulu hati (ikon faksi: sumber petir)
+        key = [(0, -19), (3, -16), (0, -12), (-3, -16)]
+        _NS_morgath._poly(surface, P["arc_dark"], [tp(x, y) for x, y in key])
+        _NS_morgath._poly(surface, P["arc_mid"],
+                          [tp(x * 0.7, y + (-16 - y) * 0.3 + 0) for x, y in key])
+        hot = tp(0, -16)
+        pygame.draw.rect(surface, P["arc_hot"], (hot[0], hot[1], _w(1), _w(1)))
+        # Kerah gorget: pita emas gelap di leher
+        collar = [(-8, -24), (8, -24), (10, -22), (-10, -22)]
+        _NS_morgath._poly(surface, P["gold_dark"], [tp(x, y) for x, y in collar])
+        pygame.draw.line(surface, P["gold_light"], tp(-7, -23), tp(7, -23), 1)
 
-        # Central tabard (lighter, blue-purple)
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["robe_mid"], [
-            (cx - 3, cy - 3),
-            (cx + 3, cy - 3),
-            (cx + 4, cy + 8),
-            (cx + int(sway), cy + 12),
-            (cx - 4, cy + 8),
-        ])
+    def _mor_draw_belt(surface, ptg, _w, f, phase, action):
+        """Sabuk pinggang + dua rumbai; menyembunyikan sambungan rok/torso."""
+        P = _NS_morgath.PALETTE
+        band = [(-11, -9), (11, -9), (11, -4), (-11, -4)]
+        _NS_morgath._poly(surface, P["robe_darkest"],
+                          [ptg(x, y) for x, y in band])
+        pygame.draw.line(surface, P["gold_mid"], ptg(-11, -8), ptg(11, -8), 1)
+        pygame.draw.line(surface, P["gold_dark"], ptg(-11, -4), ptg(11, -4), 1)
+        # Gesper arc
+        buck = [(0, -10), (3, -7), (0, -4), (-3, -7)]
+        _NS_morgath._poly(surface, P["gold_mid"], [ptg(x, y) for x, y in buck])
+        c = ptg(0, -7)
+        pygame.draw.rect(surface, P["arc_light"], (c[0], c[1], _w(1), _w(1)))
+        # Rumbai: mengayun saat walk, menggantung saat idle
+        sway = math.sin(phase * 1.3) * 1.0
+        if action == "walk":
+            sway += math.sin(phase * 2.0) * 1.6
+        for hx in (-6, 6):
+            ex = hx + f * sway
+            pygame.draw.line(surface, P["gold_dark"], ptg(hx, -4),
+                             ptg(ex, 12), 1)
+            bead = ptg(ex, 13)
+            _NS_morgath._aacircle(surface, P["gold_light"], bead, _w(1.4))
+            dot = ptg(ex - 0.4, 12.6)
+            pygame.draw.rect(surface, P["gold_shine"], (dot[0], dot[1], 1, 1))
 
-        # Highlight
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["robe_light"],
-                         (cx - 1, cy - 1, 2, 6))
+    def _mor_morph_shoulder_chain(shoulder, hand, bend):
+        elbow = _NS_morgath._mor_elbow(shoulder, hand, bend)
+        return elbow
 
-        # Fold lines
-        for x_off in (-6, -3, 3, 6):
-            pygame.draw.line(surface, _NS_morgath.PALETTE["robe_darkest"],
-                             (cx + x_off, cy - 2),
-                             (cx + x_off + int(sway * 0.5), cy + 12), 1)
+    def _mor_draw_arm_back(surface, pt, _w, f, phase, action, ap):
+        """Lengan belakang: lebih redup; menggenggam muatan cadangan."""
+        P = _NS_morgath.PALETTE
+        shoulder = _NS_morgath.SHOULDER_BACK
+        hand = _NS_morgath._back_hand_local(action, ap, phase)
+        elbow = _NS_morgath._mor_morph_shoulder_chain(shoulder, hand, -3.0)
+        _NS_morgath._mor_sleeve(surface, pt, _w, f, shoulder, elbow, hand,
+                                P["robe_darkest"], P["robe_dark"], dim=True)
+        # Gauntlet + node redup
+        hp = pt(*hand)
+        _NS_morgath._aacircle(surface, P["armor_dark"], hp, _w(2.6))
+        _NS_morgath._aacircle(surface, P["armor_mid"], hp, _w(1.8))
+        glow = 1.0 if action == "attack" else 0.5
+        _NS_morgath._aacircle(surface, P["arc_dark"], hp, _w(2.0 * glow), 1)
+        if action == "attack" and ap < 0.4:
+            _NS_morgath._aacircle(surface, P["arc_mid"], hp, _w(1.2), 1)
 
-        # Gold trim (belt)
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["gold_dark"],
-                         (cx - 9, cy - 4, 18, 3))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["gold_mid"],
-                         (cx - 9, cy - 4, 18, 2))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["gold_light"],
-                         (cx - 8, cy - 3, 16, 1))
+    def _mor_draw_arm_cast(surface, pt, _w, f, phase, action, ap):
+        """Lengan cast depan: pose-driven; telapak = muzzle beam."""
+        P = _NS_morgath.PALETTE
+        shoulder = _NS_morgath.SHOULDER_FRONT
+        hand = _NS_morgath._cast_hand_local(action, ap, phase)
+        elbow = _NS_morgath._mor_morph_shoulder_chain(shoulder, hand, 3.5)
+        _NS_morgath._mor_sleeve(surface, pt, _w, f, shoulder, elbow, hand,
+                                P["robe_dark"], P["robe_mid"], dim=False)
 
-        # Belt buckle (crystal gem)
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_darkest"],
-                         (cx - 2, cy - 4, 4, 3))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_dark"],
-                         (cx - 2, cy - 4, 3, 3))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_mid"],
-                         (cx - 1, cy - 3, 2, 1))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_light"],
-                         (cx, cy - 3, 1, 1))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_shine"],
-                         (cx, cy - 3, 1, 1))
+        hp = pt(*hand)
+        # Gauntlet
+        _NS_morgath._aacircle(surface, P["armor_mid"], hp, _w(3.0))
+        _NS_morgath._aacircle(surface, P["armor_light"], hp, _w(2.0))
+        _NS_morgath._aacircle(surface, P["armor_shine"],
+                              (hp[0] - _w(0.6), hp[1] - _w(0.6)), _w(0.9))
 
-        # Gold trim on bottom of robe
-        pygame.draw.line(surface, _NS_morgath.PALETTE["gold_dark"],
-                         (cx - 6, cy + 13), (cx + 6, cy + 13), 1)
-        pygame.draw.line(surface, _NS_morgath.PALETTE["gold_mid"],
-                         (cx - 4, cy + 13), (cx + 4, cy + 13), 1)
-
-    def _draw_mor_torso(surface, cx, cy, facing, phase):
-        """Ornate armored torso with crystal chest gem."""
-        breath = math.sin(phase * 0.7) * 1
-
-        # Torso shape
-        torso_pts = [
-            (cx - 7, cy - 4),
-            (cx - 8, cy + 2),
-            (cx - 6, cy + 8),
-            (cx + 6, cy + 8),
-            (cx + 8, cy + 2),
-            (cx + 7, cy - 4),
-            (cx + 4, cy - 6),
-            (cx - 4, cy - 6),
-        ]
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["shadow_deep"],
-                          [(px + 1, py + 1) for px, py in torso_pts])
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["armor_darkest"], torso_pts)
-
-        # Main armor tone
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["armor_dark"], [
-            (cx - 6, cy - 3 + int(breath)),
-            (cx - 7, cy + 2),
-            (cx - 5, cy + 7),
-            (cx + 5, cy + 7),
-            (cx + 7, cy + 2),
-            (cx + 6, cy - 3 + int(breath)),
-            (cx + 3, cy - 5),
-            (cx - 3, cy - 5),
-        ])
-
-        # Chest highlight
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["armor_mid"], [
-            (cx - 4, cy - 2 + int(breath)),
-            (cx - 5, cy + 2),
-            (cx - 3, cy + 5),
-            (cx + 3, cy + 5),
-            (cx + 5, cy + 2),
-            (cx + 4, cy - 2 + int(breath)),
-            (cx + 2, cy - 4),
-            (cx - 2, cy - 4),
-        ])
-
-        # Bright spot (light hits chest)
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["armor_light"], [
-            (cx - 2, cy + int(breath)),
-            (cx + 2, cy + int(breath)),
-            (cx + 2, cy + 3),
-            (cx - 2, cy + 3),
-        ])
-
-        # Chest crystal gem (glowing blue)
-        gem_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        gx = cx
-        gy = cy + 3
-        # Glow halo
-        for r in range(5, 0, -1):
-            alpha = _NS_morgath._alpha(120 * (5 - r) / 5 * gem_pulse)
-            _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["orb_mid"], alpha),
-                                  (gx, gy), r)
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_darkest"],
-                         (gx - 2, gy - 2, 5, 5))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_dark"],
-                         (gx - 1, gy - 2, 3, 4))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_mid"],
-                         (gx - 1, gy - 1, 3, 2))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_light"],
-                         (gx, gy - 1, 2, 1))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_shine"],
-                         (gx, gy - 1, 1, 1))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["white"], (gx, gy - 1, 1, 1))
-
-        # Gold trim on torso edges
-        pygame.draw.line(surface, _NS_morgath.PALETTE["gold_dark"],
-                         (cx - 6, cy - 5), (cx + 6, cy - 5), 1)
-        pygame.draw.line(surface, _NS_morgath.PALETTE["gold_mid"],
-                         (cx - 5, cy - 5), (cx + 5, cy - 5), 1)
-
-        # Shoulder pauldrons (ornate)
-        for side in (-1, 1):
-            sx = cx + side * 7
-            # Big shoulder plate
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["shadow_deep"],
-                             (sx - 3, cy - 6, 7, 6))
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_darkest"],
-                             (sx - 3, cy - 6, 6, 5))
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_dark"],
-                             (sx - 2, cy - 6, 4, 4))
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_mid"],
-                             (sx - 2, cy - 6, 3, 2))
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_light"],
-                             (sx - 1, cy - 6, 1, 1))
-            # Gold trim
-            pygame.draw.line(surface, _NS_morgath.PALETTE["gold_mid"],
-                             (sx - 3, cy - 6), (sx + 3, cy - 6), 1)
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["gold_light"],
-                             (sx - 2, cy - 6, 1, 1))
-            # Small gem
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_dark"],
-                             (sx - 1, cy - 4, 2, 2))
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["orb_light"],
-                             (sx, cy - 4, 1, 1))
-
-    def _draw_mor_arm_back(surface, cx, cy, facing, phase, action, attack_progress):
-        """Back arm."""
-        base_x = cx - facing * 6
-        base_y = cy
-
+        # Node sihir di telapak: ukurannya mengikuti pose
         if action == "attack":
-            if attack_progress < 0.4:
-                arm_angle = -0.3
-            elif attack_progress < 0.7:
-                t = (attack_progress - 0.4) / 0.3
-                arm_angle = -0.3 + t * 0.5
-            else:
-                arm_angle = 0.2
-        elif action == "walk":
-            arm_angle = math.sin(phase * 2 + math.pi) * 0.25
+            charge = 1.0 if ap >= 0.9 else min(1.0, ap / 0.35)
+            node_r = 2.0 + 3.0 * charge
+        elif action in ("point", "channel", "ascend"):
+            node_r = 3.0
+        elif action == "erect":
+            node_r = 2.2
         else:
-            arm_angle = math.sin(phase * 0.7) * 0.1
-
-        elbow_x = base_x - facing * int(3 + math.sin(arm_angle) * 2)
-        elbow_y = base_y + int(4 - math.cos(arm_angle) * 1)
-        hand_x = elbow_x - facing * int(2 + math.sin(arm_angle + 0.5) * 2)
-        hand_y = elbow_y + int(5 - math.cos(arm_angle + 0.5) * 2)
-
-        # Upper arm (robe sleeve)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["shadow_deep"],
-                            (base_x + 1, base_y + 1), (elbow_x + 1, elbow_y + 1), 5)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["robe_darkest"],
-                            (base_x, base_y), (elbow_x, elbow_y), 4)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["robe_dark"],
-                            (base_x, base_y), (elbow_x, elbow_y), 3)
-
-        # Forearm (armored gauntlet)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["shadow_deep"],
-                            (elbow_x + 1, elbow_y + 1), (hand_x + 1, hand_y + 1), 4)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["armor_darkest"],
-                            (elbow_x, elbow_y), (hand_x, hand_y), 3)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["armor_dark"],
-                            (elbow_x, elbow_y), (hand_x, hand_y), 2)
-
-        # Small idle arc energy in hand
-        if action == "idle":
-            energy_pulse = math.sin(phase * 3) * 0.4 + 0.6
-            _NS_morgath._aacircle(surface,
-                                  (*_NS_morgath.PALETTE["arc_mid"],
-                                   _NS_morgath._alpha(150 * energy_pulse)),
-                                  (hand_x, hand_y), 3)
-            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_light"],
-                                  (hand_x, hand_y), 1)
-
-    def _draw_mor_arm_front(surface, cx, cy, facing, phase, action, attack_progress):
-        """Front arm - main casting hand."""
-        base_x = cx + facing * 6
-        base_y = cy
-
-        if action == "attack":
-            if attack_progress < 0.4:
-                # Draw arm up/back for charge
-                t = attack_progress / 0.4
-                arm_angle = -0.5 - t * 0.5
-            elif attack_progress < 0.7:
-                # Thrust forward
-                t = (attack_progress - 0.4) / 0.3
-                arm_angle = -1.0 + t * 1.5
-            else:
-                # Recovery
-                t = (attack_progress - 0.7) / 0.3
-                arm_angle = 0.5 - t * 0.3
-        elif action == "walk":
-            arm_angle = math.sin(phase * 2) * 0.25
-        else:
-            arm_angle = math.sin(phase * 0.7 + 0.5) * 0.15 - 0.05
-
-        elbow_x = base_x + facing * int(3 + math.cos(arm_angle) * 3)
-        elbow_y = base_y + int(3 + math.sin(arm_angle) * 2)
-        hand_x = elbow_x + facing * int(4 + math.cos(arm_angle + 0.3) * 3)
-        hand_y = elbow_y + int(3 + math.sin(arm_angle + 0.3) * 3)
-
-        # Upper arm (robe sleeve)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["shadow_deep"],
-                            (base_x + 1, base_y + 1), (elbow_x + 1, elbow_y + 1), 5)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["robe_darkest"],
-                            (base_x, base_y), (elbow_x, elbow_y), 4)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["robe_dark"],
-                            (base_x, base_y), (elbow_x, elbow_y), 3)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["robe_mid"],
-                            (base_x, base_y - 1), (elbow_x, elbow_y - 1), 1)
-
-        # Forearm (armored gauntlet with gold trim)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["shadow_deep"],
-                            (elbow_x + 1, elbow_y + 1), (hand_x + 1, hand_y + 1), 4)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["armor_darkest"],
-                            (elbow_x, elbow_y), (hand_x, hand_y), 3)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["armor_mid"],
-                            (elbow_x, elbow_y), (hand_x, hand_y), 2)
-        _NS_morgath._aaline(surface, _NS_morgath.PALETTE["armor_light"],
-                            (elbow_x, elbow_y - 1), (hand_x, hand_y - 1), 1)
-
-        # Gauntlet detail
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["gold_mid"],
-                              (hand_x, hand_y), 2)
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["gold_light"],
-                              (hand_x - facing, hand_y), 1)
-
-        # Casting energy in hand (idle: small orb, attack: bigger charge)
-        if action == "attack" and attack_progress < 0.55:
-            # Charging orb
-            t = attack_progress / 0.55
-            cr = int(3 + t * 6)
-            for r in range(cr + 4, 0, -1):
-                alpha = _NS_morgath._alpha(220 * (cr + 4 - r) / (cr + 4))
-                _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["arc_darkest"], alpha),
-                                      (hand_x, hand_y), r)
-            for r in range(cr, 0, -1):
-                alpha = _NS_morgath._alpha(240 * (cr - r + 1) / cr)
-                _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["arc_mid"], alpha),
-                                      (hand_x, hand_y), r)
-            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_light"],
-                                  (hand_x, hand_y), max(1, cr - 2))
-            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_shine"],
-                                  (hand_x, hand_y), max(1, cr - 4))
-            pygame.draw.rect(surface, _NS_morgath.PALETTE["white"],
-                             (hand_x, hand_y, 1, 1))
-
-            # Sparks
-            for i in range(4):
-                angle = phase * 5 + i * math.pi / 2
-                sx = hand_x + int(math.cos(angle) * (cr + 3))
-                sy = hand_y + int(math.sin(angle) * (cr + 3))
-                pygame.draw.rect(surface, _NS_morgath.PALETTE["arc_hot"],
-                                 (sx, sy, 1, 1))
-
-            # Small lightning arcs to arm
-            if attack_progress > 0.15:
-                for i in range(2):
-                    end_x = hand_x + int(math.sin(phase * 8 + i) * 4)
-                    end_y = hand_y + int(math.cos(phase * 8 + i) * 4)
-                    _NS_morgath._jagged_line(surface, _NS_morgath.PALETTE["arc_hot"],
-                                             (hand_x, hand_y),
-                                             (elbow_x, elbow_y),
-                                             jitter=2, segments=4, width=1)
-        elif action == "idle" or action == "walk":
-            # Ambient small orb
-            orb_pulse = math.sin(phase * 3) * 0.4 + 0.6
-            for r in range(4, 0, -1):
-                alpha = _NS_morgath._alpha(180 * (4 - r) / 4 * orb_pulse)
-                _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["arc_mid"], alpha),
-                                      (hand_x, hand_y), r)
-            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_light"],
-                                  (hand_x, hand_y), 2)
-            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_shine"],
-                                  (hand_x, hand_y), 1)
-
-            # Occasional arc
-            arc_frame = int(phase * 4) % 8
-            if arc_frame < 2:
-                arc_end_x = hand_x + int(math.sin(phase * 6) * 5)
-                arc_end_y = hand_y - 3 - int(math.cos(phase * 6) * 2)
-                _NS_morgath._jagged_line(surface, _NS_morgath.PALETTE["arc_light"],
-                                         (hand_x, hand_y),
-                                         (arc_end_x, arc_end_y),
-                                         jitter=2, segments=4, width=1)
-
-    def _draw_mor_head(surface, cx, cy, facing, phase, action):
-        """Hood + big glowing crystal orb helm."""
-        # Hood (dark cowl behind orb)
-        hood_pts = [
-            (cx - 7, cy + 4),
-            (cx - 8, cy - 2),
-            (cx - 6, cy - 8),
-            (cx - 2, cy - 10),
-            (cx + 2, cy - 10),
-            (cx + 6, cy - 8),
-            (cx + 8, cy - 2),
-            (cx + 7, cy + 4),
-        ]
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["shadow_deep"],
-                          [(px + 1, py + 1) for px, py in hood_pts])
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["robe_darkest"], hood_pts)
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["robe_dark"], [
-            (cx - 6, cy + 3),
-            (cx - 7, cy - 2),
-            (cx - 5, cy - 7),
-            (cx - 1, cy - 9),
-            (cx + 1, cy - 9),
-            (cx + 5, cy - 7),
-            (cx + 7, cy - 2),
-            (cx + 6, cy + 3),
-        ])
-
-        # Hood inner shadow (dark inside)
-        _NS_morgath._poly(surface, _NS_morgath.PALETTE["shadow_deep"], [
-            (cx - 5, cy + 2),
-            (cx - 6, cy - 2),
-            (cx - 4, cy - 6),
-            (cx + 4, cy - 6),
-            (cx + 6, cy - 2),
-            (cx + 5, cy + 2),
-        ])
-
-        # Hood highlight edge
-        pygame.draw.line(surface, _NS_morgath.PALETTE["robe_edge"],
-                         (cx - 6 * facing, cy - 7),
-                         (cx - 7 * facing, cy - 1), 1)
-
-        # Gold trim on hood edge
-        pygame.draw.line(surface, _NS_morgath.PALETTE["gold_dark"],
-                         (cx - 5, cy - 7), (cx + 5, cy - 7), 1)
-        pygame.draw.line(surface, _NS_morgath.PALETTE["gold_mid"],
-                         (cx - 3, cy - 7), (cx + 3, cy - 7), 1)
-
-        # CRYSTAL ORB HELM (huge glowing sphere as head)
-        _NS_morgath._draw_crystal_orb(surface, cx, cy - 4, phase, action)
-
-        # Chin guard piece
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_darkest"],
-                         (cx - 3, cy + 4, 7, 3))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_dark"],
-                         (cx - 3, cy + 4, 6, 2))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_mid"],
-                         (cx - 2, cy + 4, 4, 1))
-        # Gold trim
-        pygame.draw.line(surface, _NS_morgath.PALETTE["gold_mid"],
-                         (cx - 3, cy + 6), (cx + 3, cy + 6), 1)
-
-    def _draw_crystal_orb(surface, cx, cy, phase, action):
-        """Big glowing crystal orb (the 'face' of Morgath)."""
-        pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-
-        # Outer glow halo
-        for r in range(10, 4, -1):
-            alpha = _NS_morgath._alpha(120 * (10 - r) / 6 * pulse)
-            _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["orb_mid"], alpha),
-                                  (cx, cy), r)
-
-        # Main orb sphere
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["shadow_deep"], (cx + 1, cy + 1), 6)
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["orb_darkest"], (cx, cy), 6)
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["orb_dark"], (cx, cy), 5)
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["orb_mid"], (cx, cy), 4)
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["orb_light"], (cx - 1, cy - 1), 3)
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["orb_hot"], (cx - 1, cy - 1), 2)
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["orb_shine"], (cx - 1, cy - 2), 1)
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["white"], (cx - 1, cy - 2, 1, 1))
-
-        # Rim dark (bottom-right shadow)
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["orb_darkest"],
-                              (cx + 2, cy + 2), 3, 1)
-
-        # Metal collar under orb (holds it)
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_darkest"],
-                         (cx - 4, cy + 5, 9, 2))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["armor_dark"],
-                         (cx - 4, cy + 5, 8, 1))
-        pygame.draw.rect(surface, _NS_morgath.PALETTE["gold_mid"],
-                         (cx - 3, cy + 5, 6, 1))
-
-        # Small electric arcs around orb
-        arc_frame = int(phase * 6) % 6
-        if arc_frame < 3:
+            node_r = 1.6
+        pulse = math.sin(phase * 4.0) * 0.5 + 0.5
+        nr = node_r + pulse * 0.6
+        _NS_morgath._aacircle(surface, (*P["arc_mid"], 70), hp, _w(nr + 3))
+        _NS_morgath._aacircle(surface, P["arc_dark"], hp, _w(nr))
+        _NS_morgath._aacircle(surface, P["arc_mid"], hp, _w(nr - 1))
+        _NS_morgath._aacircle(surface, P["arc_hot"], hp, _w(max(1, nr - 2.2)))
+        _NS_morgath._aacircle(surface, P["arc_shine"], hp, _w(max(1, nr - 3.4)))
+        # Mini fork berdenyut saat charge penuh / stance skill
+        if (action == "attack" and ap >= 0.35) or action in ("point", "ascend"):
             for i in range(3):
-                angle = phase * 4 + i * math.pi * 2 / 3
-                r_arc = 8
-                arc_end_x = cx + int(math.cos(angle) * r_arc)
-                arc_end_y = cy + int(math.sin(angle) * r_arc)
-                pygame.draw.rect(surface, _NS_morgath.PALETTE["arc_hot"],
-                                 (arc_end_x, arc_end_y, 1, 1))
-                pygame.draw.rect(surface, _NS_morgath.PALETTE["arc_shine"],
-                                 (arc_end_x, arc_end_y, 1, 1))
+                ang = phase * 5.0 + i * math.pi * 2.0 / 3.0
+                tip = pt(hand[0] + math.cos(ang) * 6.0,
+                         hand[1] + math.sin(ang) * 6.0)
+                _NS_morgath._jagged_line(surface, P["arc_hot"], hp, tip,
+                                         jitter=1.5, segments=2, width=_w(1))
+
+    def _mor_sleeve(surface, pt, _w, f, shoulder, elbow, hand,
+                    base, edge, dim=False):
+        """Lengan berjubah: dua segmen meruncing (atas & lengan bawah)."""
+        P = _NS_morgath.PALETTE
+        sh, el, hd = pt(*shoulder), pt(*elbow), pt(*hand)
+
+        def seg(a, b, w_a, w_b, color):
+            dx, dy = b[0] - a[0], b[1] - a[1]
+            L = max(1.0, math.hypot(dx, dy))
+            px, py = -dy / L, dx / L
+            pts = [(a[0] + px * w_a, a[1] + py * w_a),
+                   (b[0] + px * w_b, b[1] + py * w_b),
+                   (b[0] - px * w_b, b[1] - py * w_b),
+                   (a[0] - px * w_a, a[1] - py * w_a)]
+            _NS_morgath._poly(surface, color,
+                              [(int(qx), int(qy)) for qx, qy in pts])
+
+        seg(sh, el, _w(4.2), _w(3.4), base)
+        seg(el, hd, _w(3.4), _w(2.8), base)
+        # Garis tepi terang di sisi atas lengan
+        pygame.draw.line(surface, edge, sh, hd, 1)
+        # Manset emas di pergelangan
+        ex, ey = el[0] + (hd[0] - el[0]) * 0.8, el[1] + (hd[1] - el[1]) * 0.8
+        wx, wy = el[0] + (hd[0] - el[0]) * 0.97, el[1] + (hd[1] - el[1]) * 0.97
+        pygame.draw.line(surface, P["gold_dark"], (int(ex), int(ey)),
+                         (int(wx), int(wy)), _w(4.4))
+        pygame.draw.line(surface, P["gold_mid"], (int(ex), int(ey)),
+                         (int(wx), int(wy)), _w(2.6))
+
+    def _mor_draw_pauldron(surface, pt, _w, f, phase, back=False):
+        """Pelat bahu berlapis: sumber siluet 'penuh' ke samping."""
+        P = _NS_morgath.PALETTE
+        breath = math.sin(phase * 0.9) * 0.5
+        if back:
+            cx0, cy0 = -12.0, -24.0 + breath * 0.5
+            sizes = ((6.5, 4.0), (7.5, 4.5))
+            base, top, rim = P["armor_dark"], P["armor_mid"], P["armor_darkest"]
+            edge = P["armor_mid"]
+        else:
+            cx0, cy0 = 12.0, -25.0 + breath * 0.5
+            sizes = ((7.0, 4.5), (8.5, 5.0), (9.5, 5.5))
+            base, top, rim = P["armor_mid"], P["armor_light"], P["armor_darkest"]
+            edge = P["gold_mid"]
+        for i, (rx, ry) in enumerate(sizes):
+            ox = cx0 - i * 1.0
+            oy = cy0 + i * 3.2
+            plate = [(ox - rx, oy + ry * 0.4), (ox - rx * 0.7, oy - ry),
+                     (ox + rx * 0.4, oy - ry * 0.9), (ox + rx, oy - ry * 0.2),
+                     (ox + rx * 0.8, oy + ry * 0.6), (ox, oy + ry)]
+            _NS_morgath._poly(surface, rim if i == 0 else rim,
+                              [pt(x + 0.8, y + 0.8) for x, y in plate])
+            _NS_morgath._poly(surface, base if i else rim,
+                              [pt(x, y) for x, y in plate])
+            _NS_morgath._poly(surface, top,
+                              [pt(x, y) for x, y in
+                               [(ox - rx * 0.6, oy - ry * 0.7),
+                                (ox + rx * 0.2, oy - ry * 0.6),
+                                (ox + rx * 0.5, oy - ry * 0.1),
+                                (ox - rx * 0.4, oy - ry * 0.2)]])
+            if i == len(sizes) - 1:
+                pygame.draw.line(surface, edge, pt(ox - rx + 1, oy + ry * 0.5),
+                                 pt(ox + rx * 0.4, oy + ry * 0.7), 1)
+        # Paku arc kecil di pelat teratas
+        stud = pt(cx0 + (2.0 if not back else -1.0), cy0 - 2.0)
+        _NS_morgath._aacircle(surface, P["arc_light"], stud, _w(1.2))
+        _NS_morgath._aacircle(surface, P["arc_shine"], stud, _w(0.6))
+
+    def _mor_draw_head(surface, pt, _w, f, phase, action, ap):
+        """Hood dalam + orb kristal (focal point PALING terang) + antena."""
+        P = _NS_morgath.PALETTE
+        ox, oy = _NS_morgath.ORB_CENTER
+        hover = math.sin(phase * 1.3) * 0.5
+
+        # --- Antena arc (sirip logam) dari sisi hood -----------------
+        fin_f = [(5, -41), (10, -52), (13, -50), (9, -40)]
+        fin_b = [(-6, -41), (-10, -50), (-8, -52), (-3, -42)]
+        _NS_morgath._poly(surface, P["armor_dark"], [pt(x, y) for x, y in fin_b])
+        _NS_morgath._poly(surface, P["armor_mid"], [pt(x, y) for x, y in fin_f])
+        tip_f, tip_b = pt(11.5, -51), pt(-9, -51)
+        pygame.draw.rect(surface, P["arc_light"],
+                         (tip_f[0], tip_f[1], _w(1.4), _w(1.4)))
+        pygame.draw.rect(surface, P["arc_mid"],
+                         (tip_b[0], tip_b[1], _w(1.2), _w(1.2)))
+        # Saat charge serangan: percikan melompat antar ujung antena -
+        # tell yang bisa dibaca pemain sebelum beam keluar.
+        if action == "attack" and 0.02 < ap < 0.9:
+            a = _NS_morgath._alpha(min(1.0, ap / 0.3) * 230)
+            _NS_morgath._jagged_line(surface, (*P["arc_hot"], a),
+                                     tip_b, tip_f, jitter=2, segments=4,
+                                     width=_w(1))
+            _NS_morgath._jagged_line(surface, (*P["arc_light"], a),
+                                     pt(-9, -50.5), pt(11.5, -49),
+                                     jitter=2, segments=4, width=_w(1))
+
+        # --- Hood luar ------------------------------------------------
+        hood = [(-11, -23), (-14, -30), (-11, -38), (-5, -43),
+                (0, -44), (6, -43), (11, -38), (13, -30),
+                (11, -24), (6, -21), (-5, -21)]
+        _NS_morgath._poly(surface, P["shadow_deep"],
+                          [pt(x + 1, y + 1) for x, y in hood])
+        _NS_morgath._poly(surface, P["robe_dark"], [pt(x, y) for x, y in hood])
+        # Volume sisi terang (cahaya dari depan-atas)
+        _NS_morgath._poly(surface, P["robe_mid"],
+                          [pt(x, y) for x, y in
+                           [(-3, -42), (5, -41), (10, -36), (12, -29),
+                            (9, -25), (4, -38)]])
+        _NS_morgath._poly(surface, P["robe_light"],
+                          [pt(x, y) for x, y in
+                           [(0, -43), (5, -41), (8, -37), (2, -39)]])
+        # Lipatan hood
+        for lx, tone in ((-8, "robe_darkest"), (-4, "robe_darkest"),
+                         (8, "robe_edge")):
+            pygame.draw.line(surface, P[tone], pt(lx, -37), pt(lx + f * 1, -26), 1)
+        # Puncak hood menukik ke depan
+        peak = [(-2, -44), (3, -45), (7, -42), (2, -43)]
+        _NS_morgath._poly(surface, P["robe_mid"], [pt(x, y) for x, y in peak])
+
+        # --- Lubang wajah: gelap pekat, jadi orb menonjol --------------
+        hole = [(-6, -38), (6, -38), (8, -30), (6, -26), (-5, -27), (-7, -31)]
+        _NS_morgath._poly(surface, P["shadow_deep"], [pt(x, y) for x, y in hole])
+        _NS_morgath._poly(surface, P["robe_darkest"],
+                          [pt(x, y) for x, y in
+                           [(-6, -38), (6, -38), (7, -34), (-6, -35)]])
+
+        # --- ORB kristal (ruang terang TERTINGGI di seluruh sprite) ----
+        oc = pt(ox, oy + hover)
+        orad = _NS_morgath.ORB_R
+        pulse = math.sin(phase * 2.2) * 0.5 + 0.5
+        # Halo lembut (murah: dua lingkaran alpha)
+        _NS_morgath._aacircle(surface, (*P["orb_dark"], 46), oc, _w(orad + 5))
+        _NS_morgath._aacircle(surface, (*P["orb_mid"], 60), oc, _w(orad + 2))
+        # Cangkang kristal
+        _NS_morgath._aacircle(surface, P["orb_dark"], oc, _w(orad))
+        _NS_morgath._aacircle(surface, P["orb_mid"], oc, _w(orad - 1.5))
+        # Bayangan kristal: pita gelap bawah-kanan
+        low = (oc[0] + _w(1.5), oc[1] + _w(2.0))
+        _NS_morgath._aacircle(surface, P["orb_darkest"], low, _w(orad - 4.5))
+        _NS_morgath._aacircle(surface, P["orb_dark"], low, _w(orad - 6.0))
+        # Pusaran energi: dua busur orbit (ikuti phase)
+        for i in range(2):
+            ang = phase * 2.4 + i * math.pi
+            sx = math.cos(ang) * (orad - 3.5)
+            sy = math.sin(ang) * (orad - 3.5) * 0.55
+            p1 = pt(ox + sx, oy + hover + sy)
+            p2 = pt(ox + sx * 0.4, oy + hover + sy * 0.4 - 1.5)
+            pygame.draw.line(surface, P["orb_light"], p1, p2, _w(1.4))
+        # Inti panas: denyut dengan phase
+        core = (oc[0], oc[1] - _w(1.5))
+        _NS_morgath._aacircle(surface, P["orb_hot"], core, _w(2.6 + pulse))
+        _NS_morgath._aacircle(surface, P["orb_shine"], core, _w(1.4 + pulse * 0.5))
+        # Glint kaca kiri-atas
+        _NS_morgath._aacircle(surface, P["orb_shine"],
+                              (oc[0] - _w(4.0), oc[1] - _w(4.5)), _w(1.3))
+        # Pecahan rune mengorbit orb
+        for i in range(3):
+            ang = phase * 1.6 + i * (math.pi * 2.0 / 3.0)
+            rx = math.cos(ang) * (orad + 4.5)
+            ry = math.sin(ang) * (orad + 4.5) * 0.6
+            shp = pt(ox + rx, oy + hover + ry)
+            s = _w(1.2)
+            _NS_morgath._poly(surface, P["arc_light"],
+                              [(shp[0], shp[1] - s), (shp[0] + s, shp[1]),
+                               (shp[0], shp[1] + s), (shp[0] - s, shp[1])])
+
+        # --- Bibir hood menangkap cahaya orb ---------------------------
+        pygame.draw.line(surface, P["robe_light"], pt(-5, -27), pt(6, -27), 1)
+        pygame.draw.line(surface, P["robe_edge"], pt(6, -27), pt(8, -31), 1)
 
     # ============================================================
     # LIGHTNING PROJECTILE (basic attack)
@@ -3106,9 +3198,12 @@ class _NS_morgath:
         else:
             tx, ty = _NS_morgath._target_position(boss, x, y)
 
-        # Launch from front hand position (18px = ukuran asli boss)
-        start_x = x + facing * int(round(18 * inv))
-        start_y = y - 2
+        # Lahir dari TELAPAK cast rig masterwork (MOR_MUZZLE), bukan
+        # angka lepas: start beam selalu menempel di tangan yang sedang
+        # thrust, di semua skala render.
+        mdx, mdy = _NS_morgath._muzzle_offset_world()
+        start_x = x + facing * int(round(mdx * inv))
+        start_y = y + int(round(mdy * inv))
 
         t = (progress - 0.55) / 0.45
         t = min(1.0, t)
@@ -3194,13 +3289,15 @@ class _NS_morgath:
                                  (end_x, end_y, W(2), W(2)))
 
     def _draw_shadow(surface, x, y):
-        shadow = pygame.Surface((80, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 18)
+        # Bayangan mengikuti lebar hem rig masterwork (~46 px), bukan
+        # badan lama yang lebih ramping.
+        shadow = pygame.Surface((64, 16), pygame.SRCALPHA)
+        for radius in range(8, 0, -1):
+            alpha = max(0, (8 - radius) * 20)
             pygame.draw.ellipse(shadow, (0, 0, 0, alpha),
-                                (10 - radius, 10 - radius, 60 + radius * 2, radius * 2))
-        pygame.draw.ellipse(shadow, (2, 5, 12, 180), (5, 5, 70, 10))
-        surface.blit(shadow, (x - 40, y - 10))
+                                (8 - radius, 8 - radius, 48 + radius * 2, radius * 2))
+        pygame.draw.ellipse(shadow, (2, 5, 12, 190), (4, 4, 56, 8))
+        surface.blit(shadow, (x - 32, y - 8))
 
     def _draw_arc_aura(surface, x, y, phase):
         """Blue electric aura behind boss."""
@@ -3244,31 +3341,36 @@ class _NS_morgath:
                                          p1, p2, jitter=3, segments=5, width=1)
 
     def _draw_ground_rune(surface, x, y, phase, skill):
-        """Blue magic rune circle."""
-        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
-        pygame.draw.ellipse(ring, (*_NS_morgath.PALETTE["arc_darkest"], 200),
-                            (5, 14, 120, 20), 2)
-        pygame.draw.ellipse(ring, (*_NS_morgath.PALETTE["arc_dark"], 220),
-                            (12, 16, 106, 16), 1)
-        pygame.draw.ellipse(ring, (*_NS_morgath.PALETTE["arc_mid"], 180),
-                            (25, 18, 80, 12), 1)
+        """Blue magic rune circle - rapat di bawah hem jubah.
 
-        # Rune spokes
+        Pelajaran dari konvensi masterwork Gornak: rune tidak boleh
+        lebih lebar/lebih terang dari badan (versi lama 130 px), jadi
+        dikunci ~64 px dengan spoke redup.
+        """
+        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
+        ring = pygame.Surface((68, 24), pygame.SRCALPHA)
+        pygame.draw.ellipse(ring, (*_NS_morgath.PALETTE["arc_darkest"], 190),
+                            (3, 8, 62, 12), 2)
+        pygame.draw.ellipse(ring, (*_NS_morgath.PALETTE["arc_dark"], 200),
+                            (8, 10, 52, 8), 1)
+        pygame.draw.ellipse(ring, (*_NS_morgath.PALETTE["arc_mid"], 150),
+                            (16, 11, 36, 6), 1)
+
+        # Rune spokes (pendek, di dalam cincin)
         for i in range(10):
             angle = phase * 0.3 + i * math.pi / 5
-            x1 = 65 + int(math.cos(angle) * 40)
-            y1 = 23 + int(math.sin(angle) * 8)
-            x2 = 65 + int(math.cos(angle) * 58)
-            y2 = 23 + int(math.sin(angle) * 12)
-            pygame.draw.line(ring, (*_NS_morgath.PALETTE["arc_light"], 220),
+            x1 = 34 + int(math.cos(angle) * 17)
+            y1 = 14 + int(math.sin(angle) * 4)
+            x2 = 34 + int(math.cos(angle) * 28)
+            y2 = 14 + int(math.sin(angle) * 6)
+            pygame.draw.line(ring, (*_NS_morgath.PALETTE["arc_dark"], 190),
                              (x1, y1), (x2, y2), 1)
 
         if skill:
             pygame.draw.ellipse(ring, (*_NS_morgath.PALETTE["arc_hot"],
-                                       _NS_morgath._alpha(160 * pulse)),
-                                (10, 10, 110, 28), 1)
-        surface.blit(ring, (x - 65, y - 22))
+                                       _NS_morgath._alpha(150 * pulse)),
+                                (5, 5, 58, 16), 1)
+        surface.blit(ring, (x - 34, y - 12))
 
     # ============================================================
     # SKILL Q: SPARK WRAITH (homing electric orb)
@@ -3294,10 +3396,10 @@ class _NS_morgath:
         tx, ty = _NS_morgath._target_position(boss, x, y)
 
         if progress < 0.3:
-            # Charge in hand
+            # Charge di telapak cast (stance point) - menempel di rig
             t = progress / 0.3
-            charge_x = x + facing * 18
-            charge_y = y - 2
+            charge_x, charge_y = _NS_morgath._skill_hand_world(
+                boss, x, y, "q")
             cr = int(4 + t * 6)
             for r in range(cr + 5, 0, -1):
                 alpha = _NS_morgath._alpha(220 * (cr + 5 - r) / (cr + 5))
@@ -3329,10 +3431,10 @@ class _NS_morgath:
                                          (charge_x, charge_y), (ea_x, ea_y),
                                          jitter=2, segments=3, width=1)
         else:
-            # Orb travels toward target (curved wraith)
+            # Orb travels toward target (curved wraith) dari telapak rig
             t = (progress - 0.3) / 0.7
-            start_x = x + facing * 22
-            start_y = y - 2
+            start_x, start_y = _NS_morgath._skill_hand_world(
+                boss, x, y, "q")
 
             # Slight arc trajectory
             mid_x = (start_x + tx) / 2
@@ -3590,18 +3692,22 @@ class _NS_morgath:
         clone_offset = -facing * 40
         clone_x = x + clone_offset
 
-        # Draw clone body to surface with alpha
-        clone_surf = pygame.Surface((120, 120), pygame.SRCALPHA)
-        # Use idle pose for clone
-        _NS_morgath._draw_mor_body(clone_surf, 60, 60, facing, phase, "idle")
-        clone_surf.set_alpha(alpha_val)
+        # Draw clone body (rig masterwork, pose idle) ke buffer rig
+        clone_surf = pygame.Surface((_NS_morgath.RIG_W, _NS_morgath.RIG_H),
+                                    pygame.SRCALPHA)
+        _NS_morgath._draw_mor_rig(clone_surf, _NS_morgath.RIG_OX,
+                                  _NS_morgath.RIG_OY, facing, phase,
+                                  "idle", 0.0, False)
 
         # Tint clone slightly blue
-        tint = pygame.Surface((120, 120), pygame.SRCALPHA)
+        tint = pygame.Surface((_NS_morgath.RIG_W, _NS_morgath.RIG_H),
+                              pygame.SRCALPHA)
         tint.fill((80, 130, 220, 60))
         clone_surf.blit(tint, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        clone_surf.set_alpha(alpha_val)
 
-        surface.blit(clone_surf, (clone_x - 60, y - 60))
+        surface.blit(clone_surf, (clone_x - _NS_morgath.RIG_OX,
+                                  y - _NS_morgath.RIG_OY))
 
         # Electric arcs between clone and original
         arc_frame = int(phase * 6) % 4
