@@ -2114,6 +2114,8 @@ class _NS_sylara:
 
 
     def _manage_projectiles(boss, surface, phase):
+        if getattr(boss, "_skip_renderer_projectiles", False):
+            return
         if not hasattr(boss, "_sy_projectiles"):
             boss._sy_projectiles = []
         for proj in boss._sy_projectiles:
@@ -3694,6 +3696,8 @@ class _NS_kaizen:
 
 
     def _manage_projectiles(boss, surface, phase):
+        if getattr(boss, "_skip_renderer_projectiles", False):
+            return
         if not hasattr(boss, "_kz_projectiles"):
             boss._kz_projectiles = []
         for proj in boss._kz_projectiles:
@@ -6039,6 +6043,8 @@ class _NS_thorne:
 
 
     def _manage_projectiles(boss, surface, phase):
+        if getattr(boss, "_skip_renderer_projectiles", False):
+            return
         if not hasattr(boss, "_th_projectiles"):
             boss._th_projectiles = []
         for proj in boss._th_projectiles:
@@ -8275,6 +8281,8 @@ class _NS_vex:
 
 
     def _manage_projectiles(boss, surface, phase):
+        if getattr(boss, "_skip_renderer_projectiles", False):
+            return
         if not hasattr(boss, "_vx_projectiles"):
             boss._vx_projectiles = []
         for proj in boss._vx_projectiles:
@@ -10002,6 +10010,8 @@ class _NS_zephyr:
 
 
     def _manage_projectiles(boss, surface, phase):
+        if getattr(boss, "_skip_renderer_projectiles", False):
+            return
         if not hasattr(boss, "_zp_projectiles"):
             boss._zp_projectiles = []
         for proj in boss._zp_projectiles:
