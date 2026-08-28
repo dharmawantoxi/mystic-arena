@@ -2941,6 +2941,42 @@ class LevelIntroScreen:
         reward_text.set_alpha(alpha)
         surface.blit(reward_text, (coin_x + 18, coin_y - 12))
 
+        # ═══ STARTING GOLD (skala kesulitan + level) ═══
+        start_y = reward_y + 78
+
+        start_label = self.font_tiny.render(
+            "STARTING GOLD", True, (150, 170, 190))
+        start_label.set_alpha(alpha)
+        start_label_rect = start_label.get_rect(center=(cx, start_y))
+        surface.blit(start_label, start_label_rect)
+
+        # Gold coin icon
+        coin_x2 = cx - 60
+        coin_y2 = start_y + 30
+        pygame.draw.circle(surface, (255, 200, 50),
+                           (coin_x2, coin_y2), 12)
+        pygame.draw.circle(surface, (200, 150, 30),
+                           (coin_x2, coin_y2), 12, 2)
+
+        dollar2 = coin_font.render("$", True, (100, 60, 10))
+        dollar2_rect = dollar2.get_rect(center=(coin_x2, coin_y2))
+        surface.blit(dollar2, dollar2_rect)
+
+        # Pakai fungsi yang sama dengan Game.reset() supaya angka
+        # di intro selalu sama dengan gold yang diterima pemain.
+        try:
+            from _core import GameSettings, compute_starting_gold
+            sg = compute_starting_gold(
+                self.level_config, self.level_num,
+                GameSettings().difficulty)
+        except Exception:
+            sg = self.level_config.get("starting_gold", 1000)
+
+        start_text = self.font_medium.render(
+            f"{sg:,} GOLD", True, (255, 220, 100))
+        start_text.set_alpha(alpha)
+        surface.blit(start_text, (coin_x2 + 18, coin_y2 - 12))
+
     def _draw_boss_preview(self, surface, alpha):
         """Draw right side: boss preview"""
         cx = self.screen_w * 3 // 4  # kanan tengah

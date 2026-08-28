@@ -214,6 +214,38 @@ BULLET_RADIUS = 4
 STARTING_GOLD = 350          # Cukup untuk 3 tower awal
 GOLD_PER_SECOND = 3          # 180 gold per menit passive
 
+# ═══ STARTING GOLD: skala kesulitan + level ═══
+# Starting gold pemain dihitung dari base level config, lalu
+# disesuaikan:
+#   - Difficulty : easy +25%, normal 0%, hard -25%
+#   - Level      : +100 gold per level di atas level 1
+# Karena base & bonus kelipatan 100 dan multiplier kelipatan 0.25,
+# hasil akhir selalu kelipatan 25 (angka bersih).
+DIFFICULTY_GOLD_MULT = {
+    "easy": 1.25,
+    "normal": 1.0,
+    "hard": 0.75,
+}
+GOLD_PER_LEVEL_BONUS = 100
+
+
+def compute_starting_gold(level_config, level_number, difficulty="normal"):
+    """Hitung starting gold pemain untuk sebuah level.
+
+    Rumus:
+        (base starting_gold dari level config + bonus per level)
+        × multiplier kesulitan
+
+    Dipakai bersama oleh Game.reset() dan LevelIntroScreen supaya
+    angka yang ditampilkan di layar intro SAMA dengan gold yang
+    benar-benar diterima pemain saat match dimulai.
+    """
+    base = int(level_config.get("starting_gold", 1000))
+    level = max(1, int(level_number or 1))
+    bonus = (level - 1) * GOLD_PER_LEVEL_BONUS
+    mult = DIFFICULTY_GOLD_MULT.get(difficulty, 1.0)
+    return int((base + bonus) * mult)
+
 # ── MINION TYPES (Balanced) ──
 MINION_TYPES = {
     "goblin": {
@@ -1301,7 +1333,6 @@ class Game:
         except Exception:
             pass
 
-        self.gold = cfg["starting_gold"]
         self.score = 0
 
         # ═══ DIFFICULTY MODE & ENEMY SCALING ═══
@@ -1329,6 +1360,12 @@ class Game:
 
         self.difficulty = self.settings.difficulty
         self.enemy_scaling_enabled = (self.difficulty == "hard")
+
+        # ═══ STARTING GOLD: disesuaikan difficulty + level ═══
+        # easy = +25%, normal = 100%, hard = -25%, plus bonus
+        # +100/level. Nilai ini juga ditampilkan di LevelIntroScreen.
+        self.gold = compute_starting_gold(
+            cfg, self.level_number, self.difficulty)
 
         if self.enemy_scaling_enabled:
             self.enemy_hp_mult = cfg.get("enemy_hp_mult", 1.0) * 1.15
