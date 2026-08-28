@@ -223,6 +223,180 @@ Uji regresi: `python tools/test_vex_masterwork.py`.
 Review sheet dirender ulang dengan
 `python tools/_shot_vex_masterwork.py`.
 
+### Contoh maksimal ketujuh: Gornak Masterwork (mini boss + hero)
+
+Gornak — *The Warrior Against Magic*, mini boss level 1 yang juga bisa
+di-unlock jadi hero — adalah **boss pertama** yang menerima perlakuan yang
+sama. Renderer lamanya (`_draw_gnk_robe`, `_draw_leg`, `_draw_gnk_arm_back/
+front`, `_draw_blade`, `_draw_mohawk`: tumpukan body-part `pygame.draw.rect`)
+**dihapus total** dan diganti satu **bone rig 2D berlapis** di
+`bosses/level1.py`.
+
+Diukur dari render (bukan perasaan), yang salah waktu itu:
+
+| | sebelum | sesudah | rujukan keluarga |
+|---|---|---|---|
+| badan padat boss 1x | 87 x 53 px | **115 x 121 px** | morgath 82x120, drakar 138x190, abaddon (true) 122x150 |
+| rasio lebar:tinggi | 0.61 (tiang sempit) | **1.05** | hero lain 0.90–1.17 |
+| hasil di lane sebagai hero | 50 x 45 px, di-*upscale* 1.13x (kabur) | **74 x 79 px, tanpa upscale** | grimjaw 74x79, kaizen 75x83 |
+| rune tanah | 110 px, lebih terang dari badan | 58 px di bawah kaki | — |
+| biaya render | 1.15 ms/frame | **1.11 ms/frame** | — |
+
+Yang dilakukan:
+
+* **Ukuran disamakan, bukan digedein sembarangan.** `SCALE = 1.32`
+  memperbesar rig, `LIFT = 4` memindahkan jangkar ke bawah. `LIFT` penting:
+  pipeline HD hero menormalkan ukuran dari **tinggi badan di atas titik
+  jangkar**, jadi tanpa LIFT, boss setinggi 115 px akan jadi 99 px di lane
+  (lebih gemuk dari Kaizen) atau sebaliknya — sekarang tingginya 74 px,
+  sama persis dengan Grimjaw.
+* **Siluet diisi ke samping**, bukan cuma tinggi: stance kaki melebar,
+  bahu/pauldron keluar, dan kedua bilah dipegang menyamping (depan
+  `+1.02`, belakang `-1.02` rad). Itulah yang membuat Kaizen/Grimjaw/Vex
+  terasa "penuh"; Gornak sebelumnya menumpuk semua massanya di satu kolom.
+* **Kaki menapak.** Telapak dipatok di `GROUND_DY` (garis bayangan) dan
+  garis itu sendiri diturunkan dari `FEET_DY * SCALE`, jadi tidak mungkin
+  lagi badan melayang saat ukuran diubah.
+* **Bilah pose-driven & tidak pernah menembus badan.** Sudut bilah ditabel
+  per-pose; ayunan attack ditulis sebagai satu sapuan yang lewat depan
+  wajah lalu menyayat ke depan-bawah, sehingga tidak ada frame bilah
+  melintang di dada. Ujung bilah = satu-satunya sumber posisi slash arc,
+  proc Mana Break, dan kilau Counterspell.
+* **LOD dua tingkat.** Arena = siluet bersih; portrait Hero Shop
+  (`_portrait_hd`) menambah pass material (serat mohawk, grain kulit,
+  jahitan loincloth, ukiran pelat, garis hamon bilah, tato rune) dan
+  membuang aura/rune/bayangan supaya auto-crop mengisi wajah.
+* **Efek skill ditundukan**: Counterspell jadi kubah heksagon yang memeluk
+  badan (bukan bola r=42), Blink memakai after-image rig yang sama, dan
+  durasi animasi disamakan dengan `active_skill_timer` AI (`SKILL_DUR`,
+  dikunci test). `hurt_flash_timer` boss akhirnya dibaca.
+* Buffer rig dibatasi dari extents terukur semua pose (176x160) supaya
+  outline siluet (5 salinan per frame) tidak membayar ruang kosong, dan
+  ada test yang memastikan tidak ada bilah terpotong.
+
+Preview karakter, ukuran 1x di arena, dan baris paritas ukuran:
+[docs/gornak_masterwork_preview.png](docs/gornak_masterwork_preview.png).
+Contact sheet rig idle/walk/attack:
+[docs/gornak_animation_strip.png](docs/gornak_animation_strip.png).
+Portrait LOD Hero Shop: [docs/gornak_portrait_preview.png](docs/gornak_portrait_preview.png).
+Perbandingan sebelum/sesudah (baris atas = renderer lama, zoom sama):
+[docs/gornak_before_after.png](docs/gornak_before_after.png).
+Khusus pass visual jalur hero (lane + Hero Shop, ukuran sengaja tidak
+diubah): [docs/gornak_hero_pass.png](docs/gornak_hero_pass.png) —
+dirender ulang dengan `python tools/_shot_gornak_hero_pass.py`.
+
+**Pass kedua — visual jalur HERO.** Setelah ukuran aman, keluhan berikutnya
+adalah Gornak-as-hero tetap kalah "hidup" dibanding grimjaw/kaizen/vex.
+Diukur dengan me-render lewat pipeline yang sama seperti game
+(`render_hero` + cache untuk lane, dan `HeroPortraits` kanvas 160×160 untuk
+Hero Shop), ketemu 5 cacat dan semuanya diperbaiki:
+
+* **Wajah jadi subjek, bukan blob.** Pass pertama menaruh blok `skin_shine`
+  selebar 11 px + rongga mata 1 px -> setelah `smoothscale` jalur hero wajah
+  jadi "topeng merah muda" tanpa fitur. Sekarang aturan keluarga: satu blok
+  terang kecil + satu blok gelap (dahi / cavum mata 4 px) dan MATA dua garis
+  2-3 px ber-halo ungu, plus sapuan perang ungu di pipi.
+* **Krist mohawk jadi massa, bukan helaian.** Helai 1 px hilang di skala
+  hero; diganti tiga duri `hair_light`/`hair_shine` dengan 1 px pemisah, dan
+  kuncir ramping ber-cincin kuningan di belakang kepala.
+* **Satu titik fokus di dada.** Garis silang + tiga titik rune terbaca sebagai
+  noda lavender -> sekarang pelat gelap dengan tepi atas `armor_shine` dan
+  SATU permata `magic_hot` yang membesar saat Counterspell/Mana Void.
+* **Sisi jauh dibiarkan gelap.** Pauldron belakang sempat memakai
+  `armor_light`+`shine` sehingga muncul "sayap" pucat yang mengungguli wajah;
+  cahaya dan permata tema sekarang hanya di sisi depan.
+* **Anggota badan proporsional.** Dua bilah horizontal sejajar terbaca sebagai
+  "palang" yang menenggelamkan badan -> bilah depan diangkat diagonal
+  (+1.78 rad), belakang menukik (-1.00): lebar siluet tetap ~1.05 W/H tapi
+  kepala & dada yang jadi subjek. Loincloth dipersempit (dulu mengubah dua
+  kaki jadi satu tiang ungu) dan lengan dinaiki satu tingkat.
+* **Sinyal warna keluarga.** Kaizen/Vex/Grimjam punya piringan cahaya +
+  cincin tanah yang jelas; aura Gornak alpha 34-55 sehingga mati total di
+  lane. Sekarang cakram ungu 78-120 + cincin rune dalam + titik terang.
+* **Portrait Hero Shop tidak lagi terpotong.** Bilah depan (panjang +82 px
+  dari jangkar) melewati tepi kanvas 160×160 lalu di-crop; di mode portrait
+  konten dipusatkan pada bbox-nya sendiri, jalur boss 1× tidak berubah.
+
+```
+hero 1x (render akhir, alpha>=100)   H    W   kaki di bawah posisi
+grimjaw 74x79 · kaizen 75x82 · vex 76x84 · gornak 83x84
+```
+
+**Pass ketiga — timing & gerak sekunder.** Yang masih "kaku" setelah
+visualnya bagus adalah RITMENYA, jadi pass ini mengejar itu:
+
+* `_attack_curve()` memetakan progres mentah -> waktu pose dengan
+  **anticination diperlambat -> ayunan cepat -> HOLD 4-5 frame di impact ->
+  follow-through**, semuanya monoton naik (kurva sinus versi awal sempat
+  membuat bilah terlihat mundur sesaat - artefak baru).
+* `_head_bob()`: kepala tidak lagi direkat ke torso - kontrarotasi saat
+  langkah, menunduk saat ayunan, mikro weight-shift saat idle.
+* Debu langkah (`_draw_footfall_dust`) hanya muncul saat telapak MENYENTUH
+  tanah; titik kontak per boot ditambahkan ke bayangan.
+* Kedip berkala (1 frame tiap ~4 dtk, deterministik dari phase).
+* Kartu Hero Shop: mode portrait memakai pose "compact" (bilah ditarik
+  rapat) - karena `HeroPortraits` meng-crop bbox lalu men-scale-nya, figur
+  yang melebar justru TERKECIL di kartu; sekarang ~1.3x lebih besar.
+* Hierarki nilai diperbaiki: `blade_shine` 246 -> 214 supaya MATA (bukan
+  pedang) jadi piksel paling terang; garis break di pergelangan kaki;
+  bayangan miring di bawah pektoral; rim terang di tepi robek jubah.
+
+**Pass keempat — cahaya.** Gornak (jalur boss + Hero Shop) kini memakai pass
+cahaya bersama di `lighting.py`; lihat bagian *Pass cahaya bersama* di bawah
+untuk cara kerjanya dan test-nya.
+
+Uji regresi: `python tools/test_gornak_masterwork.py` (16 pemeriksaan: rig
+tunggal, kaki menapak, W/H dan **ukuran harus sama dengan keluarga**
+(boss vs morgath/drakar/abaddon, hero vs grimjaw/kaizen), bilah tidak
+menembus dada, proc di ujung bilah, outline, portrait LOD, frame per-sendi,
+Q/W/E/R jalur boss **dan** hero, tidak di-upscale, budget ms/frame, plus
+`test_hero_visual_quality` yang mengunci jalur hero: portrait tidak terpotong
+di kanvas 160, mata & warna tema harus muncul di badan, dua kaki tetap
+terpisah, dan cakram cahaya tetap ada di lane).
+Review sheet: `python tools/_shot_gornak_masterwork.py` dan
+`python tools/_shot_gornak_before_after.py`.
+
+## Pass cahaya bersama (lighting.py)
+
+Renderer prosedural membangun volume dengan blok nilai yang di-author manual
+(`skin_dark` -> `skin_mid` -> `skin_light`). Itu cukup di ukuran besar, tapi
+di 720p hasilnya tetap terbaca sebagai "tumpukan blok datar": tidak ada satu
+arah cahaya yang konsisten, dan tidak ada terminator di sepanjang siluet.
+
+`lighting.py` menambahkan tahap itu untuk SEMUA unit, tanpa satu pun sprite
+bitmap:
+
+| tahap | cara | biaya |
+|---|---|---|
+| gradien arah seluruh badan | kisi 28x28 pada sumbu cahaya, di-upscale sekali per ukuran lalu `BLEND_RGB_MULT` | 2 blit |
+| rim light kiri-atas | `mask - geser(mask, +1,+1)` -> `BLEND_RGB_ADD` | 2 operasi mask |
+| terminator kanan-bawah | `mask - geser(mask, -1,-1)` + band kedua 40% -> `BLEND_RGB_MULT` | 3 operasi mask |
+
+Pemasangannya di satu choke point: **`heroes._finish_hd_sprite`** (dijalankan
+hanya saat cache miss, di atas sprite HASIL resize, jadi rim-nya benar-benar
+1 px pada resolusi layar) — sehingga keenam hero masterwork langsung ikut.
+Boss yang menggambar sendiri ke layar (saat ini Gornak) memanggil
+`lighting.apply_to_rig()` dengan `box` **konstanta rig**, dan melewatinya saat
+dipakai sebagai hero (ada test yang mengunci ini: rim dobel = bingkai gelap
+2 px yang membuat karakter terlihat kotor).
+
+Yang dijamin test (`tools/test_hero_lighting.py`):
+
+* alpha sprite tidak berubah (outline HD & colorkey mobile bergantung pada
+  ini) dan ukuran/`pad` anchor tetap;
+* delta terarah — sisi cahaya > sisi bayangan, diukur sebagai SELISIH
+  sebelum/sesudah, karena luminance absolut tercemar art sprite itu sendiri
+  (pedang Kaizen yang terang ada di kanan-bawah);
+* tidak dobel di lane, tidak nol di Hero Shop;
+* cache gradien terbatas (<= 64 entri) dan `apply()` < 0,35 ms per panggilan;
+* kill switch `HD_LIGHTING_ENABLED = False` dan `import lighting` gagal sama
+  -samanya tidak bikin render crash.
+
+A/B untuk keluarga: `docs/lighting_ab.png` (regenerasi:
+`python tools/_shot_lighting_ab.py`) — tiap sel menampilkan KIRI tanpa pass,
+KANAN dengan pass, plus angka piksel yang berubah. Untuk Gornak sendiri:
+`docs/gornak_hero_pass.png`.
+
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
 Hero punya 6 slot item yang dibeli dengan GOLD di **ITEM FORGE**.
