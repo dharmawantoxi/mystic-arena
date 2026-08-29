@@ -4191,7 +4191,8 @@ class _NS_kaizen:
         tail_root = (-7, -34)
         # Broad ponytail mass first, then separate pointed locks. This avoids
         # the "thin broom" silhouette common in primitive-only renderers.
-        hw = int(hair_wave * 2)
+        # v2: ponytail mengibas lebih lebar saat bergerak/menyerang.
+        hw = int(hair_wave * (4 if (walk or attack) else 2))
         poly(p["hair_darkest"], [(-5, -35), (-12, -48), (-24, -57 + hw),
              (-21, -48 + hw), (-38, -51 + hw), (-29, -40 + hw),
              (-45, -37 + hw), (-29, -31 + hw), (-41, -22 + hw),
@@ -4218,8 +4219,9 @@ class _NS_kaizen:
             _NS_kaizen._aaline(surface, p["hair_mid"], a, b, 1)
 
         # ── scarf tails behind torso ──
-        scarf_wave = int(math.sin(phase * 1.45) * 3)
-        scarf_boost = 7 if walk or attack else 0
+        # v2: mengalir lebih jauh & berombak lebih kuat saat bergerak/menyerang.
+        scarf_wave = int(math.sin(phase * 1.45) * (5 if (walk or attack) else 3))
+        scarf_boost = 13 if (walk or attack) else 0
         poly(p["scarf_dark"], [(-5, -25), (-12, -22),
              (-26 - scarf_boost, -17 + scarf_wave),
              (-39 - scarf_boost, -7 + scarf_wave),
@@ -4441,6 +4443,37 @@ class _NS_kaizen:
                                         iy + math.sin(ang) * length),
                                        1 if i % 2 else 2)
         else:
+            # ── v2: aura angin berputar + daun angin (idle showcase) ──
+            # Rotating wind aura: faint orbit arcs mengelilingi tubuh.
+            aura_r = 30 + int(math.sin(phase * .9) * 3)
+            for k in range(2):
+                _NS_kaizen._draw_wind_arc(
+                    surface, cx, cy - 6, aura_r + k * 6,
+                    phase * (0.55 + k * .35),
+                    phase * (0.55 + k * .35) + 4.4,
+                    (*p["wind_mid"], 30 - k * 12), 1, 12)
+            # orbiting bright wisps tracing the aura
+            for i in range(3):
+                a = phase * 1.1 + i * math.tau / 3
+                wx = cx + int(math.cos(a) * aura_r)
+                wy = cy - 6 + int(math.sin(a) * aura_r * .55)
+                _NS_kaizen._aacircle(surface, (*p["wind_bright"], 150),
+                                     (wx, wy), 1)
+            # drifting wind leaves (daun angin) — teardrop kecil berputar
+            for i in range(4):
+                t = (phase * .11 + i / 4.0) % 1.0
+                lx = cx + int(math.sin(phase * 1.3 + i * 1.7) * (20 + i * 4))
+                ly = cy + 22 - int(t * 68)
+                la = phase * .8 + i * 2.4
+                ca, sa = math.cos(la), math.sin(la)
+                tip = (int(lx + ca * 4), int(ly + sa * 4))
+                b1 = (int(lx - sa * 2), int(ly + ca * 2))
+                b2 = (int(lx + sa * 2), int(ly - ca * 2))
+                _NS_kaizen._poly(surface, (*p["wind_light"], 150),
+                                 [tip, b1, b2])
+                _NS_kaizen._poly(surface, (*p["wind_bright"], 110),
+                                 [tip, (int(lx + sa * 1), int(ly - ca * 1)),
+                                  (int(lx - sa * 1), int(ly + ca * 1))])
             # Quiet idle motes make breathing visible without obscuring face.
             for i in range(3):
                 t = (phase * .18 + i / 3.0) % 1.0
