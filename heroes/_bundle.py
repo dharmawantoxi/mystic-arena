@@ -23,6 +23,43 @@ import random
 import pygame
 
 
+# ═══════════════════════════════════════════════════════════════════
+# SKILL OUTLINE HELPERS (dipakai semua namespace)
+# -----------------------------------------------------------------
+# Efek skill digambar langsung ke canvas tanpa outline, jadi garis/
+# cincin tipis semi-transparan "tenggelam" di terrain terang. Helper
+# di bawah menambahkan stroke gelap di belakang shape terang supaya
+# tiap telegraph/indikator skill tetap tegas & jelas di semua map.
+# ═══════════════════════════════════════════════════════════════════
+_SKILL_OUTLINE = (6, 9, 18)
+
+
+def _skill_outlined_line(surface, a, b, width, color, alpha):
+    """Garis skill: stroke gelap di belakang + garis terang di atas."""
+    sx, sy = int(a[0]), int(a[1])
+    ex, ey = int(b[0]), int(b[1])
+    if alpha <= 0:
+        return
+    pygame.draw.line(surface, (*_SKILL_OUTLINE, min(255, alpha)),
+                     (sx, sy), (ex, ey), width + 2)
+    pygame.draw.line(surface, (*color, min(255, alpha)),
+                     (sx, sy), (ex, ey), width)
+
+
+def _skill_outlined_circle(surface, center, radius, width, color, alpha):
+    """Cincin skill: stroke gelap di belakang + cincin terang di atas."""
+    if alpha <= 0:
+        return
+    cx, cy = int(center[0]), int(center[1])
+    r = int(radius)
+    if r <= 0:
+        return
+    pygame.draw.circle(surface, (*_SKILL_OUTLINE, min(255, alpha)),
+                       (cx, cy), r + 1, max(1, width + 2))
+    pygame.draw.circle(surface, (*color, min(255, alpha)),
+                       (cx, cy), r, max(1, width))
+
+
 # ====================================================================
 # grimjaw.py
 # ====================================================================
@@ -1550,10 +1587,12 @@ class _NS_grimjaw:
         aura = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
         cx, cy = radius + 10, (radius + 20) // 2
 
-        # Ring
-        pygame.draw.ellipse(aura, (*_NS_grimjaw.PALETTE["heal_mid"], int(180 * pulse)),
+        # Ring (tegas: outline gelap + ring terang)
+        pygame.draw.ellipse(aura, (*_NS_grimjaw.PALETTE["heal_dark"], int(150 * pulse)),
+                            (3, 3, radius * 2 + 14, radius + 14), 5)
+        pygame.draw.ellipse(aura, (*_NS_grimjaw.PALETTE["heal_mid"], int(195 * pulse)),
                             (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(aura, (*_NS_grimjaw.PALETTE["heal_light"], int(150 * pulse)),
+        pygame.draw.ellipse(aura, (*_NS_grimjaw.PALETTE["heal_light"], int(170 * pulse)),
                             (15, 8, radius * 2 - 10, radius + 4), 2)
 
         # Runic marks around aura
@@ -3386,10 +3425,13 @@ class _NS_sylara:
         progress = max(0.0, min(1.0, 1 - timer / 60))
         facing = boss.direction
 
-        # Line indicator to target
+        # Line indicator to target (tegas: titik terang lebih besar + outline)
         tx, ty = _NS_sylara._target_position(boss, x, y)
         for i in range(0, 100, 5):
-            alpha = int(80 + math.sin(phase * 3 + i * 0.2) * 60)
+            alpha = int(100 + math.sin(phase * 3 + i * 0.2) * 70)
+            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_dark"], alpha // 2),
+                      (x + int((tx - x) * i / 100) + 1,
+                       y + int((ty - y) * i / 100) - 7), 2)
             _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha),
                       (x + int((tx - x) * i / 100),
                        y + int((ty - y) * i / 100) - 8), 1)
@@ -3411,15 +3453,15 @@ class _NS_sylara:
     def _draw_windrun_ground(surface, boss, x, y, timer, phase):
         """Ground effect during windrun."""
         facing = boss.direction
-        # Speed lines on ground
+        # Speed lines on ground (tegas: stroke gelap + garis terang)
         for i in range(6):
             off = (i - 3) * 6
             sx = x - facing * 20
             sy = y + 30 + off
             ex = sx - facing * 40
             alpha = 200 - i * 20
-            _NS_sylara._aaline(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha),
-                    (sx, sy), (ex, sy), 1)
+            _skill_outlined_line(surface, (sx, sy), (ex, sy), 1,
+                                 _NS_sylara.PALETTE["wind_bright"], alpha)
 
 
     def _draw_windrun_trail(surface, x, y, facing, phase):
@@ -3462,7 +3504,7 @@ class _NS_sylara:
         tx, ty = _NS_sylara._target_position(boss, x, y)
         progress = max(0.0, min(1.0, 1 - timer / 150))
 
-        # Dashed line indicator
+        # Dashed line indicator (tegas: stroke gelap + garis terang)
         steps = 20
         for i in range(steps):
             if i % 2 == 0:
@@ -3472,8 +3514,8 @@ class _NS_sylara:
                 y1 = y + (ty - y) * t1 - 5
                 x2 = x + (tx - x) * t2
                 y2 = y + (ty - y) * t2 - 5
-                _NS_sylara._aaline(surface, (*_NS_sylara.PALETTE["wind_bright"], 150),
-                        (x1, y1), (x2, y2), 2)
+                _skill_outlined_line(surface, (x1, y1), (x2, y2), 2,
+                                     _NS_sylara.PALETTE["wind_bright"], 170)
 
         # Spawn shackle projectile at start
         if not getattr(boss, "_sy_shackle_spawned", False):
@@ -3495,9 +3537,12 @@ class _NS_sylara:
         ring = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
         cx, cy = radius + 10, (radius + 20) // 2
 
-        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_mid"], int(180 * pulse)),
+        # Dark outline first (tegas di atas terrain terang)
+        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_dark"], int(150 * pulse)),
+                            (3, 3, radius * 2 + 14, radius + 14), 5)
+        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_mid"], int(190 * pulse)),
                             (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_bright"], int(200 * pulse)),
+        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_bright"], int(220 * pulse)),
                             (15, 8, radius * 2 - 10, radius + 4), 2)
 
         # Runic marks
@@ -4799,9 +4844,11 @@ class _NS_kaizen:
     def _draw_dash_ground(surface, boss, x, y, timer, phase):
         """Ground effect during dash."""
         tx, ty = _NS_kaizen._target_position(boss, x, y)
-        # Line indicator from boss to target
-        _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_mid"], 100), (x, y + 30), (tx, ty + 20), 3)
-        _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_bright"], 150), (x, y + 30), (tx, ty + 20), 1)
+        # Line indicator from boss to target (tegas: stroke gelap + terang)
+        _skill_outlined_line(surface, (x, y + 30), (tx, ty + 20), 3,
+                             _NS_kaizen.PALETTE["wind_mid"], 120)
+        _skill_outlined_line(surface, (x, y + 30), (tx, ty + 20), 1,
+                             _NS_kaizen.PALETTE["wind_bright"], 170)
 
 
     def _draw_dash_effect(surface, boss, x, y, timer, phase):
@@ -4864,8 +4911,10 @@ class _NS_kaizen:
 
         wall_width = 6
 
-        # Base wall shadow
-        _NS_kaizen._rect(surface, (*_NS_kaizen.PALETTE["wind_darkest"], 100),
+        # Base wall shadow (tegas: outline gelap lebar + core terang)
+        _NS_kaizen._rect(surface, (*_NS_kaizen.PALETTE["wind_darkest"], 170),
+              (wall_x - wall_width - 2, wall_top, wall_width * 2 + 4, wall_bot - wall_top))
+        _NS_kaizen._rect(surface, (*_NS_kaizen.PALETTE["wind_mid"], 140),
               (wall_x - wall_width, wall_top, wall_width * 2, wall_bot - wall_top))
 
         # Wind swirls making up the wall
@@ -4909,9 +4958,11 @@ class _NS_kaizen:
         ring = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
         cx, cy = radius + 10, (radius + 20) // 2
 
-        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_mid"], int(180 * pulse)),
+        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_dark"], int(150 * pulse)),
+                            (3, 3, radius * 2 + 14, radius + 14), 5)
+        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_mid"], int(190 * pulse)),
                             (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_bright"], int(150 * pulse)),
+        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_bright"], int(170 * pulse)),
                             (15, 8, radius * 2 - 10, radius + 4), 2)
 
         surface.blit(ring, (x - cx, y + 30 - cy))
@@ -4960,11 +5011,11 @@ class _NS_kaizen:
         progress = max(0.0, min(1.0, 1 - timer / 100))
         pulse = math.sin(phase * 1.5) * 0.2 + 0.8
 
-        # Warning circle at target
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_dark"], int(150 * pulse)),
-                  (tx, ty + 20), 30, 2)
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_mid"], int(180 * pulse)),
-                  (tx, ty + 20), 24, 1)
+        # Warning circle at target (tegas: outline gelap + cincin terang)
+        _skill_outlined_circle(surface, (tx, ty + 20), 30, 2,
+                               _NS_kaizen.PALETTE["wind_dark"], int(150 * pulse))
+        _skill_outlined_circle(surface, (tx, ty + 20), 24, 1,
+                               _NS_kaizen.PALETTE["wind_mid"], int(185 * pulse))
 
 
     def _draw_tornado(surface, boss, x, y, timer, phase):
@@ -6386,13 +6437,15 @@ class _NS_thorne:
     def _draw_viscous_ground(surface, boss, x, y, timer, phase):
         """Line indicator."""
         tx, ty = _NS_thorne._target_position(boss, x, y)
-        # Dashed indicator
+        # Dashed indicator (tegas: stroke gelap + garis goo terang)
         for i in range(0, 20, 2):
             t1 = i / 20
             t2 = (i + 1) / 20
-            _NS_thorne._aaline(surface, (*_NS_thorne.PALETTE["goo_mid"], 130),
-                    (x + (tx - x) * t1, y + (ty - y) * t1 - 5),
-                    (x + (tx - x) * t2, y + (ty - y) * t2 - 5), 2)
+            _skill_outlined_line(
+                surface,
+                (x + (tx - x) * t1, y + (ty - y) * t1 - 5),
+                (x + (tx - x) * t2, y + (ty - y) * t2 - 5),
+                2, _NS_thorne.PALETTE["goo_mid"], 150)
 
 
     def _draw_viscous_charge(surface, boss, x, y, timer, phase):
@@ -6478,8 +6531,18 @@ class _NS_thorne:
     # SKILL E: QUILL SPRAY
     # ===================================================================
     def _draw_quill_spray_ground(surface, boss, x, y, timer, phase):
-        """Ground marker."""
-        pass
+        """Ground marker — radial AOE ring (range 100)."""
+        p = _NS_thorne.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 60))
+        pulse = math.sin(phase * 4) * 0.3 + 0.7
+        # Outer range ring (tegas)
+        _skill_outlined_circle(surface, (x, y - 10), 100, 3,
+                               p["quill_shine"], int(120 * pulse))
+        # Inner warning ring expanding with the charge
+        _skill_outlined_circle(surface, (x, y - 10), int(30 + 40 * progress), 2,
+                               p["quill_shine"], int(180 * pulse))
+        # Origin glow dot
+        _NS_thorne._aacircle(surface, p["quill_shine"], (x, y - 10), 4)
 
 
     def _handle_quill_spray_skill(surface, boss, x, y, timer, phase):
@@ -7945,16 +8008,20 @@ class _NS_vex:
     def _draw_astral_indicator(surface, boss, x, y, timer, pulse):
         """Target indicator for astral imprisonment."""
         tx, ty = _NS_vex._target_position(boss, x, y)
-        # Dashed line
+        # Dashed line (tegas: stroke gelap + garis astral terang)
         for i in range(0, 20, 2):
             t1 = i / 20
             t2 = (i + 1) / 20
-            _NS_vex._aaline(surface, (*_NS_vex.PALETTE["astral_light"], 150),
-                    (x + (tx - x) * t1, y + (ty - y) * t1 - 8),
-                    (x + (tx - x) * t2, y + (ty - y) * t2 - 8), 2)
-        # Circle marker
-        _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["astral_mid"], 150), (tx, ty), 22, 2)
-        _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["astral_light"], 180), (tx, ty), 18, 1)
+            _skill_outlined_line(
+                surface,
+                (x + (tx - x) * t1, y + (ty - y) * t1 - 8),
+                (x + (tx - x) * t2, y + (ty - y) * t2 - 8),
+                2, _NS_vex.PALETTE["astral_light"], 170)
+        # Circle marker (tegas: outline gelap + cincin terang)
+        _skill_outlined_circle(surface, (tx, ty), 22, 2,
+                               _NS_vex.PALETTE["astral_mid"], 160)
+        _skill_outlined_circle(surface, (tx, ty), 18, 1,
+                               _NS_vex.PALETTE["astral_light"], 190)
 
 
     def _handle_astral_skill(surface, boss, x, y, timer, phase):
@@ -7979,10 +8046,13 @@ class _NS_vex:
             t = progress / 0.3
             radius = int(20 + t * 40)
             pulse = math.sin(phase * 3) * 0.3 + 0.7
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_darkest"], int(200 * pulse)),
-                      (tx, ty + 15), radius, 3)
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_dark"], int(180 * pulse)),
-                      (tx, ty + 15), radius - 4, 2)
+            # Tegas: outline gelap pekat + rim terang di dalam
+            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_darkest"], int(230 * pulse)),
+                      (tx, ty + 15), radius + 2, 4)
+            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_dark"], int(190 * pulse)),
+                      (tx, ty + 15), radius - 2, 2)
+            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_bright"], int(170 * pulse)),
+                      (tx, ty + 15), radius - 5, 1)
             # Central portal
             _NS_vex._aacircle(surface, _NS_vex.PALETTE["shadow_deep"], (tx, ty + 15), 8)
             _NS_vex._aacircle(surface, _NS_vex.PALETTE["void_darkest"], (tx, ty + 15), 5)
@@ -8092,9 +8162,11 @@ class _NS_vex:
         ring = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
         cx, cy = radius + 10, (radius + 20) // 2
 
-        pygame.draw.ellipse(ring, (*_NS_vex.PALETTE["void_dark"], int(200 * pulse)),
+        pygame.draw.ellipse(ring, (*_NS_vex.PALETTE["void_darkest"], int(210 * pulse)),
+                            (3, 3, radius * 2 + 14, radius + 14), 5)
+        pygame.draw.ellipse(ring, (*_NS_vex.PALETTE["void_dark"], int(210 * pulse)),
                             (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(ring, (*_NS_vex.PALETTE["void_mid"], int(220 * pulse)),
+        pygame.draw.ellipse(ring, (*_NS_vex.PALETTE["void_mid"], int(230 * pulse)),
                             (15, 8, radius * 2 - 10, radius + 4), 2)
 
         # Runes
@@ -9825,9 +9897,14 @@ class _NS_zephyr:
                               int(145 * pulse)),
                              (int(tx - radius), int(ty + 15 - radius * .32),
                               radius * 2, max(4, int(radius * .64))))
+        # Tegas: rim gelap pekat + arc rune terang di atas
+        _NS_zephyr._ellipse(surface,
+                             (*_NS_zephyr.PALETTE["magic_dark"], int(215 * pulse)),
+                             (int(tx - radius), int(ty + 15 - radius * .32),
+                              radius * 2, max(4, int(radius * .64))), 3)
         _NS_zephyr._draw_fey_arc(surface, tx, ty + 15, radius, int(radius * .32),
                                   phase, phase + math.pi * 1.45,
-                                  (*_NS_zephyr.PALETTE["rune_mid"], 190), 2)
+                                  (*_NS_zephyr.PALETTE["rune_mid"], 215), 2)
 
 
     def _draw_bramble_maze(surface, boss, x, y, timer, phase):
@@ -9896,9 +9973,12 @@ class _NS_zephyr:
         _NS_zephyr._ellipse(surface, (*p["magic_darkest"], 155),
                              (x - radius, y + 31 - radius // 3,
                               radius * 2, max(5, radius * 2 // 3)))
+        _NS_zephyr._ellipse(surface, (*p["magic_dark"], 215),
+                             (x - radius, y + 31 - radius // 3,
+                              radius * 2, max(5, radius * 2 // 3)), 3)
         _NS_zephyr._draw_fey_arc(surface, x, y + 31, radius, radius * .32,
                                   phase, phase + math.tau,
-                                  (*p["rune_mid"], 210), 2)
+                                  (*p["rune_mid"], 225), 2)
         for i in range(6):
             a = phase * .7 + i * math.tau / 6
             _NS_zephyr._aacircle(surface, p["rune_light"],
@@ -9962,9 +10042,9 @@ class _NS_zephyr:
                  int(sy + dy * t1 + ny * wobble1))
             b = (int(sx + dx * t2 + nx * wobble2),
                  int(sy + dy * t2 + ny * wobble2))
-            _NS_zephyr._aaline(surface, (*p["magic_dark"], 180), a, b, 3)
-            _NS_zephyr._aaline(surface, (*p["magic_bright"], 210), a, b, 1)
-        _NS_zephyr._aacircle(surface, (*p["jewel_mid"], 190), (tx, ty), 9, 2)
+            _skill_outlined_line(surface, a, b, 3, p["magic_dark"], 200)
+            _skill_outlined_line(surface, a, b, 1, p["magic_bright"], 225)
+        _skill_outlined_circle(surface, (tx, ty), 9, 2, p["jewel_mid"], 200)
         _NS_zephyr._aacircle(surface, p["jewel_light"], (tx, ty), 2)
 
 
@@ -9986,6 +10066,9 @@ class _NS_zephyr:
         _NS_zephyr._ellipse(surface, (*p["magic_darkest"], 170),
                              (x - radius, y + 31 - radius // 3,
                               radius * 2, max(6, radius * 2 // 3)))
+        _NS_zephyr._ellipse(surface, (*p["magic_dark"], 220),
+                             (x - radius, y + 31 - radius // 3,
+                              radius * 2, max(6, radius * 2 // 3)), 3)
         for i in range(3):
             rr = radius - i * 9
             _NS_zephyr._draw_fey_arc(surface, x, y + 31, rr, rr * .29,
