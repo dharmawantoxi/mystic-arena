@@ -2910,7 +2910,8 @@ class _NS_morgath:
         """Rok jubah A-line; hem lebar DIPATOK di FEET_DY (tidak melayang)."""
         P = _NS_morgath.PALETTE
         FE = _NS_morgath.FEET_DY
-        hem_sway = math.sin(phase * 1.7) * 1.2 if action == "walk" else 0.0
+        # Hem sway 1.2 → 4.5 saat walk agar jubah terlihat bergerak
+        hem_sway = math.sin(phase * 1.7) * 4.5 if action == "walk" else 0.0
 
         def sp(dx, dy):
             return ptg(dx + f * hem_sway * max(0.0, dy / FE), dy)
@@ -3188,7 +3189,9 @@ class _NS_morgath:
         """Hood dalam + orb kristal (focal point PALING terang) + antena."""
         P = _NS_morgath.PALETTE
         ox, oy = _NS_morgath.ORB_CENTER
-        hover = math.sin(phase * 1.3) * 0.5
+        # Hover lebih dramatis: ±3.5px (dari ±0.5px) + sedikit lateral
+        hover   = math.sin(phase * 1.3) * 3.5
+        hover_x = math.cos(phase * 0.9) * 1.2   # sedikit melayang kiri-kanan
 
         # --- Antena arc (sirip logam) dari sisi hood -----------------
         fin_f = [(5, -41), (10, -52), (13, -50), (9, -40)]
@@ -3242,7 +3245,7 @@ class _NS_morgath:
                            [(-6, -38), (6, -38), (7, -34), (-6, -35)]])
 
         # --- ORB kristal (ruang terang TERTINGGI di seluruh sprite) ----
-        oc = pt(ox, oy + hover)
+        oc = pt(ox + hover_x, oy + hover)
         orad = _NS_morgath.ORB_R
         pulse = math.sin(phase * 2.2) * 0.5 + 0.5
         # Halo lembut (murah: dua lingkaran alpha)
@@ -3260,11 +3263,11 @@ class _NS_morgath:
             ang = phase * 2.4 + i * math.pi
             sx = math.cos(ang) * (orad - 3.5)
             sy = math.sin(ang) * (orad - 3.5) * 0.55
-            p1 = pt(ox + sx, oy + hover + sy)
-            p2 = pt(ox + sx * 0.4, oy + hover + sy * 0.4 - 1.5)
+            p1 = pt(ox + hover_x + sx, oy + hover + sy)
+            p2 = pt(ox + hover_x + sx * 0.4, oy + hover + sy * 0.4 - 1.5)
             pygame.draw.line(surface, P["orb_light"], p1, p2, _w(1.4))
         # Inti panas: denyut dengan phase
-        core = (oc[0], oc[1] - _w(1.5))
+        core = (oc[0], oc[1] - _w(1.8))
         _NS_morgath._aacircle(surface, P["orb_hot"], core, _w(2.6 + pulse))
         _NS_morgath._aacircle(surface, P["orb_shine"], core, _w(1.4 + pulse * 0.5))
         # Glint kaca kiri-atas
@@ -4486,43 +4489,47 @@ class _NS_drakar:
 
         elif action == "walk":
             stride   = math.sin(phase * 1.3)
-            # Bob vertikal: turun saat kaki mendarat, naik saat melangkah
-            bob      = -int(abs(math.sin(phase * 1.3)) * 4)
-            sway     = int(math.sin(phase * 1.0) * 4) * f
+            # Bob vertikal dramatis — turun saat mendarat, naik saat melangkah
+            bob      = -int(abs(math.sin(phase * 1.3)) * 7)   # 4→7px
+            sway     = int(math.sin(phase * 1.0) * 5) * f     # 4→5px
             breath   = 0.0
             lunge    = 0;  lift = 0
 
-            # Kaki IK per-sisi: alternating angkat mulus
             # stride +1 = front maju, back mendorong ke belakang
             front_stride =  stride
             back_stride  = -stride
 
-            # Angkat hip: hanya saat kaki benar-benar mengangkat (stride > 0.3)
-            # Pakai smooth clamp supaya tidak terlalu melompat
+            # Hip naik dramatis saat kaki terangkat
             def smooth_lift(s, max_lift):
-                return -int(max(0.0, (s - 0.3) / 0.7) * max_lift)
+                return -int(max(0.0, s) * max_lift)    # tanpa threshold 0.3
 
-            front_hip_dy_off = smooth_lift(front_stride, 6)   # max angkat 6px
-            back_hip_dy_off  = smooth_lift(back_stride,  2)   # back sedikit saja
+            front_hip_dy_off = smooth_lift(front_stride, 10)   # 6→10px
+            back_hip_dy_off  = smooth_lift(back_stride,   6)   # 2→6px
 
-            # Lutut: maju searah langkah
-            front_knee_fwd = int(front_stride * 11)
-            back_knee_fwd  = int(back_stride  *  8)
+            # Lutut maju jauh — stride lebih lebar
+            front_knee_fwd = int(front_stride * 18)    # 11→18px
+            back_knee_fwd  = int(back_stride  * 14)    # 8→14px
 
-            # Ankle: lebih sedikit dari lutut (kaki tetap di bawah lutut)
-            front_ankle_fwd = int(front_stride * 7)
-            back_ankle_fwd  = int(back_stride  * 5)
+            # Ankle mengikuti lutut
+            front_ankle_fwd = int(front_stride * 13)   # 7→13px
+            back_ankle_fwd  = int(back_stride  *  9)   # 5→9px
+
+            # Angkat ankle (kaki terangkat dari tanah) — kunci visibility!
+            front_ankle_lift = int(max(0.0, front_stride) * 12)  # max 12px
+            back_ankle_lift  = int(max(0.0, back_stride)  * 8)   # max 8px
 
             leg_data = {
                 "front": {"hip_dy": 6 + front_hip_dy_off,
-                          "hip_dx_extra": int(front_stride * 2),
+                          "hip_dx_extra": int(front_stride * 3),
                           "knee_fwd": front_knee_fwd,
                           "ankle_fwd": front_ankle_fwd,
+                          "ankle_lift": front_ankle_lift,
                           "lift_y": front_hip_dy_off},
                 "back":  {"hip_dy": 6 + back_hip_dy_off,
-                          "hip_dx_extra": int(back_stride * 2),
+                          "hip_dx_extra": int(back_stride * 3),
                           "knee_fwd": back_knee_fwd,
                           "ankle_fwd": back_ankle_fwd,
+                          "ankle_lift": back_ankle_lift,
                           "lift_y": back_hip_dy_off},
             }
 
@@ -4638,10 +4645,11 @@ class _NS_drakar:
             knee_x = int(hip_x + f * knee_base_fwd + ld["knee_fwd"])
             knee_y = hip_y + 22
 
-            # Ankle
+            # Ankle — ditambah lift vertikal (angkat kaki dari tanah)
+            ankle_lift = ld.get("ankle_lift", 0)
             ankle_base_fwd = 2 if is_front else -1
             ankle_x = int(hip_x + f * ankle_base_fwd + ld["ankle_fwd"])
-            ankle_y = knee_y + 18
+            ankle_y = knee_y + 18 - ankle_lift   # terangkat saat melangkah
 
             boot_x = ankle_x
             boot_y = ankle_y
@@ -7041,7 +7049,8 @@ class _NS_abaddon:
                     (x-r, GY-r//3, r*2, r*2//3), 3)
 
         _NS_abaddon._draw_horse_flame_base(surface, x, HY, phase, intense=True)
-        _NS_abaddon._draw_abaddon_full(surface, x, y, boss.direction, phase, "cast", progress)
+        # Q MistCoil: tangan kiri terangkat ke depan memancarkan orb (bukan extend pedang)
+        _NS_abaddon._draw_abaddon_full(surface, x, y, boss.direction, phase, "cast_q", progress)
 
         # ── SWORD TIP GLOW (lebih besar, K-scaled) ──
         if 0.12 < progress < 0.52:
@@ -7452,9 +7461,11 @@ class _NS_abaddon:
         _NS_abaddon._draw_torso(surface, cx, cy - s(3), phase)
         # Pauldrons
         _NS_abaddon._draw_pauldrons(surface, cx, cy - s(10), phase)
-        # Arms
+        # Arms — pose berbeda per skill
         if action in ("melee",):
             _NS_abaddon._draw_melee_arms(surface, cx, cy - s(3), facing, phase, attack_progress)
+        elif action == "cast_q":
+            _NS_abaddon._draw_cast_q_arms(surface, cx, cy - s(3), facing, phase, attack_progress)
         elif action == "cast":
             _NS_abaddon._draw_casting_arms(surface, cx, cy - s(3), facing, phase, attack_progress)
         else:
@@ -7466,9 +7477,17 @@ class _NS_abaddon:
 
 
     def _draw_cape(surface, cx, cy, facing, phase, action):
-        """Purple flowing cape."""
-        wave = math.sin(phase * 0.8) * 3
-        wave2 = math.sin(phase * 1.2 + 0.5) * 2
+        """Purple flowing cape — berkibar lebih dramatis saat walk."""
+        # Walk: gelombang lebih besar dan lebih cepat
+        if action == "walk":
+            wave  = math.sin(phase * 1.6) * 7
+            wave2 = math.sin(phase * 2.0 + 0.5) * 5
+        elif action in ("cast", "cast_q", "melee"):
+            wave  = math.sin(phase * 0.8) * 4
+            wave2 = math.sin(phase * 1.2 + 0.5) * 3
+        else:
+            wave  = math.sin(phase * 0.8) * 3
+            wave2 = math.sin(phase * 1.2 + 0.5) * 2
 
         cape_outer = [
             (cx - 14, cy - 20),
@@ -7753,6 +7772,58 @@ class _NS_abaddon:
 
         _NS_abaddon._draw_energy_sword(surface, sh_x, sh_y, facing, phase, angle=arm_angle,
                           intense=(0.2 < progress < 0.5))
+
+
+    def _draw_cast_q_arms(surface, cx, cy, facing, phase, progress):
+        """Q MistCoil: tangan kiri maju memancarkan orb; pedang tetap ditahan."""
+        P = _NS_abaddon.PALETTE
+
+        # ── Tangan kanan (sword arm) — pedang turun menunggu ──
+        ss_x = cx + facing * 13
+        ss_y = cy + 2
+        # Sedikit turun saat cast (berbeda dari idle)
+        hold_angle = math.pi / 2 + 0.3
+        se_x = ss_x + int(math.cos(hold_angle) * 10) * facing
+        se_y = ss_y + int(math.sin(hold_angle) * 10)
+        sh_x = se_x + int(math.cos(hold_angle) * 9) * facing
+        sh_y = se_y + int(math.sin(hold_angle) * 9)
+        _NS_abaddon._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
+        _NS_abaddon._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
+        _NS_abaddon._draw_energy_sword(surface, sh_x, sh_y, facing, phase,
+                                       angle=hold_angle, intense=False)
+
+        # ── Tangan kiri (orb arm) — maju ke depan, terangkat ──
+        ra_x = cx + (-facing) * 13
+        ra_y = cy + 2
+        if progress < 0.35:
+            t = progress / 0.35
+            cast_angle = -math.pi * 0.15 - math.pi * 0.25 * t   # angkat
+        elif progress < 0.65:
+            t = (progress - 0.35) / 0.30
+            cast_angle = -math.pi * 0.40 + math.pi * 0.12 * t   # tahan
+        else:
+            t = (progress - 0.65) / 0.35
+            cast_angle = -math.pi * 0.28 + math.pi * 0.28 * t   # turun
+        re_x = ra_x + int(math.cos(cast_angle) * 13) * (-facing)
+        re_y = ra_y + int(math.sin(cast_angle) * 13)
+        rh_x = re_x + int(math.cos(cast_angle) * 10) * (-facing)
+        rh_y = re_y + int(math.sin(cast_angle) * 10)
+        _NS_abaddon._draw_arm_segment(surface, ra_x, ra_y, re_x, re_y)
+        _NS_abaddon._draw_arm_segment(surface, re_x, re_y, rh_x, rh_y)
+        # Gauntlet tangan dengan glow orb di telapak
+        glow_t = math.sin(phase * 4) * 0.3 + 0.7
+        if 0.1 < progress < 0.75:
+            intensity = min(1.0, (progress - 0.1) / 0.25)
+            for r2, col, a2 in [
+                (int(12 * glow_t), P["magic_darkest"], 140),
+                (int( 8 * glow_t), P["magic_dark"],    185),
+                (int( 5 * glow_t), P["magic_mid"],     220),
+                (int( 3 * glow_t), P["flame_bright"],  245),
+            ]:
+                _NS_abaddon._aacircle(surface, (*col, int(a2 * intensity)),
+                                      (rh_x, rh_y), max(1, r2))
+        else:
+            _NS_abaddon._draw_gloved_hand(surface, rh_x, rh_y)
 
 
     def _draw_arm_segment(surface, x1, y1, x2, y2):
@@ -8064,16 +8135,24 @@ class _NS_abaddon:
 
 
     def _draw_shadow(surface, x, y):
-        shadow = pygame.Surface((130, 24), pygame.SRCALPHA)
-        for radius in range(12, 0, -1):
-            alpha = max(0, (12 - radius) * 15)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (12 - radius, 12 - radius, 106 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_abaddon.PALETTE["flame_darkest"], 60),
-                           (10, 5, 108, 12))
-        surface.blit(shadow, (x - 65, y - 12))
+        """Shadow elips di tanah — K-scaled agar proporsional dengan kuda."""
+        K = _NS_abaddon.K
+        W = int(200 * K)   # lebar shadow (130 → ~200 di K=1.55)
+        H = int(28  * K)   # tinggi shadow
+        surf = pygame.Surface((W + 30, H + 10), pygame.SRCALPHA)
+        cx, cy2 = (W + 30) // 2, (H + 10) // 2
+        layers = 14
+        for r in range(layers, 0, -1):
+            alpha = max(0, (layers - r) * 14)
+            rx = int(W // 2 * r / layers)
+            ry = max(1, int(H // 2 * r / layers))
+            pygame.draw.ellipse(surf, (0, 0, 0, alpha),
+                                (cx - rx, cy2 - ry, rx * 2, ry * 2))
+        # Cyan ghost-glow layer khas Abaddon
+        gw, gh = int(W * 0.75), max(1, int(H * 0.45))
+        pygame.draw.ellipse(surf, (*_NS_abaddon.PALETTE["flame_darkest"], 55),
+                            (cx - gw // 2, cy2 - gh // 2, gw, gh))
+        surface.blit(surf, (x - (W + 30) // 2, y - (H + 10) // 2))
 
 
     def _draw_dark_aura(surface, x, y, phase):
