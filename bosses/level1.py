@@ -1853,27 +1853,71 @@ class _NS_gornak:
     # SKILL Q - MANA BREAK (proc di ujung bilah, bolt ke target)
     # ==================================================================
     def _draw_manabreak_ground(surface, boss, x, y, timer, phase):
-        """Konsentrasi energi di UJUNG BILAH sebelum bolt lepas."""
+        """Q ManaBreak: aura charge besar di ujung bilah + ground pulse."""
         p = _NS_gornak.PALETTE
         duration = _NS_gornak.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        if progress > 0.34:
-            return
-        t = progress / 0.34
-        tx, ty = _NS_gornak._tip_screen(boss, x, y)
-        r = 3 + int(t * 7)
-        for k in range(r + 3, 0, -1):
-            a = _NS_gornak._alpha(200 * (r + 3 - k) / (r + 3) * (0.4 + t))
-            _NS_gornak._aacircle(surface, (*p["magic_dark"], a), (tx, ty), k)
-        for col, rr in (("magic_mid", r), ("magic_light", max(1, r - 2)),
-                        ("magic_shine", max(1, r - 4))):
-            _NS_gornak._aacircle(surface, p[col], (tx, ty), rr)
-        for i in range(5):
-            ang = phase * 4 + i * math.tau / 5
-            sx = tx + int(math.cos(ang) * (r + 4))
-            sy = ty + int(math.sin(ang) * (r + 4))
-            _NS_gornak._aaline(surface, (*p["magic_hot"], 190), (sx, sy),
-                               (tx, ty), 1)
+        GY = y + _NS_gornak.GROUND_DY
+        pulse = math.sin(phase * 3.5) * 0.25 + 0.75
+
+        if progress < 0.35:
+            # Phase charge: aura tumbuh di ujung bilah + ground ring
+            t = progress / 0.35
+            tx2, ty2 = _NS_gornak._tip_screen(boss, x, y)
+
+            # Aura ujung bilah (20px radius saat penuh)
+            r = int(4 + t * 16)
+            for k in range(r + 8, 0, -2):
+                a = _NS_gornak._alpha(220 * (r + 8 - k) / (r + 8) * t * pulse)
+                _NS_gornak._aacircle(surface, (*p["magic_darkest"], a), (tx2, ty2), k)
+            for col, rr in [("magic_mid", r), ("magic_light", max(1,r-3)),
+                            ("magic_shine", max(1,r-6)), ("white", max(1,r-9))]:
+                _NS_gornak._aacircle(surface, p[col], (tx2, ty2), rr)
+
+            # 8 kilat pendek keluar dari ujung bilah
+            for i in range(8):
+                ang = phase * 4 + i * math.tau / 8
+                r1 = r + 4
+                r2 = r + 12 + int(math.sin(phase*5+i)*4)
+                x1 = tx2 + int(math.cos(ang) * r1)
+                y1 = ty2 + int(math.sin(ang) * r1)
+                x2 = tx2 + int(math.cos(ang) * r2)
+                y2 = ty2 + int(math.sin(ang) * r2)
+                a = _NS_gornak._alpha(220 * t * pulse)
+                _NS_gornak._aaline(surface, (*p["magic_hot"], a), (x1,y1), (x2,y2), 2)
+                _NS_gornak._rect(surface, (*p["magic_shine"], a), (x2,y2,2,2))
+
+            # Ground ring mengembang di bawah boss
+            gr = int(20 * t)
+            if gr > 3:
+                ga = _NS_gornak._alpha(160 * t * pulse)
+                _NS_gornak._ellipse(surface, (*p["magic_dark"], ga),
+                    (x-gr, GY-gr//3, gr*2, gr*2//3), 2)
+                _NS_gornak._ellipse(surface, (*p["magic_mid"], ga),
+                    (x-gr+3, GY-gr//3+2, max(4,gr*2-6), max(2,gr*2//3-4)), 1)
+
+        elif progress < 0.88:
+            # Phase bolt terbang: ground ring di boss memudar
+            t = (progress - 0.35) / 0.53
+            gr = int(20 + t * 10)
+            ga = _NS_gornak._alpha(160 * (1 - t) * pulse)
+            if ga > 5:
+                _NS_gornak._ellipse(surface, (*p["magic_dark"], ga),
+                    (x-gr, GY-gr//3, gr*2, gr*2//3), 2)
+
+        else:
+            # Impact: shockwave di target
+            t = (progress - 0.88) / 0.12
+            tx2, ty2 = _NS_gornak._target_position(boss, x, y)
+            for wave in range(3):
+                wt = (t + wave*0.28) % 1.0
+                wr = int(wt * 65)
+                wa = _NS_gornak._alpha(220 * (1-wt))
+                if wr > 3 and wa > 5:
+                    _NS_gornak._ellipse(surface, (*p["magic_darkest"], wa),
+                        (tx2-wr, ty2-wr//3, wr*2, wr*2//3), 4)
+                    _NS_gornak._ellipse(surface, (*p["magic_mid"], wa),
+                        (tx2-wr+4, ty2-wr//3+3, max(4,wr*2-8), max(2,wr*2//3-6)), 2)
 
     def _draw_manabreak_foreground(surface, boss, x, y, timer, phase):
         """Bolt mana dari ujung bilah ke target + impact rune retak."""
@@ -2007,37 +2051,68 @@ class _NS_gornak:
     # SKILL R - MANA VOID
     # ==================================================================
     def _draw_manavoid_ground(surface, boss, x, y, timer, phase):
+        """R ManaVoid: aura besar tersedot di target + garis rune menyebar."""
         p = _NS_gornak.PALETTE
         tx, ty = _NS_gornak._target_position(boss, x, y)
         duration = _NS_gornak.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        if progress < 0.5:
-            t = progress / 0.5
-            r = int(28 * t)
-            a = _NS_gornak._alpha(190 * t)
-            _NS_gornak._ellipse(surface, (*p["magic_darkest"], a),
-                                (tx - r, ty - r // 3 + 6, r * 2,
-                                 max(3, r * 2 // 3)), 2)
-            _NS_gornak._ellipse(surface, (*p["magic_mid"], a),
-                                (tx - r + 4, ty - r // 3 + 8, r * 2 - 8,
-                                 max(1, r * 2 // 3 - 8)), 1)
+        pulse = math.sin(phase * 2.5) * 0.2 + 0.8
+
+        if progress < 0.50:
+            # Charge: aura tumbuh besar di target (r hingga 90px)
+            t = progress / 0.50
+            r = int(90 * t)
+            if r > 4:
+                for scale, col, a_base in [
+                    (1.00, p["magic_darkest"], 230),
+                    (0.80, p["magic_dark"],    210),
+                    (0.62, p["magic_mid"],     180),
+                    (0.44, p["magic_light"],   130),
+                ]:
+                    rr = int(r * scale)
+                    a = _NS_gornak._alpha(a_base * t * pulse)
+                    _NS_gornak._ellipse(surface, (*col, a),
+                        (tx-rr, ty-rr//3, rr*2, rr*2//3), max(1,5))
+
+                # Ring partikel berputar
+                for i in range(16):
+                    ang = phase * 2.2 + i * math.tau / 16
+                    pr = int(r * 0.72)
+                    ppx = tx + int(math.cos(ang) * pr)
+                    ppy = ty + int(math.sin(ang) * pr * 0.38)
+                    bright = (i + int(phase*4)) % 16
+                    col = p["magic_hot"] if bright < 4 else p["magic_light"]
+                    sz = 5 if bright < 4 else 2
+                    a = _NS_gornak._alpha(240 * t * pulse)
+                    _NS_gornak._rect(surface, (*col, a), (ppx-sz//2,ppy-sz//2,sz,sz))
+
+                # Garis rune dari pusat
+                for i in range(12):
+                    ang = phase * 0.5 + i * math.tau / 12
+                    r0 = int(r * 0.15); r1 = int(r * 0.65)
+                    x0 = tx + int(math.cos(ang) * r0)
+                    y0 = ty + int(math.sin(ang) * r0 * 0.38)
+                    x1 = tx + int(math.cos(ang) * r1)
+                    y1 = ty + int(math.sin(ang) * r1 * 0.38)
+                    a = _NS_gornak._alpha(200 * t * pulse)
+                    col = p["magic_hot"] if i % 3 == 0 else p["magic_dark"]
+                    _NS_gornak._aaline(surface, (*col, a), (x0,y0), (x1,y1),
+                                      2 if i%3==0 else 1)
+
         else:
-            t = (progress - 0.5) / 0.5
-            r = int(28 + t * 20)
-            a = _NS_gornak._alpha(220 * (1 - t))
-            _NS_gornak._ellipse(surface, (*p["magic_darkest"], a),
-                                (tx - r, ty - r // 3 + 6, r * 2,
-                                 max(3, r * 2 // 3)), 2)
-        if progress < 0.62:
-            t = min(1.0, progress / 0.62)
-            for i in range(6):
-                ang = i * math.tau / 6 + 0.3
-                _NS_gornak._aaline(
-                    surface, (*p["magic_mid"], _NS_gornak._alpha(180 * t)),
-                    (tx + int(math.cos(ang) * 10 * t),
-                     ty + 8 + int(math.sin(ang) * 4 * t)),
-                    (tx + int(math.cos(ang) * 32 * t),
-                     ty + 8 + int(math.sin(ang) * 11 * t)), 1)
+            # Ledakan: shockwave mengembang + aura memudar
+            t = (progress - 0.50) / 0.50
+            for wave in range(3):
+                wt = (t + wave * 0.28) % 1.0
+                wr = int(wt * 120)
+                wa = _NS_gornak._alpha(240 * (1-wt) * pulse)
+                if wr > 4 and wa > 5:
+                    _NS_gornak._ellipse(surface, (*p["magic_darkest"], wa),
+                        (tx-wr, ty-wr//3, wr*2, wr*2//3), 5)
+                    _NS_gornak._ellipse(surface, (*p["magic_mid"], wa),
+                        (tx-wr+5, ty-wr//3+3, max(4,wr*2-10), max(2,wr*2//3-6)), 3)
+                    _NS_gornak._ellipse(surface, (*p["magic_hot"], wa),
+                        (tx-wr+10, ty-wr//3+5, max(4,wr*2-20), max(2,wr*2//3-10)), 1)
 
     def _draw_manavoid_foreground(surface, boss, x, y, timer, phase):
         p = _NS_gornak.PALETTE
@@ -6802,7 +6877,9 @@ class _NS_abaddon:
 
 
     def _draw_abaddon_mist_coil(surface, boss, x, y, timer, phase):
-        """Q - Mist Coil cast."""
+        """Q - Mist Coil cast + ground FX dramatis."""
+        P = _NS_abaddon.PALETTE
+        K = _NS_abaddon.K
         cast_duration = 45
         elapsed = cast_duration - timer
         progress = max(0.0, min(1.0, elapsed / cast_duration))
@@ -6813,27 +6890,76 @@ class _NS_abaddon:
         if progress < 0.2 or progress > 0.9:
             boss._ab_coil_spawned = False
 
-        _NS_abaddon._draw_shadow(surface, x, y + 58)
-        _NS_abaddon._draw_horse_flame_base(surface, x, y + 45, phase, intense=True)
+        GY = y + int(58 * K)
+        HY = y + int(45 * K)
+        _NS_abaddon._draw_shadow(surface, x, GY)
+
+        # ── GROUND FX: aura ungu/cyan tersedot ke atas ──
+        pulse = math.sin(phase * 3) * 0.25 + 0.75
+        if progress < 0.45:
+            t = progress / 0.45
+            r = int(75 * t)
+            if r > 4:
+                for scale, col, a_base in [
+                    (1.00, P["magic_darkest"], 210),
+                    (0.80, P["magic_dark"],    190),
+                    (0.62, P["magic_mid"],     160),
+                    (0.44, P["flame_darkest"], 120),
+                ]:
+                    rr = int(r * scale)
+                    a = max(0,min(255,int(a_base * t * pulse)))
+                    pygame.draw.ellipse(surface, (*col, a),
+                        (x-rr, GY-rr//3, rr*2, rr*2//3), max(1,4))
+                # Partikel mist naik
+                for i in range(12):
+                    wisp_t = (phase * 0.8 + i * 0.1) % 1.0
+                    ang = i * math.pi * 2 / 12 + phase * 0.4
+                    wx = x + int(math.cos(ang) * r * 0.62)
+                    wy = GY - int(wisp_t * 55)
+                    wa = max(0,min(255,int(220 * (1-wisp_t) * t)))
+                    sz = int(5 * (1-wisp_t) + 2)
+                    _NS_abaddon._aacircle(surface, (*P["magic_dark"],  wa), (wx,wy), sz+2)
+                    _NS_abaddon._aacircle(surface, (*P["magic_mid"],   wa), (wx,wy), sz)
+                    _NS_abaddon._aacircle(surface, (*P["flame_mid"],   wa), (wx,wy-1), max(1,sz-1))
+        else:
+            # Orb meluncur: ground aura memudar + jejak mist
+            t = (progress - 0.45) / 0.55
+            r = int(75 * (1 - t*0.5))
+            if r > 4:
+                a = max(0,min(255,int(210 * (1-t) * pulse)))
+                pygame.draw.ellipse(surface, (*P["magic_darkest"], a),
+                    (x-r, GY-r//3, r*2, r*2//3), 3)
+
+        _NS_abaddon._draw_horse_flame_base(surface, x, HY, phase, intense=True)
         _NS_abaddon._draw_abaddon_full(surface, x, y, boss.direction, phase, "cast", progress)
 
-        # Casting glow on sword tip
-        if 0.15 < progress < 0.5:
-            sword_x = x + 32 * boss.direction
-            sword_y = y - 20
-            glow_pulse = math.sin(phase * 4) * 0.3 + 0.7
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_dark"], 180),
-                      (sword_x, sword_y), int(12 * glow_pulse))
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_mid"], 220),
-                      (sword_x, sword_y), int(8 * glow_pulse))
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], 240),
-                      (sword_x, sword_y), int(5 * glow_pulse))
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"],
-                      (sword_x, sword_y), max(1, int(3 * glow_pulse)))
+        # ── SWORD TIP GLOW (lebih besar, K-scaled) ──
+        if 0.12 < progress < 0.52:
+            t = min(1.0, progress / 0.3)
+            sword_x = x + int(38 * K) * boss.direction
+            sword_y = y - int(22 * K)
+            gp = math.sin(phase * 4) * 0.3 + 0.7
+            for r2, col, a2 in [
+                (int(20*K*gp), P["magic_darkest"], 160),
+                (int(14*K*gp), P["magic_dark"],    200),
+                (int(10*K*gp), P["magic_mid"],     230),
+                (int( 6*K*gp), P["flame_bright"],  245),
+                (int( 3*K*gp), P["flame_hot"],     255),
+            ]:
+                _NS_abaddon._aacircle(surface, (*col, int(a2*t)), (sword_x,sword_y), max(1,r2))
+            # Kilat kecil dari ujung
+            for i in range(5):
+                ang = phase * 5 + i * math.tau / 5
+                ex = sword_x + int(math.cos(ang) * int(14*K*gp))
+                ey = sword_y + int(math.sin(ang) * int(14*K*gp))
+                _NS_abaddon._aaline(surface, (*P["magic_hot"], int(200*t)),
+                                    (sword_x, sword_y), (ex, ey), 1)
 
 
     def _draw_abaddon_darkness_gale(surface, boss, x, y, timer, phase):
-        """E - Darkness Gale cast."""
+        """E - Darkness Gale cast + ground FX angin gelap."""
+        P = _NS_abaddon.PALETTE
+        K = _NS_abaddon.K
         cast_duration = 40
         elapsed = cast_duration - timer
         progress = max(0.0, min(1.0, elapsed / cast_duration))
@@ -6844,13 +6970,59 @@ class _NS_abaddon:
         if progress < 0.2 or progress > 0.9:
             boss._ab_gale_spawned = False
 
-        _NS_abaddon._draw_shadow(surface, x, y + 58)
-        _NS_abaddon._draw_horse_flame_base(surface, x, y + 45, phase, intense=True)
+        GY = y + int(58 * K)
+        HY = y + int(45 * K)
+        _NS_abaddon._draw_shadow(surface, x, GY)
+
+        # ── GROUND FX: angin gelap menyapu ke depan ──
+        pulse = math.sin(phase * 3.5) * 0.2 + 0.8
+        facing = boss.direction
+        if progress < 0.40:
+            # Charge: spiral angin mengumpul di depan kuda
+            t = progress / 0.40
+            for arm in range(4):
+                for step in range(18):
+                    st = step / 18
+                    ang = phase * 4 + arm * math.tau / 4 - st * math.pi * 3
+                    r3 = int((1 - st) * 65 * t)
+                    sx2 = x + facing * int(20*K) + int(math.cos(ang) * r3)
+                    sy2 = GY + int(math.sin(ang) * r3 * 0.38)
+                    a = max(0,min(255,int(200 * (1-st) * t * pulse)))
+                    sz2 = 4 if st < 0.3 else 2
+                    col = P["magic_mid"] if arm % 2 == 0 else P["flame_darkest"]
+                    pygame.draw.rect(surface, (*col, a), (sx2-sz2//2, sy2-sz2//2, sz2, sz2))
+        elif progress < 0.65:
+            # Blast: gale menyapu → streak panjang ke depan
+            t = (progress - 0.40) / 0.25
+            intensity = math.sin(t * math.pi)
+            streak_len = int(120 * t * facing)
+            for row2 in range(-4, 5):
+                ry2 = GY + row2 * int(3*K)
+                for seg in range(16):
+                    seg_t = seg / 16
+                    sx3 = x + int(streak_len * seg_t)
+                    a = max(0,min(255,int(240 * intensity * (1 - seg_t * 0.6) * pulse)))
+                    if a > 8:
+                        sz3 = max(1, int(4*(1-seg_t)))
+                        col = P["magic_mid"] if (seg + row2) % 3 < 2 else P["flame_dark"]
+                        pygame.draw.rect(surface, (*col, a), (sx3-1, ry2-1, sz3+2, sz3))
+        else:
+            # Memudar
+            t = (progress - 0.65) / 0.35
+            r4 = int(80 + t * 40) * facing
+            a = max(0,min(255,int(180 * (1-t) * pulse)))
+            if a > 5:
+                pygame.draw.ellipse(surface, (*P["magic_darkest"], a),
+                    (x, GY-15, abs(r4), 30), 3)
+
+        _NS_abaddon._draw_horse_flame_base(surface, x, HY, phase, intense=True)
         _NS_abaddon._draw_abaddon_full(surface, x, y, boss.direction, phase, "cast", progress)
 
 
     def _draw_abaddon_death_sever(surface, boss, x, y, timer, phase):
-        """R - Death Sever cast."""
+        """R - Death Sever cast + ground FX sabit ungu raksasa."""
+        P = _NS_abaddon.PALETTE
+        K = _NS_abaddon.K
         cast_duration = 50
         elapsed = cast_duration - timer
         progress = max(0.0, min(1.0, elapsed / cast_duration))
@@ -6861,13 +7033,69 @@ class _NS_abaddon:
         if progress < 0.2 or progress > 0.9:
             boss._ab_sever_spawned = False
 
-        lunge = int(math.sin(progress * math.pi) * 6) * boss.direction
-        _NS_abaddon._draw_shadow(surface, x + lunge, y + 58)
-        _NS_abaddon._draw_horse_flame_base(surface, x + lunge, y + 45, phase, intense=True)
+        lunge = int(math.sin(progress * math.pi) * int(10*K)) * boss.direction
+        GY = y + int(58 * K)
+        HY = y + int(45 * K)
+        _NS_abaddon._draw_shadow(surface, x + lunge, GY)
+
+        # ── GROUND FX: aura ungu + shockwave ──
+        pulse = math.sin(phase * 2.5) * 0.22 + 0.78
+        if progress < 0.38:
+            # Charge: aura ungu tumbuh di kaki kuda
+            t = progress / 0.38
+            r = int(85 * t)
+            if r > 4:
+                for scale, col, a_base in [
+                    (1.00, P["magic_darkest"], 220),
+                    (0.82, P["magic_dark"],    200),
+                    (0.64, P["magic_mid"],     170),
+                    (0.46, P["magic_light"],   120),
+                ]:
+                    rr = int(r * scale)
+                    a = max(0,min(255,int(a_base * t * pulse)))
+                    pygame.draw.ellipse(surface, (*col, a),
+                        (x+lunge-rr, GY-rr//3, rr*2, rr*2//3), max(1,5))
+                # Sabit berputar di tanah
+                for i in range(4):
+                    ang = phase * 2 + i * math.tau / 4
+                    r0 = int(r * 0.3); r1 = int(r * 0.85)
+                    x0 = x+lunge + int(math.cos(ang) * r0)
+                    y0 = GY + int(math.sin(ang) * r0 * 0.38)
+                    x1 = x+lunge + int(math.cos(ang) * r1)
+                    y1 = GY + int(math.sin(ang) * r1 * 0.38)
+                    a = max(0,min(255,int(230 * t * pulse)))
+                    col = P["magic_hot"] if i%2==0 else P["magic_mid"]
+                    _NS_abaddon._aaline(surface, (*col, a), (x0,y0), (x1,y1), 3)
+
+        elif progress < 0.68:
+            # Slash: shockwave mengembang
+            t = (progress - 0.38) / 0.30
+            intensity = math.sin(t * math.pi)
+            for wave in range(2):
+                wt = (t + wave * 0.4) % 1.0
+                wr = int(wt * 100)
+                wa = max(0,min(255,int(240 * (1-wt) * intensity)))
+                if wr > 4 and wa > 8:
+                    pygame.draw.ellipse(surface, (*P["magic_darkest"], wa),
+                        (x+lunge-wr, GY-wr//3, wr*2, wr*2//3), 5)
+                    pygame.draw.ellipse(surface, (*P["magic_mid"], wa),
+                        (x+lunge-wr+5, GY-wr//3+4, max(4,wr*2-10), max(2,wr*2//3-8)), 3)
+                    pygame.draw.ellipse(surface, (*P["magic_hot"], wa),
+                        (x+lunge-wr+10, GY-wr//3+7, max(4,wr*2-20), max(2,wr*2//3-14)), 1)
+        else:
+            # Memudar
+            t = (progress - 0.68) / 0.32
+            r = int(100 * (1-t*0.3))
+            a = max(0,min(255,int(180 * (1-t) * pulse)))
+            if a > 5 and r > 4:
+                pygame.draw.ellipse(surface, (*P["magic_darkest"], a),
+                    (x+lunge-r, GY-r//3, r*2, r*2//3), 3)
+
+        _NS_abaddon._draw_horse_flame_base(surface, x + lunge, HY, phase, intense=True)
         _NS_abaddon._draw_abaddon_full(surface, x + lunge, y, boss.direction, phase,
                           "melee", progress)
-        _NS_abaddon._draw_sword_purple_trail(surface, x + lunge, y - 8, boss.direction,
-                                 progress, phase)
+        _NS_abaddon._draw_sword_purple_trail(surface, x + lunge, y - int(8*K),
+                                             boss.direction, progress, phase)
 
 
     # ===================================================================
