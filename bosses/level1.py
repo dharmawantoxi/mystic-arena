@@ -3841,19 +3841,17 @@ class _NS_drakar:
     # tetap sejajar dengan koordinat lane.
     SCALE    = 1.0          # blit 1:1 ke layar (tidak di-scale pipeline)
     LIFT     = 0            # anchor sudah di tengah hitbox
-    FEET_DY   = 66          # telapak relatif dari anchor (y + FEET_DY = tanah)
-    GROUND_DY = FEET_DY     # alias untuk kode luar
+    # hip=+6, paha=22, betis=18, boot=10 → telapak = +6+22+18+10 = +56
+    FEET_DY   = 56
+    GROUND_DY = FEET_DY
 
-    # Buffer rig: anchor dipetakan ke (RIG_OX, RIG_OY).
-    # Kepala+mohawk: anchor - 80 = RIG_OY - 80 = 16 (margin 16 atas)
-    # Boot bawah:    anchor + 66 = RIG_OY + 66 = 162 (margin 18 bawah)
-    # Kapak terangkat (windup): anchor - 90 ~ 6 (tight)
-    # Total buffer: 200 x 186
+    # Boot bawah +56 → buffer y = 96+56 = 152 → margin 40 bawah di H=192 (ok)
     RIG_W, RIG_H = 210, 192
-    RIG_OX, RIG_OY = 105, 100
+    RIG_OX, RIG_OY = 105, 96
 
     # Kotak tetap untuk pass cahaya (lighting.py):
-    GRAD_BOX = (RIG_OX - 62, RIG_OY - 82, 144, 148)
+    # dari dy=-60 (atas kepala) s/d dy=+46 (tanah) → tinggi 106px
+    GRAD_BOX = (RIG_OX - 60, RIG_OY - 76, 140, 122)
 
     # Durasi skill (frame) - harus cocok dengan active_skill_timer di AI.
     SKILL_DUR = {"q": 80, "w": 40, "e": 70, "r": 90}
@@ -4106,10 +4104,9 @@ class _NS_drakar:
         ox = int(x) - _NS_drakar.RIG_OX
         oy = int(y) - _NS_drakar.RIG_OY
 
-        if detail:   # mode portrait: pusatkan pada pusat visual karakter
-            # Gunakan anchor tetap (kepala di ~RIG_OY-52, kaki di ~RIG_OY+66)
-            # Pusat visual = tengah antara kepala dan kaki = RIG_OY + 7
-            portrait_cy = _NS_drakar.RIG_OY + 7
+        if detail:   # mode portrait: pusatkan pada pusat visual
+            # Kepala puncak dy≈-80, kaki bawah dy≈+56 → pusat = (-80+56)/2 = -12
+            portrait_cy = _NS_drakar.RIG_OY - 12
             ox = int(x) - _NS_drakar.RIG_OX
             oy = int(y) - portrait_cy
 
@@ -4300,42 +4297,48 @@ class _NS_drakar:
     # KAKI
     # ================================================================
     def _draw_rig_legs(surface, pt, f, phase, action, stride, detail):
-        """Kaki dari anchor (pinggul).
+        """Kaki dari anchor (pinggul) — proporsi barbarian masif.
 
-        Titik hip di dy=+8 (tepat bawah sabuk).
-        Lutut di dy=+36.  Boot bawah di dy=+66.
-        Dengan RIG_OY=96: boot bawah di buffer y=162, masih dalam H=180.
+        Layout vertikal (dy dari anchor):
+          Hip        : +6
+          Lutut      : +28   (paha 22px — kuat & berotot)
+          Ankle      : +46   (betis 18px)
+          Boot bawah : +56   (boot 10px — berat)
+          TOTAL      : 50px dari hip, 56px dari anchor
+
+        Torso (-4 s/d -36) = 32px | Kepala (-42 s/d -66) ≈ 24px
+        → kaki:torso:kepala ≈ 50%:29%:21% — barbarian masif, proporsional.
+        FEET_DY = 56.
         """
         P = _NS_drakar.PALETTE
 
         if action == "walk":
-            back_swing  = stride * 14       # paha ayun ke belakang/depan
-            front_swing = -stride * 14
+            back_swing  =  stride * 12
+            front_swing = -stride * 12
         else:
             back_swing = front_swing = 0.0
 
         for side in ("back", "front"):
             is_front = (side == "front")
 
-            # Hip joint (asal paha) - sedikit terpisah lateral
+            # Hip joint — sedikit terpisah
             hip_dx = 10 if is_front else -10
-            hip_x, hip_y = pt(hip_dx, 8)
+            hip_x, hip_y = pt(hip_dx, 6)
 
-            # Ayunan kaki saat jalan
             swing = front_swing if is_front else back_swing
-            # Lutut: bergerak sedikit ke depan saat swing
-            knee_x = int(hip_x + f * (4 if is_front else -3) + swing * 0.3)
-            knee_y = hip_y + 26
 
-            # Ankle: di bawah lutut, lurus
-            ankle_x = int(hip_x + f * (2 if is_front else -1) + swing * 0.5)
-            ankle_y = knee_y + 22
+            # Lutut — paha 22px
+            knee_x = int(hip_x + f * (3 if is_front else -2) + swing * 0.28)
+            knee_y = hip_y + 22
 
-            # Boot: di bawah ankle
-            boot_x  = ankle_x
-            boot_y  = ankle_y
+            # Ankle — betis 18px
+            ankle_x = int(hip_x + f * (2 if is_front else -1) + swing * 0.48)
+            ankle_y = knee_y + 18
 
-            # ── Paha ──
+            boot_x = ankle_x
+            boot_y = ankle_y
+
+            # ── Paha (tebal berotot) ──
             pygame.draw.line(surface, P["shadow_deep"],
                              (hip_x+2, hip_y+2), (knee_x+2, knee_y+2), 13)
             pygame.draw.line(surface, P["leather_darkest"],
@@ -4344,40 +4347,30 @@ class _NS_drakar:
                              (hip_x, hip_y), (knee_x, knee_y), 10)
             if is_front:
                 pygame.draw.line(surface, P["leather_mid"],
-                                 (hip_x, hip_y-1), (knee_x, knee_y-1), 7)
+                                 (hip_x, hip_y-1), (knee_x, knee_y-1), 6)
                 pygame.draw.line(surface, P["leather_light"],
-                                 (hip_x, hip_y-2), (knee_x, knee_y-2), 3)
+                                 (hip_x, hip_y-2), (knee_x, knee_y-2), 2)
 
-            # Straps paha
-            for strap_t in (0.28, 0.62):
+            # Dua strap paha
+            for strap_t in (0.30, 0.65):
                 sx = int(hip_x + (knee_x - hip_x) * strap_t)
                 sy = int(hip_y + (knee_y - hip_y) * strap_t)
-                pygame.draw.rect(surface, P["leather_darkest"],
-                                 (sx-7, sy-1, 14, 2))
+                pygame.draw.rect(surface, P["leather_darkest"], (sx-7, sy-1, 14, 2))
                 if is_front:
-                    pygame.draw.rect(surface, P["leather_mid"],
-                                     (sx-6, sy-1, 12, 1))
-                for stud_x in (sx-5, sx+3):
-                    pygame.draw.rect(surface, P["armor_dark"],
-                                     (stud_x, sy-1, 2, 2))
+                    pygame.draw.rect(surface, P["leather_mid"], (sx-6, sy-1, 12, 1))
+                for stud_x in (sx-4, sx+3):
+                    pygame.draw.rect(surface, P["armor_dark"],  (stud_x, sy-1, 2, 2))
                     if is_front:
-                        pygame.draw.rect(surface, P["armor_light"],
-                                         (stud_x, sy-1, 1, 1))
+                        pygame.draw.rect(surface, P["armor_light"], (stud_x, sy-1, 1, 1))
 
             # ── Pelindung lutut ──
-            pygame.draw.rect(surface, P["shadow_deep"],
-                             (knee_x-7, knee_y-2, 15, 8))
-            pygame.draw.rect(surface, P["armor_darkest"],
-                             (knee_x-7, knee_y-2, 14, 8))
-            pygame.draw.rect(surface, P["armor_dark"],
-                             (knee_x-6, knee_y-2, 12, 7))
+            pygame.draw.rect(surface, P["shadow_deep"],   (knee_x-6, knee_y-2, 13, 8))
+            pygame.draw.rect(surface, P["armor_darkest"], (knee_x-6, knee_y-2, 12, 8))
+            pygame.draw.rect(surface, P["armor_dark"],    (knee_x-5, knee_y-1, 10, 6))
             if is_front:
-                pygame.draw.rect(surface, P["armor_mid"],
-                                 (knee_x-5, knee_y-1, 9, 5))
-                pygame.draw.rect(surface, P["armor_light"],
-                                 (knee_x-4, knee_y-1, 6, 2))
-                pygame.draw.rect(surface, P["armor_shine"],
-                                 (knee_x-3, knee_y-1, 3, 1))
+                pygame.draw.rect(surface, P["armor_mid"], (knee_x-4, knee_y,    7, 4))
+                pygame.draw.rect(surface, P["armor_light"],(knee_x-3, knee_y,   4, 2))
+                pygame.draw.rect(surface, P["armor_shine"],(knee_x-2, knee_y,   2, 1))
 
             # ── Betis ──
             pygame.draw.line(surface, P["shadow_deep"],
@@ -4390,33 +4383,24 @@ class _NS_drakar:
                 pygame.draw.line(surface, P["leather_mid"],
                                  (knee_x, knee_y+5), (ankle_x, ankle_y-1), 5)
 
-            # ── Boot ──
-            pygame.draw.rect(surface, P["shadow_deep"],
-                             (boot_x-9, boot_y, 20, 12))
-            pygame.draw.rect(surface, P["leather_darkest"],
-                             (boot_x-9, boot_y, 19, 11))
-            pygame.draw.rect(surface, P["leather_dark"],
-                             (boot_x-8, boot_y, 16, 10))
+            # ── Boot berat ──
+            pygame.draw.rect(surface, P["shadow_deep"],       (boot_x-8, boot_y, 18, 11))
+            pygame.draw.rect(surface, P["leather_darkest"],   (boot_x-8, boot_y, 17, 10))
+            pygame.draw.rect(surface, P["leather_dark"],      (boot_x-7, boot_y, 14,  9))
             if is_front:
-                pygame.draw.rect(surface, P["leather_mid"],
-                                 (boot_x-7, boot_y, 12, 6))
-                pygame.draw.rect(surface, P["leather_light"],
-                                 (boot_x-6, boot_y+1, 7, 3))
-            # Pelat logam boot
-            pygame.draw.rect(surface, P["armor_darkest"],
-                             (boot_x-9, boot_y+7, 20, 5))
-            pygame.draw.rect(surface, P["armor_dark"],
-                             (boot_x-9, boot_y+7, 19, 4))
+                pygame.draw.rect(surface, P["leather_mid"],   (boot_x-6, boot_y, 10,  5))
+                pygame.draw.rect(surface, P["leather_light"], (boot_x-5, boot_y+1, 6,  3))
+            # Pelat logam
+            pygame.draw.rect(surface, P["armor_darkest"],     (boot_x-8, boot_y+6, 18, 5))
+            pygame.draw.rect(surface, P["armor_dark"],        (boot_x-8, boot_y+6, 17, 4))
             if is_front:
-                pygame.draw.rect(surface, P["armor_mid"],
-                                 (boot_x-8, boot_y+7, 17, 3))
-                pygame.draw.rect(surface, P["armor_light"],
-                                 (boot_x-7, boot_y+7, 14, 1))
+                pygame.draw.rect(surface, P["armor_mid"],     (boot_x-7, boot_y+6, 15, 2))
+                pygame.draw.rect(surface, P["armor_light"],   (boot_x-6, boot_y+6, 12, 1))
             # Ujung boot
             pygame.draw.rect(surface, P["armor_light"],
-                             (boot_x + f*7, boot_y+9, 2, 2))
+                             (boot_x + f*6, boot_y+8, 2, 2))
             pygame.draw.rect(surface, P["armor_shine"],
-                             (boot_x + f*7, boot_y+9, 1, 1))
+                             (boot_x + f*6, boot_y+8, 1, 1))
 
     # ================================================================
     # PINGGANG
