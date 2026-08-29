@@ -4185,82 +4185,129 @@ class _NS_drakar:
                       ap=0.0, detail=False):
         """Bone rig lengkap Drakar - digambar ke buffer.
 
-        Anchor (cx, cy) = pusat PINGGUL (hip joint), bukan pinggang tengah.
-        Layout vertikal dari anchor:
-          kepala puncak  : dy -80  (buffer y ~16 saat cy=96)
-          kepala bawah   : dy -52
-          leher          : dy -48
-          bahu           : dy -40
-          dada atas      : dy -36
-          perut          : dy -12
-          sabuk/pinggang : dy   0  (== anchor)
-          selangkang     : dy  +8
-          paha           : dy +10 .. +34
-          lutut          : dy +34
-          betis          : dy +34 .. +56
-          boot bawah     : dy +66  (buffer y ~162 saat cy=96)
-
-        GROUND_DY = 66 (telapak dari anchor). Buffer H=180 cukup.
+        Anchor (cx, cy) = pusat PINGGUL (hip joint).
+        Semua animasi dihitung di sini sebelum diteruskan ke sub-fungsi:
+          - idle  : breathing bob besar (4px), sway lambat, kapak goyang
+          - walk  : hip_y per-kaki alternating (angkat+turun), torso condong
+          - attack: lunge dramatis, windup tinggi, swing eksplosif, shake impact
         """
-        P   = _NS_drakar.PALETTE
-        f   = 1 if facing >= 0 else -1
+        P = _NS_drakar.PALETTE
+        f = 1 if facing >= 0 else -1
 
-        # ── Breathing / bob / lunge ──────────────────────────────────
+        # ── STATE ANIMASI ────────────────────────────────────────────
         if action == "idle":
-            breath = math.sin(phase * 0.5) * 2.5
-            bob    = int(math.sin(phase * 0.5) * 2)
-            sway   = int(math.sin(phase * 0.4) * 2)
-            stride = 0.0
-            lunge  = 0
-            lift   = 0
+            # Nafas berat — bob naik-turun 5px, kapak ikut goyang
+            t_breath = math.sin(phase * 0.55)
+            breath   = t_breath * 3.0       # torso expand/contract
+            bob      = int(t_breath * 4)    # seluruh badan naik-turun
+            sway     = int(math.sin(phase * 0.35) * 2) * f
+            stride   = 0.0
+            lunge    = 0;  lift = 0
+            # Kaki simetris, sedikit stance lebar
+            leg_data = {
+                "front": {"hip_dy": 6,  "hip_dx_extra": 0, "knee_fwd": 0,
+                          "ankle_fwd": 0, "lift_y": 0},
+                "back":  {"hip_dy": 6,  "hip_dx_extra": 0, "knee_fwd": 0,
+                          "ankle_fwd": 0, "lift_y": 0},
+            }
+
         elif action == "walk":
-            stride  = math.sin(phase * 1.1)
-            bob     = -int(abs(math.sin(phase * 1.1)) * 3)
-            sway    = int(math.sin(phase * 0.8) * 3)
-            breath  = 0
-            lunge   = 0
-            lift    = 0
+            stride   = math.sin(phase * 1.3)
+            # Bob vertikal: turun saat kaki mendarat, naik saat melangkah
+            bob      = -int(abs(math.sin(phase * 1.3)) * 4)
+            sway     = int(math.sin(phase * 1.0) * 4) * f
+            breath   = 0.0
+            lunge    = 0;  lift = 0
+
+            # Kaki IK per-sisi: alternating angkat mulus
+            # stride +1 = front maju, back mendorong ke belakang
+            front_stride =  stride
+            back_stride  = -stride
+
+            # Angkat hip: hanya saat kaki benar-benar mengangkat (stride > 0.3)
+            # Pakai smooth clamp supaya tidak terlalu melompat
+            def smooth_lift(s, max_lift):
+                return -int(max(0.0, (s - 0.3) / 0.7) * max_lift)
+
+            front_hip_dy_off = smooth_lift(front_stride, 6)   # max angkat 6px
+            back_hip_dy_off  = smooth_lift(back_stride,  2)   # back sedikit saja
+
+            # Lutut: maju searah langkah
+            front_knee_fwd = int(front_stride * 11)
+            back_knee_fwd  = int(back_stride  *  8)
+
+            # Ankle: lebih sedikit dari lutut (kaki tetap di bawah lutut)
+            front_ankle_fwd = int(front_stride * 7)
+            back_ankle_fwd  = int(back_stride  * 5)
+
+            leg_data = {
+                "front": {"hip_dy": 6 + front_hip_dy_off,
+                          "hip_dx_extra": int(front_stride * 2),
+                          "knee_fwd": front_knee_fwd,
+                          "ankle_fwd": front_ankle_fwd,
+                          "lift_y": front_hip_dy_off},
+                "back":  {"hip_dy": 6 + back_hip_dy_off,
+                          "hip_dx_extra": int(back_stride * 2),
+                          "knee_fwd": back_knee_fwd,
+                          "ankle_fwd": back_ankle_fwd,
+                          "lift_y": back_hip_dy_off},
+            }
+
         else:  # attack
-            stride  = 0.0
-            breath  = 0
-            sway    = 0
-            bob     = 0
+            stride = 0.0; breath = 0.0; sway = 0; bob = 0
             if ap < 0.15:
+                # Anticipation: tarik badan sedikit ke belakang
                 t     = ap / 0.15
                 lunge = -int(t * 6) * f
-                lift  = -int(t * 4)
+                lift  = -int(t * 3)
             elif ap < 0.40:
+                # Windup: badan naik + sedikit mundur (kapak terangkat ke belakang)
                 t     = (ap - 0.15) / 0.25
                 t2    = t * t
-                lunge = -int(6 + t2 * 7) * f
-                lift  = int(-4 + t2 * 14)
+                lunge = -int(6 + t2 * 6) * f   # max mundur 12px
+                lift  = int(-3 + t2 * 14)        # naik 11px saat windup peak
             elif ap < 0.55:
+                # SWING: lunge ke depan eksplosif
                 t     = (ap - 0.40) / 0.15
                 te    = 1 - (1 - t) ** 2
-                lunge = int((-13 + te * 36)) * f
-                lift  = int(10 - te * 16)
+                lunge = int((-12 + te * 32)) * f  # dari -12 ke +20
+                lift  = int(11 - te * 18)          # turun dari +11 ke -7
             elif ap < 0.70:
+                # Impact hold
                 t     = (ap - 0.55) / 0.15
-                shake = int(math.sin(t * 28) * 2 * (1 - t))
-                lunge = int(23 + shake) * f
-                lift  = int(-6 - t * 2)
+                shake = int(math.sin(t * 30) * 2 * (1 - t))
+                lunge = int(20 + shake) * f
+                lift  = int(-7 - t * 2)
             else:
+                # Recovery: kembali ke stance
                 t     = (ap - 0.70) / 0.30
                 te    = 1 - (1 - t) ** 2
-                lunge = int(23 * (1 - te)) * f
-                lift  = int(-8 + te * 8)
+                lunge = int(20 * (1 - te)) * f
+                lift  = int(-9 + te * 9)
+            # Kaki: stance lebar saat swing, sempit saat recovery
+            swing_factor = max(0.0, min(1.0,
+                (ap - 0.30) / 0.30 if ap < 0.60 else (1.0 - ap) / 0.40))
+            leg_data = {
+                "front": {"hip_dy": int(4 + swing_factor * 2),
+                          "hip_dx_extra": int(swing_factor * 5),
+                          "knee_fwd":  int(swing_factor * 10),
+                          "ankle_fwd": int(swing_factor *  7), "lift_y": 0},
+                "back":  {"hip_dy": int(6 + swing_factor * 2),
+                          "hip_dx_extra": 0,
+                          "knee_fwd":  -int(swing_factor * 7),
+                          "ankle_fwd": -int(swing_factor * 4), "lift_y": 0},
+            }
 
-        # Root = anchor (pinggul) setelah bob/lunge/lift
+        # Root body anchor setelah semua offset
         root_x = cx + lunge + sway
         root_y = cy + bob - lift
 
-        # Helper koordinat di buffer
         def pt(dx, dy):
             return (int(root_x + dx * f), int(root_y + dy))
 
-        # ── 1. KAKI (belakang dulu, depan kemudian) ─────────────────
-        _NS_drakar._draw_rig_legs(surface, pt, f, phase, action, stride,
-                                   detail)
+        # ── 1. KAKI ─────────────────────────────────────────────────
+        _NS_drakar._draw_rig_legs(surface, root_x, root_y, f,
+                                   phase, action, stride, leg_data, detail)
 
         # ── 2. PINGGANG + LOINCLOTH ────────────────────────────────
         _NS_drakar._draw_rig_waist(surface, pt, f, phase, detail)
@@ -4272,23 +4319,17 @@ class _NS_drakar:
         # ── 4. KEPALA ──────────────────────────────────────────────
         _NS_drakar._draw_rig_head(surface, pt, f, phase, action, detail)
 
-        # ── 5. GRIP KAPAK: hitung posisi ──────────────────────────
+        # ── 5. GRIP + SENJATA + LENGAN ─────────────────────────────
         grip = _NS_drakar._compute_grip(root_x, root_y, f, phase, action, ap)
 
-        # ── 6. LENGAN BELAKANG (di belakang kapak) ────────────────
         _NS_drakar._draw_rig_arm(surface, pt, f, phase, action, ap,
                                   grip, "back", detail)
-
-        # ── 7. KAPAK ───────────────────────────────────────────────
         _NS_drakar._draw_rig_axe(surface,
                                   grip["axe_head"], grip["pommel"],
                                   grip["axe_angle"], f, action, ap, detail)
-
-        # ── 8. LENGAN DEPAN (di depan kapak) ──────────────────────
         _NS_drakar._draw_rig_arm(surface, pt, f, phase, action, ap,
                                   grip, "front", detail)
 
-        # ── 9. DETAIL MASTERWORK ──────────────────────────────────
         if detail:
             _NS_drakar._draw_rig_masterwork(surface, pt, f, phase, action,
                                              grip)
@@ -4296,37 +4337,41 @@ class _NS_drakar:
     # ================================================================
     # KAKI
     # ================================================================
-    def _draw_rig_legs(surface, pt, f, phase, action, stride, detail):
-        """Kaki dari anchor (pinggul) — POLYGON bervolume, bukan garis tipis.
+    def _draw_rig_legs(surface, root_x, root_y, f,
+                       phase, action, stride, leg_data, detail):
+        """Kaki — POLYGON bervolume + IK per-sisi dari leg_data.
 
-        Setiap segmen (paha, betis) digambar sebagai trapezoid tebal supaya
-        kaki terlihat berotot dan masif seperti torso, bukan tiang kurus.
-
-        Layout vertikal (dy dari anchor):
-          Hip   : +6    Lutut : +28    Ankle : +46    Boot : +56
-        FEET_DY = 56.
+        leg_data = dict dengan key 'front' dan 'back', masing-masing:
+          hip_dy        : dy hip dari root_y (biasanya +6, dikurangi saat angkat)
+          hip_dx_extra  : tambahan lateral ke depan/belakang
+          knee_fwd      : geser lutut ke depan (+ = maju searah f)
+          ankle_fwd     : geser ankle ke depan
+          lift_y        : (tidak dipakai langsung, sudah di hip_dy)
+        FEET_DY = 56 (hip+6, paha+22, betis+18, boot+10).
         """
         P = _NS_drakar.PALETTE
 
-        if action == "walk":
-            back_swing  =  stride * 12
-            front_swing = -stride * 12
-        else:
-            back_swing = front_swing = 0.0
-
         for side in ("back", "front"):
             is_front = (side == "front")
-            hip_dx = 10 if is_front else -10
-            hip_x, hip_y = pt(hip_dx, 6)
-            swing = front_swing if is_front else back_swing
+            ld = leg_data[side]
 
-            # Sendi utama
-            knee_x  = int(hip_x  + f * (3 if is_front else -2) + swing * 0.28)
-            knee_y  = hip_y  + 22
-            ankle_x = int(hip_x  + f * (2 if is_front else -1) + swing * 0.48)
+            # Hip position
+            hip_base_dx = 10 if is_front else -10
+            hip_x = int(root_x + (hip_base_dx + ld["hip_dx_extra"]) * f)
+            hip_y = int(root_y + ld["hip_dy"])
+
+            # Lutut
+            knee_base_fwd = 3 if is_front else -2
+            knee_x = int(hip_x + f * knee_base_fwd + ld["knee_fwd"])
+            knee_y = hip_y + 22
+
+            # Ankle
+            ankle_base_fwd = 2 if is_front else -1
+            ankle_x = int(hip_x + f * ankle_base_fwd + ld["ankle_fwd"])
             ankle_y = knee_y + 18
-            boot_x  = ankle_x
-            boot_y  = ankle_y
+
+            boot_x = ankle_x
+            boot_y = ankle_y
 
             # Lebar separuh segmen (half-width)
             TW = 9    # paha atas half-width
