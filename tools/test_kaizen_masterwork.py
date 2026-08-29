@@ -43,8 +43,16 @@ def test_masterwork_is_procedural():
     assert "pygame.image.load" not in source
     assert callable(K._draw_kaizen_elite)
     assert callable(K._draw_elite_katana)
-    assert callable(K._draw_saya_back)
-    assert callable(K._draw_masterwork_details)
+    # Body-part sticker lama sudah diganti satu rig elite (sama seperti
+    # Vex/Thorne/Zephyr); sisa-sisa renderer lama harus sudah lenyap.
+    for old in ("_draw_saya_back", "_draw_masterwork_details",
+                "_draw_torso", "_draw_head", "_draw_hakama",
+                "_draw_ponytail", "_draw_scarf_back", "_draw_scarf_front",
+                "_draw_idle_arms", "_draw_attack_arms", "_draw_arm_segment",
+                "_draw_hand", "_draw_katana_idle", "_draw_katana_swing",
+                "_draw_katana_blade", "_draw_katana_handle",
+                "_draw_swing_trail", "_draw_body_particles"):
+        assert not hasattr(K, old), f"old part still present: {old}"
 
 
 def test_material_details_and_pose():

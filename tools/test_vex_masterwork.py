@@ -61,7 +61,7 @@ def test_masterwork_is_procedural():
     for old in ("_draw_cloak", "_draw_lower_robe", "_draw_torso",
                 "_draw_idle_arms", "_draw_attack_arms", "_draw_arm_segment",
                 "_draw_hand", "_draw_staff", "_draw_head_crown",
-                "_draw_body_particles"):
+                "_draw_body_particles", "_draw_void_flame"):
         assert not hasattr(V, old), f"old part still present: {old}"
 
 
