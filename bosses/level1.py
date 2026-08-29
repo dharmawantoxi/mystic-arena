@@ -4297,17 +4297,13 @@ class _NS_drakar:
     # KAKI
     # ================================================================
     def _draw_rig_legs(surface, pt, f, phase, action, stride, detail):
-        """Kaki dari anchor (pinggul) — proporsi barbarian masif.
+        """Kaki dari anchor (pinggul) — POLYGON bervolume, bukan garis tipis.
+
+        Setiap segmen (paha, betis) digambar sebagai trapezoid tebal supaya
+        kaki terlihat berotot dan masif seperti torso, bukan tiang kurus.
 
         Layout vertikal (dy dari anchor):
-          Hip        : +6
-          Lutut      : +28   (paha 22px — kuat & berotot)
-          Ankle      : +46   (betis 18px)
-          Boot bawah : +56   (boot 10px — berat)
-          TOTAL      : 50px dari hip, 56px dari anchor
-
-        Torso (-4 s/d -36) = 32px | Kepala (-42 s/d -66) ≈ 24px
-        → kaki:torso:kepala ≈ 50%:29%:21% — barbarian masif, proporsional.
+          Hip   : +6    Lutut : +28    Ankle : +46    Boot : +56
         FEET_DY = 56.
         """
         P = _NS_drakar.PALETTE
@@ -4320,87 +4316,123 @@ class _NS_drakar:
 
         for side in ("back", "front"):
             is_front = (side == "front")
-
-            # Hip joint — sedikit terpisah
             hip_dx = 10 if is_front else -10
             hip_x, hip_y = pt(hip_dx, 6)
-
             swing = front_swing if is_front else back_swing
 
-            # Lutut — paha 22px
-            knee_x = int(hip_x + f * (3 if is_front else -2) + swing * 0.28)
-            knee_y = hip_y + 22
-
-            # Ankle — betis 18px
-            ankle_x = int(hip_x + f * (2 if is_front else -1) + swing * 0.48)
+            # Sendi utama
+            knee_x  = int(hip_x  + f * (3 if is_front else -2) + swing * 0.28)
+            knee_y  = hip_y  + 22
+            ankle_x = int(hip_x  + f * (2 if is_front else -1) + swing * 0.48)
             ankle_y = knee_y + 18
+            boot_x  = ankle_x
+            boot_y  = ankle_y
 
-            boot_x = ankle_x
-            boot_y = ankle_y
+            # Lebar separuh segmen (half-width)
+            TW = 9    # paha atas half-width
+            KW = 7    # paha bawah / lutut half-width
+            CW = 6    # betis atas half-width
+            AW = 5    # betis bawah / ankle half-width
 
-            # ── Paha (tebal berotot) ──
-            pygame.draw.line(surface, P["shadow_deep"],
-                             (hip_x+2, hip_y+2), (knee_x+2, knee_y+2), 13)
-            pygame.draw.line(surface, P["leather_darkest"],
-                             (hip_x, hip_y), (knee_x, knee_y), 12)
-            pygame.draw.line(surface, P["leather_dark"],
-                             (hip_x, hip_y), (knee_x, knee_y), 10)
+            # ── PAHA — trapezoid tebal ──────────────────────────────
+            # 4 titik: kiri-atas, kanan-atas, kanan-bawah, kiri-bawah
+            thigh_poly = [
+                (hip_x  - TW, hip_y  ),
+                (hip_x  + TW, hip_y  ),
+                (knee_x + KW, knee_y ),
+                (knee_x - KW, knee_y ),
+            ]
+            # Shadow offset
+            _NS_drakar._poly(surface, P["shadow_deep"],
+                             [(x+2, y+2) for x,y in thigh_poly])
+            _NS_drakar._poly(surface, P["leather_darkest"], thigh_poly)
+            # Mid tone (sedikit lebih kecil ke dalam)
+            _NS_drakar._poly(surface, P["leather_dark"], [
+                (hip_x  - TW+2, hip_y  ),
+                (hip_x  + TW-2, hip_y  ),
+                (knee_x + KW-2, knee_y ),
+                (knee_x - KW+2, knee_y ),
+            ])
             if is_front:
-                pygame.draw.line(surface, P["leather_mid"],
-                                 (hip_x, hip_y-1), (knee_x, knee_y-1), 6)
+                _NS_drakar._poly(surface, P["leather_mid"], [
+                    (hip_x  - TW+4, hip_y  ),
+                    (hip_x  + TW-4, hip_y  ),
+                    (knee_x + KW-4, knee_y ),
+                    (knee_x - KW+4, knee_y ),
+                ])
+                # Highlight sisi terang
                 pygame.draw.line(surface, P["leather_light"],
-                                 (hip_x, hip_y-2), (knee_x, knee_y-2), 2)
+                                 (hip_x - TW+5, hip_y+1),
+                                 (knee_x - KW+5, knee_y-1), 2)
 
             # Dua strap paha
             for strap_t in (0.30, 0.65):
-                sx = int(hip_x + (knee_x - hip_x) * strap_t)
-                sy = int(hip_y + (knee_y - hip_y) * strap_t)
-                pygame.draw.rect(surface, P["leather_darkest"], (sx-7, sy-1, 14, 2))
+                sx = int(hip_x  + (knee_x  - hip_x)  * strap_t)
+                sy = int(hip_y  + (knee_y  - hip_y)  * strap_t)
+                sw = int(TW + (KW - TW) * strap_t) + 1
+                pygame.draw.rect(surface, P["leather_darkest"], (sx-sw, sy-1, sw*2, 2))
                 if is_front:
-                    pygame.draw.rect(surface, P["leather_mid"], (sx-6, sy-1, 12, 1))
-                for stud_x in (sx-4, sx+3):
+                    pygame.draw.rect(surface, P["leather_mid"],  (sx-sw+1, sy-1, sw*2-2, 1))
+                for stud_x in (sx - sw + 2, sx + sw - 4):
                     pygame.draw.rect(surface, P["armor_dark"],  (stud_x, sy-1, 2, 2))
                     if is_front:
                         pygame.draw.rect(surface, P["armor_light"], (stud_x, sy-1, 1, 1))
 
-            # ── Pelindung lutut ──
-            pygame.draw.rect(surface, P["shadow_deep"],   (knee_x-6, knee_y-2, 13, 8))
-            pygame.draw.rect(surface, P["armor_darkest"], (knee_x-6, knee_y-2, 12, 8))
-            pygame.draw.rect(surface, P["armor_dark"],    (knee_x-5, knee_y-1, 10, 6))
+            # ── PELINDUNG LUTUT ──────────────────────────────────────
+            pygame.draw.rect(surface, P["shadow_deep"],   (knee_x-8,  knee_y-2, 17, 9))
+            pygame.draw.rect(surface, P["armor_darkest"], (knee_x-8,  knee_y-2, 16, 9))
+            pygame.draw.rect(surface, P["armor_dark"],    (knee_x-7,  knee_y-1, 14, 7))
             if is_front:
-                pygame.draw.rect(surface, P["armor_mid"], (knee_x-4, knee_y,    7, 4))
-                pygame.draw.rect(surface, P["armor_light"],(knee_x-3, knee_y,   4, 2))
-                pygame.draw.rect(surface, P["armor_shine"],(knee_x-2, knee_y,   2, 1))
+                pygame.draw.rect(surface, P["armor_mid"], (knee_x-6,  knee_y,   10, 5))
+                pygame.draw.rect(surface, P["armor_light"],(knee_x-5, knee_y,    6, 2))
+                pygame.draw.rect(surface, P["armor_shine"],(knee_x-3, knee_y,    3, 1))
 
-            # ── Betis ──
-            pygame.draw.line(surface, P["shadow_deep"],
-                             (knee_x+2, knee_y+6), (ankle_x+2, ankle_y+2), 11)
-            pygame.draw.line(surface, P["leather_darkest"],
-                             (knee_x, knee_y+6), (ankle_x, ankle_y), 10)
-            pygame.draw.line(surface, P["leather_dark"],
-                             (knee_x, knee_y+6), (ankle_x, ankle_y), 8)
+            # ── BETIS — trapezoid ────────────────────────────────────
+            calf_poly = [
+                (knee_x  - CW, knee_y  + 5),
+                (knee_x  + CW, knee_y  + 5),
+                (ankle_x + AW, ankle_y    ),
+                (ankle_x - AW, ankle_y    ),
+            ]
+            _NS_drakar._poly(surface, P["shadow_deep"],
+                             [(x+2, y+2) for x,y in calf_poly])
+            _NS_drakar._poly(surface, P["leather_darkest"], calf_poly)
+            _NS_drakar._poly(surface, P["leather_dark"], [
+                (knee_x  - CW+2, knee_y  + 5),
+                (knee_x  + CW-2, knee_y  + 5),
+                (ankle_x + AW-2, ankle_y    ),
+                (ankle_x - AW+2, ankle_y    ),
+            ])
             if is_front:
-                pygame.draw.line(surface, P["leather_mid"],
-                                 (knee_x, knee_y+5), (ankle_x, ankle_y-1), 5)
+                _NS_drakar._poly(surface, P["leather_mid"], [
+                    (knee_x  - CW+4, knee_y  + 5),
+                    (knee_x  + CW-4, knee_y  + 5),
+                    (ankle_x + AW-4, ankle_y    ),
+                    (ankle_x - AW+4, ankle_y    ),
+                ])
+                pygame.draw.line(surface, P["leather_light"],
+                                 (knee_x - CW+5, knee_y + 6),
+                                 (ankle_x - AW+5, ankle_y - 1), 1)
 
-            # ── Boot berat ──
-            pygame.draw.rect(surface, P["shadow_deep"],       (boot_x-8, boot_y, 18, 11))
-            pygame.draw.rect(surface, P["leather_darkest"],   (boot_x-8, boot_y, 17, 10))
-            pygame.draw.rect(surface, P["leather_dark"],      (boot_x-7, boot_y, 14,  9))
+            # ── BOOT BERAT ──────────────────────────────────────────
+            BW = 9   # half-width boot
+            pygame.draw.rect(surface, P["shadow_deep"],     (boot_x-BW-1, boot_y, BW*2+4, 12))
+            pygame.draw.rect(surface, P["leather_darkest"], (boot_x-BW,   boot_y, BW*2+2, 11))
+            pygame.draw.rect(surface, P["leather_dark"],    (boot_x-BW+1, boot_y, BW*2,   10))
             if is_front:
-                pygame.draw.rect(surface, P["leather_mid"],   (boot_x-6, boot_y, 10,  5))
-                pygame.draw.rect(surface, P["leather_light"], (boot_x-5, boot_y+1, 6,  3))
-            # Pelat logam
-            pygame.draw.rect(surface, P["armor_darkest"],     (boot_x-8, boot_y+6, 18, 5))
-            pygame.draw.rect(surface, P["armor_dark"],        (boot_x-8, boot_y+6, 17, 4))
+                pygame.draw.rect(surface, P["leather_mid"],   (boot_x-BW+2, boot_y, BW*2-4,  6))
+                pygame.draw.rect(surface, P["leather_light"], (boot_x-BW+3, boot_y+1, BW*2-8, 3))
+            # Pelat logam boot
+            pygame.draw.rect(surface, P["armor_darkest"],   (boot_x-BW-1, boot_y+7, BW*2+4, 5))
+            pygame.draw.rect(surface, P["armor_dark"],      (boot_x-BW,   boot_y+7, BW*2+2, 4))
             if is_front:
-                pygame.draw.rect(surface, P["armor_mid"],     (boot_x-7, boot_y+6, 15, 2))
-                pygame.draw.rect(surface, P["armor_light"],   (boot_x-6, boot_y+6, 12, 1))
+                pygame.draw.rect(surface, P["armor_mid"],   (boot_x-BW+1, boot_y+7, BW*2,   2))
+                pygame.draw.rect(surface, P["armor_light"], (boot_x-BW+2, boot_y+7, BW*2-4, 1))
             # Ujung boot
             pygame.draw.rect(surface, P["armor_light"],
-                             (boot_x + f*6, boot_y+8, 2, 2))
+                             (boot_x + f*(BW-2), boot_y+9, 3, 2))
             pygame.draw.rect(surface, P["armor_shine"],
-                             (boot_x + f*6, boot_y+8, 1, 1))
+                             (boot_x + f*(BW-2), boot_y+9, 2, 1))
 
     # ================================================================
     # PINGGANG
