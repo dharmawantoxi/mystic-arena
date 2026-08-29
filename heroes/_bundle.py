@@ -4145,6 +4145,9 @@ class _NS_kaizen:
         # compressed wind-up / explosive attack lunge. Because every layer
         # uses pt(), hair, face, armor and limbs remain attached to the rig.
         root_y = int(math.sin(phase * .72) * .7)
+        # v2 (animasi): perpindahan berat badan saat idle — badan bergoyang
+        # ke kiri-kanan (bukan sekadar naik-turun nafas), memberi kesan hidup.
+        sway = int(math.sin(phase * .8) * 3) * f if not (walk or attack) else 0
         if walk:
             root_y -= int(abs(math.sin(phase * 1.7)) * 2)
         if attack:
@@ -4153,7 +4156,7 @@ class _NS_kaizen:
             root_y += int(math.sin(ap * math.pi) * 2)
 
         def pt(dx, dy):
-            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+            return (int(cx + dx * f + lean + sway), int(cy + dy + root_y))
 
         def poly(color, points, outline=True):
             pts = [pt(dx, dy) for dx, dy in points]
@@ -4224,12 +4227,22 @@ class _NS_kaizen:
         _NS_kaizen._aacircle(surface, p["gold_mid"], pt(-31, 29), 3)
 
         # ── legs: true split stance, not one floating robe mass ──
+        # v2 (animasi): foot-lift bergantian — kaki yang melangkah maju
+        # terangkat (lutut + telapak naik), kaki tumpuan tetap menapak.
+        # Kecepatan stride menentukan fase swing tiap kaki.
         leg_phase = stride if walk else 0.0
-        rear_foot = (-8 - int(leg_phase * 5), 40 - int(abs(leg_phase) * 2))
-        front_foot = (11 + int(leg_phase * 6), 40)
-        for hip, knee, foot, shade in (
-                ((-5, 12), (-9, 27), rear_foot, p["pants_dark"]),
-                ((6, 12), (9, 26), front_foot, p["pants_mid"])):
+        stride_vel = math.cos(phase * 1.7) if walk else 0.0
+        rear_lift = int(max(0.0, -stride_vel) * 9) if walk else 0
+        front_lift = int(max(0.0, stride_vel) * 9) if walk else 0
+        rear_foot = (-8 - int(leg_phase * 5),
+                     40 - int(abs(leg_phase) * 2) - rear_lift)
+        front_foot = (11 + int(leg_phase * 6), 40 - front_lift)
+        for hip, knee, foot, shade, lift in (
+                ((-5, 12), (-9, 27), rear_foot, p["pants_dark"], rear_lift),
+                ((6, 12), (9, 26), front_foot, p["pants_mid"], front_lift)):
+            # Knee rises with the lift so the thigh folds up to meet the
+            # raised shin (proper knee-bend, no gap between segments).
+            knee = (knee[0], knee[1] - lift)
             poly(shade, [hip, (hip[0] + 7, hip[1]),
                          (knee[0] + 5, knee[1]), (foot[0] + 4, foot[1] - 5),
                          (foot[0] - 4, foot[1] - 5),
@@ -4377,7 +4390,7 @@ class _NS_kaizen:
         elbow = ((hand[0] + 10) // 2, (hand[1] - 10) // 2)
         limb((10, -12), elbow, 8, p["cloth_mid"], p["cloth_high"])
         limb(elbow, hand, 7, p["skin_dark"], p["skin_light"])
-        _NS_kaizen._draw_elite_katana(surface, cx + lean, cy, f,
+        _NS_kaizen._draw_elite_katana(surface, cx + lean + sway, cy, f,
                                       hand, angle, phase, attack)
 
         # Small wind crest and armor rivets remain legible at 50 px.
@@ -4506,6 +4519,25 @@ class _NS_kaizen:
         _NS_kaizen._aacircle(surface, p["steel_shine"], (int(tx), int(ty)), 2)
 
         if attacking:
+            # v2 (animasi): afterimage gerak pisau — beberapa siluet katana
+            # memudar di belakang ayunan, memunculkan kesan kecepatan slash.
+            # Setiap ghost adalah blade utuh (guard + bilah) pada sudut
+            # sebelumnya, warnanya makin transparan makin jauh dari pisau.
+            for k in (1, 2, 3):
+                ga = angle - 0.38 * k
+                gux, guy = math.cos(ga) * f, math.sin(ga)
+                gtx, gty = hx + gux * length, hy + guy * length
+                gpx, gpy = -guy, gux
+                gmx = hx + gux * 23 + gpx * 2
+                gmy = hy + guy * 23 + gpy * 2
+                ghost = [(hx + gpx * 2, hy + gpy * 2),
+                         (gmx + gpx, gmy + gpy), (gtx, gty),
+                         (gmx - gpx, gmy - gpy),
+                         (hx - gpx * 2, hy - gpy * 2)]
+                _NS_kaizen._poly(surface, (*p["wind_mid"],
+                                           90 - k * 22), ghost)
+                _NS_kaizen._poly(surface, (*p["wind_light"],
+                                           140 - k * 30), ghost)
             # layered crescent centered on the sword hand
             start = angle - 1.25
             for radius, color, width in ((48, (*p["wind_dark"], 90), 5),
