@@ -1974,32 +1974,68 @@ class _NS_gornak:
                                  (ex, ey, 1, 1))
 
     # ==================================================================
-    # SKILL W - BLINK (lingkaran berangkat/tiba kecil)
+    # SKILL W - BLINK (ring meledak di posisi lama + flash di posisi baru)
     # ==================================================================
     def _draw_blink_ground(surface, boss, x, y, timer, phase):
+        """W Blink ground FX: departure ring meledak + arrival flash."""
         p = _NS_gornak.PALETTE
         duration = _NS_gornak.SKILL_DUR["w"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
         gy = y + _NS_gornak.GROUND_DY
-        if progress < 0.5:
-            t = progress / 0.5
-            r = int(9 + t * 13)
-            a = _NS_gornak._alpha(200 * (1 - t))
+        pulse = math.sin(phase * 5) * 0.2 + 0.8
+
+        if progress < 0.42:
+            # DEPARTURE: ring mengembang cepat lalu menghilang
+            t = progress / 0.42
+            # Ring luar mengembang
+            for wave in range(3):
+                wt = (t + wave * 0.28) % 1.0
+                wr = int(wt * 65)
+                wa = _NS_gornak._alpha(240 * (1-wt) * (1-t*0.3))
+                if wr > 2 and wa > 5:
+                    _NS_gornak._ellipse(surface, (*p["magic_darkest"], wa),
+                        (x-wr, gy-wr//3, wr*2, wr*2//3), 5)
+                    _NS_gornak._ellipse(surface, (*p["magic_mid"], wa),
+                        (x-wr+4, gy-wr//3+3, max(4,wr*2-8), max(2,wr*2//3-6)), 3)
+                    _NS_gornak._ellipse(surface, (*p["magic_shine"], wa),
+                        (x-wr+8, gy-wr//3+5, max(4,wr*2-16), max(2,wr*2//3-10)), 1)
+            # Percikan departure ke atas
+            for i in range(12):
+                pt = (phase * 1.2 + i * 0.11) % 1.0
+                ang = i * math.tau / 12
+                px2 = x + int(math.cos(ang) * 30 * t)
+                py2 = gy - int(pt * 40)
+                pa = _NS_gornak._alpha(220 * (1-pt) * t)
+                if pa > 8:
+                    sz = 3 if i % 3 == 0 else 1
+                    col = p["magic_hot"] if i%3==0 else p["magic_light"]
+                    _NS_gornak._rect(surface, (*col, pa), (px2-sz//2,py2-sz//2,sz+1,sz+1))
+
         else:
-            t = (progress - 0.5) / 0.5
-            r = int(22 - t * 11)
-            a = _NS_gornak._alpha(200 * t)
-        if a <= 0:
-            return
-        _NS_gornak._ellipse(surface, (*p["magic_mid"], a),
-                            (x - r, gy - r // 3, r * 2, max(3, r // 2)), 1)
-        _NS_gornak._ellipse(surface, (*p["magic_hot"], a),
-                            (x - r // 2, gy - r // 6, r, max(2, r // 4)), 1)
-        for i in range(7):
-            ang = phase * 2 + i * math.tau / 7
-            _NS_gornak._rect(surface, (*p["magic_shine"], a),
-                             (x + int(math.cos(ang) * (r + 3)),
-                              gy + int(math.sin(ang) * max(1, r // 4)), 1, 1))
+            # ARRIVAL: flash tiba + ring kecil di posisi baru
+            t = (progress - 0.42) / 0.58
+            # Ring arrival mengembang lalu memudar
+            for wave in range(2):
+                wt = min(1.0, (t + wave*0.35))
+                wr = int(wt * 50)
+                wa = _NS_gornak._alpha(240 * (1-wt) * pulse)
+                if wr > 2 and wa > 5:
+                    _NS_gornak._ellipse(surface, (*p["magic_darkest"], wa),
+                        (x-wr, gy-wr//3, wr*2, wr*2//3), 4)
+                    _NS_gornak._ellipse(surface, (*p["magic_mid"], wa),
+                        (x-wr+3, gy-wr//3+2, max(4,wr*2-6), max(2,wr*2//3-4)), 2)
+                    _NS_gornak._ellipse(surface, (*p["magic_hot"], wa),
+                        (x-wr+6, gy-wr//3+4, max(4,wr*2-12), max(2,wr*2//3-8)), 1)
+            # Partikel arrival jatuh dari atas
+            for i in range(10):
+                pt = (phase * 0.9 + i * 0.13) % 1.0
+                ang = i * math.tau / 10
+                px2 = x + int(math.cos(ang) * 22 * (1-t*0.5))
+                py2 = gy - 35 + int(pt * 40)
+                pa = _NS_gornak._alpha(200 * (1-t*0.7) * pulse)
+                if pa > 8:
+                    _NS_gornak._rect(surface, (*p["magic_shine"], pa),
+                                     (px2-1, py2-1, 3, 3))
 
     # ==================================================================
     # SKILL E - COUNTERSPELL (kubah memeluk badan, bukan bola raksasa)
@@ -3725,72 +3761,106 @@ class _NS_morgath:
             pygame.draw.line(surface, (*col, a), (x0,y0), (x1,y1), 2 if i%4==0 else 1)
 
     def _draw_magneticfield_foreground(surface, boss, x, y, timer, phase):
-        """Big blue dome shield over boss."""
+        """E Magnetic Field: dome listrik besar berlapis + grid + kilat."""
+        P = _NS_morgath.PALETTE
         duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
+        pulse = math.sin(phase * 2.2) * 0.2 + 0.8
 
-        # Dome dimensions
-        breath = math.sin(phase * 2) * 2
-        r = 52 + int(breath)
+        # Dome tumbuh saat awal, stabil, menyusut di akhir
+        grow = 1.0
+        if progress < 0.14:
+            grow = progress / 0.14
+        elif progress > 0.88:
+            grow = 1.0 - (progress - 0.88) / 0.12
 
-        # Draw dome (semi-circle top-half)
-        dome_surf = pygame.Surface((r * 2 + 30, r + 30), pygame.SRCALPHA)
-        center = (r + 15, r + 15)
+        breath = math.sin(phase * 2) * 3
+        r = int((90 + breath) * grow)   # radius diperbesar 52→90
+        if r < 5:
+            return
 
-        # Multi-ring dome
-        for layer_i, (thickness, alpha_val) in enumerate([
-            (4, 100), (3, 140), (2, 190), (1, 240),
+        # ── Dome sebagai surface SRCALPHA ──────────────────────────
+        pad = 20
+        ds_w = r * 2 + pad * 2
+        ds_h = r + pad * 2
+        dome_surf = pygame.Surface((ds_w, ds_h), pygame.SRCALPHA)
+        cx2, cy2 = ds_w // 2, r + pad
+
+        # 7 layer arc (tebal→tipis, gelap→terang)
+        for li, (thick, col, av) in enumerate([
+            (8, P["arc_darkest"], 80),
+            (6, P["arc_dark"],   130),
+            (5, P["arc_dark"],   170),
+            (4, P["arc_mid"],    210),
+            (3, P["arc_light"],  230),
+            (2, P["arc_hot"],    240),
+            (1, P["arc_shine"],  250),
         ]):
-            # Draw arc (top half)
-            arc_rect = pygame.Rect(center[0] - r + layer_i, center[1] - r + layer_i,
-                                   (r - layer_i) * 2, (r - layer_i) * 2)
-            pygame.draw.arc(dome_surf, (*_NS_morgath.PALETTE["arc_dark"], alpha_val),
-                            arc_rect, 0, math.pi, thickness)
-            pygame.draw.arc(dome_surf, (*_NS_morgath.PALETTE["arc_mid"], alpha_val),
-                            arc_rect, 0, math.pi, max(1, thickness - 1))
-            pygame.draw.arc(dome_surf, (*_NS_morgath.PALETTE["arc_light"], alpha_val),
-                            arc_rect, 0, math.pi, max(1, thickness - 2))
+            rr = max(2, r - li * 2)
+            av2 = _NS_morgath._alpha(av * pulse * grow)
+            arc_rect = pygame.Rect(cx2 - rr, cy2 - rr, rr * 2, rr * 2)
+            try:
+                pygame.draw.arc(dome_surf, (*col, av2),
+                                arc_rect, 0, math.pi, thick)
+            except Exception:
+                pass
 
-        # Hex/grid pattern inside dome
-        for h_row in range(4):
-            for h_col in range(-3, 4):
-                grid_x = center[0] + h_col * 12 + (h_row % 2) * 6
-                grid_y = center[1] - h_row * 10
-                dist_from_center = math.hypot(grid_x - center[0], grid_y - center[1])
-                if dist_from_center < r - 5:
-                    alpha = _NS_morgath._alpha(180 * (1 - dist_from_center / r))
-                    pygame.draw.rect(dome_surf,
-                                     (*_NS_morgath.PALETTE["arc_mid"], alpha),
-                                     (grid_x - 1, grid_y - 1, 3, 3), 1)
+        # Grid hex di dalam dome
+        for h_row in range(6):
+            for h_col in range(-5, 6):
+                gx = cx2 + h_col * 14 + (h_row % 2) * 7
+                gy2 = cy2 - h_row * 13
+                d = math.hypot(gx - cx2, gy2 - cy2)
+                if d < r - 6:
+                    av = _NS_morgath._alpha(160 * (1 - d/r) * pulse * grow)
+                    pygame.draw.rect(dome_surf, (*P["arc_mid"], av),
+                                     (gx-2, gy2-2, 4, 4), 1)
+                    if h_col % 2 == 0 and h_row % 2 == 0:
+                        pygame.draw.rect(dome_surf, (*P["arc_hot"], av),
+                                         (gx-1, gy2-1, 2, 2))
 
-        # Rotating electric arcs on dome surface
-        for i in range(6):
-            angle = phase * 1.5 + i * math.pi / 3
-            arc_angle = math.pi + angle  # constrain to top half
-            arc_angle = math.pi * (0.1 + (i / 6) * 0.8)
-            ax = center[0] + int(math.cos(math.pi + arc_angle) * r)
-            ay = center[1] + int(math.sin(math.pi + arc_angle) * r)
-            pygame.draw.rect(dome_surf, (*_NS_morgath.PALETTE["arc_hot"], 240),
-                             (ax, ay, 2, 2))
-            pygame.draw.rect(dome_surf, (*_NS_morgath.PALETTE["arc_shine"], 255),
-                             (ax, ay, 1, 1))
+        # Titik berputar di permukaan dome
+        for i in range(12):
+            da = phase * 2.0 + i * math.pi / 6
+            da_clamped = math.pi * (0.05 + ((math.sin(da) * 0.5 + 0.5) * 0.9))
+            ax3 = cx2 + int(math.cos(math.pi + da_clamped) * r)
+            ay3 = cy2 + int(math.sin(math.pi + da_clamped) * r)
+            bright = (i + int(phase * 6)) % 12
+            sz3 = 4 if bright < 3 else 2
+            col = P["arc_shine"] if bright < 3 else P["arc_hot"]
+            pygame.draw.rect(dome_surf, (*col, _NS_morgath._alpha(240*grow)),
+                             (ax3-sz3//2, ay3-sz3//2, sz3, sz3))
 
-        surface.blit(dome_surf, (x - r - 15, y - r - 15 + 10))
+        surface.blit(dome_surf, (x - cx2, y - cy2 + 12))
 
-        # Random lightning arcs across dome interior
-        arc_frame = int(phase * 4) % 5
-        if arc_frame < 2:
-            for k in range(2):
-                a1 = phase * 2 + k * 1.7
-                a2 = phase * 2 + k * 1.7 + 1.5
-                arc_angle1 = math.pi * (0.15 + ((math.sin(a1) + 1) / 2) * 0.7)
-                arc_angle2 = math.pi * (0.15 + ((math.sin(a2) + 1) / 2) * 0.7)
-                p1 = (x + int(math.cos(math.pi + arc_angle1) * r),
-                      y + 10 + int(math.sin(math.pi + arc_angle1) * r))
-                p2 = (x + int(math.cos(math.pi + arc_angle2) * r),
-                      y + 10 + int(math.sin(math.pi + arc_angle2) * r))
-                _NS_morgath._jagged_line(surface, _NS_morgath.PALETTE["arc_hot"],
-                                         p1, p2, jitter=4, segments=6, width=1)
+        # ── Lightning arcs di dalam dome (lebih sering + lebih panjang) ──
+        arc_frame = int(phase * 5) % 4
+        if arc_frame < 3:
+            for k in range(3):
+                a1 = phase * 2.5 + k * 1.4
+                a2 = phase * 2.5 + k * 1.4 + 1.8
+                aa1 = math.pi * (0.08 + ((math.sin(a1)*0.5+0.5)*0.84))
+                aa2 = math.pi * (0.08 + ((math.sin(a2)*0.5+0.5)*0.84))
+                pt1 = (x + int(math.cos(math.pi+aa1)*r),
+                       y + 12 + int(math.sin(math.pi+aa1)*r))
+                pt2 = (x + int(math.cos(math.pi+aa2)*r),
+                       y + 12 + int(math.sin(math.pi+aa2)*r))
+                av = _NS_morgath._alpha(220 * pulse * grow)
+                _NS_morgath._jagged_line(surface, (*P["arc_hot"], av),
+                                         pt1, pt2, jitter=6, segments=8, width=2)
+                _NS_morgath._jagged_line(surface, (*P["arc_shine"], av),
+                                         pt1, pt2, jitter=4, segments=6, width=1)
+
+        # ── Orb berputar di luar dome ──────────────────────────────
+        for i in range(8):
+            oa = phase * 1.6 + i * math.tau / 8
+            ox2 = x + int(math.cos(oa) * (r + 8))
+            oy2 = y + 12 + int(math.sin(oa) * (r + 8) * 0.5)
+            if oy2 < y + 12:   # hanya bagian atas (dome)
+                ov = _NS_morgath._alpha(220 * pulse * grow)
+                _NS_morgath._aacircle(surface, (*P["arc_mid"],  ov), (ox2,oy2), 4)
+                _NS_morgath._aacircle(surface, (*P["arc_hot"],  ov), (ox2,oy2), 2)
+                _NS_morgath._aacircle(surface, P["arc_shine"],        (ox2,oy2), 1)
 
     # ============================================================
     # SKILL R: TEMPEST DOUBLE (spawn clone + lightning)
@@ -3888,88 +3958,100 @@ class _NS_morgath:
                                      jitter=5, segments=8, width=1)
 
     def _draw_tempest_foreground(surface, boss, x, y, timer, phase):
-        """Lightning storm burst FX."""
+        """R Tempest Double: charge spiral → LEDAKAN petir raksasa → afterglow."""
+        P = _NS_morgath.PALETTE
         duration = 100
         progress = max(0.0, min(1.0, 1 - timer / duration))
         facing = boss.direction
+        pulse = math.sin(phase * 3) * 0.2 + 0.8
 
-        if progress < 0.2:
-            # Charge phase - purple ground swirl
-            t = progress / 0.2
-            for arm in range(3):
-                for step in range(15):
-                    s_t = step / 15
-                    spiral_angle = phase * 3 + arm * math.pi * 2 / 3 + s_t * math.pi * 3
-                    s_r = int(30 * (1 - s_t) * t)
-                    sx = x + int(math.cos(spiral_angle) * s_r)
-                    sy = y + 30 + int(math.sin(spiral_angle) * s_r * 0.4)
-                    alpha = _NS_morgath._alpha(200 * (1 - s_t) * t)
-                    pygame.draw.rect(surface,
-                                     (*_NS_morgath.PALETTE["flux_light"], alpha),
-                                     (sx, sy, 2, 2))
-                    pygame.draw.rect(surface,
-                                     (*_NS_morgath.PALETTE["flux_hot"], alpha),
-                                     (sx, sy, 1, 1))
+        if progress < 0.20:
+            # CHARGE: 5 spiral arm tersedot ke boss
+            t = progress / 0.20
+            for arm in range(5):
+                for step in range(20):
+                    s_t = step / 20
+                    ang = phase * 4 + arm * math.tau / 5 + s_t * math.pi * 4
+                    s_r = int(75 * (1 - s_t) * t)
+                    sx = x + int(math.cos(ang) * s_r)
+                    sy = y - 10 + int(math.sin(ang) * s_r * 0.6)
+                    alpha = _NS_morgath._alpha(220 * (1 - s_t) * t * pulse)
+                    sz = 4 if s_t < 0.2 else 2
+                    col = P["flux_hot"] if arm % 2 == 0 else P["arc_light"]
+                    pygame.draw.rect(surface, (*col, alpha), (sx-sz//2,sy-sz//2,sz,sz))
+            # Halo kecil di boss
+            hr = int(15 * t)
+            if hr > 1:
+                a = _NS_morgath._alpha(200 * t * pulse)
+                _NS_morgath._aacircle(surface, (*P["arc_mid"], a), (x,y-10), hr, 2)
+                _NS_morgath._aacircle(surface, (*P["flux_hot"], a), (x,y-10), hr//2, 1)
 
-        elif progress < 0.5:
-            # Burst
-            t = (progress - 0.2) / 0.3
+        elif progress < 0.50:
+            # BURST: 16 kilat radial + ledakan pusat besar
+            t = (progress - 0.20) / 0.30
             intensity = math.sin(t * math.pi)
-            burst_r = int(30 + t * 40)
+            burst_r = int(50 + t * 75)
 
-            # Radial lightning bolts from boss
-            for i in range(12):
-                angle = i * math.pi / 6 + phase * 0.5
-                end_x = x + int(math.cos(angle) * burst_r)
-                end_y = y - 10 + int(math.sin(angle) * burst_r * 0.8)
-                alpha = _NS_morgath._alpha(240 * intensity)
-                _NS_morgath._jagged_line(surface,
-                                         _NS_morgath.PALETTE["arc_darkest"],
-                                         (x, y - 10), (end_x, end_y),
-                                         jitter=4, segments=6, width=4)
-                _NS_morgath._jagged_line(surface,
-                                         _NS_morgath.PALETTE["arc_mid"],
-                                         (x, y - 10), (end_x, end_y),
-                                         jitter=4, segments=6, width=2)
-                _NS_morgath._jagged_line(surface,
-                                         _NS_morgath.PALETTE["arc_shine"],
-                                         (x, y - 10), (end_x, end_y),
-                                         jitter=3, segments=6, width=1)
-                pygame.draw.rect(surface, (*_NS_morgath.PALETTE["white"], alpha),
-                                 (end_x, end_y, 2, 2))
-
-            # Bright core flash
-            for r in range(15, 0, -1):
-                alpha = _NS_morgath._alpha(220 * intensity * (15 - r) / 15)
-                _NS_morgath._aacircle(surface,
-                                      (*_NS_morgath.PALETTE["arc_light"], alpha),
-                                      (x, y - 10), r)
-        else:
-            # Aftermath - lingering sparks
-            t = (progress - 0.5) / 0.5
+            # Kilat tebal ke segala arah
             for i in range(16):
-                rise_t = (phase * 0.7 + i * 0.06) % 1.0
-                angle = i * math.pi * 2 / 16 + phase * 0.3
-                r_sp = 35 + int(math.sin(phase + i) * 8)
-                rx = x + int(math.cos(angle) * r_sp)
-                ry = y + 10 + int(math.sin(angle) * r_sp * 0.4) - int(rise_t * 20)
-                alpha = _NS_morgath._alpha(220 * (1 - t) * (1 - rise_t * 0.5))
-                if alpha > 0:
-                    pygame.draw.rect(surface,
-                                     (*_NS_morgath.PALETTE["arc_light"], alpha),
-                                     (rx, ry, 2, 2))
-                    pygame.draw.rect(surface,
-                                     (*_NS_morgath.PALETTE["arc_shine"], alpha),
-                                     (rx, ry, 1, 1))
+                angle = i * math.pi / 8 + phase * 0.4
+                ex = x + int(math.cos(angle) * burst_r)
+                ey = y - 10 + int(math.sin(angle) * burst_r * 0.75)
+                alpha = _NS_morgath._alpha(240 * intensity)
+                for jit, seg, w, col in [
+                    (6, 8, 5, P["arc_darkest"]),
+                    (5, 7, 3, P["arc_mid"]),
+                    (3, 6, 2, P["arc_light"]),
+                    (2, 5, 1, P["arc_shine"]),
+                ]:
+                    _NS_morgath._jagged_line(surface, (*col, alpha),
+                        (x,y-10),(ex,ey), jitter=jit,segments=seg,width=w)
+                pygame.draw.rect(surface, (*P["white"], alpha), (ex-2,ey-2,4,4))
 
-            # Occasional lingering arcs
-            arc_frame = int(phase * 4) % 6
-            if arc_frame < 2:
-                clone_offset = -facing * 40
-                _NS_morgath._jagged_line(surface, _NS_morgath.PALETTE["arc_hot"],
-                                         (x, y - 10),
-                                         (x + clone_offset, y - 10),
-                                         jitter=5, segments=6, width=1)
+            # Ledakan pusat berlapis
+            for r2 in range(35, 0, -2):
+                a = _NS_morgath._alpha(240 * intensity * (35-r2)/35)
+                col = P["arc_shine"] if r2<8 else (P["arc_hot"] if r2<16
+                      else (P["arc_mid"] if r2<24 else P["arc_darkest"]))
+                _NS_morgath._aacircle(surface, (*col,a), (x,y-10), r2)
+            _NS_morgath._aacircle(surface, P["white"], (x,y-10), 10)
+
+            # Clone: kilat ke posisi clone
+            clone_off = -facing * 80
+            clone_x = x + clone_off
+            a2 = _NS_morgath._alpha(230 * intensity)
+            for _ in range(3):
+                _NS_morgath._jagged_line(surface, (*P["arc_hot"], a2),
+                    (x,y-10),(clone_x,y-10), jitter=8, segments=10, width=3)
+                _NS_morgath._jagged_line(surface, (*P["arc_shine"], a2),
+                    (x,y-10),(clone_x,y-10), jitter=5, segments=8, width=1)
+
+        else:
+            # AFTERGLOW: percikan melayang + kilat sisa
+            t = (progress - 0.50) / 0.50
+            for i in range(22):
+                rise_t = (phase * 0.8 + i * 0.055) % 1.0
+                angle = i * math.tau / 22 + phase * 0.35
+                r_sp = int(55 + math.sin(phase + i) * 18)
+                rx2 = x + int(math.cos(angle) * r_sp)
+                ry2 = y - 10 + int(math.sin(angle) * r_sp * 0.5) - int(rise_t * 35)
+                alpha = _NS_morgath._alpha(240 * (1-t) * (1-rise_t*0.5) * pulse)
+                if alpha > 5:
+                    sz2 = 4 if i%4==0 else 2
+                    col = P["arc_hot"] if i%4==0 else P["arc_light"]
+                    pygame.draw.rect(surface, (*col,alpha),(rx2-sz2//2,ry2-sz2//2,sz2,sz2))
+                    if i%4==0:
+                        pygame.draw.rect(surface, (*P["arc_shine"],alpha),(rx2,ry2,1,1))
+
+            # Kilat sisa antara boss dan clone
+            clone_off = -facing * 80
+            af = int(phase * 5) % 5
+            if af < 3:
+                a3 = _NS_morgath._alpha(200 * (1-t) * pulse)
+                _NS_morgath._jagged_line(surface, (*P["arc_mid"], a3),
+                    (x,y-10),(x+clone_off,y-10), jitter=6,segments=8,width=2)
+                _NS_morgath._jagged_line(surface, (*P["arc_hot"], a3),
+                    (x,y-10),(x+clone_off,y-10), jitter=4,segments=6,width=1)
 
 # ====================================================================
 # DRAKAR (AXE) - Mini Boss HD (Redesigned)
@@ -6795,10 +6877,11 @@ class _NS_abaddon:
     # MAIN DRAW ENTRY POINT
     # ===================================================================
     def draw_abaddon(surface, boss, x, y):
-        """Entry point."""
+        """Entry point — dengan support portrait HD untuk Hero Shop."""
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
         moving = _NS_abaddon._detect_moving(boss)
         _NS_abaddon._update_attack_anim(boss)
 
@@ -6807,9 +6890,12 @@ class _NS_abaddon:
             or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
         )
 
-        # ---------- Background layers ----------
-        _NS_abaddon._draw_dark_aura(surface, x, y, pulse)
-        _NS_abaddon._draw_ground_runes(surface, x, y + 48, pulse, active_skill)
+        # ---------- Background layers (dibuang saat portrait HD) ----------
+        if not portrait:
+            _NS_abaddon._draw_dark_aura(surface, x, y, pulse)
+            K = _NS_abaddon.K
+            _NS_abaddon._draw_ground_runes(surface, x,
+                                           y + int(48 * K), pulse, active_skill)
 
         # ---------- Character body ----------
         if active_skill == "q":
@@ -6825,12 +6911,13 @@ class _NS_abaddon:
         else:
             _NS_abaddon._draw_abaddon_idle(surface, boss, x, y)
 
-        # Aphotic Shield goes over body
+        # Aphotic Shield goes over body (portrait: tampilkan lebih kecil)
         if active_skill == "w":
             _NS_abaddon._draw_aphotic_shield(surface, boss, x, y, skill_timer, pulse)
 
-        # ---------- Projectiles ----------
-        _NS_abaddon._manage_projectiles(boss, surface, pulse)
+        # ---------- Projectiles (skip saat portrait) ----------
+        if not portrait:
+            _NS_abaddon._manage_projectiles(boss, surface, pulse)
 
 
     # ===================================================================
