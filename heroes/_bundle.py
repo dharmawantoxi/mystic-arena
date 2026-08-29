@@ -6661,6 +6661,8 @@ class _NS_thorne:
 
         lean = (3 if walk else 0) * f
         root_y = int(math.sin(phase * .72) * .7)
+        # v2 (animasi): perpindahan berat badan saat idle — goyang kiri-kanan.
+        sway = int(math.sin(phase * .8) * 3) * f if not (walk or attack) else 0
         if walk:
             root_y -= int(abs(math.sin(phase * 1.7)) * 2)
         if attack:
@@ -6668,7 +6670,7 @@ class _NS_thorne:
             root_y += int(math.sin(ap * math.pi) * 2)
 
         def pt(dx, dy):
-            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+            return (int(cx + dx * f + lean + sway), int(cy + dy + root_y))
 
         def poly(color, points, outline=True):
             pts = [pt(dx, dy) for dx, dy in points]
@@ -6737,12 +6739,19 @@ class _NS_thorne:
                                          wave=wave * .02)
 
         # ═══ KAKI: pendek & tebal, stance lebar (ref gempal) ═══
+        # v2 (animasi): foot-lift bergantian saat jalan — kaki melangkah maju
+        # terangkat (lutut + telapak naik), kaki tumpuan tetap menapak.
         leg_phase = stride if walk else 0.0
-        rear_foot = (-11 - int(leg_phase * 5), 38 - int(abs(leg_phase) * 2))
-        front_foot = (13 + int(leg_phase * 6), 38)
-        for hip, knee, foot, shade in (
-                ((-7, 13), (-11, 26), rear_foot, p["fur_darkest"]),
-                ((8, 13), (11, 25), front_foot, p["fur_dark"])):
+        stride_vel = math.cos(phase * 1.7) if walk else 0.0
+        rear_lift = int(max(0.0, -stride_vel) * 9) if walk else 0
+        front_lift = int(max(0.0, stride_vel) * 9) if walk else 0
+        rear_foot = (-11 - int(leg_phase * 5),
+                     38 - int(abs(leg_phase) * 2) - rear_lift)
+        front_foot = (13 + int(leg_phase * 6), 38 - front_lift)
+        for hip, knee, foot, shade, lift in (
+                ((-7, 13), (-11, 26), rear_foot, p["fur_darkest"], rear_lift),
+                ((8, 13), (11, 25), front_foot, p["fur_dark"], front_lift)):
+            knee = (knee[0], knee[1] - lift)
             poly(shade, [hip, (hip[0] + 10, hip[1]), (knee[0] + 7, knee[1]),
                          (foot[0] + 6, foot[1] - 5), (foot[0] - 6, foot[1] - 5),
                          (knee[0] - 5, knee[1])])
@@ -6893,7 +6902,7 @@ class _NS_thorne:
         _NS_thorne._aacircle(surface, p["fur_mid"], (hx - 1, hy - 1), 4)
         _NS_thorne._aaline(surface, p["cloth_mid"], (hx - 3, hy - 1), (hx + 3, hy - 1), 3)
         _NS_thorne._aaline(surface, p["cloth_light"], (hx - 3, hy - 2), (hx + 3, hy - 2), 1)
-        _NS_thorne._draw_elite_club(surface, cx + lean, cy + root_y, f,
+        _NS_thorne._draw_elite_club(surface, cx + lean + sway, cy + root_y, f,
                                     hand, angle, phase, attack)
         if attack and .26 < ap < .78:
             t = max(0.0, min(1.0, (ap - .26) / .5))
