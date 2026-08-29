@@ -1496,6 +1496,160 @@ CATEGORY_INFO = {
 
 
 # ════════════════════════════════════════════════════════════
+# DETAIL POPUP ITEM (info lengkap)
+# Popup dibuka dengan mengetuk kartu item di ITEM FORGE, atau
+# mengetuk slot item yang terisi di inventory. Menampilkan
+# deskripsi LENGKAP (tanpa potongan), stat & efek item (aktif,
+# pasif, aura, on-attack, block, bash, multishot), riwayat item,
+# harga, dan syarat pemakaian - dua kolom supaya muat di layar.
+# ════════════════════════════════════════════════════════════
+
+# Label field mekanik per bahasa: key -> (label Indonesia, label English)
+_FIELD_LABELS = {
+    # stat umum
+    "damage":               ("Damage", "Damage"),
+    "hp":                   ("Max HP", "Max HP"),
+    "hp_pct":               ("Max HP", "Max HP"),
+    "hp_regen":             ("HP Regen", "HP Regen"),
+    "armor":                ("Armor", "Armor"),
+    "attack_speed":         ("Attack Speed", "Attack Speed"),
+    "crit_chance":          ("Peluang Crit", "Crit Chance"),
+    "crit_mult":            ("Pengali Crit", "Crit Multiplier"),
+    "lifesteal":            ("Lifesteal", "Lifesteal"),
+    "lifesteal_bonus":      ("Bonus Lifesteal", "Lifesteal Bonus"),
+    "cooldown_reduction":   ("Cooldown Reduction", "Cooldown Reduction"),
+    "spell_vamp":           ("Spell Lifesteal", "Spell Lifesteal"),
+    "skill_amp":            ("Skill Amp", "Skill Amp"),
+    "evasion":              ("Evasion", "Evasion"),
+    "move_speed_pct":       ("Move Speed", "Move Speed"),
+    "heal_amp":             ("Heal Diterima", "Incoming Heal"),
+    "slow_resist":          ("Tahan Slow", "Slow Resist"),
+    "range_bonus":          ("Bonus Jangkauan", "Attack Range Bonus"),
+    # aktif / pasif
+    "hp_threshold":         ("Ambang HP", "HP Threshold"),
+    "duration":             ("Durasi", "Duration"),
+    "cooldown":             ("Cooldown", "Cooldown"),
+    "ally_radius":          ("Radius Sekutu", "Ally Radius"),
+    "ally_armor":           ("Armor Sekutu", "Ally Armor"),
+    "ally_attack_speed":    ("AS Sekutu", "Ally Attack Speed"),
+    "base_block":           ("Block Dasar", "Base Block"),
+    "max_hp_block_pct":     ("Block (% Max HP)", "Block (% Max HP)"),
+    "stun":                 ("Stun", "Stun"),
+    "silence":              ("Silence", "Silence"),
+    "silence_duration":     ("Durasi Silence", "Silence Duration"),
+    "trigger_enemies":      ("Pemicu Musuh Dekat", "Trigger Enemies"),
+    "trigger_radius":       ("Radius Pemicu", "Trigger Radius"),
+    "root_radius":          ("Radius Root", "Root Radius"),
+    "root_duration":        ("Durasi Root", "Root Duration"),
+    "proc_chance":          ("Peluang Aktif", "Proc Chance"),
+    "tick":                 ("Interval Tick", "Tick Interval"),
+    "targets":              ("Jumlah Target", "Targets"),
+    "radius":               ("Radius", "Radius"),
+    "slow":                 ("Slow Gerak", "Move Slow"),
+    "atk_slow":             ("Slow Serang", "Attack Slow"),
+    "slow_duration":        ("Durasi Slow", "Slow Duration"),
+    "burn_dps":             ("Bakar (dmg/dtk)", "Burn (dmg/s)"),
+    "burn_duration":        ("Durasi Bakar", "Burn Duration"),
+    "dash_distance":        ("Jarak Dorong", "Dash Distance"),
+    "as_bonus":             ("Bonus Attack Speed", "Attack Speed Bonus"),
+    "heal_pct":             ("Heal (% Max HP)", "Heal (% Max HP)"),
+    "reflect_pct":          ("Pantulan Damage", "Damage Reflect"),
+    "damage_amp":           ("Amplifikasi Damage", "Damage Amp"),
+    "chance":               ("Peluang", "Chance"),
+    "cleave_pct":           ("Splash Damage", "Cleave Damage"),
+    "cleave_radius":        ("Radius Splash", "Cleave Radius"),
+    "out_of_combat_regen_pct": ("Regen Luar Tempur", "Out-of-Combat Regen"),
+    "combat_timeout":       ("Timeout Tempur", "Combat Timeout"),
+    "armor_shred":          ("Kikis Armor", "Armor Shred"),
+    "charge_time":          ("Waktu Isi Muatan", "Charge Time"),
+    # aura
+    "enemy_radius":         ("Radius Musuh", "Enemy Radius"),
+    "enemy_armor_reduction": ("Kurangi Armor Musuh", "Enemy Armor Reduction"),
+    "enemy_atk_slow":       ("AS Musuh Berkurang", "Enemy AS Reduction"),
+    "enemy_anti_heal":      ("Anti-Heal Musuh", "Enemy Anti-Heal"),
+    "blind":                ("Musuh Melenceng", "Enemy Miss Chance"),
+    # block / on-attack / multishot / bash
+    "melee_block":          ("Block (Melee)", "Block (Melee)"),
+    "ranged_block":         ("Block (Ranged)", "Block (Ranged)"),
+    "anti_heal":            ("Anti-Heal", "Anti-Heal"),
+    "max_hp_pct_per_tick":  ("Racun (% Max HP/tick)", "Poison (% Max HP/tick)"),
+    "cap_damage":           ("Batas Damage", "Damage Cap"),
+    "damage_pct":           ("Damage Tembakan Ekstra", "Extra Shot Damage"),
+}
+
+_GROUP_LABELS = {
+    "stats":      ("STAT", "STATS"),
+    "passive":    ("PASIF", "PASSIVE"),
+    "active":     ("AKTIF", "ACTIVE"),
+    "aura":       ("AURA", "AURA"),
+    "block":      ("BLOCK", "BLOCK"),
+    "on_attack":  ("EFEK SERANGAN", "ON-ATTACK"),
+    "multishot":  ("MULTISHOT", "MULTISHOT"),
+    "bash":       ("BASH", "BASH"),
+}
+
+_MECH_GROUPS = ("stats", "passive", "active", "aura", "block",
+                "on_attack", "multishot", "bash")
+
+# Nilai yang ditampilkan sebagai persen
+_PCT_KEYS = frozenset({
+    "hp_pct", "hp_threshold", "crit_chance", "lifesteal",
+    "lifesteal_bonus", "cooldown_reduction", "spell_vamp",
+    "skill_amp", "evasion", "move_speed_pct", "heal_amp",
+    "slow_resist", "chance", "proc_chance", "max_hp_block_pct",
+    "heal_pct", "reflect_pct", "damage_amp", "cleave_pct",
+    "out_of_combat_regen_pct", "enemy_atk_slow", "enemy_anti_heal",
+    "blind", "slow", "atk_slow", "anti_heal",
+    "max_hp_pct_per_tick", "damage_pct",
+})
+
+# Nilai dalam frame (60 fps) yang ditampilkan sebagai detik
+_FRAME_KEYS = frozenset({
+    "duration", "cooldown", "stun", "silence", "silence_duration",
+    "tick", "charge_time", "combat_timeout", "slow_duration",
+    "burn_duration", "root_duration",
+})
+
+
+def _fmt_mech_value(key, value, en=False):
+    """Format nilai mekanik item supaya mudah dibaca manusia."""
+    if key == "crit_mult":
+        return f"x{value:g}"
+    if key in _PCT_KEYS:
+        return f"{value * 100:g}%"
+    if key in _FRAME_KEYS:
+        secs = value / 60.0
+        return f"{secs:g} dtk" if not en else f"{secs:g}s"
+    return str(value)
+
+
+def _build_item_mechanics(data):
+    """Susun daftar (kind, text) mekanik item dari catalog.
+
+    kind = "header" (nama grup: [AKTIF] Blood Frenzy) atau
+    "bullet" (baris berisi "• label: nilai").
+    """
+    en = get_language() == "en"
+    items = []
+    for gkey in _MECH_GROUPS:
+        g = data.get(gkey)
+        if not isinstance(g, dict) or not g:
+            continue
+        glabel = _GROUP_LABELS[gkey][1 if en else 0]
+        gname = g.get("name", "")
+        header = f"[{glabel}]" + (f" {gname}" if gname else "")
+        items.append(("header", header))
+        for key, value in g.items():
+            if key == "name":
+                continue
+            label = _FIELD_LABELS.get(key, key)
+            label = label[1] if en else label[0]
+            items.append(
+                ("bullet", f"• {label}: {_fmt_mech_value(key, value, en)}"))
+    return items
+
+
+# ════════════════════════════════════════════════════════════
 # ICON LOADING & CACHE
 # ════════════════════════════════════════════════════════════
 _ITEMS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -3088,6 +3242,10 @@ class ItemShopUI:
         if hero is not None:
             cls._draw_owned_slots(surface, game, hero, px, py)
         cls._draw_close(surface, game, px, py)
+        # ═══ POPUP DETAIL ITEM (modal, digambar paling akhir) ═══
+        inspect = getattr(game, "itemshop_inspect_item", None)
+        if inspect and inspect in ITEM_CATALOG:
+            cls._draw_detail_popup(surface, game, inspect)
 
     @classmethod
     def _draw_hero_strip(cls, surface, game, heroes, target, px, py):
@@ -3199,6 +3357,12 @@ class ItemShopUI:
                       ui_theme.GOLD, get_font(20, "body_semibold"),
                       icon="coin", value=f"{game.gold:,}",
                       value_color=ui_theme.GOLD_TEXT)
+        # Petunjuk: ketuk kartu item untuk membuka info lengkap
+        hf = get_font(14, "body_medium")
+        ht = hf.render(tr("item_card_detail_hint"), True,
+                       ui_theme.TEXT_FAINT)
+        surface.blit(ht, (px + cls.PANEL_W - ht.get_width() - 24,
+                          py + 32))
 
     @classmethod
     def _draw_hero_info(cls, surface, hero, px, py):
@@ -3261,7 +3425,8 @@ class ItemShopUI:
         label = lf.render(ui_theme.letter("INVENTORY"),
                           True, ui_theme.TEXT_DIM)
         hint = get_font(15, "body_medium").render(
-            "  (tap item to drop)", True, ui_theme.TEXT_FAINT)
+            f"  {tr('item_inventory_hint')}", True,
+            ui_theme.TEXT_FAINT)
         total_label_w = label.get_width() + hint.get_width()
         lx = px + (cls.PANEL_W - total_label_w) // 2
         ly = sy - 22
@@ -3302,6 +3467,219 @@ class ItemShopUI:
         xt = xf.render("X", True, (255, 255, 255))
         surface.blit(xt, xt.get_rect(center=rect.center))
         game.ui_buttons["itemshop_close"] = rect
+
+    # ── POPUP DETAIL ITEM (info lengkap) ─────────────────────
+    DETAIL_W = 880
+    DETAIL_H = 600
+
+    @classmethod
+    def _detail_rect(cls, surface):
+        """Rect popup detail (di tengah layar)."""
+        sw, sh = surface.get_size()
+        return pygame.Rect((sw - cls.DETAIL_W) // 2,
+                           max(6, (sh - cls.DETAIL_H) // 2),
+                           cls.DETAIL_W, cls.DETAIL_H)
+
+    @classmethod
+    def _draw_detail_popup(cls, surface, game, sid):
+        """Popup info lengkap item.
+
+        Menampilkan deskripsi LENGKAP (tidak terpotong kartu), semua
+        stat & efek (stat / pasif / aktif / aura / block / on-attack /
+        multishot / bash) dalam dua kolom, riwayat item, harga, jumlah
+        dimiliki, dan syarat pemakaian. Ditutup lewat tombol X atau
+        ketuk di luar kotak.
+        """
+        data = ITEM_CATALOG.get(sid)
+        if not data:
+            return
+        from mobile.perf import darken
+        darken(surface, 150)
+
+        rect = cls._detail_rect(surface)
+        game.itemshop_detail_rect = rect
+        dx, dy = rect.x, rect.y
+
+        # Shadow + panel premium
+        sh = pygame.Surface((cls.DETAIL_W + 16, cls.DETAIL_H + 16),
+                            pygame.SRCALPHA)
+        pygame.draw.rect(sh, (0, 0, 0, 170),
+                         (8, 8, cls.DETAIL_W, cls.DETAIL_H),
+                         border_radius=14)
+        surface.blit(sh, (dx - 8, dy - 8))
+        if ui_theme.cheap_alpha():
+            surface.blit(ui_theme._vgrad(
+                cls.DETAIL_W, cls.DETAIL_H, (32, 38, 66),
+                (15, 18, 36), radius=14), (dx, dy))
+        else:
+            pygame.draw.rect(surface, (24, 28, 48), rect,
+                             border_radius=14)
+        pygame.draw.rect(surface, ui_theme.GOLD, rect, 3,
+                         border_radius=14)
+        ui_theme.corner_ticks(surface, rect, ui_theme.GOLD_BRIGHT,
+                              length=16, width=2, inset=8)
+
+        # ═══ HEADER ═══
+        icon = get_icon(sid, 64)
+        if icon is not None:
+            surface.blit(icon, (dx + 22, dy + 18))
+        nf = get_font(32, "body_bold")
+        nt = nf.render(data["name"], True, data["glow"])
+        surface.blit(nt, (dx + 100, dy + 14))
+
+        # Chip kelas & kategori
+        cls_label, cls_color = ITEM_CLASS_INFO[get_item_class(sid)]
+        cat_label, cat_color = CATEGORY_INFO[data["category"]]
+        cx = dx + 100
+        cy = dy + 56
+        for label, color in ((cls_label, cls_color),
+                             (cat_label, cat_color)):
+            bf = get_font(15, "body_bold")
+            bt = bf.render(label, True, color)
+            bw = bt.get_width() + 14
+            pygame.draw.rect(surface, (18, 22, 36),
+                             (cx, cy, bw, 22), border_radius=6)
+            pygame.draw.rect(surface, color, (cx, cy, bw, 22), 1,
+                             border_radius=6)
+            surface.blit(bt, (cx + 7, cy + 2))
+            cx += bw + 8
+
+        # Harga (kanan atas, di kiri tombol X)
+        costf = get_font(26, "body_bold")
+        costt = costf.render(f"{data['cost']} G", True,
+                             ui_theme.GOLD_TEXT)
+        surface.blit(costt, (dx + cls.DETAIL_W - costt.get_width()
+                             - 64, dy + 16))
+
+        # Jumlah dimiliki target pembelian + syarat pemakaian
+        hero = _resolve_shop_target(game)
+        inv = getattr(hero, "items", None)
+        owned = inv.count(sid) if inv is not None else 0
+        if owned > 0:
+            of = get_font(17, "body_bold")
+            ot = of.render(tr("item_detail_owned", count=owned),
+                           True, (150, 255, 170))
+            surface.blit(ot, (dx + cls.DETAIL_W - ot.get_width()
+                              - 64, dy + 52))
+        reqs = []
+        if data.get("melee_only"):
+            reqs.append(("MELEE ONLY", (255, 170, 90)))
+        if data.get("magic_only"):
+            reqs.append(("MAGIC ONLY", (200, 145, 255)))
+        rx = dx + cls.DETAIL_W - 24
+        for label, color in reversed(reqs):
+            bf = get_font(15, "body_bold")
+            bt = bf.render(label, True, color)
+            bw = bt.get_width() + 14
+            rx -= bw
+            pygame.draw.rect(surface, (18, 22, 36),
+                             (rx, dy + 76, bw, 22), border_radius=6)
+            pygame.draw.rect(surface, color, (rx, dy + 76, bw, 22),
+                             1, border_radius=6)
+            surface.blit(bt, (rx + 7, dy + 78))
+
+        pygame.draw.line(surface, (70, 78, 110),
+                         (dx + 22, dy + 106),
+                         (dx + cls.DETAIL_W - 22, dy + 106), 1)
+
+        pad = 22
+        text_w = cls.DETAIL_W - pad * 2
+        y = dy + 112
+        limit = dy + cls.DETAIL_H - 44
+
+        def label_line(text, color):
+            nonlocal y
+            lf = get_font(15, "body_bold")
+            lt = lf.render(text, True, color)
+            surface.blit(lt, (dx + pad, y))
+            y += 22
+
+        # ═══ DESKRIPSI LENGKAP (tanpa batas 4 baris) ═══
+        label_line(tr("item_detail_description"), ui_theme.TEXT_DIM)
+        df2 = get_font(19, "body_medium")
+        for line in cls._wrap_text(cls._localized_desc(data), df2,
+                                   text_w):
+            if y + 23 > limit:
+                break
+            t = df2.render(line, True, ui_theme.TEXT_BODY)
+            surface.blit(t, (dx + pad, y))
+            y += 23
+
+        # ═══ STAT & EFEK (dua kolom supaya muat) ═══
+        mech = _build_item_mechanics(data)
+        if mech and y < limit - 40:
+            label_line(tr("item_detail_stats"), ui_theme.TEXT_DIM)
+            mf = get_font(17, "body_medium")
+            hf = get_font(16, "body_bold")
+            col_w = (text_w - 26) // 2
+            line_h = 21
+            cols = [[], []]
+            heights = [0, 0]
+            avail = limit - y
+            for kind, text in mech:
+                lines = ([text] if kind == "header"
+                         else cls._wrap_text(text, mf, col_w))
+                h = len(lines) * line_h
+                ci = 0 if heights[0] <= heights[1] else 1
+                if heights[ci] + h > avail:
+                    other = 1 - ci
+                    if heights[other] + h <= avail:
+                        ci = other
+                    else:
+                        cols[ci].append(("bullet", ["…"]))
+                        heights[ci] = avail
+                        break
+                cols[ci].append((kind, lines))
+                heights[ci] += h
+            y0 = y
+            for ci in range(2):
+                yy = y0
+                xx = dx + pad + ci * (col_w + 26)
+                for kind, lines in cols[ci]:
+                    if kind == "header":
+                        t = hf.render(lines[0], True, data["glow"])
+                        surface.blit(t, (xx, yy))
+                        yy += line_h
+                    else:
+                        for line in lines:
+                            t = mf.render(line, True,
+                                          ui_theme.TEXT_BODY)
+                            surface.blit(t, (xx, yy))
+                            yy += line_h
+            y = y0 + max(heights)
+
+        # ═══ RIWAYAT / FLAVOR ═══
+        flavor = data.get("flavor")
+        if flavor and y < limit - 30:
+            label_line(tr("item_detail_flavor"), ui_theme.TEXT_DIM)
+            ff = get_font(16, "body_medium")
+            for line in cls._wrap_text(flavor, ff, text_w):
+                if y + 21 > limit:
+                    break
+                t = ff.render(line, True, (176, 182, 204))
+                surface.blit(t, (dx + pad, y))
+                y += 21
+
+        # ═══ TOMBOL TUTUP ═══
+        csize = 40
+        crect = pygame.Rect(dx + cls.DETAIL_W - csize - 12,
+                            dy + 12, csize, csize)
+        pygame.draw.circle(surface, (180, 60, 60), crect.center,
+                           csize // 2)
+        pygame.draw.circle(surface, (255, 255, 255), crect.center,
+                           csize // 2, 2)
+        xf = get_font(24, "body_semibold")
+        xt = xf.render("X", True, (255, 255, 255))
+        surface.blit(xt, xt.get_rect(center=crect.center))
+        game.ui_buttons["itemshop_detail_close"] = crect
+
+        # Petunjuk cara menutup
+        hb = get_font(14, "body_medium")
+        hbt = hb.render(tr("item_detail_close_hint"), True,
+                        ui_theme.TEXT_FAINT)
+        surface.blit(hbt, hbt.get_rect(
+            center=(dx + cls.DETAIL_W // 2,
+                    dy + cls.DETAIL_H - 16)))
 
     @classmethod
     def _page_count(cls):
@@ -3403,6 +3781,9 @@ class ItemShopUI:
                          has_hero=True):
         # Card premium: gradasi + border kategori + sudut emas
         rect = pygame.Rect(x, y, w, h)
+        # Ketuk kartu (di luar tombol BUY) = buka popup info lengkap
+        if game is not None:
+            game.ui_buttons[f"itemshop_card_{sid}"] = rect
         if ui_theme.cheap_alpha():
             surface.blit(ui_theme._vgrad(
                 w, h, (34, 40, 68) if can_buy else (26, 26, 38),
@@ -3463,11 +3844,22 @@ class ItemShopUI:
                            (150, 255, 170))
             surface.blit(ot, (x + w - 90, y + 58))
 
-        # Deskripsi (wrap) - ikuti bahasa aktif (id/en)
+        # Deskripsi (wrap) - ikuti bahasa aktif (id/en). Kalau
+        # terpotong oleh kartu, akhiri dengan "…" supaya jelas ada
+        # lanjutan (buka popup detail untuk teks lengkap).
         df = get_font(17, "body_medium")
         lines_desc = cls._wrap_text(cls._localized_desc(data), df, w - 20)
+        max_desc_lines = 4
+        if len(lines_desc) > max_desc_lines:
+            shown = lines_desc[:max_desc_lines]
+            last = shown[-1]
+            while last and df.size(last + "…")[0] > w - 20:
+                last = last[:-1]
+            shown[-1] = last + "…"
+        else:
+            shown = lines_desc
         ty = y + 84
-        for line in lines_desc[:4]:
+        for line in shown:
             t = df.render(line, True, ui_theme.TEXT_BODY)
             surface.blit(t, (x + 10, ty))
             ty += 19
@@ -3531,7 +3923,33 @@ def handle_item_shop_click(game, mx, my, button):
     if not getattr(game, "item_shop_open", False):
         return False
 
+    # ═══ POPUP DETAIL ITEM (modal di atas grid) ═══
+    inspect = getattr(game, "itemshop_inspect_item", None)
+    if inspect is not None and inspect in ITEM_CATALOG:
+        # Tombol X di popup / X toko = tutup (X toko sekalian keluar)
+        for btn_id, rect in list(game.ui_buttons.items()):
+            if btn_id not in ("itemshop_detail_close", "itemshop_close"):
+                continue
+            if _touch_hit(rect, mx, my):
+                game.itemshop_inspect_item = None
+                if btn_id == "itemshop_close":
+                    game.item_shop_open = False
+                _play_click()
+                return True
+        # Klik di dalam kotak detail = ditahan (tidak tembus ke grid)
+        drect = getattr(game, "itemshop_detail_rect", None)
+        if drect is not None and drect.collidepoint(mx, my):
+            return True
+        # Klik di luar kotak = tutup detail saja, tetap di toko
+        game.itemshop_inspect_item = None
+        _play_click()
+        return True
+
+    # ── PASS 1: tombol aksi (kartu item disisakan untuk PASS 2
+    #    supaya tombol BUY selalu menang saat area bertabrakan) ──
     for btn_id, rect in list(game.ui_buttons.items()):
+        if btn_id.startswith("itemshop_card_"):
+            continue
         if not _touch_hit(rect, mx, my):
             continue
         if btn_id == "itemshop_close":
@@ -3569,10 +3987,36 @@ def handle_item_shop_click(game, mx, my, button):
             return True
         if btn_id.startswith("itemshop_slot_"):
             idx = int(btn_id.replace("itemshop_slot_", ""))
-            # Klik kanan untuk drop; klik kiri info (saat ini drop juga
-            # untuk kemudahan mobile).
-            if button in (1, 3):
+            if button == 3:
+                # Tahan / klik kanan = drop item
                 _try_drop(game, idx)
+            elif button == 1:
+                # Ketuk slot terisi = buka info lengkap item;
+                # slot kosong = abaikan (aman untuk jari)
+                hero = getattr(game, "itemshop_target_hero", None)
+                sid = None
+                try:
+                    if (hero is not None and getattr(hero, "items", None)
+                            and 0 <= idx < len(hero.items.slots)):
+                        sid = hero.items.slots[idx]
+                except Exception:
+                    sid = None
+                if sid:
+                    game.itemshop_inspect_item = sid
+                    _play_click()
+            return True
+
+    # ── PASS 2: ketuk kartu item = buka/tutup popup detail ──
+    if button in (1, 3):
+        for btn_id, rect in list(game.ui_buttons.items()):
+            if not btn_id.startswith("itemshop_card_"):
+                continue
+            if not rect.collidepoint(mx, my):
+                continue
+            sid = btn_id.replace("itemshop_card_", "")
+            cur = getattr(game, "itemshop_inspect_item", None)
+            game.itemshop_inspect_item = None if cur == sid else sid
+            _play_click()
             return True
 
     # Klik kanan di mana pun = tutup.

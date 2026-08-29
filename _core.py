@@ -1323,6 +1323,9 @@ class Game:
         self.item_shop_open = False
         # Halaman aktif toko item (0 = TIER I, 1 = TIER II)
         self.itemshop_page = 0
+        # Item yang sedang dilihat detailnya di popup Item Forge
+        # (None = popup tertutup). Diisi saat ketuk kartu item.
+        self.itemshop_inspect_item = None
         # Hero penerima pembelian di Item Forge (dipilih dari strip
         # "BUY FOR"; None = auto: hero terseleksi / hero hidup pertama)
         self.itemshop_target_hero = None
@@ -1467,6 +1470,7 @@ class Game:
         self.shop_open = False
         self.item_shop_open = False
         self.itemshop_target_hero = None
+        self.itemshop_inspect_item = None
         self.popup_target = None
         self.popup_type = None
         self.ui_buttons = {}
@@ -7746,9 +7750,10 @@ class InputHandler:
                         except Exception:
                             pass
                     else:
-                        # Klik kiri: slot TERISI -> tampilkan info item
-                        # (tanpa membuka modal toko); slot KOSONG -> buka
-                        # Item Forge (jalan pintas untuk memasang item).
+                        # Klik kiri: slot TERISI -> buka popup detail
+                        # item (info lengkap, bukan sekadar nama);
+                        # slot KOSONG -> buka Item Forge (jalan pintas
+                        # untuk memasang item).
                         sid = None
                         try:
                             if h is not None and \
@@ -7757,20 +7762,16 @@ class InputHandler:
                                 sid = h.items.slots[idx]
                         except Exception:
                             sid = None
-                        if sid:
-                            try:
-                                from hero_items import ITEM_CATALOG
-                                data = ITEM_CATALOG.get(sid, {})
-                                g.ui.add_notification(
-                                    data.get("name", "Item"),
-                                    (255, 230, 160))
-                                SoundManager().play(
-                                    'ui_click', volume_mult=0.3)
-                            except Exception:
-                                g.item_shop_open = True
-                                SoundManager().play(
-                                    'ui_click', volume_mult=0.4)
-                        else:
+                        try:
+                            from hero_items import ITEM_CATALOG
+                            if sid and ITEM_CATALOG.get(sid):
+                                # Buka Item Forge langsung dengan
+                                # popup detail item terpasang.
+                                g.itemshop_inspect_item = sid
+                            g.item_shop_open = True
+                            SoundManager().play(
+                                'ui_click', volume_mult=0.4)
+                        except Exception:
                             g.item_shop_open = True
                             SoundManager().play(
                                 'ui_click', volume_mult=0.4)

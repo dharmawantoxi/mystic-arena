@@ -152,4 +152,96 @@ t = _resolve_shop_target(g)
 assert t is h2, "selected hero hidup harus jadi target awal"
 print("T11 OK - hero terseleksi di peta otomatis jadi target awal")
 
+# ═══ BAGIAN BARU: POPUP DETAIL ITEM (info lengkap) ═══
+
+# ── T12: ketuk kartu item -> popup detail terbuka ─────────────────
+g.item_shop_open = True
+g.itemshop_inspect_item = None
+g.gold = 20000
+g.ui_buttons = {}
+ItemShopUI.draw(surf, g)
+rect = g.ui_buttons["itemshop_card_dead_edge"]
+assert handle_item_shop_click(g, rect.x + 40, rect.y + 40, 1)
+assert g.itemshop_inspect_item == "dead_edge"
+ItemShopUI.draw(surf, g)
+assert "itemshop_detail_close" in g.ui_buttons, \
+    "popup detail harus punya tombol X"
+assert "itemshop_detail_rect" in dir(g) or \
+    getattr(g, "itemshop_detail_rect", None) is not None
+print("T12 OK - ketuk kartu item membuka popup detail")
+
+# ── T13: saat popup terbuka, klik BUY di belakangnya TIDAK tembus ──
+g.gold = 20000
+gold_before = g.gold
+ItemShopUI.draw(surf, g)
+buy = g.ui_buttons["itemshop_buy_dead_edge"]
+assert handle_item_shop_click(g, buy.centerx, buy.centery, 1)
+assert g.gold == gold_before, "popup modal harus menahan klik BUY"
+assert g.itemshop_inspect_item == "dead_edge"
+print("T13 OK - klik BUY di belakang popup tidak menembus")
+
+# ── T14: klik di luar popup -> detail tertutup, toko tetap buka ────
+assert handle_item_shop_click(g, 640, 700, 1)
+assert g.itemshop_inspect_item is None
+assert g.item_shop_open, "toko tidak boleh ikut tertutup"
+print("T14 OK - klik luar popup menutup detail, toko tetap buka")
+
+# ── T15: X popup menutup detail saja; X toko menutup semuanya ──────
+g.itemshop_inspect_item = "dead_edge"
+g.ui_buttons = {}
+ItemShopUI.draw(surf, g)
+crect = g.ui_buttons["itemshop_detail_close"]
+assert handle_item_shop_click(g, crect.centerx, crect.centery, 1)
+assert g.itemshop_inspect_item is None and g.item_shop_open
+g.itemshop_inspect_item = "dead_edge"
+g.ui_buttons = {}
+ItemShopUI.draw(surf, g)
+crect = g.ui_buttons["itemshop_close"]
+assert handle_item_shop_click(g, crect.centerx, crect.centery, 1)
+assert g.itemshop_inspect_item is None and not g.item_shop_open
+print("T15 OK - tombol X popup & X toko berperilaku benar")
+
+# ── T16: klik kanan kartu juga buka detail (bukan tutup toko) ──────
+g.item_shop_open = True
+g.itemshop_inspect_item = None
+g.ui_buttons = {}
+ItemShopUI.draw(surf, g)
+rect = g.ui_buttons["itemshop_card_moon_shard"]
+assert handle_item_shop_click(g, rect.centerx, rect.centery, 3)
+assert g.itemshop_inspect_item == "moon_shard" and g.item_shop_open
+g.itemshop_inspect_item = None
+print("T16 OK - klik kanan kartu membuka detail")
+
+# ── T17: ketuk slot inventory terisi = info; kanan/tahan = drop ────
+h1.alive = True
+h1.items.add("dead_edge")
+g.itemshop_target_hero = h1
+g.item_shop_open = True
+g.itemshop_inspect_item = None
+g.ui_buttons = {}
+ItemShopUI.draw(surf, g)
+rect = g.ui_buttons["itemshop_slot_0"]
+assert handle_item_shop_click(g, rect.centerx, rect.centery, 1)
+assert g.itemshop_inspect_item == "dead_edge", "ketuk slot = info"
+assert h1.items.has("dead_edge"), "ketuk kiri TIDAK boleh drop"
+g.itemshop_inspect_item = None
+g.ui_buttons = {}
+ItemShopUI.draw(surf, g)
+rect = g.ui_buttons["itemshop_slot_0"]
+assert handle_item_shop_click(g, rect.centerx, rect.centery, 3)
+assert not h1.items.has("dead_edge"), "klik kanan = drop"
+print("T17 OK - ketuk slot = info lengkap, kanan/tahan = drop")
+
+# ── T18: popup detail SEMUA item render tanpa error ────────────────
+from hero_items import _build_item_mechanics
+for sid in ITEM_CATALOG:
+    g.itemshop_inspect_item = sid
+    g.ui_buttons = {}
+    ItemShopUI.draw(surf, g)
+    assert "itemshop_detail_close" in g.ui_buttons, f"popup {sid}"
+    mech = _build_item_mechanics(ITEM_CATALOG[sid])
+    assert any(k == "bullet" for k, _ in mech), \
+        f"mekanik item {sid} kosong"
+print("T18 OK - popup detail render untuk semua 33 item")
+
 print("\nSEMUA TEST LULUS ✔")

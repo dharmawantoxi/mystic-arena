@@ -33,6 +33,14 @@ _TEXT = {
         "shop_page_label": "HAL {page}",
         "item_dropped": "Melepas {item} (tanpa refund)",
         "item_dropped_short": "Melepas {item}",
+        # ═══ DETAIL POPUP ITEM FORGE (info lengkap item) ═══
+        "item_card_detail_hint": "TAP KARTU ITEM = INFO LENGKAP",
+        "item_detail_description": "DESKRIPSI",
+        "item_detail_stats": "STAT & EFEK",
+        "item_detail_flavor": "RIWAYAT",
+        "item_detail_owned": "DIMILIKI: {count}",
+        "item_detail_close_hint": "Ketuk di luar kotak untuk menutup detail",
+        "item_inventory_hint": "(ketuk: info  •  tahan/kanan: drop)",
     },
     "en": {
         "language": "Language",
@@ -54,6 +62,14 @@ _TEXT = {
         "shop_page_label": "PAGE {page}",
         "item_dropped": "Dropped {item} (no refund)",
         "item_dropped_short": "Dropped {item}",
+        # ═══ ITEM FORGE DETAIL POPUP (full item info) ═══
+        "item_card_detail_hint": "TAP AN ITEM CARD = FULL INFO",
+        "item_detail_description": "DESCRIPTION",
+        "item_detail_stats": "STATS & EFFECTS",
+        "item_detail_flavor": "LORE",
+        "item_detail_owned": "OWNED: {count}",
+        "item_detail_close_hint": "Tap outside the box to close details",
+        "item_inventory_hint": "(tap: info  •  hold/right-click: drop)",
     },
 }
 
