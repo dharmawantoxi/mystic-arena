@@ -3135,6 +3135,19 @@ class Hero(TowerDebuffMixin):
     @property
     def skill_damage(self):
         base = self._skill_damage_value
+        # ═══ ITEM: Skill Amp (Astral Codex) ═══
+        # Prinsip yang sama dengan debuff Mage Tower: semua skill
+        # membaca property ini, jadi amplifikasi item otomatis
+        # berlaku ke SEMUA skill (Q/W/E/R) tanpa mengubah handler
+        # mana pun di hero_skills/.
+        inv = getattr(self, "items", None)
+        if inv is not None:
+            try:
+                amp = inv.get_skill_amp()
+            except Exception:
+                amp = 0.0
+            if amp > 0:
+                base = int(round(base * (1.0 + amp)))
         if getattr(self, 'skill_down_timer', 0) > 0:
             f = max(0.0, 1.0 - getattr(self, 'skill_down_amount', 0.0))
             return int(round(base * f))

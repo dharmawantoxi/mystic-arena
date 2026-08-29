@@ -22,6 +22,8 @@ _TEXT = {
         "queued_item_count": "({count} item diantrikan)",
         "no_hero": "Tidak ada hero untuk menerima item.",
         "inventory_full": "Inventory {hero} penuh.",
+        "magic_only_denied": ("{hero} bukan hero beratribut Magic - "
+                              "item ini tidak bisa dipakai."),
         "forge_purchase": "{hero} membeli {item}!",
         "forge_queued": "{item} untuk {hero} dikirim setelah respawn!",
         "forge_delivered": "Item Forge dikirim ke {hero}: {items}!",
@@ -41,6 +43,8 @@ _TEXT = {
         "queued_item_count": "({count} item(s) queued)",
         "no_hero": "There is no hero to receive this item.",
         "inventory_full": "{hero}'s inventory is full.",
+        "magic_only_denied": ("{hero} is not a Magic-attribute hero - "
+                              "this item cannot be equipped."),
         "forge_purchase": "{hero} purchased {item}!",
         "forge_queued": "{item} for {hero} will be delivered after respawn!",
         "forge_delivered": "Forge items delivered to {hero}: {items}!",

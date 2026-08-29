@@ -47,11 +47,38 @@ Item ORISINAL (bukan adaptasi Dota) - kemampuan inti anti-heal:
                         + bakar 6 dmg/dtk; Brand Burst saat >=2 musuh
                         dekat (110 magic dmg + bakar 22 dmg/dtk 3 dtk).
 
+Item ATRIBUT MAGIC (orisinal) - khusus hero beratribut Magic:
+
+ 26. Astral Codex     - SKILL AMP +25% (memperbesar damage SEMUA
+                        skill), 18% CDR, 12% Spell Lifesteal; Arcane
+                        Nova saat >=2 musuh dekat (150 magic dmg +
+                        silence 1.5 dtk). MAGIC ONLY: hanya bisa
+                        dipakai hero beratribut Magic (Vex, Zephyr,
+                        Vhaerith, dsb.; lihat is_magic_hero()).
+
+Paket item MAGIC (7 item lagi, semuanya MAGIC ONLY) - terinspirasi
+item sihir klasik, nama diganti supaya bebas hak cipta, stat & pasif
+direbalance ke ekonomi game ini:
+
+ 27. Sage Scepter    (terinspirasi dari Kaya)
+ 28. Fulgur Scepter  (terinspirasi dari Dagon)
+ 29. Hex Idol        (terinspirasi dari Scythe of Vyse)
+ 30. Rift Veil       (terinspirasi dari Veil of Discord)
+ 31. Vital Stone     (terinspirasi dari Bloodstone)
+ 32. Vine Rod        (terinspirasi dari Rod of Atos)
+ 33. Spectral Charm  (terinspirasi dari Ghost Scepter)
+
 Crimson Guard TIDAK diduplikasi: di Tier II sudah ada "Scarlet
 Bulwark" yang merupakan adaptasi langsung item tersebut.
 
-Toko ITEM FORGE kini 4 halaman (tab TIER I / TIER II / TIER III di
-bawah info hero) karena katalog berisi 25 item.
+Toko ITEM FORGE mengkategorikan 33 item menjadi tiga kelas, tiap
+kelas memiliki halaman sendiri (tanpa tercampur di halaman yang
+sama) - 6 tab di bawah info hero:
+  PHYSICAL 1/2 & 2/2 (14 item), MAGIC 1/2 & 2/2 (10 item),
+  TANK 1/2 & 2/2 (9 item).
+Kelas item ditentukan oleh get_item_class() (flag magic_only dan
+kategori caster/arcane/mystic -> MAGIC; kategori defensif -> TANK;
+sisanya -> PHYSICAL) dan setiap kartu menampilkan badge kelasnya.
 
 ITEM FORGE tidak lagi mewajibkan klik hero di peta dulu: grid item
 selalu ditampilkan, dan ada strip "BUY FOR" berisi daftar hero yang
@@ -122,6 +149,33 @@ CATEGORY_POISON   = "poison"     # racun % HP + multi-tembak (Hydra's Breath)
 CATEGORY_INFERNO  = "inferno"    # bakar area (Radiance)
 CATEGORY_ARCANE   = "arcane"     # damage + CDR + proc magic (Khanda)
 CATEGORY_MORTAL   = "mortal"     # anti-heal area (Searbrand - orisinal)
+CATEGORY_MYSTIC   = "mystic"     # atribut Magic: skill amp + CDR (Astral Codex)
+
+# Kata kunci role yang dianggap beratribut MAGIC. Mencakup hero
+# starter ("Mage" = Vex, "Mage/Trickster" = Zephyr), hero unlock
+# "Boss/Magic" (Vhaerith), dan boss/true-boss hero yang jelas
+# penyihir (Sorcerer, Caster, Warlock, Sage, Pyromancer, dst.).
+MAGIC_ROLE_KEYWORDS = (
+    "mage", "magic", "sorcer", "caster", "warlock", "witch",
+    "sage", "prophet", "priestess", "pyro", "necro", "shaman",
+    "summoner", "chorister", "farseer", "starweaver", "hex",
+    "eldritch",
+)
+
+
+def is_magic_hero(hero):
+    """True kalau ``hero`` beratribut Magic.
+
+    Dikenali dari role-nya (case-insensitive). Catatan khusus:
+    "Anti-Mage" sengaja DIKECUALIKAN - dia pemburu penyihir, bukan
+    penyihir.
+    """
+    role = (getattr(hero, "role", "") or "").lower()
+    if not role:
+        return False
+    if "anti-mage" in role:
+        return False
+    return any(k in role for k in MAGIC_ROLE_KEYWORDS)
 
 # ════════════════════════════════════════════════════════════
 # MIASMA TRACKER (Basilisk Breath - racun % Max HP per tick)
@@ -1011,43 +1065,405 @@ ITEM_CATALOG = {
         "flavor": ("Besi berpijar yang mencauter luka - apa pun yang "
                    "menerima bekasnya tak akan pernah utuh kembali."),
     },
+
+    # ════════════════════════════════════════════════════════
+    # ITEM ATRIBUT MAGIC (orisinal): Astral Codex
+    # Kemampuan inti: SKILL AMP - memperbesar damage SEMUA skill
+    # lewat stat "skill_amp" yang dibaca property Hero.skill_damage
+    # (semua handler skill di hero_skills/ membaca property itu,
+    # jadi amplifikasi otomatis berlaku ke Q/W/E/R tanpa mengubah
+    # satu pun handler). Dikhususkan untuk hero beratribut Magic
+    # lewat flag "magic_only" (lihat is_magic_hero()).
+    # ════════════════════════════════════════════════════════
+    "astral_codex": {
+        "name": "Astral Codex",
+        "category": CATEGORY_MYSTIC,
+        "cost": 6000,
+        "icon": "astral_codex.png",
+        "color": (155, 90, 235),
+        "glow": (210, 155, 255),
+        "stats": {
+            "hp": 280,
+            "hp_regen": 4,
+            "cooldown_reduction": 0.18,
+            "spell_vamp": 0.12,
+            # Stat BARU: persentase amplifikasi damage skill (Q/W/E/R).
+            "skill_amp": 0.25,
+        },
+        "active": {
+            # Arcane Nova: otomatis saat >=2 musuh dekat - ledakan
+            # arcane yang melukai + men-silence musuh di sekitar.
+            "name": "Arcane Nova",
+            "trigger_enemies": 2,
+            "radius": 260,
+            "damage": 150,
+            "silence_duration": 90,  # 1.5 detik
+            "cooldown": 1440,        # 24 detik
+        },
+        "melee_only": False,
+        # KHUSUS hero beratribut MAGIC (role mengandung mage/sorcerer/
+        # caster/warlock/dst. - lihat is_magic_hero). Hero fisik
+        # (assassin, marksman, fighter, "Anti-Mage") tidak bisa
+        # membelinya.
+        "magic_only": True,
+        "drops_on_death": False,
+        "desc": ("+280 HP, +4 HP/reg, 18% CDR, 12% Spell Lifesteal. "
+                 "SKILL AMP: +25% damage semua skill. Saat >=2 musuh "
+                 "dekat: Arcane Nova, 150 magic dmg + silence 1.5 dtk "
+                 "(CD 24 dtk). HANYA untuk hero beratribut Magic."),
+        "desc_en": ("+280 HP, +4 HP regen, 18% CDR, 12% Spell "
+                    "Lifesteal. SKILL AMP: +25% damage to all skills. "
+                    "When 2+ enemies are near: Arcane Nova, 150 magic "
+                    "dmg + 1.5s silence (24s CD). MAGIC-attribute "
+                    "heroes ONLY."),
+        "flavor": ("Kitab bintang yang halamannya menulis ulang hukum "
+                   "arus sihir setiap kali dibuka."),
+    },
+
+    # ════════════════════════════════════════════════════════
+    # PAKET MAGIC (7 item - semuanya MAGIC ONLY)
+    # Terinspirasi item sihir klasik; nama orisinal agar bebas
+    # hak cipta; stat & aktif direbalance ke ekonomi game ini.
+    # ════════════════════════════════════════════════════════
+    "sage_scepter": {
+        "name": "Sage Scepter",
+        "category": CATEGORY_CASTER,
+        "cost": 5000,
+        "icon": "sage_scepter.png",
+        "color": (120, 190, 255),
+        "glow": (170, 220, 255),
+        "stats": {
+            "hp": 200,
+            "hp_regen": 3,
+            "skill_amp": 0.15,
+            "spell_vamp": 0.08,
+            "cooldown_reduction": 0.08,
+        },
+        "melee_only": False,
+        "magic_only": True,
+        "drops_on_death": False,
+        "desc": ("+200 HP, +3 HP/reg, 15% SKILL AMP, 8% Spell "
+                 "Lifesteal, 8% CDR. Penambat arus sihir murni bagi "
+                 "sang bijak. HANYA hero Magic."),
+        "desc_en": ("+200 HP, +3 HP regen, 15% SKILL AMP, 8% Spell "
+                    "Lifesteal, 8% CDR. A pure conduit of arcane "
+                    "current for the wise. MAGIC heroes ONLY."),
+        "flavor": "Tongkat bijak yang mendengar denyut setiap mantra.",
+    },
+
+    "fulgur_scepter": {
+        "name": "Fulgur Scepter",
+        "category": CATEGORY_BURST,
+        "cost": 6000,
+        "icon": "fulgur_scepter.png",
+        "color": (255, 180, 60),
+        "glow": (255, 220, 120),
+        "stats": {
+            "damage": 15,
+            "hp": 200,
+            "skill_amp": 0.10,
+            "spell_vamp": 0.08,
+        },
+        "active": {
+            # Energy Blast: otomatis saat menyerang - semburan energi
+            # besar ke target seranganmu (burst magic murni).
+            "name": "Energy Blast",
+            "damage": 300,
+            "cooldown": 1080,        # 18 detik
+        },
+        "melee_only": False,
+        "magic_only": True,
+        "drops_on_death": False,
+        "desc": ("+15 Damage, +200 HP, 10% SKILL AMP, 8% Spell "
+                 "Lifesteal. Saat menyerang (auto): Energy Blast - "
+                 "hantam target dengan 300 magic damage (CD 18 dtk). "
+                 "HANYA hero Magic."),
+        "desc_en": ("+15 Damage, +200 HP, 10% SKILL AMP, 8% Spell "
+                    "Lifesteal. When attacking (auto): Energy Blast - "
+                    "slams your target for 300 magic damage (18s CD). "
+                    "MAGIC heroes ONLY."),
+        "flavor": "Tongkat petir yang menyimpan satu badai di ujungnya.",
+    },
+
+    "hex_idol": {
+        "name": "Hex Idol",
+        "category": CATEGORY_CONTROL,
+        "cost": 5750,
+        "icon": "hex_idol.png",
+        "color": (170, 220, 90),
+        "glow": (210, 255, 140),
+        "stats": {
+            "hp": 250,
+            "hp_regen": 4,
+            "spell_vamp": 0.06,
+            "cooldown_reduction": 0.10,
+        },
+        "active": {
+            # Hexcraft: otomatis saat menyerang - target di-HEX
+            # (stun penuh + silence) selama 2.5 detik.
+            "name": "Hexcraft",
+            "stun": 150,             # 2.5 detik
+            "silence": 150,          # 2.5 detik
+            "cooldown": 1800,        # 30 detik
+        },
+        "melee_only": False,
+        "magic_only": True,
+        "drops_on_death": False,
+        "desc": ("+250 HP, +4 HP/reg, 6% Spell Lifesteal, 10% CDR. "
+                 "Saat menyerang (auto): HEX target - stun + silence "
+                 "selama 2.5 dtk (CD 30 dtk). HANYA hero Magic."),
+        "desc_en": ("+250 HP, +4 HP regen, 6% Spell Lifesteal, 10% "
+                    "CDR. When attacking (auto): HEX the target - "
+                    "stun + silence for 2.5s (30s CD). MAGIC heroes "
+                    "ONLY."),
+        "flavor": "Arca vodu yang mengubah musuh jadi boneka bisu.",
+    },
+
+    "rift_veil": {
+        "name": "Rift Veil",
+        "category": CATEGORY_BURST,
+        "cost": 5500,
+        "icon": "rift_veil.png",
+        "color": (130, 120, 240),
+        "glow": (180, 170, 255),
+        "stats": {
+            "hp": 260,
+            "hp_regen": 4,
+            "spell_vamp": 0.06,
+        },
+        "active": {
+            # Discord Field: otomatis saat >=2 musuh dekat - selubung
+            # kerentanan; musuh di sekitar MENERIMA +15% damage
+            # (semua jenis) selama 6 detik.
+            "name": "Discord Field",
+            "trigger_enemies": 2,
+            "radius": 320,
+            "damage_amp": 0.15,
+            "duration": 360,         # 6 detik
+            "cooldown": 1200,        # 20 detik
+        },
+        "melee_only": False,
+        "magic_only": True,
+        "drops_on_death": False,
+        "desc": ("+260 HP, +4 HP/reg, 6% Spell Lifesteal. Saat >=2 "
+                 "musuh dekat (auto): Discord Field - musuh dalam "
+                 "320px menerima +15% damage selama 6 dtk (CD 20 "
+                 "dtk). HANYA hero Magic."),
+        "desc_en": ("+260 HP, +4 HP regen, 6% Spell Lifesteal. When "
+                    "2+ enemies are near (auto): Discord Field - "
+                    "enemies within 320px take +15% damage for 6s "
+                    "(20s CD). MAGIC heroes ONLY."),
+        "flavor": "Cadar retakan yang menyingkap sisi rapuh musuh.",
+    },
+
+    "vital_stone": {
+        "name": "Vital Stone",
+        "category": CATEGORY_LIFESTEAL,
+        "cost": 5250,
+        "icon": "vital_stone.png",
+        "color": (230, 80, 110),
+        "glow": (255, 140, 170),
+        "stats": {
+            "hp": 320,
+            "hp_regen": 6,
+            "spell_vamp": 0.20,
+        },
+        "active": {
+            # Vitality Pact: otomatis saat HP kritis - pulihkan
+            # seperempat Max HP seketika.
+            "name": "Vitality Pact",
+            "hp_threshold": 0.35,
+            "heal_pct": 0.25,
+            "cooldown": 2700,        # 45 detik
+        },
+        "melee_only": False,
+        "magic_only": True,
+        "drops_on_death": False,
+        "desc": ("+320 HP, +6 HP/reg, 20% Spell Lifesteal. Saat HP < "
+                 "35% (auto): Vitality Pact - pulihkan 25% Max HP "
+                 "seketika (CD 45 dtk). HANYA hero Magic."),
+        "desc_en": ("+320 HP, +6 HP regen, 20% Spell Lifesteal. Below "
+                    "35% HP (auto): Vitality Pact - instantly restore "
+                    "25% Max HP (45s CD). MAGIC heroes ONLY."),
+        "flavor": "Batu darah yang berdegup menyamai jantung pemakainya.",
+    },
+
+    "vine_rod": {
+        "name": "Vine Rod",
+        "category": CATEGORY_CONTROL,
+        "cost": 5000,
+        "icon": "vine_rod.png",
+        "color": (90, 200, 120),
+        "glow": (150, 240, 170),
+        "stats": {
+            "damage": 15,
+            "hp": 240,
+            "hp_regen": 3,
+            "spell_vamp": 0.05,
+        },
+        "on_attack": {
+            # Entangle: setiap serangan (bila CD siap) mengikat kaki
+            # target dengan sulur - ROOT total (tak bisa bergerak)
+            # selama 1 detik.
+            "name": "Entangle",
+            "root_duration": 60,     # 1 detik
+            "cooldown": 540,         # 9 detik internal
+        },
+        "melee_only": False,
+        "magic_only": True,
+        "drops_on_death": False,
+        "desc": ("+15 Damage, +240 HP, +3 HP/reg, 5% Spell Lifesteal. "
+                 "Serangannya men-ROOT target 1 dtk (tak bisa "
+                 "bergerak; CD internal 9 dtk). HANYA hero Magic."),
+        "desc_en": ("+15 Damage, +240 HP, +3 HP regen, 5% Spell "
+                    "Lifesteal. Your attacks ROOT the target for 1s "
+                    "(cannot move; 9s internal CD). MAGIC heroes "
+                    "ONLY."),
+        "flavor": "Tongkat sulur hidup yang tak pernah melepaskan cengkeramannya.",
+    },
+
+    "spectral_charm": {
+        "name": "Spectral Charm",
+        "category": CATEGORY_UTILITY,
+        "cost": 5500,
+        "icon": "spectral_charm.png",
+        "color": (190, 220, 255),
+        "glow": (225, 240, 255),
+        "stats": {
+            "hp": 230,
+            "hp_regen": 3,
+            "move_speed_pct": 0.10,
+            "spell_vamp": 0.06,
+        },
+        "active": {
+            # Spectral Form: otomatis saat HP kritis - wujud hantu;
+            # SEMUA serangan fisik otomatis MELESET (evasion 100%,
+            # sihir tetap mengenai) selama 2.5 detik.
+            "name": "Spectral Form",
+            "hp_threshold": 0.30,
+            "duration": 150,         # 2.5 detik
+            "cooldown": 1500,        # 25 detik
+        },
+        "melee_only": False,
+        "magic_only": True,
+        "drops_on_death": False,
+        "desc": ("+230 HP, +3 HP/reg, +10% Move Speed, 6% Spell "
+                 "Lifesteal. Saat HP < 30% (auto): Spectral Form 2.5 "
+                 "dtk - semua serangan FISIK meleset (sihir tetap "
+                 "kena) (CD 25 dtk). HANYA hero Magic."),
+        "desc_en": ("+230 HP, +3 HP regen, +10% Move Speed, 6% Spell "
+                    "Lifesteal. Below 30% HP (auto): Spectral Form "
+                    "for 2.5s - all PHYSICAL attacks miss (magic "
+                    "still hits) (25s CD). MAGIC heroes ONLY."),
+        "flavor": "Jimat kabut yang membuat tubuhmu seketika tanpa wujud.",
+    },
 }
 
-# Urutan tampil di toko (sama dengan urutan permintaan pengguna)
-ITEM_SHOP_ORDER = [
-    # ── Halaman 1 (TIER I) ──
-    "dead_edge",
-    "holy_rapier",
-    "demon_maw",
-    "leviathan_heart",
-    "cleave_axe",
-    "steel_aegis",
-    "moon_shard",
-    "octarine_core",
-    # ── Halaman 2 (TIER II - paket legendary) ──
-    "scarlet_bulwark",
-    "monarch_wings",
-    "corroder",
-    "tempest_vane",
-    "fenrir_chain",
-    "sanguine_thorn",
-    "abyss_breaker",
-    "thunder_coil",
-    # ── Halaman 3 (TIER III - paket mythic) ──
-    "razor_carapace",
-    "everfrost_guard",
-    "sundering_cudgel",
-    "frostbound_eye",
-    "gale_pike",
-    "basilisk_breath",
-    "solar_brand",
-    "runic_gavel",
-    # ── Halaman 4 (TIER III - lanjutan) ──
-    "searbrand",
-]
+# ════════════════════════════════════════════════════════════
+# KATEGORI KELAS ITEM di ITEM FORGE: PHYSICAL / MAGIC / TANK
+#
+# Kelas item diturunkan dari flag & kategory-nya (magic_only dan
+# kategori caster/arcane/mystic -> MAGIC; kategori defensif ->
+# TANK; sisanya -> PHYSICAL), dengan override eksplisit untuk
+# kategori yang dipakai lintas kelas (CONTROL, UTILITY).
+# ════════════════════════════════════════════════════════════
+CLASS_PHYSICAL = "physical"
+CLASS_MAGIC = "magic"
+CLASS_TANK = "tank"
 
-# Jumlah item per halaman toko (grid 4x2). 16 item = 2 halaman.
+ITEM_CLASS_INFO = {
+    CLASS_PHYSICAL: ("PHYSICAL", (255, 150, 80)),
+    CLASS_MAGIC:    ("MAGIC",    (200, 145, 255)),
+    CLASS_TANK:     ("TANK",     (115, 225, 145)),
+}
+
+# Override eksplisit: kategori item-item ini dipakai lintas kelas,
+# jadi kelasnya diputuskan satu per satu.
+_ITEM_CLASS_OVERRIDES = {
+    "tempest_vane": CLASS_TANK,    # UTILITY - defensif (HP, kebal)
+    "abyss_breaker": CLASS_TANK,   # CONTROL - bruiser tank (heal amp,
+                                   # slow resist, HP besar)
+}
+
+_MAP_CATEGORY_TO_CLASS = {
+    # Caster / sihir
+    "caster": CLASS_MAGIC,
+    "arcane": CLASS_MAGIC,
+    "mystic": CLASS_MAGIC,
+    # Defensif
+    "tank": CLASS_TANK,
+    "guard": CLASS_TANK,
+    "thorn": CLASS_TANK,
+    "frost": CLASS_TANK,
+    "inferno": CLASS_TANK,
+    "as_armor": CLASS_TANK,
+    "mortal": CLASS_TANK,
+}
+
+
+def get_item_class(item_id):
+    """Kembalikan kelas item: CLASS_PHYSICAL / CLASS_MAGIC /
+    CLASS_TANK (dipakai untuk tab kategori di ITEM FORGE)."""
+    data = ITEM_CATALOG.get(item_id)
+    if not data:
+        return CLASS_PHYSICAL
+    if item_id in _ITEM_CLASS_OVERRIDES:
+        return _ITEM_CLASS_OVERRIDES[item_id]
+    if data.get("magic_only"):
+        return CLASS_MAGIC
+    return _MAP_CATEGORY_TO_CLASS.get(data.get("category"),
+                                      CLASS_PHYSICAL)
+
+
+# Jumlah item per halaman toko (grid 4x2)
 ITEMS_PER_PAGE = 8
+
+# Urutan item DI DALAM tiap kelas (urutan tampil antar halaman).
+CLASS_ITEM_ORDER = {
+    CLASS_PHYSICAL: [
+        # Physical 1: carry dasar + utility serang
+        "dead_edge", "holy_rapier", "demon_maw", "cleave_axe",
+        "moon_shard", "monarch_wings", "corroder", "fenrir_chain",
+        # Physical 2: late-game carry
+        "sanguine_thorn", "thunder_coil", "sundering_cudgel",
+        "frostbound_eye", "gale_pike", "basilisk_breath",
+    ],
+    CLASS_MAGIC: [
+        # Magic 1: inti caster
+        "octarine_core", "runic_gavel", "astral_codex",
+        "sage_scepter", "fulgur_scepter", "hex_idol", "rift_veil",
+        "vital_stone",
+        # Magic 2: sisa paket MAGIC ONLY
+        "vine_rod", "spectral_charm",
+    ],
+    CLASS_TANK: [
+        "leviathan_heart", "steel_aegis", "scarlet_bulwark",
+        "tempest_vane", "abyss_breaker", "razor_carapace",
+        "everfrost_guard", "solar_brand", "searbrand",
+    ],
+}
+
+
+def _build_shop_pages():
+    """Pecah item menjadi halaman toko, SELARAS batas kelas:
+    tiap kelas menempati halaman genap (tidak tercampur dengan
+    kelas lain di halaman yang sama)."""
+    pages = []
+    meta = []          # (kelas, nomor-halaman-dalam-kelas, total)
+    for cls in (CLASS_PHYSICAL, CLASS_MAGIC, CLASS_TANK):
+        ids = CLASS_ITEM_ORDER[cls]
+        n = max(1, (len(ids) + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE)
+        for p in range(n):
+            pages.append(ids[p * ITEMS_PER_PAGE:(p + 1) * ITEMS_PER_PAGE])
+            meta.append((cls, p + 1, n))
+    return pages, meta
+
+
+SHOP_PAGES, SHOP_PAGE_META = _build_shop_pages()
+
+# Urutan flatten semua item (kompatibel dengan kode lama yang
+# membaca ITEM_SHOP_ORDER; tetap berisi SEMUA 33 item).
+ITEM_SHOP_ORDER = [sid for page in SHOP_PAGES for sid in page]
 
 # Kategori -> label & warna aksen di UI
 CATEGORY_INFO = {
@@ -1075,6 +1491,7 @@ CATEGORY_INFO = {
     CATEGORY_INFERNO:   ("INFERNO",    (255, 210, 120)),
     CATEGORY_ARCANE:    ("ARCANE",     (235, 180, 255)),
     CATEGORY_MORTAL:    ("MORTAL",     (255, 140, 100)),
+    CATEGORY_MYSTIC:    ("MYSTIC",     (210, 155, 255)),
 }
 
 
@@ -1197,6 +1614,16 @@ class HeroItemInventory:
             "charge_time"]
         # Searbrand (Brand Burst)
         self.searbrand_cd = 0
+        # Astral Codex (Arcane Nova) - item atribut Magic
+        self.arcane_cd = 0
+        # ═══ PAKET MAGIC (7 item atribut Magic) ═══
+        self.fulgur_cd = 0       # Fulgur Scepter (Energy Blast)
+        self.hex_cd = 0          # Hex Idol (Hexcraft)
+        self.rift_cd = 0         # Rift Veil (Discord Field)
+        self.pact_cd = 0         # Vital Stone (Vitality Pact)
+        self.vine_cd = 0         # Vine Rod (Entangle on-hit)
+        self.ghost_timer = 0     # Spectral Charm (Spectral Form aktif)
+        self.ghost_cd = 0
 
     # ── Manajemen slot ────────────────────────────────────
     def count(self, item_id):
@@ -1219,6 +1646,10 @@ class HeroItemInventory:
             rng = getattr(self.hero, "range", 100)
             if rng and rng > 80:
                 return False
+        # Magic-only check (Astral Codex): hanya hero beratribut
+        # Magic (role mage/sorcerer/caster/dst.) yang boleh memakai.
+        if data.get("magic_only") and not is_magic_hero(self.hero):
+            return False
         for i in range(MAX_ITEM_SLOTS):
             if self.slots[i] is None:
                 self.slots[i] = item_id
@@ -1283,6 +1714,15 @@ class HeroItemInventory:
         self.gale_cd = 0
         self.pierce_bash_cd = 0
         self.searbrand_cd = 0
+        self.arcane_cd = 0
+        # Paket Magic
+        self.fulgur_cd = 0
+        self.hex_cd = 0
+        self.rift_cd = 0
+        self.pact_cd = 0
+        self.vine_cd = 0
+        self.ghost_timer = 0
+        self.ghost_cd = 0
         if self.has("runic_gavel"):
             self.empower_charge = ITEM_CATALOG["runic_gavel"][
                 "passive"]["charge_time"]
@@ -1376,9 +1816,27 @@ class HeroItemInventory:
     def get_spell_vamp(self):
         return self._sum_stat("spell_vamp")
 
+    def get_skill_amp(self):
+        """Persentase amplifikasi damage skill (Astral Codex).
+
+        Dibaca oleh property ``Hero.skill_damage`` di _entity.py -
+        semua handler skill (Q/W/E/R, 274+ call site di hero_skills/)
+        membaca property itu, jadi amplifikasi otomatis berlaku ke
+        seluruh skill tanpa mengubah handler mana pun. Cap 50%.
+        """
+        return min(0.5, self._sum_stat("skill_amp"))
+
     # ── Getter stat Tier II ──────────────────────────────
     def get_evasion(self):
-        """Peluang menghindari serangan fisik (cap 50%)."""
+        """Peluang menghindari serangan fisik (cap 50%).
+
+        PENGECUALIAN Spectral Charm: selama Spectral Form aktif,
+        pemilik berwujud hantu - SEMUA serangan fisik (normal/
+        projectile) otomatis MELESET (evasion efektif 100%, sihir
+        tetap mengenainya; True Strike musuh tetap menembus).
+        """
+        if self.ghost_timer > 0 and self.has("spectral_charm"):
+            return 1.0
         return min(0.5, self._sum_stat("evasion"))
 
     def get_move_speed_pct(self):
@@ -1535,7 +1993,10 @@ class HeroItemInventory:
                      # Tier III
                      "thorn_timer", "thorn_cd", "arctic_cd",
                      "gale_timer", "gale_cd", "pierce_bash_cd",
-                     "searbrand_cd"):
+                     "searbrand_cd", "arcane_cd",
+                     # Paket Magic
+                     "fulgur_cd", "hex_cd", "rift_cd", "pact_cd",
+                     "vine_cd", "ghost_timer", "ghost_cd"):
             if getattr(self, attr, 0) > 0:
                 setattr(self, attr, getattr(self, attr) - dt)
         if self.rend_timer <= 0:
@@ -1726,6 +2187,88 @@ class HeroItemInventory:
                                ITEM_CATALOG["searbrand"]["glow"])
                     _fx_chain(h, near,
                               ITEM_CATALOG["searbrand"]["color"])
+            # Astral Codex - Arcane Nova saat >=2 musuh dekat
+            # (damage + SILENCE - kemampuan kontrol utama item
+            # atribut Magic).
+            if self.has("astral_codex") and self.arcane_cd <= 0 \
+                    and enemies:
+                act = ITEM_CATALOG["astral_codex"]["active"]
+                near = [e for e in enemies
+                        if getattr(e, "alive", False)
+                        and math.hypot(e.x - h.x, e.y - h.y)
+                        <= act["radius"]]
+                if len(near) >= act["trigger_enemies"]:
+                    self.arcane_cd = act["cooldown"]
+                    for e in near:
+                        try:
+                            e.take_damage(act["damage"], h.team,
+                                          "magic")
+                        except TypeError:
+                            e.take_damage(act["damage"], h.team)
+                        _apply_silence_to(e, act["silence_duration"])
+                    _fx_notify(h, "ARCANE NOVA!",
+                               ITEM_CATALOG["astral_codex"]["glow"])
+                    _fx_chain(h, near,
+                              ITEM_CATALOG["astral_codex"]["color"])
+
+            # ═══ PAKET MAGIC AUTO-TRIGGERS ═══
+            # Fulgur Scepter - Energy Blast saat menyerang target hidup
+            if self.has("fulgur_scepter") and self.fulgur_cd <= 0:
+                tgt = getattr(h, "target", None)
+                if tgt is not None and getattr(tgt, "alive", False) \
+                        and getattr(tgt, "team", None) != h.team:
+                    act = ITEM_CATALOG["fulgur_scepter"]["active"]
+                    self.fulgur_cd = act["cooldown"]
+                    try:
+                        tgt.take_damage(act["damage"], h.team, "magic")
+                    except TypeError:
+                        tgt.take_damage(act["damage"], h.team)
+                    _fx_notify(tgt, "ENERGY BLAST!",
+                               ITEM_CATALOG["fulgur_scepter"]["glow"])
+            # Hex Idol - Hexcraft saat menyerang target hidup
+            if self.has("hex_idol") and self.hex_cd <= 0:
+                tgt = getattr(h, "target", None)
+                if tgt is not None and getattr(tgt, "alive", False) \
+                        and getattr(tgt, "team", None) != h.team:
+                    act = ITEM_CATALOG["hex_idol"]["active"]
+                    self.hex_cd = act["cooldown"]
+                    _apply_stun_to(tgt, act["stun"])
+                    _apply_silence_to(tgt, act["silence"])
+                    _fx_notify(tgt, "HEX!",
+                               ITEM_CATALOG["hex_idol"]["glow"])
+            # Rift Veil - Discord Field saat >=2 musuh dekat
+            if self.has("rift_veil") and self.rift_cd <= 0 and enemies:
+                act = ITEM_CATALOG["rift_veil"]["active"]
+                near = [e for e in enemies
+                        if getattr(e, "alive", False)
+                        and math.hypot(e.x - h.x, e.y - h.y)
+                        <= act["radius"]]
+                if len(near) >= act["trigger_enemies"]:
+                    self.rift_cd = act["cooldown"]
+                    for e in near:
+                        _apply_amp_to(e, act["damage_amp"],
+                                      act["duration"])
+                    _fx_notify(h, "DISCORD FIELD!",
+                               ITEM_CATALOG["rift_veil"]["glow"])
+                    _fx_chain(h, near,
+                              ITEM_CATALOG["rift_veil"]["color"])
+            # Vital Stone - Vitality Pact saat HP kritis
+            if self.has("vital_stone") and self.pact_cd <= 0:
+                act = ITEM_CATALOG["vital_stone"]["active"]
+                if ratio < act["hp_threshold"]:
+                    self.pact_cd = act["cooldown"]
+                    heal = int(h.max_hp * act["heal_pct"])
+                    h.hp = min(h.max_hp, h.hp + heal)
+                    _fx_notify(h, "VITALITY PACT!",
+                               ITEM_CATALOG["vital_stone"]["glow"])
+            # Spectral Charm - Spectral Form saat HP kritis
+            if self.has("spectral_charm") and self.ghost_cd <= 0:
+                act = ITEM_CATALOG["spectral_charm"]["active"]
+                if ratio < act["hp_threshold"]:
+                    self.ghost_timer = act["duration"]
+                    self.ghost_cd = act["cooldown"]
+                    _fx_notify(h, "SPECTRAL FORM!",
+                               ITEM_CATALOG["spectral_charm"]["glow"])
 
         # HP regen (base item regen + Leviathan out-of-combat +
         # Octarine small regen sudah termasuk angka stat).
@@ -1953,6 +2496,20 @@ class HeroItemInventory:
                     target.take_damage(bonus, h.team)
                 _fx_notify(target, "EMPOWER!",
                            ITEM_CATALOG["runic_gavel"]["glow"])
+
+        # ── Vine Rod: Entangle (root gerak, CD internal) ──
+        if self.has("vine_rod") and self.vine_cd <= 0:
+            vr = ITEM_CATALOG["vine_rod"]["on_attack"]
+            self.vine_cd = vr["cooldown"]
+            rooted = False
+            if hasattr(target, "apply_slow"):
+                # ROOT = slow total 100%. Target masih bisa menyerang
+                # / mengeluarkan skill, tapi tak bisa berpindah.
+                target.apply_slow(1.0, vr["root_duration"])
+                rooted = True
+            if rooted:
+                _fx_notify(target, "ROOT!",
+                           ITEM_CATALOG["vine_rod"]["glow"])
 
     def on_ranged_attack_hit(self, target, damage, all_units=None):
         """On-hit Tier II untuk hero ranged (tanpa lifesteal/cleave -
@@ -2253,12 +2810,16 @@ def suggest_item_for_hero(hero, owned):
                 "monarch_wings", "thunder_coil", "sanguine_thorn",
                 "moon_shard", "runic_gavel", "corroder", "demon_maw",
                 "octarine_core", "steel_aegis"]
-    elif "mage" in role or "trickster" in role:
-        pool = ["octarine_core", "runic_gavel", "searbrand",
-                "solar_brand", "frostbound_eye", "everfrost_guard",
-                "tempest_vane", "corroder", "moon_shard",
-                "thunder_coil", "steel_aegis", "demon_maw",
-                "dead_edge"]
+    elif "mage" in role or "trickster" in role or is_magic_hero(hero):
+        # Pool hero beratribut Magic: paket MAGIC ONLY diutamakan
+        # (skill amp, burst, kontrol hex, clutch heal, dst.).
+        pool = ["astral_codex", "fulgur_scepter", "sage_scepter",
+                "hex_idol", "rift_veil", "vital_stone",
+                "spectral_charm", "vine_rod", "octarine_core",
+                "runic_gavel", "searbrand", "solar_brand",
+                "frostbound_eye", "everfrost_guard", "tempest_vane",
+                "corroder", "moon_shard", "thunder_coil",
+                "steel_aegis", "demon_maw", "dead_edge"]
     else:
         pool = ["steel_aegis", "searbrand", "sundering_cudgel",
                 "frostbound_eye", "razor_carapace", "moon_shard",
@@ -2278,6 +2839,8 @@ def suggest_item_for_hero(hero, owned):
             continue
         data = ITEM_CATALOG[sid]
         if data.get("melee_only") and not is_melee:
+            continue
+        if data.get("magic_only") and not is_magic_hero(hero):
             continue
         return sid
     return None
@@ -2328,6 +2891,27 @@ class HeroItemRenderer:
                     or (sid == "searbrand" and inv.searbrand_cd > 0
                         and inv.searbrand_cd
                         > ITEM_CATALOG["searbrand"]["active"]["cooldown"]
+                        - 30)
+                    or (sid == "astral_codex" and inv.arcane_cd > 0
+                        and inv.arcane_cd
+                        > ITEM_CATALOG["astral_codex"]["active"]["cooldown"]
+                        - 30)
+                    or (sid == "spectral_charm" and inv.ghost_timer > 0)
+                    or (sid == "fulgur_scepter" and inv.fulgur_cd > 0
+                        and inv.fulgur_cd
+                        > ITEM_CATALOG["fulgur_scepter"]["active"]["cooldown"]
+                        - 30)
+                    or (sid == "hex_idol" and inv.hex_cd > 0
+                        and inv.hex_cd
+                        > ITEM_CATALOG["hex_idol"]["active"]["cooldown"]
+                        - 30)
+                    or (sid == "rift_veil" and inv.rift_cd > 0
+                        and inv.rift_cd
+                        > ITEM_CATALOG["rift_veil"]["active"]["cooldown"]
+                        - 30)
+                    or (sid == "vital_stone" and inv.pact_cd > 0
+                        and inv.pact_cd
+                        > ITEM_CATALOG["vital_stone"]["active"]["cooldown"]
                         - 30))
                 if _active:
                     g = pygame.Surface(
@@ -2633,6 +3217,10 @@ class ItemShopUI:
         _im = getattr(hero, "is_melee_hero", None)
         kind = "MELEE" if (_im if _im is not None else rng < 110) \
             else "RANGED"
+        # Penanda atribut Magic - membantu pemain mengenali hero yang
+        # bisa memakai item "MAGIC ONLY" (Astral Codex).
+        if is_magic_hero(hero):
+            kind += "  MAGIC"
         dmg = int(hero.damage)
         hp = int(hero.max_hp)
         inv = hero.items
@@ -2717,12 +3305,12 @@ class ItemShopUI:
 
     @classmethod
     def _page_count(cls):
-        return max(1, (len(ITEM_SHOP_ORDER) + ITEMS_PER_PAGE - 1)
-                   // ITEMS_PER_PAGE)
+        return len(SHOP_PAGES)
 
     @classmethod
     def _draw_page_tabs(cls, surface, game, px, py):
-        """Tab tier di bawah info hero - lebar tetap, label jelas."""
+        """Tab kategori kelas: PHYSICAL / MAGIC / TANK (paginasi
+        per kelas, maksimal ITEMS_PER_PAGE item per halaman)."""
         pages = cls._page_count()
         if pages <= 1:
             return
@@ -2732,17 +3320,19 @@ class ItemShopUI:
         th = 36
         gap = 10
         tab_font = get_font(19, "body_bold")
-        tab_labels = ("TIER I - CORE", "TIER II - LEGENDARY",
-                      "TIER III - MYTHIC", "TIER III+ - MYTHIC II")
-        # Lebar tab mengikuti label (dulu tetap 180 px sehingga
-        # label panjang saling menabrak).
-        tab_ws = [ui_theme.tab_width(tab_font, lab, min_w=150)
-                  for lab in tab_labels[:pages]]
+        # Label & warna tab mengikuti kelas halaman: PHYSICAL 1/2,
+        # MAGIC 2/2, dst. Lebar tab otomatis mengikuti label.
+        tab_labels = []
+        tab_colors = []
+        for cls_key, idx, total in SHOP_PAGE_META:
+            name, color = ITEM_CLASS_INFO[cls_key]
+            tab_labels.append(f"{name} {idx}/{total}")
+            tab_colors.append(color)
+        tab_ws = [ui_theme.tab_width(tab_font, lab, min_w=130)
+                  for lab in tab_labels]
         total = sum(tab_ws) + gap * (pages - 1)
         sx = px + (cls.PANEL_W - total) // 2
         sy = py + 160
-        tab_colors = [ui_theme.GOLD, ui_theme.CYAN,
-                      ui_theme.VIOLET, ui_theme.ORANGE]
         tx = sx
         for i in range(pages):
             rect = pygame.Rect(tx, sy, tab_ws[i], th)
@@ -2751,7 +3341,7 @@ class ItemShopUI:
             ui_theme.tab(surface, game.ui_buttons,
                          f"itemshop_page_{i}", rect,
                          tab_labels[i],
-                         tab_colors[i % len(tab_colors)],
+                         tab_colors[i],
                          tab_font,
                          active=active,
                          hover=rect.collidepoint(*pygame.mouse.get_pos()))
@@ -2776,15 +3366,16 @@ class ItemShopUI:
                 game.itemshop_page = 0
             except Exception:
                 pass
-        page_items = ITEM_SHOP_ORDER[cur * ITEMS_PER_PAGE:
-                                     (cur + 1) * ITEMS_PER_PAGE]
+        page_items = SHOP_PAGES[cur]
 
         inv = None
         is_melee = False
+        is_magic = False
         if hero is not None:
             inv = getattr(hero, "items", None)
             rng = getattr(hero, "range", 0) or 0
             is_melee = rng <= 80
+            is_magic = is_magic_hero(hero)
 
         for idx, sid in enumerate(page_items):
             row = idx // cols
@@ -2798,15 +3389,18 @@ class ItemShopUI:
             slot_full = (inv is not None
                          and inv.used_slots() + queued >= MAX_ITEM_SLOTS)
             melee_ok = (not data.get("melee_only")) or is_melee
+            magic_ok = (not data.get("magic_only")) or is_magic
             can_buy = (inv is not None and can_afford
-                       and not slot_full and melee_ok)
+                       and not slot_full and melee_ok and magic_ok)
             cls._draw_item_card(surface, game, data, sid, x, y,
                                 card_w, card_h, owned_count, can_buy,
-                                is_melee, has_hero=inv is not None)
+                                is_melee, is_magic,
+                                has_hero=inv is not None)
 
     @classmethod
     def _draw_item_card(cls, surface, game, data, sid, x, y, w, h,
-                         owned_count, can_buy, is_melee, has_hero=True):
+                         owned_count, can_buy, is_melee, is_magic=False,
+                         has_hero=True):
         # Card premium: gradasi + border kategori + sudut emas
         rect = pygame.Rect(x, y, w, h)
         if ui_theme.cheap_alpha():
@@ -2829,9 +3423,23 @@ class ItemShopUI:
         if icon is not None:
             surface.blit(icon, (x + 10, y + 10))
 
-        # Nama (dipangkas rapi supaya tidak keluar kartu)
+        # Badge kelas (PHYSICAL / MAGIC / TANK) di pojok kanan atas
+        cls_label, cls_color = ITEM_CLASS_INFO[get_item_class(sid)]
+        bf = get_font(14, "body_bold")
+        bt = bf.render(cls_label, True, cls_color)
+        badge_w = bt.get_width() + 12
+        badge_rect = pygame.Rect(x + w - badge_w - 8, y + 8,
+                                 badge_w, 20)
+        pygame.draw.rect(surface, (18, 22, 36), badge_rect,
+                         border_radius=6)
+        pygame.draw.rect(surface, cls_color, badge_rect, 1,
+                         border_radius=6)
+        surface.blit(bt, bt.get_rect(center=badge_rect.center))
+
+        # Nama (dipangkas rapi supaya tidak keluar kartu / tidak
+        # bertabrakan dengan badge kelas)
         nf = get_font(24, "body_bold")
-        name_max_w = w - (icon_size + 18) - 12
+        name_max_w = w - (icon_size + 18) - 12 - badge_w - 8
         name_show = ui_theme.fit_ellipsis(nf, data["name"], name_max_w)
         nt = nf.render(name_show, True, data["glow"])
         surface.blit(nt, (x + icon_size + 18, y + 12))
@@ -2875,6 +3483,8 @@ class ItemShopUI:
         else:
             label = ("MELEE ONLY" if (data.get("melee_only")
                                       and not is_melee)
+                     else "MAGIC ONLY" if (data.get("magic_only")
+                                           and not is_magic)
                      else "NOT AFFORDABLE" if has_hero
                      else "SELECT HERO")
             ui_theme.pill(surface, {}, "n/a", label, btn, "locked",
@@ -3002,6 +3612,11 @@ def _try_buy(game, sid):
         return
     if data.get("melee_only") and (getattr(hero, "range", 0) or 0) > 80:
         _play_error()
+        return
+    if data.get("magic_only") and not is_magic_hero(hero):
+        _play_error()
+        _notify(game, tr("magic_only_denied", hero=hero.name),
+                (255, 150, 150))
         return
     if getattr(hero, "alive", False):
         if not hero.items.add(sid):

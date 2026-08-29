@@ -18,7 +18,7 @@ assets/
 ├── icon.png                    512x512  ikon aplikasi (WAJIB untuk rilis)
 ├── presplash.png               1280x720 layar pembuka saat Python dimuat
 ├── logo.png                    (opsional) logo di splash screen game
-└── items/                      ikon item ITEM FORGE (25 PNG)
+└── items/                      ikon item ITEM FORGE (33 PNG)
 ```
 
 Castle dan Hero menggunakan rendering prosedural murni berbasis kode (code base)
