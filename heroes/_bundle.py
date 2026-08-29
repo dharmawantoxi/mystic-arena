@@ -4450,6 +4450,30 @@ class _NS_kaizen:
                                      (*p["wind_bright"], int(110 * (1 - t))),
                                      (mx, my), 1)
 
+        # ── rim-light: sinyal angin biru di tepi yang menghadap cahaya ──
+        # v2 (visual): garis 1px warna angin pada tepi depan siluet supaya
+        # Kaizen "pop" saat unit bertumpuk (setara rimlight Gornak masterwork).
+        # `pt()` sudah membalik tanda saat facing -1, jadi cukup pakai dx
+        # positif (tepi depan).
+        pulse = 0.72 + 0.28 * math.sin(phase * 1.8)
+        rim_a = int(150 * pulse)
+        rim_col = (*p["wind_light"], rim_a)
+        rim_hot = (*p["wind_white"], int(205 * pulse))
+        # puncak rambut & poni (sisi depan mahkota)
+        _NS_kaizen._aaline(surface, rim_col, pt(0, -54), pt(4, -47), 1)
+        _NS_kaizen._aaline(surface, rim_col, pt(4, -47), pt(10, -45), 1)
+        _NS_kaizen._aaline(surface, rim_hot, pt(1, -52), pt(4, -48), 1)
+        # tepi atas pauldron (bahu pedang) — kilau ganda
+        _NS_kaizen._aaline(surface, rim_col, pt(8, -19), pt(19, -16), 1)
+        _NS_kaizen._aaline(surface, rim_hot, pt(10, -19), pt(16, -17), 1)
+        # tepi depan torso & jaket
+        _NS_kaizen._aaline(surface, rim_col, pt(14, -12), pt(12, 8), 1)
+        # tepi depan paha & boot depan
+        _NS_kaizen._aaline(surface, rim_col, pt(9, 26), pt(12, 39), 1)
+        _NS_kaizen._aacircle(surface, rim_hot, pt(12, 40), 1)
+        # glint kecil pada gagang katana saat diam
+        _NS_kaizen._aacircle(surface, rim_hot, pt(15, 1), 1)
+
         if detail:
             # Portrait-only micro-detail. At arena scale these marks would
             # collapse into noise, so LOD keeps them out of gameplay cache.
@@ -4527,7 +4551,24 @@ class _NS_kaizen:
             pygame.draw.aalines(surface, p["wind_mid"], False, hamon)
         _NS_kaizen._aacircle(surface, p["steel_shine"], (int(tx), int(ty)), 2)
 
+        # v2 (visual): kilau spekular yang meluncur di sepanjang bilah —
+        # titik cahaya bergerak dari pangkal ke ujung, memberi kesan logam
+        # yang hidup walau diam.
+        glint_t = (phase * .85) % 1.0
+        gx = hx + ux * length * glint_t + px * 1.2
+        gy = hy + uy * length * glint_t + py * 1.2
+        _NS_kaizen._aacircle(surface, (*p["steel_shine"], 210),
+                             (int(gx), int(gy)), 1)
+        _NS_kaizen._aacircle(surface, (*p["wind_white"], 160),
+                             (int(gx - ux * 3), int(gy - uy * 3)), 1)
+
         if attacking:
+            # v2 (visual): bilah menyala angin saat menyerang — garis cyan
+            # terang di sepanjang tepi potong, makin tebal di tengah ayunan.
+            _NS_kaizen._aaline(surface, (*p["wind_bright"], 190),
+                               (hx + px * 2, hy + py * 2), (tx, ty), 2)
+            _NS_kaizen._aaline(surface, (*p["wind_white"], 120),
+                               (hx + px * 3, hy + py * 3), (tx, ty), 1)
             # v2 (animasi): afterimage gerak pisau — beberapa siluet katana
             # memudar di belakang ayunan, memunculkan kesan kecepatan slash.
             # Setiap ghost adalah blade utuh (guard + bilah) pada sudut
