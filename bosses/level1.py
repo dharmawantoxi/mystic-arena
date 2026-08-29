@@ -5559,292 +5559,549 @@ class _NS_drakar:
     # ================================================================
     # SKILL Q: BATTLE HUNGER
     # ================================================================
+    # ================================================================
+    # SKILL Q: BATTLE HUNGER — jejak api mematikan ke target
+    # ================================================================
     def _draw_battlehunger_ground(surface, boss, x, y, timer, phase):
+        """Ground FX: aura api besar menyala di bawah target + ring berputar."""
         P = _NS_drakar.PALETTE
         tx, ty = _NS_drakar._target_position(boss, x, y)
         duration = _NS_drakar.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / max(1, duration)))
-        r = int(65 * min(1.0, progress * 3))
-        if r > 3:
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(P["blood_darkest"], 200),
-                (tx - r, ty - r//3, r*2, r*2//3))
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(P["blood_dark"], 180),
-                (tx - r+4, ty - r//3+3, r*2-8, r*2//3-6))
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(P["rage_mid"], 130),
-                (tx - r+10, ty - r//3+6, r*2-20, r*2//3-12))
+
+        # Aura tanah tumbuh cepat — radius besar
+        r = int(110 * min(1.0, progress * 1.8))
+        if r < 6:
+            return
+        pulse = math.sin(phase * 3.0) * 0.22 + 0.78
+
+        # Isi penuh (filled) aura terluar — kesan bara menyebar
+        for i, (scale, alpha_base, color) in enumerate([
+            (1.00, 230, P["blood_darkest"]),
+            (0.82, 210, P["blood_dark"]),
+            (0.66, 200, P["blood_mid"]),
+            (0.50, 180, P["rage_mid"]),
+            (0.36, 150, P["rage_light"]),
+        ]):
+            rr = int(r * scale)
+            a = _NS_drakar._alpha(alpha_base * pulse)
+            pygame.draw.ellipse(surface, _NS_drakar._rgba(color, a),
+                (tx-rr, ty-rr//3, rr*2, rr*2//3), max(1, 6-i))
+
+        # Ring berputar ganda — lebih tebal dan lebih banyak partikel
+        for ring_i in range(3):
+            ring_off = ring_i * math.pi * 2 / 3
+            ring_r   = int(r * (0.62 + ring_i * 0.1))
+            n_pts    = 20
+            for j in range(n_pts):
+                a_pt = phase * 2.2 + ring_off + j * math.pi * 2 / n_pts
+                px = tx + int(math.cos(a_pt) * ring_r)
+                py = ty + int(math.sin(a_pt) * ring_r * 0.38)
+                bright = (j + int(phase * 5)) % n_pts
+                color = P["rage_hot"] if bright < 5 else P["blood_light"]
+                sz = 5 if bright < 5 else 3
+                a = _NS_drakar._alpha(240 * pulse)
+                pygame.draw.rect(surface, _NS_drakar._rgba(color, a),
+                    (px-sz//2, py-sz//2, sz, sz))
+
+        # Garis radial pendek di tanah (api dari pusat)
+        for i in range(18):
+            ra = phase * 0.8 + i * math.pi * 2 / 18
+            r0 = int(r * 0.15)
+            r1 = int(r * 0.55)
+            x0 = tx + int(math.cos(ra) * r0)
+            y0 = ty + int(math.sin(ra) * r0 * 0.38)
+            x1 = tx + int(math.cos(ra) * r1)
+            y1 = ty + int(math.sin(ra) * r1 * 0.38)
+            a = _NS_drakar._alpha(200 * pulse)
+            col = P["rage_hot"] if i % 3 == 0 else P["blood_dark"]
+            pygame.draw.line(surface, _NS_drakar._rgba(col, a), (x0,y0), (x1,y1), 2)
 
     def _draw_battlehunger_foreground(surface, boss, x, y, timer, phase):
+        """Foreground FX: tiang api besar + jejak merah dari boss ke target."""
         P = _NS_drakar.PALETTE
         tx, ty = _NS_drakar._target_position(boss, x, y)
         duration = _NS_drakar.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / max(1, duration)))
-        r = int(65 * min(1.0, progress * 3))
-        if r < 5:
+        r = int(80 * min(1.0, progress * 2.5))
+        if r < 4:
             return
 
-        # Kolom api melingkar
-        for i in range(8):
-            col_angle = i * math.pi * 2 / 8 + phase * 0.15
-            col_dist  = int(r * 0.55)
+        pulse = math.sin(phase * 3.5) * 0.3 + 0.7
+
+        # TIANG API BESAR — 12 kolom berputar
+        for i in range(12):
+            col_angle = i * math.pi * 2 / 12 + phase * 0.25
+            col_dist  = int(r * 0.62)
             col_x     = tx + int(math.cos(col_angle) * col_dist)
-            col_y_base = ty + int(math.sin(col_angle) * col_dist * 0.4)
-            for layer in range(6):
-                lt = (phase * 0.7 + i * 0.3 + layer * 0.15) % 1.0
-                ly = col_y_base - int(lt * 38)
-                la = _NS_drakar._alpha(220 * (1 - lt))
-                lw = int(6 + lt * 3)
-                lh = int(4 + lt * 3)
+            col_y_base = ty + int(math.sin(col_angle) * col_dist * 0.38)
+            for layer in range(8):
+                lt = (phase * 0.8 + i * 0.22 + layer * 0.12) % 1.0
+                ly   = col_y_base - int(lt * 55)
+                la   = _NS_drakar._alpha(240 * (1 - lt) * pulse)
+                lw   = int(9 + lt * 4)
+                lh   = int(6 + lt * 4)
                 pygame.draw.ellipse(surface,
                     _NS_drakar._rgba(P["blood_darkest"], la),
                     (col_x-lw, ly-lh, lw*2, lh*2))
                 pygame.draw.ellipse(surface,
                     _NS_drakar._rgba(P["blood_dark"], la),
-                    (col_x-lw+1, ly-lh+1, max(1,lw*2-2), max(1,lh*2-2)))
+                    (col_x-lw+2, ly-lh+2, max(2,lw*2-4), max(2,lh*2-4)))
                 pygame.draw.ellipse(surface,
                     _NS_drakar._rgba(P["rage_mid"], la),
-                    (col_x-lw+2, ly-lh+2, max(1,lw*2-4), max(1,lh*2-4)))
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(P["rage_light"], la), (col_x, ly-1, 1, 1))
+                    (col_x-lw+4, ly-lh+3, max(2,lw*2-8), max(2,lh*2-6)))
+                if lt < 0.4:
+                    pygame.draw.rect(surface,
+                        _NS_drakar._rgba(P["rage_hot"], la),
+                        (col_x-1, ly-2, 3, 3))
+                    pygame.draw.rect(surface,
+                        _NS_drakar._rgba(P["white"], la),
+                        (col_x, ly-1, 1, 1))
 
-        # Inti
-        core_pulse = math.sin(phase * 3) * 0.4 + 0.6
-        for cr in range(11, 0, -1):
-            a = _NS_drakar._alpha(200 * (11-cr)/11 * core_pulse)
-            _NS_drakar._aacircle(surface,
-                _NS_drakar._rgba(P["blood_mid"], a), (tx, ty), cr)
-        _NS_drakar._aacircle(surface, P["rage_light"], (tx, ty), 3)
-        _NS_drakar._aacircle(surface, P["rage_hot"],   (tx, ty), 1)
+        # JEJAK API dari boss ke target (garis api berpartikel)
+        dx_total = tx - x
+        dy_total = ty - y
+        dist = max(1, math.hypot(dx_total, dy_total))
+        steps = max(4, int(dist / 14))
+        for step in range(steps):
+            t_step = step / max(1, steps - 1)
+            trail_t = (phase * 0.6 + step * 0.18) % 1.0
+            px = int(x + dx_total * t_step)
+            py = int(y + dy_total * t_step) - int(trail_t * 30)
+            ta = _NS_drakar._alpha(200 * (1 - trail_t) * pulse)
+            tw = int(8 + trail_t * 4)
+            if ta > 10:
+                pygame.draw.ellipse(surface,
+                    _NS_drakar._rgba(P["blood_dark"], ta),
+                    (px-tw, py-tw//2, tw*2, tw))
+                pygame.draw.ellipse(surface,
+                    _NS_drakar._rgba(P["rage_mid"], ta),
+                    (px-tw+2, py-tw//2+1, max(2,tw*2-4), max(2,tw-2)))
+
+        # INTI EKSPLOSIF di target
+        core_pulse = math.sin(phase * 4) * 0.5 + 0.5
+        for cr in range(22, 0, -1):
+            a = _NS_drakar._alpha(230 * (22-cr)/22 * (core_pulse * 0.5 + 0.5))
+            col = P["rage_hot"] if cr < 8 else (P["blood_mid"] if cr < 16 else P["blood_darkest"])
+            _NS_drakar._aacircle(surface, _NS_drakar._rgba(col, a), (tx, ty), cr)
+        _NS_drakar._aacircle(surface, P["blood_shine"], (tx, ty), 8)
+        _NS_drakar._aacircle(surface, P["rage_hot"],    (tx, ty), 5)
+        _NS_drakar._aacircle(surface, P["white"],       (tx, ty), 2)
+
+        # Percikan merah terbang dari inti
+        for i in range(16):
+            sp_angle = i * math.pi / 8 + phase * 0.7
+            sp_r = int(r * 0.55 + math.sin(phase * 2 + i) * 10)
+            sx = tx + int(math.cos(sp_angle) * sp_r)
+            sy = ty + int(math.sin(sp_angle) * sp_r * 0.38)
+            sa = _NS_drakar._alpha(220 * pulse)
+            pygame.draw.rect(surface, _NS_drakar._rgba(P["blood_hot"],  sa), (sx-1, sy-1, 4, 4))
+            pygame.draw.rect(surface, _NS_drakar._rgba(P["rage_light"], sa), (sx,   sy,   2, 2))
 
     # ================================================================
-    # SKILL W: COUNTER HELIX (ground)
+    # SKILL W: COUNTER HELIX — sabit berputar + ring darah
     # ================================================================
     def _draw_counterhelix_ground(surface, boss, x, y, timer, phase):
+        """Ground FX: ring besar berputar + partikel darah terbang."""
         P = _NS_drakar.PALETTE
         duration = _NS_drakar.SKILL_DUR["w"]
         progress = max(0.0, min(1.0, 1 - timer / max(1, duration)))
-        r = int(65 + progress * 32)
-        a = _NS_drakar._alpha(240 * (1 - progress * 0.5))
-        pygame.draw.ellipse(surface,
-            _NS_drakar._rgba(P["blood_darkest"], a),
-            (x-r, y+_NS_drakar.GROUND_DY-r//3, r*2, r*2//3), 4)
-        pygame.draw.ellipse(surface,
-            _NS_drakar._rgba(P["blood_mid"], a),
-            (x-r+5, y+_NS_drakar.GROUND_DY-r//3+4, r*2-10, r*2//3-8), 3)
-        pygame.draw.ellipse(surface,
-            _NS_drakar._rgba(P["blood_hot"], a),
-            (x-r+10, y+_NS_drakar.GROUND_DY-r//3+7, r*2-20, r*2//3-14), 2)
-        spin = progress * math.pi * 6
-        for i in range(4):
-            aa = spin + i * math.pi / 2
+        GY = y + _NS_drakar.GROUND_DY
+
+        # Ring aura tanah besar
+        r = int(90 + progress * 30)
+        a_ring = _NS_drakar._alpha(255 * (1 - progress * 0.4))
+        for i, (rr, thick, col) in enumerate([
+            (r,    6, P["blood_darkest"]),
+            (r-6,  4, P["blood_dark"]),
+            (r-12, 3, P["blood_mid"]),
+            (r-18, 2, P["blood_hot"]),
+            (r-24, 1, P["rage_light"]),
+        ]):
+            if rr > 4:
+                pygame.draw.ellipse(surface, _NS_drakar._rgba(col, a_ring),
+                    (x-rr, GY-rr//3, rr*2, rr*2//3), thick)
+
+        # Sabit berputar (4 lengan, masing-masing punya ekor panjang)
+        spin = progress * math.pi * 10 + phase * 2
+        for arm_i in range(4):
+            arm_start = spin + arm_i * math.pi / 2
+            # Ekor panjang (30 titik)
             arc_pts = []
-            for step in range(12):
-                st = step / 11
-                arc_a = aa + st * math.pi / 3
-                ax = x + int(math.cos(arc_a) * (r - 6))
-                ay = (y + _NS_drakar.GROUND_DY
-                      + int(math.sin(arc_a) * (r - 6) * 0.4))
-                arc_pts.append((ax, ay))
+            arc_span = math.pi * 1.1
+            for step in range(30):
+                st = step / 29
+                a_arc = arm_start - arc_span * st
+                rx = x + int(math.cos(a_arc) * (r - 8))
+                ry = GY + int(math.sin(a_arc) * (r - 8) * 0.38)
+                arc_pts.append((rx, ry))
+            # Gambar ekor berlapis (thick → thin)
             for k in range(len(arc_pts) - 1):
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(P["blood_light"], a),
-                    arc_pts[k], arc_pts[k+1], 3)
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(P["blood_hot"], a),
-                    arc_pts[k], arc_pts[k+1], 1)
+                fade = 1 - k / len(arc_pts)
+                aa = _NS_drakar._alpha(255 * fade)
+                width_map = [
+                    (12, P["blood_darkest"]),
+                    (9,  P["blood_dark"]),
+                    (6,  P["blood_mid"]),
+                    (4,  P["blood_light"]),
+                    (2,  P["blood_hot"]),
+                    (1,  P["rage_light"]),
+                ]
+                for thick, col in width_map:
+                    pygame.draw.line(surface, _NS_drakar._rgba(col, aa),
+                        arc_pts[k], arc_pts[k+1], thick)
+            # Ujung sabit (paling terang)
+            if arc_pts:
+                tip = arc_pts[0]
+                _NS_drakar._aacircle(surface, P["blood_shine"], tip, 6)
+                _NS_drakar._aacircle(surface, P["white"],       tip, 3)
+
+        # Partikel darah terbang keluar dari pusat
+        for i in range(28):
+            pa = spin * 0.8 + i * math.pi * 2 / 28
+            pr = int(r * 0.6 + math.sin(phase * 2 + i) * 16)
+            px = x + int(math.cos(pa) * pr)
+            py = GY + int(math.sin(pa) * pr * 0.38)
+            pa2 = _NS_drakar._alpha(220)
+            pygame.draw.rect(surface, _NS_drakar._rgba(P["blood_mid"],  pa2), (px-1,py-1,4,4))
+            pygame.draw.rect(surface, _NS_drakar._rgba(P["blood_hot"],  pa2), (px,  py,  2,2))
+            pygame.draw.rect(surface, _NS_drakar._rgba(P["rage_light"], pa2), (px,  py,  1,1))
 
     # ================================================================
-    # SKILL E: BERSERKER'S CALL
+    # SKILL E: BERSERKER'S CALL — teriakan perang + shockwave besar
     # ================================================================
     def _draw_berserkerscall_ground(surface, boss, x, y, timer, phase):
+        """Ground FX: shockwave ring berganda melebar dari kaki."""
         P = _NS_drakar.PALETTE
         duration = _NS_drakar.SKILL_DUR["e"]
         progress = max(0.0, min(1.0, 1 - timer / max(1, duration)))
-        if progress > 0.2:
-            t = (progress - 0.2) / 0.8
-            r = int(46 + t * 85)
-            base_a = _NS_drakar._alpha(240 * (1 - t))
-            for i in range(3):
-                a = _NS_drakar._alpha(base_a - i * 60)
-                if a > 0:
+        GY = y + _NS_drakar.GROUND_DY
+
+        # Aura tanah merah menetap selama skill aktif
+        base_r = int(55 + progress * 40)
+        base_pulse = math.sin(phase * 2.5) * 0.2 + 0.8
+        for i, (scale, col) in enumerate([
+            (1.00, P["blood_darkest"]),
+            (0.82, P["blood_dark"]),
+            (0.65, P["blood_mid"]),
+        ]):
+            rr = int(base_r * scale)
+            a = _NS_drakar._alpha(200 * base_pulse)
+            pygame.draw.ellipse(surface, _NS_drakar._rgba(col, a),
+                (x-rr, GY-rr//3, rr*2, rr*2//3), max(2, 5-i))
+
+        # Rune berputar di tanah
+        for i in range(16):
+            rune_a = phase * 0.5 + i * math.pi / 8
+            r1 = int(base_r * 0.55)
+            r2 = int(base_r * 0.9)
+            x1 = x + int(math.cos(rune_a) * r1)
+            y1 = GY + int(math.sin(rune_a) * r1 * 0.38)
+            x2 = x + int(math.cos(rune_a) * r2)
+            y2 = GY + int(math.sin(rune_a) * r2 * 0.38)
+            bright = (i + int(phase * 3)) % 16 < 3
+            col = P["blood_hot"] if bright else P["blood_light"]
+            thick = 3 if bright else 1
+            pygame.draw.line(surface, col, (x1,y1), (x2,y2), thick)
+
+        # Gelombang shockwave melebar
+        if progress > 0.15:
+            t = (progress - 0.15) / 0.85
+            for wave_i in range(3):
+                wave_t = (t + wave_i * 0.33) % 1.0
+                wr = int(wave_t * 160)
+                wa = _NS_drakar._alpha(240 * (1 - wave_t))
+                if wr > 4 and wa > 10:
                     pygame.draw.ellipse(surface,
-                        _NS_drakar._rgba(P["blood_mid"], a),
-                        (x-r-i*4, y+_NS_drakar.GROUND_DY-r//3-i,
-                         (r+i*4)*2, (r+i*4)*2//3), 3)
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(P["blood_hot"], base_a),
-                (x-r+5, y+_NS_drakar.GROUND_DY-r//3+4,
-                 r*2-10, r*2//3-8), 2)
+                        _NS_drakar._rgba(P["blood_mid"], wa),
+                        (x-wr, GY-wr//3, wr*2, wr*2//3), 4)
+                    pygame.draw.ellipse(surface,
+                        _NS_drakar._rgba(P["blood_hot"], wa),
+                        (x-wr+4, GY-wr//3+2, max(4,wr*2-8), max(2,wr*2//3-4)), 2)
+                    pygame.draw.ellipse(surface,
+                        _NS_drakar._rgba(P["rage_light"], wa),
+                        (x-wr+8, GY-wr//3+4, max(4,wr*2-16), max(2,wr*2//3-8)), 1)
 
     def _draw_berserkerscall_foreground(surface, boss, x, y, timer, phase):
+        """Foreground FX: teriakan aura + roar blast radius besar."""
         P = _NS_drakar.PALETTE
         duration = _NS_drakar.SKILL_DUR["e"]
         progress = max(0.0, min(1.0, 1 - timer / max(1, duration)))
-        if progress < 0.3:
-            t = progress / 0.3
-            glow_r = int(12 + t * 14)
-            for r in range(glow_r + 6, 0, -1):
-                a = _NS_drakar._alpha(180 * (glow_r+6-r) / (glow_r+6) * t)
+
+        if progress < 0.25:
+            # CHARGE — aura mengumpul di dada, menekan ke dalam
+            t = progress / 0.25
+            # Aura besar mengumpul
+            glow_r = int(18 + t * 22)
+            for r in range(glow_r + 14, 0, -2):
+                a = _NS_drakar._alpha(220 * (glow_r+14-r) / (glow_r+14) * t)
+                col = P["blood_dark"] if r > glow_r else P["rage_mid"]
+                _NS_drakar._aacircle(surface, _NS_drakar._rgba(col, a),
+                    (x, y - 14), r)
+            _NS_drakar._aacircle(surface, P["blood_mid"],   (x, y-14), glow_r-4)
+            _NS_drakar._aacircle(surface, P["rage_light"],  (x, y-14), glow_r-10)
+            _NS_drakar._aacircle(surface, P["rage_hot"],    (x, y-14), max(2, glow_r-14))
+            _NS_drakar._aacircle(surface, P["white"],       (x, y-14), max(1, glow_r-17))
+
+            # Partikel mengarah ke pusat (seperti tersedot)
+            for i in range(20):
+                angle = i * math.pi / 10 + phase * 0.5
+                dist = int(55 + math.sin(phase + i) * 15) * (1 - t * 0.7)
+                px = x + int(math.cos(angle) * dist)
+                py = (y - 14) + int(math.sin(angle) * dist * 0.65)
+                pa = _NS_drakar._alpha(220 * t)
+                sz = max(2, int(5 * t))
+                pygame.draw.ellipse(surface,
+                    _NS_drakar._rgba(P["blood_dark"], pa), (px-sz, py-sz//2, sz*2, sz))
+                pygame.draw.ellipse(surface,
+                    _NS_drakar._rgba(P["rage_mid"], pa), (px-sz+2, py-sz//2+1, max(2,sz*2-4), max(1,sz-2)))
+
+        elif progress < 0.45:
+            # ROAR BLAST — ledakan besar ke semua arah
+            t = (progress - 0.25) / 0.20
+            intensity = math.sin(t * math.pi)  # naik lalu turun
+            blast_r = int(20 + t * 130)
+
+            # Ring ledakan utama — SANGAT TEBAL
+            for layer, (thick, col, a_mult) in enumerate([
+                (18, P["blood_darkest"], 0.7),
+                (13, P["blood_dark"],    0.9),
+                (9,  P["blood_mid"],     1.0),
+                (6,  P["blood_light"],   1.0),
+                (4,  P["blood_hot"],     1.0),
+                (2,  P["rage_light"],    1.0),
+                (1,  P["white"],         1.0),
+            ]):
+                a = _NS_drakar._alpha(255 * intensity * a_mult)
+                if a > 5:
+                    _NS_drakar._aacircle(surface,
+                        _NS_drakar._rgba(col, a), (x, y-14), blast_r, thick)
+
+            # Spike energi radial (24 spike)
+            for i in range(24):
+                sp_angle = i * math.pi / 12 + phase * 0.3
+                sp_r1 = int(blast_r * 0.85)
+                sp_r2 = int(blast_r * 1.25 + intensity * 30)
+                px1 = x + int(math.cos(sp_angle) * sp_r1)
+                py1 = (y-14) + int(math.sin(sp_angle) * sp_r1 * 0.75)
+                px2 = x + int(math.cos(sp_angle) * sp_r2)
+                py2 = (y-14) + int(math.sin(sp_angle) * sp_r2 * 0.75)
+                a = _NS_drakar._alpha(255 * intensity)
+                thick = 5 if i % 3 == 0 else 2
+                pygame.draw.line(surface, _NS_drakar._rgba(P["blood_hot"], a), (px1,py1), (px2,py2), thick)
+                if i % 3 == 0:
+                    pygame.draw.line(surface, _NS_drakar._rgba(P["rage_light"], a), (px1,py1), (px2,py2), 2)
+                    pygame.draw.line(surface, _NS_drakar._rgba(P["white"], a), (px1,py1), (px2,py2), 1)
+
+            # Flash sentral
+            for r in range(30, 0, -2):
+                a = _NS_drakar._alpha(200 * intensity * (30-r)/30)
                 _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(P["blood_dark"], a), (x, y-4), r)
-            _NS_drakar._aacircle(surface, P["blood_mid"],   (x, y-4), 10)
-            _NS_drakar._aacircle(surface, P["rage_light"],  (x, y-4), 6)
-            _NS_drakar._aacircle(surface, P["rage_hot"],    (x, y-4), 3)
-            _NS_drakar._aacircle(surface, P["white"],       (x, y-4), 1)
-            for i in range(12):
-                angle = i * math.pi / 6
-                mx = x + int(math.cos(angle) * 32 * t)
-                my = y - 8 + int(math.sin(angle) * 26 * t)
-                a  = _NS_drakar._alpha(200 * t)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(P["blood_mid"], a), (mx, my), 4)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(P["rage_light"], a), (mx, my), 2)
+                    _NS_drakar._rgba(P["rage_mid"], a), (x, y-14), r)
+            _NS_drakar._aacircle(surface, P["blood_shine"], (x, y-14), 12)
+            _NS_drakar._aacircle(surface, P["white"],       (x, y-14), 6)
+
         else:
-            t = (progress - 0.3) / 0.7
-            wave_r = int(t * 140)
-            for i in range(30):
-                angle = i * math.pi * 2 / 30
-                px = x + int(math.cos(angle) * wave_r)
-                py = y - 8 + int(math.sin(angle) * wave_r * 0.7)
-                a = _NS_drakar._alpha(240 * (1 - t))
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(P["blood_dark"], a), (px, py), 5)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(P["blood_mid"], a), (px, py), 4)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(P["rage_light"], a), (px, py), 2)
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(P["rage_hot"], a), (px, py, 2, 2))
-                pygame.draw.rect(surface,
-                    _NS_drakar._rgba(P["white"], a), (px, py, 1, 1))
-            for i in range(14):
-                angle = i * math.pi / 7
-                inner_r = int(wave_r * 0.65)
-                outer_r = wave_r
-                p1 = (x + int(math.cos(angle) * inner_r),
-                      y - 8 + int(math.sin(angle) * inner_r * 0.7))
-                p2 = (x + int(math.cos(angle) * outer_r),
-                      y - 8 + int(math.sin(angle) * outer_r * 0.7))
-                a = _NS_drakar._alpha(220 * (1 - t))
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(P["blood_light"], a), p1, p2, 3)
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(P["rage_hot"], a), p1, p2, 1)
+            # AFTER-ROAR — gelombang memudar + partikel jatuh
+            t = (progress - 0.45) / 0.55
+            # Ring lanjutan memudar
+            for wave_i in range(2):
+                wave_t = (t * 1.5 + wave_i * 0.5) % 1.0
+                wr = int(140 + wave_t * 60)
+                wa = _NS_drakar._alpha(240 * (1 - wave_t) * (1 - t * 0.8))
+                if wr > 10 and wa > 8:
+                    _NS_drakar._aacircle(surface, _NS_drakar._rgba(P["blood_dark"], wa),
+                        (x, y-14), wr, 6)
+                    _NS_drakar._aacircle(surface, _NS_drakar._rgba(P["blood_mid"], wa),
+                        (x, y-14), wr-5, 3)
+                    _NS_drakar._aacircle(surface, _NS_drakar._rgba(P["rage_light"], wa),
+                        (x, y-14), wr-9, 1)
+
+            # Partikel merah jatuh
+            for i in range(24):
+                fall_t = (phase * 0.6 + i * 0.13) % 1.0
+                fa = math.pi * 2 * i / 24 + phase * 0.2
+                fr = int(80 + math.sin(phase+i) * 30)
+                fpx = x + int(math.cos(fa) * fr)
+                fpy = (y-14) + int(math.sin(fa) * fr * 0.6) + int(fall_t * 50)
+                fa2 = _NS_drakar._alpha(220 * (1-fall_t) * (1-t*0.7))
+                if fa2 > 10:
+                    pygame.draw.rect(surface,
+                        _NS_drakar._rgba(P["blood_dark"], fa2), (fpx-1,fpy-1,4,5))
+                    pygame.draw.rect(surface,
+                        _NS_drakar._rgba(P["blood_mid"], fa2), (fpx,fpy,2,3))
 
     # ================================================================
-    # SKILL R: CULLING BLADE
+    # SKILL R: CULLING BLADE — eksekusi + slash silang raksasa
     # ================================================================
     def _draw_cullingblade_ground(surface, boss, x, y, timer, phase):
+        """Ground FX: aura eksekusi di target + shockwave setelah tebasan."""
         P = _NS_drakar.PALETTE
         tx, ty = _NS_drakar._target_position(boss, x, y)
         duration = _NS_drakar.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / max(1, duration)))
-        if progress < 0.4:
-            t = progress / 0.4
-            r = int(52 * t)
-            a = _NS_drakar._alpha(200 * t)
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(P["blood_darkest"], a),
-                (tx-r, ty-r//3, r*2, r*2//3), 4)
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(P["blood_mid"], a),
-                (tx-r+4, ty-r//3+3, r*2-8, r*2//3-6), 3)
-            for i in range(10):
-                angle = i * math.pi / 5 + phase * 0.5
-                sx = tx + int(math.cos(angle) * r)
-                sy = ty + int(math.sin(angle) * r * 0.4)
-                pygame.draw.rect(surface, P["blood_light"], (sx, sy, 3, 3))
-                pygame.draw.rect(surface, P["blood_hot"],   (sx, sy, 2, 2))
+        pulse = math.sin(phase * 4.0) * 0.3 + 0.7
+
+        if progress < 0.40:
+            # Charge: aura tanah tumbuh di target
+            t = progress / 0.40
+            r = int(70 * t)
+            if r > 4:
+                for i, (scale, col, a_base) in enumerate([
+                    (1.00, P["blood_darkest"], 220),
+                    (0.80, P["blood_dark"],    200),
+                    (0.60, P["blood_mid"],     180),
+                    (0.42, P["rage_mid"],      150),
+                ]):
+                    rr = int(r * scale)
+                    a = _NS_drakar._alpha(a_base * t * pulse)
+                    pygame.draw.ellipse(surface, _NS_drakar._rgba(col, a),
+                        (tx-rr, ty-rr//3, rr*2, rr*2//3), max(2, 5-i))
+                # Rune berputar
+                for i in range(12):
+                    ra = phase * 2 + i * math.pi / 6
+                    rx1 = tx + int(math.cos(ra) * r * 0.55)
+                    ry1 = ty + int(math.sin(ra) * r * 0.22)
+                    rx2 = tx + int(math.cos(ra) * r * 0.88)
+                    ry2 = ty + int(math.sin(ra) * r * 0.35)
+                    a = _NS_drakar._alpha(220 * t)
+                    thick = 3 if i % 3 == 0 else 1
+                    col = P["blood_hot"] if i % 3 == 0 else P["blood_light"]
+                    pygame.draw.line(surface, _NS_drakar._rgba(col, a),
+                        (rx1,ry1), (rx2,ry2), thick)
         else:
-            t = (progress - 0.4) / 0.6
-            r = int(52 + t * 32)
-            a = _NS_drakar._alpha(240 * (1 - t * 0.5))
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(P["blood_darkest"], a),
-                (tx-r, ty-r//3, r*2, r*2//3))
-            pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(P["blood_dark"], a),
-                (tx-r+5, ty-r//3+4, r*2-10, r*2//3-8))
+            # After-slash: shockwave mengembang dari target
+            t = (progress - 0.40) / 0.60
+            for wave_i in range(3):
+                wt = (t + wave_i * 0.28) % 1.0
+                wr = int(wt * 150)
+                wa = _NS_drakar._alpha(240 * (1 - wt))
+                if wr > 4 and wa > 8:
+                    pygame.draw.ellipse(surface, _NS_drakar._rgba(P["blood_darkest"], wa),
+                        (tx-wr, ty-wr//3, wr*2, wr*2//3), 5)
+                    pygame.draw.ellipse(surface, _NS_drakar._rgba(P["blood_mid"], wa),
+                        (tx-wr+5, ty-wr//3+3, max(4,wr*2-10), max(2,wr*2//3-6)), 3)
+                    pygame.draw.ellipse(surface, _NS_drakar._rgba(P["rage_light"], wa),
+                        (tx-wr+9, ty-wr//3+5, max(4,wr*2-18), max(2,wr*2//3-10)), 1)
 
     def _draw_cullingblade_foreground(surface, boss, x, y, timer, phase):
+        """Foreground FX: dash + SLASH SILANG RAKSASA + afterimage darah."""
         P = _NS_drakar.PALETTE
         tx, ty = _NS_drakar._target_position(boss, x, y)
         duration = _NS_drakar.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / max(1, duration)))
-        if progress < 0.4:
-            t = progress / 0.4
-            facing = getattr(boss, "direction", 1)
-            charge_x = x + facing * 42
-            charge_y = y - 6
-            cr = int(8 + t * 11)
-            for r in range(cr+7, 0, -1):
-                a = _NS_drakar._alpha(220 * (cr+7-r) / (cr+7))
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(P["blood_darkest"], a), (charge_x, charge_y), r)
-            for r in range(cr, 0, -1):
-                a = _NS_drakar._alpha(240 * (cr-r+1) / cr)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(P["blood_mid"], a), (charge_x, charge_y), r)
-            _NS_drakar._aacircle(surface, P["blood_light"],  (charge_x, charge_y), max(1, cr-3))
-            _NS_drakar._aacircle(surface, P["rage_light"],   (charge_x, charge_y), max(1, cr-5))
-            _NS_drakar._aacircle(surface, P["rage_hot"],     (charge_x, charge_y), max(1, cr-7))
-            _NS_drakar._aacircle(surface, P["white"],        (charge_x, charge_y), max(1, cr-9))
-            aw = _NS_drakar._alpha(180 * t)
-            _NS_drakar._aacircle(surface,
-                _NS_drakar._rgba(P["blood_hot"], aw), (tx, ty), 10, 2)
+        facing = getattr(boss, "direction", 1)
+
+        if progress < 0.38:
+            # CHARGE DASH — bola energi merah membesar di kapak
+            t = progress / 0.38
+            charge_x = x + facing * 44
+            charge_y = y - 16
+            cr = int(10 + t * 18)
+
+            # Aura luar
+            for r in range(cr + 20, 0, -2):
+                a = _NS_drakar._alpha(200 * (cr+20-r) / (cr+20) * t)
+                col = P["blood_darkest"] if r > cr+8 else (P["blood_dark"] if r > cr else P["blood_mid"])
+                _NS_drakar._aacircle(surface, _NS_drakar._rgba(col, a), (charge_x, charge_y), r)
+            _NS_drakar._aacircle(surface, P["blood_light"],  (charge_x, charge_y), cr-2)
+            _NS_drakar._aacircle(surface, P["rage_light"],   (charge_x, charge_y), cr-6)
+            _NS_drakar._aacircle(surface, P["rage_hot"],     (charge_x, charge_y), cr-10)
+            _NS_drakar._aacircle(surface, P["white"],        (charge_x, charge_y), max(1, cr-13))
+
+            # Partikel berputar mengelilingi charge
+            for i in range(14):
+                pa = phase * 4 + i * math.pi * 2 / 14
+                pr = cr + 12 + int(math.sin(phase * 3 + i) * 5)
+                ppx = charge_x + int(math.cos(pa) * pr)
+                ppy = charge_y + int(math.sin(pa) * pr * 0.7)
+                a = _NS_drakar._alpha(220 * t)
+                pygame.draw.rect(surface, _NS_drakar._rgba(P["blood_hot"], a), (ppx-1,ppy-1,4,4))
+                pygame.draw.rect(surface, _NS_drakar._rgba(P["rage_light"],a), (ppx,ppy,2,2))
+
+            # Warning marker di target
+            warn_a = _NS_drakar._alpha(200 * t)
+            _NS_drakar._aacircle(surface, _NS_drakar._rgba(P["blood_hot"], warn_a), (tx, ty), 18, 3)
+            _NS_drakar._aacircle(surface, _NS_drakar._rgba(P["rage_light"],warn_a), (tx, ty), 12, 2)
+            _NS_drakar._aacircle(surface, _NS_drakar._rgba(P["blood_hot"], warn_a), (tx, ty), 6,  1)
 
         elif progress < 0.65:
-            t = (progress - 0.4) / 0.25
+            # SLASH SILANG RAKSASA — dua garis X dengan ekor panjang
+            t = (progress - 0.38) / 0.27
             intensity = math.sin(t * math.pi)
-            slash_len = int(68 + t * 26)
+            slash_len = int(90 + t * 40)   # panjang tiap lengan silang
+
             for slash_dir in [(1, 1), (1, -1)]:
-                dx, dy = slash_dir
-                p1 = (tx - dx * slash_len, ty - dy * slash_len)
-                p2 = (tx + dx * slash_len, ty + dy * slash_len)
+                ddx, ddy = slash_dir
+                # Slash bergerak: mulai dari boss, ujung di target
+                offs_x = int((tx - x) * t * 0.4)
+                offs_y = int((ty - y) * t * 0.4)
+                cx_s = tx + offs_x
+                cy_s = ty + offs_y
+                p1 = (cx_s - ddx * slash_len, cy_s - ddy * slash_len)
+                p2 = (cx_s + ddx * slash_len, cy_s + ddy * slash_len)
+
                 for thick, color, a_mult in [
-                    (13, P["blood_darkest"], 0.6),
-                    (10, P["blood_dark"],    0.8),
-                    (7,  P["blood_mid"],     1.0),
-                    (5,  P["blood_light"],   1.0),
-                    (3,  P["blood_hot"],     1.0),
-                    (1,  P["blood_shine"],   1.0),
+                    (22, P["blood_darkest"], 0.55),
+                    (16, P["blood_dark"],    0.75),
+                    (11, P["blood_mid"],     0.90),
+                    (7,  P["blood_light"],   1.00),
+                    (5,  P["blood_hot"],     1.00),
+                    (3,  P["blood_shine"],   1.00),
+                    (1,  P["white"],         1.00),
                 ]:
                     a = _NS_drakar._alpha(255 * intensity * a_mult)
-                    if a <= 0:
-                        continue
-                    pygame.draw.line(surface,
-                        _NS_drakar._rgba(color, a), p1, p2, thick)
-            for r in range(26, 0, -1):
-                a = _NS_drakar._alpha(240 * intensity * (26-r)/26)
-                _NS_drakar._aacircle(surface,
-                    _NS_drakar._rgba(P["blood_hot"], a), (tx, ty), r)
-            _NS_drakar._aacircle(surface, P["blood_shine"], (tx, ty), 10)
-            _NS_drakar._aacircle(surface, P["white"],       (tx, ty), 5)
+                    if a > 5:
+                        pygame.draw.line(surface, _NS_drakar._rgba(color, a), p1, p2, thick)
+
+            # Pusat ledakan di titik silang
+            for r in range(40, 0, -2):
+                a = _NS_drakar._alpha(255 * intensity * (40-r)/40)
+                col = P["white"] if r < 8 else (P["rage_light"] if r < 16 else (P["blood_hot"] if r < 26 else P["blood_mid"]))
+                _NS_drakar._aacircle(surface, _NS_drakar._rgba(col, a), (tx, ty), r)
+            _NS_drakar._aacircle(surface, P["white"], (tx, ty), 14)
+
+            # Percikan terbang ke semua arah
+            for i in range(28):
+                sp_a = i * math.pi / 14 + phase * 0.5
+                sp_r = int(slash_len * 0.6 + intensity * 35)
+                spx = tx + int(math.cos(sp_a) * sp_r)
+                spy = ty + int(math.sin(sp_a) * sp_r * 0.65)
+                sa = _NS_drakar._alpha(240 * intensity)
+                sz = 5 if i % 4 == 0 else 3
+                pygame.draw.rect(surface, _NS_drakar._rgba(P["blood_hot"],  sa), (spx-sz//2,spy-sz//2,sz,sz))
+                pygame.draw.rect(surface, _NS_drakar._rgba(P["rage_light"], sa), (spx-1,spy-1,2,2))
+
         else:
+            # AFTER-IMAGE — bekas slash memudar + darah jatuh
             t = (progress - 0.65) / 0.35
-            for i in range(18):
-                fall_t = (phase * 0.5 + i * 0.1) % 1.0
-                rx = tx + int(math.sin(phase + i) * 42)
-                ry = ty - 26 + int(fall_t * 44)
-                a = _NS_drakar._alpha(220 * (1-t) * (1 - fall_t * 0.5))
-                if a > 0:
-                    pygame.draw.rect(surface,
-                        _NS_drakar._rgba(P["blood_dark"], a), (rx, ry, 3, 4))
-                    pygame.draw.rect(surface,
-                        _NS_drakar._rgba(P["blood_mid"], a), (rx, ry, 2, 3))
+            # Sisa silang memudar
+            sl = int(90 * (1 - t * 0.5))
             for slash_dir in [(1, 1), (1, -1)]:
-                dx, dy = slash_dir
-                sl = 42
-                p1 = (tx - dx*sl, ty - dy*sl)
-                p2 = (tx + dx*sl, ty + dy*sl)
-                a = _NS_drakar._alpha(150 * (1-t))
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(P["blood_dark"], a), p1, p2, 3)
-                pygame.draw.line(surface,
-                    _NS_drakar._rgba(P["blood_mid"], a), p1, p2, 2)
+                ddx, ddy = slash_dir
+                p1 = (tx - ddx*sl, ty - ddy*sl)
+                p2 = (tx + ddx*sl, ty + ddy*sl)
+                for thick, col, a_mult in [
+                    (9, P["blood_darkest"], 0.5),
+                    (6, P["blood_dark"],    0.7),
+                    (3, P["blood_mid"],     0.9),
+                    (1, P["blood_hot"],     1.0),
+                ]:
+                    a = _NS_drakar._alpha(240 * (1-t) * a_mult)
+                    if a > 5:
+                        pygame.draw.line(surface, _NS_drakar._rgba(col, a), p1, p2, thick)
+
+            # Darah jatuh dari atas
+            for i in range(26):
+                fall_t = (phase * 0.55 + i * 0.115) % 1.0
+                fa = math.pi * 2 * i / 26
+                fr = int(55 + math.sin(phase+i)*22)
+                fpx = tx + int(math.cos(fa) * fr)
+                fpy = ty - 30 + int(fall_t * 60)
+                fa2 = _NS_drakar._alpha(240 * (1-fall_t) * (1-t*0.8))
+                if fa2 > 8:
+                    pygame.draw.rect(surface, _NS_drakar._rgba(P["blood_dark"], fa2), (fpx-1,fpy-2,3,5))
+                    pygame.draw.rect(surface, _NS_drakar._rgba(P["blood_mid"],  fa2), (fpx,fpy-1,2,3))
 
 # ====================================================================
 # ABADDON
