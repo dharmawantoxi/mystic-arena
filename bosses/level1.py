@@ -5195,28 +5195,36 @@ class _NS_drakar:
                 grip_x = base_x + f * int(22 * (1 - te))
                 grip_y = base_y + int(10 * (1 - te))
         elif action == "walk":
-            # Kapak digenggam horizontal, bergoyang ringan
-            axe_angle = math.pi * 0.06 * f + math.sin(phase * 0.9) * 0.10
-            grip_x = base_x + f * 4
+            # axe_angle dalam screen space: sudah mengandung f
+            # miring sedikit dari vertikal, goyang ringan
+            axe_angle = (math.pi * 0.10 + math.sin(phase * 0.9) * 0.08) * f
+            grip_x = base_x
             grip_y = base_y + int(math.sin(phase * 1.1) * 4)
         elif action == "helix":
             axe_angle = phase * f
             grip_x = base_x
             grip_y = base_y
-        else:  # idle
-            # Kapak digenggam miring ke depan sedikit
-            axe_angle = math.pi * 0.06 * f + math.sin(phase * 0.5) * 0.04
-            grip_x = base_x + f * 4
+        else:  # idle — screen space angle
+            axe_angle = (math.pi * 0.10 + math.sin(phase * 0.5) * 0.05) * f
+            grip_x = base_x
             grip_y = base_y + int(math.sin(phase * 0.5) * 2)
 
-        dx = math.cos(axe_angle)
-        dy = math.sin(axe_angle)
-
-        # Titik-titik handle (kapak head ke arah sudut, pommel berlawanan)
-        axe_head_x = int(grip_x + dx * handle_len * 0.52 * f)
-        axe_head_y = int(grip_y + dy * handle_len * 0.52)
-        pommel_x   = int(grip_x - dx * handle_len * 0.48 * f)
-        pommel_y   = int(grip_y - dy * handle_len * 0.48)
+        # Semua action: axe_angle dalam screen space
+        # head: ke depan (searah f dari grip center)
+        # pommel: ke belakang, jauh lebih pendek untuk idle/walk
+        dx_s = math.cos(axe_angle)
+        dy_s = math.sin(axe_angle)
+        if action == "attack":
+            axe_head_x = int(grip_x + dx_s * handle_len * 0.52)
+            axe_head_y = int(grip_y + dy_s * handle_len * 0.52)
+            pommel_x   = int(grip_x - dx_s * handle_len * 0.44)
+            pommel_y   = int(grip_y - dy_s * handle_len * 0.44)
+        else:
+            # head jauh ke depan, pommel pendek — kapak berada di depan badan
+            axe_head_x = int(grip_x + dx_s * handle_len * 0.72 * f)
+            axe_head_y = int(grip_y + dy_s * handle_len * 0.72)
+            pommel_x   = int(grip_x - dx_s * handle_len * 0.22 * f)
+            pommel_y   = int(grip_y - dy_s * handle_len * 0.22)
 
         # Posisi grip tangan
         front_t = 0.72
