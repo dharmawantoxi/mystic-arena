@@ -2580,22 +2580,26 @@ class _NS_morgath:
 
     def _mor_shift(action, phase, ap):
         """(lean_x, root_y) - lean geser badan atas; root = napas pada
-        bagian ATAS hem (hem/telapak tetap dipatok di garis tanah)."""
-        bob = math.sin(phase * 0.9) * 1.3
+        bagian ATAS hem (hem/telapak tetap dipatok di garis tanah).
+        Bob diperbesar agar terlihat jelas di ukuran SCALE=1.25.
+        """
+        bob = math.sin(phase * 0.9) * 3.5    # 1.3 -> 3.5 = lebih jelas
         lean, root = 0.0, bob
         if action == "walk":
-            root = -abs(math.sin(phase * 2.0)) * 1.6
-            lean = math.sin(phase) * 0.8
+            # Gallop bob: naik-turun lebih dalam, sway lebih lebar
+            root = -abs(math.sin(phase * 2.0)) * 4.0   # 1.6 -> 4.0
+            lean = math.sin(phase) * 2.2               # 0.8 -> 2.2
         elif action == "attack":
+            # Charge: mundur kuat, lalu thrust maju jauh
             if ap < 0.35:
-                lean = -2.0 * (ap / 0.35)
+                lean = -5.0 * (ap / 0.35)              # -2 -> -5
             elif ap < 0.9:
-                lean = -2.0 + 4.5 * ((ap - 0.35) / 0.55)
+                lean = -5.0 + 11.0 * ((ap - 0.35) / 0.55)  # 4.5 -> 11
             else:
-                lean = 2.5
-            root = 0.0
+                lean = 6.0                              # 2.5 -> 6.0
+            root = math.sin(ap * math.pi) * 2.0        # sedikit naik saat thrust
         elif action == "ascend":
-            root = -3.0 - bob
+            root = -5.0 - bob
         return lean, root
 
     def _muzzle_offset_world():
@@ -6758,33 +6762,43 @@ class _NS_abaddon:
     # POSE MODES
     # ===================================================================
     def _draw_abaddon_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_abaddon._draw_shadow(surface, x, y + 58)
-        _NS_abaddon._draw_horse_flame_base(surface, x, y + 45, boss.pulse)
+        K = _NS_abaddon.K
+        # Bob lebih besar sesuai ukuran kuda K=1.55 (8px vs 2px lama)
+        bob = int(math.sin(boss.pulse * 0.8) * 8)
+        GY = y + int(58 * K)
+        HY = y + int(45 * K)
+        _NS_abaddon._draw_shadow(surface, x, GY)
+        _NS_abaddon._draw_horse_flame_base(surface, x, HY, boss.pulse)
         _NS_abaddon._draw_abaddon_full(surface, x, y + bob, boss.direction, boss.pulse, "idle")
 
-
     def _draw_abaddon_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_abaddon._draw_shadow(surface, x + sway, y + 58)
-        _NS_abaddon._draw_horse_flame_base(surface, x + sway, y + 45, phase, trail=True,
-                              facing=boss.direction)
-        _NS_abaddon._draw_abaddon_full(surface, x + sway, y - bob, boss.direction, phase, "walk")
-
+        K = _NS_abaddon.K
+        phase = boss.pulse * 2.5   # lebih cepat = kaki terlihat bergerak
+        # Bob lebih dramatis saat walk — kuda gallop effect
+        bob  = int(abs(math.sin(phase * 1.5)) * 12)
+        sway = int(math.sin(phase * 0.8) * 5)
+        GY = y + int(58 * K)
+        HY = y + int(45 * K)
+        _NS_abaddon._draw_shadow(surface, x + sway, GY)
+        _NS_abaddon._draw_horse_flame_base(surface, x + sway, HY, phase,
+                              trail=True, facing=boss.direction)
+        _NS_abaddon._draw_abaddon_full(surface, x + sway, y - bob,
+                          boss.direction, phase, "walk")
 
     def _draw_abaddon_melee_attack(surface, boss, x, y):
-        """Sword swing on horseback."""
+        """Sword swing on horseback — lunge diperbesar K."""
+        K = _NS_abaddon.K
         progress = getattr(boss, "_ab_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
-
-        lunge = int(math.sin(progress * math.pi) * 4) * boss.direction
-        _NS_abaddon._draw_shadow(surface, x + lunge, y + 58)
-        _NS_abaddon._draw_horse_flame_base(surface, x + lunge, y + 45, boss.pulse, intense=True)
+        lunge = int(math.sin(progress * math.pi) * int(10*K)) * boss.direction
+        GY = y + int(58 * K)
+        HY = y + int(45 * K)
+        _NS_abaddon._draw_shadow(surface, x + lunge, GY)
+        _NS_abaddon._draw_horse_flame_base(surface, x + lunge, HY, boss.pulse, intense=True)
         _NS_abaddon._draw_abaddon_full(surface, x + lunge, y, boss.direction, boss.pulse,
                           "melee", progress)
-        _NS_abaddon._draw_sword_swing_trail(surface, x + lunge, y - 8, boss.direction, progress)
+        _NS_abaddon._draw_sword_swing_trail(surface, x + lunge, y - int(8*K),
+                                            boss.direction, progress)
 
 
     def _draw_abaddon_mist_coil(surface, boss, x, y, timer, phase):
