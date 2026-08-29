@@ -2842,6 +2842,8 @@ class _NS_sylara:
         if windrun:
             lean = 7 * f
         root_y = int(math.sin(phase * .72) * .7)
+        # v2 (animasi): perpindahan berat badan saat idle — goyang kiri-kanan.
+        sway = int(math.sin(phase * .8) * 3) * f if not (walk or attack or windrun) else 0
         if walk:
             root_y -= int(abs(math.sin(phase * 1.7)) * 2)
         if windrun:
@@ -2851,7 +2853,7 @@ class _NS_sylara:
             root_y += int(math.sin(ap * math.pi) * 1.5)
 
         def pt(dx, dy):
-            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+            return (int(cx + dx * f + lean + sway), int(cy + dy + root_y))
 
         def poly(color, points, outline=True):
             pts = [pt(dx, dy) for dx, dy in points]
@@ -2960,16 +2962,23 @@ class _NS_sylara:
                            pt(-3, -38), pt(-10 - hw, -30), 1)
 
         # ═══ KAKI: paha ramping + boot kulit tinggi ═══
+        # v2 (animasi): foot-lift bergantian saat jalan — kaki yang melangkah
+        # maju terangkat (lutut + telapak naik), kaki tumpuan tetap menapak.
         leg_phase = stride if (walk or windrun) else 0.0
+        stride_vel = math.cos(phase * 1.7) if walk else 0.0
+        rear_lift = int(max(0.0, -stride_vel) * 9) if walk else 0
+        front_lift = int(max(0.0, stride_vel) * 9) if walk else 0
         if windrun:
             rear_foot = (-13 - int(leg_phase * 7), 38)
             front_foot = (14 + int(leg_phase * 8), 38)
         else:
-            rear_foot = (-7 - int(leg_phase * 5), 40 - int(abs(leg_phase) * 2))
-            front_foot = (9 + int(leg_phase * 6), 40)
-        for hip, knee, foot, shade in (
-                ((-6, 11), (-9, 26), rear_foot, p["cloth_darkest"]),
-                ((6, 11), (9, 25), front_foot, p["cloth_dark"])):
+            rear_foot = (-7 - int(leg_phase * 5),
+                         40 - int(abs(leg_phase) * 2) - rear_lift)
+            front_foot = (9 + int(leg_phase * 6), 40 - front_lift)
+        for hip, knee, foot, shade, lift in (
+                ((-6, 11), (-9, 26), rear_foot, p["cloth_darkest"], rear_lift),
+                ((6, 11), (9, 25), front_foot, p["cloth_dark"], front_lift)):
+            knee = (knee[0], knee[1] - lift)
             poly(shade, [hip, (hip[0] + 6, hip[1]),
                          (knee[0] + 4, knee[1]), (foot[0] + 4, foot[1] - 6),
                          (foot[0] - 4, foot[1] - 6), (knee[0] - 4, knee[1])])
