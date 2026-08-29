@@ -448,8 +448,23 @@ class _NS_grimjaw:
         crit = getattr(hero, "_gj_crit_active", False)
         portrait = bool(getattr(hero, "_portrait_hd", False))
 
-        # Body lunge forward
-        lunge = int(math.sin(progress * math.pi) * 4) * hero.direction
+        # Body lunge: sedikit ditarik ke belakang saat wind-up, lalu
+        # menerjang maju dan mencapai puncaknya TEPAT saat pedang mendarat
+        # (ATTACK_SWING_END). Sebelumnya puncaknya di tengah ayunan
+        # (progress 0.5), sehingga badan justru sudah mundur saat tebasan
+        # mendarat.
+        if progress < _NS_grimjaw.ATTACK_WINDUP_END:
+            lunge = int(-2.0 * (progress / _NS_grimjaw.ATTACK_WINDUP_END))
+        elif progress < _NS_grimjaw.ATTACK_SWING_END:
+            t = ((progress - _NS_grimjaw.ATTACK_WINDUP_END) /
+                 (_NS_grimjaw.ATTACK_SWING_END -
+                  _NS_grimjaw.ATTACK_WINDUP_END))
+            lunge = int(-2.0 + 7.0 * (t ** 1.6))
+        else:
+            t = ((progress - _NS_grimjaw.ATTACK_SWING_END) /
+                 (1.0 - _NS_grimjaw.ATTACK_SWING_END))
+            lunge = int(5.0 * (1.0 - t))
+        lunge *= hero.direction
 
         if not portrait:
             _NS_grimjaw._draw_shadow(surface, x + lunge, y + 48)
@@ -467,7 +482,7 @@ class _NS_grimjaw:
                                            progress, crit)
 
             # Critical strike burst
-            if crit and 0.5 < progress < 0.7:
+            if crit and 0.56 < progress < 0.82:
                 _NS_grimjaw._draw_critical_strike_burst(surface, x + lunge, y, hero.direction,
                                             progress)
 
@@ -555,21 +570,50 @@ class _NS_grimjaw:
     # -------------------------------------------------------------------
     # Pose helpers (deterministic - shared by rig + skill FX anchors)
     # -------------------------------------------------------------------
+    # ═══ TIMELINE BASIC ATTACK (dipakai bersama rig + FX tebasan) ═══
+    # Satu sumber kebenaran supaya pedang, lengan, crescent api, dan
+    # impact flash tidak pernah lagi bergerak ke arah yang berlawanan.
+    ATTACK_WINDUP_END = 0.25    # pedang selesai diangkat ke atas-belakang
+    ATTACK_SWING_END = 0.62     # tebasan mendarat di depan-bawah
+    # Sudut (radian, 0 = lurus ke bawah, positif = ke depan, negatif = ke
+    # belakang) tempat tebasan MULAI dan BERAKHIR.  Nilainya MENGECIL
+    # (-2.30 -> -5.35) karena ayunannya lewat ATAS kepala: atas-belakang
+    # -> lurus atas -> depan-atas -> depan-bawah.  Kalau sudut membesar
+    # (perilaku lama: -1.55 -> +1.35) pedang justru lewat BAWAH dan ujung
+    # pedang NAIK di akhir ayunan, sehingga tebasan terbaca "dari bawah
+    # ke atas".
+    ATTACK_ARC_START = -2.30
+    ATTACK_ARC_SWEEP = -3.05    # -2.30 + (-3.05) = -5.35 == +0.93 rad
+    ATTACK_ARC_END = ATTACK_ARC_START + ATTACK_ARC_SWEEP
+
     def _blade_angle(phase, action, attack_progress=0.0, spin_phase=0.0):
         """Radian dari garis lurus-bawah: 0 = blade menunjuk ke bawah;
-        +pi/2 = menunjuk lurus ke depan; negatif = wind-up ke belakang."""
+        +pi/2 = menunjuk lurus ke depan; negatif = wind-up ke belakang.
+
+        Basic attack SELALU berputar ke arah negatif (mengecil): pedang
+        diangkat ke atas-belakang kepala lalu menebas TURUN ke depan.
+        """
         if action == "attack":
             ap = max(0.0, min(1.0, attack_progress))
-            if ap < 0.25:
-                t = ap / 0.25
+            if ap < _NS_grimjaw.ATTACK_WINDUP_END:
+                # Wind-up: angkat pedang ke atas-belakang kepala.
+                t = ap / _NS_grimjaw.ATTACK_WINDUP_END
                 t = 1.0 - (1.0 - t) ** 2
-                return -0.5 - t * 1.05
-            if ap < 0.70:
-                t = (ap - 0.25) / 0.45
-                t = t ** 1.4
-                return -1.55 + t * 2.90
-            t = (ap - 0.70) / 0.30
-            return 1.35 - t * 1.42
+                return -0.55 - t * 1.75
+            if ap < _NS_grimjaw.ATTACK_SWING_END:
+                # Tebasan: lewat atas kepala lalu turun ke depan-bawah.
+                t = ((ap - _NS_grimjaw.ATTACK_WINDUP_END) /
+                     (_NS_grimjaw.ATTACK_SWING_END -
+                      _NS_grimjaw.ATTACK_WINDUP_END))
+                t = t ** 1.35                      # akselerasi ke benturan
+                return (_NS_grimjaw.ATTACK_ARC_START +
+                        _NS_grimjaw.ATTACK_ARC_SWEEP * t)
+            # Recovery: dari depan-bawah kembali ke pose jaga (tanpa
+            # mengayun balik ke atas - itu yang bikin tebasan tampak naik).
+            t = ((ap - _NS_grimjaw.ATTACK_SWING_END) /
+                 (1.0 - _NS_grimjaw.ATTACK_SWING_END))
+            t = t * t * (3.0 - 2.0 * t)
+            return (_NS_grimjaw.ATTACK_ARC_END + 2.0 * math.pi) - t * 1.0
         if action == "spin":
             return spin_phase * 0.5 + math.sin(phase * 1.2) * 0.06
         if action == "walk":
@@ -578,17 +622,32 @@ class _NS_grimjaw:
 
 
     def _blade_grip_local(action, attack_progress=0.0, phase=0.0):
-        """Posisi gagang/pegangan blade (ruang lokal, forward = +x)."""
+        """Posisi gagang/pegangan blade (ruang lokal, forward = +x).
+
+        Jalur tangan mengikuti ayunan ATAS -> BAWAH: diangkat tinggi ke
+        atas-belakang kepala (wind-up), digeser ke depan setinggi kepala,
+        lalu diturunkan saat pedang menebas ke depan-bawah.
+        """
         if action == "attack":
             ap = max(0.0, min(1.0, attack_progress))
-            if ap < 0.25:
-                t = ap / 0.25
-                return (9 + int(5 * t), 1 - int(19 * t))
-            if ap < 0.70:
-                t = (ap - 0.25) / 0.45
-                return (15 + int(9 * t), -18 + int(23 * t))
-            t = (ap - 0.70) / 0.30
-            return (24 - int(7 * t), 5 - int(5 * t))
+            if ap < _NS_grimjaw.ATTACK_WINDUP_END:
+                t = ap / _NS_grimjaw.ATTACK_WINDUP_END
+                return (9 + int(4 * t), 1 - int(19 * t))      # (9,1) -> (13,-18)
+            if ap < _NS_grimjaw.ATTACK_SWING_END:
+                t = ((ap - _NS_grimjaw.ATTACK_WINDUP_END) /
+                     (_NS_grimjaw.ATTACK_SWING_END -
+                      _NS_grimjaw.ATTACK_WINDUP_END))
+                if t < 0.45:
+                    # Tangan tetap tinggi sambil memutar lewat atas kepala.
+                    u = t / 0.45
+                    return (13 + int(11 * u), -18 + int(4 * u))
+                # Bagian terakhir tebasan: tangan turun mengikuti pedang.
+                u = (t - 0.45) / 0.55
+                u = u * u
+                return (24 + int(2 * u), -14 + int(20 * u))    # -> (26, 6)
+            t = ((ap - _NS_grimjaw.ATTACK_SWING_END) /
+                 (1.0 - _NS_grimjaw.ATTACK_SWING_END))
+            return (26 - int(9 * t), 6 - int(6 * t))           # -> (17, 0)
         if action == "spin":
             return (17, -3)
         if action == "walk":
@@ -598,6 +657,32 @@ class _NS_grimjaw:
 
     def _blade_len(action):
         return 36 if action != "attack" else 42
+
+    def _front_arm_elbow(attack_progress=0.0):
+        """Siku lengan pedang selama basic attack (ruang lokal).
+
+        Dihitung dari keyframe, bukan sekadar ``grip + offset`` seperti
+        pose lain: saat tangan terangkat tinggi di atas kepala (wind-up)
+        offset tetap itu membuat siku "menciut" ke bahu dan lengan tampak
+        patah.  Keyframe di bawah menjaga panjang upper arm dan forearm
+        ~13 px di setiap pose.
+        """
+        ap = max(0.0, min(1.0, attack_progress))
+        if ap < _NS_grimjaw.ATTACK_WINDUP_END:
+            t = ap / _NS_grimjaw.ATTACK_WINDUP_END
+            return (7 + int(17 * t), 7 - int(19 * t))          # (7,7) -> (24,-12)
+        if ap < _NS_grimjaw.ATTACK_SWING_END:
+            t = ((ap - _NS_grimjaw.ATTACK_WINDUP_END) /
+                 (_NS_grimjaw.ATTACK_SWING_END -
+                  _NS_grimjaw.ATTACK_WINDUP_END))
+            if t < 0.45:
+                u = t / 0.45
+                return (24 - int(1 * u), -12 + int(10 * u))    # -> (23, -2)
+            u = (t - 0.45) / 0.55
+            return (23 + int(1 * u), -2 - int(2 * u))          # -> (24, -4)
+        t = ((ap - _NS_grimjaw.ATTACK_SWING_END) /
+             (1.0 - _NS_grimjaw.ATTACK_SWING_END))
+        return (24 - int(17 * t), -4 + int(11 * t))            # -> (7, 7)
 
 
     def _blade_tip_local(phase, action, attack_progress=0.0, spin_phase=0.0):
@@ -891,7 +976,7 @@ class _NS_grimjaw:
         grip = _NS_grimjaw._blade_grip_local(action, ap, phase)
         front_shoulder = (12, -9)
         if attack:
-            front_elbow = (grip[0] - 3, grip[1] + 5)
+            front_elbow = _NS_grimjaw._front_arm_elbow(ap)
         elif walk:
             front_elbow = (grip[0] - 4, grip[1] + 5 + int(stride * 2))
         else:
@@ -1396,45 +1481,102 @@ class _NS_grimjaw:
     # BASIC ATTACK - FIRE SLASH ARC
     # ===================================================================
     def _draw_fire_slash_arc(surface, x, y, facing, progress, crit=False):
-        """Fire slash crescent during basic attack."""
-        if progress < 0.3 or progress > 0.9:
+        """Fire slash crescent during basic attack - ATAS -> BAWAH.
+
+        Crescent-nya mengikuti jalur yang benar-benar dilalui pedang
+        (konstanta ATTACK_ARC_* yang sama dipakai ``_blade_angle``):
+        mulai di atas-belakang kepala, lewat atas, lalu menebas TURUN ke
+        depan-bawah.  Kepala crescent (titik paling terang & paling
+        tebal) selalu berada di posisi pedang SAAT INI dan ekornya
+        memudar ke ATAS, jadi arah ayunan terbaca jelas dari atas ke
+        bawah.
+
+        Sebelumnya crescent digambar penuh sejak awal dengan alpha paling
+        terang di ujung ATAS-nya (kepala di atas, ekor memudar ke bawah),
+        sehingga tebasan justru terbaca sebagai ayunan dari bawah ke
+        atas.
+        """
+        p0 = _NS_grimjaw.ATTACK_WINDUP_END - 0.02
+        p1 = _NS_grimjaw.ATTACK_SWING_END
+        if progress < p0 or progress > 0.92:
             return
 
-        alpha_factor = 1.0
-        if progress < 0.4:
-            alpha_factor = (progress - 0.3) / 0.1
-        elif progress > 0.8:
-            alpha_factor = 1 - (progress - 0.8) / 0.1
+        # Seberapa jauh pedang sudah menyapu: 0 = baru diangkat,
+        # 1 = mendarat di depan-bawah. Easing-nya sama dengan
+        # _blade_angle supaya kepala crescent menempel di ujung pedang.
+        travel = (progress - p0) / (p1 - p0)
+        travel = max(0.0, min(1.0, travel))
+        travel = travel ** 1.35
 
-        arc_surf = pygame.Surface((130, 100), pygame.SRCALPHA)
+        # Setelah tebasan selesai, crescent utuh memudar perlahan.
+        fade = 1.0
+        if progress > p1:
+            fade = 1.0 - (progress - p1) / (0.92 - p1)
+        fade = max(0.0, min(1.0, fade))
+        if fade <= 0.0:
+            return
+
+        a0 = _NS_grimjaw.ATTACK_ARC_START
+        a_head = a0 + _NS_grimjaw.ATTACK_ARC_SWEEP * travel
 
         # Bigger arc for crit
-        arc_scale = 1.3 if crit else 1.0
+        arc_scale = 1.25 if crit else 1.0
+        rx = 46.0 * arc_scale
+        ry = 44.0 * arc_scale
 
-        for i in range(16):
-            arc_progress = i / 16
-            arc_angle = -math.pi / 2 + arc_progress * math.pi * 1.1
+        # Pusat crescent sedikit di depan & di atas pusat badan, supaya
+        # lengkungnya menempel pada jalur ujung pedang.
+        W, H = 150, 120
+        ox, oy = W // 2, 64
 
-            arc_x = 65 + int(math.cos(arc_angle) * 42 * arc_scale) * facing
-            arc_y = 50 + int(math.sin(arc_angle) * 38 * arc_scale)
+        arc_surf = pygame.Surface((W, H), pygame.SRCALPHA)
+        p = _NS_grimjaw.PALETTE
 
-            alpha = min(255, max(0, int((240 - i * 14) * alpha_factor)))
+        steps = 20
+        for i in range(steps):
+            s = (i + 1) / steps          # 0 = ekor (atas), 1 = kepala (depan-bawah)
+            a = a0 + (a_head - a0) * s
+
+            arc_x = ox + int(math.sin(a) * rx) * (1 if facing >= 0 else -1)
+            arc_y = oy + int(math.cos(a) * ry)
+
+            # Alpha & ketebalan membesar ke arah kepala crescent.
+            taper = 0.35 + 0.65 * (s ** 1.7)
+            alpha = min(255, max(0, int((30 + 225 * (s ** 1.6)) * fade)))
             if alpha <= 0:
                 continue
+            base = 9 if crit else 8
 
             # Multi-layer fire slash
-            _NS_grimjaw._aacircle(arc_surf, (*_NS_grimjaw.PALETTE["fire_darkest"], alpha // 2),
-                      (arc_x, arc_y), 9 if crit else 8)
-            _NS_grimjaw._aacircle(arc_surf, (*_NS_grimjaw.PALETTE["fire_dark"], alpha),
-                      (arc_x, arc_y), 7 if crit else 6)
-            _NS_grimjaw._aacircle(arc_surf, (*_NS_grimjaw.PALETTE["fire_mid"], alpha),
-                      (arc_x, arc_y), 5 if crit else 4)
-            _NS_grimjaw._aacircle(arc_surf, (*_NS_grimjaw.PALETTE["fire_light"], alpha),
-                      (arc_x, arc_y), 3 if crit else 2)
-            _NS_grimjaw._aacircle(arc_surf, (*_NS_grimjaw.PALETTE["fire_hot"], alpha),
-                      (arc_x, arc_y), 2 if crit else 1)
+            _NS_grimjaw._aacircle(arc_surf, (*p["fire_darkest"], alpha // 2),
+                      (arc_x, arc_y), max(1, int(base * taper)))
+            _NS_grimjaw._aacircle(arc_surf, (*p["fire_dark"], alpha),
+                      (arc_x, arc_y), max(1, int(base * taper * 0.78)))
+            _NS_grimjaw._aacircle(arc_surf, (*p["fire_mid"], alpha),
+                      (arc_x, arc_y), max(1, int(base * taper * 0.58)))
+            _NS_grimjaw._aacircle(arc_surf, (*p["fire_light"], alpha),
+                      (arc_x, arc_y), max(1, int(base * taper * 0.40)))
+            _NS_grimjaw._aacircle(arc_surf, (*p["fire_hot"], alpha),
+                      (arc_x, arc_y), max(1, int(base * taper * 0.24)))
 
-        surface.blit(arc_surf, (x - 65, y - 50))
+        # Nyala di kepala crescent (ujung pedang) - bikin arah tebasan
+        # terbaca bahkan di frame tunggal.
+        hx = ox + int(math.sin(a_head) * rx) * (1 if facing >= 0 else -1)
+        hy = oy + int(math.cos(a_head) * ry)
+        head_a = fade * (0.5 + 0.5 * travel)
+        for radius, col, al in ((13, "fire_dark", 110),
+                                (9, "fire_mid", 170),
+                                (6, "fire_light", 215),
+                                (3, "fire_hot", 255)):
+            rr = int(radius * arc_scale)
+            _NS_grimjaw._aacircle(arc_surf, (*p[col], int(al * head_a)),
+                                  (hx, hy), max(1, rr))
+        _NS_grimjaw._aacircle(arc_surf, (*p["white"], int(200 * head_a)),
+                              (hx, hy), max(1, int(2 * arc_scale)))
+
+        # Pusat crescent digeser ke depan mengikuti arah hadap.
+        cx = x + int(16 * (1 if facing >= 0 else -1))
+        surface.blit(arc_surf, (cx - ox, y - 70))
 
 
     def _draw_impact_flash(surface, x, y, facing, progress, crit=False):
@@ -1445,15 +1587,18 @@ class _NS_grimjaw:
         crescent. Kept tight around the blade tip so it does not enlarge
         the portrait auto-crop or the sprite-cache canvas.
         """
-        if progress < 0.45 or progress > 0.75:
+        # Waktu & tempat benturan mengikuti timeline tebasan baru:
+        # pedang mendarat di ATTACK_SWING_END (0.62) di depan-BAWAH.
+        if progress < 0.52 or progress > 0.84:
             return
-        t = (progress - 0.45) / 0.30
+        t = (progress - 0.52) / 0.32
         t = max(0.0, min(1.0, t))
-        intensity = math.sin(t * math.pi)
+        intensity = math.sin(math.pi * (t ** 0.75))
 
-        # Impact point: out in front, where the scimitar tip lands.
-        tip_x = x + (34 if crit else 30) * facing
-        tip_y = y - 4
+        # Impact point: depan-BAWAH, tempat ujung pedang mendarat di
+        # akhir tebasan (bukan setinggi dada seperti versi lama).
+        tip_x = x + (58 if crit else 52) * facing
+        tip_y = y + (28 if crit else 24)
 
         # Shockwave ring expanding outward.
         ring_r = int(4 + intensity * (20 if crit else 15))
@@ -1496,10 +1641,12 @@ class _NS_grimjaw:
 
     def _draw_critical_strike_burst(surface, x, y, facing, progress):
         """Critical strike burst effect - extra sparkle."""
-        burst_x = x + 30 * facing
-        burst_y = y - 5
+        # Posisi benturan sama dengan impact flash: depan-bawah, tempat
+        # pedang mendarat di akhir tebasan (bukan setinggi dada).
+        burst_x = x + 46 * facing
+        burst_y = y + 24
 
-        t = (progress - 0.5) / 0.2
+        t = (progress - 0.56) / 0.26
         t = max(0.0, min(1.0, t))
 
         # 4-pointed star burst
