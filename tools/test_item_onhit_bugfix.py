@@ -146,7 +146,9 @@ assert heal_expect > 0
 print(f"T6 OK  - melee on-hit 1x (bukan 2x): damage {lost}, "
       f"lifesteal +{heal_expect}")
 
-# ── T7: fuzz - semua 25 item di kedua jalur on-hit ──────────
+# ── T7: fuzz - semua item di kedua jalur on-hit ─────────────
+# (hero dipilih sesuai gate item: melee_only -> kaizen,
+#  magic_only -> vex, sisanya sylara/kaizen seperti semula)
 random.seed(20260826)
 
 class FoeStub:
@@ -168,11 +170,19 @@ class FoeStub:
     def take_damage(self, d, t, ty=None): self.hp -= d
 
 for sid in ITEM_CATALOG:
-    h = Hero("sylara", "blue")
-    ok = h.items.add(sid)
-    if not ok:  # melee_only item di hero ranged
+    d = ITEM_CATALOG[sid]
+    if d.get("magic_only"):
+        h = Hero("vex", "blue")
+        assert h.items.add(sid), f"equip {sid} gagal (hero magic)"
+    elif d.get("melee_only"):
         h = Hero("kaizen", "blue")
-        assert h.items.add(sid), f"equip {sid} gagal"
+        assert h.items.add(sid), f"equip {sid} gagal (melee)"
+    else:
+        h = Hero("sylara", "blue")
+        ok = h.items.add(sid)
+        if not ok:
+            h = Hero("kaizen", "blue")
+            assert h.items.add(sid), f"equip {sid} gagal"
     t = FoeStub()
     for _ in range(30):
         h.items.on_basic_attack_hit(t, 40, [t])

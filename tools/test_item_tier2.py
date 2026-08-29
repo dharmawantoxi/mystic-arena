@@ -1,8 +1,8 @@
 """Headless test paket item TIER II (8 item legendary terinspirasi Dota 2).
 
 Mengetes:
-  - integritas katalog (25 item = 8 Tier I + 8 Tier II + 9 Tier III,
-    ikon ada di disk, field lengkap)
+  - integritas katalog (33 item = 8 Tier I + 8 Tier II + 10 Tier III
+    + 7 paket MAGIC, ikon ada di disk, field lengkap)
   - pagination toko (tab TIER I / TIER II, BUY per halaman)
   - stat getter inventory (evasion, block, shred, bash, AS, dll.)
   - mekanik via Hero ASLI: evasion, block, veil, shred, rend, stun,
@@ -29,14 +29,21 @@ TIER2 = ["scarlet_bulwark", "monarch_wings", "corroder", "tempest_vane",
 
 TIER3 = ["razor_carapace", "everfrost_guard", "sundering_cudgel",
          "frostbound_eye", "gale_pike", "basilisk_breath",
-         "solar_brand", "runic_gavel", "searbrand"]
+         "solar_brand", "runic_gavel", "searbrand", "astral_codex"]
 
-# ── T1: katalog lengkap 25 item + ikon di disk ─────────────
-assert len(ITEM_CATALOG) == 25, \
-    f"katalog harus 25 item, ada {len(ITEM_CATALOG)}"
-assert len(ITEM_SHOP_ORDER) == 25
+MAGIC = ["sage_scepter", "fulgur_scepter", "hex_idol", "rift_veil",
+         "vital_stone", "vine_rod", "spectral_charm"]
+
+# ── T1: katalog lengkap 33 item + ikon di disk ─────────────
+assert len(ITEM_CATALOG) == 33, \
+    f"katalog harus 33 item, ada {len(ITEM_CATALOG)}"
+assert len(ITEM_SHOP_ORDER) == 33
 assert set(ITEM_SHOP_ORDER) == set(ITEM_CATALOG.keys())
-assert set(TIER2) | set(TIER3) <= set(ITEM_CATALOG)
+assert set(TIER2) | set(TIER3) | set(MAGIC) <= set(ITEM_CATALOG)
+# Semua item paket MAGIC harus ber-flag magic_only
+for sid in MAGIC:
+    assert ITEM_CATALOG[sid].get("magic_only") is True, \
+        f"{sid} tidak magic_only"
 icons_dir = os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "assets", "items")
 for sid in ITEM_CATALOG:
@@ -47,8 +54,8 @@ for sid in ITEM_CATALOG:
     ipath = os.path.join(icons_dir, d["icon"])
     assert os.path.exists(ipath), f"ikon {d['icon']} tidak ada"
     # Ikon harus artwork asli (bukan placeholder 64x64 kasar):
-    # semua ikon Tier II & Tier III minimal 256x256.
-    if sid in TIER2 or sid in TIER3:
+    # semua ikon Tier II & Tier III & paket MAGIC minimal 256x256.
+    if sid in TIER2 or sid in TIER3 or sid in MAGIC:
         raw = pygame.image.load(ipath)
         assert raw.get_width() >= 256 and raw.get_height() >= 256, \
             f"ikon {d['icon']} masih placeholder kecil {raw.get_size()}"
@@ -57,8 +64,8 @@ for sid in ITEM_CATALOG:
                    "wind waker", "gleipnir", "bloodthorn",
                    "abyssal blade", "mjollnir", "mjolnir"):
         assert d["name"].lower() != banned, f"{sid} memakai nama Dota"
-print("T1 OK  - 25 item, ikon ada (Tier II & III >= 256x256), "
-      "nama bebas copyright")
+print("T1 OK  - 33 item (paket MAGIC semua magic_only), ikon ada "
+      "(Tier II & III & MAGIC >= 256x256), nama bebas copyright")
 
 # ── T2: pagination toko + BUY item Tier II ─────────────────
 class FakeHero:
@@ -99,23 +106,28 @@ surf = pygame.Surface((1280, 720))
 g = FakeGame()
 g.heroes = [FakeHero("Aldric")]
 ItemShopUI.draw(surf, g)
-assert "itemshop_buy_dead_edge" in g.ui_buttons, "halaman 0 = Tier I"
-assert "itemshop_buy_monarch_wings" not in g.ui_buttons
+assert "itemshop_buy_dead_edge" in g.ui_buttons, \
+    "halaman 0 = PHYSICAL 1"
+assert "itemshop_buy_monarch_wings" in g.ui_buttons, \
+    "Monarch Wings (physical) kini ikut halaman 0"
+assert "itemshop_buy_sanguine_thorn" not in g.ui_buttons
 assert "itemshop_page_0" in g.ui_buttons and "itemshop_page_1" in g.ui_buttons
-# pindah ke halaman 2
+# pindah ke halaman 2 (PHYSICAL 2)
 r = g.ui_buttons["itemshop_page_1"]
 assert handle_item_shop_click(g, r.centerx, r.centery, 1)
 assert g.itemshop_page == 1
 g.ui_buttons = {}
 ItemShopUI.draw(surf, g)
-assert "itemshop_buy_monarch_wings" in g.ui_buttons, "halaman 1 = Tier II"
+assert "itemshop_buy_sanguine_thorn" in g.ui_buttons, \
+    "halaman 1 = PHYSICAL 2 (late-game carry)"
 assert "itemshop_buy_dead_edge" not in g.ui_buttons
-# beli Monarch Wings
-r = g.ui_buttons["itemshop_buy_monarch_wings"]
+assert "itemshop_buy_monarch_wings" not in g.ui_buttons
+# beli Sanguine Thorn
+r = g.ui_buttons["itemshop_buy_sanguine_thorn"]
 assert handle_item_shop_click(g, r.centerx, r.centery, 1)
-assert g.heroes[0].items.has("monarch_wings")
-assert g.gold == 60000 - ITEM_CATALOG["monarch_wings"]["cost"]
-print("T2 OK  - tab TIER II pindah halaman & beli Monarch Wings")
+assert g.heroes[0].items.has("sanguine_thorn")
+assert g.gold == 60000 - ITEM_CATALOG["sanguine_thorn"]["cost"]
+print("T2 OK  - tab PHYSICAL 1/2 pindah halaman & beli Sanguine Thorn")
 
 # ── T3: getter stat inventory ──────────────────────────────
 h = FakeHero("Melee", rng=40)
