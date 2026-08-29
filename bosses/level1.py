@@ -2692,25 +2692,34 @@ class _NS_morgath:
     def _mor_shift(action, phase, ap):
         """(lean_x, root_y) - lean geser badan atas; root = napas pada
         bagian ATAS hem (hem/telapak tetap dipatok di garis tanah).
-        Bob diperbesar agar terlihat jelas di ukuran SCALE=1.25.
+        Nilai diperbesar agar visible di SCALE=1.25.
         """
-        bob = math.sin(phase * 0.9) * 3.5    # 1.3 -> 3.5 = lebih jelas
+        bob = math.sin(phase * 0.9) * 4.5    # idle bob 4.5px (lebih visible)
         lean, root = 0.0, bob
         if action == "walk":
-            # Gallop bob: naik-turun lebih dalam, sway lebih lebar
-            root = -abs(math.sin(phase * 2.0)) * 4.0   # 1.6 -> 4.0
-            lean = math.sin(phase) * 2.2               # 0.8 -> 2.2
+            # Gallop: badan naik-turun dalam + sway kiri-kanan lebar
+            root = -abs(math.sin(phase * 2.0)) * 7.0   # 4.0 → 7.0
+            lean = math.sin(phase * 1.0) * 4.5         # 2.2 → 4.5
         elif action == "attack":
-            # Charge: mundur kuat, lalu thrust maju jauh
+            # Charge mundur kuat, lalu thrust maju jauh
             if ap < 0.35:
-                lean = -5.0 * (ap / 0.35)              # -2 -> -5
+                lean = -6.5 * (ap / 0.35)              # -5 → -6.5
             elif ap < 0.9:
-                lean = -5.0 + 11.0 * ((ap - 0.35) / 0.55)  # 4.5 -> 11
+                lean = -6.5 + 14.0 * ((ap - 0.35) / 0.55)  # 11 → 14
             else:
-                lean = 6.0                              # 2.5 -> 6.0
-            root = math.sin(ap * math.pi) * 2.0        # sedikit naik saat thrust
+                lean = 7.5                              # 6 → 7.5
+            root = math.sin(ap * math.pi) * 3.0
         elif action == "ascend":
-            root = -5.0 - bob
+            root = -7.0 - bob
+        elif action == "point":    # Q: condong ke depan menunjuk
+            lean = 2.5
+            root = bob
+        elif action == "channel":  # W: sedikit condong ke belakang (channeling)
+            lean = -1.5
+            root = bob * 0.5
+        elif action == "erect":    # E: tegak lurus
+            lean = 0.0
+            root = bob * 0.3
         return lean, root
 
     def _muzzle_offset_world():
@@ -2950,17 +2959,31 @@ class _NS_morgath:
                              (sp(rx, FE - 4)[0], sp(rx, FE - 4)[1], _w(1), _w(1)))
 
     def _mor_draw_boots(surface, ptg, f, phase):
-        """Ujung sepatu mengintip dari hem saat walk; TELAPAK DIPATOK."""
+        """Kaki bergerak saat walk — stride lebih besar agar visible."""
         P = _NS_morgath.PALETTE
         FE = _NS_morgath.FEET_DY
-        stride = math.sin(phase * 2.0) * 3.0
-        for sx, lift in ((8.0 + stride, 0.0), (-7.0 - stride, 0.0)):
-            toe = [(sx - 3, FE - 4 - lift), (sx + 4, FE - 4 - lift),
-                   (sx + 5, FE), (sx - 3, FE)]
+        # Stride lebih besar: ±8px (dari ±3px)
+        stride = math.sin(phase * 2.0) * 8.0
+        # Angkat kaki saat melangkah
+        front_lift = max(0.0, math.sin(phase * 2.0)) * 6.0
+        back_lift  = max(0.0, -math.sin(phase * 2.0)) * 4.0
+        for sx, lift in ((7.0 + stride, front_lift), (-6.0 - stride, back_lift)):
+            # Betis (terlihat di bawah hem)
+            shin = [(sx - 3, FE - 10 - lift), (sx + 4, FE - 10 - lift),
+                    (sx + 5, FE - lift),       (sx - 3, FE - lift)]
+            _NS_morgath._poly(surface, P["armor_darkest"],
+                              [ptg(x, y) for x, y in shin])
+            # Boot ujung
+            toe = [(sx - 3, FE - 5 - lift), (sx + 5, FE - 5 - lift),
+                   (sx + 7, FE - lift),      (sx - 3, FE - lift)]
             _NS_morgath._poly(surface, P["armor_dark"],
                               [ptg(x, y) for x, y in toe])
-            pygame.draw.line(surface, P["armor_mid"], ptg(sx - 2, FE - 4 - lift),
-                             ptg(sx + 3, FE - 4 - lift), 1)
+            pygame.draw.line(surface, P["armor_mid"],
+                             ptg(sx - 2, FE - 5 - lift),
+                             ptg(sx + 4, FE - 5 - lift), 2)
+            pygame.draw.line(surface, P["armor_light"],
+                             ptg(sx - 1, FE - 5 - lift),
+                             ptg(sx + 2, FE - 5 - lift), 1)
 
     def _mor_draw_torso(surface, pt, _w, f, phase):
         """Cuirass dada: pelat baja-biru dengan trim emas & keystone arc."""
@@ -7203,11 +7226,16 @@ class _NS_abaddon:
     # HORSE (ghostly mount)
     # ===================================================================
     def _draw_horse(surface, cx, cy, facing, phase):
-        """Ghostly horse mount with cyan flames — K-scaled."""
+        """Ghostly horse mount with cyan flames — K-scaled, animasi kaki dramatis."""
         K = _NS_abaddon.K
-        def s(v): return int(v * K)   # scale helper
+        def s(v): return int(v * K)
 
-        step = math.sin(phase * 1.5) * s(5)   # kaki bergerak lebih jauh
+        # Kaki lebih dramatis: stride ±s(14), angkat per-kaki berbeda fase
+        stride    = math.sin(phase * 1.8) * s(14)
+        front_lift = max(0.0, math.sin(phase * 1.8))       * s(12)  # kaki depan
+        back_lift  = max(0.0, -math.sin(phase * 1.8 + 0.5)) * s(8)  # kaki belakang
+        # Alias agar kode lama pakai step tetap jalan
+        step = stride
 
         # Horse body (elongated oval) — K-scaled
         def bp(dx, dy): return (cx + s(dx) * facing, cy + s(dy))
@@ -7232,39 +7260,43 @@ class _NS_abaddon:
         _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["horse_light"], bp(-5,-7), s(4))
         _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["horse_high"],  bp(-6,-8), s(2))
 
-        # ===== FRONT LEGS =====
-        for leg_off in (-s(8), 0):
+        # ===== FRONT LEGS — stride + angkat dramatis =====
+        for li, leg_off in enumerate((-s(8), 0)):
             lx = cx + (s(12) + leg_off) * facing
+            lift_y = int(front_lift) if li == 0 else int(front_lift * 0.4)
+            foot_x = lx + int(step)
+            foot_y = cy + s(20) - lift_y
             _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["shadow_deep"],
-                    (lx+1, cy+s(11)), (lx+int(step)+1, cy+s(20)), s(5))
+                    (lx+1, cy+s(11)), (foot_x+1, foot_y), s(5))
             _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["horse_darkest"],
-                    (lx, cy+s(11)), (lx+int(step), cy+s(20)), s(4))
+                    (lx, cy+s(11)), (foot_x, foot_y), s(4))
             _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["horse_dark"],
-                    (lx, cy+s(11)), (lx+int(step), cy+s(20)), s(3))
-            for h in range(s(12)):
-                t = h / s(12)
-                fy = cy + s(20) + h
-                fx = lx + int(step)
+                    (lx, cy+s(11)), (foot_x, foot_y), s(3))
+            for h in range(s(14)):
+                t = h / s(14)
+                fy = foot_y + h
                 f_alpha = int(200 * (1 - t * 0.5))
-                _NS_abaddon._draw_cyan_flame(surface, fx, fy, max(1, s(4)-h//s(3)),
-                                phase + h, f_alpha)
+                _NS_abaddon._draw_cyan_flame(surface, foot_x, fy,
+                                max(1, s(5)-h//max(1,s(4))), phase+h, f_alpha)
 
-        # ===== BACK LEGS =====
-        for leg_off in (-s(8), 0):
+        # ===== BACK LEGS — berlawanan fase dengan front =====
+        for li, leg_off in enumerate((-s(8), 0)):
             lx = cx + (-s(12) - leg_off) * facing
+            lift_y = int(back_lift) if li == 0 else int(back_lift * 0.4)
+            foot_x = lx - int(step)
+            foot_y = cy + s(20) - lift_y
             _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["shadow_deep"],
-                    (lx+1, cy+s(11)), (lx-int(step)+1, cy+s(20)), s(5))
+                    (lx+1, cy+s(11)), (foot_x+1, foot_y), s(5))
             _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["horse_darkest"],
-                    (lx, cy+s(11)), (lx-int(step), cy+s(20)), s(4))
+                    (lx, cy+s(11)), (foot_x, foot_y), s(4))
             _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["horse_dark"],
-                    (lx, cy+s(11)), (lx-int(step), cy+s(20)), s(3))
-            for h in range(s(12)):
-                t = h / s(12)
-                fy = cy + s(20) + h
-                fx = lx - int(step)
+                    (lx, cy+s(11)), (foot_x, foot_y), s(3))
+            for h in range(s(14)):
+                t = h / s(14)
+                fy = foot_y + h
                 f_alpha = int(200 * (1 - t * 0.5))
-                _NS_abaddon._draw_cyan_flame(surface, fx, fy, max(1, s(4)-h//s(3)),
-                                phase + h + 2, f_alpha)
+                _NS_abaddon._draw_cyan_flame(surface, foot_x, fy,
+                                max(1, s(5)-h//max(1,s(4))), phase+h+2, f_alpha)
 
         # ===== HORSE NECK =====
         neck_x = cx + s(20) * facing
