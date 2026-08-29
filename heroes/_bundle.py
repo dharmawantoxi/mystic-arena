@@ -10603,6 +10603,9 @@ class _NS_zephyr:
 
         lean = int((3.5 * stride if walk else 0.0) +
                    (math.sin(ap * math.pi) * 7.0 if attack else 0.0))
+        # v2 (animasi): perpindahan berat badan saat idle — goyang kiri-kanan.
+        if not (walk or attack):
+            lean = int(math.sin(phase * .8) * 3) * f
         root_y = int(breath * .9)
         if walk:
             root_y -= int(abs(stride) * 2.5)
@@ -10652,34 +10655,39 @@ class _NS_zephyr:
                             pt(-25 - mantle_push, 10 + mantle_wave), 1)
 
         # ── planted legs, tights and ankle boots ──
+        # v2 (animasi): foot-lift bergantian saat jalan — kaki melangkah maju
+        # terangkat (knee + telapak naik), kaki tumpuan tetap menapak.
         front_step = int(stride * 4) if walk else 0
         rear_step = -front_step
         if attack:
             front_step += int(ap * 5)
             rear_step -= int(ap * 3)
-        legs = ((-7, rear_step, p["boot_dark"], p["boot_mid"]),
-                (7, front_step, p["boot_mid"], p["boot_light"]))
-        for i, (side, step, boot_base, boot_light) in enumerate(legs):
+        stride_vel = math.cos(phase * 1.72) if walk else 0.0
+        front_lift = int(max(0.0, stride_vel) * 8) if walk else 0
+        rear_lift = int(max(0.0, -stride_vel) * 8) if walk else 0
+        legs = ((-7, rear_step, p["boot_dark"], p["boot_mid"], rear_lift),
+                (7, front_step, p["boot_mid"], p["boot_light"], front_lift))
+        for i, (side, step, boot_base, boot_light, lift) in enumerate(legs):
             thigh_x = side + step
-            # visible striped tights above the boot
+            # visible striped tights above the boot (knee rises with lift)
             poly(p["dress_darkest"], [(thigh_x - 5, 15),
-                 (thigh_x + 5, 15), (thigh_x + 4, 29),
-                 (thigh_x - 4, 29)])
+                 (thigh_x + 5, 15), (thigh_x + 4, 29 - lift),
+                 (thigh_x - 4, 29 - lift)])
             poly(p["dress_mid"], [(thigh_x - 3, 17),
-                 (thigh_x + 3, 17), (thigh_x + 2, 28),
-                 (thigh_x - 3, 28)], False)
+                 (thigh_x + 3, 17), (thigh_x + 2, 28 - lift),
+                 (thigh_x - 3, 28 - lift)], False)
             _NS_zephyr._aaline(surface, p["dress_light"],
-                                pt(thigh_x - 1, 18), pt(thigh_x - 1, 27), 1)
+                                pt(thigh_x - 1, 18), pt(thigh_x - 1, 27 - lift), 1)
             # pointed cuff, heel and toe establish ground contact.
-            poly(p["boot_darkest"], [(thigh_x - 6, 27),
-                 (thigh_x + 5, 27), (thigh_x + 6, 40),
-                 (thigh_x - 5, 40)])
-            poly(boot_base, [(thigh_x - 4, 28), (thigh_x + 3, 28),
-                 (thigh_x + 4, 38), (thigh_x - 4, 38)], False)
+            poly(p["boot_darkest"], [(thigh_x - 6, 27 - lift),
+                 (thigh_x + 5, 27 - lift), (thigh_x + 6, 40 - lift),
+                 (thigh_x - 5, 40 - lift)])
+            poly(boot_base, [(thigh_x - 4, 28 - lift), (thigh_x + 3, 28 - lift),
+                 (thigh_x + 4, 38 - lift), (thigh_x - 4, 38 - lift)], False)
             _NS_zephyr._aaline(surface, boot_light,
-                                pt(thigh_x - 2, 30), pt(thigh_x - 1, 37), 1)
+                                pt(thigh_x - 2, 30 - lift), pt(thigh_x - 1, 37 - lift), 1)
             toe = 4 * f
-            foot = pt(thigh_x + (3 if f > 0 else -3), 40)
+            foot = pt(thigh_x + (3 if f > 0 else -3), 40 - lift)
             _NS_zephyr._aaline(surface, p["shadow_deep"],
                                 (foot[0] - toe, foot[1] + 1),
                                 (foot[0] + toe, foot[1] + 1), 4)
