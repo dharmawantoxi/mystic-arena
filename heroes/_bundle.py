@@ -23,6 +23,43 @@ import random
 import pygame
 
 
+# ═══════════════════════════════════════════════════════════════════
+# SKILL OUTLINE HELPERS (dipakai semua namespace)
+# -----------------------------------------------------------------
+# Efek skill digambar langsung ke canvas tanpa outline, jadi garis/
+# cincin tipis semi-transparan "tenggelam" di terrain terang. Helper
+# di bawah menambahkan stroke gelap di belakang shape terang supaya
+# tiap telegraph/indikator skill tetap tegas & jelas di semua map.
+# ═══════════════════════════════════════════════════════════════════
+_SKILL_OUTLINE = (6, 9, 18)
+
+
+def _skill_outlined_line(surface, a, b, width, color, alpha):
+    """Garis skill: stroke gelap di belakang + garis terang di atas."""
+    sx, sy = int(a[0]), int(a[1])
+    ex, ey = int(b[0]), int(b[1])
+    if alpha <= 0:
+        return
+    pygame.draw.line(surface, (*_SKILL_OUTLINE, min(255, alpha)),
+                     (sx, sy), (ex, ey), width + 2)
+    pygame.draw.line(surface, (*color, min(255, alpha)),
+                     (sx, sy), (ex, ey), width)
+
+
+def _skill_outlined_circle(surface, center, radius, width, color, alpha):
+    """Cincin skill: stroke gelap di belakang + cincin terang di atas."""
+    if alpha <= 0:
+        return
+    cx, cy = int(center[0]), int(center[1])
+    r = int(radius)
+    if r <= 0:
+        return
+    pygame.draw.circle(surface, (*_SKILL_OUTLINE, min(255, alpha)),
+                       (cx, cy), r + 1, max(1, width + 2))
+    pygame.draw.circle(surface, (*color, min(255, alpha)),
+                       (cx, cy), r, max(1, width))
+
+
 # ====================================================================
 # grimjaw.py
 # ====================================================================
@@ -424,6 +461,11 @@ class _NS_grimjaw:
             # Fire slash arc
             _NS_grimjaw._draw_fire_slash_arc(surface, x + lunge, y, hero.direction, progress, crit)
 
+            # Impact flash: a bright hit-pop + shockwave ring at the moment
+            # the blade connects, so EVERY attack has a satisfying impact.
+            _NS_grimjaw._draw_impact_flash(surface, x + lunge, y, hero.direction,
+                                           progress, crit)
+
             # Critical strike burst
             if crit and 0.5 < progress < 0.7:
                 _NS_grimjaw._draw_critical_strike_burst(surface, x + lunge, y, hero.direction,
@@ -453,35 +495,37 @@ class _NS_grimjaw:
         _NS_grimjaw._draw_shadow(surface, x, y + 48)
         _NS_grimjaw._draw_fire_mist(surface, x, y + 35, phase, intense=True)
 
-        # Draw ghost trails behind current position
-        for i in range(3):
-            ghost_alpha = 60 + i * 30
-            gx = x - int(math.sin(flicker_phase - i * 0.5) * 15)
-            gy = y + int(math.cos(flicker_phase - i * 0.5) * 5)
-            _NS_grimjaw._draw_grimjaw_ghost(surface, gx, gy, hero.direction, phase,
-                                ghost_alpha)
+        # Draw ghost trails behind current position: full-rig afterimages
+        # in different slash poses, so the teleport reads as a storm of
+        # overlapping Grimjaw cuts rather than one blurred sticker.
+        for i in range(4):
+            ghost_alpha = 45 + i * 28
+            gx = x - int(math.sin(flicker_phase - i * 0.5) * 18)
+            gy = y + int(math.cos(flicker_phase - i * 0.5) * 6)
+            ghost_ap = max(0.05, 0.85 - i * 0.22)
+            _NS_grimjaw._draw_grimjaw_ghost(surface, gx, gy,
+                                            hero.direction, phase,
+                                            ghost_alpha, ghost_ap)
 
         # Main body (with attack pose)
         _NS_grimjaw._draw_grimjaw_body(surface, x + offset_x, y + offset_y, hero.direction,
                            phase, "attack", 0.6)
 
 
-    def _draw_grimjaw_ghost(surface, cx, cy, facing, phase, alpha):
-        """Draw a ghosted version of Grimjaw for omnislash trail."""
-        # Simple ghost silhouette (just torso + head + sword)
-        ghost = pygame.Surface((60, 100), pygame.SRCALPHA)
+    def _draw_grimjaw_ghost(surface, cx, cy, facing, phase, alpha,
+                            attack_progress=0.6):
+        """Full-rig afterimage of Grimjaw for the omnislash trail.
 
-        # Torso silhouette
-        _NS_grimjaw._rect(ghost, (*_NS_grimjaw.PALETTE["fire_dark"], alpha),
-              (20, 40, 20, 25), border_radius=4)
-        # Head silhouette
-        _NS_grimjaw._rect(ghost, (*_NS_grimjaw.PALETTE["fire_mid"], alpha),
-              (23, 20, 14, 18), border_radius=4)
-        # Sword silhouette (extended)
-        _NS_grimjaw._aaline(ghost, (*_NS_grimjaw.PALETTE["fire_light"], alpha),
-                (30 + facing * 15, 50), (30 + facing * 30, 40), 3)
-
-        surface.blit(ghost, (cx - 30, cy - 50))
+        Renders the complete layered bone rig (mane, mask, blade, armor)
+        into a transparent buffer at reduced alpha so the teleport leaves
+        real body afterimages instead of crude rectangle stickers.
+        """
+        ghost = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        _NS_grimjaw._draw_grimjaw_elite(
+            ghost, cx, cy, facing, phase, "attack",
+            max(0.0, min(1.0, attack_progress)), 0.0, False)
+        ghost.set_alpha(alpha)
+        surface.blit(ghost, (0, 0))
 
 
     # ===================================================================
@@ -580,7 +624,13 @@ class _NS_grimjaw:
         lean = int(stride * 2.5 if walk else 0.0)
         if attack:
             lean += int(math.sin(ap * math.pi) * 6.0)
+        # Idle weight-shift: slow side-to-side rock so the stance reads as
+        # alive (planted feet, swaying torso) instead of a frozen statue.
+        if action == "idle":
+            lean += int(math.sin(phase * 0.5) * 3)
         root_y = int(breath * 0.8)
+        if action == "idle":
+            root_y += int(math.sin(phase * 0.78) * 2)
         if walk:
             root_y -= int(abs(stride) * 2.5)
         if attack:
@@ -642,32 +692,67 @@ class _NS_grimjaw:
         dot(p["skin_mid"], *rear_hand, 3)
         dot(p["skin_high"], rear_hand[0] - 1, rear_hand[1] - 1, 1, False)
 
+        # Back war-skirt: a wide red panel hanging behind the legs (drawn
+        # BEFORE them) so the waist reads as fully wrapped in cloth rather
+        # than only a front loincloth. Its hem sways out of phase with the
+        # front sash for a heavier, layered silhouette.
+        skirt_sway = int(math.sin(phase * 0.9 + 1.2) * 2)
+        poly(p["red_darkest"], [(-11, 13), (11, 13), (9 + skirt_sway, 34),
+             (4, 39), (0, 37), (-5, 40), (-9 + skirt_sway, 33)])
+        poly(p["red_dark"], [(-9, 14), (9, 14), (7 + skirt_sway, 31),
+             (3, 35), (0, 33), (-4, 36), (-7 + skirt_sway, 30)], False)
+        _NS_grimjaw._aaline(surface, p["red_mid"], pt(-4, 16),
+                            pt(-6 + skirt_sway, 32), 1)
+        _NS_grimjaw._aaline(surface, p["red_mid"], pt(3, 16),
+                            pt(4 + skirt_sway, 31), 1)
+
         # Legs: longer, wider planted stance with metal shin guards.
+        # v2 (animasi): kaki terangkat bergantian saat melangkah (foot-lift)
+        # + lutut ikut naik, supaya jalan tidak "meluncur" di tanah.
         front_step = int(stride * 5) if walk else 0
         rear_step = -front_step
         if attack:
             front_step += int(ap * 6)
             rear_step -= int(ap * 3)
-        legs = ((-9, rear_step, p["boot_dark"]),
-                (9, front_step, p["boot_mid"]))
-        for side, step, boot in legs:
+        # Kecepatan stride menentukan kapan tiap kaki berada di fase
+        # "swing" (maju) -> kaki itu terangkat. Dua kaki saling berlawanan:
+        # satu menapak, satu terangkat.
+        stride_vel = math.cos(phase * 1.72) if walk else 0.0
+        front_lift = int(max(0.0, stride_vel) * 8) if walk else 0
+        rear_lift = int(max(0.0, -stride_vel) * 8) if walk else 0
+        legs = ((-9, rear_step, p["boot_dark"], rear_lift),
+                (9, front_step, p["boot_mid"], front_lift))
+        for side, step, boot, lift in legs:
             tx = side + step
+            # The knee rises with the lift so the thigh shortens up to meet
+            # the raised shin (proper knee-bend, no gap).
             poly(p["skin_darkest"], [(tx - 6, 14), (tx + 6, 14),
-                 (tx + 5, 30), (tx - 5, 30)])
+                 (tx + 5, 30 - lift), (tx - 5, 30 - lift)])
             poly(p["skin_dark"], [(tx - 5, 15), (tx + 5, 15),
-                 (tx + 4, 29), (tx - 4, 29)], False)
+                 (tx + 4, 29 - lift), (tx - 4, 29 - lift)], False)
             poly(p["skin_mid"], [(tx - 3, 16), (tx + 2, 16),
-                 (tx + 1, 27), (tx - 2, 27)], False)
-            poly(p["metal_darkest"], [(tx - 5, 29), (tx + 5, 29),
-                 (tx + 6, 44), (tx - 5, 44)])
-            poly(p["metal_dark"], [(tx - 4, 30), (tx + 4, 30),
-                 (tx + 5, 43), (tx - 4, 43)], False)
+                 (tx + 1, 27 - lift), (tx - 2, 27 - lift)], False)
+            # Whole lower leg (shin guard + boot + foot) rises by `lift`
+            # so the knee actually bends instead of the leg shrinking.
+            poly(p["metal_darkest"], [(tx - 5, 29 - lift), (tx + 5, 29 - lift),
+                 (tx + 6, 44 - lift), (tx - 5, 44 - lift)])
+            poly(p["metal_dark"], [(tx - 4, 30 - lift), (tx + 4, 30 - lift),
+                 (tx + 5, 43 - lift), (tx - 4, 43 - lift)], False)
             _NS_grimjaw._aaline(surface, p["metal_light"],
-                                pt(tx - 2, 31), pt(tx - 2, 42), 1)
-            poly(boot, [(tx - 6, 43), (tx + 5, 43),
-                 (tx + 6, 48), (tx - 7, 48)], False)
+                                pt(tx - 2, 31 - lift), pt(tx - 2, 42 - lift), 1)
+            # Gold trim: knee cap line + ankle cuff on the shin guard.
+            _NS_grimjaw._aaline(surface, p["gold_dark"],
+                                pt(tx - 5, 31 - lift), pt(tx + 5, 31 - lift), 2)
+            _NS_grimjaw._aaline(surface, p["gold_mid"],
+                                pt(tx - 5, 30 - lift), pt(tx + 5, 30 - lift), 1)
+            _NS_grimjaw._aaline(surface, p["gold_dark"],
+                                pt(tx - 5, 43 - lift), pt(tx + 5, 43 - lift), 1)
+            _NS_grimjaw._aacircle(surface, p["gold_light"],
+                                  pt(tx, 31 - lift), 1)
+            poly(boot, [(tx - 6, 43 - lift), (tx + 5, 43 - lift),
+                 (tx + 6, 48 - lift), (tx - 7, 48 - lift)], False)
             toe = 6 * f
-            foot = pt(tx + (4 if f > 0 else -4), 47)
+            foot = pt(tx + (4 if f > 0 else -4), 47 - lift)
             _NS_grimjaw._aaline(surface, p["shadow_deep"],
                                 (foot[0] - toe, foot[1] + 1),
                                 (foot[0] + toe, foot[1] + 1), 4)
@@ -699,10 +784,36 @@ class _NS_grimjaw:
         _NS_grimjaw._aaline(surface, p["red_light"], pt(-10, -10),
                             pt(8, 7), 1)
 
-        # Belt + gold buckle.
+        # Cross-body leather harness: opposite diagonal to the sash, with
+        # a gold buckle at the shoulder and studs down the strap.
+        _NS_grimjaw._aaline(surface, p["armor_darkest"], pt(10, -11),
+                            pt(-9, 8), 4)
+        _NS_grimjaw._aaline(surface, p["armor_mid"], pt(10, -11),
+                            pt(-9, 8), 2)
+        _NS_grimjaw._aaline(surface, p["armor_light"], pt(9, -11),
+                            pt(-8, 8), 1)
+        for i in range(3):
+            t = 0.25 + i * 0.25
+            sx = int(10 + (-9 - 10) * t)
+            sy = int(-11 + (8 + 11) * t)
+            _NS_grimjaw._aacircle(surface, p["gold_mid"], pt(sx, sy), 1)
+        _NS_grimjaw._rect(surface, p["gold_dark"],
+                          (pt(9, -12)[0] - 2, pt(9, -12)[1] - 2, 4, 4))
+        _NS_grimjaw._rect(surface, p["gold_mid"],
+                          (pt(9, -12)[0] - 1, pt(9, -12)[1] - 1, 2, 2))
+        # Sternum medallion: a small gold boss on the chest centre.
+        dot(p["gold_darkest"], 0, -4, 3)
+        dot(p["gold_dark"], 0, -4, 2)
+        dot(p["gold_mid"], 0, -4, 1)
+        dot(p["gold_shine"], 0, -5, 1, False)
+
+        # Belt + gold buckle + studs.
         poly(p["armor_darkest"], [(-12, 9), (12, 9), (12, 15), (-12, 15)])
         poly(p["red_darkest"], [(-11, 10), (11, 10), (11, 14),
              (-11, 14)], False)
+        for bx in (-9, -5, 5, 9):
+            dot(p["gold_dark"], bx, 12, 1, False)
+            dot(p["gold_mid"], bx, 12, 1, False)
         dot(p["gold_darkest"], 0, 12, 4)
         dot(p["gold_dark"], 0, 12, 3)
         dot(p["gold_mid"], 0, 12, 2)
@@ -721,13 +832,24 @@ class _NS_grimjaw:
         _NS_grimjaw._aaline(surface, p["blood_dark"], pt(-3, 17),
                             pt(1 + cloth_sway, 29), 1)
 
-        # Hip plates.
+        # Hip tassets: three overlapping leather plates per side that taper
+        # to a point, with a gold rivet at each plate tip.
         for side in (-1, 1):
             hx = side * 11
-            poly(p["armor_darkest"], [(hx - 3, 12), (hx + 3, 12),
-                 (hx + 4, 22), (hx - 3, 21)], False)
-            poly(p["armor_dark"], [(hx - 2, 13), (hx + 2, 13),
-                 (hx + 3, 21), (hx - 2, 20)], False)
+            for i, (y0, y1, tip) in enumerate(((11, 19, 22),
+                                               (12, 18, 20),
+                                               (13, 17, 18))):
+                dx = (2 - i)
+                poly(p["armor_darkest"], [(hx - 3 - dx, y0), (hx + 3 - dx, y0),
+                     (hx + 2 - dx, y1), (hx - 1, tip),
+                     (hx - 4 - dx, y1)], False)
+                poly(p["armor_dark"], [(hx - 2 - dx, y0 + 1),
+                     (hx + 2 - dx, y0 + 1), (hx + 1 - dx, y1 - 1),
+                     (hx - 1, tip - 1)], False)
+                _NS_grimjaw._aacircle(surface, p["gold_dark"],
+                                      pt(hx - 1, tip), 1)
+                _NS_grimjaw._aacircle(surface, p["gold_light"],
+                                      pt(hx - 1, tip - 1), 1)
 
         # Shoulder pauldrons: layered steel plates, gold rim, spike.
         for side in (-1, 1):
@@ -745,6 +867,19 @@ class _NS_grimjaw:
             poly(p["metal_dark"], [(sx - 1, -15), (sx, -23),
                  (sx + 1, -15)], False)
             dot(p["metal_shine"], sx, -19, 1, False)
+            # Plate segmentation: two curved seams + rivets along the rim
+            # so the pauldron reads as layered steel, not one flat blob.
+            _NS_grimjaw._aaline(surface, p["metal_darkest"],
+                                pt(sx - 5, -12), pt(sx + 5, -12), 1)
+            _NS_grimjaw._aaline(surface, p["metal_darkest"],
+                                pt(sx - 4, -9), pt(sx + 4, -9), 1)
+            _NS_grimjaw._aaline(surface, p["metal_light"],
+                                pt(sx - 5, -11), pt(sx + 5, -11), 1)
+            for rx in (-4, -1, 1, 4):
+                _NS_grimjaw._aacircle(surface, p["metal_darkest"],
+                                      pt(sx + rx, -7), 1)
+                _NS_grimjaw._aacircle(surface, p["metal_shine"],
+                                      pt(sx + rx, -7), 1)
 
         # Neck + traps.
         poly(p["skin_darkest"], [(-7, -16), (7, -16), (10, -10),
@@ -770,6 +905,58 @@ class _NS_grimjaw:
         # Pose-driven curved flame blade (longer scimitar sweep).
         angle = _NS_grimjaw._blade_angle(phase, action, ap, spin_phase)
         length = _NS_grimjaw._blade_len(action)
+
+        # Attack motion trail: blade "afterimages" at earlier sweep angles
+        # make the swing read fast instead of a single static scimitar.
+        if attack and 0.30 < ap < 0.85:
+            for back, al in ((0.12, 80), (0.24, 45)):
+                ap_back = max(0.0, ap - back)
+                a_back = _NS_grimjaw._blade_angle(phase, action, ap_back,
+                                                  spin_phase)
+                g_back = _NS_grimjaw._blade_grip_local(action, ap_back, phase)
+                trail = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+                _NS_grimjaw._draw_elite_flame_blade(
+                    trail, pt, f, g_back, a_back, length, phase, False)
+                trail.set_alpha(al)
+                surface.blit(trail, (0, 0))
+
+        # Blade Fury spin trail: a full circular flame sweep behind the
+        # blade makes the whirl read as one continuous ring of fire.
+        if spin:
+            for back, al in ((0.25, 90), (0.55, 55)):
+                sp_back = spin_phase - back
+                a_back = _NS_grimjaw._blade_angle(phase, action, ap,
+                                                  sp_back)
+                g_back = _NS_grimjaw._blade_grip_local(action, ap, phase)
+                trail = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+                _NS_grimjaw._draw_elite_flame_blade(
+                    trail, pt, f, g_back, a_back, length, phase, False)
+                trail.set_alpha(al)
+                surface.blit(trail, (0, 0))
+
+            # Radial ember sparks: flung outward every revolution so the
+            # whirl reads as a violent blaze, not just two ghost blades.
+            for i in range(8):
+                a = spin_phase + i * math.tau / 8
+                t = (phase * 0.6 + i * 0.125) % 1.0
+                r = 18 + t * 26
+                ex = int(math.cos(a) * r)
+                ey = int(math.sin(a) * r) - 4
+                alpha = int(210 * (1.0 - t))
+                _NS_grimjaw._aacircle(surface, (*p["fire_dark"], alpha),
+                                      pt(ex, ey), 2)
+                _NS_grimjaw._aacircle(surface, (*p["fire_hot"], alpha),
+                                      pt(ex, ey), 1)
+            # Spin shockwave: a bright ring pulsing at the waist that
+            # makes the blade fury feel like it tears the air around him.
+            ring_t = (spin_phase % math.tau) / math.tau
+            ring_r = int(20 + ring_t * 12)
+            ring_alpha = int(150 * (1.0 - ring_t))
+            _NS_grimjaw._aacircle(surface, (*p["fire_mid"], ring_alpha),
+                                  pt(0, 0), ring_r, 1)
+            _NS_grimjaw._aacircle(surface, (*p["fire_hot"], ring_alpha),
+                                  pt(0, 0), max(1, ring_r - 3), 1)
+
         _NS_grimjaw._draw_elite_flame_blade(
             surface, pt, f, grip, angle, length, phase, detail)
 
@@ -878,11 +1065,39 @@ class _NS_grimjaw:
              (-2, -20), (-4, -23), (-6, -28), (-6, -34),
              (-7, -39)], False)
         _NS_grimjaw._aacircle(surface, p["mask_shine"], pt(2, -37), 2)
-        # Blood stripes: thick centre + two thin side slashes.
-        poly(p["blood_darkest"], [(-1, -43), (2, -43), (2, -17),
-             (-1, -17)])
-        poly(p["blood_dark"], [(0, -42), (1, -42), (1, -18),
-             (0, -18)], False)
+
+        # Forehead crest: small gold diamond emblem (signature masterwork).
+        poly(p["gold_darkest"], [(-1, -44), (2, -44), (3, -40),
+             (0, -38), (-2, -40)])
+        poly(p["gold_mid"], [(0, -43), (1, -43), (2, -40), (0, -39),
+             (-1, -40)], False)
+        _NS_grimjaw._aacircle(surface, p["gold_shine"], pt(0, -41), 1)
+
+        # Brow ridge: angled shadow slashes above each eye socket so the
+        # gaze reads angry instead of a blank stare.
+        _NS_grimjaw._aaline(surface, p["mask_shadow"], pt(-8, -32),
+                            pt(-3, -35), 2)
+        _NS_grimjaw._aaline(surface, p["mask_shadow"], pt(8, -32),
+                            pt(3, -35), 2)
+        _NS_grimjaw._aaline(surface, p["mask_line"], pt(-9, -33),
+                            pt(-4, -36), 1)
+        _NS_grimjaw._aaline(surface, p["mask_line"], pt(9, -33),
+                            pt(4, -36), 1)
+
+        # Nose bridge: faint vertical ridge down the centre.
+        _NS_grimjaw._aaline(surface, p["mask_line"], pt(0, -39),
+                            pt(0, -26), 1)
+
+        # Blood stripes: thick centre (with a drip tail) + two thin side
+        # slashes that taper to points.
+        poly(p["blood_darkest"], [(-1, -43), (2, -43), (2, -20),
+             (1, -17), (-1, -20)])
+        poly(p["blood_dark"], [(0, -42), (1, -42), (1, -21),
+             (0, -19)], False)
+        poly(p["blood_mid"], [(0, -21), (1, -21), (1, -17),
+             (0, -17)], False)
+        _NS_grimjaw._aaline(surface, p["blood_light"], pt(1, -40),
+                            pt(1, -22), 1)
         _NS_grimjaw._aaline(surface, p["blood_dark"], pt(-8, -39),
                             pt(-4, -25), 2)
         _NS_grimjaw._aaline(surface, p["blood_mid"], pt(-7, -38),
@@ -891,18 +1106,30 @@ class _NS_grimjaw:
                             pt(4, -25), 2)
         _NS_grimjaw._aaline(surface, p["blood_mid"], pt(7, -38),
                             pt(4, -26), 1)
-        # Eyes: dark sockets, glowing red while attacking.
+
+        # Eyes: angular dark sockets (not round blobs) with a glowing red
+        # core while attacking.
         for ex in (-5, 5):
             x, y = pt(ex, -30)
-            _NS_grimjaw._aacircle(surface, p["dark_eye"], (x, y), 3)
+            # Angular socket: a slanted diamond, wider toward the temple.
+            poly(p["dark_eye"], [(ex - f * 2, y - 2), (ex + f * 3, y - 3),
+                 (ex + f * 2, y + 2), (ex - f * 3, y + 3)])
             if eyes_glow:
                 _NS_grimjaw._aacircle(surface, p["eye_glow"], (x, y), 2)
                 _NS_grimjaw._aacircle(surface, p["white"], (x - f, y - 1), 1)
-        # Mouth grille.
+            else:
+                _NS_grimjaw._aacircle(surface, p["eye_glow"], (x, y), 1)
+
+        # Mouth grille: upper jaw line + individual teeth bars.
         _NS_grimjaw._aaline(surface, p["shadow"], pt(-4, -20), pt(4, -20), 3)
         for tx in (-3, -1, 1, 3):
-            _NS_grimjaw._aaline(surface, p["mask_light"], pt(tx, -21),
+            _NS_grimjaw._aaline(surface, p["shadow"], pt(tx, -20),
+                                pt(tx, -18), 2)
+            _NS_grimjaw._aaline(surface, p["mask_light"], pt(tx, -20),
                                 pt(tx, -19), 1)
+        # Lower jaw separation (mandible line).
+        _NS_grimjaw._aaline(surface, p["mask_shadow"], pt(-6, -17),
+                            pt(6, -17), 1)
 
 
     def _draw_elite_flame_blade(surface, pt, f, grip, angle, length, phase,
@@ -959,12 +1186,47 @@ class _NS_grimjaw:
             _NS_grimjaw._aaline(surface, p["white"], edge[i],
                                 edge[i + 1], 1)
 
+        # Flickering flame licks shed from the convex edge, so the blade
+        # reads as living fire rather than a smooth metal scimitar.
+        flick = math.sin(phase * 3.1) * 2.0
+        for i, t in enumerate((0.18, 0.40, 0.62, 0.82)):
+            ci = centers[int(t * segs)]
+            lic = 4 + int((1.0 - t) * 5) + int(math.sin(phase * 4 + i) * 1.5)
+            ex = ci[0] + n_x * (lic + flick)
+            ey = ci[1] + n_y * (lic + flick)
+            _NS_grimjaw._poly(surface, p["fire_dark"], [
+                pt(ci[0] - n_x * 2, ci[1] - n_y * 2),
+                pt(ci[0] + n_x * 2, ci[1] + n_y * 2),
+                pt(ex, ey)])
+            _NS_grimjaw._poly(surface, p["fire_light"], [
+                pt(ci[0] - n_x * 1, ci[1] - n_y * 1),
+                pt(ci[0] + n_x * 1, ci[1] + n_y * 1),
+                pt(ex - n_x * 1, ey - n_y * 1)])
+            _NS_grimjaw._aacircle(surface, p["fire_hot"],
+                                  pt(ex, ey), 1)
+
         gx, gy = grip_s
+        # Pommel (behind the hand, opposite the blade) + wrapped grip.
+        pommel = pt(grip[0] - s * 4, grip[1] - c * 4)
+        _NS_grimjaw._aacircle(surface, p["gold_darkest"], pommel, 3)
+        _NS_grimjaw._aacircle(surface, p["gold_dark"], pommel, 2)
+        _NS_grimjaw._aacircle(surface, p["gold_light"], pommel, 1)
         _NS_grimjaw._aacircle(surface, p["armor_darkest"], (gx, gy), 3)
-        _NS_grimjaw._aacircle(surface, p["gold_dark"], (gx, gy), 2)
-        _NS_grimjaw._aaline(surface, p["gold_mid"],
-                            pt(grip[0] - 4, grip[1] - 2),
-                            pt(grip[0] + 5, grip[1] + 2), 3)
+        _NS_grimjaw._aacircle(surface, p["armor_mid"], (gx, gy), 2)
+        # Crossguard: a gold quillon bar perpendicular to the blade so the
+        # weapon reads as a proper flame scimitar with a real hilt.
+        for off, col, wd in ((0, p["gold_darkest"], 5),
+                             (0, p["gold_dark"], 3),
+                             (0, p["gold_mid"], 2)):
+            _NS_grimjaw._aaline(surface, col,
+                                pt(grip[0] - n_x * 5 + off,
+                                   grip[1] - n_y * 5 + off),
+                                pt(grip[0] + n_x * 5 + off,
+                                   grip[1] + n_y * 5 + off), wd)
+        _NS_grimjaw._aacircle(surface, p["gold_light"],
+                              pt(grip[0] + n_x * 5, grip[1] + n_y * 5), 1)
+        _NS_grimjaw._aacircle(surface, p["gold_light"],
+                              pt(grip[0] - n_x * 5, grip[1] - n_y * 5), 1)
 
         # Ember particles + hot core read well in both the arena and the
         # portrait LOD (they hug the blade tip, so they do not enlarge the
@@ -1175,6 +1437,63 @@ class _NS_grimjaw:
         surface.blit(arc_surf, (x - 65, y - 50))
 
 
+    def _draw_impact_flash(surface, x, y, facing, progress, crit=False):
+        """Bright hit-pop + shockwave ring when the blade connects.
+
+        Runs for every basic attack (crit just makes it bigger), so the
+        swing always reads with a satisfying impact instead of a silent
+        crescent. Kept tight around the blade tip so it does not enlarge
+        the portrait auto-crop or the sprite-cache canvas.
+        """
+        if progress < 0.45 or progress > 0.75:
+            return
+        t = (progress - 0.45) / 0.30
+        t = max(0.0, min(1.0, t))
+        intensity = math.sin(t * math.pi)
+
+        # Impact point: out in front, where the scimitar tip lands.
+        tip_x = x + (34 if crit else 30) * facing
+        tip_y = y - 4
+
+        # Shockwave ring expanding outward.
+        ring_r = int(4 + intensity * (20 if crit else 15))
+        _NS_grimjaw._aacircle(surface, (*_NS_grimjaw.PALETTE["fire_dark"],
+                                        int(140 * intensity)),
+                              (tip_x, tip_y), ring_r, 2)
+        _NS_grimjaw._aacircle(surface, (*_NS_grimjaw.PALETTE["fire_hot"],
+                                        int(180 * intensity)),
+                              (tip_x, tip_y), max(1, ring_r - 3), 1)
+
+        # Central flash (additive-looking stack of hot cores).
+        for radius, color, alpha in ((14, "fire_dark", 90),
+                                     (9, "fire_mid", 160),
+                                     (5, "fire_light", 220),
+                                     (3, "fire_hot", 255)):
+            _NS_grimjaw._aacircle(
+                surface,
+                (*_NS_grimjaw.PALETTE[color], int(alpha * intensity)),
+                (tip_x, tip_y), radius)
+
+        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["fire_core"],
+                              (tip_x, tip_y), max(1, int(2 * intensity)))
+        _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["white"],
+                              (tip_x, tip_y), max(1, int(1 * intensity)))
+
+        # Radial spark streaks that shoot out at peak.
+        for i in range(6):
+            angle = (i * math.pi / 3) + progress * 2.0
+            r0 = int(6 * intensity)
+            r1 = int((14 if crit else 11) * intensity)
+            sx = tip_x + int(math.cos(angle) * r0)
+            sy = tip_y + int(math.sin(angle) * r0)
+            ex = tip_x + int(math.cos(angle) * r1)
+            ey = tip_y + int(math.sin(angle) * r1)
+            _NS_grimjaw._aaline(surface,
+                                (*_NS_grimjaw.PALETTE["fire_hot"],
+                                 int(220 * intensity)),
+                                (sx, sy), (ex, ey), 1)
+
+
     def _draw_critical_strike_burst(surface, x, y, facing, progress):
         """Critical strike burst effect - extra sparkle."""
         burst_x = x + 30 * facing
@@ -1268,10 +1587,12 @@ class _NS_grimjaw:
         aura = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
         cx, cy = radius + 10, (radius + 20) // 2
 
-        # Ring
-        pygame.draw.ellipse(aura, (*_NS_grimjaw.PALETTE["heal_mid"], int(180 * pulse)),
+        # Ring (tegas: outline gelap + ring terang)
+        pygame.draw.ellipse(aura, (*_NS_grimjaw.PALETTE["heal_dark"], int(150 * pulse)),
+                            (3, 3, radius * 2 + 14, radius + 14), 5)
+        pygame.draw.ellipse(aura, (*_NS_grimjaw.PALETTE["heal_mid"], int(195 * pulse)),
                             (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(aura, (*_NS_grimjaw.PALETTE["heal_light"], int(150 * pulse)),
+        pygame.draw.ellipse(aura, (*_NS_grimjaw.PALETTE["heal_light"], int(170 * pulse)),
                             (15, 8, radius * 2 - 10, radius + 4), 2)
 
         # Runic marks around aura
@@ -2560,6 +2881,8 @@ class _NS_sylara:
         if windrun:
             lean = 7 * f
         root_y = int(math.sin(phase * .72) * .7)
+        # v2 (animasi): perpindahan berat badan saat idle — goyang kiri-kanan.
+        sway = int(math.sin(phase * .8) * 3) * f if not (walk or attack or windrun) else 0
         if walk:
             root_y -= int(abs(math.sin(phase * 1.7)) * 2)
         if windrun:
@@ -2569,7 +2892,7 @@ class _NS_sylara:
             root_y += int(math.sin(ap * math.pi) * 1.5)
 
         def pt(dx, dy):
-            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+            return (int(cx + dx * f + lean + sway), int(cy + dy + root_y))
 
         def poly(color, points, outline=True):
             pts = [pt(dx, dy) for dx, dy in points]
@@ -2678,16 +3001,23 @@ class _NS_sylara:
                            pt(-3, -38), pt(-10 - hw, -30), 1)
 
         # ═══ KAKI: paha ramping + boot kulit tinggi ═══
+        # v2 (animasi): foot-lift bergantian saat jalan — kaki yang melangkah
+        # maju terangkat (lutut + telapak naik), kaki tumpuan tetap menapak.
         leg_phase = stride if (walk or windrun) else 0.0
+        stride_vel = math.cos(phase * 1.7) if walk else 0.0
+        rear_lift = int(max(0.0, -stride_vel) * 9) if walk else 0
+        front_lift = int(max(0.0, stride_vel) * 9) if walk else 0
         if windrun:
             rear_foot = (-13 - int(leg_phase * 7), 38)
             front_foot = (14 + int(leg_phase * 8), 38)
         else:
-            rear_foot = (-7 - int(leg_phase * 5), 40 - int(abs(leg_phase) * 2))
-            front_foot = (9 + int(leg_phase * 6), 40)
-        for hip, knee, foot, shade in (
-                ((-6, 11), (-9, 26), rear_foot, p["cloth_darkest"]),
-                ((6, 11), (9, 25), front_foot, p["cloth_dark"])):
+            rear_foot = (-7 - int(leg_phase * 5),
+                         40 - int(abs(leg_phase) * 2) - rear_lift)
+            front_foot = (9 + int(leg_phase * 6), 40 - front_lift)
+        for hip, knee, foot, shade, lift in (
+                ((-6, 11), (-9, 26), rear_foot, p["cloth_darkest"], rear_lift),
+                ((6, 11), (9, 25), front_foot, p["cloth_dark"], front_lift)):
+            knee = (knee[0], knee[1] - lift)
             poly(shade, [hip, (hip[0] + 6, hip[1]),
                          (knee[0] + 4, knee[1]), (foot[0] + 4, foot[1] - 6),
                          (foot[0] - 4, foot[1] - 6), (knee[0] - 4, knee[1])])
@@ -3095,10 +3425,13 @@ class _NS_sylara:
         progress = max(0.0, min(1.0, 1 - timer / 60))
         facing = boss.direction
 
-        # Line indicator to target
+        # Line indicator to target (tegas: titik terang lebih besar + outline)
         tx, ty = _NS_sylara._target_position(boss, x, y)
         for i in range(0, 100, 5):
-            alpha = int(80 + math.sin(phase * 3 + i * 0.2) * 60)
+            alpha = int(100 + math.sin(phase * 3 + i * 0.2) * 70)
+            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_dark"], alpha // 2),
+                      (x + int((tx - x) * i / 100) + 1,
+                       y + int((ty - y) * i / 100) - 7), 2)
             _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha),
                       (x + int((tx - x) * i / 100),
                        y + int((ty - y) * i / 100) - 8), 1)
@@ -3120,15 +3453,15 @@ class _NS_sylara:
     def _draw_windrun_ground(surface, boss, x, y, timer, phase):
         """Ground effect during windrun."""
         facing = boss.direction
-        # Speed lines on ground
+        # Speed lines on ground (tegas: stroke gelap + garis terang)
         for i in range(6):
             off = (i - 3) * 6
             sx = x - facing * 20
             sy = y + 30 + off
             ex = sx - facing * 40
             alpha = 200 - i * 20
-            _NS_sylara._aaline(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha),
-                    (sx, sy), (ex, sy), 1)
+            _skill_outlined_line(surface, (sx, sy), (ex, sy), 1,
+                                 _NS_sylara.PALETTE["wind_bright"], alpha)
 
 
     def _draw_windrun_trail(surface, x, y, facing, phase):
@@ -3171,7 +3504,7 @@ class _NS_sylara:
         tx, ty = _NS_sylara._target_position(boss, x, y)
         progress = max(0.0, min(1.0, 1 - timer / 150))
 
-        # Dashed line indicator
+        # Dashed line indicator (tegas: stroke gelap + garis terang)
         steps = 20
         for i in range(steps):
             if i % 2 == 0:
@@ -3181,8 +3514,8 @@ class _NS_sylara:
                 y1 = y + (ty - y) * t1 - 5
                 x2 = x + (tx - x) * t2
                 y2 = y + (ty - y) * t2 - 5
-                _NS_sylara._aaline(surface, (*_NS_sylara.PALETTE["wind_bright"], 150),
-                        (x1, y1), (x2, y2), 2)
+                _skill_outlined_line(surface, (x1, y1), (x2, y2), 2,
+                                     _NS_sylara.PALETTE["wind_bright"], 170)
 
         # Spawn shackle projectile at start
         if not getattr(boss, "_sy_shackle_spawned", False):
@@ -3204,9 +3537,12 @@ class _NS_sylara:
         ring = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
         cx, cy = radius + 10, (radius + 20) // 2
 
-        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_mid"], int(180 * pulse)),
+        # Dark outline first (tegas di atas terrain terang)
+        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_dark"], int(150 * pulse)),
+                            (3, 3, radius * 2 + 14, radius + 14), 5)
+        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_mid"], int(190 * pulse)),
                             (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_bright"], int(200 * pulse)),
+        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_bright"], int(220 * pulse)),
                             (15, 8, radius * 2 - 10, radius + 4), 2)
 
         # Runic marks
@@ -3863,6 +4199,9 @@ class _NS_kaizen:
         # compressed wind-up / explosive attack lunge. Because every layer
         # uses pt(), hair, face, armor and limbs remain attached to the rig.
         root_y = int(math.sin(phase * .72) * .7)
+        # v2 (animasi): perpindahan berat badan saat idle — badan bergoyang
+        # ke kiri-kanan (bukan sekadar naik-turun nafas), memberi kesan hidup.
+        sway = int(math.sin(phase * .8) * 3) * f if not (walk or attack) else 0
         if walk:
             root_y -= int(abs(math.sin(phase * 1.7)) * 2)
         if attack:
@@ -3871,7 +4210,7 @@ class _NS_kaizen:
             root_y += int(math.sin(ap * math.pi) * 2)
 
         def pt(dx, dy):
-            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+            return (int(cx + dx * f + lean + sway), int(cy + dy + root_y))
 
         def poly(color, points, outline=True):
             pts = [pt(dx, dy) for dx, dy in points]
@@ -3897,7 +4236,8 @@ class _NS_kaizen:
         tail_root = (-7, -34)
         # Broad ponytail mass first, then separate pointed locks. This avoids
         # the "thin broom" silhouette common in primitive-only renderers.
-        hw = int(hair_wave * 2)
+        # v2: ponytail mengibas lebih lebar saat bergerak/menyerang.
+        hw = int(hair_wave * (4 if (walk or attack) else 2))
         poly(p["hair_darkest"], [(-5, -35), (-12, -48), (-24, -57 + hw),
              (-21, -48 + hw), (-38, -51 + hw), (-29, -40 + hw),
              (-45, -37 + hw), (-29, -31 + hw), (-41, -22 + hw),
@@ -3924,8 +4264,9 @@ class _NS_kaizen:
             _NS_kaizen._aaline(surface, p["hair_mid"], a, b, 1)
 
         # ── scarf tails behind torso ──
-        scarf_wave = int(math.sin(phase * 1.45) * 3)
-        scarf_boost = 7 if walk or attack else 0
+        # v2: mengalir lebih jauh & berombak lebih kuat saat bergerak/menyerang.
+        scarf_wave = int(math.sin(phase * 1.45) * (5 if (walk or attack) else 3))
+        scarf_boost = 13 if (walk or attack) else 0
         poly(p["scarf_dark"], [(-5, -25), (-12, -22),
              (-26 - scarf_boost, -17 + scarf_wave),
              (-39 - scarf_boost, -7 + scarf_wave),
@@ -3942,12 +4283,22 @@ class _NS_kaizen:
         _NS_kaizen._aacircle(surface, p["gold_mid"], pt(-31, 29), 3)
 
         # ── legs: true split stance, not one floating robe mass ──
+        # v2 (animasi): foot-lift bergantian — kaki yang melangkah maju
+        # terangkat (lutut + telapak naik), kaki tumpuan tetap menapak.
+        # Kecepatan stride menentukan fase swing tiap kaki.
         leg_phase = stride if walk else 0.0
-        rear_foot = (-8 - int(leg_phase * 5), 40 - int(abs(leg_phase) * 2))
-        front_foot = (11 + int(leg_phase * 6), 40)
-        for hip, knee, foot, shade in (
-                ((-5, 12), (-9, 27), rear_foot, p["pants_dark"]),
-                ((6, 12), (9, 26), front_foot, p["pants_mid"])):
+        stride_vel = math.cos(phase * 1.7) if walk else 0.0
+        rear_lift = int(max(0.0, -stride_vel) * 9) if walk else 0
+        front_lift = int(max(0.0, stride_vel) * 9) if walk else 0
+        rear_foot = (-8 - int(leg_phase * 5),
+                     40 - int(abs(leg_phase) * 2) - rear_lift)
+        front_foot = (11 + int(leg_phase * 6), 40 - front_lift)
+        for hip, knee, foot, shade, lift in (
+                ((-5, 12), (-9, 27), rear_foot, p["pants_dark"], rear_lift),
+                ((6, 12), (9, 26), front_foot, p["pants_mid"], front_lift)):
+            # Knee rises with the lift so the thigh folds up to meet the
+            # raised shin (proper knee-bend, no gap between segments).
+            knee = (knee[0], knee[1] - lift)
             poly(shade, [hip, (hip[0] + 7, hip[1]),
                          (knee[0] + 5, knee[1]), (foot[0] + 4, foot[1] - 5),
                          (foot[0] - 4, foot[1] - 5),
@@ -4095,7 +4446,7 @@ class _NS_kaizen:
         elbow = ((hand[0] + 10) // 2, (hand[1] - 10) // 2)
         limb((10, -12), elbow, 8, p["cloth_mid"], p["cloth_high"])
         limb(elbow, hand, 7, p["skin_dark"], p["skin_light"])
-        _NS_kaizen._draw_elite_katana(surface, cx + lean, cy, f,
+        _NS_kaizen._draw_elite_katana(surface, cx + lean + sway, cy, f,
                                       hand, angle, phase, attack)
 
         # Small wind crest and armor rivets remain legible at 50 px.
@@ -4137,6 +4488,37 @@ class _NS_kaizen:
                                         iy + math.sin(ang) * length),
                                        1 if i % 2 else 2)
         else:
+            # ── v2: aura angin berputar + daun angin (idle showcase) ──
+            # Rotating wind aura: faint orbit arcs mengelilingi tubuh.
+            aura_r = 30 + int(math.sin(phase * .9) * 3)
+            for k in range(2):
+                _NS_kaizen._draw_wind_arc(
+                    surface, cx, cy - 6, aura_r + k * 6,
+                    phase * (0.55 + k * .35),
+                    phase * (0.55 + k * .35) + 4.4,
+                    (*p["wind_mid"], 30 - k * 12), 1, 12)
+            # orbiting bright wisps tracing the aura
+            for i in range(3):
+                a = phase * 1.1 + i * math.tau / 3
+                wx = cx + int(math.cos(a) * aura_r)
+                wy = cy - 6 + int(math.sin(a) * aura_r * .55)
+                _NS_kaizen._aacircle(surface, (*p["wind_bright"], 150),
+                                     (wx, wy), 1)
+            # drifting wind leaves (daun angin) — teardrop kecil berputar
+            for i in range(4):
+                t = (phase * .11 + i / 4.0) % 1.0
+                lx = cx + int(math.sin(phase * 1.3 + i * 1.7) * (20 + i * 4))
+                ly = cy + 22 - int(t * 68)
+                la = phase * .8 + i * 2.4
+                ca, sa = math.cos(la), math.sin(la)
+                tip = (int(lx + ca * 4), int(ly + sa * 4))
+                b1 = (int(lx - sa * 2), int(ly + ca * 2))
+                b2 = (int(lx + sa * 2), int(ly - ca * 2))
+                _NS_kaizen._poly(surface, (*p["wind_light"], 150),
+                                 [tip, b1, b2])
+                _NS_kaizen._poly(surface, (*p["wind_bright"], 110),
+                                 [tip, (int(lx + sa * 1), int(ly - ca * 1)),
+                                  (int(lx - sa * 1), int(ly + ca * 1))])
             # Quiet idle motes make breathing visible without obscuring face.
             for i in range(3):
                 t = (phase * .18 + i / 3.0) % 1.0
@@ -4145,6 +4527,33 @@ class _NS_kaizen:
                 _NS_kaizen._aacircle(surface,
                                      (*p["wind_bright"], int(110 * (1 - t))),
                                      (mx, my), 1)
+
+        # ── rim-light: sinyal angin biru di tepi yang menghadap cahaya ──
+        # v2 (visual): garis 1px warna angin pada tepi depan siluet supaya
+        # Kaizen "pop" saat unit bertumpuk (setara rimlight Gornak masterwork).
+        # `pt()` sudah membalik tanda saat facing -1, jadi cukup pakai dx
+        # positif (tepi depan).
+        pulse = 0.72 + 0.28 * math.sin(phase * 1.8)
+        rim_a = int(150 * pulse)
+        rim_col = (*p["wind_light"], rim_a)
+        rim_hot = (*p["wind_white"], int(205 * pulse))
+        # puncak rambut & poni (sisi depan mahkota)
+        _NS_kaizen._aaline(surface, rim_col, pt(0, -54), pt(4, -47), 1)
+        _NS_kaizen._aaline(surface, rim_col, pt(4, -47), pt(10, -45), 1)
+        _NS_kaizen._aaline(surface, rim_hot, pt(1, -52), pt(4, -48), 1)
+        # tepi atas pauldron (bahu pedang) — kilau ganda
+        _NS_kaizen._aaline(surface, rim_col, pt(8, -19), pt(19, -16), 1)
+        _NS_kaizen._aaline(surface, rim_hot, pt(10, -19), pt(16, -17), 1)
+        # tepi depan torso & jaket
+        _NS_kaizen._aaline(surface, rim_col, pt(14, -12), pt(12, 8), 1)
+        # tepi depan paha & boot depan (ikut naik saat kaki terangkat)
+        _NS_kaizen._aaline(surface, rim_col, pt(9, 26 - front_lift),
+                           pt(12, 39 - front_lift), 1)
+        _NS_kaizen._aacircle(surface, rim_hot, pt(12, 40 - front_lift), 1)
+        # glint kecil pada gagang katana hanya saat diam (saat menyerang
+        # gagang sudah menyala lewat glow bilah + afterimage)
+        if not attack:
+            _NS_kaizen._aacircle(surface, rim_hot, pt(15, 1), 1)
 
         if detail:
             # Portrait-only micro-detail. At arena scale these marks would
@@ -4223,7 +4632,43 @@ class _NS_kaizen:
             pygame.draw.aalines(surface, p["wind_mid"], False, hamon)
         _NS_kaizen._aacircle(surface, p["steel_shine"], (int(tx), int(ty)), 2)
 
+        # v2 (visual): kilau spekular yang meluncur di sepanjang bilah —
+        # titik cahaya bergerak dari pangkal ke ujung, memberi kesan logam
+        # yang hidup walau diam.
+        glint_t = (phase * .85) % 1.0
+        gx = hx + ux * length * glint_t + px * 1.2
+        gy = hy + uy * length * glint_t + py * 1.2
+        _NS_kaizen._aacircle(surface, (*p["steel_shine"], 210),
+                             (int(gx), int(gy)), 1)
+        _NS_kaizen._aacircle(surface, (*p["wind_white"], 160),
+                             (int(gx - ux * 3), int(gy - uy * 3)), 1)
+
         if attacking:
+            # v2 (visual): bilah menyala angin saat menyerang — garis cyan
+            # terang di sepanjang tepi potong, makin tebal di tengah ayunan.
+            _NS_kaizen._aaline(surface, (*p["wind_bright"], 190),
+                               (hx + px * 2, hy + py * 2), (tx, ty), 2)
+            _NS_kaizen._aaline(surface, (*p["wind_white"], 120),
+                               (hx + px * 3, hy + py * 3), (tx, ty), 1)
+            # v2 (animasi): afterimage gerak pisau — beberapa siluet katana
+            # memudar di belakang ayunan, memunculkan kesan kecepatan slash.
+            # Setiap ghost adalah blade utuh (guard + bilah) pada sudut
+            # sebelumnya, warnanya makin transparan makin jauh dari pisau.
+            for k in (1, 2, 3):
+                ga = angle - 0.38 * k
+                gux, guy = math.cos(ga) * f, math.sin(ga)
+                gtx, gty = hx + gux * length, hy + guy * length
+                gpx, gpy = -guy, gux
+                gmx = hx + gux * 23 + gpx * 2
+                gmy = hy + guy * 23 + gpy * 2
+                ghost = [(hx + gpx * 2, hy + gpy * 2),
+                         (gmx + gpx, gmy + gpy), (gtx, gty),
+                         (gmx - gpx, gmy - gpy),
+                         (hx - gpx * 2, hy - gpy * 2)]
+                _NS_kaizen._poly(surface, (*p["wind_mid"],
+                                           90 - k * 22), ghost)
+                _NS_kaizen._poly(surface, (*p["wind_light"],
+                                           140 - k * 30), ghost)
             # layered crescent centered on the sword hand
             start = angle - 1.25
             for radius, color, width in ((48, (*p["wind_dark"], 90), 5),
@@ -4234,899 +4679,40 @@ class _NS_kaizen:
                                            color, width, 18)
 
 
-    def _draw_saya_back(surface, cx, cy, facing, phase):
-        """Lacquered katana sheath worn diagonally behind the waist."""
-        sway = math.sin(phase * .55) * .6
-        # Sheath points away from the sword hand and has a curved end cap.
-        sx, sy = cx - facing * 7, cy + 3
-        ex, ey = cx - facing * 29, cy + 25 + sway
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["shadow_deep"],
-                           (sx + 2, sy + 2), (ex + 2, ey + 2), 8)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["wrap_dark"],
-                           (sx, sy), (ex, ey), 6)
-        _NS_kaizen._aaline(surface, (105, 28, 40), (sx, sy), (ex, ey), 4)
-        _NS_kaizen._aaline(surface, (190, 62, 70),
-                           (sx - facing, sy), (ex - facing, ey), 1)
-        # Koiguchi, suspension cord, and metal kojiri.
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["gold_dark"],
-                           (sx - 3, sy - 2), (sx + 3, sy + 3), 3)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["gold_mid"],
-                             (int(ex), int(ey)), 3)
-        cord_x = cx - facing * 10
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["scarf_light"],
-                           (cord_x, cy + 2),
-                           (cord_x - facing * 3, cy + 12), 2)
-
-
-    def _draw_masterwork_details(surface, cx, cy, facing, phase, action):
-        """High-frequency material detail that survives final downscaling."""
-        p = _NS_kaizen.PALETTE
-        shoulder = -facing
-
-        # Cohesive three-lame pauldron on the free shoulder.  The broad base
-        # is drawn once; curved separator highlights suggest overlapping
-        # lacquer plates without turning into disconnected lines at 4x zoom.
-        pauldron = [
-            (cx + shoulder * 4, cy - 15),
-            (cx + shoulder * 11, cy - 17),
-            (cx + shoulder * 17, cy - 12),
-            (cx + shoulder * 16, cy - 3),
-            (cx + shoulder * 10, cy + 1),
-            (cx + shoulder * 6, cy - 5),
-        ]
-        _NS_kaizen._poly(surface, p["shadow_deep"],
-                          [(x + 1, y + 1) for x, y in pauldron])
-        _NS_kaizen._poly(surface, p["cloth_darkest"], pauldron)
-        inner_plate = [
-            (cx + shoulder * 6, cy - 14),
-            (cx + shoulder * 11, cy - 15),
-            (cx + shoulder * 15, cy - 11),
-            (cx + shoulder * 14, cy - 5),
-            (cx + shoulder * 10, cy - 2),
-            (cx + shoulder * 7, cy - 6),
-        ]
-        _NS_kaizen._poly(surface, p["cloth_mid"], inner_plate)
-        for i in range(3):
-            yy = cy - 11 + i * 4
-            _NS_kaizen._aaline(surface, p["cloth_light"],
-                               (cx + shoulder * 7, yy),
-                               (cx + shoulder * (15 - i), yy + 2), 1)
-        _NS_kaizen._aacircle(surface, p["gold_mid"],
-                              (cx + shoulder * 8, cy - 11), 2)
-        _NS_kaizen._aacircle(surface, p["gold_light"],
-                              (cx + shoulder * 8, cy - 12), 1)
-
-        # Braided waist rope and large asymmetric knot.
-        rope_y = cy + 7
-        _NS_kaizen._aaline(surface, p["gold_dark"],
-                           (cx - 12, rope_y), (cx + 12, rope_y), 3)
-        for rx in range(cx - 10, cx + 11, 4):
-            _NS_kaizen._aaline(surface, p["gold_light"],
-                               (rx - 1, rope_y - 1), (rx + 1, rope_y + 1), 1)
-        knot_x = cx + facing * 11
-        _NS_kaizen._aacircle(surface, p["gold_dark"], (knot_x, rope_y), 3)
-        _NS_kaizen._aacircle(surface, p["gold_mid"], (knot_x, rope_y), 2)
-        _NS_kaizen._poly(surface, p["gold_light"], [
-            (knot_x - 1, rope_y), (knot_x, rope_y - 2),
-            (knot_x + 1, rope_y), (knot_x, rope_y + 1)])
-
-        # Wind crest embroidered on the visible hakama panel.
-        crest_y = cy + 19
-        glow = int(180 + math.sin(phase * 1.4) * 45)
-        _NS_kaizen._draw_wind_arc(surface, cx, crest_y, 5,
-                                   .15, math.pi * 1.35,
-                                   (*p["wind_light"], glow), 1, 8)
-        _NS_kaizen._aaline(surface, (*p["wind_bright"], glow),
-                           (cx - 1, crest_y), (cx + 4, crest_y - 2), 1)
-
-        # Jacket seam/rivets and a small chest scar add readable texture.
-        for side in (-1, 1):
-            _NS_kaizen._aaline(surface, p["cloth_high"],
-                               (cx + side * 8, cy - 11),
-                               (cx + side * 7, cy + 2), 1)
-            for yy in (-7, -2):
-                _NS_kaizen._aacircle(surface, p["gold_mid"],
-                                      (cx + side * 8, cy + yy), 1)
-        _NS_kaizen._aaline(surface, (126, 62, 56),
-                           (cx - 4, cy - 7), (cx + 2, cy - 2), 1)
-
-
-    def _draw_scarf_back(surface, cx, cy, facing, phase, action):
-        """Flowing scarf trailing behind."""
-        wave = math.sin(phase * 1.2) * 3
-        wave2 = math.sin(phase * 1.5 + 0.5) * 2
-        trail = -facing  # trails opposite to facing
-
-        # Main scarf trail
-        scarf = [
-            (cx + trail * 8, cy - 12),
-            (cx + trail * 14, cy - 8 + int(wave)),
-            (cx + trail * 22, cy - 4 + int(wave2)),
-            (cx + trail * 28, cy + 4 + int(wave)),
-            (cx + trail * 30, cy + 12 + int(wave2)),
-            (cx + trail * 26, cy + 16),
-            (cx + trail * 18, cy + 12),
-            (cx + trail * 12, cy + 4),
-            (cx + trail * 6, cy - 6),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["shadow_deep"],
-              [(p[0] + 1, p[1] + 1) for p in scarf])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["scarf_dark"], scarf)
-
-        scarf_inner = [
-            (cx + trail * 8, cy - 10),
-            (cx + trail * 13, cy - 6 + int(wave)),
-            (cx + trail * 20, cy - 2 + int(wave2)),
-            (cx + trail * 25, cy + 5 + int(wave)),
-            (cx + trail * 22, cy + 12),
-            (cx + trail * 15, cy + 8),
-            (cx + trail * 8, cy - 2),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["scarf_mid"], scarf_inner)
-
-        # Highlight streak
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["scarf_light"],
-                (cx + trail * 10, cy - 6),
-                (cx + trail * 22, cy + 3 + int(wave)), 1)
-
-
-    def _draw_hakama(surface, cx, cy, phase, facing):
-        """Floating lower body - hakama-style pants that trail."""
-        sway = int(math.sin(phase * 0.6) * 2)
-        wave = int(math.sin(phase * 0.9) * 2)
-
-        # Legs are rendered first so the robe overlaps them naturally.
-        # The old single dark mass made Kaizen appear to float; split shins,
-        # blue greaves, white tabi and sandals now give him a firm stance.
-        stride = int(math.sin(phase * 1.7) * 2)
-        for side in (-1, 1):
-            lx = cx + side * 7 + (stride * side)
-            _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["shadow_deep"], [
-                (lx - 5, cy + 17), (lx + 4, cy + 17),
-                (lx + 4, cy + 35), (lx - 5, cy + 35)])
-            _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["cloth_dark"], [
-                (lx - 4, cy + 18), (lx + 3, cy + 18),
-                (lx + 3, cy + 32), (lx - 4, cy + 32)])
-            _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["cloth_mid"],
-                              (lx - 3, cy + 21, 6, 9), 2)
-            _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["cloth_high"],
-                               (lx - 2, cy + 22), (lx - 2, cy + 29), 1)
-            # Tabi sock and wooden sandal with a strong ground-contact line.
-            _NS_kaizen._rect(surface, (205, 214, 220),
-                              (lx - 4, cy + 31, 8, 5), 2)
-            toe = 2 * facing
-            _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["leather_dark"],
-                              (lx - 5 + toe, cy + 35, 10, 3), 1)
-            _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["leather_light"],
-                               (lx - 3 + toe, cy + 35),
-                               (lx + 3 + toe, cy + 35), 1)
-
-        # Base hakama shape - wider at bottom, grounded
-        hakama = [
-            (cx - 12, cy),
-            (cx + 12, cy),
-            (cx + 16 + sway, cy + 12),
-            (cx + 14, cy + 22),
-            (cx + 8, cy + 28),
-            (cx + 3, cy + 32),
-            (cx - 3, cy + 32),
-            (cx - 8, cy + 28),
-            (cx - 14, cy + 22),
-            (cx - 16 - sway, cy + 12),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in hakama])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["pants_dark"], hakama)
-
-        hakama_mid = [
-            (cx - 10, cy + 2),
-            (cx + 10, cy + 2),
-            (cx + 13 + sway, cy + 12),
-            (cx + 10, cy + 20),
-            (cx + 5, cy + 26),
-            (cx - 5, cy + 26),
-            (cx - 10, cy + 20),
-            (cx - 13 - sway, cy + 12),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["pants_mid"], hakama_mid)
-
-        hakama_inner = [
-            (cx - 7, cy + 4),
-            (cx + 7, cy + 4),
-            (cx + 9 + sway, cy + 12),
-            (cx + 5, cy + 20),
-            (cx - 5, cy + 20),
-            (cx - 9 - sway, cy + 12),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["pants_light"], hakama_inner)
-
-        # Vertical fabric fold lines
-        for i in range(3):
-            lx = cx - 6 + i * 6
-            _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["cloth_darkest"],
-                    (lx, cy + 3), (lx + int(sway * 0.3), cy + 24), 1)
-
-        # Tattered bottom
-        for i in range(6):
-            tx = cx - 12 + i * 5
-            ty = cy + 28 + int(math.sin(phase * 1.3 + i) * 2)
-            _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["pants_dark"], [
-                (tx - 2, cy + 24), (tx + 2, cy + 24),
-                (tx + 1, ty + 4), (tx - 1, ty + 4),
-            ])
-
-        # Leather belt with buckle
-        _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["leather_dark"], (cx - 14, cy - 1, 28, 5))
-        _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["leather_mid"], (cx - 13, cy, 26, 3))
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["leather_light"],
-                (cx - 12, cy + 1), (cx + 12, cy + 1), 1)
-
-        # Belt buckle
-        _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["gold_dark"], (cx - 3, cy - 1, 6, 5))
-        _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["gold_mid"], (cx - 2, cy, 4, 3))
-        _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["gold_light"], (cx - 1, cy + 1, 2, 1))
-
-        # Sash tail hanging (on opposite side of sword)
-        tail_side = -facing
-        tx = cx + tail_side * 8
-        ty = cy + 3
-        tail_wave = int(math.sin(phase * 0.8) * 2)
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["scarf_dark"], [
-            (tx - 3, ty),
-            (tx + 3, ty),
-            (tx + 4 + tail_wave, ty + 12),
-            (tx + 2 + tail_wave, ty + 18),
-            (tx - 2 + tail_wave, ty + 18),
-            (tx - 4 + tail_wave, ty + 12),
-        ])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["scarf_mid"], [
-            (tx - 2, ty + 1),
-            (tx + 2, ty + 1),
-            (tx + 2 + tail_wave, ty + 16),
-            (tx - 2 + tail_wave, ty + 16),
-        ])
-
-
-    def _draw_torso(surface, cx, cy, facing, phase):
-        """Bare chest with open jacket."""
-        # Shadow
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["shadow_deep"], [
-            (cx - 11 + 2, cy - 8 + 2), (cx + 11 + 2, cy - 8 + 2),
-            (cx + 10 + 2, cy + 14 + 2), (cx + 4 + 2, cy + 18 + 2),
-            (cx - 4 + 2, cy + 18 + 2), (cx - 10 + 2, cy + 14 + 2),
-        ])
-
-        # Skin torso base (chest exposed)
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["skin_darkest"], [
-            (cx - 9, cy - 8), (cx + 9, cy - 8),
-            (cx + 8, cy + 14), (cx + 3, cy + 18),
-            (cx - 3, cy + 18), (cx - 8, cy + 14),
-        ])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["skin_dark"], [
-            (cx - 8, cy - 7), (cx + 8, cy - 7),
-            (cx + 7, cy + 12), (cx + 3, cy + 16),
-            (cx - 3, cy + 16), (cx - 7, cy + 12),
-        ])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["skin_mid"], [
-            (cx - 6, cy - 5), (cx + 6, cy - 5),
-            (cx + 5, cy + 10), (cx + 2, cy + 13),
-            (cx - 2, cy + 13), (cx - 5, cy + 10),
-        ])
-
-        # Muscle definition
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["skin_darkest"],
-                (cx, cy - 5), (cx, cy + 8), 1)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_light"], (cx - 3, cy - 2), 2)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_light"], (cx + 3, cy - 2), 2)
-        # Abs suggestion
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["skin_darkest"],
-                (cx - 4, cy + 3), (cx + 4, cy + 3), 1)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["skin_darkest"],
-                (cx - 3, cy + 8), (cx + 3, cy + 8), 1)
-
-        # Jacket sides (open in middle)
-        # Left side
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["cloth_darkest"], [
-            (cx - 11, cy - 8), (cx - 5, cy - 8),
-            (cx - 3, cy + 18), (cx - 10, cy + 14),
-        ])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["cloth_dark"], [
-            (cx - 10, cy - 7), (cx - 5, cy - 7),
-            (cx - 3, cy + 16), (cx - 9, cy + 12),
-        ])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["cloth_mid"], [
-            (cx - 9, cy - 6), (cx - 6, cy - 6),
-            (cx - 4, cy + 12), (cx - 8, cy + 10),
-        ])
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["cloth_light"],
-                (cx - 9, cy - 4), (cx - 8, cy + 10), 1)
-
-        # Right side
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["cloth_darkest"], [
-            (cx + 5, cy - 8), (cx + 11, cy - 8),
-            (cx + 10, cy + 14), (cx + 3, cy + 18),
-        ])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["cloth_dark"], [
-            (cx + 5, cy - 7), (cx + 10, cy - 7),
-            (cx + 9, cy + 12), (cx + 3, cy + 16),
-        ])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["cloth_mid"], [
-            (cx + 6, cy - 6), (cx + 9, cy - 6),
-            (cx + 8, cy + 10), (cx + 4, cy + 12),
-        ])
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["cloth_light"],
-                (cx + 9, cy - 4), (cx + 8, cy + 10), 1)
-
-        # Leather chest strap (across body)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["leather_dark"],
-                (cx - 8, cy - 4), (cx + 8, cy + 2), 4)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["leather_mid"],
-                (cx - 8, cy - 4), (cx + 8, cy + 2), 3)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["leather_light"],
-                (cx - 8, cy - 4), (cx + 8, cy + 2), 1)
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase, action):
-        """Idle - one arm holds katana down, other rests."""
-        sway = int(math.sin(phase * 0.7) * 1)
-
-        # SWORD arm (facing side - holds katana pointed down and back)
-        sword_side = facing
-        ss_x = cx + sword_side * 10
-        ss_y = cy + 2
-        se_x = ss_x + sword_side * 5
-        se_y = cy + 10 + sway
-        sh_x = se_x + sword_side * 3
-        sh_y = se_y + 8
-        _NS_kaizen._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_kaizen._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-        _NS_kaizen._draw_hand(surface, sh_x, sh_y)
-
-        # Katana - held pointing down and slightly back
-        _NS_kaizen._draw_katana_idle(surface, sh_x, sh_y, facing, phase)
-
-        # OTHER arm (opposite side - relaxed)
-        other_side = -facing
-        os_x = cx + other_side * 10
-        os_y = cy + 2
-        oe_x = os_x + other_side * 4
-        oe_y = cy + 10 + sway
-        oh_x = oe_x + other_side * 2
-        oh_y = oe_y + 8
-        _NS_kaizen._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_kaizen._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_kaizen._draw_hand(surface, oh_x, oh_y)
-
-
-    def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
-        """Attack - katana swing animation (arc)."""
-        sway = int(math.sin(phase * 0.7) * 1)
-
-        # Swing animation:
-        # 0.0-0.25: windup (sword back)
-        # 0.25-0.6: swing forward (arc)
-        # 0.6-1.0: recovery
-        if progress < 0.25:
-            t = progress / 0.25
-            # Windup angle: from neutral to back
-            swing_angle = -0.8 + t * -0.6  # more negative = more back
-        elif progress < 0.6:
-            t = (progress - 0.25) / 0.35
-            # Swing arc: from back to forward
-            swing_angle = -1.4 + t * 2.8  # sweep from -1.4 to 1.4
-        else:
-            t = (progress - 0.6) / 0.4
-            # Recovery: hold forward then relax
-            swing_angle = 1.4 - t * 2.2
-
-        # SWORD arm - both hands on katana during attack
-        sword_side = facing
-        ss_x = cx + sword_side * 10
-        ss_y = cy + 2
-
-        # Arm extends outward at swing angle
-        arm_length = 14
-        se_x = ss_x + int(math.cos(swing_angle) * arm_length * 0.5) * sword_side
-        se_y = ss_y + int(math.sin(swing_angle) * arm_length * 0.5) - 2
-        sh_x = ss_x + int(math.cos(swing_angle) * arm_length) * sword_side
-        sh_y = ss_y + int(math.sin(swing_angle) * arm_length) - 2
-
-        _NS_kaizen._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_kaizen._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-        _NS_kaizen._draw_hand(surface, sh_x, sh_y)
-
-        # Second hand grips lower on katana (two-handed grip during swing)
-        other_side = -facing
-        os_x = cx + other_side * 8
-        os_y = cy + 3
-        # Second hand meets near the first
-        oh_x = int(sh_x - math.cos(swing_angle) * 4 * sword_side)
-        oh_y = int(sh_y - math.sin(swing_angle) * 4)
-        oe_x = (os_x + oh_x) // 2 + other_side * 2
-        oe_y = (os_y + oh_y) // 2 + 2
-
-        _NS_kaizen._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_kaizen._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_kaizen._draw_hand(surface, oh_x, oh_y)
-
-        # KATANA - drawn along swing_angle direction
-        _NS_kaizen._draw_katana_swing(surface, sh_x, sh_y, facing, swing_angle, progress)
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Draw a clothed arm segment."""
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["shadow_deep"], (x1 + 2, y1 + 2), (x2 + 2, y2 + 2), 7)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["cloth_darkest"], (x1, y1), (x2, y2), 6)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["cloth_dark"], (x1, y1), (x2, y2), 4)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["cloth_mid"], (x1, y1), (x2, y2), 2)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["cloth_light"], (x1, y1 - 1), (x2, y2 - 1), 1)
-
-
-    def _draw_hand(surface, x, y):
-        """Small skin-colored hand."""
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_darkest"], (x, y), 3)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_mid"], (x, y), 2)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_light"], (x - 1, y - 1), 1)
-
-
-    def _draw_katana_idle(surface, hx, hy, facing, phase):
-        """Katana held pointing down/backward at rest."""
-        # Katana pointing down-back at ~30 degrees
-        angle = math.pi * 0.35  # down and slightly forward
-        length = 32
-
-        tip_x = hx + math.cos(angle) * length * facing
-        tip_y = hy + math.sin(angle) * length
-
-        # Handle (behind hand)
-        handle_len = 8
-        handle_x = hx - math.cos(angle) * handle_len * facing
-        handle_y = hy - math.sin(angle) * handle_len
-
-        _NS_kaizen._draw_katana_blade(surface, hx, hy, tip_x, tip_y, angle, facing, phase)
-        _NS_kaizen._draw_katana_handle(surface, hx, hy, handle_x, handle_y)
-
-
-    def _draw_katana_swing(surface, hx, hy, facing, swing_angle, progress):
-        """Katana during swing with motion blur/trail."""
-        length = 34
-
-        # Blade extends in swing direction
-        tip_x = hx + math.cos(swing_angle) * length * facing
-        tip_y = hy + math.sin(swing_angle) * length
-
-        # Handle behind hand
-        handle_len = 6
-        handle_x = hx - math.cos(swing_angle) * handle_len * facing
-        handle_y = hy - math.sin(swing_angle) * handle_len
-
-        # Motion trail during active swing (0.25 - 0.7)
-        if 0.25 < progress < 0.7:
-            t = (progress - 0.25) / 0.45
-            # Draw crescent slash arc trail
-            _NS_kaizen._draw_swing_trail(surface, hx, hy, facing, swing_angle, t, length)
-
-        _NS_kaizen._draw_katana_blade(surface, hx, hy, tip_x, tip_y, swing_angle, facing, 0)
-        _NS_kaizen._draw_katana_handle(surface, hx, hy, handle_x, handle_y)
-
-
-    def _draw_swing_trail(surface, cx, cy, facing, current_angle, t, length):
-        """Big crescent slash trail effect."""
-        # Trail spans from -0.6 rad behind current to current
-        trail_span = 0.8 * (1 - t * 0.5)
-        start_angle = current_angle - trail_span * facing
-
-        # Draw crescent shape
-        inner_r = length * 0.4
-        outer_r = length * 1.05
-
-        segments = 14
-        outer_points = []
-        inner_points = []
-
-        for i in range(segments + 1):
-            ti = i / segments
-            # Angle interpolated
-            if facing >= 0:
-                angle = start_angle + trail_span * ti
-            else:
-                angle = start_angle - trail_span * ti
-            ox = cx + math.cos(angle) * outer_r * facing
-            oy = cy + math.sin(angle) * outer_r
-            ix = cx + math.cos(angle) * inner_r * facing
-            iy = cy + math.sin(angle) * inner_r
-            outer_points.append((ox, oy))
-            inner_points.append((ix, iy))
-
-        # Build crescent polygon
-        crescent = outer_points + list(reversed(inner_points))
-        fade = int(180 * (1 - t))
-
-        if fade > 20:
-            _NS_kaizen._poly(surface, (*_NS_kaizen.PALETTE["wind_dark"], fade // 2), crescent)
-            # Inner brighter layer
-            inner_crescent = []
-            for i in range(segments + 1):
-                ti = i / segments
-                if facing >= 0:
-                    angle = start_angle + trail_span * ti
-                else:
-                    angle = start_angle - trail_span * ti
-                ox = cx + math.cos(angle) * (outer_r * 0.95) * facing
-                oy = cy + math.sin(angle) * (outer_r * 0.95)
-                ix = cx + math.cos(angle) * (inner_r * 1.15) * facing
-                iy = cy + math.sin(angle) * (inner_r * 1.15)
-                inner_crescent.append((ox, oy))
-            for i in range(segments + 1):
-                ti = 1 - i / segments
-                if facing >= 0:
-                    angle = start_angle + trail_span * ti
-                else:
-                    angle = start_angle - trail_span * ti
-                ix = cx + math.cos(angle) * (inner_r * 1.15) * facing
-                iy = cy + math.sin(angle) * (inner_r * 1.15)
-                inner_crescent.append((ix, iy))
-
-            # Bright core arc
-            _NS_kaizen._draw_wind_arc(surface, cx, cy, outer_r * 0.85,
-                           start_angle if facing >= 0 else start_angle - trail_span,
-                           (start_angle + trail_span) if facing >= 0 else start_angle,
-                           (*_NS_kaizen.PALETTE["wind_bright"], fade), width=2, segments=12)
-            _NS_kaizen._draw_wind_arc(surface, cx, cy, outer_r * 0.72,
-                           start_angle if facing >= 0 else start_angle - trail_span,
-                           (start_angle + trail_span) if facing >= 0 else start_angle,
-                           (*_NS_kaizen.PALETTE["wind_white"], fade), width=1, segments=12)
-
-
-    def _draw_katana_blade(surface, hx, hy, tip_x, tip_y, angle, facing, phase):
-        """Draw the katana blade."""
-        # Guard (tsuba)
-        perp = angle + math.pi / 2
-        guard_size = 4
-        g1 = (hx + math.cos(perp) * guard_size, hy + math.sin(perp) * guard_size)
-        g2 = (hx - math.cos(perp) * guard_size, hy - math.sin(perp) * guard_size)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["gold_dark"], g1, g2, 3)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["gold_mid"], g1, g2, 2)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["gold_light"], g1, g2, 1)
-
-        # Blade - curved katana shape
-        # Compute a slight curve for the blade
-        blade_length = math.sqrt((tip_x - hx) ** 2 + (tip_y - hy) ** 2)
-        # Blade width
-        bw = 3
-
-        # Perpendicular for blade thickness
-        px = -math.sin(angle) * facing
-        py = math.cos(angle) * facing
-
-        # Slight curve: mid point offset
-        mid_x = (hx + tip_x) / 2 + px * 2
-        mid_y = (hy + tip_y) / 2 + py * 2
-
-        # Blade polygon (curved with 4 points using mid control)
-        blade_points = [
-            (hx + px * bw, hy + py * bw),
-            (mid_x + px * bw * 0.7, mid_y + py * bw * 0.7),
-            (tip_x, tip_y),
-            (mid_x - px * bw * 0.2, mid_y - py * bw * 0.2),
-            (hx - px * bw, hy - py * bw),
-        ]
-        # Shadow
-        shadow_pts = [(p[0] + 1, p[1] + 1) for p in blade_points]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["shadow_deep"], shadow_pts)
-
-        # Base dark
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["steel_darkest"], blade_points)
-        # Mid layer
-        blade_mid = [
-            (hx + px * bw * 0.7, hy + py * bw * 0.7),
-            (mid_x + px * bw * 0.5, mid_y + py * bw * 0.5),
-            (tip_x, tip_y),
-            (mid_x - px * bw * 0.1, mid_y - py * bw * 0.1),
-            (hx - px * bw * 0.5, hy - py * bw * 0.5),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["steel_dark"], blade_mid)
-
-        # Light layer
-        blade_light = [
-            (hx + px * bw * 0.3, hy + py * bw * 0.3),
-            (mid_x + px * bw * 0.2, mid_y + py * bw * 0.2),
-            (tip_x, tip_y),
-            (mid_x - px * bw * 0.05, mid_y - py * bw * 0.05),
-            (hx - px * bw * 0.2, hy - py * bw * 0.2),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["steel_mid"], blade_light)
-
-        # Bright edge (top of blade)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["steel_light"],
-                (hx + px * bw * 0.8, hy + py * bw * 0.8),
-                (tip_x, tip_y), 1)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["steel_shine"],
-                (hx + px * bw * 0.5, hy + py * bw * 0.5),
-                ((tip_x + mid_x) / 2, (tip_y + mid_y) / 2), 1)
-
-        # Hamon temper line: a tiny wave inside the cutting edge.  It is
-        # deliberately high contrast so it survives the final HD downscale.
-        if blade_length >= 10:
-            ux = (tip_x - hx) / blade_length
-            uy = (tip_y - hy) / blade_length
-            hamon = []
-            for i in range(1, 7):
-                t = i / 7.0
-                ripple = math.sin(t * math.pi * 6 + phase * .25) * .65
-                hamon.append((hx + ux * blade_length * t + px * ripple,
-                              hy + uy * blade_length * t + py * ripple))
-            if len(hamon) > 1:
-                pygame.draw.aalines(surface, _NS_kaizen.PALETTE["wind_bright"],
-                                    False, hamon)
-
-        # Tip highlight
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["steel_shine"], (int(tip_x), int(tip_y)), 1)
-
-
-    def _draw_katana_handle(surface, hx, hy, end_x, end_y):
-        """Wrapped handle (tsuka)."""
-        # Base handle
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["wrap_dark"], (hx, hy), (end_x, end_y), 5)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["wrap_mid"], (hx, hy), (end_x, end_y), 3)
-
-        # Wrap pattern (diamond)
-        length = math.sqrt((end_x - hx) ** 2 + (end_y - hy) ** 2)
-        if length < 1:
-            return
-        dx = (end_x - hx) / length
-        dy = (end_y - hy) / length
-        for i in range(3):
-            t = 0.2 + i * 0.3
-            wx = int(hx + dx * length * t)
-            wy = int(hy + dy * length * t)
-            _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["wrap_dark"], (wx, wy), 2)
-            _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["wrap_light"], (wx, wy), 1)
-
-        # Pommel (end cap)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["gold_dark"], (int(end_x), int(end_y)), 3)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["gold_mid"], (int(end_x), int(end_y)), 2)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["gold_light"], (int(end_x - 1), int(end_y - 1)), 1)
-
-
-    def _draw_scarf_front(surface, cx, cy, facing, phase):
-        """Blue scarf around neck flowing over shoulder."""
-        wave = int(math.sin(phase * 1.0) * 2)
-
-        # Scarf collar around neck
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["scarf_dark"], [
-            (cx - 8, cy - 10),
-            (cx + 8, cy - 10),
-            (cx + 9, cy - 4),
-            (cx + 5, cy - 2),
-            (cx - 5, cy - 2),
-            (cx - 9, cy - 4),
-        ])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["scarf_mid"], [
-            (cx - 7, cy - 9),
-            (cx + 7, cy - 9),
-            (cx + 7, cy - 5),
-            (cx + 3, cy - 3),
-            (cx - 3, cy - 3),
-            (cx - 7, cy - 5),
-        ])
-
-        # Scarf drape over one shoulder (facing side)
-        dp = facing
-        drape = [
-            (cx + dp * 4, cy - 8),
-            (cx + dp * 9, cy - 6),
-            (cx + dp * 11, cy - 2 + wave),
-            (cx + dp * 12, cy + 6 + wave),
-            (cx + dp * 9, cy + 10),
-            (cx + dp * 5, cy + 6),
-            (cx + dp * 3, cy - 2),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["scarf_dark"], drape)
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["scarf_mid"], [
-            (cx + dp * 4, cy - 7),
-            (cx + dp * 8, cy - 5),
-            (cx + dp * 10, cy - 1 + wave),
-            (cx + dp * 10, cy + 5 + wave),
-            (cx + dp * 7, cy + 8),
-            (cx + dp * 4, cy + 4),
-        ])
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["scarf_light"],
-                (cx + dp * 5, cy - 5), (cx + dp * 9, cy + 4), 1)
-
-
-    def _draw_head(surface, cx, cy, facing, phase):
-        """Yasuo head - face, topknot, hair."""
-        # Ponytail (behind head, flowing)
-        _NS_kaizen._draw_ponytail(surface, cx, cy, facing, phase)
-
-        # Head shape (face)
-        face_points = [
-            (cx - 7, cy - 6),
-            (cx - 8, cy - 2),
-            (cx - 7, cy + 3),
-            (cx - 5, cy + 8),
-            (cx - 2, cy + 11),
-            (cx + 2, cy + 11),
-            (cx + 5, cy + 8),
-            (cx + 7, cy + 3),
-            (cx + 8, cy - 2),
-            (cx + 7, cy - 6),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["skin_darkest"],
-              [(p[0] + 1, p[1] + 1) for p in face_points])
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["skin_dark"], face_points)
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["skin_mid"], [
-            (cx - 6, cy - 5),
-            (cx - 7, cy - 2),
-            (cx - 6, cy + 3),
-            (cx - 4, cy + 7),
-            (cx - 2, cy + 10),
-            (cx + 2, cy + 10),
-            (cx + 4, cy + 7),
-            (cx + 6, cy + 3),
-            (cx + 7, cy - 2),
-            (cx + 6, cy - 5),
-        ])
-        # Cheek highlights
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_light"], (cx - 4, cy + 4), 2)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_light"], (cx + 4, cy + 4), 2)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_high"], (cx - 4, cy + 4), 1)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_high"], (cx + 4, cy + 4), 1)
-
-        # Hair top / bangs
-        hair_top = [
-            (cx - 8, cy - 5),
-            (cx - 9, cy - 2),
-            (cx - 6, cy - 4),
-            (cx - 4, cy - 7),
-            (cx - 1, cy - 5),
-            (cx + 1, cy - 8),
-            (cx + 4, cy - 6),
-            (cx + 6, cy - 4),
-            (cx + 9, cy - 2),
-            (cx + 8, cy - 5),
-            (cx + 6, cy - 10),
-            (cx - 6, cy - 10),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["hair_darkest"], hair_top)
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["hair_dark"], [
-            (cx - 7, cy - 5),
-            (cx - 8, cy - 3),
-            (cx - 5, cy - 4),
-            (cx - 3, cy - 6),
-            (cx, cy - 5),
-            (cx + 3, cy - 6),
-            (cx + 5, cy - 4),
-            (cx + 8, cy - 3),
-            (cx + 7, cy - 5),
-            (cx + 5, cy - 9),
-            (cx - 5, cy - 9),
-        ])
-        # Highlight strand
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["hair_mid"],
-                (cx - 3, cy - 8), (cx - 1, cy - 5), 1)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["hair_light"],
-                (cx + 2, cy - 7), (cx + 4, cy - 5), 1)
-
-        # Eyes - stern samurai gaze
-        for eye_x in (-3, 3):
-            # Eye white
-            _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["eye_white"], (cx + eye_x - 1, cy + 1, 2, 2))
-            # Yellow/gold iris
-            _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["eye_iris"], (cx + eye_x - 1, cy + 1, 2, 2))
-            # Highlight
-            _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["eye_iris_light"], (cx + eye_x, cy + 1, 1, 1))
-
-        # Brows (angry/stern)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["hair_darkest"],
-                (cx - 5, cy), (cx - 1, cy - 1), 2)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["hair_darkest"],
-                (cx + 1, cy - 1), (cx + 5, cy), 2)
-
-        # Nose
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_darkest"], (cx, cy + 5), 1)
-
-        # Nose bridge, jaw occlusion and iconic diagonal duelist scar.
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["skin_light"],
-                           (cx, cy + 2), (cx - facing, cy + 5), 1)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["skin_darkest"],
-                           (cx - 4, cy + 8), (cx, cy + 10), 1)
-        _NS_kaizen._aaline(surface, (112, 48, 46),
-                           (cx - facing * 6, cy + 2),
-                           (cx + facing * 3, cy + 7), 1)
-        _NS_kaizen._aacircle(surface, (226, 135, 125),
-                             (cx - facing * 3, cy + 4), 1)
-
-        # Ear and gold wind earring on the trailing side.
-        ear_x = cx - facing * 8
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["skin_dark"],
-                             (ear_x, cy + 3), 2)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["gold_light"],
-                             (ear_x, cy + 7), 1)
-
-        # Mouth (small serious line) plus lower-lip light.
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["skin_darkest"],
-                           (cx - 2, cy + 8), (cx + 2, cy + 8), 1)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["skin_light"],
-                           (cx, cy + 9), (cx + facing * 2, cy + 9), 1)
-
-
-    def _draw_ponytail(surface, cx, cy, facing, phase):
-        """Flowing samurai ponytail/topknot behind head."""
-        wave = math.sin(phase * 1.1) * 3
-        wave2 = math.sin(phase * 1.4 + 0.7) * 2
-        tail_side = -facing * 0.3  # slight backward lean
-
-        # Topknot base (bun on top of head)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["hair_darkest"], (cx, cy - 12), 5)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["hair_dark"], (cx, cy - 12), 4)
-        _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["hair_mid"], (cx - 1, cy - 13), 2)
-        # Small tie
-        _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["wrap_dark"], (cx - 3, cy - 10, 6, 2))
-        _NS_kaizen._rect(surface, _NS_kaizen.PALETTE["wrap_mid"], (cx - 2, cy - 10, 4, 1))
-
-        # Ponytail hair flowing upward and back
-        ponytail_pts = [
-            (cx - 3, cy - 14),
-            (cx - 4 + int(wave), cy - 20),
-            (cx - 5 + int(wave2), cy - 26),
-            (cx - 3 + int(wave), cy - 32),
-            (cx + int(wave2), cy - 36),
-            (cx + 3 + int(wave), cy - 34),
-            (cx + 5 + int(wave2), cy - 28),
-            (cx + 4 + int(wave), cy - 22),
-            (cx + 3, cy - 14),
-        ]
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["hair_darkest"], ponytail_pts)
-        _NS_kaizen._poly(surface, _NS_kaizen.PALETTE["hair_dark"], [
-            (cx - 2, cy - 14),
-            (cx - 3 + int(wave), cy - 20),
-            (cx - 4 + int(wave2), cy - 26),
-            (cx - 2 + int(wave), cy - 31),
-            (cx + int(wave2), cy - 34),
-            (cx + 2 + int(wave), cy - 31),
-            (cx + 4 + int(wave2), cy - 27),
-            (cx + 3 + int(wave), cy - 21),
-            (cx + 2, cy - 14),
-        ])
-        # Highlights
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["hair_mid"],
-                (cx - 1 + int(wave), cy - 18),
-                (cx - 1 + int(wave2), cy - 30), 1)
-        _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["hair_light"],
-                (cx + 1 + int(wave), cy - 22),
-                (cx + 1 + int(wave2), cy - 30), 1)
-
-        # Wispy strands
-        for i in range(3):
-            sx = cx - 6 + i * 6
-            sy = cy - 14 - i * 2
-            ex = sx + int(math.sin(phase + i) * 4)
-            ey = sy - 8
-            _NS_kaizen._aaline(surface, _NS_kaizen.PALETTE["hair_dark"], (sx, sy), (ex, ey), 1)
-
-
-    def _draw_body_particles(surface, cx, cy, phase):
-        """Wind particles around body."""
-        for i in range(8):
-            angle = phase * 0.5 + i * math.pi / 4
-            radius = 30 + int(math.sin(phase * 0.7 + i) * 8)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-            alpha = int(120 + math.sin(phase + i * 0.7) * 60)
-            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_light"], alpha), (px, py), 2)
-            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_white"], alpha), (px, py), 1)
-
-        # Passing leaves/wind streaks
-        for i in range(4):
-            t = (phase * 0.4 + i * 0.25) % 1.0
-            fx = cx - 40 + int(t * 80)
-            fy = cy - 20 + int(math.sin(phase + i) * 6) + i * 5
-            alpha = int(180 * math.sin(t * math.pi))
-            if alpha > 0:
-                _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_bright"], alpha),
-                        (fx, fy), (fx + 8, fy - 1), 1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     # ===================================================================
@@ -5258,9 +4844,11 @@ class _NS_kaizen:
     def _draw_dash_ground(surface, boss, x, y, timer, phase):
         """Ground effect during dash."""
         tx, ty = _NS_kaizen._target_position(boss, x, y)
-        # Line indicator from boss to target
-        _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_mid"], 100), (x, y + 30), (tx, ty + 20), 3)
-        _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_bright"], 150), (x, y + 30), (tx, ty + 20), 1)
+        # Line indicator from boss to target (tegas: stroke gelap + terang)
+        _skill_outlined_line(surface, (x, y + 30), (tx, ty + 20), 3,
+                             _NS_kaizen.PALETTE["wind_mid"], 120)
+        _skill_outlined_line(surface, (x, y + 30), (tx, ty + 20), 1,
+                             _NS_kaizen.PALETTE["wind_bright"], 170)
 
 
     def _draw_dash_effect(surface, boss, x, y, timer, phase):
@@ -5323,8 +4911,10 @@ class _NS_kaizen:
 
         wall_width = 6
 
-        # Base wall shadow
-        _NS_kaizen._rect(surface, (*_NS_kaizen.PALETTE["wind_darkest"], 100),
+        # Base wall shadow (tegas: outline gelap lebar + core terang)
+        _NS_kaizen._rect(surface, (*_NS_kaizen.PALETTE["wind_darkest"], 170),
+              (wall_x - wall_width - 2, wall_top, wall_width * 2 + 4, wall_bot - wall_top))
+        _NS_kaizen._rect(surface, (*_NS_kaizen.PALETTE["wind_mid"], 140),
               (wall_x - wall_width, wall_top, wall_width * 2, wall_bot - wall_top))
 
         # Wind swirls making up the wall
@@ -5368,9 +4958,11 @@ class _NS_kaizen:
         ring = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
         cx, cy = radius + 10, (radius + 20) // 2
 
-        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_mid"], int(180 * pulse)),
+        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_dark"], int(150 * pulse)),
+                            (3, 3, radius * 2 + 14, radius + 14), 5)
+        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_mid"], int(190 * pulse)),
                             (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_bright"], int(150 * pulse)),
+        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_bright"], int(170 * pulse)),
                             (15, 8, radius * 2 - 10, radius + 4), 2)
 
         surface.blit(ring, (x - cx, y + 30 - cy))
@@ -5419,11 +5011,11 @@ class _NS_kaizen:
         progress = max(0.0, min(1.0, 1 - timer / 100))
         pulse = math.sin(phase * 1.5) * 0.2 + 0.8
 
-        # Warning circle at target
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_dark"], int(150 * pulse)),
-                  (tx, ty + 20), 30, 2)
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_mid"], int(180 * pulse)),
-                  (tx, ty + 20), 24, 1)
+        # Warning circle at target (tegas: outline gelap + cincin terang)
+        _skill_outlined_circle(surface, (tx, ty + 20), 30, 2,
+                               _NS_kaizen.PALETTE["wind_dark"], int(150 * pulse))
+        _skill_outlined_circle(surface, (tx, ty + 20), 24, 1,
+                               _NS_kaizen.PALETTE["wind_mid"], int(185 * pulse))
 
 
     def _draw_tornado(surface, boss, x, y, timer, phase):
@@ -6338,6 +5930,8 @@ class _NS_thorne:
 
         lean = (3 if walk else 0) * f
         root_y = int(math.sin(phase * .72) * .7)
+        # v2 (animasi): perpindahan berat badan saat idle — goyang kiri-kanan.
+        sway = int(math.sin(phase * .8) * 3) * f if not (walk or attack) else 0
         if walk:
             root_y -= int(abs(math.sin(phase * 1.7)) * 2)
         if attack:
@@ -6345,7 +5939,7 @@ class _NS_thorne:
             root_y += int(math.sin(ap * math.pi) * 2)
 
         def pt(dx, dy):
-            return (int(cx + dx * f + lean), int(cy + dy + root_y))
+            return (int(cx + dx * f + lean + sway), int(cy + dy + root_y))
 
         def poly(color, points, outline=True):
             pts = [pt(dx, dy) for dx, dy in points]
@@ -6414,12 +6008,19 @@ class _NS_thorne:
                                          wave=wave * .02)
 
         # ═══ KAKI: pendek & tebal, stance lebar (ref gempal) ═══
+        # v2 (animasi): foot-lift bergantian saat jalan — kaki melangkah maju
+        # terangkat (lutut + telapak naik), kaki tumpuan tetap menapak.
         leg_phase = stride if walk else 0.0
-        rear_foot = (-11 - int(leg_phase * 5), 38 - int(abs(leg_phase) * 2))
-        front_foot = (13 + int(leg_phase * 6), 38)
-        for hip, knee, foot, shade in (
-                ((-7, 13), (-11, 26), rear_foot, p["fur_darkest"]),
-                ((8, 13), (11, 25), front_foot, p["fur_dark"])):
+        stride_vel = math.cos(phase * 1.7) if walk else 0.0
+        rear_lift = int(max(0.0, -stride_vel) * 9) if walk else 0
+        front_lift = int(max(0.0, stride_vel) * 9) if walk else 0
+        rear_foot = (-11 - int(leg_phase * 5),
+                     38 - int(abs(leg_phase) * 2) - rear_lift)
+        front_foot = (13 + int(leg_phase * 6), 38 - front_lift)
+        for hip, knee, foot, shade, lift in (
+                ((-7, 13), (-11, 26), rear_foot, p["fur_darkest"], rear_lift),
+                ((8, 13), (11, 25), front_foot, p["fur_dark"], front_lift)):
+            knee = (knee[0], knee[1] - lift)
             poly(shade, [hip, (hip[0] + 10, hip[1]), (knee[0] + 7, knee[1]),
                          (foot[0] + 6, foot[1] - 5), (foot[0] - 6, foot[1] - 5),
                          (knee[0] - 5, knee[1])])
@@ -6570,7 +6171,7 @@ class _NS_thorne:
         _NS_thorne._aacircle(surface, p["fur_mid"], (hx - 1, hy - 1), 4)
         _NS_thorne._aaline(surface, p["cloth_mid"], (hx - 3, hy - 1), (hx + 3, hy - 1), 3)
         _NS_thorne._aaline(surface, p["cloth_light"], (hx - 3, hy - 2), (hx + 3, hy - 2), 1)
-        _NS_thorne._draw_elite_club(surface, cx + lean, cy + root_y, f,
+        _NS_thorne._draw_elite_club(surface, cx + lean + sway, cy + root_y, f,
                                     hand, angle, phase, attack)
         if attack and .26 < ap < .78:
             t = max(0.0, min(1.0, (ap - .26) / .5))
@@ -6631,497 +6232,20 @@ class _NS_thorne:
 
         if detail:
             _NS_thorne._draw_thorne_masterwork_details(surface, pt, f)
-    def _draw_quill_mane(surface, cx, cy, facing, phase, warpath=False):
-        """The huge yellow-orange quill mane."""
-        # Choose colors based on warpath (rage)
-        if warpath:
-            c_darkest = _NS_thorne.PALETTE["rage_dark"]
-            c_dark = _NS_thorne.PALETTE["quill_dark"]
-            c_mid = _NS_thorne.PALETTE["quill_mid"]
-            c_light = _NS_thorne.PALETTE["rage_bright"]
-            c_tip = _NS_thorne.PALETTE["quill_tip"]
-        else:
-            c_darkest = _NS_thorne.PALETTE["quill_darkest"]
-            c_dark = _NS_thorne.PALETTE["quill_dark"]
-            c_mid = _NS_thorne.PALETTE["quill_mid"]
-            c_light = _NS_thorne.PALETTE["quill_light"]
-            c_tip = _NS_thorne.PALETTE["quill_tip"]
-
-        wave = math.sin(phase * 1.2) * 1.5
-
-        # Big quills going up and back
-        # Multiple layers of quills at different depths
-        # Layer 1 (back layer - largest)
-        back_quills = [
-            # (base_x_offset, base_y_offset, length, angle_rad)
-            (-8,  4, 26, -math.pi / 2 - 0.9),
-            (-4,  0, 32, -math.pi / 2 - 0.5),
-            ( 0, -2, 36, -math.pi / 2 - 0.2),
-            ( 4,  0, 34, -math.pi / 2 + 0.1),
-            ( 8,  2, 30, -math.pi / 2 + 0.4),
-            (10,  5, 26, -math.pi / 2 + 0.6),
-        ]
-        for bx, by, length, angle in back_quills:
-            _NS_thorne._draw_quill(surface, cx + bx, cy + by,
-                        length + int(wave * 0.5),
-                        angle + wave * 0.03,
-                        thickness=3,
-                        dark=c_darkest, mid=c_dark, light=c_mid, tip=c_light)
-
-        # Layer 2 (middle)
-        mid_quills = [
-            (-10, 6, 20, -math.pi / 2 - 1.1),
-            (-6,  3, 24, -math.pi / 2 - 0.7),
-            (-2,  0, 28, -math.pi / 2 - 0.3),
-            ( 2,  0, 30, -math.pi / 2 + 0.0),
-            ( 6,  2, 26, -math.pi / 2 + 0.3),
-            (10,  5, 22, -math.pi / 2 + 0.7),
-        ]
-        for bx, by, length, angle in mid_quills:
-            _NS_thorne._draw_quill(surface, cx + bx, cy + by,
-                        length + int(wave * 0.3),
-                        angle + wave * 0.02,
-                        thickness=2,
-                        dark=c_dark, mid=c_mid, light=c_light, tip=c_tip)
-
-        # Layer 3 (front - shorter)
-        front_quills = [
-            (-9, 8, 14, -math.pi / 2 - 1.0),
-            (-5, 5, 18, -math.pi / 2 - 0.5),
-            ( 0, 3, 22, -math.pi / 2 - 0.1),
-            ( 4, 4, 20, -math.pi / 2 + 0.2),
-            ( 8, 7, 16, -math.pi / 2 + 0.6),
-        ]
-        for bx, by, length, angle in front_quills:
-            _NS_thorne._draw_quill(surface, cx + bx, cy + by,
-                        length + int(wave * 0.2),
-                        angle + wave * 0.02,
-                        thickness=2,
-                        dark=c_mid, mid=c_light, light=c_tip, tip=c_tip)
-
-        # Small quills on back (going backward)
-        back_side = -facing
-        for i in range(4):
-            by_off = 8 + i * 4
-            bx = cx + back_side * (8 + i)
-            angle = math.pi if facing > 0 else 0
-            angle -= 0.3 + i * 0.1  # tilt up a bit
-            _NS_thorne._draw_quill(surface, bx, cy + by_off, 14 - i * 2,
-                        angle, thickness=2,
-                        dark=c_dark, mid=c_mid, light=c_light, tip=c_tip)
 
 
-    def _draw_belly(surface, cx, cy, phase, facing):
-        """Floating rounded belly - bottom of body."""
-        sway = int(math.sin(phase * 0.6) * 2)
-
-        # Big round belly
-        belly_pts = [
-            (cx - 14, cy - 2),
-            (cx + 14, cy - 2),
-            (cx + 18 + sway, cy + 8),
-            (cx + 16, cy + 18),
-            (cx + 10, cy + 24),
-            (cx + 4, cy + 26),
-            (cx - 4, cy + 26),
-            (cx - 10, cy + 24),
-            (cx - 16, cy + 18),
-            (cx - 18 - sway, cy + 8),
-        ]
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in belly_pts])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_darkest"], belly_pts)
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_dark"], [
-            (cx - 13, cy - 1),
-            (cx + 13, cy - 1),
-            (cx + 15 + sway, cy + 8),
-            (cx + 13, cy + 17),
-            (cx + 5, cy + 23),
-            (cx - 5, cy + 23),
-            (cx - 13, cy + 17),
-            (cx - 15 - sway, cy + 8),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_mid"], [
-            (cx - 10, cy),
-            (cx + 10, cy),
-            (cx + 12 + sway, cy + 8),
-            (cx + 9, cy + 16),
-            (cx + 3, cy + 20),
-            (cx - 3, cy + 20),
-            (cx - 9, cy + 16),
-            (cx - 12 - sway, cy + 8),
-        ])
-
-        # Lighter belly patch (center)
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["belly_dark"], [
-            (cx - 7, cy + 4),
-            (cx + 7, cy + 4),
-            (cx + 8, cy + 12),
-            (cx + 5, cy + 18),
-            (cx - 5, cy + 18),
-            (cx - 8, cy + 12),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["belly_mid"], [
-            (cx - 5, cy + 6),
-            (cx + 5, cy + 6),
-            (cx + 6, cy + 12),
-            (cx + 3, cy + 16),
-            (cx - 3, cy + 16),
-            (cx - 6, cy + 12),
-        ])
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["belly_light"],
-                (cx - 3, cy + 8), (cx + 3, cy + 8), 1)
-
-        # Belly button
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["fur_darkest"], (cx, cy + 13), 2)
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["belly_dark"], (cx, cy + 13), 1)
-
-        # Belt across
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["leather_darkest"], (cx - 15, cy, 30, 5))
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["leather_dark"], (cx - 14, cy + 1, 28, 3))
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["leather_light"],
-                (cx - 13, cy + 2), (cx + 13, cy + 2), 1)
-
-        # Belt pouches
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["leather_darkest"], (cx - 10, cy + 2, 4, 6))
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["leather_dark"], (cx - 9, cy + 3, 2, 4))
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["leather_darkest"], (cx + 6, cy + 2, 4, 6))
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["leather_dark"], (cx + 7, cy + 3, 2, 4))
-
-        # Gold buckle center
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["gold_dark"], (cx - 3, cy, 6, 5))
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["gold_mid"], (cx - 2, cy + 1, 4, 3))
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["gold_light"], (cx - 1, cy + 2, 2, 1))
-
-        # Heavy clawed feet: Thorne is a ground bruiser, so the sprite
-        # needs a broad, weighty stance instead of a floating fur fade.
-        for side in (-1, 1):
-            fx = cx + side * 8
-            _NS_thorne._rect(surface, _NS_thorne.PALETTE["fur_darkest"],
-                              (fx - 5, cy + 22, 10, 8), border_radius=2)
-            _NS_thorne._rect(surface, _NS_thorne.PALETTE["fur_dark"],
-                              (fx - 4, cy + 23, 9, 6), border_radius=2)
-            _NS_thorne._rect(surface, _NS_thorne.PALETTE["fur_mid"],
-                              (fx - 3, cy + 23, 4, 3), border_radius=1)
-            for claw in (-2, 1, 4):
-                _NS_thorne._poly(surface, _NS_thorne.PALETTE["quill_tip"], [
-                    (fx + claw, cy + 29), (fx + claw + 2, cy + 29),
-                    (fx + claw + 1, cy + 32),
-                ])
 
 
-    def _draw_torso(surface, cx, cy, facing, phase, warpath=False):
-        """Muscular torso with green vest and armor."""
-        # Shadow
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["shadow_deep"], [
-            (cx - 12 + 2, cy - 6 + 2), (cx + 12 + 2, cy - 6 + 2),
-            (cx + 11 + 2, cy + 12 + 2), (cx - 11 + 2, cy + 12 + 2),
-        ])
-
-        # Fur base torso
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_darkest"], [
-            (cx - 12, cy - 6), (cx + 12, cy - 6),
-            (cx + 11, cy + 12), (cx - 11, cy + 12),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_dark"], [
-            (cx - 11, cy - 5), (cx + 11, cy - 5),
-            (cx + 10, cy + 11), (cx - 10, cy + 11),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_mid"], [
-            (cx - 9, cy - 4), (cx + 9, cy - 4),
-            (cx + 8, cy + 10), (cx - 8, cy + 10),
-        ])
-
-        # Green vest (torn/open) - shows through
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["cloth_dark"], [
-            (cx - 10, cy - 4),
-            (cx - 4, cy - 5),
-            (cx - 3, cy + 12),
-            (cx - 9, cy + 12),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["cloth_mid"], [
-            (cx - 9, cy - 3),
-            (cx - 4, cy - 4),
-            (cx - 3, cy + 11),
-            (cx - 8, cy + 11),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["cloth_dark"], [
-            (cx + 4, cy - 5),
-            (cx + 10, cy - 4),
-            (cx + 9, cy + 12),
-            (cx + 3, cy + 12),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["cloth_mid"], [
-            (cx + 4, cy - 4),
-            (cx + 9, cy - 3),
-            (cx + 8, cy + 11),
-            (cx + 3, cy + 11),
-        ])
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["cloth_light"],
-                (cx - 8, cy - 2), (cx - 7, cy + 10), 1)
-
-        # Chest fur tuft in the middle
-        for i in range(4):
-            fx = cx - 3 + i * 2
-            fy = cy - 3 + int(math.sin(i) * 1)
-            _NS_thorne._aaline(surface, _NS_thorne.PALETTE["fur_dark"],
-                    (fx, fy), (fx + 1, fy + 6), 1)
-            _NS_thorne._aaline(surface, _NS_thorne.PALETTE["fur_light"],
-                    (fx, fy + 1), (fx + 1, fy + 5), 1)
-
-        # Leather straps crossing chest
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["leather_darkest"],
-                (cx - 10, cy - 4), (cx + 8, cy + 6), 4)
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["leather_dark"],
-                (cx - 10, cy - 4), (cx + 8, cy + 6), 3)
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["leather_mid"],
-                (cx - 10, cy - 4), (cx + 8, cy + 6), 1)
-
-        # Metal shoulder armor (facing side)
-        armor_side = -facing  # opposite side gets big pauldron in art
-        ax = cx + armor_side * 11
-        ay = cy - 5
-
-        # Pauldron - dome shape
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["armor_darkest"], [
-            (ax - 5, ay - 2),
-            (ax + 5, ay - 2),
-            (ax + 6, ay + 3),
-            (ax + 4, ay + 8),
-            (ax - 4, ay + 8),
-            (ax - 6, ay + 3),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["armor_dark"], [
-            (ax - 4, ay - 1),
-            (ax + 4, ay - 1),
-            (ax + 5, ay + 3),
-            (ax + 3, ay + 7),
-            (ax - 3, ay + 7),
-            (ax - 5, ay + 3),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["armor_mid"], [
-            (ax - 3, ay),
-            (ax + 3, ay),
-            (ax + 4, ay + 3),
-            (ax + 2, ay + 6),
-            (ax - 2, ay + 6),
-            (ax - 4, ay + 3),
-        ])
-        # Highlight
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["armor_light"], (ax - 1, ay + 2), 2)
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["armor_shine"], (ax - 1, ay + 2), 1)
-        # Rivets
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["armor_dark"], (ax - 3, ay + 5), 1)
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["armor_dark"], (ax + 3, ay + 5), 1)
-        # Small spike on top of pauldron
-        _NS_thorne._draw_quill(surface, ax, ay - 3, 5, -math.pi / 2, thickness=2,
-                    dark=_NS_thorne.PALETTE["armor_darkest"], mid=_NS_thorne.PALETTE["armor_dark"],
-                    light=_NS_thorne.PALETTE["armor_light"], tip=_NS_thorne.PALETTE["armor_shine"])
-
-        # Rage cracks in torso when warpath
-        if warpath:
-            _NS_thorne._aaline(surface, _NS_thorne.PALETTE["rage_light"],
-                    (cx - 5, cy - 2), (cx - 3, cy + 4), 1)
-            _NS_thorne._aaline(surface, _NS_thorne.PALETTE["rage_bright"],
-                    (cx + 3, cy - 1), (cx + 5, cy + 5), 1)
 
 
-    def _draw_idle_arms(surface, cx, cy, facing, phase, action):
-        """Idle - one hand holds club forward, other hangs."""
-        sway = int(math.sin(phase * 0.7) * 1)
-
-        # CLUB arm (facing side - hold club forward)
-        club_side = facing
-        cs_x = cx + club_side * 11
-        cs_y = cy + 3
-        ce_x = cs_x + club_side * 7
-        ce_y = cy + 5 + sway
-        ch_x = ce_x + club_side * 6
-        ch_y = ce_y + 2
-        _NS_thorne._draw_arm_segment(surface, cs_x, cs_y, ce_x, ce_y)
-        _NS_thorne._draw_arm_segment(surface, ce_x, ce_y, ch_x, ch_y)
-        _NS_thorne._draw_hand(surface, ch_x, ch_y)
-
-        # Club held horizontal
-        _NS_thorne._draw_club(surface, ch_x, ch_y, facing, phase, angle=0.1)
-
-        # OTHER arm (opposite - hanging)
-        other_side = -facing
-        os_x = cx + other_side * 11
-        os_y = cy + 3
-        oe_x = os_x + other_side * 5
-        oe_y = cy + 12 + sway
-        oh_x = oe_x + other_side * 3
-        oh_y = oe_y + 8
-        _NS_thorne._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_thorne._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_thorne._draw_hand(surface, oh_x, oh_y)
 
 
-    def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
-        """Attack - club swing arc animation."""
-        sway = int(math.sin(phase * 0.7) * 1)
-
-        # Swing timing:
-        # 0.0-0.25: windup (club back)
-        # 0.25-0.6: swing forward (arc)
-        # 0.6-1.0: recovery
-        if progress < 0.25:
-            t = progress / 0.25
-            swing_angle = -0.5 + t * -1.0  # back
-        elif progress < 0.6:
-            t = (progress - 0.25) / 0.35
-            swing_angle = -1.5 + t * 2.8  # sweep forward
-        else:
-            t = (progress - 0.6) / 0.4
-            swing_angle = 1.3 - t * 1.8
-
-        # Arm follows club
-        cs_x = cx + facing * 10
-        cs_y = cy + 3
-
-        arm_length = 14
-        ce_x = cs_x + int(math.cos(swing_angle) * arm_length * 0.5) * facing
-        ce_y = cs_y + int(math.sin(swing_angle) * arm_length * 0.5) - 1
-        ch_x = cs_x + int(math.cos(swing_angle) * arm_length) * facing
-        ch_y = cs_y + int(math.sin(swing_angle) * arm_length) - 1
-
-        _NS_thorne._draw_arm_segment(surface, cs_x, cs_y, ce_x, ce_y)
-        _NS_thorne._draw_arm_segment(surface, ce_x, ce_y, ch_x, ch_y)
-        _NS_thorne._draw_hand(surface, ch_x, ch_y)
-
-        # Motion trail during active swing
-        if 0.25 < progress < 0.7:
-            t = (progress - 0.25) / 0.45
-            _NS_thorne._draw_club_swing_trail(surface, cs_x, cs_y, facing, swing_angle, t)
-
-        # CLUB
-        _NS_thorne._draw_club(surface, ch_x, ch_y, facing, phase, angle=swing_angle,
-                   attack=True)
-
-        # OTHER arm - held up for balance
-        other_side = -facing
-        os_x = cx + other_side * 11
-        os_y = cy + 3
-        oe_x = os_x + other_side * 6
-        oe_y = cy + 4 + sway
-        oh_x = oe_x + other_side * 4
-        oh_y = oe_y + 6
-        _NS_thorne._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_thorne._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_thorne._draw_hand(surface, oh_x, oh_y)
 
 
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Draw a furry muscular arm segment."""
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["shadow_deep"], (x1 + 2, y1 + 2), (x2 + 2, y2 + 2), 8)
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["fur_darkest"], (x1, y1), (x2, y2), 7)
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["fur_dark"], (x1, y1), (x2, y2), 5)
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["fur_mid"], (x1, y1), (x2, y2), 3)
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["fur_light"], (x1, y1 - 1), (x2, y2 - 1), 1)
 
 
-    def _draw_hand(surface, x, y):
-        """Furry paw/hand."""
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["fur_darkest"], (x, y), 4)
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["fur_dark"], (x, y), 3)
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["fur_mid"], (x - 1, y - 1), 2)
-        # Claws
-        for i in (-1, 0, 1):
-            _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["tusk_dark"],
-                      (x + i * 2, y + 2), 1)
 
 
-    def _draw_club(surface, hx, hy, facing, phase, angle=0, attack=False):
-        """Big spiked wooden club/mace."""
-        # Handle extends from hand along angle
-        ca, sa = math.cos(angle), math.sin(angle)
-        # Handle length
-        handle_len = 16
-        head_offset = 22
-
-        # Handle end (near hand - grip goes back a bit)
-        grip_x = hx - ca * 4 * facing
-        grip_y = hy - sa * 4
-
-        # Head end (spike ball tip)
-        head_x = hx + ca * head_offset * facing
-        head_y = hy + sa * head_offset
-
-        # Draw wooden handle
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["shadow_deep"],
-                (grip_x + 2, grip_y + 2), (head_x + 2, head_y + 2), 6)
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["wood_dark"], (grip_x, grip_y), (head_x, head_y), 5)
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["wood_mid"], (grip_x, grip_y), (head_x, head_y), 3)
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["wood_light"], (grip_x, grip_y), (head_x, head_y), 1)
-
-        # Leather wrap on grip
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["leather_dark"],
-                (grip_x, grip_y),
-                (grip_x + ca * 6 * facing, grip_y + sa * 6), 5)
-        for i in range(3):
-            t = i * 0.15
-            wx = grip_x + ca * t * 6 * facing
-            wy = grip_y + sa * t * 6
-            _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["leather_darkest"], (int(wx), int(wy)), 2)
-
-        # Metal club head - cylindrical, spiky
-        # Compute perpendicular for head width
-        px = -sa * 6 * facing
-        py = ca * 6
-
-        # Head cylinder body
-        head_pts = [
-            (head_x - ca * 8 * facing + px, head_y - sa * 8 + py),
-            (head_x + ca * 4 * facing + px, head_y + sa * 4 + py),
-            (head_x + ca * 4 * facing - px, head_y + sa * 4 - py),
-            (head_x - ca * 8 * facing - px, head_y - sa * 8 - py),
-        ]
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["shadow_deep"],
-              [(p[0] + 1, p[1] + 1) for p in head_pts])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["armor_darkest"], head_pts)
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["armor_dark"], [
-            (head_x - ca * 7 * facing + px * 0.85, head_y - sa * 7 + py * 0.85),
-            (head_x + ca * 3 * facing + px * 0.85, head_y + sa * 3 + py * 0.85),
-            (head_x + ca * 3 * facing - px * 0.85, head_y + sa * 3 - py * 0.85),
-            (head_x - ca * 7 * facing - px * 0.85, head_y - sa * 7 - py * 0.85),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["armor_mid"], [
-            (head_x - ca * 6 * facing + px * 0.55, head_y - sa * 6 + py * 0.55),
-            (head_x + ca * 2 * facing + px * 0.55, head_y + sa * 2 + py * 0.55),
-            (head_x + ca * 2 * facing - px * 0.55, head_y + sa * 2 - py * 0.55),
-            (head_x - ca * 6 * facing - px * 0.55, head_y - sa * 6 - py * 0.55),
-        ])
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["armor_light"],
-                (head_x - ca * 5 * facing + px * 0.3, head_y - sa * 5 + py * 0.3),
-                (head_x + ca * 1 * facing + px * 0.3, head_y + sa * 1 + py * 0.3), 1)
-
-        # Spikes on club head
-        spike_angles = [
-            angle,  # forward tip
-            angle - math.pi / 2 * facing,  # top
-            angle + math.pi / 2 * facing,  # bottom
-            angle - 0.7 * facing,
-            angle + 0.7 * facing,
-        ]
-        spike_offsets_along = [4, -2, -2, 1, 1]  # position along the club head
-
-        for a, along in zip(spike_angles, spike_offsets_along):
-            sbx = head_x + ca * along * facing
-            sby = head_y + sa * along
-            spike_length = 8 if abs(along - 4) < 0.5 else 6
-            _NS_thorne._draw_quill(surface, int(sbx), int(sby), spike_length, a,
-                        thickness=2,
-                        dark=_NS_thorne.PALETTE["armor_darkest"],
-                        mid=_NS_thorne.PALETTE["armor_dark"],
-                        light=_NS_thorne.PALETTE["armor_mid"],
-                        tip=_NS_thorne.PALETTE["armor_shine"])
-
-        # Rage glow when attack
-        if attack:
-            glow = int(math.sin(phase * 2) * 2 + 3)
-            _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_shine"], 150),
-                      (int(head_x), int(head_y)), 4 + glow)
 
 
     def _draw_club_swing_trail(surface, cx, cy, facing, current_angle, t):
@@ -7189,184 +6313,8 @@ class _NS_thorne:
                     (x1, y1), (x2, y2), 1)
 
 
-    def _draw_head(surface, cx, cy, facing, phase, warpath=False):
-        """Boar/porcupine head with tusks."""
-        # Head shape (bulky, snout forward)
-        head_pts = [
-            (cx - 9, cy - 4),
-            (cx - 10, cy),
-            (cx - 9, cy + 5),
-            (cx - 5, cy + 8),
-            (cx + facing * 12, cy + 8),  # snout side
-            (cx + facing * 14, cy + 5),
-            (cx + facing * 13, cy),
-            (cx + facing * 10, cy - 4),
-            (cx, cy - 6),
-        ]
-        if facing < 0:
-            # Mirror
-            pass
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["shadow_deep"],
-              [(p[0] + 1, p[1] + 1) for p in head_pts])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_darkest"], head_pts)
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_dark"], [
-            (cx - 8, cy - 3),
-            (cx - 9, cy),
-            (cx - 8, cy + 4),
-            (cx - 5, cy + 7),
-            (cx + facing * 11, cy + 7),
-            (cx + facing * 13, cy + 4),
-            (cx + facing * 12, cy),
-            (cx + facing * 9, cy - 3),
-            (cx, cy - 5),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_mid"], [
-            (cx - 7, cy - 2),
-            (cx - 8, cy),
-            (cx - 6, cy + 3),
-            (cx - 4, cy + 6),
-            (cx + facing * 9, cy + 6),
-            (cx + facing * 11, cy + 3),
-            (cx + facing * 10, cy),
-            (cx + facing * 8, cy - 2),
-            (cx, cy - 4),
-        ])
-
-        # Snout (pinkish nose area at front)
-        snout_x = cx + facing * 10
-        snout_y = cy + 4
-
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["snout_dark"], [
-            (snout_x - facing * 2, snout_y - 3),
-            (snout_x + facing * 4, snout_y - 2),
-            (snout_x + facing * 5, snout_y + 2),
-            (snout_x + facing * 3, snout_y + 4),
-            (snout_x - facing * 2, snout_y + 3),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["snout_mid"], [
-            (snout_x - facing * 1, snout_y - 2),
-            (snout_x + facing * 3, snout_y - 1),
-            (snout_x + facing * 4, snout_y + 2),
-            (snout_x + facing * 2, snout_y + 3),
-            (snout_x - facing * 1, snout_y + 2),
-        ])
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["snout_light"],
-                  (snout_x + facing * 2, snout_y - 1), 1)
-
-        # Nostrils
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["fur_darkest"],
-                  (snout_x + facing * 3, snout_y + 1), 1)
-        _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["fur_darkest"],
-                  (snout_x + facing * 3, snout_y - 1), 1)
-
-        # Tusks - two curving up from mouth
-        for side_off in (1, 3):
-            tsx = snout_x - facing * side_off
-            tsy = snout_y + 3
-            # Curve up
-            ttx = tsx + facing * 2
-            tty = tsy - 5
-            _NS_thorne._poly(surface, _NS_thorne.PALETTE["shadow_deep"], [
-                (tsx + 1, tsy),
-                (tsx + 2, tsy),
-                (ttx + 1, tty),
-            ])
-            _NS_thorne._poly(surface, _NS_thorne.PALETTE["tusk_dark"], [
-                (tsx - 1, tsy),
-                (tsx + 1, tsy),
-                (ttx, tty),
-            ])
-            _NS_thorne._poly(surface, _NS_thorne.PALETTE["tusk_mid"], [
-                (tsx, tsy),
-                (tsx + 1, tsy),
-                (ttx, tty),
-            ])
-            _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["tusk_light"], (int(ttx), int(tty)), 1)
-
-        # Eye (fierce)
-        ex = cx + facing * 3
-        ey = cy - 1
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["eye_white"], (ex - 2, ey, 4, 3))
-        if warpath:
-            _NS_thorne._rect(surface, _NS_thorne.PALETTE["rage_bright"], (ex - 2, ey, 4, 3))
-            _NS_thorne._rect(surface, _NS_thorne.PALETTE["rage_light"], (ex - 1, ey + 1, 2, 1))
-        else:
-            _NS_thorne._rect(surface, _NS_thorne.PALETTE["eye_iris"], (ex - 2, ey, 4, 3))
-            _NS_thorne._rect(surface, _NS_thorne.PALETTE["eye_iris_light"], (ex - 1, ey, 2, 2))
-        _NS_thorne._rect(surface, _NS_thorne.PALETTE["eye_pupil"], (ex, ey + 1, 1, 1))
-
-        # Brow (angry)
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["fur_darkest"],
-                (ex - 3, ey - 2), (ex + 3, ey - 1), 2)
-
-        # Small ear on top (peeking through quills)
-        ear_x = cx - facing * 2
-        ear_y = cy - 4
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_darkest"], [
-            (ear_x, ear_y),
-            (ear_x - facing * 2, ear_y - 3),
-            (ear_x + facing * 1, ear_y - 3),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["fur_dark"], [
-            (ear_x, ear_y),
-            (ear_x - facing * 1, ear_y - 2),
-            (ear_x + facing * 1, ear_y - 2),
-        ])
-
-        # Small metal helmet piece on top of head
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["armor_darkest"], [
-            (cx - 4, cy - 5),
-            (cx + 4, cy - 5),
-            (cx + 3, cy - 2),
-            (cx - 3, cy - 2),
-        ])
-        _NS_thorne._poly(surface, _NS_thorne.PALETTE["armor_dark"], [
-            (cx - 3, cy - 4),
-            (cx + 3, cy - 4),
-            (cx + 2, cy - 3),
-            (cx - 2, cy - 3),
-        ])
-        _NS_thorne._aaline(surface, _NS_thorne.PALETTE["armor_light"],
-                (cx - 2, cy - 4), (cx + 2, cy - 4), 1)
 
 
-    def _draw_body_particles(surface, cx, cy, phase, warpath=False):
-        """Ambient particles around body."""
-        if warpath:
-            # Rage embers
-            for i in range(10):
-                angle = phase * 0.5 + i * math.pi / 5
-                radius = 32 + int(math.sin(phase * 0.7 + i) * 8)
-                px = cx + int(math.cos(angle) * radius)
-                py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-                alpha = int(180 + math.sin(phase + i * 0.7) * 60)
-                alpha = max(0, min(255, alpha))
-                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["rage_bright"], alpha), (px, py), 2)
-                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_shine"], alpha), (px, py), 1)
-        else:
-            # Dust motes
-            for i in range(6):
-                angle = phase * 0.4 + i * math.pi / 3
-                radius = 30 + int(math.sin(phase * 0.7 + i) * 6)
-                px = cx + int(math.cos(angle) * radius)
-                py = cy - 5 + int(math.sin(angle) * radius * 0.4)
-                alpha = int(100 + math.sin(phase + i * 0.7) * 50)
-                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["fur_light"], alpha), (px, py), 2)
-                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["fur_high"], alpha), (px, py), 1)
-
-        # Loose quills falling
-        for i in range(3):
-            t = (phase * 0.3 + i * 0.35) % 1.0
-            fx = cx - 30 + int(t * 60)
-            fy = cy - 30 + int(t * 60)
-            alpha = int(200 * math.sin(t * math.pi))
-            if alpha > 0:
-                a = math.pi / 4 + i
-                _NS_thorne._draw_quill(surface, fx, fy, 4, a, thickness=1,
-                            dark=(*_NS_thorne.PALETTE["quill_darkest"], alpha),
-                            mid=(*_NS_thorne.PALETTE["quill_dark"], alpha),
-                            light=(*_NS_thorne.PALETTE["quill_light"], alpha),
-                            tip=(*_NS_thorne.PALETTE["quill_tip"], alpha))
 
 
     # ===================================================================
@@ -7489,13 +6437,15 @@ class _NS_thorne:
     def _draw_viscous_ground(surface, boss, x, y, timer, phase):
         """Line indicator."""
         tx, ty = _NS_thorne._target_position(boss, x, y)
-        # Dashed indicator
+        # Dashed indicator (tegas: stroke gelap + garis goo terang)
         for i in range(0, 20, 2):
             t1 = i / 20
             t2 = (i + 1) / 20
-            _NS_thorne._aaline(surface, (*_NS_thorne.PALETTE["goo_mid"], 130),
-                    (x + (tx - x) * t1, y + (ty - y) * t1 - 5),
-                    (x + (tx - x) * t2, y + (ty - y) * t2 - 5), 2)
+            _skill_outlined_line(
+                surface,
+                (x + (tx - x) * t1, y + (ty - y) * t1 - 5),
+                (x + (tx - x) * t2, y + (ty - y) * t2 - 5),
+                2, _NS_thorne.PALETTE["goo_mid"], 150)
 
 
     def _draw_viscous_charge(surface, boss, x, y, timer, phase):
@@ -7581,8 +6531,18 @@ class _NS_thorne:
     # SKILL E: QUILL SPRAY
     # ===================================================================
     def _draw_quill_spray_ground(surface, boss, x, y, timer, phase):
-        """Ground marker."""
-        pass
+        """Ground marker — radial AOE ring (range 100)."""
+        p = _NS_thorne.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 60))
+        pulse = math.sin(phase * 4) * 0.3 + 0.7
+        # Outer range ring (tegas)
+        _skill_outlined_circle(surface, (x, y - 10), 100, 3,
+                               p["quill_shine"], int(120 * pulse))
+        # Inner warning ring expanding with the charge
+        _skill_outlined_circle(surface, (x, y - 10), int(30 + 40 * progress), 2,
+                               p["quill_shine"], int(180 * pulse))
+        # Origin glow dot
+        _NS_thorne._aacircle(surface, p["quill_shine"], (x, y - 10), 4)
 
 
     def _handle_quill_spray_skill(surface, boss, x, y, timer, phase):
@@ -7889,38 +6849,6 @@ class _NS_vex:
     # ---------------------------------------------------------------------------
     # Void visual helpers
     # ---------------------------------------------------------------------------
-    def _draw_void_flame(surface, cx, cy, size, angle, phase,
-                         dark=None, mid=None, light=None, hot=None):
-        """Draw a floating flame-like energy shape (for hair/crown)."""
-        if dark is None:
-            dark = _NS_vex.PALETTE["void_darkest"]
-        if mid is None:
-            mid = _NS_vex.PALETTE["void_dark"]
-        if light is None:
-            light = _NS_vex.PALETTE["void_mid"]
-        if hot is None:
-            hot = _NS_vex.PALETTE["void_bright"]
-
-        ca, sa = math.cos(angle), math.sin(angle)
-        flicker = math.sin(phase * 2 + cx * 0.1) * 1
-
-        tip_x = cx + ca * (size + flicker)
-        tip_y = cy + sa * (size + flicker)
-        base_l_x = cx + math.cos(angle + 2.4) * size * 0.4
-        base_l_y = cy + math.sin(angle + 2.4) * size * 0.4
-        base_r_x = cx + math.cos(angle - 2.4) * size * 0.4
-        base_r_y = cy + math.sin(angle - 2.4) * size * 0.4
-
-        _NS_vex._poly(surface, dark, [
-            (tip_x, tip_y), (base_l_x, base_l_y), (base_r_x, base_r_y)
-        ])
-        _NS_vex._poly(surface, mid, [
-            (tip_x, tip_y),
-            ((base_l_x + cx) / 2, (base_l_y + cy) / 2),
-            ((base_r_x + cx) / 2, (base_r_y + cy) / 2),
-        ])
-        _NS_vex._aaline(surface, light, (cx, cy), (tip_x, tip_y), 1)
-        _NS_vex._aacircle(surface, hot, (int(tip_x), int(tip_y)), 1)
 
 
     def _draw_glow_orb(surface, cx, cy, radius, color_dark, color_mid,
@@ -8529,6 +7457,9 @@ class _NS_vex:
         lean = int(stride * 2.0 if walk else 0.0)
         if attack:
             lean += int(math.sin(ap * math.pi) * 5.0)
+        elif not walk:
+            # v2 (animasi): melayang dengan goyangan kiri-kanan saat idle.
+            lean = int(math.sin(phase * .8) * 3) * f
         root_y = int(breath * .8)
         if walk:
             root_y -= int(abs(stride) * 2.0)
@@ -9077,16 +8008,20 @@ class _NS_vex:
     def _draw_astral_indicator(surface, boss, x, y, timer, pulse):
         """Target indicator for astral imprisonment."""
         tx, ty = _NS_vex._target_position(boss, x, y)
-        # Dashed line
+        # Dashed line (tegas: stroke gelap + garis astral terang)
         for i in range(0, 20, 2):
             t1 = i / 20
             t2 = (i + 1) / 20
-            _NS_vex._aaline(surface, (*_NS_vex.PALETTE["astral_light"], 150),
-                    (x + (tx - x) * t1, y + (ty - y) * t1 - 8),
-                    (x + (tx - x) * t2, y + (ty - y) * t2 - 8), 2)
-        # Circle marker
-        _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["astral_mid"], 150), (tx, ty), 22, 2)
-        _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["astral_light"], 180), (tx, ty), 18, 1)
+            _skill_outlined_line(
+                surface,
+                (x + (tx - x) * t1, y + (ty - y) * t1 - 8),
+                (x + (tx - x) * t2, y + (ty - y) * t2 - 8),
+                2, _NS_vex.PALETTE["astral_light"], 170)
+        # Circle marker (tegas: outline gelap + cincin terang)
+        _skill_outlined_circle(surface, (tx, ty), 22, 2,
+                               _NS_vex.PALETTE["astral_mid"], 160)
+        _skill_outlined_circle(surface, (tx, ty), 18, 1,
+                               _NS_vex.PALETTE["astral_light"], 190)
 
 
     def _handle_astral_skill(surface, boss, x, y, timer, phase):
@@ -9111,10 +8046,13 @@ class _NS_vex:
             t = progress / 0.3
             radius = int(20 + t * 40)
             pulse = math.sin(phase * 3) * 0.3 + 0.7
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_darkest"], int(200 * pulse)),
-                      (tx, ty + 15), radius, 3)
-            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_dark"], int(180 * pulse)),
-                      (tx, ty + 15), radius - 4, 2)
+            # Tegas: outline gelap pekat + rim terang di dalam
+            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_darkest"], int(230 * pulse)),
+                      (tx, ty + 15), radius + 2, 4)
+            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_dark"], int(190 * pulse)),
+                      (tx, ty + 15), radius - 2, 2)
+            _NS_vex._aacircle(surface, (*_NS_vex.PALETTE["void_bright"], int(170 * pulse)),
+                      (tx, ty + 15), radius - 5, 1)
             # Central portal
             _NS_vex._aacircle(surface, _NS_vex.PALETTE["shadow_deep"], (tx, ty + 15), 8)
             _NS_vex._aacircle(surface, _NS_vex.PALETTE["void_darkest"], (tx, ty + 15), 5)
@@ -9224,9 +8162,11 @@ class _NS_vex:
         ring = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
         cx, cy = radius + 10, (radius + 20) // 2
 
-        pygame.draw.ellipse(ring, (*_NS_vex.PALETTE["void_dark"], int(200 * pulse)),
+        pygame.draw.ellipse(ring, (*_NS_vex.PALETTE["void_darkest"], int(210 * pulse)),
+                            (3, 3, radius * 2 + 14, radius + 14), 5)
+        pygame.draw.ellipse(ring, (*_NS_vex.PALETTE["void_dark"], int(210 * pulse)),
                             (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(ring, (*_NS_vex.PALETTE["void_mid"], int(220 * pulse)),
+        pygame.draw.ellipse(ring, (*_NS_vex.PALETTE["void_mid"], int(230 * pulse)),
                             (15, 8, radius * 2 - 10, radius + 4), 2)
 
         # Runes
@@ -10268,6 +9208,9 @@ class _NS_zephyr:
 
         lean = int((3.5 * stride if walk else 0.0) +
                    (math.sin(ap * math.pi) * 7.0 if attack else 0.0))
+        # v2 (animasi): perpindahan berat badan saat idle — goyang kiri-kanan.
+        if not (walk or attack):
+            lean = int(math.sin(phase * .8) * 3) * f
         root_y = int(breath * .9)
         if walk:
             root_y -= int(abs(stride) * 2.5)
@@ -10317,34 +9260,39 @@ class _NS_zephyr:
                             pt(-25 - mantle_push, 10 + mantle_wave), 1)
 
         # ── planted legs, tights and ankle boots ──
+        # v2 (animasi): foot-lift bergantian saat jalan — kaki melangkah maju
+        # terangkat (knee + telapak naik), kaki tumpuan tetap menapak.
         front_step = int(stride * 4) if walk else 0
         rear_step = -front_step
         if attack:
             front_step += int(ap * 5)
             rear_step -= int(ap * 3)
-        legs = ((-7, rear_step, p["boot_dark"], p["boot_mid"]),
-                (7, front_step, p["boot_mid"], p["boot_light"]))
-        for i, (side, step, boot_base, boot_light) in enumerate(legs):
+        stride_vel = math.cos(phase * 1.72) if walk else 0.0
+        front_lift = int(max(0.0, stride_vel) * 8) if walk else 0
+        rear_lift = int(max(0.0, -stride_vel) * 8) if walk else 0
+        legs = ((-7, rear_step, p["boot_dark"], p["boot_mid"], rear_lift),
+                (7, front_step, p["boot_mid"], p["boot_light"], front_lift))
+        for i, (side, step, boot_base, boot_light, lift) in enumerate(legs):
             thigh_x = side + step
-            # visible striped tights above the boot
+            # visible striped tights above the boot (knee rises with lift)
             poly(p["dress_darkest"], [(thigh_x - 5, 15),
-                 (thigh_x + 5, 15), (thigh_x + 4, 29),
-                 (thigh_x - 4, 29)])
+                 (thigh_x + 5, 15), (thigh_x + 4, 29 - lift),
+                 (thigh_x - 4, 29 - lift)])
             poly(p["dress_mid"], [(thigh_x - 3, 17),
-                 (thigh_x + 3, 17), (thigh_x + 2, 28),
-                 (thigh_x - 3, 28)], False)
+                 (thigh_x + 3, 17), (thigh_x + 2, 28 - lift),
+                 (thigh_x - 3, 28 - lift)], False)
             _NS_zephyr._aaline(surface, p["dress_light"],
-                                pt(thigh_x - 1, 18), pt(thigh_x - 1, 27), 1)
+                                pt(thigh_x - 1, 18), pt(thigh_x - 1, 27 - lift), 1)
             # pointed cuff, heel and toe establish ground contact.
-            poly(p["boot_darkest"], [(thigh_x - 6, 27),
-                 (thigh_x + 5, 27), (thigh_x + 6, 40),
-                 (thigh_x - 5, 40)])
-            poly(boot_base, [(thigh_x - 4, 28), (thigh_x + 3, 28),
-                 (thigh_x + 4, 38), (thigh_x - 4, 38)], False)
+            poly(p["boot_darkest"], [(thigh_x - 6, 27 - lift),
+                 (thigh_x + 5, 27 - lift), (thigh_x + 6, 40 - lift),
+                 (thigh_x - 5, 40 - lift)])
+            poly(boot_base, [(thigh_x - 4, 28 - lift), (thigh_x + 3, 28 - lift),
+                 (thigh_x + 4, 38 - lift), (thigh_x - 4, 38 - lift)], False)
             _NS_zephyr._aaline(surface, boot_light,
-                                pt(thigh_x - 2, 30), pt(thigh_x - 1, 37), 1)
+                                pt(thigh_x - 2, 30 - lift), pt(thigh_x - 1, 37 - lift), 1)
             toe = 4 * f
-            foot = pt(thigh_x + (3 if f > 0 else -3), 40)
+            foot = pt(thigh_x + (3 if f > 0 else -3), 40 - lift)
             _NS_zephyr._aaline(surface, p["shadow_deep"],
                                 (foot[0] - toe, foot[1] + 1),
                                 (foot[0] + toe, foot[1] + 1), 4)
@@ -10949,9 +9897,14 @@ class _NS_zephyr:
                               int(145 * pulse)),
                              (int(tx - radius), int(ty + 15 - radius * .32),
                               radius * 2, max(4, int(radius * .64))))
+        # Tegas: rim gelap pekat + arc rune terang di atas
+        _NS_zephyr._ellipse(surface,
+                             (*_NS_zephyr.PALETTE["magic_dark"], int(215 * pulse)),
+                             (int(tx - radius), int(ty + 15 - radius * .32),
+                              radius * 2, max(4, int(radius * .64))), 3)
         _NS_zephyr._draw_fey_arc(surface, tx, ty + 15, radius, int(radius * .32),
                                   phase, phase + math.pi * 1.45,
-                                  (*_NS_zephyr.PALETTE["rune_mid"], 190), 2)
+                                  (*_NS_zephyr.PALETTE["rune_mid"], 215), 2)
 
 
     def _draw_bramble_maze(surface, boss, x, y, timer, phase):
@@ -11020,9 +9973,12 @@ class _NS_zephyr:
         _NS_zephyr._ellipse(surface, (*p["magic_darkest"], 155),
                              (x - radius, y + 31 - radius // 3,
                               radius * 2, max(5, radius * 2 // 3)))
+        _NS_zephyr._ellipse(surface, (*p["magic_dark"], 215),
+                             (x - radius, y + 31 - radius // 3,
+                              radius * 2, max(5, radius * 2 // 3)), 3)
         _NS_zephyr._draw_fey_arc(surface, x, y + 31, radius, radius * .32,
                                   phase, phase + math.tau,
-                                  (*p["rune_mid"], 210), 2)
+                                  (*p["rune_mid"], 225), 2)
         for i in range(6):
             a = phase * .7 + i * math.tau / 6
             _NS_zephyr._aacircle(surface, p["rune_light"],
@@ -11086,9 +10042,9 @@ class _NS_zephyr:
                  int(sy + dy * t1 + ny * wobble1))
             b = (int(sx + dx * t2 + nx * wobble2),
                  int(sy + dy * t2 + ny * wobble2))
-            _NS_zephyr._aaline(surface, (*p["magic_dark"], 180), a, b, 3)
-            _NS_zephyr._aaline(surface, (*p["magic_bright"], 210), a, b, 1)
-        _NS_zephyr._aacircle(surface, (*p["jewel_mid"], 190), (tx, ty), 9, 2)
+            _skill_outlined_line(surface, a, b, 3, p["magic_dark"], 200)
+            _skill_outlined_line(surface, a, b, 1, p["magic_bright"], 225)
+        _skill_outlined_circle(surface, (tx, ty), 9, 2, p["jewel_mid"], 200)
         _NS_zephyr._aacircle(surface, p["jewel_light"], (tx, ty), 2)
 
 
@@ -11110,6 +10066,9 @@ class _NS_zephyr:
         _NS_zephyr._ellipse(surface, (*p["magic_darkest"], 170),
                              (x - radius, y + 31 - radius // 3,
                               radius * 2, max(6, radius * 2 // 3)))
+        _NS_zephyr._ellipse(surface, (*p["magic_dark"], 220),
+                             (x - radius, y + 31 - radius // 3,
+                              radius * 2, max(6, radius * 2 // 3)), 3)
         for i in range(3):
             rr = radius - i * 9
             _NS_zephyr._draw_fey_arc(surface, x, y + 31, rr, rr * .29,

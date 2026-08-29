@@ -42,3 +42,6 @@ tools/shots_before/
 
 # DB runtime server top up (transaksi - jangan commit)
 server/topup.db
+
+# Output demo animasi hero (hasil render tools/grimjaw_anim_demo.py dsb.)
+tools/_out/
