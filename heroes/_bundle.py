@@ -4501,11 +4501,14 @@ class _NS_kaizen:
         _NS_kaizen._aaline(surface, rim_hot, pt(10, -19), pt(16, -17), 1)
         # tepi depan torso & jaket
         _NS_kaizen._aaline(surface, rim_col, pt(14, -12), pt(12, 8), 1)
-        # tepi depan paha & boot depan
-        _NS_kaizen._aaline(surface, rim_col, pt(9, 26), pt(12, 39), 1)
-        _NS_kaizen._aacircle(surface, rim_hot, pt(12, 40), 1)
-        # glint kecil pada gagang katana saat diam
-        _NS_kaizen._aacircle(surface, rim_hot, pt(15, 1), 1)
+        # tepi depan paha & boot depan (ikut naik saat kaki terangkat)
+        _NS_kaizen._aaline(surface, rim_col, pt(9, 26 - front_lift),
+                           pt(12, 39 - front_lift), 1)
+        _NS_kaizen._aacircle(surface, rim_hot, pt(12, 40 - front_lift), 1)
+        # glint kecil pada gagang katana hanya saat diam (saat menyerang
+        # gagang sudah menyala lewat glow bilah + afterimage)
+        if not attack:
+            _NS_kaizen._aacircle(surface, rim_hot, pt(15, 1), 1)
 
         if detail:
             # Portrait-only micro-detail. At arena scale these marks would
