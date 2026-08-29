@@ -8861,6 +8861,9 @@ class _NS_vex:
         lean = int(stride * 2.0 if walk else 0.0)
         if attack:
             lean += int(math.sin(ap * math.pi) * 5.0)
+        elif not walk:
+            # v2 (animasi): melayang dengan goyangan kiri-kanan saat idle.
+            lean = int(math.sin(phase * .8) * 3) * f
         root_y = int(breath * .8)
         if walk:
             root_y -= int(abs(stride) * 2.0)
