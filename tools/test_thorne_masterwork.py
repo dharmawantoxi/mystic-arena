@@ -75,7 +75,15 @@ def test_portrait_lod_is_distinct():
     T._draw_thorne_elite(portrait, 90, 95, 1, .8, "idle", 0.0, True)
     assert pygame.image.tobytes(normal, "RGBA") != \
         pygame.image.tobytes(portrait, "RGBA")
-    assert len(colors(portrait)) >= len(colors(normal))
+    # Pass detail portrait menambah stroke (barb ticks, jahitan, goresan):
+    # jumlah piksel opaque harus lebih besar. Cek ini stabil di pygame
+    # maupun pygame-ce (jumlah warna unik bergantung blending aaline
+    # antar-versi engine, jadi tidak dipakai sebagai asersi).
+    n_normal = sum(1 for y in range(180) for x in range(180)
+                   if normal.get_at((x, y)).a)
+    n_portrait = sum(1 for y in range(180) for x in range(180)
+                     if portrait.get_at((x, y)).a)
+    assert n_portrait > n_normal
 
 
 def test_rig_has_real_animation_frames():

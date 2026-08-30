@@ -5360,6 +5360,11 @@ class _NS_thorne:
         "shadow":         (0,   0,   0),
         "shadow_deep":    (4,   6,   15),
         "white":          (255, 255, 255),
+
+        # v4 premium pass: rim light (key atas-kiri) + specular metal
+        "rim_warm":       (255, 216, 150),
+        "rim_gold":       (255, 240, 190),
+        "spec":           (255, 246, 240),
     }
 
 
@@ -6124,6 +6129,77 @@ class _NS_thorne:
         # ujung telinga
         _NS_thorne._aaline(surface, p["fur_high"], pt(-5, -46), pt(-2, -44), 1)
 
+    def _draw_thorne_premium_pass(surface, pt, f, phase, warpath):
+        """v4 PREMIUM PASS — lighting & material pass terakhir (tanpa outline).
+
+        Prinsip pixel-art premium yang dipakai:
+        1. SATU arah key light (atas-kiri layar) -> rim light hangat di
+           tepi atas siluet. Kipas quill mendapat rim kuat kalau berada
+           di sisi key light (facing +1); kalau di sisi bayangan (facing
+           -1), sorotnya pindah ke moncong.
+        2. Ambient occlusion: lekukan gelap halus (bawah tengkorak,
+           bawah rahang, ketiak, bawah sabuk & perut) memberi kedalaman.
+        3. Specular: titik putih kecil di metal/gold + glint yang
+           berkelip mengikuti fase (material terasa hidup).
+        4. Goresan bulu halus 1px bernuansa terang -> tekstur, bukan
+           noise (jumlahnya dibatasi supaya tetap bersih di scale kecil).
+        Semua alpha rendah; aman di arena (scale 1) maupun portrait.
+        """
+        p = _NS_thorne.PALETTE
+        A = lambda c, a: (*c, max(0, min(255, int(a))))
+        # ── 1. RIM LIGHT (key: atas-kiri layar) ──
+        kx = -f  # sisi lokal yang tampil di KIRI layar
+        _NS_thorne._aaline(surface, A(p["rim_warm"], 210),
+                           pt(-6, -40), pt(kx * 3 + 1, -44), 2)
+        _NS_thorne._aacircle(surface, p["spec"], pt(kx * 4 - 1, -43), 1)
+        if f > 0:
+            # kipas quill di sisi key light -> rim kuat di dua tepi
+            _NS_thorne._aaline(surface, A(p["rim_gold"], 170),
+                               pt(-12, -44), pt(-18, -31), 1)
+            _NS_thorne._aaline(surface, A(p["rim_gold"], 120),
+                               pt(-17, -27), pt(-20, -17), 1)
+        else:
+            # kipas di sisi bayangan -> rim redup; sorot pindah ke moncong
+            _NS_thorne._aaline(surface, A(p["rim_gold"], 70),
+                               pt(-12, -44), pt(-16, -36), 1)
+            _NS_thorne._aaline(surface, A(p["rim_warm"], 150),
+                               pt(13, -34), pt(22, -32), 1)
+            _NS_thorne._aaline(surface, A(p["rim_warm"], 110),
+                               pt(25, -27), pt(26, -21), 1)
+        # pauldron bahu belakang (puncaknya selalu menangkap cahaya)
+        _NS_thorne._aaline(surface, A(p["rim_warm"], 170),
+                           pt(-9, -27), pt(-17, -27), 1)
+        # ── 2. AMBIENT OCCLUSION ──
+        _NS_thorne._aaline(surface, A(p["shadow"], 80),
+                           pt(-5, -18), pt(6, -17), 1)    # bawah tengkorak
+        _NS_thorne._aaline(surface, A(p["shadow"], 95),
+                           pt(15, -15), pt(21, -16), 1)   # bawah rahang
+        _NS_thorne._aaline(surface, A(p["shadow"], 90),
+                           pt(-11, -11), pt(-14, -6), 1)  # ketiak lengan belakang
+        _NS_thorne._aaline(surface, A(p["shadow"], 75),
+                           pt(-14, 12), pt(14, 12), 1)    # bawah sabuk
+        _NS_thorne._aaline(surface, A(p["shadow"], 80),
+                           pt(-4, 22), pt(11, 23), 1)     # bawah perut
+        # ── 3. SPECULAR + GLINT berkelip ──
+        _NS_thorne._aacircle(surface, p["spec"], pt(-15, -24), 1)  # pauldron
+        _NS_thorne._aacircle(surface, p["spec"], pt(1, 6), 1)      # gesper
+        g = (phase * .5) % 1.0
+        if .08 < g < .22:
+            _NS_thorne._aaline(surface, A(p["spec"], 200),
+                               pt(-19, -21), pt(-13, -20), 1)
+        # ── 4. GORESAN BULU HALUS ──
+        _NS_thorne._aaline(surface, A(p["fur_high"], 110),
+                           pt(6, -12), pt(7, -6), 1)
+        _NS_thorne._aaline(surface, A(p["fur_high"], 90),
+                           pt(-11, 1), pt(-12, 7), 1)
+        # warpath: rim merah ekstra di tepi kipas + rahang (siaga)
+        if warpath:
+            _NS_thorne._aaline(surface, A(p["rage_bright"], 150),
+                               pt(-13, -45), pt(-19, -32), 1)
+            _NS_thorne._aaline(surface, A(p["rage_bright"], 110),
+                               pt(14, -19), pt(20, -18), 1)
+
+
     def _draw_thorne_elite(surface, cx, cy, facing, phase, action,
                            attack_progress=0.0, detail=False, warpath=False):
         """Rewrite penuh meniru sprite sheet referensi Bristleback:
@@ -6389,6 +6465,18 @@ class _NS_thorne:
         poly(p["snout_light"], [(16, -31), (21, -29), (24, -26), (20, -25), (17, -28)], False)
         _NS_thorne._aacircle(surface, p["fur_darkest"], pt(24, -25), 2)
         _NS_thorne._aacircle(surface, p["fur_dark"], pt(23, -20), 1)
+        # v4: lendir (goo) mengkilap di sisi moncong + tetesan yang
+        # perlahan turun — material glossy, signature "viscous nose"
+        droop = 2 + int((phase * .5) % 1.0 * 3)
+        g1 = pt(18, -26)
+        g2 = pt(19, -24)
+        g3 = pt(20, -24 + droop)
+        _NS_thorne._aacircle(surface, p["goo_dark"], g1, 3)
+        _NS_thorne._aacircle(surface, p["goo_mid"], (g1[0] - 1, g1[1]), 2)
+        _NS_thorne._aacircle(surface, p["goo_bright"], (g1[0] - 1, g1[1] - 1), 1)
+        _NS_thorne._aaline(surface, p["goo_mid"], g2, g3, 2)
+        _NS_thorne._aaline(surface, p["goo_bright"], g2, (g3[0] - 1, g3[1]), 1)
+        _NS_thorne._aacircle(surface, p["goo_light"], g3, 1)
         # mulut + dagu
         _NS_thorne._aaline(surface, p["fur_darkest"], pt(16, -18), pt(23, -19), 2)
         poly(p["snout_dark"], [(15, -18), (22, -19), (20, -14), (15, -14)], False)
@@ -6478,17 +6566,28 @@ class _NS_thorne:
             impact = max(0.0, 1.0 - abs(ap - .52) / .18)
             if impact > 0:
                 A = angle if f > 0 else math.pi - angle
-                bxw = cx + lean + f * hand[0] + math.cos(A) * 32
-                byw = cy + root_y + hand[1] + math.sin(A) * 32
-                for i in range(6):
-                    ang = -1.2 + i * .48
+                bxw = int(cx + lean + f * hand[0] + math.cos(A) * 32)
+                byw = int(cy + root_y + hand[1] + math.sin(A) * 32)
+                # v4: impact "mendarat" — flash inti + cincin + kilat dua-nuansa
+                if impact > .55:
+                    _NS_thorne._aacircle(surface,
+                                         (*p["quill_shine"], int(235 * impact)),
+                                         (bxw, byw), 5)
+                    _NS_thorne._aacircle(surface, p["white"], (bxw, byw), 2)
+                rr = int(4 + (1 - impact) * 12)
+                _NS_thorne._ellipse(
+                    surface, (*p["quill_shine"], int(150 * impact)),
+                    (bxw - rr, byw - rr // 2, rr * 2, rr), 1)
+                for i in range(8):
+                    ang = -1.5 + i * (math.pi / 4)
                     length = 5 + int(impact * (8 + i % 2 * 4))
+                    exx = bxw + int(math.cos(ang) * length * f)
+                    eyy = byw + int(math.sin(ang) * length)
                     _NS_thorne._aaline(surface,
-                                       (*p["quill_shine"], int(220 * impact)),
-                                       (int(bxw), int(byw)),
-                                       (int(bxw + math.cos(ang) * length * f),
-                                        int(byw + math.sin(ang) * length)),
+                                       (*p["quill_shine"], int(230 * impact)),
+                                       (bxw, byw), (exx, eyy),
                                        1 if i % 2 else 2)
+                    _NS_thorne._aacircle(surface, p["white"], (exx, eyy), 1)
         else:
             for i in range(3):
                 t = (phase * .18 + i / 3.0) % 1.0
@@ -6497,6 +6596,10 @@ class _NS_thorne:
                 _NS_thorne._aacircle(surface,
                                      (*p["fur_high"], int(110 * (1 - t))),
                                      (motex, motey), 1)
+                if i == 0:  # v4: satu motes bercahaya (halo rim warm)
+                    _NS_thorne._aacircle(surface,
+                                         (*p["rim_warm"], int(60 * (1 - t))),
+                                         (motex, motey), 3)
 
         if warpath and not detail:
             for i in range(6):
@@ -6513,6 +6616,8 @@ class _NS_thorne:
 
         if detail:
             _NS_thorne._draw_thorne_masterwork_details(surface, pt, f)
+        # v4: premium lighting/material pass (rim, AO, specular, tekstur)
+        _NS_thorne._draw_thorne_premium_pass(surface, pt, f, phase, warpath)
 
     def _draw_club_swing_trail(surface, cx, cy, facing, current_angle, t):
         """Yellow crescent trail for club swing."""
@@ -6635,16 +6740,16 @@ class _NS_thorne:
 
 
     def _draw_shadow(surface, x, y):
-        """Ground shadow."""
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_thorne.PALETTE["fur_darkest"], 60), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
+        """Ground shadow — v4: inti gelap + halo lembut dua lapis."""
+        shadow = pygame.Surface((120, 24), pygame.SRCALPHA)
+        for radius in range(12, 0, -1):
+            alpha = max(0, (12 - radius) * 13)
+            rx, ry = 48 + radius, radius + 3
+            pygame.draw.ellipse(shadow, (0, 0, 0, alpha),
+                                (60 - rx, 12 - ry, rx * 2, ry * 2))
+        pygame.draw.ellipse(shadow, (*_NS_thorne.PALETTE["fur_darkest"], 45),
+                            (12, 5, 96, 14))
+        surface.blit(shadow, (x - 60, y - 12))
 
 
     def _draw_dust_aura(surface, x, y, phase):
