@@ -309,7 +309,10 @@ MINION_TYPES = {
         "gold_reward": 45,
         "radius": 14,
         "color": TROLL_COLOR,
-        "regen": 0.6
+        "regen": 0.6,
+        # v1 damage school: troll keras tapi lambat - tahan fisik sedikit
+        "armor": 2,
+        "magic_resist": 0.05
     },
     "undead": {
         "name": "Undead",
@@ -320,7 +323,10 @@ MINION_TYPES = {
         "attack_cooldown": 60,
         "gold_reward": 16,
         "radius": 10,
-        "color": UNDEAD_COLOR
+        "color": UNDEAD_COLOR,
+        # undead: tahan sihir, tapi rentan fisik (armor 0)
+        "armor": 0,
+        "magic_resist": 0.15
     },
     "dark_rider": {
         "name": "Dark Rider",
@@ -331,7 +337,9 @@ MINION_TYPES = {
         "attack_cooldown": 50,
         "gold_reward": 65,
         "radius": 13,
-        "color": DARK_RIDER_COLOR
+        "color": DARK_RIDER_COLOR,
+        "armor": 1,
+        "magic_resist": 0.05
     },
 }
 
@@ -1196,6 +1204,24 @@ def get_all_hero_types():
     except Exception:
         pass
 
+    # ═══════════════════════════════════════════════════════════
+    # BALANCE PASS 2026-08-30 (hero_balance.py) - diterapkan di SINI,
+    # di satu-satunya tempat katalog hero disusun, supaya toko/preview
+    # skill/unit test/gameplay memakai angka final yang sama. Data mentah
+    # di bosses/boss_data.py tetap utuh (entri cuma dict salinan), jadi
+    # fungsi ini idempoten dan bisa dimatikan lewat konstanta ENABLE_*.
+    # Rasionya (corr HP-DPS, perbandingan sekolah, gap starter)
+    # diverifikasi tools/balance_audit.py --ingame.
+    # ═══════════════════════════════════════════════════════════
+    try:
+        import hero_balance
+        hero_balance.apply_to_catalog(all_heroes)
+    except Exception:
+        import os
+        if os.environ.get("MYSTIC_DEBUG_BALANCE"):
+            import traceback
+            traceback.print_exc()
+
     return all_heroes
 
 
@@ -1964,6 +1990,14 @@ class Game:
 
         for h in all_heroes:
             h.update(all_units, self.towers, self.bases)
+        # Sekolah damage selesai dipakai - matikan context supaya
+        # damage dari sumber lain (boss/menara/dot) tidak ikut
+        # terhitung sebagai skill hero.
+        try:
+            import _entity as _ent
+            _ent.set_damage_school(None)
+        except Exception:
+            pass
 
         # ═══ ITEM AURAS (Steel Aegis) - dihitung sekali per frame ═══
         try:
@@ -2200,6 +2234,11 @@ class Game:
             b.update(all_units)
         for h in all_heroes:
             h.update(all_units, self.towers, self.bases)
+        try:
+            import _entity as _ent
+            _ent.set_damage_school(None)
+        except Exception:
+            pass
         if self.active_boss and self.active_boss.alive:
             self.active_boss.update(
                 all_units, self.towers, self.bases)
@@ -4742,6 +4781,22 @@ class Menu:
                            sec_desc, ui_theme.TEXT_DIM,
                            topleft=(panel_x + 22, panel_y + 40),
                            shadow=False)
+
+        # ═══ LEGENDA SINGKATAN DI KARTU ═══
+        # Chip sekolah di tiap kartu memakai singkatan ini. Digambar
+        # sebagai satu baris teks biasa (tanpa ikon) supaya tidak pernah
+        # menabrak garis section header.
+        _lg_font = get_font(15, "body_semibold")
+        _lg_txt = "PHY = fisik kena armor  ·  MAG = sihir tembus armor  " \
+                  "·  TNK = badak"
+        _lg = ui_theme.fit_ellipsis(_lg_font, _lg_txt, panel_w - 60)
+        _lg_w = _lg_font.size(_lg_txt)[0]
+        ui_theme.draw_text(self.screen, _lg_font, _lg_txt,
+                           (150, 156, 180),
+                           topleft=(panel_x + panel_w - 22 - _lg_w,
+                                    panel_y + 42),
+                           shadow=False)
+
         pygame.draw.line(self.screen, (48, 54, 80),
                          (panel_x + 15, panel_y + 66),
                          (panel_x + panel_w - 15, panel_y + 66), 1)
@@ -4930,10 +4985,53 @@ class Menu:
                            ui_theme.TEXT_DIM, topleft=(info_x, y + 38),
                            shadow=False)
 
-        # Role chip (auto-size)
+        # ═══ SEKOLAH DAMAGE (PHYSICAL / MAGIC, + penanda TANK) ═══
+        # Memberi tahu pemain damage mana yang ditahan armor musuh dan
+        # mana yang tembus (data: hero_archetypes.py, mekanik:
+        # _entity.resolve_damage_school + bosses/base_boss.py).
+        _sch_color = _sch_label = _sch_icon = None
+        try:
+            import hero_archetypes
+            _arch = hero_archetypes.get_archetype(hero_type, stats)
+            _sch = str(_arch.get("dmg_type", "PHYSICAL")).upper()
+            _play = str(_arch.get("playstyle", "")).upper()
+            _is_tank = _play == "TANK"
+            _sch_color = ((130, 226, 168) if _is_tank else
+                          (255, 178, 92) if _sch == "PHYSICAL" else
+                          (150, 196, 255))
+            # disingkat biar muat di kartu (kolom info cuma ~164 px)
+            _sch_label = {"PHYSICAL": "PHY", "MAGIC": "MAG"}.get(
+                _sch, "PHY")
+            if _is_tank:
+                _sch_label += "·TNK"
+            _sch_icon = ("shield" if _is_tank else
+                         "swords" if _sch == "PHYSICAL" else "bolt")
+        except Exception:
+            _sch_label = None      # murni informasi - tidak boleh error
+
+        # Role chip (auto-size) + chip sekolah. Kolom info kartu ini
+        # sempit (~164 px) dan role boss panjang ("BOSS/CRYSTAL
+        # SORCERESS") - dulu role di-print penuh sampai menyenggol
+        # tombol UNLOCK. Kini keduanya di-fit bersama: panjang role
+        # dikecilkan karakter-per-karakter sampai chip sekolah ikut muat.
         role_font = get_font(14, "body_bold")
-        role_text = stats["role"].upper()
+        role_full = stats["role"].upper()
+        sw = (role_font.size(_sch_label)[0] + 28) if _sch_label else 0
+        gap = 8 if _sch_label else 0
+        limit = max_info_w - sw - gap
+        role_text = role_full
         rw = role_font.size(role_text)[0] + 18
+        # chip sekolah diprioritaskan: role dipendekkan terus (min. 3
+        # karakter) sampai keduanya muat dalam kolom info.
+        while (role_text != role_full or rw > limit) and len(role_text) > 3:
+            role_text = role_text[:-1]
+            if role_text != role_full:
+                role_text = role_text[:-1] + "…" if not \
+                    role_text.endswith("…") else role_text
+            rw = role_font.size(role_text)[0] + 18
+            if rw + gap + sw <= max_info_w + 1:
+                break
+        _fit_school = bool(_sch_label) and (rw + gap + sw <= max_info_w + 1)
         role_rect = pygame.Rect(info_x, y + 60, rw, 20)
         pygame.draw.rect(self.screen, (14, 17, 30), role_rect,
                          border_radius=role_rect.h // 2)
@@ -4942,6 +5040,20 @@ class Menu:
         ui_theme.draw_text(self.screen, role_font, role_text,
                            tuple(min(255, c + 60) for c in color_main),
                            center=role_rect.center, shadow=False)
+
+        if _fit_school:
+            sch_rect = pygame.Rect(role_rect.right + gap, y + 60, sw - 8, 20)
+            pygame.draw.rect(self.screen, (14, 17, 30), sch_rect,
+                             border_radius=sch_rect.h // 2)
+            pygame.draw.rect(self.screen, _sch_color, sch_rect, 1,
+                             border_radius=sch_rect.h // 2)
+            ui_theme.draw_icon(self.screen, _sch_icon,
+                               sch_rect.x + 10, sch_rect.centery,
+                               _sch_color, s=0.5)
+            ui_theme.draw_text(self.screen, role_font, _sch_label,
+                               _sch_color,
+                               topleft=(sch_rect.x + 18, y + 63),
+                               shadow=False)
 
         # Category tag (ikon vektor, bukan simbol unicode)
         tag_y = y + 88

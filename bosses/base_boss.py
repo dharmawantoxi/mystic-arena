@@ -385,6 +385,36 @@ class Boss(TowerDebuffMixin):
         # Anti-burst single hit damage cap (True: 8%, Mini: 12% max HP)
         self.max_damage_per_hit = int(self.max_hp * (0.08 if self.boss_class == "true" else 0.12))
 
+        # ═══ SEKOLAH DAMAGE (v1): armor vs magic resistance ═══
+        # armor   menahan hero bertipe PHYSICAL (basic attack + skill fisik)
+        # mr      menahan hero bertipe MAGIC (skill sihir + tembakan arcane)
+        # Bisa dioverride per boss lewat "armor"/"magic_resist" di
+        # bosses/boss_data.py; kalau tidak di-override, nilainya diambil
+        # dari profil tema boss (hero_archetypes.BOSS_RESISTANCES) sehingga
+        # boss baja/batu tinggi armor-nya dan boss sihir tinggi MR-nya.
+        # Rata-rata kedua sekolah sudah dikalibrasi seimbang
+        # (tools/balance_audit.py -> effective_dps_vs_boss).
+        _ha = None
+        try:
+            import hero_archetypes as _ha
+            _def_armor, _def_mr = _ha.get_boss_resistances(
+                self.boss_type, self.boss_class)
+        except Exception:
+            _true = self.boss_class == "true"
+            _def_armor = 18 if _true else 12
+            _def_mr = 0.20 if _true else 0.10
+        self.armor = stats.get("armor", _def_armor)
+        self.magic_resist = stats.get("magic_resist", _def_mr)
+        self.armor = max(0, min(40, int(self.armor)))
+        self.magic_resist = max(0.0, min(0.45, float(self.magic_resist)))
+        self.resist_profile = stats.get("resist_profile")
+        if not self.resist_profile:
+            try:
+                self.resist_profile = _ha.BOSS_RESISTANCES.get(
+                    self.boss_type, {}).get("profile", "balanced")
+            except Exception:
+                self.resist_profile = "balanced"
+
         # Enrage / Frenzy State
         self.is_enraged = False
         self.enrage_triggered = False
@@ -576,6 +606,7 @@ class Boss(TowerDebuffMixin):
             if dist <= self.range:
                 if self.timer == 0:
                     self.target.take_damage(self.damage, self.team,
+                                            school='physical',
                                             source=self)
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
@@ -5116,7 +5147,7 @@ class Boss(TowerDebuffMixin):
             pass
 
     def take_damage(self, damage, from_team, damage_type='normal',
-                    source=None):
+                    source=None, school=None):
         # ═══ BLIND (Solar Brand aura): serangan fisik penyerang
         #     yang sedang buta berpeluang meleset. Boss tidak
         #     mempunyai evasion sendiri. ═══
@@ -5142,6 +5173,24 @@ class Boss(TowerDebuffMixin):
             if damage_type != 'fire' and shred > 0:
                 damage = int(round(
                     damage * (1.0 + min(1.0, shred * 0.06))))
+
+        # ═══ SEKOLAH DAMAGE: physical kena armor, magic kena MR ═══
+        # resolve_damage_school ada di _entity.py; dipanggil lazy supaya
+        # tidak ada import melingkar di module level.
+        try:
+            from _entity import resolve_damage_school
+            _sch = resolve_damage_school(damage_type, source, school)
+        except Exception:
+            _sch = None
+        if damage > 0 and _sch == 'physical' and self.armor > 0:
+            _red = self.armor * 0.06 / (1.0 + self.armor * 0.06)
+            # armor juga bisa dikikis (Corroder / aura) seperti di hero
+            _red = min(0.60, max(0.0,
+                                 _red - getattr(self, "armor_shred_amount",
+                                                0.0) * 0.06))
+            damage = max(1, int(round(damage * (1.0 - _red))))
+        elif damage > 0 and _sch == 'magic' and self.magic_resist > 0:
+            damage = max(1, int(round(damage * (1.0 - self.magic_resist))))
 
         # ═══ INHERENT BOSS RESILIENCE (True Boss: 30%, Mini Boss: 20%) ═══
         resilience = getattr(self, 'damage_reduction', 0.20)

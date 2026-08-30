@@ -13,6 +13,7 @@ import math
 import random
 from _core import *
 from _system import SoundManager, FrustumCuller, query_enemies_in_range
+import hero_archetypes
 
 
 # ====================================================================
@@ -53,6 +54,80 @@ def credit_hero_damage(source, amount):
             + int(amount)
     except Exception:
         pass
+
+
+# ====================================================================
+# SEKOLAH DAMAGE (PHYSICAL vs MAGIC)
+# ====================================================================
+# damage_type (normal/projectile/fire/ice/heal/crit) tetap dipakai untuk
+# INTERAKI (Wind Wall memantulkan 'projectile', 'fire' kebal armor-shred,
+# dst). SEKOLAH adalah sumbu baru yang menentukan MITIGASI:
+#
+#   physical -> dikurangi armor target (item hero, armor boss)
+#   magic    -> menembus armor, tapi ditahan magic resistance target
+#
+# Sumber sekolah (urut prioritas): argumen ``school=`` eksplisit,
+# atribut ``.dmg_school`` penyerang, lalu context hero yang sedang
+# update (dipasang di Hero.update) supaya ~270 call site skill di
+# hero_skills/_bundle.py ikut terhitung tanpa perlu diubah satu-satu.
+
+_ACTIVE_HERO = [None]            # hero yang sedang di-update
+
+
+def set_damage_school(hero):
+    """Dipanggil di awal/akhir Hero.update.
+
+    Selama hero ini update, semua damage yang DIA hasilkan (termasuk
+    ~270 call site skill yang tidak meneruskan ``source=``) dianggap
+    memakai sekolah hero tersebut.
+    """
+    _ACTIVE_HERO[0] = hero
+
+
+def get_damage_school():
+    hero = _ACTIVE_HERO[0]
+    return getattr(hero, 'dmg_school', None) if hero else None
+
+
+def _is_physical_hit(damage_type, school):
+    """Apakah serangan ini dianggap FISIK untuk interaksi defensif?
+
+    Dipakai Windrun Sylara, Wind Wall Kaizen, dan blind/evasion: ketiganya
+    dulu memakai `damage_type in ('normal', 'projectile')`. Sekarang
+    proyektil sihir (school='magic') tidak ikut di-evasi/dipantulkan,
+    persis seperti yang sudah tertulis di komentar "damage sihir tetap
+    bisa mengenai".
+    """
+    if damage_type not in ('normal', 'projectile'):
+        return False
+    return school != 'magic'
+
+
+def resolve_damage_school(damage_type='normal', source=None, school=None,
+                          target_is_hero=None):
+    """Tentukan sekolah damage: 'physical' / 'magic' / None.
+
+    None = jangan terapkan mitigasi sekolah sama sekali (paritas penuh
+    dengan perilaku lama: projectile menara, burn, dot, refleksi, dll.).
+    Hanya serangan hero & skill hero yang punya sekolah.
+    """
+    if school:
+        return school if school in ('physical', 'magic') else None
+    if damage_type in ('fire', 'ice', 'heal', 'crit'):
+        return None
+    src_school = getattr(source, 'dmg_school', None) if source else None
+    if src_school in ('physical', 'magic'):
+        return src_school
+    if source is None:
+        # Context: hanya dipakai untuk damage TANPA source (skill hero),
+        # dan HANYA terhadap target hero. Menara/castle/minion/boss tetap
+        # netral supaya dot & tick tak sengaja ikut berubah sekolah.
+        hero = _ACTIVE_HERO[0]
+        target_hero = (target_is_hero if target_is_hero is not None
+                       else False)
+        if hero is not None and target_hero:
+            return getattr(hero, 'dmg_school', None)
+    return None
 
 
 class _DummyBulletTarget:
@@ -605,6 +680,13 @@ class Tower:
         self.burn_dps = stats.get("burn_dps", 0)
         self.burn_duration = stats.get("burn_duration", 0)
 
+        # ═══ MITIGASI SEKOLAH DAMAGE (v1) ═══
+        # Menara sedikit menahan damage FISIK (hero/serangan darat);
+        # sihir menembusnya. Naik +1 per level menara; angka dasar bisa
+        # di-tuning lewat tabel TOWER_LEVELS ("armor"/"magic_resist").
+        self.armor = stats.get("armor", 2 + int(self.level))
+        self.magic_resist = stats.get("magic_resist", 0.0)
+
         # Colors
         colors = TOWER_TYPE_COLORS[self.tower_type]
         self.color = colors["main"]
@@ -969,7 +1051,7 @@ class Tower:
         self.shoot_flash_timer = 8
 
     def take_damage(self, damage, from_team, damage_type='normal',
-                    source=None):
+                    source=None, school=None):
         """Damage sistem dengan shield absorb.
 
         ``damage_type``/``source`` diterima supaya pemanggil umum
@@ -977,6 +1059,16 @@ class Tower:
         ``source=``) tidak crash saat targetnya menara.
         """
         self.no_damage_timer = 0
+
+        # ═══ SEKOLAH DAMAGE: physical kena armor menara, magic lolos ═══
+        _sch = resolve_damage_school(damage_type, source, school,
+                                     target_is_hero=False)
+        if damage > 0 and _sch == 'physical':
+            _red = self.armor * 0.06 / (1.0 + self.armor * 0.06) \
+                if self.armor > 0 else 0.0
+            damage = max(1, int(round(damage * (1.0 - _red))))
+        elif damage > 0 and _sch == 'magic' and self.magic_resist > 0:
+            damage = max(1, int(round(damage * (1.0 - self.magic_resist))))
 
         remaining_damage = damage
 
@@ -1664,7 +1756,10 @@ class Castle:
         )
 
     def take_damage(self, damage, from_team, damage_type='normal',
-                    source=None):
+                    source=None, school=None):
+        # ``school`` diterima supaya Hero._do_attack (jalur melee) bisa
+        # meneruskan sekolah damage ke semua jenis target; castle belum
+        # punya mitigasi berbasis sekolah (v1) - hanya signature.
         # ═══ CASTLE SHIELD LOGIC (fitur berbayar) ═══
         # Shield melindungi castle hanya setelah dibeli pada level 4+.
         effective_damage = damage
@@ -3218,15 +3313,57 @@ class Hero(TowerDebuffMixin):
             self._aa_hero_basic_shard = True
         # ════════════════════════════════════════════════════════
 
+        # ═══ SEKOLAH DAMAGE (PHYSICAL / MAGIC) ═══
+        # Dari hero_archetypes (hasil analisis tools/) atau override
+        # eksplisit "dmg_type" di hero_unlock. Dipakai untuk mitigasi:
+        # physical kena armor, magic menembus armor tapi ditahan
+        # magic resistance boss.
+        self.skill_data = stats
+        self.skill_damage_base = stats["skill_damage"]
+
+        _arch = hero_archetypes.get_archetype(hero_type, stats)
+        self.dmg_type = _arch["dmg_type"]
+        self.playstyle = _arch.get("playstyle", "FIGHTER")
+        self.dmg_school = self.dmg_type.lower()
+
+        # ════════════════════════════════════════════════════════
+        # BALANCE PASS 2026-08-30 (hero_balance.py)
+        # ----------------------------------------------------------------
+        # Multiplier STAT per-hero (re-budget arketipe, guard harga,
+        # koreksi sekolah) sudah diterapkan SATU KALI di
+        # _core.get_all_hero_types() - lihat hero_balance.apply_to_catalog
+        # - supaya toko, preview skill, Hero, dan AI membaca angka yang
+        # sama. Yang tersisa di sini hanya catch-up starter, yang harus
+        # dihitung ULANG tiap hero dibuat karena bergantung level hero
+        # (pemain baru tidak boleh dihukum di early game, tapi bonusnya
+        # meluruh sampai 20% pada level 8+).
+        # Masalah yang diatasi (lihat hero_balance.py untuk angkanya):
+        #   corr(HP,DPS) 0.956 -> trade-off tank/carry nyata
+        #   magic 1.32x lebih efektif vs boss -> paritas per sel arketipe
+        #   starter 8,5x lebih lemah dari hero unlock -> catch-up
+        # ════════════════════════════════════════════════════════
+        self.level = 1
+        try:
+            import hero_balance
+            _g = getattr(__import__("__main__"), "game_instance", None)
+            _unlocks = hero_balance.boss_unlocks_for_purchases(
+                getattr(_g, "purchased_heroes", None) if _g else None)
+            self.base_hp, self.base_damage = hero_balance.starter_catchup_stats(
+                hero_type, stats, _unlocks, self.level)
+        except Exception:
+            pass
+
         self.color = stats["color"]
         self.color_dark = stats["color_dark"]
 
+        # kunci internal hero_balance tidak boleh ikut ke runtime skill
+        stats.pop("__hero_type__", None)
+        self._balance = stats.pop("__bal", None)
         self.skill_name = stats["skill_name"]
         self.skill_desc = stats["skill_desc"]
         self.skill_cooldown_max = stats["skill_cooldown"]
-        self.skill_damage_base = stats["skill_damage"]
         self.skill_range = stats["skill_range"]
-        self.skill_data = stats
+
 
         self.level = 1
         self._apply_level_stats()
@@ -3639,6 +3776,10 @@ class Hero(TowerDebuffMixin):
         if not self.alive:
             return
 
+        # Damage yang dihasilkan hero ini sepanjang frame (basic attack,
+        # skill, on-hit item, projectile miliknya) memakai sekolah hero.
+        set_damage_school(self)
+
         self.pulse += 0.1
         # ═══ TICK DEBUFF MENARA (Ice/Mage/Cannon) ═══
         self._tick_tower_debuffs()
@@ -3720,7 +3861,8 @@ class Hero(TowerDebuffMixin):
                     # bisa memantulkannya (lihat Hero.take_damage).
                     target.take_damage(proj['damage'], proj['team'],
                                        damage_type='projectile',
-                                       source=proj.get('source'))
+                                       source=proj.get('source'),
+                                       school=proj.get('school'))
 
                     # Suara hentakan proyektil (panah/sihir hero ranged).
                     # Dulu TIDAK ada sama sekali - serangan jarak jauh
@@ -4168,7 +4310,8 @@ class Hero(TowerDebuffMixin):
                             pass
             else:
                 # Melee / boss hero → instant damage
-                self.target.take_damage(damage, self.team, source=self)
+                self.target.take_damage(damage, self.team, source=self,
+                                        school=self.dmg_school)
 
                 if is_crit:
                     try:
@@ -4223,6 +4366,12 @@ class Hero(TowerDebuffMixin):
     # ═══════════════════════════════════════
     # DAMAGE & RESPAWN
     # ═══════════════════════════════════════
+    def end_damage_scope(self):
+        """Dipanggil Game setelah seluruh hero update: matikan context
+        sekolah supaya damage dari sumber lain (boss/menara/dot) tidak
+        ikut terhitung sebagai skill hero."""
+        set_damage_school(None)
+
     def _spawn_projectile(self, damage, is_crit=False, speed=None,
                           target=None, hero_type=None):
         """Spawn projectile homing yang terbang & MENGENAI target.
@@ -4259,6 +4408,7 @@ class Hero(TowerDebuffMixin):
             'angle': start_angle,
             'age': 0,
             'source': self,
+            'school': self.dmg_school,
         })
 
     def _spawn_skill_projectile(self, target, speed=13.0, hero_type=None):
@@ -4274,7 +4424,13 @@ class Hero(TowerDebuffMixin):
                                target=target, hero_type=hero_type)
 
     def take_damage(self, damage, from_team, damage_type='normal',
-                    source=None):
+                    source=None, school=None):
+        # Sekolah damage penyerang - dibaca guard di bawah (Windrun /
+        # Wind Wall) dan blok mitigasi armor di atas. target_is_hero=False:
+        # sekolah ditentukan PENYERANG, bukan lewat context.
+        self._school = resolve_damage_school(damage_type, source, school,
+                                             target_is_hero=False)
+
         # ═══ ZEPHYR — SHADOW REALM ═══
         # Status ini sebelumnya hanya menyalakan renderer gelembung dan
         # heal. Dengan guard ini Zephyr benar-benar tidak bisa terkena
@@ -4298,7 +4454,7 @@ class Hero(TowerDebuffMixin):
         # untuk keperluan evasion — paritas dengan sebelum marker
         # 'projectile' ada (marker hanya untuk Kaizen Wind Wall).
         if (getattr(self, "_windrun_active", False) and damage > 0
-                and damage_type in ('normal', 'projectile')
+                and _is_physical_hit(damage_type, self._school)
                 and random.random() < 0.75):
             try:
                 import __main__
@@ -4316,7 +4472,8 @@ class Hero(TowerDebuffMixin):
         # (tanpa projectile) dan skill AOE tetap bisa mengenai —
         # wall bukan invulnerability.
         if (getattr(self, "_wind_wall_timer", 0) > 0 and damage > 0
-                and damage_type == 'projectile'):
+                and damage_type == 'projectile'
+                and self._school != 'magic'):
             try:
                 import __main__
                 if hasattr(__main__, 'game_instance'):
@@ -4348,7 +4505,7 @@ class Hero(TowerDebuffMixin):
         # True Strike (Sundering Cudgel pada penyerang) MENEMBUS
         # keduanya, jadi serangan basic-nya selalu mendarat.
         # 'projectile' ikut (paritas: peluru = serangan fisik biasa).
-        if damage_type in ('normal', 'projectile') and damage > 0:
+        if _is_physical_hit(damage_type, self._school) and damage > 0:
             true_strike = False
             if source is not None:
                 src_inv = getattr(source, "items", None)
@@ -4384,10 +4541,12 @@ class Hero(TowerDebuffMixin):
                 damage * (1.0 + self.dmg_amp_amount)))
 
         # ═══ ARMOR (item Steel Aegis/Demon Maw) ═══
-        # Damage fisik biasa dikurangi dengan formula gaya MOBA:
+        # Damage fisik dikurangi dengan formula gaya MOBA:
         #   pengurang = armor * 0.06 / (1 + armor * 0.06)
         # Armor dikikis oleh Corroder (armor_shred). Damage api/sihir
-        # tidak terpengaruh armor.
+        # tidak terpengaruh armor - kini konsisten dengan SEKOLAH:
+        # proyektil sihir hero (school='magic') juga menembus armor,
+        # jadi item armor jelas jadi "anti-fisik", bukan anti-semua.
         if damage_type != 'fire' and damage > 0:
             armor = (inv.get_armor() if inv is not None else 0)
             armor -= getattr(self, "armor_shred_amount", 0.0)
@@ -4426,7 +4585,10 @@ class Hero(TowerDebuffMixin):
         # duri). Refleksi 25% diterapkan SETELAH damage mendarat
         # (di bawah), supaya mitigasi item di atas tetap jalan.
         if getattr(self, "_bristleback_active", False) and damage > 0:
-            damage = max(1, int(round(damage * 0.70)))
+            # Duri menahan fisik penuh (30%), sihir menembusnya sebagian
+            # (15%) - Bristleback tidak lagi netral terhadap sekolah.
+            _keep = 0.70 if self._school != 'magic' else 0.85
+            damage = max(1, int(round(damage * _keep)))
 
         self.hp -= damage
 
@@ -5124,6 +5286,10 @@ class Minion(TowerDebuffMixin):
         self.color = stats["color"]
         self.name = stats["name"]
         self.regen = stats.get("regen", 0) * scale
+        # v1 damage school: armor menahan damage fisik, magic_resist
+        # menahan damage sihir (0 = tidak ada mitigasi).
+        self.armor = stats.get("armor", 0)
+        self.magic_resist = stats.get("magic_resist", 0.0)
         # Slow effect (dari Ice Tower) + semua debuff menara lain:
         # atk_slow (Ice), skill_down & anti_heal (Mage), burn (Cannon)
         self._init_tower_debuffs()
@@ -5467,8 +5633,10 @@ class Minion(TowerDebuffMixin):
                 self.direction = 1 if dx > 0 else -1
 
     def take_damage(self, damage, from_team, damage_type='normal',
-                    source=None):
+                    source=None, school=None):
         # ═══ STATUS ITEM TIER II: Soul Rend amp + Corroder shred ═══
+        _sch = resolve_damage_school(damage_type, source, school,
+                                     target_is_hero=False)
         if damage > 0:
             if getattr(self, "dmg_amp_timer", 0) > 0:
                 damage = int(round(
@@ -5477,6 +5645,20 @@ class Minion(TowerDebuffMixin):
             if damage_type != 'fire' and shred > 0:
                 damage = int(round(
                     damage * (1.0 + min(1.0, shred * 0.06))))
+
+            # ═══ SEKOLAH DAMAGE (physical vs magic) ═══
+            # Corroder/aura shred sudah menghitung armor efektif di sini.
+            armor = self.armor - shred
+            if _sch == 'physical' and armor != 0:
+                if armor > 0:
+                    red = armor * 0.06 / (1.0 + armor * 0.06)
+                    damage = max(1, int(round(damage * (1.0 - red))))
+                else:
+                    bonus = min(1.0, -armor * 0.06)
+                    damage = int(round(damage * (1.0 + bonus)))
+            elif _sch == 'magic' and self.magic_resist > 0:
+                damage = max(1, int(round(damage * (1.0 -
+                                                     self.magic_resist))))
         self.hp -= damage
 
         # Catat damage dealer (command ATTACK DAMAGE DEALER).
