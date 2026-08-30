@@ -21,6 +21,11 @@ Entry point publik ada di bagian paling bawah file.
 import math
 import pygame
 
+try:                     # pass cahaya bersama; opsional supaya file boss
+    import lighting as _lighting          # tetap bisa di-load sendiri
+except Exception:        # pragma: no cover
+    _lighting = None
+
 # Penanda: file ini berisi BANYAK boss (1 true + 3 mini).
 # Dipakai heroes/__init__.py agar tidak menebak fungsi draw_*
 # secara longgar, yang bisa mengembalikan boss yang salah.
@@ -48,6 +53,7 @@ class _NS_razak:
     _flame_cache = {}
     _flash_buf = None
     _record_shadow = None
+    _body_buf = None        # buffer badan untuk outline+lighting
 
     # ---------------------------------------------------------------------------
     # HD Palette - Fire orange / green goblin / red bat mount
@@ -663,12 +669,12 @@ class _NS_razak:
         _NS_razak._draw_shadow(surface, x, y + 52)
         _NS_razak._draw_fire_wisps(surface, x, y + 38, phase, intense=True)
 
-        # Motion blur behind
+        # Motion blur behind (afterimage langsung, tanpa outline/lighting)
         for i in range(4):
             offset = (i + 1) * 8 * -boss.direction
             alpha = int(150 - i * 30)
             temp = pygame.Surface((160, 160), pygame.SRCALPHA)
-            _NS_razak._draw_razak_full(temp, 80, 80, boss.direction, phase, "dash")
+            _NS_razak._draw_razak_full_raw(temp, 80, 80, boss.direction, phase, "dash")
             temp.set_alpha(alpha)
             surface.blit(temp, (x + offset - 80, y + bob - 80))
 
@@ -678,8 +684,8 @@ class _NS_razak:
     # ===================================================================
     # FULL COMPOSITE
     # ===================================================================
-    def _draw_razak_full(surface, cx, cy, facing, phase, action, attack_progress=0):
-        """Draw bat mount + goblin rider."""
+    def _draw_razak_full_raw(surface, cx, cy, facing, phase, action, attack_progress=0):
+        """Draw bat mount + goblin rider (langsung, tanpa outline/lighting)."""
         # Wings behind body first
         _NS_razak._draw_bat_wings(surface, cx, cy, facing, phase, action)
 
@@ -696,6 +702,40 @@ class _NS_razak:
         # Front wings overlay (bring wings forward if attack)
         if action == "attack":
             _NS_razak._draw_bat_wings_front(surface, cx, cy, facing, phase)
+
+
+    def _draw_razak_full(surface, cx, cy, facing, phase, action, attack_progress=0):
+        """Komposit ORIGINAL-MAX: badan dirender ke buffer tetap, di-crop
+        rapat, diberi outline siluet gelap 1 px + pass pencahayaan murah
+        (rim/shade), lalu di-blit ke posisi dunia yang sama. Seni per
+        bagian tidak diubah - buffer hanya menampung hasil pose."""
+        NS = _NS_razak
+        B = 200
+        if NS._body_buf is None:
+            NS._body_buf = pygame.Surface((B, B), pygame.SRCALPHA)
+        buf = NS._body_buf
+        buf.fill((0, 0, 0, 0))
+        NS._draw_razak_full_raw(buf, B // 2, B // 2, facing, phase, action,
+                                attack_progress)
+        used = buf.get_bounding_rect(min_alpha=1)
+        if used.width <= 2 or used.height <= 2:
+            return
+        used.inflate_ip(4, 4)
+        used.clamp_ip(buf.get_rect())
+        sub = buf.subsurface(used).copy()
+        # Blit origin: titik jangkar badan di buffer (B//2,B//2) harus
+        # jatuh di posisi dunia (cx,cy) -> ox = cx - (B//2) + used.left.
+        ox = int(cx) - (B // 2) + used.left
+        oy = int(cy) - (B // 2) + used.top
+        # Outline siluet (konvensi level1: edge gelap 1 px, 4 arah)
+        edge = sub.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + ddx, oy + ddy))
+        # Pass pencahayaan (rim kiri-atas + shade terminator) pada crop rapat
+        if _lighting is not None:
+            _lighting.apply_to_rig(sub, rim_add=(34, 26, 22), shade_mul=168)
+        surface.blit(sub, (ox, oy))
 
 
     def _draw_bat_wings(surface, cx, cy, facing, phase, action):
@@ -1726,6 +1766,7 @@ class _NS_khalros:
     _shadow_cache = None
     _aura_cache = None
     _flash_buf = None
+    _body_buf = None        # buffer badan untuk outline+lighting
     _record_shadow = None
 
     # ---------------------------------------------------------------------------
@@ -2331,7 +2372,7 @@ class _NS_khalros:
     # ===================================================================
     # BODY RENDERING
     # ===================================================================
-    def _draw_khalros_body(surface, cx, cy, facing, phase, action, attack_progress=0):
+    def _draw_khalros_body_raw(surface, cx, cy, facing, phase, action, attack_progress=0):
         sway = int(math.sin(phase * 0.6) * (2 if action != "idle" else 1))
 
         _NS_khalros._draw_loincloth(surface, cx, cy + 8, phase, sway)
@@ -2344,6 +2385,32 @@ class _NS_khalros:
             _NS_khalros._draw_idle_arms(surface, cx, cy - 8, facing, phase)
 
         _NS_khalros._draw_khalros_head(surface, cx, cy - 26, facing, phase)
+
+    def _draw_khalros_body(surface, cx, cy, facing, phase, action, attack_progress=0):
+        """Komposit ORIGINAL-MAX: badan -> buffer tetap -> outline siluet
+        gelap 1 px + pass pencahayaan (rim/shade) -> blit posisi dunia sama."""
+        NS = _NS_khalros
+        B = 200
+        if NS._body_buf is None:
+            NS._body_buf = pygame.Surface((B, B), pygame.SRCALPHA)
+        buf = NS._body_buf
+        buf.fill((0, 0, 0, 0))
+        NS._draw_khalros_body_raw(buf, B // 2, B // 2, facing, phase, action, attack_progress)
+        used = buf.get_bounding_rect(min_alpha=1)
+        if used.width <= 2 or used.height <= 2:
+            return
+        used.inflate_ip(4, 4)
+        used.clamp_ip(buf.get_rect())
+        sub = buf.subsurface(used).copy()
+        ox = int(cx) - (B // 2) + used.left
+        oy = int(cy) - (B // 2) + used.top
+        edge = sub.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + ddx, oy + ddy))
+        if _lighting is not None:
+            _lighting.apply_to_rig(sub, rim_add=(40, 28, 16), shade_mul=168)
+        surface.blit(sub, (ox, oy))
 
 
     def _draw_loincloth(surface, cx, cy, phase, sway):
@@ -3451,6 +3518,7 @@ class _NS_gorath:
     _shadow_cache = None
     _aura_cache = None
     _flash_buf = None
+    _body_buf = None        # buffer badan untuk outline+lighting
     _record_shadow = None
 
     # ---------------------------------------------------------------------------
@@ -3907,7 +3975,7 @@ class _NS_gorath:
     # ===================================================================
     # BODY RENDERING
     # ===================================================================
-    def _draw_gorath_body(surface, cx, cy, facing, phase, action, attack_progress=0):
+    def _draw_gorath_body_raw(surface, cx, cy, facing, phase, action, attack_progress=0):
         sway = int(math.sin(phase * 0.6) * (2 if action != "idle" else 1))
 
         # Lower floating body (loincloth / robe)
@@ -3930,6 +3998,32 @@ class _NS_gorath:
 
         # Blood dripping from body
         _NS_gorath._draw_body_blood_drips(surface, cx, cy, phase)
+
+    def _draw_gorath_body(surface, cx, cy, facing, phase, action, attack_progress=0):
+        """Komposit ORIGINAL-MAX: badan -> buffer tetap -> outline siluet
+        gelap 1 px + pass pencahayaan (rim/shade) -> blit posisi dunia sama."""
+        NS = _NS_gorath
+        B = 200
+        if NS._body_buf is None:
+            NS._body_buf = pygame.Surface((B, B), pygame.SRCALPHA)
+        buf = NS._body_buf
+        buf.fill((0, 0, 0, 0))
+        NS._draw_gorath_body_raw(buf, B // 2, B // 2, facing, phase, action, attack_progress)
+        used = buf.get_bounding_rect(min_alpha=1)
+        if used.width <= 2 or used.height <= 2:
+            return
+        used.inflate_ip(4, 4)
+        used.clamp_ip(buf.get_rect())
+        sub = buf.subsurface(used).copy()
+        ox = int(cx) - (B // 2) + used.left
+        oy = int(cy) - (B // 2) + used.top
+        edge = sub.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + ddx, oy + ddy))
+        if _lighting is not None:
+            _lighting.apply_to_rig(sub, rim_add=(46, 18, 16), shade_mul=168)
+        surface.blit(sub, (ox, oy))
 
 
     def _draw_loincloth(surface, cx, cy, phase, sway):
@@ -4884,6 +4978,7 @@ class _NS_alchemist:
     _shadow_cache = None
     _aura_cache = {}        # key: "acid"/"gold"
     _flash_buf = None
+    _body_buf = None        # buffer badan untuk outline+lighting
     _record_shadow = None
 
     # ---------------------------------------------------------------------------
@@ -5530,7 +5625,7 @@ class _NS_alchemist:
     # ===================================================================
     # FULL COMPOSITE - Ogre + Goblin rider
     # ===================================================================
-    def _draw_alch_full(surface, cx, cy, facing, phase, action, attack_progress=0):
+    def _draw_alch_full_raw(surface, cx, cy, facing, phase, action, attack_progress=0):
         # Rage buff pulse
         is_rage = action == "rage" or False
 
@@ -5555,6 +5650,32 @@ class _NS_alchemist:
         # Goblin rider on ogre's shoulder (behind ogre head, above shoulder)
         _NS_alchemist._draw_goblin_rider(surface, cx - 8 * facing, cy - 30, facing, phase, action,
                            attack_progress)
+
+    def _draw_alch_full(surface, cx, cy, facing, phase, action, attack_progress=0):
+        """Komposit ORIGINAL-MAX: badan -> buffer tetap -> outline siluet
+        gelap 1 px + pass pencahayaan (rim/shade) -> blit posisi dunia sama."""
+        NS = _NS_alchemist
+        B = 200
+        if NS._body_buf is None:
+            NS._body_buf = pygame.Surface((B, B), pygame.SRCALPHA)
+        buf = NS._body_buf
+        buf.fill((0, 0, 0, 0))
+        NS._draw_alch_full_raw(buf, B // 2, B // 2, facing, phase, action, attack_progress)
+        used = buf.get_bounding_rect(min_alpha=1)
+        if used.width <= 2 or used.height <= 2:
+            return
+        used.inflate_ip(4, 4)
+        used.clamp_ip(buf.get_rect())
+        sub = buf.subsurface(used).copy()
+        ox = int(cx) - (B // 2) + used.left
+        oy = int(cy) - (B // 2) + used.top
+        edge = sub.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + ddx, oy + ddy))
+        if _lighting is not None:
+            _lighting.apply_to_rig(sub, rim_add=(26, 40, 14), shade_mul=168)
+        surface.blit(sub, (ox, oy))
 
 
     def _draw_ogre_lower(surface, cx, cy, phase):

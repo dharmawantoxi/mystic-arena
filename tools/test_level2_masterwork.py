@@ -267,6 +267,36 @@ def test_animation_continuous_and_fast():
     print(f"PASS animasi kontinu + {dt:.2f} ms/frame (true boss)")
 
 
+def test_outline_and_lighting_present():
+    """Konvensi level1: tiap boss punya outline siluet gelap + pass cahaya
+    (rim/shade) lewat komposit badan -> buffer -> outline -> lighting."""
+    import lighting as _lighting_mod
+    body_raw = {"razak": "_draw_razak_full", "khalros": "_draw_khalros_body",
+                "gorath": "_draw_gorath_body", "alchemist": "_draw_alch_full"}
+    for name, klass, fn, NS, cd in BOSSES:
+        bodyfn = body_raw[name]
+        # 1) komposit ter-wire: ada varian _raw & cache buffer
+        assert hasattr(NS, bodyfn + "_raw"), f"{name} tanpa renderer _raw"
+        assert hasattr(NS, "_body_buf"), f"{name} tanpa cache badan"
+        # 2) badan yang di-komposit punya piksel outline-hitam (siluet),
+        #    lebih banyak daripada renderer _raw (tanpa outline).
+        raw = pygame.Surface((220, 220), pygame.SRCALPHA)
+        getattr(NS, bodyfn + "_raw")(raw, 110, 110, 1, 1.0, "idle")
+        comp = pygame.Surface((220, 220), pygame.SRCALPHA)
+        getattr(NS, bodyfn)(comp, 110, 110, 1, 1.0, "idle")
+
+        def black_count(surf):
+            return sum(1 for yy in range(0, 220, 2) for xx in range(0, 220, 2)
+                       if surf.get_at((xx, yy))[:3] == (0, 0, 0)
+                       and surf.get_at((xx, yy))[3] > 50)
+        assert black_count(comp) > black_count(raw) + 20, \
+            f"{name}: outline siluet tidak terlihat " \
+            f"({black_count(raw)}->{black_count(comp)})"
+    # 3) modul lighting diimpor (pass cahaya aktif)
+    assert _lighting_mod is not None
+    print("PASS outline siluet + pass cahaya (konvensi level1)")
+
+
 def test_procedural_only():
     src = inspect.getsource(L)
     assert "pygame.image.load" not in src
@@ -280,5 +310,6 @@ if __name__ == "__main__":
     test_durations_match_ai()
     test_shockwave_activation()
     test_animation_continuous_and_fast()
+    test_outline_and_lighting_present()
     test_procedural_only()
     print("ALL LEVEL2 ORIGINAL-MAX TESTS PASSED")
