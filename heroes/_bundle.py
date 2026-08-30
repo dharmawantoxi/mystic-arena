@@ -4961,45 +4961,77 @@ class _NS_sylara:
 # kaizen.py
 # ====================================================================
 class _NS_kaizen:
-    """Namespace kaizen - isi asli tidak diubah."""
+    """Kaizen - PIXEL MASTERWORK v2 + SKILL FX v2.1 (rewrite penuh renderer).
+
+    Standar mengikuti ``_NS_thorne`` v2/v2.1 (lihat docs/THORNE_V2_RENDERER.md):
+
+    - Tetap **100% prosedural** - tidak ada PNG / sprite-sheet / image.load.
+    - Rig native ~1.5x lebih besar (bbox idle 104x112 -> ~160x185). Ukuran di
+      arena TIDAK berubah: pipeline hero mengukur lalu menormalkan tinggi
+      badan; yang naik adalah kepadatan detail (px native per px layar).
+    - Disiplin pixel-art: ramp 4-5 band per material dengan hue-shift,
+      selout (outline hanya sisi bayangan), siluet bergerigi (_tuft_points),
+      specular cluster 1-2 px, dither band, key light kiri-atas.
+    - Animasi: foot solver, inersia/secondary motion (rambut, scarf, tale
+      hachimaki), idle hidup (napas, blink, sway berat), serangan
+      multi-keyframe dengan frame IMPACT + smear berlapis.
+    - Skill FX world-space: semua efek dikompensasi ``_fx_scale(boss)``
+      (= 1/_render_scale, cap 2.6) supaya cincin/telegraph tidak menyusut
+      bersama sprite cache hero. Tiap skill punya 3 fase jelas: TELEGRAPH,
+      AKTIVASI, STEADY. Permukaan statis di-cache lewat ``_static``.
+    - Semua nama & signature publik lama dipertahankan.
+    """
 
     # ---------------------------------------------------------------------------
     # Compatibility helpers
     # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
+    # Cache permukaan statis (aura / mist / platform dibangun SEKALI).
+    _STATIC_SURFACES = {}
+
+    def _static(key, builder):
+        """Ambil permukaan statis dari cache, atau bangun sekali lalu simpan."""
+        surf = _NS_kaizen._STATIC_SURFACES.get(key)
+        if surf is None:
+            surf = builder()
+            _NS_kaizen._STATIC_SURFACES[key] = surf
+        return surf
+
     # ---------------------------------------------------------------------------
-    # HD Color Palette - Yasuo inspired
+    # HD Color Palette - Yasuo inspired (kunci lama utuh + kunci v2 baru)
     # ---------------------------------------------------------------------------
     PALETTE = {
-        # Skin
+        # Skin - ramp 5 band, hue-shift hangat ke highlight
         "skin_darkest":   (135,  85,  60),
         "skin_dark":      (185, 130,  95),
         "skin_mid":       (220, 170, 135),
         "skin_light":     (240, 200, 165),
         "skin_high":      (250, 220, 190),
 
-        # Hair (dark brown)
+        # Hair - ramp 5 band, bayangan dingin ke ungu-cokelat
         "hair_darkest":   ( 30,  20,  15),
         "hair_dark":      ( 55,  35,  25),
         "hair_mid":       ( 85,  55,  35),
         "hair_light":     (120,  80,  55),
         "hair_shine":     (155, 110,  75),
 
-        # Outfit - blue/dark
+        # Outfit - indigo dingin (bayangan mengarah ungu, cahaya ke sian)
         "cloth_darkest":  ( 15,  20,  40),
+        "cloth_deep":     (  8,  12,  30),
         "cloth_dark":     ( 30,  45,  85),
         "cloth_mid":      ( 55,  80, 145),
         "cloth_light":    ( 90, 130, 200),
         "cloth_high":     (140, 180, 235),
 
-        # Scarf/sash - brighter blue
+        # Scarf/sash - biru terang
+        "scarf_deep":     ( 22,  42,  96),
         "scarf_dark":     ( 40,  70, 140),
         "scarf_mid":      ( 75, 120, 200),
         "scarf_light":    (130, 175, 240),
         "scarf_high":     (185, 215, 255),
 
-        # Pants - darker
+        # Pants / hakama
         "pants_dark":     ( 20,  30,  60),
         "pants_mid":      ( 40,  55, 105),
         "pants_light":    ( 70,  95, 155),
@@ -5009,38 +5041,50 @@ class _NS_kaizen:
         "leather_mid":    ( 95,  65,  40),
         "leather_light":  (140, 100,  65),
 
-        # Sword - katana
+        # Sword - katana (ramp baja dingin + specular)
         "steel_darkest":  ( 40,  50,  65),
         "steel_dark":     ( 90, 105, 125),
         "steel_mid":      (155, 170, 190),
         "steel_light":    (210, 220, 235),
         "steel_shine":    (245, 250, 255),
 
-        # Handle wrap
+        # Handle wrap (ito berlian merah)
         "wrap_dark":      ( 55,  20,  25),
         "wrap_mid":       (110,  40,  50),
         "wrap_light":     (165,  70,  85),
 
         # Gold accents
         "gold_dark":      ( 95,  70,  20),
-        "gold_mid":       (170, 130, 40),
-        "gold_light":     (230, 195, 90),
+        "gold_mid":       (170, 130,  40),
+        "gold_light":     (230, 195,  90),
 
-        # Wind - light cyan/white
+        # Saya (sarung lacquer merah-delima) - v2
+        "saya_dark":      ( 58,  14,  22),
+        "saya_mid":       (104,  27,  39),
+        "saya_light":     (150,  46,  58),
+        "saya_shine":     (205,  96, 100),
+
+        # Wind - sian/putih (FX utama)
         "wind_darkest":   ( 30,  60, 110),
         "wind_dark":      ( 55, 110, 175),
         "wind_mid":       (110, 175, 230),
         "wind_light":     (175, 220, 250),
         "wind_bright":    (215, 240, 255),
         "wind_white":     (245, 252, 255),
+        "wind_pale":      (232, 246, 255),
+        "wind_deep":      ( 16,  40,  82),
 
         # Eye
         "eye_white":      (240, 248, 255),
         "eye_iris":       (200, 150,  50),
         "eye_iris_light": (240, 200, 100),
         "eye_pupil":      ( 15,  15,  20),
+        "eye_glow":       (150, 225, 255),
 
         # Misc
+        "ink":            ( 24,  26,  40),
+        "cord_dark":      (120,  30,  40),
+        "cord_mid":       (190,  55,  65),
         "shadow":         (0,   0,   0),
         "shadow_deep":    (4,   6,   15),
         "white":          (255, 255, 255),
@@ -5049,6 +5093,21 @@ class _NS_kaizen:
 
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
+
+
+    def _mix(a, b, t):
+        """Blend linear dua warna palette (t=0 -> a, t=1 -> b)."""
+        t = max(0.0, min(1.0, t))
+        return _NS_kaizen._clamp(
+            (a[0] + (b[0] - a[0]) * t,
+             a[1] + (b[1] - a[1]) * t,
+             a[2] + (b[2] - a[2]) * t))
+
+
+    def _hash01(i):
+        """Pseudo-random deterministik 0..1 (stabil antar frame & cache)."""
+        x = math.sin(i * 127.1 + 311.7) * 43758.5453
+        return x - math.floor(x)
 
 
     def _aacircle(surface, color, center, radius, width=0):
@@ -5200,22 +5259,157 @@ class _NS_kaizen:
 
 
     def _draw_wind_swirl(surface, cx, cy, size, phase, color=None, alpha=200):
-        """Small wind swirl."""
+        """Small wind swirl (2 arc - hemat draw call untuk dinding W)."""
         if color is None:
             color = _NS_kaizen.PALETTE["wind_bright"]
         col = (*color, alpha) if len(color) == 3 else color
-        for i in range(3):
-            angle_start = phase * 0.8 + i * math.pi * 2 / 3
+        for i in range(2):
+            angle_start = phase * 0.8 + i * math.pi
             angle_end = angle_start + math.pi * 1.2
-            _NS_kaizen._draw_wind_arc(surface, cx, cy, size, angle_start, angle_end,
-                           col, width=1, segments=8)
+            _NS_kaizen._draw_wind_arc(surface, cx, cy, size, angle_start,
+                                      angle_end, col, width=1, segments=6)
+
+
+    # ---------------------------------------------------------------------------
+    # FX v2.1 vocabulary - primitif dunia (standar Thorne)
+    # ---------------------------------------------------------------------------
+    def _tuft_points(spine, depth=4.0, min_len=7.0, seed=0):
+        """Ubah spine halus menjadi tepi bergerigi (pixel-art fur/hair).
+
+        Tiap segmen di-sampling lalu diselang-selingi gigi keluar/masuk
+        sepanjang normal - deterministik (hash), aman untuk cache.
+        """
+        out = [spine[0]]
+        for i in range(len(spine) - 1):
+            ax, ay = spine[i]
+            bx, by = spine[i + 1]
+            seg = math.hypot(bx - ax, by - ay)
+            n = max(1, int(seg / min_len))
+            nx, ny = (by - ay), -(bx - ax)
+            ln = math.hypot(nx, ny) or 1.0
+            nx, ny = nx / ln, ny / ln
+            for j in range(n):
+                t = (j + 0.5) / n
+                px, py = ax + (bx - ax) * t, ay + (by - ay) * t
+                d = depth * (0.55 + 0.45 * _NS_kaizen._hash01(i * 7 + j * 13 + seed))
+                if j % 2 == 0:
+                    out.append((px + nx * d, py + ny * d))
+                else:
+                    out.append((px - nx * d * 0.45, py - ny * d * 0.45))
+            out.append((bx, by))
+        return out
+
+
+    def _fx_scale(boss):
+        """Faktor skala efek skill (world-space).
+
+        Hero dirender ke canvas lalu dikecilkan ``_render_scale`` saat
+        di-blit -> efek (cincin, telegraph, duri) ikut menyusut sampai
+        ~40%. Dengan faktor ini efek digambar lebih besar di canvas
+        sehingga ukurannya DI LAYAR setara boss asli (world-space).
+        Boss asli (tanpa _render_scale) = 1.0. Cap 2.6 (standar Thorne).
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+                    core=None):
+        """Bintang kilat: spike panjang-pendek selang-seling + inti."""
+        if alpha <= 0 or size <= 0:
+            return
+        for k in range(spikes):
+            ang = rot + k * math.pi * 2 / spikes
+            ln = size * (1.0 if k % 2 == 0 else 0.55)
+            _NS_kaizen._aaline(surface, (*color, alpha),
+                               (int(cx), int(cy)),
+                               (int(cx + math.cos(ang) * ln),
+                                int(cy + math.sin(ang) * ln * .8)),
+                               2 if k % 2 == 0 else 1)
+        if core:
+            _NS_kaizen._aacircle(surface, (*core, alpha), (int(cx), int(cy)),
+                                 max(1, int(size * .3)))
+
+
+    def _chevron(surface, cx, cy, ang, size, color, alpha, width=3):
+        """Satu panah '>' menghadap arah ``ang`` (telegraph bergerak)."""
+        if alpha <= 0 or size <= 0:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        px, py = -sa, ca
+        tipx, tipy = cx + ca * size, cy + sa * size
+        for s in (-1, 1):
+            _NS_kaizen._aaline(
+                surface, (*color, alpha),
+                (int(cx + px * s * size * .55 - ca * size * .5),
+                 int(cy + py * s * size * .55 - sa * size * .5)),
+                (int(tipx), int(tipy)), width)
+
+
+    def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
+                     segments=10, thick=3, span=0.6, squash=.92):
+        """Cincin putus-putus yang berputar (marker AOE / rune ring)."""
+        if alpha <= 0 or radius <= 1:
+            return
+        for i in range(segments):
+            a0 = phase + i * math.pi * 2 / segments
+            a1 = a0 + math.pi * 2 / segments * span
+            p0 = (cx + math.cos(a0) * radius, cy + math.sin(a0) * radius * squash)
+            p1 = (cx + math.cos(a1) * radius, cy + math.sin(a1) * radius * squash)
+            _NS_kaizen._aaline(surface, (*color, alpha), p0, p1, thick)
+
+
+    def _jagged_crack(surface, cx, cy, ang, length, colors, alpha, seed,
+                      width=3):
+        """Retakan tanah berzigzag (3 segmen) dengan seam menyala."""
+        if alpha <= 0 or length <= 0:
+            return
+        x, y, a = cx, cy, ang
+        pts = [(x, y)]
+        for i in range(3):
+            a += (_NS_kaizen._hash01(seed * 7 + i * 13) - .5) * .8
+            seg = length / 3.0
+            x += math.cos(a) * seg
+            y += math.sin(a) * seg * .55      # perspektif tanah
+            pts.append((x, y))
+        for i in range(len(pts) - 1):
+            _NS_kaizen._aaline(surface, (*colors[0], alpha),
+                               pts[i], pts[i + 1], width + 2)
+            _NS_kaizen._aaline(surface, (*colors[1], alpha),
+                               pts[i], pts[i + 1], width)
+
+
+    def _dither_dots(surface, color, a, b, step=3, alpha=210):
+        """Band dither 50% klasik: baris titik selang-seling antara a->b."""
+        if alpha <= 0:
+            return
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        ln = math.hypot(dx, dy)
+        if ln <= 0:
+            return
+        steps = max(2, int(ln / step))
+        for i in range(0, steps, 2):
+            t = i / steps
+            x, y = a[0] + dx * t, a[1] + dy * t
+            _NS_kaizen._rect(surface, (*color, alpha),
+                             (int(x), int(y) + (i % 4 == 2), 1, 1))
+            if i + 1 < steps:
+                t2 = (i + 1) / steps
+                x2, y2 = a[0] + dx * t2, a[1] + dy * t2
+                _NS_kaizen._rect(surface, (*color, alpha),
+                                 (int(x2) + 1, int(y2) + 1 - (i % 4 == 2), 1, 1))
 
 
     # ---------------------------------------------------------------------------
     # PROJECTILE SYSTEM - Steel Wind Slash (Q ranged projectile)
     # ---------------------------------------------------------------------------
     class WindSlashProjectile:
-        """Crescent wind slash projectile (Steel Wind)."""
+        """Crescent wind slash projectile (Steel Wind) - v2.1 mewah.
+
+        Trail berlapis (glow luar + core terang) + glint di ujung sabit.
+        """
         def __init__(self, sx, sy, tx, ty, speed=8.0,
                      target=None, damage=0, team=None):
             self.x = float(sx)
@@ -5277,48 +5471,58 @@ class _NS_kaizen:
             self.y += (dy / dist) * self.speed
 
         def draw(self, surface, phase):
+            p = _NS_kaizen.PALETTE
             if not self.alive and self.age < 2:
                 return
-            # Trail
+            # ── trail 3-lapis: glow lebar, mid, core terang ──
             for i, (tx, ty) in enumerate(self.trail):
+                k = (len(self.trail) - i)
                 alpha = int(30 + i * 12)
-                r = max(1, 6 - (len(self.trail) - i))
-                _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_dark"], alpha), (tx, ty), r + 2)
-                _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_light"], alpha // 2), (tx, ty), r)
+                r = max(1, 8 - k // 2)
+                _NS_kaizen._aacircle(surface, (*p["wind_dark"], alpha), (tx, ty), r + 3)
+                _NS_kaizen._aacircle(surface, (*p["wind_mid"], alpha), (tx, ty), r)
+                if i % 2 == 0:
+                    _NS_kaizen._aacircle(surface, (*p["wind_bright"], alpha),
+                              (tx, ty - 1), max(1, r - 3))
 
             if self.alive:
                 px, py = int(self.x), int(self.y)
                 # Glow behind slash
-                _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_dark"], 100), (px, py), 16)
-                _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_mid"], 150), (px, py), 11)
+                _NS_kaizen._aacircle(surface, (*p["wind_dark"], 100), (px, py), 18)
+                _NS_kaizen._aacircle(surface, (*p["wind_mid"], 150), (px, py), 12)
 
                 # Crescent slash shape - perpendicular to travel direction
                 perp = self.angle + math.pi / 2
-                arc_radius = 14
-                # Draw crescent as thick arc
+                arc_radius = 16
                 for offset in range(-2, 3):
                     width = 3 - abs(offset)
                     if width <= 0:
                         continue
                     if offset == 0:
-                        color = _NS_kaizen.PALETTE["wind_white"]
+                        color = p["wind_white"]
                     elif abs(offset) == 1:
-                        color = _NS_kaizen.PALETTE["wind_bright"]
+                        color = p["wind_bright"]
                     else:
-                        color = _NS_kaizen.PALETTE["wind_light"]
+                        color = p["wind_light"]
                     _NS_kaizen._draw_wind_arc(surface, px, py, arc_radius + offset,
                                    perp - 1.1, perp + 1.1,
                                    color, width=width, segments=10)
 
-                # Tips of crescent - sharp points
+                # Tips of crescent - sharp points + glint berputar
                 tip1_x = px + math.cos(perp - 1.1) * arc_radius
                 tip1_y = py + math.sin(perp - 1.1) * arc_radius
                 tip2_x = px + math.cos(perp + 1.1) * arc_radius
                 tip2_y = py + math.sin(perp + 1.1) * arc_radius
-                _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["wind_white"],
+                _NS_kaizen._aacircle(surface, p["wind_white"],
                           (int(tip1_x), int(tip1_y)), 2)
-                _NS_kaizen._aacircle(surface, _NS_kaizen.PALETTE["wind_white"],
+                _NS_kaizen._aacircle(surface, p["wind_white"],
                           (int(tip2_x), int(tip2_y)), 2)
+                _NS_kaizen._spark_star(surface, tip1_x, tip1_y, 5,
+                                       p["wind_pale"], 200, 4,
+                                       rot=phase * 2.1)
+                _NS_kaizen._spark_star(surface, tip2_x, tip2_y, 4,
+                                       p["wind_pale"], 170, 4,
+                                       rot=-phase * 1.7 + 1.0)
 
                 # Speed lines
                 for i in range(3):
@@ -5327,7 +5531,7 @@ class _NS_kaizen:
                     sy1 = py - math.sin(self.angle) * (8 + i * 2) + math.sin(perp) * offset
                     sx2 = sx1 - math.cos(self.angle) * 6
                     sy2 = sy1 - math.sin(self.angle) * 6
-                    _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_bright"], 180),
+                    _NS_kaizen._aaline(surface, (*p["wind_bright"], 180),
                             (sx1, sy1), (sx2, sy2), 1)
 
 
@@ -5420,6 +5624,62 @@ class _NS_kaizen:
         boss._kz_projectiles.append(proj)
 
 
+    def _katana_angle(phase, action, progress=0.0):
+        """Sudut katana menurut pose (radian, konvensi rig menghadap kanan).
+
+        Murni fungsi dari (phase, action, progress) supaya bisa diaudit.
+        Selaras dengan ``_attack_pose``: sudut wind-up < sudut IMPACT.
+        """
+        if action == "attack":
+            return _NS_kaizen._attack_pose(progress)["angle"]
+        if action == "walk":
+            return 0.46 + math.sin(phase * 1.7) * 0.06
+        # idle: katana condong santai + napas halus
+        return 0.34 + math.sin(phase * 0.72) * 0.03
+
+
+    def _attack_pose(ap):
+        """Interpolasi keyframe serang iai -> dict pose.
+
+        Keyframe: (progress, bob, lean, hand_x, hand_y, angle,
+                   flare, tremble)
+          0.00  rest      : katana santai di depan
+          0.12  wind-up   : katana terangkat ke belakang-atas, badan turun
+          0.28  tension   : gemetar 1 px, bahu tertahan
+          0.46  strike    : ayunan tercepat (smear aktif)
+          0.54  IMPACT    : squash maksimum + bintang + serpihan angin
+          0.74  follow    : rebound overshoot
+          1.00  recover   : kembali ke pose istirahat
+        """
+        keys = (
+            (0.00,  0,  1,  30,   4, 0.34, 1.00, 0),
+            (0.12,  8, -8,  16, -32, -2.35, 1.12, 0),
+            (0.28,  9, -9,  13, -35, -2.62, 1.22, 1),
+            (0.46, -4, 11,  42,  16,  0.98, 1.10, 0),
+            (0.54,  9, 12,  45,  22,  0.72, 1.05, 0),
+            (0.74,  2,  6,  40,  12,  0.48, 1.00, 0),
+            (1.00,  0,  1,  30,   4, 0.34, 1.00, 0),
+        )
+        ap = max(0.0, min(1.0, ap))
+        for i in range(len(keys) - 1):
+            k0, k1 = keys[i], keys[i + 1]
+            if k0[0] <= ap <= k1[0]:
+                span = max(1e-6, k1[0] - k0[0])
+                t = (ap - k0[0]) / span
+                t = t * t * (3 - 2 * t)          # smoothstep
+                vals = tuple(
+                    a + (b - a) * t for a, b in zip(k0[1:6], k1[1:6]))
+                flare = k0[6] + (k1[6] - k0[6]) * t
+                tremble = 1 if (k0[7] and t < 0.9) else 0
+                return {
+                    "bob": int(round(vals[0])), "lean": int(round(vals[1])),
+                    "hand": (int(round(vals[2])), int(round(vals[3]))),
+                    "angle": vals[4],
+                    "flare": flare, "tremble": tremble,
+                }
+        return {"bob": 0, "lean": 1, "hand": (30, 4), "angle": 0.34,
+                "flare": 1.0, "tremble": 0}
+
     # ===================================================================
     # MAIN DRAW ENTRY POINT
     # ===================================================================
@@ -5437,15 +5697,24 @@ class _NS_kaizen:
             or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 45) - 15
         )
 
+        # Badan ikut bereaksi ke state skill (v2.1):
+        #   gale  = W aktif -> scarf/bilah menyala sian
+        #   storm = R aktif -> mata + hachimaki + aura badai
+        gale = active_skill == "w"
+        storm = active_skill == "r"
+
         # ---------- Background layers ----------
         # Portrait LOD intentionally omits arena-sized aura/platform. This
         # lets auto-crop fill the portrait with Kaizen's face and materials
         # instead of shrinking him to include a 180 px effect circle.
         if not portrait_hd:
-            _NS_kaizen._draw_swordsman_rim_light(surface, x, y - 10, pulse)
-            _NS_kaizen._draw_wind_aura(surface, x, y, pulse)
+            _NS_kaizen._draw_swordsman_rim_light(surface, x, y - 12, pulse)
+            if storm:
+                _NS_kaizen._draw_storm_aura(surface, x, y, pulse)
+            else:
+                _NS_kaizen._draw_wind_aura(surface, x, y, pulse)
             _NS_kaizen._draw_wind_platform(
-                surface, x, y + 40, pulse, active_skill)
+                surface, x, y + 58, pulse, active_skill)
 
         # ---------- Skill ground effects ----------
         if active_skill == "q":
@@ -5479,35 +5748,44 @@ class _NS_kaizen:
 
 
     # ===================================================================
-    # POSE MODES
+    # POSE MODES  (anchor telapak = +62; ground FX mengikuti)
     # ===================================================================
     def _draw_kaizen_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
+        bob = int(math.sin(boss.pulse * 0.7) * 2.5)
+        gale = getattr(boss, "active_skill", None) == "w"
+        storm = getattr(boss, "active_skill", None) == "r"
         if not getattr(boss, "_portrait_hd", False):
-            _NS_kaizen._draw_shadow(surface, x, y + 48)
-            _NS_kaizen._draw_floating_wind(surface, x, y + 35, boss.pulse)
+            _NS_kaizen._draw_shadow(surface, x, y + 62)
+            _NS_kaizen._draw_floating_wind(surface, x, y + 46, boss.pulse,
+                                           gale=gale)
         _NS_kaizen._draw_kaizen_body(
             surface, x, y + bob, boss.direction, boss.pulse, "idle",
-            detail=getattr(boss, "_portrait_hd", False))
+            detail=getattr(boss, "_portrait_hd", False),
+            gale=gale, storm=storm)
 
 
     def _draw_kaizen_walk(surface, boss, x, y):
         phase = boss.pulse * 2.0
         bob = int(abs(math.sin(phase * 1.2)) * 3)
         sway = int(math.sin(phase) * 2)
+        gale = getattr(boss, "active_skill", None) == "w"
+        storm = getattr(boss, "active_skill", None) == "r"
         if not getattr(boss, "_portrait_hd", False):
-            _NS_kaizen._draw_shadow(surface, x + sway, y + 48)
+            _NS_kaizen._draw_shadow(surface, x + sway, y + 62)
             _NS_kaizen._draw_floating_wind(
-                surface, x + sway, y + 35, phase, trail=True,
-                facing=boss.direction)
+                surface, x + sway, y + 46, phase, trail=True,
+                facing=boss.direction, gale=gale)
         _NS_kaizen._draw_kaizen_body(
             surface, x + sway, y - bob, boss.direction, phase, "walk",
-            detail=getattr(boss, "_portrait_hd", False))
+            detail=getattr(boss, "_portrait_hd", False),
+            gale=gale, storm=storm)
 
 
     def _draw_kaizen_attack(surface, boss, x, y):
         progress = getattr(boss, "_kz_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
+        gale = getattr(boss, "active_skill", None) == "w"
+        storm = getattr(boss, "active_skill", None) == "r"
 
         # Spawn wind slash projectile at mid-swing (ranged variant)
         range_val = getattr(boss, "range", 150)
@@ -5519,23 +5797,39 @@ class _NS_kaizen:
                 boss._kz_proj_spawned = True
             if progress < 0.15 or progress > 0.9:
                 boss._kz_proj_spawned = False
+            # Muzzle burst world-space tepat saat slash lepas (v2.1)
+            if 0.45 < progress < 0.62:
+                fs = _NS_kaizen._fx_scale(boss)
+                mx = x + 52 * boss.direction
+                my = y - 6
+                fade = 1.0 - abs(progress - 0.52) / 0.12
+                _NS_kaizen._spark_star(surface, mx, my, int(16 * fs),
+                                       _NS_kaizen.PALETTE["wind_pale"],
+                                       int(235 * fade), 6, rot=progress * 6,
+                                       core=_NS_kaizen.PALETTE["white"])
+                _NS_kaizen._aacircle(
+                    surface, (*_NS_kaizen.PALETTE["wind_bright"], int(170 * fade)),
+                    (mx, my), int(20 * fs), 2)
 
         # Slight step forward during swing
-        step = int(math.sin(progress * math.pi) * 3) * boss.direction
+        step = int(math.sin(progress * math.pi) * 4) * boss.direction
         if not getattr(boss, "_portrait_hd", False):
-            _NS_kaizen._draw_shadow(surface, x + step, y + 48)
+            _NS_kaizen._draw_shadow(surface, x + step, y + 62)
             _NS_kaizen._draw_floating_wind(
-                surface, x + step, y + 35, boss.pulse, intense=True)
+                surface, x + step, y + 46, boss.pulse, intense=True,
+                gale=gale)
         _NS_kaizen._draw_kaizen_body(
             surface, x + step, y, boss.direction, boss.pulse,
-            "attack", progress, getattr(boss, "_portrait_hd", False))
+            "attack", progress, getattr(boss, "_portrait_hd", False),
+            gale=gale, storm=storm)
 
 
     # ===================================================================
-    # BODY RENDERING - HD samurai
+    # BODY RENDERING - HD samurai masterwork v2
     # ===================================================================
     def _draw_kaizen_body(surface, cx, cy, facing, phase, action,
-                          attack_progress=0, detail=False):
+                          attack_progress=0, detail=False, gale=False,
+                          storm=False):
         """Renderer tubuh Kaizen kualitas maksimum, 100% procedural.
 
         Dibangun sebagai bone rig 2D berlapis: setiap pose mengubah lean,
@@ -5543,40 +5837,53 @@ class _NS_kaizen:
         sprite sheet, ataupun image.load. Efek skill lama tetap kompatibel.
         """
         _NS_kaizen._draw_kaizen_elite(
-            surface, cx, cy, facing, phase, action, attack_progress, detail)
+            surface, cx, cy, facing, phase, action, attack_progress, detail,
+            gale, storm)
 
 
     def _draw_kaizen_elite(surface, cx, cy, facing, phase, action,
-                           attack_progress=0.0, detail=False):
-        """Hand-authored pixel-art rig memakai primitive pygame saja."""
+                           attack_progress=0.0, detail=False, gale=False,
+                           storm=False):
+        """Hand-authored pixel-art rig memakai primitive pygame saja.
+
+        Disiplin v2 (standar Thorne): ramp 4-5 band hue-shift, selout
+        (outline hanya sisi bayangan), siluet bergerigi, specular cluster,
+        dither band, key light kiri-atas. Anchor telapak = +62.
+        """
         p = _NS_kaizen.PALETTE
         f = 1 if facing >= 0 else -1
         walk = action == "walk"
         attack = action == "attack"
         stride = math.sin(phase * 1.7)
-        lean = (3 if walk else 0) * f
         # Whole-body root motion: breathing, planted walk bounce, then a
-        # compressed wind-up / explosive attack lunge. Because every layer
-        # uses pt(), hair, face, armor and limbs remain attached to the rig.
-        root_y = int(math.sin(phase * .72) * .7)
-        # v2 (animasi): perpindahan berat badan saat idle — badan bergoyang
-        # ke kiri-kanan (bukan sekadar naik-turun nafas), memberi kesan hidup.
-        sway = int(math.sin(phase * .8) * 3) * f if not (walk or attack) else 0
+        # compressed wind-up / explosive attack lunge (7 keyframe pose).
+        root_y = int(math.sin(phase * .72) * .9)
+        sway = int(math.sin(phase * .8) * 3.5) * f if not (walk or attack) else 0
+        pose = None
+        lean = 0
         if walk:
-            root_y -= int(abs(math.sin(phase * 1.7)) * 2)
-        if attack:
-            ap = max(0.0, min(1.0, attack_progress))
-            lean = int(math.sin(ap * math.pi) * 7) * f
-            root_y += int(math.sin(ap * math.pi) * 2)
+            root_y -= int(abs(math.sin(phase * 1.7)) * 3)
+            lean = 5 * f
+        elif attack:
+            pose = _NS_kaizen._attack_pose(attack_progress)
+            lean = int(pose["lean"] * .9) * f
+            root_y += int(pose["bob"] * .8)
+        # Tremble frame (tension keyframe): badan bergetar 1 px.
+        tremble = 0
+        if pose is not None and pose.get("tremble"):
+            tremble = 1 if (_NS_kaizen._hash01(int(phase * 61)) > .5) else -1
 
         def pt(dx, dy):
-            return (int(cx + dx * f + lean + sway), int(cy + dy + root_y))
+            return (int(cx + dx * f + lean + sway + tremble),
+                    int(cy + dy + root_y))
 
         def poly(color, points, outline=True):
             pts = [pt(dx, dy) for dx, dy in points]
             if outline:
+                # Selout: outline gelap HANYA di sisi bayangan (kanan-bawah
+                # relatif hadap); sisi cahaya bersih + rim 1 px di akhir.
                 _NS_kaizen._poly(surface, p["shadow_deep"],
-                                  [(x + f, y + 1) for x, y in pts])
+                                  [(x_ + f, y_ + 1) for x_, y_ in pts])
             _NS_kaizen._poly(surface, color, pts)
             return pts
 
@@ -5591,229 +5898,399 @@ class _NS_kaizen:
                                    (bb[0] + off, bb[1] - 1),
                                    max(1, width // 3))
 
-        # ── back hair: seven independently animated, tapered locks ──
-        hair_wave = math.sin(phase * 1.25)
-        tail_root = (-7, -34)
-        # Broad ponytail mass first, then separate pointed locks. This avoids
-        # the "thin broom" silhouette common in primitive-only renderers.
-        # v2: ponytail mengibas lebih lebar saat bergerak/menyerang.
-        hw = int(hair_wave * (4 if (walk or attack) else 2))
-        poly(p["hair_darkest"], [(-5, -35), (-12, -48), (-24, -57 + hw),
-             (-21, -48 + hw), (-38, -51 + hw), (-29, -40 + hw),
-             (-45, -37 + hw), (-29, -31 + hw), (-41, -22 + hw),
-             (-21, -25 + hw), (-11, -30)])
-        poly(p["hair_dark"], [(-8, -36), (-14, -46), (-23, -53 + hw),
-             (-21, -44 + hw), (-34, -47 + hw), (-27, -38 + hw),
-             (-39, -36 + hw), (-25, -32 + hw), (-34, -26 + hw),
-             (-18, -28 + hw)], False)
-        poly(p["hair_mid"], [(-14, -43), (-22, -49 + hw),
-             (-20, -42 + hw), (-31, -43 + hw), (-24, -37 + hw)], False)
-        locks = [(-16, -47, -34, -42), (-17, -43, -39, -35),
-                 (-16, -39, -38, -27), (-13, -36, -33, -20),
-                 (-10, -34, -25, -16), (-15, -46, -29, -51),
-                 (-11, -49, -20, -57)]
-        for i, (mx, my, ex, ey) in enumerate(locks):
-            wave = int(hair_wave * (2 + i % 3))
-            shape = [tail_root, (mx, my + wave), (ex, ey + wave),
-                     (mx - 2, my + 5 + wave), (-8, -30)]
+        # ── inersia rambut & kain: fase tertunda dari gerak badan ──
+        # (secondary motion: ujung kain selalu tertinggal dari akselerasi)
+        move_amp = 7 if (walk or attack) else 3
+        hair_wave = int(math.sin(phase * 1.25 - .7) * move_amp)
+        scarf_wave = int(math.sin(phase * 1.45 - .9) * (move_amp + 1))
+        band_wave = int(math.sin(phase * 1.6 - 1.1) * (move_amp - 1))
+        scarf_boost = 18 if (walk or attack) else 6
+
+        # ── back hair: ponytail besar bergerigi + 7 lock runcing ──
+        tail_root = (-9, -52)
+        spine = [(-9, -54), (-16, -62 + hair_wave // 2),
+                 (-28, -66 + hair_wave), (-44, -60 + hair_wave),
+                 (-52, -42 + hair_wave), (-50, -26 + hair_wave)]
+        mass = _NS_kaizen._tuft_points(spine, depth=5.0, min_len=8.0, seed=11)
+        mass = mass + [(-30, -46 + hair_wave), (-14, -44), (-7, -46)]
+        mass_pts = [pt(dx, dy) for dx, dy in mass]
+        _NS_kaizen._poly(surface, p["shadow_deep"],
+                          [(x_ + f, y_ + 1) for x_, y_ in mass_pts])
+        _NS_kaizen._poly(surface, p["hair_darkest"], mass_pts)
+        inner_spine = [(-11, -56), (-18, -64 + hair_wave // 2),
+                       (-28, -66 + hair_wave), (-38, -56 + hair_wave),
+                       (-43, -40 + hair_wave), (-42, -28 + hair_wave)]
+        _NS_kaizen._poly(surface, p["hair_dark"],
+                          [pt(dx, dy) for dx, dy in inner_spine] +
+                          [pt(-26, -46 + hair_wave), pt(-11, -46)])
+        locks = [(-24, -68, -52, -76), (-26, -62, -62, -64),
+                 (-28, -56, -64, -46), (-26, -50, -58, -30),
+                 (-22, -46, -46, -18), (-25, -66, -40, -76),
+                 (-19, -70, -30, -80)]
+        for i, (mx_, my_, ex_, ey_) in enumerate(locks):
+            wave = int(hair_wave * (0.7 + (i % 3) * .35))
+            shape = [tail_root, (mx_, my_ + wave), (ex_, ey_ + wave),
+                     (mx_ - 3, my_ + 7 + wave), (-11, -46)]
             poly(p["hair_darkest"], shape)
-            inner = [(-8, -34), (mx, my + 1 + wave),
-                     (ex + 3, ey + 1 + wave), (mx + 1, my + 4 + wave)]
+            inner = [(-12, -51), (mx_, my_ + 2 + wave),
+                     (ex_ + 4, ey_ + 2 + wave), (mx_ + 1, my_ + 6 + wave)]
             poly(p["hair_dark"], inner, False)
-            a, b = pt(mx + 1, my + 1 + wave), pt(ex + 4, ey + 1 + wave)
-            _NS_kaizen._aaline(surface, p["hair_mid"], a, b, 1)
+            a_, b_ = pt(mx_ + 2, my_ + 2 + wave), pt(ex_ + 5, ey_ + 2 + wave)
+            _NS_kaizen._aaline(surface, p["hair_mid"], a_, b_, 1)
+        # specular cluster pada gelombang rambut (1-2 px, disengaja)
+        sp = pt(-33, -63 + hair_wave)
+        _NS_kaizen._aacircle(surface, p["hair_light"], sp, 2)
+        _NS_kaizen._aacircle(surface, p["hair_shine"], (sp[0] + 1, sp[1] - 1), 1)
 
-        # ── scarf tails behind torso ──
-        # v2: mengalir lebih jauh & berombak lebih kuat saat bergerak/menyerang.
-        scarf_wave = int(math.sin(phase * 1.45) * (5 if (walk or attack) else 3))
-        scarf_boost = 13 if (walk or attack) else 0
-        poly(p["scarf_dark"], [(-5, -25), (-12, -22),
-             (-26 - scarf_boost, -17 + scarf_wave),
-             (-39 - scarf_boost, -7 + scarf_wave),
-             (-28, -5), (-14, -13)])
-        poly(p["scarf_mid"], [(-7, -23), (-15, -20),
-             (-29 - scarf_boost, -11 + scarf_wave),
-             (-35 - scarf_boost, -8 + scarf_wave), (-24, -7), (-12, -16)],
-             False)
-        _NS_kaizen._aaline(surface, p["scarf_light"], pt(-12, -20),
-                           pt(-31 - scarf_boost, -9 + scarf_wave), 2)
+        # ── hachimaki tails: pita kecil di belakang kepala, inersia cepat ──
+        for k, (drop, ln) in enumerate(((-2, -24), (3, -18))):
+            wv = band_wave + k * 2
+            poly(p["scarf_dark"], [(-12, -78 + k * 2), (-19, -77 + wv // 2),
+                 (-26 - scarf_boost // 2, -73 + drop + wv),
+                 (-31 - scarf_boost // 2, -71 + drop + wv),
+                 (-24, -68 + drop + wv), (-15, -73)])
+            _NS_kaizen._aaline(surface, p["scarf_mid"], pt(-20, -76 + wv // 3),
+                               pt(-28 - scarf_boost // 2, -71 + drop + wv), 1)
 
-        # ── lacquered saya behind hip ──
-        limb((-7, 7), (-31, 29), 7, (104, 27, 39), (190, 62, 70))
-        _NS_kaizen._aacircle(surface, p["gold_mid"], pt(-31, 29), 3)
+        # ── scarf tails behind torso: SATU ekor ramping mengalir ke
+        # bawah-belakang (inersia), terpisah dari pauldron ──
+        poly(p["scarf_deep"], [(-8, -32), (-15, -29),
+             (-24 - scarf_boost, -20 + scarf_wave),
+             (-30 - scarf_boost, -8 + scarf_wave),
+             (-22, -2 + scarf_wave // 2), (-14, -16)])
+        poly(p["scarf_dark"], [(-10, -29), (-17, -25),
+             (-27 - scarf_boost, -14 + scarf_wave),
+             (-27 - scarf_boost, -4 + scarf_wave),
+             (-20, 0 + scarf_wave // 2), (-13, -14)], False)
+        poly(p["scarf_mid"], [(-12, -26), (-18, -21),
+             (-25 - scarf_boost, -11 + scarf_wave),
+             (-21, -3 + scarf_wave // 2), (-14, -12)], False)
+        _NS_kaizen._aaline(surface, p["scarf_light"], pt(-14, -23),
+                           pt(-25 - scarf_boost, -7 + scarf_wave), 1)
 
-        # ── legs: true split stance, not one floating robe mass ──
-        # v2 (animasi): foot-lift bergantian — kaki yang melangkah maju
-        # terangkat (lutut + telapak naik), kaki tumpuan tetap menapak.
-        # Kecepatan stride menentukan fase swing tiap kaki.
+        # ── lacquered saya behind hip (3 band + kojiri emas + sageo) ──
+        limb((-10, 8), (-46, 44), 10, p["saya_dark"], None)
+        _NS_kaizen._aaline(surface, p["saya_mid"], pt(-10, 7), pt(-46, 43), 7)
+        _NS_kaizen._aaline(surface, p["saya_light"], pt(-12, 5), pt(-48, 41), 2)
+        _NS_kaizen._aaline(surface, p["saya_shine"], pt(-13, 4), pt(-24, 15), 1)
+        # sageo (tali pembalut) melilit + kojiri (ujung) emas
+        for t in (.3, .55, .8):
+            sx_ = -10 + (-36) * t
+            sy_ = 8 + 36 * t
+            _NS_kaizen._aaline(surface, p["cord_mid"],
+                               pt(sx_ - 3, sy_ + 2), pt(sx_ + 3, sy_ - 2), 2)
+        _NS_kaizen._aacircle(surface, p["gold_dark"], pt(-46, 44), 4)
+        _NS_kaizen._aacircle(surface, p["gold_mid"], pt(-47, 43), 2)
+        _NS_kaizen._aacircle(surface, p["gold_light"],
+                             (pt(-47, 43)[0] - 1, pt(-47, 43)[1] - 1), 1)
+
+        # ── legs: true split stance + foot solver ──
+        # v2: kaki yang melangkah terangkat (lutut + telapak naik dari
+        # fase stride), telapak tumpuan menapak dan memicu debu.
         leg_phase = stride if walk else 0.0
         stride_vel = math.cos(phase * 1.7) if walk else 0.0
-        rear_lift = int(max(0.0, -stride_vel) * 9) if walk else 0
-        front_lift = int(max(0.0, stride_vel) * 9) if walk else 0
-        rear_foot = (-8 - int(leg_phase * 5),
-                     40 - int(abs(leg_phase) * 2) - rear_lift)
-        front_foot = (11 + int(leg_phase * 6), 40 - front_lift)
+        rear_lift = int(max(0.0, -stride_vel) * 13) if walk else 0
+        front_lift = int(max(0.0, stride_vel) * 13) if walk else 0
+        rear_foot = (-15 - int(leg_phase * 7),
+                     60 - int(abs(leg_phase) * 3) - rear_lift)
+        front_foot = (17 + int(leg_phase * 8), 60 - front_lift)
         for hip, knee, foot, shade, lift in (
-                ((-5, 12), (-9, 27), rear_foot, p["pants_dark"], rear_lift),
-                ((6, 12), (9, 26), front_foot, p["pants_mid"], front_lift)):
+                ((-9, 16), (-15, 38), rear_foot, p["pants_dark"], rear_lift),
+                ((11, 16), (16, 37), front_foot, p["pants_mid"], front_lift)):
             # Knee rises with the lift so the thigh folds up to meet the
             # raised shin (proper knee-bend, no gap between segments).
             knee = (knee[0], knee[1] - lift)
-            poly(shade, [hip, (hip[0] + 7, hip[1]),
-                         (knee[0] + 5, knee[1]), (foot[0] + 4, foot[1] - 5),
-                         (foot[0] - 4, foot[1] - 5),
-                         (knee[0] - 4, knee[1])])
-            # shin wrap / tabi
-            poly((204, 211, 216), [(foot[0] - 4, foot[1] - 10),
-                 (foot[0] + 4, foot[1] - 10), (foot[0] + 4, foot[1] - 4),
-                 (foot[0] - 4, foot[1] - 4)], False)
-            poly(p["leather_dark"], [(foot[0] - 5, foot[1] - 4),
-                 (foot[0] + 7, foot[1] - 4), (foot[0] + 8, foot[1]),
-                 (foot[0] - 5, foot[1])])
+            poly(shade, [hip, (hip[0] + 9, hip[1]),
+                         (knee[0] + 7, knee[1]), (foot[0] + 6, foot[1] - 8),
+                         (foot[0] - 6, foot[1] - 8),
+                         (knee[0] - 6, knee[1])])
+            # kyahan (pelindung tulang kering) + tabi
+            poly((204, 211, 216), [(foot[0] - 5, foot[1] - 15),
+                 (foot[0] + 5, foot[1] - 15), (foot[0] + 6, foot[1] - 6),
+                 (foot[0] - 6, foot[1] - 6)], False)
+            _NS_kaizen._aaline(surface, (160, 170, 178),
+                               pt(foot[0] - 4, foot[1] - 11),
+                               pt(foot[0] + 5, foot[1] - 11), 1)
+            poly(p["leather_dark"], [(foot[0] - 7, foot[1] - 6),
+                 (foot[0] + 9, foot[1] - 6), (foot[0] + 11, foot[1]),
+                 (foot[0] - 7, foot[1])])
+            # sandal: sol + tali
+            _NS_kaizen._aaline(surface, p["leather_mid"],
+                               pt(foot[0] - 5, foot[1] - 4),
+                               pt(foot[0] + 7, foot[1] - 4), 1)
             _NS_kaizen._aaline(surface, p["leather_light"],
-                               pt(foot[0] - 3, foot[1] - 3),
-                               pt(foot[0] + 5, foot[1] - 3), 1)
+                               pt(foot[0] - 3, foot[1] - 5),
+                               pt(foot[0] - 1, foot[1] - 1), 1)
+            _NS_kaizen._aacircle(surface, p["leather_light"],
+                                 pt(foot[0] + 2, foot[1] - 8), 1)
 
-        # Wide hakama panels keep volume while the feet remain readable.
-        poly(p["pants_dark"], [(-12, 5), (0, 7), (-2, 29),
-                               (-13, 30), (-17, 22)])
-        poly(p["pants_mid"], [(0, 7), (12, 5), (17, 22),
-                              (4, 29), (1, 18)])
-        poly(p["pants_light"], [(3, 9), (10, 8), (13, 21),
-                                (6, 25)], False)
-        for dx in (-8, 5, 12):
-            _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(dx, 10),
-                               pt(dx + (1 if dx > 0 else -1), 25), 1)
+        # ── hakama: panel lebar berlipat + hem bergerigi + dither ──
+        hem_r = [(-24, 14), (-6, 18), (2, 34), (-18, 38), (-30, 30)]
+        hem_r = [(dx, dy) for dx, dy in
+                 _NS_kaizen._tuft_points(hem_r, 3.4, 7.0, seed=21)]
+        poly(p["pants_dark"], hem_r)
+        hem_f = [(0, 18), (20, 14), (31, 26), (26, 38), (8, 40), (2, 34)]
+        hem_f = [(dx, dy) for dx, dy in
+                 _NS_kaizen._tuft_points(hem_f, 3.4, 7.0, seed=33)]
+        poly(p["pants_mid"], hem_f)
+        poly(p["pants_light"], [(4, 20), (17, 17), (24, 27), (18, 34),
+                                (9, 34)], False)
+        # lipatan pleat (garis gelap vertikal)
+        for dx in (-13, 3, 8, 17):
+            _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(dx, 14),
+                               pt(dx + (2 if dx > 0 else -2), 33), 1)
+        # dither band klasik di batas light/mid hakama depan
+        _NS_kaizen._dither_dots(surface, p["pants_light"], pt(6, 24),
+                                pt(20, 22), step=3, alpha=170)
 
-        # ── torso: asymmetric open jacket + leather harness ──
-        poly(p["cloth_darkest"], [(-13, -17), (7, -20), (15, -10),
-             (12, 9), (2, 14), (-12, 8), (-16, -6)])
-        poly(p["cloth_mid"], [(-11, -15), (-2, -18), (-1, 10),
-                              (-10, 7), (-13, -5)], False)
-        poly(p["skin_dark"], [(-2, -18), (7, -18), (10, -9),
-                              (5, 8), (-1, 9)], False)
-        poly(p["skin_mid"], [(0, -16), (6, -16), (8, -8),
-                             (4, 5), (0, 7)], False)
-        _NS_kaizen._aaline(surface, p["leather_dark"], pt(-10, -14),
-                           pt(10, 5), 5)
-        _NS_kaizen._aaline(surface, p["leather_light"], pt(-10, -14),
-                           pt(10, 5), 1)
-        # braided obi
-        _NS_kaizen._aaline(surface, p["gold_dark"], pt(-13, 7), pt(13, 7), 5)
-        for dx in range(-10, 11, 4):
-            _NS_kaizen._aaline(surface, p["gold_light"], pt(dx - 1, 5),
-                               pt(dx + 1, 9), 1)
+        # ── torso: open jacket + dada + harness ──
+        # jok bahu depan: KECIL, hanya menutupi sendi lengan
+        poly(p["cloth_darkest"], [(6, -36), (19, -33), (24, -26),
+             (20, -19), (9, -21), (4, -28)])
+        poly(p["cloth_darkest"], [(-20, -32), (-2, -38), (22, -34),
+             (30, -18), (26, 4), (12, 14), (-14, 10), (-24, -12)])
+        poly(p["cloth_deep"], [(-20, -26), (-14, -29), (-16, 6),
+             (-24, -10)], False)
+        # panel kain belakang (kiri) + lipatan
+        poly(p["cloth_dark"], [(-18, -30), (-4, -34), (-4, 8), (-14, 6),
+             (-22, -14)], False)
+        poly(p["cloth_mid"], [(-16, -28), (-6, -31), (-7, 5), (-14, 3),
+             (-19, -12)], False)
+        # dada terbuka (kulit) + shading plane
+        poly(p["skin_dark"], [(-1, -27), (13, -28), (17, -14),
+             (11, 6), (1, 7)], False)
+        poly(p["skin_mid"], [(1, -25), (11, -26), (13, -13),
+             (9, 3), (2, 4)], False)
+        poly(p["skin_light"], [(3, -23), (9, -23), (10, -14),
+             (6, -2), (3, -6)], False)
+        # specular cluster dada + dither sisi bayangan
+        _NS_kaizen._aacircle(surface, p["skin_high"], pt(5, -20), 2)
+        _NS_kaizen._dither_dots(surface, p["skin_dark"], pt(1, 4),
+                                pt(10, 1), step=2, alpha=130)
+        # collar cross (lapihan jaket bertemu di dada)
+        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-2, -32), pt(12, 4), 5)
+        _NS_kaizen._aaline(surface, p["cloth_mid"], pt(-2, -32), pt(12, 4), 3)
+        _NS_kaizen._aaline(surface, p["cloth_high"], pt(-2, -33), pt(12, 4), 1)
+        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-6, -31), pt(4, 6), 4)
+        _NS_kaizen._aaline(surface, p["scarf_dark"], pt(-6, -31), pt(4, 6), 2)
+        # sabuk kulit diagonal (X harness) + jahitan
+        _NS_kaizen._aaline(surface, p["leather_dark"], pt(-16, -28), pt(14, 6), 6)
+        _NS_kaizen._aaline(surface, p["leather_mid"], pt(-16, -28), pt(14, 6), 4)
+        _NS_kaizen._aaline(surface, p["leather_light"], pt(-16, -29), pt(14, 6), 1)
+        for t in (.25, .5, .75):
+            bx_ = -16 + 30 * t
+            by_ = -28 + 34 * t
+            _NS_kaizen._aaline(surface, p["leather_light"],
+                               pt(bx_ - 2, by_ - 1), pt(bx_ + 2, by_ + 1), 1)
+        # braided obi + knot belakang + wrap emas
+        _NS_kaizen._aaline(surface, p["ink"], pt(-18, 11), pt(22, 9), 7)
+        _NS_kaizen._aaline(surface, p["scarf_dark"], pt(-18, 10), pt(22, 8), 4)
+        for dx in range(-14, 21, 5):
+            _NS_kaizen._aaline(surface, p["scarf_mid"], pt(dx - 1, 6),
+                               pt(dx + 1, 12), 1)
+        _NS_kaizen._aaline(surface, p["gold_dark"], pt(-18, 11), pt(22, 10), 2)
+        for dx in range(-12, 20, 7):
+            _NS_kaizen._aacircle(surface, p["gold_mid"], pt(dx, 8), 1)
+        # knot obi belakang + ujung tali
+        poly(p["scarf_dark"], [(-18, 6), (-26, 8), (-24, 16), (-17, 14)])
+        poly(p["scarf_mid"], [(-19, 8), (-24, 9), (-23, 13), (-19, 12)], False)
 
-        # Layered steel-and-lacquer pauldron on the sword shoulder. Separate
-        # lames, rivets and a cold rim turn the upper body into a readable
-        # armored silhouette rather than a single blue polygon.
-        pauldron = [(7, -18), (13, -20), (19, -15), (18, -8),
-                    (13, -5), (8, -9)]
+        # ── pauldron baja berlapis (bahu pedang) + sode belakang ──
+        # Baja abu-abu dingin: hue-nyapisah dari scarf indigo di belakangnya.
+        pauldron = [(11, -32), (29, -30), (36, -22), (32, -13),
+                    (23, -9), (13, -14)]
         poly(p["steel_darkest"], pauldron)
-        poly(p["cloth_mid"], [(9, -17), (13, -18), (17, -14),
-                              (16, -10), (12, -8), (9, -10)], False)
+        poly(p["steel_dark"], [(13, -30), (26, -28), (32, -22),
+             (29, -15), (22, -12), (14, -16)], False)
         for i in range(3):
-            yy = -15 + i * 3
-            _NS_kaizen._aaline(surface, p["cloth_light"],
-                               pt(10, yy), pt(17 - i, yy + 1), 1)
-        _NS_kaizen._aacircle(surface, p["gold_mid"], pt(12, -15), 2)
-        _NS_kaizen._aacircle(surface, p["gold_light"], pt(12, -16), 1)
+            yy = -27 + i * 4
+            _NS_kaizen._aaline(surface, p["steel_mid"],
+                               pt(14, yy), pt(29 - i * 2, yy + 2), 1)
+        # rim emas tepi atas + rivet + specular cluster
+        _NS_kaizen._aaline(surface, p["gold_dark"], pt(10, -29), pt(36, -21), 3)
+        _NS_kaizen._aaline(surface, p["gold_mid"], pt(11, -30), pt(35, -22), 1)
+        for rx, ry in ((16, -25), (24, -23), (30, -18)):
+            _NS_kaizen._aacircle(surface, p["steel_light"], pt(rx, ry), 1)
+        _NS_kaizen._aacircle(surface, p["steel_shine"], pt(16, -26), 2)
+        _NS_kaizen._aacircle(surface, p["white"],
+                             (pt(16, -26)[0] - 1, pt(16, -26)[1] - 1), 1)
+        # sode kecil di bahu belakang (2 lame)
+        for i in range(2):
+            poly(p["steel_dark"] if i else p["steel_darkest"],
+                 [(-18, -30 + i * 4), (-10, -28 + i * 4),
+                  (-11, -23 + i * 4), (-19, -25 + i * 4)], i == 0)
+            _NS_kaizen._aaline(surface, p["steel_mid"],
+                               pt(-17, -27 + i * 4), pt(-12, -26 + i * 4), 1)
 
-        # Jacket piping, stitches, and small wind crest.
-        _NS_kaizen._aaline(surface, p["cloth_high"], pt(-11, -13),
-                           pt(-10, 4), 1)
-        for yy in (-9, -4, 1):
+        # ── jacket piping + crest angin kecil ──
+        _NS_kaizen._aaline(surface, p["cloth_high"], pt(-17, -19),
+                           pt(-15, 4), 1)
+        for yy in (-14, -7, 0):
             _NS_kaizen._aaline(surface, p["scarf_light"],
-                               pt(-12, yy), pt(-9, yy + 1), 1)
-        _NS_kaizen._draw_wind_arc(surface, *pt(-5, -5), 4, .3, 4.4,
+                               pt(-19, yy), pt(-15, yy + 1), 1)
+        _NS_kaizen._draw_wind_arc(surface, *pt(-8, -8), 6, .3, 4.4,
                                    p["wind_mid"], 1, 7)
 
         # ── rear arm / bracer ──
-        if attack:
-            prog = max(0.0, min(1.0, attack_progress))
-            rear_hand = (-2 + int(prog * 8), -3)
+        if attack and pose is not None:
+            hx_, hy_ = pose["hand"]
+            rear_hand = (-4 + int(hx_ * .2), -6 - int(-hy_ * .12))
         else:
-            rear_hand = (-14, 5)
-        limb((-10, -12), (-16, -2), 7, p["cloth_dark"], p["cloth_light"])
-        limb((-16, -2), rear_hand, 6, p["skin_dark"], p["skin_light"])
+            rear_hand = (-22, 6)
+        if walk:
+            rear_hand = (-22 - int(stride * 4), 6 + int(abs(stride) * 1))
+        limb((-16, -28), (-28, -14), 9, p["cloth_dark"], p["cloth_light"])
+        # sleeve fold
+        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-24, -18),
+                           pt(-20, -12), 2)
+        limb((-28, -12), rear_hand, 7, p["skin_dark"], p["skin_light"])
+        # bracer kulit + strap
+        _NS_kaizen._aaline(surface, p["leather_dark"], pt(-26, -10),
+                           pt(rear_hand[0] + 2, rear_hand[1] - 2), 5)
+        _NS_kaizen._aaline(surface, p["leather_mid"], pt(-26, -10),
+                           pt(rear_hand[0] + 2, rear_hand[1] - 2), 3)
         rhx, rhy = pt(*rear_hand)
-        _NS_kaizen._rect(surface, p["wrap_dark"],
-                         (rhx - 4, rhy - 4, 8, 8), 2)
-        _NS_kaizen._aaline(surface, p["wrap_light"],
-                           (rhx - 3, rhy - 2), (rhx + 3, rhy + 1), 1)
-        _NS_kaizen._aaline(surface, p["gold_mid"],
-                           (rhx - 3, rhy + 2), (rhx + 3, rhy + 2), 1)
+        _NS_kaizen._rect(surface, p["wrap_dark"], (rhx - 5, rhy - 5, 10, 10), 2)
+        _NS_kaizen._aaline(surface, p["wrap_light"], (rhx - 4, rhy - 2),
+                           (rhx + 4, rhy + 1), 1)
+        _NS_kaizen._aaline(surface, p["gold_mid"], (rhx - 4, rhy + 3),
+                           (rhx + 4, rhy + 3), 1)
 
-        # ── neck and three-quarter head ──
-        poly(p["skin_dark"], [(-3, -23), (5, -23), (5, -16), (-3, -16)])
-        face = [(-8, -42), (4, -44), (10, -38), (11, -31),
-                (7, -23), (1, -20), (-6, -24), (-10, -33)]
+        # ── neck and three-quarter head (leher pendek: dagu -51,
+        # lilitan scarf mulai -50 -> leher nyaris tak terlihat).
+        # PENTING: poly leher berhenti di -40 karena digambar SETELAH
+        # torso; kalau lebih panjang, dia menimpa kain torso di bawah
+        # collar dan muncul kolom kulit palsu. ──
+        poly(p["skin_dark"], [(-6, -50), (8, -50), (8, -40), (-6, -40)])
+        face = [(-12, -63), (-10, -80), (-4, -92), (8, -94),
+                (15, -87), (18, -75), (15, -62), (8, -53), (0, -51), (-8, -55)]
         poly(p["skin_dark"], face)
-        poly(p["skin_mid"], [(-6, -40), (3, -42), (8, -37),
-             (9, -32), (6, -25), (1, -22), (-4, -25), (-7, -33)], False)
-        poly(p["skin_light"], [(1, -40), (6, -37), (7, -33),
-                               (3, -29), (-1, -31)], False)
-        # nose, eye, brow, scar, mouth
-        poly(p["skin_light"], [(8, -35), (13, -33), (8, -31)], False)
-        _NS_kaizen._aaline(surface, p["hair_darkest"], pt(2, -36), pt(8, -35), 2)
-        _NS_kaizen._rect(surface, p["eye_iris_light"],
-                         (pt(6, -34)[0], pt(6, -34)[1], 2, 2))
-        _NS_kaizen._aaline(surface, (120, 48, 47), pt(-1, -33), pt(7, -27), 1)
-        _NS_kaizen._aaline(surface, p["skin_darkest"], pt(4, -25), pt(8, -26), 1)
-        _NS_kaizen._aacircle(surface, p["gold_light"], pt(-8, -27), 2)
-
-        # ── hair cap and crown spikes ──
-        poly(p["hair_darkest"], [(-10, -42), (-8, -50), (-3, -47),
-             (0, -54), (4, -48), (10, -49), (8, -43), (12, -40),
-             (6, -38), (1, -41), (-4, -38), (-9, -34)])
-        poly(p["hair_dark"], [(-7, -43), (-6, -48), (-2, -45),
-             (0, -51), (3, -46), (7, -47), (6, -42), (9, -40),
-             (4, -40), (1, -43), (-4, -40)], False)
-        _NS_kaizen._aaline(surface, p["hair_light"], pt(-3, -46), pt(0, -50), 1)
-        # Narrow hachimaki under the fringe, with an embossed wind bead.
-        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-8, -40),
-                           pt(8, -39), 4)
-        _NS_kaizen._aaline(surface, p["scarf_mid"], pt(-7, -41),
-                           pt(8, -40), 2)
-        _NS_kaizen._aacircle(surface, p["wind_dark"], pt(5, -40), 2)
-        _NS_kaizen._aacircle(surface, p["wind_light"], pt(5, -41), 1)
-
-        # Scarf collar sits above neck and anchors the long tail.
-        poly(p["scarf_dark"], [(-10, -24), (-7, -29), (7, -25),
-             (10, -20), (5, -16), (-7, -17)])
-        poly(p["scarf_mid"], [(-8, -24), (-5, -27), (6, -24),
-             (8, -21), (4, -19), (-6, -19)], False)
-        _NS_kaizen._aaline(surface, p["scarf_high"], pt(-5, -25), pt(6, -22), 1)
-
-        # ── sword arm and katana, pose-driven ──
-        if attack:
-            prog = max(0.0, min(1.0, attack_progress))
-            if prog < .28:       # wind-up behind head
-                t = prog / .28
-                hand = (10, -7 - int(t * 8))
-                angle = -2.15 + t * .45
-            elif prog < .62:     # fast horizontal cut
-                t = (prog - .28) / .34
-                hand = (12 + int(t * 8), -13 + int(t * 12))
-                angle = -1.70 + t * 1.85
-            else:                # low recovery
-                t = (prog - .62) / .38
-                hand = (20 - int(t * 7), -1 + int(t * 10))
-                angle = .15 + t * .65
+        poly(p["skin_mid"], [(-9, -66), (-7, -79), (-3, -88),
+             (6, -90), (12, -85), (14, -75), (12, -64), (6, -56), (0, -54),
+             (-6, -57)], False)
+        poly(p["skin_light"], [(0, -84), (7, -85), (11, -80),
+             (10, -72), (5, -68), (1, -72)], False)
+        _NS_kaizen._aacircle(surface, p["skin_high"], pt(6, -80), 2)
+        # hidung, alis, mata (blink), parut, mulut
+        poly(p["skin_light"], [(12, -72), (19, -69), (12, -66)], False)
+        _NS_kaizen._aaline(surface, p["hair_darkest"], pt(3, -74), pt(12, -72), 2)
+        blink = (math.sin(phase * .53) > .985) or \
+                (math.sin(phase * .31 + 1.7) > .99)
+        if blink:
+            _NS_kaizen._aaline(surface, p["skin_darkest"], pt(7, -68),
+                               pt(12, -68), 1)
         else:
-            hand = (15, 1)
-            angle = .72
-        elbow = ((hand[0] + 10) // 2, (hand[1] - 10) // 2)
-        limb((10, -12), elbow, 8, p["cloth_mid"], p["cloth_high"])
-        limb(elbow, hand, 7, p["skin_dark"], p["skin_light"])
-        _NS_kaizen._draw_elite_katana(surface, cx + lean + sway, cy, f,
-                                      hand, angle, phase, attack)
+            _NS_kaizen._rect(surface, p["eye_white"],
+                             (pt(7, -70)[0], pt(7, -70)[1], 5, 3))
+            _NS_kaizen._rect(surface, p["eye_iris"],
+                             (pt(9, -70)[0], pt(9, -70)[1], 2, 3))
+            _NS_kaizen._aacircle(surface, p["eye_pupil"], pt(10, -69), 1)
+            _NS_kaizen._aacircle(surface,
+                                 p["eye_glow"] if storm else p["eye_iris_light"],
+                                 pt(9, -70), 1)
+        _NS_kaizen._aaline(surface, (120, 48, 47), pt(-1, -62), pt(9, -52), 1)
+        _NS_kaizen._aaline(surface, p["skin_darkest"], pt(6, -57), pt(11, -58), 1)
+        _NS_kaizen._aacircle(surface, p["gold_light"], pt(-11, -64), 2)
 
-        # Small wind crest and armor rivets remain legible at 50 px.
-        _NS_kaizen._draw_wind_arc(surface, *pt(2, 17), 5, .2, 4.6,
-                                   p["wind_light"], 1, 8)
-        for dx, dy in ((-10, -9), (-8, -4), (10, -7)):
-            _NS_kaizen._aacircle(surface, p["gold_mid"], pt(dx, dy), 1)
+        # ── hair cap + mahkota runcing: hanya menutup di ATAS ikat kepala
+        # (poni bergerigi y=-75..-80) supaya wajah -50..-74 tetap terbaca ──
+        crown = [(-15, -72), (-15, -82), (-11, -94), (-5, -102),
+                 (-1, -93), (5, -100), (9, -90), (14, -92),
+                 (12, -82), (16, -80),
+                 (13, -76), (6, -79), (2, -75), (-3, -79),
+                 (-7, -76), (-11, -78)]
+        poly(p["hair_darkest"], crown)
+        poly(p["hair_dark"], [(-12, -74), (-12, -82), (-8, -92),
+             (-4, -97), (0, -91), (4, -95), (7, -88), (11, -87),
+             (10, -81), (12, -79), (7, -77), (2, -77), (-3, -77),
+             (-7, -76), (-10, -77)], False)
+        _NS_kaizen._aaline(surface, p["hair_mid"], pt(-4, -88), pt(1, -93), 1)
+        _NS_kaizen._aacircle(surface, p["hair_light"], pt(4, -89), 2)
+        # topknot chonmage + wrap tinta
+        poly(p["hair_darkest"], [(-10, -96), (-2, -104), (6, -106),
+             (10, -100), (4, -94), (-4, -92)])
+        poly(p["hair_dark"], [(-7, -96), (-1, -101), (5, -101),
+             (7, -98), (1, -95)], False)
+        _NS_kaizen._rect(surface, p["ink"],
+                         (pt(-4, -98)[0], pt(-4, -98)[1], 4, 3))
+        _NS_kaizen._aacircle(surface, p["hair_light"], pt(-2, -100), 1)
+        # hachimaki band + manik angin (menyala saat storm)
+        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-11, -78),
+                           pt(14, -76), 5)
+        _NS_kaizen._aaline(surface, p["scarf_mid"], pt(-10, -79),
+                           pt(14, -77), 2)
+        _NS_kaizen._aaline(surface, p["scarf_high"], pt(-9, -80),
+                           pt(6, -79), 1)
+        bead_col = p["wind_bright"] if storm else p["wind_dark"]
+        _NS_kaizen._aacircle(surface, bead_col, pt(9, -78), 2)
+        _NS_kaizen._aacircle(surface,
+                             p["wind_pale"] if storm else p["wind_light"],
+                             (pt(9, -78)[0] - 1, pt(9, -78)[1] - 1), 1)
+        if storm:
+            _NS_kaizen._spark_star(surface, *pt(9, -78), 6, p["wind_pale"],
+                                   int(150 + 70 * math.sin(phase * 4)), 4,
+                                   rot=phase, core=p["white"])
+
+        # Scarf collar: trapesium yang TAPER mengikuti rahang di atas
+        # (14 px = selebar dagu) lalu melebar natural ke dada/bahu di
+        # bawah - seperti scarf dililit, bukan blok kolom.
+        poly(p["scarf_deep"], [(-7, -50), (10, -50), (13, -41),
+             (0, -36), (-11, -39), (-12, -44)])
+        poly(p["scarf_dark"], [(-5, -48), (8, -48), (10, -41),
+             (-1, -37), (-9, -40), (-10, -43)], False)
+        # lipatan wrap diagonal (tekstur kain lilit)
+        _NS_kaizen._aaline(surface, p["scarf_deep"], pt(-8, -42), pt(6, -44), 1)
+        # tepi atas terang (key light kiri-atas)
+        _NS_kaizen._aaline(surface, p["scarf_light"], pt(-4, -49), pt(6, -49), 1)
+
+        # ── front arm + katana (pose-driven via _attack_pose) ──
+        if attack and pose is not None:
+            hand = pose["hand"]
+            hand = (hand[0] + 2, hand[1] - 30)
+            k_angle = pose["angle"]
+            flare = pose["flare"]
+        else:
+            flare = 1.0
+            if walk:
+                hand = (36, -6 + int(stride * 3))
+                k_angle = 0.46 + math.sin(phase * 1.7) * 0.06
+            else:
+                hand = (34, -2 + int(math.sin(phase * .72) * 1.2))
+                k_angle = 0.34 + math.sin(phase * .72) * .03
+        limb((18, -28), (30, -12), 9, p["cloth_dark"], p["cloth_light"])
+        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(26, -18),
+                           pt(29, -12), 2)
+        limb((30, -10), hand, 7, p["skin_dark"], p["skin_light"])
+        # forearm wrap merah (2 band)
+        mx_, my_ = (30 + hand[0]) // 2, (-10 + hand[1]) // 2
+        _NS_kaizen._aaline(surface, p["wrap_dark"], pt(mx_ - 1, my_ - 1),
+                           pt(hand[0] - 3, hand[1] - 2), 6)
+        _NS_kaizen._aaline(surface, p["wrap_mid"], pt(mx_ - 1, my_ - 1),
+                           pt(hand[0] - 3, hand[1] - 2), 4)
+        for t in (.35, .7):
+            wx_ = int(30 + (hand[0] - 30) * t)
+            wy_ = int(-10 + (hand[1] + 10) * t)
+            _NS_kaizen._aaline(surface, p["wrap_light"],
+                               pt(wx_ - 2, wy_), pt(wx_ + 2, wy_ - 2), 1)
+        hx, hy = pt(*hand)
+        _NS_kaizen._rect(surface, p["wrap_dark"], (hx - 5, hy - 5, 10, 10), 2)
+        _NS_kaizen._aaline(surface, p["wrap_light"], (hx - 4, hy - 2),
+                           (hx + 4, hy + 1), 1)
+
+        glow = 0.0
+        smear = 0.0
+        if attack:
+            glow = max(glow, .55 + .45 * math.sin(attack_progress * math.pi))
+            # smear aktif di jendela strike 0.3..0.72 (puncak ~0.5)
+            smear = max(0.0, 1.0 - abs(attack_progress - .5) / .22)
+        if gale:
+            glow = max(glow, .5)
+        if storm:
+            glow = max(glow, .65)
+        _NS_kaizen._draw_elite_katana(
+            surface, cx + lean + sway + tremble, cy + root_y, facing, hand,
+            k_angle, phase, attacking=attack, glow=glow, flare=flare,
+            smear=smear)
 
         # ── secondary motion / contact feedback ──
         if walk:
@@ -5822,25 +6299,34 @@ class _NS_kaizen:
             contact = max(0.0, abs(stride) - .55) / .45
             if contact > 0:
                 planted = rear_foot if stride > 0 else front_foot
-                fx, fy = pt(planted[0], planted[1])
+                fx_, fy_ = pt(planted[0], planted[1])
                 alpha = int(150 * contact)
                 for i in range(4):
                     _NS_kaizen._aacircle(
                         surface, (*p["wind_mid"], max(15, alpha - i * 24)),
-                        (fx - f * (3 + i * 3), fy - i % 2), max(1, 3 - i // 2))
+                        (fx_ - f * (4 + i * 4), fy_ - i % 2), max(1, 3 - i // 2))
             for i in range(3):
-                sy = cy - 7 + i * 9 + root_y
+                sy_ = cy - 10 + i * 13 + root_y
                 _NS_kaizen._aaline(surface, (*p["wind_light"], 95 - i * 18),
-                                   (cx - f * (25 + i * 7), sy),
-                                   (cx - f * (12 + i * 5), sy - 1), 1)
+                                   (cx - f * (36 + i * 9), sy_),
+                                   (cx - f * (18 + i * 7), sy_ - 1), 1)
         elif attack:
-            ap = max(0.0, min(1.0, attack_progress))
-            impact = max(0.0, 1.0 - abs(ap - .52) / .18)
+            ap_ = max(0.0, min(1.0, attack_progress))
+            impact = max(0.0, 1.0 - abs(ap_ - .52) / .16)
             if impact > 0:
-                ix, iy = pt(47, -3)
-                for i in range(6):
-                    ang = -1.2 + i * .48
-                    length = 5 + int(impact * (8 + i % 2 * 4))
+                ix, iy = pt(70, -4)
+                # IMPACT: bintang 6-8 spike + shockwave elips + serpihan
+                _NS_kaizen._spark_star(surface, ix, iy,
+                                       int(10 + 16 * impact), p["wind_pale"],
+                                       int(235 * impact), 6, rot=.4,
+                                       core=p["white"])
+                _NS_kaizen._ellipse(
+                    surface, (*p["wind_bright"], int(150 * impact)),
+                    (ix - int(26 * impact), iy - int(7 * impact),
+                     int(52 * impact), int(14 * impact)), 2)
+                for i in range(5):
+                    ang = -1.3 + i * .5
+                    length = 8 + int(impact * (12 + i % 2 * 6))
                     _NS_kaizen._aaline(surface,
                                        (*p["wind_white"], int(220 * impact)),
                                        (ix, iy),
@@ -5849,179 +6335,252 @@ class _NS_kaizen:
                                        1 if i % 2 else 2)
         else:
             # ── v2: aura angin berputar + daun angin (idle showcase) ──
-            # Rotating wind aura: faint orbit arcs mengelilingi tubuh.
-            aura_r = 30 + int(math.sin(phase * .9) * 3)
+            aura_r = 44 + int(math.sin(phase * .9) * 4)
             for k in range(2):
                 _NS_kaizen._draw_wind_arc(
-                    surface, cx, cy - 6, aura_r + k * 6,
+                    surface, cx, cy - 8, aura_r + k * 8,
                     phase * (0.55 + k * .35),
                     phase * (0.55 + k * .35) + 4.4,
                     (*p["wind_mid"], 30 - k * 12), 1, 12)
             # orbiting bright wisps tracing the aura
             for i in range(3):
                 a = phase * 1.1 + i * math.tau / 3
-                wx = cx + int(math.cos(a) * aura_r)
-                wy = cy - 6 + int(math.sin(a) * aura_r * .55)
+                wx_ = cx + int(math.cos(a) * aura_r)
+                wy_ = cy - 8 + int(math.sin(a) * aura_r * .55)
                 _NS_kaizen._aacircle(surface, (*p["wind_bright"], 150),
-                                     (wx, wy), 1)
-            # drifting wind leaves (daun angin) — teardrop kecil berputar
+                                     (wx_, wy_), 1)
+            # drifting wind leaves (daun angin) - teardrop kecil berputar
             for i in range(4):
                 t = (phase * .11 + i / 4.0) % 1.0
-                lx = cx + int(math.sin(phase * 1.3 + i * 1.7) * (20 + i * 4))
-                ly = cy + 22 - int(t * 68)
+                lx = cx + int(math.sin(phase * 1.3 + i * 1.7) * (28 + i * 6))
+                ly = cy + 30 - int(t * 96)
                 la = phase * .8 + i * 2.4
-                ca, sa = math.cos(la), math.sin(la)
-                tip = (int(lx + ca * 4), int(ly + sa * 4))
-                b1 = (int(lx - sa * 2), int(ly + ca * 2))
-                b2 = (int(lx + sa * 2), int(ly - ca * 2))
-                _NS_kaizen._poly(surface, (*p["wind_light"], 150),
+                ca_, sa_ = math.cos(la), math.sin(la)
+                tip = (int(lx + ca_ * 4), int(ly + sa_ * 4))
+                b1 = (int(lx - sa_ * 2), int(ly + ca_ * 2))
+                b2 = (int(lx + sa_ * 2), int(ly - ca_ * 2))
+                _NS_kaizen._poly(surface, (*p["wind_mid"], 110),
                                  [tip, b1, b2])
-                _NS_kaizen._poly(surface, (*p["wind_bright"], 110),
-                                 [tip, (int(lx + sa * 1), int(ly - ca * 1)),
-                                  (int(lx - sa * 1), int(ly + ca * 1))])
+                _NS_kaizen._poly(surface, (*p["wind_bright"], 80),
+                                 [tip, (int(lx + sa_ * 1), int(ly - ca_ * 1)),
+                                  (int(lx - sa_ * 1), int(ly + ca_ * 1))])
             # Quiet idle motes make breathing visible without obscuring face.
             for i in range(3):
                 t = (phase * .18 + i / 3.0) % 1.0
-                mx = cx + int(math.sin(phase + i * 2.1) * (18 + i * 3))
-                my = cy + 28 - int(t * 58)
+                mx2 = cx + int(math.sin(phase + i * 2.1) * (24 + i * 5))
+                my2 = cy + 38 - int(t * 86)
                 _NS_kaizen._aacircle(surface,
                                      (*p["wind_bright"], int(110 * (1 - t))),
-                                     (mx, my), 1)
+                                     (mx2, my2), 1)
+
+        # ── gale / storm body reaction (v2.1) ──
+        if gale and not attack:
+            pulse_ = .6 + .4 * math.sin(phase * 2.2)
+            _NS_kaizen._draw_wind_arc(surface, cx, cy - 10, 52,
+                                      phase * .9, phase * .9 + 3.6,
+                                      (*p["wind_bright"], int(60 * pulse_)), 2, 12)
+            _NS_kaizen._draw_wind_arc(surface, cx, cy - 10, 44,
+                                      -phase * 1.2, -phase * 1.2 + 2.8,
+                                      (*p["wind_light"], int(80 * pulse_)), 1, 10)
+        if storm:
+            # mata + bead + tepi jaket berpendar saat ultimate
+            gl = int(120 + 80 * math.sin(phase * 3.4))
+            _NS_kaizen._aaline(surface, (*p["eye_glow"], min(255, gl)),
+                               pt(7, -70), pt(12, -70), 2)
+            _NS_kaizen._aaline(surface, (*p["wind_light"], int(gl // 2)),
+                               pt(-17, -18), pt(-15, 3), 1)
 
         # ── rim-light: sinyal angin biru di tepi yang menghadap cahaya ──
-        # v2 (visual): garis 1px warna angin pada tepi depan siluet supaya
-        # Kaizen "pop" saat unit bertumpuk (setara rimlight Gornak masterwork).
         # `pt()` sudah membalik tanda saat facing -1, jadi cukup pakai dx
-        # positif (tepi depan).
-        pulse = 0.72 + 0.28 * math.sin(phase * 1.8)
-        rim_a = int(150 * pulse)
+        # positif (tepi depan). Key light kiri-atas konsisten lighting.py.
+        pulse2 = 0.72 + 0.28 * math.sin(phase * 1.8)
+        rim_a = int(150 * pulse2)
         rim_col = (*p["wind_light"], rim_a)
-        rim_hot = (*p["wind_white"], int(205 * pulse))
-        # puncak rambut & poni (sisi depan mahkota)
-        _NS_kaizen._aaline(surface, rim_col, pt(0, -54), pt(4, -47), 1)
-        _NS_kaizen._aaline(surface, rim_col, pt(4, -47), pt(10, -45), 1)
-        _NS_kaizen._aaline(surface, rim_hot, pt(1, -52), pt(4, -48), 1)
-        # tepi atas pauldron (bahu pedang) — kilau ganda
-        _NS_kaizen._aaline(surface, rim_col, pt(8, -19), pt(19, -16), 1)
-        _NS_kaizen._aaline(surface, rim_hot, pt(10, -19), pt(16, -17), 1)
+        rim_hot = (*p["wind_white"], int(205 * pulse2))
+        # puncak rambut & mahkota
+        _NS_kaizen._aaline(surface, rim_col, pt(1, -80), pt(4, -71), 1)
+        _NS_kaizen._aaline(surface, rim_col, pt(4, -71), pt(11, -68), 1)
+        _NS_kaizen._aaline(surface, rim_hot, pt(2, -77), pt(5, -72), 1)
+        # tepi atas pauldron - kilau ganda
+        _NS_kaizen._aaline(surface, rim_col, pt(11, -29), pt(36, -21), 1)
+        _NS_kaizen._aaline(surface, rim_hot, pt(14, -28), pt(24, -25), 1)
         # tepi depan torso & jaket
-        _NS_kaizen._aaline(surface, rim_col, pt(14, -12), pt(12, 8), 1)
+        _NS_kaizen._aaline(surface, rim_col, pt(22, -18), pt(19, 6), 1)
         # tepi depan paha & boot depan (ikut naik saat kaki terangkat)
-        _NS_kaizen._aaline(surface, rim_col, pt(9, 26 - front_lift),
-                           pt(12, 39 - front_lift), 1)
-        _NS_kaizen._aacircle(surface, rim_hot, pt(12, 40 - front_lift), 1)
-        # glint kecil pada gagang katana hanya saat diam (saat menyerang
-        # gagang sudah menyala lewat glow bilah + afterimage)
+        _NS_kaizen._aaline(surface, rim_col, pt(13, 34 - front_lift),
+                           pt(17, 55 - front_lift), 1)
+        _NS_kaizen._aacircle(surface, rim_hot, pt(17, 58 - front_lift), 1)
+        # glint gagang katana hanya saat diam
         if not attack:
-            _NS_kaizen._aacircle(surface, rim_hot, pt(15, 1), 1)
+            _NS_kaizen._aacircle(surface, rim_hot, pt(30, -4), 1)
 
         if detail:
             # Portrait-only micro-detail. At arena scale these marks would
             # collapse into noise, so LOD keeps them out of gameplay cache.
-            # Hair fibre groups
-            for i in range(5):
+            for i in range(6):
                 _NS_kaizen._aaline(
                     surface, p["hair_light"],
-                    pt(-13 - i * 3, -43 + i * 3),
-                    pt(-24 - i * 3, -45 + i * 5), 1)
+                    pt(-18 - i * 3, -66 + i * 3),
+                    pt(-32 - i * 3, -70 + i * 5), 1)
             # Face planes, lower eyelid and lip highlight
             _NS_kaizen._aaline(surface, p["skin_high"],
-                               pt(2, -39), pt(6, -37), 1)
+                               pt(3, -86), pt(8, -83), 1)
             _NS_kaizen._aaline(surface, p["skin_darkest"],
-                               pt(3, -32), pt(8, -31), 1)
+                               pt(4, -64), pt(11, -62), 1)
             _NS_kaizen._aaline(surface, p["skin_light"],
-                               pt(5, -24), pt(8, -25), 1)
+                               pt(7, -56), pt(12, -57), 1)
+            # bulu mata + kelopak bawah
+            _NS_kaizen._aaline(surface, p["ink"], pt(12, -71), pt(13, -68), 1)
             # Fine textile weave and hakama hem stitching
-            for yy in (-11, -6, -1):
+            for yy in (-16, -9, -2):
                 _NS_kaizen._aaline(surface, p["cloth_light"],
-                                   pt(-9, yy), pt(-5, yy + 2), 1)
-            for xx in (-10, -5, 5, 10):
+                                   pt(-13, yy), pt(-8, yy + 2), 1)
+            for xx in (-14, -6, 8, 16):
                 _NS_kaizen._aacircle(surface, p["scarf_light"],
-                                      pt(xx, 24), 1)
-            # Engraved pauldron fan and tiny reflected rivet glints
+                                      pt(xx, 32), 1)
+            # Engraved pauldron fan + reflected rivet glints
             for a in (-.7, -.2, .3):
-                _NS_kaizen._aaline(surface, p["steel_mid"], pt(12, -13),
-                                   pt(12 + math.cos(a) * 5,
-                                      -13 + math.sin(a) * 5), 1)
-            _NS_kaizen._aacircle(surface, p["wind_white"], pt(13, -16), 1)
-
+                _NS_kaizen._aaline(surface, p["steel_mid"], pt(18, -18),
+                                   pt(18 + math.cos(a) * 7,
+                                      -18 + math.sin(a) * 7), 1)
+            _NS_kaizen._aacircle(surface, p["wind_white"], pt(20, -22), 1)
+            # serat saya + emboss manik hachimaki
+            _NS_kaizen._aaline(surface, p["saya_shine"], pt(-20, 14),
+                               pt(-30, 24), 1)
+            _NS_kaizen._aacircle(surface, p["wind_white"], pt(9, -79), 1)
+            # uap napas kecil
+            _NS_kaizen._aacircle(surface, (*p["wind_pale"], 120), pt(20, -58), 2)
+            _NS_kaizen._aacircle(surface, (*p["wind_pale"], 70), pt(24, -61), 1)
 
     def _draw_elite_katana(surface, cx, cy, facing, hand, angle, phase,
-                           attacking=False):
-        """Procedural katana with curved silhouette, hamon, and slash arc."""
+                           attacking=False, glow=0.0, flare=1.0, smear=0.0):
+        """Procedural katana masterwork: kurva sori, hamon, kissaki,
+        tsuba 4-lobe, tsuka wrap berlian, kashira, dan slash smear.
+
+        glow (0..1): pendar sian di tepi bilah (saat menyerang / buff
+        gale-storm). flare: skala smear. Semua deterministik dari argumen.
+        """
         p = _NS_kaizen.PALETTE
         f = 1 if facing >= 0 else -1
         hx, hy = cx + hand[0] * f, cy + hand[1]
-        length = 42
-        ux, uy = math.cos(angle) * f, math.sin(angle)
+        length = 62
+        A = angle if f > 0 else math.pi - angle
+        ux, uy = math.cos(A), math.sin(A)
         tx, ty = hx + ux * length, hy + uy * length
         px, py = -uy, ux
-        # wrapped grip behind guard
-        ex, ey = hx - ux * 12, hy - uy * 12
-        _NS_kaizen._aaline(surface, p["shadow_deep"], (hx, hy), (ex, ey), 7)
-        _NS_kaizen._aaline(surface, p["wrap_mid"], (hx, hy), (ex, ey), 4)
-        for t in (.25, .55, .85):
-            wx, wy = hx - ux * 12 * t, hy - uy * 12 * t
+        # ── tsuka (gagang) 16 px: wrap berlian ito + kashira ──
+        ex, ey = hx - ux * 16, hy - uy * 16
+        _NS_kaizen._aaline(surface, p["shadow_deep"], (hx, hy), (ex, ey), 9)
+        _NS_kaizen._aaline(surface, p["wrap_mid"], (hx, hy), (ex, ey), 6)
+        for t in (.22, .5, .78):
+            wx, wy = hx - ux * 16 * t, hy - uy * 16 * t
+            _NS_kaizen._aaline(surface, p["wrap_dark"],
+                               (wx - px * 2.6, wy - py * 2.6),
+                               (wx + px * 2.6, wy + py * 2.6), 2)
             _NS_kaizen._aaline(surface, p["wrap_light"],
-                               (wx - px * 2, wy - py * 2),
-                               (wx + px * 2, wy + py * 2), 1)
-        _NS_kaizen._aaline(surface, p["gold_dark"],
-                           (hx - px * 6, hy - py * 6),
-                           (hx + px * 6, hy + py * 6), 4)
-        _NS_kaizen._aaline(surface, p["gold_light"],
-                           (hx - px * 5, hy - py * 5),
-                           (hx + px * 5, hy + py * 5), 1)
-        # subtly curved blade polygon
-        mx, my = hx + ux * 23 + px * 2, hy + uy * 23 + py * 2
-        blade = [(hx + px * 3, hy + py * 3),
-                 (mx + px * 2, my + py * 2), (tx, ty),
-                 (mx - px, my - py), (hx - px * 2, hy - py * 2)]
+                               (wx - px * 1.4, wy - py * 1.4),
+                               (wx + px * 1.4, wy + py * 1.4), 1)
+        # kashira (pommel) emas
+        _NS_kaizen._aacircle(surface, p["gold_dark"], (int(ex), int(ey)), 3)
+        _NS_kaizen._aacircle(surface, p["gold_mid"], (int(ex) - f, int(ey) - 1), 2)
+        _NS_kaizen._aacircle(surface, p["gold_light"],
+                             (int(ex) - f - 1, int(ey) - 2), 1)
+
+        # ── blade polygon melengkung (sori) + hamon + kissaki ──
+        mx, my = hx + ux * 34 + px * 3.2, hy + uy * 34 + py * 3.2
+        blade = [(hx + px * 3.4, hy + py * 3.4),
+                 (mx + px * 2.4, my + py * 2.4),
+                 (tx + px * 1.2, ty + py * 1.2),
+                 (tx + px * .4, ty + py * .4),
+                 (mx - px * 1.1, my - py * 1.1),
+                 (hx - px * 2.2, hy - py * 2.2)]
         _NS_kaizen._poly(surface, p["shadow_deep"],
-                          [(x + f, y + 1) for x, y in blade])
+                          [(x_ + f, y_ + 1) for x_, y_ in blade])
         _NS_kaizen._poly(surface, p["steel_dark"], blade)
+        # mune (punggung) gelap + mid plane + edge terang
+        _NS_kaizen._aaline(surface, p["steel_darkest"],
+                           (hx + px * 2.6, hy + py * 2.6),
+                           (tx + px * 1.0, ty + py * 1.0), 1)
+        _NS_kaizen._aaline(surface, p["steel_mid"],
+                           (hx, hy), (mx + px * .4, my + py * .4), 2)
+        _NS_kaizen._aaline(surface, p["steel_light"],
+                           (hx + px * 2.6, hy + py * 2.6),
+                           (int(tx), int(ty)), 1)
         _NS_kaizen._aaline(surface, p["steel_shine"],
-                           (hx + px * 2, hy + py * 2), (tx, ty), 2)
-        # wavy temper line
+                           (hx + px * 3, hy + py * 3),
+                           (tx + px * 1.6, ty + py * 1.6), 1)
+        # kissaki (ujung facet)
+        _NS_kaizen._aaline(surface, p["steel_shine"],
+                           (int(tx), int(ty)),
+                           (int(tx - ux * 5 + px * 2.2),
+                            int(ty - uy * 5 + py * 2.2)), 1)
+        # wavy temper line (hamon)
         hamon = []
-        for i in range(1, 8):
-            t = i / 8.0
-            wave = math.sin(i * math.pi * .72 + phase * .2) * .8
+        for i in range(1, 9):
+            t = i / 9.0
+            wave = math.sin(i * math.pi * .72 + phase * .2) * .9
             hamon.append((hx + ux * length * t + px * wave,
                           hy + uy * length * t + py * wave))
         if len(hamon) > 1:
             pygame.draw.aalines(surface, p["wind_mid"], False, hamon)
         _NS_kaizen._aacircle(surface, p["steel_shine"], (int(tx), int(ty)), 2)
 
-        # v2 (visual): kilau spekular yang meluncur di sepanjang bilah —
-        # titik cahaya bergerak dari pangkal ke ujung, memberi kesan logam
-        # yang hidup walau diam.
+        # ── tsuba (guard) 4-lobe emas-baja ──
+        _NS_kaizen._aacircle(surface, p["shadow_deep"], (int(hx), int(hy)), 6)
+        _NS_kaizen._aacircle(surface, p["gold_dark"], (int(hx), int(hy)), 5)
+        _NS_kaizen._aacircle(surface, p["gold_mid"], (int(hx), int(hy)), 4)
+        for k in range(4):
+            aa = A + k * math.pi / 2 + math.pi / 4
+            _NS_kaizen._aacircle(surface, p["gold_light"],
+                                 (int(hx + math.cos(aa) * 3.4),
+                                  int(hy + math.sin(aa) * 3.4)), 1)
+        _NS_kaizen._aacircle(surface, p["steel_shine"],
+                             (int(hx) - 1, int(hy) - 2), 1)
+        # habaki (collar baja di pangkal bilah)
+        _NS_kaizen._aaline(surface, p["steel_light"],
+                           (hx + ux * 4 + px * 3, hy + uy * 4 + py * 3),
+                           (hx + ux * 4 - px * 2, hy + uy * 4 - py * 2), 2)
+
+        # ── kilau spekular meluncur di sepanjang bilah ──
         glint_t = (phase * .85) % 1.0
-        gx = hx + ux * length * glint_t + px * 1.2
-        gy = hy + uy * length * glint_t + py * 1.2
+        gx = hx + ux * length * glint_t + px * 1.6
+        gy = hy + uy * length * glint_t + py * 1.6
         _NS_kaizen._aacircle(surface, (*p["steel_shine"], 210),
                              (int(gx), int(gy)), 1)
         _NS_kaizen._aacircle(surface, (*p["wind_white"], 160),
                              (int(gx - ux * 3), int(gy - uy * 3)), 1)
 
+        # ── glow buff (gale/storm/attack): tepi bilah menyala ──
+        if glow > 0.05:
+            ga = int(150 + 90 * glow)
+            _NS_kaizen._aaline(surface, (*p["wind_bright"], min(255, ga)),
+                               (hx + px * 3, hy + py * 3),
+                               (tx + px * 1.2, ty + py * 1.2), 2)
+            if glow > 0.5:
+                _NS_kaizen._aaline(surface, (*p["wind_white"], min(255, ga - 40)),
+                                   (hx + px * 4, hy + py * 4),
+                                   (tx + px * 2, ty + py * 2), 1)
+                _NS_kaizen._spark_star(surface, tx, ty, 7, p["wind_pale"],
+                                       int(170 * glow), 4, rot=phase * 1.3,
+                                       core=p["white"])
+
         if attacking:
-            # v2 (visual): bilah menyala angin saat menyerang — garis cyan
-            # terang di sepanjang tepi potong, makin tebal di tengah ayunan.
+            # bilah menyala angin saat menyerang - garis cyan terang
             _NS_kaizen._aaline(surface, (*p["wind_bright"], 190),
                                (hx + px * 2, hy + py * 2), (tx, ty), 2)
             _NS_kaizen._aaline(surface, (*p["wind_white"], 120),
                                (hx + px * 3, hy + py * 3), (tx, ty), 1)
-            # v2 (animasi): afterimage gerak pisau — beberapa siluet katana
-            # memudar di belakang ayunan, memunculkan kesan kecepatan slash.
-            # Setiap ghost adalah blade utuh (guard + bilah) pada sudut
-            # sebelumnya, warnanya makin transparan makin jauh dari pisau.
+        # afterimage + smear HANYA di jendela strike (membuat frame
+        # IMPACT terbaca; wind-up menampilkan bilah terangkat yang bersih)
+        if attacking and smear > 0.05:
             for k in (1, 2, 3):
-                ga = angle - 0.38 * k
-                gux, guy = math.cos(ga) * f, math.sin(ga)
+                ga_ = A - 0.38 * k
+                gux, guy = math.cos(ga_), math.sin(ga_)
                 gtx, gty = hx + gux * length, hy + guy * length
                 gpx, gpy = -guy, gux
-                gmx = hx + gux * 23 + gpx * 2
-                gmy = hy + guy * 23 + gpy * 2
-                ghost = [(hx + gpx * 2, hy + gpy * 2),
+                gmx = hx + gux * 34 + gpx * 3
+                gmy = hy + guy * 34 + gpy * 3
+                ghost = [(hx + gpx * 2.4, hy + gpy * 2.4),
                          (gmx + gpx, gmy + gpy), (gtx, gty),
                          (gmx - gpx, gmy - gpy),
                          (hx - gpx * 2, hy - gpy * 2)]
@@ -6029,206 +6588,266 @@ class _NS_kaizen:
                                            90 - k * 22), ghost)
                 _NS_kaizen._poly(surface, (*p["wind_light"],
                                            140 - k * 30), ghost)
-            # layered crescent centered on the sword hand
-            start = angle - 1.25
-            for radius, color, width in ((48, (*p["wind_dark"], 90), 5),
-                                         (46, (*p["wind_light"], 170), 3),
-                                         (44, (*p["wind_white"], 235), 1)):
+            # smear sabit berlapis + leading edge (skala dari smear)
+            start = A - 1.25 * flare
+            for radius, color, width in ((64, (*p["wind_dark"],
+                                               int(90 * smear)), 5),
+                                         (61, (*p["wind_light"],
+                                               int(170 * smear)), 3),
+                                         (58, (*p["wind_white"],
+                                               int(235 * smear)), 1)):
                 _NS_kaizen._draw_wind_arc(surface, hx, hy, radius,
-                                           start, angle + .25,
+                                           start, A + .25,
                                            color, width, 18)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     # ===================================================================
-    # FLOATING EFFECTS
+    # FLOATING EFFECTS (permukaan statis di-cache lewat _static)
     # ===================================================================
     def _draw_floating_wind(surface, cx, cy, phase, trail=False,
-                            facing=1, intense=False):
-        """Wind mist beneath floating Kaizen."""
+                            facing=1, intense=False, gale=False):
+        """Wind mist beneath floating Kaizen (mist statis + wisp dinamis)."""
+        p = _NS_kaizen.PALETTE
         strength = 1.5 if intense else 1.0
 
-        mist = pygame.Surface((120, 40), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(30, 3, -4):
-            alpha = int((30 - radius) * 2.8 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_kaizen.PALETTE["wind_dark"], min(255, alpha)),
-                    (60 - radius * 2, 20 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 60, cy - 10))
+        def build_mist():
+            mist = pygame.Surface((170, 56), pygame.SRCALPHA)
+            for radius in range(40, 4, -4):
+                alpha = int((40 - radius) * 2.6)
+                if alpha > 0:
+                    pygame.draw.ellipse(
+                        mist, (*p["wind_dark"], min(255, alpha)),
+                        (85 - radius * 2, 28 - radius // 3,
+                         radius * 4, max(3, radius // 2)),
+                    )
+            return mist
+
+        mist = _NS_kaizen._static("mist", build_mist)
+        faded = mist.copy()
+        faded.set_alpha(int(200 * (0.8 + 0.2 * math.sin(phase))))
+        surface.blit(faded, (cx - 85, cy - 16))
 
         # Rising wind wisps
-        for i, offset in enumerate((-20, -8, 8, 20)):
+        for i, offset in enumerate((-28, -10, 10, 28)):
             t = (phase * 0.5 + i * 0.25) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 24)
+            sx = cx + offset + int(math.sin(phase + i) * 4)
+            sy = cy + 6 - int(t * 30)
             alpha = max(0, min(255, int(200 * (1 - t) * strength)))
             if alpha <= 0:
                 continue
-            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_dark"], alpha), (sx, sy), 5)
-            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_mid"], alpha), (sx, sy - 2), 3)
-            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_bright"], min(255, alpha)),
-                      (sx, sy - 3), 1)
+            _NS_kaizen._aacircle(surface, (*p["wind_dark"], alpha), (sx, sy), 6)
+            _NS_kaizen._aacircle(surface, (*p["wind_mid"], alpha), (sx, sy - 2), 4)
+            _NS_kaizen._aacircle(surface, (*p["wind_bright"], min(255, alpha)),
+                      (sx, sy - 4), 1)
 
         # Small circling wind swirls
         for i in range(3):
             angle = phase * 1.2 + i * math.pi * 2 / 3
-            r = 22 + int(math.sin(phase + i * 1.3) * 5)
+            r = 28 + int(math.sin(phase + i * 1.3) * 6)
             sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 6)
-            _NS_kaizen._draw_wind_swirl(surface, sx, sy, 4, phase + i,
-                             _NS_kaizen.PALETTE["wind_bright"], alpha=200)
+            sy = cy + int(math.sin(angle) * 7)
+            _NS_kaizen._draw_wind_swirl(surface, sx, sy, 5, phase + i,
+                             p["wind_bright"], alpha=200)
 
         if trail:
             for i in range(5):
-                sx = cx - (i + 1) * 11 * facing
+                sx = cx - (i + 1) * 14 * facing
                 sy = cy + int(math.sin(phase + i) * 2)
                 alpha = max(0, 120 - i * 22)
-                _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_mid"], alpha),
-                          (sx, sy), max(2, 5 - i))
+                _NS_kaizen._aacircle(surface, (*p["wind_mid"], alpha),
+                          (sx, sy), max(2, 6 - i))
+
+        if gale:
+            # aura gale: arc ekstra di sekitar kaki saat W aktif
+            pulse_ = .6 + .4 * math.sin(phase * 2.4)
+            _NS_kaizen._draw_wind_arc(surface, cx, cy + 6, 44,
+                                      phase * .8, phase * .8 + 3.4,
+                                      (*p["wind_bright"], int(70 * pulse_)), 2, 10)
 
 
     def _draw_shadow(surface, x, y):
-        """Ground shadow."""
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_kaizen.PALETTE["wind_darkest"], 40), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
+        """Ground shadow (statis)."""
+        def build():
+            shadow = pygame.Surface((130, 26), pygame.SRCALPHA)
+            for radius in range(13, 0, -1):
+                alpha = max(0, (13 - radius) * 15)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (13 - radius, 13 - radius, 104 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow,
+                                (*_NS_kaizen.PALETTE["wind_darkest"], 40),
+                                (10, 5, 110, 13))
+            return shadow
+        surface.blit(_NS_kaizen._static("shadow", build), (x - 65, y - 13))
 
 
     def _draw_swordsman_rim_light(surface, x, y, phase):
         """Small code-drawn blue rim light around scarf, katana, and hair."""
         pulse = .72 + math.sin(phase * 1.3) * .16
-        halo = pygame.Surface((88, 98), pygame.SRCALPHA)
-        for radius, alpha in ((38, 9), (29, 14), (20, 20)):
-            _NS_kaizen._aacircle(halo, (*_NS_kaizen.PALETTE["wind_dark"],
-                                         int(alpha * pulse)), (44, 49), radius)
-        _NS_kaizen._aaline(halo, (*_NS_kaizen.PALETTE["wind_mid"], int(38 * pulse)),
-                            (28, 57), (12, 64), 2)
-        _NS_kaizen._aaline(halo, (*_NS_kaizen.PALETTE["wind_light"], int(34 * pulse)),
-                            (55, 56), (78, 45), 1)
-        surface.blit(halo, (x - 44, y - 49))
+
+        def build():
+            halo = pygame.Surface((116, 128), pygame.SRCALPHA)
+            for radius, alpha in ((50, 9), (38, 14), (26, 20)):
+                _NS_kaizen._aacircle(halo, (*_NS_kaizen.PALETTE["wind_dark"],
+                                             int(alpha)), (58, 64), radius)
+            _NS_kaizen._aaline(halo, (*_NS_kaizen.PALETTE["wind_mid"], 38),
+                               (38, 76), (16, 85), 2)
+            _NS_kaizen._aaline(halo, (*_NS_kaizen.PALETTE["wind_light"], 34),
+                               (73, 74), (104, 60), 1)
+            return halo
+        halo = _NS_kaizen._static("rim_halo", build)
+        faded = halo.copy()
+        faded.set_alpha(int(255 * pulse))
+        surface.blit(faded, (x - 58, y - 64))
 
 
     def _draw_wind_aura(surface, x, y, phase):
-        """Large background aura."""
-        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(70, 5, -4):
-            alpha = int((70 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_kaizen._aacircle(aura, (*_NS_kaizen.PALETTE["wind_darkest"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
+        """Large background aura (statis, alpha berdenyut)."""
+        def build():
+            aura = pygame.Surface((240, 216), pygame.SRCALPHA)
+            for radius in range(96, 6, -4):
+                alpha = int((96 - radius) * 1.0)
+                if alpha > 0:
+                    _NS_kaizen._aacircle(aura,
+                                          (*_NS_kaizen.PALETTE["wind_darkest"],
+                                           min(255, alpha)),
+                                          (120, 108), radius)
+            return aura
+        aura = _NS_kaizen._static("wind_aura", build)
+        pulse = .7 + .3 * math.sin(phase * 0.4)
+        faded = aura.copy()
+        faded.set_alpha(int(255 * pulse))
+        surface.blit(faded, (x - 120, y - 108))
+
+
+    def _draw_storm_aura(surface, x, y, phase):
+        """Aura badai saat R aktif: lebih pekat + denyut lebih kuat."""
+        def build():
+            aura = pygame.Surface((260, 230), pygame.SRCALPHA)
+            for radius in range(104, 6, -5):
+                alpha = int((104 - radius) * 0.9)
+                if alpha > 0:
+                    _NS_kaizen._aacircle(aura,
+                                          (*_NS_kaizen.PALETTE["wind_deep"],
+                                           min(255, alpha)),
+                                          (130, 115), radius)
+            return aura
+        aura = _NS_kaizen._static("storm_aura", build)
+        pulse = .55 + .45 * math.sin(phase * 1.1)
+        faded = aura.copy()
+        faded.set_alpha(int(255 * pulse))
+        surface.blit(faded, (x - 130, y - 115))
 
 
     def _draw_wind_platform(surface, x, y, phase, skill):
-        """Wind circle platform."""
+        """Wind circle platform (statis; streak/node dinamis di atasnya)."""
+        def build():
+            ring = pygame.Surface((190, 64), pygame.SRCALPHA)
+            pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_dark"], 150),
+                                (5, 14, 180, 36), 4)
+            pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_mid"], 180),
+                                (28, 20, 134, 24), 2)
+            return ring
+        ring = _NS_kaizen._static("platform", build)
+        surface.blit(ring, (x - 95, y - 32))
+
+        # Streak & node berputar (dinamis, murah)
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_dark"], 150),
-                            (5, 10, 120, 24), 3)
-        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_mid"], 180),
-                            (20, 14, 90, 16), 2)
-
-        # Swirling wind streaks
         for i in range(6):
             angle = phase * 0.3 + i * math.pi / 3
-            x1 = 65 + int(math.cos(angle) * 20)
-            y1 = 22 + int(math.sin(angle) * 4)
-            x2 = 65 + int(math.cos(angle) * 55)
-            y2 = 22 + int(math.sin(angle) * 10)
-            pygame.draw.line(ring, (*_NS_kaizen.PALETTE["wind_light"], 170),
-                             (x1, y1), (x2, y2), 1)
-
+            x1 = x + int(math.cos(angle) * 28)
+            y1 = y + int(math.sin(angle) * 6)
+            x2 = x + int(math.cos(angle) * 78)
+            y2 = y + int(math.sin(angle) * 15)
+            _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_light"],
+                                          int(170 * pulse)), (x1, y1), (x2, y2), 1)
         for angle_deg in (0, 90, 180, 270):
             angle = math.radians(angle_deg) + phase * 0.15
-            sx = 65 + int(math.cos(angle) * 50)
-            sy = 22 + int(math.sin(angle) * 9)
-            pygame.draw.circle(ring, (*_NS_kaizen.PALETTE["wind_bright"], 200), (sx, sy), 2)
-
+            sx = x + int(math.cos(angle) * 72)
+            sy = y + int(math.sin(angle) * 13)
+            _NS_kaizen._aacircle(surface,
+                                  (*_NS_kaizen.PALETTE["wind_bright"], 200),
+                                  (sx, sy), 2)
         if skill:
-            pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_bright"], int(80 * pulse)),
-                                (15, 8, 100, 28), 1)
-
-        surface.blit(ring, (x - 65, y - 22))
+            _NS_kaizen._ellipse(surface, (*_NS_kaizen.PALETTE["wind_bright"],
+                                           int(80 * pulse)),
+                     (x - 74, y - 12, 148, 38), 1)
 
 
     # ===================================================================
-    # SKILL Q: DASH / STEEL WIND (already handled with projectile)
+    # SKILL Q: DASH / STEEL WIND
     # ===================================================================
     def _draw_dash_ground(surface, boss, x, y, timer, phase):
-        """Ground effect during dash."""
+        """Telegraph Q: jalur dash + chevron berbaris ke target + konvergen."""
+        p = _NS_kaizen.PALETTE
         tx, ty = _NS_kaizen._target_position(boss, x, y)
-        # Line indicator from boss to target (tegas: stroke gelap + terang)
-        _skill_outlined_line(surface, (x, y + 30), (tx, ty + 20), 3,
-                             _NS_kaizen.PALETTE["wind_mid"], 120)
-        _skill_outlined_line(surface, (x, y + 30), (tx, ty + 20), 1,
-                             _NS_kaizen.PALETTE["wind_bright"], 170)
+        progress = max(0.0, min(1.0, 1 - timer / 60))
+        pulse = math.sin(phase * 5) * .5 + .5
+        fs = _NS_kaizen._fx_scale(boss)
+
+        # garis jalur (outline gelap + core terang)
+        _skill_outlined_line(surface, (x, y + 40), (tx, ty + 30), 4,
+                             p["wind_mid"], 110)
+        _skill_outlined_line(surface, (x, y + 40), (tx, ty + 30), 1,
+                             p["wind_bright"], 150 + int(60 * pulse))
+        # chevron berbaris sepanjang jalur (telegraph bergerak)
+        ang = math.atan2(ty - y, tx - x)
+        for i in range(5):
+            t = (i / 5 + phase * .45) % 1.0
+            _NS_kaizen._chevron(surface,
+                                x + (tx - x) * t, y + (ty - y) * t + 34,
+                                ang, max(7, int(13 * fs)), p["wind_pale"],
+                                int(200 * (1 - progress * .5)), 3)
+        # marker konvergen di target (2 cincin menyusut)
+        conv = (1 - progress) * 26 + 8
+        _skill_outlined_circle(surface, (tx, ty + 30), int(conv * fs), 2,
+                               p["wind_light"], int(150 + 60 * pulse))
+        _skill_outlined_circle(surface, (tx, ty + 30),
+                               max(4, int(conv * fs * .5)),
+                               1, p["wind_pale"], int(170 + 60 * pulse))
 
 
     def _draw_dash_effect(surface, boss, x, y, timer, phase):
-        """Dash trail / speed lines."""
+        """Q v2.1: AKTIVASI (crescent burst + bintang) -> STEADY
+        (afterimage sepanjang jalur + speed lines + seam angin)."""
+        p = _NS_kaizen.PALETTE
         tx, ty = _NS_kaizen._target_position(boss, x, y)
         progress = max(0.0, min(1.0, 1 - timer / 60))
+        fs = _NS_kaizen._fx_scale(boss)
+        fade = 1.0 - progress
 
-        # Multiple after-images along dash path
+        # ── AKTIVASI: sabit ganda + bintang di tangan pedang ──
+        if progress < 0.3:
+            t = progress / 0.3
+            ang = math.atan2(ty - y, tx - x)
+            bx = x + math.cos(ang) * 30
+            by = y - 8 + math.sin(ang) * 14
+            for k, rr in enumerate((10, 17, 24)):
+                r = int((rr + t * 26) * fs)
+                alpha = int((220 - k * 55) * (1 - t))
+                _skill_outlined_circle(surface, (bx, by), max(1, r), 3 - k,
+                                       p["wind_bright"] if k < 2
+                                       else p["wind_light"], alpha)
+            _NS_kaizen._spark_star(surface, bx, by,
+                                   int((14 + 16 * (1 - t)) * fs),
+                                   p["wind_pale"], int(240 * (1 - t)), 6,
+                                   rot=phase, core=p["white"])
+
+        # ── afterimage sepanjang jalur (STEADY) ──
         for i in range(6):
             t = i / 5.0
             ix = int(x + (tx - x) * t)
             iy = int(y + (ty - y) * t)
-            alpha = int(180 * (1 - progress) * (1 - t * 0.5))
+            alpha = int(180 * fade * (1 - t * 0.5))
+            _NS_kaizen._aacircle(surface, (*p["wind_dark"], alpha // 2),
+                      (ix, iy), int(16 * fs))
+            _NS_kaizen._aacircle(surface, (*p["wind_mid"], alpha),
+                      (ix, iy - 6), int(10 * fs))
+            _NS_kaizen._aacircle(surface, (*p["wind_light"], alpha),
+                      (ix, iy - 4), int(5 * fs))
 
-            # Small ghost silhouette
-            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_dark"], alpha // 2), (ix, iy), 12)
-            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_mid"], alpha), (ix, iy - 5), 8)
-            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_light"], alpha), (ix, iy - 3), 4)
-
-        # Speed streaks
+        # ── speed streaks sejajar jalur ──
         dx = tx - x
         dy = ty - y
         dist = math.sqrt(dx * dx + dy * dy) or 1
@@ -6238,230 +6857,419 @@ class _NS_kaizen:
         py = dx
 
         for i in range(8):
-            off = (i - 4) * 4
+            off = (i - 4) * 5
             sx = x + px * off
-            sy = y + py * off
-            ex = sx + dx * 40
-            ey = sy + dy * 40
-            alpha = int(220 * (1 - progress))
-            _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_bright"], alpha),
+            sy = y + py * off + 6
+            ex = sx + dx * (34 + (i % 3) * 10) * fs
+            ey = sy + dy * (34 + (i % 3) * 10) * fs
+            alpha = int(220 * fade)
+            _NS_kaizen._aaline(surface, (*p["wind_bright"], alpha),
                     (sx, sy), (ex, ey), 1)
+        # seam angin di garis tanah
+        _skill_outlined_line(surface, (x, y + 42), (tx, ty + 32), 2,
+                             p["wind_light"], int(120 * fade))
 
 
     # ===================================================================
     # SKILL W: WIND WALL
     # ===================================================================
     def _draw_wind_wall(surface, boss, x, y, timer, phase):
-        """Vertical wind wall in front of Kaizen."""
+        """W v2.1: TELEGRAPH (arc konvergen) -> AKTIVASI (dinding naik +
+        shockwave tanah + bintang) -> STEADY (dinding berlapis + rune
+        ring ganda + mote naik + cap bintang + glint orbit)."""
+        p = _NS_kaizen.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 90))
         facing = boss.direction
+        fs = _NS_kaizen._fx_scale(boss)
+        pulse = math.sin(phase * 2.4) * .5 + .5
 
-        wall_x = x + 40 * facing
-        wall_top = y - 45
-        wall_bot = y + 35
-        wall_height = wall_bot - wall_top
+        # dinding dunia: offset & tinggi ikut _fx_scale supaya tidak
+        # menyusut bersama sprite (world-space, standar Thorne)
+        wall_x = x + int(52 * fs) * facing
+        wall_top = y - int(58 * fs)
+        wall_bot = y + int(44 * fs)
 
-        # Growing wall
-        if progress < 0.2:
-            t = progress / 0.2
-            h = int(wall_height * t)
-            wall_top = y + 35 - h
+        # ── TELEGRAPH: arc konvergen + garis tanah sebelum naik ──
+        if progress < 0.18:
+            t = progress / 0.18
+            for k in (0, 1):
+                rr = int(((44 - k * 12) * (1 - t) + 10) * fs)
+                _NS_kaizen._dashed_ring(surface, wall_x, y + 8, rr,
+                                        p["wind_light"], int(150 * (t + .2)),
+                                        phase * (1.6 + k), segments=7,
+                                        thick=2, span=.5, squash=.4)
+            _skill_outlined_line(surface, (wall_x - 30, y + 46),
+                                 (wall_x + 30, y + 46), 3,
+                                 p["wind_mid"], int(140 * pulse))
+            for i in range(3):
+                _NS_kaizen._chevron(surface, wall_x, y + 8 - i * 18,
+                                    -math.pi / 2 * facing, 10,
+                                    p["wind_pale"], int(180 * t), 2)
+            return
+
+        # ── AKTIVASI: dinding tumbuh + burst tanah + bintang ──
+        if progress < 0.38:
+            t = (progress - 0.18) / 0.2
+            h = int((wall_bot - wall_top) * t)
+            wt = wall_bot - h
+            burst = 1 - t
+            _skill_outlined_circle(surface, (wall_x, y + 40),
+                                   int((30 + 40 * t) * fs), 3,
+                                   p["wind_bright"], int(200 * burst))
+            _NS_kaizen._spark_star(surface, wall_x, y + 30,
+                                   int(22 * fs * burst + 4), p["wind_pale"],
+                                   int(235 * burst), 8, rot=phase,
+                                   core=p["white"])
         else:
-            pass
+            wt = wall_top
 
-        wall_width = 6
+        wall_width = int(7 * fs)
 
-        # Base wall shadow (tegas: outline gelap lebar + core terang)
-        _NS_kaizen._rect(surface, (*_NS_kaizen.PALETTE["wind_darkest"], 170),
-              (wall_x - wall_width - 2, wall_top, wall_width * 2 + 4, wall_bot - wall_top))
-        _NS_kaizen._rect(surface, (*_NS_kaizen.PALETTE["wind_mid"], 140),
-              (wall_x - wall_width, wall_top, wall_width * 2, wall_bot - wall_top))
+        # ── STEADY: dinding 3 lapis + rune ring + mote + caps ──
+        # base wall shadow (outline gelap lebar + core terang)
+        _NS_kaizen._rect(surface, (*p["wind_deep"], 170),
+              (wall_x - wall_width - int(2 * fs), wt,
+               int(wall_width * 2 + 4 * fs), wall_bot - wt))
+        _NS_kaizen._rect(surface, (*p["wind_mid"], 140),
+              (wall_x - wall_width, wt,
+               int(wall_width * 2), wall_bot - wt))
+        _NS_kaizen._aaline(surface, (*p["wind_white"], 150),
+                           (wall_x - wall_width // 2, wt + 4),
+                           (wall_x - wall_width // 2, wall_bot - 4), 1)
 
         # Wind swirls making up the wall
-        for i in range(8):
-            swirl_y = wall_top + i * (wall_bot - wall_top) / 8
+        for i in range(4):
+            swirl_y = wt + i * (wall_bot - wt) / 4
             offset_x = int(math.sin(phase * 2 + i * 0.7) * 3)
-            _NS_kaizen._draw_wind_swirl(surface, wall_x + offset_x, int(swirl_y), 5,
-                             phase + i, _NS_kaizen.PALETTE["wind_bright"], alpha=200)
+            _NS_kaizen._draw_wind_swirl(surface, wall_x + offset_x,
+                             int(swirl_y), 5,
+                             phase + i, p["wind_bright"], alpha=200)
 
         # Vertical wind streaks
-        for i in range(5):
-            sx = wall_x + (i - 2) * 3
-            streak_start = wall_top + int((phase * 20 + i * 15) % 30)
+        span_h = max(1, wall_bot - wt - 20)
+        for i in range(4):
+            sx = wall_x + (i - 2) * 4
+            streak_start = wt + int((phase * 20 + i * 15) % span_h)
             streak_end = min(wall_bot, streak_start + 20)
-            alpha = 180
-            _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_light"], alpha),
+            _NS_kaizen._aaline(surface, (*p["wind_light"], 180),
                     (sx, streak_start), (sx, streak_end), 1)
-            _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_white"], alpha),
+            _NS_kaizen._aaline(surface, (*p["wind_white"], 180),
                     (sx + 1, streak_start + 3), (sx + 1, streak_end - 3), 1)
 
-        # Top and bottom energy caps
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_bright"], 200),
-                  (wall_x, wall_top), 6)
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_white"], 200),
-                  (wall_x, wall_top), 3)
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_bright"], 200),
-                  (wall_x, wall_bot), 6)
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_white"], 200),
-                  (wall_x, wall_bot), 3)
+        # rune ring ganda berlawanan arah di dasar dinding
+        _NS_kaizen._dashed_ring(surface, wall_x, y + 42, int(40 * fs),
+                                p["wind_light"], int(120 + 60 * pulse),
+                                phase * 1.4, segments=9, thick=2, span=.5,
+                                squash=.35)
+        _NS_kaizen._dashed_ring(surface, wall_x, y + 42, int(28 * fs),
+                                p["wind_pale"], int(100 + 60 * pulse),
+                                -phase * 1.8 + .4, segments=6, thick=2,
+                                span=.45, squash=.35)
+
+        # mote naik + glint orbit
+        for i in range(4):
+            t = (phase * .3 + i / 4) % 1.0
+            mx = wall_x + math.sin(i * 2.4 + phase) * 16 * fs
+            my = wall_bot - t * (wall_bot - wt)
+            _NS_kaizen._aacircle(surface, (*p["wind_bright"], int(190 * (1 - t))),
+                      (int(mx), int(my)), 2 if i % 2 else 1)
+        for i in range(3):
+            a = phase * 1.5 + i * math.tau / 3
+            gr = 36 * fs + math.sin(phase * 2 + i) * 5
+            _NS_kaizen._aacircle(surface, (*p["white"], 190),
+                      (int(wall_x + math.cos(a) * gr * .6),
+                       int(y - 8 + math.sin(a) * gr * .5)), 1)
+
+        # Top and bottom energy caps (bintang kecil)
+        cap_a = int(180 + 60 * pulse)
+        _NS_kaizen._spark_star(surface, wall_x, wt, 8, p["wind_bright"],
+                               cap_a, 4, rot=phase * .7)
+        _NS_kaizen._aacircle(surface, (*p["wind_white"], 200),
+                  (wall_x, wt), 3)
+        _NS_kaizen._spark_star(surface, wall_x, wall_bot, 6,
+                               p["wind_light"], cap_a, 4, rot=-phase * .9)
+        _NS_kaizen._aacircle(surface, (*p["wind_bright"], 200),
+                  (wall_x, wall_bot), 5)
 
 
     # ===================================================================
-    # SKILL E: SWEEP (circular AoE at feet)
+    # SKILL E: SWEEP (circular AOE 100 world px di kaki)
     # ===================================================================
     def _draw_sweep_ground(surface, boss, x, y, timer, phase):
-        """Ground indicator."""
+        """Telegraph E: ring jangkauan TEPAT 100 px dunia + ring konvergen
+        + chevron kardinal + tick ring berputar (standar Thorne)."""
+        p = _NS_kaizen.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 60))
-        radius = int(35 + progress * 30)
-        pulse = math.sin(phase * 1.5) * 0.2 + 0.8
+        pulse = math.sin(phase * 4.5) * .5 + .5
+        fs = _NS_kaizen._fx_scale(boss)
+        # Radius gameplay dikonversi ke px canvas lewat _render_scale
+        # (hero) supaya telegraph pas dengan jangkauan asli (100 dunia).
+        scale = getattr(boss, "_render_scale", None)
+        rng = 100 / float(scale) if scale else 100.0
 
-        ring = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
-        cx, cy = radius + 10, (radius + 20) // 2
-
-        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_dark"], int(150 * pulse)),
-                            (3, 3, radius * 2 + 14, radius + 14), 5)
-        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_mid"], int(190 * pulse)),
-                            (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_bright"], int(170 * pulse)),
-                            (15, 8, radius * 2 - 10, radius + 4), 2)
-
-        surface.blit(ring, (x - cx, y + 30 - cy))
+        # ring jangkauan utama (outline tebal, world-space, radius penuh)
+        _skill_outlined_circle(surface, (x, y + 30), int(rng), 4,
+                               p["wind_bright"], int(110 + 50 * pulse))
+        # tick ring berputar di dalamnya
+        _NS_kaizen._dashed_ring(surface, x, y + 30, int(rng * .9),
+                                p["wind_light"], int(130 + 60 * pulse),
+                                phase * 1.1, segments=12, thick=3, span=.3)
+        # ring konvergen: mengecil ke pusat saat mendekati lemparan
+        conv = rng * (1 - progress * .82)
+        _skill_outlined_circle(surface, (x, y + 30), max(10, int(conv)), 3,
+                               p["wind_pale"], int(160 + 70 * pulse))
+        # chevron kardinal menunjuk ke dalam
+        for da in (0, math.pi / 2, math.pi, math.pi * 1.5):
+            _NS_kaizen._chevron(
+                surface,
+                x + math.cos(da) * rng * .4,
+                y + 30 + math.sin(da) * rng * .34,
+                da + math.pi, max(8, int(rng * .08)), p["wind_light"], 190, 3)
+        # orb pusat berdenyut + crosshair kecil
+        _NS_kaizen._aacircle(surface, (*p["wind_bright"], int(200 + 40 * pulse)),
+                  (x, y + 30), int((5 + 3 * pulse) * fs))
+        for da in (0, math.pi / 2):
+            _NS_kaizen._aaline(surface, (*p["wind_light"], 150),
+                               (x - math.cos(da) * 14, y + 30 - math.sin(da) * 9),
+                               (x + math.cos(da) * 14, y + 30 + math.sin(da) * 9), 1)
 
 
     def _draw_sweep_effect(surface, boss, x, y, timer, phase):
-        """Upward sweep - wind uplift."""
+        """E v2.1: AKTIVASI (ring slash mengembang + bintang + shockwave)
+        -> STEADY (pilar angin mengelilingi + daun berputar + debu)."""
+        p = _NS_kaizen.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 60))
+        fs = _NS_kaizen._fx_scale(boss)
+        pulse = math.sin(phase * 3) * .5 + .5
+        scale = getattr(boss, "_render_scale", None)
+        rng = 100 / float(scale) if scale else 100.0
 
-        # Wind pillars rising in ring
+        # ── AKTIVASI: ring slash mengembang + bintang pusat ──
+        if progress < 0.4:
+            t = progress / 0.4
+            rr = int((12 + t * rng) * fs)
+            for k, (wd, col) in enumerate(((4, p["wind_dark"]),
+                                           (2, p["wind_pale"]))):
+                _skill_outlined_circle(surface, (x, y + 24), max(2, rr - k * 4),
+                                       wd, col, int((200 - k * 50) * (1 - t * .6)))
+            _NS_kaizen._spark_star(surface, x, y + 24,
+                                   int(24 * fs * (1 - t * .5)),
+                                   p["wind_pale"], int(240 * (1 - t)), 8,
+                                   rot=phase, core=p["white"])
+            _NS_kaizen._ellipse(surface, (*p["wind_dark"], int(120 * (1 - t))),
+                     (x - int(40 * fs), y + 18, int(80 * fs), 16), 0)
+
+        # ── Wind pillars rising in ring (STEADY) ──
+        ring_r = int(rng * fs)
         for i in range(10):
             angle = i * math.pi / 5 + phase * 0.2
-            r = 40
-            px = x + int(math.cos(angle) * r)
-            py = y + 25 + int(math.sin(angle) * r * 0.3)
+            px = x + int(math.cos(angle) * ring_r)
+            py = y + 28 + int(math.sin(angle) * ring_r * 0.32)
 
-            # Rising wind pillar
-            h = int(30 * math.sin(progress * math.pi))
+            h = int(42 * math.sin(progress * math.pi))
             if h <= 0:
                 continue
-
-            # Wind streak going up
-            for seg in range(3):
-                sy = py - seg * (h // 3)
-                ey = py - (seg + 1) * (h // 3)
+            for seg in range(2):
+                sy = py - seg * (h // 2)
+                ey = py - (seg + 1) * (h // 2)
                 alpha = 200 - seg * 40
-                _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_bright"], alpha),
+                _NS_kaizen._aaline(surface, (*p["wind_bright"], alpha),
                         (px, sy), (px, ey), 2)
-                _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_white"], alpha),
-                        (px + 1, sy), (px + 1, ey), 1)
+                if seg == 0:
+                    _NS_kaizen._aaline(surface, (*p["wind_white"], alpha),
+                            (px + 1, sy), (px + 1, ey), 1)
+            _NS_kaizen._aacircle(surface, (*p["wind_white"], 220),
+                      (px, py - h), 2)
 
-            # Top cap
-            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_white"], 220), (px, py - h), 2)
-
-        # Central burst
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_bright"], int(120 * (1 - progress))),
-                  (x, y + 20), int(20 + progress * 15), 2)
+        # Central burst + ring denyut
+        _NS_kaizen._aacircle(surface, (*p["wind_bright"], int(120 * (1 - progress))),
+                  (x, y + 24), int((20 + progress * 18) * fs), 2)
+        _NS_kaizen._dashed_ring(surface, x, y + 28, int(rng * fs * .8),
+                                p["wind_light"], int(110 + 50 * pulse),
+                                -phase * 1.3, segments=8, thick=2, span=.4,
+                                squash=.4)
 
 
     # ===================================================================
-    # SKILL R: TORNADO (ultimate)
+    # SKILL R: TORNADO (ultimate, AOE 150 world px)
     # ===================================================================
     def _draw_tornado_ground(surface, boss, x, y, timer, phase):
-        """Ground swirl indicator."""
+        """Telegraph R: ring AOE 150 px dunia di sekitar caster (radius
+        damage sejati) + ring konvergen di titik funnel + retakan tanah +
+        chevron masuk + rune ring berputar."""
+        p = _NS_kaizen.PALETTE
         tx, ty = _NS_kaizen._target_position(boss, x, y)
         progress = max(0.0, min(1.0, 1 - timer / 100))
-        pulse = math.sin(phase * 1.5) * 0.2 + 0.8
+        pulse = math.sin(phase * 4) * .5 + .5
+        fs = _NS_kaizen._fx_scale(boss)
+        scale = getattr(boss, "_render_scale", None)
+        rng = 150 / float(scale) if scale else 150.0
 
-        # Warning circle at target (tegas: outline gelap + cincin terang)
-        _skill_outlined_circle(surface, (tx, ty + 20), 30, 2,
-                               _NS_kaizen.PALETTE["wind_dark"], int(150 * pulse))
-        _skill_outlined_circle(surface, (tx, ty + 20), 24, 1,
-                               _NS_kaizen.PALETTE["wind_mid"], int(185 * pulse))
+        # ring AOE sejati di sekitar hero (world-space, radius 150 dunia)
+        _skill_outlined_circle(surface, (x, y + 30), int(rng), 4,
+                               p["wind_mid"], int(90 + 50 * pulse))
+        _NS_kaizen._dashed_ring(surface, x, y + 30, int(rng * .92),
+                                p["wind_dark"], int(100 + 40 * pulse),
+                                phase * .9, segments=10, thick=3, span=.4)
+
+        # ring konvergen di titik funnel (target)
+        conv = (1 - progress) * 34 + 10
+        _skill_outlined_circle(surface, (tx, ty + 26), int(conv * fs), 3,
+                               p["wind_pale"], int(150 + 70 * pulse))
+        _skill_outlined_circle(surface, (tx, ty + 26), int(conv * fs * .55), 2,
+                               p["wind_bright"], int(170 + 60 * pulse))
+        # retakan tanah zigzag deterministik di sekitar titik funnel
+        for i in range(4):
+            ang = i * math.pi * 2 / 4 + .35
+            _NS_kaizen._jagged_crack(surface, tx, ty + 30, ang,
+                                     int((18 + (i % 3) * 8) * fs),
+                                     (p["wind_deep"], p["wind_dark"]),
+                                     int(120 + 60 * pulse),
+                                     seed=i + 2, width=2)
+        # chevron masuk kardinal
+        for da in (0, math.pi * 2 / 3, math.pi * 4 / 3):
+            _NS_kaizen._chevron(
+                surface,
+                tx + math.cos(da) * 44 * fs,
+                ty + 26 + math.sin(da) * 30 * fs,
+                da + math.pi, max(8, int(10 * fs)), p["wind_light"], 200, 3)
+        # rune ring berputar di funnel
+        _NS_kaizen._dashed_ring(surface, tx, ty + 30, int(40 * fs),
+                                p["wind_light"], int(120 + 50 * pulse),
+                                phase * 1.7, segments=8, thick=2, span=.55,
+                                squash=.4)
 
 
     def _draw_tornado(surface, boss, x, y, timer, phase):
-        """Large tornado at target position."""
+        """R v2.1: AKTIVASI (pilar cahaya + shockwave ganda + bintang)
+        -> STEADY (funnel berlapis + lengan spiral + puing orbit + flare
+        puncak + debu dasar), semua world-space dan di-clamp canvas."""
+        p = _NS_kaizen.PALETTE
         tx, ty = _NS_kaizen._target_position(boss, x, y)
         progress = max(0.0, min(1.0, 1 - timer / 100))
+        fs = _NS_kaizen._fx_scale(boss)
+        pulse = math.sin(phase * 3) * .5 + .5
 
         # Tornado grows then holds
-        if progress < 0.3:
-            grow = progress / 0.3
+        if progress < 0.34:
+            grow = progress / 0.34
         else:
             grow = 1.0
+        # memudar halus di ujung durasi
+        fade = 1.0 if progress < 0.86 else max(0.0, 1 - (progress - 0.86) / 0.14)
 
-        base_y = ty + 25
-        top_y = ty - 60
-        height = base_y - top_y
-        height = int(height * grow)
+        # ── AKTIVASI: pilar cahaya 3-lapis + shockwave ganda + bintang ──
+        if 0.2 < progress < 0.45:
+            t = (progress - 0.2) / 0.25
+            base_y = ty + 26
+            top = int(base_y - min(90 * fs, 230) * (0.5 + 0.5 * (1 - t)))
+            for wd, col, al in ((26, p["wind_deep"], 90),
+                                (15, p["wind_mid"], 140),
+                                (7, p["wind_light"], 200)):
+                _NS_kaizen._aaline(surface, (*col, int(al * (1 - t) * fade)),
+                                   (tx, top), (tx, base_y), wd)
+            _NS_kaizen._aaline(surface,
+                               (*p["wind_pale"], int(190 * (1 - t) * fade)),
+                               (tx, top), (tx, base_y), 2)
+            for k, rmax in ((0, 120), (1, 84)):
+                r = int((14 + t * rmax) * fs)
+                _skill_outlined_circle(
+                    surface, (tx, base_y), r, 3,
+                    p["wind_bright"] if k == 0 else p["wind_light"],
+                    int((220 if k == 0 else 150) * (1 - t) * fade))
+            _NS_kaizen._spark_star(surface, tx, base_y,
+                                   int(28 * (1 - t * .4) * fs),
+                                   p["wind_pale"], int(235 * (1 - t) * fade),
+                                   8, rot=.3, core=p["white"])
+
+        base_y = ty + 26
+        full_h = min(96 * fs, 230)
+        height = int(full_h * grow)
         top_y = base_y - height
-
         if height < 5:
             return
 
-        # Tornado shape - narrow at bottom, wide at top
-        layers = 12
+        # ── STEADY: funnel - narrow at bottom, wide at top ──
+        layers = 8
         for i in range(layers):
             t = i / layers
             layer_y = int(base_y - t * height)
-            # Radius grows with height
-            radius = int(4 + t * 22)
-
-            # Swirl offset
+            radius = int((5 + t * 26) * fs)
             swirl_offset = int(math.sin(phase * 3 + t * 6) * 3)
-            cx = tx + swirl_offset
+            cx_ = tx + swirl_offset
+            alpha_base = int((180 - t * 40) * fade)
 
-            # Draw layer as ellipse (rotating swirl)
-            alpha_base = int(180 - t * 40)
-
-            # Outer swirl
-            for a_off in range(3):
-                angle = phase * 4 + t * 8 + a_off * math.pi * 2 / 3
-                wx = cx + int(math.cos(angle) * radius)
+            for a_off in range(2):
+                angle = phase * 4 + t * 8 + a_off * math.pi
+                wx = cx_ + int(math.cos(angle) * radius)
                 wy = layer_y + int(math.sin(angle) * radius * 0.3)
-                _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_dark"], alpha_base),
+                _NS_kaizen._aacircle(surface, (*p["wind_mid"], alpha_base),
                           (wx, wy), 3)
-                _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_bright"], alpha_base),
-                          (wx, wy), 2)
 
-            # Ellipse ring outline
-            _NS_kaizen._ellipse(surface, (*_NS_kaizen.PALETTE["wind_mid"], alpha_base),
-                     (cx - radius, layer_y - int(radius * 0.3),
+            _NS_kaizen._ellipse(surface, (*p["wind_mid"], alpha_base),
+                     (cx_ - radius, layer_y - int(radius * 0.3),
                       radius * 2, int(radius * 0.6)), 1)
-
-            # Bright inner
-            if i % 2 == 0:
-                _NS_kaizen._ellipse(surface, (*_NS_kaizen.PALETTE["wind_bright"], alpha_base),
-                         (cx - radius + 2, layer_y - int(radius * 0.3) + 1,
+            if i % 3 == 0:
+                _NS_kaizen._ellipse(surface, (*p["wind_bright"], alpha_base),
+                         (cx_ - radius + 2, layer_y - int(radius * 0.3) + 1,
                           radius * 2 - 4, int(radius * 0.6) - 2), 1)
+
+        # lengan spiral 2 lengan menyelubungi funnel
+        for arm in range(2):
+            for j in range(6):
+                a = phase * 2.4 + arm * math.pi + j * .6
+                rr = (10 + j * (26 * fs / 6))
+                al = int(140 * (1 - j / 6) * fade)
+                _NS_kaizen._aacircle(surface, (*p["wind_light"], al),
+                                     (int(tx + math.cos(a) * rr),
+                                      int(base_y - j / 6 * height +
+                                          math.sin(a) * rr * .3)), 2)
 
         # Central vertical core
         core_x = tx + int(math.sin(phase * 2) * 2)
-        _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_white"], 200),
+        _NS_kaizen._aaline(surface, (*p["wind_white"], int(200 * fade)),
                 (core_x, top_y + 5), (core_x, base_y - 5), 2)
-        _NS_kaizen._aaline(surface, (*_NS_kaizen.PALETTE["wind_bright"], 150),
+        _NS_kaizen._aaline(surface, (*p["wind_bright"], int(150 * fade)),
                 (core_x + 1, top_y + 5), (core_x + 1, base_y - 5), 1)
 
-        # Debris/particles swirling
+        # Debris/particles swirling (puing orbit)
         for i in range(8):
-            t = ((phase * 0.3 + i * 0.12) % 1.0)
-            py = int(base_y - t * height)
-            radius = 5 + t * 22
+            t = ((phase * 0.3 + i * 0.15) % 1.0)
+            py_ = int(base_y - t * height)
+            radius = 6 + t * 26 * fs
             angle = phase * 3 + i * math.pi / 4
-            px = tx + int(math.cos(angle) * radius)
-            alpha = int(220 * (1 - t * 0.5))
-            _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_white"], alpha), (px, py), 2)
+            px_ = tx + int(math.cos(angle) * radius)
+            alpha = int(220 * (1 - t * 0.5) * fade)
+            _NS_kaizen._aacircle(surface, (*p["wind_white"], alpha), (px_, py_), 2)
+            if i % 4 == 0:
+                _NS_kaizen._spark_star(surface, px_, py_, 3, p["wind_bright"],
+                                       alpha, 4, rot=phase + i)
 
-        # Top opening flare
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_bright"], 150),
-                  (tx, top_y), 22, 2)
-        _NS_kaizen._aacircle(surface, (*_NS_kaizen.PALETTE["wind_white"], 200),
-                  (tx, top_y), 18, 1)
+        # Top opening flare (vortex crown)
+        _NS_kaizen._aacircle(surface, (*p["wind_bright"], int(150 * fade)),
+                  (tx, top_y), int(26 * fs), 2)
+        _NS_kaizen._aacircle(surface, (*p["wind_white"], int(200 * fade)),
+                  (tx, top_y), int(21 * fs), 1)
+        for i in range(4):
+            a = phase * 1.8 + i * math.pi / 2
+            _NS_kaizen._spark_star(surface,
+                                   tx + math.cos(a) * 22 * fs,
+                                   top_y + math.sin(a) * 8,
+                                   5, p["wind_pale"], int(160 * fade), 4,
+                                   rot=a)
 
-        # Base impact dust
-        _NS_kaizen._ellipse(surface, (*_NS_kaizen.PALETTE["wind_dark"], 180),
-                 (tx - 20, base_y - 4, 40, 10))
-        _NS_kaizen._ellipse(surface, (*_NS_kaizen.PALETTE["wind_mid"], 200),
-                 (tx - 15, base_y - 3, 30, 8))
+        # Base impact dust + rune ring dasar
+        _NS_kaizen._ellipse(surface, (*p["wind_dark"], int(180 * fade)),
+                 (tx - int(24 * fs), base_y - 5, int(48 * fs), 12))
+        _NS_kaizen._ellipse(surface, (*p["wind_mid"], int(200 * fade)),
+                 (tx - int(18 * fs), base_y - 4, int(36 * fs), 9))
+        _NS_kaizen._dashed_ring(surface, tx, base_y - 2, int(30 * fs),
+                                p["wind_bright"], int(130 * fade),
+                                -phase * 2.2, segments=10, thick=2, span=.45,
+                                squash=.35)
+        # denyut pusat dasar
+        _NS_kaizen._aacircle(surface, (*p["wind_pale"], int(150 * fade * pulse)),
+                  (tx, base_y - 3), int((7 + 3 * pulse) * fs))
 
 
     # ===================================================================

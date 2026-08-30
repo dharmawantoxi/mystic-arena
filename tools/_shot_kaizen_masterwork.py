@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Render review sheet untuk contoh upgrade procedural Kaizen."""
+"""Render review sheet untuk contoh upgrade procedural Kaizen (v2 rig).
+
+Diperbarui ke rig masterwork v2 (~1.5x native). Untuk audit terukur +
+sheet lengkap (skill FX per tahap, before/after), jalankan
+``tools/_audit_kaizen_v2.py``.
+"""
 import math
 import os
 import sys
@@ -23,8 +28,12 @@ font_title = pygame.font.Font(None, 46)
 font_label = pygame.font.Font(None, 28)
 font_small = pygame.font.Font(None, 20)
 
-screen.blit(font_title.render("KAIZEN — PROCEDURAL MASTERWORK", True, (166, 218, 255)), (38, 24))
-screen.blit(font_small.render("100% code-drawn • no external hero sprite • idle / walk / attack / ultimate", True, (132, 151, 181)), (40, 72))
+screen.blit(font_title.render("KAIZEN v2 — PIXEL MASTERWORK", True,
+                              (166, 218, 255)), (38, 24))
+screen.blit(font_small.render(
+    "100% code-drawn • no external hero sprite • idle / walk / attack / "
+    "ultimate (audit terukur: tools/_audit_kaizen_v2.py)", True,
+    (132, 151, 181)), (40, 72))
 
 labels = ("IDLE DETAIL", "GROUNDED WALK", "KATANA ATTACK", "TORNADO ULTIMATE")
 for i, label in enumerate(labels):
@@ -34,46 +43,45 @@ for i, label in enumerate(labels):
     pygame.draw.rect(screen, (55, 112, 172), panel, 2, border_radius=12)
     screen.blit(font_label.render(label, True, (218, 236, 255)), (x + 16, 130))
 
-    native = pygame.Surface((240, 260), pygame.SRCALPHA)
-    h = _ProbeEntity("kaizen", 120, 135)
+    native = pygame.Surface((340, 380), pygame.SRCALPHA)
+    h = _ProbeEntity("kaizen", 170, 200)
     h.pulse = 1.25
     h.direction = 1
     h.facing = 1
-    h._portrait_hd = True
     if i == 0:
-        K._draw_swordsman_rim_light(native, 120, 125, h.pulse)
-        K._draw_wind_platform(native, 120, 175, h.pulse, None)
-        K._draw_kaizen_idle(native, h, 120, 135)
+        K._draw_swordsman_rim_light(native, 170, 188, h.pulse)
+        K._draw_wind_platform(native, 170, 258, h.pulse, None)
+        K._draw_kaizen_idle(native, h, 170, 196)
     elif i == 1:
         h.pulse = 2.15
-        K._draw_wind_platform(native, 120, 175, h.pulse, None)
-        K._draw_kaizen_walk(native, h, 120, 135)
+        K._draw_wind_platform(native, 170, 258, h.pulse, None)
+        K._draw_kaizen_walk(native, h, 170, 196)
     elif i == 2:
         h._kz_attack_progress = .52
         h._kz_attack_active = True
         h.range = 40
-        K._draw_wind_platform(native, 120, 175, h.pulse, None)
-        K._draw_kaizen_attack(native, h, 120, 135)
+        K._draw_wind_platform(native, 170, 258, h.pulse, None)
+        K._draw_kaizen_attack(native, h, 170, 196)
     else:
         h.active_skill = "r"
         h.active_skill_timer = 58
-        h.target = SimpleNamespace(x=120, y=135, alive=True)
-        K._draw_wind_platform(native, 120, 175, h.pulse, "r")
-        K._draw_kaizen_idle(native, h, 120, 135)
-        K._draw_tornado(native, h, 120, 135, 58, h.pulse)
+        h.target = SimpleNamespace(x=170, y=200, alive=True)
+        K._draw_wind_platform(native, 170, 258, h.pulse, "r")
+        K._draw_kaizen_idle(native, h, 170, 196)
+        K._draw_tornado(native, h, 170, 196, 58, h.pulse)
 
-    scaled = pygame.transform.scale(native, (240 * 2, 260 * 2))
+    scaled = pygame.transform.scale(native, (340 * 2, 380 * 2))
     # Clip the intentionally oversized render inside each review card.
     old = screen.get_clip()
     screen.set_clip(panel.inflate(-8, -64))
-    screen.blit(scaled, (x + 143 - 240, 162))
+    screen.blit(scaled, (x + 170 - 340, 162))
     screen.set_clip(old)
 
 notes = (
-    "tabi feet • saya • pauldron",
-    "obi • embroidery • grounded",
-    "hamon • slash arc • highlights",
-    "layered procedural wind FX",
+    "katana sori+tsuba • saya • hachimaki",
+    "foot solver • obi • jubah grounded",
+    "hamon • smear sabit • bintang IMPACT",
+    "funnel berlapis • rune ring • puing",
 )
 for j, text in enumerate(notes):
     screen.blit(font_small.render(text, True, (115, 151, 185)),
@@ -88,11 +96,11 @@ print(out)
 SW, SH = 1280, 780
 strip = pygame.Surface((SW, SH))
 strip.fill((5, 9, 18))
-strip.blit(font_title.render("KAIZEN — PROCEDURAL ANIMATION RIG", True,
+strip.blit(font_title.render("KAIZEN v2 — PROCEDURAL ANIMATION RIG", True,
                              (166, 218, 255)), (38, 24))
 strip.blit(font_small.render(
-    "Every frame below is recalculated from joints, phase, cloth and hair physics",
-    True, (132, 151, 181)), (40, 72))
+    "Every frame below is recalculated from joints, phase, cloth and hair "
+    "physics", True, (132, 151, 181)), (40, 72))
 
 rows = (
     ("IDLE / BREATH", 4, "idle"),
@@ -105,11 +113,11 @@ for row, (label, count, action) in enumerate(rows):
     pygame.draw.line(strip, (42, 94, 145), (35, top + 104),
                      (1240, top + 104), 1)
     for i in range(count):
-        native = pygame.Surface((100, 108), pygame.SRCALPHA)
+        native = pygame.Surface((170, 190), pygame.SRCALPHA)
         phase = (i / count) * math.pi * 2
         progress = i / max(1, count - 1)
-        K._draw_kaizen_elite(native, 50, 58, 1, phase, action, progress)
-        frame = pygame.transform.scale(native, (160, 173))
+        K._draw_kaizen_elite(native, 85, 100, 1, phase, action, progress)
+        frame = pygame.transform.scale(native, (160, 179))
         fx = 190 + i * 170
         strip.blit(frame, (fx, top))
         pygame.draw.circle(strip, (95, 175, 235), (fx + 80, top + 188), 3)

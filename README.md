@@ -80,6 +80,33 @@ Contact sheet rig idle/walk/attack:
 Uji regresi: `python tools/test_hero_hd_render.py` dan
 `python tools/test_kaizen_masterwork.py`.
 
+### Upgrade terkini: Kaizen v2 Pixel Masterwork + Skill FX v2.1
+
+Renderer Kaizen ditulis ulang mengikuti standar **Thorne v2 / v2.1**
+(detail lengkap: [docs/KAIZEN_V2_RENDERER.md](docs/KAIZEN_V2_RENDERER.md)).
+Rig native dibesarkan ~1.5x (bbox idle 104x112 -> 158x168) sehingga
+kepadatan detail di layar naik tanpa mengubah ukuran di arena (pipeline
+menormalkan). Disiplin pixel-art: ramp hue-shift 4-5 band, selout,
+siluet bergerigi (`_tuft_points`), specular cluster, dither band,
+key light kiri-atas. Katana kini punya sori/hamon/kissaki/tsuba 4-lobe.
+Animasi: foot solver, inersia rambut-scarf-pita, idle hidup, serangan
+7 keyframe dengan frame IMPACT + smear sabit berlapis.
+
+Skill FX kini **world-space** (kompensasi `1/_render_scale`, cap 2.6)
+sehingga cincin/telegraph tidak menyusut bersama sprite cache: tiap
+skill punya fase TELEGRAPH -> AKTIVASI -> STEADY dengan primitif
+`_spark_star/_chevron/_dashed_ring/_jagged_crack`, rune ring berputar,
+pilar cahaya, dan badan ikut bereaksi (scarf/bilah menyala saat W,
+mata + hachimaki menyala saat R). Ring telegraph E tepat 100 px dunia
+dan R tepat 150 px dunia pada skala apa pun (teraudit 180/180 hit);
+biaya cache-miss rata-rata 2.1-3.2 ms.
+
+Audit terukur + preview:
+`python tools/_audit_kaizen_v2.py` ->
+[docs/kaizen_v2_review.png](docs/kaizen_v2_review.png),
+[docs/kaizen_v2_skills.png](docs/kaizen_v2_skills.png),
+[docs/kaizen_v2_before_after.png](docs/kaizen_v2_before_after.png).
+
 ### Contoh maksimal kedua: Thorne Masterwork
 
 Thorne menerima perlakuan yang sama seperti Kaizen: tubuh lama dibangun
