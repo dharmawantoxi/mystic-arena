@@ -28,7 +28,7 @@ import bosses.level2 as NEW
 
 def old_renderer():
     base = subprocess.run(
-        ["git", "show", "HEAD:bosses/level2.py"],
+        ["git", "show", "main:bosses/level2.py"],
         cwd=ROOT, capture_output=True, text=True, check=True).stdout
     tmp = os.path.join(ROOT, "tools", "_old_level2_anim.py")
     with open(tmp, "w") as fh:

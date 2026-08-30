@@ -13,7 +13,6 @@ Mengunci (semua lewat path shipping bosses.level2.draw_*):
 Jalankan: python3 tools/test_level2_masterwork.py
 """
 import inspect
-import math
 import os
 import re
 import sys

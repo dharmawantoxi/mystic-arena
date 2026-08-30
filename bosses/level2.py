@@ -19,7 +19,6 @@ Entry point publik ada di bagian paling bawah file.
 """
 
 import math
-import random
 import pygame
 
 # Penanda: file ini berisi BANYAK boss (1 true + 3 mini).
@@ -262,11 +261,13 @@ class _NS_razak:
             spr = pygame.Surface((int(size * 2) + 6, height + 4),
                                  pygame.SRCALPHA)
             base = int(size) + 3
+            # Sprite api menunjuk ke ATAS: baris h=0 (terlebar) di dasar
+            # (sprite-y height+1), puncak h=height-1 di atas (sprite-y 2).
             for h in range(height):
                 t = h / max(1, height)
                 w = int(size * (1 - t * 0.7))
                 fx = base + int(math.sin((pb / 4.0) * 3 + t * 4) * 2)
-                fy = h + 2
+                fy = height + 1 - h
                 a = int(ab * (1 - t * 0.4))
                 if t < 0.3:
                     color = NS.PALETTE["fire_darkest"]
@@ -277,12 +278,15 @@ class _NS_razak:
                 else:
                     color = NS.PALETTE["fire_hot"]
                 NS._aacircle(spr, (*color, a), (fx, fy), max(1, w))
+            # Core menyala: original di cy-height//3 & cy-height//4 -> sprite
+            # y = (world_y - blit_y) = (height+1) - height//3 dsb.
             NS._aacircle(spr, (*NS.PALETTE["fire_glow"], ab),
-                         (base, height // 3 + 2), size // 2)
+                         (base, height + 1 - height // 3), size // 2)
             NS._aacircle(spr, (*NS.PALETTE["fire_white"], ab),
-                         (base, height // 4 + 2), max(1, size // 4))
+                         (base, height + 1 - height // 4), max(1, size // 4))
             NS._flame_cache[key] = spr
-        surface.blit(spr, (cx - (spr.get_width() // 2), cy - 2))
+        # base (h=0, sprite-y height+1) dipatok ke cy
+        surface.blit(spr, (cx - (spr.get_width() // 2), cy - (height + 1)))
 
 
     def _draw_ember(surface, cx, cy, size=2, alpha=255):
@@ -563,7 +567,7 @@ class _NS_razak:
             _NS_razak._draw_firestorm(surface, boss, x, y, skill_timer, pulse)
 
 
-    def _draw_shockwave(surface, x, y, age, total, c1, c2, lift_scale=1.0):
+    def _draw_shockwave(surface, x, y, age, total, c1, c2):
         """Gelombang kejut aktivasi skill - 12 frame pertama, membesar &
         memudar. Ring radial target-anchored di tanah (y = titik tanah)."""
         t = age / float(total)
