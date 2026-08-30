@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render review sheets for the Zephyr procedural masterwork."""
+"""Render review sheets for the Zephyr procedural masterwork v2."""
 import math
 import os
 import sys
@@ -24,7 +24,7 @@ font_title = pygame.font.Font(None, 46)
 font_label = pygame.font.Font(None, 28)
 font_small = pygame.font.Font(None, 20)
 
-screen.blit(font_title.render("ZEPHYR — PROCEDURAL MASTERWORK", True,
+screen.blit(font_title.render("ZEPHYR — PROCEDURAL MASTERWORK v2", True,
                               (255, 137, 207)), (38, 24))
 screen.blit(font_small.render(
     "100% code-drawn • thorn crown / moth wings / living staff / Bedlam", True,
