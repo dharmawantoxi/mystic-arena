@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render review sheet untuk contoh upgrade procedural Thorne."""
+"""Render review sheet untuk contoh upgrade procedural Thorne (rig v2)."""
 import math
 import os
 import sys
@@ -23,7 +23,7 @@ font_title = pygame.font.Font(None, 46)
 font_label = pygame.font.Font(None, 28)
 font_small = pygame.font.Font(None, 20)
 
-screen.blit(font_title.render("THORNE — PROCEDURAL MASTERWORK", True, (255, 205, 120)), (38, 24))
+screen.blit(font_title.render("THORNE — PROCEDURAL MASTERWORK v2", True, (255, 205, 120)), (38, 24))
 screen.blit(font_small.render("100% code-drawn • no external hero sprite • idle / walk / attack / ultimate", True, (181, 161, 132)), (40, 72))
 
 labels = ("IDLE DETAIL", "GROUNDED WALK", "CLUB SMASH", "WARPATH ULTIMATE")
@@ -34,46 +34,46 @@ for i, label in enumerate(labels):
     pygame.draw.rect(screen, (172, 122, 55), panel, 2, border_radius=12)
     screen.blit(font_label.render(label, True, (255, 236, 218)), (x + 16, 130))
 
-    native = pygame.Surface((240, 260), pygame.SRCALPHA)
-    h = _ProbeEntity("thorne", 120, 135)
+    native = pygame.Surface((320, 340), pygame.SRCALPHA)
+    h = _ProbeEntity("thorne", 160, 180)
     h.pulse = 1.25
     h.direction = 1
     h.facing = 1
     h._portrait_hd = True
     if i == 0:
-        T._draw_dust_aura(native, 120, 125, h.pulse)
-        T._draw_ground_platform(native, 120, 175, h.pulse, None)
-        T._draw_thorne_idle(native, h, 120, 135)
+        T._draw_dust_aura(native, 160, 180, h.pulse)
+        T._draw_ground_platform(native, 160, 240, h.pulse, None)
+        T._draw_thorne_idle(native, h, 160, 180)
     elif i == 1:
         h.pulse = 2.15
-        T._draw_ground_platform(native, 120, 175, h.pulse, None)
-        T._draw_thorne_walk(native, h, 120, 135)
+        T._draw_ground_platform(native, 160, 240, h.pulse, None)
+        T._draw_thorne_walk(native, h, 160, 180)
     elif i == 2:
         h._th_attack_progress = .52
         h._th_attack_active = True
-        T._draw_ground_platform(native, 120, 175, h.pulse, None)
-        T._draw_thorne_attack(native, h, 120, 135)
+        T._draw_ground_platform(native, 160, 240, h.pulse, None)
+        T._draw_thorne_attack(native, h, 160, 180)
     else:
         h.active_skill = "r"
         h.active_skill_timer = 58
-        h.target = SimpleNamespace(x=120, y=135, alive=True)
-        T._draw_rage_aura(native, 120, 125, h.pulse)
-        T._draw_ground_platform(native, 120, 175, h.pulse, "r")
-        T._draw_thorne_idle(native, h, 120, 135)
-        T._draw_warpath_effect(native, h, 120, 135, 58, h.pulse)
+        h.target = SimpleNamespace(x=160, y=180, alive=True)
+        T._draw_rage_aura(native, 160, 180, h.pulse)
+        T._draw_ground_platform(native, 160, 240, h.pulse, "r")
+        T._draw_thorne_idle(native, h, 160, 180)
+        T._draw_warpath_effect(native, h, 160, 180, 58, h.pulse)
 
-    scaled = pygame.transform.scale(native, (240 * 2, 260 * 2))
-    # Clip the intentionally oversized render inside each review card.
+    # 1.55x preview, anchor kartu di tengah
+    scaled = pygame.transform.scale(native, (320 * 2, 340 * 2))
     old = screen.get_clip()
     screen.set_clip(panel.inflate(-8, -64))
-    screen.blit(scaled, (x + 143 - 240, 162))
+    screen.blit(scaled, (x + 143 - 320, 176))
     screen.set_clip(old)
 
 notes = (
     "tusks • quill mane • pauldron",
-    "claws • belt • grounded stance",
-    "flanged mace • impact sparks",
-    "rage cracks • ember ring",
+    "claws • foot solver • belt",
+    "flanged mace • impact star",
+    "rage crest • ember ring",
 )
 for j, text in enumerate(notes):
     screen.blit(font_small.render(text, True, (185, 151, 115)),
@@ -91,7 +91,7 @@ strip.fill((5, 9, 18))
 strip.blit(font_title.render("THORNE — PROCEDURAL ANIMATION RIG", True,
                              (255, 205, 120)), (38, 24))
 strip.blit(font_small.render(
-    "Every frame below is recalculated from joints, phase, quill flare and foot contact",
+    "Every frame below is recalculated from joints, phase, quill lag and foot contact",
     True, (181, 161, 132)), (40, 72))
 
 rows = (
@@ -105,11 +105,11 @@ for row, (label, count, action) in enumerate(rows):
     pygame.draw.line(strip, (145, 94, 42), (35, top + 104),
                      (1240, top + 104), 1)
     for i in range(count):
-        native = pygame.Surface((100, 108), pygame.SRCALPHA)
+        native = pygame.Surface((200, 220), pygame.SRCALPHA)
         phase = (i / count) * math.pi * 2
         progress = i / max(1, count - 1)
-        T._draw_thorne_elite(native, 50, 60, 1, phase, action, progress)
-        frame = pygame.transform.scale(native, (160, 173))
+        T._draw_thorne_elite(native, 100, 122, 1, phase, action, progress)
+        frame = pygame.transform.scale(native, (160, 176))
         fx = 190 + i * 170
         strip.blit(frame, (fx, top))
         pygame.draw.circle(strip, (235, 175, 95), (fx + 80, top + 188), 3)

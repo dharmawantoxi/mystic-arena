@@ -38,14 +38,14 @@ def _label(surface, text, x, y, size=20, color=(235, 235, 235)):
     return surf.get_size()
 
 
-def render_frame(action, phase, progress=0.0, facing=1, size=120):
+def render_frame(action, phase, progress=0.0, facing=1, size=220):
     s = pygame.Surface((size, size), pygame.SRCALPHA)
-    th._draw_thorne_elite(s, size // 2, size // 2, facing, phase, action,
+    th._draw_thorne_elite(s, size // 2, size // 2 + 26, facing, phase, action,
                           progress, True, False)
     return s
 
 
-def render_cycle(action, n_frames, size=120, progress=0.0):
+def render_cycle(action, n_frames, size=220, progress=0.0):
     frames = []
     params = []
     for i in range(n_frames):
