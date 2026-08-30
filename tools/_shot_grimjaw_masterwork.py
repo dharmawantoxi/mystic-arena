@@ -46,31 +46,31 @@ for i, label in enumerate(labels):
     screen.blit(font_label.render(label, True, (255, 236, 218)),
                 (x + 16, 130))
 
-    native = pygame.Surface((240, 260), pygame.SRCALPHA)
-    h = _ProbeEntity("grimjaw", 120, 135)
+    native = pygame.Surface((240, 290), pygame.SRCALPHA)
+    h = _ProbeEntity("grimjaw", 120, 152)
     h.pulse = 1.25
     h.direction = 1
     h.facing = 1
     if i == 0:
-        G._draw_fire_platform(native, 120, 178, h.pulse, None)
-        G._draw_grimjaw_elite(native, 120, 132, 1, h.pulse, "idle",
+        G._draw_fire_platform(native, 120, 216, h.pulse, None)
+        G._draw_grimjaw_elite(native, 120, 150, 1, h.pulse, "idle",
                               0.0, 0.0, detail=True)
     elif i == 1:
         h.pulse = 2.15
-        G._draw_grimjaw_walk(native, h, 120, 135)
+        G._draw_grimjaw_walk(native, h, 120, 152)
     elif i == 2:
         h._gj_attack_progress = .55
-        G._draw_grimjaw_attack(native, h, 120, 135)
+        G._draw_grimjaw_attack(native, h, 120, 152)
     else:
-        G._draw_fire_platform(native, 120, 178, h.pulse, "q")
-        G._draw_grimjaw_body(native, 120, 133, 1, h.pulse, "spin",
+        G._draw_fire_platform(native, 120, 216, h.pulse, "q")
+        G._draw_grimjaw_body(native, 120, 151, 1, h.pulse, "spin",
                              spin_phase=2.0)
-        G._draw_blade_fury_rings(native, 120, 155, h.pulse)
+        G._draw_blade_fury_rings(native, 120, 173, h.pulse)
 
-    scaled = pygame.transform.scale(native, (240 * 2, 260 * 2))
+    scaled = pygame.transform.scale(native, (240 * 2, 290 * 2))
     old = screen.get_clip()
     screen.set_clip(panel.inflate(-8, -64))
-    screen.blit(scaled, (x + 143 - 240, 162))
+    screen.blit(scaled, (x + 143 - 240, 150))
     screen.set_clip(old)
 
 notes = (
@@ -89,7 +89,7 @@ print(out)
 
 # Contact sheet: setiap frame dihitung ulang dari sendi/phase, bukan
 # sticker yang digeser.
-SW, SH = 1280, 800
+SW, SH = 1280, 880
 strip = pygame.Surface((SW, SH))
 strip.fill((5, 9, 18))
 strip.blit(font_title.render("GRIMJAW — PROCEDURAL ANIMATION RIG", True,
@@ -104,27 +104,27 @@ rows = (
     ("ATTACK / SWING", 6, "attack"),
 )
 for row, (label, count, action) in enumerate(rows):
-    top = 112 + row * 222
+    top = 112 + row * 250
     strip.blit(font_label.render(label, True, (255, 199, 130)),
-               (36, top + 70))
-    pygame.draw.line(strip, (145, 94, 42), (35, top + 104),
-                     (1240, top + 104), 1)
+               (36, top + 78))
+    pygame.draw.line(strip, (145, 94, 42), (35, top + 112),
+                     (1240, top + 112), 1)
     for i in range(count):
-        native = pygame.Surface((120, 130), pygame.SRCALPHA)
+        native = pygame.Surface((130, 170), pygame.SRCALPHA)
         phase = (i / count) * math.pi * 2
         progress = i / max(1, count - 1)
-        G._draw_grimjaw_elite(native, 60, 70, 1, phase, action, progress)
-        frame = pygame.transform.scale(native, (156, 169))
-        fx = 190 + i * 170
+        G._draw_grimjaw_elite(native, 65, 112, 1, phase, action, progress)
+        frame = pygame.transform.scale(native, (148, 193))
+        fx = 190 + i * 160
         strip.blit(frame, (fx, top))
-        pygame.draw.circle(strip, (235, 175, 95), (fx + 78, top + 192), 3)
+        pygame.draw.circle(strip, (235, 175, 95), (fx + 74, top + 205), 3)
 
 strip_out = os.path.join(ROOT, "docs", "grimjaw_animation_strip.png")
 pygame.image.save(strip, strip_out)
 print(strip_out)
 
 # Portrait LOD Hero Shop: pass detail=True (jahitan, engraving, serat mane).
-PW, PH = 640, 720
+PW, PH = 640, 790
 card = pygame.Surface((PW, PH))
 card.fill((5, 9, 18))
 card.blit(font_label.render("GRIMJAW — HERO SHOP PORTRAIT LOD", True,
@@ -133,13 +133,13 @@ panel = pygame.Rect(24, 60, PW - 48, PH - 90)
 pygame.draw.rect(card, (32, 22, 10), panel, border_radius=12)
 pygame.draw.rect(card, (172, 122, 55), panel, 2, border_radius=12)
 
-native = pygame.Surface((200, 220), pygame.SRCALPHA)
-G._draw_grimjaw_elite(native, 100, 118, 1, 1.25, "idle", 0.0, 0.0,
+native = pygame.Surface((200, 250), pygame.SRCALPHA)
+G._draw_grimjaw_elite(native, 100, 132, 1, 1.25, "idle", 0.0, 0.0,
                       detail=True)
-scaled = pygame.transform.scale(native, (200 * 3, 220 * 3))
+scaled = pygame.transform.scale(native, (200 * 2, 250 * 2))
 old = card.get_clip()
 card.set_clip(panel.inflate(-8, -8))
-card.blit(scaled, (PW // 2 - 300, 40))
+card.blit(scaled, (PW // 2 - 200, 62))
 card.set_clip(old)
 card.blit(font_small.render(
     "detail pass: mane fibres • mask cracks • sash stitching • embers",
