@@ -117,6 +117,12 @@ _EXTRA = {
         '_spawn_arcane_orb', '_spawn_astral_orb', '_staff_butt_local',
         '_staff_grip_local', '_staff_orb_position', '_target_position',
         '_update_attack_anim', 'draw_boss', 'draw_vex',
+        # Vex v2.1 skill FX helpers (public alias compatibility)
+        'RIG_SCALE', 'SKILL_VISUAL_DURATION', '_STATIC_SURFACES', '_static',
+        '_mix', '_hash01', '_fx_scale', '_ring_r', '_spark_star', '_chevron',
+        '_dashed_ring', '_jagged_crack', '_tuft_points', '_draw_arc_pair',
+        '_draw_arcane_orb_telegraph', '_draw_staff_smear',
+        '_draw_staff_impact_flash', '_skill_progress',
         'math', 'pygame',
     ],
     'zephyr': [

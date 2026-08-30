@@ -62,6 +62,10 @@ def test_masterwork_is_procedural():
     assert callable(G._draw_grimjaw_masterwork_details)
     assert callable(G._blade_angle)
     assert callable(G._blade_tip_local)
+    # V2.1 shared FX vocabulary stays available for renderer audits.
+    for helper in ("_fx_scale", "_spark_star", "_chevron", "_dashed_ring",
+                   "_jagged_crack", "_tuft_points"):
+        assert callable(getattr(G, helper)), helper
     # Body-part lama sudah benar-benar diganti satu rig.
     for old in ("_draw_torso", "_draw_pauldrons", "_draw_head_mask",
                 "_draw_hair_back", "_draw_hair_front", "_draw_sword_arm",

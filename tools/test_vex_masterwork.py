@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Regresi visual untuk Vex Procedural Masterwork.
 
-Memastikan upgrade tidak kembali menjadi kumpulan body-part statis: rig
-bone 2D berlapis, void-crown spiky, staff orb pose-driven, portrait LOD,
-dan pose (idle/walk/attack) semuanya dirender dari kode tanpa PNG /
-sprite sheet / image.load.
+Memastikan upgrade v2.1 tidak kembali menjadi kumpulan body-part statis:
+rig bone 2D berlapis ~1.5x, void-crown spiky, staff orb pose-driven,
+portrait LOD, skill FX world-space (kompensasi _render_scale), body glow
+saat skill aktif, dan pose (idle/walk/attack) semuanya dirender dari kode
+tanpa PNG / sprite sheet / image.load.
 
 Jalankan:  python3 tools/test_vex_masterwork.py
 """
@@ -57,6 +58,16 @@ def test_masterwork_is_procedural():
     assert callable(V._draw_vex_masterwork_details)
     assert callable(V._orb_tip_local)
     assert callable(V._staff_orb_position)
+    assert callable(V._fx_scale)
+    assert callable(V._ring_r)
+    assert callable(V._spark_star)
+    assert callable(V._chevron)
+    assert callable(V._dashed_ring)
+    assert callable(V._jagged_crack)
+    assert callable(V._tuft_points)
+    assert callable(V._draw_arcane_orb_telegraph)
+    assert callable(V._draw_staff_smear)
+    assert V.RIG_SCALE >= 1.45
     # Body-part lama sudah benar-benar diganti satu rig.
     for old in ("_draw_cloak", "_draw_lower_robe", "_draw_torso",
                 "_draw_idle_arms", "_draw_attack_arms", "_draw_arm_segment",
@@ -80,7 +91,7 @@ def test_material_details_and_pose():
     assert V.PALETTE["crown_tip"] in palette     # bright crown tips
 
     rect = idle.get_bounding_rect(min_alpha=8)
-    assert rect.height >= 110 and rect.width >= 80
+    assert rect.height >= 150 and rect.width >= 95, (rect.width, rect.height)
     assert pygame.image.tobytes(idle, "RGBA") != \
         pygame.image.tobytes(attack, "RGBA")
 
@@ -139,7 +150,7 @@ def test_skill_visuals_render_with_masterwork():
     """Q/W/E/R tetap muncul setelah body rewrite dan tetap cache-safe."""
     from heroes import render_hero, clear_hero_sprite_cache
     clear_hero_sprite_cache()
-    for skill, timer in (("q", 120), ("w", 90), ("e", 90), ("r", 120)):
+    for skill, timer in (("q", 35), ("w", 70), ("e", 45), ("r", 60)):
         hero = _ProbeEntity("vex", 150, 150)
         hero.pulse = 1.4
         hero.direction = hero.facing = 1
@@ -148,10 +159,54 @@ def test_skill_visuals_render_with_masterwork():
         hero.timer = 0
         hero.target = _ProbeEntity("dummy", 260, 152)
         hero.target.alive = True
-        surface = pygame.Surface((360, 300), pygame.SRCALPHA)
+        surface = pygame.Surface((420, 360), pygame.SRCALPHA)
         render_hero("vex", surface, hero, 150, 150)
         rect = surface.get_bounding_rect(min_alpha=5)
-        assert rect.width > 35 and rect.height > 35, skill
+        assert rect.width > 45 and rect.height > 45, skill
+
+
+def test_skill_fx_are_world_space():
+    """Sanity's Eclipse ring = 60 world-px after _render_scale compensation."""
+    import math as _m
+
+    def render(fs):
+        surf = pygame.Surface((760, 760), pygame.SRCALPHA)
+        h = _ProbeEntity("vex", 380, 420)
+        h.pulse = 1.3
+        h.direction = h.facing = 1
+        h.active_skill = "w"
+        h.active_skill_timer = 50
+        h.target = _ProbeEntity("dummy", 520, 420)
+        h.target.alive = True
+        h._render_scale = fs
+        V.draw_vex(surf, h, 380, 420)
+        return surf
+
+    def hits_at_radius(surf, r_px):
+        hits = 0
+        cx, cy = 380, 420
+        for a in range(0, 360, 2):
+            x = int(cx + _m.cos(_m.radians(a)) * r_px)
+            y = int(cy + _m.sin(_m.radians(a)) * r_px)
+            if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
+                    and surf.get_at((x, y)).a > 40:
+                hits += 1
+        return hits
+
+    for fs in (1.0, 0.50):
+        s = render(fs)
+        r_px = int(60 / fs)
+        n = hits_at_radius(s, r_px)
+        assert n > 90, f"W ring tidak world-space pada fs={fs}: {n}/180"
+
+
+def test_skill_state_changes_body():
+    normal = pygame.Surface((280, 300), pygame.SRCALPHA)
+    charged = pygame.Surface((280, 300), pygame.SRCALPHA)
+    V._draw_vex_elite(normal, 140, 155, 1, 1.0, "idle", 0.0, False, None)
+    V._draw_vex_elite(charged, 140, 155, 1, 1.0, "idle", 0.0, False, "r")
+    assert pygame.image.tobytes(normal, "RGBA") != \
+        pygame.image.tobytes(charged, "RGBA")
 
 
 def test_silhouette_outline_exists():
@@ -174,6 +229,9 @@ if __name__ == "__main__":
     test_portrait_lod_is_distinct()
     test_rig_has_real_animation_frames()
     test_skill_visuals_render_with_masterwork()
+    test_skill_fx_are_world_space()
+    test_skill_state_changes_body()
     test_silhouette_outline_exists()
-    print("OK - Vex masterwork: rig, staff pose, portrait LOD, "
-          "Q/W/E/R, outline, dan 12 frame animasi tervalidasi")
+    print("OK - Vex masterwork v2.1: rig 1.5x, staff pose, portrait LOD, "
+          "Q/W/E/R world-space, body-reactive glow, outline, "
+          "dan 12 frame animasi tervalidasi")
