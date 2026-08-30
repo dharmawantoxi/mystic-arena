@@ -1197,8 +1197,14 @@ class _NS_grimjaw:
         for ex in (-5, 5):
             x, y = pt(ex, -30)
             # Angular socket: a slanted diamond, wider toward the temple.
-            poly(p["dark_eye"], [(ex - f * 2, y - 2), (ex + f * 3, y - 3),
-                 (ex + f * 2, y + 2), (ex - f * 3, y + 3)])
+            # BUGFIX: `poly()` applies `pt()` to every coord it receives, so
+            # we must pass LOCAL offsets (centered on the eye at local -30),
+            # NOT the already-transformed absolute `y` above. Passing the
+            # absolute y re-transformed it and dropped the sockets ~200 px
+            # below the mask, which both hid Grimjaw's eyes and inflated his
+            # sprite bbox (hero rendered ~2x taller than every other hero).
+            poly(p["dark_eye"], [(ex - f * 2, -32), (ex + f * 3, -33),
+                 (ex + f * 2, -28), (ex - f * 3, -27)])
             if eyes_glow:
                 _NS_grimjaw._aacircle(surface, p["eye_glow"], (x, y), 2)
                 _NS_grimjaw._aacircle(surface, p["white"], (x - f, y - 1), 1)
