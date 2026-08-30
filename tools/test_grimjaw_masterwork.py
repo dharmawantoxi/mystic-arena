@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Regresi visual untuk Grimjaw Procedural Masterwork.
+"""Regresi visual untuk Grimjaw Procedural Masterwork v2.
 
-Memastikan upgrade tidak kembali menjadi kumpulan body-part statis: rig
-bone 2D berlapis, flame blade pose-driven, mask putih ber-strip darah,
-portrait LOD, dan pose (idle/walk/attack/spin/omnislash) semuanya
-dirender dari kode tanpa PNG / sprite sheet / image.load.
+Memastikan upgrade tidak kembali menjadi kumpulan body-part statis:
+rig tunggal ~1.5x (telapak y=+70, mane api y=-106), flame blade
+pose-driven (wind-up -> smear -> pendaratan), mask putih 5-band
+ber-strip darah, portrait LOD, ambient FX ter-cache, skill Q/W/E/R
+world-space, dan pose (idle/walk/attack/spin) semuanya dirender dari
+kode tanpa PNG / sprite sheet / image.load.
 
 Jalankan:  python3 tools/test_grimjaw_masterwork.py
 """
@@ -83,8 +85,18 @@ def test_material_details_and_pose():
     assert G.PALETTE["metal_light"] in palette      # boot / pauldron steel
     assert G.PALETTE["hair_mid"] in palette         # fire mane
 
+    # Rig v2 ~1.5x: telapak +70, mane api ke -106 -> bbox jauh lebih tinggi.
     rect = idle.get_bounding_rect(min_alpha=8)
     assert rect.height >= 110 and rect.width >= 70
+    # Rig besar v2 (1.5x) harus terlihat lebih tinggi dari rig lama (100px).
+    assert rect.height >= 140, f"rig v2 harus tinggi (1.5x), dapat {rect.height}"
+    # Telapak depan menapak di y=+68 (sol boot di +66..+69, anchor 135).
+    foot = idle.get_at((130 + 14, 135 + 68))
+    assert foot.a > 150, f"telapak harus menapak di +68, alpha={foot.a}"
+    # Mata / mask ada di zona kepala (y sekitar -52..-40).
+    eye = any(idle.get_at((130 + dx, 135 + dy)).a > 150
+              for dx in range(0, 14) for dy in range(-52, -40))
+    assert eye, "mata/mask tidak ada di posisi kepala"
     assert pygame.image.tobytes(idle, "RGBA") != \
         pygame.image.tobytes(attack, "RGBA")
 
@@ -147,10 +159,14 @@ def test_rig_has_real_animation_frames():
 
 
 def test_skill_visuals_render_with_masterwork():
-    """Q/W/E/R tetap muncul setelah body rewrite dan tetap cache-safe."""
+    """Q/W/E/R tetap muncul setelah body rewrite dan tetap cache-safe.
+
+    Timer memakai SKILL_VISUAL_DURATION (q=180, w=90, e=60, r=90), BUKAN
+    timer gameplay - FX phase membaca active_skill_timer di rentang visual.
+    """
     from heroes import render_hero, clear_hero_sprite_cache
     clear_hero_sprite_cache()
-    for skill, timer in (("q", 120), ("w", 90), ("e", 90), ("r", 120)):
+    for skill, timer in (("q", 100), ("w", 50), ("e", 35), ("r", 50)):
         hero = _ProbeEntity("grimjaw", 150, 150)
         hero.pulse = 1.4
         hero.direction = hero.facing = 1
@@ -163,6 +179,50 @@ def test_skill_visuals_render_with_masterwork():
         render_hero("grimjaw", surface, hero, 150, 150)
         rect = surface.get_bounding_rect(min_alpha=5)
         assert rect.width > 35 and rect.height > 35, skill
+
+
+def test_skill_fx_are_world_space():
+    """Efek skill TIDAK menyusut bersama sprite: kompensasi 1/_render_scale.
+
+    Ring AOE Q (Blade Fury) harus berada di radius DUNIA skill_range=70
+    dari hero, yaitu 70/_render_scale px di canvas. Di-render pada dua
+    _render_scale (1.0 dan 0.45): sampling lingkaran di radius tersebut
+    harus menemukan ring di keduanya. Tanpa kompensasi, pada fs=0.45
+    ring akan menggambar di radius 70 px canvas (bukan 155) -> 0 hit.
+    """
+    import math as _m
+    from heroes._bundle import _NS_grimjaw as G
+
+    def render(fs):
+        surf = pygame.Surface((760, 760), pygame.SRCALPHA)
+        h = _ProbeEntity("grimjaw", 380, 420)
+        h.pulse = 1.3
+        h.active_skill = "q"          # Blade Fury, steady -> ring penuh
+        h.active_skill_timer = 100    # progress 0.44 (fasa steady)
+        h.skill_range = 70
+        h.target = _ProbeEntity("dummy", 520, 405)
+        h.target.alive = True
+        h._render_scale = fs
+        G.draw_grimjaw(surf, h, 380, 420)
+        return surf
+
+    def hits_at_radius(surf, r_px):
+        cx, cy = 380, 420
+        hits = 0
+        for a in range(0, 360, 2):
+            x = int(cx + _m.cos(_m.radians(a)) * r_px)
+            y = int(cy + _m.sin(_m.radians(a)) * r_px)
+            if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
+                    and surf.get_at((x, y)).a > 40:
+                hits += 1
+        return hits
+
+    for fs in (1.0, 0.45):
+        s = render(fs)
+        r_px = int(70 / fs)           # 70 dunia -> px canvas
+        n = hits_at_radius(s, r_px)
+        assert n > 90, (f"ring AOE Q tidak di radius dunia 70 saat "
+                        f"fs={fs} (dapat {n}/180 hit) -> bukan world-space")
 
 
 def test_silhouette_outline_exists():
@@ -185,6 +245,7 @@ if __name__ == "__main__":
     test_portrait_lod_is_distinct()
     test_rig_has_real_animation_frames()
     test_skill_visuals_render_with_masterwork()
+    test_skill_fx_are_world_space()
     test_silhouette_outline_exists()
-    print("OK - Grimjaw masterwork: rig, blade pose, portrait LOD, "
-          "Q/W/E/R, outline, dan 12 frame animasi tervalidasi")
+    print("OK - Grimjaw masterwork v2: rig 1.5x, blade pose, portrait LOD, "
+          "Q/W/E/R world-space, outline, dan 12 frame animasi tervalidasi")
