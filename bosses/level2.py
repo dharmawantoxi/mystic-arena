@@ -38,6 +38,18 @@ class _NS_razak:
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
 
+    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    # Lapisan mahal yang hasilnya identik antar-frame di-cache supaya
+    # render penuh tetap murah. Aura/denyut via set_alpha (blit NORMAL
+    # menghormati alpha; blit ADD tidak), shadow cache + reaktif, flame
+    # dikunci per (size, phase-bucket). Daftar rect shadow direkam saat
+    # hurt-flash supaya flash badan tidak ikut menyalakan bayangan tanah.
+    _shadow_cache = None
+    _aura_cache = None
+    _flame_cache = {}
+    _flash_buf = None
+    _record_shadow = None
+
     # ---------------------------------------------------------------------------
     # HD Palette - Fire orange / green goblin / red bat mount
     # ---------------------------------------------------------------------------
@@ -233,26 +245,44 @@ class _NS_razak:
     # FIRE PARTICLE / FLAME DRAWING
     # ---------------------------------------------------------------------------
     def _draw_flame(surface, cx, cy, size, phase, alpha=255):
-        """Draw a single flame with layered fire colors."""
-        height = int(size * 2)
-        for h in range(height):
-            t = h / max(1, height)
-            w = int(size * (1 - t * 0.7))
-            fx = cx + int(math.sin(phase * 3 + t * 4) * 2)
-            fy = cy - h
-            a = int(alpha * (1 - t * 0.4))
-            if t < 0.3:
-                color = _NS_razak.PALETTE["fire_darkest"]
-            elif t < 0.55:
-                color = _NS_razak.PALETTE["fire_mid"]
-            elif t < 0.8:
-                color = _NS_razak.PALETTE["fire_bright"]
-            else:
-                color = _NS_razak.PALETTE["fire_hot"]
-            _NS_razak._aacircle(surface, (*color, a), (fx, fy), max(1, w))
-        # Bright core near base
-        _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], alpha), (cx, cy - height // 3), size // 2)
-        _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], alpha), (cx, cy - height // 4), max(1, size // 4))
+        """Draw a single flame with layered fire colors.
+
+        ORIGINAL-MAX: flame per (size, phase-bucket, alpha-bucket) di-cache
+        ke sprite piksel-identik; gerak api yang besar (amplitudo) tetap
+        kontinu, hanya wobble kecil sub-piksel yang di-kuantisasi ke bucket
+        - bukan cache bucket untuk gerak besar seperti helix dulu.
+        """
+        NS = _NS_razak
+        pb = int(phase * 4) % 8
+        ab = int(alpha / 32) * 32
+        key = (int(size), pb, ab)
+        spr = NS._flame_cache.get(key)
+        if spr is None:
+            height = int(size * 2)
+            spr = pygame.Surface((int(size * 2) + 6, height + 4),
+                                 pygame.SRCALPHA)
+            base = int(size) + 3
+            for h in range(height):
+                t = h / max(1, height)
+                w = int(size * (1 - t * 0.7))
+                fx = base + int(math.sin((pb / 4.0) * 3 + t * 4) * 2)
+                fy = h + 2
+                a = int(ab * (1 - t * 0.4))
+                if t < 0.3:
+                    color = NS.PALETTE["fire_darkest"]
+                elif t < 0.55:
+                    color = NS.PALETTE["fire_mid"]
+                elif t < 0.8:
+                    color = NS.PALETTE["fire_bright"]
+                else:
+                    color = NS.PALETTE["fire_hot"]
+                NS._aacircle(spr, (*color, a), (fx, fy), max(1, w))
+            NS._aacircle(spr, (*NS.PALETTE["fire_glow"], ab),
+                         (base, height // 3 + 2), size // 2)
+            NS._aacircle(spr, (*NS.PALETTE["fire_white"], ab),
+                         (base, height // 4 + 2), max(1, size // 4))
+            NS._flame_cache[key] = spr
+        surface.blit(spr, (cx - (spr.get_width() // 2), cy - 2))
 
 
     def _draw_ember(surface, cx, cy, size=2, alpha=255):
@@ -476,15 +506,50 @@ class _NS_razak:
         if active_skill == "r":
             _NS_razak._draw_firestorm_ground(surface, boss, x, y, skill_timer, pulse)
 
+        # PERTAGAS: gelombang kejut aktivasi skill (12 frame pertama)
+        if active_skill in ("q", "w", "r"):
+            dur = {"q": 40, "w": 50, "r": 90}[active_skill]
+            age = dur - skill_timer
+            if 0 <= age < 12:
+                _NS_razak._draw_shockwave(surface, x, y + 52, age, 12,
+                                          _NS_razak.PALETTE["fire_hot"],
+                                          _NS_razak.PALETTE["fire_glow"])
+
+        # ORIGINAL-MAX hurt flash: saat kena hit, pose dirender ke buffer,
+        # lalu siluet badannya dibanjiri putih-hangat. Bayangan tanah TIDAK
+        # ikut menyala (rect shadow direkam dan dikeluarkan dari flash).
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0:
+            B = _NS_razak
+            if B._flash_buf is None:
+                B._flash_buf = pygame.Surface((240, 260), pygame.SRCALPHA)
+            B._flash_buf.fill((0, 0, 0, 0))
+            B._record_shadow = []
+            _tgt, _tx, _ty = B._flash_buf, 120, 135
+
         # Character
         if active_skill == "e":
-            _NS_razak._draw_razak_dashing(surface, boss, x, y, skill_timer, pulse)
+            _NS_razak._draw_razak_dashing(_tgt, boss, _tx, _ty, skill_timer, pulse)
         elif attacking:
-            _NS_razak._draw_razak_attack(surface, boss, x, y)
+            _NS_razak._draw_razak_attack(_tgt, boss, _tx, _ty)
         elif moving:
-            _NS_razak._draw_razak_walk(surface, boss, x, y)
+            _NS_razak._draw_razak_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_razak._draw_razak_idle(surface, boss, x, y)
+            _NS_razak._draw_razak_idle(_tgt, boss, _tx, _ty)
+
+        if flash > 0:
+            B = _NS_razak
+            surface.blit(B._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(B._flash_buf, 50)
+            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                               unsetcolor=(0, 0, 0, 0))
+            for rect in (B._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            B._record_shadow = None
 
         # Update / draw projectiles
         _NS_razak._manage_projectiles_no_patches(boss, surface, pulse)
@@ -496,6 +561,23 @@ class _NS_razak:
             _NS_razak._draw_flamebreak(surface, boss, x, y, skill_timer, pulse)
         elif active_skill == "r":
             _NS_razak._draw_firestorm(surface, boss, x, y, skill_timer, pulse)
+
+
+    def _draw_shockwave(surface, x, y, age, total, c1, c2, lift_scale=1.0):
+        """Gelombang kejut aktivasi skill - 12 frame pertama, membesar &
+        memudar. Ring radial target-anchored di tanah (y = titik tanah)."""
+        t = age / float(total)
+        ease = 1 - (1 - t) ** 2
+        r = int(14 + ease * 60)
+        a = max(0, min(255, int(235 * (1 - t))))
+        pygame.draw.ellipse(surface, (*c1, a),
+                            (x - r, y - r // 3, r * 2, r * 2 // 3), 2)
+        pygame.draw.ellipse(surface, (*c2, a),
+                            (x - r // 2, y - r // 6, r, r // 3), 1)
+        # lingkaran dalam yang menyala
+        ri = max(3, r // 2)
+        _NS_razak._aacircle(surface, (*c1, int(a * 0.8)),
+                            (x, y - (r // 6)), ri)
 
 
     def _manage_projectiles_no_patches(boss, surface, phase):
@@ -1284,28 +1366,58 @@ class _NS_razak:
                           (sx, sy), max(1, 2 - i))
 
 
-    def _draw_shadow(surface, x, y):
-        shadow = pygame.Surface((110, 22), pygame.SRCALPHA)
-        for radius in range(11, 0, -1):
-            alpha = max(0, (11 - radius) * 15)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (11 - radius, 11 - radius, 88 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_razak.PALETTE["fire_dark"], 60), (10, 5, 90, 12))
-        surface.blit(shadow, (x - 55, y - 11))
+    def _draw_shadow(surface, x, y, lift=0):
+        # ORIGINAL-MAX: tekstur gradien di-cache (piksel identik dengan
+        # draw asli) lalu dirender ulang per frame dengan blit murah.
+        # Saat badan terangkat (lift>0) bayangan MENYUSUT tapi dasar
+        # tetap menapak tanah (bottom-anchored) - bayangan reaktif.
+        NS = _NS_razak
+        if NS._shadow_cache is None:
+            shadow = pygame.Surface((110, 22), pygame.SRCALPHA)
+            for radius in range(11, 0, -1):
+                alpha = max(0, (11 - radius) * 15)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (11 - radius, 11 - radius, 88 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow, (*NS.PALETTE["fire_dark"], 60),
+                                (10, 5, 90, 12))
+            NS._shadow_cache = shadow
+        spr = NS._shadow_cache
+        w = spr.get_width()
+        h = spr.get_height()
+        if lift:
+            k = max(0.12, 1.0 - lift * 0.05)
+            w = max(6, int(w * k))
+            h = max(2, int(h * k))
+            spr = pygame.transform.smoothscale(spr, (w, h))
+        bx = x - w // 2
+        by = (y + 11) - h          # bottom tetap di y+11 (menapak)
+        surface.blit(spr, (bx, by))
+        if NS._record_shadow is not None:
+            NS._record_shadow.append(
+                pygame.Rect(bx, by, w, h))
 
 
     def _draw_fire_aura(surface, x, y, phase, active_skill):
+        # ORIGINAL-MAX: gradien aura dirender SEKALI ke cache (piksel
+        # identik), denyut & kekuatan skill lewat set_alpha (blit NORMAL).
+        # Hasil visual setara, tapi tanpa 20 aacircle tiap frame.
+        NS = _NS_razak
+        if NS._aura_cache is None:
+            aura = pygame.Surface((200, 170), pygame.SRCALPHA)
+            for radius in range(80, 5, -4):
+                alpha = int((80 - radius) * 1.2)
+                if alpha > 0:
+                    NS._aacircle(aura, (*NS.PALETTE["fire_darkest"],
+                                        min(255, alpha)), (100, 85), radius)
+            NS._aura_cache = aura
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
         strength = 1.6 if active_skill in ("q", "w", "r") else 1.0
-        aura = pygame.Surface((200, 170), pygame.SRCALPHA)
-        for radius in range(80, 5, -4):
-            alpha = int((80 - radius) * 1.2 * pulse * strength)
-            if alpha > 0:
-                _NS_razak._aacircle(aura, (*_NS_razak.PALETTE["fire_darkest"], min(255, alpha)),
-                          (100, 85), radius)
-        surface.blit(aura, (x - 100, y - 85))
+        a = int(255 * min(1.0, pulse * strength))
+        spr = NS._aura_cache.copy()
+        spr.set_alpha(a)
+        surface.blit(spr, (x - 100, y - 85))
 
 
     def _draw_machete_swing_arc(surface, x, y, facing, progress):
@@ -1352,30 +1464,44 @@ class _NS_razak:
         if progress > 0.7:
             boss._razak_napalm_spawned = False
 
-        # Muzzle flash while casting
+        # Muzzle flash while casting (ORIGINAL-MAX: orb lebih besar/terang)
         if progress < 0.3:
             flash_intensity = 1 - progress / 0.3
             fx = x + 22 * boss.direction
             fy = y - 5
-            alpha = int(230 * flash_intensity)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], alpha), (fx, fy), 8)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], alpha), (fx, fy), 5)
+            alpha = int(255 * flash_intensity)
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_darkest"], alpha), (fx, fy), 15)
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], alpha), (fx, fy), 10)
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], alpha), (fx, fy), 6)
             _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], alpha), (fx, fy), 3)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], min(255, alpha)), (fx, fy), 1)
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], min(255, alpha)), (fx, fy), 2)
 
             # Sparks
-            for i in range(5):
+            for i in range(7):
                 angle = progress * 6 + i * math.pi * 2 / 5
-                ex = fx + int(math.cos(angle) * 10)
-                ey = fy + int(math.sin(angle) * 10)
+                ex = fx + int(math.cos(angle) * 12)
+                ey = fy + int(math.sin(angle) * 12)
                 _NS_razak._draw_ember(surface, ex, ey, 2, alpha)
+
+        # Impact ring di target saat proyektil datang (orb target-anchored)
+        if 0.55 < progress < 0.9:
+            imp = 1 - abs(progress - 0.72) / 0.17
+            imp = max(0.0, min(1.0, imp))
+            ir = int(6 + imp * 22)
+            ia = int(220 * imp)
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], ia),
+                                (int(tx), int(ty)), ir)
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], ia),
+                                (int(tx), int(ty)), max(2, ir - 3))
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], ia),
+                                (int(tx), int(ty)), max(1, ir - 5))
 
 
     # ===================================================================
     # SKILL W: FLAMEBREAK (flame cone/stream)
     # ===================================================================
     def _draw_flamebreak(surface, boss, x, y, timer, phase):
-        duration = 60
+        duration = 50
         progress = max(0.0, min(1.0, 1 - timer / duration))
         tx, ty = _NS_razak._target_position(boss, x, y)
 
@@ -1439,6 +1565,20 @@ class _NS_razak:
             _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], 255),
                       (int(start_x + dir_x * 5), int(start_y + dir_y * 5)), 4)
 
+            # ORIGINAL-MAX: impact ring menyala di target (target-anchored)
+            it = 1 - abs(progress - 0.5) / 0.3
+            it = max(0.0, min(1.0, it))
+            ir = int(8 + it * 30)
+            ia = int(230 * it)
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], ia),
+                                (int(tx), int(ty)), ir)
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], ia),
+                                (int(tx), int(ty)), max(2, ir - 3))
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], ia),
+                                (int(tx), int(ty)), max(1, ir - 6))
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], ia),
+                                (int(tx), int(ty)), max(1, ir - 8))
+
 
     # ===================================================================
     # SKILL R: FIRESTORM (columns of fire around target)
@@ -1446,7 +1586,7 @@ class _NS_razak:
     def _draw_firestorm_ground(surface, boss, x, y, timer, phase):
         """Ground circle warning."""
         tx, ty = _NS_razak._target_position(boss, x, y)
-        duration = 100
+        duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 2) * 0.3 + 0.7
 
@@ -1467,7 +1607,7 @@ class _NS_razak:
     def _draw_firestorm(surface, boss, x, y, timer, phase):
         """Multiple pillars of fire rising around target."""
         tx, ty = _NS_razak._target_position(boss, x, y)
-        duration = 100
+        duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         if progress < 0.15:
@@ -1494,17 +1634,17 @@ class _NS_razak:
             else:
                 height_ratio = 1.0 - (pillar_progress - 0.7) / 0.3
 
-            pillar_h = int(45 * height_ratio)
+            pillar_h = int(62 * height_ratio)
             if pillar_h <= 0:
                 continue
 
-            # Draw fire pillar (tall flame)
+            # Draw fire pillar (tall flame) - ORIGINAL-MAX lebih besar/terang
             for h in range(pillar_h):
                 t = h / max(1, pillar_h)
-                w = int(6 * (1 - t * 0.5))
+                w = int(9 * (1 - t * 0.5))
                 fx = px + int(math.sin(phase * 4 + h * 0.3 + i) * 2)
                 fy = py - h
-                alpha = int(240 * (1 - t * 0.3))
+                alpha = int(250 * (1 - t * 0.3))
                 if t < 0.25:
                     color = _NS_razak.PALETTE["fire_darkest"]
                 elif t < 0.5:
@@ -1516,10 +1656,10 @@ class _NS_razak:
                 _NS_razak._aacircle(surface, (*color, alpha), (fx, fy), max(1, w))
 
             # Bright core
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], 230),
-                      (px, py - pillar_h // 2), 3)
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], 240),
+                      (px, py - pillar_h // 2), 4)
             _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], 255),
-                      (px, py - pillar_h // 3), 2)
+                      (px, py - pillar_h // 3), 3)
 
             # Embers around base
             for j in range(3):
@@ -1527,6 +1667,19 @@ class _NS_razak:
                 ex = px + int(math.cos(ea) * 8)
                 ey = py + int(math.sin(ea) * 3)
                 _NS_razak._draw_ember(surface, ex, ey, 2, 200)
+
+        # ORIGINAL-MAX: ring kejut menyala di target saat pilar meletus
+        if progress > 0.15:
+            ring_t = min(1.0, (progress - 0.15) / 0.35)
+            ring_t = 1 - (1 - ring_t) ** 2
+            rr = int(12 + ring_t * 50)
+            ra = int(230 * (1 - ring_t * 0.4))
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], ra),
+                                (int(tx), int(ty)), rr)
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], ra),
+                                (int(tx), int(ty)), max(2, rr - 4))
+            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], ra),
+                                (int(tx), int(ty)), max(1, rr - 8))
 
         # Central big flame
         center_h = int(60 * min(1.0, progress / 0.4) *
@@ -1564,6 +1717,12 @@ class _NS_khalros:
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
+
+    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    _shadow_cache = None
+    _aura_cache = None
+    _flash_buf = None
+    _record_shadow = None
 
     # ---------------------------------------------------------------------------
     # HD Palette - Rustic barbarian browns / orange fire
@@ -2062,13 +2221,47 @@ class _NS_khalros:
         elif active_skill == "e":
             _NS_khalros._draw_boar_ground(surface, boss, x, y, skill_timer, pulse)
 
+        # PERTAGAS: gelombang kejut aktivasi skill (12 frame pertama)
+        if active_skill in ("q", "w", "e", "r"):
+            dur = {"q": 50, "w": 60, "e": 45, "r": 70}[active_skill]
+            age = dur - skill_timer
+            if 0 <= age < 12:
+                _NS_khalros._draw_shockwave(surface, x, y + 48, age, 12,
+                                            _NS_khalros.PALETTE["fire_hot"],
+                                            _NS_khalros.PALETTE["fire_glow"])
+
+        # ORIGINAL-MAX hurt flash: badan dibanjiri putih-hangat, bayangan
+        # tanah tidak ikut menyala (rect shadow direkam lalu dikeluarkan).
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0:
+            B = _NS_khalros
+            if B._flash_buf is None:
+                B._flash_buf = pygame.Surface((240, 260), pygame.SRCALPHA)
+            B._flash_buf.fill((0, 0, 0, 0))
+            B._record_shadow = []
+            _tgt, _tx, _ty = B._flash_buf, 120, 135
+
         # Character
         if attacking:
-            _NS_khalros._draw_khalros_attack(surface, boss, x, y)
+            _NS_khalros._draw_khalros_attack(_tgt, boss, _tx, _ty)
         elif moving:
-            _NS_khalros._draw_khalros_walk(surface, boss, x, y)
+            _NS_khalros._draw_khalros_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_khalros._draw_khalros_idle(surface, boss, x, y)
+            _NS_khalros._draw_khalros_idle(_tgt, boss, _tx, _ty)
+
+        if flash > 0:
+            B = _NS_khalros
+            surface.blit(B._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(B._flash_buf, 50)
+            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                               unsetcolor=(0, 0, 0, 0))
+            for rect in (B._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            B._record_shadow = None
 
         _NS_khalros._manage_projectiles(boss, surface, pulse)
 
@@ -2081,6 +2274,21 @@ class _NS_khalros:
             _NS_khalros._draw_boar_charge(surface, boss, x, y, skill_timer, pulse)
         elif active_skill == "r":
             _NS_khalros._draw_hawk_summon(surface, boss, x, y, skill_timer, pulse)
+
+
+    def _draw_shockwave(surface, x, y, age, total, c1, c2):
+        """Gelombang kejut aktivasi skill - 12 frame pertama."""
+        t = age / float(total)
+        ease = 1 - (1 - t) ** 2
+        r = int(14 + ease * 58)
+        a = max(0, min(255, int(235 * (1 - t))))
+        pygame.draw.ellipse(surface, (*c1, a),
+                            (x - r, y - r // 3, r * 2, r * 2 // 3), 2)
+        pygame.draw.ellipse(surface, (*c2, a),
+                            (x - r // 2, y - r // 6, r, r // 3), 1)
+        ri = max(3, r // 2)
+        _NS_khalros._aacircle(surface, (*c1, int(a * 0.8)),
+                              (x, y - (r // 6)), ri)
 
 
     # ===================================================================
@@ -2728,29 +2936,53 @@ class _NS_khalros:
                           (sx, sy), max(2, 5 - i))
 
 
-    def _draw_shadow(surface, x, y):
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_khalros.PALETTE["fire_dark"], 60), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
+    def _draw_shadow(surface, x, y, lift=0):
+        # ORIGINAL-MAX: cache tekstur + reaktif (menyusut saat badan
+        # terangkat, dasar tetap menapak tanah).
+        NS = _NS_khalros
+        if NS._shadow_cache is None:
+            shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
+            for radius in range(10, 0, -1):
+                alpha = max(0, (10 - radius) * 16)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow, (*NS.PALETTE["fire_dark"], 60),
+                                (8, 4, 84, 10))
+            NS._shadow_cache = shadow
+        spr = NS._shadow_cache
+        w = spr.get_width()
+        h = spr.get_height()
+        if lift:
+            k = max(0.12, 1.0 - lift * 0.05)
+            w = max(6, int(w * k))
+            h = max(2, int(h * k))
+            spr = pygame.transform.smoothscale(spr, (w, h))
+        bx = x - w // 2
+        by = (y + 10) - h          # bottom tetap di y+10
+        surface.blit(spr, (bx, by))
+        if NS._record_shadow is not None:
+            NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
 
     def _draw_primal_aura(surface, x, y, phase, active_skill):
         """Background aura."""
+        NS = _NS_khalros
+        if NS._aura_cache is None:
+            aura = pygame.Surface((180, 160), pygame.SRCALPHA)
+            for radius in range(72, 5, -4):
+                alpha = int((72 - radius) * 1.2)
+                if alpha > 0:
+                    NS._aacircle(aura, (*NS.PALETTE["fire_dark"],
+                                        min(255, alpha)), (90, 80), radius)
+            NS._aura_cache = aura
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
         strength = 1.4 if active_skill in ("q", "r") else 1.0
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(72, 5, -4):
-            alpha = int((72 - radius) * 1.2 * pulse * strength)
-            if alpha > 0:
-                _NS_khalros._aacircle(aura, (*_NS_khalros.PALETTE["fire_dark"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
+        a = int(255 * min(1.0, pulse * strength))
+        spr = NS._aura_cache.copy()
+        spr.set_alpha(a)
+        surface.blit(spr, (x - 90, y - 80))
 
 
     def _draw_ground_runes(surface, x, y, phase, active_skill):
@@ -2838,7 +3070,7 @@ class _NS_khalros:
     # ===================================================================
     def _draw_wild_axes(surface, boss, x, y, timer, phase):
         """Two axes thrown - spawn projectiles."""
-        duration = 60
+        duration = 50
         progress = max(0.0, min(1.0, 1 - timer / duration))
         tx, ty = _NS_khalros._target_position(boss, x, y)
 
@@ -2864,13 +3096,24 @@ class _NS_khalros:
                 py = int(start_y + (ty - start_y) * t)
                 _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], alpha), (px, py), 2)
 
+            # ORIGINAL-MAX: orb target menyala saat pelemparan
+            orb_pulse = 0.6 + 0.4 * math.sin(phase * 6)
+            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_dark"], int(180 * orb_pulse)),
+                                  (int(tx), int(ty)), 10)
+            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], int(230 * orb_pulse)),
+                                  (int(tx), int(ty)), 7)
+            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], int(255 * orb_pulse)),
+                                  (int(tx), int(ty)), 4)
+            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_white"], 255),
+                                  (int(tx), int(ty)), 2)
+
 
     # ===================================================================
     # SKILL W: CALL OF THE WILD (Summon boar + wolf)
     # ===================================================================
     def _draw_call_of_wild_ground(surface, boss, x, y, timer, phase):
         """Summon circles beside Khalros."""
-        duration = 80
+        duration = 60
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 2) * 0.3 + 0.7
 
@@ -2895,7 +3138,7 @@ class _NS_khalros:
 
     def _draw_call_of_wild(surface, boss, x, y, timer, phase):
         """Boar (left) and wolf (right) rising from summon circles."""
-        duration = 80
+        duration = 60
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         # Boar on left
@@ -3094,7 +3337,7 @@ class _NS_khalros:
     def _draw_boar_ground(surface, boss, x, y, timer, phase):
         """Trail of dust as boar charges."""
         tx, ty = _NS_khalros._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
+        progress = max(0.0, min(1.0, 1 - timer / 45))
 
         # Charging trail
         start_x = x + 15 * boss.direction
@@ -3111,7 +3354,7 @@ class _NS_khalros:
     def _draw_boar_charge(surface, boss, x, y, timer, phase):
         """Boar charging toward target."""
         tx, ty = _NS_khalros._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
+        progress = max(0.0, min(1.0, 1 - timer / 45))
         start_x = x + 15 * boss.direction
         start_y = y + 25
 
@@ -3153,7 +3396,7 @@ class _NS_khalros:
     # ===================================================================
     def _draw_hawk_summon(surface, boss, x, y, timer, phase):
         """Hawk flies from Khalros toward target."""
-        duration = 80
+        duration = 70
         progress = max(0.0, min(1.0, 1 - timer / duration))
         tx, ty = _NS_khalros._target_position(boss, x, y)
 
@@ -3199,6 +3442,12 @@ class _NS_gorath:
     # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
+
+    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    _shadow_cache = None
+    _aura_cache = None
+    _flash_buf = None
+    _record_shadow = None
 
     # ---------------------------------------------------------------------------
     # HD Blood Palette - Deep crimson / dark red / bone
@@ -3547,13 +3796,47 @@ class _NS_gorath:
         elif active_skill == "r":
             _NS_gorath._draw_rupture_ground(surface, boss, x, y, skill_timer, pulse)
 
+        # PERTAGAS: gelombang kejut aktivasi skill (12 frame pertama)
+        if active_skill in ("q", "w", "e", "r"):
+            dur = {"q": 90, "w": 60, "e": 35, "r": 90}[active_skill]
+            age = dur - skill_timer
+            if 0 <= age < 12:
+                _NS_gorath._draw_shockwave(surface, x, y + 46, age, 12,
+                                           _NS_gorath.PALETTE["blood_hot"],
+                                           _NS_gorath.PALETTE["blood_light"])
+
+        # ORIGINAL-MAX hurt flash: badan dibanjiri putih-hangat, bayangan
+        # tanah tidak ikut menyala.
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0:
+            B = _NS_gorath
+            if B._flash_buf is None:
+                B._flash_buf = pygame.Surface((240, 260), pygame.SRCALPHA)
+            B._flash_buf.fill((0, 0, 0, 0))
+            B._record_shadow = []
+            _tgt, _tx, _ty = B._flash_buf, 120, 135
+
         # Character
         if attacking:
-            _NS_gorath._draw_gorath_attack(surface, boss, x, y)
+            _NS_gorath._draw_gorath_attack(_tgt, boss, _tx, _ty)
         elif moving:
-            _NS_gorath._draw_gorath_walk(surface, boss, x, y)
+            _NS_gorath._draw_gorath_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_gorath._draw_gorath_idle(surface, boss, x, y)
+            _NS_gorath._draw_gorath_idle(_tgt, boss, _tx, _ty)
+
+        if flash > 0:
+            B = _NS_gorath
+            surface.blit(B._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(B._flash_buf, 50)
+            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                               unsetcolor=(0, 0, 0, 0))
+            for rect in (B._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            B._record_shadow = None
 
         # Projectiles
         _NS_gorath._manage_projectiles(boss, surface, pulse)
@@ -3567,6 +3850,21 @@ class _NS_gorath:
             _NS_gorath._draw_thirst(surface, boss, x, y, skill_timer, pulse)
         elif active_skill == "r":
             _NS_gorath._draw_rupture(surface, boss, x, y, skill_timer, pulse)
+
+
+    def _draw_shockwave(surface, x, y, age, total, c1, c2):
+        """Gelombang kejut aktivasi skill - 12 frame pertama."""
+        t = age / float(total)
+        ease = 1 - (1 - t) ** 2
+        r = int(14 + ease * 58)
+        a = max(0, min(255, int(235 * (1 - t))))
+        pygame.draw.ellipse(surface, (*c1, a),
+                            (x - r, y - r // 3, r * 2, r * 2 // 3), 2)
+        pygame.draw.ellipse(surface, (*c2, a),
+                            (x - r // 2, y - r // 6, r, r // 3), 1)
+        ri = max(3, r // 2)
+        _NS_gorath._aacircle(surface, (*c1, int(a * 0.8)),
+                             (x, y - (r // 6)), ri)
 
 
     # ===================================================================
@@ -4169,31 +4467,53 @@ class _NS_gorath:
                                  seed=i, alpha=alpha)
 
 
-    def _draw_shadow(surface, x, y):
-        """Ground shadow."""
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_gorath.PALETTE["blood_darkest"], 100), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
+    def _draw_shadow(surface, x, y, lift=0):
+        """Ground shadow. ORIGINAL-MAX: cache + reaktif (menyusut saat
+        badan terangkat, dasar tetap menapak tanah)."""
+        NS = _NS_gorath
+        if NS._shadow_cache is None:
+            shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
+            for radius in range(10, 0, -1):
+                alpha = max(0, (10 - radius) * 16)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow, (*NS.PALETTE["blood_darkest"], 100),
+                                (8, 4, 84, 10))
+            NS._shadow_cache = shadow
+        spr = NS._shadow_cache
+        w = spr.get_width()
+        h = spr.get_height()
+        if lift:
+            k = max(0.12, 1.0 - lift * 0.05)
+            w = max(6, int(w * k))
+            h = max(2, int(h * k))
+            spr = pygame.transform.smoothscale(spr, (w, h))
+        bx = x - w // 2
+        by = (y + 10) - h          # bottom tetap di y+10
+        surface.blit(spr, (bx, by))
+        if NS._record_shadow is not None:
+            NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
 
     def _draw_blood_aura(surface, x, y, phase, active_skill):
         """Background aura."""
+        NS = _NS_gorath
+        if NS._aura_cache is None:
+            aura = pygame.Surface((180, 160), pygame.SRCALPHA)
+            for radius in range(72, 5, -4):
+                alpha = int((72 - radius) * 1.4)
+                if alpha > 0:
+                    NS._aacircle(aura, (*NS.PALETTE["blood_darkest"],
+                                        min(255, alpha)), (90, 80), radius)
+            NS._aura_cache = aura
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
         strength = 1.5 if active_skill == "q" else 1.0
-
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(72, 5, -4):
-            alpha = int((72 - radius) * 1.4 * pulse * strength)
-            if alpha > 0:
-                _NS_gorath._aacircle(aura, (*_NS_gorath.PALETTE["blood_darkest"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
+        a = int(255 * min(1.0, pulse * strength))
+        spr = NS._aura_cache.copy()
+        spr.set_alpha(a)
+        surface.blit(spr, (x - 90, y - 80))
 
 
     def _draw_ground_blood_pool(surface, x, y, phase, active_skill):
@@ -4276,7 +4596,7 @@ class _NS_gorath:
     # ===================================================================
     def _draw_bloodrage(surface, boss, x, y, timer, phase):
         """Self-buff — flame-like blood aura around Gorath."""
-        duration = 60
+        duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
 
@@ -4325,22 +4645,25 @@ class _NS_gorath:
     def _draw_bloodrite_ground(surface, boss, x, y, timer, phase):
         """Warning circle at target location."""
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
+        progress = max(0.0, min(1.0, 1 - timer / 60))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
 
-        radius = int(30 + progress * 15)
-        # Warning ring
-        _NS_gorath._ellipse(surface, (*_NS_gorath.PALETTE["blood_darkest"], int(200 * pulse)),
+        radius = int(34 + progress * 18)
+        # Warning ring (ORIGINAL-MAX lebih besar & terang)
+        _NS_gorath._ellipse(surface, (*_NS_gorath.PALETTE["blood_darkest"], int(220 * pulse)),
                  (tx - radius, ty - radius // 2, radius * 2, radius), 3)
-        _NS_gorath._ellipse(surface, (*_NS_gorath.PALETTE["blood_mid"], int(150 * pulse)),
+        _NS_gorath._ellipse(surface, (*_NS_gorath.PALETTE["blood_mid"], int(170 * pulse)),
                  (tx - radius + 4, ty - radius // 2 + 2,
                   radius * 2 - 8, radius - 4), 2)
+        _NS_gorath._ellipse(surface, (*_NS_gorath.PALETTE["blood_bright"], int(140 * pulse)),
+                 (tx - radius + 8, ty - radius // 2 + 4,
+                  radius * 2 - 16, radius - 8), 1)
 
 
     def _draw_bloodrite(surface, boss, x, y, timer, phase):
         """Blood spikes erupting at target."""
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
+        progress = max(0.0, min(1.0, 1 - timer / 60))
 
         # Spawn projectile at start
         if progress < 0.1 and not getattr(boss, "_gor_bloodrite_spawned", False):
@@ -4413,7 +4736,7 @@ class _NS_gorath:
     def _draw_thirst(surface, boss, x, y, timer, phase):
         """Red highlighting beam / marker on target."""
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
+        progress = max(0.0, min(1.0, 1 - timer / 35))
         pulse = math.sin(phase * 2.5) * 0.3 + 0.7
 
         # Line of sight beam (blood-red thin line)
@@ -4465,7 +4788,7 @@ class _NS_gorath:
     def _draw_rupture_ground(surface, boss, x, y, timer, phase):
         """Ground blood pool at target."""
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 90))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
 
         radius = int(20 + progress * 25)
@@ -4479,7 +4802,7 @@ class _NS_gorath:
     def _draw_rupture(surface, boss, x, y, timer, phase):
         """Blood chain connecting to target, exploding at target."""
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 90))
 
         start_x = x + 12 * boss.direction
         start_y = y - 10
@@ -4552,6 +4875,12 @@ class _NS_alchemist:
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
+
+    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    _shadow_cache = None
+    _aura_cache = {}        # key: "acid"/"gold"
+    _flash_buf = None
+    _record_shadow = None
 
     # ---------------------------------------------------------------------------
     # HD Palette - Orange ogre / green acid / gold / purple goblin
@@ -5054,17 +5383,53 @@ class _NS_alchemist:
         elif active_skill == "e":
             _NS_alchemist._draw_chem_rage_ground(surface, boss, x, y, skill_timer, pulse)
 
+        # PERTAGAS: gelombang kejut aktivasi skill (12 frame pertama)
+        if active_skill in ("q", "w", "e", "r"):
+            dur = {"q": 40, "w": 60, "e": 60, "r": 90}[active_skill]
+            age = dur - skill_timer
+            if 0 <= age < 12:
+                c1 = (_NS_alchemist.PALETTE["acid_hot"] if active_skill != "r"
+                      else _NS_alchemist.PALETTE["gold_light"])
+                c2 = (_NS_alchemist.PALETTE["acid_bright"] if active_skill != "r"
+                      else _NS_alchemist.PALETTE["gold_mid"])
+                _NS_alchemist._draw_shockwave(surface, x, y + 55, age, 12, c1, c2)
+
+        # ORIGINAL-MAX hurt flash: badan dibanjiri putih-hangat, bayangan
+        # tanah tidak ikut menyala.
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0:
+            B = _NS_alchemist
+            if B._flash_buf is None:
+                B._flash_buf = pygame.Surface((260, 280), pygame.SRCALPHA)
+            B._flash_buf.fill((0, 0, 0, 0))
+            B._record_shadow = []
+            _tgt, _tx, _ty = B._flash_buf, 130, 150
+
         # Character
         if attacking:
-            _NS_alchemist._draw_alch_attack(surface, boss, x, y)
+            _NS_alchemist._draw_alch_attack(_tgt, boss, _tx, _ty)
         elif active_skill == "q":
-            _NS_alchemist._draw_alch_qcast(surface, boss, x, y, skill_timer)
+            _NS_alchemist._draw_alch_qcast(_tgt, boss, _tx, _ty, skill_timer)
         elif active_skill == "w":
-            _NS_alchemist._draw_alch_wcast(surface, boss, x, y, skill_timer)
+            _NS_alchemist._draw_alch_wcast(_tgt, boss, _tx, _ty, skill_timer)
         elif moving:
-            _NS_alchemist._draw_alch_walk(surface, boss, x, y)
+            _NS_alchemist._draw_alch_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_alchemist._draw_alch_idle(surface, boss, x, y)
+            _NS_alchemist._draw_alch_idle(_tgt, boss, _tx, _ty)
+
+        if flash > 0:
+            B = _NS_alchemist
+            surface.blit(B._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(B._flash_buf, 50)
+            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                               unsetcolor=(0, 0, 0, 0))
+            for rect in (B._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            B._record_shadow = None
 
         # Projectiles
         _NS_alchemist._manage_projectiles(boss, surface, pulse)
@@ -5076,6 +5441,21 @@ class _NS_alchemist:
             _NS_alchemist._draw_chem_rage_foreground(surface, boss, x, y, skill_timer, pulse)
         elif active_skill == "r":
             _NS_alchemist._draw_greevil_foreground(surface, boss, x, y, skill_timer, pulse)
+
+
+    def _draw_shockwave(surface, x, y, age, total, c1, c2):
+        """Gelombang kejut aktivasi skill - 12 frame pertama."""
+        t = age / float(total)
+        ease = 1 - (1 - t) ** 2
+        r = int(16 + ease * 66)
+        a = max(0, min(255, int(235 * (1 - t))))
+        pygame.draw.ellipse(surface, (*c1, a),
+                            (x - r, y - r // 3, r * 2, r * 2 // 3), 2)
+        pygame.draw.ellipse(surface, (*c2, a),
+                            (x - r // 2, y - r // 6, r, r // 3), 1)
+        ri = max(3, r // 2)
+        _NS_alchemist._aacircle(surface, (*c1, int(a * 0.8)),
+                                (x, y - (r // 6)), ri)
 
 
     # ===================================================================
@@ -5112,7 +5492,7 @@ class _NS_alchemist:
 
 
     def _draw_alch_qcast(surface, boss, x, y, timer):
-        duration = 60
+        duration = 40
         progress = max(0.0, min(1.0, 1 - timer / duration))
         bob = int(math.sin(boss.pulse * 0.7) * 2)
         recoil = int(math.sin(progress * math.pi * 2) * 2) * -boss.direction
@@ -5948,28 +6328,55 @@ class _NS_alchemist:
                           (sx, sy), max(1, 3 - i))
 
 
-    def _draw_shadow(surface, x, y):
-        shadow = pygame.Surface((120, 22), pygame.SRCALPHA)
-        for radius in range(11, 0, -1):
-            alpha = max(0, (11 - radius) * 15)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (11 - radius, 11 - radius, 98 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_alchemist.PALETTE["acid_dark"], 60), (10, 5, 100, 12))
-        surface.blit(shadow, (x - 60, y - 11))
+    def _draw_shadow(surface, x, y, lift=0):
+        # ORIGINAL-MAX: cache tekstur + reaktif (menyusut saat badan
+        # terangkat, dasar tetap menapak tanah).
+        NS = _NS_alchemist
+        if NS._shadow_cache is None:
+            shadow = pygame.Surface((120, 22), pygame.SRCALPHA)
+            for radius in range(11, 0, -1):
+                alpha = max(0, (11 - radius) * 15)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (11 - radius, 11 - radius, 98 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow, (*NS.PALETTE["acid_dark"], 60),
+                                (10, 5, 100, 12))
+            NS._shadow_cache = shadow
+        spr = NS._shadow_cache
+        w = spr.get_width()
+        h = spr.get_height()
+        if lift:
+            k = max(0.12, 1.0 - lift * 0.05)
+            w = max(6, int(w * k))
+            h = max(2, int(h * k))
+            spr = pygame.transform.smoothscale(spr, (w, h))
+        bx = x - w // 2
+        by = (y + 11) - h          # bottom tetap di y+11
+        surface.blit(spr, (bx, by))
+        if NS._record_shadow is not None:
+            NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
 
     def _draw_alch_aura(surface, x, y, phase, active_skill):
+        NS = _NS_alchemist
+        key = "gold" if active_skill == "r" else "acid"
+        if key not in NS._aura_cache:
+            aura = pygame.Surface((220, 190), pygame.SRCALPHA)
+            color = (NS.PALETTE["acid_darkest"] if key == "acid"
+                     else NS.PALETTE["gold_darkest"])
+            for radius in range(88, 5, -4):
+                alpha = int((88 - radius) * 1.2)
+                if alpha > 0:
+                    NS._aacircle(aura, (*color, min(255, alpha)),
+                                 (110, 95), radius)
+            NS._aura_cache[key] = aura
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
         strength = 1.6 if active_skill in ("e", "r") else 1.0
-        aura = pygame.Surface((220, 190), pygame.SRCALPHA)
-        color = _NS_alchemist.PALETTE["acid_darkest"] if active_skill != "r" else _NS_alchemist.PALETTE["gold_darkest"]
-        for radius in range(88, 5, -4):
-            alpha = int((88 - radius) * 1.2 * pulse * strength)
-            if alpha > 0:
-                _NS_alchemist._aacircle(aura, (*color, min(255, alpha)), (110, 95), radius)
-        surface.blit(aura, (x - 110, y - 95))
+        a = int(255 * min(1.0, pulse * strength))
+        spr = NS._aura_cache[key].copy()
+        spr.set_alpha(a)
+        surface.blit(spr, (x - 110, y - 95))
 
 
     def _draw_ground_runes(surface, x, y, phase, active_skill):
@@ -6056,7 +6463,7 @@ class _NS_alchemist:
     # SKILL Q: ACID SPRAY (green cone)
     # ===================================================================
     def _draw_acid_spray(surface, boss, x, y, timer, phase):
-        duration = 60
+        duration = 40
         progress = max(0.0, min(1.0, 1 - timer / duration))
         tx, ty = _NS_alchemist._target_position(boss, x, y)
 
@@ -6123,13 +6530,27 @@ class _NS_alchemist:
             base_y = start_y + dir_y * cone_len * drop_t + int(t * 10)
             _NS_alchemist._draw_acid_droplet(surface, int(base_x), int(base_y), 2, 200)
 
+        # ORIGINAL-MAX: ring kejut menyala di target (target-anchored)
+        it = 1 - abs(progress - 0.5) / 0.3
+        it = max(0.0, min(1.0, it))
+        ir = int(8 + it * 32)
+        ia = int(230 * it)
+        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_dark"], ia),
+                                (int(tx), int(ty)), ir)
+        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], ia),
+                                (int(tx), int(ty)), max(2, ir - 4))
+        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], ia),
+                                (int(tx), int(ty)), max(1, ir - 8))
+        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_white"], ia),
+                                (int(tx), int(ty)), max(1, ir - 10))
+
 
     # ===================================================================
     # SKILL E: CHEMICAL RAGE (self buff)
     # ===================================================================
     def _draw_chem_rage_ground(surface, boss, x, y, timer, phase):
         """Ground pulse rings under boss."""
-        duration = 80
+        duration = 60
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
 
@@ -6141,7 +6562,7 @@ class _NS_alchemist:
 
     def _draw_chem_rage_foreground(surface, boss, x, y, timer, phase):
         """Green aura + steam rising from Alchemist."""
-        duration = 80
+        duration = 60
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
 
@@ -6178,7 +6599,7 @@ class _NS_alchemist:
     # ===================================================================
     def _draw_greevil_ground(surface, boss, x, y, timer, phase):
         """Golden aura on ground."""
-        duration = 120
+        duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 2) * 0.3 + 0.7
 
@@ -6232,7 +6653,7 @@ class _NS_alchemist:
 
     def _draw_greevil_foreground(surface, boss, x, y, timer, phase):
         """Gold coins raining down + goblin celebrating."""
-        duration = 120
+        duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         # Spawn coins periodically
