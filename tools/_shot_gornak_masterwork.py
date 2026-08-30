@@ -92,11 +92,11 @@ font_small = pygame.font.Font(None, 20)
 W, H = 1280, 1120
 screen = pygame.Surface((W, H))
 screen.fill(BG)
-screen.blit(font_title.render("GORNAK — PROCEDURAL MASTERWORK", True, ACCENT),
+screen.blit(font_title.render("GORNAK — PIXEL MASTERWORK v2 + FX v2.1", True, ACCENT),
             (38, 18))
 screen.blit(font_small.render(
-    "100% code-drawn • tanpa PNG / sprite sheet • bone rig 2D berlapis + "
-    "outline gelap 1 px • twin blade pose-driven", True, SUB), (40, 66))
+    "100% code-drawn • tanpa PNG / sprite sheet • selout • tuft • dither • "
+    "specular • FX world-space E=100 / R=180 di caster", True, SUB), (40, 66))
 
 cases = []
 cases.append(("IDLE", probe(pulse=1.25), 2.1))
@@ -114,7 +114,7 @@ PX, PY, PW_, PH_ = 26, 100, 296, 466
 notes = ("kaki menapak di garis\nbayangan; tiap bagian\npunya batas sendiri",
          "langkah dihitung dari\nlutut & mata kaki,\nbukan sticker digeser",
          "bilah, slash, dan grip\nberasal dari sendi yang\nsama -> tak pernah lepas",
-         "void tetap di target;\nbadan tidak tertutup\nefek tanah")
+         "void di CASTER (AOE 180);\nbadan tetap subjek,\nring world-space")
 for i, (label, boss, zoom) in enumerate(cases):
     rect = pygame.Rect(PX + i * 310, PY, PW_, PH_)
     pygame.draw.rect(screen, PANEL, rect, border_radius=12)
