@@ -1549,9 +1549,11 @@ class _NS_varkul:
 
 
     def _draw_sacrifice_foreground(surface, boss, x, y, timer, phase):
-        """Rising soul energy from ground to Lich."""
+        """Rising soul energy from ground to Lich (lifecycle ikut timer AI)."""
         duration = 50
-        _ = duration
+        # Guard lifecycle: jangan menggambar di luar durasi skill AI.
+        if timer <= 0 or timer > duration:
+            return
         # Rising skull energy
         for i in range(6):
             t = (phase * 0.4 + i * 0.15) % 1.0
@@ -3110,7 +3112,9 @@ class _NS_xerathis:
     def _draw_arcane_aura_foreground(surface, boss, x, y, timer, phase):
         """Rising magical energy around Xerathis."""
         duration = 90
-        _ = duration
+        # Guard lifecycle: jangan menggambar di luar durasi skill AI.
+        if timer <= 0 or timer > duration:
+            return
         # Rising energy particles all around body
         for i in range(10):
             t = (phase * 0.5 + i * 0.1) % 1.0
@@ -3166,7 +3170,9 @@ class _NS_xerathis:
     def _draw_freezing_field(surface, boss, x, y, timer, phase):
         """Randomly exploding ice crystals in the field."""
         duration = 100
-        _ = duration
+        # Guard lifecycle: jangan menggambar di luar durasi skill AI.
+        if timer <= 0 or timer > duration:
+            return
         # Deterministic random positions using phase
         for i in range(8):
             # Each crystal has its own life cycle
@@ -5127,8 +5133,9 @@ class _NS_nyzrak:
     # ===================================================================
     def _draw_cold_embrace_ground(surface, boss, x, y, timer, phase):
         duration = 90
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        _ = progress
+        # Guard lifecycle: jangan menggambar di luar durasi skill AI.
+        if timer <= 0 or timer > duration:
+            return
         pulse = math.sin(phase * 2) * 0.3 + 0.7
 
         # Ground circle
