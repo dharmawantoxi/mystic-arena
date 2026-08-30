@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Regresi visual untuk Gornak Procedural Masterwork.
+"""Regresi visual untuk Gornak Pixel Masterwork v2 + Skill FX v2.1.
 
 Gornak (mini boss anti-mage level 1, sekaligus hero yang bisa di-unlock)
-dulunya dirender sebagai tumpukan body-part statis: badan 48 px, kaki tidak
-terlihat menapak, cincin kepala yang membuat wajah terbaca seperti donat,
-dan pedang bergelombang yang posenya tidak terhubung ke tangan.
+dirender 100% prosedural mengikuti standar Thorne v2 / v2.1: ramp 4-5
+band, selout, tuft, specular cluster, dither, dan FX world-space.
 
 Uji ini mengunci hasil rewrite:
   1. 100% prosedural (tanpa image.load / PNG / sprite sheet).
@@ -15,6 +14,8 @@ Uji ini mengunci hasil rewrite:
   5. Outline siluet 1 px ada (bagian tetap terpisah saat unit bertumpuk).
   6. LOD portrait: pass material aktif & efek arena (rune/aura) dibuang.
   7. Frame walk/attack benar-benar dihitung ulang per-sendi.
+  8. Kosakata FX v2.1 (_fx_scale, _spark_star, ...) tersedia.
+  9. Telegraph E=100 / R=180 px dunia (kompensasi 1/_render_scale).
 
 Jalankan:  python3 tools/test_gornak_masterwork.py
 """
@@ -103,7 +104,10 @@ def test_masterwork_is_procedural_and_single_rig():
                    "_draw_gnk_head", "_draw_gnk_arm", "_draw_gnk_blade",
                    "_draw_gnk_masterwork_details", "_blade_angle",
                    "_front_grip_local", "_elbow", "_tip_local", "_tip_screen",
-                   "_compose_outline", "_draw_crescent_slash"):
+                   "_compose_outline", "_draw_crescent_slash",
+                   "_fx_scale", "_spark_star", "_chevron", "_dashed_ring",
+                   "_jagged_crack", "_tuft_points", "_static",
+                   "_dither_dots", "_ring_r", "_world_to_local"):
         assert callable(getattr(G, needed, None)), needed
     # Tumpukan body-part lama harus sudah benar-benar dihapus.
     for gone in ("_draw_leg", "_draw_gnk_robe", "_draw_gnk_arm_back",
@@ -544,6 +548,63 @@ def test_hero_visual_quality():
     assert soft_px(shop) < 140, "mode portrait harus tetap bersih"
 
 
+
+def test_skill_fx_are_world_space():
+    """Telegraph E/R tidak menyusut bersama sprite: kompensasi 1/_render_scale.
+
+    E Counterspell AOE 100 px dunia, R Mana Void AOE 180 px dunia di CASTER
+    (bukan di target). Di-render pada fs=1.0 dan fs=0.5: sampling lingkaran
+    di radius dunia/fs harus menemukan ring. Tanpa kompensasi, fs=0.5
+    menggambar di radius 100/180 px canvas -> 0 hit.
+    """
+    def render(skill, timer, fs):
+        W = 760
+        surf = pygame.Surface((W, W), pygame.SRCALPHA)
+        b = probe(W // 2, W // 2 + 40, active_skill=skill,
+                  active_skill_timer=timer, _render_scale=fs, pulse=1.3)
+        b.target = SimpleNamespace(x=float(W // 2 + 140),
+                                   y=float(W // 2), alive=True)
+        G.draw_gornak(surf, b, W // 2, W // 2 + 40)
+        return surf
+
+    def hits_at_radius(surf, cx, cy, r_px):
+        n = 0
+        for a in range(0, 360, 2):
+            ok = False
+            ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
+            for dr in (-2, -1, 0, 1, 2):
+                x = int(cx + ca * (r_px + dr))
+                y = int(cy + sa * (r_px + dr))
+                if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
+                        and surf.get_at((x, y)).a > 30:
+                    ok = True
+                    break
+            if ok:
+                n += 1
+        return n
+
+    cx, cy = 380, 420
+    for fs in (1.0, 0.5):
+        s = render("e", 40, fs)
+        n = hits_at_radius(s, cx, cy, int(100 / fs))
+        assert n > 90, ("E ring AOE tidak di 100 px dunia saat fs=%s "
+                        "(dapat %s/180)" % (fs, n))
+        if fs < 1.0:
+            n_wrong = hits_at_radius(s, cx, cy, 100)
+            assert n_wrong < 40, ("E ring masih di radius sprite, bukan "
+                                  "dunia (fs=%s hit@100=%s)" % (fs, n_wrong))
+
+    for fs in (1.0, 0.5):
+        s = render("r", 50, fs)
+        n = hits_at_radius(s, cx, cy, int(180 / fs))
+        assert n > 70, ("R ring AOE tidak di 180 px dunia (caster) saat "
+                        "fs=%s (dapat %s/180)" % (fs, n))
+        if fs < 1.0:
+            n_wrong = hits_at_radius(s, cx, cy, 180)
+            assert n_wrong < 40, ("R ring masih di radius sprite, bukan "
+                                  "dunia (fs=%s hit@180=%s)" % (fs, n_wrong))
+
+
 def test_perf_budget():
     """Guardrail: badan 1.3x lebih besar tidak boleh membuat frame time naik
     drastis. Ambang sengaja longgar (5 ms) supaya tetap lolos di HP rendah;
@@ -579,7 +640,8 @@ if __name__ == "__main__":
     test_hero_visual_quality()
     test_attack_timing_has_impact_hold()
     test_secondary_motion_exists()
+    test_skill_fx_are_world_space()
     test_perf_budget()
-    print("OK - Gornak masterwork: rig tunggal, kaki menapak, bilah "
+    print("OK - Gornak masterwork v2: rig tunggal, kaki menapak, bilah "
           "pose-driven, proc di ujung bilah, outline, portrait LOD, "
-          "Q/W/E/R boss+hero tervalidasi")
+          "Q/W/E/R world-space (E100/R180) tervalidasi")
