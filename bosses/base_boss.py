@@ -1017,7 +1017,10 @@ class Boss(TowerDebuffMixin):
         """Q - Acid Spray: line projectile"""
         self.q_timer = 210
         self.active_skill = 'q'
-        self.active_skill_timer = 40
+        # cocok dgn _NS_alchemist.SKILL_DUR["q"] = 60 (pose pistol +
+        # cone punya fade 10% terakhir yang dulu tidak sempat tampil
+        # karena timer AI lebih pendek dari denominator FX).
+        self.active_skill_timer = 60
 
         stats = self._get_boss_stats()
         damage = stats.get("skill_q_damage", 220)
@@ -1061,7 +1064,8 @@ class Boss(TowerDebuffMixin):
         """E - Chemical Rage: buff self"""
         self.e_timer = 480
         self.active_skill = 'e'
-        self.active_skill_timer = 60
+        # cocok dgn _NS_alchemist.SKILL_DUR["e"] = 80
+        self.active_skill_timer = 80
         self.rage_active = True
         self.rage_timer = 360  # 6 detik buff
 
@@ -1089,7 +1093,9 @@ class Boss(TowerDebuffMixin):
         """R - Greevil's Greed: massive AOE + gold"""
         self.r_timer = 720
         self.active_skill = 'r'
-        self.active_skill_timer = 90
+        # cocok dgn _NS_alchemist.SKILL_DUR["r"] = 120 (hujan koin +
+        # pile emas punya siklus tumbuh-penuh-tenggelam penuh di sini)
+        self.active_skill_timer = 120
 
         stats = self._get_boss_stats()
         damage = stats.get("skill_r_damage", 550)
@@ -2742,7 +2748,10 @@ class Boss(TowerDebuffMixin):
         stats = self._get_boss_stats()
         self.w_timer = stats.get("skill_w_cooldown", 260)
         self.active_skill = 'w'
-        self.active_skill_timer = 50
+        # cocok dgn _NS_razak.SKILL_DUR["w"] - stream Flamebreak butuh
+        # 60 frame penuh (pertumbuhan 12f + sustain + fade 9f).
+        # Dulu 50: api padam mendadak di tengah stream.
+        self.active_skill_timer = 60
         if self.target and self.target.alive:
             damage = stats.get("skill_w_damage", 220)
             for e in enemies:
@@ -2778,7 +2787,8 @@ class Boss(TowerDebuffMixin):
         stats = self._get_boss_stats()
         self.r_timer = stats.get("skill_r_cooldown", 520)
         self.active_skill = 'r'
-        self.active_skill_timer = 90
+        # cocok dgn _NS_razak.SKILL_DUR["r"] = 100
+        self.active_skill_timer = 100
         damage = stats.get("skill_r_damage", 340)
         for e in enemies:
             if math.hypot(e.x - self.x, e.y - self.y) <= 180:
@@ -2827,7 +2837,10 @@ class Boss(TowerDebuffMixin):
         stats = self._get_boss_stats()
         self.q_timer = stats.get("skill_q_cooldown", 220)
         self.active_skill = 'q'
-        self.active_skill_timer = 50
+        # cocok dgn _NS_khalros.SKILL_DUR["q"] = 60 - DULU 50: gate
+        # spawn kapak (progress < 0.15) terlewat di frame pertama,
+        # Wild Axes tidak pernah benar-benar melempar kapak.
+        self.active_skill_timer = 60
         if self.target and self.target.alive:
             damage = stats.get("skill_q_damage", 210)
             for e in enemies:
@@ -2840,7 +2853,9 @@ class Boss(TowerDebuffMixin):
         stats = self._get_boss_stats()
         self.w_timer = stats.get("skill_w_cooldown", 300)
         self.active_skill = 'w'
-        self.active_skill_timer = 60
+        # cocok dgn _NS_khalros.SKILL_DUR["w"] = 80 (babi + serigala
+        # naik penuh lalu tenggelam, tidak hilang mendadak)
+        self.active_skill_timer = 80
         damage = stats.get("skill_w_damage", 160)
         for e in enemies:
             if math.hypot(e.x - self.x, e.y - self.y) <= 120:
@@ -2855,7 +2870,9 @@ class Boss(TowerDebuffMixin):
         stats = self._get_boss_stats()
         self.e_timer = stats.get("skill_e_cooldown", 280)
         self.active_skill = 'e'
-        self.active_skill_timer = 45
+        # cocok dgn _NS_khalros.SKILL_DUR["e"] = 70 - DULU 45: boar
+        # sudah muncul di 1/3 lintasan (progress awal 0.36).
+        self.active_skill_timer = 70
         if self.target and self.target.alive:
             dx = self.target.x - self.x
             dy = self.target.y - self.y
@@ -2878,7 +2895,9 @@ class Boss(TowerDebuffMixin):
         stats = self._get_boss_stats()
         self.r_timer = stats.get("skill_r_cooldown", 560)
         self.active_skill = 'r'
-        self.active_skill_timer = 70
+        # cocok dgn _NS_khalros.SKILL_DUR["r"] = 80 - DULU 70: gate
+        # spawn hawk (progress < 0.1) terlewat, elang tidak muncul.
+        self.active_skill_timer = 80
         damage = stats.get("skill_r_damage", 380)
         for e in enemies:
             if math.hypot(e.x - self.x, e.y - self.y) <= 200:
@@ -2960,7 +2979,9 @@ class Boss(TowerDebuffMixin):
         stats = self._get_boss_stats()
         self.w_timer = stats.get("skill_w_cooldown", 240)
         self.active_skill = 'w'
-        self.active_skill_timer = 60
+        # cocok dgn _NS_gorath.SKILL_DUR["w"] = 70 (gerbang spawn
+        # proyektil darah progress < 0.1 harus sempat terbuka)
+        self.active_skill_timer = 70
         damage = stats.get("skill_w_damage", 210)
         for e in enemies:
             if math.hypot(e.x - self.x, e.y - self.y) <= 150:
@@ -2994,7 +3015,8 @@ class Boss(TowerDebuffMixin):
         stats = self._get_boss_stats()
         self.r_timer = stats.get("skill_r_cooldown", 560)
         self.active_skill = 'r'
-        self.active_skill_timer = 90
+        # cocok dgn _NS_gorath.SKILL_DUR["r"] = 100
+        self.active_skill_timer = 100
         damage = stats.get("skill_r_damage", 420)
         for e in enemies:
             if math.hypot(e.x - self.x, e.y - self.y) <= 190:

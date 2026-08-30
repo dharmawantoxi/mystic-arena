@@ -416,6 +416,72 @@ Review sheet: `python tools/_shot_morgath_masterwork.py` ->
 [docs/morgath_before_after.png](docs/morgath_before_after.png),
 [docs/morgath_portrait_preview.png](docs/morgath_portrait_preview.png).
 
+### Contoh maksimal kesembilan: Level 2 Masterwork (3 mini boss + 1 true boss)
+
+Level 2 (`bosses/level2.py`) dulu di-*bundle* apa adanya: tiap namespace
+menyimpan salinan helper-nya sendiri dan **durasi FX di renderer berbeda
+dari `active_skill_timer` yang di-set AI** (`base_boss.py`). Akibatnya
+animasi skill terpotong di tengah (Razak Flamebreak ter-cut di frame 50
+dari timeline 60), dan yang lebih parah: **gerbang spawn proyektil tidak
+pernah terbuka** — Q & R Khalros serta W Gorath tidak pernah men-spawn
+apa pun, karena pada frame pertama render `progress` sudah lewat dari
+ambang (gate `< 0.10` saat timeline sudah dimulai dari 19%/29%).
+
+Perbaikan, mengikuti preseden Level 1 (bukan menyalin mentah-mentah —
+rig Level 2 digambar relatif ke jangkar dengan `SHADOW_DY` per boss,
+Razak bahkan menunggangi kelelawar, jadi tidak ada normalisasi
+`SCALE/LIFT/FEET_DY` di sini):
+
+* **`SKILL_DUR` dikunci dua arah.** Razak 40/60/35/100, Khalros
+  60/80/70/80, Gorath 90/70/35/100, Alchemist 60/60/80/120 (q/w/e/r).
+  Denominator FX renderer DAN `active_skill_timer` AI memakai angka yang
+  sama (comment `cocok dgn _NS_x.SKILL_DUR`), sehingga `progress` mulai
+  persis 0.0 di frame pertama — gerbang spawn, window pose, dan
+  fade-out semuanya jatuh di tempatnya.
+* **Root motion di semua attack**: 4 fase — anticipation (tarik badan
+  4-5 px + body lift), lunge eased ke depan 15-17 px, impact hold +
+  getar, recovery linear. Slash-arc & burst mengikuti posisi lunge.
+* **Idle/walk diperkaya**: bobbing napas 3.5-5 px, sway lateral, dan
+  untuk tiga dari empat boss — sayap kelelawar Razak mengepak lebih
+  dalam per-fase, jubah Khalros berayun, goblin penunggang Alchemist
+  ikut memantul.
+* **Razak**: pose aim dua tangan saat Q/W (lengan menara mengikuti arah
+  skill — dulu parameter `aim` tidak pernah diteruskan, kode mati);
+  napalm & fireball lahir dari moncong senapan, bukan dari perut;
+  Flamebreak 360 px punya ghost dash 3 lapis + api pecah di dada +
+  fade-out 0.15 di ujung (dulu ter-potong keras).
+* **Khalros**: pose lempar dua tangan untuk Q (axe tidak lagi "muncul
+  sendiri"); boar/wolf/hawk summon naik dengan smoothstep lalu
+  TENGGELAM + pudar di 28% terakhir (dulu pop-hilang); rune cincin
+  diturunkan ke tanah (y+45).
+* **Gorath**: indikator rage kini persisten selama buff (lingkaran
+  merah + halo kepala + mata `acid_bright` selama `rage_active`, bukan
+  cuma 35 frame saat cast); blob Bloodrage di foreground jadi ring
+  SRCALPHA + envelope agar badan tidak tertutup; mata dahaga
+  berkedip dengan fade; uap darah menguar dari luka.
+* **Alchemist (true boss)**: **goblin rider digambar SEBELUM kepala
+  ogre** (dulu dirender terakhir sehingga helm menindih wajah); cheer
+  R — goblin mengangkat & memompa botol, kepalan kanan, dan
+  percikan emas; W — badan condong memutar lalu follow-through, botol
+  lahir dari tangan goblin; Q — spray keluar dari moncong pistol;
+  E — aura chemical rage jadi ring + steam backpack (mata menyala
+  sepanjang buff); R — pile emas tumbuh 0-55 px lalu tenggelam, koin
+  menyebar, sparkle pudar di ujung.
+* **Bayangan** semua FX mengikuti `SHADOW_DY` boss (dulu mengambang di
+  koordinat mentah untuk sebagian skill).
+
+Uji regresi: `python tools/test_level2_masterwork.py` (7 pemeriksaan:
+SKILL_DUR == timer AI untuk 16 skill, gerbang spawn terbuka di frame
+pertama, proyektil benar-benar ter-spawn saat render penuh per skill,
+idle/walk/attack bervariasi per-frame tanpa exception, root motion
+terpasang, draw-order goblin→kepala ogre, dan FX mencapai 100%
+timeline). Smoke integrasi via kelas `Boss` asli 420 tick per boss.
+
+Review sheet: `python tools/_shot_level2_masterwork.py` ->
+[docs/level2_masterwork_preview.png](docs/level2_masterwork_preview.png)
+(BEFORE = kode HEAD, AFTER = setelah pass, per aksi & per skill),
+plus strip audit penuh `python tools/level2_anim_audit.py`.
+
 ## Pass cahaya bersama (lighting.py)
 
 Renderer prosedural membangun volume dengan blok nilai yang di-author manual

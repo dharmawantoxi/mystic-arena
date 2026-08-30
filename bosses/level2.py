@@ -12,8 +12,28 @@ supaya PALETTE dan fungsi helper-nya TIDAK saling
 menimpa - 91 simbol bentrok antar file boss, termasuk
 PALETTE, _aacircle, _draw_shadow, _target_position.
 
-Kode di dalam tiap namespace TIDAK diubah isinya;
-hanya referensi antar-simbol yang diberi prefix.
+== Level 2 Masterwork (pass animasi) ==
+Namespace sudah disesuaikan mengikuti standar rig Level 1
+(Kaizen/Gornak Masterwork):
+
+  * SKILL_DUR per boss DIKUNCI sama `active_skill_timer`
+    AI di base_boss.py - FX tidak lagi terpotong di tengah
+    dan gerbang spawn proyektil selalu terbuka di frame
+    pertama (bug lama: Q/R Khalros & W Gorath tidak pernah
+    men-spawn apa pun).
+  * Idle/walk: bobbing + sway diperkuat; attack: root
+    motion 4 fase (antisipasi -> lunge -> impact hold +
+    getar -> recovery) dengan body lift.
+  * Razak: pose aim 2 tangan saat Q/W, moncong napalm/api
+    keluar dari muzzle senapan; Flamebreak punya fade-out.
+  * Khalros: pose lempar untuk Wild Axes; summon boar/wolf
+    naik lalu TENGGELAM (tidak pop/hilang mendadak).
+  * Gorath: indikator rage persisten (aura + mata + uap
+    darah); envelope di Bloodrage/Thirst.
+  * Alchemist (true boss): goblin rider digambar SEBELUM
+    kepala ogre (dulu menindih helm), cheer botol + pile
+    emas tumbuh-tenggelam untuk R, aura Chemical Rage tidak
+    lagi menutupi badan, mata menyala selama buff.
 
 Entry point publik ada di bagian paling bawah file.
 """
@@ -33,7 +53,15 @@ _IS_LEVEL_BUNDLE = True
 # RAZAK
 # ====================================================================
 class _NS_razak:
-    """Namespace razak - isi asli tidak diubah."""
+    """Namespace razak - Level 2 Masterwork animation pass."""
+
+    # ── Level 2 Masterwork ──────────────────────────────────────────
+    # Durasi FX skill DIKUNCI sama `active_skill_timer` yang dipasang
+    # AI di bosses/base_boss.py supaya animasi TIDAK terpotong di
+    # tengah dan gerbang spawn proyektil (`progress < 0.1`) selalu
+    # terbuka pada frame pertama cast.
+    SKILL_DUR = {"q": 40, "w": 60, "e": 35, "r": 100}
+    SHADOW_DY = 52      # tanah visual (bayangan) relatif anchor boss
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
@@ -476,15 +504,17 @@ class _NS_razak:
         if active_skill == "r":
             _NS_razak._draw_firestorm_ground(surface, boss, x, y, skill_timer, pulse)
 
-        # Character
+        # Character - saat Q/W aktif, goblin mengangkat penyembur api
+        # (pose aim dua tangan) supaya sumber api nyambung dengan FX.
+        aim = active_skill in ("q", "w")
         if active_skill == "e":
             _NS_razak._draw_razak_dashing(surface, boss, x, y, skill_timer, pulse)
         elif attacking:
             _NS_razak._draw_razak_attack(surface, boss, x, y)
         elif moving:
-            _NS_razak._draw_razak_walk(surface, boss, x, y)
+            _NS_razak._draw_razak_walk(surface, boss, x, y, aim=aim)
         else:
-            _NS_razak._draw_razak_idle(surface, boss, x, y)
+            _NS_razak._draw_razak_idle(surface, boss, x, y, aim=aim)
 
         # Update / draw projectiles
         _NS_razak._manage_projectiles_no_patches(boss, surface, pulse)
@@ -526,28 +556,44 @@ class _NS_razak:
     # ===================================================================
     # POSE MODES
     # ===================================================================
-    def _draw_razak_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 3)  # Bat hovers with bigger bob
-        _NS_razak._draw_shadow(surface, x, y + 52)
+    def _draw_razak_idle(surface, boss, x, y, aim=False):
+        # Napas berat + melayang jelas (amplitudo 4 px, dulu cuma 3)
+        bob = int(math.sin(boss.pulse * 0.8) * 4)
+        _NS_razak._draw_shadow(surface, x, y + _NS_razak.SHADOW_DY)
         _NS_razak._draw_fire_wisps(surface, x, y + 38, boss.pulse)
-        _NS_razak._draw_razak_full(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+        _NS_razak._draw_razak_full(surface, x, y + bob, boss.direction,
+                                   boss.pulse, "idle", aim=aim)
 
-
-    def _draw_razak_walk(surface, boss, x, y):
+    def _draw_razak_walk(surface, boss, x, y, aim=False):
         phase = boss.pulse * 2.5
-        bob = int(math.sin(phase * 1.2) * 4)
-        sway = int(math.sin(phase * 0.5) * 2)
-        _NS_razak._draw_shadow(surface, x + sway, y + 52)
+        bob = int(math.sin(phase * 1.2) * 5)
+        sway = int(math.sin(phase * 0.5) * 3)
+        _NS_razak._draw_shadow(surface, x + sway, y + _NS_razak.SHADOW_DY)
         _NS_razak._draw_fire_wisps(surface, x + sway, y + 38, phase, trail=True,
                          facing=boss.direction)
-        _NS_razak._draw_razak_full(surface, x + sway, y + bob, boss.direction, phase, "walk")
-
+        _NS_razak._draw_razak_full(surface, x + sway, y + bob, boss.direction,
+                                   phase, "walk", aim=aim)
 
     def _draw_razak_attack(surface, boss, x, y):
         progress = getattr(boss, "_razak_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
         bob = int(math.sin(boss.pulse * 0.8) * 2)
-        lunge = int(math.sin(progress * math.pi) * 4) * boss.direction
+        d = boss.direction
+        # ── Root motion berfase (standar Level 1) ──
+        # wind-up menarik mundur, tembakan mendorong maju, lalu
+        # recoil-hold bergetar dan recovery mulus.
+        if progress < 0.30:
+            k = progress / 0.30
+            lunge = int(-4 * k)
+        elif progress < 0.55:
+            k = (progress - 0.30) / 0.25
+            lunge = int(-4 + 10 * (1 - (1 - k) ** 2))
+        elif progress < 0.70:
+            lunge = 6 + int(math.sin(progress * 42) * 1.5)
+        else:
+            k = (progress - 0.70) / 0.30
+            lunge = int(6 * (1 - k))
+        lunge = lunge * d
 
         # ─── Fireball serangan biasa ───
         # Razak itu unit RANGED (range 130) tapi dulu animasi
@@ -557,42 +603,46 @@ class _NS_razak:
         if 0.34 < progress < 0.46 and not getattr(
                 boss, "_razak_proj_spawned", False):
             tx, ty = _NS_razak._target_position(boss, x, y)
-            sx = x + 20 * boss.direction + lunge
-            sy = y + bob - 6
+            sx = x + 28 * d + lunge
+            sy = y + bob - 16          # muzzle moncong senapan
             _NS_razak._spawn_napalm(boss, sx, sy, tx, ty, arc_height=22)
             boss._razak_proj_spawned = True
         if progress < 0.12 or progress > 0.9:
             boss._razak_proj_spawned = False
 
-        _NS_razak._draw_shadow(surface, x + lunge, y + 52)
+        _NS_razak._draw_shadow(surface, x + lunge, y + _NS_razak.SHADOW_DY)
         _NS_razak._draw_fire_wisps(surface, x + lunge, y + 38, boss.pulse, intense=True)
-        _NS_razak._draw_razak_full(surface, x + lunge, y + bob, boss.direction, boss.pulse,
-                         "attack", progress)
-        _NS_razak._draw_machete_swing_arc(surface, x + lunge, y + bob, boss.direction, progress)
-
+        # Selama ayunan, goblin ikut mengangkat senapan (aim) supaya
+        # kapak + muzzle flash terbaca sebagai satu gerakan.
+        _NS_razak._draw_razak_full(surface, x + lunge, y + bob, d, boss.pulse,
+                         "attack", progress, aim=True)
+        _NS_razak._draw_machete_swing_arc(surface, x + lunge, y + bob, d, progress)
 
     def _draw_razak_dashing(surface, boss, x, y, timer, phase):
         """Firefly dash - bat flies forward with flame trail."""
-        bob = int(math.sin(phase * 1.5) * 2)
-        _NS_razak._draw_shadow(surface, x, y + 52)
+        bob = int(math.sin(phase * 1.5) * 3)
+        _NS_razak._draw_shadow(surface, x, y + _NS_razak.SHADOW_DY)
         _NS_razak._draw_fire_wisps(surface, x, y + 38, phase, intense=True)
 
-        # Motion blur behind
-        for i in range(4):
-            offset = (i + 1) * 8 * -boss.direction
-            alpha = int(150 - i * 30)
+        # Motion blur behind (3 ghost saja; 4 bikin frame jadi riuh)
+        for i in range(3):
+            offset = (i + 1) * 10 * -boss.direction
+            alpha = int(120 - i * 35)
             temp = pygame.Surface((160, 160), pygame.SRCALPHA)
-            _NS_razak._draw_razak_full(temp, 80, 80, boss.direction, phase, "dash")
+            _NS_razak._draw_razak_full(temp, 80, 80, boss.direction, phase,
+                                       "dash")
             temp.set_alpha(alpha)
             surface.blit(temp, (x + offset - 80, y + bob - 80))
 
-        _NS_razak._draw_razak_full(surface, x, y + bob, boss.direction, phase, "dash")
+        _NS_razak._draw_razak_full(surface, x, y + bob, boss.direction, phase,
+                                   "dash")
 
 
     # ===================================================================
     # FULL COMPOSITE
     # ===================================================================
-    def _draw_razak_full(surface, cx, cy, facing, phase, action, attack_progress=0):
+    def _draw_razak_full(surface, cx, cy, facing, phase, action,
+                         attack_progress=0, aim=False):
         """Draw bat mount + goblin rider."""
         # Wings behind body first
         _NS_razak._draw_bat_wings(surface, cx, cy, facing, phase, action)
@@ -605,7 +655,7 @@ class _NS_razak:
 
         # Goblin rider on top of bat
         _NS_razak._draw_goblin_rider(surface, cx - 2, cy - 12, facing, phase, action,
-                           attack_progress)
+                           attack_progress, aim=aim)
 
         # Front wings overlay (bring wings forward if attack)
         if action == "attack":
@@ -613,10 +663,16 @@ class _NS_razak:
 
 
     def _draw_bat_wings(surface, cx, cy, facing, phase, action):
-        """Bat mount wings (background, spread out)."""
-        flap = math.sin(phase * (2.5 if action == "walk" else 1.2)) * 0.35
+        """Bat mount wings (background, spread out).
+
+        Amplitudo flap per-aksi: santai saat idle, rapat saat walk,
+        mengepak keras untuk brace saat attack, full-speed saat dash.
+        """
+        flap = math.sin(phase * (2.6 if action == "walk" else 1.1)) * 0.45
         if action == "dash":
-            flap = math.sin(phase * 4) * 0.5
+            flap = math.sin(phase * 4.2) * 0.55
+        elif action == "attack":
+            flap = math.sin(phase * 2.2) * 0.5
 
         for side in (-1, 1):
             wing_base_x = cx + side * 8
@@ -820,11 +876,18 @@ class _NS_razak:
             ])
 
 
-    def _draw_goblin_rider(surface, cx, cy, facing, phase, action, attack_progress):
-        """Goblin sitting on bat, holding weapon."""
-        sway = int(math.sin(phase * 0.6) * 1)
+    def _draw_goblin_rider(surface, cx, cy, facing, phase, action,
+                           attack_progress, aim=False):
+        """Goblin sitting on bat, holding weapon.
+
+        `aim=True` (atau action "dash") -> goblin mencengkeram
+        penyembur api dengan DUA tangan dan muzzle menyala, sehingga
+        FX Flamebreak/Napalm keluar dari moncong senapan, bukan dari
+        kosong.
+        """
+        sway = int(math.sin(phase * 0.6) * 1.5)
         if action == "walk":
-            sway += int(math.sin(phase * 2) * 1)
+            sway += int(math.sin(phase * 2) * 1.5)
 
         # Legs (straddling bat)
         for side in (-1, 1):
@@ -854,7 +917,7 @@ class _NS_razak:
         if action == "attack":
             _NS_razak._draw_goblin_attack_arms(surface, cx + sway, cy - 4, facing, phase,
                                      attack_progress)
-        elif action in ("q_cast", "w_cast"):
+        elif aim or action in ("q_cast", "w_cast", "dash"):
             _NS_razak._draw_goblin_gun_arms(surface, cx + sway, cy - 4, facing, phase)
         else:
             _NS_razak._draw_goblin_idle_arms(surface, cx + sway, cy - 4, facing, phase)
@@ -1339,14 +1402,14 @@ class _NS_razak:
     # SKILL Q: STICKY NAPALM (arcing fire projectile)
     # ===================================================================
     def _draw_sticky_napalm(surface, boss, x, y, timer, phase):
-        duration = 40
+        duration = _NS_razak.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
         tx, ty = _NS_razak._target_position(boss, x, y)
 
         # Spawn projectile at start
         if progress < 0.15 and not getattr(boss, "_razak_napalm_spawned", False):
-            sx = x + 18 * boss.direction
-            sy = y - 5
+            sx = x + 26 * boss.direction
+            sy = y - 16            # keluar dari moncong, bukan dari perut
             _NS_razak._spawn_napalm(boss, sx, sy, tx, ty)
             boss._razak_napalm_spawned = True
         if progress > 0.7:
@@ -1355,8 +1418,8 @@ class _NS_razak:
         # Muzzle flash while casting
         if progress < 0.3:
             flash_intensity = 1 - progress / 0.3
-            fx = x + 22 * boss.direction
-            fy = y - 5
+            fx = x + 26 * boss.direction
+            fy = y - 16
             alpha = int(230 * flash_intensity)
             _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], alpha), (fx, fy), 8)
             _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], alpha), (fx, fy), 5)
@@ -1375,14 +1438,21 @@ class _NS_razak:
     # SKILL W: FLAMEBREAK (flame cone/stream)
     # ===================================================================
     def _draw_flamebreak(surface, boss, x, y, timer, phase):
-        duration = 60
+        duration = _NS_razak.SKILL_DUR["w"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
         tx, ty = _NS_razak._target_position(boss, x, y)
 
+        # ── Napas akhir: stream memudar di 15% terakhir, bukan hilang ──
+        if progress >= 0.85:
+            fade = max(0.0, (1.0 - progress) / 0.15)
+        else:
+            fade = 1.0
+        stream_w = 1.0 if progress < 0.85 else max(0.25, fade)
+
         # Continuous flame stream forward
-        if progress < 0.85:
-            start_x = x + 22 * boss.direction
-            start_y = y - 5
+        if progress < 0.98:
+            start_x = x + 28 * boss.direction
+            start_y = y - 16        # moncong penyembur api = tangan goblin
 
             # Direction toward target
             dx = tx - start_x
@@ -1413,9 +1483,11 @@ class _NS_razak:
                 fx = int(base_x + perp_x * offset)
                 fy = int(base_y + perp_y * offset)
 
-                size = int(6 + t * 4)
+                size = int((6 + t * 4) * stream_w)
                 alpha_t = 1 - t * 0.3
-                alpha = int(220 * alpha_t)
+                alpha = int(220 * alpha_t * fade)
+                if alpha <= 0:
+                    continue
 
                 # Layer flame colors based on distance
                 if t < 0.15:
@@ -1435,9 +1507,12 @@ class _NS_razak:
                 _NS_razak._aacircle(surface, (*color_inner, alpha), (fx, fy), max(1, size - 2))
 
             # Extra bright core near muzzle
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], 255), (int(start_x), int(start_y)), 5)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], 255),
-                      (int(start_x + dir_x * 5), int(start_y + dir_y * 5)), 4)
+            core_a = int(255 * fade)
+            if core_a > 0:
+                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], core_a),
+                          (int(start_x), int(start_y)), 5)
+                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], core_a),
+                          (int(start_x + dir_x * 5), int(start_y + dir_y * 5)), 4)
 
 
     # ===================================================================
@@ -1446,7 +1521,7 @@ class _NS_razak:
     def _draw_firestorm_ground(surface, boss, x, y, timer, phase):
         """Ground circle warning."""
         tx, ty = _NS_razak._target_position(boss, x, y)
-        duration = 100
+        duration = _NS_razak.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 2) * 0.3 + 0.7
 
@@ -1467,7 +1542,7 @@ class _NS_razak:
     def _draw_firestorm(surface, boss, x, y, timer, phase):
         """Multiple pillars of fire rising around target."""
         tx, ty = _NS_razak._target_position(boss, x, y)
-        duration = 100
+        duration = _NS_razak.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         if progress < 0.15:
@@ -1560,7 +1635,14 @@ class _NS_razak:
 # KHALROS
 # ====================================================================
 class _NS_khalros:
-    """Namespace khalros - isi asli tidak diubah."""
+    """Namespace khalros - Level 2 Masterwork animation pass."""
+
+    # Durasi FX DIKUNCI sama active_skill_timer AI (base_boss.py).
+    # Q/R dulu tidak pernah menembak karena gerbang spawn
+    # `progress < 0.1` tertutup permanen (AI lebih cepat dari
+    # denominator renderer); W/E muncul di tengah animasi (pop-in).
+    SKILL_DUR = {"q": 60, "w": 80, "e": 70, "r": 80}
+    SHADOW_DY = 48
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
@@ -2054,7 +2136,8 @@ class _NS_khalros:
         )
 
         _NS_khalros._draw_primal_aura(surface, x, y, pulse, active_skill)
-        _NS_khalros._draw_ground_runes(surface, x, y + 40, pulse, active_skill)
+        _NS_khalros._draw_ground_runes(surface, x, y + _NS_khalros.SHADOW_DY - 3,
+                                       pulse, active_skill)
 
         # Ground skill effects
         if active_skill == "w":
@@ -2063,8 +2146,17 @@ class _NS_khalros:
             _NS_khalros._draw_boar_ground(surface, boss, x, y, skill_timer, pulse)
 
         # Character
+        # Saat Q dilempar (0-45% durasi) Khalros memegang pose
+        # lemparan: kapak terangkat -> terlempar, bukan diam berdiri.
+        throw_p = None
+        if active_skill == "q" and not attacking:
+            tp = 1.0 - skill_timer / _NS_khalros.SKILL_DUR["q"]
+            if tp < 0.45:
+                throw_p = tp / 0.45
         if attacking:
             _NS_khalros._draw_khalros_attack(surface, boss, x, y)
+        elif throw_p is not None:
+            _NS_khalros._draw_khalros_throw(surface, boss, x, y, throw_p)
         elif moving:
             _NS_khalros._draw_khalros_walk(surface, boss, x, y)
         else:
@@ -2087,40 +2179,66 @@ class _NS_khalros:
     # POSE MODES
     # ===================================================================
     def _draw_khalros_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_khalros._draw_shadow(surface, x, y + 48)
+        # Napas terasa: bob 2 -> 3.5 px + sway lembut
+        bob = int(math.sin(boss.pulse * 0.7) * 3.5)
+        _NS_khalros._draw_shadow(surface, x, y + _NS_khalros.SHADOW_DY)
         _NS_khalros._draw_wild_wisps(surface, x, y + 32, boss.pulse)
         _NS_khalros._draw_khalros_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
 
-
     def _draw_khalros_walk(surface, boss, x, y):
         phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_khalros._draw_shadow(surface, x + sway, y + 48)
+        bob = int(abs(math.sin(phase * 1.3)) * 5)
+        sway = int(math.sin(phase) * 3)
+        _NS_khalros._draw_shadow(surface, x + sway, y + _NS_khalros.SHADOW_DY)
         _NS_khalros._draw_wild_wisps(surface, x + sway, y + 32, phase, trail=True,
                          facing=boss.direction)
         _NS_khalros._draw_khalros_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
 
+    def _khal_root_motion(progress, d):
+        """Root motion berfase: mundur-naik (anticipation) -> lunge
+        (swing) -> tanam kaki + getar (impact hold) -> recovery.
+        Return (lunge_dx, lift_dy)."""
+        if progress < 0.25:            # anticipation: mundur + sedikit naik
+            k = progress / 0.25
+            return int(-5 * k), -int(2.5 * k)
+        if progress < 0.55:            # swing: dorong 10 px ke depan
+            k = (progress - 0.25) / 0.30
+            e = 1 - (1 - k) ** 2
+            return int(-5 + 15 * e), int(-2.5 + 5 * e)
+        if progress < 0.70:            # impact hold: getar pendek
+            return 10, 2 + int(math.sin(progress * 42) * 1.5)
+        k = (progress - 0.70) / 0.30   # recovery
+        return int(10 * (1 - k)), int(2 * (1 - k))
 
     def _draw_khalros_attack(surface, boss, x, y):
         progress = getattr(boss, "_khal_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
+        lunge, lift = _NS_khalros._khal_root_motion(progress, boss.direction)
+        lunge = lunge * boss.direction
 
-        _NS_khalros._draw_shadow(surface, x + lunge, y + 48)
+        _NS_khalros._draw_shadow(surface, x + lunge, y + _NS_khalros.SHADOW_DY)
         _NS_khalros._draw_wild_wisps(surface, x + lunge, y + 32, boss.pulse, intense=True)
-        _NS_khalros._draw_khalros_body(surface, x + lunge, y, boss.direction, boss.pulse,
+        _NS_khalros._draw_khalros_body(surface, x + lunge, y + lift, boss.direction, boss.pulse,
                            "attack", progress)
-        _NS_khalros._draw_axe_swing_arc(surface, x + lunge, y, boss.direction, progress)
-        _NS_khalros._draw_swing_impact(surface, x + lunge, y, boss.direction, progress)
+        _NS_khalros._draw_axe_swing_arc(surface, x + lunge, y + lift, boss.direction, progress)
+        _NS_khalros._draw_swing_impact(surface, x + lunge, y + lift, boss.direction, progress)
+
+    def _draw_khalros_throw(surface, boss, x, y, t):
+        """Pose melempar kapak (skill Q) - reuse swing timeline."""
+        lunge, lift = _NS_khalros._khal_root_motion(0.25 + 0.35 * t, boss.direction)
+        lunge = lunge * boss.direction
+        _NS_khalros._draw_shadow(surface, x + lunge, y + _NS_khalros.SHADOW_DY)
+        _NS_khalros._draw_wild_wisps(surface, x + lunge, y + 32, boss.pulse, intense=True)
+        _NS_khalros._draw_khalros_body(surface, x + lunge, y + lift, boss.direction,
+                                       boss.pulse, "attack", 0.25 + 0.35 * t)
 
 
     # ===================================================================
     # BODY RENDERING
     # ===================================================================
     def _draw_khalros_body(surface, cx, cy, facing, phase, action, attack_progress=0):
-        sway = int(math.sin(phase * 0.6) * (2 if action != "idle" else 1))
+        _amp = {"idle": 2, "walk": 4, "attack": 2}.get(action, 2)
+        sway = int(math.sin(phase * 0.6) * _amp)
 
         _NS_khalros._draw_loincloth(surface, cx, cy + 8, phase, sway)
         _NS_khalros._draw_torso(surface, cx, cy - 5, phase, sway)
@@ -2838,7 +2956,7 @@ class _NS_khalros:
     # ===================================================================
     def _draw_wild_axes(surface, boss, x, y, timer, phase):
         """Two axes thrown - spawn projectiles."""
-        duration = 60
+        duration = _NS_khalros.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
         tx, ty = _NS_khalros._target_position(boss, x, y)
 
@@ -2870,17 +2988,19 @@ class _NS_khalros:
     # ===================================================================
     def _draw_call_of_wild_ground(surface, boss, x, y, timer, phase):
         """Summon circles beside Khalros."""
-        duration = 80
+        duration = _NS_khalros.SKILL_DUR["w"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 2) * 0.3 + 0.7
+        # Lingkaran memudar bersama beast yang tenggelam (0.72 -> 1.0)
+        fade = 1.0 if progress <= 0.72 else max(0.0, 1.0 - (progress - 0.72) / 0.28)
 
         for side, off in [(-1, -40), (1, 40)]:
             sx = x + off
             sy = y + 32
             radius = int(20 + progress * 10)
-            _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["fire_dark"], int(180 * pulse)),
+            _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["fire_dark"], int(180 * pulse * fade)),
                      (sx - radius, sy - radius // 3, radius * 2, radius // 1.5))
-            _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["fire_bright"], int(150 * pulse)),
+            _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["fire_bright"], int(150 * pulse * fade)),
                      (sx - radius + 4, sy - radius // 3 + 2,
                       radius * 2 - 8, radius // 1.5 - 4))
 
@@ -2889,30 +3009,46 @@ class _NS_khalros:
                 angle = phase * 0.3 + i * math.pi / 2
                 rx = sx + int(math.cos(angle) * (radius - 3))
                 ry = sy + int(math.sin(angle) * (radius // 3))
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], int(200 * pulse)),
+                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], int(200 * pulse * fade)),
                           (rx, ry), 2)
 
 
     def _draw_call_of_wild(surface, boss, x, y, timer, phase):
-        """Boar (left) and wolf (right) rising from summon circles."""
-        duration = 80
+        """Boar (left) and wolf (right) rising from summon circles.
+
+        Timeline penuh: NAIK (0.2-0.55) -> BERDIRI penuh (0.55-0.72)
+        -> TENGGELAM + pudar (0.72-1.0) supaya tidak hilang mendadak
+        saat active_skill_timer habis."""
+        duration = _NS_khalros.SKILL_DUR["w"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
+
+        def _rise(start):
+            if progress <= start:
+                return 0.0, 0.0
+            t = min(1.0, (progress - start) / 0.35)
+            t = t * t * (3 - 2 * t)          # smoothstep, lebih halus
+            sink = 0.0
+            if progress > 0.72:
+                sink = min(1.0, (progress - 0.72) / 0.28)
+            return t, sink
 
         # Boar on left
         boar_x = x - 40
         boar_y = y + 20
         if progress > 0.2:
-            rise_t = min(1.0, (progress - 0.2) / 0.5)
-            _NS_khalros._draw_boar(surface, boar_x, boar_y - int(20 * rise_t),
-                       -1, phase, alpha=int(255 * rise_t))
+            rise_t, sink = _rise(0.2)
+            _NS_khalros._draw_boar(surface, boar_x,
+                       boar_y - int(22 * rise_t) + int(14 * sink), -1, phase,
+                       alpha=int(255 * rise_t * (1 - sink * 0.9)))
 
         # Wolf on right
         wolf_x = x + 40
         wolf_y = y + 20
         if progress > 0.3:
-            rise_t = min(1.0, (progress - 0.3) / 0.5)
-            _NS_khalros._draw_wolf(surface, wolf_x, wolf_y - int(20 * rise_t),
-                       1, phase, alpha=int(255 * rise_t))
+            rise_t, sink = _rise(0.3)
+            _NS_khalros._draw_wolf(surface, wolf_x,
+                       wolf_y - int(22 * rise_t) + int(14 * sink), 1, phase,
+                       alpha=int(255 * rise_t * (1 - sink * 0.9)))
 
 
     def _draw_boar(surface, cx, cy, facing, phase, alpha=255):
@@ -3094,7 +3230,7 @@ class _NS_khalros:
     def _draw_boar_ground(surface, boss, x, y, timer, phase):
         """Trail of dust as boar charges."""
         tx, ty = _NS_khalros._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
+        progress = max(0.0, min(1.0, 1 - timer / _NS_khalros.SKILL_DUR["e"]))
 
         # Charging trail
         start_x = x + 15 * boss.direction
@@ -3111,7 +3247,7 @@ class _NS_khalros:
     def _draw_boar_charge(surface, boss, x, y, timer, phase):
         """Boar charging toward target."""
         tx, ty = _NS_khalros._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
+        progress = max(0.0, min(1.0, 1 - timer / _NS_khalros.SKILL_DUR["e"]))
         start_x = x + 15 * boss.direction
         start_y = y + 25
 
@@ -3153,7 +3289,7 @@ class _NS_khalros:
     # ===================================================================
     def _draw_hawk_summon(surface, boss, x, y, timer, phase):
         """Hawk flies from Khalros toward target."""
-        duration = 80
+        duration = _NS_khalros.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
         tx, ty = _NS_khalros._target_position(boss, x, y)
 
@@ -3192,7 +3328,13 @@ class _NS_khalros:
 # GORATH
 # ====================================================================
 class _NS_gorath:
-    """Namespace gorath - isi asli tidak diubah."""
+    """Namespace gorath - Level 2 Masterwork animation pass."""
+
+    # Durasi FX DIKUNCI sama active_skill_timer AI (base_boss.py).
+    # Dulu W tidak pernah men-spawn blood spike (gerbang progress
+    # terlewat) dan burst-nya terpotong sesaat sebelum hilang.
+    SKILL_DUR = {"q": 90, "w": 70, "e": 35, "r": 100}
+    SHADOW_DY = 46
 
     # ---------------------------------------------------------------------------
     # Compatibility helpers
@@ -3537,9 +3679,14 @@ class _NS_gorath:
             or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 44) - 15
         )
 
+        # Rage (Blood Rage buff) berjalan 300 frame setelah cast -
+        # selama itu ada glow persisten, bukan cuma saat FX cast.
+        rage = bool(getattr(boss, "rage_active", False))
+
         # Background
-        _NS_gorath._draw_blood_aura(surface, x, y, pulse, active_skill)
-        _NS_gorath._draw_ground_blood_pool(surface, x, y + 38, pulse, active_skill)
+        _NS_gorath._draw_blood_aura(surface, x, y, pulse, active_skill, rage)
+        _NS_gorath._draw_ground_blood_pool(surface, x, y + _NS_gorath.SHADOW_DY - 2,
+                                           pulse, active_skill)
 
         # Skill ground effects
         if active_skill == "w":
@@ -3551,9 +3698,13 @@ class _NS_gorath:
         if attacking:
             _NS_gorath._draw_gorath_attack(surface, boss, x, y)
         elif moving:
-            _NS_gorath._draw_gorath_walk(surface, boss, x, y)
+            _NS_gorath._draw_gorath_walk(surface, boss, x, y, rage)
         else:
-            _NS_gorath._draw_gorath_idle(surface, boss, x, y)
+            _NS_gorath._draw_gorath_idle(surface, boss, x, y, rage)
+
+        if rage:
+            # setetes darah menguap di sekitar tubuh selama rage
+            _NS_gorath._draw_wisps_gore(surface, x, y + 30, pulse)
 
         # Projectiles
         _NS_gorath._manage_projectiles(boss, surface, pulse)
@@ -3572,41 +3723,75 @@ class _NS_gorath:
     # ===================================================================
     # POSE MODES
     # ===================================================================
-    def _draw_gorath_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_gorath._draw_shadow(surface, x, y + 46)
-        _NS_gorath._draw_blood_wisps(surface, x, y + 30, boss.pulse)
-        _NS_gorath._draw_gorath_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+    def _draw_gorath_idle(surface, boss, x, y, rage=False):
+        # Napas demo - 2 -> 3.5 px supaya jelas hidup
+        bob = int(math.sin(boss.pulse * 0.7) * 3.5)
+        _NS_gorath._draw_shadow(surface, x, y + _NS_gorath.SHADOW_DY)
+        _NS_gorath._draw_blood_wisps(surface, x, y + 30, boss.pulse,
+                                     intense=rage)
+        _NS_gorath._draw_gorath_body(surface, x, y + bob, boss.direction,
+                                     boss.pulse, "idle", rage=rage)
 
-
-    def _draw_gorath_walk(surface, boss, x, y):
+    def _draw_gorath_walk(surface, boss, x, y, rage=False):
         phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_gorath._draw_shadow(surface, x + sway, y + 46)
-        _NS_gorath._draw_blood_wisps(surface, x + sway, y + 30, phase, trail=True, facing=boss.direction)
-        _NS_gorath._draw_gorath_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
-        _NS_gorath._draw_blood_trail(surface, x + sway, y + 30, phase, boss.direction)
+        bob = int(abs(math.sin(phase * 1.3)) * 5)
+        sway = int(math.sin(phase) * 3)
+        _NS_gorath._draw_shadow(surface, x + sway, y + _NS_gorath.SHADOW_DY)
+        _NS_gorath._draw_blood_wisps(surface, x + sway, y + 30, phase, trail=True, facing=boss.direction,
+                                     intense=rage)
+        _NS_gorath._draw_gorath_body(surface, x + sway, y - bob, boss.direction, phase, "walk",
+                                     rage=rage)
+        _NS_gorath._draw_blood_trail(surface, x + sway, y + _NS_gorath.SHADOW_DY - 14,
+                                     phase, boss.direction)
 
+    def _gor_root_motion(progress):
+        """Antisipasi -> lunge -> impact hold (getar) -> recovery."""
+        if progress < 0.25:
+            k = progress / 0.25
+            return int(-5 * k), -int(3 * k)
+        if progress < 0.55:
+            k = (progress - 0.25) / 0.30
+            e = 1 - (1 - k) ** 2
+            return int(-5 + 16 * e), int(-3 + 5.5 * e)
+        if progress < 0.70:
+            return 11, 2 + int(math.sin(progress * 42) * 1.5)
+        k = (progress - 0.70) / 0.30
+        return int(11 * (1 - k)), int(2.5 * (1 - k))
 
     def _draw_gorath_attack(surface, boss, x, y):
         progress = getattr(boss, "_gor_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
+        lunge, lift = _NS_gorath._gor_root_motion(progress)
+        lunge = lunge * boss.direction
 
-        _NS_gorath._draw_shadow(surface, x + lunge, y + 46)
+        _NS_gorath._draw_shadow(surface, x + lunge, y + _NS_gorath.SHADOW_DY)
         _NS_gorath._draw_blood_wisps(surface, x + lunge, y + 30, boss.pulse, intense=True)
-        _NS_gorath._draw_gorath_body(surface, x + lunge, y, boss.direction, boss.pulse,
+        _NS_gorath._draw_gorath_body(surface, x + lunge, y + lift, boss.direction, boss.pulse,
                           "attack", progress)
-        _NS_gorath._draw_blade_swing_arc(surface, x + lunge, y, boss.direction, progress)
-        _NS_gorath._draw_swing_impact(surface, x + lunge, y, boss.direction, progress)
+        _NS_gorath._draw_blade_swing_arc(surface, x + lunge, y + lift, boss.direction, progress)
+        _NS_gorath._draw_swing_impact(surface, x + lunge, y + lift, boss.direction, progress)
+
+    def _draw_wisps_gore(surface, cx, cy, phase):
+        """Percikan darah kecil melayang - indikator rage persisten."""
+        for i in range(6):
+            t = (phase * 0.5 + i * 0.17) % 1.0
+            px = cx + int(math.sin(phase * 0.8 + i * 2.1) * 26)
+            py = cy - int(t * 34)
+            alpha = int(160 * (1 - t))
+            if alpha > 10:
+                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha),
+                          (px, py), 2)
+                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_hot"], alpha),
+                          (px, py - 1), 1)
 
 
     # ===================================================================
     # BODY RENDERING
     # ===================================================================
-    def _draw_gorath_body(surface, cx, cy, facing, phase, action, attack_progress=0):
-        sway = int(math.sin(phase * 0.6) * (2 if action != "idle" else 1))
+    def _draw_gorath_body(surface, cx, cy, facing, phase, action,
+                          attack_progress=0, rage=False):
+        _amp = {"idle": 2, "walk": 4, "attack": 2}.get(action, 2)
+        sway = int(math.sin(phase * 0.6) * _amp)
 
         # Lower floating body (loincloth / robe)
         _NS_gorath._draw_loincloth(surface, cx, cy + 8, phase, sway)
@@ -3614,8 +3799,8 @@ class _NS_gorath:
         # Torso
         _NS_gorath._draw_torso(surface, cx, cy - 5, phase, sway)
 
-        # Head with hair
-        _NS_gorath._draw_gorath_head(surface, cx, cy - 26, facing, phase)
+        # Head with hair (rage -> mata menyala lebih panas)
+        _NS_gorath._draw_gorath_head(surface, cx, cy - 26, facing, phase, rage)
 
         # Shoulders
         _NS_gorath._draw_shoulders(surface, cx, cy - 12, phase)
@@ -3753,8 +3938,12 @@ class _NS_gorath:
                 _NS_gorath._draw_blood_streak(surface, sx - 2, cy + 5, sx - 3, cy + 12, 2, 200)
 
 
-    def _draw_gorath_head(surface, cx, cy, facing, phase):
-        """Demon head with spiky hair and glowing red eyes."""
+    def _draw_gorath_head(surface, cx, cy, facing, phase, rage=False):
+        """Demon head with spiky hair and glowing red eyes.
+
+        Saat `rage` (buff Blood Rage aktif) mata + halo membara
+        lebih besar dan berdenyut - indikator status persisten.
+        """
         # Neck
         _NS_gorath._rect(surface, _NS_gorath.PALETTE["skin_darkest"], (cx - 4, cy + 8, 8, 6))
         _NS_gorath._rect(surface, _NS_gorath.PALETTE["skin_dark"], (cx - 3, cy + 8, 6, 5))
@@ -3792,7 +3981,9 @@ class _NS_gorath:
                               cx + offset, cy + 8 + (offset % 2), 1, 200)
 
         # Glowing red eyes
-        eye_pulse = math.sin(phase * 2) * 0.3 + 0.7
+        eye_pulse = math.sin(phase * (3.0 if rage else 2)) * 0.3 + 0.7
+        _er = 3 if rage else 2
+        _hr = 6 if rage else 5
         for side in (-1, 1):
             ex = cx + side * 4
             ey = cy + 1
@@ -3801,11 +3992,11 @@ class _NS_gorath:
             # Glowing eye
             _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["eye_dark"], (ex, ey), 2)
             _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["eye_bright"], (ex, ey),
-                      max(1, int(2 * eye_pulse)))
+                      max(1, int(_er * eye_pulse)))
             _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["eye_hot"], (ex, ey), 1)
             # Glow halo
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["eye_bright"], int(120 * eye_pulse)),
-                      (ex, ey), 5)
+            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["eye_bright"], int((120 if not rage else 190) * eye_pulse)),
+                      (ex, ey), _hr)
 
         # Mouth - fanged
         _NS_gorath._rect(surface, _NS_gorath.PALETTE["shadow_deep"], (cx - 4, cy + 6, 8, 2))
@@ -4182,10 +4373,12 @@ class _NS_gorath:
         surface.blit(shadow, (x - 50, y - 10))
 
 
-    def _draw_blood_aura(surface, x, y, phase, active_skill):
+    def _draw_blood_aura(surface, x, y, phase, active_skill, rage=False):
         """Background aura."""
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
-        strength = 1.5 if active_skill == "q" else 1.0
+        strength = 1.5 if active_skill == "q" else (1.3 if rage else 1.0)
+        if rage:
+            pulse = pulse * 1.15 + 0.05
 
         aura = pygame.Surface((180, 160), pygame.SRCALPHA)
         for radius in range(72, 5, -4):
@@ -4276,9 +4469,11 @@ class _NS_gorath:
     # ===================================================================
     def _draw_bloodrage(surface, boss, x, y, timer, phase):
         """Self-buff — flame-like blood aura around Gorath."""
-        duration = 60
+        duration = _NS_gorath.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        pulse = math.sin(phase * 3) * 0.3 + 0.7
+        # envelope: menyala cepat, meredup di 20% terakhir
+        env = min(1.0, progress * 5, (1 - progress) * 5 + 0.35)
+        pulse = (math.sin(phase * 3) * 0.3 + 0.7) * env
 
         # Flame tongues rising around body
         for i in range(10):
@@ -4302,18 +4497,21 @@ class _NS_gorath:
                     color = _NS_gorath.PALETTE["blood_hot"]
                 _NS_gorath._aacircle(surface, (*color, alpha), (fx, fy), max(1, w))
 
-        # Inner intense glow around body
-        for radius in range(30, 5, -3):
-            alpha = int((30 - radius) * 4 * pulse)
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_dark"], min(255, alpha)),
-                      (x, y), radius)
+        # Inner intense glow around body (SRCALPHA buffer, tidak
+        # menutupi karakter seperti blob opaque sebelumnya)
+        glow = pygame.Surface((80, 80), pygame.SRCALPHA)
+        for radius in range(38, 5, -3):
+            alpha = int((38 - radius) * 3.2 * pulse)
+            _NS_gorath._aacircle(glow, (*_NS_gorath.PALETTE["blood_dark"], min(180, alpha)),
+                      (40, 40), radius)
+        surface.blit(glow, (x - 40, y - 40))
 
         # Rising blood particles
         for i in range(12):
             t = (phase * 0.6 + i * 0.08) % 1.0
             px = x + int(math.cos(i * 2.5 + phase) * 25)
             py = y + 20 - int(t * 40)
-            alpha = int(255 * (1 - t))
+            alpha = int(255 * (1 - t) * env)
             if alpha > 0:
                 _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha), (px, py), 2)
                 _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_hot"], alpha), (px, py), 1)
@@ -4325,8 +4523,9 @@ class _NS_gorath:
     def _draw_bloodrite_ground(surface, boss, x, y, timer, phase):
         """Warning circle at target location."""
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
-        pulse = math.sin(phase * 3) * 0.3 + 0.7
+        progress = max(0.0, min(1.0, 1 - timer / _NS_gorath.SKILL_DUR["w"]))
+        fade = min(1.0, (1 - progress) * 4 + 0.15)
+        pulse = (math.sin(phase * 3) * 0.3 + 0.7) * fade
 
         radius = int(30 + progress * 15)
         # Warning ring
@@ -4340,7 +4539,7 @@ class _NS_gorath:
     def _draw_bloodrite(surface, boss, x, y, timer, phase):
         """Blood spikes erupting at target."""
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
+        progress = max(0.0, min(1.0, 1 - timer / _NS_gorath.SKILL_DUR["w"]))
 
         # Spawn projectile at start
         if progress < 0.1 and not getattr(boss, "_gor_bloodrite_spawned", False):
@@ -4413,8 +4612,10 @@ class _NS_gorath:
     def _draw_thirst(surface, boss, x, y, timer, phase):
         """Red highlighting beam / marker on target."""
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
-        pulse = math.sin(phase * 2.5) * 0.3 + 0.7
+        progress = max(0.0, min(1.0, 1 - timer / _NS_gorath.SKILL_DUR["e"]))
+        # marker memudar di 25% terakhir supaya tidak "klik-hilang"
+        fade = min(1.0, (1 - progress) * 4 + 0.2)
+        pulse = (math.sin(phase * 2.5) * 0.3 + 0.7) * fade
 
         # Line of sight beam (blood-red thin line)
         start_x = x + 5 * boss.direction
@@ -4430,7 +4631,7 @@ class _NS_gorath:
         marker_r = int(15 + math.sin(phase * 3) * 3)
 
         # Outer ring
-        _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_darkest"], 220),
+        _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_darkest"], int(220 * fade)),
                   (tx, ty), marker_r + 2, 3)
         _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], int(230 * pulse)),
                   (tx, ty), marker_r, 2)
@@ -4465,7 +4666,7 @@ class _NS_gorath:
     def _draw_rupture_ground(surface, boss, x, y, timer, phase):
         """Ground blood pool at target."""
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / _NS_gorath.SKILL_DUR["r"]))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
 
         radius = int(20 + progress * 25)
@@ -4479,7 +4680,7 @@ class _NS_gorath:
     def _draw_rupture(surface, boss, x, y, timer, phase):
         """Blood chain connecting to target, exploding at target."""
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / _NS_gorath.SKILL_DUR["r"]))
 
         start_x = x + 12 * boss.direction
         start_y = y - 10
@@ -4548,7 +4749,23 @@ class _NS_gorath:
 # ALCHEMIST
 # ====================================================================
 class _NS_alchemist:
-    """Namespace alchemist - isi asli tidak diubah."""
+    """Namespace alchemist - Level 2 Masterwork animation pass (TRUE BOSS).
+
+    Yang diperbaiki di pass ini:
+    * SKILL_DUR dikunci sama active_skill_timer AI -> cone Q tidak
+      lagi terpotong, pile emas R tumbuh penuh lalu mengempis, bukan
+      pop-in di tengah animasi.
+    * Goblin rider digambar SEBELUM kepala ogre (dulu dia duduk di
+      atas helm karena draw order terbalik) + pose mengangkat botol
+      saat ultimate R.
+    * Aura Chemical Rage tidak lagi menutupi seluruh karakter.
+    * Idle/walk/attack amplitudo dinaikkan, root motion berfase
+      (anticipation -> smash -> impact hold -> recovery).
+    """
+
+    # q: pose pistol + cone; w: lempar botol; e: buff; r: ultimate.
+    SKILL_DUR = {"q": 60, "w": 60, "e": 80, "r": 120}
+    SHADOW_DY = 55
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
@@ -5039,8 +5256,12 @@ class _NS_alchemist:
             or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
         )
 
+        # State buff persisten (Chemical Rage berjalan 360 frame,
+        # FX cast hanya 80 -> uap + mata hijau tetap tampil)
+        rage = bool(getattr(boss, "rage_active", False))
+
         # BG aura
-        _NS_alchemist._draw_alch_aura(surface, x, y, pulse, active_skill)
+        _NS_alchemist._draw_alch_aura(surface, x, y, pulse, active_skill, rage)
 
         # Ground effects
         if hasattr(boss, "_alch_patches"):
@@ -5062,9 +5283,13 @@ class _NS_alchemist:
         elif active_skill == "w":
             _NS_alchemist._draw_alch_wcast(surface, boss, x, y, skill_timer)
         elif moving:
-            _NS_alchemist._draw_alch_walk(surface, boss, x, y)
+            _NS_alchemist._draw_alch_walk(surface, boss, x, y, rage)
         else:
-            _NS_alchemist._draw_alch_idle(surface, boss, x, y)
+            _NS_alchemist._draw_alch_idle(surface, boss, x, y, rage)
+
+        if rage:
+            # uap asam mengepul dari punggung selama rage
+            _NS_alchemist._draw_rage_steam(surface, x, y, pulse)
 
         # Projectiles
         _NS_alchemist._manage_projectiles(boss, surface, pulse)
@@ -5081,74 +5306,127 @@ class _NS_alchemist:
     # ===================================================================
     # POSE MODES
     # ===================================================================
-    def _draw_alch_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_alchemist._draw_shadow(surface, x, y + 55)
-        _NS_alchemist._draw_alch_wisps(surface, x, y + 40, boss.pulse)
-        _NS_alchemist._draw_alch_full(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+    def _draw_alch_idle(surface, boss, x, y, rage=False):
+        bob = int(math.sin(boss.pulse * 0.7) * 3.5)
+        _NS_alchemist._draw_shadow(surface, x, y + _NS_alchemist.SHADOW_DY)
+        _NS_alchemist._draw_alch_wisps(surface, x, y + 40, boss.pulse, intense=rage)
+        _NS_alchemist._draw_alch_full(surface, x, y + bob, boss.direction, boss.pulse,
+                                      "idle", rage=rage,
+                                      cheer=getattr(boss, "active_skill", None) == "r")
 
-
-    def _draw_alch_walk(surface, boss, x, y):
+    def _draw_alch_walk(surface, boss, x, y, rage=False):
         phase = boss.pulse * 2.0
-        bob = int(abs(math.sin(phase * 1.2)) * 3)
-        sway = int(math.sin(phase * 0.5) * 2)
-        _NS_alchemist._draw_shadow(surface, x + sway, y + 55)
+        bob = int(abs(math.sin(phase * 1.2)) * 5)
+        sway = int(math.sin(phase * 0.5) * 3)
+        _NS_alchemist._draw_shadow(surface, x + sway, y + _NS_alchemist.SHADOW_DY)
         _NS_alchemist._draw_alch_wisps(surface, x + sway, y + 40, phase, trail=True,
-                         facing=boss.direction)
-        _NS_alchemist._draw_alch_full(surface, x + sway, y - bob, boss.direction, phase, "walk")
+                         facing=boss.direction, intense=rage)
+        _NS_alchemist._draw_alch_full(surface, x + sway, y - bob, boss.direction, phase,
+                                      "walk", rage=rage,
+                                      cheer=getattr(boss, "active_skill", None) == "r")
 
+    def _alch_root_motion(progress):
+        """Ogre menumpu -> menghantam -> tanam -> angkat lagi."""
+        if progress < 0.25:
+            k = progress / 0.25
+            return int(-5 * k), -int(3.5 * k)
+        if progress < 0.55:
+            k = (progress - 0.25) / 0.30
+            e = 1 - (1 - k) ** 2
+            return int(-5 + 17 * e), int(-3.5 + 6.5 * e)
+        if progress < 0.70:
+            return 12, 3 + int(math.sin(progress * 42) * 1.5)
+        k = (progress - 0.70) / 0.30
+        return int(12 * (1 - k)), int(3 * (1 - k))
 
     def _draw_alch_attack(surface, boss, x, y):
         progress = getattr(boss, "_alch_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
+        rage = bool(getattr(boss, "rage_active", False))
+        lunge, lift = _NS_alchemist._alch_root_motion(progress)
+        lunge = lunge * boss.direction
 
-        _NS_alchemist._draw_shadow(surface, x + lunge, y + 55)
+        _NS_alchemist._draw_shadow(surface, x + lunge, y + _NS_alchemist.SHADOW_DY)
         _NS_alchemist._draw_alch_wisps(surface, x + lunge, y + 40, boss.pulse, intense=True)
-        _NS_alchemist._draw_alch_full(surface, x + lunge, y, boss.direction, boss.pulse,
-                        "attack", progress)
-        _NS_alchemist._draw_cleaver_swing_arc(surface, x + lunge, y, boss.direction, progress)
-        _NS_alchemist._draw_swing_impact(surface, x + lunge, y, boss.direction, progress)
-
+        _NS_alchemist._draw_alch_full(surface, x + lunge, y + lift, boss.direction, boss.pulse,
+                        "attack", progress, rage=rage,
+                        cheer=getattr(boss, "active_skill", None) == "r")
+        _NS_alchemist._draw_cleaver_swing_arc(surface, x + lunge, y + lift, boss.direction, progress)
+        _NS_alchemist._draw_swing_impact(surface, x + lunge, y + lift, boss.direction, progress)
 
     def _draw_alch_qcast(surface, boss, x, y, timer):
-        duration = 60
+        duration = _NS_alchemist.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
+        rage = bool(getattr(boss, "rage_active", False))
         bob = int(math.sin(boss.pulse * 0.7) * 2)
-        recoil = int(math.sin(progress * math.pi * 2) * 2) * -boss.direction
-        _NS_alchemist._draw_shadow(surface, x + recoil, y + 55)
+        # recoil mundur dua ketukan lalu settle
+        recoil = int(math.sin(min(1.0, progress * 1.4) * math.pi * 2) * 3) * -boss.direction
+        _NS_alchemist._draw_shadow(surface, x + recoil, y + _NS_alchemist.SHADOW_DY)
         _NS_alchemist._draw_alch_wisps(surface, x + recoil, y + 40, boss.pulse, intense=True)
         _NS_alchemist._draw_alch_full(surface, x + recoil, y + bob, boss.direction, boss.pulse,
-                        "q_cast", progress)
-
+                        "q_cast", progress, rage=rage)
 
     def _draw_alch_wcast(surface, boss, x, y, timer):
-        duration = 60
+        duration = _NS_alchemist.SKILL_DUR["w"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_alchemist._draw_shadow(surface, x, y + 55)
-        _NS_alchemist._draw_alch_wisps(surface, x, y + 40, boss.pulse)
-        _NS_alchemist._draw_alch_full(surface, x, y + bob, boss.direction, boss.pulse,
-                        "w_cast", progress)
+        rage = bool(getattr(boss, "rage_active", False))
+        # wind-up botol: condong ke belakang (0-0.35), lempar (0.35-0.45), follow-through
+        if progress < 0.35:
+            k = progress / 0.35
+            lean = int(-3 * k)
+            lift = -int(2 * k)
+        elif progress < 0.5:
+            k = (progress - 0.35) / 0.15
+            lean = int(-3 + 9 * k)
+            lift = int(-2 + 3 * k)
+        else:
+            k = min(1.0, (progress - 0.5) / 0.4)
+            lean = int(6 * (1 - k))
+            lift = int(1 - k)
+        d = boss.direction
+        _NS_alchemist._draw_shadow(surface, x + lean * d, y + _NS_alchemist.SHADOW_DY)
+        _NS_alchemist._draw_alch_wisps(surface, x + lean * d, y + 40, boss.pulse)
+        _NS_alchemist._draw_alch_full(surface, x + lean * d, y + lift, d, boss.pulse,
+                        "w_cast", progress, rage=rage)
 
-        # Spawn bottle at right moment
+        # Spawn bottle at right moment - keluar dari tangan goblin
         if 0.35 < progress < 0.45 and not getattr(boss, "_alch_wcast_spawned", False):
             tx, ty = _NS_alchemist._target_position(boss, x, y)
-            # Bottle thrown from goblin's hand (above ogre)
-            sx = x + 5 * boss.direction
-            sy = y - 30
+            sx = x - 14 * d + lean * d
+            sy = y - 42 + lift
             _NS_alchemist._spawn_acid_bottle(boss, sx, sy, tx, ty)
             boss._alch_wcast_spawned = True
         if progress > 0.7:
             boss._alch_wcast_spawned = False
 
+    def _draw_rage_steam(surface, x, y, phase):
+        """Uap asam keluar dari backpack selama buff Chemical Rage."""
+        for i in range(5):
+            t = (phase * 0.45 + i * 0.2) % 1.0
+            px = x - 12 * (1 - t * 0.4) + int(math.sin(phase + i * 1.9) * 4)
+            py = y - 14 - int(t * 34)
+            alpha = int(120 * (1 - t))
+            if alpha > 8:
+                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_mid"], alpha),
+                          (int(px), int(py)), 3)
+                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha),
+                          (int(px), int(py) - 1), 2)
+
 
     # ===================================================================
     # FULL COMPOSITE - Ogre + Goblin rider
     # ===================================================================
-    def _draw_alch_full(surface, cx, cy, facing, phase, action, attack_progress=0):
-        # Rage buff pulse
-        is_rage = action == "rage" or False
+    def _draw_alch_full(surface, cx, cy, facing, phase, action,
+                        attack_progress=0, rage=False, cheer=False):
+        """Komposit Ogre + Goblin.
+
+        Draw order DIPERBAIKI: dulu rider digambar paling akhir
+        sehingga kepalanya menindih helm ogre (terlihat "duduk di
+        atas kepala"). Sekarang: lower -> torso -> backpack ->
+        goblin (di belakang kepala) -> kepala ogre -> lengan.
+        """
+        # Goblin menunggang sedikit menunduk mengikuti napas ogre
+        ride_bob = int(math.sin(phase * 0.7) * 1.5)
 
         # Ogre body first
         _NS_alchemist._draw_ogre_lower(surface, cx, cy + 8, phase)
@@ -5157,8 +5435,15 @@ class _NS_alchemist:
         # Backpack potions on ogre's back
         _NS_alchemist._draw_backpack(surface, cx - 12 * facing, cy - 10, phase)
 
-        # Ogre head
-        _NS_alchemist._draw_ogre_head(surface, cx + 3 * facing, cy - 20, facing, phase, action)
+        # Goblin rider - DI BELAKANG kepala ogre, menempel di bahu
+        _NS_alchemist._draw_goblin_rider(surface, cx - 9 * facing,
+                                         cy - 24 + ride_bob, facing, phase,
+                                         action, attack_progress,
+                                         rage=rage, cheer=cheer)
+
+        # Ogre head (menindih goblin => kedalaman benar)
+        _NS_alchemist._draw_ogre_head(surface, cx + 3 * facing, cy - 20, facing, phase, action,
+                                      rage)
 
         # Ogre arms + cleavers
         if action == "attack":
@@ -5167,10 +5452,6 @@ class _NS_alchemist:
             _NS_alchemist._draw_ogre_cast_arms(surface, cx, cy - 8, facing, phase, action, attack_progress)
         else:
             _NS_alchemist._draw_ogre_idle_arms(surface, cx, cy - 8, facing, phase)
-
-        # Goblin rider on ogre's shoulder (behind ogre head, above shoulder)
-        _NS_alchemist._draw_goblin_rider(surface, cx - 8 * facing, cy - 30, facing, phase, action,
-                           attack_progress)
 
 
     def _draw_ogre_lower(surface, cx, cy, phase):
@@ -5282,8 +5563,12 @@ class _NS_alchemist:
                 _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["brass_mid"], (rx, ry), 1)
 
 
-    def _draw_ogre_head(surface, cx, cy, facing, phase, action):
-        """Ogre head with tusks and helmet."""
+    def _draw_ogre_head(surface, cx, cy, facing, phase, action, rage=False):
+        """Ogre head with tusks and helmet.
+
+        `rage` (buff Chemical Rage) -> mata hijau menyala + asap
+        hidung, indikator status yang bertahan sepanjang buff.
+        """
         # Neck (thick)
         _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["ogre_darkest"], (cx - 7, cy + 7, 14, 5))
         _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["ogre_dark"], (cx - 6, cy + 7, 12, 4))
@@ -5298,16 +5583,34 @@ class _NS_alchemist:
         _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_high"], (cx - 3, cy - 5), 2)
 
         # Small angry eyes
-        is_rage = action == "e"  # if E active glow more
+        is_rage = rage or action == "e"  # if E active glow more
+        _epulse = math.sin(phase * 3) * 0.3 + 0.7 if is_rage else 1.0
         for side in (-1, 1):
             ex = cx + side * 4
             ey = cy - 1
             _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["shadow_deep"], (ex, ey), 2)
             _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["eye_dark"], (ex, ey), 2)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["eye_hot"], (ex, ey), 1)
+            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["eye_hot"], (ex, ey),
+                    2 if is_rage else 1)
+            if is_rage:
+                # halo asam berdenyut + percik api hijau kecil
+                _NS_alchemist._aacircle(surface,
+                        (*_NS_alchemist.PALETTE["acid_bright"], int(150 * _epulse)),
+                        (ex, ey), 3)
+                _NS_alchemist._aacircle(surface,
+                        (*_NS_alchemist.PALETTE["acid_hot"], int(200 * _epulse)),
+                        (ex, ey), 1)
             # Angry brow
             _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["ogre_darkest"],
                     (ex - 2, ey - 3), (ex + 2, ey - 2), 2)
+        if is_rage:
+            # uap nostril saat rage
+            for side in (-1, 1):
+                t = (phase * 0.6 + side * 0.3) % 1.0
+                _NS_alchemist._aacircle(surface,
+                        (*_NS_alchemist.PALETTE["acid_mid"], int(110 * (1 - t))),
+                        (cx + side * 2 + int(math.sin(phase + side) * 2),
+                         int(cy + 4 - t * 10)), 2)
 
         # Nose (piggy snout)
         _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["ogre_dark"], (cx - 4, cy + 2, 8, 5))
@@ -5722,9 +6025,14 @@ class _NS_alchemist:
             _NS_alchemist._draw_acid_droplet(surface, end_x + facing * 6, hy + 4, 2, 200)
 
 
-    def _draw_goblin_rider(surface, cx, cy, facing, phase, action, attack_progress):
-        """Small purple goblin on ogre's shoulder holding potion."""
-        bob = int(math.sin(phase * 1.0) * 1)
+    def _draw_goblin_rider(surface, cx, cy, facing, phase, action,
+                           attack_progress, rage=False, cheer=False):
+        """Small purple goblin on ogre's shoulder holding potion.
+
+        `cheer=True` (ultimate R) -> goblin mengangkat botol dan
+        memompanya berdenyut + percik emas, perayaan klasik Greevil.
+        """
+        bob = int(math.sin(phase * 1.0) * (3 if cheer else 1.5))
 
         # Legs (little dangling)
         for side in (-1, 1):
@@ -5817,7 +6125,8 @@ class _NS_alchemist:
         _NS_alchemist._draw_goblin_hat(surface, cx, hy - 4, phase)
 
         # Goblin arms holding potion
-        _NS_alchemist._draw_goblin_arms(surface, cx, cy + bob, facing, phase, action, attack_progress)
+        _NS_alchemist._draw_goblin_arms(surface, cx, cy + bob, facing, phase, action,
+                                         attack_progress, cheer=cheer)
 
 
     def _draw_goblin_hat(surface, cx, cy, phase):
@@ -5839,15 +6148,22 @@ class _NS_alchemist:
         _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["gold_mid"], (cx - 4, cy + 1, 8, 1))
 
 
-    def _draw_goblin_arms(surface, cx, cy, facing, phase, action, attack_progress):
-        """Goblin arms — one holds potion up, one hangs down."""
+    def _draw_goblin_arms(surface, cx, cy, facing, phase, action,
+                          attack_progress, cheer=False):
+        """Goblin arms — one holds potion up, one hangs down.
+
+        Saat cheer (R) lengan botol diangkat lebih tinggi + dipompa
+        seirama denyut, tangan kanan mengepal ke atas.
+        """
         sway = math.sin(phase * 1.0 + 1) * 1
+        pump = int(math.sin(phase * 4.2) * 3) if cheer else 0
+        raise_ = 9 if cheer else 0
 
         # Left arm - holding potion up (celebratory)
         la_x = cx - 5
         la_y = cy - 2
         lh_x = cx - 9 + int(sway)
-        lh_y = cy - 8
+        lh_y = cy - 8 - raise_ + pump
 
         _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["shadow_deep"], (la_x + 1, la_y + 1),
                 (lh_x + 1, lh_y + 1), 3)
@@ -5857,12 +6173,25 @@ class _NS_alchemist:
 
         # Potion in hand
         _NS_alchemist._draw_small_potion(surface, lh_x, lh_y - 4, phase)
+        if cheer:
+            # percik emas dari botol saat perayaan
+            for i in range(3):
+                t = (phase * 0.9 + i * 0.33) % 1.0
+                gx = lh_x + int(math.cos(phase * 3 + i * 2.1) * (3 + 5 * t))
+                gy = lh_y - 8 - int(t * 9)
+                _NS_alchemist._aacircle(surface,
+                        (*_NS_alchemist.PALETTE["gold_shine"], int(220 * (1 - t))),
+                        (gx, gy), 1)
 
-        # Right arm - hangs down or holds something
+        # Right arm - normal: menggantung; cheer: mengepal ke atas
         ra_x = cx + 5
         ra_y = cy - 2
-        rh_x = cx + 8 + int(-sway)
-        rh_y = cy + 4
+        if cheer:
+            rh_x = cx + 9 + int(-sway)
+            rh_y = cy - 6 + pump
+        else:
+            rh_x = cx + 8 + int(-sway)
+            rh_y = cy + 4
 
         _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["shadow_deep"], (ra_x + 1, ra_y + 1),
                 (rh_x + 1, rh_y + 1), 3)
@@ -5960,9 +6289,11 @@ class _NS_alchemist:
         surface.blit(shadow, (x - 60, y - 11))
 
 
-    def _draw_alch_aura(surface, x, y, phase, active_skill):
+    def _draw_alch_aura(surface, x, y, phase, active_skill, rage=False):
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
-        strength = 1.6 if active_skill in ("e", "r") else 1.0
+        strength = 1.6 if active_skill in ("e", "r") else (1.35 if rage else 1.0)
+        if rage and active_skill not in ("e", "r"):
+            pulse = pulse * 1.1 + 0.06
         aura = pygame.Surface((220, 190), pygame.SRCALPHA)
         color = _NS_alchemist.PALETTE["acid_darkest"] if active_skill != "r" else _NS_alchemist.PALETTE["gold_darkest"]
         for radius in range(88, 5, -4):
@@ -6056,16 +6387,18 @@ class _NS_alchemist:
     # SKILL Q: ACID SPRAY (green cone)
     # ===================================================================
     def _draw_acid_spray(surface, boss, x, y, timer, phase):
-        duration = 60
+        duration = _NS_alchemist.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
         tx, ty = _NS_alchemist._target_position(boss, x, y)
 
-        if progress > 0.85:
+        if progress > 0.96:
             return
+        # percik memudar di 10% terakhir, tidak "klik-hilang"
+        fade = min(1.0, (1.0 - progress) / 0.10)
 
-        # From goblin's/ogre's gun
-        start_x = x + 30 * boss.direction
-        start_y = y - 5
+        # From the acid gun muzzle (tangan depan ogre yang terentang)
+        start_x = x + 46 * boss.direction
+        start_y = y - 4
 
         dx = tx - start_x
         dy = ty - start_y
@@ -6093,8 +6426,10 @@ class _NS_alchemist:
             fy = int(base_y + perp_y * offset)
 
             size = int(5 + t * 5)
-            alpha_t = 1 - t * 0.3
+            alpha_t = (1 - t * 0.3) * fade
             alpha = int(230 * alpha_t)
+            if alpha <= 0:
+                continue
 
             if t < 0.2:
                 _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_white"], alpha), (fx, fy), size)
@@ -6110,10 +6445,12 @@ class _NS_alchemist:
                 _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_dark"], alpha), (fx, fy), max(1, size - 2))
 
         # Bright muzzle
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_white"], 255),
-                  (int(start_x), int(start_y)), 6)
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], 255),
-                  (int(start_x + dir_x * 6), int(start_y + dir_y * 6)), 4)
+        _mz = int(255 * fade)
+        if _mz > 0:
+            _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_white"], _mz),
+                      (int(start_x), int(start_y)), 6)
+            _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], _mz),
+                      (int(start_x + dir_x * 6), int(start_y + dir_y * 6)), 4)
 
         # Small droplet particles falling from cone
         for i in range(8):
@@ -6129,27 +6466,37 @@ class _NS_alchemist:
     # ===================================================================
     def _draw_chem_rage_ground(surface, boss, x, y, timer, phase):
         """Ground pulse rings under boss."""
-        duration = 80
+        duration = _NS_alchemist.SKILL_DUR["e"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        pulse = math.sin(phase * 3) * 0.3 + 0.7
+        env = min(1.0, progress * 5, (1 - progress) * 4 + 0.3)
+        pulse = (math.sin(phase * 3) * 0.3 + 0.7) * env
 
         for i in range(3):
             r = int(30 + i * 15 + math.sin(phase * 2 + i) * 5)
             _NS_alchemist._ellipse(surface, (*_NS_alchemist.PALETTE["acid_bright"], int(120 * pulse)),
-                     (x - r, y + 45 - r // 3, r * 2, r // 1.5), 2)
+                     (x - r, y + _NS_alchemist.SHADOW_DY - 8 - r // 3,
+                      r * 2, r // 1.5), 2)
 
 
     def _draw_chem_rage_foreground(surface, boss, x, y, timer, phase):
-        """Green aura + steam rising from Alchemist."""
-        duration = 80
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        pulse = math.sin(phase * 3) * 0.3 + 0.7
+        """Green aura + steam rising from Alchemist.
 
-        # Intense inner aura
-        for radius in range(50, 10, -3):
-            alpha = int((50 - radius) * 4 * pulse)
-            _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_dark"], min(255, alpha)),
-                      (x, y - 10), radius)
+        Dulu blobnya opaque besar (x4 per lapis) sampai karakter
+        tenggelam total; sekarang jadi cincin aura transparan +
+        envelope masuk/keluar."""
+        duration = _NS_alchemist.SKILL_DUR["e"]
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        env = min(1.0, progress * 5, (1 - progress) * 4 + 0.3)
+        pulse = (math.sin(phase * 3) * 0.3 + 0.7) * env
+
+        # Ring aura (SRCALPHA buffer agar alpha menumpuk natural,
+        # bukan menutupi badan seperti blob sebelumnya)
+        glow = pygame.Surface((120, 110), pygame.SRCALPHA)
+        for radius in range(56, 16, -4):
+            alpha = int((56 - radius) * 1.8 * pulse)
+            _NS_alchemist._aacircle(glow, (*_NS_alchemist.PALETTE["acid_dark"],
+                              min(90, alpha)), (60, 55), radius)
+        surface.blit(glow, (x - 60, y - 60))
 
         # Rising steam wisps
         for i in range(12):
@@ -6164,34 +6511,43 @@ class _NS_alchemist:
                 _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], alpha), (px - 1, py - 1), 1)
 
         # Sparkles/electric arcs
-        for i in range(6):
-            angle = phase * 2 + i * math.pi / 3
-            r = 30 + int(math.sin(phase * 3 + i) * 8)
-            sx = x + int(math.cos(angle) * r)
-            sy = y - 10 + int(math.sin(angle) * r * 0.5)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_white"], (sx, sy), 2)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_glow"], (sx, sy), 1)
+        _sa = int(255 * env)
+        if _sa > 20:
+            for i in range(6):
+                angle = phase * 2 + i * math.pi / 3
+                r = 30 + int(math.sin(phase * 3 + i) * 8)
+                sx = x + int(math.cos(angle) * r)
+                sy = y - 10 + int(math.sin(angle) * r * 0.5)
+                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_white"], _sa),
+                          (sx, sy), 2)
+                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_glow"], _sa),
+                          (sx, sy), 1)
 
 
     # ===================================================================
     # SKILL R: GREEVIL'S GREED (gold rain)
     # ===================================================================
     def _draw_greevil_ground(surface, boss, x, y, timer, phase):
-        """Golden aura on ground."""
-        duration = 120
+        """Golden aura on ground + pile of coins yang tumbuh dari tanah."""
+        duration = _NS_alchemist.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
+        env = min(1.0, progress * 5)
         pulse = math.sin(phase * 2) * 0.3 + 0.7
+        fade = 1.0 if progress < 0.85 else max(0.0, (1.0 - progress) / 0.15)
 
         # Golden circle
         for i in range(3):
             r = int(50 + i * 20 + math.sin(phase + i) * 4)
-            _NS_alchemist._ellipse(surface, (*_NS_alchemist.PALETTE["gold_mid"], int(120 * pulse)),
-                     (x - r, y + 45 - r // 3, r * 2, r // 1.5), 2)
+            _NS_alchemist._ellipse(surface, (*_NS_alchemist.PALETTE["gold_mid"], int(120 * pulse * env * fade)),
+                     (x - r, y + _NS_alchemist.SHADOW_DY - 10 - r // 3, r * 2, r // 1.5), 2)
 
-        # Gold pile at feet
-        if progress > 0.3:
-            pile_grow = min(1.0, (progress - 0.3) / 0.5)
-            _NS_alchemist._draw_gold_pile(surface, x, y + 50, pile_grow, phase)
+        # Gold pile at feet - tumbuh 0.15..0.55 lalu ditenggelamkan lagi
+        if progress > 0.15:
+            pile_grow = min(1.0, (progress - 0.15) / 0.40)
+            pile_grow *= fade  # t 0.85-1.0: emas "disedot" balik
+            if pile_grow > 0.02:
+                _NS_alchemist._draw_gold_pile(surface, x, y + _NS_alchemist.SHADOW_DY - 5,
+                                  pile_grow, phase)
 
 
     def _draw_gold_pile(surface, cx, cy, grow, phase):
@@ -6232,7 +6588,7 @@ class _NS_alchemist:
 
     def _draw_greevil_foreground(surface, boss, x, y, timer, phase):
         """Gold coins raining down + goblin celebrating."""
-        duration = 120
+        duration = _NS_alchemist.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         # Spawn coins periodically
@@ -6241,10 +6597,11 @@ class _NS_alchemist:
         if not hasattr(boss, "_alch_last_coin_frame"):
             boss._alch_last_coin_frame = 0
         boss._alch_last_coin_frame += 1
-        if boss._alch_last_coin_frame % 4 == 0 and progress < 0.85:
+        if boss._alch_last_coin_frame % 3 == 0 and progress < 0.8:
+            # coin hujan dari atas, bukan cuma 2 baris
             seed = boss._alch_last_coin_frame
-            cx_off = (seed * 137 % 80) - 40
-            _NS_alchemist._spawn_coin(boss, x + cx_off, y - 40)
+            cx_off = (seed * 137 % 110) - 55
+            _NS_alchemist._spawn_coin(boss, x + cx_off, y - 52)
 
         # Update and draw coins
         for coin in boss._alch_coins:
@@ -6275,19 +6632,25 @@ class _NS_alchemist:
         boss._alch_coins = [c for c in boss._alch_coins
                              if c["age"] < c["life"] and c["y"] < y + 80]
 
-        # Sparkles around boss
-        for i in range(8):
-            angle = phase * 1.5 + i * math.pi / 4
-            r = 40 + int(math.sin(phase * 2 + i) * 8)
-            sx = x + int(math.cos(angle) * r)
-            sy = y + int(math.sin(angle) * r * 0.6)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["gold_shine"], (sx, sy), 2)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["gold_light"], (sx, sy), 1)
-            # Sparkle cross
-            _NS_alchemist._aaline(surface, (*_NS_alchemist.PALETTE["gold_shine"], 200),
-                    (sx - 3, sy), (sx + 3, sy), 1)
-            _NS_alchemist._aaline(surface, (*_NS_alchemist.PALETTE["gold_shine"], 200),
-                    (sx, sy - 3), (sx, sy + 3), 1)
+        # Sparkles around boss - memudar bersama akhir ultimate
+        _sp = 1.0 if progress < 0.8 else max(0.0, (1 - progress) / 0.2)
+        if _sp > 0.02:
+            for i in range(8):
+                angle = phase * 1.5 + i * math.pi / 4
+                r = 40 + int(math.sin(phase * 2 + i) * 8)
+                sx = x + int(math.cos(angle) * r)
+                sy = y + int(math.sin(angle) * r * 0.6)
+                _NS_alchemist._aacircle(surface,
+                        (*_NS_alchemist.PALETTE["gold_shine"], int(255 * _sp)), (sx, sy), 2)
+                _NS_alchemist._aacircle(surface,
+                        (*_NS_alchemist.PALETTE["gold_light"], int(255 * _sp)), (sx, sy), 1)
+                # Sparkle cross
+                _NS_alchemist._aaline(surface,
+                        (*_NS_alchemist.PALETTE["gold_shine"], int(200 * _sp)),
+                        (sx - 3, sy), (sx + 3, sy), 1)
+                _NS_alchemist._aaline(surface,
+                        (*_NS_alchemist.PALETTE["gold_shine"], int(200 * _sp)),
+                        (sx, sy - 3), (sx, sy + 3), 1)
 
 
     # ===================================================================
