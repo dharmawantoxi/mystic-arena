@@ -2670,7 +2670,46 @@ class _NS_grimjaw:
 # sylara.py
 # ====================================================================
 class _NS_sylara:
-    """Namespace sylara - isi asli tidak diubah."""
+    """Namespace sylara - PIXEL MASTERWORK v2 + Skill FX v2.1.
+
+    Rewrite penuh renderer Sylara (Wind Ranger).  Tetap 100% prosedural:
+    tidak ada PNG / sprite-sheet / image.load.
+
+    Yang naik dibanding versi lama
+    ------------------------------
+    1. RIG ~1.5x LEBIH BESAR di resolusi native (buffer rig 156x136,
+       bbox idle >= 100px tinggi).  Pipeline hero (heroes/__init__.py)
+       mengukur badan lalu men-scale agar tinggi di layar tetap ~51-70 px,
+       jadi memperbesar rig TIDAK memperbesar hero di arena - melainkan
+       memberi ~2.4 px native per px layar: cluster, ramp dan muka tetap
+       tajam setelah smoothscale + lighting + outline pass.
+    2. DISIPLIN PIXEL-ART: ramp 4-5 nilai per material dengan hue-shift
+       (bayangan rambut didorong merah-ungu menuju kulit, highlight hijau
+       gembira), selout (outline gelap hanya di sisi bayangan), siluet
+       cape & rambut bergerigi via _tuft_points (hash deterministik),
+       specular sebagai cluster 1-2 px yang disengaja (kilau busur/baja),
+       dither band di korset.  Key light kiri-atas, konsisten lighting.py.
+    3. ANATOMI: hood hijau runcing dengan rambut merah berkibar, cape
+       robek ber-lapis per-panel, quiver anak panah + busur recurve
+       pose-driven (grip/nock/tali dihitung dari sendi), korset kulit
+       hijau ber-strap, gesper emas, boot kulit 3 band.
+    4. ANIMASI: foot-solver jalan (kaki menapak/terangkat, bayangan kontak,
+       debu), inersia cape/hair (tertinggal dari akselerasi + flare saat
+       serang), idle hidup (napas, blink, daun melayang, flutter busur),
+       timeline serang multi-keyframe: wind-up -> release (IMPACT burst +
+       smear) -> recovery dengan loop-closure tanpa pop.
+    5. SKILL FX v2.1 (world-space, setingkat Thorne v2.1): semua efek
+       dikompensasi _render_scale via _fx_scale (cap 2.6) sehingga
+       cincin/telegraph tidak ikut mengecil bersama sprite cache.  Tiap
+       skill 3 fase: AKTIVASI (shockwave/pilar cahaya + bintang), STEADY
+       (aura berlapis + partikel + ring berputar), TELEGRAPH yang mudah
+       dibaca (ring konvergen, chevron berbaris, retakan tanah).  Badan
+       ikut bereaksi: busur/cape menyala hijau saat Focus Fire & Powershot,
+       rantai Shackle menunjuk ke target, Windrun memberikan afterimage.
+       Proyektil diberi trail berlapis + glint di ujung.  Surface statis
+       (aura/mist/ground glow) dibangun sekali lalu di-cache; semua radius
+       di-clamp ke dalam canvas.
+    """
 
     # ---------------------------------------------------------------------------
     # Compatibility helpers
@@ -2945,6 +2984,155 @@ class _NS_sylara:
         ])
         _NS_sylara._aaline(surface, color_light, (back_x, back_y), (tip_x, tip_y), 1)
 
+
+    # ---------------------------------------------------------------------------
+    # SKILL FX v2.1 — WORLD-SPACE PRIMITIVES (setingkat Thorne v2.1 / Grimjaw v2)
+    # ---------------------------------------------------------------------------
+    # Efek skill digambar langsung ke canvas lalu di-scale _render_scale saat
+    # di-blit ke arena -> tanpa kompensasi, cincin/telegraph ikut menyusut
+    # sampai ~40% dan nyaris tidak terlihat.  Helper di bawah menggambar efek
+    # LEBIH BESAR di canvas (faktor 1/_render_scale, cap 2.6) sehingga ukuran
+    # DI LAYAR setara dunia.  Semua radius di-clamp ke dalam canvas cache
+    # (_ring_r) supaya efek tidak terpotong di tepi.
+    # ---------------------------------------------------------------------------
+    SKILL_VISUAL_DURATION = {"q": 180, "w": 180, "e": 150, "r": 60}
+
+    # Cache surface statis (aura / mist / ground glow) — dibangun SEKALI,
+    # tanpa alokasi surface per frame.
+    _STATIC_SURFACES = {}
+
+    def _static(key, builder):
+        surf = _NS_sylara._STATIC_SURFACES.get(key)
+        if surf is None:
+            surf = builder()
+            _NS_sylara._STATIC_SURFACES[key] = surf
+        return surf
+
+    def _hash01(i):
+        """Pseudo-random deterministik 0..1 (stabil antar frame & cache)."""
+        x = math.sin(i * 127.1 + 311.7) * 43758.5453
+        return x - math.floor(x)
+
+    def _mix(a, b, t):
+        """Blend linear dua warna (t=0 -> a, t=1 -> b)."""
+        t = max(0.0, min(1.0, t))
+        return _NS_sylara._clamp(
+            (a[0] + (b[0] - a[0]) * t,
+             a[1] + (b[1] - a[1]) * t,
+             a[2] + (b[2] - a[2]) * t))
+
+    def _fx_scale(hero):
+        """Faktor kompensasi efek skill.
+
+        Hero dirender ke canvas lalu dikecilkan ``_render_scale`` saat
+        di-blit -> efek (cincin, retakan, partikel) ikut menyusut sampai
+        ~40%.  Dengan faktor ini efek digambar lebih besar di canvas
+        sehingga ukurannya DI LAYAR setara boss asli (world-space).
+        Boss asli (tanpa _render_scale) = 1.0.  Cap 2.6 menjaga efek
+        tetap muat di canvas cache.
+        """
+        scale = getattr(hero, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+    def _ring_r(hero, world_px, surface):
+        """Radius dunia (px) -> px canvas, di-clamp ke dalam canvas.
+
+        Memastikan telegraph tidak keluar dari cache canvas (efek
+        terpotong = garis aneh di tepi hero).
+        """
+        scale = getattr(hero, "_render_scale", None)
+        r = float(world_px) / float(scale) if scale else float(world_px)
+        margin = min(surface.get_width(), surface.get_height()) // 2 - 10
+        return int(max(4, min(r, margin)))
+
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+                    core=None):
+        """Bintang kilat: spike panjang-pendek selang-seling + inti."""
+        if alpha <= 0 or size <= 0:
+            return
+        for k in range(spikes):
+            ang = rot + k * math.pi * 2 / spikes
+            ln = size * (1.0 if k % 2 == 0 else 0.55)
+            _NS_sylara._aaline(surface, (*color, alpha),
+                               (int(cx), int(cy)),
+                               (int(cx + math.cos(ang) * ln),
+                                int(cy + math.sin(ang) * ln * .8)),
+                               2 if k % 2 == 0 else 1)
+        if core:
+            _NS_sylara._aacircle(surface, (*core, alpha), (int(cx), int(cy)),
+                                 max(1, int(size * .3)))
+
+    def _chevron(surface, cx, cy, ang, size, color, alpha, width=3):
+        """Satu panah '>' menghadap arah ``ang`` (telegraph bergerak)."""
+        if alpha <= 0 or size <= 0:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        px, py = -sa, ca
+        tipx, tipy = cx + ca * size, cy + sa * size
+        for s in (-1, 1):
+            _NS_sylara._aaline(
+                surface, (*color, alpha),
+                (int(cx + px * s * size * .55 - ca * size * .5),
+                 int(cy + py * s * size * .55 - sa * size * .5)),
+                (int(tipx), int(tipy)), width)
+
+    def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
+                     segments=10, thick=3, span=0.6, squash=.92):
+        """Cincin putus-putus yang berputar (marker AOE / rune ring)."""
+        if alpha <= 0 or radius <= 1:
+            return
+        for i in range(segments):
+            a0 = phase + i * math.pi * 2 / segments
+            a1 = a0 + math.pi * 2 / segments * span
+            p0 = (cx + math.cos(a0) * radius, cy + math.sin(a0) * radius * squash)
+            p1 = (cx + math.cos(a1) * radius, cy + math.sin(a1) * radius * squash)
+            _NS_sylara._aaline(surface, (*color, alpha), p0, p1, thick)
+
+    def _jagged_crack(surface, cx, cy, ang, length, colors, alpha, seed,
+                      width=3):
+        """Retakan tanah berzigzag (3 segmen) dengan seam menyala."""
+        if alpha <= 0 or length <= 0:
+            return
+        x, y, a = cx, cy, ang
+        pts = [(x, y)]
+        for i in range(3):
+            a += (_NS_sylara._hash01(seed * 7 + i * 13) - .5) * .8
+            seg = length / 3.0
+            x += math.cos(a) * seg
+            y += math.sin(a) * seg * .55      # perspektif tanah
+            pts.append((x, y))
+        for i in range(len(pts) - 1):
+            _NS_sylara._aaline(surface, (*colors[0], alpha),
+                               pts[i], pts[i + 1], width + 2)
+            _NS_sylara._aaline(surface, (*colors[1], alpha),
+                               pts[i], pts[i + 1], width)
+
+    def _tuft_points(spine, depth=4.0, min_len=7.0, seed=0):
+        """Ubah spine halus menjadi tepi bergerigi (bulu/roban pixel-art).
+
+        Deterministik (hash) — aman untuk cache.
+        """
+        out = [spine[0]]
+        for i in range(len(spine) - 1):
+            ax, ay = spine[i]
+            bx, by = spine[i + 1]
+            seg = math.hypot(bx - ax, by - ay)
+            n = max(1, int(seg / min_len))
+            nx, ny = (by - ay), -(bx - ax)
+            ln = math.hypot(nx, ny) or 1.0
+            nx, ny = nx / ln, ny / ln
+            for j in range(n):
+                t = (j + 0.5) / n
+                px, py = ax + (bx - ax) * t, ay + (by - ay) * t
+                d = depth * (0.55 + 0.45 * _NS_sylara._hash01(i * 7 + j * 13 + seed))
+                if j % 2 == 0:
+                    out.append((px + nx * d, py + ny * d))
+                else:
+                    out.append((px - nx * d * 0.45, py - ny * d * 0.45))
+            out.append((bx, by))
+        return out
 
     # ---------------------------------------------------------------------------
     # PROJECTILE SYSTEM - Wind Arrow
@@ -3460,27 +3648,40 @@ class _NS_sylara:
     # ===================================================================
     # POSE MODES
     # ===================================================================
+    def _skill_flags(boss):
+        """State skill aktif -> flag body-reaction (focus/q, wind/w,
+        shackle/e, powershot/r)."""
+        active_skill = getattr(boss, "active_skill", None)
+        return {
+            "focus": active_skill == "q",
+            "wind": active_skill == "w",
+            "shackle": active_skill == "e",
+            "powershot": active_skill == "r",
+        }
+
     def _draw_sylara_idle(surface, boss, x, y):
         bob = int(math.sin(boss.pulse * 0.7) * 2)
+        sf = _NS_sylara._skill_flags(boss)
         if not getattr(boss, "_portrait_hd", False):
             _NS_sylara._draw_shadow(surface, x, y + 48)
             _NS_sylara._draw_floating_wind(surface, x, y + 35, boss.pulse)
         _NS_sylara._draw_sylara_body(
             surface, x, y + bob, boss.direction, boss.pulse, "idle",
-            detail=getattr(boss, "_portrait_hd", False))
+            detail=getattr(boss, "_portrait_hd", False), **sf)
 
 
     def _draw_sylara_walk(surface, boss, x, y):
         phase = boss.pulse * 2.0
         bob = int(abs(math.sin(phase * 1.2)) * 3)
         sway = int(math.sin(phase) * 2)
+        sf = _NS_sylara._skill_flags(boss)
         if not getattr(boss, "_portrait_hd", False):
             _NS_sylara._draw_shadow(surface, x + sway, y + 48)
             _NS_sylara._draw_floating_wind(surface, x + sway, y + 35, phase,
                                            trail=True, facing=boss.direction)
         _NS_sylara._draw_sylara_body(
             surface, x + sway, y - bob, boss.direction, phase, "walk",
-            detail=getattr(boss, "_portrait_hd", False))
+            detail=getattr(boss, "_portrait_hd", False), **sf)
 
 
     def _draw_sylara_attack(surface, boss, x, y):
@@ -3517,9 +3718,10 @@ class _NS_sylara:
             _NS_sylara._draw_shadow(surface, x + recoil, y + 48)
             _NS_sylara._draw_floating_wind(surface, x + recoil, y + 35,
                                            boss.pulse, intense=True)
+        sf = _NS_sylara._skill_flags(boss)
         _NS_sylara._draw_sylara_body(surface, x + recoil, y, boss.direction,
                                      boss.pulse, "attack", progress,
-                                     powered=powered, detail=portrait_hd)
+                                     powered=powered, detail=portrait_hd, **sf)
         if not portrait_hd:
             _NS_sylara._draw_bow_release_flash(surface, x + recoil, y,
                                                boss.direction, progress)
@@ -3529,19 +3731,22 @@ class _NS_sylara:
         """Fast dash pose during windrun."""
         phase = boss.pulse * 3.0
         bob = int(abs(math.sin(phase * 2)) * 2)
+        sf = _NS_sylara._skill_flags(boss)
         if not getattr(boss, "_portrait_hd", False):
             _NS_sylara._draw_shadow(surface, x, y + 48)
             _NS_sylara._draw_windrun_trail(surface, x, y, boss.direction, phase)
         _NS_sylara._draw_sylara_body(
             surface, x, y - bob, boss.direction, phase, "windrun",
-            detail=getattr(boss, "_portrait_hd", False))
+            detail=getattr(boss, "_portrait_hd", False), **sf)
 
 
     # ===================================================================
     # BODY RENDERING - HD Wind Ranger
     # ===================================================================
     def _draw_sylara_body(surface, cx, cy, facing, phase, action,
-                          attack_progress=0, powered=False, detail=False):
+                          attack_progress=0, powered=False, detail=False,
+                          focus=False, wind=False, shackle=False,
+                          powershot=False, crit=False):
         """Renderer tubuh Sylara kualitas maksimum, 100% procedural.
 
         Dibangun sebagai bone rig 2D berlapis seperti Kaizen/Thorne
@@ -3550,10 +3755,17 @@ class _NS_sylara:
         merah menyembul, dan busur recurve yang posenya dihitung dari
         sendi (grip, nock, tarikan tali). Tidak ada PNG, sprite sheet,
         ataupun image.load.
+
+        Kwarg ``focus/wind/shackle/powershot/crit`` membuat badan IKUT
+        bereaksi ke state skill (mis. busur & rambut menyala hijau saat
+        Focus Fire / Powershot, rantai hijau saat Shackle, afterimage
+        saat Windrun).
         """
         _NS_sylara._draw_sylara_elite(
             surface, cx, cy, facing, phase, action, attack_progress,
-            powered=powered, detail=detail)
+            powered=powered, detail=detail,
+            focus=focus, wind=wind, shackle=shackle,
+            powershot=powershot, crit=crit)
 
 
     # ===================================================================
@@ -3733,7 +3945,9 @@ class _NS_sylara:
 
 
     def _draw_sylara_elite(surface, cx, cy, facing, phase, action,
-                           attack_progress=0.0, powered=False, detail=False):
+                           attack_progress=0.0, powered=False, detail=False,
+                           focus=False, wind=False, shackle=False,
+                           powershot=False, crit=False):
         """Komposisi akhir: rig digambar ke buffer lalu diberi outline gelap
         1 px seperti sprite sheet referensi, baru di-blit ke arena."""
         buf = pygame.Surface((_NS_sylara.RIG_W, _NS_sylara.RIG_H),
@@ -3748,6 +3962,80 @@ class _NS_sylara:
         for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             surface.blit(silhouette, (ox + dx, oy + dy))
         surface.blit(buf, (ox, oy))
+        # Badan ikut bereaksi ke state skill (bow/hair/cape menyala).
+        if focus or wind or shackle or powershot or crit:
+            _NS_sylara._draw_sylara_skill_overlay(
+                surface, cx, cy, facing, phase, action, attack_progress,
+                focus=focus, wind=wind, shackle=shackle,
+                powershot=powershot, crit=crit)
+
+
+    # -------------------------------------------------------------------
+    # Skill-state body overlay — badan ikut bereaksi ke skill aktif
+    # -------------------------------------------------------------------
+    def _draw_sylara_skill_overlay(surface, cx, cy, facing, phase, action,
+                                   attack_progress=0.0, focus=False,
+                                   wind=False, shackle=False, powershot=False,
+                                   crit=False):
+        """Glow reaktif di badan saat skill aktif (world-space, ringan).
+
+        Bow/hair/cape menyala hijau (focus/powershot), rantai hijau di
+        pergelangan (shackle), afterimage vertigo (wind).  Tetap < 100
+        primitif — dibuang otomatis bila tidak ada skill aktif (kondisi di
+        _draw_sylara_elite).
+        """
+        p = _NS_sylara.PALETTE
+        f = 1 if facing >= 0 else -1
+        pulse = math.sin(phase * 3.2) * 0.5 + 0.5
+        bow_x = cx + 20 * f
+        bow_y = cy - 8
+
+        # Inti glow di sekitar busur + ujung bow (semua skill ranged)
+        if focus or powershot or crit:
+            _NS_sylara._aacircle(surface,
+                                 (*p["wind_bright"], int(120 + 90 * pulse)),
+                                 (bow_x, bow_y), int(16 + 4 * pulse))
+            _NS_sylara._aacircle(surface,
+                                 (*p["wind_mid"], int(90 + 60 * pulse)),
+                                 (bow_x, bow_y), int(22 + 5 * pulse))
+            # specular di ujung bow — kilau baja
+            _NS_sylara._aacircle(surface, p["white"], (bow_x + f * 3, bow_y), 1)
+            # rim cahaya hijau di sepanjang bilah cape + rambut
+            _NS_sylara._aaline(surface, (*p["wind_mid"], 120),
+                               (cx - 6 * f, cy - 34), (cx - 12 * f, cy + 6), 2)
+        if focus:
+            # tick angin berputar di pergelangan draw-hand
+            _NS_sylara._dashed_ring(surface, bow_x, bow_y, int(10 + 3 * pulse),
+                                    p["wind_bright"], int(160 + 60 * pulse),
+                                    phase * 2.2, segments=6, thick=2, span=.6)
+        if powershot:
+            # orb charge membesar di ujung busur
+            _NS_sylara._aacircle(surface, (*p["wind_bright"], 200),
+                                 (bow_x + f * 4, bow_y), int(6 + 3 * pulse))
+            _NS_sylara._aacircle(surface, p["white"],
+                                 (bow_x + f * 4, bow_y), 2)
+
+        if shackle:
+            # anchor ring berputar di pergelangan draw-hand (target &
+            # tether sudah digambar di ground telegraph world-space)
+            _NS_sylara._dashed_ring(surface, bow_x, bow_y, int(12 + 2 * pulse),
+                                    p["wind_light"], int(170 + 50 * pulse),
+                                    -phase * 2.6, segments=8, thick=2, span=.5)
+            _NS_sylara._dashed_ring(surface, bow_x, bow_y, int(20 + 3 * pulse),
+                                    p["wind_bright"], int(110 + 40 * pulse),
+                                    phase * 1.2, segments=8, thick=2, span=.4)
+            _NS_sylara._aacircle(surface, p["wind_white"],
+                                 (bow_x + f * 2, bow_y), 1)
+
+        if wind:
+            # afterimage vertigo di sekeliling badan
+            for i in range(5):
+                r = int(24 + i * 6)
+                al = int(60 - i * 8)
+                if al > 0:
+                    _NS_sylara._aacircle(surface,
+                                         (*p["wind_mid"], al),
+                                         (cx, cy - 4), r, 1)
 
 
     def _draw_sylara_rig(surface, cx, cy, facing, phase, action,
@@ -4274,136 +4562,292 @@ class _NS_sylara:
 
 
     def _draw_bow_release_flash(surface, x, y, facing, progress):
-        """Flash when releasing arrow."""
-        # Flash occurs at release moment
-        if progress < 0.55 or progress > 0.75:
+        """Flash + IMPACT burst + smear saat anak panah dilepas."""
+        if progress < 0.42 or progress > 0.80:
             return
-        t = (progress - 0.55) / 0.2
-        intensity = math.sin(t * math.pi)
+        p = _NS_sylara.PALETTE
+        # t = 0 saat mulai menyerang, membesar ke puncak tepat di release
+        t = (progress - 0.42) / 0.30
+        t = max(0.0, min(1.0, t))
+        intensity = math.sin(t * math.pi) if t < 0.9 else 0.0
 
         flash_x = x + 22 * facing
         flash_y = y - 8
 
+        # ── PRIMER: katai flash + orbit glint ──
         alpha = int(200 * intensity)
         radius = int(4 + intensity * 12)
+        _NS_sylara._aacircle(surface, (*p["wind_mid"], alpha // 2),
+                             (flash_x, flash_y), radius + 4)
+        _NS_sylara._aacircle(surface, (*p["wind_bright"], alpha),
+                             (flash_x, flash_y), radius)
+        _NS_sylara._aacircle(surface, (*p["wind_white"], alpha),
+                             (flash_x, flash_y), radius // 2)
+        _NS_sylara._aacircle(surface, p["white"], (flash_x, flash_y), 1)
 
-        _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_mid"], alpha // 2),
-                  (flash_x, flash_y), radius + 4)
-        _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha),
-                  (flash_x, flash_y), radius)
-        _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_white"], alpha),
-                  (flash_x, flash_y), radius // 2)
+        # ── IMPACT (frame puncak): bintang 8-spike + shockwave ──
+        if 0.50 < progress < 0.66:
+            it = (progress - 0.50) / 0.16
+            imp = math.sin(it * math.pi)
+            _NS_sylara._spark_star(surface, flash_x, flash_y,
+                                   int(22 * imp), p["wind_bright"],
+                                   int(230 * imp), spikes=8,
+                                   rot=progress * 4, core=p["wind_white"])
+            ring_r = int(6 + imp * 22)
+            _skill_outlined_circle(surface, (flash_x, flash_y), ring_r, 3,
+                                   p["wind_light"], int(190 * imp))
 
-        # Small streaks
+        # ── SMEAR: streak angin mengikuti arah tembak ──
         for i in range(4):
             angle = progress * 5 + i * math.pi / 2
             ex = flash_x + int(math.cos(angle) * radius * 1.4)
             ey = flash_y + int(math.sin(angle) * radius * 1.4)
-            _NS_sylara._aaline(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha),
-                    (flash_x, flash_y), (ex, ey), 1)
+            _NS_sylara._aaline(surface, (*p["wind_bright"], alpha),
+                               (flash_x, flash_y), (ex, ey), 1)
+        # ekor angin ke belakang (arah tembak = facing)
+        for i in range(4):
+            back = flash_x - int((i + 1) * 5 * facing)
+            al = int(160 * (1 - i / 4.0) * (0.4 + 0.6 * intensity))
+            if al > 0:
+                _NS_sylara._aaline(surface, (*p["wind_light"], al),
+                                   (flash_x, flash_y), (back, flash_y), 2)
 
 
     # ===================================================================
-    # SKILL Q: POWERSHOT (charging)
+    # SKILL R: POWERSHOT (charge → release cone) — world-space, 3 fase
     # ===================================================================
     def _draw_powershot_charge(surface, boss, x, y, timer, phase):
-        """Charging aura around boss."""
-        progress = max(0.0, min(1.0, 1 - timer / 60))
+        """Charging aura di sekitar Sylara saat Powershot.
+
+        World-space (faktor _fx_scale): pilar aktivasi + shockwave ganda,
+        lalu orb konvergen + dashed ring berputar (steady), dan garis
+        telegraph + chevron menuju target + retakan tanah (telegraph).
+        """
+        p = _NS_sylara.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 60.0))
+        fs = _NS_sylara._fx_scale(boss)
         facing = boss.direction
-
-        # Line indicator to target (tegas: titik terang lebih besar + outline)
+        pulse = math.sin(phase * 4.0) * 0.5 + 0.5
         tx, ty = _NS_sylara._target_position(boss, x, y)
-        for i in range(0, 100, 5):
-            alpha = int(100 + math.sin(phase * 3 + i * 0.2) * 70)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_dark"], alpha // 2),
-                      (x + int((tx - x) * i / 100) + 1,
-                       y + int((ty - y) * i / 100) - 7), 2)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha),
-                      (x + int((tx - x) * i / 100),
-                       y + int((ty - y) * i / 100) - 8), 1)
+        rng = _NS_sylara._ring_r(boss, 60, surface)
+        bow_x, bow_y = x + 22 * facing, y - 8
 
-        # Charging particles converging
+        # ── AKTIVASI: pilar cahaya 3-lapis + shockwave ganda + bintang ──
+        if progress < 0.20:
+            t = progress / 0.20
+            top = int(y - min(110 * fs, 240) * (0.55 + 0.45 * (1 - t)))
+            for wd, col, al in ((22, p["wind_dark"], 100),
+                                (11, p["wind_mid"], 160),
+                                (4, p["wind_bright"], 230)):
+                _NS_sylara._aaline(surface, (*col, int(al * (1 - t))),
+                                   (x, top), (x, y + 10), wd)
+            for k, rmax in ((0, int(90 * fs)), (1, int(62 * fs))):
+                r = int((20 + t * rmax))
+                _skill_outlined_circle(surface, (bow_x, bow_y), r, 3,
+                                       p["wind_bright"] if k == 0 else p["wind_mid"],
+                                       int((235 if k == 0 else 160) * (1 - t)))
+            _NS_sylara._spark_star(surface, bow_x, bow_y,
+                                   int(30 * (1 - t * .5)), p["wind_bright"],
+                                   int(240 * (1 - t)), 8, rot=phase,
+                                   core=p["wind_white"])
+
+        # ── STEADY: orb konvergen + rune ring berputar + mote naik ──
+        _skill_outlined_circle(surface, (bow_x, bow_y),
+                               int(rng * (0.5 + 0.35 * pulse)), 3,
+                               p["wind_mid"], int(120 + 60 * pulse))
+        _NS_sylara._dashed_ring(surface, bow_x, bow_y, int(rng * 0.7),
+                                p["wind_bright"], int(130 + 65 * pulse),
+                                phase * 1.1, segments=8, thick=2, span=.5)
+        # mote angin naik di sekitar bow
         for i in range(8):
-            angle = phase * 2 + i * math.pi / 4
-            r = 30 - int(progress * 20)  # converge
-            px = x + 22 * facing + int(math.cos(angle) * r)
-            py = y - 8 + int(math.sin(angle) * r)
-            alpha = int(200 * progress)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha), (px, py), 2)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_white"], alpha), (px, py), 1)
+            t = (phase * 0.4 + i / 8.0) % 1.0
+            mx = bow_x + int(math.sin(i * 2.2) * 30 * fs)
+            my = bow_y + 12 - int(t * 60 * fs)
+            _NS_sylara._aacircle(surface,
+                                 (*p["wind_bright"], int(190 * (1 - t))),
+                                 (mx, my), 2 if i % 2 else 1)
+        # glint orbit di ujung bow
+        for i in range(4):
+            a = phase * 2.6 + i * math.pi / 2
+            gx = int(bow_x + math.cos(a) * 16)
+            gy = int(bow_y + math.sin(a) * 16)
+            _NS_sylara._aacircle(surface, (*p["wind_white"], 210), (gx, gy), 1)
+
+        # ── TELEGRAPH: garis + chevron menuju target + retakan tanah ──
+        if progress < 0.75:
+            t2 = (phase * 0.5) % 1.0
+            for i in range(3):
+                t = (i / 3.0 + t2) % 1.0
+                _NS_sylara._chevron(
+                    surface,
+                    x + facing * rng * (0.25 + 0.65 * t),
+                    y + 6, 0.0 if facing > 0 else math.pi,
+                    max(10, int(rng * 0.10)), p["wind_light"], 200, 3)
+        for i in range(4):
+            ang = 0.3 + i * 0.55
+            _NS_sylara._jagged_crack(
+                surface, x + facing * 20, y + 46, ang * (1 if facing > 0 else -1),
+                int((22 + (i % 3) * 9) * fs),
+                (p["wind_dark"], p["wind_mid"]), 150, seed=i + 51, width=2)
 
 
     # ===================================================================
-    # SKILL W: WINDRUN
+    # SKILL W: WINDRUN (speed + heal) — world-space, 3 fase
     # ===================================================================
     def _draw_windrun_ground(surface, boss, x, y, timer, phase):
-        """Ground effect during windrun."""
+        """Ground Windrun: shockwave aktivasi + ring berputar (steady) +
+        chevron berbaris ke arah lari (telegraph)."""
+        p = _NS_sylara.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 180.0))
+        fs = _NS_sylara._fx_scale(boss)
         facing = boss.direction
-        # Speed lines on ground (tegas: stroke gelap + garis terang)
+        pulse = math.sin(phase * 4.0) * 0.5 + 0.5
+        rng = _NS_sylara._ring_r(boss, 70, surface)
+
+        # ── AKTIVASI: shockwave ganda + bintang ──
+        if progress < 0.14:
+            t = progress / 0.14
+            for k, rmax in ((0, int(80 * fs)), (1, int(56 * fs))):
+                r = int((20 + t * rmax))
+                _skill_outlined_circle(surface, (x, y + 8), r, 3,
+                                       p["wind_bright"] if k == 0 else p["wind_mid"],
+                                       int((225 if k == 0 else 150) * (1 - t)))
+            _NS_sylara._spark_star(surface, x, y - 4,
+                                   int(26 * (1 - t * .5)), p["wind_light"],
+                                   int(235 * (1 - t)), 7, rot=phase,
+                                   core=p["wind_white"])
+
+        # ── STEADY: dual dashed ring counter-rotating + speed streaks ──
+        _NS_sylara._dashed_ring(surface, x, y + 14, int(rng * 0.8),
+                                p["wind_mid"], int(120 + 55 * pulse),
+                                phase * 1.2, segments=10, thick=2, span=.45)
+        _NS_sylara._dashed_ring(surface, x, y + 14, int(rng * 0.55),
+                                p["wind_light"], int(100 + 50 * pulse),
+                                -phase * 0.9, segments=8, thick=2, span=.6)
+        # speed streaks belakang (ke arah lari)
         for i in range(6):
             off = (i - 3) * 6
-            sx = x - facing * 20
             sy = y + 30 + off
-            ex = sx - facing * 40
-            alpha = 200 - i * 20
+            sx = x - facing * 20
+            ex = sx - facing * 44
+            alpha = 200 - i * 18
             _skill_outlined_line(surface, (sx, sy), (ex, sy), 1,
-                                 _NS_sylara.PALETTE["wind_bright"], alpha)
+                                 p["wind_bright"], alpha)
+        # daun melayang
+        for i in range(5):
+            t = (phase * 0.5 + i / 5.0) % 1.0
+            dx = x - facing * (12 + t * 40)
+            dy = y - 20 + int(math.sin(phase * 3 + i) * 6) + int(t * 14)
+            _NS_sylara._draw_leaf(surface, dx, dy, 7 * fs,
+                                  phase * 1.4 + i, p["cloth_dark"],
+                                  p["cloth_mid"], p["cloth_light"])
+
+        # ── TELEGRAPH: chevron berbaris ke arah lari ──
+        for i in range(3):
+            t = (i / 3.0 + phase * 0.4) % 1.0
+            _NS_sylara._chevron(
+                surface, x + facing * rng * (0.3 + 0.6 * t), y + 20,
+                0.0 if facing > 0 else math.pi, max(10, int(rng * 0.10)),
+                p["wind_light"], 190, 3)
 
 
     def _draw_windrun_trail(surface, x, y, facing, phase):
-        """After-image trail behind Sylara during windrun."""
+        """After-image trail + wind swirl saat Windrun (world-space)."""
+        p = _NS_sylara.PALETTE
+        fs = 1.0  # trail digambar relatif terhadap badan; tetap terbaca
+        # Ghost afterimage berlapis
         for i in range(5):
             offset = (i + 1) * 8 * facing
             alpha = 180 - i * 30
-            # Ghost silhouette
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_dark"], alpha // 2),
-                      (x - offset, y - 10), 14)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_mid"], alpha),
-                      (x - offset, y - 5), 10)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_light"], alpha),
-                      (x - offset, y - 8), 6)
-
-        # Wind swirls around Sylara
+            cx_, cy_ = x - offset, y - 8
+            _NS_sylara._aacircle(surface, (*p["wind_dark"], alpha // 2),
+                                 (cx_, cy_ - 2), 13)
+            _NS_sylara._aacircle(surface, (*p["wind_mid"], alpha),
+                                 (cx_, cy_), 9)
+            _NS_sylara._aacircle(surface, (*p["wind_light"], alpha),
+                                 (cx_, cy_ - 3), 5)
+        # Wind swirls
         for i in range(8):
             angle = phase * 2 + i * math.pi / 4
-            r = 25
+            r = int(28 * fs)
             px = x + int(math.cos(angle) * r)
             py = y - 5 + int(math.sin(angle) * r * 0.5)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_bright"], 200), (px, py), 3)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_white"], 220), (px, py), 1)
-
+            _NS_sylara._aacircle(surface, (*p["wind_bright"], 200), (px, py), 3)
+            _NS_sylara._aacircle(surface, (*p["wind_white"], 220), (px, py), 1)
         # Horizontal speed streaks
         for i in range(6):
             sy = y + (i - 3) * 6
             sx = x - facing * 20
-            ex = sx - facing * 30
+            ex = sx - facing * 34
             alpha = 200 - i * 15
-            _NS_sylara._aaline(surface, (*_NS_sylara.PALETTE["wind_light"], alpha),
-                    (sx, sy), (ex, sy), 1)
+            _NS_sylara._aaline(surface, (*p["wind_light"], alpha),
+                               (sx, sy), (ex, sy), 1)
 
 
     # ===================================================================
-    # SKILL E: SHACKLE SHOT
+    # SKILL E: SHACKLE SHOT (bind + stun) — world-space, 3 fase
     # ===================================================================
     def _draw_shackle_ground(surface, boss, x, y, timer, pulse):
-        """Line indicator to target for shackle shot."""
+        """Shackle Shot: tether rantai berputar dari bow ke target +
+        reticle di target + burst aktivasi.  World-space."""
+        p = _NS_sylara.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 150.0))
+        fs = _NS_sylara._fx_scale(boss)
+        facing = boss.direction
         tx, ty = _NS_sylara._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 150))
+        sx, sy = x + 20 * facing, y - 6
+        ang = math.atan2(ty - y, tx - x)
+        dist = math.hypot(tx - x, ty - y)
 
-        # Dashed line indicator (tegas: stroke gelap + garis terang)
-        steps = 20
-        for i in range(steps):
+        # ── AKTIVASI: burst bintang di target + shockwave ──
+        if progress < 0.14:
+            t = progress / 0.14
+            _NS_sylara._spark_star(surface, tx, ty - 6,
+                                   int(24 * (1 - t * .5)), p["wind_bright"],
+                                   int(240 * (1 - t)), 6, rot=pulse,
+                                   core=p["wind_white"])
+            _skill_outlined_circle(surface, (tx, ty - 6),
+                                   int((16 + t * 40 * fs)), 3,
+                                   p["wind_light"], int(210 * (1 - t)))
+
+        # ── STEADY: tether rantai berputar dari bow ke target ──
+        #    (outline gelap + garis terang; rune dot berputar di sepanjang)
+        segs = 14
+        for i in range(segs):
+            t1 = i / segs
+            t2 = min(1.0, (i + 0.7) / segs)
+            a1 = (sx + (tx - sx) * t1, sy + (ty - sy) * t1 - 5)
+            a2 = (sx + (tx - sx) * t2, sy + (ty - sy) * t2 - 5)
+            al = int(150 + math.sin(pulse * 3 + i) * 60)
+            _skill_outlined_line(surface, a1, a2, 2, p["wind_bright"], al)
+            # rune dot berputar
             if i % 2 == 0:
-                t1 = i / steps
-                t2 = (i + 1) / steps
-                x1 = x + (tx - x) * t1
-                y1 = y + (ty - y) * t1 - 5
-                x2 = x + (tx - x) * t2
-                y2 = y + (ty - y) * t2 - 5
-                _skill_outlined_line(surface, (x1, y1), (x2, y2), 2,
-                                     _NS_sylara.PALETTE["wind_bright"], 170)
+                px_ = int(a1[0] + math.cos(pulse * 4) * 4)
+                py_ = int(a1[1] + math.sin(pulse * 4) * 4)
+                _NS_sylara._aacircle(surface, (*p["wind_white"], 220),
+                                     (px_, py_), 1)
 
-        # Spawn shackle projectile at start
+        # ── TELEGRAPH: reticle di target + chevron berbaris ──
+        rtr = int(11 * fs)
+        _skill_outlined_circle(surface, (tx, ty - 6), rtr, 3,
+                               p["wind_light"], int(160 + 60 * pulse))
+        _NS_sylara._dashed_ring(surface, tx, ty - 6, rtr + 8,
+                                p["wind_bright"], int(130 + 50 * pulse),
+                                pulse, segments=8, thick=2, span=.5)
+        for da in (0, math.pi / 2, math.pi, -math.pi / 2):
+            _NS_sylara._aaline(
+                surface, (*p["wind_bright"], 170),
+                (int(tx + math.cos(da) * (rtr + 2)),
+                 int(ty - 6 + math.sin(da) * (rtr + 2))),
+                (int(tx + math.cos(da) * (rtr + 12)),
+                 int(ty - 6 + math.sin(da) * (rtr + 12))), 2)
+        for i in range(3):
+            t = (i / 3.0 + pulse * 0.5) % 1.0
+            _NS_sylara._chevron(surface, x + (tx - x) * t, y + (ty - y) * t - 5,
+                                ang, 12, p["wind_light"],
+                                int(150 + 70 * pulse * (1 - t)), 3)
+
+        # ── Spawn shackle projectile di awal ──
         if not getattr(boss, "_sy_shackle_spawned", False):
             _NS_sylara._spawn_shackle(boss, x, y)
             boss._sy_shackle_spawned = True
@@ -4412,69 +4856,99 @@ class _NS_sylara:
 
 
     # ===================================================================
-    # SKILL R: FOCUS FIRE (ultimate)
+    # SKILL Q: FOCUS FIRE (attack-speed buff + piercing) — world-space
     # ===================================================================
     def _draw_focus_fire_ground(surface, boss, x, y, timer, phase):
-        """Ground rune for focus fire."""
-        progress = max(0.0, min(1.0, 1 - timer / 180))
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-        radius = int(40 + progress * 15)
+        """Ground rune Focus Fire: aktivasi shockwave, steady aura +
+        rune ring berputar, telegraph pierce-line + chevron."""
+        p = _NS_sylara.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 180.0))
+        fs = _NS_sylara._fx_scale(boss)
+        pulse = math.sin(phase * 2.2) * 0.25 + 0.75
+        rng = _NS_sylara._ring_r(boss, int(getattr(boss, "skill_range", 200) or 200),
+                                 surface)
+        facing = boss.direction
+        gy = y + 40
 
-        ring = pygame.Surface((radius * 2 + 20, radius + 20), pygame.SRCALPHA)
-        cx, cy = radius + 10, (radius + 20) // 2
+        # ── AKTIVASI: shockwave ganda + bintang di bow ──
+        if progress < 0.12:
+            t = progress / 0.12
+            for k, rmax in ((0, int(78 * fs)), (1, int(54 * fs))):
+                r = int((18 + t * rmax))
+                _skill_outlined_circle(surface, (x, y - 4), r, 3,
+                                       p["wind_bright"] if k == 0 else p["wind_mid"],
+                                       int((225 if k == 0 else 150) * (1 - t)))
+            _NS_sylara._spark_star(surface, x + 20 * facing, y - 8,
+                                   int(26 * (1 - t * .5)), p["wind_bright"],
+                                   int(235 * (1 - t)), 8, rot=phase,
+                                   core=p["wind_white"])
 
-        # Dark outline first (tegas di atas terrain terang)
-        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_dark"], int(150 * pulse)),
-                            (3, 3, radius * 2 + 14, radius + 14), 5)
-        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_mid"], int(190 * pulse)),
-                            (5, 5, radius * 2 + 10, radius + 10), 3)
-        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_bright"], int(220 * pulse)),
-                            (15, 8, radius * 2 - 10, radius + 4), 2)
-
-        # Runic marks
+        # ── STEADY: ground ellipse aura + rune ring berputar ──
+        _NS_sylara._ellipse(surface, (*p["wind_darkest"], int(80 + 35 * pulse)),
+                            (int(x - rng * 0.5), int(gy - rng * 0.14),
+                             int(rng * 1.0), int(rng * 0.28)), 0)
+        _skill_outlined_circle(surface, (x, y), int(rng * 0.72), 4,
+                               p["wind_mid"], int(120 + 55 * pulse))
+        _NS_sylara._dashed_ring(surface, x, y, int(rng * 0.58),
+                                p["wind_bright"], int(125 + 60 * pulse),
+                                phase * 1.3, segments=12, thick=2, span=.4)
+        # rune dots berputar
         for i in range(6):
             a = phase * 0.5 + i * math.pi / 3
-            px = cx + int(math.cos(a) * (radius - 3))
-            py = cy + int(math.sin(a) * (radius // 2 - 2))
-            pygame.draw.circle(ring, (*_NS_sylara.PALETTE["wind_white"], 240), (px, py), 3)
+            px = x + int(math.cos(a) * rng * 0.7)
+            py = y + int(math.sin(a) * rng * 0.25)
+            _NS_sylara._aacircle(surface, (*p["wind_white"], 220), (px, py), 2)
 
-        surface.blit(ring, (x - cx, y + 30 - cy))
+        # ── TELEGRAPH: pierce-line chevron ke arah hadap ──
+        for i in range(3):
+            t = (i / 3.0 + phase * 0.5) % 1.0
+            _NS_sylara._chevron(surface,
+                                x + facing * rng * (0.25 + 0.65 * t),
+                                y + 10, 0.0 if facing > 0 else math.pi,
+                                max(11, int(rng * 0.09)), p["wind_light"], 200, 3)
 
 
     def _draw_focus_fire_effect(surface, boss, x, y, timer, phase):
-        """Rapid arrow volley animation."""
-        progress = max(0.0, min(1.0, 1 - timer / 180))
+        """Rapid arrow volley + channel aura saat Focus Fire."""
+        p = _NS_sylara.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / 180.0))
+        fs = _NS_sylara._fx_scale(boss)
+        facing = boss.direction
 
-        # Fire arrows in bursts
-        fire_interval = 8  # every 8 frames
+        # Fire arrows in bursts (keep existing gameplay hook)
+        fire_interval = 8
         if not hasattr(boss, "_sy_focus_last_shot"):
             boss._sy_focus_last_shot = -100
-
         if progress > 0.2 and progress < 0.9:
             if timer % fire_interval == 0 and boss._sy_focus_last_shot != timer:
                 _NS_sylara._spawn_focus_fire_volley(boss, x, y)
                 boss._sy_focus_last_shot = timer
-
         if progress < 0.2:
             boss._sy_focus_last_shot = -100
 
-        # Energy aura around boss (channeling)
+        # Channeling aura (2 layer + glint orbit di bow)
+        bow_x, bow_y = x + 20 * facing, y - 8
         for i in range(10):
             angle = phase * 3 + i * math.pi / 5
-            r = 25 + int(math.sin(phase * 2 + i) * 5)
+            r = int((25 + math.sin(phase * 2 + i) * 5) * fs)
             px = x + int(math.cos(angle) * r)
             py = y - 10 + int(math.sin(angle) * r * 0.6)
             alpha = int(200 + math.sin(phase * 2 + i) * 55)
             alpha = max(0, min(255, alpha))
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha), (px, py), 3)
-            _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_white"], alpha), (px, py), 1)
-
-        # Wind spirals
+            _NS_sylara._aacircle(surface, (*p["wind_bright"], alpha), (px, py), 3)
+            _NS_sylara._aacircle(surface, (*p["wind_white"], alpha), (px, py), 1)
+        # Wind spirals (steady signature)
         for i in range(3):
             angle_start = phase * 2 + i * math.pi * 2 / 3
-            _NS_sylara._draw_wind_arc(surface, x, y - 10, 30, angle_start,
-                           angle_start + math.pi * 1.4,
-                           (*_NS_sylara.PALETTE["wind_bright"], 200), width=2, segments=10)
+            _NS_sylara._draw_wind_arc(surface, bow_x, bow_y, 30, angle_start,
+                                      angle_start + math.pi * 1.4,
+                                      (*p["wind_bright"], 200), width=2, segments=10)
+        # glint orbit di ujung bow
+        for i in range(4):
+            a = phase * 3.2 + i * math.pi / 2
+            _NS_sylara._aacircle(surface, (*p["wind_white"], 220),
+                                 (int(bow_x + math.cos(a) * 15),
+                                  int(bow_y + math.sin(a) * 15)), 1)
 
 
     # ===================================================================
