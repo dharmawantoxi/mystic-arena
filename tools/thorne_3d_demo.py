@@ -199,26 +199,27 @@ def build_model():
     # ── Kepala (koordinat RELATIF pivot leher (0,1.88,0.05)) ──
     HEAD = Node(pivot=(0, 1.88, 0.05), axis=(1, 0, 0), name="head")
     box(HEAD, 0, 0.18, 0.04, 0.56, 0.46, 0.52, P["fur_mid"])     # tengkorak
-    box(HEAD, 0, 0.08, 0.42, 0.38, 0.30, 0.32, P["snout_mid"])   # moncong
-    box(HEAD, 0, 0.08, 0.58, 0.26, 0.20, 0.10, P["snout_dark"])  # ujung hidung
-    box(HEAD, 0, 0.34, 0.20, 0.30, 0.10, 0.16, P["fur_light"])   # alis/bulu dahi
-    # mata: sklera + iris (baca jelas di resolusi rendah)
+    box(HEAD, 0, 0.08, 0.40, 0.34, 0.26, 0.30, P["snout_mid"])   # moncong
+    box(HEAD, 0, 0.08, 0.55, 0.22, 0.18, 0.10, P["snout_dark"])  # ujung hidung
+    box(HEAD, 0, 0.34, 0.18, 0.30, 0.10, 0.14, P["fur_light"])   # bulu dahi
+    # mata: sklera + iris, lebih rapat agar tidak "goblok"
     for sgn in (1, -1):
-        box(HEAD, 0.19 * sgn, 0.30, 0.30, 0.14, 0.14, 0.07, P["eye_white"])
-        box(HEAD, 0.19 * sgn, 0.30, 0.33, 0.10, 0.10, 0.06, P["eye_iris"])
+        box(HEAD, 0.16 * sgn, 0.28, 0.28, 0.13, 0.13, 0.07, P["eye_white"])
+        box(HEAD, 0.16 * sgn, 0.28, 0.31, 0.09, 0.09, 0.06, P["eye_iris"])
+        box(HEAD, 0.16 * sgn, 0.36, 0.26, 0.15, 0.05, 0.06, P["fur_darkest"])  # alis marah
     box(HEAD, 0, -0.12, 0.05, 0.34, 0.10, 0.30, P["fur_dark"])   # rahang
     # taring: kerucut tipis melengkung ke depan-atas
     for sgn in (1, -1):
-        tk = Node(pivot=(0.13 * sgn, 0.02, 0.32), axis=(1, 0, 0),
+        tk = Node(pivot=(0.13 * sgn, 0.02, 0.30), axis=(1, 0, 0),
                   ang=0.55, name="tusk")
         cone(tk, (0, 0, 0), (0, 0.55, 0.84), 0.40, 0.06,
              P["tusk_mid"], sides=4)
         HEAD.children.append(tk)
     # telinga
     EAR_L = Node(pivot=(-0.20, 0.36, -0.02), axis=(0, 1, 0), ang=-0.25)
-    cone(EAR_L, (0, 0, 0), (0, 0.9, -0.35), 0.17, 0.075, P["fur_darkest"], 4)
+    cone(EAR_L, (0, 0, 0), (0, 0.9, -0.35), 0.19, 0.08, P["fur_darkest"], 4)
     EAR_R = Node(pivot=(0.20, 0.36, -0.02), axis=(0, 1, 0), ang=0.25)
-    cone(EAR_R, (0, 0, 0), (0, 0.9, -0.35), 0.17, 0.075, P["fur_darkest"], 4)
+    cone(EAR_R, (0, 0, 0), (0, 0.9, -0.35), 0.19, 0.08, P["fur_darkest"], 4)
     HEAD.children.append(EAR_L)
     HEAD.children.append(EAR_R)
     # quill mane: kipas CREST 13 kerucut — menyapu dari ATAS (tengah) ke
@@ -243,16 +244,17 @@ def build_model():
         QUILL_NODES.append(q)
         HEAD.children.append(q)
     # baris quill kedua di leher (lebih gelap, mengisi siluet bawahan)
-    for i in range(7):
-        side = (i - 3) / 3.0
+    for i in range(9):
+        side = (i - 4) / 4.0
         spread = abs(side)
         d = vnorm((side * (0.25 + spread * 0.75),
                    0.5 - spread * 0.2,
                    -(0.5 + spread * 0.4)))
-        ln = 0.5 - spread * 0.1
+        ln = 0.52 - spread * 0.1
         q = Node(pivot=(side * 0.12, -0.10, -0.16),
                  axis=(1, 0, 0), ang=0.0, name=f"quillN{i}")
-        cone(q, (0, 0, 0), d, ln, 0.08, P["quill_darkest"], 4)
+        col = P["quill_dark"] if i in (3, 4, 5) else P["quill_darkest"]
+        cone(q, (0, 0, 0), d, ln, 0.08, col, 4)
         QUILL_NODES.append(q)
         HEAD.children.append(q)
     root.children.append(HEAD)
@@ -277,12 +279,16 @@ def build_model():
             box(m, 0, -0.62, 0, 0.38, 0.11, 0.38, P["armor_mid"])
             box(m, 0, -0.50, 0, 0.24, 0.07, 0.24, P["gold_mid"])    # cincin atas
             box(m, 0, -0.74, 0, 0.24, 0.07, 0.24, P["gold_mid"])    # cincin bawah
-            # 6 duri gada
+            # 6 duri gada + ujung berkilau (ref 2D: rim dingin)
             for d in ((1, 0, 0), (-1, 0, 0), (0, 1, 0),
                       (0, -1, 0), (0, 0, 1), (0, 0, -1)):
                 c = Node(pivot=(0, -0.62, 0), axis=(1, 0, 0), name="spike")
                 cone(c, (0, 0, 0), d, 0.18, 0.055, P["armor_mid"], 3)
+                cone(c, (0, 0, 0), d, 0.225, 0.03, P["armor_shine"], 3)
                 m.children.append(c)
+            # ujung duri depan beracun menyala (ref 2D)
+            box(m, 0, -0.62, 0.215, 0.05, 0.05, 0.05, P["goo_bright"])
+            box(m, 0, -0.62, 0.24, 0.03, 0.03, 0.03, P["quill_shine"])
             fist.children.append(m)
         el.children.append(fist)
         sh.children.append(el)
@@ -327,15 +333,17 @@ def smooth(x):
 
 
 def pose_idle(t):
-    bob = 0.05 * math.sin(t * 2.0)
-    root_bob = bob
-    head_ang = 0.07 * math.sin(t * 2.0 + 0.7)
-    armL = 0.10 * math.sin(t * 1.3)
-    armR = 0.10 * math.sin(t * 1.3 + math.pi * 0.6)
-    elbL = 0.25 + 0.08 * math.sin(t * 1.3 + 1.0)
-    elbR = 0.25 + 0.08 * math.sin(t * 1.3 + 2.0)
-    quill = [0.06 * math.sin(t * 1.5 + i * 0.5) for i in range(20)]
-    return dict(root_bob=root_bob, head_ang=head_ang,
+    # Sinkron 2D: bob sin(t*0.72) + sway samping sin(t*0.8) + quill
+    # gelombang sin(t*1.25) — frekuensi sama persis dengan rig 2D.
+    bob = 0.05 * math.sin(t * 0.72)
+    sway = 0.05 * math.sin(t * 0.8)
+    head_ang = 0.07 * math.sin(t * 0.8 + 0.7)
+    armL = 0.10 * math.sin(t * 0.65)
+    armR = 0.10 * math.sin(t * 0.65 + math.pi * 0.6)
+    elbL = 0.25 + 0.08 * math.sin(t * 0.65 + 1.0)
+    elbR = 0.25 + 0.08 * math.sin(t * 0.65 + 2.0)
+    quill = [0.06 * math.sin(t * 1.25 + i * 0.5) for i in range(22)]
+    return dict(root_bob=bob, sway=sway, head_ang=head_ang,
                 armL=armL, armR=armR, elbL=elbL, elbR=elbR,
                 legL=0.0, legR=0.0, shinL=0.06, shinR=0.06,
                 quill=quill, mace=0.06 * math.sin(t), yaw=0.0,
@@ -343,45 +351,65 @@ def pose_idle(t):
 
 
 def pose_walk(phase):
-    l = 0.60 * math.sin(phase)
-    r = 0.60 * math.sin(phase + math.pi)
-    # lutut ditekuk saat kaki terangkat (mendekat ke posisi depan)
-    shinL = 0.75 * max(0.0, math.sin(phase + 2.4))
-    shinR = 0.75 * max(0.0, math.sin(phase + 2.4 + math.pi))
-    bob = -0.06 * abs(math.sin(phase))
-    return dict(root_bob=bob, head_ang=0.05 * math.sin(phase * 2),
-                armL=0.35 * math.sin(phase + math.pi),
-                armR=0.22 * math.sin(phase + math.pi),
+    # Sinkron 2D: fase = pulse*2 (di-sheet sudah), bob turun saat telapak
+    # menapak (|sin|), lean depan, lutut fleksi saat kaki terangkat.
+    l = 0.62 * math.sin(phase)
+    r = 0.62 * math.sin(phase + math.pi)
+    shinL = 0.80 * max(0.0, math.sin(phase + 2.4))
+    shinR = 0.80 * max(0.0, math.sin(phase + 2.4 + math.pi))
+    bob = -0.07 * abs(math.sin(phase * 1.2))
+    return dict(root_bob=bob, sway=0.04 * math.sin(phase),
+                head_ang=0.05 * math.sin(phase * 2),
+                armL=0.30 * math.sin(phase + math.pi),
+                armR=0.18 * math.sin(phase + math.pi),
                 elbL=0.35 + 0.15 * math.sin(phase),
-                elbR=0.45 + 0.15 * math.sin(phase),
+                elbR=0.50 + 0.15 * math.sin(phase),
                 legL=l, legR=r, shinL=shinL, shinR=shinR,
-                quill=[0.08 * math.sin(phase * 2 + i * 0.4) for i in range(20)],
-                mace=0.12 * math.sin(phase), yaw=0.0, pitch=0.0, bob_extra=0.0)
+                quill=[0.08 * math.sin(phase * 2 + i * 0.4) for i in range(22)],
+                mace=0.12 * math.sin(phase), yaw=0.0,
+                pitch=0.07, bob_extra=0.0)
 
 
 def pose_attack(ap):
-    # ayunan gada: windup -> smash -> recover
+    # Sinkron 2D: windup (gada ke BELAKANG kepala) -> smash (ayun ke
+    # DEPAN-bawah, langkah maju + badan condong depan) -> recover.
+    # Sumbu X: sudut positif = lengan bergerak ke belakang, negatif =
+    # ke depan (karakter menghadap +Z).
     if ap < 0.30:
-        sh = -2.7 * smooth(ap / 0.30)
+        sh = 2.7 * smooth(ap / 0.30)
     elif ap < 0.62:
-        sh = -2.7 + 3.7 * smooth((ap - 0.30) / 0.32)
+        sh = 2.7 - 3.7 * smooth((ap - 0.30) / 0.32)
     else:
-        sh = 1.0 * (1.0 - smooth((ap - 0.62) / 0.38))
+        sh = -1.0 * (1.0 - smooth((ap - 0.62) / 0.38))
     elb = 0.35 + 1.1 * math.sin(ap * math.pi)
-    lean = 0.32 * math.sin(ap * math.pi)
-    flare = 0.16 * math.sin(ap * math.pi)
-    return dict(root_bob=0.10 * math.sin(ap * math.pi),
+    lean = 0.30 * math.sin(ap * math.pi)
+    lunge = 0.16 * math.sin(ap * math.pi)          # langkah maju
+    flare = 0.20 * math.sin(ap * math.pi)          # quill menegak saat smash
+    return dict(root_bob=0.0,
+                sway=0.0,
                 head_ang=0.12 * math.sin(ap * math.pi),
                 armL=-0.5 * math.sin(ap * math.pi),
                 armR=sh,
                 elbL=0.3, elbR=elb,
-                legL=-0.35 * math.sin(ap * math.pi),
-                legR=0.45 * math.sin(ap * math.pi),
-                shinL=0.2, shinR=0.5 * math.sin(ap * math.pi),
-                quill=[flare * math.sin(i * 0.9) for i in range(20)],
+                legL=-0.45 * math.sin(ap * math.pi),
+                legR=0.55 * math.sin(ap * math.pi),
+                shinL=0.25, shinR=0.6 * math.sin(ap * math.pi),
+                quill=[flare * math.sin(0.6 + i * 0.9) for i in range(22)],
                 mace=0.35 * math.sin(ap * math.pi - 0.6),
-                yaw=lean, pitch=0.05 * math.sin(ap * math.pi),
+                yaw=0.0, pitch=lean,
+                lunge=lunge,
                 bob_extra=-0.10 * math.sin(ap * math.pi))
+
+
+def root_transform(pose, yaw_extra=0.0):
+    """Transformasi root MURNI (tanpa menyentuh node) — dipakai efek 3D
+    untuk menghitung posisi dunia gada/kaki di sampel pose masa lalu."""
+    M = rot_matrix((1, 0, 0), pose["pitch"])
+    t = (pose.get("sway", 0.0),
+         pose["root_bob"] + pose.get("bob_extra", 0.0),
+         pose.get("lunge", 0.0))
+    My = rot_matrix((0, 1, 0), yaw_extra + pose["yaw"])
+    return m3mul(My, M), t
 
 
 def apply_pose(pose, yaw_extra=0.0):
@@ -399,13 +427,47 @@ def apply_pose(pose, yaw_extra=0.0):
         MACE.ang = pose["mace"]
     for i, q in enumerate(QUILL_NODES):
         q.ang = pose["quill"][i] if i < len(pose["quill"]) else 0.0
-    return yaw_extra + pose["yaw"], pose["pitch"] + pose["pitch"], pose["root_bob"]
+    _, t = root_transform(pose, yaw_extra)
+    return (yaw_extra + pose["yaw"], pose["pitch"], t[1], t[0], t[2])
+
+
+def mace_world_from(pose, yaw_extra=0.0):
+    """Posisi dunia pusat kepala gada untuk pose tertentu (murni).
+    Chain harus persis sama dengan renderer: pivot anak di-transform
+    oleh MASI induk (sebelum rotasi anak)."""
+    M, t = root_transform(pose, yaw_extra)
+    piv = (0.40, 1.60, 0.02)
+    Ma = m3mul(M, rot_matrix((1, 0, 0), pose["armR"]))
+    ta = vadd(m3v(M, piv), t)
+    Me = m3mul(Ma, rot_matrix((1, 0, 0), pose["elbR"]))
+    te = vadd(m3v(Ma, (0, -0.30, 0)), ta)
+    Mf = Me                                          # fist tidak dirotasi
+    tf = vadd(m3v(Me, (0, -0.30, 0)), te)
+    Mm = m3mul(Mf, rot_matrix((1, 0, 0), pose["mace"]))
+    tm = vadd(m3v(Mf, (0, -0.08, 0)), tf)
+    return vadd(m3v(Mm, (0, -0.62, 0)), tm)
+
+
+def foot_world_from(pose, side, yaw_extra=0.0):
+    """Posisi dunia telapak kaki (untuk efek debu langkah)."""
+    M, t = root_transform(pose, yaw_extra)
+    ang = pose["legL"] if side < 0 else pose["legR"]
+    shin = pose["shinL"] if side < 0 else pose["shinR"]
+    piv = (0.18 * side, 0.95, 0)
+    Mh = m3mul(M, rot_matrix((1, 0, 0), ang))
+    th = vadd(m3v(M, piv), t)
+    Mk = m3mul(Mh, rot_matrix((1, 0, 0), shin))
+    tk = vadd(m3v(Mh, (0, -0.30, 0)), th)      # pivot lutut: M ASI induk
+    # telapak: pivot ankle (0,-0.28,0) + pusat kaki (0,-0.05,0.06);
+    # ankle tidak dirotasi -> titik (0,-0.33,0.06) relatif lutut
+    return vadd(m3v(Mk, (0, -0.33, 0.06)), tk)
 
 
 # ═══════════════════════════════════════════════════════════════════
 # RENDERER: transformasi, culling, shading, painter
 # ═══════════════════════════════════════════════════════════════════
-LIGHT = vnorm((-0.45, 0.80, 0.55))
+LIGHT = vnorm((-0.38, 0.78, 0.55))
+FILL = vnorm((0.55, 0.25, -0.40))  # fill lemah dari sisi gelap
 
 
 class Renderer:
@@ -424,13 +486,22 @@ class Renderer:
         u = vcross(s, f)
         self.f, self.s, self.u = f, s, u
 
-    def render(self, surf, root, yaw, pitch, bob):
+    def project(self, p):
+        """Titik dunia -> layar, atau None kalau di belakang kamera."""
+        d = vsub(p, self.eye)
+        z = vdot(self.f, d)
+        if z < 0.15:
+            return None
+        return (self.cx + self.focal * vdot(self.s, d) / z,
+                self.cy - self.focal * vdot(self.u, d) / z)
+
+    def render(self, surf, root, yaw, pitch, bob, dx=0.0, dz=0.0):
         w, h = self.w, self.h
         f, s, u, eye = self.f, self.s, self.u, self.eye
 
-        # root matrix: bob + pitch (X) + yaw (Y)
+        # root matrix: offset (sway/lunge) + bob + pitch (X) + yaw (Y)
         M = rot_matrix((1, 0, 0), pitch)
-        t = (0.0, bob, 0.0)
+        t = (dx, bob, dz)
         My = rot_matrix((0, 1, 0), yaw)
         M = m3mul(My, M)
 
@@ -464,8 +535,10 @@ class Renderer:
                 if not ok:
                     continue
                 zmax = max(c[2] for c in cams)
-                # flat shading
-                br = 0.45 + 0.62 * max(0.0, vdot(nw, LIGHT))
+                # flat shading: key light + fill lemah (sisi gelap tidak mati)
+                br = (0.50
+                      + 0.72 * max(0.0, vdot(nw, LIGHT))
+                      + 0.18 * max(0.0, vdot(nw, FILL)))
                 col = (
                     min(255, int(color[0] * br)),
                     min(255, int(color[1] * br)),
@@ -486,19 +559,151 @@ class Renderer:
         return len(draws)
 
 
-def render_frame(w, h, root, pose_fn, t, yaw_extra=0.0, focal=235.0,
-                 bg=(22, 28, 38)):
-    """Render satu frame ke Surface baru (SRCALPHA)."""
-    pose = pose_fn(t)
-    yaw, pitch, bob = apply_pose(pose, yaw_extra)
-    canvas = pygame.Surface((w, h), pygame.SRCALPHA)
+def _outline(canvas, width=1):
+    """Outline siluet gelap 1 px di sekeliling model — teknik yang sama
+    dengan _finish_hd_sprite di game (pygame.mask dilasi). Menjadikan
+    render 3D tetap terasa pixel-art, bukan gambar halus."""
+    w, h = canvas.get_size()
+    solid = pygame.mask.from_surface(canvas, 150)
+    if solid.count() == 0:
+        return canvas, 0
+    ew, eh = w + 2 * width, h + 2 * width
+    expanded = pygame.mask.Mask((ew, eh))
+    for ox in range(width + 1):
+        for oy in range(width + 1):
+            if ox == width and oy == width:
+                continue
+            expanded.draw(solid, (ox, oy))
+    core = pygame.mask.Mask((ew, eh))
+    core.draw(solid, (width, width))
+    expanded.erase(core, (width, width))
+    edge = expanded.to_surface(setcolor=(4, 6, 15, 235),
+                               unsetcolor=(0, 0, 0, 0))
+    out = pygame.Surface((ew, eh), pygame.SRCALPHA)
+    out.blit(edge, (0, 0))
+    out.blit(canvas, (width, width))
+    return out, width
+
+
+def _effect_swing_trail(canvas, r, ap, yaw_extra):
+    """Crescent trail ayunan gada — efek andalan 2D, kini dihitung dari
+    jejak dunia kepala gada di 10 sampel pose sebelumnya."""
+    if not (0.26 < ap < 0.78):
+        return
+    a0 = max(0.0, ap - 0.20)
+    pts = []
+    n = 10
+    for i in range(n + 1):
+        s = a0 + (ap - a0) * i / n
+        sp = r.project(mace_world_from(pose_attack(s), yaw_extra))
+        if sp is not None:
+            pts.append((sp, (ap - s) / max(1e-6, ap - a0)))
+    if len(pts) < 3:
+        return
+    tmp = pygame.Surface(canvas.get_size(), pygame.SRCALPHA)
+    for i in range(len(pts) - 1):
+        (x1, y1), age1 = pts[i]
+        (x2, y2), age2 = pts[i + 1]
+        ddx, ddy = x2 - x1, y2 - y1
+        d = math.hypot(ddx, ddy) or 1.0
+        px, py = -ddy / d, ddx / d
+        w1, w2 = 1.0 + 2.5 * (1 - age1), 1.0 + 2.5 * (1 - age2)
+        quad = ((x1 + px * w1, y1 + py * w1), (x2 + px * w2, y2 + py * w2),
+                (x2 - px * w2, y2 - py * w2), (x1 - px * w1, y1 - py * w1))
+        alpha = int(150 * (1 - (age1 + age2) / 2))
+        if alpha <= 12:
+            continue
+        pygame.draw.polygon(tmp, (*P["quill_light"], alpha),
+                            [(int(a), int(b)) for a, b in quad])
+    canvas.blit(tmp, (0, 0))
+
+
+def _effect_sparks(canvas, r, ap, yaw_extra):
+    """Impact sparks saat smash (2D: ap ~0.52)."""
+    impact = max(0.0, 1.0 - abs(ap - 0.52) / 0.18)
+    if impact <= 0:
+        return
+    sp = r.project(mace_world_from(pose_attack(ap), yaw_extra))
+    if sp is None:
+        return
+    tmp = pygame.Surface(canvas.get_size(), pygame.SRCALPHA)
+    for i in range(6):
+        ang = -1.2 + i * 0.48
+        length = 5 + int(impact * (8 + i % 2 * 4))
+        pygame.draw.line(
+            tmp, (*P["quill_shine"], int(220 * impact)),
+            (int(sp[0]), int(sp[1])),
+            (int(sp[0] + math.cos(ang) * length),
+             int(sp[1] + math.sin(ang) * length)),
+            1 if i % 2 else 2)
+    canvas.blit(tmp, (0, 0))
+
+
+def _effect_walk_dust(canvas, r, phase, yaw_extra):
+    """Debu di telapak kaki yang menapak — efek walk 2D."""
+    pose = pose_walk(phase)
+    tmp = pygame.Surface(canvas.get_size(), pygame.SRCALPHA)
+    for side in (-1, 1):
+        fp = foot_world_from(pose, side, yaw_extra)
+        if fp[1] >= 0.16:
+            continue
+        alpha = int(150 * (0.16 - fp[1]) / 0.16)
+        for i in range(3):
+            bp = r.project((fp[0] - 0.04 * i, 0.04, fp[2] - 0.12 - 0.08 * i))
+            if bp is None:
+                continue
+            pygame.draw.circle(
+                tmp, (*P["fur_mid"], max(20, alpha - 40 * i)),
+                (int(bp[0]), int(bp[1])), max(1, 3 - i // 2))
+    canvas.blit(tmp, (0, 0))
+
+
+def _effect_idle_motes(canvas, r, t):
+    """Partikel bulu melayang saat idle — efek idle 2D."""
+    tmp = pygame.Surface(canvas.get_size(), pygame.SRCALPHA)
+    for i in range(3):
+        tt = (t * 0.18 + i / 3.0) % 1.0
+        mp = r.project((math.sin(t + i * 2.1) * 0.3, 0.4 - tt * 1.1, 0.15))
+        if mp is None:
+            continue
+        pygame.draw.circle(tmp, (*P["fur_high"], int(110 * (1 - tt))),
+                           (int(mp[0]), int(mp[1])), 1)
+    canvas.blit(tmp, (0, 0))
+
+
+def render_frame(w, h, root, action, t, ap=0.0, yaw_extra=0.0, focal=235.0):
+    """Render satu frame. action: 'idle' (t=waktu) | 'walk' (t=fase) |
+    'attack' (ap=progress 0..1)."""
+    if action == "idle":
+        pose = pose_idle(t)
+    elif action == "walk":
+        pose = pose_walk(t)
+    else:
+        pose = pose_attack(ap)
+    yaw, pitch, bob, dx, dz = apply_pose(pose, yaw_extra)
     r = Renderer((w, h), focal)
-    # bayangan tanah
-    sh = pygame.Surface((w, h), pygame.SRCALPHA)
-    pygame.draw.ellipse(sh, (0, 0, 0, 70), (w // 2 - 42, h * 0.55 + 44, 84, 18))
-    pygame.draw.ellipse(sh, (0, 0, 0, 40), (w // 2 - 30, h * 0.55 + 48, 60, 10))
-    canvas.blit(sh, (0, 0))
-    nfaces = r.render(canvas, root, yaw, pitch, bob)
+    canvas = pygame.Surface((w, h), pygame.SRCALPHA)
+    # bayangan tanah (geser mengikuti sway; lunge maju -> turun dikit)
+    shx = int(dx * (focal / 5.4))
+    shy = int(dz * (focal / 5.4) * 0.35)
+    pygame.draw.ellipse(canvas, (0, 0, 0, 70),
+                        (w // 2 - 42 + shx, int(h * 0.55) + 44 + shy,
+                         84, 18))
+    pygame.draw.ellipse(canvas, (0, 0, 0, 40),
+                        (w // 2 - 30 + shx, int(h * 0.55) + 48 + shy,
+                         60, 10))
+    # model -> surface sendiri, outline siluet, lalu efek 3D di atasnya
+    model = pygame.Surface((w, h), pygame.SRCALPHA)
+    nfaces = r.render(model, root, yaw, pitch, bob, dx, dz)
+    outlined, pad = _outline(model)
+    canvas.blit(outlined, (-pad, -pad))
+    if action == "idle":
+        _effect_idle_motes(canvas, r, t)
+    elif action == "walk":
+        _effect_walk_dust(canvas, r, t, yaw_extra)
+    else:
+        _effect_swing_trail(canvas, r, ap, yaw_extra)
+        _effect_sparks(canvas, r, ap, yaw_extra)
     return canvas, nfaces
 
 
@@ -520,14 +725,9 @@ def make_sheets(root, out_dir):
     scale = 2
     fw, fh = frame_w * scale, frame_h * scale
 
-    def cell(t, action, yaw_extra=0.0):
-        if action == "idle":
-            fn = lambda tt: pose_idle(tt)
-        elif action == "walk":
-            fn = lambda tt: pose_walk(tt)
-        else:
-            fn = lambda tt: pose_attack(tt)
-        img, _ = render_frame(frame_w, frame_h, root, fn, t, yaw_extra)
+    def cell(t, action, yaw_extra=0.0, ap=0.0):
+        img, _ = render_frame(frame_w, frame_h, root, action, t, ap,
+                              yaw_extra)
         return pygame.transform.scale(img, (fw, fh))
 
     # ── Sheet 1: SPIN 360 (bukti 3D) ──
@@ -560,19 +760,33 @@ def make_sheets(root, out_dir):
         top = 70 + row * (fh + 60)
         _label(sheet, label, 30, top + fh // 2 - 10, 20, (255, 199, 130))
         for i in range(count):
-            t = (i / count) * math.tau if action != "attack" else i / (count - 1)
-            img = cell(t, action)
+            if action == "attack":
+                img = cell(0.0, action, ap=i / (count - 1))
+            else:
+                img = cell((i / count) * math.tau, action)
             sheet.blit(img, (150 + i * fw, top))
     dt_anim = (time.perf_counter() - t0) / 22 * 1000
     p2 = os.path.join(out_dir, "thorne_3d_anim.png")
     pygame.image.save(sheet, p2)
     print(p2)
 
-    # ── Sheet 3: close-up hero (1 frame, 4x) ──
-    img, _ = render_frame(150, 165, root, pose_idle, 0.9, yaw_extra=0.35)
-    big = pygame.transform.scale(img, (150 * 4, 165 * 4))
+    # ── Sheet 3: close-up hero (1 frame, 4x) + latar + glow ──
+    img, _ = render_frame(150, 165, root, "idle", 0.9, 0.0, 0.35)
+    big = pygame.transform.scale(img, (img.get_width() * 4,
+                                       img.get_height() * 4))
+    Wc, Hc = big.get_width(), big.get_height()
+    close = pygame.Surface((Wc, Hc))
+    close.fill((13, 16, 24))
+    # glow radial hangat di belakang (lingkaran alfa menumpuk -> gradient)
+    glow = pygame.Surface((Wc, Hc), pygame.SRCALPHA)
+    cx, cy = Wc // 2, int(Hc * 0.48)
+    maxr = max(Wc, Hc) // 2
+    for rr in range(maxr, 0, -6):
+        pygame.draw.circle(glow, (255, 176, 88, 5), (cx, cy), rr)
+    close.blit(glow, (0, 0))
+    close.blit(big, (cx - Wc // 2, int(Hc * 0.52) - Hc // 2))
     p3 = os.path.join(out_dir, "thorne_3d_closeup.png")
-    pygame.image.save(big, p3)
+    pygame.image.save(close, p3)
     print(p3)
     print(f"render ~{dt_spin:.2f} ms/frame (spin)  ~{dt_anim:.2f} ms/frame (anim)")
 
@@ -615,15 +829,15 @@ def run_live(root):
         scr = pygame.display.get_surface()
         scr.fill((14, 18, 26))
         if seq == 0:
-            pose_fn = lambda tt: pose_idle(tt)
             label = "IDLE  (1 idle / 2 walk / 3 attack / ESC quit)"
+            img, nfaces = render_frame(120, 132, root, "idle", t)
         elif seq == 1:
-            pose_fn = lambda tt: pose_walk(tt * 2.4)
             label = "WALK"
+            img, nfaces = render_frame(120, 132, root, "walk", t * 2.4)
         else:
-            pose_fn = lambda tt: pose_attack(max(0.0, min(1.0, ap)))
             label = f"ATTACK {ap:.2f}"
-        img, nfaces = render_frame(120, 132, root, pose_fn, t)
+            img, nfaces = render_frame(120, 132, root, "attack", t,
+                                       min(1.0, ap))
         big = pygame.transform.scale(img, (600, 660))
         scr.blit(big, (60, -60))
         scr.blit(font.render(label, True, (255, 205, 120)), (20, 14))
