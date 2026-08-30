@@ -19,8 +19,12 @@ Entry point publik ada di bagian paling bawah file.
 """
 
 import math
-import random
 import pygame
+
+try:                     # pass cahaya bersama; opsional supaya file boss
+    import lighting as _lighting          # tetap bisa di-load sendiri
+except Exception:        # pragma: no cover
+    _lighting = None
 
 # Penanda: file ini berisi BANYAK boss (1 true + 3 mini).
 # Dipakai heroes/__init__.py agar tidak menebak fungsi draw_*
@@ -28,12 +32,57 @@ import pygame
 _IS_LEVEL_BUNDLE = True
 
 
+def _composite_boss_body(surface, ns, raw, cx, cy, facing, phase, action,
+                         attack_progress=0, rim_add=(30, 26, 44), bsize=180):
+    """Komposit ORIGINAL-MAX untuk boss level3.
+
+    Badan dirender ke buffer tetap, di-crop rapat, diberi outline siluet
+    gelap 1 px (4 arah) lalu pass pencahayaan rim/shade dari lighting.py.
+    Anchor (cx, cy) tetap jatuh di titik yang sama dengan sebelumnya, jadi
+    pose & posisi dunia tidak berubah.
+    """
+    if getattr(ns, "_body_buf", None) is None:
+        ns._body_buf = pygame.Surface((bsize, bsize), pygame.SRCALPHA)
+    buf = ns._body_buf
+    buf.fill((0, 0, 0, 0))
+    raw(buf, bsize // 2, bsize // 2, facing, phase, action, attack_progress)
+    used = buf.get_bounding_rect(min_alpha=1)
+    if used.width <= 2 or used.height <= 2:
+        return
+    used.inflate_ip(4, 4)
+    used.clamp_ip(buf.get_rect())
+    sub = buf.subsurface(used).copy()
+    ox = int(cx) - (bsize // 2) + used.left
+    oy = int(cy) - (bsize // 2) + used.top
+    edge = sub.copy()
+    edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+    for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        surface.blit(edge, (ox + ddx, oy + ddy))
+    if _lighting is not None:
+        # Boss sprite level3 sudah punya gradasi nilai di-author yang cukup;
+        # matikan gradien global agar idle tetap < 2.2 ms (rim + terminator
+        # 1px tetap terlihat, arah cahaya dari lighting.py).
+        _lighting.apply_to_rig(sub, rim_add=rim_add, shade_mul=168,
+                               gradient=False, two_band=False)
+    surface.blit(sub, (ox, oy))
+
 
 # ====================================================================
 # VARKUL
 # ====================================================================
 class _NS_varkul:
     """Namespace varkul - isi asli tidak diubah."""
+
+    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    # Buffer badan untuk outline+lighting, buffer hurt flash, dan catatan
+    # rect shadow supaya flash tidak ikut menyalakan bayangan tanah.
+    _body_buf = None
+    _flash_buf = None
+    _record_shadow = None
+    _shadow_cache = None
+    _aura_cache = None
+    _ground_cache = None
+    _mist_cache = None
 
     # ---------------------------------------------------------------------------
     # Compatibility helpers
@@ -224,8 +273,6 @@ class _NS_varkul:
             (tip_x, tip_y), (base_l_x, base_l_y), (base_r_x, base_r_y)
         ])
         # Inner highlight
-        mid_x = (tip_x + cx) / 2
-        mid_y = (tip_y + cy) / 2
         _NS_varkul._poly(surface, color_mid, [
             (tip_x, tip_y),
             ((base_l_x + cx) / 2, (base_l_y + cy) / 2),
@@ -497,12 +544,38 @@ class _NS_varkul:
             _NS_varkul._draw_chain_frost_ground(surface, boss, x, y, skill_timer, pulse)
 
         # ---------- Character body ----------
+        # ORIGINAL-MAX hurt flash: saat kena hit, pose dirender ke buffer,
+        # lalu siluet badannya dibanjiri putih-hangat. Bayangan tanah TIDAK
+        # ikut menyala (rect shadow direkam dan dikeluarkan dari flash).
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0:
+            NS = _NS_varkul
+            if NS._flash_buf is None:
+                NS._flash_buf = pygame.Surface((220, 240), pygame.SRCALPHA)
+            NS._flash_buf.fill((0, 0, 0, 0))
+            NS._record_shadow = []
+            _tgt, _tx, _ty = NS._flash_buf, 110, 120
+
         if attacking:
-            _NS_varkul._draw_varkul_attack(surface, boss, x, y)
+            _NS_varkul._draw_varkul_attack(_tgt, boss, _tx, _ty)
         elif moving:
-            _NS_varkul._draw_varkul_walk(surface, boss, x, y)
+            _NS_varkul._draw_varkul_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_varkul._draw_varkul_idle(surface, boss, x, y)
+            _NS_varkul._draw_varkul_idle(_tgt, boss, _tx, _ty)
+
+        if flash > 0:
+            NS = _NS_varkul
+            surface.blit(NS._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(NS._flash_buf, 50)
+            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                               unsetcolor=(0, 0, 0, 0))
+            for rect in (NS._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            NS._record_shadow = None
 
         # ---------- Projectiles ----------
         _NS_varkul._manage_projectiles(boss, surface, pulse)
@@ -563,6 +636,36 @@ class _NS_varkul:
     # ===================================================================
     def _draw_varkul_body(surface, cx, cy, facing, phase, action,
                           attack_progress=0):
+        """Komposit ORIGINAL-MAX: badak ke buffer tetap, outline siluet
+        gelap 1 px + pass pencahayaan rim/shade, lalu blit ke posisi sama."""
+        _composite_boss_body(
+            surface, _NS_varkul, _NS_varkul._draw_varkul_body_raw,
+            cx, cy, facing, phase, action, attack_progress,
+            rim_add=(70, 120, 210), bsize=180)
+
+    def _masterwork_finish(surface, cx, cy, facing, phase, action,
+                           attack_progress=0):
+        """ORIGINAL-MAX detail pass: rim kiri-atas + pemisah bagian + detail
+        wajah/emblem agar tetap terbaca saat downscale."""
+        P = _NS_varkul.PALETTE
+        pygame.draw.circle(surface, P["bone_shine"], (cx - 10, cy - 36), 1)
+        pygame.draw.circle(surface, P["bone_light"], (cx - 9, cy - 34), 2)
+        for side in (-1, 1):
+            pygame.draw.circle(surface, P["bone_shine"], (cx + side * 8, cy - 44), 1)
+            pygame.draw.circle(surface, P["ice_white"], (cx + side * 7, cy - 45), 1)
+        pygame.draw.line(surface, P["shadow_deep"], (cx - 6, cy - 20), (cx + 6, cy - 20), 1)
+        pygame.draw.line(surface, P["shadow_deep"], (cx - 10, cy - 1), (cx + 10, cy - 1), 1)
+        pygame.draw.line(surface, P["robe_darkest"], (cx - 13, cy + 27), (cx + 13, cy + 27), 1)
+        pygame.draw.circle(surface, P["bone_shine"], (cx - 1, cy - 8), 1)
+        pygame.draw.line(surface, P["gold_light"], (cx - 10, cy - 14), (cx, cy - 9), 1)
+        orb_x = cx - 20 * facing
+        orb_y = cy - 20
+        pygame.draw.circle(surface, P["ice_hot"], (orb_x - 1, orb_y - 2), 2)
+        pygame.draw.circle(surface, P["ice_white"], (orb_x - 1, orb_y - 2), 1)
+
+
+    def _draw_varkul_body_raw(surface, cx, cy, facing, phase, action,
+                              attack_progress=0):
         # Cape / robe back
         _NS_varkul._draw_robe_back(surface, cx, cy, facing, phase, action)
 
@@ -586,6 +689,10 @@ class _NS_varkul:
 
         # Floating frost particles
         _NS_varkul._draw_body_particles(surface, cx, cy, phase)
+
+        # ORIGINAL-MAX detail pass (rim + separator + emblem)
+        _NS_varkul._masterwork_finish(surface, cx, cy, facing, phase, action,
+                                      attack_progress)
 
 
     def _draw_robe_back(surface, cx, cy, facing, phase, action):
@@ -815,8 +922,6 @@ class _NS_varkul:
 
     def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
         """Attack pose - staff raised for casting."""
-        sway = int(math.sin(phase * 0.7) * 1)
-
         # STAFF arm rises up during cast
         staff_side = -facing
         ss_x = cx + staff_side * 13
@@ -1110,20 +1215,23 @@ class _NS_varkul:
     def _draw_floating_mist(surface, cx, cy, phase, trail=False,
                             facing=1, intense=False):
         """Frost mist beneath floating Lich."""
+        NS = _NS_varkul
+        if NS._mist_cache is None:
+            mist = pygame.Surface((120, 40), pygame.SRCALPHA)
+            for radius in range(30, 3, -4):
+                alpha = int((30 - radius) * 2.8)
+                if alpha > 0:
+                    pygame.draw.ellipse(
+                        mist, (*NS.PALETTE["ice_dark"], min(255, alpha)),
+                        (60 - radius * 2, 20 - radius // 3,
+                         radius * 4, max(3, radius // 2)),
+                    )
+            NS._mist_cache = mist
         strength = 1.5 if intense else 1.0
-
-        # Base mist
-        mist = pygame.Surface((120, 40), pygame.SRCALPHA)
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(30, 3, -4):
-            alpha = int((30 - radius) * 2.8 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_varkul.PALETTE["ice_dark"], min(255, alpha)),
-                    (60 - radius * 2, 20 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 60, cy - 10))
+        spr = NS._mist_cache
+        spr.set_alpha(int(255 * min(1.0, pulse * strength)))
+        surface.blit(spr, (cx - 60, cy - 10))
 
         # Rising frost wisps
         for i, offset in enumerate((-20, -8, 8, 20)):
@@ -1157,64 +1265,78 @@ class _NS_varkul:
                           (sx, sy), max(2, 5 - i))
 
 
-    def _draw_shadow(surface, x, y):
-        """Ground shadow beneath floating entity."""
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_varkul.PALETTE["ice_dark"], 40), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
+    def _draw_shadow(surface, x, y, lift=0):
+        """Ground shadow beneath floating entity (cache + reaktif saat lift)."""
+        NS = _NS_varkul
+        if NS._shadow_cache is None:
+            shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
+            for radius in range(10, 0, -1):
+                alpha = max(0, (10 - radius) * 16)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow, (*NS.PALETTE["ice_dark"], 40), (8, 4, 84, 10))
+            NS._shadow_cache = shadow
+        spr = NS._shadow_cache
+        w, h = spr.get_size()
+        if lift:
+            k = max(0.12, 1.0 - lift * 0.05)
+            w = max(6, int(w * k))
+            h = max(2, int(h * k))
+            spr = pygame.transform.smoothscale(spr, (w, h))
+        bx = x - w // 2
+        by = (y + 10) - h          # dasar tetap menapak di y+10
+        surface.blit(spr, (bx, by))
+        if NS._record_shadow is not None:
+            NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
 
     def _draw_frost_aura(surface, x, y, phase):
-        """Large background frost aura."""
+        """Large background frost aura (basis di-cache, denyut via alpha)."""
+        NS = _NS_varkul
+        if NS._aura_cache is None:
+            aura = pygame.Surface((180, 160), pygame.SRCALPHA)
+            for radius in range(70, 5, -4):
+                alpha = int((70 - radius) * 1.2)
+                if alpha > 0:
+                    NS._aacircle(aura, (*NS.PALETTE["ice_darkest"], min(255, alpha)),
+                                 (90, 80), radius)
+            NS._aura_cache = aura
         pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(70, 5, -4):
-            alpha = int((70 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_varkul._aacircle(aura, (*_NS_varkul.PALETTE["ice_darkest"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
+        spr = NS._aura_cache
+        spr.set_alpha(int(255 * max(0.2, min(1.0, pulse))))
+        surface.blit(spr, (x - 90, y - 80))
 
 
     def _draw_ice_platform(surface, x, y, phase, skill):
-        """Ice circle / snowflake pattern on the ground."""
+        """Ice circle / snowflake pattern on the ground (basis di-cache)."""
+        NS = _NS_varkul
+        if NS._ground_cache is None:
+            ring = pygame.Surface((130, 44), pygame.SRCALPHA)
+            pygame.draw.ellipse(ring, (*NS.PALETTE["ice_dark"], 150),
+                                (5, 10, 120, 24), 3)
+            pygame.draw.ellipse(ring, (*NS.PALETTE["ice_mid"], 180),
+                                (20, 14, 90, 16), 2)
+            for i in range(8):
+                angle = i * math.pi / 4
+                x1 = 65 + int(math.cos(angle) * 20)
+                y1 = 22 + int(math.sin(angle) * 4)
+                x2 = 65 + int(math.cos(angle) * 55)
+                y2 = 22 + int(math.sin(angle) * 10)
+                pygame.draw.line(ring, (*NS.PALETTE["ice_light"], 170),
+                                 (x1, y1), (x2, y2), 1)
+            for angle_deg in (0, 90, 180, 270):
+                angle = math.radians(angle_deg)
+                sx = 65 + int(math.cos(angle) * 50)
+                sy = 22 + int(math.sin(angle) * 9)
+                pygame.draw.circle(ring, (*NS.PALETTE["ice_bright"], 200), (sx, sy), 2)
+            NS._ground_cache = ring
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
-
-        # Outer ice ring
-        pygame.draw.ellipse(ring, (*_NS_varkul.PALETTE["ice_dark"], 150),
-                            (5, 10, 120, 24), 3)
-        pygame.draw.ellipse(ring, (*_NS_varkul.PALETTE["ice_mid"], 180),
-                            (20, 14, 90, 16), 2)
-
-        # Snowflake pattern
-        for i in range(8):
-            angle = phase * 0.15 + i * math.pi / 4
-            x1 = 65 + int(math.cos(angle) * 20)
-            y1 = 22 + int(math.sin(angle) * 4)
-            x2 = 65 + int(math.cos(angle) * 55)
-            y2 = 22 + int(math.sin(angle) * 10)
-            pygame.draw.line(ring, (*_NS_varkul.PALETTE["ice_light"], 170),
-                             (x1, y1), (x2, y2), 1)
-
-        # Ice shard decorations
-        for angle_deg in (0, 90, 180, 270):
-            angle = math.radians(angle_deg) + phase * 0.1
-            sx = 65 + int(math.cos(angle) * 50)
-            sy = 22 + int(math.sin(angle) * 9)
-            pygame.draw.circle(ring, (*_NS_varkul.PALETTE["ice_bright"], 200), (sx, sy), 2)
-
+        surface.blit(NS._ground_cache, (x - 65, y - 22))
         if skill:
-            pygame.draw.ellipse(ring, (*_NS_varkul.PALETTE["ice_bright"], int(80 * pulse)),
-                                (15, 8, 100, 28), 1)
-
-        surface.blit(ring, (x - 65, y - 22))
+            pygame.draw.ellipse(surface, (*NS.PALETTE["ice_bright"], int(80 * pulse)),
+                                (x - 50, y - 14, 100, 28), 1)
 
 
     def _draw_cast_flash(surface, x, y, facing, progress):
@@ -1254,7 +1376,7 @@ class _NS_varkul:
     # ===================================================================
     def _draw_frost_blast_ground(surface, boss, x, y, timer, phase):
         tx, ty = _NS_varkul._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        progress = max(0.0, min(1.0, 1 - timer / 50))
         # Ground warning circle at impact
         radius = int(20 + progress * 40)
         _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_dark"], 100), (tx, ty), radius, 2)
@@ -1263,7 +1385,7 @@ class _NS_varkul:
 
     def _draw_frost_blast(surface, boss, x, y, timer, phase):
         tx, ty = _NS_varkul._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        progress = max(0.0, min(1.0, 1 - timer / 50))
 
         start_x = x - 20 * boss.direction
         start_y = y - 20
@@ -1337,7 +1459,7 @@ class _NS_varkul:
     # ===================================================================
     def _draw_frostbite(surface, boss, x, y, timer, phase):
         tx, ty = _NS_varkul._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
+        progress = max(0.0, min(1.0, 1 - timer / 60))
 
         if progress < 0.3:
             # Frost projectile flying to target
@@ -1397,7 +1519,7 @@ class _NS_varkul:
     # ===================================================================
     def _draw_sacrifice_circle(surface, boss, x, y, timer, phase):
         """Pentagram circle on ground."""
-        progress = max(0.0, min(1.0, 1 - timer / 90))
+        progress = max(0.0, min(1.0, 1 - timer / 50))
         radius = int(35 + progress * 25)
         pulse = math.sin(phase * 1.5) * 0.2 + 0.8
 
@@ -1427,9 +1549,11 @@ class _NS_varkul:
 
 
     def _draw_sacrifice_foreground(surface, boss, x, y, timer, phase):
-        """Rising soul energy from ground to Lich."""
-        progress = max(0.0, min(1.0, 1 - timer / 90))
-
+        """Rising soul energy from ground to Lich (lifecycle ikut timer AI)."""
+        duration = 50
+        # Guard lifecycle: jangan menggambar di luar durasi skill AI.
+        if timer <= 0 or timer > duration:
+            return
         # Rising skull energy
         for i in range(6):
             t = (phase * 0.4 + i * 0.15) % 1.0
@@ -1449,7 +1573,7 @@ class _NS_varkul:
     # ===================================================================
     def _draw_chain_frost_ground(surface, boss, x, y, timer, phase):
         """Warning glow before launch."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 80))
         if progress < 0.3:
             # Charge up
             radius = int(15 + progress * 30)
@@ -1460,7 +1584,7 @@ class _NS_varkul:
 
     def _draw_chain_frost(surface, boss, x, y, timer, phase):
         """Draw chain frost orb + charging."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        progress = max(0.0, min(1.0, 1 - timer / 80))
 
         if progress < 0.35:
             # Charging in hand
@@ -1506,6 +1630,15 @@ class _NS_varkul:
 # ====================================================================
 class _NS_xerathis:
     """Namespace xerathis - isi asli tidak diubah."""
+
+    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    _body_buf = None
+    _flash_buf = None
+    _record_shadow = None
+    _shadow_cache = None
+    _aura_cache = None
+    _ground_cache = None
+    _mist_cache = None
 
     # ---------------------------------------------------------------------------
     # Compatibility helpers
@@ -1923,12 +2056,35 @@ class _NS_xerathis:
             _NS_xerathis._draw_freezing_field_ground(surface, boss, x, y, skill_timer, pulse)
 
         # ---------- Character body ----------
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0:
+            NS = _NS_xerathis
+            if NS._flash_buf is None:
+                NS._flash_buf = pygame.Surface((220, 240), pygame.SRCALPHA)
+            NS._flash_buf.fill((0, 0, 0, 0))
+            NS._record_shadow = []
+            _tgt, _tx, _ty = NS._flash_buf, 110, 120
+
         if attacking:
-            _NS_xerathis._draw_xerathis_attack(surface, boss, x, y)
+            _NS_xerathis._draw_xerathis_attack(_tgt, boss, _tx, _ty)
         elif moving:
-            _NS_xerathis._draw_xerathis_walk(surface, boss, x, y)
+            _NS_xerathis._draw_xerathis_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_xerathis._draw_xerathis_idle(surface, boss, x, y)
+            _NS_xerathis._draw_xerathis_idle(_tgt, boss, _tx, _ty)
+
+        if flash > 0:
+            NS = _NS_xerathis
+            surface.blit(NS._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(NS._flash_buf, 50)
+            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                               unsetcolor=(0, 0, 0, 0))
+            for rect in (NS._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            NS._record_shadow = None
 
         # ---------- Projectiles ----------
         _NS_xerathis._manage_projectiles(boss, surface, pulse)
@@ -1987,6 +2143,37 @@ class _NS_xerathis:
     # ===================================================================
     def _draw_xerathis_body(surface, cx, cy, facing, phase, action,
                             attack_progress=0):
+        """Komposit ORIGINAL-MAX: buffer tetap + outline + lighting."""
+        _composite_boss_body(
+            surface, _NS_xerathis, _NS_xerathis._draw_xerathis_body_raw,
+            cx, cy, facing, phase, action, attack_progress,
+            rim_add=(110, 150, 240), bsize=180)
+
+    def _masterwork_finish(surface, cx, cy, facing, phase, action,
+                           attack_progress=0):
+        """ORIGINAL-MAX detail pass: wajah lebih terbaca + rim kiri-atas."""
+        P = _NS_xerathis.PALETTE
+        for ex in (-3, 3):
+            pygame.draw.rect(surface, P["eye_white"], (cx + ex - 2, cy - 25, 4, 3))
+            pygame.draw.rect(surface, P["eye_iris"], (cx + ex - 2, cy - 25, 3, 3))
+            pygame.draw.rect(surface, P["eye_iris_light"], (cx + ex - 1, cy - 26, 1, 2))
+            pygame.draw.line(surface, P["hair_darkest"], (cx + ex - 3, cy - 27), (cx + ex + 1, cy - 27), 1)
+        pygame.draw.line(surface, P["hair_darkest"], (cx - 1, cy - 18), (cx + 1, cy - 18), 1)
+        pygame.draw.rect(surface, P["lips_mid"], (cx - 2, cy - 16, 4, 2))
+        pygame.draw.rect(surface, P["skin_light"], (cx - 1, cy - 16, 2, 1))
+        for xo, yo in ((-9, -10), (-6, -14), (10, -8), (12, 2)):
+            pygame.draw.circle(surface, P["fur_light"], (cx + xo, cy + yo), 2)
+        pygame.draw.line(surface, P["fur_light"], (cx - 11, cy - 12), (cx - 13, cy + 6), 1)
+        pygame.draw.line(surface, P["robe_high"], (cx - 9, cy - 12), (cx - 8, cy + 2), 1)
+        pygame.draw.circle(surface, P["gold_shine"], (cx - 1, cy - 9), 1)
+        st_x = cx + 24 * facing
+        st_y = cy - 54
+        pygame.draw.circle(surface, P["ice_hot"], (st_x - 1, st_y - 2), 2)
+        pygame.draw.circle(surface, P["ice_white"], (st_x - 1, st_y - 2), 1)
+
+
+    def _draw_xerathis_body_raw(surface, cx, cy, facing, phase, action,
+                                attack_progress=0):
         # Cape/cloak behind
         _NS_xerathis._draw_cloak(surface, cx, cy, facing, phase, action)
 
@@ -2007,6 +2194,10 @@ class _NS_xerathis:
 
         # Body frost particles
         _NS_xerathis._draw_body_particles(surface, cx, cy, phase)
+
+        # ORIGINAL-MAX detail pass (wajah + rim)
+        _NS_xerathis._masterwork_finish(surface, cx, cy, facing, phase, action,
+                                        attack_progress)
 
 
     def _draw_cloak(surface, cx, cy, facing, phase, action):
@@ -2578,20 +2769,23 @@ class _NS_xerathis:
     def _draw_floating_mist(surface, cx, cy, phase, trail=False,
                             facing=1, intense=False):
         """Frost mist beneath floating Xerathis."""
+        NS = _NS_xerathis
+        if NS._mist_cache is None:
+            mist = pygame.Surface((120, 40), pygame.SRCALPHA)
+            for radius in range(30, 3, -4):
+                alpha = int((30 - radius) * 2.8)
+                if alpha > 0:
+                    pygame.draw.ellipse(
+                        mist, (*NS.PALETTE["ice_dark"], min(255, alpha)),
+                        (60 - radius * 2, 20 - radius // 3,
+                         radius * 4, max(3, radius // 2)),
+                    )
+            NS._mist_cache = mist
         strength = 1.5 if intense else 1.0
-
-        # Base mist
-        mist = pygame.Surface((120, 40), pygame.SRCALPHA)
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(30, 3, -4):
-            alpha = int((30 - radius) * 2.8 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_xerathis.PALETTE["ice_dark"], min(255, alpha)),
-                    (60 - radius * 2, 20 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 60, cy - 10))
+        spr = NS._mist_cache
+        spr.set_alpha(int(255 * min(1.0, pulse * strength)))
+        surface.blit(spr, (cx - 60, cy - 10))
 
         # Rising frost wisps
         for i, offset in enumerate((-20, -8, 8, 20)):
@@ -2625,61 +2819,78 @@ class _NS_xerathis:
                           (sx, sy), max(2, 5 - i))
 
 
-    def _draw_shadow(surface, x, y):
-        """Ground shadow."""
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_xerathis.PALETTE["ice_dark"], 40), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
+    def _draw_shadow(surface, x, y, lift=0):
+        """Ground shadow (cache + reaktif saat lift)."""
+        NS = _NS_xerathis
+        if NS._shadow_cache is None:
+            shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
+            for radius in range(10, 0, -1):
+                alpha = max(0, (10 - radius) * 16)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow, (*NS.PALETTE["ice_dark"], 40), (8, 4, 84, 10))
+            NS._shadow_cache = shadow
+        spr = NS._shadow_cache
+        w, h = spr.get_size()
+        if lift:
+            k = max(0.12, 1.0 - lift * 0.05)
+            w = max(6, int(w * k))
+            h = max(2, int(h * k))
+            spr = pygame.transform.smoothscale(spr, (w, h))
+        bx = x - w // 2
+        by = (y + 10) - h          # dasar tetap menapak di y+10
+        surface.blit(spr, (bx, by))
+        if NS._record_shadow is not None:
+            NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
 
     def _draw_frost_aura(surface, x, y, phase):
-        """Large background aura."""
+        """Large background aura (basis di-cache, denyut via alpha)."""
+        NS = _NS_xerathis
+        if NS._aura_cache is None:
+            aura = pygame.Surface((180, 160), pygame.SRCALPHA)
+            for radius in range(70, 5, -4):
+                alpha = int((70 - radius) * 1.2)
+                if alpha > 0:
+                    NS._aacircle(aura, (*NS.PALETTE["ice_darkest"], min(255, alpha)),
+                                 (90, 80), radius)
+            NS._aura_cache = aura
         pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(70, 5, -4):
-            alpha = int((70 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_xerathis._aacircle(aura, (*_NS_xerathis.PALETTE["ice_darkest"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
+        spr = NS._aura_cache
+        spr.set_alpha(int(255 * max(0.2, min(1.0, pulse))))
+        surface.blit(spr, (x - 90, y - 80))
 
 
     def _draw_ice_platform(surface, x, y, phase, skill):
-        """Ice snowflake pattern on the ground."""
+        """Ice snowflake pattern on the ground (basis di-cache)."""
+        NS = _NS_xerathis
+        if NS._ground_cache is None:
+            ring = pygame.Surface((130, 44), pygame.SRCALPHA)
+            pygame.draw.ellipse(ring, (*NS.PALETTE["ice_dark"], 150),
+                                (5, 10, 120, 24), 3)
+            pygame.draw.ellipse(ring, (*NS.PALETTE["ice_mid"], 180),
+                                (20, 14, 90, 16), 2)
+            for i in range(8):
+                angle = i * math.pi / 4
+                x1 = 65 + int(math.cos(angle) * 20)
+                y1 = 22 + int(math.sin(angle) * 4)
+                x2 = 65 + int(math.cos(angle) * 55)
+                y2 = 22 + int(math.sin(angle) * 10)
+                pygame.draw.line(ring, (*NS.PALETTE["ice_light"], 170),
+                                 (x1, y1), (x2, y2), 1)
+            for angle_deg in (0, 90, 180, 270):
+                angle = math.radians(angle_deg)
+                sx = 65 + int(math.cos(angle) * 50)
+                sy = 22 + int(math.sin(angle) * 9)
+                pygame.draw.circle(ring, (*NS.PALETTE["ice_bright"], 200), (sx, sy), 2)
+            NS._ground_cache = ring
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_xerathis.PALETTE["ice_dark"], 150),
-                            (5, 10, 120, 24), 3)
-        pygame.draw.ellipse(ring, (*_NS_xerathis.PALETTE["ice_mid"], 180),
-                            (20, 14, 90, 16), 2)
-
-        for i in range(8):
-            angle = phase * 0.15 + i * math.pi / 4
-            x1 = 65 + int(math.cos(angle) * 20)
-            y1 = 22 + int(math.sin(angle) * 4)
-            x2 = 65 + int(math.cos(angle) * 55)
-            y2 = 22 + int(math.sin(angle) * 10)
-            pygame.draw.line(ring, (*_NS_xerathis.PALETTE["ice_light"], 170),
-                             (x1, y1), (x2, y2), 1)
-
-        for angle_deg in (0, 90, 180, 270):
-            angle = math.radians(angle_deg) + phase * 0.1
-            sx = 65 + int(math.cos(angle) * 50)
-            sy = 22 + int(math.sin(angle) * 9)
-            pygame.draw.circle(ring, (*_NS_xerathis.PALETTE["ice_bright"], 200), (sx, sy), 2)
-
+        surface.blit(NS._ground_cache, (x - 65, y - 22))
         if skill:
-            pygame.draw.ellipse(ring, (*_NS_xerathis.PALETTE["ice_bright"], int(80 * pulse)),
-                                (15, 8, 100, 28), 1)
-
-        surface.blit(ring, (x - 65, y - 22))
+            pygame.draw.ellipse(surface, (*NS.PALETTE["ice_bright"], int(80 * pulse)),
+                                (x - 50, y - 14, 100, 28), 1)
 
 
     def _draw_cast_flash(surface, x, y, facing, progress):
@@ -2717,7 +2928,7 @@ class _NS_xerathis:
     # ===================================================================
     def _draw_crystal_nova_ground(surface, boss, x, y, timer, phase):
         tx, ty = _NS_xerathis._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        progress = max(0.0, min(1.0, 1 - timer / 60))
         # Warning circle
         radius = int(25 + progress * 45)
         _NS_xerathis._aacircle(surface, (*_NS_xerathis.PALETTE["ice_dark"], 100), (tx, ty), radius, 2)
@@ -2726,7 +2937,7 @@ class _NS_xerathis:
 
     def _draw_crystal_nova(surface, boss, x, y, timer, phase):
         tx, ty = _NS_xerathis._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 80))
+        progress = max(0.0, min(1.0, 1 - timer / 60))
 
         if progress < 0.35:
             # Casting phase - energy gathering above target
@@ -2797,7 +3008,7 @@ class _NS_xerathis:
     # ===================================================================
     def _draw_frostbite(surface, boss, x, y, timer, phase):
         tx, ty = _NS_xerathis._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 70))
+        progress = max(0.0, min(1.0, 1 - timer / 50))
 
         start_x = x + 26 * boss.direction
         start_y = y - 18
@@ -2900,8 +3111,10 @@ class _NS_xerathis:
 
     def _draw_arcane_aura_foreground(surface, boss, x, y, timer, phase):
         """Rising magical energy around Xerathis."""
-        progress = max(0.0, min(1.0, 1 - timer / 90))
-
+        duration = 90
+        # Guard lifecycle: jangan menggambar di luar durasi skill AI.
+        if timer <= 0 or timer > duration:
+            return
         # Rising energy particles all around body
         for i in range(10):
             t = (phase * 0.5 + i * 0.1) % 1.0
@@ -2956,8 +3169,10 @@ class _NS_xerathis:
 
     def _draw_freezing_field(surface, boss, x, y, timer, phase):
         """Randomly exploding ice crystals in the field."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
-
+        duration = 100
+        # Guard lifecycle: jangan menggambar di luar durasi skill AI.
+        if timer <= 0 or timer > duration:
+            return
         # Deterministic random positions using phase
         for i in range(8):
             # Each crystal has its own life cycle
@@ -3037,6 +3252,15 @@ class _NS_xerathis:
 # ====================================================================
 class _NS_nyzrak:
     """Namespace nyzrak - isi asli tidak diubah."""
+
+    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    _body_buf = None
+    _flash_buf = None
+    _record_shadow = None
+    _shadow_cache = None
+    _aura_cache = None
+    _ground_cache = None
+    _mist_cache = None
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
@@ -3641,14 +3865,37 @@ class _NS_nyzrak:
             _NS_nyzrak._draw_cold_embrace_ground(surface, boss, x, y, skill_timer, pulse)
 
         # Character
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0:
+            NS = _NS_nyzrak
+            if NS._flash_buf is None:
+                NS._flash_buf = pygame.Surface((240, 260), pygame.SRCALPHA)
+            NS._flash_buf.fill((0, 0, 0, 0))
+            NS._record_shadow = []
+            _tgt, _tx, _ty = NS._flash_buf, 120, 135
+
         if attacking:
-            _NS_nyzrak._draw_nyz_attack(surface, boss, x, y)
+            _NS_nyzrak._draw_nyz_attack(_tgt, boss, _tx, _ty)
         elif active_skill in ("q", "w"):
-            _NS_nyzrak._draw_nyz_casting(surface, boss, x, y, active_skill, skill_timer)
+            _NS_nyzrak._draw_nyz_casting(_tgt, boss, _tx, _ty, active_skill, skill_timer)
         elif moving:
-            _NS_nyzrak._draw_nyz_walk(surface, boss, x, y)
+            _NS_nyzrak._draw_nyz_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_nyzrak._draw_nyz_idle(surface, boss, x, y)
+            _NS_nyzrak._draw_nyz_idle(_tgt, boss, _tx, _ty)
+
+        if flash > 0:
+            NS = _NS_nyzrak
+            surface.blit(NS._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(NS._flash_buf, 50)
+            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                               unsetcolor=(0, 0, 0, 0))
+            for rect in (NS._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            NS._record_shadow = None
 
         # Skill spawn triggers
         _NS_nyzrak._handle_skill_projectiles(boss, x, y, active_skill, skill_timer)
@@ -3667,7 +3914,7 @@ class _NS_nyzrak:
         tx, ty = _NS_nyzrak._target_position(boss, x, y)
 
         if active_skill == "q":
-            duration = 60
+            duration = 50
             progress = max(0.0, min(1.0, 1 - timer / duration))
             if 0.35 < progress < 0.45 and not getattr(boss, "_nyz_q_spawned", False):
                 _NS_nyzrak._spawn_arctic_burn(boss, x + 25 * boss.direction, y - 15, tx, ty)
@@ -3676,7 +3923,7 @@ class _NS_nyzrak:
                 boss._nyz_q_spawned = False
 
         elif active_skill == "w":
-            duration = 55
+            duration = 50
             progress = max(0.0, min(1.0, 1 - timer / duration))
             if 0.35 < progress < 0.45 and not getattr(boss, "_nyz_w_spawned", False):
                 # Burst of shards in cone direction
@@ -3753,6 +4000,45 @@ class _NS_nyzrak:
     # FULL COMPOSITE - Wyvern + Rider
     # ===================================================================
     def _draw_nyz_full(surface, cx, cy, facing, phase, action, attack_progress=0):
+        """Komposit ORIGINAL-MAX: buffer tetap + outline + lighting."""
+        _composite_boss_body(
+            surface, _NS_nyzrak, _NS_nyzrak._draw_nyz_full_raw,
+            cx, cy, facing, phase, action, attack_progress,
+            rim_add=(130, 220, 250), bsize=220)
+
+    def _masterwork_finish(surface, cx, cy, facing, phase, action,
+                           attack_progress=0):
+        """ORIGINAL-MAX detail pass: pemisah wyvern/rider + wajah rider + rim."""
+        P = _NS_nyzrak.PALETTE
+        hx = cx - 3 * facing
+        hy = cy - 22
+        for ex in (-2, 2):
+            pygame.draw.rect(surface, P["skin_light"], (hx + ex - 1, hy - 2, 2, 2))
+            pygame.draw.rect(surface, P["shadow_deep"], (hx + ex - 1, hy - 2, 1, 1))
+        pygame.draw.rect(surface, P["skin_mid"], (hx - 1, hy + 2, 2, 1))
+        pygame.draw.circle(surface, P["ice_bright"], (hx - 3, hy + 2), 1)
+        pygame.draw.circle(surface, P["ice_bright"], (hx + 3, hy + 2), 1)
+        pygame.draw.line(surface, P["shadow_deep"], (cx - 16, cy - 4), (cx + 16, cy - 4), 1)
+        pygame.draw.line(surface, P["wing_darkest"], (cx - 22, cy - 10), (cx - 8, cy + 8), 1)
+        pygame.draw.line(surface, P["wing_darkest"], (cx + 22, cy - 10), (cx + 8, cy + 8), 1)
+        ey = cy + 1
+        ex = cx + 23 * facing
+        pygame.draw.circle(surface, P["wy_eye_hot"], (ex, ey - 1), 2)
+        pygame.draw.circle(surface, P["ice_bright"], (ex, ey - 1), 1)
+        for side in (-1, 1):
+            tip_x = cx + side * 41
+            tip_y = cy - 18
+            pygame.draw.circle(surface, P["wing_light"], (tip_x, tip_y), 2)
+            pygame.draw.line(surface, P["wing_light"], (cx + side * 12, cy - 6),
+                             (cx + side * 28, cy - 14 + side), 1)
+        spear_x = cx + 18 * facing
+        spear_y = cy - 32
+        pygame.draw.circle(surface, P["ice_hot"], (spear_x, spear_y - 2), 2)
+        pygame.draw.circle(surface, P["ice_pure"], (spear_x, spear_y - 2), 1)
+
+
+    def _draw_nyz_full_raw(surface, cx, cy, facing, phase, action,
+                           attack_progress=0):
         # Back wings first
         _NS_nyzrak._draw_wyvern_wings_back(surface, cx, cy, facing, phase, action)
 
@@ -3775,6 +4061,10 @@ class _NS_nyzrak:
         # Front wings (overlap when needed)
         if action == "attack" or action.startswith("cast"):
             _NS_nyzrak._draw_wyvern_wing_front(surface, cx, cy, facing, phase)
+
+        # ORIGINAL-MAX detail pass (separator + wajah rider + rim)
+        _NS_nyzrak._masterwork_finish(surface, cx, cy, facing, phase, action,
+                                      attack_progress)
 
 
     def _draw_wyvern_wings_back(surface, cx, cy, facing, phase, action):
@@ -4591,21 +4881,26 @@ class _NS_nyzrak:
     # ===================================================================
     def _draw_frost_wisps(surface, cx, cy, phase, trail=False, facing=1, intense=False):
         """Frost wisps beneath wyvern."""
+        NS = _NS_nyzrak
+        if NS._mist_cache is None:
+            mist = pygame.Surface((150, 45), pygame.SRCALPHA)
+            for radius in range(36, 3, -4):
+                alpha = int((36 - radius) * 2.5)
+                if alpha > 0:
+                    pygame.draw.ellipse(
+                        mist, (*NS.PALETTE["ice_darkest"], min(255, alpha)),
+                        (75 - radius * 2, 22 - radius // 3,
+                         radius * 4, max(3, radius // 2)),
+                    )
+            NS._mist_cache = mist
         strength = 1.5 if intense else 1.0
-        mist = pygame.Surface((150, 45), pygame.SRCALPHA)
         pulse = math.sin(phase * 1.2) * 0.25 + 0.75
-        for radius in range(36, 3, -4):
-            alpha = int((36 - radius) * 2.5 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_nyzrak.PALETTE["ice_darkest"], min(255, alpha)),
-                    (75 - radius * 2, 22 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 75, cy - 11))
+        spr = NS._mist_cache
+        spr.set_alpha(int(255 * min(1.0, pulse * strength)))
+        surface.blit(spr, (cx - 75, cy - 11))
 
         # Rising frost wisps
-        for i, offset in enumerate((-24, -8, 8, 24)):
+        for i, offset in enumerate((-18, 0, 18)):
             t = (phase * 0.55 + i * 0.25) % 1.0
             sx = cx + offset + int(math.sin(phase + i) * 3)
             sy = cy + 5 - int(t * 28)
@@ -4613,12 +4908,10 @@ class _NS_nyzrak:
             if alpha <= 0:
                 continue
             _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_dark"], alpha), (sx, sy), 5)
-            _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_mid"], alpha), (sx, sy - 2), 3)
-            _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_bright"], alpha), (sx, sy - 3), 2)
-            _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_hot"], alpha), (sx, sy - 3), 1)
+            _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_hot"], alpha), (sx, sy - 3), 2)
 
         # Snowflakes drifting
-        for i in range(5):
+        for i in range(3):
             t = (phase * 0.4 + i * 0.2) % 1.0
             angle = phase * 0.5 + i * math.pi * 2 / 5
             r = 24 + int(math.sin(phase + i * 1.3) * 6)
@@ -4629,7 +4922,7 @@ class _NS_nyzrak:
                              rotate=phase + i)
 
         if trail:
-            for i in range(5):
+            for i in range(3):
                 sx = cx - (i + 1) * 12 * facing
                 sy = cy + int(math.sin(phase + i) * 3)
                 alpha = max(0, 140 - i * 25)
@@ -4639,60 +4932,75 @@ class _NS_nyzrak:
                           (sx, sy), max(1, 3 - i))
 
 
-    def _draw_shadow(surface, x, y):
-        shadow = pygame.Surface((120, 22), pygame.SRCALPHA)
-        for radius in range(11, 0, -1):
-            alpha = max(0, (11 - radius) * 15)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (11 - radius, 11 - radius, 98 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_nyzrak.PALETTE["ice_dark"], 80), (10, 5, 100, 12))
-        surface.blit(shadow, (x - 60, y - 11))
+    def _draw_shadow(surface, x, y, lift=0):
+        NS = _NS_nyzrak
+        if NS._shadow_cache is None:
+            shadow = pygame.Surface((120, 22), pygame.SRCALPHA)
+            for radius in range(11, 0, -1):
+                alpha = max(0, (11 - radius) * 15)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (11 - radius, 11 - radius, 98 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow, (*NS.PALETTE["ice_dark"], 80), (10, 5, 100, 12))
+            NS._shadow_cache = shadow
+        spr = NS._shadow_cache
+        w, h = spr.get_size()
+        if lift:
+            k = max(0.12, 1.0 - lift * 0.05)
+            w = max(6, int(w * k))
+            h = max(2, int(h * k))
+            spr = pygame.transform.smoothscale(spr, (w, h))
+        bx = x - w // 2
+        by = (y + 11) - h          # dasar tetap menapak di y+11
+        surface.blit(spr, (bx, by))
+        if NS._record_shadow is not None:
+            NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
 
     def _draw_frost_aura(surface, x, y, phase, active_skill):
+        NS = _NS_nyzrak
+        if NS._aura_cache is None:
+            NS._aura_cache = {}
+        key = "q" if active_skill == "q" else "base"
+        if key not in NS._aura_cache:
+            aura = pygame.Surface((220, 200), pygame.SRCALPHA)
+            color = NS.PALETTE["frost_darkest"] if key == "q" else NS.PALETTE["ice_darkest"]
+            for radius in range(90, 5, -4):
+                alpha = int((90 - radius) * 1.2)
+                if alpha > 0:
+                    NS._aacircle(aura, (*color, min(255, alpha)),
+                                 (110, 100), radius)
+            NS._aura_cache[key] = aura
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
         strength = 1.6 if active_skill in ("q", "w", "e", "r") else 1.0
-        aura = pygame.Surface((220, 200), pygame.SRCALPHA)
-        color = _NS_nyzrak.PALETTE["frost_darkest"] if active_skill == "q" else _NS_nyzrak.PALETTE["ice_darkest"]
-        for radius in range(90, 5, -4):
-            alpha = int((90 - radius) * 1.2 * pulse * strength)
-            if alpha > 0:
-                _NS_nyzrak._aacircle(aura, (*color, min(255, alpha)),
-                          (110, 100), radius)
-        surface.blit(aura, (x - 110, y - 100))
+        spr = NS._aura_cache[key]
+        spr.set_alpha(int(255 * max(0.15, min(1.0, pulse * strength))))
+        surface.blit(spr, (x - 110, y - 100))
 
 
     def _draw_ground_frost(surface, x, y, phase, active_skill):
+        NS = _NS_nyzrak
+        if NS._ground_cache is None:
+            ring = pygame.Surface((140, 46), pygame.SRCALPHA)
+            pygame.draw.ellipse(ring, (*NS.PALETTE["ice_dark"], 160),
+                                (5, 10, 130, 26), 3)
+            pygame.draw.ellipse(ring, (*NS.PALETTE["ice_mid"], 190),
+                                (20, 14, 100, 18), 2)
+            for i in range(10):
+                angle = i * math.pi / 5
+                x1 = 70 + int(math.cos(angle) * 32)
+                y1 = 23 + int(math.sin(angle) * 7)
+                x2 = 70 + int(math.cos(angle) * 60)
+                y2 = 23 + int(math.sin(angle) * 11)
+                pygame.draw.line(ring, (*NS.PALETTE["ice_bright"], 180),
+                                 (x1, y1), (x2, y2), 1)
+            NS._ground_cache = ring
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((140, 46), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_nyzrak.PALETTE["ice_dark"], 160),
-                            (5, 10, 130, 26), 3)
-        pygame.draw.ellipse(ring, (*_NS_nyzrak.PALETTE["ice_mid"], 190),
-                            (20, 14, 100, 18), 2)
-
-        for i in range(10):
-            angle = phase * 0.15 + i * math.pi / 5
-            x1 = 70 + int(math.cos(angle) * 32)
-            y1 = 23 + int(math.sin(angle) * 7)
-            x2 = 70 + int(math.cos(angle) * 60)
-            y2 = 23 + int(math.sin(angle) * 11)
-            pygame.draw.line(ring, (*_NS_nyzrak.PALETTE["ice_bright"], 180),
-                             (x1, y1), (x2, y2), 1)
-
+        surface.blit(NS._ground_cache, (x - 70, y - 23))
         if active_skill:
-            pygame.draw.ellipse(ring, (*_NS_nyzrak.PALETTE["ice_hot"], int(80 * pulse)),
-                                (15, 8, 110, 30), 1)
-
-        for i in range(6):
-            angle = phase * 0.3 + i * math.pi / 3
-            sx = 70 + int(math.cos(angle) * 50)
-            sy = 23 + int(math.sin(angle) * 8)
-            _NS_nyzrak._draw_snowflake(ring, sx, sy, 2, 200, rotate=phase * 2 + i)
-
-        surface.blit(ring, (x - 70, y - 23))
+            pygame.draw.ellipse(surface, (*NS.PALETTE["ice_hot"], int(80 * pulse)),
+                                (x - 55, y - 15, 110, 30), 1)
 
 
     def _draw_cast_flash(surface, x, y, facing, progress):
@@ -4724,7 +5032,7 @@ class _NS_nyzrak:
     # ===================================================================
     def _draw_winters_curse_ground(surface, boss, x, y, timer, phase):
         tx, ty = _NS_nyzrak._target_position(boss, x, y)
-        duration = 90
+        duration = 70
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 2) * 0.3 + 0.7
 
@@ -4739,7 +5047,7 @@ class _NS_nyzrak:
     def _draw_winters_curse_foreground(surface, boss, x, y, timer, phase):
         """Ice tomb / prison around target."""
         tx, ty = _NS_nyzrak._target_position(boss, x, y)
-        duration = 90
+        duration = 70
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         if progress < 0.15:
@@ -4824,8 +5132,10 @@ class _NS_nyzrak:
     # SKILL R: COLD EMBRACE (ice dome shield)
     # ===================================================================
     def _draw_cold_embrace_ground(surface, boss, x, y, timer, phase):
-        duration = 100
-        progress = max(0.0, min(1.0, 1 - timer / duration))
+        duration = 90
+        # Guard lifecycle: jangan menggambar di luar durasi skill AI.
+        if timer <= 0 or timer > duration:
+            return
         pulse = math.sin(phase * 2) * 0.3 + 0.7
 
         # Ground circle
@@ -4837,7 +5147,7 @@ class _NS_nyzrak:
 
     def _draw_cold_embrace_foreground(surface, boss, x, y, timer, phase):
         """Ice crystal dome around boss."""
-        duration = 100
+        duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         # Ice crystal spikes rising in ring around boss
@@ -4915,6 +5225,15 @@ class _NS_nyzrak:
 # ====================================================================
 class _NS_ancient_apparition:
     """Namespace ancient_apparition - isi asli tidak diubah."""
+
+    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    _body_buf = None
+    _flash_buf = None
+    _record_shadow = None
+    _shadow_cache = None
+    _aura_cache = None
+    _ground_cache = None
+    _mist_cache = None
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
@@ -5489,16 +5808,39 @@ class _NS_ancient_apparition:
             _NS_ancient_apparition._draw_cold_feet_ground(surface, boss, x, y, skill_timer, pulse)
 
         # Character
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0:
+            NS = _NS_ancient_apparition
+            if NS._flash_buf is None:
+                NS._flash_buf = pygame.Surface((220, 240), pygame.SRCALPHA)
+            NS._flash_buf.fill((0, 0, 0, 0))
+            NS._record_shadow = []
+            _tgt, _tx, _ty = NS._flash_buf, 110, 120
+
         if attacking:
-            _NS_ancient_apparition._draw_aa_attack(surface, boss, x, y)
+            _NS_ancient_apparition._draw_aa_attack(_tgt, boss, _tx, _ty)
         elif active_skill == "w":
-            _NS_ancient_apparition._draw_aa_casting(surface, boss, x, y, "w")
+            _NS_ancient_apparition._draw_aa_casting(_tgt, boss, _tx, _ty, "w")
         elif active_skill == "e":
-            _NS_ancient_apparition._draw_aa_casting(surface, boss, x, y, "e")
+            _NS_ancient_apparition._draw_aa_casting(_tgt, boss, _tx, _ty, "e")
         elif moving:
-            _NS_ancient_apparition._draw_aa_walk(surface, boss, x, y)
+            _NS_ancient_apparition._draw_aa_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_ancient_apparition._draw_aa_idle(surface, boss, x, y)
+            _NS_ancient_apparition._draw_aa_idle(_tgt, boss, _tx, _ty)
+
+        if flash > 0:
+            NS = _NS_ancient_apparition
+            surface.blit(NS._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(NS._flash_buf, 50)
+            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                               unsetcolor=(0, 0, 0, 0))
+            for rect in (NS._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            NS._record_shadow = None
 
         # Trigger projectiles for skills
         _NS_ancient_apparition._handle_skill_projectiles(boss, x, y, active_skill, skill_timer)
@@ -5518,7 +5860,7 @@ class _NS_ancient_apparition:
         tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
 
         if active_skill == "e":
-            duration = 60
+            duration = 50
             progress = max(0.0, min(1.0, 1 - timer / duration))
             if 0.35 < progress < 0.45 and not getattr(boss, "_aa_e_spawned", False):
                 _NS_ancient_apparition._spawn_ice_bolt(boss, x + 25 * boss.direction, y - 5, tx, ty)
@@ -5527,7 +5869,7 @@ class _NS_ancient_apparition:
                 boss._aa_e_spawned = False
 
         elif active_skill == "w":
-            duration = 60
+            duration = 45
             progress = max(0.0, min(1.0, 1 - timer / duration))
             if 0.3 < progress < 0.4 and not getattr(boss, "_aa_w_spawned", False):
                 _NS_ancient_apparition._spawn_frost_beam(boss, x + 25 * boss.direction, y - 5, tx, ty)
@@ -5589,6 +5931,39 @@ class _NS_ancient_apparition:
     # BODY RENDERING - Ice crystalline entity
     # ===================================================================
     def _draw_aa_body(surface, cx, cy, facing, phase, action, attack_progress=0):
+        """Komposit ORIGINAL-MAX: buffer tetap + outline + lighting."""
+        _composite_boss_body(
+            surface, _NS_ancient_apparition, _NS_ancient_apparition._draw_aa_body_raw,
+            cx, cy, facing, phase, action, attack_progress,
+            rim_add=(150, 225, 255), bsize=200)
+
+    def _masterwork_finish(surface, cx, cy, facing, phase, action,
+                           attack_progress=0):
+        """ORIGINAL-MAX detail pass: wajah true boss + emblem + rim kiri-atas."""
+        P = _NS_ancient_apparition.PALETTE
+        fy = cy - 26
+        for side in (-1, 1):
+            ex = cx + side * 3
+            pygame.draw.circle(surface, P["shadow_deep"], (ex, fy - 1), 3)
+            pygame.draw.circle(surface, P["face_hot"], (ex, fy - 1), 2)
+            pygame.draw.circle(surface, P["ice_white"], (ex, fy - 2), 1)
+            pygame.draw.circle(surface, P["face_bright"], (ex, fy - 1), 4)
+        pygame.draw.rect(surface, P["shadow_deep"], (cx - 3, fy + 2, 6, 2))
+        pygame.draw.rect(surface, P["face_mid"], (cx - 2, fy + 2, 4, 1))
+        pygame.draw.circle(surface, P["cyan_dark"], (cx, cy - 7), 6)
+        pygame.draw.circle(surface, P["cyan_bright"], (cx, cy - 7), 4)
+        pygame.draw.circle(surface, P["ice_pure"], (cx, cy - 7), 3)
+        pygame.draw.line(surface, P["shadow_deep"], (cx - 10, cy - 18), (cx + 10, cy - 18), 1)
+        pygame.draw.line(surface, P["ice_darkest"], (cx - 15, cy - 2), (cx - 11, cy + 2), 1)
+        pygame.draw.line(surface, P["ice_darkest"], (cx + 15, cy - 2), (cx + 11, cy + 2), 1)
+        for xo, yo in ((-4, -44), (0, -48), (4, -44)):
+            pygame.draw.circle(surface, P["ice_hot"], (cx + xo, cy + yo), 2)
+        for side in (-1, 1):
+            pygame.draw.circle(surface, P["ice_bright"], (cx + side * 14, cy - 24), 2)
+
+
+    def _draw_aa_body_raw(surface, cx, cy, facing, phase, action,
+                          attack_progress=0):
         """Ancient Apparition body - ice crystal humanoid."""
         is_casting = action.startswith("cast_")
         intensity = 1.3 if is_casting else 1.0
@@ -5615,6 +5990,10 @@ class _NS_ancient_apparition:
 
         # Sparkle particles around body
         _NS_ancient_apparition._draw_body_sparkles(surface, cx, cy - 10, phase, intensity)
+
+        # ORIGINAL-MAX detail pass (wajah true boss + emblem + rim)
+        _NS_ancient_apparition._masterwork_finish(surface, cx, cy, facing,
+                                                  phase, action, attack_progress)
 
 
     def _draw_ice_skirt(surface, cx, cy, phase, intensity=1.0):
@@ -5806,19 +6185,16 @@ class _NS_ancient_apparition:
         face_pulse = math.sin(phase * 1.2) * 0.25 + 0.75
         face_intensity = face_pulse * intensity
 
-        # Two glowing eyes (elongated ovals)
+        # Two glowing eyes (elongated ovals) - layered ring + hot core
         for side in (-1, 1):
             ex = cx + side * 3
             ey = cy - 1
             # Outer glow
             _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["face_dark"], int(180 * face_intensity)),
                       (ex, ey), 4)
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["face_mid"], int(220 * face_intensity)),
-                      (ex, ey), 3)
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["face_bright"], int(255 * face_intensity)),
-                      (ex, ey), 2)
+            # Bright core
             _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["face_hot"], int(255 * face_intensity)),
-                      (ex, ey), 1)
+                      (ex, ey), 2)
             # Bright halo
             _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["face_bright"], int(80 * face_intensity)),
                       (ex, ey), 6)
@@ -6069,7 +6445,7 @@ class _NS_ancient_apparition:
 
     def _draw_body_sparkles(surface, cx, cy, phase, intensity=1.0):
         """Sparkling ice particles around body."""
-        for i in range(10):
+        for i in range(6):
             angle = phase * 0.4 + i * math.pi / 5
             r = 22 + int(math.sin(phase * 0.7 + i) * 8)
             px = cx + int(math.cos(angle) * r)
@@ -6085,21 +6461,26 @@ class _NS_ancient_apparition:
     # ===================================================================
     def _draw_ice_wisps(surface, cx, cy, phase, trail=False, facing=1, intense=False):
         """Frost wisps rising from below."""
+        NS = _NS_ancient_apparition
+        if NS._mist_cache is None:
+            mist = pygame.Surface((140, 42), pygame.SRCALPHA)
+            for radius in range(34, 3, -4):
+                alpha = int((34 - radius) * 2.5)
+                if alpha > 0:
+                    pygame.draw.ellipse(
+                        mist, (*NS.PALETTE["frost_dark"], min(255, alpha)),
+                        (70 - radius * 2, 21 - radius // 3,
+                         radius * 4, max(3, radius // 2)),
+                    )
+            NS._mist_cache = mist
         strength = 1.5 if intense else 1.0
-        mist = pygame.Surface((140, 42), pygame.SRCALPHA)
         pulse = math.sin(phase * 1.2) * 0.25 + 0.75
-        for radius in range(34, 3, -4):
-            alpha = int((34 - radius) * 2.5 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_ancient_apparition.PALETTE["frost_dark"], min(255, alpha)),
-                    (70 - radius * 2, 21 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 70, cy - 10))
+        spr = NS._mist_cache
+        spr.set_alpha(int(255 * min(1.0, pulse * strength)))
+        surface.blit(spr, (cx - 70, cy - 10))
 
         # Rising frost wisps
-        for i, offset in enumerate((-22, -8, 8, 22)):
+        for i, offset in enumerate((-18, 0, 18)):
             t = (phase * 0.55 + i * 0.25) % 1.0
             sx = cx + offset + int(math.sin(phase + i) * 3)
             sy = cy + 5 - int(t * 28)
@@ -6107,12 +6488,10 @@ class _NS_ancient_apparition:
             if alpha <= 0:
                 continue
             _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["frost_dark"], alpha), (sx, sy), 5)
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["frost_mid"], alpha), (sx, sy - 2), 3)
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["frost_light"], alpha), (sx, sy - 3), 2)
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_hot"], alpha), (sx, sy - 3), 1)
+            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_hot"], alpha), (sx, sy - 3), 2)
 
         # Snowflakes drifting
-        for i in range(5):
+        for i in range(3):
             t = (phase * 0.4 + i * 0.2) % 1.0
             angle = phase * 0.5 + i * math.pi * 2 / 5
             r = 22 + int(math.sin(phase + i * 1.3) * 6)
@@ -6123,14 +6502,14 @@ class _NS_ancient_apparition:
                              rotate=phase + i)
 
         # Small ice crystals on ground
-        for i in range(4):
+        for i in range(2):
             angle = i * math.pi / 2
             sx = cx + int(math.cos(angle) * 30)
             sy = cy + int(math.sin(angle) * 6)
             _NS_ancient_apparition._draw_frost_crystal_spike(surface, sx, sy + 4, sy - 3, 2, 200)
 
         if trail:
-            for i in range(5):
+            for i in range(3):
                 sx = cx - (i + 1) * 12 * facing
                 sy = cy + int(math.sin(phase + i) * 3)
                 alpha = max(0, 140 - i * 25)
@@ -6140,61 +6519,72 @@ class _NS_ancient_apparition:
                           (sx, sy), max(1, 3 - i))
 
 
-    def _draw_shadow(surface, x, y):
-        shadow = pygame.Surface((110, 22), pygame.SRCALPHA)
-        for radius in range(11, 0, -1):
-            alpha = max(0, (11 - radius) * 15)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (11 - radius, 11 - radius, 88 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_ancient_apparition.PALETTE["ice_dark"], 80), (10, 5, 90, 12))
-        surface.blit(shadow, (x - 55, y - 11))
+    def _draw_shadow(surface, x, y, lift=0):
+        NS = _NS_ancient_apparition
+        if NS._shadow_cache is None:
+            shadow = pygame.Surface((110, 22), pygame.SRCALPHA)
+            for radius in range(11, 0, -1):
+                alpha = max(0, (11 - radius) * 15)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (11 - radius, 11 - radius, 88 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow, (*NS.PALETTE["ice_dark"], 80), (10, 5, 90, 12))
+            NS._shadow_cache = shadow
+        spr = NS._shadow_cache
+        w, h = spr.get_size()
+        if lift:
+            k = max(0.12, 1.0 - lift * 0.05)
+            w = max(6, int(w * k))
+            h = max(2, int(h * k))
+            spr = pygame.transform.smoothscale(spr, (w, h))
+        bx = x - w // 2
+        by = (y + 11) - h          # dasar tetap menapak di y+11
+        surface.blit(spr, (bx, by))
+        if NS._record_shadow is not None:
+            NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
 
     def _draw_frost_aura(surface, x, y, phase, active_skill):
+        NS = _NS_ancient_apparition
+        if NS._aura_cache is None:
+            aura = pygame.Surface((200, 180), pygame.SRCALPHA)
+            for radius in range(80, 5, -4):
+                alpha = int((80 - radius) * 1.4)
+                if alpha > 0:
+                    NS._aacircle(aura, (*NS.PALETTE["ice_darkest"], min(255, alpha)),
+                                 (100, 90), radius)
+            NS._aura_cache = aura
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
         strength = 1.5 if active_skill in ("q", "w", "e", "r") else 1.0
-        aura = pygame.Surface((200, 180), pygame.SRCALPHA)
-        for radius in range(80, 5, -4):
-            alpha = int((80 - radius) * 1.4 * pulse * strength)
-            if alpha > 0:
-                _NS_ancient_apparition._aacircle(aura, (*_NS_ancient_apparition.PALETTE["ice_darkest"], min(255, alpha)),
-                          (100, 90), radius)
-        surface.blit(aura, (x - 100, y - 90))
+        spr = NS._aura_cache
+        spr.set_alpha(int(255 * max(0.15, min(1.0, pulse * strength))))
+        surface.blit(spr, (x - 100, y - 90))
 
 
     def _draw_ground_frost(surface, x, y, phase, active_skill):
-        """Frost ring on ground."""
+        """Frost ring on ground (basis di-cache)."""
+        NS = _NS_ancient_apparition
+        if NS._ground_cache is None:
+            ring = pygame.Surface((140, 46), pygame.SRCALPHA)
+            pygame.draw.ellipse(ring, (*NS.PALETTE["ice_dark"], 160),
+                                (5, 10, 130, 26), 3)
+            pygame.draw.ellipse(ring, (*NS.PALETTE["ice_mid"], 190),
+                                (20, 14, 100, 18), 2)
+            for i in range(10):
+                angle = i * math.pi / 5
+                x1 = 70 + int(math.cos(angle) * 32)
+                y1 = 23 + int(math.sin(angle) * 7)
+                x2 = 70 + int(math.cos(angle) * 60)
+                y2 = 23 + int(math.sin(angle) * 11)
+                pygame.draw.line(ring, (*NS.PALETTE["ice_bright"], 180),
+                                 (x1, y1), (x2, y2), 1)
+            NS._ground_cache = ring
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((140, 46), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_ancient_apparition.PALETTE["ice_dark"], 160),
-                            (5, 10, 130, 26), 3)
-        pygame.draw.ellipse(ring, (*_NS_ancient_apparition.PALETTE["ice_mid"], 190),
-                            (20, 14, 100, 18), 2)
-
-        for i in range(10):
-            angle = phase * 0.15 + i * math.pi / 5
-            x1 = 70 + int(math.cos(angle) * 32)
-            y1 = 23 + int(math.sin(angle) * 7)
-            x2 = 70 + int(math.cos(angle) * 60)
-            y2 = 23 + int(math.sin(angle) * 11)
-            pygame.draw.line(ring, (*_NS_ancient_apparition.PALETTE["ice_bright"], 180),
-                             (x1, y1), (x2, y2), 1)
-
+        surface.blit(NS._ground_cache, (x - 70, y - 23))
         if active_skill:
-            pygame.draw.ellipse(ring, (*_NS_ancient_apparition.PALETTE["ice_hot"], int(80 * pulse)),
-                                (15, 8, 110, 30), 1)
-
-        # Snowflakes on ring
-        for i in range(6):
-            angle = phase * 0.3 + i * math.pi / 3
-            sx = 70 + int(math.cos(angle) * 50)
-            sy = 23 + int(math.sin(angle) * 8)
-            _NS_ancient_apparition._draw_snowflake(ring, sx, sy, 2, 200, rotate=phase * 2 + i)
-
-        surface.blit(ring, (x - 70, y - 23))
+            pygame.draw.ellipse(surface, (*NS.PALETTE["ice_hot"], int(80 * pulse)),
+                                (x - 55, y - 15, 110, 30), 1)
 
 
     def _draw_cast_flash(surface, x, y, facing, progress):
@@ -6230,7 +6620,7 @@ class _NS_ancient_apparition:
     def _draw_ice_vortex_ground(surface, boss, x, y, timer, phase):
         """Ground ripple beneath vortex."""
         tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
-        duration = 70
+        duration = 60
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
 
@@ -6247,7 +6637,7 @@ class _NS_ancient_apparition:
     def _draw_ice_vortex(surface, boss, x, y, timer, phase):
         """Spinning ice tornado at target."""
         tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
-        duration = 70
+        duration = 60
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         if progress < 0.15:
@@ -6314,7 +6704,7 @@ class _NS_ancient_apparition:
     def _draw_cold_feet_ground(surface, boss, x, y, timer, phase):
         """Warning circle for cold feet."""
         tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
-        duration = 100
+        duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
 
@@ -6330,7 +6720,7 @@ class _NS_ancient_apparition:
     def _draw_cold_feet_spikes(surface, boss, x, y, timer, phase):
         """Ring of ice spikes erupting from ground."""
         tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
-        duration = 100
+        duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         if progress < 0.3:
