@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Regresi visual untuk upgrade maksimal hero procedural Sylara."""
 import inspect
+import math
 import os
 import sys
 
@@ -139,6 +140,87 @@ def test_silhouette_outline_exists():
     assert dark > 60
 
 
+def test_has_worldspace_skill_fx_helpers():
+    """Helper FX world-space v2.1 ada di namespace sylara."""
+    for name in ("_fx_scale", "_ring_r", "_spark_star", "_chevron",
+                 "_dashed_ring", "_jagged_crack", "_tuft_points",
+                 "_static", "SKILL_VISUAL_DURATION"):
+        assert callable(getattr(S, name, None)) or name == "SKILL_VISUAL_DURATION", name
+    assert S.SKILL_VISUAL_DURATION == {"q": 180, "w": 180, "e": 150, "r": 60}
+    # kompensasi: fs = 1/_render_scale (cap 2.6)
+    h = _ProbeEntity("sylara", 120, 125)
+    h._render_scale = 0.5
+    assert S._fx_scale(h) == 2.0
+    h._render_scale = 0.2
+    assert S._fx_scale(h) == 2.6
+
+
+def _render_skill(skill, timer, fs=None, size=360):
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    hero = _ProbeEntity("sylara", size // 2, size // 2 + 40)
+    hero.pulse = 1.3
+    hero.direction = hero.facing = 1
+    hero.active_skill = skill
+    hero.active_skill_timer = timer
+    hero.range = 220
+    if fs:
+        hero._render_scale = fs
+    S.draw_sylara(surf, hero, size // 2, size // 2 + 40)
+    return surf
+
+
+def _count(surface, matcher, rmin, rmax, cx=None, cy=None):
+    cx = surface.get_width() // 2 if cx is None else cx
+    cy = surface.get_height() // 2 + 40 if cy is None else cy
+    n = 0
+    for y in range(0, surface.get_height(), 2):
+        for x in range(0, surface.get_width(), 2):
+            r = math.hypot(x - cx, y - cy)
+            if rmin <= r <= rmax:
+                c = surface.get_at((x, y))
+                if c.a > 100 and matcher(c):
+                    n += 1
+    return n
+
+
+def test_skill_fx_worldspace_and_3phase():
+    """FX skill keluar dari siluet badan & kompensasi _render_scale."""
+    _wind = lambda c: c[1] > 110 and c[1] > c[0] and c[1] > c[2]
+
+    # Unscaled (fs=1): ring windrun di ~70 canvas px dari pusat.
+    s0 = _render_skill("w", 60, fs=None, size=360)
+    # Scaled (fs=2, hero dikecilkan pipeline): ring harus MENGEMBANG ke
+    # ~140 canvas px supaya ukuran di layar tetap 70 dunia.
+    s1 = _render_skill("w", 60, fs=0.5, size=360)
+
+    near0 = _count(s0, _wind, 55, 85)
+    near1 = _count(s1, _wind, 55, 85)
+    far1 = _count(s1, _wind, 95, 140)
+    # Ring world-space hadir jauh dari badan hanya saat dikompensasi.
+    assert far1 > 30, f"ring world-space tidak mengembang (far={far1})"
+    assert far1 > near1 * .5, f"kompensasi tak cukup (far={far1}, near={near1})"
+
+    # R Powershot: orb/cahaya hijau aktif di sekitar bow.
+    s2 = _render_skill("r", 30, size=360)
+    assert _count(s2, _wind, 20, 70) > 30, "powershot charge aura hilang"
+
+    # Q Focus Fire: ring AOE jangkauan hadir di luar badan.
+    s3 = _render_skill("q", 40, size=360)
+    assert _count(s3, _wind, 55, 110) > 40, "focus fire ground ring hilang"
+
+
+def test_body_reacts_to_skill_state():
+    """Badan berubah saat skill aktif (bukan sekadar sticker FX)."""
+    base = pygame.Surface((300, 300), pygame.SRCALPHA)
+    focus = pygame.Surface((300, 300), pygame.SRCALPHA)
+    wind = pygame.Surface((300, 300), pygame.SRCALPHA)
+    S._draw_sylara_elite(base, 150, 150, 1, 1.2, "idle", 0.0)
+    S._draw_sylara_elite(focus, 150, 150, 1, 1.2, "idle", 0.0, focus=True)
+    S._draw_sylara_elite(wind, 150, 150, 1, 1.2, "idle", 0.0, wind=True)
+    assert pygame.image.tobytes(base, "RGBA") != pygame.image.tobytes(focus, "RGBA")
+    assert pygame.image.tobytes(base, "RGBA") != pygame.image.tobytes(wind, "RGBA")
+
+
 if __name__ == "__main__":
     test_masterwork_is_procedural()
     test_material_details_and_pose()
@@ -146,5 +228,8 @@ if __name__ == "__main__":
     test_portrait_lod_is_distinct()
     test_rig_has_real_animation_frames()
     test_silhouette_outline_exists()
+    test_has_worldspace_skill_fx_helpers()
+    test_skill_fx_worldspace_and_3phase()
+    test_body_reacts_to_skill_state()
     print("OK - Sylara procedural: gameplay + portrait LOD, busur pose-driven, "
-          "12 frame animasi dan outline siluet tervalidasi")
+          "12 frame animasi, outline siluet, dan Skill FX v2.1 world-space tervalidasi")

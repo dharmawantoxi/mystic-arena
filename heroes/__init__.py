@@ -67,6 +67,10 @@ _EXTRA = {
         '_rect', '_spawn_arrow', '_spawn_focus_fire_volley',
         '_spawn_shackle', '_target_position', '_update_attack_anim',
         '_world_to_local', 'draw_boss', 'draw_sylara',
+        # Skill FX v2.1 world-space helpers
+        'SKILL_VISUAL_DURATION', '_STATIC_SURFACES', '_static', '_hash01',
+        '_mix', '_fx_scale', '_ring_r', '_spark_star', '_chevron',
+        '_dashed_ring', '_jagged_crack', '_tuft_points',
     ],
     'kaizen': [
         'HAS_AACIRCLE', 'PALETTE', 'WindSlashProjectile',
