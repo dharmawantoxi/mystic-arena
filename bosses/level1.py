@@ -703,6 +703,22 @@ class _NS_gornak:
             elif skill == "r":
                 _NS_gornak._draw_manavoid_ground(surface, boss, x, y, timer,
                                                  phase)
+            # PERTAGAS: gelombang kejut aktivasi skill (12 frame pertama)
+            if skill in _NS_gornak.SKILL_DUR:
+                age = _NS_gornak.SKILL_DUR[skill] - timer
+                if 0 <= age < 12:
+                    st = age / 12.0
+                    a = _NS_gornak._alpha(235 * (1 - st))
+                    rr = int(16 + st * 50)
+                    gy = y + _NS_gornak.GROUND_DY
+                    _NS_gornak._ellipse(
+                        surface, (*_NS_gornak.PALETTE["magic_mid"], a),
+                        (x - rr, gy - rr // 3, rr * 2,
+                         max(4, rr * 2 // 3)), 2)
+                    _NS_gornak._ellipse(
+                        surface, (*_NS_gornak.PALETTE["magic_shine"], a),
+                        (x - rr // 2, gy - rr // 6, rr,
+                         max(3, rr // 3)), 1)
 
         # ── Karakter
         if action == "blink":
@@ -1861,7 +1877,8 @@ class _NS_gornak:
             return
         t = progress / 0.34
         tx, ty = _NS_gornak._tip_screen(boss, x, y)
-        r = 3 + int(t * 7)
+        # PERTAGAS: orb konsentrasi lebih besar & sparkle lebih terang
+        r = 4 + int(t * 9)
         for k in range(r + 3, 0, -1):
             a = _NS_gornak._alpha(200 * (r + 3 - k) / (r + 3) * (0.4 + t))
             _NS_gornak._aacircle(surface, (*p["magic_dark"], a), (tx, ty), k)
@@ -1872,7 +1889,7 @@ class _NS_gornak:
             ang = phase * 4 + i * math.tau / 5
             sx = tx + int(math.cos(ang) * (r + 4))
             sy = ty + int(math.sin(ang) * (r + 4))
-            _NS_gornak._aaline(surface, (*p["magic_hot"], 190), (sx, sy),
+            _NS_gornak._aaline(surface, (*p["magic_hot"], 225), (sx, sy),
                                (tx, ty), 1)
 
     def _draw_manabreak_foreground(surface, boss, x, y, timer, phase):
@@ -1891,21 +1908,21 @@ class _NS_gornak:
             tt = max(0.0, t - i * 0.05)
             px = int(sx + (tx - sx) * tt)
             py = int(sy + (ty - sy) * tt)
-            a = _NS_gornak._alpha(230 - i * 25)
-            size = max(1, 6 - i)
+            a = _NS_gornak._alpha(230 - i * 22)
+            size = max(2, 8 - i)
             for col, off in (("magic_darkest", size + 1), ("magic_mid", size),
                              ("magic_light", max(1, size - 2))):
                 if off > 0:
                     _NS_gornak._aacircle(surface, (*p[col], a), (px, py), off)
             _NS_gornak._rect(surface, (*p["magic_hot"], a), (px, py, 1, 1))
 
-        for col, rr in (("magic_dark", 8), ("magic_mid", 6),
-                        ("magic_light", 4), ("magic_shine", 2),
-                        ("white", 1)):
+        for col, rr in (("magic_dark", 10), ("magic_mid", 8),
+                        ("magic_light", 5), ("magic_shine", 3),
+                        ("white", 2)):
             _NS_gornak._aacircle(surface, p[col], (bx, by), rr)
         for i in range(4):
             ang = phase * 5 + i * math.pi / 2
-            r1 = 12 + int(3 * math.sin(phase * 6 + i))
+            r1 = 14 + int(4 * math.sin(phase * 6 + i))
             _NS_gornak._aaline(surface, (*p["magic_light"], 200),
                                (bx + int(math.cos(ang) * 7),
                                 by + int(math.sin(ang) * 7)),
@@ -1914,8 +1931,11 @@ class _NS_gornak:
 
         if t > 0.86:
             st = (t - 0.86) / 0.14
-            radius = int(9 + st * 20)
+            radius = int(11 + st * 26)
             a = _NS_gornak._alpha(240 * (1 - st))
+            # kilat putih inti saat impact (pertegas momen kena)
+            _NS_gornak._aacircle(surface, (*p["white"], a), (tx, ty),
+                                 max(1, int(7 * (1 - st))))
             _NS_gornak._aacircle(surface, (*p["magic_darkest"], a), (tx, ty),
                                  radius + 2, 3)
             _NS_gornak._aacircle(surface, (*p["magic_mid"], a), (tx, ty),
@@ -1939,18 +1959,29 @@ class _NS_gornak:
         gy = y + _NS_gornak.GROUND_DY
         if progress < 0.5:
             t = progress / 0.5
-            r = int(9 + t * 13)
-            a = _NS_gornak._alpha(200 * (1 - t))
+            r = int(10 + t * 15)
+            a = _NS_gornak._alpha(240 * (1 - t))
         else:
             t = (progress - 0.5) / 0.5
-            r = int(22 - t * 11)
-            a = _NS_gornak._alpha(200 * t)
+            r = int(24 - t * 12)
+            a = _NS_gornak._alpha(240 * t)
         if a <= 0:
             return
+        # PERTAGAS: cincin luar kedua + inti lebih tebal
+        _NS_gornak._ellipse(surface, (*p["magic_dark"], a),
+                            (x - r - 3, gy - (r + 3) // 3, (r + 3) * 2,
+                             max(3, (r + 3) // 2)), 1)
         _NS_gornak._ellipse(surface, (*p["magic_mid"], a),
-                            (x - r, gy - r // 3, r * 2, max(3, r // 2)), 1)
+                            (x - r, gy - r // 3, r * 2, max(3, r // 2)), 2)
         _NS_gornak._ellipse(surface, (*p["magic_hot"], a),
-                            (x - r // 2, gy - r // 6, r, max(2, r // 4)), 1)
+                            (x - r // 2, gy - r // 6, r, max(2, r // 4)), 2)
+        if progress >= 0.5:
+            # gelombang kejut tiba
+            r2 = int(24 + t * 14)
+            a2 = _NS_gornak._alpha(200 * (1 - t))
+            _NS_gornak._ellipse(surface, (*p["magic_shine"], a2),
+                                (x - r2, gy - r2 // 3, r2 * 2,
+                                 max(3, r2 // 2)), 1)
         for i in range(7):
             ang = phase * 2 + i * math.tau / 7
             _NS_gornak._rect(surface, (*p["magic_shine"], a),
@@ -1979,7 +2010,7 @@ class _NS_gornak:
             pts.append((cx0 + int(math.cos(ang) * (rx + breath)),
                         cy0 + int(math.sin(ang) * (ry + breath))))
         fade = 1.0 - max(0.0, (progress - 0.9)) * 8
-        a_main = _NS_gornak._alpha(190 * fade)
+        a_main = _NS_gornak._alpha(225 * fade)
         x0 = min(q[0] for q in pts) - 4
         y0 = min(q[1] for q in pts) - 4
         w = max(q[0] for q in pts) - x0 + 8
@@ -1987,15 +2018,15 @@ class _NS_gornak:
         fill = pygame.Surface((max(4, w), max(4, h)), pygame.SRCALPHA)
         sh = [(q[0] - x0, q[1] - y0) for q in pts]
         _NS_gornak._poly(fill, (*p["magic_darkest"],
-                                _NS_gornak._alpha(46 * grow)), sh)
-        _NS_gornak._poly(fill, (*p["magic_dark"], _NS_gornak._alpha(52 * grow)),
+                                _NS_gornak._alpha(64 * grow)), sh)
+        _NS_gornak._poly(fill, (*p["magic_dark"], _NS_gornak._alpha(72 * grow)),
                          sh[1:-1] + [sh[0]])
         surface.blit(fill, (x0, y0))
         for i in range(6):
             q, r2 = pts[i], pts[(i + 1) % 6]
             _NS_gornak._aaline(surface, (*p["magic_mid"], a_main), q, r2, 2)
             _NS_gornak._aaline(surface, (*p["magic_shine"], a_main), q, r2, 1)
-            _NS_gornak._aacircle(surface, (*p["magic_hot"], a_main), q, 2)
+            _NS_gornak._aacircle(surface, (*p["magic_hot"], a_main), q, 3)
             _NS_gornak._rect(surface, (*p["white"], a_main), (q[0], q[1], 1, 1))
             ang = i * math.tau / 6 + phase * 0.9
             _NS_gornak._aaline(
@@ -2013,18 +2044,18 @@ class _NS_gornak:
         progress = max(0.0, min(1.0, 1 - timer / duration))
         if progress < 0.5:
             t = progress / 0.5
-            r = int(28 * t)
-            a = _NS_gornak._alpha(190 * t)
+            r = int(32 * t)
+            a = _NS_gornak._alpha(230 * t)
             _NS_gornak._ellipse(surface, (*p["magic_darkest"], a),
                                 (tx - r, ty - r // 3 + 6, r * 2,
                                  max(3, r * 2 // 3)), 2)
             _NS_gornak._ellipse(surface, (*p["magic_mid"], a),
                                 (tx - r + 4, ty - r // 3 + 8, r * 2 - 8,
-                                 max(1, r * 2 // 3 - 8)), 1)
+                                 max(1, r * 2 // 3 - 8)), 2)
         else:
             t = (progress - 0.5) / 0.5
-            r = int(28 + t * 20)
-            a = _NS_gornak._alpha(220 * (1 - t))
+            r = int(32 + t * 24)
+            a = _NS_gornak._alpha(250 * (1 - t))
             _NS_gornak._ellipse(surface, (*p["magic_darkest"], a),
                                 (tx - r, ty - r // 3 + 6, r * 2,
                                  max(3, r * 2 // 3)), 2)
@@ -2055,11 +2086,11 @@ class _NS_gornak:
                 hx, hy = _NS_gornak._local(boss, x, y, action, phase, 0.0,
                                            *grip)
                 _NS_gornak._aaline(surface,
-                                   (*p["magic_dark"], _NS_gornak._alpha(110 * t)),
-                                   (hx, hy), (tx, ty), 3)
+                                   (*p["magic_dark"], _NS_gornak._alpha(150 * t)),
+                                   (hx, hy), (tx, ty), 4)
                 _NS_gornak._aaline(surface,
-                                   (*p["magic_mid"], _NS_gornak._alpha(150 * t)),
-                                   (hx, hy), (tx, ty), 1)
+                                   (*p["magic_mid"], _NS_gornak._alpha(200 * t)),
+                                   (hx, hy), (tx, ty), 2)
                 for i in range(4):
                     tt = (phase * 0.9 + i * 0.25) % 1.0
                     px = int(hx + (tx - hx) * tt)
@@ -2085,7 +2116,7 @@ class _NS_gornak:
                                          (mx, my), 2)
                     _NS_gornak._rect(surface, (*p["magic_shine"], a),
                                      (mx, my, 1, 1))
-            core = int(5 + t * 6)
+            core = int(6 + t * 8)
             for r in range(core + 2, 0, -1):
                 a = _NS_gornak._alpha(235 * (core + 2 - r) / (core + 2))
                 _NS_gornak._aacircle(surface, (*p["magic_darkest"], a),
@@ -2104,7 +2135,7 @@ class _NS_gornak:
         elif progress < 0.68:
             t = (progress - 0.50) / 0.18
             intensity = math.sin(t * math.pi)
-            r = int(18 + t * 26)
+            r = int(22 + t * 30)
             a = _NS_gornak._alpha(240 * intensity)
             _NS_gornak._aacircle(surface, (*p["magic_darkest"], a), (tx, ty),
                                  r + 3, 4)
@@ -2325,6 +2356,21 @@ class _NS_morgath:
             elif active_skill == "r":
                 _NS_morgath._draw_tempest_ground(surface, boss, x, y,
                                                   skill_timer, pulse)
+            # PERTAGAS: gelombang kejut aktivasi skill (12 frame pertama)
+            _MOR_DUR = {"q": 50, "w": 80, "e": 90, "r": 100}
+            if active_skill in _MOR_DUR:
+                age = _MOR_DUR[active_skill] - skill_timer
+                if 0 <= age < 12:
+                    st = age / 12.0
+                    a = _NS_morgath._alpha(235 * (1 - st))
+                    rr = int(16 + st * 50)
+                    gy = y + _NS_morgath.GROUND_DY
+                    _NS_morgath._aacircle(surface,
+                                          (*_NS_morgath.PALETTE["arc_mid"], a),
+                                          (x, gy), rr, 2)
+                    _NS_morgath._aacircle(surface,
+                                          (*_NS_morgath.PALETTE["arc_shine"], a),
+                                          (x, gy), max(1, rr // 2), 1)
 
         # ── Karakter (SATU rig masterwork; hem dipatok di GROUND_DY)
         if not portrait:
@@ -3400,7 +3446,7 @@ class _NS_morgath:
             t = progress / 0.3
             charge_x, charge_y = _NS_morgath._skill_hand_world(
                 boss, x, y, "q")
-            cr = int(4 + t * 6)
+            cr = int(5 + t * 8)
             for r in range(cr + 5, 0, -1):
                 alpha = _NS_morgath._alpha(220 * (cr + 5 - r) / (cr + 5))
                 _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["arc_darkest"], alpha),
@@ -3465,10 +3511,10 @@ class _NS_morgath:
                 alpha = _NS_morgath._alpha(90 * (14 - r) / 14)
                 _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["arc_light"], alpha),
                                       (bx, by), r)
-            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_darkest"], (bx, by), 9)
-            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_dark"], (bx, by), 7)
-            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_mid"], (bx, by), 5)
-            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_light"], (bx, by), 3)
+            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_darkest"], (bx, by), 11)
+            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_dark"], (bx, by), 9)
+            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_mid"], (bx, by), 6)
+            _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_light"], (bx, by), 4)
             _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["arc_shine"], (bx, by), 2)
             pygame.draw.rect(surface, _NS_morgath.PALETTE["white"], (bx, by, 1, 1))
 
@@ -3484,7 +3530,7 @@ class _NS_morgath:
             # Impact
             if t > 0.88:
                 st = (t - 0.88) / 0.12
-                radius = int(12 + st * 26)
+                radius = int(14 + st * 30)
                 alpha = _NS_morgath._alpha(240 * (1 - st))
                 _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["arc_darkest"], alpha),
                                       (tx, ty), radius + 4, 3)
@@ -3511,12 +3557,16 @@ class _NS_morgath:
         progress = max(0.0, min(1.0, 1 - timer / duration))
         r = int(38 * min(1.0, progress * 3))
         if r > 3:
-            pygame.draw.ellipse(surface, (*_NS_morgath.PALETTE["flux_darkest"], 200),
+            # PERTAGAS: rim panas luar + alpha pool dinaikkan
+            pygame.draw.ellipse(surface, (*_NS_morgath.PALETTE["flux_hot"], 120),
+                                (tx - r - 3, ty - (r + 3) // 3,
+                                 (r + 3) * 2, (r + 3) * 2 // 3), 2)
+            pygame.draw.ellipse(surface, (*_NS_morgath.PALETTE["flux_darkest"], 240),
                                 (tx - r, ty - r // 3, r * 2, r * 2 // 3))
-            pygame.draw.ellipse(surface, (*_NS_morgath.PALETTE["flux_dark"], 180),
+            pygame.draw.ellipse(surface, (*_NS_morgath.PALETTE["flux_dark"], 220),
                                 (tx - r + 3, ty - r // 3 + 2,
                                  r * 2 - 6, r * 2 // 3 - 4))
-            pygame.draw.ellipse(surface, (*_NS_morgath.PALETTE["flux_mid"], 140),
+            pygame.draw.ellipse(surface, (*_NS_morgath.PALETTE["flux_mid"], 180),
                                 (tx - r + 8, ty - r // 3 + 4,
                                  r * 2 - 16, r * 2 // 3 - 8))
 
@@ -3540,9 +3590,9 @@ class _NS_morgath:
             alpha = _NS_morgath._alpha(230 * (1 - wisp_t))
 
             _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["flux_dark"], alpha),
-                                  (wx, wy), 4)
+                                  (wx, wy), 5)
             _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["flux_mid"], alpha),
-                                  (wx, wy - 1), 3)
+                                  (wx, wy - 1), 4)
             _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["flux_light"], alpha),
                                   (wx, wy - 1), 2)
             pygame.draw.rect(surface, (*_NS_morgath.PALETTE["flux_hot"], alpha),
@@ -3550,11 +3600,12 @@ class _NS_morgath:
 
         # Central bubbling core
         core_pulse = math.sin(phase * 3) * 0.4 + 0.6
-        for cr in range(6, 0, -1):
-            alpha = _NS_morgath._alpha(200 * (6 - cr) / 6 * core_pulse)
+        for cr in range(8, 0, -1):
+            alpha = _NS_morgath._alpha(220 * (8 - cr) / 8 * core_pulse)
             _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["flux_mid"], alpha),
                                   (tx, ty), cr)
-        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["flux_light"], (tx, ty), 2)
+        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["flux_light"], (tx, ty), 3)
+        _NS_morgath._aacircle(surface, _NS_morgath.PALETTE["flux_hot"], (tx, ty), 1)
 
         # Sparkles on ground
         for i in range(14):
@@ -3575,7 +3626,7 @@ class _NS_morgath:
         pulse = math.sin(phase * 2) * 0.3 + 0.7
         for i in range(3):
             r = int(48 + i * 4 + math.sin(phase * 2) * 2)
-            alpha = _NS_morgath._alpha(220 * pulse - i * 50)
+            alpha = _NS_morgath._alpha(250 * pulse - i * 40)
             _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["arc_mid"], alpha),
                                   (x, y + 42), r, 2)
             _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["arc_light"], alpha),
@@ -3662,7 +3713,7 @@ class _NS_morgath:
         pulse = math.sin(phase * 2) * 0.3 + 0.7
         r = int(25 + math.sin(phase * 2) * 2)
         for i in range(2):
-            alpha = _NS_morgath._alpha(200 * pulse - i * 60)
+            alpha = _NS_morgath._alpha(240 * pulse - i * 50)
             _NS_morgath._aacircle(surface, (*_NS_morgath.PALETTE["flux_mid"], alpha),
                                   (x, y + 42), r + i * 2, 2)
 
@@ -3671,7 +3722,7 @@ class _NS_morgath:
             clone_offset = -facing * 40
             clone_alpha_mult = min(1.0, (progress - 0.2) / 0.2)
             for i in range(2):
-                alpha = _NS_morgath._alpha(200 * pulse * clone_alpha_mult - i * 60)
+                alpha = _NS_morgath._alpha(240 * pulse * clone_alpha_mult - i * 50)
                 _NS_morgath._aacircle(surface,
                                       (*_NS_morgath.PALETTE["flux_mid"], alpha),
                                       (x + clone_offset, y + 42), r + i * 2, 2)
@@ -3687,7 +3738,7 @@ class _NS_morgath:
 
         # Clone spawn animation
         spawn_t = min(1.0, (progress - 0.2) / 0.3)
-        alpha_val = int(180 * spawn_t)
+        alpha_val = int(220 * spawn_t)
 
         clone_offset = -facing * 40
         clone_x = x + clone_offset
@@ -3699,10 +3750,11 @@ class _NS_morgath:
                                   _NS_morgath.RIG_OY, facing, phase,
                                   "idle", 0.0, False)
 
-        # Tint clone slightly blue
+        # Tint clone slightly blue (alpha 255 supaya RGBA_MULT tidak
+        # menggerus alpha badan - dulu clone nyaris transparan)
         tint = pygame.Surface((_NS_morgath.RIG_W, _NS_morgath.RIG_H),
                               pygame.SRCALPHA)
-        tint.fill((80, 130, 220, 60))
+        tint.fill((110, 150, 235, 255))
         clone_surf.blit(tint, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         clone_surf.set_alpha(alpha_val)
 
@@ -3930,6 +3982,117 @@ class _NS_drakar:
     def _poly(surface, color, points):
         pygame.draw.polygon(surface, _NS_drakar._clamp(color), points)
 
+    # ============================================================
+    # ORIGINAL-MAX: glow premultiplied + rim terarah + shade +
+    # animasi per-frame kontinu (tanpa bucket cache) + hurt flash.
+    # Seni per bagian TIDAK diubah - hanya pass pencahayaan mahal
+    # yang diganti aproksimasi murah setara visual.
+    # ============================================================
+    _DRK_TX = {}
+    _DRK_SHADOW = None
+    BODY_W, BODY_H, BODY_OX, BODY_OY = 240, 240, 120, 124
+
+    def _drk_glow(radius, color, peak=190):
+        """Glow untuk BLEND_RGBA_ADD. PENTING: pygame-ce RGBA_ADD menambah
+        kanal RGB MENTAH (alpha sumber diabaikan), jadi rgb harus sudah
+        PRE-MULTIPLIED dengan falloff; peak = intensitas puncak 0-255."""
+        key = (int(radius), color, int(peak))
+        if key not in _NS_drakar._DRK_TX:
+            r = int(radius)
+            s = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+            fmax = peak / 255.0
+            for rad in range(r, 0, -1):
+                t = 1.0 - rad / float(r)
+                f = (t ** 1.8) * fmax
+                _NS_drakar._aacircle(s, (int(color[0] * f), int(color[1] * f),
+                                         int(color[2] * f), 255), (r, r), rad)
+            _NS_drakar._DRK_TX[key] = s
+        return _NS_drakar._DRK_TX[key]
+
+    def _drk_outline(buf, flash=0):
+        """FINALISASI BADAN (per-frame, kontinu): outline siluet dengan
+        rim TERARAH (cahaya kiri-atas: fringe terang di sisi cahaya, gelap
+        di sisi bayangan) + shade gradien via BLEND_RGBA_MULT. Tanpa operasi
+        mask (lighting.apply ~0.64 ms) sehingga seluruh animasi tetap
+        per-frame mulus: total finish ~0.4 ms."""
+        B = _NS_drakar
+        if B._DRK_FIN is None:
+            B._DRK_FIN = pygame.Surface((B.BODY_W + 2, B.BODY_H + 2),
+                                        pygame.SRCALPHA)
+            # tekstur shade statis: terang kiri-atas -> gelap kanan-bawah
+            sh = pygame.Surface((B.BODY_W + 2, B.BODY_H + 2), pygame.SRCALPHA)
+            h = B.BODY_H + 2
+            w = B.BODY_W + 2
+            for yy in range(h):
+                v = int(255 - 70 * (yy / float(h)))
+                pygame.draw.line(sh, (v, v, v, 255), (0, yy), (w, yy))
+            for xx in range(0, w, 2):
+                v = int(255 - 30 * (xx / float(w)))
+                s2 = pygame.Surface((2, h), pygame.SRCALPHA)
+                s2.fill((v, v, v, 255))
+                sh.blit(s2, (xx, 0), special_flags=pygame.BLEND_RGBA_MULT)
+            B._DRK_SHADE = sh
+        out = B._DRK_FIN
+        out.fill((0, 0, 0, 0))
+        pad = 1
+        edge = buf.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        light = edge.copy()
+        light.fill((255, 214, 170, 0), special_flags=pygame.BLEND_RGB_ADD)
+        dark = edge.copy()
+        dark.fill((10, 5, 7, 0), special_flags=pygame.BLEND_RGB_ADD)
+        # fringe cahaya di sisi kiri-atas, bayangan di kanan-bawah
+        out.blit(light, (pad - 1, pad - 1))
+        out.blit(light, (pad, pad - 1))
+        out.blit(light, (pad - 1, pad))
+        out.blit(dark, (pad + 1, pad))
+        out.blit(dark, (pad, pad + 1))
+        out.blit(dark, (pad + 1, pad + 1))
+        out.blit(buf, (pad, pad))
+        out.blit(B._DRK_SHADE, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        if flash > 0:
+            # Hurt flash (paritas gornak/morgath): siluet putih-hangat
+            # premultiplied via RGB_ADD. Mask hanya dibangun saat kena
+            # hit (8 frame) sehingga tidak menambah biaya frame normal.
+            w = int(235 * min(1.0, flash / 8.0))
+            if w > 0:
+                m = pygame.mask.from_surface(buf, 50)
+                wht = m.to_surface(setcolor=(w, int(w * 0.92),
+                                             int(w * 0.82), 255),
+                                   unsetcolor=(0, 0, 0, 0))
+                out.blit(wht, (pad, pad), special_flags=pygame.BLEND_RGB_ADD)
+        return out
+
+    _DRK_FIN = None
+    _DRK_SHADE = None
+    _DRK_BUF = None
+
+    def _drk_body_surface(mode, facing, phase_q, prog_q, flash=0):
+        """Body asli dirender PER-FRAME (animasi kontinu) ke buffer pakai
+        ulang, lalu difinalisasi outline+rim+shade. Tanpa bucket cache -
+        tidak ada stepping di idle/walk/attack/helix."""
+        B = _NS_drakar
+        if B._DRK_BUF is None:
+            B._DRK_BUF = pygame.Surface((B.BODY_W, B.BODY_H), pygame.SRCALPHA)
+        buf = B._DRK_BUF
+        buf.fill((0, 0, 0, 0))
+        ox, oy = B.BODY_OX, B.BODY_OY
+        if mode == "idle":
+            bob = int(math.sin(phase_q * 0.5) * 6)
+            B._draw_drk_body(buf, ox, oy + bob, facing, phase_q, "idle")
+        elif mode == "walk":
+            bob = int(abs(math.sin(phase_q * 1.1)) * 5)
+            sway = int(math.sin(phase_q * 0.8) * 3)
+            B._draw_drk_body(buf, ox + sway, oy - bob + 2, facing, phase_q, "walk")
+        elif mode == "attack":
+            B._draw_drk_body(buf, ox, oy, facing, phase_q, "attack", prog_q)
+        else:  # helix
+            spin = prog_q * math.pi * 8
+            bob = int(math.sin(prog_q * math.pi) * -5)
+            B._draw_drk_body(buf, ox, oy + bob, facing, phase_q, "helix",
+                             spin_angle=spin)
+        return B._drk_outline(buf, flash)
+
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
@@ -3974,15 +4137,114 @@ class _NS_drakar:
         elif active_skill == "r":
             _NS_drakar._draw_cullingblade_ground(surface, boss, x, y, skill_timer, pulse)
 
-        # Body
+        if active_skill in ("q", "w", "e", "r"):
+            # PERTAGAS: gelombang kejut aktivasi (12 frame pertama)
+            # supaya momen "skill keluar" terbaca seketika.
+            dur = {"q": 90, "w": 45, "e": 60, "r": 60}[active_skill]
+            age = dur - skill_timer
+            if 0 <= age < 12:
+                st = age / 12.0
+                a = int(235 * (1 - st))
+                rr = int(16 + st * 50)
+                gy = y + 76
+                pygame.draw.ellipse(surface, (255, 80, 50, a),
+                                    (x - rr, gy - rr // 3, rr * 2,
+                                     max(4, rr * 2 // 3)), 2)
+                pygame.draw.ellipse(surface, (255, 200, 150, a),
+                                    (x - rr // 2, gy - rr // 6, rr,
+                                     max(3, rr // 3)), 1)
+
+        # Body - ORIGINAL-MAX: render per-frame kontinu (tanpa bucket
+        # cache) + rim terarah + shade. Seni per bagian tidak diubah;
+        # offset dunia (bob/sway/lunge) identik dengan pose router lama.
+        facing = int(getattr(boss, "direction", 1)) or 1
+        cd = max(2, int(getattr(boss, "attack_cooldown", 46)))
+        t_now = int(getattr(boss, "timer", 0))
+        atk_p = max(0.0, min(1.0, (cd - 1 - t_now) / float(cd - 1))) \
+            if attacking else 0.0
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        ox, oy = _NS_drakar.BODY_OX, _NS_drakar.BODY_OY
+
+        def _blit_body(spr):
+            img = spr if facing > 0 else pygame.transform.flip(spr, True, False)
+            surface.blit(img, (x - ox, y - oy))
+
         if active_skill == "w":
-            _NS_drakar._draw_drk_helix(surface, boss, x, y, skill_timer, pulse)
+            p = max(0.0, min(1.0, 1 - skill_timer / 45.0))
+            lift_h = int(math.sin(p * math.pi) * 5)
+            _NS_drakar._draw_shadow(surface, x, y + 80, lift_h)
+            _NS_drakar._draw_rage_mist(surface, x, y + 60, pulse, intense=True)
+            _NS_drakar._draw_drk_helix_fx(surface, boss, x, y, skill_timer, pulse)
+            _blit_body(_NS_drakar._drk_body_surface("helix", facing, pulse, p,
+                                                    flash))
         elif attacking:
-            _NS_drakar._draw_drk_attack(surface, boss, x, y)
+            if atk_p < 0.15:
+                t2 = atk_p / 0.15
+                lunge = -int(t2 * 4) * facing
+                lift = -int(t2 * 4)
+            elif atk_p < 0.40:
+                t2 = (atk_p - 0.15) / 0.25
+                lunge = -int(4 + t2 * 4) * facing
+                lift = int(-4 + t2 * 10)
+            elif atk_p < 0.55:
+                t2 = (atk_p - 0.40) / 0.15
+                t_ease = 1 - (1 - t2) ** 2
+                lunge = int((-8 + t_ease * 28)) * facing
+                lift = int(6 - t_ease * 10)
+            elif atk_p < 0.70:
+                t2 = (atk_p - 0.55) / 0.15
+                shake_x = int(math.sin(t2 * 30) * 3 * (1 - t2))
+                lunge = int(20 + shake_x) * facing
+                lift = int(-4 - t2 * 2)
+            else:
+                t2 = (atk_p - 0.70) / 0.30
+                t_ease = 1 - (1 - t2) ** 2
+                lunge = int(20 * (1 - t_ease)) * facing
+                lift = int(-6 + t_ease * 6)
+            _NS_drakar._draw_shadow(surface, x + lunge, y + 80, lift)
+            _NS_drakar._draw_rage_mist(surface, x + lunge, y + 60, pulse,
+                                       intense=True)
+            _blit_body(_NS_drakar._drk_body_surface("attack", facing, pulse,
+                                                    atk_p, flash))
+            _NS_drakar._draw_axe_slash_trail(surface, boss, x + lunge,
+                                             y - lift, atk_p)
+            if 0.53 <= atk_p <= 0.70:
+                _NS_drakar._draw_impact_burst(surface, boss, x + lunge,
+                                              y - lift, atk_p)
         elif moving:
-            _NS_drakar._draw_drk_walk(surface, boss, x, y)
+            phase = pulse * 2.0
+            bob = int(abs(math.sin(phase * 1.1)) * 5)
+            sway = int(math.sin(phase * 0.8) * 3)
+            _NS_drakar._draw_shadow(surface, x + sway, y + 80, bob)
+            _NS_drakar._draw_rage_mist(surface, x + sway, y + 60, phase,
+                                       trail=True, facing=facing)
+            _blit_body(_NS_drakar._drk_body_surface("walk", facing, phase, 0.0,
+                                                    flash))
         else:
-            _NS_drakar._draw_drk_idle(surface, boss, x, y)
+            bob_i = int(math.sin(pulse * 0.5) * 6)
+            _NS_drakar._draw_shadow(surface, x, y + 80, max(0, -bob_i))
+            _NS_drakar._draw_rage_mist(surface, x, y + 60, pulse)
+            _blit_body(_NS_drakar._drk_body_surface("idle", facing, pulse, 0.0,
+                                                    flash))
+
+        # State AI menjadi terlihat (ORIGINAL-MAX)
+        if getattr(boss, "rage_active", False):
+            g = _NS_drakar._drk_glow(46, _NS_drakar.PALETTE["rage_mid"], 70)
+            surface.blit(g, (x - 46, y - 60),
+                         special_flags=pygame.BLEND_RGBA_ADD)
+            g2 = _NS_drakar._drk_glow(7, _NS_drakar.PALETTE["rage_light"], 110)
+            surface.blit(g2, (x + 6 * facing - 7, y - 40),
+                         special_flags=pygame.BLEND_RGBA_ADD)
+        if getattr(boss, "defense_boost", False):
+            for i in range(3):
+                a = pulse * 3 + i * 2.1
+                sx = x - 12 + int(math.sin(a) * 4)
+                sy = y - 24 + int(math.cos(a * 1.3) * 5)
+                _NS_drakar._aacircle(
+                    surface,
+                    _NS_drakar._rgba(_NS_drakar.PALETTE["armor_shine"],
+                                     150 + int(70 * math.sin(a * 2))),
+                    (sx, sy), 1)
 
         # Foreground FX
         if active_skill == "q":
@@ -4035,92 +4297,14 @@ class _NS_drakar:
         boss._drk_last_y = boss.y
         return dx + dy > 0.3
 
-    # ============================================================
-    # POSE ROUTERS
-    # ============================================================
-    def _draw_drk_idle(surface, boss, x, y):
-        # Heavy breathing bob
-        bob = int(math.sin(boss.pulse * 0.5) * 6)
-        _NS_drakar._draw_shadow(surface, x, y + 80)
-        _NS_drakar._draw_rage_mist(surface, x, y + 60, boss.pulse)
-        _NS_drakar._draw_drk_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
-    def _draw_drk_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.0
-        bob = int(abs(math.sin(phase * 1.1)) * 5)
-        sway = int(math.sin(phase * 0.8) * 3)
-        _NS_drakar._draw_shadow(surface, x + sway, y + 80)
-        _NS_drakar._draw_rage_mist(surface, x + sway, y + 60, phase, trail=True,
-                                    facing=boss.direction)
-        _NS_drakar._draw_drk_body(surface, x + sway, y - bob + 2, boss.direction,
-                                   phase, "walk")
-
-    def _draw_drk_attack(surface, boss, x, y):
-        # Progress LIVE dari attack_timer (bukan counter frame yang
-        # hanya naik saat renderer dipanggil). Dengan body hero di-
-        # cache, renderer dipanggil tiap N frame; progress tetap maju
-        # tiap frame supaya fase swing tidak membeku.
-        t = int(getattr(boss, "timer", 0) or 0)
-        cd = max(2, int(getattr(boss, "attack_cooldown", 46)))
-        if getattr(boss, "_drk_attack_active", False) or t > cd - 15:
-            progress = max(0.0, min(1.0, (cd - 1 - t) / max(1.0, float(cd - 1))))
-        else:
-            progress = 0.0
-
-        # Arah swing terkunci saat serangan dimulai (lihat
-        # _update_drk_attack_anim). Fallback ke arah live kalau
-        # state kunci tidak ada.
-        facing = getattr(boss, "_drk_attack_dir", None)
-        if facing is None:
-            facing = boss.direction
-
-        # Two-handed swing has bigger body movement
-        if progress < 0.15:
-            # Anticipation - crouch
-            t = progress / 0.15
-            lunge = -int(t * 4) * facing
-            lift = -int(t * 4)
-        elif progress < 0.40:
-            # Wind-up - lean back, rise up
-            t = (progress - 0.15) / 0.25
-            lunge = -int(4 + t * 4) * facing
-            lift = int(-4 + t * 10)
-        elif progress < 0.55:
-            # EXPLOSIVE SWING - lunge forward hard
-            t = (progress - 0.40) / 0.15
-            t_ease = 1 - (1 - t) ** 2
-            lunge = int((-8 + t_ease * 28)) * facing
-            lift = int(6 - t_ease * 10)
-        elif progress < 0.70:
-            # Impact hold - screen shake feel
-            t = (progress - 0.55) / 0.15
-            shake_x = int(math.sin(t * 30) * 3 * (1 - t))
-            lunge = int(20 + shake_x) * facing
-            lift = int(-4 - t * 2)
-        else:
-            # Recovery
-            t = (progress - 0.70) / 0.30
-            t_ease = 1 - (1 - t) ** 2
-            lunge = int(20 * (1 - t_ease)) * facing
-            lift = int(-6 + t_ease * 6)
-
-        _NS_drakar._draw_shadow(surface, x + lunge, y + 80)
-        _NS_drakar._draw_rage_mist(surface, x + lunge, y + 60, boss.pulse, intense=True)
-        _NS_drakar._draw_drk_body(surface, x + lunge, y - lift, facing,
-                                   boss.pulse, "attack", progress)
-        _NS_drakar._draw_axe_slash_trail(surface, boss, x + lunge, y - lift, progress)
-        if 0.53 <= progress <= 0.70:
-            _NS_drakar._draw_impact_burst(surface, boss, x + lunge, y - lift, progress)
-
-    def _draw_drk_helix(surface, boss, x, y, timer, phase):
-        """Counter Helix - spinning."""
-        duration = 40
+    def _draw_drk_helix_fx(surface, boss, x, y, timer, phase):
+        """Counter Helix - hanya FX crescent spin (badan di-blit terpisah
+        lewat _drk_body_surface per-frame)."""
+        duration = 45  # = active_skill_timer AI
         progress = max(0.0, min(1.0, 1 - timer / duration))
         spin = progress * math.pi * 8
 
         bob = int(math.sin(progress * math.pi) * -5)
-        _NS_drakar._draw_shadow(surface, x, y + 80)
-        _NS_drakar._draw_rage_mist(surface, x, y + 60, phase, intense=True)
 
         # Big spinning red crescent slash around boss
         slash_surf = pygame.Surface((280, 280), pygame.SRCALPHA)
@@ -4178,9 +4362,6 @@ class _NS_drakar:
                              (px, py, 2, 2))
 
         surface.blit(slash_surf, (x - 140, y - 140 + bob))
-
-        _NS_drakar._draw_drk_body(surface, x, y + bob, boss.direction, phase, "helix",
-                                   spin_angle=spin)
 
     # ============================================================
     # BODY (LARGER SCALE)
@@ -5415,144 +5596,113 @@ class _NS_drakar:
     # AXE SLASH TRAIL
     # ============================================================
     def _draw_axe_slash_trail(surface, boss, cx, cy, progress):
-        """Motion blur trail following axe arc (dramatic)."""
-        # Only show during actual swing phase
+        """Motion blur trail yang posisinya DITURUNKAN dari kepala kapak
+        rig yang sama (_compute_two_handed_grip), sehingga jejak tidak
+        pernah terlepas dari bilah kapak di fase swing/impact."""
         if progress < 0.42 or progress > 0.72:
             return
 
         facing = getattr(boss, "_drk_attack_dir", None)
         if facing is None:
-            facing = boss.direction
-        # Swing phase: 0.40-0.55 (fast slash), 0.55-0.70 (impact fade)
+            facing = getattr(boss, "direction", 1)
+        phase = float(getattr(boss, "pulse", 0.0))
+
         if progress < 0.55:
             swing_t = (progress - 0.42) / 0.13
         else:
             swing_t = 1.0
         swing_t = max(0.0, min(1.0, swing_t))
 
-        # Fade out after impact
         if progress > 0.55:
-            fade = 1 - (progress - 0.55) / 0.17
-            fade = max(0.0, fade)
+            fade = max(0.0, 1 - (progress - 0.55) / 0.17)
         else:
             fade = 1.0
+        if fade <= 0:
+            return
 
-        # Slash arc center (in front of body)
-        slash_cx = cx + facing * 30
-        slash_cy = cy - 4
+        slash_surf = pygame.Surface((260, 260), pygame.SRCALPHA)
+        ox, oy = 130, 130
 
-        slash_surf = pygame.Surface((220, 220), pygame.SRCALPHA)
-        center = (110, 110)
+        def to_buf(px, py):
+            return (ox + (px - cx), oy + (py - cy))
 
-        # Axe arc parameters - matches swing (from back-up to front-down)
-        start_angle = -math.pi * 1.1  # axe way behind/above
-        end_angle = math.pi * 0.4    # axe front-down
-
-        # Number of trail steps (more = longer motion blur)
-        trail_steps = 12
-        # Current progress along arc
-        current_a = start_angle + (end_angle - start_angle) * swing_t
-
-        # Draw motion-blur trail from earlier positions
-        radius = 55
+        trail_steps = 10
+        span = 0.10
+        ghosts = []
         for step in range(trail_steps):
-            step_t = step / trail_steps
-            # Each step is a bit behind current position along the arc
-            trail_progress = max(0.0, swing_t - step_t * 0.35)
-            trail_a = start_angle + (end_angle - start_angle) * trail_progress
-
-            # Position along arc
-            tip_x = center[0] + int(math.cos(trail_a) * radius) * facing
-            tip_y = center[1] + int(math.sin(trail_a) * radius)
-
-            # Ghost axe blade curve
-            fade_step = (1 - step_t) * fade
-            alpha_step = _NS_drakar._alpha(240 * fade_step)
-            if alpha_step <= 0:
+            st = step / (trail_steps - 1)
+            p_ = progress - span * (1.0 - st)
+            if p_ < 0.40:
                 continue
+            g = _NS_drakar._compute_two_handed_grip(
+                cx, cy, facing, phase, "attack", p_)
+            ghosts.append((st, g))
 
-            # Draw curved trail segment (crescent shape)
-            arc_pts = []
-            arc_span = 0.15  # width of each trail slice
-            steps_inner = 6
-            for i in range(steps_inner + 1):
-                a = trail_a - arc_span + (arc_span * 2) * i / steps_inner
-                # Slight radius variance for organic feel
-                r_var = radius + math.sin(step + i) * 2
-                px = center[0] + int(math.cos(a) * r_var) * facing
-                py = center[1] + int(math.sin(a) * r_var)
-                arc_pts.append((px, py))
-
-            # Draw layered arc (fatter for closer ghosts)
-            layer_thickness = max(2, int(10 * fade_step))
-            for layer_i, (r_off, thick_mult, color, a_mult) in enumerate([
-                (3, 1.2, _NS_drakar.PALETTE["blood_darkest"], 0.5),
-                (2, 1.0, _NS_drakar.PALETTE["blood_dark"], 0.7),
-                (0, 0.8, _NS_drakar.PALETTE["blood_mid"], 0.9),
-                (-1, 0.6, _NS_drakar.PALETTE["blood_light"], 1.0),
-                (-2, 0.4, _NS_drakar.PALETTE["blood_hot"], 1.0),
-            ]):
-                thick = max(1, int(layer_thickness * thick_mult))
-                actual_alpha = _NS_drakar._alpha(alpha_step * a_mult)
-                if actual_alpha <= 0:
+        for st, g in ghosts:
+            hx, hy = g["axe_head"]
+            ang = g["axe_angle"]
+            dx = math.cos(ang) * facing
+            dy = math.sin(ang)
+            px_, py_ = -dy, dx
+            bx, by = to_buf(hx, hy)
+            half = 16.0
+            p1 = (bx - px_ * half, by - py_ * half)
+            p2 = (bx + px_ * half, by + py_ * half)
+            fade_step = (0.25 + 0.75 * st) * fade
+            for thick, color, a_mult in [
+                (9, _NS_drakar.PALETTE["blood_darkest"], 0.5),
+                (6, _NS_drakar.PALETTE["blood_dark"], 0.7),
+                (4, _NS_drakar.PALETTE["blood_mid"], 0.9),
+                (2, _NS_drakar.PALETTE["blood_light"], 1.0),
+            ]:
+                a = _NS_drakar._alpha(200 * fade_step * a_mult)
+                if a <= 0:
                     continue
-                for i in range(len(arc_pts) - 1):
-                    pygame.draw.line(slash_surf,
-                                     _NS_drakar._rgba(color, actual_alpha),
-                                     arc_pts[i], arc_pts[i + 1], thick)
+                pygame.draw.line(slash_surf, _NS_drakar._rgba(color, a),
+                                 p1, p2, thick)
 
-        # Leading edge (brightest, current position)
-        if swing_t > 0.05:
-            leading_pts = []
-            steps_lead = 10
-            arc_span_lead = 0.5
-            for i in range(steps_lead + 1):
-                a = current_a - arc_span_lead + (arc_span_lead * 2) * i / steps_lead
-                px = center[0] + int(math.cos(a) * radius) * facing
-                py = center[1] + int(math.sin(a) * radius)
-                leading_pts.append((px, py))
+        g = _NS_drakar._compute_two_handed_grip(
+            cx, cy, facing, phase, "attack", max(0.40, progress))
+        hx, hy = g["axe_head"]
+        ang = g["axe_angle"]
+        dx = math.cos(ang) * facing
+        dy = math.sin(ang)
+        px_, py_ = -dy, dx
+        bx, by = to_buf(hx, hy)
+        half = 18.0
+        p1 = (bx - px_ * half, by - py_ * half)
+        p2 = (bx + px_ * half, by + py_ * half)
+        for thick, color in [
+            (10, _NS_drakar.PALETTE["blood_darkest"]),
+            (7, _NS_drakar.PALETTE["blood_dark"]),
+            (5, _NS_drakar.PALETTE["blood_mid"]),
+            (3, _NS_drakar.PALETTE["blood_light"]),
+            (2, _NS_drakar.PALETTE["blood_hot"]),
+            (1, _NS_drakar.PALETTE["blood_shine"]),
+        ]:
+            a = _NS_drakar._alpha(255 * fade)
+            pygame.draw.line(slash_surf, _NS_drakar._rgba(color, a),
+                             p1, p2, thick)
 
-            for layer_i, (thick, color) in enumerate([
-                (10, _NS_drakar.PALETTE["blood_darkest"]),
-                (8, _NS_drakar.PALETTE["blood_dark"]),
-                (6, _NS_drakar.PALETTE["blood_mid"]),
-                (4, _NS_drakar.PALETTE["blood_light"]),
-                (3, _NS_drakar.PALETTE["blood_hot"]),
-                (2, _NS_drakar.PALETTE["blood_shine"]),
-                (1, _NS_drakar.PALETTE["white"]),
-            ]):
-                alpha = _NS_drakar._alpha(255 * fade)
-                if alpha <= 0:
-                    continue
-                for i in range(len(leading_pts) - 1):
-                    pygame.draw.line(slash_surf,
-                                     _NS_drakar._rgba(color, alpha),
-                                     leading_pts[i], leading_pts[i + 1], thick)
-
-        # Blood droplets flying outward from arc
-        for i in range(20):
-            drop_angle = start_angle + (end_angle - start_angle) * (i / 20) * swing_t
-            drop_r = radius + int(math.sin(swing_t * 8 + i) * 15) + 10
-            dx = center[0] + int(math.cos(drop_angle) * drop_r) * facing
-            dy = center[1] + int(math.sin(drop_angle) * drop_r)
-            drop_alpha = _NS_drakar._alpha(240 * fade * (i / 20))
-            if drop_alpha > 0:
+        for i, (st, g) in enumerate(ghosts):
+            hx, hy = g["axe_head"]
+            ang = g["axe_angle"]
+            dx = math.cos(ang) * facing
+            dy = math.sin(ang)
+            px_, py_ = -dy, dx
+            off = 20 + (i % 3) * 6
+            sgn = 1 if i % 2 else -1
+            sx, sy = to_buf(hx + px_ * off * sgn, hy + py_ * off * sgn)
+            a = _NS_drakar._alpha(220 * st * fade)
+            if a > 0:
                 pygame.draw.rect(slash_surf,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], drop_alpha),
-                    (dx, dy, 3, 3))
+                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"], a),
+                    (int(sx), int(sy), 3, 3))
                 pygame.draw.rect(slash_surf,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], drop_alpha),
-                    (dx, dy, 2, 2))
-                pygame.draw.rect(slash_surf,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_shine"], drop_alpha),
-                    (dx, dy, 1, 1))
-                # Trail behind droplet
-                pygame.draw.rect(slash_surf,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], drop_alpha),
-                    (dx, dy + 3, 1, 3))
+                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_hot"], a),
+                    (int(sx), int(sy), 2, 2))
 
-        surface.blit(slash_surf, (slash_cx - 110, slash_cy - 110))
-
+        surface.blit(slash_surf, (cx - ox, cy - oy))
     def _draw_impact_burst(surface, boss, cx, cy, progress):
         """Explosive burst FX when axe hits the ground (impact phase)."""
         facing = getattr(boss, "_drk_attack_dir", None)
@@ -5746,41 +5896,61 @@ class _NS_drakar:
     # ============================================================
     # AMBIENT / GROUND
     # ============================================================
-    def _draw_shadow(surface, x, y):
-        """Big shadow (Vhorethzir scale)."""
-        shadow = pygame.Surface((180, 40), pygame.SRCALPHA)
-        for radius in range(18, 0, -1):
-            alpha = max(0, (18 - radius) * 14)
-            pygame.draw.ellipse(shadow, (0, 0, 0, alpha),
-                                (12 - radius, 20 - radius,
-                                 156 + radius * 2, radius * 2))
-        pygame.draw.ellipse(shadow, (10, 3, 5, 190), (6, 12, 168, 16))
-        pygame.draw.ellipse(shadow, (40, 10, 15, 130), (14, 14, 152, 12))
-        surface.blit(shadow, (x - 90, y - 20))
+    def _draw_shadow(surface, x, y, lift=0):
+        """Big shadow (Vhorethzir scale), REAKTIF: saat badan terangkat
+        (lift > 0) bayangan mengecil supaya badan tidak terlihat
+        melayang. Tekstur dibangun sekali lalu di-scale."""
+        B = _NS_drakar
+        if B._DRK_SHADOW is None:
+            shadow = pygame.Surface((180, 40), pygame.SRCALPHA)
+            for radius in range(18, 0, -1):
+                alpha = max(0, (18 - radius) * 14)
+                pygame.draw.ellipse(shadow, (0, 0, 0, alpha),
+                                    (12 - radius, 20 - radius,
+                                     156 + radius * 2, radius * 2))
+            pygame.draw.ellipse(shadow, (10, 3, 5, 190), (6, 12, 168, 16))
+            pygame.draw.ellipse(shadow, (40, 10, 15, 130), (14, 14, 152, 12))
+            B._DRK_SHADOW = shadow
+        sh = B._DRK_SHADOW
+        s = 1.0 - min(0.30, abs(lift) * 0.03)
+        if s < 0.999:
+            sh = pygame.transform.smoothscale(sh, (int(180 * s), int(40 * s)))
+        w, h = sh.get_size()
+        # dasar bayangan tetap menapak tanah (bawah anchored)
+        surface.blit(sh, (x - w // 2, y + 20 - h))
 
     def _draw_rage_aura(surface, x, y, phase):
-        """Big red rage aura (Vhorethzir scale)."""
-        pulse = math.sin(phase * 0.5) * 0.25 + 0.75
+        """Big red rage aura (Vhorethzir scale).
 
-        aura = pygame.Surface((260, 220), pygame.SRCALPHA)
-        for radius in range(110, 5, -5):
-            alpha = _NS_drakar._alpha((110 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_drakar._aacircle(aura,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], alpha),
-                    (130, 110), radius)
-        for radius in range(75, 5, -4):
-            alpha = _NS_drakar._alpha((75 - radius) * 1.4 * pulse)
-            if alpha > 0:
-                _NS_drakar._aacircle(aura,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_dark"], alpha),
-                    (130, 110), radius)
-        for radius in range(45, 5, -3):
-            alpha = _NS_drakar._alpha((45 - radius) * 1.6 * pulse)
-            if alpha > 0:
-                _NS_drakar._aacircle(aura,
-                    _NS_drakar._rgba(_NS_drakar.PALETTE["rage_mid"], alpha),
-                    (130, 110), radius)
+        ORIGINAL-MAX: gradien dirender sekali ke cache dengan langkah
+        1 px (bebas banding; dulu langkah 3-5 px per-frame), lalu di-blit
+        dengan set_alpha sesuai denyut - hasil sama, mulus, dan murah.
+        """
+        pulse = math.sin(phase * 0.5) * 0.25 + 0.75
+        key = ("aura",)
+        aura = _NS_drakar._DRK_TX.get(key)
+        if aura is None:
+            aura = pygame.Surface((260, 220), pygame.SRCALPHA)
+            for radius in range(110, 5, -1):
+                alpha = _NS_drakar._alpha((110 - radius) * 1.2)
+                if alpha > 0:
+                    _NS_drakar._aacircle(aura,
+                        _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], alpha),
+                        (130, 110), radius)
+            for radius in range(75, 5, -1):
+                alpha = _NS_drakar._alpha((75 - radius) * 1.4)
+                if alpha > 0:
+                    _NS_drakar._aacircle(aura,
+                        _NS_drakar._rgba(_NS_drakar.PALETTE["rage_dark"], alpha),
+                        (130, 110), radius)
+            for radius in range(45, 5, -1):
+                alpha = _NS_drakar._alpha((45 - radius) * 1.6)
+                if alpha > 0:
+                    _NS_drakar._aacircle(aura,
+                        _NS_drakar._rgba(_NS_drakar.PALETTE["rage_mid"], alpha),
+                        (130, 110), radius)
+            _NS_drakar._DRK_TX[key] = aura
+        aura.set_alpha(int(255 * pulse))
         surface.blit(aura, (x - 130, y - 110))
 
         # Rising floating embers around
@@ -5837,26 +6007,27 @@ class _NS_drakar:
     # SKILL Q: BATTLE HUNGER
     # ============================================================
     def _draw_battlehunger_ground(surface, boss, x, y, timer, phase):
-        tx, ty = _NS_drakar._target_position(boss, x, y)
-        duration = 80
+        # Battle Hunger = self-buff rage: FX menempel di badan Drakar sendiri.
+        tx, ty = x, y + 70
+        duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
         r = int(60 * min(1.0, progress * 3))
         if r > 3:
             pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], 200),
+                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_darkest"], 240),
                 (tx - r, ty - r // 3, r * 2, r * 2 // 3))
             pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], 180),
+                _NS_drakar._rgba(_NS_drakar.PALETTE["blood_dark"], 220),
                 (tx - r + 4, ty - r // 3 + 3,
                  r * 2 - 8, r * 2 // 3 - 6))
             pygame.draw.ellipse(surface,
-                _NS_drakar._rgba(_NS_drakar.PALETTE["rage_mid"], 130),
+                _NS_drakar._rgba(_NS_drakar.PALETTE["rage_mid"], 170),
                 (tx - r + 10, ty - r // 3 + 6,
                  r * 2 - 20, r * 2 // 3 - 12))
 
     def _draw_battlehunger_foreground(surface, boss, x, y, timer, phase):
-        tx, ty = _NS_drakar._target_position(boss, x, y)
-        duration = 80
+        tx, ty = x, y + 70
+        duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
         r = int(60 * min(1.0, progress * 3))
 
@@ -5919,7 +6090,7 @@ class _NS_drakar:
     # SKILL W: COUNTER HELIX
     # ============================================================
     def _draw_counterhelix_ground(surface, boss, x, y, timer, phase):
-        duration = 40
+        duration = 45  # = active_skill_timer AI
         progress = max(0.0, min(1.0, 1 - timer / duration))
         r = int(60 + progress * 30)
         alpha = _NS_drakar._alpha(240 * (1 - progress * 0.5))
@@ -5958,7 +6129,7 @@ class _NS_drakar:
     # SKILL E: BERSERKER'S CALL
     # ============================================================
     def _draw_berserkerscall_ground(surface, boss, x, y, timer, phase):
-        duration = 70
+        duration = 60  # = active_skill_timer AI
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         if progress > 0.2:
@@ -5978,7 +6149,7 @@ class _NS_drakar:
                  r * 2 - 10, r * 2 // 3 - 8), 2)
 
     def _draw_berserkerscall_foreground(surface, boss, x, y, timer, phase):
-        duration = 70
+        duration = 60  # = active_skill_timer AI
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         if progress < 0.3:
@@ -6051,7 +6222,7 @@ class _NS_drakar:
     # ============================================================
     def _draw_cullingblade_ground(surface, boss, x, y, timer, phase):
         tx, ty = _NS_drakar._target_position(boss, x, y)
-        duration = 90
+        duration = 60  # = active_skill_timer AI
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         if progress < 0.4:
@@ -6085,7 +6256,7 @@ class _NS_drakar:
 
     def _draw_cullingblade_foreground(surface, boss, x, y, timer, phase):
         tx, ty = _NS_drakar._target_position(boss, x, y)
-        duration = 90
+        duration = 60  # = active_skill_timer AI
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         if progress < 0.4:
@@ -6198,12 +6369,20 @@ class _NS_drakar:
 # ABADDON
 # ====================================================================
 class _NS_abaddon:
-    """Namespace abaddon - isi asli tidak diubah."""
+    """Namespace abaddon - ORIGINAL-MAX: sprite flame + aura cache,
+    hurt flash, bayangan reaktif. Isi seni asli tidak diubah."""
 
     # ---------------------------------------------------------------------------
     # Compatibility helpers
     # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
+
+    # ORIGINAL-MAX caches (dibangun lazy, piksel identik dengan draw asli)
+    _AB_FLAME = {}     # sprite cyan flame per (s, alpha//8)
+    _AB_AURA1 = None   # gradien aura gelap (pulse via set_alpha)
+    _AB_AURA2 = None   # gradien glow cyan
+    _AB_BUF = None     # buffer body saat hurt flash
+    _AB_SHADOW = None  # tekstur bayangan (reaktif via lift)
 
     # ---------------------------------------------------------------------------
     # HD Color Palette - Abaddon inspired dark purple / cyan flame
@@ -6386,21 +6565,36 @@ class _NS_abaddon:
     # Cyan flame helper
     # ---------------------------------------------------------------------------
     def _draw_cyan_flame(surface, x, y, size, phase, alpha=255):
-        """Draw a cyan mist flame particle."""
+        """Draw a cyan mist flame particle. ORIGINAL-MAX: hasil draw
+        di-cache sebagai sprite per (s, alpha//8) - piksel identik,
+        posisi tetap kontinu; hanya draw-call yang diganti blit."""
         flick = math.sin(phase * 3) * 0.15 + 1.0
         s = int(size * flick)
         if s < 1:
             return
-        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_darkest"], alpha // 3), (x, y), s + 3)
-        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_dark"], alpha // 2), (x, y), s + 1)
-        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_mid"], alpha), (x, y), s)
-        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_light"], alpha), (x, y - 1),
-                  max(1, s - 2))
-        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], min(255, alpha)),
-                  (x, y - 2), max(1, s - 4))
-        if s > 3:
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_hot"], min(255, alpha)),
-                      (x, y - 3), max(1, s - 6))
+        a = min(255, int(alpha)) // 8 * 8
+        key = (s, a)
+        B = _NS_abaddon
+        cache = B._AB_FLAME
+        if key not in cache:
+            r = s + 4
+            f = pygame.Surface((r * 2, r * 2 + 4), pygame.SRCALPHA)
+            cx0, cy0 = r, r + 2
+            B._aacircle(f, (*B.PALETTE["flame_darkest"], a // 3),
+                        (cx0, cy0), s + 3)
+            B._aacircle(f, (*B.PALETTE["flame_dark"], a // 2),
+                        (cx0, cy0), s + 1)
+            B._aacircle(f, (*B.PALETTE["flame_mid"], a), (cx0, cy0), s)
+            B._aacircle(f, (*B.PALETTE["flame_light"], a), (cx0, cy0 - 1),
+                        max(1, s - 2))
+            B._aacircle(f, (*B.PALETTE["flame_bright"], min(255, a)),
+                        (cx0, cy0 - 2), max(1, s - 4))
+            if s > 3:
+                B._aacircle(f, (*B.PALETTE["flame_hot"], min(255, a)),
+                            (cx0, cy0 - 3), max(1, s - 6))
+            cache[key] = f
+        spr = cache[key]
+        surface.blit(spr, (x - (s + 4), y - (s + 6)))
 
 
     def _draw_flame_streamer(surface, x, y, height, phase, alpha=220):
@@ -6713,18 +6907,46 @@ class _NS_abaddon:
         _NS_abaddon._draw_ground_runes(surface, x, y + 48, pulse, active_skill)
 
         # ---------- Character body ----------
-        if active_skill == "q":
-            _NS_abaddon._draw_abaddon_mist_coil(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_abaddon._draw_abaddon_darkness_gale(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_abaddon._draw_abaddon_death_sever(surface, boss, x, y, skill_timer, pulse)
-        elif attacking:
-            _NS_abaddon._draw_abaddon_melee_attack(surface, boss, x, y)
-        elif moving:
-            _NS_abaddon._draw_abaddon_walk(surface, boss, x, y)
+        # ORIGINAL-MAX hurt flash: saat kena hit, body dirender ke buffer
+        # lalu siluetnya dibanjiri putih-hangat (paritas keluarga).
+        # Skill R dilewati (beam ke target lebih besar dari buffer).
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash > 0 and active_skill != "r":
+            B = _NS_abaddon
+            if B._AB_BUF is None:
+                B._AB_BUF = pygame.Surface((200, 200), pygame.SRCALPHA)
+            tgt, tx, ty = B._AB_BUF, 100, 110
+            tgt.fill((0, 0, 0, 0))
         else:
-            _NS_abaddon._draw_abaddon_idle(surface, boss, x, y)
+            tgt, tx, ty, flash = surface, x, y, 0
+
+        if active_skill == "q":
+            _NS_abaddon._draw_abaddon_mist_coil(tgt, boss, tx, ty, skill_timer, pulse)
+        elif active_skill == "e":
+            _NS_abaddon._draw_abaddon_darkness_gale(tgt, boss, tx, ty, skill_timer, pulse)
+        elif active_skill == "r":
+            _NS_abaddon._draw_abaddon_death_sever(tgt, boss, tx, ty, skill_timer, pulse)
+        elif attacking:
+            _NS_abaddon._draw_abaddon_melee_attack(tgt, boss, tx, ty)
+        elif moving:
+            _NS_abaddon._draw_abaddon_walk(tgt, boss, tx, ty)
+        else:
+            _NS_abaddon._draw_abaddon_idle(tgt, boss, tx, ty)
+
+        if flash > 0:
+            surface.blit(tgt, (x - tx, y - ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            if w > 0:
+                m = pygame.mask.from_surface(tgt, 50)
+                wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8),
+                                             255),
+                                   unsetcolor=(0, 0, 0, 0))
+                # bayangan tanah ikut masuk buffer pose; jangan ikut
+                # menyala (flash hanya badan, seperti drakar)
+                wht.fill((0, 0, 0, 0),
+                         pygame.Rect(0, ty + 46, 200, 200 - (ty + 46)))
+                surface.blit(wht, (x - tx, y - ty),
+                             special_flags=pygame.BLEND_RGB_ADD)
 
         # Aphotic Shield goes over body
         if active_skill == "w":
@@ -6739,7 +6961,7 @@ class _NS_abaddon:
     # ===================================================================
     def _draw_abaddon_idle(surface, boss, x, y):
         bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_abaddon._draw_shadow(surface, x, y + 58)
+        _NS_abaddon._draw_shadow(surface, x, y + 58, max(0, -bob))
         _NS_abaddon._draw_horse_flame_base(surface, x, y + 45, boss.pulse)
         _NS_abaddon._draw_abaddon_full(surface, x, y + bob, boss.direction, boss.pulse, "idle")
 
@@ -6748,7 +6970,7 @@ class _NS_abaddon:
         phase = boss.pulse * 2.2
         bob = int(abs(math.sin(phase * 1.3)) * 3)
         sway = int(math.sin(phase) * 2)
-        _NS_abaddon._draw_shadow(surface, x + sway, y + 58)
+        _NS_abaddon._draw_shadow(surface, x + sway, y + 58, bob)
         _NS_abaddon._draw_horse_flame_base(surface, x + sway, y + 45, phase, trail=True,
                               facing=boss.direction)
         _NS_abaddon._draw_abaddon_full(surface, x + sway, y - bob, boss.direction, phase, "walk")
@@ -7714,38 +7936,56 @@ class _NS_abaddon:
                 _NS_abaddon._draw_cyan_flame(surface, sx, sy, max(2, 4 - i), phase + i, alpha)
 
 
-    def _draw_shadow(surface, x, y):
-        shadow = pygame.Surface((130, 24), pygame.SRCALPHA)
-        for radius in range(12, 0, -1):
-            alpha = max(0, (12 - radius) * 15)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (12 - radius, 12 - radius, 106 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_abaddon.PALETTE["flame_darkest"], 60),
-                           (10, 5, 108, 12))
-        surface.blit(shadow, (x - 65, y - 12))
+    def _draw_shadow(surface, x, y, lift=0):
+        """Bayangan REAKTIF + cache: tekstur dibangun sekali; saat badan
+        terangkat (lift > 0) mengecil, dasar tetap menapak tanah."""
+        B = _NS_abaddon
+        if B._AB_SHADOW is None:
+            shadow = pygame.Surface((130, 24), pygame.SRCALPHA)
+            for radius in range(12, 0, -1):
+                alpha = max(0, (12 - radius) * 15)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (12 - radius, 12 - radius, 106 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow, (*B.PALETTE["flame_darkest"], 60),
+                                (10, 5, 108, 12))
+            B._AB_SHADOW = shadow
+        sh = B._AB_SHADOW
+        s = 1.0 - min(0.30, abs(lift) * 0.03)
+        if s < 0.999:
+            sh = pygame.transform.smoothscale(sh, (int(130 * s), int(24 * s)))
+        w, h = sh.get_size()
+        surface.blit(sh, (x - w // 2, y + 12 - h))
 
 
     def _draw_dark_aura(surface, x, y, phase):
-        """Dark purple/cyan background aura."""
+        """Dark purple/cyan background aura. ORIGINAL-MAX: gradien
+        dibangun SEKALI; denyut via set_alpha (blit normal menghormati
+        alpha permukaan) - piksel setara, ~0.5 ms -> ~0.05 ms."""
+        B = _NS_abaddon
         pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((220, 200), pygame.SRCALPHA)
-        for radius in range(88, 5, -4):
-            alpha = int((88 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_abaddon._aacircle(aura, (*_NS_abaddon.PALETTE["cape_darkest"], min(255, alpha)),
-                          (110, 100), radius)
-        surface.blit(aura, (x - 110, y - 100))
-
-        # Cyan glow overlay
-        aura2 = pygame.Surface((160, 140), pygame.SRCALPHA)
-        for radius in range(64, 5, -3):
-            alpha = int((64 - radius) * 0.7 * pulse)
-            if alpha > 0:
-                _NS_abaddon._aacircle(aura2, (*_NS_abaddon.PALETTE["flame_darkest"], min(255, alpha)),
-                          (80, 70), radius)
-        surface.blit(aura2, (x - 80, y - 70))
+        if B._AB_AURA1 is None:
+            aura = pygame.Surface((220, 200), pygame.SRCALPHA)
+            for radius in range(88, 5, -4):
+                alpha = int((88 - radius) * 1.2)
+                if alpha > 0:
+                    B._aacircle(aura, (*B.PALETTE["cape_darkest"],
+                                       min(255, alpha)), (110, 100), radius)
+            B._AB_AURA1 = aura
+            aura2 = pygame.Surface((160, 140), pygame.SRCALPHA)
+            for radius in range(64, 5, -3):
+                alpha = int((64 - radius) * 0.7)
+                if alpha > 0:
+                    B._aacircle(aura2, (*B.PALETTE["flame_darkest"],
+                                        min(255, alpha)), (80, 70), radius)
+            B._AB_AURA2 = aura2
+        a1 = B._AB_AURA1
+        a1.set_alpha(int(pulse * 255))
+        surface.blit(a1, (x - 110, y - 100))
+        a2 = B._AB_AURA2
+        a2.set_alpha(int(pulse * 255))
+        surface.blit(a2, (x - 80, y - 70))
 
 
     def _draw_ground_runes(surface, x, y, phase, skill):
