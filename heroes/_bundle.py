@@ -6045,17 +6045,17 @@ class _NS_kaizen:
 
         # ── torso: open jacket + dada + harness ──
         # jok bahu depan: KECIL, hanya menutupi sendi lengan
-        poly(p["cloth_darkest"], [(6, -31), (19, -29), (24, -23),
-             (20, -17), (9, -19), (4, -25)])
-        poly(p["cloth_darkest"], [(-20, -26), (-2, -32), (22, -28),
-             (30, -16), (26, 4), (12, 14), (-14, 10), (-24, -10)])
+        poly(p["cloth_darkest"], [(6, -36), (19, -33), (24, -26),
+             (20, -19), (9, -21), (4, -28)])
+        poly(p["cloth_darkest"], [(-20, -32), (-2, -38), (22, -34),
+             (30, -18), (26, 4), (12, 14), (-14, 10), (-24, -12)])
         poly(p["cloth_deep"], [(-20, -26), (-14, -29), (-16, 6),
              (-24, -10)], False)
         # panel kain belakang (kiri) + lipatan
-        poly(p["cloth_dark"], [(-18, -24), (-4, -28), (-4, 8), (-14, 6),
-             (-22, -12)], False)
-        poly(p["cloth_mid"], [(-16, -22), (-6, -25), (-7, 5), (-14, 3),
-             (-19, -10)], False)
+        poly(p["cloth_dark"], [(-18, -30), (-4, -34), (-4, 8), (-14, 6),
+             (-22, -14)], False)
+        poly(p["cloth_mid"], [(-16, -28), (-6, -31), (-7, 5), (-14, 3),
+             (-19, -12)], False)
         # dada terbuka (kulit) + shading plane
         poly(p["skin_dark"], [(-1, -27), (13, -28), (17, -14),
              (11, 6), (1, 7)], False)
@@ -6068,18 +6068,18 @@ class _NS_kaizen:
         _NS_kaizen._dither_dots(surface, p["skin_dark"], pt(1, 4),
                                 pt(10, 1), step=2, alpha=130)
         # collar cross (lapihan jaket bertemu di dada)
-        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-2, -27), pt(12, 4), 5)
-        _NS_kaizen._aaline(surface, p["cloth_mid"], pt(-2, -27), pt(12, 4), 3)
-        _NS_kaizen._aaline(surface, p["cloth_high"], pt(-2, -28), pt(12, 4), 1)
-        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-6, -26), pt(4, 6), 4)
-        _NS_kaizen._aaline(surface, p["scarf_dark"], pt(-6, -26), pt(4, 6), 2)
+        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-2, -32), pt(12, 4), 5)
+        _NS_kaizen._aaline(surface, p["cloth_mid"], pt(-2, -32), pt(12, 4), 3)
+        _NS_kaizen._aaline(surface, p["cloth_high"], pt(-2, -33), pt(12, 4), 1)
+        _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-6, -31), pt(4, 6), 4)
+        _NS_kaizen._aaline(surface, p["scarf_dark"], pt(-6, -31), pt(4, 6), 2)
         # sabuk kulit diagonal (X harness) + jahitan
-        _NS_kaizen._aaline(surface, p["leather_dark"], pt(-16, -22), pt(14, 8), 6)
-        _NS_kaizen._aaline(surface, p["leather_mid"], pt(-16, -22), pt(14, 8), 4)
-        _NS_kaizen._aaline(surface, p["leather_light"], pt(-16, -23), pt(14, 8), 1)
+        _NS_kaizen._aaline(surface, p["leather_dark"], pt(-16, -28), pt(14, 6), 6)
+        _NS_kaizen._aaline(surface, p["leather_mid"], pt(-16, -28), pt(14, 6), 4)
+        _NS_kaizen._aaline(surface, p["leather_light"], pt(-16, -29), pt(14, 6), 1)
         for t in (.25, .5, .75):
             bx_ = -16 + 30 * t
-            by_ = -22 + 30 * t
+            by_ = -28 + 34 * t
             _NS_kaizen._aaline(surface, p["leather_light"],
                                pt(bx_ - 2, by_ - 1), pt(bx_ + 2, by_ + 1), 1)
         # braided obi + knot belakang + wrap emas
@@ -6097,13 +6097,13 @@ class _NS_kaizen:
 
         # ── pauldron baja berlapis (bahu pedang) + sode belakang ──
         # Baja abu-abu dingin: hue-nyapisah dari scarf indigo di belakangnya.
-        pauldron = [(11, -28), (29, -26), (36, -19), (32, -10),
-                    (23, -6), (13, -11)]
+        pauldron = [(11, -32), (29, -30), (36, -22), (32, -13),
+                    (23, -9), (13, -14)]
         poly(p["steel_darkest"], pauldron)
-        poly(p["steel_dark"], [(13, -26), (26, -24), (32, -19),
-             (29, -12), (22, -9), (14, -13)], False)
+        poly(p["steel_dark"], [(13, -30), (26, -28), (32, -22),
+             (29, -15), (22, -12), (14, -16)], False)
         for i in range(3):
-            yy = -23 + i * 4
+            yy = -27 + i * 4
             _NS_kaizen._aaline(surface, p["steel_mid"],
                                pt(14, yy), pt(29 - i * 2, yy + 2), 1)
         # rim emas tepi atas + rivet + specular cluster
@@ -6117,10 +6117,10 @@ class _NS_kaizen:
         # sode kecil di bahu belakang (2 lame)
         for i in range(2):
             poly(p["steel_dark"] if i else p["steel_darkest"],
-                 [(-18, -26 + i * 4), (-10, -24 + i * 4),
-                  (-11, -19 + i * 4), (-19, -21 + i * 4)], i == 0)
+                 [(-18, -30 + i * 4), (-10, -28 + i * 4),
+                  (-11, -23 + i * 4), (-19, -25 + i * 4)], i == 0)
             _NS_kaizen._aaline(surface, p["steel_mid"],
-                               pt(-17, -23 + i * 4), pt(-12, -22 + i * 4), 1)
+                               pt(-17, -27 + i * 4), pt(-12, -26 + i * 4), 1)
 
         # ── jacket piping + crest angin kecil ──
         _NS_kaizen._aaline(surface, p["cloth_high"], pt(-17, -19),
@@ -6139,7 +6139,7 @@ class _NS_kaizen:
             rear_hand = (-22, 6)
         if walk:
             rear_hand = (-22 - int(stride * 4), 6 + int(abs(stride) * 1))
-        limb((-16, -24), (-28, -12), 9, p["cloth_dark"], p["cloth_light"])
+        limb((-16, -28), (-28, -14), 9, p["cloth_dark"], p["cloth_light"])
         # sleeve fold
         _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(-24, -18),
                            pt(-20, -12), 2)
@@ -6156,10 +6156,12 @@ class _NS_kaizen:
         _NS_kaizen._aaline(surface, p["gold_mid"], (rhx - 4, rhy + 3),
                            (rhx + 4, rhy + 3), 1)
 
-        # ── neck and three-quarter head (leher menyambung kepala-torso) ──
-        poly(p["skin_dark"], [(-6, -54), (8, -54), (8, -26), (-6, -26)])
-        _NS_kaizen._aaline(surface, p["skin_darkest"], pt(-4, -26), pt(6, -26), 1)
-        _NS_kaizen._aaline(surface, p["skin_darkest"], pt(-5, -50), pt(7, -50), 1)
+        # ── neck and three-quarter head (leher pendek: dagu -51,
+        # lilitan scarf mulai -50 -> leher nyaris tak terlihat).
+        # PENTING: poly leher berhenti di -40 karena digambar SETELAH
+        # torso; kalau lebih panjang, dia menimpa kain torso di bawah
+        # collar dan muncul kolom kulit palsu. ──
+        poly(p["skin_dark"], [(-6, -50), (8, -50), (8, -40), (-6, -40)])
         face = [(-12, -63), (-10, -80), (-4, -92), (8, -94),
                 (15, -87), (18, -75), (15, -62), (8, -53), (0, -51), (-8, -55)]
         poly(p["skin_dark"], face)
@@ -6229,12 +6231,17 @@ class _NS_kaizen:
                                    int(150 + 70 * math.sin(phase * 4)), 4,
                                    rot=phase, core=p["white"])
 
-        # Scarf collar sits above neck and anchors the long tail.
-        poly(p["scarf_dark"], [(-14, -38), (9, -38), (11, -27),
-             (-2, -22), (-15, -27)])
-        poly(p["scarf_mid"], [(-12, -36), (7, -36), (8, -29),
-             (-2, -26), (-12, -29)], False)
-        _NS_kaizen._aaline(surface, p["scarf_light"], pt(-9, -34), pt(5, -35), 1)
+        # Scarf collar: trapesium yang TAPER mengikuti rahang di atas
+        # (14 px = selebar dagu) lalu melebar natural ke dada/bahu di
+        # bawah - seperti scarf dililit, bukan blok kolom.
+        poly(p["scarf_deep"], [(-7, -50), (10, -50), (13, -41),
+             (0, -36), (-11, -39), (-12, -44)])
+        poly(p["scarf_dark"], [(-5, -48), (8, -48), (10, -41),
+             (-1, -37), (-9, -40), (-10, -43)], False)
+        # lipatan wrap diagonal (tekstur kain lilit)
+        _NS_kaizen._aaline(surface, p["scarf_deep"], pt(-8, -42), pt(6, -44), 1)
+        # tepi atas terang (key light kiri-atas)
+        _NS_kaizen._aaline(surface, p["scarf_light"], pt(-4, -49), pt(6, -49), 1)
 
         # ── front arm + katana (pose-driven via _attack_pose) ──
         if attack and pose is not None:
@@ -6250,7 +6257,7 @@ class _NS_kaizen:
             else:
                 hand = (34, -2 + int(math.sin(phase * .72) * 1.2))
                 k_angle = 0.34 + math.sin(phase * .72) * .03
-        limb((18, -24), (30, -10), 9, p["cloth_dark"], p["cloth_light"])
+        limb((18, -28), (30, -12), 9, p["cloth_dark"], p["cloth_light"])
         _NS_kaizen._aaline(surface, p["cloth_darkest"], pt(26, -18),
                            pt(29, -12), 2)
         limb((30, -10), hand, 7, p["skin_dark"], p["skin_light"])
