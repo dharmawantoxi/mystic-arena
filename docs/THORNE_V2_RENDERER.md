@@ -72,6 +72,43 @@ aura debu 260 px, rage 300 px, platform 195 px. Telegraph Quill Spray
 kini dikonversi lewat `_render_scale` sehingga **ring pas dengan
 jangkauan gameplay** (bukan radius px mentah).
 
+## Skill FX v2.1 — "mewah & terlihat" (pass lanjutan)
+
+Masalah lama: efek hero ikut mengecil bersama sprite cache
+(`_render_scale` ~0.41×) → cincin/telegraph nyaris tak terlihat di
+arena. Pass ini menggambar efek **world-space** lewat `_fx_scale(boss)`
+(= `1/_render_scale`, cap 2.6) sehingga ukuran di layar setara boss
+asli, lalu memperkaya tiap skill:
+
+- **Primitif baru**: `_spark_star` (bintang spike selang-seling),
+  `_chevron` (panah telegraph), `_dashed_ring` (rune ring berputar),
+  `_jagged_crack` (retakan zigzag deterministik), `_fx_scale`.
+- **Q — Viscous Nose**: band asam lebar 2-lapis + gelembung bergerak
+  + chevron berbaris menuju target + splat marker 2 cincin; charge
+  jadi vortex 2 arc berlawanan + droplet orbit; spit = bintang + ring
+  + kipasan droplet.
+- **W — Bristleback**: shockwave aktivasi ganda + bintang 8 spike,
+  rune ring ganda berlawanan arah, **duri 2 baris** (18 luar + 12
+  dalam) berdenyut dengan ujung emas/putih, kubah shimmer berkelip,
+  mote emas naik, glint orbit; dan **crest di badan ikut menyala
+  emas** (kwarg `bristle` — ramp crest di-mix ke gold + flare).
+- **E — Quill Spray**: ring jangkauan tebal + tick ring berputar +
+  **ring konvergen** mengecil ke pusat (membaca "incoming") +
+  chevron kardinal; tiap voli = muzzle star + ring di punggung;
+  proyektil quill mewah (trail 2-tone + glint berputar di ujung).
+- **R — Warpath (ultimate)**: aktivasi **pilar cahaya 4-lapis** +
+  shockwave ganda + bintang; steady: **7 retakan magma radial**
+  ber-zigzag dengan seam menyala, cincin aura 3-lapis + ring emas,
+  mahkota api 2 ring (17 api) dengan core emas, kolom bara sway,
+  wisp spiral 2 lengan, denyut pusat.
+
+Terukur (audit): W 860 px emas di luar siluet badan, R 628 px
+rage/magma di luar badan, E ring jangkauan tepat di 100 px dunia
+(180/180 hit pada canvas scale 0.5), Q jalur+splat sampai target.
+Biaya 2.2–3.6 ms hanya saat cache miss (bucket tiap 2 frame; perangkat
+lambat otomatis 4 frame). Pilar R di-clamp `min(100·fs, 240)` agar
+selalu muat di canvas cache.
+
 ## Kompatibilitas
 
 - Semua nama publik lama dipertahankan (`PALETTE` lengkap dengan kunci
@@ -84,8 +121,9 @@ jangkauan gameplay** (bukan radius px mentah).
 ## Alat
 
 - `tools/_audit_thorne_v2.py` — audit terukur (skala, bbox, frame unik,
-  swatch palet, coverage quill, timing) + 3 lembar preview:
-  `docs/thorne_v2_review.png`, `docs/thorne_v2_anim_strip.png`,
-  `docs/thorne_v2_ingame.png`, `docs/thorne_v2_before_after.png`.
+  swatch palet, coverage quill, timing, **cek FX skill world-space**) +
+  4 lembar preview: `docs/thorne_v2_review.png`, `docs/thorne_v2_anim_strip.png`,
+  `docs/thorne_v2_ingame.png`, `docs/thorne_v2_skills.png`, dan
+  `docs/thorne_v2_before_after.png`.
 - `tools/_shot_thorne_masterwork.py` & `tools/thorne_anim_demo.py`
   diperbarui ke canvas rig v2.

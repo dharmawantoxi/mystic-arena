@@ -129,6 +129,81 @@ t_full = bench(lambda: T.draw_thorne(norm, _ProbeEntity("thorne", 150, 150), 150
 print(f"[i] render ms: idle={t_idle:.2f} walk={t_walk:.2f} "
       f"attack={t_atk:.2f} draw_thorne={t_full:.2f}")
 
+# ── 8. skill FX: world-space, mewah, dan terukur ─────────────────
+from types import SimpleNamespace as _NS
+
+def _render_skill(skill, timer, fs=None, W=760):
+    s = pygame.Surface((W, W), pygame.SRCALPHA)
+    h = _ProbeEntity("thorne", W // 2, W // 2 + 40)
+    h.pulse = 1.3
+    h.active_skill = skill
+    h.active_skill_timer = timer
+    h.target = _NS(x=W // 2 + 140, y=W // 2, alive=True)
+    if fs:
+        h._render_scale = fs
+    T.draw_thorne(s, h, W // 2, W // 2 + 40)
+    return s
+
+def _count(s, matcher, rmin=0, rmax=10**6, cx=None, cy=None):
+    cx = s.get_width() // 2 if cx is None else cx
+    cy = s.get_height() // 2 + 40 if cy is None else cy
+    n = 0
+    for y in range(0, s.get_height(), 2):
+        for x in range(0, s.get_width(), 2):
+            if rmin <= math.hypot(x - cx, y - cy) <= rmax:
+                if matcher(s.get_at((x, y))):
+                    n += 1
+    return n
+
+_gold = lambda c: c.a > 100 and c[0] > 180 and c[1] > 140 and c[2] < 180
+_rage = lambda c: c.a > 100 and c[0] > 130 and c[1] < 110 and c[2] < 90
+_goo = lambda c: c.a > 100 and c[1] > 90 and c[0] < 120 and c[1] - c[2] > 25
+_quill_fx = lambda c: c.a > 100 and c[0] > 170 and c[1] > 130 and c[2] < 190
+
+# W: rune ring + duri harus keluar dari siluet badan, dan world-space
+s = _render_skill("w", 60)
+ok_all &= check(_count(s, _gold, 55, 100) > 60,
+                "W: duri/rune emas di luar badan",
+                str(_count(s, _gold, 55, 100)))
+s = _render_skill("w", 60, fs=0.5)
+ok_all &= check(_count(s, _gold, 110, 210) > 40,
+                "W: efek world-space saat di-scale hero",
+                str(_count(s, _gold, 110, 210)))
+
+# R: retakan + api + bara di luar badan
+s = _render_skill("r", 30)
+ok_all &= check(_count(s, _rage, 55, 140) > 60,
+                "R: magma/bara merah di luar badan",
+                str(_count(s, _rage, 55, 140)))
+
+# E: ring jangkauan tepat di 100 world-px dari pusat
+s = _render_skill("e", 50, fs=0.5)
+hits = 0
+for a in range(0, 360, 2):
+    x = int(380 + math.cos(math.radians(a)) * 198)
+    y = int(420 + math.sin(math.radians(a)) * 198)
+    if _quill_fx(s.get_at((x, y))):
+        hits += 1
+ok_all &= check(hits > 90, "E: ring jangkauan di ~200px canvas (=100 dunia)",
+                f"{hits}/180")
+
+# Q: jalur asam sampai target
+s = _render_skill("q", 30)
+ok_all &= check(_count(s, _goo, 70, 400) > 25,
+                "Q: jalur/splat goo menuju target",
+                str(_count(s, _goo, 70, 400)))
+
+# timing skill (budget cache-miss)
+for skill, t in (("w", 60), ("e", 35), ("r", 30), ("q", 20)):
+    surf = pygame.Surface((760, 760), pygame.SRCALPHA)
+    hero = _ProbeEntity("thorne", 380, 420)
+    hero.pulse = 1.3
+    hero.active_skill = skill
+    hero.active_skill_timer = t
+    hero.target = _NS(x=520, y=400, alive=True)
+    ms = bench(lambda: T.draw_thorne(surf, hero, 380, 420), 20)
+    print(f"[i] skill {skill}: {ms:.2f} ms/frame (cache-miss)")
+
 # ═══════════════════════ PREVIEW SHEETS ══════════════════════════
 font_title = pygame.font.Font(None, 44)
 font_label = pygame.font.Font(None, 30)
@@ -242,6 +317,52 @@ for i, (name, ph, prog, skill) in enumerate(poses):
 out3 = os.path.join(ROOT, "docs", "thorne_v2_ingame.png")
 pygame.image.save(game, out3)
 print(out3)
+
+# ── skill FX sheet: 4 skill x 3 tahap timer ──
+KW, KH = 1500, 1160
+skills_sheet = pygame.Surface((KW, KH))
+skills_sheet.fill((6, 10, 20))
+skills_sheet.blit(font_title.render(
+    "THORNE v2 - SKILL FX MEWAH (world-space, 100% prosedural)", True,
+    (255, 205, 120)), (36, 22))
+skills_sheet.blit(font_small.render(
+    "Q Viscous Nose • W Bristleback • E Quill Spray • R Warpath — "
+    "3 tahap timer per skill", True, (176, 158, 130)), (38, 66))
+
+skill_cards = (
+    ("Q - VISCOUS NOSE", "q", (36, 20, 8)),
+    ("W - BRISTLEBACK", "w", (26, 22, 8)),
+    ("E - QUILL SPRAY", "e", (28, 26, 10)),
+    ("R - WARPATH (ULTIMATE)", "r", (30, 12, 10)),
+)
+stages = ((90, "awal"), (50, "tengah"), (12, "puncak"))
+for ci, (label, skill, panel_col) in enumerate(skill_cards):
+    col_x = 28 + ci * 368
+    for si, (timer, stage) in enumerate(stages):
+        y0 = 100 + si * 350
+        panel = pygame.Rect(col_x, y0, 348, 330)
+        pygame.draw.rect(skills_sheet, panel_col, panel, border_radius=12)
+        pygame.draw.rect(skills_sheet, (172, 122, 55), panel, 2,
+                         border_radius=12)
+        skills_sheet.blit(
+            font_small.render(f"{label}  t={timer} ({stage})", True,
+                              (255, 236, 218)), (col_x + 14, y0 + 12))
+        native = pygame.Surface((560, 560), pygame.SRCALPHA)
+        h = _ProbeEntity("thorne", 280, 330)
+        h.pulse = 1.3
+        h.active_skill = skill
+        h.active_skill_timer = timer
+        h.target = _NS(x=420, y=300, alive=True)
+        h._render_scale = 0.45      # simulasi pipeline hero: fs aktif
+        T.draw_thorne(native, h, 280, 330)
+        scaled = pygame.transform.scale(native, (336, 336))
+        old = skills_sheet.get_clip()
+        skills_sheet.set_clip(panel.inflate(-6, -34))
+        skills_sheet.blit(scaled, (col_x + 6, y0 + 30))
+        skills_sheet.set_clip(old)
+out4 = os.path.join(ROOT, "docs", "thorne_v2_skills.png")
+pygame.image.save(skills_sheet, out4)
+print(out4)
 
 print("SEMUA CEK LOLOS" if ok_all else "ADA CEK GAGAL")
 sys.exit(0 if ok_all else 1)

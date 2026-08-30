@@ -5648,18 +5648,23 @@ class _NS_thorne:
         def draw(self, surface, phase):
             if not self.alive and self.age < 2:
                 return
-            # Trail
+            # Trail 2-tone (band lebar + inti) - terbaca setelah downscale
             for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(34 + i * 14)
-                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_dark"], alpha), (tx, ty), 3)
-                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_light"], alpha // 2),
-                          (tx, ty), 1)
+                alpha = int(40 + i * 15)
+                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_dark"], alpha), (tx, ty), 4)
+                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_mid"], alpha), (tx, ty), 2)
 
             if self.alive:
                 px, py = int(self.x), int(self.y)
                 # The quill itself (lebih panjang & banded agar terbaca
                 # setelah downscale pipeline hero)
-                _NS_thorne._draw_quill(surface, px, py, 19, self.angle, thickness=3)
+                _NS_thorne._draw_quill(surface, px, py, 23, self.angle, thickness=3)
+                # glint berputar di ujung (kilau hidup saat terbang)
+                ga = self.age * 1.1
+                gx = px + math.cos(self.angle) * 23 + math.cos(ga) * 3
+                gy = py + math.sin(self.angle) * 23 + math.sin(ga) * 3
+                _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["quill_shine"],
+                                     (int(gx), int(gy)), 1)
 
 
     class GooProjectile:
@@ -5913,6 +5918,7 @@ class _NS_thorne:
         )
 
         warpath_active = active_skill == "r"
+        bristleback_active = active_skill == "w"
 
         # ---------- Background layers ----------
         # Portrait LOD sengaja menghilangkan aura/platform seukuran arena agar
@@ -5933,11 +5939,14 @@ class _NS_thorne:
 
         # ---------- Character body ----------
         if attacking:
-            _NS_thorne._draw_thorne_attack(surface, boss, x, y, warpath_active)
+            _NS_thorne._draw_thorne_attack(surface, boss, x, y, warpath_active,
+                                           bristleback_active)
         elif moving:
-            _NS_thorne._draw_thorne_walk(surface, boss, x, y, warpath_active)
+            _NS_thorne._draw_thorne_walk(surface, boss, x, y, warpath_active,
+                                         bristleback_active)
         else:
-            _NS_thorne._draw_thorne_idle(surface, boss, x, y, warpath_active)
+            _NS_thorne._draw_thorne_idle(surface, boss, x, y, warpath_active,
+                                         bristleback_active)
 
         # ---------- Projectiles ----------
         if not portrait_hd:
@@ -5957,17 +5966,17 @@ class _NS_thorne:
     # ===================================================================
     # POSE MODES  (anchor telapak = +64; ground FX mengikuti)
     # ===================================================================
-    def _draw_thorne_idle(surface, boss, x, y, warpath=False):
+    def _draw_thorne_idle(surface, boss, x, y, warpath=False, bristle=False):
         bob = int(math.sin(boss.pulse * 0.7) * 2.5)
         if not getattr(boss, "_portrait_hd", False):
             _NS_thorne._draw_shadow(surface, x, y + 66)
             _NS_thorne._draw_floating_dust(surface, x, y + 52, boss.pulse, warpath=warpath)
         _NS_thorne._draw_thorne_body(surface, x, y + bob, boss.direction, boss.pulse,
-                          "idle", warpath=warpath,
+                          "idle", warpath=warpath, bristle=bristle,
                           detail=getattr(boss, "_portrait_hd", False))
 
 
-    def _draw_thorne_walk(surface, boss, x, y, warpath=False):
+    def _draw_thorne_walk(surface, boss, x, y, warpath=False, bristle=False):
         phase = boss.pulse * 2.0
         bob = int(abs(math.sin(phase * 1.2)) * 3)
         sway = int(math.sin(phase) * 2)
@@ -5976,11 +5985,11 @@ class _NS_thorne:
             _NS_thorne._draw_floating_dust(surface, x + sway, y + 52, phase, trail=True,
                                facing=boss.direction, warpath=warpath)
         _NS_thorne._draw_thorne_body(surface, x + sway, y - bob, boss.direction, phase,
-                          "walk", warpath=warpath,
+                          "walk", warpath=warpath, bristle=bristle,
                           detail=getattr(boss, "_portrait_hd", False))
 
 
-    def _draw_thorne_attack(surface, boss, x, y, warpath=False):
+    def _draw_thorne_attack(surface, boss, x, y, warpath=False, bristle=False):
         progress = getattr(boss, "_th_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
 
@@ -5991,7 +6000,7 @@ class _NS_thorne:
             _NS_thorne._draw_floating_dust(surface, x + step, y + 52, boss.pulse, intense=True,
                                warpath=warpath)
         _NS_thorne._draw_thorne_body(surface, x + step, y, boss.direction, boss.pulse,
-                          "attack", progress, warpath=warpath,
+                          "attack", progress, warpath=warpath, bristle=bristle,
                           detail=getattr(boss, "_portrait_hd", False))
 
 
@@ -5999,11 +6008,12 @@ class _NS_thorne:
     # BODY RENDERING - HD boar-porcupine warrior (masterwork pixel-art)
     # ===================================================================
     def _draw_thorne_body(surface, cx, cy, facing, phase, action,
-                          attack_progress=0, warpath=False, detail=False):
+                          attack_progress=0, warpath=False, detail=False,
+                          bristle=False):
         """Dialihkan ke rig masterwork v2 (lihat _draw_thorne_elite)."""
         _NS_thorne._draw_thorne_elite(
             surface, cx, cy, facing, phase, action, attack_progress,
-            detail=detail, warpath=warpath)
+            detail=detail, warpath=warpath, bristle=bristle)
 
 
     # ===================================================================
@@ -6279,7 +6289,8 @@ class _NS_thorne:
 
 
     def _draw_thorne_elite(surface, cx, cy, facing, phase, action,
-                           attack_progress=0.0, detail=False, warpath=False):
+                           attack_progress=0.0, detail=False, warpath=False,
+                           bristle=False):
         """Rig masterwork v2 - boar-porcupine pixel-art, 100% prosedural.
 
         Semua koordinat lokal: (0,0) = jangkar pinggul, x maju (facing),
@@ -6321,6 +6332,9 @@ class _NS_thorne:
                     "angle": 0.30 + breath * 0.04,
                     "flare": 1.0 + 0.03 * breath, "tremble": 0}
         flare = pose["flare"]
+        if bristle:
+            # crest berdiri lebih tegak + berdenyut saat duri aktif
+            flare *= 1.1 + .05 * math.sin(phase * 3)
         off_x = lean + sway
 
         def pt(dx, dy):
@@ -6350,7 +6364,7 @@ class _NS_thorne:
 
         wave = math.sin(phase * 1.25)
 
-        # ═══ 2. PALET CREST (swap rage saat warpath) ═══
+        # ═══ 2. PALET CREST (swap rage saat warpath / emas saat bristle) ═══
         if warpath:
             c_root, c_mid, c_light = p["rage_mid"], p["rage_light"], p["rage_bright"]
             b_root, b_mid, b_light = p["rage_dark"], p["rage_dark"], p["rage_mid"]
@@ -6360,6 +6374,19 @@ class _NS_thorne:
             b_root, b_mid, b_light = p["quill_darkest"], p["quill_dark"], p["quill_mid"]
             f_root, f_mid, f_light = p["quill_mid"], p["quill_light"], p["quill_tip"]
         c_tip = p["quill_tip"]
+        if bristle and not warpath:
+            # Bristleback aktif: duri "bercitra" menyala emas (sangat terbaca).
+            mix = _NS_thorne._mix
+            c_root = mix(c_root, p["gold_mid"], .55)
+            c_mid = mix(c_mid, p["gold_light"], .55)
+            c_light = mix(c_light, p["quill_shine"], .5)
+            b_root = mix(b_root, p["gold_dark"], .5)
+            b_mid = mix(b_mid, p["gold_mid"], .5)
+            b_light = mix(b_light, p["gold_light"], .5)
+            f_root = mix(f_root, p["gold_light"], .5)
+            f_mid = mix(f_mid, p["quill_shine"], .5)
+            f_light = p["quill_shine"]
+            c_tip = p["quill_shine"]
 
         # ═══ 3. CREST LAPISAN BELAKANG (mengisi siluet kipas) ═══
         back = ((-28, -20, -2.70, 36, 5), (-32, -28, -2.50, 44, 6),
@@ -7001,44 +7028,170 @@ class _NS_thorne:
 
 
     # ===================================================================
+    # SKILL FX PRIMITIVES (pass mewah v2.1)
+    # ------------------------------------------------------------------
+    def _fx_scale(boss):
+        """Faktor skala efek skill.
+
+        Hero dirender ke canvas lalu dikecilkan ``_render_scale`` saat
+        di-blit -> efek (cincin, retakan, duri) ikut menyusut sampai
+        ~40%. Dengan faktor ini efek digambar lebih besar di canvas
+        sehingga ukurannya DI LAYAR setara boss asli (world-space).
+        Boss asli (tanpa _render_scale) = 1.0.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+                    core=None):
+        """Bintang kilat: spike panjang-pendek selang-seling + inti."""
+        if alpha <= 0 or size <= 0:
+            return
+        for k in range(spikes):
+            ang = rot + k * math.pi * 2 / spikes
+            ln = size * (1.0 if k % 2 == 0 else 0.55)
+            _NS_thorne._aaline(surface, (*color, alpha),
+                               (int(cx), int(cy)),
+                               (int(cx + math.cos(ang) * ln),
+                                int(cy + math.sin(ang) * ln * .8)),
+                               2 if k % 2 == 0 else 1)
+        if core:
+            _NS_thorne._aacircle(surface, (*core, alpha), (int(cx), int(cy)),
+                                 max(1, int(size * .3)))
+
+
+    def _chevron(surface, cx, cy, ang, size, color, alpha, width=3):
+        """Satu panah '>' menghadap arah ``ang`` (telegraph bergerak)."""
+        if alpha <= 0 or size <= 0:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        px, py = -sa, ca
+        tipx, tipy = cx + ca * size, cy + sa * size
+        for s in (-1, 1):
+            _NS_thorne._aaline(
+                surface, (*color, alpha),
+                (int(cx + px * s * size * .55 - ca * size * .5),
+                 int(cy + py * s * size * .55 - sa * size * .5)),
+                (int(tipx), int(tipy)), width)
+
+
+    def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
+                     segments=10, thick=3, span=0.6, squash=.92):
+        """Cincin putus-putus yang berputar (marker AOE / rune ring)."""
+        if alpha <= 0 or radius <= 1:
+            return
+        for i in range(segments):
+            a0 = phase + i * math.pi * 2 / segments
+            a1 = a0 + math.pi * 2 / segments * span
+            p0 = (cx + math.cos(a0) * radius, cy + math.sin(a0) * radius * squash)
+            p1 = (cx + math.cos(a1) * radius, cy + math.sin(a1) * radius * squash)
+            _NS_thorne._aaline(surface, (*color, alpha), p0, p1, thick)
+
+
+    def _jagged_crack(surface, cx, cy, ang, length, colors, alpha, seed,
+                      width=3):
+        """Retakan tanah berzigzag (3 segmen) dengan seam menyala."""
+        if alpha <= 0 or length <= 0:
+            return
+        x, y, a = cx, cy, ang
+        pts = [(x, y)]
+        for i in range(3):
+            a += (_NS_thorne._hash01(seed * 7 + i * 13) - .5) * .8
+            seg = length / 3.0
+            x += math.cos(a) * seg
+            y += math.sin(a) * seg * .55      # perspektif tanah
+            pts.append((x, y))
+        for i in range(len(pts) - 1):
+            _NS_thorne._aaline(surface, (*colors[0], alpha),
+                               pts[i], pts[i + 1], width + 2)
+            _NS_thorne._aaline(surface, (*colors[1], alpha),
+                               pts[i], pts[i + 1], width)
+
+
+    # ===================================================================
     # SKILL Q: VISCOUS NOSE
     # ===================================================================
     def _draw_viscous_ground(surface, boss, x, y, timer, phase):
-        """Line indicator."""
+        """Jalur asam mewah: band lebar 2-lapis, gelembung bergerak,
+        chevron berbaris ke target, dan splat marker di ujung."""
+        p = _NS_thorne.PALETTE
         tx, ty = _NS_thorne._target_position(boss, x, y)
-        # Dashed indicator (tegas: stroke gelap + garis goo terang)
-        for i in range(0, 20, 2):
-            t1 = i / 20
-            t2 = (i + 1) / 20
-            _skill_outlined_line(
-                surface,
-                (x + (tx - x) * t1, y + (ty - y) * t1 + 4),
-                (x + (tx - x) * t2, y + (ty - y) * t2 + 4),
-                3, _NS_thorne.PALETTE["goo_mid"], 150)
+        pulse = math.sin(phase * 5) * .5 + .5
+
+        # band asam lebar (fade in-out di sepanjang jalur)
+        steps = 16
+        for i in range(steps):
+            t0, t1 = i / steps, (i + 1) / steps
+            a0 = (x + (tx - x) * t0, y + (ty - y) * t0 + 6)
+            a1 = (x + (tx - x) * t1, y + (ty - y) * t1 + 6)
+            fade = int(95 + 70 * math.sin(t0 * math.pi))
+            _skill_outlined_line(surface, a0, a1, 8,
+                                 p["goo_mid"], fade)
+        # gelembung asam naik-turun sepanjang jalur
+        for i in range(6):
+            t = (i / 6 + phase * .22) % 1.0
+            bx = x + (tx - x) * t
+            by = y + (ty - y) * t + 6
+            r = 2 + int(2 * math.sin(phase * 6 + i) ** 2)
+            _NS_thorne._aacircle(surface, (*p["goo_dark"], 150), (int(bx), int(by)), r + 1)
+            _NS_thorne._aacircle(surface, (*p["goo_bright"], 170), (int(bx), int(by)), max(1, r - 1))
+        # chevron berbaris menuju target
+        ang = math.atan2(ty - y, tx - x)
+        for i in range(4):
+            t = (i / 4 + phase * .35) % 1.0
+            _NS_thorne._chevron(surface,
+                                x + (tx - x) * t, y + (ty - y) * t + 6,
+                                ang, 14, p["goo_bright"], 210, 3)
+        # splat marker di target: 2 cincin + crosshair
+        _skill_outlined_circle(surface, (tx, ty + 6), 27, 3, p["goo_light"],
+                               int(140 + 60 * pulse))
+        _skill_outlined_circle(surface, (tx, ty + 6), 15, 2, p["goo_bright"],
+                               int(170 + 60 * pulse))
+        for da in (0, math.pi / 2, math.pi, -math.pi / 2):
+            _NS_thorne._aaline(
+                surface, (*p["goo_light"], 160),
+                (int(tx + math.cos(da) * 9), int(ty + 6 + math.sin(da) * 6)),
+                (int(tx + math.cos(da) * 23), int(ty + 6 + math.sin(da) * 12)), 2)
 
 
     def _draw_viscous_charge(surface, boss, x, y, timer, phase):
-        """Charging goo at snout, then spits."""
+        """Charge goo di moncong: vortex 2 arc berlawanan + droplet orbit
+        + core 3-band; spit: bintang + ring + kipasan droplet."""
+        p = _NS_thorne.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 40))
         facing = boss.direction
-
         snout_x = x + 40 * facing
         snout_y = y - 36
 
         if progress < 0.4:
-            # Charging up
+            # Charging up: vortex
             t = progress / 0.4
-            radius = int(4 + t * 8)
-            pulse = math.sin(phase * 4) * 0.2 + 0.8
-            _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["goo_dark"], int(200 * pulse)),
+            radius = int(4 + t * 9)
+            pulse = math.sin(phase * 5) * .25 + .75
+            _NS_thorne._dashed_ring(surface, snout_x, snout_y, radius + 7,
+                                    p["goo_mid"], int(190 * pulse),
+                                    -phase * 2.4, segments=3, thick=2, span=.5)
+            _NS_thorne._dashed_ring(surface, snout_x, snout_y, radius + 12,
+                                    p["goo_light"], int(120 * pulse),
+                                    phase * 1.7, segments=4, thick=1, span=.45)
+            _NS_thorne._aacircle(surface, (*p["goo_dark"], int(210 * pulse)),
                       (snout_x, snout_y), radius + 3)
-            _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["goo_mid"], int(220 * pulse)),
+            _NS_thorne._aacircle(surface, (*p["goo_mid"], int(230 * pulse)),
                       (snout_x, snout_y), radius)
-            _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["goo_bright"], int(220 * pulse)),
+            _NS_thorne._aacircle(surface, (*p["goo_bright"], int(240 * pulse)),
                       (snout_x - 1, snout_y - 1), max(1, radius // 2))
-
+            # droplet orbit cepat
+            for i in range(4):
+                a = phase * 3.2 + i * math.pi / 2
+                dr = radius + 6
+                _NS_thorne._aacircle(surface, (*p["goo_light"], 200),
+                                     (int(snout_x + math.cos(a) * dr),
+                                      int(snout_y + math.sin(a) * dr * .7)), 2)
             # Drip below
-            _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["goo_mid"],
+            _NS_thorne._aacircle(surface, p["goo_mid"],
                       (snout_x, snout_y + radius + 3), 2)
 
         elif progress < 0.5:
@@ -7046,11 +7199,17 @@ class _NS_thorne:
             if not getattr(boss, "_th_goo_spawned", False):
                 _NS_thorne._spawn_goo(boss, x, y)
                 boss._th_goo_spawned = True
-            # Muzzle flash
-            _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["goo_bright"], 200),
-                      (snout_x, snout_y), 9)
-            _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["goo_light"], 240),
-                      (snout_x, snout_y), 5)
+            # Muzzle burst: bintang + ring + kipasan droplet
+            _NS_thorne._spark_star(surface, snout_x, snout_y, 17,
+                                   p["goo_bright"], 235, 6, rot=phase)
+            _NS_thorne._aacircle(surface, (*p["goo_light"], 210), (snout_x, snout_y), 9)
+            _NS_thorne._aacircle(surface, (*p["goo_mid"], 160), (snout_x, snout_y), 14, 2)
+            for i in range(7):
+                a = -1.1 + i * .34
+                dx = math.cos(a) * (12 + i % 2 * 5) * facing
+                dy = math.sin(a) * 10
+                _NS_thorne._aacircle(surface, (*p["goo_light"], 220),
+                                     (int(snout_x + dx), int(snout_y + dy)), 2)
         else:
             boss._th_goo_spawned = False
 
@@ -7059,144 +7218,301 @@ class _NS_thorne:
     # SKILL W: BRISTLEBACK (defensive spike aura)
     # ===================================================================
     def _draw_bristleback_effect(surface, boss, x, y, timer, phase):
-        """Golden aura + quills bursting outward."""
+        """BRISTLEBACK mewah: aura dasar + rune ring ganda berlawanan,
+        shockwave aktivasi, duri 2 baris (luar panjang + dalam pendek),
+        kubah shimmer, mote emas naik, glint orbit."""
+        p = _NS_thorne.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 100))
-        pulse = math.sin(phase * 2) * 0.3 + 0.7
+        pulse = math.sin(phase * 2.4) * .5 + .5
+        fs = _NS_thorne._fx_scale(boss)
+        cx, cy = x, y - 16
+        gy = y + 30
 
-        # Golden aura around body (cached)
+        # ── aura dasar (cached) paling belakang ──
         def build():
             aura = pygame.Surface((180, 180), pygame.SRCALPHA)
             for radius in range(74, 14, -4):
                 alpha = int((74 - radius) * 3)
-                pygame.draw.circle(aura, (*_NS_thorne.PALETTE["quill_shine"], min(255, alpha)),
+                pygame.draw.circle(aura, (*p["quill_shine"], min(255, alpha)),
                                    (90, 90), radius, 2)
             return aura
         aura = _NS_thorne._static("bristle_aura", build)
         faded = aura.copy()
-        faded.set_alpha(int(255 * pulse))
+        faded.set_alpha(int(160 + 60 * pulse))
         surface.blit(faded, (x - 90, y - 90))
 
-        # Extra quills bursting outward
-        for i in range(18):
-            angle = i * math.pi / 9 + phase * 0.3
-            base_r = 46
-            tip_r = 68 + int(math.sin(phase * 3 + i) * 4)
-            bx = x + math.cos(angle) * base_r
-            by = y - 14 + math.sin(angle) * base_r * 0.7
-            tx = x + math.cos(angle) * tip_r
-            ty = y - 14 + math.sin(angle) * tip_r * 0.7
+        # glow lantai emas
+        _NS_thorne._ellipse(surface, (*p["gold_dark"], int(70 + 40 * pulse)),
+                            (int(cx - 80 * fs), int(gy - 12),
+                             int(160 * fs), 26), 0)
 
-            _NS_thorne._aaline(surface, _NS_thorne.PALETTE["quill_darkest"], (bx, by), (tx, ty), 4)
-            _NS_thorne._aaline(surface, _NS_thorne.PALETTE["quill_dark"], (bx, by), (tx, ty), 2)
-            _NS_thorne._aaline(surface, _NS_thorne.PALETTE["quill_light"], (bx, by), (tx, ty), 1)
-            _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["quill_shine"], (int(tx), int(ty)), 2)
-            _NS_thorne._aacircle(surface, _NS_thorne.PALETTE["quill_tip"], (int(tx), int(ty)), 1)
+        # ── rune ring ganda, berputar berlawanan arah ──
+        _NS_thorne._dashed_ring(surface, cx, cy, int(78 * fs), p["gold_mid"],
+                                int(120 + 60 * pulse), phase * .8,
+                                segments=10, thick=3, span=.58)
+        _NS_thorne._dashed_ring(surface, cx, cy, int(62 * fs), p["quill_shine"],
+                                int(90 + 50 * pulse), -phase * 1.1 + .3,
+                                segments=8, thick=2, span=.5)
 
-        # Spark bursts on activation (first frames)
-        if progress < 0.3:
-            t = progress / 0.3
-            burst_r = int(t * 58)
-            alpha = int(200 * (1 - t))
-            _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_shine"], alpha),
-                      (x, y - 14), burst_r, 3)
+        # ── duri 2 baris berdenyut (luar 18 panjang, dalam 12 pendek) ──
+        for ri, (n, base_r, tip_r0, wdt) in enumerate((
+                (18, int(48 * fs), int(66 * fs), 4),
+                (12, int(34 * fs), int(47 * fs), 3))):
+            ro = 0.0 if ri == 0 else math.pi / n
+            for i in range(n):
+                ang = ro + i * math.pi * 2 / n + \
+                    phase * (0.25 if ri == 0 else -0.35)
+                tip_r = tip_r0 + int(math.sin(phase * 3 + i * 1.7 + ri) * 4 * fs)
+                bx = cx + math.cos(ang) * base_r
+                by = cy + math.sin(ang) * base_r * .72
+                tx = cx + math.cos(ang) * tip_r
+                ty = cy + math.sin(ang) * tip_r * .72
+                _NS_thorne._aaline(surface, p["gold_dark"], (bx, by), (tx, ty), wdt + 2)
+                _NS_thorne._aaline(surface, p["quill_mid"], (bx, by), (tx, ty), wdt)
+                _NS_thorne._aaline(surface, p["quill_light"],
+                                   (bx, by),
+                                   (tx - (tx - bx) * .25, ty - (ty - by) * .25),
+                                   max(1, wdt - 2))
+                _NS_thorne._aacircle(surface, p["quill_shine"], (int(tx), int(ty)), 2)
+                if (i + ri) % 3 == 0:
+                    _NS_thorne._aacircle(surface, p["white"], (int(tx), int(ty)), 1)
+
+        # ── kubah shimmer: 2 arc atas berkelip ──
+        for k, rr in enumerate((int(58 * fs), int(50 * fs))):
+            a0, a1 = math.pi * 1.08 + k * .1, math.pi * 1.92 - k * .1
+            steps = 10
+            for j in range(steps):
+                aa0 = a0 + (a1 - a0) * j / steps
+                aa1 = a0 + (a1 - a0) * (j + 1) / steps
+                flick = .5 + .5 * math.sin(phase * 6 + j * 1.3 + k * 2)
+                _NS_thorne._aaline(
+                    surface, (*p["quill_shine"], int(90 + 70 * flick)),
+                    (cx + math.cos(aa0) * rr, cy + math.sin(aa0) * rr * .9),
+                    (cx + math.cos(aa1) * rr, cy + math.sin(aa1) * rr * .9), 2)
+
+        # ── mote emas naik + glint orbit ──
+        for i in range(8):
+            t = (phase * .32 + i / 8) % 1.0
+            mx = cx + math.sin(i * 2.4) * 60 * fs
+            my = cy + 30 - t * 90 * fs
+            _NS_thorne._aacircle(surface, (*p["gold_light"], int(190 * (1 - t))),
+                                 (int(mx), int(my)), 2 if i % 2 else 1)
+        for i in range(5):
+            a = phase * 1.6 + i * math.pi * 2 / 5
+            gr = 70 * fs + math.sin(phase * 2 + i) * 6
+            _NS_thorne._aacircle(surface, (*p["white"], 200),
+                                 (int(cx + math.cos(a) * gr),
+                                  int(cy + math.sin(a) * gr * .6)), 1)
+
+        # ── aktivasi: shockwave ganda + bintang ──
+        if progress < 0.22:
+            t = progress / 0.22
+            for k, rmax in ((0, 90), (1, 66)):
+                r = int((20 + t * rmax) * fs)
+                alpha = int((230 if k == 0 else 160) * (1 - t))
+                _skill_outlined_circle(
+                    surface, (cx, cy), r, 3,
+                    p["quill_shine"] if k == 0 else p["gold_light"], alpha)
+            _NS_thorne._spark_star(surface, cx, cy, int(26 * (1 - t * .5)),
+                                   p["quill_shine"], int(240 * (1 - t)),
+                                   8, rot=phase, core=p["white"])
 
 
     # ===================================================================
     # SKILL E: QUILL SPRAY
     # ===================================================================
     def _draw_quill_spray_ground(surface, boss, x, y, timer, phase):
-        """Ground marker — radial AOE ring (range 100 dunia)."""
+        """Telegraph Quill Spray mewah: ring jangkauan + tick berputar +
+        ring KONVERGEN mengecil ke pusat + chevron kardinal + orb."""
         p = _NS_thorne.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 60))
-        pulse = math.sin(phase * 4) * 0.3 + 0.7
+        pulse = math.sin(phase * 4.5) * .5 + .5
         # Radius gameplay dikonversi ke px canvas lewat _render_scale
         # (hero) supaya telegraph pas dengan jangkauan asli.
         scale = getattr(boss, "_render_scale", None)
         rng = 100 / float(scale) if scale else 100.0
-        _skill_outlined_circle(surface, (x, y), int(rng), 3,
-                               p["quill_shine"], int(120 * pulse))
-        _skill_outlined_circle(surface, (x, y), int(42 + 48 * progress), 2,
-                               p["quill_shine"], int(180 * pulse))
-        _NS_thorne._aacircle(surface, p["quill_shine"], (x, y), 5)
+
+        # ring jangkauan utama (outline tebal)
+        _skill_outlined_circle(surface, (x, y), int(rng), 4,
+                               p["quill_shine"], int(110 + 50 * pulse))
+        # tick ring berputar di dalamnya
+        _NS_thorne._dashed_ring(surface, x, y, int(rng * .9), p["quill_light"],
+                                int(130 + 60 * pulse), phase * 1.1,
+                                segments=12, thick=3, span=.3)
+        # ring konvergen: mengecil ke pusat saat mendekati tembakan
+        conv = rng * (1 - progress * .82)
+        _skill_outlined_circle(surface, (x, y), max(12, int(conv)), 3,
+                               p["quill_shine"], int(160 + 70 * pulse))
+        # chevron kardinal menunjuk ke dalam
+        for da in (0, math.pi / 2, math.pi, math.pi * 1.5):
+            _NS_thorne._chevron(
+                surface,
+                x + math.cos(da) * rng * .62,
+                y + math.sin(da) * rng * .55,
+                da + math.pi, max(8, int(rng * .1)), p["quill_light"], 190, 3)
+        # orb pusat berdenyut + crosshair kecil
+        _NS_thorne._aacircle(surface, (*p["quill_shine"], int(200 + 40 * pulse)),
+                             (x, y), int(5 + 3 * pulse))
+        for da in (0, math.pi / 2):
+            _NS_thorne._aaline(surface, (*p["quill_light"], 150),
+                               (x - math.cos(da) * 12, y - math.sin(da) * 8),
+                               (x + math.cos(da) * 12, y + math.sin(da) * 8), 1)
 
 
     def _handle_quill_spray_skill(surface, boss, x, y, timer, phase):
-        """Fires quills in bursts."""
+        """Rentetan quill: streak konvergen saat menyiap, muzzle star +
+        ring di punggung setiap voli, glow + dashed ring selang-seling."""
+        p = _NS_thorne.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 60))
+        fs = _NS_thorne._fx_scale(boss)
+        facing = getattr(boss, "direction", 1)
+        backx = x - 16 * facing
+        backy = y - 34
 
-        # Preparation - charging up (quills stand up more)
-        if progress < 0.3:
-            pulse = math.sin(phase * 4) * 0.3 + 0.7
-            _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_shine"], int(150 * pulse)),
-                      (x, y - 34), int(36 * pulse), 3)
-
-        # Fire quills at intervals
         if not hasattr(boss, "_th_spray_last"):
             boss._th_spray_last = -100
-
-        if 0.3 < progress < 0.9:
-            if timer % 6 == 0 and boss._th_spray_last != timer:
-                _NS_thorne._spawn_quill_spray(boss, x, y)
-                boss._th_spray_last = timer
-
+        fired = (0.3 < progress < 0.9 and timer % 6 == 0
+                 and boss._th_spray_last != timer)
+        if fired:
+            _NS_thorne._spawn_quill_spray(boss, x, y)
+            boss._th_spray_last = timer
+            # muzzle burst di punggung
+            _NS_thorne._spark_star(surface, backx, backy, int(15 * fs),
+                                   p["quill_shine"], 235, 7, rot=phase)
+            _skill_outlined_circle(surface, (backx, backy), int(22 * fs), 2,
+                                   p["quill_light"], 180)
         if progress < 0.2:
             boss._th_spray_last = -100
 
-        # Body glow while spraying
+        # persiapan: streak konvergen ke punggung + glow denyut
+        if progress < 0.35:
+            pulse = math.sin(phase * 5) * .5 + .5
+            for i in range(6):
+                a = i * math.pi * 2 / 6 + phase * .9
+                r0 = int((40 + 14 * pulse) * fs)
+                r1 = int(16 * fs)
+                _NS_thorne._aaline(
+                    surface, (*p["quill_light"], 120),
+                    (backx + math.cos(a) * r0, backy + math.sin(a) * r0 * .7),
+                    (backx + math.cos(a) * r1, backy + math.sin(a) * r1 * .7), 2)
+            _NS_thorne._aacircle(surface, (*p["quill_shine"], int(160 * pulse)),
+                                 (backx, backy), int((20 + 8 * pulse) * fs), 2)
+
+        # selama rentetan: body glow + dashed ring berlawanan jarum jam
         if 0.3 < progress < 0.9:
             alpha = int(150 + math.sin(phase * 5) * 60)
             alpha = max(0, min(255, alpha))
-            _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_light"], alpha),
-                      (x, y - 20), 42, 3)
+            _NS_thorne._aacircle(surface, (*p["quill_light"], alpha),
+                                 (x, y - 20), int(44 * fs), 3)
+            _NS_thorne._dashed_ring(surface, x, y - 20, int(56 * fs),
+                                    p["quill_shine"], 140, -phase * 2.2,
+                                    segments=8, thick=2, span=.4)
 
 
     # ===================================================================
     # SKILL R: WARPATH (self-buff with rage aura)
     # ===================================================================
     def _draw_warpath_effect(surface, boss, x, y, timer, phase):
-        """Rage aura + shaking effect."""
+        """WARPATH ultimate mewah: aktivasi pilar cahaya + shockwave ganda,
+        retakan magma radial, cincin aura 3-lapis, mahkota api 2-ring,
+        kolom bara, wisp spiral, dan denyut pusat."""
+        p = _NS_thorne.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 120))
-        pulse = math.sin(phase * 3) * 0.3 + 0.7
+        pulse = math.sin(phase * 3) * .5 + .5
+        fs = _NS_thorne._fx_scale(boss)
+        cx, cy = x, y - 16
+        gy = y + 42
 
-        # Rage circles
+        # ── AKTIVASI: pilar cahaya + shockwave ganda + bintang ──
+        if progress < 0.18:
+            t = progress / 0.18
+            # 100*fs aman di dalam canvas cache (margin _canvas_size_for)
+            top = int(cy - min(100 * fs, 240) * (0.6 + 0.4 * (1 - t)))
+            for wd, col, al in ((30, p["rage_dark"], 110),
+                                (18, p["rage_mid"], 150),
+                                (8, p["rage_light"], 200)):
+                _NS_thorne._aaline(surface, (*col, int(al * (1 - t))),
+                                   (cx, top), (cx, cy), wd)
+            _NS_thorne._aaline(surface, (*p["quill_shine"], int(200 * (1 - t))),
+                               (cx, top), (cx, cy), 3)
+            for k, rmax in ((0, 120), (1, 86)):
+                r = int((16 + t * rmax) * fs)
+                _skill_outlined_circle(
+                    surface, (cx, cy), r, 3,
+                    p["rage_bright"] if k == 0 else p["quill_shine"],
+                    int((220 if k == 0 else 150) * (1 - t)))
+            _NS_thorne._spark_star(surface, cx, cy, int(30 * (1 - t * .4)),
+                                   p["quill_shine"], int(235 * (1 - t)),
+                                   8, rot=.3, core=p["white"])
+
+        # ── retakan magma radial (7 crack zigzag + seam inti terang) ──
+        for i in range(7):
+            ang = i * math.pi * 2 / 7 + .35
+            _NS_thorne._jagged_crack(surface, cx, gy, ang,
+                                     int((46 + (i % 3) * 14) * fs),
+                                     (p["rage_dark"], p["rage_mid"]), 140,
+                                     seed=i + 3, width=3)
+        seam = int(120 + 110 * pulse)
+        for i in range(0, 7, 3):
+            ang = i * math.pi * 2 / 7 + .35
+            _NS_thorne._jagged_crack(surface, cx, gy, ang,
+                                     int((30 + (i % 3) * 12) * fs),
+                                     (p["rage_mid"], p["rage_bright"]), seam,
+                                     seed=i + 3, width=1)
+        # glow lantai hangat
+        _NS_thorne._ellipse(surface, (*p["rage_dark"], 95),
+                            (int(cx - 90 * fs), int(gy - 12),
+                             int(180 * fs), 24), 0)
+
+        # ── cincin aura 3-lapis + ring emas kontras ──
         for r in range(3):
-            radius = int(44 + r * 11 + math.sin(phase * 2 + r) * 5)
-            alpha = int((150 - r * 40) * pulse)
+            radius = int((44 + r * 12 + math.sin(phase * 2 + r) * 5) * fs)
+            alpha = int((160 - r * 40) * (0.7 + 0.3 * pulse))
             if alpha > 0:
-                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["rage_light"], alpha),
-                          (x, y - 14), radius, 2)
+                _NS_thorne._aacircle(surface, (*p["rage_light"], alpha),
+                                     (cx, cy), radius, 2)
+        _NS_thorne._aacircle(surface, (*p["quill_shine"], int(60 + 40 * pulse)),
+                             (cx, cy), int(34 * fs), 2)
 
-        # Rising rage flames
-        for i in range(10):
-            angle = i * math.pi / 5 + phase * 0.4
-            r = 40
-            px = x + int(math.cos(angle) * r)
-            py = y - 14 + int(math.sin(angle) * r * 0.7)
+        # ── mahkota api 2 ring (10 api luar + 7 api dalam, core emas) ──
+        for ring_i, (n, r0, scale_flame) in enumerate(((10, 44, 1.0), (7, 30, .72))):
+            for i in range(n):
+                ang = i * math.pi * 2 / n + phase * (.5 if ring_i else .8)
+                r = r0 * fs
+                px = cx + math.cos(ang) * r
+                py = cy + math.sin(ang) * r * .68
+                for h in range(3):
+                    fy = py - h * 7 - int((phase * 26 + i * 3) % 20)
+                    alpha = int(210 * (1 - h / 3))
+                    rad = max(1, int((4 - h) * scale_flame))
+                    _NS_thorne._aacircle(surface, (*p["rage_bright"], alpha),
+                                         (int(px), int(fy)), rad)
+                    _NS_thorne._aacircle(surface, (*p["quill_shine"], alpha),
+                                         (int(px), int(fy)), max(1, 2 - h // 2))
 
-            # Flame going up
-            for h in range(3):
-                fy = py - h * 6 - int((phase * 24 + i * 3) % 18)
-                alpha = int(200 * (1 - h / 3))
-                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["rage_bright"], alpha),
-                          (px, fy), 4 - h)
-                _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_shine"], alpha),
-                          (px, fy), max(1, 2 - h))
+        # ── kolom bara naik (sway per-ember) ──
+        for i in range(8):
+            t = (phase * .3 + i / 8) % 1.0
+            ex = cx + math.sin(i * 2.1 + phase) * (14 + i * 5) * fs * .5
+            ey = cy + 24 - t * 110 * fs
+            _NS_thorne._aacircle(surface, (*p["rage_bright"], int(200 * (1 - t))),
+                                 (int(ex), int(ey)), 2 if i % 2 else 1)
 
-        # Ground impact rings
-        for r in range(2):
-            radius = int(30 + r * 20 + (phase * 18 + r * 24) % 40)
-            alpha = int(120 * (1 - (radius - 30) / 50))
-            alpha = max(0, alpha)
-            if alpha > 0:
-                _NS_thorne._ellipse(surface, (*_NS_thorne.PALETTE["rage_mid"], alpha),
-                         (x - radius, y + 58 - radius // 3,
-                          radius * 2, radius * 2 // 3), 2)
+        # ── wisp spiral 2 lengan ──
+        for arm in range(2):
+            for j in range(9):
+                a = phase * 2.2 + arm * math.pi + j * .38
+                rr = (16 + j * 5) * fs
+                al = int(150 * (1 - j / 9))
+                _NS_thorne._aacircle(surface, (*p["rage_light"], al),
+                                     (int(cx + math.cos(a) * rr),
+                                      int(cy + math.sin(a) * rr * .55)), 2)
 
-        # Central pulse
-        _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["rage_bright"], int(180 * pulse)),
-                  (x, y - 16), int(22 * pulse))
-        _NS_thorne._aacircle(surface, (*_NS_thorne.PALETTE["quill_shine"], int(220 * pulse)),
-                  (x, y - 16), int(11 * pulse))
+        # ── denyut pusat ──
+        _NS_thorne._aacircle(surface, (*p["rage_bright"], int(180 * pulse)),
+                             (cx, cy), int((20 + 5 * pulse) * fs))
+        _NS_thorne._aacircle(surface, (*p["quill_shine"], int(220 * pulse)),
+                             (cx, cy), int((9 + 3 * pulse) * fs))
 
 
     # ===================================================================
