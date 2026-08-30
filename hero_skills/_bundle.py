@@ -113,7 +113,9 @@ class BaseSkill:
                 damage = int(self.hero.skill_damage * damage_multiplier)
                 # source=hero supaya damage skill ikut tercatat di
                 # hero.damage_dealt (command ATTACK DAMAGE DEALER).
-                e.take_damage(damage, self.hero.team, source=self.hero)
+                e.take_damage(damage, self.hero.team, source=self.hero,
+                          school=getattr(self.hero,
+                                     "dmg_school", None))
                 hit_count += 1
         return hit_count
 
@@ -937,10 +939,12 @@ class _NS_boss_hero_skills:
             }.get(skill_key, 1.0)
 
             # Q/W = single target, E/R = AOE
+            _school = getattr(h, "dmg_school", None)
             if skill_key in ('q', 'w'):
                 if h.target and h.target.alive:
                     h.target.take_damage(
-                        int(h.skill_damage * mult), h.team)
+                        int(h.skill_damage * mult), h.team,
+                        source=h, school=_school)
             else:
                 # AOE
                 aoe_range = 150 if skill_key == 'e' else 200
@@ -948,7 +952,8 @@ class _NS_boss_hero_skills:
                     dist = math.hypot(e.x - h.x, e.y - h.y)
                     if dist <= aoe_range:
                         e.take_damage(
-                            int(h.skill_damage * mult), h.team)
+                            int(h.skill_damage * mult), h.team,
+                            source=h, school=_school)
 
         # ═══════════════════════════════════════
         # PUBLIC CAST METHODS (dispatch ke _generic_cast)
