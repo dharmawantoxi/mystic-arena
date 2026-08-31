@@ -239,7 +239,9 @@ def test_skill_fx_are_world_space():
 # (renderer, label) yang sudah dinaikkan ke standar Thorne v2 + FX v2.1.
 def _family_namespaces():
     from bosses.level2 import _NS_gorath, _NS_razak
-    return (("gorath", _NS_gorath), ("razak", _NS_razak))
+    from bosses.level3 import _NS_ancient_apparition
+    return (("gorath", _NS_gorath), ("razak", _NS_razak),
+            ("ancient_apparition", _NS_ancient_apparition))
 
 
 def test_family_shares_fx_vocabulary():
@@ -379,6 +381,103 @@ def test_razak_skill_fx_are_world_space():
     assert n > 100, f"R: ring 180 dunia tidak world-space ({n}/180)"
 
 
+def test_ancient_apparition_skill_fx_are_world_space():
+    """Telegraph Ancient Apparition digambar di radius DUNIA, bukan px canvas.
+
+    AA: Q=80 (target), R=80 (target) px dunia. Pada _render_scale=0.5 ring
+    harus muncul di 2x radius tersebut (160 px) dalam px canvas.
+    """
+    import math as _m
+    from types import SimpleNamespace as _S
+
+    from bosses.level3 import _NS_ancient_apparition as AA
+
+    def probe(skill, timer, W=1000):
+        surf = pygame.Surface((W, W), pygame.SRCALPHA)
+        cx = cy = W // 2
+        b = _S(boss_type="ancient_apparition", boss_class="true", x=float(cx),
+               y=float(cy), direction=1, facing=1, pulse=1.3, timer=0,
+               attack_cooldown=50, active_skill=skill,
+               active_skill_timer=timer,
+               target=_S(x=float(cx + 95), y=float(cy - 20), alive=True),
+               hurt_flash_timer=0, alive=True, radius=40, range=150,
+               _render_scale=0.5)
+        AA.draw_ancient_apparition(surf, b, cx, cy)
+        return surf, cx, cy, b
+
+    def hits(surf, r_px, cx, cy, tol=4):
+        n = 0
+        for a in range(0, 360, 2):
+            ca, sa = _m.cos(_m.radians(a)), _m.sin(_m.radians(a))
+            for dr in range(-tol, tol + 1):
+                x, y = int(cx + ca * (r_px + dr)), int(cy + sa * (r_px + dr))
+                if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
+                        and surf.get_at((x, y)).a > 30:
+                    n += 1
+                    break
+        return n
+
+    # Q: telegraph 80 dunia di TARGET -> 160 px di canvas
+    s, cx, cy, b = probe("q", 30)
+    tx, ty = AA._target_position(b, cx, cy)
+    n = hits(s, 160, tx, ty)
+    assert n > 90, f"Q: ring 80 dunia tidak world-space ({n}/180)"
+
+    # R: telegraph 80 dunia di TARGET -> 160 px di canvas
+    s, cx, cy, b = probe("r", 70)
+    tx, ty = AA._target_position(b, cx, cy)
+    n = hits(s, 160, tx, ty)
+    assert n > 90, f"R: ring 80 dunia tidak world-space ({n}/180)"
+
+
+def test_ancient_apparition_skill_fx_have_three_phases():
+    """Tiap skill Ancient Apparition punya 3 tahap terbaca (aktivasi/steady/akhir)."""
+    from types import SimpleNamespace as _S
+
+    from bosses.level3 import _NS_ancient_apparition as AA
+
+    for skill, dur in AA.SKILL_DUR.items():
+        sigs = set()
+        for timer in (dur - 4, int(dur * 0.6), 6):
+            surf = pygame.Surface((620, 620), pygame.SRCALPHA)
+            b = _S(boss_type="ancient_apparition", boss_class="true", x=310.0, y=310.0,
+                   direction=1, facing=1, pulse=1.3, timer=0,
+                   attack_cooldown=50, active_skill=skill,
+                   active_skill_timer=timer,
+                   target=_S(x=430.0, y=290.0, alive=True),
+                   hurt_flash_timer=0, alive=True, radius=40, range=150)
+            AA.draw_ancient_apparition(surf, b, 310, 310)
+            sigs.add(pygame.image.tobytes(surf, "RGBA"))
+        assert len(sigs) == 3, \
+            f"ancient_apparition {skill}: hanya {len(sigs)}/3 tahap FX yang berbeda"
+
+
+def test_ancient_apparition_keeps_public_names():
+    """Upgrade v2 tidak boleh memutus nama publik lama _NS_ancient_apparition."""
+    from bosses.level3 import _NS_ancient_apparition as AA
+
+    legacy = ("PALETTE", "HAS_AACIRCLE", "_clamp", "_aacircle", "_aaline",
+              "_poly", "_ellipse", "_rect", "_target_position",
+              "IceShardProjectile", "IceBoltProjectile", "FrostBeam",
+              "_detect_moving", "_update_attack_anim", "_manage_projectiles",
+              "_spawn_ice_shard", "_spawn_ice_bolt", "_spawn_frost_beam",
+              "draw_apparition", "draw_ancient_apparition", "draw_boss",
+              "_draw_aa_idle", "_draw_aa_walk", "_draw_aa_attack",
+              "_draw_aa_casting", "_draw_aa_body", "_draw_aa_body_raw",
+              "_masterwork_finish", "_draw_ice_skirt", "_draw_ice_torso",
+              "_draw_aa_head", "_draw_ice_crown", "_draw_idle_arms",
+              "_draw_casting_arms", "_draw_attack_arms",
+              "_draw_ice_arm_segment", "_draw_ice_claw",
+              "_draw_body_sparkles", "_draw_ice_wisps", "_draw_shadow",
+              "_draw_frost_aura", "_draw_ground_frost", "_draw_cast_flash",
+              "_draw_ice_vortex_ground", "_draw_ice_vortex",
+              "_draw_cold_feet_ground", "_draw_cold_feet_spikes",
+              "_handle_skill_projectiles", "_draw_snowflake",
+              "_draw_ice_shard", "_draw_frost_crystal_spike")
+    missing = [n for n in legacy if not hasattr(AA, n)]
+    assert not missing, f"ancient_apparition: nama publik hilang -> {missing}"
+
+
 def test_razak_skill_fx_have_three_phases():
     """Tiap skill Razak punya 3 tahap terbaca (aktivasi/steady/akhir)."""
     from types import SimpleNamespace as _S
@@ -508,10 +607,13 @@ if __name__ == "__main__":
     test_family_shares_fx_vocabulary()
     test_family_skill_fx_are_world_space()
     test_razak_skill_fx_are_world_space()
+    test_ancient_apparition_skill_fx_are_world_space()
     test_family_skill_fx_have_three_phases()
     test_razak_skill_fx_have_three_phases()
+    test_ancient_apparition_skill_fx_have_three_phases()
     test_family_keeps_public_names()
     test_razak_keeps_public_names()
+    test_ancient_apparition_keeps_public_names()
     test_family_rigs_are_procedural()
     print("OK - Grimjaw masterwork v2: rig 1.5x, blade pose, portrait LOD, "
           "Q/W/E/R world-space, outline, dan 12 frame animasi tervalidasi")
@@ -519,3 +621,5 @@ if __name__ == "__main__":
           "world-space W150/E85/R190, 3 tahap per skill, nama publik utuh")
     print("OK - paritas keluarga (razak v2): telegraph world-space "
           "Q75/W95/E80/R180, 3 tahap per skill, nama publik utuh")
+    print("OK - paritas keluarga (ancient_apparition v2): telegraph world-space "
+          "Q80/R80, 3 tahap per skill, nama publik utuh")
