@@ -1,4 +1,4 @@
-# Morgath v2 — Renderer Pixel-Art Masterwork + v2.1 Skill FX
+# Morgath v2 — Renderer Pixel-Art Masterwork + v2.1 Skill FX + v2.2 Bolt
 
 > Rewrite penuh namespace `_NS_morgath` di `bosses/level1.py`.
 > Tetap **100% prosedural** — tidak ada PNG / sprite-sheet / `image.load`.
@@ -101,6 +101,38 @@ khusus + orb/keystone/gauntlet menyala):
   badan di kedua jalur, jadi mask pengukuran pipeline melihat badan
   (aturan `_BODY_ALPHA_THRESHOLD`), bukan lingkaran aura.
 
+## Basic attack — Lightning Bolt v2.2 (mewah)
+
+Beam dasar bukan lagi garis putus-putus sederhana. `_draw_lightning_
+projectile` di-rewrite penuh dengan **8 lapis elemen**, semuanya
+prosedural & deterministik per-frame (belum ada PNG apa pun):
+
+1. **Chord petir tepi-ke-tepi** — polyline bertekuk di tengah tiap
+   segmen; tekukan morph hidup tiap frame (2 oktaf sinus + pulse),
+   3 lapis pita (arc_dark → arc_mid → arc_light) dengan lebar menirus
+   5→1 px menuju kepala + **offset tegak lurus antar lapis** (kesan
+   heliks listrik), inti arc_hot menyala di 40% ujung dekat kepala.
+2. **Ranting letik menyimpang** — 3 cabang `_jagged_line` 2-lapis
+   dengan sisi selang-seling per-frame.
+3. **Trail after-image berlubang** — 3 ghost ring (isi gelap + rim
+   arc_mid) mengikuti kepala bolt.
+4. **Mote bara listrik** — 4 piksel percik deterministik berjatuhan
+   dari lintasan.
+5. **Bloom radial** — sprite glow 4-band dibangun sekali via
+   `_static()` (cache miss saja), di-blit dengan `set_alpha` +
+   restore di kepala & telapak.
+6. **Kepala bolt** — flare 5 lapis (arc_darkest → arc_hot) + inti
+   putih + 2 paku cahaya silang berputar + **glint orbit 3 titik**
+   (dulu 2 statis).
+7. **Percik pelepasan** — bintang `_spark_star` 6-spike di telapak
+   saat bolt lahir (t < 0.25).
+8. **Benturan penuh** — ring ganda + bintang 8-spike + 8 garis
+   radial + 5 serpihan deterministik (t > 0.88).
+
+Kontrak tetap: lahir dari `MOR_MUZZLE` rig di semua skala render,
+nol piksel sebelum progress 0.55, clamp ke canvas cache, dan budget
+~0.6 ms untuk frame impact penuh (jauh di bawah 3.5 ms).
+
 ## Validasi
 
 - `tools/test_morgath_masterwork.py` — 11 tes: prosedural murni,
@@ -110,11 +142,13 @@ khusus + orb/keystone/gauntlet menyala):
 - `tools/_audit_morgath_v2.py` — audit terukur: ukuran layar final,
   keunikan frame, timing, presisi ring E 90 px dunia pada fs ∈ {1.0,
   0.45} (180/180 sample), clone R ±60 px, pool W di target, clamp
-  canvas, before/after vs snapshot v1.
+  canvas, before/after vs snapshot v1, plus **blok bolt v2.2**
+  (lahir dari telapak, 5 band arc, kekayaan di luar sumbu, 8 frame
+  morph unik, impact ring/spike, budget ≤ 3.5 ms).
 - Regresi lintas: `test_hero_lighting`, `test_hero_hd_render`,
   `test_swing_anim`, `test_renderer_projectiles_not_baked`,
   `test_gornak_masterwork` (kontrak keluarga), `test_gale_morgath`.
 - Preview: `docs/morgath_v2_review.png`, `morgath_v2_anim_strip.png`,
   `morgath_v2_ingame.png`, `morgath_v2_skills.png`,
-  `morgath_v2_before_after.png` (generator:
+  `morgath_v2_before_after.png`, `morgath_v2_bolt.png` (generator:
   `tools/_shot_morgath_v2.py`).

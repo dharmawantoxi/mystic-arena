@@ -258,6 +258,117 @@ ok_all &= check(M.SKILL_DUR == {"q": 50, "w": 40, "e": 90, "r": 60},
                 "durasi visual = active_skill_timer gameplay",
                 f"{M.SKILL_DUR}")
 
+
+# ── 6b. bolt basic attack v2.2 (mewah, terukur) ──────────────────
+def _bolt_frame(prog, canvas=(460, 300), scale=1.0):
+    cw, ch = canvas
+    s = pygame.Surface((cw, ch), pygame.SRCALPHA)
+    b = probe(200.0, 200.0)
+    b._mor_attack_dir = 1
+    b._mor_attack_target = (180, 12)
+    b.target = _NS(x=380.0, y=212.0, alive=True)
+    b._render_scale = scale
+    M._draw_lightning_projectile(s, b, int(b.x), int(b.y), prog)
+    return s
+
+
+# (a) sebelum 0.55: nol piksel; sesudahnya: menempel di telapak.
+s0 = _bolt_frame(0.30)
+ok_all &= check(s0.get_bounding_rect(min_alpha=8).width == 0,
+                "bolt: kosong sebelum progress 0.55")
+s1 = _bolt_frame(0.75)
+rect = s1.get_bounding_rect(min_alpha=8)
+mdx, mdy = M._muzzle_offset_world()
+muz = (200 + mdx, 200 + mdy)
+dist = max(0.0, math.hypot(max(rect.left - muz[0], 0,
+                               muz[0] - rect.right),
+                           max(rect.top - muz[1], 0,
+                               muz[1] - rect.bottom)))
+ok_all &= check(rect.width > 30 and dist <= 4,
+                "bolt: lahir dari telapak rig (muzzle)",
+                f"bbox {rect.w}x{rect.h}, jarak {dist:.1f}px")
+
+# (b) kekayaan band: 5 band arc + inti terang hadir dalam 1 frame.
+def _pix(s):
+    return {(s.get_at((x, y)).r, s.get_at((x, y)).g,
+             s.get_at((x, y)).b)
+            for y in range(s.get_height())
+            for x in range(s.get_width()) if s.get_at((x, y)).a >= 60}
+px75 = _pix(s1)
+band_hits = 0
+for k in ("arc_darkest", "arc_dark", "arc_mid", "arc_light", "arc_hot"):
+    p = M.PALETTE[k]
+    if any(abs(c[0] - p[0]) <= 8 and abs(c[1] - p[1]) <= 8 and
+           abs(c[2] - p[2]) <= 8 for c in px75):
+        band_hits += 1
+ok_all &= check(band_hits >= 5, "bolt: 5 band hue-shift arc hadir",
+                f"{band_hits}/5")
+
+# (c) ranting & elemen di luar koridor sumbu (bukan garis polos).
+def _off_axis(s):
+    sx, sy = 200 + mdx, 200 + mdy
+    tx, ty = 380.0, 212.0
+    dx, dy = tx - sx, ty - sy
+    Ln = math.hypot(dx, dy)
+    nx, ny = -dy / Ln, dx / Ln
+    n = 0
+    for x in range(s.get_width()):
+        for y in range(s.get_height()):
+            c = s.get_at((x, y))
+            if c.a < 60:
+                continue
+            t = ((x - sx) * dx + (y - sy) * dy) / (Ln * Ln)
+            if 0.0 <= t <= 1.0:
+                d = abs((x - sx) * nx + (y - sy) * ny)
+                if d > 9 and c.b > c.r:
+                    n += 1
+    return n
+ok_all &= check(_off_axis(s1) >= 60,
+                "bolt: ranting/trail menyimpang dari sumbu (bukan garis polos)",
+                f"{_off_axis(s1)} px")
+
+# (d) morph hidup: 8 frame progres semuanya unik.
+sigs = [pygame.image.tostring(_bolt_frame(p), "RGBA")
+        for p in (0.58, 0.65, 0.72, 0.80, 0.88, 0.93, 0.97, 1.0)]
+uniq = len({s for s in sigs}) == len(sigs)
+ok_all &= check(uniq, "bolt: morph deterministik per-frame (8 frame unik)")
+
+# (e) benturan: ring ganda + bintang 8 + garis radial pada t>0.88.
+s9 = _bolt_frame(0.97)
+ring_hits = 0
+for ang in range(0, 360, 3):
+    hit = False
+    for rr in (21, 24):
+        x = int(380 + math.cos(math.radians(ang)) * rr)
+        y = int(212 + math.sin(math.radians(ang)) * rr * 0.8)
+        if 0 <= x < 460 and 0 <= y < 300 and s9.get_at((x, y)).a >= 40:
+            hit = True
+            break
+    ring_hits += 1 if hit else 0
+spike_hits = 0
+for i in range(8):
+    ang = i * math.pi / 4 + 0.5
+    hit = False
+    for rr in range(6, 22):
+        x = int(380 + math.cos(ang) * rr)
+        y = int(212 + math.sin(ang) * rr * 0.8)
+        if 0 <= x < 460 and 0 <= y < 300 and s9.get_at((x, y)).a >= 90:
+            hit = True
+            break
+    spike_hits += 1 if hit else 0
+ok_all &= check(ring_hits >= 70 and spike_hits >= 6,
+                "bolt: impact ring ganda + bintang 8 + radial",
+                f"ring {ring_hits}/120, spike {spike_hits}/8")
+
+# (f) budget: frame termahal (impact penuh) di bawah 3.5 ms.
+best = 1e9
+for _ in range(20):
+    t0 = time.perf_counter()
+    _bolt_frame(0.97)
+    best = min(best, (time.perf_counter() - t0) * 1000)
+ok_all &= check(best <= 3.5, "bolt: render <= 3.5 ms (frame impact)",
+                f"{best:.2f} ms")
+
 # ── 7. before/after vs v1 ────────────────────────────────────────
 surf_v1 = pygame.Surface((360, 360), pygame.SRCALPHA)
 surf_v2 = pygame.Surface((360, 360), pygame.SRCALPHA)

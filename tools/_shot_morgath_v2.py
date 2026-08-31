@@ -7,6 +7,7 @@ Menghasilkan 5 sheet di docs/:
   - docs/morgath_v2_ingame.png         (mini boss 1x + lane hero final)
   - docs/morgath_v2_skills.png         (Q/W/E/R x 3 tahap)
   - docs/morgath_v2_before_after.png   (v1 vs v2 + metrik terukur)
+  - docs/morgath_v2_bolt.png           (strip bolt v2.2 + zoom flight/impact)
 
 Jalankan:  /home/user/.venv/bin/python tools/_shot_morgath_v2.py
 """
@@ -290,6 +291,55 @@ def shot_before_after():
         surf, os.path.join(ROOT, "docs", "morgath_v2_before_after.png"))
 
 
+# ═══ 6. BOLT v2.2 (basic attack projectile mewah) ════════════════
+def shot_bolt():
+    W, H = 1680, 620
+    surf = pygame.Surface((W, H))
+    surf.fill(BG)
+    label(surf, "MORGATH v2.2 - LIGHTNING BOLT MEWAH (BASIC ATTACK)",
+          (24, 12), ACCENT, 26)
+
+    def bolt_frame(prog):
+        s = pygame.Surface((300, 150), pygame.SRCALPHA)
+        b = probe(60, 100)
+        b._mor_attack_dir = 1
+        b._mor_attack_target = (200, -30)
+        b.target = SimpleNamespace(x=260.0, y=70.0, alive=True)
+        M._draw_lightning_projectile(s, b, 60, 100, prog)
+        return s
+
+    phases = ((0.58, "SPAWN"), (0.65, "FLY"), (0.72, "FLY"),
+              (0.80, "FLY"), (0.88, "FLY"), (0.93, "CHARGE"),
+              (0.97, "IMPACT"), (1.0, "BURST"))
+    for i, (prog, pname) in enumerate(phases):
+        x = 24 + i * 204
+        y = 56
+        panel(surf, (x, y, 196, 176))
+        zoomed = pygame.transform.smoothscale(bolt_frame(prog), (196, 98))
+        blit_alpha(surf, zoomed, (x, y + 6), 1.0)
+        label(surf, f"progress={prog}", (x + 6, y + 116), NOTE, 14)
+        label(surf, pname, (x + 6, y + 140), SUB, 15)
+    # dua panel zoom besar: flight & impact
+    for ci, (prog, ttl) in enumerate((
+            (0.75, "FLIGHT: chord heliks + ranting + trail hollow + "
+                   "mote + bloom + glint orbit"),
+            (0.97, "IMPACT: ring ganda + bintang 8 + garis radial + "
+                   "serpihan"))):
+        x = 24 + ci * 600
+        y = 252
+        panel(surf, (x, y, 580, 300), ttl)
+        z = pygame.transform.smoothscale(bolt_frame(prog), (580, 290))
+        blit_alpha(surf, z, (x, y + 5), 1.0)
+    label(surf, "chord berliku morph tiap frame (lebar menirus + offset "
+                "heliks antar lapis) | ranting letik menyimpang | "
+                "after-image hollow | mote bara | bloom radial cached | "
+                "glint orbit 3 titik | percik pelepasan di telapak | "
+                "benturan penuh",
+          (24, 566), NOTE, 16)
+    pygame.image.save(
+        surf, os.path.join(ROOT, "docs", "morgath_v2_bolt.png"))
+
+
 if __name__ == "__main__":
     os.makedirs(os.path.join(ROOT, "docs"), exist_ok=True)
     shot_review()
@@ -302,3 +352,5 @@ if __name__ == "__main__":
     print("OK morgath_v2_skills.png")
     shot_before_after()
     print("OK morgath_v2_before_after.png")
+    shot_bolt()
+    print("OK morgath_v2_bolt.png")
