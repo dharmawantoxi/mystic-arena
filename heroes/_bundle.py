@@ -14522,3 +14522,16 @@ class _NS_zephyr:
     # ===================================================================
     def draw_boss(surface, boss, x, y):
         _NS_zephyr.draw_zephyr(surface, boss, x, y)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# ANCIENT APPARITION (Level 3 True Boss & Playable Hero)
+# Alias namespace & entry points dari bosses/level3.py
+# ═══════════════════════════════════════════════════════════════════
+from bosses.level3 import (
+    _NS_ancient_apparition,
+    draw_ancient_apparition,
+    draw_ancient_apparition as draw_apparition,
+)
+_NS_ancientapparition = _NS_ancient_apparition
+
