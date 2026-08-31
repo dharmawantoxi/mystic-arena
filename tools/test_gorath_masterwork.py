@@ -296,6 +296,81 @@ def test_activation_shockwave_window():
     assert "_draw_shockwave" in src and "age < 12" in src
 
 
+# ── 5b. kualitas visual FX tanah (anti "programmer art") ─────────
+def test_ground_fx_use_decals_not_vector_strokes():
+    """Telegraph tanah HARUS memakai decal ber-falloff, bukan stroke.
+
+    Bug asli v2: 25 `_ring` (lingkaran sempurna) ditumpuk dengan 9
+    `_dashed_ring` ber-`squash` 0.42-0.6 -> DUA perspektif tanah di
+    bidang yang sama, semuanya stroke 1-4 px bertepi keras. Itu yang
+    membuatnya terbaca "basic". Test ini mengunci perbaikannya.
+    """
+    src = open(os.path.join(ROOT, "bosses", "level2.py")).read()
+    seg = src[src.index("class _NS_gorath"):src.index("class _NS_alchemist")]
+
+    # tidak ada lagi pemanggilan stroke ring di dalam namespace gorath
+    assert "_NS_gorath._ring(" not in seg, \
+        "cincin stroke datar dipakai lagi - pakai _ground_ring"
+    assert "_NS_gorath._dashed_ring(" not in seg, \
+        "dashed ring squash dipakai lagi - pakai _rune_ring"
+
+    # primitif decal tersedia & ter-cache
+    for helper in ("_ground_ring", "_rune_ring", "_zone_fill",
+                   "_ground_scorch", "_glow", "_decal", "_blit_decal"):
+        assert callable(getattr(G, helper, None)), f"helper {helper} hilang"
+
+    # semua FX tanah memakai SATU bidang (lingkaran penuh) - tidak ada
+    # squash yang menyelundup kembali ke jalur decal
+    assert "squash=.42" not in seg and "squash=0.42" not in seg, \
+        "perspektif elips bercampur lagi dengan lingkaran AOE"
+
+
+def test_ground_ring_has_soft_falloff():
+    """Cincin AOE harus bergradien, bukan stroke bertepi keras."""
+    surf = pygame.Surface((300, 300), pygame.SRCALPHA)
+    G._ground_ring(surf, 150, 150, 90, G.PALETTE["blood_mid"],
+                   G.PALETTE["blood_hot"], 220, thickness=3, softness=8)
+    # sampling radial menembus cincin: alpha harus naik lalu turun
+    # bertahap (>=4 nilai berbeda), bukan 0 -> penuh -> 0.
+    vals = []
+    for r in range(70, 111):
+        c = surf.get_at((150 + r, 150))
+        vals.append(c.a)
+    assert max(vals) > 40, "cincin tidak tergambar"
+    distinct = len({v // 12 for v in vals if v > 0})
+    assert distinct >= 4, \
+        f"tepi cincin terlalu keras (hanya {distinct} tingkat alpha)"
+
+
+def test_zone_fill_is_edge_weighted():
+    """Wash zona pekat di TEPI dan bening di tengah (badan tetap terbaca)."""
+    surf = pygame.Surface((260, 260), pygame.SRCALPHA)
+    G._zone_fill(surf, 130, 130, 100, G.PALETTE["blood_dark"], 200)
+    center = surf.get_at((130, 130)).a
+    edge = surf.get_at((130 + 88, 130)).a
+    assert edge > center + 20, \
+        f"zona tidak edge-weighted (tengah {center}, tepi {edge})"
+
+
+def test_decals_are_cached():
+    """Decal dibangun sekali lalu dipakai ulang (bukan per frame)."""
+    G._DECAL_CACHE.clear()
+    G._DECAL_ORDER.clear()
+    surf = pygame.Surface((400, 400), pygame.SRCALPHA)
+    for _ in range(6):
+        G._ground_ring(surf, 200, 200, 120, G.PALETTE["blood_mid"],
+                       G.PALETTE["blood_hot"], 200)
+        G._zone_fill(surf, 200, 200, 120, G.PALETTE["blood_dark"], 150)
+    # 6 kali panggil -> tetap 2 entri cache
+    assert len(G._DECAL_CACHE) == 2, \
+        f"decal dibangun ulang tiap frame ({len(G._DECAL_CACHE)} entri)"
+    # LRU menjaga memori tetap terbatas
+    for r in range(10, 400, 8):
+        G._ground_ring(surf, 200, 200, r, G.PALETTE["blood_mid"],
+                       G.PALETTE["blood_hot"], 200)
+    assert len(G._DECAL_CACHE) <= 48, "cache decal tidak dibatasi"
+
+
 # ── 6. cache statis + budget render ──────────────────────────────
 def test_static_surfaces_are_cached():
     G._STATIC_SURFACES.clear()
@@ -373,10 +448,15 @@ if __name__ == "__main__":
     test_skill_fx_visible_outside_body()
     test_each_skill_has_three_phases()
     test_activation_shockwave_window()
+    test_ground_fx_use_decals_not_vector_strokes()
+    test_ground_ring_has_soft_falloff()
+    test_zone_fill_is_edge_weighted()
+    test_decals_are_cached()
     test_static_surfaces_are_cached()
     test_render_budget()
     test_fx_clamped_inside_canvas()
     test_all_modes_render()
     print("OK - Gorath masterwork v2: rig native 1.5x (ukuran layar aman), "
           "pixel-art discipline, animasi 7-keyframe + solver plume, FX skill "
-          "world-space 3 tahap (W150/E85/R190), cache statis, budget 3.5 ms")
+          "world-space 3 tahap (W150/E85/R190), decal ber-falloff "
+          "(bukan stroke), cache statis, budget 3.5 ms")

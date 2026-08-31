@@ -105,3 +105,53 @@ dan skill, serta primitif `_clamp/_aacircle/_aaline/_poly/_ellipse/_rect`.
 - `tools/test_grimjaw_masterwork.py` — paritas kosakata FX antar renderer v2.
 - `tools/_gorath_v1_snapshot.py` — snapshot renderer v1 untuk sheet before/after.
 - Preview: `docs/gorath_v2_{review,anim_strip,ingame,skills,before_after}.png`.
+
+## Revisi FX tanah: decal ber-falloff (menggantikan cincin stroke)
+
+Pass pertama menggambar telegraph sebagai **stroke vektor**: 25 pemanggilan
+`_ring` (lingkaran sempurna, `pygame.draw.circle` lebar 1-4 px) ditumpuk
+dengan 9 `_dashed_ring` ber-`squash` 0.42-0.6. Tiga masalah:
+
+1. **Dua perspektif di bidang tanah yang sama.** Lingkaran penuh
+   (`squash` 1.0) dan elips pipih (`squash` .42) digambar bertumpuk di
+   titik yang sama, sehingga tidak ada satu pun bidang lantai yang
+   konsisten.
+2. **Tepi keras, nilai rata.** Stroke lebar tetap tidak punya gradien,
+   jadi terbaca sebagai garis UI yang melayang, bukan cahaya di lantai.
+3. **Zona kosong.** Hanya garis batas yang digambar; area di dalamnya
+   tidak pernah dibaca sebagai "daerah berbahaya".
+
+### Perbaikan
+
+Radius gameplay itu euclidean (`dist <= 150`), jadi **lingkaran penuh**
+adalah bidang yang benar dan elips `squash` yang dibuang. Semua FX tanah
+sekarang memakai satu bidang.
+
+| Primitif baru | Fungsi |
+| --- | --- |
+| `_ground_ring` | Batas AOE ber-gradien; alpha mengikuti kurva kuadratik terhadap radius nominal, blit additive |
+| `_rune_ring` | Cincin busur berputar; segmen meruncing di ujung, diputar lewat `transform.rotate` (geometri tidak dibangun ulang) |
+| `_zone_fill` | Wash zona **edge-weighted**: pekat di tepi, bening di tengah -> batas jelas tapi karakter tetap terbaca |
+| `_ground_scorch` | Alas tanah gosong ber-tepi gumpalan lembut; membuat telegraph menempel di lantai |
+| `_glow` | Gradien radial ter-cache (mengganti tumpukan `_aacircle`) |
+| `_decal` / `_blit_decal` | Cache LRU 48 entri; radius di-`_quantize` ke kelipatan 6-10 px supaya cache nyangkut |
+
+Komposisi juga dirapikan: cincin konvergen sekarang hanya muncul di paruh
+akhir cast (bukan sepanjang durasi), R memakai satu rune ring bukan dua
+yang berlawanan arah, dan rim kolam darah digambar **elips** karena
+mengikuti bentuk kolam/bayangan - bukan bidang AOE.
+
+### Hasil
+
+Decal dibangun sekali lalu di-blit, jadi lebih cepat dari stroke per-frame:
+
+| Pose | Sebelum | Sesudah |
+| --- | --- | --- |
+| idle / walk / attack | 1.89 / 1.90 / 1.92 ms | 1.44 / 1.54 / 1.49 ms |
+| q / w / e / r | 2.75 / 2.83 / 2.47 / 3.27 ms | 2.24 / 2.86 / 2.19 / **2.85** ms |
+
+Radius telegraph tetap eksak (W 150 / E 85 / R 190 world px). Empat test
+baru di `tools/test_gorath_masterwork.py` mengunci perbaikan ini:
+`test_ground_fx_use_decals_not_vector_strokes`,
+`test_ground_ring_has_soft_falloff`, `test_zone_fill_is_edge_weighted`,
+`test_decals_are_cached`.

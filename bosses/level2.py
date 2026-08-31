@@ -3940,6 +3940,271 @@ class _NS_gorath:
             p1 = (cx + math.cos(a1) * radius, cy + math.sin(a1) * radius * squash)
             _NS_gorath._aaline(surface, (*color, alpha), p0, p1, thick)
 
+    # -------------------------------------------------------------------
+    # DECAL TANAH (pengganti cincin stroke)
+    # -------------------------------------------------------------------
+    # Cincin stroke 1-4 px terbaca "basic" karena tiga alasan: tepinya
+    # keras, nilainya rata sepanjang keliling, dan bidangnya campur aduk
+    # (lingkaran sempurna ditumpuk elips squash .42 -> dua perspektif di
+    # tanah yang sama). Penggantinya: DECAL yang dibangun sekali per
+    # (radius, gaya) lalu di-blit + di-set_alpha per frame.
+    #
+    # Radius gameplay itu euclidean (dist <= 150), jadi bidang decal
+    # LINGKARAN PENUH - satu perspektif konsisten untuk semua FX tanah.
+
+    _DECAL_CACHE = {}
+    _DECAL_ORDER = []
+
+    def _decal(key, size, builder):
+        """Surface decal ter-cache; LRU sederhana supaya memori terbatas."""
+        hit = _NS_gorath._DECAL_CACHE.get(key)
+        if hit is not None:
+            return hit
+        surf = builder(size)
+        _NS_gorath._DECAL_CACHE[key] = surf
+        _NS_gorath._DECAL_ORDER.append(key)
+        if len(_NS_gorath._DECAL_ORDER) > 48:
+            old = _NS_gorath._DECAL_ORDER.pop(0)
+            _NS_gorath._DECAL_CACHE.pop(old, None)
+        return surf
+
+    def _blit_decal(surface, decal, cx, cy, alpha=255, add=False):
+        """Blit decal ter-pusat di (cx, cy) dengan alpha & mode opsional."""
+        alpha = _NS_gorath._alpha(alpha)
+        if alpha <= 0:
+            return
+        w, h = decal.get_size()
+        decal.set_alpha(alpha)
+        flags = pygame.BLEND_RGBA_ADD if add else 0
+        surface.blit(decal, (int(cx) - w // 2, int(cy) - h // 2),
+                     special_flags=flags)
+        decal.set_alpha(255)
+
+    def _quantize(v, step=6):
+        """Bulatkan radius ke kelipatan `step` supaya decal cache nyangkut.
+
+        Tanpa ini radius yang berubah tiap frame (ring konvergen) akan
+        membangun surface baru terus-menerus.
+        """
+        return max(step, int(round(float(v) / step) * step))
+
+    def _build_falloff_ring(size, color, core, thickness, softness,
+                            inner_glow):
+        """Cincin ber-gradien: inti terang -> falloff halus ke luar.
+
+        Dibangun dari banyak lingkaran 1 px dengan alpha mengikuti kurva
+        jarak ke radius nominal, jadi tepinya lembut dan nilainya
+        bertingkat - bukan stroke datar.
+        """
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r_nom = c - softness - 2
+        if r_nom < 2:
+            return surf
+        lo = max(1, int(r_nom - thickness - softness))
+        hi = int(r_nom + softness)
+        for r in range(lo, hi + 1):
+            d = abs(r - r_nom)
+            if d <= thickness * 0.5:
+                t = 1.0
+            else:
+                t = max(0.0, 1.0 - (d - thickness * 0.5) / max(1.0, softness))
+                t = t * t                       # falloff kuadratik
+            if t <= 0.003:
+                continue
+            # inti hanya muncul di puncak kurva; additive blending sudah
+            # menaikkan luminansi, jadi campuran ke `core` ditahan.
+            col = _NS_gorath._mix(color, core, min(1.0, max(0.0, t - 0.45)
+                                                   * 1.5))
+            pygame.draw.circle(surf, (*col, int(200 * t)), (c, c), r, 1)
+        if inner_glow > 0:
+            for r in range(lo, 0, -2):
+                t = (r / float(max(1, lo))) ** 2
+                a = int(inner_glow * t)
+                if a > 1:
+                    pygame.draw.circle(surf, (*color, a), (c, c), r, 2)
+        return surf
+
+    def _ground_ring(surface, cx, cy, radius, color, core, alpha,
+                     thickness=3, softness=7, inner_glow=0, add=True):
+        """Cincin AOE kelas produksi: decal ber-falloff, additive.
+
+        Menggantikan stroke `_ring`. Radius di-quantize supaya decal
+        dipakai ulang; blit additive membuatnya membara di atas terrain
+        gelap tanpa terlihat seperti garis vektor.
+        """
+        radius = _NS_gorath._quantize(radius, 6)
+        if radius < 6:
+            return
+        pad = softness + thickness + 3
+        size = radius * 2 + pad * 2
+        key = ("fring", radius, color, core, thickness, softness, inner_glow)
+        decal = _NS_gorath._decal(
+            key, size,
+            lambda n: _NS_gorath._build_falloff_ring(
+                n, color, core, thickness, softness, inner_glow))
+        _NS_gorath._blit_decal(surface, decal, cx, cy, alpha, add=add)
+
+    def _build_arc_ring(size, color, core, segments, span, thickness,
+                        softness, taper):
+        """Cincin busur: tiap segmen meruncing di kedua ujung.
+
+        Dibangun sebagai poligon lengkung (bukan garis lurus antar dua
+        titik), sehingga mengikuti kelengkungan cincin dan ujungnya
+        menipis - kesan 'rune terbakar', bukan strip putus-putus.
+        """
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r_nom = c - softness - thickness - 2
+        if r_nom < 3:
+            return surf
+        step = math.tau / segments
+        for i in range(segments):
+            a0 = i * step
+            a1 = a0 + step * span
+            steps = max(3, int(span * 14))
+            outer, inner = [], []
+            for k in range(steps + 1):
+                t = k / steps
+                ang = a0 + (a1 - a0) * t
+                # meruncing: tebal penuh di tengah busur, tipis di ujung
+                w = thickness * (1.0 - taper * abs(t - 0.5) * 2) ** 1.5
+                w = max(0.6, w)
+                ca, sa = math.cos(ang), math.sin(ang)
+                outer.append((c + ca * (r_nom + w), c + sa * (r_nom + w)))
+                inner.append((c + ca * (r_nom - w), c + sa * (r_nom - w)))
+            poly = outer + inner[::-1]
+            # satu halo tipis di belakang, lalu isi segmen.
+            halo = []
+            for (px, py) in poly:
+                dx, dy = px - c, py - c
+                halo.append((c + dx * 1.012, c + dy * 1.012))
+            pygame.draw.polygon(surf, (*color, 70), halo)
+            pygame.draw.polygon(surf, (*color, 190), poly)
+            # kilau inti hanya di sepertiga tengah busur (bukan seluruhnya)
+            n = len(outer)
+            q0, q1 = int(n * 0.34), int(n * 0.66)
+            if q1 > q0 + 1:
+                mid = outer[q0:q1] + inner[q0:q1][::-1]
+                pygame.draw.polygon(surf, (*core, 205), mid)
+        return surf
+
+    def _rune_ring(surface, cx, cy, radius, color, core, alpha, spin,
+                   segments=12, span=0.42, thickness=3.0, taper=0.85):
+        """Cincin busur berputar (telegraph 'rune terbakar').
+
+        Decal dibangun sekali lalu DIPUTAR lewat transform.rotate, jadi
+        rotasi mulus tanpa membangun ulang geometri tiap frame.
+        """
+        radius = _NS_gorath._quantize(radius, 8)
+        if radius < 8:
+            return
+        pad = int(thickness) + 8
+        size = radius * 2 + pad * 2
+        key = ("arcring", radius, color, core, segments, round(span, 2),
+               round(thickness, 1), round(taper, 2))
+        decal = _NS_gorath._decal(
+            key, size,
+            lambda n: _NS_gorath._build_arc_ring(
+                n, color, core, segments, span, thickness, 6, taper))
+        deg = -math.degrees(spin) % (360.0 / max(1, segments))
+        rot = pygame.transform.rotate(decal, deg)
+        _NS_gorath._blit_decal(surface, rot, cx, cy, alpha, add=True)
+
+    def _build_scorch(size, color, edge, seed):
+        """Noda gosong tanah: gumpalan lembut ber-tepi tidak beraturan.
+
+        Dipakai sebagai alas semua telegraph supaya efek 'menempel' di
+        tanah, bukan melayang seperti overlay UI.
+        """
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r = c - 2
+        # tubuh gosong: lingkaran ber-alpha menurun
+        for i in range(r, 0, -2):
+            t = 1.0 - i / float(r)
+            a = int(120 * (t ** 1.6))
+            if a > 1:
+                col = _NS_gorath._mix(edge, color, t)
+                pygame.draw.circle(surf, (*col, a), (c, c), i)
+        # tepi tidak beraturan: tiap gumpalan JUGA ber-falloff, kalau
+        # tidak, lingkaran keras terbaca sebagai kotak gelap di layar.
+        for i in range(20):
+            ang = _NS_gorath._hash01(seed * 31 + i) * math.tau
+            rr = r * (0.80 + 0.16 * _NS_gorath._hash01(seed * 17 + i))
+            br = max(3, int(r * 0.15 * (0.5 +
+                     _NS_gorath._hash01(seed * 7 + i))))
+            bx = int(c + math.cos(ang) * rr)
+            by = int(c + math.sin(ang) * rr)
+            for k in range(br, 0, -1):
+                a = int(70 * (1.0 - k / float(br)) ** 1.5)
+                if a > 1:
+                    pygame.draw.circle(surf, (*edge, a), (bx, by), k)
+        return surf
+
+    def _ground_scorch(surface, cx, cy, radius, color, edge, alpha, seed=1):
+        """Alas gosong ter-cache di bawah telegraph."""
+        radius = _NS_gorath._quantize(radius, 10)
+        if radius < 8:
+            return
+        size = radius * 2 + 6
+        key = ("scorch", radius, color, edge, seed)
+        decal = _NS_gorath._decal(
+            key, size,
+            lambda n: _NS_gorath._build_scorch(n, color, edge, seed))
+        _NS_gorath._blit_decal(surface, decal, cx, cy, alpha)
+
+    def _build_zone_fill(size, color, edge_bias):
+        """Isi zona AOE: paling pekat DI DEKAT TEPI, memudar ke tengah.
+
+        Pola ini (bukan glow tengah) yang dipakai game aksi modern:
+        pemain membaca BATAS zona, sementara tengahnya tetap bening
+        supaya karakter & pertarungan tidak tertutup.
+        """
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r = c - 1
+        for i in range(r, 0, -1):
+            t = i / float(r)
+            # kurva: naik tajam mendekati tepi
+            v = t ** edge_bias
+            a = int(115 * v)
+            if a > 1:
+                pygame.draw.circle(surf, (*color, a), (c, c), i)
+        return surf
+
+    def _zone_fill(surface, cx, cy, radius, color, alpha, edge_bias=3.2):
+        """Wash zona AOE ter-cache (additive lembut)."""
+        radius = _NS_gorath._quantize(radius, 8)
+        if radius < 6:
+            return
+        decal = _NS_gorath._decal(
+            ("zone", radius, color, round(edge_bias, 1)), radius * 2,
+            lambda n: _NS_gorath._build_zone_fill(n, color, edge_bias))
+        _NS_gorath._blit_decal(surface, decal, cx, cy, alpha, add=True)
+
+    def _build_radial_grad(size, color):
+        """Gradien radial lembut (glow / pilar bawah)."""
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        for i in range(c, 0, -1):
+            t = 1.0 - i / float(c)
+            a = int(190 * (t ** 2.2))
+            if a > 1:
+                pygame.draw.circle(surf, (*color, a), (c, c), i)
+        return surf
+
+    def _glow(surface, cx, cy, radius, color, alpha):
+        """Glow radial additive ter-cache (pengganti tumpukan aacircle)."""
+        radius = _NS_gorath._quantize(radius, 8)
+        if radius < 4:
+            return
+        size = radius * 2
+        decal = _NS_gorath._decal(
+            ("glow", radius, color), size,
+            lambda n: _NS_gorath._build_radial_grad(n, color))
+        _NS_gorath._blit_decal(surface, decal, cx, cy, alpha, add=True)
+
     def _jagged_crack(surface, cx, cy, ang, length, colors, alpha, seed,
                       width=3):
         """Retakan tanah berzigzag (3 segmen) dengan seam menyala."""
@@ -4279,20 +4544,24 @@ class _NS_gorath:
         t = age / float(total)
         if t >= 1.0:
             return
+        P = _NS_gorath.PALETTE
         ease = 1 - (1 - t) ** 2
         r = int((14 + ease * 58) * fs)
         a = _NS_gorath._alpha(235 * (1 - t))
-        pygame.draw.ellipse(surface, (*c1, a),
-                            (x - r, y - r // 3, r * 2, max(3, r * 2 // 3)), 2)
-        pygame.draw.ellipse(surface, (*c2, a),
-                            (x - r // 2, y - r // 6, max(2, r),
-                             max(2, r // 3)), 1)
-        ri = max(3, r // 2)
-        _NS_gorath._aacircle(surface, (*c1, int(a * 0.8)),
-                             (x, y - (r // 6)), ri)
-        _NS_gorath._spark_star(surface, x, y - r // 8, int(20 * fs),
+        # muka gelombang: cincin ber-falloff yang MENIPIS saat mengembang
+        _NS_gorath._ground_ring(surface, x, y, r, c1, c2, a,
+                                thickness=max(1.5, 5 - ease * 3.5),
+                                softness=10)
+        # kilau susulan di belakang muka gelombang
+        _NS_gorath._ground_ring(surface, x, y, int(r * 0.72), c2, P["white"],
+                                int(a * 0.55),
+                                thickness=max(1.0, 3 - ease * 2), softness=7)
+        # kilatan pusat yang cepat padam
+        _NS_gorath._glow(surface, x, y, max(6, int(r * 0.5)), c1,
+                         int(a * 0.75 * (1 - ease * 0.6)))
+        _NS_gorath._spark_star(surface, x, y, int(20 * fs),
                                c2, a, spikes=8, rot=t * 2.2,
-                               core=_NS_gorath.PALETTE["white"])
+                               core=P["white"])
 
     # ===================================================================
     # POSE MODES  (jangkar tanah = +GROUND_DY; ground FX mengikuti)
@@ -5380,10 +5649,18 @@ class _NS_gorath:
                                  (sx + int(math.cos(angle) * 5), sy - 5), 1)
 
         if active_skill:
+            # Rim mengikuti bentuk KOLAM (elips), bukan lingkaran AOE.
+            # Bayangan/kolam karakter memang digambar pipih; telegraph
+            # jangkauan yang lingkaran penuh adalah bidang berbeda.
             color = (P["blood_glow"] if active_skill in ("q", "r")
                      else P["blood_bright"])
-            _NS_gorath._ellipse(surface, (*color, int(140 * pulse)),
-                                (x - 56, y - 18, 112, 36), 2)
+            a = int(150 * pulse)
+            for k, (grow, al) in enumerate(((6, .35), (3, .65), (0, 1.0))):
+                _NS_gorath._ellipse(
+                    surface, (*_NS_gorath._mix(P["blood_mid"], color, al),
+                              int(a * al)),
+                    (x - 56 - grow, y - 19 - grow // 2,
+                     112 + grow * 2, 38 + grow), 2)
 
     # ===================================================================
     # MELEE SWING FX (smear sabit 3 lapis + IMPACT)
@@ -5437,9 +5714,12 @@ class _NS_gorath:
         alpha = _NS_gorath._alpha(235 * intensity)
         radius = max(3, int((10 + intensity * 26) * k))
 
-        _NS_gorath._aacircle(surface, (*P["blood_dark"], alpha // 2),
-                             (ix, iy), radius + 5)
-        _NS_gorath._ring(surface, (ix, iy), radius, 3, P["blood_bright"], alpha)
+        _NS_gorath._glow(surface, ix, iy, radius + 6, P["blood_dark"],
+                         int(alpha * 0.7))
+        _NS_gorath._ground_ring(surface, ix, iy, radius, P["blood_mid"],
+                                P["blood_hot"], alpha,
+                                thickness=max(1.5, 3.5 - intensity * 1.5),
+                                softness=7)
         _NS_gorath._spark_star(surface, ix, iy, int(radius * 1.25),
                                P["blood_hot"], alpha, spikes=8,
                                rot=progress * 3, core=P["white"])
@@ -5476,14 +5756,20 @@ class _NS_gorath:
         # seiring buff naik supaya 3 tahap (aktivasi/steady/telegraph)
         # terbaca jelas walau ini skill self-buff.
         grow = 0.55 + 0.45 * progress
-        _NS_gorath._dashed_ring(surface, x, gy, int(46 * fs * grow),
-                                P["blood_bright"], int(150 + 60 * pulse),
-                                phase * 1.3 + progress * 2.4,
-                                segments=12, thick=3, span=.45, squash=.42)
-        _NS_gorath._dashed_ring(surface, x, gy, int(34 * fs * grow),
-                                P["blood_glow"], int(130 + 60 * pulse),
-                                -phase * 1.8 - progress * 3.1,
-                                segments=8, thick=2, span=.5, squash=.42)
+        # alas gosong: buff "membakar" tanah di bawah kaki
+        _NS_gorath._ground_scorch(surface, x, gy, int(50 * fs * grow),
+                                  P["blood_darkest"], P["shadow_deep"],
+                                  int(110 + 60 * progress), seed=6)
+        _NS_gorath._rune_ring(surface, x, gy, int(46 * fs * grow),
+                              P["blood_bright"], P["blood_glow"],
+                              int(160 + 60 * pulse),
+                              phase * 1.3 + progress * 2.4,
+                              segments=12, span=.46, thickness=3.2)
+        _NS_gorath._rune_ring(surface, x, gy, int(34 * fs * grow),
+                              P["blood_glow"], P["white"],
+                              int(140 + 60 * pulse),
+                              -phase * 1.8 - progress * 3.1,
+                              segments=8, span=.5, thickness=2.4)
         # chevron berbaris ke dalam (telegraph "buff mengunci")
         for k in range(4):
             da = k * math.pi / 2 + progress * 1.1
@@ -5499,10 +5785,9 @@ class _NS_gorath:
                                      int((30 + (i % 3) * 10) * fs * grow),
                                      (P["blood_darkest"], P["blood_mid"]),
                                      130 + int(60 * pulse), seed=i + 2, width=2)
-        # glow lantai hangat
-        _NS_gorath._ellipse(surface, (*P["blood_dark"], int(80 + 40 * pulse)),
-                            (int(x - 60 * fs * grow), gy - 11,
-                             int(120 * fs * grow), 22), 0)
+        # glow lantai hangat (radial ter-cache, bukan elips datar)
+        _NS_gorath._glow(surface, x, gy, int(56 * fs * grow),
+                         P["blood_dark"], int(90 + 50 * pulse))
 
     def _draw_bloodrage(surface, boss, x, y, timer, phase):
         """Q foreground: pilar aktivasi, mahkota api darah, bara, glint."""
@@ -5527,9 +5812,13 @@ class _NS_gorath:
                                (cx, top), (cx, cy), 2)
             for k, rmax in ((0, 120), (1, 86)):
                 r = int((16 + t * rmax) * fs)
-                _NS_gorath._ring(surface, (cx, cy), r, 3,
-                                 P["blood_hot"] if k == 0 else P["blood_light"],
-                                 int((220 if k == 0 else 150) * (1 - t)))
+                # gelombang menipis saat mengembang (thickness ikut t)
+                _NS_gorath._ground_ring(
+                    surface, cx, cy, r,
+                    P["blood_mid"] if k == 0 else P["blood_bright"],
+                    P["blood_hot"] if k == 0 else P["white"],
+                    int((225 if k == 0 else 155) * (1 - t)),
+                    thickness=max(1.5, 4 - t * 2.5), softness=9)
             _NS_gorath._spark_star(surface, cx, cy, int(32 * (1 - t * .4)),
                                    P["blood_glow"], int(235 * (1 - t)),
                                    8, rot=.3, core=P["white"])
@@ -5550,13 +5839,12 @@ class _NS_gorath:
                     _NS_gorath._aacircle(surface, (*P["blood_hot"], alpha),
                                          (int(px), int(fy)), max(1, 2 - h // 2))
 
-        # ── STEADY: aura berlapis 3 cincin ──
-        for r in range(3):
-            radius = int((30 + r * 11 + math.sin(phase * 2 + r) * 4) * fs)
-            alpha = _NS_gorath._alpha((160 - r * 42) * (0.7 + 0.3 * pulse))
-            if alpha > 0:
-                _NS_gorath._aacircle(surface, (*P["blood_glow"], alpha),
-                                     (cx, cy), radius, 2)
+        # ── STEADY: aura berlapis (glow radial, bukan 3 stroke cincin) ──
+        breathe = math.sin(phase * 2) * 4
+        _NS_gorath._glow(surface, cx, cy, int((46 + breathe) * fs),
+                         P["blood_dark"], int(120 * (0.7 + 0.3 * pulse)))
+        _NS_gorath._glow(surface, cx, cy, int((30 + breathe * .6) * fs),
+                         P["blood_glow"], int(150 * (0.7 + 0.3 * pulse)))
 
         # ── STEADY: kolom bara naik (sway per-ember) ──
         for i in range(10):
@@ -5576,11 +5864,11 @@ class _NS_gorath:
                                    P["blood_light"], 190, spikes=4,
                                    rot=a, core=P["white"])
 
-        # ── denyut pusat ──
-        _NS_gorath._aacircle(surface, (*P["blood_bright"], int(170 * pulse)),
-                             (cx, cy + 6), int((16 + 5 * pulse) * fs))
-        _NS_gorath._aacircle(surface, (*P["blood_glow"], int(220 * pulse)),
-                             (cx, cy + 6), int((7 + 3 * pulse) * fs))
+        # ── denyut pusat (inti membara ber-falloff) ──
+        _NS_gorath._glow(surface, cx, cy + 6, int((24 + 6 * pulse) * fs),
+                         P["blood_bright"], int(185 * pulse))
+        _NS_gorath._glow(surface, cx, cy + 6, int((11 + 4 * pulse) * fs),
+                         P["blood_glow"], int(225 * pulse))
 
     # ===================================================================
     # SKILL W: BLOODRITE (AOE 150 px dunia di sekitar diri, 60 frame)
@@ -5597,30 +5885,46 @@ class _NS_gorath:
         gy = y + _NS_gorath.GROUND_DY - 8
         rng = _NS_gorath._ring_r(boss, _NS_gorath.SKILL_RADIUS["w"], surface)
 
-        # ring jangkauan utama (tebal, outline gelap)
-        _NS_gorath._ring(surface, (x, gy), rng, 4, P["blood_bright"],
-                         int(120 + 60 * pulse))
-        # tick ring berputar
-        _NS_gorath._dashed_ring(surface, x, gy, int(rng * .88), P["blood_hot"],
-                                int(140 + 60 * pulse), phase * 1.1,
-                                segments=14, thick=3, span=.3, squash=.5)
-        # ring konvergen (membaca "incoming")
-        conv = rng * (1 - progress * .8)
-        _NS_gorath._ring(surface, (x, gy), max(10, int(conv)), 3,
-                         P["blood_glow"], int(160 + 70 * pulse))
-        # chevron kardinal menunjuk ke dalam
+        # 1) ALAS: tanah gosong -> telegraph menempel, bukan overlay UI
+        _NS_gorath._ground_scorch(surface, x, gy, rng, P["blood_darkest"],
+                                  P["shadow_deep"],
+                                  int(120 + 40 * progress), seed=4)
+        # 2) wash zona: pekat di tepi, bening di tengah -> badan tetap
+        #    terbaca sementara batas jangkauan jelas
+        _NS_gorath._zone_fill(surface, x, gy, rng, P["blood_dark"],
+                              int(90 + 90 * progress))
+        # 3) BATAS jangkauan: cincin ber-falloff, bukan stroke datar
+        _NS_gorath._ground_ring(surface, x, gy, rng, P["blood_mid"],
+                                P["blood_hot"], int(150 + 70 * pulse),
+                                thickness=3, softness=8)
+        # 4) rune ring berputar tepat di dalam batas
+        _NS_gorath._rune_ring(surface, x, gy, int(rng * .87), P["blood_bright"],
+                              P["blood_glow"], int(160 + 60 * pulse),
+                              phase * 1.1, segments=14, span=.34,
+                              thickness=3.0)
+        # 5) sapuan konvergen TIPIS: hanya muncul di paruh akhir cast,
+        #    jadi tidak menambah "cincin ketiga" sepanjang durasi.
+        if progress > 0.45:
+            ct = (progress - 0.45) / 0.55
+            conv = rng * (1 - ct * .82)
+            _NS_gorath._ground_ring(surface, x, gy, max(10, int(conv)),
+                                    P["blood_bright"], P["blood_light"],
+                                    int(70 + 150 * ct),
+                                    thickness=1.5, softness=4)
+        # 6) chevron kardinal (tetap vektor: bentuknya memang tajam)
         for da in (0, math.pi / 2, math.pi, math.pi * 1.5):
             _NS_gorath._chevron(surface,
                                 x + math.cos(da) * rng * .62,
-                                gy + math.sin(da) * rng * .40,
+                                gy + math.sin(da) * rng * .62,
                                 da + math.pi, max(8, int(rng * .11)),
                                 P["blood_light"], 195, 3)
-        # marker target (kalau ada)
+        # 7) marker target: reticle ber-glow
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        _NS_gorath._ring(surface, (tx, ty), int(20 + progress * 12), 2,
-                         P["blood_hot"], int(200 * pulse))
-        _NS_gorath._ring(surface, (tx, ty), int(11 + progress * 6), 1,
-                         P["blood_light"], int(210 * pulse))
+        _NS_gorath._glow(surface, tx, ty, int(24 + progress * 10),
+                         P["blood_dark"], int(150 * pulse))
+        _NS_gorath._ground_ring(surface, tx, ty, int(20 + progress * 12),
+                                P["blood_hot"], P["blood_light"],
+                                int(210 * pulse), thickness=2, softness=5)
 
     def _draw_bloodrite(surface, boss, x, y, timer, phase):
         """W foreground: voli proyektil + duri darah meletus di target."""
@@ -5679,12 +5983,14 @@ class _NS_gorath:
                                    int(230 * erupt_t), spikes=6, rot=phase,
                                    core=P["white"])
             # splat marker 2 cincin
-            _NS_gorath._ring(surface, (tx, ty), int(radius * .8), 2,
-                             P["blood_hot"], int(200 * erupt_t))
-            _NS_gorath._dashed_ring(surface, tx, ty, int(radius * 1.05),
-                                    P["blood_light"], int(170 * erupt_t),
-                                    -phase * 2.0, segments=10, thick=2,
-                                    span=.45, squash=.5)
+            _NS_gorath._ground_ring(surface, tx, ty, int(radius * .8),
+                                    P["blood_mid"], P["blood_hot"],
+                                    int(210 * erupt_t),
+                                    thickness=2.5, softness=6)
+            _NS_gorath._rune_ring(surface, tx, ty, int(radius * 1.05),
+                                  P["blood_light"], P["white"],
+                                  int(180 * erupt_t), -phase * 2.0,
+                                  segments=10, span=.46, thickness=2.4)
             # cipratan
             for i in range(8):
                 angle = i * math.pi / 4 + phase
@@ -5708,16 +6014,28 @@ class _NS_gorath:
         tx, ty = _NS_gorath._target_position(boss, x, y)
         rng = _NS_gorath._ring_r(boss, _NS_gorath.SKILL_RADIUS["e"], surface)
 
-        # ring AOE tepat di radius gameplay
-        _NS_gorath._ring(surface, (tx, ty), rng, 4, P["blood_bright"],
-                         int(130 + 60 * pulse))
-        _NS_gorath._dashed_ring(surface, tx, ty, int(rng * .84), P["blood_hot"],
-                                int(150 + 60 * pulse), phase * 1.6,
-                                segments=10, thick=3, span=.4, squash=.5)
-        # ring konvergen (mengecil menuju hentakan)
-        conv = rng * (1 - progress * .82)
-        _NS_gorath._ring(surface, (tx, ty), max(8, int(conv)), 3,
-                         P["blood_glow"], int(170 + 70 * pulse))
+        # alas gosong + area membara di titik pendaratan
+        _NS_gorath._ground_scorch(surface, tx, ty, rng, P["blood_darkest"],
+                                  P["shadow_deep"],
+                                  int(130 + 50 * progress), seed=9)
+        _NS_gorath._zone_fill(surface, tx, ty, rng, P["blood_dark"],
+                              int(100 + 110 * progress))
+        # batas AOE tepat di radius gameplay (falloff, additive)
+        _NS_gorath._ground_ring(surface, tx, ty, rng, P["blood_mid"],
+                                P["blood_hot"], int(160 + 70 * pulse),
+                                thickness=3, softness=8)
+        _NS_gorath._rune_ring(surface, tx, ty, int(rng * .82),
+                              P["blood_bright"], P["blood_glow"],
+                              int(165 + 60 * pulse), phase * 1.6,
+                              segments=10, span=.44, thickness=3.2)
+        # sapuan konvergen -> "hentakan datang" (hanya paruh akhir)
+        if progress > 0.4:
+            ct = (progress - 0.4) / 0.6
+            conv = rng * (1 - ct * .85)
+            _NS_gorath._ground_ring(surface, tx, ty, max(8, int(conv)),
+                                    P["blood_bright"], P["blood_light"],
+                                    int(80 + 160 * ct),
+                                    thickness=1.5, softness=4)
         # retakan pendaratan
         for i in range(5):
             ang = i * math.pi * 2 / 5 + .4
@@ -5770,12 +6088,11 @@ class _NS_gorath:
 
         # crosshair berdenyut
         marker_r = int((16 + math.sin(phase * 3) * 3) * fs)
-        _NS_gorath._ring(surface, (tx, ty), marker_r + 2, 3, P["blood_darkest"],
-                         220)
-        _NS_gorath._ring(surface, (tx, ty), marker_r, 2, P["blood_bright"],
-                         int(230 * pulse))
-        _NS_gorath._ring(surface, (tx, ty), max(2, marker_r - 4), 1,
-                         P["blood_hot"], int(255 * pulse))
+        _NS_gorath._glow(surface, tx, ty, marker_r + 6, P["blood_dark"],
+                         int(150 * pulse))
+        _NS_gorath._ground_ring(surface, tx, ty, marker_r, P["blood_bright"],
+                                P["blood_hot"], int(235 * pulse),
+                                thickness=2, softness=5)
         for angle in (0, math.pi / 2, math.pi, math.pi * 1.5):
             x1 = tx + int(math.cos(angle) * (marker_r - 3))
             y1 = ty + int(math.sin(angle) * (marker_r - 3))
@@ -5813,19 +6130,31 @@ class _NS_gorath:
         gy = y + _NS_gorath.GROUND_DY
         rng = _NS_gorath._ring_r(boss, _NS_gorath.SKILL_RADIUS["r"], surface)
 
-        # ring jangkauan tepat di radius gameplay
-        _NS_gorath._ring(surface, (x, gy), rng, 4, P["blood_hot"],
-                         int(120 + 60 * pulse))
-        _NS_gorath._dashed_ring(surface, x, gy, int(rng * .9), P["blood_glow"],
-                                int(140 + 60 * pulse), phase * .9,
-                                segments=16, thick=3, span=.35, squash=.42)
-        _NS_gorath._dashed_ring(surface, x, gy, int(rng * .66), P["blood_light"],
-                                int(120 + 60 * pulse), -phase * 1.4,
-                                segments=12, thick=2, span=.4, squash=.42)
-        # ring konvergen
-        conv = rng * (1 - progress * .7)
-        _NS_gorath._ring(surface, (x, gy), max(12, int(conv)), 3,
-                         P["blood_bright"], int(150 + 70 * pulse))
+        # alas gosong besar + inti membara (ultimate = paling "berat")
+        _NS_gorath._ground_scorch(surface, x, gy, rng, P["blood_darkest"],
+                                  P["shadow_deep"],
+                                  int(140 + 50 * progress), seed=2)
+        _NS_gorath._zone_fill(surface, x, gy, rng, P["blood_dark"],
+                              int(110 + 110 * progress))
+        # batas jangkauan tepat di radius gameplay
+        _NS_gorath._ground_ring(surface, x, gy, rng, P["blood_mid"],
+                                P["blood_hot"], int(155 + 70 * pulse),
+                                thickness=4, softness=10)
+        # SATU rune ring di dalam batas (dua ring berputar berlawanan
+        # arah saling bersaing dan membuat area terbaca sebagai target
+        # practice, bukan telegraph).
+        _NS_gorath._rune_ring(surface, x, gy, int(rng * .86), P["blood_bright"],
+                              P["blood_glow"], int(155 + 60 * pulse),
+                              phase * .9, segments=16, span=.36,
+                              thickness=3.4)
+        # sapuan konvergen hanya di paruh akhir
+        if progress > 0.5:
+            ct = (progress - 0.5) / 0.5
+            conv = rng * (1 - ct * .74)
+            _NS_gorath._ground_ring(surface, x, gy, max(12, int(conv)),
+                                    P["blood_bright"], P["blood_light"],
+                                    int(80 + 150 * ct),
+                                    thickness=2, softness=5)
         # chevron kardinal + diagonal
         for k in range(6):
             da = k * math.pi / 3
@@ -5883,9 +6212,12 @@ class _NS_gorath:
                                (cx, top), (cx, cy), 3)
             for k, rmax in ((0, 130), (1, 92)):
                 r = int((18 + t * rmax) * fs)
-                _NS_gorath._ring(surface, (cx, cy), r, 3,
-                                 P["blood_hot"] if k == 0 else P["blood_light"],
-                                 int((225 if k == 0 else 155) * (1 - t)))
+                _NS_gorath._ground_ring(
+                    surface, cx, cy, r,
+                    P["blood_mid"] if k == 0 else P["blood_bright"],
+                    P["blood_hot"] if k == 0 else P["white"],
+                    int((230 if k == 0 else 160) * (1 - t)),
+                    thickness=max(1.5, 4.5 - t * 3), softness=10)
             _NS_gorath._spark_star(surface, cx, cy, int(36 * (1 - t * .4)),
                                    P["blood_glow"], int(240 * (1 - t)),
                                    8, rot=.3, core=P["white"])
@@ -5928,21 +6260,21 @@ class _NS_gorath:
         if progress > 0.4:
             explosion_t = min(1.0, (progress - 0.4) / 0.5)
             radius = int((16 + explosion_t * 32) * fs)
-            _NS_gorath._aacircle(surface, (*P["blood_darkest"], int(200 * pulse)),
-                                 (tx, ty), radius + 5)
-            _NS_gorath._aacircle(surface, (*P["blood_mid"], int(220 * pulse)),
-                                 (tx, ty), radius)
-            _NS_gorath._aacircle(surface, (*P["blood_bright"], int(240 * pulse)),
-                                 (tx, ty), max(1, radius - 8))
-            _NS_gorath._aacircle(surface, (*P["blood_hot"], int(255 * pulse)),
-                                 (tx, ty), max(1, radius - 15))
+            _NS_gorath._glow(surface, tx, ty, radius + 8, P["blood_darkest"],
+                             int(210 * pulse))
+            _NS_gorath._glow(surface, tx, ty, radius, P["blood_mid"],
+                             int(225 * pulse))
+            _NS_gorath._glow(surface, tx, ty, max(3, radius - 8),
+                             P["blood_bright"], int(240 * pulse))
+            _NS_gorath._glow(surface, tx, ty, max(2, radius - 15),
+                             P["blood_hot"], int(255 * pulse))
             _NS_gorath._spark_star(surface, tx, ty, int(radius * 1.2),
                                    P["blood_glow"], int(235 * explosion_t),
                                    spikes=8, rot=phase * .6, core=P["white"])
-            _NS_gorath._dashed_ring(surface, tx, ty, int(radius * 1.4),
-                                    P["blood_light"], int(190 * explosion_t),
-                                    -phase * 2.4, segments=12, thick=2,
-                                    span=.45, squash=.6)
+            _NS_gorath._rune_ring(surface, tx, ty, int(radius * 1.4),
+                                  P["blood_light"], P["white"],
+                                  int(200 * explosion_t), -phase * 2.4,
+                                  segments=12, span=.46, thickness=2.6)
             # duri menyembur keluar
             for i in range(10):
                 angle = i * math.pi / 5 + phase * 0.5
@@ -5957,11 +6289,11 @@ class _NS_gorath:
                                    (sx2, sy2), 2)
                 _NS_gorath._draw_blood_droplet(surface, sx2, sy2, 2, 220)
 
-        # ── denyut pusat ──
-        _NS_gorath._aacircle(surface, (*P["blood_bright"], int(170 * pulse)),
-                             (cx, cy), int((18 + 5 * pulse) * fs))
-        _NS_gorath._aacircle(surface, (*P["blood_glow"], int(220 * pulse)),
-                             (cx, cy), int((8 + 3 * pulse) * fs))
+        # ── denyut pusat (inti membara ber-falloff) ──
+        _NS_gorath._glow(surface, cx, cy, int((26 + 6 * pulse) * fs),
+                         P["blood_bright"], int(190 * pulse))
+        _NS_gorath._glow(surface, cx, cy, int((12 + 4 * pulse) * fs),
+                         P["blood_glow"], int(230 * pulse))
 
     # ===================================================================
     # Backward compatible alias
