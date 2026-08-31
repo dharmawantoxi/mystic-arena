@@ -4308,33 +4308,36 @@ class _NS_morgath:
                           (pt(5, 12)[0], pt(5, 12)[1], _w(1), _w(1)))
 
     # ============================================================
-    # LIGHTNING PROJECTILE (basic attack) - trail + glint
+    # LIGHTNING PROJECTILE (basic attack) — BOLT MEWAH v2.3
     # ============================================================
-    # ============================================================
-    # LIGHTNING PROJECTILE (basic attack) — BOLT MEWAH v2.2
-    # ============================================================
-    def _glow_sprite():
-        """Bloom radial prosedural (cache statis, tanpa image.load)."""
+    def _glow_sprite(radius=24):
+        """Bloom radial prosedural (cache statis per ukuran, tanpa
+        image.load)."""
+        key = "morgath_bolt_glow_%d" % int(radius)
+
         def build():
-            r = 24
+            r = int(radius)
             s = pygame.Surface((r * 2 + 2, r * 2 + 2), pygame.SRCALPHA)
             c = r + 1
-            for rr, key, al in ((r, "arc_dark", 36),
-                                (int(r * .68), "arc_mid", 64),
-                                (int(r * .44), "arc_light", 104),
-                                (int(r * .22), "arc_hot", 168)):
-                _NS_morgath._aacircle(s, (*_NS_morgath.PALETTE[key], al),
+            for rr, k, al in ((r, "arc_dark", 36),
+                              (int(r * .68), "arc_mid", 64),
+                              (int(r * .44), "arc_light", 104),
+                              (int(r * .22), "arc_hot", 168)):
+                _NS_morgath._aacircle(s, (*_NS_morgath.PALETTE[k], al),
                                       (c, c), rr)
             return s
-        return _NS_morgath._static("morgath_bolt_glow", build)
+        return _NS_morgath._static(key, build)
 
     def _draw_lightning_projectile(surface, boss, x, y, progress):
-        """Bolt petir mewah dari telapak (v2.2): chord berliku yang
-        morph tiap frame (edge-to-edge, lebar menirus, lapisan heliks),
-        ranting letik menyimpang, trail after-image berlubang, mote
-        bara listrik, bloom radial, glint orbit, percik pelepasan di
-        telapak, dan benturan penuh (ring ganda + bintang 8 + garis
-        radial + serpihan). 100% prosedural, deterministik per-frame."""
+        """Bolt petir mewah dari telapak (v2.3) — bukan garis polos:
+        chord 3-lapis morph per-frame dengan offset heliks + echo arc
+        menyambar kembali + ghost chord dobel-eksposur + pulse energi
+        berjalan + mach rings + corona berputar + ranting letik +
+        trail after-image hollow + mote bara berwarna + bloom radial
+        + percik las di telapak + glint orbit + benturan berlapis
+        (scorch, ring ganda + ring tunda, bintang 8, garis radial,
+        fork jagged, serpihan berekor). 100% prosedural &
+        deterministik per-frame."""
         if progress < 0.55:
             return
 
@@ -4359,6 +4362,13 @@ class _NS_morgath:
             # efek tidak boleh lolos dari canvas cache (clamp kontrak)
             return (max(0, min(surface.get_width() - 1, int(px))),
                     max(0, min(surface.get_height() - 1, int(py))))
+
+        def blit_glow(gx, gy, alpha, grow=1.0):
+            r = max(8, int(round(24 * grow * inv)))
+            spr = _NS_morgath._glow_sprite(r)
+            spr.set_alpha(_A(alpha))
+            surface.blit(spr, (int(gx - r - 1), int(gy - r - 1)))
+            spr.set_alpha(255)
 
         facing = getattr(boss, "_mor_attack_dir", None)
         if facing is None:
@@ -4387,16 +4397,51 @@ class _NS_morgath:
         length = max(1.0, math.hypot(dx, dy))
         nx, ny = -dy / length, dx / length
 
-        # ═══ 1) BLOOM RADIAL (kepala + telapak) ═══
-        glow = _NS_morgath._glow_sprite()
-        for gx, gy, ga in ((bx, by, 210), (start_x, start_y, 120)):
-            glow.set_alpha(_A(ga))
-            surface.blit(glow, (int(gx - 13 * inv), int(gy - 13 * inv)))
-        glow.set_alpha(255)
+        def chord_pt(s):
+            return (int(start_x + dx * s), int(start_y + dy * s))
 
-        # ═══ 2) CHORD PETIR TEPI-KE-TEPI (berliku, morph hidup) ═══
-        # Polyline bertekuk di tengah tiap segmen; besar tekukan &
-        # arahnya morph deterministik per-frame (2 oktaf sinus + pulse).
+        # ═══ 0) BLOOM RADIAL (telapak + kepala) ═══
+        blit_glow(bx, by, 205)
+        blit_glow(start_x, start_y, 145, grow=0.6)
+
+        # ═══ 1) GHOST CHORD (dobel-eksposur, offset tegak lurus) ═══
+        # Echo samar seluruh bentuk chord, digeser sedikit — memberi
+        # kedalaman listrik (2 citra sekaligus) sebelum chord utama.
+        goff = -1.6 * inv
+        for i in range(1, 8):
+            s0 = (i - 1) / 7
+            s1 = i / 7
+            a0 = (start_x + dx * s0 + nx * goff,
+                  start_y + dy * s0 + ny * goff)
+            a1 = (start_x + dx * s1 + nx * goff,
+                  start_y + dy * s1 + ny * goff)
+            _NS_morgath._aaline(surface, (*P["arc_darkest"], _A(70)),
+                                (int(a0[0]), int(a0[1])),
+                                (int(a1[0]), int(a1[1])), W(1))
+
+        # ═══ 2) ECHO ARC — leader menyambar balik ke chord ═══
+        # 2 busur petir melompat keluar lalu menyambung kembali ke
+        # jalur utama (sisi kiri/kanan), khas sambaran listrik asli.
+        for k in range(2):
+            s_a = 0.22 + 0.36 * k
+            s_b = s_a + 0.20
+            p_a = chord_pt(s_a)
+            p_b = chord_pt(s_b)
+            side = 1.0 if (k + int(progress * 26)) % 2 == 0 else -1.0
+            bulge = (9.0 + k * 4.0) * inv * side
+            m1 = (start_x + dx * (s_a + 0.07) + nx * bulge,
+                  start_y + dy * (s_a + 0.07) + ny * bulge)
+            m2 = (start_x + dx * (s_a + 0.13) + nx * bulge * 0.55,
+                  start_y + dy * (s_a + 0.13) + ny * bulge * 0.55)
+            pts = [p_a, (int(m1[0]), int(m1[1])),
+                   (int(m2[0]), int(m2[1])), p_b]
+            for li, (key, al, w) in enumerate(
+                    (("arc_dark", 120, W(2)), ("arc_light", 190, W(1)))):
+                for j in range(1, len(pts)):
+                    _NS_morgath._aaline(surface, (*P[key], _A(al)),
+                                        pts[j - 1], pts[j], w)
+
+        # ═══ 3) CHORD UTAMA: polyline berliku morph hidup ═══
         segs = 7
         pts0 = [(start_x, start_y)]
         for i in range(1, segs + 1):
@@ -4413,8 +4458,7 @@ class _NS_morgath:
             pts0.append((int(start_x + dx * sm + nx * off),
                          int(start_y + dy * sm + ny * off)))
             pts0.append((int(ex), int(ey)))
-        # 3 lapis pita: lebar menirus ke kepala + offset tegak lurus
-        # antar lapis (kesan heliks listrik), alpha naik ke inti.
+        # 3 lapis pita: lebar menirus + offset heliks antar lapis
         for li, (key, base_w, al) in enumerate(
                 (("arc_dark", 5, 130), ("arc_mid", 3, 210),
                  ("arc_light", 1, 245))):
@@ -4431,7 +4475,27 @@ class _NS_morgath:
             _NS_morgath._aaline(surface, (*P["arc_hot"], 255),
                                 pts0[j], pts0[j + 1], W(1))
 
-        # ═══ 3) RANTING LETIK MENYIMPANG (sisi selang-seling) ═══
+        # ═══ 4) PULSE ENERGI BERJALAN (menyusul kepala) ═══
+        # Pita putih menyala berjalan dari telapak menuju kepala 1.6x
+        # lebih cepat — ledakan energi di sepanjang lintasan.
+        s_band = min(1.0, t * 1.6)
+        for k in range(2):
+            s_b0 = max(0.0, s_band - 0.045)
+            s_b1 = s_band + 0.02
+            c0 = (start_x + dx * s_b0 + nx * (0.6 - k) * inv,
+                  start_y + dy * s_b0 + ny * (0.6 - k) * inv)
+            c1 = (start_x + dx * s_b1 + nx * (0.6 - k) * inv,
+                  start_y + dy * s_b1 + ny * (0.6 - k) * inv)
+            _NS_morgath._aaline(surface,
+                                (*P["arc_shine" if k == 0 else "arc_hot"],
+                                 _A(200)),
+                                (int(c0[0]), int(c0[1])),
+                                (int(c1[0]), int(c1[1])), W(2 - k))
+        cxp, cyp = clamp_xy(start_x + dx * s_band, start_y + dy * s_band)
+        _NS_morgath._rect(surface, (*P["white"], 255),
+                          (cxp, cyp, W(2), W(2)))
+
+        # ═══ 5) RANTING LETIK MENYIMPANG (sisi selang-seling) ═══
         for k, s in ((2, 0.26), (3, 0.46), (4, 0.66)):
             side = 1 if (k + int(progress * 20)) % 2 == 0 else -1
             ax = int(start_x + dx * s)
@@ -4440,12 +4504,23 @@ class _NS_morgath:
             by2 = int(ay + ny * side * (8 + k) * inv + dy * .12 * inv)
             _NS_morgath._jagged_line(surface, (*P["arc_dark"], _A(150)),
                                      (ax, ay), (bx2, by2),
-                                     jitter=2.5 * inv, segments=2, width=W(2))
+                                     jitter=2.5 * inv, segments=2,
+                                     width=W(2))
             _NS_morgath._jagged_line(surface, (*P["arc_hot"], _A(220)),
                                      (ax, ay), (bx2, by2),
-                                     jitter=1.5 * inv, segments=2, width=W(1))
+                                     jitter=1.5 * inv, segments=2,
+                                     width=W(1))
 
-        # ═══ 4) TRAIL AFTER-IMAGE BERLUBANG + MOTE BARA ═══
+        # ═══ 6) MACH RINGS (wake kecepatan di belakang kepala) ═══
+        # Cincin tipis membesar makin jauh di belakang kepala bolt.
+        for g in (1, 2, 3):
+            gt = max(0.02, t - 0.045 * g)
+            gx, gy = chord_pt(gt)
+            _NS_morgath._aacircle(surface,
+                                  (*P["arc_mid"], _A(95 - g * 22)),
+                                  (gx, gy), R(6 + g * 3), W(1))
+
+        # ═══ 7) TRAIL AFTER-IMAGE HOLLOW + MOTE BARA ═══
         for g in (3, 2, 1):
             gt = max(0.0, t - 0.055 * g)
             gx = int(start_x + dx * gt)
@@ -4455,18 +4530,19 @@ class _NS_morgath:
                                   (gx, gy), R(4 + g))
             _NS_morgath._aacircle(surface, (*P["arc_mid"], ga + 30),
                                   (gx, gy), R(5 + g), W(1))
-        # Mote bara listrik berjatuhan dari lintasan (deterministik)
-        for i in range(4):
-            mt = (0.18 + 0.16 * i
-                  + _NS_morgath._hash01(i + int(progress * 30)) * 0.12)
+        # Mote bara listrik berjatuhan (2 warna, berekor 2 px)
+        for i in range(7):
+            mt = (0.14 + 0.11 * i
+                  + _NS_morgath._hash01(i + int(progress * 30)) * 0.1)
             mt = max(0.0, min(1.0, mt))
             mx = start_x + dx * mt
-            my = start_y + dy * mt + (t - mt) * 15 * inv
+            my = start_y + dy * mt + (t - mt) * 16 * inv
+            key = "arc_mid" if i % 2 == 0 else "flux_light"
             cx0, cy0 = clamp_xy(mx, my)
-            _NS_morgath._rect(surface, (*P["arc_mid"], _A(160)),
-                              (cx0, cy0, W(1), W(1)))
+            _NS_morgath._rect(surface, (*P[key], _A(165)),
+                              (cx0, cy0, W(1), W(2)))
 
-        # ═══ 5) KEPALA BOLT: flare 5 lapis + paku silang + glint ═══
+        # ═══ 8) KEPALA BOLT: flare 5 lapis + corona + paku + glint ═══
         for radius, key, al in ((10, "arc_darkest", 80),
                                 (7, "arc_dark", 140),
                                 (5, "arc_mid", 205),
@@ -4475,15 +4551,39 @@ class _NS_morgath:
             _NS_morgath._aacircle(surface, (*P[key], _A(al)),
                                   (bx, by), R(radius))
         cx0, cy0 = clamp_xy(bx, by)
-        _NS_morgath._rect(surface, (*P["white"], 255), (cx0, cy0, W(1), W(1)))
+        _NS_morgath._rect(surface, (*P["white"], 255),
+                          (cx0, cy0, W(1), W(1)))
+        # Corona 6 paku berputar (2 jagged + 4 lurus, ujung menyala)
+        # Semua ujung di luar disk flare kepala (r<=10) supaya tetap
+        # putih menyala, tidak tertelan pita gelap flare.
+        for i in range(6):
+            ang = ph * 2.0 + i * math.pi / 3 + progress * 4.0
+            ln = (15.0 if i % 3 == 0 else (13.0 if i % 2 == 0 else 11.0))
+            ln *= inv
+            px2 = int(math.cos(ang) * ln)
+            py2 = int(math.sin(ang) * ln * 0.8)
+            sx2 = bx + int(math.cos(ang) * 3 * inv)
+            sy2 = by + int(math.sin(ang) * 3 * inv)
+            if i % 3 == 0:
+                _NS_morgath._jagged_line(surface, P["arc_hot"],
+                                         (sx2, sy2), (bx + px2, by + py2),
+                                         jitter=1.8 * inv, segments=2,
+                                         width=W(1))
+            else:
+                _NS_morgath._aaline(surface, (*P["arc_hot"], _A(175)),
+                                    (sx2, sy2), (bx + px2, by + py2), W(1))
+            cx2, cy2 = clamp_xy(bx + px2, by + py2)
+            _NS_morgath._rect(surface, (*P["arc_shine"], _A(220)),
+                              (cx2, cy2, W(1), W(1)))
         # Dua paku cahaya silang berputar halus di inti
         for i in range(2):
             ga = ph * 2.5 + i * math.pi / 2 + progress * 4.0
             hx = int(math.cos(ga) * 5 * inv)
             hy = int(math.sin(ga) * 4 * inv)
             _NS_morgath._aaline(surface, (*P["arc_hot"], _A(210)),
-                                (bx - hx, by - hy), (bx + hx, by + hy), W(1))
-        # Glint orbit 3 titik cahaya memutar (bukan 2 statis)
+                                (bx - hx, by - hy), (bx + hx, by + hy),
+                                W(1))
+        # Glint orbit 3 titik cahaya memutar
         for i in range(3):
             ga = ph * 5.0 + i * math.pi * 2 / 3 + progress * 6.0
             gx = bx + math.cos(ga) * 5.5 * inv
@@ -4492,16 +4592,18 @@ class _NS_morgath:
             _NS_morgath._rect(surface, (*P["arc_shine"], _A(235)),
                               (int(gx), int(gy), W(1), W(1)))
 
-        # ═══ 6) PECAHAN LETIK SEKITAR KEPALA (4 ranting berputar) ═══
-        for i in range(4):
-            ang = i * math.pi / 2 + progress * 3.1 + ph * 0.5
-            fx = bx + math.cos(ang) * 10 * inv
-            fy = by + math.sin(ang) * 7.5 * inv
-            _NS_morgath._jagged_line(surface, P["arc_hot"], (bx, by),
-                                     (int(fx), int(fy)), jitter=1.8 * inv,
-                                     segments=2, width=W(1))
-
-        # ═══ 7) PERCIK PELEPASAN DI TELAPAK (saat bolt lahir) ═══
+        # ═══ 9) PERCIK LAS DI TELAPAK (menyala sepanjang flight) ═══
+        # 3 busur kecil menyembur dari muzzle, panjang berkedip-kedip.
+        flick = 0.6 + 0.4 * _NS_morgath._hash01(int(progress * 24))
+        for i in range(3):
+            ang = -0.9 + i * 0.55 + ph * 0.7
+            ln = (4 + i * 2.5) * flick * inv
+            _NS_morgath._aaline(surface, (*P["arc_hot"], _A(190)),
+                                (start_x, start_y),
+                                (int(start_x + math.cos(ang) * ln),
+                                 int(start_y + math.sin(ang) * ln)),
+                                W(1))
+        # Bintang pelepasan saat bolt lahir
         if t < 0.25:
             mt2 = t / 0.25
             _NS_morgath._spark_star(surface, start_x, start_y,
@@ -4509,36 +4611,57 @@ class _NS_morgath:
                                     P["arc_shine"], _A(int(235 * (1 - mt2))),
                                     spikes=6, rot=0.3 + ph, core=P["white"])
 
-        # ═══ 8) BENTURAN: ring ganda + bintang 8 + garis radial ═══
+        # ═══ 11) BENTURAN BERLAPIS (t > 0.88) ═══
         if t > 0.88:
             st = (t - 0.88) / 0.12
             radius = int((10 + st * 26) * inv)
             alpha = _A(230 * (1 - st))
+            # scorch glow di titik benturan
+            blit_glow(tx, ty, int(150 * (1 - st)), grow=1.5)
+            # ring ganda + ring tunda (micro-ring menyusul)
             _NS_morgath._aacircle(surface, (*P["arc_darkest"], alpha),
                                   (tx, ty), R(radius + 3), W(3))
             _NS_morgath._aacircle(surface, (*P["arc_mid"], alpha),
                                   (tx, ty), R(radius), W(2))
             _NS_morgath._aacircle(surface, (*P["arc_shine"], alpha),
                                   (tx, ty), R(max(1, radius - 6)), W(1))
+            st2 = max(0.0, st - 0.35) / 0.65
+            _NS_morgath._aacircle(
+                surface, (*P["arc_hot"], _A(200 * (1 - st2))),
+                (tx, ty), R(max(1, int(radius * 0.55))), W(1))
             _NS_morgath._spark_star(surface, tx, ty,
                                     int((9 + st * 15) * inv),
                                     P["arc_shine"], int(225 * (1 - st)),
                                     spikes=8, rot=0.5, core=P["white"])
+            # 8 garis radial lurus
             for i in range(8):
                 ang = i * math.pi / 4 + progress * 2.0
                 ex = int(tx + math.cos(ang) * radius * 1.05 * inv)
                 ey = int(ty + math.sin(ang) * radius * 0.8 * inv)
                 _NS_morgath._aaline(surface, (*P["arc_hot"], alpha),
                                     (tx, ty), (ex, ey), W(1))
-            # Serpihan deterministik terlempar (debris pixel-art)
-            for i in range(5):
-                a = 0.7 + i * 0.9 + _NS_morgath._hash01(i * 5) * 0.6
-                r = (7 + st * 22) * inv
+            # 4 fork jagged di antara garis radial
+            for i in range(4):
+                ang = (i + 0.5) * math.pi / 2 + progress * 2.0
+                ex = int(tx + math.cos(ang) * radius * 1.25 * inv)
+                ey = int(ty + math.sin(ang) * radius * 0.95 * inv)
+                _NS_morgath._jagged_line(surface, P["arc_shine"],
+                                         (tx, ty), (ex, ey),
+                                         jitter=2.0 * inv, segments=2,
+                                         width=W(1))
+            # 8 serpihan deterministik berekor
+            for i in range(8):
+                a = 0.7 + i * 0.72 + _NS_morgath._hash01(i * 5) * 0.6
+                r = (7 + st * 24) * inv
                 dx2 = math.cos(a) * r
                 dy2 = math.sin(a) * r * 0.55 - st * st * 8 * inv
                 cx2, cy2 = clamp_xy(tx + dx2, ty + dy2)
                 _NS_morgath._rect(surface, (*P["arc_light"], alpha),
                                   (cx2, cy2, W(1), W(1)))
+                cx3, cy3 = clamp_xy(tx + dx2 * 0.6, ty + dy2 * 0.6)
+                _NS_morgath._rect(surface, (*P["arc_mid"], alpha),
+                                  (cx3, cy3, W(1), W(1)))
+
 
 
     # ============================================================
