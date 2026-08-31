@@ -4871,112 +4871,152 @@ class _NS_drakar:
                 "front_hand":front_hand,"back_hand":back_hand}
 
     def _draw_axe(surface, cx, cy, facing, angle, action, attack_progress, pommel_pos=None):
-        """Draw two-handed axe (1.5x scale, detailed).
-        
-        BUG FIX: Blade crescent sekarang ROTASI sesuai axe_angle,
-        bukan selalu horizontal. Handle dan blade sekarang konsisten.
+        """Draw MENACING two-handed axe - v2.
+        - Besar crescent blade (48px) dengan 16-point sweep.
+        - 6-layer gradient halus (offset kecil untuk blending).
+        - Rotasi blade konsisten dengan axe_angle.
+        - Darah kecil sebagai splatter, bukan lingkaran.
+        - Handle kayu dengan bungkus kulit.
         """
         if pommel_pos is None:
-            pommel_pos = (cx-int(math.cos(angle)*30)*facing, cy-int(math.sin(angle)*30))
+            pommel_pos = (cx-int(math.cos(angle)*28)*facing, cy-int(math.sin(angle)*28))
         px, py = pommel_pos
-        
-        # Handle (wood, 3-band) - TETAP dari pommel ke head (ini benar)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_darkest"], (px,py), (cx,cy), 9)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_dark"], (px,py), (cx,cy), 7)
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_mid"], (px,py), (cx,cy), 5)
-        mid_x=(px+cx)//2; mid_y=(py+cy)//2
-        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_light"], (mid_x-2,mid_y-2), (mid_x+2,mid_y+2), 1)
-        for i in range(3):
-            gx=px+int((cx-px)*(0.3+i*0.15)); gy=py+int((cy-py)*(0.3+i*0.15))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_darkest"], (gx-2,gy-1,5,3))
-        
-        # Pommel (gold)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["gold_dark"], (px-3,py-3,7,7))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["gold_mid"], (px-2,py-2,5,5))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["gold_light"], (px-1,py-1,2,2))
-        
-        # Collar (di axe_head)
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"], (cx-4,cy-4,9,9))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_mid"], (cx-3,cy-3,7,7))
-        
-        # BLADE - SEKARANG ROTASI sesuai angle!
-        # Hitung ujung blade berdasarkan angle
-        blade_size = 28
-        # Arah blade: tegak lurus terhadap handle, dengan offset
-        # Blade crescent menghadap ke arah swing
-        blade_angle = angle + math.pi/2 * facing  # Tegak lurus handle
-        
-        # Titik-titik blade crescent (6 titik untuk bentuk crescent)
-        blade_pts = []
-        for i in range(7):  # 0 sampai 6
-            t = i / 6.0  # 0.0 sampai 1.0
-            # Crescendo di tengah, taper di ujung
-            width = blade_size * (1.0 - abs(t - 0.5) * 1.5)
-            width = max(5, width)  # Minimal 5px
-            
-            # Posisi sepanjang blade
-            dist = blade_size * t
-            bx = cx + int(math.cos(blade_angle) * dist)
-            by = cy + int(math.sin(blade_angle) * dist)
-            
-            # Lebar blade (tegak lurus arah blade)
-            perp_angle = blade_angle + math.pi/2
-            left_x = bx + int(math.cos(perp_angle) * width * 0.5)
-            left_y = by + int(math.sin(perp_angle) * width * 0.5)
-            right_x = bx - int(math.cos(perp_angle) * width * 0.5)
-            right_y = by - int(math.sin(perp_angle) * width * 0.5)
-            
-            blade_pts.append((left_x, left_y, right_x, right_y))
-        
-        # Gambar blade dengan 6 lapis (dari gelap ke terang)
-        for layer_idx, (off, color_key) in enumerate([
-            (3, "shadow_deep"), (2, "blade_darkest"), (0, "blade_dark"),
-            (-1, "blade_mid"), (-2, "blade_light"), (-3, "blade_shine")]):
-            
+
+        # ===== HANDLE (kayu gelap + bungkus kulit) =====
+        # Shadow
+        pygame.draw.line(surface, (10, 8, 6), (px+1,py+1), (cx+1,cy+1), 10)
+        # Kayu lapis
+        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_darkest"], (px,py), (cx,cy), 10)
+        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_dark"], (px,py), (cx,cy), 8)
+        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_mid"], (px,py), (cx,cy), 6)
+        # Light highlight
+        mx = (px + cx) // 2; my = (py + cy) // 2
+        pygame.draw.line(surface, _NS_drakar.PALETTE["leather_light"], (mx-2,my-1), (mx+2,my+1), 1)
+        # Leather wrap texture
+        dx = cx - px; dy = cy - py
+        h_len = max(1, math.hypot(dx, dy))
+        nx = -dy / h_len; ny = dx / h_len
+        for i in range(5):
+            t = 0.12 + i * 0.16
+            gx = int(px + dx * t); gy = int(py + dy * t)
+            wrap = [(gx-2-int(nx*2), gy-2-int(ny*2)), (gx+2-int(nx*2), gy+2-int(ny*2)),
+                    (gx+2+int(nx*2), gy+2+int(ny*2)), (gx-2+int(nx*2), gy-2+int(ny*2))]
+            _NS_drakar._poly(surface, _NS_drakar.PALETTE["leather_darkest"], wrap)
+
+        # ===== POMMEL (emas besar) =====
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["shadow_deep"], (px-6,py-6,13,13))
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["gold_dark"], (px-5,py-5,11,11))
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["gold_mid"], (px-4,py-4,9,9))
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["gold_light"], (px-3,py-3,5,5))
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["white"], (px-2,py-2,2,2))
+
+        # ===== COLLAR (baja tebal) =====
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_darkest"], (cx-6,cy-6,13,13))
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"], (cx-5,cy-5,11,11))
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_mid"], (cx-4,cy-4,9,9))
+        for rx, ry in [(-3,-3),(3,-3),(-3,3),(3,3)]:
+            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_light"], (cx+rx,cy+ry,2,2))
+            pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_shine"], (cx+rx,cy+ry,1,1))
+
+        # ===== BLADE CRESCENT - BESAR & MENACING =====
+        blade_size = 48  # Big but reasonable
+        blade_angle = angle + math.pi/2 * facing
+
+        # Sweep crescent dengan 16 points untuk smooth curve
+        NUM_PTS = 16
+        sweep = math.pi * 0.80  # 144 derajat
+        crescent_outer = []
+        crescent_inner = []
+        for i in range(NUM_PTS):
+            t = i / (NUM_PTS - 1.0)
+            a = blade_angle - sweep/2 + t * sweep
+            # Outer - melengkung menjauh dari pusat
+            crescent_outer.append((cx + int(math.cos(a) * blade_size),
+                                   cy + int(math.sin(a) * blade_size)))
+            # Inner - dengan curve agar blade tajam di ujung
+            # Tebal di tengah, tipis di ujung (seperti axe sungguhan)
+            thickness = math.sin(t * math.pi)  # 0..1..0
+            ir = blade_size * (0.20 + 0.55 * thickness)
+            crescent_inner.append((cx + int(math.cos(a) * ir),
+                                   cy + int(math.sin(a) * ir)))
+
+        # 6 lapis blade - offset kecil agar blending halus
+        layers = [
+            (4, "shadow_deep"),
+            (3, "blade_darkest"),
+            (2, "blade_dark"),
+            (0, "blade_mid"),
+            (-1, "blade_light"),
+            (-2, "blade_shine"),
+        ]
+        for off, color_key in layers:
             color = _NS_drakar.PALETTE[color_key]
-            
-            # Bangun polygon blade untuk layer ini
-            poly_points = []
-            # Sisi kiri (dari collar ke tip)
-            for i in range(len(blade_pts)):
-                left_x, left_y, right_x, right_y = blade_pts[i]
-                # Offset untuk layer (efek 3D)
-                ox = int(math.cos(blade_angle + math.pi/2) * off)
-                oy = int(math.sin(blade_angle + math.pi/2) * off)
-                poly_points.append((left_x + ox, left_y + oy))
-            
-            # Sisi kanan (dari tip ke collar, reverse)
-            for i in range(len(blade_pts) - 1, -1, -1):
-                left_x, left_y, right_x, right_y = blade_pts[i]
-                ox = int(math.cos(blade_angle + math.pi/2) * off)
-                oy = int(math.sin(blade_angle + math.pi/2) * off)
-                poly_points.append((right_x + ox, right_y + oy))
-            
-            if len(poly_points) >= 3:
-                _NS_drakar._poly(surface, color, poly_points)
-        
-        # Specular highlight di blade (1-2px, bukan gradien)
-        # Posisi di 1/3 dari collar
-        if len(blade_pts) > 2:
-            highlight_idx = len(blade_pts) // 3
-            left_x, left_y, right_x, right_y = blade_pts[highlight_idx]
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["blade_shine"], 
-                           (int((left_x+right_x)/2), int((left_y+right_y)/2), 3, 1))
-            pygame.draw.rect(surface, _NS_drakar.PALETTE["white"], 
-                           (int((left_x+right_x)/2), int((left_y+right_y)/2), 1, 1))
-        
-        # Darah di blade saat attack (tetap)
-        if action == "attack" and attack_progress > 0.4:
-            for i in range(4):
-                # Posisi darah sepanjang blade
-                t = 0.3 + i * 0.15
-                if t < 1.0 and int(t * len(blade_pts)) < len(blade_pts):
-                    idx = int(t * len(blade_pts))
-                    left_x, left_y, right_x, right_y = blade_pts[idx]
-                    bx = int((left_x + right_x) / 2)
-                    by = int((left_y + right_y) / 2) + int(_NS_drakar._hash01(i*7)*8-4)
-                    pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_dark"], (bx,by,2,2))
-                    pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_mid"], (bx,by,1,1))
+            poly = []
+            for (ox, oy) in crescent_outer:
+                poly.append((ox + int(math.cos(blade_angle) * off),
+                             oy + int(math.sin(blade_angle) * off)))
+            for (ix, iy) in reversed(crescent_inner):
+                poly.append((ix + int(math.cos(blade_angle) * off * 0.4),
+                             iy + int(math.sin(blade_angle) * off * 0.4)))
+            if len(poly) >= 3:
+                _NS_drakar._poly(surface, color, poly)
+
+        # EDGE HIGHLIGHT di cutting edge (ujung dalam blade)
+        edge_pts = [(ix + int(math.cos(blade_angle) * (-2)),
+                     iy + int(math.sin(blade_angle) * (-2)))
+                    for (ix, iy) in crescent_inner]
+        for i in range(len(edge_pts) - 1):
+            _NS_drakar._aaline(surface, _NS_drakar.PALETTE["blade_shine"],
+                             edge_pts[i], edge_pts[i+1], 1)
+        for i in range(len(edge_pts) - 1):
+            _NS_drakar._aaline(surface, _NS_drakar.PALETTE["white"],
+                             edge_pts[i], edge_pts[i+1], 1)
+
+        # SPECULAR CLUSTER di bagian paling lebar blade
+        spec_idx = NUM_PTS // 2 - 1
+        spec_x, spec_y = crescent_outer[spec_idx]
+        sx = spec_x + int(math.cos(blade_angle) * (-1))
+        sy = spec_y + int(math.sin(blade_angle) * (-1))
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["blade_shine"], (sx-2, sy-1, 5, 3))
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["white"], (sx-1, sy, 3, 1))
+        # Second spec cluster
+        sx2, sy2 = crescent_outer[spec_idx - 2]
+        pygame.draw.rect(surface, _NS_drakar.PALETTE["blade_shine"], (sx2-1, sy2-1, 3, 2))
+
+        # DARAH di blade saat attack - SPLATTER kecil (bukan lingkaran besar)
+        if action == "attack" and attack_progress > 0.3:
+            intensity = min(1.0, (attack_progress - 0.3) / 0.35)
+            rng = _NS_drakar._hash01
+            for i in range(10):
+                t = 0.2 + i * 0.07
+                idx = min(int(t * NUM_PTS), NUM_PTS - 1)
+                bx, by = crescent_outer[idx]
+                offset = int(rng(i*13 + attack_progress*50) * 10 - 5)
+                bx += int(math.cos(blade_angle) * offset)
+                by += int(math.sin(blade_angle) * offset)
+                # Splatter kecil 3x3, 2x2, atau 1x1
+                size = 2 + (int(rng(i*7+3)) % 2)
+                pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_darkest"],
+                                 (bx-1, by-1, size+1, size+1))
+                pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_dark"],
+                                 (bx, by, size, size))
+                if intensity > 0.7 and rng(i*11) > 0.4:
+                    pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_mid"],
+                                     (bx, by, size-1, size-1))
+
+        # GLOW EFFECT saat attack - aura merah tipis di blade edge
+        if action == "attack" and attack_progress > 0.35:
+            intensity = min(1.0, (attack_progress - 0.35) / 0.3)
+            glow_r = max(1, int(8 * intensity))
+            for i in range(0, NUM_PTS, 3):
+                gx, gy = crescent_inner[i]
+                for r in range(glow_r, 0, -1):
+                    alpha = int(60 * intensity * (glow_r - r + 1) / glow_r)
+                    if alpha > 0:
+                        rage_color = _NS_drakar.PALETTE["rage_dark"]
+                        _NS_drakar._aacircle(surface,
+                            (rage_color[0], rage_color[1], rage_color[2], alpha),
+                            (gx, gy), r)
 
     def _draw_drk_head(surface, cx, cy, facing, phase, action):
         pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"], (cx-8,cy+12,16,10))
