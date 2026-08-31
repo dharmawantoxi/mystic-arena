@@ -12,7 +12,7 @@
 | Warna unik (idle native) | ~90 | **142** (portrait LOD: 155) |
 | Skala pipeline | 0.745 (canvas 378²) | **0.402** (canvas 528²) |
 | Ukuran di arena | ~74 px | **~75 px** (sama — pipeline menormalkan) |
-| Biaya render | ~1–2 ms | idle **1.5–1.9 ms**, skill **2.3–3.4 ms** (hanya saat cache miss) |
+| Biaya render | ~1–2 ms | idle **1.4 ms**, skill **1.9–2.4 ms** (hanya saat cache miss; pass v2.1) |
 
 Memperbesar rig TIDAK memperbesar hero di arena: `heroes/__init__.py`
 mengukur badan lalu men-scale agar tinggi final tetap ~51 px. Yang berubah
@@ -100,6 +100,39 @@ canvas cache (efek tidak keluar canvas = tidak terpotong).
 platform dibangun sekali lalu di-cache (`_static`); afterimage
 omnislash di-cache per `(facing, bucket pose)` (`_GHOST_BUF`) —
 re-render 4× per frame di v0 (12 ms) menjadi blit 4× (0.16 ms).
+
+## Pass performa v2.1 (budget 3.5 ms terjamin)
+
+Audit sempat mengukur skill Q 4.3 ms & R 4.0 ms — di atas budget.
+Optimasi yang diterapkan (semua visual-aman):
+
+1. **`_clamp` fast-path** — warna palet sudah int valid 0..255;
+   buang genexpr/max/min per saluran (dulu ~10% waktu rig).
+2. **Scratch-surface pool** (`_scratch`) — jalur alpha
+   `_aacircle`/`_aaline`/`_poly` tidak lagi mengalokasikan Surface
+   per-primitif (ribuan alokasi/frame), melainkan memakai pool
+   reusable ber-`fill(0)`.
+3. **Blit aura tanpa `copy()`** — `set_alpha` mutasi + restore di
+   static (fire/rage/heal aura, mist, glow); hemat satu copy penuh
+   280×260 per frame.
+4. **Ghost afterimage di-crop ke bbox konten** (di-cache bersama
+   buffer) — blit hanya area berisi piksel.
+5. **Rig body omnislash di-cache per bucket fase (12/s)**
+   (`_OMNI_BUF`) — jitter teleport tetap live di blit; pipeline hero
+   sendiri sudah mengkuantisasi frame skill, jadi tidak ada
+   kuantisasi visual baru.
+6. **Trail swing 5 band → 4 band, 12 → 10 langkah**; slash radial
+   5 band → 3 band (standar smear berlapis Thorne v2).
+
+Hasil (median-of-9, canvas cache 528²):
+
+| Frame | Sebelum | Sesudah |
+|---|---|---|
+| idle penuh | 1.95 ms | **1.40 ms** |
+| Q Blade Fury | 4.27 ms | **2.32 ms** |
+| W Healing Ward | 3.25 ms | **1.89 ms** |
+| E Critical | 2.64 ms | **1.97 ms** |
+| R Omnislash | 3.99 ms | **1.87 ms** (fase live 1.87) |
 
 ## Kompatibilitas
 

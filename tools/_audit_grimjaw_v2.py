@@ -467,8 +467,13 @@ ba.blit(font_small.render(
 Old = None
 try:
     Old = load_old_ns()
-except Exception as e:  # baseline tidak ada -> lewati sheet
-    print(f"[i] before/after dilewati: {e}")
+except Exception as e:
+    # Repo arena di-import dangkal (hanya commit terakhir) - baseline
+    # rig v1 (commit eccbeda) tidak ada di history lokal. Sheet
+    # before/after dilewati secara informatif, TIDAK dihitung gagal:
+    # metrik sebelum/sesudah tetap ter-cover oleh cek rig 1.5x di atas.
+    print(f"[i] before/after dilewati (baseline git tidak tersedia "
+          f"di history arena): {e}")
 
 if Old is not None:
     cols = (

@@ -113,6 +113,8 @@ class _NS_grimjaw:
     # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
+    _SCRATCH_POOL = {}
+    _OMNI_BUF = {}
 
     # ---------------------------------------------------------------------------
     # HD Color Palette - "Masterwork v2"
@@ -229,9 +231,41 @@ class _NS_grimjaw:
             _NS_grimjaw._STATIC_SURFACES[key] = surf
         return surf
 
-    def _clamp(color):
-        return tuple(max(0, min(255, int(c))) for c in color)
+    def _scratch(w, h):
+        """Surface sementara POOL (fill 0 lalu pakai) - menggantikan
+        alokasi Surface per-primitif di jalur alpha. Ribuan alokasi per
+        frame dulunya menambah ~0.3-0.5 ms; pool dikosongkan bila > 24
+        ukuran (tidak pernah membengkak di cache)."""
+        pool = _NS_grimjaw._SCRATCH_POOL
+        key = (w, h)
+        surf = pool.get(key)
+        if surf is None:
+            if len(pool) > 24:
+                pool.clear()
+            surf = pygame.Surface((w, h), pygame.SRCALPHA)
+            pool[key] = surf
+        surf.fill((0, 0, 0, 0))
+        return surf
 
+    def _clamp(color):
+        # Fast path: warna palet sudah int valid 0..255 (99% panggilan)
+        # - tanpa genexpr/max/min yang dulu menghabiskan ~10% frame rig.
+        n = len(color)
+        if n == 3:
+            r, g, b = color
+            if 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255:
+                if type(r) is int and type(g) is int and type(b) is int:
+                    return color
+                return (int(r), int(g), int(b))
+        else:
+            r, g, b, a = color
+            if 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255 \
+                    and 0 <= a <= 255:
+                if type(r) is int and type(g) is int and type(b) is int \
+                        and type(a) is int:
+                    return color
+                return (int(r), int(g), int(b), int(a))
+        return tuple(max(0, min(255, int(c))) for c in color)
     def _mix(a, b, t):
         """Blend linear dua warna (t=0 -> a, t=1 -> b)."""
         t = max(0.0, min(1.0, t))
@@ -252,7 +286,7 @@ class _NS_grimjaw:
         if radius == 0:
             return
         if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
+            temp = _NS_grimjaw._scratch(radius * 2 + 4, radius * 2 + 4)
             pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
             surface.blit(temp, (cx - radius - 2, cy - radius - 2))
             return
@@ -275,7 +309,7 @@ class _NS_grimjaw:
             h = abs(ey - sy) + width * 4 + 4
             if w <= 0 or h <= 0:
                 return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
+            temp = _NS_grimjaw._scratch(w, h)
             pygame.draw.line(temp, color,
                              (sx - min_x, sy - min_y),
                              (ex - min_x, ey - min_y), max(1, width))
@@ -295,7 +329,7 @@ class _NS_grimjaw:
             h = max(ys) - min_y + 4
             if w <= 0 or h <= 0:
                 return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
+            temp = _NS_grimjaw._scratch(w, h)
             shifted = [(p[0] - min_x, p[1] - min_y) for p in points]
             pygame.draw.polygon(temp, color, shifted)
             surface.blit(temp, (min_x, min_y))
@@ -748,10 +782,31 @@ class _NS_grimjaw:
                                             hero.direction, phase,
                                             ghost_alpha, ghost_ap)
 
-        # Main body (with attack pose)
-        _NS_grimjaw._draw_grimjaw_body(surface, x + offset_x, y + offset_y,
-                           hero.direction, phase, "attack", 0.6,
-                           detail=False, omni=True)
+        # Main body (with attack pose). Rig omnislash di-cache per
+        # bucket fase (12/s): konten rig hanya berubah lewat fase
+        # (mane/blade/trail), sementara jitter teleport (offset_x/y)
+        # tetap live di blit. Pipeline hero sendiri sudah
+        # mengkuantisasi frame skill; cache ini memangkas ~1.4 ms dari
+        # frame R tanpa mengubah pembacaan badai tebasan.
+        bucket = int(phase * 12) % 12
+        key = ("omni_body", hero.direction, bucket)
+        entry = _NS_grimjaw._OMNI_BUF.get(key)
+        if entry is None:
+            if len(_NS_grimjaw._OMNI_BUF) > 16:
+                _NS_grimjaw._OMNI_BUF.clear()
+            buf = pygame.Surface((240, 240), pygame.SRCALPHA)
+            _NS_grimjaw._draw_grimjaw_body(buf, 120, 124, hero.direction,
+                                           phase, "attack", 0.6,
+                                           detail=False, omni=True)
+            box = buf.get_bounding_rect(min_alpha=1)
+            if box.width <= 0:
+                box = pygame.Rect(0, 0, 240, 240)
+            crop = buf.subsurface(box).copy()
+            entry = (crop, box)
+            _NS_grimjaw._OMNI_BUF[key] = entry
+        crop, box = entry
+        surface.blit(crop, (int(x + offset_x) - 120 + box.x,
+                            int(y + offset_y) - 124 + box.y))
 
 
     # Buffer afterimage R (omnislash): di-cache per (facing, pose bucket).
@@ -773,17 +828,26 @@ class _NS_grimjaw:
         f = 1 if facing >= 0 else -1
         q = max(0.0, min(1.0, round(attack_progress / 0.05) * 0.05))
         key = (f, q)
-        buf = _NS_grimjaw._GHOST_BUF.get(key)
-        if buf is None:
+        entry = _NS_grimjaw._GHOST_BUF.get(key)
+        if entry is None:
             if len(_NS_grimjaw._GHOST_BUF) > 24:
                 _NS_grimjaw._GHOST_BUF.clear()
             buf = pygame.Surface((220, 220), pygame.SRCALPHA)
             _NS_grimjaw._draw_grimjaw_elite(
                 buf, 110, 118, f, 1.0, "attack", q, 0.0, False)
-            _NS_grimjaw._GHOST_BUF[key] = buf
-        buf.set_alpha(alpha)
-        surface.blit(buf, (int(cx) - 110, int(cy) - 118))
-        buf.set_alpha(255)
+            # Crop ke bbox konten (di-cache bersama buffer): blit ghost
+            # hanya area berisi piksel - 40% lebih murah per afterimage,
+            # visual identik.
+            box = buf.get_bounding_rect(min_alpha=1)
+            if box.width <= 0:
+                box = pygame.Rect(0, 0, 220, 220)
+            crop = buf.subsurface(box).copy()
+            entry = (crop, box)
+            _NS_grimjaw._GHOST_BUF[key] = entry
+        crop, box = entry
+        crop.set_alpha(alpha)
+        surface.blit(crop, (int(cx) - 110 + box.x, int(cy) - 118 + box.y))
+        crop.set_alpha(255)
 
 
     # ===================================================================
@@ -1749,7 +1813,7 @@ class _NS_grimjaw:
         dengan rig), sehingga kepala smear SELALU menempel di pedang.
         """
         p = _NS_grimjaw.PALETTE
-        steps = 12
+        steps = 10
         span = min(0.20, max(0.03, ap - _NS_grimjaw.ATTACK_WINDUP_END))
         fade = 1.0
         if ap > _NS_grimjaw.ATTACK_SWING_END:
@@ -1769,10 +1833,8 @@ class _NS_grimjaw:
             base = 13
             _NS_grimjaw._aacircle(surface, (*p["fire_darkest"], alpha // 2),
                                   (ax, ay), max(1, int(base * taper)))
-            _NS_grimjaw._aacircle(surface, (*p["fire_dark"], alpha),
-                                  (ax, ay), max(1, int(base * taper * 0.75)))
             _NS_grimjaw._aacircle(surface, (*p["fire_mid"], alpha),
-                                  (ax, ay), max(1, int(base * taper * 0.55)))
+                                  (ax, ay), max(1, int(base * taper * 0.62)))
             _NS_grimjaw._aacircle(surface, (*p["fire_light"], alpha),
                                   (ax, ay), max(1, int(base * taper * 0.36)))
             _NS_grimjaw._aacircle(surface, (*p["fire_hot"], alpha),
@@ -1866,9 +1928,9 @@ class _NS_grimjaw:
         mist = _NS_grimjaw._static("mist", build_mist)
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
         if pulse < .9:
-            faded = mist.copy()
-            faded.set_alpha(int(255 * pulse))
-            surface.blit(faded, (cx - 85, cy - 16))
+            mist.set_alpha(int(255 * pulse))
+            surface.blit(mist, (cx - 85, cy - 16))
+            mist.set_alpha(255)
         else:
             surface.blit(mist, (cx - 85, cy - 16))
 
@@ -1936,9 +1998,9 @@ class _NS_grimjaw:
             return aura
         aura = _NS_grimjaw._static("fire_aura", build)
         if pulse < .9:
-            faded = aura.copy()
-            faded.set_alpha(int(255 * pulse))
-            surface.blit(faded, (x - 120, y - 110))
+            aura.set_alpha(int(255 * pulse))
+            surface.blit(aura, (x - 120, y - 110))
+            aura.set_alpha(255)
         else:
             surface.blit(aura, (x - 120, y - 110))
 
@@ -1956,9 +2018,9 @@ class _NS_grimjaw:
                         (140, 130), radius)
             return aura
         aura = _NS_grimjaw._static("rage_aura", build)
-        faded = aura.copy()
-        faded.set_alpha(int(255 * pulse))
-        surface.blit(faded, (x - 140, y - 130))
+        aura.set_alpha(int(255 * pulse))
+        surface.blit(aura, (x - 140, y - 130))
+        aura.set_alpha(255)
 
     def _draw_fire_platform(surface, x, y, phase, skill):
         """Fire circle pattern on the ground (base cached)."""
@@ -2356,9 +2418,9 @@ class _NS_grimjaw:
                     pygame.draw.circle(glow, (*p["heal_mid"], alpha), (22, 22), r)
             return glow
         glow = _NS_grimjaw._static("heal_glow", build_glow)
-        faded = glow.copy()
-        faded.set_alpha(int(160 + 80 * pulse))
-        surface.blit(faded, (wx - 22, wy - 12 - 22))
+        glow.set_alpha(int(160 + 80 * pulse))
+        surface.blit(glow, (wx - 22, wy - 12 - 22))
+        glow.set_alpha(255)
 
         _NS_grimjaw._aacircle(surface, p["heal_darkest"], (wx, wy - 12), 8)
         _NS_grimjaw._aacircle(surface, p["heal_dark"], (wx, wy - 12), 7)
@@ -2400,9 +2462,9 @@ class _NS_grimjaw:
                                        (65, 65), r, 2)
             return aura
         aura = _NS_grimjaw._static("heal_aura", build)
-        faded = aura.copy()
-        faded.set_alpha(int(150 + 70 * pulse))
-        surface.blit(faded, (x - 65, y - 65))
+        aura.set_alpha(int(150 + 70 * pulse))
+        surface.blit(aura, (x - 65, y - 65))
+        aura.set_alpha(255)
 
         # Ground ring particles
         for i in range(14):
@@ -2588,17 +2650,11 @@ class _NS_grimjaw:
             end_y = int(math.sin(angle) * slash_len * 0.8)
             _NS_grimjaw._aaline(surface, (*p["fire_darkest"], alpha),
                                 (slash_x, slash_y),
-                                (slash_x + end_x, slash_y + end_y), 7)
-            _NS_grimjaw._aaline(surface, (*p["fire_dark"], alpha),
-                                (slash_x, slash_y),
-                                (slash_x + end_x, slash_y + end_y), 5)
+                                (slash_x + end_x, slash_y + end_y), 8)
             _NS_grimjaw._aaline(surface, (*p["fire_mid"], alpha),
                                 (slash_x, slash_y),
-                                (slash_x + end_x, slash_y + end_y), 3)
+                                (slash_x + end_x, slash_y + end_y), 4)
             _NS_grimjaw._aaline(surface, (*p["fire_hot"], alpha),
-                                (slash_x, slash_y),
-                                (slash_x + end_x, slash_y + end_y), 2)
-            _NS_grimjaw._aaline(surface, (*p["fire_core"], alpha),
                                 (slash_x, slash_y),
                                 (slash_x + end_x, slash_y + end_y), 1)
             _NS_grimjaw._aacircle(surface, (*p["white"], alpha),

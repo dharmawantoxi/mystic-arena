@@ -104,12 +104,11 @@ def test_dense_body_matches_boss_family():
     """Badan padat Morgath sekelas Gornak & jauh di atas versi lama (55px)."""
     rect = solid_rect(render_rig("idle"))
     assert rect is not None
-    # Versi lama: 35x55. Rewrite: ~49x84 padat -> tepat rujukan keluarga
-    # "morgath H82/W120" (rujukan itu diukur BERSAMA FX; padat murni
-    # sedikit di bawahnya). Di bawah gornak (H~133 dengan FX) sesuai
-    # urutan keluarga, di atas rig lama 1.5x.
-    assert 76 <= rect.height <= 96, f"H padat di luar band: {rect.height}"
-    assert rect.width >= 40, f"silluet too slim: {rect.width}x{rect.height}"
+    # Versi lama: 35x55. Rewrite: ~105 px padat (SATU skala 0.76 untuk
+    # boss & lane, pola Thorne/Gornak v2) - di bawah gornak H~119
+    # (kontrak keluarga gornak >= 1.05x morgath) & di atas rig lama 2x.
+    assert 92 <= rect.height <= 110, f"H padat di luar band: {rect.height}"
+    assert rect.width >= 50, f"silluet too slim: {rect.width}x{rect.height}"
     # Caster berjubah: proporsi tinggi, tapi bukan tiang (lama 0.64).
     assert rect.width / rect.height >= 0.42, rect.width / rect.height
     # Hem jubah jatuh di garis bayangan -> tidak melayang.
@@ -264,23 +263,31 @@ def test_hero_lane_render_and_beam_pass():
     from heroes import _ProbeEntity, HERO_RENDERERS, BOSS_RENDERERS
 
     c = 200
-    canvas = pygame.Surface((400, 400), pygame.SRCALPHA)
+    rend = HERO_RENDERERS.get("morgath") or BOSS_RENDERERS.get("morgath")
+    assert rend is not None
+
+    # Skala hasil normalisasi TIDAK boleh meng-upscale (kabur); badan
+    # final di layar = HERO_TARGET_HEIGHT * HERO_GLOBAL_SCALE (kontrak
+    # pipeline - semua hero masterwork mendarat di ~51 px di lane).
+    sc = heroes._get_hero_scale("morgath")
+    assert sc <= 1.02, f"morgath di-upscale {sc}"
+    assert 0.45 <= sc <= 0.95, f"skala di luar band keluarga: {sc}"
+
+    # Render jalur PENUH (canvas -> smoothscale -> pass HD/outline),
+    # lalu ukur badan final dengan semantik yang sama seperti
+    # _measure_native_size (buang FX tanah di bawah garis kaki,
+    # ambang alpha 100) - ini ukuran yang benar-benar terlihat.
     h = _ProbeEntity("morgath", c, c)
     h.pulse = 1.35
     h.direction = 1
     h.team = "blue"
-    rend = HERO_RENDERERS.get("morgath") or BOSS_RENDERERS.get("morgath")
-    assert rend is not None
-    h._render_scale = 1.0
-    rend(canvas, h, c, c)
-    assert canvas.get_bounding_rect(min_alpha=100).height > 40
-
-    # Skala hasil normalisasi TIDAK boleh meng-upscale (kabur) dan harus
-    # mendaratkan hero Morgath sekelas hero lain di lane (target 65).
-    sc = heroes._get_hero_scale("morgath")
-    assert sc <= 1.02, f"morgath di-upscale {sc}"
-    r = canvas.get_bounding_rect(min_alpha=100)
-    assert 52 <= r.height * sc <= 82, f"final lane H = {r.height * sc}"
+    final = pygame.Surface((400, 400), pygame.SRCALPHA)
+    heroes.render_hero("morgath", final, h, c, c)
+    body_line = c + 16
+    final.fill((0, 0, 0, 0), (0, body_line, 400, 400 - body_line))
+    r = final.get_bounding_rect(min_alpha=100)
+    assert r.height >= 40, f"badan final hilang: {r}"
+    assert 45 <= r.height <= 62, f"final body H = {r.height}"
 
     # Beam pass (skala dunia, setelah body ter-blit): tidak crash & menggambar
     h2 = probe(c, c)
