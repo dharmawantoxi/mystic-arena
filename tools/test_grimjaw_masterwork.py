@@ -238,8 +238,8 @@ def test_skill_fx_are_world_space():
 # ── paritas keluarga masterwork ──────────────────────────────────
 # (renderer, label) yang sudah dinaikkan ke standar Thorne v2 + FX v2.1.
 def _family_namespaces():
-    from bosses.level2 import _NS_gorath
-    return (("gorath", _NS_gorath),)
+    from bosses.level2 import _NS_gorath, _NS_razak
+    return (("gorath", _NS_gorath), ("razak", _NS_razak))
 
 
 def test_family_shares_fx_vocabulary():
@@ -317,6 +317,114 @@ def test_family_skill_fx_are_world_space():
     s, cx, cy, _ = probe("r", 60)
     n = hits(s, 380, cx, cy + GOR.GROUND_DY)
     assert n > 100, f"R: ring 190 dunia tidak world-space ({n}/180)"
+
+
+def test_razak_skill_fx_are_world_space():
+    """Telegraph Razak digambar di radius DUNIA, bukan px canvas.
+
+    Razak: Q=75 (target), W=95 (target), E=80 (caster), R=180 (caster)
+    px dunia. Pada _render_scale=0.5 ring harus muncul di 2x radius
+    tersebut dalam px canvas.
+    """
+    import math as _m
+    from types import SimpleNamespace as _S
+
+    from bosses.level2 import _NS_razak as RZ
+
+    def probe(skill, timer, W=1000):
+        surf = pygame.Surface((W, W), pygame.SRCALPHA)
+        cx = cy = W // 2
+        b = _S(boss_type="razak", boss_class="mini", x=float(cx),
+               y=float(cy), direction=1, facing=1, pulse=1.3, timer=0,
+               attack_cooldown=45, active_skill=skill,
+               active_skill_timer=timer,
+               target=_S(x=float(cx + 95), y=float(cy - 20), alive=True),
+               hurt_flash_timer=0, alive=True, radius=34, range=55,
+               _render_scale=0.5)
+        RZ.draw_razak(surf, b, cx, cy)
+        return surf, cx, cy, b
+
+    def hits(surf, r_px, cx, cy, tol=4):
+        n = 0
+        for a in range(0, 360, 2):
+            ca, sa = _m.cos(_m.radians(a)), _m.sin(_m.radians(a))
+            for dr in range(-tol, tol + 1):
+                x, y = int(cx + ca * (r_px + dr)), int(cy + sa * (r_px + dr))
+                if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
+                        and surf.get_at((x, y)).a > 30:
+                    n += 1
+                    break
+        return n
+
+    # Q: telegraph 75 dunia di TARGET
+    s, cx, cy, b = probe("q", 30)
+    tx, ty = RZ._target_position(b, cx, cy)
+    n = hits(s, 150, tx, ty)
+    assert n > 120, f"Q: ring 75 dunia tidak world-space ({n}/180)"
+
+    # W: telegraph 95 dunia di TARGET
+    s, cx, cy, b = probe("w", 30)
+    tx, ty = RZ._target_position(b, cx, cy)
+    n = hits(s, 190, tx, ty)
+    assert n > 120, f"W: ring 95 dunia tidak world-space ({n}/180)"
+
+    # E: ring pendaratan 80 dunia di CASTER
+    s, cx, cy, _ = probe("e", 20)
+    n = hits(s, 160, cx, cy + RZ.GROUND_DY)
+    assert n > 120, f"E: ring 80 dunia tidak world-space ({n}/180)"
+
+    # R: AOE 180 dunia di CASTER
+    s, cx, cy, _ = probe("r", 60)
+    n = hits(s, 360, cx, cy + RZ.GROUND_DY)
+    assert n > 100, f"R: ring 180 dunia tidak world-space ({n}/180)"
+
+
+def test_razak_skill_fx_have_three_phases():
+    """Tiap skill Razak punya 3 tahap terbaca (aktivasi/steady/akhir)."""
+    from types import SimpleNamespace as _S
+
+    from bosses.level2 import _NS_razak as RZ
+
+    for skill, dur in RZ.SKILL_DUR.items():
+        sigs = set()
+        for timer in (dur - 4, int(dur * 0.6), 6):
+            surf = pygame.Surface((620, 620), pygame.SRCALPHA)
+            b = _S(boss_type="razak", boss_class="mini", x=310.0, y=310.0,
+                   direction=1, facing=1, pulse=1.3, timer=0,
+                   attack_cooldown=45, active_skill=skill,
+                   active_skill_timer=timer,
+                   target=_S(x=430.0, y=290.0, alive=True),
+                   hurt_flash_timer=0, alive=True, radius=34, range=55)
+            RZ.draw_razak(surf, b, 310, 310)
+            sigs.add(pygame.image.tobytes(surf, "RGBA"))
+        assert len(sigs) == 3, \
+            f"razak {skill}: hanya {len(sigs)}/3 tahap FX yang berbeda"
+
+
+def test_razak_keeps_public_names():
+    """Upgrade v2 tidak boleh memutus nama publik lama _NS_razak."""
+    from bosses.level2 import _NS_razak as RZ
+
+    legacy = ("PALETTE", "_clamp", "_aacircle", "_aaline", "_poly",
+              "_ellipse", "_rect", "_target_position", "NapalmProjectile",
+              "NapalmPatch", "_detect_moving", "_update_attack_anim",
+              "_manage_projectiles", "_manage_projectiles_no_patches",
+              "_spawn_napalm", "draw_razak", "draw_boss", "_draw_shockwave",
+              "_draw_razak_idle", "_draw_razak_walk", "_draw_razak_attack",
+              "_draw_razak_dashing", "_draw_razak_full_raw",
+              "_draw_razak_full", "_draw_bat_wings", "_draw_bat_wings_front",
+              "_draw_bat_body", "_draw_bat_head", "_draw_goblin_rider",
+              "_draw_goblin_torso", "_draw_goblin_head", "_draw_fuel_tanks",
+              "_draw_goblin_idle_arms", "_draw_goblin_gun_arms",
+              "_draw_goblin_attack_arms", "_draw_goblin_arm",
+              "_draw_flame_gun", "_draw_machete_held",
+              "_draw_machete_swinging", "_draw_fire_wisps", "_draw_shadow",
+              "_draw_fire_aura", "_draw_machete_swing_arc", "_draw_flame",
+              "_draw_ember", "_draw_fire_ground_patch",
+              "_draw_sticky_napalm", "_draw_flamebreak",
+              "_draw_firestorm_ground", "_draw_firestorm")
+    missing = [n for n in legacy if not hasattr(RZ, n)]
+    assert not missing, f"razak: nama publik hilang -> {missing}"
 
 
 def test_family_skill_fx_have_three_phases():
@@ -399,10 +507,15 @@ if __name__ == "__main__":
     test_silhouette_outline_exists()
     test_family_shares_fx_vocabulary()
     test_family_skill_fx_are_world_space()
+    test_razak_skill_fx_are_world_space()
     test_family_skill_fx_have_three_phases()
+    test_razak_skill_fx_have_three_phases()
     test_family_keeps_public_names()
+    test_razak_keeps_public_names()
     test_family_rigs_are_procedural()
     print("OK - Grimjaw masterwork v2: rig 1.5x, blade pose, portrait LOD, "
           "Q/W/E/R world-space, outline, dan 12 frame animasi tervalidasi")
     print("OK - paritas keluarga (gorath v2): kosakata FX, telegraph "
           "world-space W150/E85/R190, 3 tahap per skill, nama publik utuh")
+    print("OK - paritas keluarga (razak v2): telegraph world-space "
+          "Q75/W95/E80/R180, 3 tahap per skill, nama publik utuh")
