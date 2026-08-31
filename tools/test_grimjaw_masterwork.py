@@ -238,8 +238,8 @@ def test_skill_fx_are_world_space():
 # ── paritas keluarga masterwork ──────────────────────────────────
 # (renderer, label) yang sudah dinaikkan ke standar Thorne v2 + FX v2.1.
 def _family_namespaces():
-    from bosses.level2 import _NS_gorath
-    return (("gorath", _NS_gorath),)
+    from bosses.level2 import _NS_gorath, _NS_razak
+    return (("gorath", _NS_gorath), ("razak", _NS_razak),)
 
 
 def test_family_shares_fx_vocabulary():
@@ -269,15 +269,15 @@ def test_family_shares_fx_vocabulary():
 def test_family_skill_fx_are_world_space():
     """Telegraph keluarga digambar di radius DUNIA, bukan px canvas.
 
-    Gorath: W=150, E=85, R=190 px dunia. Pada _render_scale=0.5 ring
-    harus muncul di 2x radius tersebut dalam px canvas.
+    Gorath: W=150, E=85, R=190 px dunia. Razak: Q=75, W=130, R=180.
+    Pada _render_scale=0.5 ring harus muncul di 2x radius tersebut dalam px canvas.
     """
     import math as _m
     from types import SimpleNamespace as _S
 
-    from bosses.level2 import _NS_gorath as GOR
+    from bosses.level2 import _NS_gorath as GOR, _NS_razak as RAZ
 
-    def probe(skill, timer, W=1000):
+    def probe_gor(skill, timer, W=1000):
         surf = pygame.Surface((W, W), pygame.SRCALPHA)
         cx = cy = W // 2
         b = _S(boss_type="gorath", boss_class="mini", x=float(cx),
@@ -290,62 +290,91 @@ def test_family_skill_fx_are_world_space():
         GOR.draw_gorath(surf, b, cx, cy)
         return surf, cx, cy, b
 
-    def hits(surf, r_px, cx, cy, tol=3):
+    def probe_raz(skill, timer, W=1000):
+        surf = pygame.Surface((W, W), pygame.SRCALPHA)
+        cx = cy = W // 2
+        b = _S(boss_type="razak", boss_class="mini", x=float(cx),
+               y=float(cy), direction=1, facing=1, pulse=1.3, timer=0,
+               attack_cooldown=45, active_skill=skill,
+               active_skill_timer=timer,
+               target=_S(x=float(cx + 70), y=float(cy + 10), alive=True),
+               hurt_flash_timer=0, alive=True, radius=36, range=58,
+               _render_scale=0.5)
+        RAZ.draw_razak(surf, b, cx, cy)
+        return surf, cx, cy, b
+
+    def hits(surf, r_px, cx, cy, tol=3, squash=1.0):
         n = 0
         for a in range(0, 360, 2):
             ca, sa = _m.cos(_m.radians(a)), _m.sin(_m.radians(a))
             for dr in range(-tol, tol + 1):
-                x, y = int(cx + ca * (r_px + dr)), int(cy + sa * (r_px + dr))
+                x = int(cx + ca * (r_px + dr))
+                y = int(cy + sa * (r_px + dr) * squash)
                 if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
                         and surf.get_at((x, y)).a > 30:
                     n += 1
                     break
         return n
 
-    # W: AOE 150 dunia, digambar di garis tanah caster
-    s, cx, cy, _ = probe("w", 40)
+    # Gorath checks
+    s, cx, cy, _ = probe_gor("w", 40)
     n = hits(s, 300, cx, cy + GOR.GROUND_DY - 8)
-    assert n > 120, f"W: ring 150 dunia tidak world-space ({n}/180)"
+    assert n > 120, f"gorath W: ring 150 dunia tidak world-space ({n}/180)"
 
-    # E: AOE 85 dunia, digambar di TARGET
-    s, cx, cy, b = probe("e", 24)
+    s, cx, cy, b = probe_gor("e", 24)
     tx, ty = GOR._target_position(b, cx, cy)
     n = hits(s, 170, tx, ty)
-    assert n > 120, f"E: ring 85 dunia tidak world-space ({n}/180)"
+    assert n > 120, f"gorath E: ring 85 dunia tidak world-space ({n}/180)"
 
-    # R: AOE 190 dunia di caster
-    s, cx, cy, _ = probe("r", 60)
+    s, cx, cy, _ = probe_gor("r", 60)
     n = hits(s, 380, cx, cy + GOR.GROUND_DY)
-    assert n > 100, f"R: ring 190 dunia tidak world-space ({n}/180)"
+    assert n > 100, f"gorath R: ring 190 dunia tidak world-space ({n}/180)"
+
+    # Razak checks: Q=75, W=130, R=180 world px, at fs=0.5 => 150,260,360 canvas
+    s, cx, cy, b = probe_raz("q", 20)
+    tx, ty = RAZ._target_position(b, cx, cy)
+    n = hits(s, 150, tx, ty+12, squash=0.35)
+    assert n > 40, f"razak Q: ring 75 dunia tidak world-space ({n}/180)"
+
+    s, cx, cy, b = probe_raz("w", 25)
+    tx, ty = RAZ._target_position(b, cx, cy)
+    n = hits(s, 260, tx, ty+12, squash=0.35)
+    assert n > 40, f"razak W: ring 130 dunia tidak world-space ({n}/180)"
+
+    s, cx, cy, _ = probe_raz("r", 40)
+    n = hits(s, 360, cx, cy + RAZ.GROUND_DY, squash=0.35)
+    assert n > 40, f"razak R: ring 180 dunia tidak world-space ({n}/180)"
 
 
 def test_family_skill_fx_have_three_phases():
     """Tiap skill keluarga punya 3 tahap terbaca (aktivasi/steady/telegraph)."""
     from types import SimpleNamespace as _S
 
-    from bosses.level2 import _NS_gorath as GOR
+    from bosses.level2 import _NS_gorath as GOR, _NS_razak as RAZ
 
-    for skill, dur in GOR.SKILL_DUR.items():
-        sigs = set()
-        for timer in (dur - 4, int(dur * 0.6), 6):
-            surf = pygame.Surface((620, 620), pygame.SRCALPHA)
-            b = _S(boss_type="gorath", boss_class="mini", x=310.0, y=310.0,
-                   direction=1, facing=1, pulse=1.3, timer=0,
-                   attack_cooldown=44, active_skill=skill,
-                   active_skill_timer=timer,
-                   target=_S(x=430.0, y=290.0, alive=True),
-                   hurt_flash_timer=0, alive=True, radius=36, range=58)
-            GOR.draw_gorath(surf, b, 310, 310)
-            sigs.add(pygame.image.tobytes(surf, "RGBA"))
-        assert len(sigs) == 3, \
-            f"gorath {skill}: hanya {len(sigs)}/3 tahap FX yang berbeda"
+    for label, NS, draw_fn, cd in (("gorath", GOR, GOR.draw_gorath, 44), ("razak", RAZ, RAZ.draw_razak, 45)):
+        dur_map = getattr(NS, "SKILL_VISUAL_DURATION", None) or getattr(NS, "SKILL_DUR", None) or getattr(NS, "SKILL_VISUAL_DURATION", {})
+        for skill, dur in dur_map.items():
+            sigs = set()
+            for timer in (dur - 4, int(dur * 0.6), 6):
+                surf = pygame.Surface((620, 620), pygame.SRCALPHA)
+                b = _S(boss_type=label, boss_class="mini", x=310.0, y=310.0,
+                       direction=1, facing=1, pulse=1.3, timer=0,
+                       attack_cooldown=cd, active_skill=skill,
+                       active_skill_timer=timer,
+                       target=_S(x=430.0, y=290.0, alive=True),
+                       hurt_flash_timer=0, alive=True, radius=36, range=58)
+                draw_fn(surf, b, 310, 310)
+                sigs.add(pygame.image.tobytes(surf, "RGBA"))
+            assert len(sigs) == 3, \
+                f"{label} {skill}: hanya {len(sigs)}/3 tahap FX yang berbeda"
 
 
 def test_family_keeps_public_names():
     """Upgrade v2 tidak boleh memutus nama publik lama renderer keluarga."""
-    from bosses.level2 import _NS_gorath as GOR
+    from bosses.level2 import _NS_gorath as GOR, _NS_razak as RAZ
 
-    legacy = ("PALETTE", "_clamp", "_aacircle", "_aaline", "_poly",
+    legacy_gor = ("PALETTE", "_clamp", "_aacircle", "_aaline", "_poly",
               "_ellipse", "_rect", "_target_position", "BloodProjectile",
               "_detect_moving", "_update_attack_anim", "_manage_projectiles",
               "_spawn_projectile", "draw_gorath", "draw_boss",
@@ -361,8 +390,16 @@ def test_family_keeps_public_names():
               "_draw_spiky_hair", "_draw_idle_arms", "_draw_attack_arms",
               "_draw_arm_segment", "_draw_hand", "_draw_curved_blade",
               "_draw_curved_blade_angled", "_draw_body_blood_drips")
-    missing = [n for n in legacy if not hasattr(GOR, n)]
+    missing = [n for n in legacy_gor if not hasattr(GOR, n)]
     assert not missing, f"gorath: nama publik hilang -> {missing}"
+
+    # razak public names (minimal set)
+    legacy_raz = ("PALETTE", "_clamp", "_aacircle", "_aaline", "_poly", "_ellipse", "_rect",
+                  "_target_position", "draw_razak", "draw_boss", "_draw_shadow", "_draw_shockwave",
+                  "_draw_razak_idle", "_draw_razak_walk", "_draw_razak_attack", "_draw_razak_body",
+                  "_draw_razak_body_raw", "_draw_razak_elite", "_draw_razak_full_raw")
+    missing2 = [n for n in legacy_raz if not hasattr(RAZ, n)]
+    assert not missing2, f"razak: nama publik hilang -> {missing2}"
 
 
 def test_family_rigs_are_procedural():
