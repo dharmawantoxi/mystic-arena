@@ -157,17 +157,17 @@ ok_all &= check(_count(s, _wind, 95, 170) > 30,
 
 s = _render_skill("q", 90)
 ok_all &= check(_count(s, _wind, 55, 180) > 50,
-                "Q: rune/ring focus fire di luar badan",
+                "Q: fletching/pita angin di luar badan",
                 str(_count(s, _wind, 55, 180)))
 
 s = _render_skill("r", 30)
 ok_all &= check(_count(s, _wind, 20, 90) > 30,
-                "R: orb powershot di sekitar busur",
+                "R: gale/daun di sekitar busur",
                 str(_count(s, _wind, 20, 90)))
 
 s = _render_skill("e", 80)
 ok_all &= check(_count(s, _wind, 40, 220) > 25,
-                "E: tether/reticle shackle menuju target",
+                "E: sulur/daun shackle menuju target",
                 str(_count(s, _wind, 40, 220)))
 
 # 3 tahap

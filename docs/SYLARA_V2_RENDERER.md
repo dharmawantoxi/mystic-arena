@@ -59,23 +59,30 @@ smoothscale + lighting + outline pass.
   `powershot`): busur + rim cape menyala hijau, orb charge, rune ring,
   afterimage vertigo.
 
-## Skill FX (world-space, 3 fase tiap skill)
+## Skill FX — bahasa visual Sylara (bukan Thorne/Drakar)
+
+Bukan rune ring, retakan tanah, X-slash, atau crescent helix. Kosakata
+ranger: **pita angin laminar**, **daun/rumput**, **fletching**, **sulur hidup**.
 
 FX membaca `hero.active_skill` / `hero.active_skill_timer` dengan
 **durasi VISUAL** `SKILL_VISUAL_DURATION = {q:180, w:180, e:150, r:60}`.
 
-| Skill | Radius dunia | Visual |
+| Skill | Radius dunia | Visual khas |
 |---|---|---|
-| Q Focus Fire | 200 (`skill_range`) | shockwave ganda + bintang → rune ring + crescent + retakan daun → pierce-line chevron |
-| W Windrun | 70 | shockwave + bintang → crescent helix + dashed ring + daun + retakan → chevron arah lari |
-| E Shackle Shot | target | burst orb di target → tether rantai 14 segmen + reticle → kandang menguncup + burst ikat |
-| R Powershot | 60 | shockwave + bintang di busur → orb charge + rune ring + mote → X-slash + retakan di target |
+| Q Focus Fire | 200 (`skill_range`) | kipas pita angin dari nock → halo rumput + spiral fletching → koridor volley ke arah hadap |
+| W Windrun | 70 | ledakan daun → **halo rumput** tepat di 70 px dunia + siklon daun + lembar angin dash → siklon mengencang |
+| E Shackle Shot | target | sulur berdaun dari busur ke target + karangan daun → mengerat → karangan menguncup |
+| R Powershot | busur → target | getar tali + daun menggulung ke nock → **gale tunnel** terkompresi + sapuan daun di target |
+
+Primitif baru: `_sy_ribbon`, `_sy_wind_sheets`, `_sy_leaf_orbit`,
+`_sy_leaf_burst`, `_sy_grass_halo`, `_sy_vine_tether`, `_sy_fletch`,
+`_sy_gale_tunnel`.
 
 **World-space**: `_fx_scale(hero)` = `1/_render_scale` (cap 2.6).
 `_ring_r()` clamp ke dalam canvas cache.
 
-**Proyektil**: `WindArrowProjectile` / `ShackleProjectile` memakai
-`_drk_arrow` + pita comet + kilau `leaf_gold`.
+**Proyektil**: `WindArrowProjectile` / `ShackleProjectile` tetap panah
+angin berlapis + kilau `leaf_gold`.
 
 **Tanpa alokasi per-frame**: shadow & aura di-cache `_static`.
 

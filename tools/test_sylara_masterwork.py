@@ -335,6 +335,20 @@ def test_keeps_public_names():
     assert not missing, f"sylara: nama publik hilang -> {missing}"
 
 
+def test_skill_fx_are_sylara_not_thorne():
+    """Skill FX memakai kosakata ranger, bukan rune/retakan/X-slash Thorne."""
+    import inspect as _ins
+    for name in ("_draw_focus_fire_ground", "_draw_focus_fire_effect",
+                 "_draw_windrun_ground", "_draw_windrun_trail",
+                 "_draw_shackle_ground", "_draw_powershot_charge",
+                 "_draw_bow_release_flash"):
+        src = _ins.getsource(getattr(S, name))
+        for banned in ("_drk_rune_ring", "_drk_cracks", "_drk_crescent",
+                       "_drk_shock", "_drk_orb", "_jagged_crack"):
+            assert banned not in src, f"{name} masih meniru {banned}"
+        assert "_sy_" in src or name == "_draw_bow_release_flash"
+
+
 if __name__ == "__main__":
     test_masterwork_is_procedural()
     test_material_details_and_pose()
@@ -347,5 +361,6 @@ if __name__ == "__main__":
     test_skill_visuals_render_with_masterwork()
     test_body_reacts_to_skill_state()
     test_keeps_public_names()
+    test_skill_fx_are_sylara_not_thorne()
     print("OK - Sylara masterwork v2: rig 1.52x, busur pose, 7-keyframe IMPACT, "
-          "portrait LOD, Q/W/E/R world-space, outline, dan animasi tervalidasi")
+          "portrait LOD, Q/W/E/R world-space khas ranger, outline, animasi")
