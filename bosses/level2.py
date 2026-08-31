@@ -37,17 +37,63 @@ _IS_LEVEL_BUNDLE = True
 # RAZAK
 # ====================================================================
 class _NS_razak:
-    """Namespace razak - isi asli tidak diubah."""
+    """Namespace razak - PIXEL MASTERWORK v2 + SKILL FX v2.1.
 
+    Rewrite penuh renderer `_NS_razak` mengikuti standar
+    **Thorne v2 Pixel Masterwork + Thorne v2.1 Skill FX**
+    (lihat docs/THORNE_V2_RENDERER.md) - pola yang sama dengan
+    `_NS_gorath` di file ini. Tetap 100% prosedural: tidak ada
+    PNG / sprite-sheet / image.load.
+
+    Apa yang naik dibanding v1
+    --------------------------
+    1. RIG ~1.5x LEBIH BESAR di resolusi native (mahkota helm goblin
+       y=-72, cakar/api bawah +40) lalu ditampilkan lewat SATU
+       `SCALE = 0.62` untuk semua jalur (boss langsung, lane hero,
+       portrait). Ukuran DI LAYAR tetap sekelas keluarga level-2
+       (alchemist true boss >= razak mini); yang berubah adalah
+       KEPADATAN detail per piksel layar.
+    2. DISIPLIN PIXEL-ART: tiap material 4-6 nilai ramp dengan
+       hue-shift (bayangan kulit bat didorong ungu dingin, highlight
+       oranye hangat; goblin hijau -> kuning hangat), selout (salinan
+       shadow_deep hanya di sisi bayangan), siluet bergerigi lewat
+       `_tuft_points` (tepi belakang sayap ber-scallop, syal pilot
+       robek), specular cluster 1-2 px (goggle, tangki brass, edge
+       machete), dither band (`_dither_dots`) di perut bat & membran
+       sayap. Key light kiri-atas konsisten lighting.py.
+    3. ANATOMI: bat api bersisik dengan sayap membran 4-band + tulang
+       jari + cakar, kepala naga (mata membara + kedip, moncong,
+       taring, 3 tanduk, lubang hidung mendengus), ekor berujung
+       panah dengan inersia; rider goblin: goggles biru khas
+       (specular cluster), helm kulit ber-rivet, syal robek
+       berkibar, rompi + strap X ber-jahitan, tangki bahan bakar
+       brass ganda + selang + gauge, FLAMETHROWER brass ber-moncong
+       flare + pilot flame flicker, MACHETE api 5-band ber-fuller.
+    4. ANIMASI: wing-beat solver (downstroke memicu gust ring di
+       bawah + hover bob mengikuti kepakan - pengganti foot solver
+       untuk unit terbang), inersia ekor/syal/api (secondary motion),
+       idle hidup (napas, kedip bat & goblin, dengus, gauge bergetar,
+       pilot flame flicker), serangan 7 keyframe dengan frame IMPACT
+       tersendiri di ap=0.54 (squash, bintang 6 spike, shockwave,
+       smear sabit api 3 lapis) + fireball ranged tetap spawn di
+       puncak ayunan.
+    5. SKILL FX world-space (`_fx_scale`, cap 2.6) dengan 3 tahap
+       (AKTIVASI / STEADY / TELEGRAPH) dan radius telegraph TEPAT
+       dalam px dunia = radius gameplay base_boss.py:
+         Q Sticky Napalm  75 px dunia DI TARGET
+         W Flamebreak     95 px dunia DI TARGET
+         E Firefly        80 px dunia (AOE pendaratan dash)
+         R Firestorm     180 px dunia DI CASTER (bukan target - AI
+                          memukul sekitar DIRI, telegraph mengikuti).
+    """
+
+    # ---------------------------------------------------------------------------
+    # Compatibility helpers
+    # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
 
-    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
-    # Lapisan mahal yang hasilnya identik antar-frame di-cache supaya
-    # render penuh tetap murah. Aura/denyut via set_alpha (blit NORMAL
-    # menghormati alpha; blit ADD tidak), shadow cache + reaktif, flame
-    # dikunci per (size, phase-bucket). Daftar rect shadow direkam saat
-    # hurt-flash supaya flash badan tidak ikut menyalakan bayangan tanah.
+    # ── cache (nama lama dipertahankan) ─────────────────────────────
     _shadow_cache = None
     _aura_cache = None
     _flame_cache = {}
@@ -55,55 +101,92 @@ class _NS_razak:
     _record_shadow = None
     _body_buf = None        # buffer badan untuk outline+lighting
 
+    # Surface statis (aura/mist/platform) dibangun SEKALI lalu
+    # dipakai ulang - tidak ada alokasi surface per frame.
+    _STATIC_SURFACES = {}
+
+    # ── metrik rig v2 ───────────────────────────────────────────────
+    # Faktor pertumbuhan terhadap rig v1 (dokumentasi + dipakai audit).
+    RIG_SCALE = 1.5
+    # Buffer badan: dibatasi dari extents TERUKUR semua pose (idle/
+    # walk/attack x 7 keyframe/dash, dua arah hadap): sayap +-62,
+    # helm -72, cakar bawah +40, + margin smear machete.
+    RIG_W, RIG_H = 176, 152
+    RIG_OX, RIG_OY = 88, 92
+
+    # Satu SCALE untuk SEMUA jalur (boss langsung, lane hero, portrait).
+    # PERINGATAN: jangan pisahkan SCALE per jalur; itu merusak
+    # normalisasi _measure_native_size di heroes/__init__.py.
+    SCALE = 0.62
+    # Garis tanah dunia relatif jangkar (bayangan/patch/telegraph).
+    GROUND_DY = 52
+
+    # Durasi visual skill (frame) - HARUS sama dengan active_skill_timer
+    # yang diisi AI di bosses/base_boss.py (_razak_q/w/e/r).
+    SKILL_DUR = {"q": 40, "w": 50, "e": 35, "r": 90}
+
+    # Radius gameplay tiap skill dalam PX DUNIA (bosses/base_boss.py):
+    #   q -> AOE 75 di target, w -> AOE 95 di target,
+    #   e -> AOE 80 setelah dash, r -> AOE 180 di sekitar DIRI.
+    # Telegraph digambar TEPAT di angka ini lewat _ring_r (world-space).
+    SKILL_RADIUS = {"q": 75, "w": 95, "e": 80, "r": 180}
+
     # ---------------------------------------------------------------------------
-    # HD Palette - Fire orange / green goblin / red bat mount
+    # HD Palette v2 - fire orange / green goblin / red bat mount.
+    # Semua kunci lama dipertahankan (nilai dituning ulang dengan
+    # hue-shift) + kunci baru untuk rim, smoke, dan gold.
     # ---------------------------------------------------------------------------
     PALETTE = {
-        # Goblin skin - green
-        "gob_darkest":    (25,  45,  20),
-        "gob_dark":       (55,  95,  38),
+        # Goblin skin - green (bayangan didorong biru-hijau dingin,
+        # highlight kuning hangat)
+        "gob_darkest":    (22,  42,  26),
+        "gob_dark":       (52,  92,  42),
         "gob_mid":        (95, 145,  55),
         "gob_light":      (140, 190, 78),
-        "gob_high":       (185, 225, 120),
-        "gob_shine":      (225, 250, 175),
+        "gob_high":       (188, 224, 112),
+        "gob_shine":      (228, 250, 168),
+        "gob_rim":        (240, 255, 196),
 
-        # Bat/dragon mount - red-orange
-        "bat_darkest":    (35,  15,  10),
-        "bat_dark":       (95,  32,  18),
+        # Bat/dragon mount - red-orange (bayangan ungu dingin)
+        "bat_darkest":    (36,  14,  20),
+        "bat_dark":       (92,  30,  24),
         "bat_mid":        (155, 62,  25),
         "bat_light":      (210, 95,  38),
-        "bat_high":       (240, 140, 65),
-        "bat_shine":      (255, 180, 100),
+        "bat_high":       (242, 142, 66),
+        "bat_shine":      (255, 184, 104),
+        "bat_rim":        (255, 214, 150),
 
         # Bat belly (lighter)
-        "belly_dark":     (105, 55,  25),
+        "belly_dark":     (112, 56,  32),
         "belly_mid":      (170, 105, 55),
-        "belly_light":    (215, 155, 85),
+        "belly_light":    (216, 156, 88),
 
-        # Wing membrane
-        "wing_darkest":   (30,  12,   8),
-        "wing_dark":      (75,  25,  15),
+        # Wing membrane (bayangan maroon-ungu)
+        "wing_darkest":   (32,  12,  16),
+        "wing_dark":      (74,  24,  20),
         "wing_mid":       (135, 45,  22),
         "wing_light":     (190, 78,  35),
+        "wing_high":      (228, 118, 56),
 
         # Leather / gear
-        "leather_darkest": (22, 14,  8),
-        "leather_dark":   (50,  32,  18),
+        "leather_darkest": (24, 15,  10),
+        "leather_dark":   (52,  33,  19),
         "leather_mid":    (95,  62,  32),
         "leather_light":  (150, 100, 55),
+        "leather_high":   (196, 144, 88),
 
         # Metal
-        "metal_darkest":  (18,  15,  18),
-        "metal_dark":     (48,  42,  48),
-        "metal_mid":      (95,  88,  95),
+        "metal_darkest":  (18,  15,  20),
+        "metal_dark":     (48,  42,  50),
+        "metal_mid":      (95,  88,  98),
         "metal_light":    (160, 152, 165),
-        "metal_shine":    (225, 220, 225),
+        "metal_shine":    (225, 220, 228),
 
-        # Brass / bronze (gun parts)
-        "brass_dark":     (80,  50,  15),
+        # Brass / bronze (gun & tanks)
+        "brass_dark":     (82,  50,  16),
         "brass_mid":      (155, 108, 40),
-        "brass_light":    (210, 170, 80),
-        "brass_shine":    (250, 220, 140),
+        "brass_light":    (212, 170, 78),
+        "brass_shine":    (250, 222, 138),
 
         # Fire - orange/yellow
         "fire_darkest":   (55,  12,   5),
@@ -114,20 +197,30 @@ class _NS_razak:
         "fire_glow":      (255, 220, 130),
         "fire_white":     (255, 250, 210),
 
-        # Blue (goggles)
+        # Blue (goggles - signature)
         "blue_dark":      (15,  35,  75),
         "blue_mid":       (45,  95, 165),
         "blue_light":     (95, 165, 230),
-        "blue_shine":     (170, 220, 255),
+        "blue_shine":     (176, 224, 255),
 
         # Eyes
-        "eye_dark":       (15,  25,   8),
+        "eye_dark":       (78,  20,   6),
         "eye_bright":     (255, 220, 100),
         "eye_hot":        (255, 250, 200),
 
         # Teeth / claws
         "bone_dark":      (110, 95,  70),
-        "bone_light":     (220, 210, 175),
+        "bone_light":     (222, 212, 178),
+        "bone_shine":     (246, 240, 218),
+
+        # Smoke (knalpot flamethrower)
+        "smoke_dark":     (38,  30,  30),
+        "smoke_mid":      (76,  60,  56),
+
+        # Gold trim (gesper, gauge)
+        "gold_dark":      (96,  64,  20),
+        "gold_mid":       (178, 132, 46),
+        "gold_light":     (240, 200, 98),
 
         # Misc
         "shadow":         (0,   0,   0),
@@ -135,10 +228,49 @@ class _NS_razak:
         "white":          (255, 255, 255),
     }
 
+    # ---------------------------------------------------------------------------
+    # Primitif dasar (standar keluarga masterwork)
+    # ---------------------------------------------------------------------------
+    def _static(key, builder):
+        """Surface statis ter-cache (dibangun sekali, dipakai ulang)."""
+        surf = _NS_razak._STATIC_SURFACES.get(key)
+        if surf is None:
+            surf = builder()
+            _NS_razak._STATIC_SURFACES[key] = surf
+        return surf
+
+    _CLAMP_MEMO = {}
 
     def _clamp(color):
-        return tuple(max(0, min(255, int(c))) for c in color)
+        """Clamp color channels, supports both RGB and RGBA (memo)."""
+        try:
+            hit = _NS_razak._CLAMP_MEMO.get(color)
+        except TypeError:
+            return tuple(max(0, min(255, int(c))) for c in color)
+        if hit is not None:
+            return hit
+        out = tuple(max(0, min(255, int(c))) for c in color)
+        memo = _NS_razak._CLAMP_MEMO
+        if len(memo) > 8192:
+            memo.clear()
+        memo[color] = out
+        return out
 
+    def _alpha(v):
+        return max(0, min(255, int(v)))
+
+    def _mix(a, b, t):
+        """Blend linear dua warna palette (t=0 -> a, t=1 -> b)."""
+        t = max(0.0, min(1.0, t))
+        return _NS_razak._clamp(
+            (a[0] + (b[0] - a[0]) * t,
+             a[1] + (b[1] - a[1]) * t,
+             a[2] + (b[2] - a[2]) * t))
+
+    def _hash01(i):
+        """Pseudo-random deterministik 0..1 (stabil antar frame & cache)."""
+        x = math.sin(i * 127.1 + 311.7) * 43758.5453
+        return x - math.floor(x)
 
     def _aacircle(surface, color, center, radius, width=0):
         color = _NS_razak._clamp(color)
@@ -147,7 +279,8 @@ class _NS_razak:
         if radius == 0:
             return
         if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
+            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4),
+                                  pygame.SRCALPHA)
             pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
             surface.blit(temp, (cx - radius - 2, cy - radius - 2))
             return
@@ -158,7 +291,6 @@ class _NS_razak:
             except Exception:
                 pass
         pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
-
 
     def _aaline(surface, color, start, end, width=1):
         color = _NS_razak._clamp(color)
@@ -172,12 +304,12 @@ class _NS_razak:
             if w <= 0 or h <= 0:
                 return
             temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.line(temp, color, (sx - min_x, sy - min_y),
+            pygame.draw.line(temp, color,
+                             (sx - min_x, sy - min_y),
                              (ex - min_x, ey - min_y), max(1, width))
             surface.blit(temp, (min_x, min_y))
             return
         pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
-
 
     def _poly(surface, color, points):
         if len(points) < 3:
@@ -191,13 +323,12 @@ class _NS_razak:
             h = max(ys) - min_y + 4
             if w <= 0 or h <= 0:
                 return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
+            temp = pygame.Surface((int(w), int(h)), pygame.SRCALPHA)
             shifted = [(p[0] - min_x, p[1] - min_y) for p in points]
             pygame.draw.polygon(temp, color, shifted)
             surface.blit(temp, (min_x, min_y))
             return
         pygame.draw.polygon(surface, color[:3], points)
-
 
     def _ellipse(surface, color, rect, width=0):
         color = _NS_razak._clamp(color)
@@ -210,8 +341,8 @@ class _NS_razak:
             surface.blit(temp, (rx - 2, ry - 2))
             return
         pygame.draw.ellipse(surface, color[:3],
-                            (rect[0], rect[1], int(rect[2]), int(rect[3])), width)
-
+                            (rect[0], rect[1], int(rect[2]), int(rect[3])),
+                            width)
 
     def _rect(surface, color, rect, border_radius=0):
         color = _NS_razak._clamp(color)
@@ -228,47 +359,405 @@ class _NS_razak:
                          (rect[0], rect[1], int(rect[2]), int(rect[3])),
                          border_radius=border_radius)
 
+    def _ring(surface, center, radius, width, color, alpha):
+        """Cincin skill: stroke gelap di belakang + cincin terang di atas."""
+        alpha = _NS_razak._alpha(alpha)
+        if alpha <= 0:
+            return
+        cx, cy = int(center[0]), int(center[1])
+        r = int(radius)
+        if r <= 0:
+            return
+        _NS_razak._aacircle(surface, (6, 3, 3, alpha), (cx, cy), r + 1,
+                            max(1, width + 2))
+        _NS_razak._aacircle(surface, (*color, alpha), (cx, cy), r,
+                            max(1, width))
+
+    # ---------------------------------------------------------------------------
+    # Konversi ruang dunia <-> canvas renderer
+    # ---------------------------------------------------------------------------
+    def _world_to_local(boss, x, y, wx, wy):
+        """Titik DUNIA -> ruang gambar renderer (kompensasi _render_scale)."""
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        rng = int(getattr(boss, "range", 130) or 130)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
 
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
             # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
+            # DENGAN kompensasi scale supaya beam/proyektil mendarat
+            # TEPAT di target setelah blit.
             scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
             tx = x + (target.x - getattr(boss, "x", x)) / scale
             ty = y + (target.y - getattr(boss, "y", y)) / scale
             return int(tx), int(ty)
-        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+        return (int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0)
+                    * getattr(boss, "direction", 1)), int(y))
 
+    # ===================================================================
+    # SKILL FX PRIMITIVES (standar Thorne v2.1)
+    # ===================================================================
+    def _fx_scale(boss):
+        """Faktor skala efek skill (world-space).
 
+        Hero dirender ke canvas lalu dikecilkan ``_render_scale`` saat
+        di-blit -> efek (cincin, retakan, kobaran) ikut menyusut. Dengan
+        faktor 1/_render_scale (cap 2.6 supaya tetap muat di canvas
+        cache) ukuran efek DI LAYAR setara boss asli. Boss asli (tanpa
+        _render_scale) = 1.0.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+    def _ring_r(boss, world_px, surface):
+        """Radius dunia (px) -> px canvas, di-clamp ke dalam canvas.
+
+        Dipakai untuk telegraph yang HARUS sama dengan radius gameplay
+        (Q 75 / W 95 / E 80 / R 180 px dunia).
+        """
+        scale = getattr(boss, "_render_scale", None)
+        r = float(world_px) / float(scale) if scale else float(world_px)
+        margin = min(surface.get_width(), surface.get_height()) // 2 - 10
+        return int(max(4, min(r, margin)))
+
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+                    core=None):
+        """Bintang kilat: spike panjang-pendek selang-seling + inti."""
+        alpha = _NS_razak._alpha(alpha)
+        if alpha <= 0 or size <= 0:
+            return
+        for k in range(spikes):
+            ang = rot + k * math.pi * 2 / spikes
+            ln = size * (1.0 if k % 2 == 0 else 0.55)
+            _NS_razak._aaline(surface, (*color, alpha),
+                              (int(cx), int(cy)),
+                              (int(cx + math.cos(ang) * ln),
+                               int(cy + math.sin(ang) * ln * .8)),
+                              2 if k % 2 == 0 else 1)
+        if core:
+            _NS_razak._aacircle(surface, (*core, alpha), (int(cx), int(cy)),
+                                max(1, int(size * .3)))
+
+    def _chevron(surface, cx, cy, ang, size, color, alpha, width=3):
+        """Satu panah '>' menghadap arah ``ang`` (telegraph bergerak)."""
+        alpha = _NS_razak._alpha(alpha)
+        if alpha <= 0 or size <= 0:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        px, py = -sa, ca
+        tipx, tipy = cx + ca * size, cy + sa * size
+        for s in (-1, 1):
+            _NS_razak._aaline(
+                surface, (*color, alpha),
+                (int(cx + px * s * size * .55 - ca * size * .5),
+                 int(cy + py * s * size * .55 - sa * size * .5)),
+                (int(tipx), int(tipy)), width)
+
+    def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
+                     segments=10, thick=3, span=0.6, squash=.92):
+        """Cincin putus-putus yang berputar (marker AOE / rune ring)."""
+        alpha = _NS_razak._alpha(alpha)
+        if alpha <= 0 or radius <= 1:
+            return
+        for i in range(segments):
+            a0 = phase + i * math.pi * 2 / segments
+            a1 = a0 + math.pi * 2 / segments * span
+            p0 = (cx + math.cos(a0) * radius, cy + math.sin(a0) * radius * squash)
+            p1 = (cx + math.cos(a1) * radius, cy + math.sin(a1) * radius * squash)
+            _NS_razak._aaline(surface, (*color, alpha), p0, p1, thick)
+
+    # -------------------------------------------------------------------
+    # DECAL TANAH (standar keluarga: dibangun sekali per (radius, gaya))
+    # -------------------------------------------------------------------
+    _DECAL_CACHE = {}
+    _DECAL_ORDER = []
+
+    def _decal(key, size, builder):
+        """Surface decal ter-cache; LRU sederhana supaya memori terbatas."""
+        hit = _NS_razak._DECAL_CACHE.get(key)
+        if hit is not None:
+            return hit
+        surf = builder(size)
+        _NS_razak._DECAL_CACHE[key] = surf
+        _NS_razak._DECAL_ORDER.append(key)
+        if len(_NS_razak._DECAL_ORDER) > 48:
+            old = _NS_razak._DECAL_ORDER.pop(0)
+            _NS_razak._DECAL_CACHE.pop(old, None)
+        return surf
+
+    def _blit_decal(surface, decal, cx, cy, alpha=255, add=False):
+        """Blit decal ter-pusat di (cx, cy) dengan alpha & mode opsional."""
+        alpha = _NS_razak._alpha(alpha)
+        if alpha <= 0:
+            return
+        w, h = decal.get_size()
+        decal.set_alpha(alpha)
+        flags = pygame.BLEND_RGBA_ADD if add else 0
+        surface.blit(decal, (int(cx) - w // 2, int(cy) - h // 2),
+                     special_flags=flags)
+        decal.set_alpha(255)
+
+    def _quantize(v, step=6):
+        """Bulatkan radius ke kelipatan `step` supaya decal cache nyangkut."""
+        return max(step, int(round(float(v) / step) * step))
+
+    def _build_falloff_ring(size, color, core, thickness, softness,
+                            inner_glow):
+        """Cincin ber-gradien: inti terang -> falloff halus ke luar."""
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r_nom = c - softness - 2
+        if r_nom < 2:
+            return surf
+        lo = max(1, int(r_nom - thickness - softness))
+        hi = int(r_nom + softness)
+        for r in range(lo, hi + 1):
+            d = abs(r - r_nom)
+            if d <= thickness * 0.5:
+                t = 1.0
+            else:
+                t = max(0.0, 1.0 - (d - thickness * 0.5) / max(1.0, softness))
+                t = t * t
+            if t <= 0.003:
+                continue
+            col = _NS_razak._mix(color, core, min(1.0, max(0.0, t - 0.45)
+                                                  * 1.5))
+            pygame.draw.circle(surf, (*col, int(200 * t)), (c, c), r, 1)
+        if inner_glow > 0:
+            for r in range(lo, 0, -2):
+                t = (r / float(max(1, lo))) ** 2
+                a = int(inner_glow * t)
+                if a > 1:
+                    pygame.draw.circle(surf, (*color, a), (c, c), r, 2)
+        return surf
+
+    def _ground_ring(surface, cx, cy, radius, color, core, alpha,
+                     thickness=3, softness=7, inner_glow=0, add=True):
+        """Cincin AOE kelas produksi: decal ber-falloff, additive."""
+        radius = _NS_razak._quantize(radius, 6)
+        if radius < 6:
+            return
+        pad = softness + thickness + 3
+        size = radius * 2 + pad * 2
+        key = ("fring", radius, color, core, thickness, softness, inner_glow)
+        decal = _NS_razak._decal(
+            key, size,
+            lambda n: _NS_razak._build_falloff_ring(
+                n, color, core, thickness, softness, inner_glow))
+        _NS_razak._blit_decal(surface, decal, cx, cy, alpha, add=add)
+
+    def _build_arc_ring(size, color, core, segments, span, thickness,
+                        softness, taper):
+        """Cincin busur: tiap segmen meruncing di kedua ujung."""
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r_nom = c - softness - thickness - 2
+        if r_nom < 3:
+            return surf
+        step = math.tau / segments
+        for i in range(segments):
+            a0 = i * step
+            a1 = a0 + step * span
+            steps = max(3, int(span * 14))
+            outer, inner = [], []
+            for k in range(steps + 1):
+                t = k / steps
+                ang = a0 + (a1 - a0) * t
+                w = thickness * (taper + (1 - taper) *
+                                 math.sin(t * math.pi))
+                outer.append((c + math.cos(ang) * (r_nom + w * .5),
+                              c + math.sin(ang) * (r_nom + w * .5)))
+                inner.append((c + math.cos(ang) * (r_nom - w * .5),
+                              c + math.sin(ang) * (r_nom - w * .5)))
+            pts = outer + inner[::-1]
+            pygame.draw.polygon(surf, (*color, 150), pts)
+            mid = [(c + (px - c) * .997, c + (py - c) * .997)
+                   for px, py in outer[1:-1]] + \
+                  [(c + (px - c) * 1.003, c + (py - c) * 1.003)
+                   for px, py in inner[1:-1]][::-1]
+            if len(mid) >= 3:
+                pygame.draw.polygon(surf, (*core, 205), mid)
+        return surf
+
+    def _rune_ring(surface, cx, cy, radius, color, core, alpha, spin,
+                   segments=12, span=0.42, thickness=3.0, taper=0.85):
+        """Cincin busur berputar (telegraph 'rune terbakar')."""
+        radius = _NS_razak._quantize(radius, 8)
+        if radius < 8:
+            return
+        pad = int(thickness) + 8
+        size = radius * 2 + pad * 2
+        key = ("arcring", radius, color, core, segments, round(span, 2),
+               round(thickness, 1), round(taper, 2))
+        decal = _NS_razak._decal(
+            key, size,
+            lambda n: _NS_razak._build_arc_ring(
+                n, color, core, segments, span, thickness, 6, taper))
+        deg = -math.degrees(spin) % (360.0 / max(1, segments))
+        rot = pygame.transform.rotate(decal, deg)
+        _NS_razak._blit_decal(surface, rot, cx, cy, alpha, add=True)
+
+    def _build_scorch(size, color, edge, seed):
+        """Noda gosong tanah: gumpalan lembut ber-tepi tidak beraturan."""
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r = c - 2
+        for i in range(r, 0, -2):
+            t = 1.0 - i / float(r)
+            a = int(120 * (t ** 1.6))
+            if a > 1:
+                col = _NS_razak._mix(edge, color, t)
+                pygame.draw.circle(surf, (*col, a), (c, c), i)
+        for i in range(20):
+            ang = _NS_razak._hash01(seed * 31 + i) * math.tau
+            rr = r * (0.80 + 0.16 * _NS_razak._hash01(seed * 17 + i))
+            br = max(3, int(r * 0.15 * (0.5 +
+                     _NS_razak._hash01(seed * 7 + i))))
+            bx = int(c + math.cos(ang) * rr)
+            by = int(c + math.sin(ang) * rr)
+            for k in range(br, 0, -1):
+                a = int(70 * (1.0 - k / float(br)) ** 1.5)
+                if a > 1:
+                    pygame.draw.circle(surf, (*edge, a), (bx, by), k)
+        return surf
+
+    def _ground_scorch(surface, cx, cy, radius, color, edge, alpha, seed=1):
+        """Alas gosong ter-cache di bawah telegraph."""
+        radius = _NS_razak._quantize(radius, 10)
+        if radius < 8:
+            return
+        size = radius * 2 + 6
+        key = ("scorch", radius, color, edge, seed)
+        decal = _NS_razak._decal(
+            key, size,
+            lambda n: _NS_razak._build_scorch(n, color, edge, seed))
+        _NS_razak._blit_decal(surface, decal, cx, cy, alpha)
+
+    def _build_zone_fill(size, color, edge_bias):
+        """Isi zona AOE: paling pekat DI DEKAT TEPI, memudar ke tengah."""
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r = c - 1
+        for i in range(r, 0, -1):
+            t = i / float(r)
+            v = t ** edge_bias
+            a = int(115 * v)
+            if a > 1:
+                pygame.draw.circle(surf, (*color, a), (c, c), i)
+        return surf
+
+    def _zone_fill(surface, cx, cy, radius, color, alpha, edge_bias=3.2):
+        """Wash zona AOE ter-cache (additive lembut)."""
+        radius = _NS_razak._quantize(radius, 8)
+        if radius < 6:
+            return
+        decal = _NS_razak._decal(
+            ("zone", radius, color, round(edge_bias, 1)), radius * 2,
+            lambda n: _NS_razak._build_zone_fill(n, color, edge_bias))
+        _NS_razak._blit_decal(surface, decal, cx, cy, alpha, add=True)
+
+    def _build_radial_grad(size, color):
+        """Gradien radial lembut (glow / pilar bawah)."""
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        for i in range(c, 0, -1):
+            t = 1.0 - i / float(c)
+            a = int(190 * (t ** 2.2))
+            if a > 1:
+                pygame.draw.circle(surf, (*color, a), (c, c), i)
+        return surf
+
+    def _glow(surface, cx, cy, radius, color, alpha):
+        """Glow radial additive ter-cache (pengganti tumpukan aacircle)."""
+        radius = _NS_razak._quantize(radius, 8)
+        if radius < 4:
+            return
+        size = radius * 2
+        decal = _NS_razak._decal(
+            ("glow", radius, color), size,
+            lambda n: _NS_razak._build_radial_grad(n, color))
+        _NS_razak._blit_decal(surface, decal, cx, cy, alpha, add=True)
+
+    def _jagged_crack(surface, cx, cy, ang, length, colors, alpha, seed,
+                      width=3):
+        """Retakan tanah berzigzag (3 segmen) dengan seam menyala."""
+        alpha = _NS_razak._alpha(alpha)
+        if alpha <= 0 or length <= 0:
+            return
+        x, y, a = cx, cy, ang
+        pts = [(x, y)]
+        for i in range(3):
+            a += (_NS_razak._hash01(seed * 7 + i * 13) - .5) * .8
+            seg = length / 3.0
+            x += math.cos(a) * seg
+            y += math.sin(a) * seg * .55      # perspektif tanah
+            pts.append((x, y))
+        for i in range(len(pts) - 1):
+            _NS_razak._aaline(surface, (*colors[0], alpha),
+                              pts[i], pts[i + 1], width + 2)
+            _NS_razak._aaline(surface, (*colors[1], alpha),
+                              pts[i], pts[i + 1], width)
+
+    def _tuft_points(spine, depth=4.0, min_len=7.0, seed=0):
+        """Ubah spine halus jadi tepi bergerigi (kain robek / membran).
+
+        Deterministik (hash) - aman untuk cache sprite.
+        """
+        out = [spine[0]]
+        for i in range(len(spine) - 1):
+            ax, ay = spine[i]
+            bx, by = spine[i + 1]
+            seg = math.hypot(bx - ax, by - ay)
+            n = max(1, int(seg / min_len))
+            nx, ny = (by - ay), -(bx - ax)
+            ln = math.hypot(nx, ny) or 1.0
+            nx, ny = nx / ln, ny / ln
+            for j in range(n):
+                t = (j + 0.5) / n
+                px, py = ax + (bx - ax) * t, ay + (by - ay) * t
+                d = depth * (0.55 + 0.45 * _NS_razak._hash01(i * 7 + j * 13 + seed))
+                if j % 2 == 0:
+                    out.append((px + nx * d, py + ny * d))
+                else:
+                    out.append((px - nx * d * 0.45, py - ny * d * 0.45))
+            out.append((bx, by))
+        return out
+
+    def _dither_dots(surface, color, points, alpha=80):
+        """Dither band 50% klasik (bertahan setelah downscale)."""
+        col = (*color, _NS_razak._alpha(alpha))
+        for i, (px, py) in enumerate(points):
+            if i % 2 == 0:
+                _NS_razak._aacircle(surface, col, (int(px), int(py)), 1)
     # ---------------------------------------------------------------------------
-    # FIRE PARTICLE / FLAME DRAWING
+    # FIRE PARTICLE / FLAME DRAWING (nama lama dipertahankan)
     # ---------------------------------------------------------------------------
     def _draw_flame(surface, cx, cy, size, phase, alpha=255):
-        """Draw a single flame with layered fire colors.
-
-        ORIGINAL-MAX: flame per (size, phase-bucket, alpha-bucket) di-cache
-        ke sprite piksel-identik; gerak api yang besar (amplitudo) tetap
-        kontinu, hanya wobble kecil sub-piksel yang di-kuantisasi ke bucket
-        - bukan cache bucket untuk gerak besar seperti helix dulu.
-        """
+        """Api tunggal ber-lapis (di-cache per size/phase-bucket/alpha)."""
         NS = _NS_razak
+        height = int(size * 2)
         pb = int(phase * 4) % 8
         ab = int(alpha / 32) * 32
         key = (int(size), pb, ab)
         spr = NS._flame_cache.get(key)
         if spr is None:
-            height = int(size * 2)
             spr = pygame.Surface((int(size * 2) + 6, height + 4),
                                  pygame.SRCALPHA)
             base = int(size) + 3
-            # Sprite api menunjuk ke ATAS: baris h=0 (terlebar) di dasar
-            # (sprite-y height+1), puncak h=height-1 di atas (sprite-y 2).
             for h in range(height):
                 t = h / max(1, height)
                 w = int(size * (1 - t * 0.7))
@@ -284,49 +773,104 @@ class _NS_razak:
                 else:
                     color = NS.PALETTE["fire_hot"]
                 NS._aacircle(spr, (*color, a), (fx, fy), max(1, w))
-            # Core menyala: original di cy-height//3 & cy-height//4 -> sprite
-            # y = (world_y - blit_y) = (height+1) - height//3 dsb.
             NS._aacircle(spr, (*NS.PALETTE["fire_glow"], ab),
                          (base, height + 1 - height // 3), size // 2)
             NS._aacircle(spr, (*NS.PALETTE["fire_white"], ab),
                          (base, height + 1 - height // 4), max(1, size // 4))
             NS._flame_cache[key] = spr
-        # base (h=0, sprite-y height+1) dipatok ke cy
         surface.blit(spr, (cx - (spr.get_width() // 2), cy - (height + 1)))
 
+    _PILLAR_CACHE = {}
+
+    def _draw_fire_pillar(surface, cx, cy, height, width, phase):
+        """Kolom api vertikal ter-cache per (height, width, phase-bucket).
+
+        Pengganti tumpukan aacircle ber-alpha per frame (hot spot skill
+        R). Sway sub-piksel dikunci ke 6 bucket fase; gerak besar
+        (tinggi pilar tumbuh/susut) tetap kontinu karena height masuk
+        kunci cache setelah dikuantisasi 4 px.
+        """
+        NS = _NS_razak
+        P = NS.PALETTE
+        height = max(4, int(height))
+        width = max(2, int(width))
+        hq = (height // 4) * 4
+        pb = int(phase * 3) % 6
+        key = (hq, width, pb)
+        spr = NS._PILLAR_CACHE.get(key)
+        if spr is None:
+            w_s = width * 2 + 8
+            spr = pygame.Surface((w_s, hq + 6), pygame.SRCALPHA)
+            base_x = w_s // 2
+            for h in range(0, hq, 2):
+                t = h / max(1, hq)
+                w = max(1, int(width * (1 - t * 0.5)))
+                fxp = base_x + int(math.sin(pb * 1.05 + h * 0.3) * 2)
+                fyp = hq + 2 - h
+                alpha = int(245 * (1 - t * 0.3))
+                if t < 0.25:
+                    color = P["fire_darkest"]
+                elif t < 0.5:
+                    color = P["fire_mid"]
+                elif t < 0.75:
+                    color = P["fire_bright"]
+                else:
+                    color = P["fire_hot"]
+                pygame.draw.circle(spr, (*color, alpha), (fxp, fyp), w)
+            if len(NS._PILLAR_CACHE) > 96:
+                NS._PILLAR_CACHE.clear()
+            NS._PILLAR_CACHE[key] = spr
+        surface.blit(spr, (int(cx) - spr.get_width() // 2,
+                           int(cy) + 2 - spr.get_height()))
 
     def _draw_ember(surface, cx, cy, size=2, alpha=255):
-        _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], alpha), (cx, cy), size + 1)
-        _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], alpha), (cx, cy), size)
-        _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], alpha), (cx, cy), max(1, size - 1))
-        _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], min(255, alpha)), (cx, cy), 1)
-
+        NS = _NS_razak
+        NS._aacircle(surface, (*NS.PALETTE["fire_dark"], alpha), (cx, cy), size + 1)
+        NS._aacircle(surface, (*NS.PALETTE["fire_bright"], alpha), (cx, cy), size)
+        NS._aacircle(surface, (*NS.PALETTE["fire_hot"], alpha), (cx, cy),
+                     max(1, size - 1))
+        NS._aacircle(surface, (*NS.PALETTE["fire_glow"], min(255, alpha)),
+                     (cx, cy), 1)
 
     def _draw_fire_ground_patch(surface, cx, cy, radius, phase, alpha=255):
-        """Ground fire patch - Sticky Napalm effect."""
-        # Base scorch
-        _NS_razak._ellipse(surface, (*_NS_razak.PALETTE["fire_darkest"], int(alpha * 0.9)),
-                 (cx - radius, cy - radius // 3, radius * 2, radius // 1.5))
-        _NS_razak._ellipse(surface, (*_NS_razak.PALETTE["fire_dark"], int(alpha * 0.8)),
-                 (cx - radius + 3, cy - radius // 3 + 2,
-                  radius * 2 - 6, radius // 1.5 - 4))
-
-        # Flames on top
-        flame_count = max(3, radius // 4)
+        """Patch napalm menyala di tanah - scorch decal + api + bara."""
+        NS = _NS_razak
+        # alas gosong ter-cache (menempel di tanah, bukan overlay UI)
+        NS._ground_scorch(surface, cx, cy, int(radius * 1.15),
+                          NS.PALETTE["fire_darkest"],
+                          NS.PALETTE["shadow_deep"],
+                          int(alpha * 0.85), seed=3)
+        # kolam bara: wash zona pekat di tepi
+        NS._zone_fill(surface, cx, cy, radius, NS.PALETTE["fire_dark"],
+                      int(alpha * 0.5), edge_bias=2.4)
+        # api keliling
+        flame_count = max(3, int(radius) // 5)
         for i in range(flame_count):
             angle = i * math.pi * 2 / flame_count + phase * 0.3
             r = radius - 4
             fx = cx + int(math.cos(angle) * r)
             fy = cy + int(math.sin(angle) * r // 3)
             size = 3 + (i % 3)
-            _NS_razak._draw_flame(surface, fx, fy, size, phase + i, alpha=alpha)
-
+            NS._draw_flame(surface, fx, fy, size, phase + i, alpha=alpha)
+        # bara kecil yang naik (deterministik)
+        for i in range(4):
+            t = (phase * 0.5 + NS._hash01(i * 9)) % 1.0
+            ex = cx + int((NS._hash01(i * 5) - 0.5) * radius * 1.4)
+            ey = cy - int(t * 18)
+            ea = int(alpha * (1 - t) * 0.8)
+            if ea > 8:
+                NS._draw_ember(surface, ex, ey, 1, ea)
 
     # ---------------------------------------------------------------------------
     # PROJECTILE SYSTEM
     # ---------------------------------------------------------------------------
     class NapalmProjectile:
-        """Sticky napalm — arcing fireball."""
+        """Sticky napalm - botol molotov berputar dengan busur parabola.
+
+        v2: proyektil SESUAI KARAKTER - botol kaca brass berisi api
+        (bukan bola generik): badan botol berputar, sumbu menyala di
+        ekor, trail api 2-tone + asap, glint kaca berputar.
+        """
         def __init__(self, sx, sy, tx, ty, arc_height=40):
             self.start_x = float(sx)
             self.start_y = float(sy)
@@ -345,14 +889,13 @@ class _NS_razak:
             if not self.alive:
                 return
             self.age += 1
-            self.spin += 0.3
+            self.spin += 0.34
             t = self.age / self.max_age
             if t >= 1.0:
                 self.alive = False
                 self.x, self.y = self.tx, self.ty
                 return
             self.x = self.start_x + (self.tx - self.start_x) * t
-            # Parabolic arc
             arc = -4 * self.arc_height * t * (1 - t)
             self.y = self.start_y + (self.ty - self.start_y) * t + arc
             self.trail.append((int(self.x), int(self.y)))
@@ -360,29 +903,64 @@ class _NS_razak:
                 self.trail.pop(0)
 
         def draw(self, surface, phase):
-            # Trail
+            NS = _NS_razak
+            # Trail api 2-tone + asap di ekor terjauh
+            n = len(self.trail)
             for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(60 + i * 15)
-                r = max(1, 5 - (len(self.trail) - i))
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], alpha), (tx, ty), r + 2)
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], alpha), (tx, ty), r)
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], alpha), (tx, ty), max(1, r - 1))
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                # Fireball
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], 200), (px, py), 8)
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_mid"], 220), (px, py), 6)
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], 240), (px, py), 5)
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], 255), (px, py), 3)
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], 255), (px, py), 2)
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], 255), (px - 1, py - 1), 1)
-                # Flame licks
-                for i in range(3):
-                    angle = self.spin + i * math.pi * 2 / 3
-                    fx = px + int(math.cos(angle) * 5)
-                    fy = py + int(math.sin(angle) * 5)
-                    _NS_razak._draw_ember(surface, fx, fy, 2, 220)
-
+                k = i / max(1, n - 1)
+                alpha = int(40 + k * 150)
+                r = max(1, int(2 + k * 4))
+                if k < 0.45:            # asap dingin di ujung ekor
+                    NS._aacircle(surface, (*NS.PALETTE["smoke_dark"],
+                                           int(alpha * 0.7)), (tx, ty), r + 1)
+                    NS._aacircle(surface, (*NS.PALETTE["smoke_mid"],
+                                           int(alpha * 0.5)), (tx, ty - 1), r)
+                else:                   # api panas dekat botol
+                    NS._aacircle(surface, (*NS.PALETTE["fire_dark"], alpha),
+                                 (tx, ty), r + 1)
+                    NS._aacircle(surface, (*NS.PALETTE["fire_bright"], alpha),
+                                 (tx, ty), r)
+                    NS._aacircle(surface, (*NS.PALETTE["fire_hot"],
+                                           int(alpha * 0.8)),
+                                 (tx, ty - 1), max(1, r - 2))
+            if not self.alive:
+                return
+            px, py = int(self.x), int(self.y)
+            # kilau panas di sekitar botol
+            NS._glow(surface, px, py, 16, NS.PALETTE["fire_mid"], 130)
+            # badan botol brass berputar (ellipse sumbu spin)
+            ca = abs(math.cos(self.spin))
+            bw = max(2, int(6 * ca) + 2)
+            NS._ellipse(surface, (*NS.PALETTE["shadow_deep"], 200),
+                        (px - bw + 1, py - 5 + 1, bw * 2, 10))
+            NS._ellipse(surface, NS.PALETTE["brass_dark"],
+                        (px - bw, py - 5, bw * 2, 10))
+            NS._ellipse(surface, NS.PALETTE["brass_mid"],
+                        (px - bw + 1, py - 4, max(1, bw * 2 - 2), 8))
+            NS._ellipse(surface, NS.PALETTE["brass_light"],
+                        (px - bw + 1, py - 4, max(1, bw * 2 - 3), 4))
+            # glint kaca berputar (specular cluster 1-2 px)
+            ga = self.spin * 1.7
+            gx = px + int(math.cos(ga) * (bw - 1))
+            gy = py - 2 + int(math.sin(ga) * 2)
+            NS._aacircle(surface, NS.PALETTE["brass_shine"], (gx, gy), 1)
+            # sumbu menyala di ekor botol (arah berlawanan gerak)
+            dxn = self.tx - self.start_x
+            dyn = self.ty - self.start_y
+            dd = math.hypot(dxn, dyn) or 1.0
+            wx = px - int(dxn / dd * 8)
+            wy = py - int(dyn / dd * 8) - 2
+            NS._aacircle(surface, (*NS.PALETTE["fire_bright"], 240),
+                         (wx, wy), 3)
+            NS._aacircle(surface, (*NS.PALETTE["fire_hot"], 255), (wx, wy), 2)
+            NS._aacircle(surface, (*NS.PALETTE["fire_white"], 255),
+                         (wx, wy - 1), 1)
+            # lidah api mengelilingi botol
+            for i in range(3):
+                angle = self.spin + i * math.pi * 2 / 3
+                fx = px + int(math.cos(angle) * 6)
+                fy = py + int(math.sin(angle) * 4)
+                NS._draw_ember(surface, fx, fy, 2, 220)
 
     class NapalmPatch:
         """Persistent burning ground patch."""
@@ -401,7 +979,6 @@ class _NS_razak:
 
         def draw(self, surface, phase):
             t = self.age / self.life
-            # Grow then fade
             if t < 0.15:
                 r = int(self.radius * (t / 0.15))
                 alpha = int(255 * (t / 0.15))
@@ -413,11 +990,11 @@ class _NS_razak:
                 alpha = int(255 * (1 - (t - 0.7) / 0.3))
             if r <= 0 or alpha <= 0:
                 return
-            _NS_razak._draw_fire_ground_patch(surface, self.x, self.y, r, phase, alpha=alpha)
-
+            _NS_razak._draw_fire_ground_patch(surface, self.x, self.y, r,
+                                              phase, alpha=alpha)
 
     # ---------------------------------------------------------------------------
-    # State management
+    # State management (nama & pola lama dipertahankan)
     # ---------------------------------------------------------------------------
     def _detect_moving(boss):
         if not hasattr(boss, "_razak_last_x"):
@@ -429,7 +1006,6 @@ class _NS_razak:
         boss._razak_last_x = boss.x
         boss._razak_last_y = boss.y
         return dx + dy > 0.3
-
 
     def _update_attack_anim(boss):
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 45)))
@@ -458,7 +1034,6 @@ class _NS_razak:
             if active else 0.0
         )
 
-
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_razak_projectiles"):
             boss._razak_projectiles = []
@@ -468,19 +1043,17 @@ class _NS_razak:
         for proj in boss._razak_projectiles:
             proj.update()
             if not proj.alive:
-                # Spawn napalm patch at landing point
                 boss._razak_patches.append(
-                    _NS_razak.NapalmPatch(int(proj.x), int(proj.y), radius=28, life=100))
+                    _NS_razak.NapalmPatch(int(proj.x), int(proj.y),
+                                          radius=28, life=100))
             proj.draw(surface, phase)
         boss._razak_projectiles = [p for p in boss._razak_projectiles
-                                    if p.alive or p.age < 3]
+                                   if p.alive or p.age < 3]
 
-        # Draw patches BEHIND everything (but they're called from foreground here)
         for patch in boss._razak_patches:
             patch.update()
             patch.draw(surface, phase)
         boss._razak_patches = [p for p in boss._razak_patches if p.alive]
-
 
     def _spawn_napalm(boss, sx, sy, tx, ty, arc_height=40):
         if not hasattr(boss, "_razak_projectiles"):
@@ -488,46 +1061,68 @@ class _NS_razak:
         boss._razak_projectiles.append(
             _NS_razak.NapalmProjectile(sx, sy, tx, ty, arc_height=arc_height))
 
-
     # ===================================================================
     # MAIN ENTRY
     # ===================================================================
     def draw_razak(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus heroes.render_hero().
+
+        Urutan lapisan: aura panas & patch tanah -> telegraph skill ->
+        badan (rig native 1.5x -> SCALE -> selout -> lighting) ->
+        proyektil -> FX skill foreground. Semua FX skill world-space
+        lewat `_fx_scale`.
+        """
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_razak._detect_moving(boss)
         _NS_razak._update_attack_anim(boss)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        in_cache = bool(getattr(boss, "_skip_renderer_projectiles", False))
 
         attacking = (
             getattr(boss, "_razak_attack_active", False)
             or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 45) - 15
         )
 
-        # Background
-        _NS_razak._draw_fire_aura(surface, x, y, pulse, active_skill)
+        # ---------- Background layers ----------
+        if not portrait:
+            _NS_razak._draw_fire_aura(surface, x, y, pulse, active_skill)
 
-        # Ground patches (behind character)
-        if hasattr(boss, "_razak_patches"):
-            for patch in boss._razak_patches:
-                patch.draw(surface, pulse)
+            # Ground patches (behind character). Saat render ke canvas
+            # cache hero, patch TIDAK digambar supaya tidak terpanggang
+            # beku di sekitar sprite (lihat _park_renderer_fx).
+            if not in_cache and hasattr(boss, "_razak_patches"):
+                for patch in boss._razak_patches:
+                    patch.draw(surface, pulse)
 
-        # Skill ground effects
-        if active_skill == "r":
-            _NS_razak._draw_firestorm_ground(surface, boss, x, y, skill_timer, pulse)
+            # ---------- Skill ground telegraph ----------
+            if active_skill == "q":
+                _NS_razak._draw_napalm_ground(surface, boss, x, y,
+                                              skill_timer, pulse)
+            elif active_skill == "w":
+                _NS_razak._draw_flamebreak_ground(surface, boss, x, y,
+                                                  skill_timer, pulse)
+            elif active_skill == "e":
+                _NS_razak._draw_firefly_ground(surface, boss, x, y,
+                                               skill_timer, pulse)
+            elif active_skill == "r":
+                _NS_razak._draw_firestorm_ground(surface, boss, x, y,
+                                                 skill_timer, pulse)
 
-        # PERTAGAS: gelombang kejut aktivasi skill (12 frame pertama)
-        if active_skill in ("q", "w", "r"):
-            dur = {"q": 40, "w": 50, "r": 90}[active_skill]
-            age = dur - skill_timer
-            if 0 <= age < 12:
-                _NS_razak._draw_shockwave(surface, x, y + 52, age, 12,
-                                          _NS_razak.PALETTE["fire_hot"],
-                                          _NS_razak.PALETTE["fire_glow"])
+            # AKTIVASI: gelombang kejut + bintang (12 frame pertama)
+            if active_skill in ("q", "w", "e", "r"):
+                dur = _NS_razak.SKILL_DUR[active_skill]
+                age = dur - skill_timer
+                if 0 <= age < 12:
+                    _NS_razak._draw_shockwave(
+                        surface, x, y + _NS_razak.GROUND_DY, age, 12,
+                        _NS_razak.PALETTE["fire_hot"],
+                        _NS_razak.PALETTE["fire_glow"],
+                        fs=_NS_razak._fx_scale(boss))
 
-        # ORIGINAL-MAX hurt flash: saat kena hit, pose dirender ke buffer,
-        # lalu siluet badannya dibanjiri putih-hangat. Bayangan tanah TIDAK
-        # ikut menyala (rect shadow direkam dan dikeluarkan dari flash).
+        # ORIGINAL-MAX hurt flash: badan dibanjiri putih-hangat,
+        # bayangan tanah TIDAK ikut menyala.
         flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
         _tgt, _tx, _ty = surface, x, y
         if flash > 0:
@@ -538,9 +1133,10 @@ class _NS_razak:
             B._record_shadow = []
             _tgt, _tx, _ty = B._flash_buf, 120, 135
 
-        # Character
+        # ---------- Character ----------
         if active_skill == "e":
-            _NS_razak._draw_razak_dashing(_tgt, boss, _tx, _ty, skill_timer, pulse)
+            _NS_razak._draw_razak_dashing(_tgt, boss, _tx, _ty, skill_timer,
+                                          pulse)
         elif attacking:
             _NS_razak._draw_razak_attack(_tgt, boss, _tx, _ty)
         elif moving:
@@ -561,37 +1157,47 @@ class _NS_razak:
                          special_flags=pygame.BLEND_RGB_ADD)
             B._record_shadow = None
 
-        # Update / draw projectiles
+        # ---------- Projectiles ----------
         _NS_razak._manage_projectiles_no_patches(boss, surface, pulse)
 
-        # Foreground skill effects
-        if active_skill == "q":
-            _NS_razak._draw_sticky_napalm(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_razak._draw_flamebreak(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_razak._draw_firestorm(surface, boss, x, y, skill_timer, pulse)
+        # ---------- Foreground skill effects ----------
+        if not portrait:
+            if active_skill == "q":
+                _NS_razak._draw_sticky_napalm(surface, boss, x, y,
+                                              skill_timer, pulse)
+            elif active_skill == "w":
+                _NS_razak._draw_flamebreak(surface, boss, x, y,
+                                           skill_timer, pulse)
+            elif active_skill == "r":
+                _NS_razak._draw_firestorm(surface, boss, x, y,
+                                          skill_timer, pulse)
 
+    def _draw_shockwave(surface, x, y, age, total, c1, c2, fs=1.0):
+        """Gelombang kejut aktivasi skill - 12 frame pertama.
 
-    def _draw_shockwave(surface, x, y, age, total, c1, c2):
-        """Gelombang kejut aktivasi skill - 12 frame pertama, membesar &
-        memudar. Ring radial target-anchored di tanah (y = titik tanah)."""
+        World-space: radius dikalikan ``fs`` (= 1/_render_scale) supaya
+        ukurannya DI LAYAR setara boss asli.
+        """
         t = age / float(total)
+        if t >= 1.0:
+            return
+        P = _NS_razak.PALETTE
         ease = 1 - (1 - t) ** 2
-        r = int(14 + ease * 60)
-        a = max(0, min(255, int(235 * (1 - t))))
-        pygame.draw.ellipse(surface, (*c1, a),
-                            (x - r, y - r // 3, r * 2, r * 2 // 3), 2)
-        pygame.draw.ellipse(surface, (*c2, a),
-                            (x - r // 2, y - r // 6, r, r // 3), 1)
-        # lingkaran dalam yang menyala
-        ri = max(3, r // 2)
-        _NS_razak._aacircle(surface, (*c1, int(a * 0.8)),
-                            (x, y - (r // 6)), ri)
-
+        r = int((14 + ease * 58) * fs)
+        a = _NS_razak._alpha(235 * (1 - t))
+        _NS_razak._ground_ring(surface, x, y, r, c1, c2, a,
+                               thickness=max(1.5, 5 - ease * 3.5),
+                               softness=10)
+        _NS_razak._ground_ring(surface, x, y, int(r * 0.72), c2, P["white"],
+                               int(a * 0.55),
+                               thickness=max(1.0, 3 - ease * 2), softness=7)
+        _NS_razak._glow(surface, x, y, max(6, int(r * 0.5)), c1,
+                        int(a * 0.75 * (1 - ease * 0.6)))
+        _NS_razak._spark_star(surface, x, y, int(20 * fs), c2, a,
+                              spikes=8, rot=t * 2.2, core=P["white"])
 
     def _manage_projectiles_no_patches(boss, surface, phase):
-        """Same as manage_projectiles but patches are drawn separately (before character)."""
+        """Proyektil digambar di sini; patch dirawat terpisah."""
         if not hasattr(boss, "_razak_projectiles"):
             boss._razak_projectiles = []
         if not hasattr(boss, "_razak_patches"):
@@ -600,716 +1206,1009 @@ class _NS_razak:
         for proj in boss._razak_projectiles:
             proj.update()
             if not proj.alive and proj.age > 0:
-                # Spawn napalm patch at landing point
                 boss._razak_patches.append(
-                    _NS_razak.NapalmPatch(int(proj.tx), int(proj.ty), radius=28, life=100))
+                    _NS_razak.NapalmPatch(int(proj.tx), int(proj.ty),
+                                          radius=30, life=100))
                 proj.age = -1  # prevent re-spawn
             if proj.age >= 0:
                 proj.draw(surface, phase)
         boss._razak_projectiles = [p for p in boss._razak_projectiles
-                                    if p.alive]
+                                   if p.alive]
 
-        # Update patches (drawing was done earlier)
         for patch in boss._razak_patches:
             patch.update()
         boss._razak_patches = [p for p in boss._razak_patches if p.alive]
-
-
     # ===================================================================
-    # POSE MODES
+    # POSE MODES  (jangkar tanah = +GROUND_DY; ground FX mengikuti)
     # ===================================================================
     def _draw_razak_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 3)  # Bat hovers with bigger bob
-        _NS_razak._draw_shadow(surface, x, y + 52)
-        _NS_razak._draw_fire_wisps(surface, x, y + 38, boss.pulse)
-        _NS_razak._draw_razak_full(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
+        phase = float(getattr(boss, "pulse", 0.0))
+        # hover bob mengikuti wing-beat (downstroke mengangkat badan)
+        flap = math.sin(phase * 1.2)
+        bob = int(flap * 3) - 1
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            _NS_razak._draw_shadow(surface, x, y + _NS_razak.GROUND_DY,
+                                   lift=max(0, -int(flap * 2)))
+            _NS_razak._draw_fire_wisps(surface, x, y + 36, phase)
+        _NS_razak._draw_razak_full(surface, x, y + bob,
+                                   getattr(boss, "direction", 1), phase,
+                                   "idle")
 
     def _draw_razak_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.5
-        bob = int(math.sin(phase * 1.2) * 4)
+        phase = float(getattr(boss, "pulse", 0.0)) * 2.5
+        flap = math.sin(phase * 1.2)
+        bob = int(flap * 4)
         sway = int(math.sin(phase * 0.5) * 2)
-        _NS_razak._draw_shadow(surface, x + sway, y + 52)
-        _NS_razak._draw_fire_wisps(surface, x + sway, y + 38, phase, trail=True,
-                         facing=boss.direction)
-        _NS_razak._draw_razak_full(surface, x + sway, y + bob, boss.direction, phase, "walk")
-
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            _NS_razak._draw_shadow(surface, x + sway,
+                                   y + _NS_razak.GROUND_DY,
+                                   lift=max(0, -int(flap * 2)))
+            _NS_razak._draw_fire_wisps(surface, x + sway, y + 36, phase,
+                                       trail=True,
+                                       facing=getattr(boss, "direction", 1))
+        _NS_razak._draw_razak_full(surface, x + sway, y + bob,
+                                   getattr(boss, "direction", 1), phase,
+                                   "walk")
 
     def _draw_razak_attack(surface, boss, x, y):
         progress = getattr(boss, "_razak_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        lunge = int(math.sin(progress * math.pi) * 4) * boss.direction
+        phase = float(getattr(boss, "pulse", 0.0))
+        facing = getattr(boss, "direction", 1)
+        pose = _NS_razak._attack_pose(progress)
+        bob = int(math.sin(phase * 0.8) * 2)
+        lunge = int(pose["lunge"] * _NS_razak.SCALE) * facing
 
-        # ─── Fireball serangan biasa ───
-        # Razak itu unit RANGED (range 130) tapi dulu animasi
-        # serangannya cuma ayunan machete tanpa proyektil apa pun,
-        # jadi damage terasa datang entah dari mana. Spawn fireball
-        # kecil di puncak ayunan, pola sama seperti boss ranged lain.
+        # ─── Fireball serangan biasa (unit RANGED) ───
+        # Spawn molotov kecil di puncak ayunan, pola boss ranged lain.
         if 0.34 < progress < 0.46 and not getattr(
                 boss, "_razak_proj_spawned", False):
             tx, ty = _NS_razak._target_position(boss, x, y)
-            sx = x + 20 * boss.direction + lunge
+            sx = x + 20 * facing + lunge
             sy = y + bob - 6
             _NS_razak._spawn_napalm(boss, sx, sy, tx, ty, arc_height=22)
             boss._razak_proj_spawned = True
         if progress < 0.12 or progress > 0.9:
             boss._razak_proj_spawned = False
 
-        _NS_razak._draw_shadow(surface, x + lunge, y + 52)
-        _NS_razak._draw_fire_wisps(surface, x + lunge, y + 38, boss.pulse, intense=True)
-        _NS_razak._draw_razak_full(surface, x + lunge, y + bob, boss.direction, boss.pulse,
-                         "attack", progress)
-        _NS_razak._draw_machete_swing_arc(surface, x + lunge, y + bob, boss.direction, progress)
-
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            _NS_razak._draw_shadow(surface, x + lunge,
+                                   y + _NS_razak.GROUND_DY)
+            _NS_razak._draw_fire_wisps(surface, x + lunge, y + 36, phase,
+                                       intense=True)
+        _NS_razak._draw_razak_full(surface, x + lunge, y + bob, facing,
+                                   phase, "attack", progress)
+        _NS_razak._draw_machete_swing_arc(surface, x + lunge, y + bob,
+                                          facing, progress)
 
     def _draw_razak_dashing(surface, boss, x, y, timer, phase):
-        """Firefly dash - bat flies forward with flame trail."""
+        """Firefly dash - bat melesat dengan trail api + afterimage."""
         bob = int(math.sin(phase * 1.5) * 2)
-        _NS_razak._draw_shadow(surface, x, y + 52)
-        _NS_razak._draw_fire_wisps(surface, x, y + 38, phase, intense=True)
+        facing = getattr(boss, "direction", 1)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            _NS_razak._draw_shadow(surface, x, y + _NS_razak.GROUND_DY,
+                                   lift=4)
+            _NS_razak._draw_fire_wisps(surface, x, y + 36, phase,
+                                       intense=True)
 
-        # Motion blur behind (afterimage langsung, tanpa outline/lighting)
+        # Motion blur belakang: SATU ghost dirender lalu di-blit 4x
+        # dengan alpha menurun (4x lebih murah dari me-render ulang rig).
+        temp = pygame.Surface((200, 200), pygame.SRCALPHA)
+        _NS_razak._draw_razak_dash_ghost(temp, 100, 100, facing, phase)
         for i in range(4):
-            offset = (i + 1) * 8 * -boss.direction
-            alpha = int(150 - i * 30)
-            temp = pygame.Surface((160, 160), pygame.SRCALPHA)
-            _NS_razak._draw_razak_full_raw(temp, 80, 80, boss.direction, phase, "dash")
-            temp.set_alpha(alpha)
-            surface.blit(temp, (x + offset - 80, y + bob - 80))
+            offset = (i + 1) * 9 * -facing
+            temp.set_alpha(int(140 - i * 30))
+            surface.blit(temp, (x + offset - 100, y + bob - 100))
+        temp.set_alpha(255)
 
-        _NS_razak._draw_razak_full(surface, x, y + bob, boss.direction, phase, "dash")
+        # bara terlempar di belakang jalur dash
+        for i in range(5):
+            ex = x - (14 + i * 13) * facing
+            ey = y + bob + int(math.sin(phase * 2 + i * 1.7) * 8)
+            ea = max(0, 190 - i * 36)
+            _NS_razak._draw_ember(surface, ex, ey, max(1, 3 - i // 2), ea)
 
+        _NS_razak._draw_razak_full(surface, x, y + bob, facing, phase,
+                                   "dash")
+
+    def _draw_razak_dash_ghost(surface, cx, cy, facing, phase):
+        """Afterimage dash: rig native diturunkan ke SCALE tanpa pass."""
+        NS = _NS_razak
+        buf = pygame.Surface((NS.RIG_W, NS.RIG_H), pygame.SRCALPHA)
+        NS._draw_razak_full_raw(buf, NS.RIG_OX, NS.RIG_OY, facing, phase,
+                                "dash")
+        k = NS.SCALE
+        tw = max(1, int(buf.get_width() * k))
+        th = max(1, int(buf.get_height() * k))
+        small = pygame.transform.smoothscale(buf, (tw, th))
+        surface.blit(small, (cx - int(NS.RIG_OX * k),
+                             cy - int(NS.RIG_OY * k)))
+
+    # ===================================================================
+    # ATTACK TIMELINE (7 keyframe + frame IMPACT tersendiri)
+    # ===================================================================
+    def _attack_pose(ap):
+        """Interpolasi keyframe serang -> dict pose.
+
+        Keyframe: (progress, lunge, lean, dip, arm_a, flare, tremble)
+          0.14  wind-up   : machete ditarik ke belakang atas, badan mundur
+          0.30  tension   : gemetar 1 px, syal & ekor tertinggal
+          0.48  strike    : ayunan tercepat (smear sabit api aktif)
+          0.54  IMPACT    : squash + bintang + shockwave kecil
+          0.72  follow    : rebound overshoot
+          1.00  recover   : kembali ke pose istirahat
+        """
+        keys = (
+            (0.00, 0.0,  0.0, 0.0, -1.30, 1.00, 0),
+            (0.14, -3.0, -5.0, 2.0, -2.10, 1.12, 0),
+            (0.30, -4.0, -6.0, 3.0, -2.35, 1.20, 1),
+            (0.48, 7.0,  6.0, -2.0, 0.85, 1.08, 0),
+            (0.54, 9.0,  8.0, 3.0,  1.25, 1.02, 0),
+            (0.72, 3.0,  3.0, 1.0,  0.55, 1.00, 0),
+            (1.00, 0.0,  0.0, 0.0, -1.30, 1.00, 0),
+        )
+        ap = max(0.0, min(1.0, ap))
+        for i in range(len(keys) - 1):
+            k0, k1 = keys[i], keys[i + 1]
+            if k0[0] <= ap <= k1[0]:
+                span = max(1e-6, k1[0] - k0[0])
+                t = (ap - k0[0]) / span
+                t = t * t * (3 - 2 * t)          # smoothstep
+                vals = tuple(a + (b - a) * t for a, b in zip(k0[1:6], k1[1:6]))
+                return {
+                    "lunge": vals[0], "lean": vals[1], "dip": vals[2],
+                    "arm_a": vals[3], "flare": vals[4],
+                    "tremble": 1 if (k0[6] and t < 0.9) else 0,
+                    "impact": 1.0 - min(1.0, abs(ap - 0.54) / 0.10),
+                }
+        return {"lunge": 0.0, "lean": 0.0, "dip": 0.0, "arm_a": -1.30,
+                "flare": 1.0, "tremble": 0, "impact": 0.0}
 
     # ===================================================================
     # FULL COMPOSITE
     # ===================================================================
-    def _draw_razak_full_raw(surface, cx, cy, facing, phase, action, attack_progress=0):
-        """Draw bat mount + goblin rider (langsung, tanpa outline/lighting)."""
-        # Wings behind body first
-        _NS_razak._draw_bat_wings(surface, cx, cy, facing, phase, action)
+    def _draw_razak_full_raw(surface, cx, cy, facing, phase, action,
+                             attack_progress=0):
+        """Rig masterwork v2 - bat api + goblin rider, 100% prosedural.
 
-        # Bat body
-        _NS_razak._draw_bat_body(surface, cx, cy + 5, facing, phase)
+        Semua koordinat lokal ~1.5x versi lama: (0, 0) = jangkar pusat
+        badan bat, x maju (facing), y ke bawah. Helm goblin memuncak
+        di -72, cakar bat +40, ujung sayap +-62.
+        """
+        f = 1 if facing >= 0 else -1
+        attack = action == "attack"
+        ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
+        pose = _NS_razak._attack_pose(ap) if attack else None
+        breath = math.sin(phase * 0.75)
 
-        # Bat head
-        _NS_razak._draw_bat_head(surface, cx + 18 * facing, cy + 3, facing, phase)
+        # ═══ gerak badan: wing-beat bob + lean + inersia ═══
+        if action == "walk":
+            flap_speed = 2.5
+            lean = 3 * f
+            tail_lag = math.sin(phase + 2.2) * 0.35
+            scarf_lag = 4.5
+        elif action == "dash":
+            flap_speed = 4.0
+            lean = 6 * f
+            tail_lag = 0.8
+            scarf_lag = 9.0
+        elif attack:
+            flap_speed = 1.6
+            lean = int(pose["lean"]) * f
+            tail_lag = -pose["lean"] * 0.05
+            scarf_lag = -pose["lean"] * 0.7
+        else:
+            flap_speed = 1.2
+            lean = int(math.sin(phase * 0.5 + 1.1) * 1.5)
+            tail_lag = math.sin(phase * 0.6) * 0.18
+            scarf_lag = math.sin(phase * 0.55) * 2.2
 
-        # Goblin rider on top of bat
-        _NS_razak._draw_goblin_rider(surface, cx - 2, cy - 12, facing, phase, action,
-                           attack_progress)
+        flap = math.sin(phase * flap_speed) * (0.5 if action == "dash"
+                                               else 0.35)
+        tremble = 0
+        if attack and pose["tremble"]:
+            tremble = 1 if int(phase * 30) % 2 else 0
+        root_y = int(pose["dip"]) if attack else int(breath * 1.6)
 
-        # Front wings overlay (bring wings forward if attack)
-        if action == "attack":
-            _NS_razak._draw_bat_wings_front(surface, cx, cy, facing, phase)
+        ox = int(cx) + lean + tremble
+        oy = int(cy) + root_y
 
+        # ═══ lapisan belakang -> depan ═══
+        # sayap belakang (kanan-layar jauh)
+        _NS_razak._draw_bat_wings(surface, ox, oy, f, phase, action,
+                                  flap=flap)
+        # ekor dengan inersia
+        _NS_razak._draw_bat_tail(surface, ox, oy + 8, f, phase, tail_lag)
+        # badan bat + kaki/cakar
+        _NS_razak._draw_bat_body(surface, ox, oy + 7, f, phase)
+        # kepala naga bat
+        _NS_razak._draw_bat_head(surface, ox + 27 * f, oy + 4, f, phase)
+        # rider goblin di punggung
+        _NS_razak._draw_goblin_rider(surface, ox - 3 * f, oy - 18, f, phase,
+                                     action, ap, scarf_lag=scarf_lag)
+        # sayap depan overlay saat serang
+        if attack:
+            _NS_razak._draw_bat_wings_front(surface, ox, oy, f, phase)
 
-    def _draw_razak_full(surface, cx, cy, facing, phase, action, attack_progress=0):
-        """Komposit ORIGINAL-MAX: badan dirender ke buffer tetap, di-crop
-        rapat, diberi outline siluet gelap 1 px + pass pencahayaan murah
-        (rim/shade), lalu di-blit ke posisi dunia yang sama. Seni per
-        bagian tidak diubah - buffer hanya menampung hasil pose."""
+    def _draw_razak_full(surface, cx, cy, facing, phase, action,
+                         attack_progress=0):
+        """Komposit badan: rig native (1.5x) -> buffer -> turun ke SCALE ->
+        outline siluet gelap 1 px -> pass cahaya (rim/shade) -> blit.
+
+        Outline & lighting dikerjakan SETELAH penskalaan supaya tetap
+        setebal 1 px di layar (konvensi _finish_hd_sprite).
+        """
         NS = _NS_razak
-        B = 200
         if NS._body_buf is None:
-            NS._body_buf = pygame.Surface((B, B), pygame.SRCALPHA)
+            NS._body_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                          pygame.SRCALPHA)
         buf = NS._body_buf
         buf.fill((0, 0, 0, 0))
-        NS._draw_razak_full_raw(buf, B // 2, B // 2, facing, phase, action,
-                                attack_progress)
+        NS._draw_razak_full_raw(buf, NS.RIG_OX, NS.RIG_OY, facing, phase,
+                                action, attack_progress)
         used = buf.get_bounding_rect(min_alpha=1)
         if used.width <= 2 or used.height <= 2:
             return
         used.inflate_ip(4, 4)
         used.clamp_ip(buf.get_rect())
         sub = buf.subsurface(used).copy()
-        # Blit origin: titik jangkar badan di buffer (B//2,B//2) harus
-        # jatuh di posisi dunia (cx,cy) -> ox = cx - (B//2) + used.left.
-        ox = int(cx) - (B // 2) + used.left
-        oy = int(cy) - (B // 2) + used.top
-        # Outline siluet (konvensi level1: edge gelap 1 px, 4 arah)
+        lx = used.left - NS.RIG_OX
+        ly = used.top - NS.RIG_OY
+
+        k = NS.SCALE
+        if abs(k - 1.0) >= 0.02:
+            tw = max(1, int(round(sub.get_width() * k)))
+            th = max(1, int(round(sub.get_height() * k)))
+            sub = pygame.transform.smoothscale(sub, (tw, th))
+        ox = int(cx) + int(round(lx * k))
+        oy = int(cy) + int(round(ly * k))
+
         edge = sub.copy()
         edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
         for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             surface.blit(edge, (ox + ddx, oy + ddy))
-        # Pass pencahayaan (rim kiri-atas + shade terminator) pada crop rapat
         if _lighting is not None:
-            _lighting.apply_to_rig(sub, rim_add=(34, 26, 22), shade_mul=168)
+            _lighting.apply_to_rig(sub, rim_add=(38, 26, 18), shade_mul=168)
         surface.blit(sub, (ox, oy))
+    # ===================================================================
+    # ANATOMI BAT MOUNT (rig native 1.5x)
+    # ===================================================================
+    def _draw_bat_wings(surface, cx, cy, facing, phase, action, flap=None):
+        """Sayap membran bat: 4-band + tulang jari + scallop bergerigi.
 
-
-    def _draw_bat_wings(surface, cx, cy, facing, phase, action):
-        """Bat mount wings (background, spread out)."""
-        flap = math.sin(phase * (2.5 if action == "walk" else 1.2)) * 0.35
-        if action == "dash":
-            flap = math.sin(phase * 4) * 0.5
+        Tepi bawah membran digerigi `_tuft_points` (siluet pixel-art),
+        downstroke memicu gust kecil di bawah sayap.
+        """
+        NS = _NS_razak
+        P = NS.PALETTE
+        if flap is None:
+            flap = math.sin(phase * (2.5 if action == "walk" else 1.2)) * 0.35
+            if action == "dash":
+                flap = math.sin(phase * 4) * 0.5
+        fs = math.sin(flap * 3.0)          # -1..1 posisi kepakan
 
         for side in (-1, 1):
-            wing_base_x = cx + side * 8
-            wing_base_y = cy - 2
-            wing_tip_x = cx + side * (32 + int(math.cos(flap) * 6))
-            wing_tip_y = cy - 15 + int(math.sin(flap) * 8)
-            wing_mid_x = cx + side * 24
-            wing_mid_y = cy - 6 + int(math.sin(flap) * 6)
-            wing_low_x = cx + side * 20
-            wing_low_y = cy + 12 + int(math.sin(flap) * 3)
+            base_x = cx + side * 12
+            base_y = cy - 4
+            # sendi tengah & ujung mengikuti kepakan
+            tip_x = cx + side * (48 + int(math.cos(flap) * 9))
+            tip_y = cy - 24 + int(fs * 14)
+            mid_x = cx + side * 36
+            mid_y = cy - 10 + int(fs * 9)
+            low_x = cx + side * 30
+            low_y = cy + 17 + int(fs * 5)
 
-            # Wing membrane (large triangle)
-            wing_shape = [
-                (wing_base_x, wing_base_y),
-                (wing_tip_x, wing_tip_y),
-                (cx + side * 30, cy - 4 + int(math.sin(flap) * 5)),
-                (wing_mid_x, wing_mid_y),
-                (cx + side * 27, cy + 3 + int(math.sin(flap) * 4)),
-                (wing_low_x, wing_low_y),
-                (cx + side * 4, cy + 8),
-            ]
+            # spine tepi bawah membran -> scallop bergerigi
+            spine = [(tip_x, tip_y),
+                     (cx + side * 44, cy - 5 + int(fs * 7)),
+                     (mid_x, mid_y + 12),
+                     (cx + side * 40, cy + 6 + int(fs * 6)),
+                     (low_x, low_y),
+                     (cx + side * 6, cy + 12)]
+            edge = NS._tuft_points(spine, depth=3.5, min_len=8.0,
+                                   seed=7 + side)
+            shape = [(base_x, base_y)] + edge
 
-            # Shadow
-            _NS_razak._poly(surface, _NS_razak.PALETTE["shadow_deep"],
-                  [(p[0] + 2, p[1] + 2) for p in wing_shape])
-            _NS_razak._poly(surface, _NS_razak.PALETTE["wing_darkest"], wing_shape)
-            # Inner membrane (lighter)
-            inner_shape = [
-                (wing_base_x + side, wing_base_y + 1),
-                (wing_tip_x - side * 2, wing_tip_y + 1),
-                (wing_mid_x - side, wing_mid_y),
-                (wing_low_x - side, wing_low_y - 1),
-                (cx + side * 4, cy + 7),
-            ]
-            _NS_razak._poly(surface, _NS_razak.PALETTE["wing_dark"], inner_shape)
-            _NS_razak._poly(surface, _NS_razak.PALETTE["wing_mid"], [
-                (wing_base_x + side * 2, wing_base_y + 2),
-                (cx + side * 20, wing_mid_y + 1),
-                (wing_low_x - side * 2, wing_low_y - 2),
-                (cx + side * 5, cy + 6),
+            # selout: salinan shadow_deep di sisi bayangan (kanan-bawah)
+            NS._poly(surface, P["shadow_deep"],
+                     [(p[0] + 2, p[1] + 2) for p in shape])
+            # membran 4-band
+            NS._poly(surface, P["wing_darkest"], shape)
+            inner = [(base_x + side, base_y + 2)] + \
+                    [(cx + (p[0] - cx) * 0.93, cy + (p[1] - cy) * 0.93)
+                     for p in edge]
+            NS._poly(surface, P["wing_dark"], inner)
+            inner2 = [(base_x + side * 2, base_y + 3)] + \
+                     [(cx + (p[0] - cx) * 0.82, cy + (p[1] - cy) * 0.82)
+                      for p in edge[::2]]
+            if len(inner2) >= 3:
+                NS._poly(surface, P["wing_mid"], inner2)
+            # band terang hanya di sisi cahaya (kiri-atas)
+            lit = [(base_x, base_y),
+                   (tip_x - side * 4, tip_y + 3),
+                   (mid_x - side * 3, mid_y + 2),
+                   (base_x + side * 4, base_y + 6)]
+            NS._poly(surface, P["wing_light"], lit)
+
+            # dither band transisi membran (bertahan setelah downscale)
+            dith = [((base_x + tip_x) / 2 + side * k * 3,
+                     (base_y + tip_y) / 2 + 6 + (k % 3))
+                    for k in range(6)]
+            NS._dither_dots(surface, P["wing_high"], dith, alpha=110)
+
+            # tulang jari (3 strut) + sendi
+            for jx, jy in ((tip_x, tip_y), (mid_x, mid_y), (low_x, low_y)):
+                NS._aaline(surface, P["wing_darkest"],
+                           (base_x, base_y), (jx, jy), 3)
+                NS._aaline(surface, P["bat_dark"],
+                           (base_x, base_y), (jx, jy), 1)
+            NS._aacircle(surface, P["bat_dark"], (base_x, base_y), 3)
+            NS._aacircle(surface, P["bat_mid"], (base_x - 1, base_y - 1), 2)
+
+            # cakar ujung sayap ivory 3-band
+            NS._poly(surface, P["bone_dark"], [
+                (tip_x, tip_y),
+                (tip_x + side * 5, tip_y - 4),
+                (tip_x + side * 2, tip_y + 2),
             ])
-
-            # Wing bones (finger struts)
-            _NS_razak._aaline(surface, _NS_razak.PALETTE["wing_darkest"],
-                    (wing_base_x, wing_base_y), (wing_tip_x, wing_tip_y), 2)
-            _NS_razak._aaline(surface, _NS_razak.PALETTE["wing_darkest"],
-                    (wing_base_x, wing_base_y), (wing_mid_x, wing_mid_y), 2)
-            _NS_razak._aaline(surface, _NS_razak.PALETTE["wing_darkest"],
-                    (wing_base_x, wing_base_y), (wing_low_x, wing_low_y), 2)
-
-            # Claw at wing tip
-            _NS_razak._poly(surface, _NS_razak.PALETTE["bone_dark"], [
-                (wing_tip_x, wing_tip_y),
-                (wing_tip_x + side * 3, wing_tip_y - 2),
-                (wing_tip_x + side * 1, wing_tip_y + 1),
+            NS._poly(surface, P["bone_light"], [
+                (tip_x + side, tip_y - 1),
+                (tip_x + side * 4, tip_y - 3),
+                (tip_x + side * 2, tip_y + 1),
             ])
-            _NS_razak._aacircle(surface, _NS_razak.PALETTE["bone_light"],
-                      (wing_tip_x + side * 2, wing_tip_y - 1), 1)
-
+            NS._aacircle(surface, P["bone_shine"],
+                         (tip_x + side * 3, tip_y - 2), 1)
 
     def _draw_bat_wings_front(surface, cx, cy, facing, phase):
-        """Overlay wing detail during attack."""
-        # Just add some highlights
+        """Overlay highlight sayap saat serang (rim tipis sisi cahaya)."""
+        NS = _NS_razak
         for side in (-1, 1):
-            _NS_razak._aaline(surface, _NS_razak.PALETTE["wing_light"],
-                    (cx + side * 10, cy),
-                    (cx + side * 25, cy - 8), 1)
+            NS._aaline(surface, NS.PALETTE["wing_light"],
+                       (cx + side * 14, cy - 2),
+                       (cx + side * 38, cy - 13), 2)
+            NS._aaline(surface, NS.PALETTE["wing_high"],
+                       (cx + side * 20, cy - 6),
+                       (cx + side * 34, cy - 12), 1)
 
+    def _draw_bat_tail(surface, cx, cy, facing, phase, lag=0.0):
+        """Ekor berujung panah dengan inersia (secondary motion)."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        f = facing
+        # spine ekor 3 segmen; segmen jauh makin tertinggal (lag)
+        sx, sy = cx - f * 16, cy + 2
+        seg = []
+        ang = math.pi if f > 0 else 0.0
+        for i in range(3):
+            ang += (0.22 + lag * (i + 1) * 0.4) * (1 if f > 0 else -1) * 0.6
+            ln = 9 - i
+            nx = seg[-1][0] if seg else sx
+            ny = seg[-1][1] if seg else sy
+            seg.append((nx + math.cos(ang) * ln,
+                        ny + math.sin(ang) * ln * 0.5 + 1.5))
+        prev = (sx, sy)
+        for i, p in enumerate(seg):
+            NS._aaline(surface, P["shadow_deep"],
+                       (prev[0] + 1, prev[1] + 2), (p[0] + 1, p[1] + 2),
+                       6 - i)
+            NS._aaline(surface, P["bat_darkest"], prev, p, 5 - i)
+            NS._aaline(surface, P["bat_dark"], prev, p, max(1, 3 - i))
+            prev = p
+        tex, tey = seg[-1]
+        # ujung panah 3-band
+        NS._poly(surface, P["bat_darkest"], [
+            (tex, tey - 4), (tex - f * 7, tey), (tex, tey + 4)])
+        NS._poly(surface, P["bat_mid"], [
+            (tex, tey - 2), (tex - f * 5, tey), (tex, tey + 2)])
+        NS._aacircle(surface, P["bat_light"], (int(tex - f * 2), int(tey)), 1)
 
     def _draw_bat_body(surface, cx, cy, facing, phase):
-        """Red bat/dragon body."""
-        # Shadow
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["shadow_deep"],
-                 (cx - 15, cy - 3, 32, 20))
+        """Badan bat merah: 5-band + sisik punggung + perut dither + cakar."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        f = facing
+        breath = math.sin(phase * 0.75) * 1.2
 
-        # Main body (elongated)
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["bat_darkest"], (cx - 14, cy - 5, 30, 18))
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["bat_dark"], (cx - 12, cy - 4, 26, 15))
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["bat_mid"], (cx - 10, cy - 3, 22, 12))
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["bat_light"], (cx - 8, cy - 4, 18, 8))
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["bat_high"], (cx - 6, cy - 4, 12, 4))
+        # selout bayangan
+        NS._ellipse(surface, P["shadow_deep"], (cx - 21, cy - 6, 47, 29))
+        # badan 5-band (bayangan ungu -> highlight oranye, key kiri-atas)
+        NS._ellipse(surface, P["bat_darkest"], (cx - 21, cy - 8, 45, 27))
+        NS._ellipse(surface, P["bat_dark"], (cx - 19, cy - 7, 41, 24))
+        NS._ellipse(surface, P["bat_mid"], (cx - 16, cy - 6, 35, 19 + breath))
+        NS._ellipse(surface, P["bat_light"], (cx - 13, cy - 7, 27, 12))
+        NS._ellipse(surface, P["bat_high"], (cx - 10, cy - 7, 18, 6))
+        # specular cluster 2 px di punggung sisi cahaya
+        NS._aacircle(surface, P["bat_shine"], (cx - 7, cy - 5), 1)
+        NS._aacircle(surface, P["bat_shine"], (cx - 4, cy - 6), 1)
+        NS._aacircle(surface, P["bat_rim"], (cx - 6, cy - 7), 1)
 
-        # Belly (lighter underside)
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["belly_dark"], (cx - 8, cy + 6, 18, 6))
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["belly_mid"], (cx - 6, cy + 7, 14, 4))
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["belly_light"], (cx - 4, cy + 7, 10, 2))
+        # perut terang + dither band transisi
+        NS._ellipse(surface, P["belly_dark"], (cx - 12, cy + 9, 27, 9))
+        NS._ellipse(surface, P["belly_mid"], (cx - 9, cy + 10, 21, 6))
+        NS._ellipse(surface, P["belly_light"], (cx - 6, cy + 11, 15, 3))
+        NS._dither_dots(surface, P["belly_light"],
+                        [(cx - 10 + i * 4, cy + 8 + (i % 2)) for i in range(6)],
+                        alpha=120)
 
-        # Back spikes
-        for i, sx_off in enumerate((-6, -2, 2, 6)):
-            _NS_razak._poly(surface, _NS_razak.PALETTE["bat_darkest"], [
-                (cx + sx_off - 1, cy - 4),
-                (cx + sx_off + 1, cy - 4),
-                (cx + sx_off, cy - 8),
+        # sisik/duri punggung bergerigi (siluet)
+        for i, sx_off in enumerate((-12, -6, 0, 6, 11)):
+            h = 6 + (i % 2) * 2
+            NS._poly(surface, P["bat_darkest"], [
+                (cx + sx_off - 2, cy - 6),
+                (cx + sx_off + 2, cy - 6),
+                (cx + sx_off, cy - 6 - h),
             ])
-            _NS_razak._poly(surface, _NS_razak.PALETTE["bat_mid"], [
-                (cx + sx_off, cy - 4),
-                (cx + sx_off + 1, cy - 4),
-                (cx + sx_off, cy - 7),
+            NS._poly(surface, P["bat_mid"], [
+                (cx + sx_off - 1, cy - 6),
+                (cx + sx_off + 1, cy - 6),
+                (cx + sx_off, cy - 5 - h),
             ])
+            NS._aacircle(surface, P["bat_light"],
+                         (cx + sx_off, cy - 4 - h), 1)
 
-        # Legs (small, tucked)
+        # kaki tuck + cakar 3 jari
         for side in (-1, 1):
-            lx = cx + side * 7
-            ly = cy + 10
-            _NS_razak._aacircle(surface, _NS_razak.PALETTE["bat_darkest"], (lx, ly), 3)
-            _NS_razak._aacircle(surface, _NS_razak.PALETTE["bat_dark"], (lx, ly), 2)
-            # Claws
-            for c in (-1, 0, 1):
-                _NS_razak._poly(surface, _NS_razak.PALETTE["bone_dark"], [
-                    (lx + c, ly + 2),
-                    (lx + c + side, ly + 4),
-                    (lx + c, ly + 3),
+            lx = cx + side * 10
+            ly = cy + 16
+            NS._aacircle(surface, P["shadow_deep"], (lx + 1, ly + 1), 5)
+            NS._aacircle(surface, P["bat_darkest"], (lx, ly), 4)
+            NS._aacircle(surface, P["bat_dark"], (lx - 1, ly - 1), 3)
+            NS._aacircle(surface, P["bat_mid"], (lx - 1, ly - 2), 2)
+            for c in (-2, 0, 2):
+                NS._poly(surface, P["bone_dark"], [
+                    (lx + c - 1, ly + 3),
+                    (lx + c + 1, ly + 3),
+                    (lx + c + side, ly + 7),
                 ])
-
-        # Tail
-        tail_end_x = cx - 18 * facing
-        tail_end_y = cy + 4
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["bat_darkest"], (cx - facing * 12, cy + 2),
-                (tail_end_x, tail_end_y), 4)
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["bat_dark"], (cx - facing * 12, cy + 2),
-                (tail_end_x, tail_end_y), 2)
-        # Arrow-tipped tail
-        _NS_razak._poly(surface, _NS_razak.PALETTE["bat_darkest"], [
-            (tail_end_x, tail_end_y - 2),
-            (tail_end_x - facing * 4, tail_end_y),
-            (tail_end_x, tail_end_y + 2),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["bat_mid"], [
-            (tail_end_x, tail_end_y - 1),
-            (tail_end_x - facing * 3, tail_end_y),
-            (tail_end_x, tail_end_y + 1),
-        ])
-
+                NS._aacircle(surface, P["bone_light"],
+                             (lx + c + side, ly + 6), 1)
 
     def _draw_bat_head(surface, cx, cy, facing, phase):
-        """Dragon-like bat head."""
-        # Shadow
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["shadow_deep"], (cx + 1, cy + 1), 8)
+        """Kepala naga bat: moncong + taring + 3 tanduk + mata membara."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        f = facing
 
-        # Head base (elongated snout)
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["bat_darkest"], (cx - 7, cy - 5, 14, 12))
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["bat_dark"], (cx - 6, cy - 4, 12, 10))
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["bat_mid"], (cx - 5, cy - 3, 10, 7))
-        _NS_razak._ellipse(surface, _NS_razak.PALETTE["bat_light"], (cx - 4, cy - 3, 8, 4))
+        # selout
+        NS._aacircle(surface, P["shadow_deep"], (cx + 2, cy + 2), 12)
+        # tengkorak 5-band
+        NS._ellipse(surface, P["bat_darkest"], (cx - 11, cy - 8, 22, 19))
+        NS._ellipse(surface, P["bat_dark"], (cx - 10, cy - 7, 20, 16))
+        NS._ellipse(surface, P["bat_mid"], (cx - 8, cy - 6, 16, 12))
+        NS._ellipse(surface, P["bat_light"], (cx - 7, cy - 6, 12, 7))
+        NS._aacircle(surface, P["bat_high"], (cx - 4, cy - 4), 2)
+        NS._aacircle(surface, P["bat_rim"], (cx - 5, cy - 5), 1)
 
-        # Snout extending forward
+        # moncong maju
         snout = [
-            (cx, cy - 1),
-            (cx + facing * 8, cy - 2),
-            (cx + facing * 10, cy + 1),
-            (cx + facing * 8, cy + 3),
-            (cx, cy + 3),
+            (cx, cy - 2),
+            (cx + f * 12, cy - 3),
+            (cx + f * 15, cy + 1),
+            (cx + f * 12, cy + 5),
+            (cx, cy + 5),
         ]
-        _NS_razak._poly(surface, _NS_razak.PALETTE["bat_darkest"], snout)
-        _NS_razak._poly(surface, _NS_razak.PALETTE["bat_dark"], [
-            (cx + 1, cy),
-            (cx + facing * 7, cy - 1),
-            (cx + facing * 9, cy + 1),
-            (cx + facing * 7, cy + 2),
-            (cx + 1, cy + 2),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["bat_mid"], [
-            (cx + 2, cy),
-            (cx + facing * 6, cy),
-            (cx + facing * 8, cy + 1),
-            (cx + facing * 6, cy + 2),
-        ])
+        NS._poly(surface, P["shadow_deep"],
+                 [(p[0] + 1, p[1] + 2) for p in snout])
+        NS._poly(surface, P["bat_darkest"], snout)
+        NS._poly(surface, P["bat_dark"], [
+            (cx + 1, cy - 1), (cx + f * 11, cy - 2),
+            (cx + f * 13, cy + 1), (cx + f * 11, cy + 4), (cx + 1, cy + 4)])
+        NS._poly(surface, P["bat_mid"], [
+            (cx + 2, cy - 1), (cx + f * 9, cy - 1),
+            (cx + f * 12, cy + 1), (cx + f * 9, cy + 3)])
+        NS._aaline(surface, P["bat_light"],
+                   (cx + 2, cy - 1), (cx + f * 10, cy - 1), 1)
 
-        # Fangs
-        for tooth_off in (0, 3):
-            _NS_razak._poly(surface, _NS_razak.PALETTE["bone_light"], [
-                (cx + facing * (5 + tooth_off), cy + 2),
-                (cx + facing * (5 + tooth_off) + facing, cy + 4),
-                (cx + facing * (6 + tooth_off), cy + 2),
-            ])
+        # lubang hidung + dengus (sniff berkala, deterministik)
+        NS._aacircle(surface, P["shadow_deep"], (cx + f * 12, cy - 1), 1)
+        sniff = math.sin(phase * 0.9 + 1.0)
+        if sniff > 0.86:
+            k = (sniff - 0.86) / 0.14
+            NS._aacircle(surface, (*P["smoke_mid"], int(120 * k)),
+                         (cx + f * (15 + int(k * 4)), cy - 2 - int(k * 3)), 2)
 
-        # Nostril
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["shadow_deep"],
-                  (cx + facing * 8, cy - 1), 1)
+        # rahang bawah + taring ivory 3-band
+        NS._poly(surface, P["bat_darkest"], [
+            (cx + 1, cy + 5), (cx + f * 11, cy + 5),
+            (cx + f * 9, cy + 8), (cx + 1, cy + 8)])
+        for tooth_off in (2, 6):
+            bx = cx + f * (3 + tooth_off)
+            NS._poly(surface, P["bone_dark"], [
+                (bx - 1, cy + 4), (bx + 1, cy + 4), (bx + f, cy + 9)])
+            NS._poly(surface, P["bone_light"], [
+                (bx - 1, cy + 4), (bx, cy + 4), (bx + f, cy + 8)])
+            NS._aacircle(surface, P["bone_shine"], (bx, cy + 5), 1)
 
-        # Glowing yellow eye
-        eye_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["shadow_deep"],
-                  (cx + facing * 2, cy - 2), 2)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["fire_dark"], (cx + facing * 2, cy - 2), 2)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["fire_hot"], (cx + facing * 2, cy - 2),
-                  max(1, int(2 * eye_pulse)))
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["fire_glow"], (cx + facing * 2, cy - 2), 1)
+        # mata membara + blink deterministik (~2.4 dtk)
+        blink = math.sin(phase * 0.42 + 0.7) > 0.97
+        ex, ey = cx + f * 3, cy - 3
+        NS._aacircle(surface, P["shadow_deep"], (ex, ey), 3)
+        if blink:
+            NS._aaline(surface, P["fire_dark"], (ex - 2, ey), (ex + 2, ey), 2)
+        else:
+            eye_pulse = math.sin(phase * 2) * 0.3 + 0.7
+            NS._aacircle(surface, P["fire_dark"], (ex, ey), 3)
+            NS._aacircle(surface, P["fire_bright"], (ex, ey), 2)
+            NS._aacircle(surface, P["fire_hot"], (ex, ey),
+                         max(1, int(2 * eye_pulse)))
+            NS._aacircle(surface, P["fire_glow"], (ex - 1, ey - 1), 1)
 
-        # Horns / ears on top
-        for i, off in enumerate((-3, 0, 3)):
-            _NS_razak._poly(surface, _NS_razak.PALETTE["bat_darkest"], [
-                (cx + off - 1, cy - 4),
-                (cx + off + 1, cy - 4),
-                (cx + off, cy - 8 - i % 2),
-            ])
-            _NS_razak._poly(surface, _NS_razak.PALETTE["bat_dark"], [
-                (cx + off, cy - 4),
-                (cx + off + 1, cy - 4),
-                (cx + off, cy - 7),
-            ])
-
-
-    def _draw_goblin_rider(surface, cx, cy, facing, phase, action, attack_progress):
-        """Goblin sitting on bat, holding weapon."""
+        # 3 tanduk/telinga runcing dengan twitch
+        tw = 1 if math.sin(phase * 0.36 + 2.0) > 0.94 else 0
+        for i, off in enumerate((-5, 0, 5)):
+            h = 9 + (i % 2) * 3 + (tw if i == 2 else 0)
+            NS._poly(surface, P["shadow_deep"], [
+                (cx + off, cy - 6), (cx + off + 3, cy - 6),
+                (cx + off + 2, cy - 6 - h)])
+            NS._poly(surface, P["bat_darkest"], [
+                (cx + off - 1, cy - 6), (cx + off + 2, cy - 6),
+                (cx + off + 1, cy - 6 - h)])
+            NS._poly(surface, P["bat_mid"], [
+                (cx + off, cy - 6), (cx + off + 1, cy - 6),
+                (cx + off, cy - 5 - h)])
+            NS._aacircle(surface, P["bat_light"],
+                         (cx + off + 1, cy - 4 - h), 1)
+    # ===================================================================
+    # GOBLIN RIDER (rig native 1.5x)
+    # ===================================================================
+    def _draw_goblin_rider(surface, cx, cy, facing, phase, action,
+                           attack_progress, scarf_lag=0.0):
+        """Goblin pilot di punggung bat: kaki straddle, torso, kepala,
+        tangki bahan bakar, syal berkibar, lengan + senjata."""
+        NS = _NS_razak
         sway = int(math.sin(phase * 0.6) * 1)
         if action == "walk":
             sway += int(math.sin(phase * 2) * 1)
 
-        # Legs (straddling bat)
+        # syal robek berkibar DI BELAKANG badan (inersia scarf_lag)
+        NS._draw_goblin_scarf(surface, cx + sway - facing * 6, cy - 8,
+                              facing, phase, scarf_lag)
+
+        # kaki straddle
         for side in (-1, 1):
-            lx = cx + side * 4
-            ly = cy + 10
-            # Thigh
-            _NS_razak._rect(surface, _NS_razak.PALETTE["leather_darkest"], (lx - 2, ly, 4, 6),
-                  border_radius=1)
-            _NS_razak._rect(surface, _NS_razak.PALETTE["leather_dark"], (lx - 2, ly, 4, 5))
-            _NS_razak._rect(surface, _NS_razak.PALETTE["leather_mid"], (lx - 1, ly + 1, 3, 3))
-            # Boot
-            _NS_razak._rect(surface, _NS_razak.PALETTE["leather_darkest"], (lx - 3, ly + 6, 6, 4),
-                  border_radius=1)
-            _NS_razak._rect(surface, _NS_razak.PALETTE["leather_dark"], (lx - 3, ly + 6, 6, 3))
-            _NS_razak._rect(surface, _NS_razak.PALETTE["brass_dark"], (lx - 3, ly + 6, 6, 1))
+            lx = cx + side * 7
+            ly = cy + 15
+            NS._rect(surface, NS.PALETTE["shadow_deep"],
+                     (lx - 3 + 1, ly + 1, 6, 9), border_radius=1)
+            NS._rect(surface, NS.PALETTE["leather_darkest"],
+                     (lx - 3, ly, 6, 9), border_radius=1)
+            NS._rect(surface, NS.PALETTE["leather_dark"], (lx - 3, ly, 6, 7))
+            NS._rect(surface, NS.PALETTE["leather_mid"], (lx - 2, ly + 1, 4, 4))
+            NS._rect(surface, NS.PALETTE["leather_light"], (lx - 2, ly + 1, 2, 2))
+            # boot + gesper brass
+            NS._rect(surface, NS.PALETTE["leather_darkest"],
+                     (lx - 4, ly + 9, 9, 6), border_radius=1)
+            NS._rect(surface, NS.PALETTE["leather_dark"], (lx - 4, ly + 9, 9, 4))
+            NS._rect(surface, NS.PALETTE["leather_mid"], (lx - 3, ly + 10, 6, 2))
+            NS._rect(surface, NS.PALETTE["brass_mid"], (lx - 4, ly + 9, 9, 1))
+            NS._aacircle(surface, NS.PALETTE["brass_shine"], (lx, ly + 9), 1)
 
-        # Torso
-        _NS_razak._draw_goblin_torso(surface, cx + sway, cy, facing, phase)
+        # tangki bahan bakar (di belakang torso)
+        NS._draw_fuel_tanks(surface, cx + sway - facing * 9, cy - 5, phase)
 
-        # Head
-        _NS_razak._draw_goblin_head(surface, cx + sway, cy - 12, facing, phase)
+        # torso
+        NS._draw_goblin_torso(surface, cx + sway, cy, facing, phase)
 
-        # Backpack / fuel tanks
-        _NS_razak._draw_fuel_tanks(surface, cx + sway - facing * 6, cy - 4, phase)
+        # kepala
+        NS._draw_goblin_head(surface, cx + sway, cy - 17, facing, phase)
 
-        # Arms with weapons
+        # lengan + senjata
         if action == "attack":
-            _NS_razak._draw_goblin_attack_arms(surface, cx + sway, cy - 4, facing, phase,
-                                     attack_progress)
+            NS._draw_goblin_attack_arms(surface, cx + sway, cy - 5, facing,
+                                        phase, attack_progress)
         elif action in ("q_cast", "w_cast"):
-            _NS_razak._draw_goblin_gun_arms(surface, cx + sway, cy - 4, facing, phase)
+            NS._draw_goblin_gun_arms(surface, cx + sway, cy - 5, facing,
+                                     phase)
         else:
-            _NS_razak._draw_goblin_idle_arms(surface, cx + sway, cy - 4, facing, phase)
+            NS._draw_goblin_idle_arms(surface, cx + sway, cy - 5, facing,
+                                      phase)
 
+    def _draw_goblin_scarf(surface, sx, sy, facing, phase, lag=0.0):
+        """Syal pilot robek berkibar - tepi digerigi _tuft_points."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        f = facing
+        wave = math.sin(phase * 1.6) * 3 + lag
+        spine = [(sx, sy),
+                 (sx - f * 8, sy + 2 + wave * 0.4),
+                 (sx - f * 16, sy + 5 + wave * 0.8),
+                 (sx - f * 23, sy + 9 + wave)]
+        edge = NS._tuft_points(spine, depth=3.0, min_len=6.0, seed=11)
+        lower = [(p[0], p[1] + 5 + i * 0.3) for i, p in enumerate(spine)]
+        shape = edge + lower[::-1]
+        if len(shape) >= 3:
+            NS._poly(surface, P["shadow_deep"],
+                     [(p[0] + 1, p[1] + 2) for p in shape])
+            NS._poly(surface, P["fire_dark"], shape)
+            inner = [(p[0], p[1] + 1) for p in spine] + \
+                    [(p[0], p[1] + 4) for p in spine][::-1]
+            NS._poly(surface, P["fire_mid"], inner)
+            NS._aaline(surface, P["fire_bright"], spine[0],
+                       (spine[1][0], spine[1][1] + 1), 1)
 
     def _draw_goblin_torso(surface, cx, cy, facing, phase):
-        """Small goblin torso in armor/vest."""
-        # Shadow
-        _NS_razak._poly(surface, _NS_razak.PALETTE["shadow_deep"], [
-            (cx - 7 + 1, cy - 5 + 1), (cx + 7 + 1, cy - 5 + 1),
-            (cx + 6 + 1, cy + 10 + 1), (cx - 6 + 1, cy + 10 + 1),
-        ])
+        """Torso goblin: kulit hijau 4-band + rompi + strap X ber-jahitan."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        breath = math.sin(phase * 0.75) * 0.8
 
-        # Torso base (green skin)
-        _NS_razak._poly(surface, _NS_razak.PALETTE["gob_darkest"], [
-            (cx - 7, cy - 5), (cx + 7, cy - 5),
-            (cx + 6, cy + 10), (cx - 6, cy + 10),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["gob_dark"], [
-            (cx - 6, cy - 4), (cx + 6, cy - 4),
-            (cx + 5, cy + 9), (cx - 5, cy + 9),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["gob_mid"], [
-            (cx - 5, cy - 3), (cx + 5, cy - 3),
-            (cx + 4, cy + 7), (cx - 4, cy + 7),
-        ])
+        # selout
+        NS._poly(surface, P["shadow_deep"], [
+            (cx - 10 + 2, cy - 8 + 2), (cx + 10 + 2, cy - 8 + 2),
+            (cx + 9 + 2, cy + 14 + 2), (cx - 9 + 2, cy + 14 + 2)])
+        # kulit hijau 4-band
+        NS._poly(surface, P["gob_darkest"], [
+            (cx - 10, cy - 8), (cx + 10, cy - 8),
+            (cx + 9, cy + 14), (cx - 9, cy + 14)])
+        NS._poly(surface, P["gob_dark"], [
+            (cx - 9, cy - 7), (cx + 9, cy - 7),
+            (cx + 8, cy + 13), (cx - 8, cy + 13)])
+        NS._poly(surface, P["gob_mid"], [
+            (cx - 7, cy - 6 + breath), (cx + 7, cy - 6 + breath),
+            (cx + 6, cy + 10), (cx - 6, cy + 10)])
+        NS._poly(surface, P["gob_light"], [
+            (cx - 6, cy - 5), (cx + 1, cy - 5),
+            (cx, cy + 3), (cx - 5, cy + 3)])
+        # specular cluster bahu kiri-atas
+        NS._aacircle(surface, P["gob_high"], (cx - 4, cy - 4), 1)
+        NS._aacircle(surface, P["gob_shine"], (cx - 5, cy - 5), 1)
 
-        # Leather chest armor
-        _NS_razak._rect(surface, _NS_razak.PALETTE["leather_darkest"], (cx - 8, cy - 2, 16, 8),
-              border_radius=2)
-        _NS_razak._rect(surface, _NS_razak.PALETTE["leather_dark"], (cx - 7, cy - 1, 14, 6),
-              border_radius=1)
-        _NS_razak._rect(surface, _NS_razak.PALETTE["leather_mid"], (cx - 6, cy, 12, 3))
+        # rompi kulit
+        NS._rect(surface, P["leather_darkest"], (cx - 11, cy - 3, 22, 12),
+                 border_radius=2)
+        NS._rect(surface, P["leather_dark"], (cx - 10, cy - 2, 20, 10),
+                 border_radius=1)
+        NS._rect(surface, P["leather_mid"], (cx - 9, cy - 1, 18, 5))
+        NS._rect(surface, P["leather_light"], (cx - 8, cy, 7, 2))
+        # dither transisi rompi
+        NS._dither_dots(surface, P["leather_light"],
+                        [(cx - 7 + i * 3, cy + 4) for i in range(5)],
+                        alpha=110)
 
-        # Chest strap X
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["leather_darkest"], (cx - 6, cy - 2), (cx + 6, cy + 4), 2)
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["leather_darkest"], (cx + 6, cy - 2), (cx - 6, cy + 4), 2)
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["leather_mid"], (cx - 6, cy - 2), (cx + 6, cy + 4), 1)
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["leather_mid"], (cx + 6, cy - 2), (cx - 6, cy + 4), 1)
+        # strap X ber-jahitan
+        NS._aaline(surface, P["leather_darkest"], (cx - 9, cy - 4),
+                   (cx + 9, cy + 6), 3)
+        NS._aaline(surface, P["leather_darkest"], (cx + 9, cy - 4),
+                   (cx - 9, cy + 6), 3)
+        NS._aaline(surface, P["leather_mid"], (cx - 9, cy - 4),
+                   (cx + 9, cy + 6), 1)
+        NS._aaline(surface, P["leather_mid"], (cx + 9, cy - 4),
+                   (cx - 9, cy + 6), 1)
+        # jahitan (dither di sepanjang strap)
+        for k in range(4):
+            t = 0.2 + k * 0.2
+            jx = cx - 9 + int(18 * t)
+            jy = cy - 4 + int(10 * t)
+            NS._aacircle(surface, (*P["leather_high"], 150), (jx, jy - 1), 1)
 
-        # Brass buckle center
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["brass_dark"], (cx, cy + 1), 2)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["brass_mid"], (cx, cy + 1), 1)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["brass_shine"], (cx, cy), 1)
-
+        # gesper emas pusat + rivet
+        NS._aacircle(surface, P["gold_dark"], (cx, cy + 1), 3)
+        NS._aacircle(surface, P["gold_mid"], (cx, cy + 1), 2)
+        NS._aacircle(surface, P["gold_light"], (cx - 1, cy), 1)
 
     def _draw_goblin_head(surface, cx, cy, facing, phase):
-        """Goblin head with pilot goggles."""
-        # Shadow
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["shadow_deep"], (cx + 1, cy + 1), 8)
+        """Kepala goblin: goggles biru signature + helm rivet + telinga."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        f = facing
 
-        # Head base
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["gob_darkest"], (cx, cy), 7)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["gob_dark"], (cx - 1, cy - 1), 6)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["gob_mid"], (cx - 1, cy - 2), 4)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["gob_light"], (cx - 2, cy - 3), 2)
+        # selout
+        NS._aacircle(surface, P["shadow_deep"], (cx + 2, cy + 2), 11)
+        # tengkorak 4-band
+        NS._aacircle(surface, P["gob_darkest"], (cx, cy), 10)
+        NS._aacircle(surface, P["gob_dark"], (cx - 1, cy - 1), 9)
+        NS._aacircle(surface, P["gob_mid"], (cx - 1, cy - 2), 7)
+        NS._aacircle(surface, P["gob_light"], (cx - 3, cy - 4), 4)
+        NS._aacircle(surface, P["gob_high"], (cx - 4, cy - 5), 2)
 
-        # Long pointy ears
+        # telinga panjang runcing (twitch berkala)
+        tw = 1 if math.sin(phase * 0.44 + 1.3) > 0.94 else 0
         for side in (-1, 1):
-            _NS_razak._poly(surface, _NS_razak.PALETTE["gob_darkest"], [
-                (cx + side * 6, cy - 1),
-                (cx + side * 11, cy - 4),
-                (cx + side * 7, cy + 2),
-            ])
-            _NS_razak._poly(surface, _NS_razak.PALETTE["gob_dark"], [
-                (cx + side * 6, cy),
-                (cx + side * 9, cy - 3),
-                (cx + side * 7, cy + 1),
-            ])
-            _NS_razak._poly(surface, _NS_razak.PALETTE["gob_mid"], [
-                (cx + side * 7, cy),
-                (cx + side * 9, cy - 2),
-                (cx + side * 7, cy),
-            ])
+            NS._poly(surface, P["shadow_deep"], [
+                (cx + side * 8 + 1, cy - 1 + 1),
+                (cx + side * 17 + 1, cy - 6 - (tw if side == f else 0) + 1),
+                (cx + side * 10 + 1, cy + 3 + 1)])
+            NS._poly(surface, P["gob_darkest"], [
+                (cx + side * 8, cy - 1),
+                (cx + side * 17, cy - 6 - (tw if side == f else 0)),
+                (cx + side * 10, cy + 3)])
+            NS._poly(surface, P["gob_dark"], [
+                (cx + side * 8, cy),
+                (cx + side * 14, cy - 4),
+                (cx + side * 10, cy + 2)])
+            NS._poly(surface, P["gob_mid"], [
+                (cx + side * 9, cy),
+                (cx + side * 12, cy - 3),
+                (cx + side * 10, cy + 1)])
 
-        # Big nose (goblin trait)
-        _NS_razak._poly(surface, _NS_razak.PALETTE["gob_dark"], [
-            (cx + facing * 2, cy),
-            (cx + facing * 5, cy + 1),
-            (cx + facing * 5, cy + 3),
-            (cx + facing * 2, cy + 3),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["gob_mid"], [
-            (cx + facing * 2, cy + 1),
-            (cx + facing * 4, cy + 2),
-            (cx + facing * 2, cy + 2),
-        ])
+        # hidung besar goblin
+        NS._poly(surface, P["gob_dark"], [
+            (cx + f * 3, cy), (cx + f * 8, cy + 2),
+            (cx + f * 8, cy + 5), (cx + f * 3, cy + 5)])
+        NS._poly(surface, P["gob_mid"], [
+            (cx + f * 3, cy + 1), (cx + f * 6, cy + 3), (cx + f * 3, cy + 3)])
+        NS._aacircle(surface, P["gob_light"], (cx + f * 4, cy + 1), 1)
 
-        # Mouth with fang
-        _NS_razak._rect(surface, _NS_razak.PALETTE["shadow_deep"], (cx - 2, cy + 4, 4, 1))
-        _NS_razak._poly(surface, _NS_razak.PALETTE["bone_light"], [
-            (cx + 1, cy + 4),
-            (cx + 2, cy + 6),
-            (cx + 2, cy + 4),
-        ])
+        # mulut + gigi taring
+        NS._rect(surface, P["shadow_deep"], (cx - 3, cy + 6, 7, 2))
+        grin = math.sin(phase * 0.7) > 0.5
+        NS._poly(surface, P["bone_light"], [
+            (cx + 2, cy + 6), (cx + 4, cy + (9 if grin else 8)),
+            (cx + 4, cy + 6)])
+        NS._poly(surface, P["bone_light"], [
+            (cx - 2, cy + 6), (cx - 3, cy + 8), (cx - 1, cy + 6)])
 
-        # Blue goggles (Batrider signature!)
-        _NS_razak._rect(surface, _NS_razak.PALETTE["leather_darkest"], (cx - 6, cy - 5, 12, 4),
-              border_radius=1)
-        # Left goggle lens
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["leather_dark"], (cx - 3, cy - 3), 3)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["blue_dark"], (cx - 3, cy - 3), 2)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["blue_mid"], (cx - 3, cy - 3), 2)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["blue_light"], (cx - 4, cy - 4), 1)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["blue_shine"], (cx - 4, cy - 4), 1)
-        # Right goggle lens
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["leather_dark"], (cx + 3, cy - 3), 3)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["blue_dark"], (cx + 3, cy - 3), 2)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["blue_mid"], (cx + 3, cy - 3), 2)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["blue_light"], (cx + 2, cy - 4), 1)
+        # goggles biru signature (2 lensa + strap + specular cluster)
+        NS._rect(surface, P["leather_darkest"], (cx - 9, cy - 8, 18, 6),
+                 border_radius=2)
+        NS._rect(surface, P["leather_dark"], (cx - 8, cy - 7, 16, 4))
+        for gx in (-4, 4):
+            NS._aacircle(surface, P["metal_dark"], (cx + gx, cy - 5), 4)
+            NS._aacircle(surface, P["blue_dark"], (cx + gx, cy - 5), 3)
+            NS._aacircle(surface, P["blue_mid"], (cx + gx, cy - 5), 2)
+            NS._aacircle(surface, P["blue_light"], (cx + gx - 1, cy - 6), 1)
+            NS._aacircle(surface, P["blue_shine"], (cx + gx - 2, cy - 7), 1)
 
-        # Helmet on top
-        _NS_razak._poly(surface, _NS_razak.PALETTE["leather_darkest"], [
-            (cx - 7, cy - 5),
-            (cx - 5, cy - 8),
-            (cx + 5, cy - 8),
-            (cx + 7, cy - 5),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["leather_dark"], [
-            (cx - 6, cy - 5),
-            (cx - 4, cy - 7),
-            (cx + 4, cy - 7),
-            (cx + 6, cy - 5),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["leather_mid"], [
-            (cx - 5, cy - 5),
-            (cx - 3, cy - 6),
-            (cx + 3, cy - 6),
-            (cx + 5, cy - 5),
-        ])
-        # Rivets
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["brass_light"], (cx - 4, cy - 6), 1)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["brass_light"], (cx + 4, cy - 6), 1)
-
+        # helm kulit ber-rivet
+        NS._poly(surface, P["shadow_deep"], [
+            (cx - 10 + 1, cy - 8 + 1), (cx - 7 + 1, cy - 13 + 1),
+            (cx + 7 + 1, cy - 13 + 1), (cx + 10 + 1, cy - 8 + 1)])
+        NS._poly(surface, P["leather_darkest"], [
+            (cx - 10, cy - 8), (cx - 7, cy - 13),
+            (cx + 7, cy - 13), (cx + 10, cy - 8)])
+        NS._poly(surface, P["leather_dark"], [
+            (cx - 9, cy - 8), (cx - 6, cy - 12),
+            (cx + 6, cy - 12), (cx + 9, cy - 8)])
+        NS._poly(surface, P["leather_mid"], [
+            (cx - 8, cy - 8), (cx - 5, cy - 11),
+            (cx + 4, cy - 11), (cx + 7, cy - 8)])
+        NS._poly(surface, P["leather_light"], [
+            (cx - 7, cy - 9), (cx - 5, cy - 10), (cx - 2, cy - 10),
+            (cx - 4, cy - 9)])
+        # rivet brass + antena kecil
+        NS._aacircle(surface, P["brass_mid"], (cx - 6, cy - 10), 1)
+        NS._aacircle(surface, P["brass_shine"], (cx - 6, cy - 11), 1)
+        NS._aacircle(surface, P["brass_mid"], (cx + 6, cy - 10), 1)
+        NS._aaline(surface, P["metal_mid"], (cx + 7, cy - 12),
+                   (cx + 9, cy - 17), 1)
+        NS._aacircle(surface, P["fire_bright"], (cx + 9, cy - 17), 1)
 
     def _draw_fuel_tanks(surface, cx, cy, phase):
-        """Fuel tanks on goblin's back."""
-        # Two brass tanks
-        for i, off in enumerate((-2, 2)):
-            _NS_razak._rect(surface, _NS_razak.PALETTE["shadow_deep"],
-                  (cx - 2 + off + 1, cy - 4 + 1, 3, 10), border_radius=1)
-            _NS_razak._rect(surface, _NS_razak.PALETTE["brass_dark"], (cx - 2 + off, cy - 4, 3, 10),
-                  border_radius=1)
-            _NS_razak._rect(surface, _NS_razak.PALETTE["brass_mid"], (cx - 1 + off, cy - 3, 2, 8))
-            _NS_razak._rect(surface, _NS_razak.PALETTE["brass_light"], (cx - 1 + off, cy - 3, 1, 6))
-            # Cap on top
-            _NS_razak._rect(surface, _NS_razak.PALETTE["metal_dark"], (cx - 2 + off, cy - 5, 3, 2))
-            _NS_razak._rect(surface, _NS_razak.PALETTE["metal_light"], (cx - 2 + off, cy - 5, 3, 1))
+        """Tangki bahan bakar brass ganda + selang + gauge bergetar."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        for i, off in enumerate((-3, 3)):
+            NS._rect(surface, P["shadow_deep"],
+                     (cx - 3 + off + 1, cy - 6 + 1, 5, 15), border_radius=2)
+            NS._rect(surface, P["brass_dark"], (cx - 3 + off, cy - 6, 5, 15),
+                     border_radius=2)
+            NS._rect(surface, P["brass_mid"], (cx - 2 + off, cy - 5, 3, 13))
+            NS._rect(surface, P["brass_light"], (cx - 2 + off, cy - 5, 1, 10))
+            NS._aacircle(surface, P["brass_shine"], (cx - 2 + off, cy - 4), 1)
+            # cap logam + valve
+            NS._rect(surface, P["metal_dark"], (cx - 3 + off, cy - 8, 5, 3))
+            NS._rect(surface, P["metal_light"], (cx - 3 + off, cy - 8, 5, 1))
+            NS._aacircle(surface, P["metal_mid"], (cx - 1 + off, cy - 9), 1)
+            # band pengikat
+            NS._rect(surface, P["leather_darkest"], (cx - 3 + off, cy, 5, 2))
 
-        # Connecting hose
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["leather_darkest"], (cx - 1, cy - 3), (cx + 3, cy - 2), 2)
+        # selang penghubung + ke gun
+        NS._aaline(surface, P["leather_darkest"], (cx - 2, cy - 4),
+                   (cx + 4, cy - 3), 2)
+        NS._aaline(surface, P["smoke_dark"], (cx + 3, cy + 2),
+                   (cx + 9, cy + 6), 2)
+        NS._aaline(surface, P["smoke_mid"], (cx + 3, cy + 2),
+                   (cx + 9, cy + 6), 1)
 
-
+        # gauge tekanan (jarum bergetar - idle hidup)
+        gx, gy = cx, cy + 6
+        NS._aacircle(surface, P["metal_dark"], (gx, gy), 3)
+        NS._aacircle(surface, P["bone_light"], (gx, gy), 2)
+        na = -0.8 + math.sin(phase * 5.0) * 0.25
+        NS._aaline(surface, P["fire_dark"], (gx, gy),
+                   (gx + math.cos(na) * 2, gy + math.sin(na) * 2), 1)
+        NS._aacircle(surface, P["gold_mid"], (gx, gy), 3, 1)
+    # ===================================================================
+    # LENGAN & SENJATA
+    # ===================================================================
     def _draw_goblin_idle_arms(surface, cx, cy, facing, phase):
-        """Idle - holding gun in one arm, machete in other."""
-        sway = math.sin(phase * 0.7) * 1
+        """Idle - machete di tangan belakang, flamethrower di depan."""
+        NS = _NS_razak
+        sway = math.sin(phase * 0.7) * 1.5
 
-        # Back arm - holding machete
         back_side = -facing
-        bs_x = cx + back_side * 5
-        bs_y = cy - 2
-        bh_x = bs_x + back_side * 4
-        bh_y = cy + 4 + int(sway)
-        _NS_razak._draw_goblin_arm(surface, bs_x, bs_y, bh_x, bh_y)
-        _NS_razak._draw_machete_held(surface, bh_x, bh_y, back_side, phase)
+        bs_x = cx + back_side * 7
+        bs_y = cy - 3
+        bh_x = bs_x + back_side * 6
+        bh_y = cy + 6 + int(sway)
+        NS._draw_goblin_arm(surface, bs_x, bs_y, bh_x, bh_y)
+        NS._draw_machete_held(surface, bh_x, bh_y, back_side, phase)
 
-        # Front arm - gun
-        fs_x = cx + facing * 5
-        fs_y = cy - 2
-        fh_x = fs_x + facing * 8
+        fs_x = cx + facing * 7
+        fs_y = cy - 3
+        fh_x = fs_x + facing * 11
         fh_y = cy - 1 + int(sway)
-        _NS_razak._draw_goblin_arm(surface, fs_x, fs_y, fh_x, fh_y)
-        _NS_razak._draw_flame_gun(surface, fh_x, fh_y, facing, phase)
-
+        NS._draw_goblin_arm(surface, fs_x, fs_y, fh_x, fh_y)
+        NS._draw_flame_gun(surface, fh_x, fh_y, facing, phase)
 
     def _draw_goblin_gun_arms(surface, cx, cy, facing, phase):
         """Both arms holding gun forward, firing."""
-        fs_x = cx + facing * 5
-        fs_y = cy - 2
-        fh_x = fs_x + facing * 10
+        NS = _NS_razak
+        fs_x = cx + facing * 7
+        fs_y = cy - 3
+        fh_x = fs_x + facing * 14
         fh_y = cy - 1
-        _NS_razak._draw_goblin_arm(surface, fs_x, fs_y, fh_x, fh_y)
+        NS._draw_goblin_arm(surface, fs_x, fs_y, fh_x, fh_y)
 
-        # Back arm supporting gun
-        bs_x = cx - facing * 3
-        bs_y = cy - 1
-        bh_x = fh_x - facing * 4
+        bs_x = cx - facing * 4
+        bs_y = cy - 2
+        bh_x = fh_x - facing * 6
         bh_y = fh_y
-        _NS_razak._draw_goblin_arm(surface, bs_x, bs_y, bh_x, bh_y)
+        NS._draw_goblin_arm(surface, bs_x, bs_y, bh_x, bh_y)
 
-        _NS_razak._draw_flame_gun(surface, fh_x, fh_y, facing, phase, firing=True)
-
+        NS._draw_flame_gun(surface, fh_x, fh_y, facing, phase, firing=True)
 
     def _draw_goblin_attack_arms(surface, cx, cy, facing, phase, progress):
-        """One arm swings machete, other holds gun."""
-        # Back arm - gun at rest
+        """Lengan depan ayun machete (7 keyframe), belakang pegang gun."""
+        NS = _NS_razak
+        pose = NS._attack_pose(progress)
+
+        # lengan belakang - gun istirahat
         back_side = -facing
-        bs_x = cx + back_side * 3
-        bs_y = cy - 2
-        bh_x = bs_x + back_side * 6
-        bh_y = cy + 1
-        _NS_razak._draw_goblin_arm(surface, bs_x, bs_y, bh_x, bh_y)
-        _NS_razak._draw_flame_gun(surface, bh_x, bh_y, back_side, phase)
+        bs_x = cx + back_side * 4
+        bs_y = cy - 3
+        bh_x = bs_x + back_side * 8
+        bh_y = cy + 2
+        NS._draw_goblin_arm(surface, bs_x, bs_y, bh_x, bh_y)
+        NS._draw_flame_gun(surface, bh_x, bh_y, back_side, phase)
 
-        # Front arm swings machete
-        fs_x = cx + facing * 5
-        fs_y = cy - 2
-
-        if progress < 0.25:
-            t = progress / 0.25
-            t = t * t * (3 - 2 * t)
-            arm_angle = -1.3 + 0.3 * t
-        elif progress < 0.55:
-            t = (progress - 0.25) / 0.30
-            t = 1 - (1 - t) ** 3
-            arm_angle = -1.0 + 2.2 * t
-        else:
-            t = (progress - 0.55) / 0.45
-            arm_angle = 1.2 - 1.0 * t
-
-        arm_len = 10
+        # lengan depan - machete mengikuti kurva keyframe
+        fs_x = cx + facing * 7
+        fs_y = cy - 3
+        arm_angle = pose["arm_a"]
+        arm_len = 14
         fh_x = fs_x + int(math.cos(arm_angle) * arm_len) * facing
         fh_y = fs_y + int(math.sin(arm_angle) * arm_len)
+        NS._draw_goblin_arm(surface, fs_x, fs_y, fh_x, fh_y)
 
-        _NS_razak._draw_goblin_arm(surface, fs_x, fs_y, fh_x, fh_y)
-
-        # Machete swinging
         blade_angle = arm_angle + math.pi / 4 * facing
-        _NS_razak._draw_machete_swinging(surface, fh_x, fh_y, facing, blade_angle)
+        NS._draw_machete_swinging(surface, fh_x, fh_y, facing, blade_angle)
 
+        # frame IMPACT: bintang + serpihan bara di ujung machete
+        if pose["impact"] > 0.05:
+            k = pose["impact"]
+            tipx = fh_x + int(math.cos(blade_angle) * 26) * facing
+            tipy = fh_y + int(math.sin(blade_angle) * 26)
+            NS._spark_star(surface, tipx, tipy, int(14 * k),
+                           NS.PALETTE["fire_hot"], int(240 * k), spikes=6,
+                           rot=progress * 4, core=NS.PALETTE["fire_white"])
+            for i in range(4):
+                a = progress * 6 + i * math.pi / 2
+                NS._draw_ember(surface, tipx + int(math.cos(a) * 10 * k),
+                               tipy + int(math.sin(a) * 7 * k), 1,
+                               int(220 * k))
 
     def _draw_goblin_arm(surface, x1, y1, x2, y2):
-        """Small goblin arm."""
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["shadow_deep"], (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 5)
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["gob_darkest"], (x1, y1), (x2, y2), 4)
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["gob_dark"], (x1, y1), (x2, y2), 3)
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["gob_mid"], (x1, y1), (x2, y2), 1)
-        # Hand
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["gob_darkest"], (x2, y2), 2)
-        _NS_razak._aacircle(surface, _NS_razak.PALETTE["gob_mid"], (x2, y2), 1)
-
+        """Lengan goblin 4-band + tangan."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        NS._aaline(surface, P["shadow_deep"], (x1 + 1, y1 + 2),
+                   (x2 + 1, y2 + 2), 6)
+        NS._aaline(surface, P["gob_darkest"], (x1, y1), (x2, y2), 5)
+        NS._aaline(surface, P["gob_dark"], (x1, y1), (x2, y2), 4)
+        NS._aaline(surface, P["gob_mid"], (x1, y1), (x2, y2), 2)
+        NS._aaline(surface, P["gob_light"], (x1, y1),
+                   ((x1 + x2) // 2, (y1 + y2) // 2), 1)
+        NS._aacircle(surface, P["gob_darkest"], (x2, y2), 3)
+        NS._aacircle(surface, P["gob_mid"], (x2, y2), 2)
+        NS._aacircle(surface, P["gob_light"], (x2 - 1, y2 - 1), 1)
 
     def _draw_flame_gun(surface, hx, hy, facing, phase, firing=False):
-        """Brass flamethrower / rifle."""
-        # Handle/grip
-        _NS_razak._rect(surface, _NS_razak.PALETTE["leather_darkest"], (hx - 1, hy - 2, 3, 5),
-              border_radius=1)
-        _NS_razak._rect(surface, _NS_razak.PALETTE["leather_dark"], (hx - 1, hy - 2, 3, 4))
+        """Flamethrower brass: grip + barrel + moncong flare + pilot flame."""
+        NS = _NS_razak
+        P = NS.PALETTE
 
-        # Barrel (extending forward)
-        barrel_len = 12
+        # grip kulit
+        NS._rect(surface, P["leather_darkest"], (hx - 2, hy - 2, 4, 7),
+                 border_radius=1)
+        NS._rect(surface, P["leather_dark"], (hx - 2, hy - 2, 4, 5))
+        NS._rect(surface, P["leather_mid"], (hx - 1, hy - 1, 2, 3))
+
+        # barrel brass 4-band
+        barrel_len = 17
         end_x = hx + facing * barrel_len
         end_y = hy - 1
+        bx0 = min(hx, end_x)
+        NS._rect(surface, P["shadow_deep"],
+                 (bx0 + 1, hy - 4 + 1, barrel_len, 7), border_radius=2)
+        NS._rect(surface, P["brass_dark"], (bx0, hy - 4, barrel_len, 7),
+                 border_radius=2)
+        NS._rect(surface, P["brass_mid"], (bx0, hy - 3, barrel_len, 5))
+        NS._rect(surface, P["brass_light"], (bx0, hy - 3, barrel_len, 2))
+        NS._aacircle(surface, P["brass_shine"],
+                     (hx + facing * 5, hy - 3), 1)
+        NS._aacircle(surface, P["brass_shine"],
+                     (hx + facing * 9, hy - 3), 1)
+        # ring baja + rivet di tengah barrel
+        NS._rect(surface, P["metal_dark"],
+                 (hx + facing * 7 - (2 if facing < 0 else 0), hy - 4, 2, 7))
+        NS._aacircle(surface, P["metal_light"],
+                     (hx + facing * 8, hy - 4), 1)
 
-        # Wide brass barrel
-        _NS_razak._rect(surface, _NS_razak.PALETTE["shadow_deep"],
-              (min(hx, end_x) + 1, hy - 3 + 1, barrel_len, 5), border_radius=1)
-        _NS_razak._rect(surface, _NS_razak.PALETTE["brass_dark"],
-              (min(hx, end_x), hy - 3, barrel_len, 5), border_radius=1)
-        _NS_razak._rect(surface, _NS_razak.PALETTE["brass_mid"],
-              (min(hx, end_x), hy - 2, barrel_len, 3))
-        _NS_razak._rect(surface, _NS_razak.PALETTE["brass_light"],
-              (min(hx, end_x), hy - 2, barrel_len, 1))
+        # moncong flare 3-band
+        NS._poly(surface, P["brass_dark"], [
+            (end_x, hy - 5), (end_x + facing * 6, hy - 7),
+            (end_x + facing * 6, hy + 5), (end_x, hy + 3)])
+        NS._poly(surface, P["brass_mid"], [
+            (end_x, hy - 4), (end_x + facing * 5, hy - 5),
+            (end_x + facing * 5, hy + 3), (end_x, hy + 2)])
+        NS._poly(surface, P["brass_light"], [
+            (end_x + facing, hy - 3), (end_x + facing * 4, hy - 4),
+            (end_x + facing * 4, hy + 1)])
+        NS._aacircle(surface, P["brass_shine"],
+                     (end_x + facing * 3, hy - 3), 1)
 
-        # Muzzle (flared)
-        _NS_razak._poly(surface, _NS_razak.PALETTE["brass_dark"], [
-            (end_x, hy - 4),
-            (end_x + facing * 4, hy - 5),
-            (end_x + facing * 4, hy + 3),
-            (end_x, hy + 2),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["brass_mid"], [
-            (end_x, hy - 3),
-            (end_x + facing * 3, hy - 4),
-            (end_x + facing * 3, hy + 2),
-            (end_x, hy + 1),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["brass_light"], [
-            (end_x + facing * 1, hy - 2),
-            (end_x + facing * 3, hy - 3),
-            (end_x + facing * 3, hy + 1),
-        ])
-
-        # Ignition pilot flame at muzzle
+        # pilot flame flicker (idle hidup)
         if not firing:
-            px = end_x + facing * 5
+            px = end_x + facing * 7
             py = hy - 1
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], 200), (px, py), 2)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], 220), (px, py), 1)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], 255), (px, py - 1), 1)
-
+            fl = 0.6 + 0.4 * abs(math.sin(phase * 3.1))
+            NS._aacircle(surface, (*P["fire_bright"], int(200 * fl)),
+                         (px, py), 2)
+            NS._aacircle(surface, (*P["fire_hot"], int(230 * fl)), (px, py), 1)
+            NS._aacircle(surface, (*P["fire_glow"], 255),
+                         (px, py - 1), 1)
 
     def _draw_machete_held(surface, hx, hy, side, phase):
-        """Machete at rest (blade forward)."""
-        # Blade
-        blade_end_x = hx + side * 14
-        blade_end_y = hy - 6
+        """Machete istirahat: bilah 5-band + fuller + grip kulit."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        blade_end_x = hx + side * 20
+        blade_end_y = hy - 9
 
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["shadow_deep"],
-                (hx + 1, hy + 1), (blade_end_x + 1, blade_end_y + 1), 4)
-        _NS_razak._poly(surface, _NS_razak.PALETTE["metal_darkest"], [
-            (hx, hy - 1),
-            (hx + side * 3, hy - 3),
+        NS._aaline(surface, P["shadow_deep"], (hx + 1, hy + 2),
+                   (blade_end_x + 1, blade_end_y + 2), 6)
+        # bilah 5-band
+        NS._poly(surface, P["metal_darkest"], [
+            (hx, hy - 2), (hx + side * 4, hy - 4),
             (blade_end_x, blade_end_y),
-            (blade_end_x - side * 2, blade_end_y + 2),
-            (hx, hy + 1),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["metal_dark"], [
-            (hx + side, hy - 1),
+            (blade_end_x - side * 3, blade_end_y + 4), (hx, hy + 1)])
+        NS._poly(surface, P["metal_dark"], [
+            (hx + side, hy - 2), (hx + side * 4, hy - 3),
+            (blade_end_x - side, blade_end_y + 1), (hx + side, hy)])
+        NS._poly(surface, P["metal_mid"], [
             (hx + side * 3, hy - 2),
-            (blade_end_x - side, blade_end_y + 1),
-            (hx + side, hy),
-        ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["metal_mid"], [
-            (hx + side * 2, hy - 1),
-            (blade_end_x - side * 2, blade_end_y + 1),
-            (hx + side * 2, hy),
-        ])
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["metal_shine"],
-                (hx + side * 3, hy - 2), (blade_end_x - side, blade_end_y + 1), 1)
+            (blade_end_x - side * 3, blade_end_y + 2), (hx + side * 3, hy)])
+        # fuller gelap di tengah bilah
+        NS._aaline(surface, P["metal_darkest"],
+                   (hx + side * 5, hy - 2),
+                   (blade_end_x - side * 4, blade_end_y + 2), 1)
+        # edge highlight + specular cluster
+        NS._aaline(surface, P["metal_light"],
+                   (hx + side * 4, hy - 3),
+                   (blade_end_x - side, blade_end_y + 1), 1)
+        NS._aacircle(surface, P["metal_shine"],
+                     (hx + side * 8, hy - 4), 1)
+        NS._aacircle(surface, P["metal_shine"],
+                     (hx + side * 13, hy - 6), 1)
 
-        # Handle
-        _NS_razak._rect(surface, _NS_razak.PALETTE["leather_darkest"], (hx - 1, hy, 3, 4))
-        _NS_razak._rect(surface, _NS_razak.PALETTE["leather_dark"], (hx, hy, 2, 3))
-
+        # grip kulit berlilit + pommel brass
+        NS._rect(surface, P["leather_darkest"], (hx - 2, hy, 4, 6))
+        NS._rect(surface, P["leather_dark"], (hx - 1, hy, 2, 5))
+        NS._aaline(surface, P["leather_mid"], (hx - 2, hy + 2),
+                   (hx + 2, hy + 3), 1)
+        NS._aacircle(surface, P["brass_mid"], (hx, hy + 6), 2)
+        NS._aacircle(surface, P["brass_shine"], (hx - 1, hy + 5), 1)
 
     def _draw_machete_swinging(surface, hx, hy, facing, angle):
-        """Machete in motion — angled with fire trail."""
-        blade_len = 20
+        """Machete in motion - bilah 5-band + api di edge."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        blade_len = 28
         dx = math.cos(angle) * facing
         dy = math.sin(angle)
         perp_x = -math.sin(angle)
@@ -1318,103 +2217,117 @@ class _NS_razak:
         end_x = hx + int(dx * blade_len)
         end_y = hy + int(dy * blade_len)
 
-        # Shadow
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["shadow_deep"], (hx + 2, hy + 2),
-                (end_x + 2, end_y + 2), 4)
+        NS._aaline(surface, P["shadow_deep"], (hx + 2, hy + 3),
+                   (end_x + 2, end_y + 3), 6)
 
-        # Blade shape
         blade_pts = [
+            (hx + int(perp_x * 3), hy + int(perp_y * 3)),
+            (hx + int(dx * blade_len * 0.5) + int(perp_x * 4),
+             hy + int(dy * blade_len * 0.5) + int(perp_y * 4)),
+            (end_x, end_y),
+            (hx + int(dx * blade_len * 0.5) - int(perp_x * 2),
+             hy + int(dy * blade_len * 0.5) - int(perp_y * 2)),
+            (hx - int(perp_x * 2), hy - int(perp_y * 2)),
+        ]
+        NS._poly(surface, P["metal_darkest"], blade_pts)
+        NS._poly(surface, P["metal_dark"], [
             (hx + int(perp_x * 2), hy + int(perp_y * 2)),
             (hx + int(dx * blade_len * 0.5) + int(perp_x * 3),
              hy + int(dy * blade_len * 0.5) + int(perp_y * 3)),
             (end_x, end_y),
-            (hx + int(dx * blade_len * 0.5) - int(perp_x * 1),
-             hy + int(dy * blade_len * 0.5) - int(perp_y * 1)),
-            (hx - int(perp_x * 1), hy - int(perp_y * 1)),
-        ]
-        _NS_razak._poly(surface, _NS_razak.PALETTE["metal_darkest"], blade_pts)
-        _NS_razak._poly(surface, _NS_razak.PALETTE["metal_dark"], [
-            (hx + int(perp_x), hy + int(perp_y)),
-            (hx + int(dx * blade_len * 0.5) + int(perp_x * 2),
-             hy + int(dy * blade_len * 0.5) + int(perp_y * 2)),
-            (end_x, end_y),
             (hx + int(dx * blade_len * 0.5), hy + int(dy * blade_len * 0.5)),
         ])
-        _NS_razak._poly(surface, _NS_razak.PALETTE["metal_mid"], [
-            (hx + int(perp_x * 2), hy + int(perp_y * 2)),
-            (hx + int(dx * blade_len * 0.4) + int(perp_x * 2),
-             hy + int(dy * blade_len * 0.4) + int(perp_y * 2)),
+        NS._poly(surface, P["metal_mid"], [
+            (hx + int(perp_x * 3), hy + int(perp_y * 3)),
+            (hx + int(dx * blade_len * 0.4) + int(perp_x * 3),
+             hy + int(dy * blade_len * 0.4) + int(perp_y * 3)),
             (end_x, end_y),
         ])
+        # fuller
+        NS._aaline(surface, P["metal_darkest"],
+                   (hx + int(dx * 6), hy + int(dy * 6)),
+                   (hx + int(dx * blade_len * 0.8),
+                    hy + int(dy * blade_len * 0.8)), 1)
+        # edge highlight
+        NS._aaline(surface, P["metal_shine"],
+                   (hx + int(perp_x * 4), hy + int(perp_y * 4)),
+                   (end_x, end_y), 1)
 
-        # Sharp edge
-        _NS_razak._aaline(surface, _NS_razak.PALETTE["metal_shine"],
-                (hx + int(perp_x * 3), hy + int(perp_y * 3)),
-                (end_x, end_y), 1)
-
-        # FIRE aura on blade (Batrider machete on fire!)
-        _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], 180), (end_x, end_y), 5)
-        _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], 220), (end_x, end_y), 3)
-        _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], 255), (end_x, end_y), 1)
-
-
+        # api di bilah (machete Batrider terbakar!)
+        NS._aacircle(surface, (*P["fire_bright"], 180), (end_x, end_y), 6)
+        NS._aacircle(surface, (*P["fire_hot"], 220), (end_x, end_y), 4)
+        NS._aacircle(surface, (*P["fire_glow"], 255), (end_x, end_y), 2)
+        NS._aacircle(surface, (*P["fire_white"], 255),
+                     (end_x - 1, end_y - 1), 1)
+        # lidah api sepanjang edge
+        for k in (0.45, 0.7):
+            fx = hx + int(dx * blade_len * k) + int(perp_x * 4)
+            fy = hy + int(dy * blade_len * k) + int(perp_y * 4)
+            NS._aacircle(surface, (*P["fire_bright"], 160), (fx, fy), 2)
+            NS._aacircle(surface, (*P["fire_hot"], 200), (fx, fy), 1)
     # ===================================================================
-    # EFFECTS - Wisps, aura, shadow
+    # EFFECTS - Wisps, aura, shadow, swing trail
     # ===================================================================
-    def _draw_fire_wisps(surface, cx, cy, phase, trail=False, facing=1, intense=False):
-        """Fire wisps below bat (replaces legs)."""
+    def _draw_fire_wisps(surface, cx, cy, phase, trail=False, facing=1,
+                         intense=False):
+        """Fire wisps di bawah bat (pengganti kaki) - mist ter-cache."""
+        NS = _NS_razak
+        P = NS.PALETTE
         strength = 1.5 if intense else 1.0
-        mist = pygame.Surface((140, 44), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.5) * 0.25 + 0.75
-        for radius in range(34, 3, -4):
-            alpha = int((34 - radius) * 2.5 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_razak.PALETTE["fire_darkest"], min(255, alpha)),
-                    (70 - radius * 2, 22 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 70, cy - 11))
 
-        # Rising fire wisps
-        for i, offset in enumerate((-24, -10, 6, 20)):
+        def build():
+            mist = pygame.Surface((150, 48), pygame.SRCALPHA)
+            for radius in range(36, 3, -4):
+                alpha = int((36 - radius) * 2.4)
+                if alpha > 0:
+                    pygame.draw.ellipse(
+                        mist, (*P["fire_darkest"], min(255, alpha)),
+                        (75 - radius * 2, 24 - radius // 3,
+                         radius * 4, max(3, radius // 2)))
+            return mist
+
+        mist = NS._static("wisp_mist", build)
+        pulse = math.sin(phase * 1.5) * 0.25 + 0.75
+        spr = mist.copy() if strength != 1.0 else mist
+        spr.set_alpha(int(255 * min(1.0, pulse * strength)))
+        surface.blit(spr, (cx - 75, cy - 12))
+        spr.set_alpha(255)
+
+        # wisp api naik
+        for i, offset in enumerate((-26, -11, 7, 22)):
             t = (phase * 0.6 + i * 0.25) % 1.0
             sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 4 - int(t * 26)
+            sy = cy + 4 - int(t * 28)
             alpha = max(0, min(255, int(220 * (1 - t) * strength)))
             if alpha <= 0:
                 continue
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], alpha), (sx, sy), 5)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], alpha), (sx, sy - 2), 3)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], alpha), (sx, sy - 3), 2)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], alpha), (sx, sy - 3), 1)
+            NS._aacircle(surface, (*P["fire_dark"], alpha), (sx, sy), 5)
+            NS._aacircle(surface, (*P["fire_bright"], alpha), (sx, sy - 2), 3)
+            NS._aacircle(surface, (*P["fire_hot"], alpha), (sx, sy - 3), 2)
+            NS._aacircle(surface, (*P["fire_glow"], alpha), (sx, sy - 3), 1)
 
-        # Ember particles
+        # bara orbit
         for i in range(7):
             angle = phase * 1.0 + i * math.pi * 2 / 7
-            r = 25 + int(math.sin(phase + i * 1.3) * 6)
+            r = 27 + int(math.sin(phase + i * 1.3) * 6)
             sx = cx + int(math.cos(angle) * r)
             sy = cy + int(math.sin(angle) * 8)
-            _NS_razak._draw_ember(surface, sx, sy, 2, 200)
+            NS._draw_ember(surface, sx, sy, 2, 200)
 
         if trail:
             for i in range(5):
-                sx = cx - (i + 1) * 13 * facing
+                sx = cx - (i + 1) * 14 * facing
                 sy = cy + int(math.sin(phase + i) * 3)
                 alpha = max(0, 150 - i * 25)
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], alpha),
-                          (sx, sy), max(2, 6 - i))
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], alpha),
-                          (sx, sy), max(1, 4 - i))
-                _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], alpha // 2),
-                          (sx, sy), max(1, 2 - i))
-
+                NS._aacircle(surface, (*P["fire_dark"], alpha),
+                             (sx, sy), max(2, 6 - i))
+                NS._aacircle(surface, (*P["fire_bright"], alpha),
+                             (sx, sy), max(1, 4 - i))
+                NS._aacircle(surface, (*P["fire_hot"], alpha // 2),
+                             (sx, sy), max(1, 2 - i))
 
     def _draw_shadow(surface, x, y, lift=0):
-        # ORIGINAL-MAX: tekstur gradien di-cache (piksel identik dengan
-        # draw asli) lalu dirender ulang per frame dengan blit murah.
-        # Saat badan terangkat (lift>0) bayangan MENYUSUT tapi dasar
-        # tetap menapak tanah (bottom-anchored) - bayangan reaktif.
+        """Bayangan tanah ter-cache; menyusut saat lift, dasar menapak."""
         NS = _NS_razak
         if NS._shadow_cache is None:
             shadow = pygame.Surface((110, 22), pygame.SRCALPHA)
@@ -1439,14 +2352,10 @@ class _NS_razak:
         by = (y + 11) - h          # bottom tetap di y+11 (menapak)
         surface.blit(spr, (bx, by))
         if NS._record_shadow is not None:
-            NS._record_shadow.append(
-                pygame.Rect(bx, by, w, h))
-
+            NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
     def _draw_fire_aura(surface, x, y, phase, active_skill):
-        # ORIGINAL-MAX: gradien aura dirender SEKALI ke cache (piksel
-        # identik), denyut & kekuatan skill lewat set_alpha (blit NORMAL).
-        # Hasil visual setara, tapi tanpa 20 aacircle tiap frame.
+        """Aura panas ambient ter-cache; menguat saat skill aktif."""
         NS = _NS_razak
         if NS._aura_cache is None:
             aura = pygame.Surface((200, 170), pygame.SRCALPHA)
@@ -1463,214 +2372,456 @@ class _NS_razak:
         spr.set_alpha(a)
         surface.blit(spr, (x - 100, y - 85))
 
-
     def _draw_machete_swing_arc(surface, x, y, facing, progress):
-        """Fire trail of machete swing."""
-        if progress < 0.28 or progress > 0.75:
+        """Swing trail machete: smear sabit api 3 lapis + leading edge.
+
+        SESUAI KARAKTER: trail-nya API (bukan garis logam) - sabit
+        fire_dark -> fire_bright -> fire_hot dengan tepi depan menyala
+        putih dan bara terlempar dari busur.
+        """
+        NS = _NS_razak
+        P = NS.PALETTE
+        if progress < 0.28 or progress > 0.78:
             return
         if progress < 0.5:
-            visibility = (progress - 0.28) / 0.22
+            vis = (progress - 0.28) / 0.22
         else:
-            visibility = 1.0 - (progress - 0.5) / 0.25
-        visibility = max(0.0, min(1.0, visibility))
+            vis = 1.0 - (progress - 0.5) / 0.28
+        vis = max(0.0, min(1.0, vis))
 
-        arc = pygame.Surface((140, 100), pygame.SRCALPHA)
-        for i in range(18):
-            t = i / 17
-            angle = -math.pi * 0.85 + t * math.pi
-            px = 70 + int(math.cos(angle) * 48) * facing
-            py = 50 + int(math.sin(angle) * 36)
-            alpha = int((220 - i * 10) * visibility)
-            if alpha <= 0:
-                continue
-            _NS_razak._aacircle(arc, (*_NS_razak.PALETTE["fire_darkest"], alpha), (px, py), 8)
-            _NS_razak._aacircle(arc, (*_NS_razak.PALETTE["fire_mid"], alpha), (px, py), 6)
-            _NS_razak._aacircle(arc, (*_NS_razak.PALETTE["fire_bright"], alpha), (px, py), 4)
-            _NS_razak._aacircle(arc, (*_NS_razak.PALETTE["fire_hot"], alpha), (px, py), 2)
-            _NS_razak._aacircle(arc, (*_NS_razak.PALETTE["fire_glow"], min(255, alpha)), (px, py), 1)
-        surface.blit(arc, (x - 70, y - 50))
+        arc = pygame.Surface((170, 130), pygame.SRCALPHA)
+        acx, acy = 85, 62
+        # sabit smear: 3 pita mengikuti busur ayunan, lebar menipis di ekor
+        sweep = min(1.0, (progress - 0.24) / 0.34)
+        a_end = -math.pi * 0.95 + sweep * math.pi * 1.25
+        n = 16
+        for band, (col, rr, wid) in enumerate((
+                (P["fire_dark"], 56, 9),
+                (P["fire_bright"], 52, 6),
+                (P["fire_hot"], 49, 3))):
+            pts_o, pts_i = [], []
+            for i in range(n + 1):
+                t = i / n
+                ang = a_end - t * math.pi * 0.85
+                w = wid * (1.0 - t * 0.75)
+                ca = math.cos(ang) * facing
+                sa = math.sin(ang) * 0.78
+                pts_o.append((acx + ca * (rr + w), acy + sa * (rr + w)))
+                pts_i.append((acx + ca * (rr - w), acy + sa * (rr - w)))
+            pts = pts_o + pts_i[::-1]
+            alpha = int((150 - band * 25) * vis)
+            NS._poly(arc, (*col, alpha), pts)
+        # leading edge putih menyala
+        ca = math.cos(a_end) * facing
+        sa = math.sin(a_end) * 0.78
+        lx, ly = acx + ca * 52, acy + sa * 52
+        NS._aaline(arc, (*P["fire_white"], int(230 * vis)),
+                   (acx + ca * 42, acy + sa * 42),
+                   (acx + ca * 62, acy + sa * 62), 3)
+        NS._aacircle(arc, (*P["fire_glow"], int(240 * vis)),
+                     (int(lx), int(ly)), 4)
+        NS._aacircle(arc, (*P["fire_white"], int(255 * vis)),
+                     (int(lx), int(ly)), 2)
+        # bara terlempar dari busur (deterministik)
+        for i in range(5):
+            t = 0.15 + 0.17 * i
+            ang = a_end - t * math.pi * 0.8
+            rr = 58 + NS._hash01(i * 13) * 12
+            ex = acx + math.cos(ang) * facing * rr
+            ey = acy + math.sin(ang) * 0.78 * rr
+            ea = int(200 * vis * (1 - t))
+            if ea > 10:
+                NS._draw_ember(arc, int(ex), int(ey), 1, ea)
+        surface.blit(arc, (x - 85, y - 62))
+    # ===================================================================
+    # SKILL GROUND TELEGRAPHS (world-space, radius = gameplay px dunia)
+    # ===================================================================
+    def _draw_napalm_ground(surface, boss, x, y, timer, phase):
+        """Q telegraph: ring 75 px dunia DI TARGET + jalur lempar."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        duration = NS.SKILL_DUR["q"]
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        fs = NS._fx_scale(boss)
+        tx, ty = NS._target_position(boss, x, y)
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["q"], surface)
+        pulse = math.sin(phase * 2.5) * 0.3 + 0.7
 
+        # alas gosong + wash zona (pekat di tepi)
+        NS._ground_scorch(surface, tx, ty, int(r * 1.05), P["fire_darkest"],
+                          P["shadow_deep"], int(150 * pulse), seed=5)
+        NS._zone_fill(surface, tx, ty, r, P["fire_dark"],
+                      int(90 * pulse), edge_bias=3.0)
+        # ring jangkauan TEPAT di radius gameplay
+        NS._ground_ring(surface, tx, ty, r, P["fire_bright"], P["fire_glow"],
+                        int(215 * pulse), thickness=3, softness=8,
+                        inner_glow=26)
+        # rune ring berputar di dalam
+        NS._rune_ring(surface, tx, ty, int(r * 0.72), P["fire_mid"],
+                      P["fire_hot"], int(170 * pulse), phase * 0.9,
+                      segments=10, span=0.45)
+        # ring konvergen ("incoming") mengecil ke titik jatuh
+        conv = 1.0 - (progress * 1.6 % 1.0)
+        NS._ground_ring(surface, tx, ty, max(6, int(r * conv)),
+                        P["fire_hot"], P["fire_white"],
+                        int(160 * (1 - conv)), thickness=2, softness=5)
+        # chevron berbaris dari caster menuju target
+        dx, dy = tx - x, ty - (y + NS.GROUND_DY)
+        dist = math.hypot(dx, dy) or 1.0
+        ang = math.atan2(dy, dx)
+        for i in range(3):
+            t = ((phase * 0.4 + i / 3.0) % 1.0)
+            px = x + dx * t
+            py = (y + NS.GROUND_DY) + dy * t
+            NS._chevron(surface, px, py, ang, 7 * fs, P["fire_hot"],
+                        int(200 * (1 - t) * pulse), width=3)
+        # splat marker pusat
+        NS._spark_star(surface, tx, ty, int(9 * fs), P["fire_glow"],
+                       int(210 * pulse), spikes=4, rot=phase * 1.3,
+                       core=P["fire_white"])
+
+    def _draw_flamebreak_ground(surface, boss, x, y, timer, phase):
+        """W telegraph: ring 95 px dunia DI TARGET + kerucut semburan."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        duration = NS.SKILL_DUR["w"]
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        fs = NS._fx_scale(boss)
+        tx, ty = NS._target_position(boss, x, y)
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["w"], surface)
+        pulse = math.sin(phase * 2.2) * 0.3 + 0.7
+
+        NS._ground_scorch(surface, tx, ty, int(r * 1.02), P["fire_darkest"],
+                          P["shadow_deep"], int(140 * pulse), seed=9)
+        NS._zone_fill(surface, tx, ty, r, P["fire_mid"],
+                      int(80 * pulse), edge_bias=3.2)
+        NS._ground_ring(surface, tx, ty, r, P["fire_bright"], P["fire_glow"],
+                        int(220 * pulse), thickness=3, softness=8,
+                        inner_glow=22)
+        # dua rune ring berputar berlawanan arah
+        NS._rune_ring(surface, tx, ty, int(r * 0.8), P["fire_mid"],
+                      P["fire_hot"], int(160 * pulse), phase * 1.1,
+                      segments=12, span=0.4)
+        NS._rune_ring(surface, tx, ty, int(r * 0.55), P["fire_bright"],
+                      P["fire_glow"], int(130 * pulse), -phase * 1.5,
+                      segments=8, span=0.5)
+        # retakan magma dari pusat (zigzag deterministik)
+        for i in range(5):
+            ang = i * math.tau / 5 + 0.5
+            NS._jagged_crack(surface, tx, ty, ang, r * 0.7,
+                             (P["fire_darkest"], P["fire_bright"]),
+                             int(170 * pulse), seed=17 + i, width=2)
+
+    def _draw_firefly_ground(surface, boss, x, y, timer, phase):
+        """E telegraph: ring pendaratan 80 px dunia + jejak dash."""
+        NS = _NS_razak
+        P = NS.PALETTE
+        duration = NS.SKILL_DUR["e"]
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        fs = NS._fx_scale(boss)
+        gy = y + NS.GROUND_DY
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["e"], surface)
+        pulse = math.sin(phase * 3.0) * 0.3 + 0.7
+
+        # AOE pendaratan di posisi diri (AI memindahkan boss dulu)
+        NS._ground_scorch(surface, x, gy, int(r * 1.0), P["fire_darkest"],
+                          P["shadow_deep"], int(130 * pulse), seed=13)
+        NS._zone_fill(surface, x, gy, r, P["fire_dark"],
+                      int(85 * pulse), edge_bias=3.0)
+        NS._ground_ring(surface, x, gy, r, P["fire_bright"], P["fire_glow"],
+                        int(210 * pulse), thickness=3, softness=7,
+                        inner_glow=20)
+        NS._dashed_ring(surface, x, gy, int(r * 0.8), P["fire_hot"],
+                        int(150 * pulse), phase * 2.0 + progress * 3.0,
+                        segments=12, thick=2, span=0.5, squash=1.0)
+        # ring konvergen mengecil seiring progress (fase terbaca)
+        conv = 1.0 - (progress * 1.4 % 1.0)
+        NS._ground_ring(surface, x, gy, max(6, int(r * conv)),
+                        P["fire_hot"], P["fire_white"],
+                        int(150 * (1 - conv)), thickness=2, softness=5)
+        # jejak api di belakang arah dash - memudar seiring progress
+        f = getattr(boss, "direction", 1)
+        tfade = max(0.0, 1.0 - progress * 1.1)
+        for i in range(4):
+            px = x - (18 + i * 16) * fs * f
+            a = int(160 * (1 - i / 4.0) * pulse * (0.35 + 0.65 * tfade))
+            NS._glow(surface, px, gy, int(10 * fs), P["fire_mid"], a)
+        # bintang hentak saat mendarat (awal skill)
+        if progress < 0.3:
+            k = 1 - progress / 0.3
+            NS._spark_star(surface, x, gy, int(16 * fs * k), P["fire_hot"],
+                           int(240 * k), spikes=8, rot=progress * 5,
+                           core=P["fire_white"])
+
+    def _draw_firestorm_ground(surface, boss, x, y, timer, phase):
+        """R telegraph: ring ultimate 180 px dunia DI CASTER.
+
+        AI (_razak_r) memukul semua musuh <= 180 px dari DIRI - maka
+        telegraph diletakkan di caster (v1 salah menaruhnya di target).
+        """
+        NS = _NS_razak
+        P = NS.PALETTE
+        duration = NS.SKILL_DUR["r"]
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        fs = NS._fx_scale(boss)
+        gy = y + NS.GROUND_DY
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["r"], surface)
+        pulse = math.sin(phase * 2) * 0.3 + 0.7
+
+        # alas gosong besar + wash zona
+        NS._ground_scorch(surface, x, gy, int(r * 1.03), P["fire_darkest"],
+                          P["shadow_deep"], int(160 * pulse), seed=21)
+        NS._zone_fill(surface, x, gy, r, P["fire_dark"],
+                      int(95 * pulse), edge_bias=3.4)
+        # ring jangkauan tepat 180 px dunia
+        NS._ground_ring(surface, x, gy, r, P["fire_bright"], P["fire_glow"],
+                        int(230 * pulse), thickness=4, softness=9,
+                        inner_glow=30)
+        # rune ring ganda berlawanan arah
+        NS._rune_ring(surface, x, gy, int(r * 0.85), P["fire_mid"],
+                      P["fire_hot"], int(170 * pulse), phase * 0.8,
+                      segments=14, span=0.4)
+        NS._rune_ring(surface, x, gy, int(r * 0.62), P["fire_bright"],
+                      P["fire_glow"], int(140 * pulse), -phase * 1.2,
+                      segments=10, span=0.46)
+        # retakan magma radial ber-seam menyala
+        for i in range(7):
+            ang = i * math.tau / 7 + 0.3
+            NS._jagged_crack(surface, x, gy, ang, r * 0.8,
+                             (P["fire_darkest"], P["fire_bright"]),
+                             int(190 * pulse), seed=31 + i, width=3)
+        # ring konvergen membaca "erupsi memuncak"
+        conv = 1.0 - (progress * 1.3 % 1.0)
+        NS._ground_ring(surface, x, gy, max(8, int(r * conv)),
+                        P["fire_hot"], P["fire_white"],
+                        int(150 * (1 - conv)), thickness=2, softness=6)
+        # chevron kardinal mengarah keluar (bahaya menyebar)
+        for i in range(4):
+            ang = i * math.pi / 2 + phase * 0.3
+            px = x + math.cos(ang) * r * 0.94
+            py = gy + math.sin(ang) * r * 0.94 * 0.92
+            NS._chevron(surface, px, py, ang, 8 * fs, P["fire_glow"],
+                        int(190 * pulse), width=3)
 
     # ===================================================================
-    # SKILL Q: STICKY NAPALM (arcing fire projectile)
+    # SKILL Q: STICKY NAPALM (arcing molotov + splat)
     # ===================================================================
     def _draw_sticky_napalm(surface, boss, x, y, timer, phase):
         duration = 40
+        NS = _NS_razak
+        P = NS.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        tx, ty = _NS_razak._target_position(boss, x, y)
+        fs = NS._fx_scale(boss)
+        tx, ty = NS._target_position(boss, x, y)
 
         # Spawn projectile at start
-        if progress < 0.15 and not getattr(boss, "_razak_napalm_spawned", False):
+        if progress < 0.15 and not getattr(boss, "_razak_napalm_spawned",
+                                           False):
             sx = x + 18 * boss.direction
             sy = y - 5
-            _NS_razak._spawn_napalm(boss, sx, sy, tx, ty)
+            NS._spawn_napalm(boss, sx, sy, tx, ty)
             boss._razak_napalm_spawned = True
         if progress > 0.7:
             boss._razak_napalm_spawned = False
 
-        # Muzzle flash while casting (ORIGINAL-MAX: orb lebih besar/terang)
+        # AKTIVASI: muzzle vortex - dua arc berlawanan + droplet orbit
         if progress < 0.3:
-            flash_intensity = 1 - progress / 0.3
-            fx = x + 22 * boss.direction
-            fy = y - 5
-            alpha = int(255 * flash_intensity)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_darkest"], alpha), (fx, fy), 15)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], alpha), (fx, fy), 10)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], alpha), (fx, fy), 6)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], alpha), (fx, fy), 3)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], min(255, alpha)), (fx, fy), 2)
+            k = 1 - progress / 0.3
+            fx = x + int(20 * fs) * boss.direction
+            fy = y - int(6 * fs)
+            alpha = int(255 * k)
+            NS._glow(surface, fx, fy, int(20 * fs), P["fire_mid"],
+                     int(180 * k))
+            NS._aacircle(surface, (*P["fire_bright"], alpha), (fx, fy),
+                         int(9 * fs))
+            NS._aacircle(surface, (*P["fire_hot"], alpha), (fx, fy),
+                         int(6 * fs))
+            NS._aacircle(surface, (*P["fire_glow"], alpha), (fx, fy),
+                         int(3 * fs))
+            NS._aacircle(surface, (*P["fire_white"], min(255, alpha)),
+                         (fx, fy), max(1, int(2 * fs)))
+            NS._dashed_ring(surface, fx, fy, int(14 * fs), P["fire_hot"],
+                            int(220 * k), phase * 3.0, segments=6,
+                            thick=2, span=0.55, squash=1.0)
+            NS._dashed_ring(surface, fx, fy, int(19 * fs), P["fire_bright"],
+                            int(160 * k), -phase * 2.2, segments=8,
+                            thick=2, span=0.5, squash=1.0)
+            NS._spark_star(surface, fx, fy, int(13 * fs), P["fire_glow"],
+                           alpha, spikes=6, rot=progress * 8,
+                           core=P["fire_white"])
+            # droplet api orbit
+            for i in range(6):
+                angle = progress * 7 + i * math.tau / 6
+                ex = fx + int(math.cos(angle) * 14 * fs)
+                ey = fy + int(math.sin(angle) * 10 * fs)
+                NS._draw_ember(surface, ex, ey, 2, alpha)
 
-            # Sparks
-            for i in range(7):
-                angle = progress * 6 + i * math.pi * 2 / 5
-                ex = fx + int(math.cos(angle) * 12)
-                ey = fy + int(math.sin(angle) * 12)
-                _NS_razak._draw_ember(surface, ex, ey, 2, alpha)
-
-        # Impact ring di target saat proyektil datang (orb target-anchored)
-        if 0.55 < progress < 0.9:
-            imp = 1 - abs(progress - 0.72) / 0.17
+        # IMPACT di target: splat ganda + bintang + kipasan droplet
+        if 0.55 < progress < 0.95:
+            imp = 1 - abs(progress - 0.73) / 0.20
             imp = max(0.0, min(1.0, imp))
-            ir = int(6 + imp * 22)
-            ia = int(220 * imp)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], ia),
-                                (int(tx), int(ty)), ir)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], ia),
-                                (int(tx), int(ty)), max(2, ir - 3))
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], ia),
-                                (int(tx), int(ty)), max(1, ir - 5))
-
+            ir = int((8 + imp * 26) * fs)
+            ia = int(230 * imp)
+            NS._glow(surface, tx, ty, int(24 * fs), P["fire_mid"],
+                     int(150 * imp))
+            NS._ground_ring(surface, tx, ty, ir, P["fire_bright"],
+                            P["fire_glow"], ia, thickness=3, softness=7)
+            NS._ground_ring(surface, tx, ty, int(ir * 0.55), P["fire_hot"],
+                            P["fire_white"], int(ia * 0.7),
+                            thickness=2, softness=5)
+            NS._spark_star(surface, tx, ty, int(15 * fs * imp),
+                           P["fire_hot"], ia, spikes=8, rot=progress * 5,
+                           core=P["fire_white"])
+            # kipasan droplet napalm keluar dari titik jatuh
+            for i in range(7):
+                a = i * math.tau / 7 + 0.4
+                d = (10 + 16 * imp) * fs
+                dxp = tx + int(math.cos(a) * d)
+                dyp = ty + int(math.sin(a) * d * 0.6)
+                NS._draw_ember(surface, dxp, dyp, 2, int(ia * 0.85))
 
     # ===================================================================
     # SKILL W: FLAMEBREAK (flame cone/stream)
     # ===================================================================
     def _draw_flamebreak(surface, boss, x, y, timer, phase):
         duration = 50
+        NS = _NS_razak
+        P = NS.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        tx, ty = _NS_razak._target_position(boss, x, y)
+        fs = NS._fx_scale(boss)
+        tx, ty = NS._target_position(boss, x, y)
 
         # Continuous flame stream forward
         if progress < 0.85:
             start_x = x + 22 * boss.direction
             start_y = y - 5
 
-            # Direction toward target
             dx = tx - start_x
             dy = ty - start_y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < 1:
-                dist = 1
+            dist = math.hypot(dx, dy) or 1.0
             dir_x = dx / dist
             dir_y = dy / dist
             perp_x = -dir_y
             perp_y = dir_x
 
-            # Cone length grows quickly, then stays
+            # panjang kerucut menuju target (bukan fixed 180 canvas px)
+            full_len = dist
             if progress < 0.2:
-                flame_len = int(180 * (progress / 0.2))
+                flame_len = full_len * (progress / 0.2)
             else:
-                flame_len = 180
+                flame_len = full_len
 
-            # Draw many flame particles in a cone
+            # partikel api kerucut - 2 lapis luar/dalam
             for i in range(35):
                 t = i / 35
-                # Base position along cone
                 base_x = start_x + dir_x * flame_len * t
                 base_y = start_y + dir_y * flame_len * t
-                # Spread perpendicular (wider at end)
-                spread = t * 18
+                spread = t * 16 * fs
                 offset = math.sin(phase * 4 + i * 1.7) * spread
-                fx = int(base_x + perp_x * offset)
-                fy = int(base_y + perp_y * offset)
+                fxp = int(base_x + perp_x * offset)
+                fyp = int(base_y + perp_y * offset)
 
-                size = int(6 + t * 4)
-                alpha_t = 1 - t * 0.3
-                alpha = int(220 * alpha_t)
+                size = int((5 + t * 4) * fs)
+                alpha = int(220 * (1 - t * 0.3))
 
-                # Layer flame colors based on distance
                 if t < 0.15:
-                    color_outer = _NS_razak.PALETTE["fire_white"]
-                    color_inner = _NS_razak.PALETTE["fire_glow"]
+                    color_outer = P["fire_white"]
+                    color_inner = P["fire_glow"]
                 elif t < 0.4:
-                    color_outer = _NS_razak.PALETTE["fire_hot"]
-                    color_inner = _NS_razak.PALETTE["fire_bright"]
+                    color_outer = P["fire_hot"]
+                    color_inner = P["fire_bright"]
                 elif t < 0.75:
-                    color_outer = _NS_razak.PALETTE["fire_bright"]
-                    color_inner = _NS_razak.PALETTE["fire_mid"]
+                    color_outer = P["fire_bright"]
+                    color_inner = P["fire_mid"]
                 else:
-                    color_outer = _NS_razak.PALETTE["fire_dark"]
-                    color_inner = _NS_razak.PALETTE["fire_darkest"]
+                    color_outer = P["fire_dark"]
+                    color_inner = P["fire_darkest"]
 
-                _NS_razak._aacircle(surface, (*color_outer, alpha), (fx, fy), size)
-                _NS_razak._aacircle(surface, (*color_inner, alpha), (fx, fy), max(1, size - 2))
+                NS._aacircle(surface, (*color_outer, alpha), (fxp, fyp), size)
+                NS._aacircle(surface, (*color_inner, alpha), (fxp, fyp),
+                             max(1, size - 2))
 
-            # Extra bright core near muzzle
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], 255), (int(start_x), int(start_y)), 5)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], 255),
-                      (int(start_x + dir_x * 5), int(start_y + dir_y * 5)), 4)
+            # asap tersapu di tepi kerucut
+            for i in range(6):
+                t = 0.35 + i * 0.11
+                sxp = int(start_x + dir_x * flame_len * t +
+                          perp_x * t * 22 * fs *
+                          (1 if i % 2 == 0 else -1))
+                syp = int(start_y + dir_y * flame_len * t +
+                          perp_y * t * 22 * fs *
+                          (1 if i % 2 == 0 else -1))
+                NS._aacircle(surface, (*P["smoke_mid"], int(90 * (1 - t))),
+                             (sxp, syp), int(4 * fs))
 
-            # ORIGINAL-MAX: impact ring menyala di target (target-anchored)
+            # inti terang di muzzle
+            NS._glow(surface, int(start_x), int(start_y), int(14 * fs),
+                     P["fire_hot"], 200)
+            NS._aacircle(surface, (*P["fire_white"], 255),
+                         (int(start_x), int(start_y)), int(4 * fs))
+            NS._aacircle(surface, (*P["fire_glow"], 255),
+                         (int(start_x + dir_x * 5), int(start_y + dir_y * 5)),
+                         int(3 * fs))
+
+            # impact ring menyala di target
             it = 1 - abs(progress - 0.5) / 0.3
             it = max(0.0, min(1.0, it))
-            ir = int(8 + it * 30)
+            ir = int((8 + it * 28) * fs)
             ia = int(230 * it)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], ia),
-                                (int(tx), int(ty)), ir)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], ia),
-                                (int(tx), int(ty)), max(2, ir - 3))
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], ia),
-                                (int(tx), int(ty)), max(1, ir - 6))
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], ia),
-                                (int(tx), int(ty)), max(1, ir - 8))
-
+            NS._glow(surface, tx, ty, int(26 * fs), P["fire_mid"],
+                     int(140 * it))
+            NS._ground_ring(surface, tx, ty, ir, P["fire_bright"],
+                            P["fire_white"], ia, thickness=3, softness=7)
+            NS._spark_star(surface, tx, ty, int(13 * fs * it),
+                           P["fire_hot"], ia, spikes=6, rot=phase * 2,
+                           core=P["fire_white"])
 
     # ===================================================================
-    # SKILL R: FIRESTORM (columns of fire around target)
+    # SKILL R: FIRESTORM (pilar api di sekitar CASTER)
     # ===================================================================
-    def _draw_firestorm_ground(surface, boss, x, y, timer, phase):
-        """Ground circle warning."""
-        tx, ty = _NS_razak._target_position(boss, x, y)
-        duration = 90
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        pulse = math.sin(phase * 2) * 0.3 + 0.7
-
-        radius = int(45 + progress * 20)
-        _NS_razak._ellipse(surface, (*_NS_razak.PALETTE["fire_darkest"], int(200 * pulse)),
-                 (tx - radius, ty - radius // 3, radius * 2, radius // 1.5), 3)
-        _NS_razak._ellipse(surface, (*_NS_razak.PALETTE["fire_dark"], int(180 * pulse)),
-                 (tx - radius + 5, ty - radius // 3 + 2,
-                  radius * 2 - 10, radius // 1.5 - 4), 2)
-        # Rune-like marks
-        for i in range(8):
-            angle = i * math.pi / 4 + phase * 0.2
-            rx = tx + int(math.cos(angle) * (radius - 5))
-            ry = ty + int(math.sin(angle) * (radius // 3 - 2))
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_bright"], int(200 * pulse)), (rx, ry), 2)
-
-
     def _draw_firestorm(surface, boss, x, y, timer, phase):
-        """Multiple pillars of fire rising around target."""
-        tx, ty = _NS_razak._target_position(boss, x, y)
+        """Pilar api mengelilingi CASTER (AOE 180 dunia) + erupsi pusat."""
         duration = 90
+        NS = _NS_razak
+        P = NS.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / duration))
+        fs = NS._fx_scale(boss)
+        gy = y + NS.GROUND_DY
 
-        if progress < 0.15:
+        # AKTIVASI: pilar cahaya 4-lapis + bintang (12 frame pertama)
+        if progress < 0.14:
+            k = progress / 0.14
+            ease = 1 - (1 - k) ** 2
+            ph = min(int(110 * fs), 230)
+            top = y - ph
+            for w, col, a in ((int(20 * fs), P["fire_dark"], 90),
+                              (int(14 * fs), P["fire_bright"], 130),
+                              (int(8 * fs), P["fire_hot"], 180),
+                              (int(3 * fs), P["fire_white"], 240)):
+                aa = int(a * (1 - ease * 0.5))
+                NS._rect(surface, (*col, aa),
+                         (x - w // 2, top, w, gy - top))
+            NS._spark_star(surface, x, y - int(20 * fs), int(24 * fs),
+                           P["fire_glow"], int(240 * (1 - ease * 0.4)),
+                           spikes=8, rot=k * 3, core=P["fire_white"])
+
+        if progress < 0.12:
             return
 
-        # 6 fire pillars around target
-        for i in range(6):
-            angle = i * math.pi * 2 / 6 + phase * 0.15
-            r = 35
-            px = tx + int(math.cos(angle) * r)
-            py = ty + int(math.sin(angle) * r * 0.5)
+        # 8 pilar api mengorbit caster di radius telegraph.
+        # Kolom api digambar lewat SPRITE ter-cache (_pillar_sprite) -
+        # tanpa ratusan aacircle ber-alpha per frame; wobble besar tetap
+        # kontinu lewat offset blit + phase-bucket kecil di sprite.
+        r_orbit = NS._ring_r(boss, NS.SKILL_RADIUS["r"] * 0.62, surface)
+        for i in range(8):
+            angle = i * math.tau / 8 + phase * 0.15
+            px = x + int(math.cos(angle) * r_orbit)
+            py = gy + int(math.sin(angle) * r_orbit * 0.45)
 
-            # Delay each pillar
-            pillar_progress = (progress - 0.15 - i * 0.05) / 0.5
+            pillar_progress = (progress - 0.12 - i * 0.04) / 0.55
             if pillar_progress <= 0:
                 continue
             pillar_progress = min(1.0, pillar_progress)
 
-            # Grow then shrink
             if pillar_progress < 0.3:
                 height_ratio = pillar_progress / 0.3
             elif pillar_progress < 0.7:
@@ -1678,74 +2829,58 @@ class _NS_razak:
             else:
                 height_ratio = 1.0 - (pillar_progress - 0.7) / 0.3
 
-            pillar_h = int(62 * height_ratio)
+            pillar_h = int(64 * fs * height_ratio)
             if pillar_h <= 0:
                 continue
 
-            # Draw fire pillar (tall flame) - ORIGINAL-MAX lebih besar/terang
-            for h in range(pillar_h):
-                t = h / max(1, pillar_h)
-                w = int(9 * (1 - t * 0.5))
-                fx = px + int(math.sin(phase * 4 + h * 0.3 + i) * 2)
-                fy = py - h
-                alpha = int(250 * (1 - t * 0.3))
-                if t < 0.25:
-                    color = _NS_razak.PALETTE["fire_darkest"]
-                elif t < 0.5:
-                    color = _NS_razak.PALETTE["fire_mid"]
-                elif t < 0.75:
-                    color = _NS_razak.PALETTE["fire_bright"]
-                else:
-                    color = _NS_razak.PALETTE["fire_hot"]
-                _NS_razak._aacircle(surface, (*color, alpha), (fx, fy), max(1, w))
+            NS._draw_fire_pillar(surface, px, py, pillar_h,
+                                 int(8 * fs), phase + i * 0.8)
+            NS._aacircle(surface, (*P["fire_glow"], 240),
+                         (px, py - pillar_h // 2), int(4 * fs))
+            NS._aacircle(surface, (*P["fire_white"], 255),
+                         (px, py - pillar_h // 3), int(3 * fs))
+            # dasar pilar: glow + bara
+            NS._glow(surface, px, py, int(12 * fs), P["fire_mid"], 150)
+            for j in range(2):
+                ea = phase * 2 + j * 3 + i
+                ex = px + int(math.cos(ea) * 8 * fs)
+                ey = py + int(math.sin(ea) * 3 * fs)
+                NS._draw_ember(surface, ex, ey, 2, 200)
 
-            # Bright core
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], 240),
-                      (px, py - pillar_h // 2), 4)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], 255),
-                      (px, py - pillar_h // 3), 3)
-
-            # Embers around base
-            for j in range(3):
-                ea = phase * 2 + j * 2
-                ex = px + int(math.cos(ea) * 8)
-                ey = py + int(math.sin(ea) * 3)
-                _NS_razak._draw_ember(surface, ex, ey, 2, 200)
-
-        # ORIGINAL-MAX: ring kejut menyala di target saat pilar meletus
+        # gelombang kejut susulan saat pilar meletus
         if progress > 0.15:
             ring_t = min(1.0, (progress - 0.15) / 0.35)
             ring_t = 1 - (1 - ring_t) ** 2
-            rr = int(12 + ring_t * 50)
+            rr = int((12 + ring_t * 55) * fs)
             ra = int(230 * (1 - ring_t * 0.4))
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_dark"], ra),
-                                (int(tx), int(ty)), rr)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_hot"], ra),
-                                (int(tx), int(ty)), max(2, rr - 4))
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], ra),
-                                (int(tx), int(ty)), max(1, rr - 8))
+            NS._ground_ring(surface, x, gy, rr, P["fire_bright"],
+                            P["fire_white"], ra, thickness=3, softness=8)
+            NS._ground_ring(surface, x, gy, int(rr * 0.7), P["fire_hot"],
+                            P["fire_glow"], int(ra * 0.6),
+                            thickness=2, softness=6)
 
-        # Central big flame
-        center_h = int(60 * min(1.0, progress / 0.4) *
-                        (1.0 if progress < 0.7 else 1 - (progress - 0.7) / 0.3))
+        # erupsi pusat: kolom api besar di caster + wisp spiral
+        center_h = int(70 * fs * min(1.0, progress / 0.4) *
+                       (1.0 if progress < 0.7 else
+                        1 - (progress - 0.7) / 0.3))
         if center_h > 0:
-            for h in range(center_h):
-                t = h / max(1, center_h)
-                w = int(9 * (1 - t * 0.4))
-                fx = tx + int(math.sin(phase * 3 + h * 0.2) * 2)
-                fy = ty - h
-                alpha = int(240 * (1 - t * 0.3))
-                if t < 0.25:
-                    color = _NS_razak.PALETTE["fire_dark"]
-                elif t < 0.55:
-                    color = _NS_razak.PALETTE["fire_bright"]
-                else:
-                    color = _NS_razak.PALETTE["fire_hot"]
-                _NS_razak._aacircle(surface, (*color, alpha), (fx, fy), max(1, w))
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_glow"], 255), (tx, ty - center_h // 2), 5)
-            _NS_razak._aacircle(surface, (*_NS_razak.PALETTE["fire_white"], 255), (tx, ty - center_h // 3), 3)
-
-
+            NS._draw_fire_pillar(surface, x, y + 8, center_h,
+                                 int(9 * fs), phase * 0.9)
+            NS._aacircle(surface, (*P["fire_glow"], 255),
+                         (x, y + 8 - center_h // 2), int(5 * fs))
+            NS._aacircle(surface, (*P["fire_white"], 255),
+                         (x, y + 8 - center_h // 3), int(3 * fs))
+            # wisp spiral 2 lengan naik mengelilingi kolom
+            for arm in (0, math.pi):
+                for k in range(4):
+                    t = (phase * 0.5 + k / 4.0) % 1.0
+                    a = arm + t * 5.0
+                    wx = x + int(math.cos(a) * (12 + t * 10) * fs)
+                    wy = y + 8 - int(t * center_h)
+                    wa = int(190 * (1 - t))
+                    if wa > 12:
+                        NS._aacircle(surface, (*P["fire_hot"], wa),
+                                     (wx, wy), max(1, int(2 * fs)))
     # ===================================================================
     # Backward compatible alias
     # ===================================================================
