@@ -2733,8 +2733,8 @@ class _NS_sylara:
 
     Yang naik dibanding versi lama
     ------------------------------
-    1. RIG ~1.5x LEBIH BESAR di resolusi native (buffer rig 156x136,
-       bbox idle >= 100px tinggi).  Pipeline hero (heroes/__init__.py)
+    1. RIG ~1.52x LEBIH BESAR di resolusi native (buffer rig 240x210,
+       bbox idle >= 130px tinggi).  Pipeline hero (heroes/__init__.py)
        mengukur badan lalu men-scale agar tinggi di layar tetap ~51-70 px,
        jadi memperbesar rig TIDAK memperbesar hero di arena - melainkan
        memberi ~2.4 px native per px layar: cluster, ramp dan muka tetap
@@ -2772,6 +2772,14 @@ class _NS_sylara:
     # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
+    # Rig v2 membesarkan koordinat lokal lama (~1.52x). Pipeline hero
+    # mengukur badan lalu men-scale kembali ke ukuran arena (~72 px);
+    # yang naik adalah kepadatan piksel native, bukan ukuran di layar.
+    RIG_SCALE = 1.52
+    ATTACK_WINDUP_END = 0.26
+    ATTACK_RELEASE_END = 0.58
+    ATTACK_IMPACT = 0.52
+
     # ---------------------------------------------------------------------------
     # HD Color Palette - Wind Ranger inspired
     # ---------------------------------------------------------------------------
@@ -2789,6 +2797,7 @@ class _NS_sylara:
         "hair_mid":       (200,  85,  35),
         "hair_light":     (240, 130,  55),
         "hair_shine":     (255, 180,  95),
+        "hair_high":      (255, 214, 140),
 
         # Green outfit - forest green
         "cloth_darkest":  ( 15,  35,  20),
@@ -2802,6 +2811,7 @@ class _NS_sylara:
         "cloak_dark":     ( 40,  75,  40),
         "cloak_mid":      ( 65, 110,  55),
         "cloak_light":    (100, 155,  80),
+        "cloak_high":     (148, 198, 118),
 
         # Hood - similar to cloak
         "hood_darkest":   ( 18,  36,  20),
@@ -2814,11 +2824,13 @@ class _NS_sylara:
         "leather_dark":   ( 70,  45,  25),
         "leather_mid":    (110,  75,  45),
         "leather_light":  (155, 110,  70),
+        "leather_high":   (198, 150,  96),
 
         # Gold accents
         "gold_dark":      ( 95,  70,  20),
         "gold_mid":       (170, 130, 40),
         "gold_light":     (230, 195, 90),
+        "gold_shine":     (255, 236, 150),
 
         # Bow - wood
         "wood_darkest":   ( 45,  25,  15),
@@ -2838,6 +2850,8 @@ class _NS_sylara:
         "wind_light":     (170, 235, 135),
         "wind_bright":    (210, 255, 175),
         "wind_white":     (240, 255, 220),
+        "leaf_gold":      (196, 214,  72),
+        "leaf_ember":     (236, 168,  58),
 
         # Arrow
         "arrow_shaft":    (200, 175, 130),
@@ -3076,6 +3090,44 @@ class _NS_sylara:
             (a[0] + (b[0] - a[0]) * t,
              a[1] + (b[1] - a[1]) * t,
              a[2] + (b[2] - a[2]) * t))
+
+    def _dither_dots(surface, color, points, alpha=80):
+        """Dither band 50% klasik (bertahan setelah downscale)."""
+        col = (*color, max(0, min(255, int(alpha))))
+        for i, (px, py) in enumerate(points):
+            if i % 2 == 0:
+                _NS_sylara._aacircle(surface, col, (int(px), int(py)), 1)
+
+    def _attack_pose(ap):
+        """Keyframe serangan Sylara: draw -> hold -> IMPACT -> recover.
+
+        0.00 rest -> 0.12 wind-up -> 0.26 tension -> 0.42 full draw
+        -> 0.52 IMPACT release -> 0.72 follow-through -> 1.00 rest.
+        Return bob/lean/flare/tremble yang dipakai rig dan smear busur.
+        """
+        keys = (
+            (0.00,  0,  0, 1.00, 0),
+            (0.12,  2, -4, 1.08, 0),
+            (0.26,  3, -6, 1.18, 1),
+            (0.42,  1, -5, 1.22, 0),
+            (0.52, -2,  8, 1.32, 0),
+            (0.72,  1,  3, 1.08, 0),
+            (1.00,  0,  0, 1.00, 0),
+        )
+        ap = max(0.0, min(1.0, float(ap)))
+        for i in range(len(keys) - 1):
+            k0, k1 = keys[i], keys[i + 1]
+            if k0[0] <= ap <= k1[0]:
+                span = max(1e-6, k1[0] - k0[0])
+                t = (ap - k0[0]) / span
+                t = t * t * (3 - 2 * t)
+                return {
+                    "bob": int(round(k0[1] + (k1[1] - k0[1]) * t)),
+                    "lean": int(round(k0[2] + (k1[2] - k0[2]) * t)),
+                    "flare": k0[3] + (k1[3] - k0[3]) * t,
+                    "tremble": 1 if (k0[4] and t < .9) else 0,
+                }
+        return {"bob": 0, "lean": 0, "flare": 1.0, "tremble": 0}
 
     def _fx_scale(hero):
         """Faktor kompensasi efek skill.
@@ -3428,7 +3480,7 @@ class _NS_sylara:
         p = _NS_sylara.PALETTE
         ca, sa = math.cos(angle), math.sin(angle)
         nx, ny = -sa, ca
-        wmax = 8.0 if powered else 5.5
+        wmax = 10.0 if powered else 6.5
         amax = 245 if powered else 210
 
         # 1) PITA comet: 2 lapis garis menirus (glow luar + ribbon)
@@ -3499,6 +3551,9 @@ class _NS_sylara:
             _NS_sylara._drk_sparkle(
                 surface, x, y, 2.4 + 2.4 * t0,
                 int(215 * t0 * alpha_scale), phase + i * 0.7)
+            if i % 2 == 0:
+                pygame.draw.circle(surface, (*p["leaf_gold"], int(180 * t0)),
+                                   (int(x + nx * 3), int(y + ny * 3)), 1)
 
     def _drk_arrow(surface, px, py, angle, length, phase,
                    charged=False, bind=False):
@@ -3997,7 +4052,7 @@ class _NS_sylara:
         if not portrait_hd:
             _NS_sylara._draw_ranger_silhouette_glow(surface, x, y - 10, pulse)
             _NS_sylara._draw_wind_aura(surface, x, y, pulse)
-            _NS_sylara._draw_wind_platform(surface, x, y + 40, pulse, active_skill)
+            _NS_sylara._draw_wind_platform(surface, x, y + 58, pulse, active_skill)
 
         # ---------- Skill ground effects ----------
         # Q = Focus Fire, W = Windrun, E = Shackle Shot, R = Powershot
@@ -4018,7 +4073,7 @@ class _NS_sylara:
                 st = age / 12.0
                 a = int(235 * (1 - st))
                 rr = int(16 + st * 50)
-                gy = y + 46
+                gy = y + 62
                 pygame.draw.ellipse(
                     surface, (*_NS_sylara.PALETTE["wind_mid"], a),
                     (x - rr, gy - rr // 3, rr * 2, max(6, rr * 2 // 3)), 3)
@@ -4066,7 +4121,7 @@ class _NS_sylara:
         bob = int(math.sin(boss.pulse * 0.7) * 2)
         sf = _NS_sylara._skill_flags(boss)
         if not getattr(boss, "_portrait_hd", False):
-            _NS_sylara._draw_shadow(surface, x, y + 48)
+            _NS_sylara._draw_shadow(surface, x, y + 64)
             _NS_sylara._draw_floating_wind(surface, x, y + 35, boss.pulse)
         _NS_sylara._draw_sylara_body(
             surface, x, y + bob, boss.direction, boss.pulse, "idle",
@@ -4079,7 +4134,7 @@ class _NS_sylara:
         sway = int(math.sin(phase) * 2)
         sf = _NS_sylara._skill_flags(boss)
         if not getattr(boss, "_portrait_hd", False):
-            _NS_sylara._draw_shadow(surface, x + sway, y + 48)
+            _NS_sylara._draw_shadow(surface, x + sway, y + 64)
             _NS_sylara._draw_floating_wind(surface, x + sway, y + 35, phase,
                                            trail=True, facing=boss.direction)
         _NS_sylara._draw_sylara_body(
@@ -4118,7 +4173,7 @@ class _NS_sylara:
 
         portrait_hd = bool(getattr(boss, "_portrait_hd", False))
         if not portrait_hd:
-            _NS_sylara._draw_shadow(surface, x + recoil, y + 48)
+            _NS_sylara._draw_shadow(surface, x + recoil, y + 64)
             _NS_sylara._draw_floating_wind(surface, x + recoil, y + 35,
                                            boss.pulse, intense=True)
         sf = _NS_sylara._skill_flags(boss)
@@ -4136,7 +4191,7 @@ class _NS_sylara:
         bob = int(abs(math.sin(phase * 2)) * 2)
         sf = _NS_sylara._skill_flags(boss)
         if not getattr(boss, "_portrait_hd", False):
-            _NS_sylara._draw_shadow(surface, x, y + 48)
+            _NS_sylara._draw_shadow(surface, x, y + 64)
             _NS_sylara._draw_windrun_trail(surface, x, y, boss.direction, phase)
         _NS_sylara._draw_sylara_body(
             surface, x, y - bob, boss.direction, phase, "windrun",
@@ -4343,8 +4398,9 @@ class _NS_sylara:
 
 
     # Buffer rig: cukup besar untuk cape, busur terentang, dan speed-line.
-    RIG_W, RIG_H = 156, 136
-    RIG_OX, RIG_OY = 66, 62
+    # Native ~1.52x (hip 0,0; kepala ~-76; kaki ~+61) plus bow/cape.
+    RIG_W, RIG_H = 240, 210
+    RIG_OX, RIG_OY = 100, 95
 
 
     def _draw_sylara_elite(surface, cx, cy, facing, phase, action,
@@ -4389,9 +4445,10 @@ class _NS_sylara:
         """
         p = _NS_sylara.PALETTE
         f = 1 if facing >= 0 else -1
+        rs = _NS_sylara.RIG_SCALE
         pulse = math.sin(phase * 3.2) * 0.5 + 0.5
-        bow_x = cx + 20 * f
-        bow_y = cy - 8
+        bow_x = cx + int(20 * rs * f)
+        bow_y = cy - int(8 * rs)
 
         # Inti glow di sekitar busur + ujung bow (semua skill ranged)
         if focus or powershot or crit:
@@ -4454,22 +4511,28 @@ class _NS_sylara:
         ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
         stride = math.sin(phase * 1.7)
 
+        rs = _NS_sylara.RIG_SCALE
         lean = (3 if walk else 0) * f
         if windrun:
             lean = 7 * f
         root_y = int(math.sin(phase * .72) * .7)
         # v2 (animasi): perpindahan berat badan saat idle — goyang kiri-kanan.
         sway = int(math.sin(phase * .8) * 3) * f if not (walk or attack or windrun) else 0
+        flare = 1.0
         if walk:
             root_y -= int(abs(math.sin(phase * 1.7)) * 2)
         if windrun:
             root_y += 2 - int(abs(math.sin(phase * 2.0)) * 2)
         if attack:
-            lean = int(math.sin(ap * math.pi) * 3) * f
-            root_y += int(math.sin(ap * math.pi) * 1.5)
+            pose = _NS_sylara._attack_pose(ap)
+            lean = pose["lean"] * f
+            root_y += pose["bob"]
+            flare = pose["flare"]
+            if pose["tremble"]:
+                lean += (1 if int(phase * 31) % 2 else -1)
 
         def pt(dx, dy):
-            return (int(cx + dx * f + lean + sway), int(cy + dy + root_y))
+            return (int(cx + dx * rs * f + lean + sway), int(cy + dy * rs + root_y))
 
         def poly(color, points, outline=True):
             pts = [pt(dx, dy) for dx, dy in points]
@@ -4481,14 +4544,15 @@ class _NS_sylara:
 
         def limb(a, b, width, base, light=None):
             aa, bb = pt(*a), pt(*b)
-            _NS_sylara._aaline(surface, p["shadow_deep"], aa, bb, width + 3)
-            _NS_sylara._aaline(surface, base, aa, bb, width)
+            w = max(2, int(round(width * rs)))
+            _NS_sylara._aaline(surface, p["shadow_deep"], aa, bb, w + 3)
+            _NS_sylara._aaline(surface, base, aa, bb, w)
             if light:
                 off = -1 if f > 0 else 1
                 _NS_sylara._aaline(surface, light,
                                    (aa[0] + off, aa[1] - 1),
                                    (bb[0] + off, bb[1] - 1),
-                                   max(1, width // 3))
+                                   max(1, w // 3))
 
         wave = math.sin(phase * 1.15)
         wave2 = math.sin(phase * 1.45 + .8)
@@ -4499,16 +4563,18 @@ class _NS_sylara:
         elif windrun:
             gust = 16
         elif attack:
-            gust = int(4 + 5 * math.sin(ap * math.pi))
+            gust = int(4 + 10 * (flare - 1.0) * 8)
 
         # ═══ CAPE: panel gelap sempit di punggung + tepi robek ═══
         cw = int(wave * 3)
         cw2 = int(wave2 * 2)
-        poly(p["cloak_darkest"], [
-            (-3, -34), (-8, -35),
+        cape_spine = [
+            (-8, -35),
             (-15 - gust, -24 + cw), (-20 - gust, -8 + cw),
             (-17 - int(gust * .8), 6 + cw2), (-11, 18 + cw2),
-            (-4, 14), (-2, 0)])
+            (-4, 14)]
+        cape_tuft = _NS_sylara._tuft_points(cape_spine, depth=3.4, min_len=6, seed=21)
+        poly(p["cloak_darkest"], [(-3, -34)] + cape_tuft + [(-2, 0)])
         poly(p["cloak_dark"], [
             (-4, -32), (-8, -33),
             (-13 - gust, -22 + cw), (-17 - gust, -7 + cw),
@@ -4536,6 +4602,10 @@ class _NS_sylara:
                            pt(-6, -31), pt(-14 - gust, -6 + cw), 1)
         _NS_sylara._aaline(surface, p["cloak_light"],
                            pt(-14 - gust, -6 + cw), pt(-9, 12 + cw2), 1)
+        _NS_sylara._aaline(surface, p["cloak_high"],
+                           pt(-7, -30), pt(-12 - gust, -10 + cw), 2)
+        hx, hy = pt(-16 - gust, 8 + cw2)
+        _NS_sylara._rect(surface, p["cloak_high"], (hx, hy, 2, 2))
 
         # ═══ QUIVER di punggung + anak panah berbulu ═══
         poly(p["leather_darkest"], [(-6, -24), (-13, -30), (-19, -18),
@@ -4616,6 +4686,8 @@ class _NS_sylara:
             _NS_sylara._aaline(surface, p["leather_light"],
                                pt(foot[0] - 3, foot[1] - 5),
                                pt(foot[0] + 4, foot[1] - 5), 1)
+            _NS_sylara._aacircle(surface, p["leather_high"],
+                                 pt(foot[0] + 3, foot[1] - 4), 1)
             _NS_sylara._aaline(surface, p["gold_mid"],
                                pt(knee[0] - 3, knee[1] + 1),
                                pt(knee[0] + 3, knee[1] + 1), 1)
@@ -4642,6 +4714,9 @@ class _NS_sylara:
         poly(p["cloth_light"], [(0, -15), (5, -15), (7, -9),
                                 (4, -2), (0, -4)], False)
         poly(p["cloth_high"], [(2, -13), (5, -13), (5, -8), (2, -7)], False)
+        # dither band korset — tekstur klasik yang selamat dari downscale
+        dpts = [pt(-4 + i * 2, -2 + (i % 3)) for i in range(8)]
+        _NS_sylara._dither_dots(surface, p["cloth_darkest"], dpts, 140)
         # dada & garis leher V (ref)
         poly(p["skin_dark"], [(0, -19), (7, -20), (6, -14), (1, -13)], False)
         poly(p["skin_mid"], [(1, -18), (6, -19), (5, -15), (2, -14)], False)
@@ -4656,6 +4731,7 @@ class _NS_sylara:
         _NS_sylara._rect(surface, p["gold_dark"], (pt(-3, 0)[0], pt(-3, 0)[1], 7, 6), 1)
         _NS_sylara._rect(surface, p["gold_mid"], (pt(-2, 1)[0], pt(-2, 1)[1], 5, 4), 1)
         _NS_sylara._rect(surface, p["gold_light"], (pt(-1, 2)[0], pt(-1, 2)[1], 2, 2))
+        _NS_sylara._aacircle(surface, p["gold_shine"], pt(0, 2), 1)
         # pauldron kulit bahu belakang
         poly(p["leather_dark"], [(-7, -20), (-13, -18), (-14, -12),
                                  (-8, -11)], True)
@@ -4669,21 +4745,48 @@ class _NS_sylara:
 
         # ═══ POSE BUSUR & LENGAN ═══
         if attack:
-            if ap < .45:
-                t = ap / .45
-                draw_amt = t * t * (3 - 2 * t)
-                grip = (19 - int(t * 2), -14)
-                tilt = .30 - t * .26
-            elif ap < .58:
-                t = (ap - .45) / .13
-                draw_amt = max(0.0, 1.0 - t * 1.4)
-                grip = (17 + int(t * 2), -14)
+            # 7-keyframe: rest -> wind-up -> tension -> full draw -> IMPACT
+            # release -> follow-through -> rest (loop-closure).
+            if ap < 0.12:
+                t = ap / 0.12
+                t = t * t * (3 - 2 * t)
+                draw_amt = 0.22 * t
+                grip = (19 - int(t * 1), -14 - int(t * 2))
+                tilt = .30 - t * .10
+            elif ap < 0.26:
+                t = (ap - 0.12) / 0.14
+                t = t * t * (3 - 2 * t)
+                draw_amt = 0.22 + 0.48 * t
+                grip = (18 - int(t * 2), -16 - int(t * 2))
+                tilt = .20 - t * .10
+            elif ap < 0.42:
+                t = (ap - 0.26) / 0.16
+                t = t * t * (3 - 2 * t)
+                draw_amt = 0.70 + 0.30 * t
+                grip = (16 - int(t * 1), -18)
+                tilt = .10 - t * .06
+            elif ap < 0.52:
+                t = (ap - 0.42) / 0.10
+                draw_amt = 1.0
+                grip = (15, -18)
                 tilt = .04
-            else:
-                t = (ap - .58) / .42
+            elif ap < 0.58:
+                t = (ap - 0.52) / 0.06
+                draw_amt = max(0.0, 1.0 - t * 1.6)
+                grip = (15 + int(t * 4), -18 + int(t * 4))
+                tilt = .04
+            elif ap < 0.72:
+                t = (ap - 0.58) / 0.14
+                t = t * t * (3 - 2 * t)
                 draw_amt = 0.0
-                grip = (19 - int(t * 3), -14 + int(t * 4))
-                tilt = .04 + t * .40
+                grip = (19 - int(t * 1), -14 + int(t * 2))
+                tilt = .04 + t * .18
+            else:
+                t = (ap - 0.72) / 0.28
+                t = t * t * (3 - 2 * t)
+                draw_amt = 0.0
+                grip = (18 - int(t * 1), -12 + int(t * 7))
+                tilt = .22 + t * .04
         elif windrun:
             draw_amt = 0.0
             grip = (13, -2)
@@ -4739,6 +4842,10 @@ class _NS_sylara:
         _NS_sylara._rect(surface, p["eye_iris_light"], (ex + 1, ey - 1, 2, 2))
         _NS_sylara._rect(surface, p["eye_pupil"], (ex + 2, ey - 1, 1, 3))
         _NS_sylara._rect(surface, p["white"], (ex + 3, ey - 2, 1, 1))
+        blink = (action == "idle" and math.sin(phase * 0.9 + 1.3) > 0.985)
+        if blink:
+            _NS_sylara._aaline(surface, p["hair_darkest"],
+                               (ex - 2, ey), (ex + 4, ey), 2)
         _NS_sylara._aaline(surface, p["hair_darkest"], pt(7, -37), pt(13, -37), 1)
         # hidung + bibir
         _NS_sylara._aacircle(surface, p["skin_darkest"], pt(14, -32), 1)
@@ -4749,6 +4856,7 @@ class _NS_sylara:
         poly(p["hair_mid"], [(1, -42), (9, -43), (13, -39), (7, -38),
                              (2, -37)], False)
         _NS_sylara._aaline(surface, p["hair_shine"], pt(3, -42), pt(11, -41), 1)
+        _NS_sylara._aacircle(surface, p["hair_high"], pt(6, -42), 1)
         # brim hood: pita gelap lalu kilau kain, membingkai wajah
         _NS_sylara._aaline(surface, p["hood_darkest"], pt(-2, -43), pt(14, -45), 4)
         _NS_sylara._aaline(surface, p["hood_light"], pt(-1, -45), pt(14, -46), 2)
@@ -4817,9 +4925,13 @@ class _NS_sylara:
                 t = (phase * .18 + i / 3.0) % 1.0
                 mx = cx + int(math.sin(phase + i * 2.1) * (16 + i * 4))
                 my = cy + 26 - int(t * 54)
+                col = p["leaf_gold"] if i % 2 else p["wind_light"]
                 _NS_sylara._aacircle(surface,
-                                     (*p["wind_light"], int(110 * (1 - t))),
-                                     (mx, my), 1)
+                                     (*col, int(140 * (1 - t))),
+                                     (mx, my), 1 if i % 2 else 2)
+            # swatch daun (material unik, selalu tampil di idle)
+            _NS_sylara._aacircle(surface, p["leaf_gold"], pt(-18, 8), 1)
+            _NS_sylara._aacircle(surface, p["leaf_ember"], pt(16, 6), 1)
 
         if windrun and not detail:
             for i in range(6):
@@ -4998,8 +5110,9 @@ class _NS_sylara:
         t = max(0.0, min(1.0, t))
         intensity = math.sin(t * math.pi) if t < 0.9 else 0.0
 
-        flash_x = x + 22 * facing
-        flash_y = y - 8
+        rs = _NS_sylara.RIG_SCALE
+        flash_x = x + int(22 * rs) * facing
+        flash_y = y - int(8 * rs)
 
         # ── PRIMER: katai flash + orbit glint ──
         alpha = int(200 * intensity)
@@ -5058,7 +5171,8 @@ class _NS_sylara:
         pulse = math.sin(phase * 4.0) * 0.5 + 0.5
         tx, ty = _NS_sylara._target_position(boss, x, y)
         rng = _NS_sylara._ring_r(boss, 60, surface)
-        bow_x, bow_y = x + 22 * facing, y - 8
+        rs = _NS_sylara.RIG_SCALE
+        bow_x, bow_y = x + int(22 * rs) * facing, y - int(8 * rs)
 
         # ── AKTIVASI: shockwave ganda + bintang (gaya PERTAGAS Drakar) ──
         if progress < 0.20:
@@ -5203,6 +5317,12 @@ class _NS_sylara:
         # spatter piksel orbit (partikel darah Drakar -> angin)
         _NS_sylara._drk_spatter(surface, x, gy, 22, rng * 1.02,
                                 phase, int(170 + 50 * pulse), seed=13)
+        for i in range(4):
+            ang = i * math.tau / 4 + phase * 0.2
+            _NS_sylara._jagged_crack(
+                surface, x, gy, ang, int((18 + (i % 2) * 10) * fs),
+                (p["wind_darkest"], p["wind_mid"]), int(130 + 40 * pulse),
+                seed=i + 17, width=2)
         # speed streaks belakang (ke arah lari)
         for i in range(6):
             off = (i - 3) * 6
@@ -5270,7 +5390,8 @@ class _NS_sylara:
         fs = _NS_sylara._fx_scale(boss)
         facing = boss.direction
         tx, ty = _NS_sylara._target_position(boss, x, y)
-        sx, sy = x + 20 * facing, y - 6
+        rs = _NS_sylara.RIG_SCALE
+        sx, sy = x + int(20 * rs) * facing, y - int(6 * rs)
         ang = math.atan2(ty - y, tx - x)
         dist = math.hypot(tx - x, ty - y)
 
@@ -5324,6 +5445,22 @@ class _NS_sylara:
                                 ang, 12, p["wind_light"],
                                 int(150 + 70 * pulse * (1 - t)), 3)
 
+        # ── AKHIR: kandang menguncup + burst ikat ──
+        if progress > 0.78:
+            t = (progress - 0.78) / 0.22
+            cage = max(6, int((rtr + 28 * fs) * (1.0 - t)))
+            _skill_outlined_circle(surface, (tx, ty - 6), cage, 4,
+                                   p["wind_bright"], int(220 * (0.4 + 0.6 * t)))
+            _NS_sylara._spark_star(surface, tx, ty - 6, int(18 + 16 * t),
+                                   p["leaf_gold"], int(210 * t), 8,
+                                   rot=pulse, core=p["wind_white"])
+            for i in range(6):
+                a = i * math.tau / 6 + pulse
+                _NS_sylara._jagged_crack(
+                    surface, tx, ty + 8, a, int((16 + 10 * t) * fs),
+                    (p["wind_darkest"], p["wind_mid"]), int(160 * t),
+                    seed=i + 9, width=2)
+
         # ── Spawn shackle projectile di awal ──
         if not getattr(boss, "_sy_shackle_spawned", False):
             _NS_sylara._spawn_shackle(boss, x, y)
@@ -5356,7 +5493,9 @@ class _NS_sylara:
             _NS_sylara._drk_shock(surface, x, gy,
                                   int((14 + t * 54) * fs),
                                   int(150 * (1 - t)), squash=.38)
-            _NS_sylara._spark_star(surface, x + 20 * facing, y - 8,
+            _NS_sylara._spark_star(surface,
+                                   x + int(20 * _NS_sylara.RIG_SCALE) * facing,
+                                   y - int(8 * _NS_sylara.RIG_SCALE),
                                    int(26 * (1 - t * .5)), p["wind_bright"],
                                    int(235 * (1 - t)), 8, rot=phase,
                                    core=p["wind_white"])
@@ -5389,6 +5528,12 @@ class _NS_sylara:
         _NS_sylara._drk_spatter(surface, x, gy, 16, int(rng * 0.75),
                                 phase, int(150 + 40 * pulse), seed=31,
                                 squash=.32)
+        for i in range(5):
+            ang = i * math.tau / 5 + 0.3
+            _NS_sylara._jagged_crack(
+                surface, x, gy, ang, int((22 + (i % 3) * 8) * fs),
+                (p["wind_darkest"], p["leaf_gold"]), int(140 + 40 * pulse),
+                seed=i + 41, width=2)
 
         # ── TELEGRAPH: pierce-line chevron ke arah hadap ──
         for i in range(3):

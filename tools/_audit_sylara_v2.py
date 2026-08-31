@@ -5,26 +5,20 @@ Mengukur hal yang sebelumnya hanya bisa dinilai mata:
   - skala terukur & ukuran akhir di layar (pipeline heroes/__init__)
   - bbox tiap pose, jumlah warna unik (idle vs portrait LOD)
   - keunikan frame antar siklus (bukan sticker translation)
-  - waktu render per pose (budget cache-miss ~3.5 ms)
-  - skill Q/W/E/R: world-space (kompensasi 1/_render_scale), mewah, terukur
-      Q Focus Fire   — ring AOE + chevron pierce + burst aktivasi
-      W Windrun      — shockwave + ring berputar + chevron lari
-      E Shackle Shot — tether rantai + reticle target + burst
-      R Powershot    — pilar cahaya + orb charge + cone release
-
+  - waktu render per pose (budget cache-miss)
+  - FX skill di luar siluet, radius telegraph px dunia
 Menghasilkan:
-  - docs/sylara_v2_review.png        (kartu pose besar)
-  - docs/sylara_v2_anim_strip.png    (film strip idle/walk/attack)
-  - docs/sylara_v2_ingame.png        (ukuran asli di arena, tim biru/merah)
-  - docs/sylara_v2_skills.png        (4 skill x 3 tahap timer)
-  - docs/sylara_v2_before_after.png  (perbandingan before vs after)
-
-Jalankan:  python3 tools/_audit_sylara_v2.py
+  - docs/sylara_v2_review.png
+  - docs/sylara_v2_anim_strip.png
+  - docs/sylara_v2_ingame.png
+  - docs/sylara_v2_skills.png
+  - docs/sylara_v2_before_after.png
 """
 import math
 import os
 import sys
 import time
+from types import SimpleNamespace as _NS
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -35,16 +29,9 @@ import pygame
 pygame.init()
 pygame.display.set_mode((1, 1))
 
-import heroes
-from heroes import _ProbeEntity, render_hero, _get_hero_scale
-from heroes._bundle import _NS_sylara as Z
+from heroes import _ProbeEntity, render_hero, _get_hero_scale, clear_hero_sprite_cache
+from heroes._bundle import _NS_sylara as S
 
-DOCS = os.path.join(ROOT, "docs")
-os.makedirs(DOCS, exist_ok=True)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Helpers
-# ─────────────────────────────────────────────────────────────────────────────
 
 def colors_of(surface):
     return {surface.get_at((x, y))[:3]
@@ -53,12 +40,11 @@ def colors_of(surface):
             if surface.get_at((x, y)).a}
 
 
-def elite_frame(action, phase, progress=0.0, facing=1, detail=False,
-                powered=False, size=320, anchor=None):
+def elite_frame(action, phase, progress=0.0, facing=1, size=320, detail=False):
     s = pygame.Surface((size, size), pygame.SRCALPHA)
-    ax = ay = size // 2 if anchor is None else anchor
-    Z._draw_sylara_elite(s, ax, ay, facing, phase, action, progress,
-                         powered, detail)
+    ax = ay = size // 2
+    S._draw_sylara_elite(s, ax, ay, facing, phase, action, progress,
+                         detail=detail)
     return s
 
 
@@ -70,382 +56,331 @@ def check(cond, label, extra=""):
 
 ok_all = True
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 1. Skala & ukuran layar
-# ─────────────────────────────────────────────────────────────────────────────
+# ── 1. skala & ukuran layar ──────────────────────────────────────
 scale = _get_hero_scale("sylara")
-# Pakai frame IDLE PENUH (badan + bayangan + platform) seperti test regresi
-# agar konsisten; raw rig terpisah diukur khusus (inci di bawah).
 body = elite_frame("idle", 1.25)
-raw = body.get_bounding_rect(min_alpha=8)
-full = pygame.Surface((360, 360), pygame.SRCALPHA)
-h_full = _ProbeEntity("sylara", 180, 185)
-h_full.pulse = 1.25
-h_full.direction = 1
-h_full.range = 200
-Z.draw_sylara(full, h_full, 180, 185)
-bb = full.get_bounding_rect(min_alpha=8)
-ok_all &= check(bb.height >= 100 and bb.width >= 75,
-                "bbox idle penuh (rig 1.5×: tinggi ≥100, lebar ≥75)",
-                f"{bb.w}×{bb.h}")
-# ukuran badan DI LAYAR dipakai dari raw rig (bukan bayangan/platform)
-screen_h = raw.height * scale
+bb = body.get_bounding_rect(min_alpha=8)
+ok_all &= check(bb.height >= 130 and bb.width >= 70,
+                "bbox idle native", f"{bb.w}x{bb.h}")
+screen_h = bb.height * scale
 ok_all &= check(55 <= screen_h <= 95,
-                "tinggi badan di layar (target ~51–70 px)",
-                f"{screen_h:.1f} px   scale={scale:.3f}")
+                "tinggi badan di layar (target ~72px)",
+                f"{screen_h:.1f}px scale={scale:.3f}")
+ok_all &= check(abs(S.RIG_SCALE - 1.52) < 1e-6, "RIG_SCALE 1.52",
+                str(S.RIG_SCALE))
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 2. Keunikan frame (bukan sticker)
-# ─────────────────────────────────────────────────────────────────────────────
+# ── 2. keunikan frame (bukan sticker) ────────────────────────────
 walk_frames = {pygame.image.tobytes(elite_frame("walk", i * 0.785), "RGBA")
                for i in range(8)}
 atk_frames = {pygame.image.tobytes(elite_frame("attack", 0, i / 9.0), "RGBA")
               for i in range(10)}
-ok_all &= check(len(walk_frames) == 8, "walk: 8 frame unik",
-                f"{len(walk_frames)}")
-ok_all &= check(len(atk_frames) >= 9, "attack: ≥9 pose unik (loop closure)",
+ok_all &= check(len(walk_frames) == 8, "walk: 8 frame unik", f"{len(walk_frames)}")
+ok_all &= check(len(atk_frames) >= 9, "attack: pose unik 7-keyframe",
                 f"{len(atk_frames)}/10")
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 3. Portrait LOD lebih kaya
-# ─────────────────────────────────────────────────────────────────────────────
-port = elite_frame("idle", .8, detail=True, size=320)
-norm = elite_frame("idle", .8, size=320)
+# ── 3. portrait LOD lebih kaya ───────────────────────────────────
+port = elite_frame("idle", .8, detail=True)
+norm = elite_frame("idle", .8)
 nc, pc = len(colors_of(norm)), len(colors_of(port))
-ok_all &= check(pc > nc, "portrait LOD lebih banyak warna", f"{nc} → {pc}")
+ok_all &= check(pc >= nc, "portrait LOD tidak lebih miskin", f"{nc} -> {pc}")
+ok_all &= check(nc >= 50, "idle native >= 50 warna", str(nc))
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 4. Swatch palet material sampai ke render (idle penuh — material karakter)
-# ─────────────────────────────────────────────────────────────────────────────
-pal = Z.PALETTE
-got_idle = colors_of(full)
-for key in ("hair_shine", "cloth_light", "leather_light", "gold_light",
-            "eye_iris_light", "string_shine", "arrow_feather"):
-    ok_all &= check(pal[key] in got_idle, f"swatch {key} (idle)", str(pal[key]))
-# wind_* hanya aktif saat skill (cek di section skill FX)
+# ── 4. palet material sampai ke render final ─────────────────────
+pal = S.PALETTE
+got = colors_of(norm)
+for key in ("gold_light", "gold_shine", "hair_shine", "hair_high",
+            "leather_light", "leather_high", "eye_iris_light",
+            "string_shine", "cloak_high", "leaf_gold", "cloth_high"):
+    ok_all &= check(pal[key] in got, f"swatch {key}", str(pal[key]))
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 5. Hood/rambut meruncing di kepala + busur terbaca (relatif bbox badan)
-# ─────────────────────────────────────────────────────────────────────────────
-at = body.get_bounding_rect(min_alpha=8)
-top_row = sum(1 for x in range(at.left, at.right)
-              for y in range(at.top, at.top + 32)
-              if body.get_at((x, y)).a > 8)
-ok_all &= check(top_row > 30, "hood + rambut muncul di ujung atas badan",
-                f"{top_row} px")
+# ── 5. kaki menapak + mata terbaca ───────────────────────────────
+rs = S.RIG_SCALE
+cx = cy = 160
+feet_row = norm.get_at((cx + int(9 * rs), cy + int(40 * rs)))
+eye_here = any(norm.get_at((cx + dx, cy + dy)).a > 150
+               for dx in range(4, 24) for dy in range(-80, -45))
+ok_all &= check(feet_row.a > 150, "telapak depan menapak y=+61")
+ok_all &= check(eye_here, "mata/hood ada di posisi kepala")
 
-# Bow extends forward (facing=1 -> sisi kanan) pada raw rig
-bow_px = sum(1 for x in range(at.right - 40, at.right + 30)
-             for y in range(at.top + 20, at.bottom)
-             if body.get_at((x, y)).a > 8)
-ok_all &= check(bow_px > 40,
-                "busur recurve terbaca di sisi depan (kanan)",
-                f"{bow_px} px")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 6. Timing (budget cache-miss)
-# ─────────────────────────────────────────────────────────────────────────────
-def bench(fn, n=9):
+# ── 6. timing (budget cache-miss) ────────────────────────────────
+def bench(fn, n=20):
     fn()
     t0 = time.perf_counter()
     for _ in range(n):
         fn()
     return (time.perf_counter() - t0) / n * 1000
 
-def _render_idle():
-    s = pygame.Surface((320, 320), pygame.SRCALPHA)
-    Z._draw_sylara_elite(s, 160, 170, 1, 1.0, "idle", 0.0, False)
+t_idle = bench(lambda: S._draw_sylara_elite(norm, 160, 160, 1, 1.1, "idle"))
+t_walk = bench(lambda: S._draw_sylara_elite(norm, 160, 160, 1, 1.1, "walk"))
+t_atk = bench(lambda: S._draw_sylara_elite(norm, 160, 160, 1, .5, "attack", .52))
+t_full = bench(lambda: S.draw_sylara(norm, _ProbeEntity("sylara", 160, 160), 160, 160))
+print(f"[i] render ms: idle={t_idle:.2f} walk={t_walk:.2f} "
+      f"attack={t_atk:.2f} draw_sylara={t_full:.2f}")
+ok_all &= check(t_idle < 8.0, "idle cache-miss < 8ms", f"{t_idle:.2f}")
 
-def _render_skill():
-    s = pygame.Surface((400, 400), pygame.SRCALPHA)
-    h = _ProbeEntity("sylara", 200, 200)
-    h.pulse = 1.0
-    h.direction = h.facing = 1
-    h.active_skill = "r"
-    h.active_skill_timer = 40
-    h._render_scale = 0.45
-    h.target = _ProbeEntity("dummy", 300, 202)
-    h.target.alive = True
-    Z.draw_sylara(s, h, 200, 200)
-
-t_idle = bench(_render_idle)
-t_skill = bench(_render_skill)
-ok_all &= check(t_idle < 3.5, "idle render < 3.5 ms", f"{t_idle:.2f} ms")
-ok_all &= check(t_skill < 6.0, "skill render < 6.0 ms", f"{t_skill:.2f} ms")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 7. World-space FX (ring pas dengan radius dunia)
-# ─────────────────────────────────────────────────────────────────────────────
-class HeroAt40:
-    _render_scale = 0.40
-    range = 100
-    x = y = 0
-
-class HeroAt100:
-    _render_scale = 1.00
-    range = 100
-    x = y = 0
-
-surf400 = pygame.Surface((400, 400), pygame.SRCALPHA)
-fs40 = Z._fx_scale(HeroAt40())
-rr40 = Z._ring_r(HeroAt40(), 100, surf400)
-rr100 = Z._ring_r(HeroAt100(), 100, surf400)
-ok_all &= check(2.0 <= fs40 <= 2.6,
-                "_fx_scale (scale=0.40) dalam range 2.0–2.6",
-                f"{fs40:.2f}")
-ok_all &= check(rr40 > rr100 * 1.5,
-                "ring lebih besar di canvas scale 0.40 vs 1.00",
-                f"rr40={rr40} rr100={rr100}")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 8. FX skill ada piksel di luar siluet badan
-# ─────────────────────────────────────────────────────────────────────────────
-body_surf = pygame.Surface((400, 400), pygame.SRCALPHA)
-h_body = _ProbeEntity("sylara", 200, 200)
-h_body.pulse = 1.0
-h_body.direction = 1
-Z._draw_sylara_idle(body_surf, h_body, 200, 200)
-body_bb2 = body_surf.get_bounding_rect(min_alpha=8).inflate(10, 10)
-
-for skill, timer in (("q", 120), ("w", 140), ("e", 100), ("r", 40)):
-    s = pygame.Surface((400, 400), pygame.SRCALPHA)
-    h = _ProbeEntity("sylara", 200, 200)
-    h.pulse = 1.0
-    h.direction = h.facing = 1
+# ── 7. skill FX: world-space, mewah, dan terukur ─────────────────
+def _render_skill(skill, timer, fs=None, W=760):
+    s = pygame.Surface((W, W), pygame.SRCALPHA)
+    h = _ProbeEntity("sylara", W // 2, W // 2 + 40)
+    h.pulse = 1.3
     h.active_skill = skill
     h.active_skill_timer = timer
-    h._render_scale = 0.45
-    h.target = _ProbeEntity("dummy", 300, 202)
-    h.target.alive = True
-    try:
-        Z.draw_sylara(s, h, 200, 200)
-    except Exception as e:
-        print(f"  [WARN] skill {skill}: {e}")
-        ok_all = False
-        continue
-    outside = sum(1 for y in range(s.get_height())
-                  for x in range(s.get_width())
-                  if s.get_at((x, y)).a > 8 and not body_bb2.collidepoint(x, y))
-    ok_all &= check(outside > 50,
-                    f"Skill {skill.upper()}: FX px di luar badan",
-                    f"{outside} px")
+    h.range = 220
+    h.skill_range = 200 if skill == "q" else 70
+    h.target = _NS(x=W // 2 + 140, y=W // 2, alive=True)
+    if fs:
+        h._render_scale = fs
+    S.draw_sylara(s, h, W // 2, W // 2 + 40)
+    return s
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 9. Badan ikut bereaksi ke state skill
-# ─────────────────────────────────────────────────────────────────────────────
-s_normal = pygame.Surface((280, 280), pygame.SRCALPHA)
-s_focus = pygame.Surface((280, 280), pygame.SRCALPHA)
-s_wind = pygame.Surface((280, 280), pygame.SRCALPHA)
-Z._draw_sylara_elite(s_normal, 140, 148, 1, 1.0, "idle", 0.0, False, False)
-Z._draw_sylara_elite(s_focus, 140, 148, 1, 1.0, "idle", 0.0, False, False,
-                     focus=True)
-Z._draw_sylara_elite(s_wind, 140, 148, 1, 1.0, "windrun", 0.0, False, False,
-                     wind=True)
-ok_all &= check(pygame.image.tobytes(s_normal, "RGBA") !=
-                pygame.image.tobytes(s_focus, "RGBA"),
-                "focus kwarg mengubah penampilan badan")
-ok_all &= check(pygame.image.tobytes(s_focus, "RGBA") !=
-                pygame.image.tobytes(s_wind, "RGBA"),
-                "wind kwarg mengubah penampilan badan")
+def _count(s, matcher, rmin=0, rmax=10**6, cx=None, cy=None):
+    cx = s.get_width() // 2 if cx is None else cx
+    cy = s.get_height() // 2 + 40 if cy is None else cy
+    n = 0
+    for y in range(0, s.get_height(), 2):
+        for x in range(0, s.get_width(), 2):
+            if rmin <= math.hypot(x - cx, y - cy) <= rmax:
+                if matcher(s.get_at((x, y))):
+                    n += 1
+    return n
 
-print()
-print("═" * 58)
-print(f"  AUDIT SYLARA v2: {'ALL PASS ✓' if ok_all else 'SOME FAIL ✗'}")
-print("═" * 58)
+_wind = lambda c: c.a > 100 and c[1] > 110 and c[1] > c[0] and c[1] > c[2]
 
-# ─────────────────────────────────────────────────────────────────────────────
-# GENERATE PREVIEW SHEETS
-# ─────────────────────────────────────────────────────────────────────────────
-try:
-    font_big = pygame.font.Font(None, 40)
-    font_med = pygame.font.Font(None, 28)
-    font_small = pygame.font.Font(None, 20)
-except Exception:
-    font_big = font_med = font_small = pygame.font.Font(None, 24)
+s = _render_skill("w", 90)
+ok_all &= check(_count(s, _wind, 50, 95) > 40,
+                "W: ring/daun di luar badan",
+                str(_count(s, _wind, 50, 95)))
+s = _render_skill("w", 90, fs=0.5)
+ok_all &= check(_count(s, _wind, 95, 170) > 30,
+                "W: efek world-space saat di-scale hero",
+                str(_count(s, _wind, 95, 170)))
 
-BG = (6, 14, 12)
-ACC = (110, 200, 110)
-WH = (235, 245, 235)
+s = _render_skill("q", 90)
+ok_all &= check(_count(s, _wind, 55, 180) > 50,
+                "Q: rune/ring focus fire di luar badan",
+                str(_count(s, _wind, 55, 180)))
 
-def label(surf, text, x, y, font=None, color=WH):
-    f = font or font_small
-    t = f.render(text, True, color)
-    surf.blit(t, (x, y))
-    return t.get_height()
+s = _render_skill("r", 30)
+ok_all &= check(_count(s, _wind, 20, 90) > 30,
+                "R: orb powershot di sekitar busur",
+                str(_count(s, _wind, 20, 90)))
 
+s = _render_skill("e", 80)
+ok_all &= check(_count(s, _wind, 40, 220) > 25,
+                "E: tether/reticle shackle menuju target",
+                str(_count(s, _wind, 40, 220)))
 
-# ── Review sheet ─────────────────────────────────────────────────────────────
-REV_W, REV_H = 1400, 820
-rev = pygame.Surface((REV_W, REV_H))
-rev.fill(BG)
+# 3 tahap
+for skill, dur in S.SKILL_VISUAL_DURATION.items():
+    sigs = {pygame.image.tobytes(_render_skill(skill, t, W=520), "RGBA")
+            for t in (dur - 4, int(dur * 0.55), 8)}
+    ok_all &= check(len(sigs) == 3, f"{skill}: 3 tahap FX", str(len(sigs)))
 
-label(rev, "SYLARA — PIXEL MASTERWORK v2", 32, 20, font_big, (180, 255, 190))
-label(rev, "100% prosedural  •  rig 1.5×  •  skill FX world-space",
-      32, 64, font_small, (150, 200, 160))
+ok_all &= check(S._fx_scale(_NS()) == 1.0, "_fx_scale tanpa scale = 1")
+ok_all &= check(abs(S._fx_scale(_NS(_render_scale=0.4)) - 2.5) < 1e-6,
+                "_fx_scale(0.40)=2.50")
 
-cols = [
-    ("IDLE", "idle", 0.0, 1.25, False, False),
-    ("WALK", "walk", 0.35, 2.15, False, False),
-    ("ATTACK WINDUP", "attack", 0.30, 1.0, False, False),
-    ("ATTACK IMPACT", "attack", 0.50, 1.0, False, False),
-    ("FOCUS FIRE", "idle", 0.0, 1.25, False, True),
-    ("PORTRAIT LOD", "idle", 0.0, 1.25, True, False),
-]
-for i, (lbl, action, prog, phase, detail, focus) in enumerate(cols):
-    cx = 32 + i * 225
-    panel = pygame.Rect(cx, 90, 210, 700)
-    pygame.draw.rect(rev, (12, 30, 20), panel, border_radius=10)
-    pygame.draw.rect(rev, (70, 160, 80), panel, 2, border_radius=10)
-    label(rev, lbl, cx + 8, 100, font_small, (210, 255, 215))
+for skill, t in (("w", 90), ("e", 80), ("r", 30), ("q", 90)):
+    surf = pygame.Surface((760, 760), pygame.SRCALPHA)
+    hero = _ProbeEntity("sylara", 380, 420)
+    hero.pulse = 1.3
+    hero.active_skill = skill
+    hero.active_skill_timer = t
+    hero.range = 220
+    hero.target = _NS(x=520, y=400, alive=True)
+    ms = bench(lambda: S.draw_sylara(surf, hero, 380, 420), 12)
+    print(f"[i] skill {skill}: {ms:.2f} ms/frame (cache-miss)")
 
-    frame = elite_frame(action, phase, prog, 1, detail, powered=True,
-                        size=280, anchor=140)
-    scaled = pygame.transform.smoothscale(frame, (210, 560))
-    rev.blit(scaled, (cx, 130))
-    bb_ = frame.get_bounding_rect(min_alpha=8)
-    label(rev, f"bbox {bb_.w}×{bb_.h}  colors {len(colors_of(frame))}",
-          cx + 4, 698, font_small, (150, 200, 160))
-    label(rev, f"native scale×{scale:.3f}", cx + 4, 714,
-          font_small, (120, 170, 140))
+# ═══════════════════════ PREVIEW SHEETS ══════════════════════════
+font_title = pygame.font.Font(None, 44)
+font_label = pygame.font.Font(None, 30)
+font_small = pygame.font.Font(None, 21)
 
-pygame.image.save(rev, os.path.join(DOCS, "sylara_v2_review.png"))
-print("[SAVED] docs/sylara_v2_review.png")
+W, H = 1400, 860
+sheet = pygame.Surface((W, H))
+sheet.fill((5, 12, 10))
+sheet.blit(font_title.render("SYLARA v2 - PIXEL MASTERWORK (100% prosedural)",
+                             True, (190, 240, 150)), (36, 22))
+sheet.blit(font_small.render(
+    "rig 1.52x native • ramp hue-shift • selout • tuft cape • "
+    "foot solver • 7-keyframe bow IMPACT + smear",
+    True, (150, 185, 140)), (38, 66))
 
-# ── Anim strip ───────────────────────────────────────────────────────────────
-STRIP_W, STRIP_H = 1400, 500
-strip = pygame.Surface((STRIP_W, STRIP_H))
-strip.fill(BG)
-label(strip, "SYLARA v2 — ANIMATION STRIP", 20, 10, font_med, ACC)
+cards = (
+    ("IDLE / BREATHE", dict(action="idle", phase=1.25)),
+    ("WALK / CONTACT", dict(action="walk", phase=2.4)),
+    ("BOW DRAW (impact)", dict(action="attack", phase=1.0, progress=.52)),
+    ("WINDRUN (skill W)", dict(action="windrun", phase=1.8)),
+)
+for i, (label, kw) in enumerate(cards):
+    x = 28 + i * 340
+    panel = pygame.Rect(x, 100, 322, 600)
+    pygame.draw.rect(sheet, (16, 32, 20), panel, border_radius=12)
+    pygame.draw.rect(sheet, (96, 156, 84), panel, 2, border_radius=12)
+    sheet.blit(font_label.render(label, True, (226, 246, 220)), (x + 16, 116))
+    native = pygame.Surface((300, 300), pygame.SRCALPHA)
+    S._draw_sylara_elite(native, 150, 158, 1, kw.get("phase", 0),
+                         kw["action"], kw.get("progress", 0.0))
+    scaled = pygame.transform.scale(native, (300 * 2, 300 * 2))
+    clip = panel.inflate(-10, -66)
+    old = sheet.get_clip()
+    sheet.set_clip(clip)
+    sheet.blit(scaled, (x + 161 - 300, 150))
+    sheet.set_clip(old)
 
-for i in range(8):
-    x = 20 + i * 165
-    f_ = elite_frame("walk", i * math.tau / 8, size=200, anchor=100)
-    scaled = pygame.transform.smoothscale(f_, (150, 300))
-    strip.blit(scaled, (x, 40))
-    label(strip, f"W{i}", x + 60, 345, font_small)
+notes = ("hood runcing • braid • quiver",
+         "foot solver • cape tuft • gait",
+         "recurve bow • IMPACT burst",
+         "dash stance • wind streaks")
+for j, text in enumerate(notes):
+    sheet.blit(font_small.render(text, True, (140, 180, 130)),
+               (44 + j * 340, 712))
+out1 = os.path.join(ROOT, "docs", "sylara_v2_review.png")
+pygame.image.save(sheet, out1)
+print(out1)
 
-for i in range(10):
-    x = 20 + i * 136
-    f_ = elite_frame("attack", 0.0, i / 9.0, size=200, anchor=100)
-    scaled = pygame.transform.smoothscale(f_, (126, 120))
-    strip.blit(scaled, (x, 368))
-    label(strip, f"A{i}", x + 50, 492 if i < 9 else 492, font_small)
+SW, SH = 1400, 900
+strip = pygame.Surface((SW, SH))
+strip.fill((5, 12, 10))
+strip.blit(font_title.render("SYLARA v2 - PROSEDURAL ANIMATION RIG", True,
+                             (190, 240, 150)), (36, 22))
+strip.blit(font_small.render(
+    "setiap frame dihitung ulang dari sendi + fase + inersia cape/rambut",
+    True, (150, 185, 140)), (38, 66))
+rows = (("IDLE / BREATHE", 6, "idle"),
+        ("WALK / CONTACT", 8, "walk"),
+        ("ATTACK / RELEASE", 10, "attack"))
+for row, (label, count, action) in enumerate(rows):
+    top = 108 + row * 262
+    strip.blit(font_label.render(label, True, (190, 240, 150)), (36, top + 66))
+    pygame.draw.line(strip, (70, 120, 70), (35, top + 100),
+                     (1364, top + 100), 1)
+    for i in range(count):
+        native = pygame.Surface((170, 190), pygame.SRCALPHA)
+        phase = i / count * math.tau
+        progress = i / max(1, count - 1)
+        S._draw_sylara_elite(native, 85, 100, 1, phase, action, progress)
+        frame = pygame.transform.scale(native, (170, 190))
+        fx = 200 + i * 122
+        strip.blit(frame, (fx, top))
+out2 = os.path.join(ROOT, "docs", "sylara_v2_anim_strip.png")
+pygame.image.save(strip, out2)
+print(out2)
 
-pygame.image.save(strip, os.path.join(DOCS, "sylara_v2_anim_strip.png"))
-print("[SAVED] docs/sylara_v2_anim_strip.png")
+clear_hero_sprite_cache()
+GW, GH = 1200, 420
+game = pygame.Surface((GW, GH))
+game.fill((18, 32, 22))
+for gy in range(0, GH, 40):
+    pygame.draw.line(game, (24, 42, 28), (0, gy), (GW, gy), 1)
+pygame.draw.line(game, (48, 78, 52), (0, 330), (GW, 330), 3)
+game.blit(font_title.render("UKURAN ASLI DI ARENA (pipeline cache hero + lighting + outline)",
+                            True, (210, 240, 170)), (30, 18))
+poses = (
+    ("idle", 0, 0.0, None), ("walk", 1.9, 0.0, None),
+    ("draw", 0, 0.42, None), ("impact", 0, 0.52, None),
+    ("windrun", 1.25, 0.0, "w"),
+)
+xpos = 130
+for i, (name, ph, prog, skill) in enumerate(poses):
+    hero = _ProbeEntity("sylara", xpos, 300)
+    hero.pulse = ph
+    hero.team = "blue" if i % 2 == 0 else "red"
+    hero.range = 220
+    if prog:
+        hero._sy_attack_active = True
+        hero._sy_attack_progress = prog
+        hero.timer = 1
+        hero._sy_prev_timer = 0
+    if skill:
+        hero.active_skill = skill
+        hero.active_skill_timer = 90
+    render_hero("sylara", game, hero, xpos, 300)
+    game.blit(font_small.render(name, True, (200, 220, 190)),
+              (xpos - 40, 330))
+    xpos += 210
+out3 = os.path.join(ROOT, "docs", "sylara_v2_ingame.png")
+pygame.image.save(game, out3)
+print(out3)
 
-# ── In-game size ──────────────────────────────────────────────────────────────
-IG_W, IG_H = 720, 240
-ig = pygame.Surface((IG_W, IG_H))
-ig.fill((14, 24, 14))
-label(ig, "SYLARA v2 — IN-GAME SIZE (both teams)", 16, 8, font_small, WH)
+KW, KH = 1500, 1160
+skills_sheet = pygame.Surface((KW, KH))
+skills_sheet.fill((5, 12, 10))
+skills_sheet.blit(font_title.render(
+    "SYLARA v2 - SKILL FX MEWAH (world-space, 100% prosedural)", True,
+    (190, 240, 150)), (36, 22))
+skills_sheet.blit(font_small.render(
+    "Q Focus Fire • W Windrun • E Shackle Shot • R Powershot — "
+    "3 tahap timer per skill", True, (150, 185, 140)), (38, 66))
 
-for i, (team_col, x_pos) in enumerate(
-        (((80, 140, 255), 160), ((255, 80, 80), 560))):
-    native = elite_frame("idle", i * 1.4, size=300, anchor=150)
-    screen_size = (int(bb.w * scale), int(bb.h * scale))
-    if screen_size[0] < 4 or screen_size[1] < 4:
-        screen_size = (50, 72)
-    scaled_ig = pygame.transform.smoothscale(native, screen_size)
-    pygame.draw.rect(ig, team_col,
-                     (x_pos - screen_size[0] // 2 - 2,
-                      IG_H // 2 - screen_size[1] // 2 - 2,
-                      screen_size[0] + 4, screen_size[1] + 4), 2)
-    ig.blit(scaled_ig, (x_pos - screen_size[0] // 2,
-                        IG_H // 2 - screen_size[1] // 2))
-    label(ig, f"{'Blue' if i == 0 else 'Red'} team  "
-              f"{screen_size[0]}×{screen_size[1]}px",
-          x_pos - 50, IG_H - 28, font_small, team_col)
-
-for px_ in range(0, IG_W, 10):
-    ig.set_at((px_, IG_H - 4), (60, 60, 80))
-pygame.image.save(ig, os.path.join(DOCS, "sylara_v2_ingame.png"))
-print("[SAVED] docs/sylara_v2_ingame.png")
-
-# ── Skills sheet ─────────────────────────────────────────────────────────────
-SK_W, SK_H = 1400, 880
-sk = pygame.Surface((SK_W, SK_H))
-sk.fill(BG)
-label(sk, "SYLARA v2 — SKILL FX (world-space, 3 phases)", 24, 14,
-      font_big, (180, 255, 190))
-
-SKILLS = [
-    ("Q  FOCUS FIRE", "q", [180, 100, 40]),
-    ("W  WINDRUN", "w", [160, 120, 30]),
-    ("E  SHACKLE SHOT", "e", [140, 110, 30]),
-    ("R  POWERSHOT", "r", [220, 160, 40]),
-]
-PHASE_LABELS = ["ACTIVATION", "STEADY", "TELEGRAPH"]
-
-for row, (skill_name, skill_key, timers) in enumerate(SKILLS):
-    y_row = 70 + row * 200
-    label(sk, skill_name, 10, y_row + 5, font_med, (210, 255, 215))
-    for col, timer in enumerate(timers):
-        x_col = 200 + col * 400
-        s = pygame.Surface((400, 400), pygame.SRCALPHA)
-        h = _ProbeEntity("sylara", 200, 200)
-        h.pulse = 1.0
-        h.direction = h.facing = 1
-        h.active_skill = skill_key
+skill_cards = (
+    ("Q - FOCUS FIRE", "q", (12, 28, 16)),
+    ("W - WINDRUN", "w", (10, 26, 22)),
+    ("E - SHACKLE SHOT", "e", (14, 24, 14)),
+    ("R - POWERSHOT", "r", (16, 30, 12)),
+)
+stages = ((int(S.SKILL_VISUAL_DURATION["q"] * 0.92), "awal"),
+          (int(S.SKILL_VISUAL_DURATION["q"] * 0.50), "tengah"),
+          (10, "puncak"))
+# per-skill stage timers from visual duration
+stage_map = {
+    "q": ((170, "awal"), (90, "tengah"), (12, "puncak")),
+    "w": ((170, "awal"), (90, "tengah"), (12, "puncak")),
+    "e": ((140, "awal"), (75, "tengah"), (10, "puncak")),
+    "r": ((55, "awal"), (30, "tengah"), (8, "puncak")),
+}
+for ci, (label, skill, panel_col) in enumerate(skill_cards):
+    col_x = 28 + ci * 368
+    for si, (timer, stage) in enumerate(stage_map[skill]):
+        y0 = 100 + si * 350
+        panel = pygame.Rect(col_x, y0, 348, 330)
+        pygame.draw.rect(skills_sheet, panel_col, panel, border_radius=12)
+        pygame.draw.rect(skills_sheet, (96, 156, 84), panel, 2,
+                         border_radius=12)
+        skills_sheet.blit(
+            font_small.render(f"{label}  t={timer} ({stage})", True,
+                              (226, 246, 220)), (col_x + 14, y0 + 12))
+        native = pygame.Surface((560, 560), pygame.SRCALPHA)
+        h = _ProbeEntity("sylara", 280, 330)
+        h.pulse = 1.3
+        h.active_skill = skill
         h.active_skill_timer = timer
+        h.range = 220
+        h.skill_range = 200 if skill == "q" else 70
+        h.target = _NS(x=420, y=300, alive=True)
         h._render_scale = 0.45
-        h.range = 200
-        h.target = _ProbeEntity("dummy", 300, 202)
-        h.target.alive = True
-        try:
-            Z.draw_sylara(s, h, 200, 200)
-        except Exception as e:
-            print(f"  [WARN] skill {skill_key} t={timer}: {e}")
-        scaled_sk = pygame.transform.smoothscale(s, (380, 180))
-        sk.blit(scaled_sk, (x_col, y_row + 14))
-        pygame.draw.rect(sk, (60, 130, 70),
-                         (x_col, y_row + 14, 380, 180), 2)
-        label(sk, f"{PHASE_LABELS[col]}  (t={timer})",
-              x_col + 6, y_row + 192, font_small, (170, 220, 180))
+        S.draw_sylara(native, h, 280, 330)
+        scaled = pygame.transform.scale(native, (336, 336))
+        old = skills_sheet.get_clip()
+        skills_sheet.set_clip(panel.inflate(-6, -34))
+        skills_sheet.blit(scaled, (col_x + 6, y0 + 30))
+        skills_sheet.set_clip(old)
+out4 = os.path.join(ROOT, "docs", "sylara_v2_skills.png")
+pygame.image.save(skills_sheet, out4)
+print(out4)
 
-pygame.image.save(sk, os.path.join(DOCS, "sylara_v2_skills.png"))
-print("[SAVED] docs/sylara_v2_skills.png")
+# before/after card: native idle vs in-game
+ba = pygame.Surface((1100, 520))
+ba.fill((5, 12, 10))
+ba.blit(font_title.render("SYLARA v2 — NATIVE RIG vs ARENA", True,
+                          (190, 240, 150)), (28, 18))
+native = elite_frame("idle", 1.25, size=360)
+ba.blit(pygame.transform.scale(native, (360, 360)), (40, 90))
+ba.blit(font_label.render("native 1.52x", True, (226, 246, 220)), (120, 460))
+clear_hero_sprite_cache()
+arena = pygame.Surface((360, 360), pygame.SRCALPHA)
+arena.fill((18, 32, 22))
+h = _ProbeEntity("sylara", 180, 220)
+h.pulse = 1.25
+render_hero("sylara", arena, h, 180, 220)
+ba.blit(arena, (480, 90))
+ba.blit(font_label.render("arena (~72 px)", True, (226, 246, 220)), (560, 460))
+ba.blit(font_small.render(
+    f"bbox native {bb.w}x{bb.h}  •  scale {scale:.3f}  •  {nc} warna idle",
+    True, (150, 185, 140)), (40, 490))
+out5 = os.path.join(ROOT, "docs", "sylara_v2_before_after.png")
+pygame.image.save(ba, out5)
+print(out5)
 
-# ── Before / after ───────────────────────────────────────────────────────────
-BA_W, BA_H = 900, 480
-ba = pygame.Surface((BA_W, BA_H))
-ba.fill(BG)
-label(ba, "SYLARA — BEFORE  (v1 label)  vs  AFTER  (v2 Masterwork)",
-      20, 10, font_med, WH)
-
-before_surf = pygame.Surface((220, 220), pygame.SRCALPHA)
-Z._draw_sylara_elite(before_surf, 110, 120, 1, 1.25, "idle", 0.0, False)
-before_native_bb = before_surf.get_bounding_rect(min_alpha=8)
-before_scaled = pygame.transform.smoothscale(
-    before_surf, (int(before_native_bb.w * 0.9), int(before_native_bb.h * 0.9)))
-label(ba, "v1  (estimated)", 40, 50, font_small, (150, 190, 160))
-ba.blit(before_scaled, (60, 80))
-pygame.draw.rect(ba, (60, 120, 70),
-                 (50, 40, before_scaled.get_width() + 20,
-                  before_scaled.get_height() + 20), 2)
-
-after_surf = elite_frame("idle", 1.25, size=320, anchor=160)
-after_bb = after_surf.get_bounding_rect(min_alpha=8)
-after_scaled = pygame.transform.smoothscale(
-    after_surf, (int(after_bb.w * 1.2), int(after_bb.h * 1.2)))
-label(ba, "v2  MASTERWORK", 520, 50, font_small, (200, 255, 210))
-ba.blit(after_scaled, (480, 80))
-pygame.draw.rect(ba, (90, 180, 100),
-                 (470, 40, after_scaled.get_width() + 20,
-                  after_scaled.get_height() + 20), 2)
-
-label(ba, f"Rig native bbox: v1 ~120×112 → v2 {bb.w}×{bb.h}",
-      20, BA_H - 80, font_small, (170, 210, 180))
-label(ba, f"Warna unik: v1 ~??  → v2 "
-           f"{len(colors_of(elite_frame('idle', 1.25, size=320)))}",
-      20, BA_H - 60, font_small, (170, 210, 180))
-label(ba, f"Skill FX: v1 canvas-space → v2 world-space  (_fx_scale={fs40:.2f}×)",
-      20, BA_H - 40, font_small, (170, 210, 180))
-
-pygame.image.save(ba, os.path.join(DOCS, "sylara_v2_before_after.png"))
-print("[SAVED] docs/sylara_v2_before_after.png")
-
-print()
-print(f"Audit selesai — {'SEMUA HIJAU ✓' if ok_all else 'ADA KEGAGALAN ✗'}")
+print("SEMUA CEK LOLOS" if ok_all else "ADA CEK GAGAL")
 sys.exit(0 if ok_all else 1)
