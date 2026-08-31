@@ -3337,15 +3337,119 @@ class _NS_sylara:
     # ---------------------------------------------------------------------------
     # PROJECTILE SYSTEM - Wind Arrow
     # ---------------------------------------------------------------------------
+    def _drk_mix(c1, c2, t):
+        """Lerp warna (gradasi shaft panah mewah)."""
+        return tuple(int(a + (b - a) * t) for a, b in zip(c1, c2))
+
+    def _drk_sparkle(surface, cx, cy, r, alpha, rot=0.0):
+        """Kilau bintang 4-sinar + palang diagonal (glint mewah)."""
+        p = _NS_sylara.PALETTE
+        al = _NS_sylara._drk_alpha(alpha)
+        if al <= 0:
+            return
+        for k in range(4):
+            a = rot + k * math.pi / 2
+            ex = cx + math.cos(a) * r
+            ey = cy + math.sin(a) * r
+            pygame.draw.line(surface, (*p["wind_bright"], int(al * .55)),
+                             (cx, cy), (ex, ey), 1)
+        d = r * 0.45
+        pygame.draw.line(surface, (*p["wind_light"], int(al * .8)),
+                         (cx - d, cy - d), (cx + d, cy + d), 1)
+        pygame.draw.line(surface, (*p["wind_light"], int(al * .8)),
+                         (cx - d, cy + d), (cx + d, cy - d), 1)
+        pygame.draw.circle(surface, (*p["white"], al),
+                           (int(cx), int(cy)), max(1, int(r * 0.30)))
+
+    def _drk_arrow_trail(surface, trail, angle, phase, alpha_scale=1.0,
+                         powered=False, bind=False):
+        """EKOR COMET MEWAH (bukan lingkaran / garis chevron):
+        pita berlapis yang menirus + wisp angin melengkung + kilau
+        bintang. bind=True menambah strand vine yang berpilin (E)."""
+        n = len(trail)
+        if n < 2:
+            return
+        p = _NS_sylara.PALETTE
+        ca, sa = math.cos(angle), math.sin(angle)
+        nx, ny = -sa, ca
+        wmax = 8.0 if powered else 5.5
+        amax = 245 if powered else 210
+
+        # 1) PITA comet: 2 lapis garis menirus (glow luar + ribbon)
+        for i in range(1, n):
+            t0 = i / float(n)                 # 1 = dekat panah
+            fade = t0 ** 1.25
+            w = max(0.8, wmax * (0.30 + 0.70 * fade))
+            al = _NS_sylara._drk_alpha(amax * fade * alpha_scale)
+            if al <= 0:
+                continue
+            a, b = trail[i - 1], trail[i]
+            _NS_sylara._drk_line(surface, a, b, w + 2.2,
+                                 int(al * .45), hot=False)
+            _NS_sylara._drk_line(surface, a, b, w, al,
+                                 hot=(i % 3 == 0), core=(i >= n - 3))
+
+        if bind:
+            # 2) Strand vine berpilin AROUND pita (Shackle) — 2 helai
+            for side in (-1.0, 1.0):
+                pts = []
+                for i in range(n):
+                    t0 = i / float(max(1, n - 1))
+                    x, y = trail[i]
+                    wob = math.sin(phase * 3.2 + i * 0.9 +
+                                   (math.pi if side > 0 else 0.0))
+                    off = wob * (2.0 + 3.2 * t0)
+                    pts.append((x + nx * off, y + ny * off))
+                for i in range(1, len(pts)):
+                    t0 = i / float(max(1, len(pts) - 1))
+                    al = _NS_sylara._drk_alpha(
+                        185 * (t0 ** 1.1) * alpha_scale)
+                    if al <= 0:
+                        continue
+                    _NS_sylara._drk_line(surface, pts[i - 1], pts[i],
+                                         1.7, al, hot=True)
+                    if i % 3 == 0:
+                        pygame.draw.circle(surface, (*p["wind_white"], al),
+                                           (int(pts[i][0]), int(pts[i][1])), 1)
+        else:
+            # 2) Wisp angin MELENGKUNG (bukan chevron lurus): busur
+            #    pendek yang menekuk ke belakang, selang-seling kiri/kanan
+            for i in range(1, n, 2):
+                t0 = i / float(n)
+                fade = t0 ** 1.1
+                x, y = trail[i]
+                wob = math.sin(phase * 2.4 + i * 0.6) * (2.6 + 3.6 * fade)
+                bs = (3.0 + 3.0 * fade) if powered else (2.0 + 2.6 * fade)
+                bx = x - ca * bs
+                by = y - sa * bs
+                mx = (bx + x) * 0.5 + nx * wob * 0.55
+                my = (by + y) * 0.5 + ny * wob * 0.55
+                tx = x + nx * (wob + 2.6)
+                ty = y + ny * (wob + 2.6)
+                al = _NS_sylara._drk_alpha(165 * fade * alpha_scale)
+                if al <= 0:
+                    continue
+                _NS_sylara._drk_line(surface, (bx, by), (mx, my),
+                                     1.4, int(al * .8))
+                _NS_sylara._drk_line(surface, (mx, my), (tx, ty),
+                                     1.7, al, hot=True)
+
+        # 3) Kilau bintang di beberapa titik pita (dekat panah)
+        for i in range(max(2, n - 6), n, 2):
+            t0 = i / float(n)
+            if t0 < 0.55:
+                continue
+            x, y = trail[i]
+            _NS_sylara._drk_sparkle(
+                surface, x, y, 2.4 + 2.4 * t0,
+                int(215 * t0 * alpha_scale), phase + i * 0.7)
+
     def _drk_arrow(surface, px, py, angle, length, phase,
                    charged=False, bind=False):
-        """Panah SUNGGUHAN (bukan garis slash): shaft fisik + kepala
-        broadhead + fletching sayap. Proporsi kepala besar supaya
-        terbaca jelas bahkan di ukuran in-game.
-
-        charged=True  -> Powershot: inti putih + spark orbit (energi)
-        bind=True     -> Shackle: lilitan vine menyala di shaft
-        """
+        """Panah FISIK mewah: shaft gradasi energi (gelap->terang) +
+        ridge putih, kepala barbed 3-lapis + glint, fletching berserat
+        + nock menyala. charged=Powershot (corona arc + spark orbit),
+        bind=Shackle (braid vine + node)."""
         p = _NS_sylara.PALETTE
         ca, sa = math.cos(angle), math.sin(angle)
         nx, ny = -sa, ca
@@ -3354,72 +3458,130 @@ class _NS_sylara:
             return (px + ca * f + nx * s, py + sa * f + ny * s)
 
         L = float(length)
-        head = L * 0.30
-        hw = L * 0.115
-        sw = max(1.2, L * 0.045)
-        fl = L * 0.30
-        fw = L * 0.10
         tip = L * 0.5
         tail = -L * 0.5
-        neck = tip - head
+        hl = L * 0.30          # kepala
+        hw = L * 0.135         # setengah lebar barb
+        sw = max(1.1, L * 0.040)   # setengah tebal shaft
+        fl = L * 0.30          # panjang fletching
+        fw = L * 0.115         # setengah lebar fletching
+        neck = tip - hl
+        shaft_a = tail + fl * 0.40
 
-        # ── SHAFT fisik 2 lapis (kayu) + highlight angin di tengah ──
-        _NS_sylara._poly(surface, p["arrow_shaft_d"], [
-            T(tail + fl * 0.45, -sw), T(neck + 1, -sw),
-            T(neck + 1, sw), T(tail + fl * 0.45, sw)])
-        _NS_sylara._poly(surface, p["arrow_shaft"], [
-            T(tail + fl * 0.45, -sw * 0.45), T(neck + 1, -sw * 0.45),
-            T(neck + 1, sw * 0.45), T(tail + fl * 0.45, sw * 0.45)])
-        _NS_sylara._aaline(surface, (*p["wind_light"], 175),
-                           T(tail + fl * 0.45, 0), T(neck, 0), 1)
+        # ── GLOW energi lembut di belakang seluruh badan ──
+        _NS_sylara._drk_line(surface, T(shaft_a, 0), T(neck, 0),
+                             13, 70, hot=False)
+        _NS_sylara._drk_line(surface, T(shaft_a, 0), T(neck, 0),
+                             8, 120, hot=False)
 
-        # ── KEPALA broadhead 4 titik + notch (dibaca jelas) ──
+        # ── SHAFT gradasi 6 segmen: gelap ekor -> terang ke kepala ──
+        segs = 6
+        for i in range(segs):
+            f0 = shaft_a + (neck - shaft_a) * i / segs
+            f1 = shaft_a + (neck - shaft_a) * (i + 1) / segs
+            t = i / float(max(1, segs - 1))
+            col = _NS_sylara._drk_mix(p["wind_dark"], p["wind_bright"],
+                                      t * 0.9)
+            pygame.draw.line(surface, (*col, 255), T(f0, 0), T(f1, 0),
+                             max(2, int(sw * 2)))
+        # outline tipis gelap + ridge putih
+        _NS_sylara._aaline(surface, (*p["wind_darkest"], 210),
+                           T(shaft_a, -sw - .6), T(neck, -sw - .6), 1)
+        _NS_sylara._aaline(surface, (*p["wind_darkest"], 210),
+                           T(shaft_a, sw + .6), T(neck, sw + .6), 1)
+        _NS_sylara._aaline(surface, (*p["wind_white"], 235),
+                           T(shaft_a, 0), T(neck, 0), 1)
+
+        # ── KEPALA barbed 3 lapis (siluet -> isi -> inti terang) ──
         _NS_sylara._poly(surface, p["arrow_head_d"], [
-            T(tip, 0), T(neck + 1.5, -hw),
-            T(neck + 0.5, 0), T(neck + 1.5, hw)])
+            T(tip, 0),
+            T(neck + 1.5, -hw), T(neck + hl * 0.34, -hw * 0.48),
+            T(neck + 0.6, 0),
+            T(neck + hl * 0.34, hw * 0.48), T(neck + 1.5, hw)])
         _NS_sylara._poly(surface, p["arrow_head"], [
-            T(tip, 0), T(neck + 2.0, -hw * 0.62),
-            T(neck + 1.2, 0), T(neck + 2.0, hw * 0.62)])
-        _NS_sylara._poly(surface, (*p["wind_white"], 235), [
-            T(tip - 0.5, 0), T(neck + 2.4, -hw * 0.30),
-            T(neck + 1.8, 0), T(neck + 2.4, hw * 0.30)])
+            T(tip - 0.5, 0),
+            T(neck + 2.0, -hw * 0.62), T(neck + hl * 0.36, -hw * 0.30),
+            T(neck + 1.2, 0),
+            T(neck + hl * 0.36, hw * 0.30), T(neck + 2.0, hw * 0.62)])
+        _NS_sylara._poly(surface, (*p["wind_light"], 220), [
+            T(tip - 1.0, 0),
+            T(neck + 2.6, -hw * 0.34), T(neck + 1.8, 0),
+            T(neck + 2.6, hw * 0.34)])
+        _NS_sylara._aaline(surface, p["white"],
+                           T(tip, 0), T(neck + 2.0, 0), 1)
         tp = T(tip, 0)
-        _NS_sylara._aacircle(surface, p["white"],
-                  (int(tp[0]), int(tp[1])), max(1, int(L * 0.035) + 1))
+        _NS_sylara._drk_sparkle(surface, tp[0], tp[1],
+                                max(2.2, L * 0.075), 240,
+                                phase * 1.5)
 
-        # ── FLETCHING: 2 pasang sayap bulu (kiri/kanan), 2 lapis ──
+        # ── FLETCHING berserat: 2 sayap, siluet -> isi -> garis tepi ──
         for s in (-1.0, 1.0):
             _NS_sylara._poly(surface, p["arrow_feather_d"], [
-                T(tail, 0), T(tail + 1, s * fw),
-                T(tail + fl * 0.55, s * fw * 0.82), T(tail + fl, 0)])
+                T(tail, 0), T(tail + 1.0, s * fw),
+                T(tail + fl * 0.30, s * fw * 1.05),
+                T(tail + fl * 0.50, s * fw * 0.55),
+                T(tail + fl * 0.76, s * fw * 0.92),
+                T(tail + fl, 0)])
             _NS_sylara._poly(surface, p["arrow_feather"], [
-                T(tail + 1.2, 0), T(tail + 1.8, s * fw * 0.66),
-                T(tail + fl * 0.52, s * fw * 0.52), T(tail + fl * 0.88, 0)])
-            _NS_sylara._aaline(surface, (*p["wind_white"], 180),
-                               T(tail + 1.2, 0),
-                               T(tail + fl * 0.7, s * fw * 0.35), 1)
+                T(tail + 1.2, 0), T(tail + 1.8, s * fw * 0.70),
+                T(tail + fl * 0.32, s * fw * 0.68),
+                T(tail + fl * 0.50, s * fw * 0.34),
+                T(tail + fl * 0.76, s * fw * 0.58),
+                T(tail + fl * 0.88, 0)])
+            _NS_sylara._aaline(surface, (*p["wind_white"], 200),
+                               T(tail + 1.4, 0),
+                               T(tail + fl * 0.68, s * fw * 0.62), 1)
+            # tepi bergerigi (2 notch)
+            for k in (0.34, 0.66):
+                nf = tail + fl * k
+                _NS_sylara._aaline(surface, (*p["wind_white"], 150),
+                                   T(nf, s * fw * 0.8),
+                                   T(nf + 1.0, s * fw * 0.52), 1)
+
+        # ── NOCK menyala (diamond + orb pulse) ──
+        _NS_sylara._poly(surface, (*p["wind_bright"], 235), [
+            T(tail - 2.2, 0), T(tail - 1.0, -sw * 0.8),
+            T(tail, 0), T(tail - 1.0, sw * 0.8)])
+        pygame.draw.circle(surface, (*p["wind_light"], 210),
+                           (int(T(tail - 1.5, 0)[0]), int(T(tail - 1.5, 0)[1])), 2)
+        pygame.draw.circle(surface, (*p["white"], 255),
+                           (int(T(tail - 1.5, 0)[0]), int(T(tail - 1.5, 0)[1])), 1)
 
         if bind:
-            # Lilitan vine spiral di shaft (Shackle) — tidak menutupi panah
-            for i in range(3):
-                t = (i + 0.5) / 3.0
-                f = tail + fl * 0.5 + (neck - tail - fl * 0.5) * t
-                a = phase * 6 + i * math.tau / 3
-                sx, sy = T(f, math.cos(a) * (sw + 1.4))
-                _NS_sylara._aacircle(surface, p["wind_bright"],
-                          (int(sx), int(sy)), 2)
-                _NS_sylara._aacircle(surface, p["wind_white"],
-                          (int(sx), int(sy)), 1)
+            # ── BRAID VINE 2 helai berpilin di sepanjang shaft ──
+            for side in (-1.0, 1.0):
+                pts = []
+                steps = 9
+                for i in range(steps):
+                    t = i / float(steps - 1)
+                    f = shaft_a + (neck - shaft_a) * t
+                    a = phase * 6 + t * 4.4 + (math.pi if side > 0 else 0)
+                    pts.append(T(f, math.cos(a) * (sw + 2.0)))
+                for i in range(1, len(pts)):
+                    al = _NS_sylara._drk_alpha(210)
+                    _NS_sylara._drk_line(surface, pts[i - 1], pts[i],
+                                         1.8, al, hot=True)
+                    if i % 2 == 0:
+                        pygame.draw.circle(surface, (*p["wind_white"], 235),
+                                           (int(pts[i][0]), int(pts[i][1])), 1)
 
         if charged:
-            # Energi Powershot: inti putih di shaft + spark orbit kecil
-            _NS_sylara._aaline(surface, p["white"],
-                               T(tail + fl * 0.5, 0), T(neck + 1, 0), 1)
-            for i in range(4):
-                a = phase * 2.5 + i * math.tau / 4
-                sx, sy = T(0, math.cos(a) * L * 0.24)
-                _NS_sylara._aacircle(surface, p["wind_bright"],
-                          (int(sx), int(sy)), 1)
+            # ── CORONA: 2 arc energi berputar DI DEPAN panah ──
+            _NS_sylara._drk_crescent(
+                surface, px, py, L * 0.44, phase * 2.1, 1.7,
+                215, squash=1.0, thick=5, arms=2)
+            # spark orbit mengelilingi shaft
+            for i in range(5):
+                a = phase * 2.5 + i * math.tau / 5
+                sx, sy = T(0, math.cos(a) * L * 0.30)
+                pygame.draw.circle(surface, (*p["wind_bright"], 235),
+                                   (int(sx), int(sy)), 2)
+                pygame.draw.circle(surface, (*p["white"], 255),
+                                   (int(sx), int(sy)), 1)
+            # kilau ekstra di ujung
+            _NS_sylara._drk_sparkle(surface, px + ca * L * 0.42,
+                                    py + sa * L * 0.42,
+                                    L * 0.10, 230, -phase * 1.8)
 
 
     class WindArrowProjectile:
@@ -3495,68 +3657,36 @@ class _NS_sylara:
             p = _NS_sylara.PALETTE
             powered = self.powered
 
-            # ── TRAIL LEMBUT: rintik angin memudar (bukan guratan
-            #    slash) supaya PANAH yang dominan, bukan ">>>>>>>".
-            #    pygame.draw.circle langsung = alpha exact (tanpa
-            #    temp surface / stacking), hemat cache-miss. ──
-            trail = self.trail
-            n_tr = len(trail)
-            for i in range(1, n_tr):
-                t0 = i / float(max(1, n_tr))     # 0 ekor terakhir, 1 dekat panah
-                al = _NS_sylara._drk_alpha(85 * t0 * (2.2 if powered else 1.0))
-                if al <= 0:
-                    continue
-                r = max(1, int((9 if powered else 6) * t0) + 1)
-                tx, ty = trail[i]
-                pygame.draw.circle(surface, (*p["wind_dark"], int(al * .55)),
-                                   (tx, ty), r + 2)
-                pygame.draw.circle(surface, (*p["wind_mid"], int(al * .78)),
-                                   (tx, ty), r)
-                pygame.draw.circle(surface, (*p["wind_light"], al),
-                                   (tx, ty), max(1, r - 2))
-                if i % 3 == 0:
-                    pygame.draw.circle(surface, (*p["wind_bright"], al),
-                                       (tx, ty), 1)
+            # ── EKOR COMET (pita menirus + wisp melengkung + kilau) ──
+            _NS_sylara._drk_arrow_trail(surface, self.trail, self.angle,
+                                        phase, powered=powered)
 
             if self.alive:
                 px, py = int(self.x), int(self.y)
                 ca, sa = math.cos(self.angle), math.sin(self.angle)
 
                 if powered:
-                    # ═══ POWERSHOT: panah besar + orb/rune di belakang ═══
-                    # Orb & rune digambar di BELAKANG panah (radius
-                    # kecil, offset ke ekor) supaya tidak menutupi bentuk.
-                    bx = px - ca * 14
-                    by = py - sa * 14
-                    _NS_sylara._drk_orb(surface, int(bx), int(by), 8,
-                                        190 + int(25 * math.sin(phase * 5)))
+                    # ═══ POWERSHOT: panah raksasa + orb/rune di belakang,
+                    #    corona arc di depan (gaya Culling Blade) ═══
+                    bx = px - ca * 18
+                    by = py - sa * 18
+                    _NS_sylara._drk_orb(surface, int(bx), int(by), 10,
+                                        200 + int(25 * math.sin(phase * 5)))
                     _NS_sylara._drk_rune_ring(
-                        surface, int(bx), int(by), 11, 11, phase * 2.2,
-                        int(120 + 35 * math.sin(phase * 4)), spokes=6)
-
-                    # Panah energik: shaft tebal + inti putih + orbit spark
+                        surface, int(bx), int(by), 15, 15, phase * 2.4,
+                        int(130 + 35 * math.sin(phase * 4)), spokes=8)
                     _NS_sylara._drk_arrow(surface, px, py, self.angle,
-                                          42, phase, charged=True)
-                    # Streak pendek di ekor (dorongan) — tidak menutupi panah
-                    for i in range(3):
-                        off = (i - 1) * 4
-                        sx1 = px - ca * 20 + ca * off * 0
-                        sy1 = py - sa * 20
-                        sx2 = sx1 - ca * (6 + i * 3)
-                        sy2 = sy1 - sa * (6 + i * 3)
-                        _NS_sylara._drk_line(surface, (sx1, sy1), (sx2, sy2),
-                                             2, 150, core=(i == 1))
+                                          54, phase, charged=True)
                 else:
-                    # ═══ PANAH BASIC: panah fisik jelas + lilitan angin ═══
+                    # ═══ PANAH BASIC: panah fisik megah + 2 kilau orbit ═══
                     _NS_sylara._drk_arrow(surface, px, py, self.angle,
-                                          36, phase)
-                    # Dua swirl tipis di sekitar shaft (angin tipis saja)
+                                          46, phase)
                     for i in range(2):
                         a = phase * 4 + i * math.pi
-                        sx = px + math.cos(self.angle + a) * 7
-                        sy = py + math.sin(self.angle + a) * 7
-                        _NS_sylara._aacircle(surface, (*p["wind_light"], 150),
-                                  (int(sx), int(sy)), 1)
+                        sx = px + ca * math.cos(a) * 9
+                        sy = py + sa * math.cos(a) * 9
+                        _NS_sylara._drk_sparkle(surface, sx, sy, 2.2,
+                                                190, phase * 2 + i)
 
 
     class ShackleProjectile:
@@ -3625,47 +3755,27 @@ class _NS_sylara:
             if not self.alive and self.age < 2:
                 return
             p = _NS_sylara.PALETTE
-            # ── TRAIL LEMBUT: rintik angin memudar + vine sparks kecil,
-            #    panah tetap yang dominan. pygame.draw.circle langsung
-            #    = alpha exact (tanpa temp surface / stacking). ──
-            n_tr = len(self.trail)
-            for i in range(1, n_tr):
-                t0 = i / float(max(1, n_tr))
-                al = _NS_sylara._drk_alpha(95 * t0)
-                if al <= 0:
-                    continue
-                r = max(1, int(7 * t0) + 1)
-                tx, ty = self.trail[i]
-                pygame.draw.circle(surface, (*p["wind_dark"], int(al * .55)),
-                                   (tx, ty), r + 2)
-                pygame.draw.circle(surface, (*p["wind_mid"], int(al * .78)),
-                                   (tx, ty), r)
-                pygame.draw.circle(surface, (*p["wind_light"], al),
-                                   (tx, ty), max(1, r - 2))
-                # Vine sparks spiral (binding energy) — 1 titik per trail
-                spiral_off = math.sin(phase * 3 + i * 0.5) * 3
-                perp = self.angle + math.pi / 2
-                sx = tx + math.cos(perp) * spiral_off
-                sy = ty + math.sin(perp) * spiral_off
-                pygame.draw.circle(surface, (*p["wind_bright"], al),
-                                   (int(sx), int(sy)), 1)
+
+            # ── EKOR COMET + strand vine berpilin (binding) ──
+            _NS_sylara._drk_arrow_trail(surface, self.trail, self.angle,
+                                        phase, bind=True)
 
             if self.alive:
                 px, py = int(self.x), int(self.y)
                 ca, sa = math.cos(self.angle), math.sin(self.angle)
 
-                # Orb binding di BELAKANG panah (offset ke ekor, kecil)
-                bx = px - ca * 12
-                by = py - sa * 12
-                _NS_sylara._drk_orb(surface, int(bx), int(by), 6,
-                                    180 + int(25 * math.sin(phase * 6)))
+                # Orb binding di BELAKANG panah + rune ring
+                bx = px - ca * 15
+                by = py - sa * 15
+                _NS_sylara._drk_orb(surface, int(bx), int(by), 7,
+                                    185 + int(25 * math.sin(phase * 6)))
                 _NS_sylara._drk_rune_ring(
-                    surface, int(bx), int(by), 9, 9, phase * 2.6,
-                    int(110 + 35 * math.sin(phase * 5)), spokes=5)
+                    surface, int(bx), int(by), 11, 11, phase * 2.6,
+                    int(115 + 35 * math.sin(phase * 5)), spokes=5)
 
-                # Panah fisik + lilitan vine menyala di shaft
+                # Panah fisik besar + braid vine menyala di shaft
                 _NS_sylara._drk_arrow(surface, px, py, self.angle,
-                                      38, phase, bind=True)
+                                      50, phase, bind=True)
 
 
     # ---------------------------------------------------------------------------
