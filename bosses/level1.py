@@ -4871,9 +4871,16 @@ class _NS_drakar:
                 "front_hand":front_hand,"back_hand":back_hand}
 
     def _draw_axe(surface, cx, cy, facing, angle, action, attack_progress, pommel_pos=None):
+        """Draw two-handed axe (1.5x scale, detailed).
+        
+        BUG FIX: Blade crescent sekarang ROTASI sesuai axe_angle,
+        bukan selalu horizontal. Handle dan blade sekarang konsisten.
+        """
         if pommel_pos is None:
             pommel_pos = (cx-int(math.cos(angle)*30)*facing, cy-int(math.sin(angle)*30))
         px, py = pommel_pos
+        
+        # Handle (wood, 3-band) - TETAP dari pommel ke head (ini benar)
         pygame.draw.line(surface, _NS_drakar.PALETTE["leather_darkest"], (px,py), (cx,cy), 9)
         pygame.draw.line(surface, _NS_drakar.PALETTE["leather_dark"], (px,py), (cx,cy), 7)
         pygame.draw.line(surface, _NS_drakar.PALETTE["leather_mid"], (px,py), (cx,cy), 5)
@@ -4882,28 +4889,94 @@ class _NS_drakar:
         for i in range(3):
             gx=px+int((cx-px)*(0.3+i*0.15)); gy=py+int((cy-py)*(0.3+i*0.15))
             pygame.draw.rect(surface, _NS_drakar.PALETTE["leather_darkest"], (gx-2,gy-1,5,3))
+        
+        # Pommel (gold)
         pygame.draw.rect(surface, _NS_drakar.PALETTE["gold_dark"], (px-3,py-3,7,7))
         pygame.draw.rect(surface, _NS_drakar.PALETTE["gold_mid"], (px-2,py-2,5,5))
         pygame.draw.rect(surface, _NS_drakar.PALETTE["gold_light"], (px-1,py-1,2,2))
+        
+        # Collar (di axe_head)
         pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_dark"], (cx-4,cy-4,9,9))
         pygame.draw.rect(surface, _NS_drakar.PALETTE["armor_mid"], (cx-3,cy-3,7,7))
+        
+        # BLADE - SEKARANG ROTASI sesuai angle!
+        # Hitung ujung blade berdasarkan angle
         blade_size = 28
-        for off, color in [(3,"shadow_deep"),(2,"blade_darkest"),(0,"blade_dark"),
-                           (-1,"blade_mid"),(-2,"blade_light"),(-3,"blade_shine")]:
-            bx=cx+facing*(8+off); by=cy+off
-            _NS_drakar._poly(surface, _NS_drakar.PALETTE[color],
-                [(bx,by-2),(bx+facing*blade_size,by-blade_size//2+off),
-                 (bx+facing*(blade_size-4),by+off),(bx,by+2)])
-            _NS_drakar._poly(surface, _NS_drakar.PALETTE[color],
-                [(bx,by+2),(bx+facing*blade_size,by+blade_size//2+off),
-                 (bx+facing*(blade_size-4),by+off),(bx,by-2)])
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["blade_shine"], (cx+facing*18,cy-4,3,1))
-        pygame.draw.rect(surface, _NS_drakar.PALETTE["white"], (cx+facing*18,cy-4,1,1))
+        # Arah blade: tegak lurus terhadap handle, dengan offset
+        # Blade crescent menghadap ke arah swing
+        blade_angle = angle + math.pi/2 * facing  # Tegak lurus handle
+        
+        # Titik-titik blade crescent (6 titik untuk bentuk crescent)
+        blade_pts = []
+        for i in range(7):  # 0 sampai 6
+            t = i / 6.0  # 0.0 sampai 1.0
+            # Crescendo di tengah, taper di ujung
+            width = blade_size * (1.0 - abs(t - 0.5) * 1.5)
+            width = max(5, width)  # Minimal 5px
+            
+            # Posisi sepanjang blade
+            dist = blade_size * t
+            bx = cx + int(math.cos(blade_angle) * dist)
+            by = cy + int(math.sin(blade_angle) * dist)
+            
+            # Lebar blade (tegak lurus arah blade)
+            perp_angle = blade_angle + math.pi/2
+            left_x = bx + int(math.cos(perp_angle) * width * 0.5)
+            left_y = by + int(math.sin(perp_angle) * width * 0.5)
+            right_x = bx - int(math.cos(perp_angle) * width * 0.5)
+            right_y = by - int(math.sin(perp_angle) * width * 0.5)
+            
+            blade_pts.append((left_x, left_y, right_x, right_y))
+        
+        # Gambar blade dengan 6 lapis (dari gelap ke terang)
+        for layer_idx, (off, color_key) in enumerate([
+            (3, "shadow_deep"), (2, "blade_darkest"), (0, "blade_dark"),
+            (-1, "blade_mid"), (-2, "blade_light"), (-3, "blade_shine")]):
+            
+            color = _NS_drakar.PALETTE[color_key]
+            
+            # Bangun polygon blade untuk layer ini
+            poly_points = []
+            # Sisi kiri (dari collar ke tip)
+            for i in range(len(blade_pts)):
+                left_x, left_y, right_x, right_y = blade_pts[i]
+                # Offset untuk layer (efek 3D)
+                ox = int(math.cos(blade_angle + math.pi/2) * off)
+                oy = int(math.sin(blade_angle + math.pi/2) * off)
+                poly_points.append((left_x + ox, left_y + oy))
+            
+            # Sisi kanan (dari tip ke collar, reverse)
+            for i in range(len(blade_pts) - 1, -1, -1):
+                left_x, left_y, right_x, right_y = blade_pts[i]
+                ox = int(math.cos(blade_angle + math.pi/2) * off)
+                oy = int(math.sin(blade_angle + math.pi/2) * off)
+                poly_points.append((right_x + ox, right_y + oy))
+            
+            if len(poly_points) >= 3:
+                _NS_drakar._poly(surface, color, poly_points)
+        
+        # Specular highlight di blade (1-2px, bukan gradien)
+        # Posisi di 1/3 dari collar
+        if len(blade_pts) > 2:
+            highlight_idx = len(blade_pts) // 3
+            left_x, left_y, right_x, right_y = blade_pts[highlight_idx]
+            pygame.draw.rect(surface, _NS_drakar.PALETTE["blade_shine"], 
+                           (int((left_x+right_x)/2), int((left_y+right_y)/2), 3, 1))
+            pygame.draw.rect(surface, _NS_drakar.PALETTE["white"], 
+                           (int((left_x+right_x)/2), int((left_y+right_y)/2), 1, 1))
+        
+        # Darah di blade saat attack (tetap)
         if action == "attack" and attack_progress > 0.4:
             for i in range(4):
-                bx=cx+facing*(12+i*4); by=cy-8+int(_NS_drakar._hash01(i*7)*16)
-                pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_dark"], (bx,by,2,2))
-                pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_mid"], (bx,by,1,1))
+                # Posisi darah sepanjang blade
+                t = 0.3 + i * 0.15
+                if t < 1.0 and int(t * len(blade_pts)) < len(blade_pts):
+                    idx = int(t * len(blade_pts))
+                    left_x, left_y, right_x, right_y = blade_pts[idx]
+                    bx = int((left_x + right_x) / 2)
+                    by = int((left_y + right_y) / 2) + int(_NS_drakar._hash01(i*7)*8-4)
+                    pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_dark"], (bx,by,2,2))
+                    pygame.draw.rect(surface, _NS_drakar.PALETTE["blood_mid"], (bx,by,1,1))
 
     def _draw_drk_head(surface, cx, cy, facing, phase, action):
         pygame.draw.rect(surface, _NS_drakar.PALETTE["skin_darkest"], (cx-8,cy+12,16,10))
