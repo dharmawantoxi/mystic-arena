@@ -3506,7 +3506,47 @@ class _NS_khalros:
 # GORATH
 # ====================================================================
 class _NS_gorath:
-    """Namespace gorath - isi asli tidak diubah."""
+    """Namespace gorath - PIXEL MASTERWORK v2 + SKILL FX v2.1.
+
+    Rewrite penuh renderer `_NS_gorath` mengikuti standar
+    **Thorne v2 Pixel Masterwork + Thorne v2.1 Skill FX**
+    (lihat docs/THORNE_V2_RENDERER.md). Tetap 100% prosedural:
+    tidak ada PNG / sprite-sheet / image.load.
+
+    Apa yang naik dibanding v1
+    --------------------------
+    1. RIG ~1.5x LEBIH BESAR di resolusi native (puncak rambut y=-76,
+       hem loincloth y=+58). Pipeline hero (heroes/__init__.py) mengukur
+       badan lalu men-scale agar tinggi di lane tetap ~51 px, jadi
+       memperbesar rig TIDAK memperbesar hero di arena - melainkan
+       memberi ~1.5x piksel native per piksel layar sehingga ramp,
+       cluster, dan wajah tetap tajam setelah smoothscale.
+    2. DISIPLIN PIXEL-ART: tiap material 4-5 nilai ramp dengan
+       hue-shift (bayangan daging didorong dingin ungu-merah, highlight
+       hangat koral), selout (outline gelap hanya di sisi bayangan),
+       siluet bergerigi lewat `_tuft_points` (hem loincloth, lidah
+       kabut darah), specular sebagai cluster 1-2 px, dither band
+       (`_dither_dots`) di perut & sisi bayangan loincloth. Key light
+       kiri-atas, konsisten dengan lighting.py (LIGHT_DIR = (-1, -1)).
+    3. ANATOMI: tengkorak demon underbite (brow berat, socket mata
+       cekung + iris menyala + kedip), war-paint darah melintang mata,
+       tanduk pendek, rambut liar 3 lapis ber-ujung darah, torso
+       berotot ber-rune darah, kalung trofi tulang, harness X kulit,
+       pauldron tulang ber-duri, sabuk + gesper emas ber-sigil, 6 helai
+       loincloth robek, dan sepasang **kukri melengkung** ber-fuller
+       (5 band + darah + glint).
+    4. ANIMASI: float solver (dua plume kabut darah bergantian menapak,
+       riak darah saat kontak), inersia rambut/loincloth/bilah
+       (secondary motion), idle hidup (napas, kedip, tetes darah,
+       denyut rune), serangan 7 keyframe dengan frame IMPACT
+       tersendiri (squash, bintang, shockwave, smear sabit 3 lapis).
+    5. SKILL FX world-space (`_fx_scale`, cap 2.6) dengan 3 fase:
+       AKTIVASI (pilar + shockwave + bintang), STEADY (aura berlapis +
+       partikel + ring berputar), TELEGRAPH (ring jangkauan TEPAT dalam
+       px dunia + ring konvergen + chevron + retakan tanah).
+       Badan ikut bereaksi ke state skill (rune & mata menyala,
+       bilah berlumur darah panas).
+    """
 
     # ---------------------------------------------------------------------------
     # Compatibility helpers
@@ -3514,67 +3554,120 @@ class _NS_gorath:
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
 
-    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    # ── cache (nama lama dipertahankan) ─────────────────────────────
     _shadow_cache = None
     _aura_cache = None
     _flash_buf = None
     _body_buf = None        # buffer badan untuk outline+lighting
     _record_shadow = None
 
+    # Surface statis (aura/mist/pool/platform) dibangun SEKALI lalu
+    # dipakai ulang - tidak ada alokasi surface per frame.
+    _STATIC_SURFACES = {}
+
+    # ── metrik rig v2 ───────────────────────────────────────────────
+    # Faktor pertumbuhan terhadap rig v1 (dokumentasi + dipakai audit).
+    RIG_SCALE = 1.5
+    # Buffer badan: dibatasi dari extents TERUKUR semua pose (idle/walk/
+    # attack x 7 keyframe, dua arah hadap, rage on/off, portrait LOD):
+    # anchor -> kiri -61, atas -89, kanan +61, bawah +52, + margin.
+    # Buffer sekecil mungkin karena outline siluet meng-copy-nya 5x per
+    # frame dan get_bounding_rect memindai seluruh isinya.
+    RIG_W, RIG_H = 140, 156
+    RIG_OX, RIG_OY = 70, 98
+
+    # Satu SCALE untuk SEMUA jalur (boss langsung, lane hero, portrait).
+    # Rig di-author 1.5x lebih besar lalu ditampilkan lewat SCALE ini,
+    # sehingga: (a) kerapatan detail naik 1.5x di resolusi native,
+    # (b) ukuran DI LAYAR tetap sekelas keluarga level-2 (alchemist true
+    # boss harus tetap >= gorath mini - lihat tools/test_level2_masterwork).
+    # PERINGATAN: jangan pisahkan SCALE per jalur; itu merusak
+    # normalisasi _measure_native_size di heroes/__init__.py.
+    SCALE = 0.62
+    # Jarak jangkar -> garis tanah dalam PX LOKAL rig (= batas bawah
+    # siluet terukur: plume kabut saat kontak penuh).
+    FEET_DY = 52
+    # Garis tanah dunia relatif jangkar (bayangan/pool/retakan).
+    GROUND_DY = int(round(FEET_DY * SCALE))
+
+    # Durasi visual skill (frame) - HARUS sama dengan active_skill_timer
+    # yang diisi AI di bosses/base_boss.py (_gorath_q/w/e/r).
+    SKILL_DUR = {"q": 90, "w": 60, "e": 35, "r": 90}
+
+    # Radius gameplay tiap skill dalam PX DUNIA (bosses/base_boss.py):
+    #   w -> AOE 150 di sekitar diri, e -> AOE 85 setelah lompat,
+    #   r -> AOE 190 di sekitar diri. Telegraph digambar TEPAT di angka
+    #   ini lewat _ring_r (world-space), bukan px canvas mentah.
+    SKILL_RADIUS = {"w": 150, "e": 85, "r": 190}
+
     # ---------------------------------------------------------------------------
-    # HD Blood Palette - Deep crimson / dark red / bone
+    # HD Blood Palette v2 - deep crimson / demon flesh / bone / steel
+    # Semua kunci lama dipertahankan (nilai dituning ulang dengan
+    # hue-shift) + kunci baru untuk rune, emas, dan rim.
     # ---------------------------------------------------------------------------
     PALETTE = {
-        # Skin - reddish demon flesh
-        "skin_darkest":   (35,  10,  10),
-        "skin_dark":      (78,  22,  20),
-        "skin_mid":       (125, 45,  35),
-        "skin_light":     (175, 78,  55),
-        "skin_high":      (215, 130, 90),
-        "skin_shine":     (245, 185, 140),
+        # Skin - reddish demon flesh (bayangan dingin ungu, highlight koral)
+        "skin_darkest":   (32,  10,  16),
+        "skin_dark":      (76,  22,  28),
+        "skin_mid":       (126, 46,  40),
+        "skin_light":     (176, 80,  58),
+        "skin_high":      (216, 132, 92),
+        "skin_shine":     (246, 188, 144),
+        "skin_rim":       (255, 214, 178),
 
         # Blood
-        "blood_darkest":  (25,   3,   5),
-        "blood_dark":     (72,   6,  10),
-        "blood_mid":      (135, 15,  20),
-        "blood_bright":   (195, 25,  30),
-        "blood_hot":      (235, 55,  50),
-        "blood_glow":     (255, 100, 85),
-        "blood_light":    (255, 165, 140),
+        "blood_darkest":  (24,   3,   6),
+        "blood_dark":     (72,   6,  12),
+        "blood_mid":      (136, 15,  22),
+        "blood_bright":   (196, 26,  32),
+        "blood_hot":      (236, 56,  50),
+        "blood_glow":     (255, 102, 86),
+        "blood_light":    (255, 166, 142),
+        "blood_seam":     (255, 214, 190),
 
-        # Hair - dark spiky
-        "hair_darkest":   (10,   8,  12),
-        "hair_dark":      (28,  22,  30),
-        "hair_mid":       (55,  45,  58),
-        "hair_high":      (95,  82, 100),
+        # Hair - dark spiky (bayangan biru-ungu)
+        "hair_darkest":   (10,   8,  14),
+        "hair_dark":      (28,  22,  34),
+        "hair_mid":       (56,  46,  62),
+        "hair_high":      (98,  84, 106),
 
         # Leather / cloth
-        "leather_darkest": (18, 12,  8),
-        "leather_dark":   (45,  28,  18),
-        "leather_mid":    (85,  55,  30),
-        "leather_light":  (135, 90,  50),
-        "leather_high":   (185, 135, 80),
+        "leather_darkest": (18, 12,  9),
+        "leather_dark":   (46,  28,  19),
+        "leather_mid":    (86,  56,  31),
+        "leather_light":  (136, 92,  52),
+        "leather_high":   (186, 138, 84),
 
         # Bone / claws
-        "bone_darkest":   (55,  45,  35),
-        "bone_dark":      (115, 100, 78),
-        "bone_mid":       (175, 160, 130),
-        "bone_light":     (220, 210, 180),
-        "bone_shine":     (245, 240, 220),
+        "bone_darkest":   (54,  44,  36),
+        "bone_dark":      (114, 100, 80),
+        "bone_mid":       (176, 161, 132),
+        "bone_light":     (221, 211, 182),
+        "bone_shine":     (246, 241, 222),
 
         # Metal (blades)
-        "metal_darkest":  (18,  15,  18),
-        "metal_dark":     (48,  42,  48),
-        "metal_mid":      (95,  88,  95),
-        "metal_light":    (155, 148, 155),
-        "metal_shine":    (215, 210, 215),
+        "metal_darkest":  (17,  15,  20),
+        "metal_dark":     (48,  43,  52),
+        "metal_mid":      (96,  89,  99),
+        "metal_light":    (156, 149, 160),
+        "metal_shine":    (218, 213, 222),
 
         # Eyes - glowing red
-        "eye_dark":       (80,   5,   8),
-        "eye_mid":        (180, 20,  25),
-        "eye_bright":     (240, 55,  50),
-        "eye_hot":        (255, 130, 100),
-        "eye_white":      (255, 220, 200),
+        "eye_dark":       (78,   5,  10),
+        "eye_mid":        (180, 20,  26),
+        "eye_bright":     (240, 56,  50),
+        "eye_hot":        (255, 132, 102),
+        "eye_white":      (255, 222, 202),
+
+        # Gold - gesper, sigil, ornamen
+        "gold_dark":      (92,  62,  20),
+        "gold_mid":       (176, 130, 44),
+        "gold_light":     (238, 198, 96),
+
+        # Rune darah di dada (menyala saat skill aktif)
+        "rune_dark":      (66,   6,  14),
+        "rune_mid":       (188, 26,  38),
+        "rune_light":     (255, 118, 96),
 
         # Misc
         "shadow":         (0,   0,   0),
@@ -3582,11 +3675,55 @@ class _NS_gorath:
         "white":          (255, 255, 255),
     }
 
+    # ---------------------------------------------------------------------------
+    # Primitif dasar
+    # ---------------------------------------------------------------------------
+    def _static(key, builder):
+        """Surface statis ter-cache (dibangun sekali, dipakai ulang)."""
+        surf = _NS_gorath._STATIC_SURFACES.get(key)
+        if surf is None:
+            surf = builder()
+            _NS_gorath._STATIC_SURFACES[key] = surf
+        return surf
+
+    _CLAMP_MEMO = {}
 
     def _clamp(color):
-        """Clamp color channels, supports both RGB and RGBA."""
-        return tuple(max(0, min(255, int(c))) for c in color)
+        """Clamp color channels, supports both RGB and RGBA.
 
+        Jalur cepat: warna palette sudah berupa tuple int 0..255, jadi
+        dikembalikan apa adanya. Sisanya (hasil hitung alpha float)
+        di-memo - primitif ini dipanggil puluhan ribu kali per detik dan
+        versi genexpr-nya adalah hot spot profil nomor satu.
+        """
+        try:
+            hit = _NS_gorath._CLAMP_MEMO.get(color)
+        except TypeError:
+            return tuple(max(0, min(255, int(c))) for c in color)
+        if hit is not None:
+            return hit
+        out = tuple(max(0, min(255, int(c))) for c in color)
+        memo = _NS_gorath._CLAMP_MEMO
+        if len(memo) > 8192:
+            memo.clear()
+        memo[color] = out
+        return out
+
+    def _alpha(v):
+        return max(0, min(255, int(v)))
+
+    def _mix(a, b, t):
+        """Blend linear dua warna palette (t=0 -> a, t=1 -> b)."""
+        t = max(0.0, min(1.0, t))
+        return _NS_gorath._clamp(
+            (a[0] + (b[0] - a[0]) * t,
+             a[1] + (b[1] - a[1]) * t,
+             a[2] + (b[2] - a[2]) * t))
+
+    def _hash01(i):
+        """Pseudo-random deterministik 0..1 (stabil antar frame & cache)."""
+        x = math.sin(i * 127.1 + 311.7) * 43758.5453
+        return x - math.floor(x)
 
     def _aacircle(surface, color, center, radius, width=0):
         color = _NS_gorath._clamp(color)
@@ -3595,7 +3732,8 @@ class _NS_gorath:
         if radius == 0:
             return
         if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
+            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4),
+                                  pygame.SRCALPHA)
             pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
             surface.blit(temp, (cx - radius - 2, cy - radius - 2))
             return
@@ -3606,7 +3744,6 @@ class _NS_gorath:
             except Exception:
                 pass
         pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
-
 
     def _aaline(surface, color, start, end, width=1):
         color = _NS_gorath._clamp(color)
@@ -3627,7 +3764,6 @@ class _NS_gorath:
             return
         pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
 
-
     def _poly(surface, color, points):
         if len(points) < 3:
             return
@@ -3647,19 +3783,17 @@ class _NS_gorath:
             return
         pygame.draw.polygon(surface, color[:3], points)
 
-
     def _ellipse(surface, color, rect, width=0):
         color = _NS_gorath._clamp(color)
         if len(color) == 4 and color[3] < 255:
             rx, ry, rw, rh = rect
             if rw <= 0 or rh <= 0:
                 return
-            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.ellipse(temp, color, (2, 2, rw, rh), width)
+            temp = pygame.Surface((int(rw) + 4, int(rh) + 4), pygame.SRCALPHA)
+            pygame.draw.ellipse(temp, color, (2, 2, int(rw), int(rh)), width)
             surface.blit(temp, (rx - 2, ry - 2))
             return
         pygame.draw.ellipse(surface, color[:3], rect, width)
-
 
     def _rect(surface, color, rect, border_radius=0):
         color = _NS_gorath._clamp(color)
@@ -3667,35 +3801,203 @@ class _NS_gorath:
             rx, ry, rw, rh = rect
             if rw <= 0 or rh <= 0:
                 return
-            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.rect(temp, color, (2, 2, rw, rh), border_radius=border_radius)
+            temp = pygame.Surface((int(rw) + 4, int(rh) + 4), pygame.SRCALPHA)
+            pygame.draw.rect(temp, color, (2, 2, int(rw), int(rh)),
+                             border_radius=border_radius)
             surface.blit(temp, (rx - 2, ry - 2))
             return
         pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
 
+    def _ring(surface, center, radius, width, color, alpha):
+        """Cincin skill: stroke gelap di belakang + cincin terang di atas.
+
+        Tanpa stroke gelap, cincin tipis semi-transparan tenggelam di
+        terrain terang (standar keluarga masterwork).
+        """
+        alpha = _NS_gorath._alpha(alpha)
+        if alpha <= 0:
+            return
+        cx, cy = int(center[0]), int(center[1])
+        r = int(radius)
+        if r <= 0:
+            return
+        _NS_gorath._aacircle(surface, (6, 3, 6, alpha), (cx, cy), r + 1,
+                             max(1, width + 2))
+        _NS_gorath._aacircle(surface, (*color, alpha), (cx, cy), r,
+                             max(1, width))
+
+    # ---------------------------------------------------------------------------
+    # Konversi ruang dunia <-> canvas renderer
+    # ---------------------------------------------------------------------------
+    def _world_to_local(boss, x, y, wx, wy):
+        """Titik DUNIA -> ruang gambar renderer.
+
+        Saat dirender sebagai HERO (heroes/__init__.py) renderer
+        dipanggil di pusat canvas lalu canvas di-scale _render_scale,
+        jadi 1 px canvas = _render_scale px dunia. Boss asli tidak punya
+        _render_scale -> dikembalikan apa adanya.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        rng = int(getattr(boss, "range", 130) or 130)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
 
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
             # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
+            # DENGAN kompensasi scale supaya beam/proyektil mendarat
+            # TEPAT di target setelah blit.
             scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
             tx = x + (target.x - getattr(boss, "x", x)) / scale
             ty = y + (target.y - getattr(boss, "y", y)) / scale
             return int(tx), int(ty)
-        return int(x + 150 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+        return (int(x + 150 / float(getattr(boss, "_render_scale", 1.0) or 1.0)
+                    * getattr(boss, "direction", 1)), int(y))
 
+    # ===================================================================
+    # SKILL FX PRIMITIVES (standar Thorne v2.1)
+    # ===================================================================
+    def _fx_scale(boss):
+        """Faktor skala efek skill (world-space).
+
+        Hero dirender ke canvas lalu dikecilkan ``_render_scale`` saat
+        di-blit -> efek (cincin, retakan, duri) ikut menyusut. Dengan
+        faktor 1/_render_scale (cap 2.6 supaya tetap muat di canvas
+        cache) ukuran efek DI LAYAR setara boss asli. Boss asli (tanpa
+        _render_scale) = 1.0.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+    def _ring_r(boss, world_px, surface):
+        """Radius dunia (px) -> px canvas, di-clamp ke dalam canvas.
+
+        Dipakai untuk telegraph yang HARUS sama dengan radius gameplay
+        (W 150 / E 85 / R 190 px dunia). Clamp menjaga efek tidak
+        terpotong di tepi cache canvas hero.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        r = float(world_px) / float(scale) if scale else float(world_px)
+        margin = min(surface.get_width(), surface.get_height()) // 2 - 10
+        return int(max(4, min(r, margin)))
+
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+                    core=None):
+        """Bintang kilat: spike panjang-pendek selang-seling + inti."""
+        alpha = _NS_gorath._alpha(alpha)
+        if alpha <= 0 or size <= 0:
+            return
+        for k in range(spikes):
+            ang = rot + k * math.pi * 2 / spikes
+            ln = size * (1.0 if k % 2 == 0 else 0.55)
+            _NS_gorath._aaline(surface, (*color, alpha),
+                               (int(cx), int(cy)),
+                               (int(cx + math.cos(ang) * ln),
+                                int(cy + math.sin(ang) * ln * .8)),
+                               2 if k % 2 == 0 else 1)
+        if core:
+            _NS_gorath._aacircle(surface, (*core, alpha), (int(cx), int(cy)),
+                                 max(1, int(size * .3)))
+
+    def _chevron(surface, cx, cy, ang, size, color, alpha, width=3):
+        """Satu panah '>' menghadap arah ``ang`` (telegraph bergerak)."""
+        alpha = _NS_gorath._alpha(alpha)
+        if alpha <= 0 or size <= 0:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        px, py = -sa, ca
+        tipx, tipy = cx + ca * size, cy + sa * size
+        for s in (-1, 1):
+            _NS_gorath._aaline(
+                surface, (*color, alpha),
+                (int(cx + px * s * size * .55 - ca * size * .5),
+                 int(cy + py * s * size * .55 - sa * size * .5)),
+                (int(tipx), int(tipy)), width)
+
+    def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
+                     segments=10, thick=3, span=0.6, squash=.92):
+        """Cincin putus-putus yang berputar (marker AOE / rune ring)."""
+        alpha = _NS_gorath._alpha(alpha)
+        if alpha <= 0 or radius <= 1:
+            return
+        for i in range(segments):
+            a0 = phase + i * math.pi * 2 / segments
+            a1 = a0 + math.pi * 2 / segments * span
+            p0 = (cx + math.cos(a0) * radius, cy + math.sin(a0) * radius * squash)
+            p1 = (cx + math.cos(a1) * radius, cy + math.sin(a1) * radius * squash)
+            _NS_gorath._aaline(surface, (*color, alpha), p0, p1, thick)
+
+    def _jagged_crack(surface, cx, cy, ang, length, colors, alpha, seed,
+                      width=3):
+        """Retakan tanah berzigzag (3 segmen) dengan seam menyala."""
+        alpha = _NS_gorath._alpha(alpha)
+        if alpha <= 0 or length <= 0:
+            return
+        x, y, a = cx, cy, ang
+        pts = [(x, y)]
+        for i in range(3):
+            a += (_NS_gorath._hash01(seed * 7 + i * 13) - .5) * .8
+            seg = length / 3.0
+            x += math.cos(a) * seg
+            y += math.sin(a) * seg * .55      # perspektif tanah
+            pts.append((x, y))
+        for i in range(len(pts) - 1):
+            _NS_gorath._aaline(surface, (*colors[0], alpha),
+                               pts[i], pts[i + 1], width + 2)
+            _NS_gorath._aaline(surface, (*colors[1], alpha),
+                               pts[i], pts[i + 1], width)
+
+    def _tuft_points(spine, depth=4.0, min_len=7.0, seed=0):
+        """Ubah spine halus jadi tepi bergerigi (kain robek / kabut).
+
+        Deterministik (hash) - aman untuk cache sprite.
+        """
+        out = [spine[0]]
+        for i in range(len(spine) - 1):
+            ax, ay = spine[i]
+            bx, by = spine[i + 1]
+            seg = math.hypot(bx - ax, by - ay)
+            n = max(1, int(seg / min_len))
+            nx, ny = (by - ay), -(bx - ax)
+            ln = math.hypot(nx, ny) or 1.0
+            nx, ny = nx / ln, ny / ln
+            for j in range(n):
+                t = (j + 0.5) / n
+                px, py = ax + (bx - ax) * t, ay + (by - ay) * t
+                d = depth * (0.55 + 0.45 * _NS_gorath._hash01(i * 7 + j * 13 + seed))
+                if j % 2 == 0:
+                    out.append((px + nx * d, py + ny * d))
+                else:
+                    out.append((px - nx * d * 0.45, py - ny * d * 0.45))
+            out.append((bx, by))
+        return out
+
+    def _dither_dots(surface, color, points, alpha=80):
+        """Dither band 50% klasik (bertahan setelah downscale)."""
+        col = (*color, _NS_gorath._alpha(alpha))
+        for i, (px, py) in enumerate(points):
+            if i % 2 == 0:
+                _NS_gorath._aacircle(surface, col, (int(px), int(py)), 1)
 
     # ---------------------------------------------------------------------------
-    # Blood splatter & droplet helpers
+    # Blood splatter & droplet helpers (nama lama dipertahankan)
     # ---------------------------------------------------------------------------
     def _draw_blood_splatter(surface, cx, cy, size=8, seed=0, alpha=255):
-        """Draw a chaotic blood splatter."""
+        """Cipratan darah kacau: inti 3 band + satelit deterministik."""
+        alpha = _NS_gorath._alpha(alpha)
         color_outer = (*_NS_gorath.PALETTE["blood_dark"], alpha)
         color_inner = (*_NS_gorath.PALETTE["blood_bright"], alpha)
         color_hot = (*_NS_gorath.PALETTE["blood_hot"], alpha)
@@ -3713,33 +4015,37 @@ class _NS_gorath:
             _NS_gorath._aacircle(surface, color_outer, (dx, dy), r)
             _NS_gorath._aacircle(surface, color_inner, (dx, dy), max(1, r - 1))
 
-
     def _draw_blood_droplet(surface, x, y, size=3, alpha=255):
-        """Draw a single blood droplet (teardrop shape)."""
+        """Tetes darah (teardrop) 4 band + kilau 1 px."""
+        alpha = _NS_gorath._alpha(alpha)
         _NS_gorath._poly(surface, (*_NS_gorath.PALETTE["blood_darkest"], alpha), [
             (x, y - size),
             (x - size, y + size),
             (x + size, y + size),
         ])
-        _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_mid"], alpha), (x, y + size // 2), size)
+        _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_mid"], alpha),
+                             (x, y + size // 2), size)
         _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha),
-                  (x, y + size // 2), max(1, size - 1))
+                             (x, y + size // 2), max(1, size - 1))
         _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_hot"], alpha),
-                  (x - 1, y + size // 2 - 1), max(1, size - 2))
-
+                             (x - 1, y + size // 2 - 1), max(1, size - 2))
 
     def _draw_blood_streak(surface, sx, sy, ex, ey, width=3, alpha=255):
-        """Blood streak with dripping effect."""
-        _NS_gorath._aaline(surface, (*_NS_gorath.PALETTE["blood_darkest"], alpha), (sx, sy), (ex, ey), width + 2)
-        _NS_gorath._aaline(surface, (*_NS_gorath.PALETTE["blood_mid"], alpha), (sx, sy), (ex, ey), width)
-        _NS_gorath._aaline(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha), (sx, sy), (ex, ey), max(1, width - 1))
-
+        """Garis darah menetes (3 band)."""
+        alpha = _NS_gorath._alpha(alpha)
+        _NS_gorath._aaline(surface, (*_NS_gorath.PALETTE["blood_darkest"], alpha),
+                           (sx, sy), (ex, ey), width + 2)
+        _NS_gorath._aaline(surface, (*_NS_gorath.PALETTE["blood_mid"], alpha),
+                           (sx, sy), (ex, ey), width)
+        _NS_gorath._aaline(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha),
+                           (sx, sy), (ex, ey), max(1, width - 1))
 
     # ---------------------------------------------------------------------------
-    # PROJECTILE SYSTEM (for Bloodrite / Thirst effects)
+    # PROJECTILE SYSTEM (Bloodrite / Thirst)
     # ---------------------------------------------------------------------------
     class BloodProjectile:
-        """A blood-based projectile for ranged skills."""
+        """Proyektil darah: trail berlapis 2-tone + glint berputar di ujung."""
+
         def __init__(self, sx, sy, tx, ty, speed=7.0):
             self.x = float(sx)
             self.y = float(sy)
@@ -3761,7 +4067,7 @@ class _NS_gorath:
                 self.alive = False
                 return
             self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 10:
+            if len(self.trail) > 12:
                 self.trail.pop(0)
             self.x += (dx / dist) * self.speed
             self.y += (dy / dist) * self.speed
@@ -3769,20 +4075,30 @@ class _NS_gorath:
         def draw(self, surface, phase):
             if not self.alive and self.age < 2:
                 return
-            # Trail
+            P = _NS_gorath.PALETTE
+            n = max(1, len(self.trail))
+            # trail 2-tone berlapis (gelap lebar -> terang sempit)
             for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(50 + i * 15)
-                r = max(1, 5 - (len(self.trail) - i))
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_dark"], alpha), (tx, ty), r + 2)
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha), (tx, ty), r)
+                t = (i + 1) / n
+                alpha = int(40 + 170 * t)
+                r = max(1, int(2 + 5 * t))
+                _NS_gorath._aacircle(surface, (*P["blood_dark"], int(alpha * .55)),
+                                     (tx, ty), r + 2)
+                _NS_gorath._aacircle(surface, (*P["blood_bright"], alpha), (tx, ty), r)
+                if i % 3 == 0:
+                    _NS_gorath._aacircle(surface, (*P["blood_hot"], alpha),
+                                         (tx, ty - 1), max(1, r - 2))
             if self.alive:
                 px, py = int(self.x), int(self.y)
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_dark"], 100), (px, py), 10)
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_mid"], 180), (px, py), 7)
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], 230), (px, py), 5)
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_hot"], 250), (px, py), 3)
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_light"], 255), (px, py - 1), 1)
-
+                _NS_gorath._aacircle(surface, (*P["blood_dark"], 110), (px, py), 11)
+                _NS_gorath._aacircle(surface, (*P["blood_mid"], 190), (px, py), 8)
+                _NS_gorath._aacircle(surface, (*P["blood_bright"], 235), (px, py), 5)
+                _NS_gorath._aacircle(surface, (*P["blood_hot"], 252), (px, py), 3)
+                _NS_gorath._aacircle(surface, (*P["blood_light"], 255), (px - 1, py - 1), 1)
+                # glint berputar di ujung
+                g = self.age * 0.4 + phase
+                _NS_gorath._spark_star(surface, px, py, 9, P["blood_glow"], 210,
+                                       spikes=4, rot=g, core=P["blood_seam"])
 
     # ---------------------------------------------------------------------------
     # State management
@@ -3796,8 +4112,9 @@ class _NS_gorath:
         dy = abs(boss.y - boss._gor_last_y)
         boss._gor_last_x = boss.x
         boss._gor_last_y = boss.y
-        return dx + dy > 0.3
-
+        moving = dx + dy > 0.3
+        boss._moving_cached = moving
+        return moving
 
     def _update_attack_anim(boss):
         """Track melee attack timeline."""
@@ -3827,55 +4144,80 @@ class _NS_gorath:
             if active else 0.0
         )
 
-
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_gor_projectiles"):
             boss._gor_projectiles = []
         for proj in boss._gor_projectiles:
             proj.update()
             proj.draw(surface, phase)
-        boss._gor_projectiles = [p for p in boss._gor_projectiles if p.alive or p.age < 8]
-
+        boss._gor_projectiles = [p for p in boss._gor_projectiles
+                                 if p.alive or p.age < 8]
 
     def _spawn_projectile(boss, sx, sy, tx, ty):
         if not hasattr(boss, "_gor_projectiles"):
             boss._gor_projectiles = []
-        boss._gor_projectiles.append(_NS_gorath.BloodProjectile(sx, sy, tx, ty, speed=6.5))
-
+        boss._gor_projectiles.append(
+            _NS_gorath.BloodProjectile(sx, sy, tx, ty, speed=6.5))
 
     # ===================================================================
     # MAIN DRAW ENTRY POINT
     # ===================================================================
     def draw_gorath(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus heroes.render_hero().
+
+        Urutan lapisan: aura & pool tanah (cached) -> telegraph skill ->
+        badan (buffer + selout + pass cahaya) -> proyektil -> FX skill
+        foreground. Semua FX skill world-space lewat `_fx_scale`.
+        """
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_gorath._detect_moving(boss)
         _NS_gorath._update_attack_anim(boss)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
 
         attacking = (
             getattr(boss, "_gor_attack_active", False)
             or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 44) - 15
         )
 
-        # Background
-        _NS_gorath._draw_blood_aura(surface, x, y, pulse, active_skill)
-        _NS_gorath._draw_ground_blood_pool(surface, x, y + 38, pulse, active_skill)
+        # Badan ikut bereaksi ke state skill:
+        #   q (Bloodrage) -> rune & mata membara, bilah berlumur darah panas
+        #   e (Thirst)    -> mata menyala berburu (fokus)
+        rage = active_skill in ("q", "r")
+        hunting = active_skill in ("e", "w")
 
-        # Skill ground effects
-        if active_skill == "w":
-            _NS_gorath._draw_bloodrite_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_gorath._draw_rupture_ground(surface, boss, x, y, skill_timer, pulse)
+        # ---------- Background layers (dibuang di portrait LOD) ----------
+        if not portrait:
+            _NS_gorath._draw_blood_aura(surface, x, y, pulse, active_skill)
+            _NS_gorath._draw_ground_blood_pool(surface, x,
+                                               y + _NS_gorath.GROUND_DY - 4,
+                                               pulse, active_skill)
 
-        # PERTAGAS: gelombang kejut aktivasi skill (12 frame pertama)
-        if active_skill in ("q", "w", "e", "r"):
-            dur = {"q": 90, "w": 60, "e": 35, "r": 90}[active_skill]
-            age = dur - skill_timer
-            if 0 <= age < 12:
-                _NS_gorath._draw_shockwave(surface, x, y + 46, age, 12,
-                                           _NS_gorath.PALETTE["blood_hot"],
-                                           _NS_gorath.PALETTE["blood_light"])
+            # ---------- Skill ground telegraph ----------
+            if active_skill == "q":
+                _NS_gorath._draw_bloodrage_ground(surface, boss, x, y,
+                                                  skill_timer, pulse)
+            elif active_skill == "w":
+                _NS_gorath._draw_bloodrite_ground(surface, boss, x, y,
+                                                  skill_timer, pulse)
+            elif active_skill == "e":
+                _NS_gorath._draw_thirst_ground(surface, boss, x, y,
+                                               skill_timer, pulse)
+            elif active_skill == "r":
+                _NS_gorath._draw_rupture_ground(surface, boss, x, y,
+                                                skill_timer, pulse)
+
+            # AKTIVASI: gelombang kejut + bintang (12 frame pertama)
+            if active_skill in ("q", "w", "e", "r"):
+                dur = _NS_gorath.SKILL_DUR[active_skill]
+                age = dur - skill_timer
+                if 0 <= age < 12:
+                    _NS_gorath._draw_shockwave(
+                        surface, x, y + _NS_gorath.GROUND_DY, age, 12,
+                        _NS_gorath.PALETTE["blood_hot"],
+                        _NS_gorath.PALETTE["blood_light"],
+                        fs=_NS_gorath._fx_scale(boss))
 
         # ORIGINAL-MAX hurt flash: badan dibanjiri putih-hangat, bayangan
         # tanah tidak ikut menyala.
@@ -3884,18 +4226,22 @@ class _NS_gorath:
         if flash > 0:
             B = _NS_gorath
             if B._flash_buf is None:
-                B._flash_buf = pygame.Surface((240, 260), pygame.SRCALPHA)
+                B._flash_buf = pygame.Surface((B.RIG_W, B.RIG_H),
+                                              pygame.SRCALPHA)
             B._flash_buf.fill((0, 0, 0, 0))
             B._record_shadow = []
-            _tgt, _tx, _ty = B._flash_buf, 120, 135
+            _tgt, _tx, _ty = B._flash_buf, B.RIG_OX, B.RIG_OY
 
-        # Character
+        # ---------- Character ----------
         if attacking:
-            _NS_gorath._draw_gorath_attack(_tgt, boss, _tx, _ty)
+            _NS_gorath._draw_gorath_attack(_tgt, boss, _tx, _ty,
+                                           rage=rage, hunting=hunting)
         elif moving:
-            _NS_gorath._draw_gorath_walk(_tgt, boss, _tx, _ty)
+            _NS_gorath._draw_gorath_walk(_tgt, boss, _tx, _ty,
+                                         rage=rage, hunting=hunting)
         else:
-            _NS_gorath._draw_gorath_idle(_tgt, boss, _tx, _ty)
+            _NS_gorath._draw_gorath_idle(_tgt, boss, _tx, _ty,
+                                         rage=rage, hunting=hunting)
 
         if flash > 0:
             B = _NS_gorath
@@ -3910,113 +4256,257 @@ class _NS_gorath:
                          special_flags=pygame.BLEND_RGB_ADD)
             B._record_shadow = None
 
-        # Projectiles
-        _NS_gorath._manage_projectiles(boss, surface, pulse)
+        # ---------- Projectiles ----------
+        if not portrait:
+            _NS_gorath._manage_projectiles(boss, surface, pulse)
 
-        # Foreground skill effects
-        if active_skill == "q":
-            _NS_gorath._draw_bloodrage(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_gorath._draw_bloodrite(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_gorath._draw_thirst(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_gorath._draw_rupture(surface, boss, x, y, skill_timer, pulse)
+            # ---------- Foreground skill effects ----------
+            if active_skill == "q":
+                _NS_gorath._draw_bloodrage(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "w":
+                _NS_gorath._draw_bloodrite(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "e":
+                _NS_gorath._draw_thirst(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "r":
+                _NS_gorath._draw_rupture(surface, boss, x, y, skill_timer, pulse)
 
+    def _draw_shockwave(surface, x, y, age, total, c1, c2, fs=1.0):
+        """Gelombang kejut aktivasi skill - 12 frame pertama.
 
-    def _draw_shockwave(surface, x, y, age, total, c1, c2):
-        """Gelombang kejut aktivasi skill - 12 frame pertama."""
+        World-space: radius dikalikan ``fs`` (= 1/_render_scale) supaya
+        ukurannya DI LAYAR setara boss asli.
+        """
         t = age / float(total)
+        if t >= 1.0:
+            return
         ease = 1 - (1 - t) ** 2
-        r = int(14 + ease * 58)
-        a = max(0, min(255, int(235 * (1 - t))))
+        r = int((14 + ease * 58) * fs)
+        a = _NS_gorath._alpha(235 * (1 - t))
         pygame.draw.ellipse(surface, (*c1, a),
-                            (x - r, y - r // 3, r * 2, r * 2 // 3), 2)
+                            (x - r, y - r // 3, r * 2, max(3, r * 2 // 3)), 2)
         pygame.draw.ellipse(surface, (*c2, a),
-                            (x - r // 2, y - r // 6, r, r // 3), 1)
+                            (x - r // 2, y - r // 6, max(2, r),
+                             max(2, r // 3)), 1)
         ri = max(3, r // 2)
         _NS_gorath._aacircle(surface, (*c1, int(a * 0.8)),
                              (x, y - (r // 6)), ri)
-
+        _NS_gorath._spark_star(surface, x, y - r // 8, int(20 * fs),
+                               c2, a, spikes=8, rot=t * 2.2,
+                               core=_NS_gorath.PALETTE["white"])
 
     # ===================================================================
-    # POSE MODES
+    # POSE MODES  (jangkar tanah = +GROUND_DY; ground FX mengikuti)
     # ===================================================================
-    def _draw_gorath_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_gorath._draw_shadow(surface, x, y + 46)
-        _NS_gorath._draw_blood_wisps(surface, x, y + 30, boss.pulse)
-        _NS_gorath._draw_gorath_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+    def _draw_gorath_idle(surface, boss, x, y, rage=False, hunting=False):
+        phase = float(getattr(boss, "pulse", 0.0))
+        bob = int(math.sin(phase * 0.7) * 3 * _NS_gorath.SCALE)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            _NS_gorath._draw_shadow(surface, x, y + _NS_gorath.GROUND_DY)
+            _NS_gorath._draw_blood_wisps(surface, x, y + 16, phase)
+        _NS_gorath._draw_gorath_body(surface, x, y + bob,
+                                     getattr(boss, "direction", 1), phase,
+                                     "idle", 0, rage=rage, hunting=hunting,
+                                     detail=portrait)
 
+    def _draw_gorath_walk(surface, boss, x, y, rage=False, hunting=False):
+        phase = float(getattr(boss, "pulse", 0.0)) * 2.2
+        k = _NS_gorath.SCALE
+        bob = int(abs(math.sin(phase * 1.3)) * 4 * k)
+        sway = int(math.sin(phase) * 3 * k)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            _NS_gorath._draw_shadow(surface, x + sway,
+                                    y + _NS_gorath.GROUND_DY)
+            _NS_gorath._draw_blood_wisps(surface, x + sway, y + 16, phase,
+                                         trail=True,
+                                         facing=getattr(boss, "direction", 1))
+        _NS_gorath._draw_gorath_body(surface, x + sway, y - bob,
+                                     getattr(boss, "direction", 1), phase,
+                                     "walk", 0, rage=rage, hunting=hunting,
+                                     detail=portrait)
+        if not portrait:
+            _NS_gorath._draw_blood_trail(surface, x + sway,
+                                         y + _NS_gorath.GROUND_DY - 4, phase,
+                                         getattr(boss, "direction", 1))
 
-    def _draw_gorath_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_gorath._draw_shadow(surface, x + sway, y + 46)
-        _NS_gorath._draw_blood_wisps(surface, x + sway, y + 30, phase, trail=True, facing=boss.direction)
-        _NS_gorath._draw_gorath_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
-        _NS_gorath._draw_blood_trail(surface, x + sway, y + 30, phase, boss.direction)
-
-
-    def _draw_gorath_attack(surface, boss, x, y):
+    def _draw_gorath_attack(surface, boss, x, y, rage=False, hunting=False):
         progress = getattr(boss, "_gor_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
+        facing = getattr(boss, "direction", 1)
+        phase = float(getattr(boss, "pulse", 0.0))
+        pose = _NS_gorath._attack_pose(progress)
+        lunge = int(pose["lunge"] * _NS_gorath.SCALE) * facing
+        portrait = bool(getattr(boss, "_portrait_hd", False))
 
-        _NS_gorath._draw_shadow(surface, x + lunge, y + 46)
-        _NS_gorath._draw_blood_wisps(surface, x + lunge, y + 30, boss.pulse, intense=True)
-        _NS_gorath._draw_gorath_body(surface, x + lunge, y, boss.direction, boss.pulse,
-                          "attack", progress)
-        _NS_gorath._draw_blade_swing_arc(surface, x + lunge, y, boss.direction, progress)
-        _NS_gorath._draw_swing_impact(surface, x + lunge, y, boss.direction, progress)
+        if not portrait:
+            _NS_gorath._draw_shadow(surface, x + lunge,
+                                    y + _NS_gorath.GROUND_DY)
+            _NS_gorath._draw_blood_wisps(surface, x + lunge, y + 16, phase,
+                                         intense=True)
+        _NS_gorath._draw_gorath_body(surface, x + lunge, y, facing, phase,
+                                     "attack", progress, rage=rage,
+                                     hunting=hunting, detail=portrait)
+        _NS_gorath._draw_blade_swing_arc(surface, x + lunge, y, facing, progress)
+        _NS_gorath._draw_swing_impact(surface, x + lunge, y, facing, progress)
 
+    # ===================================================================
+    # ATTACK TIMELINE (7 keyframe + frame IMPACT tersendiri)
+    # ===================================================================
+    def _attack_pose(ap):
+        """Interpolasi keyframe serang -> dict pose.
+
+        Keyframe: (progress, lunge, lean, torso_dip, blade_a, blade_b,
+                   flare, tremble)
+          0.14  wind-up   : bilah ditarik ke belakang, badan mundur
+          0.30  tension   : gemetar 1 px, rambut/loincloth tertinggal
+          0.48  strike    : ayunan tercepat (smear sabit aktif)
+          0.54  IMPACT    : squash + bintang + shockwave + serpihan
+          0.72  follow    : rebound overshoot
+          1.00  recover   : kembali ke pose istirahat
+        """
+        keys = (
+            (0.00, 0.0,  0.0, 0.0, -0.55, 0.75, 1.00, 0),
+            (0.14, -3.0, -5.0, 3.0, -2.25, -1.15, 1.16, 0),
+            (0.30, -4.0, -6.0, 4.0, -2.55, -1.45, 1.22, 1),
+            (0.48, 7.0,  7.0, -2.0, 0.55, 1.65, 1.10, 0),
+            (0.54, 9.0,  9.0, 4.0, 0.95, 2.05, 1.04, 0),
+            (0.72, 3.0,  4.0, 1.0, 0.20, 1.25, 1.00, 0),
+            (1.00, 0.0,  0.0, 0.0, -0.55, 0.75, 1.00, 0),
+        )
+        ap = max(0.0, min(1.0, ap))
+        for i in range(len(keys) - 1):
+            k0, k1 = keys[i], keys[i + 1]
+            if k0[0] <= ap <= k1[0]:
+                span = max(1e-6, k1[0] - k0[0])
+                t = (ap - k0[0]) / span
+                t = t * t * (3 - 2 * t)          # smoothstep
+                vals = tuple(a + (b - a) * t for a, b in zip(k0[1:7], k1[1:7]))
+                return {
+                    "lunge": vals[0], "lean": vals[1], "dip": vals[2],
+                    "blade_a": vals[3], "blade_b": vals[4],
+                    "flare": vals[5],
+                    "tremble": 1 if (k0[7] and t < 0.9) else 0,
+                    "impact": 1.0 - min(1.0, abs(ap - 0.54) / 0.10),
+                }
+        return {"lunge": 0.0, "lean": 0.0, "dip": 0.0, "blade_a": -0.55,
+                "blade_b": 0.75, "flare": 1.0, "tremble": 0, "impact": 0.0}
 
     # ===================================================================
     # BODY RENDERING
     # ===================================================================
-    def _draw_gorath_body_raw(surface, cx, cy, facing, phase, action, attack_progress=0):
-        sway = int(math.sin(phase * 0.6) * (2 if action != "idle" else 1))
+    def _draw_gorath_body_raw(surface, cx, cy, facing, phase, action,
+                              attack_progress=0, rage=False, hunting=False,
+                              detail=False):
+        """Rig masterwork v2 - demon bloodwarden melayang, 100% prosedural.
 
-        # Lower floating body (loincloth / robe)
-        _NS_gorath._draw_loincloth(surface, cx, cy + 8, phase, sway)
+        Semua koordinat lokal: (0, 0) = jangkar pinggul, x maju (facing),
+        y ke bawah. Rambut memuncak di -74, hem loincloth +32, kabut
+        darah menggantikan kaki. Rig ~1.5x versi lama di ruang lokal.
+        """
+        f = 1 if facing >= 0 else -1
+        walk = action == "walk"
+        attack = action == "attack"
+        ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
+        breath = math.sin(phase * 0.75)
 
-        # Torso
-        _NS_gorath._draw_torso(surface, cx, cy - 5, phase, sway)
-
-        # Head with hair
-        _NS_gorath._draw_gorath_head(surface, cx, cy - 26, facing, phase)
-
-        # Shoulders
-        _NS_gorath._draw_shoulders(surface, cx, cy - 12, phase)
-
-        # Arms with blades
-        if action == "attack":
-            _NS_gorath._draw_attack_arms(surface, cx, cy - 8, facing, phase, attack_progress)
+        # ═══ 1. GERAK BADAN: root / lean / sway + inersia sekunder ═══
+        if walk:
+            root_y = int(math.sin(phase * 2.0) * 2.5) - 2
+            sway = int(math.sin(phase) * 3.0)
+            lean = 4 * f
+            hair_lag = math.sin(phase + 2.5) * 0.16
+            cloth_lag = math.sin(phase + 2.1) * 3.2
+            pose = None
+        elif attack:
+            pose = _NS_gorath._attack_pose(ap)
+            root_y = int(pose["dip"])
+            sway = 1 if (pose["tremble"] and int(phase * 30) % 2) else 0
+            lean = int(pose["lean"]) * f
+            hair_lag = -pose["lean"] * 0.035
+            cloth_lag = -pose["lean"] * 0.9
         else:
-            _NS_gorath._draw_idle_arms(surface, cx, cy - 8, facing, phase)
+            root_y = int(breath * 2.2)
+            sway = int(math.sin(phase * 0.5) * 2.0)
+            lean = int(math.sin(phase * 0.5 + 1.2) * 1.5)
+            hair_lag = math.sin(phase * 0.6) * 0.05
+            cloth_lag = math.sin(phase * 0.55) * 1.6
+            pose = None
 
-        # Blood dripping from body
-        _NS_gorath._draw_body_blood_drips(surface, cx, cy, phase)
+        off_x = lean + sway
+        ox = int(cx) + off_x
+        oy = int(cy) + root_y
 
-    def _draw_gorath_body(surface, cx, cy, facing, phase, action, attack_progress=0):
-        """Komposit ORIGINAL-MAX: badan -> buffer tetap -> outline siluet
-        gelap 1 px + pass pencahayaan (rim/shade) -> blit posisi dunia sama."""
+        # ═══ 2. LAPISAN BELAKANG -> DEPAN ═══
+        # kabut darah pengganti kaki (bagian badan, ikut hurt flash).
+        # Digambar paling belakang TAPI cukup rendah + lebar agar keluar
+        # dari balik hem loincloth - inilah "kaki" siluetnya.
+        _NS_gorath._draw_float_plumes(surface, ox, oy + 34, phase, f, action)
+        # rambut belakang + loincloth (di belakang torso)
+        # Sabuk sedikit di bawah hem torso supaya gesper emas tidak
+        # tertutup badan (torso digambar setelahnya).
+        _NS_gorath._draw_loincloth(surface, ox, oy + 14, phase, cloth_lag,
+                                   rage=rage)
+        _NS_gorath._draw_spiky_hair(surface, ox, oy - 52, phase,
+                                    lag=hair_lag, back=True, f=f)
+        # lengan belakang
+        _NS_gorath._draw_back_arm(surface, ox, oy - 30, f, phase, action, ap,
+                                  pose, rage=rage)
+        # torso -> bahu -> kepala
+        _NS_gorath._draw_torso(surface, ox, oy - 14, phase, sway, f=f,
+                               rage=rage)
+        _NS_gorath._draw_shoulders(surface, ox, oy - 30, phase, f=f)
+        _NS_gorath._draw_gorath_head(surface, ox, oy - 52, facing, phase,
+                                     rage=rage, hunting=hunting)
+        # lengan depan (paling depan) + bilah
+        if attack:
+            _NS_gorath._draw_attack_arms(surface, ox, oy - 26, facing, phase,
+                                         ap, rage=rage)
+        else:
+            _NS_gorath._draw_idle_arms(surface, ox, oy - 26, facing, phase,
+                                       walk=walk, rage=rage)
+        # darah menetes dari badan
+        _NS_gorath._draw_body_blood_drips(surface, ox, oy, phase)
+        if detail:
+            _NS_gorath._draw_gorath_masterwork_details(surface, ox, oy, f)
+
+    def _draw_gorath_body(surface, cx, cy, facing, phase, action,
+                          attack_progress=0, rage=False, hunting=False,
+                          detail=False):
+        """Komposit badan: rig native (1.5x) -> buffer -> turun ke SCALE ->
+        outline siluet gelap 1 px -> pass cahaya (rim/shade) -> blit.
+
+        Urutan penting: outline & lighting dikerjakan SETELAH penskalaan
+        supaya tetap setebal 1 px di layar (konvensi `_finish_hd_sprite`
+        di heroes/__init__.py).
+        """
         NS = _NS_gorath
-        B = 200
         if NS._body_buf is None:
-            NS._body_buf = pygame.Surface((B, B), pygame.SRCALPHA)
+            NS._body_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                          pygame.SRCALPHA)
         buf = NS._body_buf
         buf.fill((0, 0, 0, 0))
-        NS._draw_gorath_body_raw(buf, B // 2, B // 2, facing, phase, action, attack_progress)
+        NS._draw_gorath_body_raw(buf, NS.RIG_OX, NS.RIG_OY, facing, phase,
+                                 action, attack_progress, rage=rage,
+                                 hunting=hunting, detail=detail)
         used = buf.get_bounding_rect(min_alpha=1)
         if used.width <= 2 or used.height <= 2:
             return
         used.inflate_ip(4, 4)
         used.clamp_ip(buf.get_rect())
         sub = buf.subsurface(used).copy()
-        ox = int(cx) - (B // 2) + used.left
-        oy = int(cy) - (B // 2) + used.top
+        # offset jangkar -> sudut kiri-atas crop, dalam px lokal
+        lx = used.left - NS.RIG_OX
+        ly = used.top - NS.RIG_OY
+
+        k = NS.SCALE
+        if abs(k - 1.0) >= 0.02:
+            tw = max(1, int(round(sub.get_width() * k)))
+            th = max(1, int(round(sub.get_height() * k)))
+            sub = pygame.transform.smoothscale(sub, (tw, th))
+        ox = int(cx) + int(round(lx * k))
+        oy = int(cy) + int(round(ly * k))
+
         edge = sub.copy()
         edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
         for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
@@ -4025,560 +4515,798 @@ class _NS_gorath:
             _lighting.apply_to_rig(sub, rim_add=(46, 18, 16), shade_mul=168)
         surface.blit(sub, (ox, oy))
 
+    # ------------------------------------------------------------------
+    # FLOAT SOLVER - dua plume kabut darah bergantian "menapak"
+    # ------------------------------------------------------------------
+    def _draw_float_plumes(surface, cx, cy, phase, f, action):
+        """Pengganti kaki: dua kolom kabut darah dengan siklus kontak.
 
-    def _draw_loincloth(surface, cx, cy, phase, sway):
-        """Floating lower body — tattered loincloth with blood."""
-        # Waist belt
-        _NS_gorath._rect(surface, _NS_gorath.PALETTE["leather_darkest"], (cx - 15, cy - 4, 30, 6))
-        _NS_gorath._rect(surface, _NS_gorath.PALETTE["leather_dark"], (cx - 14, cy - 3, 28, 4))
-        _NS_gorath._rect(surface, _NS_gorath.PALETTE["leather_mid"], (cx - 13, cy - 2, 26, 2))
+        Plume kiri/kanan bergantian memanjang & menyentuh tanah
+        (`contact`), menghasilkan riak darah - foot solver versi hantu.
+        """
+        P = _NS_gorath.PALETTE
+        speed = 2.2 if action == "walk" else 0.9
+        for side in (-1, 1):
+            ph = phase * speed + (0 if side < 0 else math.pi)
+            contact = (math.sin(ph) + 1) * 0.5          # 0..1
+            bx = cx + side * 21
+            top = cy - 12
+            # kontak penuh -> ujung plume menyentuh FEET_DY (garis tanah)
+            length = 16 + contact * 14
+            # kolom kabut 3 band (bergerigi -> siluet pixel-art)
+            spine = [(bx, top),
+                     (bx + side * 5, top + length * .5),
+                     (bx + side * (2 if action == "walk" else 4),
+                      top + length)]
+            for w, col, al in ((15, P["blood_darkest"], 165),
+                               (10, P["blood_dark"], 180),
+                               (5, P["blood_mid"], 165)):
+                pts = _NS_gorath._tuft_points(spine, depth=w * .45,
+                                              min_len=6.0,
+                                              seed=int(side * 3 + w))
+                half = max(1.0, w * .38)
+                m = max(1, len(pts) - 1)
+                left, right = [], []
+                for j, (px, py) in enumerate(pts):
+                    # kabut MELEBAR ke bawah (menyebar di tanah)
+                    hw = half * (0.45 + 0.55 * j / m)
+                    left.append((px - hw, py))
+                    right.append((px + hw, py))
+                _NS_gorath._poly(surface, (*col, al), left + right[::-1])
+            # kabut halo di pangkal plume (menyatukan dua kolom)
+            _NS_gorath._aacircle(surface, (*P["blood_darkest"], 120),
+                                 (int(bx), int(top + 6)),
+                                 int(11 + contact * 3))
+            _NS_gorath._aacircle(surface, (*P["blood_dark"], 110),
+                                 (int(bx), int(top + 10)),
+                                 int(8 + contact * 3))
+            # riak darah saat plume menyentuh tanah
+            if contact > 0.72:
+                a = int(180 * (contact - 0.72) / 0.28)
+                rr = int(6 + 7 * contact)
+                _NS_gorath._ellipse(surface, (*P["blood_dark"], a),
+                                    (bx - rr, int(top + length) - 3,
+                                     rr * 2, max(3, rr)), 1)
+                _NS_gorath._draw_blood_droplet(surface, bx + side * 3,
+                                               int(top + length) - 2, 2, a)
 
-        # Belt buckle - blood symbol
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_darkest"], (cx, cy - 1), 4)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_mid"], (cx, cy - 1), 3)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_bright"], (cx, cy - 2), 2)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_hot"], (cx, cy - 2), 1)
+    # ------------------------------------------------------------------
+    # LOINCLOTH (hem robek + dither + noda darah)
+    # ------------------------------------------------------------------
+    def _draw_loincloth(surface, cx, cy, phase, sway, rage=False):
+        """Sabuk + gesper emas ber-sigil + 6 helai kain robek."""
+        P = _NS_gorath.PALETTE
+        # ── sabuk 4 band + selout ──
+        _NS_gorath._rect(surface, P["shadow_deep"], (cx - 23, cy - 5, 47, 11))
+        _NS_gorath._rect(surface, P["leather_darkest"], (cx - 22, cy - 5, 45, 10))
+        _NS_gorath._rect(surface, P["leather_dark"], (cx - 21, cy - 4, 43, 7))
+        _NS_gorath._rect(surface, P["leather_mid"], (cx - 20, cy - 3, 41, 3))
+        _NS_gorath._aaline(surface, P["leather_light"], (cx - 19, cy - 4),
+                           (cx + 8, cy - 4), 1)
+        # stud sabuk
+        for i in range(-3, 4):
+            _NS_gorath._aacircle(surface, P["bone_dark"], (cx + i * 6, cy - 1), 1)
+        # ── gesper emas ber-sigil darah ──
+        _NS_gorath._aacircle(surface, P["shadow_deep"], (cx + 1, cy + 1), 7)
+        _NS_gorath._aacircle(surface, P["gold_dark"], (cx, cy), 6)
+        _NS_gorath._aacircle(surface, P["gold_mid"], (cx, cy), 5)
+        _NS_gorath._aacircle(surface, P["gold_light"], (cx - 1, cy - 2), 2)
+        glow = P["blood_glow"] if rage else P["blood_mid"]
+        _NS_gorath._aacircle(surface, P["blood_darkest"], (cx, cy), 3)
+        _NS_gorath._aacircle(surface, glow, (cx, cy - 1), 2)
+        _NS_gorath._aacircle(surface, P["blood_light"], (cx - 1, cy - 1), 1)
 
-        # Tattered loincloth strips
-        for i, offset in enumerate([-11, -6, -1, 5, 10]):
-            wave = math.sin(phase * 1.2 + i) * 2
-            length = 20 + (i % 2) * 4
-            # Shadow
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["shadow_deep"], [
-                (cx + offset - 3, cy + 3),
-                (cx + offset + 3, cy + 3),
-                (cx + offset + 2 + int(wave), cy + length),
-                (cx + offset - 2 + int(wave), cy + length),
-            ])
-            # Main strip
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["leather_darkest"], [
-                (cx + offset - 3, cy + 2),
-                (cx + offset + 3, cy + 2),
-                (cx + offset + 2 + int(wave), cy + length - 1),
-                (cx + offset - 2 + int(wave), cy + length - 1),
-            ])
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["leather_dark"], [
-                (cx + offset - 2, cy + 3),
-                (cx + offset + 2, cy + 3),
-                (cx + offset + 1 + int(wave), cy + length - 3),
-                (cx + offset - 1 + int(wave), cy + length - 3),
-            ])
-            # Blood stain on some strips
+        # ── 6 helai kain robek (hem bergerigi + dither band) ──
+        # Tiap helai digambar sebagai POLIGON per band (bukan polyline
+        # per-segmen): satu helai = 4 draw call, bukan ~24. Ini bagian
+        # terberat rig, jadi bentuknya dijaga tapi jumlah call ditekan.
+        for i, offset in enumerate((-18, -11, -4, 3, 10, 17)):
+            wave = math.sin(phase * 1.2 + i * .8) * 2.8 + sway * .5
+            length = 22 + (i % 3) * 7
+            tipx = cx + offset + wave
+            spine = [(cx + offset, cy + 4), (cx + offset + wave * .5,
+                                             cy + length * .6),
+                     (tipx, cy + length)]
+            hem = _NS_gorath._tuft_points(spine, depth=2.6, min_len=8.0,
+                                          seed=i * 5)
+
+            n_hem = max(1, len(hem) - 1)
+
+            def ribbon(half, off=0):
+                """Poligon helai, MERUNCING ke ujung (kain robek).
+
+                Lebar mengecil linear dari pangkal ke ujung supaya
+                siluetnya tetap tajam, bukan balok cokelat.
+                """
+                left, right = [], []
+                for j, (px, py) in enumerate(hem):
+                    w = half * (1.0 - 0.72 * j / n_hem)
+                    left.append((px - w + off, py + off))
+                    right.append((px + w + off, py + off))
+                return left + right[::-1]
+
+            _NS_gorath._poly(surface, P["shadow_deep"], ribbon(3.2, 1))
+            _NS_gorath._poly(surface, P["leather_darkest"], ribbon(2.8))
+            _NS_gorath._poly(surface, P["leather_dark"], ribbon(1.9))
+            _NS_gorath._poly(surface, P["leather_mid"], ribbon(0.9))
+            if i in (1, 4):
+                _NS_gorath._aaline(surface, P["leather_light"],
+                                   (cx + offset - 1, cy + 6),
+                                   (tipx - 1, cy + length - 3), 1)
+            # dither band transisi
+            _NS_gorath._dither_dots(
+                surface, P["leather_light"],
+                [(cx + offset + 1, cy + 8 + k * 4) for k in range(4)], 70)
+            # noda darah
             if i % 2 == 0:
-                _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_darkest"],
-                          (cx + offset, cy + length - 8), 3)
-                _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_dark"],
-                          (cx + offset, cy + length - 8), 2)
-                _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_mid"],
-                          (cx + offset, cy + length - 9), 1)
+                _NS_gorath._aacircle(surface, P["blood_darkest"],
+                                     (int(cx + offset), cy + length - 8), 3)
+                _NS_gorath._aacircle(surface, P["blood_dark"],
+                                     (int(cx + offset), cy + length - 8), 2)
+                _NS_gorath._aacircle(surface, P["blood_mid"],
+                                     (int(cx + offset), cy + length - 9), 1)
 
+    # ------------------------------------------------------------------
+    # TORSO (otot + rune darah + kalung trofi + harness X)
+    # ------------------------------------------------------------------
+    def _draw_torso(surface, cx, cy, phase, sway, f=1, rage=False):
+        """Torso berotot 5 band, rune darah berdenyut, harness kulit."""
+        P = _NS_gorath.PALETTE
+        pulse = math.sin(phase * 1.6) * .5 + .5
 
-    def _draw_torso(surface, cx, cy, phase, sway):
-        """Muscular red-skinned torso."""
-        # Shadow
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["shadow_deep"], [
-            (cx - 14 + 2, cy - 8 + 2), (cx + 14 + 2, cy - 8 + 2),
-            (cx + 13 + 2, cy + 14 + 2), (cx + 6 + 2, cy + 18 + 2),
-            (cx - 6 + 2, cy + 18 + 2), (cx - 13 + 2, cy + 14 + 2),
-        ])
+        torso = [(cx - 21, cy - 20), (cx + 21, cy - 20),
+                 (cx + 20, cy + 16), (cx + 9, cy + 24),
+                 (cx - 9, cy + 24), (cx - 20, cy + 16)]
+        # selout (sisi bayangan)
+        _NS_gorath._poly(surface, P["shadow_deep"],
+                         [(px + f, py + 2) for px, py in torso])
+        _NS_gorath._poly(surface, P["skin_darkest"], torso)
+        _NS_gorath._poly(surface, P["skin_dark"], [
+            (cx - 18, cy - 18), (cx + 18, cy - 18),
+            (cx + 17, cy + 14), (cx + 7, cy + 21),
+            (cx - 7, cy + 21), (cx - 17, cy + 14)])
+        _NS_gorath._poly(surface, P["skin_mid"], [
+            (cx - 14, cy - 15), (cx + 14, cy - 15),
+            (cx + 12, cy + 11), (cx + 4, cy + 17),
+            (cx - 4, cy + 17), (cx - 12, cy + 11)])
+        # sisi cahaya (kiri-atas) lebih terang
+        _NS_gorath._poly(surface, P["skin_light"], [
+            (cx - 13, cy - 14), (cx - 3, cy - 14),
+            (cx - 4, cy + 8), (cx - 11, cy + 6)])
 
-        # Main torso
-        torso = [
-            (cx - 14, cy - 8), (cx + 14, cy - 8),
-            (cx + 13, cy + 14), (cx + 6, cy + 18),
-            (cx - 6, cy + 18), (cx - 13, cy + 14),
-        ]
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["skin_darkest"], torso)
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["skin_dark"], [
-            (cx - 12, cy - 7), (cx + 12, cy - 7),
-            (cx + 11, cy + 12), (cx + 5, cy + 16),
-            (cx - 5, cy + 16), (cx - 11, cy + 12),
-        ])
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["skin_mid"], [
-            (cx - 9, cy - 5), (cx + 9, cy - 5),
-            (cx + 8, cy + 10), (cx + 3, cy + 14),
-            (cx - 3, cy + 14), (cx - 8, cy + 10),
-        ])
-
-        # Chest highlights (pectorals)
+        # pectoral cluster + specular 1-2 px
         for side in (-1, 1):
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_light"],
-                      (cx + side * 5, cy - 2), 4)
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_high"],
-                      (cx + side * 5 - 1, cy - 3), 2)
+            _NS_gorath._aacircle(surface, P["skin_light"],
+                                 (cx + side * 8, cy - 6), 6)
+            _NS_gorath._aacircle(surface, P["skin_high"],
+                                 (cx + side * 8 - 2, cy - 8), 3)
+            _NS_gorath._aacircle(surface, P["skin_shine"],
+                                 (cx + side * 8 - 3, cy - 10), 1)
+        # alur otot + abs
+        _NS_gorath._aaline(surface, P["skin_darkest"], (cx, cy - 1),
+                           (cx, cy + 19), 1)
+        for k, yoff in enumerate((3, 8, 13, 17)):
+            _NS_gorath._aaline(surface, P["skin_darkest"],
+                               (cx - 8 + k, cy + yoff),
+                               (cx + 8 - k, cy + yoff), 1)
+        # dither band perut (klasik pixel-art)
+        _NS_gorath._dither_dots(surface, P["skin_high"],
+                                [(cx - 6 + i * 4, cy + 6) for i in range(5)], 90)
 
-        # Abs definition
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["skin_darkest"], (cx, cy + 2), (cx, cy + 14), 1)
-        for yoff in (4, 8, 12):
-            _NS_gorath._aaline(surface, _NS_gorath.PALETTE["skin_darkest"],
-                    (cx - 5, cy + yoff), (cx + 5, cy + yoff), 1)
+        # ── rune darah di dada (menyala saat skill rage) ──
+        rune_c = P["rune_light"] if rage else P["rune_mid"]
+        ra = int((150 if not rage else 220) + 60 * pulse)
+        for i in range(3):
+            ry = cy + 2 + i * 5
+            _NS_gorath._aaline(surface, (*P["rune_dark"], 220),
+                               (cx - 7 + i, ry), (cx + 7 - i, ry), 3)
+            _NS_gorath._aaline(surface, (*rune_c, _NS_gorath._alpha(ra)),
+                               (cx - 6 + i, ry), (cx + 6 - i, ry), 1)
+        if rage:
+            _NS_gorath._aacircle(surface, (*P["blood_glow"],
+                                           _NS_gorath._alpha(120 * pulse)),
+                                 (cx, cy + 7), 9)
 
-        # Blood stains on chest
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_darkest"], (cx - 4, cy + 8), 3)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_dark"], (cx - 4, cy + 8), 2)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_bright"], (cx + 6, cy + 5), 2)
+        # ── harness X kulit ber-jahitan ──
+        for s in (-1, 1):
+            _NS_gorath._aaline(surface, P["leather_darkest"],
+                               (cx - s * 17, cy - 18), (cx + s * 12, cy + 20), 6)
+            _NS_gorath._aaline(surface, P["leather_dark"],
+                               (cx - s * 17, cy - 18), (cx + s * 12, cy + 20), 4)
+            _NS_gorath._aaline(surface, P["leather_mid"],
+                               (cx - s * 17, cy - 18), (cx + s * 12, cy + 20), 2)
+        for i in range(4):
+            _NS_gorath._aacircle(surface, P["leather_high"],
+                                 (cx - 10 + i * 7, cy - 10 + i * 3), 1)
 
-        # Necklace / trophy cord
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["bone_darkest"], (cx - 8, cy - 6), (cx + 8, cy - 6), 1)
-        for i, xoff in enumerate([-6, -2, 2, 6]):
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["bone_dark"], (cx + xoff, cy - 4), 2)
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["bone_mid"], (cx + xoff, cy - 4), 1)
+        # ── noda darah lama di dada ──
+        _NS_gorath._aacircle(surface, P["blood_darkest"], (cx - 6, cy + 12), 3)
+        _NS_gorath._aacircle(surface, P["blood_dark"], (cx - 6, cy + 12), 2)
+        _NS_gorath._aacircle(surface, P["blood_bright"], (cx + 9, cy + 7), 2)
 
+        # ── kalung trofi tulang ──
+        _NS_gorath._aaline(surface, P["bone_darkest"], (cx - 12, cy - 17),
+                           (cx + 12, cy - 17), 1)
+        for i, xoff in enumerate((-9, -3, 3, 9)):
+            _NS_gorath._aacircle(surface, P["bone_darkest"],
+                                 (cx + xoff + 1, cy - 13), 3)
+            _NS_gorath._aacircle(surface, P["bone_dark"], (cx + xoff, cy - 14), 3)
+            _NS_gorath._aacircle(surface, P["bone_mid"], (cx + xoff, cy - 14), 2)
+            _NS_gorath._aacircle(surface, P["bone_light"],
+                                 (cx + xoff - 1, cy - 15), 1)
 
-    def _draw_shoulders(surface, cx, cy, phase):
-        """Muscular shoulders with leather straps."""
+    # ------------------------------------------------------------------
+    # SHOULDERS (pauldron tulang ber-duri)
+    # ------------------------------------------------------------------
+    def _draw_shoulders(surface, cx, cy, phase, f=1):
+        """Bahu berotot + pauldron tulang ber-duri (5 band + specular)."""
+        P = _NS_gorath.PALETTE
         for side in (-1, 1):
-            sx = cx + side * 13
-            # Shadow
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["shadow_deep"], (sx + 2, cy + 2), 8)
-            # Shoulder
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_darkest"], (sx, cy), 8)
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_dark"], (sx - side, cy - 1), 7)
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_mid"], (sx - side * 2, cy - 2), 5)
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_light"], (sx - side * 3, cy - 3), 3)
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_high"], (sx - side * 3, cy - 4), 1)
+            sx = cx + side * 20
+            _NS_gorath._aacircle(surface, P["shadow_deep"], (sx + f, cy + 2), 12)
+            _NS_gorath._aacircle(surface, P["skin_darkest"], (sx, cy), 12)
+            _NS_gorath._aacircle(surface, P["skin_dark"], (sx - side, cy - 1), 10)
+            _NS_gorath._aacircle(surface, P["skin_mid"], (sx - side * 2, cy - 3), 8)
+            _NS_gorath._aacircle(surface, P["skin_light"], (sx - side * 3, cy - 5), 4)
+            _NS_gorath._aacircle(surface, P["skin_high"], (sx - side * 4, cy - 6), 2)
 
-            # Leather shoulder strap
-            _NS_gorath._rect(surface, _NS_gorath.PALETTE["leather_darkest"], (sx - 5, cy - 3, 10, 6),
-                  border_radius=1)
-            _NS_gorath._rect(surface, _NS_gorath.PALETTE["leather_dark"], (sx - 4, cy - 2, 8, 4))
-            _NS_gorath._rect(surface, _NS_gorath.PALETTE["leather_mid"], (sx - 3, cy - 1, 6, 1))
-
-            # Blood drip on shoulder
+            # pauldron tulang (cangkang 4 band)
+            cap = [(sx - 11, cy - 3), (sx - 8, cy - 11), (sx + 8, cy - 11),
+                   (sx + 11, cy - 3), (sx + 7, cy + 2), (sx - 7, cy + 2)]
+            _NS_gorath._poly(surface, P["shadow_deep"],
+                             [(px + f, py + 1) for px, py in cap])
+            _NS_gorath._poly(surface, P["bone_darkest"], cap)
+            _NS_gorath._poly(surface, P["bone_dark"], [
+                (sx - 9, cy - 3), (sx - 6, cy - 9), (sx + 6, cy - 9),
+                (sx + 9, cy - 3), (sx + 6, cy + 1), (sx - 6, cy + 1)])
+            _NS_gorath._poly(surface, P["bone_mid"], [
+                (sx - 7, cy - 4), (sx - 4, cy - 8), (sx + 3, cy - 8),
+                (sx + 5, cy - 4), (sx + 2, cy - 1), (sx - 5, cy - 1)])
+            _NS_gorath._aacircle(surface, P["bone_light"], (sx - 4, cy - 6), 2)
+            _NS_gorath._aacircle(surface, P["bone_shine"], (sx - 5, cy - 7), 1)
+            # duri tulang 3 buah
+            for k, (dx, dl) in enumerate(((-6, 9), (0, 12), (6, 9))):
+                tipx, tipy = sx + dx + side * 2, cy - 10 - dl
+                _NS_gorath._poly(surface, P["shadow_deep"],
+                                 [(sx + dx - 3 + f, cy - 8 + 1),
+                                  (sx + dx + 3 + f, cy - 8 + 1),
+                                  (tipx + f, tipy + 1)])
+                _NS_gorath._poly(surface, P["bone_dark"],
+                                 [(sx + dx - 3, cy - 8), (sx + dx + 3, cy - 8),
+                                  (tipx, tipy)])
+                _NS_gorath._poly(surface, P["bone_mid"],
+                                 [(sx + dx - 2, cy - 8), (sx + dx + 1, cy - 8),
+                                  (tipx, tipy + 2)])
+                _NS_gorath._aaline(surface, P["bone_light"],
+                                   (sx + dx - 1, cy - 9), (tipx, tipy + 1), 1)
+            # tetes darah dari pauldron belakang
             if side == -1:
-                _NS_gorath._draw_blood_streak(surface, sx - 2, cy + 5, sx - 3, cy + 12, 2, 200)
+                _NS_gorath._draw_blood_streak(surface, sx - 3, cy + 7,
+                                              sx - 4, cy + 17, 2, 200)
 
+    # ------------------------------------------------------------------
+    # HEAD (tengkorak demon underbite + war-paint + mata menyala)
+    # ------------------------------------------------------------------
+    def _draw_gorath_head(surface, cx, cy, facing, phase, rage=False,
+                          hunting=False):
+        """Kepala demon: brow berat, socket cekung, iris menyala + kedip,
+        underbite bertaring, tanduk pendek, war-paint darah."""
+        P = _NS_gorath.PALETTE
+        f = 1 if facing >= 0 else -1
+        pulse = math.sin(phase * 2.2) * .5 + .5
+        # kedip deterministik: tertutup ~4 frame tiap ~2.6 detik
+        blink = (phase % 6.4) < 0.22
 
-    def _draw_gorath_head(surface, cx, cy, facing, phase):
-        """Demon head with spiky hair and glowing red eyes."""
-        # Neck
-        _NS_gorath._rect(surface, _NS_gorath.PALETTE["skin_darkest"], (cx - 4, cy + 8, 8, 6))
-        _NS_gorath._rect(surface, _NS_gorath.PALETTE["skin_dark"], (cx - 3, cy + 8, 6, 5))
-        _NS_gorath._rect(surface, _NS_gorath.PALETTE["skin_mid"], (cx - 2, cy + 8, 4, 3))
+        # leher
+        _NS_gorath._rect(surface, P["shadow_deep"], (cx - 6 + f, cy + 11, 13, 10))
+        _NS_gorath._rect(surface, P["skin_darkest"], (cx - 6, cy + 11, 12, 9))
+        _NS_gorath._rect(surface, P["skin_dark"], (cx - 5, cy + 11, 10, 8))
+        _NS_gorath._rect(surface, P["skin_mid"], (cx - 3, cy + 11, 6, 5))
 
-        # Head shadow
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["shadow_deep"], (cx + 2, cy + 2), 12)
+        # tengkorak (selout + 4 band)
+        _NS_gorath._aacircle(surface, P["shadow_deep"], (cx + f * 2, cy + 2), 16)
+        _NS_gorath._aacircle(surface, P["skin_darkest"], (cx, cy), 16)
+        _NS_gorath._aacircle(surface, P["skin_dark"], (cx - 1, cy - 1), 14)
+        _NS_gorath._aacircle(surface, P["skin_mid"], (cx - 3, cy - 3), 11)
+        _NS_gorath._aacircle(surface, P["skin_light"], (cx - 5, cy - 6), 5)
+        _NS_gorath._aacircle(surface, P["skin_high"], (cx - 6, cy - 8), 2)
 
-        # Base head
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_darkest"], (cx, cy), 11)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_dark"], (cx - 1, cy - 1), 9)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_mid"], (cx - 2, cy - 2), 7)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_light"], (cx - 3, cy - 4), 3)
+        # ── rahang underbite (dagu maju) + rongga mulut gelap ──
+        # Mulut sengaja DI BAWAH garis mata (bukan sejajar) supaya wajah
+        # terbaca: brow -> socket -> moncong -> dagu.
+        jaw = [(cx - 11, cy + 6), (cx + 13 * f, cy + 5),
+               (cx + 14 * f, cy + 14), (cx + 3 * f, cy + 18), (cx - 9, cy + 15)]
+        _NS_gorath._poly(surface, P["skin_darkest"], jaw)
+        _NS_gorath._poly(surface, P["skin_dark"], [
+            (cx - 9, cy + 7), (cx + 11 * f, cy + 6), (cx + 12 * f, cy + 13),
+            (cx + 2 * f, cy + 16), (cx - 7, cy + 14)])
+        _NS_gorath._aaline(surface, P["skin_mid"], (cx - 7, cy + 8),
+                           (cx + 8 * f, cy + 7), 1)
+        # rongga mulut gelap (celah underbite)
+        _NS_gorath._poly(surface, P["shadow_deep"], [
+            (cx - 7, cy + 9), (cx + 11 * f, cy + 8),
+            (cx + 10 * f, cy + 12), (cx - 6, cy + 12)])
+        # gigi bawah kecil (rapat, 1-2 px - jangan mendominasi wajah)
+        for i in range(4):
+            tx = cx + (-4 + i * 4) * f
+            _NS_gorath._poly(surface, P["bone_mid"],
+                             [(tx - 1, cy + 12), (tx + 1, cy + 12),
+                              (tx, cy + 9)])
+            _NS_gorath._aacircle(surface, P["bone_light"], (tx, cy + 11), 1)
+        # taring besar 2 buah, mencuat KE ATAS dari rahang bawah
+        for sx2, ln in ((-4, 6), (8, 7)):
+            bx = cx + sx2 * f
+            _NS_gorath._poly(surface, P["shadow_deep"],
+                             [(bx - 2 + f, cy + 13), (bx + 2 + f, cy + 13),
+                              (bx + f, cy + 13 - ln)])
+            _NS_gorath._poly(surface, P["bone_dark"],
+                             [(bx - 2, cy + 12), (bx + 2, cy + 12),
+                              (bx, cy + 12 - ln)])
+            _NS_gorath._poly(surface, P["bone_light"],
+                             [(bx - 1, cy + 12), (bx + 1, cy + 12),
+                              (bx, cy + 13 - ln)])
+            _NS_gorath._aacircle(surface, P["bone_shine"],
+                                 (bx, cy + 13 - ln), 1)
 
-        # Blood face-paint (Bloodseeker style - across the face)
-        face_paint = [
-            (cx - 8, cy - 2),
-            (cx + 8, cy - 2),
-            (cx + 7, cy + 4),
-            (cx - 7, cy + 4),
-        ]
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["blood_darkest"], face_paint)
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["blood_dark"], [
-            (cx - 7, cy - 1), (cx + 7, cy - 1),
-            (cx + 6, cy + 3), (cx - 6, cy + 3),
-        ])
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["blood_mid"], [
-            (cx - 5, cy), (cx + 5, cy),
-            (cx + 4, cy + 2), (cx - 4, cy + 2),
-        ])
+        # war-paint darah: pita tipis di DAHI (di atas mata) + guratan pipi,
+        # jadi mata tetap jadi titik fokus.
+        paint = [(cx - 13, cy - 12), (cx + 13, cy - 12),
+                 (cx + 12, cy - 7), (cx - 12, cy - 7)]
+        _NS_gorath._poly(surface, P["blood_darkest"], paint)
+        _NS_gorath._poly(surface, P["blood_dark"], [
+            (cx - 11, cy - 11), (cx + 11, cy - 11),
+            (cx + 10, cy - 8), (cx - 10, cy - 8)])
+        _NS_gorath._aaline(surface, P["blood_mid"], (cx - 9, cy - 10),
+                           (cx + 8, cy - 10), 1)
+        # guratan pipi (dua sisi, melewati socket bukan menutupinya)
+        for sxx in (-12, 11):
+            _NS_gorath._aaline(surface, P["blood_darkest"],
+                               (cx + sxx, cy - 6), (cx + sxx, cy + 4), 3)
+            _NS_gorath._aaline(surface, P["blood_mid"],
+                               (cx + sxx, cy - 5), (cx + sxx, cy + 2), 1)
+        # tetes turun dari pita dahi
+        for i, dx in enumerate((-8, 0, 7)):
+            dl = 3 + int((math.sin(phase * 0.8 + i) * .5 + .5) * 4)
+            _NS_gorath._aaline(surface, P["blood_dark"],
+                               (cx + dx, cy - 7), (cx + dx, cy - 7 + dl), 2)
+            _NS_gorath._aacircle(surface, P["blood_bright"],
+                                 (cx + dx, cy - 7 + dl), 1)
 
-        # Blood drips from face paint
-        for offset in (-5, 0, 5):
-            _NS_gorath._draw_blood_streak(surface, cx + offset, cy + 4,
-                              cx + offset, cy + 8 + (offset % 2), 1, 200)
+        # brow ridge berat menggantung di atas socket (selout dalam)
+        _NS_gorath._poly(surface, P["skin_darkest"], [
+            (cx - 14, cy - 7), (cx + 14, cy - 7),
+            (cx + 12, cy - 4), (cx - 12, cy - 4)])
+        _NS_gorath._aaline(surface, P["skin_light"], (cx - 12, cy - 7),
+                           (cx + 4, cy - 8), 1)
 
-        # Glowing red eyes
-        eye_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        for side in (-1, 1):
-            ex = cx + side * 4
-            ey = cy + 1
-            # Eye socket
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["shadow_deep"], (ex, ey), 3)
-            # Glowing eye
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["eye_dark"], (ex, ey), 2)
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["eye_bright"], (ex, ey),
-                      max(1, int(2 * eye_pulse)))
-            _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["eye_hot"], (ex, ey), 1)
-            # Glow halo
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["eye_bright"], int(120 * eye_pulse)),
-                      (ex, ey), 5)
+        # ── mata: socket cekung + iris menyala + kedip ──
+        eye_c = P["eye_hot"] if (rage or hunting) else P["eye_bright"]
+        glow_a = _NS_gorath._alpha((130 if (rage or hunting) else 70)
+                                   + 60 * pulse)
+        for exx in (-7, 6):
+            ex = cx + exx * f
+            ey = cy - 3
+            # socket cekung (lebih gelap dari kulit -> mata "masuk")
+            _NS_gorath._aacircle(surface, P["skin_darkest"], (ex, ey), 4)
+            _NS_gorath._aacircle(surface, P["eye_dark"], (ex, ey), 3)
+            if blink:
+                _NS_gorath._aaline(surface, P["skin_dark"], (ex - 3, ey),
+                                   (ex + 3, ey), 3)
+                continue
+            _NS_gorath._aacircle(surface, (*eye_c, glow_a), (ex, ey), 5)
+            _NS_gorath._aacircle(surface, eye_c, (ex, ey), 2)
+            _NS_gorath._aacircle(surface, P["eye_white"], (ex - 1, ey - 1), 1)
 
-        # Mouth - fanged
-        _NS_gorath._rect(surface, _NS_gorath.PALETTE["shadow_deep"], (cx - 4, cy + 6, 8, 2))
-        # Fangs
-        for tooth in (-3, -1, 1, 3):
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["bone_light"], [
-                (cx + tooth, cy + 6),
-                (cx + tooth + 1, cy + 8),
-                (cx + tooth + 2, cy + 6),
-            ])
+        # hidung / lubang napas (di moncong, bukan di antara mata)
+        _NS_gorath._aacircle(surface, P["skin_darkest"], (cx + 7 * f, cy + 2), 2)
+        _NS_gorath._aacircle(surface, P["skin_darkest"], (cx + 11 * f, cy + 3), 1)
+        _NS_gorath._aaline(surface, P["skin_light"], (cx + 5 * f, cy),
+                           (cx + 8 * f, cy + 1), 1)
 
-        # SPIKY HAIR (Bloodseeker signature)
-        _NS_gorath._draw_spiky_hair(surface, cx, cy - 6, phase)
+        # tanduk pendek 2 buah (ivory 3 band, melengkung ke belakang)
+        for k, (hx, hy, ang, ln) in enumerate(((-11, -11, -2.45, 15),
+                                               (7, -13, -1.15, 13))):
+            bx, by = cx + hx * f, cy + hy
+            a = ang if f > 0 else math.pi - ang
+            _NS_gorath._draw_horn(surface, bx, by, a, ln)
 
-        # Bone/tribal decorations on head
-        for side in (-1, 1):
-            # Side bone ornament
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["bone_dark"], [
-                (cx + side * 9, cy - 4),
-                (cx + side * 13, cy - 2),
-                (cx + side * 12, cy + 2),
-                (cx + side * 9, cy),
-            ])
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["bone_mid"], [
-                (cx + side * 10, cy - 3),
-                (cx + side * 12, cy - 1),
-                (cx + side * 11, cy + 1),
-                (cx + side * 10, cy),
-            ])
+        # rambut depan (di atas dahi)
+        _NS_gorath._draw_spiky_hair(surface, cx, cy, phase, lag=0.0,
+                                    back=False, f=f)
 
+    def _draw_horn(surface, bx, by, ang, ln):
+        """Tanduk ivory melengkung: 3 band + groove + kilau ujung."""
+        P = _NS_gorath.PALETTE
+        pts = []
+        a = ang
+        x, y = bx, by
+        for i in range(4):
+            pts.append((x, y))
+            a += 0.22
+            step = ln / 4.0
+            x += math.cos(a) * step
+            y += math.sin(a) * step
+        pts.append((x, y))
+        for w, col in ((6, P["shadow_deep"]), (5, P["bone_darkest"]),
+                       (4, P["bone_dark"]), (2, P["bone_mid"])):
+            for i in range(len(pts) - 1):
+                off = 1 if col is P["shadow_deep"] else 0
+                _NS_gorath._aaline(surface, col,
+                                   (pts[i][0] + off, pts[i][1] + off),
+                                   (pts[i + 1][0] + off, pts[i + 1][1] + off),
+                                   max(1, int(w * (1 - i * 0.12))))
+        _NS_gorath._aacircle(surface, P["bone_light"],
+                             (int(pts[-1][0]), int(pts[-1][1])), 2)
+        _NS_gorath._aacircle(surface, P["bone_shine"],
+                             (int(pts[-1][0]) - 1, int(pts[-1][1]) - 1), 1)
 
-    def _draw_spiky_hair(surface, cx, cy, phase):
-        """Spiky mohawk/hair like Bloodseeker."""
-        # Main hair mass
-        hair_base = [
-            (cx - 10, cy + 4),
-            (cx - 8, cy - 2),
-            (cx - 3, cy - 6),
-            (cx + 3, cy - 6),
-            (cx + 8, cy - 2),
-            (cx + 10, cy + 4),
-        ]
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["hair_darkest"], hair_base)
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["hair_dark"], [
-            (cx - 8, cy + 3),
-            (cx - 6, cy - 1),
-            (cx - 2, cy - 4),
-            (cx + 2, cy - 4),
-            (cx + 6, cy - 1),
-            (cx + 8, cy + 3),
-        ])
+    # ------------------------------------------------------------------
+    # HAIR (3 lapis, siluet bergerigi, ujung berdarah)
+    # ------------------------------------------------------------------
+    def _draw_spiky_hair(surface, cx, cy, phase, lag=0.0, back=True, f=1):
+        """Rambut liar: lapis belakang (volume) + depan (jambul).
 
-        # Individual spikes
-        spikes = [
-            (cx - 9, cy - 2, -13),
-            (cx - 5, cy - 5, -10),
-            (cx - 2, cy - 6, -14),
-            (cx + 2, cy - 6, -13),
-            (cx + 5, cy - 5, -11),
-            (cx + 9, cy - 2, -14),
-        ]
-        for sx, sy, tip_y in spikes:
-            sway = int(math.sin(phase * 0.5 + sx) * 1)
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["hair_darkest"], [
-                (sx - 2, sy),
-                (sx + 2, sy),
-                (sx + sway, cy + tip_y),
-            ])
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["hair_dark"], [
-                (sx - 1, sy),
-                (sx + 1, sy),
-                (sx + sway, cy + tip_y + 2),
-            ])
-            # Highlight
-            _NS_gorath._aaline(surface, _NS_gorath.PALETTE["hair_mid"],
-                    (sx, sy), (sx + sway, cy + tip_y + 3), 1)
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Arms holding blades at rest."""
-        sway = math.sin(phase * 0.7) * 2
-        for side in (-1, 1):
-            sh_x = cx + side * 12
-            sh_y = cy + 2
-            elbow_x = sh_x + side * 10
-            elbow_y = cy + 12 + int(sway)
-            hand_x = elbow_x + side * 6
-            hand_y = elbow_y + 8
-
-            _NS_gorath._draw_arm_segment(surface, sh_x, sh_y, elbow_x, elbow_y)
-            _NS_gorath._draw_arm_segment(surface, elbow_x, elbow_y, hand_x, hand_y)
-            _NS_gorath._draw_hand(surface, hand_x, hand_y)
-            # Curved blade
-            _NS_gorath._draw_curved_blade(surface, hand_x, hand_y, side, 0.3, phase)
-
-
-    def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
-        """Arms swinging blades in attack."""
-        sway = math.sin(phase * 0.7) * 1
-
-        # Back arm (non-active, held ready)
-        back_side = -facing
-        bs_x = cx + back_side * 12
-        bs_y = cy + 2
-        be_x = bs_x + back_side * 8
-        be_y = cy + 12
-        bh_x = be_x + back_side * 6
-        bh_y = be_y + 8
-        _NS_gorath._draw_arm_segment(surface, bs_x, bs_y, be_x, be_y)
-        _NS_gorath._draw_arm_segment(surface, be_x, be_y, bh_x, bh_y)
-        _NS_gorath._draw_hand(surface, bh_x, bh_y)
-        _NS_gorath._draw_curved_blade(surface, bh_x, bh_y, back_side, 0.4, phase)
-
-        # Front arm - swinging blade
-        fs_x = cx + facing * 12
-        fs_y = cy + 2
-
-        # Swing arc: wind up → swing → recovery
-        if progress < 0.25:
-            # Wind up (raise blade)
-            t = progress / 0.25
-            t = t * t * (3 - 2 * t)  # ease
-            arm_angle = -1.5 + 0.3 * t
-        elif progress < 0.55:
-            # Swing forward (fast)
-            t = (progress - 0.25) / 0.30
-            t = 1 - (1 - t) ** 3  # ease out
-            arm_angle = -1.2 + 2.4 * t
+        ``lag`` = inersia (rambut tertinggal dari akselerasi badan).
+        """
+        P = _NS_gorath.PALETTE
+        if back:
+            spikes = ((-2.95, 22, 7), (-2.68, 26, 7), (-2.42, 29, 6),
+                      (-2.15, 30, 6), (-1.90, 29, 6), (-1.62, 26, 5),
+                      (-1.35, 23, 5), (-1.08, 19, 4))
+            bands = ((P["hair_darkest"], P["hair_dark"], P["hair_mid"]))
+            base_y = 2
         else:
-            # Recovery
-            t = (progress - 0.55) / 0.45
-            arm_angle = 1.2 - 1.0 * t
+            spikes = ((-2.30, 17, 5), (-2.02, 20, 5), (-1.74, 21, 5),
+                      (-1.46, 19, 4), (-1.18, 16, 4))
+            bands = ((P["hair_dark"], P["hair_mid"], P["hair_high"]))
+            base_y = -6
 
-        arm_len = 16
-        fe_x = fs_x + int(math.cos(arm_angle) * arm_len) * facing
-        fe_y = fs_y + int(math.sin(arm_angle) * arm_len)
-        fh_x = fe_x + int(math.cos(arm_angle) * 10) * facing
-        fh_y = fe_y + int(math.sin(arm_angle) * 10)
+        for i, (ang, ln, wd) in enumerate(spikes):
+            a = (ang + lag * (1 + i * .12))
+            a = a if f > 0 else math.pi - a
+            bx = cx + math.cos(a) * 6
+            by = cy + base_y + math.sin(a) * 4
+            wob = math.sin(phase * 1.4 + i * .7) * 0.06
+            a += wob
+            tipx = bx + math.cos(a) * ln
+            tipy = by + math.sin(a) * ln
+            px, py = -math.sin(a) * wd, math.cos(a) * wd
+            # selout
+            _NS_gorath._poly(surface, P["shadow_deep"],
+                             [(bx + px + f, by + py + 1),
+                              (bx - px + f, by - py + 1),
+                              (tipx + f, tipy + 1)])
+            _NS_gorath._poly(surface, bands[0],
+                             [(bx + px, by + py), (bx - px, by - py),
+                              (tipx, tipy)])
+            _NS_gorath._poly(surface, bands[1],
+                             [(bx + px * .6, by + py * .6),
+                              (bx - px * .6, by - py * .6),
+                              (tipx - math.cos(a) * 2, tipy - math.sin(a) * 2)])
+            _NS_gorath._aaline(surface, bands[2],
+                               (bx - px * .5, by - py * .5),
+                               (tipx - math.cos(a) * 3, tipy - math.sin(a) * 3), 1)
+            # ujung berdarah (helai selang-seling)
+            if i % 2 == 0:
+                _NS_gorath._aacircle(surface, P["blood_dark"],
+                                     (int(tipx), int(tipy)), 2)
+                _NS_gorath._aacircle(surface, P["blood_bright"],
+                                     (int(tipx), int(tipy)), 1)
 
-        _NS_gorath._draw_arm_segment(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_gorath._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y)
-        _NS_gorath._draw_hand(surface, fh_x, fh_y)
-
-        # Big curved blade in swinging hand
-        blade_angle = arm_angle + math.pi / 4 * facing
-        _NS_gorath._draw_curved_blade_angled(surface, fh_x, fh_y, facing, blade_angle,
-                                  phase, size=1.3)
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Muscular arm segment."""
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["shadow_deep"], (x1 + 2, y1 + 2), (x2 + 2, y2 + 2), 8)
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["skin_darkest"], (x1, y1), (x2, y2), 7)
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["skin_dark"], (x1, y1), (x2, y2), 5)
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["skin_mid"], (x1, y1), (x2, y2), 3)
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["skin_light"], (x1 - 1, y1), (x2 - 1, y2), 1)
-
+    # ------------------------------------------------------------------
+    # ARMS + KUKRI
+    # ------------------------------------------------------------------
+    def _draw_arm_segment(surface, x1, y1, x2, y2, w=7):
+        """Segmen lengan berotot: selout + 3 band + rim kiri-atas."""
+        P = _NS_gorath.PALETTE
+        _NS_gorath._aaline(surface, P["shadow_deep"], (x1 + 1, y1 + 1),
+                           (x2 + 1, y2 + 1), w + 2)
+        _NS_gorath._aaline(surface, P["skin_darkest"], (x1, y1), (x2, y2), w)
+        _NS_gorath._aaline(surface, P["skin_dark"], (x1, y1), (x2, y2), w - 2)
+        _NS_gorath._aaline(surface, P["skin_mid"], (x1 - 1, y1 - 1),
+                           (x2 - 1, y2 - 1), max(1, w - 4))
+        _NS_gorath._aaline(surface, P["skin_light"], (x1 - 2, y1 - 1),
+                           (x2 - 2, y2 - 1), 1)
 
     def _draw_hand(surface, x, y):
-        """Clenched fist."""
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["shadow_deep"], (x + 1, y + 1), 5)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_darkest"], (x, y), 4)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_dark"], (x, y), 3)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["skin_mid"], (x - 1, y - 1), 2)
-        # Wrist wrap
-        _NS_gorath._rect(surface, _NS_gorath.PALETTE["leather_dark"], (x - 4, y - 5, 8, 3),
-              border_radius=1)
-        _NS_gorath._rect(surface, _NS_gorath.PALETTE["leather_mid"], (x - 3, y - 5, 6, 1))
+        """Kepalan + wrist wrap kulit."""
+        P = _NS_gorath.PALETTE
+        _NS_gorath._aacircle(surface, P["shadow_deep"], (x + 1, y + 1), 7)
+        _NS_gorath._aacircle(surface, P["skin_darkest"], (x, y), 6)
+        _NS_gorath._aacircle(surface, P["skin_dark"], (x, y), 5)
+        _NS_gorath._aacircle(surface, P["skin_mid"], (x - 1, y - 1), 3)
+        _NS_gorath._aacircle(surface, P["skin_high"], (x - 2, y - 2), 1)
+        _NS_gorath._rect(surface, P["leather_darkest"], (x - 6, y - 8, 13, 5),
+                         border_radius=1)
+        _NS_gorath._rect(surface, P["leather_dark"], (x - 5, y - 7, 11, 3))
+        _NS_gorath._rect(surface, P["leather_mid"], (x - 4, y - 7, 9, 1))
 
+    def _draw_back_arm(surface, cx, cy, f, phase, action, ap, pose,
+                       rage=False):
+        """Lengan belakang + kukri kedua (digambar di balik torso)."""
+        sx, sy = cx - 20 * f, cy
+        if action == "attack" and pose is not None:
+            ang = pose["blade_a"]
+            ex, ey = sx - 8 * f, sy + 16
+            hx, hy = sx + int(math.cos(ang) * 22) * f, sy + int(math.sin(ang) * 20) + 10
+        elif action == "walk":
+            swing = math.sin(phase) * 7
+            ex, ey = sx - 6 * f, sy + 16
+            hx, hy = sx - 4 * f + int(swing), sy + 30
+            ang = 1.15
+        else:
+            bob = math.sin(phase * 0.75) * 1.5
+            ex, ey = sx - 6 * f, sy + 16
+            hx, hy = sx - 5 * f, int(sy + 30 + bob)
+            ang = 1.05
+        _NS_gorath._draw_arm_segment(surface, sx, sy, ex, ey, 8)
+        _NS_gorath._draw_arm_segment(surface, ex, ey, hx, hy, 7)
+        _NS_gorath._draw_hand(surface, hx, hy)
+        _NS_gorath._draw_curved_blade_angled(surface, hx, hy, -f, ang, phase,
+                                             size=0.85, rage=rage)
 
-    def _draw_curved_blade(surface, hx, hy, side, tilt, phase):
-        """Curved blade (idle pose)."""
-        # Blade extends downward and curves outward
-        tip_x = hx + int(side * 8)
-        tip_y = hy + 18
-        mid_x = hx + int(side * 12)
-        mid_y = hy + 10
+    def _draw_idle_arms(surface, cx, cy, facing, phase, walk=False,
+                        rage=False):
+        """Lengan depan saat idle/walk: kukri utama menggantung siaga."""
+        f = 1 if facing >= 0 else -1
+        sx, sy = cx + 20 * f, cy
+        if walk:
+            swing = math.sin(phase + math.pi) * 8
+            ex, ey = sx + 8 * f, sy + 15
+            hx, hy = sx + int(6 * f + swing), sy + 30
+            ang = 0.85
+        else:
+            bob = math.sin(phase * 0.75 + 0.6) * 1.8
+            ex, ey = sx + 8 * f, sy + 15
+            hx, hy = sx + 7 * f, int(sy + 30 + bob)
+            ang = 0.75
+        _NS_gorath._draw_arm_segment(surface, sx, sy, ex, ey, 9)
+        _NS_gorath._draw_arm_segment(surface, ex, ey, hx, hy, 8)
+        _NS_gorath._draw_hand(surface, hx, hy)
+        _NS_gorath._draw_curved_blade(surface, hx, hy, f, ang, phase,
+                                      rage=rage)
 
-        # Shadow
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["shadow_deep"], [
-            (hx + 1, hy + 3),
-            (hx + int(side * 4) + 1, hy + 4),
-            (mid_x + 1, mid_y + 1),
-            (tip_x + 1, tip_y + 1),
-            (hx + int(side * 2) + 1, hy + 8),
-        ])
+    def _draw_attack_arms(surface, cx, cy, facing, phase, progress,
+                          rage=False):
+        """Lengan depan saat menyerang - pose-driven dari _attack_pose."""
+        f = 1 if facing >= 0 else -1
+        pose = _NS_gorath._attack_pose(progress)
+        ang = pose["blade_b"]
+        sx, sy = cx + 20 * f, cy
+        reach = 20 + 10 * math.sin(min(1.0, progress * 1.6) * math.pi)
+        ex = sx + int(math.cos(ang - .6) * 16) * f
+        ey = sy + int(math.sin(ang - .6) * 14) + 6
+        hx = sx + int(math.cos(ang) * reach) * f
+        hy = sy + int(math.sin(ang) * reach) + 6
+        _NS_gorath._draw_arm_segment(surface, sx, sy, ex, ey, 9)
+        _NS_gorath._draw_arm_segment(surface, ex, ey, hx, hy, 8)
+        _NS_gorath._draw_hand(surface, hx, hy)
+        _NS_gorath._draw_curved_blade_angled(surface, hx, hy, f, ang, phase,
+                                             size=1.15, rage=rage,
+                                             impact=pose["impact"])
 
-        # Blade curved shape
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["metal_darkest"], [
-            (hx, hy + 2),
-            (hx + int(side * 5), hy + 3),
-            (mid_x, mid_y),
-            (tip_x, tip_y),
-            (hx + int(side * 1), hy + 7),
-        ])
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["metal_dark"], [
-            (hx, hy + 3),
-            (hx + int(side * 4), hy + 4),
-            (mid_x - int(side), mid_y),
-            (tip_x - int(side), tip_y - 1),
-            (hx + int(side * 1), hy + 6),
-        ])
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["metal_mid"], [
-            (hx + int(side), hy + 4),
-            (hx + int(side * 3), hy + 5),
-            (mid_x - int(side * 2), mid_y),
-            (tip_x - int(side * 2), tip_y - 2),
-            (hx + int(side * 1), hy + 5),
-        ])
+    def _draw_curved_blade(surface, hx, hy, side, tilt, phase, rage=False):
+        """Kukri melengkung (pose idle) - 5 band + fuller + darah menetes."""
+        _NS_gorath._draw_curved_blade_angled(surface, hx, hy, side, tilt,
+                                             phase, size=1.0, rage=rage)
 
-        # Blade highlight (sharp edge)
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["metal_light"],
-                (hx + int(side * 4), hy + 4),
-                (tip_x - int(side), tip_y - 1), 1)
+    def _draw_curved_blade_angled(surface, hx, hy, facing, angle, phase,
+                                  size=1.0, rage=False, impact=0.0):
+        """Kukri: gagang kulit + guard tulang + bilah crescent 5 band,
+        fuller gelap, edge highlight, darah, dan glint specular."""
+        P = _NS_gorath.PALETTE
+        f = 1 if facing >= 0 else -1
+        blade_len = 30 * size
+        curve = 12 * size
+        A = angle if f > 0 else math.pi - angle
+        dx, dy = math.cos(A), math.sin(A)
+        px, py = -dy, dx
 
-        # Blood on blade edge
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_darkest"], (mid_x, mid_y + 2), 3)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_mid"], (mid_x, mid_y + 2), 2)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_bright"], (mid_x - 1, mid_y + 1), 1)
-        # Dripping blood
-        _NS_gorath._draw_blood_droplet(surface, mid_x, mid_y + 6, 2, 220)
+        # ── gagang kulit + pommel tulang ──
+        gx, gy = hx - dx * 9, hy - dy * 9
+        _NS_gorath._aaline(surface, P["shadow_deep"], (gx + 1, gy + 1),
+                           (hx + 1, hy + 1), 7)
+        _NS_gorath._aaline(surface, P["leather_darkest"], (gx, gy), (hx, hy), 6)
+        _NS_gorath._aaline(surface, P["leather_dark"], (gx, gy), (hx, hy), 4)
+        for i in range(3):
+            wx = gx + dx * (2 + i * 3)
+            wy = gy + dy * (2 + i * 3)
+            _NS_gorath._aaline(surface, P["leather_mid"],
+                               (wx - px * 3, wy - py * 3),
+                               (wx + px * 3, wy + py * 3), 1)
+        _NS_gorath._aacircle(surface, P["bone_dark"], (int(gx), int(gy)), 4)
+        _NS_gorath._aacircle(surface, P["bone_mid"], (int(gx), int(gy)), 3)
+        _NS_gorath._aacircle(surface, P["bone_light"],
+                             (int(gx) - 1, int(gy) - 1), 1)
+        # guard tulang melintang
+        _NS_gorath._aaline(surface, P["bone_darkest"],
+                           (hx - px * 7, hy - py * 7),
+                           (hx + px * 7, hy + py * 7), 5)
+        _NS_gorath._aaline(surface, P["bone_mid"],
+                           (hx - px * 6, hy - py * 6),
+                           (hx + px * 6, hy + py * 6), 3)
+        _NS_gorath._aacircle(surface, P["bone_shine"],
+                             (int(hx - px * 5), int(hy - py * 5)), 1)
 
+        # ── bilah crescent ──
+        b1 = (hx + px * 4, hy + py * 4)
+        b2 = (hx - px * 4, hy - py * 4)
+        mid = (hx + dx * blade_len * .55 + px * curve,
+               hy + dy * blade_len * .55 + py * curve)
+        mid_in = (hx + dx * blade_len * .55 + px * curve * .35,
+                  hy + dy * blade_len * .55 + py * curve * .35)
+        tip = (hx + dx * blade_len, hy + dy * blade_len)
 
-    def _draw_curved_blade_angled(surface, hx, hy, facing, angle, phase, size=1.0):
-        """Larger curved blade for attack swing (angled)."""
-        # Blade length varies with size
-        blade_len = int(22 * size)
-        curve = int(10 * size)
+        _NS_gorath._poly(surface, P["shadow_deep"],
+                         [(b1[0] + f, b1[1] + 2), (mid[0] + f, mid[1] + 2),
+                          (tip[0] + f, tip[1] + 2), (b2[0] + f, b2[1] + 2)])
+        _NS_gorath._poly(surface, P["metal_darkest"], [b1, mid, tip, b2])
+        _NS_gorath._poly(surface, P["metal_dark"], [
+            (b1[0] - px, b1[1] - py), (mid[0] - px * .7, mid[1] - py * .7),
+            tip, b2])
+        _NS_gorath._poly(surface, P["metal_mid"], [
+            (b1[0] - px * 2, b1[1] - py * 2),
+            (mid_in[0], mid_in[1]), tip])
+        # fuller gelap (alur bilah)
+        _NS_gorath._aaline(surface, P["metal_darkest"],
+                           (hx + dx * 8 + px * 2, hy + dy * 8 + py * 2),
+                           (hx + dx * blade_len * .8 + px * 3,
+                            hy + dy * blade_len * .8 + py * 3), 2)
+        # edge highlight (sisi cahaya)
+        _NS_gorath._aaline(surface, P["metal_light"],
+                           (b1[0] - px * 2, b1[1] - py * 2), tip, 2)
+        _NS_gorath._aaline(surface, P["metal_shine"],
+                           (mid_in[0], mid_in[1]), tip, 1)
+        # specular cluster
+        _NS_gorath._aacircle(surface, P["metal_shine"],
+                             (int(hx + dx * 14 - px * 2),
+                              int(hy + dy * 14 - py * 2)), 2)
 
-        # Compute blade points along angle
-        dx = math.cos(angle) * facing
-        dy = math.sin(angle)
-        perp_x = -dy
-        perp_y = dx * facing
+        # ── darah di bilah (lebih panas saat rage / impact) ──
+        blood_a = 235 if rage else 200
+        _NS_gorath._aaline(surface, (*P["blood_darkest"], blood_a),
+                           (hx + dx * 10, hy + dy * 10), tip, 3)
+        _NS_gorath._aaline(surface, (*(P["blood_hot"] if rage
+                                       else P["blood_bright"]), blood_a),
+                           (mid[0], mid[1]), tip, 2)
+        _NS_gorath._aacircle(surface, P["blood_bright"],
+                             (int(mid[0]), int(mid[1])), 3)
+        _NS_gorath._aacircle(surface, P["blood_hot"],
+                             (int(mid[0]), int(mid[1])), 1)
+        _NS_gorath._draw_blood_droplet(surface, int(mid[0]),
+                                       int(mid[1]) + 7, 2, 210)
+        if impact > 0.05:
+            _NS_gorath._spark_star(surface, int(tip[0]), int(tip[1]),
+                                   int(14 * impact + 4), P["blood_glow"],
+                                   int(230 * impact), spikes=6,
+                                   rot=phase, core=P["white"])
 
-        # Base near hand
-        base1_x = hx + int(perp_x * 3)
-        base1_y = hy + int(perp_y * 3)
-        base2_x = hx - int(perp_x * 3)
-        base2_y = hy - int(perp_y * 3)
-
-        # Mid curve outward
-        mid_x = hx + int(dx * blade_len * 0.55) + int(perp_x * curve)
-        mid_y = hy + int(dy * blade_len * 0.55) + int(perp_y * curve)
-
-        # Tip
-        tip_x = hx + int(dx * blade_len)
-        tip_y = hy + int(dy * blade_len)
-
-        # Shadow
-        shadow_pts = [
-            (base1_x + 2, base1_y + 2),
-            (mid_x + 2, mid_y + 2),
-            (tip_x + 2, tip_y + 2),
-            (base2_x + 2, base2_y + 2),
-        ]
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["shadow_deep"], shadow_pts)
-
-        # Blade
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["metal_darkest"], [
-            (base1_x, base1_y), (mid_x, mid_y),
-            (tip_x, tip_y), (base2_x, base2_y),
-        ])
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["metal_dark"], [
-            (base1_x - int(perp_x), base1_y - int(perp_y)),
-            (mid_x - int(perp_x * 0.7), mid_y - int(perp_y * 0.7)),
-            (tip_x, tip_y),
-            (base2_x, base2_y),
-        ])
-        _NS_gorath._poly(surface, _NS_gorath.PALETTE["metal_mid"], [
-            (base1_x - int(perp_x * 2), base1_y - int(perp_y * 2)),
-            (mid_x - int(perp_x * 1.4), mid_y - int(perp_y * 1.4)),
-            (tip_x, tip_y),
-        ])
-
-        # Sharp edge highlight
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["metal_shine"],
-                (base1_x - int(perp_x * 2), base1_y - int(perp_y * 2)),
-                (tip_x, tip_y), 1)
-
-        # Blood covering blade
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["blood_darkest"], (base1_x, base1_y),
-                (tip_x, tip_y), 3)
-        _NS_gorath._aaline(surface, _NS_gorath.PALETTE["blood_bright"], (mid_x, mid_y), (tip_x, tip_y), 2)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_hot"], (mid_x, mid_y), 3)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_glow"], (mid_x, mid_y), 1)
-
-
+    # ------------------------------------------------------------------
+    # BODY BLOOD DRIPS / PORTRAIT DETAIL
+    # ------------------------------------------------------------------
     def _draw_body_blood_drips(surface, cx, cy, phase):
-        """Blood drips on body."""
-        drips = [
-            (cx - 8, cy + 5, 0),
-            (cx + 6, cy + 8, 0.3),
-            (cx - 3, cy - 5, 0.6),
-            (cx + 10, cy - 2, 0.9),
-        ]
+        """Tetes darah jatuh dari badan (siklus deterministik)."""
+        drips = ((-12, 6, 0.0), (10, 12, 0.3), (-5, -10, 0.6), (15, -4, 0.9))
         for dx, dy, offset in drips:
             t = (phase * 0.5 + offset) % 1.0
-            drip_y = dy + int(t * 15)
+            drip_y = dy + int(t * 22)
             alpha = int(255 * (1 - t))
             if alpha > 20:
-                _NS_gorath._draw_blood_droplet(surface, dx, drip_y, 2, alpha)
+                _NS_gorath._draw_blood_droplet(surface, cx + dx, cy + drip_y,
+                                               2, alpha)
 
+    def _draw_gorath_masterwork_details(surface, cx, cy, f):
+        """Micro-detail khusus portrait LOD (hilang di skala arena)."""
+        P = _NS_gorath.PALETTE
+        mix = _NS_gorath._mix
+        # pori & scar wajah
+        for i in range(5):
+            _NS_gorath._aaline(surface, P["skin_high"],
+                               (cx - 10 + i * 5, cy - 62),
+                               (cx - 8 + i * 5, cy - 58), 1)
+        _NS_gorath._aaline(surface, mix(P["skin_shine"], P["white"], .4),
+                           (cx - 12, cy - 58), (cx - 4, cy - 60), 1)
+        # ukiran rune pada tanduk & taring
+        _NS_gorath._aaline(surface, P["bone_shine"], (cx - 14, cy - 62),
+                           (cx - 12, cy - 66), 1)
+        # jahitan harness
+        for i in range(5):
+            xx = cx - 14 + i * 7
+            _NS_gorath._aaline(surface, P["leather_high"], (cx - 14 + i * 7,
+                                                            cy - 18 + i * 2),
+                               (xx + 3, cy - 15 + i * 2), 1)
+        # kilau gesper & stud sabuk
+        _NS_gorath._aacircle(surface, mix(P["gold_light"], P["white"], .5),
+                             (cx - 2, cy + 6), 1)
+        # serat kain loincloth
+        for i in range(4):
+            _NS_gorath._aaline(surface, P["leather_light"],
+                               (cx - 12 + i * 8, cy + 16),
+                               (cx - 11 + i * 8, cy + 26), 1)
+        # kabut napas dari mulut
+        _NS_gorath._aacircle(surface, (*P["blood_light"], 110),
+                             (cx + 18 * f, cy - 40), 2)
+        _NS_gorath._aacircle(surface, (*P["blood_light"], 70),
+                             (cx + 22 * f, cy - 43), 1)
 
     # ===================================================================
-    # FLOATING EFFECTS (replaces legs)
+    # AMBIENT / GROUND FX  (surface statis di-cache)
     # ===================================================================
-    def _draw_blood_wisps(surface, cx, cy, phase, trail=False, facing=1, intense=False):
-        """Blood mist wisps rising from below."""
+    def _draw_blood_wisps(surface, cx, cy, phase, trail=False, facing=1,
+                          intense=False):
+        """Kabut darah naik di bawah badan + droplet orbit (cached mist)."""
+        P = _NS_gorath.PALETTE
         strength = 1.5 if intense else 1.0
-        mist = pygame.Surface((120, 40), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
-        for radius in range(32, 3, -4):
-            alpha = int((32 - radius) * 2.5 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_gorath.PALETTE["blood_dark"], min(255, alpha)),
-                    (60 - radius * 2, 20 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 60, cy - 10))
 
-        # Rising blood wisps
-        for i, offset in enumerate((-20, -8, 8, 20)):
+        def build():
+            mist = pygame.Surface((112, 38), pygame.SRCALPHA)
+            for radius in range(30, 2, -3):
+                alpha = int((30 - radius) * 3.4)
+                if alpha > 0:
+                    pygame.draw.ellipse(
+                        mist, (*P["blood_dark"], min(255, alpha)),
+                        (56 - radius * 2, 19 - radius // 3,
+                         radius * 4, max(3, radius // 2)))
+            return mist
+        mist = _NS_gorath._static("wisp_mist", build)
+        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
+        a = _NS_gorath._alpha(255 * min(1.0, pulse * strength))
+        mist.set_alpha(a)
+        surface.blit(mist, (cx - 56, cy - 10))
+        mist.set_alpha(255)
+
+        # lidah kabut naik (siluet bergerigi)
+        for i, offset in enumerate((-18, -7, 7, 18)):
             t = (phase * 0.6 + i * 0.25) % 1.0
             sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 26)
-            alpha = max(0, min(255, int(200 * (1 - t) * strength)))
+            sy = cy + 5 - int(t * 22)
+            alpha = _NS_gorath._alpha(200 * (1 - t) * strength)
             if alpha <= 0:
                 continue
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_darkest"], alpha), (sx, sy), 5)
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_dark"], alpha), (sx, sy - 2), 3)
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha), (sx, sy - 3), 1)
+            _NS_gorath._aacircle(surface, (*P["blood_darkest"], alpha), (sx, sy), 4)
+            _NS_gorath._aacircle(surface, (*P["blood_dark"], alpha), (sx, sy - 2), 3)
+            _NS_gorath._aacircle(surface, (*P["blood_bright"], alpha), (sx, sy - 3), 1)
 
-        # Floating blood droplets
+        # droplet orbit
         for i in range(6):
             angle = phase * 0.7 + i * math.pi / 3
-            r = 22 + int(math.sin(phase + i * 1.3) * 6)
+            r = 18 + int(math.sin(phase + i * 1.3) * 5)
             sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 8)
+            sy = cy + int(math.sin(angle) * 7)
             _NS_gorath._draw_blood_droplet(surface, sx, sy, 2, 200)
 
         if trail:
             for i in range(5):
-                sx = cx - (i + 1) * 11 * facing
+                sx = cx - (i + 1) * 9 * facing
                 sy = cy + int(math.sin(phase + i) * 2)
                 alpha = max(0, 140 - i * 25)
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_dark"], alpha),
-                          (sx, sy), max(2, 5 - i))
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha // 2),
-                          (sx, sy), max(1, 3 - i))
-
+                _NS_gorath._aacircle(surface, (*P["blood_dark"], alpha),
+                                     (sx, sy), max(2, 5 - i))
+                _NS_gorath._aacircle(surface, (*P["blood_bright"], alpha // 2),
+                                     (sx, sy), max(1, 3 - i))
 
     def _draw_blood_trail(surface, cx, cy, phase, facing):
-        """Blood splashes on ground while walking."""
+        """Cipratan darah di tanah saat berjalan."""
         for i in range(4):
-            sx = cx - (i + 1) * 12 * facing
+            sx = cx - (i + 1) * 14 * facing
             sy = cy + int(math.cos(phase + i) * 2)
             alpha = max(0, 180 - i * 30)
-            _NS_gorath._draw_blood_splatter(surface, sx, sy, max(2, 5 - i),
-                                 seed=i, alpha=alpha)
-
+            _NS_gorath._draw_blood_splatter(surface, sx, sy, max(2, 6 - i),
+                                            seed=i, alpha=alpha)
 
     def _draw_shadow(surface, x, y, lift=0):
-        """Ground shadow. ORIGINAL-MAX: cache + reaktif (menyusut saat
-        badan terangkat, dasar tetap menapak tanah)."""
+        """Bayangan tanah (cached + reaktif: menyusut saat badan naik,
+        dasar tetap menapak)."""
         NS = _NS_gorath
         if NS._shadow_cache is None:
-            shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
+            shadow = pygame.Surface((78, 20), pygame.SRCALPHA)
             for radius in range(10, 0, -1):
-                alpha = max(0, (10 - radius) * 16)
+                alpha = max(0, (10 - radius) * 18)
                 pygame.draw.ellipse(
                     shadow, (0, 0, 0, alpha),
-                    (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-                )
+                    (10 - radius, 10 - radius, 58 + radius * 2, radius * 2))
             pygame.draw.ellipse(shadow, (*NS.PALETTE["blood_darkest"], 100),
-                                (8, 4, 84, 10))
+                                (7, 4, 64, 10))
             NS._shadow_cache = shadow
         spr = NS._shadow_cache
         w = spr.get_width()
@@ -4594,369 +5322,646 @@ class _NS_gorath:
         if NS._record_shadow is not None:
             NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
-
     def _draw_blood_aura(surface, x, y, phase, active_skill):
-        """Background aura."""
+        """Aura darah latar (cached, berdenyut lewat set_alpha)."""
         NS = _NS_gorath
         if NS._aura_cache is None:
-            aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-            for radius in range(72, 5, -4):
-                alpha = int((72 - radius) * 1.4)
+            aura = pygame.Surface((166, 154), pygame.SRCALPHA)
+            for radius in range(66, 4, -3):
+                alpha = int((66 - radius) * 1.7)
                 if alpha > 0:
                     NS._aacircle(aura, (*NS.PALETTE["blood_darkest"],
-                                        min(255, alpha)), (90, 80), radius)
+                                        min(255, alpha)), (83, 77), radius)
             NS._aura_cache = aura
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
-        strength = 1.5 if active_skill == "q" else 1.0
-        a = int(255 * min(1.0, pulse * strength))
-        spr = NS._aura_cache.copy()
+        strength = 1.5 if active_skill in ("q", "r") else 1.0
+        a = _NS_gorath._alpha(255 * min(1.0, pulse * strength))
+        spr = NS._aura_cache
         spr.set_alpha(a)
-        surface.blit(spr, (x - 90, y - 80))
-
+        surface.blit(spr, (x - 83, y - 77))
+        spr.set_alpha(255)
 
     def _draw_ground_blood_pool(surface, x, y, phase, active_skill):
-        """Blood pool on ground beneath Gorath."""
+        """Kolam darah + cincin tanah (cached; hanya denyut per frame)."""
+        NS = _NS_gorath
+        P = NS.PALETTE
+
+        def build():
+            pool = pygame.Surface((124, 42), pygame.SRCALPHA)
+            pygame.draw.ellipse(pool, (*P["blood_darkest"], 200), (8, 11, 108, 20))
+            pygame.draw.ellipse(pool, (*P["blood_dark"], 180), (19, 14, 86, 14))
+            pygame.draw.ellipse(pool, (*P["blood_mid"], 120), (29, 17, 66, 9))
+            pygame.draw.ellipse(pool, (*P["blood_darkest"], 190), (6, 9, 112, 24), 2)
+            # cipratan tepi
+            for i in range(10):
+                angle = i * math.pi / 5
+                px = 62 + int(math.cos(angle) * 49)
+                py = 21 + int(math.sin(angle) * 12)
+                r = 2 + (i % 3)
+                pygame.draw.ellipse(pool, (*P["blood_dark"], 180),
+                                    (px - r, py - r // 2, r * 2, max(2, r)))
+            return pool
+        pool = _NS_gorath._static("ground_pool", build)
         pulse = math.sin(phase * 0.8) * 0.15 + 0.85
-        pool = pygame.Surface((130, 40), pygame.SRCALPHA)
-        # Base pool
-        pygame.draw.ellipse(pool, (*_NS_gorath.PALETTE["blood_darkest"], int(200 * pulse)),
-                            (10, 12, 110, 20))
-        pygame.draw.ellipse(pool, (*_NS_gorath.PALETTE["blood_dark"], int(180 * pulse)),
-                            (20, 15, 90, 14))
-        pygame.draw.ellipse(pool, (*_NS_gorath.PALETTE["blood_mid"], int(120 * pulse)),
-                            (30, 17, 70, 10))
+        a = _NS_gorath._alpha(255 * pulse)
+        pool.set_alpha(a)
+        surface.blit(pool, (x - 62, y - 21))
+        pool.set_alpha(255)
 
-        # Irregular splashes around
+        # quill/serpihan tulang kecil tertanam di cincin
         for i in range(8):
-            angle = i * math.pi / 4 + phase * 0.1
-            px = 65 + int(math.cos(angle) * 50)
-            py = 22 + int(math.sin(angle) * 12)
-            r = 3 + (i % 3)
-            pygame.draw.ellipse(pool, (*_NS_gorath.PALETTE["blood_dark"], 180),
-                                (px - r, py - r // 2, r * 2, r))
+            angle = phase * 0.18 + i * math.pi / 4
+            sx = x + int(math.cos(angle) * 50)
+            sy = y + int(math.sin(angle) * 11)
+            _NS_gorath._aaline(surface, (*P["bone_dark"], 190), (sx, sy),
+                               (sx + int(math.cos(angle) * 5),
+                                sy - 5), 2)
+            _NS_gorath._aacircle(surface, (*P["bone_light"], 190),
+                                 (sx + int(math.cos(angle) * 5), sy - 5), 1)
 
-        surface.blit(pool, (x - 65, y - 20))
+        if active_skill:
+            color = (P["blood_glow"] if active_skill in ("q", "r")
+                     else P["blood_bright"])
+            _NS_gorath._ellipse(surface, (*color, int(140 * pulse)),
+                                (x - 56, y - 18, 112, 36), 2)
 
-
+    # ===================================================================
+    # MELEE SWING FX (smear sabit 3 lapis + IMPACT)
+    # ===================================================================
     def _draw_blade_swing_arc(surface, x, y, facing, progress):
-        """Blade swing motion trail."""
-        if progress < 0.28 or progress > 0.75:
+        """Smear sabit ayunan: 3 lapis (gelap lebar -> panas sempit)."""
+        if progress < 0.24 or progress > 0.78:
             return
-        if progress < 0.5:
-            visibility = (progress - 0.28) / 0.22
+        P = _NS_gorath.PALETTE
+        if progress < 0.52:
+            visibility = (progress - 0.24) / 0.28
         else:
-            visibility = 1.0 - (progress - 0.5) / 0.25
+            visibility = 1.0 - (progress - 0.52) / 0.26
         visibility = max(0.0, min(1.0, visibility))
+        f = 1 if facing >= 0 else -1
+        k = _NS_gorath.SCALE
 
-        arc = pygame.Surface((140, 110), pygame.SRCALPHA)
-        for i in range(16):
-            t = i / 15
-            angle = -math.pi * 0.9 + t * math.pi * 1.1
-            px = 70 + int(math.cos(angle) * 50) * facing
-            py = 55 + int(math.sin(angle) * 38)
-            alpha = int((200 - i * 10) * visibility)
-            if alpha <= 0:
-                continue
-            _NS_gorath._aacircle(arc, (*_NS_gorath.PALETTE["blood_darkest"], alpha), (px, py), 8)
-            _NS_gorath._aacircle(arc, (*_NS_gorath.PALETTE["blood_mid"], alpha), (px, py), 5)
-            _NS_gorath._aacircle(arc, (*_NS_gorath.PALETTE["blood_bright"], alpha), (px, py), 3)
-            _NS_gorath._aacircle(arc, (*_NS_gorath.PALETTE["blood_hot"], min(255, alpha)), (px, py), 1)
-        surface.blit(arc, (x - 70, y - 55))
-
+        for lap, (rad, wid, col, base_a) in enumerate((
+                (58 * k, max(3, int(11 * k)), P["blood_darkest"], 190),
+                (54 * k, max(2, int(7 * k)), P["blood_mid"], 210),
+                (50 * k, max(1, int(4 * k)), P["blood_bright"], 230))):
+            pts = []
+            for i in range(15):
+                t = i / 14.0
+                angle = -math.pi * 0.95 + t * math.pi * 1.15
+                pts.append((x + math.cos(angle) * rad * f,
+                            y + math.sin(angle) * rad * .78 + 4))
+            a = _NS_gorath._alpha(base_a * visibility)
+            for i in range(len(pts) - 1):
+                _NS_gorath._aaline(surface, (*col, a), pts[i], pts[i + 1], wid)
+        # leading edge panas
+        te = -math.pi * 0.95 + (0.55 + 0.35 * visibility) * math.pi * 1.15
+        _NS_gorath._aacircle(surface, (*P["blood_hot"],
+                                       _NS_gorath._alpha(240 * visibility)),
+                             (int(x + math.cos(te) * 50 * k * f),
+                              int(y + math.sin(te) * 39 * k + 4)),
+                             max(2, int(4 * k)))
 
     def _draw_swing_impact(surface, x, y, facing, progress):
-        """Impact splash at end of swing."""
-        if progress < 0.45 or progress > 0.85:
+        """Frame IMPACT: ring + bintang + serpihan + cipratan."""
+        if progress < 0.46 or progress > 0.84:
             return
-        t = (progress - 0.45) / 0.40
+        P = _NS_gorath.PALETTE
+        t = (progress - 0.46) / 0.38
         intensity = math.sin(t * math.pi)
+        f = 1 if facing >= 0 else -1
+        k = _NS_gorath.SCALE
 
-        impact_x = x + 35 * facing
-        impact_y = y + 3
-        alpha = int(230 * intensity)
-        radius = int(8 + intensity * 22)
+        ix = int(x + 42 * k * f)
+        iy = int(y + 6 * k)
+        alpha = _NS_gorath._alpha(235 * intensity)
+        radius = max(3, int((10 + intensity * 26) * k))
 
-        _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_dark"], alpha // 2),
-                  (impact_x, impact_y), radius + 4)
-        _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha),
-                  (impact_x, impact_y), radius, 3)
-
-        # Splash droplets
+        _NS_gorath._aacircle(surface, (*P["blood_dark"], alpha // 2),
+                             (ix, iy), radius + 5)
+        _NS_gorath._ring(surface, (ix, iy), radius, 3, P["blood_bright"], alpha)
+        _NS_gorath._spark_star(surface, ix, iy, int(radius * 1.25),
+                               P["blood_hot"], alpha, spikes=8,
+                               rot=progress * 3, core=P["white"])
+        # serpihan batu / percikan
         for i in range(8):
             angle = i * math.pi / 4 + progress * 3
-            dx = impact_x + int(math.cos(angle) * radius * 1.2)
-            dy = impact_y + int(math.sin(angle) * radius * 0.9)
+            dx = ix + int(math.cos(angle) * radius * 1.25)
+            dy = iy + int(math.sin(angle) * radius * 0.9)
             _NS_gorath._draw_blood_droplet(surface, dx, dy, 3, alpha)
-
+        # retakan tanah pendek
+        for i in range(3):
+            _NS_gorath._jagged_crack(surface, ix, iy + 8,
+                                     (i - 1) * .7 + (0 if f > 0 else math.pi),
+                                     max(4, int(20 * intensity * k)),
+                                     (P["blood_darkest"], P["blood_mid"]),
+                                     alpha, seed=i + 11, width=2)
 
     # ===================================================================
-    # SKILL Q: BLOODRAGE
+    # SKILL Q: BLOODRAGE (self-buff, 90 frame)
+    #   AKTIVASI : pilar darah + shockwave ganda + bintang
+    #   STEADY   : aura 3 lapis + mahkota api darah + bara naik + glint
+    #   TELEGRAPH: rune ring ganda berlawanan + retakan radial
     # ===================================================================
+    def _draw_bloodrage_ground(surface, boss, x, y, timer, phase):
+        """Telegraph tanah Q: rune ring ganda + retakan magma darah."""
+        P = _NS_gorath.PALETTE
+        duration = 90
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        fs = _NS_gorath._fx_scale(boss)
+        pulse = math.sin(phase * 3) * .5 + .5
+        gy = y + _NS_gorath.GROUND_DY
+
+        # rune ring ganda berputar berlawanan arah; ring luar MENGEMBANG
+        # seiring buff naik supaya 3 tahap (aktivasi/steady/telegraph)
+        # terbaca jelas walau ini skill self-buff.
+        grow = 0.55 + 0.45 * progress
+        _NS_gorath._dashed_ring(surface, x, gy, int(46 * fs * grow),
+                                P["blood_bright"], int(150 + 60 * pulse),
+                                phase * 1.3 + progress * 2.4,
+                                segments=12, thick=3, span=.45, squash=.42)
+        _NS_gorath._dashed_ring(surface, x, gy, int(34 * fs * grow),
+                                P["blood_glow"], int(130 + 60 * pulse),
+                                -phase * 1.8 - progress * 3.1,
+                                segments=8, thick=2, span=.5, squash=.42)
+        # chevron berbaris ke dalam (telegraph "buff mengunci")
+        for k in range(4):
+            da = k * math.pi / 2 + progress * 1.1
+            _NS_gorath._chevron(surface,
+                                x + math.cos(da) * 40 * fs * grow,
+                                gy + math.sin(da) * 17 * fs * grow,
+                                da + math.pi, max(6, int(8 * fs)),
+                                P["blood_light"], int(120 + 90 * pulse), 3)
+        # retakan magma darah radial (memanjang mengikuti progress)
+        for i in range(6):
+            ang = i * math.pi * 2 / 6 + .3
+            _NS_gorath._jagged_crack(surface, x, gy, ang,
+                                     int((30 + (i % 3) * 10) * fs * grow),
+                                     (P["blood_darkest"], P["blood_mid"]),
+                                     130 + int(60 * pulse), seed=i + 2, width=2)
+        # glow lantai hangat
+        _NS_gorath._ellipse(surface, (*P["blood_dark"], int(80 + 40 * pulse)),
+                            (int(x - 60 * fs * grow), gy - 11,
+                             int(120 * fs * grow), 22), 0)
+
     def _draw_bloodrage(surface, boss, x, y, timer, phase):
-        """Self-buff — flame-like blood aura around Gorath."""
+        """Q foreground: pilar aktivasi, mahkota api darah, bara, glint."""
+        P = _NS_gorath.PALETTE
         duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
+        fs = _NS_gorath._fx_scale(boss)
+        cx, cy = x, y - 12
 
-        # Flame tongues rising around body
-        for i in range(10):
-            angle = phase * 0.5 + i * math.pi * 2 / 10
-            base_x = x + int(math.cos(angle) * 20)
-            base_y = y + 20 + int(math.sin(angle) * 5)
-            flame_h = int(20 + math.sin(phase * 2 + i) * 8)
+        # ── AKTIVASI: pilar darah 4 lapis + shockwave ganda + bintang ──
+        if progress < 0.18:
+            t = progress / 0.18
+            top = int(cy - min(100 * fs, 240) * (0.6 + 0.4 * (1 - t)))
+            for wd, col, al in ((32, P["blood_darkest"], 110),
+                                (20, P["blood_dark"], 150),
+                                (11, P["blood_bright"], 190),
+                                (4, P["blood_glow"], 220)):
+                _NS_gorath._aaline(surface, (*col, int(al * (1 - t))),
+                                   (cx, top), (cx, cy), wd)
+            _NS_gorath._aaline(surface, (*P["blood_seam"], int(200 * (1 - t))),
+                               (cx, top), (cx, cy), 2)
+            for k, rmax in ((0, 120), (1, 86)):
+                r = int((16 + t * rmax) * fs)
+                _NS_gorath._ring(surface, (cx, cy), r, 3,
+                                 P["blood_hot"] if k == 0 else P["blood_light"],
+                                 int((220 if k == 0 else 150) * (1 - t)))
+            _NS_gorath._spark_star(surface, cx, cy, int(32 * (1 - t * .4)),
+                                   P["blood_glow"], int(235 * (1 - t)),
+                                   8, rot=.3, core=P["white"])
 
-            # Flame shape
-            for h in range(flame_h):
-                t = h / max(1, flame_h)
-                w = int(4 * (1 - t * 0.7))
-                fx = base_x + int(math.sin(phase * 3 + i + t * 5) * 2)
-                fy = base_y - h
-                alpha = int(200 * pulse * (1 - t * 0.5))
-                if t < 0.3:
-                    color = _NS_gorath.PALETTE["blood_darkest"]
-                elif t < 0.6:
-                    color = _NS_gorath.PALETTE["blood_mid"]
-                else:
-                    color = _NS_gorath.PALETTE["blood_hot"]
-                _NS_gorath._aacircle(surface, (*color, alpha), (fx, fy), max(1, w))
+        # ── STEADY: mahkota api darah 2 ring ──
+        for ring_i, (n, r0, sc) in enumerate(((10, 34, 1.0), (7, 22, .72))):
+            for i in range(n):
+                ang = i * math.pi * 2 / n + phase * (.5 if ring_i else .85)
+                r = r0 * fs
+                px = cx + math.cos(ang) * r
+                py = cy + 14 + math.sin(ang) * r * .55
+                for h in range(3):
+                    fy = py - h * 7 - int((phase * 26 + i * 3) % 20)
+                    alpha = _NS_gorath._alpha(210 * (1 - h / 3) * pulse)
+                    rad = max(1, int((4 - h) * sc))
+                    _NS_gorath._aacircle(surface, (*P["blood_bright"], alpha),
+                                         (int(px), int(fy)), rad)
+                    _NS_gorath._aacircle(surface, (*P["blood_hot"], alpha),
+                                         (int(px), int(fy)), max(1, 2 - h // 2))
 
-        # Inner intense glow around body
-        for radius in range(30, 5, -3):
-            alpha = int((30 - radius) * 4 * pulse)
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_dark"], min(255, alpha)),
-                      (x, y), radius)
-
-        # Rising blood particles
-        for i in range(12):
-            t = (phase * 0.6 + i * 0.08) % 1.0
-            px = x + int(math.cos(i * 2.5 + phase) * 25)
-            py = y + 20 - int(t * 40)
-            alpha = int(255 * (1 - t))
+        # ── STEADY: aura berlapis 3 cincin ──
+        for r in range(3):
+            radius = int((30 + r * 11 + math.sin(phase * 2 + r) * 4) * fs)
+            alpha = _NS_gorath._alpha((160 - r * 42) * (0.7 + 0.3 * pulse))
             if alpha > 0:
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha), (px, py), 2)
-                _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_hot"], alpha), (px, py), 1)
+                _NS_gorath._aacircle(surface, (*P["blood_glow"], alpha),
+                                     (cx, cy), radius, 2)
 
+        # ── STEADY: kolom bara naik (sway per-ember) ──
+        for i in range(10):
+            t = (phase * .35 + i / 10.0) % 1.0
+            ex = cx + math.sin(i * 2.1 + phase) * (12 + i * 4) * fs * .5
+            ey = cy + 20 - t * 96 * fs
+            _NS_gorath._aacircle(surface, (*P["blood_hot"],
+                                           _NS_gorath._alpha(210 * (1 - t))),
+                                 (int(ex), int(ey)), 2 if i % 2 else 1)
+
+        # ── STEADY: glint orbit ──
+        for i in range(5):
+            a = phase * 1.9 + i * math.pi * 2 / 5
+            rr = 40 * fs
+            _NS_gorath._spark_star(surface, cx + math.cos(a) * rr,
+                                   cy + math.sin(a) * rr * .55, 7,
+                                   P["blood_light"], 190, spikes=4,
+                                   rot=a, core=P["white"])
+
+        # ── denyut pusat ──
+        _NS_gorath._aacircle(surface, (*P["blood_bright"], int(170 * pulse)),
+                             (cx, cy + 6), int((16 + 5 * pulse) * fs))
+        _NS_gorath._aacircle(surface, (*P["blood_glow"], int(220 * pulse)),
+                             (cx, cy + 6), int((7 + 3 * pulse) * fs))
 
     # ===================================================================
-    # SKILL W: BLOODRITE (ranged rain of blood spikes)
+    # SKILL W: BLOODRITE (AOE 150 px dunia di sekitar diri, 60 frame)
+    #   TELEGRAPH: ring jangkauan TEPAT 150 + ring konvergen + chevron
+    #   AKTIVASI : shockwave ganda + bintang di pusat
+    #   STEADY   : hujan duri darah + splat marker
     # ===================================================================
     def _draw_bloodrite_ground(surface, boss, x, y, timer, phase):
-        """Warning circle at target location."""
-        tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 60))
+        """Telegraph W: cincin jangkauan world-space (150 px dunia)."""
+        P = _NS_gorath.PALETTE
+        duration = 60
+        progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
+        gy = y + _NS_gorath.GROUND_DY - 8
+        rng = _NS_gorath._ring_r(boss, _NS_gorath.SKILL_RADIUS["w"], surface)
 
-        radius = int(34 + progress * 18)
-        # Warning ring (ORIGINAL-MAX lebih besar & terang)
-        _NS_gorath._ellipse(surface, (*_NS_gorath.PALETTE["blood_darkest"], int(220 * pulse)),
-                 (tx - radius, ty - radius // 2, radius * 2, radius), 3)
-        _NS_gorath._ellipse(surface, (*_NS_gorath.PALETTE["blood_mid"], int(170 * pulse)),
-                 (tx - radius + 4, ty - radius // 2 + 2,
-                  radius * 2 - 8, radius - 4), 2)
-        _NS_gorath._ellipse(surface, (*_NS_gorath.PALETTE["blood_bright"], int(140 * pulse)),
-                 (tx - radius + 8, ty - radius // 2 + 4,
-                  radius * 2 - 16, radius - 8), 1)
-
+        # ring jangkauan utama (tebal, outline gelap)
+        _NS_gorath._ring(surface, (x, gy), rng, 4, P["blood_bright"],
+                         int(120 + 60 * pulse))
+        # tick ring berputar
+        _NS_gorath._dashed_ring(surface, x, gy, int(rng * .88), P["blood_hot"],
+                                int(140 + 60 * pulse), phase * 1.1,
+                                segments=14, thick=3, span=.3, squash=.5)
+        # ring konvergen (membaca "incoming")
+        conv = rng * (1 - progress * .8)
+        _NS_gorath._ring(surface, (x, gy), max(10, int(conv)), 3,
+                         P["blood_glow"], int(160 + 70 * pulse))
+        # chevron kardinal menunjuk ke dalam
+        for da in (0, math.pi / 2, math.pi, math.pi * 1.5):
+            _NS_gorath._chevron(surface,
+                                x + math.cos(da) * rng * .62,
+                                gy + math.sin(da) * rng * .40,
+                                da + math.pi, max(8, int(rng * .11)),
+                                P["blood_light"], 195, 3)
+        # marker target (kalau ada)
+        tx, ty = _NS_gorath._target_position(boss, x, y)
+        _NS_gorath._ring(surface, (tx, ty), int(20 + progress * 12), 2,
+                         P["blood_hot"], int(200 * pulse))
+        _NS_gorath._ring(surface, (tx, ty), int(11 + progress * 6), 1,
+                         P["blood_light"], int(210 * pulse))
 
     def _draw_bloodrite(surface, boss, x, y, timer, phase):
-        """Blood spikes erupting at target."""
+        """W foreground: voli proyektil + duri darah meletus di target."""
+        P = _NS_gorath.PALETTE
+        duration = 60
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        fs = _NS_gorath._fx_scale(boss)
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 60))
 
-        # Spawn projectile at start
+        # spawn proyektil di awal + muzzle star
         if progress < 0.1 and not getattr(boss, "_gor_bloodrite_spawned", False):
             for i in range(3):
                 offset_x = (i - 1) * 25
-                _NS_gorath._spawn_projectile(boss, x, y - 10, tx + offset_x, ty)
+                _NS_gorath._spawn_projectile(boss, x, y - 16, tx + offset_x, ty)
             boss._gor_bloodrite_spawned = True
+            _NS_gorath._spark_star(surface, x, y - 16, int(18 * fs),
+                                   P["blood_glow"], 235, 7, rot=phase,
+                                   core=P["white"])
         if progress > 0.4:
             boss._gor_bloodrite_spawned = False
 
-        # After 0.5 progress, spikes erupt
+        # duri darah meletus di target
         if progress > 0.4:
             erupt_t = min(1.0, (progress - 0.4) / 0.3)
-            radius = 45
+            radius = int(50 * fs)
             for i in range(12):
                 angle = i * math.pi * 2 / 12
                 spike_x = tx + int(math.cos(angle) * radius * 0.7)
                 spike_y = ty + int(math.sin(angle) * radius * 0.4)
-                spike_h = int(20 * erupt_t)
+                spike_h = int(24 * erupt_t)
+                _NS_gorath._poly(surface, P["shadow_deep"], [
+                    (spike_x - 3, spike_y + 1), (spike_x + 4, spike_y + 1),
+                    (spike_x + 1, spike_y - spike_h)])
+                _NS_gorath._poly(surface, P["blood_darkest"], [
+                    (spike_x - 3, spike_y), (spike_x + 3, spike_y),
+                    (spike_x, spike_y - spike_h)])
+                _NS_gorath._poly(surface, P["blood_dark"], [
+                    (spike_x - 2, spike_y), (spike_x + 2, spike_y),
+                    (spike_x, spike_y - spike_h + 2)])
+                _NS_gorath._poly(surface, P["blood_bright"], [
+                    (spike_x - 1, spike_y), (spike_x + 1, spike_y),
+                    (spike_x, spike_y - spike_h + 4)])
+                _NS_gorath._aacircle(surface, P["blood_hot"],
+                                     (spike_x, spike_y - spike_h + 2), 1)
 
-                # Blood spike
-                _NS_gorath._poly(surface, _NS_gorath.PALETTE["blood_darkest"], [
-                    (spike_x - 3, spike_y),
-                    (spike_x + 3, spike_y),
-                    (spike_x, spike_y - spike_h),
-                ])
-                _NS_gorath._poly(surface, _NS_gorath.PALETTE["blood_dark"], [
-                    (spike_x - 2, spike_y),
-                    (spike_x + 2, spike_y),
-                    (spike_x, spike_y - spike_h + 2),
-                ])
-                _NS_gorath._poly(surface, _NS_gorath.PALETTE["blood_bright"], [
-                    (spike_x - 1, spike_y),
-                    (spike_x + 1, spike_y),
-                    (spike_x, spike_y - spike_h + 4),
-                ])
-                # Tip highlight
-                _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_hot"],
-                          (spike_x, spike_y - spike_h + 2), 1)
-
-            # Central spike (bigger)
-            big_h = int(30 * erupt_t)
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["blood_darkest"], [
-                (tx - 5, ty),
-                (tx + 5, ty),
-                (tx, ty - big_h),
-            ])
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["blood_mid"], [
-                (tx - 3, ty),
-                (tx + 3, ty),
-                (tx, ty - big_h + 3),
-            ])
-            _NS_gorath._poly(surface, _NS_gorath.PALETTE["blood_bright"], [
-                (tx - 1, ty),
-                (tx + 1, ty),
-                (tx, ty - big_h + 5),
-            ])
-
-            # Blood splash particles
+            # duri pusat (lebih besar) + bintang impact
+            big_h = int(36 * erupt_t)
+            _NS_gorath._poly(surface, P["blood_darkest"], [
+                (tx - 6, ty), (tx + 6, ty), (tx, ty - big_h)])
+            _NS_gorath._poly(surface, P["blood_mid"], [
+                (tx - 4, ty), (tx + 4, ty), (tx, ty - big_h + 3)])
+            _NS_gorath._poly(surface, P["blood_bright"], [
+                (tx - 2, ty), (tx + 2, ty), (tx, ty - big_h + 5)])
+            _NS_gorath._spark_star(surface, tx, ty - big_h,
+                                   int(16 * erupt_t * fs), P["blood_glow"],
+                                   int(230 * erupt_t), spikes=6, rot=phase,
+                                   core=P["white"])
+            # splat marker 2 cincin
+            _NS_gorath._ring(surface, (tx, ty), int(radius * .8), 2,
+                             P["blood_hot"], int(200 * erupt_t))
+            _NS_gorath._dashed_ring(surface, tx, ty, int(radius * 1.05),
+                                    P["blood_light"], int(170 * erupt_t),
+                                    -phase * 2.0, segments=10, thick=2,
+                                    span=.45, squash=.5)
+            # cipratan
             for i in range(8):
                 angle = i * math.pi / 4 + phase
-                px = tx + int(math.cos(angle) * 30 * erupt_t)
-                py = ty + int(math.sin(angle) * 15 * erupt_t) - 5
-                _NS_gorath._draw_blood_droplet(surface, px, py, 2, int(255 * erupt_t))
-
+                px = tx + int(math.cos(angle) * 34 * erupt_t * fs)
+                py = ty + int(math.sin(angle) * 17 * erupt_t * fs) - 5
+                _NS_gorath._draw_blood_droplet(surface, px, py, 2,
+                                               int(255 * erupt_t))
 
     # ===================================================================
-    # SKILL E: THIRST (highlight enemy from distance)
+    # SKILL E: THIRST (leap AOE 85 px dunia, 35 frame)
+    #   TELEGRAPH: ring AOE 85 di target + chevron berbaris di jalur
+    #   AKTIVASI : garis lompat + bintang
+    #   STEADY   : crosshair berdenyut + partikel pelacak
     # ===================================================================
-    def _draw_thirst(surface, boss, x, y, timer, phase):
-        """Red highlighting beam / marker on target."""
+    def _draw_thirst_ground(surface, boss, x, y, timer, phase):
+        """Telegraph E: ring AOE 85 px dunia di target + chevron jalur."""
+        P = _NS_gorath.PALETTE
+        duration = 35
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        pulse = math.sin(phase * 3.2) * 0.3 + 0.7
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 35))
-        pulse = math.sin(phase * 2.5) * 0.3 + 0.7
+        rng = _NS_gorath._ring_r(boss, _NS_gorath.SKILL_RADIUS["e"], surface)
 
-        # Line of sight beam (blood-red thin line)
-        start_x = x + 5 * boss.direction
-        start_y = y - 10
+        # ring AOE tepat di radius gameplay
+        _NS_gorath._ring(surface, (tx, ty), rng, 4, P["blood_bright"],
+                         int(130 + 60 * pulse))
+        _NS_gorath._dashed_ring(surface, tx, ty, int(rng * .84), P["blood_hot"],
+                                int(150 + 60 * pulse), phase * 1.6,
+                                segments=10, thick=3, span=.4, squash=.5)
+        # ring konvergen (mengecil menuju hentakan)
+        conv = rng * (1 - progress * .82)
+        _NS_gorath._ring(surface, (tx, ty), max(8, int(conv)), 3,
+                         P["blood_glow"], int(170 + 70 * pulse))
+        # retakan pendaratan
+        for i in range(5):
+            ang = i * math.pi * 2 / 5 + .4
+            _NS_gorath._jagged_crack(surface, tx, ty, ang, int(rng * .55),
+                                     (P["blood_darkest"], P["blood_mid"]),
+                                     int(120 + 70 * progress), seed=i + 5,
+                                     width=2)
+        # chevron berbaris di jalur lompat
+        sx, sy = x, y - 12
+        dxx, dyy = tx - sx, ty - sy
+        dist = math.hypot(dxx, dyy) or 1.0
+        ang = math.atan2(dyy, dxx)
+        n = max(2, min(7, int(dist / 34)))
+        for i in range(n):
+            t = ((i + 1) / (n + 1) + phase * 0.16) % 1.0
+            _NS_gorath._chevron(surface, sx + dxx * t, sy + dyy * t, ang,
+                                11, P["blood_light"],
+                                int(120 + 110 * (1 - abs(t - .5) * 2)), 3)
+
+    def _draw_thirst(surface, boss, x, y, timer, phase):
+        """E foreground: beam pelacak, crosshair, dan partikel darah."""
+        P = _NS_gorath.PALETTE
+        duration = 35
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        pulse = math.sin(phase * 2.5) * 0.3 + 0.7
+        fs = _NS_gorath._fx_scale(boss)
+        tx, ty = _NS_gorath._target_position(boss, x, y)
+
+        start_x = x + 8 * getattr(boss, "direction", 1)
+        start_y = y - 16
+
+        # AKTIVASI: kilat lompat
+        if progress < 0.22:
+            t = progress / 0.22
+            _NS_gorath._aaline(surface, (*P["blood_glow"], int(220 * (1 - t))),
+                               (start_x, start_y), (tx, ty), int(7 * (1 - t)) + 2)
+            _NS_gorath._spark_star(surface, start_x, start_y,
+                                   int(22 * fs * (1 - t * .5)), P["blood_hot"],
+                                   int(235 * (1 - t)), 8, rot=phase,
+                                   core=P["white"])
+
+        # beam pelacak 3 lapis
         for i in range(3):
             offset = (i - 1) * 2
-            alpha = int(80 - i * 20)
-            _NS_gorath._aaline(surface, (*_NS_gorath.PALETTE["blood_bright"], alpha),
-                    (start_x, start_y + offset), (tx, ty + offset), 2)
-        _NS_gorath._aaline(surface, (*_NS_gorath.PALETTE["blood_hot"], 200), (start_x, start_y), (tx, ty), 1)
+            alpha = int(90 - i * 22)
+            _NS_gorath._aaline(surface, (*P["blood_bright"], alpha),
+                               (start_x, start_y + offset), (tx, ty + offset), 2)
+        _NS_gorath._aaline(surface, (*P["blood_hot"], 205),
+                           (start_x, start_y), (tx, ty), 1)
 
-        # Target marker - crosshair
-        marker_r = int(15 + math.sin(phase * 3) * 3)
-
-        # Outer ring
-        _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_darkest"], 220),
-                  (tx, ty), marker_r + 2, 3)
-        _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], int(230 * pulse)),
-                  (tx, ty), marker_r, 2)
-        _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_hot"], int(255 * pulse)),
-                  (tx, ty), marker_r - 3, 1)
-
-        # Cross lines
+        # crosshair berdenyut
+        marker_r = int((16 + math.sin(phase * 3) * 3) * fs)
+        _NS_gorath._ring(surface, (tx, ty), marker_r + 2, 3, P["blood_darkest"],
+                         220)
+        _NS_gorath._ring(surface, (tx, ty), marker_r, 2, P["blood_bright"],
+                         int(230 * pulse))
+        _NS_gorath._ring(surface, (tx, ty), max(2, marker_r - 4), 1,
+                         P["blood_hot"], int(255 * pulse))
         for angle in (0, math.pi / 2, math.pi, math.pi * 1.5):
             x1 = tx + int(math.cos(angle) * (marker_r - 3))
             y1 = ty + int(math.sin(angle) * (marker_r - 3))
-            x2 = tx + int(math.cos(angle) * (marker_r + 6))
-            y2 = ty + int(math.sin(angle) * (marker_r + 6))
-            _NS_gorath._aaline(surface, _NS_gorath.PALETTE["blood_bright"], (x1, y1), (x2, y2), 2)
-            _NS_gorath._aaline(surface, _NS_gorath.PALETTE["blood_hot"], (x1, y1), (x2, y2), 1)
+            x2 = tx + int(math.cos(angle) * (marker_r + 7))
+            y2 = ty + int(math.sin(angle) * (marker_r + 7))
+            _NS_gorath._aaline(surface, P["blood_bright"], (x1, y1), (x2, y2), 2)
+            _NS_gorath._aaline(surface, P["blood_hot"], (x1, y1), (x2, y2), 1)
+        _NS_gorath._aacircle(surface, P["blood_hot"], (tx, ty), 3)
+        _NS_gorath._aacircle(surface, P["blood_light"], (tx, ty), 1)
 
-        # Central dot
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_hot"], (tx, ty), 3)
-        _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_light"], (tx, ty), 1)
-
-        # Blood-tracking particles going from Gorath to target
-        for i in range(5):
-            t = (phase * 0.5 + i * 0.2) % 1.0
+        # partikel pelacak mengalir ke target + glint
+        for i in range(6):
+            t = (phase * 0.5 + i * 0.16) % 1.0
             px = int(start_x + (tx - start_x) * t)
             py = int(start_y + (ty - start_y) * t)
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], 200), (px, py), 3)
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_hot"], 240), (px, py), 1)
-
+            _NS_gorath._aacircle(surface, (*P["blood_bright"], 210), (px, py), 3)
+            _NS_gorath._aacircle(surface, (*P["blood_hot"], 245), (px, py), 1)
+            if i % 3 == 0:
+                _NS_gorath._spark_star(surface, px, py, 6, P["blood_light"],
+                                       180, spikes=4, rot=phase + i)
 
     # ===================================================================
-    # SKILL R: RUPTURE (chained blood damage)
+    # SKILL R: RUPTURE (ultimate, AOE 190 px dunia, 90 frame)
+    #   TELEGRAPH: ring 190 px dunia + chevron kardinal + retakan
+    #   AKTIVASI : pilar cahaya darah + shockwave ganda + bintang
+    #   STEADY   : rantai darah ke target + ledakan + duri + wisp spiral
     # ===================================================================
     def _draw_rupture_ground(surface, boss, x, y, timer, phase):
-        """Ground blood pool at target."""
-        tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 90))
+        """Telegraph R: ring AOE 190 px dunia di CASTER + retakan magma."""
+        P = _NS_gorath.PALETTE
+        duration = 90
+        progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
+        fs = _NS_gorath._fx_scale(boss)
+        gy = y + _NS_gorath.GROUND_DY
+        rng = _NS_gorath._ring_r(boss, _NS_gorath.SKILL_RADIUS["r"], surface)
 
-        radius = int(20 + progress * 25)
-        _NS_gorath._ellipse(surface, (*_NS_gorath.PALETTE["blood_darkest"], int(200 * pulse)),
-                 (tx - radius, ty - radius // 3, radius * 2, radius // 1.5))
-        _NS_gorath._ellipse(surface, (*_NS_gorath.PALETTE["blood_dark"], int(180 * pulse)),
-                 (tx - radius + 4, ty - radius // 3 + 2,
-                  radius * 2 - 8, radius // 1.5 - 4))
-
+        # ring jangkauan tepat di radius gameplay
+        _NS_gorath._ring(surface, (x, gy), rng, 4, P["blood_hot"],
+                         int(120 + 60 * pulse))
+        _NS_gorath._dashed_ring(surface, x, gy, int(rng * .9), P["blood_glow"],
+                                int(140 + 60 * pulse), phase * .9,
+                                segments=16, thick=3, span=.35, squash=.42)
+        _NS_gorath._dashed_ring(surface, x, gy, int(rng * .66), P["blood_light"],
+                                int(120 + 60 * pulse), -phase * 1.4,
+                                segments=12, thick=2, span=.4, squash=.42)
+        # ring konvergen
+        conv = rng * (1 - progress * .7)
+        _NS_gorath._ring(surface, (x, gy), max(12, int(conv)), 3,
+                         P["blood_bright"], int(150 + 70 * pulse))
+        # chevron kardinal + diagonal
+        for k in range(6):
+            da = k * math.pi / 3
+            _NS_gorath._chevron(surface,
+                                x + math.cos(da) * rng * .58,
+                                gy + math.sin(da) * rng * .35,
+                                da + math.pi, max(8, int(rng * .09)),
+                                P["blood_light"], 190, 3)
+        # 6 retakan magma radial + seam menyala di 2 cabang
+        for i in range(6):
+            ang = i * math.pi * 2 / 6 + .35
+            _NS_gorath._jagged_crack(surface, x, gy, ang,
+                                     int((42 + (i % 3) * 14) * fs),
+                                     (P["blood_darkest"], P["blood_mid"]), 145,
+                                     seed=i + 3, width=3)
+        seam = int(120 + 110 * pulse)
+        for i in (0, 3):
+            ang = i * math.pi * 2 / 6 + .35
+            _NS_gorath._jagged_crack(surface, x, gy, ang,
+                                     int((28 + (i % 3) * 12) * fs),
+                                     (P["blood_mid"], P["blood_glow"]), seam,
+                                     seed=i + 3, width=1)
+        # kolam darah membesar di pusat
+        radius = int((22 + progress * 26) * fs)
+        _NS_gorath._ellipse(surface, (*P["blood_darkest"], int(200 * pulse)),
+                            (x - radius, gy - radius // 3, radius * 2,
+                             max(4, int(radius / 1.5))))
+        _NS_gorath._ellipse(surface, (*P["blood_dark"], int(180 * pulse)),
+                            (x - radius + 5, gy - radius // 3 + 2,
+                             max(4, radius * 2 - 10),
+                             max(3, int(radius / 1.5) - 4)))
 
     def _draw_rupture(surface, boss, x, y, timer, phase):
-        """Blood chain connecting to target, exploding at target."""
+        """R foreground: pilar aktivasi, rantai darah, ledakan target,
+        duri menyembur, wisp spiral."""
+        P = _NS_gorath.PALETTE
+        duration = 90
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        pulse = math.sin(phase * 4) * 0.3 + 0.7
+        fs = _NS_gorath._fx_scale(boss)
         tx, ty = _NS_gorath._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 90))
+        cx, cy = x, y - 14
 
-        start_x = x + 12 * boss.direction
-        start_y = y - 10
+        # ── AKTIVASI: pilar cahaya darah 4 lapis + shockwave ganda ──
+        if progress < 0.16:
+            t = progress / 0.16
+            top = int(cy - min(100 * fs, 240) * (0.6 + 0.4 * (1 - t)))
+            for wd, col, al in ((34, P["blood_darkest"], 120),
+                                (22, P["blood_dark"], 155),
+                                (12, P["blood_bright"], 195),
+                                (5, P["blood_glow"], 225)):
+                _NS_gorath._aaline(surface, (*col, int(al * (1 - t))),
+                                   (cx, top), (cx, cy), wd)
+            _NS_gorath._aaline(surface, (*P["blood_seam"], int(210 * (1 - t))),
+                               (cx, top), (cx, cy), 3)
+            for k, rmax in ((0, 130), (1, 92)):
+                r = int((18 + t * rmax) * fs)
+                _NS_gorath._ring(surface, (cx, cy), r, 3,
+                                 P["blood_hot"] if k == 0 else P["blood_light"],
+                                 int((225 if k == 0 else 155) * (1 - t)))
+            _NS_gorath._spark_star(surface, cx, cy, int(36 * (1 - t * .4)),
+                                   P["blood_glow"], int(240 * (1 - t)),
+                                   8, rot=.3, core=P["white"])
 
-        # Blood chain line
-        segments = 12
+        # ── rantai darah bergelombang ke target ──
+        start_x = cx + 14 * getattr(boss, "direction", 1)
+        start_y = cy
+        segments = 9
         prev = (start_x, start_y)
         for i in range(1, segments + 1):
             t = i / segments
             mx = start_x + (tx - start_x) * t
             my = start_y + (ty - start_y) * t
-            # Add wiggle
             wiggle = math.sin(phase * 3 + i) * 3
             mx += wiggle if i < segments else 0
             curr = (int(mx), int(my))
-
-            _NS_gorath._aaline(surface, _NS_gorath.PALETTE["blood_darkest"], prev, curr, 5)
-            _NS_gorath._aaline(surface, _NS_gorath.PALETTE["blood_mid"], prev, curr, 3)
-            _NS_gorath._aaline(surface, _NS_gorath.PALETTE["blood_bright"], prev, curr, 1)
-
-            # Blood droplets along chain
+            _NS_gorath._aaline(surface, P["blood_darkest"], prev, curr, 6)
+            _NS_gorath._aaline(surface, P["blood_mid"], prev, curr, 4)
+            _NS_gorath._aaline(surface, P["blood_bright"], prev, curr, 2)
             if i % 3 == 0:
-                _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_dark"], curr, 4)
-                _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_bright"], curr, 2)
-                _NS_gorath._aacircle(surface, _NS_gorath.PALETTE["blood_hot"], curr, 1)
+                _NS_gorath._aacircle(surface, P["blood_dark"], curr, 5)
+                _NS_gorath._aacircle(surface, P["blood_bright"], curr, 3)
+                _NS_gorath._aacircle(surface, P["blood_hot"], curr, 1)
+                _NS_gorath._spark_star(surface, curr[0], curr[1], 7,
+                                       P["blood_light"], 180, spikes=4,
+                                       rot=phase + i)
             prev = curr
 
-        # Explosion at target
+        # ── wisp spiral 2 lengan di sekitar caster ──
+        for arm in range(2):
+            for j in range(6):
+                a = phase * 2.2 + arm * math.pi + j * .52
+                rr = (14 + j * 7) * fs
+                al = _NS_gorath._alpha(150 * (1 - j / 6))
+                _NS_gorath._aacircle(surface, (*P["blood_glow"], al),
+                                     (int(cx + math.cos(a) * rr),
+                                      int(cy + math.sin(a) * rr * .55)), 2)
+
+        # ── ledakan di target ──
         if progress > 0.4:
             explosion_t = min(1.0, (progress - 0.4) / 0.5)
-            radius = int(15 + explosion_t * 30)
-            pulse = math.sin(phase * 4) * 0.3 + 0.7
-
-            # Outer blast
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_darkest"], int(200 * pulse)),
-                      (tx, ty), radius + 5)
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_mid"], int(220 * pulse)),
-                      (tx, ty), radius)
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_bright"], int(240 * pulse)),
-                      (tx, ty), max(1, radius - 8))
-            _NS_gorath._aacircle(surface, (*_NS_gorath.PALETTE["blood_hot"], int(255 * pulse)),
-                      (tx, ty), max(1, radius - 15))
-
-            # Spikes bursting outward
+            radius = int((16 + explosion_t * 32) * fs)
+            _NS_gorath._aacircle(surface, (*P["blood_darkest"], int(200 * pulse)),
+                                 (tx, ty), radius + 5)
+            _NS_gorath._aacircle(surface, (*P["blood_mid"], int(220 * pulse)),
+                                 (tx, ty), radius)
+            _NS_gorath._aacircle(surface, (*P["blood_bright"], int(240 * pulse)),
+                                 (tx, ty), max(1, radius - 8))
+            _NS_gorath._aacircle(surface, (*P["blood_hot"], int(255 * pulse)),
+                                 (tx, ty), max(1, radius - 15))
+            _NS_gorath._spark_star(surface, tx, ty, int(radius * 1.2),
+                                   P["blood_glow"], int(235 * explosion_t),
+                                   spikes=8, rot=phase * .6, core=P["white"])
+            _NS_gorath._dashed_ring(surface, tx, ty, int(radius * 1.4),
+                                    P["blood_light"], int(190 * explosion_t),
+                                    -phase * 2.4, segments=12, thick=2,
+                                    span=.45, squash=.6)
+            # duri menyembur keluar
             for i in range(10):
                 angle = i * math.pi / 5 + phase * 0.5
-                sp_len = int(radius * 1.3)
+                sp_len = int(radius * 1.35)
                 sx1 = tx + int(math.cos(angle) * radius * 0.5)
                 sy1 = ty + int(math.sin(angle) * radius * 0.5)
                 sx2 = tx + int(math.cos(angle) * sp_len)
                 sy2 = ty + int(math.sin(angle) * sp_len)
-                _NS_gorath._aaline(surface, _NS_gorath.PALETTE["blood_darkest"], (sx1, sy1), (sx2, sy2), 4)
-                _NS_gorath._aaline(surface, _NS_gorath.PALETTE["blood_bright"], (sx1, sy1), (sx2, sy2), 2)
-                # Tip droplet
+                _NS_gorath._aaline(surface, P["blood_darkest"], (sx1, sy1),
+                                   (sx2, sy2), 4)
+                _NS_gorath._aaline(surface, P["blood_bright"], (sx1, sy1),
+                                   (sx2, sy2), 2)
                 _NS_gorath._draw_blood_droplet(surface, sx2, sy2, 2, 220)
 
+        # ── denyut pusat ──
+        _NS_gorath._aacircle(surface, (*P["blood_bright"], int(170 * pulse)),
+                             (cx, cy), int((18 + 5 * pulse) * fs))
+        _NS_gorath._aacircle(surface, (*P["blood_glow"], int(220 * pulse)),
+                             (cx, cy), int((8 + 3 * pulse) * fs))
 
     # ===================================================================
     # Backward compatible alias
