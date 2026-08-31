@@ -6735,13 +6735,17 @@ class _NS_drakar:
                 pygame.draw.line(surface, _NS_drakar._rgba(_NS_drakar.PALETTE["blood_mid"],alpha), p1, p2, 2)
 
 class _NS_abaddon:
-    """Namespace abaddon - ORIGINAL-MAX: sprite flame + aura cache,
-    hurt flash, bayangan reaktif. Isi seni asli tidak diubah."""
+    """Namespace abaddon - PIXEL MASTERWORK v2 + Skill FX v2.1.
 
-    # ---------------------------------------------------------------------------
-    # Compatibility helpers
-    # ---------------------------------------------------------------------------
+    True boss + hero, 100% prosedural. Standar Thorne v2 / v2.1:
+    ramp 4-5 band, selout, tuft cape, specular cluster, dither,
+    FX world-space lewat _fx_scale (cap 2.6).
+    """
+
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
+    HAS_AALINES = hasattr(pygame.draw, "aalines")
+    _STATIC_SURFACES = {}
+    SKILL_DUR = {"q": 45, "w": 100, "e": 40, "r": 50}
 
     # ORIGINAL-MAX caches (dibangun lazy, piksel identik dengan draw asli)
     _AB_FLAME = {}     # sprite cyan flame per (s, alpha//8)
@@ -6926,6 +6930,98 @@ class _NS_abaddon:
             return int(tx), int(ty)
         return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
 
+    def _mix(a, b, t):
+        t = max(0.0, min(1.0, t))
+        return _NS_abaddon._clamp((a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t))
+
+    def _hash01(i):
+        x = math.sin(i * 127.1 + 311.7) * 43758.5453
+        return x - math.floor(x)
+
+    def _static(key, builder):
+        surf = _NS_abaddon._STATIC_SURFACES.get(key)
+        if surf is None:
+            surf = builder()
+            _NS_abaddon._STATIC_SURFACES[key] = surf
+        return surf
+
+    def _fx_scale(boss):
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+    def _ring_r(boss, world_r):
+        return max(1, int(round(float(world_r) * _NS_abaddon._fx_scale(boss))))
+
+    def _alpha(v):
+        return max(0, min(255, int(v)))
+
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4, core=None):
+        if alpha <= 0 or size <= 0:
+            return
+        for k in range(spikes):
+            ang = rot + k * math.pi * 2 / spikes
+            ln = size * (1.0 if k % 2 == 0 else 0.55)
+            _NS_abaddon._aaline(surface, (*color, alpha), (int(cx), int(cy)),
+                (int(cx + math.cos(ang) * ln), int(cy + math.sin(ang) * ln * .8)),
+                2 if k % 2 == 0 else 1)
+        if core:
+            _NS_abaddon._aacircle(surface, (*core, alpha), (int(cx), int(cy)), max(1, int(size * .3)))
+
+    def _chevron(surface, cx, cy, ang, size, color, alpha, width=3):
+        if alpha <= 0 or size <= 0:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        px, py = -sa, ca
+        tipx, tipy = cx + ca * size, cy + sa * size
+        for s in (-1, 1):
+            _NS_abaddon._aaline(surface, (*color, alpha),
+                (int(cx + px * s * size * .55 - ca * size * .5),
+                 int(cy + py * s * size * .55 - sa * size * .5)),
+                (int(tipx), int(tipy)), width)
+
+    def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
+                     segments=10, thick=3, span=0.6, squash=.92):
+        if alpha <= 0 or radius <= 1:
+            return
+        for i in range(segments):
+            a0 = phase + i * math.pi * 2 / segments
+            a1 = a0 + math.pi * 2 / segments * span
+            p0 = (cx + math.cos(a0) * radius, cy + math.sin(a0) * radius * squash)
+            p1 = (cx + math.cos(a1) * radius, cy + math.sin(a1) * radius * squash)
+            _NS_abaddon._aaline(surface, (*color, alpha), p0, p1, thick)
+
+    def _tuft_points(spine, depth=4.0, min_len=7.0, seed=0):
+        if not spine:
+            return spine
+        out = [spine[0]]
+        for i in range(len(spine) - 1):
+            ax, ay = spine[i]
+            bx, by = spine[i + 1]
+            seg = math.hypot(bx - ax, by - ay)
+            n = max(1, int(seg / min_len))
+            nx, ny = (by - ay), -(bx - ax)
+            ln = math.hypot(nx, ny) or 1.0
+            nx, ny = nx / ln, ny / ln
+            for j in range(n):
+                t = (j + 0.5) / n
+                px, py = ax + (bx - ax) * t, ay + (by - ay) * t
+                d = depth * (0.55 + 0.45 * _NS_abaddon._hash01(i * 7 + j * 13 + seed))
+                if j % 2 == 0:
+                    out.append((px + nx * d, py + ny * d))
+                else:
+                    out.append((px - nx * d * 0.45, py - ny * d * 0.45))
+            out.append((bx, by))
+        return out
+
+    def _dither_dots(surface, color, points, alpha=70):
+        a = _NS_abaddon._alpha(alpha)
+        col = (*_NS_abaddon._clamp(color)[:3], a)
+        for x, y in points:
+            ix, iy = int(x), int(y)
+            if (ix + iy) & 1:
+                _NS_abaddon._rect(surface, col, (ix, iy, 1, 1))
 
     # ---------------------------------------------------------------------------
     # Cyan flame helper
@@ -7344,8 +7440,20 @@ class _NS_abaddon:
 
     def _draw_abaddon_melee_attack(surface, boss, x, y):
         """Sword swing on horseback."""
-        progress = getattr(boss, "_ab_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
+        raw = max(0.0, min(1.0, getattr(boss, "_ab_attack_progress", 0.0)))
+        # anticipation / IMPACT HOLD / follow-through (Thorne v2 attack curve)
+        if raw < 0.28:
+            t = raw / 0.28
+            progress = 0.26 * (t ** 0.75)
+        elif raw < 0.50:
+            t = (raw - 0.28) / 0.22
+            progress = 0.26 + 0.53 * (t ** 0.5)
+        elif raw < 0.62:
+            t = (raw - 0.50) / 0.12
+            progress = 0.79 + 0.05 * t
+        else:
+            t = (raw - 0.62) / 0.38
+            progress = 0.84 + 0.16 * (t ** 0.85)
 
         lunge = int(math.sin(progress * math.pi) * 4) * boss.direction
         _NS_abaddon._draw_shadow(surface, x + lunge, y + 58)
@@ -8413,6 +8521,13 @@ class _NS_abaddon:
                       (ax, ay), size)
             _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"],
                       (ax, ay), max(1, size - 1))
+        if 0.48 <= progress <= 0.62:
+            hold = 1.0 - abs((progress - 0.55) / 0.07)
+            tip_x = center_x + int(math.cos(current_angle) * radius) * facing
+            tip_y = center_y + int(math.sin(current_angle) * radius)
+            _NS_abaddon._spark_star(surface, tip_x, tip_y, int(12 * hold),
+                _NS_abaddon.PALETTE["flame_hot"], _NS_abaddon._alpha(230 * hold),
+                spikes=8, rot=progress * 4, core=_NS_abaddon.PALETTE["white"])
 
 
     def _draw_sword_purple_trail(surface, x, y, facing, progress, phase):
@@ -8458,12 +8573,22 @@ class _NS_abaddon:
     # SKILL W: APHOTIC SHIELD
     # ===================================================================
     def _draw_aphotic_shield(surface, boss, x, y, timer, phase):
-        """Bubble shield around Abaddon."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        """W Aphotic Shield — telegraph / aktivasi / steady, world-space."""
+        duration = float(_NS_abaddon.SKILL_DUR["w"])
+        progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
-
-        # Shield radius
-        radius = int(45 + progress * 5)
+        fs = _NS_abaddon._fx_scale(boss)
+        radius = _NS_abaddon._ring_r(boss, 45 + progress * 5)
+        gy = y + 48
+        if progress < 0.18:
+            t = progress / 0.18
+            a = _NS_abaddon._alpha(220 * (1 - t * 0.2))
+            _NS_abaddon._dashed_ring(surface, x, gy, int(radius * (0.6 + t * 0.4)),
+                _NS_abaddon.PALETTE["flame_mid"], a, phase * 2, segments=12, thick=max(2, int(2*fs)), squash=0.45)
+            _NS_abaddon._spark_star(surface, x, y - 8, int(14 * fs * (1 - t)),
+                _NS_abaddon.PALETTE["flame_hot"], a, spikes=8, rot=t * 3,
+                core=_NS_abaddon.PALETTE["flame_white"])
+        # Shield radius already world-scaled above
 
         # Multi-layer shield sphere
         shield_layers = [

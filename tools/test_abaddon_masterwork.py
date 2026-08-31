@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression test Abaddon ORIGINAL-MAX.
+"""Regression test Abaddon PIXEL MASTERWORK v2 + Skill FX v2.1.
 
 Mengunci (semua lewat path shipping bosses.level1.draw_abaddon):
   * semua mode render tanpa exception & berisi piksel;
@@ -158,4 +158,4 @@ if __name__ == "__main__":
     test_animation_not_frozen_and_fast()
     test_procedural_only()
     print("PASS procedural + animasi hidup")
-    print("ALL ABADDON ORIGINAL-MAX TESTS PASSED")
+    print("ALL ABADDON MASTERWORK V2 TESTS PASSED")
