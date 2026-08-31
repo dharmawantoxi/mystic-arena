@@ -3109,6 +3109,206 @@ class _NS_sylara:
             _NS_sylara._aaline(surface, (*colors[1], alpha),
                                pts[i], pts[i + 1], width)
 
+    # -------------------------------------------------------------------
+    # SKILL FX — DRAKAR-STYLE PRIMITIVES (bahasa visual boss Drakar,
+    # dipindahkan ke palet angin Sylara):
+    #   * crescent tebal berlapis 5-band, ekor memudar + kilau di tip
+    #   * spatter piksel (rect 3 ukuran + core hot)
+    #   * shockwave tanah 3-ellipse berlapis
+    #   * charge orb cincin konsentris -> inti putih
+    #   * rune ring: ellipse berlapis + spoke berputar + titik hot
+    #   * ghost afterimage 3 lapis + ember naik
+    # pygame.draw.* menulis alpha langsung pada surface SRCALPHA, jadi
+    # tidak ada surface sementara per primitif (ramah cache-miss).
+    # -------------------------------------------------------------------
+    def _drk_alpha(alpha):
+        return max(0, min(255, int(alpha)))
+
+    def _drk_line(surface, a, b, thick, alpha, hot=True, core=False):
+        """Garis berlapis gaya Drakar: outline gelap -> mid -> hot -> shine."""
+        p = _NS_sylara.PALETTE
+        al = _NS_sylara._drk_alpha(alpha)
+        if al <= 0:
+            return
+        W = max(2, int(thick))
+        pygame.draw.line(surface, (*p["wind_darkest"], al), a, b, W + 4)
+        pygame.draw.line(surface, (*p["wind_dark"], int(al * .95)), a, b, W + 2)
+        pygame.draw.line(surface, (*p["wind_mid"], al), a, b, W)
+        pygame.draw.line(surface, (*p["wind_light"], al), a, b, max(1, W - 2))
+        if hot:
+            pygame.draw.line(surface, (*p["wind_bright"], al), a, b, 2)
+        if core:
+            pygame.draw.line(surface, (*p["white"], int(al * .9)), a, b, 1)
+
+    def _drk_crescent(surface, cx, cy, radius, start, span, alpha,
+                      squash=1.0, thick=9, arms=1):
+        """Crescent berputar gaya Counter Helix: ekor memudar + tip kilau."""
+        p = _NS_sylara.PALETTE
+        steps = 14
+        for arm in range(arms):
+            a0 = start + arm * math.pi / max(1, arms)
+            for k in range(steps):
+                t0 = k / float(steps)
+                t1 = (k + 1) / float(steps)
+                fade = (1.0 - t0) ** 1.4
+                al = _NS_sylara._drk_alpha(alpha * fade)
+                if al <= 0:
+                    continue
+                ang0 = a0 + span * t0
+                ang1 = a0 + span * t1
+                c0 = (cx + math.cos(ang0) * radius,
+                      cy + math.sin(ang0) * radius * squash)
+                c1 = (cx + math.cos(ang1) * radius,
+                      cy + math.sin(ang1) * radius * squash)
+                _NS_sylara._drk_line(surface, c0, c1,
+                                     thick * (0.4 + 0.6 * fade), al)
+            # ujung (tip) menyala — kunci baca Drakar
+            ta = a0 + span
+            tpx = int(cx + math.cos(ta) * radius)
+            tpy = int(cy + math.sin(ta) * radius * squash)
+            pygame.draw.circle(surface, (*p["wind_bright"], _NS_sylara._drk_alpha(alpha)),
+                               (tpx, tpy), max(2, int(thick * .55)))
+            pygame.draw.circle(surface, (*p["white"], _NS_sylara._drk_alpha(alpha * .9)),
+                               (tpx, tpy), max(1, int(thick * .28)))
+
+    def _drk_spatter(surface, cx, cy, count, spread, phase, alpha,
+                     seed=0, squash=0.62):
+        """Spatter piksel radial gaya Drakar (rect 3 ukuran + core hot)."""
+        p = _NS_sylara.PALETTE
+        for i in range(count):
+            ang = phase * 0.35 + i * math.tau / count
+            dist = spread * (0.35 + 0.65 * _NS_sylara._hash01(seed + i * 7))
+            px = int(cx + math.cos(ang) * dist)
+            py = int(cy + math.sin(ang) * dist * squash)
+            al = _NS_sylara._drk_alpha(
+                alpha * (0.55 + 0.45 * _NS_sylara._hash01(seed + i * 13)))
+            if al <= 0:
+                continue
+            pygame.draw.rect(surface, (*p["wind_dark"], al), (px - 1, py - 1, 3, 3))
+            pygame.draw.rect(surface, (*p["wind_mid"], al), (px, py, 2, 2))
+            pygame.draw.rect(surface, (*p["wind_bright"], al), (px + 1, py, 1, 1))
+
+    def _drk_shock(surface, cx, cy, radius, alpha, squash=0.62):
+        """Shockwave tanah 3 ellipse berlapis (aktivasi skill, gaya Drakar)."""
+        p = _NS_sylara.PALETTE
+        al = _NS_sylara._drk_alpha(alpha)
+        if al <= 0:
+            return
+        rr = max(4, int(radius))
+        ry = max(2, int(rr * squash))
+        pygame.draw.ellipse(surface, (*p["wind_darkest"], al),
+                            (cx - rr, cy - ry, rr * 2, ry * 2), 4)
+        pygame.draw.ellipse(surface, (*p["wind_dark"], int(al * .9)),
+                            (cx - rr + 5, cy - ry + 4, rr * 2 - 10, ry * 2 - 8), 3)
+        pygame.draw.ellipse(surface, (*p["wind_mid"], int(al * .8)),
+                            (cx - rr + 10, cy - ry + 7, rr * 2 - 20, ry * 2 - 14), 2)
+        pygame.draw.ellipse(surface, (*p["wind_light"], int(al * .7)),
+                            (cx - rr + 14, cy - ry + 9, rr * 2 - 28, ry * 2 - 18), 1)
+
+    def _drk_orb(surface, cx, cy, radius, alpha):
+        """Charge orb gaya Culling Blade: cincin konsentris -> inti putih."""
+        p = _NS_sylara.PALETTE
+        al = _NS_sylara._drk_alpha(alpha)
+        if al <= 0:
+            return
+        r = max(1, int(radius))
+        for rr, col, am in ((r, p["wind_darkest"], .65),
+                            (r - 1, p["wind_dark"], .85),
+                            (r - 2, p["wind_mid"], 1.0),
+                            (r - 3, p["wind_light"], 1.0),
+                            (r - 4, p["wind_bright"], 1.0)):
+            if rr > 0:
+                pygame.draw.circle(surface, (*col, int(al * am)), (cx, cy), rr)
+        pygame.draw.circle(surface, (*p["white"], al), (cx, cy), max(1, r - 6))
+
+    def _drk_cracks(surface, cx, cy, count, length, phase, alpha,
+                    seed=0, squash=0.5):
+        """Retakan tanah zigzag 3 lapis (impact / telegraph, gaya Drakar)."""
+        p = _NS_sylara.PALETTE
+        for i in range(count):
+            ang = phase * 0.2 + i * math.tau / count + 0.35
+            ln = length * (0.75 + 0.25 * _NS_sylara._hash01(seed + i * 11))
+            x, y, a = float(cx), float(cy), ang
+            pts = [(x, y)]
+            for seg in range(4):
+                a += (_NS_sylara._hash01(seed * 7 + seg * 13 + i) - .5) * .7
+                x += math.cos(a) * ln / 4.0
+                y += math.sin(a) * ln / 4.0 * squash
+                pts.append((x, y))
+            for k in range(len(pts) - 1):
+                al = _NS_sylara._drk_alpha(alpha * (1 - k * 0.15))
+                if al <= 0:
+                    continue
+                pygame.draw.line(surface, (*p["wind_darkest"], al),
+                                 pts[k], pts[k + 1], 3)
+                pygame.draw.line(surface, (*p["wind_mid"], al),
+                                 pts[k], pts[k + 1], 2)
+                pygame.draw.line(surface, (*p["wind_bright"], al),
+                                 pts[k], pts[k + 1], 1)
+
+    def _drk_rune_ring(surface, cx, cy, rx, ry, phase, alpha, spokes=12):
+        """Rune ring gaya ground Drakar: ellipse berlapis + spoke berputar
+        + titik hot di ujung spoke."""
+        p = _NS_sylara.PALETTE
+        al = _NS_sylara._drk_alpha(alpha)
+        if al <= 0:
+            return
+        rx, ry = max(6, int(rx)), max(3, int(ry))
+        pygame.draw.ellipse(surface, (*p["wind_darkest"], al),
+                            (cx - rx, cy - ry, rx * 2, ry * 2), 4)
+        pygame.draw.ellipse(surface, (*p["wind_dark"], int(al * .9)),
+                            (cx - rx + 4, cy - ry + 3, rx * 2 - 8, ry * 2 - 6), 3)
+        pygame.draw.ellipse(surface, (*p["wind_mid"], int(al * .8)),
+                            (cx - rx + 8, cy - ry + 5, rx * 2 - 16, ry * 2 - 10), 2)
+        inner = 0.55
+        for i in range(spokes):
+            a = phase + i * math.tau / spokes
+            x1 = cx + math.cos(a) * rx * inner
+            y1 = cy + math.sin(a) * ry * inner
+            x2 = cx + math.cos(a) * rx
+            y2 = cy + math.sin(a) * ry
+            pygame.draw.line(surface, (*p["wind_light"], int(al * .85)),
+                             (x1, y1), (x2, y2), 2)
+            pygame.draw.rect(surface, (*p["wind_bright"], al),
+                             (int(x2) - 1, int(y2) - 1, 3, 3))
+            pygame.draw.rect(surface, (*p["white"], al), (int(x2), int(y2), 1, 1))
+
+    def _drk_ghost(surface, cx, cy, radius, alpha):
+        """Ghost afterimage melingkar 3 lapis (trail, gaya rage-mist Drakar)."""
+        p = _NS_sylara.PALETTE
+        al = _NS_sylara._drk_alpha(alpha)
+        if al <= 0:
+            return
+        r = max(2, int(radius))
+        pygame.draw.circle(surface, (*p["wind_darkest"], int(al * .5)),
+                           (cx, cy), r + 3)
+        pygame.draw.circle(surface, (*p["wind_dark"], al), (cx, cy), r)
+        pygame.draw.circle(surface, (*p["wind_mid"], al), (cx, cy), max(1, r - 3))
+        pygame.draw.circle(surface, (*p["wind_bright"], al), (cx, cy), max(1, r - 6))
+        pygame.draw.rect(surface, (*p["wind_light"], al), (cx - 1, cy - 1, 3, 3))
+        pygame.draw.rect(surface, (*p["white"], al), (cx, cy, 1, 1))
+
+    def _drk_embers(surface, cx, cy, count, phase, alpha,
+                    spread=44, rise=46, squash=0.5):
+        """Ember naik piksel (rect berlapis) — rage-mist versi angin."""
+        p = _NS_sylara.PALETTE
+        for i in range(count):
+            t = (phase * 0.4 + i * 0.11) % 1.0
+            ang = phase * 0.3 + i * math.tau / count
+            sx = cx + math.cos(ang) * spread * \
+                (0.6 + 0.4 * _NS_sylara._hash01(i * 5))
+            sy = cy - int(t * rise) + \
+                math.sin(ang) * spread * squash * 0.3
+            al = _NS_sylara._drk_alpha(alpha * (1 - t))
+            if al <= 0:
+                continue
+            pygame.draw.rect(surface, (*p["wind_dark"], al),
+                             (int(sx) - 1, int(sy) - 1, 3, 3))
+            pygame.draw.rect(surface, (*p["wind_mid"], al),
+                             (int(sx), int(sy), 2, 2))
+            pygame.draw.rect(surface, (*p["wind_bright"], al),
+                             (int(sx), int(sy) - 1, 1, 1))
+
     def _tuft_points(spine, depth=4.0, min_len=7.0, seed=0):
         """Ubah spine halus menjadi tepi bergerigi (bulu/roban pixel-art).
 
@@ -3137,6 +3337,253 @@ class _NS_sylara:
     # ---------------------------------------------------------------------------
     # PROJECTILE SYSTEM - Wind Arrow
     # ---------------------------------------------------------------------------
+    def _drk_mix(c1, c2, t):
+        """Lerp warna (gradasi shaft panah mewah)."""
+        return tuple(int(a + (b - a) * t) for a, b in zip(c1, c2))
+
+    def _drk_sparkle(surface, cx, cy, r, alpha, rot=0.0):
+        """Kilau bintang 4-sinar + palang diagonal (glint mewah)."""
+        p = _NS_sylara.PALETTE
+        al = _NS_sylara._drk_alpha(alpha)
+        if al <= 0:
+            return
+        for k in range(4):
+            a = rot + k * math.pi / 2
+            ex = cx + math.cos(a) * r
+            ey = cy + math.sin(a) * r
+            pygame.draw.line(surface, (*p["wind_bright"], int(al * .55)),
+                             (cx, cy), (ex, ey), 1)
+        d = r * 0.45
+        pygame.draw.line(surface, (*p["wind_light"], int(al * .8)),
+                         (cx - d, cy - d), (cx + d, cy + d), 1)
+        pygame.draw.line(surface, (*p["wind_light"], int(al * .8)),
+                         (cx - d, cy + d), (cx + d, cy - d), 1)
+        pygame.draw.circle(surface, (*p["white"], al),
+                           (int(cx), int(cy)), max(1, int(r * 0.30)))
+
+    def _drk_arrow_trail(surface, trail, angle, phase, alpha_scale=1.0,
+                         powered=False, bind=False):
+        """EKOR COMET MEWAH (bukan lingkaran / garis chevron):
+        pita berlapis yang menirus + wisp angin melengkung + kilau
+        bintang. bind=True menambah strand vine yang berpilin (E)."""
+        n = len(trail)
+        if n < 2:
+            return
+        p = _NS_sylara.PALETTE
+        ca, sa = math.cos(angle), math.sin(angle)
+        nx, ny = -sa, ca
+        wmax = 8.0 if powered else 5.5
+        amax = 245 if powered else 210
+
+        # 1) PITA comet: 2 lapis garis menirus (glow luar + ribbon)
+        for i in range(1, n):
+            t0 = i / float(n)                 # 1 = dekat panah
+            fade = t0 ** 1.25
+            w = max(0.8, wmax * (0.30 + 0.70 * fade))
+            al = _NS_sylara._drk_alpha(amax * fade * alpha_scale)
+            if al <= 0:
+                continue
+            a, b = trail[i - 1], trail[i]
+            _NS_sylara._drk_line(surface, a, b, w + 2.2,
+                                 int(al * .45), hot=False)
+            _NS_sylara._drk_line(surface, a, b, w, al,
+                                 hot=(i % 3 == 0), core=(i >= n - 3))
+
+        if bind:
+            # 2) Strand vine berpilin AROUND pita (Shackle) — 2 helai
+            for side in (-1.0, 1.0):
+                pts = []
+                for i in range(n):
+                    t0 = i / float(max(1, n - 1))
+                    x, y = trail[i]
+                    wob = math.sin(phase * 3.2 + i * 0.9 +
+                                   (math.pi if side > 0 else 0.0))
+                    off = wob * (2.0 + 3.2 * t0)
+                    pts.append((x + nx * off, y + ny * off))
+                for i in range(1, len(pts)):
+                    t0 = i / float(max(1, len(pts) - 1))
+                    al = _NS_sylara._drk_alpha(
+                        185 * (t0 ** 1.1) * alpha_scale)
+                    if al <= 0:
+                        continue
+                    _NS_sylara._drk_line(surface, pts[i - 1], pts[i],
+                                         1.7, al, hot=True)
+                    if i % 3 == 0:
+                        pygame.draw.circle(surface, (*p["wind_white"], al),
+                                           (int(pts[i][0]), int(pts[i][1])), 1)
+        else:
+            # 2) Wisp angin MELENGKUNG (bukan chevron lurus): busur
+            #    pendek yang menekuk ke belakang, selang-seling kiri/kanan
+            for i in range(1, n, 2):
+                t0 = i / float(n)
+                fade = t0 ** 1.1
+                x, y = trail[i]
+                wob = math.sin(phase * 2.4 + i * 0.6) * (2.6 + 3.6 * fade)
+                bs = (3.0 + 3.0 * fade) if powered else (2.0 + 2.6 * fade)
+                bx = x - ca * bs
+                by = y - sa * bs
+                mx = (bx + x) * 0.5 + nx * wob * 0.55
+                my = (by + y) * 0.5 + ny * wob * 0.55
+                tx = x + nx * (wob + 2.6)
+                ty = y + ny * (wob + 2.6)
+                al = _NS_sylara._drk_alpha(165 * fade * alpha_scale)
+                if al <= 0:
+                    continue
+                _NS_sylara._drk_line(surface, (bx, by), (mx, my),
+                                     1.4, int(al * .8))
+                _NS_sylara._drk_line(surface, (mx, my), (tx, ty),
+                                     1.7, al, hot=True)
+
+        # 3) Kilau bintang di beberapa titik pita (dekat panah)
+        for i in range(max(2, n - 6), n, 2):
+            t0 = i / float(n)
+            if t0 < 0.55:
+                continue
+            x, y = trail[i]
+            _NS_sylara._drk_sparkle(
+                surface, x, y, 2.4 + 2.4 * t0,
+                int(215 * t0 * alpha_scale), phase + i * 0.7)
+
+    def _drk_arrow(surface, px, py, angle, length, phase,
+                   charged=False, bind=False):
+        """Panah FISIK mewah: shaft gradasi energi (gelap->terang) +
+        ridge putih, kepala barbed 3-lapis + glint, fletching berserat
+        + nock menyala. charged=Powershot (corona arc + spark orbit),
+        bind=Shackle (braid vine + node)."""
+        p = _NS_sylara.PALETTE
+        ca, sa = math.cos(angle), math.sin(angle)
+        nx, ny = -sa, ca
+
+        def T(f, s):
+            return (px + ca * f + nx * s, py + sa * f + ny * s)
+
+        L = float(length)
+        tip = L * 0.5
+        tail = -L * 0.5
+        hl = L * 0.30          # kepala
+        hw = L * 0.135         # setengah lebar barb
+        sw = max(1.1, L * 0.040)   # setengah tebal shaft
+        fl = L * 0.30          # panjang fletching
+        fw = L * 0.115         # setengah lebar fletching
+        neck = tip - hl
+        shaft_a = tail + fl * 0.40
+
+        # ── GLOW energi lembut di belakang seluruh badan ──
+        _NS_sylara._drk_line(surface, T(shaft_a, 0), T(neck, 0),
+                             13, 70, hot=False)
+        _NS_sylara._drk_line(surface, T(shaft_a, 0), T(neck, 0),
+                             8, 120, hot=False)
+
+        # ── SHAFT gradasi 6 segmen: gelap ekor -> terang ke kepala ──
+        segs = 6
+        for i in range(segs):
+            f0 = shaft_a + (neck - shaft_a) * i / segs
+            f1 = shaft_a + (neck - shaft_a) * (i + 1) / segs
+            t = i / float(max(1, segs - 1))
+            col = _NS_sylara._drk_mix(p["wind_dark"], p["wind_bright"],
+                                      t * 0.9)
+            pygame.draw.line(surface, (*col, 255), T(f0, 0), T(f1, 0),
+                             max(2, int(sw * 2)))
+        # outline tipis gelap + ridge putih
+        _NS_sylara._aaline(surface, (*p["wind_darkest"], 210),
+                           T(shaft_a, -sw - .6), T(neck, -sw - .6), 1)
+        _NS_sylara._aaline(surface, (*p["wind_darkest"], 210),
+                           T(shaft_a, sw + .6), T(neck, sw + .6), 1)
+        _NS_sylara._aaline(surface, (*p["wind_white"], 235),
+                           T(shaft_a, 0), T(neck, 0), 1)
+
+        # ── KEPALA barbed 3 lapis (siluet -> isi -> inti terang) ──
+        _NS_sylara._poly(surface, p["arrow_head_d"], [
+            T(tip, 0),
+            T(neck + 1.5, -hw), T(neck + hl * 0.34, -hw * 0.48),
+            T(neck + 0.6, 0),
+            T(neck + hl * 0.34, hw * 0.48), T(neck + 1.5, hw)])
+        _NS_sylara._poly(surface, p["arrow_head"], [
+            T(tip - 0.5, 0),
+            T(neck + 2.0, -hw * 0.62), T(neck + hl * 0.36, -hw * 0.30),
+            T(neck + 1.2, 0),
+            T(neck + hl * 0.36, hw * 0.30), T(neck + 2.0, hw * 0.62)])
+        _NS_sylara._poly(surface, (*p["wind_light"], 220), [
+            T(tip - 1.0, 0),
+            T(neck + 2.6, -hw * 0.34), T(neck + 1.8, 0),
+            T(neck + 2.6, hw * 0.34)])
+        _NS_sylara._aaline(surface, p["white"],
+                           T(tip, 0), T(neck + 2.0, 0), 1)
+        tp = T(tip, 0)
+        _NS_sylara._drk_sparkle(surface, tp[0], tp[1],
+                                max(2.2, L * 0.075), 240,
+                                phase * 1.5)
+
+        # ── FLETCHING berserat: 2 sayap, siluet -> isi -> garis tepi ──
+        for s in (-1.0, 1.0):
+            _NS_sylara._poly(surface, p["arrow_feather_d"], [
+                T(tail, 0), T(tail + 1.0, s * fw),
+                T(tail + fl * 0.30, s * fw * 1.05),
+                T(tail + fl * 0.50, s * fw * 0.55),
+                T(tail + fl * 0.76, s * fw * 0.92),
+                T(tail + fl, 0)])
+            _NS_sylara._poly(surface, p["arrow_feather"], [
+                T(tail + 1.2, 0), T(tail + 1.8, s * fw * 0.70),
+                T(tail + fl * 0.32, s * fw * 0.68),
+                T(tail + fl * 0.50, s * fw * 0.34),
+                T(tail + fl * 0.76, s * fw * 0.58),
+                T(tail + fl * 0.88, 0)])
+            _NS_sylara._aaline(surface, (*p["wind_white"], 200),
+                               T(tail + 1.4, 0),
+                               T(tail + fl * 0.68, s * fw * 0.62), 1)
+            # tepi bergerigi (2 notch)
+            for k in (0.34, 0.66):
+                nf = tail + fl * k
+                _NS_sylara._aaline(surface, (*p["wind_white"], 150),
+                                   T(nf, s * fw * 0.8),
+                                   T(nf + 1.0, s * fw * 0.52), 1)
+
+        # ── NOCK menyala (diamond + orb pulse) ──
+        _NS_sylara._poly(surface, (*p["wind_bright"], 235), [
+            T(tail - 2.2, 0), T(tail - 1.0, -sw * 0.8),
+            T(tail, 0), T(tail - 1.0, sw * 0.8)])
+        pygame.draw.circle(surface, (*p["wind_light"], 210),
+                           (int(T(tail - 1.5, 0)[0]), int(T(tail - 1.5, 0)[1])), 2)
+        pygame.draw.circle(surface, (*p["white"], 255),
+                           (int(T(tail - 1.5, 0)[0]), int(T(tail - 1.5, 0)[1])), 1)
+
+        if bind:
+            # ── BRAID VINE 2 helai berpilin di sepanjang shaft ──
+            for side in (-1.0, 1.0):
+                pts = []
+                steps = 9
+                for i in range(steps):
+                    t = i / float(steps - 1)
+                    f = shaft_a + (neck - shaft_a) * t
+                    a = phase * 6 + t * 4.4 + (math.pi if side > 0 else 0)
+                    pts.append(T(f, math.cos(a) * (sw + 2.0)))
+                for i in range(1, len(pts)):
+                    al = _NS_sylara._drk_alpha(210)
+                    _NS_sylara._drk_line(surface, pts[i - 1], pts[i],
+                                         1.8, al, hot=True)
+                    if i % 2 == 0:
+                        pygame.draw.circle(surface, (*p["wind_white"], 235),
+                                           (int(pts[i][0]), int(pts[i][1])), 1)
+
+        if charged:
+            # ── CORONA: 2 arc energi berputar DI DEPAN panah ──
+            _NS_sylara._drk_crescent(
+                surface, px, py, L * 0.44, phase * 2.1, 1.7,
+                215, squash=1.0, thick=5, arms=2)
+            # spark orbit mengelilingi shaft
+            for i in range(5):
+                a = phase * 2.5 + i * math.tau / 5
+                sx, sy = T(0, math.cos(a) * L * 0.30)
+                pygame.draw.circle(surface, (*p["wind_bright"], 235),
+                                   (int(sx), int(sy)), 2)
+                pygame.draw.circle(surface, (*p["white"], 255),
+                                   (int(sx), int(sy)), 1)
+            # kilau ekstra di ujung
+            _NS_sylara._drk_sparkle(surface, px + ca * L * 0.42,
+                                    py + sa * L * 0.42,
+                                    L * 0.10, 230, -phase * 1.8)
+
+
     class WindArrowProjectile:
         """Basic wind arrow projectile."""
         def __init__(self, sx, sy, tx, ty, speed=9.0, powered=False,
@@ -3207,115 +3654,39 @@ class _NS_sylara:
             if not self.alive and self.age < 2:
                 return
 
-            # Trail - wind wisps
-            trail_intensity = 2 if self.powered else 1
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(30 + i * 12) * trail_intensity
-                alpha = min(255, alpha)
-                r = max(1, (7 if self.powered else 5) - (len(self.trail) - i))
-                _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_dark"], alpha), (tx, ty), r + 2)
-                _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_light"], min(255, alpha // 2)),
-                          (tx, ty), r)
+            p = _NS_sylara.PALETTE
+            powered = self.powered
+
+            # ── EKOR COMET (pita menirus + wisp melengkung + kilau) ──
+            _NS_sylara._drk_arrow_trail(surface, self.trail, self.angle,
+                                        phase, powered=powered)
 
             if self.alive:
                 px, py = int(self.x), int(self.y)
                 ca, sa = math.cos(self.angle), math.sin(self.angle)
 
-                if self.powered:
-                    # Powershot - large glowing green arrow
-                    _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_dark"], 150), (px, py), 18)
-                    _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_mid"], 200), (px, py), 12)
-
-                    # Large arrow shaft
-                    length = 22
-                    tip_x = px + ca * length
-                    tip_y = py + sa * length
-                    tail_x = px - ca * length
-                    tail_y = py - sa * length
-
-                    # Glow shaft
-                    _NS_sylara._aaline(surface, (*_NS_sylara.PALETTE["wind_bright"], 220),
-                            (tail_x, tail_y), (tip_x, tip_y), 5)
-                    _NS_sylara._aaline(surface, (*_NS_sylara.PALETTE["wind_white"], 240),
-                            (tail_x, tail_y), (tip_x, tip_y), 3)
-                    _NS_sylara._aaline(surface, _NS_sylara.PALETTE["white"],
-                            (tail_x, tail_y), (tip_x, tip_y), 1)
-
-                    # Arrowhead
-                    perp_x = -sa * 6
-                    perp_y = ca * 6
-                    _NS_sylara._poly(surface, _NS_sylara.PALETTE["wind_bright"], [
-                        (tip_x + ca * 8, tip_y + sa * 8),
-                        (tip_x + perp_x, tip_y + perp_y),
-                        (tip_x - perp_x, tip_y - perp_y),
-                    ])
-                    _NS_sylara._poly(surface, _NS_sylara.PALETTE["wind_white"], [
-                        (tip_x + ca * 7, tip_y + sa * 7),
-                        (tip_x + perp_x * 0.6, tip_y + perp_y * 0.6),
-                        (tip_x - perp_x * 0.6, tip_y - perp_y * 0.6),
-                    ])
-                    _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["white"],
-                              (int(tip_x + ca * 7), int(tip_y + sa * 7)), 2)
-
-                    # Wind spiral around powershot
-                    for i in range(5):
-                        a = phase * 3 + i * math.pi * 2 / 5
-                        r = 12
-                        sx = px + math.cos(a) * r
-                        sy = py + math.sin(a) * r
-                        _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_bright"], 180),
-                                  (int(sx), int(sy)), 2)
+                if powered:
+                    # ═══ POWERSHOT: panah raksasa + orb/rune di belakang,
+                    #    corona arc di depan (gaya Culling Blade) ═══
+                    bx = px - ca * 18
+                    by = py - sa * 18
+                    _NS_sylara._drk_orb(surface, int(bx), int(by), 10,
+                                        200 + int(25 * math.sin(phase * 5)))
+                    _NS_sylara._drk_rune_ring(
+                        surface, int(bx), int(by), 15, 15, phase * 2.4,
+                        int(130 + 35 * math.sin(phase * 4)), spokes=8)
+                    _NS_sylara._drk_arrow(surface, px, py, self.angle,
+                                          54, phase, charged=True)
                 else:
-                    # Normal arrow
-                    length = 14
-                    tip_x = px + ca * length
-                    tip_y = py + sa * length
-                    tail_x = px - ca * length
-                    tail_y = py - sa * length
-
-                    # Glow
-                    _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_dark"], 100), (px, py), 8)
-                    _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_mid"], 130), (px, py), 5)
-
-                    # Arrow shaft
-                    _NS_sylara._aaline(surface, _NS_sylara.PALETTE["arrow_shaft_d"],
-                            (tail_x, tail_y), (tip_x, tip_y), 3)
-                    _NS_sylara._aaline(surface, _NS_sylara.PALETTE["arrow_shaft"],
-                            (tail_x, tail_y), (tip_x, tip_y), 2)
-                    _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_shine"],
-                            (tail_x, tail_y), (tip_x, tip_y), 1)
-
-                    # Arrowhead
-                    perp_x = -sa * 3
-                    perp_y = ca * 3
-                    _NS_sylara._poly(surface, _NS_sylara.PALETTE["arrow_head_d"], [
-                        (tip_x + ca * 5, tip_y + sa * 5),
-                        (tip_x + perp_x, tip_y + perp_y),
-                        (tip_x - perp_x, tip_y - perp_y),
-                    ])
-                    _NS_sylara._poly(surface, _NS_sylara.PALETTE["arrow_head"], [
-                        (tip_x + ca * 4, tip_y + sa * 4),
-                        (tip_x + perp_x * 0.6, tip_y + perp_y * 0.6),
-                        (tip_x - perp_x * 0.6, tip_y - perp_y * 0.6),
-                    ])
-                    _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["white"],
-                              (int(tip_x + ca * 4), int(tip_y + sa * 4)), 1)
-
-                    # Fletching (feathers)
-                    for f_off in (2, -2):
-                        fp_x = -sa * f_off
-                        fp_y = ca * f_off
-                        _NS_sylara._poly(surface, _NS_sylara.PALETTE["arrow_feather_d"], [
-                            (tail_x, tail_y),
-                            (tail_x + ca * 4, tail_y + sa * 4),
-                            (tail_x + ca * 3 + fp_x, tail_y + sa * 3 + fp_y),
-                        ])
-                        _NS_sylara._poly(surface, _NS_sylara.PALETTE["arrow_feather"], [
-                            (tail_x + ca * 1, tail_y + sa * 1),
-                            (tail_x + ca * 4, tail_y + sa * 4),
-                            (tail_x + ca * 3 + fp_x * 0.7,
-                             tail_y + sa * 3 + fp_y * 0.7),
-                        ])
+                    # ═══ PANAH BASIC: panah fisik megah + 2 kilau orbit ═══
+                    _NS_sylara._drk_arrow(surface, px, py, self.angle,
+                                          46, phase)
+                    for i in range(2):
+                        a = phase * 4 + i * math.pi
+                        sx = px + ca * math.cos(a) * 9
+                        sy = py + sa * math.cos(a) * 9
+                        _NS_sylara._drk_sparkle(surface, sx, sy, 2.2,
+                                                190, phase * 2 + i)
 
 
     class ShackleProjectile:
@@ -3383,69 +3754,28 @@ class _NS_sylara:
         def draw(self, surface, phase):
             if not self.alive and self.age < 2:
                 return
-            # Swirling trail
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(40 + i * 14)
-                # Spiral around trail
-                spiral_off = math.sin(phase * 3 + i * 0.5) * 3
-                perp = self.angle + math.pi / 2
-                sx = tx + math.cos(perp) * spiral_off
-                sy = ty + math.sin(perp) * spiral_off
-                _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_light"], alpha),
-                          (int(sx), int(sy)), 3)
-                _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_bright"], alpha),
-                          (int(sx), int(sy)), 1)
+            p = _NS_sylara.PALETTE
+
+            # ── EKOR COMET + strand vine berpilin (binding) ──
+            _NS_sylara._drk_arrow_trail(surface, self.trail, self.angle,
+                                        phase, bind=True)
 
             if self.alive:
                 px, py = int(self.x), int(self.y)
                 ca, sa = math.cos(self.angle), math.sin(self.angle)
 
-                # Glow
-                _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_dark"], 130), (px, py), 10)
-                _NS_sylara._aacircle(surface, (*_NS_sylara.PALETTE["wind_mid"], 170), (px, py), 7)
+                # Orb binding di BELAKANG panah + rune ring
+                bx = px - ca * 15
+                by = py - sa * 15
+                _NS_sylara._drk_orb(surface, int(bx), int(by), 7,
+                                    185 + int(25 * math.sin(phase * 6)))
+                _NS_sylara._drk_rune_ring(
+                    surface, int(bx), int(by), 11, 11, phase * 2.6,
+                    int(115 + 35 * math.sin(phase * 5)), spokes=5)
 
-                # Arrow with binding energy
-                length = 14
-                tip_x = px + ca * length
-                tip_y = py + sa * length
-                tail_x = px - ca * length
-                tail_y = py - sa * length
-
-                _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wood_dark"],
-                        (tail_x, tail_y), (tip_x, tip_y), 3)
-                _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wind_bright"],
-                        (tail_x, tail_y), (tip_x, tip_y), 2)
-                _NS_sylara._aaline(surface, _NS_sylara.PALETTE["wind_white"],
-                        (tail_x, tail_y), (tip_x, tip_y), 1)
-
-                # Vine wraps spiraling around
-                for i in range(4):
-                    t = i / 4.0
-                    spiral_a = phase * 6 + i * math.pi / 2
-                    spiral_r = 4
-                    cx = px + ca * (t - 0.5) * length
-                    cy = py + sa * (t - 0.5) * length
-                    perp = self.angle + math.pi / 2
-                    sx = cx + math.cos(perp) * math.cos(spiral_a) * spiral_r
-                    sy = cy + math.sin(perp) * math.cos(spiral_a) * spiral_r
-                    _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["wind_bright"],
-                              (int(sx), int(sy)), 2)
-                    _NS_sylara._aacircle(surface, _NS_sylara.PALETTE["wind_white"],
-                              (int(sx), int(sy)), 1)
-
-                # Arrowhead
-                perp_x = -sa * 4
-                perp_y = ca * 4
-                _NS_sylara._poly(surface, _NS_sylara.PALETTE["wind_dark"], [
-                    (tip_x + ca * 6, tip_y + sa * 6),
-                    (tip_x + perp_x, tip_y + perp_y),
-                    (tip_x - perp_x, tip_y - perp_y),
-                ])
-                _NS_sylara._poly(surface, _NS_sylara.PALETTE["wind_bright"], [
-                    (tip_x + ca * 5, tip_y + sa * 5),
-                    (tip_x + perp_x * 0.6, tip_y + perp_y * 0.6),
-                    (tip_x - perp_x * 0.6, tip_y - perp_y * 0.6),
-                ])
+                # Panah fisik besar + braid vine menyala di shaft
+                _NS_sylara._drk_arrow(surface, px, py, self.angle,
+                                      50, phase, bind=True)
 
 
     # ---------------------------------------------------------------------------
@@ -3622,6 +3952,23 @@ class _NS_sylara:
             _NS_sylara._draw_focus_fire_ground(surface, boss, x, y, skill_timer, pulse)
         elif active_skill == "w":
             _NS_sylara._draw_windrun_ground(surface, boss, x, y, skill_timer, pulse)
+
+        # PERTAGAS (gaya Drakar): gelombang kejut aktivasi 12 frame pertama
+        # supaya momen "skill keluar" terbaca seketika di arena.
+        if active_skill in ("q", "w", "e", "r"):
+            age = (_NS_sylara.SKILL_VISUAL_DURATION.get(active_skill, 60)
+                   - skill_timer)
+            if 0 <= age < 12:
+                st = age / 12.0
+                a = int(235 * (1 - st))
+                rr = int(16 + st * 50)
+                gy = y + 46
+                pygame.draw.ellipse(
+                    surface, (*_NS_sylara.PALETTE["wind_mid"], a),
+                    (x - rr, gy - rr // 3, rr * 2, max(6, rr * 2 // 3)), 3)
+                pygame.draw.ellipse(
+                    surface, (*_NS_sylara.PALETTE["wind_white"], a),
+                    (x - rr // 2, gy - rr // 6, rr, max(4, rr // 3)), 1)
 
         # ---------- Character body ----------
         if active_skill == "w":
@@ -4516,49 +4863,73 @@ class _NS_sylara:
 
 
     def _draw_wind_aura(surface, x, y, phase):
-        """Large background aura."""
-        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(70, 5, -4):
-            alpha = int((70 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_sylara._aacircle(aura, (*_NS_sylara.PALETTE["wind_darkest"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
+        """Aura angin besar gaya Drakar: gradien 3 lapis di-cache +
+        ember piksel naik (versi hijau dari rage aura)."""
+        p = _NS_sylara.PALETTE
+        pulse = math.sin(phase * 0.5) * 0.25 + 0.75
+
+        def build():
+            aura = pygame.Surface((220, 190), pygame.SRCALPHA)
+            core = (110, 95)
+            # Gradien radial LANGSUNG (pygame.draw.circle menulis alpha
+            # exact, TIDAK menumpuk seperti blit `_aacircle`) sehingga:
+            #  - lapisan warna darkest->dark->mid->light->bright (Drakar)
+            #  - alpha < 100 di ATAS kepala -> mask ukuran badan tetap
+            #    melihat badan saja (audit v2: tinggi 51.2 px -> fix).
+            for radius in range(95, 3, -1):
+                t = 1.0 - radius / 95.0
+                al = int(190 * t ** 1.35)
+                if al <= 0:
+                    continue
+                if radius > 70:
+                    col = p["wind_darkest"]
+                elif radius > 48:
+                    col = p["wind_dark"]
+                elif radius > 28:
+                    col = p["wind_mid"]
+                elif radius > 12:
+                    col = p["wind_light"]
+                else:
+                    col = p["wind_bright"]
+                pygame.draw.circle(aura, (*col, min(255, al)), core, radius)
+            pygame.draw.circle(aura, (*p["white"], 120), core, 4)
+            return aura
+        aura = _NS_sylara._static("sylara_wind_aura_drk", build)
+        aura.set_alpha(int(255 * pulse))
+        surface.blit(aura, (x - 110, y - 95))
+        # Ember piksel naik — kunci "bernafas" gaya rage mist Drakar
+        _NS_sylara._drk_embers(surface, x, y + 22, 14, phase, 185,
+                               spread=58, rise=54, squash=.6)
 
 
     def _draw_wind_platform(surface, x, y, phase, skill):
-        """Wind circle platform with leaf pattern."""
+        """Rune ring tanah gaya Drakar: ellipse berlapis + 12 spoke rune
+        berputar + titik hot di ujung spoke."""
+        p = _NS_sylara.PALETTE
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
+        ring = pygame.Surface((200, 68), pygame.SRCALPHA)
+        pygame.draw.ellipse(ring, (*p["wind_darkest"], 200), (5, 20, 190, 36), 4)
+        pygame.draw.ellipse(ring, (*p["wind_dark"], 220), (14, 24, 172, 30), 3)
+        pygame.draw.ellipse(ring, (*p["wind_mid"], 230), (30, 28, 140, 22), 2)
+        pygame.draw.ellipse(ring, (*p["wind_light"], 190), (46, 30, 108, 18), 1)
+        surface.blit(ring, (x - 100, y - 34))
 
-        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_dark"], 150),
-                            (5, 10, 120, 24), 3)
-        pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_mid"], 180),
-                            (20, 14, 90, 16), 2)
-
-        # Swirling wind streaks
-        for i in range(6):
-            angle = phase * 0.3 + i * math.pi / 3
-            x1 = 65 + int(math.cos(angle) * 20)
-            y1 = 22 + int(math.sin(angle) * 4)
-            x2 = 65 + int(math.cos(angle) * 55)
-            y2 = 22 + int(math.sin(angle) * 10)
-            pygame.draw.line(ring, (*_NS_sylara.PALETTE["wind_light"], 170),
-                             (x1, y1), (x2, y2), 1)
-
-        # Small leaves around ring
-        for angle_deg in (0, 90, 180, 270):
-            angle = math.radians(angle_deg) + phase * 0.15
-            sx = 65 + int(math.cos(angle) * 50)
-            sy = 22 + int(math.sin(angle) * 9)
-            pygame.draw.circle(ring, (*_NS_sylara.PALETTE["wind_bright"], 200), (sx, sy), 2)
+        # Spoke rune berputar (12) + tip hot — signature ground Drakar
+        for i in range(12):
+            angle = phase * 0.3 + i * math.pi / 6
+            x1 = x + int(math.cos(angle) * 55)
+            y1 = y + int(math.sin(angle) * 10)
+            x2 = x + int(math.cos(angle) * 88)
+            y2 = y + int(math.sin(angle) * 15)
+            pygame.draw.line(surface, (*p["wind_light"], 220), (x1, y1), (x2, y2), 2)
+            pygame.draw.rect(surface, (*p["wind_bright"], 250),
+                             (x2 - 1, y2 - 1, 3, 3))
+            pygame.draw.rect(surface, (*p["white"], 255), (x2, y2, 1, 1))
 
         if skill:
-            pygame.draw.ellipse(ring, (*_NS_sylara.PALETTE["wind_bright"], int(80 * pulse)),
-                                (15, 8, 100, 28), 1)
-
-        surface.blit(ring, (x - 65, y - 22))
+            pygame.draw.ellipse(surface,
+                                (*p["wind_bright"], int(130 * pulse)),
+                                (x - 78, y - 22, 156, 44), 2)
 
 
     def _draw_bow_release_flash(surface, x, y, facing, progress):
@@ -4617,11 +4988,12 @@ class _NS_sylara:
     # SKILL R: POWERSHOT (charge → release cone) — world-space, 3 fase
     # ===================================================================
     def _draw_powershot_charge(surface, boss, x, y, timer, phase):
-        """Charging aura di sekitar Sylara saat Powershot.
+        """Powershot gaya Culling Blade (Drakar): charge orb konsentris di
+        busur -> X-slash berlapis + spatter + retakan tanah di target.
 
-        World-space (faktor _fx_scale): pilar aktivasi + shockwave ganda,
-        lalu orb konvergen + dashed ring berputar (steady), dan garis
-        telegraph + chevron menuju target + retakan tanah (telegraph).
+        World-space (faktor _fx_scale): shockwave aktivasi, steady charge
+        orb + rune ring, kemudian release X slash + impact burst seperti
+        signature ultimate Drakar (dalam palet angin Sylara).
         """
         p = _NS_sylara.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 60.0))
@@ -4632,102 +5004,153 @@ class _NS_sylara:
         rng = _NS_sylara._ring_r(boss, 60, surface)
         bow_x, bow_y = x + 22 * facing, y - 8
 
-        # ── AKTIVASI: pilar cahaya 3-lapis + shockwave ganda + bintang ──
+        # ── AKTIVASI: shockwave ganda + bintang (gaya PERTAGAS Drakar) ──
         if progress < 0.20:
             t = progress / 0.20
-            top = int(y - min(110 * fs, 240) * (0.55 + 0.45 * (1 - t)))
-            for wd, col, al in ((22, p["wind_dark"], 100),
-                                (11, p["wind_mid"], 160),
-                                (4, p["wind_bright"], 230)):
-                _NS_sylara._aaline(surface, (*col, int(al * (1 - t))),
-                                   (x, top), (x, y + 10), wd)
-            for k, rmax in ((0, int(90 * fs)), (1, int(62 * fs))):
-                r = int((20 + t * rmax))
-                _skill_outlined_circle(surface, (bow_x, bow_y), r, 3,
-                                       p["wind_bright"] if k == 0 else p["wind_mid"],
-                                       int((235 if k == 0 else 160) * (1 - t)))
-            _NS_sylara._spark_star(surface, bow_x, bow_y,
-                                   int(30 * (1 - t * .5)), p["wind_bright"],
-                                   int(240 * (1 - t)), 8, rot=phase,
-                                   core=p["wind_white"])
+            _NS_sylara._drk_shock(
+                surface, x, y + 40, int((16 + t * 90) * fs),
+                int(235 * (1 - t)), squash=.62)
+            _NS_sylara._drk_shock(
+                surface, bow_x, bow_y - 6, int((12 + t * 56) * fs),
+                int(160 * (1 - t)), squash=.72)
+            _NS_sylara._spark_star(
+                surface, bow_x, bow_y, int(28 * (1 - t * .5)),
+                p["wind_bright"], int(240 * (1 - t)), 8,
+                rot=phase, core=p["white"])
 
-        # ── STEADY: orb konvergen + rune ring berputar + mote naik ──
-        _skill_outlined_circle(surface, (bow_x, bow_y),
-                               int(rng * (0.5 + 0.35 * pulse)), 3,
-                               p["wind_mid"], int(120 + 60 * pulse))
-        _NS_sylara._dashed_ring(surface, bow_x, bow_y, int(rng * 0.7),
-                                p["wind_bright"], int(130 + 65 * pulse),
-                                phase * 1.1, segments=8, thick=2, span=.5)
-        # mote angin naik di sekitar bow
+        # ── CHARGE (steady): orb konsentris + rune ring + mote naik ──
+        orb_r = int((9 + 11 * pulse) * fs)
+        _NS_sylara._drk_orb(surface, bow_x, bow_y, orb_r, 200 + 40 * pulse)
+        _NS_sylara._drk_rune_ring(surface, bow_x, bow_y,
+                                  int(24 * fs), int(14 * fs),
+                                  phase * 1.1, int(150 + 50 * pulse), spokes=8)
         for i in range(8):
             t = (phase * 0.4 + i / 8.0) % 1.0
             mx = bow_x + int(math.sin(i * 2.2) * 30 * fs)
             my = bow_y + 12 - int(t * 60 * fs)
-            _NS_sylara._aacircle(surface,
-                                 (*p["wind_bright"], int(190 * (1 - t))),
-                                 (mx, my), 2 if i % 2 else 1)
-        # glint orbit di ujung bow
+            al = int(190 * (1 - t))
+            pygame.draw.circle(surface, (*p["wind_mid"], al), (mx, my), 2)
+            pygame.draw.circle(surface, (*p["wind_bright"], al), (mx, my), 1)
+        # glint orbit di ujung busur
         for i in range(4):
             a = phase * 2.6 + i * math.pi / 2
             gx = int(bow_x + math.cos(a) * 16)
             gy = int(bow_y + math.sin(a) * 16)
-            _NS_sylara._aacircle(surface, (*p["wind_white"], 210), (gx, gy), 1)
+            pygame.draw.circle(surface, (*p["wind_white"], 210), (gx, gy), 1)
 
-        # ── TELEGRAPH: garis + chevron menuju target + retakan tanah ──
+        # Warning ring di target selama charge (gaya Culling Blade)
+        wr = max(8, int(12 * fs))
+        pygame.draw.circle(surface, (*p["wind_bright"], 180),
+                           (tx, ty - 6), wr, 2)
+        pygame.draw.circle(surface, (*p["wind_mid"], 140),
+                           (tx, ty - 6), wr + 5, 2)
+
+        # ── RELEASE: X double slash di target + flash + spatter + retakan ──
+        if 0.35 <= progress < 0.70:
+            t = (progress - 0.35) / 0.35
+            intensity = math.sin(t * math.pi)
+            slash_len = int((65 + 25 * t) * fs * 0.8)
+            for sdx, sdy in ((1, 1), (1, -1)):
+                a1 = (tx - sdx * slash_len, ty - 6 - sdy * slash_len)
+                a2 = (tx + sdx * slash_len, ty - 6 + sdy * slash_len)
+                _NS_sylara._drk_line(surface, a1, a2, 10,
+                                     int(255 * intensity), core=True)
+            for r in range(25, 0, -2):
+                pygame.draw.circle(
+                    surface, (*p["wind_bright"],
+                              int(230 * intensity * (25 - r) / 25)),
+                    (tx, ty - 6), r)
+            pygame.draw.circle(surface,
+                               (*p["wind_white"], int(230 * intensity)),
+                               (tx, ty - 6), 10)
+            pygame.draw.circle(surface, p["white"],
+                               (tx, ty - 6), int(5 * intensity + 1))
+            _NS_sylara._drk_spatter(surface, tx, ty - 6, 18,
+                                    slash_len * 0.8, phase,
+                                    int(230 * intensity), seed=77)
+            _NS_sylara._drk_cracks(surface, tx, ty + 8, 4,
+                                   slash_len * 0.9, phase,
+                                   int(170 * intensity), seed=88)
+        elif progress >= 0.70:
+            # ── FALLING DEBRIS + garis X memudar (residual) ──
+            t = (progress - 0.70) / 0.30
+            for i in range(10):
+                fall_t = (phase * 0.5 + i * 0.1) % 1.0
+                rx = tx + int(math.sin(phase + i) * 34 * fs)
+                ry = ty - 22 + int(fall_t * 38 * fs)
+                al = int(200 * (1 - t) * (1 - fall_t * .5))
+                if al > 0:
+                    pygame.draw.rect(surface, (*p["wind_dark"], al),
+                                     (rx, ry, 3, 4))
+                    pygame.draw.rect(surface, (*p["wind_mid"], al),
+                                     (rx, ry, 2, 3))
+            for sdx, sdy in ((1, 1), (1, -1)):
+                a1 = (tx - sdx * 40, ty - 6 - sdy * 40)
+                a2 = (tx + sdx * 40, ty - 6 + sdy * 40)
+                al = int(150 * (1 - t))
+                pygame.draw.line(surface, (*p["wind_dark"], al), a1, a2, 3)
+                pygame.draw.line(surface, (*p["wind_mid"], al), a1, a2, 2)
+
+        # ── TELEGRAPH: chevron menuju target + retakan di kaki ──
         if progress < 0.75:
             t2 = (phase * 0.5) % 1.0
             for i in range(3):
                 t = (i / 3.0 + t2) % 1.0
                 _NS_sylara._chevron(
                     surface,
-                    x + facing * rng * (0.25 + 0.65 * t),
-                    y + 6, 0.0 if facing > 0 else math.pi,
+                    x + (tx - x) * t, y + (ty - y) * t - 5,
+                    math.atan2(ty - y, tx - x),
                     max(10, int(rng * 0.10)), p["wind_light"], 200, 3)
-        for i in range(4):
-            ang = 0.3 + i * 0.55
-            _NS_sylara._jagged_crack(
-                surface, x + facing * 20, y + 46, ang * (1 if facing > 0 else -1),
-                int((22 + (i % 3) * 9) * fs),
-                (p["wind_dark"], p["wind_mid"]), 150, seed=i + 51, width=2)
+        _NS_sylara._drk_cracks(surface, x + facing * 20, y + 46, 4,
+                               int(30 * fs), phase, 150, seed=51)
 
 
     # ===================================================================
     # SKILL W: WINDRUN (speed + heal) — world-space, 3 fase
     # ===================================================================
     def _draw_windrun_ground(surface, boss, x, y, timer, phase):
-        """Ground Windrun: shockwave aktivasi + ring berputar (steady) +
-        chevron berbaris ke arah lari (telegraph)."""
+        """Ground Windrun gaya Counter Helix (Drakar): crescent ganda
+        berputar + spatter orbit + rune ring + chevron arah lari."""
         p = _NS_sylara.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 180.0))
         fs = _NS_sylara._fx_scale(boss)
         facing = boss.direction
         pulse = math.sin(phase * 4.0) * 0.5 + 0.5
         rng = _NS_sylara._ring_r(boss, 70, surface)
+        gy = y + 14
 
-        # ── AKTIVASI: shockwave ganda + bintang ──
+        # ── AKTIVASI: shockwave ganda + bintang (gaya PERTAGAS) ──
         if progress < 0.14:
             t = progress / 0.14
-            for k, rmax in ((0, int(80 * fs)), (1, int(56 * fs))):
-                r = int((20 + t * rmax))
-                _skill_outlined_circle(surface, (x, y + 8), r, 3,
-                                       p["wind_bright"] if k == 0 else p["wind_mid"],
-                                       int((225 if k == 0 else 150) * (1 - t)))
+            _NS_sylara._drk_shock(surface, x, gy,
+                                  int((18 + t * 80) * fs),
+                                  int(235 * (1 - t)), squash=.62)
+            _NS_sylara._drk_shock(surface, x, gy,
+                                  int((14 + t * 56) * fs),
+                                  int(160 * (1 - t)), squash=.50)
             _NS_sylara._spark_star(surface, x, y - 4,
                                    int(26 * (1 - t * .5)), p["wind_light"],
                                    int(235 * (1 - t)), 7, rot=phase,
                                    core=p["wind_white"])
 
-        # ── STEADY: dual dashed ring counter-rotating + speed streaks ──
-        _NS_sylara._dashed_ring(surface, x, y + 14, int(rng * 0.8),
-                                p["wind_mid"], int(120 + 55 * pulse),
-                                phase * 1.2, segments=10, thick=2, span=.45)
-        _NS_sylara._dashed_ring(surface, x, y + 14, int(rng * 0.55),
-                                p["wind_light"], int(100 + 50 * pulse),
-                                -phase * 0.9, segments=8, thick=2, span=.6)
+        # ── STEADY: crescent berputar gaya Counter Helix (2 lengan) ──
+        _NS_sylara._drk_crescent(surface, x, gy, rng * 0.92,
+                                 phase * 2.2 + progress * 3.0,
+                                 math.pi * 1.9, 205, squash=.38,
+                                 thick=8, arms=2)
+        # ring AOE world-space (jangkauan 70 dunia, tidak menyusut)
+        _skill_outlined_circle(surface, (x, gy), rng, 3,
+                               p["wind_mid"], int(120 + 55 * pulse))
+        _NS_sylara._dashed_ring(surface, x, gy, int(rng * 0.88),
+                                p["wind_light"], int(140 + 60 * pulse),
+                                phase * 1.1, segments=10, thick=3, span=.4)
+        # spatter piksel orbit (partikel darah Drakar -> angin)
+        _NS_sylara._drk_spatter(surface, x, gy, 22, rng * 1.02,
+                                phase, int(170 + 50 * pulse), seed=13)
         # speed streaks belakang (ke arah lari)
         for i in range(6):
             off = (i - 3) * 6
-            sy = y + 30 + off
+            sy = gy + 16 + off
             sx = x - facing * 20
             ex = sx - facing * 44
             alpha = 200 - i * 18
@@ -4746,50 +5169,46 @@ class _NS_sylara:
         for i in range(3):
             t = (i / 3.0 + phase * 0.4) % 1.0
             _NS_sylara._chevron(
-                surface, x + facing * rng * (0.3 + 0.6 * t), y + 20,
+                surface, x + facing * rng * (0.3 + 0.6 * t), gy + 10,
                 0.0 if facing > 0 else math.pi, max(10, int(rng * 0.10)),
                 p["wind_light"], 190, 3)
 
 
     def _draw_windrun_trail(surface, x, y, facing, phase):
-        """After-image trail + wind swirl saat Windrun (world-space)."""
+        """After-image trail gaya Drakar: ghost 3-lapis + streak kecepatan
+        + swirl angin (tetap terbaca di skala arena)."""
         p = _NS_sylara.PALETTE
         fs = 1.0  # trail digambar relatif terhadap badan; tetap terbaca
-        # Ghost afterimage berlapis
+        # Ghost afterimage berlapis (versi hijau rage-mist trail)
         for i in range(5):
-            offset = (i + 1) * 8 * facing
-            alpha = 180 - i * 30
-            cx_, cy_ = x - offset, y - 8
-            _NS_sylara._aacircle(surface, (*p["wind_dark"], alpha // 2),
-                                 (cx_, cy_ - 2), 13)
-            _NS_sylara._aacircle(surface, (*p["wind_mid"], alpha),
-                                 (cx_, cy_), 9)
-            _NS_sylara._aacircle(surface, (*p["wind_light"], alpha),
-                                 (cx_, cy_ - 3), 5)
+            offset = (i + 1) * 9 * facing
+            alpha = 170 - i * 28
+            _NS_sylara._drk_ghost(surface, x - offset, y - 8,
+                                  11 - i, max(20, alpha))
         # Wind swirls
         for i in range(8):
             angle = phase * 2 + i * math.pi / 4
             r = int(28 * fs)
             px = x + int(math.cos(angle) * r)
             py = y - 5 + int(math.sin(angle) * r * 0.5)
-            _NS_sylara._aacircle(surface, (*p["wind_bright"], 200), (px, py), 3)
-            _NS_sylara._aacircle(surface, (*p["wind_white"], 220), (px, py), 1)
-        # Horizontal speed streaks
+            pygame.draw.circle(surface, (*p["wind_bright"], 200), (px, py), 3)
+            pygame.draw.circle(surface, (*p["wind_white"], 220), (px, py), 1)
+        # Horizontal speed streaks (2 lapis: mid + hot)
         for i in range(6):
             sy = y + (i - 3) * 6
             sx = x - facing * 20
-            ex = sx - facing * 34
+            ex = sx - facing * 36
             alpha = 200 - i * 15
-            _NS_sylara._aaline(surface, (*p["wind_light"], alpha),
-                               (sx, sy), (ex, sy), 1)
+            pygame.draw.line(surface, (*p["wind_mid"], alpha), (sx, sy), (ex, sy), 2)
+            pygame.draw.line(surface, (*p["wind_bright"], alpha), (sx, sy), (ex, sy), 1)
 
 
     # ===================================================================
     # SKILL E: SHACKLE SHOT (bind + stun) — world-space, 3 fase
     # ===================================================================
     def _draw_shackle_ground(surface, boss, x, y, timer, pulse):
-        """Shackle Shot: tether rantai berputar dari bow ke target +
-        reticle di target + burst aktivasi.  World-space."""
+        """Shackle Shot gaya Berserker's Call (Drakar): burst orb di target
+        + tether rantai tebal berlapis + rune ring + chevron.  World-space."""
         p = _NS_sylara.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 150.0))
         fs = _NS_sylara._fx_scale(boss)
@@ -4799,44 +5218,46 @@ class _NS_sylara:
         ang = math.atan2(ty - y, tx - x)
         dist = math.hypot(tx - x, ty - y)
 
-        # ── AKTIVASI: burst bintang di target + shockwave ──
+        # ── AKTIVASI: burst orb di target + shockwave (gaya Culling) ──
         if progress < 0.14:
             t = progress / 0.14
+            _NS_sylara._drk_orb(surface, tx, ty - 6,
+                                int((10 + 14 * t) * fs),
+                                int(235 * (1 - t)))
+            _NS_sylara._drk_shock(surface, tx, ty - 4,
+                                  int((14 + 40 * t) * fs),
+                                  int(210 * (1 - t)), squash=.80)
             _NS_sylara._spark_star(surface, tx, ty - 6,
                                    int(24 * (1 - t * .5)), p["wind_bright"],
                                    int(240 * (1 - t)), 6, rot=pulse,
                                    core=p["wind_white"])
-            _skill_outlined_circle(surface, (tx, ty - 6),
-                                   int((16 + t * 40 * fs)), 3,
-                                   p["wind_light"], int(210 * (1 - t)))
 
-        # ── STEADY: tether rantai berputar dari bow ke target ──
-        #    (outline gelap + garis terang; rune dot berputar di sepanjang)
+        # ── STEADY: tether rantai BERLAPIS dari bow ke target ──
+        #    (5 ton gaya Drakar + rune dot berputar di sepanjang rantai)
         segs = 14
         for i in range(segs):
             t1 = i / segs
             t2 = min(1.0, (i + 0.7) / segs)
             a1 = (sx + (tx - sx) * t1, sy + (ty - sy) * t1 - 5)
             a2 = (sx + (tx - sx) * t2, sy + (ty - sy) * t2 - 5)
-            al = int(150 + math.sin(pulse * 3 + i) * 60)
-            _skill_outlined_line(surface, a1, a2, 2, p["wind_bright"], al)
+            al = int(180 + math.sin(pulse * 3 + i) * 60)
+            _NS_sylara._drk_line(surface, a1, a2, 4, al, core=(i % 3 == 0))
             # rune dot berputar
             if i % 2 == 0:
                 px_ = int(a1[0] + math.cos(pulse * 4) * 4)
                 py_ = int(a1[1] + math.sin(pulse * 4) * 4)
-                _NS_sylara._aacircle(surface, (*p["wind_white"], 220),
-                                     (px_, py_), 1)
+                pygame.draw.circle(surface, (*p["wind_white"], 230),
+                                   (px_, py_), 1)
 
-        # ── TELEGRAPH: reticle di target + chevron berbaris ──
-        rtr = int(11 * fs)
+        # ── TELEGRAPH: rune ring + reticle di target + chevron ──
+        rtr = max(8, int(13 * fs))
+        _NS_sylara._drk_rune_ring(surface, tx, ty - 6, rtr + 6, rtr * .6,
+                                  pulse, int(150 + 60 * pulse), spokes=8)
         _skill_outlined_circle(surface, (tx, ty - 6), rtr, 3,
                                p["wind_light"], int(160 + 60 * pulse))
-        _NS_sylara._dashed_ring(surface, tx, ty - 6, rtr + 8,
-                                p["wind_bright"], int(130 + 50 * pulse),
-                                pulse, segments=8, thick=2, span=.5)
         for da in (0, math.pi / 2, math.pi, -math.pi / 2):
-            _NS_sylara._aaline(
-                surface, (*p["wind_bright"], 170),
+            pygame.draw.line(
+                surface, (*p["wind_bright"], 180),
                 (int(tx + math.cos(da) * (rtr + 2)),
                  int(ty - 6 + math.sin(da) * (rtr + 2))),
                 (int(tx + math.cos(da) * (rtr + 12)),
@@ -4859,8 +5280,8 @@ class _NS_sylara:
     # SKILL Q: FOCUS FIRE (attack-speed buff + piercing) — world-space
     # ===================================================================
     def _draw_focus_fire_ground(surface, boss, x, y, timer, phase):
-        """Ground rune Focus Fire: aktivasi shockwave, steady aura +
-        rune ring berputar, telegraph pierce-line + chevron."""
+        """Ground rune Focus Fire gaya Battle Hunger (Drakar): AOE rune
+        ring + crescent spin + spatter + pierce-line chevron."""
         p = _NS_sylara.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 180.0))
         fs = _NS_sylara._fx_scale(boss)
@@ -4870,34 +5291,48 @@ class _NS_sylara:
         facing = boss.direction
         gy = y + 40
 
-        # ── AKTIVASI: shockwave ganda + bintang di bow ──
+        # ── AKTIVASI: shockwave ganda + bintang di bow (PERTAGAS) ──
         if progress < 0.12:
             t = progress / 0.12
-            for k, rmax in ((0, int(78 * fs)), (1, int(54 * fs))):
-                r = int((18 + t * rmax))
-                _skill_outlined_circle(surface, (x, y - 4), r, 3,
-                                       p["wind_bright"] if k == 0 else p["wind_mid"],
-                                       int((225 if k == 0 else 150) * (1 - t)))
+            _NS_sylara._drk_shock(surface, x, gy,
+                                  int((18 + t * 78) * fs),
+                                  int(225 * (1 - t)), squash=.5)
+            _NS_sylara._drk_shock(surface, x, gy,
+                                  int((14 + t * 54) * fs),
+                                  int(150 * (1 - t)), squash=.38)
             _NS_sylara._spark_star(surface, x + 20 * facing, y - 8,
                                    int(26 * (1 - t * .5)), p["wind_bright"],
                                    int(235 * (1 - t)), 8, rot=phase,
                                    core=p["wind_white"])
 
-        # ── STEADY: ground ellipse aura + rune ring berputar ──
-        _NS_sylara._ellipse(surface, (*p["wind_darkest"], int(80 + 35 * pulse)),
+        # ── STEADY: ground ellipse aura + rune ring + crescent spin ──
+        _NS_sylara._ellipse(surface, (*p["wind_darkest"], int(90 + 40 * pulse)),
                             (int(x - rng * 0.5), int(gy - rng * 0.14),
                              int(rng * 1.0), int(rng * 0.28)), 0)
+        # rune ring utama (world-space = radius gameplay AOE)
+        _NS_sylara._drk_rune_ring(surface, x, gy,
+                                  int(rng * 0.96), int(rng * 0.26),
+                                  phase * 0.5, int(140 + 55 * pulse), spokes=12)
         _skill_outlined_circle(surface, (x, y), int(rng * 0.72), 4,
                                p["wind_mid"], int(120 + 55 * pulse))
-        _NS_sylara._dashed_ring(surface, x, y, int(rng * 0.58),
-                                p["wind_bright"], int(125 + 60 * pulse),
-                                phase * 1.3, segments=12, thick=2, span=.4)
-        # rune dots berputar
+        # rune ring dalam (papan baca di radius ~0.5 rng)
+        _NS_sylara._dashed_ring(surface, x, y, int(rng * 0.5),
+                                p["wind_bright"], int(135 + 60 * pulse),
+                                phase * 1.3, segments=10, thick=2, span=.4)
+        # crescent berputar 2 lengan di sekitar badan (kunci Drakar)
+        _NS_sylara._drk_crescent(surface, x, y - 2, int(rng * 0.36),
+                                 phase * 2.6 + progress * 2.0,
+                                 math.pi * 1.8, 190, squash=.62,
+                                 thick=7, arms=2)
+        # rune dots + spatter piksel
         for i in range(6):
             a = phase * 0.5 + i * math.pi / 3
             px = x + int(math.cos(a) * rng * 0.7)
             py = y + int(math.sin(a) * rng * 0.25)
-            _NS_sylara._aacircle(surface, (*p["wind_white"], 220), (px, py), 2)
+            pygame.draw.circle(surface, (*p["wind_white"], 230), (px, py), 2)
+        _NS_sylara._drk_spatter(surface, x, gy, 16, int(rng * 0.75),
+                                phase, int(150 + 40 * pulse), seed=31,
+                                squash=.32)
 
         # ── TELEGRAPH: pierce-line chevron ke arah hadap ──
         for i in range(3):
@@ -4909,7 +5344,8 @@ class _NS_sylara:
 
 
     def _draw_focus_fire_effect(surface, boss, x, y, timer, phase):
-        """Rapid arrow volley + channel aura saat Focus Fire."""
+        """Rapid arrow volley + channel aura gaya Battle Hunger (Drakar):
+        crescent orbit di busur + ember piksel naik + glint."""
         p = _NS_sylara.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 180.0))
         fs = _NS_sylara._fx_scale(boss)
@@ -4926,8 +5362,17 @@ class _NS_sylara:
         if progress < 0.2:
             boss._sy_focus_last_shot = -100
 
-        # Channeling aura (2 layer + glint orbit di bow)
+        # Channeling aura: crescent berputar di sekitar bow (gaya Drakar)
         bow_x, bow_y = x + 20 * facing, y - 8
+        _NS_sylara._drk_crescent(surface, bow_x, bow_y,
+                                 int((16 + 4 * math.sin(phase)) * fs),
+                                 phase * 3.1, math.pi * 1.6,
+                                 int(190 + 50 * math.sin(phase * 3)),
+                                 squash=.7, thick=5, arms=1)
+        # ember piksel naik di sekitar badan
+        _NS_sylara._drk_embers(surface, x, y + 10, 10, phase, 165,
+                               spread=38, rise=44, squash=.55)
+        # orb titik orbit (mote channel)
         for i in range(10):
             angle = phase * 3 + i * math.pi / 5
             r = int((25 + math.sin(phase * 2 + i) * 5) * fs)
@@ -4935,8 +5380,8 @@ class _NS_sylara:
             py = y - 10 + int(math.sin(angle) * r * 0.6)
             alpha = int(200 + math.sin(phase * 2 + i) * 55)
             alpha = max(0, min(255, alpha))
-            _NS_sylara._aacircle(surface, (*p["wind_bright"], alpha), (px, py), 3)
-            _NS_sylara._aacircle(surface, (*p["wind_white"], alpha), (px, py), 1)
+            pygame.draw.circle(surface, (*p["wind_bright"], alpha), (px, py), 3)
+            pygame.draw.circle(surface, (*p["white"], alpha), (px, py), 1)
         # Wind spirals (steady signature)
         for i in range(3):
             angle_start = phase * 2 + i * math.pi * 2 / 3
@@ -4946,9 +5391,10 @@ class _NS_sylara:
         # glint orbit di ujung bow
         for i in range(4):
             a = phase * 3.2 + i * math.pi / 2
-            _NS_sylara._aacircle(surface, (*p["wind_white"], 220),
-                                 (int(bow_x + math.cos(a) * 15),
-                                  int(bow_y + math.sin(a) * 15)), 1)
+            pygame.draw.circle(
+                surface, (*p["wind_white"], 220),
+                (int(bow_x + math.cos(a) * 15),
+                 int(bow_y + math.sin(a) * 15)), 1)
 
 
     # ===================================================================
