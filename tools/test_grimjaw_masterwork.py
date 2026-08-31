@@ -8,6 +8,12 @@ ber-strip darah, portrait LOD, ambient FX ter-cache, skill Q/W/E/R
 world-space, dan pose (idle/walk/attack/spin) semuanya dirender dari
 kode tanpa PNG / sprite sheet / image.load.
 
+Juga menjaga PARITAS keluarga masterwork: renderer lain yang sudah
+di-upgrade ke standar v2 (termasuk Gorath di bosses/level2.py) wajib
+punya kosakata FX yang sama - `_fx_scale` dengan cap 2.6, primitif
+telegraph (`_spark_star`/`_chevron`/`_dashed_ring`/`_jagged_crack`),
+surface statis ter-cache lewat `_static`, dan FX skill world-space.
+
 Jalankan:  python3 tools/test_grimjaw_masterwork.py
 """
 import inspect
@@ -229,6 +235,146 @@ def test_skill_fx_are_world_space():
                         f"fs={fs} (dapat {n}/180 hit) -> bukan world-space")
 
 
+# ── paritas keluarga masterwork ──────────────────────────────────
+# (renderer, label) yang sudah dinaikkan ke standar Thorne v2 + FX v2.1.
+def _family_namespaces():
+    from bosses.level2 import _NS_gorath
+    return (("gorath", _NS_gorath),)
+
+
+def test_family_shares_fx_vocabulary():
+    """Renderer masterwork lain memakai kosakata FX yang sama.
+
+    Menjaga agar upgrade berikutnya tidak menciptakan dialek FX baru:
+    setiap namespace v2 harus menyediakan helper yang sama seperti
+    Thorne/Grimjaw, dan `_fx_scale` harus memakai cap 2.6 yang sama.
+    """
+    from types import SimpleNamespace
+
+    required = ("_fx_scale", "_ring_r", "_spark_star", "_chevron",
+                "_dashed_ring", "_jagged_crack", "_tuft_points",
+                "_static", "_dither_dots", "_mix", "_hash01")
+    for label, NS in _family_namespaces():
+        for helper in required:
+            assert callable(getattr(NS, helper, None)), \
+                f"{label}: helper {helper} hilang"
+        # world-space: 1.0 tanpa _render_scale, 1/scale dengan cap 2.6
+        assert NS._fx_scale(SimpleNamespace()) == 1.0, label
+        assert abs(NS._fx_scale(SimpleNamespace(_render_scale=0.5)) - 2.0) \
+            < 1e-6, label
+        assert abs(NS._fx_scale(SimpleNamespace(_render_scale=0.1)) - 2.6) \
+            < 1e-6, f"{label}: cap _fx_scale bukan 2.6"
+
+
+def test_family_skill_fx_are_world_space():
+    """Telegraph keluarga digambar di radius DUNIA, bukan px canvas.
+
+    Gorath: W=150, E=85, R=190 px dunia. Pada _render_scale=0.5 ring
+    harus muncul di 2x radius tersebut dalam px canvas.
+    """
+    import math as _m
+    from types import SimpleNamespace as _S
+
+    from bosses.level2 import _NS_gorath as GOR
+
+    def probe(skill, timer, W=1000):
+        surf = pygame.Surface((W, W), pygame.SRCALPHA)
+        cx = cy = W // 2
+        b = _S(boss_type="gorath", boss_class="mini", x=float(cx),
+               y=float(cy), direction=1, facing=1, pulse=1.3, timer=0,
+               attack_cooldown=44, active_skill=skill,
+               active_skill_timer=timer,
+               target=_S(x=float(cx + 95), y=float(cy - 20), alive=True),
+               hurt_flash_timer=0, alive=True, radius=36, range=58,
+               _render_scale=0.5)
+        GOR.draw_gorath(surf, b, cx, cy)
+        return surf, cx, cy, b
+
+    def hits(surf, r_px, cx, cy, tol=3):
+        n = 0
+        for a in range(0, 360, 2):
+            ca, sa = _m.cos(_m.radians(a)), _m.sin(_m.radians(a))
+            for dr in range(-tol, tol + 1):
+                x, y = int(cx + ca * (r_px + dr)), int(cy + sa * (r_px + dr))
+                if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
+                        and surf.get_at((x, y)).a > 30:
+                    n += 1
+                    break
+        return n
+
+    # W: AOE 150 dunia, digambar di garis tanah caster
+    s, cx, cy, _ = probe("w", 40)
+    n = hits(s, 300, cx, cy + GOR.GROUND_DY - 8)
+    assert n > 120, f"W: ring 150 dunia tidak world-space ({n}/180)"
+
+    # E: AOE 85 dunia, digambar di TARGET
+    s, cx, cy, b = probe("e", 24)
+    tx, ty = GOR._target_position(b, cx, cy)
+    n = hits(s, 170, tx, ty)
+    assert n > 120, f"E: ring 85 dunia tidak world-space ({n}/180)"
+
+    # R: AOE 190 dunia di caster
+    s, cx, cy, _ = probe("r", 60)
+    n = hits(s, 380, cx, cy + GOR.GROUND_DY)
+    assert n > 100, f"R: ring 190 dunia tidak world-space ({n}/180)"
+
+
+def test_family_skill_fx_have_three_phases():
+    """Tiap skill keluarga punya 3 tahap terbaca (aktivasi/steady/telegraph)."""
+    from types import SimpleNamespace as _S
+
+    from bosses.level2 import _NS_gorath as GOR
+
+    for skill, dur in GOR.SKILL_DUR.items():
+        sigs = set()
+        for timer in (dur - 4, int(dur * 0.6), 6):
+            surf = pygame.Surface((620, 620), pygame.SRCALPHA)
+            b = _S(boss_type="gorath", boss_class="mini", x=310.0, y=310.0,
+                   direction=1, facing=1, pulse=1.3, timer=0,
+                   attack_cooldown=44, active_skill=skill,
+                   active_skill_timer=timer,
+                   target=_S(x=430.0, y=290.0, alive=True),
+                   hurt_flash_timer=0, alive=True, radius=36, range=58)
+            GOR.draw_gorath(surf, b, 310, 310)
+            sigs.add(pygame.image.tobytes(surf, "RGBA"))
+        assert len(sigs) == 3, \
+            f"gorath {skill}: hanya {len(sigs)}/3 tahap FX yang berbeda"
+
+
+def test_family_keeps_public_names():
+    """Upgrade v2 tidak boleh memutus nama publik lama renderer keluarga."""
+    from bosses.level2 import _NS_gorath as GOR
+
+    legacy = ("PALETTE", "_clamp", "_aacircle", "_aaline", "_poly",
+              "_ellipse", "_rect", "_target_position", "BloodProjectile",
+              "_detect_moving", "_update_attack_anim", "_manage_projectiles",
+              "_spawn_projectile", "draw_gorath", "draw_boss",
+              "_draw_shockwave", "_draw_gorath_idle", "_draw_gorath_walk",
+              "_draw_gorath_attack", "_draw_gorath_body_raw",
+              "_draw_gorath_body", "_draw_shadow", "_draw_blood_aura",
+              "_draw_ground_blood_pool", "_draw_blood_wisps",
+              "_draw_blood_trail", "_draw_blade_swing_arc",
+              "_draw_swing_impact", "_draw_bloodrage",
+              "_draw_bloodrite_ground", "_draw_bloodrite", "_draw_thirst",
+              "_draw_rupture_ground", "_draw_rupture", "_draw_loincloth",
+              "_draw_torso", "_draw_shoulders", "_draw_gorath_head",
+              "_draw_spiky_hair", "_draw_idle_arms", "_draw_attack_arms",
+              "_draw_arm_segment", "_draw_hand", "_draw_curved_blade",
+              "_draw_curved_blade_angled", "_draw_body_blood_drips")
+    missing = [n for n in legacy if not hasattr(GOR, n)]
+    assert not missing, f"gorath: nama publik hilang -> {missing}"
+
+
+def test_family_rigs_are_procedural():
+    """Tidak ada renderer keluarga yang memuat aset dari disk."""
+    for label, NS in _family_namespaces():
+        source = inspect.getsource(sys.modules[NS.__module__]) \
+            if hasattr(NS, "__module__") else ""
+        if not source:
+            source = open(os.path.join(ROOT, "bosses", "level2.py")).read()
+        assert "pygame.image.load" not in source, label
+
+
 def test_silhouette_outline_exists():
     surface = pygame.Surface((200, 200), pygame.SRCALPHA)
     G._draw_grimjaw_elite(surface, 100, 100, 1, 1.2, "idle", 0.0)
@@ -251,5 +397,12 @@ if __name__ == "__main__":
     test_skill_visuals_render_with_masterwork()
     test_skill_fx_are_world_space()
     test_silhouette_outline_exists()
+    test_family_shares_fx_vocabulary()
+    test_family_skill_fx_are_world_space()
+    test_family_skill_fx_have_three_phases()
+    test_family_keeps_public_names()
+    test_family_rigs_are_procedural()
     print("OK - Grimjaw masterwork v2: rig 1.5x, blade pose, portrait LOD, "
           "Q/W/E/R world-space, outline, dan 12 frame animasi tervalidasi")
+    print("OK - paritas keluarga (gorath v2): kosakata FX, telegraph "
+          "world-space W150/E85/R190, 3 tahap per skill, nama publik utuh")
