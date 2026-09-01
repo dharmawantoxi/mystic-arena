@@ -5,6 +5,18 @@
 > (lihat docs/THORNE_V2_RENDERER.md).
 > Tetap **100% prosedural** — tidak ada PNG / sprite-sheet / `image.load`.
 
+> **STATUS (2026-09-01).** Dokumen ini membahas **badan/rig** dan skill FX v2.1,
+> dan masih akurat untuk bagian itu. Setelah dokumen ini ditulis ada tiga pass
+> lagi di `_NS_gornak` (jalur hero v3, kurva pose v3, pass cahaya v4) plus satu
+> **rewrite sistem tempur penuh** yang tidak didokumentasikan di sini:
+> controller animasi, fase ayunan, swing trail, proyektil, impact, hit-stop, dan
+> screen shake kini tinggal di `heroes/gornak_fx.py` + `heroes/combat_feel.py`.
+> Baca **[GORNAK_V3_COMBAT_FX.md](GORNAK_V3_COMBAT_FX.md)** untuk bagian itu,
+> dan jalankan `python tools/_audit_gornak_v3.py` (46 cek terukur + lembar
+> `docs/gornak_v3_*.png`) untuk melihat kondisi sebenarnya. Kalau tabel di bawah
+> bertentangan dengan kode, **kode yang benar** — dokumen ini tidak otomatis
+> diregenerasi.
+
 Gornak adalah **mini-boss 1:1 DAN hero** (pipeline `heroes/__init__.py`
 menormalkan tinggi lane). Tidak seperti Kaizen/Thorne/Grimjaw, rig
 boss-path **tidak boleh tumbuh 1.5×**: HP bar mini-boss digambar di

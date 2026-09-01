@@ -383,6 +383,59 @@ terpisah, dan cakram cahaya tetap ada di lane).
 Review sheet: `python tools/_shot_gornak_masterwork.py` dan
 `python tools/_shot_gornak_before_after.py`.
 
+### Pass kelima Gornak — combat FX hidup (lapisan 1:1, 100% prosedural)
+
+Empat pass di atas membuat *badan* Gornak bagus; *tempurnya* belum. Penyebabnya
+bukan estetika tapi arsitektur: sprite hero lewat `render_hero` **di-cache dan
+dikuantisasi**, lalu di-`smoothscale` (skala ≈ 0.69) — jadi apa pun yang
+digambar ke canvas itu ikut beku dan menyusut. Trail ayunan jadi patah, bolt
+skill "menempel" di satu frame, dan hit terasa hening karena tidak ada hit-stop
+atau shake.
+
+Karena itu sistem tempur Gornak ditulis ulang dan **dipisahkan dari renderer**:
+
+* `heroes/gornak_fx.py` (baru) — lapisan hidup yang digambar di layar penuh,
+  skala 1:1, tiap frame nyata: trail dua bilah dari histori ujung bilah,
+  particle system berbatas, proyektil Mana Break (lahir dari `_tip_local`,
+  visual-only supaya damage tetap milik `hero_skills`), impact
+  flash+shockwave+spoke+debris+spark, burst W, R void, overlay debug.
+* `heroes/combat_feel.py` (baru) — bus rasa: hit-stop **0.03–0.08 s** yang
+  dikunci ke 2–5 langkah simulasi, shake meluruh yang hanya dimundurkan
+  **sekali per frame**, delta-time terclamp satu sumber. Zephyr ikut
+  dipindahkan ke bus ini, jadi dua karakter tidak pernah menumpuk freeze.
+* `_NS_gornak` (renderer) — tetap pemilik geometri badan, ditambah
+  **controller animasi**: `IDLE/WALK/RUN/ATTACK/SWING/CAST/SKILL/SPECIAL/HIT/
+  HURT/DEATH` berprioritas + 6 fase ayunan (`ANTICIPATION→WINDUP→SWING→IMPACT→
+  FOLLOW→RECOVERY`) dengan jendela hit aktif, dipublikasikan lewat field lama
+  (`_gnk_attack_frame/_gnk_attack_progress/_gnk_attack_active`) sehingga
+  portrait, lane boss, dan tes lama tidak berubah. Kurva tebasan dire tune
+  (`t^0.55 → t^1.25`) agar tidak ada frame lompat 32 px.
+* Semua efek **fallback** ke renderer kalau modul FX tidak tersedia — visual
+  kehilangan polish, tidak pernah kehilangan efek. Engine tidak pernah
+  dipaksa punya field baru: event skill **dibaca** dari state yang sudah ada.
+
+Trail-nya bukan poligon naif `[tip, tip+1, grip+1, grip]` (itu yang bikin
+"lembaran" raksasa menutupi badan saat bilah berputar cepat): histori diubah
+jadi `(poros, sudut, radius, umur)`, strip putus saat arah berbalik, sapuan
+dibatasi 1.95 rad, dan tiap cuplikan digambar sebagai sector cincin tipis di
+sekitar grip — wash + inti terang + garis glint 1 px persis di lintasan ujung.
+
+Terukur: render berat (lapisan hidup penuh + impact per 10 frame) median
+**≈ 2.9 ms/frame**, partikel aktif ≤ 170 dan **0** setelah 400 frame tanpa
+tempur, entri surface cache 110/384.
+
+Detail lengkap: **[docs/GORNAK_V3_COMBAT_FX.md](docs/GORNAK_V3_COMBAT_FX.md)**.
+Lembar review (regenerasi `python tools/_audit_gornak_v3.py`, 46 cek terukur):
+[docs/gornak_v3_swing_strip.png](docs/gornak_v3_swing_strip.png),
+[docs/gornak_v3_projectile.png](docs/gornak_v3_projectile.png),
+[docs/gornak_v3_impact.png](docs/gornak_v3_impact.png),
+[docs/gornak_v3_skillfx.png](docs/gornak_v3_skillfx.png),
+[docs/gornak_v3_feel.png](docs/gornak_v3_feel.png),
+[docs/gornak_v3_ingame.png](docs/gornak_v3_ingame.png),
+[docs/gornak_v3_debug.png](docs/gornak_v3_debug.png).
+Uji regresi: `python -m pytest tools/test_gornak_v3_combat.py -q` (60 cek) dan
+`python tools/test_gornak_masterwork.py` (16 cek, tetap hijau).
+
 ### Contoh maksimal kedelapan: Morgath Masterwork (mini boss + hero)
 
 Morgath — *Arc Warden*, mini boss level 1 yang juga bisa di-unlock jadi

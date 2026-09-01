@@ -4329,6 +4329,23 @@ class Hero(TowerDebuffMixin):
                 self.target.take_damage(damage, self.team, source=self,
                                         school=self.dmg_school)
 
+                # ═══ IMPACT FX GORNAK ═══
+                # Damage melee diterapkan instan (tanpa proyektil), jadi
+                # umpan balik benturan tidak punya tempat lain untuk
+                # dipicu: flash, spark, debris, shake, hit-stop 0.03-0.08 s
+                # (paket lengkapnya di heroes/gornak_fx.notify_melee_impact).
+                # Sama seperti jalur Zephyr: dibungkus try/except dan
+                # difilter per hero_type, sehingga hero lain tidak menarik
+                # modul FX-nya dan error visual tidak pernah memutus
+                # alur serangan.
+                if self.hero_type == 'gornak':
+                    try:
+                        from heroes import gornak_fx as _gfx
+                        _gfx.notify_melee_impact(
+                            self, self.target, damage, is_crit)
+                    except Exception:
+                        pass
+
                 if is_crit:
                     try:
                         import __main__
