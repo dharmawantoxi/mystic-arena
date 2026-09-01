@@ -21,6 +21,15 @@ pygame.display.set_mode((1, 1))
 from heroes import _ProbeEntity
 from heroes._bundle import _NS_kaizen as K
 
+# Lembar ini mem-preview FALLBACK CANVAS murni: lapisan hidup dimatikan
+# supaya draw_kaizen tidak menekan smear/sabit in-canvas yang dipotret.
+try:
+    from heroes import kaizen_fx as _kzfx
+    _kzfx.KAIZEN_FX_ENABLED = False
+    K._LIVE_MOD = False
+except Exception:
+    pass
+
 W, H = 1280, 720
 screen = pygame.Surface((W, H))
 screen.fill((5, 9, 18))

@@ -28,6 +28,15 @@ pygame.display.set_mode((8, 8))
 from heroes import _bundle as _b
 kz = _b._NS_kaizen
 
+# Demo ini memotret FALLBACK CANVAS murni (rig + smear in-canvas);
+# lapisan hidup 60fps (heroes/kaizen_fx.py) dimatikan.
+try:
+    from heroes import kaizen_fx as _kzfx
+    _kzfx.KAIZEN_FX_ENABLED = False
+    kz._LIVE_MOD = False
+except Exception:
+    pass
+
 
 def _font(size):
     return pygame.font.SysFont("dejavusans", size, bold=True)
