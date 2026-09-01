@@ -436,6 +436,48 @@ Lembar review (regenerasi `python tools/_audit_gornak_v3.py`, 46 cek terukur):
 Uji regresi: `python -m pytest tools/test_gornak_v3_combat.py -q` (60 cek) dan
 `python tools/test_gornak_masterwork.py` (16 cek, tetap hijau).
 
+### Pass Grimjaw — combat FX hidup (lapisan 1:1, 100% prosedural)
+
+Renderer masterwork v2 Grimjaw bagus, tapi tempurnya belum: smear ayunan dan
+impact pop hidup **di dalam sprite cache** (kuantisasi 2 frame + smoothscale
+0.402) sehingga patah dan lembek, tidak ada animation controller, dan basic
+attack melee-nya mendarat tanpa hit-stop / shake / impact karena damage
+diterapkan instan di `_entity.py`.
+
+Sistem tempurnya kini ditulis ulang mengikuti arsitektur Gornak v3:
+
+* `heroes/grimjaw_fx.py` (baru) — lapisan hidup skala 1:1 di luar cache:
+  **trail pedang 4-band** dari histori posisi bilah NYATA
+  (`_blade_grip_local`/`_blade_tip_local` renderer), particle system
+  berbatas (7 bentuk pixel-art: pixel/glow/spark/shard/streak/ember/smoke),
+  **proyektil gelombang bilah** (lifecycle penuh spawn→travel→trail→hit→
+  impact→destroy, visual-only supaya damage tetap milik `hero_skills`),
+  ImpactFX (flash bintang + shockwave elips berarah + spoke debris + slash
+  fragment + silang omnislash), SkillFX lifecycle Q/W/E/R, hit-flash, dan
+  overlay `DEBUG_CHARACTER`.
+* Animation controller cermin — state machine berprioritas penuh
+  (`IDLE..DEATH`, 12 state) dengan delta-time + transisi, dan 6 fase ayunan
+  (`ANTICIPATION→WINDUP→SWING→IMPACT→FOLLOW→RECOVERY`) yang di-*resolve*
+  dari konstanta renderer (`ATTACK_WINDUP_END/ATTACK_SWING_END`) supaya
+  rig, trail, dan FX selalu sepakat kapan tebasan mendarat.
+* Event gameplay dibaca edge-triggered tanpa menyentuh balance: tick damage
+  Q (tiap 15 frame) dan R (tiap 8 frame), cast W di posisi ward, buff E,
+  turunnya HP, dan kematian — masing-masing memicu bahasa FX-nya sendiri
+  (Q: hit-stop 0.045 + spin trail; E: 3 gelombang bilah + hit-stop 0.04;
+  R: pilar rage + shake 8 + hit-stop 0.07; tebasan: whoosh pop walau
+  meleset, paket impact penuh saat kena).
+* Hit-stop & shake lewat bus bersama `heroes/combat_feel.py` (Zephyr +
+  Gornak + Grimjaw tidak menumpuk freeze); supresi ganda: saat lapisan
+  hidup aktif, renderer melompati 4 FX in-canvas-nya — dan semuanya kembali
+  otomatis sebagai fallback kalau modul FX gagal dimuat.
+
+Detail lengkap: **[docs/GRIMJAW_V3_COMBAT_FX.md](docs/GRIMJAW_V3_COMBAT_FX.md)**.
+Lembar review (`python tools/_shot_grimjaw_v3_combat.py`):
+[docs/grimjaw_v3_combat_sheet.png](docs/grimjaw_v3_combat_sheet.png).
+Uji regresi: `python -m pytest tools/test_grimjaw_v3_combat.py -q` (58 cek),
+`tools/test_grimjaw_masterwork.py` + `tools/test_grimjaw_swing_arah.py`
+(19 cek, tetap hijau).
+
 ### Contoh maksimal kedelapan: Morgath Masterwork (mini boss + hero)
 
 Morgath — *Arc Warden*, mini boss level 1 yang juga bisa di-unlock jadi

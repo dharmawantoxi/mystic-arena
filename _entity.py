@@ -4346,6 +4346,21 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX GRIMJAW ═══
+                # Paket game-feel yang sama untuk Grimjaw (flash, spark,
+                # debris, shockwave, slash fragment, screen shake, dan
+                # hit-stop 0.03-0.08 s) - lengkapnya di
+                # heroes/grimjaw_fx.notify_melee_impact.  Difilter per
+                # hero_type dan dibungkus try/except supaya error visual
+                # tidak pernah memutus alur serangan (paritas Gornak).
+                if self.hero_type == 'grimjaw':
+                    try:
+                        from heroes import grimjaw_fx as _gjfx
+                        _gjfx.notify_melee_impact(
+                            self, self.target, damage, is_crit)
+                    except Exception:
+                        pass
+
                 if is_crit:
                     try:
                         import __main__

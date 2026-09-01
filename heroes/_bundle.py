@@ -885,6 +885,57 @@ class _NS_grimjaw:
             if active else 0.0
         )
 
+    # ------------------------------------------------------------------
+    # LAPISAN FX HIDUP (heroes/grimjaw_fx.py)
+    # ------------------------------------------------------------------
+    #: Modul FX layar (diisi malas). False = percobaan gagal -> jalur canvas.
+    _LIVE_MOD = None
+
+    class _LiveFlag:
+        """Penanda sederhana yang bisa di-set dari fungsi static."""
+        __slots__ = ("v",)
+
+        def __init__(self):
+            self.v = False
+
+    #: Dibaca rig: True = smear/impact ayunan sudah diambil alih lapisan
+    #: hidup 60fps, jadi canvas tidak menggambarnya dua kali.
+    _FX_LIVE = _LiveFlag()
+
+    @staticmethod
+    def _live_module():
+        """Muat ``heroes.grimjaw_fx`` sekali; None kalau tidak tersedia.
+
+        Impor dilakukan DI SINI (bukan di kepala modul) supaya bundle
+        hero besar tidak menarik paket FX saat build hanya-butuh-renderer,
+        dan supaya lapisan FX bisa dimatikan lewat satu flag tanpa
+        merusak jalur render (pola yang sama dengan _NS_gornak).
+        """
+        NS = _NS_grimjaw
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import grimjaw_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "GRIMJAW_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    @staticmethod
+    def _fx_live_owned(hero):
+        """True kalau lapisan hidup mengambil alih FX unit ini.
+
+        Dipakai untuk memutuskan apakah smear/ayunan di-canvas masih
+        perlu digambar (fallback) atau sudah digantikan lapisan layar.
+        """
+        try:
+            mod = _NS_grimjaw._live_module()
+            if mod is None:
+                return False
+            return bool(mod.owns(hero))
+        except Exception:
+            return False
+
     # ===================================================================
     # MAIN DRAW ENTRY POINT
     # ===================================================================
@@ -896,6 +947,24 @@ class _NS_grimjaw:
         moving = _NS_grimjaw._detect_moving(hero)
         _NS_grimjaw._update_attack_anim(hero)
         portrait_hd = bool(getattr(hero, "_portrait_hd", False))
+
+        # ═══ LAPISAN FX HIDUP (heroes/grimjaw_fx.py) ═══
+        # Pasang director layar untuk unit ini.  Penanda ``owned`` juga
+        # memberi tahu rig bahwa smear ayunan + impact pop di-canvas
+        # sudah digantikan lapisan 60fps (tidak dobel).  Portrait tidak
+        # pernah dipasang: potret hanya berisi rig.  Jalur HERO lane
+        # menggambar lapisannya lewat heroes/__init__ (_LIVE_FX_HEROES),
+        # attach di sini hanya memastikan penanda konsisten sejak frame
+        # pertama supaya cache sprite tidak pernah membeku dobel-FX.
+        if not portrait_hd:
+            try:
+                mod = _NS_grimjaw._live_module()
+                if mod is not None:
+                    mod.attach(hero)
+            except Exception:
+                pass
+        _NS_grimjaw._FX_LIVE.v = (not portrait_hd) and \
+            _NS_grimjaw._fx_live_owned(hero)
 
         attacking = (
             getattr(hero, "_gj_attack_active", False)
@@ -1034,7 +1103,12 @@ class _NS_grimjaw:
                                        hero.pulse, "attack", progress,
                                        detail=portrait, crit=crit, omni=omni)
 
-        if not portrait:
+        # FX tebasan in-canvas (fallback): smear crescent + impact pop +
+        # burst crit.  Saat lapisan hidup (heroes/grimjaw_fx.py) sudah
+        # mengambil alih unit ini, semuanya LOMPATI - trail 60fps dari
+        # posisi bilah nyata + ImpactFX + hit-stop/shake jauh lebih kaya
+        # dan tidak terkunci kuantisasi pose, dan tidak digambar 2x.
+        if not portrait and not _NS_grimjaw._FX_LIVE.v:
             # Fire slash arc (mengikuti jalur ujung pedang yang sama)
             _NS_grimjaw._draw_fire_slash_arc(surface, x + lunge, y,
                                              hero.direction, progress, crit,
@@ -1734,8 +1808,11 @@ class _NS_grimjaw:
         length = _NS_grimjaw._blade_len_ap(action, ap)
         hot = crit or omni
 
-        # Smear ayunan: crescent 3-band mengikuti jalur ujung pedang
-        if attack and 0.30 < ap < 0.88:
+        # Smear ayunan: crescent 3-band mengikuti jalur ujung pedang.
+        # Lompati kalau lapisan hidup sudah menggambar trail 60fps dari
+        # histori posisi bilah NYATA (heroes/grimjaw_fx.SwingTrail) -
+        # supaya efek tidak dobel dan tidak ikut kuantisasi pose.
+        if attack and 0.30 < ap < 0.88 and not _NS_grimjaw._FX_LIVE.v:
             _NS_grimjaw._draw_blade_swing_trail(surface, cx, cy, f, phase, ap)
 
         # Blade Fury: lingkaran api yang berputar + ghost blade
