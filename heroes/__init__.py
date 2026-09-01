@@ -626,7 +626,11 @@ _BEAM_PASS_HEROES = {"morgath"}
 # ledakan Essence Flux R, impact, hit-stop, dan shake — semuanya hidup
 # di luar cache sprite supaya tetap mulus 60 fps.
 # ═══════════════════════════════════════════════════════
-_LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex"}
+# Sylara (heroes/sylara_fx.py) melengkapi daftar ini: pita sapuan busur
+# arc-based, panah angin prosedural dengan lifecycle penuh, daun/gust
+# particle system, sulur Shackle, siklon Windrun, gale Powershot, impact,
+# hit-stop, dan shake — semua hidup di luar cache sprite.
+_LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex", "sylara"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -635,6 +639,7 @@ _LIVE_FX_PATHS = {
     "grimjaw": "heroes.grimjaw_fx",
     "kaizen": "heroes.kaizen_fx",
     "vex": "heroes.vex_fx",
+    "sylara": "heroes.sylara_fx",
 }
 
 
@@ -1128,8 +1133,13 @@ def _hero_cache_key(hero_type, hero):
         return (hero_type, team, level, facing, 'skill', skill,
                 skill_t // (HERO_SKILL_QUANT * _q))
     if timer > 0:
+        # _pose_variant: varian pose yang dipilih renderer sendiri
+        # (mis. Sylara memilih sapuan melee vs tembakan tergantung jarak
+        # target).  Tanpa ini, dua pose berbeda memakai key yang sama
+        # dan cache menyajikan sprite basi.
         return (hero_type, team, level, facing, 'atk',
-                timer // (HERO_ATK_QUANT * _q))
+                timer // (HERO_ATK_QUANT * _q),
+                int(getattr(hero, '_pose_variant', 0) or 0))
 
     phase = int(getattr(hero, 'pulse', 0.0) * 2.0) % HERO_ANIM_PHASES
     return (hero_type, team, level, facing, 'idle', phase,

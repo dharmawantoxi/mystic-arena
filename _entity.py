@@ -3891,6 +3891,27 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX SYLARA ═══
+                # Sylara (range 130) menembak lewat proyektil generik ini,
+                # jadi pendaratan panahnya diumumkan di titik yang sama:
+                # flash bintang, sabit angin, serpihan kayu/baja, daun
+                # terlempar, screen shake, dan hit-stop 0.03-0.08 s -
+                # lengkapnya di heroes/sylara_fx.notify_projectile_impact.
+                # Difilter per hero_type dan dibungkus try/except supaya
+                # error visual tidak pernah memutus alur serangan
+                # (paritas Zephyr / Vex).
+                if proj.get('hero_type') == 'sylara' and not target_dead:
+                    try:
+                        from heroes import sylara_fx as _syfx
+                        _syfx.notify_projectile_impact(
+                            proj.get('source') or self,
+                            proj['x'], proj['y'],
+                            proj.get('angle', 0.0),
+                            proj.get('damage', 0),
+                            bool(proj.get('is_crit')))
+                    except Exception:
+                        pass
+
                 # HIT! (hanya damage > 0 yang mengenai target & bersuara;
                 # projectile visual-only skill damage=0 diam saja)
                 if not target_dead and proj['damage'] > 0:
@@ -4394,6 +4415,19 @@ class Hero(TowerDebuffMixin):
                     try:
                         from heroes import kaizen_fx as _kzfx
                         _kzfx.notify_melee_impact(
+                            self, self.target, damage, is_crit)
+                    except Exception:
+                        pass
+
+                # ═══ IMPACT FX SYLARA (sapuan limb busur) ═══
+                # Jalur ini hanya hidup kalau Sylara memukul dari jarak
+                # sangat dekat (riposte melee); damage tetap mengalir
+                # lewat rumus yang sama - yang ditambahkan hanya sabit
+                # angin, serpihan, shake, dan hit-stop.
+                if self.hero_type == 'sylara':
+                    try:
+                        from heroes import sylara_fx as _syfx2
+                        _syfx2.notify_melee_impact(
                             self, self.target, damage, is_crit)
                     except Exception:
                         pass
