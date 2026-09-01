@@ -3353,6 +3353,70 @@ class _NS_sylara:
     """
 
     # ---------------------------------------------------------------------------
+    # LAPISAN FX HIDUP (heroes/sylara_fx.py)
+    # ---------------------------------------------------------------------------
+    # Sprite Sylara DI-CACHE oleh pipeline hero (heroes/__init__.py).
+    # Semua yang harus bergerak 60 fps sejati - trail ayunan busur,
+    # partikel daun/angin, proyektil panah angin, impact, screen shake,
+    # hit-stop - TIDAK boleh hidup di dalam canvas itu: hasilnya ikut
+    # beku pada kuantisasi pose dan menyusut bersama sprite.
+    #
+    # Modul ``heroes/sylara_fx.py`` adalah lapisan hidupnya: digambar
+    # langsung ke layar pada skala 1:1.  Jembatan di bawah memasang
+    # director per unit dan memberi tahu rig bahwa smear/flash di-canvas
+    # sudah digantikan, sehingga tidak ada efek yang tergambar dua kali.
+    #
+    # Jalur HERO lane menggambar lapisannya lewat heroes/__init__.py
+    # (``_LIVE_FX_HEROES``); jalur BOSS (draw dipanggil tiap frame, di
+    # luar cache) menggambarnya sendiri di ``draw_sylara``.
+    _LIVE_MOD = None
+
+    class _LiveFlag:
+        """Penanda sederhana yang bisa di-set dari fungsi static."""
+        __slots__ = ("v",)
+
+        def __init__(self):
+            self.v = False
+
+    #: Dibaca rig: True = trail/flash sudah diambil alih lapisan hidup
+    #: 60 fps, jadi canvas tidak menggambarnya dua kali.
+    _FX_LIVE = _LiveFlag()
+
+    @staticmethod
+    def _live_module():
+        """Muat ``heroes.sylara_fx`` sekali; None kalau tidak tersedia.
+
+        Impor dilakukan DI SINI (bukan di kepala modul) supaya bundle
+        hero besar tidak menarik paket FX saat build hanya-butuh-
+        renderer, dan supaya lapisan FX bisa dimatikan lewat satu flag
+        tanpa merusak jalur render (pola yang sama dengan _NS_vex).
+        """
+        NS = _NS_sylara
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import sylara_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "SYLARA_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    @staticmethod
+    def _fx_live_owned(hero):
+        """True kalau lapisan hidup mengambil alih FX unit ini."""
+        try:
+            mod = _NS_sylara._live_module()
+            if mod is None:
+                return False
+            return bool(mod.owns(hero))
+        except Exception:
+            return False
+
+    def live_fx_ready():
+        """True kalau lapisan hidup Sylara bisa dipakai (dipakai tooling)."""
+        return _NS_sylara._live_module() is not None
+
+    # ---------------------------------------------------------------------------
     # Compatibility helpers
     # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
@@ -3713,6 +3777,372 @@ class _NS_sylara:
                     "tremble": 1 if (k0[4] and t < .9) else 0,
                 }
         return {"bob": 0, "lean": 0, "flare": 1.0, "tremble": 0}
+
+    # ═══════════════════════════════════════════════════════════════
+    # v3 — TIMELINE SERANGAN, AYUNAN BUSUR, DAN ANIMATION CONTROLLER
+    # ───────────────────────────────────────────────────────────────
+    # Serangan Sylara punya DUA bentuk yang memakai satu timeline:
+    #
+    #   1. SHOT   — tarik tali -> full draw -> release (jarak jauh).
+    #   2. SWING  — sapuan limb busur berbasis BUSUR (arc) saat musuh
+    #               terlalu dekat untuk menembak (< SWING_RANGE dunia).
+    #
+    # Keduanya dipecah jadi enam fase supaya ada bobot & momentum:
+    #
+    #   ANTICIPATION -> WIND-UP -> SWING -> IMPACT -> FOLLOW -> RECOVERY
+    #
+    # Nilai di bawah adalah fraksi 0..1 dari durasi satu serangan dan
+    # dipakai bersama oleh renderer (pose) maupun lapisan FX hidup
+    # (trail, hitbox, release panah) — satu sumber kebenaran.
+    # ═══════════════════════════════════════════════════════════════
+    ATTACK_ANTICIPATION_END = 0.12   # counter-motion kecil ke belakang
+    ATTACK_SWING_END = 0.58          # akhir busur maju (== RELEASE_END)
+    ATTACK_IMPACT_END = 0.62         # jendela hit aktif berakhir
+    ATTACK_FOLLOW_END = 0.80         # follow-through
+    #  (0.80 - 1.00 = RECOVERY, kembali ke pose idle)
+
+    #: Jendela hit aktif (fraksi progress) — dipakai hitbox & FX.
+    ATTACK_ACTIVE_WINDOW = (0.42, 0.62)
+
+    #: Frame IMPACT tunggal (lepas tali / puncak benturan sapuan).
+    ATTACK_IMPACT_FRAME = 0.52
+
+    #: Jendela perekaman trail senjata (fraksi progress).
+    SWING_WINDOW = (0.16, 0.88)
+
+    #: Jarak DUNIA maksimum yang memicu sapuan melee (bukan tembakan).
+    SWING_RANGE = 64.0
+
+    #: Pivot bahu (koordinat lokal rig) tempat busur berayun.
+    SHOULDER_PIVOT = (4.0, -16.0)
+
+    # Sudut busur ayunan (radian, ruang lokal rig; 0 = lurus ke depan).
+    SWING_ARC_START = -1.24          # limb terangkat penuh ke belakang
+    SWING_ARC_MID = -0.26            # melewati garis kepala
+    SWING_ARC_END = 0.86             # ekstensi maksimum ke depan-bawah
+
+    # Radius pivot -> grip busur per fase: ayunan MEMANJANG saat
+    # menghantam lalu memendek lagi (bobot), bukan radius tetap.
+    SWING_R_REST = 19.0
+    SWING_R_WINDUP = 14.0
+    SWING_R_STRIKE = 29.0
+    SWING_R_FOLLOW = 24.0
+
+    #: Nama state animasi + prioritas (angka besar menang).
+    ANIM_STATES = {
+        "IDLE": 0, "WALK": 10, "RUN": 15, "CHARGE": 30, "CAST": 35,
+        "ATTACK": 40, "SWING": 45, "SKILL": 50, "SPECIAL": 55,
+        "HIT": 60, "HURT": 65, "DEATH": 100,
+    }
+
+    #: Overlay debug rig (hitbox / hurtbox / range / state / progress).
+    DEBUG_CHARACTER = False
+
+    # ── easing ──────────────────────────────────────────────────────
+    def _ease_out(t):
+        t = max(0.0, min(1.0, float(t)))
+        return 1.0 - (1.0 - t) * (1.0 - t)
+
+    def _ease_in(t):
+        t = max(0.0, min(1.0, float(t)))
+        return t * t
+
+    def _ease_in_out(t):
+        t = max(0.0, min(1.0, float(t)))
+        return t * t * (3.0 - 2.0 * t)
+
+    def _lerp(a, b, t):
+        return a + (b - a) * t
+
+    # ── AYUNAN BERBASIS BUSUR ───────────────────────────────────────
+    def _swing_arc_pose(ap):
+        """Pose sapuan limb busur pada progress ``ap`` (0..1).
+
+        Bukan lerp lurus dari pose awal ke pose akhir: grip bergerak
+        pada BUSUR polar mengelilingi bahu (sudut + radius berubah
+        terpisah), sehingga ayunan punya percepatan, ekstensi saat
+        impact, dan follow-through yang melewati titik akhir sedikit
+        sebelum mengendap.
+        """
+        A = _NS_sylara
+        ap = max(0.0, min(1.0, float(ap)))
+        anti = A.ATTACK_ANTICIPATION_END
+        wind = A.ATTACK_WINDUP_END
+        swing = A.ATTACK_SWING_END
+        impact = A.ATTACK_IMPACT_END
+        follow = A.ATTACK_FOLLOW_END
+
+        if ap < anti:                                   # ANTICIPATION
+            t = A._ease_out(ap / max(1e-6, anti))
+            ang = A._lerp(0.30, A.SWING_ARC_START * 0.34, t)
+            rad = A._lerp(A.SWING_R_REST, A.SWING_R_REST - 2.0, t)
+            lean, bob, flare = -2.0 * t, 1.0 * t, 1.0 + 0.04 * t
+        elif ap < wind:                                 # WIND-UP
+            t = A._ease_in_out((ap - anti) / max(1e-6, wind - anti))
+            ang = A._lerp(A.SWING_ARC_START * 0.34, A.SWING_ARC_START, t)
+            rad = A._lerp(A.SWING_R_REST - 2.0, A.SWING_R_WINDUP, t)
+            lean, bob = -2.0 - 3.0 * t, 1.0 - 2.0 * t
+            flare = 1.04 + 0.16 * t
+        elif ap < swing:                                # SWING (accel)
+            t = A._ease_in((ap - wind) / max(1e-6, swing - wind))
+            ang = A._lerp(A.SWING_ARC_START, A.SWING_ARC_MID, t)
+            rad = A._lerp(A.SWING_R_WINDUP, A.SWING_R_STRIKE, t)
+            lean = A._lerp(-5.0, 5.0, t)
+            bob = A._lerp(-1.0, 2.0, t)
+            flare = 1.20 + 0.14 * t
+        elif ap < impact:                               # IMPACT
+            t = A._ease_out((ap - swing) / max(1e-6, impact - swing))
+            ang = A._lerp(A.SWING_ARC_MID, A.SWING_ARC_END, t)
+            rad = A._lerp(A.SWING_R_STRIKE, A.SWING_R_STRIKE + 2.0, t)
+            lean = A._lerp(5.0, 8.0, t)
+            bob = A._lerp(2.0, 3.0, t)
+            flare = 1.34 - 0.06 * t
+        elif ap < follow:                               # FOLLOW THROUGH
+            t = A._ease_out((ap - impact) / max(1e-6, follow - impact))
+            # sedikit melewati sudut akhir (overshoot) lalu balik
+            over = A.SWING_ARC_END + 0.20
+            ang = A._lerp(over, A.SWING_ARC_END * 0.72, t)
+            rad = A._lerp(A.SWING_R_STRIKE + 2.0, A.SWING_R_FOLLOW, t)
+            lean = A._lerp(8.0, 3.0, t)
+            bob = A._lerp(3.0, 1.0, t)
+            flare = 1.28 - 0.20 * t
+        else:                                           # RECOVERY
+            t = A._ease_in_out((ap - follow) / max(1e-6, 1.0 - follow))
+            ang = A._lerp(A.SWING_ARC_END * 0.72, 0.30, t)
+            rad = A._lerp(A.SWING_R_FOLLOW, A.SWING_R_REST, t)
+            lean = A._lerp(3.0, 0.0, t)
+            bob = A._lerp(1.0, 0.0, t)
+            flare = A._lerp(1.08, 1.0, t)
+        return {"angle": ang, "radius": rad, "lean": lean,
+                "bob": bob, "flare": flare}
+
+    def _bow_pose_local(action="idle", ap=0.0, wave=0.0):
+        """(grip, tilt, draw_amt) busur di ruang lokal rig.
+
+        Satu sumber kebenaran untuk pose busur: dipakai rig saat
+        menggambar DAN oleh lapisan FX hidup untuk menempelkan trail /
+        titik lepas panah tepat di senjata (bukan perkiraan).
+        """
+        A = _NS_sylara
+        ap = max(0.0, min(1.0, float(ap)))
+        if action == "swing":
+            pose = A._swing_arc_pose(ap)
+            ang, rad = pose["angle"], pose["radius"]
+            px, py = A.SHOULDER_PIVOT
+            grip = (px + math.cos(ang) * rad, py + math.sin(ang) * rad)
+            # bidang busur tegak lurus lintasan sapuan -> limb memimpin
+            return grip, ang + 1.40, 0.0
+        if action == "attack":
+            # 7-keyframe: rest -> wind-up -> tension -> full draw ->
+            # IMPACT release -> follow-through -> rest (loop-closure).
+            if ap < 0.12:
+                t = A._ease_in_out(ap / 0.12)
+                return (19 - t * 1, -14 - t * 2), .30 - t * .10, 0.22 * t
+            if ap < 0.26:
+                t = A._ease_in_out((ap - 0.12) / 0.14)
+                return ((18 - t * 2, -16 - t * 2), .20 - t * .10,
+                        0.22 + 0.48 * t)
+            if ap < 0.42:
+                t = A._ease_in_out((ap - 0.26) / 0.16)
+                return ((16 - t * 1, -18), .10 - t * .06, 0.70 + 0.30 * t)
+            if ap < 0.52:
+                return (15, -18), .04, 1.0
+            if ap < 0.58:
+                t = (ap - 0.52) / 0.06
+                return ((15 + t * 4, -18 + t * 4), .04,
+                        max(0.0, 1.0 - t * 1.6))
+            if ap < 0.72:
+                t = A._ease_in_out((ap - 0.58) / 0.14)
+                return (19 - t * 1, -14 + t * 2), .04 + t * .18, 0.0
+            t = A._ease_in_out((ap - 0.72) / 0.28)
+            return (18 - t * 1, -12 + t * 7), .22 + t * .04, 0.0
+        if action == "windrun":
+            return (13, -2), 1.25, 0.0
+        return (17, -5 + wave), .26 + wave * .05, 0.0
+
+    def _bow_geometry(phase=0.0, action="idle", attack_progress=0.0):
+        """Semua titik penting busur (lokal): grip, tilt, tips, nock.
+
+        Ujung limb memakai kurva yang sama dengan ``_draw_elite_bow``
+        (u = +-24, v = 8s^2 - 14s^4 - flex) supaya penanda FX benar-benar
+        menempel di kayu, bukan mengambang di dekatnya.
+        """
+        A = _NS_sylara
+        wave = math.sin(float(phase) * 1.15)
+        grip, tilt, draw_amt = A._bow_pose_local(action, attack_progress,
+                                                 wave)
+        flex = draw_amt * 0.55
+        v_tip = 8.0 - 14.0 - flex * 6.0        # s = 1.0 pada ujung limb
+        tip_up = A._bow_point(grip, tilt, 24.0, v_tip)
+        tip_low = A._bow_point(grip, tilt, -24.0, v_tip)
+        nock = A._bow_nock(grip, tilt, draw_amt)
+        (_ux, _uy), (fx, fy) = A._bow_frame(tilt)
+        arrow_tip = (nock[0] + fx * 32.0, nock[1] + fy * 32.0)
+        return {"grip": grip, "tilt": tilt, "draw": draw_amt,
+                "tip_up": tip_up, "tip_low": tip_low, "nock": nock,
+                "arrow_tip": arrow_tip}
+
+    def _bow_grip_local(phase=0.0, action="idle", attack_progress=0.0):
+        """Titik grip busur (lokal) — dipakai lapisan FX & debug."""
+        return _NS_sylara._bow_geometry(phase, action,
+                                        attack_progress)["grip"]
+
+    def _bow_tip_local(phase=0.0, action="idle", attack_progress=0.0):
+        """Ujung limb ATAS busur (lokal) — ujung 'bilah' saat menyapu."""
+        return _NS_sylara._bow_geometry(phase, action,
+                                        attack_progress)["tip_up"]
+
+    def _bow_nock_local(phase=0.0, action="idle", attack_progress=0.0):
+        """Titik nock/lepas panah (lokal)."""
+        return _NS_sylara._bow_geometry(phase, action,
+                                        attack_progress)["nock"]
+
+    def _bow_release_local(phase=0.0, attack_progress=0.0):
+        """Titik keluar panah (ujung mata panah pada saat release)."""
+        return _NS_sylara._bow_geometry(phase, "attack",
+                                        attack_progress)["arrow_tip"]
+
+    def _bow_trail_samples(phase, attack_progress, count=10,
+                           action="swing", span=0.16):
+        """Histori posisi senjata untuk trail: [(base, tip), ...] lokal.
+
+        Sample diambil MUNDUR dari progress sekarang (OLD -> CURRENT)
+        sehingga pita selalu mengikuti arah serangan, apa pun arah
+        ayunannya.
+        """
+        A = _NS_sylara
+        out = []
+        n = max(2, int(count))
+        for i in range(n):
+            t = attack_progress - span * (1.0 - i / float(n - 1))
+            if t < 0.0:
+                t = 0.0
+            g = A._bow_geometry(phase, action, t)
+            out.append((g["grip"], g["tip_up"]))
+        return out
+
+    def _draw_bow_swing_trail(surface, pt, phase, attack_progress,
+                              alpha_scale=1.0):
+        """Pita sapuan busur di CANVAS (fallback tanpa lapisan hidup).
+
+        Dipakai jalur boss / tooling / perangkat tanpa modul FX; kalau
+        ``heroes/sylara_fx.py`` aktif, ia menggambar versi 60 fps di
+        layar dan fungsi ini dilewati supaya tidak dobel.
+        """
+        A = _NS_sylara
+        p = A.PALETTE
+        samples = A._bow_trail_samples(phase, attack_progress, count=9)
+        n = len(samples)
+        if n < 2:
+            return
+        for i in range(n - 1):
+            f = (i + 1) / float(n)
+            a = int(150 * f * f * alpha_scale)
+            if a <= 6:
+                continue
+            (g0, t0), (g1, t1) = samples[i], samples[i + 1]
+            m0 = (g0[0] + (t0[0] - g0[0]) * 0.42,
+                  g0[1] + (t0[1] - g0[1]) * 0.42)
+            m1 = (g1[0] + (t1[0] - g1[0]) * 0.42,
+                  g1[1] + (t1[1] - g1[1]) * 0.42)
+            A._poly(surface, (*p["wind_dark"], a),
+                    [pt(*m0), pt(*t0), pt(*t1), pt(*m1)])
+            m0 = (g0[0] + (t0[0] - g0[0]) * 0.74,
+                  g0[1] + (t0[1] - g0[1]) * 0.74)
+            m1 = (g1[0] + (t1[0] - g1[0]) * 0.74,
+                  g1[1] + (t1[1] - g1[1]) * 0.74)
+            A._poly(surface, (*p["wind_light"], min(255, int(a * 1.5))),
+                    [pt(*m0), pt(*t0), pt(*t1), pt(*m1)])
+            A._aaline(surface, (*p["wind_white"], min(255, int(a * 1.7))),
+                      pt(*t0), pt(*t1), 2)
+
+    # ── ANIMATION CONTROLLER (state + prioritas + transisi) ─────────
+    def _resolve_anim_state(boss, attacking, phase):
+        """Tentukan state animasi yang DIINGINKAN frame ini."""
+        if not getattr(boss, "alive", True):
+            return "DEATH"
+        if int(getattr(boss, "_sy_hurt_frames", 0) or 0) > 0:
+            return "HURT"
+        if getattr(boss, "_powershot_charging", False) and not attacking:
+            return "CHARGE"
+        skill = getattr(boss, "active_skill", None)
+        if skill:
+            return "SPECIAL" if skill == "r" else "SKILL"
+        if attacking:
+            if phase in ("ANTICIPATION", "WINDUP"):
+                return "CHARGE"
+            if phase in ("SWING", "IMPACT"):
+                return "SWING" if getattr(boss, "_sy_swing_mode", False) \
+                    else "ATTACK"
+            return "ATTACK"
+        if getattr(boss, "_windrun_active", False):
+            return "RUN"
+        if getattr(boss, "_moving_cached", False):
+            return "RUN" if float(getattr(boss, "speed", 1.0)) >= 2.2 \
+                else "WALK"
+        return "IDLE"
+
+    def _swing_hitbox(boss, cx, cy):
+        """Rect hitbox sapuan (canvas-space) saat jendela hit aktif.
+
+        Return None kalau jendela hit sedang tidak aktif.  Dipakai
+        overlay debug dan (opsional) sistem tumbukan.
+        """
+        if not getattr(boss, "_sy_hit_active", False):
+            return None
+        f = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        reach = 70
+        left = cx if f > 0 else cx - reach
+        return pygame.Rect(int(left), int(cy - 52), reach, 74)
+
+    def _draw_debug(surface, boss, x, y, state):
+        """Overlay debug rig: hurtbox, hitbox, jangkauan, state, timer."""
+        A = _NS_sylara
+        pygame.draw.rect(surface, (90, 220, 255),
+                         pygame.Rect(int(x - 30), int(y - 96), 62, 150), 1)
+        scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
+        reach = int(float(getattr(boss, "range", 130)) / max(0.05, scale))
+        pygame.draw.circle(surface, (255, 190, 90), (int(x), int(y)),
+                           min(reach, 900), 1)
+        swing_r = int(A.SWING_RANGE / max(0.05, scale))
+        pygame.draw.circle(surface, (255, 120, 120), (int(x), int(y)),
+                           min(swing_r, 900), 1)
+        box = A._swing_hitbox(boss, x, y)
+        if box is not None:
+            pygame.draw.rect(surface, (255, 230, 90), box, 2)
+        # penanda ujung busur + titik lepas panah
+        f = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        rs = A.RIG_SCALE
+        ap = float(getattr(boss, "_sy_attack_progress", 0.0))
+        action = "swing" if getattr(boss, "_sy_swing_mode", False) \
+            else "attack"
+        if not getattr(boss, "_sy_attack_active", False):
+            action = "idle"
+            ap = 0.0
+        geo = A._bow_geometry(float(getattr(boss, "pulse", 0.0)),
+                              action, ap)
+        for key, col in (("tip_up", (120, 255, 150)),
+                         ("nock", (255, 255, 120))):
+            lx, ly = geo[key]
+            pygame.draw.circle(
+                surface, col,
+                (int(x + lx * rs * f), int(y + ly * rs)), 3, 1)
+        # bar progress serangan + indikator state
+        bar = pygame.Rect(int(x - 40), int(y - 110), 80, 5)
+        pygame.draw.rect(surface, (12, 30, 16), bar)
+        pygame.draw.rect(surface, (150, 235, 120),
+                         (bar.x, bar.y, int(80 * ap), 5))
+        idx = list(A.ANIM_STATES).index(state) \
+            if state in A.ANIM_STATES else 0
+        pygame.draw.rect(surface, (210, 255, 175),
+                         (bar.x, bar.y - 6, 4 + idx * 5, 4))
+        # proyektil renderer (kalau ada) — lingkaran tumbukan
+        for pr in list(getattr(boss, "_sy_projectiles", []) or []):
+            try:
+                pygame.draw.circle(surface, (255, 255, 120),
+                                   (int(pr.x), int(pr.y)), 5, 1)
+            except Exception:
+                pass
 
     def _fx_scale(hero):
         """Faktor kompensasi efek skill.
@@ -4528,10 +4958,86 @@ class _NS_sylara:
         # penghitung frame gambar. Durasi swing jadi identik di 60 FPS
         # maupun 8 FPS.
         boss._sy_attack_frame = max(0, cooldown - timer) if active else 0
-        boss._sy_attack_progress = (
+        progress = (
             min(1.0, boss._sy_attack_frame / max(1, cooldown - 1))
             if active else 0.0
         )
+        boss._sy_attack_progress = progress
+
+        # ═══ v3 — FASE, JENDELA HIT, MODE AYUNAN, STATE MACHINE ═══
+        A = _NS_sylara
+        if not active:
+            phase = "NONE"
+        elif progress < A.ATTACK_ANTICIPATION_END:
+            phase = "ANTICIPATION"
+        elif progress < A.ATTACK_WINDUP_END:
+            phase = "WINDUP"
+        elif progress < A.ATTACK_SWING_END:
+            phase = "SWING"
+        elif progress < A.ATTACK_IMPACT_END:
+            phase = "IMPACT"
+        elif progress < A.ATTACK_FOLLOW_END:
+            phase = "FOLLOW"
+        else:
+            phase = "RECOVERY"
+        boss._sy_attack_phase = phase
+
+        lo, hi = A.ATTACK_ACTIVE_WINDOW
+        boss._sy_hit_active = bool(active and lo <= progress < hi)
+
+        # Mode ayunan dikunci SAAT serangan dimulai (bukan tiap frame):
+        # kalau target menjauh di tengah animasi, pose tidak boleh
+        # berganti di tengah jalan — itu yang membuat gerakan patah.
+        if trigger or (active and not hasattr(boss, "_sy_swing_mode")):
+            tgt = getattr(boss, "target", None)
+            close = False
+            if tgt is not None and getattr(tgt, "alive", True):
+                try:
+                    close = math.hypot(float(tgt.x) - float(boss.x),
+                                       float(tgt.y) - float(boss.y)) \
+                        <= A.SWING_RANGE
+                except Exception:
+                    close = False
+            boss._sy_swing_mode = bool(close)
+        if not active:
+            boss._sy_swing_mode = False
+
+        # Pose ayunan berbeda total dari pose tembak, jadi kunci cache
+        # sprite harus ikut membedakannya (lihat heroes/__init__.py ::
+        # _hero_cache_key) — tanpa ini pose bisa tertahan basi.
+        boss._pose_variant = 1 if getattr(boss, "_sy_swing_mode",
+                                          False) else 0
+
+        # Hitung mundur frame HURT (di-set dari luar lewat
+        # ``sylara_fx.notify_hurt`` atau deteksi HP di director).
+        hurt = int(getattr(boss, "_sy_hurt_frames", 0) or 0)
+        if hurt > 0:
+            boss._sy_hurt_frames = hurt - 1
+
+        # ── state machine ber-prioritas ─────────────────────────────
+        want = A._resolve_anim_state(boss, active, phase)
+        cur = getattr(boss, "_sy_state", None)
+        if cur is None:
+            boss._sy_state = want
+            boss._sy_state_prev = want
+            boss._sy_state_time = 0.0
+        else:
+            dt = 1.0 / 60.0
+            state_time = float(getattr(boss, "_sy_state_time", 0.0))
+            if want != cur:
+                cur_p = A.ANIM_STATES.get(cur, 0)
+                new_p = A.ANIM_STATES.get(want, 0)
+                # DEATH mengunci; selain itu prioritas sama/lebih tinggi
+                # boleh mengambil alih, atau state lama sudah cukup lama
+                # (mencegah pose tersangkut).
+                if cur != "DEATH" and (new_p >= cur_p or state_time > 0.08):
+                    boss._sy_state_prev = cur
+                    boss._sy_state = want
+                    boss._sy_state_time = 0.0
+                else:
+                    boss._sy_state_time = state_time + dt
+            else:
+                boss._sy_state_time = state_time + dt
 
 
     def _manage_projectiles(boss, surface, phase):
@@ -4615,13 +5121,47 @@ class _NS_sylara:
     # MAIN DRAW ENTRY POINT
     # ===================================================================
     def draw_sylara(surface, boss, x, y):
-        """Entry point for Boss.draw()."""
+        """Entry point for Boss.draw().
+
+        Urutan lapisan mengikuti kontrak render order proyek:
+
+            GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/HEAD ->
+            WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+            SKILL FX -> IMPACT FX -> DEBUG
+
+        Trail ayunan 60 fps, partikel daun/angin, proyektil panah,
+        impact, screen shake, dan hit-stop hidup di
+        ``heroes/sylara_fx.py`` (lapisan layar 1:1, di luar sprite
+        cache).  Semua nama publik lama tetap ada; kalau modul FX tidak
+        dimuat, renderer kembali menggambar semuanya di canvas.
+        """
+        A = _NS_sylara
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_sylara._detect_moving(boss)
         _NS_sylara._update_attack_anim(boss)
         portrait_hd = bool(getattr(boss, "_portrait_hd", False))
+        state = getattr(boss, "_sy_state", "IDLE")
+
+        # Jalur hero (lane): heroes/__init__ men-set _render_scale
+        # sebelum memanggil renderer ke canvas, lalu sprite hasilnya
+        # DI-CACHE.  Lapisan hidup di sana digambar oleh
+        # heroes/__init__ (pre/post), jadi di sini cukup dipasang
+        # penanda "diambil alih".  Jalur BOSS (tanpa _render_scale)
+        # dipanggil tiap frame -> lapisan hidup digambar di sini.
+        hero_lane = hasattr(boss, "_render_scale")
+        if not portrait_hd:
+            try:
+                mod = A._live_module()
+                if mod is not None:
+                    if hero_lane:
+                        mod.attach(boss)
+                    else:
+                        mod.draw_ground_layer(surface, boss, x, y)
+            except Exception:
+                pass
+        A._FX_LIVE.v = (not portrait_hd) and A._fx_live_owned(boss)
 
         attacking = (
             getattr(boss, "_sy_attack_active", False)
@@ -4679,6 +5219,25 @@ class _NS_sylara:
         elif active_skill == "q":
             _NS_sylara._draw_focus_fire_effect(surface, boss, x, y, skill_timer, pulse)
 
+        # ---------- LAPISAN FX HIDUP (jalur BOSS) ----------
+        # Di jalur lane hero, lapisan ini digambar heroes/__init__.py
+        # SETELAH sprite di-blit (sprite-nya ter-cache); di jalur boss
+        # draw dipanggil tiap frame, jadi digambar di sini.
+        if not portrait_hd and not hero_lane:
+            try:
+                mod = A._live_module()
+                if mod is not None:
+                    mod.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        # ---------- DEBUG ----------
+        if A.DEBUG_CHARACTER and not portrait_hd:
+            try:
+                A._draw_debug(surface, boss, x, y, state)
+            except Exception:
+                pass
+
 
     # ===================================================================
     # POSE MODES
@@ -4720,11 +5279,19 @@ class _NS_sylara:
 
 
     def _draw_sylara_attack(surface, boss, x, y):
+        A = _NS_sylara
         progress = getattr(boss, "_sy_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
 
         # Check if we should power-shot (during Q)
         powered = getattr(boss, "active_skill", None) == "q"
+
+        # SWING MODE: musuh terlalu dekat untuk menembak -> sapuan limb
+        # busur berbasis busur (arc).  Mode dikunci saat serangan mulai
+        # (lihat _update_attack_anim) supaya pose tidak berganti di
+        # tengah animasi.
+        swing_mode = bool(getattr(boss, "_sy_swing_mode", False))
+        action = "swing" if swing_mode else "attack"
 
         # Spawn arrow at release (mid-late in animation)
         release_start = 0.55 if powered else 0.5
@@ -4734,7 +5301,7 @@ class _NS_sylara:
         # generic (_entity.py) yang homing & terarah saja supaya tidak
         # ada efek ganda. Renderer arrow hanya saat skill aktif.
         active_skill = getattr(boss, "active_skill", None)
-        if (active_skill is not None
+        if (active_skill is not None and not swing_mode
                 and release_start < progress < release_end
                 and not getattr(boss, "_sy_arrow_spawned", False)):
             _NS_sylara._spawn_arrow(boss, x, y, powered=powered)
@@ -4755,11 +5322,25 @@ class _NS_sylara:
                                            boss.pulse, intense=True)
         sf = _NS_sylara._skill_flags(boss)
         _NS_sylara._draw_sylara_body(surface, x + recoil, y, boss.direction,
-                                     boss.pulse, "attack", progress,
+                                     boss.pulse, action, progress,
                                      powered=powered, detail=portrait_hd, **sf)
         if not portrait_hd:
-            _NS_sylara._draw_bow_release_flash(surface, x + recoil, y,
-                                               boss.direction, progress)
+            # Trail sapuan versi CANVAS hanya dipakai kalau lapisan FX
+            # hidup tidak mengambil alih (jalur boss / tanpa modul FX);
+            # kalau tidak, pita 60 fps di layar yang menggambarnya.
+            lo, hi = A.SWING_WINDOW
+            if swing_mode and lo < progress < hi and not A._FX_LIVE.v:
+                f = 1 if boss.direction >= 0 else -1
+                rs = A.RIG_SCALE
+                cxr = x + recoil
+
+                def _pt(dx, dy):
+                    return (int(cxr + dx * rs * f), int(y + dy * rs))
+
+                A._draw_bow_swing_trail(surface, _pt, boss.pulse, progress)
+            if not swing_mode:
+                _NS_sylara._draw_bow_release_flash(surface, x + recoil, y,
+                                                   boss.direction, progress)
 
 
     def _draw_sylara_windrun(surface, boss, x, y, timer):
@@ -5083,7 +5664,8 @@ class _NS_sylara:
         p = _NS_sylara.PALETTE
         f = 1 if facing >= 0 else -1
         walk = action == "walk"
-        attack = action == "attack"
+        swing = action == "swing"
+        attack = action == "attack" or swing
         windrun = action == "windrun"
         ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
         stride = math.sin(phase * 1.7)
@@ -5101,12 +5683,20 @@ class _NS_sylara:
         if windrun:
             root_y += 2 - int(abs(math.sin(phase * 2.0)) * 2)
         if attack:
-            pose = _NS_sylara._attack_pose(ap)
-            lean = pose["lean"] * f
-            root_y += pose["bob"]
-            flare = pose["flare"]
-            if pose["tremble"]:
-                lean += (1 if int(phase * 31) % 2 else -1)
+            if swing:
+                # Sapuan melee: bobot badan mengikuti busur ayunan
+                # (anticipation ke belakang -> hentakan ke depan).
+                sp = _NS_sylara._swing_arc_pose(ap)
+                lean = int(round(sp["lean"])) * f
+                root_y += int(round(sp["bob"]))
+                flare = sp["flare"]
+            else:
+                pose = _NS_sylara._attack_pose(ap)
+                lean = pose["lean"] * f
+                root_y += pose["bob"]
+                flare = pose["flare"]
+                if pose["tremble"]:
+                    lean += (1 if int(phase * 31) % 2 else -1)
 
         def pt(dx, dy):
             return (int(cx + dx * rs * f + lean + sway), int(cy + dy * rs + root_y))
@@ -5321,61 +5911,29 @@ class _NS_sylara:
         _NS_sylara._aaline(surface, p["skin_darkest"], pt(3, -24), pt(8, -25), 2)
 
         # ═══ POSE BUSUR & LENGAN ═══
-        if attack:
-            # 7-keyframe: rest -> wind-up -> tension -> full draw -> IMPACT
-            # release -> follow-through -> rest (loop-closure).
-            if ap < 0.12:
-                t = ap / 0.12
-                t = t * t * (3 - 2 * t)
-                draw_amt = 0.22 * t
-                grip = (19 - int(t * 1), -14 - int(t * 2))
-                tilt = .30 - t * .10
-            elif ap < 0.26:
-                t = (ap - 0.12) / 0.14
-                t = t * t * (3 - 2 * t)
-                draw_amt = 0.22 + 0.48 * t
-                grip = (18 - int(t * 2), -16 - int(t * 2))
-                tilt = .20 - t * .10
-            elif ap < 0.42:
-                t = (ap - 0.26) / 0.16
-                t = t * t * (3 - 2 * t)
-                draw_amt = 0.70 + 0.30 * t
-                grip = (16 - int(t * 1), -18)
-                tilt = .10 - t * .06
-            elif ap < 0.52:
-                t = (ap - 0.42) / 0.10
-                draw_amt = 1.0
-                grip = (15, -18)
-                tilt = .04
-            elif ap < 0.58:
-                t = (ap - 0.52) / 0.06
-                draw_amt = max(0.0, 1.0 - t * 1.6)
-                grip = (15 + int(t * 4), -18 + int(t * 4))
-                tilt = .04
-            elif ap < 0.72:
-                t = (ap - 0.58) / 0.14
-                t = t * t * (3 - 2 * t)
-                draw_amt = 0.0
-                grip = (19 - int(t * 1), -14 + int(t * 2))
-                tilt = .04 + t * .18
-            else:
-                t = (ap - 0.72) / 0.28
-                t = t * t * (3 - 2 * t)
-                draw_amt = 0.0
-                grip = (18 - int(t * 1), -12 + int(t * 7))
-                tilt = .22 + t * .04
-        elif windrun:
-            draw_amt = 0.0
-            grip = (13, -2)
-            tilt = 1.25
-        else:
-            draw_amt = 0.0
-            grip = (17, -5 + int(wave))
-            tilt = .26 + wave * .05
+        # Pose busur dihitung SATU tempat (_bow_pose_local) supaya rig,
+        # trail ayunan, titik lepas panah, dan overlay debug memakai
+        # geometri yang identik.  action:
+        #   attack  -> 7-keyframe tarik tali (rest -> full draw -> IMPACT)
+        #   swing   -> sapuan limb berbasis busur (arc) untuk musuh dekat
+        #   windrun -> busur disandang saat dash
+        #   idle    -> busur menggantung, ikut napas (wave)
+        _pose_action = ("swing" if swing else
+                        "attack" if attack else
+                        "windrun" if windrun else "idle")
+        grip, tilt, draw_amt = _NS_sylara._bow_pose_local(
+            _pose_action, ap, wave)
 
         # lengan belakang (penarik tali) digambar sebelum busur
         nock = _NS_sylara._bow_nock(grip, tilt, draw_amt)
-        if attack and draw_amt > 0.05:
+        if swing:
+            # Sapuan: lengan belakang menyeimbangkan badan, tertinggal
+            # dari busur (follow-through) alih-alih menarik tali.
+            _sp = _NS_sylara._swing_arc_pose(ap)
+            _sa = _sp["angle"]
+            rear_hand = (-9 - math.cos(_sa) * 4.0, 2 - math.sin(_sa) * 5.0)
+            elbow = (rear_hand[0] + 2, rear_hand[1] - 7)
+        elif attack and draw_amt > 0.05:
             rear_hand = (nock[0], nock[1])
             elbow = (rear_hand[0] - 7, rear_hand[1] + 7)
         elif windrun:
