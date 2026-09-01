@@ -34,8 +34,8 @@ for i, label in enumerate(labels):
     pygame.draw.rect(screen, (96, 156, 84), panel, 2, border_radius=12)
     screen.blit(font_label.render(label, True, (226, 246, 220)), (x + 16, 130))
 
-    native = pygame.Surface((240, 260), pygame.SRCALPHA)
-    h = _ProbeEntity("sylara", 120, 135)
+    native = pygame.Surface((280, 300), pygame.SRCALPHA)
+    h = _ProbeEntity("sylara", 140, 155)
     h.pulse = 1.25
     h.direction = 1
     h.facing = 1

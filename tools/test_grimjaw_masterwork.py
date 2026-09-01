@@ -239,7 +239,9 @@ def test_skill_fx_are_world_space():
 # (renderer, label) yang sudah dinaikkan ke standar Thorne v2 + FX v2.1.
 def _family_namespaces():
     from bosses.level2 import _NS_gorath, _NS_razak
-    return (("gorath", _NS_gorath), ("razak", _NS_razak))
+    from heroes._bundle import _NS_sylara
+    return (("gorath", _NS_gorath), ("razak", _NS_razak),
+            ("sylara", _NS_sylara))
 
 
 def test_family_shares_fx_vocabulary():
