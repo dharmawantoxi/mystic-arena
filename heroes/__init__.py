@@ -617,9 +617,17 @@ _BEAM_PASS_HEROES = {"morgath"}
 # layar pada skala 1.0 setiap frame:
 #   pre   -> GROUND FX + BACK PARTICLES (di bawah sprite)
 #   post  -> TRAIL / PROJECTILE / FRONT PARTICLES / SKILL / IMPACT
+#
+# Modul yang sama juga dipakai jalur BOSS (lihat _NS_gornak.draw_gornak),
+# jadi satu karakter punya satu bahasa efek di arena maupun di lane.
 # ═══════════════════════════════════════════════════════
-_LIVE_FX_HEROES = {"zephyr"}
+_LIVE_FX_HEROES = {"zephyr", "gornak"}
 _LIVE_FX_MODULES = {}
+
+_LIVE_FX_PATHS = {
+    "zephyr": "heroes.zephyr_fx",
+    "gornak": "heroes.gornak_fx",
+}
 
 
 def _live_fx_module(hero_type):
@@ -629,10 +637,11 @@ def _live_fx_module(hero_type):
     mod = _LIVE_FX_MODULES.get(hero_type)
     if mod is None:
         try:
-            if hero_type == "zephyr":
-                from heroes import zephyr_fx as mod
-            else:                                    # pragma: no cover
-                mod = False
+            import importlib
+            path = _LIVE_FX_PATHS.get(hero_type)
+            if path is None:                           # pragma: no cover
+                raise ImportError("no live FX module for %s" % hero_type)
+            mod = importlib.import_module(path)
         except Exception as _e:                      # pragma: no cover
             print(f"[HERO WARNING] live FX {hero_type} failed: {_e}")
             mod = False

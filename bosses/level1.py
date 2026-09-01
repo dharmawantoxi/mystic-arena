@@ -700,31 +700,236 @@ class _NS_gornak:
                 int(y))
 
     # ==================================================================
-    # STATE ANIMASI
+    # CONTROLLER ANIMASI  (state, fase, timing, delta-time, jendela hit)
     # ==================================================================
+    # Batas fase = fraksi 0..1 dari DURASI SERANGAN (bukan dari waktu pose
+    # yang sudah dilengkungkan _attack_curve). Batasnya sengaja jatuh
+    # PERSIS di patahan kurva, jadi nama fase, grip bilah, dan sudut
+    # bilah tidak pernah berbeda satu frame.
+    ATTACK_ANTICIPATION_END = 0.16      # counter-motion kecil ke belakang
+    ATTACK_WINDUP_END = 0.30            # bilah di atas kepala + TAHAN
+    ATTACK_SWING_END = 0.46             # tebasan turun (paling cepat)
+    ATTACK_IMPACT_END = 0.60            # HOLD impact -> freeze 1-2 frame
+    ATTACK_FOLLOW_END = 0.80            # follow-through
+    #: jendela di mana bilah secara geometris menyapu depan badan
+    ATTACK_ACTIVE_WINDOW = (0.36, 0.62)
+    #: puncak benturan (dipakai FX untuk memicu spark "di udara")
+    ATTACK_IMPACT_FRAME = 0.53
+
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.16),
+        ("WINDUP",       0.16, 0.30),
+        ("SWING",        0.30, 0.46),
+        ("IMPACT",       0.46, 0.60),
+        ("FOLLOW",       0.60, 0.80),
+        ("RECOVERY",     0.80, 1.00),
+    )
+
+    #: Prioritas state. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: Aktifkan untuk melihat hitbox/hurtbox/jangkauan/state di arena
+    #: (jalur boss 1:1). Untuk lane hero, overlay yang sama tersedia di
+    #: heroes/gornak_fx.DEBUG_CHARACTER.
+    DEBUG_CHARACTER = False
+
+    def attack_phases_order():
+        """Urutan nama fase (dipakai test & alat audit)."""
+        return tuple(name for name, _a, _b in _NS_gornak.ATTACK_PHASES)
+
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1 (None di luar serangan)."""
+        if progress is None:
+            return "NONE"
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_gornak.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    def _resolve_anim_state(boss, attacking, phase):
+        """Tentukan state animasi yang DIINGINKAN frame ini."""
+        if not getattr(boss, "alive", True):
+            return "DEATH"
+        if int(getattr(boss, "_gnk_hurt_frames", 0)) > 0:
+            return "HURT"
+        skill = getattr(boss, "active_skill", None)
+        if skill:
+            return "SPECIAL" if skill == "r" else "SKILL"
+        if attacking:
+            if phase in ("ANTICIPATION", "WINDUP"):
+                return "CHARGE"
+            if phase in ("SWING", "IMPACT"):
+                return "SWING"
+            return "ATTACK"
+        if getattr(boss, "_moving_cached", False):
+            return "RUN" if float(getattr(boss, "speed", 1.0)) >= 2.2 \
+                else "WALK"
+        return "IDLE"
+
+    def _swing_hitbox(boss, cx, cy):
+        """Rect hitbox ayunan (ruang permukaan) saat jendela hit aktif.
+
+        Dipakai overlay debug dan alat audit; return None di luar jendela
+        hit supaya tidak pernah terlihat seperti "pedang menembus tembok".
+        """
+        if not getattr(boss, "_gnk_hit_active", False):
+            return None
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        scale = _NS_gornak._fx_scale(boss)
+        reach = int(58 * scale)
+        top = int(cy - 34 * scale)
+        h = int(64 * scale)
+        left = int(cx) if f > 0 else int(cx) - reach
+        return pygame.Rect(left, top, max(8, reach), max(10, h))
+
     def _update_gnk_attack_anim(boss):
+        """ANIMATION CONTROLLER Gornak - state, fase, timing, delta-time.
+
+        Dulu fungsi ini cuma menghitung timer untuk pose serangan. Sekarang
+        ia satu-satunya sumber kebenaran untuk SEMUA state karakter, dan
+        lapisan hidup (heroes/gornak_fx) serta alat uji membacanya dari
+        sini, jadi badan dan efek tidak mungkin berbeda fase:
+
+        * ``_gnk_dt``              delta-time nyata (detik, dijepit)
+        * ``_gnk_attack_active``   serangan sedang berjalan   (nama lama)
+        * ``_gnk_attack_frame``    frame ke-n dalam serangan   (nama lama)
+        * ``_gnk_attack_progress`` 0..1 sepanjang serangan     (nama lama)
+        * ``_gnk_attack_raw``      progress sebelum kurva      (nama lama)
+        * ``_gnk_attack_phase``    ANTICIPATION/.../RECOVERY
+        * ``_gnk_hit_active``      True hanya di jendela hit aktif
+        * ``_gnk_frame_duration``  lama 1 langkah simulasi (untuk HUD)
+        * ``_gnk_state`` / ``_gnk_state_prev`` / ``_gnk_state_time``
+        * ``_gnk_hurt_frames``     sisa frame respons kena damage
+
+        Semua nama lama dipertahankan supaya renderer, skill, dan
+        tools/_audit_gornak_v2.py tidak perlu diubah.
+        """
+        G = _NS_gornak
+
+        # ── delta time nyata (dipakai FX & transisi state) ───────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                          # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_gnk_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._gnk_last_ms = now
+        boss._gnk_dt = dt
+
+        # ── timeline serangan ───────────────────────────────────────
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 38)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_gnk_previous_timer", 0))
         active = bool(getattr(boss, "_gnk_attack_active", False))
 
-        if timer >= cooldown - 1 and previous <= 1:
+        # Serangan dikenali dari DUA hal: lompatan timer ke atas (cooldown
+        # dipasang saat attack mendarat) dan detak jam (satu siklus penuh
+        # timer turun ke 0). Yang kedua menjaga animasi tetap jalan untuk
+        # pemanggil yang mengisi timer manual (alat preview / tes).
+        triggered = timer >= cooldown - 1 and previous <= 1
+        if triggered:
             boss._gnk_attack_active = True
             boss._gnk_attack_frame = 0
+            boss._gnk_attack_manual = False
             active = True
         elif active and timer > 0:
             boss._gnk_attack_frame = int(getattr(boss, "_gnk_attack_frame",
                                                  0)) + 1
+            boss._gnk_attack_manual = False
         elif timer <= 0:
-            boss._gnk_attack_active = False
-            boss._gnk_attack_frame = 0
-            active = False
+            if active and not getattr(boss, "_gnk_attack_manual", False) \
+                    and int(getattr(boss, "_gnk_attack_progress", 0.0)) > 0.0:
+                # Ada yang mengaktifkan serangan TANPA menyentuh timer
+                # (alat audit, preview kartu, test). Itu bukan serangan
+                # engine: hormati, tandai manual, dan jangan dimatikan di
+                # sini - yang mematikan ya pemanggilnya sendiri.
+                boss._gnk_attack_manual = True
+                active = True
+            elif not getattr(boss, "_gnk_attack_manual", False):
+                boss._gnk_attack_active = False
+                boss._gnk_attack_frame = 0
+                active = False
+            if not active:
+                boss._gnk_attack_active = False
+                boss._gnk_attack_frame = 0
 
         boss._gnk_previous_timer = timer
-        boss._gnk_attack_progress = (
-            min(1.0, boss._gnk_attack_frame / max(1, cooldown - 1))
-            if active else 0.0
-        )
+        frame = int(getattr(boss, "_gnk_attack_frame", 0)) if active else 0
+        span = max(1, cooldown - 1)
+        boss._gnk_attack_frame = frame
+        boss._gnk_frame_duration = dt
+        if bool(getattr(boss, "_gnk_attack_manual", False)) and active:
+            # Alat preview / tes menggerakkan ``_gnk_attack_progress``
+            # sendiri (tanpa timeline timer). Jangan dilawan: biarkan angka
+            # pemanggil yang dipakai, dan tetap turunkan fase + jendela hit
+            # darinya supaya pose, FX, dan debug membaca sumber yang sama.
+            progress = min(1.0, max(0.0, float(getattr(
+                boss, "_gnk_attack_progress", 0.0))))
+            boss._gnk_attack_frame = int(round(progress * span))
+        else:
+            progress = min(1.0, frame / float(span)) if active else 0.0
+            boss._gnk_attack_progress = progress
+
+        # ── fase + jendela hit ──────────────────────────────────────
+        if not getattr(boss, "_gnk_attack_active", False):
+            # pemanggil sudah mematikan serangannya -> lupa status manual
+            boss._gnk_attack_active = False
+            boss._gnk_attack_manual = False
+            active = False
+        phase = G.attack_phase(progress) if active else "NONE"
+        boss._gnk_attack_phase = phase
+        lo, hi = G.ATTACK_ACTIVE_WINDOW
+        boss._gnk_hit_active = bool(active and lo <= progress < hi)
+
+        # ── respons kena damage (HURT) ──────────────────────────────
+        hurt = int(getattr(boss, "_gnk_hurt_frames", 0))
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash >= 8 and hurt <= 0:
+            hurt = 10                       # flash baru -> minimal 10 frame
+        boss._gnk_hurt_frames = max(0, hurt - 1) if hurt > 0 else 0
+
+        # ── state machine ber-prioritas ─────────────────────────────
+        want = G._resolve_anim_state(boss, active, phase)
+        cur = getattr(boss, "_gnk_state", None)
+        if cur is None:
+            boss._gnk_state = want
+            boss._gnk_state_prev = want
+            boss._gnk_state_time = 0.0
+        elif want != cur:
+            cur_p = G.ANIM_STATES.get(cur, 0)
+            new_p = G.ANIM_STATES.get(want, 0)
+            stime = float(getattr(boss, "_gnk_state_time", 0.0))
+            # DEATH mengunci; state lain boleh direbut prioritas yang
+            # sama/lebih tinggi, atau yang lebih rendah kalau state lama
+            # sudah selesai (mencegah pose tersangkut).
+            if cur != "DEATH" and (new_p >= cur_p or stime > 0.08):
+                boss._gnk_state_prev = cur
+                boss._gnk_state = want
+                boss._gnk_state_time = 0.0
+            else:
+                boss._gnk_state_time = stime + dt
+        else:
+            boss._gnk_state_time = float(getattr(boss, "_gnk_state_time",
+                                                 0.0)) + dt
 
     def _detect_moving(boss):
         cur_x = float(getattr(boss, "x", 0.0))
@@ -732,11 +937,16 @@ class _NS_gornak:
         if not hasattr(boss, "_gnk_last_x"):
             boss._gnk_last_x = cur_x
             boss._gnk_last_y = cur_y
+            boss._moving_cached = False
             return False
         moved = abs(cur_x - boss._gnk_last_x) + abs(cur_y - boss._gnk_last_y)
         boss._gnk_last_x = cur_x
         boss._gnk_last_y = cur_y
-        return moved > 0.3
+        moving = moved > 0.3
+        # Nama sama dengan hero lain (kaizen/zephyr/dll) supaya state
+        # machine dan cache sprite cukup satu konvensi.
+        boss._moving_cached = moving
+        return moving
 
     # ==================================================================
     # POSE STATE - satu sumber kebenaran untuk rig DAN semua FX
@@ -810,9 +1020,15 @@ class _NS_gornak:
         if ap < 0.30:                       # anticipation: angkat lalu tahan
             t = ap / 0.30
             return w * (t ** 0.85)
-        if ap < 0.46:                       # tebasan: sangat cepat
+        if ap < 0.46:                       # tebasan: dipercepat
+            # Eksponen > 1 = MULUS dari puncak tahan lalu MENGGILAS di
+            # tengah. Dengan < 1 (v3 lama) frame pertama tebasan justru
+            # melompat ~32 px dari pose yang sedang ditahan, dan itu
+            # terbaca sebagai glitch, bukan bobot. Sekarang lajunya naik
+            # terus sampai tepat sebelum IMPACT HOLD, jadi ayunannya
+            # "memukul masuk" ke freeze.
             t = (ap - 0.30) / 0.16
-            return w + (h - w - 0.02) * (t ** 0.55)
+            return w + (h - w - 0.02) * (t ** 1.25)
         if ap < 0.60:                       # IMPACT HOLD (nyaris beku)
             t = (ap - 0.46) / 0.14
             return h - 0.02 + 0.02 * t
@@ -1040,73 +1256,258 @@ class _NS_gornak:
                                                         back))
 
     # ==================================================================
+    # LAPISAN FX HIDUP (heroes/gornak_fx)
+    # ==================================================================
+    #: Modul FX layar (diisi malas). False = percobaan gagal -> jalur canvas.
+    _LIVE_MOD = None
+
+    def _live_module():
+        """Muat ``heroes.gornak_fx`` sekali; None kalau tidak tersedia.
+
+        Impor dilakukan DI SINI (bukan di kepala modul) supaya modul boss
+        besar tidak menarik paket hero saat build hanya-butuh-renderer, dan
+        supaya karakter FX bisa di-matikan lewat satu flag tanpa merusak
+        jalur render.
+        """
+        NS = _NS_gornak
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import gornak_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "GORNAK_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    def live_fx_ready():
+        """True kalau lapisan hidup Gornak bisa dipakai (dipakai tooling)."""
+        return _NS_gornak._live_module() is not None
+
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Lapisan hidup untuk unit ini.
+
+        Return ``(mod, owned)``:
+          * ``mod``   - modulnya (None = jangan gambar lapisan hidup),
+          * ``owned`` - True kalau efek ayunan/bolt sudah diambil alih
+            lapisan hidup, jadi renderer boleh melewati salinan di-canvas.
+
+        ``want_draw`` True pada jalur BOSS (draw dipanggil tiap frame,
+        tidak lewat cache sprite). Pada jalur HERO penggambaran dilakukan
+        heroes/__init__.py (``_LIVE_FX_HEROES``) supaya lapisan tetap hidup
+        walau sprite sedang di-cache - di sini hanya dipasang penanda
+        "diambil alih" agar tidak ada efek yang digambar dua kali.
+        """
+        NS = _NS_gornak
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    # ==================================================================
     # ENTRY POINT
     # ==================================================================
     def draw_gornak(surface, boss, x, y):
-        """Entry point Boss.draw() sekaligus heroes.render_hero()."""
+        """Entry point Boss.draw() sekaligus heroes.render_hero().
+
+        Urutan lapisan mengikuti kontrak render order proyek:
+
+            GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/HEAD ->
+            WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+            SKILL FX -> IMPACT FX -> DEBUG
+
+        Trail ayunan, partikel, proyektil Mana Break, impact, screen shake
+        dan hit-stop hidup di ``heroes/gornak_fx.py`` (lapisan layar 1:1,
+        di luar sprite cache). Semua nama publik lama tetap ada; kalau
+        modul FX tidak dimuat, renderer kembali menggambar semuanya
+        di-canvas (jalur fallback).
+        """
+        NS = _NS_gornak
         # jalur hero (lane): heroes/__init__ men-set _render_scale sebelum
         # memanggil renderer, dan _finish_hd_sprite sudah menambah
         # rim/terminator -> pass di sini dilewati (lihat _draw_gnk_rig_at).
-        _NS_gornak._HERO_LANE.v = hasattr(boss, "_render_scale")
-        _NS_gornak._update_gnk_attack_anim(boss)
-        action, phase, ap = _NS_gornak._resolve_pose(
-            boss, _NS_gornak._detect_moving(boss))
+        hero_lane = hasattr(boss, "_render_scale")
+        NS._HERO_LANE.v = hero_lane
+        NS._update_gnk_attack_anim(boss)
+        action, phase, ap = NS._resolve_pose(boss, NS._detect_moving(boss))
         boss._gnk_pose_action = action
         skill = getattr(boss, "active_skill", None)
         timer = int(getattr(boss, "active_skill_timer", 0))
         portrait = bool(getattr(boss, "_portrait_hd", False))
         facing = getattr(boss, "direction", 1) or 1
-        flash = _NS_gornak._alpha(170 * (getattr(boss, "hurt_flash_timer", 0)
-                                         / 8.0))
+        flash = NS._alpha(170 * (getattr(boss, "hurt_flash_timer", 0)
+                                 / 8.0))
+        # Jalur boss digambar tiap frame TANPA cache -> lapisan hidup
+        # dipicu dari sini. Jalur lane sudah dipicu heroes/__init__.
+        live, owned = NS._live_fx(boss, surface, x, y,
+                                  not hero_lane, portrait)
 
         # ── Latar. Dibuang total saat portrait supaya auto-crop Hero Shop
         #    terisi wajah & material, bukan lingkaran efek.
         if not portrait:
-            _NS_gornak._draw_anti_magic_field(surface, x, y, phase, skill)
+            NS._draw_anti_magic_field(surface, x, y, phase, skill)
             if skill != "r":
                 # Saat ULT, segel void menutupi rune tanah -> tidak perlu
-                # digambar (hemat frame di frame paling berat).
-                _NS_gornak._draw_ground_rune(surface, x, y, phase, skill)
+                # digambar (hemat di frame paling berat).
+                NS._draw_ground_rune(surface, x, y, phase, skill)
             if skill == "q":
-                _NS_gornak._draw_manabreak_ground(surface, boss, x, y, timer,
-                                                  phase)
+                NS._draw_manabreak_ground(surface, boss, x, y, timer, phase)
             elif skill == "w":
-                _NS_gornak._draw_blink_ground(surface, boss, x, y, timer,
-                                              phase)
+                NS._draw_blink_ground(surface, boss, x, y, timer, phase)
             elif skill == "r":
-                _NS_gornak._draw_manavoid_ground(surface, boss, x, y, timer,
-                                                 phase)
-            _NS_gornak._draw_cast_shockwave(surface, boss, x, y, skill, timer)
+                NS._draw_manavoid_ground(surface, boss, x, y, timer, phase)
+            if not owned:
+                NS._draw_cast_shockwave(surface, boss, x, y, skill, timer)
 
         # ── Karakter
         if action == "blink":
-            _NS_gornak._draw_gnk_blink(surface, boss, x, y, timer, portrait,
-                                       flash)
+            NS._draw_gnk_blink(surface, boss, x, y, timer, portrait, flash)
         else:
             if not portrait:
-                _NS_gornak._draw_shadow(surface, x, y + _NS_gornak.GROUND_DY)
-            _NS_gornak._draw_gnk_rig_at(surface, x, y, facing, phase, action,
-                                        ap, portrait, flash)
-            if action == "attack" and not portrait:
-                _NS_gornak._draw_crescent_slash(surface, x, y, facing, phase,
-                                                ap)
+                NS._draw_shadow(surface, x, y + NS.GROUND_DY)
+            NS._draw_gnk_rig_at(surface, x, y, facing, phase, action, ap,
+                                portrait, flash)
+            if action == "attack" and not portrait and not owned:
+                # Pita ayunan di-canvas HANYA kalau lapisan hidup tidak
+                # mengambil alih. Canvas lane di-smoothscale, jadi pita
+                # di sana terbaca lembek; trail layar memakai histori
+                # posisi bilah yang sebenarnya pada resolusi 1:1.
+                NS._draw_crescent_slash(surface, x, y, facing, phase, ap)
             elif action == "walk" and not portrait:
                 # Debu langkah: dua kepul kecil tepat saat telapak mendarat,
                 # jadi bobot badan terasa menekan tanah (bukan karakter
                 # meluncur di atas lantai).
-                _NS_gornak._draw_footfall_dust(surface, x, y, facing, phase)
+                NS._draw_footfall_dust(surface, x, y, facing, phase)
 
         # ── Foreground FX
         if not portrait:
             if skill == "q":
-                _NS_gornak._draw_manabreak_foreground(surface, boss, x, y,
-                                                      timer, phase)
+                if not owned:
+                    NS._draw_manabreak_foreground(surface, boss, x, y, timer,
+                                                  phase)
             elif skill == "e":
-                _NS_gornak._draw_counterspell_foreground(surface, boss, x, y,
-                                                         timer, phase)
+                NS._draw_counterspell_foreground(surface, boss, x, y, timer,
+                                                 phase)
             elif skill == "r":
-                _NS_gornak._draw_manavoid_foreground(surface, boss, x, y,
-                                                     timer, phase)
+                NS._draw_manavoid_foreground(surface, boss, x, y, timer,
+                                             phase)
+
+        # ── Lapisan hidup bagian ATAS + debug
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_gnk_debug(surface, boss, x, y, action, owned)
+
+    # ==================================================================
+    # DEBUG OVERLAY  (DEBUG_CHARACTER = True)
+    # ==================================================================
+    def _draw_gnk_debug(surface, boss, x, y, action, owned):
+        """Hitbox, hurtbox, jangkauan, state/frame, FPS, jumlah partikel.
+
+        Tidak menyentuh gameplay: semua angka dibaca dari state yang sudah
+        ada, dan overlay digambar PALING AKHIR supaya tidak pernah tertutup.
+        """
+        NS = _NS_gornak
+        import pygame as _pg
+
+        # ── hurtbox = lingkaran radius unit ─────────────────────────
+        r = max(6, int(getattr(boss, "radius", 16) * 0.9 * NS.SCALE))
+        _pg.draw.rect(surface, (80, 170, 255, 150),
+                      _pg.Rect(int(x) - r, int(y) - r - 8, r * 2, r * 2), 1)
+
+        # ── jangkauan serangan ──────────────────────────────────────
+        rng = max(10, int(getattr(boss, "range", 60) * NS.SCALE * 0.9))
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        _pg.draw.line(surface, (255, 210, 60, 150), (int(x), int(y)),
+                      (int(x) + int(rng * f), int(y)), 1)
+        _pg.draw.rect(surface, (255, 210, 60, 110),
+                      _pg.Rect(int(x + rng * f) - 5, int(y) - 7, 10, 14), 1)
+
+        # ── hitbox ayunan (hanya saat jendela hit aktif) ─────────────
+        hb = NS._swing_hitbox(boss, x, y)
+        if hb is not None:
+            _pg.draw.rect(surface, (255, 70, 70, 190), hb, 2)
+            _pg.draw.rect(surface, (255, 70, 70, 60), hb)
+
+        # ── tabrakan proyektil milik lapisan hidup ──────────────────
+        if owned:
+            try:
+                mod = NS._LIVE_MOD
+                for p in mod.projectiles_for(boss):
+                    rr = max(3, int(p.hit_radius))
+                    _pg.draw.circle(surface, (255, 120, 255, 170),
+                                    (int(p.sx), int(p.sy)), rr, 1)
+            except Exception:
+                pass
+
+        # ── panel teks ──────────────────────────────────────────────
+        fps = getattr(boss, "_gnk_fps", None)
+        if fps is None:
+            boss._gnk_fps = 60.0
+            fps = 60.0
+        else:
+            dt = float(getattr(boss, "_gnk_dt", 1.0 / 60.0))
+            inst = 1.0 / dt if dt > 0 else 60.0
+            boss._gnk_fps = fps + (inst - fps) * 0.1
+            fps = boss._gnk_fps
+        state = getattr(boss, "_gnk_state", "IDLE")
+        phase = getattr(boss, "_gnk_attack_phase", "NONE")
+        frames = int(getattr(boss, "_gnk_attack_frame", 0))
+        prog = float(getattr(boss, "_gnk_attack_progress", 0.0))
+        hurt = int(getattr(boss, "_gnk_hurt_frames", 0))
+        atk_cd = int(getattr(boss, "attack_cooldown", 38))
+        timer = int(getattr(boss, "timer", 0))
+        skill = getattr(boss, "active_skill", None) or "-"
+        s_timer = int(getattr(boss, "active_skill_timer", 0))
+        npart = 0
+        try:
+            npart = int(NS._LIVE_MOD.total_particles()) if NS._LIVE_MOD \
+                else 0
+        except Exception:
+            npart = 0
+        lines = (
+            "GORNAK  %.0f fps" % fps,
+            "state %s (prev %s) %.2fs" % (state,
+                                          getattr(boss, "_gnk_state_prev",
+                                                  "-"),
+                                          float(getattr(boss, "_gnk_state_time",
+                                                        0.0))),
+            "action %s  phase %s" % (action, phase),
+            "atk frame %d/%d  prog %.2f  hit %s" % (
+                frames, max(1, atk_cd - 1), prog,
+                "ON" if getattr(boss, "_gnk_hit_active", False) else "off"),
+            "timer %d  hurt %d" % (timer, hurt),
+            "skill %s  %d  live %s" % (skill, s_timer,
+                                       "on" if owned else "canvas"),
+            "particles %d  dt %.1fms" % (npart,
+                                         float(getattr(boss, "_gnk_dt",
+                                                       1.0 / 60.0)) * 1000.0),
+        )
+        fnt = _pg.font.SysFont("consolas,monospace", 10)
+        w0 = int(x) - 96
+        y0 = int(y) - int(140 * NS.SCALE) - 10 * len(lines)
+        box = _pg.Rect(w0 - 3, y0 - 2, 200, 12 * len(lines) + 4)
+        bg = _pg.Surface(box.size, _pg.SRCALPHA)
+        bg.fill((6, 4, 12, 150))
+        surface.blit(bg, box.topleft)
+        for i, t in enumerate(lines):
+            txt = fnt.render(t, True, (255, 226, 150))
+            surface.blit(txt, (box.x + 3, box.y + 1 + i * 12))
 
     def _draw_cast_shockwave(surface, boss, x, y, skill, timer):
         """Gelombang kejut 12 frame pertama SETIAP skill (world-space).

@@ -608,6 +608,21 @@ class Boss(TowerDebuffMixin):
                     self.target.take_damage(self.damage, self.team,
                                             school='physical',
                                             source=self)
+                    # ═══ IMPACT FX ═══
+                    # Mini-boss digambar lewat renderer yang sama dengan
+                    # hero-nya (lihat _NS_gornak.draw_gornak), jadi lapisan
+                    # FX hidup juga tersedia di sini: benturan memicu flash,
+                    # spark, debris, shake, dan hit-stop yang sama persis
+                    # dengan versi hero-nya. Difilter per boss_type +
+                    # try/except supaya hero/boss lain tidak pernah menarik
+                    # modul FX yang bukan miliknya.
+                    if getattr(self, 'boss_type', None) == 'gornak':
+                        try:
+                            from heroes import gornak_fx as _gfx
+                            _gfx.notify_melee_impact(self, self.target,
+                                                     self.damage, False)
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:

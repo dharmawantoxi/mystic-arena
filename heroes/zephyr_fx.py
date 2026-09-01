@@ -1280,116 +1280,133 @@ class SkillFX:
 
 
 # ============================================================================
-# 8.  GAME FEEL  —  screen shake + hit stop
+# 8.  GAME FEEL  —  screen shake + hit stop (via bus bersama)
 # ============================================================================
+#
+# STATE INI GLOBAL, jadi tidak boleh dimiliki satu karakter.  Sejak pass
+# Gornak, hit-stop & shake hidup di ``heroes/combat_feel.py``; modul ini
+# hanya memakainya lewat nama lama (``HITSTOP``, ``SHAKE``, ``hit_stop``,
+# ``shake``, ``should_freeze_frame``) supaya semua pemanggil lama —
+# ``_core.Game.update``, ``_entity``, tooling, dan tes regresi
+# ``tools/test_zephyr_v3.py`` — tidak perlu diubah sama sekali.
+#
+# Manfaat ikut bus bersama:
+#   * dua hero yang memukul di frame yang sama tidak menumpuk freeze;
+#   * satu-satunya jalur shake ke kamera tetap ``EffectManager.shake_screen``;
+#   * ``Game.update`` cukup bertanya ke satu tempat untuk SEMUA karakter.
 
-class ScreenShake:
-    """Guncangan layar berbasis trauma, meredam bertahap.
+try:                                     # build minimal: tanpa bus = no-op
+    from heroes import combat_feel as _feel
+except Exception:                          # pragma: no cover
+    _feel = None
 
-    Nilai akhirnya di-forward ke EffectManager milik game supaya satu
-    sumber kebenaran (tidak menggambar dua kali).
-    """
+if _feel is not None:
+    ScreenShake = _feel.ScreenShake
+    HitStop = _feel.HitStop
+    HITSTOP = _feel.HITSTOP
+    SHAKE = _feel.SHAKE
+    FIXED_DT = _feel.FIXED_DT
+else:                                      # pragma: no cover - fallback
+    class ScreenShake:                     # noqa: F811
+        """Shake lokal (bus tidak tersedia) — API identik dengan bus."""
 
-    def __init__(self):
-        self.shake_strength = 0.0
-        self.shake_duration = 0.0
-        self._max_duration = 0.0001
-        self.enabled = True
-
-    def add(self, strength, duration=0.22):
-        """Tambah guncangan; yang paling kuat menang."""
-        if not self.enabled:
-            return
-        if strength <= self.shake_strength and \
-                duration <= self.shake_duration:
-            return
-        self.shake_strength = max(self.shake_strength, float(strength))
-        self.shake_duration = max(self.shake_duration, float(duration))
-        self._max_duration = max(self._max_duration, self.shake_duration)
-
-    def update(self, dt):
-        if self.shake_duration <= 0.0:
+        def __init__(self):
             self.shake_strength = 0.0
-            return
-        self.shake_duration -= dt
-        if self.shake_duration <= 0.0:
             self.shake_duration = 0.0
-            self.shake_strength = 0.0
             self._max_duration = 0.0001
+            self.enabled = True
 
-    @property
-    def amount(self):
-        """Kekuatan efektif saat ini (sudah teredam)."""
-        if self.shake_duration <= 0.0:
-            return 0.0
-        return self.shake_strength * (self.shake_duration /
-                                      self._max_duration)
+        def add(self, strength, duration=0.22):
+            if strength <= self.shake_strength and \
+                    duration <= self.shake_duration:
+                return
+            self.shake_strength = max(self.shake_strength, float(strength))
+            self.shake_duration = max(self.shake_duration, float(duration))
+            self._max_duration = max(self._max_duration, self.shake_duration)
 
-    def offset(self):
-        amt = self.amount
-        if amt <= 0.4:
-            return (0, 0)
-        return (random.uniform(-amt, amt), random.uniform(-amt, amt))
+        def update(self, dt):
+            if self.shake_duration <= 0.0:
+                self.shake_strength = 0.0
+                return
+            self.shake_duration -= dt
+            if self.shake_duration <= 0.0:
+                self.shake_duration = 0.0
+                self.shake_strength = 0.0
+                self._max_duration = 0.0001
 
+        @property
+        def amount(self):
+            if self.shake_duration <= 0.0:
+                return 0.0
+            return self.shake_strength * (self.shake_duration
+                                          / self._max_duration)
 
-class HitStop:
-    """Freeze singkat saat benturan (0.03 - 0.08 detik).
+        def offset(self):
+            amt = self.amount
+            if amt <= 0.4:
+                return (0, 0)
+            return (random.uniform(-amt, amt), random.uniform(-amt, amt))
 
-    Simulasi game memakai langkah tetap 1/60 s, jadi durasi detik
-    dikonversi ke jumlah langkah yang dilewati.
-    """
+    class HitStop:                         # noqa: F811
+        MIN_SECONDS = 0.03
+        MAX_SECONDS = 0.08
 
-    MIN_SECONDS = 0.03
-    MAX_SECONDS = 0.08
+        def __init__(self):
+            self.frames = 0
+            self.total = 0
 
-    def __init__(self):
-        self.frames = 0
-        self.total = 0
+        def trigger(self, seconds=0.045):
+            if not HIT_STOP_ENABLED:
+                return
+            seconds = max(self.MIN_SECONDS,
+                          min(self.MAX_SECONDS, float(seconds)))
+            frames = max(1, int(round(seconds / FIXED_DT)))
+            if frames > self.frames:
+                self.frames = frames
+                self.total = frames
 
-    def trigger(self, seconds=0.045):
-        """Minta hit-stop; durasi dijepit ke rentang aman."""
-        if not HIT_STOP_ENABLED:
-            return
-        seconds = max(self.MIN_SECONDS, min(self.MAX_SECONDS,
-                                            float(seconds)))
-        frames = max(1, int(round(seconds / FIXED_DT)))
-        if frames > self.frames:
-            self.frames = frames
-            self.total = frames
+        def consume_frame(self):
+            if self.frames > 0:
+                self.frames -= 1
+                return True
+            self.total = 0
+            return False
 
-    def consume_frame(self):
-        """True = langkah simulasi ini harus dibekukan."""
-        if self.frames > 0:
-            self.frames -= 1
-            return True
-        self.total = 0
-        return False
+        @property
+        def active(self):
+            return self.frames > 0
 
-    @property
-    def active(self):
-        return self.frames > 0
-
-
-#: Instance global — satu untuk seluruh game.
-HITSTOP = HitStop()
-SHAKE = ScreenShake()
+    HITSTOP = HitStop()
+    SHAKE = ScreenShake()
 
 
 def hit_stop(seconds=0.045):
-    """API publik: minta hit-stop global."""
-    HITSTOP.trigger(seconds)
+    """API publik: minta hit-stop global (dijepit 0.03 - 0.08 s)."""
+    if _feel is not None:
+        _feel.hit_stop(seconds)
+    else:                                  # pragma: no cover
+        HITSTOP.trigger(seconds)
 
 
 def should_freeze_frame():
-    """Dipanggil Game.update: True kalau frame simulasi dibekukan."""
-    if not HIT_STOP_ENABLED or not ZEPHYR_FX_ENABLED:
+    """Dipanggil ``Game.update``: True kalau frame simulasi dibekukan.
+
+    Flag ``ZEPHYR_FX_ENABLED`` TIDAK menahan freeze karakter lain — ia
+    hanya mengatur apakah FX Zephyr sendiri ikut jalan (lihat ``shake``).
+    """
+    if _feel is not None:
+        return _feel.should_freeze_frame()
+    if not HIT_STOP_ENABLED:               # pragma: no cover
         return False
     return HITSTOP.consume_frame()
 
 
 def shake(strength=5.0, duration=0.22):
     """API publik: guncangkan layar (lokal + EffectManager game)."""
-    SHAKE.add(strength, duration)
+    if _feel is not None:
+        _feel.shake(strength, duration)
+        return
+    SHAKE.add(strength, duration)          # pragma: no cover
     try:
         import __main__
         game = getattr(__main__, "game_instance", None)
@@ -1797,27 +1814,31 @@ def director_for(hero):
 def tick():
     """Majukan waktu FX satu frame nyata.  Aman dipanggil berkali-kali.
 
-    Delta-time diambil dari jam SDL dan dijepit supaya lonjakan frame
-    (loading, alt-tab) tidak melemparkan partikel ke luar layar.
+    Delta-time dihitung oleh bus ``combat_feel`` (dijepit supaya lonjakan
+    frame saat loading / alt-tab tidak melempar partikel ke luar layar,
+    dilambatkan saat hit-stop, dan shake-nya hanya dimundurkan SEKALI per
+    frame walau beberapa karakter ikut bertempur).
     """
     global _LAST_TICK_MS
-    now = pygame.time.get_ticks()
-    if _LAST_TICK_MS is None:
+    if _feel is not None:
+        dt = _feel.fx_dt()
+        _LAST_TICK_MS = pygame.time.get_ticks()
+    else:                                  # pragma: no cover - fallback
+        now = pygame.time.get_ticks()
+        if _LAST_TICK_MS is None:
+            _LAST_TICK_MS = now
+            return 0.0
+        dt_ms = now - _LAST_TICK_MS
+        if dt_ms <= 0:
+            return 0.0
         _LAST_TICK_MS = now
-        return 0.0
-    dt_ms = now - _LAST_TICK_MS
-    if dt_ms <= 0:
-        return 0.0
-    _LAST_TICK_MS = now
-    dt = max(1.0 / 240.0, min(1.0 / 20.0, dt_ms / 1000.0))
-
-    # saat hit-stop: FX melambat (slow-mo), tidak berhenti total
-    if HITSTOP.active:
-        dt *= 0.18
-
-    SHAKE.update(dt)
-    for d in _DIRECTORS:
-        d.update(dt)
+        dt = max(1.0 / 240.0, min(1.0 / 20.0, dt_ms / 1000.0))
+        if HITSTOP.active:
+            dt *= 0.18
+        SHAKE.update(dt)
+    if dt > 0.0:
+        for d in _DIRECTORS:
+            d.update(dt)
     return dt
 
 
@@ -1830,9 +1851,12 @@ def reset_all():
         d.impacts.clear()
         d.skills.clear()
     _DIRECTORS.clear()
-    HITSTOP.frames = 0
-    SHAKE.shake_strength = 0.0
-    SHAKE.shake_duration = 0.0
+    if _feel is not None:
+        _feel.reset()
+    else:                                  # pragma: no cover
+        HITSTOP.frames = 0
+        SHAKE.shake_strength = 0.0
+        SHAKE.shake_duration = 0.0
 
 
 def total_particles():

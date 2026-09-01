@@ -1887,9 +1887,13 @@ class Game:
         # pukulan terasa punya bobot. Frame gambar TETAP jalan, jadi
         # partikel & flash benturan tetap terlihat bergerak pelan.
         # Dibatasi keras di HitStop.trigger() (maks ~5 langkah).
+        # Busnya SHARED (heroes/combat_feel.py): Zephyr dan Gornak memicu
+        # freeze yang sama tanpa menumpuk - satu-satunya tempat hit-stop
+        # dibekukan adalah di sini, jadi karakter tambahan tidak perlu
+        # menambah gate sendiri.
         try:
-            from heroes import zephyr_fx as _zfx
-            if _zfx.should_freeze_frame():
+            from heroes import combat_feel as _feel
+            if _feel.should_freeze_frame():
                 return
         except Exception:
             pass
@@ -8880,7 +8884,27 @@ class DevMode:
             f"Effects: {len(g.effects.floating_texts)} texts, "
             f"{len(g.effects.particles)} particles",
             f"Wave: {g.wave_number}",
-            f"Player Gold: {g.gold}",
+        ]
+        # Partikel lapisan FX karakter (Zephyr/Gornak). Angka ini harus
+        # SELALU jatuh ke 0 setelah pertarungan selesai - kalau nyangkut,
+        # ada efek yang tidak mati (lihat checklist di docs/*_V3_COMBAT_FX.md).
+        try:
+            from heroes import combat_feel as _feel
+            _n = _feel.stats()
+            _hp = _n.get("particles", 0)
+            for _mod in ("zephyr_fx", "gornak_fx"):
+                try:
+                    _m = __import__("heroes." + _mod, fromlist=["x"])
+                    _hp += int(_m.total_particles())
+                except Exception:
+                    pass
+            info_lines.append("Hero FX: %d particles, hitstop %d, shake %.1f"
+                              % (_hp, _n.get("hitstop_frames", 0),
+                                 _n.get("shake", 0.0)))
+        except Exception:
+            pass
+        info_lines += [
+                        f"Player Gold: {g.gold}",
             f"AI Gold: {g.ai.gold}",
             f"Kills: {g.total_kills}",
             f"Max Combo: {g.max_combo}",
@@ -9082,6 +9106,15 @@ class GameSettings:
 
     def set_screen_shake(self, enabled):
         self.screen_shake_enabled = enabled
+        # Bus game-feel karakter (heroes/combat_feel) memakai angka yang
+        # sama untuk mirror shake-nya; disinkron di SINI (satu-satunya
+        # tempat setting ini berubah) supaya modul karakter tidak pernah
+        # perlu membaca GameSettings sendiri.
+        try:
+            from heroes import combat_feel as _feel
+            _feel.sync_settings()
+        except Exception:
+            pass
         self.save()
 
     def set_damage_numbers(self, enabled):
