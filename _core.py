@@ -1882,6 +1882,18 @@ class Game:
         if self.state != "playing":
             return
 
+        # ═══ HIT STOP (game feel) ═══
+        # Benturan berat membekukan simulasi 0.03-0.08 detik supaya
+        # pukulan terasa punya bobot. Frame gambar TETAP jalan, jadi
+        # partikel & flash benturan tetap terlihat bergerak pelan.
+        # Dibatasi keras di HitStop.trigger() (maks ~5 langkah).
+        try:
+            from heroes import zephyr_fx as _zfx
+            if _zfx.should_freeze_frame():
+                return
+        except Exception:
+            pass
+
         # ═══ GAME SPEED (dari settings) ═══
         # Skip cinematic - cinematic tetap normal speed
         if not (self.boss_intro and self.boss_intro.is_active()) and \

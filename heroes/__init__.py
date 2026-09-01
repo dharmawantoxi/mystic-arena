@@ -148,6 +148,17 @@ _EXTRA = {
         '_spawn_magic_bolt', '_target_position', '_update_attack_anim',
         'draw_boss', 'draw_zephyr', 'math',
         'pygame',
+        # ── v3: swing arc, weapon trail, animation controller, debug ──
+        'ATTACK_ANTICIPATION_END', 'ATTACK_WINDUP_END', 'ATTACK_SWING_END',
+        'ATTACK_IMPACT_END', 'ATTACK_FOLLOW_END', 'ATTACK_ACTIVE_WINDOW',
+        'ATTACK_IMPACT_FRAME', 'ATTACK_ARC_START', 'ATTACK_ARC_SWEEP',
+        'ATTACK_ARC_END', 'STAFF_PIVOT', 'STAFF_R_REST', 'STAFF_R_WINDUP',
+        'STAFF_R_STRIKE', 'STAFF_R_FOLLOW', 'ANIM_STATES',
+        'DEBUG_CHARACTER', '_resolve_anim_state', '_swing_hitbox',
+        '_ease_in', '_ease_out', '_ease_in_out', '_staff_arc_pose',
+        '_staff_tip_local', '_staff_grip_local', '_staff_bottom_local',
+        '_staff_orb_position', '_staff_trail_samples',
+        '_draw_staff_swing_trail', '_draw_debug',
     ],
 }
 
@@ -593,6 +604,71 @@ def _adapt_hero_to_boss(hero):
 # smoothscale). Tambah hero_type lain di sini bila renderer-nya sudah
 # punya hook _beam_pass_only (lihat bosses/level1.py, _NS_morgath).
 _BEAM_PASS_HEROES = {"morgath"}
+
+# ═══════════════════════════════════════════════════════
+# LIVE FX PASS
+#
+# Sprite hero DI-CACHE (lihat render_hero). Konsekuensinya semua yang
+# harus bergerak 60 fps sejati - trail senjata, partikel, projectile,
+# impact - tidak boleh hidup di dalam canvas cache: hasilnya akan ikut
+# beku selama pose yang sama dipakai ulang.
+#
+# Hero di daftar ini punya modul FX terpisah yang digambar LANGSUNG ke
+# layar pada skala 1.0 setiap frame:
+#   pre   -> GROUND FX + BACK PARTICLES (di bawah sprite)
+#   post  -> TRAIL / PROJECTILE / FRONT PARTICLES / SKILL / IMPACT
+# ═══════════════════════════════════════════════════════
+_LIVE_FX_HEROES = {"zephyr"}
+_LIVE_FX_MODULES = {}
+
+
+def _live_fx_module(hero_type):
+    """Ambil modul FX hidup untuk hero_type (lazy import, cached)."""
+    if hero_type not in _LIVE_FX_HEROES:
+        return None
+    mod = _LIVE_FX_MODULES.get(hero_type)
+    if mod is None:
+        try:
+            if hero_type == "zephyr":
+                from heroes import zephyr_fx as mod
+            else:                                    # pragma: no cover
+                mod = False
+        except Exception as _e:                      # pragma: no cover
+            print(f"[HERO WARNING] live FX {hero_type} failed: {_e}")
+            mod = False
+        _LIVE_FX_MODULES[hero_type] = mod
+    return mod or None
+
+
+def _live_fx_pre(hero_type, surface, hero, x, y):
+    """Lapisan FX di BAWAH sprite hero (ground FX, back particles)."""
+    if hero_type not in _LIVE_FX_HEROES:
+        return
+    if getattr(hero, "_portrait_hd", False):
+        return
+    mod = _live_fx_module(hero_type)
+    if mod is None:
+        return
+    try:
+        mod.draw_ground_layer(surface, hero, x, y)
+    except Exception:
+        pass
+
+
+def _live_fx_post(hero_type, surface, hero, x, y):
+    """Lapisan FX di ATAS sprite hero (trail, projectile, impact)."""
+    if hero_type not in _LIVE_FX_HEROES:
+        return
+    if getattr(hero, "_portrait_hd", False):
+        return
+    mod = _live_fx_module(hero_type)
+    if mod is None:
+        return
+    try:
+        mod.draw_live_layer(surface, hero, x, y)
+    except Exception:
+        pass
+
 
 # ═══════════════════════════════════════════════════════
 # SPRITE PROBE
@@ -1232,9 +1308,13 @@ def render_hero(hero_type, surface, hero, x, y):
         hero: Hero object
         x, y: position
     """
+    # Lapisan FX hidup (ground) HARUS di bawah sprite -> digambar dulu.
+    _live_fx_pre(hero_type, surface, hero, x, y)
+
     if not HERO_CACHE_ENABLED:
         if not _render_hero_raw(hero_type, surface, hero, x, y):
             _draw_generic_hero(surface, hero, x, y)
+        _live_fx_post(hero_type, surface, hero, x, y)
         return
 
     key = _hero_cache_key(hero_type, hero)
@@ -1290,6 +1370,7 @@ def render_hero(hero_type, surface, hero, x, y):
 
             rect = canvas.get_bounding_rect(min_alpha=8)
             if rect.width <= 0 or rect.height <= 0:
+                _live_fx_post(hero_type, surface, hero, x, y)
                 return
 
             scale = _get_hero_scale(hero_type)
@@ -1334,6 +1415,12 @@ def render_hero(hero_type, surface, hero, x, y):
             finally:
                 hero._beam_pass_only = False
                 hero._render_scale = saved_scale
+
+    # ═══ LIVE FX PASS (Zephyr) ═══
+    # Trail ayunan, projectile, partikel, dan impact digambar setelah
+    # sprite supaya berada di depan badan - dan di luar cache supaya
+    # tetap bergerak 60 fps walau pose sprite sedang dipakai ulang.
+    _live_fx_post(hero_type, surface, hero, x, y)
 
 
 def _draw_generic_hero(surface, hero, x, y):

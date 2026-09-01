@@ -3854,6 +3854,22 @@ class Hero(TowerDebuffMixin):
                 proj['y'] = float(ty)
                 proj['_hit_applied'] = True
 
+                # ═══ IMPACT FX ZEPHYR ═══
+                # Benturan bolt Zephyr memicu paket game-feel penuh:
+                # hit flash, spark, shockwave, debris, screen shake,
+                # dan hit-stop 0.03-0.08 s (lihat heroes/zephyr_fx.py).
+                if proj.get('hero_type') == 'zephyr' and not target_dead:
+                    try:
+                        from heroes import zephyr_fx as _zfx
+                        _zfx.notify_projectile_impact(
+                            proj.get('source') or self,
+                            proj['x'], proj['y'],
+                            proj.get('angle', 0.0),
+                            proj.get('damage', 0),
+                            bool(proj.get('is_crit')))
+                    except Exception:
+                        pass
+
                 # HIT! (hanya damage > 0 yang mengenai target & bersuara;
                 # projectile visual-only skill damage=0 diam saja)
                 if not target_dead and proj['damage'] > 0:
@@ -4917,7 +4933,8 @@ class Hero(TowerDebuffMixin):
         elif proj['hero_type'] == 'vex':
             self._draw_magic_orb_projectile(surface, px, py, angle, age)
         elif proj['hero_type'] == 'zephyr':
-            self._draw_magic_bolt_projectile(surface, px, py, angle, age)
+            self._draw_magic_bolt_projectile(surface, px, py, angle, age,
+                                             crit=bool(proj.get('is_crit')))
         elif proj['hero_type'] == 'morgath':
             self._draw_lightning_projectile(surface, px, py, angle, age)
         elif proj['hero_type'] == 'ancient_apparition':
@@ -5063,12 +5080,26 @@ class Hero(TowerDebuffMixin):
         pygame.draw.circle(surface, (220, 180, 255), (px, py), 3)
         pygame.draw.circle(surface, (255, 255, 255), (px, py), 1)
 
-    def _draw_magic_bolt_projectile(self, surface, px, py, angle=0.0, age=0):
-        """Pink magic bolt (Zephyr) - core di (px,py) + trail belakang."""
+    def _draw_magic_bolt_projectile(self, surface, px, py, angle=0.0, age=0,
+                                    crit=False):
+        """Bolt sihir Zephyr — prosedural berarah (bukan lingkaran polos).
+
+        Visual dipindah ke ``heroes/zephyr_fx.draw_bolt``: glow additive,
+        badan belah-ketupat searah gerak, duri fey, inti putih, glint
+        orbit, dan ekor memudar.  Fallback sederhana dipakai kalau modul
+        FX tidak tersedia (mis. build minimal).
+        """
+        try:
+            from heroes import zephyr_fx as _zfx
+            _zfx.draw_bolt(surface, px, py, angle, age,
+                           crit=bool(crit), radius=6.0)
+            return
+        except Exception:
+            pass
+
+        # ─── FALLBACK (tanpa modul FX) ───
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
-
-        # ─── TRAIL (jejak bolt ke arah belakang) ───
         for i in range(5):
             off = (i + 1) * 3
             trail_x = px - int(cos_a * off)
@@ -5081,13 +5112,9 @@ class Hero(TowerDebuffMixin):
                                    (4, 4), max(1, 3 - i // 2))
                 surface.blit(trail_surf,
                              (trail_x - 4, trail_y - 4))
-
-        # Glow
         glow_surf = pygame.Surface((14, 14), pygame.SRCALPHA)
-        pygame.draw.circle(glow_surf, (230, 80, 200, 120),
-                           (7, 7), 5)
+        pygame.draw.circle(glow_surf, (230, 80, 200, 120), (7, 7), 5)
         surface.blit(glow_surf, (px - 7, py - 7))
-
         pygame.draw.circle(surface, (255, 130, 230), (px, py), 3)
         pygame.draw.circle(surface, (255, 255, 255), (px, py), 1)
 

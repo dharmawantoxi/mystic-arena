@@ -13558,12 +13558,52 @@ class _NS_zephyr:
     # ---------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
-    # Attack timeline (shared dengan legacy konstanta)
-    ATTACK_WINDUP_END  = 0.28   # wind-up berakhir
-    ATTACK_SWING_END   = 0.62   # strike berakhir, IMPACT di 0.50
-    ATTACK_ARC_START   = -1.80
-    ATTACK_ARC_SWEEP   = -2.60
-    ATTACK_ARC_END     = -4.40
+    # ═══════════════════════════════════════════════════════════════
+    # ATTACK / SWING TIMELINE
+    # ───────────────────────────────────────────────────────────────
+    # Serangan Zephyr adalah AYUNAN TONGKAT berbasis busur, bukan
+    # perpindahan lurus dari titik A ke titik B.  Timeline dipecah
+    # jadi enam fase supaya ayunannya punya bobot & momentum:
+    #
+    #   ANTICIPATION -> WINDUP -> SWING -> IMPACT -> FOLLOW -> RECOVERY
+    #
+    # Nilai di bawah adalah fraksi 0..1 dari durasi satu serangan.
+    # ═══════════════════════════════════════════════════════════════
+    ATTACK_ANTICIPATION_END = 0.16   # counter-motion kecil ke belakang
+    ATTACK_WINDUP_END  = 0.34        # tongkat terangkat penuh ke belakang
+    ATTACK_SWING_END   = 0.52        # busur maju selesai
+    ATTACK_IMPACT_END  = 0.60        # jendela hit aktif berakhir
+    ATTACK_FOLLOW_END  = 0.80        # follow-through
+    #  (0.80 - 1.00 = RECOVERY, kembali ke pose idle)
+
+    #: Jendela hit aktif (fraksi progress) — dipakai hitbox & FX.
+    ATTACK_ACTIVE_WINDOW = (0.44, 0.60)
+
+    #: Frame IMPACT tunggal (puncak benturan).
+    ATTACK_IMPACT_FRAME = 0.54
+
+    # Busur ayunan dalam koordinat polar lokal, relatif pivot bahu.
+    # (dipertahankan sebagai nama publik lama; nilainya kini benar-
+    #  benar dipakai sebagai sudut busur, bukan angka mati)
+    ATTACK_ARC_START   = -1.18   # sudut tongkat saat wind-up penuh
+    ATTACK_ARC_SWEEP   = -0.62   # sudut tengah busur (melewati kepala)
+    ATTACK_ARC_END     = 0.00    # sudut saat ekstensi maksimum ke depan
+
+    #: Pivot bahu (lokal) tempat tongkat berputar.
+    STAFF_PIVOT = (8, -24)
+
+    #: Radius tongkat per fase (rest, windup, impact, follow).
+    STAFF_R_REST   = 36.0
+    STAFF_R_WINDUP = 26.0
+    STAFF_R_STRIKE = 68.0
+    STAFF_R_FOLLOW = 62.0
+
+    #: Nama state animasi + prioritas (angka besar menang).
+    ANIM_STATES = {
+        "IDLE": 0, "WALK": 10, "RUN": 15, "CHARGE": 30, "CAST": 35,
+        "ATTACK": 40, "SWING": 45, "SKILL": 50, "SPECIAL": 55,
+        "HIT": 60, "HURT": 65, "DEATH": 100,
+    }
 
     # Durasi visual (frames) — renderer memakai ini, bukan gameplay timer
     SKILL_VISUAL_DURATION = {"q": 240, "w": 180, "e": 180, "r": 240}
@@ -13973,11 +14013,41 @@ class _NS_zephyr:
         return moving
 
     def _update_attack_anim(boss):
-        """Track attack animation timeline.
+        """ANIMATION CONTROLLER Zephyr — state, fase, timing, delta-time.
 
-        Gunakan metode naik-timer sama seperti grimjaw/thorne v2 supaya
-        deteksi serangan tidak bergantung pada frekuensi frame gambar.
+        Menggantikan pelacak serangan lama yang hanya menghitung timer.
+        Sekarang ada:
+
+        * ``_zp_dt``              delta-time nyata (detik, dijepit)
+        * ``_zp_attack_active``   serangan sedang berjalan  (legacy)
+        * ``_zp_attack_frame``    frame ke-n dalam serangan  (legacy)
+        * ``_zp_attack_progress`` 0..1 sepanjang serangan     (legacy)
+        * ``_zp_attack_phase``    ANTICIPATION/WINDUP/SWING/IMPACT/
+                                  FOLLOW/RECOVERY
+        * ``_zp_hit_active``      True hanya di jendela hit aktif
+        * ``_zp_state``           state animasi ber-prioritas
+        * ``_zp_state_prev``      state sebelumnya (untuk transisi)
+        * ``_zp_state_time``      lama state sekarang (detik)
+
+        Semua nama lama dipertahankan supaya kode pemanggil (renderer,
+        skill, tooling) tidak perlu diubah.
         """
+        # ── delta time nyata (untuk FX & transisi) ──────────────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                              # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_zp_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._zp_last_ms = now
+        boss._zp_dt = dt
+
+        # ── timeline serangan ───────────────────────────────────────
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 42)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_zp_prev_timer", -1))
@@ -13986,17 +14056,95 @@ class _NS_zephyr:
         trigger = previous >= 0 and timer > previous
         if trigger:
             boss._zp_attack_active = True
+            boss._zp_swing_started = False
             active = True
         if active and timer <= 0:
             boss._zp_attack_active = False
             active = False
 
         boss._zp_prev_timer = timer
-        boss._zp_attack_frame = (max(0, cooldown - timer)
-                                 if active else 0)
-        boss._zp_attack_progress = (
-            min(1.0, boss._zp_attack_frame / max(1, cooldown - 1))
-            if active else 0.0)
+        frame = max(0, cooldown - timer) if active else 0
+        boss._zp_attack_frame = frame
+        progress = (min(1.0, frame / max(1, cooldown - 1))
+                    if active else 0.0)
+        boss._zp_attack_progress = progress
+
+        # ── fase serangan ───────────────────────────────────────────
+        Z = _NS_zephyr
+        if not active:
+            phase = "NONE"
+        elif progress < Z.ATTACK_ANTICIPATION_END:
+            phase = "ANTICIPATION"
+        elif progress < Z.ATTACK_WINDUP_END:
+            phase = "WINDUP"
+        elif progress < Z.ATTACK_SWING_END:
+            phase = "SWING"
+        elif progress < Z.ATTACK_IMPACT_END:
+            phase = "IMPACT"
+        elif progress < Z.ATTACK_FOLLOW_END:
+            phase = "FOLLOW"
+        else:
+            phase = "RECOVERY"
+        boss._zp_attack_phase = phase
+
+        lo, hi = Z.ATTACK_ACTIVE_WINDOW
+        boss._zp_hit_active = bool(active and lo <= progress < hi)
+
+        # ── state machine ber-prioritas ─────────────────────────────
+        want = _NS_zephyr._resolve_anim_state(boss, active, phase)
+        cur = getattr(boss, "_zp_state", "IDLE")
+        state_time = float(getattr(boss, "_zp_state_time", 0.0))
+        if want != cur:
+            cur_p = Z.ANIM_STATES.get(cur, 0)
+            new_p = Z.ANIM_STATES.get(want, 0)
+            # DEATH mengunci; selain itu state boleh diambil alih oleh
+            # prioritas yang sama/lebih tinggi, atau kalau state lama
+            # sudah berjalan cukup lama (mencegah pose tersangkut).
+            if cur != "DEATH" and (new_p >= cur_p or state_time > 0.08):
+                boss._zp_state_prev = cur
+                boss._zp_state = want
+                boss._zp_state_time = 0.0
+            else:
+                boss._zp_state_time = state_time + dt
+        else:
+            boss._zp_state_time = state_time + dt
+        if not hasattr(boss, "_zp_state"):
+            boss._zp_state = want
+            boss._zp_state_prev = want
+            boss._zp_state_time = 0.0
+
+    def _resolve_anim_state(boss, attacking, phase):
+        """Tentukan state animasi yang DIINGINKAN frame ini."""
+        if not getattr(boss, "alive", True):
+            return "DEATH"
+        if int(getattr(boss, "_zp_hurt_frames", 0)) > 0:
+            return "HURT"
+        skill = getattr(boss, "active_skill", None)
+        if skill:
+            return "SPECIAL" if skill == "r" else "SKILL"
+        if attacking:
+            if phase in ("ANTICIPATION", "WINDUP"):
+                return "CHARGE"
+            if phase in ("SWING", "IMPACT"):
+                return "SWING"
+            return "ATTACK"
+        if getattr(boss, "_moving_cached", False):
+            return "RUN" if float(getattr(boss, "speed", 1.0)) >= 2.2 \
+                else "WALK"
+        return "IDLE"
+
+    def _swing_hitbox(boss, cx, cy):
+        """Rect hitbox ayunan (canvas-space) saat jendela hit aktif.
+
+        Dipakai debug overlay dan sistem tumbukan opsional.  Return
+        None kalau jendela hit sedang tidak aktif.
+        """
+        if not getattr(boss, "_zp_hit_active", False):
+            return None
+        f = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        reach = 76
+        left = cx if f > 0 else cx - reach
+        return pygame.Rect(int(left), int(cy - 58), reach, 78)
 
     # ---------------------------------------------------------------
     # STATIC SURFACE BUILDERS  (cached, no per-frame allocation)
@@ -14102,53 +14250,157 @@ class _NS_zephyr:
                      int(y + 8 - i * 4)), max(1, 2 - i))
 
     def _draw_cast_flash(surface, x, y, facing, progress, phase):
-        """Flash orb around staff tip during attack release."""
-        p = _NS_zephyr.PALETTE
-        if .42 < progress < .72:
-            t = (progress - .42) / .30
-            alpha = int(220 * (1.0 - t * t))
-            tip = _NS_zephyr._staff_orb_position(
+        """Kilatan orb di ujung tongkat saat fase SWING -> FOLLOW."""
+        Z = _NS_zephyr
+        p = Z.PALETTE
+        lo = Z.ATTACK_SWING_END - 0.10
+        hi = Z.ATTACK_FOLLOW_END
+        if lo < progress < hi:
+            t = (progress - lo) / (hi - lo)
+            alpha = int(230 * (1.0 - t * t))
+            tip = Z._staff_orb_position(
                 x, y, facing, phase, "attack", progress)
-            r = int(18 + t * 12)
-            _NS_zephyr._aacircle(surface, (*p["magic_dark"], alpha // 2),
-                                 tip, r + 4)
-            _NS_zephyr._aacircle(surface, (*p["magic_mid"], alpha),
-                                 tip, r)
-            _NS_zephyr._aacircle(surface, (*p["magic_hot"], int(alpha * 1.1)),
-                                 tip, max(1, r - 5))
+            r = int(11 + t * 8)
+            Z._aacircle(surface, (*p["magic_dark"], alpha // 3),
+                        tip, r + 5)
+            Z._aacircle(surface, (*p["magic_mid"], int(alpha * .7)),
+                        tip, r)
+            Z._aacircle(surface, (*p["magic_hot"], alpha),
+                        tip, max(1, r - 4))
             # 6-spike star burst
-            _NS_zephyr._spark_star(surface, tip[0], tip[1],
-                                   r + 8, p["magic_light"], alpha,
-                                   spikes=6, rot=phase * 2.1,
-                                   core=p["magic_white"])
+            Z._spark_star(surface, tip[0], tip[1],
+                          r + 8, p["magic_light"], alpha,
+                          spikes=6, rot=phase * 2.1,
+                          core=p["magic_white"])
 
     # ---------------------------------------------------------------
     # ZEPHYR v2 MASTERWORK RIG  —  _draw_zephyr_elite
     # ---------------------------------------------------------------
+    def _ease_out(t):
+        """Ease-out kuadratik — cepat di awal, mendarat halus."""
+        t = max(0.0, min(1.0, t))
+        return 1.0 - (1.0 - t) * (1.0 - t)
+
+    def _ease_in(t):
+        """Ease-in kuadratik — pelan di awal (antisipasi)."""
+        t = max(0.0, min(1.0, t))
+        return t * t
+
+    def _ease_in_out(t):
+        """Smoothstep."""
+        t = max(0.0, min(1.0, t))
+        return t * t * (3.0 - 2.0 * t)
+
+    def _staff_arc_pose(attack_progress):
+        """Sudut + radius tongkat pada busur ayunan.
+
+        Mengembalikan ``(angle_rad, radius)`` relatif ``STAFF_PIVOT``.
+        Interpolasi dilakukan dalam ruang POLAR, sehingga ujung tongkat
+        benar-benar menyapu sebuah BUSUR — bukan meluncur lurus dari
+        pose awal ke pose akhir.
+        """
+        Z = _NS_zephyr
+        ap = max(0.0, min(1.0, attack_progress))
+
+        a_rest = 0.0555                    # sudut pose istirahat
+        r_rest = Z.STAFF_R_REST
+
+        if ap < Z.ATTACK_ANTICIPATION_END:
+            # ANTICIPATION — tarikan kecil berlawanan arah ayunan
+            t = Z._ease_in(ap / Z.ATTACK_ANTICIPATION_END)
+            return (a_rest + 0.22 * t, r_rest - 3.0 * t)
+
+        if ap < Z.ATTACK_WINDUP_END:
+            # WIND-UP — tongkat terangkat ke belakang-atas
+            t = Z._ease_in_out(
+                (ap - Z.ATTACK_ANTICIPATION_END) /
+                (Z.ATTACK_WINDUP_END - Z.ATTACK_ANTICIPATION_END))
+            a0, r0 = a_rest + 0.22, r_rest - 3.0
+            return (a0 + (Z.ATTACK_ARC_START - a0) * t,
+                    r0 + (Z.STAFF_R_WINDUP - r0) * t)
+
+        if ap < Z.ATTACK_SWING_END:
+            # SWING — busur maju melewati atas kepala, radius memanjang
+            t = (ap - Z.ATTACK_WINDUP_END) / \
+                (Z.ATTACK_SWING_END - Z.ATTACK_WINDUP_END)
+            te = Z._ease_out(t)
+            # dua sub-busur (start -> sweep -> end) supaya lintasan
+            # melengkung, tidak sekadar berputar rata
+            if te < 0.5:
+                k = te / 0.5
+                ang = Z.ATTACK_ARC_START + \
+                    (Z.ATTACK_ARC_SWEEP - Z.ATTACK_ARC_START) * k
+            else:
+                k = (te - 0.5) / 0.5
+                ang = Z.ATTACK_ARC_SWEEP + \
+                    (Z.ATTACK_ARC_END - Z.ATTACK_ARC_SWEEP) * k
+            rad = Z.STAFF_R_WINDUP + \
+                (Z.STAFF_R_STRIKE - Z.STAFF_R_WINDUP) * te
+            return (ang, rad)
+
+        if ap < Z.ATTACK_IMPACT_END:
+            # IMPACT — tahan sebentar di ekstensi maksimum (bobot)
+            t = (ap - Z.ATTACK_SWING_END) / \
+                (Z.ATTACK_IMPACT_END - Z.ATTACK_SWING_END)
+            return (Z.ATTACK_ARC_END + 0.06 * t,
+                    Z.STAFF_R_STRIKE + 2.0 * math.sin(t * math.pi))
+
+        if ap < Z.ATTACK_FOLLOW_END:
+            # FOLLOW-THROUGH — momentum membawa ujung turun ke depan
+            t = Z._ease_out(
+                (ap - Z.ATTACK_IMPACT_END) /
+                (Z.ATTACK_FOLLOW_END - Z.ATTACK_IMPACT_END))
+            return (Z.ATTACK_ARC_END + 0.06 + 0.30 * t,
+                    Z.STAFF_R_STRIKE +
+                    (Z.STAFF_R_FOLLOW - Z.STAFF_R_STRIKE) * t)
+
+        # RECOVERY — kembali ke pose istirahat
+        t = Z._ease_in_out(
+            (ap - Z.ATTACK_FOLLOW_END) / (1.0 - Z.ATTACK_FOLLOW_END))
+        a0 = Z.ATTACK_ARC_END + 0.36
+        return (a0 + (a_rest - a0) * t,
+                Z.STAFF_R_FOLLOW + (r_rest - Z.STAFF_R_FOLLOW) * t)
+
     def _staff_tip_local(phase, action="idle", attack_progress=0.0):
-        """Pose-driven local orb position for Zephyr's thorn staff."""
+        """Posisi lokal ujung (orb) tongkat untuk pose saat ini.
+
+        Untuk ``action == "attack"`` posisi diambil dari busur ayunan
+        (:meth:`_staff_arc_pose`) sehingga gerakannya melengkung dan
+        punya momentum.  Idle & walk memakai sway halus.
+        """
+        Z = _NS_zephyr
         wave = math.sin(phase * 1.35) * 1.6
         if action == "attack":
-            ap = max(0.0, min(1.0, attack_progress))
-            if ap < _NS_zephyr.ATTACK_WINDUP_END:
-                # Wind-up: tuck orb toward hair
-                t = ap / _NS_zephyr.ATTACK_WINDUP_END
-                return (int(44 - 24 * t), int(-22 - 20 * t + wave))
-            if ap < _NS_zephyr.ATTACK_SWING_END:
-                # Release: unmistakable forward wand thrust
-                t = ((ap - _NS_zephyr.ATTACK_WINDUP_END) /
-                     (_NS_zephyr.ATTACK_SWING_END -
-                      _NS_zephyr.ATTACK_WINDUP_END))
-                return (int(20 + 52 * t), int(-42 + 20 * t + wave))
-            # Recovery
-            t = (ap - _NS_zephyr.ATTACK_SWING_END) / \
-                (1.0 - _NS_zephyr.ATTACK_SWING_END)
-            return (int(72 - 28 * t), int(-22 + 4 * t + wave))
+            ang, rad = Z._staff_arc_pose(attack_progress)
+            px, py = Z.STAFF_PIVOT
+            return (int(px + math.cos(ang) * rad),
+                    int(py + math.sin(ang) * rad + wave * 0.5))
         if action == "walk":
             return (int(44 + math.sin(phase * 1.72) * 4),
                     int(-22 + wave))
         # idle: gentle sway
         return (int(44 + math.sin(phase * .92) * 2), int(-22 + wave))
+
+    def _staff_grip_local(phase, action="idle", attack_progress=0.0):
+        """Posisi lokal genggaman tangan pada batang tongkat."""
+        tx, ty = _NS_zephyr._staff_tip_local(phase, action,
+                                             attack_progress)
+        bx, by = _NS_zephyr._staff_bottom_local(phase, action,
+                                                attack_progress)
+        return (int(bx * .46 + tx * .54), int(by * .46 + ty * .54))
+
+    def _staff_bottom_local(phase, action="idle", attack_progress=0.0):
+        """Posisi lokal pangkal tongkat (ikut berayun saat menyerang)."""
+        if action == "attack":
+            ang, _rad = _NS_zephyr._staff_arc_pose(attack_progress)
+            px, py = _NS_zephyr.STAFF_PIVOT
+            # pangkal berada di sisi berlawanan pivot -> counter-rotate
+            back = 22.0
+            return (int(px - math.cos(ang) * back),
+                    int(py - math.sin(ang) * back + 30))
+        if action == "walk":
+            return (int(2 + math.sin(phase * 1.72) * 2), 28)
+        return (2, 28)
 
     def _staff_orb_position(cx, cy, facing, phase=0.0, action="idle",
                             attack_progress=0.0):
@@ -14156,6 +14408,119 @@ class _NS_zephyr:
         tx, ty = _NS_zephyr._staff_tip_local(phase, action, attack_progress)
         f = 1 if facing >= 0 else -1
         return int(cx + tx * f), int(cy + ty)
+
+    # ── SWING TRAIL (canvas-space, deterministik dari progress) ─────
+    def _staff_trail_samples(phase, attack_progress, count=10,
+                             step=0.021):
+        """Histori posisi tongkat: [(grip, tip), ...] dari lama -> baru.
+
+        Sample diturunkan dari progress serangan (bukan disimpan per
+        frame) sehingga hasilnya DETERMINISTIK — aman untuk sprite
+        cache dan tidak pernah bocor memori.
+        """
+        Z = _NS_zephyr
+        out = []
+        floor_ = Z.ATTACK_ANTICIPATION_END + 0.02
+        for i in range(count, 0, -1):
+            ap = attack_progress - step * i
+            if ap <= floor_:
+                continue
+            tip = Z._staff_tip_local(phase, "attack", ap)
+            grip = Z._staff_grip_local(phase, "attack", ap)
+            out.append((grip, tip))
+        out.append((Z._staff_grip_local(phase, "attack", attack_progress),
+                    Z._staff_tip_local(phase, "attack", attack_progress)))
+        return out
+
+    def _draw_staff_swing_trail(surface, pt, phase, attack_progress):
+        """Slash trail prosedural yang mengikuti arah ayunan.
+
+        Pita dibangun dari pasangan (grip, tip) beberapa posisi terakhir
+        lalu digambar tiga lapis:
+
+          1. badan gelap selebar penuh   (massa / bobot)
+          2. inti panas separuh lebar    (energi)
+          3. tepi keras 2 px di ujung    (hard edge pixel-art)
+
+        Warnanya me-ramp dari dingin (sample tua) ke panas (sample
+        baru) sehingga arah ayunan terbaca jelas.  Ditutup crescent
+        terang di ujung terdepan + percikan piksel.
+        """
+        Z = _NS_zephyr
+        p = Z.PALETTE
+        ap = max(0.0, min(1.0, attack_progress))
+        if ap < Z.ATTACK_WINDUP_END - 0.04 or ap > 0.88:
+            return
+        samples = Z._staff_trail_samples(phase, ap)
+        n = len(samples)
+        if n < 2:
+            return
+
+        # kekuatan trail memuncak tepat di jendela hit
+        peak = 1.0 - min(1.0, abs(ap - Z.ATTACK_IMPACT_FRAME) / 0.34)
+        peak = max(0.18, peak)
+
+        ramp_body = (p["magic_darkest"], p["magic_dark"], p["magic_mid"])
+        ramp_core = (p["magic_mid"], p["magic_light"], p["magic_bright"])
+
+        # Pita hanya menempati SEPERTIGA LUAR tongkat -> crescent tipis
+        # di jalur ujung, bukan kipas lebar yang menutupi badan.
+        def edges(sample):
+            (gx, gy), (tx, ty) = sample
+            ix = gx + (tx - gx) * 0.46
+            iy = gy + (ty - gy) * 0.46
+            ox = gx + (tx - gx) * 1.06
+            oy = gy + (ty - gy) * 1.06
+            return (int(ix), int(iy)), (int(ox), int(oy))
+
+        for i in range(n - 1):
+            t = (i + 1) / float(n)
+            fade = (t ** 1.6) * peak
+            i0, o0 = edges(samples[i])
+            i1, o1 = edges(samples[i + 1])
+            pi0, po0 = pt(*i0), pt(*o0)
+            pi1, po1 = pt(*i1), pt(*o1)
+
+            band = min(2, int(t * 3))
+            a_body = int(112 * fade)
+            if a_body > 4:
+                Z._poly(surface, (*ramp_body[band], a_body),
+                        [pi0, po0, po1, pi1])
+            a_core = int(168 * fade)
+            if a_core > 6:
+                m0 = (int(pi0[0] + (po0[0] - pi0[0]) * .52),
+                      int(pi0[1] + (po0[1] - pi0[1]) * .52))
+                m1 = (int(pi1[0] + (po1[0] - pi1[0]) * .52),
+                      int(pi1[1] + (po1[1] - pi1[1]) * .52))
+                Z._poly(surface, (*ramp_core[band], a_core),
+                        [m0, po0, po1, m1])
+            a_edge = int(240 * fade)
+            if a_edge > 8:
+                Z._aaline(surface, (*p["magic_hot"], a_edge), po0, po1, 2)
+
+        # crescent terang tipis di tepi terdepan
+        if n >= 4:
+            lead = []
+            inner = []
+            for s in samples[-4:]:
+                i_, o_ = edges(s)
+                lead.append(pt(*o_))
+                inner.append(pt(int(i_[0] + (o_[0] - i_[0]) * .70),
+                                int(i_[1] + (o_[1] - i_[1]) * .70)))
+            Z._poly(surface, (*p["magic_white"], int(120 * peak)),
+                    lead + list(reversed(inner)))
+
+        # percikan piksel di ujung busur (chunky, bukan gradien)
+        tipx, tipy = pt(*samples[-1][1])
+        for k in range(5):
+            h = Z._hash01(int(ap * 997) + k * 31)
+            ang = -1.4 + h * 2.8
+            dist = 6 + int(h * 13)
+            Z._aacircle(surface,
+                        (*p["magic_white"], int(220 * peak)),
+                        (tipx + int(math.cos(ang) * dist),
+                         tipy + int(math.sin(ang) * dist)),
+                        1 if k % 2 else 2)
 
     # ── Main elite body renderer ────────────────────────────────────
     def _draw_zephyr_elite(surface, cx, cy, facing, phase, action,
@@ -14468,13 +14833,20 @@ class _NS_zephyr:
 
         # ── Thorn staff ─────────────────────────────────────────────
         staff_top    = _NS_zephyr._staff_tip_local(phase, action, ap)
-        staff_bottom = (2 + int(stride * 2 if walk else 0), 28)
+        if attack:
+            staff_bottom = _NS_zephyr._staff_bottom_local(phase, action, ap)
+        else:
+            staff_bottom = (2 + int(stride * 2 if walk else 0), 28)
         grip = (int(staff_bottom[0] * .46 + staff_top[0] * .54),
                 int(staff_bottom[1] * .46 + staff_top[1] * .54))
         _NS_zephyr._draw_elite_staff(surface, pt, f,
                                      staff_bottom, staff_top,
                                      phase, action, detail,
                                      glow=bedlam)
+
+        # ── ATTACK TRAIL (tepat di atas senjata) ────────────────────
+        if attack:
+            _NS_zephyr._draw_staff_swing_trail(surface, pt, phase, ap)
 
         # ── Front staff arm ─────────────────────────────────────────
         front_shoulder = (9, -24)
@@ -14549,16 +14921,28 @@ class _NS_zephyr:
                                       orb_y + int(math.sin(ang_) * r_)), 1)
 
         # ── Impact burst at mid-swing ───────────────────────────────
-        if attack and abs(ap - 0.50) < 0.08:
+        if attack and abs(ap - _NS_zephyr.ATTACK_IMPACT_FRAME) < 0.07:
             orb_x, orb_y = pt(*staff_top)
-            t = 1.0 - abs(ap - 0.50) / 0.08
+            t = 1.0 - abs(ap - _NS_zephyr.ATTACK_IMPACT_FRAME) / 0.07
             _NS_zephyr._spark_star(
-                surface, orb_x, orb_y, int(26 * t),
-                p["magic_bright"], int(240 * t), spikes=8,
+                surface, orb_x, orb_y, int(30 * t),
+                p["magic_bright"], int(245 * t), spikes=8,
                 rot=phase, core=p["magic_white"])
             _NS_zephyr._aacircle(surface,
-                                 (*p["magic_hot"], int(200 * t)),
-                                 (orb_x, orb_y), int(14 * t))
+                                 (*p["magic_hot"], int(210 * t)),
+                                 (orb_x, orb_y), int(9 * t))
+            # kilat benturan: cincin tipis + pecahan busur
+            _NS_zephyr._aacircle(surface,
+                                 (*p["magic_white"], int(160 * t)),
+                                 (orb_x, orb_y), int(20 + 10 * (1 - t)), 2)
+            for k in (-1, 0, 1):
+                a_ = -0.5 + k * 0.55
+                _NS_zephyr._aaline(
+                    surface, (*p["magic_hot"], int(200 * t)),
+                    (orb_x + int(math.cos(a_) * 10 * f),
+                     orb_y + int(math.sin(a_) * 10)),
+                    (orb_x + int(math.cos(a_) * (22 + 8 * t) * f),
+                     orb_y + int(math.sin(a_) * (22 + 8 * t))), 2)
 
         # ── Portrait detail pass ────────────────────────────────────
         if detail:
@@ -15549,34 +15933,52 @@ class _NS_zephyr:
             phase, "walk", detail=portrait_hd)
 
     def _draw_zephyr_attack(surface, boss, x, y):
+        """Pose serangan: ayunan tongkat berbasis busur + FX benturan."""
+        Z = _NS_zephyr
         progress = max(0.0, min(1.0,
             float(getattr(boss, "_zp_attack_progress", 0.0))))
         phase = float(getattr(boss, "pulse", 0.0))
         facing = getattr(boss, "direction", 1)
         portrait_hd = bool(getattr(boss, "_portrait_hd", False))
+        atk_phase = getattr(boss, "_zp_attack_phase", "NONE")
 
+        # Bolt dilepas tepat pada frame IMPACT (bukan di tengah-tengah
+        # gerakan) supaya lesatannya sinkron dengan puncak ayunan.
         if (getattr(boss, "active_skill", None) is not None
-                and .48 < progress < .60
+                and atk_phase == "IMPACT"
                 and not getattr(boss, "_zp_proj_spawned", False)
                 and not portrait_hd):
-            _NS_zephyr._spawn_magic_bolt(boss, x, y)
+            Z._spawn_magic_bolt(boss, x, y)
             boss._zp_proj_spawned = True
         if progress < .15 or progress > .9:
             boss._zp_proj_spawned = False
 
-        lunge = int(math.sin(progress*math.pi)*5)
-        recoil = -lunge*(1 if facing >= 0 else -1)
+        # Lunge mengikuti kurva ayunan: dorongan maju saat SWING,
+        # tahan di IMPACT, mundur pelan saat RECOVERY.
+        if progress < Z.ATTACK_WINDUP_END:
+            lunge = -int(3 * Z._ease_in_out(
+                progress / max(1e-4, Z.ATTACK_WINDUP_END)))
+        elif progress < Z.ATTACK_IMPACT_END:
+            t = (progress - Z.ATTACK_WINDUP_END) / \
+                max(1e-4, Z.ATTACK_IMPACT_END - Z.ATTACK_WINDUP_END)
+            lunge = int(7 * Z._ease_out(t))
+        else:
+            t = (progress - Z.ATTACK_IMPACT_END) / \
+                max(1e-4, 1.0 - Z.ATTACK_IMPACT_END)
+            lunge = int(7 * (1.0 - Z._ease_in_out(t)))
+        recoil = lunge * (1 if facing >= 0 else -1)
+
         if not portrait_hd:
-            _NS_zephyr._draw_shadow(surface, x+recoil, y+50)
-            _NS_zephyr._draw_floating_sparkles(
-                surface, x+recoil, y+36, phase, intense=True,
+            Z._draw_shadow(surface, x + recoil, y + 50)
+            Z._draw_floating_sparkles(
+                surface, x + recoil, y + 36, phase, intense=True,
                 facing=facing)
-        _NS_zephyr._draw_zephyr_body(
-            surface, x+recoil, y, facing, phase, "attack", progress,
+        Z._draw_zephyr_body(
+            surface, x + recoil, y, facing, phase, "attack", progress,
             detail=portrait_hd)
         if not portrait_hd:
-            _NS_zephyr._draw_cast_flash(surface, x+recoil, y, facing,
-                                        progress, phase)
+            Z._draw_cast_flash(surface, x + recoil, y, facing,
+                               progress, phase)
 
     # ---------------------------------------------------------------
     # BODY DISPATCH
@@ -15599,19 +16001,27 @@ class _NS_zephyr:
     # MAIN DRAW ENTRY POINT
     # ---------------------------------------------------------------
     def draw_zephyr(surface, boss, x, y):
-        """Render Zephyr's v2 procedural masterwork rig.
+        """Render Zephyr — rig prosedural v3 (render + animation + FX).
 
-        All public names from v1 are preserved.  Skill FX now use
-        world-space compensation (_fx_scale) so rings/telegraphs remain
-        visible at arena scale.
+        Urutan lapisan mengikuti kontrak render order proyek:
+
+            GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/HEAD ->
+            WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+            SKILL FX -> IMPACT FX
+
+        Trail 60 fps, partikel, projectile gameplay, impact, screen
+        shake, dan hit-stop hidup di ``heroes/zephyr_fx.py`` (lapisan
+        layar, di luar sprite cache).  Semua nama publik lama tetap.
         """
+        Z = _NS_zephyr
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer  = int(getattr(boss, "active_skill_timer", 0))
-        moving       = _NS_zephyr._detect_moving(boss)
-        _NS_zephyr._update_attack_anim(boss)
+        moving       = Z._detect_moving(boss)
+        Z._update_attack_anim(boss)
         portrait_hd  = bool(getattr(boss, "_portrait_hd", False))
         bedlam_on    = (active_skill == "r")
+        state        = getattr(boss, "_zp_state", "IDLE")
 
         attacking = (
             getattr(boss, "_zp_attack_active", False)
@@ -15620,46 +16030,86 @@ class _NS_zephyr:
         )
 
         if not portrait_hd:
-            _NS_zephyr._draw_fey_rim_light(surface, x, y-14, pulse)
-            _NS_zephyr._draw_fey_aura(surface, x, y, pulse)
-            _NS_zephyr._draw_fey_platform(surface, x, y+46, pulse,
-                                          active_skill)
+            Z._draw_fey_rim_light(surface, x, y - 14, pulse)
+            Z._draw_fey_aura(surface, x, y, pulse)
+            Z._draw_fey_platform(surface, x, y + 46, pulse, active_skill)
 
             if active_skill == "q":
-                _NS_zephyr._draw_bramble_ground(
+                Z._draw_bramble_ground(
                     surface, boss, x, y, skill_timer, pulse)
             elif active_skill == "w":
-                _NS_zephyr._draw_shadow_realm_ground(
+                Z._draw_shadow_realm_ground(
                     surface, boss, x, y, skill_timer, pulse)
             elif active_skill == "r":
-                _NS_zephyr._draw_bedlam_ground(
+                Z._draw_bedlam_ground(
                     surface, boss, x, y, skill_timer, pulse)
             elif active_skill == "e":
-                _NS_zephyr._draw_casket_indicator(
+                Z._draw_casket_indicator(
                     surface, boss, x, y, skill_timer, pulse)
 
         if attacking:
-            _NS_zephyr._draw_zephyr_attack(surface, boss, x, y)
+            Z._draw_zephyr_attack(surface, boss, x, y)
         elif moving:
-            _NS_zephyr._draw_zephyr_walk(surface, boss, x, y)
+            Z._draw_zephyr_walk(surface, boss, x, y)
         else:
-            _NS_zephyr._draw_zephyr_idle(surface, boss, x, y)
+            Z._draw_zephyr_idle(surface, boss, x, y)
 
         if not portrait_hd:
-            _NS_zephyr._manage_projectiles(boss, surface, pulse)
+            Z._manage_projectiles(boss, surface, pulse)
 
             if active_skill == "q":
-                _NS_zephyr._draw_bramble_maze(
+                Z._draw_bramble_maze(
                     surface, boss, x, y, skill_timer, pulse)
             elif active_skill == "w":
-                _NS_zephyr._draw_shadow_realm(
+                Z._draw_shadow_realm(
                     surface, boss, x, y, skill_timer, pulse)
             elif active_skill == "e":
-                _NS_zephyr._handle_casket_skill(
+                Z._handle_casket_skill(
                     surface, boss, x, y, skill_timer, pulse)
             elif active_skill == "r":
-                _NS_zephyr._draw_bedlam(
+                Z._draw_bedlam(
                     surface, boss, x, y, skill_timer, pulse)
+
+            if Z.DEBUG_CHARACTER:
+                Z._draw_debug(surface, boss, x, y, state)
+
+    # ---------------------------------------------------------------
+    # DEBUG MODE (canvas-space)
+    # ---------------------------------------------------------------
+    #: Aktifkan untuk melihat hitbox / hurtbox / state / timer.
+    DEBUG_CHARACTER = False
+
+    def _draw_debug(surface, boss, x, y, state):
+        """Overlay debug rig: hurtbox, hitbox ayunan, jangkauan, state."""
+        Z = _NS_zephyr
+        # hurtbox badan (kotak siluet rig)
+        pygame.draw.rect(surface, (90, 220, 255),
+                         pygame.Rect(int(x - 34), int(y - 104), 70, 156), 1)
+        # jangkauan serangan (dalam ruang canvas)
+        scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
+        reach = int(float(getattr(boss, "range", 130)) / max(0.05, scale))
+        pygame.draw.circle(surface, (255, 90, 190), (int(x), int(y)),
+                           min(reach, 900), 1)
+        # hitbox jendela aktif
+        box = Z._swing_hitbox(boss, x, y)
+        if box is not None:
+            pygame.draw.rect(surface, (255, 230, 90), box, 2)
+        # penanda ujung tongkat
+        tip = Z._staff_orb_position(
+            x, y, getattr(boss, "direction", 1),
+            float(getattr(boss, "pulse", 0.0)), "attack",
+            float(getattr(boss, "_zp_attack_progress", 0.0)))
+        pygame.draw.circle(surface, (120, 255, 150), tip, 4, 1)
+        # teks state (tanpa font: bar indikator progress)
+        prog = float(getattr(boss, "_zp_attack_progress", 0.0))
+        bar = pygame.Rect(int(x - 40), int(y - 118), 80, 5)
+        pygame.draw.rect(surface, (30, 10, 40), bar)
+        pygame.draw.rect(surface, (255, 140, 220),
+                         (bar.x, bar.y, int(80 * prog), 5))
+        idx = list(Z.ANIM_STATES).index(state) \
+            if state in Z.ANIM_STATES else 0
+        pygame.draw.rect(surface, (140, 255, 200),
+                         (bar.x, bar.y - 6, 4 + idx * 5, 4))
 
     # ===================================================================
     # Backward-compatible entry point alias
