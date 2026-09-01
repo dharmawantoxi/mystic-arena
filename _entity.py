@@ -3870,6 +3870,27 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX VEX ═══
+                # Paket game-feel yang sama untuk Vex (range 130 = ranged,
+                # jadi serangan dasarnya mendarat lewat proyektil generik
+                # ini, bukan damage instan melee): flash, spark, pecahan
+                # rune, shockwave, screen shake, dan hit-stop 0.03-0.08 s
+                # - lengkapnya di heroes/vex_fx.notify_projectile_impact.
+                # Difilter per hero_type dan dibungkus try/except supaya
+                # error visual tidak pernah memutus alur serangan
+                # (paritas Zephyr / Kaizen).
+                if proj.get('hero_type') == 'vex' and not target_dead:
+                    try:
+                        from heroes import vex_fx as _vxfx
+                        _vxfx.notify_projectile_impact(
+                            proj.get('source') or self,
+                            proj['x'], proj['y'],
+                            proj.get('angle', 0.0),
+                            proj.get('damage', 0),
+                            bool(proj.get('is_crit')))
+                    except Exception:
+                        pass
+
                 # HIT! (hanya damage > 0 yang mengenai target & bersuara;
                 # projectile visual-only skill damage=0 diam saja)
                 if not target_dead and proj['damage'] > 0:
@@ -4979,7 +5000,13 @@ class Hero(TowerDebuffMixin):
         if proj['hero_type'] == 'sylara':
             self._draw_arrow_projectile(surface, px, py, angle)
         elif proj['hero_type'] == 'vex':
-            self._draw_magic_orb_projectile(surface, px, py, angle, age)
+            # ``kind`` membedakan serangan dasar (damage > 0) dari
+            # proyektil skill murni-visual (damage == 0) supaya orb
+            # skill tampil lebih panas dengan aksen rune emas.
+            self._draw_magic_orb_projectile(
+                surface, px, py, angle, age,
+                kind=("skill" if int(proj.get('damage', 0) or 0) <= 0
+                      else "attack"))
         elif proj['hero_type'] == 'zephyr':
             self._draw_magic_bolt_projectile(surface, px, py, angle, age,
                                              crit=bool(proj.get('is_crit')))
@@ -5090,8 +5117,30 @@ class Hero(TowerDebuffMixin):
                            (8, 8), 6)
         surface.blit(glow_surf, (px - 8, py - 8))
 
-    def _draw_magic_orb_projectile(self, surface, px, py, angle=0.0, age=0):
-        """Purple magic orb (Vex) - core di (px,py) + trail belakang."""
+    def _draw_magic_orb_projectile(self, surface, px, py, angle=0.0, age=0,
+                                   kind="attack"):
+        """Orb void Vex — berarah, prosedural (BUKAN lingkaran polos).
+
+        Visual utamanya hidup di ``heroes/vex_fx.draw_arcane_orb``: orb
+        bersegi dengan faset terang/gelap, sabit specular, halo rune
+        putus-putus kontra-rotasi, glif orbit, core putih, dan ekor
+        facet memudar.  Fallback sederhana dipakai kalau modul FX tidak
+        tersedia (mis. build minimal) supaya proyektil tidak pernah
+        menghilang.
+
+        ``kind``:
+          * "attack" — serangan dasar (teal)
+          * "skill"  — proyektil skill Q/E (lebih panas, aksen emas)
+        """
+        try:
+            from heroes import vex_fx as _vxfx
+            _vxfx.draw_arcane_orb(surface, px, py, angle, age,
+                                  kind=kind, radius=7.0)
+            return
+        except Exception:
+            pass
+
+        # ─── FALLBACK (tanpa modul FX) ───
         import pygame.gfxdraw
 
         cos_a = math.cos(angle)

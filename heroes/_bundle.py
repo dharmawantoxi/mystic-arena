@@ -10700,6 +10700,75 @@ class _NS_vex:
     """
 
     # ---------------------------------------------------------------------------
+    # LAPISAN FX HIDUP (heroes/vex_fx.py)
+    # ---------------------------------------------------------------------------
+    # Sprite Vex DI-CACHE oleh pipeline hero.  Semua yang harus bergerak
+    # 60 fps sejati - arc ayunan staff, partikel void, proyektil serpihan,
+    # spike crystal W, kurungan astral E, ledakan Essence Flux R, impact,
+    # shake, hit-stop - karena itu TIDAK boleh hidup di dalam canvas:
+    # hasilnya ikut beku pada kuantisasi pose dan menyusut bersama sprite.
+    #
+    # Modul ``heroes/vex_fx.py`` adalah lapisan hidupnya: digambar langsung
+    # ke layar pada skala 1:1.  Jembatan di bawah memasang director per
+    # unit dan memberi tahu rig bahwa smear ayunan di-canvas sudah
+    # digantikan, sehingga tidak ada efek yang tergambar dua kali.
+    #
+    # Jalur HERO lane menggambar lapisannya lewat heroes/__init__.py
+    # (``_LIVE_FX_HEROES``); jalur BOSS (draw dipanggil tiap frame, tidak
+    # lewat cache) menggambarnya sendiri di ``draw_vex``.
+    _LIVE_MOD = None
+
+    class _LiveFlag:
+        """Penanda sederhana yang bisa di-set dari fungsi static."""
+        __slots__ = ("v",)
+
+        def __init__(self):
+            self.v = False
+
+    #: Dibaca rig: True = smear ayunan sudah diambil alih lapisan hidup
+    #: 60fps, jadi canvas tidak menggambarnya dua kali.
+    _FX_LIVE = _LiveFlag()
+
+    @staticmethod
+    def _live_module():
+        """Muat ``heroes.vex_fx`` sekali; None kalau tidak tersedia.
+
+        Impor dilakukan DI SINI (bukan di kepala modul) supaya bundle
+        hero besar tidak menarik paket FX saat build hanya-butuh-
+        renderer, dan supaya lapisan FX bisa dimatikan lewat satu flag
+        tanpa merusak jalur render (pola yang sama dengan _NS_kaizen).
+        """
+        NS = _NS_vex
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import vex_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "VEX_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    @staticmethod
+    def _fx_live_owned(hero):
+        """True kalau lapisan hidup mengambil alih FX unit ini.
+
+        Dipakai untuk memutuskan apakah smear ayunan + orb di-canvas
+        masih perlu digambar (fallback) atau sudah digantikan lapisan
+        layar.
+        """
+        try:
+            mod = _NS_vex._live_module()
+            if mod is None:
+                return False
+            return bool(mod.owns(hero))
+        except Exception:
+            return False
+
+    def live_fx_ready():
+        """True kalau lapisan hidup Vex bisa dipakai (dipakai tooling)."""
+        return _NS_vex._live_module() is not None
+
+    # ---------------------------------------------------------------------------
     # Compatibility helpers
     # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
@@ -11860,13 +11929,48 @@ class _NS_vex:
     # MAIN DRAW ENTRY POINT
     # ===================================================================
     def draw_vex(surface, boss, x, y):
-        """Entry point for Boss.draw()."""
+        """Entry point for Boss.draw() sekaligus heroes.render_hero().
+
+        Urutan lapisan mengikuti kontrak render order proyek:
+
+            GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/HEAD ->
+            WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+            SKILL FX -> IMPACT FX -> DEBUG
+
+        Arc ayunan staff, partikel void, proyektil serpihan, spike
+        crystal W, kurungan astral E, ledakan Essence Flux R, impact,
+        screen shake, dan hit-stop hidup di ``heroes/vex_fx.py``
+        (lapisan layar 1:1, di luar sprite cache).  Semua nama publik
+        lama tetap ada; kalau modul FX tidak dimuat, renderer kembali
+        menggambar semuanya di-canvas (jalur fallback).
+        """
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_vex._detect_moving(boss)
         _NS_vex._update_attack_anim(boss)
         portrait_hd = bool(getattr(boss, "_portrait_hd", False))
+
+        # jalur hero (lane): heroes/__init__ men-set _render_scale sebelum
+        # memanggil renderer ke canvas, lalu sprite hasilnya DI-CACHE.
+        # Lapisan hidup di sana digambar oleh heroes/__init__ (pre/post),
+        # jadi di sini cukup dipasang penanda "diambil alih" supaya tidak
+        # ada efek yang tergambar dua kali.  Jalur BOSS (tanpa
+        # _render_scale) draw dipanggil tiap frame -> lapisan hidup
+        # digambar sendiri di sini.
+        hero_lane = hasattr(boss, "_render_scale")
+        if not portrait_hd:
+            try:
+                mod = _NS_vex._live_module()
+                if mod is not None:
+                    if hero_lane:
+                        mod.attach(boss)
+                    else:
+                        mod.draw_ground_layer(surface, boss, x, y)
+            except Exception:
+                pass
+        _NS_vex._FX_LIVE.v = (not portrait_hd) and \
+            _NS_vex._fx_live_owned(boss)
 
         attacking = (
             getattr(boss, "_vx_attack_active", False)
@@ -11915,6 +12019,18 @@ class _NS_vex:
                 _NS_vex._draw_sanity_eclipse(surface, boss, x, y, skill_timer, pulse)
             elif active_skill == "r":
                 _NS_vex._draw_essence_flux(surface, boss, x, y, skill_timer, pulse)
+
+            # ---------- LAPISAN FX HIDUP (jalur BOSS) ----------
+            # Di jalur lane hero, lapisan ini digambar heroes/__init__.py
+            # SETELAH sprite di-blit (sprite-nya ter-cache); di jalur boss
+            # draw dipanggil tiap frame, jadi digambar di sini.
+            if not hero_lane:
+                try:
+                    mod = _NS_vex._live_module()
+                    if mod is not None:
+                        mod.draw_live_layer(surface, boss, x, y)
+                except Exception:
+                    pass
 
 
     # ===================================================================
@@ -12337,7 +12453,13 @@ class _NS_vex:
         butt = _NS_vex._staff_butt_local(phase, action, ap)
         orb = _NS_vex._orb_tip_local(phase, action, ap)
         grip = _NS_vex._staff_grip_local(phase, action, ap)
-        if attack and 0.26 < ap < 0.86:
+        # Smear ayunan di-canvas adalah FALLBACK: kalau lapisan hidup
+        # (heroes/vex_fx.py) sudah mengambil alih unit ini, arc staff-nya
+        # digambar di layar 1:1 dari histori posisi NYATA (lebih mulus,
+        # tidak ikut mengecil & beku bersama cache sprite).  Tanpa modul
+        # FX - potret, tooling, build minimal - jalur canvas ini tetap
+        # jalan, jadi tidak ada visual yang hilang.
+        if attack and 0.26 < ap < 0.86 and not _NS_vex._FX_LIVE.v:
             _NS_vex._draw_staff_smear(surface, cx + lean, cy + root_y,
                                       f, phase, ap, astralized or overcharge)
         _NS_vex._draw_elite_staff(surface, pt, poly, dot, f, butt, orb,

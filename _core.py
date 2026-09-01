@@ -8893,7 +8893,7 @@ class DevMode:
             _n = _feel.stats()
             _hp = _n.get("particles", 0)
             for _mod in ("zephyr_fx", "gornak_fx", "grimjaw_fx",
-                         "kaizen_fx"):
+                         "kaizen_fx", "vex_fx"):
                 try:
                     _m = __import__("heroes." + _mod, fromlist=["x"])
                     _hp += int(_m.total_particles())
