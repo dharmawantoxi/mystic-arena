@@ -620,8 +620,13 @@ _BEAM_PASS_HEROES = {"morgath"}
 #
 # Modul yang sama juga dipakai jalur BOSS (lihat _NS_gornak.draw_gornak),
 # jadi satu karakter punya satu bahasa efek di arena maupun di lane.
+#
+# Vex (heroes/vex_fx.py) mengikuti pola yang sama: arc ayunan staff,
+# partikel void, proyektil serpihan, spike crystal W, kurungan astral E,
+# ledakan Essence Flux R, impact, hit-stop, dan shake — semuanya hidup
+# di luar cache sprite supaya tetap mulus 60 fps.
 # ═══════════════════════════════════════════════════════
-_LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen"}
+_LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -629,6 +634,7 @@ _LIVE_FX_PATHS = {
     "gornak": "heroes.gornak_fx",
     "grimjaw": "heroes.grimjaw_fx",
     "kaizen": "heroes.kaizen_fx",
+    "vex": "heroes.vex_fx",
 }
 
 
