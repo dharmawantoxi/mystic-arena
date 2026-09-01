@@ -45,25 +45,48 @@ except Exception:        # pragma: no cover
 
 
 class _NS_gornak:
-    """Namespace gornak - Anti-Mage mini boss (Pixel Masterwork v2).
+    """Namespace gornak - Anti-Mage mini boss (PIXEL MASTERWORK v3).
 
     Renderer 100% prosedural (tanpa PNG, sprite sheet, atau image.load).
-    Standar Thorne v2 Pixel Masterwork + Thorne v2.1 Skill FX:
+    Ditulis ulang penuh dari v2: rig, animasi, ayunan pedang, proyektil,
+    dan seluruh FX skill.
 
-    * SATU bone rig 2D berlapis. Sendi dihitung tiap frame dari
-      ``phase``/``action``. Telapak DIPATOK di ``GROUND_DY``.
-    * Twin blade pose-driven; ujung bilah = sumber slash/proc Q.
-    * Pixel-art: ramp 4-5 band + hue-shift, selout sisi bayangan,
-      siluet cape/loincloth bergerigi (``_tuft_points``), specular
-      cluster 1-2 px, dither 50% di kain/greave, key light kiri-atas.
-    * Gornak adalah mini-boss 1:1 DAN hero (pipeline menormalkan).
-      Ukuran arena dikunci paritas keluarga (HP bar, vs Abaddon);
-      kepadatan detail naik, bukan bbox 1.5x di jalur boss.
-    * Skill FX world-space lewat ``_fx_scale`` (= 1/_render_scale,
-      cap 2.6): 3 fase (telegraph / aktivasi / steady), telegraph
-      E=100 px dunia, R=180 px dunia.
-    * Aura/mist/bayangan ter-cache (``_static``). Portrait LOD
-      membuang FX arena.
+    Yang berubah di v3
+    ------------------
+    * RENDER. Satu sistem ramp 5-band (``_RAMP``) memasok SEMUA material,
+      jadi nilai kulit/baja/kain/bilah tidak pernah lagi saling tabrak.
+      Setiap bidang digambar dengan pola yang sama: core gelap -> body ->
+      plane cahaya -> selout sisi bayangan -> specular cluster 1-2 px.
+      Hierarki nilai dikunci: MATA > permata ungu > mata-bilah > pelat >
+      kulit > kain.
+    * BILAH. Bukan lagi tiga poligon inset (yang terbaca sebagai jarum
+      putih), tapi bilah asimetris sungguhan: punggung gelap, badan mid,
+      MATA bilah 1 px terang di sisi potong, fuller ungu, hamon dither,
+      guard + pommel. Terbaca sebagai senjata di 1x maupun di kartu.
+    * ANIMASI. Kurva serangan baru (anticipation -> tebas -> HOLD ->
+      follow-through) plus gerak sekunder: kepala, jenggot, mohawk, cape,
+      dan loincloth semuanya tertinggal dari badan (lag) alih-alih ikut
+      kaku.
+    * SWING. ``_draw_crescent_slash`` sekarang menyapu DUA pita: bilah
+      depan (busur besar) dan bilah belakang (cross-cut), keduanya dibuat
+      dari trail ujung bilah yang sebenarnya, jadi tidak pernah lepas dari
+      senjata.
+    * PROYEKTIL. Bolt Mana Break v3: kepala panah runcing berorientasi
+      arah terbang, inti 3 lapis, dua pecahan yang mengorbit spiral,
+      after-image ter-kuantisasi (stamp, bukan garis mulus), lalu impact
+      retak + serpihan.
+    * FX SKILL. Q/W/E/R ditulis ulang dengan bahasa yang sama: telegraph
+      -> aktivasi -> steady, semuanya world-space lewat ``_fx_scale``
+      (E = 100 px dunia, R = 180 px dunia di CASTER).
+
+    Kontrak yang TIDAK berubah (dipakai gameplay & tes regresi):
+      * ``draw_gornak(surface, boss, x, y)`` entry point tunggal.
+      * telapak dipatok di ``GROUND_DY``; bilah pose-driven; FX lahir dari
+        ``_tip_screen``; portrait LOD membuang FX arena.
+      * ``SKILL_DUR`` sinkron dengan AI boss & skill hero.
+
+    Regresi: tools/test_gornak_masterwork.py
+    Sheet  : tools/_shot_gornak_masterwork.py
     """
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
@@ -71,130 +94,139 @@ class _NS_gornak:
     _STATIC_SURFACES = {}
 
     # ── SKALA BADAN ───────────────────────────────────────────────
-    # Rujuran keluarga (diukur dari render, alpha>=100):
-    #   boss 1x : morgath H82/W120, drakar H138/W190, abaddon H122/W150
+    # Rujukan keluarga (diukur dari render, alpha>=100):
+    #   boss 1x : morgath H82/W120, abaddon H122/W150
     #   hero    : kaizen 75x83, grimjaw 74x79, vex 75x83, sylara 77x90
-    # Renderer lama hanya 87x53 (W/H 0.61) -> terlihat seperti tiang kecil
-    # di samping boss/hero lain. SCALE memperbesar rig, LIFT memindahkan
-    # jangkar ke bawah (kepala lebih tinggi di atas titik (x,y)) supaya
-    # pipeline HD hero menormalkan tingginya SAMA seperti hero lain, dan
-    # stance/blade spread membuat rasio W/H masuk ~1.0 seperti sepupunya.
+    # SCALE memperbesar rig, LIFT memindahkan jangkar ke bawah supaya
+    # pipeline HD hero menormalkan tingginya SAMA seperti hero lain.
     SCALE = 1.32
-    # Jangkar boss = pusat hitbox; LIFT memindahkan badan ke bawah supaya
-    # wajah tidak tertutup HP bar boss (digambar di y-r-15..y-r-7) TAPI
-    # tinggi di atas jangkar tetap besar - itu yang dipakai pipeline HD hero
-    # untuk menormalkan ukuran, jadi hero Gornak tetap setinggi Kaizen/
-    # Grimjaw (75-77 px) alih-alih membesar 2x.
     LIFT = 4
     # Telapak dalam RUANG LOKAL; garis tanah dunia diturunkan dari sini
     # supaya bayangan, rune tanah, dan telapak tidak pernah saling lepas.
     FEET_DY = 44
-    GROUND_DY = int(round(FEET_DY * SCALE)) - LIFT        # ~ 46
+    GROUND_DY = int(round(FEET_DY * SCALE)) - LIFT        # ~ 54
 
     # Buffer rig: dibatasi dari extents TERUKUR semua pose (idle/walk/
-    # attack/surge/ward/void/blink, dua LOD): anchor -> left -66, top -88,
-    # right +96, bottom +58, + margin 4 px. Buffer sekecil mungkin karena
-    # outline siluet meng-copy-nya 5x per frame.
+    # attack/surge/ward/void/blink, dua LOD) + margin. Buffer sekecil
+    # mungkin karena outline siluet meng-copy-nya 4-5x per frame.
     RIG_W, RIG_H = 176, 160
     RIG_OX, RIG_OY = 74, 96
 
-    # Bidang acuan untuk pass cahaya (lighting.py): kotak TETAP di dalam
-    # buffer rig, bukan bbox hasil render per frame. Alasannya dua: (a) kalau
-    # acuan ikut bbox, arah cahaya bergeser tiap ganti pose dan terbaca
-    # sebagai lampu berkedip; (b) bbox yang berubah-buat membuat cache
-    # ukuran gradien miss tiap frame (+1,5 ms, terukur).
+    # Bidang acuan pass cahaya (lighting.py): kotak TETAP di dalam buffer,
+    # bukan bbox per frame - kalau ikut bbox, arah cahaya bergeser tiap
+    # ganti pose dan terbaca sebagai lampu berkedip.
     GRAD_BOX = (RIG_OX - 54, RIG_OY - 52, 126, 102)
 
-    # Durasi status skill (frame) - HARUS sama dengan active_skill_timer yang
-    # diisi AI boss (bosses/base_boss.py) dan skill hero
-    # (hero_skills/_bundle.py). Kalau konstanta ini lebih kecil, pose skill
-    # "menggantung" di frame terakhir; kalau lebih besar, animasinya
-    # terpotong di tengah. Dikunci oleh tools/test_gornak_masterwork.py.
+    # Durasi status skill (frame) - HARUS sama dengan active_skill_timer
+    # yang diisi AI boss (bosses/base_boss.py) dan skill hero
+    # (hero_skills/_bundle.py). Dikunci tools/test_gornak_masterwork.py.
     SKILL_DUR = {"q": 40, "w": 25, "e": 60, "r": 90}
 
-    # Penanda "sedang di-render ke canvas hero" (lane). Dipasang per-frame
-    # oleh draw_gornak, dipakai _draw_gnk_rig_at untuk memutuskan siapa yang
-    # mengerjakan pass cahaya - hindari rim dobel di lane dan rim nol di shop.
+    # Penanda "sedang di-render ke canvas hero" (lane).
     class _HERO_LANE:
         v = False
 
     PALETTE = {
-        # Kulit sawo matang berdebu (cahaya dari depan-atas)
-        "skin_darkest": (34, 17, 11),
-        "skin_dark": (84, 44, 25),
-        "skin_mid": (154, 94, 52),
-        "skin_light": (205, 148, 96),
-        "skin_shine": (240, 192, 142),
-        "skin_high": (252, 222, 182),
+        # ── Kulit sawo matang berdebu (5 band + 1 hot) ──────────────
+        "skin_darkest": (30, 15, 10),
+        "skin_dark": (78, 40, 23),
+        "skin_mid": (148, 88, 48),
+        "skin_light": (203, 145, 92),
+        "skin_shine": (238, 190, 138),
+        "skin_high": (252, 224, 186),
 
-        # Mohawk (ungu sihir)
-        "hair_darkest": (24, 8, 38),
-        "hair_dark": (52, 18, 84),
-        "hair_mid": (106, 45, 158),
-        "hair_light": (160, 98, 214),
-        "hair_shine": (216, 172, 252),
+        # ── Mohawk (ungu sihir) ────────────────────────────────────
+        "hair_darkest": (22, 7, 36),
+        "hair_dark": (50, 17, 82),
+        "hair_mid": (104, 43, 156),
+        "hair_light": (162, 100, 216),
+        "hair_shine": (218, 174, 252),
 
-        # Jenggot & alis
-        "beard_darkest": (22, 12, 12),
-        "beard_dark": (44, 25, 22),
-        "beard_mid": (72, 43, 34),
+        # ── Jenggot & alis ─────────────────────────────────────────
+        "beard_darkest": (20, 11, 11),
+        "beard_dark": (42, 24, 21),
+        "beard_mid": (74, 45, 36),
+        "beard_light": (112, 74, 56),
 
-        # Kain jubah / loincloth
-        "robe_darkest": (12, 7, 21),
-        "robe_dark": (32, 19, 52),
-        "robe_mid": (60, 38, 92),
+        # ── Kain jubah / loincloth ─────────────────────────────────
+        "robe_darkest": (11, 6, 20),
+        "robe_dark": (30, 18, 50),
+        "robe_mid": (58, 36, 90),
         "robe_light": (98, 66, 140),
-        "robe_edge": (152, 116, 194),
+        "robe_edge": (154, 118, 196),
 
-        # Baja "spellbreaker"
+        # ── Baja "spellbreaker" ────────────────────────────────────
         "armor_darkest": (7, 6, 12),
-        "armor_dark": (24, 22, 34),
-        "armor_mid": (74, 70, 96),
-        "armor_light": (138, 132, 164),
-        "armor_shine": (206, 202, 232),
+        "armor_dark": (26, 24, 37),
+        "armor_mid": (76, 72, 99),
+        "armor_light": (140, 134, 167),
+        "armor_shine": (208, 204, 234),
 
-        # Bilah silver-biru + garis temper
-        # Bilah sengaja DITURUNKAN satu tingkat dari nilai tertinggi:
-        # selama blade_shine = 246, mata (yang harusnya focal point) kalah
-        # terangi senjatanya sendiri, dan pandangan jatuh ke pedang.
-        # Hierarki nilai yang benar: mata > krist > pelat > bilah.
-        "blade_dark": (34, 32, 50),
-        "blade_mid": (98, 102, 130),
-        "blade_light": (166, 172, 198),
-        "blade_shine": (214, 220, 244),
+        # ── Bilah silver-biru + garis temper ───────────────────────
+        # Hierarki nilai: mata > permata > mata-bilah > pelat > bilah.
+        "blade_darkest": (18, 18, 30),
+        "blade_dark": (36, 34, 52),
+        "blade_mid": (96, 100, 128),
+        "blade_light": (164, 170, 196),
+        "blade_shine": (212, 218, 242),
         "blade_hamon": (168, 196, 236),
-
-        # Kulit tan & kuningan paku
-        "leather_dark": (48, 29, 18),
-        "leather_mid": (88, 55, 33),
-        "leather_light": (132, 89, 54),
-        "brass_dark": (96, 68, 24),
-        "brass_mid": (170, 130, 50),
-        "brass_light": (228, 200, 114),
-
-        # Aura anti-sihir (FX utama)
-        "magic_darkest": (25, 5, 45),
-        "magic_dark": (60, 20, 110),
-        "magic_mid": (130, 55, 200),
-        "magic_light": (185, 110, 240),
-        "magic_hot": (220, 160, 255),
-        "magic_shine": (245, 210, 255),
-
-        # Mata menyala
-        "eye_dark": (58, 18, 78),
-        "eye_mid": (180, 90, 220),
-        "eye_light": (240, 180, 255),
-        "eye_glow": (255, 235, 255),
-
-        # v2 extra ramps (kunci lama tetap)
-        "magic_void": (38, 8, 72),
-        "magic_core": (255, 236, 255),
         "blade_edge": (188, 204, 236),
+
+        # ── Kulit tan & kuningan paku ──────────────────────────────
+        "leather_dark": (46, 28, 17),
+        "leather_mid": (88, 55, 33),
+        "leather_light": (134, 91, 56),
+        "brass_dark": (94, 66, 23),
+        "brass_mid": (172, 132, 51),
+        "brass_light": (230, 202, 116),
+
+        # ── Aura anti-sihir (FX utama) ─────────────────────────────
+        "magic_void": (36, 7, 70),
+        "magic_darkest": (24, 5, 44),
+        "magic_dark": (58, 19, 108),
+        "magic_mid": (130, 55, 200),
+        "magic_light": (186, 111, 241),
+        "magic_hot": (221, 161, 255),
+        "magic_shine": (245, 210, 255),
+        "magic_core": (255, 236, 255),
+
+        # ── Mata menyala (nilai TERTINGGI di seluruh sprite) ───────
+        "eye_dark": (56, 17, 76),
+        "eye_mid": (182, 92, 222),
+        "eye_light": (242, 182, 255),
+        "eye_glow": (255, 236, 255),
 
         "shadow": (0, 0, 0),
         "shadow_deep": (4, 2, 8),
         "white": (255, 255, 255),
     }
+
+    # Ramp 5 band: (core, dark, body, light, shine). SATU tabel supaya
+    # setiap bidang di badan memakai tangga nilai yang sama - itu yang
+    # membuat pixel-art terbaca "satu tangan", bukan tempelan.
+    _RAMP = {
+        "skin": ("skin_darkest", "skin_dark", "skin_mid", "skin_light",
+                 "skin_shine"),
+        "armor": ("armor_darkest", "armor_dark", "armor_mid", "armor_light",
+                  "armor_shine"),
+        "robe": ("robe_darkest", "robe_dark", "robe_mid", "robe_light",
+                 "robe_edge"),
+        "leather": ("shadow_deep", "leather_dark", "leather_mid",
+                    "leather_light", "brass_light"),
+        "blade": ("blade_darkest", "blade_dark", "blade_mid", "blade_light",
+                  "blade_shine"),
+        "hair": ("hair_darkest", "hair_dark", "hair_mid", "hair_light",
+                 "hair_shine"),
+        "magic": ("magic_darkest", "magic_dark", "magic_mid", "magic_light",
+                  "magic_hot"),
+        "brass": ("shadow_deep", "brass_dark", "brass_mid", "brass_light",
+                  "white"),
+    }
+
+    def _band(ramp, i):
+        """Warna band ke-i (0=core .. 4=shine) dari ramp bernama."""
+        keys = _NS_gornak._RAMP[ramp]
+        return _NS_gornak.PALETTE[keys[max(0, min(4, int(i)))]]
 
     # ==================================================================
     # PRIMITIF HELPER (mendukung warna alpha lewat surface sementara)
@@ -295,9 +327,8 @@ class _NS_gornak:
             return
         pygame.draw.rect(surface, color[:3], (rx, ry, rw, rh))
 
-
     # ==================================================================
-    # V2.1 FX VOCABULARY (standar Thorne - world-space + pixel-art)
+    # V3 FX VOCABULARY (world-space + pixel-art)
     # ==================================================================
     def _mix(a, b, t):
         """Blend linear dua warna palette (t=0 -> a, t=1 -> b)."""
@@ -418,7 +449,7 @@ class _NS_gornak:
                                pts[i], pts[i + 1], width)
 
     def _tuft_points(spine, depth=4.0, min_len=7.0, seed=0):
-        """Ubah spine halus menjadi tepi bergerigi (pixel-art fur)."""
+        """Ubah spine halus menjadi tepi bergerigi (pixel-art fur/kain)."""
         if not spine:
             return spine
         out = [spine[0]]
@@ -451,6 +482,50 @@ class _NS_gornak:
             if (ix + iy) & 1:
                 _NS_gornak._rect(surface, col, (ix, iy, 1, 1))
 
+    def _shard(surface, cx, cy, ang, length, width, color, alpha,
+               core=None):
+        """Serpihan kristal mana: belah ketupat runcing searah ``ang``.
+
+        Dipakai proyektil, impact, dan debris ayunan - bentuk yang sama
+        di semua tempat supaya FX Gornak punya "bahasa" visual sendiri.
+        """
+        if alpha <= 0 or length <= 1:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        nx, ny = -sa, ca
+        pts = [(cx + ca * length, cy + sa * length),
+               (cx + nx * width, cy + ny * width),
+               (cx - ca * length * 0.45, cy - sa * length * 0.45),
+               (cx - nx * width, cy - ny * width)]
+        _NS_gornak._poly(surface, (*color, _NS_gornak._alpha(alpha)),
+                         [(int(px), int(py)) for px, py in pts])
+        if core:
+            _NS_gornak._aaline(
+                surface, (*core, _NS_gornak._alpha(alpha)),
+                (int(cx - ca * length * 0.3), int(cy - sa * length * 0.3)),
+                (int(cx + ca * length * 0.8), int(cy + sa * length * 0.8)), 1)
+
+    def _ribbon(surface, path, widths, color, alpha):
+        """Pita tebal-tipis dari daftar titik (trail ujung bilah)."""
+        if len(path) < 3 or alpha <= 0:
+            return
+        left, right = [], []
+        for i, (px, py) in enumerate(path):
+            if i == 0:
+                dx, dy = path[1][0] - px, path[1][1] - py
+            elif i == len(path) - 1:
+                dx, dy = px - path[-2][0], py - path[-2][1]
+            else:
+                dx = path[i + 1][0] - path[i - 1][0]
+                dy = path[i + 1][1] - path[i - 1][1]
+            ln = math.hypot(dx, dy) or 1.0
+            nx, ny = -dy / ln, dx / ln
+            w = widths[i]
+            left.append((px + nx * w, py + ny * w))
+            right.append((px - nx * w, py - ny * w))
+        _NS_gornak._poly(surface, (*color, _NS_gornak._alpha(alpha)),
+                         [(int(a), int(b)) for a, b in left + right[::-1]])
+
     def _skill_progress(boss, skill):
         dur = float(_NS_gornak.SKILL_DUR.get(skill, 40) or 40)
         timer = int(getattr(boss, "active_skill_timer", 0) or 0)
@@ -480,11 +555,6 @@ class _NS_gornak:
         target = getattr(boss, "target", None)
         scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
         if target is not None and getattr(target, "alive", True):
-            # Hero di-render ke canvas offscreen lalu di-scale saat blit
-            # (heroes/__init__.py), jadi titik canvas harus
-            # = (delta dunia)/scale supaya proyektil mendarat TEPAT di
-            # target setelah blit. Boss digambar langsung di layar
-            # (scale = 1) jadi tidak terpengaruh.
             tx = x + (target.x - getattr(boss, "x", x)) / scale
             ty = y + (target.y - getattr(boss, "y", y)) / scale
             return int(tx), int(ty)
@@ -506,7 +576,7 @@ class _NS_gornak:
             active = True
         elif active and timer > 0:
             boss._gnk_attack_frame = int(getattr(boss, "_gnk_attack_frame",
-                                                  0)) + 1
+                                                 0)) + 1
         elif timer <= 0:
             boss._gnk_attack_active = False
             boss._gnk_attack_frame = 0
@@ -565,132 +635,116 @@ class _NS_gornak:
         if action == "attack":
             raw = max(0.0, min(1.0, float(getattr(boss, "_gnk_attack_progress",
                                                   0.0))))
-            # anticipation / impact hold / rebound - lihat _attack_curve
             ap = _NS_gornak._attack_curve(raw)
             boss._gnk_attack_raw = raw
         return action, phase, ap
 
-    # Tinggi badan dalam RUANG LOKAL (y=0 = garis pinggang, + = ke bawah).
-    # Punggung bahu & pusat kepala dibuat konstanta supaya seluruh bagian
-    # (dan semua anchor FX) ikut berubah konsisten saat dituning.
-    # Total badan (ruang lokal, sebelum SCALE): krist -40 -> telapak +44.
-    # Setelah SCALE x1.32 + LIFT: ~115 px tinggi, cukup untuk mini boss tapi
-    # wajah tetap di bawah HP bar boss (y-r-15..y-r-7).
+    # ── Tinggi badan dalam RUANG LOKAL (y=0 = garis pinggang, + ke bawah)
+    # Krist mohawk -37 .. telapak +44. Setelah SCALE 1.32 + LIFT: ~107 px,
+    # cukup untuk mini boss tapi wajah tetap di bawah HP bar boss.
     HEAD_Y = -24
     SHOULDER_Y = -14
-    # Sendi bahu (x = ke depan mengikuti arah hadap)
     SHOULDER_FRONT = (12, SHOULDER_Y)
     SHOULDER_BACK = (-11, SHOULDER_Y - 1)
+
+    # ── Kunci fase ayunan (dipakai grip, sudut, DAN pita slash) ────────
+    _SWING_WIND = 0.24          # puncak wind-up (bilah di atas kepala)
+    _SWING_HIT = 0.80           # frame impact (bilah menyapu bawah-depan)
 
     def _attack_curve(ap):
         """Remap progres mentah (0..1) -> waktu pose (0..1), MONOTON naik.
 
         Yang membuat animasi serangan 2D terasa murah bukan jumlah frame,
         tapi tidak adanya: (a) anticipation yang jelas, (b) HOLD satu-dua
-        frame di impact, (c) follow-through yang tidak langsung "ditarik"
-        balik. Kurva ini memberi ketiganya; recovery sengaja tidak pernah
-        turun (versi sinus dulu membuat bilah terlihat mundur sesaat).
+        frame di impact, (c) follow-through yang tidak langsung ditarik
+        balik. Kurva v3 memberi ketiganya dengan kontras laju ~10x antara
+        tebasan dan hold.
 
-        Batas segmen dipilih supaya jatuh PERSIS di batas fase
-        _blade_angle / _front_grip_local: pose-time 0.26 = puncak wind-up,
-        0.79 = impact, dan setelahnya recovery.
+        Batas segmen jatuh PERSIS di _SWING_WIND / _SWING_HIT supaya tabel
+        grip & sudut tidak pernah "patah" di tengah transisi.
         """
         if ap <= 0.0:
             return 0.0
-        if ap < 0.28:                       # anticipation: diperlambat
-            t = ap / 0.28
-            return 0.26 * (t ** 0.75)
-        if ap < 0.50:                       # tebasan: sangat cepat
-            t = (ap - 0.28) / 0.22
-            return 0.26 + 0.53 * (t ** 0.5)
-        if ap < 0.62:                       # IMPACT HOLD (nyaris beku)
-            t = (ap - 0.50) / 0.12
-            return 0.79 + 0.05 * t
-        t = (ap - 0.62) / 0.38              # follow-through -> siap
-        return 0.84 + 0.16 * (t ** 0.85)
+        if ap >= 1.0:
+            return 1.0
+        w = _NS_gornak._SWING_WIND
+        h = _NS_gornak._SWING_HIT
+        if ap < 0.30:                       # anticipation: angkat lalu tahan
+            t = ap / 0.30
+            return w * (t ** 0.85)
+        if ap < 0.46:                       # tebasan: sangat cepat
+            t = (ap - 0.30) / 0.16
+            return w + (h - w - 0.02) * (t ** 0.55)
+        if ap < 0.60:                       # IMPACT HOLD (nyaris beku)
+            t = (ap - 0.46) / 0.14
+            return h - 0.02 + 0.02 * t
+        t = (ap - 0.60) / 0.40              # follow-through -> siap
+        return h + (1.0 - h) * (t ** 0.80)
 
     def _portrait_blade_angle(back=False):
-        """Sudut bilah mode portrait: rapat ke badan, ujung menukik ke bawah.
+        """Sudut bilah mode portrait: rapat ke badan, ujung menukik turun.
 
-        Lihat _front_grip_local(compact=...): HeroPortraits meng-crop bbox
-        lalu men-scale-nya ke kartu, jadi figur yang LEBAR (bilah terentang)
-        justru terKECIL di kartu yang sama. Dengan bilah ditarik masuk, bbox
-        menyempit dan figur ter-render ~1.3x lebih besar - wajah & zirah
-        akhirnya terbaca di Hero Shop.
+        HeroPortraits meng-crop bbox lalu men-scale-nya ke kartu, jadi
+        figur yang LEBAR (bilah terentang) justru terKECIL di kartu yang
+        sama. Dengan bilah ditarik masuk, bbox menyempit dan figur
+        ter-render lebih besar - wajah & zirah akhirnya terbaca.
         """
-        return 0.62 if not back else -0.68
+        return -0.78 if back else 0.95
 
     def _blade_angle(phase, action, ap=0.0, back=False):
-        """Sudut bilah (radian, dari garis lurus-bawah; + = ke depan).
+        """Sudut bilah (rad). tip = grip + (sin a * L, cos a * L).
 
-        0 = moncong ke bawah, +pi/2 = lurus ke depan, ~pi = ke atas,
-        -pi/2 = lurus ke belakang. Ditabel per-pose, BUKAN diturunkan dari
-        arah lengan, supaya bilah tidak pernah menyayat menembus badannya
-        sendiri. Depan dan belakang sengaja TIDAK simetris: bilah depan
-        diangkat (memberi arah + massa di kuadran atas, seperti surai
-        Grimjam / ponytail Kaizen yang membuat hero lain terbaca di lane),
-        bilah belakang menukik ke bawah-belakang (menyeimbangkan bobot dan
-        tetap melebar ke kiri supaya siluet tidak jadi tiang sempit).
+        a = 0 menunjuk LURUS KE BAWAH, a = pi/2 lurus ke depan, a = pi
+        lurus ke atas. Bilah belakang memakai tanda berlawanan sehingga
+        dua senjata selalu membentuk gunting, bukan sejajar.
         """
         s = math.sin(phase * 1.72)
         if action == "attack":
-            # Semua jalur rotasi ada di SISI DEPAN badan, jadi tidak ada satu
-            # frame pun bilah melintasi torso atau kepala. `ap` di sini sudah
-            # lewat _attack_curve() (anticipation -> swing -> HOLD -> rebound).
-            if ap < 0.26:                       # wind-up (1.78 -> 2.92)
-                t = ap / 0.26
-                return (1.78 + 1.14 * t, -1.00 - 1.92 * t)[back]
-            if ap < 0.79:                       # tebasan (2.92 -> 0.30)
-                t = (ap - 0.26) / 0.53
-                return (2.92 - 2.62 * t, -2.92 + 1.92 * t)[back]
-            t = (ap - 0.79) / 0.21             # recovery -> siap
-            return (0.30 + 1.48 * t, -1.00)[back]
-        if action == "surge":                  # Q: tusukan mana medatar
-            return (1.45, -1.45)[back]
-        if action == "ward":                   # E: dua bilah tegak = garda
+            w = _NS_gornak._SWING_WIND
+            h = _NS_gornak._SWING_HIT
+            if ap < w:                       # angkat ke atas-belakang
+                u = ap / w
+                return (2.05 + 0.85 * u, -0.80 - 2.05 * u)[back]
+            if ap < h:                       # tebasan turun ke depan
+                u = (ap - w) / (h - w)
+                return (2.90 - 2.28 * u, -2.85 + 1.90 * u)[back]
+            u = (ap - h) / (1.0 - h)         # recovery -> siap
+            return (0.62 + 1.43 * u, -0.95 + 0.15 * u)[back]
+        if action == "surge":                # Q: tusukan mana mendatar
+            return (1.45, -1.42)[back]
+        if action == "ward":                 # E: dua bilah tegak = garda
             return (3.02, -3.02)[back]
-        if action == "void":                   # R: kedua bilah dibuka ke atas
+        if action == "void":                 # R: kedua bilah dibuka ke atas
             return (2.40, -2.40)[back]
         if action == "blink":
             return (0.62, -0.62)[back]
         if action == "walk":
-            return (1.78 + s * 0.10, -1.00 - s * 0.10)[back]
-        # Siap: bilah DEPAN terangkat diagonal ke depan-atas, bilah belakang
-        # menukik ke belakang-bawah. Versi dua bilah sejajar horizontal
-        # terbaca sebagai "palang" putih lebar yang menenggelamkan badan di
-        # skala hero; sudut asimetris ini tetap menjaga lebar siluet
-        # (W/H ~1.05) tapi membuat kepala & dada jadi subjek. Nilai ini
-        # juga titik awal/akhir ayunan -> tidak ada frame "snap".
+            return (2.05 + s * 0.14, -0.80 - s * 0.14)[back]
+        # Siap: bilah DEPAN diagonal ke depan-atas, bilah belakang menukik
+        # ke belakang-bawah. Asimetris supaya kepala & dada tetap subjek,
+        # tapi lebar siluet (W/H ~1.1) tetap terjaga. Nilai ini juga titik
+        # awal/akhir ayunan -> tidak pernah ada frame "snap".
         w = math.sin(phase * 0.5) * 0.05
-        return (1.78 + w, -1.00 - w)[back]
+        return (2.05 + w, -0.80 - w)[back]
 
     def _front_grip_local(action, ap=0.0, phase=0.0, compact=False):
-        """Pergelangan tangan depan (pegangan bilah utama), ruang lokal.
-
-        compact=True dipakai mode portrait: HeroPortraits meng-crop bbox
-        lalu men-scale-nya ke kartu, jadi konten yang LEBAR (bilah terentang
-        ke kanan-kiri) justru membuat figur terKECIL di kartu yang sama.
-        Dengan bilah ditarik rapat ke badan, bbox menyempit -> figur
-        ter-render ~1.3x lebih besar, wajah & zirah terbaca.
-        """
-        rest = _NS_gornak.SHOULDER_Y + 16
+        """Pergelangan tangan depan (bilah utama), ruang lokal."""
+        rest = _NS_gornak.SHOULDER_Y + 16                    # = 2
         if compact:
             return (12, rest + 2)
         if action == "attack":
-            # Tangan tetap di sisi depan badan sepanjang ayunan - x tidak
-            # pernah melewati garis tengah, jadi bilah tidak menutupi wajah.
-            # Batas segmen mengikuti _attack_curve(): 0-0.26 angkat,
-            # 0.26-0.79 tebas (dengan HOLD di ~0.78), 0.79-1 recovery.
-            if ap < 0.26:
-                t = min(1.0, ap / 0.26) ** 0.9
-                return (int(15 - 13 * t), int(rest - 27 * t))
-            if ap < 0.79:
-                t = (ap - 0.26) / 0.53
-                return (int(2 + 21 * t), int(rest - 27 + 33 * t))
-            t = (ap - 0.79) / 0.18
-            return (int(23 - 8 * t), int(rest + 6 - 4 * t))
+            w = _NS_gornak._SWING_WIND
+            h = _NS_gornak._SWING_HIT
+            if ap < w:
+                e = (ap / w) ** 0.9
+                return (int(15 - 13 * e), int(rest - 26 * e))
+            if ap < h:
+                u = (ap - w) / (h - w)
+                return (int(2 + 20 * u), int(rest - 26 + 32 * u))
+            u = (ap - h) / (1.0 - h)
+            return (int(22 - 7 * u), int(rest + 6 - 4 * u))
         if action == "surge":
-            return (23, rest + 3)
+            return (21, rest + 3)
         if action == "ward":
             return (14, rest - 9)
         if action == "void":
@@ -704,18 +758,20 @@ class _NS_gornak:
 
     def _back_grip_local(action, ap=0.0, phase=0.0, compact=False):
         """Pergelangan tangan belakang (bilah pendek, grip terbalik)."""
-        rest = _NS_gornak.SHOULDER_Y + 17
+        rest = _NS_gornak.SHOULDER_Y + 17                    # = 3
         if compact:
             return (-13, rest + 3)
         if action == "attack":
-            if ap < 0.26:
-                t = min(1.0, ap / 0.26) ** 0.9
-                return (int(-19 - 5 * t), int(rest - 24 * t))
-            if ap < 0.79:
-                t = (ap - 0.26) / 0.53
-                return (int(-24 - 3 * t), int(rest - 24 + 30 * t))
-            t = (ap - 0.79) / 0.21
-            return (int(-27 + 8 * t), int(rest + 6 - 3 * t))
+            w = _NS_gornak._SWING_WIND
+            h = _NS_gornak._SWING_HIT
+            if ap < w:
+                e = (ap / w) ** 0.9
+                return (int(-19 - 6 * e), int(rest - 25 * e))
+            if ap < h:
+                u = (ap - w) / (h - w)
+                return (int(-25 + 13 * u), int(rest - 25 + 27 * u))
+            u = (ap - h) / (1.0 - h)
+            return (int(-12 - 7 * u), int(rest + 2 - 1 * u))
         if action == "surge":
             return (-21, rest - 3)
         if action == "ward":
@@ -744,41 +800,42 @@ class _NS_gornak:
 
     def _arm_chain(shoulder, grip, phase, action, ap=0.0, back=False):
         """(elbow, blade_angle) - siku dari lengan, sudut dari tabel pose."""
-        elbow = _NS_gornak._elbow(shoulder, grip, -4.5 if not back else 5.0)
+        elbow = _NS_gornak._elbow(shoulder, grip, 5.0 if back else -4.5)
         return elbow, _NS_gornak._blade_angle(phase, action, ap, back)
 
     def _blade_len(action, back=False):
-        # Panjang bilah adalah sumber LEBAR utamanya siluet: pedang yang
-        # dipegang menyamping membuat karakter pemegang dua bilah terbaca
-        # penuh, bukan setiinggi tiang.
+        """Panjang bilah - sumber LEBAR utama siluet dual-wield."""
         if back:
-            return 25 if action != "attack" else 29
+            return 28 if action == "attack" else 25
         if action == "attack":
-            return 42
+            return 40
         if action == "surge":
-            return 44
+            return 42
+        if action in ("ward", "void"):
+            return 38
         return 36
 
     def _head_bob(action, phase, ap):
         """Offset kepala (dx, dy) ruang lokal.
 
-        Yang membuat rig terasa "hidup" bukan jumlah sendi, tapi kepala yang
-        TIDAK merekat mati ke torso: dia mengangkat sedikit saat langkah
-        (ayunan kontrarotasi), menunduk saat ayunan bilah, dan bergoyang
-        halus saat idle.
+        Yang membuat rig terasa hidup bukan jumlah sendi, tapi kepala yang
+        TIDAK merekat mati ke torso: mengangguk saat langkah, menunduk
+        saat ayunan, dan bergoyang halus saat idle.
         """
         if action == "walk":
-            sw = math.sin(phase * 1.72)
-            return (int(-sw * 1.2), int(abs(math.sin(phase * 1.15)) * -1.4))
+            return (-int(round(math.sin(phase * 1.72) * 1.4)),
+                    -1 - int(round(abs(math.sin(phase * 1.15)) * 1.2)))
         if action == "attack":
-            return (int(math.sin(ap * math.pi) * 2.4),
-                    -int(math.sin(ap * math.pi) * 1.4))
+            k = math.sin(ap * math.pi)
+            return (int(round(k * 2.6)), -int(round(k * 1.6)))
         if action == "void":
-            return (-1, -2)
+            return (-1, -3)
         if action == "ward":
             return (0, -1)
-        return (int(math.sin(phase * 0.31) * 0.9),
-                int(math.sin(phase * 0.62 + 0.8) * 0.8))
+        if action == "surge":
+            return (2, 0)
+        return (int(round(math.sin(phase * 0.31) * 0.9)),
+                int(round(math.sin(phase * 0.62 + 0.8) * 0.8)))
 
     def _rig_shift(action, phase, ap):
         """(lean, root_y) badan; kaki TIDAK ikut bergeser (menapak)."""
@@ -788,17 +845,15 @@ class _NS_gornak:
             lean = int(math.sin(phase * 1.72) * 2)
             root_y -= int(abs(math.sin(phase * 1.15)) * 2.5)
         elif action == "attack":
-            t = math.sin(ap * math.pi)
-            lean = int(t * 6)
-            root_y += int(t * 2)
+            # Berat badan pindah ke depan saat tebasan lalu ditarik balik.
+            k = math.sin(ap * math.pi)
+            lean = int(k * 6)
+            root_y += int(k * 2)
         elif action == "surge":
             lean = 3
             root_y -= 1
         elif action in ("void", "ward"):
             root_y -= 2
-        elif action == "surge":
-            lean = 3
-            root_y -= 1
         elif action == "blink":
             lean = 1
             root_y -= 1
@@ -828,12 +883,12 @@ class _NS_gornak:
 
     def _tip_local(action, phase, ap=0.0, back=False):
         """Ujung bilah dalam ruang lokal (rig & FX pakai angka yang sama)."""
-        grip = (_NS_gornak._front_grip_local(action, ap, phase) if not back
-                else _NS_gornak._back_grip_local(action, ap, phase))
-        shoulder = (_NS_gornak.SHOULDER_FRONT if not back
-                    else _NS_gornak.SHOULDER_BACK)
+        grip = (_NS_gornak._back_grip_local(action, ap, phase) if back
+                else _NS_gornak._front_grip_local(action, ap, phase))
+        shoulder = (_NS_gornak.SHOULDER_BACK if back
+                    else _NS_gornak.SHOULDER_FRONT)
         _, angle = _NS_gornak._arm_chain(shoulder, grip, phase, action, ap,
-                                        back)
+                                         back)
         L = _NS_gornak._blade_len(action, back)
         return (int(grip[0] + math.sin(angle) * L),
                 int(grip[1] + math.cos(angle) * L))
@@ -843,7 +898,8 @@ class _NS_gornak:
         # FX selalu memakai pose yang sama dengan badan (lihat
         # _resolve_pose yang murni), jadi bolt/proc tidak pernah lepas.
         return _NS_gornak._local(boss, x, y, action, phase, ap,
-                                 *_NS_gornak._tip_local(action, phase, ap, back))
+                                 *_NS_gornak._tip_local(action, phase, ap,
+                                                        back))
 
     # ==================================================================
     # ENTRY POINT
@@ -872,35 +928,14 @@ class _NS_gornak:
             _NS_gornak._draw_ground_rune(surface, x, y, phase, skill)
             if skill == "q":
                 _NS_gornak._draw_manabreak_ground(surface, boss, x, y, timer,
-                                                   phase)
+                                                  phase)
             elif skill == "w":
                 _NS_gornak._draw_blink_ground(surface, boss, x, y, timer,
                                               phase)
             elif skill == "r":
                 _NS_gornak._draw_manavoid_ground(surface, boss, x, y, timer,
                                                  phase)
-            # PERTAGAS v2.1: gelombang kejut aktivasi (12 frame pertama)
-            # world-space lewat _fx_scale + bintang spike.
-            if skill in _NS_gornak.SKILL_DUR:
-                age = _NS_gornak.SKILL_DUR[skill] - timer
-                if 0 <= age < 12:
-                    st = age / 12.0
-                    fs = _NS_gornak._fx_scale(boss)
-                    a = _NS_gornak._alpha(235 * (1 - st))
-                    rr = int((16 + st * 50) * fs)
-                    gy = y + _NS_gornak.GROUND_DY
-                    _NS_gornak._ellipse(
-                        surface, (*_NS_gornak.PALETTE["magic_mid"], a),
-                        (x - rr, gy - rr // 3, rr * 2,
-                         max(4, rr * 2 // 3)), 2)
-                    _NS_gornak._ellipse(
-                        surface, (*_NS_gornak.PALETTE["magic_shine"], a),
-                        (x - rr // 2, gy - rr // 6, rr,
-                         max(3, rr // 3)), 1)
-                    _NS_gornak._spark_star(
-                        surface, x, gy - 4, int(10 * fs * (1 - st)),
-                        _NS_gornak.PALETTE["magic_hot"], a, spikes=8,
-                        rot=st * 1.4, core=_NS_gornak.PALETTE["magic_shine"])
+            _NS_gornak._draw_cast_shockwave(surface, boss, x, y, skill, timer)
 
         # ── Karakter
         if action == "blink":
@@ -916,7 +951,7 @@ class _NS_gornak:
                                                 ap)
             elif action == "walk" and not portrait:
                 # Debu langkah: dua kepul kecil tepat saat telapak mendarat,
-                # jadi bobot badan terasa menekan tanah (bukan character
+                # jadi bobot badan terasa menekan tanah (bukan karakter
                 # meluncur di atas lantai).
                 _NS_gornak._draw_footfall_dust(surface, x, y, facing, phase)
 
@@ -924,23 +959,57 @@ class _NS_gornak:
         if not portrait:
             if skill == "q":
                 _NS_gornak._draw_manabreak_foreground(surface, boss, x, y,
-                                                       timer, phase)
+                                                      timer, phase)
             elif skill == "e":
                 _NS_gornak._draw_counterspell_foreground(surface, boss, x, y,
-                                                          timer, phase)
+                                                         timer, phase)
             elif skill == "r":
                 _NS_gornak._draw_manavoid_foreground(surface, boss, x, y,
                                                      timer, phase)
+
+    def _draw_cast_shockwave(surface, boss, x, y, skill, timer):
+        """Gelombang kejut 12 frame pertama SETIAP skill (world-space).
+
+        Satu "tanda baca" yang sama untuk Q/W/E/R: pemain langsung tahu
+        sebuah skill baru saja keluar, tanpa harus membaca efeknya dulu.
+        """
+        if skill not in _NS_gornak.SKILL_DUR:
+            return
+        age = _NS_gornak.SKILL_DUR[skill] - timer
+        if not (0 <= age < 12):
+            return
+        p = _NS_gornak.PALETTE
+        st = age / 12.0
+        fs = _NS_gornak._fx_scale(boss)
+        a = _NS_gornak._alpha(235 * (1 - st) ** 1.4)
+        rr = int((16 + st * 52) * fs)
+        gy = y + _NS_gornak.GROUND_DY
+        _NS_gornak._ellipse(surface, (*p["magic_mid"], a),
+                            (x - rr, gy - rr // 3, rr * 2,
+                             max(4, rr * 2 // 3)), 2)
+        _NS_gornak._ellipse(surface, (*p["magic_shine"], a),
+                            (x - rr // 2, gy - rr // 6, rr,
+                             max(3, rr // 3)), 1)
+        for i in range(6):
+            ang = i * math.tau / 6 + st * 1.2
+            _NS_gornak._shard(
+                surface, x + math.cos(ang) * rr * 0.9,
+                gy + math.sin(ang) * rr * 0.3, ang,
+                int(6 * fs * (1 - st)) + 2, max(1, int(2 * fs)),
+                p["magic_light"], a, core=p["magic_shine"])
+        _NS_gornak._spark_star(
+            surface, x, gy - 4, int(10 * fs * (1 - st)), p["magic_hot"], a,
+            spikes=8, rot=st * 1.4, core=p["magic_shine"])
 
     def _draw_gnk_rig_at(surface, x, y, facing, phase, action, ap, detail,
                          flash=0):
         """Rig -> buffer -> outline gelap 1 px -> satu blit murah.
 
-        Mode portrait Hero Shop memakai kanvas kecil (160x160 di
-        ui_components HeroPortraits) dan meng-crop dari bbox: kalau badan
-        digambar dengan anchor di pinggang, bilah depan yang panjang
-        melewati tepi kanan dan TERPOTONG. Jadi di mode itu konten dipusatkan
-        pada bbox-nya sendiri; jalur boss (1x) tidak berubah sama sekali.
+        Mode portrait Hero Shop memakai kanvas kecil (160x160) dan
+        meng-crop dari bbox: kalau badan digambar dengan anchor di
+        pinggang, bilah depan yang panjang melewati tepi kanan dan
+        TERPOTONG. Jadi di mode itu konten dipusatkan pada bbox-nya
+        sendiri; jalur boss (1x) tidak berubah sama sekali.
         """
         buf = pygame.Surface((_NS_gornak.RIG_W, _NS_gornak.RIG_H),
                              pygame.SRCALPHA)
@@ -951,21 +1020,12 @@ class _NS_gornak:
             lit.fill((255, 246, 255, 0), special_flags=pygame.BLEND_RGBA_MAX)
             lit.set_alpha(flash)
             buf.blit(lit, (0, 0))
-        # Jalur BOSS digambar langsung ke layar 1:1, jadi TIDAK melewati
-        # _finish_hd_sprite (yang sudah memberi rim+terminator ke hero).
-        # Di sinilah cahaya itu dipasang untuk boss. Saat hero-path
-        # (scale != 1.0) pass-nya dilewati supaya tidak dua kali; mode
-        # portrait tetap dipakai karena HeroPortraits tidak memanggil
-        # _finish_hd_sprite sama sekali.
-        # Aturan: pass cahaya dipasang di SINI hanya kalau sprite ini TIDAK
-        # akan dilewatkan ke heroes._finish_hd_sprite (yang sudah memasang
-        # pass yang sama):
-        #   * boss 1x (scale 1.0)          -> pasang di sini
-        #   * lane hero (scale != 1.0)      -> jangan (nanti dobel)
-        #   * Hero Shop (tanpa _render_scale, portrait) -> pasang di sini,
-        #     karena HeroPortraits tidak memanggil _finish_hd_sprite sama
-        #     sekali. Ciri mode shop: attribute hero TIDAK punya
-        #     _render_scale sama sekali (jalur lane selalu men-set-nya).
+        # Aturan pass cahaya: dipasang di SINI hanya kalau sprite ini TIDAK
+        # akan dilewatkan ke heroes._finish_hd_sprite (yang memasang pass
+        # yang sama):
+        #   * boss 1x (tanpa _render_scale)             -> pasang di sini
+        #   * lane hero (punya _render_scale)           -> jangan (dobel)
+        #   * Hero Shop (portrait, tanpa _render_scale) -> pasang di sini
         if _lighting is not None and not _NS_gornak._HERO_LANE.v:
             _lighting.apply_to_rig(
                 buf, rim_add=(32, 26, 46), shade_mul=160,
@@ -977,9 +1037,7 @@ class _NS_gornak:
             if used.width > 0:
                 ox = int(x) - (used.left + used.width // 2)
                 oy = int(y) - (used.top + used.height // 2)
-        # Outline siluet (4 arah) - sama seperti Sylara: jalur hero memang
-        # menambah satu tepi lagi di _finish_hd_sprite, dan hasilnya justru
-        # dipakai sebagai acuan keluarga, jadi tidak perlu di-skip.
+        # Outline siluet 4 arah: bagian tetap terpisah saat unit bertumpuk.
         edge = buf.copy()
         edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
         for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
@@ -987,7 +1045,7 @@ class _NS_gornak:
         surface.blit(buf, (ox, oy))
         return buf
 
-    # Pose lama tetap tersedia (dipakai tool debug/preview).
+    # Pose tunggal (dipakai tool debug/preview).
     def _draw_gnk_idle(surface, boss, x, y):
         _NS_gornak._draw_gnk_rig_at(surface, x, y,
                                     getattr(boss, "direction", 1) or 1,
@@ -1007,7 +1065,8 @@ class _NS_gornak:
                                     "attack", ap, False)
 
     def _draw_gnk_blink(surface, boss, x, y, timer, portrait, flash):
-        """Blink: after-image RIG YANG SAMA + dissolve di garis kaki."""
+        """Blink: after-image RIG YANG SAMA + disolusi serpihan di kaki."""
+        p = _NS_gornak.PALETTE
         duration = _NS_gornak.SKILL_DUR["w"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
         facing = getattr(boss, "direction", 1) or 1
@@ -1033,17 +1092,17 @@ class _NS_gornak:
         rig.set_alpha(255)
 
         if not portrait:
-            p = _NS_gornak.PALETTE
             gy = y + _NS_gornak.GROUND_DY
-            for i in range(8):
-                t = (phase * 0.5 + i * 0.125) % 1.0
-                gx = x + int(math.sin(i * 1.7) * (10 + t * 16))
-                a = _NS_gornak._alpha(190 * (1 - t) * alpha_t)
-                if a > 0:
-                    _NS_gornak._aacircle(surface, (*p["magic_mid"], a),
-                                         (gx, gy - int(t * 12)), 2)
-                    _NS_gornak._aacircle(surface, (*p["magic_shine"], a),
-                                         (gx, gy - int(t * 12)), 1)
+            for i in range(9):
+                t = (phase * 0.5 + i * 0.111) % 1.0
+                gx = x + int(math.sin(i * 1.7) * (10 + t * 18))
+                a = _NS_gornak._alpha(200 * (1 - t) * alpha_t)
+                if a <= 0:
+                    continue
+                _NS_gornak._shard(surface, gx, gy - int(t * 16),
+                                  -math.pi / 2 + math.sin(i * 2.1) * 0.5,
+                                  4 + int((1 - t) * 4), 2, p["magic_light"],
+                                  a, core=p["magic_shine"])
 
     def _compose_outline(x, y, facing, phase, action, ap, detail):
         """Rig + outline gelap 1 px sebagai SATU surface (perlu untuk
@@ -1063,20 +1122,21 @@ class _NS_gornak:
         edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
         # Selout: outline gelap hanya sisi bayangan (kanan-bawah relatif
         # hadap). Key light kiri-atas (lighting.LIGHT_DIR = (-1, -1));
-        # sisi cahaya dibiarkan bersih — rim 1 px ada di _draw_gnk_rimlight.
+        # sisi cahaya dibiarkan bersih - rim 1 px ada di _draw_gnk_rimlight.
         sx = 1 if facing >= 0 else -1
         for dx, dy in ((sx, 0), (0, 1), (sx, 1)):
             out.blit(edge, (pad + dx, pad + dy))
         out.blit(buf, (pad, pad))
         return out, _NS_gornak.RIG_OX + pad, _NS_gornak.RIG_OY + pad
 
+    # ==================================================================
+    # BONE RIG 2D BERLAPIS
+    # ==================================================================
     def _draw_gnk_rig(surface, cx, cy, facing, phase, action, ap=0.0,
                       detail=False):
-        """BONE RIG 2D BERLAPIS - seluruh badan dihitung dari sendi.
+        """Seluruh badan dihitung dari sendi, urutan belakang -> depan.
 
-        ``cx, cy`` = anchor (pusat boss / garis pinggul). Urutan gambar
-        belakang -> depan, jadi pedang belakang di balik torso dan pedang
-        depan paling depan, seperti sprite sheet referensi.
+        ``cx, cy`` = anchor (pusat boss / garis pinggul).
         """
         p = _NS_gornak.PALETTE
         f = 1 if facing >= 0 else -1
@@ -1087,21 +1147,21 @@ class _NS_gornak:
             return _NS_gornak._local_to_screen(cx, cy, f, lean, root_y, dx, dy)
 
         def ptg(dx, dy):
-            """Sendi yang terpatok tanah (telapak kaki tidak ikut bob)."""
+            """Sendi terpatok tanah (telapak kaki tidak ikut bob)."""
             return _NS_gornak._local_to_screen(cx, cy, f, lean, 0, dx, dy)
 
         def poly(color, coords, outline=True):
             pts = [pt(dx, dy) for dx, dy in coords]
             if outline:
                 _NS_gornak._poly(surface, p["shadow_deep"],
-                                  [(qx + f, qy + 1) for qx, qy in pts])
+                                 [(qx + f, qy + 1) for qx, qy in pts])
             _NS_gornak._poly(surface, color, pts)
             return pts
 
         def poly_free(color, pts, outline=True):
             if outline:
                 _NS_gornak._poly(surface, p["shadow_deep"],
-                                  [(qx + f, qy + 1) for qx, qy in pts])
+                                 [(qx + f, qy + 1) for qx, qy in pts])
             _NS_gornak._poly(surface, color, pts)
 
         def dot(color, dx, dy, r, outline=True):
@@ -1133,9 +1193,9 @@ class _NS_gornak:
 
         portrait = bool(detail)
         front_grip = _NS_gornak._front_grip_local(action, ap, phase,
-                                                 compact=portrait)
+                                                  compact=portrait)
         back_grip = _NS_gornak._back_grip_local(action, ap, phase,
-                                               compact=portrait)
+                                                compact=portrait)
         front_elbow, front_angle = _NS_gornak._arm_chain(
             _NS_gornak.SHOULDER_FRONT, front_grip, phase, action, ap)
         back_elbow, back_angle = _NS_gornak._arm_chain(
@@ -1146,7 +1206,7 @@ class _NS_gornak:
 
         # 1. Jubah belakang - memberi kedalaman pada siluet
         _NS_gornak._draw_gnk_cape_back(surface, pt, poly_free, f, phase,
-                                       action)
+                                       action, ap)
 
         # 2. Kaki - telapak dipatok di GROUND_DY
         _NS_gornak._draw_gnk_legs(surface, pt, ptg, poly_free, f, phase,
@@ -1171,9 +1231,9 @@ class _NS_gornak:
         _NS_gornak._draw_gnk_pauldrons(surface, pt, poly_free, dot, f, phase,
                                        breath)
 
-        # 7. Leher + kepala (rahang, jenggot kepang, mohawk nempel)
+        # 7. Leher + kepala (rahang, jenggot kepang, mohawk)
         _NS_gornak._draw_gnk_head(surface, pt, poly_free, dot, f, phase,
-                                  action, ward, void)
+                                  action, ap, ward, void)
 
         # 8. Tangan + bilah depan (paling depan)
         _NS_gornak._draw_gnk_arm(surface, pt, poly_free, dot, limb, f, phase,
@@ -1182,7 +1242,7 @@ class _NS_gornak:
                                  _NS_gornak._blade_len(action), back=False,
                                  ward=ward, void=void, surge=surge)
 
-        # 9. Rim light ungu - sinyal warna tema (lihat docstring-nya)
+        # 9. Rim light ungu - sinyal warna tema
         _NS_gornak._draw_gnk_rimlight(surface, pt, f, phase, ward, void)
 
         # 10. Pass material portrait-only
@@ -1194,23 +1254,26 @@ class _NS_gornak:
     # ==================================================================
     # BAGIAN TUBUH
     # ==================================================================
-    # Prinsip di 720p: yang dibaca hanyalah NILAI (terang/gelap) dan
-    # SILUET, bukan garis halus. Setiap bagian karenanya dibatasi 2-3
-    # lapis nilai, dan garis penanda (otot, jahitan) hanya muncul di
-    # pass portrait.
+    # Prinsip di 720p: yang dibaca hanya NILAI (terang/gelap) dan SILUET,
+    # bukan garis halus. Tiap bagian dibatasi 3 nilai + 1 aksen, dan garis
+    # penanda (otot, jahitan) hanya muncul di pass portrait.
     # ==================================================================
 
-    def _draw_gnk_cape_back(surface, pt, poly_free, f, phase, action):
+    def _draw_gnk_cape_back(surface, pt, poly_free, f, phase, action, ap=0.0):
         """Half-mantle kulit di punggung: MEMBINGKAI badan, tidak
-        melebarinya. Tepi bawah robek dan berayun oleh phase."""
+        melebarinya. Tepi bawah robek dan berayun dengan LAG terhadap
+        badan (sway mengikuti phase, bukan pose) - itu yang membuat kain
+        terasa punya berat sendiri.
+        """
         p = _NS_gornak.PALETTE
         sway = int(math.sin(phase * 1.05) * 2)
-        if action in ("walk", "attack"):
-            sway -= 2
-        outer = [(-15, -19), (-19, -6), (-22 + sway, 10), (-17 + sway, 17),
-                 (-11 + sway, 9), (-6 + sway, 16), (0, 7), (4, -8), (2, -19)]
-        # Tepi bawah bergerigi (pixel-art tuft) - depth kecil supaya
-        # tidak melewati buffer rig / garis HP.
+        if action == "walk":
+            sway -= 2 + int(math.sin(phase * 1.72) * 2)
+        elif action == "attack":
+            # Follow-through: mantel terlempar ke belakang saat menebas.
+            sway -= 2 + int(math.sin(ap * math.pi) * 3)
+        elif action in ("void", "ward"):
+            sway -= 1
         hem_spine = [(-22 + sway, 10), (-17 + sway, 17), (-11 + sway, 9),
                      (-6 + sway, 16), (0, 7)]
         tuft = _NS_gornak._tuft_points(hem_spine, depth=2.2, min_len=4.0,
@@ -1220,19 +1283,20 @@ class _NS_gornak:
         inner = [(-14, -17), (-17, -6), (-20 + sway, 8), (-15 + sway, 14),
                  (-10 + sway, 8), (-5 + sway, 13), (0, 6), (3, -8), (1, -17)]
         poly_free(p["robe_dark"], [pt(*q) for q in inner], outline=False)
-        _NS_gornak._aaline(surface, p["robe_mid"], pt(-10, -14),
-                           pt(-12 + sway, 4), 1)
-        poly_free(p["robe_light"], [pt(-9, -12), pt(-12 + sway, 1),
-                                   pt(-9 + sway, 7), pt(-6, -6)],
+        # Lipatan: satu bidang mid + satu bidang light, arah jatuh sama.
+        poly_free(p["robe_mid"], [pt(-13, -15), pt(-9, -14),
+                                  pt(-11 + sway, 6), pt(-15 + sway, 5)],
                   outline=False)
-        # Rim di tepi robek: 1 px terang membuat sobekan terbaca sebagai
-        # KAIN (bukan lubang gelap) di skala 1x.
+        poly_free(p["robe_light"], [pt(-9, -12), pt(-12 + sway, 1),
+                                    pt(-9 + sway, 7), pt(-6, -6)],
+                  outline=False)
+        # Rim 1 px di tepi robek: sobekan terbaca sebagai KAIN, bukan lubang.
         hem = [(-16 + sway, 9), (-12 + sway, 15), (-8 + sway, 8),
                (-4 + sway, 14), (0, 6)]
         for i in range(len(hem) - 1):
             _NS_gornak._aaline(surface, p["robe_edge"], pt(*hem[i]),
                                pt(*hem[i + 1]), 1)
-        # Dither 50% di sisi bayangan jubah (kanan-bawah, 1 px).
+        # Dither 50% di sisi bayangan jubah (1 px).
         dots = [pt(-18 + sway, 6), pt(-16 + sway, 10), pt(-14 + sway, 13),
                 pt(-12 + sway, 8), pt(-10 + sway, 12), pt(-8 + sway, 7)]
         _NS_gornak._dither_dots(surface, p["robe_darkest"], dots, 110)
@@ -1240,11 +1304,9 @@ class _NS_gornak:
     def _draw_gnk_legs(surface, pt, ptg, poly_free, f, phase, action, stride):
         """Dua kaki berotot: paha -> pelindung lutut -> greave -> boot.
 
-        Pass hero-baru: blok tulang kering tidak lagi memakai armor_light
-        (di skala hero kaki terbaca sebagai dua balok abu-abu pucat yang
-        menyatu dengan loincloth). Sekarang paha & betis gelap dengan SATU
-        garis tepi terang di sisi cahaya + kap kuningan di ujung boot, jadi
-        kedua kaki terpisah dan tetap terbaca.
+        Paha & betis sengaja GELAP dengan satu garis tepi terang di sisi
+        cahaya; kalau blok tulang kering dibuat pucat, kedua kaki menyatu
+        dengan loincloth jadi satu tiang di skala hero.
         """
         p = _NS_gornak.PALETTE
         hip_y = 4
@@ -1268,24 +1330,23 @@ class _NS_gornak:
             foot_x = hip_x + dx + side * 2
             knee_y = (hip_y + ground) // 2 - lift
             fy = ground - lift
-            # Paha: satu blok gelap + satu blok tengah + garis cahaya tipis
+            # Paha: core -> body -> plane cahaya
             poly_free(p["skin_darkest"], [pt(hip_x - 6, hip_y),
                                           pt(hip_x + 5, hip_y),
                                           pt(knee_x + 4, knee_y),
                                           pt(knee_x - 5, knee_y)])
+            poly_free(p["skin_dark"] if front else p["skin_darkest"],
+                      [pt(hip_x - 5, hip_y + 1), pt(hip_x + 4, hip_y + 1),
+                       pt(knee_x + 3, knee_y - 1), pt(knee_x - 4, knee_y - 1)],
+                      outline=False)
             if front:
-                poly_free(p["skin_dark"], [pt(hip_x - 5, hip_y + 1),
-                                          pt(hip_x + 4, hip_y + 1),
-                                          pt(knee_x + 3, knee_y - 1),
-                                          pt(knee_x - 4, knee_y - 1)],
-                          outline=False)
                 poly_free(p["skin_mid"], [pt(hip_x - 4, hip_y + 2),
                                           pt(hip_x + 1, hip_y + 2),
                                           pt(knee_x - 1, knee_y - 4),
                                           pt(knee_x - 3, knee_y - 4)],
                           outline=False)
-            # Pembungkus kain di paha (identik dengan loincloth -> kaki
-            # menyatu dengan badan, bukan dua tabung terpisah)
+            # Pembungkus kain di paha (senada loincloth -> kaki menyatu
+            # dengan badan, bukan dua tabung terpisah)
             poly_free(p["robe_dark"], [pt(hip_x - 6, hip_y + 7),
                                        pt(hip_x + 5, hip_y + 7),
                                        pt(hip_x + 5, hip_y + 13),
@@ -1296,19 +1357,22 @@ class _NS_gornak:
                                           pt(hip_x + 2, hip_y + 12),
                                           pt(hip_x - 4, hip_y + 12)],
                           outline=False)
+                _NS_gornak._aaline(surface, p["robe_edge"],
+                                   pt(hip_x - 4, hip_y + 13),
+                                   pt(hip_x + 2, hip_y + 13), 1)
             # Pelindung lutut
             poly_free(p["armor_darkest"], [pt(knee_x - 4, knee_y - 3),
                                            pt(knee_x + 4, knee_y - 3),
                                            pt(knee_x + 4, knee_y + 3),
                                            pt(knee_x - 4, knee_y + 3)])
-            poly_free(p["armor_mid"], [pt(knee_x - 3, knee_y - 2),
-                                       pt(knee_x + 2, knee_y - 2),
-                                       pt(knee_x + 2, knee_y + 2),
-                                       pt(knee_x - 3, knee_y + 2)],
-                          outline=False)
-            _NS_gornak._aacircle(surface, p["armor_shine"], pt(knee_x - 1,
-                                                              knee_y - 1), 1)
-            # Shina gelap + satu garis tepi cahaya
+            poly_free(p["armor_mid"] if front else p["armor_dark"],
+                      [pt(knee_x - 3, knee_y - 2), pt(knee_x + 2, knee_y - 2),
+                       pt(knee_x + 2, knee_y + 2), pt(knee_x - 3, knee_y + 2)],
+                      outline=False)
+            if front:
+                _NS_gornak._aacircle(surface, p["armor_shine"],
+                                     pt(knee_x - 1, knee_y - 1), 1)
+            # Betis gelap + satu garis tepi cahaya
             poly_free(p["armor_dark"], [pt(knee_x - 4, knee_y + 2),
                                         pt(knee_x + 4, knee_y + 2),
                                         ptg(foot_x + 4, fy - 7),
@@ -1322,7 +1386,6 @@ class _NS_gornak:
                 _NS_gornak._aaline(surface, p["armor_light"],
                                    pt(knee_x - 2, knee_y + 4),
                                    ptg(foot_x - 2, fy - 7), 1)
-                # Dither band di sisi bayangan greave (1 px, key light kiri-atas)
                 dots = []
                 for k in range(4):
                     t = (k + 0.5) / 4.0
@@ -1342,7 +1405,7 @@ class _NS_gornak:
                                          ptg(foot_x + 4, fy - 6),
                                          ptg(foot_x + toe + 1, fy - 3),
                                          ptg(foot_x - 5, fy - 3)],
-                        outline=False)
+                      outline=False)
             # Garis break terang di pergelangan: tanpa ini paha-celana-boot
             # jadi satu kolom cokelat dan kaki "hilang" di skala hero.
             _NS_gornak._aaline(surface, p["leather_light"],
@@ -1362,14 +1425,12 @@ class _NS_gornak:
 
     def _draw_gnk_torso(surface, pt, poly_free, dot, f, phase, breath, ward,
                         void):
-        """Dada bidang (V-taper) + pelat spellbreaker BERCAHAYA + rune ungu.
+        """Dada bidang (V-taper) + pelat spellbreaker + permata rune ungu.
 
-        Pass hero-baru: pelat baja dinaikkan ke armor_light/shine (sebelumnya
-        armor_mid yang di skala hero menyatu dengan kulit sehingga seluruh
-        badan jadi satu blob coklat), dan rantai pemutus sihir dibuat jadi
-        tiga titik magic_hot yang jelas - itu "sinyal warna" yang dipakai
-        Grimjaw (api) / Vex (void cyan) / Kaizen (angin biru) supaya unit
-        terbaca dari jauh.
+        Pelat baja dipertahankan di armor_mid/light (bukan mid saja):
+        kalau senilai kulit, seluruh badan jadi satu blob cokelat di
+        skala hero. Permata ungu = "sinyal warna" tema, sama seperti api
+        Grimjaw / void cyan Vex.
         """
         p = _NS_gornak.PALETTE
         sh = _NS_gornak.SHOULDER_Y
@@ -1382,39 +1443,35 @@ class _NS_gornak:
         poly_free(p["skin_mid"], [pt(-10 + twist, sh + 1),
                                   pt(9 + twist, sh + 1), pt(7, -2),
                                   pt(-8, -2)], outline=False)
-        # Blok cahaya di bahu-dada (satu bentuk besar, bukan garis halus)
-        poly_free(p["skin_light"], [pt(-9 + twist, sh + 1),
-                                    pt(6 + twist, sh + 1), pt(4, sh + 7),
-                                    pt(-8, sh + 6)], outline=False)
-        poly_free(p["skin_shine"], [pt(-7 + twist, sh + 2),
-                                    pt(2 + twist, sh + 2), pt(1, sh + 5),
-                                    pt(-6, sh + 5)], outline=False)
-        # Bayangan miring di bawah pektoral + highlight mikro: dua nilai
-        # ini yang membuat dada terbaca BERBUKUK, bukan papan cokelat datar
-        # saat di-zoom di kartu Hero Shop.
-        poly_free(p["skin_dark"], [pt(-9 + twist, sh + 7), pt(-1 + twist, sh + 8),
-                                   pt(-2 + twist, sh + 10),
-                                   pt(-9 + twist, sh + 9)], outline=False)
-        _NS_gornak._aaline(surface, p["skin_high"], pt(-7 + twist, sh + 4),
-                           pt(-2 + twist, sh + 4), 1)
+        # Pektoral: satu blok terang di dada DEPAN + bayangan di bawahnya.
+        poly_free(p["skin_light"], [pt(1 + twist, sh + 2),
+                                    pt(9 + twist, sh + 2),
+                                    pt(8, sh + 8), pt(0, sh + 8)],
+                  outline=False)
+        poly_free(p["skin_dark"], [pt(0 + twist, sh + 8), pt(9, sh + 8),
+                                   pt(8, sh + 10), pt(-1, sh + 10)],
+                  outline=False)
+        _NS_gornak._aaline(surface, p["skin_shine"], pt(2 + twist, sh + 3),
+                           pt(8 + twist, sh + 3), 1)
         # Garis tengah + perut (nilai, bukan outline)
         _NS_gornak._aaline(surface, p["skin_dark"], pt(twist, sh + 3),
                            pt(0, 2), 1)
         _NS_gornak._aaline(surface, p["skin_dark"], pt(-5, -2), pt(5, -2), 1)
         _NS_gornak._aaline(surface, p["skin_dark"], pt(-4, 1), pt(4, 1), 1)
-        # Sabuk kulit diagonal - satu jalur tipis (dulu 5 px: jadi palang)
+        # Harness kulit diagonal - satu jalur tipis (versi 5 px jadi palang)
         _NS_gornak._aaline(surface, p["leather_dark"], pt(12 + twist, sh),
                            pt(-9, 3), 3)
         _NS_gornak._aaline(surface, p["leather_light"], pt(12 + twist, sh),
                            pt(-9, 3), 1)
-        # Pelat spellbreaker: satu bentuk gelap dengan TEPI atas terang dan
-        # SATU permata ungu. Pass-pass sebelumnya menaruh garis silang +
-        # tiga titik rune di sini; di skala 720p itu terbaca sebagai noda
-        # lavender, bukan detail. Satu fokus terang = satu bacaan jelas.
+        # Pelat spellbreaker: SATU bentuk gelap, tepi atas terang, satu
+        # permata. Garis silang + tiga rune (versi lama) di 720p hanya
+        # terbaca sebagai noda lavender.
         poly_free(p["armor_darkest"], [pt(-12, sh + 1), pt(-1, sh + 2),
                                        pt(0, -5), pt(-11, -6)])
         poly_free(p["armor_mid"], [pt(-11, sh + 2), pt(-2, sh + 3),
                                    pt(-1, -5), pt(-10, -6)], outline=False)
+        poly_free(p["armor_light"], [pt(-10, sh + 3), pt(-4, sh + 4),
+                                     pt(-4, -3), pt(-9, -4)], outline=False)
         _NS_gornak._aaline(surface, p["armor_shine"], pt(-11, sh + 3),
                            pt(-2, sh + 4), 2)
         _NS_gornak._aaline(surface, p["armor_darkest"], pt(-1, sh + 3),
@@ -1424,13 +1481,9 @@ class _NS_gornak:
                               (0.72 + 0.28 * math.sin(phase * 2.2)))
         gemx, gemy = pt(-6, sh + 5)
         _NS_gornak._aacircle(surface, (*p["magic_mid"], a), (gemx, gemy), 3)
-        _NS_gornak._aacircle(surface, (*p["magic_hot"], min(255, a + 40)),
-                             (gemx, gemy), 2)
-        _NS_gornak._rect(surface, (*p["magic_shine"], 255),
-                         (gemx - 1, gemy - 1, 2, 2))
-        # Cincin kuningan di ujung harness - geser ke tengah-tulang-dada
-        # (di sisi kiri dia terbaca sebagai bintik nyasar) dan buang
-        # highlight putihnya: satu nilai saja sudah cukup terbaca.
+        _NS_gornak._aacircle(surface, p["magic_hot"], (gemx, gemy), 2)
+        _NS_gornak._rect(surface, p["magic_shine"], (gemx - 1, gemy - 1, 2, 2))
+        # Cincin kuningan di ujung harness (satu nilai saja sudah terbaca)
         dot(p["brass_dark"], -1, -7, 2)
         dot(p["brass_mid"], -1, -7, 1)
 
@@ -1455,12 +1508,7 @@ class _NS_gornak:
         _NS_gornak._aacircle(surface, p["magic_hot"], pt(0, 4), 2)
         _NS_gornak._aacircle(surface, p["magic_shine"], pt(0, 4), 1)
         # Loincloth bertepi robek. Sengaja sempit (lebar 12, panjang 20):
-        # versi lebar mengubah kedua kaki jadi satu tiang ungu dan
-        # menghapus silhouette "berdiri".
-        # Kain dijatuhkan ke sisi BELAKANG garis tengah: sebelumnya simetris
-        # sehingga menutup paha depan dan kaki tampak hilang satu.
-        outer = [(-8, 7), (3, 7), (4 + sway, 18), (1 + sway, 24), (-2, 18),
-                 (-3, 24), (-6, 18), (-8 + sway, 22), (-10 + sway, 16)]
+        # versi lebar mengubah kedua kaki jadi satu tiang ungu.
         hem = [(4 + sway, 18), (1 + sway, 24), (-2, 18), (-3, 24),
                (-6, 18), (-8 + sway, 22), (-10 + sway, 16)]
         tuft = _NS_gornak._tuft_points(hem, depth=1.8, min_len=3.5, seed=3)
@@ -1487,26 +1535,25 @@ class _NS_gornak:
                                      pt(-12, 14)], outline=False)
 
     def _draw_gnk_pauldrons(surface, pt, poly_free, dot, f, phase, breath):
-        """Pauldron baja bertingkat + duri + permata ungu di sisi belakang."""
+        """Pauldron baja bertingkat + duri + permata ungu di sisi depan."""
         p = _NS_gornak.PALETTE
         sh = _NS_gornak.SHOULDER_Y
         for side, scale in ((-1, 0.80), (1, 1.0)):
             sx = side * 15
             sy = sh - 2 - int(breath if side > 0 else 0)
-            w = max(4, int(8 * scale))
-            h = max(3, int(6 * scale))
+            w = max(4, int(7 * scale))
+            h = max(3, int(5 * scale))
             poly_free(p["armor_darkest"], [pt(sx - w, sy - h + 2),
-                                          pt(sx + w, sy - h),
-                                          pt(sx + w + 1, sy + 2),
-                                          pt(sx, sy + h),
-                                          pt(sx - w - 1, sy + 2)])
-            poly_free(p["armor_mid"], [pt(sx - w + 1, sy - h + 3),
-                                       pt(sx + w - 1, sy - h + 3),
-                                       pt(sx + w, sy), pt(sx, sy + h - 2),
-                                       pt(sx - w, sy)], outline=False)
-            # Sisi JAUH dibiarkan gelap (dulu armor_light + shine: jadi
-            # "sayat" pucat yang mengungguli wajah). Cahaya dan permata
-            # tema ditaruh di sisi DEPAN, searah cahaya.
+                                           pt(sx + w, sy - h),
+                                           pt(sx + w + 1, sy + 2),
+                                           pt(sx, sy + h),
+                                           pt(sx - w - 1, sy + 2)])
+            poly_free(p["armor_mid"] if side > 0 else p["armor_dark"],
+                      [pt(sx - w + 1, sy - h + 3), pt(sx + w - 1, sy - h + 3),
+                       pt(sx + w, sy), pt(sx, sy + h - 2), pt(sx - w, sy)],
+                      outline=False)
+            # Sisi JAUH dibiarkan gelap; cahaya & permata tema ditaruh di
+            # sisi DEPAN, searah key light.
             lit = p["armor_light"] if side > 0 else p["armor_dark"]
             poly_free(lit, [pt(sx - w + 2, sy - h + 4),
                             pt(sx - 1, sy - h + 4),
@@ -1516,238 +1563,226 @@ class _NS_gornak:
                 _NS_gornak._aaline(surface, p["armor_shine"],
                                    pt(sx - w + 2, sy - h + 4),
                                    pt(sx + w - 1, sy - h + 3), 1)
-                # Specular cluster 1-2 px (bukan gradien) di pauldron depan.
+                # Specular cluster 1-2 px (bukan gradien).
                 hx, hy = pt(sx - 2, sy - h + 3)
                 _NS_gornak._rect(surface, p["armor_shine"], (hx, hy, 2, 1))
                 _NS_gornak._rect(surface, p["white"], (hx, hy, 1, 1))
-            spike = sy - h - (6 if side > 0 else 4)
+            spike = sy - h - (4 if side > 0 else 3)
             poly_free(p["armor_darkest"], [pt(sx - 2, sy - h + 1),
                                            pt(sx + 1, spike),
                                            pt(sx + 3, sy - h + 1)])
-            poly_free(p["armor_light"], [pt(sx - 1, sy - h + 1),
-                                         pt(sx + 1, spike + 1),
-                                         pt(sx + 2, sy - h + 1)],
-                      outline=False)
-            _NS_gornak._aacircle(surface, p["brass_mid"], pt(sx + side * 4,
-                                                            sy + 2), 1)
+            poly_free(p["armor_light"] if side > 0 else p["armor_mid"],
+                      [pt(sx - 1, sy - h + 1), pt(sx + 1, spike + 1),
+                       pt(sx + 2, sy - h + 1)], outline=False)
+            _NS_gornak._aacircle(surface, p["brass_mid"],
+                                 pt(sx + side * 4, sy + 2), 1)
             if side > 0:
-                # Permata tema: 2px saja. Versi 3+2 px tadi jadi blob ungu
-                # yang mengambang di bahu dan mencuri fokus dari wajah.
-                _NS_gornak._aacircle(surface, p["magic_mid"], pt(sx - 3,
-                                                                sy - 1), 2)
+                _NS_gornak._aacircle(surface, p["magic_mid"],
+                                     pt(sx - 3, sy - 1), 2)
                 _NS_gornak._rect(surface, p["magic_shine"],
                                  (pt(sx - 3, sy - 1)[0],
                                   pt(sx - 3, sy - 1)[1], 1, 1))
 
-    def _draw_gnk_head(surface, pt, poly_free, dot, f, phase, action, ward,
-                       void):
-        """KEPALA sebagai subjek: krist mohawk solid, wajah terang, mata
-        menyala ber-halo ungu, jenggot kepang, circlet ber-taring.
+    def _draw_gnk_head(surface, pt, poly_free, dot, f, phase, action, ap,
+                       ward, void):
+        """KEPALA sebagai SUBJEK gambar.
 
-        Versi awal masterwork masih terlalu "halus": rongga mata selebar 1 px
-        dan helai rambut 1 px hilang setelah smoothscale jalur hero, sehingga
-        kepala terbaca sebagai blob gelap. Sekarang volume rambut jadi SATU
-        massa terang dengan 3 duri (bukan helaian), wajah blok TERANG, dan
-        mata dua garis tebal + halo - persis cara Grimjaw (mask putih) atau
-        Kaizen (ponytail) mempertahankan focal point di skala kecil.
+        Aturan yang dipakai: tempurung kepala BESAR (proporsi heroik,
+        bukan realistis - di 65 px badan, kepala kecil selalu jadi blob),
+        satu massa rambut solid alih-alih helaian, bidang wajah TERANG
+        menghadap depan-atas, dan mata sebagai nilai tertinggi di seluruh
+        sprite. Semua detail lain di kepala dijaga agar tidak menyamai
+        kecerahan mata; kalau bilah atau permata lebih terang, pandangan
+        pemain jatuh ke sana dan kepala kehilangan perannya.
         """
         p = _NS_gornak.PALETTE
-        hy = _NS_gornak.HEAD_Y + int(math.sin(phase * 0.62) * 0.8)
-        hx = 2 if action == "attack" else (0 if action == "void" else 1)
+        bx, by = _NS_gornak._head_bob(action, phase, ap)
+        hy = _NS_gornak.HEAD_Y + by
+        hx = bx + (1 if action in ("attack", "surge") else 0)
         sh = _NS_gornak.SHOULDER_Y
+        lag = math.sin(phase * 1.05 - 0.8)          # rambut & jenggot telat
 
-        # Leher & trapezius
-        poly_free(p["skin_darkest"], [pt(-6, sh + 1), pt(6, sh + 1),
-                                      pt(9, sh + 5), pt(-9, sh + 5)])
-        poly_free(p["skin_mid"], [pt(-4, sh + 2), pt(4, sh + 2),
-                                  pt(6, sh + 5), pt(-5, sh + 5)],
+        def H(dx, dy):
+            return pt(hx + dx, hy + dy)
+
+        # ── Leher & trapezius (digambar lebih dulu = di belakang rahang)
+        poly_free(p["skin_darkest"], [pt(-7, sh + 1), pt(7, sh + 1),
+                                      H(6, 8), H(-5, 8)])
+        poly_free(p["skin_dark"], [pt(-5, sh), pt(5, sh), H(5, 8), H(-4, 8)],
                   outline=False)
 
-        # Massa rambut belakang (krist) - lebih besar dari tengkorak
-        wave = int(math.sin(phase * 1.35) * 1.5)
-        if action in ("walk", "attack", "surge"):
-            wave -= 2
-        crest = [(hx - 10, hy + 6), (hx - 13 + wave, hy - 2),
-                 (hx - 11 + wave, hy - 12), (hx - 4, hy - 15),
-                 (hx + 4, hy - 11), (hx + 7, hy - 3), (hx + 6, hy + 6)]
-        poly_free(p["hair_darkest"], [pt(*q) for q in crest])
-        # Pangkal krist ditebelkan 1 px supaya rambut tidak menempel langsung
-        # ke dahi terang (kalau menempel, wajah kehilangan bentuknya).
-        _NS_gornak._aaline(surface, p["shadow_deep"], pt(hx - 8, hy - 7),
-                           pt(hx + 7, hy - 7), 1)
-        crest_in = [(hx - 9, hy + 4), (hx - 11 + wave, hy - 2),
-                    (hx - 9 + wave, hy - 10), (hx - 4, hy - 13),
-                    (hx + 2, hy - 9), (hx + 5, hy - 2), (hx + 4, hy + 4)]
-        poly_free(p["hair_mid"], [pt(*q) for q in crest_in], outline=False)
-        # 3 duri krist - bentuk besar, BUKAN helai 1 px (hilang saat
-        # di-scale). Duri tengah sedikit lebih pendek dan tiap duri
-        # dipisah 1 px gelap supaya tidak jadi satu kerucut "topi penyihir".
-        for i, (bx, bh) in enumerate(((-10, 11), (-3, 13), (4, 9))):
-            tipx = hx + bx - 4 + wave
-            tipy = hy - bh
-            poly_free(p["hair_light"], [pt(hx + bx - 1, hy - 3), pt(tipx, tipy),
-                                       pt(hx + bx + 4, hy - 5)],
-                      outline=False)
-            poly_free(p["hair_shine"], [pt(hx + bx, hy - 4), pt(tipx + 1,
-                                                                tipy + 2),
-                                       pt(hx + bx + 2, hy - 5)],
-                      outline=False)
-        for bx in (-6, 1):
-            _NS_gornak._aaline(surface, p["hair_darkest"], pt(hx + bx, hy - 4),
-                               pt(hx + bx - 3 + wave, hy - 12), 1)
-        # Kuncir: pita rambut ramping yang keluar dari samping kepala dan
-        # diikat cincin kuningan - menambah massa di belakang kepala tanpa
-        # jadi gumpalan di atas bahu.
-        poly_free(p["hair_dark"], [pt(hx - 10, hy - 2), pt(hx - 15 + wave, hy - 1),
-                                   pt(hx - 16 + wave, hy + 5),
-                                   pt(hx - 12, hy + 4), pt(hx - 9, hy + 1)])
-        poly_free(p["hair_mid"], [pt(hx - 11, hy), pt(hx - 14 + wave, hy + 1),
-                                 pt(hx - 12, hy + 3)], outline=False)
-        _NS_gornak._aacircle(surface, p["brass_mid"], pt(hx - 10, hy), 2)
-
-        # Tengkorak + rahang bidang
-        poly_free(p["skin_darkest"], [pt(hx - 8, hy - 7), pt(hx + 8, hy - 7),
-                                      pt(hx + 9, hy + 2), pt(hx + 7, hy + 9),
-                                      pt(hx - 4, hy + 10), pt(hx - 8, hy + 3)])
-        poly_free(p["skin_mid"], [pt(hx - 7, hy - 6), pt(hx + 7, hy - 6),
-                                  pt(hx + 8, hy + 2), pt(hx + 6, hy + 8),
-                                  pt(hx - 3, hy + 9), pt(hx - 7, hy + 2)],
+        # ── Mohawk: SATU massa bergerigi, berayun telat terhadap badan
+        drift = int(round(lag * 1.6))
+        crest = [(-8, -7), (-7, -14), (-5, -9), (-2, -17),
+                 (1, -10), (4, -16), (7, -9), (9, -13), (10, -6)]
+        crest = [(qx + (drift if qy < -8 else 0), qy) for qx, qy in crest]
+        poly_free(p["hair_darkest"],
+                  [H(*q) for q in crest] + [H(10, -2), H(-8, -2)])
+        inner = [(qx, qy + 3) if qy < -8 else (qx, qy) for qx, qy in crest]
+        poly_free(p["hair_dark"],
+                  [H(*q) for q in inner] + [H(9, -3), H(-7, -3)],
                   outline=False)
-        # WAJAH: terang di tulang pipi, gelap di rongga mata. Aturan yang
-        # dipakai Grimjam (mask putih) / Kaizen (belang biru): SATU blok
-        # terang kecil + SATU blok gelap, bukan gradasi lebar - kalau lebar,
-        # di skala hero wajah jadi "topeng merah muda" tanpa fitur.
-        poly_free(p["skin_light"], [pt(hx - 5, hy - 1), pt(hx + 6, hy - 1),
-                                    pt(hx + 5, hy + 3), pt(hx - 3, hy + 4)],
+        poly_free(p["hair_mid"], [H(-5, -7), H(-2, -13), H(1, -8), H(4, -12),
+                                  H(7, -7), H(7, -3), H(-5, -3)],
                   outline=False)
-        poly_free(p["skin_shine"], [pt(hx + 1, hy + 1), pt(hx + 5, hy + 1),
-                                     pt(hx + 5, hy + 3),
-                                     pt(hx + 1, hy + 3)], outline=False)
-        # Dahi (terang, dipisah alis gelap) + cavum mata 4 px
-        poly_free(p["skin_mid"], [pt(hx - 6, hy - 6), pt(hx + 7, hy - 6),
-                                  pt(hx + 7, hy - 4),
-                                  pt(hx - 6, hy - 4)], outline=False)
-        poly_free(p["skin_darkest"], [pt(hx - 6, hy - 4), pt(hx + 7, hy - 4),
-                                      pt(hx + 7, hy + 0), pt(hx - 6, hy + 0)],
+        for tipx, tipy in ((-7 + drift, -13), (-2 + drift, -16),
+                           (4 + drift, -15), (9 + drift, -12)):
+            _NS_gornak._aaline(surface, p["hair_light"], H(tipx, tipy + 4),
+                               H(tipx, tipy), 1)
+            _NS_gornak._rect(surface, p["hair_shine"],
+                             (H(tipx, tipy)[0], H(tipx, tipy)[1], 1, 1))
+
+        # ── Tempurung kepala (3 nilai + bidang wajah)
+        poly_free(p["skin_darkest"], [H(-9, -8), H(3, -10), H(9, -7),
+                                      H(11, 0), H(9, 7), H(2, 10),
+                                      H(-6, 8), H(-9, 0)])
+        poly_free(p["skin_dark"], [H(-8, -7), H(3, -9), H(8, -6), H(10, 0),
+                                   H(8, 6), H(2, 9), H(-5, 7), H(-8, 0)],
                   outline=False)
-        # Mata menyala: dua blok + halo ungu. PLUS kedip berkala - satu
-        # frame kelopak turun tiap ~4 dtk, cukup untuk membuat unit terasa
-        # hidup di lane tanpa mengorbankan satu piksel pun di pose lain.
-        blink = ((phase * 0.6) % 4.2) < 0.16
-        if blink:
-            poly_free(p["skin_dark"], [pt(hx - 6, hy - 4), pt(hx + 7, hy - 4),
-                                       pt(hx + 7, hy - 1),
-                                       pt(hx - 6, hy - 1)], outline=False)
-        # DUA mata, bukan satu bar: tiap mata 2 px dengan batang hidung gelap
-        # 2 px di antaranya. Tanpa pemisah itu, wajah terbaca sebagai satu
-        # garis putih (keluhan "wajah masih pita terang" di pass sebelumnya).
-        for ex in ((hx - 1, hx + 4) if not blink else ()):
-            _NS_gornak._aaline(surface, p["eye_mid"], pt(ex, hy - 2.5),
-                               pt(ex + 1, hy - 2.5), 2)
-            _NS_gornak._aaline(surface, p["eye_glow"], pt(ex, hy - 2.5),
-                               pt(ex + 1, hy - 2.5), 1)
-        if not blink:
-            _NS_gornak._aaline(surface, p["skin_darkest"], pt(hx + 2, hy - 4),
-                               pt(hx + 2, hy + 0), 2)   # batang hidung
-        ga = _NS_gornak._alpha(85 + (115 if (ward or void) else 0))
-        gx, gy = pt(hx + 1.5, hy - 2.5)
-        _NS_gornak._aacircle(surface, (*p["eye_light"], ga), (gx, gy), 3)
-        _NS_gornak._aacircle(surface, (*p["magic_hot"], ga // 2), (gx, gy), 5)
-        # War paint ungu di pipi (sinyal warna tema, terlihat di 1x)
-        wp = _NS_gornak._alpha(190)
-        _NS_gornak._aaline(surface, (*p["magic_light"], wp), pt(hx - 4, hy + 1),
-                           pt(hx - 1, hy + 3), 1)
-        _NS_gornak._aaline(surface, (*p["magic_light"], wp), pt(hx - 5, hy + 2),
-                           pt(hx - 2, hy + 4), 1)
-        # Hidung & mulut
-        _NS_gornak._aaline(surface, p["skin_darkest"], pt(hx + 8, hy + 1),
-                           pt(hx + 8, hy + 4), 1)
-        _NS_gornak._aaline(surface, p["skin_darkest"], pt(hx + 4, hy + 5),
-                           pt(hx + 7, hy + 5), 1)
+        poly_free(p["skin_mid"], [H(-6, -7), H(3, -8), H(8, -5), H(9, 0),
+                                  H(7, 6), H(1, 8), H(-5, 5)],
+                  outline=False)
+        poly_free(p["skin_light"], [H(0, -6), H(8, -4), H(10, 1), H(7, 7),
+                                    H(0, 7)], outline=False)
+        poly_free(p["skin_shine"], [H(4, 2), H(9, 2), H(8, 5), H(4, 5)],
+                  outline=False)
+        _NS_gornak._rect(surface, p["skin_high"],
+                         (H(7, 3)[0], H(7, 3)[1], 2, 1))
 
-        # Jenggot kepang: hanya RAHANG BAWAH (dulu sampai hy+16 -> menyatu
-        # dengan leher & dada jadi satu massa gelap).
-        poly_free(p["beard_darkest"], [pt(hx - 5, hy + 5), pt(hx + 7, hy + 5),
-                                       pt(hx + 6, hy + 10), pt(hx + 2, hy + 13),
-                                       pt(hx - 3, hy + 10)])
-        poly_free(p["beard_mid"], [pt(hx - 3, hy + 6), pt(hx + 5, hy + 6),
-                                   pt(hx + 4, hy + 9), pt(hx + 2, hy + 11),
-                                   pt(hx - 2, hy + 9)], outline=False)
-        # Garis gelap di bawah rahang: memisahkan jenggot dari leher/dada,
-        # kalau tidak semuanya jadi satu massa coklat.
-        _NS_gornak._aaline(surface, p["shadow_deep"], pt(hx - 5, hy + 11),
-                           pt(hx + 6, hy + 10), 1)
-        poly_free(p["beard_mid"], [pt(hx + 1, hy + 12), pt(hx + 4, hy + 12),
-                                   pt(hx + 3, hy + 15)], outline=False)
-        for i in range(3):
-            _NS_gornak._aaline(surface, p["beard_darkest"],
-                               pt(hx - 2 + i * 3, hy + 6),
-                               pt(hx - 1 + i * 3, hy + 13), 1)
-        dot(p["brass_dark"], hx + 2, hy + 13, 2)
-        _NS_gornak._aacircle(surface, p["brass_mid"], pt(hx + 2, hy + 13), 1)
+        # ── Circlet kuningan + permata rune (di DAHI, tidak menutup mata)
+        poly_free(p["brass_dark"], [H(-9, -6), H(10, -5), H(10, -3),
+                                    H(-9, -4)])
+        _NS_gornak._aaline(surface, p["brass_mid"], H(-8, -5), H(9, -4), 1)
+        _NS_gornak._rect(surface, p["brass_light"],
+                         (H(3, -5)[0], H(3, -5)[1], 1, 1))
+        gx, gy = H(9, -4)
+        _NS_gornak._aacircle(surface, p["magic_mid"], (gx, gy), 2)
+        _NS_gornak._rect(surface, p["magic_hot"], (gx, gy - 1, 1, 2))
 
-        # Circlet besi + taring pelipis + permata ungu di dahi
-        poly_free(p["armor_darkest"], [pt(hx - 8, hy - 7), pt(hx + 8, hy - 7),
-                                       pt(hx + 8, hy - 4), pt(hx - 8, hy - 4)])
-        poly_free(p["armor_light"], [pt(hx - 7, hy - 6.5), pt(hx + 7, hy - 6.5),
-                                     pt(hx + 7, hy - 5),
-                                     pt(hx - 7, hy - 5)], outline=False)
-        _NS_gornak._aacircle(surface, p["magic_hot"], pt(hx + 6, hy - 6), 1)
-        poly_free(p["armor_mid"], [pt(hx - 9, hy - 6), pt(hx - 9, hy - 11),
-                                   pt(hx - 7, hy - 6)], outline=False)
-        poly_free(p["armor_mid"], [pt(hx + 8, hy - 6), pt(hx + 9, hy - 11),
-                                   pt(hx + 7, hy - 6)], outline=False)
+        # ── Bayangan alis: satu pita gelap membuat mata "cekung"
+        poly_free(p["skin_darkest"], [H(0, -3), H(10, -2), H(10, 0),
+                                      H(0, -1)], outline=False)
+
+        # ── MATA: nilai tertinggi di sprite (halo -> iris -> kilat inti)
+        glow = 1.0 if (ward or void) else (0.78 + 0.22 * math.sin(phase * 2.4))
+        # Dua rongga TERPISAH: kalau soket saling bersentuhan setelah
+        # SCALE, dua mata terbaca sebagai satu pita terang (visor helm).
+        for ex in (2, 8):
+            _NS_gornak._rect(surface, p["eye_dark"],
+                             (H(ex, -1)[0], H(ex, -1)[1], 3, 4))
+            _NS_gornak._aacircle(surface,
+                                 (*p["magic_light"],
+                                  _NS_gornak._alpha(110 * glow)),
+                                 (H(ex, 1)[0] + 1, H(ex, 1)[1]), 2)
+            _NS_gornak._rect(surface, p["eye_mid"],
+                             (H(ex, 0)[0], H(ex, 0)[1], 3, 2))
+            _NS_gornak._rect(surface, p["eye_light"],
+                             (H(ex, 0)[0], H(ex, 0)[1], 2, 1))
+            _NS_gornak._rect(surface, p["eye_glow"],
+                             (H(ex, 0)[0], H(ex, 0)[1], 1, 1))
+
+        # ── Hidung & mulut (nilai, bukan garis halus)
+        _NS_gornak._aaline(surface, p["skin_dark"], H(10, 2), H(11, 4), 1)
+        _NS_gornak._aaline(surface, p["beard_darkest"], H(4, 6), H(9, 6), 1)
+
+        # ── Jenggot kepang: dua untai + cincin kuningan, ikut lag
+        bl = int(round(lag * 1.2))
+        poly_free(p["beard_darkest"], [H(-2, 7), H(9, 7), H(10, 11),
+                                       H(6 + bl, 17), H(3, 12),
+                                       H(1 + bl, 15), H(-3, 10)])
+        poly_free(p["beard_mid"], [H(-1, 8), H(8, 8), H(9, 11),
+                                   H(5 + bl, 15), H(3, 12),
+                                   H(2 + bl, 13), H(-2, 10)], outline=False)
+        poly_free(p["beard_dark"], [H(-1, 8), H(3, 8), H(3, 11),
+                                    H(1 + bl, 13), H(-2, 10)], outline=False)
+        poly_free(p["beard_light"], [H(4, 9), H(8, 9), H(8, 11),
+                                     H(5 + bl, 13)], outline=False)
+        _NS_gornak._aaline(surface, p["beard_light"], H(2, 8), H(8, 9), 1)
+        for rx, ry in ((5 + bl, 14), (2 + bl, 13)):
+            _NS_gornak._aacircle(surface, p["brass_dark"], H(rx, ry), 2)
+            _NS_gornak._aacircle(surface, p["brass_mid"], H(rx, ry), 1)
+
+        # ── Kuncir samping (mengunci siluet sisi belakang kepala)
+        poly_free(p["hair_dark"], [H(-8, -4), H(-5, -3), H(-4, 5),
+                                   H(-7 + drift, 11), H(-10, 4)])
+        poly_free(p["hair_mid"], [H(-7, -3), H(-5, -2), H(-5, 5),
+                                  H(-7 + drift, 9)], outline=False)
 
     def _draw_gnk_rimlight(surface, pt, f, phase, ward, void):
         """Rim light ungu tipis di tepi yang menghadap cahaya.
 
-        Ini yang paling hilang dari render sebelumnya: semua hero masterwork
-        lain punya "sinyal" warna di tepian (Grimjam api, Vex void cyan,
-        Kaizen angin biru) sehingga terbaca saat unit bertumpuk. Gornak
-        memakai ungu anti-sihir; 1 px saja, tapi di posisi yang tepat
-        (puncak bahu, tepi pelat, punggung bilah, ujung boot).
+        Semua hero masterwork punya "sinyal" warna di tepian (Grimjaw api,
+        Vex void cyan, Kaizen angin biru) sehingga terbaca saat unit
+        bertumpuk. Gornak memakai ungu anti-sihir; 1 px saja, tapi di
+        posisi yang tepat (puncak krist, tepi pelat, sabuk, ujung boot).
         """
         p = _NS_gornak.PALETTE
         sh = _NS_gornak.SHOULDER_Y
-        hy = _NS_gornak.HEAD_Y + int(math.sin(phase * 0.62) * 0.8)
+        hy = _NS_gornak.HEAD_Y
         pulse = 1.0 if (ward or void) else (0.72 + 0.28 * math.sin(phase * 1.8))
         a = _NS_gornak._alpha(150 * pulse)
         col = (*p["magic_light"], a)
-        # Puncak krist saja + tepi pelat: garis di bahu tumpang tindih
-        # dengan armor_shine pauldron jadi terlihat seperti noda.
-        _NS_gornak._aaline(surface, col, pt(-8, hy - 12), pt(2, hy - 13), 1)
-        # Tepi pelat dada & sabuk
+        _NS_gornak._aaline(surface, col, pt(-8, hy - 10), pt(3, hy - 11), 1)
         _NS_gornak._aaline(surface, col, pt(-11, sh + 1), pt(-11, -5), 1)
         _NS_gornak._aaline(surface, (*p["magic_hot"], a), pt(-12, 1),
                            pt(12, 1), 1)
-        # Garis cahaya di lutut & ujung boot
-        for sx in (-5, 9):
-            _NS_gornak._aaline(surface, col, pt(sx, 22), pt(sx + 1, 30), 1)
-            _NS_gornak._aacircle(surface, col, pt(sx + 1, 41), 1)
+        # Kaki: garis harus jatuh DI ATAS tulang kering, bukan di celah
+        # antara dua kaki (versi lama menyisakan garis ungu melayang).
+        for kx, fx in ((10, 13), (-11, -15)):
+            _NS_gornak._aaline(surface, col, pt(kx, 26), pt(fx, 36), 1)
+            _NS_gornak._aacircle(surface, col, pt(fx, 40), 1)
 
     def _draw_gnk_arm(surface, pt, poly_free, dot, limb, f, phase, action, ap,
-                      shoulder, elbow, grip, blade_angle, blade_len, back=False,
-                      ward=False, void=False, surge=False):
-        """Lengan 2-tulang + bracer + bilah. Bayangan antar-bagian cukup
-        +2 px; outline luar sudah memberi pemisah, jadi tidak perlu tebal."""
+                      shoulder, elbow, grip, blade_angle, blade_len,
+                      back=False, ward=False, void=False, surge=False):
+        """Lengan 2-tulang + bracer + bilah.
+
+        Bayangan antar-bagian cukup +2 px; outline luar sudah memberi
+        pemisah, jadi tidak perlu tebal.
+        """
         p = _NS_gornak.PALETTE
         base = p["skin_dark"] if back else p["skin_mid"]
         high = p["skin_mid"] if back else p["skin_light"]
-        # Satu tingkat lebih berisi daripada pass sebelumnya: di skala hero
-        # bilah yang panjang+terang sempat mendominasi sampai lengan terlihat
-        # seperti ranting dan pedang seperti menempel sendiri di dada.
         limb(shoulder, elbow, 6 if back else 7, base, high)
         limb(elbow, grip, 5 if back else 6, base, high)
+        # Balutan kulit di lengan atas: memecah bidang coklat polos jadi
+        # dua massa (deltoid / biseps) tanpa menambah siluet.
+        sxa, sya = shoulder
+        exa, eya = elbow
+        dxa, dya = exa - sxa, eya - sya
+        dla = math.hypot(dxa, dya) or 1.0
+        uxa, uya = dxa / dla, dya / dla
+        pxa, pya = -uya, uxa
+        wrapw = 2.6 if back else 3.2
+        wrapc = p["leather_dark"] if back else p["leather_mid"]
+        for u, thick in ((0.40, 1.6), (0.66, 1.2)):
+            wcx = sxa + dxa * u
+            wcy = sya + dya * u
+            poly_free(p["skin_darkest"] if back else wrapc,
+                      [pt(wcx + pxa * wrapw, wcy + pya * wrapw),
+                       pt(wcx - pxa * wrapw, wcy - pya * wrapw),
+                       pt(wcx - pxa * wrapw + uxa * thick,
+                          wcy - pya * wrapw + uya * thick),
+                       pt(wcx + pxa * wrapw + uxa * thick,
+                          wcy + pya * wrapw + uya * thick)], outline=False)
+        if not back:
+            # Kilau 1 px di sisi atas deltoid.
+            dot(p["skin_shine"],
+                sxa + dxa * 0.22 + uya * 1.8,
+                sya + dya * 0.22 - uxa * 1.8, 1, outline=False)
         # Bracer besi: satu blok di tengah lengan bawah
         bx = int(elbow[0] * 0.4 + grip[0] * 0.6)
         by = int(elbow[1] * 0.4 + grip[1] * 0.6)
         poly_free(p["armor_darkest"], [pt(bx - 3, by - 3), pt(bx + 3, by - 3),
                                        pt(bx + 3, by + 3), pt(bx - 3, by + 3)])
-        poly_free(p["armor_light"], [pt(bx - 2, by - 2), pt(bx + 1, by - 2),
-                                     pt(bx + 1, by + 2), pt(bx - 2, by + 2)],
-                  outline=False)
-        # Tangan + highlight buku jari: tanpa ini bilah terlihat "menempel"
-        # di dada, bukan digenggam.
+        poly_free(p["armor_mid"] if back else p["armor_light"],
+                  [pt(bx - 2, by - 2), pt(bx + 1, by - 2),
+                   pt(bx + 1, by + 2), pt(bx - 2, by + 2)], outline=False)
+        if not back:
+            _NS_gornak._rect(surface, p["armor_shine"],
+                             (pt(bx - 2, by - 2)[0], pt(bx - 2, by - 2)[1],
+                              2, 1))
+        # Telapak + buku jari: tanpa ini bilah terlihat "menempel" di dada
         dot(p["skin_darkest"], *grip, 3 if back else 4)
         dot(high, *grip, 2 if back else 3)
         if not back:
@@ -1759,71 +1794,85 @@ class _NS_gornak:
 
     def _draw_gnk_blade(surface, pt, f, grip, angle, length, phase, action,
                         back=False, ward=False, void=False, surge=False):
-        """Bilah "spellbreaker" melengkung - dihitung dari grip + sudut.
+        """Bilah "spellbreaker" ASIMETRIS - dihitung dari grip + sudut.
 
-        Dibuat TERANG (nilai tertinggi ke-2 setelah mata) supaya senjata
-        terbaca sebagai senjata, bukan tonjolan gelap seperti sebelumnya.
+        Bentuknya sengaja tidak simetris: punggung tebal & gelap,
+        MATA BILAH tipis & terang di sisi potong, fuller ungu di tengah.
+        Versi lama memakai tiga poligon inset sehingga terbaca sebagai
+        jarum putih; dengan punggung gelap, senjata jadi punya arah dan
+        tebasan langsung terbaca ke mana bilah menghadap.
         """
         p = _NS_gornak.PALETTE
         s, c = math.sin(angle), math.cos(angle)
+        n_x, n_y = c, -s                              # normal = sisi potong
         segs = 6
-        curve = 5.0 if not back else 3.0
-        centers = []
+        curve = 4.5 if not back else 2.8
+        w0 = 3.4 if not back else 2.5
+        w1 = 0.7
+
+        spine, edge, mid, backline = [], [], [], []
         for i in range(segs + 1):
             t = i / segs
             bend = curve * (t * t)
-            centers.append((grip[0] + s * length * t + c * bend,
-                            grip[1] + c * length * t - s * bend))
-        n_x, n_y = c, -s
-        left, right = [], []
-        for i, (x, y) in enumerate(centers):
-            t = i / segs
-            wd = (3.0 if not back else 2.2) * (1.0 - t) + 0.7 * t
-            left.append((x + n_x * wd, y + n_y * wd))
-            right.append((x - n_x * wd, y - n_y * wd))
-        body = left + right[::-1]
-        poly_pts = [pt(*q) for q in body]
+            cxp = grip[0] + s * length * t + n_x * bend
+            cyp = grip[1] + c * length * t + n_y * bend
+            w = w0 * (1.0 - t) + w1 * t
+            backline.append((cxp - n_x * w * 0.55, cyp - n_y * w * 0.55))
+            spine.append((cxp, cyp))
+            mid.append((cxp + n_x * w * 0.28, cyp + n_y * w * 0.28))
+            edge.append((cxp + n_x * w * 0.62, cyp + n_y * w * 0.62))
+
+        def S(seq):
+            return [pt(int(round(qx)), int(round(qy))) for qx, qy in seq]
+
+        s_back, s_spine, s_mid, s_edge = (S(backline), S(spine), S(mid),
+                                          S(edge))
+        full = s_edge + s_back[::-1]
         _NS_gornak._poly(surface, p["shadow_deep"],
-                         [(q[0] + f, q[1] + 1) for q in poly_pts])
-        _NS_gornak._poly(surface, p["blade_mid"], poly_pts)
+                         [(q[0] + f, q[1] + 1) for q in full])
+        _NS_gornak._poly(surface, p["blade_darkest"], full)
+        # Punggung gelap -> badan -> pita mata terang (3 nilai, tanpa gradien)
+        _NS_gornak._poly(surface, p["blade_dark"], s_back + s_spine[::-1])
+        _NS_gornak._poly(surface, p["blade_mid"], s_spine + s_mid[::-1])
+        _NS_gornak._poly(surface, p["blade_light"], s_mid + s_edge[::-1])
+        # MATA BILAH: satu garis 1 px paling terang di sisi potong
+        for i in range(len(s_edge) - 1):
+            _NS_gornak._aaline(surface, p["blade_shine"], s_edge[i],
+                               s_edge[i + 1], 1)
+        # Hamon: dither 1 px sepanjang badan bilah
+        _NS_gornak._dither_dots(surface, p["blade_hamon"], s_mid[1:], 150)
 
-        def inset(k):
-            out = []
-            for (x, y) in body:
-                dx = (x - grip[0]) * k
-                dy = (y - grip[1]) * k
-                out.append(pt(int(x - dx), int(y - dy)))
-            return out
-
-        _NS_gornak._poly(surface, p["blade_light"], inset(0.22))
-        _NS_gornak._poly(surface, p["blade_shine"], inset(0.52))
-        # Rune penyedot mana - hanya saat menyerang / skill
+        # Fuller / rune penyedot mana - menyala saat menyerang & skill
         hot = 0.30 + (0.70 if (ward or void or surge or action == "attack")
                       else 0.0)
-        glow_a = _NS_gornak._alpha(150 * hot *
+        glow_a = _NS_gornak._alpha(160 * hot *
                                    (0.8 + 0.2 * math.sin(phase * 2.2)))
-        core = [pt(*q) for q in centers]
         if not back:
-            for i in range(len(core) - 1):
+            for i in range(len(s_spine) - 1):
                 _NS_gornak._aaline(surface, (*p["magic_light"], glow_a),
-                                   core[i], core[i + 1], 1)
-        # Gagang kulit + cross-guard + pommel
-        g1 = pt(grip[0] - int(c * 3), grip[1] + int(s * 3))
-        g2 = pt(grip[0] + int(c * 3), grip[1] - int(s * 3))
+                                   s_spine[i], s_spine[i + 1], 1)
+
+        # Cross-guard + gagang kulit + pommel kuningan
+        g1 = pt(int(grip[0] - c * 4), int(grip[1] + s * 4))
+        g2 = pt(int(grip[0] + c * 4), int(grip[1] - s * 4))
         _NS_gornak._aaline(surface, p["shadow_deep"], (g1[0] + f, g1[1] + 1),
                            (g2[0] + f, g2[1] + 1), 4)
-        _NS_gornak._aaline(surface, p["armor_mid"], g1, g2, 2)
-        butt = pt(grip[0] - int(s * 6), grip[1] - int(c * 6))
+        _NS_gornak._aaline(surface, p["armor_dark"], g1, g2, 3)
+        _NS_gornak._aaline(surface, p["armor_light"], g1, g2, 1)
+        butt = pt(int(grip[0] - s * 6), int(grip[1] - c * 6))
         gx, gy = pt(*grip)
         _NS_gornak._aaline(surface, p["leather_dark"], (gx, gy), butt, 4)
         _NS_gornak._aaline(surface, p["leather_light"], (gx, gy), butt, 1)
-        _NS_gornak._aacircle(surface, p["brass_mid"], butt, 2)
-        tip = core[-1]
+        _NS_gornak._aacircle(surface, p["brass_dark"], butt, 2)
+        _NS_gornak._aacircle(surface, p["brass_mid"], butt, 1)
+
+        # Ujung: glint + inti ungu (titik lahir semua FX Q / slash)
+        tip = s_spine[-1]
         _NS_gornak._aacircle(surface, (*p["magic_hot"], glow_a), tip, 2)
-        # Specular cluster 1-2 px (bukan gradien) di sisi cahaya bilah.
-        if not back and len(core) > 3:
-            gl = core[2]
-            _NS_gornak._rect(surface, p["blade_shine"], (gl[0] - 1, gl[1] - 1, 2, 1))
+        if not back and len(s_edge) > 3:
+            gl = s_edge[2]
+            _NS_gornak._rect(surface, p["blade_shine"],
+                             (gl[0] - 1, gl[1] - 1, 2, 1))
             _NS_gornak._rect(surface, p["white"], (gl[0], gl[1] - 1, 1, 1))
         if (ward or void or surge) and not back:
             _NS_gornak._spark_star(
@@ -1837,7 +1886,7 @@ class _NS_gornak:
     def _draw_gnk_weave(surface, pt, f):
         """Tenun kain & grain kulit - HANYA portrait LOD.
 
-        Dither 1-px seperti ini justru jadi noise/kasar setelah jalur hero
+        Dither 1-px seperti ini jadi noise setelah jalur hero
         men-smoothscale sprite ke 0.7-0.8, jadi dibatasi ke mode detail.
         """
         p = _NS_gornak.PALETTE
@@ -1850,26 +1899,31 @@ class _NS_gornak:
                              (pt(x0, y0)[0], pt(x0, y0)[1], 1, 1))
 
     def _draw_gnk_masterwork_details(surface, pt, f, phase, action):
-        """Detail frekuensi tinggi; di skala arena tanda-tanda ini hanya
-        akan menjadi noise, jadi hanya dinyalakan saat portrait."""
+        """Detail frekuensi tinggi; di skala arena hanya jadi noise, jadi
+        hanya dinyalakan saat portrait."""
         p = _NS_gornak.PALETTE
         hx = 1 if f > 0 else -1
-        cy = _NS_gornak.HEAD_Y + int(math.sin(phase * 0.62) * 0.8)
-        # Helai rambut ekstra di atas krist
-        for i in range(7):
-            bx = hx - 7 + i * 2
-            by = cy - 7 - abs(i - 3)
-            wx = bx - 3 + int(math.sin(phase * 1.4 + i) * 2)
-            _NS_gornak._aaline(surface, p["hair_shine"], pt(bx, by),
-                               pt(wx, by - 10 - (i % 3)), 1)
+        cy = _NS_gornak.HEAD_Y
+        # Serat di DALAM massa mohawk (bukan helai lepas di atas siluet):
+        # garis nilai terang mengikuti arah tumbuh duri.
+        crest = ((-7, -13, -8, -8), (-2, -16, -3, -10),
+                 (4, -15, 3, -9), (9, -12, 8, -7))
+        for i, (ax, ay, bx2, by2) in enumerate(crest):
+            sway = int(math.sin(phase * 1.4 + i) * 1.0)
+            _NS_gornak._aaline(surface, p["hair_shine"],
+                               pt(hx + ax + sway, cy + ay + 1),
+                               pt(hx + bx2, cy + by2), 1)
+            _NS_gornak._aaline(surface, p["hair_dark"],
+                               pt(hx + ax + sway + 1, cy + ay + 2),
+                               pt(hx + bx2 + 1, cy + by2), 1)
         # Serat jenggot
         for i in range(4):
             _NS_gornak._aaline(surface, p["beard_mid"],
-                               pt(hx - 4 + i * 2, cy + 5),
-                               pt(hx - 3 + i * 2, cy + 12), 1)
+                               pt(hx - 1 + i * 2, cy + 9),
+                               pt(hx + i * 2, cy + 15), 1)
         # Alis tebal
-        _NS_gornak._aaline(surface, p["beard_darkest"], pt(hx - 1, cy - 4),
-                           pt(hx + 6, cy - 5), 1)
+        _NS_gornak._aaline(surface, p["beard_darkest"], pt(hx + 1, cy - 2),
+                           pt(hx + 9, cy - 1), 1)
         # Grain kulit pada bahu & dada
         for i in range(10):
             dx = -9 + (i % 5) * 4
@@ -1877,8 +1931,8 @@ class _NS_gornak:
             _NS_gornak._aaline(surface, (*p["skin_shine"], 110), pt(dx, dy),
                                pt(dx + 1, dy), 1)
         # Otot leher
-        _NS_gornak._aaline(surface, p["skin_dark"], pt(hx - 4, -20),
-                           pt(hx - 1, -16), 1)
+        _NS_gornak._aaline(surface, p["skin_dark"], pt(hx - 4, -18),
+                           pt(hx - 1, -15), 1)
         # Jahitan jubah & loincloth
         for yy in (8, 13, 18):
             _NS_gornak._aaline(surface, (*p["robe_edge"], 150), pt(-15, yy),
@@ -1886,7 +1940,7 @@ class _NS_gornak:
         for xx in (-5, 0, 5):
             _NS_gornak._aaline(surface, (*p["robe_light"], 120), pt(xx, 8),
                                pt(xx + 1, 23), 1)
-        # Tato rune anti-sihir
+        # Tato rune anti-sihir di lengan/dada
         for i in range(4):
             _NS_gornak._aaline(surface, (*p["magic_light"], 140),
                                pt(-12 + i * 2, -13 + i * 6),
@@ -1894,17 +1948,15 @@ class _NS_gornak:
         # Ukiran pelat & paku pauldron
         _NS_gornak._aaline(surface, (*p["armor_shine"], 165), pt(-9, -15),
                            pt(0, -14), 1)
-        _NS_gornak._aaline(surface, (*p["armor_shine"], 165), pt(-9, -11),
-                           pt(-1, -10), 1)
         for sx, sy in ((13, -22), (15, -19), (11, -18), (-13, -21)):
-            _NS_gornak._aacircle(surface, (*p["armor_shine"], 150), pt(sx, sy),
-                                 1)
-        # Ringgit gagang & garis hamon bilah
+            _NS_gornak._aacircle(surface, (*p["armor_shine"], 150),
+                                 pt(sx, sy), 1)
+        # Garis hamon bilah depan
         for i in range(5):
             t = i / 5
             _NS_gornak._aaline(surface, (*p["blade_hamon"], 170),
-                               pt(13 + int(t * 12), 3 - int(t * 15)),
-                               pt(14 + int(t * 12), 4 - int(t * 15)), 1)
+                               pt(15 + int(t * 12), 8 + int(t * 12)),
+                               pt(16 + int(t * 12), 9 + int(t * 12)), 1)
 
     def _draw_footfall_dust(surface, x, y, facing, phase):
         """Kepul debu di tapak yang mendarat (deterministik dari phase)."""
@@ -1928,10 +1980,10 @@ class _NS_gornak:
                                  (px, py, 1, 1))
 
     # ==================================================================
-    # EFEK DASAR - ditundukan pada karakter
+    # EFEK DASAR - selalu ditundukkan pada karakter
     # ==================================================================
     def _draw_shadow(surface, x, y):
-        """Bayangan kontak tunggal yang lembek (base_boss menggambar satu
+        """Bayangan kontak tunggal yang lembut (base_boss menggambar satu
         lagi; ini dipertipis supaya tidak jadi dua piringan hitam)."""
         p = _NS_gornak.PALETTE
         K = _NS_gornak.SCALE
@@ -1945,7 +1997,8 @@ class _NS_gornak:
                 _NS_gornak._ellipse(sh, (0, 0, 0, a),
                                     (bw // 2 - w // 2, bh // 2 - h // 2, w, h))
             _NS_gornak._ellipse(sh, (*p["magic_darkest"], 60),
-                                (int(6 * K), int(3 * K), int(48 * K), int(12 * K)))
+                                (int(6 * K), int(3 * K), int(48 * K),
+                                 int(12 * K)))
             for side in (-1, 1):
                 fx = bw // 2 + int(side * 9 * K)
                 _NS_gornak._ellipse(sh, (0, 0, 0, 130),
@@ -1957,7 +2010,7 @@ class _NS_gornak:
         surface.blit(sh, (int(x) - bw // 2, int(y) - bh // 2))
 
     def _draw_anti_magic_field(surface, x, y, phase, skill):
-        """Cahaya lembut MENEMPEL badan + percikan mengorbit siluet."""
+        """Cahaya lembut MENEMPEL badan + serpihan mana mengorbit siluet."""
         p = _NS_gornak.PALETTE
         pulse = 1.0 if skill else math.sin(phase * 0.7) * 0.25 + 0.72
         K = _NS_gornak.SCALE
@@ -1966,9 +2019,12 @@ class _NS_gornak:
 
         def _build():
             glow = pygame.Surface((gw, gh), pygame.SRCALPHA)
-            for rx, ry, col, a in ((int(30 * K), int(38 * K), "magic_darkest", 78),
-                                   (int(23 * K), int(30 * K), "magic_dark", 96),
-                                   (int(16 * K), int(22 * K), "magic_mid", 120)):
+            for rx, ry, col, a in ((int(30 * K), int(38 * K),
+                                    "magic_darkest", 78),
+                                   (int(23 * K), int(30 * K), "magic_dark",
+                                    96),
+                                   (int(16 * K), int(22 * K), "magic_mid",
+                                    120)):
                 _NS_gornak._ellipse(glow, (*p[col], a),
                                     (cx - rx, cy - ry, rx * 2, ry * 2))
             _NS_gornak._ellipse(glow, (*p["magic_light"], 70),
@@ -1980,6 +2036,7 @@ class _NS_gornak:
         glow.set_alpha(_NS_gornak._alpha(255 * pulse))
         surface.blit(glow, (int(x) - cx, int(y) - cy + 8))
 
+        # Serpihan (bukan bulatan): bahasa bentuk yang sama dengan FX skill.
         n = 6
         for i in range(n):
             ang = ((phase * 0.35 + i / n) % 1.0) * math.tau
@@ -1987,11 +2044,11 @@ class _NS_gornak:
             sx = x + int(math.cos(ang) * r * 1.25)
             sy = y + 2 + int(math.sin(ang) * r * 0.8)
             a = _NS_gornak._alpha(120 + 80 * math.sin(phase * 3 + i))
-            _NS_gornak._aacircle(surface, (*p["magic_mid"], a), (sx, sy), 2)
-            _NS_gornak._aacircle(surface, (*p["magic_shine"], a), (sx, sy), 1)
+            _NS_gornak._shard(surface, sx, sy, ang + math.pi / 2, 4, 2,
+                              p["magic_mid"], a, core=p["magic_shine"])
 
     def _draw_ground_rune(surface, x, y, phase, skill):
-        """Cincin rune di bawah kaki - kecil TAPI terang."""
+        """Sigil rune di bawah kaki - kecil TAPI terang (heksagram + tick)."""
         p = _NS_gornak.PALETTE
         pulse = math.sin(phase * 1.1) * 0.25 + 0.75
         gy = y + _NS_gornak.GROUND_DY
@@ -2006,6 +2063,17 @@ class _NS_gornak:
                             (*p["magic_mid"],
                              _NS_gornak._alpha(140 * pulse * bright)),
                             (x - rw2, gy - rh2, rw2 * 2, rh2 * 2), 1)
+        # Heksagram datar (dua segitiga) - bacaan "rune", bukan cincin polos
+        a_tri = _NS_gornak._alpha(120 * pulse * bright)
+        for rot in (0.0, math.pi / 3):
+            pts = []
+            for i in range(3):
+                ang = phase * 0.22 + rot + i * math.tau / 3
+                pts.append((x + int(math.cos(ang) * rw2 * 1.18),
+                            gy + int(math.sin(ang) * rh2 * 1.18)))
+            for i in range(3):
+                _NS_gornak._aaline(surface, (*p["magic_light"], a_tri),
+                                   pts[i], pts[(i + 1) % 3], 1)
         t0, t1 = _NS_gornak._s(18), _NS_gornak._s(24)
         ty0, ty1 = _NS_gornak._s(5), _NS_gornak._s(6)
         for i in range(6):
@@ -2014,14 +2082,11 @@ class _NS_gornak:
                 surface,
                 (*p["magic_light"], _NS_gornak._alpha(170 * pulse * bright)),
                 (x + int(math.cos(ang) * t0), gy + int(math.sin(ang) * ty0)),
-                (x + int(math.cos(ang) * t1), gy + int(math.sin(ang) * ty1)), 1)
-        irw, irh = _NS_gornak._s(11), _NS_gornak._s(3)
-        _NS_gornak._ellipse(surface,
-                            (*p["magic_light"],
-                             _NS_gornak._alpha(150 * pulse * bright)),
-                            (x - irw, gy - irh, irw * 2, irh * 2), 1)
-        _NS_gornak._aacircle(surface, (*p["magic_shine"],
-                                       _NS_gornak._alpha(200 * pulse)),
+                (x + int(math.cos(ang) * t1), gy + int(math.sin(ang) * ty1)),
+                1)
+        _NS_gornak._aacircle(surface,
+                             (*p["magic_shine"],
+                              _NS_gornak._alpha(200 * pulse)),
                              (int(x), int(gy)), 2)
         if skill in ("e", "r"):
             ew, eh = _NS_gornak._s(26), _NS_gornak._s(7)
@@ -2029,75 +2094,99 @@ class _NS_gornak:
                 surface, (*p["magic_hot"], _NS_gornak._alpha(120 * pulse)),
                 (x - ew, gy - eh, ew * 2, eh * 2), 1)
 
+    # ==================================================================
+    # SWING ATTACK - dua pita dari trail UJUNG BILAH yang sebenarnya
+    # ==================================================================
     def _draw_crescent_slash(surface, x, y, facing, phase, progress):
-        """Pita slash dari trail UJUNG BILAH (bukan busur titik melayang)."""
-        if progress < 0.24 or progress > 0.92:
+        """Cross-slash dual blade.
+
+        Pita dibangun dari posisi ujung bilah pada beberapa waktu pose ke
+        belakang, jadi busur SELALU menempel di senjata (tidak pernah ada
+        "serpihan" yang mengambang di samping badan seperti versi busur
+        titik-melayang). Bilah belakang ikut menyapu dengan pita lebih
+        kecil dan arah berlawanan -> terbaca sebagai gunting, bukan satu
+        tebasan yang digandakan.
+        """
+        if progress < 0.20 or progress > 0.99:
             return
         p = _NS_gornak.PALETTE
         lean, root_y = _NS_gornak._rig_shift("attack", phase, progress)
+        hit = _NS_gornak._SWING_HIT
 
         def scr(lx, ly):
             return _NS_gornak._local_to_screen(x, y, facing, lean, root_y,
                                                lx, ly)
 
-        def tip_at(ap):
-            return scr(*_NS_gornak._tip_local("attack", phase, ap))
+        def tip_at(ap, back):
+            return scr(*_NS_gornak._tip_local("attack", phase,
+                                              max(0.0, min(1.0, ap)), back))
 
-        steps = 7
-        trail = []
-        for i in range(steps):
-            t = i / (steps - 1)
-            trail.append(tip_at(max(0.0, min(1.0, progress - 0.30 + t * 0.30))))
-        pivot = scr(*_NS_gornak._front_grip_local("attack", progress, phase))
-        fade = 1.0 - max(0.0, (progress - 0.70) / 0.22)
-        alpha = _NS_gornak._alpha(230 * fade)
-        if alpha <= 0:
+        if progress < 0.28:
+            fade = (progress - 0.20) / 0.08
+        elif progress <= hit:
+            fade = 1.0
+        else:
+            fade = max(0.0, 1.0 - (progress - hit) / 0.17)
+        if fade <= 0.02:
             return
-        for col, off, mul in (("magic_darkest", 8, 0.62),
-                              ("magic_mid", 4, 0.9),
-                              ("magic_shine", 1, 1.0)):
-            outer, inner = [], []
-            for i, q in enumerate(trail):
-                t = i / (steps - 1)
-                # Lebar pita memuncak dekat bilah dan menipis ke ekor,
-                # supaya trail terbaca menyatu dengan senjata (versi
-                # seragam menyisakan "serpihan" terpisah di ujung arc).
-                w = max(0.5, (1 - abs(t - 0.8)) * off * (0.35 + 0.65 * t))
-                vx, vy = q[0] - pivot[0], q[1] - pivot[1]
-                ln = math.hypot(vx, vy) or 1.0
-                nx, ny = -vy / ln, vx / ln
-                outer.append((q[0] + nx * w, q[1] + ny * w))
-                inner.append((q[0] - nx * w * 0.55, q[1] - ny * w * 0.55))
-            _NS_gornak._poly(surface,
-                              (*p[col], _NS_gornak._alpha(alpha * mul)),
-                              outer + inner[::-1])
-        if 0.40 <= progress <= 0.62:
-            tip = trail[-1]
+
+        steps = 9
+        for back in (True, False):
+            span = 0.24 if back else 0.28
+            wmax = 3.6 if back else 6.4
+            path = [tip_at(progress - span + span * (i / (steps - 1)), back)
+                    for i in range(steps)]
+            widths = [wmax * ((i / (steps - 1)) ** 1.25) + 0.4
+                      for i in range(steps)]
+            a = _NS_gornak._alpha((190 if back else 235) * fade)
+            _NS_gornak._ribbon(surface, path, [w * 1.45 for w in widths],
+                               p["magic_darkest"], int(a * 0.42))
+            _NS_gornak._ribbon(surface, path, widths, p["magic_mid"],
+                               int(a * 0.92))
+            _NS_gornak._ribbon(surface, path, [w * 0.42 for w in widths],
+                               p["magic_shine"], a)
+            # Tepi depan pita: 1 px paling terang = arah gerak terbaca
+            for i in range(steps - 3, steps - 1):
+                _NS_gornak._aaline(surface, (*p["magic_core"], a),
+                                   path[i], path[i + 1], 1)
+            # Speed line di dalam busur (pixel-art motion smear)
+            if not back:
+                for k in range(3):
+                    i0 = 2 + k * 2
+                    q0, q1 = path[i0], path[min(steps - 1, i0 + 3)]
+                    _NS_gornak._aaline(
+                        surface, (*p["magic_light"], _NS_gornak._alpha(a * .6)),
+                        q0, q1, 1)
+
+        # ── IMPACT: bintang + gelombang + serpihan yang beterbangan
+        if hit - 0.10 <= progress <= hit + 0.10:
+            hold = 1.0 - abs((progress - hit) / 0.10)
+            tip = tip_at(progress, False)
+            a = _NS_gornak._alpha(245 * hold)
+            _NS_gornak._spark_star(surface, tip[0], tip[1],
+                                   int(9 + 6 * hold), p["magic_hot"], a,
+                                   spikes=8, rot=progress * 4.0,
+                                   core=p["white"])
+            wr = int(9 + hold * 12)
+            _NS_gornak._ellipse(
+                surface, (*p["magic_shine"], _NS_gornak._alpha(180 * hold)),
+                (tip[0] - wr, tip[1] - wr // 3, wr * 2,
+                 max(3, wr * 2 // 3)), 1)
             for i in range(5):
-                ang = -math.pi / 2 + i * math.pi / 4
-                ex = tip[0] + int(math.cos(ang) * 7)
-                ey = tip[1] + int(math.sin(ang) * 7)
-                _NS_gornak._aaline(surface, (*p["magic_hot"], alpha), tip,
-                                   (ex, ey), 1)
-            # IMPACT: bintang spike + shockwave elips kecil
-            if 0.50 <= progress <= 0.62:
-                hold = 1.0 - abs((progress - 0.56) / 0.06)
-                _NS_gornak._spark_star(
-                    surface, tip[0], tip[1], 11, p["magic_hot"],
-                    _NS_gornak._alpha(alpha * hold), spikes=8,
-                    rot=progress * 4.0, core=p["white"])
-                wr = int(8 + hold * 10)
-                _NS_gornak._ellipse(
-                    surface, (*p["magic_shine"], _NS_gornak._alpha(160 * hold)),
-                    (tip[0] - wr, tip[1] - wr // 3, wr * 2, max(3, wr * 2 // 3)),
-                    1)
+                ang = -1.9 + i * 0.62 + math.sin(progress * 9 + i) * 0.15
+                d = 6 + hold * 12
+                _NS_gornak._shard(
+                    surface, tip[0] + math.cos(ang) * d,
+                    tip[1] + math.sin(ang) * d, ang,
+                    5 + int(hold * 5), 2, p["magic_light"], a,
+                    core=p["magic_core"])
 
     # ==================================================================
     # SKILL Q - MANA BREAK (world-space, 3 fase)
-    # Telegraph/charge di ujung bilah -> bolt 3-lapis -> impact retak.
+    # Telegraph & charge di ujung bilah -> bolt panah -> impact retak.
     # ==================================================================
     def _draw_manabreak_ground(surface, boss, x, y, timer, phase):
-        """TELEGRAPH + charge di UJUNG BILAH sebelum bolt lepas."""
+        """TELEGRAPH: serpihan mana disedot MASUK ke ujung bilah."""
         p = _NS_gornak.PALETTE
         duration = _NS_gornak.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
@@ -2107,40 +2196,53 @@ class _NS_gornak:
         fs = _NS_gornak._fx_scale(boss)
         tx, ty = _NS_gornak._tip_screen(boss, x, y)
         r = int((4 + t * 9) * fs)
+        # Halo bertingkat (murah: lingkaran penuh mengecil)
         for k in range(r + 3, 0, -1):
             a = _NS_gornak._alpha(200 * (r + 3 - k) / (r + 3) * (0.4 + t))
             _NS_gornak._aacircle(surface, (*p["magic_dark"], a), (tx, ty), k)
         for col, rr in (("magic_mid", r), ("magic_light", max(1, r - 2)),
                         ("magic_shine", max(1, r - 4))):
             _NS_gornak._aacircle(surface, p[col], (tx, ty), rr)
-        # Cincin konvergen + chevron ke target (telegraph terbaca)
+        # Serpihan konvergen: terbang MASUK, bukan berputar-putar
+        for i in range(7):
+            ang = phase * 1.4 + i * math.tau / 7
+            d = (26 - t * 18 + (i % 3) * 5) * fs
+            sx = tx + math.cos(ang) * d
+            sy = ty + math.sin(ang) * d * 0.9
+            _NS_gornak._shard(surface, sx, sy, ang + math.pi,
+                              int(7 * fs), max(1, int(2 * fs)),
+                              p["magic_light"],
+                              _NS_gornak._alpha(210 * (0.35 + t)),
+                              core=p["magic_shine"])
+        # Cincin pengunci + chevron ke arah target
         aim = _NS_gornak._target_position(boss, x, y)
         ang = math.atan2(aim[1] - ty, aim[0] - tx)
-        for k in range(3):
-            rr = int((18 - t * 10 + k * 6) * fs)
+        for k in range(2):
+            rr = int((18 - t * 10 + k * 7) * fs)
             _NS_gornak._dashed_ring(
                 surface, tx, ty, rr, p["magic_light"],
-                _NS_gornak._alpha(200 * (1 - t) * (1 - k * 0.2)),
+                _NS_gornak._alpha(200 * (1 - t) * (1 - k * 0.25)),
                 phase * 2 + k, segments=8, thick=2, span=0.55, squash=0.85)
         for k in range(3):
-            d = (12 + k * 10) * fs * (1.0 - t * 0.4)
+            d = (14 + k * 11) * fs * (1.0 - t * 0.4)
             _NS_gornak._chevron(
                 surface, tx + math.cos(ang) * d, ty + math.sin(ang) * d,
                 ang, int(7 * fs), p["magic_hot"],
                 _NS_gornak._alpha(220 * (0.4 + t)), width=2)
         _NS_gornak._spark_star(
             surface, tx, ty, int((8 + t * 6) * fs), p["magic_hot"],
-            _NS_gornak._alpha(200 * t), spikes=8, rot=phase * 3,
+            _NS_gornak._alpha(210 * t), spikes=8, rot=phase * 3,
             core=p["magic_shine"])
-        for i in range(5):
-            a2 = phase * 4 + i * math.tau / 5
-            sx = tx + int(math.cos(a2) * (r + 4 * fs))
-            sy = ty + int(math.sin(a2) * (r + 4 * fs))
-            _NS_gornak._aaline(surface, (*p["magic_hot"], 225), (sx, sy),
-                               (tx, ty), 1)
 
     def _draw_manabreak_foreground(surface, boss, x, y, timer, phase):
-        """Bolt mana 3-lapis + glint ujung + impact retak (world-space)."""
+        """PROYEKTIL v3: kepala panah kristal + after-image ter-stempel.
+
+        Perubahan dari v2: bolt tidak lagi sekadar deret lingkaran yang
+        makin kecil (terbaca seperti gelembung). Sekarang ada bentuk
+        KEPALA yang berorientasi arah terbang, dua pecahan yang mengorbit
+        spiral di belakangnya, dan after-image yang di-stempel pada jarak
+        tetap (bukan garis mulus) - ciri khas pixel-art projectile.
+        """
         p = _NS_gornak.PALETTE
         duration = _NS_gornak.SKILL_DUR["q"]
         progress = max(0.0, min(1.0, 1 - timer / duration))
@@ -2150,48 +2252,74 @@ class _NS_gornak:
         fs = _NS_gornak._fx_scale(boss)
         sx, sy = _NS_gornak._tip_screen(boss, x, y)
         tx, ty = _NS_gornak._target_position(boss, x, y)
+        ang = math.atan2(ty - sy, tx - sx)
+        ca, sa = math.cos(ang), math.sin(ang)
+        nx, ny = -sa, ca
         bx, by = int(sx + (tx - sx) * t), int(sy + (ty - sy) * t)
 
-        for i in range(9):
-            tt = max(0.0, t - i * 0.05)
-            px = int(sx + (tx - sx) * tt)
-            py = int(sy + (ty - sy) * tt)
-            a = _NS_gornak._alpha(230 - i * 22)
-            size = max(2, int((8 - i) * fs))
-            for col, off in (("magic_darkest", size + 1), ("magic_mid", size),
-                             ("magic_light", max(1, size - 2))):
-                if off > 0:
-                    _NS_gornak._aacircle(surface, (*p[col], a), (px, py), off)
-            _NS_gornak._rect(surface, (*p["magic_hot"], a), (px, py, 1, 1))
+        # ── After-image: stempel serpihan pada jarak tetap di belakang
+        for i in range(1, 8):
+            tt = t - i * 0.052
+            if tt <= 0:
+                break
+            px = sx + (tx - sx) * tt
+            py = sy + (ty - sy) * tt
+            a = _NS_gornak._alpha(215 - i * 26)
+            ln = max(2, int((9 - i) * fs))
+            _NS_gornak._shard(surface, px, py, ang, ln,
+                              max(1, int((4 - i * 0.4) * fs)),
+                              p["magic_dark"], a)
+            _NS_gornak._shard(surface, px, py, ang, int(ln * 0.7),
+                              max(1, int((2.6 - i * 0.28) * fs)),
+                              p["magic_mid"], a, core=p["magic_light"])
 
-        # Glint berputar di ujung bolt
-        rot = phase * 6 + t * 4
-        _NS_gornak._spark_star(
-            surface, bx, by, int(10 * fs), p["magic_shine"], 230,
-            spikes=6, rot=rot, core=p["white"])
-        for col, rr in (("magic_dark", int(10 * fs)), ("magic_mid", int(8 * fs)),
-                        ("magic_light", int(5 * fs)), ("magic_shine", int(3 * fs)),
-                        ("white", max(1, int(2 * fs)))):
-            _NS_gornak._aacircle(surface, p[col], (bx, by), rr)
+        # ── Dua pecahan mengorbit spiral (memberi rasa "berputar cepat")
+        for k in (0, 1):
+            sp = phase * 7.0 + t * 26 + k * math.pi
+            off = math.sin(sp) * 7 * fs
+            fx2 = bx - ca * 8 * fs + nx * off
+            fy2 = by - sa * 8 * fs + ny * off
+            _NS_gornak._shard(surface, fx2, fy2, ang + math.cos(sp) * 0.8,
+                              int(7 * fs), max(1, int(2 * fs)),
+                              p["magic_hot"], 225, core=p["magic_core"])
 
-        if t > 0.86:
-            st = (t - 0.86) / 0.14
-            radius = int((11 + st * 26) * fs)
-            a = _NS_gornak._alpha(240 * (1 - st))
+        # ── Kepala bolt: 3 lapis nilai + glint berputar
+        for col, ln, wd in (("magic_darkest", 19, 7), ("magic_mid", 16, 5),
+                            ("magic_hot", 12, 3), ("magic_core", 7, 2)):
+            _NS_gornak._shard(surface, bx, by, ang, int(ln * fs),
+                              max(1, int(wd * fs)), p[col], 245)
+        _NS_gornak._spark_star(surface, bx, by, int(10 * fs), p["magic_shine"],
+                               230, spikes=6, rot=phase * 6 + t * 4,
+                               core=p["white"])
+
+        # ── Impact: kilat putih -> cincin patah -> retak -> debris
+        if t > 0.84:
+            st = (t - 0.84) / 0.16
+            radius = int((11 + st * 28) * fs)
+            a = _NS_gornak._alpha(245 * (1 - st))
             _NS_gornak._aacircle(surface, (*p["white"], a), (tx, ty),
-                                 max(1, int(7 * fs * (1 - st))))
-            _NS_gornak._aacircle(surface, (*p["magic_darkest"], a), (tx, ty),
-                                 radius + 2, 3)
-            _NS_gornak._aacircle(surface, (*p["magic_mid"], a), (tx, ty),
-                                 max(1, radius - 4), 2)
+                                 max(1, int(8 * fs * (1 - st))))
+            _NS_gornak._dashed_ring(surface, tx, ty, radius + 2,
+                                    p["magic_darkest"], a, st * 3,
+                                    segments=9, thick=max(2, int(3 * fs)),
+                                    span=0.62, squash=1.0)
+            _NS_gornak._dashed_ring(surface, tx, ty, max(3, radius - 5),
+                                    p["magic_hot"], a, -st * 4,
+                                    segments=7, thick=2, span=0.5,
+                                    squash=1.0)
             _NS_gornak._spark_star(
-                surface, tx, ty, int(16 * fs * (1 - st)), p["magic_hot"], a,
+                surface, tx, ty, int(17 * fs * (1 - st)), p["magic_hot"], a,
                 spikes=8, rot=st * 2, core=p["white"])
             for i in range(8):
-                ang = i * math.pi / 4 + st * 0.5
+                a2 = i * math.pi / 4 + st * 0.5
                 _NS_gornak._jagged_crack(
-                    surface, tx, ty, ang, int((18 + st * 16) * fs),
+                    surface, tx, ty, a2, int((18 + st * 16) * fs),
                     (p["magic_darkest"], p["magic_hot"]), a, i + 3, width=2)
+                _NS_gornak._shard(
+                    surface, tx + math.cos(a2) * radius * 0.8,
+                    ty + math.sin(a2) * radius * 0.8, a2,
+                    int(8 * fs * (1 - st)) + 2, max(1, int(2 * fs)),
+                    p["magic_light"], a, core=p["magic_core"])
 
     # ==================================================================
     # SKILL W - BLINK (world-space departure / arrival)
@@ -2233,13 +2361,13 @@ class _NS_gornak:
                 a2, spikes=8, rot=t * 2, core=p["magic_shine"])
         for i in range(7):
             ang = phase * 2 + i * math.tau / 7
-            _NS_gornak._rect(surface, (*p["magic_shine"], a),
-                             (x + int(math.cos(ang) * (r + 3)),
-                              gy + int(math.sin(ang) * max(1, r // 4)), 1, 1))
+            _NS_gornak._shard(surface, x + math.cos(ang) * (r + 3),
+                              gy + math.sin(ang) * max(1, r // 4),
+                              -math.pi / 2, 4, 1, p["magic_shine"], a)
 
     # ==================================================================
     # SKILL E - COUNTERSPELL (AOE 100 px dunia)
-    # Telegraph ring tepat 100 + kubah heksagon 3-lapis + stars.
+    # Telegraph ring tepat 100 + kubah heksagon + rune orbit.
     # ==================================================================
     def _draw_counterspell_foreground(surface, boss, x, y, timer, phase):
         p = _NS_gornak.PALETTE
@@ -2254,11 +2382,8 @@ class _NS_gornak:
         fade = 1.0 - max(0.0, (progress - 0.9)) * 8
         a_main = _NS_gornak._alpha(225 * fade)
 
-        # TELEGRAPH: ring jangkauan TEPAT 100 px dunia
+        # ── TELEGRAPH: ring jangkauan TEPAT 100 px dunia
         wr = _NS_gornak._ring_r(boss, 100)
-        gy = y + _NS_gornak.GROUND_DY
-        # Ring solid 3-komponen (tanpa temp SRCALPHA) supaya radius 100
-        # dunia tetap murah di canvas hero.
         if fade > 0.15:
             _NS_gornak._aacircle(surface, p["magic_light"],
                                  (int(x), int(y)), wr, max(2, int(2 * fs)))
@@ -2267,10 +2392,10 @@ class _NS_gornak:
             _NS_gornak._alpha(210 * fade), phase * 1.4,
             segments=14, thick=max(2, int(2 * fs)), span=0.55, squash=1.0)
         _NS_gornak._dashed_ring(
-            surface, x, y, max(4, int(wr * (0.72 + 0.10 * math.sin(phase * 3)))),
+            surface, x, y,
+            max(4, int(wr * (0.72 + 0.10 * math.sin(phase * 3)))),
             p["magic_hot"], _NS_gornak._alpha(160 * fade), -phase * 1.1,
             segments=10, thick=2, span=0.45, squash=1.0)
-        # Cincin konvergen di awal
         if progress < 0.28:
             conv = 1.0 - progress / 0.28
             _NS_gornak._aacircle(
@@ -2279,12 +2404,11 @@ class _NS_gornak:
         for i in range(4):
             ang = i * math.pi / 2 + phase * 0.4
             _NS_gornak._chevron(
-                surface,
-                x + math.cos(ang) * wr * 0.82,
+                surface, x + math.cos(ang) * wr * 0.82,
                 y + math.sin(ang) * wr * 0.82,
                 ang + math.pi, int(10 * fs), p["magic_hot"], a_main, width=2)
 
-        # AKTIVASI: kubah heksagon memeluk badan + bintang
+        # ── AKTIVASI: kubah heksagon memeluk badan
         rx = int(_NS_gornak._s(24) * grow * max(1.0, fs * 0.55))
         ry = int(_NS_gornak._s(33) * grow * max(1.0, fs * 0.55))
         cx0, cy0 = int(x), int(y) - 3
@@ -2302,33 +2426,35 @@ class _NS_gornak:
         sh = [(q[0] - x0, q[1] - y0) for q in pts]
         _NS_gornak._poly(fill, (*p["magic_darkest"],
                                 _NS_gornak._alpha(64 * grow)), sh)
-        _NS_gornak._poly(fill, (*p["magic_dark"], _NS_gornak._alpha(72 * grow)),
+        _NS_gornak._poly(fill, (*p["magic_dark"],
+                                _NS_gornak._alpha(72 * grow)),
                          sh[1:-1] + [sh[0]])
         surface.blit(fill, (x0, y0))
         for i in range(6):
             q, r2 = pts[i], pts[(i + 1) % 6]
             _NS_gornak._aaline(surface, (*p["magic_mid"], a_main), q, r2, 2)
             _NS_gornak._aaline(surface, (*p["magic_shine"], a_main), q, r2, 1)
-            _NS_gornak._aacircle(surface, (*p["magic_hot"], a_main), q, 3)
-            _NS_gornak._rect(surface, (*p["white"], a_main), (q[0], q[1], 1, 1))
+            # Simpul heksagon = serpihan kristal, bukan bulatan
+            na = math.atan2(q[1] - cy0, q[0] - cx0)
+            _NS_gornak._shard(surface, q[0], q[1], na, 6, 3, p["magic_hot"],
+                              a_main, core=p["white"])
         if progress < 0.20:
             _NS_gornak._spark_star(
                 surface, x, y - 8, int(14 * fs * (1 - progress / 0.20)),
                 p["magic_hot"], a_main, spikes=8, rot=progress * 5,
                 core=p["white"])
-        # STEADY: mote orbit di ring 100
+        # ── STEADY: rune mote mengorbit tepat di ring 100
         for i in range(8):
             ang = phase * 1.3 + i * math.tau / 8
             mx = x + math.cos(ang) * wr
             my = y + math.sin(ang) * wr
-            _NS_gornak._aacircle(surface, (*p["magic_light"], a_main),
-                                 (int(mx), int(my)), max(1, int(2 * fs)))
-            _NS_gornak._rect(surface, (*p["magic_shine"], a_main),
-                             (int(mx), int(my), 1, 1))
+            _NS_gornak._shard(surface, mx, my, ang + math.pi / 2,
+                              int(5 * fs), max(1, int(2 * fs)),
+                              p["magic_light"], a_main, core=p["magic_shine"])
 
     # ==================================================================
     # SKILL R - MANA VOID (AOE 180 px dunia di CASTER)
-    # Telegraph 180 + pilar + funnel. Drain mote dari target (opsional).
+    # Telegraph 180 -> corong sedot -> implosi -> asap void.
     # ==================================================================
     def _draw_manavoid_ground(surface, boss, x, y, timer, phase):
         p = _NS_gornak.PALETTE
@@ -2338,8 +2464,7 @@ class _NS_gornak:
         wr = _NS_gornak._ring_r(boss, 180)
         gy = y + _NS_gornak.GROUND_DY
         a = _NS_gornak._alpha(220 * min(1.0, progress * 3))
-        # Telegraph ring TEPAT 180 px dunia di caster (gameplay AOE).
-        # 3-komponen = tanpa alokasi temp raksasa.
+        # Telegraph ring TEPAT 180 px dunia di caster (= AOE gameplay).
         if a > 40:
             _NS_gornak._aacircle(surface, p["magic_light"],
                                  (int(x), int(y)), wr, max(3, int(2 * fs)))
@@ -2361,11 +2486,19 @@ class _NS_gornak:
             for i in range(4):
                 ang = i * math.pi / 2 + phase * 0.3
                 _NS_gornak._chevron(
-                    surface,
-                    x + math.cos(ang) * wr * 0.78,
+                    surface, x + math.cos(ang) * wr * 0.78,
                     y + math.sin(ang) * wr * 0.78,
                     ang + math.pi, int(12 * fs), p["magic_hot"],
                     _NS_gornak._alpha(210 * t), width=2)
+            # Puing tanah tersedot ke pusat
+            for i in range(10):
+                ang = phase * 0.8 + i * math.tau / 10
+                d = wr * (0.85 - t * 0.55) * (0.7 + 0.3 * ((i % 3) / 2.0))
+                _NS_gornak._shard(
+                    surface, x + math.cos(ang) * d,
+                    gy + math.sin(ang) * d * 0.32, ang + math.pi,
+                    int(8 * fs), max(1, int(2 * fs)), p["magic_mid"],
+                    _NS_gornak._alpha(200 * t), core=p["magic_light"])
 
     def _draw_manavoid_foreground(surface, boss, x, y, timer, phase):
         p = _NS_gornak.PALETTE
@@ -2374,12 +2507,11 @@ class _NS_gornak:
         fs = _NS_gornak._fx_scale(boss)
         action = "void"
         wr = _NS_gornak._ring_r(boss, 180)
-        # Inti void di CASTER (gameplay: mana_void_x = self.x)
-        cx, cy = int(x), int(y) - 4
+        cx, cy = int(x), int(y) - 4          # inti void di CASTER
         aim = _NS_gornak._target_position(boss, x, y)
 
         if progress < 0.22:
-            # AKTIVASI: pilar 3 lapis (clamp tinggi) + shockwave + bintang
+            # AKTIVASI: pilar 3 lapis (tinggi di-clamp) + shockwave
             t = progress / 0.22
             a = _NS_gornak._alpha(240 * (1 - t * 0.25))
             ph = min(int(100 * fs), 240)
@@ -2388,9 +2520,8 @@ class _NS_gornak:
                                 ("magic_shine", 4, 0.55)):
                 ww = max(2, int(w * fs * (1.1 - t * 0.3)))
                 hh = int(ph * mul)
-                _NS_gornak._ellipse(
-                    surface, (*p[col], a),
-                    (cx - ww, cy - hh, ww * 2, hh + 8))
+                _NS_gornak._ellipse(surface, (*p[col], a),
+                                    (cx - ww, cy - hh, ww * 2, hh + 8))
             _NS_gornak._spark_star(
                 surface, cx, cy - int(20 * fs), int(18 * fs * (1 - t)),
                 p["magic_hot"], a, spikes=8, rot=t * 3, core=p["white"])
@@ -2399,20 +2530,21 @@ class _NS_gornak:
 
         if progress < 0.50:
             t = progress / 0.5
-            # Drain mote: target -> dada (arah "mencuri mana")
+            # Corong sedot: mana target -> dada; bilah jadi konduktor
             chest = _NS_gornak._local(boss, x, y, action, phase, 0.0,
                                       0, _NS_gornak.SHOULDER_Y + 4)
             for back in (False, True):
-                grip = (_NS_gornak._front_grip_local(action, 0.0, phase)
-                        if not back else
-                        _NS_gornak._back_grip_local(action, 0.0, phase))
+                grip = (_NS_gornak._back_grip_local(action, 0.0, phase) if back
+                        else _NS_gornak._front_grip_local(action, 0.0, phase))
                 hx, hy = _NS_gornak._local(boss, x, y, action, phase, 0.0,
                                            *grip)
                 _NS_gornak._aaline(surface,
-                                   (*p["magic_dark"], _NS_gornak._alpha(150 * t)),
+                                   (*p["magic_dark"],
+                                    _NS_gornak._alpha(150 * t)),
                                    (hx, hy), (cx, cy), max(2, int(3 * fs)))
                 _NS_gornak._aaline(surface,
-                                   (*p["magic_mid"], _NS_gornak._alpha(200 * t)),
+                                   (*p["magic_mid"],
+                                    _NS_gornak._alpha(200 * t)),
                                    (hx, hy), (cx, cy), max(1, int(2 * fs)))
             for i in range(6):
                 tt = (phase * 0.7 + i / 6.0) % 1.0
@@ -2421,10 +2553,10 @@ class _NS_gornak:
                          - math.sin(tt * math.pi) * 7 * fs)
                 aa = _NS_gornak._alpha(210 * (1 - abs(tt - 0.5) * 1.2) * t)
                 if aa > 0:
-                    _NS_gornak._aacircle(surface, (*p["magic_light"], aa),
-                                         (mx, my), max(1, int(2 * fs)))
-                    _NS_gornak._rect(surface, (*p["magic_shine"], aa),
-                                     (mx, my, 1, 1))
+                    ang = math.atan2(chest[1] - aim[1], chest[0] - aim[0])
+                    _NS_gornak._shard(surface, mx, my, ang, int(6 * fs),
+                                      max(1, int(2 * fs)), p["magic_light"],
+                                      aa, core=p["magic_shine"])
             core = int((6 + t * 8) * fs)
             for r in range(core + 2, 0, -1):
                 aa = _NS_gornak._alpha(235 * (core + 2 - r) / (core + 2))
@@ -2434,13 +2566,15 @@ class _NS_gornak:
             _NS_gornak._aacircle(surface, p["magic_hot"], (cx, cy),
                                  max(1, core - 3))
         elif progress < 0.68:
+            # IMPLOSI
             t = (progress - 0.50) / 0.18
             intensity = math.sin(t * math.pi)
             r = int((22 + t * 30) * fs)
             a = _NS_gornak._alpha(240 * intensity)
             _NS_gornak._aacircle(surface, (*p["magic_darkest"], a), (cx, cy),
                                  r + 3, 4)
-            _NS_gornak._aacircle(surface, (*p["magic_dark"], a), (cx, cy), r, 3)
+            _NS_gornak._aacircle(surface, (*p["magic_dark"], a), (cx, cy),
+                                 r, 3)
             _NS_gornak._aacircle(surface, (*p["magic_mid"], a), (cx, cy),
                                  max(1, r - 6), 2)
             _NS_gornak._aacircle(surface, (*p["magic_shine"], a), (cx, cy),
@@ -2450,11 +2584,14 @@ class _NS_gornak:
                 spikes=10, rot=t * 4, core=p["white"])
             for i in range(12):
                 ang = i * math.tau / 12
-                ex = cx + int(math.cos(ang) * min(wr, r + 8 * fs))
-                ey = cy + int(math.sin(ang) * min(wr, r + 8 * fs) * 0.85)
-                _NS_gornak._aaline(surface, (*p["magic_hot"], a), (cx, cy),
-                                   (ex, ey), 2 if i % 3 == 0 else 1)
+                d = min(wr, r + 8 * fs)
+                _NS_gornak._shard(surface, cx + math.cos(ang) * d * 0.85,
+                                  cy + math.sin(ang) * d * 0.72, ang,
+                                  int(10 * fs * intensity) + 2,
+                                  max(1, int(2 * fs)), p["magic_hot"], a,
+                                  core=p["magic_core"])
         else:
+            # SISA: asap void naik
             t = (progress - 0.68) / 0.32
             for i in range(10):
                 tt = (phase * 0.5 + i * 0.1) % 1.0
@@ -2470,8 +2607,8 @@ class _NS_gornak:
                                      (px, py, 1, 1))
         # Rim violet di badan (badan tetap subjek)
         rim = _NS_gornak._alpha(110 * min(1.0, progress * 3))
-        rw, rh = int(_NS_gornak._s(15) * max(1.0, fs * 0.5)), \
-            int(_NS_gornak._s(21) * max(1.0, fs * 0.5))
+        rw = int(_NS_gornak._s(15) * max(1.0, fs * 0.5))
+        rh = int(_NS_gornak._s(21) * max(1.0, fs * 0.5))
         _NS_gornak._ellipse(surface, (*p["magic_light"], rim),
                             (int(x) - rw, int(y) - rh - _NS_gornak.LIFT,
                              rw * 2, rh * 2 + _NS_gornak._s(2)), 1)

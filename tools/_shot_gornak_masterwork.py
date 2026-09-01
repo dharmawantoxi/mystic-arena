@@ -103,6 +103,7 @@ cases.append(("IDLE", probe(pulse=1.25), 2.1))
 cases.append(("WALK CYCLE", probe(pulse=2.35), 2.1))
 b = probe(pulse=1.15, timer=22)
 b._gnk_attack_active = True
+b._gnk_attack_frame = 19          # -> pose tebasan (bukan frame antisipasi)
 b._gnk_attack_progress = 0.52
 cases.append(("ATTACK — SLASH ARC", b, 2.1))
 b = probe(pulse=1.15, active_skill="r", active_skill_timer=44)
