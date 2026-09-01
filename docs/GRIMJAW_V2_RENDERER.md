@@ -86,15 +86,29 @@ shockwave+bintang → steady → puncak):
 
 | Skill | Radius dunia | Visual |
 |---|---|---|
-| Q Blade Fury | `skill_range` (70) | ring konvergen, dashed ring, ellipse tanah, chevron, orbit particles, spin sweep |
-| W Healing Ward | 100 | ring rune green, totem + pilar cahaya, heal aura + motes naik |
-| E Critical Strike | cone 60 | telegraph cone + chevron + retakan tanah, glint orbit, burst bintang di pendaratan |
-| R Omnislash | AOE 150 (fallback) | 4 ghost afterimage (ter-cache), pilar cahaya, slash radial 7, retakan 5, marker target + reticle |
+| Q Blade Fury | `skill_range` (70) | pilar api 4-lapis + nova + burst radial, dither disk + **marker AOE angular** (tick radial + bracket sudut), rune glyph menyebar (bukan sigil ring), retakan radial 5, **tick inner** (telegraph incoming), chevron kardinal, glow orb pusat, ember orbit, partikel orbit ber-ekor |
+| W Healing Ward | 100 | dither disk hijau + **marker AOE angular** (tick + bracket), rune glyph menyebar, nova petal, totem shard kristal faset + rune ring + glint orbit, heal aura + cross motes naik |
+| E Critical Strike | cone 60 | dither disk di area cone, ellipse cone + arc-rim depan, **marker AOE angular** di ujung cone, chevron berbaris 4, retakan api 6, orb pendaratan (glow + nova), glint orbit di blade + energy arc, **marker angular badan** + rune glyph |
+| R Omnislash | AOE 150 (fallback) | 4 ghost afterimage (ter-cache), pilar cahaya + nova + burst radial, slash radial 7 (beam 3-lapis), retakan radial 6, shard kristal orbit, **marker AOE angular** + rune glyph, dither disk, **marker target angular** + glint orbit + energy arc |
 
 **World-space**: `_fx_scale(hero)` = `1/_render_scale` (cap 2.6) —
 efek dikompensasi agar radius di layar cocok dengan jangkauan
 gameplay, tidak menyusut bersama sprite. `_ring_r()` clamp ke dalam
 canvas cache (efek tidak keluar canvas = tidak terpotong).
+
+**Kosakata FX v3 yang dipakai bersama keluarga masterwork**
+(Thorne v2.1 / Gorath v2): `_rgba`, `_dpoly`, `_arc_band`, `_rune_glyph`,
+`_sigil_ring`, `_shard_glint`, `_crystal_shard`, `_beam3`, `_energy_arc`,
+`_nova`, `_dither_disk`, `_orbit_glints`, `_draw_glow_orb`, `_draw_rune_ring`.
+Semua deterministik (hash) dan tanpa alokasi surface berlebih — budget
+tetap di bawah 3.5 ms.
+
+**AOE angular (bukan cincin)**: radius gameplay untuk Q/W/E/R ditandai
+dengan `_aoe_marks()` — deretan tick radial pada sudut FIXED di keliling
+`radius` + 4 bracket sudut (viewfinder), bukan lingkaran kontinu. Radius
+tetap bisa diverifikasi (audit & test world-space men-sampling jangkauan
+keluar marker). Ring/cincin indikator AOE dihapus; partikel bulat kecil
+(ember, mote, glow) dipertahankan.
 
 **Tanpa alokasi per-frame**: mist, shadow, fire/rage aura, dan
 platform dibangun sekali lalu di-cache (`_static`); afterimage
@@ -133,6 +147,10 @@ Hasil (median-of-9, canvas cache 528²):
 | W Healing Ward | 3.25 ms | **1.89 ms** |
 | E Critical | 2.64 ms | **1.97 ms** |
 | R Omnislash | 3.99 ms | **1.87 ms** (fase live 1.87) |
+
+Hasil setelah **Skill FX v3** (median-of-9, canvas 528²): Q **1.96 ms**,
+W **1.36 ms**, E **1.47 ms**, R **1.05 ms** — semua tetap di bawah
+budget 3.5 ms sambil lebih mewah (pilar/nova/sigil/dither/shard).
 
 ## Kompatibilitas
 
