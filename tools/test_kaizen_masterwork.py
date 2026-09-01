@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regresi visual untuk Kaizen PIXEL MASTERWORK v2 + SKILL FX v2.1.
+"""Regresi visual untuk Kaizen PIXEL MASTERWORK v3 + SKILL FX / SWING / PROJECTILE.
 
 Memastikan upgrade mengikuti standar Thorne v2/v2.1 (docs/THORNE_V2_RENDERER.md)
 dan tidak kembali menjadi rig lama:
@@ -7,14 +7,15 @@ dan tidak kembali menjadi rig lama:
   - 100% prosedural (tanpa PNG / sprite-sheet / image.load).
   - Rig native ~1.5x (bbox idle >= 150 px tinggi, telapak +60, kepala -94).
   - Helper FX v2.1 tersedia (_fx_scale, _spark_star, _chevron, _dashed_ring,
-    _jagged_crack, _tuft_points, _static).
+    _jagged_crack, _tuft_points, _static, _aoe_marks).
   - Palet material sampai ke render akhir (saya lacquer, tabi, pauldron,
     hachimaki, eye iris).
   - Portrait LOD lebih kaya.
   - Animasi nyata: 12 frame walk/attack unik (bukan sticker translation),
     serangan 7 keyframe dengan frame IMPACT + smear berlapis.
-  - Skill FX world-space: ring AOE E tepat 100 px dunia dan R 150 px dunia
-    pada _render_scale apa pun (kompensasi 1/_render_scale, cap 2.6).
+  - Skill FX world-space: marker AOE angular E tepat 100 px dunia dan R 150 px
+    dunia pada _render_scale apa pun (kompensasi 1/_render_scale, cap 2.6).
+    Telegraph memakai tick radial + bracket, BUKAN cincin kontinu.
   - Outline selout ada di siluet.
 
 Jalankan:  python3 tools/test_kaizen_masterwork.py
@@ -69,7 +70,7 @@ def test_masterwork_is_procedural():
     # Kosakata FX v2.1 (standar Thorne) tersedia untuk audit renderer.
     for helper in ("_fx_scale", "_spark_star", "_chevron", "_dashed_ring",
                    "_jagged_crack", "_tuft_points", "_static", "_mix",
-                   "_hash01", "_dither_dots", "_attack_pose"):
+                   "_hash01", "_dither_dots", "_attack_pose", "_aoe_marks"):
         assert callable(getattr(K, helper)), helper
     # Body-part sticker lama tidak boleh kembali.
     for old in ("_draw_saya_back", "_draw_masterwork_details",
@@ -204,18 +205,19 @@ def test_skill_visuals_render_with_masterwork():
 def test_skill_fx_are_world_space():
     """Efek skill TIDAK menyusut bersama sprite: kompensasi 1/_render_scale.
 
-    Ring telegraph E (Sweep) harus berada di radius DUNIA skill_range=100
-    dari hero, yaitu 100/_render_scale px di canvas, di sekitar titik
-    tanah (y + 30). Di-render pada beberapa _render_scale: sampling
-    lingkaran di radius tersebut harus menemukan ring di semuanya.
-    Tanpa kompensasi, pada fs=0.5 ring akan menggambar di radius 100 px
-    canvas (bukan 200) -> 0 hit.
+    Marker AOE E (Sweep) versi ANGULAR (tick radial + bracket sudut, bukan
+    cincin kontinu) tetap menandai radius DUNIA 100 dari hero, yaitu
+    100/_render_scale px di canvas, di sekitar titik tanah (y + 30).
+    Di-render pada dua _render_scale: sampling pita di sekitar radius
+    tersebut harus menemukan spike marker di keduanya. Tanpa kompensasi,
+    pada fs=0.5 marker akan menggambar di radius 100 px canvas (bukan 200)
+    -> ~0 hit di pita 200.
     """
     def render(fs):
         surf = pygame.Surface((900, 900), pygame.SRCALPHA)
         h = _ProbeEntity("kaizen", 450, 500)
         h.pulse = 1.3
-        h.active_skill = "e"          # Sweep -> ring jangkauan penuh
+        h.active_skill = "e"          # Sweep -> marker jangkauan penuh
         h.active_skill_timer = 20     # progress 0.66 (masih telegraph)
         h.skill_range = 100
         h.target = _NS(x=590, y=485, alive=True)
@@ -223,22 +225,26 @@ def test_skill_fx_are_world_space():
         K.draw_kaizen(surf, h, 450, 500)
         return surf
 
-    def hits_at_radius(surf, r_px, cx=450, cy=530):
-        # pusat ring tanah = (x, y + 30)
+    def hits_in_band(surf, r_px, cx=450, cy=530, band=12):
+        # pusat marker tanah = (x, y + 30)
         hits = 0
         for a in range(0, 360, 2):
-            x = int(cx + math.cos(math.radians(a)) * r_px)
-            y = int(cy + math.sin(math.radians(a)) * r_px)
-            if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
-                    and surf.get_at((x, y)).a > 40:
-                hits += 1
+            ca = math.cos(math.radians(a))
+            sa = math.sin(math.radians(a))
+            for dk in range(-band, band + 1):
+                x = int(cx + ca * (r_px + dk))
+                y = int(cy + sa * (r_px + dk))
+                if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
+                        and surf.get_at((x, y)).a > 40:
+                    hits += 1
+                    break
         return hits
 
     for fs in (1.0, 0.5):
         s = render(fs)
         r_px = int(100 / fs)           # 100 dunia -> px canvas
-        n = hits_at_radius(s, r_px)
-        assert n > 90, (f"ring AOE E tidak di radius dunia 100 saat "
+        n = hits_in_band(s, r_px)
+        assert n > 10, (f"marker AOE E tidak di radius dunia 100 saat "
                         f"fs={fs} (dapat {n}/180 hit) -> bukan world-space")
 
     # R: tornado berbasis AOE 150 px dunia di sekitar caster.
@@ -257,8 +263,8 @@ def test_skill_fx_are_world_space():
     for fs in (1.0, 0.5):
         s = render_r(fs)
         r_px = int(150 / fs)
-        n = hits_at_radius(s, r_px, cx=600, cy=670)
-        assert n > 90, (f"ring AOE R tidak di radius dunia 150 saat "
+        n = hits_in_band(s, r_px, cx=600, cy=670)
+        assert n > 10, (f"marker AOE R tidak di radius dunia 150 saat "
                         f"fs={fs} (dapat {n}/180 hit)")
 
 
