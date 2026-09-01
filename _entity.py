@@ -4361,6 +4361,22 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX KAIZEN ═══
+                # Paket game-feel yang sama untuk Kaizen (flash, spark,
+                # serpihan baja, shockwave, slash fragment sian, screen
+                # shake, dan hit-stop 0.03-0.08 s) - lengkapnya di
+                # heroes/kaizen_fx.notify_melee_impact.  Difilter per
+                # hero_type dan dibungkus try/except supaya error visual
+                # tidak pernah memutus alur serangan (paritas Gornak /
+                # Grimjaw).
+                if self.hero_type == 'kaizen':
+                    try:
+                        from heroes import kaizen_fx as _kzfx
+                        _kzfx.notify_melee_impact(
+                            self, self.target, damage, is_crit)
+                    except Exception:
+                        pass
+
                 if is_crit:
                     try:
                         import __main__

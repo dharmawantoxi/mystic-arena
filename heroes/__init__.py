@@ -621,13 +621,14 @@ _BEAM_PASS_HEROES = {"morgath"}
 # Modul yang sama juga dipakai jalur BOSS (lihat _NS_gornak.draw_gornak),
 # jadi satu karakter punya satu bahasa efek di arena maupun di lane.
 # ═══════════════════════════════════════════════════════
-_LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw"}
+_LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
     "zephyr": "heroes.zephyr_fx",
     "gornak": "heroes.gornak_fx",
     "grimjaw": "heroes.grimjaw_fx",
+    "kaizen": "heroes.kaizen_fx",
 }
 
 

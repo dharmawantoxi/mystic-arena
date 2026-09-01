@@ -38,6 +38,16 @@ import heroes
 from heroes import _ProbeEntity, render_hero, _get_hero_scale
 from heroes._bundle import _NS_kaizen as K
 
+# Audit ini menilai FALLBACK CANVAS murni (rig + smear + sabit in-canvas).
+# Lapisan hidup 60fps (heroes/kaizen_fx.py) dimatikan supaya draw_kaizen
+# tidak meng-attach director dan menekan smear yang justru mau diaudit.
+try:
+    from heroes import kaizen_fx as _kzfx
+    _kzfx.KAIZEN_FX_ENABLED = False
+    K._LIVE_MOD = False
+except Exception:
+    pass
+
 AX, AY = 170, 175          # anchor rig v2 di kartu 340 px (telapak +60)
 
 
