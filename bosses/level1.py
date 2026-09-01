@@ -7919,28 +7919,108 @@ class _NS_drakar:
                                             pulse)
 
 class _NS_abaddon:
-    """Namespace abaddon - PIXEL MASTERWORK v2 + Skill FX v2.1.
+    """Namespace abaddon - PIXEL MASTERWORK v3 + Skill FX v3 (TRUE BOSS).
 
-    True boss + hero, 100% prosedural. Standar Thorne v2 / v2.1:
-    ramp 4-5 band, selout, tuft cape, specular cluster, dither,
-    FX world-space lewat _fx_scale (cap 2.6).
+    Abaddon, Lord of Avernus: penunggang berhud di atas tungganjan
+    hantu api cyan, bilah energi besar, dan empat skill (Q Mist Coil,
+    W Aphotic Shield, E Darkness Gale, R Death Sever).
+
+    Ditulis ulang penuh dari v2:
+      * RIG. Kuda + penunggang dibangun sebagai rig pixel-art chunky
+        berlapis: bayangan -> base api -> kuda (kaki jauh -> badan ->
+        kaki dekat) -> cape -> penunggang (kaki jauh, torso, pauldron,
+        hood, lengan + pedang) -> highlight -> mata. Satu buffer rig +
+        outline gelap 4 arah.
+      * ANIMASI. Controller state machine ber-prioritas (IDLE/WALK/RUN/
+        CHARGE/CAST/SKILL/SPECIAL/HIT/HURT/DEATH) dengan delta-time
+        nyata, 6 fase serangan (anticipation -> windup -> swing ->
+        impact -> follow -> recovery), jendela hit aktif, respons hurt,
+        dan impact satu kali per ayunan.
+      * SWING. Bilah berotasi pada busur terdefinisi (sudut fungsi
+        pose), jendela hit aktif, trail dibangun dari posisi UJUNG
+        BILAH yang tersimpan (histori), impact flash, screen shake,
+        hit-stop (lapisan hidup heroes/abaddon_fx memicu impact di
+        frame benturan; fallback canvas menggambar versinya sendiri).
+      * PROYEKTIL. 3 kelas dengan lifecycle penuh (spawn -> travel ->
+        trail -> hit -> impact -> destroy), bentuk chunky ber-arah
+        (bukan lingkaran polos): Mist Coil (orb + puing spiral +
+        after-image terkuantisasi), Darkness Gale (dinding angin
+        crescent), Death Sever (busur pita tebal + serpihan).
+      * SKILL. Lifecycle telegraph -> charge -> release -> travel ->
+        impact -> after-effect. W kini perisai PELAT HEKSAAGON
+        berputar, bukan lingkaran besar. Bentuk: cincin putus-putus,
+        chevron, serpihan, bintang, retakan tanah - satu bahasa bentuk.
+      * GAME FEEL. hit-stop 0.03-0.08 s + screen shake meluruh lewat
+        bus heroes/combat_feel (lapisan hidup).
+      * DEBUG_CHARACTER. overlay hurtbox, hitbox ayunan, jangkauan,
+        hit proyektil, state/frame/progress/skill/partikel/FPS.
+      * PERFORMANCE. buffer rig + outline cache, plate tanah statis
+        per skill, sprite api cache, partikel & proyektil dibatasi.
+
+    Kontrak yang TIDAK berubah (gameplay + tes regresi):
+      * ``draw_abaddon(surface, boss, x, y)`` - entry point tunggal.
+      * ``SKILL_DUR`` sinkron dengan AI boss (30/90/40/60).
+      * ``_ab_projectiles`` (di-park hero lane), ``_ab_coil_spawned``,
+        ``_ab_gale_spawned``, ``_ab_sever_spawned``,
+        ``_ab_attack_active``, ``_ab_attack_frame``,
+        ``_ab_attack_progress``, ``_ab_prev_timer``, ``_ab_last_x``.
+
+    Regresi: tools/test_abaddon_masterwork.py
+    Audit  : tools/_audit_abaddon_v2.py
+    Sheet  : tools/_shot_abaddon_max.py
     """
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
     _STATIC_SURFACES = {}
-    SKILL_DUR = {"q": 45, "w": 100, "e": 40, "r": 50}
 
-    # ORIGINAL-MAX caches (dibangun lazy, piksel identik dengan draw asli)
-    _AB_FLAME = {}     # sprite cyan flame per (s, alpha//8)
-    _AB_AURA1 = None   # gradien aura gelap (pulse via set_alpha)
-    _AB_AURA2 = None   # gradien glow cyan
-    _AB_BUF = None     # buffer body saat hurt flash
-    _AB_SHADOW = None  # tekstur bayangan (reaktif via lift)
+    # Durasi status skill (frame) - HARUS sama dengan active_skill_timer
+    # yang diisi AI boss (bosses/base_boss.py) dan skill hero
+    # (hero_skills/_bundle.py).
+    SKILL_DUR = {"q": 30, "w": 90, "e": 40, "r": 60}
 
-    # ---------------------------------------------------------------------------
-    # HD Color Palette - Abaddon inspired dark purple / cyan flame
-    # ---------------------------------------------------------------------------
+    # Batas fase = fraksi 0..1 dari durasi serangan.
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.18),
+        ("WINDUP",       0.18, 0.34),
+        ("SWING",        0.34, 0.52),
+        ("IMPACT",       0.52, 0.62),
+        ("FOLLOW",       0.62, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+    #: jendela di mana bilah secara geometris menyapu depan badan
+    ATTACK_ACTIVE_WINDOW = (0.36, 0.60)
+    #: puncak benturan (FX impact + hit-stop dipicu di sini)
+    ATTACK_IMPACT_FRAME = 0.56
+
+    #: Prioritas state animasi. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: Aktifkan untuk melihat hitbox/hurtbox/jangkauan/state di arena.
+    DEBUG_CHARACTER = False
+
+    # Buffer rig: extents terukur semua pose + margin. Anchor (0,0) =
+    # pusat badan kuda; +x = arah hadap, +y = ke bawah.
+    RIG_W, RIG_H = 224, 196
+    RIG_OX, RIG_OY = 112, 82
+    SHADOW_Y = 58          # bayangan kontak (ruang lokal)
+    FLAME_Y = 46           # garis base api tunggangan (ruang lokal)
+    SWORD_LEN = 46         # panjang tangan -> ujung bilah
+
+    # ── HD Color Palette - dark purple / cyan flame (konsisten v2) ────
     PALETTE = {
         # Cape / cloth - deep purple
         "cape_darkest":   (18,   8,  32),
@@ -7949,29 +8029,25 @@ class _NS_abaddon:
         "cape_light":     (95,  70, 155),
         "cape_high":      (140, 115, 195),
         "cape_shine":     (185, 165, 225),
-
-        # Armor - dark purple/black with gold trim
+        # Armor - dark purple/black dengan trim emas
         "armor_darkest":  (12,   8,  22),
         "armor_dark":     (28,  20,  48),
         "armor_mid":      (55,  42,  85),
         "armor_light":    (95,  78, 130),
         "armor_high":     (150, 130, 180),
-
         # Gold trim
         "gold_darkest":   (65,  42,  10),
         "gold_dark":      (115, 85,  25),
         "gold_mid":       (175, 140, 45),
         "gold_light":     (225, 190, 85),
         "gold_shine":     (250, 225, 145),
-
         # Horse body - dark blue-purple
         "horse_darkest":  (10,  15,  30),
         "horse_dark":     (25,  35,  60),
         "horse_mid":      (50,  70, 105),
         "horse_light":    (85, 115, 155),
         "horse_high":     (135, 170, 200),
-
-        # Cyan flame / mist - the signature color
+        # Cyan flame / mist - warna tanda tangan
         "flame_darkest":  (5,   45,  55),
         "flame_dark":     (15,  95, 115),
         "flame_mid":      (40, 170, 185),
@@ -7979,81 +8055,120 @@ class _NS_abaddon:
         "flame_bright":   (160, 250, 250),
         "flame_hot":      (215, 255, 255),
         "flame_white":    (240, 255, 255),
-
-        # Sword blade - cyan energy blade
+        # Sword blade - cyan energy
         "blade_darkest":  (30,  55,  70),
         "blade_dark":     (60, 120, 145),
         "blade_mid":      (110, 190, 210),
         "blade_light":    (170, 235, 240),
         "blade_shine":    (220, 250, 250),
-
-        # Purple magic (for skills)
+        # Purple magic (skill)
         "magic_darkest":  (20,   5,  50),
         "magic_dark":     (55,  25, 115),
         "magic_mid":      (105, 60, 180),
         "magic_light":    (165, 120, 225),
         "magic_bright":   (210, 175, 250),
         "magic_hot":      (240, 220, 255),
-
         # Eye glow
         "eye_dark":       (30,  90, 100),
         "eye_mid":        (90, 200, 205),
         "eye_bright":     (170, 245, 245),
         "eye_hot":        (230, 255, 255),
-
+        # Abu / debu
+        "ash_dark":       (58,  52,  72),
+        "ash_mid":        (96,  88, 112),
+        "ash_light":      (140, 132, 160),
         # Misc
         "shadow":         (0,   0,   0),
         "shadow_deep":    (3,   4,   8),
+        "outline":        (4,   4,  10),
         "white":          (255, 255, 255),
     }
 
-
+    # ==================================================================
+    # PRIMITIF HELPER
+    # ==================================================================
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
 
+    def _alpha(v):
+        return max(0, min(255, int(v)))
+
+    def _hash01(i):
+        x = math.sin(i * 127.1 + 311.7) * 43758.5453
+        return x - math.floor(x)
+
+    def _mix(a, b, t):
+        t = max(0.0, min(1.0, t))
+        return _NS_abaddon._clamp((a[0] + (b[0] - a[0]) * t,
+                                   a[1] + (b[1] - a[1]) * t,
+                                   a[2] + (b[2] - a[2]) * t))
+
+    def _static(key, builder):
+        surf = _NS_abaddon._STATIC_SURFACES.get(key)
+        if surf is None:
+            surf = builder()
+            _NS_abaddon._STATIC_SURFACES[key] = surf
+        return surf
+
+    def _fx_scale(boss):
+        """Skala FX world-space untuk lane hero (canvas dikecilkan)."""
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+    def _ring_r(boss, world_r):
+        return max(1, int(round(float(world_r) * _NS_abaddon._fx_scale(boss))))
 
     def _aacircle(surface, color, center, radius, width=0):
         color = _NS_abaddon._clamp(color)
         cx, cy = int(center[0]), int(center[1])
         radius = max(0, int(radius))
-        if radius == 0:
+        if radius <= 0:
             return
         if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
+            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4),
+                                  pygame.SRCALPHA)
+            pygame.draw.circle(temp, color, (radius + 2, radius + 2),
+                               radius, width)
             surface.blit(temp, (cx - radius - 2, cy - radius - 2))
             return
         if _NS_abaddon.HAS_AACIRCLE and radius > 1:
             try:
-                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius, width)
+                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius,
+                                     width)
                 return
             except Exception:
                 pass
         pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
 
-
     def _aaline(surface, color, start, end, width=1):
         color = _NS_abaddon._clamp(color)
         sx, sy = int(start[0]), int(start[1])
         ex, ey = int(end[0]), int(end[1])
+        width = max(1, int(width))
         if len(color) == 4 and color[3] < 255:
-            min_x = min(sx, ex) - width
-            min_y = min(sy, ey) - width
-            w = abs(ex - sx) + width * 4 + 4
-            h = abs(ey - sy) + width * 4 + 4
+            min_x = min(sx, ex) - width - 2
+            min_y = min(sy, ey) - width - 2
+            w = abs(ex - sx) + width * 4 + 6
+            h = abs(ey - sy) + width * 4 + 6
             if w <= 0 or h <= 0:
                 return
             temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.line(temp, color,
-                             (sx - min_x, sy - min_y),
-                             (ex - min_x, ey - min_y), max(1, width))
+            pygame.draw.line(temp, color, (sx - min_x, sy - min_y),
+                             (ex - min_x, ey - min_y), width)
             surface.blit(temp, (min_x, min_y))
             return
-        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
-
+        if _NS_abaddon.HAS_AALINES and width == 1:
+            try:
+                pygame.draw.aaline(surface, color[:3], (sx, sy), (ex, ey))
+                return
+            except Exception:
+                pass
+        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), width)
 
     def _poly(surface, color, points):
-        if len(points) < 3:
+        if not points or len(points) < 3:
             return
         color = _NS_abaddon._clamp(color)
         if len(color) == 4 and color[3] < 255:
@@ -8065,118 +8180,138 @@ class _NS_abaddon:
             if w <= 0 or h <= 0:
                 return
             temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            shifted = [(p[0] - min_x, p[1] - min_y) for p in points]
-            pygame.draw.polygon(temp, color, shifted)
+            pygame.draw.polygon(
+                temp, color,
+                [(int(p[0] - min_x), int(p[1] - min_y)) for p in points])
             surface.blit(temp, (min_x, min_y))
             return
-        pygame.draw.polygon(surface, color[:3], points)
-
+        pygame.draw.polygon(surface, color[:3],
+                            [(int(px), int(py)) for px, py in points])
 
     def _ellipse(surface, color, rect, width=0):
         color = _NS_abaddon._clamp(color)
+        rx, ry, rw, rh = int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3])
+        if rw <= 0 or rh <= 0:
+            return
         if len(color) == 4 and color[3] < 255:
-            rx, ry, rw, rh = rect
-            if rw <= 0 or rh <= 0:
-                return
             temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
             pygame.draw.ellipse(temp, color, (2, 2, rw, rh), width)
             surface.blit(temp, (rx - 2, ry - 2))
             return
-        pygame.draw.ellipse(surface, color[:3], rect, width)
-
+        pygame.draw.ellipse(surface, color[:3], (rx, ry, rw, rh), width)
 
     def _rect(surface, color, rect, border_radius=0):
         color = _NS_abaddon._clamp(color)
+        rx, ry, rw, rh = int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3])
+        if rw <= 0 or rh <= 0:
+            return
         if len(color) == 4 and color[3] < 255:
-            rx, ry, rw, rh = rect
-            if rw <= 0 or rh <= 0:
-                return
             temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.rect(temp, color, (2, 2, rw, rh), border_radius=border_radius)
+            pygame.draw.rect(temp, color, (2, 2, rw, rh),
+                             border_radius=border_radius)
             surface.blit(temp, (rx - 2, ry - 2))
             return
-        pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
+        pygame.draw.rect(surface, color[:3], (rx, ry, rw, rh),
+                         border_radius=border_radius)
 
-
-    def _target_position(boss, x, y):
-        target = getattr(boss, "target", None)
-        if target is not None and getattr(target, "alive", True):
-            # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
-            scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
-            tx = x + (target.x - getattr(boss, "x", x)) / scale
-            ty = y + (target.y - getattr(boss, "y", y)) / scale
-            return int(tx), int(ty)
-        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
-
-    def _mix(a, b, t):
-        t = max(0.0, min(1.0, t))
-        return _NS_abaddon._clamp((a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t))
-
-    def _hash01(i):
-        x = math.sin(i * 127.1 + 311.7) * 43758.5453
-        return x - math.floor(x)
-
-    def _static(key, builder):
-        surf = _NS_abaddon._STATIC_SURFACES.get(key)
-        if surf is None:
-            surf = builder()
-            _NS_abaddon._STATIC_SURFACES[key] = surf
-        return surf
-
-    def _fx_scale(boss):
-        scale = getattr(boss, "_render_scale", None)
-        if not scale:
-            return 1.0
-        return max(1.0, min(2.6, 1.0 / float(scale)))
-
-    def _ring_r(boss, world_r):
-        return max(1, int(round(float(world_r) * _NS_abaddon._fx_scale(boss))))
-
-    def _alpha(v):
-        return max(0, min(255, int(v)))
-
-    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4, core=None):
+    # ==================================================================
+    # FX VOCABULARY (bahasa bentuk yang sama di semua efek)
+    # ==================================================================
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+                    core=None):
+        """Bintang kilat: spike panjang-pendek selang-seling + inti."""
         if alpha <= 0 or size <= 0:
             return
         for k in range(spikes):
             ang = rot + k * math.pi * 2 / spikes
             ln = size * (1.0 if k % 2 == 0 else 0.55)
-            _NS_abaddon._aaline(surface, (*color, alpha), (int(cx), int(cy)),
-                (int(cx + math.cos(ang) * ln), int(cy + math.sin(ang) * ln * .8)),
+            _NS_abaddon._aaline(
+                surface, (*color, _NS_abaddon._alpha(alpha)),
+                (int(cx), int(cy)),
+                (int(cx + math.cos(ang) * ln),
+                 int(cy + math.sin(ang) * ln * 0.8)),
                 2 if k % 2 == 0 else 1)
         if core:
-            _NS_abaddon._aacircle(surface, (*core, alpha), (int(cx), int(cy)), max(1, int(size * .3)))
+            _NS_abaddon._aacircle(surface,
+                                  (*core, _NS_abaddon._alpha(alpha)),
+                                  (int(cx), int(cy)),
+                                  max(1, int(size * 0.3)))
 
     def _chevron(surface, cx, cy, ang, size, color, alpha, width=3):
+        """Satu panah '>' menghadap arah ``ang`` (telegraph bergerak)."""
         if alpha <= 0 or size <= 0:
             return
         ca, sa = math.cos(ang), math.sin(ang)
         px, py = -sa, ca
         tipx, tipy = cx + ca * size, cy + sa * size
         for s in (-1, 1):
-            _NS_abaddon._aaline(surface, (*color, alpha),
-                (int(cx + px * s * size * .55 - ca * size * .5),
-                 int(cy + py * s * size * .55 - sa * size * .5)),
+            _NS_abaddon._aaline(
+                surface, (*color, _NS_abaddon._alpha(alpha)),
+                (int(cx + px * s * size * 0.55 - ca * size * 0.5),
+                 int(cy + py * s * size * 0.55 - sa * size * 0.5)),
                 (int(tipx), int(tipy)), width)
 
     def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
-                     segments=10, thick=3, span=0.6, squash=.92):
+                     segments=10, thick=3, span=0.6, squash=0.92):
+        """Cincin PUTUS-PUTUS chunky yang berputar (marker AOE/rune)."""
         if alpha <= 0 or radius <= 1:
             return
         for i in range(segments):
             a0 = phase + i * math.pi * 2 / segments
             a1 = a0 + math.pi * 2 / segments * span
-            p0 = (cx + math.cos(a0) * radius, cy + math.sin(a0) * radius * squash)
-            p1 = (cx + math.cos(a1) * radius, cy + math.sin(a1) * radius * squash)
-            _NS_abaddon._aaline(surface, (*color, alpha), p0, p1, thick)
+            p0 = (cx + math.cos(a0) * radius,
+                  cy + math.sin(a0) * radius * squash)
+            p1 = (cx + math.cos(a1) * radius,
+                  cy + math.sin(a1) * radius * squash)
+            _NS_abaddon._aaline(surface, (*color,
+                                          _NS_abaddon._alpha(alpha)),
+                                p0, p1, thick)
+
+    def _shard(surface, cx, cy, ang, length, width, color, alpha,
+               core=None):
+        """Serpihan kristal: belah ketupat runcing searah ``ang``."""
+        if alpha <= 0 or length <= 1:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        nx, ny = -sa, ca
+        pts = [(cx + ca * length, cy + sa * length),
+               (cx + nx * width, cy + ny * width),
+               (cx - ca * length * 0.45, cy - sa * length * 0.45),
+               (cx - nx * width, cy - ny * width)]
+        _NS_abaddon._poly(surface,
+                          (*color, _NS_abaddon._alpha(alpha)),
+                          [(int(px), int(py)) for px, py in pts])
+        if core:
+            _NS_abaddon._aaline(
+                surface, (*core, _NS_abaddon._alpha(alpha)),
+                (int(cx - ca * length * 0.3), int(cy - sa * length * 0.3)),
+                (int(cx + ca * length * 0.8), int(cy + sa * length * 0.8)),
+                1)
+
+    def _ribbon(surface, path, widths, color, alpha):
+        """Pita tebal-tipis dari daftar titik (trail ujung bilah)."""
+        if len(path) < 3 or alpha <= 0:
+            return
+        left, right = [], []
+        for i, (px, py) in enumerate(path):
+            if i == 0:
+                dx, dy = path[1][0] - px, path[1][1] - py
+            elif i == len(path) - 1:
+                dx, dy = px - path[-2][0], py - path[-2][1]
+            else:
+                dx = path[i + 1][0] - path[i - 1][0]
+                dy = path[i + 1][1] - path[i - 1][1]
+            ln = math.hypot(dx, dy) or 1.0
+            nx, ny = -dy / ln, dx / ln
+            w = widths[i]
+            left.append((px + nx * w, py + ny * w))
+            right.append((px - nx * w, py - ny * w))
+        _NS_abaddon._poly(surface,
+                          (*color, _NS_abaddon._alpha(alpha)),
+                          [(int(a), int(b)) for a, b in left + right[::-1]])
 
     def _tuft_points(spine, depth=4.0, min_len=7.0, seed=0):
+        """Ubah spine halus menjadi tepi bergerigi (pixel-art kain)."""
         if not spine:
             return spine
         out = [spine[0]]
@@ -8191,7 +8326,8 @@ class _NS_abaddon:
             for j in range(n):
                 t = (j + 0.5) / n
                 px, py = ax + (bx - ax) * t, ay + (by - ay) * t
-                d = depth * (0.55 + 0.45 * _NS_abaddon._hash01(i * 7 + j * 13 + seed))
+                d = depth * (0.55 + 0.45 * _NS_abaddon._hash01(
+                    i * 7 + j * 13 + seed))
                 if j % 2 == 0:
                     out.append((px + nx * d, py + ny * d))
                 else:
@@ -8200,69 +8336,1280 @@ class _NS_abaddon:
         return out
 
     def _dither_dots(surface, color, points, alpha=70):
+        """Checkerboard 50% 1-px (band dither klasik)."""
         a = _NS_abaddon._alpha(alpha)
+        if a <= 0:
+            return
         col = (*_NS_abaddon._clamp(color)[:3], a)
         for x, y in points:
             ix, iy = int(x), int(y)
             if (ix + iy) & 1:
                 _NS_abaddon._rect(surface, col, (ix, iy, 1, 1))
 
-    # ---------------------------------------------------------------------------
-    # Cyan flame helper
-    # ---------------------------------------------------------------------------
-    def _draw_cyan_flame(surface, x, y, size, phase, alpha=255):
-        """Draw a cyan mist flame particle. ORIGINAL-MAX: hasil draw
-        di-cache sebagai sprite per (s, alpha//8) - piksel identik,
-        posisi tetap kontinu; hanya draw-call yang diganti blit."""
-        flick = math.sin(phase * 3) * 0.15 + 1.0
-        s = int(size * flick)
-        if s < 1:
-            return
-        a = min(255, int(alpha)) // 8 * 8
-        key = (s, a)
-        B = _NS_abaddon
-        cache = B._AB_FLAME
-        if key not in cache:
-            r = s + 4
+    # -- sprite api cyan yang di-cache (dipakai puluhan titik/frame) ----
+    _FLAME_CACHE = {}
+
+    def _flame_sprite(size, alpha):
+        """Sprite api cyan per (size, alpha//8) - dibangun sekali."""
+        key = (size, alpha)
+        spr = _NS_abaddon._FLAME_CACHE.get(key)
+        if spr is None:
+            r = size + 4
             f = pygame.Surface((r * 2, r * 2 + 4), pygame.SRCALPHA)
             cx0, cy0 = r, r + 2
-            B._aacircle(f, (*B.PALETTE["flame_darkest"], a // 3),
-                        (cx0, cy0), s + 3)
-            B._aacircle(f, (*B.PALETTE["flame_dark"], a // 2),
-                        (cx0, cy0), s + 1)
-            B._aacircle(f, (*B.PALETTE["flame_mid"], a), (cx0, cy0), s)
-            B._aacircle(f, (*B.PALETTE["flame_light"], a), (cx0, cy0 - 1),
-                        max(1, s - 2))
-            B._aacircle(f, (*B.PALETTE["flame_bright"], min(255, a)),
-                        (cx0, cy0 - 2), max(1, s - 4))
-            if s > 3:
-                B._aacircle(f, (*B.PALETTE["flame_hot"], min(255, a)),
-                            (cx0, cy0 - 3), max(1, s - 6))
-            cache[key] = f
-        spr = cache[key]
-        surface.blit(spr, (x - (s + 4), y - (s + 6)))
+            p = _NS_abaddon.PALETTE
+            _NS_abaddon._aacircle(f, (*p["flame_darkest"], alpha // 3),
+                                  (cx0, cy0), size + 3)
+            _NS_abaddon._aacircle(f, (*p["flame_dark"], alpha // 2),
+                                  (cx0, cy0), size + 1)
+            _NS_abaddon._aacircle(f, (*p["flame_mid"], alpha), (cx0, cy0),
+                                  size)
+            _NS_abaddon._aacircle(f, (*p["flame_light"], alpha),
+                                  (cx0, cy0 - 1), max(1, size - 2))
+            _NS_abaddon._aacircle(f, (*p["flame_bright"], alpha),
+                                  (cx0, cy0 - 2), max(1, size - 4))
+            if size > 3:
+                _NS_abaddon._aacircle(f, (*p["flame_hot"], alpha),
+                                      (cx0, cy0 - 3), max(1, size - 6))
+            spr = f
+            _NS_abaddon._FLAME_CACHE[key] = spr
+        return spr
 
+    def _draw_flame(surface, x, y, size, alpha):
+        """Blit sprite api cyan (cache) di (x, y)."""
+        s = max(1, int(size))
+        a = max(0, min(255, int(alpha))) // 8 * 8
+        if a <= 8:
+            return
+        spr = _NS_abaddon._flame_sprite(s, a)
+        surface.blit(spr, (int(x) - (s + 4), int(y) - (s + 6)))
 
-    def _draw_flame_streamer(surface, x, y, height, phase, alpha=220):
-        """Draw a rising cyan flame streamer."""
-        for i in range(height):
-            t = i / max(1, height)
-            wave = math.sin(phase * 3 + t * 5) * 2
-            size = int(3 * (1 - t * 0.7))
-            if size < 1:
-                break
-            fx = x + int(wave)
-            fy = y - i
-            f_alpha = int(alpha * (1 - t * 0.6))
-            _NS_abaddon._draw_cyan_flame(surface, fx, fy, size, phase, f_alpha)
+    # ==================================================================
+    # KOORDINAT TARGET (kompensasi scale untuk lane hero offscreen)
+    # ==================================================================
+    def _target_position(boss, x, y):
+        target = getattr(boss, "target", None)
+        scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
+        if target is not None and getattr(target, "alive", True):
+            tx = x + (target.x - getattr(boss, "x", x)) / scale
+            ty = y + (target.y - getattr(boss, "y", y)) / scale
+            return int(tx), int(ty)
+        return (int(x + 200.0 / scale * getattr(boss, "direction", 1)),
+                int(y))
 
+    # ==================================================================
+    # CONTROLLER ANIMASI (state, fase, timing, delta-time, jendela hit)
+    # ==================================================================
+    def attack_phases_order():
+        """Urutan nama fase (dipakai test & alat audit)."""
+        return tuple(name for name, _a, _b in _NS_abaddon.ATTACK_PHASES)
 
-    # ---------------------------------------------------------------------------
-    # PROJECTILE / EFFECT SYSTEM
-    # ---------------------------------------------------------------------------
-    class MistCoilProjectile:
-        """Q - Purple/cyan orb projectile."""
-        def __init__(self, sx, sy, tx, ty, speed=6.0):
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1 (None di luar)."""
+        if progress is None:
+            return "NONE"
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_abaddon.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    def _resolve_anim_state(boss, active, phase, moving, skill):
+        """State animasi yang DIINGINKAN frame ini (ber-prioritas)."""
+        if not getattr(boss, "alive", True):
+            return "DEATH"
+        if int(getattr(boss, "_ab_hurt_frames", 0)) > 0:
+            return "HURT"
+        if skill == "r":
+            return "SPECIAL"
+        if skill:
+            return "SKILL"
+        if active:
+            if phase in ("ANTICIPATION", "WINDUP"):
+                return "CHARGE"
+            if phase in ("SWING", "IMPACT"):
+                return "SWING"
+            return "ATTACK"
+        if moving:
+            return ("RUN" if float(getattr(boss, "speed", 1.0)) >= 2.2
+                    else "WALK")
+        return "IDLE"
+
+    def _swing_hitbox(boss, cx, cy):
+        """Rect hitbox ayunan (ruang permukaan) saat jendela hit aktif."""
+        if not getattr(boss, "_ab_hit_active", False):
+            return None
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        scale = _NS_abaddon._fx_scale(boss)
+        reach = int(56 * scale)
+        top = int(cy - 42 * scale)
+        h = int(72 * scale)
+        left = int(cx) if f > 0 else int(cx) - reach
+        return pygame.Rect(left, top, max(8, reach), max(10, h))
+
+    def _update_attack_anim(boss):
+        """ANIMATION CONTROLLER Abaddon - satu sumber kebenaran.
+
+        Menulis:
+          * ``_ab_dt``              delta-time nyata (detik, dijepit)
+          * ``_ab_attack_active``   serangan sedang berjalan  (nama lama)
+          * ``_ab_attack_frame``    frame ke-n dalam serangan  (nama lama)
+          * ``_ab_attack_progress`` 0..1 sepanjang serangan   (nama lama)
+          * ``_ab_attack_phase``    ANTICIPATION/.../RECOVERY
+          * ``_ab_hit_active``      True hanya di jendela hit aktif
+          * ``_ab_hurt_frames``     sisa frame respons kena damage
+          * ``_ab_state`` / ``_ab_state_prev`` / ``_ab_state_time``
+          * ``_ab_swing_seq``       id unik per ayunan (untuk FX impact)
+
+        Serangan dikenali dari lompatan timer ke atas (cooldown dipasang
+        saat attack mendarat) plus detak jam; pemanggil yang menggerakkan
+        ``_ab_attack_progress`` sendiri (alat preview/tes) dihormati via
+        mode ``_ab_attack_manual``.
+        """
+        # ── delta time nyata ──────────────────────────────────────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                          # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_ab_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._ab_last_ms = now
+        boss._ab_dt = dt
+
+        # ── timeline serangan ─────────────────────────────────────────
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 43)))
+        timer = int(getattr(boss, "timer", 0))
+        previous = int(getattr(boss, "_ab_prev_timer", 0))
+        active = bool(getattr(boss, "_ab_attack_active", False))
+        manual = bool(getattr(boss, "_ab_attack_manual", False))
+
+        triggered = timer >= cooldown - 1 and previous <= 1
+        if triggered:
+            boss._ab_attack_active = True
+            boss._ab_attack_frame = 0
+            boss._ab_attack_manual = False
+            boss._ab_swing_seq = int(getattr(boss, "_ab_swing_seq", 0)) + 1
+            active = True
+        elif active and timer > 0:
+            boss._ab_attack_frame = int(getattr(boss, "_ab_attack_frame",
+                                                0)) + 1
+            boss._ab_attack_manual = False
+        elif timer <= 0:
+            if active and not manual and \
+                    float(getattr(boss, "_ab_attack_progress", 0.0)) > 0.0:
+                boss._ab_attack_manual = True
+            else:
+                boss._ab_attack_active = False
+                boss._ab_attack_frame = 0
+                boss._ab_attack_manual = False
+                active = False
+        boss._ab_prev_timer = timer
+
+        frame = int(getattr(boss, "_ab_attack_frame", 0)) if active else 0
+        span = max(1, cooldown - 1)
+        if active and bool(getattr(boss, "_ab_attack_manual", False)):
+            progress = min(1.0, max(0.0, float(getattr(
+                boss, "_ab_attack_progress", 0.0))))
+            boss._ab_attack_frame = int(round(progress * span))
+        else:
+            progress = min(1.0, frame / float(span)) if active else 0.0
+        boss._ab_attack_progress = progress
+
+        phase = _NS_abaddon.attack_phase(progress) if active else "NONE"
+        boss._ab_attack_phase = phase
+        lo, hi = _NS_abaddon.ATTACK_ACTIVE_WINDOW
+        boss._ab_hit_active = bool(active and lo <= progress < hi)
+
+        # ── respons kena damage (HURT) ────────────────────────────────
+        hurt = int(getattr(boss, "_ab_hurt_frames", 0))
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash >= 8 and hurt <= 0:
+            hurt = 10
+        boss._ab_hurt_frames = max(0, hurt - 1) if hurt > 0 else 0
+
+        # ── state machine ber-prioritas ───────────────────────────────
+        moving = bool(getattr(boss, "_ab_moving_cached", False))
+        skill = getattr(boss, "active_skill", None)
+        want = _NS_abaddon._resolve_anim_state(boss, active, phase, moving,
+                                               skill)
+        cur = getattr(boss, "_ab_state", None)
+        if cur is None:
+            boss._ab_state = want
+            boss._ab_state_prev = want
+            boss._ab_state_time = 0.0
+        elif want != cur:
+            cur_p = _NS_abaddon.ANIM_STATES.get(cur, 0)
+            new_p = _NS_abaddon.ANIM_STATES.get(want, 0)
+            stime = float(getattr(boss, "_ab_state_time", 0.0))
+            if cur != "DEATH" and (new_p >= cur_p or stime > 0.08):
+                boss._ab_state_prev = cur
+                boss._ab_state = want
+                boss._ab_state_time = 0.0
+            else:
+                boss._ab_state_time = stime + dt
+        else:
+            boss._ab_state_time = float(getattr(boss, "_ab_state_time",
+                                                0.0)) + dt
+
+    def _detect_moving(boss):
+        cur_x = float(getattr(boss, "x", 0.0))
+        cur_y = float(getattr(boss, "y", 0.0))
+        if not hasattr(boss, "_ab_last_x"):
+            boss._ab_last_x = cur_x
+            boss._ab_last_y = cur_y
+            boss._ab_moving_cached = False
+            return False
+        moved = abs(cur_x - boss._ab_last_x) + abs(cur_y - boss._ab_last_y)
+        boss._ab_last_x = cur_x
+        boss._ab_last_y = cur_y
+        moving = moved > 0.3
+        boss._ab_moving_cached = moving
+        return moving
+
+    # ==================================================================
+    # POSE - satu sumber kebenaran untuk rig, trail, DAN lapisan hidup
+    # ==================================================================
+    # Kunci pose: 0 = siap (bilah carried), 0.30 = puncak wind-up
+    # (di atas kepala), 0.62 = frame impact (menyapu depan-bawah),
+    # 1.0 = kembali siap.
+    _SW_REST = 0.95
+    _SW_WIND = 3.02
+    _SW_HIT = 1.04
+    _POSE_WIND = 0.30
+    _POSE_HIT = 0.62
+
+    def _attack_curve(ap):
+        """Progres mentah 0..1 -> waktu pose 0..1 (MONOTON naik).
+
+        Memberi: (a) anticipation jelas, (b) HOLD wind-up, (c) tebasan
+        yang dipercepat, (d) HOLD impact 1-2 frame, (e) follow-through
+        meluruh - kontras laju ~10x antara tebasan dan hold.
+        """
+        if ap <= 0.0:
+            return 0.0
+        if ap >= 1.0:
+            return 1.0
+        w = _NS_abaddon._POSE_WIND
+        h = _NS_abaddon._POSE_HIT
+        if ap < 0.18:                       # anticipation: angkat bilah
+            t = ap / 0.18
+            return w * (t ** 0.85)
+        if ap < 0.34:                       # WINDUP HOLD (di atas kepala)
+            return w
+        if ap < 0.52:                       # tebasan: dipercepat
+            t = (ap - 0.34) / 0.18
+            return w + (h - w) * (t ** 1.30)
+        if ap < 0.62:                       # IMPACT HOLD (nyaris beku)
+            return h
+        t = (ap - 0.62) / 0.38              # follow-through -> siap
+        return h + (1.0 - h) * (t ** 0.80)
+
+    def _sword_angle(pose):
+        """Sudut bilah (rad). tip = hand + (sin a * L, cos a * L).
+
+        a = 0 ke bawah, a = pi/2 ke depan, a = pi ke atas.
+        """
+        if pose <= _NS_abaddon._POSE_WIND:
+            t = pose / _NS_abaddon._POSE_WIND
+            return (_NS_abaddon._SW_REST +
+                    (_NS_abaddon._SW_WIND - _NS_abaddon._SW_REST) * t)
+        if pose <= _NS_abaddon._POSE_HIT:
+            t = ((pose - _NS_abaddon._POSE_WIND) /
+                 (_NS_abaddon._POSE_HIT - _NS_abaddon._POSE_WIND))
+            return (_NS_abaddon._SW_WIND +
+                    (_NS_abaddon._SW_HIT - _NS_abaddon._SW_WIND) * t)
+        t = (pose - _NS_abaddon._POSE_HIT) / (1.0 - _NS_abaddon._POSE_HIT)
+        return _NS_abaddon._SW_HIT + \
+            (_NS_abaddon._SW_REST - _NS_abaddon._SW_HIT) * t
+
+    def _pose(boss, x, y, ap_override=None):
+        """Hitung seluruh pose rig dalam SATU tempat (murni).
+
+        ``ap_override`` mengganti progress serangan (dipakai trail yang
+        menyampling pose ke belakang). Return dict dengan semua angka
+        yang dibutuhkan rig, trail, dan lapisan hidup:
+
+        facing, phase, action, ap, pose, sword_angle, skill, skill_p,
+        lunge, lean, bob, gallop, hurt, active, trailing, hot, swing_id,
+        hand (x, y dunia), tip (x, y dunia).
+        """
+        phase = float(getattr(boss, "pulse", 0.0))
+        facing = int(getattr(boss, "direction", 1)) or 1
+        active_skill = getattr(boss, "active_skill", None)
+        attacking = bool(getattr(boss, "_ab_attack_active", False))
+        hurt = int(getattr(boss, "_ab_hurt_frames", 0)) > 0
+        moving = bool(getattr(boss, "_ab_moving_cached", False))
+
+        if not getattr(boss, "alive", True):
+            action = "death"
+        elif active_skill:
+            action = active_skill
+        elif attacking:
+            action = "attack"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+
+        ap = (max(0.0, min(1.0, float(getattr(boss, "_ab_attack_progress",
+                                             0.0))))
+              if attacking else 0.0)
+        if ap_override is not None:
+            ap = max(0.0, min(1.0, float(ap_override)))
+        pose = _NS_abaddon._attack_curve(ap) if attacking else 0.0
+
+        dur = float(_NS_abaddon.SKILL_DUR.get(action, 40) or 40) \
+            if action in _NS_abaddon.SKILL_DUR else 40.0
+        timer = int(getattr(boss, "active_skill_timer", 0) or 0)
+        skill_p = (max(0.0, min(1.0, 1.0 - timer / dur))
+                   if action in _NS_abaddon.SKILL_DUR else 0.0)
+
+        # ── offset badan ──────────────────────────────────────────────
+        lunge = 0
+        lean = 0
+        bob = 0
+        gallop = phase * 1.5
+        if action == "walk":
+            gallop = phase * 2.2
+            bob = int(abs(math.sin(gallop)) * 3)
+            lean = int(math.sin(gallop) * 2)
+        elif action == "attack":
+            k = math.sin(min(1.0, ap / 0.62) * math.pi)
+            lunge = int(k * 7)
+            lean = int(k * 6) - (4 if ap < 0.34 else 0)
+        elif action == "q":
+            lean = 2
+            lunge = int(math.sin(skill_p * math.pi) * 3)
+        elif action == "w":
+            lean = -2
+        elif action == "e":
+            lunge = int(math.sin(skill_p * math.pi) * 14)
+            lean = 4
+            gallop = phase * 3.2
+        elif action == "r":
+            if skill_p < 0.55:
+                lean = -4
+                lunge = -2
+            else:
+                k = min(1.0, (skill_p - 0.55) / 0.18)
+                lunge = int(math.sin(k * math.pi) * 10)
+                lean = int(k * 8)
+        if hurt:
+            lean -= 5
+            bob = 1
+
+        # ── sudut bilah per aksi ──────────────────────────────────────
+        if action == "attack":
+            sword_angle = _NS_abaddon._sword_angle(pose)
+        elif action == "q":
+            sword_angle = 1.35 + math.sin(phase * 2.0) * 0.04
+        elif action == "w":
+            sword_angle = 0.55 + math.sin(phase * 1.4) * 0.03
+        elif action == "e":
+            sword_angle = 1.5 + math.sin(phase * 2.4) * 0.05
+        elif action == "r":
+            if skill_p < 0.55:
+                sword_angle = 2.95 - skill_p * 0.1
+            else:
+                k = min(1.0, (skill_p - 0.55) / 0.18)
+                sword_angle = 2.95 + (0.9 - 2.95) * (k ** 0.9)
+        elif action == "death":
+            sword_angle = 1.25
+        elif action == "walk":
+            sword_angle = _NS_abaddon._SW_REST + \
+                math.sin(phase * 0.62) * 0.05 + math.sin(gallop) * 0.04
+        else:
+            sword_angle = _NS_abaddon._SW_REST + \
+                math.sin(phase * 0.62) * 0.06
+
+        # ── tangan + ujung bilah (dunia) ──────────────────────────────
+        # hand lokal (28, -22); ikut lunge + lean + bob
+        hx = 28 + lean
+        hy = -22 + bob
+        tip_lx = hx + math.sin(sword_angle) * _NS_abaddon.SWORD_LEN
+        tip_ly = hy + math.cos(sword_angle) * _NS_abaddon.SWORD_LEN
+        f = 1 if facing >= 0 else -1
+        hand = (int(x + (hx + lunge) * f), int(y + hy))
+        tip = (int(x + (tip_lx + lunge) * f), int(y + tip_ly))
+
+        # ── flag trail & impact ───────────────────────────────────────
+        trailing = False
+        hot = False
+        swing_id = None
+        if action == "attack":
+            trailing = 0.34 <= ap < 0.70
+            swing_id = int(getattr(boss, "_ab_swing_seq", 0))
+        if action == "r" and skill_p >= 0.55:
+            # penanda lepas R: seq negatif unik per skill instance
+            if not getattr(boss, "_ab_r_released", False):
+                boss._ab_r_released = True
+                boss._ab_release_seq = int(getattr(boss, "_ab_release_seq",
+                                                   1)) + 1
+            trailing = 0.55 <= skill_p < 0.80
+            hot = True
+            swing_id = -int(getattr(boss, "_ab_release_seq", 1))
+        if action != "r" and getattr(boss, "_ab_r_released", False):
+            boss._ab_r_released = False
+
+        return {
+            "facing": facing,
+            "phase": phase,
+            "action": action,
+            "ap": ap,
+            "pose": pose,
+            "sword_angle": sword_angle,
+            "skill": active_skill,
+            "skill_p": skill_p,
+            "lunge": lunge,
+            "lean": lean,
+            "bob": bob,
+            "gallop": gallop,
+            "hurt": hurt,
+            "active": action == "attack",
+            "trailing": trailing,
+            "hot": hot,
+            "swing_id": swing_id,
+            "hand": hand,
+            "tip": tip,
+        }
+
+    def _swing_tip(boss, x, y):
+        """Untuk lapisan hidup (heroes/abaddon_fx): keadaan tebasan.
+
+        Return dict kecil dengan angka dunia yang perlu direkam layar:
+        tip dunia, progress, jendela trail, flag impact, id ayunan.
+        """
+        p = _NS_abaddon._pose(boss, x, y)
+        impact_frame = _NS_abaddon.ATTACK_IMPACT_FRAME
+        if p["action"] == "r":
+            # sweep R: progress sweep 0..1 + frame impact sweep
+            sp = p["skill_p"]
+            impact_frame = 0.55 + 0.18 * 0.85
+            p_ap = max(0.0, min(1.0, (sp - 0.55) / 0.18))
+        else:
+            p_ap = p["ap"]
+        return {
+            "active": p["active"] or (p["action"] == "r"
+                                      and p["skill_p"] >= 0.55),
+            "ap": p_ap,
+            "tip_x": p["tip"][0],
+            "tip_y": p["tip"][1],
+            "trailing": p["trailing"],
+            "hot": p["hot"],
+            "swing_id": p["swing_id"],
+            "impact_frame": impact_frame,
+        }
+
+    # ==================================================================
+    # LAPISAN FX HIDUP (heroes/abaddon_fx)
+    # ==================================================================
+    _LIVE_MOD = None
+
+    def _live_module():
+        """Muat ``heroes.abaddon_fx`` sekali; None kalau tidak tersedia."""
+        NS = _NS_abaddon
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import abaddon_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "ABADDON_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    def live_fx_ready():
+        """True kalau lapisan hidup Abaddon bisa dipakai (tooling)."""
+        return _NS_abaddon._live_module() is not None
+
+    # ==================================================================
+    # RIG: buffer -> outline 4 arah -> satu blit
+    # ==================================================================
+    def _draw_rig_at(surface, x, y, p, flash=0):
+        """Rig -> buffer -> (hurt flash) -> outline gelap -> blit.
+
+        Buffer sekecil mungkin karena outline menyalinnya 4x per frame.
+        """
+        B = _NS_abaddon
+        buf = pygame.Surface((B.RIG_W, B.RIG_H), pygame.SRCALPHA)
+        B._draw_rig(buf, B.RIG_OX, B.RIG_OY, p)
+        if flash > 0:
+            w = int(235 * min(1.0, flash / 8.0))
+            if w > 0:
+                lit = buf.copy()
+                lit.fill((255, 250, 245, 0),
+                         special_flags=pygame.BLEND_RGBA_MAX)
+                lit.set_alpha(w)
+                buf.blit(lit, (0, 0))
+        edge = buf.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        ox = int(x) - B.RIG_OX
+        oy = int(y) - B.RIG_OY
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + dx, oy + dy))
+        surface.blit(buf, (ox, oy))
+
+    def _draw_rig(surface, ox, oy, p):
+        """Seluruh badan dari sendi, urutan belakang -> depan.
+
+        (ox, oy) = posisi anchor dunia di dalam buffer.
+        """
+        B = _NS_abaddon
+        p_ = B.PALETTE
+        f = 1 if p["facing"] >= 0 else -1
+        dx = p["lunge"] * f
+        dy = p["bob"]
+        phase = p["phase"]
+        action = p["action"]
+        gallop = p["gallop"]
+        galloping = action == "walk"
+
+        def L(lx, ly):
+            """Lokal -> buffer (+lunge/+bob)."""
+            return (ox + int(lx * f + dx), oy + int(ly + dy))
+
+        def poly(color, coords, outline=True):
+            pts = [L(a, b) for a, b in coords]
+            if outline:
+                B._poly(surface, p_["outline"],
+                        [(qx + f, qy + 1) for qx, qy in pts])
+            B._poly(surface, color, pts)
+
+        def poly_free(color, pts, outline=True):
+            """Poligon dengan titik sudah dalam ruang buffer."""
+            if outline:
+                B._poly(surface, p_["outline"],
+                        [(qx + f, qy + 1) for qx, qy in pts])
+            B._poly(surface, color, pts)
+
+        # ══ 1. KAKI JAUH (lebih gelap, di balik badan kuda) ═══════════
+        B._draw_ab_legs(surface, L, p_, f, gallop, galloping, near=False)
+
+        # ══ 2. EKOR API (di balik badan) ═════════════════════════════
+        tail_sway = math.sin(phase * 1.3) * 3
+        for i in range(6):
+            t = i / 5.0
+            tx = -44 - t * 30 + math.sin(phase * 1.6 + i * 1.2) * (2 + t * 3)
+            ty = -6 + t * 10 + tail_sway * t
+            s = max(1, int(5 - t * 3.4))
+            B._draw_flame(surface, L(tx, ty)[0], L(tx, ty)[1], s,
+                          int(225 * (1 - t * 0.55)))
+
+        # ══ 3. BADAN KUDA (3 nilai + garis punggung) ═════════════════
+        body_outer = [
+            (-46, -4), (-42, -12), (-30, -18), (-12, -21), (10, -21),
+            (26, -17), (38, -10), (45, -2), (46, 8), (41, 16), (28, 20),
+            (6, 22), (-16, 21), (-36, 17), (-44, 9),
+        ]
+        poly(p_["horse_darkest"], body_outer)
+        poly(p_["horse_dark"], [
+            (-43, -3), (-39, -10), (-28, -15), (-11, -18), (9, -18),
+            (24, -14), (35, -8), (42, -1), (43, 7), (38, 14), (26, 17),
+            (5, 19), (-15, 18), (-33, 14), (-41, 8),
+        ], outline=False)
+        poly(p_["horse_mid"], [
+            (-34, -8), (-28, -12), (-12, -14), (8, -14), (22, -11),
+            (32, -6), (34, 0), (30, 9), (20, 13), (0, 14), (-20, 13),
+            (-32, 8),
+        ], outline=False)
+        # garis punggung (terang) - cahaya jatuh di atas
+        B._aaline(surface, p_["horse_light"], L(-30, -16), L(24, -15), 2)
+        B._aaline(surface, p_["horse_high"], L(-24, -17), L(14, -17), 1)
+        # bayangan perut
+        B._aaline(surface, p_["horse_darkest"], L(-24, 19), L(22, 18), 2)
+
+        # ══ 4. LEHER + KEPALA KUDA ═══════════════════════════════════
+        neck = [(24, -16), (33, -12), (51, -34), (54, -27), (38, -7)]
+        poly(p_["horse_darkest"], neck)
+        poly(p_["horse_dark"], [(26, -14), (33, -11), (49, -31), (51, -26),
+                                (37, -8)], outline=False)
+        poly(p_["horse_mid"], [(28, -13), (33, -10), (47, -29), (48, -26),
+                               (36, -9)], outline=False)
+        head = [(42, -42), (48, -47), (59, -43), (63, -36), (61, -29),
+                (52, -27), (44, -32)]
+        poly(p_["horse_darkest"], head)
+        poly(p_["horse_dark"], [(44, -41), (49, -45), (58, -42),
+                                (61, -36), (59, -30), (51, -28), (45, -32)],
+             outline=False)
+        poly(p_["horse_mid"], [(46, -40), (50, -43), (57, -41), (59, -36),
+                               (57, -31), (50, -29), (46, -32)],
+             outline=False)
+        # telinga
+        poly(p_["horse_darkest"], [(46, -47), (50, -46), (48, -53)])
+        # garis mulut + hidung
+        B._aaline(surface, p_["horse_darkest"], L(52, -28), L(60, -31), 1)
+        B._aaline(surface, p_["horse_darkest"], L(62, -33), L(62, -31), 2)
+        # mata kuda menyala
+        eye_pulse = 0.75 + 0.25 * math.sin(phase * 2.0)
+        ex, ey = L(53, -37)
+        B._aacircle(surface, p_["shadow_deep"], (ex, ey), 2)
+        B._aacircle(surface, (*p_["eye_dark"],
+                              int(200 * eye_pulse)), (ex, ey), 2)
+        B._aacircle(surface, p_["eye_bright"], (ex, ey), 1)
+        B._aacircle(surface, p_["eye_hot"], (ex, ey), 1)
+
+        # ══ 5. PUNGGUNG API (sepanjang leher) ════════════════════════
+        for i in range(5):
+            t = i / 4.0
+            mx = 27 + t * 24
+            my = -15 - t * 20
+            s = max(1, int(4 - t * 2))
+            B._draw_flame(surface, L(mx, my)[0], L(mx, my)[1], s,
+                          int(200 * (1 - t * 0.4)))
+
+        # ══ 6. KAKI DEKAT ════════════════════════════════════════════
+        B._draw_ab_legs(surface, L, p_, f, gallop, galloping, near=True)
+
+        # ══ 7. SELIMUT SADDLE ════════════════════════════════════════
+        poly(p_["cape_darkest"], [(-14, -21), (12, -21), (10, -12),
+                                  (-16, -12)])
+        poly(p_["cape_dark"], [(-12, -19), (10, -19), (9, -14), (-14, -14)],
+             outline=False)
+        B._aaline(surface, p_["gold_dark"], L(-14, -12), L(10, -12), 2)
+        B._aaline(surface, p_["gold_mid"], L(-13, -12), L(9, -12), 1)
+
+        # ══ 8. CAPE (di belakang penunggang) ═════════════════════════
+        B._draw_ab_cape(surface, L, p_, f, phase, p)
+
+        # ══ 9. KAKI PENUNGGANG (jauh, di balik torso) ════════════════
+        knee_f = 6 + (2 if action == "attack" else 0)
+        poly(p_["armor_darkest"], [(0, -22), (6, -22), (knee_f + 2, -12),
+                                   (knee_f - 3, -12)])
+        B._aaline(surface, p_["armor_dark"], L(2, -20), L(knee_f, -14), 3)
+        # sepatu jauh (gantung di sisi kuda)
+        poly(p_["armor_darkest"], [(knee_f - 3, -12), (knee_f + 3, -12),
+                                   (knee_f + 5, -4), (knee_f - 1, -4)])
+
+        # ══ 10. TORSO PENUNGGANG ═════════════════════════════════════
+        torso = [(-14, -48), (13, -48), (16, -36), (12, -18), (-11, -18),
+                 (-16, -36)]
+        poly(p_["armor_darkest"], torso)
+        poly(p_["armor_dark"], [(-12, -46), (11, -46), (14, -36),
+                                (10, -20), (-9, -20), (-14, -36)],
+             outline=False)
+        poly(p_["armor_mid"], [(-9, -43), (9, -43), (11, -36),
+                               (7, -24), (-7, -24), (-11, -36)],
+             outline=False)
+        # bidang dada (cahaya dari depan-atas)
+        poly(p_["armor_light"], [(2, -43), (10, -43), (11, -36),
+                                 (5, -30)], outline=False)
+        poly(p_["armor_high"], [(3, -42), (8, -42), (9, -38), (4, -35)],
+             outline=False)
+        # V-trim emas
+        B._aaline(surface, p_["gold_dark"], L(-10, -45), L(0, -26), 2)
+        B._aaline(surface, p_["gold_dark"], L(10, -45), L(0, -26), 2)
+        B._aaline(surface, p_["gold_mid"], L(-9, -44), L(0, -27), 1)
+        B._aaline(surface, p_["gold_mid"], L(9, -44), L(0, -27), 1)
+        # permata dada cyan
+        gem_x, gem_y = L(0, -32)
+        pulse_g = 0.7 + 0.3 * math.sin(phase * 2.4)
+        B._aacircle(surface, p_["shadow_deep"], (gem_x, gem_y), 4)
+        B._aacircle(surface, p_["flame_darkest"], (gem_x, gem_y), 3)
+        B._aacircle(surface, (*p_["flame_mid"], int(230 * pulse_g)),
+                    (gem_x, gem_y), 3)
+        B._aacircle(surface, p_["flame_bright"], (gem_x, gem_y), 2)
+        B._rect(surface, p_["flame_hot"], (gem_x, gem_y - 1, 1, 1))
+        # sabuk + gesper emas
+        belt = [L(-13, -19), L(11, -19), L(11, -15), L(-13, -15)]
+        B._poly(surface, p_["cape_darkest"], belt)
+        B._poly(surface, p_["cape_dark"],
+                [L(-12, -18), L(10, -18), L(10, -16), L(-12, -16)])
+        buckle = [L(-3, -19), L(3, -19), L(3, -15), L(-3, -15)]
+        B._poly(surface, p_["gold_dark"], buckle)
+        B._poly(surface, p_["gold_mid"],
+                [L(-2, -18), L(2, -18), L(2, -16), L(-2, -16)])
+
+        # ══ 11. PAULDRON BELAKANG ════════════════════════════════════
+        poly(p_["armor_darkest"], [(-20, -50), (-12, -50), (-11, -42),
+                                   (-19, -42)])
+        poly(p_["armor_dark"], [(-19, -49), (-13, -49), (-12, -44),
+                                (-18, -44)], outline=False)
+        poly(p_["armor_darkest"], [(-18, -50), (-15, -56), (-14, -50)])
+
+        # ══ 12. LERENG + HOOD (kepala = subjek gambar) ═══════════════
+        B._aaline(surface, p_["armor_darkest"], L(-4, -50), L(5, -50), 5)
+        # hood luar (ungu dalam)
+        hood = [(-13, -54), (-10, -66), (-4, -70), (5, -70), (11, -65),
+                (14, -54), (12, -46), (4, -42), (-6, -42), (-13, -47)]
+        poly(p_["cape_darkest"], hood)
+        hood2 = [(-11, -54), (-8, -64), (-3, -67), (4, -67), (9, -63),
+                 (12, -54), (10, -47), (3, -44), (-5, -44), (-11, -49)]
+        poly(p_["cape_dark"], hood2, outline=False)
+        poly(p_["cape_mid"], [(-9, -56), (-6, -62), (0, -64), (6, -62),
+                              (9, -55), (7, -50), (-7, -50)], outline=False)
+        # rongga wajah gelap
+        face = [(-3, -58), (8, -58), (9, -49), (4, -45), (-4, -47),
+                (-5, -53)]
+        B._poly(surface, p_["shadow_deep"], [L(*q) for q in face])
+        # alis helm emas
+        B._aaline(surface, p_["gold_dark"], L(-8, -56), L(10, -56), 2)
+        B._aaline(surface, p_["gold_mid"], L(-7, -56), L(9, -56), 1)
+        # mata menyala - nilai tertinggi di sprite
+        eye_p = 0.8 + 0.2 * math.sin(phase * 2.0)
+        for eoff in (0, 5):
+            gx, gy = L(0 + eoff, -52)
+            B._rect(surface, p_["shadow_deep"], (gx - 1, gy - 1, 4, 3))
+            B._aacircle(surface, (*p_["eye_dark"], int(120 * eye_p)),
+                        (gx + 1, gy), 3)
+            B._rect(surface, p_["eye_mid"], (gx, gy, 3, 2))
+            B._rect(surface, p_["eye_bright"], (gx, gy, 2, 1))
+            B._rect(surface, p_["eye_hot"], (gx, gy, 1, 1))
+        # tanduk helm (melengkung ke atas-belakang)
+        for s0, s1, s2 in (((-8, -64), (-12, -68), (-15, -71)),
+                           ((10, -66), (14, -69), (17, -71))):
+            a0, a1, a2 = L(*s0), L(*s1), L(*s2)
+            B._aaline(surface, p_["armor_darkest"], a0, a1, 3)
+            B._aaline(surface, p_["armor_darkest"], a1, a2, 2)
+            B._aaline(surface, p_["armor_mid"], a0, a1, 1)
+            B._draw_flame(surface, a2[0], a2[1], 2, 190)
+        # wisp api kecil dari puncak hood
+        B._draw_flame(surface, L(1, -70)[0], L(1, -70)[1], 3, 180)
+
+        # ══ 13. LANGAN REINS (lengan + tali ke kepala kuda) ══════════
+        shoulder_b = L(-14, -44)
+        elbow_b = L(-20, -36)
+        hand_b = L(-24, -30)
+        B._aaline(surface, p_["shadow_deep"],
+                  (shoulder_b[0] + f, shoulder_b[1] + 1),
+                  (elbow_b[0] + f, elbow_b[1] + 1), 7)
+        B._aaline(surface, p_["armor_darkest"], shoulder_b, elbow_b, 6)
+        B._aaline(surface, p_["armor_dark"], shoulder_b, elbow_b, 4)
+        B._aaline(surface, p_["armor_mid"], elbow_b, hand_b, 5)
+        B._aaline(surface, p_["armor_light"], elbow_b, hand_b, 2)
+        B._aacircle(surface, p_["armor_darkest"], hand_b, 4)
+        B._aacircle(surface, p_["armor_mid"], hand_b, 2)
+        # tali reins: lengkung 2 segmen ke mulut kuda
+        mx = (hand_b[0] + L(56, -30)[0]) // 2
+        my = (hand_b[1] + L(56, -30)[1]) // 2 + 3
+        B._aaline(surface, p_["cape_darkest"], hand_b, (mx, my), 1)
+        B._aaline(surface, p_["cape_darkest"], (mx, my), L(56, -30), 1)
+
+        # ══ 14. LANGAN PEDANG (lengan 2-tulang) ══════════════════════
+        shoulder_f = L(15, -44)
+        # siku: titik tengah + bengkok; hand sudah termasuk lunge/lean
+        hand_l = L(28 + p["lean"], -22 + p["bob"])
+        mid_x = (shoulder_f[0] + hand_l[0]) // 2
+        mid_y = (shoulder_f[1] + hand_l[1]) // 2
+        ddx = hand_l[0] - shoulder_f[0]
+        ddy = hand_l[1] - shoulder_f[1]
+        dlen = math.hypot(ddx, ddy) or 1.0
+        elbow_f = (int(mid_x + (-ddy / dlen) * 5),
+                   int(mid_y + (ddx / dlen) * 5))
+        B._aaline(surface, p_["shadow_deep"],
+                  (shoulder_f[0] + f, shoulder_f[1] + 1),
+                  (elbow_f[0] + f, elbow_f[1] + 1), 8)
+        B._aaline(surface, p_["armor_darkest"], shoulder_f, elbow_f, 7)
+        B._aaline(surface, p_["armor_dark"], shoulder_f, elbow_f, 5)
+        B._aaline(surface, p_["armor_mid"], elbow_f, hand_l, 6)
+        B._aaline(surface, p_["armor_light"], elbow_f, hand_l, 3)
+        B._aaline(surface, p_["armor_high"], elbow_f, hand_l, 1)
+        # bracer
+        bx = int(elbow_f[0] * 0.4 + hand_l[0] * 0.6)
+        by = int(elbow_f[1] * 0.4 + hand_l[1] * 0.6)
+        B._poly(surface, p_["armor_darkest"],
+                [(bx - 3, by - 3), (bx + 3, by - 3), (bx + 3, by + 3),
+                 (bx - 3, by + 3)])
+        B._poly(surface, p_["armor_light"],
+                [(bx - 2, by - 2), (bx + 1, by - 2), (bx + 1, by + 2),
+                 (bx - 2, by + 2)])
+        # tangan
+        B._aacircle(surface, p_["armor_darkest"], hand_l, 4)
+        B._aacircle(surface, p_["armor_mid"], hand_l, 3)
+        B._aacircle(surface, p_["armor_high"],
+                    (hand_l[0] - 1, hand_l[1] - 1), 2)
+
+        # ══ 15. PEDANG (bilah energi chunky asimetris) ═══════════════
+        B._draw_ab_sword(surface, hand_l, p["sword_angle"], p, f, phase)
+
+        # ══ 16. PAULDRON DEPAN (di atas lengan) ══════════════════════
+        poly(p_["armor_darkest"], [(12, -52), (22, -52), (23, -44),
+                                   (12, -44)])
+        poly(p_["armor_dark"], [(13, -51), (21, -51), (22, -46),
+                                (13, -46)], outline=False)
+        poly(p_["armor_mid"], [(14, -50), (20, -50), (21, -47),
+                               (14, -47)], outline=False)
+        # duri 3x naik
+        for i in range(3):
+            sx = 13 + i * 4
+            poly(p_["armor_darkest"], [(sx, -52), (sx + 2, -59 - i),
+                                       (sx + 4, -52)])
+            B._aaline(surface, p_["armor_light"], L(sx + 1, -52),
+                      L(sx + 2, -58 - i), 1)
+        B._aaline(surface, p_["gold_dark"], L(12, -52), L(22, -52), 2)
+        B._aaline(surface, p_["gold_mid"], L(13, -52), L(21, -52), 1)
+        # permata pauldron
+        B._aacircle(surface, p_["flame_darkest"], L(18, -47), 2)
+        B._aacircle(surface, p_["flame_bright"], L(18, -47), 1)
+
+        # ══ 17. RIM LIGHT + SPECULAR (1 px, posisi kunci) ════════════
+        rim = 0.65 + 0.35 * math.sin(phase * 1.8)
+        ra = int(150 * rim)
+        B._aaline(surface, (*p_["flame_light"], ra), L(-11, -46),
+                  L(-13, -22), 1)
+        B._aaline(surface, (*p_["flame_light"], ra), L(-13, -54),
+                  L(-6, -66), 1)
+        B._aaline(surface, (*p_["flame_bright"], ra), L(12, -51),
+                  L(21, -51), 1)
+        # kilau pelat dada (spekular cluster 1-2 px)
+        spec = [L(5, -41), L(8, -41), L(8, -40), L(5, -40)]
+        B._poly(surface, (*p_["armor_high"], 200), spec)
+        B._rect(surface, p_["white"], (spec[0][0], spec[0][1], 1, 1))
+
+    # ==================================================================
+    # BAGIAN TUBUH (fungsi terpisah untuk kejelasan)
+    # ==================================================================
+    def _draw_ab_legs(surface, L, p_, f, gallop, galloping, near):
+        """Empat kaki tunggangan: paha -> lutut -> larut ke api.
+
+        Kaki JAUH (near=False) lebih gelap & ber-offset -10% agar
+        kedalaman terbaca; saat gallop kaki berselang-seling (scissor).
+        """
+        B = _NS_abaddon
+        hips = ((30, 0.0, 1), (-30, math.pi, 1), (22, 0.55, 0),
+                (-22, math.pi + 0.55, 0))
+        for hip_x, off, is_near in hips:
+            if is_near != (1 if near else 0):
+                continue
+            base = p_["horse_dark"] if near else p_["horse_darkest"]
+            hi = p_["horse_mid"] if near else p_["horse_dark"]
+            if galloping:
+                s = math.sin(gallop + off)
+                kx = int(s * 7)
+                lift = int(max(0.0, math.sin(gallop + off + 1.1)) * 4)
+            else:
+                s = math.sin(gallop + off) * 0.6
+                kx = int(s)
+                lift = 0
+            hip = L(hip_x, 12)
+            knee = L(hip_x + kx * 0.55, 26 - lift)
+            hoof_x = hip_x + kx
+            hoof_y = 38 - lift
+            # paha
+            w = 6 if near else 5
+            B._aaline(surface, p_["outline"], (hip[0] + f, hip[1] + 1),
+                      (knee[0] + f, knee[1] + 1), w + 2)
+            B._aaline(surface, base, hip, knee, w)
+            B._aaline(surface, hi, hip, knee, max(1, w - 3))
+            # betis larut ke api (3 blob memudar)
+            for i in range(3):
+                t = (i + 1) / 3.0
+                fx = L(hoof_x, hoof_y - 8 + t * 10)[0]
+                fy = L(hoof_x, hoof_y - 8 + t * 10)[1]
+                s2 = max(1, int(4 - t * 2.4))
+                B._draw_flame(surface, fx, fy, s2,
+                              int(215 * (1 - t * 0.5)))
+
+    def _draw_ab_cape(surface, L, p_, f, phase, p):
+        """Jubah ungu mengalir ke belakang, tepi robek (tuft).
+
+        Sway mengikuti fase + aksi (lag ringan terhadap badan).
+        """
+        action = p["action"]
+        sway = int(math.sin(phase * 1.05) * 3)
+        if action == "walk":
+            sway -= 2 + int(math.sin(p["gallop"]) * 2)
+        elif action == "attack":
+            sway -= 2 + int(math.sin(p["ap"] * math.pi) * 3)
+        elif action == "e":
+            sway -= 4
+        hem_spine = [(-18 + sway, -6), (-26 + sway, 4), (-30 + sway, 14),
+                     (-26 + sway, 20), (-18 + sway, 14), (-12 + sway, 18)]
+        tuft = _NS_abaddon._tuft_points(hem_spine, depth=2.4, min_len=4.0,
+                                        seed=17)
+        outer = [(-13, -46), (-22, -30), (-24 + sway, -8)] + \
+            [(a - 4, b) for a, b in tuft] + [(-10, -10), (-11, -44)]
+        pts = [L(a, b) for a, b in outer]
+        _NS_abaddon._poly(surface, p_["cape_darkest"], pts)
+        inner = [(-13, -44), (-19, -30), (-21 + sway, -6),
+                 (-24 + sway, 6), (-20 + sway, 14), (-14 + sway, 12),
+                 (-11, -6), (-12, -42)]
+        _NS_abaddon._poly(surface, p_["cape_dark"],
+                          [L(a, b) for a, b in inner])
+        # lipatan (2 bidang nilai)
+        fold1 = [(-16, -30), (-14, -28), (-17 + sway, -4),
+                 (-20 + sway, -5)]
+        _NS_abaddon._poly(surface, p_["cape_mid"],
+                          [L(a, b) for a, b in fold1])
+        fold2 = [(-14, -26), (-13, -24), (-15 + sway, 2),
+                 (-18 + sway, 1)]
+        _NS_abaddon._poly(surface, p_["cape_light"],
+                          [L(a, b) for a, b in fold2])
+        # rim di tepi robek
+        hem = [(-22 + sway, 8), (-26 + sway, 16), (-24 + sway, 19),
+               (-18 + sway, 15)]
+        for i in range(len(hem) - 1):
+            _NS_abaddon._aaline(surface, p_["cape_high"], L(*hem[i]),
+                                L(*hem[i + 1]), 1)
+
+    def _draw_ab_sword(surface, hand, angle, p, f, phase):
+        """Bilah energi chunky ASIMETRIS dari tangan.
+
+        Punggung gelap, badan mid, MATA bilah 1 px terang di sisi
+        potong, fuller menyala saat menyerang/skill, guard emas +
+        pommel dengan permata cyan. Saat R release: bilah menyala ungu.
+        """
+        B = _NS_abaddon
+        p_ = B.PALETTE
+        hot = p["hot"]
+        L = B.SWORD_LEN
+        s, c = math.sin(angle), math.cos(angle)
+        nx, ny = c, -s          # normal = sisi potong
+        # warna bilah: cyan normal, ungu saat R release
+        if hot:
+            cols = (p_["magic_darkest"], p_["magic_dark"], p_["magic_mid"],
+                    p_["magic_light"], p_["magic_bright"])
+        else:
+            cols = (p_["blade_darkest"], p_["blade_dark"],
+                    p_["blade_mid"], p_["blade_light"], p_["blade_shine"])
+        c_dark, c_body, c_mid, c_light, c_edge = cols
+        segs = 6
+        curve = 4.5
+        w0 = 4.2
+        w1 = 0.9
+        backline, spine, midline, edgeline = [], [], [], []
+        for i in range(segs + 1):
+            t = i / segs
+            bend = curve * (t * t)
+            cx = hand[0] + s * L * t + nx * bend
+            cy = hand[1] + c * L * t + ny * bend
+            w = w0 * (1.0 - t) + w1 * t
+            backline.append((cx - nx * w * 0.55, cy - ny * w * 0.55))
+            spine.append((cx, cy))
+            midline.append((cx + nx * w * 0.28, cy + ny * w * 0.28))
+            edgeline.append((cx + nx * w * 0.62, cy + ny * w * 0.62))
+
+        def S(seq):
+            return [(int(qx), int(qy)) for qx, qy in seq]
+
+        s_back, s_spine, s_mid, s_edge = (S(backline), S(spine), S(midline),
+                                          S(edgeline))
+        full = s_edge + s_back[::-1]
+        B._poly(surface, p_["outline"],
+                [(qx + f, qy + 1) for qx, qy in full])
+        B._poly(surface, c_dark, full)
+        B._poly(surface, c_body, s_back + s_spine[::-1])
+        B._poly(surface, c_mid, s_spine + s_mid[::-1])
+        B._poly(surface, c_light, s_mid + s_edge[::-1])
+        # mata bilah: 1 px paling terang di sisi potong
+        for i in range(len(s_edge) - 1):
+            B._aaline(surface, c_edge, s_edge[i], s_edge[i + 1], 1)
+        # fuller menyala (selalu sedikit; terang saat swing/skill)
+        active_glow = p["active"] or p["skill"] in ("q", "r")
+        glow_a = int((170 if active_glow else 90) *
+                     (0.8 + 0.2 * math.sin(phase * 2.2)))
+        glow_col = p_["magic_light"] if hot else p_["flame_light"]
+        for i in range(len(s_spine) - 1):
+            B._aaline(surface, (*glow_col, glow_a), s_spine[i],
+                      s_spine[i + 1], 1)
+        # hamon dither di badan bilah
+        dots = [s_mid[i] for i in range(1, len(s_mid))]
+        B._dither_dots(surface, glow_col, dots, int(glow_a * 0.5))
+
+        # guard emas (tegak lurus bilah di tangan)
+        g1 = (int(hand[0] + nx * 6), int(hand[1] + ny * 6))
+        g2 = (int(hand[0] - nx * 6), int(hand[1] - ny * 6))
+        B._aaline(surface, p_["shadow_deep"], (g1[0] + f, g1[1] + 1),
+                  (g2[0] + f, g2[1] + 1), 5)
+        B._aaline(surface, p_["gold_dark"], g1, g2, 4)
+        B._aaline(surface, p_["gold_mid"], g1, g2, 2)
+        # gagang + pommel
+        butt = (int(hand[0] - s * 7), int(hand[1] - c * 7))
+        B._aaline(surface, p_["cape_darkest"], hand, butt, 5)
+        B._aaline(surface, p_["gold_dark"], hand, butt, 2)
+        B._aacircle(surface, p_["gold_dark"], butt, 3)
+        B._aacircle(surface, p_["gold_light"], butt, 2)
+        B._aacircle(surface, p_["flame_bright"], butt, 1)
+        # ujung: glint + kilau (titik lahir semua FX)
+        tip = s_spine[-1]
+        B._aacircle(surface, (*p_["flame_hot"], glow_a), tip, 2)
+        B._rect(surface, p_["flame_white"], (tip[0], tip[1] - 1, 2, 1))
+        if active_glow:
+            B._spark_star(surface, tip[0], tip[1], 6, glow_col,
+                          int(glow_a * 0.8), spikes=6, rot=phase * 1.6,
+                          core=p_["flame_white"])
+
+    # ==================================================================
+    # LAPISAN TANAH (di luar buffer: bayangan, aura, base api, rune)
+    # ==================================================================
+    def _draw_shadow(surface, x, y, lift=0):
+        """Bayangan kontak REAKTIF + cache.
+
+        Tekstur dibangun SEKALI; saat badan terangkat (lift > 0)
+        mengecil, DASAR tetap menapak tanah (bawah tidak bergeser).
+        """
+        B = _NS_abaddon
+
+        def _build():
+            w, h = 130, 24
+            sh = pygame.Surface((w, h), pygame.SRCALPHA)
+            for radius in range(11, 0, -1):
+                alpha = max(0, (11 - radius) * 16)
+                pygame.draw.ellipse(
+                    sh, (0, 0, 0, alpha),
+                    (w // 2 - 50 - radius, h // 2 - radius,
+                     100 + radius * 2, radius * 2))
+            pygame.draw.ellipse(sh, (5, 45, 55, 70),
+                                (w // 2 - 40, h // 2 - 5, 80, 10))
+            return sh
+
+        sh = B._static(("ab_shadow",), _build)
+        s = 1.0 - min(0.30, abs(lift) * 0.03)
+        if s < 0.999:
+            sh = pygame.transform.smoothscale(
+                sh, (int(130 * s), int(24 * s)))
+        w, h = sh.get_size()
+        surface.blit(sh, (int(x) - w // 2, int(y) + 12 - h))
+
+    def _draw_dark_aura(surface, x, y, phase, skill):
+        """Aura gelap ungu/cyan latar - gradien cache, denyut set_alpha."""
+        B = _NS_abaddon
+        pulse = 1.0 if skill else math.sin(phase * 0.4) * 0.25 + 0.75
+
+        def _build1():
+            aura = pygame.Surface((220, 200), pygame.SRCALPHA)
+            for radius in range(88, 5, -4):
+                alpha = int((88 - radius) * 1.2)
+                if alpha > 0:
+                    B._aacircle(aura, (*B.PALETTE["cape_darkest"],
+                                       min(255, alpha)), (110, 100),
+                                radius)
+            return aura
+
+        def _build2():
+            aura = pygame.Surface((160, 140), pygame.SRCALPHA)
+            for radius in range(64, 5, -3):
+                alpha = int((64 - radius) * 0.7)
+                if alpha > 0:
+                    B._aacircle(aura, (*B.PALETTE["flame_darkest"],
+                                       min(255, alpha)), (80, 70), radius)
+            return aura
+
+        a1 = B._static(("ab_aura1",), _build1)
+        a1.set_alpha(int(pulse * 235))
+        surface.blit(a1, (int(x) - 110, int(y) - 100))
+        a2 = B._static(("ab_aura2",), _build2)
+        a2.set_alpha(int(pulse * 235))
+        surface.blit(a2, (int(x) - 80, int(y) - 70))
+
+    def _draw_flame_base(surface, x, y, phase, p):
+        """Base api cyan di bawah tunggangan (pad cache + blob hidup)."""
+        B = _NS_abaddon
+        p_ = B.PALETTE
+        intense = p["action"] in ("attack", "e", "r", "q", "walk")
+        strength = 1.5 if intense else 1.0
+        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
+        gy = y + B.FLAME_Y
+
+        def _build_pad():
+            pad = pygame.Surface((170, 44), pygame.SRCALPHA)
+            for radius in range(42, 3, -4):
+                alpha = int((42 - radius) * 2.0)
+                if alpha > 0:
+                    pygame.draw.ellipse(
+                        pad, (*p_["flame_darkest"], min(255, alpha)),
+                        (85 - radius * 2, 22 - radius // 3,
+                         radius * 4, max(3, radius // 2)))
+            return pad
+
+        pad = B._static(("ab_mist_pad",), _build_pad)
+        pad.set_alpha(int(200 * pulse * min(1.4, strength)))
+        surface.blit(pad, (int(x) - 85, int(gy) - 14))
+        # bara naik (6 titik)
+        for i, off in enumerate((-40, -24, -8, 8, 24, 40)):
+            t = (phase * 0.5 + i * 0.17) % 1.0
+            sx = x + off + int(math.sin(phase + i) * 3)
+            sy = gy + 6 - int(t * 26)
+            alpha = max(0, min(255, int(225 * (1 - t) * strength)))
+            if alpha > 12:
+                B._draw_flame(surface, sx, sy, max(1, 4 - int(t * 3)),
+                              alpha)
+        # orb api mengorbit (5 titik)
+        for i in range(5):
+            angle = phase * 0.9 + i * math.pi * 2 / 5
+            r = 30 + int(math.sin(phase + i * 1.3) * 4)
+            sx = x + int(math.cos(angle) * r)
+            sy = gy + int(math.sin(angle) * 7)
+            B._draw_flame(surface, sx, sy, 3, 215)
+        # jejak belakang saat bergerak
+        if p["action"] == "walk":
+            for i in range(5):
+                sx = x - (i + 1) * 14 * p["facing"]
+                sy = gy + int(math.sin(phase + i) * 2)
+                alpha = max(0, 140 - i * 25)
+                if alpha > 12:
+                    B._draw_flame(surface, sx, sy, max(2, 4 - i), alpha)
+
+    def _rune_plate(skill):
+        """Plate rune tanah STATIS per skill (cache)."""
+        p_ = _NS_abaddon.PALETTE
+
+        def _build():
+            s = pygame.Surface((160, 52), pygame.SRCALPHA)
+            pygame.draw.ellipse(s, (*p_["cape_dark"], 140), (5, 12, 150, 30),
+                                3)
+            pygame.draw.ellipse(s, (*p_["flame_dark"], 170), (25, 16, 110, 22),
+                                2)
+            for i in range(10):
+                angle = i * math.pi / 5
+                x1 = 80 + int(math.cos(angle) * 38)
+                y1 = 27 + int(math.sin(angle) * 8)
+                x2 = 80 + int(math.cos(angle) * 68)
+                y2 = 27 + int(math.sin(angle) * 12)
+                pygame.draw.line(s, (*p_["flame_bright"], 150),
+                                 (x1, y1), (x2, y2), 1)
+            if skill:
+                hot = p_["magic_bright"] if skill == "r" \
+                    else p_["flame_hot"]
+                pygame.draw.ellipse(s, (*hot, 90), (15, 10, 130, 34), 1)
+            return s
+
+        return _NS_abaddon._static(("ab_rune", skill), _build)
+
+    def _draw_ground_runes(surface, x, y, phase, skill):
+        """Sigil rune di bawah tunggangan (plate cache + sapuan live)."""
+        B = _NS_abaddon
+        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
+        gy = y + B.FLAME_Y + 12
+        plate = B._rune_plate(skill)
+        plate.set_alpha(int(205 * pulse))
+        surface.blit(plate, (int(x) - 80, int(gy) - 26))
+        # sapuan cahaya: 3 tick terang berputar (murah)
+        a = _NS_abaddon._alpha(170 * pulse)
+        for i in range(3):
+            angle = phase * 0.6 + i * math.pi * 2 / 3
+            x1 = x + int(math.cos(angle) * 40)
+            y1 = gy + int(math.sin(angle) * 8)
+            x2 = x + int(math.cos(angle) * 70)
+            y2 = gy + int(math.sin(angle) * 13)
+            B._aaline(surface, (*B.PALETTE["flame_bright"], a),
+                      (x1, y1), (x2, y2), 2)
+            B._aaline(surface, (*B.PALETTE["flame_white"], a),
+                      (x1, y1), (x2, y2), 1)
+
+    # ==================================================================
+    # SWING TRAIL - pita dari trail UJUNG BILAH yang sebenarnya
+    # ==================================================================
+    def _draw_swing_trail(surface, boss, x, y, p):
+        """Fallback canvas: pita 3 lapis + leading edge + impact.
+
+        Pita dibangun dari posisi ujung bilah pada beberapa waktu pose
+        ke belakang, jadi busur SELALU menempel di senjata.
+        """
+        B = _NS_abaddon
+        p_ = B.PALETTE
+        ap = p["ap"]
+        if p["action"] != "attack" or not p["trailing"]:
+            return
+        if ap < 0.36:
+            fade = (ap - 0.30) / 0.06
+        elif ap <= 0.62:
+            fade = 1.0
+        else:
+            fade = max(0.0, 1.0 - (ap - 0.62) / 0.16)
+        if fade <= 0.02:
+            return
+        steps = 12
+        path = []
+        for i in range(steps):
+            ai = max(0.30, ap - 0.26 * (1.0 - i / (steps - 1)))
+            path.append(B._pose(boss, x, y, ap_override=ai)["tip"])
+        widths = [7.5 * ((i / (steps - 1)) ** 1.25) + 0.5
+                  for i in range(steps)]
+        B._ribbon(surface, path, [w * 1.5 for w in widths],
+                  p_["flame_darkest"], int(190 * fade * 0.5))
+        B._ribbon(surface, path, widths, p_["flame_mid"],
+                  int(235 * fade * 0.9))
+        B._ribbon(surface, path, [w * 0.4 for w in widths],
+                  p_["flame_bright"], int(235 * fade))
+        # leading edge 1 px (arah gerak terbaca)
+        for i in range(steps - 3, steps - 1):
+            B._aaline(surface, (*p_["flame_white"], int(245 * fade)),
+                      path[i], path[i + 1], 1)
+        # speed line di dalam busur
+        for k in range(2):
+            i0 = 2 + k * 3
+            i1 = min(steps - 1, i0 + 4)
+            B._aaline(surface, (*p_["flame_hot"], int(170 * fade)),
+                      path[i0], path[i1], 1)
+        # IMPACT: bintang + cincin chunky + serpihan
+        if 0.50 <= ap <= 0.64:
+            hold = max(0.0, 1.0 - abs(ap - 0.56) / 0.08)
+            if hold > 0:
+                tx, ty = path[-1]
+                B._spark_star(surface, tx, ty, int(10 + 7 * hold),
+                              p_["flame_hot"], int(235 * hold), spikes=8,
+                              rot=ap * 4, core=p_["white"])
+                B._dashed_ring(surface, tx, ty, int(10 + hold * 14),
+                               p_["flame_light"], int(190 * hold),
+                               ap * 3, segments=10, thick=2, squash=0.55)
+                for i in range(5):
+                    ang = -1.8 + i * 0.62 + math.sin(ap * 9 + i) * 0.15
+                    d = 6 + hold * 12
+                    B._shard(surface, tx + math.cos(ang) * d,
+                             ty + math.sin(ang) * d, ang,
+                             5 + int(hold * 4), 2, p_["flame_light"],
+                             int(220 * hold), core=p_["flame_white"])
+
+    def _draw_sever_trail(surface, boss, x, y, p):
+        """Fallback canvas: pita ungu Death Sever saat release."""
+        B = _NS_abaddon
+        p_ = B.PALETTE
+        sp = p["skill_p"]
+        if p["action"] != "r" or not (0.55 <= sp < 0.80):
+            return
+        k = (sp - 0.55) / 0.25
+        fade = 1.0 if k < 0.6 else max(0.0, 1.0 - (k - 0.6) / 0.4)
+        if fade <= 0.02:
+            return
+        steps = 12
+        path = []
+        for i in range(steps):
+            si = max(0.55, sp - 0.22 * (1.0 - i / (steps - 1)))
+            path.append(B._pose(boss, x, y)["tip"] if si == sp else
+                        _NS_abaddon._pose_at_skill(boss, x, y, si)["tip"])
+        widths = [8.5 * ((i / (steps - 1)) ** 1.25) + 0.5
+                  for i in range(steps)]
+        B._ribbon(surface, path, [w * 1.5 for w in widths],
+                  p_["magic_darkest"], int(200 * fade * 0.55))
+        B._ribbon(surface, path, widths, p_["magic_mid"],
+                  int(235 * fade * 0.9))
+        B._ribbon(surface, path, [w * 0.4 for w in widths],
+                  p_["magic_bright"], int(235 * fade))
+        for i in range(steps - 3, steps - 1):
+            B._aaline(surface, (*p_["flame_white"], int(245 * fade)),
+                      path[i], path[i + 1], 1)
+        if 0.68 <= sp <= 0.80:
+            hold = max(0.0, 1.0 - abs(sp - 0.72) / 0.08)
+            if hold > 0:
+                tx, ty = path[-1]
+                B._spark_star(surface, tx, ty, int(12 + 8 * hold),
+                              p_["magic_bright"], int(240 * hold),
+                              spikes=8, rot=sp * 5, core=p_["white"])
+
+    def _pose_at_skill(boss, x, y, sp):
+        """Pose dengan progress skill dipaksa (untuk trail R)."""
+        # trik: set sementara active_skill_timer yang sesuai
+        action = "r"
+        dur = float(_NS_abaddon.SKILL_DUR["r"])
+        timer = int(round((1.0 - sp) * dur))
+        saved = getattr(boss, "active_skill_timer", 0)
+        boss.active_skill_timer = timer
+        try:
+            return _NS_abaddon._pose(boss, x, y)
+        finally:
+            boss.active_skill_timer = saved
+
+    # ==================================================================
+    # PROJECTILE (canvas fallback) - lifecycle penuh, bentuk chunky
+    # ==================================================================
+    class MistCoilProjectile(object):
+        """Q - orb mist yang mengejar target (fallback canvas)."""
+
+        def __init__(self, sx, sy, tx, ty, speed=6.5):
             self.x = float(sx)
             self.y = float(sy)
             self.tx = float(tx)
@@ -8271,137 +9618,161 @@ class _NS_abaddon:
             self.alive = True
             self.age = 0
             self.trail = []
+            self.rot = 0.0
 
         def update(self):
             if not self.alive:
                 return
             self.age += 1
+            self.rot += 0.55
             dx = self.tx - self.x
             dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < self.speed + 4:
+            d = math.hypot(dx, dy)
+            if d < self.speed + 4:
+                self.x, self.y = self.tx, self.ty
                 self.alive = False
                 return
-            self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 14:
-                self.trail.pop(0)
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
+            self.x += dx / d * self.speed
+            self.y += dy / d * self.speed
+            if self.age % 2 == 0:
+                self.trail.append((int(self.x // 3) * 3,
+                                   int(self.y // 3) * 3))
+                if len(self.trail) > 8:
+                    self.trail.pop(0)
 
         def draw(self, surface, phase):
-            if not self.alive and self.age < 3:
+            B = _NS_abaddon
+            P = B.PALETTE
+            if not self.alive and self.age > 6:
                 return
-
-            # Long misty trail (purple/cyan)
+            # after-image terkuantisasi (stamp persegi, bukan garis)
+            n = len(self.trail)
             for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(40 + i * 15)
-                r = max(1, 6 - (len(self.trail) - i) // 2)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_dark"], alpha), (tx, ty), r + 2)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_mid"], alpha), (tx, ty), r)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_mid"], alpha // 2),
-                          (tx, ty), max(1, r - 1))
+                a = B._alpha(110 * (i + 1) / max(1, n))
+                if a <= 4:
+                    continue
+                s = 3 + (n - i)
+                B._rect(surface, (*P["magic_dark"], a),
+                        (tx - s // 2, ty - s // 2, s, s))
+                B._aacircle(surface, (*P["magic_mid"], a), (tx, ty),
+                            max(1, s // 3))
+            if not self.alive:
+                return
+            px, py = int(self.x), int(self.y)
+            # ekor spike arah gerak
+            ang = math.atan2(self.ty - self.y, self.tx - self.x)
+            for off in (-4, 0, 4):
+                nx, ny = -math.sin(ang), math.cos(ang)
+                B._aaline(surface, (*P["magic_light"], 160),
+                          (px - math.cos(ang) * 14 + nx * off,
+                           py - math.sin(ang) * 14 + ny * off),
+                          (px - math.cos(ang) * 30 + nx * off,
+                           py - math.sin(ang) * 30 + ny * off), 2)
+            # inti berlapis
+            B._aacircle(surface, (*P["magic_darkest"], 185), (px, py), 10)
+            B._aacircle(surface, (*P["magic_dark"], 220), (px, py), 8)
+            B._aacircle(surface, (*P["magic_mid"], 240), (px, py), 6)
+            B._aacircle(surface, (*P["flame_mid"], 240), (px, py), 4)
+            B._aacircle(surface, (*P["flame_bright"], 250), (px, py), 3)
+            B._aacircle(surface, P["flame_hot"], (px, py), 2)
+            B._rect(surface, P["flame_white"], (px - 1, py - 1, 2, 2))
+            # puing mengorbit spiral
+            for k in range(2):
+                oa = self.rot * 1.4 + k * math.pi
+                ox = px + math.cos(oa) * 9
+                oy = py + math.sin(oa) * 7
+                B._aacircle(surface, (*P["magic_light"], 200), (ox, oy), 2)
+                B._aacircle(surface, P["flame_hot"], (ox, oy), 1)
 
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                # Multi-layer orb
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_darkest"], 180), (px, py), 10)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_dark"], 220), (px, py), 8)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_mid"], 240), (px, py), 6)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_mid"], 240), (px, py), 4)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], 250), (px, py), 3)
-                _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"], (px, py), 2)
-                _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_white"], (px, py), 1)
+    class DarknessGaleProjectile(object):
+        """E - dinding angin gelap menjalar ke depan (fallback canvas)."""
 
-                # Mist trails
-                for i in range(4):
-                    angle = phase * 4 + i * math.pi / 2
-                    sx = px + int(math.cos(angle) * 10)
-                    sy = py + int(math.sin(angle) * 10)
-                    _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_light"], 200), (sx, sy), 2)
-                    _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"], (sx, sy), 1)
-
-
-    class DarknessGaleProjectile:
-        """E - Dark wave/gale that travels forward."""
         def __init__(self, sx, sy, direction, max_dist=250):
             self.x = float(sx)
             self.y = float(sy)
-            self.direction = direction
+            self.direction = int(direction) or 1
             self.max_dist = max_dist
             self.speed = 11.0
             self.alive = True
             self.age = 0
-            self.max_age = 25
+            self.max_age = 24
+            self.rot = 0.0
 
         def update(self):
             if not self.alive:
                 return
             self.age += 1
+            self.rot += 0.4
             self.x += self.speed * self.direction
             if self.age >= self.max_age:
                 self.alive = False
 
         def draw(self, surface, phase):
-            if not self.alive and self.age < 2:
+            if not self.alive and self.age > 3:
                 return
+            B = _NS_abaddon
+            P = B.PALETTE
             t = self.age / self.max_age
-            alpha = int(255 * (1 - t * 0.5))
+            fade = 1.0 - t * 0.5
             px, py = int(self.x), int(self.y)
+            d = self.direction
+            # 9 balok vertikal membentuk busur (chunky, bukan lingkaran)
+            for i in range(9):
+                tt = i / 8.0
+                yy = py - 17 + tt * 34
+                bow = (1.0 - abs(tt - 0.5) * 2) ** 1.6
+                xx = px - d * int(6 + bow * 12)
+                a = B._alpha(235 * fade * (0.45 + 0.55 * bow))
+                w = int(3 + bow * 3)
+                B._rect(surface, (*P["magic_darkest"], B._alpha(a * 0.85)),
+                        (xx - w // 2, yy - 3, w, 7))
+                B._rect(surface, (*P["magic_mid"], a),
+                        (xx - w // 2 + 1, yy - 2, max(1, w - 2), 5))
+                if bow > 0.55:
+                    B._rect(surface, (*P["flame_light"], B._alpha(a * 0.9)),
+                            (xx - w // 2 + 1, yy - 1, max(1, w - 2), 2))
+            # leading edge
+            for i in range(7):
+                tt = i / 6.0
+                yy = py - 14 + tt * 28
+                bow = (1.0 - abs(tt - 0.5) * 2) ** 1.6
+                xx = px + d * int(2 + bow * 2)
+                B._rect(surface, (*P["flame_bright"],
+                                  B._alpha(235 * fade * bow)),
+                        (xx - 1, yy - 1, 3, 3))
+            # streak ke belakang
+            for off in (-8, 0, 8):
+                B._aaline(surface, (*P["magic_dark"], B._alpha(190 * fade)),
+                          (px - d * 18, py + off), (px - d * 44, py + off + 2),
+                          3)
+                B._aaline(surface, (*P["magic_light"],
+                                    B._alpha(140 * fade)),
+                          (px - d * 16, py + off),
+                          (px - d * 38, py + off + 2), 1)
+            # ujung menyala
+            B._spark_star(surface, px + d * 5, py, int(7 * fade + 3),
+                          P["flame_light"], B._alpha(220 * fade), spikes=4,
+                          rot=self.rot, core=P["flame_white"])
 
-            # Elongated gale/wind streak
-            for i in range(-6, 7):
-                # Multiple parallel streaks
-                for streak_off in (-4, 0, 4):
-                    streak_y = py + i * 2 + streak_off
-                    # Length varies
-                    for length_i in range(20):
-                        lt = length_i / 20
-                        lx = px - int(lt * 40) * self.direction
-                        ly = streak_y + int(math.sin(lt * 5 + phase + i) * 2)
+    class DeathSeverWave(object):
+        """R - busur bulan sabit ungu raksasa (fallback canvas)."""
 
-                        w_alpha = int(alpha * (1 - abs(i) / 7) * (1 - lt * 0.4))
-                        if w_alpha <= 0:
-                            continue
-
-                        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_dark"], w_alpha),
-                                  (lx, ly), 2)
-                        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_dark"], w_alpha),
-                                  (lx, ly), 1)
-
-            # Bright forward core
-            for i in range(-4, 5):
-                core_y = py + i * 2
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_mid"], alpha),
-                          (px, core_y), 3)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], alpha),
-                          (px, core_y), 2)
-                _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"], (px, core_y), 1)
-
-            # Bright tip
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], alpha),
-                      (px + 8 * self.direction, py), 4)
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"],
-                      (px + 8 * self.direction, py), 3)
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_white"],
-                      (px + 8 * self.direction, py), 1)
-
-
-    class DeathSeverWave:
-        """R - Purple crescent wave."""
         def __init__(self, sx, sy, direction, max_dist=200):
             self.x = float(sx)
             self.y = float(sy)
-            self.direction = direction
+            self.direction = int(direction) or 1
             self.max_dist = max_dist
             self.speed = 9.0
             self.alive = True
             self.age = 0
             self.max_age = 22
+            self.rot = 0.0
 
         def update(self):
             if not self.alive:
                 return
             self.age += 1
+            self.rot += 0.3
             self.x += self.speed * self.direction
             if self.age >= self.max_age:
                 self.alive = False
@@ -8409,103 +9780,57 @@ class _NS_abaddon:
         def draw(self, surface, phase):
             if not self.alive:
                 return
+            B = _NS_abaddon
+            P = B.PALETTE
             t = self.age / self.max_age
-            alpha = int(255 * (1 - t * 0.4))
+            fade = 1.0 - t * 0.4
             px, py = int(self.x), int(self.y)
-
-            # Purple crescent wave
-            for i in range(-14, 15):
-                curve = math.cos(i * 0.2) * 8
-                vy = py + i * 2
-                vx = px + int(curve) * self.direction
-
-                w_alpha = int(alpha * (1 - abs(i) / 15))
-                if w_alpha <= 0:
-                    continue
-
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_darkest"], w_alpha),
-                          (vx, vy), 5)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_dark"], w_alpha),
-                          (vx, vy), 4)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_mid"], w_alpha),
-                          (vx, vy), 3)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_light"], w_alpha),
-                          (vx, vy), 2)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_bright"], w_alpha),
-                          (vx, vy), 1)
-
-            # Bright core arc
-            for i in range(-12, 13):
-                curve = math.cos(i * 0.2) * 8
-                vy = py + i * 2
-                vx = px + int(curve) * self.direction
-                core_alpha = int(alpha * (1 - abs(i) / 13))
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_hot"], core_alpha),
-                          (vx, vy), 2)
-                _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["white"], (vx, vy), 1)
-
-            # Trailing purple sparks
+            d = self.direction
+            R = 24
+            a0 = self.rot * 0.5
+            # pita 4 lapis (gelap -> terang -> inti panas)
+            for w, col, am in ((15, P["magic_darkest"], 0.75),
+                               (10, P["magic_mid"], 0.95),
+                               (5, P["magic_bright"], 1.0),
+                               (2, P["flame_hot"], 1.0)):
+                prev = None
+                for i in range(13):
+                    tt = i / 12.0
+                    ang = a0 + (tt - 0.5) * 1.9
+                    ex = px + math.cos(ang) * R * 0.4 * d
+                    ey = py + math.sin(ang) * R
+                    q = (int(ex), int(ey))
+                    if prev is not None:
+                        B._aaline(surface, (*col, B._alpha(235 * fade * am)),
+                                  prev, q, w)
+                    prev = q
+            # serpihan berputar di belakang busur
             for i in range(6):
-                angle = phase * 3 + i * math.pi / 3
-                r = 15 + int(math.sin(phase + i) * 4)
-                sx = px + int(math.cos(angle) * r) * self.direction
-                sy = py + int(math.sin(angle) * r)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_bright"], alpha), (sx, sy), 2)
-                _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["magic_hot"], (sx, sy), 1)
+                sa = a0 + 1.15 + B._hash01(i * 5) * 0.5
+                sr = R * (0.6 + 0.5 * B._hash01(i * 9))
+                sx = px + math.cos(sa) * sr * 0.4 * d
+                sy = py + math.sin(sa) * sr
+                B._shard(surface, sx, sy, sa + math.pi / 2, 6, 2,
+                         P["magic_light"], B._alpha(210 * fade))
+            # inti putih di pucuk
+            for tt in (0.0, 1.0):
+                ang = a0 + (tt - 0.5) * 1.9
+                tx = px + math.cos(ang) * R * 0.4 * d
+                ty = py + math.sin(ang) * R
+                B._aacircle(surface, (*P["flame_white"],
+                                      B._alpha(255 * fade)), (tx, ty), 2)
 
-
-    # ---------------------------------------------------------------------------
-    # State management
-    # ---------------------------------------------------------------------------
-    def _detect_moving(boss):
-        if not hasattr(boss, "_ab_last_x"):
-            boss._ab_last_x = boss.x
-            boss._ab_last_y = boss.y
-            return False
-        dx = abs(boss.x - boss._ab_last_x)
-        dy = abs(boss.y - boss._ab_last_y)
-        boss._ab_last_x = boss.x
-        boss._ab_last_y = boss.y
-        return dx + dy > 0.3
-
-
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
-        timer = int(getattr(boss, "timer", 0))
-        previous = int(getattr(boss, "_ab_prev_timer", 0))
-        active = bool(getattr(boss, "_ab_attack_active", False))
-
-        if timer >= cooldown - 1 and previous <= 1:
-            boss._ab_attack_active = True
-            boss._ab_attack_frame = 0
-            active = True
-        elif active:
-            boss._ab_attack_frame = int(getattr(boss, "_ab_attack_frame", 0)) + 1
-            if boss._ab_attack_frame > cooldown:
-                boss._ab_attack_active = False
-                boss._ab_attack_frame = 0
-                active = False
-        elif timer <= 0:
-            boss._ab_attack_active = False
-            boss._ab_attack_frame = 0
-            active = False
-
-        boss._ab_prev_timer = timer
-        boss._ab_attack_progress = (
-            min(1.0, getattr(boss, "_ab_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
-
-
+    # ------------------------------------------------------------------
+    # spawn + manajemen proyektil (nama list lama: _ab_projectiles)
+    # ------------------------------------------------------------------
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_ab_projectiles"):
             boss._ab_projectiles = []
-        for p in boss._ab_projectiles:
-            p.update()
-            p.draw(surface, phase)
-        boss._ab_projectiles = [p for p in boss._ab_projectiles
-                               if p.alive or p.age < 8]
-
+        for pr in boss._ab_projectiles:
+            pr.update()
+            pr.draw(surface, phase)
+        boss._ab_projectiles = [pr for pr in boss._ab_projectiles
+                                if pr.alive or pr.age < 8]
 
     def _spawn_mist_coil(boss, x, y):
         if not hasattr(boss, "_ab_projectiles"):
@@ -8513,1320 +9838,519 @@ class _NS_abaddon:
         tx, ty = _NS_abaddon._target_position(boss, x, y)
         sx = x + 26 * boss.direction
         sy = y - 10
-        boss._ab_projectiles.append(_NS_abaddon.MistCoilProjectile(sx, sy, tx, ty, speed=6.5))
-
+        boss._ab_projectiles.append(
+            _NS_abaddon.MistCoilProjectile(sx, sy, tx, ty, speed=6.5))
 
     def _spawn_darkness_gale(boss, x, y):
         if not hasattr(boss, "_ab_projectiles"):
             boss._ab_projectiles = []
         sx = x + 30 * boss.direction
         sy = y - 8
-        boss._ab_projectiles.append(_NS_abaddon.DarknessGaleProjectile(sx, sy, boss.direction))
-
+        boss._ab_projectiles.append(
+            _NS_abaddon.DarknessGaleProjectile(sx, sy, boss.direction))
 
     def _spawn_death_sever(boss, x, y):
         if not hasattr(boss, "_ab_projectiles"):
             boss._ab_projectiles = []
         sx = x + 30 * boss.direction
         sy = y - 8
-        boss._ab_projectiles.append(_NS_abaddon.DeathSeverWave(sx, sy, boss.direction))
-
-
-    # ===================================================================
-    # MAIN DRAW ENTRY POINT
-    # ===================================================================
-    def draw_abaddon(surface, boss, x, y):
-        """Entry point."""
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_abaddon._detect_moving(boss)
-        _NS_abaddon._update_attack_anim(boss)
-
-        attacking = (
-            getattr(boss, "_ab_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
-
-        # ---------- Background layers ----------
-        _NS_abaddon._draw_dark_aura(surface, x, y, pulse)
-        _NS_abaddon._draw_ground_runes(surface, x, y + 48, pulse, active_skill)
-
-        # ---------- Character body ----------
-        # ORIGINAL-MAX hurt flash: saat kena hit, body dirender ke buffer
-        # lalu siluetnya dibanjiri putih-hangat (paritas keluarga).
-        # Skill R dilewati (beam ke target lebih besar dari buffer).
-        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
-        if flash > 0 and active_skill != "r":
-            B = _NS_abaddon
-            if B._AB_BUF is None:
-                B._AB_BUF = pygame.Surface((200, 200), pygame.SRCALPHA)
-            tgt, tx, ty = B._AB_BUF, 100, 110
-            tgt.fill((0, 0, 0, 0))
-        else:
-            tgt, tx, ty, flash = surface, x, y, 0
-
-        if active_skill == "q":
-            _NS_abaddon._draw_abaddon_mist_coil(tgt, boss, tx, ty, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_abaddon._draw_abaddon_darkness_gale(tgt, boss, tx, ty, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_abaddon._draw_abaddon_death_sever(tgt, boss, tx, ty, skill_timer, pulse)
-        elif attacking:
-            _NS_abaddon._draw_abaddon_melee_attack(tgt, boss, tx, ty)
-        elif moving:
-            _NS_abaddon._draw_abaddon_walk(tgt, boss, tx, ty)
-        else:
-            _NS_abaddon._draw_abaddon_idle(tgt, boss, tx, ty)
-
-        if flash > 0:
-            surface.blit(tgt, (x - tx, y - ty))
-            w = int(235 * min(1.0, flash / 8.0))
-            if w > 0:
-                m = pygame.mask.from_surface(tgt, 50)
-                wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8),
-                                             255),
-                                   unsetcolor=(0, 0, 0, 0))
-                # bayangan tanah ikut masuk buffer pose; jangan ikut
-                # menyala (flash hanya badan, seperti drakar)
-                wht.fill((0, 0, 0, 0),
-                         pygame.Rect(0, ty + 46, 200, 200 - (ty + 46)))
-                surface.blit(wht, (x - tx, y - ty),
-                             special_flags=pygame.BLEND_RGB_ADD)
-
-        # Aphotic Shield goes over body
-        if active_skill == "w":
-            _NS_abaddon._draw_aphotic_shield(surface, boss, x, y, skill_timer, pulse)
-
-        # ---------- Projectiles ----------
-        _NS_abaddon._manage_projectiles(boss, surface, pulse)
-
-
-    # ===================================================================
-    # POSE MODES
-    # ===================================================================
-    def _draw_abaddon_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_abaddon._draw_shadow(surface, x, y + 58, max(0, -bob))
-        _NS_abaddon._draw_horse_flame_base(surface, x, y + 45, boss.pulse)
-        _NS_abaddon._draw_abaddon_full(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
-
-    def _draw_abaddon_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_abaddon._draw_shadow(surface, x + sway, y + 58, bob)
-        _NS_abaddon._draw_horse_flame_base(surface, x + sway, y + 45, phase, trail=True,
-                              facing=boss.direction)
-        _NS_abaddon._draw_abaddon_full(surface, x + sway, y - bob, boss.direction, phase, "walk")
-
-
-    def _draw_abaddon_melee_attack(surface, boss, x, y):
-        """Sword swing on horseback."""
-        raw = max(0.0, min(1.0, getattr(boss, "_ab_attack_progress", 0.0)))
-        # anticipation / IMPACT HOLD / follow-through (Thorne v2 attack curve)
-        if raw < 0.28:
-            t = raw / 0.28
-            progress = 0.26 * (t ** 0.75)
-        elif raw < 0.50:
-            t = (raw - 0.28) / 0.22
-            progress = 0.26 + 0.53 * (t ** 0.5)
-        elif raw < 0.62:
-            t = (raw - 0.50) / 0.12
-            progress = 0.79 + 0.05 * t
-        else:
-            t = (raw - 0.62) / 0.38
-            progress = 0.84 + 0.16 * (t ** 0.85)
-
-        lunge = int(math.sin(progress * math.pi) * 4) * boss.direction
-        _NS_abaddon._draw_shadow(surface, x + lunge, y + 58)
-        _NS_abaddon._draw_horse_flame_base(surface, x + lunge, y + 45, boss.pulse, intense=True)
-        _NS_abaddon._draw_abaddon_full(surface, x + lunge, y, boss.direction, boss.pulse,
-                          "melee", progress)
-        _NS_abaddon._draw_sword_swing_trail(surface, x + lunge, y - 8, boss.direction, progress)
-
-
-    def _draw_abaddon_mist_coil(surface, boss, x, y, timer, phase):
-        """Q - Mist Coil cast."""
-        cast_duration = 45
-        elapsed = cast_duration - timer
-        progress = max(0.0, min(1.0, elapsed / cast_duration))
-
-        if 0.3 < progress < 0.4 and not getattr(boss, "_ab_coil_spawned", False):
-            _NS_abaddon._spawn_mist_coil(boss, x, y)
-            boss._ab_coil_spawned = True
-        if progress < 0.2 or progress > 0.9:
-            boss._ab_coil_spawned = False
-
-        _NS_abaddon._draw_shadow(surface, x, y + 58)
-        _NS_abaddon._draw_horse_flame_base(surface, x, y + 45, phase, intense=True)
-        _NS_abaddon._draw_abaddon_full(surface, x, y, boss.direction, phase, "cast", progress)
-
-        # Casting glow on sword tip
-        if 0.15 < progress < 0.5:
-            sword_x = x + 32 * boss.direction
-            sword_y = y - 20
-            glow_pulse = math.sin(phase * 4) * 0.3 + 0.7
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_dark"], 180),
-                      (sword_x, sword_y), int(12 * glow_pulse))
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_mid"], 220),
-                      (sword_x, sword_y), int(8 * glow_pulse))
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], 240),
-                      (sword_x, sword_y), int(5 * glow_pulse))
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"],
-                      (sword_x, sword_y), max(1, int(3 * glow_pulse)))
-
-
-    def _draw_abaddon_darkness_gale(surface, boss, x, y, timer, phase):
-        """E - Darkness Gale cast."""
-        cast_duration = 40
-        elapsed = cast_duration - timer
-        progress = max(0.0, min(1.0, elapsed / cast_duration))
-
-        if 0.3 < progress < 0.4 and not getattr(boss, "_ab_gale_spawned", False):
-            _NS_abaddon._spawn_darkness_gale(boss, x, y)
-            boss._ab_gale_spawned = True
-        if progress < 0.2 or progress > 0.9:
-            boss._ab_gale_spawned = False
-
-        _NS_abaddon._draw_shadow(surface, x, y + 58)
-        _NS_abaddon._draw_horse_flame_base(surface, x, y + 45, phase, intense=True)
-        _NS_abaddon._draw_abaddon_full(surface, x, y, boss.direction, phase, "cast", progress)
-
-
-    def _draw_abaddon_death_sever(surface, boss, x, y, timer, phase):
-        """R - Death Sever cast."""
-        cast_duration = 50
-        elapsed = cast_duration - timer
-        progress = max(0.0, min(1.0, elapsed / cast_duration))
-
-        if 0.35 < progress < 0.45 and not getattr(boss, "_ab_sever_spawned", False):
-            _NS_abaddon._spawn_death_sever(boss, x, y)
-            boss._ab_sever_spawned = True
-        if progress < 0.2 or progress > 0.9:
-            boss._ab_sever_spawned = False
-
-        lunge = int(math.sin(progress * math.pi) * 6) * boss.direction
-        _NS_abaddon._draw_shadow(surface, x + lunge, y + 58)
-        _NS_abaddon._draw_horse_flame_base(surface, x + lunge, y + 45, phase, intense=True)
-        _NS_abaddon._draw_abaddon_full(surface, x + lunge, y, boss.direction, phase,
-                          "melee", progress)
-        _NS_abaddon._draw_sword_purple_trail(surface, x + lunge, y - 8, boss.direction,
-                                 progress, phase)
-
-
-    # ===================================================================
-    # FULL COMPOSITE - Abaddon + Horse
-    # ===================================================================
-    def _draw_abaddon_full(surface, cx, cy, facing, phase, action,
-                          attack_progress=0):
-        """Draw horse + Abaddon rider composition."""
-        # Horse (drawn first as background)
-        _NS_abaddon._draw_horse(surface, cx, cy + 15, facing, phase)
-
-        # Abaddon rider on top
-        _NS_abaddon._draw_abaddon_rider(surface, cx, cy - 8, facing, phase, action,
-                           attack_progress)
-
-
-    # ===================================================================
-    # HORSE (ghostly mount)
-    # ===================================================================
-    def _draw_horse(surface, cx, cy, facing, phase):
-        """Ghostly horse mount with cyan flames."""
-        step = math.sin(phase * 1.5) * 1
-
-        # Horse body (elongated oval)
-        body_pts = [
-            (cx - 25 * facing, cy - 2),
-            (cx - 22 * facing, cy - 10),
-            (cx - 10 * facing, cy - 12),
-            (cx + 10 * facing, cy - 12),
-            (cx + 20 * facing, cy - 10),
-            (cx + 25 * facing, cy - 5),
-            (cx + 23 * facing, cy + 8),
-            (cx + 12 * facing, cy + 12),
-            (cx - 12 * facing, cy + 12),
-            (cx - 22 * facing, cy + 8),
-        ]
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in body_pts])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_darkest"], body_pts)
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_dark"], [
-            (cx - 23 * facing, cy - 1),
-            (cx - 20 * facing, cy - 8),
-            (cx - 10 * facing, cy - 10),
-            (cx + 10 * facing, cy - 10),
-            (cx + 18 * facing, cy - 8),
-            (cx + 23 * facing, cy - 4),
-            (cx + 21 * facing, cy + 7),
-            (cx + 10 * facing, cy + 10),
-            (cx - 10 * facing, cy + 10),
-            (cx - 20 * facing, cy + 7),
-        ])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_mid"], [
-            (cx - 18 * facing, cy - 3),
-            (cx - 15 * facing, cy - 7),
-            (cx - 5 * facing, cy - 8),
-            (cx + 5 * facing, cy - 8),
-            (cx + 15 * facing, cy - 7),
-            (cx + 20 * facing, cy - 3),
-            (cx + 15 * facing, cy + 6),
-            (cx - 15 * facing, cy + 6),
-        ])
-
-        # Body highlight (top of back)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["horse_light"], (cx - 5 * facing, cy - 7), 3)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["horse_high"], (cx - 6 * facing, cy - 8), 1)
-
-        # ===== FRONT LEGS =====
-        for leg_off in (-8, 0):
-            lx = cx + (12 + leg_off) * facing
-            # Upper leg
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["shadow_deep"],
-                    (lx + 1, cy + 11), (lx + int(step) + 1, cy + 20), 4)
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["horse_darkest"],
-                    (lx, cy + 11), (lx + int(step), cy + 20), 3)
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["horse_dark"],
-                    (lx, cy + 11), (lx + int(step), cy + 20), 2)
-            # Lower leg (dissolves into flame)
-            for h in range(8):
-                t = h / 8
-                fy = cy + 20 + h
-                fx = lx + int(step)
-                f_alpha = int(200 * (1 - t * 0.5))
-                _NS_abaddon._draw_cyan_flame(surface, fx, fy, max(1, 3 - h // 2),
-                                phase + h, f_alpha)
-
-        # ===== BACK LEGS =====
-        for leg_off in (-8, 0):
-            lx = cx + (-12 - leg_off) * facing
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["shadow_deep"],
-                    (lx + 1, cy + 11), (lx - int(step) + 1, cy + 20), 4)
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["horse_darkest"],
-                    (lx, cy + 11), (lx - int(step), cy + 20), 3)
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["horse_dark"],
-                    (lx, cy + 11), (lx - int(step), cy + 20), 2)
-            # Flame at hoof
-            for h in range(8):
-                t = h / 8
-                fy = cy + 20 + h
-                fx = lx - int(step)
-                f_alpha = int(200 * (1 - t * 0.5))
-                _NS_abaddon._draw_cyan_flame(surface, fx, fy, max(1, 3 - h // 2),
-                                phase + h + 2, f_alpha)
-
-        # ===== HORSE NECK =====
-        neck_x = cx + 20 * facing
-        neck_y = cy - 8
-        neck_top_x = cx + 26 * facing
-        neck_top_y = cy - 20
-
-        # Neck shape
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_darkest"], [
-            (neck_x - 3 * facing, neck_y),
-            (neck_x + 3 * facing, neck_y - 2),
-            (neck_top_x + 4 * facing, neck_top_y),
-            (neck_top_x - 3 * facing, neck_top_y + 3),
-        ])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_dark"], [
-            (neck_x - 2 * facing, neck_y - 1),
-            (neck_x + 3 * facing, neck_y - 2),
-            (neck_top_x + 3 * facing, neck_top_y + 1),
-            (neck_top_x - 2 * facing, neck_top_y + 3),
-        ])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_mid"], [
-            (neck_x, neck_y - 1),
-            (neck_x + 2 * facing, neck_y - 2),
-            (neck_top_x + 2 * facing, neck_top_y + 1),
-            (neck_top_x - 1 * facing, neck_top_y + 3),
-        ])
-
-        # ===== HORSE HEAD =====
-        head_x = neck_top_x + 2 * facing
-        head_y = neck_top_y
-
-        # Head shape (elongated)
-        head_pts = [
-            (head_x - 5 * facing, head_y - 3),
-            (head_x + 3 * facing, head_y - 5),
-            (head_x + 12 * facing, head_y - 2),
-            (head_x + 13 * facing, head_y + 3),
-            (head_x + 8 * facing, head_y + 6),
-            (head_x - 3 * facing, head_y + 5),
-            (head_x - 6 * facing, head_y + 2),
-        ]
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["shadow_deep"], [(p[0] + 1, p[1] + 1) for p in head_pts])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_darkest"], head_pts)
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_dark"], [
-            (head_x - 4 * facing, head_y - 2),
-            (head_x + 3 * facing, head_y - 4),
-            (head_x + 11 * facing, head_y - 1),
-            (head_x + 12 * facing, head_y + 3),
-            (head_x + 7 * facing, head_y + 5),
-            (head_x - 3 * facing, head_y + 4),
-            (head_x - 5 * facing, head_y + 1),
-        ])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_mid"], [
-            (head_x - 2 * facing, head_y - 1),
-            (head_x + 2 * facing, head_y - 3),
-            (head_x + 9 * facing, head_y - 1),
-            (head_x + 10 * facing, head_y + 2),
-            (head_x + 5 * facing, head_y + 4),
-            (head_x - 2 * facing, head_y + 3),
-        ])
-
-        # Horse ears
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_darkest"], [
-            (head_x + 1 * facing, head_y - 5),
-            (head_x + 3 * facing, head_y - 5),
-            (head_x + 2 * facing, head_y - 9),
-        ])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["horse_darkest"], [
-            (head_x + 5 * facing, head_y - 5),
-            (head_x + 7 * facing, head_y - 5),
-            (head_x + 6 * facing, head_y - 9),
-        ])
-
-        # Horse glowing eye
-        eye_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["shadow_deep"],
-                  (head_x + 5 * facing, head_y), 2)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_dark"],
-                  (head_x + 5 * facing, head_y), max(1, int(2 * eye_pulse)))
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_bright"],
-                  (head_x + 5 * facing, head_y), 1)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_hot"],
-                  (head_x + 5 * facing, head_y - 1), 1)
-
-        # Nostril
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["shadow_deep"],
-                  (head_x + 11 * facing, head_y + 2), 1)
-
-        # ===== HORSE MANE (cyan flames along neck) =====
-        for i in range(6):
-            t = i / 6
-            mane_x = neck_x + int((neck_top_x - neck_x) * t) - 3 * facing
-            mane_y = neck_y + int((neck_top_y - neck_y) * t) - 2
-            _NS_abaddon._draw_flame_streamer(surface, mane_x, mane_y + 3, 6 + i, phase + i,
-                                200)
-
-        # ===== HORSE TAIL (flame) =====
-        tail_x = cx - 25 * facing
-        tail_y = cy - 3
-        for i in range(6):
-            t = i / 6
-            # Tail curves down
-            tx = tail_x - int(t * 15) * facing
-            ty = tail_y + int(t * 15) + int(math.sin(phase + i) * 2)
-            _NS_abaddon._draw_flame_streamer(surface, tx, ty, 8 - i, phase + i, 200)
-
-        # Also curling tail flame
-        for i in range(4):
-            angle = math.pi * (0.6 + i * 0.15)
-            fx = tail_x + int(math.cos(angle) * 10) * facing
-            fy = tail_y + int(math.sin(angle) * 12)
-            _NS_abaddon._draw_cyan_flame(surface, fx, fy, 4 - i, phase + i, 220)
-
-        # ===== HORSE SADDLE/HARNESS =====
-        # Saddle blanket (purple)
-        saddle_pts = [
-            (cx - 10 * facing, cy - 12),
-            (cx + 12 * facing, cy - 12),
-            (cx + 10 * facing, cy - 5),
-            (cx - 12 * facing, cy - 5),
-        ]
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["cape_darkest"], saddle_pts)
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["cape_dark"], [
-            (cx - 8 * facing, cy - 11),
-            (cx + 10 * facing, cy - 11),
-            (cx + 8 * facing, cy - 6),
-            (cx - 10 * facing, cy - 6),
-        ])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["cape_mid"], [
-            (cx - 6 * facing, cy - 10),
-            (cx + 6 * facing, cy - 10),
-            (cx + 5 * facing, cy - 7),
-            (cx - 7 * facing, cy - 7),
-        ])
-
-        # Gold saddle trim
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_dark"],
-                (cx - 10 * facing, cy - 5), (cx + 10 * facing, cy - 5), 2)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_mid"],
-                (cx - 10 * facing, cy - 5), (cx + 10 * facing, cy - 5), 1)
-
-        # Reins (from Abaddon's hand to horse head)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["leather_mid"] if "leather_mid" in _NS_abaddon.PALETTE
-                else _NS_abaddon.PALETTE["cape_darkest"],
-                (cx + 5 * facing, cy - 10), (head_x + 2 * facing, head_y + 3), 1)
-
-
-    # ===================================================================
-    # ABADDON RIDER
-    # ===================================================================
-    def _draw_abaddon_rider(surface, cx, cy, facing, phase, action,
-                           attack_progress=0):
-        """Draw Abaddon on horseback."""
-        # Cape (flowing behind)
-        _NS_abaddon._draw_cape(surface, cx, cy + 5, facing, phase, action)
-
-        # Rider legs (visible sitting on horse)
-        _NS_abaddon._draw_rider_legs(surface, cx, cy + 12, facing, phase)
-
-        # Torso armor
-        _NS_abaddon._draw_torso(surface, cx, cy - 3, phase)
-
-        # Pauldrons
-        _NS_abaddon._draw_pauldrons(surface, cx, cy - 10, phase)
-
-        # Arms (one holding sword, one holding reins)
-        if action in ("melee",):
-            _NS_abaddon._draw_melee_arms(surface, cx, cy - 3, facing, phase, attack_progress)
-        elif action == "cast":
-            _NS_abaddon._draw_casting_arms(surface, cx, cy - 3, facing, phase, attack_progress)
-        else:
-            _NS_abaddon._draw_idle_arms(surface, cx, cy - 3, facing, phase)
-
-        # Head with hood
-        _NS_abaddon._draw_hooded_head(surface, cx, cy - 22, facing, phase)
-
-        # Floating cyan flames around body
-        _NS_abaddon._draw_body_flames(surface, cx, cy, phase)
-
-
-    def _draw_cape(surface, cx, cy, facing, phase, action):
-        """Purple flowing cape."""
-        wave = math.sin(phase * 0.8) * 3
-        wave2 = math.sin(phase * 1.2 + 0.5) * 2
-
-        cape_outer = [
-            (cx - 14, cy - 20),
-            (cx - 20, cy - 5),
-            (cx - 24 - int(wave), cy + 12),
-            (cx - 22 - int(wave2), cy + 25),
-            (cx - 10, cy + 30 + int(abs(wave))),
-            (cx + 10, cy + 30 + int(abs(wave))),
-            (cx + 22 + int(wave2), cy + 25),
-            (cx + 24 + int(wave), cy + 12),
-            (cx + 20, cy - 5),
-            (cx + 14, cy - 20),
-        ]
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in cape_outer])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["cape_darkest"], cape_outer)
-
-        cape_mid = [
-            (cx - 12, cy - 18),
-            (cx - 18, cy - 5),
-            (cx - 22 - int(wave * 0.7), cy + 10),
-            (cx - 18 - int(wave2 * 0.7), cy + 22),
-            (cx - 6, cy + 26),
-            (cx + 6, cy + 26),
-            (cx + 18 + int(wave2 * 0.7), cy + 22),
-            (cx + 22 + int(wave * 0.7), cy + 10),
-            (cx + 18, cy - 5),
-            (cx + 12, cy - 18),
-        ]
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["cape_dark"], cape_mid)
-
-        cape_inner = [
-            (cx - 10, cy - 15),
-            (cx - 15, cy - 5),
-            (cx - 18, cy + 8),
-            (cx - 10, cy + 20),
-            (cx, cy + 22),
-            (cx + 10, cy + 20),
-            (cx + 18, cy + 8),
-            (cx + 15, cy - 5),
-            (cx + 10, cy - 15),
-        ]
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["cape_mid"], cape_inner)
-
-        # Cape highlights
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["cape_light"],
-                (cx - 8, cy - 12), (cx - 12, cy + 15), 1)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["cape_light"],
-                (cx + 8, cy - 12), (cx + 12, cy + 15), 1)
-
-
-    def _draw_rider_legs(surface, cx, cy, facing, phase):
-        """Rider legs on horse."""
-        for side in (-1, 1):
-            # Thigh (goes to knee)
-            thigh_x = cx + side * 5
-            thigh_top = cy
-            thigh_bot = cy + 8
-
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["shadow_deep"],
-                    (thigh_x + 1, thigh_top + 1), (thigh_x + 1, thigh_bot + 1), 6)
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["armor_darkest"],
-                    (thigh_x, thigh_top), (thigh_x, thigh_bot), 5)
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["armor_dark"],
-                    (thigh_x, thigh_top), (thigh_x, thigh_bot), 3)
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["armor_mid"],
-                    (thigh_x - 1, thigh_top), (thigh_x - 1, thigh_bot), 1)
-
-            # Boot area (sticking out below horse)
-            boot_x = thigh_x
-            boot_y = thigh_bot + 4
-            _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["shadow_deep"],
-                  (boot_x - 4, boot_y - 2, 8, 8))
-            _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["armor_darkest"],
-                  (boot_x - 3, boot_y - 2, 7, 7))
-            _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["armor_dark"],
-                  (boot_x - 3, boot_y - 2, 7, 5))
-            # Gold boot detail
-            _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["gold_dark"], (boot_x - 3, boot_y, 7, 1))
-            _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["gold_mid"], (boot_x - 3, boot_y, 6, 1))
-
-
-    def _draw_torso(surface, cx, cy, phase):
-        """Torso armor."""
-        # Shadow
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["shadow_deep"], [
-            (cx - 12 + 2, cy - 8 + 2), (cx + 12 + 2, cy - 8 + 2),
-            (cx + 11 + 2, cy + 12 + 2), (cx - 11 + 2, cy + 12 + 2),
-        ])
-
-        torso_pts = [
-            (cx - 12, cy - 8),
-            (cx + 12, cy - 8),
-            (cx + 13, cy + 5),
-            (cx + 10, cy + 12),
-            (cx - 10, cy + 12),
-            (cx - 13, cy + 5),
-        ]
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["armor_darkest"], torso_pts)
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["armor_dark"], [
-            (cx - 10, cy - 6),
-            (cx + 10, cy - 6),
-            (cx + 11, cy + 5),
-            (cx + 8, cy + 10),
-            (cx - 8, cy + 10),
-            (cx - 11, cy + 5),
-        ])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["armor_mid"], [
-            (cx - 7, cy - 3),
-            (cx + 7, cy - 3),
-            (cx + 8, cy + 4),
-            (cx + 5, cy + 8),
-            (cx - 5, cy + 8),
-            (cx - 8, cy + 4),
-        ])
-
-        # Gold trim (V-shape on chest)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_dark"],
-                (cx - 10, cy - 6), (cx, cy + 8), 2)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_dark"],
-                (cx + 10, cy - 6), (cx, cy + 8), 2)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_mid"],
-                (cx - 9, cy - 5), (cx, cy + 7), 1)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_mid"],
-                (cx + 9, cy - 5), (cx, cy + 7), 1)
-
-        # Central gem (cyan)
-        pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_darkest"], (cx, cy + 1), 4)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_dark"], (cx, cy + 1), 3)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_mid"], (cx, cy + 1),
-                  max(1, int(3 * pulse)))
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_bright"], (cx, cy + 1),
-                  max(1, int(2 * pulse)))
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"], (cx, cy + 1), 1)
-
-        # Gold outline
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["gold_mid"], (cx, cy + 1), 4, 1)
-
-        # Belt
-        _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["cape_darkest"], (cx - 13, cy + 10, 26, 4))
-        _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["cape_dark"], (cx - 12, cy + 10, 24, 3))
-        _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["gold_dark"], (cx - 3, cy + 10, 6, 4))
-        _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["gold_mid"], (cx - 2, cy + 10, 4, 3))
-
-
-    def _draw_pauldrons(surface, cx, cy, phase):
-        """Shoulder pauldrons with spikes."""
-        for side in (-1, 1):
-            sx = cx + side * 14
-            # Shadow
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["shadow_deep"], (sx + 2, cy + 2), 8)
-            # Pauldron
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["armor_darkest"], (sx, cy), 7)
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["armor_dark"], (sx - side, cy - 1), 5)
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["armor_mid"], (sx - side, cy - 2), 3)
-
-            # Gold trim
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["gold_dark"], (sx, cy), 7, 2)
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["gold_mid"], (sx, cy), 6, 1)
-
-            # Small spike on top
-            _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["armor_darkest"], [
-                (sx - 2, cy - 6),
-                (sx + 2, cy - 6),
-                (sx + side * 2, cy - 12),
-            ])
-            _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["armor_dark"], [
-                (sx - 1, cy - 6),
-                (sx + 1, cy - 6),
-                (sx + side * 1, cy - 11),
-            ])
-            # Gold tip
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["gold_mid"],
-                      (sx + side * 2, cy - 12), 1)
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Idle - one arm with sword down, one holding reins."""
-        sway = math.sin(phase * 0.7) * 1
-
-        # Sword arm (facing side)
-        ss_x = cx + facing * 13
-        ss_y = cy + 2
-        se_x = ss_x + facing * 6
-        se_y = cy + 10 + int(sway)
-        sh_x = se_x + facing * 4
-        sh_y = se_y + 12
-        _NS_abaddon._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_abaddon._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-
-        # Sword pointing down
-        _NS_abaddon._draw_energy_sword(surface, sh_x, sh_y, facing, phase, angle=math.pi/2 - 0.2)
-
-        # Reins arm (opposite side, holding reins forward)
-        ra_x = cx + (-facing) * 13
-        ra_y = cy + 2
-        re_x = ra_x + (-facing) * 5
-        re_y = cy + 8
-        rh_x = re_x + (-facing) * 3
-        rh_y = re_y + 4
-        _NS_abaddon._draw_arm_segment(surface, ra_x, ra_y, re_x, re_y)
-        _NS_abaddon._draw_arm_segment(surface, re_x, re_y, rh_x, rh_y)
-        _NS_abaddon._draw_gloved_hand(surface, rh_x, rh_y)
-
-
-    def _draw_melee_arms(surface, cx, cy, facing, phase, progress):
-        """Melee sword swing."""
-        # Reins arm stable
-        ra_x = cx + (-facing) * 13
-        ra_y = cy + 2
-        re_x = ra_x + (-facing) * 5
-        re_y = cy + 8
-        rh_x = re_x + (-facing) * 3
-        rh_y = re_y + 4
-        _NS_abaddon._draw_arm_segment(surface, ra_x, ra_y, re_x, re_y)
-        _NS_abaddon._draw_arm_segment(surface, re_x, re_y, rh_x, rh_y)
-        _NS_abaddon._draw_gloved_hand(surface, rh_x, rh_y)
-
-        # Sword arm - swing motion
-        ss_x = cx + facing * 13
-        ss_y = cy + 2
-
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = -0.8 + (-1.0) * t
-        elif progress < 0.6:
-            t = (progress - 0.3) / 0.3
-            arm_angle = -1.8 + 2.8 * t
-        else:
-            t = (progress - 0.6) / 0.4
-            arm_angle = 1.0 - 1.5 * t
-
-        se_x = ss_x + int(math.cos(arm_angle) * 12) * facing
-        se_y = ss_y + int(math.sin(arm_angle) * 12)
-        sh_x = se_x + int(math.cos(arm_angle) * 10) * facing
-        sh_y = se_y + int(math.sin(arm_angle) * 10)
-
-        _NS_abaddon._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_abaddon._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-
-        # Sword with rotation
-        sword_angle = arm_angle + (0.3 if facing > 0 else -0.3)
-        _NS_abaddon._draw_energy_sword(surface, sh_x, sh_y, facing, phase, angle=sword_angle,
-                          intense=(0.3 < progress < 0.7))
-
-
-    def _draw_casting_arms(surface, cx, cy, facing, phase, progress):
-        """Casting - sword extended forward."""
-        # Reins arm
-        ra_x = cx + (-facing) * 13
-        ra_y = cy + 2
-        re_x = ra_x + (-facing) * 5
-        re_y = cy + 8
-        rh_x = re_x + (-facing) * 3
-        rh_y = re_y + 4
-        _NS_abaddon._draw_arm_segment(surface, ra_x, ra_y, re_x, re_y)
-        _NS_abaddon._draw_arm_segment(surface, re_x, re_y, rh_x, rh_y)
-        _NS_abaddon._draw_gloved_hand(surface, rh_x, rh_y)
-
-        # Sword arm - point forward
-        ss_x = cx + facing * 13
-        ss_y = cy + 2
-
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = -0.5 - 0.5 * t
-        elif progress < 0.5:
-            t = (progress - 0.3) / 0.2
-            arm_angle = -1.0 + 1.3 * t
-        else:
-            t = (progress - 0.5) / 0.5
-            arm_angle = 0.3 - 0.5 * t
-
-        se_x = ss_x + int(math.cos(arm_angle) * 12) * facing
-        se_y = ss_y + int(math.sin(arm_angle) * 12)
-        sh_x = se_x + int(math.cos(arm_angle) * 10) * facing
-        sh_y = se_y + int(math.sin(arm_angle) * 10)
-
-        _NS_abaddon._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_abaddon._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-
-        _NS_abaddon._draw_energy_sword(surface, sh_x, sh_y, facing, phase, angle=arm_angle,
-                          intense=(0.2 < progress < 0.5))
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Armored arm segment."""
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["shadow_deep"],
-                (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 6)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["armor_darkest"], (x1, y1), (x2, y2), 5)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["armor_dark"], (x1, y1), (x2, y2), 4)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["armor_mid"], (x1, y1), (x2, y2), 2)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["armor_light"], (x1 - 1, y1), (x2 - 1, y2), 1)
-        # Gold joint
-        mx, my = (x1 + x2) // 2, (y1 + y2) // 2
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["gold_dark"], (mx, my), 3)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["gold_mid"], (mx, my), 2)
-
-
-    def _draw_gloved_hand(surface, x, y):
-        """Armored gauntlet hand."""
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["shadow_deep"], (x + 1, y + 1), 4)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["armor_darkest"], (x, y), 3)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["armor_dark"], (x, y - 1), 2)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["armor_mid"], (x - 1, y - 1), 1)
-
-
-    def _draw_energy_sword(surface, hx, hy, facing, phase, angle=0, intense=False):
-        """Abaddon's cyan energy sword."""
-        length = 32
-        tip_x = hx + int(math.cos(angle) * length) * facing
-        tip_y = hy + int(math.sin(angle) * length)
-
-        perp_angle = angle + math.pi / 2
-        px = math.cos(perp_angle) * facing
-        py = math.sin(perp_angle)
-
-        # Blade base - crystalline shape
-        blade_pts = [
-            (hx + int(px * 3), hy + int(py * 3)),
-            (hx - int(px * 2), hy - int(py * 2)),
-            (tip_x - int(math.cos(angle) * 4) * facing - int(px * 1),
-             tip_y - int(math.sin(angle) * 4) - int(py * 1)),
-            (tip_x, tip_y),
-            (tip_x - int(math.cos(angle) * 4) * facing + int(px * 3),
-             tip_y - int(math.sin(angle) * 4) + int(py * 3)),
-        ]
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in blade_pts])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["blade_darkest"], blade_pts)
-
-        # Layers
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["blade_dark"], [
-            (hx + int(px * 2), hy + int(py * 2)),
-            (hx - int(px * 1), hy - int(py * 1)),
-            (tip_x, tip_y),
-            (hx + int(px * 2) + int(math.cos(angle) * length * 0.5) * facing,
-             hy + int(py * 2) + int(math.sin(angle) * length * 0.5)),
-        ])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["blade_mid"], [
-            (hx + int(px * 1), hy + int(py * 1)),
-            (hx, hy),
-            (tip_x, tip_y),
-        ])
-
-        # Energy glow along blade
-        for i in range(6):
-            t = i / 6
-            bx = int(hx + (tip_x - hx) * t)
-            by = int(hy + (tip_y - hy) * t)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_mid"], 200), (bx, by), 3)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], 220), (bx, by), 2)
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"], (bx, by), 1)
-
-        # Bright edge
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["blade_shine"], (hx, hy), (tip_x, tip_y), 2)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["flame_white"], (hx, hy), (tip_x, tip_y), 1)
-
-        # Extra intense glow when swinging
-        if intense:
-            # Aura around blade
-            for i in range(4):
-                t = i / 4
-                bx = int(hx + (tip_x - hx) * t)
-                by = int(hy + (tip_y - hy) * t)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_mid"], 100), (bx, by), 6)
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], 150), (bx, by), 4)
-
-        # Guard (crossguard - gold)
-        guard_perp_x = int(px * 6)
-        guard_perp_y = int(py * 6)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_darkest"],
-                (hx + guard_perp_x, hy + guard_perp_y),
-                (hx - guard_perp_x, hy - guard_perp_y), 4)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_dark"],
-                (hx + guard_perp_x, hy + guard_perp_y),
-                (hx - guard_perp_x, hy - guard_perp_y), 3)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_mid"],
-                (hx + guard_perp_x, hy + guard_perp_y),
-                (hx - guard_perp_x, hy - guard_perp_y), 1)
-
-        # Pommel with cyan gem
-        pommel_x = hx - int(math.cos(angle) * 5) * facing
-        pommel_y = hy - int(math.sin(angle) * 5)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["gold_darkest"], (pommel_x, pommel_y), 3)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["gold_dark"], (pommel_x, pommel_y), 2)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_bright"], (pommel_x, pommel_y), 1)
-
-
-    def _draw_hooded_head(surface, cx, cy, facing, phase):
-        """Hood with glowing eyes inside."""
-        # Neck
-        _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["armor_darkest"], (cx - 3, cy + 8, 6, 5))
-        _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["armor_dark"], (cx - 2, cy + 8, 4, 4))
-
-        # Hood shape (large purple hood covering head)
-        hood_pts = [
-            (cx - 12, cy - 2),
-            (cx - 11, cy - 10),
-            (cx - 6, cy - 14),
-            (cx, cy - 16),
-            (cx + 6, cy - 14),
-            (cx + 11, cy - 10),
-            (cx + 12, cy - 2),
-            (cx + 13, cy + 8),
-            (cx + 7, cy + 12),
-            (cx - 7, cy + 12),
-            (cx - 13, cy + 8),
-        ]
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["shadow_deep"], [(p[0] + 2, p[1] + 2) for p in hood_pts])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["cape_darkest"], hood_pts)
-
-        hood_mid = [
-            (cx - 10, cy - 1),
-            (cx - 9, cy - 9),
-            (cx - 5, cy - 13),
-            (cx, cy - 15),
-            (cx + 5, cy - 13),
-            (cx + 9, cy - 9),
-            (cx + 10, cy - 1),
-            (cx + 11, cy + 6),
-            (cx + 6, cy + 10),
-            (cx - 6, cy + 10),
-            (cx - 11, cy + 6),
-        ]
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["cape_dark"], hood_mid)
-
-        # Hood highlight edge
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["cape_mid"],
-                (cx - 9, cy - 9), (cx, cy - 15), 1)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["cape_mid"],
-                (cx + 9, cy - 9), (cx, cy - 15), 1)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["cape_light"],
-                (cx - 5, cy - 13), (cx, cy - 15), 1)
-
-        # Dark interior of hood
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["shadow_deep"], [
-            (cx - 8, cy - 6),
-            (cx - 7, cy - 10),
-            (cx, cy - 12),
-            (cx + 7, cy - 10),
-            (cx + 8, cy - 6),
-            (cx + 7, cy + 5),
-            (cx, cy + 8),
-            (cx - 7, cy + 5),
-        ])
-
-        # ===== HELM inside hood =====
-        # Simple helm shape (visible under hood)
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["armor_darkest"], [
-            (cx - 6, cy - 3),
-            (cx - 5, cy - 8),
-            (cx, cy - 10),
-            (cx + 5, cy - 8),
-            (cx + 6, cy - 3),
-            (cx + 5, cy + 4),
-            (cx, cy + 6),
-            (cx - 5, cy + 4),
-        ])
-        _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["armor_dark"], [
-            (cx - 5, cy - 2),
-            (cx - 4, cy - 7),
-            (cx, cy - 9),
-            (cx + 4, cy - 7),
-            (cx + 5, cy - 2),
-            (cx + 4, cy + 3),
-            (cx, cy + 5),
-            (cx - 4, cy + 3),
-        ])
-
-        # Gold helm brow
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_dark"],
-                (cx - 5, cy - 5), (cx + 5, cy - 5), 2)
-        _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["gold_mid"],
-                (cx - 5, cy - 5), (cx + 5, cy - 5), 1)
-
-        # ===== GLOWING EYES =====
-        eye_pulse = math.sin(phase * 2) * 0.2 + 0.8
-        eye_size = max(1, int(2 * eye_pulse))
-        # Eye sockets (dark slits)
-        _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["shadow_deep"], (cx - 5, cy - 2, 4, 2))
-        _NS_abaddon._rect(surface, _NS_abaddon.PALETTE["shadow_deep"], (cx + 1, cy - 2, 4, 2))
-        # Bright cyan eye glow
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_dark"], (cx - 3, cy - 1), eye_size + 1)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_mid"], (cx - 3, cy - 1), eye_size)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_bright"], (cx - 3, cy - 1),
-                  max(1, eye_size - 1))
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_hot"], (cx - 3, cy - 1), 1)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_dark"], (cx + 3, cy - 1), eye_size + 1)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_mid"], (cx + 3, cy - 1), eye_size)
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_bright"], (cx + 3, cy - 1),
-                  max(1, eye_size - 1))
-        _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["eye_hot"], (cx + 3, cy - 1), 1)
-
-        # Eye emission glow
-        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["eye_bright"], int(80 * eye_pulse)),
-                  (cx - 3, cy - 1), 5)
-        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["eye_bright"], int(80 * eye_pulse)),
-                  (cx + 3, cy - 1), 5)
-
-        # ===== HELM HORNS =====
-        for side in (-1, 1):
-            # Curved horn
-            _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["armor_darkest"], [
-                (cx + side * 5, cy - 8),
-                (cx + side * 8, cy - 12),
-                (cx + side * 12, cy - 20),
-                (cx + side * 14, cy - 22),
-                (cx + side * 11, cy - 19),
-                (cx + side * 7, cy - 11),
-            ])
-            _NS_abaddon._poly(surface, _NS_abaddon.PALETTE["armor_dark"], [
-                (cx + side * 6, cy - 9),
-                (cx + side * 8, cy - 12),
-                (cx + side * 11, cy - 18),
-                (cx + side * 13, cy - 21),
-                (cx + side * 10, cy - 18),
-                (cx + side * 7, cy - 11),
-            ])
-            _NS_abaddon._aaline(surface, _NS_abaddon.PALETTE["armor_mid"],
-                    (cx + side * 8, cy - 12),
-                    (cx + side * 13, cy - 21), 1)
-            # Small cyan glow on horn tip
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_mid"], 180),
-                      (cx + side * 14, cy - 22), 2)
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_bright"],
-                      (cx + side * 14, cy - 22), 1)
-
-        # Cyan flame streamers coming up from head
-        for i in (-4, 0, 4):
-            _NS_abaddon._draw_flame_streamer(surface, cx + i, cy - 10, 6, phase + i * 0.3, 180)
-
-
-    def _draw_body_flames(surface, cx, cy, phase):
-        """Cyan flames rising from body."""
-        for i in range(6):
-            angle = phase * 0.4 + i * math.pi / 3
-            radius = 22 + int(math.sin(phase * 0.7 + i) * 4)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-            alpha = int(140 + math.sin(phase + i * 0.7) * 60)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_dark"], alpha), (px, py), 2)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], alpha // 2), (px, py), 1)
-
-
-    # ===================================================================
-    # FLOATING EFFECTS
-    # ===================================================================
-    def _draw_horse_flame_base(surface, cx, cy, phase, trail=False,
-                              facing=1, intense=False):
-        """Cyan flame base beneath the ghostly horse."""
-        strength = 1.5 if intense else 1.0
-
-        # Base flame mist
-        mist = pygame.Surface((150, 45), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(42, 3, -4):
-            alpha = int((42 - radius) * 2.0 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_abaddon.PALETTE["flame_darkest"], min(255, alpha)),
-                    (75 - radius * 2, 22 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 75, cy - 12))
-
-        # Rising cyan flames
-        for i, offset in enumerate((-30, -18, -6, 6, 18, 30)):
-            t = (phase * 0.5 + i * 0.17) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 25)
-            alpha = max(0, min(255, int(220 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            _NS_abaddon._draw_cyan_flame(surface, sx, sy, max(1, 4 - int(t * 3)),
-                            phase + i, alpha)
-
-        # Orbiting flame orbs
-        for i in range(5):
-            angle = phase * 0.9 + i * math.pi * 2 / 5
-            r = 28 + int(math.sin(phase + i * 1.3) * 4)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 7)
-            _NS_abaddon._draw_cyan_flame(surface, sx, sy, 3, phase + i, 220)
-
-        if trail:
+        boss._ab_projectiles.append(
+            _NS_abaddon.DeathSeverWave(sx, sy, boss.direction))
+
+    # ==================================================================
+    # SKILL FX - canvas fallback (lapisan hidup menggambar versi 1:1)
+    # ==================================================================
+    def _draw_skill_canvas(surface, boss, x, y, p, phase):
+        """Semua FX skill di-canvas; dipanggil hanya saat tidak owned."""
+        B = _NS_abaddon
+        action = p["action"]
+        sp = p["skill_p"]
+        fs = B._fx_scale(boss)
+        tx, ty = B._target_position(boss, x, y)
+        p_ = B.PALETTE
+        if action == "q":
+            # telegraph: cincin kabut menutup di target
+            if sp < 0.42:
+                t = sp / 0.42
+                r = int((26 - t * 18) * (0.6 + 0.4 * t) * fs)
+                a = B._alpha(185 * (0.5 + 0.5 * t))
+                B._dashed_ring(surface, tx, ty, max(2, r), p_["magic_mid"],
+                               a, phase * 2.2, segments=10, thick=3,
+                               squash=0.5)
+                for i in range(6):
+                    ang = phase * 2.4 + i * math.pi / 3
+                    rr = max(2, r * (1.25 - t * 0.9))
+                    B._aacircle(surface, (*p_["magic_light"], a),
+                                (tx + math.cos(ang) * rr,
+                                 ty + math.sin(ang) * rr * 0.5), 2)
+            elif sp < 0.62:
+                t = (sp - 0.42) / 0.20
+                k = 1.0 - t
+                B._spark_star(surface, tx, ty, int(20 * k + 6) ,
+                              p_["flame_bright"], B._alpha(240 * k),
+                              spikes=8, rot=phase * 3, core=p_["white"])
+            elif sp < 1.0:
+                # kabut menguap dari titik mendarat (after-effect)
+                t = (sp - 0.62) / 0.38
+                a = B._alpha(140 * (1 - t))
+                for i in range(6):
+                    ang = i * math.pi / 3 + phase * 0.5
+                    rr = 8 + t * 22 + B._hash01(i * 3) * 8
+                    B._rect(surface, (*p_["magic_dark"], B._alpha(a * 0.8)),
+                            (tx + math.cos(ang) * rr - 3,
+                             ty + math.sin(ang) * rr * 0.5 - 2, 6, 4))
+                    B._rect(surface, (*p_["magic_mid"], B._alpha(a * 0.6)),
+                            (tx + math.cos(ang) * rr - 2,
+                             ty + math.sin(ang) * rr * 0.5 - 1, 4, 3))
+                if sp >= 0.95:
+                    # residu: cincin kecil memudar di titik mendarat
+                    rt = (sp - 0.95) / 0.05
+                    ar = B._alpha(110 * (1 - rt))
+                    B._dashed_ring(surface, tx, ty, max(2, int(6 * fs)),
+                                   p_["magic_mid"], ar, phase * 3.0,
+                                   segments=6, thick=2, squash=0.5)
+            # charge glow di ujung bilah
+            if 0.10 < sp < 0.50:
+                tipx, tipy = p["tip"]
+                glow = math.sin(phase * 4) * 0.3 + 0.7
+                B._aacircle(surface, (*p_["magic_dark"], 170), (tipx, tipy),
+                            int(12 * glow * fs))
+                B._aacircle(surface, (*p_["magic_mid"], 215), (tipx, tipy),
+                            int(8 * glow * fs))
+                B._aacircle(surface, (*p_["flame_bright"], 235),
+                            (tipx, tipy), int(5 * glow * fs))
+                B._aacircle(surface, p_["flame_hot"], (tipx, tipy),
+                            max(1, int(3 * glow * fs)))
+        elif action == "e":
+            # dash: gust horizontal + chevron konvergen
+            a = B._alpha(215 * min(1.0, sp * 4))
             for i in range(5):
-                sx = cx - (i + 1) * 14 * facing
-                sy = cy + int(math.sin(phase + i) * 2)
-                alpha = max(0, 140 - i * 25)
-                _NS_abaddon._draw_cyan_flame(surface, sx, sy, max(2, 4 - i), phase + i, alpha)
+                t = (sp * 1.4 + i * 0.17) % 1.0
+                xx = x - p["facing"] * (10 + t * 46 * fs)
+                yy = y - 26 + i * 13
+                aa = B._alpha(210 * (1 - t))
+                B._aaline(surface, (*p_["magic_dark"], B._alpha(aa * 0.8)),
+                          (xx, yy),
+                          (xx - p["facing"] * 14, yy + 2), 4)
+                B._aaline(surface, (*p_["flame_light"], B._alpha(aa * 0.9)),
+                          (xx, yy), (xx - p["facing"] * 10, yy + 2), 1)
+            if sp < 0.6:
+                pull = (phase * 1.1) % 1.0
+                for i in range(4):
+                    cxp = x - p["facing"] * (18 + pull * 26 + i * 8)
+                    cyp = y - 20 + i * 14
+                    for s in (-1, 1):
+                        B._aaline(surface, (*p_["magic_light"],
+                                            B._alpha(180 * (1 - sp))),
+                                  (cxp - p["facing"] * 5, cyp + s * 5),
+                                  (cxp + p["facing"] * 6, cyp), 2)
+            # jejak gust di tanah
+            gy = y + 52
+            for i in range(6):
+                t = (phase * 0.8 + i * 0.16) % 1.0
+                xx = x - p["facing"] * (10 + t * 50 * fs)
+                aa = B._alpha(150 * (1 - t) * sp)
+                B._aaline(surface, (*p_["ash_mid"], aa), (xx, gy),
+                          (xx - p["facing"] * 10, gy + 1), 2)
+        elif action == "r":
+            if sp < 0.55:
+                # TELEGRAPH: cincin dash mengecil + crosshair + chevron
+                t = sp / 0.55
+                r = int((58 - t * 26) * fs)
+                a = B._alpha(215 * min(1.0, t * 3))
+                B._dashed_ring(surface, tx, ty, max(2, r), p_["magic_mid"],
+                               a, -phase * 2.6, segments=10, thick=4,
+                               squash=0.5)
+                B._dashed_ring(surface, tx, ty, max(2, int(r * 0.66)),
+                               p_["magic_bright"], B._alpha(a * 0.8),
+                               phase * 3.2, segments=6, thick=2,
+                               squash=0.5)
+                blink = 0.55 + 0.45 * math.sin(phase * 7)
+                for (sx2, sy2) in ((1, 1), (1, -1)):
+                    for st in range(5):
+                        dd = (st + 2) * 8
+                        B._rect(surface, (*p_["magic_light"],
+                                          B._alpha(a * blink)),
+                                (tx + sx2 * dd, ty + sy2 * dd * 0.5 - 2,
+                                 5, 4))
+                        B._rect(surface, (*p_["magic_light"],
+                                          B._alpha(a * blink)),
+                                (tx - sx2 * dd, ty - sy2 * dd * 0.5 - 2,
+                                 5, 4))
+                B._rect(surface, (*p_["magic_hot"], B._alpha(a * blink)),
+                        (tx - 3, ty - 3, 6, 5))
+                for i in range(6):
+                    ang = i * math.pi / 3 + phase * 0.8
+                    cr = max(4, r * (1.18 - t * 0.25))
+                    cxp = tx + math.cos(ang) * cr
+                    cyp = ty + math.sin(ang) * cr * 0.5
+                    for s in (-1, 1):
+                        B._aaline(surface, (*p_["magic_bright"],
+                                            B._alpha(a * 0.9)),
+                                  (cxp - math.cos(ang) * 5,
+                                   cyp - math.sin(ang) * 2 + s * 5),
+                                  (cxp + math.cos(ang) * 7,
+                                   cyp + math.sin(ang) * 3.5), 2)
+            else:
+                # LEDAKAN: flash + gelombang ungu + retakan + abu
+                t = (sp - 0.55) / 0.45
+                k = 1.0 - t
+                if t < 0.4:
+                    B._spark_star(surface, tx, ty,
+                                  int((30 + t * 60) * (1 - t / 0.4 * 0.5)),
+                                  p_["magic_bright"],
+                                  B._alpha(250 * (1 - t / 0.4)),
+                                  spikes=10, rot=phase * 4,
+                                  core=p_["white"])
+                r = int((14 + t * 74) * fs)
+                B._dashed_ring(surface, tx, ty, max(2, r), p_["magic_dark"],
+                               B._alpha(225 * k), t * 4.0, segments=14,
+                               thick=5, squash=0.48)
+                B._dashed_ring(surface, tx, ty, max(2, int(r * 0.7)),
+                               p_["magic_bright"], B._alpha(185 * k),
+                               -t * 5.2, segments=10, thick=3,
+                               squash=0.48)
+                # retakan bergerigi
+                for i in range(6):
+                    a2 = i * math.pi / 3 + 0.3
+                    x0, y0 = tx, ty
+                    for j in range(3):
+                        a2 += (B._hash01(i * 7 + j) - 0.5) * 0.7
+                        ln = 20 * (j + 1) / 3 * (0.5 + t * 0.7)
+                        x1 = x0 + math.cos(a2) * ln
+                        y1 = y0 + math.sin(a2) * ln * 0.5
+                        B._aaline(surface, (*p_["magic_darkest"],
+                                           B._alpha(200 * k)),
+                                  (x0, y0), (x1, y1), 3)
+                        B._aaline(surface, (*p_["magic_mid"],
+                                           B._alpha(150 * k)),
+                                  (x0, y0), (x1, y1), 1)
+                        x0, y0 = x1, y1
+                # abu ungu melayang
+                for i in range(8):
+                    f2 = (phase * 0.35 + i * 0.125) % 1.0
+                    ax = tx + math.sin(phase + i * 2.0) * 30
+                    ay = ty - f2 * 44
+                    B._rect(surface, (*p_["magic_mid"],
+                                      B._alpha(190 * k * (1 - f2))),
+                            (ax - 2, ay - 2, 4, 4))
+        elif action == "w":
+            B._draw_ab_w_shield(surface, boss, x, y, sp, phase, fs)
 
+    def _draw_ab_w_shield(surface, boss, x, y, sp, phase, fs):
+        """W APHOTIC SHIELD - perisai PELAT HEKSAAGON (bukan lingkaran).
 
-    def _draw_shadow(surface, x, y, lift=0):
-        """Bayangan REAKTIF + cache: tekstur dibangun sekali; saat badan
-        terangkat (lift > 0) mengecil, dasar tetap menapak tanah."""
+        Cahaya TERTARIK masuk ke inti gelap (afotik = penyerap cahaya);
+        6 pelat berputar, simpul sudut, rune heksagon di tanah.
+        """
         B = _NS_abaddon
-        if B._AB_SHADOW is None:
-            shadow = pygame.Surface((130, 24), pygame.SRCALPHA)
-            for radius in range(12, 0, -1):
-                alpha = max(0, (12 - radius) * 15)
-                pygame.draw.ellipse(
-                    shadow, (0, 0, 0, alpha),
-                    (12 - radius, 12 - radius, 106 + radius * 2, radius * 2),
-                )
-            pygame.draw.ellipse(shadow, (*B.PALETTE["flame_darkest"], 60),
-                                (10, 5, 108, 12))
-            B._AB_SHADOW = shadow
-        sh = B._AB_SHADOW
-        s = 1.0 - min(0.30, abs(lift) * 0.03)
-        if s < 0.999:
-            sh = pygame.transform.smoothscale(sh, (int(130 * s), int(24 * s)))
-        w, h = sh.get_size()
-        surface.blit(sh, (x - w // 2, y + 12 - h))
-
-
-    def _draw_dark_aura(surface, x, y, phase):
-        """Dark purple/cyan background aura. ORIGINAL-MAX: gradien
-        dibangun SEKALI; denyut via set_alpha (blit normal menghormati
-        alpha permukaan) - piksel setara, ~0.5 ms -> ~0.05 ms."""
-        B = _NS_abaddon
-        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        if B._AB_AURA1 is None:
-            aura = pygame.Surface((220, 200), pygame.SRCALPHA)
-            for radius in range(88, 5, -4):
-                alpha = int((88 - radius) * 1.2)
-                if alpha > 0:
-                    B._aacircle(aura, (*B.PALETTE["cape_darkest"],
-                                       min(255, alpha)), (110, 100), radius)
-            B._AB_AURA1 = aura
-            aura2 = pygame.Surface((160, 140), pygame.SRCALPHA)
-            for radius in range(64, 5, -3):
-                alpha = int((64 - radius) * 0.7)
-                if alpha > 0:
-                    B._aacircle(aura2, (*B.PALETTE["flame_darkest"],
-                                        min(255, alpha)), (80, 70), radius)
-            B._AB_AURA2 = aura2
-        a1 = B._AB_AURA1
-        a1.set_alpha(int(pulse * 255))
-        surface.blit(a1, (x - 110, y - 100))
-        a2 = B._AB_AURA2
-        a2.set_alpha(int(pulse * 255))
-        surface.blit(a2, (x - 80, y - 70))
-
-
-    def _draw_ground_runes(surface, x, y, phase, skill):
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((160, 52), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_abaddon.PALETTE["cape_dark"], 140),
-                            (5, 12, 150, 30), 3)
-        pygame.draw.ellipse(ring, (*_NS_abaddon.PALETTE["flame_dark"], 170),
-                            (25, 16, 110, 22), 2)
-
-        for i in range(10):
-            angle = phase * 0.2 + i * math.pi / 5
-            x1 = 80 + int(math.cos(angle) * 38)
-            y1 = 27 + int(math.sin(angle) * 8)
-            x2 = 80 + int(math.cos(angle) * 68)
-            y2 = 27 + int(math.sin(angle) * 12)
-            pygame.draw.line(ring, (*_NS_abaddon.PALETTE["flame_bright"], 160),
-                             (x1, y1), (x2, y2), 1)
-
-        if skill:
-            pygame.draw.ellipse(ring, (*_NS_abaddon.PALETTE["flame_hot"], int(80 * pulse)),
-                                (15, 10, 130, 34), 1)
-
-        surface.blit(ring, (x - 80, y - 26))
-
-
-    def _draw_sword_swing_trail(surface, x, y, facing, progress):
-        """Cyan trail during basic sword swing."""
-        if progress < 0.3 or progress > 0.7:
+        p_ = B.PALETTE
+        scale = min(1.0, sp / 0.15) if sp < 0.15 else 1.0
+        fade_out = 1.0 if sp < 0.85 else max(0.0, (1.0 - sp) / 0.15)
+        if fade_out <= 0.02:
             return
-        t = (progress - 0.3) / 0.4
-        center_x = x + facing * 5
-        center_y = y
-        radius = 45
-
-        start_angle = -math.pi / 2 - 0.5
-        end_angle = math.pi / 4
-        current_angle = start_angle + (end_angle - start_angle) * t
-
-        trail_length = 1.5
-        segments = 14
-        for i in range(segments):
-            seg_t = i / segments
-            angle = current_angle - trail_length * seg_t
-            if angle < start_angle:
-                continue
-
-            ax = center_x + int(math.cos(angle) * radius) * facing
-            ay = center_y + int(math.sin(angle) * radius)
-
-            alpha_seg = int(220 * (1 - seg_t))
-            size = int(4 * (1 - seg_t * 0.4))
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_dark"], alpha_seg),
-                      (ax, ay), size + 2)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_mid"], alpha_seg),
-                      (ax, ay), size + 1)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], alpha_seg),
-                      (ax, ay), size)
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"],
-                      (ax, ay), max(1, size - 1))
-        if 0.48 <= progress <= 0.62:
-            hold = 1.0 - abs((progress - 0.55) / 0.07)
-            tip_x = center_x + int(math.cos(current_angle) * radius) * facing
-            tip_y = center_y + int(math.sin(current_angle) * radius)
-            _NS_abaddon._spark_star(surface, tip_x, tip_y, int(12 * hold),
-                _NS_abaddon.PALETTE["flame_hot"], _NS_abaddon._alpha(230 * hold),
-                spikes=8, rot=progress * 4, core=_NS_abaddon.PALETTE["white"])
-
-
-    def _draw_sword_purple_trail(surface, x, y, facing, progress, phase):
-        """Purple trail during Death Sever."""
-        if progress < 0.15 or progress > 0.75:
+        cx, cy = int(x), int(y - 14)
+        R = int(36 * scale * fs)
+        if R < 3:
             return
-
-        t = (progress - 0.15) / 0.6
-        center_x = x + facing * 5
-        center_y = y
-        radius = 50
-
-        start_angle = -math.pi / 2 - 0.5
-        end_angle = math.pi / 4
-        current_angle = start_angle + (end_angle - start_angle) * t
-
-        trail_length = 2.0
-        segments = 16
-        for i in range(segments):
-            seg_t = i / segments
-            angle = current_angle - trail_length * seg_t
-            if angle < start_angle:
-                continue
-
-            ax = center_x + int(math.cos(angle) * radius) * facing
-            ay = center_y + int(math.sin(angle) * radius)
-
-            alpha_seg = int(240 * (1 - seg_t))
-            size = int(5 * (1 - seg_t * 0.3))
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_darkest"], alpha_seg),
-                      (ax, ay), size + 3)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_dark"], alpha_seg),
-                      (ax, ay), size + 2)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_mid"], alpha_seg),
-                      (ax, ay), size + 1)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_bright"], alpha_seg),
-                      (ax, ay), size)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["magic_hot"], alpha_seg),
-                      (ax, ay), max(1, size - 1))
-
-
-    # ===================================================================
-    # SKILL W: APHOTIC SHIELD
-    # ===================================================================
-    def _draw_aphotic_shield(surface, boss, x, y, timer, phase):
-        """W Aphotic Shield — telegraph / aktivasi / steady, world-space."""
-        duration = float(_NS_abaddon.SKILL_DUR["w"])
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-        fs = _NS_abaddon._fx_scale(boss)
-        radius = _NS_abaddon._ring_r(boss, 45 + progress * 5)
-        gy = y + 48
-        if progress < 0.18:
-            t = progress / 0.18
-            a = _NS_abaddon._alpha(220 * (1 - t * 0.2))
-            _NS_abaddon._dashed_ring(surface, x, gy, int(radius * (0.6 + t * 0.4)),
-                _NS_abaddon.PALETTE["flame_mid"], a, phase * 2, segments=12, thick=max(2, int(2*fs)), squash=0.45)
-            _NS_abaddon._spark_star(surface, x, y - 8, int(14 * fs * (1 - t)),
-                _NS_abaddon.PALETTE["flame_hot"], a, spikes=8, rot=t * 3,
-                core=_NS_abaddon.PALETTE["flame_white"])
-        # Shield radius already world-scaled above
-
-        # Multi-layer shield sphere
-        shield_layers = [
-            (radius + 3, _NS_abaddon.PALETTE["flame_dark"], 100),
-            (radius, _NS_abaddon.PALETTE["flame_mid"], 180),
-            (radius - 3, _NS_abaddon.PALETTE["flame_light"], 150),
-            (radius - 6, _NS_abaddon.PALETTE["flame_bright"], 100),
-        ]
-
-        for r, color, alpha in shield_layers:
-            a = int(alpha * pulse)
-            _NS_abaddon._aacircle(surface, (*color, a), (x, y - 8), r, 3)
-
-        # Bright edge highlights
-        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], int(220 * pulse)),
-                  (x, y - 8), radius, 2)
-        _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_hot"], int(200 * pulse)),
-                  (x, y - 8), radius, 1)
-
-        # Rotating energy bands
-        for band_i in range(3):
-            band_phase = phase * 1.5 + band_i * math.pi / 3
-            # Draw as arc segments (approximated with lines)
-            for j in range(-6, 7):
-                angle = band_phase + j * 0.15
-                bx = x + int(math.cos(angle) * radius * math.cos(band_i * 0.4))
-                by = y - 8 + int(math.sin(angle) * radius * math.cos(band_i * 0.4))
-                _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_hot"], 200), (bx, by), 2)
-                _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_white"], (bx, by), 1)
-
-        # Small orbs orbiting the shield
+        pulse = 0.82 + 0.18 * math.sin(phase * 2.0)
+        base_a = B._alpha(235 * pulse * fade_out)
+        spin = phase * 0.35
+        # 6 pelat heksagon (setiap sisi = satu pelat chunky berlapis)
         for i in range(6):
-            angle = phase * 1.2 + i * math.pi / 3
-            ox = x + int(math.cos(angle) * radius)
-            oy = y - 8 + int(math.sin(angle) * radius * 0.6)
-            _NS_abaddon._aacircle(surface, (*_NS_abaddon.PALETTE["flame_bright"], 220), (ox, oy), 3)
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_hot"], (ox, oy), 2)
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_white"], (ox, oy), 1)
+            a0 = spin + i * math.pi / 3
+            a1 = a0 + math.pi / 3 * 0.82
+            p0 = (cx + math.cos(a0) * R, cy + math.sin(a0) * R)
+            p1 = (cx + math.cos(a1) * R, cy + math.sin(a1) * R)
+            B._aaline(surface, (*p_["flame_dark"],
+                                B._alpha(base_a * 0.7)), p0, p1, 7)
+            B._aaline(surface, (*p_["flame_mid"],
+                                B._alpha(base_a * 0.9)), p0, p1, 4)
+            B._aaline(surface, (*p_["flame_bright"], base_a), p0, p1, 2)
+            B._aacircle(surface, (*p_["flame_hot"], base_a), p0, 3)
+            B._rect(surface, (*p_["flame_white"], base_a),
+                    (int(p0[0]) - 1, int(p0[1]) - 1, 2, 2))
+        # inti gelap (penyerap cahaya)
+        B._aacircle(surface, (*p_["shadow_deep"],
+                             B._alpha(190 * fade_out)), (cx, cy),
+                    int(R * 0.55))
+        B._dashed_ring(surface, cx, cy, max(2, int(R * 0.62)),
+                       p_["flame_mid"], B._alpha(140 * pulse * fade_out),
+                       -spin * 1.6, segments=8, thick=2, squash=1.0)
+        # cahaya tertariK masuk (ditaran ke dalam)
+        for i in range(6):
+            ang = -phase * 0.9 + i * math.pi / 3
+            rr = R * (1.35 - ((phase * 0.25 + i * 0.166) % 1.0) * 0.35)
+            a = B._alpha(200 * fade_out)
+            ox = cx + math.cos(ang) * rr
+            oy = cy + math.sin(ang) * rr
+            B._aacircle(surface, (*p_["flame_light"], a), (ox, oy), 2)
+            B._rect(surface, (*p_["flame_white"], B._alpha(a * 0.8)),
+                    (int(ox) - 1, int(oy) - 1, 2, 2))
+        # rune heksagon di tanah
+        if sp < 0.9:
+            gy = y + 48
+            for i in range(6):
+                a0 = -spin + i * math.pi / 3
+                a1 = a0 + math.pi / 3 * 0.7
+                B._aaline(surface, (*p_["flame_dark"],
+                                    B._alpha(130 * fade_out)),
+                          (x + math.cos(a0) * 40 * fs,
+                           gy + math.sin(a0) * 16 * fs),
+                          (x + math.cos(a1) * 40 * fs,
+                           gy + math.sin(a1) * 16 * fs), 3)
+        # flash aktivasi (10 frame pertama)
+        if sp < 0.10:
+            t = sp / 0.10
+            B._spark_star(surface, x, y - 14, int(16 * (1 - t) * fs),
+                          p_["flame_hot"], B._alpha(230 * (1 - t)),
+                          spikes=8, rot=t * 3, core=p_["flame_white"])
 
-        # Bright sparks
-        for i in range(8):
-            angle = phase * 0.8 + i * math.pi / 4
-            sx = x + int(math.cos(angle) * (radius + 5))
-            sy = y - 8 + int(math.sin(angle) * (radius + 5))
-            _NS_abaddon._aacircle(surface, _NS_abaddon.PALETTE["flame_shine"] if "flame_shine" in _NS_abaddon.PALETTE
-                      else _NS_abaddon.PALETTE["flame_hot"], (sx, sy), 1)
+    # ==================================================================
+    # DEATH - hantu yang menguap
+    # ==================================================================
+    def _draw_death(surface, boss, x, y, p, owned, mod):
+        B = _NS_abaddon
+        t = int(getattr(boss, "_ab_death_t", 0))
+        boss._ab_death_t = t + 1
+        k = min(1.0, t / 40.0)
+        if k >= 1.0:
+            # bara terakhir yang padam
+            if t % 4 == 0:
+                B._draw_flame(surface, x + (B._hash01(t) - 0.5) * 30,
+                              y + 20, 2, 120)
+            return
+        fade = int(255 * (1 - k))
+        buf = pygame.Surface((B.RIG_W, B.RIG_H), pygame.SRCALPHA)
+        B._draw_rig(buf, B.RIG_OX, B.RIG_OY, p)
+        edge = buf.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        edge.set_alpha(int(fade * 0.7))
+        buf.set_alpha(fade)
+        ox = int(x) - B.RIG_OX
+        oy = int(y) - B.RIG_OY - int(k * 14)
+        surface.blit(edge, (ox, oy))
+        surface.blit(buf, (ox, oy))
+        # bara tersebar
+        for i in range(6):
+            tt = (p["phase"] * 0.4 + i * 0.17) % 1.0
+            B._draw_flame(surface,
+                          x + math.sin(p["phase"] + i * 1.9) * (10 + tt * 30),
+                          y + 30 - tt * 50 - int(k * 14),
+                          max(1, int(4 - tt * 3)),
+                          int(200 * (1 - tt) * (1 - k)))
 
+    # ==================================================================
+    # DEBUG OVERLAY (DEBUG_CHARACTER = True)
+    # ==================================================================
+    def _draw_debug(surface, boss, x, y, p, owned):
+        """Hitbox, hurtbox, jangkauan, state/frame, FPS, jumlah partikel.
 
-    # ===================================================================
-    # Backward-compatible entry point alias
-    # ===================================================================
+        Tidak menyentuh gameplay: semua angka dibaca dari state yang
+        sudah ada; overlay digambar PALING AKHIR.
+        """
+        B = _NS_abaddon
+        import pygame as _pg
+        # hurtbox = lingkaran radius unit
+        r = max(8, int(getattr(boss, "radius", 42) * 0.9))
+        _pg.draw.rect(surface, (80, 170, 255, 150),
+                      _pg.Rect(int(x) - r, int(y) - r, r * 2, r * 2), 1)
+        # jangkauan serangan
+        rng = max(10, int(getattr(boss, "range", 50)))
+        f = p["facing"]
+        _pg.draw.line(surface, (255, 210, 60, 150), (int(x), int(y)),
+                      (int(x) + rng * f, int(y)), 1)
+        _pg.draw.rect(surface, (255, 210, 60, 110),
+                      _pg.Rect(int(x) + rng * f - 5, int(y) - 7, 10, 14), 1)
+        # hitbox ayunan (hanya saat jendela hit aktif)
+        hb = B._swing_hitbox(boss, x, y)
+        if hb is not None:
+            _pg.draw.rect(surface, (255, 70, 70, 190), hb, 2)
+            _pg.draw.rect(surface, (255, 70, 70, 60), hb)
+        # tabrakan proyektil milik lapisan hidup
+        mod = B._live_module()
+        if owned and mod is not None:
+            try:
+                for pr in mod.projectiles_for(boss):
+                    _pg.draw.circle(surface, (255, 120, 255, 170),
+                                    (int(pr.x), int(pr.y)),
+                                    max(3, int(getattr(pr, "radius", 8))), 1)
+            except Exception:
+                pass
+        # fps (exponential moving average)
+        fps = getattr(boss, "_ab_fps", None)
+        if fps is None:
+            boss._ab_fps = 60.0
+            fps = 60.0
+        else:
+            dt = float(getattr(boss, "_ab_dt", 1.0 / 60.0))
+            inst = 1.0 / dt if dt > 0 else 60.0
+            boss._ab_fps = fps + (inst - fps) * 0.1
+            fps = boss._ab_fps
+        state = getattr(boss, "_ab_state", "IDLE")
+        phase_name = getattr(boss, "_ab_attack_phase", "NONE")
+        frames = int(getattr(boss, "_ab_attack_frame", 0))
+        prog = float(getattr(boss, "_ab_attack_progress", 0.0))
+        atk_cd = int(getattr(boss, "attack_cooldown", 43))
+        timer = int(getattr(boss, "timer", 0))
+        skill = getattr(boss, "active_skill", None) or "-"
+        s_timer = int(getattr(boss, "active_skill_timer", 0))
+        npart = nproj = 0
+        try:
+            if mod is not None:
+                npart = int(mod.total_particles())
+                nproj = len(mod.projectiles_for(boss))
+        except Exception:
+            pass
+        lines = (
+            "ABADDON  %.0f fps" % fps,
+            "state %s (prev %s) %.2fs" % (state,
+                                          getattr(boss, "_ab_state_prev",
+                                                  "-"),
+                                          float(getattr(
+                                              boss, "_ab_state_time", 0.0))),
+            "action %s  phase %s" % (p["action"], phase_name),
+            "atk frame %d/%d  prog %.2f  hit %s" % (
+                frames, max(1, atk_cd - 1), prog,
+                "ON" if getattr(boss, "_ab_hit_active", False) else "off"),
+            "timer %d  hurt %d" % (timer,
+                                   int(getattr(boss, "_ab_hurt_frames", 0))),
+            "skill %s  %d  live %s" % (skill, s_timer,
+                                       "on" if owned else "canvas"),
+            "particles %d  projectiles %d  dt %.1fms" % (
+                npart, nproj,
+                float(getattr(boss, "_ab_dt", 1.0 / 60.0)) * 1000.0),
+        )
+        try:
+            fnt = _pg.font.SysFont("consolas,monospace", 10)
+        except Exception:                          # pragma: no cover
+            fnt = _pg.font.Font(None, 12)
+        w0 = int(x) - 100
+        y0 = int(y) - 150 - 12 * len(lines)
+        box = _pg.Rect(w0 - 3, y0 - 2, 205, 12 * len(lines) + 4)
+        bg = _pg.Surface(box.size, _pg.SRCALPHA)
+        bg.fill((6, 4, 12, 150))
+        surface.blit(bg, box.topleft)
+        for i, t in enumerate(lines):
+            txt = fnt.render(t, True, (180, 240, 245))
+            surface.blit(txt, (box.x + 3, box.y + 1 + i * 12))
+
+    # ==================================================================
+    # ENTRY POINT
+    # ==================================================================
+    def draw_abaddon(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus heroes.render_hero().
+
+        Urutan lapisan mengikuti kontrak render order proyek:
+
+            GROUND FX -> SHADOW -> BODY/ARMOR/HEAD -> WEAPON ->
+            ATTACK TRAIL -> PROJECTILE -> SKILL FX -> IMPACT FX -> DEBUG
+
+        Trail tebasan, proyektil, partikel, impact, hit-stop, dan screen
+        shake hidup di ``heroes/abaddon_fx.py`` (lapisan layar 1:1, di
+        luar sprite cache). Kalau modul FX tidak tersedia, renderer
+        kembali menggambar semuanya di-canvas (jalur fallback).
+        """
+        NS = _NS_abaddon
+        x = int(x)
+        y = int(y)
+        pulse = float(getattr(boss, "pulse", 0.0))
+        NS._update_attack_anim(boss)
+        NS._detect_moving(boss)
+        active_skill = getattr(boss, "active_skill", None)
+        p = NS._pose(boss, x, y)
+
+        # ── lapisan hidup (pasang / tick ground) ──────────────────────
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
+        mod = None if portrait else NS._live_module()
+        owned = False
+        if mod is not None:
+            try:
+                if hero_lane:
+                    mod.attach(boss)
+                else:
+                    mod.draw_ground_layer(surface, boss, x, y)
+                owned = bool(mod.owns(boss))
+            except Exception:
+                mod = None
+                owned = False
+
+        if not getattr(boss, "alive", True):
+            NS._draw_death(surface, boss, x, y, p, owned, mod)
+            return
+
+        f = p["facing"]
+        # ── Lapisan tanah ─────────────────────────────────────────────
+        NS._draw_dark_aura(surface, x, y, pulse, active_skill)
+        NS._draw_flame_base(surface, x, y, pulse, p)
+        if active_skill != "r":
+            NS._draw_ground_runes(surface, x, y, pulse, active_skill)
+        lift = 0
+        if p["action"] == "e":
+            lift = int(math.sin(p["skill_p"] * math.pi) * 4)
+        NS._draw_shadow(surface, x + p["lunge"] * f, y + NS.SHADOW_Y, lift)
+
+        # ── Karakter (buffer rig + hurt flash + outline) ──────────────
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        NS._draw_rig_at(surface, x, y, p, flash)
+
+        # ── Trail tebasan (canvas fallback) ───────────────────────────
+        if p["trailing"] and not owned:
+            if p["active"]:
+                NS._draw_swing_trail(surface, boss, x, y, p)
+            else:
+                NS._draw_sever_trail(surface, boss, x, y, p)
+
+        # ── Skill FX (canvas) + spawn proyektil ───────────────────────
+        # Telegraph / charge / release / after-effect digambar di-canvas
+        # di KEDUA lane (paritas Gornak v3: FX skill bagian dari pose,
+        # ikut cache lane dengan kompensasi _fx_scale). Lapisan hidup
+        # hanya menambah yang harus 60 fps: proyektil, partikel,
+        # impact, trail, hit-stop + shake (dijadwalkan via on_cast).
+        if active_skill:
+            sp = p["skill_p"]
+            if not owned:
+                if active_skill == "q" and 0.30 < sp < 0.40 and \
+                        not getattr(boss, "_ab_coil_spawned", False):
+                    NS._spawn_mist_coil(boss, x, y)
+                    boss._ab_coil_spawned = True
+                if active_skill != "q" or sp < 0.2 or sp > 0.9:
+                    boss._ab_coil_spawned = False
+                if active_skill == "e" and 0.30 < sp < 0.40 and \
+                        not getattr(boss, "_ab_gale_spawned", False):
+                    NS._spawn_darkness_gale(boss, x, y)
+                    boss._ab_gale_spawned = True
+                if active_skill != "e" or sp < 0.2 or sp > 0.9:
+                    boss._ab_gale_spawned = False
+                if active_skill == "r" and 0.55 < sp < 0.68 and \
+                        not getattr(boss, "_ab_sever_spawned", False):
+                    NS._spawn_death_sever(boss, x, y)
+                    boss._ab_sever_spawned = True
+                if active_skill != "r" or sp < 0.4 or sp > 0.9:
+                    boss._ab_sever_spawned = False
+            NS._draw_skill_canvas(surface, boss, x, y, p, pulse)
+
+        # ── Proyektil (canvas fallback; hero lane di-park) ────────────
+        if not owned:
+            NS._manage_projectiles(boss, surface, pulse)
+
+        # ── Lapisan hidup bagian ATAS (jalur boss) ────────────────────
+        if mod is not None and not hero_lane:
+            try:
+                mod.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        # ── Overlay debug ─────────────────────────────────────────────
+        if NS.DEBUG_CHARACTER:
+            NS._draw_debug(surface, boss, x, y, p, owned)
+
+    # ==================================================================
+    # Aliases kompatibilitas lama
+    # ==================================================================
     def draw_boss(surface, boss, x, y):
         _NS_abaddon.draw_abaddon(surface, boss, x, y)
-
 
 # ====================================================================
 # ENTRY POINT PUBLIK (dipanggil base_boss.Boss.draw)

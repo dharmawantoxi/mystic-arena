@@ -4403,6 +4403,19 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX ABADDON ═══
+                # Bilah energi Abaddon mendarat: flash bintang, cincin
+                # chunky, serpihan api, shake, dan hit-stop 0.03-0.08 s
+                # (lengkapnya di heroes/abaddon_fx.notify_melee_impact).
+                # Difilter per hero_type + try/except (paritas Gornak).
+                if self.hero_type == 'abaddon':
+                    try:
+                        from heroes import abaddon_fx as _abfx
+                        _abfx.notify_melee_impact(
+                            self, self.target, damage, is_crit)
+                    except Exception:
+                        pass
+
                 # ═══ IMPACT FX KAIZEN ═══
                 # Paket game-feel yang sama untuk Kaizen (flash, spark,
                 # serpihan baja, shockwave, slash fragment sian, screen

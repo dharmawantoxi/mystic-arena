@@ -630,7 +630,8 @@ _BEAM_PASS_HEROES = {"morgath"}
 # arc-based, panah angin prosedural dengan lifecycle penuh, daun/gust
 # particle system, sulur Shackle, siklon Windrun, gale Powershot, impact,
 # hit-stop, dan shake — semua hidup di luar cache sprite.
-_LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex", "sylara"}
+_LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
+                   "sylara", "abaddon"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -640,6 +641,7 @@ _LIVE_FX_PATHS = {
     "kaizen": "heroes.kaizen_fx",
     "vex": "heroes.vex_fx",
     "sylara": "heroes.sylara_fx",
+    "abaddon": "heroes.abaddon_fx",
 }
 
 
