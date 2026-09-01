@@ -429,6 +429,144 @@ class _NS_gornak:
                   cy + math.sin(a1) * radius * squash)
             _NS_gornak._aaline(surface, (*color, alpha), p0, p1, thick)
 
+    _SEAL_N = 32               # segmen rim segel arcane
+    _SEAL_CACHE = {}
+
+    def _seal_plate(radius, fs, nodes, star, teeth, ab):
+        """Bagian STATIS segel (rim bergerigi, gigi radial, bintang-poligon,
+        simpul kristal) di-bake sekali per (radius, fs) lalu di-blit.
+
+        Alasan: tiap garis ber-alpha di _aaline bikin satu temp surface;
+        40 segmen per frame = mahal. Yang benar-benar bergerak hanya sapuan
+        cahaya, dan itu cuma beberapa segmen -> digambar live di atas plate.
+        """
+        p = _NS_gornak.PALETTE
+        key = (int(radius), round(float(fs), 2), nodes, star, bool(teeth), ab)
+        cache = _NS_gornak._SEAL_CACHE
+        got = cache.get(key)
+        if got is not None:
+            return got
+        pad = int(10 * fs) + 6
+        c = int(radius) + pad
+        size = c * 2
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        rim, hot, core = p["magic_light"], p["magic_hot"], p["magic_shine"]
+        # Alpha di-bake ke dalam plate (di-bucket) supaya blit-nya TIDAK
+        # perlu set_alpha: per-pixel-alpha + surface-alpha memaksa jalur
+        # blit lambat di SDL (1.16 ms vs 0.07 ms untuk plate 534x534).
+        k_a = ab / 255.0
+        n = _NS_gornak._SEAL_N
+        thick = max(1, int(1.5 * fs))
+        prev = None
+        for i in range(n + 1):
+            k = i % n
+            ang = k * math.tau / n
+            rr = radius + (_NS_gornak._hash01(k * 3 + 1) - 0.5) * 1.4
+            q = (c + math.cos(ang) * rr, c + math.sin(ang) * rr)
+            if prev is not None:
+                pygame.draw.line(surf, (*rim, int(205 * k_a)), prev, q,
+                                 thick)
+                # garis kedua tipis di dalam: batas AOE jadi "dua tarikan
+                # pena", bukan satu lingkaran vektor
+                pygame.draw.line(
+                    surf, (*p["magic_mid"], int(120 * k_a)),
+                    (c + (prev[0] - c) * 0.94, c + (prev[1] - c) * 0.94),
+                    (c + (q[0] - c) * 0.94, c + (q[1] - c) * 0.94), 1)
+            prev = q
+            if teeth and k % 5 == 0:
+                ln = (3 + (3 if k % 10 == 0 else 0)) * fs
+                pygame.draw.line(surf, (*rim, int(175 * k_a)), q,
+                                 (c + math.cos(ang) * (rr + ln),
+                                  c + math.sin(ang) * (rr + ln)), 1)
+        pts = []
+        for i in range(nodes):
+            ang = -math.pi / 2 + i * math.tau / nodes
+            pts.append((c + math.cos(ang) * radius,
+                        c + math.sin(ang) * radius))
+        # Tali bintang-poligon sengaja DIPOTONG: hanya pangkalnya yang
+        # digambar, jadi terbaca sebagai kurung sudut segel di tepi -
+        # bukan sangkar kawat yang menutupi badan.
+        for i in range(nodes):
+            q = pts[i]
+            r2 = pts[(i * star) % nodes]
+            dxc, dyc = r2[0] - q[0], r2[1] - q[1]
+            for a0, b0 in ((0.0, 0.15), (0.85, 1.0)):
+                pygame.draw.line(
+                    surf, (*rim, int(120 * k_a)),
+                    (q[0] + dxc * a0, q[1] + dyc * a0),
+                    (q[0] + dxc * b0, q[1] + dyc * b0), 1)
+        for i in range(nodes):
+            q = pts[i]
+            na = math.atan2(q[1] - c, q[0] - c)
+            _NS_gornak._shard(surf, q[0], q[1], na, int(7 * fs),
+                              max(2, int(2 * fs)), hot, int(235 * k_a),
+                              core=core)
+        if len(cache) > 24:
+            cache.clear()
+        cache[key] = surf
+        return surf
+
+    def _arcane_seal(surface, cx, cy, radius, phase, alpha, fs=1.0,
+                     nodes=7, star=3, rim=None, hot=None, core=None,
+                     spin=1.0, teeth=True):
+        """Segel arcane: pengganti 'lingkaran vektor' penanda AOE.
+
+        Batas AOE tetap terbaca persis di ``radius`` (jitter <= 1 px, jadi
+        gameplay tidak berbohong), tapi bentuknya bukan lingkaran halus:
+        rim bergerigi hasil hash, gigi radial seperti skala jam matahari,
+        simpul kristal, dan bintang-poligon di dalamnya - satu bahasa
+        bentuk dengan _shard milik Gornak. Sapuan cahaya berputar
+        mengelilingi rim supaya segel terasa hidup.
+        """
+        p = _NS_gornak.PALETTE
+        alpha = _NS_gornak._alpha(alpha)
+        if alpha <= 0 or radius < 6:
+            return
+        ab = max(48, min(255, int(round(alpha / 48.0)) * 48))
+        plate = _NS_gornak._seal_plate(int(radius), fs, nodes, star, teeth,
+                                       ab)
+        c = plate.get_width() // 2
+        surface.blit(plate, (int(cx) - c, int(cy) - c))
+        # Sapuan cahaya: hanya beberapa segmen, digambar live.
+        hot = hot or p["magic_hot"]
+        rim = rim or p["magic_light"]
+        n = _NS_gornak._SEAL_N
+        head = (phase * spin * 0.16) % 1.0
+        thick = max(1, int(1.5 * fs))
+        for j in range(3):
+            t0 = head - j / float(n)
+            k = int(round(t0 * n)) % n
+            f0 = 1.0 - j / 3.0
+            a0 = _NS_gornak._alpha(alpha * (0.35 + 0.65 * f0))
+            if a0 <= 0:
+                continue
+            pq = []
+            for kk in (k, k + 1):
+                ang = (kk % n) * math.tau / n
+                rr = radius + (_NS_gornak._hash01((kk % n) * 3 + 1) - .5) * 1.4
+                pq.append((cx + math.cos(ang) * rr, cy + math.sin(ang) * rr))
+            # pygame.draw.line langsung (bukan _aaline): sapuan ini nyaris
+            # opak, jadi tidak perlu temp surface per segmen.
+            pygame.draw.line(surface, (*(hot if f0 > 0.5 else rim), a0),
+                             (int(pq[0][0]), int(pq[0][1])),
+                             (int(pq[1][0]), int(pq[1][1])),
+                             thick + (1 if f0 > 0.66 else 0))
+
+    def _rune_orbit(surface, cx, cy, radius, phase, alpha, fs=1.0,
+                    count=12, spin=1.0, color=None, core=None):
+        """Barisan rune yang mengorbit (pengganti cincin dalam)."""
+        p = _NS_gornak.PALETTE
+        if alpha <= 0 or radius < 3:
+            return
+        color = color or p["magic_mid"]
+        core = core or p["magic_light"]
+        for i in range(count):
+            ang = phase * spin + i * math.tau / count
+            _NS_gornak._shard(surface, cx + math.cos(ang) * radius,
+                              cy + math.sin(ang) * radius,
+                              ang + math.pi / 2, int(5 * fs),
+                              max(1, int(2 * fs)), color, alpha, core=core)
+
     def _jagged_crack(surface, cx, cy, ang, length, colors, alpha, seed,
                       width=3):
         """Retakan tanah berzigzag (3 segmen) dengan seam menyala."""
@@ -925,7 +1063,10 @@ class _NS_gornak:
         #    terisi wajah & material, bukan lingkaran efek.
         if not portrait:
             _NS_gornak._draw_anti_magic_field(surface, x, y, phase, skill)
-            _NS_gornak._draw_ground_rune(surface, x, y, phase, skill)
+            if skill != "r":
+                # Saat ULT, segel void menutupi rune tanah -> tidak perlu
+                # digambar (hemat frame di frame paling berat).
+                _NS_gornak._draw_ground_rune(surface, x, y, phase, skill)
             if skill == "q":
                 _NS_gornak._draw_manabreak_ground(surface, boss, x, y, timer,
                                                   phase)
@@ -2384,23 +2525,25 @@ class _NS_gornak:
 
         # ── TELEGRAPH: ring jangkauan TEPAT 100 px dunia
         wr = _NS_gornak._ring_r(boss, 100)
-        if fade > 0.15:
-            _NS_gornak._aacircle(surface, p["magic_light"],
-                                 (int(x), int(y)), wr, max(2, int(2 * fs)))
-        _NS_gornak._dashed_ring(
-            surface, x, y, wr, p["magic_light"],
-            _NS_gornak._alpha(210 * fade), phase * 1.4,
-            segments=14, thick=max(2, int(2 * fs)), span=0.55, squash=1.0)
-        _NS_gornak._dashed_ring(
+        _NS_gornak._arcane_seal(surface, x, y, wr, phase,
+                                _NS_gornak._alpha(235 * fade), fs,
+                                nodes=7, star=3, spin=1.0)
+        _NS_gornak._rune_orbit(
             surface, x, y,
-            max(4, int(wr * (0.72 + 0.10 * math.sin(phase * 3)))),
-            p["magic_hot"], _NS_gornak._alpha(160 * fade), -phase * 1.1,
-            segments=10, thick=2, span=0.45, squash=1.0)
+            max(4, int(wr * (0.70 + 0.06 * math.sin(phase * 3)))),
+            -phase * 0.9, _NS_gornak._alpha(175 * fade), fs, count=8)
         if progress < 0.28:
+            # Segel mengunci: pecahan kristal jatuh ke dalam, bukan
+            # lingkaran yang mengecil.
             conv = 1.0 - progress / 0.28
-            _NS_gornak._aacircle(
-                surface, (*p["magic_shine"], _NS_gornak._alpha(200 * conv)),
-                (int(x), int(y)), max(4, int(wr * (0.35 + 0.65 * conv))), 2)
+            for i in range(7):
+                ang = i * math.tau / 7 + progress * 4
+                d = wr * (0.30 + 0.72 * conv)
+                _NS_gornak._shard(
+                    surface, x + math.cos(ang) * d, y + math.sin(ang) * d,
+                    ang + math.pi, int(11 * fs * conv + 3),
+                    max(2, int(3 * fs)), p["magic_shine"],
+                    _NS_gornak._alpha(215 * conv), core=p["white"])
         for i in range(4):
             ang = i * math.pi / 2 + phase * 0.4
             _NS_gornak._chevron(
@@ -2465,22 +2608,24 @@ class _NS_gornak:
         gy = y + _NS_gornak.GROUND_DY
         a = _NS_gornak._alpha(220 * min(1.0, progress * 3))
         # Telegraph ring TEPAT 180 px dunia di caster (= AOE gameplay).
-        if a > 40:
-            _NS_gornak._aacircle(surface, p["magic_light"],
-                                 (int(x), int(y)), wr, max(3, int(2 * fs)))
+        _NS_gornak._arcane_seal(surface, x, y, wr, phase, a, fs,
+                                nodes=9, star=2, spin=-1.0)
+        # Kawah void di tanah: busur pecah, bukan elips penuh yang
+        # menggelapkan seluruh badan.
         _NS_gornak._dashed_ring(
-            surface, x, y, wr, p["magic_light"], a,
-            phase * 0.9, segments=16, thick=max(2, int(2 * fs)),
-            span=0.55, squash=1.0)
-        _NS_gornak._ellipse(surface, (*p["magic_darkest"], a),
-                            (x - wr, gy - wr // 4, wr * 2,
-                             max(4, wr // 2)), 2)
+            surface, x, gy, int(wr * 0.52), p["magic_darkest"],
+            _NS_gornak._alpha(a * 0.7), phase * 0.4, segments=6,
+            thick=max(2, int(3 * fs)), span=0.52, squash=0.34)
+        _NS_gornak._dashed_ring(
+            surface, x, gy, int(wr * 0.34), p["magic_dark"],
+            _NS_gornak._alpha(a * 0.55), -phase * 0.6, segments=3,
+            thick=2, span=0.46, squash=0.34)
         if progress < 0.55:
             t = progress / 0.55
-            for i in range(8):
-                ang = i * math.tau / 8 + 0.2
+            for i in range(5):
+                ang = i * math.tau / 5 + 0.2
                 _NS_gornak._jagged_crack(
-                    surface, x, gy, ang, int(wr * 0.55 * t),
+                    surface, x, gy, ang, int(wr * 0.38 * t),
                     (p["magic_darkest"], p["magic_hot"]),
                     _NS_gornak._alpha(190 * t), i + 5, width=2)
             for i in range(4):
@@ -2491,8 +2636,8 @@ class _NS_gornak:
                     ang + math.pi, int(12 * fs), p["magic_hot"],
                     _NS_gornak._alpha(210 * t), width=2)
             # Puing tanah tersedot ke pusat
-            for i in range(10):
-                ang = phase * 0.8 + i * math.tau / 10
+            for i in range(7):
+                ang = phase * 0.8 + i * math.tau / 7
                 d = wr * (0.85 - t * 0.55) * (0.7 + 0.3 * ((i % 3) / 2.0))
                 _NS_gornak._shard(
                     surface, x + math.cos(ang) * d,
@@ -2546,8 +2691,8 @@ class _NS_gornak:
                                    (*p["magic_mid"],
                                     _NS_gornak._alpha(200 * t)),
                                    (hx, hy), (cx, cy), max(1, int(2 * fs)))
-            for i in range(6):
-                tt = (phase * 0.7 + i / 6.0) % 1.0
+            for i in range(5):
+                tt = (phase * 0.7 + i / 5.0) % 1.0
                 mx = int(aim[0] + (chest[0] - aim[0]) * tt)
                 my = int(aim[1] + (chest[1] - aim[1]) * tt
                          - math.sin(tt * math.pi) * 7 * fs)
@@ -5662,18 +5807,26 @@ class _NS_drakar:
     }
 
     # ── Konstanta rig ────────────────────────────────────────────────
-    PIX = 3                    # 1 piksel art = 3 piksel native
+    PIX = 2                    # 1 piksel art = 2 piksel native
     ART_W, ART_H = 120, 120    # kanvas art low-res
-    BODY_W, BODY_H = 360, 360  # kanvas native (ART * PIX)
+    BODY_W, BODY_H = 360, 360  # kanvas native (tetap 360; art dipusatkan)
+    # Art (ART_W*PIX = 240 px) ditempel di dalam kanvas 360 pada offset ini.
+    # Dipilih supaya telapak kaki art (y=100) tetap mendarat di garis tanah
+    # native y+114 seperti sebelumnya -> SEMUA offset FX tanah tidak berubah,
+    # hanya badannya yang mengecil ke proporsi keluarga mini boss.
+    ART_OX, ART_OY = 60, 100
+    ART_FY = 43                # art y yang sejajar dengan titik jangkar boss
+    ANCHOR_DY = 58             # koreksi garis tanah 114 -> 56 (lihat draw_drakar)
     BODY_OX, BODY_OY = 180, 186
     AXE_LEN = 17               # jarak tangan depan -> pusat kepala kapak (art px)
-    _RIG_SCALE = 1.5
+    _RIG_SCALE = 1.0           # proporsi keluarga mini boss (dulu 1.5x)
     _STATIC_SURFACES = {}
     _DRK_TX = {}
     _DRK_ART = None            # buffer badan art-space
     _DRK_FIN = None            # buffer art-space + outline
     _DRK_SHADE = None          # gradien shading native (multiply)
-    _DRK_OUT = None            # buffer native hasil scale
+    _DRK_SCL = None            # buffer art hasil upscale PIX x
+    _DRK_OUT = None            # buffer native hasil komposit
 
     # ── Util dasar ───────────────────────────────────────────────────
     def _static(key, builder):
@@ -6404,11 +6557,17 @@ class _NS_drakar:
                     unsetcolor=(0, 0, 0, 0))
                 F.blit(wht, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
 
-        # upscale nearest 3x -> piksel chunky
-        out = pygame.transform.scale(F, (B.BODY_W, B.BODY_H), B._DRK_OUT) \
-            if B._DRK_OUT is not None else \
-            pygame.transform.scale(F, (B.BODY_W, B.BODY_H))
-        B._DRK_OUT = out
+        # upscale nearest PIX× -> piksel chunky, lalu tempel di kanvas native
+        aw, ah = B.ART_W * B.PIX, B.ART_H * B.PIX
+        scl = pygame.transform.scale(F, (aw, ah), B._DRK_SCL) \
+            if B._DRK_SCL is not None else pygame.transform.scale(F, (aw, ah))
+        B._DRK_SCL = scl
+        out = B._DRK_OUT
+        if out is None:
+            out = pygame.Surface((B.BODY_W, B.BODY_H), pygame.SRCALPHA)
+            B._DRK_OUT = out
+        out.fill((0, 0, 0, 0))
+        out.blit(scl, (B.ART_OX, B.ART_OY))
 
         # gradien shading vertikal (cache)
         if B._DRK_SHADE is None:
@@ -6425,10 +6584,10 @@ class _NS_drakar:
             tt = (emb_seed + k * 0.37) % 1.0
             if tt >= 0.85:
                 continue
-            ex = 180 + math.sin(phase_q * 1.3 + k * 2.1 + prog_q * 5) * 26
-            ey = 124 - tt * 18
+            ex = 180 + math.sin(phase_q * 1.3 + k * 2.1 + prog_q * 5) * 18
+            ey = 182 - tt * 12
             c = B.PALETTE["ember_mid"] if k % 2 == 0 else B.PALETTE["ember_light"]
-            pygame.draw.rect(out, (*c, 255), (int(ex), int(ey), 3, 3))
+            pygame.draw.rect(out, (*c, 255), (int(ex), int(ey), 2, 2))
             pygame.draw.rect(out, (*B.PALETTE["ember_hot"], 255),
                              (int(ex) + 1, int(ey) + 1, 1, 1))
         return out
@@ -6448,7 +6607,7 @@ class _NS_drakar:
 
         def cvt(px_, py_):
             return (cx + facing * (px_ - 60) * B.PIX,
-                    cy + (py_ - 62) * B.PIX)
+                    cy + (py_ - B.ART_FY) * B.PIX)
 
         head = cvt(hx + ca * B.AXE_LEN, hy + sa * B.AXE_LEN)
         return {"axe_head": head, "axe_angle": ang,
@@ -7193,6 +7352,11 @@ class _NS_drakar:
     # ═════════════════════════════════════════════════════════════════
     def draw_drakar(surface, boss, x, y):
         B = _NS_drakar
+        # Garis tanah rig ini ada di y+114 (warisan kanvas 3x). Boss lain
+        # menapak sekitar y+56, jadi seluruh gambar (badan DAN efek tanah,
+        # semuanya relatif terhadap y) digeser satu kali di sini supaya
+        # kaki, bayangan, HP bar, dan label sejajar dengan keluarga.
+        y = int(y) - B.ANCHOR_DY
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))

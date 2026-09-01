@@ -92,13 +92,17 @@ def test_family_size():
     dh, dw = bb("drakar", L.draw_drakar)
     ah, aw = bb("abaddon", L.draw_abaddon)
     assert gh >= mh * 1.05, f"gornak H={gh} vs morgath H={mh}"
-    # Drakar v2 rig 1.5x lebih besar (BODY 360x360), sehingga bbox lebih tinggi
-    assert gh >= dh * 0.50, f"gornak H={gh} vs drakar H={dh} (v2 rig 1.5x)"
+    # Drakar v3: art di-render PIX=2 di dalam kanvas 360 dan garis tanahnya
+    # dikoreksi ke y+56, jadi tingginya kembali sekeluarga dengan mini boss
+    # lain (dulu 1.5x -> menjulang 226 px & HP bar menumpuk di dada).
+    assert gh >= dh * 0.72, f"gornak H={gh} vs drakar H={dh}"
     assert gw >= mw * 0.85, f"gornak W={gw} vs morgath W={mw}"
     assert gh <= ah * 1.00, f"gornak H={gh} vs abaddon H={ah}"
     assert gw <= aw * 1.00, f"gornak W={gw} vs abaddon W={aw}"
     assert dw >= 130, f"drakar W={dw} kehilangan presence"
-    assert 180 <= dh <= 260, f"drakar H={dh} keluar rentang v2 (1.5x rig)"
+    assert 130 <= dh <= 175, f"drakar H={dh} keluar rentang keluarga mini boss"
+    # ...tapi tetap yang paling jangkung di antara mini boss level ini.
+    assert dh >= gh * 1.15, f"drakar H={dh} kehilangan dominasi vs gornak {gh}"
 
 
 def test_hurt_flash_and_reactive_shadow():
