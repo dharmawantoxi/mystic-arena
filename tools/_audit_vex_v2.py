@@ -354,10 +354,10 @@ KW, KH = 1500, 1160
 skills_sheet = pygame.Surface((KW, KH))
 skills_sheet.fill((5, 7, 18))
 skills_sheet.blit(font_title.render(
-    "VEX v2.1 - SKILL FX MEWAH (world-space, 100% prosedural)", True,
+    "VEX v3.0 - SKILL FX VOID ASTRAL CINEMATIC (world-space, prosedural)", True,
     (232, 244, 255)), (36, 22))
 skills_sheet.blit(font_small.render(
-    "Q Arcane Orb • W Sanity's Eclipse • E Astral Imprisonment • R Essence Flux — aktivasi/steady/telegraph",
+    "Q conduit+portal • W gerhana+Mahkota Kristal • E rantai+sangkar kaca • R event horizon+accretion",
     True, (160, 190, 218)), (38, 66))
 skill_cards = (
     ("Q - ARCANE ORB", "q", (10, 20, 38), (38, 22, 8)),
