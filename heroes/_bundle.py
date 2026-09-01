@@ -13592,6 +13592,15 @@ class _NS_zephyr:
     #: Pivot bahu (lokal) tempat tongkat berputar.
     STAFF_PIVOT = (8, -24)
 
+    # ── PANJANG LENGAN (skeleton) ───────────────────────────────────
+    # Lengan Zephyr punya panjang TETAP.  Sebelumnya posisi tangan
+    # diambil langsung dari ujung tongkat, sehingga lengan "melar"
+    # 2-3x saat ayunan (bahu->siku 16 px -> 35 px, bahu->tangan
+    # belakang 24 px -> 79 px) dan bar lengan menembus badan.
+    ARM_UPPER = 15.0        # bahu -> siku
+    ARM_FORE = 13.0         # siku -> tangan
+    ARM_REACH = 27.4        # (ARM_UPPER + ARM_FORE) * 0.98, tak pernah lurus
+
     #: Radius tongkat per fase (rest, windup, impact, follow).
     STAFF_R_REST   = 36.0
     STAFF_R_WINDUP = 26.0
@@ -14402,6 +14411,131 @@ class _NS_zephyr:
             return (int(2 + math.sin(phase * 1.72) * 2), 28)
         return (2, 28)
 
+    # ── SKELETON LENGAN: IK 2-tulang + genggaman terjangkau ─────────
+    def _solve_arm(shoulder, target, l1=None, l2=None, bend=1.0):
+        """IK 2-tulang: kembalikan ``(elbow, hand)`` dengan panjang TETAP.
+
+        ``target`` adalah posisi tangan yang diinginkan.  Kalau target
+        di luar jangkauan (``l1 + l2``) tangan DIJEPIT ke lingkaran
+        jangkauan — lengan tidak pernah melar.  ``bend`` menentukan
+        arah tekukan siku (+1 = siku di bawah garis bahu->tangan).
+
+        Semua koordinat lokal (pra-mirror), y ke bawah.
+        """
+        Z = _NS_zephyr
+        l1 = Z.ARM_UPPER if l1 is None else float(l1)
+        l2 = Z.ARM_FORE if l2 is None else float(l2)
+        sx, sy = float(shoulder[0]), float(shoulder[1])
+        vx, vy = float(target[0]) - sx, float(target[1]) - sy
+        d = math.hypot(vx, vy)
+        if d < 1e-4:
+            vx, vy, d = 0.0, 1.0, 1.0
+        ux, uy = vx / d, vy / d
+
+        reach = (l1 + l2) * 0.995
+        floor_ = abs(l1 - l2) + 0.75
+        d = max(floor_, min(reach, d))
+        hand = (sx + ux * d, sy + uy * d)
+
+        # hukum kosinus -> proyeksi siku pada sumbu bahu->tangan
+        a = (d * d + l1 * l1 - l2 * l2) / (2.0 * d)
+        a = max(-l1, min(l1, a))
+        h = math.sqrt(max(0.0, l1 * l1 - a * a))
+        # perp(u) = (-uy, ux) menunjuk "ke bawah" saat u menunjuk kanan
+        ex = sx + ux * a + (-uy) * h * bend
+        ey = sy + uy * a + (ux) * h * bend
+        return (int(round(ex)), int(round(ey))), \
+               (int(round(hand[0])), int(round(hand[1])))
+
+    def _staff_hand_local(phase, action="idle", attack_progress=0.0,
+                          shoulder=(9, -24), prefer=0.42, lowest=0.0):
+        """Titik pegangan pada BATANG tongkat yang masih terjangkau.
+
+        Tangan wajib menempel di batang (bukan melayang), jadi alih-alih
+        menarik lengan ke ujung tongkat, kita cari titik di batang yang
+        jaraknya dari bahu <= ``ARM_REACH`` dan PALING DEKAT dengan
+        genggaman ideal ``prefer`` (0 = pangkal, 1 = ujung).  Pencarian
+        dua arah supaya tidak pernah tersangkut di pangkal.
+        """
+        Z = _NS_zephyr
+        bx, by = Z._staff_bottom_local(phase, action, attack_progress)
+        tx, ty = Z._staff_tip_local(phase, action, attack_progress)
+        sx, sy = shoulder
+        reach = Z.ARM_REACH
+        prefer = max(lowest, min(1.0, float(prefer)))
+
+        def at(tt):
+            return (bx + (tx - bx) * tt, by + (ty - by) * tt)
+
+        def dist(tt):
+            px, py = at(tt)
+            return math.hypot(px - sx, py - sy)
+
+        if dist(prefer) <= reach:
+            px, py = at(prefer)
+            return (int(round(px)), int(round(py))), prefer
+
+        # menyebar keluar dari genggaman ideal, dua arah sekaligus
+        step = 0.02
+        k = 1
+        nearest_t, nearest_d = prefer, dist(prefer)
+        while k * step <= 1.0:
+            for tt in (prefer - k * step, prefer + k * step):
+                if tt < lowest or tt > 1.0:
+                    continue
+                dd = dist(tt)
+                if dd <= reach:
+                    px, py = at(tt)
+                    return (int(round(px)), int(round(py))), tt
+                if dd < nearest_d:
+                    nearest_t, nearest_d = tt, dd
+            k += 1
+        # seluruh batang di luar jangkauan -> titik terdekat;
+        # _solve_arm yang menjepitnya ke lingkaran jangkauan
+        px, py = at(nearest_t)
+        return (int(round(px)), int(round(py))), nearest_t
+
+    def _arm_pose_local(phase, action="idle", attack_progress=0.0):
+        """Pose kedua lengan untuk frame ini.
+
+        Return ``(front_shoulder, front_elbow, front_hand,
+        rear_shoulder, rear_elbow, rear_hand, grip_t)``.  Dipakai
+        renderer dan debug overlay supaya keduanya tak pernah beda.
+        """
+        Z = _NS_zephyr
+        fs = (9, -24)
+        rs = (-9, -24)
+
+        # Genggaman bergeser sepanjang batang mengikuti fase: ditarik
+        # mendekat saat wind-up (lengan menekuk), terentang saat strike.
+        # Interpolasi HALUS (smoothstep) — kalau memakai tangga per fase,
+        # tangan melompat belasan piksel di batas fase.
+        if action == "attack":
+            keys = ((0.00, 0.40), (Z.ATTACK_WINDUP_END, 0.33),
+                    (Z.ATTACK_SWING_END, 0.53), (Z.ATTACK_IMPACT_END, 0.52),
+                    (Z.ATTACK_FOLLOW_END, 0.47), (1.00, 0.42))
+            ap = max(0.0, min(1.0, float(attack_progress)))
+            prefer = keys[-1][1]
+            for (a0, v0), (a1, v1) in zip(keys, keys[1:]):
+                if ap <= a1:
+                    span = max(1e-6, a1 - a0)
+                    u = max(0.0, min(1.0, (ap - a0) / span))
+                    u = u * u * (3.0 - 2.0 * u)          # smoothstep
+                    prefer = v0 + (v1 - v0) * u
+                    break
+        else:
+            prefer = 0.50
+
+        hand_t, t = Z._staff_hand_local(phase, action, attack_progress,
+                                        shoulder=fs, prefer=prefer)
+        fe, fh = Z._solve_arm(fs, hand_t, bend=1.0)
+        # tangan belakang menopang batang sedikit di bawah tangan depan
+        rear_t, _ = Z._staff_hand_local(phase, action, attack_progress,
+                                        shoulder=rs,
+                                        prefer=max(0.0, t - 0.20))
+        re_, rh = Z._solve_arm(rs, rear_t, bend=1.0)
+        return fs, fe, fh, rs, re_, rh, t
+
     def _staff_orb_position(cx, cy, facing, phase=0.0, action="idle",
                             attack_progress=0.0):
         """World/canvas position of the staff orb for spell effects."""
@@ -14735,9 +14869,10 @@ class _NS_zephyr:
         # ── Rear arm (free / casting hand) ─────────────────────────
         rear_shoulder = (-9, -24)
         if attack:
-            rear_hand  = (_NS_zephyr._staff_tip_local(phase,"attack",ap)[0]-8,
-                          _NS_zephyr._staff_tip_local(phase,"attack",ap)[1]+16)
-            rear_elbow = (rear_hand[0] - 11, rear_hand[1] + 8)
+            # Tangan belakang MENOPANG batang (dua tangan), bukan
+            # melayang di ujung tongkat: panjang lengan tetap.
+            (_fs, _fe, _fh, rear_shoulder, rear_elbow,
+             rear_hand, _gt) = _NS_zephyr._arm_pose_local(phase, action, ap)
         elif walk:
             rear_hand  = (-15, -4 + int(stride * 6))
             rear_elbow = (-18, -15 - int(stride * 3))
@@ -14837,8 +14972,6 @@ class _NS_zephyr:
             staff_bottom = _NS_zephyr._staff_bottom_local(phase, action, ap)
         else:
             staff_bottom = (2 + int(stride * 2 if walk else 0), 28)
-        grip = (int(staff_bottom[0] * .46 + staff_top[0] * .54),
-                int(staff_bottom[1] * .46 + staff_top[1] * .54))
         _NS_zephyr._draw_elite_staff(surface, pt, f,
                                      staff_bottom, staff_top,
                                      phase, action, detail,
@@ -14849,13 +14982,20 @@ class _NS_zephyr:
             _NS_zephyr._draw_staff_swing_trail(surface, pt, phase, ap)
 
         # ── Front staff arm ─────────────────────────────────────────
+        # Genggaman digeser sepanjang batang sampai terjangkau, lalu
+        # siku dihitung IK -> panjang lengan KONSTAN di semua frame.
         front_shoulder = (9, -24)
         if attack:
-            front_elbow = (grip[0] - 6, grip[1] + 9)
-        elif walk:
-            front_elbow = (grip[0] - 8, grip[1] + 6 + int(stride * 2))
+            (front_shoulder, front_elbow, grip,
+             _rs, _re, _rh, _gt) = _NS_zephyr._arm_pose_local(
+                phase, action, ap)
         else:
-            front_elbow = (grip[0] - 8, grip[1] + 7)
+            (front_shoulder, front_elbow, grip,
+             _rs, _re, _rh, _gt) = _NS_zephyr._arm_pose_local(
+                phase, action, ap)
+            if walk:
+                front_elbow = (front_elbow[0], front_elbow[1]
+                               + int(stride * 2))
         limb(front_shoulder, front_elbow, 7, p["cloak_mid"], p["cloak_light"])
         limb(front_elbow, grip, 6, p["skin_dark"], p["skin_light"])
         ghx, ghy = pt(*grip)

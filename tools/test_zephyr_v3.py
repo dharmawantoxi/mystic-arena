@@ -193,6 +193,69 @@ def test_ujung_tongkat_bergerak_kontinu():
     assert sum(steps) > 60.0, "ujung tongkat nyaris tidak bergerak"
 
 
+# ── SKELETON LENGAN (regresi "tangan melar" saat menyerang) ───────────────
+def _arm_samples(action="attack", n=60):
+    return [Z._arm_pose_local(0.0, action, i / float(n))
+            for i in range(n + 1)]
+
+
+@pytest.mark.parametrize("action", ["idle", "walk", "attack"])
+def test_panjang_lengan_konstan(action):
+    """Bug lama: tangan diambil dari ujung tongkat -> lengan melar 2-3x."""
+    up = Z.ARM_UPPER
+    fore = Z.ARM_FORE
+    tol = 1.6                       # toleransi pembulatan ke piksel
+    for fs, fe, fh, rs, re_, rh, _t in _arm_samples(action):
+        for sh, el, hd, tag in ((fs, fe, fh, "depan"), (rs, re_, rh, "blkg")):
+            l1 = math.dist(sh, el)
+            l2 = math.dist(el, hd)
+            assert abs(l1 - up) <= tol, \
+                "%s: lengan atas %.1f px (harus %.1f)" % (tag, l1, up)
+            assert abs(l2 - fore) <= tol, \
+                "%s: lengan bawah %.1f px (harus %.1f)" % (tag, l2, fore)
+
+
+def test_tangan_tidak_pernah_di_luar_jangkauan():
+    for fs, _fe, fh, rs, _re, rh, _t in _arm_samples("attack"):
+        assert math.dist(fs, fh) <= Z.ARM_REACH + 1.5, math.dist(fs, fh)
+        assert math.dist(rs, rh) <= Z.ARM_REACH + 1.5, math.dist(rs, rh)
+
+
+def test_tangan_menempel_di_batang_tongkat():
+    """Tangan wajib berada pada garis pangkal->ujung tongkat."""
+    n = 40
+    for i in range(n + 1):
+        ap = i / float(n)
+        b = pygame.Vector2(Z._staff_bottom_local(0.0, "attack", ap))
+        t = pygame.Vector2(Z._staff_tip_local(0.0, "attack", ap))
+        axis = t - b
+        if axis.length() < 1e-3:
+            continue
+        axis = axis.normalize()
+        fs, _fe, fh, rs, _re, rh, _gt = Z._arm_pose_local(0.0, "attack", ap)
+        for hd, tag in ((fh, "depan"), (rh, "belakang")):
+            v = pygame.Vector2(hd) - b
+            perp = abs(v.x * axis.y - v.y * axis.x)     # jarak tegak lurus
+            assert perp <= 3.0, \
+                "tangan %s melayang %.1f px dari batang (ap %.2f)" % (
+                    tag, perp, ap)
+
+
+def test_pose_lengan_kontinu_tanpa_lompatan():
+    pts = _arm_samples("attack", n=90)
+    for a, b in zip(pts, pts[1:]):
+        for ia in (1, 2, 4, 5):     # elbow/hand depan & belakang
+            step = math.dist(a[ia], b[ia])
+            assert step < 9.0, "sendi lompat %.1f px antar frame" % step
+
+
+def test_genggaman_bergerak_sepanjang_ayunan():
+    """Tangan harus ikut menyusuri batang, bukan diam menempel di badan."""
+    hands = [p[2] for p in _arm_samples("attack")]
+    xs = [h[0] for h in hands]
+    assert max(xs) - min(xs) > 8, "tangan depan nyaris tidak bergerak"
+
+
 def test_cooldown_pendek_tetap_melewati_semua_fase():
     for cd in (8, 12, 45, 90):
         phases = {s["phase"] for s in run_attack(fresh_hero(cooldown=cd), cd)}
