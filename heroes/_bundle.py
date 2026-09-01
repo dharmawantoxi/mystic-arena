@@ -10136,7 +10136,7 @@ class _NS_thorne:
 # vex.py
 # ====================================================================
 class _NS_vex:
-    """Namespace vex - PIXEL MASTERWORK v2 + Skill FX v2.1.
+    """Namespace vex - PIXEL MASTERWORK v2 + Skill FX v3.0.
 
     Rewrite visual Vex mengikuti standar Thorne v2 / v2.1: tetap
     100% prosedural (tanpa PNG, sprite-sheet, atau ``image.load``),
@@ -10204,6 +10204,7 @@ class _NS_vex:
         "void_edge":      (120, 255, 236),
         "void_green":     ( 60, 235, 150),
         "void_gold":      (232, 210, 118),
+        "void_gold_hot":  (255, 240, 196),
         "void_magma":     (236,  72,  80),
 
 
@@ -10546,6 +10547,250 @@ class _NS_vex:
 
 
     # ---------------------------------------------------------------------------
+    # SKILL FX v3 PRIMITIVES — glyph rune, sigil ring, crystal shard,
+    # energy arc, nova, dither disk, chain link, orbit glint, arc band.
+    # Semua fast-path pygame.draw (tanpa alokasi surface per segmen)
+    # supaya FX tetap cache-miss friendly di ukuran fx_scale 2.6x.
+    # ---------------------------------------------------------------------------
+    def _rgba(color, alpha):
+        """Warna RGBA ter-clamp untuk pemanggilan pygame.draw langsung."""
+        return (*_NS_vex._clamp(color), max(0, min(255, int(alpha))))
+
+    def _dpoly(surface, color, alpha, points):
+        """Polygon RGBA fast-path: langsung blend ke canvas SRCALPHA."""
+        if len(points) < 3 or alpha <= 0:
+            return
+        pts = [(int(px), int(py)) for px, py in points]
+        pygame.draw.polygon(surface, _NS_vex._rgba(color, alpha), pts)
+
+    def _arc_band(surface, cx, cy, rx, ry, a0, a1, color, alpha,
+                  width=2, segments=14):
+        """Arc elips ringan tanpa alokasi surface (pengganti _draw_arc_pair
+        untuk jalur panas: accretion band, kubah kaca, rim lensing)."""
+        if alpha <= 0 or rx <= 1 or ry <= 1:
+            return
+        col = _NS_vex._rgba(color, alpha)
+        prev = None
+        span = a1 - a0
+        for i in range(segments + 1):
+            a = a0 + span * i / segments
+            pt = (int(cx + math.cos(a) * rx), int(cy + math.sin(a) * ry))
+            if prev is not None:
+                pygame.draw.line(surface, col, prev, pt, max(1, width))
+            prev = pt
+
+    def _rune_glyph(surface, x, y, size, kind, color, alpha, rot=0.0):
+        """Mikro-rune prosedural (5 varian, 1-3 goresan): wajik, palang,
+        siku ganda, segitiga, silang — bata penyusun cincin sigil."""
+        if alpha <= 0 or size < 2:
+            return
+        col = _NS_vex._rgba(color, alpha)
+        ca, sa = math.cos(rot), math.sin(rot)
+
+        def P(dx, dy):
+            return (int(x + (dx * ca - dy * sa) * size),
+                    int(y + (dx * sa + dy * ca) * size))
+
+        k = int(kind) % 5
+        if k == 0:      # wajik
+            pygame.draw.polygon(surface, col,
+                                [P(-.5, 0), P(0, -.6), P(.5, 0), P(0, .6)])
+        elif k == 1:    # palang + titik
+            pygame.draw.line(surface, col, P(-.5, 0), P(.5, 0), 1)
+            pygame.draw.circle(surface, col, P(0, -.45), 1)
+        elif k == 2:    # siku ganda
+            pygame.draw.line(surface, col, P(-.45, -.35), P(-.1, .35), 1)
+            pygame.draw.line(surface, col, P(.1, -.35), P(.45, .35), 1)
+        elif k == 3:    # segitiga
+            pygame.draw.polygon(surface, col, [P(-.5, .4), P(.5, .4), P(0, -.5)])
+        else:           # silang
+            pygame.draw.line(surface, col, P(-.4, -.4), P(.4, .4), 1)
+            pygame.draw.line(surface, col, P(.4, -.4), P(-.4, .4), 1)
+
+    def _sigil_ring(surface, cx, cy, radius, phase, ramp, alpha,
+                    n=8, squash=.6, seed=0, size=5):
+        """Cincin sigil 3/4-view: deretan rune mengorbit sambil berputar.
+        Glyph sisi depan (sin>0) lebih besar & terang — kedalaman palsu
+        tanpa surface ekstra. ramp = (bright, mid, hot)."""
+        if alpha <= 0 or radius < 5:
+            return
+        for i in range(n):
+            a = phase + i * math.tau / n
+            depth = .55 + .45 * (math.sin(a) * .5 + .5)
+            gx = cx + math.cos(a) * radius
+            gy = cy + math.sin(a) * radius * squash
+            col = ramp[1] if depth < .82 else ramp[0]
+            _NS_vex._rune_glyph(surface, gx, gy,
+                                max(2, int(size * (.8 + .35 * depth))),
+                                i * 3 + seed + int(phase * 2),
+                                col, int(alpha * depth), rot=a + math.pi / 2)
+            if i % 2 == 0:
+                pygame.draw.circle(
+                    surface, _NS_vex._rgba(ramp[2], alpha * .75 * depth),
+                    (int(gx), int(gy)), 1)
+
+    def _shard_glint(surface, x, y, color, alpha, size=3, core=False):
+        """Kilau silang 4 arah 1px untuk ujung shard / pole anchor."""
+        if alpha <= 0:
+            return
+        col = _NS_vex._rgba(color, alpha)
+        xi, yi = int(x), int(y)
+        s = max(1, int(size))
+        pygame.draw.line(surface, col, (xi - s, yi), (xi + s, yi), 1)
+        pygame.draw.line(surface, col, (xi, yi - s), (xi, yi + s), 1)
+        if core:
+            pygame.draw.circle(
+                surface, _NS_vex._rgba(_NS_vex.PALETTE["white"], alpha),
+                (xi, yi), 1)
+
+    def _crystal_shard(surface, bx, by, w, h, ang, ramp, alpha, glint=0):
+        """Shard kristal faset: siluet gelap 5 titik, faset kiri key-light,
+        rim kanan (selout terang), specular 1px, ujung menyala.
+        ramp = (dark, mid, bright, hot)."""
+        if alpha <= 0 or h < 3:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+
+        def P(dx, dy):
+            return (int(bx + dx * ca - dy * sa), int(by + dx * sa + dy * ca))
+
+        base_l, base_r = P(-w, 3), P(w, 3)
+        sho_l, sho_r = P(-w * .45, -h * .55), P(w * .45, -h * .55)
+        tip = P(0, -h)
+        _NS_vex._dpoly(surface, ramp[0], alpha,
+                       [base_l, base_r, sho_r, tip, sho_l])
+        _NS_vex._dpoly(surface, ramp[1], alpha,
+                       [base_l, P(0, 3), P(0, -h * .8), sho_l])
+        _skill_outlined_line(surface, sho_r, tip, 1, ramp[2], int(alpha * .9))
+        _skill_outlined_line(surface, base_r, sho_r, 1, ramp[2], int(alpha * .7))
+        pygame.draw.line(surface,
+                         _NS_vex._rgba(ramp[3], min(255, alpha + 30)),
+                         P(-w * .5, -h * .35), P(-w * .2, -h * .6), 1)
+        if glint:
+            _NS_vex._shard_glint(surface, tip[0], tip[1], ramp[3],
+                                 int(alpha * .8), max(2, w), core=True)
+
+    def _beam3(surface, a, b, width, ramp, alpha):
+        """Beam 3-lapis: stroke gelap -> badan mid -> inti hot.
+        ramp = (body_mid, halo_dark, core_hot)."""
+        if alpha <= 0:
+            return
+        _skill_outlined_line(surface, a, b, width + 2, ramp[1], int(alpha * .55))
+        _skill_outlined_line(surface, a, b, width, ramp[0], alpha)
+        if width >= 2:
+            pygame.draw.line(
+                surface, _NS_vex._rgba(ramp[2], min(255, alpha + 40)),
+                (int(a[0]), int(a[1])), (int(b[0]), int(b[1])),
+                max(1, width - 2))
+
+    def _energy_arc(surface, x0, y0, x1, y1, seed, color, alpha,
+                    width=1, wobble=5.0):
+        """Busur energi zigzag deterministik (hash seed) + under-glow."""
+        if alpha <= 0:
+            return
+        pts = [(x0, y0)]
+        for i in range(1, 4):
+            t = i / 4.0
+            jx = (_NS_vex._hash01(seed * 13 + i * 7) - .5) * wobble * 2
+            jy = (_NS_vex._hash01(seed * 29 + i * 11) - .5) * wobble * 2
+            pts.append((x0 + (x1 - x0) * t + jx, y0 + (y1 - y0) * t + jy))
+        pts.append((x1, y1))
+        dark = _NS_vex.PALETTE["shadow_deep"]
+        for i in range(len(pts) - 1):
+            a, b = pts[i], pts[i + 1]
+            ai, bi = (int(a[0]), int(a[1])), (int(b[0]), int(b[1]))
+            pygame.draw.line(surface, _NS_vex._rgba(dark, alpha * .45),
+                             ai, bi, width + 2)
+            pygame.draw.line(surface, _NS_vex._rgba(color, alpha),
+                             ai, bi, width)
+
+    def _nova(surface, cx, cy, r_in, r_out, petals, rot, ramp, alpha,
+              squash=.82):
+        """Ledakan nova: kelopak polygon runcing — lapis gelap penuh +
+        lapis hot inset. ramp = (main, under)."""
+        if alpha <= 0 or petals < 3:
+            return
+        span = math.tau / petals
+        for i in range(petals):
+            a = rot + i * span
+            a0, a1 = a - span * .3, a + span * .3
+            p0 = (cx + math.cos(a0) * r_in, cy + math.sin(a0) * r_in * squash)
+            p1 = (cx + math.cos(a) * r_out, cy + math.sin(a) * r_out * squash)
+            p2 = (cx + math.cos(a1) * r_in, cy + math.sin(a1) * r_in * squash)
+            _NS_vex._dpoly(surface, ramp[1], int(alpha * .55), [p0, p1, p2])
+            q0 = (cx + math.cos(a0) * r_in * .9,
+                  cy + math.sin(a0) * r_in * .9 * squash)
+            q1 = (cx + math.cos(a) * r_out * .74,
+                  cy + math.sin(a) * r_out * .74 * squash)
+            q2 = (cx + math.cos(a1) * r_in * .9,
+                  cy + math.sin(a1) * r_in * .9 * squash)
+            _NS_vex._dpoly(surface, ramp[0], alpha, [q0, q1, q2])
+
+    def _dither_disk(surface, cx, cy, rx, ry, color, alpha,
+                     phase=0.0, seed=0):
+        """Disk ground dither checkerboard — shading pixel-art murah;
+        grid dibatasi (<=8x16) sehingga aman di fx_scale 2.6x."""
+        if alpha <= 0 or rx < 4 or ry < 3:
+            return
+        cell = max(2, min(int(rx / 8.0), int(ry / 3.0)) or 2)
+        rows = max(2, min(8, int(ry * 2 // cell)))
+        for r in range(rows):
+            ty = -ry + (2 * r + 1) * ry / rows
+            hw = rx * math.sqrt(max(0.0, 1.0 - (ty / ry) ** 2))
+            cols = max(1, min(16, int(hw * 2 // cell)))
+            for c in range(cols):
+                if (r + c) % 2:
+                    continue
+                x = -hw + (2 * c + 1) * hw / cols
+                tw = _NS_vex._hash01(seed * 31 + r * 13 + c * 7
+                                     + int(phase * 3))
+                a = int(alpha * (.45 + .55 * tw))
+                if a <= 0:
+                    continue
+                pygame.draw.rect(
+                    surface, _NS_vex._rgba(color, a),
+                    (int(cx + x), int(cy + ty), cell, cell))
+
+    def _chain_link(surface, x, y, ang, w, h, color, alpha):
+        """Mata rantai astral: batang rotasi ber-stroke gelap + inti
+        lubang gelap — tether skill E."""
+        if alpha <= 0:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        x0, y0 = int(x - ca * w), int(y - sa * w)
+        x1, y1 = int(x + ca * w), int(y + sa * w)
+        pygame.draw.line(
+            surface, _NS_vex._rgba(_NS_vex.PALETTE["shadow_deep"], alpha * .8),
+            (x0, y0), (x1, y1), h + 2)
+        pygame.draw.line(surface, _NS_vex._rgba(color, alpha),
+                         (x0, y0), (x1, y1), h)
+        pygame.draw.line(
+            surface,
+            _NS_vex._rgba(_NS_vex.PALETTE["astral_darkest"], alpha),
+            (int(x - ca * w * .5), int(y - sa * w * .5)),
+            (int(x + ca * w * .5), int(y + sa * w * .5)), max(1, h - 2))
+
+    def _orbit_glints(surface, cx, cy, rx, ry, phase, n, color, alpha,
+                      hot=None):
+        """Titik kilau mengorbit elips dengan ekor 1px (kedalaman depan)."""
+        if alpha <= 0:
+            return
+        hot = hot or _NS_vex.PALETTE["white"]
+        for i in range(n):
+            a = phase + i * math.tau / n
+            depth = .6 + .4 * (math.sin(a) * .5 + .5)
+            gx = int(cx + math.cos(a) * rx)
+            gy = int(cy + math.sin(a) * ry)
+            al = int(alpha * depth)
+            tx = int(cx + math.cos(a - .35) * rx * .93)
+            ty = int(cy + math.sin(a - .35) * ry * .93)
+            pygame.draw.line(surface, _NS_vex._rgba(color, al * .6),
+                             (tx, ty), (gx, gy), 1)
+            pygame.draw.circle(surface, _NS_vex._rgba(color, al), (gx, gy), 2)
+            pygame.draw.circle(surface, _NS_vex._rgba(hot, al), (gx, gy), 1)
+
+
+    # ---------------------------------------------------------------------------
     # Void visual helpers
     # ---------------------------------------------------------------------------
 
@@ -10643,7 +10888,7 @@ class _NS_vex:
 
         def draw(self, surface, phase):
             p = _NS_vex.PALETTE
-            # Trail - layered void comet, with outline spline + fading cores.
+            # Trail comet berlapis: spline outline + core memudar + serbuk samping.
             trail = list(self.trail[-18:])
             if len(trail) >= 2:
                 for i in range(1, len(trail)):
@@ -10652,62 +10897,77 @@ class _NS_vex:
                     w = max(1, int(1 + 4 * t))
                     _skill_outlined_line(surface, trail[i - 1], trail[i],
                                          w, p["void_mid"], a)
-            for i, (tx, ty) in enumerate(trail):
+            for i, (tx_, ty_) in enumerate(trail):
                 t = (i + 1) / max(1, len(trail))
                 alpha = int(35 + 155 * t)
                 r = max(1, int(2 + 5 * t))
                 _NS_vex._aacircle(surface, (*p["void_darkest"], alpha // 2),
-                                  (tx, ty), r + 4)
+                                  (tx_, ty_), r + 4)
                 _NS_vex._aacircle(surface, (*p["void_mid"], alpha),
-                                  (tx, ty), r)
+                                  (tx_, ty_), r)
                 _NS_vex._aacircle(surface, (*p["void_bright"], alpha),
-                                  (tx, ty), max(1, r - 3))
+                                  (tx_, ty_), max(1, r - 3))
                 if i % 4 == 0:
                     side = self.angle + math.pi / 2
                     _NS_vex._aacircle(surface, (*p["void_hot"], alpha),
-                                      (tx + int(math.cos(side) * 5 * t),
-                                       ty + int(math.sin(side) * 5 * t)), 1)
+                                      (tx_ + int(math.cos(side) * 5 * t),
+                                       ty_ + int(math.sin(side) * 5 * t)), 1)
 
             if not self.alive:
                 fade = max(0.0, 1.0 - self.dead_frames / 8.0)
                 if fade > 0:
-                    cx, cy = int(self.x), int(self.y)
-                    _NS_vex._spark_star(surface, cx, cy, int(22 * fade),
+                    cx_, cy_ = int(self.x), int(self.y)
+                    _NS_vex._nova(surface, cx_, cy_, int(8 * fade),
+                                  int(24 * fade), 6, phase * 1.8,
+                                  (p["void_bright"], p["void_dark"]),
+                                  int(215 * fade))
+                    _NS_vex._spark_star(surface, cx_, cy_, int(20 * fade),
                                         p["void_bright"], int(210 * fade),
                                         spikes=8, rot=phase * 1.8,
                                         core=p["void_hot"])
                 return
 
             px, py = int(self.x), int(self.y)
-            # Forward smear and tip glint make projectile direction readable.
+            # Forward smear + inti garis (arah tetap terbaca).
             bx = px - int(math.cos(self.angle) * 20)
             by = py - int(math.sin(self.angle) * 20)
             fx = px + int(math.cos(self.angle) * 9)
             fy = py + int(math.sin(self.angle) * 9)
             _skill_outlined_line(surface, (bx, by), (fx, fy), 5,
                                  p["void_bright"], 125)
-            _skill_outlined_line(surface, (px - int(math.cos(self.angle) * 10),
-                                           py - int(math.sin(self.angle) * 10)),
+            _skill_outlined_line(surface,
+                                 (px - int(math.cos(self.angle) * 10),
+                                  py - int(math.sin(self.angle) * 10)),
                                  (fx, fy), 2, p["void_hot"], 220)
 
-            # Rotating rune particles around orb.
+            # Halo rune: dashed kontra-rotasi + 2 glyph + 2 bintang orbit.
             _NS_vex._dashed_ring(surface, px, py, 12, p["void_bright"], 210,
                                  phase * 2.8, segments=8, thick=2, span=.40)
             _NS_vex._dashed_ring(surface, px, py, 18, p["void_mid"], 125,
                                  -phase * 1.7, segments=10, thick=1, span=.28)
-            for i in range(4):
-                a = phase * 3 + i * math.pi / 2
+            for i in range(2):
+                a = phase * 3 + i * math.pi
                 rr = 10 + int(math.sin(phase * 4 + i) * 2)
-                sx = px + int(math.cos(a) * rr)
-                sy = py + int(math.sin(a) * rr)
-                _NS_vex._spark_star(surface, sx, sy, 5,
-                                    p["void_bright"], 210,
-                                    spikes=4, rot=a, core=p["void_hot"])
+                _NS_vex._rune_glyph(surface,
+                                    px + math.cos(a) * rr,
+                                    py + math.sin(a) * rr,
+                                    3, i + int(phase * 2),
+                                    p["void_bright"], 215, rot=a)
+                a2 = a + math.pi / 2
+                rr2 = 10 + int(math.sin(phase * 4 + i + 1) * 2)
+                _NS_vex._spark_star(surface,
+                                    px + int(math.cos(a2) * rr2),
+                                    py + int(math.sin(a2) * rr2), 5,
+                                    p["void_bright"], 210, spikes=4,
+                                    rot=a2, core=p["void_hot"])
 
-            # Main orb body, faceted with hot upper-left highlight.
+            # Badan orb faset + crescent specular kiri-atas + titik putih.
             _NS_vex._draw_glow_orb(surface, px, py, 8,
                                    p["void_dark"], p["void_mid"],
                                    p["void_hot"], p["void_white"])
+            _NS_vex._arc_band(surface, px, py, 6, 6,
+                              math.pi * .75, math.pi * 1.35,
+                              p["void_white"], 235, 1, 6)
             _NS_vex._aacircle(surface, p["white"], (px - 2, py - 2), 1)
             _NS_vex._spark_star(surface, fx, fy, 7,
                                 p["void_hot"], 240, spikes=4,
@@ -10786,10 +11046,9 @@ class _NS_vex:
 
         def draw(self, surface, phase):
             p = _NS_vex.PALETTE
-            # Prison bubble stage: keeps a luxurious E aftermath after impact.
+            # ── Tahap sangkar: aftermath mewah setelah impact ──
             if self.impact_frame >= 0:
                 elapsed = self.age - self.impact_frame
-                t = min(1.0, elapsed / 60.0)
                 if elapsed < 8:
                     grow = elapsed / 8
                 elif elapsed > 50:
@@ -10799,63 +11058,82 @@ class _NS_vex:
                 radius = int(34 * grow)
                 if radius < 3:
                     return
-                cx, cy = int(self.tx), int(self.ty)
+                cx_, cy_ = int(self.tx), int(self.ty)
                 pulse = .78 + .22 * math.sin(phase * 3.0)
-                # Ground rune circle and target ticks.
-                _skill_outlined_circle(surface, (cx, cy + 15), radius, 3,
+                # Footprint rune + tick + sigil ring.
+                _skill_outlined_circle(surface, (cx_, cy_ + 15), radius, 3,
                                        p["astral_mid"], int(150 * grow))
-                _NS_vex._dashed_ring(surface, cx, cy + 15, radius + 6,
-                                     p["astral_bright"], int(180 * pulse * grow),
-                                     phase * 1.7, segments=10, thick=2, span=.35)
+                _NS_vex._dashed_ring(surface, cx_, cy_ + 15, radius + 6,
+                                     p["astral_bright"],
+                                     int(180 * pulse * grow),
+                                     phase * 1.7, segments=10, thick=2,
+                                     span=.35)
+                _NS_vex._sigil_ring(surface, cx_, cy_ + 15, radius - 4,
+                                    -phase * 1.1,
+                                    (p["astral_bright"], p["astral_mid"],
+                                     p["astral_hot"]),
+                                    int(150 * grow), n=6, squash=.4,
+                                    seed=23, size=3)
                 for i in range(4):
                     a = i * math.pi / 2 + phase * .25
                     _NS_vex._chevron(surface,
-                                     cx + math.cos(a) * (radius + 9),
-                                     cy + 15 + math.sin(a) * (radius + 9) * .72,
+                                     cx_ + math.cos(a) * (radius + 9),
+                                     cy_ + 15 + math.sin(a) * (radius + 9) * .72,
                                      a + math.pi, 8, p["astral_hot"],
                                      int(170 * grow), 2)
-                # Vertical energy beam column.
-                top = max(3, cy - int(radius * 1.8))
+                # Kolom energi vertikal 3-lapis.
+                top = max(3, cy_ - int(radius * 1.8))
                 for wd, col, al in ((16, p["astral_dark"], 80),
                                     (8, p["astral_mid"], 130),
                                     (3, p["astral_bright"], 205)):
                     _NS_vex._aaline(surface, (*col, int(al * pulse * grow)),
-                                    (cx, top), (cx, cy + radius // 2), wd)
-                # Bubble sphere: glass arcs, not a solid blob.
+                                    (cx_, top), (cx_, cy_ + radius // 2), wd)
+                # Sangkar kaca: kubah glass + bar rune vertikal.
                 _NS_vex._aacircle(surface, (*p["astral_dark"], int(55 * grow)),
-                                  (cx, cy), radius)
-                _NS_vex._draw_arc_pair(surface, cx, cy, radius, radius,
-                                       .18, math.pi - .18,
-                                       p["astral_bright"], int(210 * pulse * grow),
-                                       2, 24)
-                _NS_vex._draw_arc_pair(surface, cx, cy, radius - 5, radius - 5,
-                                       math.pi + .25, math.tau - .25,
-                                       p["astral_light"], int(150 * pulse * grow),
-                                       2, 20)
-                _NS_vex._dashed_ring(surface, cx, cy, radius - 2,
+                                  (cx_, cy_), radius)
+                _NS_vex._arc_band(surface, cx_, cy_, radius, radius,
+                                  .18, math.pi - .18,
+                                  p["astral_bright"],
+                                  int(210 * pulse * grow), 2, 16)
+                _NS_vex._arc_band(surface, cx_, cy_, radius - 5, radius - 5,
+                                  math.pi + .25, math.tau - .25,
+                                  p["astral_light"],
+                                  int(150 * pulse * grow), 1, 14)
+                for i in range(5):
+                    a = phase * .4 + i * math.tau / 5
+                    depth = .55 + .45 * (math.sin(a) * .5 + .5)
+                    bx_ = int(cx_ + math.cos(a) * radius * .9)
+                    by_ = int(cy_ + math.sin(a) * radius * .34)
+                    h = int(radius * (.75 + .3 * depth))
+                    _skill_outlined_line(
+                        surface, (bx_, by_ + radius // 3), (bx_, by_ - h),
+                        2, p["astral_bright"] if depth > .8 else p["astral_mid"],
+                        int(200 * pulse * depth * grow))
+                _NS_vex._dashed_ring(surface, cx_, cy_, radius - 2,
                                      p["astral_hot"], int(175 * pulse * grow),
-                                     -phase * 1.9, segments=9, thick=1, span=.42)
-                # Bubble highlight and star flare.
+                                     -phase * 1.9, segments=9, thick=1,
+                                     span=.42)
                 _NS_vex._aacircle(surface, (*p["astral_hot"], int(180 * grow)),
-                                  (cx - radius // 2, cy - radius // 2),
+                                  (cx_ - radius // 2, cy_ - radius // 2),
                                   max(1, radius // 5))
                 if elapsed < 14:
-                    _NS_vex._spark_star(surface, cx, cy, int((22 - elapsed) * grow),
+                    _NS_vex._spark_star(surface, cx_, cy_,
+                                        int((22 - elapsed) * grow),
                                         p["astral_bright"], int(230 * grow),
                                         spikes=8, rot=phase, core=p["white"])
-                # Rising energy particles inside.
+                # Partikel energi naik di dalam sangkar.
                 for i in range(8):
                     pt = (phase * 0.4 + i * 0.125) % 1.0
                     py_off = int(-pt * radius * 1.6 + radius * 0.5)
                     px_off = int(math.sin(phase * 2 + i) * (radius // 3))
                     alpha = int(220 * (1 - pt) * grow)
                     _NS_vex._aacircle(surface, (*p["astral_hot"], alpha),
-                                      (cx + px_off, cy + py_off), 2)
+                                      (cx_ + px_off, cy_ + py_off), 2)
                     _NS_vex._aacircle(surface, p["white"],
-                                      (cx + px_off, cy + py_off), 1)
+                                      (cx_ + px_off, cy_ + py_off), 1)
                 return
 
-            # Trail: layered astral ribbon plus hot nodes.
+            # ── Tahap terbang: pita astral + orb black-hole berrune ──
             trail = list(self.trail[-16:])
             if len(trail) >= 2:
                 for i in range(1, len(trail)):
@@ -10863,18 +11141,17 @@ class _NS_vex:
                     _skill_outlined_line(surface, trail[i - 1], trail[i],
                                          max(1, int(1 + 3 * t)),
                                          p["astral_light"], int(55 + 150 * t))
-            for i, (tx, ty) in enumerate(trail):
+            for i, (tx_, ty_) in enumerate(trail):
                 t = (i + 1) / max(1, len(trail))
                 alpha = int(35 + 165 * t)
                 r = max(1, int(2 + 4 * t))
                 _NS_vex._aacircle(surface, (*p["astral_dark"], alpha // 2),
-                                  (tx, ty), r + 3)
+                                  (tx_, ty_), r + 3)
                 _NS_vex._aacircle(surface, (*p["astral_light"], alpha),
-                                  (tx, ty), r)
+                                  (tx_, ty_), r)
                 if i % 3 == 0:
-                    _NS_vex._aacircle(surface, p["white"], (tx, ty), 1)
+                    _NS_vex._aacircle(surface, p["white"], (tx_, ty_), 1)
 
-            # Traveling orb - astral black-hole with orbiting glints.
             if self.alive:
                 px, py = int(self.x), int(self.y)
                 bx = px - int(math.cos(self.angle) * 18)
@@ -10885,23 +11162,32 @@ class _NS_vex:
                                      p["astral_bright"], 140)
                 _NS_vex._dashed_ring(surface, px, py, 15,
                                      p["astral_bright"], 210,
-                                     phase * 2.8, segments=8, thick=2, span=.42)
+                                     phase * 2.8, segments=8, thick=2,
+                                     span=.42)
                 _NS_vex._dashed_ring(surface, px, py, 22,
                                      p["astral_mid"], 115,
-                                     -phase * 1.6, segments=10, thick=1, span=.28)
+                                     -phase * 1.6, segments=10, thick=1,
+                                     span=.28)
                 _NS_vex._aacircle(surface, (*p["astral_mid"], 205), (px, py), 12)
                 _NS_vex._aacircle(surface, (*p["astral_light"], 220), (px, py), 8)
                 _NS_vex._aacircle(surface, p["shadow_deep"], (px, py), 5)
                 _NS_vex._aacircle(surface, p["astral_darkest"], (px, py), 3)
                 _NS_vex._aacircle(surface, p["astral_hot"], (px - 2, py - 2), 2)
-                for i in range(4):
-                    a = phase * 4 + i * math.pi / 2
+                for i in range(2):
+                    a = phase * 4 + i * math.pi
                     rr = 10 + int(math.sin(phase * 3.4 + i) * 2)
-                    sx = px + int(math.cos(a) * rr)
-                    sy = py + int(math.sin(a) * rr)
-                    _NS_vex._spark_star(surface, sx, sy, 5,
-                                        p["astral_bright"], 220,
-                                        spikes=4, rot=a, core=p["astral_hot"])
+                    _NS_vex._rune_glyph(surface,
+                                        px + math.cos(a) * rr,
+                                        py + math.sin(a) * rr,
+                                        3, i * 2 + int(phase * 2),
+                                        p["astral_bright"], 220, rot=a)
+                    a2 = a + math.pi / 2
+                    rr2 = 10 + int(math.sin(phase * 3.4 + i + 1) * 2)
+                    _NS_vex._spark_star(surface,
+                                        px + int(math.cos(a2) * rr2),
+                                        py + int(math.sin(a2) * rr2), 5,
+                                        p["astral_bright"], 220, spikes=4,
+                                        rot=a2, core=p["astral_hot"])
                 _NS_vex._spark_star(surface, fx, fy, 7,
                                     p["astral_hot"], 245,
                                     spikes=4, rot=self.angle, core=p["white"])
@@ -11988,34 +12274,55 @@ class _NS_vex:
 
 
     # ===================================================================
-    # SKILL FX v2.1 — WORLD-SPACE, 3 FASE PER SKILL
+    # SKILL FX v3.0 — VOID ASTRAL CINEMATIC (world-space, 3 fase)
+    # -------------------------------------------------------------------
+    # Standar rewrite (setara disiplin rig masterwork):
+    #   * 100% primitif pygame — tanpa PNG / sprite sheet / image.load.
+    #   * Ramp 4-5 band + selout gelap di tiap telegraph supaya tetap
+    #     terbaca di terrain terang maupun gelap.
+    #   * 3 fase per skill: AKTIVASI (burst/pilar) -> STEADY (loop hidup:
+    #     rune berputar, shard faset, mote, accretion) -> RELEASE
+    #     (konvergen + fade). Semua deterministik dari (progress, phase).
+    #   * Radius gameplay dikompensasi 1/_render_scale (lihat _ring_r):
+    #     W tetap 60 px dunia, R tetap 180 px dunia di semua ukuran cache.
     # ===================================================================
     def _skill_progress(skill, timer):
         dur = float(_NS_vex.SKILL_VISUAL_DURATION.get(skill, max(1, timer or 1)))
         return max(0.0, min(1.0, 1.0 - float(timer) / dur))
 
+    def _skill_steady(progress, tail=5.0, floor=.25):
+        """Amplop fade akhir skill: plateau 1.0 lalu melandai ke floor."""
+        return max(floor, min(1.0, (1.0 - progress) * tail + .3))
+
 
     # ===================================================================
-    # SKILL Q: ARCANE ORB (line telegraph + charged staff projectile)
+    # SKILL Q: ARCANE ORB — arcane conduit + portal collapse
     # ===================================================================
     def _draw_arcane_orb_telegraph(surface, boss, x, y, timer, phase):
-        """Q ground/world telegraph: chevrons toward target + target ring."""
+        """Q ground FX v3: aperture iris di ujung staff, conduit beam
+        beralir energi (3 lapis + filament + paket + rune node), dan
+        portal collapse di target (iris petals + sigil + bracket)."""
         p = _NS_vex.PALETTE
         fs = _NS_vex._fx_scale(boss)
         progress = _NS_vex._skill_progress("q", timer)
+        steady = _NS_vex._skill_steady(progress)
         facing = getattr(boss, "direction", 1)
         sx, sy = _NS_vex._staff_orb_position(x, y, facing, phase, "idle", 0.0)
         tx, ty = _NS_vex._target_position(boss, x, y)
-        gy = y + int(60 * fs)
         pulse = math.sin(phase * 4.0) * .5 + .5
 
-        # ACTIVATION: staff burst + shockwave.
-        if progress < .22:
-            t = progress / .22
-            rr = int((16 + 54 * t) * fs)
+        # ── AKTIVASI: aperture iris + pilar cahaya di ujung staff ──
+        if progress < .20:
+            t = progress / .20
+            rr = int((14 + 58 * t) * fs)
             _skill_outlined_circle(surface, (sx, sy), rr, 3,
                                    p["void_light"], int(220 * (1 - t)))
-            _NS_vex._spark_star(surface, sx, sy, int(26 * fs * (1 - t * .4)),
+            if int(phase * 24) % 2 == 0:
+                _skill_outlined_circle(surface, (sx, sy),
+                                       max(4, int(rr * .55)), 2,
+                                       p["void_hot"], int(205 * (1 - t)))
+            _NS_vex._spark_star(surface, sx, sy,
+                                int(26 * fs * (1 - t * .4)),
                                 p["void_bright"], int(245 * (1 - t)),
                                 spikes=8, rot=phase, core=p["white"])
             top = max(3, sy - int(min(100 * fs, 220)))
@@ -12025,100 +12332,181 @@ class _NS_vex:
                 _NS_vex._aaline(surface, (*col, int(al * (1 - t))),
                                 (sx, top), (sx, sy), max(1, int(wd * fs * .45)))
 
-        # STEADY: readable segmented beam path.
+        # ── STEADY: conduit beam 12 segmen + filament + paket energi ──
         dx, dy = tx - sx, ty - sy
         dist = math.hypot(dx, dy) or 1.0
         ang = math.atan2(dy, dx)
         nx, ny = -dy / dist, dx / dist
-        for i in range(12):
+        pts = []
+        for i in range(13):
             t1 = i / 12.0
-            t2 = min(1.0, t1 + .055 + .02 * ((i + int(phase * 4)) % 2))
-            wob1 = math.sin(phase * 3.0 + i) * 3 * fs
-            wob2 = math.sin(phase * 3.0 + i + .7) * 3 * fs
-            a = (sx + dx * t1 + nx * wob1, sy + dy * t1 + ny * wob1)
-            b = (sx + dx * t2 + nx * wob2, sy + dy * t2 + ny * wob2)
-            _skill_outlined_line(surface, a, b, 2, p["void_light"],
-                                 int(120 + 70 * pulse))
-        # Chevron row, all arrows point to target.
+            wob = math.sin(phase * 3.0 + i * .8) * 3.2 * fs
+            pts.append((sx + dx * t1 + nx * wob, sy + dy * t1 + ny * wob))
+        beam_a = int((120 + 70 * pulse) * steady)
+        for i in range(12):
+            _NS_vex._beam3(surface, pts[i], pts[i + 1], 2,
+                           (p["void_light"], p["void_dark"], p["void_hot"]),
+                           beam_a)
+        for sgn in (-1, 1):
+            for i in range(0, 11, 3):
+                a_ = (pts[i][0] + nx * sgn * 5 * fs,
+                      pts[i][1] + ny * sgn * 5 * fs)
+                b_ = (pts[i + 2][0] + nx * sgn * 5 * fs,
+                      pts[i + 2][1] + ny * sgn * 5 * fs)
+                _skill_outlined_line(surface, a_, b_, 1,
+                                     p["void_dark"], int(85 * steady))
+        for k in range(3):
+            t = (progress * 1.7 + k / 3.0) % 1.0
+            wob = math.sin(phase * 3.0 + k * 2.1) * 3 * fs
+            ex = int(sx + dx * t + nx * wob)
+            ey = int(sy + dy * t + ny * wob)
+            _NS_vex._aacircle(surface, (*p["void_hot"], int(230 * steady)),
+                              (ex, ey), max(1, int(2.5 * fs)))
+            _NS_vex._aacircle(surface, p["white"], (ex, ey), 1)
+        for i, tt in enumerate((.25, .5, .75)):
+            _NS_vex._rune_glyph(surface, sx + dx * tt, sy + dy * tt,
+                                max(3, int(5 * fs)),
+                                i * 2 + int(phase * 2),
+                                p["void_bright"],
+                                int((150 + 70 * pulse) * steady), rot=ang)
         for i in range(4):
-            t = ((i + 1) / 5.0 + phase * .28) % 1.0
-            cx_ = sx + dx * t
-            cy_ = sy + dy * t
-            _NS_vex._chevron(surface, cx_, cy_, ang,
+            tt = ((i + 1) / 5.0 + phase * .28) % 1.0
+            _NS_vex._chevron(surface, sx + dx * tt, sy + dy * tt, ang,
                              max(8, int(10 * fs)), p["void_hot"],
-                             int(175 + 55 * pulse), 2)
-        # TELEGRAPH: target splat + converging ring.
+                             int((175 + 55 * pulse) * steady), 2)
+
+        # ── TELEGRAPH: portal collapse di target ──
         targ_r = max(12, int(22 * fs))
-        _skill_outlined_circle(surface, (tx, ty), targ_r + 5, 3,
-                               p["void_mid"], 150)
-        _NS_vex._dashed_ring(surface, tx, ty, targ_r + 11,
-                             p["void_bright"], int(160 + 60 * pulse),
-                             -phase * 1.1, segments=8, thick=2, span=.42)
-        conv = int((targ_r + 28 * fs) * (1.0 - (progress % .33) * 2.4))
-        if conv > targ_r:
-            _skill_outlined_circle(surface, (tx, ty), conv, 2,
-                                   p["void_hot"], 135)
-        # Ground glint under the target (world-space but clamped by tx/ty).
-        _NS_vex._ellipse(surface, (*p["void_darkest"], 82),
+        _NS_vex._ellipse(surface, (*p["void_darkest"], int(82 * steady)),
                          (int(tx - targ_r * 1.3), int(ty + 12 - targ_r * .32),
                           int(targ_r * 2.6), int(targ_r * .64)), 0)
+        _skill_outlined_circle(surface, (tx, ty), targ_r + 5, 3,
+                               p["void_mid"], int(150 * steady))
+        _skill_outlined_circle(surface, (tx, ty), targ_r, 4,
+                               p["void_light"],
+                               int((130 + 60 * pulse) * steady))
+        _NS_vex._dashed_ring(surface, tx, ty, targ_r + 11,
+                             p["void_bright"], int((160 + 60 * pulse) * steady),
+                             -phase * 1.1, segments=8, thick=2, span=.42)
+        _NS_vex._sigil_ring(surface, tx, ty, targ_r - int(4 * fs),
+                            phase * 1.3,
+                            (p["void_bright"], p["void_mid"], p["void_hot"]),
+                            int(160 * steady), n=6, squash=.55, seed=3,
+                            size=max(3, int(4.5 * fs)))
+        # Iris petals konvergen — diafragma menutup ke pusat portal.
+        conv = (targ_r + 26 * fs) * (1.0 - (progress % .33) * 2.2)
+        if conv > targ_r * .35:
+            for i in range(6):
+                a = phase * .9 + i * math.tau / 6
+                bx_ = tx + math.cos(a) * conv
+                by_ = ty + math.sin(a) * conv * .8
+                tipx = tx + math.cos(a) * conv * .45
+                tipy = ty + math.sin(a) * conv * .45 * .8
+                ex_ = -math.sin(a) * max(2, int(3 * fs))
+                ey_ = math.cos(a) * max(2, int(3 * fs)) * .8
+                _NS_vex._dpoly(surface, p["void_hot"], int(125 * steady),
+                               [(bx_ - ex_, by_ - ey_),
+                                (bx_ + ex_, by_ + ey_), (tipx, tipy)])
+        for da in (0, math.pi / 2, math.pi, math.pi * 1.5):
+            _skill_outlined_line(
+                surface,
+                (tx + math.cos(da) * (targ_r + 6),
+                 ty + math.sin(da) * (targ_r + 6) * .8),
+                (tx + math.cos(da) * (targ_r + 13 * fs),
+                 ty + math.sin(da) * (targ_r + 13 * fs) * .8),
+                2, p["void_bright"], int(150 * steady))
+        _NS_vex._draw_glow_orb(surface, tx, ty, max(3, int(5 * fs)),
+                               p["void_dark"], p["void_mid"], p["void_hot"],
+                               p["white"])
+        gy = y + int(60 * fs)
         if gy < surface.get_height():
-            _NS_vex._aacircle(surface, (*p["void_bright"], 110), (x, y),
-                              max(2, int(6 * fs)))
+            _NS_vex._aacircle(surface, (*p["void_bright"], int(110 * steady)),
+                              (x, y), max(2, int(6 * fs)))
 
 
     def _draw_arcane_orb_charge(surface, boss, x, y, timer, phase):
-        """Q foreground: charged staff aura + motes + release star."""
+        """Q foreground FX v3: aperture rune di staff, mote konvergen
+        berekor radial, busur energy acak, dan release star."""
         p = _NS_vex.PALETTE
         fs = _NS_vex._fx_scale(boss)
         progress = _NS_vex._skill_progress("q", timer)
+        steady = _NS_vex._skill_steady(progress)
         facing = getattr(boss, "direction", 1)
         tip_x, tip_y = _NS_vex._staff_orb_position(x, y, facing, phase,
-                                                    "attack", .52)
+                                                   "attack", .52)
         pulse = math.sin(phase * 5.0) * .5 + .5
 
-        # Orbiting motes converge to staff tip.
+        # Mote konvergen: titik + ekor radial menuju ujung staff.
         for i in range(12):
             t = (progress + i / 12.0 + phase * .08) % 1.0
             a = phase * 3.2 + i * math.tau / 12
-            r = (38 - 24 * progress) * fs * (0.75 + 0.25 * _NS_vex._hash01(i * 19))
-            px = tip_x + int(math.cos(a) * r)
-            py = tip_y + int(math.sin(a) * r * .82)
-            alpha = int((120 + 110 * pulse) * (1.0 - t * .45))
-            _NS_vex._aacircle(surface, (*p["void_mid"], alpha), (px, py), max(1, int(3 * fs)))
-            _NS_vex._aacircle(surface, (*p["void_hot"], alpha), (px, py), max(1, int(1.4 * fs)))
-        # Counter-rotating rune rings around the orb.
+            r = (38 - 24 * progress) * fs * (0.75 + 0.25 *
+                                             _NS_vex._hash01(i * 19))
+            px = int(tip_x + math.cos(a) * r)
+            py = int(tip_y + math.sin(a) * r * .82)
+            alpha = int((120 + 110 * pulse) * (1.0 - t * .45) * steady)
+            _NS_vex._aacircle(surface, (*p["void_mid"], alpha),
+                              (px, py), max(1, int(3 * fs)))
+            _NS_vex._aacircle(surface, (*p["void_hot"], alpha),
+                              (px, py), max(1, int(1.4 * fs)))
+            tail = max(2, int(4 * fs))
+            pygame.draw.line(
+                surface, _NS_vex._rgba(p["void_bright"], alpha * .7),
+                (px, py),
+                (int(px + (tip_x - px) * tail / max(1.0, r)),
+                 int(py + (tip_y - py) * tail / max(1.0, r))), 1)
+        # Aperture: sigil ring kontra-rotasi + dashed ganda.
+        _NS_vex._sigil_ring(surface, tip_x, tip_y, int(20 * fs),
+                            -phase * 1.5,
+                            (p["void_bright"], p["void_mid"], p["void_hot"]),
+                            int(175 * steady), n=5, squash=.9, seed=7,
+                            size=max(2, int(3.4 * fs)))
         _NS_vex._dashed_ring(surface, tip_x, tip_y, int(22 * fs),
-                             p["void_bright"], int(170 + 45 * pulse),
+                             p["void_bright"], int((170 + 45 * pulse) * steady),
                              phase * 1.7, segments=9, thick=2, span=.45)
         _NS_vex._dashed_ring(surface, tip_x, tip_y, int(13 * fs),
-                             p["void_hot"], int(150 + 50 * pulse),
+                             p["void_hot"], int((150 + 50 * pulse) * steady),
                              -phase * 1.4, segments=7, thick=1, span=.55)
+        # Busur energy sesekali melompat dari mote ke orb.
+        for i in range(3):
+            if _NS_vex._hash01(i * 53 + int(phase * 9)) > .62:
+                a = phase * 3.2 + i * math.tau / 3
+                r = 26 * fs
+                _NS_vex._energy_arc(surface,
+                                    tip_x + math.cos(a) * r,
+                                    tip_y + math.sin(a) * r * .82,
+                                    tip_x, tip_y, i + int(phase * 9),
+                                    p["void_bright"], int(190 * steady),
+                                    width=1, wobble=4 * fs)
         if progress > .42:
             t = min(1.0, (progress - .42) / .24)
-            _NS_vex._spark_star(surface, tip_x, tip_y, int((18 + 18 * t) * fs),
+            _NS_vex._spark_star(surface, tip_x, tip_y,
+                                int((18 + 18 * t) * fs),
                                 p["void_light"], int(230 * (1 - t * .35)),
-                                spikes=8, rot=phase * 2.0, core=p["void_white"])
+                                spikes=8, rot=phase * 2.0,
+                                core=p["void_white"])
 
 
     # ===================================================================
-    # SKILL E: ASTRAL IMPRISONMENT
+    # SKILL E: ASTRAL IMPRISONMENT — rantai astral + sangkar collapsar
     # ===================================================================
     def _draw_astral_indicator(surface, boss, x, y, timer, pulse):
-        """E telegraph: tether staff->target + prison rune rings."""
+        """E ground FX v3: rantai astral staff->target (mata rantai +
+        sag + pulsa), footprint rune circle, crosshair, bracket, dan
+        pilar aktivasi dengan hujan rune."""
         p = _NS_vex.PALETTE
         fs = _NS_vex._fx_scale(boss)
         progress = _NS_vex._skill_progress("e", timer)
+        steady = _NS_vex._skill_steady(progress)
         tx, ty = _NS_vex._target_position(boss, x, y)
-        sx, sy = _NS_vex._staff_orb_position(x, y, getattr(boss, "direction", 1),
-                                              pulse, "attack", .45)
+        sx, sy = _NS_vex._staff_orb_position(
+            x, y, getattr(boss, "direction", 1), pulse, "attack", .45)
         dx, dy = tx - sx, ty - sy
         dist = math.hypot(dx, dy) or 1.0
         ang = math.atan2(dy, dx)
-        nx, ny = -dy / dist, dx / dist
         wave = math.sin(pulse * 4.5) * .5 + .5
 
-        # ACTIVATION: star and a vertical astral pillar at target.
+        # ── AKTIVASI: pilar astral + hujan rune + star ──
         if progress < .18:
             t = progress / .18
             h = int(min(130 * fs, 230) * (1 - .25 * t))
@@ -12129,48 +12517,93 @@ class _NS_vex:
                 _NS_vex._aaline(surface, (*col, int(al * (1 - t))),
                                 (tx, top), (tx, ty + int(16 * fs)),
                                 max(1, int(wd * fs * .42)))
-            _NS_vex._spark_star(surface, tx, ty, int(28 * fs * (1 - t * .3)),
+            for i in range(3):
+                ry = ty - h * (.35 + .55 * _NS_vex._hash01(i * 37))
+                _NS_vex._rune_glyph(
+                    surface,
+                    tx + int((_NS_vex._hash01(i * 41) - .5) * 12 * fs),
+                    int(ry), max(2, int(3.5 * fs)), i * 3 + 1,
+                    p["astral_bright"], int(235 * (1 - t)),
+                    rot=pulse + i)
+            _NS_vex._spark_star(surface, tx, ty,
+                                int(28 * fs * (1 - t * .3)),
                                 p["astral_bright"], int(245 * (1 - t)),
                                 spikes=8, rot=pulse, core=p["astral_hot"])
 
-        # Segmented tether with deterministic sine wobble.
-        for i in range(14):
-            t1 = i / 14.0
-            t2 = min(1.0, t1 + .045)
-            wob1 = math.sin(pulse * 3.3 + i * .8) * 4 * fs
-            wob2 = math.sin(pulse * 3.3 + i * .8 + .5) * 4 * fs
-            a = (sx + dx * t1 + nx * wob1, sy + dy * t1 + ny * wob1)
-            b = (sx + dx * t2 + nx * wob2, sy + dy * t2 + ny * wob2)
-            _skill_outlined_line(surface, a, b, 2,
-                                 p["astral_light"], int(145 + 55 * wave))
+        # ── STEADY: rantai mata-rantai dengan sag sinus ──
+        links = 9
+        link_pts = []
+        nx_, ny_ = -dy / dist, dx / dist
+        for i in range(links + 1):
+            t1 = i / float(links)
+            sag = math.sin(t1 * math.pi) * 6 * fs
+            wob = math.sin(pulse * 3.3 + i * .8) * 3 * fs
+            link_pts.append((sx + dx * t1 + nx_ * (wob + sag),
+                             sy + dy * t1 + ny_ * (wob + sag)))
+        for i in range(links):
+            mx = (link_pts[i][0] + link_pts[i + 1][0]) * .5
+            my = (link_pts[i][1] + link_pts[i + 1][1]) * .5
+            la = math.atan2(link_pts[i + 1][1] - link_pts[i][1],
+                            link_pts[i + 1][0] - link_pts[i][0])
+            _NS_vex._chain_link(surface, mx, my, la,
+                                max(4, int(6 * fs)), max(2, int(3 * fs)),
+                                p["astral_light"],
+                                int((160 + 55 * wave) * steady))
+            if i % 3 == 0:
+                _NS_vex._aacircle(surface, (*p["astral_hot"],
+                                            int(220 * steady)),
+                                  (int(mx), int(my)), 1)
+        for i in range(2):
+            t = (i * .5 + pulse * .5) % 1.0
+            _NS_vex._aacircle(surface, p["white"],
+                              (int(sx + dx * t), int(sy + dy * t)), 1)
         for i in range(3):
             t = (i / 3.0 + pulse * .44) % 1.0
             _NS_vex._chevron(surface, sx + dx * t, sy + dy * t,
-                             ang, int(12 * fs), p["astral_hot"], 190, 2)
+                             ang, int(12 * fs), p["astral_hot"],
+                             int(190 * steady), 2)
 
-        # TELEGRAPH: target prison footprint + converging ring.
+        # ── TELEGRAPH: footprint penjara + sigil + crosshair + bracket ──
         r = max(12, int(30 * fs))
-        _skill_outlined_circle(surface, (tx, ty), r, 3, p["astral_mid"], 180)
+        _skill_outlined_circle(surface, (tx, ty), r, 3, p["astral_mid"],
+                               int(180 * steady))
         _skill_outlined_circle(surface, (tx, ty), max(3, r - int(8 * fs)), 2,
-                               p["astral_light"], 205)
+                               p["astral_light"], int(205 * steady))
         _NS_vex._dashed_ring(surface, tx, ty, r + int(8 * fs),
-                             p["astral_bright"], int(165 + 50 * wave),
+                             p["astral_bright"],
+                             int((165 + 50 * wave) * steady),
                              pulse * 1.2, segments=10, thick=2, span=.42)
+        _NS_vex._sigil_ring(surface, tx, ty, r - int(4 * fs), pulse * .9,
+                            (p["astral_bright"], p["astral_mid"],
+                             p["astral_hot"]),
+                            int(150 * steady), n=6, squash=.55, seed=11,
+                            size=max(3, int(4.5 * fs)))
         conv = int((r + 40 * fs) * (1.0 - (progress % .28) * 2.7))
         if conv > r:
             _skill_outlined_circle(surface, (tx, ty), conv, 2,
-                                   p["astral_hot"], 130)
-        # Crosshair ticks.
+                                   p["astral_hot"], int(130 * steady))
         for da in (0, math.pi / 2, math.pi, math.pi * 1.5):
-            _NS_vex._aaline(surface, (*p["astral_hot"], 190),
-                            (int(tx + math.cos(da) * (r + 2)),
-                             int(ty + math.sin(da) * (r + 2))),
-                            (int(tx + math.cos(da) * (r + 13 * fs)),
-                             int(ty + math.sin(da) * (r + 13 * fs))), 2)
+            _skill_outlined_line(
+                surface,
+                (tx + math.cos(da) * (r + 2),
+                 ty + math.sin(da) * (r + 2) * .8),
+                (tx + math.cos(da) * (r + 13 * fs),
+                 ty + math.sin(da) * (r + 13 * fs) * .8),
+                2, p["astral_hot"], int(190 * steady))
+        for k in range(4):
+            a = math.pi / 4 + k * math.pi / 2
+            _skill_outlined_line(
+                surface,
+                (tx + math.cos(a) * (r + 9 * fs),
+                 ty + math.sin(a) * (r + 9 * fs) * .8),
+                (tx + math.cos(a) * (r + 16 * fs),
+                 ty + math.sin(a) * (r + 16 * fs) * .8),
+                2, p["astral_light"], int(140 * steady))
 
 
     def _handle_astral_skill(surface, boss, x, y, timer, phase):
-        """E foreground: prison bubble + optional renderer projectile."""
+        """E foreground FX v3: sangkar kaca collapsar — bar rune vertikal
+        depan/belakang, kubah glass, shard orbit, mote naik, anchor flare."""
         p = _NS_vex.PALETTE
         fs = _NS_vex._fx_scale(boss)
         progress = _NS_vex._skill_progress("e", timer)
@@ -12187,157 +12620,284 @@ class _NS_vex:
         pulse = .78 + math.sin(phase * 2.4) * .18
         if radius <= 4:
             return
-        # Glass dome: upper/lower arcs + inner aura.
+
+        # ── FOOTPRINT: rune circle di dasar sangkar ──
+        _NS_vex._ellipse(surface, (*p["astral_darkest"], int(48 * pulse)),
+                         (int(tx - radius * 1.05), int(ty + radius * .28),
+                          int(radius * 2.1), int(radius * .7)), 0)
+        _NS_vex._dashed_ring(surface, tx, ty + radius * .42,
+                             int(radius * 1.05), p["astral_mid"],
+                             int(140 * pulse), phase * .8, segments=10,
+                             thick=2, span=.4)
+        _NS_vex._sigil_ring(surface, tx, ty + radius * .42,
+                            int(radius * .8), -phase * .7,
+                            (p["astral_bright"], p["astral_mid"],
+                             p["astral_hot"]),
+                            int(150 * pulse), n=6, squash=.4, seed=5,
+                            size=max(2, int(3 * fs)))
+
+        # ── BAR RUNE (belakang kubah -> kubah -> bar depan) ──
+        def _cage_bar(a):
+            depth = .55 + .45 * (math.sin(a) * .5 + .5)
+            bx = int(tx + math.cos(a) * radius * .92)
+            by = int(ty + math.sin(a) * radius * .36)
+            h = int(radius * (.8 + .3 * depth))
+            col = p["astral_bright"] if depth > .8 else p["astral_mid"]
+            al = int(200 * pulse * depth)
+            _skill_outlined_line(surface,
+                                 (bx, by + int(radius * .38)),
+                                 (bx, by - h), 2, col, al)
+            _NS_vex._aacircle(surface, (*p["astral_hot"], al), (bx, by - h), 1)
+            _NS_vex._aacircle(surface, (*p["astral_light"], al),
+                              (bx, by + int(radius * .38)), 1)
+
+        for i in range(7):
+            a = phase * .45 + i * math.tau / 7
+            if math.sin(a) < 0:
+                _cage_bar(a)
+
+        # ── KUBAH GLASS: isi + 2 band arc + dashed equator ──
         _NS_vex._aacircle(surface, (*p["astral_dark"], int(52 * pulse)),
                           (tx, ty), radius)
-        for off, al, wd in ((0, 200, 2), (5, 135, 2), (10, 82, 1)):
-            _NS_vex._draw_arc_pair(surface, tx, ty, radius - off, radius - off,
-                                   .18, math.pi - .18, p["astral_bright"],
-                                   int(al * pulse), wd, 24)
-        _NS_vex._draw_arc_pair(surface, tx, ty, radius - 4, radius - 4,
-                               math.pi + .2, math.tau - .2, p["astral_mid"],
-                               int(150 * pulse), 1, 22)
-        _NS_vex._dashed_ring(surface, tx, ty, radius - 2,
-                             p["astral_bright"], int(180 * pulse),
-                             phase * 1.8, segments=10, thick=2, span=.35)
-        # Rising motes inside bubble.
+        _NS_vex._arc_band(surface, tx, ty, radius, radius,
+                          .18, math.pi - .18, p["astral_bright"],
+                          int(200 * pulse), 2, 20)
+        _NS_vex._arc_band(surface, tx, ty, radius - 4, radius - 4,
+                          math.pi + .2, math.tau - .2, p["astral_mid"],
+                          int(150 * pulse), 1, 18)
+        _NS_vex._dashed_ring(surface, tx, ty, radius - 2, p["astral_bright"],
+                             int(180 * pulse), phase * 1.8, segments=10,
+                             thick=2, span=.35)
+
+        for i in range(7):
+            a = phase * .45 + i * math.tau / 7
+            if math.sin(a) >= 0:
+                _cage_bar(a)
+
+        # ── SHARD ORBIT + MOTE NAIK + ANCHOR FLARE ──
+        for i in range(5):
+            a = phase * 1.6 + i * math.tau / 5
+            depth = .6 + .4 * (math.sin(a) * .5 + .5)
+            _NS_vex._crystal_shard(
+                surface,
+                tx + math.cos(a) * radius * .8,
+                ty + math.sin(a) * radius * .3 - radius * .35,
+                max(2, int(2.2 * fs)), int((7 + 5 * depth) * fs * envelope),
+                .5 + .2 * math.sin(phase + i),
+                (p["astral_darkest"], p["astral_mid"], p["astral_bright"],
+                 p["astral_hot"]),
+                int(190 * pulse * depth))
         for i in range(8):
             t = (phase * .38 + i / 8.0) % 1.0
             mx = tx + int(math.sin(phase * 2 + i) * radius * .42)
             my = ty + int(radius * .45) - int(t * radius * 1.3)
-            _NS_vex._aacircle(surface, (*p["astral_hot"], int(210 * (1 - t))),
+            _NS_vex._aacircle(surface,
+                              (*p["astral_hot"], int(210 * (1 - t) * pulse)),
                               (mx, my), max(1, int(2 * fs)))
             _NS_vex._aacircle(surface, p["white"], (mx, my), 1)
+        _NS_vex._shard_glint(surface, tx, ty - radius, p["astral_hot"],
+                             int(200 * pulse), max(2, int(3 * fs)))
+        _NS_vex._shard_glint(surface, tx, ty + int(radius * .45),
+                             p["astral_light"], int(130 * pulse),
+                             max(2, int(2 * fs)))
 
 
     # ===================================================================
-    # SKILL W: SANITY'S ECLIPSE (world-space spike field)
+    # SKILL W: SANITY'S ECLIPSE — gerhana void + mahkota kristal
     # ===================================================================
     def _draw_sanity_eclipse_ground(surface, boss, x, y, timer, phase):
-        """W ground: 60 world-px AOE ring, cracks, chevrons inward."""
+        """W ground FX v3: disk dither + ring 60 px dunia presisi, rune
+        kontra-rotasi, retakan zigzag, chevron masuk, dan GERHANA —
+        disc void menutup corona seiring progress."""
         p = _NS_vex.PALETTE
         fs = _NS_vex._fx_scale(boss)
         progress = _NS_vex._skill_progress("w", timer)
+        steady = _NS_vex._skill_steady(progress)
         pulse = math.sin(phase * 3.0) * .5 + .5
         rng = _NS_vex._ring_r(boss, 60, surface)
         gy = y + int(56 * fs)
 
-        # ACTIVATION: double shockwave + star.
+        # ── AKTIVASI: ground slam ellipse + shockwave ganda + star ──
         if progress < .18:
             t = progress / .18
+            _NS_vex._ellipse(surface, (*p["void_mid"], int(70 * (1 - t))),
+                             (int(x - rng * .8 * t - 6),
+                              int(gy - rng * .22),
+                              int(rng * 1.6 * t + 12),
+                              int(rng * .44 * t + 6)), 0)
             for k, mul in enumerate((1.0, .68)):
                 rr = int((14 + rng * mul * t))
-                _skill_outlined_circle(surface, (x, y), rr, 3,
-                                       p["void_light"] if k == 0 else p["void_mid"],
-                                       int((225 if k == 0 else 160) * (1 - t)))
-            _NS_vex._spark_star(surface, x, y, int(30 * fs * (1 - t * .35)),
+                _skill_outlined_circle(
+                    surface, (x, y), rr, 3,
+                    p["void_light"] if k == 0 else p["void_mid"],
+                    int((225 if k == 0 else 160) * (1 - t)))
+            _NS_vex._spark_star(surface, x, y,
+                                int(30 * fs * (1 - t * .35)),
                                 p["void_bright"], int(245 * (1 - t)),
                                 spikes=8, rot=phase, core=p["white"])
 
-        # STEADY: ground disk, exact world radius ring, counter-runes.
-        _NS_vex._ellipse(surface, (*p["void_darkest"], int(92 + 38 * pulse)),
+        # ── STEADY: disk dither + ring presisi + rune kontra ──
+        _NS_vex._dither_disk(surface, x, gy, int(rng * .66), int(rng * .2),
+                             p["void_darkest"],
+                             int((70 + 35 * pulse) * steady),
+                             phase=phase, seed=17)
+        _NS_vex._ellipse(surface,
+                         (*p["void_darkest"], int((60 + 30 * pulse) * steady)),
                          (int(x - rng * .68), int(gy - rng * .18),
                           int(rng * 1.36), int(rng * .36)), 0)
         _skill_outlined_circle(surface, (x, y), rng, 4,
-                               p["void_light"], int(130 + 60 * pulse))
+                               p["void_light"],
+                               int((130 + 60 * pulse) * steady))
         _NS_vex._dashed_ring(surface, x, y, int(rng * .86),
-                             p["void_bright"], int(155 + 45 * pulse),
+                             p["void_bright"],
+                             int((155 + 45 * pulse) * steady),
                              phase * 1.25, segments=12, thick=3, span=.36)
-        _NS_vex._dashed_ring(surface, x, y, int(rng * .58),
-                             p["void_mid"], int(130 + 45 * pulse),
-                             -phase * 1.1, segments=9, thick=2, span=.45)
-        # TELEGRAPH: converging ring and inward chevrons.
+        _NS_vex._sigil_ring(surface, x, gy, int(rng * .58), -phase * .8,
+                            (p["void_bright"], p["void_mid"], p["void_hot"]),
+                            int((125 + 45 * pulse) * steady), n=8,
+                            squash=.34, seed=9, size=max(2, int(3.6 * fs)))
+
+        # ── GERHANA: "matahari hitam" melayang di atas caster — corona
+        # void ditutup disc shadow seiring progress (diamond ring flare).
+        if progress > .10:
+            ec_y = y - int(118 * fs)
+            r_e = max(9, int(15 * fs))
+            cov = min(1.0, (progress - .10) / .5)
+            for k, (rr_, al) in enumerate((
+                    (r_e + 7, 55), (r_e + 3, 100), (r_e + 1, 150))):
+                _NS_vex._aacircle(surface,
+                                  (*p["void_darkest" if k == 0 else
+                                    "void_dark" if k == 1 else "void_mid"],
+                                   int(al * steady)),
+                                  (x, ec_y), rr_)
+            # Rim corona tegas (selout gelap + garis terang).
+            _skill_outlined_circle(surface, (x, ec_y), r_e + 2, 1,
+                                   p["void_light"], int(160 * steady))
+            # Sinar corona pendek 6 arah saat gerhana menutup.
+            if cov > .35:
+                for i in range(6):
+                    a = i * math.tau / 6 + .3
+                    _NS_vex._aaline(
+                        surface, (*p["void_mid"], int(105 * steady)),
+                        (int(x + math.cos(a) * (r_e + 4)),
+                         int(ec_y + math.sin(a) * (r_e + 4) * .9)),
+                        (int(x + math.cos(a) * (r_e + 11)),
+                         int(ec_y + math.sin(a) * (r_e + 11) * .9)), 1)
+            _NS_vex._aacircle(surface, (*p["void_light"],
+                                        int((120 + 60 * pulse) * steady)),
+                              (x, ec_y), max(2, r_e - 2))
+            # Occluder bergeser masuk lalu menutup penuh (diamond ring).
+            off = (1.0 - cov) * 2.0 * r_e
+            _NS_vex._aacircle(surface, p["shadow_deep"],
+                              (int(x + off), ec_y), int(r_e * .94))
+            _NS_vex._aacircle(surface, p["shadow"],
+                              (int(x + off), ec_y), max(2, int(r_e * .7)))
+            if .3 < cov < .95:
+                _NS_vex._shard_glint(surface, x - r_e, ec_y - r_e * .3,
+                                     p["void_bright"], int(220 * steady),
+                                     max(2, int(3 * fs)), core=True)
+
+        # ── TELEGRAPH: ring konvergen + chevron masuk + retakan ──
         conv = max(10, int(rng * (1.0 - (progress % .25) * 3.1)))
         _skill_outlined_circle(surface, (x, y), conv, 3,
-                               p["void_hot"], int(150 + 60 * pulse))
+                               p["void_hot"],
+                               int((150 + 60 * pulse) * steady))
         for da in (0, math.pi / 2, math.pi, math.pi * 1.5):
             _NS_vex._chevron(surface,
                              x + math.cos(da) * rng * .68,
                              y + math.sin(da) * rng * .56,
                              da + math.pi, max(9, int(10 * fs)),
-                             p["void_hot"], 190, 3)
-        # Deterministic jagged cracks in ground plane.
+                             p["void_hot"], int(190 * steady), 3)
         for i in range(5):
             ang = i * math.tau / 5 + .25
             _NS_vex._jagged_crack(surface, x, gy, ang,
                                   int((22 + (i % 3) * 8) * fs),
                                   (p["void_darkest"], p["void_mid"]),
-                                  int(130 + 40 * pulse), i + 41, width=2)
+                                  int((130 + 40 * pulse) * steady),
+                                  i + 41, width=2)
 
 
     def _draw_sanity_eclipse(surface, boss, x, y, timer, phase):
-        """W foreground: two rows of void crystals + motes + glints."""
+        """W foreground FX v3: portal inti accretion mini, mahkota kristal
+        faset 2 baris (rotasi lambat + specular), mote jiwa tersedot
+        spiral masuk, dan glint orbit."""
         p = _NS_vex.PALETTE
         fs = _NS_vex._fx_scale(boss)
         progress = _NS_vex._skill_progress("w", timer)
+        steady = _NS_vex._skill_steady(progress)
         pulse = math.sin(phase * 4.2) * .5 + .5
         rng = _NS_vex._ring_r(boss, 60, surface)
         gy = y + int(56 * fs)
+        ramp = (p["void_darkest"], p["void_mid"], p["void_bright"],
+                p["void_hot"])
 
-        # Portal core.
-        _NS_vex._aacircle(surface, (*p["shadow_deep"], 230), (x, gy), int(12 * fs))
-        _NS_vex._aacircle(surface, (*p["void_darkest"], 220), (x, gy), int(8 * fs))
-        _NS_vex._aacircle(surface, (*p["void_mid"], 120), (x, gy), int(5 * fs))
+        # Portal core dengan accretion mini.
+        _NS_vex._aacircle(surface, (*p["shadow_deep"], 230), (x, gy),
+                          int(13 * fs))
+        _NS_vex._aacircle(surface, (*p["void_darkest"], 220), (x, gy),
+                          int(9 * fs))
+        _NS_vex._aacircle(surface, (*p["void_mid"], int(120 + 40 * pulse)),
+                          (x, gy), int(5 * fs))
+        _NS_vex._arc_band(surface, x, gy, int(16 * fs), int(6 * fs),
+                          math.pi * 1.05, math.tau * .98,
+                          p["void_mid"], int(150 + 40 * pulse), 1, 12)
 
+        # Mahkota kristal: 2 baris shard faset, tumbuh lalu berputar pelan.
         spike_grow = min(1.0, max(0.0, (progress - .12) / .30))
-        rows = ((16, rng * .96, 22), (10, rng * .58, 14))
+        rows = ((14, rng * .96, 24), (9, rng * .58, 15))
         for count, rad, height_base in rows:
             for i in range(count):
-                ang = phase * (0.18 if count == 18 else -0.22) + i * math.tau / count
-                bx = x + int(math.cos(ang) * rad)
-                by = gy + int(math.sin(ang) * rad * .34)
+                ang = phase * (0.18 if count == 14 else -0.22) \
+                    + i * math.tau / count
+                bx = x + math.cos(ang) * rad
+                by = gy + math.sin(ang) * rad * .34
                 h = int((height_base + (i % 4) * 4) * fs * spike_grow)
                 if h < 3:
                     continue
-                w = max(2, int((4 if count == 18 else 3) * fs))
-                _NS_vex._poly(surface, p["void_darkest"], [
-                    (bx - w, by + 3), (bx + w, by + 3),
-                    (bx + max(1, w - 1), by - h + 4),
-                    (bx, by - h - int(4 * fs)),
-                    (bx - max(1, w - 1), by - h + 4)])
-                _NS_vex._poly(surface, p["void_dark"], [
-                    (bx - w + 1, by + 2), (bx + w - 1, by + 2),
-                    (bx + 1, by - h + 5), (bx, by - h - int(2 * fs)),
-                    (bx - 1, by - h + 5)])
-                _NS_vex._poly(surface, p["void_mid"], [
-                    (bx - max(1, w - 2), by + 1),
-                    (bx + max(1, w - 2), by + 1),
-                    (bx, by - h + 6)])
-                _NS_vex._aaline(surface, p["void_bright"],
-                                (bx - 1, by - h + 5), (bx - 1, by + 1), 1)
-                _NS_vex._aacircle(surface, p["void_hot"], (bx, by - h), 1)
-        # Rising motes and glint orbit.
+                _NS_vex._crystal_shard(
+                    surface, bx, by,
+                    max(2, int((4 if count == 14 else 3) * fs)), h,
+                    .18 * math.sin(ang * 2 + i), ramp,
+                    int((160 + 55 * pulse) * steady),
+                    glint=1 if i % 4 == 0 else 0)
+        # Mote jiwa spiral masuk — tersedot ke portal.
         for i in range(10):
-            t = (phase * .36 + i / 10.0) % 1.0
-            ang = _NS_vex._hash01(i * 29) * math.tau
-            rr = rng * (.25 + .7 * _NS_vex._hash01(i * 31))
-            mx = x + int(math.cos(ang) * rr)
-            my = gy + int(math.sin(ang) * rr * .34) - int(t * 42 * fs)
-            alpha = int(210 * (1 - t))
-            _NS_vex._aacircle(surface, (*p["void_bright"], alpha), (mx, my), max(1, int(2 * fs)))
+            t = (phase * .34 + i / 10.0) % 1.0
+            ang = _NS_vex._hash01(i * 29) * math.tau + phase * .5 + t * 1.2
+            rr = rng * (.85 - .75 * t)
+            mx = int(x + math.cos(ang) * rr)
+            my = int(gy + math.sin(ang) * rr * .34 - t * 10 * fs)
+            alpha = int(215 * (1 - t) * steady)
+            pygame.draw.line(
+                surface, _NS_vex._rgba(p["void_bright"], alpha * .5),
+                (mx, my),
+                (int(mx + math.cos(ang + .8) * 5),
+                 int(my + math.sin(ang + .8) * 2)), 1)
+            _NS_vex._aacircle(surface, (*p["void_bright"], alpha),
+                              (mx, my), max(1, int(2 * fs)))
             if i % 3 == 0:
                 _NS_vex._aacircle(surface, p["white"], (mx, my), 1)
-        for i in range(6):
-            a = phase * 2.4 + i * math.tau / 6
-            gx = int(x + math.cos(a) * rng * .55)
-            gy2 = int(y + math.sin(a) * rng * .28)
-            _NS_vex._aacircle(surface, p["void_hot"], (gx, gy2), 2)
-            _NS_vex._aacircle(surface, p["white"], (gx, gy2), 1)
+        _NS_vex._orbit_glints(surface, x, y, int(rng * .55), int(rng * .28),
+                              phase * 2.4, 6, p["void_hot"],
+                              int(200 * steady), hot=p["white"])
 
 
     # ===================================================================
-    # SKILL R: ESSENCE FLUX (ultimate world-space burst)
+    # SKILL R: ESSENCE FLUX — event horizon + accretion (ultimate)
     # ===================================================================
     def _draw_essence_flux_ground(surface, boss, x, y, timer, phase):
-        """R ground: 180 world-px ultimate ring + magma/void cracks."""
+        """R ground FX v3: ring ultimate 180 px dunia presisi (rim ganda
+        magma+gold), rune gold berputar, retakan magma, chevron masuk,
+        bracket kompas, dan pilar aktivasi 4-lapis."""
         p = _NS_vex.PALETTE
         fs = _NS_vex._fx_scale(boss)
         progress = _NS_vex._skill_progress("r", timer)
+        steady = _NS_vex._skill_steady(progress)
         pulse = math.sin(phase * 2.8) * .5 + .5
         rng = _NS_vex._ring_r(boss, 180, surface)
         gy = y + int(58 * fs)
 
-        # ACTIVATION: pillar of light, double shockwave, star.
+        # ── AKTIVASI: pilar 4-lapis + shockwave triple + nova ──
         if progress < .20:
             t = progress / .20
             height = int(min(150 * fs, 240) * (1.0 - .35 * t))
@@ -12347,115 +12907,203 @@ class _NS_vex:
                                 (12, p["void_mid"], 205),
                                 (5, p["void_hot"], 245)):
                 _NS_vex._aaline(surface, (*col, int(al * (1 - t))),
-                                (x, top), (x, gy), max(1, int(wd * fs * .42)))
-            for k, mul in enumerate((1.0, .58)):
+                                (x, top), (x, gy),
+                                max(1, int(wd * fs * .42)))
+            for k, mul in enumerate((1.0, .58, .30)):
                 rr = int((18 + rng * mul * t))
-                _skill_outlined_circle(surface, (x, y), rr, 4,
-                                       p["void_magma"] if k == 0 else p["void_hot"],
-                                       int((235 if k == 0 else 165) * (1 - t)))
-            _NS_vex._spark_star(surface, x, y, int(38 * fs * (1 - t * .25)),
+                _skill_outlined_circle(
+                    surface, (x, y), rr, 4,
+                    p["void_magma"] if k == 0 else
+                    (p["void_hot"] if k == 1 else p["void_gold"]),
+                    int((235 if k == 0 else
+                         (165 if k == 1 else 130)) * (1 - t)))
+            _NS_vex._spark_star(surface, x, y,
+                                int(38 * fs * (1 - t * .25)),
                                 p["void_hot"], int(250 * (1 - t)),
                                 spikes=10, rot=phase, core=p["white"])
+            _NS_vex._nova(surface, x, y, int(10 * fs),
+                          int((46 + 60 * t) * fs), 8, phase * .2,
+                          (p["void_magma"], p["void_gold"]),
+                          int(210 * (1 - t)))
 
-        # STEADY: exact gameplay AOE ring + rotating rune rings.
-        # AOE rim is drawn as a ring instead of a huge filled ellipse to keep
-        # cache-miss cost low while preserving the exact world radius.
+        # ── STEADY: rim ganda presisi + rune gold + dashed kontra ──
         _skill_outlined_circle(surface, (x, y), rng, 5,
-                               p["void_magma"], int(110 + 55 * pulse))
+                               p["void_magma"],
+                               int((110 + 55 * pulse) * steady))
+        _skill_outlined_circle(surface, (x, y), max(6, rng - int(7 * fs)), 2,
+                               p["void_gold"],
+                               int((120 + 50 * pulse) * steady))
         _NS_vex._dashed_ring(surface, x, y, int(rng * .84),
-                             p["void_hot"], int(150 + 60 * pulse),
+                             p["void_hot"],
+                             int((150 + 60 * pulse) * steady),
                              phase * 1.5, segments=10, thick=3, span=.30)
         _NS_vex._dashed_ring(surface, x, y, int(rng * .58),
-                             p["astral_bright"], int(125 + 45 * pulse),
+                             p["astral_bright"],
+                             int((125 + 45 * pulse) * steady),
                              -phase * 1.0, segments=8, thick=2, span=.42)
-        # TELEGRAPH: ring konvergen besar.
+        _NS_vex._sigil_ring(surface, x, gy, int(rng * .95), phase * .5,
+                            (p["void_gold_hot"], p["void_gold"],
+                             p["void_hot"]),
+                            int((130 + 50 * pulse) * steady), n=10,
+                            squash=.3, seed=13,
+                            size=max(3, int(4.2 * fs)))
+        # TELEGRAPH: ring konvergen besar + bracket kompas gold.
         conv = max(18, int(rng * (1.0 - (progress % .28) * 2.6)))
         _skill_outlined_circle(surface, (x, y), conv, 3,
-                               p["void_hot"], int(135 + 55 * pulse))
-        # Jagged cracks radial (magma seam) — deterministic.
+                               p["void_hot"],
+                               int((135 + 55 * pulse) * steady))
+        for da in (0, math.pi / 2, math.pi, math.pi * 1.5):
+            a0 = da - .12
+            _NS_vex._arc_band(surface, x, y, rng + int(10 * fs),
+                              int((rng + int(10 * fs)) * .3),
+                              a0, a0 + .24, p["void_gold"],
+                              int(150 * steady), 2, 4)
         for i in range(6):
             ang = i * math.tau / 6 + .18
             ln = int((42 + (i % 3) * 18) * fs)
             _NS_vex._jagged_crack(surface, x, gy, ang, ln,
                                   (p["shadow_deep"], p["void_magma"]),
-                                  int(150 + 45 * pulse), i + 71, width=3)
+                                  int((150 + 45 * pulse) * steady),
+                                  i + 71, width=3)
         for i in range(6):
             a = phase * .55 + i * math.tau / 6
             _NS_vex._chevron(surface,
                              x + math.cos(a) * rng * .62,
                              y + math.sin(a) * rng * .50,
                              a + math.pi, max(10, int(12 * fs)),
-                             p["void_hot"], 170, 3)
+                             p["void_hot"], int(170 * steady), 3)
 
 
     def _draw_essence_flux(surface, boss, x, y, timer, phase):
-        """R foreground: void nova, spiral wisps, ember columns."""
+        """R foreground FX v3: black hole ber-photon-ring, piringan
+        accretion miring (band gold+magma depan/belakang), arc lensing,
+        nova + ray burst, wisps spiral, ember column, dan glint orbit."""
         p = _NS_vex.PALETTE
         fs = _NS_vex._fx_scale(boss)
         progress = _NS_vex._skill_progress("r", timer)
+        steady = _NS_vex._skill_steady(progress)
         pulse = math.sin(phase * 5.0) * .5 + .5
         rng = _NS_vex._ring_r(boss, 180, surface)
         envelope = min(1.0, progress * 5.0, (1.0 - progress) * 3.0 + .45)
+        cx_ = x
+        cy_ = y - int(8 * fs)
 
-        # Central black-hole core and pulse.
-        core_r = int((16 + 7 * pulse) * fs * max(.5, envelope))
-        _NS_vex._aacircle(surface, (*p["shadow_deep"], 240), (x, y - int(8 * fs)), core_r + 3)
-        _NS_vex._aacircle(surface, (*p["void_darkest"], 230), (x, y - int(8 * fs)), core_r)
-        _NS_vex._aacircle(surface, (*p["void_mid"], int(150 * envelope)),
-                          (x, y - int(8 * fs)), max(3, core_r - 5))
-        _NS_vex._aacircle(surface, (*p["void_hot"], int(220 * envelope)),
-                          (x, y - int(8 * fs)), max(2, core_r - 9))
+        # ── ACCRETION BAND BELAKANG (terlihat di atas core) ──
+        disc_r = int((30 + 14 * pulse) * fs * max(.55, envelope))
+        _NS_vex._arc_band(surface, cx_, cy_, disc_r, disc_r * .34,
+                          math.pi + .25, math.tau - .25,
+                          p["void_gold"], int(150 * envelope), 2, 14)
+        _NS_vex._arc_band(surface, cx_, cy_, int(disc_r * .8),
+                          int(disc_r * .3),
+                          math.pi + .35, math.tau - .35,
+                          p["void_magma"], int(120 * envelope), 1, 12)
 
-        # Star/ray burst after activation. Lines are used instead of many
-        # alpha polygons so the ultimate remains cache-miss friendly.
-        if progress > .18:
-            t = min(1.0, (progress - .18) / .50)
-            for i in range(8):
-                angle = i * math.tau / 8 + phase * .08
-                ray_len = int((34 + t * 70) * fs * (1.25 if i % 2 == 0 else .85))
-                tip = (x + math.cos(angle) * ray_len,
-                       y - int(8 * fs) + math.sin(angle) * ray_len * .82)
-                alpha = int(190 * (1 - t * .58) * envelope)
-                _skill_outlined_line(surface, (x, y - int(8 * fs)), tip,
-                                     max(2, int(4 * fs)), p["void_magma"], alpha)
-                if i % 2 == 0:
-                    _NS_vex._aacircle(surface, (*p["void_hot"], alpha),
-                                      (int(tip[0]), int(tip[1])), 2)
-
-        # Spiral wisps and ember columns (steady aura).
+        # ── WISPS SPIRAL (di belakang inti — stream accretion) ──
+        # ── WISPS SPIRAL + EMBER COLUMN + GLINT ORBIT ──
         for arm in (0, math.pi):
             prev = None
             for j in range(9):
                 t = j / 8.0
                 a = arm + phase * 1.9 + t * math.tau * .82
                 r = (16 + t * min(rng * .42, 95 * fs))
-                px = int(x + math.cos(a) * r)
-                py = int(y - int(12 * fs) + math.sin(a) * r * .46 - t * 42 * fs)
+                px = int(cx_ + math.cos(a) * r)
+                py = int(cy_ - int(4 * fs) + math.sin(a) * r * .46
+                         - t * 42 * fs)
                 if prev:
                     _skill_outlined_line(surface, prev, (px, py), 1,
-                                         p["void_bright"], int(125 * (1 - t) * envelope))
+                                         p["void_bright"],
+                                         int(125 * (1 - t) * envelope))
                 prev = (px, py)
                 if j % 4 == 0:
-                    _NS_vex._aacircle(surface, (*p["void_hot"], int(170 * (1 - t) * envelope)),
-                                      (px, py), max(1, int(2 * fs)))
+                    _NS_vex._aacircle(
+                        surface,
+                        (*p["void_hot"], int(170 * (1 - t) * envelope)),
+                        (px, py), max(1, int(2 * fs)))
+
+        # ── INTI BLACK HOLE: disc hitam pekat + photon ring ganda ──
+        core_r = int((16 + 7 * pulse) * fs * max(.5, envelope))
+        _NS_vex._aacircle(surface, (*p["shadow_deep"], 240), (cx_, cy_),
+                          core_r + 3)
+        _NS_vex._aacircle(surface, (*p["void_darkest"], 230), (cx_, cy_),
+                          core_r)
+        # Horizon: pusat HITAM total (opaque), cahaya hanya di rim.
+        _NS_vex._aacircle(surface, p["shadow_deep"], (cx_, cy_),
+                          max(2, core_r - 3))
+        _skill_outlined_circle(surface, (cx_, cy_), max(3, core_r - 1), 2,
+                               p["void_hot"], int(225 * envelope))
+        _skill_outlined_circle(surface, (cx_, cy_), core_r + 2, 1,
+                               p["void_gold"], int(200 * envelope))
+
+        # ── ACCRETION BAND DEPAN (menyilang bawah core) ──
+        _NS_vex._arc_band(surface, cx_, cy_, disc_r, disc_r * .34,
+                          .25, math.pi - .25,
+                          p["void_gold_hot"], int(200 * envelope), 2, 14)
+        _NS_vex._arc_band(surface, cx_, cy_, int(disc_r * .82),
+                          int(disc_r * .3),
+                          .35, math.pi - .35,
+                          p["void_magma"], int(170 * envelope), 2, 12)
+        for i in range(3):
+            a = .8 + i * .7 + phase * .9
+            gx_ = int(cx_ + math.cos(a) * disc_r)
+            gy_ = int(cy_ + math.sin(a) * disc_r * .34)
+            _NS_vex._aacircle(surface, p["void_gold_hot"], (gx_, gy_), 1)
+
+        # ── ARC LENSING tipis di atas & bawah ──
+        _NS_vex._arc_band(surface, cx_, cy_, int(disc_r * 1.5),
+                          int(disc_r * .55),
+                          math.pi + .5, math.tau - .5,
+                          p["void_light"], int(95 * envelope), 1, 12)
+        _NS_vex._arc_band(surface, cx_, cy_, int(disc_r * 1.5),
+                          int(disc_r * .55),
+                          .5, math.pi - .5,
+                          p["void_light"], int(95 * envelope), 1, 12)
+
+        # ── NOVA + RAY BURST setelah aktivasi ──
+        if progress > .18:
+            t = min(1.0, (progress - .18) / .50)
+            _NS_vex._nova(surface, cx_, cy_, int(disc_r * .9),
+                          int((34 + t * 66) * fs), 8, phase * .08,
+                          (p["void_magma"], p["void_gold"]),
+                          int(180 * (1 - t * .55) * envelope))
+            for i in range(8):
+                angle = i * math.tau / 8 + phase * .08
+                ray_len = int((34 + t * 70) * fs *
+                              (1.25 if i % 2 == 0 else .85))
+                # Ray mulai dari tepi core agar disc black hole tetap
+                # pekat — bukan dari pusatnya.
+                ox = cx_ + math.cos(angle) * (core_r + 2)
+                oy = cy_ + math.sin(angle) * (core_r + 2) * .9
+                tip = (cx_ + math.cos(angle) * ray_len,
+                       cy_ + math.sin(angle) * ray_len * .82)
+                alpha = int(190 * (1 - t * .58) * envelope)
+                _skill_outlined_line(surface, (int(ox), int(oy)),
+                                     (int(tip[0]), int(tip[1])),
+                                     max(2, int(4 * fs)),
+                                     p["void_magma"], alpha)
+                if i % 2 == 0:
+                    _NS_vex._aacircle(surface, (*p["void_hot"], alpha),
+                                      (int(tip[0]), int(tip[1])), 2)
+
         for i in range(10):
             t = (phase * .32 + i / 10.0) % 1.0
             a = i * math.tau / 10 + math.sin(phase * .5) * .12
-            r = min(rng * .55, 100 * fs) * (.35 + .65 * _NS_vex._hash01(i * 23))
+            r = min(rng * .55, 100 * fs) * (.35 + .65 *
+                                            _NS_vex._hash01(i * 23))
             px = int(x + math.cos(a) * r)
             py = int(y + math.sin(a) * r * .32 + 40 * fs - t * 92 * fs)
             alpha = int(195 * (1 - t) * envelope)
-            col = p["void_magma"] if i % 3 == 0 else p["void_bright"]
-            _NS_vex._aacircle(surface, (*col, alpha), (px, py), max(1, int(2 * fs)))
+            col = p["void_magma"] if i % 3 == 0 else (
+                p["void_gold"] if i % 3 == 1 else p["void_bright"])
+            _NS_vex._aacircle(surface, (*col, alpha), (px, py),
+                              max(1, int(2 * fs)))
             if i % 4 == 0:
                 _NS_vex._aacircle(surface, p["white"], (px, py), 1)
-        # Orbit glints at outer steady ring.
-        for i in range(12):
-            a = phase * 1.35 + i * math.tau / 12
-            gr = int(min(rng * .72, 130 * fs))
-            gx = int(x + math.cos(a) * gr)
-            gy = int(y - int(4 * fs) + math.sin(a) * gr * .42)
-            _NS_vex._aacircle(surface, p["void_hot"], (gx, gy), 1)
+        _NS_vex._orbit_glints(
+            surface, x, y - int(4 * fs),
+            int(min(rng * .72, 130 * fs)),
+            int(min(rng * .72, 130 * fs) * .42),
+            phase * 1.35, 12, p["void_hot"], int(200 * steady),
+            hot=p["void_gold_hot"])
 
 
     # ===================================================================
