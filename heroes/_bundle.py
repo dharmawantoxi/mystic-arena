@@ -6175,6 +6175,54 @@ class _NS_kaizen:
     ATTACK_SWING_END = 0.72
     ATTACK_IMPACT = 0.54
 
+    # ── jembatan ke lapisan FX hidup (heroes/kaizen_fx.py) ──────────
+    _LIVE_MOD = None
+
+    class _LiveFlag:
+        """Penanda sederhana yang bisa di-set dari fungsi static."""
+        __slots__ = ("v",)
+
+        def __init__(self):
+            self.v = False
+
+    #: Dibaca rig: True = smear/ayunan sudah diambil alih lapisan hidup
+    #: 60fps, jadi canvas tidak menggambarnya dua kali.
+    _FX_LIVE = _LiveFlag()
+
+    @staticmethod
+    def _live_module():
+        """Muat ``heroes.kaizen_fx`` sekali; None kalau tidak tersedia.
+
+        Impor dilakukan DI SINI (bukan di kepala modul) supaya bundle
+        hero besar tidak menarik paket FX saat build hanya-butuh-
+        renderer, dan supaya lapisan FX bisa dimatikan lewat satu flag
+        tanpa merusak jalur render (pola yang sama dengan _NS_grimjaw).
+        """
+        NS = _NS_kaizen
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import kaizen_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "KAIZEN_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    @staticmethod
+    def _fx_live_owned(hero):
+        """True kalau lapisan hidup mengambil alih FX unit ini.
+
+        Dipakai untuk memutuskan apakah smear ayunan di-canvas masih
+        perlu digambar (fallback) atau sudah digantikan lapisan layar.
+        """
+        try:
+            mod = _NS_kaizen._live_module()
+            if mod is None:
+                return False
+            return bool(mod.owns(hero))
+        except Exception:
+            return False
+
     def _static(key, builder):
         surf = _NS_kaizen._STATIC_SURFACES.get(key)
         if surf is None:
@@ -6796,6 +6844,11 @@ class _NS_kaizen:
             p for p in boss._kz_projectiles if p.alive or p.dead_frames < 8]
 
     def _spawn_wind_slash(boss, x, y):
+        # Lapisan FX hidup (heroes/kaizen_fx.py) memiliki proyektil unit
+        # ini: jalur canvas TIDAK boleh menumpuk sabit yang tidak pernah
+        # digambar/di-update (_manage_projectiles ikut dilewati).
+        if getattr(boss, "_skip_renderer_projectiles", False):
+            return
         if not hasattr(boss, "_kz_projectiles"):
             boss._kz_projectiles = []
         tx, ty = _NS_kaizen._target_position(boss, x, y)
@@ -6926,6 +6979,24 @@ class _NS_kaizen:
         moving = _NS_kaizen._detect_moving(boss)
         _NS_kaizen._update_attack_anim(boss)
         portrait_hd = bool(getattr(boss, "_portrait_hd", False))
+
+        # ═══ LAPISAN FX HIDUP (heroes/kaizen_fx.py) ═══
+        # Pasang director layar untuk unit ini.  Penanda ``owned`` juga
+        # memberi tahu rig bahwa smear ayunan + sabit angin di-canvas
+        # sudah digantikan lapisan 60fps (tidak dobel).  Portrait tidak
+        # pernah dipasang: potret hanya berisi rig.  Jalur HERO lane
+        # menggambar lapisannya lewat heroes/__init__ (_LIVE_FX_HEROES),
+        # attach di sini hanya memastikan penanda konsisten sejak frame
+        # pertama supaya cache sprite tidak pernah membeku dobel-FX.
+        if not portrait_hd:
+            try:
+                mod = _NS_kaizen._live_module()
+                if mod is not None:
+                    mod.attach(boss)
+            except Exception:
+                pass
+        _NS_kaizen._FX_LIVE.v = (not portrait_hd) and \
+            _NS_kaizen._fx_live_owned(boss)
 
         attacking = (
             getattr(boss, "_kz_attack_active", False)
@@ -7671,10 +7742,14 @@ class _NS_kaizen:
         tx, ty = hx + ux * length, hy + uy * length
         px, py = -uy, ux
 
-        # smear DULU (di bawah bilah)
+        # smear DULU (di bawah bilah).  Kalau lapisan FX hidup memiliki
+        # unit ini, jejak ujung-bilah digambar OLEHNYA di layar 60fps —
+        # canvas hanya menyisakan sabit pose (anchor di tangan) supaya
+        # tidak ada efek yang dobel.
         if attacking and smear > 0.05:
-            _NS_kaizen._draw_katana_swing_trail(
-                surface, cx, cy, f, phase, progress)
+            if not _NS_kaizen._FX_LIVE.v:
+                _NS_kaizen._draw_katana_swing_trail(
+                    surface, cx, cy, f, phase, progress)
             # sabit 3-band tambahan di jendela IMPACT (px putih sian)
             start = A - 1.15 * max(0.6, flare)
             for radius, color, width in (
