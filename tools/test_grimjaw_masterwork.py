@@ -194,20 +194,25 @@ def test_skill_visuals_render_with_masterwork():
 def test_skill_fx_are_world_space():
     """Efek skill TIDAK menyusut bersama sprite: kompensasi 1/_render_scale.
 
-    Ring AOE Q (Blade Fury) harus berada di radius DUNIA skill_range=70
-    dari hero, yaitu 70/_render_scale px di canvas. Di-render pada dua
-    _render_scale (1.0 dan 0.45): sampling lingkaran di radius tersebut
-    harus menemukan ring di keduanya. Tanpa kompensasi, pada fs=0.45
-    ring akan menggambar di radius 70 px canvas (bukan 155) -> 0 hit.
+    Marker AOE Q (Blade Fury) versi ANGULAR (tick radial + bracket sudut,
+    bukan cincin kontinu) tetap menandai radius DUNIA skill_range=70 dari
+    hero, yaitu 70/_render_scale px di canvas. Di-render pada dua
+    _render_scale (1.0 dan 0.45): sampling pita di sekitar radius tersebut
+    harus menemukan spike marker di keduanya. Tanpa kompensasi, pada
+    fs=0.45 marker akan menggambar di radius 70 px canvas (bukan 155)
+    -> ~0 hit hangat di pita 155.
     """
     import math as _m
     from heroes._bundle import _NS_grimjaw as G
+
+    def warm(c):
+        return c.a > 80 and c[0] > 140 and c[0] - c[2] > 70 and c[1] < 230
 
     def render(fs):
         surf = pygame.Surface((760, 760), pygame.SRCALPHA)
         h = _ProbeEntity("grimjaw", 380, 420)
         h.pulse = 1.3
-        h.active_skill = "q"          # Blade Fury, steady -> ring penuh
+        h.active_skill = "q"          # Blade Fury, steady -> marker penuh
         h.active_skill_timer = 100    # progress 0.44 (fasa steady)
         h.skill_range = 70
         h.target = _ProbeEntity("dummy", 520, 405)
@@ -216,22 +221,25 @@ def test_skill_fx_are_world_space():
         G.draw_grimjaw(surf, h, 380, 420)
         return surf
 
-    def hits_at_radius(surf, r_px):
+    def warm_hits_in_band(surf, r_px, band=12):
         cx, cy = 380, 420
         hits = 0
         for a in range(0, 360, 2):
-            x = int(cx + _m.cos(_m.radians(a)) * r_px)
-            y = int(cy + _m.sin(_m.radians(a)) * r_px)
-            if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
-                    and surf.get_at((x, y)).a > 40:
-                hits += 1
+            ca, sa = _m.cos(_m.radians(a)), _m.sin(_m.radians(a))
+            for dk in range(-band, band + 1):
+                x = int(cx + ca * (r_px + dk))
+                y = int(cy + sa * (r_px + dk))
+                if 0 <= x < surf.get_width() and 0 <= y < surf.get_height() \
+                        and warm(surf.get_at((x, y))):
+                    hits += 1
+                    break
         return hits
 
     for fs in (1.0, 0.45):
         s = render(fs)
         r_px = int(70 / fs)           # 70 dunia -> px canvas
-        n = hits_at_radius(s, r_px)
-        assert n > 90, (f"ring AOE Q tidak di radius dunia 70 saat "
+        n = warm_hits_in_band(s, r_px)
+        assert n > 10, (f"marker AOE Q tidak di radius dunia 70 saat "
                         f"fs={fs} (dapat {n}/180 hit) -> bukan world-space")
 
 

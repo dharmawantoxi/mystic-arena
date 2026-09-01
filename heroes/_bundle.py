@@ -116,6 +116,10 @@ class _NS_grimjaw:
     _SCRATCH_POOL = {}
     _OMNI_BUF = {}
 
+    # Durasi visual skill (frame @60fps) — renderer memakai ini untuk
+    # progress FX, BUKAN timer gameplay (lihat hero_skills GrimjawSkills).
+    SKILL_VISUAL_DURATION = {"q": 180, "w": 90, "e": 60, "r": 90}
+
     # ---------------------------------------------------------------------------
     # HD Color Palette - "Masterwork v2"
     # Semua kunci lama dipertahankan (renderer/test lain memakai), nilai
@@ -520,6 +524,306 @@ class _NS_grimjaw:
                     out.append((px - nx * d * 0.45, py - ny * d * 0.45))
             out.append((bx, by))
         return out
+
+    # ---------------------------------------------------------------------------
+    # SKILL FX PRIMITIVES v3 (rich pass — dipinjam dari kosakata Thorne/Gorath
+    # dan diadaptasi ke tema api Grimjaw: rune sigil, band arc, nova petal,
+    # shard kristal, dither disk, beam 3-lapis, energy arc, glint orbit).
+    # Semua deterministik (hash) dan tanpa alokasi surface berlebih.
+    # ---------------------------------------------------------------------------
+    def _rgba(color, alpha):
+        """Warna RGBA ter-clamp untuk pemanggilan pygame.draw langsung."""
+        return (*_NS_grimjaw._clamp(color), max(0, min(255, int(alpha))))
+
+    def _dpoly(surface, color, alpha, points):
+        """Polygon RGBA fast-path: langsung blend ke canvas SRCALPHA."""
+        if len(points) < 3 or alpha <= 0:
+            return
+        pts = [(int(px), int(py)) for px, py in points]
+        pygame.draw.polygon(surface, _NS_grimjaw._rgba(color, alpha), pts)
+
+    def _arc_band(surface, cx, cy, rx, ry, a0, a1, color, alpha,
+                  width=2, segments=14):
+        """Arc elips ringan tanpa alokasi surface (rim / band cahaya)."""
+        if alpha <= 0 or rx <= 1 or ry <= 1:
+            return
+        col = _NS_grimjaw._rgba(color, alpha)
+        prev = None
+        span = a1 - a0
+        for i in range(segments + 1):
+            a = a0 + span * i / segments
+            pt = (int(cx + math.cos(a) * rx), int(cy + math.sin(a) * ry))
+            if prev is not None:
+                pygame.draw.line(surface, col, prev, pt, max(1, width))
+            prev = pt
+
+    def _rune_glyph(surface, x, y, size, kind, color, alpha, rot=0.0):
+        """Mikro-rune prosedural (5 varian, 1-3 goresan): wajik, palang,
+        siku ganda, segitiga, silang — bata penyusun cincin sigil."""
+        if alpha <= 0 or size < 2:
+            return
+        col = _NS_grimjaw._rgba(color, alpha)
+        ca, sa = math.cos(rot), math.sin(rot)
+
+        def P(dx, dy):
+            return (int(x + (dx * ca - dy * sa) * size),
+                    int(y + (dx * sa + dy * ca) * size))
+
+        k = int(kind) % 5
+        if k == 0:      # wajik
+            pygame.draw.polygon(surface, col,
+                                [P(-.5, 0), P(0, -.6), P(.5, 0), P(0, .6)])
+        elif k == 1:    # palang + titik
+            pygame.draw.line(surface, col, P(-.5, 0), P(.5, 0), 1)
+            pygame.draw.circle(surface, col, P(0, -.45), 1)
+        elif k == 2:    # siku ganda
+            pygame.draw.line(surface, col, P(-.45, -.35), P(-.1, .35), 1)
+            pygame.draw.line(surface, col, P(.1, -.35), P(.45, .35), 1)
+        elif k == 3:    # segitiga
+            pygame.draw.polygon(surface, col, [P(-.5, .4), P(.5, .4), P(0, -.5)])
+        else:           # silang
+            pygame.draw.line(surface, col, P(-.4, -.4), P(.4, .4), 1)
+            pygame.draw.line(surface, col, P(.4, -.4), P(-.4, .4), 1)
+
+    def _sigil_ring(surface, cx, cy, radius, phase, ramp, alpha,
+                    n=8, squash=.6, seed=0, size=5):
+        """Cincin sigil 3/4-view: deretan rune mengorbit sambil berputar.
+        Glyph sisi depan (sin>0) lebih besar & terang — kedalaman palsu
+        tanpa surface ekstra. ramp = (bright, mid, hot)."""
+        if alpha <= 0 or radius < 5:
+            return
+        for i in range(n):
+            a = phase + i * math.tau / n
+            depth = .55 + .45 * (math.sin(a) * .5 + .5)
+            gx = cx + math.cos(a) * radius
+            gy = cy + math.sin(a) * radius * squash
+            col = ramp[1] if depth < .82 else ramp[0]
+            _NS_grimjaw._rune_glyph(surface, gx, gy,
+                                    max(2, int(size * (.8 + .35 * depth))),
+                                    i * 3 + seed + int(phase * 2),
+                                    col, int(alpha * depth), rot=a + math.pi / 2)
+            if i % 2 == 0:
+                pygame.draw.circle(
+                    surface, _NS_grimjaw._rgba(ramp[2], alpha * .75 * depth),
+                    (int(gx), int(gy)), 1)
+
+    def _shard_glint(surface, x, y, color, alpha, size=3, core=False):
+        """Kilau silang 4 arah 1px untuk ujung shard / pole anchor."""
+        if alpha <= 0:
+            return
+        col = _NS_grimjaw._rgba(color, alpha)
+        xi, yi = int(x), int(y)
+        s = max(1, int(size))
+        pygame.draw.line(surface, col, (xi - s, yi), (xi + s, yi), 1)
+        pygame.draw.line(surface, col, (xi, yi - s), (xi, yi + s), 1)
+        if core:
+            pygame.draw.circle(
+                surface, _NS_grimjaw._rgba(_NS_grimjaw.PALETTE["white"], alpha),
+                (xi, yi), 1)
+
+    def _crystal_shard(surface, bx, by, w, h, ang, ramp, alpha, glint=0):
+        """Shard kristal faset: siluet gelap 5 titik, faset kiri key-light,
+        rim kanan (selout terang), specular 1px, ujung menyala.
+        ramp = (dark, mid, bright, hot)."""
+        if alpha <= 0 or h < 3:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+
+        def P(dx, dy):
+            return (int(bx + dx * ca - dy * sa), int(by + dx * sa + dy * ca))
+
+        base_l, base_r = P(-w, 3), P(w, 3)
+        sho_l, sho_r = P(-w * .45, -h * .55), P(w * .45, -h * .55)
+        tip = P(0, -h)
+        _NS_grimjaw._dpoly(surface, ramp[0], alpha,
+                           [base_l, base_r, sho_r, tip, sho_l])
+        _NS_grimjaw._dpoly(surface, ramp[1], alpha,
+                           [base_l, P(0, 3), P(0, -h * .8), sho_l])
+        _skill_outlined_line(surface, sho_r, tip, 1, ramp[2], int(alpha * .9))
+        _skill_outlined_line(surface, base_r, sho_r, 1, ramp[2], int(alpha * .7))
+        pygame.draw.line(surface,
+                         _NS_grimjaw._rgba(ramp[3], min(255, alpha + 30)),
+                         P(-w * .5, -h * .35), P(-w * .2, -h * .6), 1)
+        if glint:
+            _NS_grimjaw._shard_glint(surface, tip[0], tip[1], ramp[3],
+                                     int(alpha * .8), max(2, w), core=True)
+
+    def _beam3(surface, a, b, width, ramp, alpha):
+        """Beam 3-lapis: stroke gelap -> badan mid -> inti hot.
+        ramp = (body_mid, halo_dark, core_hot)."""
+        if alpha <= 0:
+            return
+        _skill_outlined_line(surface, a, b, width + 2, ramp[1], int(alpha * .55))
+        _skill_outlined_line(surface, a, b, width, ramp[0], alpha)
+        if width >= 2:
+            pygame.draw.line(
+                surface, _NS_grimjaw._rgba(ramp[2], min(255, alpha + 40)),
+                (int(a[0]), int(a[1])), (int(b[0]), int(b[1])),
+                max(1, width - 2))
+
+    def _energy_arc(surface, x0, y0, x1, y1, seed, color, alpha,
+                    width=1, wobble=5.0):
+        """Busur energi zigzag deterministik (hash seed) + under-glow."""
+        if alpha <= 0:
+            return
+        pts = [(x0, y0)]
+        for i in range(1, 4):
+            t = i / 4.0
+            jx = (_NS_grimjaw._hash01(seed * 13 + i * 7) - .5) * wobble * 2
+            jy = (_NS_grimjaw._hash01(seed * 29 + i * 11) - .5) * wobble * 2
+            pts.append((x0 + (x1 - x0) * t + jx, y0 + (y1 - y0) * t + jy))
+        pts.append((x1, y1))
+        dark = _NS_grimjaw.PALETTE["shadow_deep"]
+        for i in range(len(pts) - 1):
+            a, b = pts[i], pts[i + 1]
+            ai, bi = (int(a[0]), int(a[1])), (int(b[0]), int(b[1]))
+            pygame.draw.line(surface, _NS_grimjaw._rgba(dark, alpha * .45),
+                             ai, bi, width + 2)
+            pygame.draw.line(surface, _NS_grimjaw._rgba(color, alpha),
+                             ai, bi, width)
+
+    def _nova(surface, cx, cy, r_in, r_out, petals, rot, ramp, alpha,
+              squash=.82):
+        """Ledakan nova: kelopak polygon runcing — lapis gelap penuh +
+        lapis hot inset. ramp = (main, under)."""
+        if alpha <= 0 or petals < 3:
+            return
+        span = math.tau / petals
+        for i in range(petals):
+            a = rot + i * span
+            a0, a1 = a - span * .3, a + span * .3
+            p0 = (cx + math.cos(a0) * r_in, cy + math.sin(a0) * r_in * squash)
+            p1 = (cx + math.cos(a) * r_out, cy + math.sin(a) * r_out * squash)
+            p2 = (cx + math.cos(a1) * r_in, cy + math.sin(a1) * r_in * squash)
+            _NS_grimjaw._dpoly(surface, ramp[1], int(alpha * .55), [p0, p1, p2])
+            q0 = (cx + math.cos(a0) * r_in * .9,
+                  cy + math.sin(a0) * r_in * .9 * squash)
+            q1 = (cx + math.cos(a) * r_out * .74,
+                  cy + math.sin(a) * r_out * .74 * squash)
+            q2 = (cx + math.cos(a1) * r_in * .9,
+                  cy + math.sin(a1) * r_in * .9 * squash)
+            _NS_grimjaw._dpoly(surface, ramp[0], alpha, [q0, q1, q2])
+
+    def _dither_disk(surface, cx, cy, rx, ry, color, alpha,
+                     phase=0.0, seed=0):
+        """Disk ground dither checkerboard — shading pixel-art murah;
+        grid dibatasi (<=8x16) sehingga aman di fx_scale 2.6x."""
+        if alpha <= 0 or rx < 4 or ry < 3:
+            return
+        cell = max(2, min(int(rx / 8.0), int(ry / 3.0)) or 2)
+        rows = max(2, min(8, int(ry * 2 // cell)))
+        for r in range(rows):
+            ty = -ry + (2 * r + 1) * ry / rows
+            hw = rx * math.sqrt(max(0.0, 1.0 - (ty / ry) ** 2))
+            cols = max(1, min(16, int(hw * 2 // cell)))
+            for c in range(cols):
+                if (r + c) % 2:
+                    continue
+                x = -hw + (2 * c + 1) * hw / cols
+                tw = _NS_grimjaw._hash01(seed * 31 + r * 13 + c * 7
+                                         + int(phase * 3))
+                a = int(alpha * (.45 + .55 * tw))
+                if a <= 0:
+                    continue
+                pygame.draw.rect(
+                    surface, _NS_grimjaw._rgba(color, a),
+                    (int(cx + x), int(cy + ty), cell, cell))
+
+    def _orbit_glints(surface, cx, cy, rx, ry, phase, n, color, alpha,
+                      hot=None):
+        """Titik kilau orbit elips (mengelilingi caster/target)."""
+        if alpha <= 0 or n < 1:
+            return
+        for i in range(n):
+            a = phase + i * math.tau / n
+            px = int(cx + math.cos(a) * rx)
+            py = int(cy + math.sin(a) * ry)
+            _NS_grimjaw._aacircle(surface, (*color, alpha), (px, py), 2)
+            if hot:
+                _NS_grimjaw._aacircle(surface, (*hot, min(255, alpha)), (px, py), 1)
+
+    def _draw_glow_orb(surface, cx, cy, r, ramp, alpha, core=True):
+        """Orb glow berlapis 3 nilai: halo -> mid -> hot + inti putih."""
+        if alpha <= 0 or r < 1:
+            return
+        _NS_grimjaw._aacircle(surface, (*ramp[0], int(alpha * .55)), (cx, cy), r)
+        _NS_grimjaw._aacircle(surface, (*ramp[1], alpha), (cx, cy),
+                              max(1, int(r * .72)))
+        _NS_grimjaw._aacircle(surface, (*ramp[2], min(255, alpha + 30)), (cx, cy),
+                              max(1, int(r * .45)))
+        if core:
+            _NS_grimjaw._aacircle(surface, (*ramp[2], min(255, alpha + 60)),
+                                  (cx, cy), max(1, int(r * .24)))
+            _NS_grimjaw._aacircle(surface, p_white := _NS_grimjaw.PALETTE["white"],
+                                  (cx, cy), max(1, int(r * .12)))
+
+    def _draw_rune_ring(surface, cx, cy, radius, phase, ramp, alpha,
+                        n=8, squash=.6, width=2, seed=4):
+        """Cincin rune putus-putus berputar (gabungan dashed ring + sigil)."""
+        _NS_grimjaw._dashed_ring(surface, cx, cy, radius, ramp[0], int(alpha * .8),
+                                 phase, segments=n * 2, thick=width, span=.4,
+                                 squash=squash)
+        _NS_grimjaw._sigil_ring(surface, cx, cy, radius * .82, -phase * .6, ramp,
+                                int(alpha * .8), n=n, squash=squash, seed=seed,
+                                size=max(3, int(radius * .055)))
+
+    def _skill_progress(skill, timer):
+        """Progress 0..1 skill FX dari countdown active_skill_timer.
+
+        Durasi visual dipakai dari SKILL_VISUAL_DURATION (q=180, w=90,
+        e=60, r=90) — bukan timer gameplay (yang bisa jauh lebih
+        panjang, mis. W=360)."""
+        dur = float(_NS_grimjaw.SKILL_VISUAL_DURATION.get(skill, max(1, timer or 1)))
+        return max(0.0, min(1.0, 1.0 - float(timer) / dur))
+
+    def _skill_steady(progress, tail=5.0, floor=.25):
+        """Amplop fade akhir skill: plateau 1.0 lalu melandai ke floor."""
+        return max(floor, min(1.0, (1.0 - progress) * tail + .3))
+
+    def _aoe_marks(surface, cx, cy, radius, color, alpha, phase=0.0,
+                   squash=1.0, ticks=12, tick_len=None, corner=True,
+                   inner=False):
+        """Marker AOE ANGULAR — pengganti ring/cincin kontinu.
+
+        Menandai radius gameplay tanpa menggambar lingkaran: deretan
+        ``tick`` pendek radial tepat di keliling ``radius`` + 4 bracket
+        sudut di posisi diagonal (viewfinder).  Sudut FIXED
+        (deterministik) sehingga radius dunia tetap terverifikasi;
+        hidupnya dari pulse alpha + panjang tick yang bernapas.
+        ``inner=True`` membuat tick mengarah keluar->ke dalam (untuk
+        ring konvergen \"incoming\")."""
+        if alpha <= 0 or radius < 4:
+            return
+        if tick_len is None:
+            tick_len = max(6, int(radius * 0.10))
+        pulse = 0.55 + 0.45 * (0.5 + 0.5 * math.sin(phase * 2.2))
+        lo, hi = (radius - tick_len, radius) if not inner else (radius, radius + tick_len)
+        for i in range(ticks):
+            a = i * math.tau / ticks
+            ca, sa = math.cos(a), math.sin(a)
+            ox = cx + ca * hi
+            oy = cy + sa * hi * squash
+            ix = cx + ca * lo
+            iy = cy + sa * lo * squash
+            al = int(alpha * (0.55 + 0.45 * (0.5 + 0.5 * math.sin(phase * 1.3 + i))))
+            _skill_outlined_line(surface, (ix, iy), (ox, oy), 2, color, max(8, al))
+        if corner:
+            L = max(6, int(radius * 0.13))
+            for a in (math.pi / 4, 3 * math.pi / 4,
+                      5 * math.pi / 4, 7 * math.pi / 4):
+                ca, sa = math.cos(a), math.sin(a)
+                ta, tb = -sa, ca          # arah tangensial / normal
+                txa, tya = ca, sa         # arah radial keluar
+                px = cx + ca * radius
+                py = cy + sa * radius * squash
+                al = int(alpha * (0.7 + 0.3 * pulse))
+                # siku: garis radial (keluar) + garis tangensial
+                _skill_outlined_line(
+                    surface, (px, py), (px + txa * L, py + tya * L * squash),
+                    2, color, al)
+                _skill_outlined_line(
+                    surface, (px, py), (px + ta * L, py + tb * L * squash),
+                    2, color, al)
 
     # ---------------------------------------------------------------------------
     # State detection helpers
@@ -2236,87 +2540,152 @@ class _NS_grimjaw:
     # SKILL Q: BLADE FURY (spin AOE, 180 frame)
     # ===================================================================
     def _draw_blade_fury_ground(surface, hero, x, y, timer, phase):
-        """Telegraph + steady ground Blade Fury (world-space).
+        """Telegraph + steady ground Blade Fury (world-space, v3).
 
         Ring jangkauan = skill_range (70 dunia) dikonversi ke px canvas
-        lewat _render_scale supaya pas dengan AOE gameplay; ring
-        konvergen mengecil ke pusat membaca "spin incoming".
+        lewat _render_scale supaya pas dengan AOE gameplay.  Layer:
+        dither disk tanah -> rim ganda presisi -> sigil rune berputar ->
+        ring konvergen "incoming" -> chevron kardinal -> nova burst saat
+        aktivasi -> retakan radial (jagged) -> push ring ganda -> orb
+        pusat berdenyut.  Aktivasi: pilar api 4-lapis + shockwave ganda +
+        spark star.
         """
         p = _NS_grimjaw.PALETTE
-        progress = max(0.0, min(1.0, 1 - timer / 180.0))
+        progress = _NS_grimjaw._skill_progress("q", timer)
+        steady = _NS_grimjaw._skill_steady(progress)
         pulse = math.sin(phase * 4.0) * 0.5 + 0.5
         fs = _NS_grimjaw._fx_scale(hero)
         gy = y + 58
 
         spin_range = int(getattr(hero, "skill_range", 70) or 70)
         rng = _NS_grimjaw._ring_r(hero, spin_range, surface)
+        fire_ramp = (p["fire_light"], p["fire_mid"], p["fire_hot"])
 
-        # ── AKTIVASI: shockwave ganda + bintang ──
-        if progress < 0.14:
-            t = progress / 0.14
-            for k, rmax in ((0, int(95 * fs)), (1, int(68 * fs))):
-                r = int((22 + t * rmax) * (1 if k else 1))
-                alpha = int((235 if k == 0 else 165) * (1 - t))
-                _skill_outlined_circle(surface, (x, y), r, 3,
-                                       p["fire_hot"] if k == 0 else p["fire_light"],
-                                       alpha)
-            _NS_grimjaw._spark_star(surface, x, y, int(30 * (1 - t * .5)),
-                                    p["fire_hot"], int(240 * (1 - t)),
-                                    8, rot=phase, core=p["white"])
+        # ── AKTIVASI: pilar api 4-lapis + spark star + nova (tanpa lingkaran) ──
+        if progress < 0.16:
+            t = progress / 0.16
+            top = int(y - min(150 * fs, 260) * (0.55 + 0.45 * (1 - t)))
+            for wd, col, al in ((30, p["fire_darkest"], 95),
+                                (18, p["fire_dark"], 145),
+                                (8, p["fire_mid"], 205),
+                                (3, p["fire_hot"], 245)):
+                _NS_grimjaw._aaline(surface, (*col, int(al * (1 - t))),
+                                    (x, top), (x, y), max(1, int(wd * fs * .4)))
+            _NS_grimjaw._spark_star(surface, x, y, int(34 * (1 - t * .5)),
+                                    p["fire_hot"], int(245 * (1 - t)),
+                                    10, rot=phase, core=p["white"])
+            _NS_grimjaw._nova(surface, x, y, int(8 * fs),
+                              int((40 + 70 * t) * fs), 8, phase * .2,
+                              (p["fire_light"], p["fire_dark"]),
+                              int(215 * (1 - t)))
+            # burst radial pendek (pengganti shockwave bulat)
+            for k in range(6):
+                a = phase + k * math.pi / 3
+                rl = int((26 + t * (70 * fs)) * (1 if k % 2 else .62))
+                ca, sa = math.cos(a), math.sin(a)
+                _NS_grimjaw._aaline(surface, (*p["fire_hot"], int(210 * (1 - t))),
+                                    (x, y), (x + ca * rl, y + sa * rl * .7), 2)
 
-        # ── STEADY: ellipse tanah (cached feel) + ring konvergen ──
+        # ── STEADY: dither disk tanah + marker AOE bersudut ──
+        _NS_grimjaw._dither_disk(surface, x, gy, int(rng * .62), int(rng * .2),
+                                 p["fire_darkest"],
+                                 int((70 + 40 * pulse) * steady),
+                                 phase=phase, seed=13)
         _NS_grimjaw._ellipse(surface, (*p["fire_darkest"], int(90 + 40 * pulse)),
                              (int(x - rng * 0.55), int(gy - rng * 0.16),
                               int(rng * 1.1), int(rng * 0.32)), 0)
-        _skill_outlined_circle(surface, (x, y), rng, 4,
-                               p["fire_light"], int(110 + 50 * pulse))
-        _NS_grimjaw._dashed_ring(surface, x, y, int(rng * 0.88),
-                                 p["fire_mid"], int(130 + 60 * pulse),
-                                 phase * 1.2, segments=12, thick=3, span=.3)
-        # ring konvergen: mengecil ke pusat (telegraph "incoming")
-        conv = rng * (1 - progress * 0.80)
-        _skill_outlined_circle(surface, (x, y), max(12, int(conv)), 3,
-                               p["fire_hot"], int(150 + 70 * pulse))
+        # marker perimeter (bracket + tick, bukan cincin)
+        _NS_grimjaw._aoe_marks(surface, x, y, rng, p["fire_light"],
+                               int(130 + 55 * pulse), phase,
+                               ticks=16, tick_len=max(8, int(rng * .12)))
+        _NS_grimjaw._aoe_marks(surface, x, y, max(6, rng - int(6 * fs)),
+                               p["fire_hot"], int(105 + 45 * pulse), -phase,
+                               ticks=12, corner=False,
+                               tick_len=max(6, int(rng * .07)))
+        # rune glyph menyebar (bukan sigil ring) — angular, deterministik
+        for i in range(8):
+            a = i * math.tau / 8
+            gx = x + math.cos(a) * rng * 0.72
+            gy = gy + math.sin(a) * rng * 0.34
+            _NS_grimjaw._rune_glyph(surface, int(gx), int(gy),
+                                    max(3, int(4.6 * fs)), i + int(phase * 2),
+                                    fire_ramp[i % 2],
+                                    int(120 * steady), rot=a + math.pi / 2)
+        # retakan api radial (5, deterministik)
+        for i in range(5):
+            ang = i * math.tau / 5 + 0.4
+            _NS_grimjaw._jagged_crack(surface, x, gy, ang,
+                                      int((24 + (i % 3) * 9) * fs),
+                                      (p["fire_darkest"], p["fire_mid"]),
+                                      int(145 * steady), seed=i + 51, width=2)
+        # ring konvergen: tick mengarah ke dalam (telegraph "incoming")
+        conv = max(12, int(rng * (1 - (progress % .28) * 3.2)))
+        _NS_grimjaw._aoe_marks(surface, x, y, conv, p["fire_hot"],
+                               int(160 + 70 * pulse), phase,
+                               ticks=10, corner=False, inner=True,
+                               tick_len=max(6, int(conv * .12)))
         # chevron kardinal menunjuk ke dalam
         for da in (0, math.pi / 2, math.pi, math.pi * 1.5):
             _NS_grimjaw._chevron(
                 surface,
                 x + math.cos(da) * rng * 0.62,
                 y + math.sin(da) * rng * 0.55,
-                da + math.pi, max(9, int(rng * 0.11)), p["fire_light"], 190, 3)
-        # orb pusat berdenyut
-        _NS_grimjaw._aacircle(surface,
-                              (*p["fire_hot"], int(200 + 40 * pulse)),
-                              (x, y), int(5 + 3 * pulse))
+                da + math.pi, max(9, int(rng * 0.11)), p["fire_light"],
+                int(190 * steady), 3)
+        # orb pusat berdenyut + ember orbit
+        _NS_grimjaw._draw_glow_orb(surface, x, y, int(6 + 3 * pulse),
+                                   (p["fire_dark"], p["fire_mid"], p["fire_hot"]),
+                                   int(200 + 45 * pulse))
+        _NS_grimjaw._orbit_glints(surface, x, y, int(rng * .5), int(rng * .2),
+                                  phase * 1.6, 6, p["fire_light"],
+                                  int(130 * steady), hot=p["fire_hot"])
 
     def _draw_blade_fury_rings(surface, x, y, phase):
-        """Fire rings spinning around character during Blade Fury."""
+        """Fire rings spinning around character during Blade Fury (v3).
+
+        Tiga cincin api elips selang-seling arah + trailing ember; setiap
+        titik memakai ban warna hangat (darkest->hot) sehingga terbaca
+        sebagai piringan api berputar, bukan titik-titik kosong.
+        """
         p = _NS_grimjaw.PALETTE
-        for ring_i in range(2):
-            ring_phase = phase * 3 + ring_i * 1.5
-            ring_radius = 34 + ring_i * 9
-            # Ring is horizontal ellipse (ground-level)
-            for i in range(12):
-                angle = ring_phase + i * math.tau / 12
+        ring_specs = ((34, 3, p["fire_darkest"]), (43, -1.5, p["fire_dark"]),
+                      (52, 1.1, p["fire_mid"]))
+        for ring_i, (ring_radius, spin_dir, base_col) in enumerate(ring_specs):
+            ring_phase = phase * 3 * spin_dir + ring_i * 2.1
+            for i in range(14):
+                angle = ring_phase + i * math.tau / 14
                 px = x + int(math.cos(angle) * ring_radius)
-                py = y + int(math.sin(angle) * ring_radius * 0.4)
-                _NS_grimjaw._aacircle(surface, p["fire_darkest"], (px, py), 5)
-                _NS_grimjaw._aacircle(surface, p["fire_dark"], (px, py), 3)
-                _NS_grimjaw._aacircle(surface, p["fire_mid"], (px, py), 2)
+                py = y + int(math.sin(angle) * ring_radius * 0.42)
+                # trailing ember (semakin dekat ke belakang semakin redup)
+                trail_ang = angle - 0.22
+                tx = x + int(math.cos(trail_ang) * ring_radius)
+                ty = y + int(math.sin(trail_ang) * ring_radius * 0.42)
+                _NS_grimjaw._aacircle(surface, (*base_col, 150),
+                                      (tx, ty), 3 if i % 2 else 2)
+                _NS_grimjaw._aacircle(surface, p["fire_hot"], (px, py), 2)
                 _NS_grimjaw._aacircle(surface, p["fire_light"], (px, py), 1)
+        # arc-rim elips tipis di pinggang (3 band, blur-nya api)
+        _NS_grimjaw._arc_band(surface, x, y + 4, 58, 22, phase,
+                              phase + math.pi * 1.3, p["fire_light"], 90, 1, 22)
+        _NS_grimjaw._arc_band(surface, x, y + 4, 45, 17, -phase * 1.4,
+                              -phase * 1.4 + math.pi * 1.2, p["fire_dark"], 70, 1, 18)
 
     def _draw_fire_particles_orbit(surface, x, y, phase):
-        """Fire particles orbiting during spinning."""
+        """Fire particles orbiting during spinning (v3)."""
         p = _NS_grimjaw.PALETTE
-        for i in range(14):
+        for i in range(16):
             p_phase = phase * 4 + i * 0.5
             p_angle = p_phase
             p_dist = 34 + int(math.sin(p_phase * 2) * 12)
-
             px = x + int(math.cos(p_angle) * p_dist)
             py = y + int(math.sin(p_angle) * p_dist * 0.5)
-
-            _NS_grimjaw._aacircle(surface, p["fire_dark"], (px, py), 3)
+            # inti partikel + ekor (garis pendek ke arah gerak orbit)
+            lead_ang = p_angle + 0.5
+            tx = x + int(math.cos(lead_ang) * (p_dist - 7))
+            ty = y + int(math.sin(lead_ang) * (p_dist - 7) * 0.5)
+            _NS_grimjaw._aaline(surface, (*p["fire_dark"], 120),
+                                (tx, ty), (px, py), 1)
+            _NS_grimjaw._aacircle(surface, p["fire_dark"], (px, py), 3 if i % 3 else 2)
             _NS_grimjaw._aacircle(surface, p["fire_hot"], (px, py), 2)
             _NS_grimjaw._aacircle(surface, p["fire_core"], (px, py), 1)
 
@@ -2324,76 +2693,112 @@ class _NS_grimjaw:
     # SKILL W: HEALING WARD (visual 90 frame)
     # ===================================================================
     def _draw_healing_ward_ground(surface, hero, x, y, timer, phase):
-        """Ground layer of healing ward (world-space).
+        """Ground layer of healing ward (world-space, v3).
 
         Ring jangkauan = radius heal 100 dunia, dikonversi lewat
-        _render_scale; ring konvergen di 30% pertama = telegraph.
+        _render_scale.  Layer: dither disk hijau -> rim ganda presisi ->
+        sigil rune penyembuh berputar -> dashed ring -> ring konvergen
+        telegraph -> orbit cross motes -> glow orb pusat.  Aktivasi:
+        shockwave hijau + spark star + nova petal penyembuh.
         """
         p = _NS_grimjaw.PALETTE
-        progress = max(0.0, min(1.0, 1 - timer / 90.0))
+        progress = _NS_grimjaw._skill_progress("w", timer)
+        steady = _NS_grimjaw._skill_steady(progress)
         pulse = math.sin(phase * 1.5) * 0.2 + 0.8
         fs = _NS_grimjaw._fx_scale(hero)
         rng = _NS_grimjaw._ring_r(hero, 100, surface)
         gy = y + 58
+        heal_ramp = (p["heal_light"], p["heal_mid"], p["heal_core"])
 
-        # ── AKTIVASI: shockwave hijau + bintang ──
+        # ── AKTIVASI: burst radial + bintang + nova (tanpa lingkaran) ──
         if progress < 0.18:
             t = progress / 0.18
-            for k, rmax in ((0, int(100 * fs)), (1, int(72 * fs))):
-                r = int((20 + t * rmax))
-                alpha = int((230 if k == 0 else 160) * (1 - t))
-                _skill_outlined_circle(surface, (x, y), r, 3,
-                                       p["heal_light"] if k == 0 else p["heal_mid"],
-                                       alpha)
+            # burst radial pendek (pengganti shockwave bulat)
+            for k in range(6):
+                a = phase * .5 + k * math.pi / 3
+                rl = int((26 + t * (70 * fs)) * (1 if k % 2 else .62))
+                ca, sa = math.cos(a), math.sin(a)
+                _NS_grimjaw._aaline(
+                    surface, (*p["heal_light"], int(215 * (1 - t))),
+                    (x, y), (x + ca * rl, y + sa * rl * .7), 2)
             _NS_grimjaw._spark_star(surface, x, y, int(28 * (1 - t * .5)),
                                     p["heal_light"], int(240 * (1 - t)),
                                     8, rot=phase, core=p["heal_core"])
+            _NS_grimjaw._nova(surface, x, y, int(6 * fs),
+                              int((36 + 60 * t) * fs), 8, phase * .3,
+                              (p["heal_light"], p["heal_dark"]),
+                              int(200 * (1 - t)))
 
-        # ── STEADY: lingkaran penyembuh 2 lapis + rune berputar ──
+        # ── STEADY: dither disk + marker AOE bersudut + rune menyebar ──
+        _NS_grimjaw._dither_disk(surface, x, gy, int(rng * .5), int(rng * .2),
+                                 p["heal_darkest"],
+                                 int((55 + 30 * pulse) * steady),
+                                 phase=phase, seed=17)
         _NS_grimjaw._ellipse(surface, (*p["heal_darkest"], int(80 + 30 * pulse)),
                              (int(x - rng * 0.55), int(gy - rng * 0.15),
                               int(rng * 1.1), int(rng * 0.30)), 0)
-        _skill_outlined_circle(surface, (x, y), rng, 4,
-                               p["heal_mid"], int(120 + 50 * pulse))
-        _NS_grimjaw._dashed_ring(surface, x, y, int(rng * 0.86),
-                                 p["heal_light"], int(130 + 60 * pulse),
-                                 phase * 0.9, segments=10, thick=3, span=.5)
-        # rune dots berputar
+        # marker perimeter (bracket + tick, bukan cincin)
+        _NS_grimjaw._aoe_marks(surface, x, y, rng, p["heal_mid"],
+                               int(125 + 55 * pulse), phase,
+                               ticks=16, tick_len=max(8, int(rng * .12)))
+        _NS_grimjaw._aoe_marks(surface, x, y, max(6, rng - int(6 * fs)),
+                               p["heal_light"], int(105 + 45 * pulse), -phase,
+                               ticks=12, corner=False,
+                               tick_len=max(6, int(rng * .07)))
+        # rune glyph menyebar (bukan sigil ring) — angular, deterministik
         for i in range(8):
-            a = phase * 0.35 + i * math.pi / 4
-            px = x + int(math.cos(a) * (rng - 8))
-            py = y + int(math.sin(a) * (rng * 0.5 - 5))
-            _NS_grimjaw._aacircle(surface,
-                                  (*p["heal_core"], int(220 * pulse)), (px, py), 3)
-            _NS_grimjaw._rect(surface, p["white"], (px, py, 1, 1))
-        # ring konvergen (telegraph awal)
+            a = i * math.tau / 8
+            gx = x + math.cos(a) * rng * 0.72
+            gy = gy + math.sin(a) * rng * 0.34
+            _NS_grimjaw._rune_glyph(surface, int(gx), int(gy),
+                                    max(3, int(4.6 * fs)), i + int(phase * 2),
+                                    heal_ramp[i % 2],
+                                    int(120 * steady), rot=a + math.pi / 2)
+        # ring konvergen: tick mengarah ke dalam (telegraph awal)
         if progress < 0.4:
             t = progress / 0.4
-            conv = rng * (1 - t * 0.75)
-            _skill_outlined_circle(surface, (x, y), max(12, int(conv)), 3,
-                                   p["heal_light"], int(180 * (1 - t) + 60))
+            conv = max(12, int(rng * (1 - t * 0.75)))
+            _NS_grimjaw._aoe_marks(surface, x, y, conv, p["heal_light"],
+                                   int(180 * (1 - t) + 60), phase,
+                                   ticks=10, corner=False, inner=True,
+                                   tick_len=max(6, int(conv * .12)))
+        # orbit cross motes
+        _NS_grimjaw._orbit_glints(surface, x, y, int(rng * .56), int(rng * .2),
+                                  -phase * 1.1, 8, p["heal_mid"],
+                                  int(120 * steady), hot=p["heal_light"])
+        # glow orb pusat
+        _NS_grimjaw._draw_glow_orb(surface, x, y, int(6 + 3 * pulse),
+                                   (p["heal_dark"], p["heal_mid"], p["heal_light"]),
+                                   int(150 + 60 * pulse))
 
     def _draw_healing_ward_totem(surface, hero, x, y, timer, phase):
-        """Green healing totem beside Grimjaw + pilar cahaya aktivasi."""
+        """Green healing totem beside Grimjaw + pilar cahaya aktivasi (v3)."""
         p = _NS_grimjaw.PALETTE
-        progress = max(0.0, min(1.0, 1 - timer / 90.0))
+        progress = _NS_grimjaw._skill_progress("w", timer)
         facing = getattr(hero, "direction", 1)
         fs = _NS_grimjaw._fx_scale(hero)
         wx = x + int(52 * fs * (1 if facing >= 0 else -1))
         wy = y + int(34 * fs)
+        green_ramp = (p["heal_darkest"], p["heal_mid"], p["heal_light"],
+                      p["heal_core"])
 
-        # ── AKTIVASI: pilar cahaya 4-lapis + bintang (clamped) ──
+        # ── AKTIVASI: pilar cahaya 4-lapis + bintang + nova ──
         if progress < 0.2:
             t = progress / 0.2
-            top = wy - int(min(110 * fs, 240) * (0.6 + 0.4 * (1 - t)))
-            for wd, col, al in ((26, p["heal_dark"], 100),
-                                (15, p["heal_mid"], 150),
-                                (7, p["heal_light"], 210)):
+            top = wy - int(min(120 * fs, 250) * (0.6 + 0.4 * (1 - t)))
+            for wd, col, al in ((28, p["heal_dark"], 100),
+                                (17, p["heal_mid"], 150),
+                                (8, p["heal_light"], 210),
+                                (3, p["heal_core"], 245)):
                 _NS_grimjaw._aaline(surface, (*col, int(al * (1 - t))),
-                                    (wx, int(top)), (wx, wy), wd)
-            _NS_grimjaw._spark_star(surface, wx, wy, int(22 * (1 - t * .5)),
+                                    (wx, int(top)), (wx, wy), max(1, int(wd * fs * .4)))
+            _NS_grimjaw._spark_star(surface, wx, wy, int(24 * (1 - t * .5)),
                                     p["heal_light"], int(235 * (1 - t)),
-                                    6, rot=phase, core=p["heal_core"])
+                                    8, rot=phase, core=p["heal_core"])
+            _NS_grimjaw._nova(surface, wx, wy, int(5 * fs),
+                              int((30 + 48 * t) * fs), 6, phase * .4,
+                              (p["heal_light"], p["heal_dark"]),
+                              int(190 * (1 - t)))
 
         # Base (stone 3 band)
         _NS_grimjaw._rect(surface, p["shadow"], (wx - 8, wy + 8, 16, 6))
@@ -2407,7 +2812,6 @@ class _NS_grimjaw:
         for band_y in (wy - 4, wy + 3):
             _NS_grimjaw._rect(surface, p["gold_dark"], (wx - 4, band_y, 8, 1))
             _NS_grimjaw._rect(surface, p["gold_mid"], (wx - 4, band_y, 6, 1))
-        # Glowing orb on top (4 band + core)
         pulse = math.sin(phase) * 0.3 + 0.7
 
         def build_glow():
@@ -2422,20 +2826,26 @@ class _NS_grimjaw:
         surface.blit(glow, (wx - 22, wy - 12 - 22))
         glow.set_alpha(255)
 
+        # Orb: crystal shard faset (bukan bulat polos) + core + glint
+        _NS_grimjaw._crystal_shard(surface, wx, wy - 12, int(5 * fs),
+                                   int(13 * fs), math.pi * .5, green_ramp,
+                                   int(230 * pulse), glint=1)
         _NS_grimjaw._aacircle(surface, p["heal_darkest"], (wx, wy - 12), 8)
-        _NS_grimjaw._aacircle(surface, p["heal_dark"], (wx, wy - 12), 7)
         _NS_grimjaw._aacircle(surface, p["heal_mid"], (wx - 1, wy - 13), 5)
         _NS_grimjaw._aacircle(surface, p["heal_light"], (wx - 1, wy - 13), 4)
         _NS_grimjaw._rect(surface, p["heal_core"], (wx - 1, wy - 13, 2, 2))
         _NS_grimjaw._rect(surface, p["white"], (wx - 1, wy - 13, 1, 1))
-        # glint orbit
-        for i in range(4):
-            a = phase * 2.2 + i * math.pi / 2
-            gx = int(wx + math.cos(a) * 12)
-            gy = int(wy - 12 + math.sin(a) * 12)
-            _NS_grimjaw._aacircle(surface, (*p["heal_light"], 200), (gx, gy), 1)
+        # rune ring kecil + glint orbit
+        _NS_grimjaw._sigil_ring(surface, wx, wy - 14, int(15 * fs), phase * 1.4,
+                                (p["heal_light"], p["heal_mid"], p["heal_core"]),
+                                int(170 * pulse), n=6, squash=.6, seed=33,
+                                size=max(2, int(3 * fs)))
+        _NS_grimjaw._orbit_glints(surface, wx, wy - 12, int(13 * fs),
+                                  int(12 * fs), phase * 2.2, 4,
+                                  p["heal_light"], int(190 * pulse),
+                                  hot=p["heal_core"])
 
-        # Floating + heal symbols
+        # Floating + heal symbols (cross naik)
         for i in range(4):
             sym_phase = phase * 2 + i * 1.5
             sym_y_offset = int((sym_phase * 3) % 16)
@@ -2449,7 +2859,7 @@ class _NS_grimjaw:
                                   (sym_x - 4, sym_y - 1, 9, 2))
 
     def _draw_heal_aura(surface, x, y, phase):
-        """Heal aura around Grimjaw when Healing Ward active (cached)."""
+        """Heal aura around Grimjaw when Healing Ward active (cached, v3)."""
         p = _NS_grimjaw.PALETTE
         pulse = math.sin(phase) * 0.3 + 0.7
 
@@ -2466,35 +2876,43 @@ class _NS_grimjaw:
         surface.blit(aura, (x - 65, y - 65))
         aura.set_alpha(255)
 
-        # Ground ring particles
+        # Ground ring particles (cross + sparkle)
         for i in range(14):
             angle = i * math.pi / 7 + phase
-            rx = x + int(math.cos(angle) * 38)
-            ry = y + int(math.sin(angle) * 14) + 22
-            _NS_grimjaw._aacircle(surface, p["heal_light"], (rx, ry), 2)
+            rx = x + int(math.cos(angle) * 44)
+            ry = y + int(math.sin(angle) * 16) + 24
+            _NS_grimjaw._aacircle(surface, p["heal_light"], (rx, ry), 2 if i % 2 else 1)
             _NS_grimjaw._rect(surface, p["heal_core"], (rx, ry, 1, 1))
+            # ekor energi pendek
+            _NS_grimjaw._aaline(surface, (*p["heal_mid"], 150),
+                                (rx, ry), (rx + int(math.cos(angle) * 8), ry), 1)
 
         # Rising + symbols around body
-        for i in range(6):
+        for i in range(7):
             phase_i = (phase * 1.5 + i * 0.3) % 1.0
-            angle = i * math.pi / 3
+            angle = i * math.pi / 3.5
             px = x + int(math.cos(angle) * 30)
-            py = y + 24 - int(phase_i * 48)
+            py = y + 24 - int(phase_i * 52)
             alpha = int(220 * (1 - phase_i))
             if alpha > 0:
                 _NS_grimjaw._rect(surface, (*p["heal_light"], alpha),
                                   (px - 1, py - 4, 2, 9))
                 _NS_grimjaw._rect(surface, (*p["heal_light"], alpha),
                                   (px - 4, py - 1, 9, 2))
+        # orbit glints mengelilingi badan
+        _NS_grimjaw._orbit_glints(surface, x, y - 10, 34, 40, phase * 1.3, 5,
+                                  p["heal_mid"], int(110 + 60 * pulse),
+                                  hot=p["heal_core"])
 
     # ===================================================================
     # SKILL E: CRITICAL STRIKE (buff 60 frame visual)
     # ===================================================================
     def _draw_crit_telegraph(surface, hero, x, y, timer, phase):
-        """Telegraph Critical Strike (world-space): cone 60 dunia di arah
-        hadap + chevron berbaris + retakan api di tanah."""
+        """Telegraph Critical Strike (world-space, v3): cone 60 dunia di
+        arah hadap + chevron berbaris + retakan + dither disk + orb di
+        ujung cone (posisi pendaratan)."""
         p = _NS_grimjaw.PALETTE
-        progress = max(0.0, min(1.0, 1 - timer / 60.0))
+        progress = _NS_grimjaw._skill_progress("e", timer)
         if progress > 0.5:
             return
         facing = getattr(hero, "direction", 1)
@@ -2502,138 +2920,206 @@ class _NS_grimjaw:
         pulse = math.sin(phase * 6) * 0.5 + 0.5
         fade = 1.0 - progress / 0.5
         gy = y + 56
+        rage_ramp = (p["rage_light"], p["rage_mid"], p["rage_bright"])
 
-        # ellipse cone di depan
+        # dither disk tanah di area cone
         rng = _NS_grimjaw._ring_r(hero, 60, surface)
         ox = int(x + rng * 0.55 * (1 if facing >= 0 else -1))
+        _NS_grimjaw._dither_disk(surface, ox, gy, int(rng * .5), int(rng * .14),
+                                 p["rage_dark"], int(90 * fade * pulse),
+                                 phase=phase, seed=21)
+        # ellipse cone di depan
         _NS_grimjaw._ellipse(surface, (*p["fire_darkest"], int(120 * fade * pulse)),
                              (int(ox - rng * 0.55), int(gy - rng * 0.14),
                               int(rng * 1.1), int(rng * 0.28)), 0)
-        _skill_outlined_circle(surface, (ox, y), rng, 3,
-                               p["fire_light"], int(140 * fade * pulse + 40))
+        # marker AOE bersudut di ujung cone (bukan cincin)
+        _NS_grimjaw._aoe_marks(surface, ox, y, rng, p["fire_light"],
+                               int(140 * fade * pulse + 40), phase,
+                               ticks=12, tick_len=max(8, int(rng * .1)),
+                               corner=False)
+        # arc-rim cone depan
+        _NS_grimjaw._arc_band(surface, ox, y, int(rng * .9), int(rng * .34),
+                              -1.1, 1.1, p["fire_hot"], int(120 * fade * pulse),
+                              2, 16)
         # chevron berbaris menuju depan
-        for i in range(3):
-            t = (i / 3 + phase * 0.5) % 1.0
+        for i in range(4):
+            t = (i / 4 + phase * 0.5) % 1.0
             _NS_grimjaw._chevron(surface,
-                                 x + facing * rng * (0.3 + 0.62 * t),
+                                 x + facing * rng * (0.25 + 0.66 * t),
                                  y + 8, 0.0 if facing > 0 else math.pi,
-                                 14, p["fire_hot"], int(210 * fade), 3)
+                                 15, p["fire_hot"], int(210 * fade), 3)
         # retakan api di tanah (deterministik)
-        for i in range(5):
-            ang = (0.3 + i * 0.45) * (1 if facing > 0 else -1) + math.pi / 2 * (0 if facing > 0 else 1)
+        for i in range(6):
+            ang = (0.28 + i * 0.42) * (1 if facing > 0 else -1)
             _NS_grimjaw._jagged_crack(
                 surface, x + facing * 18, gy, ang,
-                int((20 + (i % 3) * 8) * fs),
-                (p["fire_darkest"], p["fire_mid"]), int(150 * fade),
+                int((22 + (i % 3) * 9) * fs),
+                (p["fire_darkest"], p["fire_mid"]), int(160 * fade),
                 seed=i + 21, width=2)
+        # orb pendaratan (glow + nova tip) di ujung cone
+        _NS_grimjaw._draw_glow_orb(surface, ox, y + 4, int(8 * fs),
+                                   rage_ramp, int(170 * fade * pulse))
+        _NS_grimjaw._nova(surface, ox, y + 4, int(4 * fs), int(16 * fs), 8,
+                          phase * .5, (p["fire_hot"], p["fire_dark"]),
+                          int(120 * fade * pulse))
 
     def _draw_crit_steady(surface, hero, x, y, timer, phase):
-        """Steady Critical Strike: glint orbit di blade, rune ring merah,
-        mote naik - blade di badan sudah menyala incandescent (kwarg crit)."""
+        """Steady Critical Strike (v3): glint orbit di blade, rune ring
+        merah, sigil ring badan, mote bara + energy arc naik — blade di
+        badan sudah menyala incandescent (kwarg crit)."""
         p = _NS_grimjaw.PALETTE
-        progress = max(0.0, min(1.0, 1 - timer / 60.0))
+        progress = _NS_grimjaw._skill_progress("e", timer)
         fs = _NS_grimjaw._fx_scale(hero)
         facing = getattr(hero, "direction", 1)
         pulse = math.sin(phase * 5) * 0.5 + 0.5
+        rage_ramp = (p["rage_light"], p["rage_mid"], p["rage_bright"])
 
-        # AKTIVASI: bintang + shockwave
+        # AKTIVASI: bintang + shockwave + nova
         if progress < 0.15:
             t = progress / 0.15
             tipx, tipy = _NS_grimjaw._blade_tip_local(0.0, "idle", 0.0)
             hx, hy = int(x + tipx * facing), int(y + tipy)
-            _NS_grimjaw._spark_star(surface, hx, hy, int(24 * (1 - t * .4)),
+            _NS_grimjaw._spark_star(surface, hx, hy, int(26 * (1 - t * .4)),
                                     p["fire_hot"], int(240 * (1 - t)),
-                                    7, rot=phase, core=p["white"])
-            r = int((16 + t * int(70 * fs)))
-            _skill_outlined_circle(surface, (hx, hy), r, 3,
-                                   p["fire_light"], int(200 * (1 - t)))
+                                    9, rot=phase, core=p["white"])
+            # burst radial pendek (pengganti shockwave bulat)
+            for k in range(6):
+                a = phase + k * math.pi / 3
+                rl = int((16 + t * int(80 * fs)) * (1 if k % 2 else .6))
+                ca, sa = math.cos(a), math.sin(a)
+                _NS_grimjaw._aaline(
+                    surface, (*p["fire_light"], int(200 * (1 - t))),
+                    (hx, hy), (hx + ca * rl, hy + sa * rl * .7), 2)
+            _NS_grimjaw._nova(surface, hx, hy, int(5 * fs),
+                              int((26 + 40 * t) * fs), 8, phase * .4,
+                              (p["fire_hot"], p["rage_dark"]),
+                              int(200 * (1 - t)))
             return
 
-        # glint orbit mengelilingi blade (3 titik)
+        # glint orbit mengelilingi blade (4 titik + energy arc)
         tipx, tipy = _NS_grimjaw._blade_tip_local(0.0, "idle", 0.0)
         hx, hy = int(x + tipx * facing), int(y + tipy)
-        for i in range(3):
-            a = phase * 3.0 + i * math.tau / 3
-            gx = int(hx + math.cos(a) * 16)
-            gy = int(hy + math.sin(a) * 16)
-            _NS_grimjaw._aacircle(surface, (*p["fire_hot"], 220), (gx, gy), 2)
-            _NS_grimjaw._aacircle(surface, p["white"], (gx, gy), 1)
-        # rune ring merah kecil di sekeliling badan
-        _NS_grimjaw._dashed_ring(surface, x, y - 6, int(52 * fs),
-                                 p["rage_mid"], int(120 + 60 * pulse),
-                                 -phase * 1.3, segments=8, thick=2, span=.45)
+        _NS_grimjaw._orbit_glints(surface, hx, hy, 20, 20, phase * 3.0, 4,
+                                  p["fire_hot"], int(200 + 40 * pulse),
+                                  hot=p["white"])
+        _NS_grimjaw._energy_arc(surface, x, y - 12, hx, hy, 5,
+                                p["fire_light"], int(110 + 60 * pulse),
+                                width=1, wobble=4.5)
+        # rune ring + sigil => marker angular + rune glyph di sekeliling badan
+        _NS_grimjaw._aoe_marks(surface, x, y - 6, int(52 * fs),
+                               p["rage_mid"], int(120 + 60 * pulse), -phase * 1.3,
+                               ticks=10, corner=False, tick_len=max(6, int(52 * fs * .1)))
+        _NS_grimjaw._aoe_marks(surface, x, y - 6, int(60 * fs),
+                               p["rage_light"], int(120 + 50 * pulse), phase * .9,
+                               ticks=12, corner=True, tick_len=max(8, int(60 * fs * .12)))
+        for i in range(8):
+            a = phase * .9 + i * math.tau / 8
+            _NS_grimjaw._rune_glyph(
+                surface, int(x + math.cos(a) * 60 * fs),
+                int(y - 6 + math.sin(a) * 60 * fs * .56),
+                max(3, int(4 * fs)), i * 3 + int(phase * 2),
+                rage_ramp[i % 2], int(120 + 50 * pulse), rot=a + math.pi / 2)
         # mote bara naik
-        for i in range(7):
-            t = (phase * 0.35 + i / 7) % 1.0
-            mx = x + int(math.sin(i * 2.2) * 34 * fs)
-            my = y + 26 - int(t * 70 * fs)
+        for i in range(9):
+            t = (phase * 0.35 + i / 9) % 1.0
+            mx = x + int(math.sin(i * 2.2) * 36 * fs)
+            my = y + 26 - int(t * 76 * fs)
             _NS_grimjaw._aacircle(surface,
                                   (*p["rage_bright"], int(190 * (1 - t))),
                                   (mx, my), 2 if i % 2 else 1)
+            _NS_grimjaw._aacircle(surface, p["fire_hot"], (mx, my), 1)
 
     # ===================================================================
     # SKILL R: OMNISLASH (90 frame)
     # ===================================================================
     def _draw_omnislash_ground(surface, hero, x, y, timer, phase):
-        """Ground Omnislash (world-space): retakan api radial + ring
-        berputar + glow lantai."""
+        """Ground Omnislash (world-space, v3): retakan api radial + ring
+        berputar + sigil rune + dither disk + glow lantai + nova."
+        """
         p = _NS_grimjaw.PALETTE
-        progress = max(0.0, min(1.0, 1 - timer / 90.0))
+        progress = _NS_grimjaw._skill_progress("r", timer)
+        steady = _NS_grimjaw._skill_steady(progress)
         pulse = math.sin(phase * 3) * 0.3 + 0.7
         fs = _NS_grimjaw._fx_scale(hero)
         gy = y + 58
         rng = _NS_grimjaw._ring_r(hero, 80, surface)
+        rage_ramp = (p["rage_light"], p["rage_mid"], p["rage_bright"])
 
-        # ── AKTIVASI: pilar cahaya 4-lapis + shockwave ganda + bintang ──
+        # ── AKTIVASI: pilar cahaya 4-lapis + shockwave ganda + nova ──
         if progress < 0.18:
             t = progress / 0.18
-            top = int(y - min(110 * fs, 240) * (0.6 + 0.4 * (1 - t)))
+            top = int(y - min(140 * fs, 260) * (0.6 + 0.4 * (1 - t)))
             for wd, col, al in ((34, p["rage_dark"], 110),
                                 (20, p["rage_mid"], 155),
                                 (9, p["rage_light"], 210),
                                 (3, p["fire_hot"], 235)):
                 _NS_grimjaw._aaline(surface, (*col, int(al * (1 - t))),
-                                    (x, top), (x, y), wd)
-            for k, rmax in ((0, int(120 * fs)), (1, int(86 * fs))):
-                r = int((16 + t * rmax))
-                _skill_outlined_circle(surface, (x, y), r, 3,
-                                       p["rage_bright"] if k == 0 else p["fire_hot"],
-                                       int((225 if k == 0 else 150) * (1 - t)))
-            _NS_grimjaw._spark_star(surface, x, y, int(32 * (1 - t * .4)),
+                                    (x, top), (x, y), max(1, int(wd * fs * .4)))
+            # burst radial (pengganti shockwave bulat)
+            for k, rmax in ((0, int(130 * fs)), (1, int(92 * fs))):
+                rr = int((16 + t * rmax))
+                for kk in range(6):
+                    a = phase * .4 + kk * math.pi / 3
+                    rl = rr * (1 if kk % 2 else .6)
+                    ca, sa = math.cos(a), math.sin(a)
+                    _NS_grimjaw._aaline(
+                        surface,
+                        (*((p["rage_bright"] if k == 0 else p["fire_hot"])),
+                         int((225 if k == 0 else 150) * (1 - t))),
+                        (x, y), (x + ca * rl, y + sa * rl * .7), 2)
+            _NS_grimjaw._spark_star(surface, x, y, int(34 * (1 - t * .4)),
                                     p["fire_hot"], int(235 * (1 - t)),
-                                    8, rot=.3, core=p["white"])
+                                    10, rot=.3, core=p["white"])
+            _NS_grimjaw._nova(surface, x, y, int(9 * fs),
+                              int((44 + 70 * t) * fs), 8, phase * .2,
+                              (p["rage_bright"], p["rage_dark"]),
+                              int(215 * (1 - t)))
 
-        # ── STEADY: glow lantai + ring + retakan radial ──
+        # ── STEADY: dither disk + marker AOE bersudut + rune menyebar ──
+        _NS_grimjaw._dither_disk(surface, x, gy, int(rng * .64), int(rng * .22),
+                                 p["rage_dark"], int((70 + 40 * pulse) * steady),
+                                 phase=phase, seed=31)
         _NS_grimjaw._ellipse(surface, (*p["rage_dark"], int(95 + 40 * pulse)),
                              (int(x - rng * 0.55), int(gy - rng * 0.15),
                               int(rng * 1.1), int(rng * 0.30)), 0)
-        _skill_outlined_circle(surface, (x, y), rng, 4,
-                               p["rage_light"], int(120 + 60 * pulse))
-        _NS_grimjaw._dashed_ring(surface, x, y, int(rng * 0.85),
-                                 p["fire_hot"], int(140 + 60 * pulse),
-                                 phase * 1.4, segments=10, thick=3, span=.32)
-        _NS_grimjaw._dashed_ring(surface, x, y, int(rng * 0.6),
-                                 p["rage_bright"], int(110 + 50 * pulse),
-                                 -phase * 1.1, segments=8, thick=2, span=.4)
-        # retakan api radial (5)
-        for i in range(5):
-            ang = i * math.pi * 2 / 5 + 0.35
+        # marker perimeter (bracket + tick, bukan cincin)
+        _NS_grimjaw._aoe_marks(surface, x, y, rng, p["rage_light"],
+                               int(120 + 60 * pulse), phase,
+                               ticks=16, tick_len=max(8, int(rng * .12)))
+        _NS_grimjaw._aoe_marks(surface, x, y, max(6, rng - int(7 * fs)),
+                               p["fire_hot"], int(105 + 45 * pulse), -phase,
+                               ticks=12, corner=False,
+                               tick_len=max(6, int(rng * .07)))
+        # rune glyph api menyebar (bukan sigil ring) — angular
+        for i in range(10):
+            a = phase * .55 + i * math.tau / 10
+            gx = x + math.cos(a) * rng * 0.8
+            gy = gy + math.sin(a) * rng * 0.34
+            _NS_grimjaw._rune_glyph(surface, int(gx), int(gy),
+                                    max(3, int(4.5 * fs)), i + int(phase * 2),
+                                    rage_ramp[i % 2],
+                                    int(115 * steady), rot=a + math.pi / 2)
+        # retakan api radial (6, deterministik)
+        for i in range(6):
+            ang = i * math.pi * 2 / 6 + 0.35
             _NS_grimjaw._jagged_crack(surface, x, gy, ang,
-                                      int((28 + (i % 3) * 10) * fs),
-                                      (p["rage_dark"], p["rage_mid"]), 150,
-                                      seed=i + 31, width=2)
-        # denyut pusat
-        _NS_grimjaw._aacircle(surface,
-                              (*p["rage_bright"], int(150 * pulse)),
-                              (x, y), int(18 + 5 * pulse))
-        _NS_grimjaw._aacircle(surface,
-                              (*p["fire_hot"], int(210 * pulse)),
-                              (x, y), int(8 + 3 * pulse))
+                                      int((30 + (i % 3) * 11) * fs),
+                                      (p["rage_dark"], p["rage_mid"]),
+                                      int(150 * steady), seed=i + 31, width=2)
+        # denyut pusat (glow orb) + ember orbit
+        _NS_grimjaw._draw_glow_orb(surface, x, y, int(8 + 3 * pulse),
+                                   rage_ramp, int(150 + 70 * pulse))
+        _NS_grimjaw._orbit_glints(surface, x, y, int(rng * .56), int(rng * .2),
+                                  phase * 1.5, 8, p["fire_hot"],
+                                  int(130 * steady), hot=p["rage_bright"])
 
     def _draw_omnislash_slashes(surface, hero, x, y, timer, phase):
-        """Multiple fire slashes emanating from Grimjaw (retune rig v2):
-        8 streak radial + core flash + orbit shards."""
+        """Multiple fire slashes emanating from Grimjaw (v3): 7 streak
+        radial + core flash + nova + orbit shard (crystal) + ember column."
+        """
         p = _NS_grimjaw.PALETTE
+        rage_ramp = (p["rage_dark"], p["rage_mid"], p["rage_light"],
+                     p["rage_bright"])
         slash_count = 7
         for i in range(slash_count):
             slash_phase = phase * 4 + i * 0.6
@@ -2648,48 +3134,57 @@ class _NS_grimjaw:
             slash_len = 30
             end_x = int(math.cos(angle) * slash_len)
             end_y = int(math.sin(angle) * slash_len * 0.8)
-            _NS_grimjaw._aaline(surface, (*p["fire_darkest"], alpha),
-                                (slash_x, slash_y),
-                                (slash_x + end_x, slash_y + end_y), 8)
-            _NS_grimjaw._aaline(surface, (*p["fire_mid"], alpha),
-                                (slash_x, slash_y),
-                                (slash_x + end_x, slash_y + end_y), 4)
-            _NS_grimjaw._aaline(surface, (*p["fire_hot"], alpha),
-                                (slash_x, slash_y),
-                                (slash_x + end_x, slash_y + end_y), 1)
+            # beam 3-lapis (jalur panas, tanpa alokasi surface)
+            _NS_grimjaw._beam3(surface, (slash_x, slash_y),
+                               (slash_x + end_x, slash_y + end_y),
+                               8, (p["fire_mid"], p["fire_darkest"],
+                                   p["fire_hot"]), alpha)
             _NS_grimjaw._aacircle(surface, (*p["white"], alpha),
                                   (slash_x + end_x, slash_y + end_y), 2)
 
-        # orbit shards (mini blade quill)
+        # orbit shards (mini cristal quill)
         for i in range(6):
             a = phase * 2.6 + i * math.tau / 6
             r = 58 + int(math.sin(phase * 2 + i) * 8)
             sx = int(x + math.cos(a) * r)
             sy = int(y + math.sin(a) * r * 0.55)
-            _NS_grimjaw._aaline(surface, (*p["fire_mid"], 190),
-                                (sx, sy), (sx - int(math.cos(a) * 12),
-                                           sy - int(math.sin(a) * 7)), 3)
-            _NS_grimjaw._aaline(surface, (*p["fire_hot"], 220),
-                                (sx, sy), (sx - int(math.cos(a) * 9),
-                                           sy - int(math.sin(a) * 5)), 1)
+            _NS_grimjaw._crystal_shard(surface, sx, sy, 3,
+                                       int(9 + (i % 3) * 3), a + math.pi / 2,
+                                       rage_ramp, 190, glint=1 if i % 2 == 0 else 0)
 
-        # Central bright flash
+        # Central nova + core flash
         core_pulse = math.sin(phase * 6) * 0.3 + 0.7
+        _NS_grimjaw._nova(surface, x, y, int(6 * core_pulse),
+                          int((20 + 26 * core_pulse)), 8, phase * .3,
+                          (p["fire_hot"], p["rage_dark"]),
+                          int(190 * core_pulse))
         _NS_grimjaw._aacircle(surface, (*p["fire_hot"], int(180 * core_pulse)),
                               (x, y), int(9 * core_pulse))
         _NS_grimjaw._aacircle(surface, p["fire_core"], (x, y), int(4 * core_pulse))
+        # ember column naik
+        for i in range(6):
+            t = (phase * .35 + i / 6.0) % 1.0
+            mx = x + int(math.sin(i * 2.1) * 22)
+            my = y + int(20 * (1 - t) - t * 60)
+            _NS_grimjaw._aacircle(surface,
+                                  (*p["rage_bright"], int(180 * (1 - t))),
+                                  (mx, my), 2 if i % 2 else 1)
 
     def _draw_omnislash_target(surface, hero, x, y, timer, phase):
-        """Target-lock indicator: garis putus ke target + cincin + chevron."""
+        """Target-lock indicator (v3): garis putus ke target + chevron +
+        cincin target presisi + sigil rune + glint orbit + energy arc."
+        """
         p = _NS_grimjaw.PALETTE
-        progress = max(0.0, min(1.0, 1 - timer / 90.0))
+        progress = _NS_grimjaw._skill_progress("r", timer)
+        steady = _NS_grimjaw._skill_steady(progress)
         pulse = math.sin(phase * 6) * 0.5 + 0.5
         tx, ty = _NS_grimjaw._target_position(hero, x, y)
         if (tx, ty) == (x, y):
             return
         ang = math.atan2(ty - y, tx - x)
         dist = math.hypot(tx - x, ty - y)
-        # dashed line
+        rage_ramp = (p["rage_light"], p["rage_mid"], p["rage_bright"])
+        # dashed line (energi zigzag di atas garis putus biasa)
         for i in range(0, 12, 2):
             t1 = i / 12
             t2 = min(1.0, (i + 0.7) / 12)
@@ -2698,6 +3193,9 @@ class _NS_grimjaw:
                 (x + (tx - x) * t1, y + (ty - y) * t1 - 6),
                 (x + (tx - x) * t2, y + (ty - y) * t2 - 6),
                 2, p["rage_light"], 190)
+        _NS_grimjaw._energy_arc(surface, x, y - 6, tx, ty - 6, 97,
+                                p["fire_hot"], int(120 * steady),
+                                width=1, wobble=4.0)
         # chevron menuju target (berdenyut)
         for i in range(3):
             t = (i / 3 + phase * 0.6) % 1.0
@@ -2705,11 +3203,27 @@ class _NS_grimjaw:
                                  x + (tx - x) * t, y + (ty - y) * t - 6,
                                  ang, 13, p["fire_hot"],
                                  int(160 + 80 * pulse * (1 - t)), 3)
-        # cincin target
-        _skill_outlined_circle(surface, (tx, ty - 6), 20, 3,
-                               p["rage_light"], int(150 + 60 * pulse))
-        _skill_outlined_circle(surface, (tx, ty - 6), 12, 2,
-                               p["fire_hot"], int(180 + 50 * pulse))
+        # marker target ANGULAR (bukan cincin) + glint orbit (target-lock)
+        _NS_grimjaw._aoe_marks(surface, tx, ty - 6, 20, p["rage_light"],
+                               int(150 + 60 * pulse), phase,
+                               ticks=10, corner=True,
+                               tick_len=max(6, int(20 * .16)))
+        _NS_grimjaw._aoe_marks(surface, tx, ty - 6, 12, p["fire_hot"],
+                               int(180 + 50 * pulse), -phase,
+                               ticks=8, corner=False,
+                               tick_len=max(5, int(12 * .2)))
+        # rune glyph menyebar (bukan sigil ring)
+        for i in range(6):
+            a = phase * 1.2 + i * math.tau / 6
+            _NS_grimjaw._rune_glyph(surface,
+                                    int(tx + math.cos(a) * 26),
+                                    int(ty - 6 + math.sin(a) * 26 * .6),
+                                    max(2, int(3 * 1.0)), i + int(phase * 2),
+                                    rage_ramp[i % 2],
+                                    int(150 * steady), rot=a + math.pi / 2)
+        _NS_grimjaw._orbit_glints(surface, tx, ty - 6, 28, 28, phase * 2.4, 4,
+                                  p["fire_hot"], int(170 * steady),
+                                  hot=p["white"])
         # crosshair
         for da in (0, math.pi / 2, math.pi, -math.pi / 2):
             _NS_grimjaw._aaline(

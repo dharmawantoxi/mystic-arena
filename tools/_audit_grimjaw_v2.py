@@ -207,23 +207,29 @@ _warm = lambda c: (c.a > 80 and c[0] > 140 and c[0] - c[2] > 70
 _heal = lambda c: (c.a > 100 and c[1] > 110 and c[0] < 180
                    and c[1] - c[2] > 30)
 
-# Q: ring AOE 70 dunia harus di 70/fs px canvas (world-space)
+# Q: AOE 70 dunia harus sampai ke 70/fs px canvas (world-space).
+# v4 mengganti cincin kontinu dengan marker ANGULAR (tick radial + bracket
+# sudut) yang tetap menandai radius gameplay.  Radius diverifikasi lewat
+# jangkauan keluar maksimum tiap sudut: boundary harus ~140px canvas (bukan
+# menyusut/meleset), dan perimeter harus ditandai di seluruh keliling
+# (spoke angle) walau dengan celah antar-tick.
 s = _render_skill("q", 100, fs=0.5)
-hits = total = 0
+_cx, _cy = s.get_width() // 2, s.get_height() // 2 + 40
+reach = []
 for a in range(0, 360, 2):                       # 180 sudut
     ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
-    ok = False
-    for dr in (-1, 0, 1):                        # toleransi lebar ring
-        x = int(380 + ca * (140 + dr))
-        y = int(420 + sa * (140 + dr))
-        if _warm(s.get_at((x, y))):
-            ok = True
-            break
-    total += 1
-    hits += 1 if ok else 0
-ok_all &= check(hits > 150,
-                "Q: ring AOE tepat di 140px canvas (=70 dunia, fs=0.5)",
-                f"{hits}/{total}")
+    f = 0
+    for rr in range(24, 180):
+        x = int(_cx + ca * rr)
+        y = int(_cy + sa * rr)
+        if 0 <= x < s.get_width() and 0 <= y < s.get_height() \
+                and _warm(s.get_at((x, y))):
+            f = rr
+    reach.append(f)
+near = sum(1 for r in reach if r >= 136)         # spoke mencapai boundary
+ok_all &= check(20 <= near <= 60 and 135 <= max(reach) <= 170,
+                "Q: marker AOE angular mencapai ~140px canvas (=70 dunia, fs=0.5)",
+                f"spokes@{136}={near}/180 max={max(reach)}")
 
 # W: rune/ring heal hijau di luar badan, world-space
 s = _render_skill("w", 50)
