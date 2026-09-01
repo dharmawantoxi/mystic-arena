@@ -8,6 +8,7 @@ Mengukur hal yang sebelumnya hanya bisa dinilai mata (standar _audit_thorne_v2):
   - waktu render per pose + skill (budget cache-miss ~3.5 ms)
   - cakupan FX skill DI LUAR siluet badan (efek harus terlihat)
   - radius telegraph TEPAT dalam px dunia (E=100, R=150) pada 2 skala
+    — marker angular (tick + bracket), bukan cincin kontinu
   - before/after melawan rig baseline git
 Menghasilkan:
   - docs/kaizen_v2_review.png      (kartu pose besar, 2x)
@@ -164,17 +165,25 @@ ok_all &= check(_count(s, _windx, 60, 200) > 60,
                 "R: funnel/puing sian di luar badan",
                 str(_count(s, _windx, 60, 200)))
 
-# E: ring jangkauan tepat di 100 world-px dari pusat tanah
+# E: marker AOE angular mencapai 100 world-px (=200 canvas, fs=0.5)
+# Spoke-reach: tick/bracket menandai perimeter walau ada celah antar-tick.
 s = _render_skill("e", 30, fs=0.5)
-hits = 0
+_cx, _cy = 450, 520
+reach = []
 for a in range(0, 360, 2):
-    x = int(450 + math.cos(math.radians(a)) * 200)
-    y = int(520 + math.sin(math.radians(a)) * 200)
-    if 0 <= x < s.get_width() and 0 <= y < s.get_height() \
-            and s.get_at((x, y)).a > 40:
-        hits += 1
-ok_all &= check(hits > 90, "E: ring jangkauan di ~200px canvas (=100 dunia)",
-                f"{hits}/180")
+    ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
+    f = 0
+    for rr in range(40, 260):
+        x = int(_cx + ca * rr)
+        y = int(_cy + sa * rr)
+        if 0 <= x < s.get_width() and 0 <= y < s.get_height() \
+                and s.get_at((x, y)).a > 40:
+            f = rr
+    reach.append(f)
+near = sum(1 for r in reach if r >= 190)
+ok_all &= check(12 <= near <= 80 and 190 <= max(reach) <= 250,
+                "E: marker AOE angular mencapai ~200px canvas (=100 dunia, fs=0.5)",
+                f"spokes@{190}={near}/180 max={max(reach) if reach else 0}")
 
 # Q: jalur + splat menuju target
 s = _render_skill("q", 30)

@@ -86,10 +86,13 @@ _EXTRA = {
         '_poly', '_rect', '_spawn_wind_slash', '_target_position',
         '_update_attack_anim', '_world_to_local', 'draw_boss',
         'draw_kaizen', 'math', 'pygame',
-        # Skill FX v2.1 world-space helpers (standar Thorne)
+        # Skill FX v3 world-space helpers (standar Thorne / Grimjaw)
         '_STATIC_SURFACES', '_static', '_hash01', '_mix', '_fx_scale',
-        '_spark_star', '_chevron', '_dashed_ring', '_jagged_crack',
+        '_spark_star', '_chevron', '_dashed_ring', '_aoe_marks', '_jagged_crack',
         '_tuft_points', '_dither_dots', '_attack_pose', '_katana_angle',
+        'SKILL_VISUAL_DURATION', '_ring_r', '_skill_progress',
+        '_katana_tip_local', '_draw_katana_swing_trail', '_filled_crescent',
+        '_scratch', '_SCRATCH_POOL',
     ],
     'thorne': [
         'GooProjectile', 'HAS_AACIRCLE', 'PALETTE',
