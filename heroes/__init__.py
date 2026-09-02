@@ -638,9 +638,14 @@ _BEAM_PASS_HEROES = {"morgath"}
 # ogre-goblin: trail cleaver busur, botol asam modular dengan lifecycle
 # penuh, semburan droplet Acid Spray, badai koin Greevil's Greed,
 # uap Chemical Rage, impact, hit-stop, dan shake.
+# Ancient Apparition (heroes/ancient_apparition_fx.py): arc ayunan cakar
+# kristal, trail sapuan ribbon, particle system salju/es/mist, proyektil
+# shard & bolt modular, vortex Q / beam gerigi W / Ice Blast E / erupsi
+# Cold Feet R, impact flash + shockwave + debris, shatter kematian,
+# hit-stop, dan shake — semuanya hidup di luar cache sprite.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
-                   "alchemist"}
+                   "alchemist", "ancient_apparition"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -654,6 +659,7 @@ _LIVE_FX_PATHS = {
     "gorath": "heroes.gorath_fx",
     "razak": "heroes.razak_fx",
     "alchemist": "heroes.alchemist_fx",
+    "ancient_apparition": "heroes.ancient_apparition_fx",
 }
 
 

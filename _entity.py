@@ -3931,6 +3931,26 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX ANCIENT APPARITION (ice shard) ═══
+                # Shard es AA (ranged) mendarat lewat proyektil generik
+                # ini: impact flash bintang es, shockwave elips, fragmen
+                # sabit goresan, serpihan kristal + salju, screen shake,
+                # dan hit-stop 0.03-0.08 s (lengkapnya di
+                # heroes/ancient_apparition_fx.notify_projectile_impact).
+                # Difilter per hero_type + try/except (paritas Vex/Razak).
+                if proj.get('hero_type') == 'ancient_apparition' \
+                        and not target_dead:
+                    try:
+                        from heroes import ancient_apparition_fx as _aafx
+                        _aafx.notify_projectile_impact(
+                            proj.get('source') or self,
+                            proj['x'], proj['y'],
+                            proj.get('angle', 0.0),
+                            proj.get('damage', 0),
+                            bool(proj.get('is_crit')))
+                    except Exception:
+                        pass
+
                 # HIT! (hanya damage > 0 yang mengenai target & bersuara;
                 # projectile visual-only skill damage=0 diam saja)
                 if not target_dead and proj['damage'] > 0:
@@ -5352,7 +5372,21 @@ class Hero(TowerDebuffMixin):
         surface.blit(glow_surf, (px - 7, py - 7))
 
     def _draw_ice_shard_projectile(self, surface, px, py, angle):
-        """Ice shard (Ancient Apparition) - ujung TEPAT di (px,py)."""
+        """Ice shard (Ancient Apparition) - ujung TEPAT di (px,py).
+
+        Visual utamanya hidup di ``heroes/ancient_apparition_fx.
+        draw_ice_shard``: shard es bersegi berarah (bukan lingkaran),
+        inti panas, halo radial, dan ekor facet memudar — identik dengan
+        shard lapisan hidup 60 fps.  Fallback sederhana dipakai kalau
+        modul FX tidak tersedia (build minimal).
+        """
+        try:
+            from heroes import ancient_apparition_fx as _aafx
+            _aafx.draw_ice_shard(surface, px, py, angle)
+            return
+        except Exception:
+            pass
+
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
         perp_x = -sin_a

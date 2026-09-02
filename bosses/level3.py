@@ -5224,9 +5224,40 @@ class _NS_nyzrak:
 # ANCIENT_APPARITION
 # ====================================================================
 class _NS_ancient_apparition:
-    """Namespace ancient_apparition - isi asli tidak diubah."""
+    """Namespace ancient_apparition — FULL REWRITE visual & animasi.
 
-    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    TRUE BOSS Level 3: wraith es purba.  Seluruh visual prosedural
+    (pygame.draw + Surface + transform), tanpa satu pun aset eksternal.
+
+    Arsitektur render (layer, urutan kontrak proyek):
+
+        GROUND FX (aura beku, platform, telegraph skill)
+          -> SHADOW (reaktif, dasar menapak)
+          -> BACK ARM + BACK ORBIT
+          -> SKIRT (jubah shard)
+          -> TORSO -> ARMOR (pauldron) -> HEAD -> CROWN
+          -> FRONT ARM + CLAW (senjata) -> FRONT ORBIT
+          -> HIGHLIGHTS (rim + glint)
+          -> ATTACK FX (flash cakar, trail canvas fallback)
+          -> SKILL FX / PROJECTILE (fallback canvas)
+          -> LIVE FX LAYER (heroes/ancient_apparition_fx — layar 1:1)
+          -> DEBUG OVERLAY
+
+    GAYA PIXEL ART: rig digambar di buffer setengah resolusi lalu
+    di-upscale 2x nearest-neighbor (PIXEL = 2) sehingga piksel chunky,
+    tepi keras, palet terbatas, highlight/shadow per-piksel — bukan
+    vektor halus.
+
+    Kontrak API lama dipertahankan (dipakai tools/test_level3_masterwork,
+    heroes/__init__, bosses/_boss_index): draw_apparition / draw_boss /
+    draw_ancient_apparition, _draw_shadow(lift), _draw_aa_body[_raw],
+    _update_attack_anim, _detect_moving, durasi FX == AI.
+    """
+
+    # ── switch debug (hitbox/hurtbox/range/state/FPS/partikel) ──
+    DEBUG_CHARACTER = False
+
+    # ── cache komposit (piksel-identik, dibangun lazy) ──
     _body_buf = None
     _flash_buf = None
     _record_shadow = None
@@ -5234,53 +5265,75 @@ class _NS_ancient_apparition:
     _aura_cache = None
     _ground_cache = None
     _mist_cache = None
+    _rig_lo = None          # buffer rig resolusi rendah (pixel art)
+    _rig_px = None          # hasil upscale 2x (chunky)
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
-    # ---------------------------------------------------------------------------
-    # HD Ice Palette
-    # ---------------------------------------------------------------------------
-    PALETTE = {
-        # Ice body - deep blue to bright white
-        "ice_darkest":    (8,   20,  55),
-        "ice_dark":       (22,  55, 115),
-        "ice_mid":        (55, 110, 180),
-        "ice_light":      (115, 175, 230),
-        "ice_bright":     (170, 215, 250),
-        "ice_hot":        (220, 240, 255),
-        "ice_white":      (245, 252, 255),
-        "ice_pure":       (255, 255, 255),
+    #: Skala pixel art chunky (semua bagian badan digambar di 1/PIXEL).
+    PIXEL = 2
 
-        # Cyan tints
-        "cyan_dark":      (15,  75, 110),
-        "cyan_mid":       (55, 155, 195),
-        "cyan_light":     (130, 215, 240),
-        "cyan_bright":    (200, 245, 255),
+    #: Geometri lengan (px penuh, relatif jangkar badan) — MIRROR dari
+    #: heroes/ancient_apparition_fx (_SHOULDER/_UPPER/_FORE/_CLAW).
+    #: Jangan ubah satu sisi saja: trail layar menempel pada angka ini.
+    SHOULDER_OFF = (13.0, -6.0)
+    UPPER_LEN = 10.0
+    FORE_LEN = 11.0
+    CLAW_LEN = 8.0
 
-        # Deep shadow (inside ice)
-        "shadow_ice":     (12,  25,  55),
-
-        # Face glow
-        "face_dark":      (30,  70, 130),
-        "face_mid":       (95, 175, 230),
-        "face_bright":    (180, 230, 255),
-        "face_hot":       (230, 248, 255),
-
-        # Frost mist
-        "frost_dark":     (30,  75, 130),
-        "frost_mid":      (95, 165, 220),
-        "frost_light":    (170, 220, 250),
-
-        # Misc
-        "shadow":         (0,   0,   0),
-        "shadow_deep":    (2,   5,  12),
-        "white":          (255, 255, 255),
+    #: Fase serangan (progress 0..1) — MIRROR heroes/ancient_apparition_fx.
+    ATK_PHASES = {
+        "anticipation": (0.00, 0.20),
+        "windup":       (0.20, 0.38),
+        "swing":        (0.38, 0.55),
+        "follow":       (0.55, 0.75),
+        "recovery":     (0.75, 1.00),
     }
 
+    # ---------------------------------------------------------------------------
+    # HD Ice Palette (dark fantasy, terbatas, kontras)
+    # ---------------------------------------------------------------------------
+    PALETTE = {
+        # ── kontrak inti ──
+        "outline":     (6, 10, 20),
+        "shadow":      (2, 5, 12),
+        "dark":        (18, 38, 78),
+        "body":        (30, 62, 112),
+        "mid":         (55, 110, 180),
+        "light":       (115, 175, 230),
+        "highlight":   (170, 215, 250),
+        "weapon":      (170, 215, 250),
+        "fx":          (150, 225, 255),
 
+        # ── ramp es ──
+        "ice_darkest": (8, 20, 55),
+        "ice_dark":    (22, 55, 115),
+        "ice_mid":     (55, 110, 180),
+        "ice_light":   (115, 175, 230),
+        "ice_bright":  (170, 215, 250),
+        "ice_hot":     (220, 240, 255),
+        "ice_pure":    (245, 252, 255),
+
+        # ── aksen ──
+        "cyan_dark":   (15, 75, 110),
+        "cyan_mid":    (55, 155, 195),
+        "shadow_ice":  (12, 25, 55),
+        "face_dark":   (30, 70, 130),
+        "face_mid":    (95, 175, 230),
+        "face_bright": (180, 230, 255),
+        "face_hot":    (230, 248, 255),
+        "frost_dark":  (30, 75, 130),
+        "frost_mid":   (95, 165, 220),
+        "frost_light": (170, 220, 250),
+        "shadow_deep": (2, 5, 12),
+        "white":       (255, 255, 255),
+    }
+
+    # ===================================================================
+    # UTIL GAMBAR
+    # ===================================================================
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
-
 
     def _aacircle(surface, color, center, radius, width=0):
         color = _NS_ancient_apparition._clamp(color)
@@ -5289,18 +5342,20 @@ class _NS_ancient_apparition:
         if radius == 0:
             return
         if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
+            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4),
+                                  pygame.SRCALPHA)
+            pygame.draw.circle(temp, color, (radius + 2, radius + 2),
+                               radius, width)
             surface.blit(temp, (cx - radius - 2, cy - radius - 2))
             return
         if _NS_ancient_apparition.HAS_AACIRCLE and radius > 1:
             try:
-                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius, width)
+                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius,
+                                     width)
                 return
             except Exception:
                 pass
         pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
-
 
     def _aaline(surface, color, start, end, width=1):
         color = _NS_ancient_apparition._clamp(color)
@@ -5318,8 +5373,8 @@ class _NS_ancient_apparition:
                              (ex - min_x, ey - min_y), max(1, width))
             surface.blit(temp, (min_x, min_y))
             return
-        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
-
+        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey),
+                         max(1, width))
 
     def _poly(surface, color, points):
         if len(points) < 3:
@@ -5340,373 +5395,90 @@ class _NS_ancient_apparition:
             return
         pygame.draw.polygon(surface, color[:3], points)
 
-
     def _ellipse(surface, color, rect, width=0):
         color = _NS_ancient_apparition._clamp(color)
         if len(color) == 4 and color[3] < 255:
             rx, ry, rw, rh = rect
             if rw <= 0 or rh <= 0:
                 return
-            temp = pygame.Surface((int(rw) + 4, int(rh) + 4), pygame.SRCALPHA)
+            temp = pygame.Surface((int(rw) + 4, int(rh) + 4),
+                                  pygame.SRCALPHA)
             pygame.draw.ellipse(temp, color, (2, 2, int(rw), int(rh)), width)
             surface.blit(temp, (rx - 2, ry - 2))
             return
         pygame.draw.ellipse(surface, color[:3],
-                            (rect[0], rect[1], int(rect[2]), int(rect[3])), width)
-
-
-    def _rect(surface, color, rect, border_radius=0):
-        color = _NS_ancient_apparition._clamp(color)
-        if len(color) == 4 and color[3] < 255:
-            rx, ry, rw, rh = rect
-            if rw <= 0 or rh <= 0:
-                return
-            temp = pygame.Surface((int(rw) + 4, int(rh) + 4), pygame.SRCALPHA)
-            pygame.draw.rect(temp, color, (2, 2, int(rw), int(rh)),
-                             border_radius=border_radius)
-            surface.blit(temp, (rx - 2, ry - 2))
-            return
-        pygame.draw.rect(surface, color[:3],
-                         (rect[0], rect[1], int(rect[2]), int(rect[3])),
-                         border_radius=border_radius)
-
+                            (rect[0], rect[1], int(rect[2]), int(rect[3])),
+                            width)
 
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
             # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
+            # dengan kompensasi scale pipeline hero (lihat catatan lama).
             scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
             tx = x + (target.x - getattr(boss, "x", x)) / scale
             ty = y + (target.y - getattr(boss, "y", y)) / scale
             return int(tx), int(ty)
-        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0)
+                                   or 1.0)
+                   * getattr(boss, "direction", 1)), int(y)
 
+    def _hash01(seed):
+        seed &= 0xFFFFFFFF
+        seed = (seed * 2654435761) & 0xFFFFFFFF
+        seed ^= seed >> 13
+        seed = (seed * 1274126177) & 0xFFFFFFFF
+        return ((seed ^ (seed >> 16)) & 0xFFFF) / 65535.0
 
-    # ---------------------------------------------------------------------------
-    # Ice / Snowflake helpers
-    # ---------------------------------------------------------------------------
-    def _draw_snowflake(surface, cx, cy, size=3, alpha=255, rotate=0):
-        """Draw a snowflake - cross with small arms."""
-        for i in range(6):
-            angle = rotate + i * math.pi / 3
-            ex = cx + int(math.cos(angle) * size)
-            ey = cy + int(math.sin(angle) * size)
-            _NS_ancient_apparition._aaline(surface, (*_NS_ancient_apparition.PALETTE["ice_hot"], alpha), (cx, cy), (ex, ey), 1)
-            # Little tick marks
-            tick_angle_1 = angle + math.pi / 2
-            tick_angle_2 = angle - math.pi / 2
-            mx = cx + int(math.cos(angle) * (size - 1))
-            my = cy + int(math.sin(angle) * (size - 1))
-            tx1 = mx + int(math.cos(tick_angle_1) * 1)
-            ty1 = my + int(math.sin(tick_angle_1) * 1)
-            tx2 = mx + int(math.cos(tick_angle_2) * 1)
-            ty2 = my + int(math.sin(tick_angle_2) * 1)
-            _NS_ancient_apparition._aaline(surface, (*_NS_ancient_apparition.PALETTE["ice_bright"], alpha), (mx, my), (tx1, ty1), 1)
-            _NS_ancient_apparition._aaline(surface, (*_NS_ancient_apparition.PALETTE["ice_bright"], alpha), (mx, my), (tx2, ty2), 1)
-        _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_pure"], alpha), (cx, cy), 1)
+    # ===================================================================
+    # ANIMATION CONTROLLER
+    # ===================================================================
+    # State: IDLE / WALK / RUN / ATTACK / CAST / SKILL / HIT / HURT /
+    #        DEATH / CHARGE / SPECIAL.
+    # Sumber kebenaran state tetap atribut gameplay (timer, active_skill,
+    # hurt_flash_timer) — renderer hanya menerjemahkan, tidak menyimpan.
 
+    def _ease_in_out(t):
+        t = 0.0 if t < 0.0 else (1.0 if t > 1.0 else t)
+        if t < 0.5:
+            return 2.0 * t * t
+        return 1.0 - 2.0 * (1.0 - t) * (1.0 - t)
 
-    def _draw_ice_shard(surface, points, colors_layers=None):
-        """Draw a layered ice shard from a set of polygon points."""
-        if colors_layers is None:
-            colors_layers = [
-                _NS_ancient_apparition.PALETTE["ice_darkest"],
-                _NS_ancient_apparition.PALETTE["ice_dark"],
-                _NS_ancient_apparition.PALETTE["ice_mid"],
-                _NS_ancient_apparition.PALETTE["ice_light"],
-                _NS_ancient_apparition.PALETTE["ice_bright"],
-            ]
-        for i, color in enumerate(colors_layers):
-            # Shrink polygon slightly per layer
-            cx = sum(p[0] for p in points) / len(points)
-            cy = sum(p[1] for p in points) / len(points)
-            shrink = i * 0.15
-            inner = [(p[0] + (cx - p[0]) * shrink,
-                      p[1] + (cy - p[1]) * shrink) for p in points]
-            _NS_ancient_apparition._poly(surface, color, inner)
+    def _ease_in(t):
+        t = 0.0 if t < 0.0 else (1.0 if t > 1.0 else t)
+        return t * t
 
+    def _ease_out(t):
+        t = 0.0 if t < 0.0 else (1.0 if t > 1.0 else t)
+        return 1.0 - (1.0 - t) * (1.0 - t)
 
-    def _draw_frost_crystal_spike(surface, cx, base_y, tip_y, width=4, alpha=255,
-                                    phase=0):
-        """Draw a single ice spike growing upward."""
-        height = base_y - tip_y
-        if height <= 0:
-            return
+    def _attack_phase(progress):
+        p = 0.0 if progress <= 0.0 else (1.0 if progress >= 1.0
+                                         else progress)
+        for name in ("anticipation", "windup", "swing", "follow",
+                     "recovery"):
+            lo, hi = _NS_ancient_apparition.ATK_PHASES[name]
+            if p < hi:
+                return name
+        return "recovery"
 
-        # Shadow
-        _NS_ancient_apparition._poly(surface, (*_NS_ancient_apparition.PALETTE["shadow_deep"], alpha), [
-            (cx - width + 1, base_y + 1),
-            (cx + width + 1, base_y + 1),
-            (cx + 1, tip_y + 1),
-        ])
-
-        # Outer dark
-        _NS_ancient_apparition._poly(surface, (*_NS_ancient_apparition.PALETTE["ice_darkest"], alpha), [
-            (cx - width, base_y),
-            (cx + width, base_y),
-            (cx, tip_y),
-        ])
-        # Layers getting brighter
-        for i, color_key in enumerate(["ice_dark", "ice_mid", "ice_light", "ice_bright"]):
-            shrink = (i + 1) * 0.15
-            w = int(width * (1 - shrink))
-            _NS_ancient_apparition._poly(surface, (*_NS_ancient_apparition.PALETTE[color_key], alpha), [
-                (cx - w, base_y - 1),
-                (cx + w, base_y - 1),
-                (cx, tip_y + int(height * shrink * 0.2)),
-            ])
-        # White edge line
-        _NS_ancient_apparition._aaline(surface, (*_NS_ancient_apparition.PALETTE["ice_hot"], alpha),
-                (cx, base_y - 2), (cx, tip_y + 2), 1)
-        _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_pure"], alpha), (cx, tip_y + 1), 1)
-
-
-    # ---------------------------------------------------------------------------
-    # PROJECTILE SYSTEM
-    # ---------------------------------------------------------------------------
-    class IceShardProjectile:
-        """Cold Touch - small fast ice shard."""
-        def __init__(self, sx, sy, tx, ty, speed=7.5):
-            self.x = float(sx)
-            self.y = float(sy)
-            self.tx = float(tx)
-            self.ty = float(ty)
-            self.speed = speed
-            self.alive = True
-            self.age = 0
-            self.trail = []
-            # angle for shard rotation
-            dx = tx - sx
-            dy = ty - sy
-            self.angle = math.atan2(dy, dx)
-
-        def update(self):
-            if not self.alive:
-                return
-            self.age += 1
-            dx = self.tx - self.x
-            dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < self.speed + 4:
-                self.alive = False
-                return
-            self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 10:
-                self.trail.pop(0)
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
-
-        def draw(self, surface, phase):
-            # Trail
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(50 + i * 15)
-                r = max(1, 4 - (len(self.trail) - i))
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_dark"], alpha), (tx, ty), r + 2)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_light"], alpha), (tx, ty), r)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_hot"], alpha // 2), (tx, ty), max(1, r - 1))
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                # Shard shape (diamond)
-                dx = math.cos(self.angle)
-                dy = math.sin(self.angle)
-                perp_x = -dy
-                perp_y = dx
-
-                shard = [
-                    (px + int(dx * 8), py + int(dy * 8)),
-                    (px + int(perp_x * 4), py + int(perp_y * 4)),
-                    (px - int(dx * 5), py - int(dy * 5)),
-                    (px - int(perp_x * 4), py - int(perp_y * 4)),
-                ]
-                _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["shadow_deep"],
-                      [(p[0] + 1, p[1] + 1) for p in shard])
-                _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], shard)
-                _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_dark"], [
-                    (px + int(dx * 7), py + int(dy * 7)),
-                    (px + int(perp_x * 3), py + int(perp_y * 3)),
-                    (px - int(dx * 4), py - int(dy * 4)),
-                    (px - int(perp_x * 3), py - int(perp_y * 3)),
-                ])
-                _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_mid"], [
-                    (px + int(dx * 6), py + int(dy * 6)),
-                    (px + int(perp_x * 2), py + int(perp_y * 2)),
-                    (px - int(dx * 3), py - int(dy * 3)),
-                    (px - int(perp_x * 2), py - int(perp_y * 2)),
-                ])
-                _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_bright"], [
-                    (px + int(dx * 5), py + int(dy * 5)),
-                    (px + int(perp_x), py + int(perp_y)),
-                    (px - int(dx * 2), py - int(dy * 2)),
-                    (px - int(perp_x), py - int(perp_y)),
-                ])
-                _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_pure"],
-                        (px + int(dx * 6), py + int(dy * 6)),
-                        (px - int(dx * 3), py - int(dy * 3)), 1)
-
-                # Glow
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_light"], 120), (px, py), 10)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_bright"], 80), (px, py), 6)
-
-
-    class IceBoltProjectile:
-        """Ice Blast (E) - larger, slower shard bolt."""
-        def __init__(self, sx, sy, tx, ty, speed=5.5):
-            self.x = float(sx)
-            self.y = float(sy)
-            self.tx = float(tx)
-            self.ty = float(ty)
-            self.speed = speed
-            self.alive = True
-            self.age = 0
-            self.trail = []
-            dx = tx - sx
-            dy = ty - sy
-            self.angle = math.atan2(dy, dx)
-
-        def update(self):
-            if not self.alive:
-                return
-            self.age += 1
-            dx = self.tx - self.x
-            dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < self.speed + 5:
-                self.alive = False
-                return
-            self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 14:
-                self.trail.pop(0)
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
-
-        def draw(self, surface, phase):
-            # Long streaking trail
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(40 + i * 15)
-                r = max(1, 6 - (len(self.trail) - i))
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_dark"], alpha), (tx, ty), r + 2)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_mid"], alpha), (tx, ty), r)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_bright"], alpha // 2), (tx, ty), max(1, r - 1))
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                dx = math.cos(self.angle)
-                dy = math.sin(self.angle)
-                perp_x = -dy
-                perp_y = dx
-
-                # Large shard bolt
-                shard = [
-                    (px + int(dx * 14), py + int(dy * 14)),
-                    (px + int(perp_x * 6), py + int(perp_y * 6)),
-                    (px - int(dx * 8), py - int(dy * 8)),
-                    (px - int(perp_x * 6), py - int(perp_y * 6)),
-                ]
-                _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["shadow_deep"],
-                      [(p[0] + 2, p[1] + 2) for p in shard])
-                _NS_ancient_apparition._draw_ice_shard(surface, shard)
-                _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_pure"],
-                        (px + int(dx * 12), py + int(dy * 12)),
-                        (px - int(dx * 6), py - int(dy * 6)), 1)
-
-                # Bright glow
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_light"], 140), (px, py), 16)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_bright"], 100), (px, py), 10)
-
-                # Snowflake particles around
-                for i in range(3):
-                    angle = phase * 3 + i * math.pi * 2 / 3
-                    sx = px + int(math.cos(angle) * 12)
-                    sy = py + int(math.sin(angle) * 12)
-                    _NS_ancient_apparition._draw_snowflake(surface, sx, sy, 2, 200, rotate=phase)
-
-
-    class FrostBeam:
-        """Chilling Touch (W) - continuous beam."""
-        def __init__(self, sx, sy, tx, ty, life=40):
-            self.sx = sx
-            self.sy = sy
-            self.tx = tx
-            self.ty = ty
-            self.life = life
-            self.age = 0
-            self.alive = True
-
-        def update(self):
-            self.age += 1
-            if self.age >= self.life:
-                self.alive = False
-
-        def draw(self, surface, phase):
-            t = self.age / self.life
-            # Fade in/out
-            if t < 0.15:
-                alpha_scale = t / 0.15
-            elif t < 0.7:
-                alpha_scale = 1.0
-            else:
-                alpha_scale = 1 - (t - 0.7) / 0.3
-
-            dx = self.tx - self.sx
-            dy = self.ty - self.sy
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < 1:
-                return
-            dir_x = dx / dist
-            dir_y = dy / dist
-            perp_x = -dir_y
-            perp_y = dir_x
-
-            # Draw beam as many layered particles
-            for i in range(int(dist / 4)):
-                t_pos = i / max(1, int(dist / 4))
-                base_x = self.sx + dir_x * dist * t_pos
-                base_y = self.sy + dir_y * dist * t_pos
-
-                # Sinusoidal offset (chilling wave)
-                wave = math.sin(phase * 6 + t_pos * 15) * 4
-                fx = int(base_x + perp_x * wave)
-                fy = int(base_y + perp_y * wave)
-
-                alpha = int(200 * alpha_scale)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_dark"], alpha), (fx, fy), 6)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_mid"], alpha), (fx, fy), 4)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_bright"], alpha), (fx, fy), 3)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_hot"], alpha), (fx, fy), 2)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_pure"], alpha), (fx, fy), 1)
-
-            # Snowflake sparkles along beam
-            for i in range(8):
-                t_pos = (phase * 0.3 + i * 0.13) % 1.0
-                sx = int(self.sx + dir_x * dist * t_pos)
-                sy = int(self.sy + dir_y * dist * t_pos)
-                _NS_ancient_apparition._draw_snowflake(surface, sx + int(perp_x * 6), sy + int(perp_y * 6),
-                                 2, int(230 * alpha_scale), rotate=phase * 2 + i)
-
-
-    # ---------------------------------------------------------------------------
-    # State management
-    # ---------------------------------------------------------------------------
     def _detect_moving(boss):
+        """Deteksi gerak + kecepatan (px/frame) untuk pemisahan WALK/RUN."""
+        NS = _NS_ancient_apparition
         if not hasattr(boss, "_aa_last_x"):
             boss._aa_last_x = boss.x
             boss._aa_last_y = boss.y
+            boss._aa_speed = 0.0
             return False
-        dx = abs(boss.x - boss._aa_last_x)
-        dy = abs(boss.y - boss._aa_last_y)
+        dx = boss.x - boss._aa_last_x
+        dy = boss.y - boss._aa_last_y
         boss._aa_last_x = boss.x
         boss._aa_last_y = boss.y
-        return dx + dy > 0.3
-
+        boss._aa_speed = math.hypot(dx, dy)
+        return dx + dy > 0.3 or dx + dy < -0.3
 
     def _update_attack_anim(boss):
+        """Jendela serangan dari timer gameplay (pola lama, tetap)."""
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_aa_prev_timer", 0))
@@ -5717,7 +5489,8 @@ class _NS_ancient_apparition:
             boss._aa_attack_frame = 0
             active = True
         elif active:
-            boss._aa_attack_frame = int(getattr(boss, "_aa_attack_frame", 0)) + 1
+            boss._aa_attack_frame = int(
+                getattr(boss, "_aa_attack_frame", 0)) + 1
             if boss._aa_attack_frame > cooldown:
                 boss._aa_attack_active = False
                 boss._aa_attack_frame = 0
@@ -5729,797 +5502,735 @@ class _NS_ancient_apparition:
 
         boss._aa_prev_timer = timer
         boss._aa_attack_progress = (
-            min(1.0, getattr(boss, "_aa_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
+            min(1.0, getattr(boss, "_aa_attack_frame", 0)
+                / max(1, cooldown - 1))
+            if active else 0.0)
 
+    def _resolve_state(boss, moving):
+        """Pilih state animasi (prioritas: hurt > skill > attack > gerak)."""
+        NS = _NS_ancient_apparition
+        if not getattr(boss, "alive", True):
+            return "death"
+        if int(getattr(boss, "hurt_flash_timer", 0) or 0) > 3:
+            return "hurt"
+        skill = getattr(boss, "active_skill", None)
+        if skill in ("q", "w", "e", "r"):
+            return "cast_" + skill
+        if getattr(boss, "_aa_attack_active", False):
+            return "attack"
+        speed = float(getattr(boss, "_moving_speed", None)
+                      or getattr(boss, "_aa_speed", 0.0))
+        if moving and speed > 1.35:
+            return "run"
+        if moving:
+            return "walk"
+        return "idle"
 
+    # ===================================================================
+    # GEOMETRI LENGAN (dipakai renderer + lapisan FX — satu sumber)
+    # ===================================================================
+    def arc_angle(progress, action, phase):
+        """Sudut lengan depan (radian; 0 = depan, positif = naik).
+
+        ANTICIPATION -> WIND-UP -> SWING -> FOLLOW -> RECOVERY: ayunan
+        berbasis arc penuh (tidak ada teleport posisi awal ke akhir).
+        """
+        NS = _NS_ancient_apparition
+        p = 0.0 if progress <= 0.0 else (1.0 if progress >= 1.0
+                                         else progress)
+        if action == "attack":
+            if p < 0.20:                       # ANTICIPATION — tarik mundur
+                return 0.35 + (-0.55 - 0.35) * NS._ease_in_out(p / 0.20)
+            if p < 0.38:                       # WIND-UP — angkat ke belakang
+                return -0.55 + (-1.62 - -0.55) * \
+                    NS._ease_in_out((p - 0.20) / 0.18)
+            if p < 0.55:                       # SWING — sapuan cepat
+                return -1.62 + (0.55 - -1.62) * \
+                    NS._ease_in((p - 0.38) / 0.17)
+            if p < 0.75:                       # FOLLOW THROUGH
+                return 0.55 + (0.75 - 0.55) * (p - 0.55) / 0.20
+            return 0.75 + (0.35 - 0.75) * \
+                NS._ease_out((p - 0.75) / 0.25)     # RECOVERY
+        if action == "cast_w":                 # dua tangan mendorong depan
+            return 0.05 + math.sin(phase * 26.0) * 0.03
+        if action == "cast_e":                 # gather di dada
+            return -0.12
+        if action == "cast_q":                 # menyalurkan vortex
+            return 0.28
+        if action == "cast_r":                 # ULT: kedua tangan terangkat
+            return 1.85
+        if action == "run":
+            return 0.15 + math.sin(phase * 5.2) * 0.5
+        if action == "walk":
+            return 0.35 + math.sin(phase * 2.6) * 0.22
+        return 0.35 + math.sin(phase * 0.7) * 0.08
+
+    def arm_geometry(facing, action, phase, progress=0.0):
+        """(bahu, siku, tangan, ujung cakar) — offset px dari jangkar.
+
+        Dipakai _rig_front_arm (//PIXEL) DAN heroes/ancient_apparition_fx
+        (layar 1:1) supaya trail & asal shard menempel di cakar.
+        """
+        NS = _NS_ancient_apparition
+        ang = NS.arc_angle(progress, action, phase)
+        sx = NS.SHOULDER_OFF[0] * facing
+        sy = NS.SHOULDER_OFF[1]
+        bend = 0.55 if action == "attack" else 0.42
+        ex = sx + math.cos(ang - bend) * NS.UPPER_LEN * facing
+        ey = sy - math.sin(ang - bend) * NS.UPPER_LEN
+        hx = ex + math.cos(ang) * NS.FORE_LEN * facing
+        hy = ey - math.sin(ang) * NS.FORE_LEN
+        tx = hx + math.cos(ang) * NS.CLAW_LEN * facing
+        ty = hy - math.sin(ang) * NS.CLAW_LEN
+        return ((sx, sy), (ex, ey), (hx, hy), (tx, ty))
+
+    # ===================================================================
+    # RIG PIXEL ART (buffer setengah resolusi -> upscale 2x chunky)
+    # ===================================================================
+    RIG_W = 64
+    RIG_H = 76
+    RIG_AX = 32            # jangkar low-res
+    RIG_AY = 34
+
+    def _rig_buffers():
+        NS = _NS_ancient_apparition
+        if NS._rig_lo is None:
+            NS._rig_lo = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                        pygame.SRCALPHA)
+            NS._rig_px = pygame.Surface((NS.RIG_W * NS.PIXEL,
+                                         NS.RIG_H * NS.PIXEL),
+                                        pygame.SRCALPHA)
+        return NS._rig_lo, NS._rig_px
+
+    # ----------------------------- SKIRT -----------------------------
+    def _rig_skirt(buf, phase, action, lean):
+        """Jubah shard mengambang: massa + 6 shard hem bergantian.
+
+        WALK: shard hem kiri/kanan menendang bergantian (foot timing),
+        hem bergoyang; RUN: amplitude lebih besar dan condong.
+        """
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        ax, ay = NS.RIG_AX, NS.RIG_AY
+        f = 1.6 if action in ("run",) else (1.0 if action in ("walk",)
+                                            else 0.6)
+        sway = math.sin(phase * (2.6 if action != "idle" else 0.7)) * f
+
+        # massa utama (panggul)
+        pygame.draw.polygon(buf, P["shadow_ice"], [
+            (ax - 11, ay + 2), (ax + 11, ay + 2),
+            (ax + 9, ay + 13), (ax - 9, ay + 13)])
+        pygame.draw.polygon(buf, P["ice_darkest"], [
+            (ax - 10, ay + 2), (ax + 10, ay + 2),
+            (ax + 8, ay + 12), (ax - 8, ay + 12)])
+        pygame.draw.polygon(buf, P["ice_dark"], [
+            (ax - 8, ay + 3), (ax + 8, ay + 3),
+            (ax + 6, ay + 11), (ax - 6, ay + 11)])
+        pygame.draw.polygon(buf, P["ice_mid"], [
+            (ax - 5, ay + 4), (ax + 5, ay + 4),
+            (ax + 4, ay + 9), (ax - 4, ay + 9)])
+        # garis facet vertikal
+        for lx in (-4, 0, 4):
+            pygame.draw.line(buf, P["ice_light"],
+                             (ax + lx, ay + 4), (ax + lx, ay + 9), 1)
+
+        # shard hem bergantian (kiri & kanan berlawanan fase = langkah)
+        hem = ((-10, 6, 0), (-6, 9, math.pi), (-2, 7, 0),
+               (2, 10, math.pi), (6, 8, 0), (10, 6, math.pi))
+        for off, hgt, ph_off in hem:
+            kick = math.sin(phase * 2.6 + ph_off) * (2.0 * f)
+            bx = ax + off + int(kick + sway * off * 0.12)
+            top = ay + 11
+            tipx = bx + int(kick * 0.6 + lean * 0.5)
+            tipy = top + hgt + (1 if math.sin(phase * 2.6 + ph_off) > 0
+                                else 0)
+            pygame.draw.polygon(buf, P["shadow_deep"], [
+                (bx - 2 + 1, top + 1), (bx + 2 + 1, top + 1),
+                (tipx + 1, tipy + 1)])
+            pygame.draw.polygon(buf, P["ice_darkest"], [
+                (bx - 2, top), (bx + 2, top), (tipx, tipy)])
+            pygame.draw.polygon(buf, P["ice_dark"], [
+                (bx - 1, top), (bx + 1, top), (tipx, tipy - 1)])
+            pygame.draw.line(buf, P["ice_bright"],
+                             (bx, top + 1), (tipx, tipy - 1), 1)
+            buf.set_at((int(tipx), int(tipy) - 1), P["ice_hot"])
+
+    # ----------------------------- TORSO -----------------------------
+    def _rig_torso(buf, phase, action, core_hot):
+        """Dada kristal heksagonal + inti menyala + pauldron."""
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        ax, ay = NS.RIG_AX, NS.RIG_AY
+        # torso heksagonal
+        pygame.draw.polygon(buf, P["shadow_ice"], [
+            (ax - 9, ay - 9), (ax + 9, ay - 9), (ax + 11, ay - 1),
+            (ax + 6, ay + 3), (ax - 6, ay + 3), (ax - 11, ay - 1)])
+        pygame.draw.polygon(buf, P["ice_darkest"], [
+            (ax - 8, ay - 8), (ax + 8, ay - 8), (ax + 10, ay - 1),
+            (ax + 5, ay + 2), (ax - 5, ay + 2), (ax - 10, ay - 1)])
+        pygame.draw.polygon(buf, P["ice_dark"], [
+            (ax - 6, ay - 7), (ax + 6, ay - 7), (ax + 8, ay - 1),
+            (ax + 4, ay + 1), (ax - 4, ay + 1), (ax - 8, ay - 1)])
+        # inti dada (jantung es) — denyut
+        pulse = 0.7 + 0.3 * math.sin(phase * 1.5)
+        core = P["ice_bright"] if core_hot else P["ice_light"]
+        pygame.draw.rect(buf, P["shadow_deep"], (ax - 2, ay - 4, 4, 4))
+        pygame.draw.rect(buf, core, (ax - 2, ay - 4, 3, 3))
+        buf.set_at((ax - 1, ay - 3), P["ice_hot"])
+        if core_hot or pulse > 0.85:
+            buf.set_at((ax, ay - 3), P["ice_pure"])
+        # facet diagonal
+        pygame.draw.line(buf, P["ice_mid"], (ax - 6, ay - 6),
+                         (ax - 3, ay + 1), 1)
+        pygame.draw.line(buf, P["ice_mid"], (ax + 6, ay - 6),
+                         (ax + 3, ay + 1), 1)
+        pygame.draw.line(buf, P["ice_bright"], (ax - 5, ay - 6),
+                         (ax - 4, ay - 3), 1)
+
+        # pauldron (armor bahu): 3 paku per sisi
+        for side in (-1, 1):
+            base = [(ax + side * 8, ay - 8), (ax + side * 12, ay - 9),
+                    (ax + side * 10, ay - 5)]
+            pygame.draw.polygon(buf, P["ice_darkest"], base)
+            pygame.draw.polygon(buf, P["ice_dark"], [
+                (ax + side * 8, ay - 8), (ax + side * 11, ay - 9),
+                (ax + side * 9, ay - 6)])
+            for i, (dx, dy, hgt) in enumerate(((9, -9, 4), (11, -8, 6),
+                                               (10, -6, 3))):
+                bx = ax + side * dx
+                by = ay + dy
+                pygame.draw.polygon(buf, P["ice_mid"], [
+                    (bx - 1, by), (bx + 1, by), (bx, by - hgt)])
+                buf.set_at((bx, by - hgt), P["ice_hot"])
+
+    # ----------------------------- HEAD ------------------------------
+    def _rig_head(buf, phase, tilt, facing, hurt):
+        """Kepala berhood berongga: wajah glow, mata menyala, dagu shard."""
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        ax = NS.RIG_AX + int(tilt)
+        ay = NS.RIG_AY - 13 + (1 if math.sin(phase * 0.8) > 0.4 else 0)
+        breath = 1 if math.sin(phase * 1.6) > 0.2 else 0
+
+        # hood
+        pygame.draw.polygon(buf, P["ice_darkest"], [
+            (ax - 6, ay - 6), (ax + 6, ay - 6), (ax + 8, ay),
+            (ax + 7, ay + 5), (ax - 7, ay + 5), (ax - 8, ay)])
+        pygame.draw.polygon(buf, P["ice_dark"], [
+            (ax - 5, ay - 5), (ax + 5, ay - 5), (ax + 7, ay),
+            (ax + 6, ay + 4), (ax - 6, ay + 4), (ax - 7, ay)])
+        # puncak hood melengkung (breathing)
+        pygame.draw.polygon(buf, P["ice_mid"], [
+            (ax - 3, ay - 5), (ax + 3, ay - 5), (ax, ay - 7 - breath)])
+        # wajah berongga
+        pygame.draw.rect(buf, P["shadow_deep"], (ax - 4, ay - 3, 8, 6))
+        pygame.draw.rect(buf, P["face_dark"], (ax - 3, ay - 2, 6, 4))
+        # mata menyala (pixel 1x2, flicker)
+        flick = 0 if hurt else (1 if math.sin(phase * 7.0) > 0.93 else 0)
+        for side in (-1, 1):
+            ex = ax + side * 2
+            buf.set_at((ex, ay - 1), P["face_hot"])
+            buf.set_at((ex, ay), P["face_bright"] if not flick
+                       else P["white"])
+        # mulut berongga glow
+        pygame.draw.rect(buf, P["face_mid"], (ax - 1, ay + 2, 2, 1))
+        # duri hood samping
+        for side in (-1, 1):
+            pygame.draw.polygon(buf, P["ice_darkest"], [
+                (ax + side * 7, ay - 3), (ax + side * 10, ay - 5),
+                (ax + side * 8, ay - 1)])
+            pygame.draw.line(buf, P["ice_bright"],
+                             (ax + side * 7, ay - 3),
+                             (ax + side * 9, ay - 4), 1)
+        # dagu shard
+        pygame.draw.polygon(buf, P["ice_dark"], [
+            (ax - 1, ay + 5), (ax + 1, ay + 5), (ax, ay + 8)])
+        buf.set_at((ax, ay + 7), P["ice_bright"])
+
+    # ----------------------------- CROWN -----------------------------
+    def _rig_crown(buf, phase, flare):
+        """Mahkota es: 5 paku tinggi, ujung menyala, bergoyang halus."""
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        ax = NS.RIG_AX
+        ay = NS.RIG_AY - 19      # puncak hood
+        sway = int(math.sin(phase * 0.9) * 1)
+        spikes = ((0, 13), (-3, 10), (3, 10), (-6, 8), (6, 8))
+        for off, hgt in spikes:
+            bx = ax + off + (sway if abs(off) > 3 else sway // 2)
+            tip = (bx + (1 if off > 0 else -1 if off < 0 else 0)
+                   + sway // 2, ay - hgt)
+            pygame.draw.polygon(buf, P["shadow_deep"], [
+                (bx - 2 + 1, ay + 1), (bx + 2 + 1, ay + 1),
+                (tip[0] + 1, tip[1] + 1)])
+            pygame.draw.polygon(buf, P["ice_darkest"], [
+                (bx - 2, ay), (bx + 2, ay), tip])
+            pygame.draw.polygon(buf, P["ice_dark"], [
+                (bx - 1, ay), (bx + 1, ay), (tip[0], tip[1] + 1)])
+            pygame.draw.line(buf, P["ice_bright"], (bx, ay),
+                             (tip[0], tip[1] + 1), 1)
+            buf.set_at((int(tip[0]), int(tip[1])),
+                       P["ice_pure"] if flare else P["ice_hot"])
+
+    # ----------------------------- ARMS ------------------------------
+    def _rig_arm(buf, facing, action, phase, progress, back):
+        """Satu lengan kristal: lengan atas + bawah + cakar 3 jari."""
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        ax, ay = NS.RIG_AX, NS.RIG_AY
+        if back:
+            facing = -facing
+            phase = phase + math.pi          # fase berlawanan
+            if action == "attack":
+                action = "idle"              # lengan belakang santai
+            elif action.startswith("cast_") and action != "cast_r":
+                action = "idle"
+            progress = 0.0
+        (sx, sy), (ex, ey), (hx, hy), (tx, ty) = NS.arm_geometry(
+            facing, action, phase, progress)
+        dark = P["ice_darkest"] if back else P["ice_dark"]
+        mid = P["ice_dark"] if back else P["ice_mid"]
+        bri = P["ice_mid"] if back else P["ice_bright"]
+
+        def seg(x1, y1, x2, y2, w):
+            pygame.draw.line(buf, dark, (x1 // 2 + ax, y1 // 2 + ay),
+                             (x2 // 2 + ax, y2 // 2 + ay), w)
+
+        # lengan atas & bawah (lebar 3 px low-res = 6 px chunky)
+        seg(sx, sy, ex, ey, 3)
+        seg(ex, ey, hx, hy, 3)
+        # highlight atas lengan
+        pygame.draw.line(buf, mid,
+                         (sx // 2 + ax, sy // 2 + ay - 1),
+                         (ex // 2 + ax, ey // 2 + ay - 1), 1)
+        pygame.draw.line(buf, mid,
+                         (ex // 2 + ax, ey // 2 + ay - 1),
+                         (hx // 2 + ax, hy // 2 + ay - 1), 1)
+        # telapak
+        px_, py_ = hx // 2 + ax, hy // 2 + ay
+        pygame.draw.rect(buf, dark, (px_ - 1, py_ - 1, 3, 3))
+        buf.set_at((px_, py_), mid)
+        # cakar 3 jari mengarah ujung
+        ang = math.atan2(-(ty - hy), (tx - hx) * facing)
+        for da in (-0.45, 0.0, 0.45):
+            fx = px_ + int(math.cos(ang + da) * 3 * facing)
+            fy = py_ - int(math.sin(ang + da) * 3)
+            pygame.draw.line(buf, bri, (px_, py_), (fx, fy), 1)
+            buf.set_at((fx, fy), P["ice_hot"] if not back
+                       else P["ice_mid"])
+
+    # --------------------------- ORBIT -------------------------------
+    def _rig_orbit(buf, phase, action, progress, facing):
+        """3 splinter es mengorbit — sumber visual shard basic attack."""
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        ax, ay = NS.RIG_AX, NS.RIG_AY
+        base_r = 21
+        for i in range(3):
+            spd = (1.1, -0.8, 1.6)[i]
+            r = base_r + (3, -2, 5)[i] + int(math.sin(phase * 1.3 + i) * 2)
+            ang = phase * spd + i * math.tau / 3.0
+            oy = ay - 4 + (i - 1) * 5 + int(math.sin(phase + i * 2) * 2)
+            ox = ax + int(math.cos(ang) * r)
+            # saat menyerang, splinter depan menyusul tangan (maju)
+            if action == "attack" and 0.3 < progress < 0.6 and i == 2:
+                ox += int(6 * facing)
+            ln = 4 + (i % 2) * 2
+            dx_, dy_ = math.cos(ang + math.pi / 2), math.sin(ang
+                                                             + math.pi / 2)
+            pygame.draw.line(buf, P["ice_darkest"],
+                             (ox - int(dx_ * ln), oy - int(dy_ * ln)),
+                             (ox + int(dx_ * ln), oy + int(dy_ * ln)), 2)
+            pygame.draw.line(buf, P["ice_light"],
+                             (ox - int(dx_ * (ln - 1)),
+                              oy - int(dy_ * (ln - 1))),
+                             (ox + int(dx_ * (ln - 1)),
+                              oy + int(dy_ * (ln - 1))), 1)
+            buf.set_at((ox + int(dx_ * ln), oy + int(dy_ * ln)),
+                       P["ice_hot"])
+
+    # ------------------------ MASTERWORK (full-res) ------------------
+    def _masterwork_finish(surface, cx, cy, facing, phase, action,
+                           attack_progress=0):
+        """Pass detail full-res: halo mata, glow inti, glint mahkota."""
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        flick = 0.5 + 0.5 * math.sin(phase * 7.0)
+        cast = action.startswith("cast_")
+        hot = 1.35 if cast else 1.0
+        # halo mata (dua titik glow kecil)
+        for side in (-1, 1):
+            ex = cx + int(tilt_head(phase)) + side * 4
+            ey = cy - 27
+            NS._aacircle(surface, (*P["face_dark"], int(110 * hot)),
+                         (ex, ey), 4)
+            NS._aacircle(surface, (*P["face_bright"], int(60 * hot * flick)),
+                         (ex, ey), 6)
+        # glow inti dada
+        pulse = 0.7 + 0.3 * math.sin(phase * 1.5)
+        NS._aacircle(surface, (*P["ice_light"], int(120 * pulse * hot)),
+                     (cx, cy - 1), 7)
+        NS._aacircle(surface, (*P["ice_hot"], int(70 * pulse * hot)),
+                     (cx, cy - 1), 4)
+        # glint ujung mahkota (2 titik berkedip)
+        for off, k in ((0, 0), (-5, 2), (5, 3)):
+            gx = cx + off
+            gy = cy - 47 - (9 if off == 0 else 6)
+            tw = 0.5 + 0.5 * math.sin(phase * 3.0 + k * 1.7)
+            NS._aacircle(surface, (*P["ice_hot"], int(150 * tw)),
+                         (gx, gy), 2)
+        # rim kiri-atas: 3 piksel terang di tepi hood/torso
+        pygame.draw.line(surface, P["ice_bright"],
+                         (cx - 9, cy - 30), (cx - 8, cy - 27), 1)
+        pygame.draw.line(surface, P["ice_bright"],
+                         (cx - 12, cy - 12), (cx - 11, cy - 9), 1)
+        del cast
+
+    # ===================================================================
+    # BODY RENDER (komposit: rig chunky + outline + lighting)
+    # ===================================================================
+    def _draw_aa_body(surface, cx, cy, facing, phase, action,
+                      attack_progress=0):
+        """Komposit ORIGINAL-MAX: buffer tetap + outline + lighting."""
+        _composite_boss_body(
+            surface, _NS_ancient_apparition,
+            _NS_ancient_apparition._draw_aa_body_raw,
+            cx, cy, facing, phase, action, attack_progress,
+            rim_add=(150, 225, 255), bsize=200)
+
+    def _draw_aa_body_raw(surface, cx, cy, facing, phase, action,
+                          attack_progress=0):
+        """Rig pixel art: low-res -> upscale 2x -> blit pada jangkar."""
+        NS = _NS_ancient_apparition
+        hurt = action == "hurt"
+        ap = attack_progress if action == "attack" else 0.0
+        ph = NS._attack_phase(ap) if ap > 0 else ""
+
+        # ── bob & lean per state ──
+        if action == "walk":
+            bob = -abs(int(math.sin(phase * 2.6) * 2))
+            lean = 1
+        elif action == "run":
+            bob = -abs(int(math.sin(phase * 5.2) * 3))
+            lean = 3
+        elif action == "attack":
+            if ph == "anticipation":
+                bob = -1
+                lean = -2
+            elif ph == "windup":
+                bob = 1
+                lean = -3
+            elif ph == "swing":
+                bob = -1
+                lean = 5
+            elif ph == "follow":
+                bob = 0
+                lean = 6
+            else:
+                bob = 0
+                lean = 2
+        elif action.startswith("cast_"):
+            bob = -int(abs(math.sin(phase * 1.2)) * 2)
+            lean = 2 if action != "cast_r" else 0
+        else:
+            bob = -int(abs(math.sin(phase * 0.8)) * 1)   # breathing
+            lean = 0
+        if hurt:
+            lean = -2
+            bob = 0
+
+        lo, px = NS._rig_buffers()
+        lo.fill((0, 0, 0, 0))
+        core_hot = action.startswith("cast_") or \
+            (ap > 0.35 and ap < 0.6)
+        tilt = (2 if hurt else 0) + (1 if ph == "swing" else 0)
+
+        # URUTAN LAYER RIG (back -> front)
+        NS._rig_arm(lo, facing, action, phase, ap, back=True)
+        NS._rig_orbit(lo, phase, action, ap, facing)
+        NS._rig_skirt(lo, phase, action, lean)
+        NS._rig_torso(lo, phase, action, core_hot)
+        NS._rig_head(lo, phase, tilt, facing, hurt)
+        NS._rig_crown(lo, phase, core_hot)
+        NS._rig_arm(lo, facing, action, phase, ap, back=False)
+
+        # upscale 2x nearest-neighbor -> piksel chunky keras
+        pygame.transform.scale(lo, px.get_size(), px)
+        ox = int(cx) - NS.RIG_AX * NS.PIXEL
+        oy = int(cy) - NS.RIG_AY * NS.PIXEL + bob * NS.PIXEL
+        surface.blit(px, (ox, oy))
+
+        # pass detail full-res (glow/glint) pada posisi yang sama
+        NS._masterwork_finish(surface, cx + lean, cy + bob, facing, phase,
+                              action, attack_progress)
+
+    # ===================================================================
+    # CANVAS PROJECTILE SYSTEM (fallback tanpa lapisan hidup)
+    # ===================================================================
+    class IceShardProjectile:
+        """Cold Touch kecil — cepat, homing ringan (canvas space).
+
+        Bidang lengkap: position/velocity/speed/damage/lifetime/target/
+        radius/rotation/trail/particles/active.
+        """
+        SPEED = 7.5
+
+        def __init__(self, sx, sy, tx, ty, target=None):
+            self.position = [float(sx), float(sy)]
+            self.tx, self.ty = float(tx), float(ty)
+            dx, dy = float(tx) - sx, float(ty) - sy
+            d = max(1.0, math.hypot(dx, dy))
+            self.velocity = [dx / d * self.SPEED, dy / d * self.SPEED]
+            self.speed = float(self.SPEED)
+            self.damage = 0
+            self.lifetime = 90.0
+            self.age = 0.0
+            self.target = target
+            self.radius = 4
+            self.rotation = math.atan2(dy, dx)
+            self.trail = []
+            self.particles = True
+            self.alive = True
+
+        def update(self, dt=1.0 / 60.0):
+            self.age += dt
+            if self.age > self.lifetime:
+                self.alive = False
+                return
+            # target tracking: titik tujuan mengikuti target hidup
+            if self.target is not None and getattr(self.target, "alive",
+                                                   True):
+                tx = getattr(self.target, "x", None)
+                ty = getattr(self.target, "y", None)
+                if tx is not None and ty is not None:
+                    self.tx, self.ty = float(tx), float(ty)
+            dx = self.tx - self.position[0]
+            dy = self.ty - self.position[1]
+            dist = math.hypot(dx, dy)
+            if dist < self.speed + 4:
+                self.alive = False
+                return
+            self.trail.append((int(self.position[0]), int(self.position[1])))
+            if len(self.trail) > 8:
+                self.trail.pop(0)
+            self.position[0] += dx / dist * self.speed
+            self.position[1] += dy / dist * self.speed
+            self.rotation = math.atan2(dy, dx)
+
+        def draw(self, surface, phase):
+            NS = _NS_ancient_apparition
+            P = NS.PALETTE
+            for i, (tx, ty) in enumerate(self.trail):
+                a = int(60 + i * 14)
+                r = max(1, 3 - (len(self.trail) - i))
+                NS._aacircle(surface, (*P["ice_dark"], a), (tx, ty), r + 1)
+                NS._aacircle(surface, (*P["ice_light"], a), (tx, ty),
+                             max(1, r - 1))
+            if not self.alive:
+                return
+            px, py = int(self.position[0]), int(self.position[1])
+            dx, dy = math.cos(self.rotation), math.sin(self.rotation)
+            pxp, pyp = -dy, dx
+            shard = [(px + int(dx * 8), py + int(dy * 8)),
+                     (px + int(pxp * 4), py + int(pyp * 4)),
+                     (px - int(dx * 5), py - int(dy * 5)),
+                     (px - int(pxp * 4), py - int(pyp * 4))]
+            NS._poly(surface, P["ice_darkest"], shard)
+            NS._poly(surface, P["ice_mid"], [
+                (p[0] - dx * 2, p[1] - dy * 2) for p in shard[:3]])
+            NS._aaline(surface, P["ice_pure"],
+                       (px + int(dx * 6), py + int(dy * 6)),
+                       (px - int(dx * 3), py - int(dy * 3)), 1)
+            NS._aacircle(surface, (*P["ice_light"], 110), (px, py), 9)
+            NS._aacircle(surface, (*P["ice_bright"], 70), (px, py), 5)
+
+    class IceBoltProjectile:
+        """Ice Blast (E) — bolt besar lambat + shard pengorbit."""
+        SPEED = 5.0
+
+        def __init__(self, sx, sy, tx, ty, target=None):
+            self.position = [float(sx), float(sy)]
+            self.tx, self.ty = float(tx), float(ty)
+            dx, dy = float(tx) - sx, float(ty) - sy
+            d = max(1.0, math.hypot(dx, dy))
+            self.velocity = [dx / d * self.SPEED, dy / d * self.SPEED]
+            self.speed = float(self.SPEED)
+            self.damage = 0
+            self.lifetime = 140.0
+            self.age = 0.0
+            self.target = target
+            self.radius = 8
+            self.rotation = math.atan2(dy, dx)
+            self.trail = []
+            self.particles = True
+            self.alive = True
+
+        def update(self, dt=1.0 / 60.0):
+            self.age += dt
+            if self.age > self.lifetime:
+                self.alive = False
+                return
+            dx = self.tx - self.position[0]
+            dy = self.ty - self.position[1]
+            dist = math.hypot(dx, dy)
+            if dist < self.speed + 6:
+                self.alive = False
+                return
+            self.trail.append((int(self.position[0]), int(self.position[1])))
+            if len(self.trail) > 12:
+                self.trail.pop(0)
+            self.position[0] += dx / dist * self.speed
+            self.position[1] += dy / dist * self.speed
+
+        def draw(self, surface, phase):
+            NS = _NS_ancient_apparition
+            P = NS.PALETTE
+            for i, (tx, ty) in enumerate(self.trail):
+                a = int(50 + i * 13)
+                r = max(1, 5 - (len(self.trail) - i))
+                NS._aacircle(surface, (*P["ice_dark"], a), (tx, ty), r + 2)
+                NS._aacircle(surface, (*P["ice_mid"], a), (tx, ty), r)
+            if not self.alive:
+                return
+            px, py = int(self.position[0]), int(self.position[1])
+            dx, dy = math.cos(self.rotation), math.sin(self.rotation)
+            pxp, pyp = -dy, dx
+            shard = [(px + int(dx * 14), py + int(dy * 14)),
+                     (px + int(pxp * 7), py + int(pyp * 7)),
+                     (px - int(dx * 9), py - int(dy * 9)),
+                     (px - int(pxp * 7), py - int(pyp * 7))]
+            NS._poly(surface, P["shadow_deep"],
+                     [(p[0] + 2, p[1] + 2) for p in shard])
+            NS._poly(surface, P["ice_darkest"], shard)
+            NS._poly(surface, P["ice_dark"], [
+                (p[0] - dx * 2, p[1] - dy * 2) for p in shard])
+            NS._poly(surface, P["ice_mid"], [
+                (p[0] - dx * 5, p[1] - dy * 5) for p in shard[:3]])
+            NS._aaline(surface, P["ice_pure"],
+                       (px + int(dx * 12), py + int(dy * 12)),
+                       (px - int(dx * 6), py - int(dy * 6)), 1)
+            NS._aacircle(surface, (*P["ice_light"], 130), (px, py), 15)
+            NS._aacircle(surface, (*P["ice_bright"], 90), (px, py), 9)
+            for i in range(3):
+                ang = phase * 3 + i * math.tau / 3.0
+                ox = px + int(math.cos(ang) * 12)
+                oy = py + int(math.sin(ang) * 12)
+                NS._draw_snowflake(surface, ox, oy, 2, 190, rotate=phase)
+
+    class FrostBeam:
+        """Chilling Touch (W) — beam gerigi bergerak (canvas fallback)."""
+        def __init__(self, sx, sy, tx, ty, life=45):
+            self.sx, self.sy = int(sx), int(sy)
+            self.tx, self.ty = int(tx), int(ty)
+            self.life = life
+            self.age = 0
+            self.alive = True
+            self.rotation = math.atan2(self.ty - self.sy,
+                                       self.tx - self.sx)
+
+        def update(self, dt=1.0 / 60.0):
+            self.age += 1
+            if self.age >= self.life:
+                self.alive = False
+
+        def draw(self, surface, phase):
+            NS = _NS_ancient_apparition
+            P = NS.PALETTE
+            t = self.age / self.life
+            a_scale = t / 0.15 if t < 0.15 else (
+                1.0 - (t - 0.7) / 0.3 if t > 0.7 else 1.0)
+            dx = self.tx - self.sx
+            dy = self.ty - self.sy
+            dist = math.hypot(dx, dy)
+            if dist < 1 or a_scale <= 0:
+                return
+            dx /= dist
+            dy /= dist
+            pxp, pyp = -dy, dx
+            steps = int(dist / 7)
+            for i in range(steps):
+                tp = i / max(1, steps - 1)
+                bx = self.sx + dx * dist * tp
+                by = self.sy + dy * dist * tp
+                wave = math.sin(phase * 6 + tp * 14) * 3.5
+                fx = int(bx + pxp * wave)
+                fy = int(by + pyp * wave)
+                a = int(200 * a_scale * (1.0 - tp * 0.35))
+                w = int(4 + 2 * math.sin(math.pi * tp))
+                NS._aacircle(surface, (*P["ice_dark"], a), (fx, fy), w + 2)
+                NS._aacircle(surface, (*P["ice_mid"], a), (fx, fy), w)
+                NS._aacircle(surface, (*P["ice_hot"], a), (fx, fy),
+                             max(1, w - 2))
+                if i % 2 == 0:
+                    gx = int(fx + pxp * (w + 3))
+                    gy = int(fy + pyp * (w + 3))
+                    ex = int(gx + pxp * 4 + dx * (2 if i % 4 == 0 else -2))
+                    ey = int(gy + pyp * 4 + dy * (2 if i % 4 == 0 else -2))
+                    NS._aaline(surface, (*P["ice_bright"], a), (gx, gy),
+                               (ex, ey), 1)
+            for i in range(7):
+                tp = (phase * 0.35 + i * 0.15) % 1.0
+                sx = int(self.sx + dx * dist * tp)
+                sy = int(self.sy + dy * dist * tp)
+                NS._draw_snowflake(surface, sx + int(pxp * 7),
+                                   sy + int(pyp * 7), 2,
+                                   int(220 * a_scale),
+                                   rotate=phase * 2 + i)
+
+    # ===================================================================
+    # STATE MANAGEMENT + SPAWN
+    # ===================================================================
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_aa_projectiles"):
             boss._aa_projectiles = []
         if not hasattr(boss, "_aa_beams"):
             boss._aa_beams = []
-
         for proj in boss._aa_projectiles:
             proj.update()
             proj.draw(surface, phase)
         boss._aa_projectiles = [p for p in boss._aa_projectiles
-                                 if p.alive or p.age < 5]
-
+                                if p.alive or p.age < 0.08]
         for beam in boss._aa_beams:
             beam.update()
             beam.draw(surface, phase)
         boss._aa_beams = [b for b in boss._aa_beams if b.alive]
 
-
     def _spawn_ice_shard(boss, sx, sy, tx, ty):
-        # Saat Ancient Apparition DIMAINKAN sebagai hero (class Hero),
-        # basic attack-nya sudah menembakkan homing ice shard dari
-        # sistem projectile Hero (Hero._do_attack -> _spawn_projectile,
-        # digambar _draw_ice_shard_projectile di koordinat layar).
-        # Shard internal renderer ini hidup di ruang canvas offscreen
-        # yang ikut di-scale & sering ter-clip: dulu basic attack AA
-        # yang dimainkan jadi tidak terlihat sama sekali, dan kalau
-        # dibiarkan kini malah ada DUA shard. Flag
-        # ``_aa_hero_basic_shard`` mematikannya untuk hero; versi TRUE
-        # BOSS musuh (class Boss) tetap memakai shard internal ini.
+        # Saat Ancient Apparition DIMAINKAN sebagai hero, basic attack
+        # menembakkan homing shard dari sistem Hero — shard internal
+        # canvas ini dimatikan supaya tidak dobel (lihat _entity.py).
         if getattr(boss, "_aa_hero_basic_shard", False):
+            return
+        if getattr(boss, "_skip_renderer_projectiles", False):
             return
         if not hasattr(boss, "_aa_projectiles"):
             boss._aa_projectiles = []
-        boss._aa_projectiles.append(_NS_ancient_apparition.IceShardProjectile(sx, sy, tx, ty))
-
+        boss._aa_projectiles.append(
+            _NS_ancient_apparition.IceShardProjectile(
+                sx, sy, tx, ty, target=getattr(boss, "target", None)))
 
     def _spawn_ice_bolt(boss, sx, sy, tx, ty):
+        if getattr(boss, "_skip_renderer_projectiles", False):
+            return
         if not hasattr(boss, "_aa_projectiles"):
             boss._aa_projectiles = []
-        boss._aa_projectiles.append(_NS_ancient_apparition.IceBoltProjectile(sx, sy, tx, ty))
-
+        boss._aa_projectiles.append(
+            _NS_ancient_apparition.IceBoltProjectile(
+                sx, sy, tx, ty, target=getattr(boss, "target", None)))
 
     def _spawn_frost_beam(boss, sx, sy, tx, ty):
+        if getattr(boss, "_skip_renderer_projectiles", False):
+            return
         if not hasattr(boss, "_aa_beams"):
             boss._aa_beams = []
-        boss._aa_beams.append(_NS_ancient_apparition.FrostBeam(sx, sy, tx, ty, life=50))
-
-
-    # ===================================================================
-    # MAIN ENTRY
-    # ===================================================================
-    def draw_apparition(surface, boss, x, y):
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_ancient_apparition._detect_moving(boss)
-        _NS_ancient_apparition._update_attack_anim(boss)
-
-        attacking = (
-            getattr(boss, "_aa_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
-
-        # Background
-        _NS_ancient_apparition._draw_frost_aura(surface, x, y, pulse, active_skill)
-        _NS_ancient_apparition._draw_ground_frost(surface, x, y + 42, pulse, active_skill)
-
-        # Skill ground effects
-        if active_skill == "q":
-            _NS_ancient_apparition._draw_ice_vortex_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_ancient_apparition._draw_cold_feet_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # Character
-        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
-        _tgt, _tx, _ty = surface, x, y
-        if flash > 0:
-            NS = _NS_ancient_apparition
-            if NS._flash_buf is None:
-                NS._flash_buf = pygame.Surface((220, 240), pygame.SRCALPHA)
-            NS._flash_buf.fill((0, 0, 0, 0))
-            NS._record_shadow = []
-            _tgt, _tx, _ty = NS._flash_buf, 110, 120
-
-        if attacking:
-            _NS_ancient_apparition._draw_aa_attack(_tgt, boss, _tx, _ty)
-        elif active_skill == "w":
-            _NS_ancient_apparition._draw_aa_casting(_tgt, boss, _tx, _ty, "w")
-        elif active_skill == "e":
-            _NS_ancient_apparition._draw_aa_casting(_tgt, boss, _tx, _ty, "e")
-        elif moving:
-            _NS_ancient_apparition._draw_aa_walk(_tgt, boss, _tx, _ty)
-        else:
-            _NS_ancient_apparition._draw_aa_idle(_tgt, boss, _tx, _ty)
-
-        if flash > 0:
-            NS = _NS_ancient_apparition
-            surface.blit(NS._flash_buf, (x - _tx, y - _ty))
-            w = int(235 * min(1.0, flash / 8.0))
-            m = pygame.mask.from_surface(NS._flash_buf, 50)
-            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
-                               unsetcolor=(0, 0, 0, 0))
-            for rect in (NS._record_shadow or ()):
-                wht.fill((0, 0, 0, 0), rect)
-            surface.blit(wht, (x - _tx, y - _ty),
-                         special_flags=pygame.BLEND_RGB_ADD)
-            NS._record_shadow = None
-
-        # Trigger projectiles for skills
-        _NS_ancient_apparition._handle_skill_projectiles(boss, x, y, active_skill, skill_timer)
-
-        # Projectiles
-        _NS_ancient_apparition._manage_projectiles(boss, surface, pulse)
-
-        # Foreground skill effects
-        if active_skill == "q":
-            _NS_ancient_apparition._draw_ice_vortex(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_ancient_apparition._draw_cold_feet_spikes(surface, boss, x, y, skill_timer, pulse)
-
-
-    def _handle_skill_projectiles(boss, x, y, active_skill, timer):
-        """Spawn projectiles at appropriate times."""
-        tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
-
-        if active_skill == "e":
-            duration = 50
-            progress = max(0.0, min(1.0, 1 - timer / duration))
-            if 0.35 < progress < 0.45 and not getattr(boss, "_aa_e_spawned", False):
-                _NS_ancient_apparition._spawn_ice_bolt(boss, x + 25 * boss.direction, y - 5, tx, ty)
-                boss._aa_e_spawned = True
-            if progress > 0.7:
-                boss._aa_e_spawned = False
-
-        elif active_skill == "w":
-            duration = 45
-            progress = max(0.0, min(1.0, 1 - timer / duration))
-            if 0.3 < progress < 0.4 and not getattr(boss, "_aa_w_spawned", False):
-                _NS_ancient_apparition._spawn_frost_beam(boss, x + 25 * boss.direction, y - 5, tx, ty)
-                boss._aa_w_spawned = True
-            if progress > 0.7:
-                boss._aa_w_spawned = False
-
+        boss._aa_beams.append(
+            _NS_ancient_apparition.FrostBeam(sx, sy, tx, ty, life=45))
 
     # ===================================================================
-    # POSE MODES
+    # GROUND FX + SHADOW
     # ===================================================================
-    def _draw_aa_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_ancient_apparition._draw_shadow(surface, x, y + 52)
-        _NS_ancient_apparition._draw_ice_wisps(surface, x, y + 38, boss.pulse)
-        _NS_ancient_apparition._draw_aa_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
-
-    def _draw_aa_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_ancient_apparition._draw_shadow(surface, x + sway, y + 52)
-        _NS_ancient_apparition._draw_ice_wisps(surface, x + sway, y + 38, phase, trail=True,
-                         facing=boss.direction)
-        _NS_ancient_apparition._draw_aa_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
-
-
-    def _draw_aa_attack(surface, boss, x, y):
-        progress = getattr(boss, "_aa_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-        recoil = int(math.sin(progress * math.pi) * 3) * -boss.direction
-
-        # Spawn ice shard mid-attack
-        if 0.35 < progress < 0.45 and not getattr(boss, "_aa_atk_spawned", False):
-            tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
-            _NS_ancient_apparition._spawn_ice_shard(boss, x + 22 * boss.direction, y - 5, tx, ty)
-            boss._aa_atk_spawned = True
-        if progress < 0.1 or progress > 0.9:
-            boss._aa_atk_spawned = False
-
-        _NS_ancient_apparition._draw_shadow(surface, x + recoil, y + 52)
-        _NS_ancient_apparition._draw_ice_wisps(surface, x + recoil, y + 38, boss.pulse, intense=True)
-        _NS_ancient_apparition._draw_aa_body(surface, x + recoil, y, boss.direction, boss.pulse,
-                      "attack", progress)
-        _NS_ancient_apparition._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
-
-
-    def _draw_aa_casting(surface, boss, x, y, skill_key):
-        """Casting pose - arms raised, glowing intensity."""
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_ancient_apparition._draw_shadow(surface, x, y + 52)
-        _NS_ancient_apparition._draw_ice_wisps(surface, x, y + 38, boss.pulse, intense=True)
-        _NS_ancient_apparition._draw_aa_body(surface, x, y + bob, boss.direction, boss.pulse,
-                      "cast_" + skill_key)
-
-
-    # ===================================================================
-    # BODY RENDERING - Ice crystalline entity
-    # ===================================================================
-    def _draw_aa_body(surface, cx, cy, facing, phase, action, attack_progress=0):
-        """Komposit ORIGINAL-MAX: buffer tetap + outline + lighting."""
-        _composite_boss_body(
-            surface, _NS_ancient_apparition, _NS_ancient_apparition._draw_aa_body_raw,
-            cx, cy, facing, phase, action, attack_progress,
-            rim_add=(150, 225, 255), bsize=200)
-
-    def _masterwork_finish(surface, cx, cy, facing, phase, action,
-                           attack_progress=0):
-        """ORIGINAL-MAX detail pass: wajah true boss + emblem + rim kiri-atas."""
-        P = _NS_ancient_apparition.PALETTE
-        fy = cy - 26
-        for side in (-1, 1):
-            ex = cx + side * 3
-            pygame.draw.circle(surface, P["shadow_deep"], (ex, fy - 1), 3)
-            pygame.draw.circle(surface, P["face_hot"], (ex, fy - 1), 2)
-            pygame.draw.circle(surface, P["ice_white"], (ex, fy - 2), 1)
-            pygame.draw.circle(surface, P["face_bright"], (ex, fy - 1), 4)
-        pygame.draw.rect(surface, P["shadow_deep"], (cx - 3, fy + 2, 6, 2))
-        pygame.draw.rect(surface, P["face_mid"], (cx - 2, fy + 2, 4, 1))
-        pygame.draw.circle(surface, P["cyan_dark"], (cx, cy - 7), 6)
-        pygame.draw.circle(surface, P["cyan_bright"], (cx, cy - 7), 4)
-        pygame.draw.circle(surface, P["ice_pure"], (cx, cy - 7), 3)
-        pygame.draw.line(surface, P["shadow_deep"], (cx - 10, cy - 18), (cx + 10, cy - 18), 1)
-        pygame.draw.line(surface, P["ice_darkest"], (cx - 15, cy - 2), (cx - 11, cy + 2), 1)
-        pygame.draw.line(surface, P["ice_darkest"], (cx + 15, cy - 2), (cx + 11, cy + 2), 1)
-        for xo, yo in ((-4, -44), (0, -48), (4, -44)):
-            pygame.draw.circle(surface, P["ice_hot"], (cx + xo, cy + yo), 2)
-        for side in (-1, 1):
-            pygame.draw.circle(surface, P["ice_bright"], (cx + side * 14, cy - 24), 2)
-
-
-    def _draw_aa_body_raw(surface, cx, cy, facing, phase, action,
-                          attack_progress=0):
-        """Ancient Apparition body - ice crystal humanoid."""
-        is_casting = action.startswith("cast_")
-        intensity = 1.3 if is_casting else 1.0
-
-        # Lower ice shards (floating base) - drawn as icy skirt/tail
-        _NS_ancient_apparition._draw_ice_skirt(surface, cx, cy + 8, phase, intensity)
-
-        # Torso (crystalline shard cluster)
-        _NS_ancient_apparition._draw_ice_torso(surface, cx, cy - 5, phase, intensity)
-
-        # Arms (ice claw arms)
-        if action == "attack":
-            _NS_ancient_apparition._draw_attack_arms(surface, cx, cy - 5, facing, phase, attack_progress)
-        elif is_casting:
-            _NS_ancient_apparition._draw_casting_arms(surface, cx, cy - 5, facing, phase)
-        else:
-            _NS_ancient_apparition._draw_idle_arms(surface, cx, cy - 5, facing, phase)
-
-        # Head with ghostly face
-        _NS_ancient_apparition._draw_aa_head(surface, cx, cy - 26, facing, phase, intensity)
-
-        # Ice crown / top shards
-        _NS_ancient_apparition._draw_ice_crown(surface, cx, cy - 40, phase, intensity)
-
-        # Sparkle particles around body
-        _NS_ancient_apparition._draw_body_sparkles(surface, cx, cy - 10, phase, intensity)
-
-        # ORIGINAL-MAX detail pass (wajah true boss + emblem + rim)
-        _NS_ancient_apparition._masterwork_finish(surface, cx, cy, facing,
-                                                  phase, action, attack_progress)
-
-
-    def _draw_ice_skirt(surface, cx, cy, phase, intensity=1.0):
-        """Lower body - jagged ice shards flowing down."""
-        sway = math.sin(phase * 0.6) * 2
-
-        # Central mass
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["shadow_ice"], [
-            (cx - 16, cy),
-            (cx + 16, cy),
-            (cx + 14, cy + 25),
-            (cx + 6, cy + 32),
-            (cx - 6, cy + 32),
-            (cx - 14, cy + 25),
-        ])
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], [
-            (cx - 14, cy + 2),
-            (cx + 14, cy + 2),
-            (cx + 12, cy + 23),
-            (cx + 5, cy + 30),
-            (cx - 5, cy + 30),
-            (cx - 12, cy + 23),
-        ])
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_dark"], [
-            (cx - 12, cy + 4),
-            (cx + 12, cy + 4),
-            (cx + 10, cy + 21),
-            (cx + 4, cy + 26),
-            (cx - 4, cy + 26),
-            (cx - 10, cy + 21),
-        ])
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_mid"], [
-            (cx - 8, cy + 6),
-            (cx + 8, cy + 6),
-            (cx + 6, cy + 18),
-            (cx + 2, cy + 22),
-            (cx - 2, cy + 22),
-            (cx - 6, cy + 18),
-        ])
-
-        # Vertical light lines (ice reflection)
-        for line_x in (-4, 0, 4):
-            _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_bright"],
-                    (cx + line_x, cy + 4), (cx + line_x, cy + 20), 1)
-
-        # Jagged ice shards hanging down at sides
-        for i, offset in enumerate([-14, -8, -2, 4, 10, 14]):
-            shard_h = 18 + (i % 3) * 4
-            shard_x = cx + offset + int(sway * (offset / 15))
-            tip_x = shard_x + int(sway * 0.5)
-            tip_y = cy + shard_h
-
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["shadow_deep"], [
-                (shard_x - 3 + 1, cy + 4 + 1),
-                (shard_x + 3 + 1, cy + 4 + 1),
-                (tip_x + 1, tip_y + 1),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], [
-                (shard_x - 3, cy + 4),
-                (shard_x + 3, cy + 4),
-                (tip_x, tip_y),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_dark"], [
-                (shard_x - 2, cy + 5),
-                (shard_x + 2, cy + 5),
-                (tip_x, tip_y - 1),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_mid"], [
-                (shard_x - 1, cy + 6),
-                (shard_x + 1, cy + 6),
-                (tip_x, tip_y - 3),
-            ])
-            _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_bright"],
-                    (shard_x, cy + 6), (tip_x, tip_y - 2), 1)
-            _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_hot"], (tip_x, tip_y - 1), 1)
-
-
-    def _draw_ice_torso(surface, cx, cy, phase, intensity=1.0):
-        """Crystalline torso - cluster of shards."""
-        # Shadow
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["shadow_deep"], [
-            (cx - 12 + 2, cy - 8 + 2),
-            (cx + 12 + 2, cy - 8 + 2),
-            (cx + 14 + 2, cy + 10 + 2),
-            (cx - 14 + 2, cy + 10 + 2),
-        ])
-
-        # Main torso mass
-        torso = [
-            (cx - 12, cy - 8),
-            (cx + 12, cy - 8),
-            (cx + 14, cy + 10),
-            (cx - 14, cy + 10),
-        ]
-        _NS_ancient_apparition._draw_ice_shard(surface, torso)
-
-        # Central bright core
-        pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-        core_r = int(6 * pulse * intensity)
-        _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_dark"], 200), (cx, cy), core_r + 4)
-        _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_mid"], (cx, cy), core_r + 2)
-        _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_bright"], (cx, cy), core_r)
-        _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_hot"], (cx, cy), max(1, core_r - 2))
-        _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_pure"], (cx, cy), max(1, core_r - 4))
-
-        # Diagonal ice facet lines
-        _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_bright"], (cx - 10, cy - 5), (cx - 4, cy + 5), 1)
-        _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_bright"], (cx + 10, cy - 5), (cx + 4, cy + 5), 1)
-        _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_hot"], (cx - 5, cy - 6), (cx - 2, cy - 2), 1)
-        _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_hot"], (cx + 5, cy - 6), (cx + 2, cy - 2), 1)
-
-        # Shoulder shards jutting outward
-        for side in (-1, 1):
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], [
-                (cx + side * 10, cy - 6),
-                (cx + side * 16, cy - 10),
-                (cx + side * 14, cy - 4),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_dark"], [
-                (cx + side * 11, cy - 5),
-                (cx + side * 15, cy - 9),
-                (cx + side * 13, cy - 4),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_mid"], [
-                (cx + side * 12, cy - 5),
-                (cx + side * 14, cy - 8),
-                (cx + side * 13, cy - 5),
-            ])
-            _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_bright"],
-                    (cx + side * 12, cy - 5),
-                    (cx + side * 15, cy - 9), 1)
-
-        # Small ice spikes on chest (upward)
-        for i, off in enumerate([-6, -2, 3, 7]):
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], [
-                (cx + off - 1, cy - 6),
-                (cx + off + 1, cy - 6),
-                (cx + off, cy - 10 - (i % 2) * 2),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_bright"], [
-                (cx + off, cy - 6),
-                (cx + off + 1, cy - 6),
-                (cx + off, cy - 9),
-            ])
-
-
-    def _draw_aa_head(surface, cx, cy, facing, phase, intensity=1.0):
-        """Ghostly ice head with glowing face."""
-        # Head shape - elongated hood-like
-        head = [
-            (cx - 9, cy + 8),
-            (cx - 10, cy - 2),
-            (cx - 6, cy - 10),
-            (cx, cy - 12),
-            (cx + 6, cy - 10),
-            (cx + 10, cy - 2),
-            (cx + 9, cy + 8),
-        ]
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["shadow_deep"], [(p[0] + 2, p[1] + 2) for p in head])
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], head)
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_dark"], [
-            (cx - 8, cy + 7),
-            (cx - 9, cy - 2),
-            (cx - 5, cy - 9),
-            (cx, cy - 11),
-            (cx + 5, cy - 9),
-            (cx + 9, cy - 2),
-            (cx + 8, cy + 7),
-        ])
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_mid"], [
-            (cx - 6, cy + 6),
-            (cx - 7, cy - 2),
-            (cx - 4, cy - 7),
-            (cx, cy - 9),
-            (cx + 4, cy - 7),
-            (cx + 7, cy - 2),
-            (cx + 6, cy + 6),
-        ])
-
-        # Face area - darker recessed
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["shadow_deep"], [
-            (cx - 6, cy - 4),
-            (cx + 6, cy - 4),
-            (cx + 5, cy + 5),
-            (cx - 5, cy + 5),
-        ])
-
-        # GHOSTLY GLOWING FACE (Ancient Apparition signature!)
-        face_pulse = math.sin(phase * 1.2) * 0.25 + 0.75
-        face_intensity = face_pulse * intensity
-
-        # Two glowing eyes (elongated ovals) - layered ring + hot core
-        for side in (-1, 1):
-            ex = cx + side * 3
-            ey = cy - 1
-            # Outer glow
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["face_dark"], int(180 * face_intensity)),
-                      (ex, ey), 4)
-            # Bright core
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["face_hot"], int(255 * face_intensity)),
-                      (ex, ey), 2)
-            # Bright halo
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["face_bright"], int(80 * face_intensity)),
-                      (ex, ey), 6)
-
-        # Ghostly mouth (glowing hollow)
-        _NS_ancient_apparition._ellipse(surface, _NS_ancient_apparition.PALETTE["shadow_deep"], (cx - 3, cy + 2, 6, 3))
-        _NS_ancient_apparition._ellipse(surface, (*_NS_ancient_apparition.PALETTE["face_mid"], int(200 * face_intensity)),
-                 (cx - 2, cy + 2, 4, 2))
-        _NS_ancient_apparition._ellipse(surface, (*_NS_ancient_apparition.PALETTE["face_bright"], int(230 * face_intensity)),
-                 (cx - 1, cy + 2, 2, 1))
-
-        # Ice spikes on sides of head (jagged)
-        for side in (-1, 1):
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], [
-                (cx + side * 9, cy - 4),
-                (cx + side * 14, cy - 8),
-                (cx + side * 11, cy - 2),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_mid"], [
-                (cx + side * 10, cy - 4),
-                (cx + side * 13, cy - 7),
-                (cx + side * 11, cy - 3),
-            ])
-            _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_bright"],
-                    (cx + side * 10, cy - 4),
-                    (cx + side * 13, cy - 7), 1)
-
-        # Small chin spikes
-        for off in (-3, 0, 3):
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], [
-                (cx + off - 1, cy + 6),
-                (cx + off + 1, cy + 6),
-                (cx + off, cy + 10),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_mid"], [
-                (cx + off, cy + 6),
-                (cx + off + 1, cy + 6),
-                (cx + off, cy + 9),
-            ])
-
-        # Face outer glow (larger halo)
-        _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["face_bright"], int(40 * face_intensity)),
-                  (cx, cy), 12)
-
-
-    def _draw_ice_crown(surface, cx, cy, phase, intensity=1.0):
-        """Tall ice shards on top of head - crown."""
-        # Main central tall spike
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["shadow_deep"], [
-            (cx - 3 + 1, cy + 8 + 1),
-            (cx + 3 + 1, cy + 8 + 1),
-            (cx + 1, cy - 10 + 1),
-        ])
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], [
-            (cx - 3, cy + 8),
-            (cx + 3, cy + 8),
-            (cx, cy - 10),
-        ])
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_dark"], [
-            (cx - 2, cy + 7),
-            (cx + 2, cy + 7),
-            (cx, cy - 9),
-        ])
-        _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_mid"], [
-            (cx - 1, cy + 6),
-            (cx + 1, cy + 6),
-            (cx, cy - 8),
-        ])
-        _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_bright"], (cx, cy + 5), (cx, cy - 8), 1)
-        _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_hot"], (cx, cy - 8), 1)
-
-        # Side spikes (slightly shorter, angled outward)
-        for side in (-1, 1):
-            for offset in (side * 4, side * 8):
-                spike_h = 14 - abs(offset) // 2
-                tip_x = cx + offset + side * 2
-                tip_y = cy + 8 - spike_h
-
-                _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["shadow_deep"], [
-                    (cx + offset - 2 + 1, cy + 8 + 1),
-                    (cx + offset + 2 + 1, cy + 8 + 1),
-                    (tip_x + 1, tip_y + 1),
-                ])
-                _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], [
-                    (cx + offset - 2, cy + 8),
-                    (cx + offset + 2, cy + 8),
-                    (tip_x, tip_y),
-                ])
-                _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_dark"], [
-                    (cx + offset - 1, cy + 7),
-                    (cx + offset + 1, cy + 7),
-                    (tip_x - side, tip_y + 1),
-                ])
-                _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_bright"], [
-                    (cx + offset, cy + 7),
-                    (cx + offset + 1, cy + 7),
-                    (tip_x - side, tip_y + 2),
-                ])
-                _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_hot"], (tip_x, tip_y + 1), 1)
-
-        # Sparkles at spike tips
-        for i in range(4):
-            angle = phase * 0.5 + i * math.pi / 2
-            sx = cx + int(math.cos(angle) * 10)
-            sy = cy - 4 + int(math.sin(angle) * 6)
-            _NS_ancient_apparition._draw_snowflake(surface, sx, sy, 2, int(180 * intensity),
-                            rotate=phase * 2)
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Arms at rest with claw-hands."""
-        sway = math.sin(phase * 0.7) * 2
-        for side in (-1, 1):
-            sh_x = cx + side * 14
-            sh_y = cy - 2
-            elbow_x = sh_x + side * 8
-            elbow_y = cy + 8 + int(sway)
-            hand_x = elbow_x + side * 5
-            hand_y = elbow_y + 10
-
-            _NS_ancient_apparition._draw_ice_arm_segment(surface, sh_x, sh_y, elbow_x, elbow_y)
-            _NS_ancient_apparition._draw_ice_arm_segment(surface, elbow_x, elbow_y, hand_x, hand_y)
-            _NS_ancient_apparition._draw_ice_claw(surface, hand_x, hand_y, side, phase)
-
-
-    def _draw_casting_arms(surface, cx, cy, facing, phase):
-        """Both arms raised for casting."""
-        for side in (-1, 1):
-            sh_x = cx + side * 14
-            sh_y = cy - 2
-            # Raised elbow
-            elbow_x = sh_x + side * 10
-            elbow_y = cy - 4
-            hand_x = elbow_x + side * 6
-            hand_y = cy - 10
-
-            _NS_ancient_apparition._draw_ice_arm_segment(surface, sh_x, sh_y, elbow_x, elbow_y)
-            _NS_ancient_apparition._draw_ice_arm_segment(surface, elbow_x, elbow_y, hand_x, hand_y)
-            _NS_ancient_apparition._draw_ice_claw(surface, hand_x, hand_y, side, phase)
-
-            # Casting energy in hand
-            pulse = math.sin(phase * 4 + side) * 0.3 + 0.7
-            r = int(5 * pulse)
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_dark"], 150), (hand_x, hand_y), r + 4)
-            _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_mid"], (hand_x, hand_y), r + 2)
-            _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_bright"], (hand_x, hand_y), r)
-            _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_hot"], (hand_x, hand_y), max(1, r - 2))
-            _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_pure"], (hand_x, hand_y), max(1, r - 3))
-
-
-    def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
-        """One arm extended forward casting."""
-        # Back arm - resting
-        back_side = -facing
-        bs_x = cx + back_side * 14
-        bs_y = cy - 2
-        be_x = bs_x + back_side * 8
-        be_y = cy + 6
-        bh_x = be_x + back_side * 4
-        bh_y = be_y + 8
-        _NS_ancient_apparition._draw_ice_arm_segment(surface, bs_x, bs_y, be_x, be_y)
-        _NS_ancient_apparition._draw_ice_arm_segment(surface, be_x, be_y, bh_x, bh_y)
-        _NS_ancient_apparition._draw_ice_claw(surface, bh_x, bh_y, back_side, phase)
-
-        # Front arm - extends forward
-        fs_x = cx + facing * 14
-        fs_y = cy - 2
-
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = -0.9 * t
-        elif progress < 0.5:
-            t = (progress - 0.3) / 0.2
-            arm_angle = -0.9 + 1.8 * t
-        else:
-            t = (progress - 0.5) / 0.5
-            arm_angle = 0.9 - 0.5 * t
-
-        arm_len = 14
-        fe_x = fs_x + int(math.cos(arm_angle) * arm_len * 0.6) * facing
-        fe_y = fs_y + int(math.sin(arm_angle) * arm_len * 0.6) - 2
-        fh_x = fe_x + int(math.cos(arm_angle) * arm_len * 0.7) * facing
-        fh_y = fe_y + int(math.sin(arm_angle) * arm_len * 0.7)
-
-        _NS_ancient_apparition._draw_ice_arm_segment(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_ancient_apparition._draw_ice_arm_segment(surface, fe_x, fe_y, fh_x, fh_y)
-        _NS_ancient_apparition._draw_ice_claw(surface, fh_x, fh_y, facing, phase)
-
-        # Casting energy
-        if 0.2 < progress < 0.55:
-            intensity = math.sin((progress - 0.2) / 0.35 * math.pi)
-            r = int(4 + intensity * 6)
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_dark"], 150), (fh_x, fh_y), r + 4)
-            _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_mid"], (fh_x, fh_y), r + 2)
-            _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_bright"], (fh_x, fh_y), r)
-            _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_hot"], (fh_x, fh_y), max(1, r - 2))
-            _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_pure"], (fh_x, fh_y), max(1, r - 4))
-
-
-    def _draw_ice_arm_segment(surface, x1, y1, x2, y2):
-        """Arm segment - jagged ice."""
-        _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["shadow_deep"], (x1 + 2, y1 + 2), (x2 + 2, y2 + 2), 8)
-        _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], (x1, y1), (x2, y2), 7)
-        _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_dark"], (x1, y1), (x2, y2), 5)
-        _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_mid"], (x1, y1), (x2, y2), 3)
-        _NS_ancient_apparition._aaline(surface, _NS_ancient_apparition.PALETTE["ice_bright"], (x1 - 1, y1), (x2 - 1, y2), 1)
-
-
-    def _draw_ice_claw(surface, cx, cy, facing, phase):
-        """Ice claw hand — 3 sharp fingers."""
-        # Palm
-        _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["shadow_deep"], (cx + 1, cy + 1), 4)
-        _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], (cx, cy), 4)
-        _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_dark"], (cx, cy), 3)
-        _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_mid"], (cx - 1, cy - 1), 2)
-
-        # 3 curved claws
-        for i, angle_off in enumerate((-0.4, 0, 0.4)):
-            base_angle = 0.3 * facing + angle_off
-            tip_x = cx + int(math.cos(base_angle) * 8) * facing
-            tip_y = cy + int(math.sin(base_angle) * 8) + 3
-            base_x = cx + int(math.cos(base_angle) * 3) * facing
-            base_y = cy + int(math.sin(base_angle) * 3)
-
-            # Shadow
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["shadow_deep"], [
-                (base_x - 1 + 1, base_y + 1),
-                (base_x + 1 + 1, base_y + 1),
-                (tip_x + 1, tip_y + 1),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_darkest"], [
-                (base_x - 1, base_y),
-                (base_x + 1, base_y),
-                (tip_x, tip_y),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_dark"], [
-                (base_x - 1, base_y),
-                (base_x + 1, base_y),
-                (tip_x - 1, tip_y - 1),
-            ])
-            _NS_ancient_apparition._poly(surface, _NS_ancient_apparition.PALETTE["ice_bright"], [
-                (base_x, base_y),
-                (base_x + 1, base_y),
-                (tip_x - 1, tip_y - 2),
-            ])
-            _NS_ancient_apparition._aacircle(surface, _NS_ancient_apparition.PALETTE["ice_hot"], (tip_x, tip_y), 1)
-
-
-    def _draw_body_sparkles(surface, cx, cy, phase, intensity=1.0):
-        """Sparkling ice particles around body."""
-        for i in range(6):
-            angle = phase * 0.4 + i * math.pi / 5
-            r = 22 + int(math.sin(phase * 0.7 + i) * 8)
-            px = cx + int(math.cos(angle) * r)
-            py = cy + int(math.sin(angle) * r * 0.6)
-            alpha = int((150 + math.sin(phase + i * 0.5) * 100) * intensity)
-            alpha = max(0, min(255, alpha))
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_bright"], alpha), (px, py), 2)
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_hot"], alpha), (px, py), 1)
-
-
-    # ===================================================================
-    # FLOATING EFFECTS
-    # ===================================================================
-    def _draw_ice_wisps(surface, cx, cy, phase, trail=False, facing=1, intense=False):
-        """Frost wisps rising from below."""
-        NS = _NS_ancient_apparition
-        if NS._mist_cache is None:
-            mist = pygame.Surface((140, 42), pygame.SRCALPHA)
-            for radius in range(34, 3, -4):
-                alpha = int((34 - radius) * 2.5)
-                if alpha > 0:
-                    pygame.draw.ellipse(
-                        mist, (*NS.PALETTE["frost_dark"], min(255, alpha)),
-                        (70 - radius * 2, 21 - radius // 3,
-                         radius * 4, max(3, radius // 2)),
-                    )
-            NS._mist_cache = mist
-        strength = 1.5 if intense else 1.0
-        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
-        spr = NS._mist_cache
-        spr.set_alpha(int(255 * min(1.0, pulse * strength)))
-        surface.blit(spr, (cx - 70, cy - 10))
-
-        # Rising frost wisps
-        for i, offset in enumerate((-18, 0, 18)):
-            t = (phase * 0.55 + i * 0.25) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 28)
-            alpha = max(0, min(255, int(220 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["frost_dark"], alpha), (sx, sy), 5)
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_hot"], alpha), (sx, sy - 3), 2)
-
-        # Snowflakes drifting
-        for i in range(3):
-            t = (phase * 0.4 + i * 0.2) % 1.0
-            angle = phase * 0.5 + i * math.pi * 2 / 5
-            r = 22 + int(math.sin(phase + i * 1.3) * 6)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 9) - int(t * 8)
-            alpha = int(230 * (1 - t * 0.5) * strength)
-            _NS_ancient_apparition._draw_snowflake(surface, sx, sy, 2, max(0, min(255, alpha)),
-                             rotate=phase + i)
-
-        # Small ice crystals on ground
-        for i in range(2):
-            angle = i * math.pi / 2
-            sx = cx + int(math.cos(angle) * 30)
-            sy = cy + int(math.sin(angle) * 6)
-            _NS_ancient_apparition._draw_frost_crystal_spike(surface, sx, sy + 4, sy - 3, 2, 200)
-
-        if trail:
-            for i in range(3):
-                sx = cx - (i + 1) * 12 * facing
-                sy = cy + int(math.sin(phase + i) * 3)
-                alpha = max(0, 140 - i * 25)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["frost_mid"], alpha),
-                          (sx, sy), max(2, 5 - i))
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["frost_light"], alpha),
-                          (sx, sy), max(1, 3 - i))
-
-
     def _draw_shadow(surface, x, y, lift=0):
+        """Bayangan reaktif: mengecil saat terangkat, dasar menapak."""
         NS = _NS_ancient_apparition
         if NS._shadow_cache is None:
             shadow = pygame.Surface((110, 22), pygame.SRCALPHA)
@@ -6527,9 +6238,11 @@ class _NS_ancient_apparition:
                 alpha = max(0, (11 - radius) * 15)
                 pygame.draw.ellipse(
                     shadow, (0, 0, 0, alpha),
-                    (11 - radius, 11 - radius, 88 + radius * 2, radius * 2),
-                )
-            pygame.draw.ellipse(shadow, (*NS.PALETTE["ice_dark"], 80), (10, 5, 90, 12))
+                    (11 - radius, 11 - radius, 88 + radius * 2,
+                     radius * 2))
+            pygame.draw.ellipse(shadow,
+                                (*NS.PALETTE["ice_dark"], 80),
+                                (10, 5, 90, 12))
             NS._shadow_cache = shadow
         spr = NS._shadow_cache
         w, h = spr.get_size()
@@ -6539,31 +6252,32 @@ class _NS_ancient_apparition:
             h = max(2, int(h * k))
             spr = pygame.transform.smoothscale(spr, (w, h))
         bx = x - w // 2
-        by = (y + 11) - h          # dasar tetap menapak di y+11
+        by = (y + 11) - h
         surface.blit(spr, (bx, by))
         if NS._record_shadow is not None:
             NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
-
     def _draw_frost_aura(surface, x, y, phase, active_skill):
+        """Aura dingin halus di belakang badan (cached)."""
         NS = _NS_ancient_apparition
         if NS._aura_cache is None:
             aura = pygame.Surface((200, 180), pygame.SRCALPHA)
             for radius in range(80, 5, -4):
-                alpha = int((80 - radius) * 1.4)
+                alpha = int((80 - radius) * 1.15)
                 if alpha > 0:
-                    NS._aacircle(aura, (*NS.PALETTE["ice_darkest"], min(255, alpha)),
-                                 (100, 90), radius)
+                    NS._aacircle(
+                        aura,
+                        (*NS.PALETTE["ice_darkest"], min(255, alpha)),
+                        (100, 90), radius)
             NS._aura_cache = aura
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
-        strength = 1.5 if active_skill in ("q", "w", "e", "r") else 1.0
+        strength = 1.4 if active_skill in ("q", "w", "e", "r") else 1.0
         spr = NS._aura_cache
         spr.set_alpha(int(255 * max(0.15, min(1.0, pulse * strength))))
         surface.blit(spr, (x - 100, y - 90))
 
-
     def _draw_ground_frost(surface, x, y, phase, active_skill):
-        """Frost ring on ground (basis di-cache)."""
+        """Platform beku di bawah kaki (cached) + denyut skill."""
         NS = _NS_ancient_apparition
         if NS._ground_cache is None:
             ring = pygame.Surface((140, 46), pygame.SRCALPHA)
@@ -6577,209 +6291,556 @@ class _NS_ancient_apparition:
                 y1 = 23 + int(math.sin(angle) * 7)
                 x2 = 70 + int(math.cos(angle) * 60)
                 y2 = 23 + int(math.sin(angle) * 11)
-                pygame.draw.line(ring, (*NS.PALETTE["ice_bright"], 180),
-                                 (x1, y1), (x2, y2), 1)
+                pygame.draw.line(
+                    ring, (*NS.PALETTE["ice_bright"], 180),
+                    (x1, y1), (x2, y2), 1)
             NS._ground_cache = ring
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        surface.blit(NS._ground_cache, (x - 70, y - 23))
+        surface.blit(NS._ground_cache, (x - 70, y - 23 + 30))
         if active_skill:
-            pygame.draw.ellipse(surface, (*NS.PALETTE["ice_hot"], int(80 * pulse)),
-                                (x - 55, y - 15, 110, 30), 1)
+            NS._ellipse(surface,
+                        (*NS.PALETTE["ice_hot"], int(80 * pulse)),
+                        (x - 55, y - 15 + 30, 110, 30), 1)
 
-
-    def _draw_cast_flash(surface, x, y, facing, progress):
-        """Flash at hand during ranged attack."""
-        if progress < 0.25 or progress > 0.6:
-            return
-        t = (progress - 0.25) / 0.35
-        intensity = math.sin(t * math.pi)
-
-        fx = x + 22 * facing
-        fy = y - 5
-        alpha = int(220 * intensity)
-        radius = int(6 + intensity * 14)
-
-        _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_dark"], alpha // 2), (fx, fy), radius + 6)
-        _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_mid"], alpha), (fx, fy), radius + 2)
-        _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_bright"], alpha), (fx, fy), radius)
-        _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_hot"], alpha), (fx, fy), max(1, radius - 3))
-        _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_pure"], min(255, alpha)),
-                  (fx, fy), max(1, radius - 5))
-
-        # Snowflake burst
-        for i in range(5):
-            angle = i * math.pi * 2 / 5 + progress * 3
-            ex = fx + int(math.cos(angle) * radius * 1.4)
-            ey = fy + int(math.sin(angle) * radius * 1.4)
-            _NS_ancient_apparition._draw_snowflake(surface, ex, ey, 2, alpha, rotate=progress * 5)
-
+    def _draw_ice_wisps(surface, cx, cy, phase, trail=False, facing=1,
+                        intense=False):
+        """Mist beku + salju melayang (versi ringan; partikel hidup ada
+        di lapisan FX — fungsi ini fallback canvas)."""
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        if NS._mist_cache is None:
+            mist = pygame.Surface((140, 42), pygame.SRCALPHA)
+            for radius in range(34, 3, -4):
+                alpha = int((34 - radius) * 2.2)
+                if alpha > 0:
+                    pygame.draw.ellipse(
+                        mist, (*P["frost_dark"], min(255, alpha)),
+                        (70 - radius * 2, 21 - radius // 3,
+                         radius * 4, max(3, radius // 2)))
+            NS._mist_cache = mist
+        strength = 1.4 if intense else 1.0
+        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
+        spr = NS._mist_cache
+        spr.set_alpha(int(255 * min(1.0, pulse * strength)))
+        surface.blit(spr, (cx - 70, cy - 10))
+        for i, offset in enumerate((-16, 0, 16)):
+            t = (phase * 0.55 + i * 0.25) % 1.0
+            sx = cx + offset + int(math.sin(phase + i) * 3)
+            sy = cy + 5 - int(t * 26)
+            alpha = max(0, min(255, int(200 * (1 - t) * strength)))
+            if alpha > 0:
+                NS._aacircle(surface, (*P["frost_dark"], alpha),
+                             (sx, sy), 4)
+                NS._aacircle(surface, (*P["ice_hot"], alpha),
+                             (sx, sy - 3), 1)
+        for i in range(3):
+            t = (phase * 0.4 + i * 0.2) % 1.0
+            angle = phase * 0.5 + i * math.tau / 5.0
+            r = 22 + int(math.sin(phase + i * 1.3) * 6)
+            sx = cx + int(math.cos(angle) * r)
+            sy = cy + int(math.sin(angle) * 9) - int(t * 8)
+            alpha = int(210 * (1 - t * 0.5) * strength)
+            NS._draw_snowflake(surface, sx, sy, 2,
+                               max(0, min(255, alpha)),
+                               rotate=phase + i)
+        if trail:
+            for i in range(3):
+                sx = cx - (i + 1) * 12 * facing
+                sy = cy + int(math.sin(phase + i) * 3)
+                alpha = max(0, 130 - i * 25)
+                NS._aacircle(surface, (*P["frost_mid"], alpha),
+                             (sx, sy), max(2, 4 - i))
 
     # ===================================================================
-    # SKILL Q: ICE VORTEX
+    # ICE / SNOWFLAKE HELPERS (dipakai skill fallback)
+    # ===================================================================
+    def _draw_snowflake(surface, cx, cy, size=3, alpha=255, rotate=0):
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        for i in range(6):
+            angle = rotate + i * math.pi / 3
+            ex = cx + int(math.cos(angle) * size)
+            ey = cy + int(math.sin(angle) * size)
+            NS._aaline(surface, (*P["ice_hot"], alpha), (cx, cy),
+                       (ex, ey), 1)
+            mx = cx + int(math.cos(angle) * (size - 1))
+            my = cy + int(math.sin(angle) * (size - 1))
+            t1 = angle + math.pi / 2
+            t2 = angle - math.pi / 2
+            NS._aaline(surface, (*P["ice_bright"], alpha), (mx, my),
+                       (mx + int(math.cos(t1)), my + int(math.sin(t1))), 1)
+            NS._aaline(surface, (*P["ice_bright"], alpha), (mx, my),
+                       (mx + int(math.cos(t2)), my + int(math.sin(t2))), 1)
+        NS._aacircle(surface, (*P["ice_pure"], alpha), (cx, cy), 1)
+
+    def _draw_frost_crystal_spike(surface, cx, base_y, tip_y, width=4,
+                                  alpha=255, phase=0):
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        height = base_y - tip_y
+        if height <= 0:
+            return
+        NS._poly(surface, (*P["shadow_deep"], alpha), [
+            (cx - width + 1, base_y + 1), (cx + width + 1, base_y + 1),
+            (cx + 1, tip_y + 1)])
+        NS._poly(surface, (*P["ice_darkest"], alpha), [
+            (cx - width, base_y), (cx + width, base_y), (cx, tip_y)])
+        for i, ck in enumerate(("ice_dark", "ice_mid", "ice_light",
+                                "ice_bright")):
+            shrink = (i + 1) * 0.15
+            w = int(width * (1 - shrink))
+            NS._poly(surface, (*P[ck], alpha), [
+                (cx - w, base_y - 1), (cx + w, base_y - 1),
+                (cx, tip_y + int(height * shrink * 0.2))])
+        NS._aaline(surface, (*P["ice_hot"], alpha),
+                   (cx, base_y - 2), (cx, tip_y + 2), 1)
+        NS._aacircle(surface, (*P["ice_pure"], alpha), (cx, tip_y + 1), 1)
+
+    # ===================================================================
+    # SWING TRAIL (canvas fallback — histori posisi cakar)
+    # ===================================================================
+    def _draw_swing_trail(surface, boss, x, y, facing, progress):
+        """Ribbon sapuan cakar dari histori posisi (fallback canvas)."""
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        ph = NS._attack_phase(progress)
+        if ph not in ("swing", "follow"):
+            if hasattr(boss, "_aa_trail"):
+                boss._aa_trail.clear()
+            return
+        if not hasattr(boss, "_aa_trail"):
+            boss._aa_trail = []
+        (_, _, hand, tip) = NS.arm_geometry(facing, "attack",
+                                            getattr(boss, "pulse", 0.0),
+                                            progress)
+        boss._aa_trail.append((x + hand[0], y + hand[1],
+                               x + tip[0], y + tip[1]))
+        if len(boss._aa_trail) > 10:
+            boss._aa_trail.pop(0)
+        n = len(boss._aa_trail)
+        if n < 2:
+            return
+        for i in range(n - 1):
+            bx0, by0, tx0, ty0 = boss._aa_trail[i]
+            bx1, by1, tx1, ty1 = boss._aa_trail[i + 1]
+            k = i / max(1, n - 1)
+            a = int(120 * (0.3 + 0.7 * k))
+            ix0 = bx0 + (tx0 - bx0) * 0.3
+            iy0 = by0 + (ty0 - by0) * 0.3
+            ix1 = bx1 + (tx1 - bx1) * 0.3
+            iy1 = by1 + (ty1 - by1) * 0.3
+            NS._poly(surface, (*P["ice_mid"], a),
+                     [(ix0, iy0), (ix1, iy1), (tx1, ty1), (tx0, ty0)])
+            NS._aaline(surface, (*P["ice_hot"], int(a * 0.9)),
+                       (tx0, ty0), (tx1, ty1), 1)
+
+    # ===================================================================
+    # CAST FLASH (canvas fallback)
+    # ===================================================================
+    def _draw_cast_flash(surface, x, y, facing, progress):
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        if progress < 0.32 or progress > 0.62:
+            return
+        t = (progress - 0.32) / 0.30
+        intensity = math.sin(t * math.pi)
+        (_, _, hand, tip) = NS.arm_geometry(facing, "attack",
+                                            0.0, progress)
+        fx = x + tip[0]
+        fy = y + tip[1]
+        alpha = int(220 * intensity)
+        radius = int(5 + intensity * 11)
+        NS._aacircle(surface, (*P["ice_dark"], 140 * intensity // 1),
+                     (fx, fy), radius + 4)
+        NS._aacircle(surface, (*P["ice_mid"], alpha), (fx, fy), radius + 2)
+        NS._aacircle(surface, (*P["ice_bright"], alpha), (fx, fy), radius)
+        NS._aacircle(surface, (*P["ice_hot"], alpha), (fx, fy),
+                     max(1, radius - 2))
+        NS._aacircle(surface, (*P["ice_pure"], alpha), (fx, fy),
+                     max(1, radius - 4))
+        for i in range(5):
+            ang = i * math.tau / 5 + progress * 6.0
+            ex = fx + int(math.cos(ang) * radius * 1.5)
+            ey = fy + int(math.sin(ang) * radius * 1.5)
+            NS._draw_snowflake(surface, ex, ey, 2, alpha,
+                               rotate=progress * 5)
+
+    # ===================================================================
+    # SKILL Q: ICE VORTEX (ground + foreground, canvas fallback)
     # ===================================================================
     def _draw_ice_vortex_ground(surface, boss, x, y, timer, phase):
-        """Ground ripple beneath vortex."""
-        tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
+        """Riak tanah di bawah vortex."""
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        tx, ty = NS._target_position(boss, x, y)
         duration = 60
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
-
-        # Concentric rings
         for i in range(4):
-            r = int(15 + i * 12 + progress * 20 + math.sin(phase * 2 + i) * 3)
-            _NS_ancient_apparition._ellipse(surface, (*_NS_ancient_apparition.PALETTE["ice_dark"], int(150 * pulse)),
-                     (tx - r, ty - r // 3, r * 2, r // 1.5), 2)
-            _NS_ancient_apparition._ellipse(surface, (*_NS_ancient_apparition.PALETTE["ice_mid"], int(100 * pulse)),
-                     (tx - r + 3, ty - r // 3 + 2,
-                      r * 2 - 6, r // 1.5 - 4), 1)
-
+            r = int(15 + i * 12 + progress * 20
+                    + math.sin(phase * 2 + i) * 3)
+            NS._ellipse(surface, (*P["ice_dark"], int(150 * pulse)),
+                        (tx - r, ty - r // 3, r * 2, r // 1.5), 2)
+            NS._ellipse(surface, (*P["ice_mid"], int(100 * pulse)),
+                        (tx - r + 3, ty - r // 3 + 2, r * 2 - 6,
+                         r // 1.5 - 4), 1)
 
     def _draw_ice_vortex(surface, boss, x, y, timer, phase):
-        """Spinning ice tornado at target."""
-        tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
+        """Tornado es berputar di target (fallback canvas)."""
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        tx, ty = NS._target_position(boss, x, y)
         duration = 60
         progress = max(0.0, min(1.0, 1 - timer / duration))
-
         if progress < 0.15:
             return
-
-        # Vortex height and width
         if progress < 0.5:
             height = int(60 * (progress - 0.15) / 0.35)
         else:
-            height = int(60 * (1 - (progress - 0.85) / 0.15)) if progress > 0.85 else 60
-
+            height = int(60 * (1 - (progress - 0.85) / 0.15)) \
+                if progress > 0.85 else 60
         if height <= 0:
             return
-
         max_width = 28
-
-        # Draw spinning vortex - rings at different heights
         ring_count = height // 3
         for i in range(ring_count):
             h_ratio = i / max(1, ring_count)
             y_offset = -int(h_ratio * height)
-            # Wider at bottom, narrower at top
             width = int(max_width * (1 - h_ratio * 0.4))
-
             rotation = phase * 4 + h_ratio * 8
-            # Ring is a spinning ellipse - draw as several arcs
             for j in range(8):
-                angle1 = rotation + j * math.pi / 4
-                angle2 = angle1 + 0.5
-                x1 = tx + int(math.cos(angle1) * width)
-                y1 = ty + y_offset + int(math.sin(angle1) * width * 0.3)
-                x2 = tx + int(math.cos(angle2) * width)
-                y2 = ty + y_offset + int(math.sin(angle2) * width * 0.3)
-
+                a1 = rotation + j * math.pi / 4
+                a2 = a1 + 0.5
+                x1 = tx + int(math.cos(a1) * width)
+                y1 = ty + y_offset + int(math.sin(a1) * width * 0.3)
+                x2 = tx + int(math.cos(a2) * width)
+                y2 = ty + y_offset + int(math.sin(a2) * width * 0.3)
                 alpha = int(200 * (1 - h_ratio * 0.3))
-                _NS_ancient_apparition._aaline(surface, (*_NS_ancient_apparition.PALETTE["ice_dark"], alpha), (x1, y1), (x2, y2), 3)
-                _NS_ancient_apparition._aaline(surface, (*_NS_ancient_apparition.PALETTE["ice_bright"], alpha), (x1, y1), (x2, y2), 1)
-
-            # Bright spots (spinning fast)
+                NS._aaline(surface, (*P["ice_dark"], alpha),
+                           (x1, y1), (x2, y2), 3)
+                NS._aaline(surface, (*P["ice_bright"], alpha),
+                           (x1, y1), (x2, y2), 1)
             for j in range(3):
-                spin_angle = rotation + j * math.pi * 2 / 3
-                sx = tx + int(math.cos(spin_angle) * width)
-                sy = ty + y_offset + int(math.sin(spin_angle) * width * 0.3)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_hot"], 220), (sx, sy), 3)
-                _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["ice_pure"], 250), (sx, sy), 1)
-
-        # Ice shards flying around vortex
+                sa = rotation + j * math.tau / 3
+                sx = tx + int(math.cos(sa) * width)
+                sy = ty + y_offset + int(math.sin(sa) * width * 0.3)
+                NS._aacircle(surface, (*P["ice_hot"], 220), (sx, sy), 3)
+                NS._aacircle(surface, (*P["ice_pure"], 250), (sx, sy), 1)
         for i in range(6):
             angle = phase * 2 + i * math.pi / 3
             r = max_width - 3
             sx = tx + int(math.cos(angle) * r)
             sy = ty - height // 2 + int(math.sin(angle) * 15)
-            _NS_ancient_apparition._draw_snowflake(surface, sx, sy, 3, 230, rotate=phase * 3)
-
-        # Base pool
-        _NS_ancient_apparition._ellipse(surface, (*_NS_ancient_apparition.PALETTE["ice_bright"], 180),
-                 (tx - max_width, ty - max_width // 3,
-                  max_width * 2, max_width // 1.5), 2)
-
+            NS._draw_snowflake(surface, sx, sy, 3, 230,
+                               rotate=phase * 3)
+        NS._ellipse(surface, (*P["ice_bright"], 180),
+                    (tx - max_width, ty - max_width // 3,
+                     max_width * 2, max_width // 1.5), 2)
 
     # ===================================================================
-    # SKILL R: COLD FEET (ice spike ring)
+    # SKILL R: COLD FEET (ground telegraph + erupsi, canvas fallback)
     # ===================================================================
     def _draw_cold_feet_ground(surface, boss, x, y, timer, phase):
-        """Warning circle for cold feet."""
-        tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        tx, ty = NS._target_position(boss, x, y)
         duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 3) * 0.3 + 0.7
-
         if progress < 0.4:
             radius = int(40 + progress * 20)
-            _NS_ancient_apparition._ellipse(surface, (*_NS_ancient_apparition.PALETTE["ice_dark"], int(200 * pulse)),
-                     (tx - radius, ty - radius // 3, radius * 2, radius // 1.5), 3)
-            _NS_ancient_apparition._ellipse(surface, (*_NS_ancient_apparition.PALETTE["ice_mid"], int(150 * pulse)),
-                     (tx - radius + 4, ty - radius // 3 + 2,
-                      radius * 2 - 8, radius // 1.5 - 4), 2)
-
+            NS._ellipse(surface, (*P["ice_dark"], int(200 * pulse)),
+                        (tx - radius, ty - radius // 3, radius * 2,
+                         radius // 1.5), 3)
+            NS._ellipse(surface, (*P["ice_mid"], int(150 * pulse)),
+                        (tx - radius + 4, ty - radius // 3 + 2,
+                         radius * 2 - 8, radius // 1.5 - 4), 2)
 
     def _draw_cold_feet_spikes(surface, boss, x, y, timer, phase):
-        """Ring of ice spikes erupting from ground."""
-        tx, ty = _NS_ancient_apparition._target_position(boss, x, y)
+        NS = _NS_ancient_apparition
+        P = NS.PALETTE
+        tx, ty = NS._target_position(boss, x, y)
         duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
-
         if progress < 0.3:
-            # Charging phase - snowflakes gathering
             for i in range(8):
                 angle = phase * 2 + i * math.pi / 4
                 r = 60 * (1 - progress / 0.3)
                 sx = tx + int(math.cos(angle) * r)
                 sy = ty + int(math.sin(angle) * r * 0.5)
-                _NS_ancient_apparition._draw_snowflake(surface, sx, sy, 3, 200, rotate=phase * 4)
+                NS._draw_snowflake(surface, sx, sy, 3, 200,
+                                   rotate=phase * 4)
             return
-
-        # Erupt phase
         erupt_t = min(1.0, (progress - 0.3) / 0.3)
-
-        # Ring of spikes
         num_spikes = 12
         ring_r = 50
         for i in range(num_spikes):
-            angle = i * math.pi * 2 / num_spikes
+            angle = i * math.tau / num_spikes
             spike_x = tx + int(math.cos(angle) * ring_r)
             spike_y = ty + int(math.sin(angle) * ring_r * 0.5)
             spike_h = int(25 * erupt_t)
-            width = 3
-
-            _NS_ancient_apparition._draw_frost_crystal_spike(surface, spike_x, spike_y,
-                                        spike_y - spike_h, width, 240, phase)
-
-        # Central big spike (bigger)
+            NS._draw_frost_crystal_spike(surface, spike_x, spike_y,
+                                         spike_y - spike_h, 3, 240, phase)
         center_h = int(35 * erupt_t)
-        _NS_ancient_apparition._draw_frost_crystal_spike(surface, tx, ty, ty - center_h, 5, 250, phase)
-
-        # Second ring - smaller spikes between
+        NS._draw_frost_crystal_spike(surface, tx, ty, ty - center_h, 5,
+                                     250, phase)
         for i in range(num_spikes):
-            angle = (i + 0.5) * math.pi * 2 / num_spikes
+            angle = (i + 0.5) * math.tau / num_spikes
             spike_x = tx + int(math.cos(angle) * (ring_r * 0.6))
             spike_y = ty + int(math.sin(angle) * (ring_r * 0.6) * 0.5)
             spike_h = int(18 * erupt_t)
-            _NS_ancient_apparition._draw_frost_crystal_spike(surface, spike_x, spike_y,
-                                        spike_y - spike_h, 2, 230, phase)
-
-        # Snowflakes bursting outward
+            NS._draw_frost_crystal_spike(surface, spike_x, spike_y,
+                                         spike_y - spike_h, 2, 230, phase)
         for i in range(10):
             angle = i * math.pi / 5 + phase * 2
             r = ring_r + int(math.sin(phase * 3 + i) * 10)
             sx = tx + int(math.cos(angle) * r)
             sy = ty + int(math.sin(angle) * r * 0.5) - int(erupt_t * 15)
-            _NS_ancient_apparition._draw_snowflake(surface, sx, sy, 2, int(230 * erupt_t),
-                             rotate=phase * 3 + i)
-
-        # Frost mist around
+            NS._draw_snowflake(surface, sx, sy, 2, int(230 * erupt_t),
+                               rotate=phase * 3 + i)
         for i in range(5):
-            angle = phase * 0.5 + i * math.pi * 2 / 5
+            angle = phase * 0.5 + i * math.tau / 5
             r = ring_r + 5
             sx = tx + int(math.cos(angle) * r)
             sy = ty + int(math.sin(angle) * r * 0.5)
-            _NS_ancient_apparition._aacircle(surface, (*_NS_ancient_apparition.PALETTE["frost_light"], int(120 * erupt_t)),
-                      (sx, sy), 8)
+            NS._aacircle(surface, (*P["frost_light"], int(120 * erupt_t)),
+                         (sx, sy), 8)
 
+    # ===================================================================
+    # SKILL PROJECTILE TRIGGER (durasi HARUS == AI: w=45, e=50)
+    # ===================================================================
+    def _handle_skill_projectiles(boss, x, y, active_skill, timer):
+        """Spawn proyektil skill pada titik progress yang tepat."""
+        NS = _NS_ancient_apparition
+        if getattr(boss, "_skip_renderer_projectiles", False):
+            return
+        tx, ty = NS._target_position(boss, x, y)
+
+        if active_skill == "e":
+            duration = 50
+            progress = max(0.0, min(1.0, 1 - timer / duration))
+            if 0.35 < progress < 0.45 and not getattr(boss,
+                                                      "_aa_e_spawned",
+                                                      False):
+                NS._spawn_ice_bolt(boss, x + 25 * boss.direction, y - 5,
+                                   tx, ty)
+                boss._aa_e_spawned = True
+            if progress > 0.7:
+                boss._aa_e_spawned = False
+
+        elif active_skill == "w":
+            duration = 45
+            progress = max(0.0, min(1.0, 1 - timer / duration))
+            if 0.3 < progress < 0.4 and not getattr(boss,
+                                                    "_aa_w_spawned",
+                                                    False):
+                NS._spawn_frost_beam(boss, x + 25 * boss.direction, y - 5,
+                                     tx, ty)
+                boss._aa_w_spawned = True
+            if progress > 0.7:
+                boss._aa_w_spawned = False
+
+    # ===================================================================
+    # LAPISAN FX HIDUP (heroes/ancient_apparition_fx)
+    # ===================================================================
+    _LIVE_MOD = None
+
+    def _live_module():
+        """Muat heroes.ancient_apparition_fx sekali; None kalau gagal."""
+        NS = _NS_ancient_apparition
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import ancient_apparition_fx as mod
+                NS._LIVE_MOD = mod if getattr(
+                    mod, "APPARITION_FX_ENABLED", True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    def live_fx_ready():
+        """True kalau lapisan hidup bisa dipakai (dipakai tooling)."""
+        return _NS_ancient_apparition._live_module() is not None
+
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Return (mod, owned): mod None = tanpa lapisan hidup.
+
+        want_draw True pada jalur BOSS (draw tiap frame, tanpa cache).
+        Jalur HERO penggambaran dilakukan heroes/__init__.py; di sini
+        hanya dipasang penanda agar renderer melewati salinan canvas.
+        """
+        NS = _NS_ancient_apparition
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    # ===================================================================
+    # MAIN ENTRY
+    # ===================================================================
+    def draw_apparition(surface, boss, x, y):
+        NS = _NS_ancient_apparition
+        pulse = float(getattr(boss, "pulse", 0.0))
+        active_skill = getattr(boss, "active_skill", None)
+        skill_timer = int(getattr(boss, "active_skill_timer", 0))
+        # Deteksi gerak: preferensi cache direktur FX (diperbarui tiap
+        # frame).  Fallback _detect_moving untuk jalur tanpa lapisan
+        # hidup — jalur hero hanya memanggil renderer saat cache miss,
+        # jadi sampling posisi di sini tidak beraturan.
+        NS._detect_moving(boss)
+        cached_moving = getattr(boss, "_moving_cached", None)
+        moving = bool(cached_moving) if cached_moving is not None \
+            else bool(getattr(boss, "_aa_speed", 0.0) > 0.3)
+        NS._update_attack_anim(boss)
+
+        attacking = (getattr(boss, "_aa_attack_active", False)
+                     or getattr(boss, "timer", 0)
+                     > getattr(boss, "attack_cooldown", 50) - 15)
+        facing = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = (hasattr(boss, "_render_scale") and not portrait)
+
+        # ── lapisan FX hidup: BOSS digambar tiap frame -> draw di sini;
+        #    HERO digambar heroes/__init__ (di luar cache sprite) ──
+        live, owned = NS._live_fx(boss, surface, x, y,
+                                  want_draw=not hero_lane, portrait=portrait)
+
+        state = NS._resolve_state(boss, moving)
+        action = state if state != "death" else "idle"
+        ap = getattr(boss, "_aa_attack_progress", 0.0) \
+            if attacking else 0.0
+
+        # ═══ 1. GROUND FX (belakang segalanya) ═══
+        if not portrait:
+            NS._draw_frost_aura(surface, x, y, pulse, active_skill)
+            NS._draw_ground_frost(surface, x, y + 22, pulse, active_skill)
+            NS._draw_ice_wisps(surface, x, y + 34, pulse,
+                               trail=(state in ("walk", "run")),
+                               facing=facing,
+                               intense=bool(active_skill) or attacking)
+            if not owned:
+                if active_skill == "q":
+                    NS._draw_ice_vortex_ground(surface, boss, x, y,
+                                               skill_timer, pulse)
+                elif active_skill == "r":
+                    NS._draw_cold_feet_ground(surface, boss, x, y,
+                                              skill_timer, pulse)
+
+        # ═══ 2. SHADOW (di luar flash buffer — kontrak) ═══
+        hover = 2 if state.startswith("cast_r") else 0
+        NS._draw_shadow(surface, x, y + 52, lift=hover)
+
+        # ═══ 3. KARAKTER (ke flash buffer saat hurt) ═══
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0:
+            if NS._flash_buf is None:
+                NS._flash_buf = pygame.Surface((220, 240),
+                                               pygame.SRCALPHA)
+            NS._flash_buf.fill((0, 0, 0, 0))
+            NS._record_shadow = []
+            _tgt, _tx, _ty = NS._flash_buf, 110, 120
+
+        NS._draw_aa_body(_tgt, _tx, _ty, facing, pulse, action, ap)
+
+        if flash > 0:
+            surface.blit(NS._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(NS._flash_buf, 50)
+            wht = m.to_surface(
+                setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                unsetcolor=(0, 0, 0, 0))
+            for rect in (NS._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            NS._record_shadow = None
+
+        # ═══ 4. ATTACK FX + SKILL FX + PROJECTILE (fallback canvas) ═══
+        if not portrait and not owned:
+            if attacking and not hero_lane:
+                NS._draw_swing_trail(surface, boss, x, y, facing, ap)
+                NS._draw_cast_flash(surface, x, y, facing, ap)
+            NS._handle_skill_projectiles(boss, x, y, active_skill,
+                                         skill_timer)
+            NS._manage_projectiles(boss, surface, pulse)
+            if active_skill == "q":
+                NS._draw_ice_vortex(surface, boss, x, y, skill_timer,
+                                    pulse)
+            elif active_skill == "r":
+                NS._draw_cold_feet_spikes(surface, boss, x, y,
+                                          skill_timer, pulse)
+
+        # ═══ 5. LAPISAN HIDUP (depan) + DEBUG ═══
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_aa_debug(surface, boss, x, y, action, owned)
+
+    # ===================================================================
+    # DEBUG OVERLAY  (DEBUG_CHARACTER = True)
+    # ===================================================================
+    def _draw_aa_debug(surface, boss, x, y, action, owned):
+        """Hitbox, hurtbox, jangkauan, state, FPS — murni baca state."""
+        NS = _NS_ancient_apparition
+        # hurtbox = radius unit
+        r = max(8, int(getattr(boss, "radius", 30)))
+        pygame.draw.circle(surface, (80, 170, 255), (int(x), int(y)), r, 1)
+        # jangkauan serangan
+        rng = max(10, int(getattr(boss, "range", 150)))
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        pygame.draw.line(surface, (255, 210, 60), (int(x), int(y)),
+                         (int(x) + rng * f, int(y)), 1)
+        # hitbox ayunan (jendela aktif)
+        ap = float(getattr(boss, "_aa_attack_progress", 0.0) or 0.0)
+        if getattr(boss, "_aa_attack_active", False) and \
+                NS.ATK_PHASES["swing"][0] <= ap <= 0.62:
+            hb = pygame.Rect(int(x) + (14 if f > 0 else -58),
+                             int(y) - 30, 44, 36)
+            pygame.draw.rect(surface, (255, 70, 70), hb, 2)
+        # tabrakan proyektil lapisan hidup
+        if owned:
+            try:
+                mod = NS._LIVE_MOD
+                for p in mod.projectiles_for(boss):
+                    pr = max(3, int(p.hit_radius))
+                    pygame.draw.circle(surface, (255, 120, 255),
+                                       (int(p.position.x),
+                                        int(p.position.y)), pr, 1)
+            except Exception:
+                pass
+        try:
+            font = pygame.font.Font(None, 15)
+        except Exception:
+            return
+        try:
+            fps = int(pygame.time.Clock().get_fps())
+        except Exception:
+            fps = 0
+        lines = [
+            "AA %s ap=%.2f" % (action, ap),
+            "skill %s t=%d" % (getattr(boss, "active_skill", None),
+                               int(getattr(boss, "active_skill_timer", 0))),
+            "owned=%d fps=%d" % (1 if owned else 0, fps),
+        ]
+        for i, txt in enumerate(lines):
+            img = font.render(txt, True, (200, 245, 255))
+            surface.blit(img, (x - 56, y - 108 + i * 13))
 
     # ===================================================================
     # Backward compatible alias
@@ -6787,13 +6848,14 @@ class _NS_ancient_apparition:
     def draw_boss(surface, boss, x, y):
         _NS_ancient_apparition.draw_apparition(surface, boss, x, y)
 
-    # ===================================================================
-    # ALIAS - nama fungsi yang dipakai registry heroes/__init__.py
-    # ===================================================================
     def draw_ancient_apparition(surface, boss, x, y):
         """Entry point resmi untuk Ancient Apparition."""
         _NS_ancient_apparition.draw_apparition(surface, boss, x, y)
 
+
+def tilt_head(phase):
+    """Goyangan kepala ringan (dipakai _masterwork_finish)."""
+    return math.sin(phase * 0.8) * 1.0
 
 
 # ====================================================================
