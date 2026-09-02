@@ -388,15 +388,25 @@ class _NS_boss_hero_skills:
             # Jangan tick di sini juga -> dobel decrement,
             # animasi jadi 2x lebih cepat.
 
-            # Rage buff (Drakar)
+            # Rage buff (Drakar, Gorath & hero lain dengan rage)
             if h.rage_active:
                 h.rage_timer -= 1
                 if h.rage_timer <= 0:
                     h.rage_active = False
-                    # Reset damage
-                    from settings import get_all_hero_types
-                    stats = get_all_hero_types()[h.hero_type]
-                    h.damage = stats["damage"]
+                    # Reset damage ke nilai sesuai LEVEL saat ini.
+                    # BUG LAMA: reset dari katalog = base level 1, jadi
+                    # buff Drakar dkk membuat damage turun permanen
+                    # setelah rage habis (hilang multiplier level).
+                    try:
+                        h._apply_level_stats()
+                    except Exception:
+                        pass
+                    # Kalau buff juga mengubah speed (Gorath dkk),
+                    # kembalikan ke nilai sebelum buff.
+                    base_speed = getattr(h, "_pre_buff_speed", None)
+                    if base_speed is not None:
+                        h.speed = base_speed
+                        h._pre_buff_speed = None
 
             # Defense boost (Drakar)
             if h.defense_boost:
@@ -442,10 +452,11 @@ class _NS_boss_hero_skills:
                 h.dragon_form_timer -= 1
                 if h.dragon_form_timer <= 0:
                     h.dragon_form_active = False
-                    # Reset damage
-                    from settings import get_all_hero_types
-                    stats = get_all_hero_types()[h.hero_type]
-                    h.damage = stats["damage"]
+                    # Reset damage sesuai level (bukan base level 1)
+                    try:
+                        h._apply_level_stats()
+                    except Exception:
+                        pass
 
                 # Dragon Blood buff (Ignis Drachorn)
             if getattr(h, 'dragon_blood_active', False):
@@ -475,6 +486,24 @@ class _NS_boss_hero_skills:
                 'w': '_cast_w_counter_helix',
                 'e': '_cast_e_berserkers_call',
                 'r': '_cast_r_culling_blade',
+            },
+            "razak": {
+                'q': '_cast_q_sticky_napalm',
+                'w': '_cast_w_flamebreak',
+                'e': '_cast_e_firefly',
+                'r': '_cast_r_firestorm',
+            },
+            "khalros": {
+                'q': '_cast_q_wild_axes',
+                'w': '_cast_w_call_of_wild',
+                'e': '_cast_e_boar_charge',
+                'r': '_cast_r_hawk_storm',
+            },
+            "gorath": {
+                'q': '_cast_q_bloodrage',
+                'w': '_cast_w_blood_rite',
+                'e': '_cast_e_thirst',
+                'r': '_cast_r_rupture',
             },
             "abaddon": {
                 'q': '_cast_q_mist_coil',
@@ -955,6 +984,20 @@ class _NS_boss_hero_skills:
                             int(h.skill_damage * mult), h.team,
                             source=h, school=_school)
 
+        def _level_base_damage(self, h):
+            """Damage dasar hero pada level saat ini (tanpa buff aktif).
+
+            Dipakai sebagai basis buff self-damage (Drakar/Battle Hunger,
+            Gorath/Bloodrage, Dragon Blood, dll) supaya buff tetap
+            mengikuti multiplier level hero.
+            """
+            try:
+                from settings import HERO_LEVELS, MAX_HERO_LEVEL
+                lvl = min(int(getattr(h, "level", 1) or 1), MAX_HERO_LEVEL)
+                return int(h.base_damage * HERO_LEVELS[lvl]["dmg_mult"])
+            except Exception:
+                return int(getattr(h, "damage", 0) or 0)
+
         # ═══════════════════════════════════════
         # PUBLIC CAST METHODS (dispatch ke _generic_cast)
         # ═══════════════════════════════════════
@@ -1085,10 +1128,10 @@ class _NS_boss_hero_skills:
             h.rage_active = True
             h.rage_timer = 300
 
-            # Buff damage
-            from settings import get_all_hero_types
-            base_damage = get_all_hero_types()[h.hero_type]["damage"]
-            h.damage = int(base_damage * 1.5)
+            # Buff damage di atas damage level SAAT INI (bukan base
+            # level 1 dari katalog - itu bug yang menurunkan damage
+            # hero boss yang sudah naik level).
+            h.damage = int(self._level_base_damage(h) * 1.5)
 
             heal = int(h.max_hp * 0.1)
             h.hp = min(h.max_hp, h.hp + heal)
@@ -1124,6 +1167,174 @@ class _NS_boss_hero_skills:
                 if h.target.hp / h.target.max_hp < 0.3:
                     damage = int(damage * 2)
                 h.target.take_damage(damage, h.team)
+
+        # ═══════════════════════════════════════
+        # RAZAK skills (Level 2 Mini Boss)
+        # Paritas dengan _smart_ai_razak : Q molotov AOE+slow, W
+        # Flamebreak AOE+stun, E Firefly dash+AOE, R Firestorm besar.
+        # ═══════════════════════════════════════
+
+        def _cast_q_sticky_napalm(self, h, enemies):
+            h.active_skill = 'q'
+            h.active_skill_timer = 40
+            if not (h.target and h.target.alive):
+                return
+            for e in enemies:
+                if math.hypot(e.x - h.target.x,
+                              e.y - h.target.y) <= 75:
+                    e.take_damage(int(h.skill_damage * 1.0), h.team)
+                    if hasattr(e, 'apply_slow'):
+                        e.apply_slow(0.35, 120)
+
+        def _cast_w_flamebreak(self, h, enemies):
+            h.active_skill = 'w'
+            h.active_skill_timer = 50
+            if not (h.target and h.target.alive):
+                return
+            for e in enemies:
+                if math.hypot(e.x - h.target.x,
+                              e.y - h.target.y) <= 95:
+                    e.take_damage(int(h.skill_damage * 1.1), h.team)
+                    if hasattr(e, 'attack_timer'):
+                        e.attack_timer = max(
+                            getattr(e, 'attack_timer', 0), 45)
+
+        def _cast_e_firefly(self, h, enemies):
+            h.active_skill = 'e'
+            h.active_skill_timer = 35
+            if not (h.target and h.target.alive):
+                return
+            dx = h.target.x - h.x
+            dy = h.target.y - h.y
+            dist = math.hypot(dx, dy)
+            if dist > 0:
+                jump = min(110, max(40, dist - 50))
+                h.x += (dx / dist) * jump
+                h.y += (dy / dist) * jump
+                h.facing = 1 if dx > 0 else -1
+            for e in enemies:
+                if math.hypot(e.x - h.x, e.y - h.y) <= 80:
+                    e.take_damage(int(h.skill_damage * 1.0), h.team)
+
+        def _cast_r_firestorm(self, h, enemies):
+            h.active_skill = 'r'
+            h.active_skill_timer = 90
+            for e in enemies:
+                if math.hypot(e.x - h.x, e.y - h.y) <= 180:
+                    e.take_damage(int(h.skill_damage * 1.8), h.team)
+
+        # ═══════════════════════════════════════
+        # KHALROS skills (Level 2 Mini Boss)
+        # Paritas _smart_ai_khalros : Q Wild Axes, W Call of the Wild
+        # (AOE+slow+heal), E Boar Charge (dash+stun), R Hawk Storm.
+        # ═══════════════════════════════════════
+
+        def _cast_q_wild_axes(self, h, enemies):
+            h.active_skill = 'q'
+            h.active_skill_timer = 50
+            if not (h.target and h.target.alive):
+                return
+            for e in enemies:
+                if math.hypot(e.x - h.target.x,
+                              e.y - h.target.y) <= 70:
+                    e.take_damage(int(h.skill_damage * 1.0), h.team)
+
+        def _cast_w_call_of_wild(self, h, enemies):
+            h.active_skill = 'w'
+            h.active_skill_timer = 60
+            for e in enemies:
+                if math.hypot(e.x - h.x, e.y - h.y) <= 120:
+                    e.take_damage(int(h.skill_damage * 1.0), h.team)
+                    if hasattr(e, 'apply_slow'):
+                        e.apply_slow(0.5, 90)
+            heal = int(h.max_hp * 0.08)
+            h.hp = min(h.max_hp, h.hp + heal)
+
+        def _cast_e_boar_charge(self, h, enemies):
+            h.active_skill = 'e'
+            h.active_skill_timer = 45
+            if not (h.target and h.target.alive):
+                return
+            dx = h.target.x - h.x
+            dy = h.target.y - h.y
+            dist = math.hypot(dx, dy)
+            if dist > 0:
+                charge = min(90, max(35, dist - 45))
+                h.x += (dx / dist) * charge
+                h.y += (dy / dist) * charge
+                h.facing = 1 if dx > 0 else -1
+            for e in enemies:
+                if math.hypot(e.x - h.x, e.y - h.y) <= 85:
+                    e.take_damage(int(h.skill_damage * 1.0), h.team)
+                    if hasattr(e, 'attack_timer'):
+                        e.attack_timer = max(
+                            getattr(e, 'attack_timer', 0), 40)
+
+        def _cast_r_hawk_storm(self, h, enemies):
+            h.active_skill = 'r'
+            h.active_skill_timer = 70
+            for e in enemies:
+                if math.hypot(e.x - h.x, e.y - h.y) <= 200:
+                    e.take_damage(int(h.skill_damage * 1.5), h.team)
+                    if hasattr(e, 'attack_timer'):
+                        e.attack_timer = max(
+                            getattr(e, 'attack_timer', 0), 30)
+
+        # ═══════════════════════════════════════
+        # GORATH skills (Level 2 Mini Boss)
+        # Paritas _smart_ai_gorath : Q Bloodrage (buff self), W Blood
+        # Rite (AOE+stun), E Thirst (leap+AOE), R Rupture (AOE+bonus).
+        # ═══════════════════════════════════════
+
+        def _cast_q_bloodrage(self, h):
+            h.active_skill = 'q'
+            h.active_skill_timer = 90
+            h.rage_active = True
+            h.rage_timer = 300
+            # Simpan speed sebelum buff supaya bisa dipulihkan persis
+            # saat rage habis (reset speed dari katalog akan kehilangan
+            # kompensasi melee +18%).
+            h._pre_buff_speed = getattr(h, 'speed', None)
+            h.damage = int(self._level_base_damage(h) * 1.4)
+            h.speed = (h._pre_buff_speed or 1.0) * 1.2
+            heal = int(h.max_hp * 0.08)
+            h.hp = min(h.max_hp, h.hp + heal)
+
+        def _cast_w_blood_rite(self, h, enemies):
+            h.active_skill = 'w'
+            h.active_skill_timer = 60
+            for e in enemies:
+                if math.hypot(e.x - h.x, e.y - h.y) <= 150:
+                    e.take_damage(int(h.skill_damage * 1.1), h.team)
+                    if hasattr(e, 'attack_timer'):
+                        e.attack_timer = max(
+                            getattr(e, 'attack_timer', 0), 50)
+
+        def _cast_e_thirst(self, h, enemies):
+            h.active_skill = 'e'
+            h.active_skill_timer = 35
+            if not (h.target and h.target.alive):
+                return
+            dx = h.target.x - h.x
+            dy = h.target.y - h.y
+            dist = math.hypot(dx, dy)
+            if dist > 0:
+                leap = min(120, max(45, dist - 35))
+                h.x += (dx / dist) * leap
+                h.y += (dy / dist) * leap
+                h.facing = 1 if dx > 0 else -1
+            for e in enemies:
+                if math.hypot(e.x - h.x, e.y - h.y) <= 85:
+                    e.take_damage(int(h.skill_damage * 1.0), h.team)
+
+        def _cast_r_rupture(self, h, enemies):
+            h.active_skill = 'r'
+            h.active_skill_timer = 90
+            for e in enemies:
+                if math.hypot(e.x - h.x, e.y - h.y) <= 190:
+                    e.take_damage(int(h.skill_damage * 1.7), h.team)
+            if h.target and h.target.alive:
+                h.target.take_damage(int(h.skill_damage * 0.8), h.team)
 
         # ═══════════════════════════════════════
         # ABADDON skills
@@ -1202,9 +1413,7 @@ class _NS_boss_hero_skills:
             h.rage_active = True
             h.rage_timer = 360
 
-            from settings import get_all_hero_types
-            base_damage = get_all_hero_types()[h.hero_type]["damage"]
-            h.damage = int(base_damage * 1.5)
+            h.damage = int(self._level_base_damage(h) * 1.5)
 
             heal = int(h.max_hp * 0.15)
             h.hp = min(h.max_hp, h.hp + heal)
@@ -1379,9 +1588,7 @@ class _NS_boss_hero_skills:
             h.dragon_blood_active = True
             h.dragon_blood_timer = 480
 
-            from settings import get_all_hero_types
-            base_damage = get_all_hero_types()[h.hero_type]["damage"]
-            h.damage = int(base_damage * 1.3)
+            h.damage = int(self._level_base_damage(h) * 1.3)
 
             heal = int(h.max_hp * 0.20)
             h.hp = min(h.max_hp, h.hp + heal)
@@ -1394,9 +1601,7 @@ class _NS_boss_hero_skills:
             h.dragon_form_active = True
             h.dragon_form_timer = 600
 
-            from settings import get_all_hero_types
-            base_damage = get_all_hero_types()[h.hero_type]["damage"]
-            h.damage = int(base_damage * 1.8)
+            h.damage = int(self._level_base_damage(h) * 1.8)
 
             for e in enemies:
                 if math.hypot(e.x - h.x, e.y - h.y) <= 220:
@@ -1525,9 +1730,7 @@ class _NS_boss_hero_skills:
                 if math.hypot(e.x-h.x, e.y-h.y) <= 180:
                     e.take_damage(int(h.skill_damage*1.7), h.team)
                     if not e.alive: kills += 1
-            from settings import get_all_hero_types
-            base_damage = get_all_hero_types()[h.hero_type]["damage"]
-            h.damage = int(base_damage * 1.4)
+            h.damage = int(self._level_base_damage(h) * 1.4)
             h.rage_active = True; h.rage_timer = 480
             heal = int(h.max_hp * 0.08) + kills * 30
             h.hp = min(h.max_hp, h.hp + heal)
@@ -1628,9 +1831,7 @@ class _NS_boss_hero_skills:
         def _cast_e_syrentha_mirror(self, h):
             h.active_skill = 'e'; h.active_skill_timer = 70
             h.rage_active = True; h.rage_timer = 360
-            from settings import get_all_hero_types
-            base_damage = get_all_hero_types()[h.hero_type]["damage"]
-            h.damage = int(base_damage * 1.4)
+            h.damage = int(self._level_base_damage(h) * 1.4)
             heal = int(h.max_hp * 0.12); h.hp = min(h.max_hp, h.hp + heal)
 
         def _cast_r_syrentha_siren(self, h, enemies):
@@ -1670,9 +1871,7 @@ class _NS_boss_hero_skills:
         def _cast_e_thalgryn_morph(self, h):
             h.active_skill = 'e'; h.active_skill_timer = 60
             h.rage_active = True; h.rage_timer = 300
-            from settings import get_all_hero_types
-            base_damage = get_all_hero_types()[h.hero_type]["damage"]
-            h.damage = int(base_damage * 1.35)
+            h.damage = int(self._level_base_damage(h) * 1.35)
             heal = int(h.max_hp * 0.14); h.hp = min(h.max_hp, h.hp + heal)
 
         def _cast_r_thalgryn_replicate(self, h, enemies):

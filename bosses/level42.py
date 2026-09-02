@@ -4917,6 +4917,16 @@ def draw_morvaeth(surface, boss, x, y):
     return _NS_morvaeth.draw_morvaeth(surface, boss, x, y)
 
 
+def draw_morvaeth2(surface, boss, x, y):
+    """Entry point morvaeth2 (The Mirrorborn, mini boss level 42).
+
+    FIX: dipakai sebagai renderer morvaeth2 yang sebelumnya tidak
+    terindeks di _boss_index.py (215/216) sehingga boss muncul
+    sebagai body generic.
+    """
+    return _NS_morvaeth.draw_morvaeth(surface, boss, x, y)
+
+
 def draw_vardrok(surface, boss, x, y):
     """Entry point vardrok."""
     return _NS_vardrok.draw_vardrok(surface, boss, x, y)

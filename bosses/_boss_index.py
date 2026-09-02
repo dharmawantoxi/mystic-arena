@@ -104,6 +104,7 @@ BOSS_INDEX = {
     "morthyrax": ("level28", "draw_morthyrax"),
     "morvaenthir": ("level20", "draw_morvaenthir"),
     "morvaeth": ("level25", "draw_morvaeth"),
+    "morvaeth2": ("level42", "draw_morvaeth2"),
     "morvakhul": ("level27", "draw_morvakhul"),
     "morvath": ("level51", "draw_morvath"),
     "morvein": ("level15", "draw_morvein"),

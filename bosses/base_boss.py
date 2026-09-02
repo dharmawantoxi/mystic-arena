@@ -677,168 +677,6 @@ class Boss(TowerDebuffMixin):
                     except Exception:
                         pass
 
-                # ═══ SMART AI per boss type ═══
-                if self.boss_type == "abaddon":
-                    self._smart_ai_abaddon(enemies, dist)
-                elif self.boss_type == "alchemist":
-                    self._smart_ai_alchemist(enemies, dist)
-                elif self.boss_type == "ancient_apparition":
-                    self._smart_ai_ancient_apparition(enemies, dist)
-                elif self.boss_type == "ignis_drachorn":  # ← TAMBAH
-                    self._smart_ai_ignis_drachorn(enemies, dist)
-                elif self.boss_type == "gornak":
-                    self._smart_ai_gornak(enemies, dist)
-                elif self.boss_type == "morgath":
-                    self._smart_ai_morgath(enemies, dist)
-                elif self.boss_type == "drakar":
-                    self._smart_ai_drakar(enemies, dist)
-                elif self.boss_type == "razak":
-                    self._smart_ai_razak(enemies, dist)
-                elif self.boss_type == "khalros":
-                    self._smart_ai_khalros(enemies, dist)
-                elif self.boss_type == "gorath":
-                    self._smart_ai_gorath(enemies, dist)
-                elif self.boss_type == "varkul":
-                    self._smart_ai_varkul(enemies, dist)
-                elif self.boss_type == "xerathis":
-                    self._smart_ai_xerathis(enemies, dist)
-                elif self.boss_type == "nyzrak":
-                    self._smart_ai_nyzrak(enemies, dist)
-                elif self.boss_type == "zharok":
-                    self._smart_ai_zharok(enemies, dist)
-                elif self.boss_type == "pyrenth":
-                    self._smart_ai_pyrenth(enemies, dist)
-                elif self.boss_type == "vokrahn":
-                    self._smart_ai_vokrahn(enemies, dist)
-                elif self.boss_type == "nyxara":
-                    self._smart_ai_nyxara(enemies, dist)
-                elif self.boss_type == "gravefang":
-                    self._smart_ai_gravefang(enemies, dist)
-                elif self.boss_type == "vhalzun":
-                    self._smart_ai_vhalzun(enemies, dist)
-                elif self.boss_type == "kunkka":
-                    self._smart_ai_kunkka(enemies, dist)
-                elif self.boss_type == "gravewake":
-                    self._smart_ai_gravewake(enemies, dist)
-                elif self.boss_type == "syrentha":
-                    self._smart_ai_syrentha(enemies, dist)
-                elif self.boss_type == "thalgryn":
-                    self._smart_ai_thalgryn(enemies, dist)
-                elif self.boss_type == "nyxarath":
-                    self._smart_ai_nyxarath(enemies, dist)
-                elif self.boss_type == "vhorethzir":
-                    self._smart_ai_vhorethzir(enemies, dist)
-                elif self.boss_type == "vaerith":
-                    self._smart_ai_vaerith(enemies, dist)
-                elif self.boss_type == "xirthalis":
-                    self._smart_ai_xirthalis(enemies, dist)
-                elif self.boss_type == "vhyssarion":
-                    self._smart_ai_vhyssarion(enemies, dist)
-                elif self.boss_type == "kenshiro":
-                    self._smart_ai_kenshiro(enemies, dist)
-                elif self.boss_type == "khazan":
-                    self._smart_ai_khazan(enemies, dist)
-                elif self.boss_type == "wiro":
-                    self._smart_ai_wiro(enemies, dist)
-                elif self.boss_type == "naraka":
-                    self._smart_ai_naraka(enemies, dist)
-                elif self.boss_type == "krognarr":
-                    self._smart_ai_krognarr(enemies, dist)
-                elif self.boss_type == "raz":
-                    self._smart_ai_raz(enemies, dist)
-                elif self.boss_type == "vraskhan":
-                    self._smart_ai_vraskhan(enemies, dist)
-                elif self.boss_type == "aurethzar":
-                    self._smart_ai_aurethzar(enemies, dist)
-                elif self.boss_type == "aeralith":
-                    self._smart_ai_aeralith(enemies, dist)
-                elif self.boss_type == "aurex":
-                    self._smart_ai_aurex(enemies, dist)
-                elif self.boss_type == "nyxareva":
-                    self._smart_ai_nyxareva(enemies, dist)
-                elif self.boss_type == "thalakryon":
-                    self._smart_ai_thalakryon(enemies, dist)
-                elif self.boss_type == "aurelix":
-                    self._smart_ai_aurelix(enemies, dist)
-                elif self.boss_type == "aurelyssa":
-                    self._smart_ai_aurelyssa(enemies, dist)
-                elif self.boss_type == "vargrath":
-                    self._smart_ai_vargrath(enemies, dist)
-                elif self.boss_type == "nazulmor":
-                    self._smart_ai_nazulmor(enemies, dist)
-                elif self.boss_type == "kaeldris":
-                    self._smart_ai_kaeldris(enemies, dist)
-                elif self.boss_type == "pyraklos":
-                    self._smart_ai_pyraklos(enemies, dist)
-                elif self.boss_type == "velmyrth":
-                    self._smart_ai_velmyrth(enemies, dist)
-                elif self.boss_type == "solvarin":
-                    self._smart_ai_solvarin(enemies, dist)
-                elif self.boss_type == "malzareth":
-                    self._smart_ai_malzareth(enemies, dist)
-                elif self.boss_type == "akashari":
-                    self._smart_ai_akashari(enemies, dist)
-                elif self.boss_type == "vorenmarr":
-                    self._smart_ai_vorenmarr(enemies, dist)
-                elif self.boss_type == "azureth":
-                    self._smart_ai_azureth(enemies, dist)
-                elif self.boss_type == "luminar":
-                    self._smart_ai_luminar(enemies, dist)
-                elif self.boss_type == "solara":
-                    self._smart_ai_solara(enemies, dist)
-                elif self.boss_type == "pyraethis":
-                    self._smart_ai_pyraethis(enemies, dist)
-                elif self.boss_type == "auroth":
-                    self._smart_ai_auroth(enemies, dist)
-                elif self.boss_type == "morvein":
-                    self._smart_ai_morvein(enemies, dist)
-                elif self.boss_type == "thorvak":
-                    self._smart_ai_thorvak(enemies, dist)
-                elif self.boss_type == "yamako":
-                    self._smart_ai_yamako(enemies, dist)
-                elif self.boss_type == "ignirus":
-                    self._smart_ai_ignirus(enemies, dist)
-                elif self.boss_type == "leoric":
-                    self._smart_ai_leoric(enemies, dist)
-                elif self.boss_type == "shirotaka":
-                    self._smart_ai_shirotaka(enemies, dist)
-                elif self.boss_type == "seiryukong":
-                    self._smart_ai_seiryukong(enemies, dist)
-                elif self.boss_type == "kaelthorn":
-                    self._smart_ai_kaelthorn(enemies, dist)
-                elif self.boss_type == "solvanth":
-                    self._smart_ai_solvanth(enemies, dist)
-                elif self.boss_type == "xyrael":
-                    self._smart_ai_xyrael(enemies, dist)
-                elif self.boss_type == "nyxareth":
-                    self._smart_ai_nyxareth(enemies, dist)
-                elif self.boss_type == "cryssalia":
-                    self._smart_ai_cryssalia(enemies, dist)
-                elif self.boss_type == "kaelthar":
-                    self._smart_ai_kaelthar(enemies, dist)
-                elif self.boss_type == "morkhaera":
-                    self._smart_ai_morkhaera(enemies, dist)
-                elif self.boss_type == "aurelion":
-                    self._smart_ai_aurelion(enemies, dist)
-                elif self.boss_type == "akahime":
-                    self._smart_ai_akahime(enemies, dist)
-                elif self.boss_type == "nyxthrael":
-                    self._smart_ai_nyxthrael(enemies, dist)
-                elif self.boss_type == "sylvantheros":
-                    self._smart_ai_sylvantheros(enemies, dist)
-                elif self.boss_type == "vaelindra":
-                    self._smart_ai_vaelindra(enemies, dist)
-                elif self.boss_type == "astraelion":
-                    self._smart_ai_astraelion(enemies, dist)
-                elif self.boss_type == "morvaenthir":
-                    self._smart_ai_morvaenthir(enemies, dist)
-                elif self.boss_type == "thornvaegrim":
-                    self._smart_ai_thornvaegrim(enemies, dist)
-                elif self.boss_type == "morthraxis":
-                    self._smart_ai_morthraxis(enemies, dist)
-                else:
-                    if self.ability_timer == 0:
-                        self._use_ability(enemies)
             else:
                 dx = self.target.x - self.x
                 dy = self.target.y - self.y
@@ -851,6 +689,13 @@ class Boss(TowerDebuffMixin):
                     stats = self._get_boss_stats()
                     min_dist = stats.get("min_distance", 200)
                     prefer_dist = stats.get("prefer_distance", 280)
+                    # ═══ FIX DEADLOCK KITING (bug Razak) ═══
+                    # if prefer_distance > range, boss berhenti di zona
+                    # (range, prefer] -> tidak menyerang & tidak casting
+                    # selamanya. Clamp jarak ideal agar SELALU <= range;
+                    # min juga dipaksa di bawah prefer.
+                    prefer_dist = min(prefer_dist, max(1, self.range))
+                    min_dist = min(min_dist, max(0, prefer_dist - 1))
                     if d < min_dist and d > 0:
                         # KITE: mundur dari target
                         self.x -= self.speed * dx / d
@@ -868,8 +713,193 @@ class Boss(TowerDebuffMixin):
                         self.x += self.speed * dx / d
                         self.y += self.speed * dy / d
                         self.direction = 1 if dx > 0 else -1
+            # ═══ SMART AI per boss type ═══
+            # Dipanggil pada jarak sampai "sensing reach" (bukan
+            # hanya saat dist <= range) supaya skill gap-close/
+            # utility (blink, charge, dash) bisa menyala saat
+            # mengejar - sebelumnya dispatch hanya di dalam range
+            # sehingga kondisi `target_dist > 90..120` tidak
+            # pernah terpenuhi dan skill tertentu mati total.
+            # Reach dibatasi max(range, ability_range)+60 supaya
+            # skill self-buff tanpa syarat jarak (mis. ultimate
+            # HP-kritis) tidak menyala dari seberang peta.
+            _ai_reach = max(self.range,
+                            getattr(self, 'ability_range', self.range)) + 60
+            if dist <= _ai_reach:
+                # Jauh di luar reach tidak ada cabang skill (ability
+                # generic hanya aktif dalam range lihat _run_smart_ai).
+                self._run_smart_ai(enemies, dist)
+
         else:
             self._move_forward()
+
+    def _run_smart_ai(self, enemies, dist):
+        """Dispatch smart-AI per boss type (lihat update)."""
+        # ═══ SMART AI per boss type ═══
+        if self.boss_type == "abaddon":
+            self._smart_ai_abaddon(enemies, dist)
+        elif self.boss_type == "alchemist":
+            self._smart_ai_alchemist(enemies, dist)
+        elif self.boss_type == "ancient_apparition":
+            self._smart_ai_ancient_apparition(enemies, dist)
+        elif self.boss_type == "ignis_drachorn":  # ← TAMBAH
+            self._smart_ai_ignis_drachorn(enemies, dist)
+        elif self.boss_type == "gornak":
+            self._smart_ai_gornak(enemies, dist)
+        elif self.boss_type == "morgath":
+            self._smart_ai_morgath(enemies, dist)
+        elif self.boss_type == "drakar":
+            self._smart_ai_drakar(enemies, dist)
+        elif self.boss_type == "razak":
+            self._smart_ai_razak(enemies, dist)
+        elif self.boss_type == "khalros":
+            self._smart_ai_khalros(enemies, dist)
+        elif self.boss_type == "gorath":
+            self._smart_ai_gorath(enemies, dist)
+        elif self.boss_type == "varkul":
+            self._smart_ai_varkul(enemies, dist)
+        elif self.boss_type == "xerathis":
+            self._smart_ai_xerathis(enemies, dist)
+        elif self.boss_type == "nyzrak":
+            self._smart_ai_nyzrak(enemies, dist)
+        elif self.boss_type == "zharok":
+            self._smart_ai_zharok(enemies, dist)
+        elif self.boss_type == "pyrenth":
+            self._smart_ai_pyrenth(enemies, dist)
+        elif self.boss_type == "vokrahn":
+            self._smart_ai_vokrahn(enemies, dist)
+        elif self.boss_type == "nyxara":
+            self._smart_ai_nyxara(enemies, dist)
+        elif self.boss_type == "gravefang":
+            self._smart_ai_gravefang(enemies, dist)
+        elif self.boss_type == "vhalzun":
+            self._smart_ai_vhalzun(enemies, dist)
+        elif self.boss_type == "kunkka":
+            self._smart_ai_kunkka(enemies, dist)
+        elif self.boss_type == "gravewake":
+            self._smart_ai_gravewake(enemies, dist)
+        elif self.boss_type == "syrentha":
+            self._smart_ai_syrentha(enemies, dist)
+        elif self.boss_type == "thalgryn":
+            self._smart_ai_thalgryn(enemies, dist)
+        elif self.boss_type == "nyxarath":
+            self._smart_ai_nyxarath(enemies, dist)
+        elif self.boss_type == "vhorethzir":
+            self._smart_ai_vhorethzir(enemies, dist)
+        elif self.boss_type == "vaerith":
+            self._smart_ai_vaerith(enemies, dist)
+        elif self.boss_type == "xirthalis":
+            self._smart_ai_xirthalis(enemies, dist)
+        elif self.boss_type == "vhyssarion":
+            self._smart_ai_vhyssarion(enemies, dist)
+        elif self.boss_type == "kenshiro":
+            self._smart_ai_kenshiro(enemies, dist)
+        elif self.boss_type == "khazan":
+            self._smart_ai_khazan(enemies, dist)
+        elif self.boss_type == "wiro":
+            self._smart_ai_wiro(enemies, dist)
+        elif self.boss_type == "naraka":
+            self._smart_ai_naraka(enemies, dist)
+        elif self.boss_type == "krognarr":
+            self._smart_ai_krognarr(enemies, dist)
+        elif self.boss_type == "raz":
+            self._smart_ai_raz(enemies, dist)
+        elif self.boss_type == "vraskhan":
+            self._smart_ai_vraskhan(enemies, dist)
+        elif self.boss_type == "aurethzar":
+            self._smart_ai_aurethzar(enemies, dist)
+        elif self.boss_type == "aeralith":
+            self._smart_ai_aeralith(enemies, dist)
+        elif self.boss_type == "aurex":
+            self._smart_ai_aurex(enemies, dist)
+        elif self.boss_type == "nyxareva":
+            self._smart_ai_nyxareva(enemies, dist)
+        elif self.boss_type == "thalakryon":
+            self._smart_ai_thalakryon(enemies, dist)
+        elif self.boss_type == "aurelix":
+            self._smart_ai_aurelix(enemies, dist)
+        elif self.boss_type == "aurelyssa":
+            self._smart_ai_aurelyssa(enemies, dist)
+        elif self.boss_type == "vargrath":
+            self._smart_ai_vargrath(enemies, dist)
+        elif self.boss_type == "nazulmor":
+            self._smart_ai_nazulmor(enemies, dist)
+        elif self.boss_type == "kaeldris":
+            self._smart_ai_kaeldris(enemies, dist)
+        elif self.boss_type == "pyraklos":
+            self._smart_ai_pyraklos(enemies, dist)
+        elif self.boss_type == "velmyrth":
+            self._smart_ai_velmyrth(enemies, dist)
+        elif self.boss_type == "solvarin":
+            self._smart_ai_solvarin(enemies, dist)
+        elif self.boss_type == "malzareth":
+            self._smart_ai_malzareth(enemies, dist)
+        elif self.boss_type == "akashari":
+            self._smart_ai_akashari(enemies, dist)
+        elif self.boss_type == "vorenmarr":
+            self._smart_ai_vorenmarr(enemies, dist)
+        elif self.boss_type == "azureth":
+            self._smart_ai_azureth(enemies, dist)
+        elif self.boss_type == "luminar":
+            self._smart_ai_luminar(enemies, dist)
+        elif self.boss_type == "solara":
+            self._smart_ai_solara(enemies, dist)
+        elif self.boss_type == "pyraethis":
+            self._smart_ai_pyraethis(enemies, dist)
+        elif self.boss_type == "auroth":
+            self._smart_ai_auroth(enemies, dist)
+        elif self.boss_type == "morvein":
+            self._smart_ai_morvein(enemies, dist)
+        elif self.boss_type == "thorvak":
+            self._smart_ai_thorvak(enemies, dist)
+        elif self.boss_type == "yamako":
+            self._smart_ai_yamako(enemies, dist)
+        elif self.boss_type == "ignirus":
+            self._smart_ai_ignirus(enemies, dist)
+        elif self.boss_type == "leoric":
+            self._smart_ai_leoric(enemies, dist)
+        elif self.boss_type == "shirotaka":
+            self._smart_ai_shirotaka(enemies, dist)
+        elif self.boss_type == "seiryukong":
+            self._smart_ai_seiryukong(enemies, dist)
+        elif self.boss_type == "kaelthorn":
+            self._smart_ai_kaelthorn(enemies, dist)
+        elif self.boss_type == "solvanth":
+            self._smart_ai_solvanth(enemies, dist)
+        elif self.boss_type == "xyrael":
+            self._smart_ai_xyrael(enemies, dist)
+        elif self.boss_type == "nyxareth":
+            self._smart_ai_nyxareth(enemies, dist)
+        elif self.boss_type == "cryssalia":
+            self._smart_ai_cryssalia(enemies, dist)
+        elif self.boss_type == "kaelthar":
+            self._smart_ai_kaelthar(enemies, dist)
+        elif self.boss_type == "morkhaera":
+            self._smart_ai_morkhaera(enemies, dist)
+        elif self.boss_type == "aurelion":
+            self._smart_ai_aurelion(enemies, dist)
+        elif self.boss_type == "akahime":
+            self._smart_ai_akahime(enemies, dist)
+        elif self.boss_type == "nyxthrael":
+            self._smart_ai_nyxthrael(enemies, dist)
+        elif self.boss_type == "sylvantheros":
+            self._smart_ai_sylvantheros(enemies, dist)
+        elif self.boss_type == "vaelindra":
+            self._smart_ai_vaelindra(enemies, dist)
+        elif self.boss_type == "astraelion":
+            self._smart_ai_astraelion(enemies, dist)
+        elif self.boss_type == "morvaenthir":
+            self._smart_ai_morvaenthir(enemies, dist)
+        elif self.boss_type == "thornvaegrim":
+            self._smart_ai_thornvaegrim(enemies, dist)
+        elif self.boss_type == "morthraxis":
+            self._smart_ai_morthraxis(enemies, dist)
+        else:
+            # Boss tanpa smart-AI: ability generik tetap aktif saat
+            # target sudah dalam range serang (paritas perilaku lama -
+            # _use_ability tidak boleh hilang untuk 137 boss generic).
+            if self.ability_timer == 0 and dist <= self.range:
+                self._use_ability(enemies)
 
     def _move_forward(self):
         if not self.lane_path or self.waypoint_index < 0:
@@ -5214,7 +5244,10 @@ class Boss(TowerDebuffMixin):
         if getattr(self, 'dmg_scaling_mult', 1.0) != 1.0:
             mult *= getattr(self, 'dmg_scaling_mult', 1.0)
         if getattr(self, 'is_enraged', False):
-            mult *= 1.25
+            # True boss enrage = +25% damage, mini boss frenzy = +20%
+            # (sama dengan yang diterapkan saat trigger enrage).
+            mult *= 1.25 if getattr(self, 'boss_class', 'true') == 'true' \
+                else 1.20
         if mult != 1.0 and stats:
             scaled = dict(stats)
             for k, v in stats.items():

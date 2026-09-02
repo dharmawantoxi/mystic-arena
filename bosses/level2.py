@@ -8748,24 +8748,6 @@ class _NS_alchemist:
         decal = NS._decal(d * 2, d * 2, build)
         NS._blit_decal(surface, decal, cx, cy)
 
-    def _ground_glow(surface, cx, cy, radius, color, alpha):
-        """Genangan cahaya di tanah (falloff pusat->tepi)."""
-        NS = _NS_alchemist
-        radius = max(3, int(radius))
-
-        def build(s, w, h):
-            for i in range(8):
-                t = i / 8.0
-                a = int(alpha * (1.0 - t) ** 1.7)
-                if a <= 2:
-                    continue
-                NS._aacircle(s, (*color, a), (w // 2, h // 2),
-                             max(1, int(radius * (1.0 - t))))
-
-        d = radius + 2
-        decal = NS._decal(d * 2, d * 2, build)
-        NS._blit_decal(surface, decal, cx, cy)
-
     # ==================================================================
     # AIM & STATE
     # ==================================================================
@@ -9376,28 +9358,6 @@ class _NS_alchemist:
     # ==================================================================
     # ACID PARTICLE HELPERS (stamp kecil, dipakai canvas & fallback)
     # ==================================================================
-    def _draw_acid_splash(surface, cx, cy, size=8, phase=0, alpha=255):
-        """Cipratan asam berbusa (ramp 6 band + gelembung)."""
-        NS = _NS_alchemist
-        P = NS.PALETTE
-        NS._aacircle(surface, (*P["acid_darkest"], alpha), (cx, cy), size)
-        NS._aacircle(surface, (*P["acid_dark"], alpha), (cx, cy),
-                     max(1, size - 1))
-        NS._aacircle(surface, (*P["acid_mid"], alpha), (cx, cy),
-                     max(1, size - 3))
-        NS._aacircle(surface, (*P["acid_bright"], alpha),
-                     (cx - 1, cy - 1), max(1, size - 4))
-        NS._aacircle(surface, (*P["acid_hot"], alpha),
-                     (cx - 1, cy - 2), max(1, size - 6))
-        NS._aacircle(surface, (*P["acid_glow"], min(255, alpha)),
-                     (cx - 1, cy - 2), max(1, size - 7))
-        for i in range(4):
-            angle = phase * 0.5 + i * math.pi / 2
-            bx = cx + int(math.cos(angle) * (size - 2))
-            by = cy + int(math.sin(angle) * (size - 2))
-            NS._aacircle(surface, (*P["acid_bright"], alpha),
-                         (bx, by), 1)
-
     def _draw_acid_droplet(surface, x, y, size=3, alpha=255):
         """Tetes asam (bentuk tear + glow)."""
         NS = _NS_alchemist
@@ -11024,7 +10984,10 @@ class _NS_alchemist:
             except Exception:
                 pass
         try:
-            font = _debug_font()
+            # FIX: `_debug_font` adalah method dari _NS_alchemist, bukan
+            # global modul -> pemanggilan tanpa `NS.` selalu NameError
+            # dan overlay debug tidak pernah menggambar teks.
+            font = _NS_alchemist._debug_font()
             for i, txt in enumerate(lines):
                 surface.blit(font.render(txt, True, (235, 240, 220)),
                              (x - 60, y - 108 + i * 11))

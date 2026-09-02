@@ -1771,6 +1771,12 @@ class Game:
         if self.active_boss is not None:
             if getattr(self.active_boss, "alive", True):
                 return
+            # ═══ FIX: jangan buang boss mati yang reward/unlock-nya
+            # belum sempat diproses (bisa terjadi saat game speed > 1:
+            # _update_gameplay membunuh boss, lalu update_waves di frame
+            # yang sama memanggil fungsi ini sebelum blok death reward).
+            if getattr(self.active_boss, "defeated", False):
+                return
             self.active_boss = None
 
         if not self.pending_mini_bosses:

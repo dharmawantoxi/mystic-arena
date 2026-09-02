@@ -7,12 +7,11 @@
 # ═══════════════════════════════════════════════════════
 # MINI BOSSES (muncul di wave tertentu)
 # ═══════════════════════════════════════════════════════
-
-MINI_BOSS_WAVES = {
-    5: "gornak",
-    10: "morgath",
-    15: "drakar",
-}
+#
+# DEAD CODE DIHAPUS: `MINI_BOSS_WAVES` (wave tetap 5/10/15 untuk
+# Gornak/Morgath/Drakar) tidak direferensikan siapa pun — jadwal
+# mini boss sekarang dibaca dari levels/level_data.py per level dan
+# wave-nya diacak tiap run oleh Game._roll_mini_boss_schedule().
 
 MINI_BOSS_TYPES = {
     "gornak": {
@@ -195,7 +194,9 @@ MINI_BOSS_TYPES = {
         "skill_e_cooldown": 280,
         "skill_r_damage": 340,
         "skill_r_cooldown": 520,
-        "prefer_distance": 60,
+        # prefer_distance HARUS <= range (55) agar boss bisa menyerang.
+        # Dulu 60 -> Razak diam di zona 55..60 dan tidak pernah attack.
+        "prefer_distance": 45,
         "min_distance": 40,
         "hero_unlock": {
             "name": "Razak",

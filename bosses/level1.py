@@ -223,11 +223,6 @@ class _NS_gornak:
                   "white"),
     }
 
-    def _band(ramp, i):
-        """Warna band ke-i (0=core .. 4=shine) dari ramp bernama."""
-        keys = _NS_gornak._RAMP[ramp]
-        return _NS_gornak.PALETTE[keys[max(0, min(4, int(i)))]]
-
     # ==================================================================
     # PRIMITIF HELPER (mendukung warna alpha lewat surface sementara)
     # ==================================================================
@@ -668,22 +663,6 @@ class _NS_gornak:
         dur = float(_NS_gornak.SKILL_DUR.get(skill, 40) or 40)
         timer = int(getattr(boss, "active_skill_timer", 0) or 0)
         return max(0.0, min(1.0, 1.0 - timer / dur))
-
-    def _clamp_fx_xy(boss, x, y, px, py):
-        """Jaga FX di dalam canvas hero (rumus = _canvas_size_for)."""
-        scale = getattr(boss, "_render_scale", None)
-        if scale is None:
-            return int(px), int(py)
-        scale = float(scale) or 1.0
-        rng = int(getattr(boss, "range", 130) or 130)
-        half = max(120, int(rng / scale) + 40)
-        max_off = half - 12
-        ox, oy = px - x, py - y
-        d = math.hypot(ox, oy)
-        if d > max_off:
-            ox *= max_off / d
-            oy *= max_off / d
-        return int(x + ox), int(y + oy)
 
     # ==================================================================
     # KOORDINAT TARGET (kompensasi scale untuk jalur hero offscreen)
@@ -3945,11 +3924,6 @@ class _NS_morgath:
         _NS_morgath._draw_mor_rig_at(
             surface, x, y, getattr(boss, "direction", 1) or 1,
             float(getattr(boss, "pulse", 0.0)), "idle", 0.0, False)
-
-    def _draw_mor_walk(surface, boss, x, y):
-        _NS_morgath._draw_mor_rig_at(
-            surface, x, y, getattr(boss, "direction", 1) or 1,
-            float(getattr(boss, "pulse", 0.0)) * 2.0, "walk", 0.0, False)
 
     def _draw_mor_attack(surface, boss, x, y):
         progress = _NS_morgath._mor_progress(boss)
