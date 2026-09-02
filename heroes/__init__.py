@@ -652,7 +652,7 @@ _BEAM_PASS_HEROES = {"morgath"}
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
                    "alchemist", "ancient_apparition", "nyzrak",
-                   "xerathis", "varkul"}
+                   "xerathis", "varkul", "ignis_drachorn"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -670,6 +670,7 @@ _LIVE_FX_PATHS = {
     "nyzrak": "heroes.nyzrak_fx",
     "xerathis": "heroes.xerathis_fx",
     "varkul": "heroes.varkul_fx",
+    "ignis_drachorn": "heroes.ignis_drachorn_fx",
 }
 
 

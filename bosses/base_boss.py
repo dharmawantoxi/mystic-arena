@@ -696,6 +696,24 @@ class Boss(TowerDebuffMixin):
                                 self.damage, False, 'ice')
                         except Exception:
                             pass
+                    # ═══ IMPACT FX IGNIS DRACHORN ═══
+                    # Greatsword magma Ignis mendarat: flash bintang,
+                    # sabit api, serpihan obsidian + bara, shake, dan
+                    # hit-stop 0.03-0.08 s (paket lengkapnya di
+                    # heroes/ignis_drachorn_fx.notify_melee_impact).
+                    # Difilter per boss_type + try/except (paritas Gornak).
+                    if getattr(self, 'boss_type', None) == 'ignis_drachorn':
+                        try:
+                            from heroes import ignis_drachorn_fx as _ignfx
+                            if getattr(self, 'attack_range', 0) > 120:
+                                _ignfx.notify_projectile_impact(
+                                    self, self.target.x, self.target.y, 0.0,
+                                    self.damage, False, 'orb')
+                            else:
+                                _ignfx.notify_melee_impact(
+                                    self, self.target, self.damage, False)
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -1547,6 +1565,15 @@ class Boss(TowerDebuffMixin):
                     if hasattr(e, 'attack_timer'):
                         e.attack_timer = max(e.attack_timer, 45)
 
+        # ═══ FX DRAGON BREATH (lapisan hidup) ═══
+        try:
+            from heroes import ignis_drachorn_fx as _ignfx
+            _ignfx.notify_skill_cast(self, 'q')
+            _ignfx.notify_skill_impact(self, self.target.x, self.target.y,
+                                       max_range * 0.55, 'q')
+        except Exception:
+            pass
+
         self._shake_screen(12)
 
     def _cast_w_dragon_tail(self, enemies):
@@ -1577,6 +1604,14 @@ class Boss(TowerDebuffMixin):
                     e.x += push_x
                     e.y += push_y
 
+        # ═══ FX DRAGON TAIL (lapisan hidup) ═══
+        try:
+            from heroes import ignis_drachorn_fx as _ignfx
+            _ignfx.notify_skill_cast(self, 'w')
+            _ignfx.notify_skill_impact(self, self.x, self.y, 130, 'w')
+        except Exception:
+            pass
+
         self._shake_screen(15)
 
     def _cast_e_dragon_blood(self):
@@ -1595,6 +1630,14 @@ class Boss(TowerDebuffMixin):
         # Heal 20% max HP
         heal = int(self.max_hp * 0.20)
         self.hp = min(self.max_hp, self.hp + heal)
+
+        # ═══ FX DRAGON BLOOD (lapisan hidup) ═══
+        try:
+            from heroes import ignis_drachorn_fx as _ignfx
+            _ignfx.notify_skill_cast(self, 'e')
+            _ignfx.notify_skill_impact(self, self.x, self.y, 110, 'e')
+        except Exception:
+            pass
 
         self._shake_screen(10)
 
@@ -1635,6 +1678,14 @@ class Boss(TowerDebuffMixin):
         # Heal 25% (transformation)
         heal = int(self.max_hp * 0.25)
         self.hp = min(self.max_hp, self.hp + heal)
+
+        # ═══ FX ELDER DRAGON FORM (lapisan hidup) ═══
+        try:
+            from heroes import ignis_drachorn_fx as _ignfx
+            _ignfx.notify_skill_cast(self, 'r')
+            _ignfx.notify_skill_impact(self, self.x, self.y, 220, 'r')
+        except Exception:
+            pass
 
         self._shake_screen(28)
 

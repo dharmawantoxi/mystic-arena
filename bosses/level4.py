@@ -5794,78 +5794,282 @@ class _NS_vokrahn:
 # IGNIS_DRACHORN
 # ====================================================================
 class _NS_ignis_drachorn:
-    """Namespace ignis_drachorn - isi asli tidak diubah."""
+    """Namespace ignis_drachorn - PIXEL MASTERWORK v2 + COMBAT FX v3.
+
+    Rewrite penuh renderer + sistem tempur **IGNIS DRACHORN, THE MOLTEN
+    SOVEREIGN** (true boss level 4) mengikuti standar Thorne v2 Pixel
+    Masterwork + v3 Combat FX (lihat docs/IGNIS_DRACHORN_V3_COMBAT_FX.md).
+
+    Pembagian kerja:
+
+      RENDERER (file ini)                LAPISAN HIDUP (heroes/ignis_drachorn_fx.py)
+      ---------------------------------  ------------------------------------------
+      rig dragon knight berlapis         trail ayunan greatsword (histori nyata)
+      palette + outline + rim light      particle system (ember/asap/debris)
+      ANIMATION CONTROLLER (state,       proyektil Fire Orb / Meteor modular
+        fase, hit window, delta time)    IMPACT FX + hit-stop + screen shake
+      ark ayunan pedang (SWORD_ARC)      SkillFX q/w/e/r lifecycle penuh
+      telegraph tanah q/w/e/r            overlay DEBUG_CHARACTER
+      elder dragon form (R)              -- semua di luar cache sprite --
+      fallback penuh saat modul FX
+        tidak tersedia
+
+    100% PROSEDURAL: tidak ada PNG / JPG / GIF / sprite-sheet, dan tidak
+    ada pemuat gambar eksternal apa pun. Semua bentuk dari pygame.Surface +
+    pygame.draw + pygame.transform + pygame.Vector2 + pygame.mask.
+    """
 
     # ---------------------------------------------------------------------------
-    # Compatibility helpers
+    # 0. KONFIGURASI
     # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
+    HAS_AALINES = hasattr(pygame.draw, "aalines")
+
+    #: Debug visual karakter: hitbox, hurtbox, attack range, tabrakan
+    #: proyektil, state animasi, frame, FPS, jumlah partikel, state skill,
+    #: dan timer serangan.
+    DEBUG_CHARACTER = False
+
+    # ── cache (nama lama dipertahankan) ─────────────────────────────
+    _shadow_cache = None
+    _aura_cache = None
+    _flash_buf = None
+    _body_buf = None
+    _record_shadow = None
+    _STATIC_SURFACES = {}
+    _LIVE_MOD = None
+    _premul_buf = None               # buffer premultiply decal additif
+    _last_rig = None                 # rig terakhir (untuk afterimage FX)
+    _last_rig_off = (0, 0)
+
+    # ── metrik rig ──────────────────────────────────────────────────
+    # Rig di-author 1:1 pada resolusi tampil (chunky pixel, hard edge,
+    # tanpa smoothscale) supaya piksel tetap tajam. Buffer badan dipakai
+    # untuk outline siluet + pass pencahayaan.
+    RIG_W, RIG_H = 220, 230
+    RIG_OX, RIG_OY = 110, 132
+    SCALE = 1.0
+    FEET_DY = 48
+    GROUND_DY = FEET_DY
+
+    #: Durasi pose skill (frame sim) — SINKRON dengan
+    #: base_boss._cast_q/w/e/r_* (active_skill_timer).
+    SKILL_DUR = {"q": 45, "w": 40, "e": 60, "r": 90}
+
+    #: Radius efek di ruang DUNIA (px). Dipakai telegraph & FX.
+    SKILL_RADIUS = {"q": 250, "w": 130, "e": 110, "r": 220}
+
+    #: Fase serangan (fraksi 0..1 durasi serangan). Nama fase dipakai
+    #: renderer, lapisan hidup, dan overlay debug — satu kosakata.
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.12),
+        ("WINDUP",       0.12, 0.30),
+        ("SWING",        0.30, 0.50),
+        ("IMPACT",       0.50, 0.62),
+        ("FOLLOW",       0.62, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+
+    #: Jendela hit aktif + frame impact (dibaca FX & debug).
+    ATTACK_ACTIVE_WINDOW = (0.36, 0.62)
+    ATTACK_IMPACT_FRAME = 0.52
+
+    #: Prioritas state animasi. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: ARK AYUNAN GREATSWORD — (t0, t1, theta0, theta1, ease).
+    #: theta = sudut bilah dari sumbu ATAS (rad); positif berputar ke
+    #: arah depan (facing). Pedang TIDAK PERNAH melompat: tiap fase
+    #: bersambung dengan fase berikutnya (a1 == a0 fase sesudahnya).
+    SWORD_ARC = (
+        (0.00, 0.12,  2.42,  2.00, "out"),    # ANTICIPATION: angkat tip dari tanah
+        (0.12, 0.30,  2.00, -1.30, "io"),     # WIND-UP: putar tinggi ke belakang
+        (0.30, 0.50, -1.30,  1.80, "oc"),     # SWING: tebasan cepat ke depan
+        (0.50, 0.62,  1.80,  2.12, "hold"),   # IMPACT: overshoot + tahan bobot
+        (0.62, 0.82,  2.12,  2.72, "io"),     # FOLLOW THROUGH: bilah turun
+        (0.82, 1.00,  2.72,  2.42, "io"),     # RECOVERY: kembali ke garda
+    )
+
+    #: Panjang bilah (px lokal) & offset grip idle.
+    BLADE_LEN = 56.0
+    GRIP_LOCAL = (16.0, -6.0)
 
     # ---------------------------------------------------------------------------
-    # HD Color Palette - Dragon Knight inspired crimson / gold / fire
+    # 1. HD PALETTE — Molten Sovereign
+    #    Obsidian plate + magma seam + crimson cloth + gold dragon trim.
+    #    Tiap material adalah RAMP 4-8 band dengan hue-shift (bayangan
+    #    condong ungu-dingin, highlight condong kuning-panas) supaya
+    #    volume terbaca walau palette-nya terbatas.
     # ---------------------------------------------------------------------------
     PALETTE = {
-        # Armor - dark steel with red tint
-        "armor_darkest":  (18,  12,  14),
-        "armor_dark":     (42,  28,  30),
-        "armor_mid":      (75,  52,  55),
-        "armor_light":    (120, 90,  90),
+        # ── kontrak 9 kunci karakter ────────────────────────────────
+        "outline":        (6,    3,   6),
+        "shadow":         (0,    0,   0),
+        "dark":           (28,   16,  20),
+        "body":           (58,   36,  40),
+        "mid":            (96,   62,  62),
+        "light":          (150,  108, 100),
+        "highlight":      (226,  200, 188),
+        "weapon":         (255,  150,  46),
+        "fx":             (255,  196,  78),
+
+        # Armor obsidian - 6 band (dark steel dengan pantulan merah)
+        "armor_darkest":  (18,   12,  14),
+        "armor_dark":     (42,   28,  30),
+        "armor_mid":      (75,   52,  55),
+        "armor_light":    (120,  90,  90),
         "armor_high":     (170, 140, 138),
         "armor_shine":    (215, 195, 190),
 
-        # Red cloth / cape
-        "red_darkest":    (45,   8,  10),
-        "red_dark":       (90,  18,  22),
-        "red_mid":        (140, 30,  35),
-        "red_light":      (185, 55,  55),
-        "red_high":       (220, 90,  80),
+        # Obsidian pelat berat (siluet luar) - 5 band
+        "obsidian_darkest": (10,   7,  11),
+        "obsidian_dark":    (26,  18,  24),
+        "obsidian_mid":     (48,  34,  42),
+        "obsidian_light":   (82,  60,  70),
+        "obsidian_high":    (128, 100, 110),
+
+        # Magma seam (retakan menyala di pelat) - 5 band
+        "magma_dark":     (96,   16,   6),
+        "magma_mid":      (192,  56,  12),
+        "magma_hot":      (255, 128,  28),
+        "magma_bright":   (255, 190,  76),
+        "magma_white":    (255, 246, 208),
+
+        # Red cloth / cape - 6 band
+        "red_darkest":    (45,    8,  10),
+        "red_dark":       (90,   18,  22),
+        "red_mid":        (140,  30,  35),
+        "red_light":      (185,  55,  55),
+        "red_high":       (220,  90,  80),
         "red_shine":      (250, 145, 120),
 
-        # Gold trim
-        "gold_dark":      (95,  62,  15),
-        "gold_mid":       (170, 125, 35),
-        "gold_light":     (230, 190, 75),
+        # Gold trim - 5 band
+        "gold_darkest":   (58,   36,   8),
+        "gold_dark":      (95,   62,  15),
+        "gold_mid":       (170, 125,  35),
+        "gold_light":     (230, 190,  75),
         "gold_shine":     (255, 235, 150),
 
-        # Fire - orange/red flame
-        "fire_darkest":   (60,  12,   4),
-        "fire_dark":      (135, 35,   8),
-        "fire_mid":       (215, 80,  15),
-        "fire_light":     (250, 145, 30),
-        "fire_bright":    (255, 200, 65),
+        # Fire - 7 band
+        "fire_darkest":   (60,   12,   4),
+        "fire_dark":      (135,  35,   8),
+        "fire_mid":       (215,  80,  15),
+        "fire_light":     (250, 145,  30),
+        "fire_bright":    (255, 200,  65),
         "fire_hot":       (255, 235, 140),
         "fire_white":     (255, 250, 220),
 
-        # Dragon scale - deep red/black
-        "dragon_darkest": (25,  8,   10),
-        "dragon_dark":    (60,  18,  20),
-        "dragon_mid":     (105, 30,  32),
-        "dragon_light":   (155, 55,  50),
-        "dragon_high":    (200, 100, 80),
+        # Dragon scale - 6 band
+        "dragon_darkest": (25,    8,  10),
+        "dragon_dark":    (60,   18,  20),
+        "dragon_mid":     (105,  30,  32),
+        "dragon_light":   (155,  55,  50),
+        "dragon_high":    (200, 100,  80),
+        "dragon_rim":     (240, 160, 120),
 
-        # Sword blade - fiery steel
-        "blade_dark":     (120, 60,  25),
-        "blade_mid":      (200, 130, 55),
+        # Sword blade - fiery steel 5 band
+        "blade_dark":     (120,  60,  25),
+        "blade_mid":      (200, 130,  55),
         "blade_light":    (245, 195, 100),
         "blade_hot":      (255, 235, 170),
+        "blade_core":     (255, 252, 232),
+
+        # Wing membrane - 4 band
+        "wing_dark":      (52,   14,  20),
+        "wing_mid":       (92,   26,  30),
+        "wing_light":     (146,  48,  44),
+        "wing_glow":      (226, 108,  62),
+
+        # Horn / claw / bone - 4 band
+        "horn_dark":      (36,   26,  26),
+        "horn_mid":       (78,   62,  58),
+        "horn_light":     (140, 120, 108),
+        "horn_shine":     (206, 190, 170),
+
+        # Leather strap - 4 band
+        "leather_dark":   (34,   20,  16),
+        "leather_mid":    (72,   44,  28),
+        "leather_light":  (118,  78,  46),
+        "leather_high":   (162, 118,  74),
+
+        # Ash / smoke - 4 band
+        "smoke_dark":     (24,   18,  22),
+        "smoke_mid":      (58,   46,  50),
+        "smoke_light":    (104,  88,  90),
+        "smoke_glow":     (168, 142, 132),
 
         # Misc
-        "shadow":         (0,   0,   0),
-        "shadow_deep":    (8,   4,   6),
+        "shadow_deep":    (8,     4,   6),
         "white":          (255, 255, 255),
 
-        # Eye glow
-        "eye_dark":       (100, 20,   5),
-        "eye_mid":        (220, 90,  15),
-        "eye_bright":     (255, 180, 60),
+        # Eye glow - 4 band
+        "eye_dark":       (100,  20,   5),
+        "eye_mid":        (220,  90,  15),
+        "eye_bright":     (255, 180,  60),
         "eye_hot":        (255, 240, 180),
     }
 
+    # ---------------------------------------------------------------------------
+    # 2. PRIMITIF (zero-allocation bila memungkinkan)
+    # ---------------------------------------------------------------------------
+    _CLAMP_MEMO = {}
 
+    @staticmethod
+    def _static(key, builder):
+        """Surface statis ter-cache (dibangun sekali, dipakai ulang)."""
+        surf = _NS_ignis_drachorn._STATIC_SURFACES.get(key)
+        if surf is None:
+            surf = builder()
+            _NS_ignis_drachorn._STATIC_SURFACES[key] = surf
+        return surf
+
+    @staticmethod
     def _clamp(color):
-        return tuple(max(0, min(255, int(c))) for c in color)
+        try:
+            hit = _NS_ignis_drachorn._CLAMP_MEMO.get(color)
+        except TypeError:
+            return tuple(max(0, min(255, int(c))) for c in color)
+        if hit is not None:
+            return hit
+        out = tuple(max(0, min(255, int(c))) for c in color)
+        memo = _NS_ignis_drachorn._CLAMP_MEMO
+        if len(memo) > 8192:
+            memo.clear()
+        memo[color] = out
+        return out
 
+    @staticmethod
+    def _alpha(v):
+        return max(0, min(255, int(v)))
 
+    @staticmethod
+    def _mix(a, b, t):
+        t = max(0.0, min(1.0, t))
+        return _NS_ignis_drachorn._clamp(
+            (a[0] + (b[0] - a[0]) * t,
+             a[1] + (b[1] - a[1]) * t,
+             a[2] + (b[2] - a[2]) * t))
+
+    @staticmethod
+    def _hash01(i):
+        """Hash deterministik kecil -> [0,1). Dipakai bentuk bergerigi."""
+        x = math.sin(i * 127.1 + 311.7) * 43758.5453
+        return x - math.floor(x)
+
+    @staticmethod
     def _aacircle(surface, color, center, radius, width=0):
         color = _NS_ignis_drachorn._clamp(color)
         cx, cy = int(center[0]), int(center[1])
@@ -5873,26 +6077,29 @@ class _NS_ignis_drachorn:
         if radius == 0:
             return
         if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
+            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4),
+                                  pygame.SRCALPHA)
+            pygame.draw.circle(temp, color, (radius + 2, radius + 2),
+                               radius, width)
             surface.blit(temp, (cx - radius - 2, cy - radius - 2))
             return
         if _NS_ignis_drachorn.HAS_AACIRCLE and radius > 1:
             try:
-                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius, width)
+                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius,
+                                     width)
                 return
             except Exception:
                 pass
         pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
 
-
+    @staticmethod
     def _aaline(surface, color, start, end, width=1):
         color = _NS_ignis_drachorn._clamp(color)
         sx, sy = int(start[0]), int(start[1])
         ex, ey = int(end[0]), int(end[1])
         if len(color) == 4 and color[3] < 255:
-            min_x = min(sx, ex) - width
-            min_y = min(sy, ey) - width
+            min_x = min(sx, ex) - width * 2
+            min_y = min(sy, ey) - width * 2
             w = abs(ex - sx) + width * 4 + 4
             h = abs(ey - sy) + width * 4 + 4
             if w <= 0 or h <= 0:
@@ -5903,9 +6110,10 @@ class _NS_ignis_drachorn:
                              (ex - min_x, ey - min_y), max(1, width))
             surface.blit(temp, (min_x, min_y))
             return
-        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
+        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey),
+                         max(1, width))
 
-
+    @staticmethod
     def _poly(surface, color, points):
         if len(points) < 3:
             return
@@ -5913,9 +6121,9 @@ class _NS_ignis_drachorn:
         if len(color) == 4 and color[3] < 255:
             xs = [p[0] for p in points]
             ys = [p[1] for p in points]
-            min_x, min_y = min(xs) - 2, min(ys) - 2
-            w = max(xs) - min_x + 4
-            h = max(ys) - min_y + 4
+            min_x, min_y = int(min(xs)) - 2, int(min(ys)) - 2
+            w = int(max(xs)) - min_x + 4
+            h = int(max(ys)) - min_y + 4
             if w <= 0 or h <= 0:
                 return
             temp = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -5925,149 +6133,587 @@ class _NS_ignis_drachorn:
             return
         pygame.draw.polygon(surface, color[:3], points)
 
-
+    @staticmethod
     def _ellipse(surface, color, rect, width=0):
         color = _NS_ignis_drachorn._clamp(color)
         if len(color) == 4 and color[3] < 255:
             rx, ry, rw, rh = rect
             if rw <= 0 or rh <= 0:
                 return
-            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.ellipse(temp, color, (2, 2, rw, rh), width)
+            temp = pygame.Surface((int(rw) + 4, int(rh) + 4), pygame.SRCALPHA)
+            pygame.draw.ellipse(temp, color, (2, 2, int(rw), int(rh)), width)
             surface.blit(temp, (rx - 2, ry - 2))
             return
         pygame.draw.ellipse(surface, color[:3], rect, width)
 
-
+    @staticmethod
     def _rect(surface, color, rect, border_radius=0):
         color = _NS_ignis_drachorn._clamp(color)
         if len(color) == 4 and color[3] < 255:
             rx, ry, rw, rh = rect
             if rw <= 0 or rh <= 0:
                 return
-            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.rect(temp, color, (2, 2, rw, rh), border_radius=border_radius)
+            temp = pygame.Surface((int(rw) + 4, int(rh) + 4), pygame.SRCALPHA)
+            pygame.draw.rect(temp, color, (2, 2, int(rw), int(rh)),
+                             border_radius=border_radius)
             surface.blit(temp, (rx - 2, ry - 2))
             return
-        pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
+        pygame.draw.rect(surface, color[:3], rect,
+                         border_radius=border_radius)
 
+    @staticmethod
+    def _ring(surface, center, radius, width, color, alpha):
+        """Cincin dua lapis (gelap di luar) supaya tidak jadi kawat 1 px."""
+        alpha = _NS_ignis_drachorn._alpha(alpha)
+        if alpha <= 0:
+            return
+        cx, cy = int(center[0]), int(center[1])
+        r = int(radius)
+        if r <= 0:
+            return
+        _NS_ignis_drachorn._aacircle(surface, (10, 4, 4, alpha // 2),
+                                     (cx, cy), r + 1, max(1, width + 2))
+        _NS_ignis_drachorn._aacircle(surface, (*color, alpha), (cx, cy), r,
+                                     max(1, width))
 
+    @staticmethod
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=8, rot=0.3,
+                    core=None):
+        """Bintang percikan (bukan lingkaran) untuk flash & impact."""
+        alpha = _NS_ignis_drachorn._alpha(alpha)
+        if alpha <= 0 or size <= 0:
+            return
+        for k in range(spikes):
+            ang = rot + k * math.pi * 2 / spikes
+            ln = size * (1.0 if k % 2 == 0 else 0.5)
+            _NS_ignis_drachorn._aaline(
+                surface, (*color, alpha), (int(cx), int(cy)),
+                (int(cx + math.cos(ang) * ln),
+                 int(cy + math.sin(ang) * ln * 0.85)),
+                2 if k % 2 == 0 else 1)
+        if core:
+            _NS_ignis_drachorn._aacircle(surface, (*core, alpha),
+                                         (int(cx), int(cy)),
+                                         max(1, int(size * 0.28)))
+
+    @staticmethod
+    def _chevron(surface, cx, cy, ang, size, color, alpha, width=3):
+        """Chevron terarah — telegraph yang bukan lingkaran."""
+        alpha = _NS_ignis_drachorn._alpha(alpha)
+        if alpha <= 0 or size <= 0:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        px, py = -sa, ca
+        tipx, tipy = cx + ca * size, cy + sa * size
+        for s in (-1, 1):
+            _NS_ignis_drachorn._aaline(
+                surface, (*color, alpha),
+                (int(cx + px * s * size * 0.55 - ca * size * 0.5),
+                 int(cy + py * s * size * 0.55 - sa * size * 0.5)),
+                (int(tipx), int(tipy)), width)
+
+    @staticmethod
+    def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
+                     segments=10, thick=3, span=0.6, squash=0.42):
+        """Cincin tanah putus-putus (perspektif pipih)."""
+        alpha = _NS_ignis_drachorn._alpha(alpha)
+        if alpha <= 0 or radius <= 1:
+            return
+        for i in range(segments):
+            a0 = phase + i * math.pi * 2 / segments
+            a1 = a0 + math.pi * 2 / segments * span
+            p0 = (cx + math.cos(a0) * radius,
+                  cy + math.sin(a0) * radius * squash)
+            p1 = (cx + math.cos(a1) * radius,
+                  cy + math.sin(a1) * radius * squash)
+            _NS_ignis_drachorn._aaline(surface, (*color, alpha), p0, p1,
+                                       thick)
+
+    @staticmethod
+    def _jagged_crack(surface, x0, y0, x1, y1, color, alpha, width=2,
+                      segments=4, max_dev=5.0, seed=0):
+        """Retakan magma bergerigi deterministik."""
+        alpha = _NS_ignis_drachorn._alpha(alpha)
+        if alpha <= 0:
+            return
+        dx = x1 - x0
+        dy = y1 - y0
+        dist = math.hypot(dx, dy)
+        if dist < 2.0:
+            return
+        nx, ny = -dy / dist, dx / dist
+        pts = [(x0, y0)]
+        for k in range(1, segments):
+            t = k / float(segments)
+            h = _NS_ignis_drachorn._hash01(seed + k * 17) * 2.0 - 1.0
+            dev = h * max_dev * math.sin(t * math.pi)
+            pts.append((x0 + dx * t + nx * dev, y0 + dy * t + ny * dev))
+        pts.append((x1, y1))
+        for i in range(len(pts) - 1):
+            _NS_ignis_drachorn._aaline(surface, (*color, alpha), pts[i],
+                                       pts[i + 1], width)
+
+    @staticmethod
+    def _tuft_points(spine, depth=4.0, seed=0):
+        """Ubah tulang punggung jadi poligon compang-camping (jubah)."""
+        if len(spine) < 2:
+            return list(spine)
+        left_pts = []
+        right_pts = []
+        for i in range(len(spine)):
+            x, y = spine[i]
+            if i < len(spine) - 1:
+                dx = spine[i + 1][0] - x
+                dy = spine[i + 1][1] - y
+            else:
+                dx = x - spine[i - 1][0]
+                dy = y - spine[i - 1][1]
+            dist = math.hypot(dx, dy) or 1.0
+            nx, ny = -dy / dist, dx / dist
+            d = depth * (0.6 + 0.4 * _NS_ignis_drachorn._hash01(seed + i * 19))
+            left_pts.append((x - nx * d, y - ny * d))
+            right_pts.append((x + nx * d, y + ny * d))
+        return left_pts + right_pts[::-1]
+
+    @staticmethod
+    def _dither_dots(surface, color, rect, pattern=0):
+        """Band dither 2x2 — transisi nilai ala pixel art."""
+        color = _NS_ignis_drachorn._clamp(color)
+        rx, ry, rw, rh = int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3])
+        sw, sh = surface.get_size()
+        for dy in range(rh):
+            yy = ry + dy
+            if yy < 0 or yy >= sh:
+                continue
+            for dx in range(rw):
+                xx = rx + dx
+                if xx < 0 or xx >= sw:
+                    continue
+                if (dx + dy + pattern) % 2 == 0:
+                    surface.set_at((xx, yy), color)
+
+    # ---------------------------------------------------------------------------
+    # 3. KONVERSI KOORDINAT (hero-lane aware)
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _target_position(boss, x, y):
+        """Posisi target dalam ruang gambar (kompensasi _render_scale)."""
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
-            # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
             scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
             tx = x + (target.x - getattr(boss, "x", x)) / scale
             ty = y + (target.y - getattr(boss, "y", y)) / scale
             return int(tx), int(ty)
-        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+        scale = float(getattr(boss, "_render_scale", 1.0) or 1.0)
+        return (int(x + 200 / scale * getattr(boss, "direction", 1)), int(y))
 
+    @staticmethod
+    def _world_to_local(boss, x, y, wx, wy):
+        """Titik DUNIA -> ruang gambar, dibatasi agar tidak keluar canvas."""
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        rng = int(getattr(boss, "range", 180) or 180)
+        half = max(140, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off and d > 0.001:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
+
+    @staticmethod
+    def _fx_scale(boss):
+        """Pengali ukuran FX supaya efek tidak menyusut di hero-lane."""
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+    @staticmethod
+    def _ring_r(boss, world_px, surface):
+        """Radius dunia -> radius gambar, di-clamp ke ukuran canvas."""
+        scale = getattr(boss, "_render_scale", None)
+        r = float(world_px) / float(scale) if scale else float(world_px)
+        margin = min(surface.get_width(), surface.get_height()) // 2 - 10
+        return int(max(4, min(r, margin)))
 
     # ---------------------------------------------------------------------------
-    # Fire particle helper
+    # 4. DECAL ENGINE (primitif tanah ber-cache)
     # ---------------------------------------------------------------------------
-    def _draw_flame_puff(surface, x, y, size, phase, alpha=255):
-        """Draw a puff of flame with multiple layers."""
-        flick = math.sin(phase * 3) * 0.15 + 1.0
-        s = int(size * flick)
-        if s < 1:
+    _DECAL_CACHE = {}
+    _DECAL_ORDER = []
+
+    @staticmethod
+    def _decal(key, size, builder):
+        hit = _NS_ignis_drachorn._DECAL_CACHE.get(key)
+        if hit is not None:
+            return hit
+        surf = builder(size)
+        _NS_ignis_drachorn._DECAL_CACHE[key] = surf
+        _NS_ignis_drachorn._DECAL_ORDER.append(key)
+        if len(_NS_ignis_drachorn._DECAL_ORDER) > 96:
+            old = _NS_ignis_drachorn._DECAL_ORDER.pop(0)
+            _NS_ignis_drachorn._DECAL_CACHE.pop(old, None)
+        return surf
+
+    @staticmethod
+    def _blit_decal(surface, decal, cx, cy, alpha=255, add=False):
+        """Blit decal; mode ``add`` MENGHORMATI alpha per-piksel.
+
+        ``BLEND_RGB_ADD`` mengabaikan kanal alpha, jadi decal bergradien
+        yang langsung di-ADD akan muncul sebagai cakram warna penuh
+        bertepi keras. Untuk mode add decal di-"premultiply" dulu (blit
+        normal ke atas hitam) supaya cahayanya benar-benar meluruh.
+        """
+        NS = _NS_ignis_drachorn
+        alpha = NS._alpha(alpha)
+        if alpha <= 0 or decal is None:
             return
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_darkest"], alpha // 3), (x, y), s + 3)
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_dark"], alpha // 2), (x, y), s + 1)
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_mid"], alpha), (x, y), s)
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_light"], alpha), (x, y - 1), max(1, s - 2))
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_bright"], min(255, alpha)),
-                  (x, y - 2), max(1, s - 4))
-        if s > 4:
-            _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_hot"], min(255, alpha)),
-                      (x, y - 3), max(1, s - 6))
+        w, h = decal.get_size()
+        x0 = int(cx) - w // 2
+        y0 = int(cy) - h // 2
+        if not add:
+            if alpha < 255:
+                decal = decal.copy()
+                decal.set_alpha(alpha)
+            surface.blit(decal, (x0, y0))
+            return
+        buf = NS._premul_buf
+        if buf is None or buf.get_width() < w or buf.get_height() < h:
+            buf = pygame.Surface((max(w, 256), max(h, 256)))
+            NS._premul_buf = buf
+        sub = buf.subsurface((0, 0, w, h))
+        sub.fill((0, 0, 0))
+        sub.blit(decal, (0, 0))
+        if alpha < 255:
+            sub.fill((alpha, alpha, alpha, 255),
+                     special_flags=pygame.BLEND_RGB_MULT)
+        surface.blit(sub, (x0, y0), special_flags=pygame.BLEND_RGB_ADD)
 
+    @staticmethod
+    def _glow_decal(radius, color):
+        """Cahaya radial lembut ter-cache (falloff kuadratik)."""
+        radius = max(3, int(radius))
+        key = ("glow", radius, tuple(color[:3]))
+
+        def build(_r):
+            surf = pygame.Surface((radius * 2 + 2, radius * 2 + 2),
+                                  pygame.SRCALPHA)
+            c = radius + 1
+            steps = max(4, radius // 2)
+            for i in range(steps, 0, -1):
+                t = i / float(steps)
+                a = int(150 * (1.0 - t) ** 2)
+                if a <= 0:
+                    continue
+                pygame.draw.circle(surf, (*color[:3], a), (c, c),
+                                   max(1, int(radius * t)))
+            return surf
+
+        return _NS_ignis_drachorn._decal(key, radius, build)
+
+    @staticmethod
+    def _ground_pool_decal(radius, color):
+        """Genangan cahaya PIPIH di tanah (elips, bukan bola merah)."""
+        radius = max(4, int(radius))
+        key = ("pool", radius, tuple(color[:3]))
+
+        def build(_r):
+            w = radius * 2 + 4
+            h = int(radius * 0.7) + 4
+            surf = pygame.Surface((w, h), pygame.SRCALPHA)
+            steps = max(4, radius // 3)
+            for i in range(steps, 0, -1):
+                t = i / float(steps)
+                a = int(90 * (1.0 - t) ** 1.7)
+                if a <= 0:
+                    continue
+                rw = int(radius * t)
+                rh = max(1, int(radius * 0.32 * t))
+                pygame.draw.ellipse(surf, (*color[:3], a),
+                                    (w // 2 - rw, h // 2 - rh, rw * 2,
+                                     rh * 2))
+            return surf
+
+        return _NS_ignis_drachorn._decal(key, radius, build)
+
+    @staticmethod
+    def _ground_ring_decal(radius, color, thick=3):
+        """Cincin tanah pipih dengan falloff (anti kawat 1 px)."""
+        radius = max(4, int(radius))
+        key = ("gring", radius, tuple(color[:3]), int(thick))
+
+        def build(_r):
+            w = radius * 2 + 6
+            h = int(radius * 0.9) + 6
+            surf = pygame.Surface((w, h), pygame.SRCALPHA)
+            for i in range(thick, 0, -1):
+                a = int(200 * (i / float(thick)) ** 0.6)
+                rr = radius - (thick - i)
+                pygame.draw.ellipse(
+                    surf, (*color[:3], a),
+                    (w // 2 - rr, h // 2 - int(rr * 0.36),
+                     rr * 2, int(rr * 0.72)), 1)
+            return surf
+
+        return _NS_ignis_drachorn._decal(key, radius, build)
+
+    @staticmethod
+    def _scorch_decal(radius, seed=0):
+        """Patch tanah hangus organik (blob deterministik)."""
+        radius = max(6, int(radius))
+        key = ("scorch", radius, int(seed))
+        P = _NS_ignis_drachorn.PALETTE
+
+        def build(_r):
+            w = radius * 2 + 8
+            h = int(radius * 1.0) + 8
+            surf = pygame.Surface((w, h), pygame.SRCALPHA)
+            cx, cy = w // 2, h // 2
+            for i in range(12):
+                a = _NS_ignis_drachorn._hash01(seed * 31 + i) * math.tau
+                d = _NS_ignis_drachorn._hash01(seed * 17 + i * 7) * radius * 0.7
+                rr = int(radius * (0.28 + 0.3 *
+                                   _NS_ignis_drachorn._hash01(seed + i * 13)))
+                pygame.draw.ellipse(
+                    surf, (*P["smoke_dark"], 150),
+                    (int(cx + math.cos(a) * d) - rr,
+                     int(cy + math.sin(a) * d * 0.45) - rr // 2,
+                     rr * 2, rr))
+            for i in range(7):
+                a = _NS_ignis_drachorn._hash01(seed * 7 + i * 3) * math.tau
+                d = radius * (0.2 + 0.55 *
+                              _NS_ignis_drachorn._hash01(seed + i * 5))
+                pygame.draw.line(
+                    surf, (*P["magma_mid"], 130),
+                    (cx, cy),
+                    (int(cx + math.cos(a) * d),
+                     int(cy + math.sin(a) * d * 0.45)), 2)
+            return surf
+
+        return _NS_ignis_drachorn._decal(key, radius, build)
 
     # ---------------------------------------------------------------------------
-    # PROJECTILE SYSTEM - Fire orb from sword
+    # 5. JEMBATAN KE LAPISAN HIDUP (heroes/ignis_drachorn_fx.py)
     # ---------------------------------------------------------------------------
-    class FireProjectile:
-        """A fire orb that travels toward a target (used for melee-ish ranged)."""
-        def __init__(self, sx, sy, tx, ty, speed=5.5):
-            self.x = float(sx)
-            self.y = float(sy)
-            self.tx = float(tx)
-            self.ty = float(ty)
-            self.speed = speed
-            self.alive = True
-            self.age = 0
-            self.trail = []
+    @staticmethod
+    def _live_module():
+        """Muat ``heroes.ignis_drachorn_fx`` sekali; None kalau tak ada."""
+        NS = _NS_ignis_drachorn
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import ignis_drachorn_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "IGNIS_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
 
-        def update(self):
-            if not self.alive:
-                return
-            self.age += 1
-            dx = self.tx - self.x
-            dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < self.speed + 4:
-                self.alive = False
-                return
-            self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 10:
-                self.trail.pop(0)
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
+    @staticmethod
+    def live_fx_ready():
+        return _NS_ignis_drachorn._live_module() is not None
 
-        def draw(self, surface, phase):
-            if not self.alive and self.age < 2:
-                return
-            # Trail
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(50 + i * 15)
-                r = max(1, 5 - (len(self.trail) - i))
-                _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_dark"], alpha), (tx, ty), r + 2)
-                _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_mid"], alpha), (tx, ty), r)
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                _NS_ignis_drachorn._draw_flame_puff(surface, px, py, 7, phase, 240)
-                # Trailing sparks
-                for i in range(3):
-                    angle = phase * 5 + i * math.pi * 2 / 3
-                    sx = px + int(math.cos(angle) * 8)
-                    sy = py + int(math.sin(angle) * 8)
-                    _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_hot"], (sx, sy), 1)
-
+    @staticmethod
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Pasang/gambar lapisan hidup. Return (mod_untuk_draw, owned)."""
+        NS = _NS_ignis_drachorn
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
 
     # ---------------------------------------------------------------------------
-    # State management
+    # 6. ANIMATION CONTROLLER
+    #    Satu-satunya sumber kebenaran state/fase/timing. Lapisan hidup,
+    #    overlay debug, dan alat uji membacanya dari sini.
     # ---------------------------------------------------------------------------
+    @staticmethod
     def _detect_moving(boss):
         if not hasattr(boss, "_ign_last_x"):
             boss._ign_last_x = boss.x
             boss._ign_last_y = boss.y
+            boss._ign_speed = 0.0
             return False
         dx = abs(boss.x - boss._ign_last_x)
         dy = abs(boss.y - boss._ign_last_y)
         boss._ign_last_x = boss.x
         boss._ign_last_y = boss.y
-        return dx + dy > 0.3
+        boss._ign_speed = dx + dy
+        return (dx + dy) > 0.3
 
+    @staticmethod
+    def _ease(kind, t):
+        if t <= 0.0:
+            return 0.0
+        if t >= 1.0:
+            return 1.0
+        if kind == "out":
+            return 1.0 - (1.0 - t) * (1.0 - t)
+        if kind == "oc":                              # out-cubic (cepat)
+            return 1.0 - (1.0 - t) ** 3
+        if kind == "in":
+            return t * t
+        if kind == "hold":
+            return math.sin(t * math.pi * 0.5)
+        return t * t * (3.0 - 2.0 * t)                # in-out (smoothstep)
 
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
+    @staticmethod
+    def attack_phases_order():
+        return tuple(name for name, _a, _b in
+                     _NS_ignis_drachorn.ATTACK_PHASES)
+
+    @staticmethod
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1."""
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_ignis_drachorn.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    @staticmethod
+    def _sword_lift(progress):
+        """Ketinggian relatif kedua tangan saat mengayun (0..1)."""
+        p = max(0.0, min(1.0, float(progress)))
+        E = _NS_ignis_drachorn._ease
+        if p < 0.30:
+            return E("out", p / 0.30)
+        if p < 0.50:
+            return 1.0 - E("oc", (p - 0.30) / 0.20) * 0.95
+        if p < 0.82:
+            return 0.05 + E("io", (p - 0.50) / 0.32) * 0.18
+        return 0.23 * (1.0 - E("io", (p - 0.82) / 0.18))
+
+    @staticmethod
+    def _sword_arc(progress):
+        """(theta, lift) ark greatsword — SATU sumber kebenaran.
+
+        theta = sudut bilah dari sumbu ATAS (rad), positif ke arah facing.
+        Tabel bersambung, jadi tidak pernah ada teleport senjata.
+        """
+        p = max(0.0, min(1.0, float(progress)))
+        NS = _NS_ignis_drachorn
+        for t0, t1, a0, a1, kind in NS.SWORD_ARC:
+            if t0 <= p < t1 or (p >= 1.0 and t1 >= 1.0):
+                e = NS._ease(kind, (p - t0) / max(0.0001, t1 - t0))
+                return a0 + (a1 - a0) * e, NS._sword_lift(p)
+        return NS.SWORD_ARC[0][2], 0.0
+
+    @staticmethod
+    def _lunge_offset(progress):
+        """Dorongan badan ke depan (px) mengikuti bobot ayunan."""
+        p = max(0.0, min(1.0, float(progress)))
+        E = _NS_ignis_drachorn._ease
+        if p < 0.12:
+            return -1.5 * E("out", p / 0.12)          # anticipation mundur
+        if p < 0.30:
+            return -1.5 - 2.0 * E("io", (p - 0.12) / 0.18)
+        if p < 0.50:
+            return -3.5 + 12.0 * E("oc", (p - 0.30) / 0.20)
+        if p < 0.62:
+            return 8.5 + 1.5 * E("hold", (p - 0.50) / 0.12)
+        if p < 0.82:
+            return 10.0 - 7.0 * E("io", (p - 0.62) / 0.20)
+        return 3.0 * (1.0 - E("io", (p - 0.82) / 0.18))
+
+    @staticmethod
+    def sword_geometry(facing, action, phase, ap=0.0):
+        """(grip, tip, theta) sebagai OFFSET lokal dari jangkar badan.
+
+        Dipakai renderer (menggambar pedang) DAN lapisan hidup (trail +
+        titik lahir proyektil) supaya bilah dan trail tidak mungkin
+        berbeda satu frame pun.
+        """
+        NS = _NS_ignis_drachorn
+        f = 1 if facing >= 0 else -1
+        L = NS.BLADE_LEN
+
+        if action in ("melee", "attack", "swing"):
+            theta, lift = NS._sword_arc(ap)
+            lunge = NS._lunge_offset(ap)
+            gx = f * (NS.GRIP_LOCAL[0] + 7.0 * lift + lunge * 0.55)
+            gy = NS.GRIP_LOCAL[1] - 4.0 - 15.0 * lift
+        elif action == "ranged":
+            t = max(0.0, min(1.0, ap))
+            theta = 1.15 - 0.55 * math.sin(t * math.pi)
+            lift = 0.55 + 0.25 * math.sin(t * math.pi)
+            gx = f * (NS.GRIP_LOCAL[0] + 8.0)
+            gy = NS.GRIP_LOCAL[1] - 16.0
+        elif action in ("cast", "skill", "charge"):
+            sway = math.sin(phase * 2.2) * 0.06
+            theta = 0.10 + sway
+            lift = 0.9
+            gx = f * 10.0
+            gy = -18.0
+        elif action in ("walk", "run"):
+            sway = math.sin(phase * 1.1) * 0.10
+            theta = 2.30 + sway
+            lift = 0.08
+            gx = f * (NS.GRIP_LOCAL[0] + 1.0)
+            gy = NS.GRIP_LOCAL[1] + 1.0
+        else:                                          # idle / hurt / death
+            sway = math.sin(phase * 0.8) * 0.05
+            theta = 2.42 + sway
+            lift = 0.0
+            gx = f * NS.GRIP_LOCAL[0]
+            gy = NS.GRIP_LOCAL[1] + math.sin(phase * 0.8) * 0.8
+
+        tx = gx + f * math.sin(theta) * L
+        ty = gy - math.cos(theta) * L
+        return (gx, gy), (tx, ty), theta
+
+    @staticmethod
+    def _update_ignis_anim(boss, moving=False):
+        """Controller: delta time, state + prioritas, timeline serangan."""
+        NS = _NS_ignis_drachorn
+
+        # ── delta time nyata ────────────────────────────────────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                              # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_ign_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._ign_last_ms = now
+        boss._ign_dt = dt
+
+        # ── timeline serangan (timer engine menghitung MUNDUR) ──────
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 42)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_ign_prev_timer", 0))
         active = bool(getattr(boss, "_ign_attack_active", False))
 
-        if timer >= cooldown - 1 and previous <= 1:
+        # serangan baru: timer melonjak naik (di-reset ke cooldown)
+        if timer > previous + 1 and timer >= cooldown - 2:
             boss._ign_attack_active = True
             boss._ign_attack_frame = 0
+            boss._ign_proj_spawned = False
             active = True
         elif active:
-            boss._ign_attack_frame = int(getattr(boss, "_ign_attack_frame", 0)) + 1
+            boss._ign_attack_frame = int(
+                getattr(boss, "_ign_attack_frame", 0)) + 1
             if boss._ign_attack_frame > cooldown:
                 boss._ign_attack_active = False
                 boss._ign_attack_frame = 0
@@ -6078,1504 +6724,2336 @@ class _NS_ignis_drachorn:
             active = False
 
         boss._ign_prev_timer = timer
-        boss._ign_attack_progress = (
-            min(1.0, getattr(boss, "_ign_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
+        frame = int(getattr(boss, "_ign_attack_frame", 0))
+        # durasi animasi serangan dibatasi agar ayunan tetap punya bobot
+        anim_len = max(10, min(cooldown - 1, 34))
+        progress = min(1.0, frame / float(anim_len)) if active else 0.0
+        boss._ign_attack_progress = progress
+        boss._ign_attack_phase = (NS.attack_phase(progress) if active
+                                  else "NONE")
+        lo, hi = NS.ATTACK_ACTIVE_WINDOW
+        boss._ign_hit_window = bool(active and lo <= progress <= hi)
 
+        # ── prioritas state ─────────────────────────────────────────
+        skill = getattr(boss, "active_skill", None)
+        alive = bool(getattr(boss, "alive", True))
+        hurt = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        speed = float(getattr(boss, "_ign_speed", 0.0))
 
+        if not alive:
+            state = "DEATH"
+        elif skill == "r":
+            state = "SPECIAL"
+        elif skill in ("q", "w", "e"):
+            state = "SKILL"
+        elif active and progress < 0.30:
+            state = "CHARGE" if progress < 0.12 else "ATTACK"
+        elif active:
+            state = "SWING" if progress < 0.62 else "ATTACK"
+        elif hurt > 0:
+            state = "HURT"
+        elif moving:
+            state = "RUN" if speed > 1.6 else "WALK"
+        else:
+            state = "IDLE"
+
+        prev_state = getattr(boss, "_ign_state", "IDLE")
+        if prev_state != state:
+            boss._ign_state_prev = prev_state
+            boss._ign_state_time = 0.0
+        else:
+            boss._ign_state_time = getattr(boss, "_ign_state_time", 0.0) + dt
+        boss._ign_state = state
+        boss._ign_state_priority = NS.ANIM_STATES.get(state, 0)
+        return state
+
+    @staticmethod
+    def _resolve_pose(boss, moving):
+        """(action, phase, attack_progress) untuk renderer + FX."""
+        NS = _NS_ignis_drachorn
+        pulse = float(getattr(boss, "pulse", 0.0))
+        state = getattr(boss, "_ign_state", "IDLE")
+        ap = float(getattr(boss, "_ign_attack_progress", 0.0) or 0.0)
+        skill = getattr(boss, "active_skill", None)
+        attack_range = float(getattr(boss, "attack_range",
+                                     getattr(boss, "range", 55)) or 55)
+
+        if state in ("SKILL", "SPECIAL"):
+            return "cast", pulse, 0.0
+        if state in ("ATTACK", "SWING", "CHARGE"):
+            if attack_range > 120:
+                return "ranged", pulse, ap
+            return "melee", pulse, ap
+        if state == "RUN":
+            return "run", pulse * 2.6, 0.0
+        if state == "WALK":
+            return "walk", pulse * 2.2, 0.0
+        if state == "DEATH":
+            return "death", pulse, 0.0
+        if state == "HURT":
+            return "hurt", pulse, 0.0
+        _ = skill
+        return "idle", pulse, 0.0
+
+    # ---------------------------------------------------------------------------
+    # 7. PROJECTILE (fallback canvas — dipakai bila lapisan hidup absen)
+    # ---------------------------------------------------------------------------
+    class FireProjectile:
+        """Bola api dari pedang.
+
+        Lifecycle: SPAWN -> TRAVEL -> TRAIL -> HIT -> IMPACT FX -> DESTROY.
+        Atribut wajib lengkap (position/velocity/speed/damage/lifetime/
+        target/radius/rotation/trail/particles/active) supaya API-nya sama
+        dengan proyektil di lapisan hidup.
+        """
+
+        def __init__(self, sx, sy, tx, ty, speed=5.5, damage=0, target=None,
+                     radius=7.0):
+            self.position = pygame.Vector2(float(sx), float(sy))
+            dx, dy = float(tx) - float(sx), float(ty) - float(sy)
+            L = math.hypot(dx, dy) or 1.0
+            self.velocity = pygame.Vector2(dx / L, dy / L)
+            self.speed = float(speed)
+            self.damage = damage
+            self.target = target
+            self.radius = float(radius)
+            self.rotation = math.atan2(dy, dx)
+            self.lifetime = 180
+            self.trail = []
+            self.particles = []
+            self.active = True
+            # kompatibilitas nama lama
+            self.x = float(sx)
+            self.y = float(sy)
+            self.tx = float(tx)
+            self.ty = float(ty)
+            self.alive = True
+            self.age = 0
+            self.impact = 0
+
+        def update(self):
+            if not self.active:
+                if self.impact > 0:
+                    self.impact -= 1
+                return
+            self.age += 1
+            if self.age > self.lifetime:
+                self._destroy()
+                return
+            dx = self.tx - self.x
+            dy = self.ty - self.y
+            dist = math.hypot(dx, dy)
+            if dist < self.speed + 4:
+                self._destroy()
+                return
+            self.trail.append((self.x, self.y))
+            if len(self.trail) > 12:
+                self.trail.pop(0)
+            self.velocity.update(dx / dist, dy / dist)
+            self.rotation = math.atan2(dy, dx)
+            self.x += self.velocity.x * self.speed
+            self.y += self.velocity.y * self.speed
+            self.position.update(self.x, self.y)
+
+        def _destroy(self):
+            self.active = False
+            self.alive = False
+            self.impact = 10
+
+        def draw(self, surface, phase):
+            NS = _NS_ignis_drachorn
+            P = NS.PALETTE
+            n = len(self.trail)
+            for i, (tx, ty) in enumerate(self.trail):
+                t = (i + 1) / max(1, n)
+                alpha = int(30 + 150 * t)
+                r = max(1, int(1 + 4 * t))
+                NS._aacircle(surface, (*P["fire_darkest"], alpha // 2),
+                             (int(tx), int(ty)), r + 2)
+                NS._aacircle(surface, (*P["fire_mid"], alpha),
+                             (int(tx), int(ty)), r)
+                NS._aacircle(surface, (*P["fire_hot"], alpha),
+                             (int(tx), int(ty)), max(1, r - 2))
+
+            if self.active:
+                px, py = int(self.x), int(self.y)
+                ca, sa = math.cos(self.rotation), math.sin(self.rotation)
+                # bentuk terarah (tetesan api) — bukan lingkaran polos
+                nose = (px + ca * 13, py + sa * 13)
+                tail = (px - ca * 15, py - sa * 15)
+                perp = (-sa * 6.0, ca * 6.0)
+                NS._poly(surface, P["fire_dark"],
+                         [nose, (px + perp[0], py + perp[1]), tail,
+                          (px - perp[0], py - perp[1])])
+                NS._poly(surface, P["fire_mid"],
+                         [(px + ca * 10, py + sa * 10),
+                          (px + perp[0] * 0.6, py + perp[1] * 0.6),
+                          (px - ca * 10, py - sa * 10),
+                          (px - perp[0] * 0.6, py - perp[1] * 0.6)])
+                NS._draw_flame_puff(surface, px, py, 6, phase, 235)
+                NS._aacircle(surface, P["fire_white"],
+                             (int(px + ca * 4), int(py + sa * 4)), 2)
+                for i in range(3):
+                    angle = phase * 5 + i * math.pi * 2 / 3
+                    sx = px + int(math.cos(angle) * 9)
+                    sy = py + int(math.sin(angle) * 9)
+                    NS._aacircle(surface, P["fire_hot"], (sx, sy), 1)
+            elif self.impact > 0:
+                t = self.impact / 10.0
+                px, py = int(self.x), int(self.y)
+                NS._spark_star(surface, px, py, int(6 + 16 * (1 - t)),
+                               P["fire_bright"], int(220 * t), 8,
+                               0.4, P["fire_white"])
+                NS._ring(surface, (px, py), int(6 + 18 * (1 - t)), 2,
+                         P["fire_light"], int(180 * t))
+
+    # ── state proyektil fallback ────────────────────────────────────
+    @staticmethod
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_ign_projectiles"):
             boss._ign_projectiles = []
         for proj in boss._ign_projectiles:
             proj.update()
             proj.draw(surface, phase)
-        boss._ign_projectiles = [p for p in boss._ign_projectiles if p.alive or p.age < 8]
+        boss._ign_projectiles = [p for p in boss._ign_projectiles
+                                 if p.active or p.impact > 0]
+        if len(boss._ign_projectiles) > 16:
+            del boss._ign_projectiles[:-16]
 
-
+    @staticmethod
     def _spawn_fire_projectile(boss, x, y):
+        NS = _NS_ignis_drachorn
         if not hasattr(boss, "_ign_projectiles"):
             boss._ign_projectiles = []
-        tx, ty = _NS_ignis_drachorn._target_position(boss, x, y)
-        sx = x + 28 * getattr(boss, "direction", 1)
-        sy = y - 15
-        boss._ign_projectiles.append(_NS_ignis_drachorn.FireProjectile(sx, sy, tx, ty, speed=5.5))
+        tx, ty = NS._target_position(boss, x, y)
+        facing = getattr(boss, "direction", 1)
+        action = getattr(boss, "_ign_pose_action", "ranged")
+        ap = float(getattr(boss, "_ign_attack_progress", 0.0) or 0.0)
+        phase = float(getattr(boss, "pulse", 0.0))
+        _grip, tip, _th = NS.sword_geometry(facing, action, phase, ap)
+        boss._ign_projectiles.append(
+            NS.FireProjectile(x + tip[0], y + tip[1], tx, ty, speed=6.2,
+                              target=getattr(boss, "target", None)))
 
+    @staticmethod
+    def _update_attack_anim(boss):
+        """Kompatibilitas API lama — delegasi ke controller baru."""
+        _NS_ignis_drachorn._update_ignis_anim(
+            boss, bool(getattr(boss, "_ign_speed", 0.0) > 0.3))
 
-    # ===================================================================
-    # MAIN DRAW ENTRY POINT
-    # ===================================================================
-    def draw_ignis(surface, boss, x, y):
-        """Entry point for Boss.draw()."""
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_ignis_drachorn._detect_moving(boss)
-        _NS_ignis_drachorn._update_attack_anim(boss)
+    # ---------------------------------------------------------------------------
+    # 8. FLAME HELPER
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def _draw_flame_puff(surface, x, y, size, phase, alpha=255):
+        """Kepulan api berlapis (chunky, bukan gradasi halus)."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        flick = math.sin(phase * 3 + x * 0.07) * 0.15 + 1.0
+        s = int(size * flick)
+        if s < 1:
+            return
+        x, y = int(x), int(y)
+        NS._aacircle(surface, (*P["fire_darkest"], alpha // 3), (x, y), s + 3)
+        NS._aacircle(surface, (*P["fire_dark"], alpha // 2), (x, y), s + 1)
+        NS._aacircle(surface, (*P["fire_mid"], alpha), (x, y), s)
+        NS._aacircle(surface, (*P["fire_light"], alpha), (x, y - 1),
+                     max(1, s - 2))
+        NS._aacircle(surface, (*P["fire_bright"], min(255, alpha)),
+                     (x, y - 2), max(1, s - 4))
+        if s > 4:
+            NS._aacircle(surface, (*P["fire_hot"], min(255, alpha)),
+                         (x, y - 3), max(1, s - 6))
+        if s > 7:
+            NS._aacircle(surface, (*P["fire_white"], min(255, alpha)),
+                         (x, y - 4), max(1, s - 9))
 
-        attacking = (
-            getattr(boss, "_ign_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
+    @staticmethod
+    def _flame_tongue(surface, x, y, h, phase, seed=0, alpha=255,
+                      width=None):
+        """Lidah api bergerigi (poligon), bukan lingkaran bertumpuk."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        h = max(3, int(h))
+        w = float(width if width is not None else h * 0.55)
+        wob = math.sin(phase * 3.4 + seed) * (w * 0.35)
+        wob2 = math.sin(phase * 5.1 + seed * 1.7) * (w * 0.22)
+        pts = [
+            (x - w, y),
+            (x - w * 0.55, y - h * 0.32),
+            (x - w * 0.75 + wob2, y - h * 0.6),
+            (x + wob, y - h),
+            (x + w * 0.72 + wob2, y - h * 0.58),
+            (x + w * 0.5, y - h * 0.3),
+            (x + w, y),
+        ]
+        NS._poly(surface, (*P["fire_dark"], alpha), pts)
+        inner = [(x + (px - x) * 0.62, y + (py - y) * 0.72) for px, py in pts]
+        NS._poly(surface, (*P["fire_mid"], alpha), inner)
+        core = [(x + (px - x) * 0.34, y + (py - y) * 0.5) for px, py in pts]
+        NS._poly(surface, (*P["fire_bright"], alpha), core)
+        NS._aacircle(surface, (*P["fire_hot"], alpha),
+                     (int(x + wob * 0.4), int(y - h * 0.48)),
+                     max(1, int(w * 0.3)))
 
-        # Determine attack type - if boss has attack_range > 100, treat as ranged
-        attack_range = getattr(boss, "attack_range", 150)
-        is_ranged_attack = attack_range > 120
+    # ---------------------------------------------------------------------------
+    # 9. GROUND / AURA LAYERS
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def _draw_shadow(surface, x, y, width=54):
+        NS = _NS_ignis_drachorn
+        w = int(width)
+        h = max(6, int(w * 0.26))
+        rect = (int(x) - w // 2, int(y) - h // 2, w, h)
+        NS._ellipse(surface, (0, 0, 0, 118), rect)
+        NS._ellipse(surface, (0, 0, 0, 70),
+                    (rect[0] - 4, rect[1] + 1, w + 8, h))
+        if NS._record_shadow is not None:
+            NS._record_shadow.append(pygame.Rect(rect[0] - 5, rect[1] - 1,
+                                                 w + 10, h + 3))
 
-        # ---------- Background layers ----------
-        _NS_ignis_drachorn._draw_fire_aura(surface, x, y, pulse)
-        _NS_ignis_drachorn._draw_ground_embers(surface, x, y + 38, pulse, active_skill)
+    @staticmethod
+    def _draw_fire_aura(surface, x, y, phase, skill=None):
+        """Aura panas di sekitar sovereign (additive, murah, ter-cache)."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        pulse = math.sin(phase * 1.6) * 0.18 + 0.82
+        boost = 1.3 if skill else 1.0
+        pool = NS._ground_pool_decal(int(34 * boost), P["fire_dark"])
+        NS._blit_decal(surface, pool, x, y + 44,
+                       int(120 * pulse * boost), add=True)
+        pool2 = NS._ground_pool_decal(int(18 * boost), P["magma_dark"])
+        NS._blit_decal(surface, pool2, x, y + 46,
+                       int(110 * pulse * boost), add=True)
+        # panas tipis di belakang badan (tidak menutupi siluet)
+        NS._blit_decal(surface, NS._glow_decal(14, P["fire_darkest"]),
+                       x, y - 6, int(26 * pulse * boost), add=True)
 
-        # ---------- Skill ground effects ----------
-        if active_skill == "q":
-            _NS_ignis_drachorn._draw_dragon_breath_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_ignis_drachorn._draw_dragon_tail_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_ignis_drachorn._draw_dragon_blood_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_ignis_drachorn._draw_elder_form_ground(surface, boss, x, y, skill_timer, pulse)
+    @staticmethod
+    def _draw_ground_embers(surface, x, y, phase, skill=None):
+        """Bara & retakan magma yang merayap di tanah bawah kaki."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        pulse = math.sin(phase * 2.0) * 0.25 + 0.75
+        r = 30 if not skill else 40
+        NS._blit_decal(surface, NS._scorch_decal(r, seed=3), x, y,
+                       int(120 * pulse))
+        for i in range(6):
+            a = phase * 0.5 + i * math.pi / 3
+            ex = x + int(math.cos(a) * (r * 0.72))
+            ey = y + int(math.sin(a) * (r * 0.3))
+            fl = (math.sin(phase * 4 + i * 1.7) * 0.5 + 0.5)
+            NS._aacircle(surface, (*P["magma_hot"], int(120 + 100 * fl)),
+                         (ex, ey), 1 + int(fl * 1.6))
+        NS._dashed_ring(surface, x, y, r, P["magma_mid"],
+                        int(80 * pulse), phase * 0.35, 9, 2, 0.45)
 
-        # ---------- Character body ----------
-        if active_skill == "r" and skill_timer > 10:
-            _NS_ignis_drachorn._draw_elder_dragon_form(surface, boss, x, y, skill_timer, pulse)
-        elif attacking:
-            if is_ranged_attack:
-                _NS_ignis_drachorn._draw_ignis_ranged_attack(surface, boss, x, y)
-            else:
-                _NS_ignis_drachorn._draw_ignis_melee_attack(surface, boss, x, y)
-        elif moving:
-            _NS_ignis_drachorn._draw_ignis_walk(surface, boss, x, y)
+    @staticmethod
+    def _draw_floating_flames(surface, cx, cy, phase, trail=False, facing=1,
+                              intense=False):
+        """Api melayang di sekitar kaki (legacy signature dipertahankan)."""
+        NS = _NS_ignis_drachorn
+        count = 5 if intense else 3
+        for i in range(count):
+            t = (phase * 0.7 + i * 0.9) % 2.4
+            a = i * 2.399 + phase * 0.5
+            rad = 8 + i * 4
+            fx = cx + int(math.cos(a) * rad) - (int(t * 5) * facing
+                                                if trail else 0)
+            fy = cy + 6 - int(t * 8) + int(math.sin(a) * 2)
+            alpha = int(max(0, 190 * (1.0 - t / 2.4)))
+            if alpha <= 6:
+                continue
+            NS._flame_tongue(surface, fx, fy,
+                             (6 if intense else 4) + int((2.4 - t) * 1.2),
+                             phase, seed=i * 3, alpha=alpha, width=2.6)
+
+    @staticmethod
+    def _draw_body_fire_particles(surface, cx, cy, phase):
+        """Bara yang naik dari pelat badan (legacy name)."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        for i in range(6):
+            t = (phase * 0.8 + i * 0.62) % 1.0
+            a = i * 1.9 + phase * 0.35
+            px = cx + int(math.cos(a) * (12 + i * 2))
+            py = cy + 10 - int(t * 42)
+            alpha = int(200 * (1.0 - t))
+            if alpha <= 5:
+                continue
+            NS._aacircle(surface, (*P["fire_dark"], alpha // 2), (px, py), 2)
+            NS._aacircle(surface, (*P["fire_bright"], alpha), (px, py), 1)
+
+    # ---------------------------------------------------------------------------
+    # 10. ANATOMI — dragon knight sovereign
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def _draw_back_wing(surface, cx, cy, facing, phase, spread=0.0):
+        """Sayap naga terlipat di punggung — penguat siluet."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        f = facing
+        flap = math.sin(phase * 1.1) * 2.0 + spread * 8.0
+        base_x = cx - f * 8
+        base_y = cy - 20
+
+        # tulang sayap (3 jari)
+        joints = [
+            (base_x - f * (12 + spread * 6), base_y - 12 - flap),
+            (base_x - f * (22 + spread * 12), base_y + 2 - flap * 0.6),
+            (base_x - f * (18 + spread * 10), base_y + 16 + flap * 0.3),
+        ]
+        membrane = [(base_x, base_y + 4)] + joints + [
+            (base_x - f * 10, base_y + 18)]
+        NS._poly(surface, P["wing_dark"], membrane)
+        inner = [(base_x + (px - base_x) * 0.78,
+                  base_y + (py - base_y) * 0.78) for px, py in membrane]
+        NS._poly(surface, P["wing_mid"], inner)
+        # urat membran menyala
+        for jx, jy in joints:
+            NS._aaline(surface, P["wing_light"], (base_x, base_y + 2),
+                       (int(jx), int(jy)), 2)
+            NS._aaline(surface, P["magma_dark"], (base_x, base_y + 2),
+                       (int(jx), int(jy)), 1)
+        # tepi bergerigi + cakar ujung
+        for jx, jy in joints:
+            NS._aacircle(surface, P["horn_dark"], (int(jx), int(jy)), 2)
+            NS._aacircle(surface, P["horn_mid"], (int(jx), int(jy) - 1), 1)
+        NS._poly(surface, P["wing_glow"], [
+            (base_x - f * 4, base_y - 1),
+            (base_x - f * 10, base_y - 7),
+            (base_x - f * 7, base_y + 2)])
+
+    @staticmethod
+    def _draw_cape(surface, cx, cy, facing, phase, action):
+        """Jubah crimson compang-camping — MENYAPU KE BELAKANG.
+
+        Jubah sengaja asimetris (hanya sisi -facing) supaya siluet depan
+        tetap dibaca sebagai pelat baja, bukan gumpalan bundar.
+        """
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        wave = math.sin(phase * 0.9) * 3.0
+        wave2 = math.sin(phase * 1.4 + 0.7) * 2.0
+        gust = 7 if action in ("walk", "run") else 0
+        gust += 5 if action in ("melee", "swing", "cast") else 0
+
+        # tulang punggung jubah: dari bahu -> menyapu ke belakang-bawah
+        spine = [
+            (cx - f * 9, cy - 15),
+            (cx - f * (15 + gust * 0.3), cy + 2 + wave2),
+            (cx - f * (23 + gust * 0.7), cy + 20 + wave),
+            (cx - f * (28 + gust), cy + 36 + wave2),
+            (cx - f * (26 + gust * 1.2), cy + 47),
+        ]
+        outer = NS._tuft_points(spine, depth=10.0, seed=7)
+        NS._poly(surface, P["red_darkest"], outer)
+        mid = NS._tuft_points(
+            [(cx + (px - cx) * 0.86, cy + (py - cy) * 0.92)
+             for px, py in spine], depth=7.0, seed=13)
+        NS._poly(surface, P["red_dark"], mid)
+        inner = NS._tuft_points(
+            [(cx + (px - cx) * 0.62, cy + (py - cy) * 0.8)
+             for px, py in spine], depth=4.0, seed=21)
+        NS._poly(surface, P["red_mid"], inner)
+
+        # lipatan kain + dither transisi
+        for i in range(len(spine) - 1):
+            NS._aaline(surface, P["red_light"],
+                       (spine[i][0] + f * 2, spine[i][1]),
+                       (spine[i + 1][0] + f * 2, spine[i + 1][1]), 1)
+        NS._aaline(surface, P["red_high"], (cx - f * 8, cy - 12),
+                   (cx - f * 14, cy + 12), 1)
+        NS._dither_dots(surface, P["red_dark"],
+                        (cx - f * 20 - 4, cy + 14, 9, 7), 0)
+
+        # ujung robek (segitiga tajam) di tepi bawah
+        for i in range(4):
+            bx = cx - f * (14 + i * 6)
+            by = cy + 38 + i * 2 + wave2
+            d = 5 + int(NS._hash01(i * 9 + 5) * 8)
+            NS._poly(surface, P["red_darkest"],
+                     [(bx - 4, by), (bx + 4, by), (bx - f * 1, by + d)])
+
+        # mantel bahu (menutupi pangkal jubah) + trim emas
+        NS._poly(surface, P["red_dark"], [
+            (cx - 15, cy - 17), (cx + 15, cy - 17),
+            (cx + 12, cy - 6), (cx - 12, cy - 6)])
+        NS._poly(surface, P["red_mid"], [
+            (cx - 13, cy - 16), (cx + 13, cy - 16),
+            (cx + 10, cy - 8), (cx - 10, cy - 8)])
+        NS._rect(surface, P["gold_darkest"], (cx - 16, cy - 18, 32, 4))
+        NS._rect(surface, P["gold_dark"], (cx - 15, cy - 17, 30, 3))
+        NS._rect(surface, P["gold_mid"], (cx - 14, cy - 17, 28, 2))
+        NS._rect(surface, P["gold_light"], (cx - 10, cy - 17, 20, 1))
+        # bros kepala naga di bahu depan
+        NS._aacircle(surface, P["gold_dark"], (cx + f * 12, cy - 13), 4)
+        NS._aacircle(surface, P["gold_mid"], (cx + f * 12, cy - 13), 3)
+        NS._aacircle(surface, P["magma_hot"], (cx + f * 12, cy - 13), 1)
+
+    @staticmethod
+    def _draw_tail(surface, cx, cy, facing, phase):
+        """Ekor naga pendek yang menjuntai ke belakang-bawah.
+
+        Sengaja tidak horizontal: ekor mendatar membuat siluet terbaca
+        sebagai "tongkat", jadi ekor dibuat melengkung turun di belakang
+        kaki dan sebagian besar tertutup jubah.
+        """
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        px, py = cx - f * 8, cy + 16
+        pts = [(px, py)]
+        for i in range(1, 5):
+            t = i / 4.0
+            sway = math.sin(phase * 1.2 - i * 0.7) * (1.5 + i * 0.8)
+            pts.append((px - f * (5 + int(7 * t)) - f * int(sway),
+                        py + int(30 * t * t + 6 * t)))
+        for i in range(len(pts) - 1):
+            th = max(2, 8 - i * 2)
+            NS._aaline(surface, P["dragon_darkest"], pts[i], pts[i + 1],
+                       th + 2)
+            NS._aaline(surface, P["dragon_dark"], pts[i], pts[i + 1], th)
+            NS._aaline(surface, P["dragon_mid"],
+                       (pts[i][0] - 1, pts[i][1]),
+                       (pts[i + 1][0] - 1, pts[i + 1][1]), max(1, th - 3))
+        for i in range(1, 4):
+            sx, sy = pts[i]
+            NS._poly(surface, P["horn_dark"], [
+                (sx - 3, sy - 1), (sx + 1, sy - 2), (sx - f * 5, sy - 6)])
+        tipx, tipy = pts[-1]
+        NS._poly(surface, P["horn_mid"], [
+            (tipx - 3, tipy - 2), (tipx + 3, tipy - 1),
+            (tipx - f * 4, tipy + 7)])
+        NS._aacircle(surface, (*P["magma_mid"], 190),
+                     (int(tipx), int(tipy)), 2)
+
+    @staticmethod
+    def _draw_leg(surface, hx, hy, knee_x, knee_y, foot_x, foot_y, facing,
+                  shade=0):
+        """Kaki berpelat: paha -> lutut berduri -> tulang kering -> cakar."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        dark = (P["obsidian_darkest"] if shade else P["obsidian_dark"])
+        mid = (P["obsidian_dark"] if shade else P["obsidian_mid"])
+        light = (P["obsidian_mid"] if shade else P["obsidian_light"])
+
+        NS._aaline(surface, P["shadow_deep"], (hx + 1, hy + 1),
+                   (knee_x + 1, knee_y + 1), 11)
+        NS._aaline(surface, dark, (hx, hy), (knee_x, knee_y), 10)
+        NS._aaline(surface, mid, (hx, hy), (knee_x, knee_y), 7)
+        NS._aaline(surface, light, (hx - 1, hy), (knee_x - 1, knee_y), 3)
+
+        NS._aaline(surface, dark, (knee_x, knee_y), (foot_x, foot_y), 8)
+        NS._aaline(surface, mid, (knee_x, knee_y), (foot_x, foot_y), 5)
+        NS._aaline(surface, light, (knee_x - 1, knee_y),
+                   (foot_x - 1, foot_y), 2)
+
+        # pelat lutut berduri
+        NS._aacircle(surface, P["obsidian_darkest"], (knee_x, knee_y), 6)
+        NS._aacircle(surface, mid, (knee_x, knee_y), 5)
+        NS._aacircle(surface, P["gold_dark"], (knee_x, knee_y), 3)
+        NS._poly(surface, P["horn_dark"], [
+            (knee_x - 3, knee_y - 1), (knee_x + 3, knee_y - 1),
+            (knee_x + facing * 8, knee_y - 6)])
+        NS._poly(surface, P["horn_light"], [
+            (knee_x - 1, knee_y - 2), (knee_x + 2, knee_y - 2),
+            (knee_x + facing * 6, knee_y - 5)])
+
+        # sabaton bercakar
+        NS._poly(surface, P["obsidian_darkest"], [
+            (foot_x - 6, foot_y - 4), (foot_x + 7, foot_y - 4),
+            (foot_x + facing * 11, foot_y + 2), (foot_x + 6, foot_y + 4),
+            (foot_x - 7, foot_y + 4)])
+        NS._poly(surface, mid, [
+            (foot_x - 4, foot_y - 3), (foot_x + 5, foot_y - 3),
+            (foot_x + facing * 8, foot_y + 1), (foot_x + 4, foot_y + 2),
+            (foot_x - 5, foot_y + 2)])
+        for c in (-3, 0, 3):
+            NS._poly(surface, P["horn_light"], [
+                (foot_x + c, foot_y + 1), (foot_x + c + 2, foot_y + 1),
+                (foot_x + c + facing * 4, foot_y + 4)])
+        # seam magma di tulang kering
+        NS._aaline(surface, P["magma_mid"],
+                   (knee_x + facing, knee_y + 3),
+                   (foot_x + facing, foot_y - 4), 1)
+
+    @staticmethod
+    def _draw_lower_body(surface, cx, cy, phase, facing=1, action="idle",
+                         step=0.0):
+        """Pinggul + rok pelat naga + kedua kaki (legacy name)."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        sway = int(math.sin(phase * 0.7) * 2)
+        f = 1 if facing >= 0 else -1
+
+        # ── kaki (di belakang rok) ─────────────────────────────────
+        if action in ("walk", "run"):
+            sw = math.sin(step)
+            back = (int(-sw * 9), int(abs(math.sin(step + math.pi)) * -6))
+            front = (int(sw * 9), int(abs(math.sin(step)) * -6))
+        elif action in ("melee", "swing"):
+            back = (-8, 0)
+            front = (10, 0)
+        elif action == "ranged":
+            back = (-6, 0)
+            front = (7, 0)
         else:
-            _NS_ignis_drachorn._draw_ignis_idle(surface, boss, x, y)
+            back = (-5, 0)
+            front = (6, 0)
 
-        # ---------- Projectiles ----------
-        _NS_ignis_drachorn._manage_projectiles(boss, surface, pulse)
+        hipy = cy + 6
+        NS._draw_leg(surface, cx - 7, hipy,
+                     cx - 8 + int(back[0] * 0.6) - f * 1, hipy + 17,
+                     cx - 8 + back[0], hipy + 34 + back[1], f, shade=1)
+        NS._draw_leg(surface, cx + 7, hipy,
+                     cx + 8 + int(front[0] * 0.6) + f * 1, hipy + 17,
+                     cx + 8 + front[0], hipy + 34 + front[1], f, shade=0)
 
-        # ---------- Skill foreground effects ----------
-        if active_skill == "q":
-            _NS_ignis_drachorn._draw_dragon_breath(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_ignis_drachorn._draw_dragon_tail(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_ignis_drachorn._draw_dragon_blood_foreground(surface, boss, x, y, skill_timer, pulse)
+        # ── rok pelat (pendek: kaki harus terbaca di siluet) ───────
+        skirt = [
+            (cx - 16, cy - 2), (cx + 16, cy - 2),
+            (cx + 18 + sway, cy + 8), (cx + 12, cy + 17),
+            (cx + 5, cy + 21), (cx - 5, cy + 21),
+            (cx - 12, cy + 17), (cx - 18 - sway, cy + 8),
+        ]
+        NS._poly(surface, P["shadow_deep"],
+                 [(p[0] + 2, p[1] + 2) for p in skirt])
+        NS._poly(surface, P["obsidian_darkest"], skirt)
+        NS._poly(surface, P["obsidian_dark"], [
+            (cx - 14, cy), (cx + 14, cy),
+            (cx + 15 + sway, cy + 8), (cx + 10, cy + 15),
+            (cx + 4, cy + 18), (cx - 4, cy + 18),
+            (cx - 10, cy + 15), (cx - 15 - sway, cy + 8)])
+        NS._poly(surface, P["obsidian_mid"], [
+            (cx - 10, cy + 2), (cx + 10, cy + 2),
+            (cx + 11 + sway, cy + 8), (cx + 6, cy + 13),
+            (cx - 6, cy + 13), (cx - 11 - sway, cy + 8)])
 
+        # bilah tasset (pelat paha) — memecah rok jadi lempeng terbaca
+        for side in (-1, 1):
+            tx = cx + side * 12
+            NS._poly(surface, P["obsidian_darkest"], [
+                (tx - 4, cy + 3), (tx + 4, cy + 3),
+                (tx + 3, cy + 16), (tx - 3, cy + 16)])
+            NS._poly(surface, P["obsidian_light"], [
+                (tx - 3, cy + 4), (tx - 1, cy + 4),
+                (tx - 1, cy + 14), (tx - 3, cy + 14)])
+            NS._aaline(surface, P["gold_dark"], (tx - 4, cy + 16),
+                       (tx + 4, cy + 16), 2)
 
-    # ===================================================================
-    # POSE MODES
-    # ===================================================================
+        # sisik naga pada rok (2 baris, offset selang-seling)
+        for row in range(2):
+            for col in range(-1, 2):
+                sx = cx + col * 6 + (row % 2) * 3
+                sy = cy + 4 + row * 5
+                NS._aacircle(surface, P["dragon_dark"], (sx, sy), 3)
+                NS._aacircle(surface, P["dragon_mid"], (sx, sy - 1), 2)
+                NS._aacircle(surface, P["dragon_light"], (sx, sy - 1), 1)
+        # seam magma antar pelat
+        glow = int(150 + 80 * math.sin(phase * 2.2))
+        NS._jagged_crack(surface, cx - 12, cy + 14, cx + 11, cy + 12,
+                         P["magma_hot"], glow, 1, 4, 2.0, seed=11)
+
+        # sabuk emas + gesper kepala naga
+        NS._rect(surface, P["gold_darkest"], (cx - 20, cy - 2, 40, 7))
+        NS._rect(surface, P["gold_dark"], (cx - 19, cy - 1, 38, 5))
+        NS._rect(surface, P["gold_mid"], (cx - 17, cy, 34, 3))
+        NS._rect(surface, P["gold_light"], (cx - 14, cy + 1, 28, 1))
+        NS._poly(surface, P["dragon_darkest"], [
+            (cx - 5, cy - 1), (cx + 5, cy - 1),
+            (cx + 4, cy + 5), (cx, cy + 7), (cx - 4, cy + 5)])
+        NS._poly(surface, P["dragon_mid"], [
+            (cx - 4, cy), (cx + 4, cy),
+            (cx + 3, cy + 4), (cx, cy + 6), (cx - 3, cy + 4)])
+        eye_a = int(190 + 60 * math.sin(phase * 3.0))
+        NS._aacircle(surface, (*P["eye_bright"], eye_a), (cx - 2, cy + 2), 1)
+        NS._aacircle(surface, (*P["eye_bright"], eye_a), (cx + 2, cy + 2), 1)
+
+    @staticmethod
+    def _draw_torso(surface, cx, cy, phase, facing=1, breath=0.0):
+        """Kuras dada obsidian + emblem naga + retakan magma."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        b = int(breath)
+
+        NS._poly(surface, P["shadow_deep"], [
+            (cx - 12, cy - 8), (cx + 16, cy - 8),
+            (cx + 14, cy + 16), (cx + 7, cy + 21),
+            (cx - 3, cy + 21), (cx - 10, cy + 16)])
+
+        chest = [
+            (cx - 15, cy - 11 - b), (cx + 15, cy - 11 - b),
+            (cx + 13, cy + 14), (cx + 5, cy + 19),
+            (cx - 5, cy + 19), (cx - 13, cy + 14),
+        ]
+        NS._poly(surface, P["obsidian_darkest"], chest)
+        NS._poly(surface, P["obsidian_dark"], [
+            (cx - 13, cy - 9 - b), (cx + 13, cy - 9 - b),
+            (cx + 11, cy + 12), (cx + 4, cy + 16),
+            (cx - 4, cy + 16), (cx - 11, cy + 12)])
+        NS._poly(surface, P["obsidian_mid"], [
+            (cx - 10, cy - 6 - b), (cx + 10, cy - 6 - b),
+            (cx + 8, cy + 9), (cx + 3, cy + 13),
+            (cx - 3, cy + 13), (cx - 8, cy + 9)])
+        NS._poly(surface, P["obsidian_light"], [
+            (cx - 8, cy - 4 - b), (cx - 2, cy - 5 - b),
+            (cx - 3, cy + 6), (cx - 7, cy + 5)])
+        NS._dither_dots(surface, P["obsidian_mid"],
+                        (cx - 8, cy + 4, 7, 6), 1)
+
+        # trim emas mengelilingi kuras
+        for i in range(len(chest)):
+            NS._aaline(surface, P["gold_darkest"], chest[i],
+                       chest[(i + 1) % len(chest)], 3)
+        for i in range(len(chest)):
+            NS._aaline(surface, P["gold_dark"], chest[i],
+                       chest[(i + 1) % len(chest)], 2)
+        for i in range(len(chest)):
+            NS._aaline(surface, P["gold_mid"], chest[i],
+                       chest[(i + 1) % len(chest)], 1)
+
+        # retakan magma di pelat (denyut jantung naga)
+        pulse = math.sin(phase * 2.4) * 0.5 + 0.5
+        glow = int(120 + 120 * pulse)
+        NS._jagged_crack(surface, cx - 9, cy - 6, cx - 2, cy + 10,
+                         P["magma_mid"], glow, 2, 4, 2.4, seed=5)
+        NS._jagged_crack(surface, cx + 9, cy - 4, cx + 3, cy + 12,
+                         P["magma_mid"], glow, 2, 4, 2.2, seed=9)
+        NS._jagged_crack(surface, cx - 9, cy - 6, cx - 2, cy + 10,
+                         P["magma_bright"], int(glow * 0.7), 1, 4, 2.4,
+                         seed=5)
+
+        # emblem naga (berlian merah dengan inti magma)
+        NS._poly(surface, P["red_darkest"], [
+            (cx, cy - 5), (cx + 7, cy + 4), (cx, cy + 13), (cx - 7, cy + 4)])
+        NS._poly(surface, P["red_dark"], [
+            (cx, cy - 3), (cx + 5, cy + 4), (cx, cy + 11), (cx - 5, cy + 4)])
+        NS._poly(surface, P["red_mid"], [
+            (cx, cy - 1), (cx + 3, cy + 4), (cx, cy + 9), (cx - 3, cy + 4)])
+        core = int(150 + 105 * pulse)
+        NS._aacircle(surface, (*P["magma_hot"], core), (cx, cy + 4), 3)
+        NS._aacircle(surface, (*P["magma_bright"], core), (cx, cy + 4), 2)
+        NS._aacircle(surface, (*P["magma_white"], core), (cx, cy + 3), 1)
+
+        # gorget / kerah
+        NS._poly(surface, P["obsidian_darkest"], [
+            (cx - 9, cy - 12 - b), (cx + 9, cy - 12 - b),
+            (cx + 7, cy - 7 - b), (cx - 7, cy - 7 - b)])
+        NS._poly(surface, P["gold_dark"], [
+            (cx - 7, cy - 11 - b), (cx + 7, cy - 11 - b),
+            (cx + 6, cy - 9 - b), (cx - 6, cy - 9 - b)])
+        NS._aacircle(surface, P["gold_light"], (cx, cy - 10 - b), 1)
+        _ = facing
+
+    @staticmethod
+    def _draw_pauldrons(surface, cx, cy, phase, facing=1):
+        """Bahu berkubah bertanduk — bagian terkuat dari siluet.
+
+        Dibuat sebagai KUBAH (poligon membulat) dengan dua lame di
+        bawahnya, bukan balok lebar: balok membuat bahu menyatu jadi
+        satu palang gelap dan menelan kepala.
+        """
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        breathe = int(math.sin(phase * 1.2) * 1)
+        fdir = 1 if facing >= 0 else -1
+        for side in (-1, 1):
+            big = 1.18 if side == fdir else 1.0
+            w = 10.0 * big
+            h = 9.0 * big
+            sx = cx + side * (14 + w * 0.35)
+            sy = cy + breathe
+
+            def dome(scale, dy=0.0):
+                pts = []
+                for k in range(9):
+                    a = math.pi + k * math.pi / 8
+                    pts.append((sx + math.cos(a) * w * scale * side * -1.0,
+                                sy + math.sin(a) * h * scale + dy))
+                pts.append((sx + w * scale * 0.9, sy + h * 0.55 + dy))
+                pts.append((sx - w * scale * 0.9, sy + h * 0.55 + dy))
+                return pts
+
+            NS._poly(surface, P["shadow_deep"],
+                     [(px + 2, py + 2) for px, py in dome(1.0)])
+            NS._poly(surface, P["obsidian_darkest"], dome(1.0))
+            NS._poly(surface, P["obsidian_dark"], dome(0.86))
+            NS._poly(surface, P["obsidian_mid"], dome(0.62))
+            NS._poly(surface, P["obsidian_light"], [
+                (sx - w * 0.55, sy - h * 0.42),
+                (sx - w * 0.12, sy - h * 0.62),
+                (sx - w * 0.05, sy - h * 0.28),
+                (sx - w * 0.5, sy - h * 0.1)])
+            NS._aacircle(surface, P["obsidian_high"],
+                         (int(sx - w * 0.42), int(sy - h * 0.45)), 1)
+
+            # lame bawah (dua tingkat) menutupi pangkal lengan
+            for k in range(2):
+                ly = sy + h * 0.55 + k * 4
+                lw = w * (0.92 - k * 0.18)
+                NS._poly(surface, P["obsidian_darkest"], [
+                    (sx - lw, ly), (sx + lw, ly),
+                    (sx + lw * 0.85, ly + 4), (sx - lw * 0.85, ly + 4)])
+                NS._poly(surface, P["obsidian_mid"], [
+                    (sx - lw + 1, ly + 1), (sx + lw - 1, ly + 1),
+                    (sx + lw * 0.8, ly + 3), (sx - lw * 0.8, ly + 3)])
+                NS._aaline(surface, P["gold_dark"], (sx - lw, ly + 4),
+                           (sx + lw, ly + 4), 1)
+
+            # tanduk pendek menyapu ke belakang
+            NS._poly(surface, P["horn_dark"], [
+                (sx + side * w * 0.55, sy - h * 0.55),
+                (sx + side * w * 0.95, sy - h * 0.25),
+                (sx + side * (w + 6), sy - h - 5)])
+            NS._poly(surface, P["horn_mid"], [
+                (sx + side * w * 0.62, sy - h * 0.5),
+                (sx + side * w * 0.85, sy - h * 0.3),
+                (sx + side * (w + 4.5), sy - h - 4)])
+            NS._aacircle(surface, P["horn_shine"],
+                         (int(sx + side * (w + 4.5)), int(sy - h - 4)), 1)
+
+            # trim emas + rivet + seam magma
+            NS._aaline(surface, P["gold_dark"],
+                       (sx - w * 0.95, sy + h * 0.5),
+                       (sx + w * 0.95, sy + h * 0.5), 2)
+            NS._aaline(surface, P["gold_mid"],
+                       (sx - w * 0.85, sy + h * 0.5),
+                       (sx + w * 0.85, sy + h * 0.5), 1)
+            for r in (-1, 1):
+                NS._aacircle(surface, P["gold_light"],
+                             (int(sx + r * w * 0.6), int(sy - h * 0.15)), 1)
+            NS._aaline(surface, P["magma_mid"],
+                       (sx - w * 0.5, sy + h * 0.2),
+                       (sx + w * 0.5, sy + h * 0.28), 1)
+
+    @staticmethod
+    def _draw_shield(surface, cx, cy, side, phase):
+        """Perisai kepala naga di tangan lepas (legacy signature)."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        sx = cx + side * 22
+        sy = cy + 2 + int(math.sin(phase * 0.9) * 1)
+        pts = [
+            (sx - 9, sy - 15), (sx + 9, sy - 15),
+            (sx + 11, sy - 2), (sx + 7, sy + 12),
+            (sx, sy + 18), (sx - 7, sy + 12), (sx - 11, sy - 2),
+        ]
+        NS._poly(surface, P["shadow_deep"], [(p[0] + 2, p[1] + 2)
+                                             for p in pts])
+        NS._poly(surface, P["obsidian_darkest"], pts)
+        NS._poly(surface, P["obsidian_dark"],
+                 [(sx + (p[0] - sx) * 0.86, sy + (p[1] - sy) * 0.86)
+                  for p in pts])
+        NS._poly(surface, P["obsidian_mid"],
+                 [(sx + (p[0] - sx) * 0.62, sy + (p[1] - sy) * 0.62)
+                  for p in pts])
+        # bos tengah = kepala naga
+        NS._aacircle(surface, P["gold_dark"], (sx, sy - 1), 6)
+        NS._aacircle(surface, P["gold_mid"], (sx, sy - 1), 5)
+        NS._poly(surface, P["dragon_darkest"], [
+            (sx - 4, sy - 4), (sx + 4, sy - 4),
+            (sx + 3, sy + 2), (sx, sy + 4), (sx - 3, sy + 2)])
+        NS._poly(surface, P["dragon_mid"], [
+            (sx - 3, sy - 3), (sx + 3, sy - 3),
+            (sx + 2, sy + 1), (sx, sy + 3), (sx - 2, sy + 1)])
+        e = int(180 + 70 * math.sin(phase * 2.6))
+        NS._aacircle(surface, (*P["eye_bright"], e), (sx - 2, sy - 1), 1)
+        NS._aacircle(surface, (*P["eye_bright"], e), (sx + 2, sy - 1), 1)
+        # trim tepi + rivet
+        for i in range(len(pts)):
+            NS._aaline(surface, P["gold_dark"], pts[i],
+                       pts[(i + 1) % len(pts)], 2)
+            NS._aaline(surface, P["gold_mid"], pts[i],
+                       pts[(i + 1) % len(pts)], 1)
+        NS._aacircle(surface, P["gold_light"], (sx - 6, sy - 11), 1)
+        NS._aacircle(surface, P["gold_light"], (sx + 6, sy - 11), 1)
+
+    @staticmethod
+    def _draw_head(surface, cx, cy, facing, phase, roar=0.0):
+        """Helm naga: moncong, tanduk melengkung, jambul api."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        nod = int(math.sin(phase * 0.9) * 1)
+        cy = cy + nod
+
+        # tempurung helm — POLIGON bersudut (bukan lingkaran) supaya
+        # siluetnya terbaca sebagai kepala naga berbaja, bukan bola.
+        skull = [
+            (cx - f * 12, cy - 8), (cx - f * 7, cy - 14),
+            (cx + f * 4, cy - 15), (cx + f * 11, cy - 9),
+            (cx + f * 13, cy - 1), (cx + f * 9, cy + 7),
+            (cx + f * 1, cy + 11), (cx - f * 8, cy + 8),
+            (cx - f * 13, cy + 1),
+        ]
+        NS._poly(surface, P["shadow_deep"],
+                 [(px + 2, py + 2) for px, py in skull])
+        NS._poly(surface, P["obsidian_darkest"], skull)
+        NS._poly(surface, P["obsidian_dark"],
+                 [(cx + (px - cx) * 0.86, cy + (py - cy) * 0.86)
+                  for px, py in skull])
+        NS._poly(surface, P["obsidian_mid"],
+                 [(cx + (px - cx) * 0.62, cy + (py - cy) * 0.66)
+                  for px, py in skull])
+        # bidang cahaya kiri-atas
+        NS._poly(surface, P["obsidian_light"], [
+            (cx - f * 8, cy - 5), (cx - f * 3, cy - 9),
+            (cx - f * 2, cy - 4), (cx - f * 7, cy - 1)])
+        NS._aacircle(surface, P["obsidian_high"],
+                     (int(cx - f * 6), int(cy - 6)), 1)
+
+        # moncong naga menonjol ke arah hadap
+        snout = [
+            (cx + f * 4, cy - 4), (cx + f * 15, cy - 1 + int(roar * 2)),
+            (cx + f * 16, cy + 4 + int(roar * 3)),
+            (cx + f * 5, cy + 7),
+        ]
+        NS._poly(surface, P["obsidian_darkest"], snout)
+        NS._poly(surface, P["obsidian_mid"], [
+            (cx + f * 5, cy - 3), (cx + f * 13, cy - 1),
+            (cx + f * 13, cy + 3), (cx + f * 6, cy + 5)])
+        NS._aaline(surface, P["obsidian_high"], (cx + f * 6, cy - 2),
+                   (cx + f * 12, cy - 1), 1)
+        # taring
+        for t in (0, 1):
+            tx = cx + f * (10 + t * 3)
+            NS._poly(surface, P["horn_shine"], [
+                (tx, cy + 4), (tx + f * 2, cy + 4), (tx + f, cy + 8)])
+        # nostril menyala
+        NS._aacircle(surface, (*P["magma_hot"],
+                               int(160 + 80 * math.sin(phase * 3))),
+                     (cx + f * 13, cy), 1)
+
+        # trim emas mengikuti tepi helm
+        for i in range(len(skull)):
+            NS._aaline(surface, P["gold_darkest"], skull[i],
+                       skull[(i + 1) % len(skull)], 2)
+        for i in range(len(skull)):
+            NS._aaline(surface, P["gold_dark"], skull[i],
+                       skull[(i + 1) % len(skull)], 1)
+
+        # brow ridge + celah mata MIRING yang menyala (bukan dua titik)
+        NS._poly(surface, P["shadow_deep"], [
+            (cx - f * 9, cy - 3), (cx + f * 9, cy - 5),
+            (cx + f * 9, cy - 1), (cx - f * 9, cy + 1)])
+        pulse = math.sin(phase * 2) * 0.3 + 0.7
+        eye_a = int(190 + 60 * pulse)
+        for k, ex in enumerate((-6, 2)):
+            x0 = cx + f * ex
+            y0 = cy - 2 + k * 1
+            slit = [(x0, y0 + 2), (x0 + f * 6, y0 - 1),
+                    (x0 + f * 6, y0 + 1), (x0, y0 + 3)]
+            NS._poly(surface, (*P["eye_dark"], 255), slit)
+            NS._aaline(surface, (*P["eye_mid"], eye_a), (x0, y0 + 2),
+                       (x0 + f * 6, y0), 2)
+            NS._aaline(surface, (*P["eye_bright"], eye_a),
+                       (x0 + f, y0 + 2), (x0 + f * 5, y0), 1)
+            NS._aacircle(surface, (*P["eye_hot"], eye_a),
+                         (int(x0 + f * 5), int(y0)), 1)
+        # brow spike besi di atas mata
+        NS._poly(surface, P["obsidian_darkest"], [
+            (cx - f * 10, cy - 5), (cx + f * 9, cy - 7),
+            (cx + f * 8, cy - 4), (cx - f * 9, cy - 3)])
+        NS._aaline(surface, P["obsidian_high"], (cx - f * 9, cy - 5),
+                   (cx + f * 8, cy - 6), 1)
+
+        # circlet emas
+        NS._rect(surface, P["gold_darkest"], (cx - 9, cy - 11, 18, 4))
+        NS._rect(surface, P["gold_dark"], (cx - 9, cy - 11, 18, 3))
+        NS._rect(surface, P["gold_mid"], (cx - 8, cy - 10, 16, 2))
+        NS._aacircle(surface, P["gold_shine"], (cx - 1, cy - 10), 1)
+
+        # tanduk besar melengkung ke belakang
+        for side in (-1, 1):
+            base_x = cx + side * 10
+            base_y = cy - 9
+            seg = [(base_x, base_y)]
+            for i in range(1, 6):
+                t = i / 5.0
+                seg.append((base_x + side * int(7 * t + 9 * t * t),
+                            base_y - int(18 * t) + int(9 * t * t)))
+            for i in range(len(seg) - 1):
+                th = max(2, 7 - i)
+                NS._aaline(surface, P["horn_dark"], seg[i], seg[i + 1],
+                           th + 1)
+                NS._aaline(surface, P["horn_mid"], seg[i], seg[i + 1], th)
+                NS._aaline(surface, P["horn_light"],
+                           (seg[i][0] - 1, seg[i][1]),
+                           (seg[i + 1][0] - 1, seg[i + 1][1]),
+                           max(1, th - 3))
+            NS._aacircle(surface, P["horn_shine"],
+                         (int(seg[-1][0]), int(seg[-1][1])), 1)
+            # cincin emas pangkal tanduk
+            NS._aaline(surface, P["gold_mid"],
+                       (base_x - side * 2, base_y - 1),
+                       (base_x + side * 3, base_y - 2), 2)
+
+        # jambul api di puncak helm
+        for i, off in enumerate((-5, 0, 5)):
+            h = 12 - abs(off)
+            NS._flame_tongue(surface, cx + off, cy - 15, h + 5, phase,
+                             seed=i * 5, alpha=230, width=3.6)
+
+    @staticmethod
+    def _draw_arm_segment(surface, x1, y1, x2, y2, thick=7):
+        """Segmen lengan berpelat + sendi emas."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        NS._aaline(surface, P["shadow_deep"], (x1 + 2, y1 + 2),
+                   (x2 + 2, y2 + 2), thick + 1)
+        NS._aaline(surface, P["obsidian_darkest"], (x1, y1), (x2, y2), thick)
+        NS._aaline(surface, P["obsidian_dark"], (x1, y1), (x2, y2),
+                   max(1, thick - 2))
+        NS._aaline(surface, P["obsidian_mid"], (x1, y1), (x2, y2),
+                   max(1, thick - 4))
+        NS._aaline(surface, P["obsidian_light"], (x1, y1 - 1), (x2, y2 - 1),
+                   1)
+        mx, my = (x1 + x2) // 2, (y1 + y2) // 2
+        NS._aacircle(surface, P["gold_dark"], (mx, my), 4)
+        NS._aacircle(surface, P["gold_mid"], (mx, my), 3)
+        NS._aacircle(surface, P["gold_light"], (mx - 1, my - 1), 1)
+
+    @staticmethod
+    def _draw_hand_to(surface, cx, cy, facing, hx, hy, back=False):
+        """Rantai bahu -> siku -> tangan menuju titik grip."""
+        NS = _NS_ignis_drachorn
+        f = 1 if facing >= 0 else -1
+        side = -f if back else f
+        sx = cx + side * 15
+        sy = cy + 2
+        mx = (sx + hx) * 0.5 + side * 3
+        my = (sy + hy) * 0.5 + 5
+        NS._draw_arm_segment(surface, int(sx), int(sy), int(mx), int(my),
+                             8 if not back else 7)
+        NS._draw_arm_segment(surface, int(mx), int(my), int(hx), int(hy),
+                             7 if not back else 6)
+        # sarung tangan bercakar
+        NS._aacircle(surface, NS.PALETTE["obsidian_darkest"],
+                     (int(hx), int(hy)), 5)
+        NS._aacircle(surface, NS.PALETTE["obsidian_mid"],
+                     (int(hx), int(hy)), 4)
+        NS._aacircle(surface, NS.PALETTE["gold_dark"],
+                     (int(hx), int(hy)), 2)
+
+    @staticmethod
+    def _draw_flame_sword(surface, hx, hy, facing, phase, angle=0,
+                          intense=False, theta=None, tip=None):
+        """Greatsword magma: bilah bergerigi, fuller menyala, api hidup.
+
+        Kompatibel dengan signature lama (``angle`` = sudut radian gaya
+        lama); kalau ``theta``/``tip`` diberikan (ark baru) keduanya
+        dipakai apa adanya supaya identik dengan lapisan hidup.
+        """
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        L = NS.BLADE_LEN
+
+        if tip is not None:
+            tip_x, tip_y = int(tip[0]), int(tip[1])
+        elif theta is not None:
+            tip_x = int(hx + f * math.sin(theta) * L)
+            tip_y = int(hy - math.cos(theta) * L)
+        else:
+            tip_x = int(hx + math.cos(angle) * L * f)
+            tip_y = int(hy + math.sin(angle) * L)
+
+        hx, hy = int(hx), int(hy)
+        dx, dy = tip_x - hx, tip_y - hy
+        dist = math.hypot(dx, dy) or 1.0
+        ux, uy = dx / dist, dy / dist
+        px, py = -uy, ux
+
+        # pangkal bilah sedikit di atas grip (ricasso)
+        bx = hx + ux * 8
+        by = hy + uy * 8
+
+        def _p(t, w):
+            return (bx + ux * (dist - 8) * t + px * w,
+                    by + uy * (dist - 8) * t + py * w)
+
+        # siluet bilah (bergerigi: dua takik di tepi belakang)
+        blade = [
+            _p(0.0, 5.2), _p(0.30, 4.6), _p(0.44, 6.0), _p(0.58, 4.2),
+            _p(0.74, 5.0), _p(0.88, 3.0), _p(1.0, 0.0),
+            _p(0.88, -3.0), _p(0.70, -4.4), _p(0.40, -4.8), _p(0.0, -5.2),
+        ]
+        NS._poly(surface, P["shadow_deep"],
+                 [(p[0] + 2, p[1] + 2) for p in blade])
+        NS._poly(surface, P["armor_darkest"], blade)
+        NS._poly(surface, P["blade_dark"],
+                 [_p(0.0, 4.0), _p(0.5, 3.6), _p(1.0, 0.0),
+                  _p(0.5, -3.6), _p(0.0, -4.0)])
+        NS._poly(surface, P["blade_mid"],
+                 [_p(0.02, 2.6), _p(0.55, 2.2), _p(0.98, 0.0),
+                  _p(0.55, -2.2), _p(0.02, -2.6)])
+        # fuller magma
+        NS._aaline(surface, P["magma_mid"], (bx, by), (tip_x, tip_y), 3)
+        NS._aaline(surface, P["blade_light"], (bx, by), (tip_x, tip_y), 2)
+        NS._aaline(surface, P["blade_hot"], (bx, by), (tip_x, tip_y), 1)
+        NS._aaline(surface, P["blade_core"],
+                   (bx + ux * dist * 0.25, by + uy * dist * 0.25),
+                   (tip_x, tip_y), 1)
+
+        # api yang menjilat sepanjang bilah
+        flames = 6 if not intense else 8
+        for i in range(flames):
+            t = 0.12 + (i / float(flames)) * 0.9
+            fxp = bx + ux * (dist - 8) * t
+            fyp = by + uy * (dist - 8) * t
+            flick = math.sin(phase * 4.5 + i * 1.3)
+            size = (3.0 if intense else 2.2) + flick * 1.0
+            NS._flame_tongue(surface, fxp + px * (5.0 + flick),
+                             fyp + py * (5.0 + flick),
+                             max(3, int(size * 1.9)), phase, seed=i * 4,
+                             alpha=185 if intense else 140,
+                             width=max(1.6, size * 0.7))
+        NS._draw_flame_puff(surface, tip_x, tip_y, 5 if intense else 4,
+                            phase, 225)
+
+        # crossguard sayap naga
+        gx1, gy1 = hx + px * 11, hy + py * 11
+        gx2, gy2 = hx - px * 11, hy - py * 11
+        NS._aaline(surface, P["gold_darkest"], (gx1, gy1), (gx2, gy2), 6)
+        NS._aaline(surface, P["gold_dark"], (gx1, gy1), (gx2, gy2), 4)
+        NS._aaline(surface, P["gold_mid"], (gx1, gy1), (gx2, gy2), 2)
+        for s in (1, -1):
+            wx = hx + px * s * 12 + ux * 5
+            wy = hy + py * s * 12 + uy * 5
+            NS._poly(surface, P["gold_dark"], [
+                (hx + px * s * 8, hy + py * s * 8), (wx, wy),
+                (hx + px * s * 10 - ux * 5, hy + py * s * 10 - uy * 5)])
+            NS._aacircle(surface, P["gold_shine"], (int(wx), int(wy)), 1)
+
+        # gagang + pommel permata
+        hx2 = hx - ux * 9
+        hy2 = hy - uy * 9
+        NS._aaline(surface, P["leather_dark"], (hx, hy), (hx2, hy2), 5)
+        NS._aaline(surface, P["leather_mid"], (hx, hy), (hx2, hy2), 3)
+        NS._aaline(surface, P["leather_high"], (hx, hy), (hx2, hy2), 1)
+        px2, py2 = int(hx - ux * 12), int(hy - uy * 12)
+        NS._aacircle(surface, P["gold_dark"], (px2, py2), 4)
+        NS._aacircle(surface, P["gold_mid"], (px2, py2), 3)
+        NS._aacircle(surface, P["red_dark"], (px2, py2), 2)
+        NS._aacircle(surface, (*P["magma_bright"],
+                               int(180 + 70 * math.sin(phase * 3))),
+                     (px2, py2), 1)
+
+    # ── set lengan per aksi (nama lama dipertahankan) ───────────────
+    @staticmethod
+    def _draw_idle_arms(surface, cx, cy, facing, phase):
+        NS = _NS_ignis_drachorn
+        grip, tip, theta = NS.sword_geometry(facing, "idle", phase, 0.0)
+        hx, hy = cx + grip[0], cy + grip[1] + 8
+        NS._draw_hand_to(surface, cx, cy, facing,
+                         cx - (1 if facing >= 0 else -1) * 20, cy + 14,
+                         back=True)
+        NS._draw_hand_to(surface, cx, cy, facing, hx, hy, back=False)
+        NS._draw_flame_sword(surface, hx, hy, facing, phase, theta=theta,
+                             tip=(cx + tip[0], cy + tip[1] + 8))
+
+    @staticmethod
+    def _draw_walk_arms(surface, cx, cy, facing, phase):
+        NS = _NS_ignis_drachorn
+        swing = math.sin(phase) * 4
+        grip, tip, theta = NS.sword_geometry(facing, "walk", phase, 0.0)
+        hx, hy = cx + grip[0], cy + grip[1] + 8 + swing * 0.4
+        NS._draw_hand_to(surface, cx, cy, facing,
+                         cx - (1 if facing >= 0 else -1) * (20 + swing),
+                         cy + 14 - swing * 0.3, back=True)
+        NS._draw_hand_to(surface, cx, cy, facing, hx, hy, back=False)
+        NS._draw_flame_sword(surface, hx, hy, facing, phase, theta=theta,
+                             tip=(cx + tip[0], cy + tip[1] + 8 + swing * 0.4))
+
+    @staticmethod
+    def _draw_melee_arms(surface, cx, cy, facing, phase, progress):
+        """Ayunan dua tangan mengikuti ark — bukan lompatan pose."""
+        NS = _NS_ignis_drachorn
+        grip, tip, theta = NS.sword_geometry(facing, "melee", phase, progress)
+        hx, hy = cx + grip[0], cy + grip[1] + 8
+        tx, ty = cx + tip[0], cy + tip[1] + 8
+        # tangan belakang ikut memegang gagang (grip dua tangan)
+        f = 1 if facing >= 0 else -1
+        back_hx = hx - f * 7 - math.sin(theta) * f * 4
+        back_hy = hy + 5 + math.cos(theta) * 3
+        NS._draw_hand_to(surface, cx, cy, facing, back_hx, back_hy, back=True)
+        NS._draw_hand_to(surface, cx, cy, facing, hx, hy, back=False)
+        NS._draw_flame_sword(surface, hx, hy, facing, phase, theta=theta,
+                             tip=(tx, ty),
+                             intense=(0.30 <= progress <= 0.66))
+
+    @staticmethod
+    def _draw_ranged_arms(surface, cx, cy, facing, phase, progress):
+        NS = _NS_ignis_drachorn
+        grip, tip, theta = NS.sword_geometry(facing, "ranged", phase,
+                                             progress)
+        hx, hy = cx + grip[0], cy + grip[1] + 8
+        NS._draw_hand_to(surface, cx, cy, facing,
+                         cx - (1 if facing >= 0 else -1) * 18, cy + 10,
+                         back=True)
+        NS._draw_hand_to(surface, cx, cy, facing, hx, hy, back=False)
+        NS._draw_flame_sword(surface, hx, hy, facing, phase, theta=theta,
+                             tip=(cx + tip[0], cy + tip[1] + 8),
+                             intense=(0.20 < progress < 0.55))
+
+    @staticmethod
+    def _draw_cast_arms(surface, cx, cy, facing, phase):
+        """Pedang diangkat vertikal, dua tangan — pose CAST/SKILL."""
+        NS = _NS_ignis_drachorn
+        grip, tip, theta = NS.sword_geometry(facing, "cast", phase, 0.0)
+        hx, hy = cx + grip[0], cy + grip[1] + 8
+        f = 1 if facing >= 0 else -1
+        NS._draw_hand_to(surface, cx, cy, facing, hx - f * 6, hy + 6,
+                         back=True)
+        NS._draw_hand_to(surface, cx, cy, facing, hx, hy, back=False)
+        NS._draw_flame_sword(surface, hx, hy, facing, phase, theta=theta,
+                             tip=(cx + tip[0], cy + tip[1] + 8), intense=True)
+
+    # ---------------------------------------------------------------------------
+    # 11. KOMPOSISI BADAN (layer order + outline + pass pencahayaan)
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def _draw_ignis_body_raw(surface, ox, oy, facing, phase, action,
+                             attack_progress=0.0):
+        """Urutan layer: BACK WING -> CAPE -> TAIL -> BACK LIMB -> BODY ->
+        ARMOR -> HEAD -> WEAPON/FRONT LIMB -> HIGHLIGHT."""
+        NS = _NS_ignis_drachorn
+        f = 1 if facing >= 0 else -1
+        ap = max(0.0, min(1.0, float(attack_progress)))
+
+        breath = math.sin(phase * 1.1) * 1.2
+        spread = 0.0
+        if action in ("cast", "melee") and (action == "cast" or ap > 0.3):
+            spread = 0.55 if action == "cast" else 0.35 * math.sin(ap * math.pi)
+
+        # ── BACK LAYER ─────────────────────────────────────────────
+        NS._draw_back_wing(surface, ox, oy, f, phase, spread)
+        NS._draw_tail(surface, ox, oy, f, phase)
+        NS._draw_cape(surface, ox, oy, f, phase, action)
+
+        # ── BODY / ARMOR ───────────────────────────────────────────
+        step = phase if action in ("walk", "run") else 0.0
+        NS._draw_lower_body(surface, ox, oy + 5, phase, f, action, step)
+        NS._draw_torso(surface, ox, oy - 8, phase, f, breath)
+
+        # perisai: di belakang badan kecuali saat menghunus ke depan
+        shield_front = (action in ("melee",) and ap >= 0.30)
+        if not shield_front:
+            NS._draw_shield(surface, ox, oy - 5, -f, phase)
+
+        NS._draw_pauldrons(surface, ox, oy - 16, phase, f)
+
+        roar = 0.0
+        if action == "cast":
+            roar = 0.5 + 0.5 * math.sin(phase * 3.0)
+        elif action in ("melee", "ranged") and 0.3 < ap < 0.7:
+            roar = 1.0
+        NS._draw_head(surface, ox, oy - 35, f, phase, roar)
+
+        # ── WEAPON + FRONT LIMB ────────────────────────────────────
+        if action in ("melee", "swing"):
+            NS._draw_melee_arms(surface, ox, oy - 8, f, phase, ap)
+        elif action == "ranged":
+            NS._draw_ranged_arms(surface, ox, oy - 8, f, phase, ap)
+        elif action in ("cast", "skill", "charge"):
+            NS._draw_cast_arms(surface, ox, oy - 8, f, phase)
+        elif action in ("walk", "run"):
+            NS._draw_walk_arms(surface, ox, oy - 8, f, phase)
+        else:
+            NS._draw_idle_arms(surface, ox, oy - 8, f, phase)
+
+        if shield_front:
+            NS._draw_shield(surface, ox, oy - 5, -f, phase)
+
+        # ── HIGHLIGHT PASS ─────────────────────────────────────────
+        NS._draw_body_fire_particles(surface, ox, oy, phase)
+
+    @staticmethod
+    def _draw_ignis_body(surface, cx, cy, facing, phase, action,
+                         attack_progress=0):
+        """Komposit: buffer tetap -> crop -> outline 1 px -> rim light."""
+        NS = _NS_ignis_drachorn
+        if NS._body_buf is None:
+            NS._body_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                          pygame.SRCALPHA)
+        buf = NS._body_buf
+        buf.fill((0, 0, 0, 0))
+        NS._draw_ignis_body_raw(buf, NS.RIG_OX, NS.RIG_OY, facing, phase,
+                                action, attack_progress)
+        used = buf.get_bounding_rect(min_alpha=1)
+        if used.width <= 2 or used.height <= 2:
+            return
+        used.inflate_ip(4, 4)
+        used.clamp_ip(buf.get_rect())
+        sub = buf.subsurface(used).copy()
+        ox = int(cx) - NS.RIG_OX + used.left
+        oy = int(cy) - NS.RIG_OY + used.top
+
+        edge = sub.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + ddx, oy + ddy))
+        try:
+            import lighting as _lighting
+            if _lighting is not None:
+                _lighting.apply_to_rig(sub, rim_add=(52, 24, 14),
+                                       shade_mul=170, gradient=False,
+                                       two_band=False)
+        except Exception:
+            pass
+        surface.blit(sub, (ox, oy))
+        # Simpan rig terakhir supaya lapisan hidup bisa membuat AFTERIMAGE
+        # tanpa menggambar ulang badan (murah + selalu sinkron pose).
+        NS._last_rig = sub
+        NS._last_rig_off = (ox - int(cx), oy - int(cy))
+
+    # ---------------------------------------------------------------------------
+    # 12. POSE MODES
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _draw_ignis_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_ignis_drachorn._draw_shadow(surface, x, y + 48)
-        _NS_ignis_drachorn._draw_floating_flames(surface, x, y + 35, boss.pulse)
-        _NS_ignis_drachorn._draw_ignis_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+        NS = _NS_ignis_drachorn
+        phase = float(getattr(boss, "pulse", 0.0))
+        bob = int(math.sin(phase * 0.8) * 2)
+        NS._draw_shadow(surface, x, y + NS.FEET_DY)
+        NS._draw_floating_flames(surface, x, y + 35, phase)
+        NS._draw_ignis_body(surface, x, y + bob, boss.direction, phase,
+                            "idle")
 
-
-    def _draw_ignis_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
+    @staticmethod
+    def _draw_ignis_walk(surface, boss, x, y, run=False):
+        NS = _NS_ignis_drachorn
+        phase = float(getattr(boss, "pulse", 0.0)) * (2.6 if run else 2.2)
+        bob = int(abs(math.sin(phase * 1.3)) * (4 if run else 3))
         sway = int(math.sin(phase) * 2)
-        _NS_ignis_drachorn._draw_shadow(surface, x + sway, y + 48)
-        _NS_ignis_drachorn._draw_floating_flames(surface, x + sway, y + 35, phase, trail=True,
-                              facing=boss.direction)
-        _NS_ignis_drachorn._draw_ignis_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
+        NS._draw_shadow(surface, x + sway, y + NS.FEET_DY)
+        NS._draw_floating_flames(surface, x + sway, y + 35, phase, trail=True,
+                                 facing=boss.direction)
+        NS._draw_ignis_body(surface, x + sway, y - bob, boss.direction, phase,
+                            "run" if run else "walk")
 
-
+    @staticmethod
     def _draw_ignis_melee_attack(surface, boss, x, y):
-        progress = getattr(boss, "_ign_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
+        NS = _NS_ignis_drachorn
+        phase = float(getattr(boss, "pulse", 0.0))
+        progress = max(0.0, min(1.0,
+                                getattr(boss, "_ign_attack_progress", 0.0)))
+        f = getattr(boss, "direction", 1)
+        lunge = int(NS._lunge_offset(progress)) * f
 
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
-        _NS_ignis_drachorn._draw_shadow(surface, x + lunge, y + 48)
-        _NS_ignis_drachorn._draw_floating_flames(surface, x + lunge, y + 35, boss.pulse, intense=True)
-        _NS_ignis_drachorn._draw_ignis_body(surface, x + lunge, y, boss.direction, boss.pulse,
-                         "melee", progress)
-        _NS_ignis_drachorn._draw_sword_swing_trail(surface, x + lunge, y, boss.direction, progress)
+        NS._draw_shadow(surface, x + lunge, y + NS.FEET_DY)
+        NS._draw_floating_flames(surface, x + lunge, y + 35, phase,
+                                 intense=True)
+        NS._draw_ignis_body(surface, x + lunge, y, f, phase, "melee",
+                            progress)
+        if not getattr(boss, "_ign_suppress_canvas_fx", False):
+            NS._draw_sword_swing_trail(surface, x + lunge, y, f, progress)
 
-
+    @staticmethod
     def _draw_ignis_ranged_attack(surface, boss, x, y):
-        progress = getattr(boss, "_ign_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
+        NS = _NS_ignis_drachorn
+        phase = float(getattr(boss, "pulse", 0.0))
+        progress = max(0.0, min(1.0,
+                                getattr(boss, "_ign_attack_progress", 0.0)))
+        f = getattr(boss, "direction", 1)
 
-        if 0.28 < progress < 0.35 and not getattr(boss, "_ign_proj_spawned", False):
-            _NS_ignis_drachorn._spawn_fire_projectile(boss, x, y)
+        if 0.28 < progress < 0.36 and not getattr(boss, "_ign_proj_spawned",
+                                                  False):
+            if getattr(boss, "_ign_suppress_canvas_fx", False):
+                try:
+                    from heroes import ignis_drachorn_fx as _ifx
+                    _ifx.notify_projectile_cast(boss, x, y)
+                except Exception:
+                    pass
+            else:
+                NS._spawn_fire_projectile(boss, x, y)
             boss._ign_proj_spawned = True
         if progress < 0.1 or progress > 0.9:
             boss._ign_proj_spawned = False
 
-        recoil = int(math.sin(progress * math.pi) * 3) * -boss.direction
-        _NS_ignis_drachorn._draw_shadow(surface, x + recoil, y + 48)
-        _NS_ignis_drachorn._draw_floating_flames(surface, x + recoil, y + 35, boss.pulse, intense=True)
-        _NS_ignis_drachorn._draw_ignis_body(surface, x + recoil, y, boss.direction, boss.pulse,
-                         "ranged", progress)
-        _NS_ignis_drachorn._draw_sword_charge_flash(surface, x + recoil, y, boss.direction, progress)
-
-
-    # ===================================================================
-    # BODY RENDERING – HD detailed Dragon Knight
-    # ===================================================================
-    def _draw_ignis_body(surface, cx, cy, facing, phase, action,
-                         attack_progress=0):
-        """Main body composition."""
-        # Cape behind
-        _NS_ignis_drachorn._draw_cape(surface, cx, cy, facing, phase, action)
-
-        # Lower body (floating robes with dragon scales)
-        _NS_ignis_drachorn._draw_lower_body(surface, cx, cy + 5, phase)
-
-        # Torso plate armor
-        _NS_ignis_drachorn._draw_torso(surface, cx, cy - 8, phase)
-
-        # Shield on off-hand
-        if action != "melee" or attack_progress < 0.3:
-            _NS_ignis_drachorn._draw_shield(surface, cx, cy - 5, -facing, phase)
-
-        # Pauldrons
-        _NS_ignis_drachorn._draw_pauldrons(surface, cx, cy - 16, phase)
-
-        # Sword arm and shield arm
-        if action == "melee":
-            _NS_ignis_drachorn._draw_melee_arms(surface, cx, cy - 8, facing, phase, attack_progress)
-        elif action == "ranged":
-            _NS_ignis_drachorn._draw_ranged_arms(surface, cx, cy - 8, facing, phase, attack_progress)
-        else:
-            _NS_ignis_drachorn._draw_idle_arms(surface, cx, cy - 8, facing, phase)
-
-        # Shield on top for depth (front layer when melee attacking)
-        if action == "melee" and attack_progress >= 0.3:
-            _NS_ignis_drachorn._draw_shield(surface, cx, cy - 5, -facing, phase)
-
-        # Head with dragon helm
-        _NS_ignis_drachorn._draw_head(surface, cx, cy - 30, facing, phase)
-
-        # Fire particles around body
-        _NS_ignis_drachorn._draw_body_fire_particles(surface, cx, cy, phase)
-
-
-    def _draw_cape(surface, cx, cy, facing, phase, action):
-        """Red cape flowing behind character."""
-        wave = math.sin(phase * 0.8) * 3
-        wave2 = math.sin(phase * 1.2 + 0.5) * 2
-
-        cape_outer = [
-            (cx - 14, cy - 14),
-            (cx - 20, cy + 5),
-            (cx - 26 - int(wave), cy + 30),
-            (cx - 20 - int(wave2), cy + 44),
-            (cx - 5, cy + 47 + int(abs(wave))),
-            (cx + 5, cy + 47 + int(abs(wave))),
-            (cx + 20 + int(wave2), cy + 44),
-            (cx + 26 + int(wave), cy + 30),
-            (cx + 20, cy + 5),
-            (cx + 14, cy - 14),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_darkest"], cape_outer)
-
-        cape_mid = [
-            (cx - 12, cy - 12),
-            (cx - 17, cy + 5),
-            (cx - 22 - int(wave * 0.7), cy + 28),
-            (cx - 15 - int(wave2 * 0.7), cy + 40),
-            (cx - 3, cy + 42),
-            (cx + 3, cy + 42),
-            (cx + 15 + int(wave2 * 0.7), cy + 40),
-            (cx + 22 + int(wave * 0.7), cy + 28),
-            (cx + 17, cy + 5),
-            (cx + 12, cy - 12),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_dark"], cape_mid)
-
-        cape_inner = [
-            (cx - 9, cy - 8),
-            (cx - 13, cy + 5),
-            (cx - 16 - int(wave * 0.4), cy + 22),
-            (cx - 8, cy + 34),
-            (cx, cy + 36),
-            (cx + 8, cy + 34),
-            (cx + 16 + int(wave * 0.4), cy + 22),
-            (cx + 13, cy + 5),
-            (cx + 9, cy - 8),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_mid"], cape_inner)
-
-        # Highlights on cape folds
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["red_light"],
-                (cx - 8, cy - 5), (cx - 12, cy + 20), 1)
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["red_light"],
-                (cx + 8, cy - 5), (cx + 12, cy + 20), 1)
-
-        # Gold trim at top of cape
-        _NS_ignis_drachorn._rect(surface, _NS_ignis_drachorn.PALETTE["gold_dark"], (cx - 14, cy - 15, 28, 3))
-        _NS_ignis_drachorn._rect(surface, _NS_ignis_drachorn.PALETTE["gold_mid"], (cx - 13, cy - 14, 26, 2))
-
-
-    def _draw_lower_body(surface, cx, cy, phase):
-        """Armored lower body/skirt with dragon scale texture."""
-        sway = int(math.sin(phase * 0.7) * 2)
-
-        # Outer skirt
-        skirt = [
-            (cx - 18, cy),
-            (cx + 18, cy),
-            (cx + 22 + sway, cy + 14),
-            (cx + 16, cy + 24),
-            (cx + 8, cy + 30),
-            (cx + 3, cy + 32),
-            (cx - 3, cy + 32),
-            (cx - 8, cy + 30),
-            (cx - 16, cy + 24),
-            (cx - 22 - sway, cy + 14),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], [(p[0] + 2, p[1] + 2) for p in skirt])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["armor_darkest"], skirt)
-
-        skirt_mid = [
-            (cx - 15, cy + 2),
-            (cx + 15, cy + 2),
-            (cx + 18 + sway, cy + 14),
-            (cx + 12, cy + 22),
-            (cx + 5, cy + 27),
-            (cx - 5, cy + 27),
-            (cx - 12, cy + 22),
-            (cx - 18 - sway, cy + 14),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["armor_dark"], skirt_mid)
-
-        skirt_inner = [
-            (cx - 11, cy + 4),
-            (cx + 11, cy + 4),
-            (cx + 14 + sway, cy + 14),
-            (cx + 8, cy + 20),
-            (cx - 8, cy + 20),
-            (cx - 14 - sway, cy + 14),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["armor_mid"], skirt_inner)
-
-        # Dragon scale pattern on skirt
-        for row in range(3):
-            for col in range(-2, 3):
-                sx = cx + col * 6 + (row % 2) * 3
-                sy = cy + 6 + row * 5
-                _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"], (sx, sy), 3)
-                _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], (sx, sy - 1), 2)
-                _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_light"], (sx, sy - 1), 1)
-
-        # Gold belt
-        _NS_ignis_drachorn._rect(surface, _NS_ignis_drachorn.PALETTE["gold_dark"], (cx - 19, cy - 1, 38, 5))
-        _NS_ignis_drachorn._rect(surface, _NS_ignis_drachorn.PALETTE["gold_mid"], (cx - 17, cy, 34, 3))
-        _NS_ignis_drachorn._rect(surface, _NS_ignis_drachorn.PALETTE["gold_light"], (cx - 14, cy + 1, 28, 1))
-
-        # Dragon head belt buckle
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], [
-            (cx - 5, cy - 1), (cx + 5, cy - 1),
-            (cx + 4, cy + 5), (cx, cy + 7), (cx - 4, cy + 5),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], [
-            (cx - 4, cy), (cx + 4, cy),
-            (cx + 3, cy + 4), (cx, cy + 6), (cx - 3, cy + 4),
-        ])
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_bright"], (cx - 2, cy + 2), 1)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_bright"], (cx + 2, cy + 2), 1)
-
-
-    def _draw_torso(surface, cx, cy, phase):
-        """Chest armor with dragon emblem."""
-        # Shadow
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], [
-            (cx - 14 + 2, cy - 10 + 2), (cx + 14 + 2, cy - 10 + 2),
-            (cx + 12 + 2, cy + 14 + 2), (cx + 5 + 2, cy + 19 + 2),
-            (cx - 5 + 2, cy + 19 + 2), (cx - 12 + 2, cy + 14 + 2),
-        ])
-
-        chest = [
-            (cx - 14, cy - 10), (cx + 14, cy - 10),
-            (cx + 12, cy + 14), (cx + 5, cy + 19),
-            (cx - 5, cy + 19), (cx - 12, cy + 14),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["armor_darkest"], chest)
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["armor_dark"], [
-            (cx - 12, cy - 8), (cx + 12, cy - 8),
-            (cx + 10, cy + 12), (cx + 4, cy + 16),
-            (cx - 4, cy + 16), (cx - 10, cy + 12),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["armor_mid"], [
-            (cx - 9, cy - 5), (cx + 9, cy - 5),
-            (cx + 7, cy + 9), (cx + 3, cy + 13),
-            (cx - 3, cy + 13), (cx - 7, cy + 9),
-        ])
-        # Highlight
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["armor_light"],
-                (cx - 7, cy - 4), (cx - 5, cy + 8), 1)
-
-        # Gold trim around chest
-        for i in range(len(chest)):
-            p1 = chest[i]
-            p2 = chest[(i + 1) % len(chest)]
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["gold_dark"], p1, p2, 2)
-        for i in range(len(chest)):
-            p1 = chest[i]
-            p2 = chest[(i + 1) % len(chest)]
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["gold_mid"], p1, p2, 1)
-
-        # Central dragon emblem (red diamond shape)
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_darkest"], [
-            (cx, cy - 4), (cx + 6, cy + 4),
-            (cx, cy + 12), (cx - 6, cy + 4),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_dark"], [
-            (cx, cy - 3), (cx + 5, cy + 4),
-            (cx, cy + 11), (cx - 5, cy + 4),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_mid"], [
-            (cx, cy - 1), (cx + 4, cy + 4),
-            (cx, cy + 9), (cx - 4, cy + 4),
-        ])
-
-        # Dragon symbol on emblem
-        pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_bright"], (cx, cy + 4),
-                  int(2 * pulse) + 1)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_hot"], (cx, cy + 4), 1)
-
-        # Wing marks on emblem
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["gold_light"], (cx - 3, cy + 3), (cx - 1, cy + 5), 1)
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["gold_light"], (cx + 3, cy + 3), (cx + 1, cy + 5), 1)
-
-
-    def _draw_pauldrons(surface, cx, cy, phase):
-        """Shoulder pauldrons with dragon spikes."""
-        for side in (-1, 1):
-            sx = cx + side * 16
-            # Shadow
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], (sx + 2, cy + 2), 11)
-            # Main pauldron
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["armor_darkest"], (sx, cy), 10)
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["armor_dark"], (sx - side, cy - 1), 8)
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["armor_mid"], (sx - side * 2, cy - 2), 6)
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["armor_light"], (sx - side * 3, cy - 4), 3)
-
-            # Gold trim ring
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["gold_dark"], (sx, cy), 10, 2)
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["gold_mid"], (sx, cy), 9, 1)
-
-            # Dragon spike on top
-            _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], [
-                (sx - 3, cy - 8),
-                (sx + 3, cy - 8),
-                (sx + side * 3, cy - 18),
-            ])
-            _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], [
-                (sx - 2, cy - 8),
-                (sx + 2, cy - 8),
-                (sx + side * 2, cy - 16),
-            ])
-            # Ember on spike tip
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_light"],
-                      (sx + side * 3, cy - 18), 2)
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_hot"],
-                      (sx + side * 3, cy - 18), 1)
-
-            # Small side spike
-            _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"], [
-                (sx + side * 8, cy - 3),
-                (sx + side * 12, cy - 5),
-                (sx + side * 9, cy + 2),
-            ])
-
-
-    def _draw_shield(surface, cx, cy, side, phase):
-        """Dragon knight shield."""
-        shx = cx + side * 18
-        shy = cy + 4
-
-        # Shield shadow
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], [
-            (shx - 8 + 2, shy - 10 + 2),
-            (shx + 8 + 2, shy - 10 + 2),
-            (shx + 10 + 2, shy + 5 + 2),
-            (shx + 2, shy + 14 + 2),
-            (shx - 10 + 2, shy + 5 + 2),
-        ])
-
-        # Shield body
-        shield_pts = [
-            (shx - 8, shy - 10),
-            (shx + 8, shy - 10),
-            (shx + 10, shy + 5),
-            (shx, shy + 14),
-            (shx - 10, shy + 5),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_darkest"], shield_pts)
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_dark"], [
-            (shx - 7, shy - 9),
-            (shx + 7, shy - 9),
-            (shx + 9, shy + 4),
-            (shx, shy + 12),
-            (shx - 9, shy + 4),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_mid"], [
-            (shx - 5, shy - 7),
-            (shx + 5, shy - 7),
-            (shx + 7, shy + 3),
-            (shx, shy + 10),
-            (shx - 7, shy + 3),
-        ])
-
-        # Gold trim
-        for i in range(len(shield_pts)):
-            p1 = shield_pts[i]
-            p2 = shield_pts[(i + 1) % len(shield_pts)]
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["gold_dark"], p1, p2, 2)
-        for i in range(len(shield_pts)):
-            p1 = shield_pts[i]
-            p2 = shield_pts[(i + 1) % len(shield_pts)]
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["gold_mid"], p1, p2, 1)
-
-        # Dragon emblem on shield
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["gold_dark"], (shx, shy - 1), 5)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["gold_mid"], (shx, shy - 1), 4)
-
-        # Simplified dragon head
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], [
-            (shx - 3, shy - 3),
-            (shx + 3, shy - 3),
-            (shx + 2, shy + 2),
-            (shx, shy + 3),
-            (shx - 2, shy + 2),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], [
-            (shx - 2, shy - 2),
-            (shx + 2, shy - 2),
-            (shx + 1, shy + 1),
-            (shx, shy + 2),
-            (shx - 1, shy + 1),
-        ])
-        # Dragon eyes
-        pulse = math.sin(phase * 2) * 0.4 + 0.6
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_bright"],
-                  (shx - 1, shy - 1), max(1, int(pulse)))
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_bright"],
-                  (shx + 1, shy - 1), max(1, int(pulse)))
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Both arms in resting position with sword and shield ready."""
-        sway = math.sin(phase * 0.7) * 2
-
-        # Sword arm (facing side)
-        ss_x = cx + facing * 14
-        ss_y = cy + 2
-        se_x = ss_x + facing * 6
-        se_y = cy + 12 + int(sway)
-        sh_x = se_x + facing * 3
-        sh_y = se_y + 10
-
-        _NS_ignis_drachorn._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_ignis_drachorn._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-
-        # Sword pointing down/forward
-        _NS_ignis_drachorn._draw_flame_sword(surface, sh_x, sh_y, facing, phase, angle=-0.3)
-
-        # Shield arm (opposite side) - hand supports shield
-        bs_x = cx + (-facing) * 14
-        bs_y = cy + 2
-        be_x = bs_x + (-facing) * 4
-        be_y = cy + 10
-        bh_x = be_x + (-facing) * 3
-        bh_y = be_y + 6
-        _NS_ignis_drachorn._draw_arm_segment(surface, bs_x, bs_y, be_x, be_y)
-        _NS_ignis_drachorn._draw_arm_segment(surface, be_x, be_y, bh_x, bh_y)
-
-
-    def _draw_melee_arms(surface, cx, cy, facing, phase, progress):
-        """Sword swing animation."""
-        # Shield arm stays relatively stable
-        bs_x = cx + (-facing) * 14
-        bs_y = cy + 2
-        be_x = bs_x + (-facing) * 4
-        be_y = cy + 10
-        bh_x = be_x + (-facing) * 3
-        bh_y = be_y + 6
-        _NS_ignis_drachorn._draw_arm_segment(surface, bs_x, bs_y, be_x, be_y)
-        _NS_ignis_drachorn._draw_arm_segment(surface, be_x, be_y, bh_x, bh_y)
-
-        # Sword arm - swing animation
-        ss_x = cx + facing * 14
-        ss_y = cy + 2
-
-        # Wind up (0-0.3): raise sword back
-        # Swing (0.3-0.6): swing forward
-        # Recovery (0.6-1.0): return
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = -1.2 + (-0.8) * t  # from -1.2 to -2.0
-        elif progress < 0.6:
-            t = (progress - 0.3) / 0.3
-            arm_angle = -2.0 + 3.0 * t  # swing forward from -2.0 to 1.0
-        else:
-            t = (progress - 0.6) / 0.4
-            arm_angle = 1.0 - 1.3 * t  # return to -0.3
-
-        se_x = ss_x + int(math.cos(arm_angle) * 12) * facing
-        se_y = ss_y + int(math.sin(arm_angle) * 12)
-        sh_x = se_x + int(math.cos(arm_angle) * 10) * facing
-        sh_y = se_y + int(math.sin(arm_angle) * 10)
-
-        _NS_ignis_drachorn._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_ignis_drachorn._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-
-        # Sword with rotation
-        sword_angle = arm_angle + (0.3 if facing > 0 else -0.3)
-        _NS_ignis_drachorn._draw_flame_sword(surface, sh_x, sh_y, facing, phase, angle=sword_angle,
-                         intense=(0.3 < progress < 0.7))
-
-
-    def _draw_ranged_arms(surface, cx, cy, facing, phase, progress):
-        """Ranged attack - raise sword and shoot fire projectile."""
-        # Shield arm stable
-        bs_x = cx + (-facing) * 14
-        bs_y = cy + 2
-        be_x = bs_x + (-facing) * 4
-        be_y = cy + 10
-        bh_x = be_x + (-facing) * 3
-        bh_y = be_y + 6
-        _NS_ignis_drachorn._draw_arm_segment(surface, bs_x, bs_y, be_x, be_y)
-        _NS_ignis_drachorn._draw_arm_segment(surface, be_x, be_y, bh_x, bh_y)
-
-        # Sword arm - point forward
-        ss_x = cx + facing * 14
-        ss_y = cy + 2
-
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = -0.3 - 0.8 * t
-        elif progress < 0.5:
-            t = (progress - 0.3) / 0.2
-            arm_angle = -1.1 + 1.4 * t
-        else:
-            t = (progress - 0.5) / 0.5
-            arm_angle = 0.3 - 0.6 * t
-
-        se_x = ss_x + int(math.cos(arm_angle) * 12) * facing
-        se_y = ss_y + int(math.sin(arm_angle) * 12)
-        sh_x = se_x + int(math.cos(arm_angle) * 10) * facing
-        sh_y = se_y + int(math.sin(arm_angle) * 10)
-
-        _NS_ignis_drachorn._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_ignis_drachorn._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-
-        sword_angle = arm_angle
-        _NS_ignis_drachorn._draw_flame_sword(surface, sh_x, sh_y, facing, phase, angle=sword_angle,
-                         intense=(0.2 < progress < 0.5))
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Armored arm segment."""
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], (x1 + 2, y1 + 2), (x2 + 2, y2 + 2), 8)
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["armor_darkest"], (x1, y1), (x2, y2), 7)
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["armor_dark"], (x1, y1), (x2, y2), 5)
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["armor_mid"], (x1, y1), (x2, y2), 3)
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["armor_light"], (x1, y1 - 1), (x2, y2 - 1), 1)
-        # Gold joint
-        mx, my = (x1 + x2) // 2, (y1 + y2) // 2
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["gold_dark"], (mx, my), 4)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["gold_mid"], (mx, my), 3)
-
-
-    def _draw_flame_sword(surface, hx, hy, facing, phase, angle=0, intense=False):
-        """Fiery sword extending from hand."""
-        # Sword pointing in direction determined by angle
-        length = 32
-        tip_x = hx + int(math.cos(angle) * length) * facing
-        tip_y = hy + int(math.sin(angle) * length)
-
-        # Perpendicular for blade width
-        perp_angle = angle + math.pi / 2
-        px = math.cos(perp_angle) * facing
-        py = math.sin(perp_angle)
-
-        # Blade shadow
-        blade_pts = [
-            (hx + int(px * 3), hy + int(py * 3)),
-            (hx - int(px * 3), hy - int(py * 3)),
-            (tip_x, tip_y),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in blade_pts])
-
-        # Blade layers (fiery)
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["fire_darkest"], blade_pts)
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["fire_dark"], [
-            (hx + int(px * 2.5), hy + int(py * 2.5)),
-            (hx - int(px * 2.5), hy - int(py * 2.5)),
-            (tip_x, tip_y),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["fire_mid"], [
-            (hx + int(px * 2), hy + int(py * 2)),
-            (hx - int(px * 2), hy - int(py * 2)),
-            (tip_x, tip_y),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["fire_light"], [
-            (hx + int(px * 1), hy + int(py * 1)),
-            (hx - int(px * 1), hy - int(py * 1)),
-            (tip_x, tip_y),
-        ])
-
-        # Bright core line
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["fire_hot"], (hx, hy), (tip_x, tip_y), 2)
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["fire_white"], (hx, hy), (tip_x, tip_y), 1)
-
-        # Flames on the blade
-        flame_count = 6
-        for i in range(flame_count):
-            t = i / flame_count
-            bx = int(hx + (tip_x - hx) * t)
-            by = int(hy + (tip_y - hy) * t)
-            flick = math.sin(phase * 4 + i) * 2
-            size = 3 + int(flick) if intense else 2 + int(flick * 0.5)
-            _NS_ignis_drachorn._draw_flame_puff(surface, bx + int(py * flick), by - int(px * flick),
-                             size, phase, 200)
-
-        # Sword tip flame
-        tip_size = 6 if intense else 4
-        _NS_ignis_drachorn._draw_flame_puff(surface, tip_x, tip_y, tip_size, phase, 240)
-
-        # Guard (crossguard)
-        guard_perp_x = int(px * 8)
-        guard_perp_y = int(py * 8)
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["gold_dark"],
-                (hx + guard_perp_x, hy + guard_perp_y),
-                (hx - guard_perp_x, hy - guard_perp_y), 4)
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["gold_mid"],
-                (hx + guard_perp_x, hy + guard_perp_y),
-                (hx - guard_perp_x, hy - guard_perp_y), 3)
-        _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["gold_light"],
-                (hx + int(guard_perp_x * 0.7), hy + int(guard_perp_y * 0.7)),
-                (hx - int(guard_perp_x * 0.7), hy - int(guard_perp_y * 0.7)), 1)
-
-        # Pommel gem
-        pommel_x = hx - int(math.cos(angle) * 6) * facing
-        pommel_y = hy - int(math.sin(angle) * 6)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["gold_dark"], (pommel_x, pommel_y), 3)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["red_dark"], (pommel_x, pommel_y), 2)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["red_high"], (pommel_x, pommel_y), 1)
-
-
-    def _draw_head(surface, cx, cy, facing, phase):
-        """Dragon knight helm."""
-        # Shadow
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], (cx + 2, cy + 2), 13)
-
-        # Helm base
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["armor_darkest"], (cx, cy), 12)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["armor_dark"], (cx - 1, cy - 1), 10)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["armor_mid"], (cx - 2, cy - 2), 7)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["armor_light"], (cx - 3, cy - 4), 4)
-
-        # Gold helm trim
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["gold_dark"], (cx, cy), 12, 2)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["gold_mid"], (cx, cy), 11, 1)
-
-        # Visor - T-shape opening
-        # Vertical slit
-        _NS_ignis_drachorn._rect(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], (cx - 1, cy - 6, 3, 12))
-        # Horizontal slit
-        _NS_ignis_drachorn._rect(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], (cx - 7, cy - 2, 14, 4))
-
-        # Eye glow inside visor
-        pulse = math.sin(phase * 2) * 0.3 + 0.7
-        eye_size = max(1, int(2 * pulse))
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_dark"], (cx - 4, cy), eye_size + 1)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_mid"], (cx - 4, cy), eye_size)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_bright"], (cx - 4, cy), max(1, eye_size - 1))
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_dark"], (cx + 4, cy), eye_size + 1)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_mid"], (cx + 4, cy), eye_size)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_bright"], (cx + 4, cy), max(1, eye_size - 1))
-
-        # Gold crown/circlet band
-        _NS_ignis_drachorn._rect(surface, _NS_ignis_drachorn.PALETTE["gold_dark"], (cx - 11, cy - 9, 22, 3))
-        _NS_ignis_drachorn._rect(surface, _NS_ignis_drachorn.PALETTE["gold_mid"], (cx - 10, cy - 8, 20, 2))
-
-        # Dragon horns on helm (large curved horns)
-        for side in (-1, 1):
-            # Base
-            _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], [
-                (cx + side * 6, cy - 8),
-                (cx + side * 10, cy - 8),
-                (cx + side * 14, cy - 18),
-                (cx + side * 16, cy - 22),
-                (cx + side * 13, cy - 20),
-                (cx + side * 9, cy - 12),
-            ])
-            _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], [
-                (cx + side * 7, cy - 8),
-                (cx + side * 9, cy - 8),
-                (cx + side * 13, cy - 17),
-                (cx + side * 14, cy - 20),
-                (cx + side * 12, cy - 18),
-                (cx + side * 8, cy - 11),
-            ])
-            # Horn tip highlight
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_high"],
-                      (cx + side * 15, cy - 21), 1)
-
-            # Fire ember at horn tips
-            _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_mid"], 180),
-                      (cx + side * 16, cy - 22), 3)
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_bright"],
-                      (cx + side * 16, cy - 22), 1)
-
-        # Center crown spike
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], [
-            (cx - 2, cy - 10),
-            (cx + 2, cy - 10),
-            (cx, cy - 16),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["gold_mid"], [
-            (cx - 1, cy - 10),
-            (cx + 1, cy - 10),
-            (cx, cy - 15),
-        ])
-
-        # Chin/mouth guard
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["armor_darkest"], [
-            (cx - 6, cy + 6),
-            (cx + 6, cy + 6),
-            (cx + 4, cy + 12),
-            (cx, cy + 14),
-            (cx - 4, cy + 12),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["armor_dark"], [
-            (cx - 4, cy + 7),
-            (cx + 4, cy + 7),
-            (cx + 2, cy + 11),
-            (cx, cy + 12),
-            (cx - 2, cy + 11),
-        ])
-
-        # Small fangs
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["armor_shine"], [
-            (cx - 2, cy + 8), (cx - 1, cy + 8), (cx - 1, cy + 10)
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["armor_shine"], [
-            (cx + 1, cy + 8), (cx + 2, cy + 8), (cx + 1, cy + 10)
-        ])
-
-
-    def _draw_body_fire_particles(surface, cx, cy, phase):
-        """Fire embers around body."""
-        for i in range(10):
-            angle = phase * 0.5 + i * math.pi / 5
-            radius = 28 + int(math.sin(phase * 0.9 + i) * 6)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.4)
-            alpha = int(120 + math.sin(phase + i * 0.7) * 60)
-            _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_dark"], alpha), (px, py), 2)
-            _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_bright"], alpha // 2), (px, py), 1)
-
-        # Rising embers
-        for i in range(6):
-            t = (phase * 0.4 + i * 0.17) % 1.0
-            px = cx + int(math.sin(phase + i) * 20) + (i - 3) * 3
-            py = cy + 20 - int(t * 60)
-            alpha = int(200 * (1 - t))
-            if alpha > 0:
-                _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_light"], alpha), (px, py), 1)
-                _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_hot"], alpha), (px, py - 1), 1)
-
-
-    # ===================================================================
-    # FLOATING EFFECTS
-    # ===================================================================
-    def _draw_floating_flames(surface, cx, cy, phase, trail=False,
-                              facing=1, intense=False):
-        """Fire mist below floating Ignis."""
-        strength = 1.5 if intense else 1.0
-
-        # Fire base mist
-        mist = pygame.Surface((120, 40), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(30, 3, -4):
-            alpha = int((30 - radius) * 2.5 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_ignis_drachorn.PALETTE["fire_dark"], min(255, alpha)),
-                    (60 - radius * 2, 20 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 60, cy - 10))
-
-        # Rising flame wisps
-        for i, offset in enumerate((-20, -8, 8, 20)):
-            t = (phase * 0.6 + i * 0.25) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 22)
-            alpha = max(0, min(255, int(220 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            size = int(5 * (1 - t * 0.5))
-            _NS_ignis_drachorn._draw_flame_puff(surface, sx, sy, size, phase, alpha)
-
-        # Ember orbits
-        for i in range(5):
-            angle = phase * 1.1 + i * math.pi * 2 / 5
-            r = 22 + int(math.sin(phase + i * 1.3) * 4)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 6)
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_mid"], (sx, sy), 2)
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_bright"], (sx, sy), 1)
-
-        if trail:
-            for i in range(5):
-                sx = cx - (i + 1) * 11 * facing
-                sy = cy + int(math.sin(phase + i) * 2)
-                alpha = max(0, 140 - i * 25)
-                _NS_ignis_drachorn._draw_flame_puff(surface, sx, sy, max(2, 5 - i), phase, alpha)
-
-
-    def _draw_shadow(surface, x, y):
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_ignis_drachorn.PALETTE["fire_darkest"], 60), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
-
-
-    def _draw_fire_aura(surface, x, y, phase):
-        """Warm background aura."""
-        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(72, 5, -4):
-            alpha = int((72 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_ignis_drachorn._aacircle(aura, (*_NS_ignis_drachorn.PALETTE["fire_darkest"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
-
-
-    def _draw_ground_embers(surface, x, y, phase, skill):
-        """Fire runes on ground."""
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_ignis_drachorn.PALETTE["fire_dark"], 140),
-                            (5, 10, 120, 24), 3)
-        pygame.draw.ellipse(ring, (*_NS_ignis_drachorn.PALETTE["fire_mid"], 170),
-                            (20, 14, 90, 16), 2)
-
-        for i in range(10):
-            angle = phase * 0.2 + i * math.pi / 5
-            x1 = 65 + int(math.cos(angle) * 30)
-            y1 = 22 + int(math.sin(angle) * 6)
-            x2 = 65 + int(math.cos(angle) * 55)
-            y2 = 22 + int(math.sin(angle) * 10)
-            pygame.draw.line(ring, (*_NS_ignis_drachorn.PALETTE["fire_light"], 160),
-                             (x1, y1), (x2, y2), 1)
-
-        if skill:
-            pygame.draw.ellipse(ring, (*_NS_ignis_drachorn.PALETTE["fire_bright"], int(80 * pulse)),
-                                (15, 8, 100, 28), 1)
-
-        surface.blit(ring, (x - 65, y - 22))
-
-
+        recoil = int(math.sin(progress * math.pi) * 3) * -f
+        NS._draw_shadow(surface, x + recoil, y + NS.FEET_DY)
+        NS._draw_floating_flames(surface, x + recoil, y + 35, phase,
+                                 intense=True)
+        NS._draw_ignis_body(surface, x + recoil, y, f, phase, "ranged",
+                            progress)
+        if not getattr(boss, "_ign_suppress_canvas_fx", False):
+            NS._draw_sword_charge_flash(surface, x + recoil, y, f, progress)
+
+    @staticmethod
+    def _draw_ignis_cast(surface, boss, x, y):
+        NS = _NS_ignis_drachorn
+        phase = float(getattr(boss, "pulse", 0.0))
+        skill = getattr(boss, "active_skill", None)
+        bob = int(math.sin(phase * 1.4) * 2)
+        NS._draw_shadow(surface, x, y + NS.FEET_DY)
+        NS._draw_floating_flames(surface, x, y + 35, phase,
+                                 intense=(skill in ("e", "r")))
+        NS._draw_ignis_body(surface, x, y - bob, boss.direction, phase,
+                            "cast")
+
+    @staticmethod
+    def _draw_ignis_hurt(surface, boss, x, y):
+        NS = _NS_ignis_drachorn
+        phase = float(getattr(boss, "pulse", 0.0))
+        f = getattr(boss, "direction", 1)
+        flinch = int(min(3, getattr(boss, "hurt_flash_timer", 0) * 0.5)) * -f
+        NS._draw_shadow(surface, x + flinch, y + NS.FEET_DY)
+        NS._draw_ignis_body(surface, x + flinch, y + 1, f, phase, "idle")
+
+    @staticmethod
+    def _draw_ignis_death(surface, boss, x, y):
+        NS = _NS_ignis_drachorn
+        phase = float(getattr(boss, "pulse", 0.0))
+        NS._draw_shadow(surface, x, y + NS.FEET_DY, 62)
+        NS._draw_ignis_body(surface, x, y + 2, boss.direction, phase, "idle")
+
+    # ---------------------------------------------------------------------------
+    # 13. ATTACK FX FALLBACK (canvas) — trail & muzzle flash
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _draw_sword_swing_trail(surface, x, y, facing, progress):
-        """Arc trail during sword swing."""
-        if progress < 0.3 or progress > 0.7:
+        """Sabit trail dari ARK pedang (sampel posisi lampau).
+
+        Pita hanya menutupi 45% ujung bilah supaya tidak jadi kipas
+        raksasa yang menelan karakter, dan digambar ADDITIVE agar terasa
+        seperti bara, bukan cat.
+        """
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        if progress < 0.28 or progress > 0.74:
             return
+        f = 1 if facing >= 0 else -1
+        samples = []
+        for i in range(5):
+            pr = progress - i * 0.030
+            if pr < 0.24:
+                break
+            grip, tip, _t = NS.sword_geometry(f, "melee", 0.0, pr)
+            gx, gy = x + grip[0], y + grip[1]
+            tx, ty = x + tip[0], y + tip[1]
+            samples.append(((gx + (tx - gx) * 0.74, gy + (ty - gy) * 0.74),
+                            (tx, ty)))
+        if len(samples) < 3:
+            return
+        strength = math.sin(min(1.0, (progress - 0.28) / 0.46) * math.pi)
 
-        t = (progress - 0.3) / 0.4
-        # Draw arc trail
-        center_x = x + facing * 5
-        center_y = y - 8
-        radius = 40
+        xs = [p[0] for s2 in samples for p in s2]
+        ys = [p[1] for s2 in samples for p in s2]
+        minx, miny = int(min(xs)) - 6, int(min(ys)) - 6
+        w = int(max(xs)) - minx + 12
+        h = int(max(ys)) - miny + 12
+        if w <= 0 or h <= 0 or w > 520 or h > 520:
+            return
+        buf = pygame.Surface((w, h), pygame.SRCALPHA)
 
-        start_angle = -math.pi / 2 - 0.5
-        end_angle = math.pi / 4
+        def sh(pt):
+            return (pt[0] - minx, pt[1] - miny)
 
-        current_angle = start_angle + (end_angle - start_angle) * t
+        band = [sh(s2[1]) for s2 in samples] + \
+               [sh(s2[0]) for s2 in reversed(samples)]
+        pygame.draw.polygon(buf, (*P["fire_dark"], int(46 * strength)), band)
+        inner = []
+        for a, b in samples:
+            inner.append(sh((a[0] + (b[0] - a[0]) * 0.98,
+                             a[1] + (b[1] - a[1]) * 0.98)))
+        for a, b in reversed(samples):
+            inner.append(sh((a[0] + (b[0] - a[0]) * 0.72,
+                             a[1] + (b[1] - a[1]) * 0.72)))
+        pygame.draw.polygon(buf, (*P["fire_mid"], int(62 * strength)), inner)
 
-        # Multiple arc segments for trail
-        trail_length = 1.5
-        segments = 12
-        for i in range(segments):
-            seg_t = i / segments
-            angle = current_angle - trail_length * seg_t
-            if angle < start_angle:
-                continue
+        pts = [sh(s2[1]) for s2 in samples]
+        for i in range(len(pts) - 1):
+            pygame.draw.line(buf, (*P["fire_hot"], int(140 * strength)),
+                             pts[i], pts[i + 1], 2)
+            pygame.draw.line(buf, (*P["fire_white"], int(110 * strength)),
+                             pts[i], pts[i + 1], 1)
+        surface.blit(buf, (minx, miny), special_flags=pygame.BLEND_RGB_ADD)
 
-            ax = center_x + int(math.cos(angle) * radius) * facing
-            ay = center_y + int(math.sin(angle) * radius)
+        # percikan piksel di ujung terdepan
+        for i, (px_, py_) in enumerate(pts[:3]):
+            NS._aacircle(surface,
+                         (*P["fire_white"],
+                          int(220 * strength * (1 - i * 0.25))),
+                         (int(px_ + minx * 0), int(py_ + miny * 0)) if False
+                         else (int(samples[i][1][0]), int(samples[i][1][1])),
+                         max(1, 3 - i))
 
-            alpha_seg = int(200 * (1 - seg_t))
-            size = int(6 * (1 - seg_t * 0.5))
-            _NS_ignis_drachorn._draw_flame_puff(surface, ax, ay, size, progress * 10, alpha_seg)
-
-        # Slash mark at current position
-        slash_x = center_x + int(math.cos(current_angle) * radius) * facing
-        slash_y = center_y + int(math.sin(current_angle) * radius)
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_hot"], 220), (slash_x, slash_y), 8)
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_white"], 240), (slash_x, slash_y), 4)
-
-
+    @staticmethod
     def _draw_sword_charge_flash(surface, x, y, facing, progress):
-        """Flash effect during ranged attack."""
-        if progress < 0.2 or progress > 0.65:
+        """Kilatan muzzle di ujung pedang saat melepas bola api."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        if not (0.20 < progress < 0.58):
             return
-        t = (progress - 0.2) / 0.45
-        intensity = math.sin(t * math.pi)
-
-        flash_x = x + 28 * facing
-        flash_y = y - 15
-
-        alpha = int(180 * intensity)
-        radius = int(8 + intensity * 15)
-
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_mid"], alpha // 2),
-                  (flash_x, flash_y), radius + 8)
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_light"], alpha),
-                  (flash_x, flash_y), radius)
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_bright"], alpha),
-                  (flash_x, flash_y), radius // 2)
-        _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_hot"], min(255, alpha)),
-                  (flash_x, flash_y), max(1, radius // 4))
-
-        # Fire sparks
+        f = 1 if facing >= 0 else -1
+        _g, tip, theta = NS.sword_geometry(f, "ranged", 0.0, progress)
+        tx, ty = int(x + tip[0]), int(y + tip[1])
+        t = (progress - 0.20) / 0.38
+        strength = math.sin(t * math.pi)
+        NS._blit_decal(surface, NS._glow_decal(18, P["fire_mid"]), tx, ty,
+                       int(200 * strength), add=True)
+        NS._spark_star(surface, tx, ty, int(10 + 12 * strength),
+                       P["fire_bright"], int(230 * strength), 8,
+                       theta, P["fire_white"])
         for i in range(5):
-            angle = progress * 6 + i * math.pi * 2 / 5
-            ex = flash_x + int(math.cos(angle) * radius * 1.3)
-            ey = flash_y + int(math.sin(angle) * radius * 1.3)
-            _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_hot"], alpha), (ex, ey), 2)
+            a = theta + (i - 2) * 0.32
+            r = 10 + 16 * strength
+            NS._aacircle(surface,
+                         (*P["fire_hot"], int(190 * strength)),
+                         (int(tx + math.cos(a) * r * f),
+                          int(ty + math.sin(a) * r)), 2)
 
+    # ---------------------------------------------------------------------------
+    # 14. SKILL Q — DRAGON BREATH (kerucut api, 3 tahap)
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def _skill_progress(boss, skill, timer):
+        dur = float(_NS_ignis_drachorn.SKILL_DUR.get(skill, 45))
+        return max(0.0, min(1.0, 1.0 - float(timer) / dur))
 
-    # ===================================================================
-    # SKILL Q: DRAGON BREATH - Cone of fire
-    # ===================================================================
+    @staticmethod
     def _draw_dragon_breath_ground(surface, boss, x, y, timer, phase):
-        """Scorched ground where breath will hit."""
-        progress = max(0.0, min(1.0, 1 - timer / 80))
-        facing = boss.direction
+        """Tahap 1: tanah hangus + chevron telegraph ke arah target."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        progress = NS._skill_progress(boss, "q", timer)
+        f = getattr(boss, "direction", 1)
+        tx, ty = NS._target_position(boss, x, y)
+        ang = math.atan2(ty - y, tx - x)
+        reach = NS._ring_r(boss, NS.SKILL_RADIUS["q"], surface)
 
-        # Scorch marks growing
-        for i in range(5):
-            t = i / 5
-            sx = x + facing * (30 + i * 25)
-            sy = y + 40
-            alpha = int(120 * progress * (1 - t * 0.5))
-            _NS_ignis_drachorn._ellipse(surface, (*_NS_ignis_drachorn.PALETTE["fire_darkest"], alpha),
-                     (sx - 15, sy - 5, 30, 10))
+        for i in range(6):
+            t = (i + 1) / 6.0
+            sx = int(x + math.cos(ang) * reach * t)
+            sy = int(y + math.sin(ang) * reach * t * 0.55) + 38
+            a = int(150 * progress * (1.0 - t * 0.45))
+            NS._blit_decal(surface, NS._scorch_decal(10 + int(t * 16),
+                                                     seed=i + 2),
+                           sx, sy, a)
+        for i in range(4):
+            t = 0.25 + i * 0.22
+            NS._chevron(surface, x + math.cos(ang) * reach * t,
+                        y + 34 + math.sin(ang) * reach * t * 0.5, ang,
+                        11 + i * 2, P["magma_hot"],
+                        int(190 * progress * (1.0 - i * 0.18)), 3)
+        _ = f
 
-
+    @staticmethod
     def _draw_dragon_breath(surface, boss, x, y, timer, phase):
-        """Cone of fire from mouth/sword."""
-        progress = max(0.0, min(1.0, 1 - timer / 80))
-        facing = boss.direction
+        """Tahap 2-3: semburan kerucut + inti putih + ledakan ujung."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        progress = NS._skill_progress(boss, "q", timer)
+        f = getattr(boss, "direction", 1)
+        tx, ty = NS._target_position(boss, x, y)
+        ang = math.atan2(ty - (y - 25), tx - (x + f * 15))
+        ca, sa = math.cos(ang), math.sin(ang)
+        px_, py_ = -sa, ca
 
-        # Fire origin at head
-        origin_x = x + facing * 15
+        origin_x = x + f * 15
         origin_y = y - 25
+        reach = NS._ring_r(boss, NS.SKILL_RADIUS["q"], surface) * 0.78
+        length = reach * min(1.0, progress * 2.2)
+        fade = 1.0 if progress < 0.75 else max(0.0, 1.0 - (progress - 0.75) / 0.25)
 
-        # Cone parameters
-        max_length = 180
-        length = int(max_length * min(1.0, progress * 2))
-
-        # Draw cone of flames
-        for i in range(20):
-            t = i / 20
-            # Position along cone
-            px = origin_x + facing * int(length * t)
-            py = origin_y + int(math.sin(phase * 3 + i) * 3)
-
-            # Width increases along cone
-            width = int(8 + t * 35)
-
-            # Multiple flame puffs across cone width
+        for i in range(18):
+            t = i / 18.0
+            base_x = origin_x + ca * length * t
+            base_y = origin_y + sa * length * t
+            width = 7 + t * 34
             for j in range(4):
-                offset = (j - 1.5) * width / 3
-                wobble = math.sin(phase * 4 + i + j) * 3
-                fx = px
-                fy = py + int(offset) + int(wobble)
-
-                alpha = int(220 * (1 - t * 0.6))
+                off = (j - 1.5) * width / 3.0
+                wob = math.sin(phase * 4 + i * 0.7 + j) * 3.0
+                fx = base_x + px_ * (off + wob)
+                fy = base_y + py_ * (off + wob)
+                alpha = int(225 * fade * (1.0 - t * 0.55))
                 size = int(6 + t * 8 + math.sin(phase * 5 + i * 0.3) * 2)
-                _NS_ignis_drachorn._draw_flame_puff(surface, fx, fy, size, phase, alpha)
+                NS._draw_flame_puff(surface, fx, fy, size, phase, alpha)
 
-        # Very bright core stream
-        for i in range(15):
-            t = i / 15
-            px = origin_x + facing * int(length * t)
-            py = origin_y + int(math.sin(phase * 4 + i) * 2)
-            size = max(2, int(5 - t * 3))
-            _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_bright"], 220), (px, py), size)
-            _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_hot"], 240), (px, py), max(1, size - 1))
-            _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_white"], 250), (px, py), max(1, size - 2))
+        for i in range(14):
+            t = i / 14.0
+            cx2 = origin_x + ca * length * t
+            cy2 = origin_y + sa * length * t + math.sin(phase * 4 + i) * 2
+            size = max(2, int(6 - t * 3))
+            NS._aacircle(surface, (*P["fire_bright"], int(230 * fade)),
+                         (int(cx2), int(cy2)), size)
+            NS._aacircle(surface, (*P["fire_hot"], int(240 * fade)),
+                         (int(cx2), int(cy2)), max(1, size - 1))
+            NS._aacircle(surface, (*P["fire_white"], int(250 * fade)),
+                         (int(cx2), int(cy2)), max(1, size - 2))
 
-        # Impact explosion at end
         if progress > 0.3:
-            end_x = origin_x + facing * length
-            end_y = origin_y
-            explosion_r = int(20 + math.sin(phase * 3) * 5)
-            _NS_ignis_drachorn._draw_flame_puff(surface, end_x, end_y, explosion_r, phase, 240)
-            # Radial sparks
+            ex = int(origin_x + ca * length)
+            ey = int(origin_y + sa * length)
+            r = int(18 + math.sin(phase * 3) * 5)
+            NS._draw_flame_puff(surface, ex, ey, r, phase, int(240 * fade))
+            NS._spark_star(surface, ex, ey, r + 10, P["fire_bright"],
+                           int(200 * fade), 8, phase * 0.6, P["fire_white"])
             for i in range(8):
-                angle = phase * 2 + i * math.pi / 4
-                sx = end_x + int(math.cos(angle) * explosion_r * 1.5)
-                sy = end_y + int(math.sin(angle) * explosion_r * 1.5)
-                _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_bright"], (sx, sy), 3)
-                _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_hot"], (sx, sy), 1)
+                a = phase * 2 + i * math.pi / 4
+                NS._aacircle(surface, (*P["fire_hot"], int(220 * fade)),
+                             (int(ex + math.cos(a) * r * 1.5),
+                              int(ey + math.sin(a) * r * 1.2)), 2)
 
-
-    # ===================================================================
-    # SKILL W: DRAGON TAIL - Whip attack
-    # ===================================================================
+    # ---------------------------------------------------------------------------
+    # 15. SKILL W — DRAGON TAIL (sapuan 360 derajat)
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _draw_dragon_tail_ground(surface, boss, x, y, timer, phase):
-        """Ground shockwave from tail strike."""
-        progress = max(0.0, min(1.0, 1 - timer / 60))
-        facing = boss.direction
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        progress = NS._skill_progress(boss, "w", timer)
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["w"], surface)
+        gy = y + 34
+        NS._blit_decal(surface, NS._ground_ring_decal(int(r * progress),
+                                                      P["magma_hot"], 3),
+                       x, gy, int(220 * (1.0 - progress * 0.4)), add=True)
+        NS._dashed_ring(surface, x, gy, int(r * 0.72), P["fire_bright"],
+                        int(180 * (1.0 - progress * 0.5)), -phase * 0.8,
+                        12, 3, 0.5)
+        for i in range(6):
+            a = -phase * 1.6 + i * math.pi / 3
+            NS._jagged_crack(surface, x, gy,
+                             x + math.cos(a) * r * progress,
+                             gy + math.sin(a) * r * progress * 0.45,
+                             P["magma_mid"], int(200 * (1 - progress * 0.5)),
+                             2, 4, 5.0, seed=i * 13)
 
-        if progress > 0.4:
-            # Shockwave
-            wave_r = int((progress - 0.4) * 100)
-            wave_x = x + facing * 60
-            wave_y = y + 40
-            alpha = int(180 * (1 - (progress - 0.4) / 0.6))
-            _NS_ignis_drachorn._ellipse(surface, (*_NS_ignis_drachorn.PALETTE["fire_dark"], alpha),
-                     (wave_x - wave_r, wave_y - wave_r // 3,
-                      wave_r * 2, wave_r * 2 // 3), 3)
-            _NS_ignis_drachorn._ellipse(surface, (*_NS_ignis_drachorn.PALETTE["fire_mid"], alpha),
-                     (wave_x - wave_r + 3, wave_y - wave_r // 3 + 2,
-                      wave_r * 2 - 6, wave_r * 2 // 3 - 4), 2)
-
-
+    @staticmethod
     def _draw_dragon_tail(surface, boss, x, y, timer, phase):
-        """Dragon tail whipping out."""
-        progress = max(0.0, min(1.0, 1 - timer / 60))
-        facing = boss.direction
+        """Ekor naga raksasa menyapu + gelombang kejut."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        progress = NS._skill_progress(boss, "w", timer)
+        f = getattr(boss, "direction", 1)
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["w"], surface)
+        sweep = -math.pi * 0.25 + progress * math.pi * 2.1 * f
+        fade = 1.0 if progress < 0.8 else max(0.0, 1.0 - (progress - 0.8) / 0.2)
 
-        # Tail base
-        base_x = x + facing * 8
-        base_y = y - 5
+        # ekor: rantai segmen menebal dari pusat ke ujung
+        pts = []
+        for i in range(9):
+            t = i / 8.0
+            a = sweep - t * 0.55 * f
+            rr = r * t
+            pts.append((x + math.cos(a) * rr,
+                        y + 12 + math.sin(a) * rr * 0.5 - t * 8))
+        for i in range(len(pts) - 1):
+            t = i / float(len(pts) - 1)
+            th = max(3, int(14 * (1.0 - t * 0.75)))
+            NS._aaline(surface, (*P["dragon_darkest"], int(235 * fade)),
+                       pts[i], pts[i + 1], th + 2)
+            NS._aaline(surface, (*P["dragon_dark"], int(235 * fade)),
+                       pts[i], pts[i + 1], th)
+            NS._aaline(surface, (*P["dragon_mid"], int(220 * fade)),
+                       (pts[i][0], pts[i][1] - 1),
+                       (pts[i + 1][0], pts[i + 1][1] - 1), max(1, th - 4))
+            NS._aaline(surface, (*P["magma_mid"], int(190 * fade)),
+                       (pts[i][0], pts[i][1] + 1),
+                       (pts[i + 1][0], pts[i + 1][1] + 1), 1)
+        # duri sepanjang ekor
+        for i in range(2, len(pts) - 1, 2):
+            sx, sy = pts[i]
+            NS._poly(surface, (*P["horn_dark"], int(230 * fade)),
+                     [(sx - 4, sy), (sx + 4, sy), (sx, sy - 11)])
+            NS._poly(surface, (*P["horn_light"], int(230 * fade)),
+                     [(sx - 1, sy - 1), (sx + 2, sy - 1), (sx, sy - 9)])
+        # ujung berduri
+        tipx, tipy = pts[-1]
+        for k in range(3):
+            a = sweep + (k - 1) * 0.5
+            NS._poly(surface, (*P["horn_mid"], int(230 * fade)), [
+                (tipx, tipy),
+                (tipx + math.cos(a) * 16, tipy + math.sin(a) * 12),
+                (tipx + math.cos(a + 0.3) * 8, tipy + math.sin(a + 0.3) * 6)])
+        # gelombang kejut mengikuti ujung
+        NS._ring(surface, (int(tipx), int(tipy)), int(10 + 16 * progress), 3,
+                 P["fire_bright"], int(200 * fade))
+        NS._spark_star(surface, tipx, tipy, 14, P["fire_hot"],
+                       int(210 * fade), 6, sweep, P["fire_white"])
 
-        # Whip motion
-        if progress < 0.3:
-            t = progress / 0.3
-            max_angle = -1.2 * t
-        elif progress < 0.6:
-            t = (progress - 0.3) / 0.3
-            max_angle = -1.2 + 2.4 * t
-        else:
-            t = (progress - 0.6) / 0.4
-            max_angle = 1.2 * (1 - t)
-
-        # Draw tail as chain of segments
-        segments = 12
-        tail_length = 60 + int(progress * 40)
-        prev_x, prev_y = base_x, base_y
-
-        for i in range(1, segments + 1):
-            t_seg = i / segments
-            # Curved tail path
-            angle_offset = max_angle * (t_seg ** 0.7)
-            seg_x = base_x + int(facing * tail_length * t_seg * math.cos(angle_offset))
-            seg_y = base_y + int(tail_length * t_seg * math.sin(angle_offset))
-
-            # Segment thickness decreases toward tip
-            thickness = max(2, int(8 * (1 - t_seg * 0.8)))
-
-            # Draw segment (dragon scale look)
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"],
-                    (prev_x + 1, prev_y + 1), (seg_x + 1, seg_y + 1), thickness + 2)
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"],
-                    (prev_x, prev_y), (seg_x, seg_y), thickness + 1)
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"],
-                    (prev_x, prev_y), (seg_x, seg_y), thickness)
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"],
-                    (prev_x, prev_y), (seg_x, seg_y), max(1, thickness - 2))
-
-            # Scale segments (small circles)
-            if i % 2 == 0:
-                _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"],
-                          (seg_x, seg_y), thickness // 2 + 1)
-                _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"],
-                          (seg_x, seg_y - 1), thickness // 2)
-                _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_light"],
-                          (seg_x, seg_y - 1), max(1, thickness // 2 - 1))
-
-            # Fire embers along tail
-            if i % 3 == 0:
-                _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_mid"], 180),
-                          (seg_x, seg_y - thickness), 2)
-                _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_bright"],
-                          (seg_x, seg_y - thickness), 1)
-
-            prev_x, prev_y = seg_x, seg_y
-
-        # Spiked club at tail tip
-        tip_x, tip_y = prev_x, prev_y
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], (tip_x + 2, tip_y + 2), 9)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], (tip_x, tip_y), 8)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"], (tip_x, tip_y), 6)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], (tip_x - 1, tip_y - 1), 4)
-
-        # Spikes on tip
-        for spike_angle in range(0, 360, 60):
-            rad = math.radians(spike_angle) + phase * 0.5
-            spike_x = tip_x + int(math.cos(rad) * 12)
-            spike_y = tip_y + int(math.sin(rad) * 12)
-            _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], [
-                (tip_x + int(math.cos(rad) * 6), tip_y + int(math.sin(rad) * 6)),
-                (tip_x + int(math.cos(rad + 0.3) * 6),
-                 tip_y + int(math.sin(rad + 0.3) * 6)),
-                (spike_x, spike_y),
-            ])
-
-        # Fire on tip
-        _NS_ignis_drachorn._draw_flame_puff(surface, tip_x, tip_y - 5, 8, phase, 220)
-
-
-    # ===================================================================
-    # SKILL E: DRAGON BLOOD - Fire armor buff
-    # ===================================================================
+    # ---------------------------------------------------------------------------
+    # 16. SKILL E — DRAGON BLOOD (buff: aura darah naga)
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _draw_dragon_blood_ground(surface, boss, x, y, timer, phase):
-        """Ground fire ring."""
-        progress = max(0.0, min(1.0, 1 - timer / 90))
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-        radius = int(40 + progress * 20)
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        progress = NS._skill_progress(boss, "e", timer)
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["e"], surface)
+        gy = y + 36
+        pulse = math.sin(phase * 3.0) * 0.25 + 0.75
+        NS._blit_decal(surface, NS._ground_ring_decal(r, P["red_light"], 3),
+                       x, gy, int(190 * pulse), add=True)
+        # rune pentagram (garis lurus, bukan lingkaran)
+        n = 5
+        rr = r * 0.72
+        star = []
+        for i in range(n):
+            a = -math.pi / 2 + phase * 0.25 + i * math.tau * 2 / n
+            star.append((x + math.cos(a) * rr, gy + math.sin(a) * rr * 0.45))
+        for i in range(n):
+            NS._aaline(surface, (*P["magma_hot"], int(170 * pulse)),
+                       star[i], star[(i + 1) % n], 2)
+        for i in range(8):
+            a = -phase * 0.5 + i * math.pi / 4
+            d = rr * (0.35 + 0.5 * progress)
+            NS._aacircle(surface, (*P["fire_bright"], int(200 * pulse)),
+                         (int(x + math.cos(a) * d),
+                          int(gy + math.sin(a) * d * 0.45)), 2)
 
-        _NS_ignis_drachorn._ellipse(surface, (*_NS_ignis_drachorn.PALETTE["fire_dark"], int(120 * pulse)),
-                 (x - radius, y + 32 - radius // 4, radius * 2, radius // 2), 3)
-        _NS_ignis_drachorn._ellipse(surface, (*_NS_ignis_drachorn.PALETTE["fire_mid"], int(100 * pulse)),
-                 (x - radius + 4, y + 34 - radius // 4,
-                  radius * 2 - 8, radius // 2 - 4), 2)
-
-
+    @staticmethod
     def _draw_dragon_blood_foreground(surface, boss, x, y, timer, phase):
-        """Fire aura enveloping the body."""
-        progress = max(0.0, min(1.0, 1 - timer / 90))
-        pulse = math.sin(phase * 2.5) * 0.3 + 0.7
+        """Darah naga mendidih: pilar api naik + siluet naga hantu."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        progress = NS._skill_progress(boss, "e", timer)
+        fade = 1.0 if progress < 0.7 else max(0.0, 1.0 - (progress - 0.7) / 0.3)
+        rise = progress * 60.0
 
-        # Large fire aura around body
-        aura_layers = [
-            (55, _NS_ignis_drachorn.PALETTE["fire_darkest"], 80),
-            (48, _NS_ignis_drachorn.PALETTE["fire_dark"], 100),
-            (40, _NS_ignis_drachorn.PALETTE["fire_mid"], 90),
-            (32, _NS_ignis_drachorn.PALETTE["fire_light"], 70),
-        ]
-        for radius, color, alpha in aura_layers:
-            a = int(alpha * pulse * progress)
-            _NS_ignis_drachorn._aacircle(surface, (*color, a), (x, y - 10), radius)
+        for i in range(10):
+            a = phase * 1.6 + i * math.tau / 10
+            rr = 22 + math.sin(phase * 2 + i) * 5
+            fx = x + math.cos(a) * rr
+            fy = y + 30 - (rise + i * 3) % 70
+            NS._flame_tongue(surface, fx, fy, 10 + int(math.sin(a) * 3),
+                             phase, seed=i * 3, alpha=int(200 * fade))
+        # aliran magma naik di badan
+        for i in range(5):
+            t = (phase * 0.7 + i * 0.2) % 1.0
+            NS._aacircle(surface, (*P["magma_bright"], int(220 * fade *
+                                                           (1 - t))),
+                         (int(x + math.sin(i * 2.1 + phase) * 14),
+                          int(y + 20 - t * 56)), 2)
+        # kepala naga hantu di atas kepala
+        hy = y - 62 - int(math.sin(phase * 1.6) * 3)
+        NS._blit_decal(surface, NS._glow_decal(24, P["red_mid"]), x, hy,
+                       int(150 * fade), add=True)
+        NS._draw_dragon_head(surface, x, hy, getattr(boss, "direction", 1),
+                             phase)
 
-        # Rising flames from body
-        for i in range(12):
-            angle = phase * 1.5 + i * math.pi / 6
-            base_r = 25
-            # Flame goes upward and outward
-            wobble = math.sin(phase * 3 + i) * 3
-            fx = x + int(math.cos(angle) * base_r) + int(wobble)
-            fy = y - 15 + int(math.sin(angle) * base_r * 0.5)
-
-            # Rising trail
-            for j in range(4):
-                rise_t = j / 4
-                ry = fy - int(rise_t * 20)
-                rx = fx + int(math.sin(phase * 4 + j) * 2)
-                size = max(1, int(5 * (1 - rise_t)))
-                alpha = int(200 * (1 - rise_t) * pulse)
-                _NS_ignis_drachorn._draw_flame_puff(surface, rx, ry, size, phase, alpha)
-
-        # Bright core flames near body
-        for i in range(8):
-            angle = phase * 2 + i * math.pi / 4
-            r = 20 + int(math.sin(phase * 3 + i) * 3)
-            fx = x + int(math.cos(angle) * r)
-            fy = y - 10 + int(math.sin(angle) * r * 0.6)
-            _NS_ignis_drachorn._draw_flame_puff(surface, fx, fy, 5, phase, 200)
-
-
-    # ===================================================================
-    # SKILL R: ELDER DRAGON FORM
-    # ===================================================================
+    # ---------------------------------------------------------------------------
+    # 17. SKILL R — ELDER DRAGON FORM
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _draw_elder_form_ground(surface, boss, x, y, timer, phase):
-        """Massive fire circle for transformation."""
-        progress = max(0.0, min(1.0, 1 - timer / 120))
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        progress = NS._skill_progress(boss, "r", timer)
         pulse = math.sin(phase * 2) * 0.3 + 0.7
-        radius = int(60 + progress * 20)
-
-        _NS_ignis_drachorn._ellipse(surface, (*_NS_ignis_drachorn.PALETTE["fire_darkest"], int(180 * pulse)),
-                 (x - radius, y + 32 - radius // 3, radius * 2, radius * 2 // 3), 4)
-        _NS_ignis_drachorn._ellipse(surface, (*_NS_ignis_drachorn.PALETTE["fire_dark"], int(150 * pulse)),
-                 (x - radius + 5, y + 34 - radius // 3,
-                  radius * 2 - 10, radius * 2 // 3 - 6), 3)
-        _NS_ignis_drachorn._ellipse(surface, (*_NS_ignis_drachorn.PALETTE["fire_mid"], int(120 * pulse)),
-                 (x - radius + 10, y + 36 - radius // 3,
-                  radius * 2 - 20, radius * 2 // 3 - 12), 2)
-
-        # Runes in circle
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["r"], surface)
+        gy = y + 36
+        NS._blit_decal(surface, NS._scorch_decal(int(r * 0.85), seed=21),
+                       x, gy, int(190 * pulse))
+        NS._blit_decal(surface, NS._ground_ring_decal(int(r * min(1.0, progress * 1.6)),
+                                                      P["magma_hot"], 4),
+                       x, gy, int(230 * pulse), add=True)
+        NS._dashed_ring(surface, x, gy, int(r * 0.62), P["fire_bright"],
+                        int(200 * pulse), phase * 0.4, 10, 3, 0.55)
         for i in range(8):
-            angle = phase * 0.4 + i * math.pi / 4
-            rx = x + int(math.cos(angle) * (radius - 8))
-            ry = y + 38 + int(math.sin(angle) * (radius // 3 - 4))
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_bright"], (rx, ry), 3)
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["fire_hot"], (rx, ry), 1)
+            a = phase * 0.4 + i * math.pi / 4
+            rx = x + int(math.cos(a) * (r * 0.8))
+            ry = gy + int(math.sin(a) * (r * 0.36))
+            NS._spark_star(surface, rx, ry, 6, P["fire_bright"],
+                           int(220 * pulse), 6, a, P["fire_hot"])
+        for i in range(6):
+            a = i * math.tau / 6 - phase * 0.3
+            NS._jagged_crack(surface, x, gy,
+                             x + math.cos(a) * r * 0.9,
+                             gy + math.sin(a) * r * 0.4,
+                             P["magma_mid"], int(200 * pulse), 2, 5, 6.0,
+                             seed=i * 23)
 
-
-    def _draw_elder_dragon_form(surface, boss, x, y, timer, pulse):
-        """Ignis transformed into elder red dragon."""
-        facing = boss.direction
-        bob = int(math.sin(pulse * 0.8) * 3)
-        cy = y + bob
-
-        # Shadow (larger)
-        _NS_ignis_drachorn._draw_shadow(surface, x, y + 48)
-        _NS_ignis_drachorn._ellipse(surface, (*_NS_ignis_drachorn.PALETTE["shadow"], 100),
-                 (x - 60, y + 46, 120, 12))
-
-        # Fire aura
-        for radius in range(70, 20, -5):
-            alpha = int((70 - radius) * 2)
-            _NS_ignis_drachorn._aacircle(surface, (*_NS_ignis_drachorn.PALETTE["fire_darkest"], alpha),
-                      (x, cy - 10), radius)
-
-        # ===== DRAGON BODY =====
-        body_y = cy - 5
-
-        # Body (large elongated)
-        body_pts = [
-            (x - 30 * facing, body_y + 5),
-            (x - 25 * facing, body_y - 15),
-            (x - 5 * facing, body_y - 22),
-            (x + 15 * facing, body_y - 20),
-            (x + 30 * facing, body_y - 10),
-            (x + 35 * facing, body_y + 5),
-            (x + 25 * facing, body_y + 15),
-            (x, body_y + 20),
-            (x - 20 * facing, body_y + 15),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], [(p[0] + 3, p[1] + 3) for p in body_pts])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], body_pts)
-
-        body_inner = [
-            (x - 26 * facing, body_y + 3),
-            (x - 22 * facing, body_y - 12),
-            (x - 5 * facing, body_y - 18),
-            (x + 12 * facing, body_y - 16),
-            (x + 26 * facing, body_y - 8),
-            (x + 30 * facing, body_y + 3),
-            (x + 20 * facing, body_y + 12),
-            (x, body_y + 16),
-            (x - 18 * facing, body_y + 12),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"], body_inner)
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], [
-            (x - 20 * facing, body_y),
-            (x - 15 * facing, body_y - 10),
-            (x + 5 * facing, body_y - 14),
-            (x + 20 * facing, body_y - 5),
-            (x + 22 * facing, body_y + 5),
-            (x + 10 * facing, body_y + 10),
-            (x - 10 * facing, body_y + 8),
-        ])
-
-        # Body scales
-        for row in range(3):
-            for col in range(-3, 4):
-                sx = x + col * 7 * facing + (row % 2) * 3 * facing
-                sy = body_y - 5 + row * 6
-                if abs(sy - body_y) < 15 and abs(sx - x) < 28:
-                    _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"], (sx, sy), 3)
-                    _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], (sx, sy - 1), 2)
-                    _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_light"], (sx - 1, sy - 2), 1)
-
-        # ===== WINGS =====
-        wing_flap = math.sin(pulse * 2) * 0.3
-        for side in (-1, 1):
-            _NS_ignis_drachorn._draw_dragon_wing(surface, x, body_y - 10, side, facing, wing_flap, pulse)
-
-        # ===== TAIL =====
-        tail_curve = math.sin(pulse * 1.2) * 8
-        tail_base_x = x - 25 * facing
-        tail_base_y = body_y + 5
-        tail_segments = 8
-        prev_tx, prev_ty = tail_base_x, tail_base_y
-        for i in range(1, tail_segments + 1):
-            t = i / tail_segments
-            tx = tail_base_x - facing * int(45 * t)
-            ty = tail_base_y + int(math.sin(t * 3 + pulse) * (10 + int(tail_curve)))
-            thickness = max(2, int(10 * (1 - t * 0.8)))
-
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"],
-                    (prev_tx, prev_ty), (tx, ty), thickness + 1)
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"],
-                    (prev_tx, prev_ty), (tx, ty), thickness)
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"],
-                    (prev_tx, prev_ty), (tx, ty), max(1, thickness - 2))
-            prev_tx, prev_ty = tx, ty
-
-        # Tail tip spikes
-        for i in range(3):
-            angle = math.pi / 4 * i
-            sx = prev_tx + int(math.cos(angle) * 8)
-            sy = prev_ty - int(math.sin(angle) * 8)
-            _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], [
-                (prev_tx, prev_ty - 2), (prev_tx, prev_ty + 2), (sx, sy)
-            ])
-
-        # ===== HEAD =====
-        head_x = x + 25 * facing
-        head_y = body_y - 15
-        _NS_ignis_drachorn._draw_dragon_head(surface, head_x, head_y, facing, pulse)
-
-        # Fire breathing effect (constant during elder form)
-        breath_x = head_x + facing * 15
-        breath_y = head_y + 3
-        for i in range(8):
-            t = i / 8
-            bx = breath_x + facing * int(t * 40)
-            by = breath_y + int(math.sin(pulse * 3 + i) * 4)
-            size = int(4 + t * 3)
-            alpha = int(220 * (1 - t * 0.5))
-            _NS_ignis_drachorn._draw_flame_puff(surface, bx, by, size, pulse, alpha)
-
-
+    @staticmethod
     def _draw_dragon_wing(surface, cx, cy, side, facing, flap, phase):
-        """Draw one dragon wing."""
-        wing_side = side * facing
-        base_x = cx
+        """Sayap naga besar (legacy signature dipertahankan)."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        base_x = cx + side * 8
         base_y = cy
-
-        # Wing spans outward and upward
-        tip_x = base_x + wing_side * 50
-        tip_y = base_y - 20 + int(flap * 15)
-
-        # Wing membrane (large triangle-ish shape)
-        wing_pts = [
-            (base_x, base_y),
-            (base_x + wing_side * 15, base_y - 25 + int(flap * 10)),
-            (base_x + wing_side * 35, base_y - 30 + int(flap * 15)),
-            (tip_x, tip_y),
-            (base_x + wing_side * 40, base_y - 5 + int(flap * 8)),
-            (base_x + wing_side * 25, base_y + 5),
-            (base_x + wing_side * 10, base_y + 3),
+        span = 52 + flap * 16
+        joints = [
+            (base_x + side * span * 0.45, base_y - 30 - flap * 10),
+            (base_x + side * span, base_y - 12 - flap * 14),
+            (base_x + side * span * 0.85, base_y + 18 - flap * 6),
+            (base_x + side * span * 0.45, base_y + 26),
         ]
+        membrane = [(base_x, base_y - 6)] + joints + [(base_x, base_y + 14)]
+        NS._poly(surface, P["shadow_deep"],
+                 [(p[0] + 3, p[1] + 3) for p in membrane])
+        NS._poly(surface, P["wing_dark"], membrane)
+        NS._poly(surface, P["wing_mid"],
+                 [(base_x + (p[0] - base_x) * 0.82,
+                   base_y + (p[1] - base_y) * 0.82) for p in membrane])
+        NS._poly(surface, P["wing_light"],
+                 [(base_x + (p[0] - base_x) * 0.5,
+                   base_y + (p[1] - base_y) * 0.5) for p in membrane])
+        for jx, jy in joints:
+            NS._aaline(surface, P["dragon_darkest"], (base_x, base_y - 4),
+                       (jx, jy), 4)
+            NS._aaline(surface, P["dragon_mid"], (base_x, base_y - 4),
+                       (jx, jy), 2)
+            NS._aacircle(surface, P["horn_mid"], (int(jx), int(jy)), 3)
+            NS._aacircle(surface, P["horn_light"], (int(jx), int(jy) - 1), 1)
+        # membran menyala di tepi
+        for i in range(len(joints) - 1):
+            NS._aaline(surface, (*P["wing_glow"],
+                                 int(150 + 70 * math.sin(phase * 2 + i))),
+                       joints[i], joints[i + 1], 2)
 
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_darkest"], wing_pts)
-
-        # Inner membrane
-        wing_inner = [
-            (base_x + wing_side * 3, base_y - 2),
-            (base_x + wing_side * 15, base_y - 22 + int(flap * 10)),
-            (base_x + wing_side * 33, base_y - 27 + int(flap * 15)),
-            (base_x + wing_side * 46, tip_y + 3),
-            (base_x + wing_side * 37, base_y - 3 + int(flap * 8)),
-            (base_x + wing_side * 22, base_y + 3),
-            (base_x + wing_side * 8, base_y + 1),
-        ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["red_dark"], wing_inner)
-
-        # Wing bones (finger structure)
-        bone_ends = [
-            (base_x + wing_side * 15, base_y - 25 + int(flap * 10)),
-            (base_x + wing_side * 35, base_y - 30 + int(flap * 15)),
-            (tip_x, tip_y),
-            (base_x + wing_side * 40, base_y - 5 + int(flap * 8)),
-        ]
-        for be in bone_ends:
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], (base_x, base_y), be, 3)
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"], (base_x, base_y), be, 2)
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], (base_x, base_y), be, 1)
-
-        # Wing outline
-        for i in range(len(wing_pts)):
-            p1 = wing_pts[i]
-            p2 = wing_pts[(i + 1) % len(wing_pts)]
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], p1, p2, 2)
-
-
+    @staticmethod
     def _draw_dragon_head(surface, cx, cy, facing, phase):
-        """Elder dragon head."""
-        # Head main shape (elongated snout)
-        head_pts = [
-            (cx - 12 * facing, cy - 8),
-            (cx + 5 * facing, cy - 10),
-            (cx + 15 * facing, cy - 5),
-            (cx + 18 * facing, cy + 2),
-            (cx + 15 * facing, cy + 7),
-            (cx + 5 * facing, cy + 8),
-            (cx - 10 * facing, cy + 6),
-            (cx - 14 * facing, cy),
+        """Kepala naga (dipakai R & E) — moncong panjang bertanduk."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        skull = [
+            (cx - f * 12, cy - 8), (cx + f * 6, cy - 11),
+            (cx + f * 20, cy - 4), (cx + f * 22, cy + 3),
+            (cx + f * 6, cy + 8), (cx - f * 10, cy + 6),
         ]
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"], [(p[0] + 2, p[1] + 2) for p in head_pts])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], head_pts)
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"], [
-            (cx - 10 * facing, cy - 7),
-            (cx + 4 * facing, cy - 8),
-            (cx + 13 * facing, cy - 4),
-            (cx + 16 * facing, cy + 1),
-            (cx + 13 * facing, cy + 6),
-            (cx + 4 * facing, cy + 7),
-            (cx - 8 * facing, cy + 5),
-            (cx - 12 * facing, cy),
-        ])
-        _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], [
-            (cx - 6 * facing, cy - 4),
-            (cx + 2 * facing, cy - 5),
-            (cx + 10 * facing, cy - 2),
-            (cx + 12 * facing, cy + 2),
-            (cx + 8 * facing, cy + 4),
-            (cx - 4 * facing, cy + 3),
-        ])
+        NS._poly(surface, P["shadow_deep"],
+                 [(p[0] + 2, p[1] + 2) for p in skull])
+        NS._poly(surface, P["dragon_darkest"], skull)
+        NS._poly(surface, P["dragon_dark"],
+                 [(cx + (p[0] - cx) * 0.86, cy + (p[1] - cy) * 0.86)
+                  for p in skull])
+        NS._poly(surface, P["dragon_mid"],
+                 [(cx + (p[0] - cx) * 0.6, cy + (p[1] - cy) * 0.6)
+                  for p in skull])
+        # rahang terbuka + api di mulut
+        NS._poly(surface, P["dragon_darkest"], [
+            (cx + f * 6, cy + 5), (cx + f * 21, cy + 4),
+            (cx + f * 18, cy + 11), (cx + f * 5, cy + 10)])
+        NS._draw_flame_puff(surface, cx + f * 20, cy + 5, 5, phase, 230)
+        # taring
+        for t in range(3):
+            tx = cx + f * (10 + t * 4)
+            NS._poly(surface, P["horn_shine"], [
+                (tx, cy + 4), (tx + f * 2, cy + 4), (tx + f, cy + 9)])
+        # tanduk
+        for side in (-1, 1):
+            hx = cx - f * 6
+            hy = cy - 8 + side * 2
+            NS._aaline(surface, P["horn_dark"], (hx, hy),
+                       (hx - f * 14, hy - 12 + side * 5), 5)
+            NS._aaline(surface, P["horn_mid"], (hx, hy),
+                       (hx - f * 14, hy - 12 + side * 5), 3)
+            NS._aacircle(surface, P["horn_light"],
+                         (int(hx - f * 14), int(hy - 12 + side * 5)), 1)
+        # mata menyala
+        e = int(190 + 65 * math.sin(phase * 3))
+        NS._aacircle(surface, (*P["eye_dark"], e), (cx + f * 8, cy - 4), 3)
+        NS._aacircle(surface, (*P["eye_bright"], e), (cx + f * 8, cy - 4), 2)
+        NS._aacircle(surface, (*P["eye_hot"], e), (cx + f * 8, cy - 5), 1)
 
-        # Horns swept back
-        for horn_y_off in (-6, -2):
-            hx1 = cx - 5 * facing
-            hy1 = cy + horn_y_off
-            hx2 = cx - 18 * facing
-            hy2 = cy - 12 + horn_y_off
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], (hx1, hy1), (hx2, hy2), 4)
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_dark"], (hx1, hy1), (hx2, hy2), 3)
-            _NS_ignis_drachorn._aaline(surface, _NS_ignis_drachorn.PALETTE["dragon_mid"], (hx1, hy1), (hx2, hy2), 1)
-            _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["dragon_darkest"], (hx2, hy2), 2)
+    @staticmethod
+    def _draw_elder_dragon_form(surface, boss, x, y, timer, pulse):
+        """Bentuk R: Ignis meledak jadi NAGA PURBA yang berdiri tegak.
 
-        # Glowing eye
-        eye_pulse = math.sin(phase * 3) * 0.3 + 0.7
-        eye_x = cx + 2 * facing
-        eye_y = cy - 3
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_dark"], (eye_x, eye_y), 3)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_mid"], (eye_x, eye_y), 2)
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_bright"], (eye_x, eye_y),
-                  max(1, int(2 * eye_pulse)))
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["eye_hot"], (eye_x, eye_y), 1)
+        Digambar lewat jalur komposit yang sama dengan badan normal
+        (buffer -> crop -> outline siluet 1 px -> rim light) supaya
+        siluetnya tetap kokoh dan tidak jadi gumpalan merah.
+        """
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        f = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        bob = math.sin(pulse * 0.9) * 3.0
+        rise = min(1.0, max(0.0, (90 - int(timer)) / 12.0))   # bangkit
 
-        # Nostril
-        _NS_ignis_drachorn._aacircle(surface, _NS_ignis_drachorn.PALETTE["shadow_deep"],
-                  (cx + 13 * facing, cy + 1), 1)
+        # ── tanah: bayangan besar + genangan magma ─────────────────
+        NS._draw_shadow(surface, x, y + NS.FEET_DY + 2, 120)
+        NS._blit_decal(surface, NS._ground_pool_decal(58, P["magma_dark"]),
+                       x, y + NS.FEET_DY, 150, add=True)
+        NS._blit_decal(surface, NS._ground_pool_decal(34, P["fire_dark"]),
+                       x, y + NS.FEET_DY + 2, 130, add=True)
 
-        # Teeth
-        for i in range(3):
-            tx = cx + (10 + i * 2) * facing
-            ty = cy + 5
-            _NS_ignis_drachorn._poly(surface, _NS_ignis_drachorn.PALETTE["white"], [
-                (tx, ty), (tx + facing, ty + 3), (tx + facing * 2, ty)
-            ])
+        # ── badan naga lewat buffer komposit ───────────────────────
+        if NS._body_buf is None:
+            NS._body_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                          pygame.SRCALPHA)
+        buf = NS._body_buf
+        buf.fill((0, 0, 0, 0))
+        NS._draw_elder_form_raw(buf, NS.RIG_OX, NS.RIG_OY - int(bob), f,
+                                pulse, rise)
+        used = buf.get_bounding_rect(min_alpha=1)
+        if used.width <= 2 or used.height <= 2:
+            return
+        used.inflate_ip(4, 4)
+        used.clamp_ip(buf.get_rect())
+        sub = buf.subsurface(used).copy()
+        ox = int(x) - NS.RIG_OX + used.left
+        oy = int(y) - NS.RIG_OY + used.top
 
+        edge = sub.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + ddx, oy + ddy))
+        try:
+            import lighting as _lighting
+            if _lighting is not None:
+                _lighting.apply_to_rig(sub, rim_add=(70, 30, 16),
+                                       shade_mul=170, gradient=False,
+                                       two_band=False)
+        except Exception:
+            pass
+        surface.blit(sub, (ox, oy))
+        NS._last_rig = sub
+        NS._last_rig_off = (ox - int(x), oy - int(y))
+
+        # ── bara mengorbit (di depan, ruang layar) ─────────────────
+        for i in range(8):
+            a = pulse * 1.2 + i * math.tau / 8
+            rr = 52 + math.sin(pulse * 2 + i) * 7
+            px = int(x + math.cos(a) * rr)
+            py = int(y - 18 + math.sin(a) * rr * 0.5)
+            NS._aacircle(surface, (*P["fire_bright"],
+                                   int(150 + 90 * math.sin(pulse * 3 + i))),
+                         (px, py), 2)
+
+    @staticmethod
+    def _draw_elder_form_raw(surf, ox, oy, f, pulse, rise=1.0):
+        """Rig naga purba. Urutan: sayap jauh -> ekor -> kaki belakang ->
+        badan -> sisik -> sayap dekat -> leher -> kepala -> cakar depan."""
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        flap = math.sin(pulse * 2.0) * 0.32
+        body_y = oy - 12 - int(10 * rise)          # naga berdiri tegak
+
+        # ── 1. SAYAP JAUH (di belakang badan) ──────────────────────
+        NS._draw_elder_wing(surf, ox - f * 6, body_y - 16, -1, f,
+                            flap * 0.7, pulse, far=True)
+
+        # ── 2. EKOR: melengkung ke belakang-bawah ──────────────────
+        px_, py_ = ox - f * 20, body_y + 16
+        pts = []
+        for i in range(1, 10):
+            t = i / 9.0
+            tx = px_ - f * (58 * t)
+            ty = body_y + 16 + math.sin(t * 2.2 + pulse * 0.9) * 9 + 20 * t
+            pts.append((tx, ty))
+        prev = (px_, py_)
+        for i, (tx, ty) in enumerate(pts):
+            t = (i + 1) / 9.0
+            th = max(2, int(13 * (1.0 - t * 0.82)))
+            NS._aaline(surf, P["dragon_darkest"], prev, (tx, ty), th + 2)
+            NS._aaline(surf, P["dragon_dark"], prev, (tx, ty), th)
+            NS._aaline(surf, P["dragon_mid"], (prev[0], prev[1] - 1),
+                       (tx, ty - 1), max(1, th - 3))
+            if i % 2 == 0 and i < 7:               # duri punggung ekor
+                NS._poly(surf, P["horn_dark"], [
+                    (tx, ty - th * 0.5), (tx + f * 3, ty - th * 0.5 - 7),
+                    (tx + f * 6, ty - th * 0.5)])
+            prev = (tx, ty)
+        tipx, tipy = prev
+        NS._poly(surf, P["horn_mid"], [
+            (tipx + f * 4, tipy - 6), (tipx - f * 13, tipy),
+            (tipx + f * 4, tipy + 6)])
+        NS._poly(surf, P["horn_light"], [
+            (tipx + f * 2, tipy - 3), (tipx - f * 8, tipy),
+            (tipx + f * 2, tipy + 3)])
+
+        # ── 3. KAKI BELAKANG (paha tebal + cakar) ──────────────────
+        for side, depth in ((-1, 0), (1, 1)):
+            lx = ox + f * (side * 13)
+            hip = body_y + 14
+            knee = (lx - f * 7, hip + 20)
+            foot = (lx + f * 4, oy + NS.FEET_DY - 4)
+            col_a = P["dragon_darkest"] if depth == 0 else P["dragon_dark"]
+            col_b = P["dragon_dark"] if depth == 0 else P["dragon_mid"]
+            NS._poly(surf, col_a, [
+                (lx - f * 11, hip - 6), (lx + f * 10, hip - 4),
+                (knee[0] + f * 7, knee[1]), (knee[0] - f * 7, knee[1])])
+            NS._aaline(surf, col_a, knee, foot, 9)
+            NS._aaline(surf, col_b, (knee[0], knee[1] - 1),
+                       (foot[0], foot[1] - 1), 5)
+            NS._poly(surf, col_a, [
+                (foot[0] - f * 8, foot[1] - 3),
+                (foot[0] + f * 11, foot[1] - 2),
+                (foot[0] + f * 11, foot[1] + 4),
+                (foot[0] - f * 8, foot[1] + 4)])
+            for c in (-5, 0, 5):
+                NS._poly(surf, P["horn_light"], [
+                    (foot[0] + f * 10, foot[1] + c * 0.5 - 1),
+                    (foot[0] + f * 17, foot[1] + c * 0.4 + 1),
+                    (foot[0] + f * 10, foot[1] + c * 0.5 + 3)])
+
+        # ── 4. BADAN: dada bidang + perut berpelat ─────────────────
+        body_pts = [
+            (ox - f * 26, body_y + 12), (ox - f * 28, body_y - 10),
+            (ox - f * 16, body_y - 26), (ox + f * 6, body_y - 31),
+            (ox + f * 24, body_y - 22), (ox + f * 30, body_y - 2),
+            (ox + f * 24, body_y + 16), (ox + f * 4, body_y + 22),
+            (ox - f * 16, body_y + 20),
+        ]
+        NS._poly(surf, P["dragon_darkest"], body_pts)
+        NS._poly(surf, P["dragon_dark"],
+                 [(ox + (p[0] - ox) * 0.9, body_y + (p[1] - body_y) * 0.9)
+                  for p in body_pts])
+        NS._poly(surf, P["dragon_mid"],
+                 [(ox + (p[0] - ox) * 0.62, body_y + (p[1] - body_y) * 0.66)
+                  for p in body_pts])
+        # pelat perut (garis horizontal terang -> arah jelas)
+        for i in range(4):
+            py = body_y + 2 + i * 6
+            w = 17 - i * 3
+            NS._poly(surf, P["dragon_light"], [
+                (ox + f * (2 - w), py), (ox + f * (2 + w), py - 1),
+                (ox + f * (2 + w - 2), py + 3), (ox + f * (2 - w + 2),
+                                                 py + 4)])
+        # sisik punggung (baris berselang)
+        for row in range(3):
+            for col in range(-2, 4):
+                sx = ox + f * (col * 8 + (row % 2) * 4)
+                sy = body_y - 22 + row * 7
+                NS._poly(surf, P["dragon_dark"],
+                         [(sx, sy - 4), (sx + 4, sy), (sx, sy + 4),
+                          (sx - 4, sy)])
+                NS._poly(surf, P["dragon_light"],
+                         [(sx, sy - 2), (sx + 2, sy - 1), (sx, sy + 1),
+                          (sx - 2, sy - 1)])
+        # inti magma di dada (denyut)
+        glow = int(180 + 70 * math.sin(pulse * 2.6))
+        NS._jagged_crack(surf, ox - f * 13, body_y - 14, ox + f * 17,
+                         body_y + 6, P["magma_hot"], glow, 3, 5, 4.0,
+                         seed=31)
+        NS._poly(surf, (*P["magma_bright"], glow), [
+            (ox + f * 2, body_y - 12), (ox + f * 9, body_y - 4),
+            (ox + f * 2, body_y + 5), (ox - f * 5, body_y - 4)])
+        NS._poly(surf, (*P["magma_white"], min(255, glow + 40)), [
+            (ox + f * 2, body_y - 7), (ox + f * 5, body_y - 4),
+            (ox + f * 2, body_y + 1), (ox - f * 1, body_y - 4)])
+
+        # ── 5. SAYAP DEKAT (di depan badan) ────────────────────────
+        NS._draw_elder_wing(surf, ox + f * 2, body_y - 18, 1, f, flap,
+                            pulse, far=False)
+
+        # ── 6. LEHER melengkung + KEPALA ───────────────────────────
+        nx0, ny0 = ox + f * 14, body_y - 24
+        nx1, ny1 = ox + f * 30, body_y - 44
+        nx2, ny2 = ox + f * 40, body_y - 60
+        for w, col in ((15, P["dragon_darkest"]), (12, P["dragon_dark"]),
+                       (7, P["dragon_mid"])):
+            NS._aaline(surf, col, (nx0, ny0), (nx1, ny1), w)
+            NS._aaline(surf, col, (nx1, ny1), (nx2, ny2),
+                       max(2, int(w * 0.82)))
+        for i in range(4):                          # duri leher
+            t = i / 3.0
+            sx = nx0 + (nx2 - nx0) * t
+            sy = ny0 + (ny2 - ny0) * t
+            NS._poly(surf, P["horn_dark"], [
+                (sx - f * 5, sy), (sx - f * 12, sy - 8),
+                (sx - f * 3, sy - 4)])
+        NS._draw_dragon_head(surf, nx2 + f * 8, ny2 - 4, f, pulse)
+
+        # ── 7. CAKAR DEPAN (menjulur ke arah hadap) ────────────────
+        for side, depth in ((-1, 0), (1, 1)):
+            sx = ox + f * (16 + side * 3)
+            sy = body_y - 8 + side * 6
+            elbow = (sx + f * 14, sy + 16)
+            paw = (sx + f * 26, sy + 26)
+            col_a = P["dragon_darkest"] if depth == 0 else P["dragon_dark"]
+            col_b = P["dragon_dark"] if depth == 0 else P["dragon_mid"]
+            NS._aaline(surf, col_a, (sx, sy), elbow, 10)
+            NS._aaline(surf, col_b, (sx, sy - 1), (elbow[0], elbow[1] - 1), 6)
+            NS._aaline(surf, col_a, elbow, paw, 8)
+            NS._aaline(surf, col_b, (elbow[0], elbow[1] - 1),
+                       (paw[0], paw[1] - 1), 4)
+            for c in (-6, -1, 4):
+                NS._poly(surf, P["horn_light"], [
+                    (paw[0], paw[1] + c * 0.5),
+                    (paw[0] + f * 11, paw[1] + c * 0.4 + 2),
+                    (paw[0], paw[1] + c * 0.5 + 4)])
+
+    @staticmethod
+    def _draw_elder_wing(surf, bx, by, side, f, flap, pulse, far=False):
+        """Sayap naga purba: 4 jari mengipas + membran berlekuk.
+
+        ``far`` = sayap seberang (lebih kecil, lebih gelap, digambar
+        sebelum badan) supaya ada kedalaman, bukan dua bentuk kembar.
+        """
+        NS = _NS_ignis_drachorn
+        P = NS.PALETTE
+        depth = 0.74 if far else 1.0
+        spread = (1.0 + flap * 0.30) * depth
+        shoulder = (bx, by)
+        elbow = (bx - f * 30 * spread, by - (22 + 12 * flap) * spread)
+        wrist = (bx - f * 54 * spread, by - (40 + 16 * flap) * spread)
+
+        # jari mengipas dari pergelangan: dari atas-belakang ke bawah
+        fingers = []
+        base = 2.05                                   # rad, mengarah ke -f
+        for i in range(4):
+            t = i / 3.0
+            a = base + (-0.62 + 1.55 * t)
+            ln = (58 - 12 * t) * spread
+            fingers.append((wrist[0] + f * math.cos(a) * ln * -1.0,
+                            wrist[1] - math.sin(a) * ln * -1.0
+                            + math.sin(pulse * 2.0 + i) * 2.0))
+
+        if far:
+            memb_out, memb_in, vein = (P["shadow_deep"],
+                                       P["dragon_darkest"], P["dragon_dark"])
+            bone_a, bone_b = P["horn_dark"], P["horn_dark"]
+        else:
+            memb_out, memb_in, vein = (P["dragon_darkest"],
+                                       P["dragon_dark"], P["dragon_mid"])
+            bone_a, bone_b = P["horn_dark"], P["horn_mid"]
+
+        # membran: tepi luar melewati ujung jari, dengan LEKUK di antaranya
+        memb = [shoulder, elbow, wrist]
+        for i, fg in enumerate(fingers):
+            memb.append(fg)
+            if i < len(fingers) - 1:
+                nx_ = (fg[0] + fingers[i + 1][0]) * 0.5
+                ny_ = (fg[1] + fingers[i + 1][1]) * 0.5
+                memb.append((nx_ + (wrist[0] - nx_) * 0.30,
+                             ny_ + (wrist[1] - ny_) * 0.30))
+        memb.append((shoulder[0] - f * 4, shoulder[1] + 16 * depth))
+        NS._poly(surf, memb_out, memb)
+        NS._poly(surf, memb_in,
+                 [(wrist[0] + (p[0] - wrist[0]) * 0.80,
+                   wrist[1] + (p[1] - wrist[1]) * 0.80) for p in memb])
+
+        # urat membran dari pergelangan ke tiap ujung jari
+        for fg in fingers:
+            NS._aaline(surf, vein, wrist, fg, 2)
+        NS._aaline(surf, vein, elbow, fingers[0], 1)
+
+        # tulang lengan + jari
+        NS._aaline(surf, bone_a, shoulder, elbow, 7 if not far else 5)
+        NS._aaline(surf, bone_a, elbow, wrist, 6 if not far else 4)
+        NS._aaline(surf, bone_b, (shoulder[0], shoulder[1] - 1),
+                   (elbow[0], elbow[1] - 1), 3 if not far else 2)
+        NS._aaline(surf, bone_b, (elbow[0], elbow[1] - 1),
+                   (wrist[0], wrist[1] - 1), 3 if not far else 2)
+        for i, fg in enumerate(fingers):
+            NS._aaline(surf, bone_a, wrist, fg, 4 if not far else 3)
+            NS._aaline(surf, bone_b, (wrist[0], wrist[1] - 1),
+                       (fg[0], fg[1] - 1), 2 if not far else 1)
+
+        # cakar di pergelangan + bara di tepi depan (hanya sayap dekat)
+        NS._poly(surf, P["horn_mid"], [
+            (wrist[0], wrist[1] - 3), (wrist[0] - f * 12, wrist[1] - 10),
+            (wrist[0] + f * 2, wrist[1] + 3)])
+        NS._poly(surf, P["horn_light"], [
+            (wrist[0] - f * 1, wrist[1] - 3),
+            (wrist[0] - f * 8, wrist[1] - 7),
+            (wrist[0] + f * 1, wrist[1])])
+        if not far:
+            for i in range(3):
+                t = (i + 1) / 4.0
+                ex = shoulder[0] + (wrist[0] - shoulder[0]) * t
+                ey = shoulder[1] + (wrist[1] - shoulder[1]) * t
+                NS._aacircle(surf, (*P["magma_hot"],
+                                    int(150 + 90 * math.sin(pulse * 3 + i))),
+                             (int(ex), int(ey - 4)), 2)
+
+    # ---------------------------------------------------------------------------
+    # 18. DEBUG OVERLAY
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def _debug_font():
+        try:
+            from _render import get_font
+            return get_font(14)
+        except Exception:
+            try:
+                return pygame.font.Font(None, 16)
+            except Exception:                          # pragma: no cover
+                return None
+
+    @staticmethod
+    def _draw_ignis_debug(surface, boss, x, y):
+        """hitbox / hurtbox / range / proyektil / state / FPS / partikel."""
+        NS = _NS_ignis_drachorn
+        r = max(8, int(getattr(boss, "radius", 45)))
+        f = getattr(boss, "direction", 1)
+
+        pygame.draw.rect(surface, (80, 200, 255),
+                         (x - r, y - r, r * 2, r * 2), 1)          # hurtbox
+        pygame.draw.circle(surface, (255, 220, 60), (int(x), int(y)),
+                           int(getattr(boss, "range", 55)), 1)     # range
+        # hitbox ayunan (aktif hanya di jendela hit)
+        if getattr(boss, "_ign_hit_window", False):
+            grip, tip, _t = NS.sword_geometry(
+                f, "melee", 0.0,
+                float(getattr(boss, "_ign_attack_progress", 0.0)))
+            pygame.draw.line(surface, (255, 60, 60),
+                             (x + grip[0], y + grip[1]),
+                             (x + tip[0], y + tip[1]), 2)
+            pygame.draw.circle(surface, (255, 60, 60),
+                               (int(x + tip[0]), int(y + tip[1])), 10, 1)
+        for p in getattr(boss, "_ign_projectiles", ()):
+            pygame.draw.circle(surface, (255, 80, 220),
+                               (int(p.x), int(p.y)), int(p.radius), 1)
+
+        font = NS._debug_font()
+        if font is None:
+            return
+        try:
+            fps = int(pygame.time.Clock().get_fps())
+        except Exception:                              # pragma: no cover
+            fps = 0
+        particles = len(getattr(boss, "_ign_projectiles", ()))
+        try:
+            from heroes import ignis_drachorn_fx as _ifx
+            particles += int(_ifx.total_particles())
+        except Exception:
+            pass
+        lines = [
+            "state=%s prio=%d" % (getattr(boss, "_ign_state", "?"),
+                                  int(getattr(boss, "_ign_state_priority",
+                                              0))),
+            "phase=%s ap=%.2f" % (getattr(boss, "_ign_attack_phase", "NONE"),
+                                  float(getattr(boss, "_ign_attack_progress",
+                                                0.0))),
+            "frame=%d timer=%d" % (int(getattr(boss, "_ign_attack_frame", 0)),
+                                   int(getattr(boss, "timer", 0))),
+            "skill=%s t=%d" % (getattr(boss, "active_skill", None),
+                               int(getattr(boss, "active_skill_timer", 0))),
+            "fps=%d particles=%d" % (fps, particles),
+        ]
+        for i, line in enumerate(lines):
+            try:
+                img = font.render(line, True, (255, 235, 190))
+                surface.blit(img, (int(x) - 60, int(y) - r - 78 + i * 15))
+            except Exception:                          # pragma: no cover
+                break
 
     # ===================================================================
-    # Backward-compatible entry point alias
+    # 19. MAIN DRAW ENTRY POINT
     # ===================================================================
+    @staticmethod
+    def draw_ignis(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus jalur hero-lane.
+
+        Urutan render:
+          GROUND -> GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/
+          HEAD/WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+          SKILL FX -> IMPACT FX -> DEBUG.
+        Trail/partikel/proyektil/impact/hit-stop/shake hidup di
+        ``heroes/ignis_drachorn_fx`` (skala layar 1:1); canvas hanya
+        fallback bila modul itu tidak tersedia.
+        """
+        NS = _NS_ignis_drachorn
+        pulse = float(getattr(boss, "pulse", 0.0))
+        active_skill = getattr(boss, "active_skill", None)
+        skill_timer = int(getattr(boss, "active_skill_timer", 0))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+
+        moving = NS._detect_moving(boss)
+        NS._update_ignis_anim(boss, moving)
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._ign_pose_action = action
+        boss._ign_phase = phase
+
+        # ── lapisan hidup ──────────────────────────────────────────
+        live, owned = NS._live_fx(boss, surface, x, y, not hero_lane,
+                                  portrait)
+        boss._ign_suppress_canvas_fx = owned
+
+        # ── GROUND / AURA ──────────────────────────────────────────
+        if not portrait:
+            NS._draw_fire_aura(surface, x, y, pulse, active_skill)
+            NS._draw_ground_embers(surface, x, y + 38, pulse, active_skill)
+            if not owned:
+                if active_skill == "q":
+                    NS._draw_dragon_breath_ground(surface, boss, x, y,
+                                                  skill_timer, pulse)
+                elif active_skill == "w":
+                    NS._draw_dragon_tail_ground(surface, boss, x, y,
+                                                skill_timer, pulse)
+                elif active_skill == "e":
+                    NS._draw_dragon_blood_ground(surface, boss, x, y,
+                                                 skill_timer, pulse)
+                elif active_skill == "r":
+                    NS._draw_elder_form_ground(surface, boss, x, y,
+                                               skill_timer, pulse)
+
+        # ── BADAN (dengan hurt-flash mask) ─────────────────────────
+        tgt, tx_, ty_ = surface, x, y
+        if flash > 0 and not portrait:
+            if NS._flash_buf is None:
+                NS._flash_buf = pygame.Surface((240, 260), pygame.SRCALPHA)
+            NS._flash_buf.fill((0, 0, 0, 0))
+            NS._record_shadow = []
+            tgt, tx_, ty_ = NS._flash_buf, 120, 130
+
+        if active_skill == "r" and skill_timer > 10:
+            NS._draw_elder_dragon_form(tgt, boss, tx_, ty_, skill_timer,
+                                       pulse)
+        elif action == "cast":
+            NS._draw_ignis_cast(tgt, boss, tx_, ty_)
+        elif action == "melee":
+            NS._draw_ignis_melee_attack(tgt, boss, tx_, ty_)
+        elif action == "ranged":
+            NS._draw_ignis_ranged_attack(tgt, boss, tx_, ty_)
+        elif action == "run":
+            NS._draw_ignis_walk(tgt, boss, tx_, ty_, run=True)
+        elif action == "walk":
+            NS._draw_ignis_walk(tgt, boss, tx_, ty_)
+        elif action == "death":
+            NS._draw_ignis_death(tgt, boss, tx_, ty_)
+        elif action == "hurt":
+            NS._draw_ignis_hurt(tgt, boss, tx_, ty_)
+        else:
+            NS._draw_ignis_idle(tgt, boss, tx_, ty_)
+
+        if flash > 0 and not portrait:
+            surface.blit(NS._flash_buf, (x - tx_, y - ty_))
+            w = int(235 * min(1.0, flash / 8.0))
+            try:
+                m = pygame.mask.from_surface(NS._flash_buf, 50)
+                wht = m.to_surface(setcolor=(w, int(w * 0.72), int(w * 0.5),
+                                             255),
+                                   unsetcolor=(0, 0, 0, 0))
+                for rect in (NS._record_shadow or ()):
+                    wht.fill((0, 0, 0, 0), rect)
+                surface.blit(wht, (x - tx_, y - ty_),
+                             special_flags=pygame.BLEND_RGB_ADD)
+            except Exception:                          # pragma: no cover
+                pass
+            NS._record_shadow = None
+
+        # ── PROYEKTIL + SKILL FX (fallback canvas) ─────────────────
+        if not portrait and not owned:
+            NS._manage_projectiles(boss, surface, pulse)
+            if active_skill == "q":
+                NS._draw_dragon_breath(surface, boss, x, y, skill_timer,
+                                       pulse)
+            elif active_skill == "w":
+                NS._draw_dragon_tail(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "e":
+                NS._draw_dragon_blood_foreground(surface, boss, x, y,
+                                                 skill_timer, pulse)
+
+        # ── LAPISAN HIDUP DI ATAS (trail/proyektil/impact/skill) ───
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        # ── DEBUG ──────────────────────────────────────────────────
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_ignis_debug(surface, boss, x, y)
+
+        _ = ap
+
+    @staticmethod
     def draw_boss(surface, boss, x, y):
         _NS_ignis_drachorn.draw_ignis(surface, boss, x, y)
 
-    # ===================================================================
-    # ALIAS - nama fungsi yang dipakai registry heroes/__init__.py
-    # ===================================================================
+    @staticmethod
     def draw_ignis_drachorn(surface, boss, x, y):
         """Entry point resmi untuk Ignis Drachorn."""
         _NS_ignis_drachorn.draw_ignis(surface, boss, x, y)
-
 
 
 # ====================================================================
