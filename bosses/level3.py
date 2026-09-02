@@ -448,43 +448,346 @@ class _NS_varkul:
         boss._vk_last_y = boss.y
         return dx + dy > 0.3
 
-    def _update_attack_anim(boss):
-        """Track ranged attack animation timeline."""
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
+    # ===================================================================
+    # V2 ANIMATION CONTROLLER + LIVE FX BRIDGE
+    # ===================================================================
+
+    #: Fase serangan (fraksi 0..1 dari durasi serangan).
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.14),
+        ("WINDUP",       0.14, 0.32),
+        ("SWING",        0.32, 0.52),
+        ("IMPACT",       0.52, 0.64),
+        ("FOLLOW",       0.64, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+
+    #: Jendela hit aktif (dipakai debug & game feel).
+    ATTACK_ACTIVE_WINDOW = (0.38, 0.64)
+    ATTACK_IMPACT_FRAME = 0.52
+
+    #: Prioritas state. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: Aktifkan hitbox/hurtbox/jangkauan/state di arena.
+    DEBUG_CHARACTER = False
+
+    #: Modul FX layar (diisi malas). False = percobaan gagal -> canvas.
+    _LIVE_MOD = None
+
+    #: Tabel ark staff — SATU sumber kebenaran pose ayunan. Dipakai
+    #: renderer canvas (``_draw_attack_arms``) DAN modul hidup
+    #: (``heroes/varkul_fx.staff_arc``). Format: (t0, t1, theta0, theta1,
+    #: ease); theta dalam radian dari vertikal, positif = ke arah depan.
+    STAFF_ARC = (
+        (0.00, 0.14, 0.00,  0.22, "out"),      # ANTICIPATION: angkat
+        (0.14, 0.32, 0.22, -1.13, "io"),       # WINDUP: putar ke belakang
+        (0.32, 0.52, -1.13, 1.42, "oc"),       # SWING: sapu cepat ke depan
+        (0.52, 0.64, 1.42,  1.42, "hold"),     # IMPACT: tahan + overshoot
+        (0.64, 0.82, 1.42, -0.48, "io"),       # FOLLOW THROUGH
+        (0.82, 1.00, -0.48, 0.00, "io"),       # RECOVERY
+    )
+
+    @staticmethod
+    def _arc_ease(kind, t):
+        if t <= 0.0:
+            return 0.0
+        if t >= 1.0:
+            return 1.0
+        if kind == "out":
+            return 1.0 - (1.0 - t) * (1.0 - t)
+        if kind == "oc":                        # out-cubic
+            return 1.0 - (1.0 - t) ** 3
+        if kind == "hold":
+            return math.sin(t * math.pi)
+        # in-out (smoothstep)
+        return t * t * (3.0 - 2.0 * t)
+
+    @staticmethod
+    def _staff_lift(progress):
+        """Tinggi tangan staff relatif (0 = idle, positif = terangkat)."""
+        p = max(0.0, min(1.0, float(progress)))
+        if p < 0.32:
+            return _NS_varkul._arc_ease("out", p / 0.32)
+        if p < 0.52:
+            return 1.0 - _NS_varkul._arc_ease("oc", (p - 0.32) / 0.20) * 0.85
+        if p < 0.82:
+            return 0.15 + _NS_varkul._arc_ease("io", (p - 0.52) / 0.30) * 0.25
+        return 0.4 * (1.0 - _NS_varkul._arc_ease("io", (p - 0.82) / 0.18))
+
+    @classmethod
+    def _staff_arc(cls, progress):
+        """(theta, lift) staff untuk progress serangan 0..1.
+
+        Staff TIDAK pernah diteleportasi: sudutnya diinterpolasi lewat
+        tabel ark di atas, jadi crystal menelusuri lengkungan mulus
+        wind-up -> sapuan -> follow-through.
+        """
+        p = max(0.0, min(1.0, float(progress)))
+        for t0, t1, a0, a1, kind in cls.STAFF_ARC:
+            if t0 <= p < t1:
+                e = cls._arc_ease(kind, (p - t0) / max(0.0001, t1 - t0))
+                return a0 + (a1 - a0) * e, cls._staff_lift(p)
+        return 0.0, 0.0
+
+    def attack_phases_order():
+        return tuple(name for name, _a, _b in _NS_varkul.ATTACK_PHASES)
+
+    def attack_phase(progress):
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_varkul.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    def _live_module():
+        """Muat ``heroes.varkul_fx`` sekali; None kalau tidak tersedia."""
+        NS = _NS_varkul
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import varkul_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "VARKUL_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    def live_fx_ready():
+        return _NS_varkul._live_module() is not None
+
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Lapisan hidup untuk unit ini.
+
+        Return ``(mod, owned)``. ``want_draw`` True pada jalur BOSS (draw
+        dipanggil tiap frame tanpa cache sprite).
+        """
+        NS = _NS_varkul
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    def _update_varkul_anim(boss, moving=False):
+        """ANIMATION CONTROLLER Varkul - state, fase, timing, delta-time.
+
+        Satu-satunya sumber kebenaran untuk SEMUA state karakter; lapisan
+        hidup (heroes/varkul_fx) serta alat uji membacanya dari sini.
+        """
+        G = _NS_varkul
+
+        # ── delta time nyata (dipakai FX & transisi state) ──────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                      # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_vk_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._vk_last_ms = now
+        boss._vk_dt = dt
+
+        # ── timeline serangan ───────────────────────────────────────
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 42)))
         timer = int(getattr(boss, "timer", 0))
-        previous = int(getattr(boss, "_vk_prev_timer", -1))
+        previous = int(getattr(boss, "_vk_previous_timer", 0))
         active = bool(getattr(boss, "_vk_attack_active", False))
 
-        # Trigger conditions:
-        # 1. timer melonjak ke nilai tinggi (>= cooldown-1) dari nilai rendah
-        # 2. timer baru saja di-reset dari tinggi ke rendah (wrap-around)
-        trigger = False
-        if previous < 0:
-            # First frame - jangan trigger
-            pass
-        elif timer >= cooldown - 1 and previous < cooldown - 1:
-            trigger = True
-        elif previous >= cooldown - 2 and timer <= 1:
-            # timer wrapped from high to low - attack fires now
-            trigger = True
-
-        if trigger and not active:
+        triggered = timer >= cooldown - 1 and previous <= 1
+        if triggered:
             boss._vk_attack_active = True
             boss._vk_attack_frame = 0
             active = True
-
-        if active:
-            boss._vk_attack_frame = int(getattr(boss, "_vk_attack_frame", 0)) + 1
-            if boss._vk_attack_frame > cooldown:
+        elif active and timer > 0:
+            boss._vk_attack_frame = int(getattr(boss, "_vk_attack_frame",
+                                                0)) + 1
+        elif timer <= 0 and active:
+            # serangan manual (alat audit / probe): majukan sampai selesai
+            boss._vk_attack_frame = int(getattr(boss, "_vk_attack_frame",
+                                                0)) + 1
+            if int(getattr(boss, "_vk_attack_frame", 0)) > cooldown:
                 boss._vk_attack_active = False
                 boss._vk_attack_frame = 0
                 active = False
 
-        boss._vk_prev_timer = timer
-        boss._vk_attack_progress = (
-            min(1.0, getattr(boss, "_vk_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
+        boss._vk_previous_timer = timer
+        if active:
+            prog = min(1.0, int(getattr(boss, "_vk_attack_frame", 0))
+                       / max(1, cooldown))
+        else:
+            prog = 0.0
+        boss._vk_attack_progress = prog
+        boss._vk_attack_raw = prog
+        boss._vk_attack_phase = G.attack_phase(prog) if active else "NONE"
+        boss._vk_hit_active = active and (G.ATTACK_ACTIVE_WINDOW[0] <= prog <
+                                          G.ATTACK_ACTIVE_WINDOW[1])
+        boss._vk_impact_frame = active and abs(prog - G.ATTACK_IMPACT_FRAME) \
+            < 0.025
+
+        # ── hurt / hit flash ────────────────────────────────────────
+        hurt = int(getattr(boss, "_vk_hurt_frames", 0) or 0)
+        if hurt > 0:
+            hurt -= 1
+        if int(getattr(boss, "hurt_flash_timer", 0) or 0) > 0:
+            hurt = max(hurt, 7)
+        boss._vk_hurt_frames = hurt
+
+        # ── resolve state ───────────────────────────────────────────
+        if not getattr(boss, "alive", True):
+            state = "DEATH"
+        elif hurt > 0:
+            state = "HURT"
+        elif getattr(boss, "active_skill", None) is not None:
+            state = ("SPECIAL" if getattr(boss, "active_skill", None) == "r"
+                     else "SKILL")
+        elif active:
+            ph = boss._vk_attack_phase
+            if ph in ("ANTICIPATION", "WINDUP"):
+                state = "CHARGE"
+            elif ph in ("SWING", "IMPACT"):
+                state = "SWING"
+            else:
+                state = "ATTACK"
+        elif moving:
+            state = ("RUN" if float(getattr(boss, "speed", 1.0)) >= 2.2
+                     else "WALK")
+        else:
+            state = "IDLE"
+
+        old = getattr(boss, "_vk_state", None)
+        boss._vk_state_prev = old or state
+        if old != state:
+            boss._vk_state_time = 0.0
+        else:
+            boss._vk_state_time = (float(getattr(boss, "_vk_state_time", 0.0))
+                                   + dt)
+        boss._vk_state = state
+
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, attack_progress) untuk renderer & FX."""
+        skill = getattr(boss, "active_skill", None)
+        active = bool(getattr(boss, "_vk_attack_active", False))
+        if skill:
+            action = "cast"
+        elif active:
+            action = "attack"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+        phase = float(getattr(boss, "pulse", 0.0) or 0.0)
+        ap = (float(getattr(boss, "_vk_attack_progress", 0.0) or 0.0)
+              if active else 0.0)
+        return action, phase, ap
+
+    def _staff_tip_screen(boss, x, y):
+        """Titik crystal staff untuk FX (semua FX memakai modul hidup,
+        yang membacanya dari ``_resolve_pose`` + ``_staff_arc``)."""
+        action = getattr(boss, "_vk_pose_action", "idle")
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        if action == "attack":
+            theta, lift = _NS_varkul._staff_arc(
+                float(getattr(boss, "_vk_attack_progress", 0.0) or 0.0))
+            hand_x = x - facing * (23 - 6 * lift)
+            hand_y = y + 8 - 30 * lift
+            return (hand_x + facing * math.sin(theta) * 50,
+                    hand_y - math.cos(theta) * 50)
+        if action == "cast":
+            return (x - facing * 20, y - 66)
+        return (x - facing * 21, y - 30)
+
+    def _draw_varkul_debug(surface, boss, x, y):
+        """Overlay DEBUG_CHARACTER: hitbox, state, frame, FPS."""
+        NS = _NS_varkul
+        r = max(6, int(getattr(boss, "radius", 16)))
+        pygame.draw.rect(surface, (80, 170, 255, 150),
+                         pygame.Rect(int(x) - r, int(y) - r - 8, r * 2,
+                                     r * 2), 1)
+        rng = max(10, int(getattr(boss, "range", 200) * 0.7))
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        pygame.draw.line(surface, (255, 210, 60, 150), (int(x), int(y)),
+                         (int(x + rng * f), int(y)), 1)
+        pygame.draw.rect(surface, (255, 210, 60, 110),
+                         pygame.Rect(int(x + rng * f) - 5, int(y) - 7, 10,
+                                     14), 1)
+        hb = None
+        if getattr(boss, "_vk_hit_active", False):
+            reach = int(rng)
+            top = int(y - 44)
+            left = int(x) if f > 0 else int(x) - reach
+            hb = pygame.Rect(left, top, max(8, reach), max(10, 80))
+            pygame.draw.rect(surface, (255, 70, 70, 190), hb, 2)
+            pygame.draw.rect(surface, (255, 70, 70, 60), hb)
+        state = getattr(boss, "_vk_state", "IDLE")
+        ph = getattr(boss, "_vk_attack_phase", "NONE")
+        frames = int(getattr(boss, "_vk_attack_frame", 0))
+        prog = float(getattr(boss, "_vk_attack_progress", 0.0))
+        hurt = int(getattr(boss, "_vk_hurt_frames", 0))
+        dtv = float(getattr(boss, "_vk_dt", 1.0 / 60.0))
+        inst = 1.0 / dtv if dtv > 0 else 60.0
+        fps = float(getattr(boss, "_vk_fps", 60.0))
+        fps = fps + (inst - fps) * 0.1
+        boss._vk_fps = fps
+        mod = NS._live_module()
+        n_part = n_proj = -1
+        if mod is not None:
+            try:
+                n_part = mod.total_particles()
+                n_proj = len(mod.projectiles_for(boss))
+            except Exception:
+                pass
+        lines = [
+            f"VARKUL {state} {ph}",
+            f"frame {frames} t={prog:.2f} hurt={hurt}",
+            f"hit={'Y' if hb else 'N'} fps={fps:.0f}",
+            f"dt={dtv:.4f} proj={n_proj} part={n_part}",
+        ]
+        font = None
+        try:
+            from _render import get_font
+            font = get_font(14)
+        except Exception:
+            pass
+        if font is None:
+            return
+        px, py = int(x) - 80, int(y) + 36
+        for i, line in enumerate(lines):
+            s = font.render(line, True, (220, 255, 230))
+            surface.blit(s, (px, py + i * 14))
+
+    def _update_attack_anim(boss):
+        """Backward-compatible alias ke controller V2."""
+        return _NS_varkul._update_varkul_anim(
+            boss, _NS_varkul._detect_moving(boss))
 
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_vk_projectiles"):
@@ -508,10 +811,17 @@ class _NS_varkul:
         if not hasattr(boss, "_vk_projectiles"):
             boss._vk_projectiles = []
         tx, ty = _NS_varkul._target_position(boss, x, y)
-        # Staff tip position - Lich holds staff on off-hand side
+        # Lepaskan dari crystal staff pada ark (progress ~0.43, layar
+        # 1:1; canvas fallback memakai skala 1)
         facing = getattr(boss, "direction", 1)
-        sx = x - 20 * facing  # staff hand
-        sy = y - 20
+        try:
+            scale = float(getattr(boss, "_render_scale", 1.0) or 1.0)
+        except (TypeError, ValueError):
+            scale = 1.0
+        theta, lift = _NS_varkul._staff_arc(0.43)
+        sx = x - facing * (23 - 6 * lift) * scale + \
+            facing * math.sin(theta) * 50 * scale
+        sy = y + (8 - 30 * lift - math.cos(theta) * 50) * scale
         boss._vk_projectiles.append(_NS_varkul.FrostProjectile(sx, sy, tx, ty, speed=5.5))
 
 
@@ -519,53 +829,67 @@ class _NS_varkul:
     # MAIN DRAW ENTRY POINT
     # ===================================================================
     def draw_varkul(surface, boss, x, y):
-        """Entry point for Boss.draw()."""
+        """Entry point Boss.draw() sekaligus jalur hero-lane.
+
+        Urutan lapisan: GROUND -> GROUND FX -> SHADOW -> CHARACTER BODY
+        (back robe -> lower robe -> torso -> armor -> head -> weapon) ->
+        ATTACK TRAIL/PROJECTILE/PARTICLES/SKILL FX/IMPACT (lapisan hidup
+        heroes/varkul_fx) -> DEBUG. Trail, proyektil, impact, hit-stop &
+        shake hidup di modul layar 1:1; canvas hanya fallback.
+        """
+        NS = _NS_varkul
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_varkul._detect_moving(boss)
-        _NS_varkul._update_attack_anim(boss)
-
-        attacking = (
-            getattr(boss, "_vk_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
-
-        # ---------- Background layers ----------
-        _NS_varkul._draw_frost_aura(surface, x, y, pulse)
-        _NS_varkul._draw_ice_platform(surface, x, y + 40, pulse, active_skill)
-
-        # ---------- Skill ground effects ----------
-        if active_skill == "q":
-            _NS_varkul._draw_frost_blast_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_varkul._draw_sacrifice_circle(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_varkul._draw_chain_frost_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # ---------- Character body ----------
-        # ORIGINAL-MAX hurt flash: saat kena hit, pose dirender ke buffer,
-        # lalu siluet badannya dibanjiri putih-hangat. Bayangan tanah TIDAK
-        # ikut menyala (rect shadow direkam dan dikeluarkan dari flash).
+        moving = NS._detect_moving(boss)
+        NS._update_varkul_anim(boss, moving)
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._vk_pose_action = action
+        boss._vk_phase = phase
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
+        facing = getattr(boss, "direction", 1) or 1
         flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+
+        # ── lapisan hidup (boss jalur 1:1; lane dipicu heroes/__init__)
+        live, owned = NS._live_fx(boss, surface, x, y,
+                                  not hero_lane, portrait)
+        boss._vk_suppress_canvas_projectile = owned
+
+        # ── GROUND LAYERS ──────────────────────────────────────────
+        if not portrait:
+            NS._draw_frost_aura(surface, x, y, pulse)
+            NS._draw_ice_platform(surface, x, y + 40, pulse, active_skill)
+            if not owned:
+                if active_skill == "q":
+                    NS._draw_frost_blast_ground(surface, boss, x, y,
+                                                skill_timer, pulse)
+                elif active_skill == "e":
+                    NS._draw_sacrifice_circle(surface, boss, x, y,
+                                              skill_timer, pulse)
+                elif active_skill == "r":
+                    NS._draw_chain_frost_ground(surface, boss, x, y,
+                                                skill_timer, pulse)
+
+        # ---------- Character body (dengan hurt-flash mask) ----------
         _tgt, _tx, _ty = surface, x, y
         if flash > 0:
-            NS = _NS_varkul
             if NS._flash_buf is None:
                 NS._flash_buf = pygame.Surface((220, 240), pygame.SRCALPHA)
             NS._flash_buf.fill((0, 0, 0, 0))
             NS._record_shadow = []
             _tgt, _tx, _ty = NS._flash_buf, 110, 120
 
-        if attacking:
-            _NS_varkul._draw_varkul_attack(_tgt, boss, _tx, _ty)
-        elif moving:
-            _NS_varkul._draw_varkul_walk(_tgt, boss, _tx, _ty)
+        if action == "attack":
+            NS._draw_varkul_attack(_tgt, boss, _tx, _ty)
+        elif action == "cast":
+            NS._draw_varkul_cast(_tgt, boss, _tx, _ty)
+        elif action in ("walk", "run"):
+            NS._draw_varkul_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_varkul._draw_varkul_idle(_tgt, boss, _tx, _ty)
+            NS._draw_varkul_idle(_tgt, boss, _tx, _ty)
 
         if flash > 0:
-            NS = _NS_varkul
             surface.blit(NS._flash_buf, (x - _tx, y - _ty))
             w = int(235 * min(1.0, flash / 8.0))
             m = pygame.mask.from_surface(NS._flash_buf, 50)
@@ -577,19 +901,33 @@ class _NS_varkul:
                          special_flags=pygame.BLEND_RGB_ADD)
             NS._record_shadow = None
 
-        # ---------- Projectiles ----------
-        _NS_varkul._manage_projectiles(boss, surface, pulse)
-        _NS_varkul._manage_chain_orbs(boss, surface, pulse)
+        # ---------- Projectiles (fallback canvas) ----------
+        if not owned:
+            NS._manage_projectiles(boss, surface, pulse)
+            NS._manage_chain_orbs(boss, surface, pulse)
 
-        # ---------- Skill foreground effects ----------
-        if active_skill == "q":
-            _NS_varkul._draw_frost_blast(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_varkul._draw_frostbite(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_varkul._draw_sacrifice_foreground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_varkul._draw_chain_frost(surface, boss, x, y, skill_timer, pulse)
+        # ---------- Skill foreground effects (fallback canvas) ----------
+        if not owned and active_skill:
+            if active_skill == "q":
+                NS._draw_frost_blast(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "w":
+                NS._draw_frostbite(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "e":
+                NS._draw_sacrifice_foreground(surface, boss, x, y,
+                                              skill_timer, pulse)
+            elif active_skill == "r":
+                NS._draw_chain_frost(surface, boss, x, y, skill_timer, pulse)
+
+        # ── LIVE TOP LAYER (trail / projectile / impact / particle) ─
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        # ---------- DEBUG ----------
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_varkul_debug(surface, boss, x, y)
 
 
     # ===================================================================
@@ -616,9 +954,16 @@ class _NS_varkul:
         progress = getattr(boss, "_vk_attack_progress", 0.0)
         progress = max(0.0, min(1.0, progress))
 
-        # Spawn projectile at the right moment
-        if 0.30 < progress < 0.40 and not getattr(boss, "_vk_proj_spawned", False):
-            _NS_varkul._spawn_projectile(boss, x, y)
+        # Spawn projectile at the right moment (ark swing melewati vertikal)
+        if 0.38 < progress < 0.48 and not getattr(boss, "_vk_proj_spawned", False):
+            if not getattr(boss, "_vk_suppress_canvas_projectile", False):
+                _NS_varkul._spawn_projectile(boss, x, y)
+            else:
+                try:
+                    from heroes import varkul_fx as _vfx
+                    _vfx.notify_projectile_cast(boss, x, y)
+                except Exception:
+                    pass
             boss._vk_proj_spawned = True
         if progress < 0.15 or progress > 0.9:
             boss._vk_proj_spawned = False
@@ -629,6 +974,29 @@ class _NS_varkul:
         _NS_varkul._draw_varkul_body(surface, x + recoil, y, boss.direction, boss.pulse,
                           "attack", progress)
         _NS_varkul._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
+
+
+    def _draw_varkul_cast(surface, boss, x, y):
+        """Pose CAST (skill q/w/e/r): staff terangkat, orb tangan menyala.
+
+        Menggunakan tabel ark yang sama dengan serangan pada progress
+        channel (staff lurus ke atas) supaya transisi attack<->cast mulus.
+        """
+        skill = getattr(boss, "active_skill", None)
+        # channel: staff naik saat mulai, sedikit turun menjelang release
+        skill_timer = int(getattr(boss, "active_skill_timer", 0))
+        total = {"q": 50, "w": 60, "e": 50, "r": 80}.get(skill, 50)
+        t = 1.0 - (skill_timer / float(total)) if total else 0.0
+        progress = 0.20 + 0.03 * math.sin(boss.pulse * 2.5) - 0.10 * t
+
+        recoil = int(math.sin(boss.pulse * 1.4) * 1) * -boss.direction
+        _NS_varkul._draw_shadow(surface, x + recoil, y + 48)
+        _NS_varkul._draw_floating_mist(surface, x + recoil, y + 35, boss.pulse,
+                            intense=(skill in ("r", "e")))
+        _NS_varkul._draw_varkul_body(surface, x + recoil, y, boss.direction,
+                          boss.pulse, "cast", progress)
+        _NS_varkul._draw_channel_glow(surface, x + recoil, y, boss.direction,
+                                      t, skill)
 
 
     # ===================================================================
@@ -679,7 +1047,7 @@ class _NS_varkul:
         _NS_varkul._draw_pauldrons(surface, cx, cy - 18, phase)
 
         # Arms – staff arm and casting arm
-        if action == "attack":
+        if action in ("attack", "cast"):
             _NS_varkul._draw_attack_arms(surface, cx, cy - 8, facing, phase, attack_progress)
         else:
             _NS_varkul._draw_idle_arms(surface, cx, cy - 8, facing, phase, action)
@@ -921,71 +1289,192 @@ class _NS_varkul:
 
 
     def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
-        """Attack pose - staff raised for casting."""
-        # STAFF arm rises up during cast
+        """Attack pose — AYUNAN ARK staff (bukan translasi).
+
+        Staff diputar mengelilingi tangan mengikuti tabel
+        ``_NS_varkul.STAFF_ARC``:
+
+            ANTICIPATION  angkat staff, badan mengecil (menyiapkan)
+            WIND-UP       staff berputar ke belakang kepala
+            SWING         sapuan cepat melewati vertikal (out-cubic)
+            IMPACT        tahan di depan-bawah + overshoot kecil
+            FOLLOW        rileks naik kembali
+            RECOVERY      kembali ke pose idle
+
+        Posisi tangan dan sudut staff dibaca dari SATU fungsi
+        ``_staff_arc`` yang juga dipakai modul hidup, sehingga trail,
+        proyektil, dan FX selalu lahir tepat di crystal staff.
+        """
+        NS = _NS_varkul
         staff_side = -facing
+        theta, lift = NS._staff_arc(progress)
+
+        # ---- STAFF arm: bahu -> siku -> tangan (mengikuti lift) ----
         ss_x = cx + staff_side * 13
         ss_y = cy + 2
+        sh_x = cx + staff_side * (23 - 6 * lift)
+        sh_y = cy + 16 - 30 * lift
+        # siku sedikit keluar supaya lengan tidak kaku
+        mid_x = (ss_x + sh_x) / 2 + staff_side * 3
+        mid_y = (ss_y + sh_y) / 2 + 2
+        NS._draw_arm_segment(surface, ss_x, ss_y, mid_x, mid_y)
+        NS._draw_arm_segment(surface, mid_x, mid_y, sh_x, sh_y)
 
-        # Wind up then thrust
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = math.pi / 2 + 0.8 * t  # raising up
-        elif progress < 0.5:
-            t = (progress - 0.3) / 0.2
-            arm_angle = math.pi / 2 + 0.8 - 0.6 * t
-        else:
-            t = (progress - 0.5) / 0.5
-            arm_angle = math.pi / 2 + 0.2 + 0.5 * t
+        # ---- STAFF berputar pada titik tangan ----
+        NS._draw_staff_arc(surface, sh_x, sh_y, phase, staff_side, theta,
+                           casting=True, progress=progress)
 
-        se_x = ss_x + int(math.cos(arm_angle) * 10) * staff_side
-        se_y = ss_y - int(math.sin(arm_angle) * 10)
-        sh_x = se_x + int(math.cos(arm_angle) * 10) * staff_side
-        sh_y = se_y - int(math.sin(arm_angle) * 10)
-
-        _NS_varkul._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_varkul._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-        _NS_varkul._draw_staff(surface, sh_x, sh_y, phase, staff_side, casting=True,
-                    progress=progress)
-
-        # ORB hand extends forward
+        # ---- ORB hand: tarik saat wind-up, dorong saat swing ----
         orb_side = facing
         os_x = cx + orb_side * 13
         os_y = cy + 2
-
-        if progress < 0.35:
-            t = progress / 0.35
-            ext = t
-        elif progress < 0.55:
+        if progress < 0.32:
+            t = progress / 0.32
+            ext = -0.4 * t          # tarik ke belakang (anticipation)
+        elif progress < 0.52:
+            t = (progress - 0.32) / 0.20
+            ext = -0.4 + 1.4 * t    # dorong kuat ke depan saat swing
+        elif progress < 0.64:
             ext = 1.0
         else:
-            t = (progress - 0.55) / 0.45
-            ext = 1.0 - t * 0.7
+            t = (progress - 0.64) / 0.36
+            ext = 1.0 - t * 0.85
 
         oe_x = os_x + orb_side * int(6 + ext * 6)
         oe_y = cy + int(10 - ext * 6)
         oh_x = oe_x + orb_side * int(5 + ext * 5)
         oh_y = oe_y + int(8 - ext * 6)
 
-        _NS_varkul._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
-        _NS_varkul._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
-        _NS_varkul._draw_skeletal_hand(surface, oh_x, oh_y)
+        NS._draw_arm_segment(surface, os_x, os_y, oe_x, oe_y)
+        NS._draw_arm_segment(surface, oe_x, oe_y, oh_x, oh_y)
+        NS._draw_skeletal_hand(surface, oh_x, oh_y)
 
-        # Larger, glowing orb during cast
-        orb_size = 6 + int(math.sin(progress * math.pi) * 5)
-        _NS_varkul._draw_hand_orb(surface, oh_x + orb_side * 4, oh_y + 2, phase, orb_size)
+        # Orb tangan membesar mendekati frame rilis (bobot + antisipasi)
+        release_pulse = 0.0
+        if 0.38 < progress < 0.55:
+            release_pulse = math.sin((progress - 0.38) / 0.17 * math.pi)
+        orb_size = 6 + int(math.sin(progress * math.pi) * 4
+                           + release_pulse * 4)
+        NS._draw_hand_orb(surface, oh_x + orb_side * 4, oh_y + 2, phase,
+                          orb_size)
 
-        # Frost trail from hand during launch
-        if 0.25 < progress < 0.55:
-            intensity = math.sin((progress - 0.25) / 0.3 * math.pi)
+        # Frost trail dari tangan saat swing melewati vertikal
+        if 0.36 < progress < 0.60:
+            intensity = math.sin((progress - 0.36) / 0.24 * math.pi)
             for i in range(4):
                 angle = phase * 3 + i * math.pi / 2
                 ex = oh_x + int(math.cos(angle) * 12 * intensity) * facing
                 ey = oh_y + int(math.sin(angle) * 10 * intensity)
-                _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_light"], 180),
-                          (ex, ey), max(1, int(3 * intensity)))
-                _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_white"], 200),
-                          (ex, ey), max(1, int(2 * intensity)))
+                NS._aacircle(surface,
+                             (*NS.PALETTE["ice_light"], 180),
+                             (ex, ey), max(1, int(3 * intensity)))
+                NS._aacircle(surface,
+                             (*NS.PALETTE["ice_white"], 200),
+                             (ex, ey), max(1, int(2 * intensity)))
+
+    def _draw_staff_arc(surface, x, y, phase, side, theta, casting=False,
+                        progress=0):
+        """Staff yang SELURUHNYA berputar mengelilingi tangan.
+
+        Mirip ``_draw_staff`` (pole gelap -> mid -> light, cincin emas,
+        cakar metal + kristal es di kepala), tetapi pole digambar pada
+        sudut ``theta`` dari vertikal — inilah yang membuat ayunan
+        terasa berbobot: ujung crystal menempuh lengkungan sungguhan.
+        """
+        NS = _NS_varkul
+        P = NS.PALETTE
+        st = math.sin(theta)
+        ct = math.cos(theta)
+        top_x = x + st * 44
+        top_y = y - ct * 44
+        bot_x = x - st * 8
+        bot_y = y + ct * 16
+
+        # Shadow pole
+        NS._aaline(surface, P["shadow_deep"],
+                   (top_x + 2, top_y + 2), (bot_x + 2, bot_y + 2), 5)
+        # Wood/metal staff (3 ramp)
+        NS._aaline(surface, P["armor_darkest"], (top_x, top_y),
+                   (bot_x, bot_y), 4)
+        NS._aaline(surface, P["armor_dark"], (top_x, top_y),
+                   (bot_x, bot_y), 3)
+        NS._aaline(surface, P["armor_mid"], (top_x, top_y),
+                   (bot_x, bot_y), 1)
+
+        # Gold rings mengikuti pole
+        for t in (0.3, 0.6, 0.85):
+            rx = int(top_x + (bot_x - top_x) * t)
+            ry = int(top_y + (bot_y - top_y) * t)
+            NS._aacircle(surface, P["gold_dark"], (rx, ry), 3)
+            NS._aacircle(surface, P["gold_mid"], (rx, ry), 2)
+            NS._aacircle(surface, P["gold_light"], (rx - 1, ry - 1), 1)
+
+        # Kepala staff: crystal cluster pada ujung pole (searah theta)
+        head_x = int(top_x + st * 4)
+        head_y = int(top_y - ct * 4)
+
+        glow_size = 6
+        if casting:
+            glow_size = 6 + int(math.sin(progress * math.pi) * 7)
+
+        NS._aacircle(surface, (*P["ice_dark"], 80), (head_x, head_y),
+                     glow_size + 3)
+        NS._aacircle(surface, (*P["ice_mid"], 130), (head_x, head_y),
+                     glow_size)
+
+        # Cakar metal memegang kristal (rotasi ikut theta)
+        for offset_a in (-1.2, -0.4, 0.4, 1.2):
+            ang = theta + math.pi / 2 + offset_a * 0.35
+            cx1 = head_x + int(math.cos(ang) * 3)
+            cy1 = head_y + int(math.sin(ang) * 3)
+            cx2 = head_x + int(math.cos(ang) * 8)
+            cy2 = head_y + int(math.sin(ang) * 8) - (2 if ct > 0.3 else 0)
+            NS._aaline(surface, P["armor_darkest"], (cx1, cy1), (cx2, cy2), 3)
+            NS._aaline(surface, P["armor_mid"], (cx1, cy1), (cx2, cy2), 1)
+
+        # Kristal utama mengarah sejajar pole
+        NS._draw_ice_shard(surface, head_x, head_y, 8,
+                           theta - math.pi / 2,
+                           P["ice_darkest"], P["ice_dark"],
+                           P["ice_light"], P["ice_white"])
+        # Center gem
+        pulse = math.sin(phase * 1.5) * 0.3 + 0.7
+        NS._aacircle(surface, P["ice_dark"], (head_x, head_y - 2), 4)
+        NS._aacircle(surface, P["ice_mid"], (head_x, head_y - 2),
+                     int(3 * pulse) + 1)
+        NS._aacircle(surface, P["ice_bright"], (head_x, head_y - 3), 2)
+        NS._aacircle(surface, P["ice_white"], (head_x, head_y - 3), 1)
+
+    def _draw_channel_glow(surface, x, y, facing, t, skill):
+        """Cahaya channeling saat cast skill: kristal staff + orb tangan."""
+        NS = _NS_varkul
+        P = NS.PALETTE
+        intensity = math.sin(min(1.0, max(0.0, t)) * math.pi)
+        # kristal staff (sisi belakang, terangkat)
+        head_x = x - facing * 20
+        head_y = y - 66
+        NS._aacircle(surface, (*P["ice_mid"], int(140 * intensity)),
+                     (head_x, head_y), int(6 + intensity * 5))
+        NS._aacircle(surface, (*P["ice_bright"], int(170 * intensity)),
+                     (head_x, head_y), int(3 + intensity * 3))
+        # orb tangan depan membesar mendekati rilis
+        orb_x = x + facing * 22
+        orb_y = y - 14
+        r = int(4 + intensity * 6)
+        NS._aacircle(surface, (*P["ice_dark"], int(120 * intensity)),
+                     (orb_x, orb_y), r + 3)
+        NS._aacircle(surface, (*P["ice_mid"], int(180 * intensity)),
+                     (orb_x, orb_y), r + 1)
+        NS._aacircle(surface, P["ice_light"], (orb_x, orb_y), r)
+        NS._aacircle(surface, P["ice_white"], (orb_x, orb_y), 1)
+        # rune kecil berputar di sekitar orb
+        rot = t * 7.0
+        for i in range(4):
+            a = rot + i * math.pi / 2
+            rx = orb_x + int(math.cos(a) * (r + 9))
+            ry = orb_y + int(math.sin(a) * (r + 7))
+            NS._rect(surface, (*P["ice_bright"], int(200 * intensity)),
+                     (rx, ry, 2, 2))
 
 
     def _draw_arm_segment(surface, x1, y1, x2, y2):
@@ -1009,16 +1498,16 @@ class _NS_varkul:
 
 
     def _draw_hand_orb(surface, x, y, phase, size=5):
-        """Frost orb hovering in hand."""
+        """Frost orb hovering in hand (chunky: core tegas + glint pixel)."""
         pulse = math.sin(phase * 1.8) * 0.3 + 0.7
-        s = int(size * pulse)
-        _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_dark"], 90), (x, y), s + 6)
-        _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_mid"], 150), (x, y), s + 3)
+        s = max(2, int(size * pulse))
+        _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_dark"], 70), (x, y), s + 3)
+        _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_mid"], 120), (x, y), s + 1)
         _NS_varkul._aacircle(surface, _NS_varkul.PALETTE["ice_light"], (x, y), s)
         _NS_varkul._aacircle(surface, _NS_varkul.PALETTE["ice_bright"], (x - 1, y - 1), max(1, s - 2))
-        _NS_varkul._aacircle(surface, _NS_varkul.PALETTE["ice_white"], (x - 1, y - 1), max(1, s - 4))
+        _NS_varkul._aacircle(surface, _NS_varkul.PALETTE["ice_white"], (x - 1, y - 1), 1)
 
-        # Tiny snowflakes floating around
+        # Kilau chunky (rect pixel, bukan lingkaran lembut)
         for i in range(3):
             angle = phase * 2 + i * math.pi * 2 / 3
             sx = x + int(math.cos(angle) * (s + 4))
@@ -1340,33 +1829,42 @@ class _NS_varkul:
 
 
     def _draw_cast_flash(surface, x, y, facing, progress):
-        """Flash effect during ranged attack."""
-        if progress < 0.25 or progress > 0.6:
+        """Flash yang MENGIKUTI ark crystal staff saat swing."""
+        if progress < 0.30 or progress > 0.62:
             return
-        t = (progress - 0.25) / 0.35
+        t = (progress - 0.30) / 0.32
         intensity = math.sin(t * math.pi)
 
-        # Flash from staff (opposite side)
-        flash_x = x - 20 * facing
-        flash_y = y - 20
+        # Posisi crystal staff saat ini (ark yang sama dengan renderer)
+        theta, lift = _NS_varkul._staff_arc(progress)
+        hand_x = x - facing * (23 - 6 * lift)
+        hand_y = y + 8 - 30 * lift
+        flash_x = hand_x + facing * math.sin(theta) * 50
+        flash_y = hand_y - math.cos(theta) * 50
 
         alpha = int(180 * intensity)
-        radius = int(6 + intensity * 15)
+        radius = int(5 + intensity * 8)
 
+        # flash: dua cincin tegas + bintang 4 arah (bukan bola lembut)
         _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_mid"], alpha // 2),
-                  (flash_x, flash_y), radius + 6)
+                  (int(flash_x), int(flash_y)), radius + 3)
         _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_light"], alpha),
-                  (flash_x, flash_y), radius)
-        _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_bright"], alpha),
-                  (flash_x, flash_y), radius // 2)
+                  (int(flash_x), int(flash_y)), radius)
+        star = radius + 4
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            _NS_varkul._aaline(surface,
+                               (*_NS_varkul.PALETTE["ice_white"], min(255, alpha)),
+                               (int(flash_x), int(flash_y)),
+                               (int(flash_x + dx * star),
+                                int(flash_y + dy * star)), 2)
         _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_white"], min(255, alpha)),
-                  (flash_x, flash_y), max(1, radius // 4))
+                  (int(flash_x), int(flash_y)), 2)
 
-        # Snowflake burst
+        # Snowflake burst mengikuti crystal
         for i in range(5):
             angle = progress * 6 + i * math.pi * 2 / 5
-            ex = flash_x + int(math.cos(angle) * radius * 1.4)
-            ey = flash_y + int(math.sin(angle) * radius * 1.4)
+            ex = flash_x + int(math.cos(angle) * radius * 1.5)
+            ey = flash_y + int(math.sin(angle) * radius * 1.5)
             _NS_varkul._draw_snowflake(surface, ex, ey, 3, progress,
                             (*_NS_varkul.PALETTE["ice_bright"], alpha))
 
