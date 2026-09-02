@@ -4490,6 +4490,19 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX ALCHEMIST ═══
+                # Cleaver Alchemist mendarat: flash bintang asam,
+                # serpihan kaca, shake, hit-stop 0.03-0.08 s
+                # (lengkapnya di heroes/alchemist_fx.notify_melee_impact).
+                # Difilter per hero_type + try/except (paritas Razak).
+                if self.hero_type == 'alchemist':
+                    try:
+                        from heroes import alchemist_fx as _afx
+                        _afx.notify_melee_impact(
+                            self, self.target, damage, is_crit)
+                    except Exception:
+                        pass
+
                 if is_crit:
                     try:
                         import __main__

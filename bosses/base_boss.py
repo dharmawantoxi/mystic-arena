@@ -27,7 +27,7 @@ BOSS_LABEL_TOP = {
     "azkharion": 55,
     "aelyrion": 58,
     "akashari": 59,
-    "alchemist": 66,
+    "alchemist": 100,  # rig masterwork v2: puncak botol W ~-77px
     "ancient_apparition": 61,
     "astraelion": 53,
     "aurelion": 83,
@@ -644,6 +644,18 @@ class Boss(TowerDebuffMixin):
                         try:
                             from heroes import razak_fx as _rfx
                             _rfx.notify_melee_impact(self, self.target,
+                                                     self.damage, False)
+                        except Exception:
+                            pass
+                    # ═══ IMPACT FX ALCHEMIST ═══
+                    # Cleaver Alchemist mendarat: flash bintang asam,
+                    # serpihan kaca, shake, hit-stop 0.03-0.08 s
+                    # (lengkapnya di heroes/alchemist_fx.notify_melee_impact).
+                    # Difilter per boss_type + try/except (paritas Razak).
+                    if getattr(self, 'boss_type', None) == 'alchemist':
+                        try:
+                            from heroes import alchemist_fx as _afx
+                            _afx.notify_melee_impact(self, self.target,
                                                      self.damage, False)
                         except Exception:
                             pass

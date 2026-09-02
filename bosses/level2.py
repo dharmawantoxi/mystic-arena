@@ -8339,87 +8339,202 @@ class _NS_gorath:
 # ALCHEMIST
 # ====================================================================
 class _NS_alchemist:
-    """Namespace alchemist - isi asli tidak diubah."""
+    """Namespace ALCHEMIST — PIXEL MASTERWORK v2 + COMBAT FX v3.
 
+    FULL REWRITE dari rig ORIGINAL-MAX lama, mengikuti standar
+    **Gorath v2 Pixel Masterwork + Razak v3 Combat FX**
+    (docs/GORATH_V2_RENDERER.md, docs/RAZAK_V3_COMBAT_FX.md).
+    Tetap 100% prosedural: tidak ada file gambar / sprite-sheet /
+    pemuatan aset eksternal. Semua bentuk lahir dari pygame.draw +
+    Surface + transform + mask.
+
+    Apa yang naik dibanding rig lama
+    --------------------------------
+    1. RIG LEBIH BESAR & BERLAPIS (shadow -> back limb -> body -> armor
+       -> head -> weapon -> front limb -> highlights). Ogre duo (ogre
+       + goblin rider) tinggi ~150 px di jalur boss: true boss level-2
+       kembali paling besar di keluarganya (test_level2_masterwork).
+       Siluet kuat: massa ogre + dua cleaver + backpack botol + topi
+       goblin mudah dikenali dari kejauhan.
+    2. ANIMATION CONTROLLER: state ANIM_PRIORITY (IDLE..DEATH), delta
+       time nyata (bus heroes/combat_feel), kurva pose MONOTON
+       (_attack_curve) dengan anticipation / wind-up / swing / IMPACT
+       hold / follow-through / recovery, jendela hit aktif
+       (_alch_hit_active), transisi antar state berprioritas.
+    3. SWING ARC-BASED: cleaver bergerak menyusui busur (sudut ->
+       posisi), bukan lerp posisi awal->akhir; keyframe 7 titik +
+       tremble wind-up + squash IMPACT + canvas trail fallback.
+    4. SKILL FX world-space: telegraph digambar TEPAT di radius
+       gameplay (Q cone / W 100 / E 90 / R 200 px dunia) lewat
+       _ring_r, memakai decal ber-falloff yang DI-CACHE
+       (_ground_ring / _zone_fill / _DECAL_CACHE, LRU 48).
+    5. PERFORMANCE: stamp lingkaran-alpha di-cache (bukan Surface baru
+       per panggilan), aura/mist/rune/arc statis di _STATIC_SURFACES,
+       pose badan di-cache per kuantum pose (LRU) lalu satu blit,
+       outline siluet tetap 1 px. Budget: < 2.2 ms/frame (mobile).
+    6. LAPISAN HIDUP heroes/alchemist_fx.py: trail cleaver 60 fps,
+       partikel, proyektil botol asam, impact FX, hit-stop 0.03-0.08 s,
+       screen shake, skill lifecycle CAST->..->FADE, overlay DEBUG.
+       Renderer memicu timingnya; kalau modul itu tidak ada, semua FX
+       kembali digambar di canvas (jalur fallback lengkap).
+    """
+
+    # ------------------------------------------------------------------
+    # Compatibility / konfigurasi umum
+    # ------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
 
-    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    # ── cache (nama lama dipertahankan) ─────────────────────────────
     _shadow_cache = None
     _aura_cache = {}        # key: "acid"/"gold"
     _flash_buf = None
     _body_buf = None        # buffer badan untuk outline+lighting
     _record_shadow = None
+    _STATIC_SURFACES = {}   # stamp statis (mist/rune/arc/pile)
+    _CIRCLE_STAMPS = {}     # stamp lingkaran alpha (radius, width, rgba)
+    _DECAL_CACHE = {}       # decal tanah (ground ring / zone fill)
+    _DECAL_ORDER = []
+    _POSE_CACHE = {}        # pose badan komposit (key -> (surf, ax, ay))
+    _POSE_ORDER = []
 
-    # ---------------------------------------------------------------------------
-    # HD Palette - Orange ogre / green acid / gold / purple goblin
-    # ---------------------------------------------------------------------------
+    #: Overlay debug renderer (hitbox/hurtbox/jangkauan/state/FPS).
+    DEBUG_CHARACTER = False
+
+    #: Ukuran buffer badan & jangkar. Extents terukur dari semua pose:
+    #: botol W -77 (glow), e_cast hop -83, kaki +60, bayangan +73,
+    #: wisps mist +73, swing lunge +-88 -> buffer 180x166 berpusat
+    #: di (90, 86).
+    RIG_W, RIG_H = 180, 166
+    RIG_OX, RIG_OY = 90, 86
+
+    #: Rig di-author di RUANG LAYAR (SCALE 1.0) — jalur boss langsung
+    #: 1:1; jalur hero di-normalisasi heroes/__init__ lewat pengukuran
+    #: native, jadi satu-satunya skala tetap 1.0 di sini.
+    SCALE = 1.0
+
+    #: Garis tanah dunia relatif jangkar (kaki / bayangan / decal).
+    GROUND_DY = 62
+
+    #: Durasi visual skill (frame) - HARUS sama dengan active_skill_timer
+    #: yang diisi AI (bosses/base_boss.py & hero_skills/_bundle.py).
+    SKILL_DUR = {"q": 40, "w": 60, "e": 60, "r": 90}
+
+    #: Radius gameplay tiap skill dalam PX DUNIA:
+    #:   q -> cone + genangan di target (visual ~100),
+    #:   w -> AOE 100 di titik target (base_boss: <= 100),
+    #:   e -> buff diri (denyut ~90 visual),
+    #:   r -> AOE 200 di sekitar DIRI (base_boss: <= 200).
+    SKILL_RADIUS = {"q": 100, "w": 100, "e": 90, "r": 200}
+
+    #: Prioritas state animasi (angka besar menang; DEATH mengunci).
+    #: Cermin tabel di heroes/alchemist_fx.py (satu bahasa state).
+    ANIM_PRIORITY = {
+        "IDLE": 10, "WALK": 20, "RUN": 25, "CHARGE": 40,
+        "ATTACK": 45, "SWING": 50, "CAST": 55, "SKILL": 56,
+        "SPECIAL": 60, "HIT": 62, "HURT": 65, "DEATH": 100,
+    }
+
+    #: Timeline serangan (fraksi progress mentah 0..1). Satu sumber
+    #: kebenaran untuk renderer, canvas trail, lapisan hidup, dan
+    #: overlay debug. 0.30 wind-up penuh, 0.54 IMPACT (damage AI
+    #: mendarat di frame-0; pose impact ditaruh DINI supaya pembacaan
+    #: "pukulan -> efek" tetap rapat).
+    ATTACK_WINDUP_END = 0.30
+    ATTACK_IMPACT = 0.54
+    ATTACK_SWING_END = 0.62
+    ATTACK_FOLLOW_END = 0.80
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.10),
+        ("WINDUP",       0.10, 0.30),
+        ("SWING",        0.30, 0.46),
+        ("IMPACT",       0.46, 0.62),
+        ("FOLLOW",       0.62, 0.80),
+        ("RECOVERY",     0.80, 1.00),
+    )
+
+    #: Geometri cleaver (px layar; dipakai FX hidup & canvas trail).
+    CLEAVER_BLADE = 26
+    CLEAVER_HANDLE = 9
+
+    #: Modul FX hidup (diisi malas; False = gagal -> jalur canvas).
+    _LIVE_MOD = None
+
+    # ------------------------------------------------------------------
+    # PALETTE — dark fantasy ogre chemist: orange ogre / ungu goblin /
+    # acid green / gold / kuningan / kulit samak / baja. Semua kunci
+    # lama dipertahankan; kunci baru untuk ramp rage & decal.
+    # ------------------------------------------------------------------
     PALETTE = {
-        # Ogre skin - orange/yellow
-        "ogre_darkest":   (55,  30,  10),
-        "ogre_dark":      (120, 65,  20),
-        "ogre_mid":       (185, 115, 40),
-        "ogre_light":     (225, 165, 65),
-        "ogre_high":      (245, 205, 110),
-        "ogre_shine":     (255, 235, 175),
+        # Ogre skin - orange/yellow (bayangan didorong coklat-ungu)
+        "ogre_darkest":   (38,  20,   8),
+        "ogre_dark":      (96,  52,  16),
+        "ogre_mid":       (158, 98,  32),
+        "ogre_light":     (205, 143, 52),
+        "ogre_high":      (232, 182, 92),
+        "ogre_shine":     (250, 222, 140),
+        "ogre_rim":       (255, 238, 178),
 
-        # Goblin (rider) - purple
-        "gob_darkest":    (35,  20,  50),
-        "gob_dark":       (75,  45, 105),
-        "gob_mid":        (125, 80, 160),
-        "gob_light":      (180, 130, 210),
-        "gob_high":       (220, 175, 235),
+        # Goblin (rider) - purple (bayangan biru gelap)
+        "gob_darkest":    (24,  14,  38),
+        "gob_dark":       (58,  34,  88),
+        "gob_mid":        (104, 66, 140),
+        "gob_light":      (156, 110, 192),
+        "gob_high":       (204, 162, 230),
+        "gob_rim":        (232, 198, 248),
 
         # Acid green
-        "acid_darkest":   (18,  50,  10),
-        "acid_dark":      (55, 115,  20),
-        "acid_mid":       (110, 190, 30),
-        "acid_bright":    (170, 240, 55),
-        "acid_hot":       (215, 255, 100),
-        "acid_glow":      (240, 255, 170),
-        "acid_white":     (250, 255, 220),
+        "acid_darkest":   (12,  36,   8),
+        "acid_dark":      (40,  88,  16),
+        "acid_mid":       (86, 156,  24),
+        "acid_bright":    (150, 222,  46),
+        "acid_hot":       (198, 246,  84),
+        "acid_glow":      (232, 255, 150),
+        "acid_white":     (246, 255, 214),
 
-        # Gold
-        "gold_darkest":   (60,  38,  10),
-        "gold_dark":      (135, 90,  15),
-        "gold_mid":       (215, 170, 40),
-        "gold_light":     (250, 220, 90),
-        "gold_shine":     (255, 245, 175),
+        # Gold (Greevil's Greed)
+        "gold_darkest":   (48,  30,   8),
+        "gold_dark":      (116,  76,  12),
+        "gold_mid":       (196, 150,  34),
+        "gold_light":     (244, 208,  78),
+        "gold_shine":     (255, 242, 160),
 
         # Leather / straps
-        "leather_darkest": (22, 14,  8),
-        "leather_dark":   (55,  35,  20),
-        "leather_mid":    (100, 68,  35),
-        "leather_light":  (155, 108, 62),
+        "leather_darkest": (18,  11,   6),
+        "leather_dark":   (44,  28,  15),
+        "leather_mid":    (86,  57,  29),
+        "leather_light":  (138,  96,  52),
+        "leather_high":   (182, 136,  84),
 
         # Metal (cleavers, armor)
-        "metal_darkest":  (18,  18,  22),
-        "metal_dark":     (48,  48,  55),
-        "metal_mid":      (95,  95, 105),
-        "metal_light":    (160, 158, 170),
-        "metal_shine":    (215, 215, 225),
-        "metal_edge":     (250, 250, 255),
+        "metal_darkest":  (14,  14,  17),
+        "metal_dark":     (40,  40,  47),
+        "metal_mid":      (82,  82,  94),
+        "metal_light":    (142, 140, 156),
+        "metal_shine":    (204, 204, 218),
+        "metal_edge":     (244, 244, 255),
 
         # Brass
-        "brass_dark":     (85,  55,  15),
-        "brass_mid":      (160, 115, 42),
-        "brass_light":    (215, 175, 82),
-        "brass_shine":    (250, 225, 145),
+        "brass_dark":     (72,  46,  12),
+        "brass_mid":      (148, 104, 36),
+        "brass_light":    (208, 166, 74),
+        "brass_shine":    (246, 218, 132),
 
         # Bottle glass
-        "glass_dark":     (25,  60,  20),
-        "glass_mid":      (65, 130,  35),
-        "glass_light":    (130, 200, 65),
-        "glass_shine":    (200, 245, 145),
+        "glass_dark":     (18,  46,  14),
+        "glass_mid":      (50, 104,  26),
+        "glass_light":    (112, 178,  54),
+        "glass_shine":    (188, 236, 128),
 
         # Teeth / tusks
-        "bone_dark":      (110, 95,  70),
-        "bone_mid":       (185, 170, 130),
-        "bone_light":     (235, 225, 190),
+        "bone_dark":      (96,  82,  58),
+        "bone_mid":       (172, 156, 116),
+        "bone_light":     (228, 216, 178),
 
         # Eyes
         "eye_dark":       (5,  35,   5),
         "eye_hot":        (255, 240, 100),
+        "eye_rage":       (140, 255,  70),
 
         # Misc
         "shadow":         (0,   0,   0),
@@ -8428,10 +8543,28 @@ class _NS_alchemist:
         "red":            (200, 40,  30),
     }
 
-
+    # ==================================================================
+    # PRIMITIF PIXEL — clamp + stamp cache (tidak ada Surface baru
+    # per panggilan untuk lingkaran alpha; inilah sumber frame-time
+    # rig lama yang bocor).
+    # ==================================================================
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
 
+    def _circle_stamp(radius, width, color):
+        """Lingkaran alpha SIAP-BLIT, di-cache per (r, w, rgba)."""
+        NS = _NS_alchemist
+        key = (radius, width, color)
+        stamp = NS._CIRCLE_STAMPS.get(key)
+        if stamp is None:
+            d = radius * 2 + 2
+            stamp = pygame.Surface((d, d), pygame.SRCALPHA)
+            pygame.draw.circle(stamp, color, (radius + 1, radius + 1),
+                               radius, width)
+            if len(NS._CIRCLE_STAMPS) >= 320:
+                NS._CIRCLE_STAMPS.pop(next(iter(NS._CIRCLE_STAMPS)))
+            NS._CIRCLE_STAMPS[key] = stamp
+        return stamp
 
     def _aacircle(surface, color, center, radius, width=0):
         color = _NS_alchemist._clamp(color)
@@ -8440,57 +8573,57 @@ class _NS_alchemist:
         if radius == 0:
             return
         if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
-            surface.blit(temp, (cx - radius - 2, cy - radius - 2))
+            stamp = _NS_alchemist._circle_stamp(radius, max(1, width),
+                                                color)
+            surface.blit(stamp, (cx - radius - 1, cy - radius - 1))
             return
-        if _NS_alchemist.HAS_AACIRCLE and radius > 1:
+        if _NS_alchemist.HAS_AACIRCLE and radius > 2:
             try:
-                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius, width)
+                pygame.draw.aacircle(surface, color[:3], (cx, cy),
+                                     radius, width)
                 return
             except Exception:
                 pass
         pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
-
 
     def _aaline(surface, color, start, end, width=1):
         color = _NS_alchemist._clamp(color)
         sx, sy = int(start[0]), int(start[1])
         ex, ey = int(end[0]), int(end[1])
         if len(color) == 4 and color[3] < 255:
-            min_x = min(sx, ex) - width - 2
-            min_y = min(sy, ey) - width - 2
-            w = abs(ex - sx) + width * 4 + 8
-            h = abs(ey - sy) + width * 4 + 8
-            if w <= 0 or h <= 0:
-                return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.line(temp, color, (sx - min_x, sy - min_y),
-                             (ex - min_x, ey - min_y), max(1, width))
-            surface.blit(temp, (min_x, min_y))
+            # garis alpha pendek: poligon 4 titik (tanpa Surface baru)
+            import math as _m
+            ang = _m.atan2(ey - sy, ex - sx)
+            px, py = -_m.sin(ang), _m.cos(ang)
+            hw = max(1, width) / 2.0
+            pts = [(sx + px * hw, sy + py * hw),
+                   (ex + px * hw, ey + py * hw),
+                   (ex - px * hw, ey - py * hw),
+                   (sx - px * hw, sy - py * hw)]
+            _NS_alchemist._poly(surface, color, pts)
             return
-        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
-
+        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey),
+                         max(1, width))
 
     def _poly(surface, color, points):
         if len(points) < 3:
             return
         color = _NS_alchemist._clamp(color)
+        pts = [(int(p[0]), int(p[1])) for p in points]
         if len(color) == 4 and color[3] < 255:
-            xs = [p[0] for p in points]
-            ys = [p[1] for p in points]
-            min_x, min_y = min(xs) - 2, min(ys) - 2
-            w = max(xs) - min_x + 4
-            h = max(ys) - min_y + 4
+            xs = [p[0] for p in pts]
+            ys = [p[1] for p in pts]
+            min_x, min_y = min(xs) - 1, min(ys) - 1
+            w = max(xs) - min_x + 2
+            h = max(ys) - min_y + 2
             if w <= 0 or h <= 0:
                 return
             temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            shifted = [(p[0] - min_x, p[1] - min_y) for p in points]
+            shifted = [(p[0] - min_x, p[1] - min_y) for p in pts]
             pygame.draw.polygon(temp, color, shifted)
             surface.blit(temp, (min_x, min_y))
             return
-        pygame.draw.polygon(surface, color[:3], points)
-
+        pygame.draw.polygon(surface, color[:3], pts)
 
     def _ellipse(surface, color, rect, width=0):
         color = _NS_alchemist._clamp(color)
@@ -8498,13 +8631,14 @@ class _NS_alchemist:
             rx, ry, rw, rh = rect
             if rw <= 0 or rh <= 0:
                 return
-            temp = pygame.Surface((int(rw) + 4, int(rh) + 4), pygame.SRCALPHA)
-            pygame.draw.ellipse(temp, color, (2, 2, int(rw), int(rh)), width)
-            surface.blit(temp, (rx - 2, ry - 2))
+            temp = pygame.Surface((rw, rh), pygame.SRCALPHA)
+            pygame.draw.ellipse(temp, color, (0, 0, rw - 1, rh - 1),
+                                width)
+            surface.blit(temp, (rx, ry))
             return
         pygame.draw.ellipse(surface, color[:3],
-                            (rect[0], rect[1], int(rect[2]), int(rect[3])), width)
-
+                            (int(rect[0]), int(rect[1]), int(rect[2]),
+                             int(rect[3])), width)
 
     def _rect(surface, color, rect, border_radius=0):
         color = _NS_alchemist._clamp(color)
@@ -8512,73 +8646,538 @@ class _NS_alchemist:
             rx, ry, rw, rh = rect
             if rw <= 0 or rh <= 0:
                 return
-            temp = pygame.Surface((int(rw) + 4, int(rh) + 4), pygame.SRCALPHA)
-            pygame.draw.rect(temp, color, (2, 2, int(rw), int(rh)),
+            temp = pygame.Surface((rw, rh), pygame.SRCALPHA)
+            pygame.draw.rect(temp, color, (0, 0, rw - 1, rh - 1),
                              border_radius=border_radius)
-            surface.blit(temp, (rx - 2, ry - 2))
+            surface.blit(temp, (rx, ry))
             return
-        pygame.draw.rect(surface, color[:3],
-                         (rect[0], rect[1], int(rect[2]), int(rect[3])),
+        pygame.draw.rect(surface, color[:3], rect,
                          border_radius=border_radius)
 
+    # ── fx scale: efek world-space di jalur hero (canvas di-scale) ──
+    def _fx_scale(boss):
+        """Faktor skala efek skill (world-space). Jalur boss = 1.0."""
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
 
+    def _ring_r(boss, world_px, surface):
+        """Radius dunia (px) -> px canvas, di-clamp ke dalam canvas."""
+        scale = getattr(boss, "_render_scale", None)
+        r = float(world_px) / float(scale) if scale else float(world_px)
+        margin = min(surface.get_width(), surface.get_height()) // 2 - 10
+        return int(max(4, min(r, margin)))
+
+    # ==================================================================
+    # DECAL TANAH TER-CACHE  (soft falloff, bukan stroke keras)
+    # ==================================================================
+    def _decal(w, h, builder):
+        """Surface decal (w,h) dibangun sekali oleh builder lalu LRU."""
+        NS = _NS_alchemist
+        key = (w, h, id(builder))
+        surf = NS._DECAL_CACHE.get(key)
+        if surf is None:
+            surf = pygame.Surface((w, h), pygame.SRCALPHA)
+            builder(surf, w, h)
+            NS._DECAL_CACHE[key] = surf
+            NS._DECAL_ORDER.append(key)
+            while len(NS._DECAL_ORDER) > 48:
+                old = NS._DECAL_ORDER.pop(0)
+                NS._DECAL_CACHE.pop(old, None)
+        return surf
+
+    def _blit_decal(surface, decal, cx, cy, alpha=255):
+        if alpha <= 2:
+            return
+        if alpha >= 250:
+            surface.blit(decal, (int(cx - decal.get_width() / 2),
+                                 int(cy - decal.get_height() / 2)))
+            return
+        tmp = decal.copy()
+        tmp.fill((255, 255, 255, int(alpha)),
+                 special_flags=pygame.BLEND_RGBA_MULT)
+        surface.blit(tmp, (int(cx - tmp.get_width() / 2),
+                           int(cy - tmp.get_height() / 2)))
+
+    def _ground_ring(surface, cx, cy, radius, c1, c2, alpha,
+                     thickness=3, softness=7):
+        """Cincin AOE ber-gradien (tepi lunak) — decal ter-cache."""
+        NS = _NS_alchemist
+        radius = max(3, int(radius))
+        pad = softness + thickness + 3
+
+        def build(s, w, h):
+            steps = softness + thickness + softness
+            for i in range(steps):
+                t = i / float(max(1, steps - 1))     # 0 luar -> 1 dalam
+                band = softness + thickness - t * (softness + softness
+                                                   + thickness) / 2.0
+                # radius band: mulai di radius-softness naik ke
+                # radius+thickness lalu turun -> profil falloff lunak
+                r = radius - softness + t * (softness * 2 + thickness)
+                a = int(max(0.0, 1.0 - abs(r - radius - thickness / 2.0)
+                            / (softness + thickness / 2.0)) * alpha)
+                if a <= 2:
+                    continue
+                col = c2 if r < radius else c1
+                NS._aacircle(s, (*col, a), (w // 2, h // 2),
+                             max(1, int(r)))
+
+        d = radius + pad
+        decal = NS._decal(d * 2, d * 2, build)
+        NS._blit_decal(surface, decal, cx, cy)
+
+    def _zone_fill(surface, cx, cy, radius, color, alpha):
+        """Wash zona: pekat di TEPI, bening di tengah (badan terbaca)."""
+        NS = _NS_alchemist
+        radius = max(3, int(radius))
+
+        def build(s, w, h):
+            steps = 7
+            for i in range(steps):
+                t = i / float(steps)               # 0 tepi -> 1 tengah
+                r = radius * (1.0 - t * 0.86)
+                a = int(alpha * (1.0 - t) ** 1.5)
+                if a <= 2:
+                    continue
+                NS._aacircle(s, (*color, a), (w // 2, h // 2),
+                             max(1, int(r)))
+
+        d = radius + 3
+        decal = NS._decal(d * 2, d * 2, build)
+        NS._blit_decal(surface, decal, cx, cy)
+
+    def _ground_glow(surface, cx, cy, radius, color, alpha):
+        """Genangan cahaya di tanah (falloff pusat->tepi)."""
+        NS = _NS_alchemist
+        radius = max(3, int(radius))
+
+        def build(s, w, h):
+            for i in range(8):
+                t = i / 8.0
+                a = int(alpha * (1.0 - t) ** 1.7)
+                if a <= 2:
+                    continue
+                NS._aacircle(s, (*color, a), (w // 2, h // 2),
+                             max(1, int(radius * (1.0 - t))))
+
+        d = radius + 2
+        decal = NS._decal(d * 2, d * 2, build)
+        NS._blit_decal(surface, decal, cx, cy)
+
+    # ==================================================================
+    # AIM & STATE
+    # ==================================================================
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
-            # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
             scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
             tx = x + (target.x - getattr(boss, "x", x)) / scale
             ty = y + (target.y - getattr(boss, "y", y)) / scale
             return int(tx), int(ty)
-        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0)
+                                   or 1.0)
+                   * getattr(boss, "direction", 1)), int(y)
 
+    def _detect_moving(boss):
+        if not hasattr(boss, "_alch_last_x"):
+            boss._alch_last_x = boss.x
+            boss._alch_last_y = boss.y
+            return False
+        dx = abs(boss.x - boss._alch_last_x)
+        dy = abs(boss.y - boss._alch_last_y)
+        boss._alch_last_x = boss.x
+        boss._alch_last_y = boss.y
+        return dx + dy > 0.3
 
-    # ---------------------------------------------------------------------------
-    # Acid particle helpers
-    # ---------------------------------------------------------------------------
-    def _draw_acid_splash(surface, cx, cy, size=8, phase=0, alpha=255):
-        """Bubbly acid splash."""
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_darkest"], alpha), (cx, cy), size)
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_dark"], alpha), (cx, cy), max(1, size - 1))
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_mid"], alpha), (cx, cy), max(1, size - 3))
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha), (cx - 1, cy - 1), max(1, size - 4))
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], alpha), (cx - 1, cy - 2), max(1, size - 6))
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_glow"], min(255, alpha)),
-                  (cx - 1, cy - 2), max(1, size - 7))
+    def attack_phase(progress):
+        """Nama fase serangan (ANTICIPATION..RECOVERY); NONE di luar."""
+        if progress is None:
+            return "NONE"
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_alchemist.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
 
-        # Bubbles
-        for i in range(4):
-            angle = phase * 0.5 + i * math.pi / 2
-            bx = cx + int(math.cos(angle) * (size - 2))
-            by = cy + int(math.sin(angle) * (size - 2))
-            _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha), (bx, by), 1)
+    def attack_phases_order():
+        return tuple(n for n, _a, _b in _NS_alchemist.ATTACK_PHASES)
 
+    def _attack_curve(ap):
+        """Remap progres mentah (0..1) -> waktu pose (0..1), MONOTON.
 
-    def _draw_acid_droplet(surface, x, y, size=3, alpha=255):
-        """Acid teardrop."""
-        _NS_alchemist._poly(surface, (*_NS_alchemist.PALETTE["acid_darkest"], alpha), [
-            (x, y - size),
-            (x - size, y + size),
-            (x + size, y + size),
-        ])
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_dark"], alpha), (x, y + size // 2), size)
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha),
-                  (x, y + size // 2), max(1, size - 1))
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_glow"], alpha),
-                  (x - 1, y + size // 2 - 1), max(1, size - 2))
+        (a) wind-up melambat (counter-motion terbaca), (b) tebasan
+        menajam menjelang impact, (c) HOLD ~2 frame di keyframe IMPACT
+        0.54 (squash + bintang + shockwave ikut membeku), (d) follow-
+        through lepas perlahan. Nilai kunci nyaris identik dengan input
+        mentah sehingga keyframe pose tetap di timeline yang sama.
+        """
+        if ap <= 0.0:
+            return 0.0
+        if ap >= 1.0:
+            return 1.0
+        if ap < 0.44:
+            t = ap / 0.44
+            return 0.44 * (t ** 0.94)
+        if ap < 0.52:
+            t = (ap - 0.44) / 0.08
+            return 0.44 + 0.10 * (t ** 1.30)
+        if ap < 0.64:
+            t = (ap - 0.52) / 0.12
+            return 0.54 + 0.02 * t
+        t = (ap - 0.64) / 0.36
+        return 0.56 + 0.44 * (t ** 0.85)
 
+    def _attack_pose(ap):
+        """Interpolasi keyframe serang -> dict pose (ARC-BASED).
 
-    # ---------------------------------------------------------------------------
-    # PROJECTILE SYSTEM
-    # ---------------------------------------------------------------------------
+        Keyframe: (progress, lunge, lean, dip, blade_f, blade_b, flare,
+                   tremble)
+          0.10  anticipation : cleaver diangkat sedikit, badan mundur
+          0.30  wind-up      : cleaver di belakang kepala, gemetar
+          0.46  swing        : sapuan tercepat (busur melengkung)
+          0.54  IMPACT       : squash + lunge + bintang + shockwave
+          0.72  follow       : rebound overshoot
+          1.00  recovery     : kembali ke pose istirahat
+        Sudut dalam rad ruang layar (y ke bawah); blade_f menyapu
+        -2.30 -> 0.72 MELALUI busur atas -> depan, bukan lerp posisi.
+        blade_b (cleaver belakang) mengayun berlawanan: 2.79 -> 2.84.
+        """
+        keys = (
+            (0.00,  0.0,  0.0,  0.0,  0.95, 2.79, 1.00, 0),
+            (0.10, -2.0, -3.0,  2.0,  0.38, 2.59, 1.06, 0),
+            (0.30, -5.0, -6.0,  3.0, -2.30, 2.30, 1.18, 1),
+            (0.46,  5.0,  5.0, -2.0, -0.10, 2.64, 1.10, 0),
+            (0.54,  9.0,  8.0,  5.0,  0.72, 2.84, 1.04, 0),
+            (0.72,  3.0,  4.0,  1.0,  1.12, 2.74, 1.00, 0),
+            (1.00,  0.0,  0.0,  0.0,  0.95, 2.79, 1.00, 0),
+        )
+        ap = max(0.0, min(1.0, ap))
+        for i in range(len(keys) - 1):
+            k0, k1 = keys[i], keys[i + 1]
+            if k0[0] <= ap <= k1[0]:
+                span = max(1e-6, k1[0] - k0[0])
+                t = (ap - k0[0]) / span
+                t = t * t * (3 - 2 * t)              # smoothstep
+                vals = tuple(a + (b - a) * t
+                             for a, b in zip(k0[1:7], k1[1:7]))
+                return {
+                    "lunge": vals[0], "lean": vals[1], "dip": vals[2],
+                    "blade_f": vals[3], "blade_b": vals[4],
+                    "flare": vals[5],
+                    "tremble": 1 if (k0[7] and t < 0.9) else 0,
+                    "impact": 1.0 - min(1.0, abs(ap - 0.54) / 0.10),
+                }
+        return {"lunge": 0.0, "lean": 0.0, "dip": 0.0, "blade_f": 0.95,
+                "blade_b": 2.79, "flare": 1.0, "tremble": 0,
+                "impact": 0.0}
+
+    def _update_attack_anim(boss):
+        """ANIMATION CONTROLLER ALCHEMIST — state, fase, timing, dt.
+
+        Satu-satunya sumber kebenaran state karakter. Nama field lama
+        tetap diisi supaya tooling lama tidak berubah:
+
+        * ``_alch_attack_active``    serangan sedang berjalan (lama)
+        * ``_alch_attack_frame``     frame ke-n dalam serangan (lama)
+        * ``_alch_attack_progress``  0..1 mentah sepanjang serangan
+        * ``_alch_attack_phase``     ANTICIPATION/.../RECOVERY / NONE
+        * ``_alch_ap``               progress setelah _attack_curve
+        * ``_alch_hit_active``       True hanya di jendela hit aktif
+        * ``_alch_dt``               delta-time nyata (detik, dijepit)
+        * ``_alch_state`` / ``_alch_state_prev`` / ``_alch_state_time``
+        * ``_alch_moving``           hasil _detect_moving terakhir
+        """
+        NS = _NS_alchemist
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
+        timer = int(getattr(boss, "timer", 0))
+        previous = int(getattr(boss, "_alch_prev_timer", 0))
+        active = bool(getattr(boss, "_alch_attack_active", False))
+
+        # ── delta time nyata dari bus game-feel ─────────────────────
+        try:
+            from heroes import combat_feel as _cf
+            dt = float(_cf.frame_dt())
+        except Exception:
+            dt = 1.0 / 60.0
+        if not (0.0 < dt <= 0.05):
+            dt = 1.0 / 60.0
+        boss._alch_dt = dt
+
+        if timer >= cooldown - 1 and previous <= 1:
+            boss._alch_attack_active = True
+            boss._alch_attack_frame = 0
+            active = True
+        elif active:
+            boss._alch_attack_frame = int(
+                getattr(boss, "_alch_attack_frame", 0)) + 1
+            if boss._alch_attack_frame > cooldown:
+                boss._alch_attack_active = False
+                boss._alch_attack_frame = 0
+                active = False
+        elif timer <= 0:
+            boss._alch_attack_active = False
+            boss._alch_attack_frame = 0
+            active = False
+
+        boss._alch_prev_timer = timer
+        raw = (min(1.0, getattr(boss, "_alch_attack_frame", 0)
+                   / max(1, cooldown - 1)) if active else 0.0)
+        boss._alch_attack_progress = raw
+        boss._alch_attack_phase = (NS.attack_phase(raw)
+                                   if active else "NONE")
+        boss._alch_ap = NS._attack_curve(raw)
+        boss._alch_hit_active = bool(
+            active and 0.30 <= raw <= 0.62)
+
+        # ── state machine (prioritas; DEATH mengunci) ───────────────
+        want = NS._resolve_want_state(boss, active)
+        if not hasattr(boss, "_alch_state"):
+            boss._alch_state = want
+            boss._alch_state_prev = want
+            boss._alch_state_time = 0.0
+        prev = str(getattr(boss, "_alch_state", want))
+        if want != prev:
+            cur_p = NS.ANIM_PRIORITY.get(prev, 0)
+            new_p = NS.ANIM_PRIORITY.get(want, 0)
+            if prev != "DEATH" and (new_p >= cur_p
+                                    or float(getattr(boss,
+                                                     "_alch_state_time",
+                                                     0.0)) > 0.05):
+                boss._alch_state_prev = prev
+                boss._alch_state = want
+                boss._alch_state_time = 0.0
+        boss._alch_state_time = (float(getattr(boss, "_alch_state_time",
+                                               0.0)) + dt)
+
+    def _resolve_want_state(boss, active):
+        """State yang DIINGINKAN frame ini (tanpa efek samping)."""
+        if not getattr(boss, "alive", True):
+            return "DEATH"
+        if int(getattr(boss, "hurt_flash_timer", 0) or 0) > 0:
+            return "HURT"
+        skill = getattr(boss, "active_skill", None)
+        if skill == "r":
+            return "SPECIAL"
+        if skill in ("q", "w", "e"):
+            return "CAST" if skill != "e" else "SKILL"
+        if active:
+            ph = _NS_alchemist.attack_phase(
+                getattr(boss, "_alch_attack_progress", 0.0))
+            if ph in ("ANTICIPATION", "WINDUP"):
+                return "CHARGE"
+            if ph in ("SWING", "IMPACT"):
+                return "SWING"
+            return "ATTACK"
+        if bool(getattr(boss, "_alch_moving", False)):
+            return "RUN" if float(getattr(boss, "speed", 1.0) or
+                                  1.0) >= 1.1 else "WALK"
+        return "IDLE"
+
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, ap) — pose yang SEDANG digambar badan.
+
+        Murni/tanpa efek samping: dipanggil renderer DAN lapisan hidup
+        supaya trail, proyektil, dan badan tidak mungkin berbeda frame.
+        ``ap`` = waktu pose (sudah lewat _attack_curve).
+        """
+        active_skill = getattr(boss, "active_skill", None)
+        attacking = (
+            getattr(boss, "_alch_attack_active", False)
+            or getattr(boss, "timer", 0) >
+            getattr(boss, "attack_cooldown", 50) - 15
+        )
+        if attacking:
+            action = "attack"
+        elif active_skill == "q":
+            action = "q_cast"
+        elif active_skill == "w":
+            action = "w_cast"
+        elif active_skill == "e":
+            action = "e_cast"
+        elif active_skill == "r":
+            action = "r_cast"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+
+        phase = float(getattr(boss, "pulse", 0.0))
+        if action == "walk":
+            phase *= 2.4
+        ap = 0.0
+        if action == "attack":
+            raw = max(0.0, min(1.0, float(
+                getattr(boss, "_alch_attack_progress", 0.0))))
+            ap = _NS_alchemist._attack_curve(raw)
+        return action, phase, ap
+
+    # ── pemetaan ruang lokal rig -> layar (FX hidup memakai ini) ────
+    def _rig_shift(action, phase, ap):
+        """(lean, root_y) gerak badan (belum dikali facing)."""
+        if action == "attack":
+            pose = _NS_alchemist._attack_pose(ap)
+            sway = 1 if (pose["tremble"]
+                         and int(phase * 30) % 2) else 0
+            return int(pose["lean"]) + sway, int(pose["dip"])
+        if action == "walk":
+            return int(math.sin(phase) * 3.0) + 3, \
+                int(math.sin(phase * 2.0) * 2.5) - 2
+        if action in ("q_cast", "w_cast"):
+            return -3, int(math.sin(phase * 0.8) * 1.5)
+        if action == "e_cast":
+            return 2, int(-4.0 * math.sin(min(1.0, phase * 0.02) *
+                                           math.pi))
+        if action == "r_cast":
+            return -4, int(math.sin(phase * 1.4) * 2.0) - 2
+        breath = math.sin(phase * 0.7)
+        return int(math.sin(phase * 0.5 + 1.2) * 1.5), int(breath * 2.2)
+
+    def _local_to_screen(cx, cy, facing, lean, root_y, lx, ly):
+        """SATU pemetaan lokal -> layar (SCALE, facing, bob/lean)."""
+        f = 1 if facing >= 0 else -1
+        k = _NS_alchemist.SCALE
+        return (int(cx + (lx * f + lean * f) * k),
+                int(cy + (ly + root_y) * k))
+
+    def _local(boss, x, y, action, phase, ap, lx, ly):
+        """Ruang lokal rig -> piksel surface (dipakai FX eksternal)."""
+        facing = getattr(boss, "direction", 1) or 1
+        lean, root_y = _NS_alchemist._rig_shift(action, phase, ap)
+        return _NS_alchemist._local_to_screen(x, y, facing, lean,
+                                              root_y, lx, ly)
+
+    def _cleaver_grip_local(action, phase, ap=0.0, back=False):
+        """Pergelangan tangan (grip cleaver) ruang lokal."""
+        if action == "attack":
+            pose = _NS_alchemist._attack_pose(ap)
+            ang = pose["blade_b"] if back else pose["blade_f"]
+            reach = 20 + 10 * math.sin(min(1.0, ap * 1.6) * math.pi)
+            sx = -16 if back else 16
+            return (int(sx + math.cos(ang) * reach),
+                    int(-30 + math.sin(ang) * reach + 8))
+        if action == "walk":
+            swing = math.sin(phase + (math.pi if back else 0.0)) * 7
+            return (int((-16 if back else 17) + swing), 2)
+        if action == "q_cast":
+            return (18, 6) if not back else (-22, 6)
+        if action == "w_cast":
+            return (14, -18) if not back else (-14, -18)
+        if action == "e_cast":
+            return (26, -4) if not back else (-26, -4)
+        if action == "r_cast":
+            return (16, -28) if not back else (-16, -28)
+        bob = math.sin(phase * 0.7 + (0.9 if back else 0.4)) * 1.8
+        return (-25 if back else 24, int(4 + bob))
+
+    def _cleaver_angle_local(action, phase, ap=0.0, back=False):
+        """Sudut cleaver (rad) ruang lokal — ARC tunggal, bukan snap."""
+        if action == "attack":
+            pose = _NS_alchemist._attack_pose(ap)
+            return pose["blade_b"] if back else pose["blade_f"]
+        if action == "walk":
+            return (2.79 if back else 0.95) + \
+                math.sin(phase + (math.pi if back else 0.0)) * 0.10
+        if action == "q_cast":
+            return (2.30 if back else 1.05)
+        if action == "w_cast":
+            return (-1.90 if back else -1.20) + \
+                math.sin(phase * 2.0) * 0.05
+        if action == "e_cast":
+            return (1.95 if back else 1.35) + \
+                math.sin(phase * 3.0) * 0.06
+        if action == "r_cast":
+            return (-1.95 if back else -1.60) + \
+                math.sin(phase * 1.2) * 0.08
+        return (2.79 if back else 0.95) + \
+            math.sin(phase * 0.8 + (0.7 if back else 0.0)) * 0.05
+
+    def _tip_local(action, phase, ap=0.0, back=False):
+        """Ujung bilah ruang lokal (rig & FX pakai angka sama)."""
+        grip = _NS_alchemist._cleaver_grip_local(action, phase, ap,
+                                                 back)
+        ang = _NS_alchemist._cleaver_angle_local(action, phase, ap,
+                                                 back)
+        L = _NS_alchemist.CLEAVER_BLADE + _NS_alchemist.CLEAVER_HANDLE
+        return (int(grip[0] + math.cos(ang) * L),
+                int(grip[1] + math.sin(ang) * L))
+
+    def _grip_screen(boss, x, y, back=False):
+        action, phase, ap = _NS_alchemist._resolve_pose(
+            boss, bool(getattr(boss, "_alch_moving", False)))
+        lx, ly = _NS_alchemist._cleaver_grip_local(action, phase, ap,
+                                                   back)
+        return _NS_alchemist._local(boss, x, y, action, phase, ap,
+                                    lx, ly)
+
+    def _tip_screen(boss, x, y, back=False):
+        action, phase, ap = _NS_alchemist._resolve_pose(
+            boss, bool(getattr(boss, "_alch_moving", False)))
+        lx, ly = _NS_alchemist._tip_local(action, phase, ap, back)
+        return _NS_alchemist._local(boss, x, y, action, phase, ap,
+                                    lx, ly)
+
+    def _gun_end_screen(boss, x, y):
+        """Moncong acid gun goblin dalam piksel layar (kembaran
+        matematis dari rig supaya muzzle FX lahir PERSIS di laras)."""
+        action, phase, ap = _NS_alchemist._resolve_pose(
+            boss, bool(getattr(boss, "_alch_moving", False)))
+        facing = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        g = _NS_alchemist._local(boss, x, y, action, phase, ap,
+                                 -13, -44)
+        if action == "q_cast":
+            hx, hy = g[0] + facing * 8, g[1] - 6
+            tx, ty = _NS_alchemist._target_position(boss, x, y)
+            ang = math.atan2(ty - hy, tx - hx)
+        else:
+            hx, hy = g[0] + facing * 8, g[1] - 8
+            ang = -0.55 + math.sin(phase * 0.9) * 0.08
+        return (int(hx + math.cos(ang) * 13),
+                int(hy + math.sin(ang) * 13))
+
+    def _bottle_hand_screen(boss, x, y):
+        """Tangan botol goblin (pose W) dalam piksel layar."""
+        action, phase, ap = _NS_alchemist._resolve_pose(
+            boss, bool(getattr(boss, "_alch_moving", False)))
+        lx, ly = -11, -74
+        if action == "w_cast":
+            lx, ly = -11, -74
+        return _NS_alchemist._local(boss, x, y, action, phase, ap,
+                                    lx, ly)
+
+    def _swing_hitbox(boss, x, y):
+        """Rect AABB jendela hit aktif (SWING..IMPACT) untuk debug."""
+        action, phase, ap = _NS_alchemist._resolve_pose(
+            boss, bool(getattr(boss, "_alch_moving", False)))
+        if action != "attack" or not (0.30 <= ap <= 0.78):
+            return None
+        facing = getattr(boss, "direction", 1) or 1
+        gx, gy = _NS_alchemist._grip_screen(boss, x, y)
+        tx, ty = _NS_alchemist._tip_screen(boss, x, y)
+        pad = 10
+        left = min(gx, tx) - pad
+        right = max(gx, tx) + pad
+        top = min(gy, ty) - pad
+        bottom = max(gy, ty) + pad
+        return pygame.Rect(int(left), int(top), int(right - left),
+                           int(bottom - top))
+
+    # ==================================================================
+    # PROJECTILE CANVAS (fallback bila lapisan hidup tidak aktif)
+    # Lifecycle: SPAWN -> TRAVEL -> TRAIL -> HIT -> IMPACT FX -> DESTROY
+    # ==================================================================
     class AcidBottle:
-        """Arcing acid potion bottle."""
+        """Botol asam melempar busur (canvas fallback).
+
+        Hidup di layar boss 1:1; pada jalur hero lapisan hidup
+        (heroes/alchemist_fx) yang melempar supaya tetap 60 fps —
+        renderer hanya memicu timing lewat ``_alch_wcast_spawned``.
+        """
+        __slots__ = ("start_x", "start_y", "tx", "ty", "arc_height",
+                     "alive", "age", "max_age", "x", "y", "spin",
+                     "trail", "_landed")
+
         def __init__(self, sx, sy, tx, ty, arc_height=50):
             self.start_x = float(sx)
             self.start_y = float(sy)
@@ -8592,12 +9191,13 @@ class _NS_alchemist:
             self.y = float(sy)
             self.spin = 0.0
             self.trail = []
+            self._landed = False
 
         def update(self):
             if not self.alive:
                 return
             self.age += 1
-            self.spin += 0.35
+            self.spin += 0.38
             t = self.age / self.max_age
             if t >= 1.0:
                 self.alive = False
@@ -8607,22 +9207,23 @@ class _NS_alchemist:
             arc = -4 * self.arc_height * t * (1 - t)
             self.y = self.start_y + (self.ty - self.start_y) * t + arc
             self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 8:
+            if len(self.trail) > 9:
                 self.trail.pop(0)
 
         def draw(self, surface, phase):
-            # Trail droplets
             for i, (tx, ty) in enumerate(self.trail):
                 alpha = int(70 + i * 15)
-                _NS_alchemist._draw_acid_droplet(surface, tx, ty, max(1, 3 - (len(self.trail) - i)), alpha)
-
+                _NS_alchemist._draw_acid_droplet(
+                    surface, tx, ty, max(1, 3 - (len(self.trail) - i)),
+                    alpha)
             if self.alive:
-                px, py = int(self.x), int(self.y)
-                _NS_alchemist._draw_bottle_spinning(surface, px, py, self.spin)
-
+                _NS_alchemist._draw_bottle_spinning(
+                    surface, int(self.x), int(self.y), self.spin)
 
     class AcidPatch:
-        """Persistent acid puddle."""
+        """Genangan asam persisten (canvas fallback)."""
+        __slots__ = ("x", "y", "radius", "age", "life", "alive")
+
         def __init__(self, x, y, radius=30, life=90):
             self.x = x
             self.y = y
@@ -8637,6 +9238,7 @@ class _NS_alchemist:
                 self.alive = False
 
         def draw(self, surface, phase):
+            NS = _NS_alchemist
             t = self.age / self.life
             if t < 0.1:
                 r = int(self.radius * (t / 0.1))
@@ -8649,52 +9251,44 @@ class _NS_alchemist:
                 alpha = int(255 * (1 - (t - 0.7) / 0.3))
             if r <= 0 or alpha <= 0:
                 return
-
-            # Ground puddle
-            _NS_alchemist._ellipse(surface, (*_NS_alchemist.PALETTE["acid_darkest"], int(alpha * 0.9)),
-                     (self.x - r, self.y - r // 3, r * 2, r // 1.5))
-            _NS_alchemist._ellipse(surface, (*_NS_alchemist.PALETTE["acid_dark"], int(alpha * 0.85)),
-                     (self.x - r + 3, self.y - r // 3 + 2,
-                      r * 2 - 6, r // 1.5 - 4))
-            _NS_alchemist._ellipse(surface, (*_NS_alchemist.PALETTE["acid_mid"], int(alpha * 0.7)),
-                     (self.x - r + 6, self.y - r // 3 + 4,
-                      r * 2 - 12, r // 1.5 - 8))
-            # Bright puddle center
-            _NS_alchemist._ellipse(surface, (*_NS_alchemist.PALETTE["acid_bright"], int(alpha * 0.5)),
-                     (self.x - r + 10, self.y - r // 4 + 2,
-                      r * 2 - 20, r // 3))
-
-            # Bubbles
+            P = NS.PALETTE
+            NS._ellipse(surface, (*P["acid_darkest"], int(alpha * 0.9)),
+                        (self.x - r, self.y - r // 3, r * 2, r // 1.5))
+            NS._ellipse(surface, (*P["acid_dark"], int(alpha * 0.85)),
+                        (self.x - r + 3, self.y - r // 3 + 2,
+                         r * 2 - 6, r // 1.5 - 4))
+            NS._ellipse(surface, (*P["acid_mid"], int(alpha * 0.7)),
+                        (self.x - r + 6, self.y - r // 3 + 4,
+                         r * 2 - 12, r // 1.5 - 8))
+            NS._ellipse(surface, (*P["acid_bright"], int(alpha * 0.5)),
+                        (self.x - r + 10, self.y - r // 4 + 2,
+                         r * 2 - 20, r // 3))
             for i in range(6):
                 angle = phase * 0.5 + i * math.pi / 3
                 bx = self.x + int(math.cos(angle) * (r - 5))
                 by = self.y + int(math.sin(angle) * (r // 3 - 2))
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha), (bx, by), 2)
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_glow"], alpha), (bx, by - 1), 1)
-
-            # Rising vapor wisps
+                NS._aacircle(surface, (*P["acid_bright"], alpha),
+                             (bx, by), 2)
+                NS._aacircle(surface, (*P["acid_glow"], alpha),
+                             (bx, by - 1), 1)
             for i in range(3):
                 wt = (phase * 0.6 + i * 0.33) % 1.0
-                wx = self.x - r // 2 + i * (r // 3) + int(math.sin(phase + i) * 3)
+                wx = self.x - r // 2 + i * (r // 3) + \
+                    int(math.sin(phase + i) * 3)
                 wy = self.y - int(wt * 20)
                 wa = int(alpha * (1 - wt) * 0.6)
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_mid"], wa), (wx, wy), 3)
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], wa), (wx, wy), 2)
-
+                NS._aacircle(surface, (*P["acid_mid"], wa), (wx, wy), 3)
+                NS._aacircle(surface, (*P["acid_bright"], wa),
+                             (wx, wy), 2)
 
     def _draw_bottle_spinning(surface, cx, cy, spin):
-        """A potion bottle spinning through air."""
-        # Rotate simple bottle shape around center
-        # Bottle: cork on top, body below
+        """Botol ramuan berputar di udara (core + glow + sumbu bara)."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
         dx = math.cos(spin)
         dy = math.sin(spin)
-        perp_x = -dy
-        perp_y = dx
-
-        # Body corners
-        body_h = 8
-        body_w = 5
-
+        perp_x, perp_y = -dy, dx
+        body_h, body_w = 8, 5
         p1 = (cx + int(dx * body_h + perp_x * body_w),
               cy + int(dy * body_h + perp_y * body_w))
         p2 = (cx + int(dx * body_h - perp_x * body_w),
@@ -8703,14 +9297,10 @@ class _NS_alchemist:
               cy + int(-dy * body_h - perp_y * body_w))
         p4 = (cx + int(-dx * body_h + perp_x * body_w),
               cy + int(-dy * body_h + perp_y * body_w))
-
-        # Shadow
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["shadow_deep"],
-              [(p[0] + 1, p[1] + 1) for p in [p1, p2, p3, p4]])
-
-        # Bottle body (green glass)
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["glass_dark"], [p1, p2, p3, p4])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["glass_mid"], [
+        NS._poly(surface, P["shadow_deep"],
+                 [(p[0] + 1, p[1] + 1) for p in (p1, p2, p3, p4)])
+        NS._poly(surface, P["glass_dark"], [p1, p2, p3, p4])
+        NS._poly(surface, P["glass_mid"], [
             (cx + int(dx * (body_h - 1) + perp_x * (body_w - 1)),
              cy + int(dy * (body_h - 1) + perp_y * (body_w - 1))),
             (cx + int(dx * (body_h - 1) - perp_x * (body_w - 1)),
@@ -8720,65 +9310,16 @@ class _NS_alchemist:
             (cx + int(-dx * (body_h - 1) + perp_x * (body_w - 2)),
              cy + int(-dy * (body_h - 1) + perp_y * (body_w - 2))),
         ])
-
-        # Cork on top
         cork_x = cx + int(dx * (body_h + 3))
         cork_y = cy + int(dy * (body_h + 3))
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["leather_dark"], (cork_x, cork_y), 3)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["leather_mid"], (cork_x, cork_y), 2)
+        NS._aacircle(surface, P["leather_dark"], (cork_x, cork_y), 3)
+        NS._aacircle(surface, P["leather_mid"], (cork_x, cork_y), 2)
+        NS._aacircle(surface, P["acid_bright"], (cx, cy), 3)
+        NS._aacircle(surface, P["acid_hot"], (cx, cy), 2)
+        NS._aacircle(surface, P["acid_glow"], (cx, cy), 1)
+        NS._aacircle(surface, (*P["acid_bright"], 120), (cx, cy), 10)
 
-        # Bright acid glow inside
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_bright"], (cx, cy), 3)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_hot"], (cx, cy), 2)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_glow"], (cx, cy), 1)
-
-        # Outer glow
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], 120), (cx, cy), 10)
-
-
-    # ---------------------------------------------------------------------------
-    # State
-    # ---------------------------------------------------------------------------
-    def _detect_moving(boss):
-        if not hasattr(boss, "_alch_last_x"):
-            boss._alch_last_x = boss.x
-            boss._alch_last_y = boss.y
-            return False
-        dx = abs(boss.x - boss._alch_last_x)
-        dy = abs(boss.y - boss._alch_last_y)
-        boss._alch_last_x = boss.x
-        boss._alch_last_y = boss.y
-        return dx + dy > 0.3
-
-
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
-        timer = int(getattr(boss, "timer", 0))
-        previous = int(getattr(boss, "_alch_prev_timer", 0))
-        active = bool(getattr(boss, "_alch_attack_active", False))
-
-        if timer >= cooldown - 1 and previous <= 1:
-            boss._alch_attack_active = True
-            boss._alch_attack_frame = 0
-            active = True
-        elif active:
-            boss._alch_attack_frame = int(getattr(boss, "_alch_attack_frame", 0)) + 1
-            if boss._alch_attack_frame > cooldown:
-                boss._alch_attack_active = False
-                boss._alch_attack_frame = 0
-                active = False
-        elif timer <= 0:
-            boss._alch_attack_active = False
-            boss._alch_attack_frame = 0
-            active = False
-
-        boss._alch_prev_timer = timer
-        boss._alch_attack_progress = (
-            min(1.0, getattr(boss, "_alch_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
-
-
+    # ── manajemen proyektil + koin canvas ───────────────────────────
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_alch_projectiles"):
             boss._alch_projectiles = []
@@ -8791,22 +9332,33 @@ class _NS_alchemist:
             proj.update()
             if not proj.alive and proj.age > 0:
                 boss._alch_patches.append(
-                    _NS_alchemist.AcidPatch(int(proj.tx), int(proj.ty), radius=32, life=100))
+                    _NS_alchemist.AcidPatch(int(proj.tx), int(proj.ty),
+                                            radius=32, life=100))
                 proj.age = -1
             if proj.age >= 0:
                 proj.draw(surface, phase)
-        boss._alch_projectiles = [p for p in boss._alch_projectiles if p.alive]
+        boss._alch_projectiles = [p for p in boss._alch_projectiles
+                                  if p.alive]
 
         for patch in boss._alch_patches:
             patch.update()
         boss._alch_patches = [p for p in boss._alch_patches if p.alive]
 
-
     def _spawn_acid_bottle(boss, sx, sy, tx, ty):
+        """Lempar botol asam (canvas fallback).
+
+        Jalur lapisan hidup mengambil alih kalau aktif: renderer hanya
+        menyalakan ``_alch_live_proj_window``, lapisan hidup yang
+        melempar di koordinat layar 1:1.
+        """
+        NS = _NS_alchemist
+        if NS._fx_owned(boss):
+            boss._alch_live_proj_window = True
+            return
         if not hasattr(boss, "_alch_projectiles"):
             boss._alch_projectiles = []
-        boss._alch_projectiles.append(_NS_alchemist.AcidBottle(sx, sy, tx, ty))
-
+        boss._alch_projectiles.append(
+            NS.AcidBottle(sx, sy, tx, ty))
 
     def _spawn_coin(boss, x, y):
         if not hasattr(boss, "_alch_coins"):
@@ -8821,1011 +9373,54 @@ class _NS_alchemist:
             "spin_speed": 0.3 + (hash((x, y, "s")) % 30) / 100.0,
         })
 
-
-    # ===================================================================
-    # MAIN ENTRY
-    # ===================================================================
-    def draw_alchemist(surface, boss, x, y):
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_alchemist._detect_moving(boss)
-        _NS_alchemist._update_attack_anim(boss)
-
-        attacking = (
-            getattr(boss, "_alch_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
-
-        # BG aura
-        _NS_alchemist._draw_alch_aura(surface, x, y, pulse, active_skill)
-
-        # Ground effects
-        if hasattr(boss, "_alch_patches"):
-            for patch in boss._alch_patches:
-                patch.draw(surface, pulse)
-
-        _NS_alchemist._draw_ground_runes(surface, x, y + 45, pulse, active_skill)
-
-        if active_skill == "r":
-            _NS_alchemist._draw_greevil_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_alchemist._draw_chem_rage_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # PERTAGAS: gelombang kejut aktivasi skill (12 frame pertama)
-        if active_skill in ("q", "w", "e", "r"):
-            dur = {"q": 40, "w": 60, "e": 60, "r": 90}[active_skill]
-            age = dur - skill_timer
-            if 0 <= age < 12:
-                c1 = (_NS_alchemist.PALETTE["acid_hot"] if active_skill != "r"
-                      else _NS_alchemist.PALETTE["gold_light"])
-                c2 = (_NS_alchemist.PALETTE["acid_bright"] if active_skill != "r"
-                      else _NS_alchemist.PALETTE["gold_mid"])
-                _NS_alchemist._draw_shockwave(surface, x, y + 55, age, 12, c1, c2)
-
-        # ORIGINAL-MAX hurt flash: badan dibanjiri putih-hangat, bayangan
-        # tanah tidak ikut menyala.
-        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
-        _tgt, _tx, _ty = surface, x, y
-        if flash > 0:
-            B = _NS_alchemist
-            if B._flash_buf is None:
-                B._flash_buf = pygame.Surface((260, 280), pygame.SRCALPHA)
-            B._flash_buf.fill((0, 0, 0, 0))
-            B._record_shadow = []
-            _tgt, _tx, _ty = B._flash_buf, 130, 150
-
-        # Character
-        if attacking:
-            _NS_alchemist._draw_alch_attack(_tgt, boss, _tx, _ty)
-        elif active_skill == "q":
-            _NS_alchemist._draw_alch_qcast(_tgt, boss, _tx, _ty, skill_timer)
-        elif active_skill == "w":
-            _NS_alchemist._draw_alch_wcast(_tgt, boss, _tx, _ty, skill_timer)
-        elif moving:
-            _NS_alchemist._draw_alch_walk(_tgt, boss, _tx, _ty)
-        else:
-            _NS_alchemist._draw_alch_idle(_tgt, boss, _tx, _ty)
-
-        if flash > 0:
-            B = _NS_alchemist
-            surface.blit(B._flash_buf, (x - _tx, y - _ty))
-            w = int(235 * min(1.0, flash / 8.0))
-            m = pygame.mask.from_surface(B._flash_buf, 50)
-            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
-                               unsetcolor=(0, 0, 0, 0))
-            for rect in (B._record_shadow or ()):
-                wht.fill((0, 0, 0, 0), rect)
-            surface.blit(wht, (x - _tx, y - _ty),
-                         special_flags=pygame.BLEND_RGB_ADD)
-            B._record_shadow = None
-
-        # Projectiles
-        _NS_alchemist._manage_projectiles(boss, surface, pulse)
-
-        # Foreground
-        if active_skill == "q":
-            _NS_alchemist._draw_acid_spray(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_alchemist._draw_chem_rage_foreground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_alchemist._draw_greevil_foreground(surface, boss, x, y, skill_timer, pulse)
-
-
-    def _draw_shockwave(surface, x, y, age, total, c1, c2):
-        """Gelombang kejut aktivasi skill - 12 frame pertama."""
-        t = age / float(total)
-        ease = 1 - (1 - t) ** 2
-        r = int(16 + ease * 66)
-        a = max(0, min(255, int(235 * (1 - t))))
-        pygame.draw.ellipse(surface, (*c1, a),
-                            (x - r, y - r // 3, r * 2, r * 2 // 3), 2)
-        pygame.draw.ellipse(surface, (*c2, a),
-                            (x - r // 2, y - r // 6, r, r // 3), 1)
-        ri = max(3, r // 2)
-        _NS_alchemist._aacircle(surface, (*c1, int(a * 0.8)),
-                                (x, y - (r // 6)), ri)
-
-
-    # ===================================================================
-    # POSE MODES
-    # ===================================================================
-    def _draw_alch_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_alchemist._draw_shadow(surface, x, y + 55)
-        _NS_alchemist._draw_alch_wisps(surface, x, y + 40, boss.pulse)
-        _NS_alchemist._draw_alch_full(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
-
-    def _draw_alch_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.0
-        bob = int(abs(math.sin(phase * 1.2)) * 3)
-        sway = int(math.sin(phase * 0.5) * 2)
-        _NS_alchemist._draw_shadow(surface, x + sway, y + 55)
-        _NS_alchemist._draw_alch_wisps(surface, x + sway, y + 40, phase, trail=True,
-                         facing=boss.direction)
-        _NS_alchemist._draw_alch_full(surface, x + sway, y - bob, boss.direction, phase, "walk")
-
-
-    def _draw_alch_attack(surface, boss, x, y):
-        progress = getattr(boss, "_alch_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
-
-        _NS_alchemist._draw_shadow(surface, x + lunge, y + 55)
-        _NS_alchemist._draw_alch_wisps(surface, x + lunge, y + 40, boss.pulse, intense=True)
-        _NS_alchemist._draw_alch_full(surface, x + lunge, y, boss.direction, boss.pulse,
-                        "attack", progress)
-        _NS_alchemist._draw_cleaver_swing_arc(surface, x + lunge, y, boss.direction, progress)
-        _NS_alchemist._draw_swing_impact(surface, x + lunge, y, boss.direction, progress)
-
-
-    def _draw_alch_qcast(surface, boss, x, y, timer):
-        duration = 40
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        recoil = int(math.sin(progress * math.pi * 2) * 2) * -boss.direction
-        _NS_alchemist._draw_shadow(surface, x + recoil, y + 55)
-        _NS_alchemist._draw_alch_wisps(surface, x + recoil, y + 40, boss.pulse, intense=True)
-        _NS_alchemist._draw_alch_full(surface, x + recoil, y + bob, boss.direction, boss.pulse,
-                        "q_cast", progress)
-
-
-    def _draw_alch_wcast(surface, boss, x, y, timer):
-        duration = 60
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_alchemist._draw_shadow(surface, x, y + 55)
-        _NS_alchemist._draw_alch_wisps(surface, x, y + 40, boss.pulse)
-        _NS_alchemist._draw_alch_full(surface, x, y + bob, boss.direction, boss.pulse,
-                        "w_cast", progress)
-
-        # Spawn bottle at right moment
-        if 0.35 < progress < 0.45 and not getattr(boss, "_alch_wcast_spawned", False):
-            tx, ty = _NS_alchemist._target_position(boss, x, y)
-            # Bottle thrown from goblin's hand (above ogre)
-            sx = x + 5 * boss.direction
-            sy = y - 30
-            _NS_alchemist._spawn_acid_bottle(boss, sx, sy, tx, ty)
-            boss._alch_wcast_spawned = True
-        if progress > 0.7:
-            boss._alch_wcast_spawned = False
-
-
-    # ===================================================================
-    # FULL COMPOSITE - Ogre + Goblin rider
-    # ===================================================================
-    def _draw_alch_full_raw(surface, cx, cy, facing, phase, action, attack_progress=0):
-        # Rage buff pulse
-        is_rage = action == "rage" or False
-
-        # Ogre body first
-        _NS_alchemist._draw_ogre_lower(surface, cx, cy + 8, phase)
-        _NS_alchemist._draw_ogre_torso(surface, cx, cy - 8, facing, phase, action, attack_progress)
-
-        # Backpack potions on ogre's back
-        _NS_alchemist._draw_backpack(surface, cx - 12 * facing, cy - 10, phase)
-
-        # Ogre head
-        _NS_alchemist._draw_ogre_head(surface, cx + 3 * facing, cy - 20, facing, phase, action)
-
-        # Ogre arms + cleavers
-        if action == "attack":
-            _NS_alchemist._draw_ogre_attack_arms(surface, cx, cy - 8, facing, phase, attack_progress)
-        elif action in ("q_cast", "w_cast"):
-            _NS_alchemist._draw_ogre_cast_arms(surface, cx, cy - 8, facing, phase, action, attack_progress)
-        else:
-            _NS_alchemist._draw_ogre_idle_arms(surface, cx, cy - 8, facing, phase)
-
-        # Goblin rider on ogre's shoulder (behind ogre head, above shoulder)
-        _NS_alchemist._draw_goblin_rider(surface, cx - 8 * facing, cy - 30, facing, phase, action,
-                           attack_progress)
-
-    def _draw_alch_full(surface, cx, cy, facing, phase, action, attack_progress=0):
-        """Komposit ORIGINAL-MAX: badan -> buffer tetap -> outline siluet
-        gelap 1 px + pass pencahayaan (rim/shade) -> blit posisi dunia sama."""
+    # ==================================================================
+    # ACID PARTICLE HELPERS (stamp kecil, dipakai canvas & fallback)
+    # ==================================================================
+    def _draw_acid_splash(surface, cx, cy, size=8, phase=0, alpha=255):
+        """Cipratan asam berbusa (ramp 6 band + gelembung)."""
         NS = _NS_alchemist
-        B = 200
-        if NS._body_buf is None:
-            NS._body_buf = pygame.Surface((B, B), pygame.SRCALPHA)
-        buf = NS._body_buf
-        buf.fill((0, 0, 0, 0))
-        NS._draw_alch_full_raw(buf, B // 2, B // 2, facing, phase, action, attack_progress)
-        used = buf.get_bounding_rect(min_alpha=1)
-        if used.width <= 2 or used.height <= 2:
-            return
-        used.inflate_ip(4, 4)
-        used.clamp_ip(buf.get_rect())
-        sub = buf.subsurface(used).copy()
-        ox = int(cx) - (B // 2) + used.left
-        oy = int(cy) - (B // 2) + used.top
-        edge = sub.copy()
-        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
-        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-            surface.blit(edge, (ox + ddx, oy + ddy))
-        if _lighting is not None:
-            _lighting.apply_to_rig(sub, rim_add=(26, 40, 14), shade_mul=168)
-        surface.blit(sub, (ox, oy))
+        P = NS.PALETTE
+        NS._aacircle(surface, (*P["acid_darkest"], alpha), (cx, cy), size)
+        NS._aacircle(surface, (*P["acid_dark"], alpha), (cx, cy),
+                     max(1, size - 1))
+        NS._aacircle(surface, (*P["acid_mid"], alpha), (cx, cy),
+                     max(1, size - 3))
+        NS._aacircle(surface, (*P["acid_bright"], alpha),
+                     (cx - 1, cy - 1), max(1, size - 4))
+        NS._aacircle(surface, (*P["acid_hot"], alpha),
+                     (cx - 1, cy - 2), max(1, size - 6))
+        NS._aacircle(surface, (*P["acid_glow"], min(255, alpha)),
+                     (cx - 1, cy - 2), max(1, size - 7))
+        for i in range(4):
+            angle = phase * 0.5 + i * math.pi / 2
+            bx = cx + int(math.cos(angle) * (size - 2))
+            by = cy + int(math.sin(angle) * (size - 2))
+            NS._aacircle(surface, (*P["acid_bright"], alpha),
+                         (bx, by), 1)
 
-
-    def _draw_ogre_lower(surface, cx, cy, phase):
-        """Floating lower body — belt + tattered leather skirt."""
-        # Belt
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_darkest"], (cx - 22, cy - 4, 44, 8))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_dark"], (cx - 20, cy - 3, 40, 6))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_mid"], (cx - 18, cy - 2, 36, 3))
-
-        # Big brass buckle
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_dark"], (cx - 6, cy - 4, 12, 8), border_radius=1)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_mid"], (cx - 5, cy - 3, 10, 6))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_light"], (cx - 4, cy - 3, 8, 2))
-        # Alchemist symbol on buckle (small $ or R for Alchemist)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["gold_shine"], (cx, cy), 2)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["gold_light"], (cx, cy), 1)
-
-        # Leather skirt strips
-        for i, offset in enumerate([-16, -8, 0, 8, 16]):
-            wave = math.sin(phase * 1.0 + i) * 2
-            length = 22 + (i % 2) * 4
-            _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["shadow_deep"], [
-                (cx + offset - 4, cy + 3),
-                (cx + offset + 4, cy + 3),
-                (cx + offset + 3 + int(wave), cy + length),
-                (cx + offset - 3 + int(wave), cy + length),
-            ])
-            _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["leather_darkest"], [
-                (cx + offset - 4, cy + 2),
-                (cx + offset + 4, cy + 2),
-                (cx + offset + 3 + int(wave), cy + length - 1),
-                (cx + offset - 3 + int(wave), cy + length - 1),
-            ])
-            _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["leather_dark"], [
-                (cx + offset - 3, cy + 3),
-                (cx + offset + 3, cy + 3),
-                (cx + offset + 2 + int(wave), cy + length - 3),
-                (cx + offset - 2 + int(wave), cy + length - 3),
-            ])
-            _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["leather_mid"], [
-                (cx + offset - 2, cy + 4),
-                (cx + offset + 2, cy + 4),
-                (cx + offset + 1 + int(wave), cy + length - 5),
-                (cx + offset - 1 + int(wave), cy + length - 5),
-            ])
-
-
-    def _draw_ogre_torso(surface, cx, cy, facing, phase, action, attack_progress):
-        """Massive orange ogre torso."""
-        # Body sway
-        sway = int(math.sin(phase * 0.5) * 1)
-
-        # Shadow
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["shadow_deep"], [
-            (cx - 22 + 2, cy - 10 + 2), (cx + 22 + 2, cy - 10 + 2),
-            (cx + 20 + 2, cy + 18 + 2), (cx - 20 + 2, cy + 18 + 2),
+    def _draw_acid_droplet(surface, x, y, size=3, alpha=255):
+        """Tetes asam (bentuk tear + glow)."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        NS._poly(surface, (*P["acid_darkest"], alpha), [
+            (x, y - size),
+            (x - size, y + size),
+            (x + size, y + size),
         ])
-
-        # Main body (large trapezoid)
-        body = [
-            (cx - 22, cy - 10),
-            (cx + 22, cy - 10),
-            (cx + 20, cy + 18),
-            (cx - 20, cy + 18),
-        ]
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["ogre_darkest"], body)
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["ogre_dark"], [
-            (cx - 20, cy - 8), (cx + 20, cy - 8),
-            (cx + 18, cy + 16), (cx - 18, cy + 16),
-        ])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["ogre_mid"], [
-            (cx - 17, cy - 5), (cx + 17, cy - 5),
-            (cx + 15, cy + 13), (cx - 15, cy + 13),
-        ])
-
-        # Belly bulge (round)
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["ogre_light"], (cx - 14, cy + 2, 28, 14))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["ogre_high"], (cx - 10, cy + 4, 20, 8))
-
-        # Chest muscle highlights
-        for side in (-1, 1):
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_light"],
-                      (cx + side * 8, cy - 3), 5)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_high"],
-                      (cx + side * 8 - 1, cy - 5), 2)
-
-        # Belly button
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_darkest"], (cx, cy + 8), 2)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_dark"], (cx, cy + 8), 1)
-
-        # Dark spots on skin
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_darkest"], (cx - 8, cy + 12), 2)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_darkest"], (cx + 10, cy - 2), 1)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_darkest"], (cx + 6, cy + 10), 1)
-
-        # Metal shoulder armor
-        for side in (-1, 1):
-            sx = cx + side * 18
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["shadow_deep"], (sx + 2, cy - 8 + 2), 10)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["metal_darkest"], (sx, cy - 8), 10)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["metal_dark"], (sx - side, cy - 9), 8)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["metal_mid"], (sx - side * 2, cy - 10), 6)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["metal_light"], (sx - side * 3, cy - 12), 3)
-            # Rivets
-            for i in range(3):
-                angle = i * math.pi * 2 / 3
-                rx = sx + int(math.cos(angle) * 5)
-                ry = cy - 8 + int(math.sin(angle) * 5)
-                _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["brass_mid"], (rx, ry), 1)
-
-
-    def _draw_ogre_head(surface, cx, cy, facing, phase, action):
-        """Ogre head with tusks and helmet."""
-        # Neck (thick)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["ogre_darkest"], (cx - 7, cy + 7, 14, 5))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["ogre_dark"], (cx - 6, cy + 7, 12, 4))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["ogre_mid"], (cx - 5, cy + 7, 10, 2))
-
-        # Head base (large)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["shadow_deep"], (cx + 2, cy + 2), 13)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_darkest"], (cx, cy), 12)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_dark"], (cx - 1, cy - 1), 10)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_mid"], (cx - 2, cy - 2), 8)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_light"], (cx - 3, cy - 3), 4)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_high"], (cx - 3, cy - 5), 2)
-
-        # Small angry eyes
-        is_rage = action == "e"  # if E active glow more
-        for side in (-1, 1):
-            ex = cx + side * 4
-            ey = cy - 1
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["shadow_deep"], (ex, ey), 2)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["eye_dark"], (ex, ey), 2)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["eye_hot"], (ex, ey), 1)
-            # Angry brow
-            _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["ogre_darkest"],
-                    (ex - 2, ey - 3), (ex + 2, ey - 2), 2)
-
-        # Nose (piggy snout)
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["ogre_dark"], (cx - 4, cy + 2, 8, 5))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["ogre_mid"], (cx - 3, cy + 2, 6, 4))
-        # Nostrils
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["shadow_deep"], (cx - 1, cy + 4), 1)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["shadow_deep"], (cx + 1, cy + 4), 1)
-
-        # Big lower lip
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["ogre_dark"], (cx - 6, cy + 6, 12, 4))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["ogre_mid"], (cx - 4, cy + 6, 8, 3))
-
-        # Tusks (Alchemist signature - two big lower fangs)
-        for side in (-1, 1):
-            tusk_x = cx + side * 4
-            tusk_y = cy + 6
-            _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["shadow_deep"], [
-                (tusk_x + 1, tusk_y + 1),
-                (tusk_x - side * 2, tusk_y + 5),
-                (tusk_x + side + 1, tusk_y + 7),
-                (tusk_x + side * 2, tusk_y + 5),
-            ])
-            _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["bone_dark"], [
-                (tusk_x, tusk_y),
-                (tusk_x - side * 2, tusk_y + 5),
-                (tusk_x + side, tusk_y + 6),
-                (tusk_x + side * 2, tusk_y + 5),
-            ])
-            _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["bone_mid"], [
-                (tusk_x, tusk_y + 1),
-                (tusk_x - side, tusk_y + 4),
-                (tusk_x + side, tusk_y + 5),
-                (tusk_x + side * 2, tusk_y + 4),
-            ])
-            _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["bone_light"], [
-                (tusk_x, tusk_y + 2),
-                (tusk_x, tusk_y + 4),
-                (tusk_x + side, tusk_y + 4),
-            ])
-
-        # Metal helmet cap on top
-        helm = [
-            (cx - 10, cy - 2),
-            (cx - 8, cy - 10),
-            (cx - 2, cy - 12),
-            (cx + 4, cy - 12),
-            (cx + 8, cy - 8),
-            (cx + 10, cy - 2),
-        ]
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["shadow_deep"], [(p[0] + 1, p[1] + 1) for p in helm])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_darkest"], helm)
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_dark"], [
-            (cx - 9, cy - 3),
-            (cx - 7, cy - 9),
-            (cx - 2, cy - 11),
-            (cx + 4, cy - 11),
-            (cx + 7, cy - 8),
-            (cx + 9, cy - 3),
-        ])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_mid"], [
-            (cx - 7, cy - 4),
-            (cx - 5, cy - 8),
-            (cx + 4, cy - 10),
-            (cx + 7, cy - 7),
-        ])
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["metal_light"],
-                (cx - 4, cy - 9), (cx + 3, cy - 10), 1)
-
-        # Small horn spike on top
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_darkest"], [
-            (cx - 1, cy - 12),
-            (cx + 2, cy - 12),
-            (cx, cy - 17),
-        ])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_mid"], [
-            (cx, cy - 12),
-            (cx + 1, cy - 12),
-            (cx, cy - 15),
-        ])
-
-        # Rivets on helmet
-        for rx in (-5, 0, 5):
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["brass_mid"], (cx + rx, cy - 4), 1)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["brass_shine"], (cx + rx, cy - 4), 1)
-
-
-    def _draw_backpack(surface, cx, cy, phase):
-        """Wooden barrel + potion bottles on back."""
-        # Barrel
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["shadow_deep"], (cx - 6 + 1, cy - 8 + 1, 12, 18),
-              border_radius=2)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_darkest"], (cx - 6, cy - 8, 12, 18),
-              border_radius=2)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_dark"], (cx - 5, cy - 7, 10, 16),
-              border_radius=1)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_mid"], (cx - 4, cy - 7, 8, 14))
-
-        # Barrel hoops (metal bands)
-        for hoop_y in (cy - 6, cy, cy + 6):
-            _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["metal_darkest"], (cx - 6, hoop_y, 12, 2))
-            _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["metal_mid"], (cx - 6, hoop_y, 12, 1))
-
-        # Wood plank lines
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["leather_darkest"],
-                (cx - 2, cy - 7), (cx - 2, cy + 9), 1)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["leather_darkest"],
-                (cx + 1, cy - 7), (cx + 1, cy + 9), 1)
-
-
-    def _draw_ogre_idle_arms(surface, cx, cy, facing, phase):
-        """Both arms holding cleavers relaxed."""
-        sway = math.sin(phase * 0.7) * 2
-        for side in (-1, 1):
-            sh_x = cx + side * 18
-            sh_y = cy + 2
-            elbow_x = sh_x + side * 12
-            elbow_y = cy + 14 + int(sway)
-            hand_x = elbow_x + side * 5
-            hand_y = elbow_y + 12
-
-            _NS_alchemist._draw_ogre_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-            _NS_alchemist._draw_ogre_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-            _NS_alchemist._draw_hand(surface, hand_x, hand_y)
-            _NS_alchemist._draw_cleaver_held(surface, hand_x, hand_y, side, phase)
-
-
-    def _draw_ogre_cast_arms(surface, cx, cy, facing, phase, action, progress):
-        """Arms during Q or W cast — back arm holds cleaver, front arm holds tank hose or potion."""
-        # Back arm holding cleaver
-        back_side = -facing
-        bs_x = cx + back_side * 18
-        bs_y = cy + 2
-        be_x = bs_x + back_side * 10
-        be_y = cy + 14
-        bh_x = be_x + back_side * 4
-        bh_y = be_y + 12
-        _NS_alchemist._draw_ogre_arm(surface, bs_x, bs_y, be_x, be_y)
-        _NS_alchemist._draw_ogre_arm(surface, be_x, be_y, bh_x, bh_y)
-        _NS_alchemist._draw_hand(surface, bh_x, bh_y)
-        _NS_alchemist._draw_cleaver_held(surface, bh_x, bh_y, back_side, phase)
-
-        # Front arm - extended forward
-        fs_x = cx + facing * 18
-        fs_y = cy + 2
-        fe_x = fs_x + facing * 12
-        fe_y = cy + 8
-        fh_x = fe_x + facing * 8
-        fh_y = fe_y + 2
-        _NS_alchemist._draw_ogre_arm(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_alchemist._draw_ogre_arm(surface, fe_x, fe_y, fh_x, fh_y)
-        _NS_alchemist._draw_hand(surface, fh_x, fh_y)
-
-        if action == "q_cast":
-            # Acid gun / hose held forward
-            _NS_alchemist._draw_acid_gun(surface, fh_x, fh_y, facing, phase, firing=progress > 0.2)
-
-
-    def _draw_ogre_attack_arms(surface, cx, cy, facing, phase, progress):
-        """Both arms swing cleavers overhead."""
-        # Back arm — cleaver at side
-        back_side = -facing
-        bs_x = cx + back_side * 18
-        bs_y = cy + 2
-        be_x = bs_x + back_side * 8
-        be_y = cy + 12
-        bh_x = be_x + back_side * 4
-        bh_y = be_y + 10
-        _NS_alchemist._draw_ogre_arm(surface, bs_x, bs_y, be_x, be_y)
-        _NS_alchemist._draw_ogre_arm(surface, be_x, be_y, bh_x, bh_y)
-        _NS_alchemist._draw_hand(surface, bh_x, bh_y)
-        _NS_alchemist._draw_cleaver_held(surface, bh_x, bh_y, back_side, phase)
-
-        # Front arm swings cleaver
-        fs_x = cx + facing * 18
-        fs_y = cy + 2
-
-        if progress < 0.25:
-            t = progress / 0.25
-            t = t * t * (3 - 2 * t)
-            arm_angle = -1.4 + 0.3 * t
-        elif progress < 0.55:
-            t = (progress - 0.25) / 0.30
-            t = 1 - (1 - t) ** 3
-            arm_angle = -1.1 + 2.3 * t
-        else:
-            t = (progress - 0.55) / 0.45
-            arm_angle = 1.2 - 0.9 * t
-
-        arm_len = 20
-        fh_x = fs_x + int(math.cos(arm_angle) * arm_len) * facing
-        fh_y = fs_y + int(math.sin(arm_angle) * arm_len)
-        elbow_x = fs_x + int(math.cos(arm_angle) * arm_len * 0.55) * facing
-        elbow_y = fs_y + int(math.sin(arm_angle) * arm_len * 0.55)
-
-        _NS_alchemist._draw_ogre_arm(surface, fs_x, fs_y, elbow_x, elbow_y)
-        _NS_alchemist._draw_ogre_arm(surface, elbow_x, elbow_y, fh_x, fh_y)
-        _NS_alchemist._draw_hand(surface, fh_x, fh_y)
-
-        # Big cleaver in motion
-        blade_angle = arm_angle + math.pi / 4 * facing
-        _NS_alchemist._draw_cleaver_swinging(surface, fh_x, fh_y, facing, blade_angle)
-
-
-    def _draw_ogre_arm(surface, x1, y1, x2, y2):
-        """Massive muscular ogre arm."""
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["shadow_deep"], (x1 + 2, y1 + 2), (x2 + 2, y2 + 2), 11)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["ogre_darkest"], (x1, y1), (x2, y2), 10)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["ogre_dark"], (x1, y1), (x2, y2), 8)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["ogre_mid"], (x1, y1), (x2, y2), 5)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["ogre_light"], (x1 - 1, y1), (x2 - 1, y2), 2)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["ogre_high"], (x1 - 2, y1), (x2 - 2, y2), 1)
-
-
-    def _draw_hand(surface, x, y):
-        """Ogre fist."""
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["shadow_deep"], (x + 1, y + 1), 6)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_darkest"], (x, y), 5)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_dark"], (x, y), 4)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_mid"], (x - 1, y - 1), 3)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_light"], (x - 1, y - 2), 1)
-        # Leather wrist wrap
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_darkest"], (x - 5, y - 7, 10, 4),
-              border_radius=1)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_dark"], (x - 4, y - 7, 8, 3))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_mid"], (x - 4, y - 6, 8, 1))
-
-
-    def _draw_cleaver_held(surface, hx, hy, side, phase):
-        """Cleaver held at rest — big rectangular blade with hook."""
-        # Handle
-        handle_len = 10
-        handle_bot_x = hx + side * 2
-        handle_bot_y = hy + handle_len
-
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["shadow_deep"],
-                (hx + 1, hy + 1), (handle_bot_x + 1, handle_bot_y + 1), 5)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["leather_darkest"],
-                (hx, hy), (handle_bot_x, handle_bot_y), 4)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["leather_dark"],
-                (hx, hy), (handle_bot_x, handle_bot_y), 3)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["leather_mid"],
-                (hx, hy), (handle_bot_x, handle_bot_y), 1)
-
-        # Cleaver blade (big rectangle)
-        bx = hx - side * 1
-        by = hy - 3
-        bw = 14  # blade width
-        bh = 12  # blade height
-
-        # Shadow
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["shadow_deep"], [
-            (bx + 1, by + 1),
-            (bx + side * bw + 1, by + 1),
-            (bx + side * (bw + 3) + 1, by + bh // 2 + 1),
-            (bx + side * bw + 1, by + bh + 1),
-            (bx - side * 2 + 1, by + bh + 1),
-        ])
-
-        # Blade shape
-        blade_pts = [
-            (bx, by),
-            (bx + side * bw, by),
-            (bx + side * (bw + 3), by + bh // 2),
-            (bx + side * bw, by + bh),
-            (bx - side * 2, by + bh),
-        ]
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_darkest"], blade_pts)
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_dark"], [
-            (bx + side, by + 1),
-            (bx + side * (bw - 1), by + 1),
-            (bx + side * (bw + 2), by + bh // 2),
-            (bx + side * (bw - 1), by + bh - 1),
-            (bx - side, by + bh - 1),
-        ])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_mid"], [
-            (bx + side * 2, by + 2),
-            (bx + side * (bw - 2), by + 2),
-            (bx + side * (bw + 1), by + bh // 2),
-            (bx + side * (bw - 2), by + bh - 2),
-            (bx, by + bh - 2),
-        ])
-
-        # Sharp edge highlight
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["metal_shine"],
-                (bx + side * 2, by + 1),
-                (bx + side * (bw + 2), by + bh // 2), 1)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["metal_edge"],
-                (bx + side * (bw + 2), by + bh // 2),
-                (bx + side * (bw - 1), by + bh - 1), 1)
-
-        # Acid stain on blade
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_dark"],
-                  (bx + side * bw // 2, by + bh // 2), 3)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_mid"],
-                  (bx + side * bw // 2 - 1, by + bh // 2 - 1), 2)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_bright"],
-                  (bx + side * bw // 2 - 1, by + bh // 2 - 1), 1)
-
-        # Dripping acid
-        _NS_alchemist._draw_acid_droplet(surface, bx + side * bw // 2,
-                            by + bh + 4 + int(math.sin(phase + side) * 2), 2, 200)
-
-
-    def _draw_cleaver_swinging(surface, hx, hy, facing, angle):
-        """Large cleaver in motion."""
-        handle_len = 12
-        dx = math.cos(angle) * facing
-        dy = math.sin(angle)
-        perp_x = -math.sin(angle)
-        perp_y = math.cos(angle) * facing
-
-        # Handle
-        end_x = hx + int(dx * handle_len)
-        end_y = hy + int(dy * handle_len)
-
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["shadow_deep"], (hx + 2, hy + 2),
-                (end_x + 2, end_y + 2), 5)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["leather_darkest"], (hx, hy), (end_x, end_y), 4)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["leather_dark"], (hx, hy), (end_x, end_y), 3)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["leather_mid"], (hx, hy), (end_x, end_y), 1)
-
-        # Blade
-        blade_w = 14
-        # Corners
-        c1 = (end_x + int(dx * 2 + perp_x * blade_w),
-              end_y + int(dy * 2 + perp_y * blade_w))
-        c2 = (end_x + int(dx * (blade_w + 3) + perp_x * blade_w // 2),
-              end_y + int(dy * (blade_w + 3) + perp_y * blade_w // 2))
-        c3 = (end_x + int(dx * blade_w - perp_x * blade_w // 2),
-              end_y + int(dy * blade_w - perp_y * blade_w // 2))
-        c4 = (end_x + int(-dx * 2 - perp_x * 2),
-              end_y + int(-dy * 2 - perp_y * 2))
-
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["shadow_deep"], [
-            (p[0] + 1, p[1] + 1) for p in [c1, c2, c3, c4]])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_darkest"], [c1, c2, c3, c4])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_dark"], [
-            (c1[0] - int(perp_x), c1[1] - int(perp_y)),
-            (c2[0] - int(perp_x), c2[1] - int(perp_y)),
-            c3, c4,
-        ])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["metal_mid"], [
-            (c1[0] - int(perp_x * 2), c1[1] - int(perp_y * 2)),
-            c2, c3,
-        ])
-
-        # Sharp edge
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["metal_shine"], c1, c2, 1)
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["metal_edge"], c2, c3, 1)
-
-        # Acid glow on blade
-        mid_x = (c1[0] + c2[0] + c3[0]) // 3
-        mid_y = (c1[1] + c2[1] + c3[1]) // 3
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], 180), (mid_x, mid_y), 4)
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], 220), (mid_x, mid_y), 2)
-
-
-    def _draw_acid_gun(surface, hx, hy, facing, phase, firing=False):
-        """Brass acid gun / hose held in ogre's hand."""
-        # Handle
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_darkest"], (hx - 2, hy - 3, 4, 8),
-              border_radius=1)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_dark"], (hx - 2, hy - 3, 4, 6))
-
-        # Tank on top
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["shadow_deep"], (hx - 4 + 1, hy - 10 + 1, 8, 8),
-              border_radius=1)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_dark"], (hx - 4, hy - 10, 8, 8),
-              border_radius=1)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_mid"], (hx - 3, hy - 9, 6, 6))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_light"], (hx - 3, hy - 9, 3, 4))
-
-        # Green fluid window
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["glass_dark"], (hx - 2, hy - 8, 4, 5))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["acid_mid"], (hx - 1, hy - 7, 3, 3))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["acid_bright"], (hx - 1, hy - 7, 2, 2))
-
-        # Barrel/hose extending forward
-        barrel_len = 16
-        end_x = hx + facing * barrel_len
-
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["shadow_deep"],
-              (min(hx, end_x) + 1, hy - 2 + 1, barrel_len, 5), border_radius=1)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_dark"],
-              (min(hx, end_x), hy - 2, barrel_len, 5), border_radius=1)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_mid"],
-              (min(hx, end_x), hy - 1, barrel_len, 3))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_light"],
-              (min(hx, end_x), hy - 1, barrel_len, 1))
-
-        # Flared muzzle
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["brass_dark"], [
-            (end_x, hy - 4),
-            (end_x + facing * 5, hy - 5),
-            (end_x + facing * 5, hy + 4),
-            (end_x, hy + 3),
-        ])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["brass_mid"], [
-            (end_x, hy - 3),
-            (end_x + facing * 4, hy - 4),
-            (end_x + facing * 4, hy + 3),
-            (end_x, hy + 2),
-        ])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["brass_light"], [
-            (end_x + facing * 1, hy - 2),
-            (end_x + facing * 4, hy - 3),
-            (end_x + facing * 4, hy + 1),
-        ])
-
-        if not firing:
-            # Small drip
-            _NS_alchemist._draw_acid_droplet(surface, end_x + facing * 6, hy + 4, 2, 200)
-
-
-    def _draw_goblin_rider(surface, cx, cy, facing, phase, action, attack_progress):
-        """Small purple goblin on ogre's shoulder holding potion."""
-        bob = int(math.sin(phase * 1.0) * 1)
-
-        # Legs (little dangling)
-        for side in (-1, 1):
-            lx = cx + side * 3
-            ly = cy + 6 + bob
-            _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_darkest"], (lx - 1, ly, 3, 5),
-                  border_radius=1)
-            _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_dark"], (lx - 1, ly, 3, 4))
-            # Boot
-            _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_darkest"], (lx - 2, ly + 5, 5, 3))
-            _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_dark"], (lx - 2, ly + 5, 5, 1))
-
-        # Torso (small purple robe)
-        torso = [
-            (cx - 5, cy - 4 + bob),
-            (cx + 5, cy - 4 + bob),
-            (cx + 4, cy + 6 + bob),
-            (cx - 4, cy + 6 + bob),
-        ]
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["shadow_deep"], [(p[0] + 1, p[1] + 1) for p in torso])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["gob_darkest"], torso)
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["gob_dark"], [
-            (cx - 4, cy - 3 + bob),
-            (cx + 4, cy - 3 + bob),
-            (cx + 3, cy + 5 + bob),
-            (cx - 3, cy + 5 + bob),
-        ])
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["gob_mid"], [
-            (cx - 3, cy - 2 + bob),
-            (cx + 3, cy - 2 + bob),
-            (cx + 2, cy + 4 + bob),
-            (cx - 2, cy + 4 + bob),
-        ])
-
-        # Belt
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_dark"], (cx - 5, cy + 2 + bob, 10, 2))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["brass_mid"], (cx - 1, cy + 2 + bob, 2, 2))
-
-        # Head (green skin, small)
-        hy = cy - 8 + bob
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["shadow_deep"], (cx + 1, hy + 1), 6)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["ogre_dark"], (cx, hy), 5)  # greenish tint
-        # Actually let's use goblin-ish green
-        _NS_alchemist._aacircle(surface, (50, 90, 30), (cx, hy), 5)
-        _NS_alchemist._aacircle(surface, (85, 130, 45), (cx - 1, hy - 1), 4)
-        _NS_alchemist._aacircle(surface, (130, 175, 65), (cx - 1, hy - 2), 2)
-
-        # Long pointed ears
-        for side in (-1, 1):
-            _NS_alchemist._poly(surface, (35, 70, 25), [
-                (cx + side * 4, hy - 1),
-                (cx + side * 8, hy - 4),
-                (cx + side * 5, hy + 2),
-            ])
-            _NS_alchemist._poly(surface, (75, 110, 40), [
-                (cx + side * 4, hy),
-                (cx + side * 7, hy - 3),
-                (cx + side * 5, hy + 1),
-            ])
-
-        # Big nose
-        _NS_alchemist._poly(surface, (65, 100, 35), [
-            (cx + facing * 1, hy + 1),
-            (cx + facing * 4, hy + 2),
-            (cx + facing * 4, hy + 4),
-            (cx + facing * 1, hy + 4),
-        ])
-        _NS_alchemist._poly(surface, (95, 140, 50), [
-            (cx + facing * 1, hy + 2),
-            (cx + facing * 3, hy + 3),
-            (cx + facing * 1, hy + 3),
-        ])
-
-        # Grinning mouth
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["shadow_deep"], (cx - 2, hy + 4, 4, 1))
-        # Small fang
-        _NS_alchemist._poly(surface, _NS_alchemist.PALETTE["bone_light"], [
-            (cx - 1, hy + 4),
-            (cx, hy + 6),
-            (cx + 1, hy + 4),
-        ])
-
-        # Beady eyes
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["shadow_deep"], (cx - 2, hy - 1), 1)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["shadow_deep"], (cx + 2, hy - 1), 1)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["eye_hot"], (cx - 2, hy - 1), 1)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["eye_hot"], (cx + 2, hy - 1), 1)
-
-        # Explorer hat (Alchemist style safari helmet)
-        _NS_alchemist._draw_goblin_hat(surface, cx, hy - 4, phase)
-
-        # Goblin arms holding potion
-        _NS_alchemist._draw_goblin_arms(surface, cx, cy + bob, facing, phase, action, attack_progress)
-
-
-    def _draw_goblin_hat(surface, cx, cy, phase):
-        """Explorer/pith helmet."""
-        # Brim
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["shadow_deep"], (cx - 8 + 1, cy + 1 + 1, 16, 4))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["leather_darkest"], (cx - 8, cy + 1, 16, 4))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["leather_dark"], (cx - 7, cy + 1, 14, 3))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["leather_mid"], (cx - 6, cy + 1, 12, 2))
-
-        # Dome
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["leather_darkest"], (cx - 5, cy - 4, 10, 8))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["leather_dark"], (cx - 4, cy - 4, 8, 7))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["leather_mid"], (cx - 3, cy - 4, 6, 5))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["leather_light"], (cx - 3, cy - 4, 4, 3))
-
-        # Hat band
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["red"], (cx - 5, cy, 10, 2))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["gold_mid"], (cx - 4, cy + 1, 8, 1))
-
-
-    def _draw_goblin_arms(surface, cx, cy, facing, phase, action, attack_progress):
-        """Goblin arms — one holds potion up, one hangs down."""
-        sway = math.sin(phase * 1.0 + 1) * 1
-
-        # Left arm - holding potion up (celebratory)
-        la_x = cx - 5
-        la_y = cy - 2
-        lh_x = cx - 9 + int(sway)
-        lh_y = cy - 8
-
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["shadow_deep"], (la_x + 1, la_y + 1),
-                (lh_x + 1, lh_y + 1), 3)
-        _NS_alchemist._aaline(surface, (35, 70, 25), (la_x, la_y), (lh_x, lh_y), 3)
-        _NS_alchemist._aaline(surface, (75, 110, 40), (la_x, la_y), (lh_x, lh_y), 2)
-        _NS_alchemist._aaline(surface, (115, 155, 55), (la_x, la_y), (lh_x, lh_y), 1)
-
-        # Potion in hand
-        _NS_alchemist._draw_small_potion(surface, lh_x, lh_y - 4, phase)
-
-        # Right arm - hangs down or holds something
-        ra_x = cx + 5
-        ra_y = cy - 2
-        rh_x = cx + 8 + int(-sway)
-        rh_y = cy + 4
-
-        _NS_alchemist._aaline(surface, _NS_alchemist.PALETTE["shadow_deep"], (ra_x + 1, ra_y + 1),
-                (rh_x + 1, rh_y + 1), 3)
-        _NS_alchemist._aaline(surface, (35, 70, 25), (ra_x, ra_y), (rh_x, rh_y), 3)
-        _NS_alchemist._aaline(surface, (75, 110, 40), (ra_x, ra_y), (rh_x, rh_y), 2)
-
-        # Small hand
-        _NS_alchemist._aacircle(surface, (35, 70, 25), (rh_x, rh_y), 2)
-        _NS_alchemist._aacircle(surface, (85, 130, 45), (rh_x - 1, rh_y - 1), 1)
-
-
-    def _draw_small_potion(surface, cx, cy, phase):
-        """Small acid potion held by goblin."""
-        # Bottle body
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["shadow_deep"], (cx - 2 + 1, cy - 1 + 1, 4, 6),
-              border_radius=1)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["glass_dark"], (cx - 2, cy - 1, 4, 6), border_radius=1)
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["glass_mid"], (cx - 2, cy, 4, 4))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["glass_light"], (cx - 2, cy, 1, 4))
-
-        # Cork
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_dark"], (cx - 1, cy - 3, 3, 2))
-        _NS_alchemist._rect(surface, _NS_alchemist.PALETTE["leather_mid"], (cx - 1, cy - 3, 2, 1))
-
-        # Pink ribbon (decorative like reference)
-        _NS_alchemist._rect(surface, (220, 130, 180), (cx - 2, cy - 2, 4, 1))
-        _NS_alchemist._rect(surface, (255, 180, 220), (cx - 2, cy - 2, 2, 1))
-
-        # Bright glow
-        pulse = math.sin(phase * 2) * 0.3 + 0.7
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], int(150 * pulse)), (cx, cy + 2), 4)
-        _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_hot"], (cx, cy + 2), 1)
-
-
-    # ===================================================================
-    # FLOATING EFFECTS
-    # ===================================================================
-    def _draw_alch_wisps(surface, cx, cy, phase, trail=False, facing=1, intense=False):
-        """Acid green wisps under Alchemist."""
-        strength = 1.5 if intense else 1.0
-        mist = pygame.Surface((150, 44), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
-        for radius in range(38, 3, -4):
-            alpha = int((38 - radius) * 2.2 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_alchemist.PALETTE["acid_darkest"], min(255, alpha)),
-                    (75 - radius * 2, 22 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 75, cy - 11))
-
-        # Rising acid vapors
-        for i, offset in enumerate((-25, -10, 8, 24)):
-            t = (phase * 0.55 + i * 0.25) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 26)
-            alpha = max(0, min(255, int(210 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_darkest"], alpha), (sx, sy), 5)
-            _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_mid"], alpha), (sx, sy - 2), 3)
-            _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha), (sx, sy - 3), 2)
-            _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], alpha), (sx, sy - 3), 1)
-
-        # Bubbles orbiting
-        for i in range(7):
-            angle = phase * 0.7 + i * math.pi * 2 / 7
-            r = 25 + int(math.sin(phase + i * 1.3) * 6)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 9)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_mid"], (sx, sy), 2)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_bright"], (sx, sy), 1)
-
-        if trail:
-            for i in range(5):
-                sx = cx - (i + 1) * 13 * facing
-                sy = cy + int(math.sin(phase + i) * 3)
-                alpha = max(0, 140 - i * 25)
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_dark"], alpha),
-                          (sx, sy), max(2, 6 - i))
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha),
-                          (sx, sy), max(1, 3 - i))
-
-
+        NS._aacircle(surface, (*P["acid_dark"], alpha),
+                     (x, y + size // 2), size)
+        NS._aacircle(surface, (*P["acid_bright"], alpha),
+                     (x, y + size // 2), max(1, size - 1))
+        NS._aacircle(surface, (*P["acid_glow"], alpha),
+                     (x - 1, y + size // 2 - 1), max(1, size - 2))
+
+    # ==================================================================
+    # SHADOW / AURA / GROUND FX  (cached — tanpa Surface baru/frame)
+    # ==================================================================
     def _draw_shadow(surface, x, y, lift=0):
-        # ORIGINAL-MAX: cache tekstur + reaktif (menyusut saat badan
-        # terangkat, dasar tetap menapak tanah).
+        """Bayangan kontak reaktif (menyusut saat terangkat, dasar
+        menapak). Rect-nya dicatat ke _record_shadow supaya hurt flash
+        TIDAK ikut menerangi tanah."""
         NS = _NS_alchemist
         if NS._shadow_cache is None:
             shadow = pygame.Surface((120, 22), pygame.SRCALPHA)
@@ -9833,378 +9428,1793 @@ class _NS_alchemist:
                 alpha = max(0, (11 - radius) * 15)
                 pygame.draw.ellipse(
                     shadow, (0, 0, 0, alpha),
-                    (11 - radius, 11 - radius, 98 + radius * 2, radius * 2),
-                )
-            pygame.draw.ellipse(shadow, (*NS.PALETTE["acid_dark"], 60),
+                    (11 - radius, 11 - radius, 98 + radius * 2,
+                     radius * 2))
+            pygame.draw.ellipse(shadow,
+                                (*NS.PALETTE["acid_dark"], 60),
                                 (10, 5, 100, 12))
             NS._shadow_cache = shadow
         spr = NS._shadow_cache
-        w = spr.get_width()
-        h = spr.get_height()
+        w, h = spr.get_width(), spr.get_height()
         if lift:
             k = max(0.12, 1.0 - lift * 0.05)
             w = max(6, int(w * k))
             h = max(2, int(h * k))
-            spr = pygame.transform.smoothscale(spr, (w, h))
+            spr = pygame.transform.scale(spr, (w, h))
         bx = x - w // 2
-        by = (y + 11) - h          # bottom tetap di y+11
+        by = (y + 11) - h
         surface.blit(spr, (bx, by))
         if NS._record_shadow is not None:
             NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
-
     def _draw_alch_aura(surface, x, y, phase, active_skill):
+        """Aura latar (acid/gold) — stamp ter-cache, alpha lewat
+        set_alpha pada stamp bersama (tanpa .copy() per frame)."""
         NS = _NS_alchemist
-        key = "gold" if active_skill == "r" else "acid"
+        P = NS.PALETTE
+        key = "gold" if active_skill in ("r",) else "acid"
         if key not in NS._aura_cache:
             aura = pygame.Surface((220, 190), pygame.SRCALPHA)
-            color = (NS.PALETTE["acid_darkest"] if key == "acid"
-                     else NS.PALETTE["gold_darkest"])
+            color = (P["acid_darkest"] if key == "acid"
+                     else P["gold_darkest"])
             for radius in range(88, 5, -4):
                 alpha = int((88 - radius) * 1.2)
                 if alpha > 0:
-                    NS._aacircle(aura, (*color, min(255, alpha)),
-                                 (110, 95), radius)
+                    pygame.draw.circle(
+                        aura, (*color, min(255, alpha)), (110, 95),
+                        radius)
             NS._aura_cache[key] = aura
         pulse = math.sin(phase * 0.5) * 0.25 + 0.75
         strength = 1.6 if active_skill in ("e", "r") else 1.0
         a = int(255 * min(1.0, pulse * strength))
-        spr = NS._aura_cache[key].copy()
+        spr = NS._aura_cache[key]
         spr.set_alpha(a)
         surface.blit(spr, (x - 110, y - 95))
 
-
     def _draw_ground_runes(surface, x, y, phase, active_skill):
+        """Rune alkemi di tanah: cincin dasar ter-cache + jari-jari
+        berputar + denyut skill (murah, tanpa alokasi per frame)."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        key = "rune_gold" if active_skill == "r" else "rune_acid"
+        if key not in NS._STATIC_SURFACES:
+            ring = pygame.Surface((140, 46), pygame.SRCALPHA)
+            c1 = (*P["gold_dark"], 150) if active_skill == "r" else \
+                (*P["acid_dark"], 140)
+            c2 = (*P["gold_mid"], 170) if active_skill == "r" else \
+                (*P["acid_mid"], 170)
+            pygame.draw.ellipse(ring, c1, (5, 10, 130, 26), 3)
+            pygame.draw.ellipse(ring, c2, (20, 14, 100, 18), 2)
+            # simbol alkemi (segitiga + lingkaran kecil)
+            sx = (*P["gold_light"], 190) if active_skill == "r" else \
+                (*P["acid_bright"], 170)
+            pygame.draw.polygon(ring, sx, [(70, 16), (62, 30),
+                                           (78, 30)], 1)
+            pygame.draw.circle(ring, sx, (70, 24), 4, 1)
+            NS._STATIC_SURFACES[key] = ring
         pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((140, 46), pygame.SRCALPHA)
-        color1 = (*_NS_alchemist.PALETTE["acid_dark"], 140)
-        color2 = (*_NS_alchemist.PALETTE["acid_mid"], 170)
-        color3 = (*_NS_alchemist.PALETTE["acid_bright"], 160)
-        if active_skill == "r":
-            color1 = (*_NS_alchemist.PALETTE["gold_dark"], 160)
-            color2 = (*_NS_alchemist.PALETTE["gold_mid"], 190)
-            color3 = (*_NS_alchemist.PALETTE["gold_light"], 180)
-
-        pygame.draw.ellipse(ring, color1, (5, 10, 130, 26), 3)
-        pygame.draw.ellipse(ring, color2, (20, 14, 100, 18), 2)
-
+        ring = NS._STATIC_SURFACES[key]
+        ring.set_alpha(int(150 + 90 * pulse))
+        surface.blit(ring, (x - 70, y - 23))
+        c3 = P["gold_light"] if active_skill == "r" else \
+            P["acid_bright"]
         for i in range(10):
             angle = phase * 0.15 + i * math.pi / 5
-            x1 = 70 + int(math.cos(angle) * 32)
-            y1 = 23 + int(math.sin(angle) * 7)
-            x2 = 70 + int(math.cos(angle) * 60)
-            y2 = 23 + int(math.sin(angle) * 11)
-            pygame.draw.line(ring, color3, (x1, y1), (x2, y2), 1)
+            x1 = x + int(math.cos(angle) * 32)
+            y1 = y + int(math.sin(angle) * 7)
+            x2 = x + int(math.cos(angle) * 60)
+            y2 = y + int(math.sin(angle) * 11)
+            NS._aaline(surface, (*c3, int(150 * pulse)),
+                       (x1, y1), (x2, y2), 1)
 
-        if active_skill:
-            pygame.draw.ellipse(ring, (color3[0], color3[1], color3[2], int(80 * pulse)),
-                                (15, 8, 110, 30), 1)
+    def _draw_alch_wisps(surface, cx, cy, phase, trail=False, facing=1,
+                         intense=False):
+        """Uap asap naik + gelembung mengorbit (mist ter-cache)."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        strength = 1.5 if intense else 1.0
+        mist_key = "wisps_mist"
+        if mist_key not in NS._STATIC_SURFACES:
+            mist = pygame.Surface((150, 44), pygame.SRCALPHA)
+            for radius in range(38, 3, -4):
+                alpha = int((38 - radius) * 2.2)
+                if alpha > 0:
+                    pygame.draw.ellipse(
+                        mist, (*P["acid_darkest"],
+                               min(255, alpha)),
+                        (75 - radius * 2, 22 - radius // 3,
+                         radius * 4, max(3, radius // 2)))
+            NS._STATIC_SURFACES[mist_key] = mist
+        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
+        mist = NS._STATIC_SURFACES[mist_key]
+        mist.set_alpha(int(255 * min(1.0, pulse * strength)))
+        surface.blit(mist, (cx - 75, cy - 11))
 
-        surface.blit(ring, (x - 70, y - 23))
+        for i, offset in enumerate((-25, -10, 8, 24)):
+            t = (phase * 0.55 + i * 0.25) % 1.0
+            sx = cx + offset + int(math.sin(phase + i) * 3)
+            sy = cy + 5 - int(t * 26)
+            alpha = max(0, min(255, int(210 * (1 - t) * strength)))
+            if alpha <= 0:
+                continue
+            NS._aacircle(surface, (*P["acid_darkest"], alpha),
+                         (sx, sy), 5)
+            NS._aacircle(surface, (*P["acid_mid"], alpha), (sx, sy - 2),
+                         3)
+            NS._aacircle(surface, (*P["acid_bright"], alpha),
+                         (sx, sy - 3), 2)
+            NS._aacircle(surface, (*P["acid_hot"], alpha),
+                         (sx, sy - 3), 1)
+        for i in range(7):
+            angle = phase * 0.7 + i * math.pi * 2 / 7
+            r = 25 + int(math.sin(phase + i * 1.3) * 6)
+            sx = cx + int(math.cos(angle) * r)
+            sy = cy + int(math.sin(angle) * 9)
+            NS._aacircle(surface, P["acid_mid"], (sx, sy), 2)
+            NS._aacircle(surface, P["acid_bright"], (sx, sy), 1)
+        if trail:
+            for i in range(5):
+                sx = cx - (i + 1) * 13 * facing
+                sy = cy + int(math.sin(phase + i) * 3)
+                alpha = max(0, 140 - i * 25)
+                NS._aacircle(surface, (*P["acid_dark"], alpha),
+                             (sx, sy), max(2, 6 - i))
+                NS._aacircle(surface, (*P["acid_bright"], alpha),
+                             (sx, sy), max(1, 3 - i))
 
+    def _draw_shockwave(surface, x, y, age, total, c1, c2, fs=1.0):
+        """Gelombang kejut aktivasi skill (12 frame pertama)."""
+        NS = _NS_alchemist
+        t = age / float(total)
+        ease = 1 - (1 - t) ** 2
+        r = int((16 + ease * 66) * fs)
+        a = max(0, min(255, int(235 * (1 - t))))
+        if r <= 0 or a <= 0:
+            return
+        NS._ellipse(surface, (*c1, a),
+                    (x - r, y - r // 3, r * 2, r * 2 // 3), 2)
+        NS._ellipse(surface, (*c2, a),
+                    (x - r // 2, y - r // 6, r, r // 3), 1)
+        ri = max(3, r // 2)
+        NS._aacircle(surface, (*c1, int(a * 0.8)),
+                     (x, y - (r // 6)), ri)
+
+    # ==================================================================
+    # RIG PIXEL-ART v2 — ogre chemist + goblin rider (ruang lokal).
+    # Konvensi: (0,0) = jangkar pinggul; +x maju (dikali facing); y ke
+    # bawah. Semua bentuk poligon/ellipse keras + ramp 4-6 band.
+    # ==================================================================
+    def _draw_cleaver(surface, gx, gy, ang, f, phase=0.0, glow=0.0):
+        """Cleaver jagal berputar mengikuti SUDUT (arc-based).
+
+        gx,gy = layar; ang = sudut layar (0 maju, pi/2 bawah).
+        Bilah = poligon dari basis ke ujung memakai cos/sin — tidak
+        pernah ada lerp posisi awal->akhir.
+        """
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        ca, sa = math.cos(ang), math.sin(ang)
+        px, py = -sa, ca
+        H = NS.CLEAVER_HANDLE
+        B = NS.CLEAVER_BLADE
+
+        def pt(dist, side):
+            return (int(gx + ca * dist + px * side),
+                    int(gy + sa * dist + py * side))
+
+        h0, h1 = pt(0, 0), pt(H, 0)                      # gagang
+        NS._poly(surface, P["leather_darkest"], [
+            pt(0, -2), pt(H, -2), pt(H, 2), pt(0, 2)])
+        NS._poly(surface, P["leather_mid"], [
+            pt(0, -1), pt(H - 1, -1), pt(H - 1, 1), pt(0, 1)])
+        b0s, b0e = pt(H, -3), pt(H, 4)                   # basis bilah
+        b1s, b1e = pt(H + B, -2), pt(H + B, 6)           # ujung bilah
+        # selout sisi bayangan
+        NS._poly(surface, P["shadow_deep"],
+                 [(b0s[0] + 1, b0s[1] + 1), (b0e[0] + 1, b0e[1] + 1),
+                  (b1e[0] + 1, b1e[1] + 1), (b1s[0] + 1, b1s[1] + 1)])
+        # badan bilah
+        NS._poly(surface, P["metal_darkest"],
+                 [b0s, b0e, b1e, b1s])
+        NS._poly(surface, P["metal_dark"],
+                 [pt(H + 1, -2), pt(H + 1, 4), pt(H + B - 1, 5),
+                  pt(H + B - 1, -1)])
+        NS._poly(surface, P["metal_mid"],
+                 [pt(H + 2, -2), pt(H + 2, 2), pt(H + B - 2, 3),
+                  pt(H + B - 2, -1)])
+        # band specular sepanjang tulang (3 cluster, bukan garis penuh)
+        for t in (0.25, 0.55, 0.85):
+            d = H + 2 + int(t * (B - 5))
+            NS._poly(surface, P["metal_light"],
+                     [pt(d, -2), pt(d + 2, -2), pt(d + 2, 0),
+                      pt(d, 0)])
+        # mata tebang (edge) + etching asam
+        NS._aaline(surface, P["metal_edge"], pt(H + 1, 4),
+                   pt(H + B, 6), 1)
+        NS._aaline(surface, P["acid_dark"], pt(H + 6, 1),
+                   pt(H + B - 4, 3), 1)
+        NS._aacircle(surface, P["brass_mid"], (h0[0], h0[1]), 2)
+        NS._aacircle(surface, P["brass_light"],
+                     (h0[0] - f, h0[1] - 1), 1)
+        # glint periodik di ujung bilah
+        if math.sin(phase * 2.6 + ang) > 0.90:
+            tip = pt(H + B - 2, 4)
+            NS._aacircle(surface, P["metal_edge"],
+                         (tip[0], tip[1]), 1)
+            NS._aacircle(surface, P["white"],
+                         (tip[0] - f, tip[1] - 1), 1)
+        if glow > 0.02:
+            g = int(150 * min(1.0, glow))
+            NS._aacircle(surface, (*P["acid_bright"], g),
+                         (h1[0], h1[1]), 5)
+            NS._aacircle(surface, (*P["acid_hot"], g),
+                         (h1[0], h1[1]), 3)
+
+    def _draw_ogre_arm(surface, sx, sy, gx, gy, f, back=False,
+                       flex=0.0):
+        """Lengan ogre chunky: bahu -> siku (droop) -> pergelangan."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        mx, my = (sx + gx) / 2.0, (sy + gy) / 2.0 + 6 - flex * 4
+        c_dark = P["ogre_dark"] if back else P["ogre_mid"]
+        c_mid = P["ogre_mid"] if back else P["ogre_light"]
+        c_hi = P["ogre_light"] if back else P["ogre_high"]
+        # selout
+        NS._poly(surface, P["shadow_deep"], [
+            (sx + 1, sy + 2), (mx + 1, my + 3), (gx + 1, gy + 2),
+            (gx - 2, gy + 1), (mx - 3, my + 1), (sx - 3, sy)])
+        # lengan atas + bawah sebagai poligon tebal 2 band
+        NS._poly(surface, c_dark, [
+            (sx - 4, sy - 2), (mx - 4, my), (gx - 3, gy - 1),
+            (gx + 3, gy + 2), (mx + 4, my + 3), (sx + 4, sy + 3)])
+        NS._poly(surface, c_mid, [
+            (sx - 3, sy - 2), (mx - 3, my - 1), (gx - 2, gy - 1),
+            (gx + 2, gy + 1), (mx + 3, my + 2), (sx + 3, sy + 2)])
+        # highlight atas
+        NS._aaline(surface, c_hi, (sx - 2, sy - 2), (mx - 2, my - 2), 1)
+        NS._aaline(surface, c_hi, (mx - 2, my - 2), (gx - 1, gy - 1), 1)
+        # bahu berotot + pergelangan
+        NS._aacircle(surface, c_dark, (sx, sy), 7 if not back else 6)
+        NS._aacircle(surface, c_mid, (sx - f, sy - 1), 5 if not back
+                     else 4)
+        NS._aacircle(surface, c_hi, (sx - f * 2, sy - 2), 2)
+        NS._aacircle(surface, P["ogre_dark"], (gx, gy), 5)
+        NS._aacircle(surface, c_mid, (gx - f, gy - 1), 4)
+        NS._aacircle(surface, c_hi, (gx - f * 2, gy - 2), 1)
+        # sarung tangan kulit
+        NS._aacircle(surface, P["leather_dark"],
+                     (gx + f, gy + 2), 3)
+        NS._aacircle(surface, P["leather_mid"],
+                     (gx + f, gy + 1), 2)
+
+    def _draw_ogre_leg(surface, hipx, hipy, ang, lift, front, f):
+        """Satu kaki ogre: paha -> lutut -> kaki (foot plant timing)."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        ca, sa = math.cos(ang), math.sin(ang)
+        kx = hipx + ca * 15
+        ky = hipy + sa * 20
+        ax = kx + ca * 12
+        ay = ky + 16 - lift
+        c_base = P["ogre_mid"] if front else P["ogre_dark"]
+        c_hi = P["ogre_light"] if front else P["ogre_mid"]
+        # selout
+        NS._poly(surface, P["shadow_deep"], [
+            (hipx + 2, hipy + 3), (kx + 2, ky + 3), (ax + 2, ay + 2),
+            (ax - 2, ay + 1), (kx - 3, ky), (hipx - 3, hipy)])
+        # paha + betis
+        NS._poly(surface, P["ogre_dark"], [
+            (hipx - 6, hipy - 2), (kx - 5, ky), (ax - 4, ay - 1),
+            (ax + 4, ay + 1), (kx + 5, ky + 3), (hipx + 6, hipy + 3)])
+        NS._poly(surface, c_base, [
+            (hipx - 5, hipy - 2), (kx - 4, ky - 1), (ax - 3, ay - 1),
+            (ax + 3, ay), (kx + 4, ky + 2), (hipx + 5, hipy + 2)])
+        NS._aaline(surface, c_hi, (hipx - 3, hipy), (kx - 3, ky), 2)
+        NS._aacircle(surface, c_base, (kx, ky), 5)
+        # kaki (sepatu kulit besar) menapak tanah
+        fy = ay + 2
+        NS._ellipse(surface, P["leather_darkest"],
+                    (ax - 7, fy - 3, 14 + (4 if front else 2), 7))
+        NS._ellipse(surface, P["leather_dark"],
+                    (ax - 6, fy - 3, 12 + (4 if front else 2), 5))
+        NS._ellipse(surface, P["leather_mid"],
+                    (ax - 5, fy - 2, 8, 2))
+        # jahitan boot
+        NS._aaline(surface, P["leather_high"],
+                   (ax - 3, fy + 2), (ax + 4, fy + 2), 1)
+
+    def _draw_ogre_torso(surface, ox, oy, phase, flare, rage, f):
+        """Torso massive: perut barel + dada + pektoral + collar."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        fl = max(0.9, min(1.3, flare))
+        bw = int(23 * fl)
+        bh = int(26 / fl)
+        # selout seluruh massa
+        NS._ellipse(surface, P["shadow_deep"],
+                    (ox - bw - 2, oy - bh - 2 + 14,
+                     bw * 2 + 4, bh * 2 + 4))
+        # perut (barel) — ramp 4 band dengan dither band tengah
+        NS._ellipse(surface, P["ogre_darkest"],
+                    (ox - bw, oy - bh + 14, bw * 2, bh * 2))
+        NS._ellipse(surface, P["ogre_dark"],
+                    (ox - bw + 2, oy - bh + 16, bw * 2 - 4, bh * 2 - 4))
+        NS._ellipse(surface, P["ogre_mid"],
+                    (ox - bw + 5, oy - bh + 19, bw * 2 - 10,
+                     bh * 2 - 10))
+        NS._ellipse(surface, P["ogre_light"],
+                    (ox - bw + 9, oy - bh + 23, bw * 2 - 19,
+                     bh * 2 - 17))
+        # dada atas
+        NS._ellipse(surface, P["ogre_dark"],
+                    (ox - 16, oy - 22, 32, 20))
+        NS._ellipse(surface, P["ogre_mid"],
+                    (ox - 14, oy - 21, 28, 17))
+        NS._ellipse(surface, P["ogre_light"],
+                    (ox - 10, oy - 19, 18, 11))
+        # pektoral kiri-kanan (arc bawah)
+        NS._aaline(surface, P["ogre_dark"],
+                   (ox - 11, oy - 12), (ox - 2, oy - 9), 2)
+        NS._aaline(surface, P["ogre_dark"],
+                   (ox + 2, oy - 9), (ox + 11, oy - 12), 2)
+        # specular cluster (kiri-atas, konsisten key light)
+        NS._aacircle(surface, P["ogre_high"],
+                     (ox - bw + 12, oy - bh + 26), 3)
+        NS._aacircle(surface, P["ogre_shine"],
+                     (ox - bw + 13, oy - bh + 25), 1)
+        NS._aacircle(surface, P["ogre_high"],
+                     (ox - 8, oy - 18), 2)
+        # dither band perut (transisi mid->light)
+        for i in range(5):
+            dx = ox - bw + 10 + i * 5
+            dy = oy - bh + 22 + (i % 2)
+            NS._aacircle(surface, P["ogre_mid"], (dx, dy), 1)
+        # pusar + bulu dada
+        NS._aacircle(surface, P["ogre_darkest"], (ox + 2, oy + 12), 2)
+        NS._aacircle(surface, P["ogre_dark"], (ox - 4, oy - 8), 1)
+        NS._aacircle(surface, P["ogre_dark"], (ox + 5, oy - 6), 1)
+        NS._aacircle(surface, P["ogre_dark"], (ox, oy - 2), 1)
+        # denyut vena saat rage
+        if rage:
+            pul = 0.5 + 0.5 * math.sin(phase * 6.0)
+            NS._aaline(surface, (*P["acid_mid"], int(120 + 100 * pul)),
+                       (ox - 8, oy - 4), (ox - 2, oy + 2), 1)
+            NS._aaline(surface, (*P["acid_mid"], int(120 + 100 * pul)),
+                       (ox + 6, oy - 8), (ox + 9, oy - 1), 1)
+
+    def _draw_ogre_armor(surface, ox, oy, phase, f, rage):
+        """Harness X + pauldron baja + sabuk kuningan."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        # harness diagonal (dua tali kulit berjahit)
+        for sgn in (1, -1):
+            x0 = ox - sgn * 15
+            y0 = oy - 22
+            x1 = ox + sgn * 14
+            y1 = oy + 8
+            NS._aaline(surface, P["leather_darkest"],
+                       (x0 - f, y0), (x1 - f, y1), 4)
+            NS._aaline(surface, P["leather_mid"], (x0 - f, y0),
+                       (x1 - f, y1), 2)
+            for t in (0.3, 0.55, 0.8):
+                sxp = int(x0 + (x1 - x0) * t) - f
+                syp = int(y0 + (y1 - y0) * t)
+                NS._aacircle(surface, P["leather_light"],
+                             (sxp, syp), 1)
+        # gesper tengah (brass + sigil gold)
+        NS._rect(surface, P["brass_dark"],
+                 (ox - 4 - f, oy - 9, 8, 8), border_radius=1)
+        NS._rect(surface, P["brass_mid"],
+                 (ox - 3 - f, oy - 8, 6, 6), border_radius=1)
+        NS._aacircle(surface, P["gold_light"], (ox - f, oy - 5), 2)
+        NS._aacircle(surface, P["gold_shine"], (ox - f - 1, oy - 6), 1)
+        # pauldron bahu depan (plat baja berpaku)
+        px, py = ox + f * 17, oy - 30
+        NS._ellipse(surface, P["metal_darkest"],
+                    (px - 9, py - 5, 18, 13))
+        NS._ellipse(surface, P["metal_dark"],
+                    (px - 7, py - 4, 14, 10))
+        NS._ellipse(surface, P["metal_mid"],
+                    (px - 5, py - 3, 9, 6))
+        NS._aacircle(surface, P["metal_light"], (px - 3, py - 2), 2)
+        for rv in ((-5, -3), (3, -3), (0, 1)):
+            NS._aacircle(surface, P["metal_shine"],
+                         (px + rv[0], py + rv[1]), 1)
+        # baut rage menyala
+        if rage:
+            pul = 0.5 + 0.5 * math.sin(phase * 5.0)
+            NS._aacircle(surface, (*P["acid_hot"],
+                                   int(120 + 120 * pul)),
+                         (px, py - 1), 2)
+        # sabuk pinggang + gesper besar
+        NS._rect(surface, P["leather_darkest"],
+                 (ox - 21, oy + 14, 42, 9))
+        NS._rect(surface, P["leather_dark"],
+                 (ox - 19, oy + 15, 38, 6))
+        NS._rect(surface, P["leather_mid"],
+                 (ox - 17, oy + 16, 34, 3))
+        NS._rect(surface, P["brass_dark"],
+                 (ox - 6, oy + 14, 12, 9), border_radius=1)
+        NS._rect(surface, P["brass_mid"],
+                 (ox - 5, oy + 15, 10, 7), border_radius=1)
+        NS._rect(surface, P["brass_light"],
+                 (ox - 4, oy + 15, 8, 2))
+        NS._aacircle(surface, P["gold_shine"], (ox, oy + 18), 2)
+        NS._aacircle(surface, P["gold_light"], (ox, oy + 18), 1)
+
+    def _draw_backpack(surface, bx, by, phase, f, rage):
+        """Rangka kayu + 3 botol ramuan berkilau di punggung ogre."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        # rangka kulit-kayu
+        NS._poly(surface, P["shadow_deep"],
+                 [(bx - 9, by - 12), (bx + 9, by - 12), (bx + 9, by + 12),
+                  (bx - 9, by + 12)])
+        NS._poly(surface, P["leather_darkest"],
+                 [(bx - 8, by - 11), (bx + 8, by - 11), (bx + 8, by + 11),
+                  (bx - 8, by + 11)])
+        NS._poly(surface, P["leather_dark"],
+                 [(bx - 6, by - 9), (bx + 6, by - 9), (bx + 6, by + 9),
+                  (bx - 6, by + 9)])
+        NS._aaline(surface, P["leather_mid"],
+                   (bx - 6, by), (bx + 6, by), 1)
+        # tali silang
+        NS._aaline(surface, P["leather_darkest"],
+                   (bx - 6, by - 9), (bx + 6, by + 9), 1)
+        NS._aaline(surface, P["leather_darkest"],
+                   (bx + 6, by - 9), (bx - 6, by + 9), 1)
+        fills = (("glass_dark", "glass_mid", "glass_light",
+                  "acid_hot"),) * 3
+        # 3 botol: asam (hijau), ramuan (ungu), emas
+        contents = (
+            (P["glass_dark"], P["glass_mid"], P["glass_light"],
+             P["acid_hot"]),
+            (P["gob_darkest"], P["gob_dark"], P["gob_mid"],
+             P["gob_high"]),
+            (P["gold_darkest"], P["gold_dark"], P["gold_mid"],
+             P["gold_light"]),
+        )
+        for i, (dar, mid, lig, hot) in enumerate(contents):
+            bxx = bx - 5 + i * 5
+            byy = by - 5 + (i % 2) * 4
+            slosh = int(math.sin(phase * 1.6 + i * 2.1) * 1)
+            NS._rect(surface, dar, (bxx - 2, byy - 3, 4, 8),
+                     border_radius=1)
+            NS._rect(surface, mid, (bxx - 1, byy - 2 + slosh, 2, 6),
+                     border_radius=1)
+            NS._aacircle(surface, lig, (bxx, byy + 3 - slosh), 1)
+            NS._aacircle(surface, P["leather_dark"],
+                         (bxx, byy - 4), 1)
+            if rage and i == 0:
+                NS._aacircle(surface, (*P["acid_bright"], 160),
+                             (bxx, byy), 4)
+        # gelembung asam kecil naik dari botol hijau
+        bt = (phase * 0.7) % 1.0
+        NS._aacircle(surface, (*P["acid_bright"],
+                               int(180 * (1 - bt))),
+                     (bx - 5, by - 6 - int(bt * 6)), 1)
+
+    def _draw_ogre_head(surface, hx, hy, f, phase, action, rage):
+        """Kepala ogre: brow berat, underbite bertaring, telinga,
+        ikat kain, war-paint asam, mata menyala saat rage."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        nod = int(math.sin(phase * 0.9) * 1) if action == "idle" else 0
+        hy += nod
+        # tengkorak
+        NS._ellipse(surface, P["shadow_deep"],
+                    (hx - 12, hy - 11 + 2, 24, 22))
+        NS._ellipse(surface, P["ogre_darkest"],
+                    (hx - 11, hy - 10 + 2, 22, 20))
+        NS._ellipse(surface, P["ogre_dark"],
+                    (hx - 9, hy - 8 + 2, 18, 16))
+        NS._ellipse(surface, P["ogre_mid"],
+                    (hx - 6, hy - 6 + 2, 12, 11))
+        # moncong / rahang underbite
+        NS._ellipse(surface, P["ogre_dark"],
+                    (hx + f * 3 - 6, hy + 3, 13, 8))
+        NS._ellipse(surface, P["ogre_mid"],
+                    (hx + f * 3 - 4, hy + 4, 9, 5))
+        # brow ridge berat
+        NS._poly(surface, P["ogre_darkest"], [
+            (hx - 9, hy - 3), (hx + 8, hy - 3), (hx + 7, hy - 1),
+            (hx - 8, hy - 1)])
+        NS._poly(surface, P["ogre_dark"], [
+            (hx - 8, hy - 3), (hx + 7, hy - 3), (hx + 6, hy - 2),
+            (hx - 7, hy - 2)])
+        # mata (kedip deterministik ~2.6 dtk) + glow rage
+        blink = 1 if (phase % (math.pi * 5.0)) < 0.14 else 0
+        eye_c = P["eye_rage"] if rage else P["eye_hot"]
+        for ex in (hx - 5, hx + 4):
+            if blink:
+                NS._aaline(surface, P["ogre_darkest"],
+                           (ex - 1, hy - 1), (ex + 2, hy - 1), 1)
+            else:
+                NS._aacircle(surface, P["eye_dark"], (ex, hy), 2)
+                NS._aacircle(surface, eye_c, (ex, hy), 1)
+        # taring atas-bawah (underbite: taring bawah naik)
+        for tx, up in ((hx - 5, 1), (hx + 5, 1), (hx - 2, -1)):
+            ty = hy + 8 if up > 0 else hy + 6
+            d = -3 if up > 0 else 3
+            NS._poly(surface, P["bone_dark"], [
+                (tx - 1, ty), (tx + 2, ty), (tx + 1, ty + d),
+                (tx, ty + d)])
+            NS._poly(surface, P["bone_mid"], [
+                (tx - 1, ty), (tx + 1, ty), (tx + 1, ty + d),
+                (tx, ty + d)])
+            NS._aacircle(surface, P["bone_light"],
+                         (tx + f, ty + d), 1)
+        # hidung
+        NS._aacircle(surface, P["ogre_darkest"],
+                     (hx + f * 1, hy + 1), 2)
+        # telinga runcing
+        for sgn in (-1, 1):
+            ex = hx + sgn * 11
+            NS._poly(surface, P["ogre_darkest"],
+                     [(ex, hy - 2), (ex + sgn * 6, hy - 7),
+                      (ex + sgn * 5, hy + 2)])
+            NS._poly(surface, P["ogre_dark"],
+                     [(ex, hy - 1), (ex + sgn * 4, hy - 5),
+                      (ex + sgn * 4, hy + 1)])
+        # ikat kain + war paint
+        NS._rect(surface, P["leather_darkest"],
+                 (hx - 11, hy - 12 + 2, 22, 5))
+        NS._rect(surface, P["leather_dark"],
+                 (hx - 10, hy - 11 + 2, 20, 3))
+        NS._aaline(surface, P["acid_mid"],
+                   (hx - 6, hy - 4), (hx - 2, hy + 6), 2)
+        NS._aaline(surface, P["acid_mid"],
+                   (hx + 6, hy - 4), (hx + 2, hy + 6), 2)
+        # topknot kecil
+        NS._aacircle(surface, P["leather_mid"],
+                     (hx - f * 2, hy - 11), 3)
+        NS._aacircle(surface, P["leather_light"],
+                     (hx - f * 3, hy - 12), 2)
+
+    def _draw_acid_gun(surface, hx, hy, ang, f, firing, phase):
+        """Acid gun goblin: laras kuningan + tangki kaca + moncong."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        ca, sa = math.cos(ang), math.sin(ang)
+        px, py = -sa, ca
+
+        def pt(dist, side):
+            return (int(hx + ca * dist + px * side),
+                    int(hy + sa * dist + py * side))
+
+        # laras
+        NS._poly(surface, P["shadow_deep"],
+                 [pt(-2, -3), pt(13, -3), pt(13, 3), pt(-2, 3)])
+        NS._poly(surface, P["brass_dark"],
+                 [pt(-1, -3), pt(12, -3), pt(12, 3), pt(-1, 3)])
+        NS._poly(surface, P["brass_mid"],
+                 [pt(-1, -2), pt(11, -2), pt(11, 2), pt(-1, 2)])
+        NS._aaline(surface, P["brass_light"], pt(0, -1), pt(10, -1), 1)
+        # cincin laras
+        for d in (3, 8):
+            NS._aaline(surface, P["brass_dark"], pt(d, -3), pt(d, 3), 1)
+        # tangki kaca asam di atas laras
+        tk = pt(4, -5)
+        slosh = int(math.sin(phase * 2.2) * 1)
+        NS._ellipse(surface, P["glass_dark"],
+                    (tk[0] - 3, tk[1] - 3 + slosh, 6, 7))
+        NS._ellipse(surface, P["glass_mid"],
+                    (tk[0] - 2, tk[1] - 2 + slosh, 4, 5))
+        NS._aacircle(surface, P["glass_shine"], (tk[0] - 1, tk[1] - 2),
+                     1)
+        NS._aacircle(surface, P["acid_hot"], (tk[0], tk[1] + 1), 1)
+        # pegangan + pelatuk
+        gp = pt(0, 4)
+        NS._poly(surface, P["leather_darkest"],
+                 [pt(-1, 3), pt(2, 3), pt(1, 7), pt(-2, 7)])
+        NS._aacircle(surface, P["leather_mid"], (gp[0], gp[1]), 2)
+        # moncong: uap tetes saat idle, semburan saat firing
+        mz = pt(13, 0)
+        if firing:
+            NS._aacircle(surface, (*P["acid_white"], 230),
+                         (mz[0], mz[1]), 4)
+            NS._aacircle(surface, P["acid_hot"], (mz[0], mz[1]), 2)
+        else:
+            drip = (phase * 0.5) % 1.0
+            NS._aacircle(surface, (*P["acid_bright"],
+                                   int(190 * (1 - drip))),
+                         (mz[0], mz[1] + int(drip * 5)), 1)
+        return mz
+
+    def _draw_goblin_rider(surface, gx, gy, f, phase, action, ap,
+                           rage, aim_angle=None):
+        """Goblin alkemis menunggangi bahu ogre.
+
+        action mengendalikan lengan: q = bidik senapan, w = botol
+        diangkat (gemetar saat charge), e/r = pengangkatan, lainnya
+        genggam tali. Return posisi tangan senapan & tangan botol.
+        """
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        bob = int(math.sin(phase * 1.1) * 1)
+        gx += 0
+        gy += bob
+        # badan goblin
+        NS._poly(surface, P["shadow_deep"],
+                 [(gx - 6, gy - 8), (gx + 6, gy - 8), (gx + 6, gy + 8),
+                  (gx - 6, gy + 8)])
+        NS._poly(surface, P["gob_darkest"],
+                 [(gx - 5, gy - 7), (gx + 5, gy - 7), (gx + 5, gy + 7),
+                  (gx - 5, gy + 7)])
+        NS._poly(surface, P["gob_dark"],
+                 [(gx - 4, gy - 6), (gx + 4, gy - 6), (gx + 4, gy + 5),
+                  (gx - 4, gy + 5)])
+        NS._poly(surface, P["gob_mid"],
+                 [(gx - 3, gy - 5), (gx + 3, gy - 5), (gx + 3, gy + 3),
+                  (gx - 3, gy + 3)])
+        # rompi kulit + gesper
+        NS._rect(surface, P["leather_darkest"],
+                 (gx - 4, gy - 2, 8, 7))
+        NS._rect(surface, P["leather_dark"], (gx - 3, gy - 1, 6, 5))
+        NS._aacircle(surface, P["brass_light"], (gx, gy + 1), 1)
+        # kaki mencengkeram bahu ogre
+        NS._aaline(surface, P["gob_darkest"],
+                   (gx - 3, gy + 6), (gx - 6 + f * 3, gy + 10), 2)
+        NS._aaline(surface, P["gob_darkest"],
+                   (gx + 3, gy + 6), (gx + 6 + f * 3, gy + 10), 2)
+        # kepala goblin
+        NS._ellipse(surface, P["shadow_deep"],
+                    (gx - 6, gy - 15, 12, 11))
+        NS._ellipse(surface, P["gob_darkest"],
+                    (gx - 5, gy - 14, 10, 9))
+        NS._ellipse(surface, P["gob_dark"],
+                    (gx - 4, gy - 13, 8, 7))
+        NS._ellipse(surface, P["gob_mid"],
+                    (gx - 2, gy - 12, 4, 5))
+        # mata glow (kuning-panas; rage = hijau)
+        eye = P["eye_rage"] if rage else P["eye_hot"]
+        NS._aacircle(surface, eye, (gx + f * 1 - 1, gy - 11), 1)
+        NS._aacircle(surface, eye, (gx + f * 1 + 2, gy - 11), 1)
+        # hidung bawang + senyum snaggle
+        NS._aacircle(surface, P["gob_mid"],
+                     (gx + f * 4, gy - 9), 2)
+        NS._aacircle(surface, P["gob_high"],
+                     (gx + f * 4, gy - 10), 1)
+        NS._aaline(surface, P["gob_darkest"],
+                   (gx + f * 1, gy - 7), (gx + f * 4, gy - 7), 1)
+        NS._aacircle(surface, P["bone_light"],
+                     (gx + f * 3, gy - 7), 1)
+        # telinga
+        for sgn in (-1, 1):
+            ex = gx + sgn * 5
+            NS._poly(surface, P["gob_darkest"],
+                     [(ex, gy - 12), (ex + sgn * 6, gy - 15),
+                      (ex + sgn * 5, gy - 9)])
+            NS._poly(surface, P["gob_dark"],
+                     [(ex, gy - 12), (ex + sgn * 4, gy - 14),
+                      (ex + sgn * 4, gy - 10)])
+        # topi alkemis (topi kulit ber-band kuningan + kaca)
+        NS._poly(surface, P["shadow_deep"],
+                 [(gx - 6, gy - 17), (gx + 6, gy - 17), (gx + 5, gy - 25),
+                  (gx - 5, gy - 25)])
+        NS._poly(surface, P["leather_darkest"],
+                 [(gx - 5, gy - 17), (gx + 5, gy - 17), (gx + 4, gy - 24),
+                  (gx - 4, gy - 24)])
+        NS._poly(surface, P["leather_mid"],
+                 [(gx - 4, gy - 18), (gx + 4, gy - 18), (gx + 3, gy - 23),
+                  (gx - 3, gy - 23)])
+        NS._aaline(surface, P["brass_mid"],
+                   (gx - 4, gy - 19), (gx + 4, gy - 19), 2)
+        NS._aacircle(surface, P["glass_shine"], (gx, gy - 21), 1)
+        NS._aacircle(surface, P["acid_hot"], (gx, gy - 21), 1)
+
+        # ── lengan & pose ──────────────────────────────────────────
+        gun_hand = (gx + f * 9, gy - 4)
+        bottle_hand = (gx + f * 3, gy - 10)
+        aim_ang = (float(aim_angle) if aim_angle is not None
+                   else -0.1 + math.sin(phase) * 0.06)
+        if action == "q_cast":
+            gun_hand = (gx + f * 8, gy - 6)
+            NS._aaline(surface, P["gob_dark"],
+                       (gx + 3, gy - 4), gun_hand, 3)
+            NS._aaline(surface, P["gob_mid"],
+                       (gx + 3, gy - 5), gun_hand, 1)
+            recoil = int(math.sin(phase * 8.0) * 1)
+            mz = NS._draw_acid_gun(surface, gun_hand[0] + f * 2,
+                                   gun_hand[1] + recoil, aim_ang, f,
+                                   firing=True, phase=phase)
+            gun_hand = mz
+        elif action == "w_cast":
+            trem = 1 if int(phase * 26) % 2 else 0
+            bottle_hand = (gx + f * (2 + trem), gy - 30)
+            NS._aaline(surface, P["gob_dark"],
+                       (gx + 2, gy - 5), bottle_hand, 3)
+            NS._aaline(surface, P["gob_mid"],
+                       (gx + 2, gy - 6), bottle_hand, 1)
+            glow = 0.5 + 0.5 * math.sin(phase * 6.0)
+            NS._aacircle(surface, P["glass_dark"],
+                         bottle_hand, 4)
+            NS._aacircle(surface, P["glass_mid"], bottle_hand, 3)
+            NS._aacircle(surface, P["acid_bright"], bottle_hand, 2)
+            NS._aacircle(surface, P["acid_hot"],
+                         (bottle_hand[0] - 1, bottle_hand[1] - 1), 1)
+            NS._aacircle(surface, (*P["acid_glow"],
+                                   int(140 * glow)), bottle_hand, 7)
+            # tangan satunya pegang tali
+            NS._aaline(surface, P["gob_dark"],
+                       (gx - 3, gy - 3), (gx - 7, gy + 2), 2)
+        else:
+            # genggam senapan ke atas-depan
+            gun_hand = (gx + f * 8, gy - 8)
+            NS._aaline(surface, P["gob_dark"],
+                       (gx + 3, gy - 5), gun_hand, 3)
+            NS._aaline(surface, P["gob_mid"],
+                       (gx + 3, gy - 6), gun_hand, 1)
+            mz = NS._draw_acid_gun(surface, gun_hand[0], gun_hand[1],
+                                   -0.55 + math.sin(phase * 0.9) * 0.08,
+                                   f, firing=False, phase=phase)
+            gun_hand = mz
+            if action in ("e_cast", "r_cast"):
+                pump = int(math.sin(phase * 3.0) * 3)
+                bottle_hand = (gx - f * 6, gy - 12 - pump)
+                NS._aaline(surface, P["gob_dark"],
+                           (gx - 3, gy - 4), bottle_hand, 3)
+                NS._aacircle(surface, P["gob_mid"], bottle_hand, 2)
+                if action == "r_cast":
+                    NS._aacircle(surface, P["gold_light"],
+                                 bottle_hand, 2)
+                    NS._aacircle(surface, P["gold_shine"],
+                                 (bottle_hand[0], bottle_hand[1] - 1),
+                                 1)
+            else:
+                NS._aaline(surface, P["gob_dark"],
+                           (gx - 3, gy - 3), (gx - 7, gy + 2), 2)
+        return gun_hand, bottle_hand
+
+    # ==================================================================
+    # FULL COMPOSITE — buffer -> outline siluet -> lighting -> blit
+    # (+ pose cache LRU supaya frame stabil 60 fps di mobile)
+    # ==================================================================
+    def _draw_alch_full_raw(surface, cx, cy, facing, phase, action,
+                            attack_progress=0, rage=False,
+                            detail=False, boss=None):
+        """Rig masterwork v2 — ogre chemist + goblin rider, prosedural.
+
+        Semua koordinat lokal: (0,0) = jangkar pinggul, +x maju
+        (facing), y ke bawah. Topi goblin -68, botol W -88, kaki +56.
+        Urutan lapisan: backpack -> goblin -> back arm -> legs ->
+        skirt -> torso -> armor -> head -> goblin arms/weapon ->
+        front arm + cleaver.
+        """
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        attack = action == "attack"
+        ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
+        breath = math.sin(phase * 0.7)
+
+        # ═══ 1. GERAK BADAN: root / lean / sway (satu sumber dgn
+        # _local supaya anchor FX hidup cocok piksel-per-piksel) ═══
+        lean, root_y = NS._rig_shift(action, phase, ap)
+        L = lambda lx, ly: NS._local_to_screen(cx, cy, f, lean,
+                                               root_y, lx, ly)
+
+        pose = NS._attack_pose(ap) if attack else None
+        flare = pose["flare"] if pose else 1.0
+
+        # ═══ 2. BACKPACK (paling belakang) ═══
+        NS._draw_backpack(surface, *L(-17, -12), phase, f, rage)
+
+        # ═══ 3. GOBLIN RIDER (di belakang torso, di atas backpack) ═══
+        aim_angle = None
+        if action == "q_cast":
+            if boss is not None:
+                tx, ty = NS._target_position(boss, cx, cy)
+                hx, hy = L(-13 + 8, -36 - 6)
+                aim_angle = math.atan2(ty - hy, tx - hx)
+            else:
+                aim_angle = -0.1
+        goblin_x, goblin_y = L(-13, -44)
+        NS._draw_goblin_rider(surface, goblin_x, goblin_y, f, phase,
+                              action, ap, rage, aim_angle=aim_angle)
+
+        # ═══ 4. LENGAN BELAKANG + CLEAVER BELAKANG ═══
+        grip_b = NS._cleaver_grip_local(action, phase, ap, back=True)
+        ang_b = NS._cleaver_angle_local(action, phase, ap, back=True)
+        gb = L(*grip_b)
+        shb = L(-17, -30)
+        flex = 1.0 if action == "e_cast" else 0.0
+        NS._draw_ogre_arm(surface, shb[0], shb[1], gb[0], gb[1], f,
+                          back=True, flex=flex)
+        NS._draw_cleaver(surface, gb[0], gb[1], ang_b, f, phase)
+
+        # ═══ 5. KAKI (alternating walk + foot plant) ═══
+        if action == "walk":
+            la = math.sin(phase) * 0.5
+            lift_a = max(0.0, math.sin(phase + 0.4)) * 5
+            lift_b = max(0.0, math.sin(phase + math.pi + 0.4)) * 5
+        else:
+            la = 0.08
+            lift_a = lift_b = 0.0
+            if attack:
+                la = 0.10 + pose["lunge"] * 0.012
+        hA = L(-8, 20)
+        hB = L(8, 20)
+        NS._draw_ogre_leg(surface, hB[0], hB[1], la, lift_a, True, f)
+        NS._draw_ogre_leg(surface, hA[0], hA[1], -la, lift_b, False, f)
+
+        # ═══ 6. ROK ROMPUL ROBEK (3 helai, inersia tertinggal) ═══
+        lag = 0.0
+        if action == "walk":
+            lag = math.sin(phase + 2.1) * 3.2
+        elif attack:
+            lag = -pose["lean"] * 0.9
+        else:
+            lag = math.sin(phase * 0.55) * 1.6
+        for i, off in enumerate((-14, -4, 7)):
+            wave = int(lag + math.sin(phase * 1.0 + i) * 2)
+            length = 22 + (i % 2) * 5
+            p0 = L(off - 4, 22)
+            p1 = L(off + 4, 22)
+            p2 = L(off + 3 + wave, 22 + length)
+            p3 = L(off - 3 + wave, 22 + length)
+            NS._poly(surface, P["shadow_deep"],
+                     [(p2[0] + 1, p2[1] + 1), (p3[0] + 1, p3[1] + 1),
+                      (p1[0] + 1, p1[1] + 1)])
+            NS._poly(surface, P["leather_darkest"],
+                     [p0, p1, p2, p3])
+            NS._poly(surface, P["leather_dark"], [
+                L(off - 3, 23), L(off + 3, 23),
+                L(off + 2 + wave, 22 + length - 2),
+                L(off - 2 + wave, 22 + length - 2)])
+            NS._poly(surface, P["leather_mid"], [
+                L(off - 2, 24), L(off + 2, 24),
+                L(off + 1 + wave, 22 + length - 5),
+                L(off - 1 + wave, 22 + length - 5)])
+
+        # ═══ 7. TORSO + ARMOR + KEPALA ═══
+        NS._draw_ogre_torso(surface, *L(0, 2), phase, flare, rage, f)
+        NS._draw_ogre_armor(surface, *L(0, 0), phase, f, rage)
+        # leher tebal
+        nck0, nck1 = L(-8, -30), L(8, -18)
+        NS._poly(surface, NS.PALETTE["ogre_dark"],
+                 [nck0, (nck1[0], nck0[1]), (nck1[0], nck1[1]),
+                  (nck0[0], nck1[1])])
+        hd = L(4, -50)
+        if action == "attack":
+            hd = (hd[0], hd[1] + int(pose["dip"] * 0.4))
+        NS._draw_ogre_head(surface, hd[0], hd[1], f, phase, action,
+                           rage)
+
+        # ═══ 8. LENGAN DEPAN + CLEAVER UTAMA (paling depan) ═══
+        grip_f = NS._cleaver_grip_local(action, phase, ap, back=False)
+        ang_f = NS._cleaver_angle_local(action, phase, ap, back=False)
+        gf = L(*grip_f)
+        shf = L(17, -30)
+        NS._draw_ogre_arm(surface, shf[0], shf[1], gf[0], gf[1], f,
+                          back=False, flex=flex)
+        NS._draw_cleaver(surface, gf[0], gf[1], ang_f, f, phase)
+
+        # ═══ 9. HIGHLIGHTS / detail portrait ═══
+        if rage:
+            pul = 0.5 + 0.5 * math.sin(phase * 7.0)
+            NS._aacircle(surface, (*P["acid_hot"],
+                                   int(150 + 100 * pul)),
+                         (gf[0], gf[1]), 4)
+        if detail:
+            NS._draw_alch_masterwork_details(surface, L, f, phase)
+
+    def _draw_alch_masterwork_details(surface, L, f, phase):
+        """Pass detail portrait: jahitan, paku, ukiran rune asam."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        # rune asam di pauldron
+        px, py = L(17 * f, -27)
+        NS._aaline(surface, P["acid_mid"], (px - 3, py - 1),
+                   (px + 3, py - 1), 1)
+        NS._aaline(surface, P["acid_mid"], (px, py - 3), (px, py + 2),
+                   1)
+        # jahitan harness
+        for t in ((-6, -14), (-2, -6), (2, 2)):
+            sxp, syp = L(t[0], t[1])
+            NS._aacircle(surface, P["leather_high"], (sxp, syp), 1)
+        # tetes asam menggantung di moncong gun
+        gx, gy = L(9, -44)
+        drip = (phase * 0.4) % 1.0
+        NS._aacircle(surface, (*P["acid_bright"],
+                               int(200 * (1 - drip))),
+                     (gx, gy + int(drip * 7)), 1)
+
+    def _composite_body(facing, phase, action, attack_progress=0,
+                        rage=False, detail=False, boss=None):
+        """Komposit badan -> (crop, dx, dy). dx,dy = offset sudut
+        kiri-atas crop relatif jangkar. Outline siluet hitam 1 px
+        4 arah + pass cahaya dikerjakan DI SINI (sekali per pose)."""
+        NS = _NS_alchemist
+        if NS._body_buf is None:
+            NS._body_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                          pygame.SRCALPHA)
+        buf = NS._body_buf
+        buf.fill((0, 0, 0, 0))
+        NS._draw_alch_full_raw(buf, NS.RIG_OX, NS.RIG_OY, facing,
+                               phase, action, attack_progress,
+                               rage=rage, detail=detail, boss=boss)
+        used = buf.get_bounding_rect(min_alpha=1)
+        if used.width <= 2 or used.height <= 2:
+            return None, 0, 0
+        used.inflate_ip(2, 2)
+        used.clamp_ip(buf.get_rect())
+        sub = buf.subsurface(used).copy()
+        dx = used.left - NS.RIG_OX
+        dy = used.top - NS.RIG_OY
+        # pass cahaya DULU (rim/shade) supaya outline tetap hitam pekat,
+        # lalu outline siluet 1 px 4 arah di atasnya (konvensi gorath).
+        if _lighting is not None:
+            try:
+                _lighting.apply_to_rig(sub, rim_add=(26, 40, 14),
+                                       shade_mul=168)
+            except Exception:
+                pass
+        edge = sub.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        w, h = sub.get_size()
+        padded = pygame.Surface((w + 2, h + 2), pygame.SRCALPHA)
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            padded.blit(edge, (1 + ddx, 1 + ddy))
+        padded.blit(sub, (1, 1))
+        return padded, dx - 1, dy - 1
+
+    def _draw_alch_full(surface, cx, cy, facing, phase, action,
+                        attack_progress=0, rage=False, detail=False,
+                        boss=None):
+        """Komposit langsung (tanpa cache) — kontrak API lama."""
+        NS = _NS_alchemist
+        surf, dx, dy = NS._composite_body(facing, phase, action,
+                                          attack_progress, rage=rage,
+                                          detail=detail, boss=boss)
+        if surf is None:
+            return
+        surface.blit(surf, (int(cx) + dx, int(cy) + dy))
+
+    # ── pose cache: kuantum pose -> satu blit per frame ────────────
+    _POSE_CACHE_MAX = 44
+
+    def _pose_bucket(action, phase, ap):
+        if action == "attack":
+            return int(max(0.0, min(1.0, ap)) * 29)
+        cyc = (phase / (math.pi * 2.0)) % 1.0
+        return int(cyc * 24.0) % 24
+
+    def _aim_bucket(action, boss, cx, cy):
+        """Kuantum arah bidik goblin (12 bucket) — dipakai pose cache."""
+        if action != "q_cast" or boss is None:
+            return 0
+        try:
+            tx, ty = _NS_alchemist._target_position(boss, cx, cy)
+            return int(math.atan2(ty - cy, tx - cx) /
+                       (math.pi / 6.0)) % 12
+        except Exception:
+            return 0
+
+    def _draw_alch_pose(surface, cx, cy, facing, phase, action, ap=0.0,
+                        rage=False, detail=False, boss=None):
+        """Badan dengan pose LRU-cache (idle 24/walk 24/attack 30
+        bucket) — cache-miss ~2 ms, hit ~0.1 ms; animasi tetap
+        kontinu karena bucket << jumlah frame siklus."""
+        NS = _NS_alchemist
+        key = (action, 1 if facing >= 0 else -1,
+               NS._pose_bucket(action, phase, ap), bool(rage),
+               bool(detail),
+               NS._aim_bucket(action, boss, cx, cy))
+        entry = NS._POSE_CACHE.get(key)
+        if entry is None:
+            surf, dx, dy = NS._composite_body(
+                facing, phase, action, ap, rage=rage, detail=detail,
+                boss=boss)
+            if surf is None:
+                return
+            entry = (surf, int(dx), int(dy))
+            NS._POSE_CACHE[key] = entry
+            NS._POSE_ORDER.append(key)
+            while len(NS._POSE_ORDER) > NS._POSE_CACHE_MAX:
+                old = NS._POSE_ORDER.pop(0)
+                NS._POSE_CACHE.pop(old, None)
+        surface.blit(entry[0], (int(cx) + entry[1],
+                                int(cy) + entry[2]))
+
+    # ==================================================================
+    # POSE MODES (wrapper — bayangan + wisps + badan)
+    # ==================================================================
+    def _draw_alch_idle(surface, boss, x, y, rage=False, detail=False):
+        NS = _NS_alchemist
+        phase = float(getattr(boss, "pulse", 0.0))
+        bob = int(math.sin(phase * 0.7) * 2)
+        if not detail:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY)
+            NS._draw_alch_wisps(surface, x, y + 44, phase)
+        NS._draw_alch_pose(surface, x, y + bob,
+                           getattr(boss, "direction", 1), phase,
+                           "idle", 0.0, rage=rage, detail=detail)
+
+    def _draw_alch_walk(surface, boss, x, y, rage=False, detail=False):
+        NS = _NS_alchemist
+        phase = float(getattr(boss, "pulse", 0.0)) * 2.4
+        bob = int(abs(math.sin(phase * 1.3)) * 3)
+        sway = int(math.sin(phase) * 2)
+        if not detail:
+            NS._draw_shadow(surface, x + sway, y + NS.GROUND_DY)
+            NS._draw_alch_wisps(surface, x + sway, y + 40, phase,
+                                trail=True,
+                                facing=getattr(boss, "direction", 1))
+        NS._draw_alch_pose(surface, x + sway, y - bob,
+                           getattr(boss, "direction", 1), phase,
+                           "walk", 0.0, rage=rage, detail=detail)
+
+    def _draw_alch_attack(surface, boss, x, y, rage=False,
+                          detail=False):
+        NS = _NS_alchemist
+        progress = max(0.0, min(1.0,
+                                getattr(boss, "_alch_attack_progress",
+                                        0.0)))
+        ap = NS._attack_curve(progress)
+        pose = NS._attack_pose(ap)
+        lunge = int(math.sin(min(1.0, progress * 1.2) * math.pi) *
+                    pose["lunge"] * 0.55) * \
+            (1 if getattr(boss, "direction", 1) >= 0 else -1)
+        if not detail:
+            NS._draw_shadow(surface, x + lunge, y + NS.GROUND_DY,
+                            lift=2 if 0.10 < progress < 0.30 else 0)
+            NS._draw_alch_wisps(surface, x + lunge, y + 40,
+                                float(getattr(boss, "pulse", 0.0)),
+                                intense=True)
+        NS._draw_alch_pose(surface, x + lunge, y,
+                           getattr(boss, "direction", 1),
+                           float(getattr(boss, "pulse", 0.0)),
+                           "attack", ap, rage=rage, detail=detail)
+        if not detail and not NS._fx_owned(boss):
+            NS._draw_cleaver_swing_arc(surface, x + lunge, y,
+                                       getattr(boss, "direction", 1),
+                                       progress)
+            NS._draw_swing_impact(surface, x + lunge, y,
+                                  getattr(boss, "direction", 1),
+                                  progress)
+
+    def _draw_alch_qcast(surface, boss, x, y, timer, rage=False,
+                         detail=False):
+        duration = 40
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        NS = _NS_alchemist
+        bob = int(math.sin(float(getattr(boss, "pulse", 0.0)) * 0.7)
+                  * 2)
+        recoil = int(math.sin(progress * math.pi * 2) * 2) * \
+            -1 * (1 if getattr(boss, "direction", 1) >= 0 else -1)
+        if not detail:
+            NS._draw_shadow(surface, x + recoil, y + NS.GROUND_DY)
+            NS._draw_alch_wisps(surface, x + recoil, y + 40,
+                                float(getattr(boss, "pulse", 0.0)),
+                                intense=True)
+        NS._draw_alch_pose(surface, x + recoil, y + bob,
+                           getattr(boss, "direction", 1),
+                           float(getattr(boss, "pulse", 0.0)),
+                           "q_cast", 0.0, rage=rage, detail=detail,
+                           boss=boss)
+
+    def _draw_alch_wcast(surface, boss, x, y, timer, rage=False,
+                         detail=False):
+        duration = 60
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        NS = _NS_alchemist
+        bob = int(math.sin(float(getattr(boss, "pulse", 0.0)) * 0.7)
+                  * 2)
+        if not detail:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY)
+            NS._draw_alch_wisps(surface, x, y + 40,
+                                float(getattr(boss, "pulse", 0.0)),
+                                intense=progress < 0.5)
+        NS._draw_alch_pose(surface, x, y + bob,
+                           getattr(boss, "direction", 1),
+                           float(getattr(boss, "pulse", 0.0)),
+                           "w_cast", progress, rage=rage,
+                           detail=detail)
+        # Lempar botol pada momen yang tepat (canvas fallback; jalur
+        # lapisan hidup melempar sendiri lewat _watch_engine_events).
+        if 0.35 < progress < 0.45 and not detail:
+            if not getattr(boss, "_alch_wcast_spawned", False):
+                tx, ty = NS._world_to_screen_target(boss, x, y)
+                hx, hy = NS._bottle_hand_screen(boss, x, y)
+                NS._spawn_acid_bottle(boss, hx, hy, tx, ty)
+                boss._alch_wcast_spawned = True
+        if progress > 0.7:
+            boss._alch_wcast_spawned = False
+
+    def _draw_alch_ecast(surface, boss, x, y, timer, rage=True,
+                         detail=False):
+        duration = 60
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        NS = _NS_alchemist
+        hop = int(math.sin(progress * math.pi) * 6)
+        if not detail:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY,
+                            lift=hop // 2)
+            NS._draw_alch_wisps(surface, x, y + 40,
+                                float(getattr(boss, "pulse", 0.0)),
+                                intense=True)
+        NS._draw_alch_pose(surface, x, y - hop,
+                           getattr(boss, "direction", 1),
+                           float(getattr(boss, "pulse", 0.0)) * 1.4,
+                           "e_cast", progress, rage=True,
+                           detail=detail)
+
+    def _draw_alch_rcast(surface, boss, x, y, timer, rage=True,
+                         detail=False):
+        duration = 90
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        NS = _NS_alchemist
+        bob = int(math.sin(float(getattr(boss, "pulse", 0.0)) * 1.6)
+                  * 2)
+        if not detail:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY)
+            NS._draw_alch_wisps(surface, x, y + 40,
+                                float(getattr(boss, "pulse", 0.0)),
+                                intense=True)
+        NS._draw_alch_pose(surface, x, y + bob,
+                           getattr(boss, "direction", 1),
+                           float(getattr(boss, "pulse", 0.0)),
+                           "r_cast", progress, rage=True,
+                           detail=detail)
+
+    def _world_to_screen_target(boss, x, y):
+        """Posisi target skill W (w_target_x/y dunia) -> px layar."""
+        NS = _NS_alchemist
+        wx = getattr(boss, "w_target_x", None)
+        wy = getattr(boss, "w_target_y", None)
+        if wx is None or wy is None:
+            return NS._target_position(boss, x, y)
+        scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
+        return (int(x + (float(wx) - float(getattr(boss, "x", x)))
+                    / scale),
+                int(y + (float(wy) - float(getattr(boss, "y", y)))
+                    / scale))
+
+    # ==================================================================
+    # CANVAS SWING FX (fallback tanpa lapisan hidup)
+    # ==================================================================
+    def _cleaver_arc_points(progress, facing, count=16):
+        """Titik-titik busur sapuan (windup -> sudut sekarang)."""
+        NS = _NS_alchemist
+        ap = NS._attack_curve(max(0.0, min(1.0, progress)))
+        pose = NS._attack_pose(ap)
+        ang_now = pose["blade_f"]
+        ang_start = -2.30
+        pts = []
+        for i in range(count):
+            t = (i / float(count - 1)) ** 1.7
+            ang = ang_start + (ang_now - ang_start) * t
+            grip = NS._cleaver_grip_local("attack", 0.0, ap)
+            L = NS.CLEAVER_HANDLE + NS.CLEAVER_BLADE - 2
+            pts.append((ang, grip, L))
+        return pts, ang_now
 
     def _draw_cleaver_swing_arc(surface, x, y, facing, progress):
-        if progress < 0.28 or progress > 0.75:
+        """Trail sapuan canvas: stamp memudar menyusuri busur —
+        mengikuti ARAH serangan (bukan dua posisi snap)."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        if progress < 0.28 or progress > 0.78:
             return
         if progress < 0.5:
             visibility = (progress - 0.28) / 0.22
         else:
-            visibility = 1.0 - (progress - 0.5) / 0.25
+            visibility = 1.0 - (progress - 0.5) / 0.28
         visibility = max(0.0, min(1.0, visibility))
-
-        arc = pygame.Surface((160, 120), pygame.SRCALPHA)
-        for i in range(18):
-            t = i / 17
-            angle = -math.pi * 0.9 + t * math.pi * 1.1
-            px = 80 + int(math.cos(angle) * 60) * facing
-            py = 60 + int(math.sin(angle) * 44)
-            alpha = int((210 - i * 10) * visibility)
-            if alpha <= 0:
+        if visibility <= 0.02:
+            return
+        lean, root_y = NS._rig_shift("attack", 0.0,
+                                     NS._attack_curve(progress))
+        arc, _ang = NS._cleaver_arc_points(progress, facing)
+        n = len(arc)
+        for i, (ang, grip, L) in enumerate(arc):
+            t = i / float(n - 1)
+            fade = t ** 1.4 * visibility
+            alpha = int(215 * fade)
+            if alpha <= 6:
                 continue
-            _NS_alchemist._aacircle(arc, (*_NS_alchemist.PALETTE["acid_darkest"], alpha), (px, py), 10)
-            _NS_alchemist._aacircle(arc, (*_NS_alchemist.PALETTE["acid_mid"], alpha), (px, py), 6)
-            _NS_alchemist._aacircle(arc, (*_NS_alchemist.PALETTE["acid_bright"], alpha), (px, py), 4)
-            _NS_alchemist._aacircle(arc, (*_NS_alchemist.PALETTE["acid_hot"], alpha), (px, py), 2)
-            _NS_alchemist._aacircle(arc, (*_NS_alchemist.PALETTE["acid_glow"], min(255, alpha)), (px, py), 1)
-        surface.blit(arc, (x - 80, y - 60))
-
+            gx, gy = NS._local_to_screen(x, y, facing, lean, root_y,
+                                         grip[0], grip[1])
+            tx = int(gx + math.cos(ang) * L)
+            ty = int(gy + math.sin(ang) * L)
+            size = 5 + int(5 * t)
+            NS._aacircle(surface, (*P["acid_darkest"], alpha),
+                         (tx, ty), size)
+            NS._aacircle(surface, (*P["acid_mid"], alpha),
+                         (tx, ty), max(1, size - 2))
+            NS._aacircle(surface, (*P["acid_bright"], alpha),
+                         (tx, ty), max(1, size - 4))
+            NS._aacircle(surface, (*P["acid_hot"], min(255, alpha)),
+                         (tx, ty), max(1, size - 6))
 
     def _draw_swing_impact(surface, x, y, facing, progress):
-        if progress < 0.5 or progress > 0.85:
+        """Bintang + cincin benturan di jendela IMPACT (canvas)."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        if progress < 0.46 or progress > 0.74:
             return
-        t = (progress - 0.5) / 0.35
+        t = (progress - 0.46) / 0.28
         intensity = math.sin(t * math.pi)
+        ap = NS._attack_curve(0.54)
+        grip = NS._cleaver_grip_local("attack", 0.0, ap)
+        ang = NS._attack_pose(ap)["blade_f"]
+        lean, root_y = NS._rig_shift("attack", 0.0, ap)
+        gx, gy = NS._local_to_screen(x, y, facing, lean, root_y,
+                                     grip[0], grip[1])
+        ix = int(gx + math.cos(ang) * (NS.CLEAVER_BLADE + 6))
+        iy = int(gy + math.sin(ang) * (NS.CLEAVER_BLADE + 6))
+        alpha = int(235 * intensity)
+        radius = int(10 + intensity * 20)
+        NS._aacircle(surface, (*P["acid_dark"], alpha // 2),
+                     (ix, iy), radius + 4)
+        NS._aacircle(surface, (*P["acid_bright"], alpha),
+                     (ix, iy), radius, 3)
+        NS._aacircle(surface, (*P["acid_hot"], alpha),
+                     (ix, iy), max(1, radius - 6), 2)
+        NS._aacircle(surface, (*P["acid_white"], alpha),
+                     (ix, iy), max(1, radius // 2))
+        for k in range(6):
+            ang2 = k * math.pi / 3 + 0.35
+            dx = ix + int(math.cos(ang2) * radius * 1.4)
+            dy = iy + int(math.sin(ang2) * radius * 1.1)
+            NS._draw_acid_droplet(surface, dx, dy, 3, alpha)
 
-        impact_x = x + 42 * facing
-        impact_y = y + 5
-        alpha = int(230 * intensity)
-        radius = int(10 + intensity * 22)
-
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_dark"], alpha // 2),
-                  (impact_x, impact_y), radius + 4)
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha),
-                  (impact_x, impact_y), radius, 3)
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], alpha),
-                  (impact_x, impact_y), max(1, radius - 6), 2)
-
-        for i in range(10):
-            angle = i * math.pi / 5 + progress * 3
-            dx = impact_x + int(math.cos(angle) * radius * 1.3)
-            dy = impact_y + int(math.sin(angle) * radius * 0.9)
-            _NS_alchemist._draw_acid_droplet(surface, dx, dy, 3, alpha)
-
-
-    # ===================================================================
-    # SKILL Q: ACID SPRAY (green cone)
-    # ===================================================================
+    # ==================================================================
+    # SKILL Q: ACID SPRAY (cone) — canvas fallback
+    # ==================================================================
     def _draw_acid_spray(surface, boss, x, y, timer, phase):
         duration = 40
         progress = max(0.0, min(1.0, 1 - timer / duration))
-        tx, ty = _NS_alchemist._target_position(boss, x, y)
-
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        tx, ty = NS._target_position(boss, x, y)
         if progress > 0.85:
             return
-
-        # From goblin's/ogre's gun
-        start_x = x + 30 * boss.direction
-        start_y = y - 5
-
+        start_x, start_y = NS._gun_end_screen(boss, x, y)
         dx = tx - start_x
         dy = ty - start_y
         dist = math.sqrt(dx * dx + dy * dy)
         if dist < 1:
             dist = 1
-        dir_x = dx / dist
-        dir_y = dy / dist
-        perp_x = -dir_y
-        perp_y = dir_x
-
-        if progress < 0.2:
-            cone_len = int(160 * (progress / 0.2))
-        else:
-            cone_len = 160
-
-        # Cone of acid particles
-        for i in range(28):
-            t = i / 28
+        dir_x, dir_y = dx / dist, dy / dist
+        perp_x, perp_y = -dir_y, dir_x
+        cone_len = int(160 * min(1.0, progress / 0.2))
+        for i in range(26):
+            t = i / 26
             base_x = start_x + dir_x * cone_len * t
             base_y = start_y + dir_y * cone_len * t
             spread = t * 22
             offset = math.sin(phase * 5 + i * 1.7) * spread
             fx = int(base_x + perp_x * offset)
             fy = int(base_y + perp_y * offset)
-
             size = int(5 + t * 5)
-            alpha_t = 1 - t * 0.3
-            alpha = int(230 * alpha_t)
-
+            alpha = int(230 * (1 - t * 0.3))
             if t < 0.2:
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_white"], alpha), (fx, fy), size)
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_glow"], alpha), (fx, fy), max(1, size - 2))
+                NS._aacircle(surface, (*P["acid_white"], alpha),
+                             (fx, fy), size)
+                NS._aacircle(surface, (*P["acid_glow"], alpha),
+                             (fx, fy), max(1, size - 2))
             elif t < 0.5:
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], alpha), (fx, fy), size)
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha), (fx, fy), max(1, size - 2))
+                NS._aacircle(surface, (*P["acid_hot"], alpha),
+                             (fx, fy), size)
+                NS._aacircle(surface, (*P["acid_bright"], alpha),
+                             (fx, fy), max(1, size - 2))
             elif t < 0.8:
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha), (fx, fy), size)
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_mid"], alpha), (fx, fy), max(1, size - 2))
+                NS._aacircle(surface, (*P["acid_bright"], alpha),
+                             (fx, fy), size)
+                NS._aacircle(surface, (*P["acid_mid"], alpha),
+                             (fx, fy), max(1, size - 2))
             else:
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_mid"], alpha), (fx, fy), size)
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_dark"], alpha), (fx, fy), max(1, size - 2))
-
-        # Bright muzzle
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_white"], 255),
-                  (int(start_x), int(start_y)), 6)
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], 255),
-                  (int(start_x + dir_x * 6), int(start_y + dir_y * 6)), 4)
-
-        # Small droplet particles falling from cone
+                NS._aacircle(surface, (*P["acid_mid"], alpha),
+                             (fx, fy), size)
+                NS._aacircle(surface, (*P["acid_dark"], alpha),
+                             (fx, fy), max(1, size - 2))
+        NS._aacircle(surface, (*P["acid_white"], 255),
+                     (int(start_x), int(start_y)), 6)
+        NS._aacircle(surface, (*P["acid_hot"], 255),
+                     (int(start_x + dir_x * 6),
+                      int(start_y + dir_y * 6)), 4)
         for i in range(8):
             t = (phase * 0.5 + i * 0.12) % 1.0
             drop_t = 0.3 + t * 0.6
             base_x = start_x + dir_x * cone_len * drop_t
             base_y = start_y + dir_y * cone_len * drop_t + int(t * 10)
-            _NS_alchemist._draw_acid_droplet(surface, int(base_x), int(base_y), 2, 200)
+            NS._draw_acid_droplet(surface, int(base_x), int(base_y),
+                                  2, 200)
+        # telegraph genangan di target (radius gameplay, world-space)
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["q"] * 0.62, surface)
+        it = max(0.0, min(1.0, 1.0 - abs(progress - 0.5) / 0.4))
+        NS._ground_ring(surface, tx, ty + 4, r,
+                        P["acid_dark"], P["acid_bright"],
+                        int(200 * it))
 
-        # ORIGINAL-MAX: ring kejut menyala di target (target-anchored)
-        it = 1 - abs(progress - 0.5) / 0.3
-        it = max(0.0, min(1.0, it))
-        ir = int(8 + it * 32)
-        ia = int(230 * it)
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_dark"], ia),
-                                (int(tx), int(ty)), ir)
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], ia),
-                                (int(tx), int(ty)), max(2, ir - 4))
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], ia),
-                                (int(tx), int(ty)), max(1, ir - 8))
-        _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_white"], ia),
-                                (int(tx), int(ty)), max(1, ir - 10))
-
-
-    # ===================================================================
+    # ==================================================================
     # SKILL E: CHEMICAL RAGE (self buff)
-    # ===================================================================
+    # ==================================================================
     def _draw_chem_rage_ground(surface, boss, x, y, timer, phase):
-        """Ground pulse rings under boss."""
         duration = 60
         progress = max(0.0, min(1.0, 1 - timer / duration))
+        NS = _NS_alchemist
+        P = NS.PALETTE
         pulse = math.sin(phase * 3) * 0.3 + 0.7
-
         for i in range(3):
             r = int(30 + i * 15 + math.sin(phase * 2 + i) * 5)
-            _NS_alchemist._ellipse(surface, (*_NS_alchemist.PALETTE["acid_bright"], int(120 * pulse)),
-                     (x - r, y + 45 - r // 3, r * 2, r // 1.5), 2)
-
+            NS._ellipse(surface,
+                        (*P["acid_bright"], int(120 * pulse)),
+                        (x - r, y + 52 - r // 3, r * 2, r // 1.5), 2)
+        NS._zone_fill(surface, x, y + 46, 40, P["acid_darkest"],
+                      int(120 * pulse))
+        # denyut denyut nadi (heal)
+        if progress < 0.4:
+            rr = int(20 + progress / 0.4 * 52)
+            NS._aacircle(surface, (*P["acid_hot"],
+                                   int(200 * (1 - progress / 0.4))),
+                         (x, y + 46), rr)
 
     def _draw_chem_rage_foreground(surface, boss, x, y, timer, phase):
-        """Green aura + steam rising from Alchemist."""
         duration = 60
         progress = max(0.0, min(1.0, 1 - timer / duration))
+        NS = _NS_alchemist
+        P = NS.PALETTE
         pulse = math.sin(phase * 3) * 0.3 + 0.7
-
-        # Intense inner aura
-        for radius in range(50, 10, -3):
-            alpha = int((50 - radius) * 4 * pulse)
-            _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_dark"], min(255, alpha)),
-                      (x, y - 10), radius)
-
-        # Rising steam wisps
+        fade = 1.0 if progress < 0.7 else (1.0 - (progress - 0.7) / 0.3)
+        for radius in range(50, 10, -4):
+            alpha = int((50 - radius) * 4 * pulse * fade)
+            if alpha > 0:
+                NS._aacircle(surface,
+                             (*P["acid_dark"], min(255, alpha)),
+                             (x, y - 10), radius)
         for i in range(12):
             t = (phase * 0.8 + i * 0.08) % 1.0
             angle = i * math.pi * 2 / 12
             px = x + int(math.cos(angle) * 25)
             py = y + 15 - int(t * 50)
-            alpha = int(255 * (1 - t))
+            alpha = int(255 * (1 - t) * fade)
             if alpha > 0:
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_mid"], alpha), (px, py), 4)
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_bright"], alpha), (px, py), 2)
-                _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["acid_hot"], alpha), (px - 1, py - 1), 1)
-
-        # Sparkles/electric arcs
+                NS._aacircle(surface, (*P["acid_mid"], alpha),
+                             (px, py), 4)
+                NS._aacircle(surface, (*P["acid_bright"], alpha),
+                             (px, py), 2)
+                NS._aacircle(surface, (*P["acid_hot"], alpha),
+                             (px - 1, py - 1), 1)
         for i in range(6):
             angle = phase * 2 + i * math.pi / 3
             r = 30 + int(math.sin(phase * 3 + i) * 8)
             sx = x + int(math.cos(angle) * r)
             sy = y - 10 + int(math.sin(angle) * r * 0.5)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_white"], (sx, sy), 2)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["acid_glow"], (sx, sy), 1)
+            NS._aacircle(surface, P["acid_white"], (sx, sy), 2)
+            NS._aacircle(surface, P["acid_glow"], (sx, sy), 1)
 
-
-    # ===================================================================
-    # SKILL R: GREEVIL'S GREED (gold rain)
-    # ===================================================================
+    # ==================================================================
+    # SKILL R: GREEVIL'S GREED (gold storm)
+    # ==================================================================
     def _draw_greevil_ground(surface, boss, x, y, timer, phase):
-        """Golden aura on ground."""
         duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
+        NS = _NS_alchemist
+        P = NS.PALETTE
         pulse = math.sin(phase * 2) * 0.3 + 0.7
-
-        # Golden circle
-        for i in range(3):
-            r = int(50 + i * 20 + math.sin(phase + i) * 4)
-            _NS_alchemist._ellipse(surface, (*_NS_alchemist.PALETTE["gold_mid"], int(120 * pulse)),
-                     (x - r, y + 45 - r // 3, r * 2, r // 1.5), 2)
-
-        # Gold pile at feet
+        fade = 1.0 if progress < 0.75 else \
+            max(0.0, 1.0 - (progress - 0.75) / 0.25)
+        r200 = NS._ring_r(boss, NS.SKILL_RADIUS["r"], surface)
+        NS._ground_ring(surface, x, y + 50, r200,
+                        P["gold_dark"], P["gold_light"],
+                        int(170 * pulse * fade))
+        NS._zone_fill(surface, x, y + 46, min(r200, 90),
+                      P["gold_darkest"], int(110 * pulse * fade))
         if progress > 0.3:
             pile_grow = min(1.0, (progress - 0.3) / 0.5)
-            _NS_alchemist._draw_gold_pile(surface, x, y + 50, pile_grow, phase)
-
+            NS._draw_gold_pile(surface, x, y + 56, pile_grow, phase)
 
     def _draw_gold_pile(surface, cx, cy, grow, phase):
-        """Pile of gold coins on ground."""
-        pile_w = int(60 * grow)
-        pile_h = int(12 * grow)
-
-        # Base pile
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["shadow_deep"],
-                 (cx - pile_w // 2 + 1, cy - pile_h // 2 + 1, pile_w, pile_h))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["gold_dark"],
-                 (cx - pile_w // 2, cy - pile_h // 2, pile_w, pile_h))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["gold_mid"],
-                 (cx - pile_w // 2 + 3, cy - pile_h // 2 + 2,
-                  pile_w - 6, pile_h - 4))
-        _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["gold_light"],
-                 (cx - pile_w // 2 + 6, cy - pile_h // 2 + 3,
-                  pile_w - 15, pile_h - 8))
-
-        # Individual coins scattered
-        coin_count = int(15 * grow)
-        for i in range(coin_count):
-            seed = i * 1234567 % 100
-            angle = (seed / 100) * math.pi
-            r = (seed % 30)
-            cx_offset = int(math.cos(angle) * r - pile_w // 2 + r)
-            cx_offset = max(-pile_w // 2, min(pile_w // 2, cx_offset))
-            cy_offset = int(-abs(math.sin(angle) * 5) + seed % 4)
-            px = cx + cx_offset
-            py = cy + cy_offset
-
-            # Coin
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["gold_dark"], (px, py), 3)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["gold_mid"], (px, py), 2)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["gold_light"], (px - 1, py - 1), 1)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["gold_shine"], (px - 1, py - 1), 1)
-
+        """Tumpukan koin emas (stamp ter-cache + shimmer)."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        pile_w = max(6, int(60 * grow))
+        pile_h = max(2, int(12 * grow))
+        key = "gold_pile_%d_%d" % (pile_w, pile_h)
+        if key not in NS._STATIC_SURFACES:
+            pile = pygame.Surface((pile_w + 8, pile_h + 8),
+                                  pygame.SRCALPHA)
+            NS._ellipse(pile, P["shadow_deep"],
+                        (2, pile_h // 2 + 3, pile_w + 4, pile_h + 3))
+            NS._ellipse(pile, P["gold_darkest"],
+                        (3, 2, pile_w + 2, pile_h + 2))
+            NS._ellipse(pile, P["gold_dark"],
+                        (5, 3, pile_w - 2, pile_h))
+            NS._ellipse(pile, P["gold_mid"],
+                        (8, 4, max(4, pile_w - 8), max(2, pile_h - 4)))
+            NS._ellipse(pile, P["gold_light"],
+                        (10, 5, max(3, pile_w - 14),
+                         max(1, pile_h - 8)))
+            for i in range(max(3, pile_w // 8)):
+                cxx = 6 + (i * 7) % max(1, pile_w - 4)
+                cyy = 5 + (i * 3) % max(1, pile_h - 2)
+                NS._aacircle(pile, P["gold_dark"], (cxx, cyy), 2)
+                NS._aacircle(pile, P["gold_mid"], (cxx, cyy - 1), 1)
+            NS._STATIC_SURFACES[key] = pile
+            if len(NS._STATIC_SURFACES) > 96:
+                for k in list(NS._STATIC_SURFACES):
+                    if k.startswith("gold_pile"):
+                        del NS._STATIC_SURFACES[k]
+                        break
+        spr = NS._STATIC_SURFACES[key]
+        surface.blit(spr, (cx - spr.get_width() // 2,
+                           cy - spr.get_height() + 4))
+        # shimmer koin
+        for i in range(3):
+            t = (phase * 0.7 + i * 0.33) % 1.0
+            sx = cx - pile_w // 2 + int(t * pile_w)
+            a = int(200 * math.sin(t * math.pi))
+            NS._aaline(surface, (*P["gold_shine"], a),
+                       (sx, cy - 4), (sx, cy + 2), 1)
 
     def _draw_greevil_foreground(surface, boss, x, y, timer, phase):
-        """Gold coins raining down + goblin celebrating."""
         duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
-
-        # Spawn coins periodically
+        NS = _NS_alchemist
+        P = NS.PALETTE
         if not hasattr(boss, "_alch_coins"):
             boss._alch_coins = []
-        if not hasattr(boss, "_alch_last_coin_frame"):
-            boss._alch_last_coin_frame = 0
-        boss._alch_last_coin_frame += 1
-        if boss._alch_last_coin_frame % 4 == 0 and progress < 0.85:
-            seed = boss._alch_last_coin_frame
-            cx_off = (seed * 137 % 80) - 40
-            _NS_alchemist._spawn_coin(boss, x + cx_off, y - 40)
+        # hujan koin (spawn selama 60% pertama)
+        if progress < 0.6 and len(boss._alch_coins) < 26:
+            for _ in range(2):
+                NS._spawn_coin(boss,
+                               x + (hash((id(boss), phase, len(
+                                   boss._alch_coins))) % 120 - 60),
+                               y - 10)
+        coins = boss._alch_coins
+        for c in coins:
+            c["age"] += 1
+            c["x"] += c["vx"]
+            c["vy"] += 0.25
+            c["y"] += c["vy"]
+            c["spin"] += c["spin_speed"]
+            if c["y"] > y + 54:
+                c["y"] = y + 54
+                c["vy"] = -abs(c["vy"]) * 0.4
+                c["vx"] *= 0.7
+        boss._alch_coins = [c for c in coins
+                            if c["age"] < c["life"]]
+        for c in boss._alch_coins:
+            fade = 1.0 if c["age"] < c["life"] - 12 else \
+                (c["life"] - c["age"]) / 12.0
+            cw = max(1, int(abs(math.cos(c["spin"])) * 4) + 1)
+            a = int(230 * fade)
+            NS._ellipse(surface, (*P["gold_darkest"], a),
+                        (int(c["x"]) - cw - 1, int(c["y"]) - 3,
+                         cw * 2 + 2, 6))
+            NS._ellipse(surface, (*P["gold_mid"], a),
+                        (int(c["x"]) - cw, int(c["y"]) - 2,
+                         cw * 2, 4))
+            NS._aacircle(surface, (*P["gold_light"], a),
+                         (int(c["x"]), int(c["y"])), max(1, cw - 1))
+            if math.sin(c["spin"] * 3) > 0.7:
+                NS._aacircle(surface, (*P["gold_shine"], a),
+                             (int(c["x"]) - 1, int(c["y"]) - 1), 1)
+        # kilau greed aura
+        pul = 0.5 + 0.5 * math.sin(phase * 2.2)
+        for radius in range(44, 18, -5):
+            alpha = int((44 - radius) * 4 * pul)
+            if alpha > 0:
+                NS._aacircle(surface, (*P["gold_darkest"],
+                                       min(200, alpha)),
+                             (x, y - 8), radius)
 
-        # Update and draw coins
-        for coin in boss._alch_coins:
-            coin["age"] += 1
-            coin["vy"] += 0.25  # gravity
-            coin["x"] += coin["vx"]
-            coin["y"] += coin["vy"]
-            coin["spin"] += coin["spin_speed"]
+    # ==================================================================
+    # LAPISAN FX HIDUP  (heroes/alchemist_fx.py)
+    # ==================================================================
+    def _live_module():
+        """Muat ``heroes.alchemist_fx`` sekali; None kalau gagal."""
+        NS = _NS_alchemist
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import alchemist_fx as mod
+                NS._LIVE_MOD = mod if getattr(
+                    mod, "ALCHEMIST_FX_ENABLED", True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
 
-            # Draw spinning coin
-            px, py = int(coin["x"]), int(coin["y"])
-            spin_w = abs(math.cos(coin["spin"]))
-            w = max(1, int(4 * spin_w))
-            # Coin as ellipse for spinning effect
-            _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["shadow_deep"],
-                     (px - w + 1, py - 3 + 1, w * 2, 6))
-            _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["gold_dark"],
-                     (px - w, py - 3, w * 2, 6))
-            _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["gold_mid"],
-                     (px - w + 1, py - 2, max(1, w * 2 - 2), 4))
-            _NS_alchemist._ellipse(surface, _NS_alchemist.PALETTE["gold_light"],
-                     (px - w + 1, py - 2, max(1, w * 2 - 2), 2))
+    def live_fx_ready():
+        """True kalau lapisan hidup Alchemist siap (dipakai tooling)."""
+        return _NS_alchemist._live_module() is not None
 
-            # Sparkle trail
-            _NS_alchemist._aacircle(surface, (*_NS_alchemist.PALETTE["gold_shine"], 200), (px, py - 4), 1)
+    def _fx_owned(boss):
+        """True kalau lapisan hidup sudah mengambil alih efek unit."""
+        mod = _NS_alchemist._live_module()
+        if mod is None:
+            return False
+        try:
+            return bool(mod.owns(boss))
+        except Exception:
+            return False
 
-        # Clean up old coins
-        boss._alch_coins = [c for c in boss._alch_coins
-                             if c["age"] < c["life"] and c["y"] < y + 80]
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Lapisan hidup untuk unit ini. Return (mod, owned)."""
+        NS = _NS_alchemist
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
 
-        # Sparkles around boss
-        for i in range(8):
-            angle = phase * 1.5 + i * math.pi / 4
-            r = 40 + int(math.sin(phase * 2 + i) * 8)
-            sx = x + int(math.cos(angle) * r)
-            sy = y + int(math.sin(angle) * r * 0.6)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["gold_shine"], (sx, sy), 2)
-            _NS_alchemist._aacircle(surface, _NS_alchemist.PALETTE["gold_light"], (sx, sy), 1)
-            # Sparkle cross
-            _NS_alchemist._aaline(surface, (*_NS_alchemist.PALETTE["gold_shine"], 200),
-                    (sx - 3, sy), (sx + 3, sy), 1)
-            _NS_alchemist._aaline(surface, (*_NS_alchemist.PALETTE["gold_shine"], 200),
-                    (sx, sy - 3), (sx, sy + 3), 1)
+    # ==================================================================
+    # DEBUG OVERLAY  (DEBUG_CHARACTER = True)
+    # ==================================================================
+    def _draw_alch_debug(surface, boss, x, y, action, owned):
+        """Hitbox, hurtbox, jangkauan, state/frame, FPS, partikel,
+        skill state, timer serangan. Digambar PALING AKHIR; tidak
+        pernah menyentuh gameplay."""
+        NS = _NS_alchemist
+        r = max(6, int(getattr(boss, "radius", 30) * 0.9))
+        pygame.draw.rect(surface, (80, 170, 255, 150),
+                         pygame.Rect(int(x) - r, int(y) - r - 10,
+                                     r * 2, r * 2 + 18), 1)
+        rng = max(10, int(getattr(boss, "range", 50) * 0.9))
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        pygame.draw.line(surface, (255, 210, 60, 150),
+                         (int(x), int(y)),
+                         (int(x + rng * f), int(y)), 1)
+        pygame.draw.rect(surface, (255, 210, 60, 110),
+                         pygame.Rect(int(x + rng * f) - 5,
+                                     int(y) - 7, 10, 14), 1)
+        hb = NS._swing_hitbox(boss, x, y)
+        if hb is not None:
+            pygame.draw.rect(surface, (255, 70, 70, 190), hb, 2)
+            pygame.draw.rect(surface, (255, 70, 70, 60), hb)
+        if owned:
+            try:
+                mod = NS._LIVE_MOD
+                for p in mod.projectiles_for(boss):
+                    rr = max(3, int(p.hit_radius))
+                    pygame.draw.circle(surface, (255, 120, 255, 170),
+                                       (int(p.x), int(p.y)), rr, 1)
+            except Exception:
+                pass
+        fps = getattr(boss, "_alch_dbg_fps", None)
+        if fps is None:
+            try:
+                import __main__
+                game = getattr(__main__, "game_instance", None)
+                fps = game.clock.get_fps() if game else 0.0
+            except Exception:
+                fps = 0.0
+        lines = [
+            "ALCHEMIST %s" % action,
+            "state=%s/%s t=%.2fs" % (
+                getattr(boss, "_alch_state", "?"),
+                getattr(boss, "_alch_state_prev", "?"),
+                float(getattr(boss, "_alch_state_time", 0.0))),
+            "phase=%s ap=%.2f hit=%d" % (
+                getattr(boss, "_alch_attack_phase", "NONE"),
+                float(getattr(boss, "_alch_ap", 0.0)),
+                1 if getattr(boss, "_alch_hit_active", False) else 0),
+            "atk=%d/%d" % (int(getattr(boss, "timer", 0)),
+                           int(getattr(boss, "attack_cooldown", 50))),
+            "skill=%s t=%d rage=%s" % (
+                getattr(boss, "active_skill", None),
+                int(getattr(boss, "active_skill_timer", 0)),
+                bool(getattr(boss, "rage_active", False))),
+            "fps=%.0f live=%s" % (float(fps or 0.0),
+                                  "y" if owned else "n"),
+        ]
+        if owned:
+            try:
+                mod = NS._LIVE_MOD
+                d = getattr(boss, "_alch_fx", None)
+                if d is not None:
+                    lines.append("particles=%d proj=%d trail=%d" % (
+                        d.particles.count(),
+                        d.projectiles.count(),
+                        len(d.trail.samples)))
+            except Exception:
+                pass
+        try:
+            font = _debug_font()
+            for i, txt in enumerate(lines):
+                surface.blit(font.render(txt, True, (235, 240, 220)),
+                             (x - 60, y - 108 + i * 11))
+        except Exception:
+            pass
 
+    _DEBUG_FONT = None
+
+    def _debug_font():
+        NS = _NS_alchemist
+        if NS._DEBUG_FONT is None:
+            try:
+                NS._DEBUG_FONT = pygame.font.Font(None, 15)
+            except Exception:
+                NS._DEBUG_FONT = False
+        return NS._DEBUG_FONT or None
+
+    # ==================================================================
+    # MAIN ENTRY
+    # ==================================================================
+    def draw_alchemist(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus heroes.render_hero().
+
+        Urutan lapisan (kontrak render order proyek):
+
+            GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/HEAD
+            -> WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT
+            PARTICLES -> SKILL FX -> IMPACT FX -> DEBUG
+
+        Trail, partikel, botol, impact, hit-stop & shake hidup di
+        heroes/alchemist_fx.py (layar 1:1, luar sprite cache); kalau
+        modul itu tidak ada, semua FX kembali ke canvas dari sini.
+        """
+        NS = _NS_alchemist
+        pulse = float(getattr(boss, "pulse", 0.0))
+        active_skill = getattr(boss, "active_skill", None)
+        skill_timer = int(getattr(boss, "active_skill_timer", 0))
+        moving = NS._detect_moving(boss)
+        NS._update_attack_anim(boss)
+        boss._alch_moving = moving
+        _action, _phase, _ap = NS._resolve_pose(boss, moving)
+        boss._alch_pose_action = _action
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
+
+        attacking = (
+            getattr(boss, "_alch_attack_active", False)
+            or getattr(boss, "timer", 0) >
+            getattr(boss, "attack_cooldown", 50) - 15
+        )
+        rage = bool(active_skill in ("e", "r")
+                    or getattr(boss, "rage_active", False))
+
+        # ── lapisan hidup: jalur boss digambar dari sini tiap frame;
+        #    jalur lane dipicu heroes/__init__ (_LIVE_FX_HEROES) ──
+        live, owned = NS._live_fx(boss, surface, x, y,
+                                  not hero_lane, portrait)
+
+        # ---------- Background layers ----------
+        if not portrait:
+            NS._draw_alch_aura(surface, x, y, pulse, active_skill)
+            if not owned and hasattr(boss, "_alch_patches"):
+                for patch in boss._alch_patches:
+                    patch.draw(surface, pulse)
+            NS._draw_ground_runes(surface, x, y + 52, pulse,
+                                  active_skill)
+
+            # telegraph skill (ground, world-space, ter-cache)
+            if active_skill == "w":
+                NS._draw_concoction_ground(surface, boss, x, y,
+                                           skill_timer, pulse)
+            elif active_skill == "r":
+                NS._draw_greevil_ground(surface, boss, x, y,
+                                        skill_timer, pulse)
+            elif active_skill == "e":
+                NS._draw_chem_rage_ground(surface, boss, x, y,
+                                          skill_timer, pulse)
+
+            # gelombang kejut aktivasi (12 frame pertama)
+            if active_skill in ("q", "w", "e", "r") and not owned:
+                dur = NS.SKILL_DUR[active_skill]
+                age = dur - skill_timer
+                if 0 <= age < 12:
+                    c1 = (NS.PALETTE["gold_light"]
+                          if active_skill == "r"
+                          else NS.PALETTE["acid_hot"])
+                    c2 = (NS.PALETTE["gold_mid"]
+                          if active_skill == "r"
+                          else NS.PALETTE["acid_bright"])
+                    NS._draw_shockwave(
+                        surface, x, y + 56, age, 12, c1, c2,
+                        fs=NS._fx_scale(boss))
+
+        # ---------- hurt flash: badan menyala, tanah tidak ----------
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0:
+            if NS._flash_buf is None:
+                NS._flash_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                               pygame.SRCALPHA)
+            NS._flash_buf.fill((0, 0, 0, 0))
+            NS._record_shadow = []
+            _tgt, _tx, _ty = NS._flash_buf, NS.RIG_OX, NS.RIG_OY
+
+        # ---------- Character (pose dispatcher) ----------
+        if attacking:
+            NS._draw_alch_attack(_tgt, boss, _tx, _ty, rage=rage)
+        elif active_skill == "q":
+            NS._draw_alch_qcast(_tgt, boss, _tx, _ty, skill_timer,
+                                rage=rage)
+        elif active_skill == "w":
+            NS._draw_alch_wcast(_tgt, boss, _tx, _ty, skill_timer,
+                                rage=rage)
+        elif active_skill == "e":
+            NS._draw_alch_ecast(_tgt, boss, _tx, _ty, skill_timer,
+                                rage=True)
+        elif active_skill == "r":
+            NS._draw_alch_rcast(_tgt, boss, _tx, _ty, skill_timer,
+                                rage=True)
+        elif moving:
+            NS._draw_alch_walk(_tgt, boss, _tx, _ty, rage=rage)
+        else:
+            NS._draw_alch_idle(_tgt, boss, _tx, _ty, rage=rage)
+
+        if flash > 0:
+            surface.blit(NS._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(NS._flash_buf, 50)
+            wht = m.to_surface(
+                setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                unsetcolor=(0, 0, 0, 0))
+            for rect in (NS._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            NS._record_shadow = None
+
+        # ---------- Projectiles + foreground FX (canvas fallback) ---
+        if not portrait:
+            NS._manage_projectiles(boss, surface, pulse)
+            if not owned:
+                if active_skill == "q":
+                    NS._draw_acid_spray(surface, boss, x, y,
+                                        skill_timer, pulse)
+                elif active_skill == "e":
+                    NS._draw_chem_rage_foreground(
+                        surface, boss, x, y, skill_timer, pulse)
+                elif active_skill == "r":
+                    NS._draw_greevil_foreground(
+                        surface, boss, x, y, skill_timer, pulse)
+
+        # ── lapisan hidup bagian ATAS (trail/projektil/impact) ──
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_alch_debug(surface, boss, x, y,
+                                getattr(boss, "_alch_pose_action",
+                                        "?"), owned)
+
+    def _draw_concoction_ground(surface, boss, x, y, timer, phase):
+        """Telegraph W: cincin konvergen + zona AOE 100 px dunia."""
+        duration = 60
+        progress = max(0.0, min(1.0, 1 - timer / duration))
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        tx, ty = NS._world_to_screen_target(boss, x, y)
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["w"], surface)
+        fade = 1.0 if progress < 0.8 else \
+            max(0.0, 1.0 - (progress - 0.8) / 0.2)
+        NS._ground_ring(surface, tx, ty + 4, r,
+                        P["acid_darkest"], P["acid_bright"],
+                        int(190 * fade))
+        NS._zone_fill(surface, tx, ty + 4, r, P["acid_darkest"],
+                      int(70 * fade))
+        # cincin konvergen (memberitahu "bom akan jatuh di sini")
+        conv = 1.0 - min(1.0, progress / 0.45)
+        if conv > 0:
+            rr = int(6 + r * conv)
+            NS._aacircle(surface, (*P["acid_hot"],
+                                   int(210 * fade)),
+                         (tx, ty + 2), rr)
+        # penanda silang
+        for sgn in (-1, 1):
+            NS._aaline(surface, (*P["acid_bright"], int(160 * fade)),
+                       (tx - 8, ty + 2 + sgn * 5),
+                       (tx + 8, ty + 2 + sgn * 5), 1)
 
     # ===================================================================
     # Backward compatible alias
