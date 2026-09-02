@@ -635,6 +635,18 @@ class Boss(TowerDebuffMixin):
                                                      self.damage, False)
                         except Exception:
                             pass
+                    # ═══ IMPACT FX RAZAK ═══
+                    # Machete api Razak mendarat: flash bintang, sabit
+                    # api, serpihan bara, shake, hit-stop 0.03-0.08 s
+                    # (lengkapnya di heroes/razak_fx.notify_melee_impact).
+                    # Difilter per boss_type + try/except (paritas Gornak).
+                    if getattr(self, 'boss_type', None) == 'razak':
+                        try:
+                            from heroes import razak_fx as _rfx
+                            _rfx.notify_melee_impact(self, self.target,
+                                                     self.damage, False)
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -2795,6 +2807,9 @@ class Boss(TowerDebuffMixin):
                     if hasattr(e, 'apply_slow'):
                         e.apply_slow(0.35, 120)
         self._shake_screen(10)
+        # Q: impact visual menyusul saat molotov mendarat (lapisan hidup
+        # menangani sendiri lewat projectile on_impact) — damage AOE
+        # tetap instan di atas, jadi tidak perlu notify ganda di sini.
 
     def _razak_w(self, enemies):
         stats = self._get_boss_stats()
@@ -2810,6 +2825,15 @@ class Boss(TowerDebuffMixin):
                     if hasattr(e, 'attack_timer'):
                         e.attack_timer = max(
                             getattr(e, 'attack_timer', 0), 45)
+            # ═══ SKILL FX RAZAK ═══
+            # Kerucut api + impact di titik damage (flash, serpihan,
+            # shake, hit-stop) — lapisan hidup heroes/razak_fx.py.
+            try:
+                from heroes import razak_fx as _rfx
+                _rfx.notify_skill_impact(self, self.target.x,
+                                         self.target.y, 95, 'w')
+            except Exception:
+                pass
         self._shake_screen(14)
 
     def _razak_e(self, enemies):
@@ -2830,6 +2854,13 @@ class Boss(TowerDebuffMixin):
             for e in enemies:
                 if math.hypot(e.x - self.x, e.y - self.y) <= 80:
                     e.take_damage(damage, self.team)
+            # ═══ SKILL FX RAZAK ═══
+            # Firefly mendarat di posisi BARU (setelah dash).
+            try:
+                from heroes import razak_fx as _rfx
+                _rfx.notify_skill_impact(self, self.x, self.y, 80, 'e')
+            except Exception:
+                pass
         self._shake_screen(12)
 
     def _razak_r(self, enemies):
@@ -2841,6 +2872,14 @@ class Boss(TowerDebuffMixin):
         for e in enemies:
             if math.hypot(e.x - self.x, e.y - self.y) <= 180:
                 e.take_damage(damage, self.team)
+        # ═══ SKILL FX RAZAK ═══
+        # Firestorm: erupsi + 8 pilar di caster (flash, serpihan,
+        # shake, hit-stop) — lapisan hidup heroes/razak_fx.py.
+        try:
+            from heroes import razak_fx as _rfx
+            _rfx.notify_skill_impact(self, self.x, self.y, 180, 'r')
+        except Exception:
+            pass
         self._shake_screen(20)
 
     # ═══════════════════════════════════════════════════

@@ -635,7 +635,7 @@ _BEAM_PASS_HEROES = {"morgath"}
 # Q/W/E/R (pilar, voli, jejak lompat, rantai+ledakan), impact, hit-stop,
 # dan shake — semua hidup di luar cache sprite.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
-                   "sylara", "abaddon", "gorath"}
+                   "sylara", "abaddon", "gorath", "razak"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -647,6 +647,7 @@ _LIVE_FX_PATHS = {
     "sylara": "heroes.sylara_fx",
     "abaddon": "heroes.abaddon_fx",
     "gorath": "heroes.gorath_fx",
+    "razak": "heroes.razak_fx",
 }
 
 
