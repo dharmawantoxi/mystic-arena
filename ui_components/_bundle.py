@@ -48,8 +48,6 @@ except Exception:
 # ================================
 
 
-
-
 # ═══ POPUP KE PANEL KANAN ═══
 # Popup upgrade/build dulu muncul di atas peta, tepat menutupi bagian
 # yang justru perlu dilihat pemain saat memutuskan upgrade.
@@ -88,19 +86,6 @@ class BaseUIComponent:
         """Override di subclass"""
         pass
 
-    def _draw_shadow_rect(self, surface, rect, alpha=150,
-                          border_radius=8, offset=(5, 5)):
-        """Reusable shadow drawing"""
-        shadow_surf = pygame.Surface(
-            (rect.width + offset[0] * 2,
-             rect.height + offset[1] * 2), pygame.SRCALPHA)
-        pygame.draw.rect(shadow_surf, (0, 0, 0, alpha),
-                         (offset[0], offset[1],
-                          rect.width, rect.height),
-                         border_radius=border_radius)
-        surface.blit(shadow_surf,
-                     (rect.x - offset[0],
-                      rect.y - offset[1]))
 
     def _draw_hp_bar(self, surface, x, y, w, h, hp_ratio,
                       show_bg=True):
@@ -185,7 +170,6 @@ class BaseUIComponent:
         return close_rect
 
 
-
 # ================================
 
 
@@ -199,7 +183,6 @@ class _NS_hero_portraits:
     # GANTI SELURUH FILE ui_components/hero_portraits.py
     # 100% AUTO-GENERATE - ZERO manual portraits
     # ================================
-
 
 
     class HeroPortraits:
@@ -671,7 +654,6 @@ class _NS_build_popup:
     # ================================
 
 
-
     class BuildPopup(BaseUIComponent):
         """
         Build tower popup - 4 tower types, clean English layout
@@ -963,84 +945,10 @@ class _NS_build_slots:
         # BLUE SLOT (Interactive)
         # ═══════════════════════════════════════
 
-        def _draw_blue_slot(self, surface, slot, pulse):
-            """Draw blue interactive build slot"""
-            sx, sy = slot['x'], slot['y']
-
-            # Ground shadow
-            pygame.draw.ellipse(surface, (0, 0, 0, 100),
-                                (sx - 18, sy + 12, 36, 8))
-
-            # Stone platform
-            pygame.draw.circle(surface, (80, 80, 90), (sx, sy + 5), 16)
-            pygame.draw.circle(surface, (120, 120, 130), (sx, sy + 4), 15)
-            pygame.draw.circle(surface, (160, 160, 170), (sx, sy + 3), 13)
-            pygame.draw.circle(surface, (100, 100, 110), (sx, sy + 3), 13, 1)
-
-            # Inner pattern
-            pygame.draw.circle(surface, (140, 140, 150), (sx, sy + 3), 10)
-            pygame.draw.circle(surface, (180, 180, 190), (sx - 2, sy + 1), 5)
-
-            # Plus icon
-            plus_size = 8 + int(pulse)
-
-            # Glow
-            glow_surf = pygame.Surface((40, 40), pygame.SRCALPHA)
-            pygame.draw.circle(glow_surf, (100, 200, 255, 60),
-                               (20, 20), 15 + int(pulse))
-            surface.blit(glow_surf, (sx - 20, sy - 17))
-
-            # Plus outline
-            pygame.draw.rect(surface, (30, 60, 120),
-                             (sx - plus_size // 2 - 1, sy - 2,
-                              plus_size + 2, 4))
-            pygame.draw.rect(surface, (30, 60, 120),
-                             (sx - 2, sy - plus_size // 2 - 1,
-                              4, plus_size + 2))
-
-            # Plus body
-            pygame.draw.rect(surface, (100, 200, 255),
-                             (sx - plus_size // 2, sy - 1,
-                              plus_size, 2))
-            pygame.draw.rect(surface, (100, 200, 255),
-                             (sx - 1, sy - plus_size // 2,
-                              2, plus_size))
-
-            # Plus highlight
-            pygame.draw.rect(surface, (200, 240, 255),
-                             (sx - plus_size // 2, sy - 1,
-                              plus_size, 1))
-            pygame.draw.rect(surface, (200, 240, 255),
-                             (sx - 1, sy - plus_size // 2,
-                              1, plus_size))
-
-            # Cost label - DIPERBESAR 14->18
-            cost_font = get_font(22, "body_semibold")  # 18->22
-            cost_text = cost_font.render("100G", True, GOLD)
-            cost_bg = pygame.Rect(sx - 18, sy + 18, 36, 14)
-            pygame.draw.rect(surface, (0, 0, 0), cost_bg, border_radius=3)
-            pygame.draw.rect(surface, GOLD, cost_bg, 1, border_radius=3)
-            cost_rect = cost_text.get_rect(center=cost_bg.center)
-            surface.blit(cost_text, cost_rect)
 
         # ═══════════════════════════════════════
         # RED SLOT (Visual only)
         # ═══════════════════════════════════════
-
-        def _draw_red_slot(self, surface, slot):
-            """Draw red visual-only slot"""
-            sx, sy = slot['x'], slot['y']
-
-            pygame.draw.circle(surface, (60, 20, 20), (sx, sy + 3), 10)
-            pygame.draw.circle(surface, (100, 40, 40), (sx, sy + 3), 9)
-            pygame.draw.circle(surface, (140, 60, 60), (sx - 1, sy + 2), 6)
-
-            pygame.draw.line(surface, (200, 80, 80),
-                             (sx - 3, sy - 1), (sx + 3, sy + 5), 1)
-            pygame.draw.line(surface, (200, 80, 80),
-                             (sx + 3, sy - 1), (sx - 3, sy + 5), 1)
-
-
 
 
     # ================================
@@ -1055,7 +963,6 @@ class _NS_hero_panel:
     # ui_components/hero_panel.py
     # Panel hero info di bottom-left (saat hero selected)
     # ================================
-
 
 
     class HeroPanel(BaseUIComponent):
@@ -1516,8 +1423,6 @@ class _NS_hero_panel:
         return fake
 
 
-
-
     # ================================
 
 
@@ -1530,7 +1435,6 @@ class _NS_hero_shop:
     # ui_components/hero_shop.py
     # Modern hero shop dengan pixel art portraits
     # ================================
-
 
 
     class HeroShop(BaseUIComponent):
@@ -2157,363 +2061,6 @@ class _NS_hero_shop:
             ])
 
 
-
-        def _draw_card(self, surface, hero_type, cx, cy, cw, ch):
-            """Draw single hero card"""
-            from settings import get_all_hero_types
-            g = self.game
-            all_heroes = get_all_hero_types()
-            stats = all_heroes[hero_type]
-            owned = any(h.hero_type == hero_type for h in g.heroes)
-            cost = stats.get("cost", 400)
-            can_afford = g.gold >= cost  # ← pakai gold in-game
-
-            # Hover detection
-            mx, my = pygame.mouse.get_pos()
-            card_rect = pygame.Rect(cx, cy, cw, ch)
-            is_hover = card_rect.collidepoint(mx, my) and not owned \
-                       and len(g.heroes) < MAX_HEROES_OWNED
-
-            # Determine colors
-            color_main = stats["color"]
-            color_dark = stats["color_dark"]
-            if owned:
-                color_main = (100, 100, 100)
-                color_dark = (60, 60, 60)
-
-            # Draw card layers
-            self._draw_card_bg(surface, cx, cy, cw, ch, color_dark, is_hover)
-            self._draw_card_border(surface, cx, cy, cw, ch, color_main,
-                                   is_hover)
-            self._draw_card_portrait(surface, cx, cy, hero_type, stats,
-                                     color_main, owned)
-            self._draw_card_info(surface, cx, cy, cw, stats, color_main,
-                                 owned)
-            self._draw_card_stats(surface, cx, cy, cw, stats)
-            self._draw_card_skill(surface, cx, cy, cw, stats, color_main)
-            self._draw_card_button(surface, cx, cy, cw, ch, hero_type,
-                                   stats, owned, can_afford, is_hover)
-
-        def _draw_card_bg(self, surface, cx, cy, cw, ch, color_dark,
-                          is_hover):
-            """Card background - OPTIMIZED"""
-            # Shadow
-            shadow_surf = pygame.Surface((cw + 10, ch + 10), pygame.SRCALPHA)
-            pygame.draw.rect(shadow_surf, (0, 0, 0, 120),
-                             (5, 5, cw, ch), border_radius=12)
-            surface.blit(shadow_surf, (cx - 5, cy - 5))
-
-            # Solid background (OPTIMIZED - bukan per-pixel gradient)
-            dark_color = (
-                int(color_dark[0] * 0.35),
-                int(color_dark[1] * 0.35),
-                int(color_dark[2] * 0.35))
-            light_color = (
-                int(color_dark[0] * 0.55),
-                int(color_dark[1] * 0.55),
-                int(color_dark[2] * 0.55))
-
-            # 2-step gradient (top dark, bottom lighter)
-            half = ch // 2
-            pygame.draw.rect(surface, dark_color,
-                             (cx, cy, cw, half))
-            pygame.draw.rect(surface, light_color,
-                             (cx, cy + half, cw, ch - half))
-
-            # Rounded corners overlay
-            pygame.draw.rect(surface, dark_color,
-                             (cx, cy, cw, ch),
-                             border_radius=12)
-            pygame.draw.rect(surface, dark_color,
-                             (cx + 1, cy + 1, cw - 2, ch - 2),
-                             border_radius=11)
-
-        def _draw_card_border(self, surface, cx, cy, cw, ch, color_main,
-                                is_hover):
-            """Card border + hover glow"""
-            # Hover glow
-            if is_hover:
-                glow_surf = pygame.Surface((cw + 20, ch + 20),
-                                           pygame.SRCALPHA)
-                pygame.draw.rect(glow_surf,
-                                 (*color_main, 80),
-                                 (0, 0, cw + 20, ch + 20),
-                                 border_radius=15)
-                surface.blit(glow_surf, (cx - 10, cy - 10))
-
-            # Border (double)
-            border_color = (255, 255, 255) if is_hover else color_main
-            border_width = 3 if is_hover else 2
-            pygame.draw.rect(surface, border_color,
-                             (cx, cy, cw, ch),
-                             border_width, border_radius=12)
-            pygame.draw.rect(surface, (*color_main, 150),
-                             (cx + 4, cy + 4, cw - 8, ch - 8),
-                             1, border_radius=10)
-
-        def _draw_card_portrait(self, surface, cx, cy, hero_type, stats,
-                                  color_main, owned):
-            """Portrait box + mini pixel art hero"""
-            portrait_size = 90
-            portrait_x = cx + 15
-            portrait_y = cy + 15
-
-            # Portrait BG dengan gradient
-            for i in range(portrait_size):
-                t = i / portrait_size
-                r = int(15 + t * 10)
-                g_c = int(20 + t * 10)
-                b = int(30 + t * 15)
-                pygame.draw.line(surface, (r, g_c, b),
-                                 (portrait_x, portrait_y + i),
-                                 (portrait_x + portrait_size,
-                                  portrait_y + i))
-
-            # Portrait border
-            pygame.draw.rect(surface, color_main,
-                             (portrait_x, portrait_y,
-                              portrait_size, portrait_size),
-                             2, border_radius=6)
-
-            # Inner shadow
-            pygame.draw.rect(surface, (0, 0, 0, 100),
-                             (portrait_x + 2, portrait_y + 2,
-                              portrait_size - 4, portrait_size - 4),
-                             1, border_radius=4)
-
-            # DRAW MINI HERO PORTRAIT
-            HeroPortraits.draw(
-                surface, hero_type,
-                portrait_x + portrait_size // 2,
-                portrait_y + portrait_size // 2 + 5,
-                stats, owned)
-
-        def _draw_card_info(self, surface, cx, cy, cw, stats, color_main,
-                              owned):
-            """Name, title, role badge (kanan portrait)"""
-            info_x = cx + 15 + 90 + 15  # portrait_x + portrait_size + 15
-            info_y = cy + 15
-
-            # Name
-            try:
-                name_font = get_font(36, "body_semibold")  # 32->36
-            except:
-                name_font = self.ui.font_medium
-
-            # Name shadow
-            name_shadow = name_font.render(stats["name"], True, (0, 0, 0))
-            name_shadow.set_alpha(150)
-            surface.blit(name_shadow, (info_x + 1, info_y + 1))
-
-            # Name main
-            name_color = (200, 200, 200) if owned else (255, 255, 255)
-            name_surf = name_font.render(stats["name"], True, name_color)
-            surface.blit(name_surf, (info_x, info_y))
-
-            # Title
-            title_color = (180, 180, 180) if owned else (200, 200, 220)
-            title_surf = self.ui.font_tiny.render(stats["title"], True,
-                                                    title_color)
-            surface.blit(title_surf, (info_x, info_y + 30))
-
-            # Role badge
-            role_bg = pygame.Rect(info_x, info_y + 48, 100, 22)
-            pygame.draw.rect(surface, (0, 0, 0, 150), role_bg,
-                             border_radius=11)
-            pygame.draw.rect(surface, color_main, role_bg, 1,
-                             border_radius=11)
-            role_surf = self.ui.font_tiny.render(
-                stats["role"].upper(), True, color_main)
-            role_rect = role_surf.get_rect(center=role_bg.center)
-            surface.blit(role_surf, role_rect)
-
-        def _draw_card_stats(self, surface, cx, cy, cw, stats):
-            """Stats row (HP, DMG, RNG, SPD) dengan icons"""
-            stats_y = cy + 120
-            stat_items = [
-                ("HP", stats["hp"], (255, 100, 100)),
-                ("DMG", stats["damage"], (255, 200, 100)),
-                ("RNG", stats["range"], (100, 200, 255)),
-                ("SPD", stats["speed"], (100, 255, 150)),
-            ]
-
-            stat_width = (cw - 30) // 4
-            for idx, (icon, value, icon_color) in enumerate(stat_items):
-                stat_x = cx + 15 + idx * stat_width
-
-                # Stat card mini
-                stat_bg = pygame.Rect(stat_x, stats_y, stat_width - 5, 35)
-                pygame.draw.rect(surface, (0, 0, 0, 100), stat_bg,
-                                 border_radius=6)
-                pygame.draw.rect(surface, (255, 255, 255, 30),
-                                 stat_bg, 1, border_radius=6)
-
-                # Label (di atas) - DIPERBESAR 14->20
-                icon_surf = self.ui.font_tiny.render(icon, True, icon_color)
-                icon_rect = icon_surf.get_rect(
-                    center=(stat_x + (stat_width - 5) // 2, stats_y + 8))
-                surface.blit(icon_surf, icon_rect)
-
-                # Value (di bawah) - DIPERBESAR 20->24
-                value_str = str(value)
-                if isinstance(value, float):
-                    value_str = f"{value:.1f}"
-
-                value_surf = self.ui.font_small.render(
-                    value_str, True, (255, 255, 255))
-                value_rect = value_surf.get_rect(
-                    center=(stat_x + (stat_width - 5) // 2, stats_y + 26))
-                surface.blit(value_surf, value_rect)
-
-        def _draw_card_skill(self, surface, cx, cy, cw, stats, color_main):
-            """Skill info dengan background box + word wrap"""
-            skill_y = cy + 160
-            skill_box_h = 50
-
-            # Skill background box
-            skill_bg = pygame.Rect(cx + 15, skill_y, cw - 30, skill_box_h)
-            pygame.draw.rect(surface, (0, 0, 0, 120), skill_bg,
-                             border_radius=6)
-            pygame.draw.rect(surface, (*color_main, 100), skill_bg, 1,
-                             border_radius=6)
-
-            # Skill icon (glowing dot)
-            pygame.draw.circle(surface, color_main,
-                               (cx + 28, skill_y + 12), 5)
-            pygame.draw.circle(surface, (255, 255, 255),
-                               (cx + 26, skill_y + 10), 2)
-
-            # Skill name - DIPERBESAR 18->24
-            skill_surf = self.ui.font_small.render(
-                stats["skill_name"], True, color_main)
-            surface.blit(skill_surf, (cx + 42, skill_y + 5))
-
-            # Skill desc (word wrap ke 2 baris) - DIPERBESAR 13->16
-            desc = stats["skill_desc"]
-            desc_font = self.ui.font_tiny  # 13->20
-
-            # Word wrap
-            words = desc.split()
-            lines = []
-            current_line = ""
-            max_width = cw - 55
-
-            for word in words:
-                test_line = current_line + word + " "
-                if desc_font.size(test_line)[0] > max_width:
-                    if current_line:
-                        lines.append(current_line.strip())
-                    current_line = word + " "
-                else:
-                    current_line = test_line
-
-            if current_line:
-                lines.append(current_line.strip())
-
-            # Draw max 2 lines - spacing diperbesar
-            for i, line in enumerate(lines[:2]):
-                desc_surf = desc_font.render(line, True, (180, 180, 200))
-                surface.blit(desc_surf, (cx + 42, skill_y + 25 + i * 16))
-
-        def _draw_card_button(self, surface, cx, cy, cw, ch, hero_type,
-                              stats, owned, can_afford, is_hover):
-            """Summon button — pakai gold in-game"""
-            from settings import get_all_hero_types
-            g = self.game
-
-            btn_y = cy + ch - 38
-            btn_rect = pygame.Rect(cx + 20, btn_y, cw - 40, 32)
-
-            # Register button
-            g.ui_buttons[f'shop_buy_{hero_type}'] = btn_rect
-
-            # Get summon cost
-            all_heroes = get_all_hero_types()
-            hero_stats = all_heroes.get(hero_type, stats)
-            cost = hero_stats.get("cost", 400)
-            can_afford_gold = g.gold >= cost
-
-            # Determine button state
-            if owned:
-                # ACTIVE (sudah di-summon di battle)
-                self._draw_button_owned(surface, btn_rect)
-                btn_text = "ACTIVE IN BATTLE"
-                btn_color = (100, 200, 100)
-            elif len(g.heroes) >= MAX_HEROES_OWNED:
-                # MAX HEROES
-                self._draw_button_max(surface, btn_rect)
-                btn_text = f"MAX HEROES ({MAX_HEROES_OWNED})"
-                btn_color = (200, 100, 100)
-            elif not can_afford_gold:
-                # CANNOT AFFORD
-                self._draw_button_cant_afford(surface, btn_rect)
-                btn_text = f"SUMMON ({cost}G)"
-                btn_color = (255, 150, 150)
-            else:
-                # CAN SUMMON
-                self._draw_button_buy(surface, btn_rect, is_hover)
-                btn_text = f"SUMMON ({cost}G)"
-                btn_color = (255, 255, 255)
-
-            # Button text
-            try:
-                btn_font = get_font(26, "body_semibold")  # 22->26
-            except:
-                btn_font = self.ui.font_small
-            btn_surf = btn_font.render(btn_text, True, btn_color)
-            btn_text_rect = btn_surf.get_rect(center=btn_rect.center)
-            surface.blit(btn_surf, btn_text_rect)
-
-        def _draw_button_owned(self, surface, btn_rect):
-            """OWNED button style"""
-            pygame.draw.rect(surface, (40, 60, 40), btn_rect,
-                             border_radius=6)
-            pygame.draw.rect(surface, (80, 120, 80), btn_rect, 2,
-                             border_radius=6)
-
-        def _draw_button_max(self, surface, btn_rect):
-            """MAX HEROES button style"""
-            pygame.draw.rect(surface, (60, 40, 40), btn_rect,
-                             border_radius=6)
-            pygame.draw.rect(surface, (120, 80, 80), btn_rect, 2,
-                             border_radius=6)
-
-        def _draw_button_buy(self, surface, btn_rect, is_hover):
-            """Green buy button - OPTIMIZED"""
-            # Solid green (bukan gradient per-pixel)
-            pygame.draw.rect(surface, (40, 170, 40), btn_rect,
-                             border_radius=6)
-            # Lighter top half
-            top_rect = pygame.Rect(btn_rect.x, btn_rect.y,
-                                    btn_rect.width, btn_rect.height // 2)
-            pygame.draw.rect(surface, (50, 190, 50), top_rect,
-                             border_radius=6)
-
-            border_col = (150, 255, 150) if is_hover else (100, 200, 100)
-            pygame.draw.rect(surface, border_col, btn_rect,
-                             2, border_radius=6)
-
-            if is_hover:
-                glow_surf = pygame.Surface(
-                    (btn_rect.width + 10, btn_rect.height + 10),
-                    pygame.SRCALPHA)
-                pygame.draw.rect(glow_surf, (100, 255, 100, 100),
-                                 (0, 0, btn_rect.width + 10,
-                                  btn_rect.height + 10),
-                                 border_radius=8)
-                surface.blit(glow_surf,
-                             (btn_rect.x - 5, btn_rect.y - 5))
-
-        def _draw_button_cant_afford(self, surface, btn_rect):
-            """Red-gray button (can't afford)"""
-            pygame.draw.rect(surface, (60, 30, 30), btn_rect,
-                             border_radius=6)
-            pygame.draw.rect(surface, (150, 80, 80), btn_rect, 2,
-                             border_radius=6)
-
-
-
-
     # ================================
 
 
@@ -2526,7 +2073,6 @@ class _NS_hover_indicators:
     # ui_components/hover_indicators.py
     # Hover indicators (tower range, slot highlight)
     # ================================
-
 
 
     class HoverIndicators(BaseUIComponent):
@@ -2718,9 +2264,6 @@ class _NS_hover_indicators:
             surface.blit(hint_text, hint_rect)
 
 
-
-
-
     class Notification(BaseUIComponent):
         """Popup notification (achievements, alerts, dll)"""
 
@@ -2740,8 +2283,6 @@ class _NS_hover_indicators:
             """Draw notifications"""
             # ... logic
             pass
-
-
 
 
     # ================================
@@ -2782,7 +2323,6 @@ class _NS_overlay:
     # ui_components/overlay.py
     # Victory / Defeat overlay screen
     # ================================
-
 
 
     class Overlay(BaseUIComponent):
@@ -3515,8 +3055,6 @@ class _NS_overlay:
             surface.blit(ach_text, (tx + 26, ach_y - 9))
 
 
-
-
     # ================================
 
 
@@ -3529,7 +3067,6 @@ class _NS_popup_renderer:
     # ui_components/popup_renderer.py
     # Tower & Nexus popup renderer
     # ================================
-
 
 
     class PopupRenderer(BaseUIComponent):
@@ -4039,8 +3576,6 @@ class _NS_popup_renderer:
                           icon="minus", letter_gap=False)
 
 
-
-
     # ================================
 
 
@@ -4053,7 +3588,6 @@ class _NS_shop_hints:
     # ui_components/shop_hints.py
     # Floating hint di atas shop buildings
     # ================================
-
 
 
     class ShopHints(BaseUIComponent):

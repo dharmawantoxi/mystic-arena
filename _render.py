@@ -73,7 +73,6 @@ def title_font(size, bold=True):
     return get_font(size, "title", bold)
 
 
-
 # ====================================================================
 # map_renderer.py
 # ====================================================================
@@ -230,23 +229,6 @@ class MapRenderer:
             return self.bot_lane_points
         return []
 
-    def get_shop_positions(self):
-        """Get shop positions.
-        radiant (dekat base biru) = ITEM FORGE
-        dire (dekat base merah)   = HERO SHOP
-        """
-        return {
-            'radiant': self.radiant_shop_pos,
-            'dire': self.dire_shop_pos,
-            'size': self.shop_size,
-        }
-
-    def is_click_on_shop(self, mx, my):
-        """True kalau klik mengenai salah satu dari dua bangunan toko."""
-        for pos in [self.radiant_shop_pos, self.dire_shop_pos]:
-            if math.hypot(mx - pos[0], my - pos[1]) <= self.shop_size:
-                return True
-        return False
 
     def get_clicked_shop(self, mx, my):
         """Kembalikan 'item' (Radiant/ITEM FORGE), 'hero' (Dire/HERO
@@ -259,9 +241,6 @@ class MapRenderer:
             if math.hypot(mx - pos[0], my - pos[1]) <= self.shop_size:
                 return label
         return None
-
-
-
 
 
 # ================================
@@ -1122,10 +1101,6 @@ class PopupAnimation:
         """Return scale (0-1) for pop animation"""
         return _ease_out_back(self.progress)
 
-    def get_offset_y(self):
-        """Return Y offset for slide animation"""
-        return int((1 - self.progress) * 30)
-
 
 # ═══════════════════════════════════════════════════════
 # EASING FUNCTIONS
@@ -1475,8 +1450,6 @@ class AchievementPopup:
 import pygame
 import math
 import random
-
-
 
 
 # ---------------------------------------------------------------
@@ -2412,150 +2385,6 @@ class BossIntroCinematic:
             pygame.draw.circle(surface, (255, 255, 255),
                                (eye_x, cy - 40), 2)
 
-    def _draw_boss_text(self, surface, alpha, offset_y):
-        """Draw name + title dengan animasi"""
-        # Text di kiri tengah
-        text_x = self.screen_w // 4
-        text_y = self.screen_h // 2 - 20 + offset_y
-
-        # ═══ CLASS TAG (BOSS / TRUE BOSS) ═══
-        if self.boss_class == "true":
-            tag_text = "TRUE BOSS"
-            tag_color = (255, 80, 80)
-        else:
-            tag_text = "BOSS"
-            tag_color = (255, 200, 100)
-
-        tag_surf = self.font_medium.render(tag_text, True, tag_color)
-        tag_surf.set_alpha(alpha)
-        tag_rect = tag_surf.get_rect(center=(text_x, text_y - 80))
-
-        # Tag glow background
-        tag_bg = tag_rect.inflate(30, 10)
-        tag_bg_surf = pygame.Surface(tag_bg.size, pygame.SRCALPHA)
-        pygame.draw.rect(tag_bg_surf,
-                         (*tag_color, alpha // 3),
-                         (0, 0, tag_bg.width, tag_bg.height),
-                         border_radius=6)
-        pygame.draw.rect(tag_bg_surf,
-                         (*tag_color, alpha),
-                         (0, 0, tag_bg.width, tag_bg.height),
-                         2, border_radius=6)
-        surface.blit(tag_bg_surf, tag_bg)
-        surface.blit(tag_surf, tag_rect)
-
-        # ═══ BOSS NAME (huge) ═══
-        # Multiple shadow layers untuk dramatic effect
-        from mobile.perf import Quality as _Qz
-        for offset in (range(5, 0, -1) if _Qz.cheap_alpha else (3,)):
-            shadow = self.font_huge.render(
-                self.boss_name, True, (0, 0, 0))
-            shadow.set_alpha(min(alpha, 100))
-            shadow_rect = shadow.get_rect(
-                center=(text_x + offset, text_y + offset))
-            surface.blit(shadow, shadow_rect)
-
-        # Main name text
-        name_surf = self.font_huge.render(
-            self.boss_name, True, self.entrance_color)
-        name_surf.set_alpha(alpha)
-        name_rect = name_surf.get_rect(center=(text_x, text_y))
-        surface.blit(name_surf, name_rect)
-
-        # ═══ TITLE (smaller, italic feel) ═══
-        title_text = f'"{self.boss_title}"'
-        title_surf = self.font_medium.render(
-            title_text, True, (220, 220, 240))
-        title_surf.set_alpha(alpha)
-        title_rect = title_surf.get_rect(
-            center=(text_x, text_y + 60))
-
-        # Title shadow
-        title_shadow = self.font_medium.render(
-            title_text, True, (0, 0, 0))
-        title_shadow.set_alpha(alpha // 2)
-        surface.blit(title_shadow, (title_rect.x + 2, title_rect.y + 2))
-        surface.blit(title_surf, title_rect)
-
-        # ═══ DECORATIVE LINES ═══
-        line_alpha = alpha
-        line_color = (*self.entrance_color, line_alpha)
-
-        line_surf = pygame.Surface(
-            (self.screen_w, 4), pygame.SRCALPHA)
-        # Top line
-        pygame.draw.line(line_surf, line_color,
-                         (text_x - 200, 2),
-                         (text_x + 200, 2), 2)
-        surface.blit(line_surf, (0, text_y - 55))
-
-        # Bottom line
-        surface.blit(line_surf, (0, text_y + 95))
-
-    def _draw_hp_preview(self, surface, fill_ratio):
-        """Draw HP bar preview di bawah name"""
-        text_x = self.screen_w // 4
-        text_y = self.screen_h // 2 + 130
-
-        # HP bar
-        bar_w = 300
-        bar_h = 16
-        bx = text_x - bar_w // 2
-        by = text_y
-
-        # Border
-        pygame.draw.rect(surface, (0, 0, 0),
-                         (bx - 2, by - 2, bar_w + 4, bar_h + 4),
-                         border_radius=3)
-
-        # BG
-        pygame.draw.rect(surface, (40, 10, 10),
-                         (bx, by, bar_w, bar_h),
-                         border_radius=3)
-
-        # Fill (animated)
-        fill_w = int(bar_w * fill_ratio)
-        if fill_w > 0:
-            # Gradient effect
-            for i in range(fill_w):
-                t = i / bar_w
-                r = int(220 - t * 40)
-                g = int(60 + t * 30)
-                b = int(60 - t * 30)
-                pygame.draw.line(surface, (r, g, b),
-                                 (bx + i, by),
-                                 (bx + i, by + bar_h))
-
-        # White border
-        pygame.draw.rect(surface, (255, 255, 255),
-                         (bx, by, bar_w, bar_h),
-                         2, border_radius=3)
-
-        # HP text (kalau sudah full)
-        if fill_ratio >= 1.0:
-            hp_text = self.font_small.render(
-                f"HP: {self.boss.max_hp:,}", True, (255, 255, 255))
-            hp_rect = hp_text.get_rect(center=(text_x, by + bar_h + 15))
-
-            # Shadow
-            hp_shadow = self.font_small.render(
-                f"HP: {self.boss.max_hp:,}", True, (0, 0, 0))
-            surface.blit(hp_shadow, (hp_rect.x + 1, hp_rect.y + 1))
-            surface.blit(hp_text, hp_rect)
-
-    def _draw_skip_hint(self, surface):
-        """Draw skip hint di bottom"""
-        pulse = math.sin(pygame.time.get_ticks() * 0.005) * 0.3 + 0.7
-        alpha = int(180 * pulse)
-
-        hint_text = self.font_small.render(
-            f"[{_skip_button_label()}] to skip",
-            True, (200, 200, 200))
-        hint_text.set_alpha(alpha)
-        hint_rect = hint_text.get_rect(
-            center=(self.screen_w // 2, self.screen_h - 40))
-        surface.blit(hint_text, hint_rect)
-
 
 # ====================================================================
 # effects_level_intro.py
@@ -3385,21 +3214,6 @@ class SpriteCache:
 
         return entry
 
-    def invalidate(self, prefix=None):
-        """
-        Hapus cache.
-        prefix: string - hapus semua key yang mulai dengan prefix
-        """
-        if prefix is None:
-            self._cache.clear()
-            self._cropped.clear()
-        else:
-            keys_to_del = [k for k in self._cache
-                           if isinstance(k, tuple) and
-                           len(k) > 0 and k[0] == prefix]
-            for k in keys_to_del:
-                del self._cache[k]
-                self._cropped.pop(k, None)
 
     def clear(self):
         self._cache.clear()

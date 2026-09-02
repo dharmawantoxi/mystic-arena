@@ -34,7 +34,6 @@ from settings import HERO_TYPES, HERO_LEVELS
 # ================================
 
 
-
 class BaseSkill:
     """
     Base class untuk semua skill handler hero.
@@ -86,21 +85,6 @@ class BaseSkill:
         return self.hero._get_all_enemies(
             all_units, all_towers, all_bases)
 
-    def _get_enemies_in_range(self, all_units, all_towers, all_bases,
-                                range_val, center_x=None, center_y=None):
-        """Get semua musuh dalam range tertentu"""
-        if center_x is None:
-            center_x = self.hero.x
-        if center_y is None:
-            center_y = self.hero.y
-
-        enemies = self._get_enemies(all_units, all_towers, all_bases)
-        in_range = []
-        for e in enemies:
-            dist = math.hypot(e.x - center_x, e.y - center_y)
-            if dist <= range_val:
-                in_range.append((e, dist))
-        return in_range
 
     def _deal_aoe_damage(self, all_units, all_towers, all_bases,
                           range_val, damage_multiplier=1.0):
@@ -143,18 +127,6 @@ class BaseSkill:
         if self.hero.team == "blue":
             SoundManager().play('hero_skill', volume_mult=volume)
 
-    def _add_popup(self, x, y, text, is_critical=False,
-                    damage_type='normal'):
-        """Add damage number popup"""
-        try:
-            import __main__
-            if hasattr(__main__, 'game_instance'):
-                __main__.game_instance.effects.add_damage_number(
-                    x, y, text,
-                    is_critical=is_critical,
-                    damage_type=damage_type)
-        except Exception:
-            pass
 
     # ═══════════════════════════════════════
     # COOLDOWN HELPERS
@@ -333,7 +305,6 @@ class _NS_boss_hero_skills:
     # Generic skill handler untuk hero yang berasal dari boss
     # Reuse boss skill logic
     # ================================
-
 
 
     class BossHeroSkills(BaseSkill):
@@ -3713,7 +3684,6 @@ class _NS_grimjaw_skills:
     # ================================
 
 
-
     class GrimjawSkills(BaseSkill):
         """
         Skills untuk Grimjaw - Juggernaut / The Blade Fury
@@ -3942,7 +3912,6 @@ class _NS_kaizen_skills:
     # ================================
 
 
-
     class KaizenSkills(BaseSkill):
         """
         Skills untuk Kaizen - Wind Blade Assassin
@@ -4133,7 +4102,6 @@ class _NS_sylara_skills:
     # hero_skills/sylara_skills.py
     # Sylara (Wind Ranger - Wind's Arrow) skill logic
     # ================================
-
 
 
     class SylaraSkills(BaseSkill):
@@ -4454,7 +4422,6 @@ class _NS_thorne_skills:
     # ================================
 
 
-
     class ThorneSkills(BaseSkill):
         """
         Skills untuk Thorne - Bristleback / The Quill Sprayer
@@ -4691,7 +4658,6 @@ class _NS_vex_skills:
     # hero_skills/vex_skills.py
     # Vex (Outworld Destroyer) skill logic
     # ================================
-
 
 
     class VexSkills(BaseSkill):
@@ -4952,7 +4918,6 @@ class _NS_zephyr_skills:
     # hero_skills/zephyr_skills.py
     # Zephyr (Dark Willow) skill logic
     # ================================
-
 
 
     class ZephyrSkills(BaseSkill):

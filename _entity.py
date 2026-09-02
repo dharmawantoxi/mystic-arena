@@ -1671,8 +1671,6 @@ class Castle:
         self.shield_regen_flash = 6
         return True
 
-    def get_minion_composition(self):
-        return NEXUS_WAVE_COMPOSITION[self.level]
 
     def update(self, all_units):
         if not self.alive:
@@ -3201,7 +3199,6 @@ def _draw_castle_magic_aura(canvas, cx, cy, palette, timer):
         pygame.draw.rect(canvas, palette['a_light'], (px, py + 2, 1, 1))
 
 
-
 # ================================
 
 
@@ -3722,14 +3719,6 @@ class Hero(TowerDebuffMixin):
                 best = e
         return best
 
-    def count_enemies_in_range(self, all_units, all_towers, all_bases,
-                                range_val=None):
-        if range_val is None:
-            range_val = self.skill_range
-        enemies = self._get_all_enemies(all_units, all_towers, all_bases)
-        count = sum(1 for e in enemies
-                    if math.hypot(e.x - self.x, e.y - self.y) <= range_val)
-        return count
 
     # ═══════════════════════════════════════
     # HELPER
@@ -4556,11 +4545,6 @@ class Hero(TowerDebuffMixin):
     # ═══════════════════════════════════════
     # DAMAGE & RESPAWN
     # ═══════════════════════════════════════
-    def end_damage_scope(self):
-        """Dipanggil Game setelah seluruh hero update: matikan context
-        sekolah supaya damage dari sumber lain (boss/menara/dot) tidak
-        ikut terhitung sebagai skill hero."""
-        set_damage_school(None)
 
     def _spawn_projectile(self, damage, is_crit=False, speed=None,
                           target=None, hero_type=None):
@@ -5448,25 +5432,6 @@ class Hero(TowerDebuffMixin):
     # SKILL SYSTEM DOCUMENTATION
     # ═══════════════════════════════════════
 
-    def get_skill_cooldowns(self):
-        """
-        Get cooldowns semua skill dalam dict.
-        Useful untuk UI display.
-
-        Returns:
-            dict: {'q': ratio, 'w': ratio, 'e': ratio, 'r': ratio}
-            ratio: 0.0 (ready) sampai 1.0 (baru cast)
-        """
-        return {
-            'q': self.skill_timer / self.skill_cooldown_max
-                 if self.skill_cooldown_max > 0 else 0,
-            'w': self.w_cooldown / self.w_cooldown_max
-                 if self.w_cooldown_max > 0 else 0,
-            'e': self.e_cooldown / self.e_cooldown_max
-                 if self.e_cooldown_max > 0 else 0,
-            'r': self.r_cooldown / self.r_cooldown_max
-                 if self.r_cooldown_max > 0 else 0,
-        }
 
     def is_skill_ready(self, skill_key):
         """Cek apakah skill tertentu ready untuk cast"""
@@ -5590,12 +5555,6 @@ class Minion(TowerDebuffMixin):
         if minion_type == "goblin":
             SoundManager().play('goblin_spawn', volume_mult=0.7)
 
-    def _get_lane_y(self):
-        return {
-            "top": LANE_Y_TOP,
-            "mid": LANE_Y_MID,
-            "bot": LANE_Y_BOT,
-        }[self.lane]
 
     def update(self, all_units, all_towers, all_bases):
         if not self.alive:
@@ -6050,8 +6009,6 @@ class Minion(TowerDebuffMixin):
                              (14, 2), (10, 6), 1)
 
             surface.blit(eye_surf, (x - 8, y - 4 + fall_y))
-
-
 
 
 # ================================
@@ -6599,7 +6556,6 @@ class AIPlayer:
                 self.total_nexus_upgrades += 1
                 return True
         return False
-
 
 
 # ================================

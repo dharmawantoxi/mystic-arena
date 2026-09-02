@@ -214,9 +214,6 @@ class TacticalCommandManager:
             self.command_timer = min(self.command_timer,
                                      HOLD_RELEASE_TAIL)
 
-    def hold_active(self):
-        """True kalau ada perintah yang sedang ditahan."""
-        return self.held_command is not None
 
     def _issue_held(self, loud):
         """Terbitkan perintah yang sedang di-hold SEKALI.
@@ -1036,16 +1033,3 @@ class TacticalCommandManager:
         self.draw_world(surface)
         self.draw_ui(surface)
 
-    def get_status_text(self):
-        """Return status untuk debug / HUD"""
-        hold_tag = " [HOLD]" if self.held_command else ""
-        if self.active_command:
-            target_name = ""
-            if self.command_target:
-                target_name = getattr(self.command_target, 'name', str(self.command_target))[:15]
-            return f"{self.active_command.upper()} {target_name} ({self.command_timer//60}s){hold_tag}"
-        if self.held_command:
-            # Sedang ditahan tapi syarat belum terpenuhi (mis. belum
-            # ada boss) - hold tetap dipersenjatai.
-            return f"{self.held_command.upper()} [HOLD] (menunggu syarat)"
-        return "No tactical command"

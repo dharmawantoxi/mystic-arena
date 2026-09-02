@@ -26,8 +26,6 @@ import pygame
 _IS_LEVEL_BUNDLE = True
 
 
-
-
 # ====================================================================
 # IGNAKHOR (FURNACE-WROUGHT BERSERKER) - Mini Boss
 # ====================================================================
@@ -1657,12 +1655,6 @@ class _NS_ignakhor:
                                    (*_NS_ignakhor.PALETTE["fire_dark"], alpha),
                                    center, r)
         surface.blit(aura_surf, (x - aura_r - 10, y - aura_r - 10 - 5))
-    def _draw_lastinsanity_foreground(surface, boss, x, y, timer, phase):
-        """Rising fire pillars around berserker body."""
-        # Note: this is called in the main draw flow, but I didn't add the routing
-        # since aura is enough for R. The ground already handles most of it.
-        pass
-
 
 
 # ====================================================================
@@ -3343,7 +3335,6 @@ class _NS_kazureth:
             )
 
 
-
 # ====================================================================
 # SETHRAKHAR (SUNFORGED BUTCHER) - Mini Boss
 # ====================================================================
@@ -4990,7 +4981,6 @@ class _NS_sethrakhar:
                                          (*_NS_sethrakhar.PALETTE["fury_hot"], a),
                                          (125, 125), r)
             surface.blit(flash_surf, (x - 125, y - 125))
-
 
 
 # ====================================================================

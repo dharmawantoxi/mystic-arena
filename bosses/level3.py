@@ -302,18 +302,6 @@ class _NS_varkul:
         _NS_varkul._aacircle(surface, _NS_varkul.PALETTE["ice_hot"], (cx, cy), 1)
 
 
-    def _draw_frost_particles(surface, cx, cy, phase, radius=25, count=8):
-        """Frosty motes swirling around a point."""
-        for i in range(count):
-            angle = phase * 0.6 + i * math.pi * 2 / count
-            r = radius + int(math.sin(phase + i * 0.9) * 6)
-            px = cx + int(math.cos(angle) * r)
-            py = cy + int(math.sin(angle) * r * 0.6)
-            alpha = int(140 + math.sin(phase * 1.4 + i) * 80)
-            _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_light"], alpha), (px, py), 2)
-            _NS_varkul._aacircle(surface, (*_NS_varkul.PALETTE["ice_hot"], alpha), (px, py), 1)
-
-
     # ---------------------------------------------------------------------------
     # PROJECTILE SYSTEM – Frost Orb
     # ---------------------------------------------------------------------------
@@ -3823,16 +3811,6 @@ class _NS_nyzrak:
         boss._nyz_projectiles.append(_NS_nyzrak.IceProjectile(sx, sy, tx, ty))
 
 
-    def _spawn_splinter_burst(boss, x, y, count=8):
-        if not hasattr(boss, "_nyz_shards"):
-            boss._nyz_shards = []
-        for i in range(count):
-            angle = i * math.pi * 2 / count
-            boss._nyz_shards.append(_NS_nyzrak.SplinterShard(
-                x, y, math.cos(angle), math.sin(angle) * 0.7, speed=5.5, life=28
-            ))
-
-
     def _spawn_arctic_burn(boss, sx, sy, tx, ty):
         if not hasattr(boss, "_nyz_beams"):
             boss._nyz_beams = []
@@ -6793,7 +6771,6 @@ class _NS_ancient_apparition:
     def draw_ancient_apparition(surface, boss, x, y):
         """Entry point resmi untuk Ancient Apparition."""
         _NS_ancient_apparition.draw_apparition(surface, boss, x, y)
-
 
 
 # ====================================================================

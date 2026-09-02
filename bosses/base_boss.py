@@ -5224,9 +5224,6 @@ class Boss(TowerDebuffMixin):
         except Exception:
             pass
 
-    def take_damage_with_defense(self, damage, from_team):
-        """Override take_damage untuk defense boost"""
-        self.take_damage(damage, from_team)
 
     def _get_boss_stats(self):
         """Helper - get stats dari boss_data.

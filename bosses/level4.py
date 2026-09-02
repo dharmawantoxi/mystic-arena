@@ -28,7 +28,6 @@ import pygame
 _IS_LEVEL_BUNDLE = True
 
 
-
 # ====================================================================
 # ZHAROK
 # ====================================================================
@@ -1415,11 +1414,6 @@ class _NS_zharok:
             pass
         surface.blit(sub, (ox, oy))
 
-    @staticmethod
-    def _draw_zharok_elite(surface, cx, cy, facing=1, phase=0.0, action="idle",
-                           progress=0.0, detail=False, stealth=False):
-        _NS_zharok._draw_zharok_body(surface, cx, cy, facing, phase, action,
-                                     progress, stealth=stealth, detail=detail)
 
     @staticmethod
     def _draw_zh_body(surface, cx, cy, facing, phase, action, attack_progress=0):
@@ -2068,7 +2062,6 @@ class _NS_zharok:
     @staticmethod
     def draw_boss(surface, boss, x, y):
         _NS_zharok.draw_zharok(surface, boss, x, y)
-
 
 
 # ====================================================================
@@ -7575,7 +7568,6 @@ class _NS_ignis_drachorn:
     def draw_ignis_drachorn(surface, boss, x, y):
         """Entry point resmi untuk Ignis Drachorn."""
         _NS_ignis_drachorn.draw_ignis(surface, boss, x, y)
-
 
 
 # ====================================================================

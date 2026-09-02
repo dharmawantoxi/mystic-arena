@@ -2120,8 +2120,6 @@ class HeroItemInventory:
         """True saat Tempest Veil aktif (kebal semua damage)."""
         return self.veil_timer > 0
 
-    def is_guarding(self):
-        return self.guard_timer > 0
 
     def get_rend_crit(self):
         """Pengali crit pasti selama Soul Rend aktif, else None."""
@@ -3105,21 +3103,6 @@ class HeroItemRenderer:
                     g.ui_buttons[f"hero_item_slot_{i}"] = rect
         except Exception:
             pass
-
-    @classmethod
-    def slot_index_at(cls, hero, mx, my, px, py, panel_w):
-        """Return index slot yang diklik, atau -1."""
-        if hero is None:
-            return -1
-        total_w = cls.width()
-        sx = px + (panel_w - total_w) // 2
-        sy = py
-        for i in range(MAX_ITEM_SLOTS):
-            rect = pygame.Rect(sx + i * (cls.SLOT_SIZE + cls.SLOT_GAP),
-                               sy, cls.SLOT_SIZE, cls.SLOT_SIZE)
-            if rect.collidepoint(mx, my):
-                return i
-        return -1
 
 
 def _get_game():

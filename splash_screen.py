@@ -358,14 +358,3 @@ class SplashScreen:
                              (cx + gap, y + off),
                              (cx + gap - 46, y + off), 2)
 
-    def draw_preview_frame(self, path, at_seconds):
-        """(untuk testing) render satu frame pada waktu tertentu."""
-        # simulasikan update sampai waktu ts
-        self.elapsed = at_seconds
-        self.title_alpha = int(255 * min(1.0, max(0.0, (at_seconds - 0.5) / 0.6)))
-        for p in self.particles:
-            p["y"] -= p["speed"] * 60
-            if p["y"] < -6:
-                p["y"] = self.h + 6
-        self.draw()
-        pygame.image.save(self.screen, path)

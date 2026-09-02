@@ -1237,7 +1237,6 @@ def get_hero_shop_order():
     return ordered
 
 
-
 # ================================
 
 
@@ -2902,8 +2901,6 @@ class Game:
         _PH.end()
 
 
-
-
 # ================================
 
 
@@ -4547,20 +4544,6 @@ class Menu:
     # MAIN MENU
     # ═══════════════════════════════════════
 
-    def _render_gradient_text(self, font, text, top_color, bottom_color):
-        """Render teks dengan gradasi warna vertikal."""
-        base = font.render(text, True, (255, 255, 255))
-        grad = pygame.Surface(base.get_size(), pygame.SRCALPHA)
-        h = base.get_height()
-        for y in range(h):
-            t = y / max(1, h - 1)
-            r = int(top_color[0] + (bottom_color[0] - top_color[0]) * t)
-            g = int(top_color[1] + (bottom_color[1] - top_color[1]) * t)
-            b = int(top_color[2] + (bottom_color[2] - top_color[2]) * t)
-            pygame.draw.line(grad, (r, g, b, 255), (0, y),
-                             (base.get_width(), y))
-        grad.blit(base, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-        return grad
 
     def _draw_main_menu(self):
         """Draw main menu screen (tema dark-fantasy TD)."""
@@ -6002,11 +5985,6 @@ class Menu:
               f"{cur} {round(price_cur, 2)}, simulasi)")
         SoundManager().play('ui_buy', volume_mult=0.9)
 
-    def _blit_shadow(self, surf, text_surf, topleft, offset=(2, 2)):
-        """Blit teks dengan bayangan gelap lembut di belakangnya."""
-        sh = text_surf.copy()
-        sh.fill((0, 0, 0, 150), special_flags=pygame.BLEND_RGBA_MULT)
-        surf.blit(sh, (topleft[0] + offset[0], topleft[1] + offset[1]))
 
     def _draw_how_to_play(self):
         """Tutorial screen (header seragam emas + ikon vektor)."""
@@ -7494,23 +7472,6 @@ class Menu:
         except Exception as e:
             print(f"[CLOUD] Peek restore gagal: {e}")
 
-    def _toggle_input_mode(self):
-        """Toggle antara keyboard & controller"""
-        if not hasattr(self, 'controller_mgr') or not self.controller_mgr:
-            return
-
-        if self.controller_mgr.is_controller_mode():
-            self.controller_mgr.set_mode('keyboard')
-        else:
-            if self.controller_mgr.connected:
-                self.controller_mgr.set_mode('controller')
-            else:
-                # No controller detected, rescan
-                self.controller_mgr.rescan()
-                if self.controller_mgr.connected:
-                    self.controller_mgr.set_mode('controller')
-                else:
-                    print("[INPUT] No controller detected!")
 
     def _adjust_volume(self, setting_id, delta):
         """Adjust volume setting"""
@@ -7552,8 +7513,6 @@ class Menu:
         self.state = MenuState.MAIN
         self.pause_mode = False
         self.action = None
-
-
 
 
 # ================================
@@ -8540,9 +8499,6 @@ class UIRenderer:
             self.overlay_component.draw(surface, title, color,
                                          subtitle, action)
 
-    def draw_notifications(self, surface):
-        """Draw notification popups (kosong - notifikasi DIHAPUS)."""
-        return
 
     def add_notification(self, text, color=(255, 255, 255)):
         """
@@ -9089,12 +9045,6 @@ class GameSettings:
         """Kompatibilitas tombol lama: cycle maju ke mode berikutnya."""
         return self.cycle_difficulty(1)
 
-    def get_difficulty_label(self):
-        return {
-            "easy": "EASY",
-            "normal": "NORMAL",
-            "hard": "HARD",
-        }.get(self.difficulty, "NORMAL")
 
     def get_difficulty_short_label(self):
         return {
@@ -9106,8 +9056,6 @@ class GameSettings:
     def is_easy_mode(self):
         return self.difficulty == "easy"
 
-    def is_hard_mode(self):
-        return self.difficulty == "hard"
 
     def is_scaling_on(self):
         return self.difficulty == "hard"

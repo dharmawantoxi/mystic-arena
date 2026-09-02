@@ -112,8 +112,6 @@ def query_enemies_in_range(x, y, radius, team):
             if hasattr(e, 'team') and e.team != team and e.alive]
 
 
-
-
 # ================================
 
 
@@ -377,21 +375,6 @@ class AdaptiveQuality:
     def get_fps(self):
         return self.clock.get_fps()
 
-    @property
-    def skip_glow_effects(self):
-        """Skip glow/particle effects saat FPS rendah"""
-        return self.quality == 'low'
-
-    @property
-    def skip_shadow_effects(self):
-        """Skip shadow saat FPS medium/low"""
-        return self.quality in ('medium', 'low')
-
-    @property
-    def reduce_particles(self):
-        """Kurangi jumlah particles"""
-        return self.quality != 'high'
-
 
 # ====================================================================
 # sound_manager.py
@@ -558,21 +541,6 @@ class SoundManager:
             channel.set_volume(final_vol)
             channel.play(sound)
 
-    def play_positional(self, name, x, y, player_x, player_y,
-                         max_distance=800, volume_mult=1.0):
-        """Sound dengan volume berdasar jarak"""
-        if not self.enabled:
-            return
-
-        import math
-        dist = math.hypot(x - player_x, y - player_y)
-        if dist > max_distance:
-            return
-
-        distance_vol = 1.0 - (dist / max_distance)
-        distance_vol = max(0.15, distance_vol)
-
-        self.play(name, volume_mult=volume_mult * distance_vol)
 
     # ═══════════════════════════════════════
     # BGM (Background Music)
@@ -609,17 +577,6 @@ class SoundManager:
         pygame.mixer.music.fadeout(fade_ms)
         self.current_bgm = None
 
-    def pause_bgm(self):
-        """Pause BGM"""
-        if self.enabled and self.current_bgm:
-            pygame.mixer.music.pause()
-            self.bgm_paused = True
-
-    def resume_bgm(self):
-        """Resume BGM"""
-        if self.enabled and self.bgm_paused:
-            pygame.mixer.music.unpause()
-            self.bgm_paused = False
 
     def update_bgm_volume(self):
         """Update BGM volume (dipanggil saat master volume berubah)"""
@@ -649,11 +606,6 @@ class SoundManager:
             self.ambient_channel.set_volume(vol)
             self.ambient_channel.play(sound, loops=-1, fade_ms=2000)
 
-    def stop_ambient(self, fade_ms=1500):
-        """Stop ambient"""
-        if self.ambient_channel:
-            self.ambient_channel.fadeout(fade_ms)
-            self.ambient_channel = None
 
     # ═══════════════════════════════════════
     # VOLUME CONTROL
@@ -667,12 +619,6 @@ class SoundManager:
         if self.ambient_channel and self.ambient_channel.get_busy():
             self.ambient_channel.set_volume(
                 self.master_volume * self.ambient_volume)
-
-    def stop_all(self):
-        """Stop semua"""
-        if self.enabled:
-            pygame.mixer.stop()
-            pygame.mixer.music.stop()
 
 
 # ====================================================================
@@ -930,14 +876,6 @@ class SaveManager:
         return [SaveManager.get_slot_info(i)
                 for i in range(1, NUM_SLOTS + 1)]
 
-    @staticmethod
-    def format_playtime(seconds):
-        """Format playtime seconds → 'Xh Ym'"""
-        hours = int(seconds // 3600)
-        minutes = int((seconds % 3600) // 60)
-        if hours > 0:
-            return f"{hours}h {minutes}m"
-        return f"{minutes}m"
 
     @staticmethod
     def format_last_played(timestamp):

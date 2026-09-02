@@ -28,7 +28,6 @@ import pygame
 _IS_LEVEL_BUNDLE = True
 
 
-
 # ====================================================================
 # GRAVEWAKE
 # ====================================================================
@@ -232,24 +231,6 @@ class _NS_gravewake:
                   max(1, s - 2))
         _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_bright"], min(255, alpha)),
                   (x, y - 2), max(1, s - 4))
-
-
-    def _draw_water_column(surface, cx, cy, height, width, phase, alpha=220):
-        """Vertical water column with wave motion."""
-        for i in range(height):
-            t = i / max(1, height)
-            wave = math.sin(phase * 3 + t * 6) * 3
-            w_here = int(width * (1 - t * 0.4))
-            layer_y = cy - i
-            layer_x = cx + int(wave)
-            _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha),
-                  (layer_x - w_here, layer_y, w_here * 2, 2))
-            _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha),
-                  (layer_x - w_here + 1, layer_y, w_here * 2 - 2, 2))
-            _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_light"], alpha),
-                  (layer_x - w_here // 2, layer_y, w_here, 2))
-            _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_hot"], alpha),
-                  (layer_x - w_here // 4, layer_y, max(1, w_here // 2), 2))
 
 
     # ---------------------------------------------------------------------------
@@ -3331,19 +3312,6 @@ class _NS_thalgryn:
     # ---------------------------------------------------------------------------
     # Water helpers
     # ---------------------------------------------------------------------------
-    def _draw_water_droplet(surface, x, y, size, phase, alpha=255):
-        """Small water droplet."""
-        flick = math.sin(phase * 3) * 0.15 + 1.0
-        s = int(size * flick)
-        if s < 1:
-            return
-        _NS_thalgryn._aacircle(surface, (*_NS_thalgryn.PALETTE["water_darkest"], alpha // 3), (x, y), s + 3)
-        _NS_thalgryn._aacircle(surface, (*_NS_thalgryn.PALETTE["water_dark"], alpha // 2), (x, y), s + 1)
-        _NS_thalgryn._aacircle(surface, (*_NS_thalgryn.PALETTE["water_mid"], alpha), (x, y), s)
-        _NS_thalgryn._aacircle(surface, (*_NS_thalgryn.PALETTE["water_light"], alpha), (x, y - 1),
-                  max(1, s - 2))
-        _NS_thalgryn._aacircle(surface, (*_NS_thalgryn.PALETTE["water_high"], min(255, alpha)),
-                  (x, y - 2), max(1, s - 4))
 
 
     def _draw_water_splash(surface, x, y, size, phase, alpha=255):
@@ -3579,15 +3547,6 @@ class _NS_thalgryn:
         sx = x + 22 * boss.direction
         sy = y - 10
         boss._th_projectiles.append(_NS_thalgryn.AdaptiveStrikeProjectile(sx, sy, tx, ty, speed=7.0))
-
-
-    def _spawn_adaptive_strike(boss, x, y):
-        if not hasattr(boss, "_th_projectiles"):
-            boss._th_projectiles = []
-        tx, ty = _NS_thalgryn._target_position(boss, x, y)
-        sx = x + 22 * boss.direction
-        sy = y - 10
-        boss._th_projectiles.append(_NS_thalgryn.AdaptiveStrikeProjectile(sx, sy, tx, ty, speed=10.0))
 
 
     def _manage_effects(boss, surface, phase):
@@ -4762,32 +4721,6 @@ class _NS_kunkka:
         if s > 3:
             _NS_kunkka._aacircle(surface, (*_NS_kunkka.PALETTE["water_hot"], min(255, alpha)),
                       (x, y - 2), max(1, s - 6))
-
-
-    def _draw_water_wave(surface, x1, y1, x2, y2, phase, thickness=4,
-                        alpha=220):
-        """Draw a curved water wave between two points."""
-        dx = x2 - x1
-        dy = y2 - y1
-        dist = math.sqrt(dx * dx + dy * dy) or 1
-        steps = max(6, int(dist / 6))
-
-        for i in range(steps):
-            t = i / steps
-            # Curve using sine wave perpendicular
-            wave = math.sin(t * math.pi * 2 + phase * 2) * 4
-            perp_x = -dy / dist * wave
-            perp_y = dx / dist * wave
-            px = int(x1 + dx * t + perp_x)
-            py = int(y1 + dy * t + perp_y)
-            _NS_kunkka._aacircle(surface, (*_NS_kunkka.PALETTE["water_dark"], alpha), (px, py),
-                      thickness + 1)
-            _NS_kunkka._aacircle(surface, (*_NS_kunkka.PALETTE["water_mid"], alpha),
-                      (px, py), thickness)
-            _NS_kunkka._aacircle(surface, (*_NS_kunkka.PALETTE["water_light"], alpha),
-                      (px, py), max(1, thickness - 1))
-            _NS_kunkka._aacircle(surface, (*_NS_kunkka.PALETTE["water_bright"], alpha),
-                      (px, py), max(1, thickness - 2))
 
 
     # ---------------------------------------------------------------------------

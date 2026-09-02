@@ -28,7 +28,6 @@ import pygame
 _IS_LEVEL_BUNDLE = True
 
 
-
 # ====================================================================
 # NYXARA
 # ====================================================================
@@ -2855,7 +2854,6 @@ class _NS_gravefang:
         _NS_gravefang.draw_morgath(surface, boss, x, y)
 
 
-
 # ====================================================================
 # VHALZUN
 # ====================================================================
@@ -4545,26 +4543,6 @@ class _NS_krobellus:
     # ---------------------------------------------------------------------------
     # Spirit / ghost drawing helpers
     # ---------------------------------------------------------------------------
-    def _draw_spirit_wisp(surface, x, y, size, phase, alpha=200, small_face=False):
-        """Draw a ghostly spirit wisp."""
-        flick = math.sin(phase * 2) * 0.15 + 1.0
-        s = int(size * flick)
-        if s < 1:
-            return
-        # Outer glow
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_darkest"], alpha // 3), (x, y), s + 4)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], alpha // 2), (x, y), s + 2)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], alpha), (x, y), s)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_light"], alpha), (x, y - 1),
-                  max(1, s - 2))
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_bright"], min(255, alpha)),
-                  (x, y - 2), max(1, s - 4))
-
-        # Small ghostly face if requested
-        if small_face and s >= 5:
-            # Eye sockets
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_darkest"], (x - 2, y - 1), 1)
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_darkest"], (x + 2, y - 1), 1)
 
 
     def _draw_ghost_head(surface, cx, cy, phase, size=8, facing=1, alpha=220):

@@ -4294,22 +4294,6 @@ class _NS_sylara:
             pygame.draw.circle(surface, (*p["white"], _NS_sylara._drk_alpha(alpha * .9)),
                                (tpx, tpy), max(1, int(thick * .28)))
 
-    def _drk_spatter(surface, cx, cy, count, spread, phase, alpha,
-                     seed=0, squash=0.62):
-        """Spatter piksel radial gaya Drakar (rect 3 ukuran + core hot)."""
-        p = _NS_sylara.PALETTE
-        for i in range(count):
-            ang = phase * 0.35 + i * math.tau / count
-            dist = spread * (0.35 + 0.65 * _NS_sylara._hash01(seed + i * 7))
-            px = int(cx + math.cos(ang) * dist)
-            py = int(cy + math.sin(ang) * dist * squash)
-            al = _NS_sylara._drk_alpha(
-                alpha * (0.55 + 0.45 * _NS_sylara._hash01(seed + i * 13)))
-            if al <= 0:
-                continue
-            pygame.draw.rect(surface, (*p["wind_dark"], al), (px - 1, py - 1, 3, 3))
-            pygame.draw.rect(surface, (*p["wind_mid"], al), (px, py, 2, 2))
-            pygame.draw.rect(surface, (*p["wind_bright"], al), (px + 1, py, 1, 1))
 
     def _drk_shock(surface, cx, cy, radius, alpha, squash=0.62):
         """Shockwave tanah 3 ellipse berlapis (aktivasi skill, gaya Drakar)."""
@@ -4396,20 +4380,6 @@ class _NS_sylara:
                              (int(x2) - 1, int(y2) - 1, 3, 3))
             pygame.draw.rect(surface, (*p["white"], al), (int(x2), int(y2), 1, 1))
 
-    def _drk_ghost(surface, cx, cy, radius, alpha):
-        """Ghost afterimage melingkar 3 lapis (trail, gaya rage-mist Drakar)."""
-        p = _NS_sylara.PALETTE
-        al = _NS_sylara._drk_alpha(alpha)
-        if al <= 0:
-            return
-        r = max(2, int(radius))
-        pygame.draw.circle(surface, (*p["wind_darkest"], int(al * .5)),
-                           (cx, cy), r + 3)
-        pygame.draw.circle(surface, (*p["wind_dark"], al), (cx, cy), r)
-        pygame.draw.circle(surface, (*p["wind_mid"], al), (cx, cy), max(1, r - 3))
-        pygame.draw.circle(surface, (*p["wind_bright"], al), (cx, cy), max(1, r - 6))
-        pygame.draw.rect(surface, (*p["wind_light"], al), (cx - 1, cy - 1, 3, 3))
-        pygame.draw.rect(surface, (*p["white"], al), (cx, cy, 1, 1))
 
     def _drk_embers(surface, cx, cy, count, phase, alpha,
                     spread=44, rise=46, squash=0.5):
@@ -6078,7 +6048,6 @@ class _NS_sylara:
 
         if detail:
             _NS_sylara._draw_sylara_masterwork_details(surface, pt, f)
-
 
 
     # ===================================================================
@@ -10605,7 +10574,6 @@ class _NS_thorne:
         _NS_thorne._aaline(surface, (*p["quill_shine"], min(255, fade + 40)),
                            (int(cx + lx * (inner_r + 4)), int(cy + ly * (inner_r + 4))),
                            (int(cx + lx * (outer_r - 2)), int(cy + ly * (outer_r - 2))), 2)
-
 
 
     # ===================================================================
