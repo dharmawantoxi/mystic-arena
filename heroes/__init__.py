@@ -651,7 +651,8 @@ _BEAM_PASS_HEROES = {"morgath"}
 # hit-stop 0.03-0.08 s, dan shake — 60 fps di luar cache sprite.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
-                   "alchemist", "ancient_apparition", "nyzrak"}
+                   "alchemist", "ancient_apparition", "nyzrak",
+                   "xerathis"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -667,6 +668,7 @@ _LIVE_FX_PATHS = {
     "alchemist": "heroes.alchemist_fx",
     "ancient_apparition": "heroes.ancient_apparition_fx",
     "nyzrak": "heroes.nyzrak_fx",
+    "xerathis": "heroes.xerathis_fx",
 }
 
 
