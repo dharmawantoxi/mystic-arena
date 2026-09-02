@@ -316,6 +316,26 @@ class FloatingText:
         self.scale = 0.3
         self.target_scale = 1.2 if critical else 1.0
 
+        # ═══ PRE-RENDER TEKS SEKALI ═══
+        # BUGFIX PERFORMA: dulu FloatingText.draw() memanggil
+        # font.render() 2x (shadow + teks) SETIAP FRAME untuk SETIAP
+        # damage number. Saat combat ramai (banyak hero bertarung),
+        # ratusan teks ikut di-raster ulang tiap frame -> font.render
+        # (operasi paling mahal di pygame) jadi bottleneck utama &
+        # FPS ambruk. Sekarang teks di-render SEKALI di sini, lalu
+        # tiap frame cukup di-blit (dengan scale/alpha) -> ratusan
+        # damage number pun tetap murah.
+        style = "body_bold" if self.critical else "body_semibold"
+        self._peak_font_size = max(8, min(
+            int(self.font_size * self.target_scale), 64))
+        try:
+            font = get_font(self._peak_font_size, style)
+            self._text_surf = font.render(self.text, True, self.color)
+            self._shadow_surf = font.render(self.text, True, (8, 8, 14))
+        except Exception:
+            self._text_surf = None
+            self._shadow_surf = None
+
     def update(self):
         if not self.alive:
             return
@@ -352,27 +372,47 @@ class FloatingText:
         if alpha <= 0:
             return
 
-        # ← GUNAKAN CACHED FONT (bukan buat baru tiap frame!)
-        # body_bold: angka damage lebih tegas; kritis/ultimate lebih
-        # tebal lagi via scale.
-        font_size = int(self.font_size * self.scale)
-        font_size = max(8, min(font_size, 64))  # clamp
-        style = "body_bold" if self.critical else "body_semibold"
-        font = get_font(font_size, style)
+        # ← GUNAKAN SURFACE TEKS YANG SUDAH DI-RENDER DI __init__.
+        # Tidak ada font.render() lagi tiap frame (lihat BUGFIX di
+        # __init__). Animasi "pop-in" tetap ada: ukuran teks
+        # di-scale dari surface cache via transform.scale (jauh lebih
+        # murah dari rasterisasi ulang).
+        if self._text_surf is None or self._shadow_surf is None:
+            # Fallback aman kalau pre-render gagal.
+            font_size = max(8, min(int(self.font_size * self.scale), 64))
+            style = "body_bold" if self.critical else "body_semibold"
+            font = get_font(font_size, style)
+            cx, cy = int(self.x), int(self.y)
+            shadow_surf = font.render(self.text, True, (8, 8, 14))
+            shadow_surf.set_alpha(min(220, alpha))
+            surface.blit(shadow_surf,
+                         shadow_surf.get_rect(center=(cx + 1, cy + 2)))
+            text_surf = font.render(self.text, True, self.color)
+            text_surf.set_alpha(alpha)
+            surface.blit(text_surf, text_surf.get_rect(center=(cx, cy)))
+            return
 
-        cx, cy = int(self.x), int(self.y)
+        cur_font = max(8, min(int(self.font_size * self.scale), 64))
+        sx = cur_font / self._peak_font_size if self._peak_font_size else 1.0
 
-        # Shadow (satu blit — dulu 9 blit per teks, boros saat combat
-        # ramai dan hasilnya nyaris sama)
-        shadow_surf = font.render(self.text, True, (8, 8, 14))
-        shadow_surf.set_alpha(min(220, alpha))
-        shadow_rect = shadow_surf.get_rect(center=(cx + 1, cy + 2))
-        surface.blit(shadow_surf, shadow_rect)
+        if abs(sx - 1.0) < 0.02:
+            # Skala ~1.0: pakai surface cache langsung (blit murah).
+            text_surf = self._text_surf
+            shadow_surf = self._shadow_surf
+        else:
+            # Pop-in: scale sekali dari surface cache (tanpa
+            # font.render). Surface per-instance jadi mutasi aman.
+            w = max(1, int(self._text_surf.get_width() * sx))
+            h = max(1, int(self._text_surf.get_height() * sx))
+            text_surf = pygame.transform.scale(self._text_surf, (w, h))
+            shadow_surf = pygame.transform.scale(self._shadow_surf, (w, h))
 
-        text_surf = font.render(self.text, True, self.color)
         text_surf.set_alpha(alpha)
-        text_rect = text_surf.get_rect(center=(cx, cy))
-        surface.blit(text_surf, text_rect)
+        shadow_surf.set_alpha(min(220, alpha))
+        cx, cy = int(self.x), int(self.y)
+        surface.blit(shadow_surf,
+                     shadow_surf.get_rect(center=(cx + 1, cy + 2)))
+        surface.blit(text_surf, text_surf.get_rect(center=(cx, cy)))
 
 
 class HitParticle:
@@ -399,6 +439,22 @@ class HitParticle:
         self.alive = True
         self.gravity = 0.15
 
+        # ═══ PRE-RENDER SPRITE SEKALI ═══
+        # BUGFIX PERFORMA: dulu HitParticle.draw() mengalokasikan
+        # pygame.Surface BARU + menggambar 2 circle SETIAP FRAME untuk
+        # SETIAP partikel. Saat banyak hero menyerang, ratusan partikel
+        # ikut alokasi ulang tiap frame -> fragmentasi + overhead yang
+        # membebani GC/SDL. Sekarang sprite di-render SEKALI di sini,
+        # lalu tiap frame cukup di-scale & di-blit.
+        base = max(1, int(self.size))
+        self._pbase = base
+        self._psurf = pygame.Surface((base * 3, base * 3), pygame.SRCALPHA)
+        pygame.draw.circle(self._psurf, (*self.color, 255),
+                           (base * 3 // 2, base * 3 // 2), base)
+        pygame.draw.circle(self._psurf, (255, 255, 255, 255),
+                           (base * 3 // 2, base * 3 // 2),
+                           max(1, base // 2))
+
     def update(self):
         if not self.alive:
             return
@@ -420,23 +476,19 @@ class HitParticle:
         alpha = int(255 * alpha_ratio)
         current_size = max(1, int(self.size * alpha_ratio))
 
-        if alpha > 0 and current_size > 0:
-            particle_surf = pygame.Surface(
-                (current_size * 3, current_size * 3), pygame.SRCALPHA)
-            pygame.draw.circle(particle_surf,
-                               (*self.color, alpha),
-                               (current_size * 3 // 2,
-                                current_size * 3 // 2),
-                               current_size)
-            # Bright core
-            pygame.draw.circle(particle_surf,
-                               (255, 255, 255, alpha),
-                               (current_size * 3 // 2,
-                                current_size * 3 // 2),
-                               max(1, current_size // 2))
-            surface.blit(particle_surf,
-                         (int(self.x) - current_size * 3 // 2,
-                          int(self.y) - current_size * 3 // 2))
+        if alpha <= 0 or current_size <= 0:
+            return
+
+        # Pakai sprite cache; hanya scale (murah) sesuai sisa life.
+        if current_size == self._pbase:
+            s = self._psurf
+        else:
+            s = pygame.transform.scale(
+                self._psurf, (current_size * 3, current_size * 3))
+        s.set_alpha(alpha)
+        surface.blit(s,
+                     (int(self.x) - current_size * 3 // 2,
+                      int(self.y) - current_size * 3 // 2))
 
 
 class DeathExplosion:
@@ -549,6 +601,16 @@ class ScreenShake:
 class EffectManager:
     """Central manager untuk semua effects"""
 
+    # ═══ BATAS KEAMANAN (anti unbounded growth) ═══
+    # Saat combat sangat ramai (banyak hero), ribuan damage number &
+    # partikel bisa menumpuk. Tanpa batas, list terus membesar dan
+    # update/draw jadi O(n) mahal tiap frame -> FPS ambruk. Kita buang
+    # yang tertua saat melewati batas (gameplay tidak terasa, tapi
+    # performa aman).
+    MAX_FLOATING = 300
+    MAX_PARTICLES = 500
+    MAX_EXPLOSIONS = 80
+
     def __init__(self):
         self.floating_texts = []
         self.particles = []
@@ -565,10 +627,28 @@ class EffectManager:
 
     def add_damage_number(self, x, y, damage, is_critical=False,
                           damage_type='normal'):
-        """Add floating damage number (respect settings)"""
+        """Add floating damage number (respect settings + quality budget)"""
         from _core import GameSettings
         if not GameSettings().damage_numbers_enabled:
             return
+        # ═══ BATAS SESUAI PRESET KUALITAS ═══
+        # Quality.max_damage_numbers (8/MED/LOW, 16, 32/HIGH) adalah
+        # "anggaran" yang SUDAH dirancang untuk adaptive quality.
+        # Selama ini EffectManager TIDAK membacanya, sehingga menurunnya
+        # kualitas saat FPS jeblok tidak mengurangi jumlah damage
+        # number -> lag spiral. Sekarang kita hormati budget ini: kalau
+        # penuh, buang yang tertua. Hard ceiling MAX_FLOATING di bawah
+        # tetap jadi jaring pengaman kalau Quality tak tersedia.
+        try:
+            from mobile.perf import Quality
+            cap = Quality.max_damage_numbers
+        except Exception:
+            cap = self.MAX_FLOATING
+        if len(self.floating_texts) >= cap:
+            if self.floating_texts:
+                del self.floating_texts[0]
+        elif len(self.floating_texts) >= self.MAX_FLOATING:
+            del self.floating_texts[0]
         # Color berdasarkan type
         if damage_type == 'heal':
             color = (100, 255, 100)
@@ -602,6 +682,10 @@ class EffectManager:
             critical=is_critical
         )
         self.floating_texts.append(text)
+        if len(self.floating_texts) > self.MAX_FLOATING:
+            # Buang yang tertua (index 0) supaya list tidak tumbuh
+            # tak terbatas saat combat sangat ramai.
+            del self.floating_texts[0]
 
     def add_gold_popup(self, x, y, amount):
         """Add gold gained popup"""
@@ -612,9 +696,26 @@ class EffectManager:
             velocity=(0, -1.5), lifetime=50
         )
         self.floating_texts.append(text)
+        if len(self.floating_texts) > self.MAX_FLOATING:
+            del self.floating_texts[0]
 
     def add_hit_particles(self, x, y, team="red", count=5):
-        """Add hit spark particles"""
+        """Add hit spark particles (jumlah di-scale oleh preset kualitas)"""
+        # ═══ HORMATI BUDGET KUALITAS ═══
+        # Quality.particle_ratio (0.35 LOW / 0.65 MED / 1.0 HIGH) &
+        # Quality.particles mengurangi jumlah partikel saat perangkat
+        # lambat, supaya adaptive quality benar-benar menurunkan beban
+        # draw. Tanpa ini, partikel menumpuk ribuan saat banyak hero
+        # bertarung -> FPS ambruk.
+        try:
+            from mobile.perf import Quality
+            if not Quality.particles:
+                return
+            count = max(0, int(round(count * Quality.particle_ratio)))
+        except Exception:
+            pass
+        if count <= 0:
+            return
         if team == "blue":
             colors = [(100, 200, 255), (200, 240, 255)]
         else:
@@ -631,10 +732,15 @@ class EffectManager:
                 HitParticle(x, y, color, (vx, vy),
                             lifetime=random.randint(12, 20),
                             size=random.randint(2, 3)))
+        if len(self.particles) > self.MAX_PARTICLES:
+            # Buang partikel tertua (jaga jumlah tetap wajar).
+            del self.particles[0:len(self.particles) - self.MAX_PARTICLES]
 
     def add_death_explosion(self, x, y, team="red", size='medium'):
         """Add death explosion"""
         self.explosions.append(DeathExplosion(x, y, team, size))
+        if len(self.explosions) > self.MAX_EXPLOSIONS:
+            del self.explosions[0]
 
     def shake_screen(self, intensity=5):
         """
