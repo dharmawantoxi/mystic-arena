@@ -107,6 +107,29 @@ Audit terukur + preview:
 [docs/kaizen_v2_skills.png](docs/kaizen_v2_skills.png),
 [docs/kaizen_v2_before_after.png](docs/kaizen_v2_before_after.png).
 
+### Upgrade terbaru: Varkul V3 Combat FX + Swing Arc
+
+Renderer Varkul (Frost Sorcerer, mini-boss level3) ditulis ulang
+mengikuti standar **Thorne v2 / Xerathis v3**
+(detail lengkap: [docs/VARKUL_V3_COMBAT_FX.md](docs/VARKUL_V3_COMBAT_FX.md)).
+Sapuan staff kini **berbasis ark**: sudut staff diinterpolasi lewat tabel
+`_NS_varkul.STAFF_ARC` (anticipation → wind-up → swing → impact →
+follow-through → recovery) yang dibaca renderer canvas DAN lapisan hidup
+`heroes/varkul_fx.py`, sehingga trail sabit es, proyektil Frost Bolt, dan
+orb Chain Frost selalu lahir tepat di ujung kristal. Pose **CAST** baru
+untuk q/w/e/r; SkillFX world-space: telegraph cincin putus Q, kurungan
+kristal poligonal W, pentagram rune E, orb memantul 4x + petir es R;
+impact flash + shockwave chunky + hit-stop 0.03-0.08 s + shake trauma
+via `heroes/combat_feel`. Fallback canvas q/w/e/r otomatis nonaktif saat
+lapisan hidup aktif — tidak ada efek digambar dua kali (idle 1.46 ms,
+budget 2.35 ms).
+
+Uji regresi + preview:
+`python tools/test_varkul_v3_combat.py` (14 grup),
+[docs/varkul_v3_preview.png](docs/varkul_v3_preview.png),
+[docs/varkul_v3_swing_strip.png](docs/varkul_v3_swing_strip.png).
+
+
 ### Contoh maksimal kedua: Thorne Masterwork
 
 Thorne menerima perlakuan yang sama seperti Kaizen: tubuh lama dibangun

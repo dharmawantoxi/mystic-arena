@@ -684,6 +684,18 @@ class Boss(TowerDebuffMixin):
                                 self.damage, False, 'ice')
                         except Exception:
                             pass
+                    # ═══ IMPACT FX VARKUL ═══
+                    # Frost bolt Varkul mendarat: flash es, serpihan
+                    # kristal, shockwave, shake, dan hit-stop 0.03-0.08 s
+                    # (lengkapnya di heroes/varkul_fx.notify_projectile_impact).
+                    if getattr(self, 'boss_type', None) == 'varkul':
+                        try:
+                            from heroes import varkul_fx as _vkfx
+                            _vkfx.notify_projectile_impact(
+                                self, self.target.x, self.target.y, 0.0,
+                                self.damage, False, 'ice')
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -3216,6 +3228,14 @@ class Boss(TowerDebuffMixin):
             self.target.take_damage(damage, self.team)
             if hasattr(self.target, 'apply_slow'):
                 self.target.apply_slow(0.4, 120)
+            # ═══ FX FROST BLAST (lapisan hidup) ═══
+            try:
+                from heroes import varkul_fx as _vkfx
+                _vkfx.notify_skill_cast(self, 'q')
+                _vkfx.notify_skill_impact(self, self.target.x,
+                                          self.target.y, 54, 'q')
+            except Exception:
+                pass
         self._shake_screen(10)
 
     def _varkul_w(self, enemies):
@@ -3229,6 +3249,14 @@ class Boss(TowerDebuffMixin):
             if hasattr(self.target, 'attack_timer'):
                 self.target.attack_timer = max(
                     getattr(self.target, 'attack_timer', 0), 60)
+            # ═══ FX FROSTBITE (lapisan hidup) ═══
+            try:
+                from heroes import varkul_fx as _vkfx
+                _vkfx.notify_skill_cast(self, 'w')
+                _vkfx.notify_skill_impact(self, self.target.x,
+                                          self.target.y, 34, 'w')
+            except Exception:
+                pass
         self._shake_screen(14)
 
     def _varkul_e(self):
@@ -3241,6 +3269,13 @@ class Boss(TowerDebuffMixin):
             self.target.take_damage(damage, self.team)
         heal = int(self.max_hp * 0.12)
         self.hp = min(self.max_hp, self.hp + heal)
+        # ═══ FX SACRIFICE (lapisan hidup) ═══
+        try:
+            from heroes import varkul_fx as _vkfx
+            _vkfx.notify_skill_cast(self, 'e')
+            _vkfx.notify_skill_impact(self, self.x, self.y, 95, 'e')
+        except Exception:
+            pass
         self._shake_screen(10)
 
     def _varkul_r(self, enemies):
@@ -3254,6 +3289,13 @@ class Boss(TowerDebuffMixin):
                 e.take_damage(damage, self.team)
                 if hasattr(e, 'apply_slow'):
                     e.apply_slow(0.5, 180)
+        # ═══ FX CHAIN FROST (lapisan hidup) ═══
+        try:
+            from heroes import varkul_fx as _vkfx
+            _vkfx.notify_skill_cast(self, 'r')
+            _vkfx.notify_skill_impact(self, self.x, self.y, 120, 'r')
+        except Exception:
+            pass
         self._shake_screen(20)
 
     # ═══════════════════════════════════════════════════
