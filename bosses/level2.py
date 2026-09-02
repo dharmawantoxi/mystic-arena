@@ -131,6 +131,42 @@ class _NS_razak:
     # Telegraph digambar TEPAT di angka ini lewat _ring_r (world-space).
     SKILL_RADIUS = {"q": 75, "w": 95, "e": 80, "r": 180}
 
+    # ── v3 COMBAT FX: debug & animation controller ────────────────────
+    #: Overlay debug (hitbox, hurtbox, jangkauan, state/frame, FPS,
+    #: partikel). Sama dengan karakter v3 lain - renderer & lapisan
+    #: hidup masing-masing punya flag, dua-duanya mati secara default.
+    DEBUG_CHARACTER = False
+
+    #: Prioritas state animasi (angka besar = lebih penting; DEATH
+    #: mengunci). Dipakai state machine cermin di heroes/razak_fx.py.
+    ANIM_PRIORITY = {
+        "IDLE": 10, "WALK": 20, "RUN": 25, "CHARGE": 40,
+        "ATTACK": 45, "SWING": 50, "CAST": 55, "SKILL": 56,
+        "SPECIAL": 60, "HIT": 62, "HURT": 65, "DEATH": 100,
+    }
+
+    #: Timeline serangan (fraksi progress 0..1). Keyframe renderer:
+    #: 0.14 wind-up, 0.30 tension, 0.48 strike, 0.54 IMPACT, 0.72
+    #: follow, 1.0 recover. Fase di bawah dipakai controller renderer
+    #: DAN lapisan hidup (satu sumber kebenaran).
+    ATTACK_WINDUP_END = 0.30
+    ATTACK_IMPACT = 0.54
+    ATTACK_SWING_END = 0.62
+    ATTACK_FOLLOW_END = 0.80
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.09),
+        ("WINDUP",       0.09, 0.30),
+        ("SWING",        0.30, 0.50),
+        ("IMPACT",       0.50, 0.62),
+        ("FOLLOW",       0.62, 0.80),
+        ("RECOVERY",     0.80, 1.00),
+    )
+
+    #: Geometri machete (ruang native rig v2; dipakai FX hidup).
+    MACHETE_LEN = 28
+    MACHETE_ARM_LEN = 14
+    MACHETE_BLADE_TIP = 26       # titik bintang impact v2
+
     # ---------------------------------------------------------------------------
     # HD Palette v2 - fire orange / green goblin / red bat mount.
     # Semua kunci lama dipertahankan (nilai dituning ulang dengan
@@ -1034,6 +1070,27 @@ class _NS_razak:
             if active else 0.0
         )
 
+        # ── v3: delta-time + fase bernama (dipakai state machine FX) ──
+        try:
+            from heroes import combat_feel as _cf
+            boss._razak_dt = float(_cf.frame_dt())
+        except Exception:
+            boss._razak_dt = 1.0 / 60.0
+        if not (0.0 < boss._razak_dt <= 0.05):
+            boss._razak_dt = 1.0 / 60.0
+        boss._razak_attack_phase = (
+            _NS_razak.attack_phase(boss._razak_attack_progress)
+            if active else "NONE"
+        )
+
+    def attack_phase(progress):
+        """Nama fase serangan bernama (ANTICIPATION..RECOVERY)."""
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_razak.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_razak_projectiles"):
             boss._razak_projectiles = []
@@ -1056,10 +1113,255 @@ class _NS_razak:
         boss._razak_patches = [p for p in boss._razak_patches if p.alive]
 
     def _spawn_napalm(boss, sx, sy, tx, ty, arc_height=40):
+        """Spawn napalm. Jalur lapisan hidup mengambil alih kalau aktif:
+        renderer hanya memicu timing lewat _razak_proj_spawned, lapisan
+        hidup yang melempar molotov di koordinat layar (1:1). Kalau
+        lapisan hidup tidak ada, molotov v2 lama dipakai (fallback)."""
+        if _NS_razak._fx_owned(boss):
+            boss._razak_live_proj_window = True
+            return
         if not hasattr(boss, "_razak_projectiles"):
             boss._razak_projectiles = []
         boss._razak_projectiles.append(
             _NS_razak.NapalmProjectile(sx, sy, tx, ty, arc_height=arc_height))
+
+    # ===================================================================
+    # v3 POSES & GEOMETRI  (satu sumber kebenaran untuk lapisan hidup)
+    # ===================================================================
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, ap) persis sama dengan dispatch draw_razak.
+
+        Murni / tanpa efek samping: boleh dipanggil ulang oleh fungsi
+        efek. ``ap`` = progress serangan MENTAH (keyframe _attack_pose
+        menginterpolasi sendiri), jadi bilah, trail, dan badan tidak
+        mungkin berbeda frame.
+        """
+        skill = getattr(boss, "active_skill", None)
+        attacking = (
+            getattr(boss, "_razak_attack_active", False)
+            or getattr(boss, "timer", 0)
+            > getattr(boss, "attack_cooldown", 45) - 15
+        )
+        if skill == "e":
+            action = "dash"
+        elif attacking:
+            action = "attack"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+        phase = float(getattr(boss, "pulse", 0.0) or 0.0)
+        ap = 0.0
+        if action == "attack":
+            ap = max(0.0, min(1.0, float(
+                getattr(boss, "_razak_attack_progress", 0.0) or 0.0)))
+        return action, phase, ap
+
+    def _body_offset(action, phase, ap, facing=1):
+        """(dx, dy) layar yang dipakai draw_razak_* sebelum _draw_razak_full."""
+        f = 1 if facing >= 0 else -1
+        if action == "attack":
+            pose = _NS_razak._attack_pose(ap)
+            bob = int(math.sin(phase * 0.8) * 2)
+            lunge = int(pose["lunge"] * _NS_razak.SCALE) * f
+            return lunge, bob
+        if action == "walk":
+            pw = phase * 2.5
+            return int(math.sin(pw * 0.5) * 2), int(math.sin(pw * 1.2) * 4)
+        if action == "dash":
+            return 0, int(math.sin(phase * 1.5) * 2)
+        return 0, int(math.sin(phase * 1.2) * 3) - 1
+
+    def _raw_shift(action, phase, ap, facing=1):
+        """(lean_f, root_y, tremble, sway) ruang native _draw_razak_full_raw.
+
+        ``lean_f`` SUDAH dikali arah hadap (sama dengan draw), jadi
+        pemetaan lokal->layar tinggal menambahkan angka ini apa adanya.
+        """
+        f = 1 if facing >= 0 else -1
+        breath = math.sin(phase * 0.75)
+        sway = int(math.sin(phase * 0.6) * 1)
+        if action == "attack":
+            pose = _NS_razak._attack_pose(ap)
+            tremble = 1 if (pose["tremble"] and int(phase * 30) % 2) else 0
+            return int(pose["lean"]) * f, int(pose["dip"]), tremble, sway
+        if action == "walk":
+            pw = phase * 2.5
+            return 3 * f, int(breath * 1.6), 0, \
+                int(math.sin(phase * 0.6) * 1) + int(math.sin(phase * 2) * 1)
+        if action == "dash":
+            return 6 * f, int(breath * 1.6), 0, int(math.sin(phase * 0.6) * 1)
+        return int(math.sin(phase * 0.5 + 1.1) * 1.5), \
+            int(breath * 1.6), 0, sway
+
+    def _local_to_screen(cx, cy, facing, lean_f, root_y, tremble, sway,
+                         lx, ly):
+        """SATU pemetaan lokal badan -> layar (dipakai FX eksternal).
+
+        Ruang lokal: (0, 0) = jangkar badan _draw_razak_full (x maju,
+        y turun, ruang native 1.5x). Fungsi ini menambahkan shift badan
+        raw (lean/tremble/root_y/sway) lalu mengalikan SCALE — jadi
+        sebuah titik lokal tidak mungkin lepas dari badan.
+        """
+        k = _NS_razak.SCALE
+        return (int(cx + (lx + lean_f + tremble + sway) * k),
+                int(cy + (ly + root_y) * k))
+
+    def _local(boss, x, y, action, phase, ap, lx, ly):
+        """Ruang lokal badan rig -> piksel surface (dipakai FX eksternal)."""
+        facing = getattr(boss, "direction", 1) or 1
+        dx, dy = _NS_razak._body_offset(action, phase, ap, facing)
+        lean_f, root_y, tremble, sway = _NS_razak._raw_shift(
+            action, phase, ap, facing)
+        return _NS_razak._local_to_screen(x + dx, y + dy, facing,
+                                          lean_f, root_y, tremble, sway,
+                                          lx, ly)
+
+    def _machete_grip_local(action, phase, ap, facing=1):
+        """Pergelangan tangan depan (grip machete), ruang lokal badan.
+
+        Kembaran matematis dari _draw_goblin_attack_arms: lengan depan
+        (keyframe arm_a) relatif titik jangkar badan. x > 0 = arah
+        hadap (sudah mengikuti facing), y > 0 = turun.
+        """
+        f = 1 if facing >= 0 else -1
+        if action == "attack":
+            pose = _NS_razak._attack_pose(ap)
+            arm_a = pose["arm_a"]
+            fx = f * 4 + int(math.cos(arm_a)
+                             * _NS_razak.MACHETE_ARM_LEN) * f
+            fy = -26 + int(math.sin(arm_a) * _NS_razak.MACHETE_ARM_LEN)
+            return fx, fy
+        # idle/walk/dash: machete istirahat di tangan belakang
+        sway_arm = int(math.sin(phase * 0.7) * 1.5)
+        return -f * 16, -22 + sway_arm
+
+    def _machete_tip_local(action, phase, ap, facing=1):
+        """Ujung bilah machete, ruang lokal badan (kembaran draw)."""
+        f = 1 if facing >= 0 else -1
+        gx, gy = _NS_razak._machete_grip_local(action, phase, ap, facing)
+        if action == "attack":
+            pose = _NS_razak._attack_pose(ap)
+            blade = pose["arm_a"] + math.pi / 4 * f
+            dx = int(math.cos(blade) * _NS_razak.MACHETE_LEN) * f
+            dy = int(math.sin(blade) * _NS_razak.MACHETE_LEN)
+        else:
+            dx = -f * 20
+            dy = -9
+        return gx + dx, gy + dy
+
+    def _gun_end_local(action, phase, ap, facing=1):
+        """Moncong flamethrower, ruang lokal badan (Q/W origin api)."""
+        f = 1 if facing >= 0 else -1
+        sway_arm = int(math.sin(phase * 0.7) * 1.5)
+        if action in ("q_cast", "w_cast"):
+            return f * 41, -25
+        if action == "attack":
+            return f * 8, -22
+        return f * 38, -25 + sway_arm
+
+    def _grip_screen(boss, x, y):
+        """Grip machete dalam piksel layar (dipakai FX/trail)."""
+        action, phase, ap = _NS_razak._resolve_pose(
+            boss, bool(getattr(boss, "_razak_moving", False)))
+        facing = getattr(boss, "direction", 1) or 1
+        lx, ly = _NS_razak._machete_grip_local(action, phase, ap, facing)
+        return _NS_razak._local(boss, x, y, action, phase, ap, lx, ly)
+
+    def _tip_screen(boss, x, y):
+        """Ujung bilah machete dalam piksel layar (dipakai FX/trail)."""
+        action, phase, ap = _NS_razak._resolve_pose(
+            boss, bool(getattr(boss, "_razak_moving", False)))
+        facing = getattr(boss, "direction", 1) or 1
+        lx, ly = _NS_razak._machete_tip_local(action, phase, ap, facing)
+        return _NS_razak._local(boss, x, y, action, phase, ap, lx, ly)
+
+    def _gun_end_screen(boss, x, y):
+        """Moncong flamethrower dalam piksel layar."""
+        action, phase, ap = _NS_razak._resolve_pose(
+            boss, bool(getattr(boss, "_razak_moving", False)))
+        facing = getattr(boss, "direction", 1) or 1
+        lx, ly = _NS_razak._gun_end_local(action, phase, ap, facing)
+        return _NS_razak._local(boss, x, y, action, phase, ap, lx, ly)
+
+    def _swing_hitbox(boss, x, y):
+        """Rect AABB jendela hit aktif (SWING/IMPACT) untuk debug."""
+        action, phase, ap = _NS_razak._resolve_pose(
+            boss, bool(getattr(boss, "_razak_moving", False)))
+        if action != "attack" or not (0.30 <= ap <= 0.78):
+            return None
+        facing = getattr(boss, "direction", 1) or 1
+        gx, gy = _NS_razak._grip_screen(boss, x, y)
+        tx, ty = _NS_razak._tip_screen(boss, x, y)
+        pad = 10
+        left = min(gx, tx) - pad
+        right = max(gx, tx) + pad
+        top = min(gy, ty) - pad
+        bottom = max(gy, ty) + pad
+        if facing < 0 and right > x:
+            right = x if right > x else right
+        return pygame.Rect(int(left), int(top), int(right - left),
+                           int(bottom - top))
+
+    # ===================================================================
+    # LAPISAN FX HIDUP  (heroes/razak_fx.py)
+    # ===================================================================
+    #: Modul FX layar (diisi malas). False = gagal -> jalur canvas.
+    _LIVE_MOD = None
+
+    def _live_module():
+        """Muat ``heroes.razak_fx`` sekali; None kalau tidak tersedia."""
+        NS = _NS_razak
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import razak_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "RAZAK_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    def live_fx_ready():
+        """True kalau lapisan hidup Razak bisa dipakai (dipakai tooling)."""
+        return _NS_razak._live_module() is not None
+
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Lapisan hidup untuk unit ini. Return ``(mod, owned)``.
+
+        ``want_draw`` True pada jalur BOSS (draw tiap frame, tanpa cache
+        sprite): lapisan digambar langsung dari sini. Pada jalur HERO
+        penggambaran dilakukan heroes/__init__.py via _LIVE_FX_HEROES,
+        jadi di sini hanya dipasang penanda "diambil alih".
+        """
+        NS = _NS_razak
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    def _fx_owned(boss):
+        """True kalau lapisan hidup sudah mengambil alih efek unit ini."""
+        mod = _NS_razak._live_module()
+        if mod is None:
+            return False
+        try:
+            return bool(mod.owns(boss))
+        except Exception:
+            return False
+
 
     # ===================================================================
     # MAIN ENTRY
@@ -1077,6 +1379,7 @@ class _NS_razak:
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_razak._detect_moving(boss)
         _NS_razak._update_attack_anim(boss)
+        boss._razak_moving = moving
         portrait = bool(getattr(boss, "_portrait_hd", False))
         in_cache = bool(getattr(boss, "_skip_renderer_projectiles", False))
 
@@ -1085,14 +1388,22 @@ class _NS_razak:
             or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 45) - 15
         )
 
+        # ── Lapisan hidup (heroes/razak_fx.py). Jalur boss digambar
+        #    tiap frame dari sini; jalur lane (render_hero) dipicu
+        #    heroes/__init__.py supaya tetap 60 fps walau sprite cache.
+        hero_lane = hasattr(boss, "_render_scale")
+        live, owned = _NS_razak._live_fx(boss, surface, x, y,
+                                         not hero_lane, portrait)
+
         # ---------- Background layers ----------
         if not portrait:
             _NS_razak._draw_fire_aura(surface, x, y, pulse, active_skill)
 
             # Ground patches (behind character). Saat render ke canvas
             # cache hero, patch TIDAK digambar supaya tidak terpanggang
-            # beku di sekitar sprite (lihat _park_renderer_fx).
-            if not in_cache and hasattr(boss, "_razak_patches"):
+            # beku di sekitar sprite (lihat _park_renderer_fx). Patch
+            # burnout diambil alih lapisan hidup -> cukup sekali.
+            if not owned and not in_cache and hasattr(boss, "_razak_patches"):
                 for patch in boss._razak_patches:
                     patch.draw(surface, pulse)
 
@@ -1110,8 +1421,10 @@ class _NS_razak:
                 _NS_razak._draw_firestorm_ground(surface, boss, x, y,
                                                  skill_timer, pulse)
 
-            # AKTIVASI: gelombang kejut + bintang (12 frame pertama)
-            if active_skill in ("q", "w", "e", "r"):
+            # AKTIVASI: gelombang kejut + bintang (12 frame pertama).
+            # Saat lapisan hidup mengambil alih, shockwave digambar di
+            # sana (SkillFX) supaya tidak dobel & tetap 60 fps.
+            if not owned and active_skill in ("q", "w", "e", "r"):
                 dur = _NS_razak.SKILL_DUR[active_skill]
                 age = dur - skill_timer
                 if 0 <= age < 12:
@@ -1158,10 +1471,15 @@ class _NS_razak:
             B._record_shadow = None
 
         # ---------- Projectiles ----------
-        _NS_razak._manage_projectiles_no_patches(boss, surface, pulse)
+        # Mojotov v2 tetap dipakai sebagai fallback; lapisan hidup
+        # memakai sistem proyektil sendiri (spawn_napalm sudah dialihkan).
+        if not owned:
+            _NS_razak._manage_projectiles_no_patches(boss, surface, pulse)
 
         # ---------- Foreground skill effects ----------
-        if not portrait:
+        # Saat lapisan hidup mengambil alih, foreground skill digambar
+        # di sana (SkillFX) - lebih kaya + tidak terikat kuantisasi cache.
+        if not portrait and not owned:
             if active_skill == "q":
                 _NS_razak._draw_sticky_napalm(surface, boss, x, y,
                                               skill_timer, pulse)
@@ -1171,6 +1489,13 @@ class _NS_razak:
             elif active_skill == "r":
                 _NS_razak._draw_firestorm(surface, boss, x, y,
                                           skill_timer, pulse)
+
+        # ---------- Lapisan hidup bagian ATAS + debug ----------
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
 
     def _draw_shockwave(surface, x, y, age, total, c1, c2, fs=1.0):
         """Gelombang kejut aktivasi skill - 12 frame pertama.
@@ -1233,7 +1558,7 @@ class _NS_razak:
             _NS_razak._draw_fire_wisps(surface, x, y + 36, phase)
         _NS_razak._draw_razak_full(surface, x, y + bob,
                                    getattr(boss, "direction", 1), phase,
-                                   "idle")
+                                   "idle", boss=boss)
 
     def _draw_razak_walk(surface, boss, x, y):
         phase = float(getattr(boss, "pulse", 0.0)) * 2.5
@@ -1250,7 +1575,7 @@ class _NS_razak:
                                        facing=getattr(boss, "direction", 1))
         _NS_razak._draw_razak_full(surface, x + sway, y + bob,
                                    getattr(boss, "direction", 1), phase,
-                                   "walk")
+                                   "walk", boss=boss)
 
     def _draw_razak_attack(surface, boss, x, y):
         progress = getattr(boss, "_razak_attack_progress", 0.0)
@@ -1280,9 +1605,13 @@ class _NS_razak:
             _NS_razak._draw_fire_wisps(surface, x + lunge, y + 36, phase,
                                        intense=True)
         _NS_razak._draw_razak_full(surface, x + lunge, y + bob, facing,
-                                   phase, "attack", progress)
-        _NS_razak._draw_machete_swing_arc(surface, x + lunge, y + bob,
-                                          facing, progress)
+                                   phase, "attack", progress, boss=boss)
+        # Pita ayunan di-canvas HANYA kalau lapisan hidup tidak mengambil
+        # alih: trail layar memakai histori posisi bilah yang sebenarnya
+        # (lihat heroes/razak_fx.SwingTrail).
+        if not _NS_razak._fx_owned(boss):
+            _NS_razak._draw_machete_swing_arc(surface, x + lunge, y + bob,
+                                              facing, progress)
 
     def _draw_razak_dashing(surface, boss, x, y, timer, phase):
         """Firefly dash - bat melesat dengan trail api + afterimage."""
@@ -1313,7 +1642,7 @@ class _NS_razak:
             _NS_razak._draw_ember(surface, ex, ey, max(1, 3 - i // 2), ea)
 
         _NS_razak._draw_razak_full(surface, x, y + bob, facing, phase,
-                                   "dash")
+                                   "dash", boss=boss)
 
     def _draw_razak_dash_ghost(surface, cx, cy, facing, phase):
         """Afterimage dash: rig native diturunkan ke SCALE tanpa pass."""
@@ -1372,12 +1701,15 @@ class _NS_razak:
     # FULL COMPOSITE
     # ===================================================================
     def _draw_razak_full_raw(surface, cx, cy, facing, phase, action,
-                             attack_progress=0):
+                             attack_progress=0, boss=None):
         """Rig masterwork v2 - bat api + goblin rider, 100% prosedural.
 
         Semua koordinat lokal ~1.5x versi lama: (0, 0) = jangkar pusat
         badan bat, x maju (facing), y ke bawah. Helm goblin memuncak
         di -72, cakar bat +40, ujung sayap +-62.
+
+        ``boss`` dipakai hanya untuk supresi FX impact saat lapisan
+        hidup mengambil alih (None = jalur canvas penuh).
         """
         f = 1 if facing >= 0 else -1
         attack = action == "attack"
@@ -1429,13 +1761,14 @@ class _NS_razak:
         _NS_razak._draw_bat_head(surface, ox + 27 * f, oy + 4, f, phase)
         # rider goblin di punggung
         _NS_razak._draw_goblin_rider(surface, ox - 3 * f, oy - 18, f, phase,
-                                     action, ap, scarf_lag=scarf_lag)
+                                     action, ap, scarf_lag=scarf_lag,
+                                     boss=boss)
         # sayap depan overlay saat serang
         if attack:
             _NS_razak._draw_bat_wings_front(surface, ox, oy, f, phase)
 
     def _draw_razak_full(surface, cx, cy, facing, phase, action,
-                         attack_progress=0):
+                         attack_progress=0, boss=None):
         """Komposit badan: rig native (1.5x) -> buffer -> turun ke SCALE ->
         outline siluet gelap 1 px -> pass cahaya (rim/shade) -> blit.
 
@@ -1449,7 +1782,7 @@ class _NS_razak:
         buf = NS._body_buf
         buf.fill((0, 0, 0, 0))
         NS._draw_razak_full_raw(buf, NS.RIG_OX, NS.RIG_OY, facing, phase,
-                                action, attack_progress)
+                                action, attack_progress, boss=boss)
         used = buf.get_bounding_rect(min_alpha=1)
         if used.width <= 2 or used.height <= 2:
             return
@@ -1756,7 +2089,7 @@ class _NS_razak:
     # GOBLIN RIDER (rig native 1.5x)
     # ===================================================================
     def _draw_goblin_rider(surface, cx, cy, facing, phase, action,
-                           attack_progress, scarf_lag=0.0):
+                           attack_progress, scarf_lag=0.0, boss=None):
         """Goblin pilot di punggung bat: kaki straddle, torso, kepala,
         tangki bahan bakar, syal berkibar, lengan + senjata."""
         NS = _NS_razak
@@ -1799,7 +2132,7 @@ class _NS_razak:
         # lengan + senjata
         if action == "attack":
             NS._draw_goblin_attack_arms(surface, cx + sway, cy - 5, facing,
-                                        phase, attack_progress)
+                                        phase, attack_progress, boss=boss)
         elif action in ("q_cast", "w_cast"):
             NS._draw_goblin_gun_arms(surface, cx + sway, cy - 5, facing,
                                      phase)
@@ -2052,7 +2385,8 @@ class _NS_razak:
 
         NS._draw_flame_gun(surface, fh_x, fh_y, facing, phase, firing=True)
 
-    def _draw_goblin_attack_arms(surface, cx, cy, facing, phase, progress):
+    def _draw_goblin_attack_arms(surface, cx, cy, facing, phase, progress,
+                                 boss=None):
         """Lengan depan ayun machete (7 keyframe), belakang pegang gun."""
         NS = _NS_razak
         pose = NS._attack_pose(progress)
@@ -2079,7 +2413,8 @@ class _NS_razak:
         NS._draw_machete_swinging(surface, fh_x, fh_y, facing, blade_angle)
 
         # frame IMPACT: bintang + serpihan bara di ujung machete
-        if pose["impact"] > 0.05:
+        # (fallback canvas saja - lapisan hidup punya ImpactFX penuh).
+        if pose["impact"] > 0.05 and not NS._fx_owned(boss):
             k = pose["impact"]
             tipx = fh_x + int(math.cos(blade_angle) * 26) * facing
             tipy = fh_y + int(math.sin(blade_angle) * 26)

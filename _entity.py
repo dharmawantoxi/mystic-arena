@@ -3912,6 +3912,25 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX RAZAK (molotov, jalur hero) ═══
+                # Serangan dasar Razak (range 130) mendarat lewat
+                # proyektil generik ini: pendaratan napalm diumumkan
+                # di titik yang sama — flash, kolam api, serpihan kaca
+                # & bara, screen shake, hit-stop 0.03-0.08 s (lengkapnya
+                # di heroes/razak_fx.notify_projectile_impact). Difilter
+                # per hero_type + try/except (paritas Zephyr/Sylara).
+                if proj.get('hero_type') == 'razak' and not target_dead:
+                    try:
+                        from heroes import razak_fx as _rfx
+                        _rfx.notify_projectile_impact(
+                            proj.get('source') or self,
+                            proj['x'], proj['y'],
+                            proj.get('angle', 0.0),
+                            proj.get('damage', 0),
+                            bool(proj.get('is_crit')))
+                    except Exception:
+                        pass
+
                 # HIT! (hanya damage > 0 yang mengenai target & bersuara;
                 # projectile visual-only skill damage=0 diam saja)
                 if not target_dead and proj['damage'] > 0:
@@ -4454,6 +4473,19 @@ class Hero(TowerDebuffMixin):
                     try:
                         from heroes import gorath_fx as _gfx
                         _gfx.notify_melee_impact(
+                            self, self.target, damage, is_crit)
+                    except Exception:
+                        pass
+
+                # ═══ IMPACT FX RAZAK ═══
+                # Machete api Razak mendarat: flash bintang, sabit api,
+                # serpihan bara, shake, hit-stop 0.03-0.08 s (lengkapnya
+                # di heroes/razak_fx.notify_melee_impact).  Difilter per
+                # hero_type + try/except (paritas Gornak/Gorath).
+                if self.hero_type == 'razak':
+                    try:
+                        from heroes import razak_fx as _rfx
+                        _rfx.notify_melee_impact(
                             self, self.target, damage, is_crit)
                     except Exception:
                         pass
