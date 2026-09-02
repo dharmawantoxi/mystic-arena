@@ -5516,33 +5516,383 @@ class _NS_gorath:
         boss._moving_cached = moving
         return moving
 
-    def _update_attack_anim(boss):
-        """Track melee attack timeline."""
+    # ===================================================================
+    # CONTROLLER ANIMASI v3 — state, fase, timing, delta-time, jendela hit
+    # ===================================================================
+    # Batas fase = fraksi 0..1 dari DURASI SERANGAN (progress mentah, sama
+    # dengan timeline engine). Batasnya sengaja jatuh di sekitar keyframe
+    # _attack_pose (0.14 wind-up, 0.30 tension, 0.48 strike, 0.54 IMPACT,
+    # 0.72 follow) supaya nama fase dan pose tidak pernah berbeda satu
+    # frame.
+    ATTACK_ANTICIPATION_END = 0.16      # counter-motion kecil ke belakang
+    ATTACK_WINDUP_END = 0.30            # bilah ditarik + TAHAN (tension)
+    ATTACK_SWING_END = 0.46             # tebasan turun (paling cepat)
+    ATTACK_IMPACT_END = 0.60            # HOLD impact -> freeze 1-2 frame
+    ATTACK_FOLLOW_END = 0.80            # follow-through
+    #: jendela di mana bilah secara geometris menyapu depan badan
+    ATTACK_ACTIVE_WINDOW = (0.40, 0.66)
+    #: puncak benturan (dipakai FX untuk memicu spark "di udara")
+    ATTACK_IMPACT_FRAME = 0.54
+
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.16),
+        ("WINDUP",       0.16, 0.30),
+        ("SWING",        0.30, 0.46),
+        ("IMPACT",       0.46, 0.60),
+        ("FOLLOW",       0.60, 0.80),
+        ("RECOVERY",     0.80, 1.00),
+    )
+
+    #: Prioritas state. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: Aktifkan untuk melihat hitbox/hurtbox/jangkauan/state di arena
+    #: (jalur boss 1:1). Untuk lane hero, overlay yang sama tersedia di
+    #: heroes/gorath_fx.DEBUG_CHARACTER.
+    DEBUG_CHARACTER = False
+
+    #: LIFT pemetaan lokal -> layar (gorath: jangkar badan = titik gambar).
+    LIFT = 0
+
+    def attack_phases_order():
+        """Urutan nama fase (dipakai test & alat audit)."""
+        return tuple(name for name, _a, _b in _NS_gorath.ATTACK_PHASES)
+
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1 (None di luar serangan)."""
+        if progress is None:
+            return "NONE"
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_gorath.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    def _resolve_anim_state(boss, attacking, phase):
+        """Tentukan state animasi yang DIINGINKAN frame ini."""
+        if not getattr(boss, "alive", True):
+            return "DEATH"
+        if int(getattr(boss, "_gor_hurt_frames", 0)) > 0:
+            return "HURT"
+        skill = getattr(boss, "active_skill", None)
+        if skill:
+            return "SPECIAL" if skill == "r" else "SKILL"
+        if attacking:
+            if phase in ("ANTICIPATION", "WINDUP"):
+                return "CHARGE"
+            if phase in ("SWING", "IMPACT"):
+                return "SWING"
+            return "ATTACK"
+        if getattr(boss, "_moving_cached", False):
+            return "RUN" if float(getattr(boss, "speed", 1.0)) >= 2.2 \
+                else "WALK"
+        return "IDLE"
+
+    def _swing_hitbox(boss, cx, cy):
+        """Rect hitbox ayunan (ruang permukaan) saat jendela hit aktif.
+
+        Dipakai overlay debug dan alat audit; return None di luar jendela
+        hit supaya tidak pernah terlihat seperti "kukri menembus tembok".
+        """
+        if not getattr(boss, "_gor_hit_active", False):
+            return None
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        scale = _NS_gorath._fx_scale(boss)
+        reach = int(58 * scale)
+        top = int(cy - 34 * scale)
+        h = int(64 * scale)
+        left = int(cx) if f > 0 else int(cx) - reach
+        return pygame.Rect(left, top, max(8, reach), max(10, h))
+
+    def _attack_curve(ap):
+        """Remap progres mentah (0..1) -> waktu pose (0..1), MONOTON naik.
+
+        Keyframe _attack_pose sudah punya anticipation & impact; kurva ini
+        menambah yang belum ada: (a) wind-up yang sedikit diperlambat
+        (counter-motion makin terbaca), (b) tebasan yang "memukul masuk"
+        (akselerasi menjelang impact), (c) HOLD 1-2 frame di keyframe
+        IMPACT 0.54 (pose squash + bintang + shockwave ikut membeku),
+        lalu (d) follow-through yang tidak langsung ditarik balik.
+        Nilai di titik kunci fase nyaris identik dengan input mentah,
+        sehingga pose _attack_pose(0.30/0.48/0.54/0.72) tetap berada di
+        tempat yang sama pada timeline raw.
+        """
+        if ap <= 0.0:
+            return 0.0
+        if ap >= 1.0:
+            return 1.0
+        if ap < 0.44:                       # anticipation + wind-up
+            t = ap / 0.44
+            return 0.44 * (t ** 0.94)
+        if ap < 0.52:                       # tebasan: dipercepat
+            t = (ap - 0.44) / 0.08
+            return 0.44 + 0.10 * (t ** 1.30)
+        if ap < 0.64:                       # IMPACT HOLD (nyaris beku)
+            t = (ap - 0.52) / 0.12
+            return 0.54 + 0.02 * t
+        t = (ap - 0.64) / 0.36              # follow-through -> siap
+        return 0.56 + 0.44 * (t ** 0.85)
+
+    def _update_gorath_attack_anim(boss):
+        """ANIMATION CONTROLLER GORATH - state, fase, timing, delta-time.
+
+        Satu-satunya sumber kebenaran state karakter. Nama lama tetap
+        diisi supaya renderer v2, portrait, dan tools/_audit_gorath_v2.py
+        tidak perlu berubah:
+
+        * ``_gor_dt``              delta-time nyata (detik, dijepit)
+        * ``_gor_attack_active``   serangan sedang berjalan   (nama lama)
+        * ``_gor_attack_frame``    frame ke-n dalam serangan   (nama lama)
+        * ``_gor_attack_progress`` 0..1 sepanjang serangan     (nama lama)
+        * ``_gor_attack_raw``      progress sebelum kurva
+        * ``_gor_attack_phase``    ANTICIPATION/.../RECOVERY
+        * ``_gor_hit_active``      True hanya di jendela hit aktif
+        * ``_gor_frame_duration``  lama 1 langkah simulasi (untuk HUD)
+        * ``_gor_state`` / ``_gor_state_prev`` / ``_gor_state_time``
+        * ``_gor_hurt_frames``     sisa frame respons kena damage
+        * ``_gor_attack_manual``   mode alat preview: pemanggil menggerakkan
+                                   ``_gor_attack_progress`` sendiri
+        """
+        G = _NS_gorath
+
+        # ── delta time nyata (dipakai FX & transisi state) ───────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                      # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_gor_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._gor_last_ms = now
+        boss._gor_dt = dt
+
+        # ── timeline serangan (kontrak lama: frame engine) ───────────
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 44)))
+        span = max(1, cooldown - 1)
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_gor_prev_timer", 0))
         active = bool(getattr(boss, "_gor_attack_active", False))
 
-        if timer >= cooldown - 1 and previous <= 1:
+        # Serangan dikenali dari lompatan timer ke atas (cooldown dipasang
+        # saat attack mendarat) ATAU dari detak jam (timer turun ke 0).
+        triggered = timer >= cooldown - 1 and previous <= 1
+        if triggered:
             boss._gor_attack_active = True
             boss._gor_attack_frame = 0
+            boss._gor_attack_manual = False
             active = True
-        elif active:
-            boss._gor_attack_frame = int(getattr(boss, "_gor_attack_frame", 0)) + 1
+        elif active and not getattr(boss, "_gor_attack_manual", False):
+            boss._gor_attack_frame = int(getattr(boss, "_gor_attack_frame",
+                                                 0)) + 1
             if boss._gor_attack_frame > cooldown:
                 boss._gor_attack_active = False
                 boss._gor_attack_frame = 0
                 active = False
         elif timer <= 0:
-            boss._gor_attack_active = False
-            boss._gor_attack_frame = 0
-            active = False
+            if active and (getattr(boss, "_gor_attack_manual", False)
+                           or float(getattr(boss, "_gor_attack_progress",
+                                            0.0)) > 0.0):
+                # Mode preview/test (atau serangan yang diaktifkan TANPA
+                # menyentuh timer engine): hormati, tandai manual, dan
+                # jangan dimatikan di sini.
+                boss._gor_attack_manual = True
+                active = True
+            else:
+                boss._gor_attack_active = False
+                boss._gor_attack_frame = 0
+                active = False
 
         boss._gor_prev_timer = timer
-        boss._gor_attack_progress = (
-            min(1.0, getattr(boss, "_gor_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
+        frame = int(getattr(boss, "_gor_attack_frame", 0)) if active else 0
+        boss._gor_attack_frame = frame
+        boss._gor_frame_duration = dt
+        if bool(getattr(boss, "_gor_attack_manual", False)) and active:
+            # Alat preview / tes menggerakkan progress sendiri: biarkan
+            # angka pemanggil dipakai, tetap turunkan fase + jendela hit
+            # darinya supaya pose, FX, dan debug membaca sumber yang sama.
+            progress = min(1.0, max(0.0, float(getattr(
+                boss, "_gor_attack_progress", 0.0))))
+            boss._gor_attack_frame = int(round(progress * span))
+        else:
+            progress = min(1.0, frame / float(span)) if active else 0.0
+            boss._gor_attack_progress = progress
+
+        if not getattr(boss, "_gor_attack_active", False):
+            boss._gor_attack_manual = False
+            active = False
+        boss._gor_attack_raw = progress if active else 0.0
+        phase = G.attack_phase(progress) if active else "NONE"
+        boss._gor_attack_phase = phase
+        lo, hi = G.ATTACK_ACTIVE_WINDOW
+        boss._gor_hit_active = bool(active and lo <= progress < hi)
+
+        # ── respons kena damage (HURT) ──────────────────────────────
+        hurt = int(getattr(boss, "_gor_hurt_frames", 0))
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash >= 8 and hurt <= 0:
+            hurt = 10                       # flash baru -> minimal 10 frame
+        boss._gor_hurt_frames = max(0, hurt - 1) if hurt > 0 else 0
+
+        # ── state machine ber-prioritas ─────────────────────────────
+        want = G._resolve_anim_state(boss, active, phase)
+        cur = getattr(boss, "_gor_state", None)
+        if cur is None:
+            boss._gor_state = want
+            boss._gor_state_prev = want
+            boss._gor_state_time = 0.0
+        elif want != cur:
+            cur_p = G.ANIM_STATES.get(cur, 0)
+            new_p = G.ANIM_STATES.get(want, 0)
+            stime = float(getattr(boss, "_gor_state_time", 0.0))
+            if cur != "DEATH" and (new_p >= cur_p or stime > 0.08):
+                boss._gor_state_prev = cur
+                boss._gor_state = want
+                boss._gor_state_time = 0.0
+            else:
+                boss._gor_state_time = stime + dt
+        else:
+            boss._gor_state_time = float(getattr(boss, "_gor_state_time",
+                                                 0.0)) + dt
+
+    # alias nama lama (dipakai tooling & test v2)
+    def _update_attack_anim(boss):
+        _NS_gorath._update_gorath_attack_anim(boss)
+
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, ap) - dipakai rig DAN anchor FX agar sinkron.
+
+        Murni/tanpa efek samping: boleh dipanggil ulang oleh fungsi efek.
+        ``ap`` untuk serangan adalah WAKTU POSE (sudah lewat _attack_curve),
+        jadi bilah, trail, dan badan tidak mungkin berbeda frame.
+        """
+        active_skill = getattr(boss, "active_skill", None)
+        _rag = active_skill in ("q", "r")
+        _hunt = active_skill in ("e", "w")
+        attacking = (
+            getattr(boss, "_gor_attack_active", False)
+            or getattr(boss, "timer", 0) >
+            getattr(boss, "attack_cooldown", 44) - 15
         )
+        if attacking:
+            action = "attack"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+
+        phase = float(getattr(boss, "pulse", 0.0))
+        if action == "walk":
+            phase *= 2.2
+        ap = 0.0
+        if action == "attack":
+            raw = max(0.0, min(1.0, float(getattr(boss, "_gor_attack_raw",
+                                                  0.0))))
+            ap = _NS_gorath._attack_curve(raw)
+        return action, phase, ap
+
+    # ── Pemetaan ruang lokal rig -> layar (dipakai FX eksternal) ─────
+    def _rig_shift(action, phase, ap):
+        """(lean, root_y) gerak badan dalam ruang lokal (belum * facing)."""
+        if action == "attack":
+            pose = _NS_gorath._attack_pose(ap)
+            sway = 1 if (pose["tremble"] and int(phase * 30) % 2) else 0
+            return int(pose["lean"]) + sway, int(pose["dip"])
+        if action == "walk":
+            return int(math.sin(phase) * 3.0) + 4, \
+                int(math.sin(phase * 2.0) * 2.5) - 2
+        breath = math.sin(phase * 0.75)
+        return int(math.sin(phase * 0.5 + 1.2) * 1.5) + \
+            int(math.sin(phase * 0.5) * 2.0), int(breath * 2.2)
+
+    def _local_to_screen(cx, cy, facing, lean, root_y, lx, ly):
+        """SATU pemetaan lokal -> layar: skala, arah hadap, bob/lean."""
+        f = 1 if facing >= 0 else -1
+        k = _NS_gorath.SCALE
+        return (int(cx + (lx * f + lean * f) * k),
+                int(cy - _NS_gorath.LIFT + (ly + root_y) * k))
+
+    def _local(boss, x, y, action, phase, ap, lx, ly):
+        """Ruang lokal rig -> piksel surface (dipakai FX eksternal)."""
+        facing = getattr(boss, "direction", 1) or 1
+        lean, root_y = _NS_gorath._rig_shift(action, phase, ap)
+        return _NS_gorath._local_to_screen(x, y, facing, lean, root_y,
+                                           lx, ly)
+
+    # ── Anchor bilah: kembaran matematis dari _draw_attack_arms /
+    #    _draw_back_arm / _draw_idle_arms supaya trail & proyektil lahir
+    #    PERSIS dari ujung kukri yang sedang digambar badan.
+    def _blade_len(action, back=False):
+        """Panjang bilah kukri dalam ruang lokal (sama dengan draw)."""
+        if action == "attack":
+            return 30 * (0.85 if back else 1.15)
+        return 30 * (0.85 if back else 1.0)
+
+    def _blade_angle_local(action, phase, ap=0.0, back=False):
+        """Sudut bilah (rad) dalam ruang lokal (belum * facing)."""
+        if action == "attack":
+            pose = _NS_gorath._attack_pose(ap)
+            return pose["blade_a"] if back else pose["blade_b"]
+        if action == "walk":
+            return (1.15, 0.85)[back]
+        return (1.05, 0.75)[back]
+
+    def _front_grip_local(action, ap=0.0, phase=0.0):
+        """Pergelangan tangan depan (kukri utama), ruang lokal."""
+        if action == "attack":
+            ang = _NS_gorath._attack_pose(ap)["blade_b"]
+            reach = 20 + 10 * math.sin(min(1.0, ap * 1.6) * math.pi)
+            return (int(20 + math.cos(ang) * reach),
+                    int(-26 + math.sin(ang) * reach + 6))
+        if action == "walk":
+            swing = math.sin(phase + math.pi) * 8
+            return (int(26 + swing), 4)
+        bob = math.sin(phase * 0.75 + 0.6) * 1.8
+        return (27, int(4 + bob))
+
+    def _back_grip_local(action, ap=0.0, phase=0.0):
+        """Pergelangan tangan belakang (kukri kedua), ruang lokal."""
+        if action == "attack":
+            ang = _NS_gorath._attack_pose(ap)["blade_a"]
+            return (int(-20 + math.cos(ang) * 22),
+                    int(-26 + math.sin(ang) * 20 + 10))
+        if action == "walk":
+            swing = math.sin(phase) * 7
+            return (int(-24 + swing), 4)
+        bob = math.sin(phase * 0.75) * 1.5
+        return (-25, int(4 + bob))
+
+    def _tip_local(action, phase, ap=0.0, back=False):
+        """Ujung bilah dalam ruang lokal (rig & FX pakai angka yang sama)."""
+        grip = (_NS_gorath._back_grip_local(action, ap, phase) if back
+                else _NS_gorath._front_grip_local(action, ap, phase))
+        ang = _NS_gorath._blade_angle_local(action, phase, ap, back)
+        L = _NS_gorath._blade_len(action, back)
+        return (int(grip[0] + math.cos(ang) * L),
+                int(grip[1] + math.sin(ang) * L))
+
+    def _tip_screen(boss, x, y, back=False):
+        """Ujung bilah dalam piksel layar (dipakai FX eksternal)."""
+        action, phase, ap = _NS_gorath._resolve_pose(
+            boss, bool(getattr(boss, "_moving_cached", False)))
+        lx, ly = _NS_gorath._tip_local(action, phase, ap, back)
+        return _NS_gorath._local(boss, x, y, action, phase, ap, lx, ly)
 
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_gor_projectiles"):
@@ -5560,20 +5910,96 @@ class _NS_gorath:
             _NS_gorath.BloodProjectile(sx, sy, tx, ty, speed=6.5))
 
     # ===================================================================
+    # LAPISAN FX HIDUP (heroes/gorath_fx)
+    # ===================================================================
+    #: Modul FX layar (diisi malas). False = percobaan gagal -> jalur canvas.
+    _LIVE_MOD = None
+
+    def _live_module():
+        """Muat ``heroes.gorath_fx`` sekali; None kalau tidak tersedia.
+
+        Impor dilakukan DI SINI (bukan di kepala modul) supaya modul boss
+        besar tidak menarik paket hero saat build hanya-butuh-renderer, dan
+        supaya karakter FX bisa di-matikan lewat satu flag tanpa merusak
+        jalur render.
+        """
+        NS = _NS_gorath
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import gorath_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "GORATH_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    def live_fx_ready():
+        """True kalau lapisan hidup Gorath bisa dipakai (dipakai tooling)."""
+        return _NS_gorath._live_module() is not None
+
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Lapisan hidup untuk unit ini.
+
+        Return ``(mod, owned)``:
+          * ``mod``   - modulnya (None = jangan gambar lapisan hidup),
+          * ``owned`` - True kalau efek ayunan/skill sudah diambil alih
+            lapisan hidup, jadi renderer boleh melewati salinan di-canvas.
+
+        ``want_draw`` True pada jalur BOSS (draw dipanggil tiap frame,
+        tidak lewat cache sprite). Pada jalur HERO penggambaran dilakukan
+        heroes/__init__.py (``_LIVE_FX_HEROES``) supaya lapisan tetap hidup
+        walau sprite sedang di-cache - di sini hanya dipasang penanda
+        "diambil alih" agar tidak ada efek yang digambar dua kali.
+        """
+        NS = _NS_gorath
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    # ===================================================================
     # MAIN DRAW ENTRY POINT
     # ===================================================================
     def draw_gorath(surface, boss, x, y):
         """Entry point Boss.draw() sekaligus heroes.render_hero().
 
-        Urutan lapisan: aura & pool tanah (cached) -> telegraph skill ->
-        badan (buffer + selout + pass cahaya) -> proyektil -> FX skill
-        foreground. Semua FX skill world-space lewat `_fx_scale`.
+        Urutan lapisan mengikuti kontrak render order proyek:
+
+            GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/HEAD ->
+            WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+            SKILL FX -> IMPACT FX -> DEBUG
+
+        Trail ayunan, partikel, proyektil darah, impact, screen shake dan
+        hit-stop hidup di ``heroes/gorath_fx.py`` (lapisan layar 1:1, di
+        luar sprite cache). Semua nama publik lama tetap ada; kalau modul
+        FX tidak dimuat, renderer kembali menggambar semuanya di-canvas
+        (jalur fallback).
         """
+        NS = _NS_gorath
+        # jalur hero (lane): heroes/__init__ men-set _render_scale sebelum
+        # memanggil renderer, dan sprite-nya di-smoothscale -> pass FX
+        # hidup dilakukan heroes/__init__; di sini hanya penanda.
+        hero_lane = hasattr(boss, "_render_scale")
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_gorath._detect_moving(boss)
-        _NS_gorath._update_attack_anim(boss)
+        moving = NS._detect_moving(boss)
+        NS._update_gorath_attack_anim(boss)
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._gor_pose_action = action
         portrait = bool(getattr(boss, "_portrait_hd", False))
 
         attacking = (
@@ -5587,44 +6013,52 @@ class _NS_gorath:
         rage = active_skill in ("q", "r")
         hunting = active_skill in ("e", "w")
 
+        # Jalur boss digambar tiap frame TANPA cache -> lapisan hidup
+        # dipicu dari sini. Jalur lane sudah dipicu heroes/__init__.
+        live, owned = NS._live_fx(boss, surface, x, y,
+                                  not hero_lane, portrait)
+
         # ---------- Background layers (dibuang di portrait LOD) ----------
         if not portrait:
-            _NS_gorath._draw_blood_aura(surface, x, y, pulse, active_skill)
-            _NS_gorath._draw_ground_blood_pool(surface, x,
-                                               y + _NS_gorath.GROUND_DY - 4,
-                                               pulse, active_skill)
+            NS._draw_blood_aura(surface, x, y, pulse, active_skill)
+            NS._draw_ground_blood_pool(surface, x,
+                                       y + NS.GROUND_DY - 4,
+                                       pulse, active_skill)
 
             # ---------- Skill ground telegraph ----------
             if active_skill == "q":
-                _NS_gorath._draw_bloodrage_ground(surface, boss, x, y,
-                                                  skill_timer, pulse)
+                NS._draw_bloodrage_ground(surface, boss, x, y,
+                                          skill_timer, pulse)
             elif active_skill == "w":
-                _NS_gorath._draw_bloodrite_ground(surface, boss, x, y,
-                                                  skill_timer, pulse)
+                NS._draw_bloodrite_ground(surface, boss, x, y,
+                                          skill_timer, pulse)
             elif active_skill == "e":
-                _NS_gorath._draw_thirst_ground(surface, boss, x, y,
-                                               skill_timer, pulse)
+                NS._draw_thirst_ground(surface, boss, x, y,
+                                       skill_timer, pulse)
             elif active_skill == "r":
-                _NS_gorath._draw_rupture_ground(surface, boss, x, y,
-                                                skill_timer, pulse)
+                NS._draw_rupture_ground(surface, boss, x, y,
+                                        skill_timer, pulse)
 
-            # AKTIVASI: gelombang kejut + bintang (12 frame pertama)
-            if active_skill in ("q", "w", "e", "r"):
-                dur = _NS_gorath.SKILL_DUR[active_skill]
+            # AKTIVASI: gelombang kejut + bintang (12 frame pertama).
+            # Saat lapisan hidup mengambil alih (owned), gelombang yang
+            # hidup digambar oleh lapisan 1:1 — yang di-canvas ini dilewati
+            # supaya tidak ada efek ganda.
+            if active_skill in ("q", "w", "e", "r") and not owned:
+                dur = NS.SKILL_DUR[active_skill]
                 age = dur - skill_timer
                 if 0 <= age < 12:
-                    _NS_gorath._draw_shockwave(
-                        surface, x, y + _NS_gorath.GROUND_DY, age, 12,
-                        _NS_gorath.PALETTE["blood_hot"],
-                        _NS_gorath.PALETTE["blood_light"],
-                        fs=_NS_gorath._fx_scale(boss))
+                    NS._draw_shockwave(
+                        surface, x, y + NS.GROUND_DY, age, 12,
+                        NS.PALETTE["blood_hot"],
+                        NS.PALETTE["blood_light"],
+                        fs=NS._fx_scale(boss))
 
         # ORIGINAL-MAX hurt flash: badan dibanjiri putih-hangat, bayangan
         # tanah tidak ikut menyala.
         flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
         _tgt, _tx, _ty = surface, x, y
         if flash > 0:
-            B = _NS_gorath
+            B = NS
             if B._flash_buf is None:
                 B._flash_buf = pygame.Surface((B.RIG_W, B.RIG_H),
                                               pygame.SRCALPHA)
@@ -5634,17 +6068,18 @@ class _NS_gorath:
 
         # ---------- Character ----------
         if attacking:
-            _NS_gorath._draw_gorath_attack(_tgt, boss, _tx, _ty,
-                                           rage=rage, hunting=hunting)
+            _raw = getattr(boss, "_gor_attack_raw", None)
+            NS._draw_gorath_attack(_tgt, boss, _tx, _ty, rage=rage,
+                                   hunting=hunting, ap=ap, raw=_raw)
         elif moving:
-            _NS_gorath._draw_gorath_walk(_tgt, boss, _tx, _ty,
-                                         rage=rage, hunting=hunting)
+            NS._draw_gorath_walk(_tgt, boss, _tx, _ty,
+                                 rage=rage, hunting=hunting)
         else:
-            _NS_gorath._draw_gorath_idle(_tgt, boss, _tx, _ty,
-                                         rage=rage, hunting=hunting)
+            NS._draw_gorath_idle(_tgt, boss, _tx, _ty,
+                                 rage=rage, hunting=hunting)
 
         if flash > 0:
-            B = _NS_gorath
+            B = NS
             surface.blit(B._flash_buf, (x - _tx, y - _ty))
             w = int(235 * min(1.0, flash / 8.0))
             m = pygame.mask.from_surface(B._flash_buf, 50)
@@ -5658,17 +6093,114 @@ class _NS_gorath:
 
         # ---------- Projectiles ----------
         if not portrait:
-            _NS_gorath._manage_projectiles(boss, surface, pulse)
+            NS._manage_projectiles(boss, surface, pulse)
 
-            # ---------- Foreground skill effects ----------
-            if active_skill == "q":
-                _NS_gorath._draw_bloodrage(surface, boss, x, y, skill_timer, pulse)
-            elif active_skill == "w":
-                _NS_gorath._draw_bloodrite(surface, boss, x, y, skill_timer, pulse)
-            elif active_skill == "e":
-                _NS_gorath._draw_thirst(surface, boss, x, y, skill_timer, pulse)
-            elif active_skill == "r":
-                _NS_gorath._draw_rupture(surface, boss, x, y, skill_timer, pulse)
+            # ---------- Foreground skill effects (fallback canvas) ----------
+            if not owned:
+                if active_skill == "q":
+                    NS._draw_bloodrage(surface, boss, x, y, skill_timer,
+                                       pulse)
+                elif active_skill == "w":
+                    NS._draw_bloodrite(surface, boss, x, y, skill_timer,
+                                       pulse)
+                elif active_skill == "e":
+                    NS._draw_thirst(surface, boss, x, y, skill_timer, pulse)
+                elif active_skill == "r":
+                    NS._draw_rupture(surface, boss, x, y, skill_timer, pulse)
+
+        # ── Lapisan hidup bagian ATAS + debug
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_gorath_debug(surface, boss, x, y, action, owned)
+
+    # ===================================================================
+    # DEBUG OVERLAY  (DEBUG_CHARACTER = True)
+    # ===================================================================
+    def _draw_gorath_debug(surface, boss, x, y, action, owned):
+        """Hitbox, hurtbox, jangkauan, state/frame, FPS, jumlah partikel.
+
+        Tidak menyentuh gameplay: semua angka dibaca dari state yang sudah
+        ada, dan overlay digambar PALING AKHIR supaya tidak pernah tertutup.
+        """
+        NS = _NS_gorath
+        import pygame as _pg
+
+        # ── hurtbox = lingkaran radius unit ─────────────────────────
+        r = max(6, int(getattr(boss, "radius", 16) * 0.9 * NS.SCALE))
+        _pg.draw.rect(surface, (80, 170, 255, 150),
+                      _pg.Rect(int(x) - r, int(y) - r - 8, r * 2, r * 2), 1)
+
+        # ── jangkauan serangan ──────────────────────────────────────
+        rng = max(10, int(getattr(boss, "range", 60) * NS.SCALE * 0.9))
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        _pg.draw.line(surface, (255, 210, 60, 150), (int(x), int(y)),
+                      (int(x) + int(rng * f), int(y)), 1)
+        _pg.draw.rect(surface, (255, 210, 60, 110),
+                      _pg.Rect(int(x + rng * f) - 5, int(y) - 7, 10, 14), 1)
+
+        # ── hitbox ayunan (hanya saat jendela hit aktif) ─────────────
+        hb = NS._swing_hitbox(boss, x, y)
+        if hb is not None:
+            _pg.draw.rect(surface, (255, 70, 70, 190), hb, 2)
+            _pg.draw.rect(surface, (255, 70, 70, 60), hb)
+
+        # ── tabrakan proyektil milik lapisan hidup ──────────────────
+        if owned:
+            try:
+                mod = NS._LIVE_MOD
+                for p in mod.projectiles_for(boss):
+                    rr = max(3, int(p.hit_radius))
+                    _pg.draw.circle(surface, (255, 120, 255, 170),
+                                    (int(p.sx), int(p.sy)), rr, 1)
+            except Exception:
+                pass
+
+        # ── panel teks ──────────────────────────────────────────────
+        fps = getattr(boss, "_gor_fps", None)
+        if fps is None:
+            boss._gor_fps = 60.0
+            fps = 60.0
+        else:
+            dt = float(getattr(boss, "_gor_dt", 1.0 / 60.0))
+            inst = 1.0 / dt if dt > 0 else 60.0
+            boss._gor_fps = fps + (inst - fps) * 0.1
+            fps = boss._gor_fps
+        state = getattr(boss, "_gor_state", "IDLE")
+        phase = getattr(boss, "_gor_attack_phase", "NONE")
+        frames = int(getattr(boss, "_gor_attack_frame", 0))
+        prog = getattr(boss, "_gor_attack_progress", 0.0)
+        hit = "HIT" if getattr(boss, "_gor_hit_active", False) else "-"
+        skill = getattr(boss, "active_skill", None) or "-"
+        stime = getattr(boss, "_gor_state_time", 0.0)
+        pc = "-"
+        try:
+            mod = NS._live_module()
+            if mod is not None:
+                pc = str(mod.total_particles())
+        except Exception:
+            pass
+        lines = [
+            f"GORATH  {state} {stime:.2f}s",
+            f"anim    {action}  phase {phase}  f{frames}  p{prog:.2f}",
+            f"hit     {hit}  skill {skill}  owned {int(bool(owned))}",
+            f"fps     {fps:5.1f}  particles {pc}",
+        ]
+        try:
+            font = pygame.font.SysFont("consolas", 13, bold=True)
+        except Exception:                      # pragma: no cover
+            font = pygame.font.Font(None, 18)
+        yy = int(y) - 120
+        xx = int(x) + 30
+        for i, ln in enumerate(lines):
+            img = font.render(ln, True, (255, 240, 120))
+            _pg.draw.rect(surface, (10, 8, 12, 170),
+                          (xx - 4, yy + i * 15 - 2,
+                           img.get_width() + 8, 15))
+            surface.blit(img, (xx, yy + i * 15))
 
     def _draw_shockwave(surface, x, y, age, total, c1, c2, fs=1.0):
         """Gelombang kejut aktivasi skill - 12 frame pertama.
@@ -5734,9 +6266,19 @@ class _NS_gorath:
                                          y + _NS_gorath.GROUND_DY - 4, phase,
                                          getattr(boss, "direction", 1))
 
-    def _draw_gorath_attack(surface, boss, x, y, rage=False, hunting=False):
-        progress = getattr(boss, "_gor_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
+    def _draw_gorath_attack(surface, boss, x, y, rage=False, hunting=False,
+                            ap=None, raw=None):
+        """Pose serangan - pose-time (sudah lewat _attack_curve) bila `ap`
+        diberikan; fallback ke progress mentah (kontrak v2)."""
+        if ap is None:
+            progress = getattr(boss, "_gor_attack_progress", 0.0)
+            progress = max(0.0, min(1.0, progress))
+            raw = progress
+            ap = _NS_gorath._attack_curve(progress)
+        else:
+            progress = max(0.0, min(1.0, float(ap)))
+            if raw is None:
+                raw = progress
         facing = getattr(boss, "direction", 1)
         phase = float(getattr(boss, "pulse", 0.0))
         pose = _NS_gorath._attack_pose(progress)
@@ -5751,8 +6293,8 @@ class _NS_gorath:
         _NS_gorath._draw_gorath_body(surface, x + lunge, y, facing, phase,
                                      "attack", progress, rage=rage,
                                      hunting=hunting, detail=portrait)
-        _NS_gorath._draw_blade_swing_arc(surface, x + lunge, y, facing, progress)
-        _NS_gorath._draw_swing_impact(surface, x + lunge, y, facing, progress)
+        _NS_gorath._draw_blade_swing_arc(surface, x + lunge, y, facing, raw)
+        _NS_gorath._draw_swing_impact(surface, x + lunge, y, facing, raw)
 
     # ===================================================================
     # ATTACK TIMELINE (7 keyframe + frame IMPACT tersendiri)

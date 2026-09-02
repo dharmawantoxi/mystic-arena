@@ -630,8 +630,12 @@ _BEAM_PASS_HEROES = {"morgath"}
 # arc-based, panah angin prosedural dengan lifecycle penuh, daun/gust
 # particle system, sulur Shackle, siklon Windrun, gale Powershot, impact,
 # hit-stop, dan shake — semua hidup di luar cache sprite.
+# Gorath (heroes/gorath_fx.py) menutup pola yang sama: trail sabit darah
+# dari histori ujung kukri, bolt darah modular, particle system, skill FX
+# Q/W/E/R (pilar, voli, jejak lompat, rantai+ledakan), impact, hit-stop,
+# dan shake — semua hidup di luar cache sprite.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
-                   "sylara", "abaddon"}
+                   "sylara", "abaddon", "gorath"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -642,6 +646,7 @@ _LIVE_FX_PATHS = {
     "vex": "heroes.vex_fx",
     "sylara": "heroes.sylara_fx",
     "abaddon": "heroes.abaddon_fx",
+    "gorath": "heroes.gorath_fx",
 }
 
 

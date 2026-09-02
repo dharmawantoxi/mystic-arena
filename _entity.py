@@ -4445,6 +4445,19 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX GORATH ═══
+                # Paket game-feel yang sama untuk Gorath (flash bintang,
+                # serpihan darah, shake, hit-stop 0.03-0.08 s) - lengkapnya
+                # di heroes/gorath_fx.notify_melee_impact. Difilter per
+                # hero_type dan dibungkus try/except (paritas Gornak).
+                if self.hero_type == 'gorath':
+                    try:
+                        from heroes import gorath_fx as _gfx
+                        _gfx.notify_melee_impact(
+                            self, self.target, damage, is_crit)
+                    except Exception:
+                        pass
+
                 if is_crit:
                     try:
                         import __main__
