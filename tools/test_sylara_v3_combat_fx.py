@@ -952,10 +952,22 @@ def test_clear_cache():
 def test_tick_tidak_maju_dua_kali_di_frame_yang_sama():
     h = fresh_hero()
     d = F.director_for(h)
-    F.tick()
-    t1 = d.time
-    F.tick()
-    assert d.time == t1
+    # "Frame yang sama" ditentukan guard `now == _LAST_TICK_MS`, dan `now`
+    # berasal dari pygame.time.get_ticks() yang resolusinya milidetik.
+    # Kalau dua tick() kebetulan jatuh di sisi berbeda dari batas
+    # milidetik, tick kedua sah dianggap frame BARU dan ikut maju --
+    # test jadi gagal ~0.05% run tanpa ada yang salah di kodenya.
+    # Patok jamnya supaya yang diuji benar-benar guard-nya.
+    import pygame as _pg
+    _real = _pg.time.get_ticks
+    _pg.time.get_ticks = lambda: 100000
+    try:
+        F.tick()
+        t1 = d.time
+        F.tick()
+        assert d.time == t1
+    finally:
+        _pg.time.get_ticks = _real
 
 
 def test_advance_per_unit_bukan_kuadratik():

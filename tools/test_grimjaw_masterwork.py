@@ -122,8 +122,12 @@ def test_blade_geometry_is_pose_driven():
     # Blade sweeps forward: release reaches farther forward (+x is facing).
     assert release_tip[0] > idle_tip[0] + 8
     assert windup_tip[0] < release_tip[0]
-    # Wind-up tucks the blade back/up compared with the forward release.
+    # Wind-up tucks the blade back/up compared with the forward release,
+    # dan pose idle memang beda dari kedua fase ayunan itu (kalau sama,
+    # sudut bilah tidak benar-benar digerakkan pose).
     assert windup_angle < release_angle
+    assert idle_angle != windup_angle
+    assert idle_angle != release_angle
 
     rest = pygame.Surface((240, 220), pygame.SRCALPHA)
     swing = pygame.Surface((240, 220), pygame.SRCALPHA)
@@ -395,20 +399,64 @@ def test_razak_skill_fx_have_three_phases():
 
     from bosses.level2 import _NS_razak as RZ
 
-    for skill, dur in RZ.SKILL_DUR.items():
-        sigs = set()
-        for timer in (dur - 4, int(dur * 0.6), 6):
-            surf = pygame.Surface((620, 620), pygame.SRCALPHA)
-            b = _S(boss_type="razak", boss_class="mini", x=310.0, y=310.0,
-                   direction=1, facing=1, pulse=1.3, timer=0,
-                   attack_cooldown=45, active_skill=skill,
-                   active_skill_timer=timer,
-                   target=_S(x=430.0, y=290.0, alive=True),
-                   hurt_flash_timer=0, alive=True, radius=34, range=55)
-            RZ.draw_razak(surf, b, 310, 310)
-            sigs.add(pygame.image.tobytes(surf, "RGBA"))
-        assert len(sigs) == 3, \
-            f"razak {skill}: hanya {len(sigs)}/3 tahap FX yang berbeda"
+    # Lapisan hidup Razak (heroes/razak_fx.py) maju memakai jam NYATA:
+    # draw_ground_layer() memanggil tick() tanpa dt, dan tick() meminta
+    # combat_feel.fx_dt(). Dua hal karena itu bisa membuat test ini
+    # lulus/gagal tergantung kecepatan mesin, bukan tergantung kode:
+    #
+    #   1. hit-stop bocor. Test sebelumnya (mis.
+    #      test_skill_visuals_render_with_masterwork) memicu hit_stop()
+    #      sebagai umpan balik benturan; hit-stop meluruh menurut waktu
+    #      nyata (~0.045-0.08 s). Kalau test ini keburu jalan sebelum
+    #      luruh, fx_dt() anjlok ke ~0.00075 s.
+    #   2. tiga render bisa selesai dalam 1 milidetik SDL yang sama,
+    #      sehingga dt antar-fase = 0 dan FX tidak sempat maju.
+    #
+    # Dua-duanya membuat ketiga snapshot nyaris sama. Jadi: bersihkan
+    # bus + registry FX dulu, lalu majukan waktu FX dengan dt EKSPLISIT
+    # supaya yang diuji murni progres tahap skill.
+    try:
+        from heroes import combat_feel as _feel
+    except Exception:
+        _feel = None
+    try:
+        from heroes import razak_fx as _rfx
+    except Exception:
+        _rfx = None
+
+    # Patok jam FX ke 1/60 s per frame selama test ini. draw_ground_layer()
+    # memanggil tick() sendiri, jadi mematok tick() adalah satu-satunya cara
+    # melepas render dari jam dinding sepenuhnya.
+    _orig_tick = getattr(_rfx, "tick", None) if _rfx is not None else None
+    if _orig_tick is not None:
+        _rfx.tick = lambda dt=None: _orig_tick(1.0 / 60.0)
+
+    try:
+        for skill, dur in RZ.SKILL_DUR.items():
+            if _feel is not None:
+                _feel.reset()
+            if _rfx is not None:
+                _rfx.reset_all()
+            sigs = set()
+            for timer in (dur - 4, int(dur * 0.6), 6):
+                surf = pygame.Surface((620, 620), pygame.SRCALPHA)
+                b = _S(boss_type="razak", boss_class="mini", x=310.0,
+                       y=310.0, direction=1, facing=1, pulse=1.3, timer=0,
+                       attack_cooldown=45, active_skill=skill,
+                       active_skill_timer=timer,
+                       target=_S(x=430.0, y=290.0, alive=True),
+                       hurt_flash_timer=0, alive=True, radius=34, range=55)
+                RZ.draw_razak(surf, b, 310, 310)
+                sigs.add(pygame.image.tobytes(surf, "RGBA"))
+            assert len(sigs) == 3, \
+                f"razak {skill}: hanya {len(sigs)}/3 tahap FX yang berbeda"
+    finally:
+        if _orig_tick is not None:
+            _rfx.tick = _orig_tick
+        if _feel is not None:
+            _feel.reset()
+        if _rfx is not None:
+            _rfx.reset_all()
 
 
 def test_razak_keeps_public_names():

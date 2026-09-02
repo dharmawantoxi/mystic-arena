@@ -24,7 +24,6 @@ Entry point publik ada di bagian paling bawah file.
 """
 
 import math
-import random
 import pygame
 
 # Penanda: file ini berisi BANYAK boss (1 true + 3 mini).
@@ -35,9 +34,6 @@ _IS_LEVEL_BUNDLE = True
 # ====================================================================
 # GORNAK (ANTI-MAGE) - Mini Boss  ·  PROCEDURAL MASTERWORK RIG
 # ====================================================================
-import math
-import pygame
-
 try:                     # pass cahaya bersama; opsional supaya file boss
     import lighting as _lighting          # tetap bisa di-load sendiri
 except Exception:        # pragma: no cover
@@ -3163,10 +3159,6 @@ class _NS_gornak:
 # ====================================================================
 # MORGATH (ARC WARDEN) - Mini Boss
 # ====================================================================
-import math
-import pygame
-
-
 class _NS_morgath:
     """Namespace morgath - Arc Warden mini boss (ranged lightning caster).
 
@@ -4032,7 +4024,6 @@ class _NS_morgath:
         belakang -> kepala -> lengan cast -> pauldron depan -> FX.
         Semua titik lewat pt()/ptg() supaya ukuran cukup diubah dari
         SATU konstanta SCALE (atau K_BOSS di jalur mini boss)."""
-        P = _NS_morgath.PALETTE
         k = _NS_morgath._MOR_K.v
         f = 1 if facing >= 0 else -1
         lean, root = _NS_morgath._mor_shift(action, phase, ap)
@@ -5886,7 +5877,6 @@ class _NS_morgath:
         P = _NS_morgath.PALETTE
         dur = _NS_morgath.SKILL_DUR["e"]
         progress = max(0.0, min(1.0, 1 - timer / dur))
-        fs = _NS_morgath._fx_scale(boss)
         gy = y + _NS_morgath._ground_dy()
         r = _NS_morgath._ring_r(boss, 90, surface)
         pulse = math.sin(phase * 2) * 0.3 + 0.7
@@ -5905,7 +5895,6 @@ class _NS_morgath:
 
         # spark berputar di permukaan kubah (deterministik)
         for i in range(6):
-            ang = phase * 1.5 + i * math.pi / 3
             arc_angle = math.pi * (0.1 + (i / 6.0) * 0.8)
             ax = x + int(math.cos(math.pi + arc_angle) * r * build_t)
             ay = gy + int(math.sin(math.pi + arc_angle) * r * build_t)
@@ -6044,8 +6033,6 @@ class _NS_morgath:
         dur = _NS_morgath.SKILL_DUR["r"]
         progress = max(0.0, min(1.0, 1 - timer / dur))
         fs = _NS_morgath._fx_scale(boss)
-        facing = getattr(boss, "direction", 1) or 1
-        gy = y + _NS_morgath._ground_dy()
 
         if progress < 0.45:
             # ── AKTIVASI: pilar cahaya 4 lapis + shockwave ganda ──
@@ -6139,10 +6126,6 @@ class _NS_morgath:
                 (x, y - 10), int((12 + 4 * math.sin(phase * 3)) * fs))
 # DRAKAR (AXE) - Mini Boss HD (Redesigned)
 # ====================================================================
-import math
-import pygame
-
-
 class _NS_drakar:
     """Namespace drakar — PIXEL MASTERWORK v3 (TRUE PIXEL-ART REWRITE).
 
@@ -7071,7 +7054,6 @@ class _NS_drakar:
                 inner.append((hx0 + (pivot[0]-hx0)*fi, hy0 + (pivot[1]-hy0)*fi))
             return outer + inner[::-1]
 
-        a = B._alpha(235 * strength)
         B._poly(surface, B.PALETTE["blood_darkest"], strip(-0.06, 0.44, n))
         B._poly(surface, B.PALETTE["blood_dark"], strip(-0.03, 0.36, n))
         B._poly(surface, B.PALETTE["blood_mid"], strip(0.0, 0.27, max(3, n - 2)))
@@ -9593,7 +9575,6 @@ class _NS_abaddon:
     def _pose_at_skill(boss, x, y, sp):
         """Pose dengan progress skill dipaksa (untuk trail R)."""
         # trik: set sementara active_skill_timer yang sesuai
-        action = "r"
         dur = float(_NS_abaddon.SKILL_DUR["r"])
         timer = int(round((1.0 - sp) * dur))
         saved = getattr(boss, "active_skill_timer", 0)

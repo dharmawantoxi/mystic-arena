@@ -311,9 +311,16 @@ def test_ayunan_berbasis_busur_bukan_lerp():
 
 
 def test_trail_histori_old_positions():
-    """Trail memuat histori OLD xN + CURRENT (>= 4 sampel saat ayunan)."""
+    """Trail memuat histori OLD xN + CURRENT (>= 4 sampel saat ayunan).
+
+    Jumlah frame dihitung dari laju SEBENARNYA: satu sampel per frame
+    ayunan. Dulu angkanya lebih kecil karena ``tick()`` Razak belum
+    punya guard frame-sama, sehingga ``run_live`` memajukan FX dua kali
+    tiap iterasi (sekali eksplisit + sekali dari draw_ground_layer) dan
+    trail terisi 2x lebih cepat dari yang terjadi di game.
+    """
     hero = fresh_hero()
-    run_live(hero, 22, attack=True)
+    run_live(hero, 30, attack=True)
     d = getattr(hero, "_razak_fx")
     assert len(d.trail.samples) >= 4, len(d.trail.samples)
     # sampel terbaru ada di akhir (CURRENT), yang lama di depan
@@ -322,7 +329,7 @@ def test_trail_histori_old_positions():
 
 def test_trail_memudar_dan_habis():
     hero = fresh_hero()
-    run_live(hero, 16, attack=True)
+    run_live(hero, 30, attack=True)
     d = getattr(hero, "_razak_fx")
     assert len(d.trail.samples) >= 4
     run_live(hero, 40, attack=False)

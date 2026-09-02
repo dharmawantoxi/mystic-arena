@@ -1821,8 +1821,15 @@ def tick():
     """
     global _LAST_TICK_MS
     if _feel is not None:
+        # Guard frame-sama: draw_ground_layer() memanggil tick() untuk
+        # SETIAP unit, sedangkan loop di bawah melangkahkan SEMUA
+        # director. Tanpa guard ini 4 Zephyr di layar membuat FX maju
+        # ~4x lebih cepat.
+        now = pygame.time.get_ticks()
+        if now == _LAST_TICK_MS:
+            return 0.0                     # frame yang sama: sudah maju
         dt = _feel.fx_dt()
-        _LAST_TICK_MS = pygame.time.get_ticks()
+        _LAST_TICK_MS = now
     else:                                  # pragma: no cover - fallback
         now = pygame.time.get_ticks()
         if _LAST_TICK_MS is None:
@@ -1844,6 +1851,8 @@ def tick():
 
 def reset_all():
     """Bersihkan seluruh state FX (ganti level / keluar match)."""
+    global _LAST_TICK_MS
+    _LAST_TICK_MS = None                   # jangan telan tick pertama
     for d in _DIRECTORS:
         d.particles.clear()
         d.projectiles.clear()

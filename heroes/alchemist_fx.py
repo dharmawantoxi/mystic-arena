@@ -1170,7 +1170,6 @@ class AlchemistProjectile:
             t = min(1.0, self.age / self.flight)
             self.x = self.sx + (self.tx - self.sx) * t
             arc = -4.0 * self.arc_height * t * (1.0 - t)
-            gy = self.ground
             self.y = self.sy + (self.ty - self.sy) * t + arc
             self.rotation += self.rot_speed * dt
             if particles is not None and self.particles:
@@ -1882,7 +1881,6 @@ class AlchemistFXDirector:
     def on_cast(self, x, y, skill):
         """Skill dilepas: SkillFX + guncangan + proyektil."""
         gy = self._ground_dy()
-        facing = 1 if getattr(self.hero, "direction", 1) >= 0 else -1
         if skill == "q":
             self._spray_q(x, y)
         elif skill == "w":
@@ -2421,7 +2419,14 @@ def tick(dt=None):
         step = max(0.0, min(1.0 / 20.0, float(dt)))
         _advance(step)
         return step
+    # Guard frame-sama: draw_ground_layer() memanggil tick() untuk SETIAP
+    # unit, sedangkan _advance() melangkahkan SEMUA director. Tanpa guard
+    # ini 4 unit sejenis di layar membuat FX maju ~4x lebih cepat.
+    now = pygame.time.get_ticks()
+    if now == _LAST_TICK_MS:
+        return 0.0                             # frame yang sama: sudah maju
     if _feel is not None:
+        _LAST_TICK_MS = now
         try:
             step = _feel.fx_dt()
         except Exception:                      # pragma: no cover
@@ -2454,6 +2459,8 @@ def _advance(step):
 
 def reset_all():
     """Bersihkan seluruh state FX (ganti level / keluar match)."""
+    global _LAST_TICK_MS
+    _LAST_TICK_MS = None                       # jangan telan tick pertama
     for d in list(_DIRECTORS):
         _release(d)
     _DIRECTORS.clear()

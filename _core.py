@@ -1397,6 +1397,25 @@ class Game:
         except Exception:
             pass
 
+        # ═══ BUS GAME-FEEL: WAJIB DIKOSONGKAN TIAP MATCH BARU ═══
+        # BUG: HITSTOP/SHAKE di heroes/combat_feel.py adalah singleton
+        # MODUL (global proses), bukan milik Game. Kalau match sebelumnya
+        # berakhir tepat saat hit-stop aktif (mis. pemain membunuh boss
+        # dengan pukulan berat lalu keluar / ganti level), sisa
+        # `HITSTOP.frames` ikut terbawa ke match berikutnya.
+        # `Game.update()` memanggil `should_freeze_frame()` PALING AWAL
+        # dan `return` sebelum apa pun dijalankan, jadi beberapa frame
+        # pertama match baru dibuang diam-diam: reward kematian tower
+        # tidak dihitung, `red_towers_destroyed` tidak naik, dan true
+        # boss bisa gagal spawn. Reset di sini = satu titik bersih untuk
+        # SEMUA jalur (level baru, replay, next level, kembali ke menu).
+        try:
+            from heroes import combat_feel as _feel
+            _feel.reset()
+            _feel.sync_settings()
+        except Exception:
+            pass
+
         self.score = 0
 
         # ═══ DIFFICULTY MODE & ENEMY SCALING ═══

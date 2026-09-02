@@ -337,7 +337,6 @@ class AbaddonProjectile(object):
         self.trail = []          # (x, y) - after-image kuantisasi
         self._stamp = 0
         dx, dy = tx - x, ty - y
-        d = math.hypot(dx, dy) or 1.0
         self.ang = math.atan2(dy, dx)
 
     # ------------------------------------------------------------------
