@@ -643,9 +643,15 @@ _BEAM_PASS_HEROES = {"morgath"}
 # shard & bolt modular, vortex Q / beam gerigi W / Ice Blast E / erupsi
 # Cold Feet R, impact flash + shockwave + debris, shatter kematian,
 # hit-stop, dan shake — semuanya hidup di luar cache sprite.
+# Nyzrak (heroes/nyzrak_fx.py): rig pixel-art wyvern rider dari level3
+# (canvas ter-cache) + lapisan hidup berisi pita sapuan tombak dari
+# histori posisi blade, proyektil lanset es modular, beam Arctic Burn
+# bergerigi, kerucut Splinter Blast, kurungan kristal Winter's Curse,
+# nova + kubah Cold Embrace, impact flash + shockwave + serpihan,
+# hit-stop 0.03-0.08 s, dan shake — 60 fps di luar cache sprite.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
-                   "alchemist", "ancient_apparition"}
+                   "alchemist", "ancient_apparition", "nyzrak"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -660,6 +666,7 @@ _LIVE_FX_PATHS = {
     "razak": "heroes.razak_fx",
     "alchemist": "heroes.alchemist_fx",
     "ancient_apparition": "heroes.ancient_apparition_fx",
+    "nyzrak": "heroes.nyzrak_fx",
 }
 
 

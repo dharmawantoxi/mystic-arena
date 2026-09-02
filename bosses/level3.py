@@ -3248,24 +3248,45 @@ class _NS_xerathis:
 
 
 # ====================================================================
-# NYZRAK
+# NYZRAK  —  FULL REWRITE (pixel-art rig + animation controller + arc swing)
+#
+# Wyvern Rider "The Hollow Blizzard".  Seluruh visual prosedural: rig
+# digambar pada canvas LOW-RES (110x110) lalu di-nearest-scale 2x ->
+# piksel chunky 2x2 dengan tepi keras, band cel-shading 3 nada, siluet
+# kuat.  Gerak dikendalikan _NyzAnimController (state + prioritas +
+# sub-fase timing anticipation->recovery).  Serangan tombak berbasis
+# ARC (bukan teleport posisi).  Efek 60fps (trail, partikel, beam,
+# impact, hit-stop, shake) hidup di heroes/nyzrak_fx.py — canvas di
+# sini hanya fallback saat modul itu tidak tersedia (portrait/tools).
 # ====================================================================
 class _NS_nyzrak:
-    """Namespace nyzrak - isi asli tidak diubah."""
+    """Namespace nyzrak — rig pixel-art + animasi + swing arc."""
 
-    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
-    _body_buf = None
-    _flash_buf = None
-    _record_shadow = None
+    # ── Buffer cache (dibangun lazy, dipakai ulang antar frame) ──────
+    _body_buf = None        # canvas komposit 220x220 (outline+lighting)
+    _rig_buf = None         # canvas rig low-res (pixel-art asli)
+    _scale_buf = None       # target scale 2x (dipakai ulang, tanpa alloc)
+    _flash_buf = None       # buffer hurt-flash
+    _record_shadow = None   # rect bayangan -> dikecualikan dari flash
     _shadow_cache = None
     _aura_cache = None
     _ground_cache = None
     _mist_cache = None
 
+    #: Ukuran "fat pixel" — rig digambar setengah resolusi lalu di-scale.
+    PIXEL = 2
+    RIG_SIZE = 110          # sisi canvas rig low-res
+    GROUND_DY = 55          # jangkar -> garis tanah (piksel layar)
+    LIFT = 4                # tinggi hover wyvern di atas bayangan
+
+    #: Penanda varian serangan aktif untuk _spear_pose_geom (stateless).
+    _pose_variant_now = "thrust"
+
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
     # ---------------------------------------------------------------------------
-    # HD Winter Palette
+    # PALETTE — winter wyvern (satu sumber kebenaran warna untuk rig,
+    # FX canvas, dan heroes/nyzrak_fx.py via _sync_palette)
     # ---------------------------------------------------------------------------
     PALETTE = {
         # Wyvern body - teal/cyan
@@ -3334,7 +3355,7 @@ class _NS_nyzrak:
         "metal_shine":    (225, 230, 245),
 
         # Gold accents (small)
-        "gold_mid":       (200, 165, 60),
+        "gold_mid":       (200, 165,  60),
         "gold_light":     (240, 210, 110),
 
         # Eyes
@@ -3344,7 +3365,7 @@ class _NS_nyzrak:
 
         # Wyvern eye (orange/red - fierce)
         "wy_eye_dark":    (85,  25,  10),
-        "wy_eye_bright":  (255, 130, 40),
+        "wy_eye_bright":  (255, 130,  40),
         "wy_eye_hot":     (255, 210, 120),
 
         # Teeth
@@ -3357,7 +3378,495 @@ class _NS_nyzrak:
         "white":          (255, 255, 255),
     }
 
+    # ===================================================================
+    # ANIMATION CONTROLLER
+    #
+    # Pose adalah fungsi MURNI dari atribut simulasi — pipeline hero
+    # meng-cache sprite, jadi controller tidak boleh menyimpan state
+    # antar-gambar.  "Delta time" = langkah tetap 1/60 s yang sudah
+    # diintegrasi game ke boss.pulse (+0.05/step), timer serangan, dan
+    # timer skill (frame @60fps).
+    # ===================================================================
+    STATE_IDLE = "IDLE"
+    STATE_WALK = "WALK"
+    STATE_RUN = "RUN"
+    STATE_ATTACK = "ATTACK"      # varian thrust (ranged)
+    STATE_SWING = "SWING"        # varian sweep (melee)
+    STATE_CAST = "CAST"
+    STATE_SKILL = "SKILL"
+    STATE_HIT = "HIT"
+    STATE_HURT = "HURT"
+    STATE_DEATH = "DEATH"
+    STATE_CHARGE = "CHARGE"
+    STATE_SPECIAL = "SPECIAL"
 
+    #: Prioritas — state bernilai tinggi menang selama durasinya.
+    STATE_PRIORITY = {
+        "IDLE": 0, "WALK": 10, "RUN": 20, "CHARGE": 45, "CAST": 50,
+        "ATTACK": 55, "SWING": 60, "SPECIAL": 65, "SKILL": 70,
+        "HIT": 80, "HURT": 90, "DEATH": 100,
+    }
+
+    #: Durasi bingkai (detik) per state untuk frame-index controller.
+    FRAME_DUR = {
+        "IDLE": 0.125, "WALK": 0.083, "RUN": 0.058, "ATTACK": 0.016,
+        "SWING": 0.016, "CAST": 0.10, "SKILL": 0.033, "CHARGE": 0.066,
+        "HIT": 0.033, "HURT": 0.10, "DEATH": 0.05, "SPECIAL": 0.033,
+    }
+    FRAME_COUNT = {"IDLE": 8, "WALK": 8, "RUN": 8}
+
+    #: Timing serangan (progress 0..1).  Jendela ACTIVE = hitbox hidup.
+    ATTACK_PHASES = (
+        ("anticipation", 0.00, 0.22),   # coil: badan mundur, tombak naik
+        ("windup",       0.22, 0.40),   # hold di apex, embun beku mengumpul
+        ("swing",        0.40, 0.56),   # sapuan/entakan cepat (aktif)
+        ("impact",       0.56, 0.64),   # bingkai benturan + recoil
+        ("follow",       0.64, 0.80),   # momentum terbawa melewati target
+        ("recovery",     0.80, 1.00),   # kembali ke pose siaga
+    )
+    #: Jendela hit aktif (inklusif) — dipakai swing hitbox & debug.
+    ATTACK_ACTIVE = (0.40, 0.64)
+    #: Progres saat proyektil dasar diluncurkan (varian thrust).
+    ATTACK_RELEASE = 0.46
+
+    #: Durasi skill (frame @60fps) — identik dengan AI base_boss.
+    SKILL_DUR = {"q": 50, "w": 50, "e": 70, "r": 90}
+
+    #: Sub-fase lifecycle skill: cast->charge->release->area->after.
+    SKILL_PHASES = (
+        ("cast",    0.00, 0.18),
+        ("charge",  0.18, 0.38),
+        ("release", 0.38, 0.50),
+        ("area",    0.50, 0.78),
+        ("after",   0.78, 1.00),
+    )
+
+    class _NyzAnimController:
+        """Controller animasi stateless untuk Nyzrak.
+
+        resolve() memetakan atribut unit -> dict pose.  Tidak ada
+        mutasi boss di sini (aman untuk render ter-cache); penulisan
+        atribut kerja hanya terjadi di _update_attack_anim /
+        _detect_moving yang dipanggil sekali per draw jalur boss.
+        """
+
+        #: Transisi yang diizinkan (dokumentasi & debug overlay).
+        TRANSITIONS = {
+            "IDLE":    {"WALK", "RUN", "ATTACK", "SWING", "CAST", "SKILL",
+                        "HIT", "HURT", "DEATH", "CHARGE", "SPECIAL"},
+            "WALK":    {"IDLE", "RUN", "ATTACK", "SWING", "CAST", "SKILL",
+                        "HIT", "HURT", "DEATH"},
+            "RUN":     {"IDLE", "WALK", "ATTACK", "SWING", "CAST", "SKILL",
+                        "HIT", "HURT", "DEATH"},
+            "CHARGE":  {"SKILL", "CAST", "IDLE", "HIT", "HURT", "DEATH"},
+            "CAST":    {"SKILL", "IDLE", "WALK", "HIT", "HURT", "DEATH"},
+            "ATTACK":  {"IDLE", "WALK", "RUN", "SWING", "HIT", "DEATH"},
+            "SWING":   {"IDLE", "WALK", "RUN", "ATTACK", "HIT", "DEATH"},
+            "SPECIAL": {"IDLE", "WALK", "SKILL", "HIT", "DEATH"},
+            "SKILL":   {"IDLE", "WALK", "RUN", "HIT", "DEATH"},
+            "HIT":     {"IDLE", "WALK", "RUN", "HURT", "DEATH"},
+            "HURT":    {"IDLE", "WALK", "HIT", "DEATH"},
+            "DEATH":   set(),
+        }
+
+        @classmethod
+        def frame_index(cls, state, phase):
+            """Index bingkai animasi looping (idle/walk/run)."""
+            n = _NS_nyzrak.FRAME_COUNT.get(state, 1)
+            dur = max(1e-3, _NS_nyzrak.FRAME_DUR.get(state, 0.1))
+            t = (phase * 0.05) / dur          # pulse: +0.05 per 1/60 s
+            return int(t * n) % n
+
+        @classmethod
+        def attack_stage(cls, ap):
+            """(nama_subfase, t_lokal) dari progress serangan 0..1."""
+            ap = min(1.0, max(0.0, ap))
+            for name, a, b in _NS_nyzrak.ATTACK_PHASES:
+                if ap < b:
+                    return name, min(1.0, max(0.0, (ap - a) / max(1e-3, b - a)))
+            return "recovery", 1.0
+
+        @classmethod
+        def attack_active(cls, ap):
+            a0, a1 = _NS_nyzrak.ATTACK_ACTIVE
+            return a0 <= ap <= a1
+
+        @classmethod
+        def skill_stage(cls, t01):
+            """(nama_subfase, t_lokal) dari progress skill 0..1."""
+            t01 = min(1.0, max(0.0, t01))
+            for name, a, b in _NS_nyzrak.SKILL_PHASES:
+                if t01 < b:
+                    return name, min(1.0, max(0.0, (t01 - a) / max(1e-3, b - a)))
+            return "after", 1.0
+
+        @classmethod
+        def resolve(cls, boss, moving=False, run=False):
+            """Resolve pose saat ini dari atribut sim."""
+            phase = float(getattr(boss, "pulse", 0.0) or 0.0)
+            ap = min(1.0, max(0.0,
+                       float(getattr(boss, "_nyz_attack_progress", 0.0) or 0.0)))
+            attack_on = bool(getattr(boss, "_nyz_attack_active", False))
+            skill = getattr(boss, "active_skill", None)
+            skill_timer = int(getattr(boss, "active_skill_timer", 0) or 0)
+            hurt = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+            alive = bool(getattr(boss, "alive", True))
+            hp = float(getattr(boss, "hp", 1.0) or 0.0)
+
+            if not alive or hp <= 0.0:
+                death_t = min(1.0,
+                              float(getattr(boss, "_nyz_death_age", 0)) / 60.0)
+                return {"state": "DEATH", "action": "death", "phase": phase,
+                        "ap": death_t, "skill": None, "skill_t01": 0.0,
+                        "stage": "collapse", "death_t": death_t}
+            if hurt > 0:
+                return {"state": "HIT", "action": "hit", "phase": phase,
+                        "ap": min(1.0, hurt / 8.0), "skill": None,
+                        "skill_t01": 0.0, "stage": "flinch", "death_t": 0.0}
+            if skill in ("q", "w", "e", "r"):
+                dur = float(_NS_nyzrak.SKILL_DUR.get(skill, 50))
+                t01 = min(1.0, max(0.0, 1.0 - skill_timer / dur))
+                stage, _t = cls.skill_stage(t01)
+                return {"state": "SKILL", "action": "cast_" + skill,
+                        "phase": phase, "ap": t01, "skill": skill,
+                        "skill_t01": t01, "stage": stage, "death_t": 0.0}
+            if attack_on:
+                variant = "sweep" if int(getattr(boss, "_pose_variant", 0) or 0) == 1 else "thrust"
+                stage, _t = cls.attack_stage(ap)
+                return {"state": "SWING" if variant == "sweep" else "ATTACK",
+                        "action": "attack", "phase": phase, "ap": ap,
+                        "skill": None, "skill_t01": 0.0, "stage": stage,
+                        "death_t": 0.0}
+            if moving and run:
+                return {"state": "RUN", "action": "run", "phase": phase,
+                        "ap": 0.0, "skill": None, "skill_t01": 0.0,
+                        "stage": "stride", "death_t": 0.0}
+            if moving:
+                return {"state": "WALK", "action": "walk", "phase": phase,
+                        "ap": 0.0, "skill": None, "skill_t01": 0.0,
+                        "stage": "step", "death_t": 0.0}
+            return {"state": "IDLE", "action": "idle", "phase": phase,
+                    "ap": 0.0, "skill": None, "skill_t01": 0.0,
+                    "stage": "breathe", "death_t": 0.0}
+
+    # ===================================================================
+    # MATEMATIKA EASING & GEOMETRI SERANGAN (arc, bukan teleport)
+    # ===================================================================
+    @staticmethod
+    def _ease_out_cubic(t):
+        t = min(1.0, max(0.0, t))
+        return 1.0 - (1.0 - t) ** 3
+
+    @staticmethod
+    def _ease_in_out(t):
+        t = min(1.0, max(0.0, t))
+        return t * t * (3.0 - 2.0 * t)
+
+    @staticmethod
+    def _seg_t(ap, a, b):
+        """t lokal 0..1 di dalam segmen [a, b)."""
+        if ap <= a:
+            return 0.0
+        if ap >= b:
+            return 1.0
+        return (ap - a) / max(1e-3, b - a)
+
+    @staticmethod
+    def _spear_pose_geom(action, ap, phase):
+        """Geometri tombak (rig-local, y ke bawah) untuk pose ini.
+
+        Return (angle_deg, reach_px, grip_dx, grip_dy).
+        angle 0 = lurus ke depan; negatif = terangkat ke atas.
+        """
+        NS = _NS_nyzrak
+        base_ang, base_reach = -62.0, 22.0
+        grip_x, grip_y = 7.0, -22.0
+
+        if action == "attack":
+            variant = getattr(NS, "_pose_variant_now", "thrust")
+            if variant == "sweep":
+                # ── sapuan melee: arc lewat atas lalu menghunjam ──
+                if ap < 0.22:            # anticipation
+                    t = NS._ease_out_cubic(ap / 0.22)
+                    ang = -20.0 - 95.0 * t
+                    reach = base_reach + 2.0 * t
+                    grip_x = 7.0 - 3.0 * t
+                elif ap < 0.40:          # windup: apex + tremor es
+                    ang = -115.0 + math.sin(phase * 26.0) * 2.5
+                    reach = 24.0
+                    grip_x = 4.0
+                elif ap < 0.56:          # swing: sapuan cepat (AKTIF)
+                    t = NS._ease_out_cubic((ap - 0.40) / 0.16)
+                    ang = -115.0 + 155.0 * t
+                    reach = 24.0 + 6.0 * t
+                    grip_x = 4.0 + 5.0 * t
+                elif ap < 0.64:          # impact: recoil
+                    t = (ap - 0.56) / 0.08
+                    ang = 40.0 - 7.0 * t
+                    reach = 30.0 - 1.0 * t
+                    grip_x = 9.0
+                elif ap < 0.80:          # follow: momentum terbawa
+                    t = NS._ease_in_out((ap - 0.64) / 0.16)
+                    ang = 33.0 + 10.0 * t
+                    reach = 29.0 - 2.0 * t
+                    grip_x = 9.0 - 2.0 * t
+                else:                    # recovery
+                    t = NS._ease_in_out((ap - 0.80) / 0.20)
+                    ang = 43.0 + (base_ang - 43.0) * t
+                    reach = 27.0 + (base_reach - 27.0) * t
+                    grip_x = 7.0
+                return ang, reach, grip_x, grip_y
+            # ── thrust ranged: tarik -> entak -> tahan -> kembali ──
+            if ap < 0.22:
+                t = NS._ease_out_cubic(ap / 0.22)
+                ang = -62.0 - 28.0 * t
+                reach = 22.0 - 6.0 * t
+                grip_x = 7.0 - 4.0 * t
+            elif ap < 0.40:
+                ang = -90.0 + 4.0 * math.sin(phase * 22.0)
+                reach = 16.0
+                grip_x = 3.0
+            elif ap < 0.56:
+                t = NS._ease_out_cubic((ap - 0.40) / 0.16)
+                ang = -90.0 + 86.0 * t
+                reach = 16.0 + 16.0 * t
+                grip_x = 3.0 + 7.0 * t
+            elif ap < 0.64:
+                t = (ap - 0.56) / 0.08
+                ang = -4.0 - 3.0 * t
+                reach = 32.0 - 1.5 * t
+                grip_x = 10.0 - t
+            elif ap < 0.80:
+                t = (ap - 0.64) / 0.16
+                ang = -7.0 - 2.0 * t
+                reach = 30.5 - 2.5 * t
+                grip_x = 9.0 - t
+            else:
+                t = NS._ease_in_out((ap - 0.80) / 0.20)
+                ang = -9.0 + (base_ang + 9.0) * t
+                reach = 28.0 + (base_reach - 28.0) * t
+                grip_x = 8.0 - t
+            return ang, reach, grip_x, grip_y
+
+        if action == "cast_q":         # Arctic Burn: bidik + recoil
+            if ap < 0.38:
+                k = NS._ease_out_cubic(ap / 0.38)
+                ang = -62.0 + 54.0 * k
+                reach = 22.0 + 9.0 * k
+                grip_x = 7.0 + 2.0 * k
+            else:
+                rec = math.sin(min(1.0, (ap - 0.38) / 0.2) * math.pi) * 6.0
+                ang = -8.0 + rec * 0.4
+                reach = 31.0 - rec * 0.3
+                grip_x = 9.0
+            return ang, reach, grip_x, grip_y
+        if action == "cast_w":         # Splinter Blast: kibasan keluar
+            if ap < 0.35:
+                t = NS._ease_out_cubic(ap / 0.35)
+                ang = -62.0 - 58.0 * t
+                reach = 22.0 - 5.0 * t
+                grip_x = 7.0 - 4.0 * t
+            else:
+                t = NS._ease_out_cubic((ap - 0.35) / 0.15)
+                ang = -120.0 + 112.0 * t
+                reach = 17.0 + 13.0 * t
+                grip_x = 3.0 + 6.0 * t
+            return ang, reach, grip_x, grip_y
+        if action == "cast_e":         # Winter's Curse: angkat tinggi
+            if ap < 0.3:
+                t = NS._ease_out_cubic(ap / 0.3)
+                ang = -62.0 - 48.0 * t
+                reach = 22.0 + 3.0 * t
+                grip_x = 7.0 + t
+            elif ap < 0.5:
+                ang = -110.0 + 3.0 * math.sin(phase * 18.0)
+                reach = 25.0
+                grip_x = 8.0
+            else:
+                t = NS._ease_in_out((ap - 0.5) / 0.5)
+                ang = -110.0 + 48.0 * t
+                reach = 25.0 - 3.0 * t
+                grip_x = 8.0 - t
+            return ang, reach, grip_x, grip_y
+        if action == "cast_r":         # Cold Embrace: angkat -> tebar
+            if ap < 0.25:
+                t = NS._ease_out_cubic(ap / 0.25)
+                ang = -62.0 - 38.0 * t
+                reach = 22.0 + 2.0 * t
+                grip_x = 7.0 + t
+            elif ap < 0.42:
+                ang = -100.0 - 4.0 * math.sin(phase * 14.0)
+                reach = 24.0
+                grip_x = 8.0
+            elif ap < 0.55:
+                t = NS._ease_out_cubic((ap - 0.42) / 0.13)
+                ang = -100.0 + 82.0 * t
+                reach = 24.0 + 6.0 * t
+                grip_x = 8.0 + 2.0 * t
+            else:
+                t = NS._ease_in_out((ap - 0.55) / 0.45)
+                ang = -18.0 + (base_ang + 18.0) * t
+                reach = 30.0 + (base_reach - 30.0) * t
+                grip_x = 10.0 - 3.0 * t
+            return ang, reach, grip_x, grip_y
+        if action == "hit":
+            flinch = math.sin(min(1.0, ap) * math.pi)
+            return (base_ang - 14.0 * flinch,
+                    base_reach - 3.0 * flinch,
+                    7.0 - 2.0 * flinch, grip_y)
+        if action == "death":
+            return base_ang + 55.0, base_reach - 6.0, 5.0, -18.0
+        if action == "run":
+            return (base_ang + 12.0 + math.sin(phase * 2.4) * 7.0,
+                    base_reach + 1.0, 8.0, -21.0)
+        if action == "walk":
+            return (base_ang + math.sin(phase * 1.6) * 2.0,
+                    base_reach, 7.0, -22.0)
+        # idle: napas + ayunan senjata halus
+        return base_ang + math.sin(phase * 0.9) * 3.0, base_reach, 7.0, -22.0
+
+    # ===================================================================
+    # RIG POSE — seluruh parameter gerak satu bingkai rig
+    # ===================================================================
+    @staticmethod
+    def _rig_pose(action, phase, ap):
+        """Hitung pose rig (unit rig low-res, y ke bawah)."""
+        NS = _NS_nyzrak
+        pose = {
+            "bob": 0, "lean": 0, "pitch": 0, "rear": 0.0,
+            "flap": math.sin(phase * 1.3), "flap_amp": 0.42,
+            "tail": phase * 0.8, "legs": phase * 2.2, "charge": 0.0,
+            "variant": "thrust", "death_t": 0.0,
+        }
+        if action == "idle":
+            pose["bob"] = math.sin(phase * 0.8) * 1.2      # breathing
+            pose["tail"] = phase * 0.6
+        elif action == "walk":
+            pose["bob"] = math.sin(phase * 1.2) * 1.6
+            pose["flap"] = math.sin(phase * 2.1)
+            pose["flap_amp"] = 0.5
+            pose["tail"] = phase * 1.1
+            pose["legs"] = phase * 3.0
+        elif action == "run":
+            pose["bob"] = math.sin(phase * 2.2) * 2.0
+            pose["lean"] = 2
+            pose["flap"] = math.sin(phase * 3.4)
+            pose["flap_amp"] = 0.62
+            pose["tail"] = phase * 1.8
+            pose["legs"] = phase * 4.4
+        elif action == "attack":
+            pose["variant"] = getattr(NS, "_pose_variant_now", "thrust")
+            if pose["variant"] == "sweep":
+                if ap < 0.22:
+                    t = ap / 0.22
+                    pose["rear"] = -0.35 * t
+                    pose["flap"] = 0.5 + 0.5 * t
+                    pose["flap_amp"] = 0.36
+                elif ap < 0.40:
+                    pose["rear"] = -0.35
+                    pose["flap"] = 1.0
+                    pose["flap_amp"] = 0.3
+                elif ap < 0.64:
+                    t = NS._ease_out_cubic((ap - 0.40) / 0.24)
+                    pose["rear"] = -0.35 + 0.75 * t
+                    pose["lean"] = int(3 * t)
+                    pose["flap"] = 1.0 - 1.6 * t
+                    pose["flap_amp"] = 0.55
+                else:
+                    t = NS._ease_in_out((ap - 0.64) / 0.36)
+                    pose["rear"] = 0.4 - 0.4 * t
+                    pose["lean"] = int(3 * (1 - t))
+                    pose["flap"] = -0.6 + 0.6 * t
+                    pose["flap_amp"] = 0.5
+            else:
+                if ap < 0.22:
+                    t = ap / 0.22
+                    pose["rear"] = -0.3 * t
+                    pose["flap"] = 0.4 + 0.6 * t
+                elif ap < 0.40:
+                    pose["rear"] = -0.3
+                    pose["flap"] = 1.0
+                    pose["flap_amp"] = 0.32
+                    pose["charge"] = (ap - 0.22) / 0.18
+                elif ap < 0.64:
+                    t = NS._ease_out_cubic((ap - 0.40) / 0.24)
+                    pose["rear"] = -0.3 + 0.6 * t
+                    pose["lean"] = int(4 * t)
+                    pose["flap"] = 1.0 - 1.4 * t
+                    pose["flap_amp"] = 0.5
+                    pose["charge"] = max(0.0, 1.0 - (ap - 0.40) / 0.08)
+                else:
+                    t = NS._ease_in_out((ap - 0.64) / 0.36)
+                    pose["rear"] = 0.3 - 0.3 * t
+                    pose["lean"] = int(4 * (1 - t))
+                    pose["flap"] = -0.4 + 0.4 * t
+        elif action.startswith("cast"):
+            pose["flap"] = math.sin(phase * 1.7)
+            pose["flap_amp"] = 0.55
+            pose["bob"] = math.sin(phase * 1.0) * 1.4
+            if action in ("cast_q", "cast_w"):
+                if ap < 0.38:
+                    pose["charge"] = ap / 0.38
+                    pose["rear"] = -0.2 * pose["charge"]
+                else:
+                    pose["rear"] = -0.2 + 0.35 * NS._ease_out_cubic(
+                        (ap - 0.38) / 0.2)
+                    pose["lean"] = 2
+            elif action == "cast_e":
+                pose["charge"] = min(1.0, ap / 0.3)
+            else:  # cast_r
+                if ap < 0.42:
+                    pose["charge"] = ap / 0.42
+                    pose["rear"] = -0.25 * pose["charge"]
+                elif ap < 0.55:
+                    pose["rear"] = 0.5
+                    pose["flap"] = 1.2
+                    pose["flap_amp"] = 0.7
+                else:
+                    t = NS._ease_in_out((ap - 0.55) / 0.45)
+                    pose["rear"] = 0.5 - 0.5 * t
+        elif action == "hit":
+            flinch = math.sin(min(1.0, ap) * math.pi)
+            pose["rear"] = -0.3 * flinch
+            pose["flap"] = -0.9 * flinch
+            pose["flap_amp"] = 0.6
+        elif action == "death":
+            pose["death_t"] = min(1.0, ap)
+            pose["flap"] = -0.4
+            pose["flap_amp"] = 0.2
+            pose["rear"] = -0.5 + 0.2 * pose["death_t"]
+            pose["bob"] = 6.0 * pose["death_t"]
+        return pose
+
+    # ===================================================================
+    # HELPERS GAMBAR RIG (low-res, koordinat int, tepi keras)
+    # ===================================================================
+    @staticmethod
+    def _rp(surface, color, points):
+        if len(points) >= 3:
+            pygame.draw.polygon(surface, color, points)
+
+    @staticmethod
+    def _rc(surface, color, c, r):
+        if r >= 1:
+            pygame.draw.circle(surface, color, (int(c[0]), int(c[1])), int(r))
+
+    @staticmethod
+    def _rl(surface, color, rect):
+        x, y, w, h = rect
+        w = max(1, int(w))
+        h = max(1, int(h))
+        if w > 0 and h > 0:
+            pygame.draw.rect(surface, color, (int(x), int(y), w, h))
+
+    @staticmethod
+    def _rline(surface, color, a, b, w=1):
+        pygame.draw.line(surface, color, (int(a[0]), int(a[1])),
+                         (int(b[0]), int(b[1])), max(1, int(w)))
+
+    # ---------------------------------------------------------------------------
+    # DRAW PRIMITIVES (layar, alpha-safe) — FX canvas fallback
+    # ---------------------------------------------------------------------------
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
 
@@ -3409,8 +3918,8 @@ class _NS_nyzrak:
             xs = [p[0] for p in points]
             ys = [p[1] for p in points]
             min_x, min_y = min(xs) - 2, min(ys) - 2
-            w = max(xs) - min_x + 4
-            h = max(ys) - min_y + 4
+            w = int(max(xs) - min_x + 4)
+            h = int(max(ys) - min_y + 4)
             if w <= 0 or h <= 0:
                 return
             temp = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -3454,80 +3963,554 @@ class _NS_nyzrak:
     def _target_position(boss, x, y):
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
-            # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
             scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
             tx = x + (target.x - getattr(boss, "x", x)) / scale
             ty = y + (target.y - getattr(boss, "y", y)) / scale
             return int(tx), int(ty)
-        return int(x + 220 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+        return int(x + 220 / float(getattr(boss, "_render_scale", 1.0) or 1.0)
+                   * getattr(boss, "direction", 1)), int(y)
 
 
-    # ---------------------------------------------------------------------------
-    # Snowflake / ice crystal helpers
-    # ---------------------------------------------------------------------------
-    def _draw_snowflake(surface, cx, cy, size=3, alpha=255, rotate=0):
-        """Snowflake - 6-arm star."""
-        for i in range(6):
-            angle = rotate + i * math.pi / 3
-            ex = cx + int(math.cos(angle) * size)
-            ey = cy + int(math.sin(angle) * size)
-            _NS_nyzrak._aaline(surface, (*_NS_nyzrak.PALETTE["ice_hot"], alpha), (cx, cy), (ex, ey), 1)
-            # Tick marks
-            tick1 = angle + math.pi / 2
-            tick2 = angle - math.pi / 2
-            mx = cx + int(math.cos(angle) * (size - 1))
-            my = cy + int(math.sin(angle) * (size - 1))
-            _NS_nyzrak._aaline(surface, (*_NS_nyzrak.PALETTE["ice_bright"], alpha),
-                    (mx, my),
-                    (mx + int(math.cos(tick1) * 1), my + int(math.sin(tick1) * 1)), 1)
-            _NS_nyzrak._aaline(surface, (*_NS_nyzrak.PALETTE["ice_bright"], alpha),
-                    (mx, my),
-                    (mx + int(math.cos(tick2) * 1), my + int(math.sin(tick2) * 1)), 1)
-        _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_pure"], alpha), (cx, cy), 1)
+    @staticmethod
+    def _melee_variant(boss):
+        """True kalau target cukup dekat untuk sapuan melee."""
+        tgt = getattr(boss, "target", None)
+        if tgt is None or not getattr(tgt, "alive", False):
+            return False
+        try:
+            d = math.hypot(tgt.x - getattr(boss, "x", 0),
+                           tgt.y - getattr(boss, "y", 0))
+        except Exception:
+            return False
+        return d <= 115.0
 
+    # ===================================================================
+    # RIG PIXEL-ART — komposit wyvern + rider per layer
+    # ===================================================================
+    @staticmethod
+    def _draw_rig(surface, cx, cy, facing, pose, action, phase, ap):
+        """Gambar seluruh rig ke canvas low-res.
 
-    def _draw_crystal_spike(surface, cx, base_y, tip_y, width=4, alpha=255,
-                             color_set="ice"):
-        """Ice crystal spike growing upward."""
-        if color_set == "ice":
-            colors = ["ice_darkest", "ice_dark", "ice_mid", "ice_light", "ice_bright"]
+        Urutan layer (siluet kuat, band cel 3 nada):
+            back wing -> tail -> hind legs -> body -> belly plates ->
+            neck/head -> rider body -> rider armor -> rider head ->
+            weapon (tombak) -> front wing -> highlights
+        """
+        NS = _NS_nyzrak
+        F = 1 if facing >= 0 else -1
+
+        def mx(dx):
+            return cx + int(dx) * F
+
+        bob = int(pose.get("bob", 0))
+        lean = int(pose.get("lean", 0)) * F
+        rear = float(pose.get("rear", 0.0))
+        pitch = float(pose.get("pitch", 0.0)) + rear * 6.0
+        by = cy + bob + int(-rear * 3)
+
+        # geometri tombak dihitung SEKALI — rider & spear pakai sama
+        ang_deg, reach, gx, gy = NS._spear_pose_geom(action, ap, phase)
+        grip_ax = mx(gx) + lean
+        grip_ay = cy + gy + bob
+
+        # 1. sayap belakang (jauh, paling gelap)
+        NS._draw_wing(surface, mx(-4) + lean, by - 8, F,
+                      pose["flap"], pose["flap_amp"], back=True, spread=0.92)
+
+        # 2. ekor bersegmen + spatade es
+        NS._draw_tail(surface, mx(-16) + lean, by + 2, F,
+                      pose["tail"], pose.get("death_t", 0.0))
+
+        # 3. kaki belakang gantung
+        NS._draw_legs(surface, mx(-6) + lean, by + 12, F, pose["legs"])
+
+        # 4. badan wyvern (band pixel-art)
+        NS._draw_wy_body(surface, mx(0) + lean, by, F, pitch)
+
+        # 5. leher + kepala (maju saat lunge)
+        head_lunge = 0.0
+        if action == "attack":
+            head_lunge = NS._ease_out_cubic(NS._seg_t(ap, 0.40, 0.64)) \
+                - NS._seg_t(ap, 0.80, 1.0) * 0.8
+        elif action.startswith("cast"):
+            head_lunge = 0.3 * NS._seg_t(ap, 0.38, 0.55)
+        NS._draw_wy_head(surface, mx(16) + lean + int(head_lunge * 5) * F,
+                         by - 6 + int(-rear * 4), F, phase, action)
+
+        # 6-8. rider: jubah -> torso+armor -> kepala (lengan ke grip)
+        NS._draw_rider(surface, mx(-3) + lean, by - 16, F, phase, action,
+                       (grip_ax, grip_ay))
+
+        # 9. SENJATA: tombak es (rotasi penuh dari kurva arc)
+        NS._draw_spear(surface, grip_ax, grip_ay, F,
+                       math.radians(ang_deg), reach,
+                       pose.get("charge", 0.0))
+
+        # 10. sayap depan (dekat, lebih terang)
+        NS._draw_wing(surface, mx(2) + lean, by - 6, F,
+                      pose["flap"], pose["flap_amp"], back=False, spread=1.0)
+
+        # 11. highlights: rim punggung + kilang es
+        NS._draw_rim_highlights(surface, mx(0) + lean, by, F, phase)
+
+    @staticmethod
+    def _draw_wing(surface, sx, sy, facing, flap, amp, back=False,
+                   spread=1.0):
+        """Satu sayap kelelawar: membrane 3 nada + jari-jari tulang."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        rot = flap * amp
+        c, s = math.cos(rot), math.sin(rot)
+
+        def pt(dx, dy):
+            dx *= spread
+            rx = dx * c - dy * s
+            ry = dx * s + dy * c
+            return (int(sx + rx * facing), int(sy + ry))
+
+        t1 = pt(26, -22)      # jari atas
+        t2 = pt(34, -2)       # jari tengah
+        t3 = pt(27, 13)       # jari bawah
+        root = (int(sx), int(sy))
+        root_low = (int(sx + 2 * facing), int(sy + 7))
+
+        if back:
+            mem_d, mem_m, mem_l = ("wing_darkest", "wing_darkest", "wing_dark")
+            bone, bone_hi = "wy_darkest", "wy_dark"
         else:
-            colors = ["frost_darkest", "frost_dark", "frost_mid", "frost_light", "frost_bright"]
+            mem_d, mem_m, mem_l = ("wing_darkest", "wing_dark", "wing_mid")
+            bone, bone_hi = "wy_darkest", "wy_mid"
+        # membrane dasar (scallop trailing edge)
+        NS._rp(surface, P[mem_d], [
+            root, t1,
+            (t1[0] - 3 * facing, t1[1] + 5), (t2[0], t2[1] + 4),
+            (t3[0] - 2 * facing, t3[1] + 4), root_low,
+        ])
+        # band tengah
+        NS._rp(surface, P[mem_m], [
+            (root[0] + 2 * facing, root[1] + 1), t1,
+            (t2[0] - 2 * facing, t2[1] + 2),
+            (t3[0] - 4 * facing, t3[1] + 2), root_low,
+        ])
+        # band terang dekat bahu
+        k = pt(15, -8)
+        NS._rp(surface, P[mem_l], [
+            (root[0] + 2 * facing, root[1] + 1), k,
+            (k[0] - 2 * facing, k[1] + 6), root_low,
+        ])
+        # tulang jari
+        for tip in (t1, t2, t3):
+            NS._rline(surface, P[bone], root, tip, 2)
+        NS._rline(surface, P[bone_hi], root, t1, 1)
+        # cakar ujung jari atas
+        NS._rp(surface, P["bone_dark"], [
+            (t1[0], t1[1]), (t1[0] + 2 * facing, t1[1] - 2),
+            (t1[0] + facing, t1[1] + 1),
+        ])
+        NS._rl(surface, P["bone_light"],
+               (t1[0] + facing, t1[1] - 2, 1, 1))
 
-        _NS_nyzrak._poly(surface, (*_NS_nyzrak.PALETTE["shadow_deep"], alpha), [
-            (cx - width + 1, base_y + 1),
-            (cx + width + 1, base_y + 1),
-            (cx + 1, tip_y + 1),
+    @staticmethod
+    def _draw_tail(surface, x, y, facing, wave, death_t):
+        """Ekor bersegmen (rect mengecil) + spatade es."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        px, py = float(x), float(y)
+        for i in range(6):
+            t = i / 5.0
+            curve = math.sin(t * 2.2 + wave * 0.5)
+            step = 5.5 - t * 2.0
+            # dominan ke belakang + lengkung sinus + droop saat mati
+            px += -facing * step * (0.85 + 0.3 * curve)
+            py += step * 0.35 * curve + (step * 0.3 if death_t > 0 else 0.0)
+            w = max(2, 6 - i)
+            NS._rl(surface, P["wy_dark" if i % 2 else "wy_darkest"],
+                   (int(px - w // 2), int(py - w // 2), w, w))
+            if i == 2:
+                NS._rl(surface, P["wy_mid"],
+                       (int(px - w // 2), int(py - w // 2) - 1, w - 1, 1))
+        tx, ty = int(px), int(py)
+        NS._rp(surface, P["ice_darkest"], [
+            (tx - 3, ty - 1), (tx + 3, ty - 1),
+            (tx + 2 * facing, ty - 7), (tx - 2 * facing, ty - 7),
         ])
-        _NS_nyzrak._poly(surface, (*_NS_nyzrak.PALETTE[colors[0]], alpha), [
-            (cx - width, base_y),
-            (cx + width, base_y),
-            (cx, tip_y),
+        NS._rp(surface, P["ice_dark"], [
+            (tx - 2, ty - 1), (tx + 2, ty - 1),
+            (tx + facing, ty - 6), (tx - facing, ty - 6),
         ])
-        for i in range(1, 5):
-            shrink = i * 0.18
-            w = max(1, int(width * (1 - shrink)))
-            _NS_nyzrak._poly(surface, (*_NS_nyzrak.PALETTE[colors[i]], alpha), [
-                (cx - w, base_y - 1),
-                (cx + w, base_y - 1),
-                (cx, tip_y + int((base_y - tip_y) * shrink * 0.15)),
+        NS._rl(surface, P["ice_light"], (tx - 1, ty - 6, 1, 3))
+
+    @staticmethod
+    def _draw_legs(surface, x, y, facing, cycle):
+        """Dua kaki belakang gantung; alternating saat bergerak."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        for side, ph in ((-1, 0.0), (1, math.pi)):
+            swing = math.sin(cycle + ph)
+            lx = x + side * 5 * facing
+            ly = y + int(swing * 2)
+            NS._rl(surface, P["wy_darkest"], (lx - 2, ly, 4, 6))
+            NS._rl(surface, P["wy_dark"], (lx - 1, ly, 2, 5))
+            NS._rl(surface, P["wy_mid"], (lx - 1, ly, 1, 4))
+            for c in (-2, 0, 2):
+                NS._rp(surface, P["bone_dark"], [
+                    (lx + c, ly + 6), (lx + c + 2, ly + 6),
+                    (lx + c + 1, ly + 8),
+                ])
+            NS._rl(surface, P["bone_light"], (lx, ly + 6, 1, 1))
+
+    @staticmethod
+    def _draw_wy_body(surface, x, y, facing, pitch):
+        """Badan wyvern: band horizontal pixel-art + punggung berduri."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        rows = [
+            (-8, 26, "wy_darkest"), (-6, 36, "wy_dark"),
+            (-4, 42, "wy_mid"), (-1, 44, "wy_mid"),
+            (2, 43, "belly_dark"), (5, 40, "belly_mid"),
+            (8, 32, "belly_mid"), (11, 22, "belly_light"),
+            (13, 12, "belly_light"),
+        ]
+        for dy, w, key in rows:
+            wy = y + dy + int(pitch * (1.0 if dy < 0 else 0.4))
+            NS._rl(surface, P[key],
+                   (x - w // 2 + 2 * facing, wy, w, 3))
+        # leher: dua segmen naik ke depan
+        NS._rl(surface, P["wy_darkest"], (x + 12 * facing, y - 10, 6, 6))
+        NS._rl(surface, P["wy_dark"], (x + 13 * facing, y - 10, 4, 5))
+        NS._rl(surface, P["wy_dark"], (x + 15 * facing, y - 14, 6, 6))
+        NS._rl(surface, P["wy_mid"], (x + 16 * facing, y - 14, 3, 5))
+        # duri punggung
+        for i, dx in enumerate((-16, -10, -4, 2, 8)):
+            sxp = x + dx * facing
+            syp = y - 9 - int(pitch * 1.2)
+            h = 3 - (i % 2)
+            NS._rp(surface, P["wy_darkest"], [
+                (sxp - 2, syp + 1), (sxp + 2, syp + 1), (sxp, syp - h),
             ])
-        _NS_nyzrak._aaline(surface, (*_NS_nyzrak.PALETTE["ice_hot"], alpha),
-                (cx, base_y - 2), (cx, tip_y + 2), 1)
-        _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_pure"], alpha), (cx, tip_y + 1), 1)
+            NS._rl(surface, P["wy_light"], (sxp, syp - h, 1, 1))
+        # pelat perut
+        for i in range(3):
+            gy = y + 3 + i * 3
+            NS._rl(surface, P["belly_dark"], (x - 12 + 2 * facing, gy, 26, 1))
+        # bahu armor es
+        NS._rl(surface, P["ice_darkest"], (x - 6 * facing, y - 8, 12, 3))
+        NS._rl(surface, P["ice_dark"], (x - 5 * facing, y - 8, 10, 1))
+        NS._rl(surface, P["ice_light"], (x - 4 * facing, y - 8, 3, 1))
 
+    @staticmethod
+    def _draw_wy_head(surface, x, y, facing, phase, action):
+        """Kepala wyvern chunky: tengkorak blok + rahang + tanduk."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        F = facing
+        NS._rl(surface, P["wy_darkest"], (x - 4 * F, y - 6, 10, 9))
+        NS._rl(surface, P["wy_dark"], (x - 3 * F, y - 5, 8, 7))
+        NS._rl(surface, P["wy_mid"], (x - 3 * F, y - 5, 4, 3))
+        # moncong
+        NS._rl(surface, P["wy_darkest"], (x + 5 * F, y - 3, 8, 5))
+        NS._rl(surface, P["wy_dark"], (x + 5 * F, y - 3, 6, 3))
+        NS._rl(surface, P["wy_mid"], (x + 6 * F, y - 3, 3, 2))
+        # rahang terbuka + taring
+        open_j = 3 if (action == "attack" or action.startswith("cast")) else 2
+        NS._rp(surface, P["shadow_deep"], [
+            (x + 5 * F, y + 2), (x + 12 * F, y + 2),
+            (x + 11 * F, y + 2 + open_j), (x + 5 * F, y + 3),
+        ])
+        NS._rp(surface, P["wy_darkest"], [
+            (x + 5 * F, y + 2 + open_j), (x + 12 * F, y + 2 + open_j),
+            (x + 12 * F, y + 4 + open_j), (x + 6 * F, y + 4 + open_j),
+        ])
+        for tx in (7, 10):
+            NS._rp(surface, P["bone_light"], [
+                (x + tx * F, y + 2), (x + (tx + 1) * F, y + 2),
+                (x + (tx + 1) * F, y + 4),
+            ])
+        # napas dingin
+        bp = int(math.sin(phase * 3.0) * 1.2)
+        NS._rl(surface, P["ice_light"], (x + 13 * F, y + bp, 2, 2))
+        NS._rl(surface, P["ice_hot"], (x + 15 * F, y + bp + 1, 1, 1))
+        # mata oranye garang
+        NS._rl(surface, P["wy_eye_dark"], (x + F, y - 4, 3, 3))
+        glow = 0.6 + 0.4 * math.sin(phase * 2.2)
+        NS._rl(surface,
+               P["wy_eye_bright"] if glow > 0.6 else P["wy_eye_dark"],
+               (x + 2 * F, y - 3, 2, 1))
+        NS._rl(surface, P["wy_eye_hot"], (x + 2 * F, y - 3, 1, 1))
+        NS._rl(surface, P["wy_darkest"], (x + F, y - 6, 6, 1))
+        # tanduk kembar
+        for side in (0, 2):
+            hx = x + (side - 1) * F
+            NS._rline(surface, P["bone_dark"],
+                      (hx, y - 6), (hx - 3 * F, y - 14), 2)
+            NS._rline(surface, P["bone_light"],
+                      (hx, y - 6), (hx - 2 * F, y - 12), 1)
+            NS._rl(surface, P["ice_hot"], (hx - 3 * F, y - 15, 1, 1))
+        # sirip tengkorak belakang
+        NS._rp(surface, P["wing_dark"], [
+            (x - 4 * F, y - 5), (x - 9 * F, y - 9), (x - 8 * F, y - 3),
+        ])
+        NS._rp(surface, P["wing_mid"], [
+            (x - 4 * F, y - 5), (x - 8 * F, y - 8), (x - 7 * F, y - 4),
+        ])
 
-    # ---------------------------------------------------------------------------
-    # PROJECTILE SYSTEM
-    # ---------------------------------------------------------------------------
+    @staticmethod
+    def _draw_rider(surface, cx, cy, facing, phase, action, grip):
+        """Rider berjubah: jubah, torso armor, kepala berhood, lengan."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        F = facing
+        rx, ry = cx, cy + int(math.sin(phase * 0.8))     # breathing
+
+        # jubah bawah
+        NS._rp(surface, P["robe_darkest"], [
+            (rx - 7 * F, ry - 4), (rx + 7 * F, ry - 4),
+            (rx + 10 * F, ry + 8), (rx + 3 * F, ry + 11),
+            (rx - 3 * F, ry + 11), (rx - 10 * F, ry + 8),
+        ])
+        NS._rp(surface, P["robe_dark"], [
+            (rx - 6 * F, ry - 3), (rx + 6 * F, ry - 3),
+            (rx + 8 * F, ry + 7), (rx - 8 * F, ry + 7),
+        ])
+        NS._rp(surface, P["robe_mid"], [
+            (rx - 4 * F, ry - 2), (rx + 4 * F, ry - 2),
+            (rx + 5 * F, ry + 5), (rx - 5 * F, ry + 5),
+        ])
+        # bulu tepi jubah (piksel chunky)
+        for i in range(-3, 4):
+            NS._rl(surface, P["fur_dark"], (rx + i * 3 * F - 1, ry + 10, 2, 2))
+            NS._rl(surface, P["fur_mid"], (rx + i * 3 * F - 1, ry + 9, 2, 1))
+
+        # torso + armor dada
+        NS._rl(surface, P["robe_darkest"], (rx - 5 * F, ry - 12, 10, 9))
+        NS._rl(surface, P["robe_dark"], (rx - 4 * F, ry - 11, 8, 7))
+        NS._rl(surface, P["robe_mid"], (rx - 3 * F, ry - 11, 5, 4))
+        # armor bahu es
+        NS._rl(surface, P["ice_darkest"], (rx - 6 * F, ry - 13, 5, 3))
+        NS._rl(surface, P["ice_dark"], (rx - 5 * F, ry - 13, 3, 2))
+        NS._rl(surface, P["ice_mid"], (rx - 5 * F, ry - 13, 2, 1))
+        NS._rl(surface, P["ice_darkest"], (rx + 2 * F, ry - 13, 4, 3))
+        NS._rl(surface, P["ice_dark"], (rx + 2 * F, ry - 13, 2, 2))
+        # kerah bulu
+        NS._rl(surface, P["fur_dark"], (rx - 5 * F, ry - 14, 10, 3))
+        NS._rl(surface, P["fur_mid"], (rx - 4 * F, ry - 14, 8, 1))
+        NS._rl(surface, P["fur_light"], (rx - 3 * F, ry - 15, 4, 1))
+        # ikang pinggang + permata es
+        NS._rl(surface, P["metal_darkest"], (rx - 5 * F, ry - 4, 10, 2))
+        NS._rl(surface, P["metal_dark"], (rx - 4 * F, ry - 4, 8, 1))
+        NS._rl(surface, P["ice_dark"], (rx - F, ry - 5, 3, 3))
+        NS._rl(surface, P["ice_bright"], (rx - F, ry - 5, 1, 1))
+
+        # lengan tombak: bahu -> siku -> grip tombak (2 segmen)
+        shx, shy = rx + 4 * F, ry - 10
+        hx, hy = grip
+        ex = shx + (hx - shx) * 0.45
+        ey = shy + (hy - shy) * 0.45 - 2
+        NS._rline(surface, P["robe_darkest"], (shx, shy), (ex, ey), 3)
+        NS._rline(surface, P["robe_dark"], (shx, shy), (ex, ey), 2)
+        NS._rline(surface, P["robe_darkest"], (ex, ey), (hx, hy), 3)
+        NS._rline(surface, P["robe_dark"], (ex, ey), (hx, hy), 2)
+        NS._rc(surface, P["robe_darkest"], (hx + 1, hy + 1), 2)
+        NS._rc(surface, P["skin_dark"], (hx, hy), 2)
+        NS._rl(surface, P["skin_mid"], (hx - 1, hy - 1, 1, 1))
+
+        # lengan depan: merentang saat cast, santai saat lain
+        if action.startswith("cast"):
+            fx2, fy2 = rx + 5 * F, ry - 8
+        else:
+            fx2 = rx - 5 * F
+            fy2 = ry - 2 + int(math.sin(phase * 1.1))
+        NS._rline(surface, P["robe_dark"], (rx - 3 * F, ry - 9), (fx2, fy2), 2)
+        NS._rline(surface, P["robe_mid"], (rx - 3 * F, ry - 9), (fx2, fy2), 1)
+        NS._rc(surface, P["skin_dark"], (fx2, fy2), 2)
+        NS._rl(surface, P["skin_mid"], (fx2 - 1, fy2 - 1, 1, 1))
+        # bola mantra di tangan depan saat cast
+        if action.startswith("cast"):
+            pk = 0.6 + 0.4 * math.sin(phase * 5)
+            r = max(1, int(2 * pk))
+            col = P["frost_bright"] if action == "cast_q" else P["ice_bright"]
+            NS._rc(surface, P["frost_dark"] if action == "cast_q"
+                   else P["ice_dark"], (fx2 + F, fy2 - 1), r + 1)
+            NS._rc(surface, col, (fx2 + F, fy2 - 1), r)
+
+        # kepala berhood + wajah berbayang + mata menyala
+        hyy = ry - 20
+        NS._rp(surface, P["robe_darkest"], [
+            (rx - 4 * F, hyy + 4), (rx + 4 * F, hyy + 4),
+            (rx + 4 * F, hyy - 3), (rx + 2 * F, hyy - 6),
+            (rx - 2 * F, hyy - 6), (rx - 4 * F, hyy - 3),
+        ])
+        NS._rp(surface, P["robe_dark"], [
+            (rx - 3 * F, hyy + 4), (rx + 3 * F, hyy + 4),
+            (rx + 3 * F, hyy - 2), (rx + F, hyy - 5),
+            (rx - F, hyy - 5), (rx - 3 * F, hyy - 2),
+        ])
+        NS._rl(surface, P["shadow_deep"], (rx + F, hyy - 2, 2, 4))
+        if (int(phase * 2.0) % 7) != 0:      # kedip
+            NS._rl(surface, P["eye_bright"], (rx + F, hyy - 1, 2, 1))
+        NS._rl(surface, P["eye_hot"], (rx + 2 * F, hyy - 1, 1, 1))
+        # rambut pirang keluar dari hood
+        NS._rl(surface, P["hair_dark"], (rx - 2 * F, hyy + 3, 2, 3))
+        NS._rl(surface, P["hair_mid"], (rx - 2 * F, hyy + 3, 1, 2))
+        NS._rl(surface, P["ice_mid"], (rx - F, hyy - 5, 1, 1))
+
+    @staticmethod
+    def _draw_spear(surface, gx, gy, facing, angle, reach, charge):
+        """Tombak es: poros, cincin emas, mata kristal 4 faset."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        F = facing
+        dx, dy = math.cos(angle) * F, math.sin(angle)
+        tipx, tipy = gx + dx * reach, gy + dy * reach
+        nx, ny = -dy, dx
+        # poros (quad 2px)
+        NS._rp(surface, P["metal_darkest"], [
+            (int(gx - nx), int(gy - ny)), (int(tipx - nx), int(tipy - ny)),
+            (int(tipx + nx), int(tipy + ny)), (int(gx + nx), int(gy + ny)),
+        ])
+        NS._rline(surface, P["metal_dark"], (gx, gy), (tipx, tipy), 1)
+        NS._rline(surface, P["metal_light"],
+                  (gx - nx, gy - ny), (tipx - nx, tipy - ny), 1)
+        # cincin emas
+        for t in (0.3, 0.68):
+            rxp, ryp = gx + dx * reach * t, gy + dy * reach * t
+            NS._rline(surface, P["gold_mid"],
+                      (rxp - nx * 2, ryp - ny * 2),
+                      (rxp + nx * 2, ryp + ny * 2), 2)
+            NS._rl(surface, P["gold_light"], (int(rxp) - 1, int(ryp) - 1, 1, 1))
+        # mata kristal es
+        bx, by = tipx, tipy
+        p_tip = (int(bx + dx * 9), int(by + dy * 9))
+        p_up = (int(bx - nx * 4 + dx * 2), int(by - ny * 4 + dy * 2))
+        p_dn = (int(bx + nx * 4 + dx * 2), int(by + ny * 4 + dy * 2))
+        p_base = (int(bx - dx * 2), int(by - dy * 2))
+        NS._rp(surface, P["ice_darkest"], [p_base, p_up, p_tip, p_dn])
+        NS._rp(surface, P["ice_dark"], [
+            p_base,
+            (p_up[0] - (p_up[0] - p_tip[0]) // 3,
+             p_up[1] - (p_up[1] - p_tip[1]) // 3),
+            (int(p_tip[0] - dx), int(p_tip[1] - dy)),
+            (p_dn[0] - (p_dn[0] - p_tip[0]) // 3,
+             p_dn[1] - (p_dn[1] - p_tip[1]) // 3),
+        ])
+        NS._rp(surface, P["ice_mid"], [
+            p_base, ((p_up[0] + p_tip[0]) // 2, (p_up[1] + p_tip[1]) // 2),
+            p_tip,
+        ])
+        NS._rl(surface, P["ice_bright"],
+               (int(bx + dx * 2), int(by + dy * 2), 1, 1))
+        NS._rl(surface, P["ice_pure"], (p_tip[0], p_tip[1], 1, 1))
+        # nyala windup
+        if charge > 0.05:
+            r = 2 + int(charge * 3)
+            NS._rc(surface, P["ice_bright"], (int(tipx), int(tipy)), r)
+            NS._rc(surface, P["ice_hot"], (int(tipx), int(tipy)),
+                   max(1, r - 2))
+
+    @staticmethod
+    def _draw_rim_highlights(surface, x, y, facing, phase):
+        """Pass akhir: rim cahaya dingin di punggung + kilang baju."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        F = facing
+        tw = 0.6 + 0.4 * math.sin(phase * 1.7)
+        for i, (dx, dy) in enumerate(((-18, -8), (-12, -10), (-6, -11),
+                                      (0, -11), (6, -10))):
+            if (i % 2) == 0 or tw > 0.75:
+                NS._rl(surface, P["wy_high"] if tw > 0.75 else P["wy_light"],
+                       (x + dx * F, y + dy, 2, 1))
+        NS._rl(surface, P["ice_light"], (x - 4 * F, y - 8, 2, 1))
+
+    # ===================================================================
+    # STATE MANAGEMENT (sekali per draw jalur boss)
+    # ===================================================================
+    def _detect_moving(boss):
+        if not hasattr(boss, "_nyz_last_x"):
+            boss._nyz_last_x = boss.x
+            boss._nyz_last_y = boss.y
+            return False
+        dx = abs(boss.x - boss._nyz_last_x)
+        dy = abs(boss.y - boss._nyz_last_y)
+        mag = dx + dy
+        boss._nyz_last_x = boss.x
+        boss._nyz_last_y = boss.y
+        boss._nyz_move_mag = mag
+        return mag > 0.3
+
+    def _update_attack_anim(boss):
+        """Kemajuan serangan dari timer simulasi (frame @60fps)."""
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 45)))
+        timer = int(getattr(boss, "timer", 0))
+        previous = int(getattr(boss, "_nyz_prev_timer", 0))
+        active = bool(getattr(boss, "_nyz_attack_active", False))
+
+        if timer >= cooldown - 1 and previous <= 1:
+            boss._nyz_attack_active = True
+            boss._nyz_attack_frame = 0
+            boss._pose_variant = 1 if _NS_nyzrak._melee_variant(boss) else 0
+            active = True
+        elif active:
+            boss._nyz_attack_frame = int(getattr(boss, "_nyz_attack_frame", 0)) + 1
+            if boss._nyz_attack_frame > cooldown:
+                boss._nyz_attack_active = False
+                boss._nyz_attack_frame = 0
+                active = False
+        elif timer <= 0:
+            boss._nyz_attack_active = False
+            boss._nyz_attack_frame = 0
+            active = False
+
+        boss._nyz_prev_timer = timer
+        boss._nyz_attack_progress = (
+            min(1.0, getattr(boss, "_nyz_attack_frame", 0) / max(1, cooldown - 1))
+            if active else 0.0
+        )
+        boss._pose_variant_now = \
+            "sweep" if int(getattr(boss, "_pose_variant", 0) or 0) == 1 else "thrust"
+        if not getattr(boss, "alive", True) or getattr(boss, "hp", 1) <= 0:
+            boss._nyz_death_age = int(getattr(boss, "_nyz_death_age", 0)) + 1
+        else:
+            boss._nyz_death_age = 0
+
+    @staticmethod
+    def _resolve_pose(boss):
+        """(action, phase, ap) pose SAAT INI — dipakai fx layer & debug."""
+        moving = bool(getattr(boss, "_nyz_move_mag", 0) > 0.3)
+        run = float(getattr(boss, "_nyz_move_mag", 0)) > 2.4
+        info = _NS_nyzrak._NyzAnimController.resolve(boss, moving, run)
+        _NS_nyzrak._pose_variant_now = \
+            "sweep" if int(getattr(boss, "_pose_variant", 0) or 0) == 1 else "thrust"
+        return info["action"], info["phase"], info["ap"]
+
+    @staticmethod
+    def _spear_state(boss, x, y):
+        """Geometri tombak layar-lokal untuk lapisan FX (trail/muzzle)."""
+        NS = _NS_nyzrak
+        action, phase, ap = NS._resolve_pose(boss)
+        facing = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        ang_deg, reach, gx, gy = NS._spear_pose_geom(action, ap, phase)
+        ang = math.radians(ang_deg)
+        scale = NS.render_scale_of(boss)
+        grip = pygame.Vector2(x + gx * NS.PIXEL * facing * scale,
+                              y + gy * NS.PIXEL * scale)
+        d = pygame.Vector2(math.cos(ang) * facing, math.sin(ang))
+        tip = grip + d * (reach * NS.PIXEL * scale)
+        active = (action == "attack"
+                  and NS.ATTACK_ACTIVE[0] <= ap <= NS.ATTACK_ACTIVE[1])
+        return {"grip": grip, "tip": tip, "angle": ang, "action": action,
+                "ap": ap, "facing": facing, "active": active}
+
+    @staticmethod
+    def render_scale_of(boss):
+        """Faktor skala pipeline hero (jalur boss = 1.0)."""
+        v = float(getattr(boss, "_render_scale", 1.0) or 1.0)
+        return max(0.05, min(1.6, v if v > 0.02 else 1.0))
+
+    # ===================================================================
+    # PROJECTILE CANVAS FALLBACK (hidup saat modul FX tak tersedia)
+    # ===================================================================
     class IceProjectile:
-        """Ice shard/snowflake projectile for Nyzrak's ranged attack."""
+        """Pecahan es berputar — serangan dasar (fallback canvas)."""
         def __init__(self, sx, sy, tx, ty, speed=7.0):
             self.x = float(sx)
             self.y = float(sy)
@@ -3538,9 +4521,7 @@ class _NS_nyzrak:
             self.age = 0
             self.trail = []
             self.spin = 0.0
-            dx = tx - sx
-            dy = ty - sy
-            self.angle = math.atan2(dy, dx)
+            self.angle = math.atan2(ty - sy, tx - sx)
 
         def update(self):
             if not self.alive:
@@ -3549,53 +4530,49 @@ class _NS_nyzrak:
             self.spin += 0.4
             dx = self.tx - self.x
             dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
+            dist = math.hypot(dx, dy)
             if dist < self.speed + 4:
                 self.alive = False
                 return
             self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 10:
+            if len(self.trail) > 8:
                 self.trail.pop(0)
             self.x += (dx / dist) * self.speed
             self.y += (dy / dist) * self.speed
 
         def draw(self, surface, phase):
-            # Trail with snowflakes
+            NS = _NS_nyzrak
+            P = NS.PALETTE
             for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(50 + i * 15)
-                r = max(1, 4 - (len(self.trail) - i))
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_dark"], alpha), (tx, ty), r + 2)
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_light"], alpha), (tx, ty), r)
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_hot"], alpha // 2),
-                          (tx, ty), max(1, r - 1))
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                # Outer glow
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_dark"], 130), (px, py), 12)
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_mid"], 180), (px, py), 8)
-
-                # Snowflake sprite spinning
-                _NS_nyzrak._draw_snowflake(surface, px, py, 6, 255, rotate=self.spin)
-
-                # Inner shard (diamond)
-                dx = math.cos(self.angle)
-                dy = math.sin(self.angle)
-                perp_x = -dy
-                perp_y = dx
-
-                shard = [
-                    (px + int(dx * 5), py + int(dy * 5)),
-                    (px + int(perp_x * 2), py + int(perp_y * 2)),
-                    (px - int(dx * 3), py - int(dy * 3)),
-                    (px - int(perp_x * 2), py - int(perp_y * 2)),
-                ]
-                _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["ice_bright"], shard)
-                _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["ice_pure"], (px, py), 2)
+                alpha = int(40 + i * 18)
+                NS._aacircle(surface, (*P["ice_dark"], alpha), (tx, ty), 2)
+                NS._aacircle(surface, (*P["ice_light"], alpha), (tx, ty), 1)
+            if not self.alive:
+                return
+            px, py = int(self.x), int(self.y)
+            dx, dy = math.cos(self.angle), math.sin(self.angle)
+            nx, ny = -dy, dx
+            NS._poly(surface, P["ice_darkest"], [
+                (px + int(dx * 8), py + int(dy * 8)),
+                (px + int(nx * 3), py + int(ny * 3)),
+                (px - int(dx * 3), py - int(dy * 3)),
+                (px - int(nx * 3), py - int(ny * 3)),
+            ])
+            NS._poly(surface, P["ice_mid"], [
+                (px + int(dx * 6), py + int(dy * 6)),
+                (px + int(nx * 2), py + int(ny * 2)),
+                (px - int(dx * 2), py - int(dy * 2)),
+                (px - int(nx * 2), py - int(ny * 2)),
+            ])
+            NS._poly(surface, P["ice_bright"], [
+                (px + int(dx * 5), py + int(dy * 5)),
+                (px, py), (px - dx, py - dy),
+            ])
+            NS._draw_snowflake(surface, px, py, 4, 200, rotate=self.spin)
 
 
     class SplinterShard:
-        """Splinter Blast (W) — small shard flying outward."""
+        """Splinter Blast (W) — serpihan cepat keluar (fallback canvas)."""
         def __init__(self, x, y, dir_x, dir_y, speed=6.0, life=25):
             self.x = float(x)
             self.y = float(y)
@@ -3614,52 +4591,42 @@ class _NS_nyzrak:
                 self.alive = False
                 return
             self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 6:
+            if len(self.trail) > 5:
                 self.trail.pop(0)
             self.x += self.dir_x * self.speed
             self.y += self.dir_y * self.speed
 
         def draw(self, surface, phase):
+            NS = _NS_nyzrak
+            P = NS.PALETTE
             for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(40 + i * 20)
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_light"], alpha), (tx, ty), 2)
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_hot"], alpha), (tx, ty), 1)
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                dx = self.dir_x
-                dy = self.dir_y
-                perp_x = -dy
-                perp_y = dx
-
-                # Long thin shard
-                shard = [
-                    (px + int(dx * 8), py + int(dy * 8)),
-                    (px + int(perp_x * 2), py + int(perp_y * 2)),
-                    (px - int(dx * 4), py - int(dy * 4)),
-                    (px - int(perp_x * 2), py - int(perp_y * 2)),
-                ]
-                _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["shadow_deep"],
-                      [(p[0] + 1, p[1] + 1) for p in shard])
-                _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["ice_darkest"], shard)
-                _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["ice_dark"], [
-                    (px + int(dx * 7), py + int(dy * 7)),
-                    (px + int(perp_x), py + int(perp_y)),
-                    (px - int(dx * 3), py - int(dy * 3)),
-                    (px - int(perp_x), py - int(perp_y)),
-                ])
-                _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["ice_bright"], [
-                    (px + int(dx * 6), py + int(dy * 6)),
-                    (px, py),
-                    (px - int(dx * 2), py - int(dy * 2)),
-                ])
-                _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["ice_pure"],
-                        (px + int(dx * 6), py + int(dy * 6)),
-                        (px - int(dx * 2), py - int(dy * 2)), 1)
+                alpha = int(40 + i * 22)
+                NS._aacircle(surface, (*P["ice_light"], alpha), (tx, ty), 1)
+            if not self.alive:
+                return
+            px, py = int(self.x), int(self.y)
+            dx, dy = self.dir_x, self.dir_y
+            nx, ny = -dy, dx
+            NS._poly(surface, P["ice_darkest"], [
+                (px + int(dx * 8), py + int(dy * 8)),
+                (px + int(nx * 2), py + int(ny * 2)),
+                (px - int(dx * 4), py - int(dy * 4)),
+                (px - int(nx * 2), py - int(ny * 2)),
+            ])
+            NS._poly(surface, P["ice_dark"], [
+                (px + int(dx * 7), py + int(dy * 7)),
+                (px + int(nx), py + int(ny)),
+                (px - int(dx * 3), py - int(dy * 3)),
+                (px - int(nx), py - int(ny)),
+            ])
+            NS._poly(surface, P["ice_bright"], [
+                (px + int(dx * 6), py + int(dy * 6)),
+                (px, py), (px - int(dx * 2), py - int(dy * 2)),
+            ])
 
 
     class ArcticBurnBeam:
-        """Q - Arctic Burn continuous purple frost beam."""
+        """Q — beam frost ungu menerjang target (fallback canvas)."""
         def __init__(self, sx, sy, tx, ty, life=45):
             self.sx = sx
             self.sy = sy
@@ -3675,123 +4642,71 @@ class _NS_nyzrak:
                 self.alive = False
 
         def draw(self, surface, phase):
+            NS = _NS_nyzrak
+            P = NS.PALETTE
             t = self.age / self.life
             if t < 0.15:
-                alpha_scale = t / 0.15
+                a_scale = t / 0.15
             elif t < 0.75:
-                alpha_scale = 1.0
+                a_scale = 1.0
             else:
-                alpha_scale = 1 - (t - 0.75) / 0.25
-
+                a_scale = 1 - (t - 0.75) / 0.25
             dx = self.tx - self.sx
             dy = self.ty - self.sy
-            dist = math.sqrt(dx * dx + dy * dy)
+            dist = math.hypot(dx, dy)
             if dist < 1:
                 return
-            dir_x = dx / dist
-            dir_y = dy / dist
-            perp_x = -dir_y
-            perp_y = dir_x
-
-            # Beam extends progressively at start
+            ux, uy = dx / dist, dy / dist
+            nx, ny = -uy, ux
             beam_len = dist * min(1.0, t / 0.3)
-
-            # Multi-layer purple frost beam
-            for i in range(int(beam_len / 3)):
-                t_pos = i / max(1, int(beam_len / 3))
-                base_x = self.sx + dir_x * beam_len * t_pos
-                base_y = self.sy + dir_y * beam_len * t_pos
-
-                # Sinusoidal wave
-                wave = math.sin(phase * 6 + t_pos * 12) * 5
-                fx = int(base_x + perp_x * wave)
-                fy = int(base_y + perp_y * wave)
-
-                alpha = int(220 * alpha_scale)
-                size = int(8 + math.sin(phase * 3 + t_pos * 10) * 3)
-
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["frost_darkest"], alpha), (fx, fy), size + 2)
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["frost_dark"], alpha), (fx, fy), size)
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["frost_mid"], alpha), (fx, fy), max(1, size - 2))
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["frost_light"], alpha), (fx, fy), max(1, size - 4))
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["frost_bright"], alpha), (fx, fy), max(1, size - 6))
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["frost_hot"], alpha), (fx, fy), max(1, size - 7))
-
-            # Snowflakes along beam
-            for i in range(6):
-                t_pos = (phase * 0.4 + i * 0.17) % 1.0
-                if t_pos > beam_len / dist:
+            steps = max(2, int(beam_len / 5))
+            edge_top, edge_bot, core = [], [], []
+            for i in range(steps + 1):
+                tp = i / steps
+                w = 3.0 + 2.0 * math.sin(phase * 6 + tp * 9)
+                wav = math.sin(phase * 6 + tp * 12) * 2.0
+                bx = self.sx + ux * beam_len * tp
+                by = self.sy + uy * beam_len * tp
+                edge_top.append((bx + nx * (w + wav), by + ny * (w + wav)))
+                edge_bot.append((bx - nx * (w - wav), by - ny * (w - wav)))
+                core.append((bx, by))
+            NS._poly(surface, (*P["frost_dark"], int(150 * a_scale)),
+                     edge_top + edge_bot[::-1])
+            NS._poly(surface, (*P["frost_mid"], int(190 * a_scale)),
+                     [(cx_ + nx * 1.6, cy_ + ny * 1.6) for cx_, cy_ in core]
+                     + [(cx_ - nx * 1.6, cy_ - ny * 1.6)
+                        for cx_, cy_ in core[::-1]])
+            NS._poly(surface, (*P["frost_hot"], int(220 * a_scale)),
+                     [(cx_ + nx * 0.7, cy_ + ny * 0.7) for cx_, cy_ in core]
+                     + [(cx_ - nx * 0.7, cy_ - ny * 0.7)
+                        for cx_, cy_ in core[::-1]])
+            for i in range(5):
+                tp = (phase * 0.5 + i * 0.2) % 1.0
+                if tp > beam_len / dist:
                     continue
-                sx = int(self.sx + dir_x * dist * t_pos)
-                sy = int(self.sy + dir_y * dist * t_pos)
-                _NS_nyzrak._draw_snowflake(surface, sx + int(perp_x * 8), sy + int(perp_y * 8),
-                                2, int(230 * alpha_scale), rotate=phase * 2 + i)
-
-            # Impact end burst
-            if t > 0.3 and t < 0.85:
-                impact_intensity = math.sin((t - 0.3) / 0.55 * math.pi)
-                ex = int(self.sx + dir_x * beam_len)
-                ey = int(self.sy + dir_y * beam_len)
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["frost_dark"], int(150 * impact_intensity)),
-                          (ex, ey), int(20 * impact_intensity))
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["frost_bright"], int(200 * impact_intensity)),
-                          (ex, ey), int(12 * impact_intensity))
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_pure"], int(255 * impact_intensity)),
-                          (ex, ey), int(6 * impact_intensity))
-
-                # Ice crystals bursting
+                fx = self.sx + ux * dist * tp + nx * 6
+                fy = self.sy + uy * dist * tp + ny * 6
+                NS._draw_snowflake(surface, int(fx), int(fy), 2,
+                                   int(210 * a_scale), rotate=phase * 2 + i)
+            if 0.3 < t < 0.85:
+                k = math.sin((t - 0.3) / 0.55 * math.pi)
+                ex = int(self.sx + ux * beam_len)
+                ey = int(self.sy + uy * beam_len)
+                for r, col in ((18, "frost_dark"), (11, "frost_bright"),
+                               (5, "ice_pure")):
+                    NS._aacircle(surface, (*P[col], int(200 * k)),
+                                 (ex, ey), max(1, int(r * k)))
                 for i in range(6):
-                    angle = i * math.pi / 3 + phase
-                    spike_h = int(15 * impact_intensity)
-                    cx = ex + int(math.cos(angle) * 15)
-                    cy = ey + int(math.sin(angle) * 8)
-                    _NS_nyzrak._draw_crystal_spike(surface, cx, cy, cy - spike_h, 2,
-                                         int(230 * impact_intensity))
+                    a = i * math.pi / 3 + phase
+                    cx2 = ex + int(math.cos(a) * 14)
+                    cy2 = ey + int(math.sin(a) * 7)
+                    NS._draw_crystal_spike(surface, cx2, cy2,
+                                           cy2 - max(2, int(13 * k)), 2,
+                                           int(220 * k), "frost")
 
-
-    # ---------------------------------------------------------------------------
-    # State management
-    # ---------------------------------------------------------------------------
-    def _detect_moving(boss):
-        if not hasattr(boss, "_nyz_last_x"):
-            boss._nyz_last_x = boss.x
-            boss._nyz_last_y = boss.y
-            return False
-        dx = abs(boss.x - boss._nyz_last_x)
-        dy = abs(boss.y - boss._nyz_last_y)
-        boss._nyz_last_x = boss.x
-        boss._nyz_last_y = boss.y
-        return dx + dy > 0.3
-
-
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 45)))
-        timer = int(getattr(boss, "timer", 0))
-        previous = int(getattr(boss, "_nyz_prev_timer", 0))
-        active = bool(getattr(boss, "_nyz_attack_active", False))
-
-        if timer >= cooldown - 1 and previous <= 1:
-            boss._nyz_attack_active = True
-            boss._nyz_attack_frame = 0
-            active = True
-        elif active:
-            boss._nyz_attack_frame = int(getattr(boss, "_nyz_attack_frame", 0)) + 1
-            if boss._nyz_attack_frame > cooldown:
-                boss._nyz_attack_active = False
-                boss._nyz_attack_frame = 0
-                active = False
-        elif timer <= 0:
-            boss._nyz_attack_active = False
-            boss._nyz_attack_frame = 0
-            active = False
-
-        boss._nyz_prev_timer = timer
-        boss._nyz_attack_progress = (
-            min(1.0, getattr(boss, "_nyz_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
-
-
+    # ------------------------------------------------------------------
+    # Manajemen projectile canvas fallback
+    # ------------------------------------------------------------------
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_nyz_projectiles"):
             boss._nyz_projectiles = []
@@ -3804,7 +4719,7 @@ class _NS_nyzrak:
             p.update()
             p.draw(surface, phase)
         boss._nyz_projectiles = [p for p in boss._nyz_projectiles
-                                  if p.alive or p.age < 3]
+                                 if p.alive or p.age < 3]
 
         for s in boss._nyz_shards:
             s.update()
@@ -3838,1049 +4753,141 @@ class _NS_nyzrak:
             boss._nyz_beams = []
         boss._nyz_beams.append(_NS_nyzrak.ArcticBurnBeam(sx, sy, tx, ty))
 
-
     # ===================================================================
-    # MAIN ENTRY
+    # SNOWFLAKE / CRYSTAL HELPERS
     # ===================================================================
-    def draw_nyzrak(surface, boss, x, y):
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_nyzrak._detect_moving(boss)
-        _NS_nyzrak._update_attack_anim(boss)
-
-        attacking = (
-            getattr(boss, "_nyz_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 45) - 15
-        )
-
-        # Background aura
-        _NS_nyzrak._draw_frost_aura(surface, x, y, pulse, active_skill)
-        _NS_nyzrak._draw_ground_frost(surface, x, y + 46, pulse, active_skill)
-
-        # Ground skill effects
-        if active_skill == "e":
-            _NS_nyzrak._draw_winters_curse_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_nyzrak._draw_cold_embrace_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # Character
-        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
-        _tgt, _tx, _ty = surface, x, y
-        if flash > 0:
-            NS = _NS_nyzrak
-            if NS._flash_buf is None:
-                NS._flash_buf = pygame.Surface((240, 260), pygame.SRCALPHA)
-            NS._flash_buf.fill((0, 0, 0, 0))
-            NS._record_shadow = []
-            _tgt, _tx, _ty = NS._flash_buf, 120, 135
-
-        if attacking:
-            _NS_nyzrak._draw_nyz_attack(_tgt, boss, _tx, _ty)
-        elif active_skill in ("q", "w"):
-            _NS_nyzrak._draw_nyz_casting(_tgt, boss, _tx, _ty, active_skill, skill_timer)
-        elif moving:
-            _NS_nyzrak._draw_nyz_walk(_tgt, boss, _tx, _ty)
-        else:
-            _NS_nyzrak._draw_nyz_idle(_tgt, boss, _tx, _ty)
-
-        if flash > 0:
-            NS = _NS_nyzrak
-            surface.blit(NS._flash_buf, (x - _tx, y - _ty))
-            w = int(235 * min(1.0, flash / 8.0))
-            m = pygame.mask.from_surface(NS._flash_buf, 50)
-            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
-                               unsetcolor=(0, 0, 0, 0))
-            for rect in (NS._record_shadow or ()):
-                wht.fill((0, 0, 0, 0), rect)
-            surface.blit(wht, (x - _tx, y - _ty),
-                         special_flags=pygame.BLEND_RGB_ADD)
-            NS._record_shadow = None
-
-        # Skill spawn triggers
-        _NS_nyzrak._handle_skill_projectiles(boss, x, y, active_skill, skill_timer)
-
-        # Projectiles
-        _NS_nyzrak._manage_projectiles(boss, surface, pulse)
-
-        # Foreground skill effects
-        if active_skill == "e":
-            _NS_nyzrak._draw_winters_curse_foreground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_nyzrak._draw_cold_embrace_foreground(surface, boss, x, y, skill_timer, pulse)
-
-
-    def _handle_skill_projectiles(boss, x, y, active_skill, timer):
-        tx, ty = _NS_nyzrak._target_position(boss, x, y)
-
-        if active_skill == "q":
-            duration = 50
-            progress = max(0.0, min(1.0, 1 - timer / duration))
-            if 0.35 < progress < 0.45 and not getattr(boss, "_nyz_q_spawned", False):
-                _NS_nyzrak._spawn_arctic_burn(boss, x + 25 * boss.direction, y - 15, tx, ty)
-                boss._nyz_q_spawned = True
-            if progress > 0.7:
-                boss._nyz_q_spawned = False
-
-        elif active_skill == "w":
-            duration = 50
-            progress = max(0.0, min(1.0, 1 - timer / duration))
-            if 0.35 < progress < 0.45 and not getattr(boss, "_nyz_w_spawned", False):
-                # Burst of shards in cone direction
-                sx = x + 25 * boss.direction
-                sy = y - 10
-                # Spawn 5 shards in a forward cone
-                base_angle = math.atan2(ty - sy, (tx - sx) or 1)
-                for i in range(5):
-                    spread = (i - 2) * 0.25
-                    a = base_angle + spread
-                    if not hasattr(boss, "_nyz_shards"):
-                        boss._nyz_shards = []
-                    boss._nyz_shards.append(_NS_nyzrak.SplinterShard(
-                        sx, sy, math.cos(a), math.sin(a), speed=6.0, life=35
-                    ))
-                boss._nyz_w_spawned = True
-            if progress > 0.7:
-                boss._nyz_w_spawned = False
-
-
-    # ===================================================================
-    # POSE MODES
-    # ===================================================================
-    def _draw_nyz_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 3)
-        _NS_nyzrak._draw_shadow(surface, x, y + 55)
-        _NS_nyzrak._draw_frost_wisps(surface, x, y + 40, boss.pulse)
-        _NS_nyzrak._draw_nyz_full(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
-
-    def _draw_nyz_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.3
-        bob = int(math.sin(phase * 1.2) * 4)
-        sway = int(math.sin(phase * 0.5) * 2)
-        _NS_nyzrak._draw_shadow(surface, x + sway, y + 55)
-        _NS_nyzrak._draw_frost_wisps(surface, x + sway, y + 40, phase, trail=True,
-                          facing=boss.direction)
-        _NS_nyzrak._draw_nyz_full(surface, x + sway, y - bob, boss.direction, phase, "walk")
-
-
-    def _draw_nyz_attack(surface, boss, x, y):
-        progress = getattr(boss, "_nyz_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        recoil = int(math.sin(progress * math.pi) * 3) * -boss.direction
-
-        # Spawn ice projectile mid-attack
-        if 0.35 < progress < 0.45 and not getattr(boss, "_nyz_atk_spawned", False):
-            tx, ty = _NS_nyzrak._target_position(boss, x, y)
-            # Fires from spear tip (above rider)
-            sx = x + 20 * boss.direction
-            sy = y - 30
-            _NS_nyzrak._spawn_ice_projectile(boss, sx, sy, tx, ty)
-            boss._nyz_atk_spawned = True
-        if progress < 0.1 or progress > 0.9:
-            boss._nyz_atk_spawned = False
-
-        _NS_nyzrak._draw_shadow(surface, x + recoil, y + 55)
-        _NS_nyzrak._draw_frost_wisps(surface, x + recoil, y + 40, boss.pulse, intense=True)
-        _NS_nyzrak._draw_nyz_full(surface, x + recoil, y + bob, boss.direction, boss.pulse,
-                       "attack", progress)
-        _NS_nyzrak._draw_cast_flash(surface, x + recoil, y - 25, boss.direction, progress)
-
-
-    def _draw_nyz_casting(surface, boss, x, y, skill, timer):
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_nyzrak._draw_shadow(surface, x, y + 55)
-        _NS_nyzrak._draw_frost_wisps(surface, x, y + 40, boss.pulse, intense=True)
-        _NS_nyzrak._draw_nyz_full(surface, x, y + bob, boss.direction, boss.pulse,
-                       "cast_" + skill)
-
-
-    # ===================================================================
-    # FULL COMPOSITE - Wyvern + Rider
-    # ===================================================================
-    def _draw_nyz_full(surface, cx, cy, facing, phase, action, attack_progress=0):
-        """Komposit ORIGINAL-MAX: buffer tetap + outline + lighting."""
-        _composite_boss_body(
-            surface, _NS_nyzrak, _NS_nyzrak._draw_nyz_full_raw,
-            cx, cy, facing, phase, action, attack_progress,
-            rim_add=(130, 220, 250), bsize=220)
-
-    def _masterwork_finish(surface, cx, cy, facing, phase, action,
-                           attack_progress=0):
-        """ORIGINAL-MAX detail pass: pemisah wyvern/rider + wajah rider + rim."""
+    @staticmethod
+    def _draw_snowflake(surface, cx, cy, size=3, alpha=255, rotate=0.0):
+        """Bintang salju 6 lengan — 1px, alpha-safe."""
         P = _NS_nyzrak.PALETTE
-        hx = cx - 3 * facing
-        hy = cy - 22
-        for ex in (-2, 2):
-            pygame.draw.rect(surface, P["skin_light"], (hx + ex - 1, hy - 2, 2, 2))
-            pygame.draw.rect(surface, P["shadow_deep"], (hx + ex - 1, hy - 2, 1, 1))
-        pygame.draw.rect(surface, P["skin_mid"], (hx - 1, hy + 2, 2, 1))
-        pygame.draw.circle(surface, P["ice_bright"], (hx - 3, hy + 2), 1)
-        pygame.draw.circle(surface, P["ice_bright"], (hx + 3, hy + 2), 1)
-        pygame.draw.line(surface, P["shadow_deep"], (cx - 16, cy - 4), (cx + 16, cy - 4), 1)
-        pygame.draw.line(surface, P["wing_darkest"], (cx - 22, cy - 10), (cx - 8, cy + 8), 1)
-        pygame.draw.line(surface, P["wing_darkest"], (cx + 22, cy - 10), (cx + 8, cy + 8), 1)
-        ey = cy + 1
-        ex = cx + 23 * facing
-        pygame.draw.circle(surface, P["wy_eye_hot"], (ex, ey - 1), 2)
-        pygame.draw.circle(surface, P["ice_bright"], (ex, ey - 1), 1)
-        for side in (-1, 1):
-            tip_x = cx + side * 41
-            tip_y = cy - 18
-            pygame.draw.circle(surface, P["wing_light"], (tip_x, tip_y), 2)
-            pygame.draw.line(surface, P["wing_light"], (cx + side * 12, cy - 6),
-                             (cx + side * 28, cy - 14 + side), 1)
-        spear_x = cx + 18 * facing
-        spear_y = cy - 32
-        pygame.draw.circle(surface, P["ice_hot"], (spear_x, spear_y - 2), 2)
-        pygame.draw.circle(surface, P["ice_pure"], (spear_x, spear_y - 2), 1)
+        cx, cy = int(cx), int(cy)
+        for i in range(6):
+            a = rotate + i * math.pi / 3
+            ex = cx + int(math.cos(a) * size)
+            ey = cy + int(math.sin(a) * size)
+            _NS_nyzrak._aaline(surface, (*P["ice_hot"], alpha), (cx, cy),
+                               (ex, ey), 1)
+            mx = cx + int(math.cos(a) * max(1, size - 1))
+            my = cy + int(math.sin(a) * max(1, size - 1))
+            tt = a + math.pi / 2
+            _NS_nyzrak._aaline(surface, (*P["ice_bright"], alpha),
+                               (mx, my),
+                               (mx + int(math.cos(tt)), my + int(math.sin(tt))),
+                               1)
+        pygame.draw.rect(surface, (*P["ice_pure"], alpha), (cx, cy, 1, 1))
 
 
-    def _draw_nyz_full_raw(surface, cx, cy, facing, phase, action,
-                           attack_progress=0):
-        # Back wings first
-        _NS_nyzrak._draw_wyvern_wings_back(surface, cx, cy, facing, phase, action)
-
-        # Wyvern tail (behind body)
-        _NS_nyzrak._draw_wyvern_tail(surface, cx, cy + 8, facing, phase, action)
-
-        # Wyvern body
-        _NS_nyzrak._draw_wyvern_body(surface, cx, cy + 5, facing, phase)
-
-        # Wyvern head
-        _NS_nyzrak._draw_wyvern_head(surface, cx + 20 * facing, cy + 5, facing, phase, action)
-
-        # Wyvern legs (small, front)
-        _NS_nyzrak._draw_wyvern_legs(surface, cx, cy + 15, facing, phase, action)
-
-        # RIDER on top
-        _NS_nyzrak._draw_rider(surface, cx - 3 * facing, cy - 18, facing, phase, action,
-                    attack_progress)
-
-        # Front wings (overlap when needed)
-        if action == "attack" or action.startswith("cast"):
-            _NS_nyzrak._draw_wyvern_wing_front(surface, cx, cy, facing, phase)
-
-        # ORIGINAL-MAX detail pass (separator + wajah rider + rim)
-        _NS_nyzrak._masterwork_finish(surface, cx, cy, facing, phase, action,
-                                      attack_progress)
-
-
-    def _draw_wyvern_wings_back(surface, cx, cy, facing, phase, action):
-        """Wyvern wings spread out behind (both sides)."""
-        flap_speed = 2.5 if action == "walk" else 1.2
-        flap = math.sin(phase * flap_speed) * 0.35
-
-        for side in (-1, 1):
-            wing_base_x = cx + side * 10
-            wing_base_y = cy - 5
-
-            # Wing extends outward and slightly up/back
-            tip_x = cx + side * (36 + int(math.cos(flap) * 5))
-            tip_y = cy - 18 + int(math.sin(flap) * 6)
-            mid_x = cx + side * 28
-            mid_y = cy - 8 + int(math.sin(flap) * 5)
-            low_x = cx + side * 24
-            low_y = cy + 10 + int(math.sin(flap) * 3)
-
-            # Membrane
-            wing_shape = [
-                (wing_base_x, wing_base_y),
-                (tip_x, tip_y),
-                (cx + side * 32, cy - 6 + int(math.sin(flap) * 4)),
-                (mid_x, mid_y),
-                (cx + side * 30, cy + 3 + int(math.sin(flap) * 4)),
-                (low_x, low_y),
-                (cx + side * 6, cy + 6),
-            ]
-
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["shadow_deep"],
-                  [(p[0] + 2, p[1] + 2) for p in wing_shape])
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wing_darkest"], wing_shape)
-            # Inner brighter
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wing_dark"], [
-                (wing_base_x + side, wing_base_y + 1),
-                (tip_x - side * 2, tip_y + 1),
-                (mid_x - side, mid_y),
-                (low_x - side, low_y - 1),
-                (cx + side * 6, cy + 5),
-            ])
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wing_mid"], [
-                (wing_base_x + side * 2, wing_base_y + 2),
-                (cx + side * 24, mid_y + 1),
-                (low_x - side * 2, low_y - 2),
-                (cx + side * 7, cy + 4),
-            ])
-
-            # Wing bones
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wing_darkest"],
-                    (wing_base_x, wing_base_y), (tip_x, tip_y), 2)
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wing_darkest"],
-                    (wing_base_x, wing_base_y), (mid_x, mid_y), 2)
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wing_darkest"],
-                    (wing_base_x, wing_base_y), (low_x, low_y), 2)
-
-            # Highlight on bones
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wing_light"],
-                    (wing_base_x + side, wing_base_y - 1),
-                    (tip_x - side * 2, tip_y - 1), 1)
-
-            # Claw at wing tip
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["bone_dark"], [
-                (tip_x, tip_y),
-                (tip_x + side * 3, tip_y - 2),
-                (tip_x + side, tip_y + 1),
-            ])
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["bone_light"],
-                      (tip_x + side * 2, tip_y - 1), 1)
-
-
-    def _draw_wyvern_wing_front(surface, cx, cy, facing, phase):
-        """Highlight overlay on wings."""
-        for side in (-1, 1):
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wing_light"],
-                    (cx + side * 12, cy - 2),
-                    (cx + side * 28, cy - 10), 1)
-
-
-    def _draw_wyvern_tail(surface, cx, cy, facing, phase, action):
-        """Long curling wyvern tail."""
-        tail_wave = math.sin(phase * 0.8) * 3
-        # Tail curves back and slightly up
-        segments = [
-            (cx - facing * 14, cy + 2),
-            (cx - facing * 22, cy + int(tail_wave)),
-            (cx - facing * 30, cy - 3 + int(tail_wave * 1.5)),
-            (cx - facing * 35, cy - 10 + int(tail_wave * 1.5)),
-            (cx - facing * 36, cy - 18 + int(tail_wave)),
-        ]
-
-        # Draw tail as connected thick segments
-        for i in range(len(segments) - 1):
-            thickness = 5 - i
-            x1, y1 = segments[i]
-            x2, y2 = segments[i + 1]
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["shadow_deep"],
-                    (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), thickness + 2)
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wy_darkest"], (x1, y1), (x2, y2), thickness + 1)
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wy_dark"], (x1, y1), (x2, y2), thickness)
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wy_mid"], (x1, y1), (x2, y2), max(1, thickness - 2))
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wy_light"], (x1 - 1, y1), (x2 - 1, y2), 1)
-
-        # Tail fin at end
-        tip_x, tip_y = segments[-1]
-        fin_pts = [
-            (tip_x, tip_y),
-            (tip_x - facing * 4, tip_y - 8),
-            (tip_x + facing * 2, tip_y - 4),
-            (tip_x + facing * 5, tip_y - 6),
-            (tip_x + facing * 2, tip_y + 2),
-        ]
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_darkest"], fin_pts)
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_dark"], [
-            (tip_x, tip_y - 1),
-            (tip_x - facing * 3, tip_y - 7),
-            (tip_x + facing * 1, tip_y - 4),
-            (tip_x + facing * 4, tip_y - 5),
-            (tip_x + facing * 1, tip_y + 1),
-        ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_mid"], [
-            (tip_x, tip_y - 1),
-            (tip_x - facing * 2, tip_y - 5),
-            (tip_x + facing * 3, tip_y - 4),
-        ])
-
-        # Tail spikes along back
-        for i, (sx, sy) in enumerate(segments[:-1]):
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_darkest"], [
-                (sx - 1, sy - 2),
-                (sx + 1, sy - 2),
-                (sx, sy - 5 - (i % 2)),
-            ])
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_mid"], [
-                (sx, sy - 2),
-                (sx + 1, sy - 2),
-                (sx, sy - 4 - (i % 2)),
-            ])
-
-
-    def _draw_wyvern_body(surface, cx, cy, facing, phase):
-        """Ice wyvern body — teal/cyan dragon."""
-        # Body shadow
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["shadow_deep"], (cx - 18, cy - 5, 36, 22))
-
-        # Main body (elongated oval)
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["wy_darkest"], (cx - 17, cy - 7, 34, 20))
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["wy_dark"], (cx - 15, cy - 6, 30, 17))
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["wy_mid"], (cx - 13, cy - 5, 26, 14))
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["wy_light"], (cx - 10, cy - 6, 20, 8))
-
-        # Belly (lighter underside)
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["belly_dark"], (cx - 10, cy + 5, 20, 8))
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["belly_mid"], (cx - 8, cy + 6, 16, 5))
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["belly_light"], (cx - 5, cy + 6, 10, 3))
-
-        # Belly scales lines
-        for xoff in (-5, 0, 5):
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["belly_dark"],
-                    (cx + xoff - 2, cy + 6), (cx + xoff + 2, cy + 6), 1)
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["belly_dark"],
-                    (cx + xoff - 2, cy + 9), (cx + xoff + 2, cy + 9), 1)
-
-        # Dorsal spikes
-        for i, sx_off in enumerate((-10, -5, 0, 5, 10)):
-            h = 5 + (i % 3)
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_darkest"], [
-                (cx + sx_off - 2, cy - 6),
-                (cx + sx_off + 2, cy - 6),
-                (cx + sx_off, cy - 6 - h),
-            ])
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_mid"], [
-                (cx + sx_off, cy - 6),
-                (cx + sx_off + 1, cy - 6),
-                (cx + sx_off, cy - 4 - h),
-            ])
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["wy_high"],
-                      (cx + sx_off, cy - 5 - h), 1)
-
-        # Ice frost patches on body
-        for i in range(3):
-            px = cx - 8 + i * 8
-            py = cy - 2 + (i % 2) * 3
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["ice_bright"], (px, py), 2)
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["ice_hot"], (px, py), 1)
-
-
-    def _draw_wyvern_head(surface, cx, cy, facing, phase, action):
-        """Ice wyvern head - dragon-like with horns."""
-        # Head shadow
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["shadow_deep"], (cx + 1, cy + 1), 9)
-
-        # Head base
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["wy_darkest"], (cx - 8, cy - 6, 16, 13))
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["wy_dark"], (cx - 7, cy - 5, 14, 11))
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["wy_mid"], (cx - 6, cy - 4, 12, 8))
-        _NS_nyzrak._ellipse(surface, _NS_nyzrak.PALETTE["wy_light"], (cx - 5, cy - 4, 8, 4))
-
-        # Snout (extending forward)
-        snout = [
-            (cx + facing * 1, cy - 2),
-            (cx + facing * 10, cy - 3),
-            (cx + facing * 13, cy + 1),
-            (cx + facing * 10, cy + 4),
-            (cx + facing * 1, cy + 4),
-        ]
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["shadow_deep"], [(p[0] + 1, p[1] + 1) for p in snout])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_darkest"], snout)
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_dark"], [
-            (cx + facing * 2, cy - 1),
-            (cx + facing * 9, cy - 2),
-            (cx + facing * 12, cy + 1),
-            (cx + facing * 9, cy + 3),
-            (cx + facing * 2, cy + 3),
-        ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_mid"], [
-            (cx + facing * 3, cy),
-            (cx + facing * 8, cy - 1),
-            (cx + facing * 10, cy + 1),
-            (cx + facing * 8, cy + 2),
-        ])
-
-        # Open mouth (fierce)
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["shadow_deep"], [
-            (cx + facing * 6, cy + 1),
-            (cx + facing * 13, cy + 1),
-            (cx + facing * 12, cy + 4),
-            (cx + facing * 6, cy + 3),
-        ])
-
-        # Fangs
-        for tooth_off in (7, 10):
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["bone_light"], [
-                (cx + facing * tooth_off, cy + 1),
-                (cx + facing * tooth_off + facing, cy + 4),
-                (cx + facing * (tooth_off + 1), cy + 1),
-            ])
-        # Lower fang
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["bone_light"], [
-            (cx + facing * 8, cy + 4),
-            (cx + facing * 8 + facing, cy + 1),
-            (cx + facing * 9, cy + 4),
-        ])
-
-        # Cold breath particles from mouth
-        for i in range(3):
-            px = cx + facing * (14 + i * 3)
-            py = cy + 1 + int(math.sin(phase * 2 + i) * 2)
-            alpha = 200 - i * 50
-            _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_light"], alpha), (px, py), 3 - i)
-            _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_hot"], alpha), (px, py), max(1, 2 - i))
-
-        # Nostril
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["shadow_deep"], (cx + facing * 10, cy - 1), 1)
-
-        # Fierce orange eye
-        eye_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["shadow_deep"], (cx + facing * 3, cy - 3), 2)
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["wy_eye_dark"], (cx + facing * 3, cy - 3), 2)
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["wy_eye_bright"], (cx + facing * 3, cy - 3),
-                  max(1, int(2 * eye_pulse)))
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["wy_eye_hot"], (cx + facing * 3, cy - 3), 1)
-
-        # Horns on top (2 curved horns)
-        for side_off in (-2, 2):
-            hb_x = cx + side_off
-            hb_y = cy - 5
-            # Curved horn
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["shadow_deep"], [
-                (hb_x - 1 + 1, hb_y + 1),
-                (hb_x + 2 + 1, hb_y - 8 + 1),
-                (hb_x - side_off + 1, hb_y - 10 + 1),
-                (hb_x - side_off - 1 + 1, hb_y - 6 + 1),
-            ])
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["bone_dark"], [
-                (hb_x - 1, hb_y),
-                (hb_x + 2, hb_y - 8),
-                (hb_x - side_off, hb_y - 10),
-                (hb_x - side_off - 1, hb_y - 6),
-            ])
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["bone_light"], [
-                (hb_x, hb_y),
-                (hb_x + 1, hb_y - 7),
-                (hb_x - side_off, hb_y - 9),
-            ])
-            # Tip
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["ice_hot"], (hb_x - side_off, hb_y - 10), 1)
-
-        # Ear-like fin
-        for side_off in (-6, 6):
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_darkest"], [
-                (cx + side_off, cy - 4),
-                (cx + side_off + (1 if side_off > 0 else -1) * 2, cy - 8),
-                (cx + side_off + (1 if side_off > 0 else -1) * 3, cy - 3),
-            ])
-            _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["wy_dark"], [
-                (cx + side_off, cy - 4),
-                (cx + side_off + (1 if side_off > 0 else -1), cy - 7),
-                (cx + side_off + (1 if side_off > 0 else -1) * 2, cy - 3),
-            ])
-
-
-    def _draw_wyvern_legs(surface, cx, cy, facing, phase, action):
-        """Wyvern's small hind legs, drawn but wyvern is mostly floating."""
-        walk_phase = phase * 3 if action == "walk" else 0
-        for side_off in (-9, 9):
-            leg_lift = int(math.sin(walk_phase + (0 if side_off > 0 else math.pi)) * 2)
-            lx = cx + side_off
-            ly = cy - leg_lift
-
-            # Upper leg
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["shadow_deep"], (lx + 1, ly + 1), (lx + 1, ly + 6), 5)
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wy_darkest"], (lx, ly), (lx, ly + 5), 4)
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wy_dark"], (lx, ly), (lx, ly + 5), 3)
-            _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["wy_mid"], (lx, ly), (lx, ly + 4), 1)
-
-            # Claws
-            for c in (-1, 0, 1):
-                _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["bone_dark"], [
-                    (lx + c - 1, ly + 6),
-                    (lx + c + 1, ly + 6),
-                    (lx + c, ly + 9),
-                ])
-                _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["bone_light"], [
-                    (lx + c, ly + 6),
-                    (lx + c + 1, ly + 6),
-                    (lx + c, ly + 8),
-                ])
-
-
-    def _draw_rider(surface, cx, cy, facing, phase, action, attack_progress):
-        """Female rider in blue hooded cloak with fur trim, holding ice spear."""
-        sway = int(math.sin(phase * 0.7) * 1)
-        if action == "walk":
-            sway += int(math.sin(phase * 2) * 1)
-
-        # Cloak/robe lower (sits on wyvern back)
-        _NS_nyzrak._draw_cloak_lower(surface, cx + sway, cy + 4, facing, phase)
-
-        # Body (torso)
-        _NS_nyzrak._draw_rider_torso(surface, cx + sway, cy, facing, phase)
-
-        # Arms + spear
-        if action == "attack":
-            _NS_nyzrak._draw_rider_attack_arms(surface, cx + sway, cy, facing, phase, attack_progress)
-        elif action.startswith("cast"):
-            _NS_nyzrak._draw_rider_cast_arms(surface, cx + sway, cy, facing, phase, action)
+    @staticmethod
+    def _draw_crystal_spike(surface, cx, base_y, tip_y, width=4, alpha=255,
+                            color_set="ice"):
+        """Paku kristal es tumbuh ke atas — band 3 nada."""
+        if color_set == "ice":
+            colors = ["ice_darkest", "ice_dark", "ice_mid", "ice_light",
+                      "ice_bright"]
         else:
-            _NS_nyzrak._draw_rider_idle_arms(surface, cx + sway, cy, facing, phase)
-
-        # Head with hood
-        _NS_nyzrak._draw_rider_head(surface, cx + sway, cy - 8, facing, phase)
-
-
-    def _draw_cloak_lower(surface, cx, cy, facing, phase):
-        """Lower cloak spread over wyvern's back."""
-        sway = int(math.sin(phase * 0.6) * 1)
-
-        # Base cloak spreading down and out
-        cloak_pts = [
-            (cx - 10, cy - 2),
-            (cx + 10, cy - 2),
-            (cx + 14, cy + 8 + sway),
-            (cx + 10, cy + 14),
-            (cx + 3, cy + 16),
-            (cx - 3, cy + 16),
-            (cx - 10, cy + 14),
-            (cx - 14, cy + 8 + sway),
-        ]
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["shadow_deep"], [(p[0] + 1, p[1] + 1) for p in cloak_pts])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["robe_darkest"], cloak_pts)
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["robe_dark"], [
-            (cx - 9, cy - 1),
-            (cx + 9, cy - 1),
-            (cx + 12, cy + 7 + sway),
-            (cx + 8, cy + 12),
-            (cx - 8, cy + 12),
-            (cx - 12, cy + 7 + sway),
+            colors = ["frost_darkest", "frost_dark", "frost_mid",
+                      "frost_light", "frost_bright"]
+        P = _NS_nyzrak.PALETTE
+        _NS_nyzrak._poly(surface, (*P["shadow_deep"], alpha), [
+            (cx - width + 1, base_y + 1), (cx + width + 1, base_y + 1),
+            (cx + 1, tip_y + 1),
         ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["robe_mid"], [
-            (cx - 7, cy),
-            (cx + 7, cy),
-            (cx + 9, cy + 6 + sway),
-            (cx + 5, cy + 10),
-            (cx - 5, cy + 10),
-            (cx - 9, cy + 6 + sway),
+        _NS_nyzrak._poly(surface, (*P[colors[0]], alpha), [
+            (cx - width, base_y), (cx + width, base_y), (cx, tip_y),
         ])
-
-        # Fur trim at bottom
-        for xoff in range(-11, 12, 3):
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["fur_dark"], (cx + xoff, cy + 14), 2)
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["fur_mid"], (cx + xoff, cy + 13), 2)
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["fur_light"], (cx + xoff - 1, cy + 12), 1)
-
-
-    def _draw_rider_torso(surface, cx, cy, facing, phase):
-        """Rider's torso in robe."""
-        # Shadow
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["shadow_deep"], [
-            (cx - 7 + 1, cy - 5 + 1), (cx + 7 + 1, cy - 5 + 1),
-            (cx + 6 + 1, cy + 6 + 1), (cx - 6 + 1, cy + 6 + 1),
+        _NS_nyzrak._poly(surface, (*P[colors[1]], alpha), [
+            (cx - max(1, width - 1), base_y), (cx + max(1, width - 1), base_y),
+            (cx, tip_y + (base_y - tip_y) // 4),
         ])
-
-        # Torso base
-        torso = [
-            (cx - 7, cy - 5), (cx + 7, cy - 5),
-            (cx + 6, cy + 6), (cx - 6, cy + 6),
-        ]
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["robe_darkest"], torso)
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["robe_dark"], [
-            (cx - 6, cy - 4), (cx + 6, cy - 4),
-            (cx + 5, cy + 5), (cx - 5, cy + 5),
+        _NS_nyzrak._poly(surface, (*P[colors[2]], alpha), [
+            (cx - max(1, width // 2), base_y), (cx + 1, base_y),
+            (cx, tip_y + (base_y - tip_y) // 2),
         ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["robe_mid"], [
-            (cx - 4, cy - 3), (cx + 4, cy - 3),
-            (cx + 3, cy + 4), (cx - 3, cy + 4),
+        _NS_nyzrak._poly(surface, (*P[colors[4]], alpha), [
+            (cx, tip_y), (cx + 1, tip_y + (base_y - tip_y) // 3), (cx, base_y),
         ])
-
-        # Fur trim collar (V-neck)
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["fur_dark"], [
-            (cx - 6, cy - 5), (cx + 6, cy - 5),
-            (cx + 4, cy - 3), (cx - 4, cy - 3),
-        ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["fur_mid"], [
-            (cx - 5, cy - 5), (cx + 5, cy - 5),
-            (cx + 3, cy - 4), (cx - 3, cy - 4),
-        ])
-
-        # Belt with ice gem
-        _NS_nyzrak._rect(surface, _NS_nyzrak.PALETTE["metal_darkest"], (cx - 6, cy + 2, 12, 3))
-        _NS_nyzrak._rect(surface, _NS_nyzrak.PALETTE["metal_dark"], (cx - 5, cy + 2, 10, 2))
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["ice_dark"], (cx, cy + 3), 2)
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["ice_bright"], (cx, cy + 3), 1)
-
-        # V-decoration on chest
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["ice_bright"], (cx - 3, cy - 2), (cx, cy + 1), 1)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["ice_bright"], (cx + 3, cy - 2), (cx, cy + 1), 1)
-
-
-    def _draw_rider_idle_arms(surface, cx, cy, facing, phase):
-        """One arm holds spear, other rests on wyvern."""
-        sway = math.sin(phase * 0.7) * 1
-
-        # Right arm - holds spear high (back arm)
-        spear_side = facing  # spear held on facing side
-        sh_x = cx + spear_side * 6
-        sh_y = cy - 3
-        # Elbow raised
-        elbow_x = sh_x + spear_side * 3
-        elbow_y = cy - 8
-        hand_x = elbow_x + spear_side * 2
-        hand_y = cy - 12
-
-        _NS_nyzrak._draw_rider_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-        _NS_nyzrak._draw_rider_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-        _NS_nyzrak._draw_rider_hand(surface, hand_x, hand_y)
-
-        # Ice spear held vertically
-        _NS_nyzrak._draw_ice_spear_vertical(surface, hand_x, hand_y, spear_side, phase)
-
-        # Front arm - rests down / on wyvern
-        other_side = -facing
-        sh_x2 = cx + other_side * 6
-        sh_y2 = cy - 3
-        hand_x2 = sh_x2 + other_side * 4
-        hand_y2 = cy + 4 + int(sway)
-        _NS_nyzrak._draw_rider_arm(surface, sh_x2, sh_y2, hand_x2, hand_y2)
-        _NS_nyzrak._draw_rider_hand(surface, hand_x2, hand_y2)
-
-
-    def _draw_rider_cast_arms(surface, cx, cy, facing, phase, action):
-        """Cast pose - spear extended forward."""
-        # Back arm - holds spear
-        spear_side = facing
-        sh_x = cx + spear_side * 6
-        sh_y = cy - 3
-        elbow_x = sh_x + spear_side * 5
-        elbow_y = cy - 5
-        hand_x = elbow_x + spear_side * 5
-        hand_y = cy - 7
-
-        _NS_nyzrak._draw_rider_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-        _NS_nyzrak._draw_rider_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-        _NS_nyzrak._draw_rider_hand(surface, hand_x, hand_y)
-
-        # Ice spear extended forward
-        _NS_nyzrak._draw_ice_spear_forward(surface, hand_x, hand_y, facing, phase)
-
-        # Front arm - forward too, gathering energy
-        other_side = -facing
-        sh_x2 = cx + other_side * 6
-        sh_y2 = cy - 3
-        elbow_x2 = sh_x2 + facing * 3
-        elbow_y2 = cy - 3
-        hand_x2 = elbow_x2 + facing * 6
-        hand_y2 = cy - 5
-
-        _NS_nyzrak._draw_rider_arm(surface, sh_x2, sh_y2, elbow_x2, elbow_y2)
-        _NS_nyzrak._draw_rider_arm(surface, elbow_x2, elbow_y2, hand_x2, hand_y2)
-        _NS_nyzrak._draw_rider_hand(surface, hand_x2, hand_y2)
-
-        # Casting energy
-        pulse = math.sin(phase * 4) * 0.3 + 0.7
-        r = int(5 * pulse)
-        if action == "cast_q":
-            color_dark = _NS_nyzrak.PALETTE["frost_dark"]
-            color_bright = _NS_nyzrak.PALETTE["frost_bright"]
-            color_hot = _NS_nyzrak.PALETTE["frost_hot"]
-        else:
-            color_dark = _NS_nyzrak.PALETTE["ice_dark"]
-            color_bright = _NS_nyzrak.PALETTE["ice_bright"]
-            color_hot = _NS_nyzrak.PALETTE["ice_hot"]
-        _NS_nyzrak._aacircle(surface, (*color_dark, 150), (hand_x2, hand_y2), r + 4)
-        _NS_nyzrak._aacircle(surface, color_bright, (hand_x2, hand_y2), r)
-        _NS_nyzrak._aacircle(surface, color_hot, (hand_x2, hand_y2), max(1, r - 2))
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["ice_pure"], (hand_x2, hand_y2), max(1, r - 3))
-
-
-    def _draw_rider_attack_arms(surface, cx, cy, facing, phase, progress):
-        """Attack pose - spear thrust forward to fire projectile."""
-        spear_side = facing
-
-        # Wind-up then thrust
-        if progress < 0.3:
-            t = progress / 0.3
-            angle = -1.2 - 0.3 * t
-        elif progress < 0.5:
-            t = (progress - 0.3) / 0.2
-            angle = -1.5 + 2.0 * t
-        else:
-            t = (progress - 0.5) / 0.5
-            angle = 0.5 - 0.3 * t
-
-        sh_x = cx + spear_side * 6
-        sh_y = cy - 3
-
-        arm_len = 10
-        hand_x = sh_x + int(math.cos(angle) * arm_len) * facing
-        hand_y = sh_y + int(math.sin(angle) * arm_len)
-        elbow_x = sh_x + int(math.cos(angle) * arm_len * 0.55) * facing
-        elbow_y = sh_y + int(math.sin(angle) * arm_len * 0.55)
-
-        _NS_nyzrak._draw_rider_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-        _NS_nyzrak._draw_rider_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-        _NS_nyzrak._draw_rider_hand(surface, hand_x, hand_y)
-
-        # Spear angled
-        spear_angle = angle
-        _NS_nyzrak._draw_ice_spear_angled(surface, hand_x, hand_y, facing, spear_angle)
-
-        # Other arm rests
-        other_side = -facing
-        sh_x2 = cx + other_side * 6
-        sh_y2 = cy - 3
-        hand_x2 = sh_x2 + other_side * 3
-        hand_y2 = cy + 4
-        _NS_nyzrak._draw_rider_arm(surface, sh_x2, sh_y2, hand_x2, hand_y2)
-        _NS_nyzrak._draw_rider_hand(surface, hand_x2, hand_y2)
-
-
-    def _draw_rider_arm(surface, x1, y1, x2, y2):
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["shadow_deep"], (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 5)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["robe_darkest"], (x1, y1), (x2, y2), 4)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["robe_dark"], (x1, y1), (x2, y2), 3)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["robe_mid"], (x1, y1), (x2, y2), 1)
-
-
-    def _draw_rider_hand(surface, x, y):
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["shadow_deep"], (x + 1, y + 1), 3)
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["skin_dark"], (x, y), 2)
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["skin_mid"], (x - 1, y - 1), 2)
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["skin_light"], (x - 1, y - 1), 1)
-
-
-    def _draw_rider_head(surface, cx, cy, facing, phase):
-        """Female rider head with hood + fur trim."""
-        # Hood back (drawn wider, behind head)
-        hood_back = [
-            (cx - 9, cy + 2),
-            (cx - 10, cy - 5),
-            (cx - 6, cy - 11),
-            (cx, cy - 12),
-            (cx + 6, cy - 11),
-            (cx + 10, cy - 5),
-            (cx + 9, cy + 2),
-        ]
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["shadow_deep"], [(p[0] + 2, p[1] + 2) for p in hood_back])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["robe_darkest"], hood_back)
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["robe_dark"], [
-            (cx - 8, cy + 1),
-            (cx - 9, cy - 5),
-            (cx - 5, cy - 10),
-            (cx, cy - 11),
-            (cx + 5, cy - 10),
-            (cx + 9, cy - 5),
-            (cx + 8, cy + 1),
-        ])
-
-        # Fur trim around hood opening
-        for i, xoff in enumerate([-7, -5, -3, 0, 3, 5, 7]):
-            yoff = -8 if i in (2, 3, 4) else -6
-            yoff += (i % 2)
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["fur_dark"], (cx + xoff, cy + yoff), 2)
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["fur_mid"], (cx + xoff, cy + yoff), 2)
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["fur_light"], (cx + xoff - 1, cy + yoff - 1), 1)
-
-        # Face (inside hood shadow)
-        face_pts = [
-            (cx - 5, cy - 4),
-            (cx + 5, cy - 4),
-            (cx + 4, cy + 4),
-            (cx, cy + 5),
-            (cx - 4, cy + 4),
-        ]
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["skin_dark"], face_pts)
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["skin_mid"], [
-            (cx - 4, cy - 3),
-            (cx + 4, cy - 3),
-            (cx + 3, cy + 3),
-            (cx, cy + 4),
-            (cx - 3, cy + 3),
-        ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["skin_light"], [
-            (cx - 3, cy - 2),
-            (cx + 3, cy - 2),
-            (cx + 2, cy + 2),
-            (cx - 2, cy + 2),
-        ])
-
-        # Hair strands visible on sides / front
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["hair_dark"], [
-            (cx - 5, cy - 4),
-            (cx - 3, cy - 2),
-            (cx - 3, cy + 1),
-            (cx - 5, cy - 1),
-        ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["hair_mid"], [
-            (cx - 4, cy - 3),
-            (cx - 3, cy - 2),
-            (cx - 3, cy + 1),
-            (cx - 4, cy - 1),
-        ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["hair_dark"], [
-            (cx + 3, cy - 2),
-            (cx + 5, cy - 4),
-            (cx + 5, cy - 1),
-            (cx + 3, cy + 1),
-        ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["hair_mid"], [
-            (cx + 3, cy - 2),
-            (cx + 4, cy - 3),
-            (cx + 4, cy - 1),
-            (cx + 3, cy + 1),
-        ])
-        # Hair light
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["hair_light"], (cx - 4, cy - 3), (cx - 4, cy), 1)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["hair_light"], (cx + 4, cy - 3), (cx + 4, cy), 1)
-
-        # Icy blue eyes
-        for side in (-1, 1):
-            ex = cx + side * 2
-            ey = cy - 1
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["shadow_deep"], (ex, ey), 1)
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["eye_dark"], (ex, ey), 1)
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["eye_bright"], (ex, ey), 1)
-
-        # Small mouth
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["skin_dark"], (cx - 1, cy + 2), (cx + 1, cy + 2), 1)
-
-        # Snowflake earring or decoration on hood
-        _NS_nyzrak._draw_snowflake(surface, cx - 8, cy - 3, 2, 220, rotate=phase)
-        _NS_nyzrak._draw_snowflake(surface, cx + 8, cy - 3, 2, 220, rotate=phase + 1)
-
-
-    def _draw_ice_spear_vertical(surface, hx, hy, side, phase):
-        """Spear held vertical, tip pointing up."""
-        # Handle extends up from hand
-        top_x = hx
-        top_y = hy - 20
-        bottom_x = hx
-        bottom_y = hy + 8
-
-        # Handle shaft
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["shadow_deep"],
-                (top_x + 1, top_y + 1), (bottom_x + 1, bottom_y + 1), 3)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["metal_darkest"],
-                (top_x, top_y), (bottom_x, bottom_y), 3)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["metal_dark"],
-                (top_x, top_y), (bottom_x, bottom_y), 2)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["metal_light"],
-                (top_x - 1, top_y), (bottom_x - 1, bottom_y), 1)
-
-        # Gold rings on handle
-        for ry in (hy - 12, hy - 4):
-            _NS_nyzrak._rect(surface, _NS_nyzrak.PALETTE["gold_mid"], (hx - 2, ry, 4, 2))
-            _NS_nyzrak._rect(surface, _NS_nyzrak.PALETTE["gold_light"], (hx - 2, ry, 4, 1))
-
-        # ICE CRYSTAL BLADE at top
-        tip_y = top_y - 12
-        spear_head = [
-            (top_x, top_y - 1),
-            (top_x - 4, top_y - 5),
-            (top_x - 3, top_y - 10),
-            (top_x, tip_y),
-            (top_x + 3, top_y - 10),
-            (top_x + 4, top_y - 5),
-        ]
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["shadow_deep"], [(p[0] + 1, p[1] + 1) for p in spear_head])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["ice_darkest"], spear_head)
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["ice_dark"], [
-            (top_x, top_y - 1),
-            (top_x - 3, top_y - 5),
-            (top_x - 2, top_y - 9),
-            (top_x, tip_y + 1),
-            (top_x + 2, top_y - 9),
-            (top_x + 3, top_y - 5),
-        ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["ice_mid"], [
-            (top_x, top_y - 1),
-            (top_x - 2, top_y - 5),
-            (top_x - 1, top_y - 8),
-            (top_x, tip_y + 2),
-            (top_x + 1, top_y - 8),
-            (top_x + 2, top_y - 5),
-        ])
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["ice_bright"], (top_x, top_y - 1), (top_x, tip_y + 2), 1)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["ice_hot"], (top_x, top_y - 4), (top_x, tip_y + 3), 1)
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["ice_pure"], (top_x, tip_y + 1), 1)
-
-        # Small blade glow
-        _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_bright"], 150), (top_x, top_y - 5), 5)
-        _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_hot"], 200), (top_x, top_y - 5), 2)
-
-
-    def _draw_ice_spear_forward(surface, hx, hy, facing, phase):
-        """Spear extended forward."""
-        tip_x = hx + facing * 22
-        tip_y = hy
-
-        # Handle
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["shadow_deep"], (hx + 1, hy + 1),
-                (tip_x + 1, tip_y + 1), 3)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["metal_darkest"], (hx, hy), (tip_x, tip_y), 3)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["metal_dark"], (hx, hy), (tip_x, tip_y), 2)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["metal_light"], (hx, hy - 1), (tip_x, tip_y - 1), 1)
-
-        # Gold rings
-        for t in (0.3, 0.7):
-            rx = hx + int((tip_x - hx) * t)
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["gold_mid"], (rx, hy), 2)
-
-        # Ice crystal blade at tip (perpendicular to handle)
-        _NS_nyzrak._draw_ice_spear_head(surface, tip_x, tip_y, facing, phase)
-
-
-    def _draw_ice_spear_angled(surface, hx, hy, facing, angle):
-        """Spear at specific angle."""
-        spear_len = 22
-        dx = math.cos(angle) * facing
-        dy = math.sin(angle)
-        tip_x = hx + int(dx * spear_len)
-        tip_y = hy + int(dy * spear_len)
-
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["shadow_deep"], (hx + 1, hy + 1),
-                (tip_x + 1, tip_y + 1), 3)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["metal_darkest"], (hx, hy), (tip_x, tip_y), 3)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["metal_dark"], (hx, hy), (tip_x, tip_y), 2)
-
-        # Gold rings
-        for t in (0.3, 0.7):
-            rx = hx + int(dx * spear_len * t)
-            ry = hy + int(dy * spear_len * t)
-            _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["gold_mid"], (rx, ry), 2)
-
-        # Ice blade at tip
-        _NS_nyzrak._draw_ice_spear_head(surface, tip_x, tip_y, facing, 0)
-
-
-    def _draw_ice_spear_head(surface, tip_x, tip_y, facing, phase):
-        """Ice crystal spear head - diamond shape at tip."""
-        # Diamond
-        blade_pts = [
-            (tip_x + facing * 8, tip_y),
-            (tip_x + facing * 3, tip_y - 4),
-            (tip_x - facing * 2, tip_y),
-            (tip_x + facing * 3, tip_y + 4),
-        ]
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["shadow_deep"], [(p[0] + 1, p[1] + 1) for p in blade_pts])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["ice_darkest"], blade_pts)
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["ice_dark"], [
-            (tip_x + facing * 7, tip_y),
-            (tip_x + facing * 3, tip_y - 3),
-            (tip_x - facing * 1, tip_y),
-            (tip_x + facing * 3, tip_y + 3),
-        ])
-        _NS_nyzrak._poly(surface, _NS_nyzrak.PALETTE["ice_mid"], [
-            (tip_x + facing * 6, tip_y),
-            (tip_x + facing * 3, tip_y - 2),
-            (tip_x, tip_y),
-            (tip_x + facing * 3, tip_y + 2),
-        ])
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["ice_bright"],
-                (tip_x + facing * 6, tip_y), (tip_x, tip_y), 1)
-        _NS_nyzrak._aaline(surface, _NS_nyzrak.PALETTE["ice_hot"],
-                (tip_x + facing * 5, tip_y), (tip_x + facing * 1, tip_y), 1)
-        _NS_nyzrak._aacircle(surface, _NS_nyzrak.PALETTE["ice_pure"], (tip_x + facing * 3, tip_y), 1)
-
-        # Glow
-        _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_bright"], 130), (tip_x + facing * 3, tip_y), 6)
-
 
     # ===================================================================
-    # FLOATING EFFECTS
+    # GROUND / SHADOW / AURA (ruang layar)
     # ===================================================================
-    def _draw_frost_wisps(surface, cx, cy, phase, trail=False, facing=1, intense=False):
-        """Frost wisps beneath wyvern."""
+    def _draw_shadow(surface, x, y, lift=0):
+        """Bayangan kontak reaktif: mengecil saat terangkat, dasar menapak."""
+        NS = _NS_nyzrak
+        if NS._shadow_cache is None:
+            shadow = pygame.Surface((120, 22), pygame.SRCALPHA)
+            for radius in range(11, 0, -1):
+                alpha = max(0, (11 - radius) * 15)
+                pygame.draw.ellipse(
+                    shadow, (0, 0, 0, alpha),
+                    (11 - radius, 11 - radius, 98 + radius * 2, radius * 2),
+                )
+            pygame.draw.ellipse(shadow, (*NS.PALETTE["ice_dark"], 80),
+                                (10, 5, 100, 12))
+            NS._shadow_cache = shadow
+        spr = NS._shadow_cache
+        w, h = spr.get_size()
+        if lift:
+            k = max(0.12, 1.0 - lift * 0.05)
+            w = max(6, int(w * k))
+            h = max(2, int(h * k))
+            spr = pygame.transform.smoothscale(spr, (w, h))
+        bx = x - w // 2
+        by = (y + 11) - h          # dasar tetap menapak di y+11
+        surface.blit(spr, (bx, by))
+        if NS._record_shadow is not None:
+            NS._record_shadow.append(pygame.Rect(bx, by, w, h))
+
+
+    def _draw_frost_aura(surface, x, y, phase, active_skill):
+        """Halo dingin lembut di belakang karakter (cached)."""
+        NS = _NS_nyzrak
+        if NS._aura_cache is None:
+            NS._aura_cache = {}
+        key = "q" if active_skill == "q" else "base"
+        if key not in NS._aura_cache:
+            aura = pygame.Surface((220, 200), pygame.SRCALPHA)
+            color = NS.PALETTE["frost_darkest"] if key == "q" \
+                else NS.PALETTE["ice_darkest"]
+            for radius in range(90, 5, -4):
+                alpha = int((90 - radius) * 1.2)
+                if alpha > 0:
+                    NS._aacircle(aura, (*color, min(255, alpha)),
+                                 (110, 100), radius)
+            NS._aura_cache[key] = aura
+        pulse = math.sin(phase * 0.5) * 0.25 + 0.75
+        strength = 1.6 if active_skill in ("q", "w", "e", "r") else 1.0
+        spr = NS._aura_cache[key]
+        spr.set_alpha(int(255 * max(0.15, min(1.0, pulse * strength))))
+        surface.blit(spr, (x - 110, y - 100))
+
+
+    def _draw_ground_frost(surface, x, y, phase, active_skill):
+        """Beku tanah chunky: patch es + kristal kecil (cached)."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        if NS._ground_cache is None:
+            g = pygame.Surface((150, 40), pygame.SRCALPHA)
+            for i, (dx, w) in enumerate(((-48, 16), (-28, 22), (-4, 26),
+                                         (24, 18), (46, 12))):
+                yy = 18 + (i % 2) * 3
+                pygame.draw.rect(g, (*P["ice_darkest"], 90),
+                                 (75 + dx, yy, w, 2))
+                pygame.draw.rect(g, (*P["ice_dark"], 120),
+                                 (75 + dx + 2, yy, w - 4, 1))
+            for dx, h in ((-40, 5), (-10, 7), (18, 6), (40, 4)):
+                pygame.draw.polygon(g, (*P["ice_mid"], 150),
+                                    [(75 + dx - 2, 20), (75 + dx + 2, 20),
+                                     (75 + dx, 20 - h)])
+            NS._ground_cache = g
+        spr = NS._ground_cache
+        pulse = math.sin(phase * 0.9) * 0.25 + 0.75
+        spr.set_alpha(int(255 * pulse * (1.5 if active_skill else 1.0)))
+        surface.blit(spr, (x - 75, y - 10))
+
+
+    def _draw_frost_wisps(surface, cx, cy, phase, trail=False, facing=1,
+                          intense=False):
+        """Kabut dingin + salju melayang di bawah wyvern."""
         NS = _NS_nyzrak
         if NS._mist_cache is None:
             mist = pygame.Surface((150, 45), pygame.SRCALPHA)
@@ -4899,7 +4906,6 @@ class _NS_nyzrak:
         spr.set_alpha(int(255 * min(1.0, pulse * strength)))
         surface.blit(spr, (cx - 75, cy - 11))
 
-        # Rising frost wisps
         for i, offset in enumerate((-18, 0, 18)):
             t = (phase * 0.55 + i * 0.25) % 1.0
             sx = cx + offset + int(math.sin(phase + i) * 3)
@@ -4907,10 +4913,10 @@ class _NS_nyzrak:
             alpha = max(0, min(255, int(220 * (1 - t) * strength)))
             if alpha <= 0:
                 continue
-            _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_dark"], alpha), (sx, sy), 5)
-            _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_hot"], alpha), (sx, sy - 3), 2)
-
-        # Snowflakes drifting
+            NS._aacircle(surface, (*NS.PALETTE["ice_dark"], alpha),
+                         (sx, sy), 4)
+            NS._aacircle(surface, (*NS.PALETTE["ice_hot"], alpha),
+                         (sx, sy - 3), 1)
         for i in range(3):
             t = (phase * 0.4 + i * 0.2) % 1.0
             angle = phase * 0.5 + i * math.pi * 2 / 5
@@ -4918,306 +4924,448 @@ class _NS_nyzrak:
             sx = cx + int(math.cos(angle) * r)
             sy = cy + int(math.sin(angle) * 9) - int(t * 8)
             alpha = int(230 * (1 - t * 0.5) * strength)
-            _NS_nyzrak._draw_snowflake(surface, sx, sy, 2, max(0, min(255, alpha)),
-                             rotate=phase + i)
-
+            NS._draw_snowflake(surface, sx, sy, 2,
+                               max(0, min(255, alpha)), rotate=phase + i)
         if trail:
             for i in range(3):
                 sx = cx - (i + 1) * 12 * facing
                 sy = cy + int(math.sin(phase + i) * 3)
                 alpha = max(0, 140 - i * 25)
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_mid"], alpha),
-                          (sx, sy), max(2, 5 - i))
-                _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_light"], alpha),
-                          (sx, sy), max(1, 3 - i))
-
-
-    def _draw_shadow(surface, x, y, lift=0):
-        NS = _NS_nyzrak
-        if NS._shadow_cache is None:
-            shadow = pygame.Surface((120, 22), pygame.SRCALPHA)
-            for radius in range(11, 0, -1):
-                alpha = max(0, (11 - radius) * 15)
-                pygame.draw.ellipse(
-                    shadow, (0, 0, 0, alpha),
-                    (11 - radius, 11 - radius, 98 + radius * 2, radius * 2),
-                )
-            pygame.draw.ellipse(shadow, (*NS.PALETTE["ice_dark"], 80), (10, 5, 100, 12))
-            NS._shadow_cache = shadow
-        spr = NS._shadow_cache
-        w, h = spr.get_size()
-        if lift:
-            k = max(0.12, 1.0 - lift * 0.05)
-            w = max(6, int(w * k))
-            h = max(2, int(h * k))
-            spr = pygame.transform.smoothscale(spr, (w, h))
-        bx = x - w // 2
-        by = (y + 11) - h          # dasar tetap menapak di y+11
-        surface.blit(spr, (bx, by))
-        if NS._record_shadow is not None:
-            NS._record_shadow.append(pygame.Rect(bx, by, w, h))
-
-
-    def _draw_frost_aura(surface, x, y, phase, active_skill):
-        NS = _NS_nyzrak
-        if NS._aura_cache is None:
-            NS._aura_cache = {}
-        key = "q" if active_skill == "q" else "base"
-        if key not in NS._aura_cache:
-            aura = pygame.Surface((220, 200), pygame.SRCALPHA)
-            color = NS.PALETTE["frost_darkest"] if key == "q" else NS.PALETTE["ice_darkest"]
-            for radius in range(90, 5, -4):
-                alpha = int((90 - radius) * 1.2)
-                if alpha > 0:
-                    NS._aacircle(aura, (*color, min(255, alpha)),
-                                 (110, 100), radius)
-            NS._aura_cache[key] = aura
-        pulse = math.sin(phase * 0.5) * 0.25 + 0.75
-        strength = 1.6 if active_skill in ("q", "w", "e", "r") else 1.0
-        spr = NS._aura_cache[key]
-        spr.set_alpha(int(255 * max(0.15, min(1.0, pulse * strength))))
-        surface.blit(spr, (x - 110, y - 100))
-
-
-    def _draw_ground_frost(surface, x, y, phase, active_skill):
-        NS = _NS_nyzrak
-        if NS._ground_cache is None:
-            ring = pygame.Surface((140, 46), pygame.SRCALPHA)
-            pygame.draw.ellipse(ring, (*NS.PALETTE["ice_dark"], 160),
-                                (5, 10, 130, 26), 3)
-            pygame.draw.ellipse(ring, (*NS.PALETTE["ice_mid"], 190),
-                                (20, 14, 100, 18), 2)
-            for i in range(10):
-                angle = i * math.pi / 5
-                x1 = 70 + int(math.cos(angle) * 32)
-                y1 = 23 + int(math.sin(angle) * 7)
-                x2 = 70 + int(math.cos(angle) * 60)
-                y2 = 23 + int(math.sin(angle) * 11)
-                pygame.draw.line(ring, (*NS.PALETTE["ice_bright"], 180),
-                                 (x1, y1), (x2, y2), 1)
-            NS._ground_cache = ring
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        surface.blit(NS._ground_cache, (x - 70, y - 23))
-        if active_skill:
-            pygame.draw.ellipse(surface, (*NS.PALETTE["ice_hot"], int(80 * pulse)),
-                                (x - 55, y - 15, 110, 30), 1)
+                NS._aacircle(surface, (*NS.PALETTE["ice_mid"], alpha),
+                             (sx, sy), max(2, 5 - i))
+                NS._aacircle(surface, (*NS.PALETTE["ice_light"], alpha),
+                             (sx, sy), max(1, 3 - i))
 
 
     def _draw_cast_flash(surface, x, y, facing, progress):
-        if progress < 0.25 or progress > 0.6:
+        """Kilat lepas serangan: bintang 4 arah chunky."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        k = 0.0
+        if 0.40 <= progress <= 0.64:
+            k = math.sin((progress - 0.40) / 0.24 * math.pi)
+        if k <= 0.02:
             return
-        t = (progress - 0.25) / 0.35
-        intensity = math.sin(t * math.pi)
-        fx = x + 24 * facing
-        fy = y - 5
-        alpha = int(220 * intensity)
-        radius = int(6 + intensity * 14)
-
-        _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_dark"], alpha // 2), (fx, fy), radius + 6)
-        _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_mid"], alpha), (fx, fy), radius + 2)
-        _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_bright"], alpha), (fx, fy), radius)
-        _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_hot"], alpha), (fx, fy), max(1, radius - 3))
-        _NS_nyzrak._aacircle(surface, (*_NS_nyzrak.PALETTE["ice_pure"], min(255, alpha)),
-                  (fx, fy), max(1, radius - 5))
-
-        for i in range(5):
-            angle = i * math.pi * 2 / 5 + progress * 3
-            ex = fx + int(math.cos(angle) * radius * 1.4)
-            ey = fy + int(math.sin(angle) * radius * 1.4)
-            _NS_nyzrak._draw_snowflake(surface, ex, ey, 2, alpha, rotate=progress * 5)
-
+        fx = x + 26 * facing
+        fy = y - 12
+        for r, col in ((10, "ice_dark"), (6, "ice_bright")):
+            NS._aacircle(surface, (*P[col], int(120 * k)), (fx, fy),
+                         max(1, int(r * k)))
+        for a in (0, math.pi / 2, math.pi, math.pi * 1.5):
+            ex = fx + int(math.cos(a) * 14 * k)
+            ey = fy + int(math.sin(a) * 14 * k)
+            NS._aaline(surface, (*P["ice_hot"], int(200 * k)), (fx, fy),
+                       (ex, ey), 2)
 
     # ===================================================================
-    # SKILL E: WINTER'S CURSE (freeze target in ice tomb)
+    # SWING ARC TRAIL — fallback canvas (deterministik dari kurva arc)
+    # ===================================================================
+    def _draw_swing_arc(surface, boss, x, y, action, ap, phase, facing):
+        """Jejak sapuan tombak (canvas fallback, tanpa histori runtime).
+
+        Posisi blade dihitung dari kurva _spear_pose_geom pada progress
+        lampau -> quad sapuan memudar mengikuti arah serangan.
+        """
+        NS = _NS_nyzrak
+        if action != "attack":
+            return
+        a0, a1 = NS.ATTACK_ACTIVE
+        if not (a0 <= ap <= a1 + 0.12):
+            return
+        scale = NS.render_scale_of(boss)
+        samples = []
+        for i in range(6):
+            back_ap = ap - i * 0.035
+            if back_ap < a0:
+                break
+            ang_deg, reach, gx, gy = NS._spear_pose_geom(action, back_ap,
+                                                         phase)
+            ang = math.radians(ang_deg)
+            grip = pygame.Vector2(x + gx * NS.PIXEL * facing * scale,
+                                  y + gy * NS.PIXEL * scale)
+            d = pygame.Vector2(math.cos(ang) * facing, math.sin(ang))
+            samples.append(grip + d * (reach * NS.PIXEL * scale))
+        if len(samples) < 3:
+            return
+        P = NS.PALETTE
+        for i in range(len(samples) - 1):
+            k = 1.0 - i / float(len(samples))
+            p0, p1 = samples[i], samples[i + 1]
+            nx = -(p1.y - p0.y)
+            ny = (p1.x - p0.x)
+            ln = max(1.0, math.hypot(nx, ny))
+            nx, ny = nx / ln * 3.0, ny / ln * 3.0
+            NS._poly(surface, (*P["ice_mid"], int(90 * k)), [
+                (p0.x + nx, p0.y + ny), (p1.x + nx, p1.y + ny),
+                (p1.x - nx, p1.y - ny), (p0.x - nx, p0.y - ny),
+            ])
+            NS._poly(surface, (*P["ice_bright"], int(150 * k)), [
+                (p0.x + nx * 0.4, p0.y + ny * 0.4),
+                (p1.x + nx * 0.4, p1.y + ny * 0.4),
+                (p1.x - nx * 0.4, p1.y - ny * 0.4),
+                (p0.x - nx * 0.4, p0.y - ny * 0.4),
+            ])
+
+    # ===================================================================
+    # SKILL FX CANVAS — telegraph tanah + foreground (fallback)
     # ===================================================================
     def _draw_winters_curse_ground(surface, boss, x, y, timer, phase):
-        tx, ty = _NS_nyzrak._target_position(boss, x, y)
+        """E: telegraph tanah — cincin es dash chunky menyempit."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        tx, ty = NS._target_position(boss, x, y)
         duration = 70
         progress = max(0.0, min(1.0, 1 - timer / duration))
         pulse = math.sin(phase * 2) * 0.3 + 0.7
-
         radius = int(25 + progress * 12)
-        _NS_nyzrak._ellipse(surface, (*_NS_nyzrak.PALETTE["ice_dark"], int(180 * pulse)),
-                 (tx - radius, ty - radius // 3, radius * 2, radius // 1.5), 3)
-        _NS_nyzrak._ellipse(surface, (*_NS_nyzrak.PALETTE["ice_mid"], int(150 * pulse)),
-                 (tx - radius + 4, ty - radius // 3 + 2,
-                  radius * 2 - 8, radius // 1.5 - 4), 2)
+        for i in range(12):
+            a = i * math.pi * 2 / 12 + phase * 0.6
+            ex = tx + math.cos(a) * radius
+            ey = ty + math.sin(a) * radius * 0.45
+            dx = -math.sin(a) * 3
+            dy = math.cos(a) * 1.4
+            NS._aaline(surface, (*P["ice_dark"], int(160 * pulse)),
+                       (ex - dx, ey - dy), (ex + dx, ey + dy), 2)
+        NS._ellipse(surface, (*P["ice_mid"], int(90 * pulse)),
+                    (tx - radius, ty - radius // 3, radius * 2,
+                     radius // 1.5), 2)
 
 
     def _draw_winters_curse_foreground(surface, boss, x, y, timer, phase):
-        """Ice tomb / prison around target."""
-        tx, ty = _NS_nyzrak._target_position(boss, x, y)
+        """E: penjara es kristal di sekitar target."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
+        tx, ty = NS._target_position(boss, x, y)
         duration = 70
         progress = max(0.0, min(1.0, 1 - timer / duration))
 
         if progress < 0.15:
-            # Charging - snowflakes converging
-            for i in range(12):
-                angle = phase * 2 + i * math.pi / 6
-                r = 50 * (1 - progress / 0.15)
+            for i in range(10):
+                angle = phase * 2 + i * math.pi / 5
+                r = 46 * (1 - progress / 0.15)
                 sx = tx + int(math.cos(angle) * r)
                 sy = ty + int(math.sin(angle) * r * 0.5)
-                _NS_nyzrak._draw_snowflake(surface, sx, sy, 3, 200, rotate=phase * 4)
+                NS._draw_snowflake(surface, sx, sy, 2, 200,
+                                   rotate=phase * 4)
             return
 
-        # Build ice tomb around target
         form_t = min(1.0, (progress - 0.15) / 0.3)
-
-        # Ice tomb base (rounded rectangle - taller than wide)
-        tomb_w = int(30 * form_t)
-        tomb_h = int(45 * form_t)
-
+        tomb_w = int(26 * form_t)
+        tomb_h = int(42 * form_t)
         if tomb_h <= 0:
             return
-
-        # Outer tomb shape
-        tomb_pts = [
-            (tx - tomb_w, ty + 5),
-            (tx - tomb_w, ty - tomb_h + 8),
-            (tx - tomb_w // 2, ty - tomb_h),
-            (tx + tomb_w // 2, ty - tomb_h),
-            (tx + tomb_w, ty - tomb_h + 8),
-            (tx + tomb_w, ty + 5),
-        ]
-        _NS_nyzrak._poly(surface, (*_NS_nyzrak.PALETTE["ice_darkest"], 200), tomb_pts)
-        _NS_nyzrak._poly(surface, (*_NS_nyzrak.PALETTE["ice_dark"], 180), [
-            (tx - tomb_w + 2, ty + 4),
-            (tx - tomb_w + 2, ty - tomb_h + 10),
-            (tx - tomb_w // 2, ty - tomb_h + 2),
-            (tx + tomb_w // 2, ty - tomb_h + 2),
-            (tx + tomb_w - 2, ty - tomb_h + 10),
-            (tx + tomb_w - 2, ty + 4),
+        NS._poly(surface, (*P["ice_darkest"], 200), [
+            (tx - tomb_w, ty + 5), (tx - tomb_w, ty - tomb_h + 7),
+            (tx - tomb_w // 2, ty - tomb_h), (tx + tomb_w // 2, ty - tomb_h),
+            (tx + tomb_w, ty - tomb_h + 7), (tx + tomb_w, ty + 5),
         ])
-        _NS_nyzrak._poly(surface, (*_NS_nyzrak.PALETTE["ice_mid"], 160), [
-            (tx - tomb_w + 4, ty + 3),
-            (tx - tomb_w + 4, ty - tomb_h + 12),
-            (tx - tomb_w // 2 + 2, ty - tomb_h + 4),
-            (tx + tomb_w // 2 - 2, ty - tomb_h + 4),
-            (tx + tomb_w - 4, ty - tomb_h + 12),
-            (tx + tomb_w - 4, ty + 3),
+        NS._poly(surface, (*P["ice_dark"], 180), [
+            (tx - tomb_w + 2, ty + 4), (tx - tomb_w + 2, ty - tomb_h + 9),
+            (tx - tomb_w // 2 + 2, ty - tomb_h + 2),
+            (tx + tomb_w // 2 - 2, ty - tomb_h + 2),
+            (tx + tomb_w - 2, ty - tomb_h + 9), (tx + tomb_w - 2, ty + 4),
         ])
-
-        # Bright internal highlights (glowing crystal look)
-        _NS_nyzrak._aaline(surface, (*_NS_nyzrak.PALETTE["ice_bright"], 200),
-                (tx - tomb_w + 4, ty - tomb_h + 15), (tx - tomb_w + 4, ty), 1)
-        _NS_nyzrak._aaline(surface, (*_NS_nyzrak.PALETTE["ice_bright"], 200),
-                (tx + tomb_w - 4, ty - tomb_h + 15), (tx + tomb_w - 4, ty), 1)
-        _NS_nyzrak._aaline(surface, (*_NS_nyzrak.PALETTE["ice_hot"], 220),
-                (tx, ty - tomb_h + 3), (tx, ty - 5), 1)
-
-        # Diagonal ice facet lines
+        NS._poly(surface, (*P["ice_mid"], 150), [
+            (tx - tomb_w + 4, ty + 3), (tx - tomb_w + 4, ty - tomb_h + 12),
+            (tx - tomb_w // 2 + 4, ty - tomb_h + 5),
+            (tx + tomb_w // 2 - 4, ty - tomb_h + 5),
+            (tx + tomb_w - 6, ty - tomb_h + 12), (tx + tomb_w - 6, ty + 3),
+        ])
         for i in range(3):
-            _NS_nyzrak._aaline(surface, (*_NS_nyzrak.PALETTE["ice_light"], 180),
-                    (tx - tomb_w + 4, ty - i * 12),
-                    (tx - tomb_w // 2, ty - tomb_h + i * 5 + 5), 1)
-            _NS_nyzrak._aaline(surface, (*_NS_nyzrak.PALETTE["ice_light"], 180),
-                    (tx + tomb_w - 4, ty - i * 12),
-                    (tx + tomb_w // 2, ty - tomb_h + i * 5 + 5), 1)
-
-        # Ice spikes protruding from tomb
-        for i, off in enumerate((-tomb_w + 2, 0, tomb_w - 2)):
-            _NS_nyzrak._draw_crystal_spike(surface, tx + off, ty - tomb_h + 3,
-                                 ty - tomb_h - 8, 3, 240)
-
-        # Snowflake sparkles
+            NS._aaline(surface, (*P["ice_light"], 170),
+                       (tx - tomb_w + 4, ty - i * 10),
+                       (tx - tomb_w // 2, ty - tomb_h + i * 5 + 4), 1)
+            NS._aaline(surface, (*P["ice_light"], 170),
+                       (tx + tomb_w - 4, ty - i * 10),
+                       (tx + tomb_w // 2, ty - tomb_h + i * 5 + 4), 1)
+        NS._aaline(surface, (*P["ice_hot"], 220),
+                   (tx, ty - tomb_h + 3), (tx, ty - 4), 1)
+        for off in (-tomb_w + 2, 0, tomb_w - 2):
+            NS._draw_crystal_spike(surface, tx + off, ty - tomb_h + 4,
+                                   ty - tomb_h - 10, 3, 240, "ice")
         for i in range(5):
             angle = phase + i * math.pi * 2 / 5
             r = tomb_w + 5
             sx = tx + int(math.cos(angle) * r)
             sy = ty - tomb_h // 2 + int(math.sin(angle) * tomb_h // 2)
-            _NS_nyzrak._draw_snowflake(surface, sx, sy, 2, 220, rotate=phase * 2 + i)
+            NS._draw_snowflake(surface, sx, sy, 2, 220,
+                               rotate=phase * 2 + i)
 
 
-    # ===================================================================
-    # SKILL R: COLD EMBRACE (ice dome shield)
-    # ===================================================================
     def _draw_cold_embrace_ground(surface, boss, x, y, timer, phase):
+        """R: lingkaran tanah 3 cincin dash chunky."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
         duration = 90
         # Guard lifecycle: jangan menggambar di luar durasi skill AI.
         if timer <= 0 or timer > duration:
             return
         pulse = math.sin(phase * 2) * 0.3 + 0.7
-
-        # Ground circle
         for i in range(3):
-            r = int(50 + i * 12 + math.sin(phase + i) * 4)
-            _NS_nyzrak._ellipse(surface, (*_NS_nyzrak.PALETTE["ice_bright"], int(120 * pulse)),
-                     (x - r, y + 45 - r // 3, r * 2, r // 1.5), 2)
+            r = int(48 + i * 12 + math.sin(phase + i) * 4)
+            segs = 14 + i * 4
+            for s in range(segs):
+                a = s * math.pi * 2 / segs - phase * (0.4 + i * 0.2)
+                ex = x + math.cos(a) * r
+                ey = (y + 45) + math.sin(a) * r * 0.32
+                dx = -math.sin(a) * 3
+                dy = math.cos(a)
+                NS._aaline(surface, (*P["ice_bright"], int(110 * pulse)),
+                           (ex - dx, ey - dy), (ex + dx, ey + dy), 1)
 
 
     def _draw_cold_embrace_foreground(surface, boss, x, y, timer, phase):
-        """Ice crystal dome around boss."""
+        """R: cincin paku kristal + kubah faset + ledakan salju."""
+        NS = _NS_nyzrak
+        P = NS.PALETTE
         duration = 90
         progress = max(0.0, min(1.0, 1 - timer / duration))
+        rise_t = min(1.0, progress / 0.3)
+        ring_radius = 52
 
-        # Ice crystal spikes rising in ring around boss
-        if progress < 0.3:
-            rise_t = progress / 0.3
-        else:
-            rise_t = 1.0
+        for i in range(12):
+            angle = i * math.pi * 2 / 12
+            sxp = x + int(math.cos(angle) * ring_radius)
+            syp = y + 18 + int(math.sin(angle) * ring_radius * 0.3)
+            h = int(22 * rise_t * (0.7 + 0.3 * math.sin(i * 2.4)))
+            NS._draw_crystal_spike(surface, sxp, syp, syp - h, 3,
+                                   int(230 * (1 - progress * 0.5)), "ice")
+        if progress > 0.25:
+            dome_k = min(1.0, (progress - 0.25) / 0.2)
+            fade = max(0.0, 1.0 - max(0.0, (progress - 0.75) / 0.25))
+            R = int(46 * dome_k)
+            if R > 4 and fade > 0:
+                for i in range(7):
+                    a0 = i * math.pi / 7
+                    a1 = (i + 1) * math.pi / 7
+                    p0 = (x + int(math.cos(a0) * R),
+                          y - 6 + int(math.sin(a0) * R * 0.9))
+                    p1 = (x + int(math.cos(a1) * R),
+                          y - 6 + int(math.sin(a1) * R * 0.9))
+                    col = P["ice_dark"] if i % 2 else P["ice_mid"]
+                    NS._poly(surface, (*col, int(70 * fade)),
+                             [(x, y - 6), p0, p1])
+                NS._ellipse(surface, (*P["ice_bright"], int(90 * fade)),
+                            (x - R, y - 6 - int(R * 0.92), R * 2,
+                             int(R * 1.84)), 2)
+        if 0.38 < progress < 0.7:
+            k = 1 - (progress - 0.38) / 0.32
+            for i in range(8):
+                a = i * math.pi / 4 + phase * 0.8
+                rr = 30 + (1 - k) * 60
+                sx = x + int(math.cos(a) * rr)
+                sy = y - 8 + int(math.sin(a) * rr * 0.5)
+                NS._draw_snowflake(surface, sx, sy, 3, int(230 * k),
+                                   rotate=phase * 3 + i)
 
-        ring_radius = 55
-        for i in range(14):
-            angle = i * math.pi * 2 / 14
-            spike_x = x + int(math.cos(angle) * ring_radius)
-            spike_y = y + 40 + int(math.sin(angle) * ring_radius * 0.5)
-            spike_h = int(30 * rise_t) + (i % 3) * 3
+    # ===================================================================
+    # LIVE FX BRIDGE — heroes/nyzrak_fx.py (lazy, opsional)
+    # ===================================================================
+    _live_mod = None
 
-            _NS_nyzrak._draw_crystal_spike(surface, spike_x, spike_y,
-                                 spike_y - spike_h, 4, 240)
+    @staticmethod
+    def _live_module():
+        """Modul FX hidup atau None (lazy import + fail-safe)."""
+        NS = _NS_nyzrak
+        if NS._live_mod is None:
+            try:
+                from heroes import nyzrak_fx as mod
+                NS._live_mod = mod
+            except Exception:
+                NS._live_mod = False
+        return NS._live_mod or None
 
-        # Inner smaller spikes
-        for i in range(10):
-            angle = i * math.pi * 2 / 10 + phase * 0.1
-            r_inner = 35
-            spike_x = x + int(math.cos(angle) * r_inner)
-            spike_y = y + 42 + int(math.sin(angle) * r_inner * 0.5)
-            spike_h = int(22 * rise_t)
-            _NS_nyzrak._draw_crystal_spike(surface, spike_x, spike_y,
-                                 spike_y - spike_h, 3, 220)
+    # ===================================================================
+    # SKILL SPAWN (canvas fallback — dilewati jika FX hidup mengambil alih)
+    # ===================================================================
+    def _handle_skill_projectiles(boss, x, y, active_skill, timer, owned):
+        """Pemicu proyektil skill Q/W pada progres yang tepat."""
+        NS = _NS_nyzrak
+        tx, ty = NS._target_position(boss, x, y)
 
-        # Dome overlay (semi-transparent)
-        if progress > 0.3:
-            dome_alpha = int(100 * min(1.0, (progress - 0.3) / 0.2))
-            dome = pygame.Surface((ring_radius * 2 + 20, ring_radius + 40), pygame.SRCALPHA)
-            # Draw dome arcs
-            dcx, dcy = ring_radius + 10, ring_radius + 20
-            for i in range(10):
-                a1 = math.pi + i * math.pi / 10
-                a2 = a1 + math.pi / 10
-                x1 = dcx + int(math.cos(a1) * ring_radius)
-                y1 = dcy + int(math.sin(a1) * ring_radius * 0.7)
-                x2 = dcx + int(math.cos(a2) * ring_radius)
-                y2 = dcy + int(math.sin(a2) * ring_radius * 0.7)
-                pygame.draw.line(dome, (*_NS_nyzrak.PALETTE["ice_bright"], dome_alpha),
-                                 (x1, y1), (x2, y2), 2)
+        if active_skill == "q":
+            duration = 50
+            progress = max(0.0, min(1.0, 1 - timer / duration))
+            if 0.35 < progress < 0.45 and not getattr(boss, "_nyz_q_spawned", False):
+                if not owned:
+                    NS._spawn_arctic_burn(boss, x + 25 * boss.direction,
+                                          y - 15, tx, ty)
+                boss._nyz_q_spawned = True
+            if progress > 0.7:
+                boss._nyz_q_spawned = False
 
-            # Bright orbs on dome
-            for i in range(4):
-                angle = phase * 0.5 + i * math.pi / 2
-                ox = dcx + int(math.cos(angle) * ring_radius * 0.85)
-                oy = dcy + int(math.sin(angle) * ring_radius * 0.55)
-                pygame.draw.circle(dome, (*_NS_nyzrak.PALETTE["ice_hot"], dome_alpha + 100),
-                                   (ox, oy), 4)
-                pygame.draw.circle(dome, (*_NS_nyzrak.PALETTE["ice_pure"], min(255, dome_alpha + 155)),
-                                   (ox, oy), 2)
+        elif active_skill == "w":
+            duration = 50
+            progress = max(0.0, min(1.0, 1 - timer / duration))
+            if 0.35 < progress < 0.45 and not getattr(boss, "_nyz_w_spawned", False):
+                sx = x + 25 * boss.direction
+                sy = y - 10
+                base_angle = math.atan2(ty - sy, (tx - sx) or 1)
+                if not owned:
+                    for i in range(5):
+                        spread = (i - 2) * 0.25
+                        a = base_angle + spread
+                        if not hasattr(boss, "_nyz_shards"):
+                            boss._nyz_shards = []
+                        boss._nyz_shards.append(NS.SplinterShard(
+                            sx, sy, math.cos(a), math.sin(a), speed=6.0,
+                            life=35))
+                boss._nyz_w_spawned = True
+            if progress > 0.7:
+                boss._nyz_w_spawned = False
 
-            surface.blit(dome, (x - dcx, y + 40 - dcy + ring_radius // 2))
+    # ===================================================================
+    # MAIN ENTRY
+    # ===================================================================
+    def draw_nyzrak(surface, boss, x, y):
+        """Entry point render Nyzrak (jalur boss & pipeline hero)."""
+        NS = _NS_nyzrak
+        pulse = float(getattr(boss, "pulse", 0.0))
+        active_skill = getattr(boss, "active_skill", None)
+        skill_timer = int(getattr(boss, "active_skill_timer", 0))
+        moving = NS._detect_moving(boss)
+        NS._update_attack_anim(boss)
 
-        # Sparkling snowflakes around dome
-        for i in range(8):
-            angle = phase * 1.5 + i * math.pi / 4
-            r = ring_radius + 8
-            sx = x + int(math.cos(angle) * r)
-            sy = y + 20 + int(math.sin(angle) * r * 0.5) - 10
-            _NS_nyzrak._draw_snowflake(surface, sx, sy, 3, 230, rotate=phase * 3 + i)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        canvas_pass = bool(getattr(boss, "_skip_renderer_projectiles", False))
+        facing = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
 
+        info = NS._NyzAnimController.resolve(
+            boss, moving, float(getattr(boss, "_nyz_move_mag", 0)) > 2.4)
+        action, ap = info["action"], info["ap"]
+
+        # ── lapisan FX hidup (pre): ground FX + attach ────────────────
+        owned = False
+        live = None
+        if not portrait and not canvas_pass:
+            live = NS._live_module()
+            if live is not None:
+                try:
+                    live.draw_ground_layer(surface, boss, x, y)
+                    owned = bool(live.owns(boss))
+                except Exception:
+                    owned = False
+
+        # ── latar: aura + tanah beku + telegraph skill ────────────────
+        NS._draw_frost_aura(surface, x, y, pulse, active_skill)
+        NS._draw_ground_frost(surface, x, y + 46, pulse, active_skill)
+        if active_skill == "e":
+            NS._draw_winters_curse_ground(surface, boss, x, y,
+                                          skill_timer, pulse)
+        elif active_skill == "r":
+            NS._draw_cold_embrace_ground(surface, boss, x, y,
+                                         skill_timer, pulse)
+
+        # ── bayangan + kabut dingin ───────────────────────────────────
+        lift = NS.LIFT + (2.0 if action in ("run", "attack") else 0.0)
+        NS._draw_shadow(surface, x, y + NS.GROUND_DY - 2, int(lift))
+        NS._draw_frost_wisps(surface, x, y + 40, pulse,
+                             trail=(action in ("walk", "run")),
+                             facing=facing,
+                             intense=(action == "attack"
+                                      or action.startswith("cast")))
+
+        # ── badan (rig pixel-art, komposit outline + lighting) ────────
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        tgt, tx, ty = surface, x, y
+        if flash > 0:
+            if NS._flash_buf is None:
+                NS._flash_buf = pygame.Surface((240, 260), pygame.SRCALPHA)
+            NS._flash_buf.fill((0, 0, 0, 0))
+            NS._record_shadow = []
+            tgt, tx, ty = NS._flash_buf, 120, 140
+
+        NS._draw_nyz_full(tgt, tx, ty, facing, pulse, action, ap)
+
+        if flash > 0:
+            surface.blit(NS._flash_buf, (x - tx, y - ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(NS._flash_buf, 50)
+            wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
+                               unsetcolor=(0, 0, 0, 0))
+            for rect in (NS._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - tx, y - ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            NS._record_shadow = None
+
+        # ── FX canvas fallback (dilewati saat FX hidup aktif) ─────────
+        if not owned and not canvas_pass:
+            NS._draw_swing_arc(surface, boss, x, y, action, ap, pulse, facing)
+            if action == "attack":
+                NS._draw_cast_flash(surface, x, y, facing, ap)
+                if (0.44 <= ap <= 0.50
+                        and not getattr(boss, "_nyz_atk_spawned", False)
+                        and getattr(NS, "_pose_variant_now", "thrust") == "thrust"):
+                    txx, tyy = NS._target_position(boss, x, y)
+                    spear = NS._spear_state(boss, x, y)
+                    tip = spear["tip"]
+                    NS._spawn_ice_projectile(boss, tip.x, tip.y, txx, tyy)
+                    boss._nyz_atk_spawned = True
+                if ap < 0.1 or ap > 0.9:
+                    boss._nyz_atk_spawned = False
+
+        NS._handle_skill_projectiles(boss, x, y, active_skill, skill_timer,
+                                     owned)
+
+        if not owned and not canvas_pass:
+            NS._manage_projectiles(boss, surface, pulse)
+
+        # ── foreground skill canvas ───────────────────────────────────
+        if not owned:
+            if active_skill == "e":
+                NS._draw_winters_curse_foreground(surface, boss, x, y,
+                                                  skill_timer, pulse)
+            elif active_skill == "r":
+                NS._draw_cold_embrace_foreground(surface, boss, x, y,
+                                                 skill_timer, pulse)
+
+        # ── lapisan FX hidup (post): trail/proyektil/partikel/debug ───
+        if live is not None and not portrait and not canvas_pass:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+    # ===================================================================
+    # KOMPOSIT BADAN (buffer -> outline -> lighting)
+    # ===================================================================
+    def _draw_nyz_full(surface, cx, cy, facing, phase, action,
+                       attack_progress=0.0):
+        """Komposit ORIGINAL-MAX: rig low-res 2x + outline + rim light."""
+        NS = _NS_nyzrak
+        _composite_boss_body(
+            surface, NS, NS._draw_nyz_full_raw,
+            cx, cy, 1 if facing >= 0 else -1, phase, action,
+            attack_progress,
+            rim_add=(130, 220, 250), bsize=220)
+
+
+    def _draw_nyz_full_raw(surface, cx, cy, facing, phase, action,
+                           attack_progress=0.0):
+        """Raw rig: gambar low-res lalu nearest-scale 2x (chunky pixel)."""
+        NS = _NS_nyzrak
+        if NS._rig_buf is None:
+            NS._rig_buf = pygame.Surface((NS.RIG_SIZE, NS.RIG_SIZE),
+                                         pygame.SRCALPHA)
+            NS._scale_buf = pygame.Surface(
+                (NS.RIG_SIZE * NS.PIXEL, NS.RIG_SIZE * NS.PIXEL),
+                pygame.SRCALPHA)
+        rig = NS._rig_buf
+        rig.fill((0, 0, 0, 0))
+        pose = NS._rig_pose(action, phase, attack_progress)
+        NS._draw_rig(rig, NS.RIG_SIZE // 2, NS.RIG_SIZE // 2, facing, pose,
+                     action, phase, attack_progress)
+        big = NS.RIG_SIZE * NS.PIXEL
+        pygame.transform.scale(rig, (big, big), NS._scale_buf)
+        surface.blit(NS._scale_buf, (cx - big // 2, cy - big // 2))
 
     # ===================================================================
     # Backward compatible alias
     # ===================================================================
     def draw_boss(surface, boss, x, y):
         _NS_nyzrak.draw_nyzrak(surface, boss, x, y)
+
 
 
 # ====================================================================

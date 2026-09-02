@@ -4523,6 +4523,21 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX NYZRAK ═══
+                # Sapuan tombak es Nyzrak mendarat dari dekat: flash
+                # bintang es, serpihan, shockwave, shake, dan hit-stop
+                # 0.03-0.08 s (lengkapnya di
+                # heroes/nyzrak_fx.notify_melee_impact; paritas varian
+                # melee sweep — serangan jarak jauh memicu impact lewat
+                # proyektil di lapisan FX yang sama).
+                if self.hero_type == 'nyzrak':
+                    try:
+                        from heroes import nyzrak_fx as _nzfx
+                        _nzfx.notify_melee_impact(
+                            self, self.target, damage, is_crit)
+                    except Exception:
+                        pass
+
                 if is_crit:
                     try:
                         import __main__

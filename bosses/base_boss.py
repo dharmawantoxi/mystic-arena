@@ -659,6 +659,19 @@ class Boss(TowerDebuffMixin):
                                                      self.damage, False)
                         except Exception:
                             pass
+                    # ═══ IMPACT FX NYZRAK ═══
+                    # Sapuan/tetesukan tombak es Nyzrak mendarat: flash
+                    # bintang, serpihan es, shockwave chunky, shake, dan
+                    # hit-stop 0.03-0.08 s (paket lengkapnya di
+                    # heroes/nyzrak_fx.notify_melee_impact). Difilter per
+                    # boss_type + try/except (paritas Gornak/Alchemist).
+                    if getattr(self, 'boss_type', None) == 'nyzrak':
+                        try:
+                            from heroes import nyzrak_fx as _nzfx
+                            _nzfx.notify_melee_impact(self, self.target,
+                                                      self.damage, False)
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -3386,6 +3399,17 @@ class Boss(TowerDebuffMixin):
             if hasattr(self.target, 'apply_slow'):
                 self.target.apply_slow(0.4, 120)
         self._shake_screen(12)
+        # ═══ SKILL FX NYZRAK ═══
+        # Arctic Burn: beam frost ungu (cast->charge->release) digambar
+        # lapisan hidup heroes/nyzrak_fx.py; impact di target menyusul
+        # lewat edge-detection director + notify di bawah ini.
+        try:
+            from heroes import nyzrak_fx as _nzfx
+            if self.target and self.target.alive:
+                _nzfx.notify_skill_impact(self, self.target.x,
+                                          self.target.y, 60, 'q')
+        except Exception:
+            pass
 
     def _nyzrak_w(self, enemies):
         stats = self._get_boss_stats()
@@ -3399,6 +3423,16 @@ class Boss(TowerDebuffMixin):
                 if math.hypot(e.x - tx, e.y - ty) <= 80:
                     e.take_damage(damage, self.team)
         self._shake_screen(14)
+        # ═══ SKILL FX NYZRAK ═══
+        # Splinter Blast: kerucut serpihan (proyektil visual) + impact
+        # di titik target — lapisan hidup heroes/nyzrak_fx.py.
+        try:
+            from heroes import nyzrak_fx as _nzfx
+            if self.target and self.target.alive:
+                _nzfx.notify_skill_impact(self, self.target.x,
+                                          self.target.y, 80, 'w')
+        except Exception:
+            pass
 
     def _nyzrak_e(self):
         stats = self._get_boss_stats()
@@ -3414,6 +3448,16 @@ class Boss(TowerDebuffMixin):
             if hasattr(self.target, 'apply_slow'):
                 self.target.apply_slow(0.7, 180)
         self._shake_screen(16)
+        # ═══ SKILL FX NYZRAK ═══
+        # Winter's Curse: kurungan kristal di target — erupsi paket
+        # impact (flash, serpihan, shake, hit-stop) di titik target.
+        try:
+            from heroes import nyzrak_fx as _nzfx
+            if self.target and self.target.alive:
+                _nzfx.notify_skill_impact(self, self.target.x,
+                                          self.target.y, 44, 'e')
+        except Exception:
+            pass
 
     def _nyzrak_r(self, enemies):
         stats = self._get_boss_stats()
@@ -3431,6 +3475,14 @@ class Boss(TowerDebuffMixin):
         heal = int(self.max_hp * 0.15)
         self.hp = min(self.max_hp, self.hp + heal)
         self._shake_screen(22)
+        # ═══ SKILL FX NYZRAK ═══
+        # Cold Embrace: nova + kubah es + salju orbit di posisi caster
+        # — lapisan hidup heroes/nyzrak_fx.py (hit-stop 0.05 s di R).
+        try:
+            from heroes import nyzrak_fx as _nzfx
+            _nzfx.notify_skill_impact(self, self.x, self.y, 200, 'r')
+        except Exception:
+            pass
 
     # ===== ZHAROK AI (Flaming Archer) =====
     def _smart_ai_zharok(self, enemies, target_dist):
