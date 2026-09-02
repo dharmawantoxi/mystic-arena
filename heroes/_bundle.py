@@ -754,7 +754,7 @@ class _NS_grimjaw:
         if core:
             _NS_grimjaw._aacircle(surface, (*ramp[2], min(255, alpha + 60)),
                                   (cx, cy), max(1, int(r * .24)))
-            _NS_grimjaw._aacircle(surface, p_white := _NS_grimjaw.PALETTE["white"],
+            _NS_grimjaw._aacircle(surface, _NS_grimjaw.PALETTE["white"],
                                   (cx, cy), max(1, int(r * .12)))
 
     def _draw_rune_ring(surface, cx, cy, radius, phase, ramp, alpha,
@@ -1883,7 +1883,6 @@ class _NS_grimjaw:
             flick = int(math.sin(phase * 4.2 + i * 1.3) * 2)
             tx2 = tx + tw + flick
             ty2 = ty2 + (flick if i % 2 else -flick)
-            ln = math.hypot(tx2 - bx, ty2 - by) * flare
             tx3 = bx + (tx2 - bx) * flare
             ty3 = by + (ty2 - by) * flare
             poly(p["hair_darkest"], [(bx - wd, by), (tx3, ty3),
@@ -2079,7 +2078,6 @@ class _NS_grimjaw:
 
         # Flickering flame licks shed from the convex edge
         flick = math.sin(phase * 3.1) * 2.0
-        n_licks = 5 if hot else 4
         for i, t in enumerate((0.16, 0.38, 0.60, 0.80, 0.94)):
             if i >= 4 and not hot:
                 continue
@@ -3259,7 +3257,6 @@ class _NS_grimjaw:
         if (tx, ty) == (x, y):
             return
         ang = math.atan2(ty - y, tx - x)
-        dist = math.hypot(tx - x, ty - y)
         rage_ramp = (p["rage_light"], p["rage_mid"], p["rage_bright"])
         # dashed line (energi zigzag di atas garis putus biasa)
         for i in range(0, 12, 2):
@@ -4780,7 +4777,6 @@ class _NS_sylara:
             if not self.alive and self.age < 2:
                 return
 
-            p = _NS_sylara.PALETTE
             powered = self.powered
 
             # ── EKOR COMET (pita menirus + wisp melengkung + kilau) ──
@@ -4880,7 +4876,6 @@ class _NS_sylara:
         def draw(self, surface, phase):
             if not self.alive and self.age < 2:
                 return
-            p = _NS_sylara.PALETTE
 
             # ── EKOR COMET + strand vine berpilin (binding) ──
             _NS_sylara._drk_arrow_trail(surface, self.trail, self.angle,
@@ -6584,7 +6579,6 @@ class _NS_sylara:
                                p["cloth_light"], int(150 + 50 * math.sin(pulse)))
 
         # fletching along vine (shot reads as an arrow that became a vine)
-        dist = math.hypot(tx - sx, ty - 6 - sy) or 1.0
         for i in range(3):
             t = (i / 3.0 + pulse * 0.3) % 1.0
             fx = sx + (tx - sx) * t
@@ -7560,7 +7554,6 @@ class _NS_kaizen:
             getattr(boss, "_kz_attack_active", False)
             or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 45) - 15
         )
-        gale = active_skill == "w"
         storm = active_skill == "r"
 
         if not portrait_hd:
@@ -9335,7 +9328,6 @@ class _NS_thorne:
             dy = ty - sy
             base_angle = math.atan2(dy, dx)
             self.angle = base_angle + spread_angle
-            dist = math.sqrt(dx * dx + dy * dy) or 1
             # Travel in own direction (fan spread)
             self.tx = sx + math.cos(self.angle) * 500
             self.ty = sy + math.sin(self.angle) * 500
@@ -15084,7 +15076,6 @@ class _NS_zephyr:
                                  (x + dx, y + dy), r)
         if trail:
             for i in range(3):
-                ta = phase * .42 + i * .9
                 _NS_zephyr._aacircle(
                     surface, (*p["magic_hot"], 90),
                     (int(x - facing * (8 + i * 4)),
@@ -16502,8 +16493,6 @@ class _NS_zephyr:
         """Q foreground: thorn ring spines + thorn motes rising."""
         p = _NS_zephyr.PALETTE
         fs = _NS_zephyr._fx_scale(boss)
-        dur = _NS_zephyr.SKILL_VISUAL_DURATION["q"]
-        progress = max(0.0, min(1.0, 1 - timer / dur))
         tx_, ty_ = _NS_zephyr._target_position(boss, x, y)
         rng = _NS_zephyr._ring_r(boss, 60, surface)
 
@@ -16542,7 +16531,6 @@ class _NS_zephyr:
     def _draw_shadow_realm_ground(surface, boss, x, y, timer, phase):
         """W ground: expanding ground ring."""
         p = _NS_zephyr.PALETTE
-        fs = _NS_zephyr._fx_scale(boss)
         dur = _NS_zephyr.SKILL_VISUAL_DURATION["w"]
         progress = max(0.0, min(1.0, 1 - timer / dur))
         rng = _NS_zephyr._ring_r(boss, 100, surface)
@@ -16992,7 +16980,6 @@ class _NS_zephyr:
         moving       = Z._detect_moving(boss)
         Z._update_attack_anim(boss)
         portrait_hd  = bool(getattr(boss, "_portrait_hd", False))
-        bedlam_on    = (active_skill == "r")
         state        = getattr(boss, "_zp_state", "IDLE")
 
         attacking = (

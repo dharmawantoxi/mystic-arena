@@ -196,7 +196,6 @@ def _renderer():
 
 def _fallback_pose(boss):
     """(action, phase, ap) tanpa renderer: baca atribut yang sudah ada."""
-    skill = getattr(boss, "active_skill", None)
     action = getattr(boss, "_gor_pose_action", None)
     if action is None:
         action = ("attack" if getattr(boss, "_gor_attack_active", False)
@@ -489,7 +488,6 @@ def ellipse_ring_surface(rx, ry, thickness, color, angle_deg=0):
     w, h = rx * 2 + th * 2 + 2, ry * 2 + th * 2 + 2
     surf = pygame.Surface((w, h), pygame.SRCALPHA)
     c = (rx + th + 1, ry + th + 1)
-    rect = pygame.Rect(c[0] - rx, c[1] - ry, rx * 2, ry * 2)
     col = (*_clamp_color(color), 255)
     steps = max(12, int((rx + ry) * 0.35))
     pts = []
@@ -846,7 +844,6 @@ class ParticleSystem:
                additive=False, layer="front"):
         """Aliran partikel dari (x,y) menuju (tx,ty)."""
         dx, dy = tx - x, ty - y
-        dist = math.hypot(dx, dy) or 1.0
         base = math.atan2(dy, dx)
         n = max(0, int(count))
         for _ in range(n):
@@ -1152,7 +1149,6 @@ class ImpactFX:
         # ── 6. RETAKAN ZIGZAG (rupture — ledakan besar) ─────────────
         if t < 0.62 and self.kind == "rupture":
             st = 1.0 - t / 0.62
-            a2 = int(200 * st)
             n = 7
             for i in range(n):
                 base = (self.seed * 0.37) + i * math.tau / n
@@ -1782,7 +1778,6 @@ class SkillFX:
     def _draw_q_front(self, surface, x, y, t, inv, phase):
         """BLOODRAGE: pilar aktivasi 4 lapis + mahkota api darah 2 ring +
         bintang 8 spike + glint orbit."""
-        c = P["blood_hot"]
         # ── AKTIVASI: pilar darah 4 lapis ──
         if phase in ("cast", "charge"):
             pt = min(1.0, self.age / max(0.01, self.t_release))
@@ -1808,12 +1803,8 @@ class SkillFX:
                     (int(30 * (self.radius / 90.0)), P["blood_mid"], 4),
                     (int(20 * (self.radius / 90.0)), P["blood_bright"], 3))):
                 ang0 = self.age * (2.4 if k == 0 else -1.7)
-                buf = _scratch(rr * 2 + 8, rr * 2 + 8)
-                cc = rr + 4
                 for i in range(14):
                     a = ang0 + i * math.tau / 14
-                    px = cc + int(math.cos(a) * rr * pulse)
-                    py = cc + int(math.sin(a) * rr * 0.62 * pulse)
                     ln = 4 if i % 2 else 7
                     pygame.draw.line(
                         surface,
@@ -1927,7 +1918,6 @@ class SkillFX:
             for i in range(6):
                 a = self.seed + i * math.tau / 6 + 0.35
                 L = int(rr * (0.5 + 0.8 * st))
-                wdt = 3 if i % 2 else 2
                 pygame.draw.polygon(surface, (*P["blood_darkest"],
                                               int(220 * st)),
                                     [(x + int(math.cos(a) * rr * 0.25),
@@ -2394,7 +2384,6 @@ class GorathFXDirector:
 
         # ── deteksi ayunan dari controller renderer ──
         active = bool(getattr(self.hero, "_gor_attack_active", False))
-        raw = float(getattr(self.hero, "_gor_attack_raw", 0.0) or 0.0)
         phase = getattr(self.hero, "_gor_attack_phase", "NONE") or "NONE"
         facing = 1 if (getattr(self.hero, "direction", 1) or 1) >= 0 else -1
 
@@ -2646,7 +2635,14 @@ def tick(dt=None):
         step = max(0.0, min(1.0 / 20.0, float(dt)))
         _advance(step)
         return step
+    # Guard frame-sama: draw_ground_layer() memanggil tick() untuk SETIAP
+    # unit, sedangkan _advance() melangkahkan SEMUA director. Tanpa guard
+    # ini 4 unit sejenis di layar membuat FX maju ~4x lebih cepat.
+    now = pygame.time.get_ticks()
+    if now == _LAST_TICK_MS:
+        return 0.0                             # frame yang sama: sudah maju
     if _feel is not None:
+        _LAST_TICK_MS = now
         try:
             step = _feel.fx_dt()
         except Exception:                      # pragma: no cover
@@ -2683,6 +2679,8 @@ def reset_all():
     Sekalian melepas penanda "diambil alih" di setiap unit, supaya
     ``owns()`` dan ``draw_gorath`` kembali ke jalur canvas.
     """
+    global _LAST_TICK_MS
+    _LAST_TICK_MS = None                       # jangan telan tick pertama
     for d in list(_DIRECTORS):
         _release(d)
     _DIRECTORS.clear()

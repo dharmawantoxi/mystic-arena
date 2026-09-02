@@ -1247,7 +1247,6 @@ class RazakProjectile:
             return
         if self.state == self.STATE_DESTROY:
             return
-        NS = None
         # trail: asap dingin -> api panas (mengikuti lengkung)
         n = len(self.trail)
         for i, (tx, ty, age) in enumerate(self.trail):
@@ -2037,7 +2036,6 @@ class RazakFXDirector:
         if len(self.skills) >= MAX_SKILLS:
             self.skills.pop(0)
         gy = self._ground_dy()
-        G = _renderer()
         aim = None
         tgt = getattr(self.hero, "target", None)
         if tgt is not None and getattr(tgt, "alive", False):
@@ -2237,7 +2235,7 @@ class RazakFXDirector:
             prev = self._skill_release.get("w")
             if prev != release_at and timer <= release_at:
                 self._skill_release["w"] = release_at
-                d, (hot) = (self._skill_for("w"), None)
+                d = self._skill_for("w")
                 if d is not None:
                     d.impacted()
         elif skill != "w":
@@ -2649,7 +2647,16 @@ def tick(dt=None):
         step = max(0.0, min(1.0 / 20.0, float(dt)))
         _advance(step)
         return step
+    # Guard frame-sama: draw_ground_layer() memanggil tick() untuk SETIAP
+    # unit Razak, sedangkan _advance() melangkahkan SEMUA director. Tanpa
+    # guard ini, 2 Razak di layar membuat FX maju 2x lebih cepat, 4 Razak
+    # 4x lebih cepat (partikel & trail habis sebelum waktunya). Samakan
+    # dengan pola sylara/kaizen/vex_fx.
+    now = pygame.time.get_ticks()
+    if now == _LAST_TICK_MS:
+        return 0.0                             # frame yang sama: sudah maju
     if _feel is not None:
+        _LAST_TICK_MS = now
         try:
             step = _feel.fx_dt()
         except Exception:                      # pragma: no cover
@@ -2682,9 +2689,11 @@ def _advance(step):
 
 def reset_all():
     """Bersihkan seluruh state FX Razak (ganti level / keluar match)."""
+    global _LAST_TICK_MS
     for d in list(_DIRECTORS):
         _release(d)
     _DIRECTORS.clear()
+    _LAST_TICK_MS = None                       # jangan telan tick pertama
     if _feel is not None:
         try:
             _feel.reset()

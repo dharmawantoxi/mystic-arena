@@ -2779,8 +2779,15 @@ def tick(dt=None):
     global _LAST_TICK_MS
     if dt is None:
         if _feel is not None:
+            # Guard frame-sama: draw_ground_layer() memanggil tick() untuk
+            # SETIAP unit, sedangkan loop di bawah melangkahkan SEMUA
+            # director. Tanpa guard ini 4 Grimjaw di layar membuat FX maju
+            # ~4x lebih cepat.
+            now = pygame.time.get_ticks()
+            if now == _LAST_TICK_MS:
+                return 0.0                 # frame yang sama: sudah maju
             dt = _feel.fx_dt()
-            _LAST_TICK_MS = pygame.time.get_ticks()
+            _LAST_TICK_MS = now
         else:                              # pragma: no cover - fallback
             now = pygame.time.get_ticks()
             if _LAST_TICK_MS is None:
@@ -2805,6 +2812,13 @@ def tick(dt=None):
 
 def reset_all():
     """Lepas & kosongkan SEMUA director (ganti level / keluar match)."""
+    # BUG: tanpa `global`, baris `_LAST_TICK_MS = None` di bawah hanya
+    # membuat variabel LOKAL yang langsung dibuang - jam frame modul
+    # tidak pernah benar-benar direset. Akibatnya frame pertama match
+    # berikutnya memakai selisih waktu dari match LAMA (bisa puluhan
+    # detik), lalu trail & partikel Grimjaw melompat jauh di frame
+    # pembuka. Pola yang benar sudah dipakai kaizen/sylara/vex_fx.
+    global _LAST_TICK_MS
     for d in list(_DIRECTORS):
         _release(d)
     _DIRECTORS.clear()

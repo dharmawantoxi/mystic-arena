@@ -50,9 +50,31 @@ g = Game(screen, level_number=1)
 g.level_intro = None
 g.boss_intro = None
 
+try:
+    from heroes import combat_feel as _feel
+except Exception:                              # pragma: no cover
+    _feel = None
+
+
+def step(n=1):
+    """Jalankan ``n`` frame gameplay yang BENAR-BENAR maju.
+
+    ``Game.update()`` sengaja langsung return selama hit-stop (blok
+    HIT STOP di _core.py) supaya benturan terasa berbobot. Untuk test
+    yang menghitung frame, itu berarti "620 kali update()" belum tentu
+    "620 frame gameplay": pertempuran yang kebetulan terjadi bisa
+    menelan sampai 20 frame, dan T1 cuma punya margin 20 frame (620
+    vs durasi 600). Kosongkan bus tiap iterasi supaya jumlah frame
+    yang dihitung test benar-benar deterministik.
+    """
+    for _ in range(n):
+        if _feel is not None:
+            _feel.reset()
+        g.update()
+
+
 # Pemanasan singkat supaya sistem siap.
-for _ in range(30):
-    g.update()
+step(30)
 
 tac = g.tactical
 assert tac is not None, "TacticalCommandManager tidak terpasang"
@@ -74,7 +96,7 @@ assert tac.command_timer > 500, \
     f"tap cepat harus tetap durasi penuh, timer={tac.command_timer}"
 # Perintah kedaluwarsa normal (bukan dipangkas ke ekor).
 for _ in range(620):
-    g.update()
+    step()
 assert tac.active_command is None, \
     f"perintah tap harus berakhir alami, masih {tac.active_command}"
 print("T1 OK  - TAP cepat = tekanan biasa (durasi penuh 10 detik)")
@@ -85,7 +107,7 @@ ok = tac.hold_start(TacticalCommand.PROTECT_CASTLE)
 assert ok
 min_timer = 9999
 for i in range(300):           # 5 detik menahan
-    g.update()
+    step()
     assert tac.active_command == TacticalCommand.PROTECT_CASTLE, \
         f"frame {i}: perintah hilang padahal masih di-hold"
     assert tac.held_command == TacticalCommand.PROTECT_CASTLE
@@ -103,7 +125,7 @@ assert tac.held_command is None
 assert tac.command_timer <= HOLD_RELEASE_TAIL, \
     f"timer harus dipangkas ke ekor, masih {tac.command_timer}"
 for _ in range(HOLD_RELEASE_TAIL + 10):
-    g.update()
+    step()
 assert tac.active_command is None, \
     f"perintah harus berakhir setelah hold dilepas, masih {tac.active_command}"
 print("T3 OK  - perintah berhenti ditegakkan begitu hold dilepas")
@@ -117,7 +139,7 @@ assert tac.held_command == TacticalCommand.ATTACK_BOSS, \
     "hold harus tetap dipersenjatai walau syarat belum terpenuhi"
 # Beberapa frame tanpa boss: tidak ada yang crash/macet.
 for _ in range(40):
-    g.update()
+    step()
 assert tac.held_command == TacticalCommand.ATTACK_BOSS
 assert not tac._hold_has_fired
 # Boss MUNCUL saat tombol masih ditahan -> aktivasi otomatis.
@@ -127,7 +149,7 @@ boss.entrance_timer = 0
 g.active_boss = boss
 fired = False
 for _ in range(90):
-    g.update()
+    step()
     if tac.active_command == TacticalCommand.ATTACK_BOSS \
             and tac._hold_has_fired:
         fired = True
@@ -146,7 +168,7 @@ assert tac.held_command is None
 tac.cooldown = 0
 assert tac.hold_start(TacticalCommand.PROTECT_CASTLE)
 for _ in range(5):
-    g.update()
+    step()
 tac.hold_end(TacticalCommand.ATTACK_BOSS)   # nama berbeda -> abaikan
 assert tac.held_command == TacticalCommand.PROTECT_CASTLE, \
     "hold_end command lain tidak boleh melepas hold aktif"
@@ -168,7 +190,7 @@ assert ok, "gather gagal"
 assert tac._gather_push_fired is False
 push_frame = None
 for i in range(420):           # maks 7 detik menahan
-    g.update()
+    step()
     if tac._gather_push_fired:
         push_frame = i
         break
@@ -209,7 +231,7 @@ print("T8 OK  - sentuh panel: apply_hud_action mulai hold")
 tac.cooldown = 0
 assert tac.hold_start(TacticalCommand.PROTECT_CASTLE)
 for _ in range(12):
-    g.update()
+    step()
 elapsed0 = tac.hold_elapsed
 lagi = tac.hold_start(TacticalCommand.PROTECT_CASTLE)  # tekan ulang
 assert lagi and tac.hold_elapsed == elapsed0, \

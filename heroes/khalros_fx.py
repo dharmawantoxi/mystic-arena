@@ -478,7 +478,6 @@ class KhalrosProjectile(object):
         self.trail = []          # (x, y) - after-image
         self._stamp = 0
         dx, dy = tx - x, ty - y
-        d = math.hypot(dx, dy) or 1.0
         self.ang = math.atan2(dy, dx)
 
     def update(self, dt, on_hit):
@@ -803,7 +802,6 @@ class KhalrosSkillFX(object):
     # ---- Q: Wild Axes (kapak melayang + tebas ke bawah + ring) --------
     def _draw_q(self, surface, t):
         P = PALETTE
-        d = self.direction
         # dua kapak berputar di atas target, lalu menebas ke bawah
         for k in range(2):
             off = (k - 0.5) * 26
@@ -1332,7 +1330,6 @@ class KhalrosRenderer(object):
     def _draw_death(self, surface, x, y, facing, pulse):
         P = PALETTE
         # roboh: badan miring + hilang perlahan (alpha menurun via caller)
-        t = min(1.0, (getattr(self, "_death_t", 0.0)))
         _ellipse_shadow(surface, x, y + 4, 30, 9)
         ang = -facing * 1.2
         ca, sa = math.cos(ang), math.sin(ang)
@@ -1650,7 +1647,6 @@ class KhalrosFXDirector(object):
     def draw_debug(self, surface, x, y):
         if not DEBUG_CHARACTER:
             return
-        P = PALETTE
         hx = x
         hy = y
         # hitbox (badan)
@@ -1913,7 +1909,6 @@ if __name__ == "__main__":
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    import random
 
     pygame.init()
     W, H = 720, 520

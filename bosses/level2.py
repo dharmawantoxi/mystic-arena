@@ -1186,7 +1186,6 @@ class _NS_razak:
             tremble = 1 if (pose["tremble"] and int(phase * 30) % 2) else 0
             return int(pose["lean"]) * f, int(pose["dip"]), tremble, sway
         if action == "walk":
-            pw = phase * 2.5
             return 3 * f, int(breath * 1.6), 0, \
                 int(math.sin(phase * 0.6) * 1) + int(math.sin(phase * 2) * 1)
         if action == "dash":
@@ -1943,7 +1942,6 @@ class _NS_razak:
         """Badan bat merah: 5-band + sisik punggung + perut dither + cakar."""
         NS = _NS_razak
         P = NS.PALETTE
-        f = facing
         breath = math.sin(phase * 0.75) * 1.2
 
         # selout bayangan
@@ -2456,7 +2454,6 @@ class _NS_razak:
         # barrel brass 4-band
         barrel_len = 17
         end_x = hx + facing * barrel_len
-        end_y = hy - 1
         bx0 = min(hx, end_x)
         NS._rect(surface, P["shadow_deep"],
                  (bx0 + 1, hy - 4 + 1, barrel_len, 7), border_radius=2)
@@ -2802,7 +2799,6 @@ class _NS_razak:
                         int(160 * (1 - conv)), thickness=2, softness=5)
         # chevron berbaris dari caster menuju target
         dx, dy = tx - x, ty - (y + NS.GROUND_DY)
-        dist = math.hypot(dx, dy) or 1.0
         ang = math.atan2(dy, dx)
         for i in range(3):
             t = ((phase * 0.4 + i / 3.0) % 1.0)
@@ -2819,9 +2815,6 @@ class _NS_razak:
         """W telegraph: ring 95 px dunia DI TARGET + kerucut semburan."""
         NS = _NS_razak
         P = NS.PALETTE
-        duration = NS.SKILL_DUR["w"]
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        fs = NS._fx_scale(boss)
         tx, ty = NS._target_position(boss, x, y)
         r = NS._ring_r(boss, NS.SKILL_RADIUS["w"], surface)
         pulse = math.sin(phase * 2.2) * 0.3 + 0.7
@@ -4254,7 +4247,6 @@ class _NS_khalros:
 
     def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
         """One arm swings axe."""
-        sway = math.sin(phase * 0.7) * 1
 
         # Back arm - just holds axe
         back_side = -facing
@@ -4639,7 +4631,6 @@ class _NS_khalros:
         if progress < 0.15 and not getattr(boss, "_khal_axes_spawned", False):
             # Spawn 2 axes with slight spread
             for i, offset in enumerate((-10, 10)):
-                angle_off = math.atan2(ty - y, (tx - x) * boss.direction) + i * 0.15
                 sx = x + 12 * boss.direction
                 sy = y - 10 + offset
                 _NS_khalros._spawn_axe(boss, sx, sy, tx + offset * 0.5, ty)
@@ -6138,9 +6129,6 @@ class _NS_gorath:
         ``ap`` untuk serangan adalah WAKTU POSE (sudah lewat _attack_curve),
         jadi bilah, trail, dan badan tidak mungkin berbeda frame.
         """
-        active_skill = getattr(boss, "active_skill", None)
-        _rag = active_skill in ("q", "r")
-        _hunt = active_skill in ("e", "w")
         attacking = (
             getattr(boss, "_gor_attack_active", False)
             or getattr(boss, "timer", 0) >
@@ -8711,8 +8699,6 @@ class _NS_alchemist:
             steps = softness + thickness + softness
             for i in range(steps):
                 t = i / float(max(1, steps - 1))     # 0 luar -> 1 dalam
-                band = softness + thickness - t * (softness + softness
-                                                   + thickness) / 2.0
                 # radius band: mulai di radius-softness naik ke
                 # radius+thickness lalu turun -> profil falloff lunak
                 r = radius - softness + t * (softness * 2 + thickness)
@@ -9152,7 +9138,6 @@ class _NS_alchemist:
             boss, bool(getattr(boss, "_alch_moving", False)))
         if action != "attack" or not (0.30 <= ap <= 0.78):
             return None
-        facing = getattr(boss, "direction", 1) or 1
         gx, gy = _NS_alchemist._grip_screen(boss, x, y)
         tx, ty = _NS_alchemist._tip_screen(boss, x, y)
         pad = 10
@@ -9863,8 +9848,6 @@ class _NS_alchemist:
                    (bx - 6, by - 9), (bx + 6, by + 9), 1)
         NS._aaline(surface, P["leather_darkest"],
                    (bx + 6, by - 9), (bx - 6, by + 9), 1)
-        fills = (("glass_dark", "glass_mid", "glass_light",
-                  "acid_hot"),) * 3
         # 3 botol: asam (hijau), ramuan (ungu), emas
         contents = (
             (P["glass_dark"], P["glass_mid"], P["glass_light"],
@@ -10186,7 +10169,6 @@ class _NS_alchemist:
         f = 1 if facing >= 0 else -1
         attack = action == "attack"
         ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
-        breath = math.sin(phase * 0.7)
 
         # ═══ 1. GERAK BADAN: root / lean / sway (satu sumber dgn
         # _local supaya anchor FX hidup cocok piksel-per-piksel) ═══
@@ -11024,10 +11006,16 @@ class _NS_alchemist:
             except Exception:
                 pass
         try:
-            font = _debug_font()
-            for i, txt in enumerate(lines):
-                surface.blit(font.render(txt, True, (235, 240, 220)),
-                             (x - 60, y - 108 + i * 11))
+            # BUG: dulu `_debug_font()` (nama bebas). Di dalam kelas
+            # namespace, nama itu TIDAK ada di scope fungsi maupun di
+            # global modul -> NameError, dan panel teks debug tidak
+            # pernah tampil (tertelan `except` di bawah). Harus lewat NS
+            # seperti helper _NS_alchemist lainnya.
+            font = NS._debug_font()
+            if font is not None:
+                for i, txt in enumerate(lines):
+                    surface.blit(font.render(txt, True, (235, 240, 220)),
+                                 (x - 60, y - 108 + i * 11))
         except Exception:
             pass
 
