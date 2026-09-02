@@ -758,13 +758,27 @@ class Particle:
 
         # default: kotak chunky (inti terang kalau cukup besar)
         buf = _scratch(sz * 2 + 2, sz * 2 + 2)
+        if self.additive:
+            # BLEND_RGB_ADD mengabaikan kanal alpha -> fade harus
+            # dikodekan di RGB (premultiplied), kalau tidak partikel
+            # additive selalu tampil intensitas penuh sampai mati.
+            k = max(0.0, min(1.0, a / 255.0))
+            col = _clamp_color((col[0] * k, col[1] * k, col[2] * k))
+            wc = _clamp_color((P["fx_white"][0] * k,
+                               P["fx_white"][1] * k,
+                               P["fx_white"][2] * k))
+            pygame.draw.rect(buf, (*col, 255), (1, 1, sz, sz))
+            if sz >= 3:
+                pygame.draw.rect(buf, (*wc, 255),
+                                 (1, 1, max(1, sz // 2), max(1, sz // 2)))
+            surface.blit(buf, (x - sz // 2, y - sz // 2),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            return
         pygame.draw.rect(buf, (*col, a), (1, 1, sz, sz))
         if sz >= 3:
             pygame.draw.rect(buf, (*P["fx_white"], min(255, a + 40)),
                              (1, 1, max(1, sz // 2), max(1, sz // 2)))
-        surface.blit(buf, (x - sz // 2, y - sz // 2),
-                     special_flags=pygame.BLEND_RGB_ADD
-                     if self.additive else 0)
+        surface.blit(buf, (x - sz // 2, y - sz // 2))
 
 
 class ParticleSystem:
@@ -1894,8 +1908,11 @@ class SkillFX:
         elif self.phase == "release":
             t = (a - self.t_charge) / max(0.001,
                                           self.t_release - self.t_charge)
+            # Lebar pilar dijaga di bawah lebar bahu karakter: berkas
+            # putih selebar badan (versi lama 2x lebar bahu) menelannya
+            # utuh selama fase release.
             self._pillar(surface, x, y, int(150 * (1.0 - t * 0.35)),
-                         int(34 + 40 * t), int(210 * (1 - t)),
+                         int(26 + 18 * t), int(190 * (1 - t)),
                          P["fx_white"])
             rr = int(R * (0.25 + 1.05 * t))
             if rr > 6:
@@ -1927,19 +1944,30 @@ class SkillFX:
         buf = _scratch(width * 2 + 10, height + 10)
         w, h = buf.get_size()
         c = w // 2
+        base = _clamp_color(color)
+        # PENTING: blit di bawah memakai BLEND_RGB_ADD yang MENGABAIKAN
+        # kanal alpha (lihat glow_surface). Intensitas tiap lapis harus
+        # dikodekan sebagai RGB PREMULTIPLIED -- versi lama menggambar
+        # RGB penuh + alpha samar, jadi pilar tampil sebagai berkas putih
+        # jenuh selebar badan yang menelan karakter saat R di-cast.
         for i in range(3):
-            al = max(0, int(alpha / (i + 1)))
+            k = max(0.0, min(1.0, (alpha / (i + 1)) / 255.0))
+            col = (int(base[0] * k), int(base[1] * k), int(base[2] * k),
+                   255)
             inset = i * 2
             pygame.draw.polygon(
-                buf, (*_clamp_color(color), al),
+                buf, col,
                 [(c - width + inset, h - 2),
                  (c + width - inset, h - 2),
                  (c + max(1, width // 3), 2),
                  (c - max(1, width // 3), 2)])
-        # bilah cahaya vertikal di tengah pilar
-        pygame.draw.line(buf, (*P["fx_white"], min(255, alpha + 30)),
+        # bilah cahaya vertikal di tengah pilar (premultiplied juga)
+        kc = max(0.0, min(1.0, min(255, alpha + 30) / 255.0))
+        wc = _clamp_color(P["fx_white"])
+        pygame.draw.line(buf, (int(wc[0] * kc), int(wc[1] * kc),
+                               int(wc[2] * kc), 255),
                          (c, 2), (c, h - 2), max(1, width // 4))
-        surface.blit(buf, (cx - c, cy - height),
+        surface.blit(buf, (int(cx) - c, int(cy) - height),
                      special_flags=pygame.BLEND_RGB_ADD)
 
     def _rune_marks(self, surface, cx, cy, radius, color, alpha, rot, marks):
@@ -2452,19 +2480,35 @@ class GornakFXDirector:
             draw_debug_overlay(surface, self)
 
     def _draw_hit_flash(self, surface, x, y):
-        """IMPACT FLASH: Surface transparan di atas badan (bukan tint RGB)."""
+        """IMPACT FLASH: glow baja di sekitar badan + kilat kecil di dada.
+
+        House style yang sama dengan zephyr/grimjaw/kaizen/vex: SATU
+        ``glow_surface`` additive. Versi lama menambahkan lingkaran PUTIH
+        additive radius ~55 px (alpha 120) di atas badan — ~84% area
+        karakter jadi blob putih solid TIAP kali kena damage, dan karena
+        efek di-retrigger tiap tick damage (serangan minion / DoT),
+        Gornak tampak "dibungkus cahaya putih" hampir tanpa jeda di
+        tengah baku hantam. Lingkaran itu dihapus; sinyal "kena pukul"
+        tetap terbaca dari glow kecil + kilat 4-titik di dada.
+        """
         k = max(0.0, min(1.0, self.hit_flash / 0.16))
-        r = int(20 + 26 * k)
+        # Lane boss menggambar JUGA flash siluet di canvas (hurt_flash_timer
+        # -> _draw_gnk_rig_at); dua flash penuh di momen yang sama terbaca
+        # sebagai white-out, jadi bagian hidupnya diredam di jalur itu.
+        if int(getattr(self.hero, "hurt_flash_timer", 0) or 0) > 0:
+            k *= 0.35
+        r = int(18 + 14 * k)
         if glow_allowed():
-            g = glow_surface(r, P["steel_hot"], 0.7 * k)
-            surface.blit(g, (int(x) - r, int(y) - r - 6),
+            g = glow_surface(r, P["steel_hot"], 0.55 * k)
+            surface.blit(g, (int(x) - r, int(y) - r - 8),
                          special_flags=pygame.BLEND_RGB_ADD)
-        size = int(30 + 46 * k)
-        buf = _scratch(size * 2, size * 2)
-        pygame.draw.circle(buf, (*P["fx_white"], int(120 * k)),
-                           (size, size), int(size * 0.72))
-        surface.blit(buf, (int(x) - size, int(y) - size - 8),
-                     special_flags=pygame.BLEND_RGB_ADD)
+        # Kilat bintang 4-titik KECIL di dada: tanda benturan yang terbaca
+        # tanpa menutupi siluet (spark_surface sudah premultiplied-aman
+        # untuk blit normal; alpha diatur lewat set_alpha).
+        s = max(3, int(4 + 8 * k))
+        star = spark_surface(s, P["fx_white"])
+        star.set_alpha(int(170 * k))
+        surface.blit(star, (int(x) - s, int(y) - 16 - s))
 
     # ------------------------------------------------------------------
     def clear(self):
