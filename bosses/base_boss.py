@@ -5422,30 +5422,29 @@ class Boss(TowerDebuffMixin):
         else:
             self._draw_generic_body(surface, x, y, is_true)
 
-        # ═══ LABEL ═══
-        prefix = "TRUE BOSS" if is_true else "BOSS"
-        if getattr(self, 'is_enraged', False):
-            enrage_tag = " [ENRAGED]" if is_true else " [FRENZY]"
+        # ═══ HP BAR + PLAT NAMA (di atas puncak sprite) ═══
+        # BUG LAMA: bar & nama dipatok ke y - r - 15 / y - r - 25.
+        # Radius badan (30-96 px) BUKAN tinggi sprite: rig custom boss
+        # menjulang sampai ±100 px di atas titik jangkar, jadi bar dan
+        # nama menutupi kepala/badan boss - dan kotak nama yang
+        # di-inflate juga menutupi HP bar-nya sendiri. Sekarang
+        # jangkar diambil dari BOSS_LABEL_TOP (puncak tiap boss, diukur
+        # dari render idle) dan layoutnya ditumpuk rapi:
+        #
+        #     [ NAMA BOSS ]      <- tepat di atas bar, gap 3 px
+        #     [████ HP BAR ████] <- 6 px di atas puncak sprite
+        #          (boss)
+        if _draw_fn is None:
+            # badan generic: lingkaran radius r + spike mahkota ±11 px
+            head_top = r + 12
         else:
-            enrage_tag = ""
-        font = get_font(18 if not is_true else 20, "body_bold")
-        label_color = (255, 60, 60) if self.is_enraged else ((255, 100, 100) if is_true else (255, 220, 100))
-        name_text = font.render(f"{prefix}: {self.name}{enrage_tag}", True,
-                                label_color)
-        name_rect = name_text.get_rect(center=(x, y - r - 25))
-        bg_rect = name_rect.inflate(8, 4)
-        pygame.draw.rect(surface, (0, 0, 0), bg_rect,
-                         border_radius=3)
-        border_c = (255, 60, 60) if self.is_enraged else ((255, 100, 100) if is_true else (255, 200, 50))
-        pygame.draw.rect(surface, border_c, bg_rect, 1,
-                         border_radius=3)
-        surface.blit(name_text, name_rect)
+            head_top = max(int(BOSS_LABEL_TOP.get(self.boss_type, r)), r)
 
-        # ═══ HP BAR ═══
+        # ═══ HP BAR (digambar duluan: jangkar untuk papan nama) ═══
         bar_w = 70 if is_true else 60
         bar_h = 10 if is_true else 8
         bx = x - bar_w // 2
-        by = y - r - 15
+        by = y - head_top - 6 - bar_h
 
         pygame.draw.rect(surface, (40, 0, 0),
                          (bx, by, bar_w, bar_h))
@@ -5459,8 +5458,39 @@ class Boss(TowerDebuffMixin):
             else:
                 hpc = (240, 60, 60)
             pygame.draw.rect(surface, hpc, (bx, by, fill, bar_h))
+        border_c = (255, 60, 60) if self.is_enraged else ((255, 100, 100) if is_true else (255, 200, 50))
         pygame.draw.rect(surface, border_c,
                          (bx, by, bar_w, bar_h), 1)
+
+        # ═══ LABEL ═══
+        prefix = "TRUE BOSS" if is_true else "BOSS"
+        if getattr(self, 'is_enraged', False):
+            enrage_tag = " [ENRAGED]" if is_true else " [FRENZY]"
+        else:
+            enrage_tag = ""
+        font = get_font(18 if not is_true else 20, "body_bold")
+        label_color = (255, 60, 60) if self.is_enraged else ((255, 100, 100) if is_true else (255, 220, 100))
+        name_text = font.render(f"{prefix}: {self.name}{enrage_tag}", True,
+                                label_color)
+        # dasar teks 5 px DI ATAS tepi bar (kotak bg inflate 2 px ke
+        # bawah -> gap visual 3 px, tidak pernah menutupi bar lagi)
+        name_rect = name_text.get_rect(midbottom=(x, by - 5))
+        bg_rect = name_rect.inflate(8, 4)
+        # nama panjang dekat tepi layar: geser, jangan sampai terpotong
+        margin = 2
+        if bg_rect.left < margin:
+            d = margin - bg_rect.left
+            name_rect.x += d
+            bg_rect.x += d
+        elif bg_rect.right > surface.get_width() - margin:
+            d = bg_rect.right - (surface.get_width() - margin)
+            name_rect.x -= d
+            bg_rect.x -= d
+        pygame.draw.rect(surface, (0, 0, 0), bg_rect,
+                         border_radius=3)
+        pygame.draw.rect(surface, border_c, bg_rect, 1,
+                         border_radius=3)
+        surface.blit(name_text, name_rect)
 
     def _draw_enrage_aura(self, surface, x, y):
         """Enrage / Frenzy visual aura"""
