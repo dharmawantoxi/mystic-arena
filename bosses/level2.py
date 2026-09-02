@@ -3721,6 +3721,11 @@ class _NS_khalros:
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = _NS_khalros._detect_moving(boss)
         _NS_khalros._update_attack_anim(boss)
+        # ekspos state bergerak ke lapisan FX hidup (heroes/khalros_fx)
+        try:
+            boss._khal_moving = moving
+        except Exception:
+            pass
 
         attacking = (
             getattr(boss, "_khal_attack_active", False)
@@ -3744,6 +3749,22 @@ class _NS_khalros:
                 _NS_khalros._draw_shockwave(surface, x, y + 48, age, 12,
                                             _NS_khalros.PALETTE["fire_hot"],
                                             _NS_khalros.PALETTE["fire_glow"])
+
+        # ────────────────────────────────────────────────────────────
+        # LAPISAN FX HIDUP KHALROS (heroes/khalros_fx.py)
+        # Render badan prosedural + swing trail + proyektil + skill FX +
+        # partikel + impact + screen-shake + hit-stop hidup di sini,
+        # di luar cache sprite supaya tetap 60 fps. Bila modul tak
+        # tersedia / gagal, kode inline di bawah tetap jalan (fallback
+        # aman - game tidak ikut rusak).
+        # ────────────────────────────────────────────────────────────
+        try:
+            from heroes import khalros_fx as _kfx
+            if _kfx.KHALROS_FX_ENABLED and _kfx.render_khalros(
+                    surface, boss, x, y):
+                return
+        except Exception:
+            pass
 
         # ORIGINAL-MAX hurt flash: badan dibanjiri putih-hangat, bayangan
         # tanah tidak ikut menyala (rect shadow direkam lalu dikeluarkan).
