@@ -623,6 +623,18 @@ class Boss(TowerDebuffMixin):
                                                      self.damage, False)
                         except Exception:
                             pass
+                    # ═══ IMPACT FX GORATH ═══
+                    # Paket game-feel yang sama untuk Gorath (flash bintang,
+                    # serpihan darah, shake, hit-stop) — lengkapnya di
+                    # heroes/gorath_fx.notify_melee_impact. Difilter per
+                    # boss_type + try/except (paritas Gornak).
+                    if getattr(self, 'boss_type', None) == 'gorath':
+                        try:
+                            from heroes import gorath_fx as _gfx
+                            _gfx.notify_melee_impact(self, self.target,
+                                                     self.damage, False)
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -3001,6 +3013,12 @@ class Boss(TowerDebuffMixin):
         heal = int(self.max_hp * 0.08)
         self.hp = min(self.max_hp, self.hp + heal)
         self._shake_screen(12)
+        # ═══ FX GORATH (visual-only, guarded) ═══
+        try:
+            from heroes import gorath_fx as _gfx
+            _gfx.notify_skill_cast(self, 'q')
+        except Exception:
+            pass
 
     def _gorath_w(self, enemies):
         stats = self._get_boss_stats()
@@ -3014,7 +3032,18 @@ class Boss(TowerDebuffMixin):
                 if hasattr(e, 'attack_timer'):
                     e.attack_timer = max(
                         getattr(e, 'attack_timer', 0), 50)
+                # ═══ FX GORATH (visual-only, guarded) ═══
+                try:
+                    from heroes import gorath_fx as _gfx
+                    _gfx.notify_skill_impact(self, e.x, e.y, 150, 'w')
+                except Exception:
+                    pass
         self._shake_screen(15)
+        try:
+            from heroes import gorath_fx as _gfx
+            _gfx.notify_skill_cast(self, 'w')
+        except Exception:
+            pass
 
     def _gorath_e(self, enemies):
         stats = self._get_boss_stats()
@@ -3035,6 +3064,13 @@ class Boss(TowerDebuffMixin):
                 if math.hypot(e.x - self.x, e.y - self.y) <= 85:
                     e.take_damage(damage, self.team)
         self._shake_screen(12)
+        # ═══ FX GORATH (visual-only, guarded) ═══
+        try:
+            from heroes import gorath_fx as _gfx
+            _gfx.notify_skill_cast(self, 'e')
+            _gfx.notify_skill_impact(self, self.x, self.y, 85, 'e')
+        except Exception:
+            pass
 
     def _gorath_r(self, enemies):
         stats = self._get_boss_stats()
@@ -3048,6 +3084,13 @@ class Boss(TowerDebuffMixin):
         if self.target and self.target.alive:
             self.target.take_damage(damage // 2, self.team)
         self._shake_screen(22)
+        # ═══ FX GORATH (visual-only, guarded) ═══
+        try:
+            from heroes import gorath_fx as _gfx
+            _gfx.notify_skill_cast(self, 'r')
+            _gfx.notify_skill_impact(self, self.x, self.y, 190, 'r')
+        except Exception:
+            pass
 
     # ═══════════════════════════════════════════════════
     # VARKUL AI (Frostbound Sorcerer - ranged)
