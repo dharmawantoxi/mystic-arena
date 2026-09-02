@@ -457,6 +457,28 @@ class _NS_boss_hero_skills:
         # (Auto-loaded, tambah boss baru = tambah entry)
         # ═══════════════════════════════════════
 
+        # Override durasi visual PER HERO boss (frame).  Nyzrak butuh
+        # 50/50/70/90 agar sinkron 1:1 dengan renderer v2
+        # (bosses/level3.py SKILL_DUR) dan lapisan FX hidup
+        # (heroes/nyzrak_fx.py SKILL_DUR) — CAST->CHARGE->RELEASE
+        # #match# dengan AI.  Hero lain tetap memakai default
+        # _DEFAULT_VISUAL_DURATION / SKILL_VISUAL_DURATION.
+        BOSS_HERO_VISUAL_DURATION = {
+            "nyzrak": {"q": 50, "w": 50, "e": 70, "r": 90},
+        }
+
+        def _get_visual_duration(self, key):
+            """Durasi visual: override per-hero boss -> override kelas
+            -> default bersama (urutan presedensi)."""
+            per_hero = self.BOSS_HERO_VISUAL_DURATION.get(
+                getattr(self.hero, "hero_type", ""))
+            if per_hero:
+                override = per_hero.get(key)
+                if override is not None:
+                    return override
+            return super()._get_visual_duration(key)
+
+
         _SKILL_REGISTRY = {
             "gornak": {
                 'q': '_cast_q_mana_break',
@@ -493,6 +515,12 @@ class _NS_boss_hero_skills:
                 'w': '_cast_w_chilling_touch',
                 'e': '_cast_e_ice_blast',
                 'r': '_cast_r_cold_feet',
+            },
+            "nyzrak": {
+                'q': '_cast_q_arctic_burn',
+                'w': '_cast_w_splinter_blast',
+                'e': '_cast_e_winters_curse',
+                'r': '_cast_r_cold_embrace',
             },
             "ignis_drachorn": {
                 'q': '_cast_q_dragon_breath',
@@ -1322,6 +1350,96 @@ class _NS_boss_hero_skills:
 
             h.r_dir_x = dx
             h.r_dir_y = dy
+
+        # ═══════════════════════════════════════
+        # NYZRAK skills (The Hollow Blizzard)
+        # Semantik 1:1 dengan AI boss (bosses/boss_data.py):
+        # Q Arctic Burn / W Splinter Blast / E Winter's Curse /
+        # R Cold Embrace. Visual hidup di heroes/nyzrak_fx.py.
+        # ═══════════════════════════════════════
+
+        def _cast_q_arctic_burn(self, h, enemies):
+            """Q - Arctic Burn: beam frost lurus + slow 40%/120t."""
+            h.active_skill = 'q'
+            h.active_skill_timer = 50
+            if h.target and h.target.alive:
+                tx, ty = h.target.x, h.target.y
+            else:
+                tx, ty = h.x, h.y
+            sx, sy = h.x, h.y
+            max_range, line_width = 240.0, 26.0
+            ln = math.hypot(tx - sx, ty - sy) or 1.0
+            ux, uy = (tx - sx) / ln, (ty - sy) / ln
+            for e in enemies:
+                ex, ey = e.x - sx, e.y - sy
+                proj = ex * ux + ey * uy
+                if 0 < proj < max_range:
+                    if abs(ex * -uy + ey * ux) < line_width:
+                        e.take_damage(int(h.skill_damage * 1.2), h.team)
+                        if hasattr(e, 'apply_slow'):
+                            e.apply_slow(0.4, 120)
+            try:
+                from heroes import nyzrak_fx
+                nyzrak_fx.notify_skill_impact(h, tx, ty, 60, 'q')
+            except Exception:
+                pass
+
+        def _cast_w_splinter_blast(self, h, enemies):
+            """W - Splinter Blast: ledakan serpihan es r80 di target."""
+            h.active_skill = 'w'
+            h.active_skill_timer = 50
+            if h.target and h.target.alive:
+                tx, ty = h.target.x, h.target.y
+            else:
+                tx, ty = h.x, h.y
+            for e in enemies:
+                if math.hypot(e.x - tx, e.y - ty) <= 80:
+                    e.take_damage(int(h.skill_damage * 1.0), h.team)
+                    if hasattr(e, 'apply_slow'):
+                        e.apply_slow(0.3, 60)
+            try:
+                from heroes import nyzrak_fx
+                nyzrak_fx.notify_skill_impact(h, tx, ty, 80, 'w')
+            except Exception:
+                pass
+
+        def _cast_e_winters_curse(self, h, enemies):
+            """E - Winter's Curse: kutukan kristal — kunci serangan
+            target 90t + slow 70%/180t."""
+            h.active_skill = 'e'
+            h.active_skill_timer = 70
+            if h.target and h.target.alive:
+                h.target.take_damage(int(h.skill_damage * 1.1), h.team)
+                if hasattr(h.target, 'attack_timer'):
+                    h.target.attack_timer = max(
+                        getattr(h.target, 'attack_timer', 0), 90)
+                if hasattr(h.target, 'apply_slow'):
+                    h.target.apply_slow(0.7, 180)
+                try:
+                    from heroes import nyzrak_fx
+                    nyzrak_fx.notify_skill_impact(
+                        h, h.target.x, h.target.y, 44, 'e')
+                except Exception:
+                    pass
+
+        def _cast_r_cold_embrace(self, h, enemies):
+            """R - Cold Embrace: nova es r200, heal 15%, perisai 240t."""
+            h.active_skill = 'r'
+            h.active_skill_timer = 90
+            h.shield_active = True
+            h.shield_timer = 240
+            for e in enemies:
+                if math.hypot(e.x - h.x, e.y - h.y) <= 200:
+                    e.take_damage(int(h.skill_damage * 2.0), h.team)
+                    if hasattr(e, 'apply_slow'):
+                        e.apply_slow(0.5, 180)
+            heal = int(getattr(h, 'max_hp', h.hp) * 0.15)
+            h.hp = min(getattr(h, 'max_hp', h.hp), h.hp + heal)
+            try:
+                from heroes import nyzrak_fx
+                nyzrak_fx.notify_skill_impact(h, h.x, h.y, 200, 'r')
+            except Exception:
+                pass
 
         # ═══════════════════════════════════════
         # IGNIS DRACHORN skills
