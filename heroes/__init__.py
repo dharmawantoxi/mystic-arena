@@ -634,8 +634,13 @@ _BEAM_PASS_HEROES = {"morgath"}
 # dari histori ujung kukri, bolt darah modular, particle system, skill FX
 # Q/W/E/R (pilar, voli, jejak lompat, rantai+ledakan), impact, hit-stop,
 # dan shake — semua hidup di luar cache sprite.
+# Alchemist (heroes/alchemist_fx.py) menyusul pola yang sama untuk duo
+# ogre-goblin: trail cleaver busur, botol asam modular dengan lifecycle
+# penuh, semburan droplet Acid Spray, badai koin Greevil's Greed,
+# uap Chemical Rage, impact, hit-stop, dan shake.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
-                   "sylara", "abaddon", "gorath", "razak"}
+                   "sylara", "abaddon", "gorath", "razak",
+                   "alchemist"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -648,6 +653,7 @@ _LIVE_FX_PATHS = {
     "abaddon": "heroes.abaddon_fx",
     "gorath": "heroes.gorath_fx",
     "razak": "heroes.razak_fx",
+    "alchemist": "heroes.alchemist_fx",
 }
 
 
