@@ -1974,37 +1974,9 @@ class _NS_xerathis:
 
 
     def _update_attack_anim(boss):
-        """Track ranged attack animation timeline."""
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
-        timer = int(getattr(boss, "timer", 0))
-        previous = int(getattr(boss, "_xr_prev_timer", -1))
-        active = bool(getattr(boss, "_xr_attack_active", False))
-
-        trigger = False
-        if previous < 0:
-            pass
-        elif timer >= cooldown - 1 and previous < cooldown - 1:
-            trigger = True
-        elif previous >= cooldown - 2 and timer <= 1:
-            trigger = True
-
-        if trigger and not active:
-            boss._xr_attack_active = True
-            boss._xr_attack_frame = 0
-            active = True
-
-        if active:
-            boss._xr_attack_frame = int(getattr(boss, "_xr_attack_frame", 0)) + 1
-            if boss._xr_attack_frame > cooldown:
-                boss._xr_attack_active = False
-                boss._xr_attack_frame = 0
-                active = False
-
-        boss._xr_prev_timer = timer
-        boss._xr_attack_progress = (
-            min(1.0, getattr(boss, "_xr_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
+        """Backward-compatible alias ke controller V2."""
+        return _NS_xerathis._update_xerathis_anim(
+            boss, _NS_xerathis._detect_moving(boss))
 
 
     def _manage_projectiles(boss, surface, phase):
@@ -2028,53 +2000,332 @@ class _NS_xerathis:
 
 
     # ===================================================================
+    # V2 ANIMATION CONTROLLER + LIVE FX BRIDGE
+    # ===================================================================
+
+    #: Fase serangan (fraksi 0..1 dari durasi serangan).
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.16),
+        ("WINDUP",       0.16, 0.32),
+        ("SWING",        0.32, 0.50),
+        ("IMPACT",       0.50, 0.64),
+        ("FOLLOW",       0.64, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+
+    #: Jendela hit aktif (dipakai debug & game feel).
+    ATTACK_ACTIVE_WINDOW = (0.38, 0.64)
+    ATTACK_IMPACT_FRAME = 0.52
+
+    #: Prioritas state. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: Aktifkan hitbox/hurtbox/jangkauan/state di arena.
+    DEBUG_CHARACTER = False
+
+    #: Modul FX layar (diisi malas). False = percobaan gagal -> canvas.
+    _LIVE_MOD = None
+
+    def attack_phases_order():
+        return tuple(name for name, _a, _b in _NS_xerathis.ATTACK_PHASES)
+
+    def attack_phase(progress):
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_xerathis.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    def _live_module():
+        """Muat ``heroes.xerathis_fx`` sekali; None kalau tidak tersedia."""
+        NS = _NS_xerathis
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import xerathis_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "XERATHIS_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    def live_fx_ready():
+        return _NS_xerathis._live_module() is not None
+
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Lapisan hidup untuk unit ini.
+
+        Return ``(mod, owned)``. ``want_draw`` True pada jalur BOSS (draw
+        dipanggil tiap frame tanpa cache sprite).
+        """
+        NS = _NS_xerathis
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    def _update_xerathis_anim(boss, moving=False):
+        """ANIMATION CONTROLLER Xerathis - state, fase, timing, delta-time.
+
+        Satu-satunya sumber kebenaran untuk SEMUA state karakter; lapisan
+        hidup (heroes/xerathis_fx) serta alat uji membacanya dari sini.
+        """
+        G = _NS_xerathis
+
+        # ── delta time nyata (dipakai FX & transisi state) ──────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                      # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_xr_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._xr_last_ms = now
+        boss._xr_dt = dt
+
+        # ── timeline serangan ───────────────────────────────────────
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 59)))
+        timer = int(getattr(boss, "timer", 0))
+        previous = int(getattr(boss, "_xr_previous_timer", 0))
+        active = bool(getattr(boss, "_xr_attack_active", False))
+
+        triggered = timer >= cooldown - 1 and previous <= 1
+        if triggered:
+            boss._xr_attack_active = True
+            boss._xr_attack_frame = 0
+            active = True
+        elif active and timer > 0:
+            boss._xr_attack_frame = int(getattr(boss, "_xr_attack_frame",
+                                                0)) + 1
+        elif timer <= 0 and active:
+            # serangan manual (alat audit / probe): majukan sampai selesai
+            boss._xr_attack_frame = int(getattr(boss, "_xr_attack_frame",
+                                                0)) + 1
+            if int(getattr(boss, "_xr_attack_frame", 0)) > cooldown:
+                boss._xr_attack_active = False
+                boss._xr_attack_frame = 0
+                active = False
+
+        boss._xr_previous_timer = timer
+        if active:
+            prog = min(1.0, int(getattr(boss, "_xr_attack_frame", 0))
+                       / max(1, cooldown))
+        else:
+            prog = 0.0
+        boss._xr_attack_progress = prog
+        boss._xr_attack_raw = prog
+        boss._xr_attack_phase = G.attack_phase(prog) if active else "NONE"
+        boss._xr_hit_active = active and (G.ATTACK_ACTIVE_WINDOW[0] <= prog <
+                                          G.ATTACK_ACTIVE_WINDOW[1])
+        boss._xr_impact_frame = active and abs(prog - G.ATTACK_IMPACT_FRAME) < 0.025
+
+        # ── hurt / hit flash ────────────────────────────────────────
+        hurt = int(getattr(boss, "_xr_hurt_frames", 0) or 0)
+        if hurt > 0:
+            hurt -= 1
+        if int(getattr(boss, "hurt_flash_timer", 0) or 0) > 0:
+            hurt = max(hurt, 7)
+        boss._xr_hurt_frames = hurt
+
+        # ── resolve state ───────────────────────────────────────────
+        if not getattr(boss, "alive", True):
+            state = "DEATH"
+        elif hurt > 0:
+            state = "HURT"
+        elif getattr(boss, "active_skill", None) is not None:
+            state = ("SPECIAL" if getattr(boss, "active_skill", None) == "r"
+                     else "SKILL")
+        elif active:
+            ph = boss._xr_attack_phase
+            if ph in ("ANTICIPATION", "WINDUP"):
+                state = "CHARGE"
+            elif ph in ("SWING", "IMPACT"):
+                state = "SWING"
+            else:
+                state = "ATTACK"
+        elif moving:
+            state = ("RUN" if float(getattr(boss, "speed", 1.0)) >= 2.2
+                     else "WALK")
+        else:
+            state = "IDLE"
+
+        old = getattr(boss, "_xr_state", None)
+        boss._xr_state_prev = old or state
+        if old != state:
+            boss._xr_state_time = 0.0
+        else:
+            boss._xr_state_time = (float(getattr(boss, "_xr_state_time", 0.0))
+                                   + dt)
+        boss._xr_state = state
+
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, attack_progress) untuk renderer & FX."""
+        skill = getattr(boss, "active_skill", None)
+        active = bool(getattr(boss, "_xr_attack_active", False))
+        if skill:
+            action = "cast"
+        elif active:
+            action = "attack"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+        phase = float(getattr(boss, "pulse", 0.0) or 0.0)
+        ap = (float(getattr(boss, "_xr_attack_progress", 0.0) or 0.0)
+              if active else 0.0)
+        return action, phase, ap
+
+    def _staff_tip_screen(boss, x, y):
+        """Titik kepala kristal staff untuk FX (semua FX memakai modul
+        hidup, yang membacanya dari ``_resolve_pose``)."""
+        action = getattr(boss, "_xr_pose_action", "idle")
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        if action == "attack":
+            t = float(getattr(boss, "_xr_attack_progress", 0.0) or 0.0)
+            ext = 1.0 if t < 0.5 else 0.55
+            return (x + facing * (24 + ext * 10), y - 18)
+        return (x + facing * 24, y - 54)
+
+    def _draw_xerathis_debug(surface, boss, x, y):
+        """Overlay DEBUG_CHARACTER: hitbox, state, frame, FPS."""
+        NS = _NS_xerathis
+        import pygame as _pg
+        r = max(6, int(getattr(boss, "radius", 16)))
+        _pg.draw.rect(surface, (80, 170, 255, 150),
+                      _pg.Rect(int(x) - r, int(y) - r - 8, r * 2, r * 2), 1)
+        rng = max(10, int(getattr(boss, "range", 200) * 0.7))
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        _pg.draw.line(surface, (255, 210, 60, 150), (int(x), int(y)),
+                      (int(x + rng * f), int(y)), 1)
+        _pg.draw.rect(surface, (255, 210, 60, 110),
+                      _pg.Rect(int(x + rng * f) - 5, int(y) - 7, 10, 14), 1)
+        hb = None
+        if getattr(boss, "_xr_hit_active", False):
+            reach = int(rng)
+            top = int(y - 38)
+            left = int(x) if f > 0 else int(x) - reach
+            hb = _pg.Rect(left, top, max(8, reach), max(10, 72))
+            _pg.draw.rect(surface, (255, 70, 70, 190), hb, 2)
+            _pg.draw.rect(surface, (255, 70, 70, 60), hb)
+        state = getattr(boss, "_xr_state", "IDLE")
+        ph = getattr(boss, "_xr_attack_phase", "NONE")
+        frames = int(getattr(boss, "_xr_attack_frame", 0))
+        prog = float(getattr(boss, "_xr_attack_progress", 0.0))
+        hurt = int(getattr(boss, "_xr_hurt_frames", 0))
+        fps = getattr(boss, "_xr_fps", 60.0)
+        dtv = float(getattr(boss, "_xr_dt", 1.0 / 60.0))
+        inst = 1.0 / dtv if dtv > 0 else 60.0
+        fps = fps + (inst - fps) * 0.1
+        boss._xr_fps = fps
+        lines = [
+            f"XERATHIS {state} {ph}",
+            f"frame {frames} t={prog:.2f} hurt={hurt}",
+            f"hit={'Y' if hb else 'N'} fps={fps:.0f}",
+            f"dt={dtv:.4f} proj={len(getattr(boss, '_xr_projectiles', []))}",
+        ]
+        font = None
+        try:
+            from _render import get_font
+            font = get_font(14)
+        except Exception:
+            pass
+        if font is None:
+            return
+        px, py = int(x) - 80, int(y) + 36
+        for i, line in enumerate(lines):
+            s = font.render(line, True, (220, 255, 230))
+            surface.blit(s, (px, py + i * 14))
+
+    # ===================================================================
     # MAIN DRAW ENTRY POINT
     # ===================================================================
     def draw_xerathis(surface, boss, x, y):
-        """Entry point for Boss.draw()."""
+        """Entry point Boss.draw() sekaligus jalur hero-lane.
+
+        Urutan lapisan: GROUND -> SHADOW -> BODY/ARMOR/HEAD -> WEAPON ->
+        ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES -> SKILL FX ->
+        IMPACT FX -> DEBUG. Trail, proyektil, impact, hit-stop & shake
+        hidup di ``heroes/xerathis_fx.py`` (lapisan layar 1:1).
+        """
+        NS = _NS_xerathis
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_xerathis._detect_moving(boss)
-        _NS_xerathis._update_attack_anim(boss)
-
-        attacking = (
-            getattr(boss, "_xr_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
-
-        # ---------- Background layers ----------
-        _NS_xerathis._draw_frost_aura(surface, x, y, pulse)
-        _NS_xerathis._draw_ice_platform(surface, x, y + 40, pulse, active_skill)
-
-        # ---------- Skill ground effects ----------
-        if active_skill == "q":
-            _NS_xerathis._draw_crystal_nova_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_xerathis._draw_arcane_aura_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_xerathis._draw_freezing_field_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # ---------- Character body ----------
+        moving = NS._detect_moving(boss)
+        NS._update_xerathis_anim(boss, moving)
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._xr_pose_action = action
+        boss._xr_phase = phase
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
+        facing = getattr(boss, "direction", 1) or 1
         flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+
+        # ── lapisan hidup (boss jalur 1:1; lane dipicu heroes/__init__)
+        live, owned = NS._live_fx(boss, surface, x, y,
+                                  not hero_lane, portrait)
+        boss._xr_suppress_canvas_projectile = owned
+
+        # ── GROUND LAYERS ──────────────────────────────────────────
+        if not portrait:
+            NS._draw_frost_aura(surface, x, y, pulse)
+            NS._draw_ice_platform(surface, x, y + 40, pulse, active_skill)
+            if active_skill == "q":
+                NS._draw_crystal_nova_ground(surface, boss, x, y,
+                                             skill_timer, pulse)
+            elif active_skill == "e":
+                NS._draw_arcane_aura_ground(surface, boss, x, y,
+                                            skill_timer, pulse)
+            elif active_skill == "r":
+                NS._draw_freezing_field_ground(surface, boss, x, y,
+                                               skill_timer, pulse)
+
+        # ── CHARACTER BODY (dengan hurt-flash mask) ────────────────
         _tgt, _tx, _ty = surface, x, y
         if flash > 0:
-            NS = _NS_xerathis
             if NS._flash_buf is None:
                 NS._flash_buf = pygame.Surface((220, 240), pygame.SRCALPHA)
             NS._flash_buf.fill((0, 0, 0, 0))
             NS._record_shadow = []
             _tgt, _tx, _ty = NS._flash_buf, 110, 120
 
-        if attacking:
-            _NS_xerathis._draw_xerathis_attack(_tgt, boss, _tx, _ty)
-        elif moving:
-            _NS_xerathis._draw_xerathis_walk(_tgt, boss, _tx, _ty)
+        if action == "attack":
+            NS._draw_xerathis_attack(_tgt, boss, _tx, _ty)
+        elif action in ("walk", "run"):
+            NS._draw_xerathis_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_xerathis._draw_xerathis_idle(_tgt, boss, _tx, _ty)
+            NS._draw_xerathis_idle(_tgt, boss, _tx, _ty)
 
         if flash > 0:
-            NS = _NS_xerathis
             surface.blit(NS._flash_buf, (x - _tx, y - _ty))
             w = int(235 * min(1.0, flash / 8.0))
             m = pygame.mask.from_surface(NS._flash_buf, 50)
@@ -2086,19 +2337,30 @@ class _NS_xerathis:
                          special_flags=pygame.BLEND_RGB_ADD)
             NS._record_shadow = None
 
-        # ---------- Projectiles ----------
-        _NS_xerathis._manage_projectiles(boss, surface, pulse)
+        # ── FOREGROUND SKILL FX (canvas fallback) ──────────────────
+        if not portrait:
+            if active_skill == "q":
+                NS._draw_crystal_nova(surface, boss, x, y, skill_timer,
+                                      pulse)
+            elif active_skill == "w":
+                NS._draw_frostbite(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "e":
+                NS._draw_arcane_aura_foreground(surface, boss, x, y,
+                                                skill_timer, pulse)
+            elif active_skill == "r":
+                NS._draw_freezing_field(surface, boss, x, y, skill_timer,
+                                        pulse)
 
-        # ---------- Skill foreground effects ----------
-        if active_skill == "q":
-            _NS_xerathis._draw_crystal_nova(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_xerathis._draw_frostbite(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_xerathis._draw_arcane_aura_foreground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_xerathis._draw_freezing_field(surface, boss, x, y, skill_timer, pulse)
+        # ── LIVE TOP LAYER (trail / projectile / impact / particle) ─
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
 
+        # ── DEBUG ──────────────────────────────────────────────────
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_xerathis_debug(surface, boss, x, y)
 
     # ===================================================================
     # POSE MODES
@@ -2125,7 +2387,14 @@ class _NS_xerathis:
         progress = max(0.0, min(1.0, progress))
 
         if 0.32 < progress < 0.42 and not getattr(boss, "_xr_proj_spawned", False):
-            _NS_xerathis._spawn_projectile(boss, x, y)
+            if not getattr(boss, "_xr_suppress_canvas_projectile", False):
+                _NS_xerathis._spawn_projectile(boss, x, y)
+            else:
+                try:
+                    from heroes import xerathis_fx as _xfx
+                    _xfx.notify_projectile_cast(boss, x, y)
+                except Exception:
+                    pass
             boss._xr_proj_spawned = True
         if progress < 0.15 or progress > 0.9:
             boss._xr_proj_spawned = False
@@ -5955,7 +6224,7 @@ class _NS_ancient_apparition:
                          (ex // 2 + ax, ey // 2 + ay - 1),
                          (hx // 2 + ax, hy // 2 + ay - 1), 1)
         # telapak
-        px_, py_ = hx // 2 + ax, hy // 2 + ay
+        px_, py_ = int(hx // 2 + ax), int(hy // 2 + ay)
         pygame.draw.rect(buf, dark, (px_ - 1, py_ - 1, 3, 3))
         buf.set_at((px_, py_), mid)
         # cakar 3 jari mengarah ujung

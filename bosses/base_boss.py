@@ -672,6 +672,18 @@ class Boss(TowerDebuffMixin):
                                                       self.damage, False)
                         except Exception:
                             pass
+                    # ═══ IMPACT FX XERATHIS ═══
+                    # Frost shard Xerathis mendarat: flash es, serpihan
+                    # kristal, shockwave, shake, dan hit-stop 0.03-0.08 s
+                    # (lengkapnya di heroes/xerathis_fx.notify_projectile_impact).
+                    if getattr(self, 'boss_type', None) == 'xerathis':
+                        try:
+                            from heroes import xerathis_fx as _xfx
+                            _xfx.notify_projectile_impact(
+                                self, self.target.x, self.target.y, 0.0,
+                                self.damage, False, 'ice')
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -3302,6 +3314,13 @@ class Boss(TowerDebuffMixin):
                     e.take_damage(damage, self.team)
                     if hasattr(e, 'apply_slow'):
                         e.apply_slow(0.4, 120)
+            # ═══ FX CRYSTAL NOVA (lapisan hidup) ═══
+            try:
+                from heroes import xerathis_fx as _xfx
+                _xfx.notify_skill_cast(self, 'q')
+                _xfx.notify_skill_impact(self, tx, ty, 48, 'q')
+            except Exception:
+                pass
         self._shake_screen(12)
 
     def _xerathis_w(self):
@@ -3317,6 +3336,14 @@ class Boss(TowerDebuffMixin):
                     getattr(self.target, 'attack_timer', 0), 75)
             if hasattr(self.target, 'apply_slow'):
                 self.target.apply_slow(0.6, 180)
+            # ═══ FX FROSTBITE (lapisan hidup) ═══
+            try:
+                from heroes import xerathis_fx as _xfx
+                _xfx.notify_skill_cast(self, 'w')
+                _xfx.notify_skill_impact(self, self.target.x,
+                                         self.target.y, 30, 'w')
+            except Exception:
+                pass
         self._shake_screen(14)
 
     def _xerathis_e(self):
@@ -3329,6 +3356,13 @@ class Boss(TowerDebuffMixin):
         self.damage = int(self.base_damage * 1.3)
         heal = int(self.max_hp * 0.1)
         self.hp = min(self.max_hp, self.hp + heal)
+        # ═══ FX ARCANE AURA (lapisan hidup) ═══
+        try:
+            from heroes import xerathis_fx as _xfx
+            _xfx.notify_skill_cast(self, 'e')
+            _xfx.notify_skill_impact(self, self.x, self.y, 90, 'e')
+        except Exception:
+            pass
         self._shake_screen(10)
 
     def _xerathis_r(self, enemies):
@@ -3342,6 +3376,13 @@ class Boss(TowerDebuffMixin):
                 e.take_damage(damage, self.team)
                 if hasattr(e, 'apply_slow'):
                     e.apply_slow(0.55, 240)
+        # ═══ FX FREEZING FIELD (lapisan hidup) ═══
+        try:
+            from heroes import xerathis_fx as _xfx
+            _xfx.notify_skill_cast(self, 'r')
+            _xfx.notify_skill_impact(self, self.x, self.y, 110, 'r')
+        except Exception:
+            pass
         self._shake_screen(24)
 
     # ═══════════════════════════════════════════════════
