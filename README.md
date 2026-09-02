@@ -129,6 +129,31 @@ Uji regresi + preview:
 [docs/varkul_v3_preview.png](docs/varkul_v3_preview.png),
 [docs/varkul_v3_swing_strip.png](docs/varkul_v3_swing_strip.png).
 
+### Upgrade terbaru: Ignis Drachorn V3 Combat FX + Elder Dragon Form
+
+Sistem visual & rasa-gameplay **Ignis Drachorn** (true boss level4) ditulis
+ulang total mengikuti standar **Varkul v3 / Gornak v3**
+(detail lengkap: [docs/IGNIS_DRACHORN_V3_COMBAT_FX.md](docs/IGNIS_DRACHORN_V3_COMBAT_FX.md)).
+Renderer memakai urutan lapisan tegas (bayangan → tungkai belakang → badan →
+armor → kepala → senjata → tungkai depan → highlight → FX serang → FX skill →
+partikel) di atas komposit siluet + rim `lighting.apply_to_rig`. Ayunan pedang
+kini **berbasis ark**: `_NS_ignis_drachorn.SWORD_ARC` + `sword_geometry()`
+menjadi satu sumber kebenaran yang dibaca renderer canvas DAN lapisan hidup
+`heroes/ignis_drachorn_fx.py`, sehingga slash trail, hitbox, dan proyektil api
+selalu lahir tepat di ujung bilah. Controller animasi 12 state berprioritas
+(IDLE…DEATH) dengan delta time dan 6 fase serangan (hit window 0.36–0.62);
+SkillFX world-space lengkap untuk q/w/e/r (kerucut nafas naga Q, shockwave ekor
+W, lingkaran rune darah naga E, hujan meteor + **Elder Dragon Form** R),
+impact flash + hit-stop 0.03–0.08 s + shake trauma via `heroes/combat_feel`.
+Fallback canvas otomatis nonaktif saat lapisan hidup aktif — tidak ada efek
+digambar dua kali (3.24 ms/frame dengan skill R aktif).
+
+Uji regresi + preview (regenerasi `python tools/_shot_ignis_v3.py`):
+`python tools/test_ignis_v3_combat.py` (22 grup),
+[docs/ignis_v3_preview.png](docs/ignis_v3_preview.png),
+[docs/ignis_v3_fx_sheet.png](docs/ignis_v3_fx_sheet.png),
+[docs/ignis_v3_elder_form.png](docs/ignis_v3_elder_form.png).
+
 
 ### Contoh maksimal kedua: Thorne Masterwork
 
