@@ -5794,12 +5794,179 @@ class _NS_vokrahn:
 # IGNIS_DRACHORN
 # ====================================================================
 class _NS_ignis_drachorn:
-    """Namespace ignis_drachorn - isi asli tidak diubah."""
+    """Namespace ignis_drachorn — DRAGON KNIGHT v3 (renderer + combat FX).
+
+    Badan, palet, dan pose tetap milik namespace ini (satu sumber
+    geometri). Lapisan HIDUP — trail sabit pedang, partikel bara,
+    proyektil bola api, impact, hit-stop, screen shake — dipegang oleh
+    ``heroes/ignis_drachorn_fx.py`` yang digambar langsung ke layar pada
+    skala 1:1 supaya tidak ikut beku di dalam cache sprite hero.
+
+    Kalau modul FX tidak bisa diimpor, ``owns()`` bernilai False dan
+    renderer menggambar seluruh efek versinya sendiri (fallback canvas):
+    visual kehilangan polish, TIDAK pernah kehilangan efek.
+
+    100% prosedural: tidak ada PNG / sprite-sheet / image.load.
+    """
 
     # ---------------------------------------------------------------------------
     # Compatibility helpers
     # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
+
+    # ── cache surface (dibuat sekali, dipakai ulang tiap frame) ─────
+    _flash_buf = None
+    _record_shadow = None
+    _shadow_cache = None
+    _aura_cache = None
+
+    # ---------------------------------------------------------------------------
+    # ANIMATION CONTRACT (dibaca renderer, modul FX, dan alat uji)
+    # ---------------------------------------------------------------------------
+    #: Fase serangan (fraksi 0..1 dari durasi serangan). Batasnya jatuh
+    #: PERSIS di patahan ``SWORD_ARC`` supaya nama fase dan sudut bilah
+    #: tidak pernah berbeda satu frame.
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.14),
+        ("WINDUP",       0.14, 0.30),
+        ("SWING",        0.30, 0.48),
+        ("IMPACT",       0.48, 0.60),
+        ("FOLLOW",       0.60, 0.80),
+        ("RECOVERY",     0.80, 1.00),
+    )
+
+    #: Jendela hit aktif + frame benturan.
+    ATTACK_ACTIVE_WINDOW = (0.36, 0.60)
+    ATTACK_IMPACT_FRAME = 0.48
+
+    #: Prioritas state animasi. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: Aktifkan hitbox/hurtbox/jangkauan/state/FPS di arena.
+    DEBUG_CHARACTER = False
+
+    #: Modul FX layar (diisi malas). False = percobaan gagal -> canvas.
+    _LIVE_MOD = None
+
+    #: Tabel ARK pedang — SATU sumber kebenaran pose ayunan. Dipakai
+    #: renderer canvas (``_draw_melee_arms``) DAN modul hidup
+    #: (``heroes/ignis_drachorn_fx.sword_arc``). Format:
+    #: (t0, t1, theta0, theta1, ease); theta radian dari vertikal,
+    #: positif = mengayun ke arah depan (facing).
+    #:
+    #: Pedang TIDAK pernah diteleportasi dari pose awal ke pose akhir:
+    #: sudutnya diinterpolasi lewat tabel ini, jadi ujung bilah
+    #: menelusuri lengkungan mulus wind-up -> tebasan -> follow-through.
+    SWORD_ARC = (
+        (0.00, 0.14,  0.38,  0.05, "out"),   # ANTICIPATION: tarik nafas
+        (0.14, 0.30,  0.05, -1.42, "io"),    # WINDUP: angkat ke belakang
+        (0.30, 0.48, -1.42,  1.58, "oc"),    # SWING: tebasan cepat
+        (0.48, 0.60,  1.58,  1.58, "hold"),  # IMPACT: tahan (bobot)
+        (0.60, 0.80,  1.58,  0.72, "io"),    # FOLLOW THROUGH
+        (0.80, 1.00,  0.72,  0.38, "io"),    # RECOVERY
+    )
+
+    @staticmethod
+    def _arc_ease(kind, t):
+        if t <= 0.0:
+            return 0.0
+        if t >= 1.0:
+            return 1.0
+        if kind == "out":
+            return 1.0 - (1.0 - t) * (1.0 - t)
+        if kind == "oc":                        # out-cubic
+            return 1.0 - (1.0 - t) ** 3
+        if kind == "hold":
+            return math.sin(t * math.pi)
+        return t * t * (3.0 - 2.0 * t)          # in-out (smoothstep)
+
+    @staticmethod
+    def _sword_lift(progress):
+        """Tinggi tangan pedang relatif (0 = idle, positif = terangkat)."""
+        p = max(0.0, min(1.0, float(progress)))
+        E = _NS_ignis_drachorn._arc_ease
+        if p < 0.30:
+            return E("out", p / 0.30)
+        if p < 0.48:
+            return 1.0 - E("oc", (p - 0.30) / 0.18) * 0.88
+        if p < 0.80:
+            return 0.12 + E("io", (p - 0.48) / 0.32) * 0.22
+        return 0.34 * (1.0 - E("io", (p - 0.80) / 0.20))
+
+    @classmethod
+    def _sword_arc(cls, progress):
+        """(theta, lift) pedang untuk progress serangan 0..1."""
+        p = max(0.0, min(1.0, float(progress)))
+        for t0, t1, a0, a1, kind in cls.SWORD_ARC:
+            if t0 <= p < t1:
+                e = cls._arc_ease(kind, (p - t0) / max(0.0001, t1 - t0))
+                return a0 + (a1 - a0) * e, cls._sword_lift(p)
+        return 0.38, 0.0
+
+    def attack_phases_order():
+        return tuple(name for name, _a, _b
+                     in _NS_ignis_drachorn.ATTACK_PHASES)
+
+    def attack_phase(progress):
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_ignis_drachorn.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    def _live_module():
+        """Muat ``heroes.ignis_drachorn_fx`` sekali; None kalau gagal."""
+        NS = _NS_ignis_drachorn
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import ignis_drachorn_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "IGNIS_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    def live_fx_ready():
+        return _NS_ignis_drachorn._live_module() is not None
+
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Lapisan hidup untuk unit ini.
+
+        Return ``(mod, owned)``. ``want_draw`` True pada jalur BOSS (draw
+        dipanggil tiap frame tanpa cache sprite); pada jalur hero-lane
+        pemicunya ada di ``heroes/__init__.py`` (_live_fx_pre/_post).
+        """
+        NS = _NS_ignis_drachorn
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
 
     # ---------------------------------------------------------------------------
     # HD Color Palette - Dragon Knight inspired crimson / gold / fire
@@ -6056,32 +6223,221 @@ class _NS_ignis_drachorn:
         return dx + dy > 0.3
 
 
-    def _update_attack_anim(boss):
+    def _update_ignis_anim(boss, moving=False):
+        """ANIMATION CONTROLLER Ignis — state, fase, timing, delta-time.
+
+        Satu-satunya sumber kebenaran untuk SEMUA state karakter; lapisan
+        hidup (heroes/ignis_drachorn_fx) dan alat uji membacanya dari
+        sini. Nama field lama (``_ign_attack_active`` /
+        ``_ign_attack_frame`` / ``_ign_attack_progress``) DIPERTAHANKAN
+        supaya kode lama tidak pernah rusak.
+        """
+        G = _NS_ignis_drachorn
+
+        # ── delta time nyata (dipakai FX & transisi state) ──────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                      # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_ign_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._ign_last_ms = now
+        boss._ign_dt = dt
+        boss._ign_frame_duration = dt
+
+        # ── timeline serangan ───────────────────────────────────────
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_ign_prev_timer", 0))
         active = bool(getattr(boss, "_ign_attack_active", False))
+        manual = bool(getattr(boss, "_ign_attack_manual", False))
 
-        if timer >= cooldown - 1 and previous <= 1:
-            boss._ign_attack_active = True
-            boss._ign_attack_frame = 0
-            active = True
-        elif active:
-            boss._ign_attack_frame = int(getattr(boss, "_ign_attack_frame", 0)) + 1
-            if boss._ign_attack_frame > cooldown:
-                boss._ign_attack_active = False
+        # Kontrak lama: field ini selalu ada setelah controller jalan.
+        boss._ign_attack_active = active
+        boss._ign_attack_frame = int(getattr(boss, "_ign_attack_frame", 0))
+        boss._ign_attack_progress = float(
+            getattr(boss, "_ign_attack_progress", 0.0) or 0.0)
+
+        if manual:
+            active = bool(getattr(boss, "_ign_attack_active", False))
+        else:
+            if timer >= cooldown - 1 and previous <= 1:
+                boss._ign_attack_active = True
                 boss._ign_attack_frame = 0
-                active = False
-        elif timer <= 0:
-            boss._ign_attack_active = False
-            boss._ign_attack_frame = 0
-            active = False
+                active = True
+            elif active and timer > 0:
+                boss._ign_attack_frame = int(
+                    getattr(boss, "_ign_attack_frame", 0)) + 1
+                if boss._ign_attack_frame > cooldown:
+                    boss._ign_attack_active = False
+                    boss._ign_attack_frame = 0
+                    active = False
+            elif active:
+                # serangan manual (alat audit / probe): majukan sampai habis
+                boss._ign_attack_frame = int(
+                    getattr(boss, "_ign_attack_frame", 0)) + 1
+                if boss._ign_attack_frame > cooldown:
+                    boss._ign_attack_active = False
+                    boss._ign_attack_frame = 0
+                    active = False
 
-        boss._ign_prev_timer = timer
-        boss._ign_attack_progress = (
-            min(1.0, getattr(boss, "_ign_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
+            boss._ign_prev_timer = timer
+            prog = (min(1.0, int(getattr(boss, "_ign_attack_frame", 0))
+                        / max(1, cooldown)) if active else 0.0)
+            boss._ign_attack_progress = prog
+
+        prog = float(getattr(boss, "_ign_attack_progress", 0.0) or 0.0)
+        boss._ign_attack_raw = prog
+        boss._ign_attack_phase = G.attack_phase(prog) if active else "NONE"
+        boss._ign_hit_active = active and (
+            G.ATTACK_ACTIVE_WINDOW[0] <= prog < G.ATTACK_ACTIVE_WINDOW[1])
+        boss._ign_impact_frame = active and abs(
+            prog - G.ATTACK_IMPACT_FRAME) < 0.025
+
+        # ── hurt / hit flash ────────────────────────────────────────
+        hurt = int(getattr(boss, "_ign_hurt_frames", 0) or 0)
+        if hurt > 0:
+            hurt -= 1
+        if int(getattr(boss, "hurt_flash_timer", 0) or 0) > 0:
+            hurt = max(hurt, 7)
+        boss._ign_hurt_frames = hurt
+
+        # ── resolve state (berprioritas) ────────────────────────────
+        if not getattr(boss, "alive", True):
+            state = "DEATH"
+        elif hurt > 0:
+            state = "HURT"
+        elif getattr(boss, "active_skill", None) is not None:
+            state = ("SPECIAL" if getattr(boss, "active_skill", None) == "r"
+                     else "SKILL")
+        elif active:
+            ph = boss._ign_attack_phase
+            if ph in ("ANTICIPATION", "WINDUP"):
+                state = "CHARGE"
+            elif ph in ("SWING", "IMPACT"):
+                state = "SWING"
+            else:
+                state = "ATTACK"
+        elif moving:
+            state = ("RUN" if float(getattr(boss, "speed", 1.0)) >= 2.2
+                     else "WALK")
+        else:
+            state = "IDLE"
+
+        old = getattr(boss, "_ign_state", None)
+        boss._ign_state_prev = old or state
+        if old != state:
+            boss._ign_state_time = 0.0
+        else:
+            boss._ign_state_time = float(
+                getattr(boss, "_ign_state_time", 0.0)) + dt
+        boss._ign_state = state
+        return state
+
+    def _update_attack_anim(boss):
+        """Backward-compatible alias ke controller v3."""
+        return _NS_ignis_drachorn._update_ignis_anim(
+            boss, _NS_ignis_drachorn._detect_moving(boss))
+
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, attack_progress) untuk renderer & FX."""
+        skill = getattr(boss, "active_skill", None)
+        active = bool(getattr(boss, "_ign_attack_active", False))
+        if skill:
+            action = "cast"
+        elif active:
+            action = "attack"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+        phase = float(getattr(boss, "pulse", 0.0) or 0.0)
+        ap = (float(getattr(boss, "_ign_attack_progress", 0.0) or 0.0)
+              if active else 0.0)
+        return action, phase, ap
+
+    def _sword_tip_screen(boss, x, y):
+        """Titik ujung bilah untuk FX canvas fallback (ruang canvas).
+
+        Modul hidup memakai ``ignis_drachorn_fx.sword_points`` yang
+        membaca tabel ARK yang SAMA, jadi tidak mungkin berbeda frame.
+        """
+        action = getattr(boss, "_ign_pose_action", "idle")
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        if action == "attack":
+            theta, lift = _NS_ignis_drachorn._sword_arc(
+                float(getattr(boss, "_ign_attack_progress", 0.0) or 0.0))
+            hand_x = x + facing * (17 + 7 * lift)
+            hand_y = y + 2 - 22 * lift
+            return (hand_x + facing * math.sin(theta) * 40,
+                    hand_y - math.cos(theta) * 40)
+        if action == "cast":
+            return (x + facing * 26, y - 64)
+        return (x + facing * 50, y)
+
+    def _draw_ignis_debug(surface, boss, x, y):
+        """Overlay DEBUG_CHARACTER: hitbox, state, frame, FPS, partikel."""
+        NS = _NS_ignis_drachorn
+        r = max(6, int(getattr(boss, "radius", 16)))
+        pygame.draw.rect(surface, (80, 170, 255),
+                         pygame.Rect(int(x) - r, int(y) - r - 10,
+                                     r * 2, r * 2), 1)
+        rng = max(10, int(getattr(boss, "range", 200) * 0.7))
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        pygame.draw.line(surface, (255, 210, 60), (int(x), int(y)),
+                         (int(x + rng * f), int(y)), 1)
+        pygame.draw.rect(surface, (255, 210, 60),
+                         pygame.Rect(int(x + rng * f) - 5, int(y) - 7,
+                                     10, 14), 1)
+        hb = None
+        if getattr(boss, "_ign_hit_active", False):
+            reach = int(rng)
+            top = int(y - 48)
+            left = int(x) if f > 0 else int(x) - reach
+            hb = pygame.Rect(left, top, max(8, reach), max(10, 86))
+            pygame.draw.rect(surface, (255, 70, 70), hb, 2)
+        dtv = float(getattr(boss, "_ign_dt", 1.0 / 60.0) or 1.0 / 60.0)
+        inst = 1.0 / dtv if dtv > 0 else 60.0
+        fps = float(getattr(boss, "_ign_fps", 60.0))
+        fps = fps + (inst - fps) * 0.1
+        boss._ign_fps = fps
+        mod = NS._live_module()
+        n_part = n_proj = -1
+        if mod is not None:
+            try:
+                n_part = mod.total_particles()
+                n_proj = len(mod.projectiles_for(boss))
+            except Exception:
+                pass
+        lines = [
+            "IGNIS %s %s" % (getattr(boss, "_ign_state", "IDLE"),
+                             getattr(boss, "_ign_attack_phase", "NONE")),
+            "frame %d t=%.2f hurt=%d" % (
+                int(getattr(boss, "_ign_attack_frame", 0)),
+                float(getattr(boss, "_ign_attack_progress", 0.0)),
+                int(getattr(boss, "_ign_hurt_frames", 0))),
+            "hit=%s fps=%.0f skill=%s" % (
+                "Y" if hb else "N", fps,
+                getattr(boss, "active_skill", None) or "-"),
+            "dt=%.4f proj=%d part=%d" % (dtv, n_proj, n_part),
+        ]
+        font = None
+        try:
+            from _render import get_font
+            font = get_font(14)
+        except Exception:
+            pass
+        if font is None:
+            return
+        px, py = int(x) - 84, int(y) + 38
+        for i, line in enumerate(lines):
+            surface.blit(font.render(line, True, (255, 226, 190)),
+                         (px, py + i * 14))
 
 
     def _manage_projectiles(boss, surface, phase):
@@ -6106,59 +6462,123 @@ class _NS_ignis_drachorn:
     # MAIN DRAW ENTRY POINT
     # ===================================================================
     def draw_ignis(surface, boss, x, y):
-        """Entry point for Boss.draw()."""
+        """Entry point Boss.draw() sekaligus jalur hero-lane.
+
+        Urutan lapisan (RENDER ORDER):
+            GROUND -> GROUND FX -> SHADOW -> BACK PARTICLES ->
+            CHARACTER (back limb -> body -> armor -> head -> weapon) ->
+            ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES -> SKILL FX ->
+            IMPACT FX -> DEBUG
+
+        Trail, proyektil, partikel, impact, hit-stop & shake hidup di
+        modul layar 1:1 (heroes/ignis_drachorn_fx); canvas hanya fallback
+        supaya karakter tidak pernah kehilangan efek.
+        """
+        NS = _NS_ignis_drachorn
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_ignis_drachorn._detect_moving(boss)
-        _NS_ignis_drachorn._update_attack_anim(boss)
+        moving = NS._detect_moving(boss)
+        NS._update_ignis_anim(boss, moving)
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._ign_pose_action = action
+        boss._ign_phase = phase
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
 
-        attacking = (
-            getattr(boss, "_ign_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
+        attacking = action == "attack"
 
-        # Determine attack type - if boss has attack_range > 100, treat as ranged
+        # Determine attack type - if boss has attack_range > 100, ranged
         attack_range = getattr(boss, "attack_range", 150)
         is_ranged_attack = attack_range > 120
 
-        # ---------- Background layers ----------
-        _NS_ignis_drachorn._draw_fire_aura(surface, x, y, pulse)
-        _NS_ignis_drachorn._draw_ground_embers(surface, x, y + 38, pulse, active_skill)
+        # ── lapisan hidup (boss jalur 1:1; lane dipicu heroes/__init__)
+        live, owned = NS._live_fx(boss, surface, x, y,
+                                  not hero_lane, portrait)
+        boss._ign_suppress_canvas_projectile = owned
 
-        # ---------- Skill ground effects ----------
-        if active_skill == "q":
-            _NS_ignis_drachorn._draw_dragon_breath_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_ignis_drachorn._draw_dragon_tail_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_ignis_drachorn._draw_dragon_blood_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_ignis_drachorn._draw_elder_form_ground(surface, boss, x, y, skill_timer, pulse)
+        # ---------- GROUND / BACKGROUND layers ----------
+        if not portrait:
+            NS._draw_fire_aura(surface, x, y, pulse)
+            NS._draw_ground_embers(surface, x, y + 38, pulse, active_skill)
 
-        # ---------- Character body ----------
+            # ---------- Skill ground effects (fallback canvas) ----------
+            if not owned:
+                if active_skill == "q":
+                    NS._draw_dragon_breath_ground(surface, boss, x, y,
+                                                  skill_timer, pulse)
+                elif active_skill == "w":
+                    NS._draw_dragon_tail_ground(surface, boss, x, y,
+                                                skill_timer, pulse)
+                elif active_skill == "e":
+                    NS._draw_dragon_blood_ground(surface, boss, x, y,
+                                                 skill_timer, pulse)
+                elif active_skill == "r":
+                    NS._draw_elder_form_ground(surface, boss, x, y,
+                                               skill_timer, pulse)
+
+        # ---------- Character body (dengan hurt-flash mask) ----------
+        _tgt, _tx, _ty = surface, x, y
+        if flash > 0 and not portrait:
+            if NS._flash_buf is None:
+                NS._flash_buf = pygame.Surface((240, 260), pygame.SRCALPHA)
+            NS._flash_buf.fill((0, 0, 0, 0))
+            NS._record_shadow = []
+            _tgt, _tx, _ty = NS._flash_buf, 120, 130
+
         if active_skill == "r" and skill_timer > 10:
-            _NS_ignis_drachorn._draw_elder_dragon_form(surface, boss, x, y, skill_timer, pulse)
+            NS._draw_elder_dragon_form(_tgt, boss, _tx, _ty,
+                                       skill_timer, pulse)
         elif attacking:
             if is_ranged_attack:
-                _NS_ignis_drachorn._draw_ignis_ranged_attack(surface, boss, x, y)
+                NS._draw_ignis_ranged_attack(_tgt, boss, _tx, _ty)
             else:
-                _NS_ignis_drachorn._draw_ignis_melee_attack(surface, boss, x, y)
+                NS._draw_ignis_melee_attack(_tgt, boss, _tx, _ty)
+        elif action == "cast":
+            NS._draw_ignis_cast(_tgt, boss, _tx, _ty)
         elif moving:
-            _NS_ignis_drachorn._draw_ignis_walk(surface, boss, x, y)
+            NS._draw_ignis_walk(_tgt, boss, _tx, _ty)
         else:
-            _NS_ignis_drachorn._draw_ignis_idle(surface, boss, x, y)
+            NS._draw_ignis_idle(_tgt, boss, _tx, _ty)
 
-        # ---------- Projectiles ----------
-        _NS_ignis_drachorn._manage_projectiles(boss, surface, pulse)
+        if flash > 0 and not portrait:
+            surface.blit(NS._flash_buf, (x - _tx, y - _ty))
+            w = int(235 * min(1.0, flash / 8.0))
+            m = pygame.mask.from_surface(NS._flash_buf, 50)
+            wht = m.to_surface(setcolor=(w, int(w * 0.72), int(w * 0.5), 255),
+                               unsetcolor=(0, 0, 0, 0))
+            for rect in (NS._record_shadow or ()):
+                wht.fill((0, 0, 0, 0), rect)
+            surface.blit(wht, (x - _tx, y - _ty),
+                         special_flags=pygame.BLEND_RGB_ADD)
+            NS._record_shadow = None
 
-        # ---------- Skill foreground effects ----------
-        if active_skill == "q":
-            _NS_ignis_drachorn._draw_dragon_breath(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_ignis_drachorn._draw_dragon_tail(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_ignis_drachorn._draw_dragon_blood_foreground(surface, boss, x, y, skill_timer, pulse)
+        # ---------- Projectiles (fallback canvas) ----------
+        if not owned:
+            NS._manage_projectiles(boss, surface, pulse)
+
+            # ---------- Skill foreground effects (fallback canvas) -----
+            if active_skill == "q":
+                NS._draw_dragon_breath(surface, boss, x, y,
+                                       skill_timer, pulse)
+            elif active_skill == "w":
+                NS._draw_dragon_tail(surface, boss, x, y,
+                                     skill_timer, pulse)
+            elif active_skill == "e":
+                NS._draw_dragon_blood_foreground(surface, boss, x, y,
+                                                 skill_timer, pulse)
+
+        # ── LIVE TOP LAYER (trail / projectile / impact / particle) ─
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        # ---------- DEBUG ----------
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_ignis_debug(surface, boss, x, y)
 
 
     # ===================================================================
@@ -6182,33 +6602,92 @@ class _NS_ignis_drachorn:
 
 
     def _draw_ignis_melee_attack(surface, boss, x, y):
-        progress = getattr(boss, "_ign_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
+        """Tebasan greatsword: lunge berbobot mengikuti ARK, bukan geser."""
+        NS = _NS_ignis_drachorn
+        progress = max(0.0, min(1.0, getattr(boss,
+                                             "_ign_attack_progress", 0.0)))
+        owned = bool(getattr(boss, "_ign_suppress_canvas_projectile", False))
 
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
-        _NS_ignis_drachorn._draw_shadow(surface, x + lunge, y + 48)
-        _NS_ignis_drachorn._draw_floating_flames(surface, x + lunge, y + 35, boss.pulse, intense=True)
-        _NS_ignis_drachorn._draw_ignis_body(surface, x + lunge, y, boss.direction, boss.pulse,
-                         "melee", progress)
-        _NS_ignis_drachorn._draw_sword_swing_trail(surface, x + lunge, y, boss.direction, progress)
+        # Momentum badan: mundur halus saat WINDUP, dorong ke depan saat
+        # SWING/IMPACT, mengendap di RECOVERY (anticipation punya bobot).
+        if progress < 0.30:
+            lunge = -NS._arc_ease("io", progress / 0.30) * 4.0
+        elif progress < 0.60:
+            lunge = -4.0 + NS._arc_ease("oc", (progress - 0.30) / 0.30) * 13.0
+        else:
+            lunge = 9.0 * (1.0 - NS._arc_ease("io", (progress - 0.60) / 0.40))
+        lunge = int(lunge) * boss.direction
+        bob = int(-math.sin(progress * math.pi) * 2)
+
+        NS._draw_shadow(surface, x + lunge, y + 48)
+        NS._draw_floating_flames(surface, x + lunge, y + 35, boss.pulse,
+                                 intense=True)
+        NS._draw_ignis_body(surface, x + lunge, y + bob, boss.direction,
+                            boss.pulse, "melee", progress)
+        if not owned:
+            NS._draw_sword_swing_trail(surface, x + lunge, y,
+                                       boss.direction, progress)
 
 
     def _draw_ignis_ranged_attack(surface, boss, x, y):
-        progress = getattr(boss, "_ign_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
+        """Serangan jarak: ayunan sama, bola api lahir di ujung bilah."""
+        NS = _NS_ignis_drachorn
+        progress = max(0.0, min(1.0, getattr(boss,
+                                             "_ign_attack_progress", 0.0)))
+        owned = bool(getattr(boss, "_ign_suppress_canvas_projectile", False))
 
-        if 0.28 < progress < 0.35 and not getattr(boss, "_ign_proj_spawned", False):
-            _NS_ignis_drachorn._spawn_fire_projectile(boss, x, y)
+        # Lepas proyektil pada frame ayunan melewati puncak (ARK, bukan
+        # angka ajaib): jendela sempit di sekitar ATTACK_IMPACT_FRAME.
+        lo = NS.ATTACK_IMPACT_FRAME - 0.10
+        hi = NS.ATTACK_IMPACT_FRAME - 0.02
+        if lo < progress < hi and not getattr(boss, "_ign_proj_spawned",
+                                              False):
+            if owned:
+                try:
+                    from heroes import ignis_drachorn_fx as _ifx
+                    _ifx.notify_projectile_cast(boss, x, y)
+                except Exception:
+                    NS._spawn_fire_projectile(boss, x, y)
+            else:
+                NS._spawn_fire_projectile(boss, x, y)
             boss._ign_proj_spawned = True
-        if progress < 0.1 or progress > 0.9:
+        if progress < 0.12 or progress > 0.88:
             boss._ign_proj_spawned = False
 
         recoil = int(math.sin(progress * math.pi) * 3) * -boss.direction
-        _NS_ignis_drachorn._draw_shadow(surface, x + recoil, y + 48)
-        _NS_ignis_drachorn._draw_floating_flames(surface, x + recoil, y + 35, boss.pulse, intense=True)
-        _NS_ignis_drachorn._draw_ignis_body(surface, x + recoil, y, boss.direction, boss.pulse,
-                         "ranged", progress)
-        _NS_ignis_drachorn._draw_sword_charge_flash(surface, x + recoil, y, boss.direction, progress)
+        NS._draw_shadow(surface, x + recoil, y + 48)
+        NS._draw_floating_flames(surface, x + recoil, y + 35, boss.pulse,
+                                 intense=True)
+        NS._draw_ignis_body(surface, x + recoil, y, boss.direction,
+                            boss.pulse, "ranged", progress)
+        if not owned:
+            NS._draw_sword_charge_flash(surface, x + recoil, y,
+                                        boss.direction, progress)
+
+
+    def _draw_ignis_cast(surface, boss, x, y):
+        """Pose CAST (skill q/w/e/r): pedang terangkat, helm menyala.
+
+        Memakai tabel ARK yang sama dengan serangan pada progress channel
+        supaya transisi attack <-> cast mulus (tidak ada teleport pose).
+        """
+        NS = _NS_ignis_drachorn
+        skill = getattr(boss, "active_skill", None)
+        skill_timer = int(getattr(boss, "active_skill_timer", 0))
+        total = {"q": 45, "w": 40, "e": 60, "r": 90}.get(skill, 45)
+        t = 1.0 - (skill_timer / float(total)) if total else 0.0
+        # channel: pedang naik saat mulai, sedikit turun menjelang release
+        progress = 0.22 + 0.03 * math.sin(boss.pulse * 2.5) - 0.08 * t
+
+        lean = int(math.sin(boss.pulse * 1.4)) * -boss.direction
+        NS._draw_shadow(surface, x + lean, y + 48)
+        NS._draw_floating_flames(surface, x + lean, y + 35, boss.pulse,
+                                 intense=(skill in ("r", "e")))
+        NS._draw_ignis_body(surface, x + lean, y, boss.direction,
+                            boss.pulse, "melee", progress)
+        if not getattr(boss, "_ign_suppress_canvas_projectile", False):
+            NS._draw_sword_charge_flash(surface, x + lean, y,
+                                        boss.direction, 0.2 + 0.4 * t)
 
 
     # ===================================================================
@@ -6599,35 +7078,37 @@ class _NS_ignis_drachorn:
         _NS_ignis_drachorn._draw_arm_segment(surface, bs_x, bs_y, be_x, be_y)
         _NS_ignis_drachorn._draw_arm_segment(surface, be_x, be_y, bh_x, bh_y)
 
-        # Sword arm - swing animation
+        # Sword arm — digerakkan oleh tabel ARK bersama (SWORD_ARC).
+        # theta = sudut bilah dari vertikal; lift = seberapa tinggi
+        # tangan terangkat. Keduanya dibaca juga oleh lapisan FX hidup
+        # sehingga trail selalu lahir tepat di ujung bilah.
+        NS = _NS_ignis_drachorn
+        theta, lift = NS._sword_arc(progress)
+
         ss_x = cx + facing * 14
-        ss_y = cy + 2
+        ss_y = cy + 2 - int(4 * lift)
 
-        # Wind up (0-0.3): raise sword back
-        # Swing (0.3-0.6): swing forward
-        # Recovery (0.6-1.0): return
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = -1.2 + (-0.8) * t  # from -1.2 to -2.0
-        elif progress < 0.6:
-            t = (progress - 0.3) / 0.3
-            arm_angle = -2.0 + 3.0 * t  # swing forward from -2.0 to 1.0
-        else:
-            t = (progress - 0.6) / 0.4
-            arm_angle = 1.0 - 1.3 * t  # return to -0.3
+        # Tangan mengikuti ark: naik saat wind-up, menyapu saat swing.
+        hand_x = cx + facing * (17 + 7 * lift)
+        hand_y = cy + 2 - 22 * lift
+        sh_x, sh_y = int(hand_x), int(hand_y)
 
-        se_x = ss_x + int(math.cos(arm_angle) * 12) * facing
-        se_y = ss_y + int(math.sin(arm_angle) * 12)
-        sh_x = se_x + int(math.cos(arm_angle) * 10) * facing
-        sh_y = se_y + int(math.sin(arm_angle) * 10)
+        # Siku = titik tengah yang ditarik keluar sesuai arah ayunan
+        # (bukan interpolasi lurus -> lengan terlihat punya volume).
+        mid_x = (ss_x + sh_x) * 0.5 + facing * math.sin(theta) * 7.0
+        mid_y = (ss_y + sh_y) * 0.5 - math.cos(theta) * 4.0
+        se_x, se_y = int(mid_x), int(mid_y)
 
-        _NS_ignis_drachorn._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_ignis_drachorn._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
+        NS._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
+        NS._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
 
-        # Sword with rotation
-        sword_angle = arm_angle + (0.3 if facing > 0 else -0.3)
-        _NS_ignis_drachorn._draw_flame_sword(surface, sh_x, sh_y, facing, phase, angle=sword_angle,
-                         intense=(0.3 < progress < 0.7))
+        # Sudut bilah untuk _draw_flame_sword: 0 rad = ke depan
+        # horizontal, jadi theta vertikal dikonversi (theta - pi/2).
+        sword_angle = theta - math.pi / 2
+        NS._draw_flame_sword(surface, sh_x, sh_y, facing, phase,
+                             angle=sword_angle,
+                             intense=(NS.ATTACK_ACTIVE_WINDOW[0] < progress
+                                      < NS.ATTACK_ACTIVE_WINDOW[1]))
 
 
     def _draw_ranged_arms(surface, cx, cy, facing, phase, progress):

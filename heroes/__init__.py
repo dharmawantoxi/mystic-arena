@@ -649,10 +649,17 @@ _BEAM_PASS_HEROES = {"morgath"}
 # bergerigi, kerucut Splinter Blast, kurungan kristal Winter's Curse,
 # nova + kubah Cold Embrace, impact flash + shockwave + serpihan,
 # hit-stop 0.03-0.08 s, dan shake — 60 fps di luar cache sprite.
+# Ignis Drachorn (heroes/ignis_drachorn_fx.py): true boss level-4 dragon
+# knight. Rig canvas tetap milik bosses/level4.py::_NS_ignis_drachorn;
+# lapisan hidup memegang pita sabit greatsword dari histori ujung bilah,
+# proyektil bola api modular, hujan meteor Cataclysm, cone Dragon Breath,
+# sabit Dragon Tail, aura Dragon Blood, pilar + sayap Elder Dragon Form,
+# impact flash + shockwave + debris, hit-stop 0.03-0.08 s, dan shake —
+# semuanya 60 fps di luar cache sprite.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
                    "alchemist", "ancient_apparition", "nyzrak",
-                   "xerathis", "varkul"}
+                   "xerathis", "varkul", "ignis_drachorn"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -670,6 +677,7 @@ _LIVE_FX_PATHS = {
     "nyzrak": "heroes.nyzrak_fx",
     "xerathis": "heroes.xerathis_fx",
     "varkul": "heroes.varkul_fx",
+    "ignis_drachorn": "heroes.ignis_drachorn_fx",
 }
 
 
