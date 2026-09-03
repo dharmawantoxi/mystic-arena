@@ -30,41 +30,144 @@ _IS_LEVEL_BUNDLE = True
 
 
 # ====================================================================
-# NYXARA
+# NYXARA — THE NETHER MATRON  (FULL REWRITE)
+# ====================================================================
+# Arsitektur "masterwork" (patron: vhalzun/krobellus di file yang sama):
+#
+#   * RENDERER (file ini) — rig pixel-art + controller animasi + pose +
+#     geometri tongkat + telegraph tanah + fallback FX canvas.  Semua
+#     bentuk digambar prosedural (pygame.draw) dengan palet terbatas,
+#     tepi keras (chunky pixel), dan surface statis di-cache.
+#   * LAPISAN HIDUP (heroes/nyxara_fx.py) — trail ayunan tongkat,
+#     partikel, proyektil (nether orb & nether blast), FX skill Q/W/E/R,
+#     impact flash, shockwave, screen shake, hit-stop 0.03-0.08 s.
+#     Digambar 1:1 ke layar, DI LUAR cache sprite supaya tetap 60 fps.
+#   * GAME FEEL BUS (heroes/combat_feel.py) — satu sumber hit-stop &
+#     shake untuk seluruh arena.
+#
+# Kontrak publik (dipakai heroes/__init__, bosses/base_boss, hero_skills,
+# tools, dan modul FX):
+#   draw_nyxara(surface, boss, x, y)   entry point (Boss.draw & render_hero)
+#   PALETTE                            palet karakter + FX (sumber benar)
+#   pose_of / anim_state / attack_phase  state animasi (sinkron dgn FX)
+#   staff_points(boss, x, y)           (pivot, tip) Vector2 ruang layar
+#   body_scale / ground_dy             skala & garis tanah
+#   DEBUG_CHARACTER                    overlay hitbox/hurtbox/state
+#
+# 100% PROSEDURAL: tanpa PNG/JPG/GIF/sprite-sheet/aset eksternal.
 # ====================================================================
 class _NS_nyxara:
-    """Namespace nyxara - isi asli tidak diubah."""
+    """Namespace nyxara — renderer The Nether Matron (rewrite v2).
 
-    # ---------------------------------------------------------------------------
-    # Compatibility helpers
-    # ---------------------------------------------------------------------------
-    HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
+    Gaya: 2D pixel art dark-fantasy — chunky pixels, silhouette kuat
+    (mahkota bertanduk + jubah lebar + tongkat tengkorak), palet
+    terbatas, tepi keras, highlight/shadow per-pixel.  100% prosedural.
+    """
 
-    # ---------------------------------------------------------------------------
-    # HD Color Palette - Pugna inspired yellow-green nether
-    # ---------------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # KONFIGURASI KARAKTER & KONTRAK TIMING
+    # ------------------------------------------------------------------
+    CHARACTER_NAME = "nyxara"
+
+    #: Overlay debug (hitbox, hurtbox, range, state, FPS, partikel).
+    DEBUG_CHARACTER = False
+
+    #: Jarak dunia (px) — di bawahnya Nyxara MENGAYUN tongkatnya,
+    #: di atasnya ia melempar nether orb.  Hook benturan di
+    #: bosses/base_boss.py dan modul FX memakai angka yang sama.
+    MELEE_REACH = 88.0
+
+    #: Garis tanah dari titik jangkar (px lokal).
+    GROUND_DY = 48
+
+    #: Fase serangan (fraksi 0..1 dari durasi serangan) — satu
+    #: kosakata untuk renderer, lapisan hidup, dan overlay debug.
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.12),
+        ("WINDUP",       0.12, 0.30),
+        ("SWING",        0.30, 0.50),
+        ("IMPACT",       0.50, 0.62),
+        ("FOLLOW",       0.62, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+
+    #: Jendela hit aktif + frame benturan (swing) & rilis (orb).
+    ATTACK_ACTIVE_WINDOW = (0.30, 0.55)
+    ATTACK_IMPACT_FRAME = 0.42
+    ATTACK_RELEASE_FRAME = 0.32
+
+    #: Durasi pose skill dalam FRAME — HARUS sama dengan timer yang
+    #: di-set _smart_ai_nyxara (q 60, w 70, e 80, r 90).
+    SKILL_DUR = {"q": 60, "w": 70, "e": 80, "r": 90}
+
+    #: Radius efek di RUANG DUNIA — sama dengan radius damage AI
+    #: (q target tunggal + splash 130, w single 280 -> kurva 150,
+    #: e ward 100, r drain single 240 -> tether).
+    SKILL_RADIUS = {"q": 130.0, "w": 150.0, "e": 100.0, "r": 150.0}
+
+    #: Prioritas state animasi — angka besar menang, DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: Lifecycle skill: CAST -> CHARGE -> RELEASE -> AREA -> IMPACT
+    #: -> AFTER (-> FADE saat SkillFX dibuang).
+    SKILL_PHASES = (
+        ("CAST",    0.00, 0.16),
+        ("CHARGE",  0.16, 0.34),
+        ("RELEASE", 0.34, 0.46),
+        ("AREA",    0.46, 0.74),
+        ("IMPACT",  0.74, 0.86),
+        ("AFTER",   0.86, 1.00),
+    )
+
+    # ------------------------------------------------------------------
+    # PALETTE — Nether Matron: nether kuning-hijau + jubah ungu gelap +
+    # tulang olive + trim emas + tanduk merah.  Kunci identik dengan
+    # heroes/nyxara_fx.NYXARA_PALETTE (modul FX menyalin dari sini).
+    # ------------------------------------------------------------------
     PALETTE = {
-        # Skin - malformed green/olive
+        # outline gelap (pixel-art hard edge)
+        "outline":        (6,   5,   10),
+
+        # Kulit malformed olive
         "skin_darkest":   (25,  38,  15),
         "skin_dark":      (55,  75,  30),
-        "skin_mid":       (95, 120,  50),
-        "skin_light":     (140, 165,  75),
+        "skin_mid":       (95,  120, 50),
+        "skin_light":     (140, 165, 75),
         "skin_shine":     (185, 210, 110),
 
-        # Robe - dark brown/purple armored
-        "robe_darkest":   (18,  10,  18),
-        "robe_dark":      (38,  22,  38),
-        "robe_mid":       (68,  38,  58),
-        "robe_light":     (105, 65,  90),
-        "robe_high":      (145, 100, 125),
+        # Jubah - ungu gelap berlapis
+        "robe_darkest":   (18,  10,  22),
+        "robe_dark":      (38,  22,  44),
+        "robe_mid":       (68,  38,  70),
+        "robe_light":     (105, 65,  105),
+        "robe_high":      (145, 100, 140),
+        "robe_shine":     (190, 155, 185),
 
-        # Leather/inner
+        # Jubah dalam
+        "inner_darkest":  (10,  6,   14),
+        "inner_dark":     (22,  13,  28),
+        "inner_mid":      (40,  24,  48),
+
+        # Kulit/leather
         "leather_dark":   (28,  18,  12),
         "leather_mid":    (55,  35,  20),
         "leather_light":  (90,  62,  35),
 
-        # Nether green - main magical color (yellow-green)
-        "nether_darkest": (25,  35,   5),
+        # Nether kuning-hijau — warna sihir utama
+        "nether_darkest": (25,  35,  5),
         "nether_dark":    (70,  95,  15),
         "nether_mid":     (140, 180, 30),
         "nether_light":   (200, 240, 60),
@@ -72,34 +175,34 @@ class _NS_nyxara:
         "nether_hot":     (245, 255, 180),
         "nether_white":   (255, 255, 220),
 
-        # Skull - bone
+        # Tulang olive
         "bone_dark":      (75,  85,  50),
         "bone_mid":       (130, 145, 90),
         "bone_light":     (185, 200, 140),
         "bone_shine":     (225, 235, 190),
 
-        # Gold trim
+        # Trim emas
         "gold_dark":      (90,  62,  15),
         "gold_mid":       (165, 125, 35),
         "gold_light":     (225, 185, 70),
         "gold_shine":     (250, 225, 140),
 
-        # Horns / red accent
+        # Tanduk / aksen merah
         "horn_dark":      (60,  20,  15),
         "horn_mid":       (110, 40,  25),
         "horn_light":     (170, 75,  40),
         "horn_high":      (220, 130, 70),
 
-        # Eye glow
-        "eye_dark":       (70,  95,   5),
-        "eye_mid":        (170, 220, 30),
-        "eye_bright":     (220, 250, 100),
-        "eye_hot":        (245, 255, 200),
-
-        # Wood staff
+        # Kayu tongkat
         "wood_dark":      (35,  22,  15),
         "wood_mid":       (65,  42,  22),
         "wood_light":     (100, 70,  40),
+
+        # Glow mata
+        "eye_dark":       (70,  95,  5),
+        "eye_mid":        (170, 220, 30),
+        "eye_bright":     (220, 250, 100),
+        "eye_hot":        (245, 255, 200),
 
         # Misc
         "shadow":         (0,   0,   0),
@@ -107,281 +210,351 @@ class _NS_nyxara:
         "white":          (255, 255, 255),
     }
 
+    # ------------------------------------------------------------------
+    # GEOMETRI TONGKAT (ruang lokal facing-kanan; cermin via x*facing)
+    # ------------------------------------------------------------------
+    STAFF_SHAFT = 42.0         # panjang gagang dari genggaman ke kepala
+    STAFF_BUTT = 14.0          # panjang gagang di bawah genggaman
+    STAFF_SKULL_R = 6.0        # radius tengkorak di puncak tongkat
+    _STAFF_REST = -1.35        # sudut istirahat (tongkat hampir tegak)
 
+    # ===================================================================
+    # HELPERS MATEMATIKA & PIXEL
+    # ===================================================================
+    @staticmethod
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
 
+    @staticmethod
+    def _lerp(a, b, t):
+        return a + (b - a) * t
 
-    def _aacircle(surface, color, center, radius, width=0):
-        color = _NS_nyxara._clamp(color)
-        cx, cy = int(center[0]), int(center[1])
-        radius = max(0, int(radius))
-        if radius == 0:
-            return
-        if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
-            surface.blit(temp, (cx - radius - 2, cy - radius - 2))
-            return
-        if _NS_nyxara.HAS_AACIRCLE and radius > 1:
-            try:
-                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius, width)
-                return
-            except Exception:
-                pass
-        pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
+    @staticmethod
+    def _lerp_pt(a, b, t):
+        return (_NS_nyxara._lerp(a[0], b[0], t),
+                _NS_nyxara._lerp(a[1], b[1], t))
 
+    @staticmethod
+    def _ease_out_cubic(t):
+        t = max(0.0, min(1.0, t))
+        return 1.0 - (1.0 - t) ** 3
 
-    def _aaline(surface, color, start, end, width=1):
-        color = _NS_nyxara._clamp(color)
-        sx, sy = int(start[0]), int(start[1])
-        ex, ey = int(end[0]), int(end[1])
-        if len(color) == 4 and color[3] < 255:
-            min_x = min(sx, ex) - width
-            min_y = min(sy, ey) - width
-            w = abs(ex - sx) + width * 4 + 4
-            h = abs(ey - sy) + width * 4 + 4
-            if w <= 0 or h <= 0:
-                return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.line(temp, color,
-                             (sx - min_x, sy - min_y),
-                             (ex - min_x, ey - min_y), max(1, width))
-            surface.blit(temp, (min_x, min_y))
-            return
-        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
+    @staticmethod
+    def _ease_in_cubic(t):
+        t = max(0.0, min(1.0, t))
+        return t * t * t
 
+    @staticmethod
+    def _ease_in_out(t):
+        t = max(0.0, min(1.0, t))
+        return t * t * (3.0 - 2.0 * t)
 
-    def _poly(surface, color, points):
-        if len(points) < 3:
-            return
-        color = _NS_nyxara._clamp(color)
-        if len(color) == 4 and color[3] < 255:
-            xs = [p[0] for p in points]
-            ys = [p[1] for p in points]
-            min_x, min_y = min(xs) - 2, min(ys) - 2
-            w = max(xs) - min_x + 4
-            h = max(ys) - min_y + 4
-            if w <= 0 or h <= 0:
-                return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            shifted = [(p[0] - min_x, p[1] - min_y) for p in points]
-            pygame.draw.polygon(temp, color, shifted)
-            surface.blit(temp, (min_x, min_y))
-            return
-        pygame.draw.polygon(surface, color[:3], points)
+    @staticmethod
+    def _snap(v):
+        """Snap koordinat ke pixel penuh (pixel-art: tanpa sub-pixel)."""
+        return int(round(v))
 
+    @staticmethod
+    def _qphase(phase, buckets=12):
+        """Kuantisasi fase animasi supaya surface cache tetap kecil."""
+        return int(phase * buckets) % buckets
 
-    def _ellipse(surface, color, rect, width=0):
-        color = _NS_nyxara._clamp(color)
-        if len(color) == 4 and color[3] < 255:
-            rx, ry, rw, rh = rect
-            if rw <= 0 or rh <= 0:
-                return
-            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.ellipse(temp, color, (2, 2, rw, rh), width)
-            surface.blit(temp, (rx - 2, ry - 2))
-            return
-        pygame.draw.ellipse(surface, color[:3], rect, width)
+    @staticmethod
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1."""
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_nyxara.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
 
+    @staticmethod
+    def attack_phases_order():
+        return tuple(n for n, _a, _b in _NS_nyxara.ATTACK_PHASES)
 
-    def _rect(surface, color, rect, border_radius=0):
-        color = _NS_nyxara._clamp(color)
-        if len(color) == 4 and color[3] < 255:
-            rx, ry, rw, rh = rect
-            if rw <= 0 or rh <= 0:
-                return
-            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.rect(temp, color, (2, 2, rw, rh), border_radius=border_radius)
-            surface.blit(temp, (rx - 2, ry - 2))
-            return
-        pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
+    @staticmethod
+    def skill_phase(t):
+        """Nama fase skill untuk t 0..1."""
+        p = max(0.0, min(1.0, float(t)))
+        for name, a, b in _NS_nyxara.SKILL_PHASES:
+            if a <= p < b:
+                return name
+        return "AFTER"
 
+    # ===================================================================
+    # CACHE SURFACE STATIS (dibangun sekali, dipakai semua unit)
+    # ===================================================================
+    _CACHE = {}
+    _CACHE_MAX = 96
 
+    @staticmethod
+    def clear_cache():
+        _NS_nyxara._CACHE.clear()
+
+    @staticmethod
+    def cache_size():
+        return len(_NS_nyxara._CACHE)
+
+    @staticmethod
+    def _cached(key, builder):
+        s = _NS_nyxara._CACHE.get(key)
+        if s is None:
+            if len(_NS_nyxara._CACHE) >= _NS_nyxara._CACHE_MAX:
+                _NS_nyxara._CACHE.pop(next(iter(_NS_nyxara._CACHE)))
+            s = builder()
+            _NS_nyxara._CACHE[key] = s
+        return s
+
+    @staticmethod
+    def _shadow_surf():
+        """Bayangan kontak (ellipse chunky berlapis, dibangun sekali)."""
+        w, h = 92, 22
+        c = _NS_nyxara.PALETTE
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.ellipse(s, (0, 0, 0, 115), (4, 4, w - 8, h - 8))
+        pygame.draw.ellipse(s, (0, 0, 0, 85), (12, 6, w - 24, h - 12))
+        pygame.draw.ellipse(s, (*c["nether_darkest"], 70),
+                            (18, 8, w - 36, h - 16))
+        return s
+
+    @staticmethod
+    def _mist_surf(bucket):
+        """Kabut nether di bawah jubah Nyxara (6 bucket fase)."""
+        c = _NS_nyxara.PALETTE
+        w, h = 112, 30
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        off = (bucket % 6) / 6.0
+        for i, (dx, rw) in enumerate(((-24, 32), (-4, 44), (20, 30))):
+            t = (off + i * 0.33) % 1.0
+            cy = 20 - int(t * 8)
+            a = int(72 * (1.0 - t))
+            if a <= 0:
+                continue
+            pygame.draw.ellipse(
+                s, (*c["nether_darkest"], min(255, a)),
+                (w // 2 + dx - rw // 2, cy - 4,
+                 rw, max(3, 8 - int(t * 4))))
+            pygame.draw.ellipse(
+                s, (*c["nether_dark"], a // 2),
+                (w // 2 + dx - rw // 2 + 3, cy - 3,
+                 rw - 6, max(2, 5 - int(t * 3))))
+        return s
+
+    @staticmethod
+    def _rune_surf(bucket, skill):
+        """Rune circle di tanah (8 bucket rotasi; versi skill lebih terang)."""
+        c = _NS_nyxara.PALETTE
+        w, h = 128, 48
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        cx, cy = w // 2, h // 2
+        base_a = 190 if skill else 145
+        pygame.draw.ellipse(s, (*c["nether_dark"], base_a),
+                            (6, 12, w - 12, 24), 3)
+        pygame.draw.ellipse(s, (*c["nether_mid"], base_a - 20),
+                            (20, 17, w - 40, 14), 2)
+        # rune tick yang berputar (garis pendek chunky)
+        rot = bucket * (math.pi / 4.0)
+        for i in range(10):
+            ang = rot + i * (math.pi / 5.0)
+            x1 = cx + int(math.cos(ang) * 34)
+            y1 = cy + int(math.sin(ang) * 8)
+            x2 = cx + int(math.cos(ang) * 54)
+            y2 = cy + int(math.sin(ang) * 13)
+            pygame.draw.line(s, (*c["nether_bright"], base_a - 30),
+                             (x1, y1), (x2, y2), 2)
+        # glyph segitiga kecil (bukan lingkaran) di 4 penjuru
+        for i in range(4):
+            ang = rot * 0.5 + i * (math.pi / 2.0)
+            gx = cx + int(math.cos(ang) * 44)
+            gy = cy + int(math.sin(ang) * 11)
+            pygame.draw.polygon(s, (*c["nether_light"], base_a),
+                                [(gx, gy - 4), (gx + 4, gy + 3),
+                                 (gx - 4, gy + 3)])
+        return s
+
+    @staticmethod
+    def _glow_surf(radius, color):
+        """Glow lembut (mata/orb) — dibangun sekali per radius+warna."""
+        radius = max(1, int(radius))
+        size = radius * 2 + 2
+        s = pygame.Surface((size, size), pygame.SRCALPHA)
+        for r in range(radius, 0, -1):
+            a = int(125 * (1.0 - r / float(radius)) ** 1.6)
+            if a > 0:
+                pygame.draw.circle(s, (*color[:3], min(255, a)),
+                                   (size // 2, size // 2), r)
+        return s
+
+    @staticmethod
     def _target_position(boss, x, y):
+        """Posisi target di ruang jangkar (dengan kompensasi scale).
+
+        Hero di-render ke canvas offscreen lalu di-scale saat blit
+        (heroes/__init__.py), jadi titik canvas harus = (delta dunia)/scale
+        supaya beam/proyektil mendarat TEPAT di target setelah blit.
+        Boss yang digambar langsung di layar tidak terpengaruh (scale = 1).
+        """
         target = getattr(boss, "target", None)
+        scale = float(getattr(boss, "_render_scale", 1.0) or 1.0) or 1.0
         if target is not None and getattr(target, "alive", True):
-            # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
-            scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
-            tx = x + (target.x - getattr(boss, "x", x)) / scale
-            ty = y + (target.y - getattr(boss, "y", y)) / scale
+            tx = x + (float(getattr(target, "x", x))
+                      - float(getattr(boss, "x", x))) / scale
+            ty = y + (float(getattr(target, "y", y))
+                      - float(getattr(boss, "y", y))) / scale
             return int(tx), int(ty)
-        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+        return (int(x + 200.0 / scale * (getattr(boss, "direction", 1) or 1)),
+                int(y))
 
+    # ===================================================================
+    # CONTROLLER ANIMASI
+    #   Atribut state di-simpan di boss dengan prefix `_nx_` (kompatibel
+    #   dengan versi lama):
+    #     _nx_state/_prev/_time/_frame  state machine + prioritas
+    #     _nx_attack_active/_frame/_progress/_phase/_kind/_hit_active
+    #     _nx_skill/_skill_progress/_skill_total
+    #     _nx_moving, _nx_hurt_frames, _nx_death_age, _nx_dt
+    # ===================================================================
+    @staticmethod
+    def _update_nyxara_anim(boss):
+        G = _NS_nyxara
 
-    # ---------------------------------------------------------------------------
-    # Nether particle helpers
-    # ---------------------------------------------------------------------------
-    def _draw_nether_orb(surface, x, y, size, phase, alpha=255):
-        """Draw a glowing nether orb (yellow-green)."""
-        flick = math.sin(phase * 3) * 0.15 + 1.0
-        s = int(size * flick)
-        if s < 1:
-            return
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_darkest"], alpha // 3), (x, y), s + 4)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], alpha // 2), (x, y), s + 2)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], alpha), (x, y), s)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_light"], alpha), (x, y - 1),
-                  max(1, s - 2))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], min(255, alpha)),
-                  (x, y - 2), max(1, s - 4))
-        if s > 3:
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], min(255, alpha)),
-                      (x, y - 2), max(1, s - 6))
-        if s > 5:
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_white"], min(255, alpha)),
-                      (x, y - 2), max(1, s - 8))
+        # ── delta time nyata ─────────────────────────────────────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                          # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_nx_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._nx_last_ms = now
+        boss._nx_dt = dt
 
+        # ── deteksi gerak ────────────────────────────────────────────
+        moving = G._detect_moving(boss)
+        boss._nx_moving = moving
 
-    # ---------------------------------------------------------------------------
-    # PROJECTILE SYSTEM
-    # ---------------------------------------------------------------------------
-    class NetherOrbProjectile:
-        """Basic nether orb - slow bright yellow-green orb."""
-        def __init__(self, sx, sy, tx, ty, speed=5.0):
-            self.x = float(sx)
-            self.y = float(sy)
-            self.tx = float(tx)
-            self.ty = float(ty)
-            self.speed = speed
-            self.alive = True
-            self.age = 0
-            self.trail = []
+        # ── timeline serangan ────────────────────────────────────────
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 42)))
+        timer = int(getattr(boss, "timer", 0))
+        previous = int(getattr(boss, "_nx_prev_timer", 0))
+        active = bool(getattr(boss, "_nx_attack_active", False))
 
-        def update(self):
-            if not self.alive:
-                return
-            self.age += 1
-            dx = self.tx - self.x
-            dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < self.speed + 4:
-                self.alive = False
-                return
-            self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 14:
-                self.trail.pop(0)
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
+        triggered = timer >= cooldown - 1 and previous <= 1
+        if triggered:
+            boss._nx_attack_active = True
+            boss._nx_attack_frame = 0
+            boss._nx_attack_manual = False
+            tgt = getattr(boss, "target", None)
+            if tgt is not None and getattr(tgt, "alive", True):
+                dist = math.hypot(
+                    float(getattr(tgt, "x", 0.0)) - float(getattr(boss, "x", 0.0)),
+                    float(getattr(tgt, "y", 0.0)) - float(getattr(boss, "y", 0.0)))
+            else:
+                dist = 1e9
+            boss._nx_attack_kind = "swing" if dist <= G.MELEE_REACH else "orb"
+            active = True
+        elif active and timer > 0:
+            boss._nx_attack_frame = int(getattr(
+                boss, "_nx_attack_frame", 0)) + 1
+        elif timer <= 0:
+            if active and not getattr(boss, "_nx_attack_manual", False) \
+                    and float(getattr(boss, "_nx_attack_progress", 0.0)) > 0.0:
+                # pemanggil eksternal menggerakkan progress manual (alat
+                # uji) — hormati, tandai manual
+                boss._nx_attack_manual = True
+            elif not getattr(boss, "_nx_attack_manual", False):
+                boss._nx_attack_active = False
+                boss._nx_attack_frame = 0
+                active = False
+            if not active:
+                boss._nx_attack_active = False
+                boss._nx_attack_frame = 0
+        boss._nx_prev_timer = timer
 
-        def draw(self, surface, phase):
-            if not self.alive and self.age < 3:
-                return
-            # Long bright trail
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(40 + i * 14)
-                r = max(1, 7 - (len(self.trail) - i) // 2)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], alpha), (tx, ty), r + 3)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], alpha), (tx, ty), r + 1)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_light"], alpha // 2), (tx, ty), r)
+        frame = int(getattr(boss, "_nx_attack_frame", 0)) if active else 0
+        span = max(1, cooldown - 1)
+        if bool(getattr(boss, "_nx_attack_manual", False)) and active:
+            progress = min(1.0, max(0.0, float(getattr(
+                boss, "_nx_attack_progress", 0.0))))
+            boss._nx_attack_frame = int(round(progress * span))
+        else:
+            progress = min(1.0, frame / float(span)) if active else 0.0
+            boss._nx_attack_progress = progress
 
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                _NS_nyxara._draw_nether_orb(surface, px, py, 8, phase, 250)
-                # Sparks
-                for i in range(4):
-                    angle = phase * 4 + i * math.pi / 2
-                    sx = px + int(math.cos(angle) * 12)
-                    sy = py + int(math.sin(angle) * 12)
-                    _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_hot"], (sx, sy), 1)
-                    _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_white"], (sx, sy), 1)
+        # ── fase + jendela hit ───────────────────────────────────────
+        if not getattr(boss, "_nx_attack_active", False):
+            boss._nx_attack_active = False
+            boss._nx_attack_manual = False
+            active = False
+        boss._nx_attack_phase = G.attack_phase(progress) if active else "NONE"
+        lo, hi = G.ATTACK_ACTIVE_WINDOW
+        boss._nx_hit_active = bool(active and lo <= progress < hi)
 
+        # ── respons kena damage (HURT) ───────────────────────────────
+        hurt = int(getattr(boss, "_nx_hurt_frames", 0))
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash >= 8 and hurt <= 0:
+            hurt = 10
+        boss._nx_hurt_frames = max(0, hurt - 1) if hurt > 0 else 0
 
-    class NetherBlastProjectile:
-        """Q - Larger, faster orb with big impact."""
-        def __init__(self, sx, sy, tx, ty, speed=7.0):
-            self.x = float(sx)
-            self.y = float(sy)
-            self.tx = float(tx)
-            self.ty = float(ty)
-            self.speed = speed
-            self.alive = True
-            self.age = 0
-            self.trail = []
-            self.exploded = False
-            self.explosion_frame = 0
+        # ── skill (active_skill; jalur boss generik: ability -> 'q') ──
+        skill = getattr(boss, "active_skill", None)
+        if skill is None and getattr(boss, "ability_active", False) \
+                and int(getattr(boss, "ability_active_timer", 0) or 0) > 0:
+            skill = "q"
+        if skill is not None:
+            timer_s = int(getattr(boss, "active_skill_timer", 0) or 0)
+            if skill == "q" and getattr(boss, "active_skill", None) is None:
+                timer_s = int(getattr(boss, "ability_active_timer", 0) or 0)
+            total = int(getattr(boss, "_nx_skill_total", 0) or 0)
+            if getattr(boss, "_nx_skill", None) != skill:
+                total = max(timer_s, G.SKILL_DUR.get(skill, 60))
+            boss._nx_skill_total = max(total, timer_s, 1)
+            boss._nx_skill_progress = max(
+                0.0, min(1.0, 1.0 - timer_s / float(boss._nx_skill_total)))
+            boss._nx_skill = skill
+        else:
+            boss._nx_skill = None
+            boss._nx_skill_progress = 0.0
+            boss._nx_skill_total = 0
 
-        def update(self):
-            if self.exploded:
-                self.explosion_frame += 1
-                if self.explosion_frame > 20:
-                    self.alive = False
-                return
-            self.age += 1
-            dx = self.tx - self.x
-            dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < self.speed + 4:
-                self.exploded = True
-                return
-            self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 14:
-                self.trail.pop(0)
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
+        # ── death age ────────────────────────────────────────────────
+        if not getattr(boss, "alive", True):
+            boss._nx_death_age = int(getattr(boss, "_nx_death_age", 0)) + 1
+        else:
+            boss._nx_death_age = 0
 
-        def draw(self, surface, phase):
-            if self.exploded:
-                # Big explosion
-                t = self.explosion_frame / 20
-                radius = int(20 + t * 40)
-                alpha = int(240 * (1 - t))
-                px, py = int(self.tx), int(self.ty)
+        # ── state machine (prioritas) ────────────────────────────────
+        if not getattr(boss, "alive", True):
+            state = "DEATH"
+        elif boss._nx_hurt_frames > 0:
+            state = "HURT"
+        elif skill is not None:
+            state = "SKILL" if skill in ("q", "w") else "SPECIAL"
+        elif active:
+            state = "SWING" if getattr(boss, "_nx_attack_kind",
+                                       "orb") == "swing" else "ATTACK"
+        elif moving:
+            state = "RUN" if getattr(boss, "is_enraged", False) else "WALK"
+        else:
+            state = "IDLE"
+        if state != getattr(boss, "_nx_state", None):
+            boss._nx_state_prev = getattr(boss, "_nx_state", state)
+            boss._nx_state = state
+            boss._nx_state_time = 0
+            boss._nx_state_frame = 0
+        else:
+            boss._nx_state_time = getattr(boss, "_nx_state_time", 0) + dt
+            boss._nx_state_frame = int(getattr(boss, "_nx_state_frame", 0)) + 1
+        return state
 
-                # Multi-ring explosion
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], alpha // 2),
-                          (px, py), radius + 8)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], alpha),
-                          (px, py), radius + 4)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_light"], alpha),
-                          (px, py), radius)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], alpha),
-                          (px, py), max(1, radius - 8))
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], alpha),
-                          (px, py), max(1, radius - 15))
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_white"], alpha),
-                          (px, py), max(1, radius - 22))
-
-                # Ground ring
-                _NS_nyxara._ellipse(surface, (*_NS_nyxara.PALETTE["nether_bright"], alpha),
-                         (px - radius, py + 10 - radius // 4,
-                          radius * 2, radius // 2), 2)
-
-                # Radial sparks
-                for i in range(10):
-                    angle = i * math.pi * 2 / 10 + phase
-                    spark_r = radius + 5
-                    sx = px + int(math.cos(angle) * spark_r)
-                    sy = py + int(math.sin(angle) * spark_r)
-                    _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_hot"], (sx, sy), 2)
-                    _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_white"], (sx, sy), 1)
-                return
-
-            # Trail
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(40 + i * 14)
-                r = max(1, 8 - (len(self.trail) - i) // 2)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], alpha), (tx, ty), r + 3)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], alpha), (tx, ty), r + 1)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_light"], alpha // 2), (tx, ty), r)
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                _NS_nyxara._draw_nether_orb(surface, px, py, 10, phase, 250)
-                # Extra bright core
-                _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_white"], (px, py), 3)
-
-
-    # ---------------------------------------------------------------------------
-    # State management
-    # ---------------------------------------------------------------------------
+    @staticmethod
     def _detect_moving(boss):
+        """Deteksi gerak dari delta posisi (cache 2 frame terakhir)."""
         if not hasattr(boss, "_nx_last_x"):
             boss._nx_last_x = boss.x
             boss._nx_last_y = boss.y
@@ -392,1192 +565,1044 @@ class _NS_nyxara:
         boss._nx_last_y = boss.y
         return dx + dy > 0.3
 
+    # ===================================================================
+    # POSE STATE — satu sumber kebenaran untuk rig DAN semua FX
+    # ===================================================================
+    ACTIONS = ("idle", "walk", "attack", "swing", "cast_q", "cast_w",
+               "cast_e", "cast_r", "hurt", "death")
 
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
-        timer = int(getattr(boss, "timer", 0))
-        previous = int(getattr(boss, "_nx_prev_timer", 0))
-        active = bool(getattr(boss, "_nx_attack_active", False))
+    @staticmethod
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, ap) setelah controller dijalankan."""
+        if not getattr(boss, "alive", True):
+            return ("death", float(getattr(boss, "pulse", 0.0)), 0.0)
+        skill = getattr(boss, "_nx_skill", None)
+        if skill is not None:
+            action = {"q": "cast_q", "w": "cast_w",
+                      "e": "cast_e", "r": "cast_r"}.get(skill, "cast_q")
+            return (action, float(getattr(boss, "pulse", 0.0)),
+                    float(getattr(boss, "_nx_skill_progress", 0.0) or 0.0))
+        if getattr(boss, "_nx_attack_active", False):
+            action = "swing" if getattr(boss, "_nx_attack_kind",
+                                        "orb") == "swing" else "attack"
+            return (action, float(getattr(boss, "pulse", 0.0)),
+                    max(0.0, min(1.0, float(getattr(
+                        boss, "_nx_attack_progress", 0.0)))))
+        if int(getattr(boss, "_nx_hurt_frames", 0)) > 0:
+            return ("hurt", float(getattr(boss, "pulse", 0.0)), 0.0)
+        if moving:
+            return ("walk", float(getattr(boss, "pulse", 0.0)), 0.0)
+        return ("idle", float(getattr(boss, "pulse", 0.0)), 0.0)
 
-        if timer >= cooldown - 1 and previous <= 1:
-            boss._nx_attack_active = True
-            boss._nx_attack_frame = 0
-            active = True
-        elif active:
-            boss._nx_attack_frame = int(getattr(boss, "_nx_attack_frame", 0)) + 1
-            if boss._nx_attack_frame > cooldown:
-                boss._nx_attack_active = False
-                boss._nx_attack_frame = 0
-                active = False
-        elif timer <= 0:
-            boss._nx_attack_active = False
-            boss._nx_attack_frame = 0
-            active = False
+    @staticmethod
+    def pose_of(boss):
+        """Publik: pose tersimpan (dipakai modul FX tanpa efek samping)."""
+        return _NS_nyxara._resolve_pose(
+            boss, bool(getattr(boss, "_nx_moving", False)))
 
-        boss._nx_prev_timer = timer
-        boss._nx_attack_progress = (
-            min(1.0, getattr(boss, "_nx_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
+    @staticmethod
+    def anim_state(boss):
+        """Publik: nama state animasi aktif (IDLE/WALK/.../DEATH)."""
+        return str(getattr(boss, "_nx_state", "IDLE"))
 
+    @staticmethod
+    def attack_kind(boss):
+        return str(getattr(boss, "_nx_attack_kind", "orb"))
 
-    def _manage_projectiles(boss, surface, phase):
-        if not hasattr(boss, "_nx_projectiles"):
-            boss._nx_projectiles = []
-        for proj in boss._nx_projectiles:
-            proj.update()
-            proj.draw(surface, phase)
-        boss._nx_projectiles = [p for p in boss._nx_projectiles
-                                if p.alive or p.age < 8]
+    @staticmethod
+    def body_scale(boss):
+        sc = getattr(boss, "_render_scale", 1.0)
+        try:
+            sc = float(sc)
+        except (TypeError, ValueError):
+            sc = 1.0
+        return sc if sc > 0.01 else 1.0
 
-
-    def _spawn_basic_projectile(boss, x, y):
-        if not hasattr(boss, "_nx_projectiles"):
-            boss._nx_projectiles = []
-        tx, ty = _NS_nyxara._target_position(boss, x, y)
-        sx = x + 22 * getattr(boss, "direction", 1)
-        sy = y - 12
-        boss._nx_projectiles.append(_NS_nyxara.NetherOrbProjectile(sx, sy, tx, ty, speed=5.0))
-
-
-    def _spawn_blast_projectile(boss, x, y):
-        if not hasattr(boss, "_nx_projectiles"):
-            boss._nx_projectiles = []
-        tx, ty = _NS_nyxara._target_position(boss, x, y)
-        sx = x + 22 * getattr(boss, "direction", 1)
-        sy = y - 12
-        boss._nx_projectiles.append(_NS_nyxara.NetherBlastProjectile(sx, sy, tx, ty, speed=6.5))
-
+    @staticmethod
+    def ground_dy(boss):
+        return float(_NS_nyxara.GROUND_DY) * _NS_nyxara.body_scale(boss)
 
     # ===================================================================
-    # MAIN DRAW ENTRY POINT
+    # GEOMETRI TONGKAT — pivot + sudut per pose.
+    # Dipakai renderer (gambar) DAN heroes/nyxara_fx (trail + titik lahir
+    # proyektil) lewat staff_points() — mustahil beda satu frame.
     # ===================================================================
-    def draw_nyxara(surface, boss, x, y):
-        """Entry point."""
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_nyxara._detect_moving(boss)
-        _NS_nyxara._update_attack_anim(boss)
+    @staticmethod
+    def _staff_pivot_local(action, ap, phase, boss=None):
+        """Posisi genggaman (pivot tongkat) ruang lokal, per pose."""
+        G = _NS_nyxara
+        if action == "swing":
+            # langkah kecil ke depan saat mengayun, mundur saat antisipasi
+            if ap < 0.12:
+                t = G._ease_out_cubic(ap / 0.12)
+                return G._lerp_pt((11, -18), (8, -18), t)
+            if ap < 0.30:
+                t = G._ease_out_cubic((ap - 0.12) / 0.18)
+                return G._lerp_pt((8, -18), (7, -21), t)
+            if ap < 0.62:
+                t = G._ease_in_out((ap - 0.30) / 0.32)
+                return G._lerp_pt((7, -21), (16, -12), t)
+            return G._lerp_pt((16, -12), (11, -18),
+                              G._ease_in_out((ap - 0.62) / 0.38))
+        if action == "attack":        # lempar nether orb
+            if ap < 0.32:
+                t = G._ease_out_cubic(ap / 0.32)
+                return G._lerp_pt((10, -17), (7, -23), t)
+            if ap < 0.50:
+                t = G._ease_in_cubic((ap - 0.32) / 0.18)
+                return G._lerp_pt((7, -23), (17, -15), t)
+            return G._lerp_pt((17, -15), (10, -17),
+                              G._ease_in_out((ap - 0.50) / 0.50))
+        if action == "cast_q":        # Nether Blast: tongkat terangkat
+            return (10, -22 - int(math.sin(min(1.0, ap * 1.4) * math.pi) * 5))
+        if action == "cast_w":        # Decrepify: tongkat menunjuk
+            return (7, -24)
+        if action == "cast_e":        # Nether Ward: tancap ke tanah
+            if ap < 0.5:
+                return (13, -24)
+            return (15, -14)
+        if action == "cast_r":        # Life Drain: dua tangan terangkat
+            return (9, -21 - int(math.sin(min(1.0, ap * 1.6) * math.pi) * 6))
+        if action == "hurt":
+            return (6, -16)
+        if action == "death":
+            return (13, -8 + min(1.0, ap + 0.4) * 10)
+        if action == "walk":
+            return (11, -18 + int(math.sin(phase * 2.2) * 2))
+        # idle + fallback: sway pelan
+        return (11, -18 + int(math.sin(phase * 0.8) * 1.5))
 
-        attacking = (
-            getattr(boss, "_nx_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
+    @staticmethod
+    def _staff_angle(action, ap, phase, boss=None):
+        """Sudut gagang tongkat (radian, ruang lokal facing-kanan).
 
-        # ---------- Background layers ----------
-        _NS_nyxara._draw_nether_aura(surface, x, y, pulse)
-        _NS_nyxara._draw_ground_runes(surface, x, y + 38, pulse, active_skill)
+        Swing adalah busur KONTINYU: ANTICIPATION mundur -> WINDUP
+        terangkat -> SWING menyapu cepat -> IMPACT decel -> FOLLOW
+        THROUGH -> RECOVERY kembali.  Tidak ada lompatan sudut.
+        """
+        G = _NS_nyxara
+        rest = G._STAFF_REST + math.sin(phase * 0.8) * 0.05
+        if action == "swing":
+            if ap < 0.12:                       # ANTICIPATION
+                t = G._ease_out_cubic(ap / 0.12)
+                return G._lerp(rest, -1.55, t)
+            if ap < 0.30:                       # WINDUP
+                t = G._ease_out_cubic((ap - 0.12) / 0.18)
+                return G._lerp(-1.55, -2.05, t)
+            if ap < 0.50:                       # SWING (cepat)
+                t = G._ease_in_cubic((ap - 0.30) / 0.20)
+                return G._lerp(-2.05, 0.25, t)
+            if ap < 0.62:                       # IMPACT (decel)
+                t = G._ease_out_cubic((ap - 0.50) / 0.12)
+                return G._lerp(0.25, 0.62, t)
+            if ap < 0.82:                       # FOLLOW THROUGH
+                t = G._ease_in_out((ap - 0.62) / 0.20)
+                return G._lerp(0.62, 0.92, t)
+            # RECOVERY
+            t = G._ease_in_out((ap - 0.82) / 0.18)
+            return G._lerp(0.92, rest, t)
+        if action == "attack":                  # jab lempar orb
+            if ap < 0.32:
+                t = G._ease_out_cubic(ap / 0.32)
+                return G._lerp(rest, -1.85, t)
+            if ap < 0.50:
+                t = G._ease_in_cubic((ap - 0.32) / 0.18)
+                return G._lerp(-1.85, -0.75, t)
+            return G._lerp(-0.75, rest,
+                           G._ease_in_out((ap - 0.50) / 0.50))
+        if action == "cast_e":                  # putar tongkat lalu tancap
+            if ap < 0.55:
+                return rest + ap * (math.pi * 3.0) / 0.55
+            return G._lerp(rest + math.pi * 3.0, -1.05,
+                           G._ease_out_cubic((ap - 0.55) / 0.45))
+        if action == "cast_q":
+            return rest - 0.20 - math.sin(min(1.0, ap * 1.4) * math.pi) * 0.30
+        if action == "cast_w":
+            return -0.35 + math.sin(phase * 2.0) * 0.10
+        if action == "cast_r":
+            return rest - 0.30 + math.sin(phase * 1.4) * 0.08
+        if action == "hurt":
+            return rest + 0.45
+        if action == "death":
+            return rest + min(1.0, ap + 0.4) * 1.9
+        if action == "walk":
+            return rest + math.sin(phase * 2.2) * 0.12
+        return rest + math.sin(phase * 0.8) * 0.05
 
-        # ---------- Skill ground effects ----------
-        if active_skill == "e":
-            _NS_nyxara._draw_nether_ward_ground(surface, boss, x, y, skill_timer, pulse)
+    @staticmethod
+    def staff_points(boss, x, y):
+        """(pivot, tip) pygame.Vector2 ruang LAYAR.
 
-        # ---------- Character body ----------
-        if attacking:
-            _NS_nyxara._draw_nyxara_attack(surface, boss, x, y)
-        elif moving:
-            _NS_nyxara._draw_nyxara_walk(surface, boss, x, y)
-        else:
-            _NS_nyxara._draw_nyxara_idle(surface, boss, x, y)
+        ``tip`` = pusat tengkorak di puncak tongkat.  Dipakai
+        heroes/nyxara_fx (trail ayunan, titik lahir proyektil) dan
+        overlay debug — jembatan satu-satunya ke geometri tongkat.
+        """
+        G = _NS_nyxara
+        action, phase, ap = G.pose_of(boss)
+        facing = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        sc = G.body_scale(boss)
+        p = G._staff_pivot_local(action, ap, phase, boss)
+        th = G._staff_angle(action, ap, phase, boss)
+        head = (p[0] + G.STAFF_SHAFT * math.cos(th),
+                p[1] + G.STAFF_SHAFT * math.sin(th))
+        pivot = pygame.Vector2(x + p[0] * facing * sc, y + p[1] * sc)
+        tip = pygame.Vector2(x + head[0] * facing * sc, y + head[1] * sc)
+        return (pivot, tip)
 
-        # ---------- Projectiles ----------
-        _NS_nyxara._manage_projectiles(boss, surface, pulse)
+    #: Alias kompatibilitas — beberapa alat memakai nama generik.
+    @staticmethod
+    def weapon_points(boss, x, y):
+        return _NS_nyxara.staff_points(boss, x, y)
 
-        # ---------- Skill foreground effects ----------
-        if active_skill == "q":
-            _NS_nyxara._draw_nether_blast_cast(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_nyxara._draw_decrepify(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_nyxara._draw_nether_ward(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_nyxara._draw_life_drain(surface, boss, x, y, skill_timer, pulse)
+    @staticmethod
+    def _swing_hitbox(boss, cx, cy):
+        """Rect hitbox ayunan (ruang canvas, sc=1) saat jendela aktif."""
+        if not getattr(boss, "_nx_hit_active", False):
+            return None
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        reach = int(_NS_nyxara.MELEE_REACH * 0.9)
+        top = int(cy - 42)
+        h = 74
+        left = int(cx) if f > 0 else int(cx) - reach
+        return pygame.Rect(left, top, max(8, reach), max(10, h))
 
+    @staticmethod
+    def _hurtbox(boss, cx, cy):
+        """Hurtbox badan (ruang canvas, sc=1; untuk overlay debug)."""
+        w, h = 44, 70
+        return pygame.Rect(int(cx - w / 2), int(cy - 50), w, h)
 
     # ===================================================================
-    # POSE MODES
+    # GERBANG LAPISAN HIDUP (heroes/nyxara_fx)
+    #   Trail ayunan, partikel, proyektil, skill FX, impact, hit-stop,
+    #   dan screen shake hidup di RUANG LAYAR skala 1:1 supaya tidak
+    #   ikut beku / menyusut bersama sprite cache di lane hero. Kalau
+    #   modulnya tidak ada, owns() False dan renderer menggambar
+    #   fallback canvas sendiri (kehilangan polish, BUKAN efek).
     # ===================================================================
-    def _draw_nyxara_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_nyxara._draw_shadow(surface, x, y + 48)
-        _NS_nyxara._draw_floating_mist(surface, x, y + 35, boss.pulse)
-        _NS_nyxara._draw_nyxara_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+    _LIVE_MOD = None            # None = belum dicari, False = tidak ada
 
+    @staticmethod
+    def _live_module():
+        NS = _NS_nyxara
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import nyxara_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "NYXARA_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
 
-    def _draw_nyxara_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_nyxara._draw_shadow(surface, x + sway, y + 48)
-        _NS_nyxara._draw_floating_mist(surface, x + sway, y + 35, phase, trail=True,
-                            facing=boss.direction)
-        _NS_nyxara._draw_nyxara_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
+    @staticmethod
+    def live_fx_ready():
+        return _NS_nyxara._live_module() is not None
 
-
-    def _draw_nyxara_attack(surface, boss, x, y):
-        progress = getattr(boss, "_nx_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-
-        if 0.28 < progress < 0.35 and not getattr(boss, "_nx_proj_spawned", False):
-            _NS_nyxara._spawn_basic_projectile(boss, x, y)
-            boss._nx_proj_spawned = True
-        if progress < 0.1 or progress > 0.9:
-            boss._nx_proj_spawned = False
-
-        recoil = int(math.sin(progress * math.pi) * 3) * -boss.direction
-        _NS_nyxara._draw_shadow(surface, x + recoil, y + 48)
-        _NS_nyxara._draw_floating_mist(surface, x + recoil, y + 35, boss.pulse, intense=True)
-        _NS_nyxara._draw_nyxara_body(surface, x + recoil, y, boss.direction, boss.pulse,
-                         "attack", progress)
-        _NS_nyxara._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
-
+    @staticmethod
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Pasang/gambar lapisan hidup. Return (mod_untuk_draw, owned)."""
+        NS = _NS_nyxara
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+            if owned and not want_draw:
+                # Lane hero: yang menggambar lapisan hidup adalah
+                # pipeline heroes/__init__. Kalau ternyata TIDAK ada
+                # yang menggambarnya, jangan matikan fallback canvas.
+                checker = getattr(mod, "recently_drawn", None)
+                if checker is not None:
+                    owned = bool(checker(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
 
     # ===================================================================
-    # BODY RENDERING – HD detailed Pugna
+    # OFFSET BADAN per pose (bob napas, lean, flare hem)
     # ===================================================================
-    def _draw_nyxara_body(surface, cx, cy, facing, phase, action,
-                         attack_progress=0):
-        """Main body composition - small, chubby, malformed."""
-        # Skull staff (behind body)
-        _NS_nyxara._draw_skull_staff(surface, cx + facing * 14, cy - 5, facing, phase)
-
-        # Small chubby robe body
-        _NS_nyxara._draw_robe(surface, cx, cy + 5, phase)
-
-        # Torso
-        _NS_nyxara._draw_torso(surface, cx, cy - 8, phase)
-
-        # Cape/collar
-        _NS_nyxara._draw_cape_collar(surface, cx, cy - 12, phase)
-
-        # Arms
+    @staticmethod
+    def _body_offsets(action, ap, phase, boss=None):
+        """(dx, dy, flare) — offset badan relatif jangkar."""
+        G = _NS_nyxara
+        if action == "idle":
+            breathe = math.sin(phase * 0.8)
+            return (0.0, breathe * 2.0, 0.25 + 0.1 * breathe)
+        if action == "walk":
+            step = math.sin(phase * 2.2)
+            return (step * 2.0, -abs(math.sin(phase * 2.2)) * 3.0,
+                    0.55 + 0.2 * abs(step))
+        if action == "swing":
+            if ap < 0.30:
+                t = G._ease_out_cubic(ap / 0.30)
+                return (G._lerp(0, -4, t), -1.0, G._lerp(0.3, 0.9, t))
+            if ap < 0.62:
+                t = G._ease_in_out((ap - 0.30) / 0.32)
+                return (G._lerp(-4, 7, t), 1.0, G._lerp(0.9, 1.5, t))
+            return (G._lerp(7, 0, G._ease_in_out((ap - 0.62) / 0.38)),
+                    0.0, G._lerp(1.5, 0.3, (ap - 0.62) / 0.38))
         if action == "attack":
-            _NS_nyxara._draw_casting_arms(surface, cx, cy - 5, facing, phase, attack_progress)
-        else:
-            _NS_nyxara._draw_idle_arms(surface, cx, cy - 5, facing, phase)
+            if ap < 0.32:
+                return (-2.0, -1.0, 0.6)
+            if ap < 0.50:
+                return (4.0, 0.0, 1.0)
+            return (2.0, 0.0, 0.5)
+        if action == "cast_q":
+            return (0.0, -3.0 * math.sin(min(1.0, ap * 1.4) * math.pi), 1.0)
+        if action == "cast_w":
+            return (1.0, -2.0, 1.2)
+        if action == "cast_e":
+            return (1.0 if ap >= 0.55 else -1.0, -1.0, 1.3)
+        if action == "cast_r":
+            return (0.0, -5.0 * math.sin(min(1.0, ap * 1.6) * math.pi), 1.6)
+        if action == "hurt":
+            return (-4.0, 1.0, 0.4)
+        if action == "death":
+            age = int(getattr(boss, "_nx_death_age", 0) or 0) \
+                if boss is not None else 0
+            return (2.0, min(26.0, age * 0.55), 0.2)
+        return (0.0, 0.0, 0.3)
 
-        # Head with horned crown (small and monstrous)
-        _NS_nyxara._draw_head(surface, cx, cy - 25, facing, phase)
+    # ===================================================================
+    # RIG PIXEL-ART — komposisi berlapis
+    #   SHADOW -> BACK LIMB -> HEM -> TORSO -> ARMOR -> HEAD -> WEAPON
+    #   -> FRONT LIMB -> HIGHLIGHT
+    # ===================================================================
+    @staticmethod
+    def _map(cx, cy, sc, facing, lx, ly):
+        """Peta koordinat lokal -> layar (mirror + snap pixel)."""
+        return (_NS_nyxara._snap(cx + lx * facing * sc),
+                _NS_nyxara._snap(cy + ly * sc))
 
-        # Body particles
-        _NS_nyxara._draw_body_particles(surface, cx, cy, phase)
-
-
-    def _draw_robe(surface, cx, cy, phase):
-        """Small chubby robe."""
-        sway = int(math.sin(phase * 0.7) * 2)
-
-        # Outermost robe - short and wide
-        robe_outer = [
-            (cx - 16, cy),
-            (cx + 16, cy),
-            (cx + 20 + sway, cy + 10),
-            (cx + 18, cy + 22),
-            (cx + 12, cy + 30),
-            (cx + 4, cy + 34),
-            (cx - 4, cy + 34),
-            (cx - 12, cy + 30),
-            (cx - 18, cy + 22),
-            (cx - 20 - sway, cy + 10),
+    @staticmethod
+    def _draw_hem(surface, bx, by, phase, flare, action):
+        """HEM jubah lebar compang-camping (silhouette dasar)."""
+        c = _NS_nyxara.PALETTE
+        sway = math.sin(phase * 1.5) * 2
+        sway2 = math.sin(phase * 0.9 + 1.3) * 2
+        fl = flare * 4
+        pts = [
+            (bx - 19 - fl, by + 2),
+            (bx + 19 + fl, by + 2),
+            (bx + 25 + fl + sway, by + 16),
+            (bx + 23 + sway2, by + 30),
+            (bx + 17, by + 40),
+            # tepi compang: gigi segitiga chunky
+            (bx + 12, by + 34), (bx + 9 + sway2, by + 46),
+            (bx + 4, by + 38), (bx, by + 48 + sway),
+            (bx - 4, by + 38), (bx - 9 + sway2, by + 46),
+            (bx - 12, by + 34), (bx - 17, by + 40),
+            (bx - 23 - sway2, by + 30),
+            (bx - 25 - fl - sway, by + 16),
         ]
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in robe_outer])
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["robe_darkest"], robe_outer)
+        # outline gelap 1px (offset), lalu isi dasar
+        pygame.draw.polygon(surface, c["outline"],
+                            [(px + 2, py + 2) for px, py in pts])
+        pygame.draw.polygon(surface, c["robe_dark"], pts)
 
-        # Mid robe
-        robe_mid = [
-            (cx - 14, cy + 2),
-            (cx + 14, cy + 2),
-            (cx + 17 + sway, cy + 10),
-            (cx + 15, cy + 20),
-            (cx + 10, cy + 27),
-            (cx - 10, cy + 27),
-            (cx - 15, cy + 20),
-            (cx - 17 - sway, cy + 10),
-        ]
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["robe_dark"], robe_mid)
-
-        # Inner
-        robe_inner = [
-            (cx - 11, cy + 4),
-            (cx + 11, cy + 4),
-            (cx + 13 + sway, cy + 10),
-            (cx + 11, cy + 18),
-            (cx + 7, cy + 24),
-            (cx - 7, cy + 24),
-            (cx - 11, cy + 18),
-            (cx - 13 - sway, cy + 10),
-        ]
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["robe_mid"], robe_inner)
-
-        # Vertical fold lines
-        for xoff in (-8, -3, 3, 8):
-            _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["robe_darkest"],
-                    (cx + xoff, cy + 4), (cx + xoff, cy + 24), 1)
-
-        # Nether glow beneath
-        for i in range(5):
-            alpha = 60 - i * 10
-            _NS_nyxara._ellipse(surface, (*_NS_nyxara.PALETTE["nether_mid"], alpha),
-                     (cx - 20 + i * 2, cy + 28 - i, 40 - i * 4, 8))
-
-        # Belt sash - purple/dark
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["leather_dark"], (cx - 14, cy - 1, 28, 5))
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["leather_mid"], (cx - 12, cy, 24, 3))
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["leather_light"], (cx - 10, cy + 1, 20, 1))
-
-        # Belt buckle - green gem
-        pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["gold_dark"], (cx, cy + 1), 4)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["gold_mid"], (cx, cy + 1), 3)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_dark"], (cx, cy + 1), 2)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_bright"], (cx, cy + 1),
-                  max(1, int(2 * pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_hot"], (cx, cy + 1), 1)
-
-
-    def _draw_torso(surface, cx, cy, phase):
-        """Chest section - leather with green symbol."""
-        # Chest area
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["shadow_deep"], [
-            (cx - 12 + 2, cy - 8 + 2), (cx + 12 + 2, cy - 8 + 2),
-            (cx + 13 + 2, cy + 12 + 2), (cx + 4 + 2, cy + 16 + 2),
-            (cx - 4 + 2, cy + 16 + 2), (cx - 13 + 2, cy + 12 + 2),
-        ])
-
-        chest = [
-            (cx - 12, cy - 8), (cx + 12, cy - 8),
-            (cx + 13, cy + 12), (cx + 4, cy + 16),
-            (cx - 4, cy + 16), (cx - 13, cy + 12),
-        ]
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["leather_dark"], chest)
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["leather_mid"], [
-            (cx - 10, cy - 6), (cx + 10, cy - 6),
-            (cx + 11, cy + 10), (cx + 4, cy + 14),
-            (cx - 4, cy + 14), (cx - 11, cy + 10),
-        ])
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["leather_light"], [
-            (cx - 7, cy - 3), (cx + 7, cy - 3),
-            (cx + 8, cy + 7), (cx + 3, cy + 11),
-            (cx - 3, cy + 11), (cx - 8, cy + 7),
-        ])
-
-        # Center green nether symbol/gem (glowing)
-        pulse = math.sin(phase * 2) * 0.3 + 0.7
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_darkest"], (cx, cy + 3), 5)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_dark"], (cx, cy + 3), 4)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_mid"], (cx, cy + 3),
-                  max(1, int(4 * pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_bright"], (cx, cy + 3),
-                  max(1, int(3 * pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_hot"], (cx, cy + 3),
-                  max(1, int(2 * pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_white"], (cx, cy + 3), 1)
-
-        # Gold outline of chest gem
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["gold_mid"], (cx, cy + 3), 5, 1)
-
-        # Gold trim on chest edges
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["gold_dark"], (cx - 12, cy - 8), (cx - 13, cy + 12), 1)
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["gold_dark"], (cx + 12, cy - 8), (cx + 13, cy + 12), 1)
-
-
-    def _draw_cape_collar(surface, cx, cy, phase):
-        """Shoulder pauldrons and collar - horned."""
-        for side in (-1, 1):
-            sx = cx + side * 13
-            # Shadow
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (sx + 2, cy + 2), 8)
-            # Pauldron base
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["robe_darkest"], (sx, cy), 7)
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["robe_dark"], (sx - side, cy - 1), 5)
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["robe_mid"], (sx - side, cy - 2), 3)
-
-            # Small spike on shoulder
-            _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["horn_dark"], [
-                (sx - 2, cy - 5),
-                (sx + 2, cy - 5),
-                (sx + side * 3, cy - 12),
+        # --- shading vertikal: bahu jubah terang -> hem gelap ---------------
+        # Pita horizontal chunky (pixel-art banding) memberi volume pada rok.
+        # Digambar pada layer terpisah lalu di-mask ke siluet hem supaya
+        # tidak pernah bocor keluar polygon.
+        xs = [p[0] for p in pts]
+        ys = [p[1] for p in pts]
+        ox, oy = int(min(xs)) - 2, int(min(ys)) - 2
+        lw = max(1, int(max(xs) - min(xs)) + 5)
+        lh = max(1, int(max(ys) - min(ys)) + 5)
+        layer = pygame.Surface((lw, lh), pygame.SRCALPHA)
+        _bands = (
+            (2,  11, "robe_mid"),
+            (11, 21, "robe_dark"),
+            (21, 32, "robe_dark"),
+            (32, 52, "robe_darkest"),
+        )
+        for y0, y1, key in _bands:
+            w_top = 19 + fl + (y0 * 0.30)
+            w_bot = 19 + fl + (y1 * 0.30)
+            sw_t = sway * (y0 / 30.0)
+            sw_b = sway * (y1 / 30.0)
+            pygame.draw.polygon(layer, c[key], [
+                (bx - w_top + sw_t - ox, by + y0 - oy),
+                (bx + w_top + sw_t - ox, by + y0 - oy),
+                (bx + w_bot + sw_b - ox, by + y1 - oy),
+                (bx - w_bot + sw_b - ox, by + y1 - oy),
             ])
-            _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["horn_mid"], [
-                (sx - 1, cy - 5),
-                (sx + 1, cy - 5),
-                (sx + side * 2, cy - 10),
+        # mask: hanya piksel di dalam siluet hem yang dipertahankan
+        mask = pygame.Surface((lw, lh), pygame.SRCALPHA)
+        pygame.draw.polygon(mask, (255, 255, 255, 255),
+                            [(px - ox, py - oy) for px, py in pts])
+        layer.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+        surface.blit(layer, (ox, oy))
+        pygame.draw.polygon(surface, c["outline"], pts, 1)
+
+        # --- gigi compang bawah: sisi dalam gelap, ujung ter-rim ------------
+        _teeth = ((12, 34, 9, 46), (4, 38, 0, 48), (-4, 38, -9, 46),
+                  (-12, 34, -17, 40))
+        for ax, ay, tx, ty in _teeth:
+            sw = sway2 * 0.5
+            pygame.draw.polygon(surface, c["robe_darkest"], [
+                (bx + ax, by + ay), (bx + tx + sw, by + ty),
+                (bx + (ax + tx) * 0.5 + sw, by + ay + 3),
             ])
-            # Tip highlight
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["horn_light"],
-                      (sx + side * 3, cy - 12), 1)
 
-        # Neck collar (like Pugna's high collar behind head)
-        collar_pts = [
-            (cx - 12, cy - 2),
-            (cx - 14, cy - 8),
-            (cx - 10, cy - 12),
-            (cx, cy - 10),
-            (cx + 10, cy - 12),
-            (cx + 14, cy - 8),
-            (cx + 12, cy - 2),
-        ]
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["robe_darkest"], collar_pts)
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["robe_dark"], [
-            (cx - 10, cy - 3),
-            (cx - 12, cy - 7),
-            (cx - 8, cy - 10),
-            (cx, cy - 8),
-            (cx + 8, cy - 10),
-            (cx + 12, cy - 7),
-            (cx + 10, cy - 3),
-        ])
-        # Collar highlight (points sticking up)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["horn_mid"], (cx - 12, cy - 8), 2)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["horn_mid"], (cx + 12, cy - 8), 2)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["horn_light"], (cx - 12, cy - 8), 1)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["horn_light"], (cx + 12, cy - 8), 1)
+        # --- lipatan jubah (garis vertikal chunky, gelap + highlight) -------
+        for xoff in (-13, -7, -1, 6, 12):
+            top = by + 8
+            bot = by + 30 + math.sin(phase * 1.2 + xoff) * 2
+            sw = sway * 0.55
+            pygame.draw.line(surface, c["robe_darkest"],
+                             (bx + xoff + sw, top), (bx + xoff + sw, bot), 1)
+            pygame.draw.line(surface, c["robe_mid"],
+                             (bx + xoff + 1 + sw, top + 2),
+                             (bx + xoff + 1 + sw, bot - 3), 1)
 
+        # --- rim light nether di kedua tepi ---------------------------------
+        pygame.draw.line(surface, c["robe_high"],
+                         (bx - 17 - fl * 0.7, by + 5),
+                         (bx - 23 - sway, by + 26), 2)
+        pygame.draw.line(surface, c["robe_light"],
+                         (bx + 18 + fl * 0.7, by + 6),
+                         (bx + 23 + sway, by + 24), 1)
 
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Small arms - one holding staff, one free."""
-        sway = math.sin(phase * 0.7) * 1
+    @staticmethod
+    def _draw_torso(surface, bx, by, phase, action):
+        """TORSO gempal + sash + gem nether di dada."""
+        c = _NS_nyxara.PALETTE
+        pygame.draw.polygon(surface, c["outline"], [
+            (bx - 13, by - 25), (bx + 13, by - 25),
+            (bx + 15, by - 11), (bx + 12, by + 4),
+            (bx - 12, by + 4), (bx - 15, by - 11)])
+        pygame.draw.polygon(surface, c["robe_dark"], [
+            (bx - 12, by - 24), (bx + 12, by - 24),
+            (bx + 14, by - 11), (bx + 11, by + 3),
+            (bx - 11, by + 3), (bx - 14, by - 11)])
+        # panel dalam (lebih gelap)
+        pygame.draw.polygon(surface, c["inner_darkest"], [
+            (bx - 8, by - 21), (bx + 8, by - 21),
+            (bx + 9, by - 7), (bx - 9, by - 7)])
+        # kulit dada malformed yang mengintip
+        pygame.draw.rect(surface, c["skin_dark"], (bx - 5, by - 20, 10, 6))
+        pygame.draw.rect(surface, c["skin_mid"], (bx - 4, by - 19, 8, 3))
+        pygame.draw.rect(surface, c["skin_light"], (bx - 3, by - 19, 3, 1))
+        # sash pinggang + trim emas
+        pygame.draw.rect(surface, c["robe_darkest"],
+                         (bx - 15, by - 2, 30, 5))
+        pygame.draw.rect(surface, c["gold_dark"], (bx - 14, by - 1, 28, 1))
+        pygame.draw.rect(surface, c["gold_mid"], (bx - 12, by + 1, 24, 1))
+        # gem nether dada (berdenyut)
+        pulse = 0.65 + 0.35 * math.sin(phase * 3.0)
+        pygame.draw.rect(surface, c["nether_dark"], (bx - 3, by - 15, 6, 6))
+        pygame.draw.rect(surface, c["nether_mid"], (bx - 2, by - 14, 4, 4))
+        if pulse > 0.55:
+            pygame.draw.rect(surface, c["nether_bright"],
+                             (bx - 1, by - 13, 2, 2))
 
-        # Staff arm (facing side)
-        ss_x = cx + facing * 11
-        ss_y = cy + 2
-        se_x = ss_x + facing * 4
-        se_y = cy + 8
-        sh_x = cx + facing * 14  # goes to staff
-        sh_y = cy - 3
-        _NS_nyxara._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_nyxara._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-        # Hand on staff
-        _NS_nyxara._draw_creature_hand(surface, sh_x, sh_y, phase, size=3)
-
-        # Free arm (opposite side)
-        fs_x = cx + (-facing) * 11
-        fs_y = cy + 2
-        fe_x = fs_x + (-facing) * 5
-        fe_y = cy + 8 + int(sway)
-        fh_x = fe_x + (-facing) * 4
-        fh_y = fe_y + 4
-        _NS_nyxara._draw_arm_segment(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_nyxara._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y)
-        _NS_nyxara._draw_hand_glow(surface, fh_x, fh_y, phase, 4)
-
-
-    def _draw_casting_arms(surface, cx, cy, facing, phase, progress):
-        """Casting - free hand extends forward with big orb."""
-        # Staff arm stays holding staff
-        ss_x = cx + facing * 11
-        ss_y = cy + 2
-        se_x = ss_x + facing * 4
-        se_y = cy + 8
-        sh_x = cx + facing * 14
-        sh_y = cy - 3
-        _NS_nyxara._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_nyxara._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-        _NS_nyxara._draw_creature_hand(surface, sh_x, sh_y, phase, size=3)
-
-        # Front casting arm - extends forward toward target
-        fs_x = cx + (-facing) * 11
-        fs_y = cy + 2
-
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = -0.5 * t
-        elif progress < 0.5:
-            t = (progress - 0.3) / 0.2
-            arm_angle = -0.5 + 1.3 * t
-        else:
-            t = (progress - 0.5) / 0.5
-            arm_angle = 0.8 - 0.6 * t
-
-        fe_x = fs_x + int(math.cos(arm_angle) * 10) * facing
-        fe_y = fs_y + int(math.sin(arm_angle) * 10) - 2
-        fh_x = fe_x + int(math.cos(arm_angle) * 8) * facing
-        fh_y = fe_y + int(math.sin(arm_angle) * 8)
-
-        _NS_nyxara._draw_arm_segment(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_nyxara._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y)
-
-        # Big charging orb on hand
-        glow_size = 5 + int(math.sin(progress * math.pi) * 6)
-        _NS_nyxara._draw_hand_glow(surface, fh_x, fh_y, phase, glow_size)
-
-        # Energy sparks
-        if 0.2 < progress < 0.6:
-            intensity = math.sin((progress - 0.2) / 0.4 * math.pi)
-            for i in range(5):
-                angle = phase * 4 + i * math.pi * 2 / 5
-                ex = fh_x + int(math.cos(angle) * 14 * intensity) * facing
-                ey = fh_y + int(math.sin(angle) * 12 * intensity)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], 220), (ex, ey), 2)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], 240), (ex, ey), 1)
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Arm segment - robe sleeve with skin at end."""
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["shadow_deep"],
-                (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 6)
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["robe_darkest"], (x1, y1), (x2, y2), 5)
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["robe_dark"], (x1, y1), (x2, y2), 3)
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["robe_mid"], (x1, y1), (x2, y2), 1)
-
-
-    def _draw_creature_hand(surface, x, y, phase, size=3):
-        """Small green creature hand."""
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["skin_darkest"], (x, y), size + 1)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["skin_dark"], (x, y), size)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["skin_mid"], (x - 1, y - 1), max(1, size - 1))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["skin_light"], (x - 1, y - 1), max(1, size - 2))
-
-
-    def _draw_hand_glow(surface, x, y, phase, size=5):
-        """Glowing hand with nether energy."""
-        pulse = math.sin(phase * 2.0) * 0.3 + 0.7
-        s = int(size * pulse)
-
-        # Hand
-        _NS_nyxara._draw_creature_hand(surface, x, y, phase, size=3)
-
-        # Nether glow
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_darkest"], 100), (x, y), s + 6)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], 150), (x, y), s + 3)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], 200), (x, y), s)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], 220), (x, y), max(1, s - 2))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], 240), (x, y), max(1, s - 4))
-        if s > 4:
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_white"], 250),
-                      (x, y), max(1, s - 6))
-
-        # Sparks orbiting
-        for i in range(3):
-            angle = phase * 3 + i * math.pi * 2 / 3
-            sx = x + int(math.cos(angle) * (s + 4))
-            sy = y + int(math.sin(angle) * (s + 4))
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_hot"], (sx, sy), 1)
-
-
-    def _draw_head(surface, cx, cy, facing, phase):
-        """Monstrous horned green head."""
-        # Neck
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["skin_darkest"], (cx - 4, cy + 8, 8, 6))
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["skin_dark"], (cx - 3, cy + 8, 6, 5))
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["skin_mid"], (cx - 2, cy + 9, 4, 4))
-
-        # Head shape - slightly monstrous, wider than tall
-        # Shadow
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (cx + 2, cy + 2), 11)
-
-        # Skin base
-        head_pts = [
-            (cx - 10, cy - 4),
-            (cx - 9, cy - 8),
-            (cx - 4, cy - 10),
-            (cx + 4, cy - 10),
-            (cx + 9, cy - 8),
-            (cx + 10, cy - 4),
-            (cx + 10, cy + 4),
-            (cx + 6, cy + 9),
-            (cx - 6, cy + 9),
-            (cx - 10, cy + 4),
-        ]
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["skin_darkest"], head_pts)
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["skin_dark"], [
-            (cx - 9, cy - 3),
-            (cx - 8, cy - 7),
-            (cx - 4, cy - 9),
-            (cx + 4, cy - 9),
-            (cx + 8, cy - 7),
-            (cx + 9, cy - 3),
-            (cx + 9, cy + 3),
-            (cx + 5, cy + 8),
-            (cx - 5, cy + 8),
-            (cx - 9, cy + 3),
-        ])
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["skin_mid"], [
-            (cx - 7, cy - 1),
-            (cx - 6, cy - 5),
-            (cx - 3, cy - 7),
-            (cx + 3, cy - 7),
-            (cx + 6, cy - 5),
-            (cx + 7, cy - 1),
-            (cx + 6, cy + 3),
-            (cx + 3, cy + 6),
-            (cx - 3, cy + 6),
-            (cx - 6, cy + 3),
-        ])
-
-        # Highlight
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["skin_light"], (cx - 4, cy - 4), 2)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["skin_shine"], (cx - 4, cy - 5), 1)
-
-        # ===== HORNS (large curved horns from crown) =====
+    @staticmethod
+    def _draw_pauldrons(surface, bx, by, phase, action):
+        """PAULDRON bahu chunky + kerah jubah tinggi (silhouette)."""
+        c = _NS_nyxara.PALETTE
+        lift = 1 if action in ("cast_w", "cast_r") else 0
+        # kerah tinggi di belakang leher
+        pygame.draw.polygon(surface, c["outline"], [
+            (bx - 15, by - 22), (bx - 11, by - 34), (bx + 11, by - 34),
+            (bx + 15, by - 22)])
+        pygame.draw.polygon(surface, c["robe_darkest"], [
+            (bx - 13, by - 23), (bx - 10, by - 33), (bx + 10, by - 33),
+            (bx + 13, by - 23)])
+        pygame.draw.polygon(surface, c["robe_mid"], [
+            (bx - 10, by - 24), (bx - 8, by - 31), (bx + 8, by - 31),
+            (bx + 10, by - 24)])
         for side in (-1, 1):
-            # Main horn
-            horn_pts = [
-                (cx + side * 6, cy - 8),
-                (cx + side * 9, cy - 10),
-                (cx + side * 12, cy - 18),
-                (cx + side * 13, cy - 22),
-                (cx + side * 10, cy - 20),
-                (cx + side * 8, cy - 12),
+            sx = bx + side * 14
+            sy = by - 23 - (lift if side == -1 else 0)
+            pygame.draw.rect(surface, c["outline"], (sx - 7, sy - 4, 15, 10))
+            pygame.draw.rect(surface, c["robe_darkest"], (sx - 6, sy - 3, 13, 8))
+            pygame.draw.rect(surface, c["robe_dark"], (sx - 5, sy - 3, 11, 4))
+            # spike pauldron (silhouette)
+            pygame.draw.polygon(surface, c["robe_mid"], [
+                (sx - side * 6, sy - 3), (sx - side * 10, sy + 1),
+                (sx - side * 5, sy + 3)])
+            # trim emas + pixel highlight
+            pygame.draw.rect(surface, c["gold_dark"], (sx - 6, sy + 4, 13, 1))
+            pygame.draw.rect(surface, c["robe_light"], (sx - 4, sy - 2, 3, 1))
+
+    @staticmethod
+    def _draw_head(surface, bx, by, facing, phase, action):
+        """KEPALA malformed + mahkota bertanduk (silhouette khas Nyxara)."""
+        c = _NS_nyxara.PALETTE
+        tilt = 0
+        if action == "idle":
+            tilt = int(math.sin(phase * 0.8) * 1)
+        elif action == "walk":
+            tilt = int(math.sin(phase * 2.2) * 1.5)
+        elif action == "hurt":
+            tilt = -2
+        elif action == "death":
+            tilt = 4
+        hx, hy = bx + tilt * 0.5, by - 34 + tilt
+
+        # ── TENGKORAK/KEPALA: dome olive lonjong ──────────────────
+        skull = [
+            (hx - 9, hy + 6), (hx - 10, hy - 3), (hx - 6, hy - 10),
+            (hx + 2, hy - 12), (hx + 9, hy - 8), (hx + 10, hy + 1),
+            (hx + 7, hy + 8), (hx - 4, hy + 9),
+        ]
+        pygame.draw.polygon(surface, c["outline"],
+                            [(px + 2, py + 2) for px, py in skull])
+        pygame.draw.polygon(surface, c["skin_darkest"], skull)
+        pygame.draw.polygon(surface, c["skin_dark"], [
+            (hx - 8, hy + 5), (hx - 9, hy - 3), (hx - 5, hy - 9),
+            (hx + 2, hy - 11), (hx + 8, hy - 7), (hx + 9, hy + 1),
+            (hx + 6, hy + 7), (hx - 3, hy + 8)])
+        # band terang di dahi (light dari atas)
+        pygame.draw.polygon(surface, c["skin_mid"], [
+            (hx - 6, hy - 6), (hx + 6, hy - 8), (hx + 7, hy - 2),
+            (hx - 6, hy - 1)])
+        pygame.draw.rect(surface, c["skin_light"], (hx - 4, hy - 7, 6, 2))
+        pygame.draw.rect(surface, c["skin_shine"], (hx - 3, hy - 7, 2, 1))
+
+        # ── MAHKOTA BERTANDUK (2 tanduk besar + 2 kecil) ──────────
+        for side, ln, lift in ((-1, 13, 0), (1, 15, -1)):
+            base_x = hx + side * 7
+            base_y = hy - 6 + lift
+            horn = [
+                (base_x, base_y + 2),
+                (base_x + side * 3, base_y - 3),
+                (base_x + side * 6, base_y - ln + 3),
+                (base_x + side * 3, base_y - ln),
+                (base_x - side * 1, base_y - ln + 5),
+                (base_x - side * 3, base_y - 1),
             ]
-            _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["horn_dark"], horn_pts)
-            _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["horn_mid"], [
-                (cx + side * 7, cy - 8),
-                (cx + side * 9, cy - 10),
-                (cx + side * 11, cy - 17),
-                (cx + side * 12, cy - 20),
-                (cx + side * 10, cy - 18),
-                (cx + side * 8, cy - 11),
-            ])
-            # Highlight on horn
-            _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["horn_light"],
-                    (cx + side * 9, cy - 11),
-                    (cx + side * 12, cy - 20), 1)
-            # Tip
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["horn_high"],
-                      (cx + side * 13, cy - 22), 1)
+            pygame.draw.polygon(surface, c["outline"],
+                                [(px + 1, py + 1) for px, py in horn])
+            pygame.draw.polygon(surface, c["horn_dark"], horn)
+            pygame.draw.polygon(surface, c["horn_mid"], [
+                (base_x + side * 1, base_y),
+                (base_x + side * 4, base_y - ln + 4),
+                (base_x + side * 2, base_y - ln + 1),
+                (base_x - side * 1, base_y - 1)])
+            pygame.draw.line(surface, c["horn_light"],
+                             (base_x + side * 2, base_y - 2),
+                             (base_x + side * 3, base_y - ln + 4), 1)
+            pygame.draw.rect(surface, c["horn_high"],
+                             (base_x + side * 3, base_y - ln + 4, 1, 1))
+        # tanduk kecil tengah (crown ridge)
+        for dx in (-3, 1):
+            pygame.draw.polygon(surface, c["horn_dark"], [
+                (hx + dx, hy - 10), (hx + dx + 3, hy - 10),
+                (hx + dx + 1, hy - 15)])
+            pygame.draw.line(surface, c["horn_mid"],
+                             (hx + dx + 1, hy - 11), (hx + dx + 1, hy - 14), 1)
+        # band mahkota emas
+        pygame.draw.rect(surface, c["gold_dark"], (hx - 8, hy - 6, 17, 3))
+        pygame.draw.rect(surface, c["gold_mid"], (hx - 7, hy - 6, 15, 1))
+        pygame.draw.rect(surface, c["gold_shine"], (hx - 5, hy - 6, 2, 1))
 
-        # Center small horn / crown spike
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["horn_dark"], [
-            (cx - 2, cy - 10),
-            (cx + 2, cy - 10),
-            (cx, cy - 14),
-        ])
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["horn_mid"], [
-            (cx - 1, cy - 10),
-            (cx + 1, cy - 10),
-            (cx, cy - 13),
-        ])
+        # ── MATA nether menyala (selalu hidup, intensitas naik-turun)
+        glow = _NS_nyxara._cached(
+            ("eyeglow", 4),
+            lambda: _NS_nyxara._glow_surf(4, c["nether_mid"]))
+        glow.set_alpha(150)
+        surface.blit(glow, (int(hx) - glow.get_width() // 2,
+                            int(hy) - glow.get_height() // 2))
+        glow.set_alpha(255)
+        eye_pulse = 0.6 + 0.4 * math.sin(phase * 4.0)
+        ex = 1 if facing > 0 else 0
+        pygame.draw.rect(surface, c["shadow_deep"], (hx - 6 + ex, hy - 3, 4, 4))
+        pygame.draw.rect(surface, c["shadow_deep"], (hx + 1 + ex, hy - 3, 4, 4))
+        pygame.draw.rect(surface, c["eye_dark"], (hx - 6 + ex, hy - 2, 3, 3))
+        pygame.draw.rect(surface, c["eye_dark"], (hx + 1 + ex, hy - 2, 3, 3))
+        pygame.draw.rect(surface, c["eye_mid"], (hx - 5 + ex, hy - 2, 2, 2))
+        pygame.draw.rect(surface, c["eye_mid"], (hx + 2 + ex, hy - 2, 2, 2))
+        if eye_pulse > 0.55:
+            pygame.draw.rect(surface, c["eye_bright"], (hx - 5 + ex, hy - 2, 2, 1))
+            pygame.draw.rect(surface, c["eye_bright"], (hx + 2 + ex, hy - 2, 2, 1))
+        if eye_pulse > 0.85:
+            pygame.draw.rect(surface, c["eye_hot"], (hx - 5 + ex, hy - 2, 1, 1))
+            pygame.draw.rect(surface, c["eye_hot"], (hx + 3 + ex, hy - 2, 1, 1))
 
-        # ===== EYES - large glowing nether green =====
-        eye_pulse = math.sin(phase * 2) * 0.2 + 0.8
-
-        # Eye sockets (deep)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (cx - 4, cy - 2), 3)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (cx + 4, cy - 2), 3)
-
-        # Eye glow - very bright yellow-green
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["eye_dark"], (cx - 4, cy - 2),
-                  max(1, int(3 * eye_pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["eye_mid"], (cx - 4, cy - 2),
-                  max(1, int(2 * eye_pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["eye_bright"], (cx - 4, cy - 2),
-                  max(1, int(2 * eye_pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["eye_hot"], (cx - 4, cy - 2), 1)
-
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["eye_dark"], (cx + 4, cy - 2),
-                  max(1, int(3 * eye_pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["eye_mid"], (cx + 4, cy - 2),
-                  max(1, int(2 * eye_pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["eye_bright"], (cx + 4, cy - 2),
-                  max(1, int(2 * eye_pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["eye_hot"], (cx + 4, cy - 2), 1)
-
-        # Eye emission glow (like radiating outward)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["eye_bright"], int(60 * eye_pulse)),
-                  (cx - 4, cy - 2), 5)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["eye_bright"], int(60 * eye_pulse)),
-                  (cx + 4, cy - 2), 5)
-
-        # Mouth - jagged/toothy
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["shadow_deep"], (cx - 4, cy + 3, 8, 3))
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["horn_dark"], (cx - 3, cy + 3, 6, 2))
-
-        # Teeth
-        for i in range(3):
-            tx = cx - 2 + i * 2
-            _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["bone_light"], (tx, cy + 3, 1, 2))
-
-        # Wrinkles/details on skin
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["skin_darkest"],
-                (cx - 6, cy + 1), (cx - 4, cy + 2), 1)
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["skin_darkest"],
-                (cx + 6, cy + 1), (cx + 4, cy + 2), 1)
-
-
-    def _draw_skull_staff(surface, hx, hy, facing, phase):
-        """Skull-topped staff."""
-        # Staff shaft
-        staff_top_x = hx
-        staff_top_y = hy - 30
-        staff_bottom_x = hx + int(math.sin(phase * 0.5) * 1)
-        staff_bottom_y = hy + 22
-
-        # Wood shaft
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["shadow_deep"],
-                (staff_top_x + 2, staff_top_y + 2),
-                (staff_bottom_x + 2, staff_bottom_y + 2), 5)
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["wood_dark"],
-                (staff_top_x, staff_top_y),
-                (staff_bottom_x, staff_bottom_y), 4)
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["wood_mid"],
-                (staff_top_x, staff_top_y),
-                (staff_bottom_x, staff_bottom_y), 3)
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["wood_light"],
-                (staff_top_x - 1, staff_top_y),
-                (staff_bottom_x - 1, staff_bottom_y), 1)
-
-        # Wood binding rings
-        for i in range(2):
-            yoff = staff_top_y + 8 + i * 20
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["leather_dark"], (staff_top_x, yoff), 3)
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["leather_mid"], (staff_top_x, yoff), 2)
-
-        # ===== SKULL AT TOP =====
-        skull_x = staff_top_x
-        skull_y = staff_top_y - 5
-
-        # Skull glow aura
-        glow_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], int(100 * glow_pulse)),
-                  (skull_x, skull_y), 12)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], int(80 * glow_pulse)),
-                  (skull_x, skull_y), 10)
-
-        # Skull dome
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (skull_x + 1, skull_y + 1), 8)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["bone_dark"], (skull_x, skull_y), 7)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["bone_mid"], (skull_x - 1, skull_y - 1), 6)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["bone_light"], (skull_x - 2, skull_y - 2), 3)
-
-        # Nether green glowing eye sockets
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (skull_x - 2, skull_y - 1), 2)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (skull_x + 2, skull_y - 1), 2)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_mid"], (skull_x - 2, skull_y - 1),
-                  max(1, int(2 * glow_pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_bright"], (skull_x - 2, skull_y - 1), 1)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_mid"], (skull_x + 2, skull_y - 1),
-                  max(1, int(2 * glow_pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_bright"], (skull_x + 2, skull_y - 1), 1)
-
-        # Nose
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["shadow_deep"], [
-            (skull_x, skull_y + 1), (skull_x - 1, skull_y + 3),
-            (skull_x + 1, skull_y + 3)
-        ])
-
-        # Jaw
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["bone_dark"], (skull_x - 4, skull_y + 5, 8, 3))
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["bone_mid"], (skull_x - 3, skull_y + 5, 6, 2))
-        # Teeth
-        for i in range(3):
-            tx = skull_x - 2 + i * 2
-            _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["shadow_deep"], (tx, skull_y + 6, 1, 2))
-
-        # Skull top bright glow
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], int(200 * glow_pulse)),
-                  (skull_x, skull_y - 5), int(3 * glow_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_white"], int(220 * glow_pulse)),
-                  (skull_x, skull_y - 5), max(1, int(2 * glow_pulse)))
-
-        # ===== BOTTOM STAFF TIP =====
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["horn_dark"],
-                  (staff_bottom_x, staff_bottom_y + 2), 3)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["horn_mid"],
-                  (staff_bottom_x, staff_bottom_y + 2), 2)
-        # Green gem tip
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_bright"],
-                  (staff_bottom_x, staff_bottom_y + 4), 2)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_hot"],
-                  (staff_bottom_x, staff_bottom_y + 4), 1)
-
-
-    def _draw_body_particles(surface, cx, cy, phase):
-        """Nether particles floating around body."""
-        for i in range(8):
-            angle = phase * 0.4 + i * math.pi / 4
-            radius = 26 + int(math.sin(phase * 0.7 + i) * 6)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-            alpha = int(140 + math.sin(phase + i * 0.7) * 60)
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], alpha), (px, py), 2)
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], alpha // 2), (px, py), 1)
-
-        # Rising embers
+        # ── mulut bergigi (chunky) ────────────────────────────────
+        pygame.draw.rect(surface, c["shadow_deep"], (hx - 5, hy + 3, 11, 3))
         for i in range(4):
-            t = ((phase * 0.4 + i * 0.25) % 1.0)
-            px = cx + int(math.sin(phase + i) * 15) + (i - 1) * 4
-            py = cy + 20 - int(t * 50)
-            alpha = int(200 * (1 - t))
-            if alpha > 0:
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_light"], alpha), (px, py), 1)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], alpha), (px, py - 1), 1)
+            pygame.draw.rect(surface, c["bone_light"],
+                             (hx - 4 + i * 3, hy + 3, 1, 2))
+        # rim light tepi kanan kepala
+        pygame.draw.line(surface, c["skin_light"],
+                         (hx + 9, hy - 6), (hx + 8, hy + 4), 1)
 
+    @staticmethod
+    def _draw_staff_at(surface, bx, by, sc, facing, angle, pivot, glow_k,
+                       phase):
+        """TONGKAT: gagang kayu + tengkorak nether bercahaya di puncak.
 
-    # ===================================================================
-    # FLOATING EFFECTS
-    # ===================================================================
-    def _draw_floating_mist(surface, cx, cy, phase, trail=False,
-                           facing=1, intense=False):
-        """Nether mist below floating Nyxara."""
-        strength = 1.5 if intense else 1.0
+        glow_k 0..1 mengatur intensitas cahaya nether di kepala tongkat.
+        """
+        G = _NS_nyxara
+        c = G.PALETTE
+        P = lambda lx, ly: G._map(bx, by, sc, facing, lx, ly)  # noqa: E731
+        head = (pivot[0] + G.STAFF_SHAFT * math.cos(angle),
+                pivot[1] + G.STAFF_SHAFT * math.sin(angle))
+        butt = (pivot[0] - G.STAFF_BUTT * math.cos(angle),
+                pivot[1] - G.STAFF_BUTT * math.sin(angle))
+        p_head = P(head[0], head[1])
+        p_butt = P(butt[0], butt[1])
+        w_shaft = max(2, int(5 * sc))
 
-        # Base mist
-        mist = pygame.Surface((120, 40), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(32, 3, -4):
-            alpha = int((32 - radius) * 2.5 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_nyxara.PALETTE["nether_darkest"], min(255, alpha)),
-                    (60 - radius * 2, 20 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 60, cy - 10))
-
-        # Rising green wisps
-        for i, offset in enumerate((-20, -8, 8, 20)):
-            t = (phase * 0.5 + i * 0.25) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 24)
-            alpha = max(0, min(255, int(200 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], alpha), (sx, sy), 5)
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], alpha), (sx, sy - 2), 3)
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], min(255, alpha)),
-                      (sx, sy - 3), 1)
-
-        # Orbiting orbs
-        for i in range(5):
-            angle = phase * 0.9 + i * math.pi * 2 / 5
-            r = 22 + int(math.sin(phase + i * 1.3) * 4)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 6)
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_mid"], (sx, sy), 3)
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_light"], (sx, sy), 2)
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_hot"], (sx, sy), 1)
-
-        if trail:
-            for i in range(5):
-                sx = cx - (i + 1) * 11 * facing
-                sy = cy + int(math.sin(phase + i) * 2)
-                alpha = max(0, 130 - i * 22)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], alpha),
-                          (sx, sy), max(2, 5 - i))
-
-
-    def _draw_shadow(surface, x, y):
-        """Ground shadow."""
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_nyxara.PALETTE["nether_darkest"], 60), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
-
-
-    def _draw_nether_aura(surface, x, y, phase):
-        """Background nether aura."""
-        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(72, 5, -4):
-            alpha = int((72 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_nyxara._aacircle(aura, (*_NS_nyxara.PALETTE["nether_darkest"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
-
-
-    def _draw_ground_runes(surface, x, y, phase, skill):
-        """Green nether runes on ground."""
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_nyxara.PALETTE["nether_dark"], 140),
-                            (5, 10, 120, 24), 3)
-        pygame.draw.ellipse(ring, (*_NS_nyxara.PALETTE["nether_mid"], 170),
-                            (20, 14, 90, 16), 2)
-
-        for i in range(10):
-            angle = phase * 0.2 + i * math.pi / 5
-            x1 = 65 + int(math.cos(angle) * 30)
-            y1 = 22 + int(math.sin(angle) * 6)
-            x2 = 65 + int(math.cos(angle) * 55)
-            y2 = 22 + int(math.sin(angle) * 10)
-            pygame.draw.line(ring, (*_NS_nyxara.PALETTE["nether_bright"], 160),
-                             (x1, y1), (x2, y2), 1)
-
-        if skill:
-            pygame.draw.ellipse(ring, (*_NS_nyxara.PALETTE["nether_hot"], int(80 * pulse)),
-                                (15, 8, 100, 28), 1)
-
-        surface.blit(ring, (x - 65, y - 22))
-
-
-    def _draw_cast_flash(surface, x, y, facing, progress):
-        """Flash effect during ranged attack."""
-        if progress < 0.2 or progress > 0.65:
-            return
-        t = (progress - 0.2) / 0.45
-        intensity = math.sin(t * math.pi)
-
-        flash_x = x + (-facing) * 22  # free hand side
-        flash_y = y - 5
-
-        alpha = int(200 * intensity)
-        radius = int(8 + intensity * 15)
-
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], alpha // 2),
-                  (flash_x, flash_y), radius + 8)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], alpha),
-                  (flash_x, flash_y), radius)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], alpha),
-                  (flash_x, flash_y), radius // 2)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], min(255, alpha)),
-                  (flash_x, flash_y), max(1, radius // 4))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_white"], min(255, alpha)),
-                  (flash_x, flash_y), max(1, radius // 6))
-
-
-    # ===================================================================
-    # SKILL Q: NETHER BLAST - Large orb explosion
-    # ===================================================================
-    def _draw_nether_blast_cast(surface, boss, x, y, timer, phase):
-        """Launch nether blast projectile."""
-        if not getattr(boss, "_nx_blast_spawned", False):
-            _NS_nyxara._spawn_blast_projectile(boss, x, y)
-            boss._nx_blast_spawned = True
-
-        if timer <= 5:
-            boss._nx_blast_spawned = False
-
-        # Big charge glow at hand
-        hand_x = x + boss.direction * 24
-        hand_y = y - 5
-        pulse = math.sin(phase * 4) * 0.3 + 0.7
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], 150),
-                  (hand_x, hand_y), int(14 * pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], 200),
-                  (hand_x, hand_y), int(10 * pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], 230),
-                  (hand_x, hand_y), int(6 * pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], 250),
-                  (hand_x, hand_y), max(1, int(4 * pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_white"],
-                  (hand_x, hand_y), max(1, int(2 * pulse)))
-
-
-    # ===================================================================
-    # SKILL W: DECREPIFY - Beam that debuffs target
-    # ===================================================================
-    def _draw_decrepify(surface, boss, x, y, timer, phase):
-        """Green beam applying decrepify to target."""
-        tx, ty = _NS_nyxara._target_position(boss, x, y)
-        hand_x = x + boss.direction * 22
-        hand_y = y - 8
-
-        # Main beam - thin and precise
-        _NS_nyxara._draw_beam(surface, hand_x, hand_y, tx, ty, phase, color_key="nether")
-
-        # Impact at target - green skull-like effect
-        impact_pulse = math.sin(phase * 5) * 0.3 + 0.7
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], 150),
-                  (tx, ty), int(14 * impact_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], 200),
-                  (tx, ty), int(10 * impact_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], 230),
-                  (tx, ty), int(6 * impact_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], 250),
-                  (tx, ty), max(1, int(3 * impact_pulse)))
-
-        # Small skull hovering above target (Decrepify icon)
-        skull_bob = int(math.sin(phase * 3) * 2)
-        _NS_nyxara._draw_small_skull_icon(surface, tx, ty - 25 + skull_bob, phase)
-
-        # Green particles around target (debuff visual)
-        for i in range(6):
-            angle = phase * 2 + i * math.pi / 3
-            r = 18 + int(math.sin(phase + i) * 3)
-            px = tx + int(math.cos(angle) * r)
-            py = ty + int(math.sin(angle) * r * 0.6)
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_light"], 200), (px, py), 2)
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], 220), (px, py), 1)
-
-
-    def _draw_beam(surface, sx, sy, tx, ty, phase, color_key="nether"):
-        """Draw a bright energy beam."""
-        dx = tx - sx
-        dy = ty - sy
-        dist = math.sqrt(dx * dx + dy * dy) or 1
-
-        # Outer glow (thick)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE[f"{color_key}_dark"], 100), (sx, sy), (tx, ty), 8)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE[f"{color_key}_mid"], 150), (sx, sy), (tx, ty), 5)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE[f"{color_key}_light"], 200), (sx, sy), (tx, ty), 3)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE[f"{color_key}_bright"], 240), (sx, sy), (tx, ty), 2)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE[f"{color_key}_hot"], 250), (sx, sy), (tx, ty), 1)
-
-        # Bright particles along beam
-        segments = int(dist / 12)
-        for i in range(segments):
-            t = (phase * 0.3 + i * 0.1) % 1.0
-            px = int(sx + dx * t)
-            py = int(sy + dy * t)
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE[f"{color_key}_bright"], (px, py), 2)
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE[f"{color_key}_hot"], (px, py), 1)
-
-
-    def _draw_small_skull_icon(surface, cx, cy, phase):
-        """Small floating skull icon (for Decrepify indicator)."""
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], 150), (cx, cy), 10)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], 180), (cx, cy), 8)
-        # Skull
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["bone_dark"], (cx, cy - 1), 5)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["bone_mid"], (cx - 1, cy - 2), 4)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["bone_light"], (cx - 1, cy - 3), 2)
-        # Eyes
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (cx - 2, cy - 1), 1)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (cx + 2, cy - 1), 1)
-        pulse = math.sin(phase * 3) * 0.3 + 0.7
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_bright"], (cx - 2, cy - 1), 1)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_bright"], (cx + 2, cy - 1), 1)
-        # Jaw
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["bone_dark"], (cx - 2, cy + 3, 4, 2))
-        for i in range(2):
-            tx = cx - 1 + i * 2
-            _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["shadow_deep"], (tx, cy + 4, 1, 1))
-
-
-    # ===================================================================
-    # SKILL E: NETHER WARD - Summon skull ward
-    # ===================================================================
-    def _draw_nether_ward_ground(surface, boss, x, y, timer, phase):
-        """Ward's ground indicator."""
-        progress = max(0.0, min(1.0, 1 - timer / 150))
-        facing = boss.direction
-
-        # Ward placed to the side of Nyxara
-        ward_x = x + facing * 50
-        ward_y = y + 35
-
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-        radius = int(20 + progress * 10)
-
-        _NS_nyxara._ellipse(surface, (*_NS_nyxara.PALETTE["nether_dark"], int(150 * pulse)),
-                 (ward_x - radius, ward_y - radius // 4,
-                  radius * 2, radius // 2), 3)
-        _NS_nyxara._ellipse(surface, (*_NS_nyxara.PALETTE["nether_mid"], int(120 * pulse)),
-                 (ward_x - radius + 3, ward_y - radius // 4 + 2,
-                  radius * 2 - 6, radius // 2 - 4), 2)
-
-
-    def _draw_nether_ward(surface, boss, x, y, timer, phase):
-        """Skull ward standing/floating."""
-        progress = max(0.0, min(1.0, 1 - timer / 150))
-        facing = boss.direction
-
-        # Ward position (in front of Nyxara)
-        ward_x = x + facing * 50
-        ward_y = y
-
-        # Rising animation for first 20% of skill
-        if progress < 0.2:
-            rise = progress / 0.2
-            ward_y = int(y + (1 - rise) * 20)
-            alpha = int(255 * rise)
-        else:
-            # Bobbing
-            ward_y = y + int(math.sin(phase * 1.5) * 2)
-            alpha = 255
-
-        # Ward body - a totem with skull
-        # Wooden/dark stake going into ground
-        stake_top_y = ward_y - 5
-        stake_bot_y = ward_y + 20
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["shadow_deep"],
-                (ward_x + 1, stake_top_y), (ward_x + 1, stake_bot_y), 4)
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["wood_dark"],
-                (ward_x, stake_top_y), (ward_x, stake_bot_y), 3)
-        _NS_nyxara._aaline(surface, _NS_nyxara.PALETTE["wood_mid"],
-                (ward_x, stake_top_y), (ward_x, stake_bot_y), 2)
-
-        # Skull on top of stake
-        skull_x = ward_x
-        skull_y = ward_y - 12
-
-        # Big glow aura around ward
-        glow_pulse = math.sin(phase * 3) * 0.3 + 0.7
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_darkest"], int(120 * glow_pulse)),
-                  (skull_x, skull_y), 18)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], int(100 * glow_pulse)),
-                  (skull_x, skull_y), 14)
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], int(80 * glow_pulse)),
-                  (skull_x, skull_y), 10)
-
-        # Skull
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"],
-                  (skull_x + 1, skull_y + 1), 8)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["bone_dark"], (skull_x, skull_y), 7)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["bone_mid"], (skull_x - 1, skull_y - 1), 6)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["bone_light"], (skull_x - 2, skull_y - 2), 3)
-
-        # Glowing eye sockets
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (skull_x - 2, skull_y - 1), 2)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["shadow_deep"], (skull_x + 2, skull_y - 1), 2)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_bright"], (skull_x - 2, skull_y - 1),
-                  max(1, int(2 * glow_pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_hot"], (skull_x - 2, skull_y - 1), 1)
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_bright"], (skull_x + 2, skull_y - 1),
-                  max(1, int(2 * glow_pulse)))
-        _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_hot"], (skull_x + 2, skull_y - 1), 1)
-
-        # Nose
-        _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["shadow_deep"], [
-            (skull_x, skull_y + 1), (skull_x - 1, skull_y + 3),
-            (skull_x + 1, skull_y + 3)
-        ])
-
-        # Jaw
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["bone_dark"], (skull_x - 4, skull_y + 5, 8, 3))
-        _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["bone_mid"], (skull_x - 3, skull_y + 5, 6, 2))
-        # Teeth
+        # ── gagang: outline + kayu 3 band ─────────────────────────
+        pygame.draw.line(surface, c["outline"],
+                         (p_butt[0] + 1, p_butt[1] + 1),
+                         (p_head[0] + 1, p_head[1] + 1), w_shaft + 2)
+        pygame.draw.line(surface, c["wood_dark"], p_butt, p_head, w_shaft)
+        pygame.draw.line(surface, c["wood_mid"], p_butt, p_head,
+                         max(1, w_shaft - 2))
+        pygame.draw.line(surface, c["wood_light"],
+                         (p_butt[0], p_butt[1] - 1),
+                         (p_head[0], p_head[1] - 1), 1)
+        # bungkus emas di gagang (3 titik chunky)
         for i in range(3):
-            tx = skull_x - 2 + i * 2
-            _NS_nyxara._rect(surface, _NS_nyxara.PALETTE["shadow_deep"], (tx, skull_y + 6, 1, 2))
+            t = 0.28 + i * 0.14
+            gp = P(butt[0] + (head[0] - butt[0]) * t,
+                   butt[1] + (head[1] - butt[1]) * t)
+            pygame.draw.rect(surface, c["gold_dark"], (gp[0] - 1, gp[1] - 1, 3, 3))
+            pygame.draw.rect(surface, c["gold_mid"], (gp[0] - 1, gp[1] - 1, 2, 1))
 
-        # Small horns/spikes on skull sides
-        for side in (-1, 1):
-            _NS_nyxara._poly(surface, _NS_nyxara.PALETTE["horn_dark"], [
-                (skull_x + side * 5, skull_y - 3),
-                (skull_x + side * 7, skull_y - 2),
-                (skull_x + side * 9, skull_y - 6),
-            ])
+        # ── CAKAR penyangga (4 taring emas memeluk tengkorak) ─────
+        for k in (-1, 1):
+            a = angle + k * 0.55
+            c0 = P(head[0] - math.cos(angle) * 7.0,
+                   head[1] - math.sin(angle) * 7.0)
+            c1 = P(head[0] - math.cos(angle) * 7.0 + math.cos(a) * 9.0,
+                   head[1] - math.sin(angle) * 7.0 + math.sin(a) * 9.0)
+            pygame.draw.line(surface, c["outline"],
+                             (c0[0] + 1, c0[1] + 1), (c1[0] + 1, c1[1] + 1), 4)
+            pygame.draw.line(surface, c["gold_dark"], c0, c1, 3)
+            pygame.draw.line(surface, c["gold_mid"], c0, c1, 1)
 
-        # Base circle glow
-        _NS_nyxara._ellipse(surface, (*_NS_nyxara.PALETTE["nether_bright"], int(150 * glow_pulse)),
-                 (ward_x - 12, ward_y + 20 - 3, 24, 6))
-        _NS_nyxara._ellipse(surface, (*_NS_nyxara.PALETTE["nether_hot"], int(200 * glow_pulse)),
-                 (ward_x - 8, ward_y + 20 - 2, 16, 4))
+        # ── GLOW nether di sekitar tengkorak ──────────────────────
+        gr = int(9 + 7 * max(0.0, min(1.0, glow_k)))
+        halo = G._cached(("staffglow", gr),
+                         lambda r=gr: G._glow_surf(r, c["nether_mid"]))
+        gpulse = 0.55 + 0.45 * math.sin(phase * 5.0)
+        halo.set_alpha(int(200 * gpulse * max(0.35, glow_k)))
+        surface.blit(halo, (p_head[0] - halo.get_width() // 2,
+                            p_head[1] - halo.get_height() // 2))
+        halo.set_alpha(255)
 
-        # Ward is attacking - draw beams to target
-        tx, ty = _NS_nyxara._target_position(boss, x, y)
-        # Check if beam should fire (periodic)
-        beam_active = (int(phase * 3) % 3) < 2  # Fires 2/3 of the time
-        if beam_active:
-            # Beam from skull mouth to target
-            _NS_nyxara._draw_beam(surface, skull_x, skull_y + 6, tx, ty, phase,
-                      color_key="nether")
-            # Impact on target
-            impact_r = int(6 + math.sin(phase * 5) * 2)
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], 200), (tx, ty), impact_r + 3)
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], 230), (tx, ty), impact_r)
-            _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], 250),
-                      (tx, ty), max(1, impact_r - 2))
+        # ── TENGKORAK di puncak (chunky pixel) ────────────────────
+        r = max(3, int(G.STAFF_SKULL_R * sc))
+        hx0, hy0 = p_head
+        pygame.draw.circle(surface, c["outline"], (hx0, hy0), r + 1)
+        pygame.draw.circle(surface, c["bone_dark"], (hx0, hy0), r)
+        pygame.draw.circle(surface, c["bone_mid"], (hx0 - 1, hy0 - 1), r - 1)
+        pygame.draw.rect(surface, c["bone_light"], (hx0 - 3, hy0 - r, 3, 2))
+        # rahang
+        pygame.draw.rect(surface, c["bone_dark"], (hx0 - 3, hy0 + r - 2, 7, 3))
+        pygame.draw.rect(surface, c["bone_mid"], (hx0 - 3, hy0 + r - 2, 7, 1))
+        for i in range(3):
+            pygame.draw.rect(surface, c["shadow_deep"],
+                             (hx0 - 3 + i * 3, hy0 + r - 2, 1, 2))
+        # socket mata nether
+        pygame.draw.rect(surface, c["shadow_deep"], (hx0 - 3, hy0 - 2, 3, 3))
+        pygame.draw.rect(surface, c["shadow_deep"], (hx0 + 1, hy0 - 2, 3, 3))
+        eye_col = c["nether_bright"] if gpulse > 0.55 else c["nether_mid"]
+        pygame.draw.rect(surface, eye_col, (hx0 - 3, hy0 - 1, 2, 2))
+        pygame.draw.rect(surface, eye_col, (hx0 + 1, hy0 - 1, 2, 2))
+        if glow_k > 0.6 and gpulse > 0.8:
+            pygame.draw.rect(surface, c["nether_hot"], (hx0 - 2, hy0 - 1, 1, 1))
+            pygame.draw.rect(surface, c["nether_hot"], (hx0 + 2, hy0 - 1, 1, 1))
 
-        # Rising particles from ward
-        for i in range(5):
-            t = ((phase * 0.6 + i * 0.2) % 1.0)
-            px = ward_x + int(math.sin(phase + i) * 8)
-            py = ward_y - int(t * 30)
-            alpha = int(200 * (1 - t))
-            if alpha > 0:
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_light"], alpha), (px, py), 1)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], alpha), (px, py - 1), 1)
+        # ── percikan orbit di sekitar tengkorak saat cast/swing ───
+        if glow_k > 0.35:
+            for i in range(3):
+                a = phase * 5.0 + i * (math.tau / 3.0)
+                spx = hx0 + int(math.cos(a) * (r + 5))
+                spy = hy0 + int(math.sin(a) * (r + 5))
+                pygame.draw.rect(surface, c["nether_light"], (spx, spy, 2, 2))
+                pygame.draw.rect(surface, c["nether_hot"], (spx, spy, 1, 1))
 
+    @staticmethod
+    def _draw_arms(surface, bx, by, sc, facing, action, ap, phase, pivot):
+        """Lengan jubah (sleeve chunky 2 segmen) + tangan cakar."""
+        G = _NS_nyxara
+        c = G.PALETTE
+        P = lambda lx, ly: G._map(bx, by, sc, facing, lx, ly)  # noqa: E731
+
+        def sleeve(p_from, p_to, width):
+            a = P(*p_from)
+            b = P(*p_to)
+            pygame.draw.line(surface, c["outline"],
+                             (a[0] + 1, a[1] + 1), (b[0] + 1, b[1] + 1),
+                             width + 2)
+            pygame.draw.line(surface, c["robe_darkest"], a, b, width)
+            pygame.draw.line(surface, c["robe_dark"], a, b, max(1, width - 2))
+            pygame.draw.line(surface, c["robe_mid"],
+                             (a[0], a[1] - 1), (b[0], b[1] - 1), 1)
+
+        def claw_hand(p_xy, spread=1.0):
+            h = P(*p_xy)
+            pygame.draw.circle(surface, c["outline"], h, max(3, int(3 * sc)))
+            pygame.draw.circle(surface, c["skin_dark"], h, max(2, int(2.5 * sc)))
+            pygame.draw.circle(surface, c["skin_mid"],
+                               (h[0] - 1, h[1] - 1), max(1, int(1.5 * sc)))
+            # 3 cakar pendek
+            for k in (-1, 0, 1):
+                cx2 = h[0] + int(k * 3 * spread)
+                pygame.draw.rect(surface, c["bone_light"],
+                                 (cx2, h[1] + 2, 1, 2))
+
+        # ── lengan TONGKAT (memegang pivot) ───────────────────────
+        shoulder = (pivot[0] - 7, pivot[1] + 10)
+        elbow = (pivot[0] - 3, pivot[1] + 4)
+        sleeve(shoulder, elbow, max(3, int(5 * sc)))
+        sleeve(elbow, pivot, max(3, int(4 * sc)))
+        claw_hand(pivot, 0.8)
+
+        # ── lengan BEBAS (pengatur sihir) ─────────────────────────
+        if action == "attack":
+            if ap < 0.32:
+                t = G._ease_out_cubic(ap / 0.32)
+                free_to = G._lerp_pt((-14, -8), (-6, -17), t)
+            elif ap < 0.50:
+                t = G._ease_in_cubic((ap - 0.32) / 0.18)
+                free_to = G._lerp_pt((-6, -17), (17, -13), t)
+            else:
+                t = G._ease_in_out((ap - 0.50) / 0.50)
+                free_to = G._lerp_pt((17, -13), (-14, -8), t)
+        elif action == "swing":
+            if ap < 0.30:
+                free_to = (-5, -24)
+            elif ap < 0.62:
+                free_to = (6, -6)
+            else:
+                free_to = (-12, -10)
+        elif action in ("cast_q", "cast_w"):
+            free_to = (14, -20 - int(math.sin(phase * 3.0) * 2))
+        elif action == "cast_e":
+            free_to = (14, -20) if ap >= 0.55 else (-12, -20)
+        elif action == "cast_r":
+            free_to = (13, -24 - int(math.sin(phase * 2.4) * 2))
+        elif action == "hurt":
+            free_to = (-15, -12)
+        elif action == "death":
+            free_to = (-6, -2)
+        elif action == "walk":
+            free_to = (-13, -10 + int(math.sin(phase * 2.2) * 2))
+        else:
+            free_to = (-14, -9 + int(math.sin(phase * 0.9) * 1.5))
+        f_shoulder = (-11, -16)
+        f_elbow = G._lerp_pt(f_shoulder, free_to, 0.55)
+        sleeve(f_shoulder, f_elbow, max(3, int(4 * sc)))
+        sleeve(f_elbow, free_to, max(2, int(3 * sc)))
+        claw_hand(free_to)
+
+        # ── glow tangan saat cast / rilis orb ─────────────────────
+        charging = (action == "attack" and 0.20 <= ap <= 0.55) or \
+                   action in ("cast_q", "cast_w", "cast_e", "cast_r")
+        if charging:
+            hp = P(*free_to)
+            k = math.sin(ap * math.pi) if action == "attack" else \
+                math.sin(phase * 5.0) * 0.5 + 0.5
+            r = int(3 + 4 * k)
+            hand_glow = G._cached(
+                ("handglow", r),
+                lambda r=r: G._glow_surf(r, c["nether_light"]))
+            hand_glow.set_alpha(int(200 * max(0.3, k)))
+            surface.blit(hand_glow, (hp[0] - hand_glow.get_width() // 2,
+                                     hp[1] - hand_glow.get_height() // 2))
+            hand_glow.set_alpha(255)
+            pygame.draw.rect(surface, c["nether_bright"],
+                             (hp[0] - 1, hp[1] - 1, 3, 3))
+            pygame.draw.rect(surface, c["nether_hot"], (hp[0], hp[1], 1, 1))
+
+    @staticmethod
+    def _draw_highlights(surface, bx, by, phase, action):
+        """Highlight pixel: rim light + bara nether naik dari hem."""
+        c = _NS_nyxara.PALETTE
+        # rim kiri torso
+        pygame.draw.line(surface, c["robe_light"],
+                         (bx - 13, by - 21), (bx - 14, by - 5), 1)
+        # dua titik terang di sash
+        pygame.draw.rect(surface, c["gold_shine"], (bx - 6, by - 1, 1, 1))
+        pygame.draw.rect(surface, c["gold_shine"], (bx + 5, by + 1, 1, 1))
+        # bara nether naik dari hem (2 pixel berdenyut)
+        t = (phase * 0.5) % 1.0
+        y0 = by + 34 - int(t * 26)
+        if (1.0 - t) > 0.25:
+            pygame.draw.rect(surface, c["nether_light"],
+                             (bx - 18 + int(math.sin(phase + 1) * 3), y0, 1, 1))
+            pygame.draw.rect(surface, c["nether_hot"],
+                             (bx + 16 + int(math.sin(phase) * 3), y0 + 4, 1, 1))
+
+    @staticmethod
+    def _draw_flash_hurt(surface, bx, by, flash, facing):
+        """Tint putih singkat saat kena damage (hurt_flash_timer)."""
+        if flash <= 0:
+            return
+        overlay = pygame.Surface((52, 84), pygame.SRCALPHA)
+        pygame.draw.polygon(overlay, (255, 255, 255, min(90, int(flash))),
+                            [(2, 10), (50, 10), (48, 50), (30, 78), (8, 50)])
+        surface.blit(overlay, (int(bx) - 26, int(by) - 44))
 
     # ===================================================================
-    # SKILL R: LIFE DRAIN
+    # LAPISAN TANAH (bayangan + mist + runes + telegraph skill)
     # ===================================================================
-    def _draw_life_drain(surface, boss, x, y, timer, phase):
-        """Sustained beam draining life from target."""
-        tx, ty = _NS_nyxara._target_position(boss, x, y)
-        hand_x = x + boss.direction * 22
-        hand_y = y - 8
+    @staticmethod
+    def _draw_ground_layer(surface, boss, x, y, phase, skill, owned):
+        G = _NS_nyxara
+        c = G.PALETTE
+        gy = y + G.GROUND_DY
+        # bayangan kontak
+        shadow = G._cached("shadow", G._shadow_surf)
+        surface.blit(shadow, (x - shadow.get_width() // 2,
+                              gy - shadow.get_height() // 2))
+        # kabut nether (melayang)
+        mb = G._qphase(phase, 6)
+        mist = G._cached(("mist", mb), lambda b=mb: G._mist_surf(b))
+        surface.blit(mist, (x - mist.get_width() // 2, gy - 26))
+        # rune circle
+        rb = G._qphase(phase, 8)
+        rune = G._cached(("rune", rb, bool(skill)),
+                         lambda b=rb, s=bool(skill): G._rune_surf(b, s))
+        surface.blit(rune, (x - rune.get_width() // 2, gy - 24))
+        # telegraph skill di tanah (canvas fallback; versi hidup di
+        # nyxara_fx.draw_ground_layer)
+        if not owned and skill:
+            prog = float(getattr(boss, "_nx_skill_progress", 0.0) or 0.0)
+            r = int(G.SKILL_RADIUS.get(skill, 130))
+            color = c["nether_mid"] if skill in ("q", "w") else c["nether_light"]
+            pygame.draw.ellipse(surface, (*color, 120),
+                                (x - r, gy - r // 3, r * 2, r * 2 // 3), 2)
+            if prog > 0.34:
+                pygame.draw.ellipse(
+                    surface, (*c["nether_bright"], 150),
+                    (x - r + 4, gy - r // 3 + 2, r * 2 - 8, r * 2 // 3 - 4), 1)
 
-        # Big pulsing beam
-        dx = tx - hand_x
-        dy = ty - hand_y
-        dist = math.sqrt(dx * dx + dy * dy) or 1
+    # ===================================================================
+    # FALLBACK FX CANVAS (hanya jika modul hidup tidak tersedia)
+    # ===================================================================
+    @staticmethod
+    def _manage_projectiles(boss, surface, phase):
+        """Proyektil fallback sederhana (jalur tanpa heroes/nyxara_fx)."""
+        projs = getattr(boss, "_nx_projectiles", None)
+        if not projs:
+            return
+        c = _NS_nyxara.PALETTE
+        keep = []
+        for p in projs:
+            p["x"] += p["vx"]
+            p["y"] += p["vy"]
+            p["age"] += 1
+            dist = math.hypot(p["tx"] - p["x"], p["ty"] - p["y"])
+            if dist < 8.0 or p["age"] > 140:
+                continue
+            px, py = int(p["x"]), int(p["y"])
+            # orb chunky 4 band (bukan lingkaran polos: ada inti panas)
+            pygame.draw.circle(surface, c["nether_dark"], (px, py), 7)
+            pygame.draw.circle(surface, c["nether_mid"], (px, py), 5)
+            pygame.draw.circle(surface, c["nether_light"], (px - 1, py - 1), 3)
+            pygame.draw.rect(surface, c["nether_hot"], (px - 1, py - 2, 2, 2))
+            keep.append(p)
+        boss._nx_projectiles = keep
 
-        # Outer glow beam (thicker than decrepify)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE["nether_dark"], 100),
-                (hand_x, hand_y), (tx, ty), 12)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE["nether_mid"], 150),
-                (hand_x, hand_y), (tx, ty), 8)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE["nether_light"], 200),
-                (hand_x, hand_y), (tx, ty), 5)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE["nether_bright"], 240),
-                (hand_x, hand_y), (tx, ty), 3)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE["nether_hot"], 250),
-                (hand_x, hand_y), (tx, ty), 2)
-        _NS_nyxara._aaline(surface, (*_NS_nyxara.PALETTE["nether_white"], 250),
-                (hand_x, hand_y), (tx, ty), 1)
+    @staticmethod
+    def _spawn_fallback_projectile(boss, x, y, blast=False):
+        G = _NS_nyxara
+        if not hasattr(boss, "_nx_projectiles"):
+            boss._nx_projectiles = []
+        if len(boss._nx_projectiles) >= 12:      # cap keras fallback
+            return
+        tx, ty = G._target_position(boss, x, y)
+        sx = x + 22 * (getattr(boss, "direction", 1) or 1)
+        sy = y - 14
+        dx, dy = tx - sx, ty - sy
+        d = math.hypot(dx, dy) or 1.0
+        speed = 8.0 if blast else 5.5
+        boss._nx_projectiles.append({
+            "x": float(sx), "y": float(sy),
+            "vx": dx / d * speed, "vy": dy / d * speed,
+            "tx": float(tx), "ty": float(ty), "age": 0})
 
-        # Life particles flowing from target BACK to Nyxara (life drain)
-        particle_count = int(dist / 8)
-        for i in range(particle_count):
-            # Multiple flows for effect
-            for flow_offset in range(3):
-                flow_t = ((phase * 0.6 + i * 0.1 + flow_offset * 0.33) % 1.0)
-                # Flow from target (t=0) to Nyxara (t=1)
-                px = int(tx + (hand_x - tx) * flow_t)
-                py = int(ty + (hand_y - ty) * flow_t)
-                # Wobble
-                wobble = math.sin(flow_t * math.pi * 4 + phase * 2) * 4
-                perp_x = -dy / dist * wobble
-                perp_y = dx / dist * wobble
-                px += int(perp_x)
-                py += int(perp_y)
+    # ===================================================================
+    # ENTRY POINT
+    # ===================================================================
+    @staticmethod
+    def draw_nyxara(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus heroes.render_hero().
 
-                # Life orb (like small hearts/souls)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_light"], 220), (px, py), 3)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], 240), (px, py), 2)
-                _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_white"], (px, py), 1)
+        Urutan lapisan (kontrak render order proyek):
+          GROUND FX -> SHADOW -> BACK FX -> BODY/ARMOR/HEAD -> WEAPON
+          -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES -> SKILL FX
+          -> IMPACT FX -> DEBUG.
+        Trail ayunan, partikel, proyektil, skill FX, impact, hit-stop,
+        dan shake hidup di heroes/nyxara_fx.py (layar 1:1, di luar
+        cache); canvas hanya fallback bila modul itu tidak tersedia.
+        """
+        NS = _NS_nyxara
+        pulse = float(getattr(boss, "pulse", 0.0))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
 
-        # Massive impact on target - draining effect
-        impact_pulse = math.sin(phase * 6) * 0.4 + 0.6
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], 180),
-                  (tx, ty), int(20 * impact_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], 220),
-                  (tx, ty), int(15 * impact_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], 240),
-                  (tx, ty), int(10 * impact_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], 250),
-                  (tx, ty), int(6 * impact_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_white"], 255),
-                  (tx, ty), max(1, int(3 * impact_pulse)))
+        # ── CONTROLLER ANIMASI ─────────────────────────────────────
+        NS._update_nyxara_anim(boss)
+        moving = bool(getattr(boss, "_nx_moving", False))
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._nx_pose_action = action
 
-        # Explosion sparks at target
-        for i in range(8):
-            angle = phase * 3 + i * math.pi / 4
-            r = 25 + int(math.sin(phase * 2 + i) * 5)
-            px = tx + int(math.cos(angle) * r)
-            py = ty + int(math.sin(angle) * r * 0.7)
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_hot"], (px, py), 2)
-            _NS_nyxara._aacircle(surface, _NS_nyxara.PALETTE["nether_white"], (px, py), 1)
+        # ── LAPISAN HIDUP (ground) ─────────────────────────────────
+        live, owned = NS._live_fx(boss, surface, x, y, not hero_lane,
+                                  portrait)
+        boss._nx_suppress_canvas_fx = owned
 
-        # Healing glow at Nyxara (receiving life)
-        heal_pulse = math.sin(phase * 4) * 0.3 + 0.7
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_dark"], 100),
-                  (x, y - 10), int(30 * heal_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_mid"], 150),
-                  (x, y - 10), int(22 * heal_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], 180),
-                  (x, y - 10), int(15 * heal_pulse))
-        _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], 220),
-                  (x, y - 10), int(8 * heal_pulse))
+        # ── GROUND: bayangan + mist + runes + telegraph ─────────────
+        if not portrait:
+            NS._draw_ground_layer(surface, boss, x, y, pulse,
+                                  getattr(boss, "_nx_skill", None), owned)
 
-        # Rising healing wisps around Nyxara
-        for i in range(6):
-            t = ((phase * 0.5 + i * 0.16) % 1.0)
-            angle = i * math.pi / 3
-            px = x + int(math.cos(angle) * 20)
-            py = y - 5 - int(t * 30)
-            alpha = int(220 * (1 - t))
-            if alpha > 0:
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_bright"], alpha), (px, py), 2)
-                _NS_nyxara._aacircle(surface, (*_NS_nyxara.PALETTE["nether_hot"], alpha), (px, py), 1)
+        # ── RIG (komposit satu pose) ───────────────────────────────
+        # Konvensi pipeline hero (heroes/__init__): rig SELALU digambar
+        # 1:1 di ruang canvas; smoothscale pipeline yang mengecilkan.
+        # ``body_scale`` hanya untuk FX ruang layar (staff_points) dan
+        # konversi dunia->canvas (target position).
+        facing = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        sc = 1.0
+        dx, dy, flare = NS._body_offsets(action, ap, phase, boss)
+        if action == "death":
+            age = int(getattr(boss, "_nx_death_age", 0) or 0)
+            dy += min(26.0, age * 0.55)
+        bx = x + dx * facing
+        by = y - 14 + dy
 
+        pivot = NS._staff_pivot_local(action, ap, phase, boss)
+        angle = NS._staff_angle(action, ap, phase, boss)
+        glow_k = 0.0
+        if action == "swing":
+            glow_k = 1.0 if 0.24 <= ap <= 0.60 else 0.45
+        elif action == "attack":
+            glow_k = 0.9 if 0.28 <= ap <= 0.55 else 0.3
+        elif action == "cast_e":
+            glow_k = 1.0
+        elif action.startswith("cast"):
+            glow_k = 0.75
+
+        NS._draw_hem(surface, bx, by + 4, phase, flare, action)
+        NS._draw_torso(surface, bx, by, phase, action)
+        NS._draw_pauldrons(surface, bx, by, phase, action)
+        NS._draw_head(surface, bx, by, facing, phase, action)
+        NS._draw_staff_at(surface, bx, by, sc, facing, angle, pivot,
+                          glow_k, pulse)
+        NS._draw_arms(surface, bx, by, sc, facing, action, ap, phase, pivot)
+        if not portrait:
+            NS._draw_highlights(surface, bx, by, pulse, action)
+
+        # flash hurt (di atas semuanya)
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash > 0:
+            NS._draw_flash_hurt(surface, bx, by, flash * 6, facing)
+
+        # ── FALLBACK CANVAS FX (jalur boss tanpa modul hidup) ──────
+        if not portrait and not owned and not hero_lane:
+            kind = NS.attack_kind(boss)
+            active = bool(getattr(boss, "_nx_attack_active", False))
+            if active and kind == "orb" and \
+                    not getattr(boss, "_nx_fallback_spawned", False) and \
+                    ap >= NS.ATTACK_RELEASE_FRAME:
+                NS._spawn_fallback_projectile(boss, x, y)
+                boss._nx_fallback_spawned = True
+            if not active:
+                boss._nx_fallback_spawned = False
+            skill = getattr(boss, "_nx_skill", None)
+            if skill == "q" and \
+                    not getattr(boss, "_nx_fallback_blast", False) and \
+                    ap >= 0.42:
+                NS._spawn_fallback_projectile(boss, x, y, blast=True)
+                boss._nx_fallback_blast = True
+            if skill != "q":
+                boss._nx_fallback_blast = False
+            NS._manage_projectiles(boss, surface, pulse)
+
+        # ── LAPISAN HIDUP DI ATAS (trail/proyektil/impact/skill) ───
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        # ── DEBUG ──────────────────────────────────────────────────
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_nx_debug(surface, boss, x, y)
+
+    # ===================================================================
+    # OVERLAY DEBUG (DEBUG_CHARACTER = True)
+    # ===================================================================
+    _DBG_FONT = None
+
+    @staticmethod
+    def _dbg_font(size=12):
+        if _NS_nyxara._DBG_FONT is None:
+            try:
+                _NS_nyxara._DBG_FONT = pygame.font.Font(None, size + 4)
+            except Exception:                      # pragma: no cover
+                _NS_nyxara._DBG_FONT = pygame.font.Font(None, 16)
+        return _NS_nyxara._DBG_FONT
+
+    @staticmethod
+    def _draw_nx_debug(surface, boss, x, y):
+        G = _NS_nyxara
+        hb = G._swing_hitbox(boss, x, y)
+        if hb is not None:
+            pygame.draw.rect(surface, (255, 80, 80), hb, 1)
+        pygame.draw.rect(surface, (80, 160, 255), G._hurtbox(boss, x, y), 1)
+        pygame.draw.circle(surface, (255, 200, 60), (int(x), int(y)),
+                           int(G.MELEE_REACH), 1)
+        pv, tip = G.staff_points(boss, x, y)
+        pygame.draw.line(surface, (200, 255, 90),
+                         (int(pv.x), int(pv.y)), (int(tip.x), int(tip.y)), 1)
+        pygame.draw.circle(surface, (200, 255, 90),
+                           (int(tip.x), int(tip.y)), 3, 1)
+        parts = 0
+        fps = 0.0
+        mod = G._live_module()
+        if mod is not None:
+            try:
+                parts = int(mod.total_particles())
+            except Exception:
+                parts = 0
+            d = getattr(boss, "_nyxara_fx", None)
+            if d is not None:
+                fps = float(getattr(d, "fps", 0.0))
+        lines = [
+            f"NYXARA  state={getattr(boss, '_nx_state', 'IDLE')}"
+            f"<{getattr(boss, '_nx_state_prev', '-')}>",
+            f"pose={getattr(boss, '_nx_pose_action', '-')} "
+            f"kind={G.attack_kind(boss)} "
+            f"phase={getattr(boss, '_nx_attack_phase', '-')}",
+            f"atk_t={float(getattr(boss, '_nx_attack_progress', 0.0)):.2f} "
+            f"hit={bool(getattr(boss, '_nx_hit_active', False))} "
+            f"frame={int(getattr(boss, '_nx_state_frame', 0))}",
+            f"skill={getattr(boss, '_nx_skill', '-')} "
+            f"t={float(getattr(boss, '_nx_skill_progress', 0.0)):.2f}",
+            f"partikel={parts} fps~{fps:.0f}",
+        ]
+        font = G._dbg_font()
+        yy = int(y) - 100
+        for ln in lines:
+            img = font.render(ln, True, (210, 255, 140))
+            surface.blit(img, (int(x) - 95, yy))
+            yy += 13
 
     # ===================================================================
     # Backward-compatible entry point alias
     # ===================================================================
+    @staticmethod
     def draw_boss(surface, boss, x, y):
         _NS_nyxara.draw_nyxara(surface, boss, x, y)
 

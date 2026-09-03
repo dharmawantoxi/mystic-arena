@@ -110,7 +110,7 @@ BOSS_LABEL_TOP = {
     "naraka": 67,
     "nazulmor": 73,
     "nexthyrius": 85,
-    "nyxara": 73,
+    "nyxara": 98,   # rig rewrite v2: puncak tanduk mahkota ~94 px (diukur) + aman
     "nyxarath": 66,
     "nyxaroth": 62,
     "nixweaver": 55,
@@ -799,6 +799,27 @@ class Boss(TowerDebuffMixin):
                                 _vhzfx.notify_projectile_impact(
                                     self, self.target.x, self.target.y,
                                     0.0, self.damage, False, 'soul')
+                        except Exception:
+                            pass
+                    # ═══ IMPACT FX NYXARA ═══
+                    # The Nether Matron bertarung dua wujud: ayunan
+                    # tongkat tengkorak (jarak <= MELEE_REACH dunia
+                    # 88 px) atau nether orb (jarak lebih jauh).
+                    # Keduanya memicu flash nether, serpihan tulang,
+                    # shockwave bergerigi, shake, dan hit-stop
+                    # 0.03-0.08 s (lengkapnya di heroes/nyxara_fx).
+                    # Difilter per boss_type + try/except (paritas
+                    # Vhalzun).
+                    if getattr(self, 'boss_type', None) == 'nyxara':
+                        try:
+                            from heroes import nyxara_fx as _nyxfx
+                            if dist <= _nyxfx.MELEE_REACH:
+                                _nyxfx.notify_melee_impact(
+                                    self, self.target, self.damage, False)
+                            else:
+                                _nyxfx.notify_projectile_impact(
+                                    self, self.target.x, self.target.y,
+                                    0.0, self.damage, False, 'nether')
                         except Exception:
                             pass
                     # Cleave splash damage to nearby enemy units
@@ -4095,6 +4116,13 @@ class Boss(TowerDebuffMixin):
             self.active_skill = "r"
             self.active_skill_timer = 90
 
+            # ═══ SKILL FX NYXARA (Life Drain: tether jiwa) ═══
+            try:
+                from heroes import nyxara_fx as _nyxfx
+                _nyxfx.notify_skill_cast(self, 'r')
+            except Exception:
+                pass
+
             damage = stats.get(
                 "skill_r_damage",
                 320
@@ -4121,6 +4149,14 @@ class Boss(TowerDebuffMixin):
 
             self.active_skill = "e"
             self.active_skill_timer = 80
+
+            # ═══ SKILL FX NYXARA (Nether Ward: totem tengkorak) ═══
+            try:
+                from heroes import nyxara_fx as _nyxfx
+                _nyxfx.notify_skill_cast(self, 'e')
+                _nyxfx.notify_skill_impact(self, self.x, self.y, 100, 'e')
+            except Exception:
+                pass
 
             for enemy in enemies:
                 distance = math.hypot(
@@ -4153,6 +4189,13 @@ class Boss(TowerDebuffMixin):
             self.active_skill = "w"
             self.active_skill_timer = 70
 
+            # ═══ SKILL FX NYXARA (Decrepify: kurva kutukan + sigil) ═══
+            try:
+                from heroes import nyxara_fx as _nyxfx
+                _nyxfx.notify_skill_cast(self, 'w')
+            except Exception:
+                pass
+
             self.target.take_damage(
                 stats.get(
                     "skill_w_damage",
@@ -4178,6 +4221,15 @@ class Boss(TowerDebuffMixin):
 
             self.active_skill = "q"
             self.active_skill_timer = 60
+
+            # ═══ SKILL FX NYXARA (Nether Blast: nova bergerigi) ═══
+            try:
+                from heroes import nyxara_fx as _nyxfx
+                _nyxfx.notify_skill_cast(self, 'q')
+                _nyxfx.notify_skill_impact(
+                    self, self.target.x, self.target.y, 130, 'q')
+            except Exception:
+                pass
 
             self.target.take_damage(
                 stats.get(
@@ -5807,6 +5859,18 @@ class Boss(TowerDebuffMixin):
                 try:
                     from heroes import vhalzun_fx as _vhzfx
                     _vhzfx.notify_death(self)
+                except Exception:
+                    pass
+
+            # ═══ DEATH FX NYXARA ═══
+            # Energi nether Matron meledak keluar: hit-stop 0.08 s,
+            # shake, dan ledakan partikel wisp + serpihan tulang
+            # (lengkapnya di heroes/nyxara_fx.notify_death). Difilter
+            # per boss_type + try/except (paritas hook benturan).
+            if getattr(self, 'boss_type', None) == 'nyxara':
+                try:
+                    from heroes import nyxara_fx as _nyxfx
+                    _nyxfx.notify_death(self)
                 except Exception:
                     pass
 

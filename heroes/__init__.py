@@ -671,11 +671,20 @@ _BEAM_PASS_HEROES = {"morgath"}
 # wraith + cangkang spektral Ghost Shroud, impact flash + shockwave +
 # serpihan tulang, afterimage, hit-stop 0.03-0.08 s, dan shake —
 # semua hidup di luar cache sprite.
+# Nyxara (heroes/nyxara_fx.py) menutup daftar untuk The Nether Matron:
+# pita sapuan tongkat dari histori kepala tongkat (busur ANTICIPATION->
+# RECOVERY), nether orb & Nether Blast modular (inti + glow + bentuk
+# directional + cangkang bergerigi berputar + trail + bara), nova
+# bergerigi Nether Blast, kurva kutukan + sigil heks Decrepify, totem
+# tengkorak + busur nether Nether Ward, tether jiwa berpilin Life Drain,
+# impact flash + shockwave + serpihan tulang, afterimage, hit-stop
+# 0.03-0.08 s, dan shake — semua hidup di luar cache sprite.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
                    "alchemist", "ancient_apparition", "nyzrak",
                    "xerathis", "varkul", "ignis_drachorn", "zharok",
-                   "vokrahn", "pyrenth", "krobellus", "vhalzun"}
+                   "vokrahn", "pyrenth", "krobellus", "vhalzun",
+                   "nyxara"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -699,6 +708,7 @@ _LIVE_FX_PATHS = {
     "pyrenth": "heroes.pyrenth_fx",
     "krobellus": "heroes.krobellus_fx",
     "vhalzun": "heroes.vhalzun_fx",
+    "nyxara": "heroes.nyxara_fx",
 }
 
 
