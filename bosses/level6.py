@@ -1574,25 +1574,135 @@ class _NS_gravewake:
 # SYRENTHA
 # ====================================================================
 class _NS_syrentha:
-    """Namespace syrentha - isi asli tidak diubah."""
+    """Namespace syrentha - Naga Siren mini boss (PIXEL MASTERWORK v3).
 
-    # ---------------------------------------------------------------------------
-    # Compatibility helpers
-    # ---------------------------------------------------------------------------
+    "The Song of the Seas" - Syrentha, mini boss Level 6.
+
+    Renderer 100% prosedural (tanpa PNG, sprite sheet, atau image.load).
+    Ditulis ulang penuh dari v2: rig, animasi, tusukan tombak (spear
+    thrust), proyektil Riptide, dan seluruh FX skill Q/W/E/R.
+
+    Yang berubah di v3
+    ------------------
+    * RENDER. Badan Naga Siren disusun ulang jadi LAYER rig yang satu
+      arah-hadap (facing) lewat ``_local``: ekor sisik -> torso + bra
+      emas -> lengan -> kepala -> surai sirip. Setiap bidang memakai
+      pola core gelap -> body -> plane cahaya -> selout sisi bayangan ->
+      specular 1-2 px. Hierarki nilai dikunci: MATA > perhiasan > sisik.
+    * TOMBAK. Spear Naga sungguhan (bukan tiga poligon inset): gagang
+      emas ber-cincin, daun bilah melengkung, kait belakang, pommel,
+      dan aura air saat intens. Terbaca sebagai senjata.
+    * ANIMASI. Kurva serangan baru (anticipation -> tarik -> TUSUK -> HOLD
+      -> follow-through) plus gerak sekunder: surai, sirip ekor, tetesan
+      sekitar badan, dan lower-body semuanya tertinggal dari badan (lag).
+    * THRUST. ``_draw_spear_thrust_trail`` menyapu pita tombak dari
+      histori ujung tombak sungguhan (OLD -> CURRENT), tidak pernah lepas
+      dari senjata.
+    * PROYEKTIL. Riptide Wave v3: sabit air berorientasi arah terbang,
+      inti 3 lapis, sparkle orbit, after-image ter-kuantisasi.
+    * FX SKILL. Q/W/E/R ditulis ulang dengan bahasa yang sama: telegraph
+      -> aktivasi -> steady, semuanya world-space lewat ``_fx_scale``.
+
+    Kontrak yang TIDAK berubah (dipakai gameplay & tes regresi):
+      * ``draw_syrentha(surface, boss, x, y)`` entry point tunggal.
+      * ``SKILL_DUR`` sinkron dengan AI boss (base_boss._syrentha_*) dan
+        skill hero (hero_skills/_bundle.py).
+      * telapak dipatok di ``GROUND_DY``; tombak pose-driven.
+      * atribut ``_sy_*`` dipakai controller & FX (nama lama dipertahankan).
+    """
+
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
+    HAS_AALINES = hasattr(pygame.draw, "aalines")
+    _STATIC_SURFACES = {}
 
-    # ---------------------------------------------------------------------------
-    # HD Color Palette - Naga Siren inspired teal/green/gold
-    # ---------------------------------------------------------------------------
+    # ── SKALA BADAN ───────────────────────────────────────────────
+    # Syrentha adalah mini boss yang digambar 1:1 ke layar (jalur boss),
+    # dan dinormalisasi otomatis oleh pipeline hero saat dipakai sebagai
+    # kartu / preview (heroes/__init__._get_hero_scale).
+    SCALE = 1.0
+    LIFT = 0
+    # Telapak dalam RUANG LOKAL (y+ ke bawah); garis tanah dunia diturunkan
+    # dari sini supaya bayangan, rune tanah, dan telapak tidak saling lepas.
+    FEET_DY = 44
+    GROUND_DY = int(round(FEET_DY * SCALE)) - LIFT        # ~ 44
+
+    # Buffer rig: dibatasi dari extents TERUKUR semua pose + margin.
+    RIG_W, RIG_H = 160, 150
+    RIG_OX, RIG_OY = 80, 92
+
+    # Bidang acuan pass cahaya (lighting.py): kotak TETAP di dalam buffer.
+    GRAD_BOX = (RIG_OX - 52, RIG_OY - 46, 104, 88)
+
+    # Durasi status skill (frame) - HARUS sama dengan active_skill_timer
+    # yang diisi AI boss (bosses/base_boss.py) dan skill hero
+    # (hero_skills/_bundle.py).
+    SKILL_DUR = {"q": 45, "w": 80, "e": 70, "r": 90}
+
+    #: jarak (piksel dunia) jangkauan tusukan tombak. = range boss_data.
+    MELEE_REACH = 120
+
+    # ==================================================================
+    # Batas fase = fraksi 0..1 dari DURASI SERANGAN (raw progress).
+    ATTACK_ANTICIPATION_END = 0.14
+    ATTACK_WINDUP_END = 0.30
+    ATTACK_SWING_END = 0.48
+    ATTACK_IMPACT_END = 0.62
+    ATTACK_FOLLOW_END = 0.82
+    #: jendela di mana tombak secara geometris menusuk depan badan
+    ATTACK_ACTIVE_WINDOW = (0.34, 0.62)
+    #: puncak benturan (dipakai FX untuk memicu spark di titik tusuk)
+    ATTACK_IMPACT_FRAME = 0.52
+
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.14),
+        ("WINDUP",       0.14, 0.30),
+        ("SWING",        0.30, 0.48),
+        ("IMPACT",       0.48, 0.62),
+        ("FOLLOW",       0.62, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+
+    #: Prioritas state. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: Aktifkan untuk melihat hitbox/hurtbox/jangkauan/state di arena.
+    DEBUG_CHARACTER = False
+
+    # Kunci fase tusukan (dipakai grip, sudut, DAN pita thrust) - nilai
+    # CURVE (dari _attack_curve).
+    _SWING_WIND = 0.24          # puncak tarik (tombak ditarik ke belakang)
+    _SWING_HIT = 0.80           # frame impact (tombak menusuk ke depan)
+
+    # Tinggi badan dalam RUANG LOKAL (y=0 = garis pinggang, + ke bawah).
+    HEAD_Y = -25
+    SHOULDER_Y = -12
+    SHOULDER_FRONT = (12, SHOULDER_Y)
+
+    # -------------------------------------------------------------------
+    # PALETTE — Naga Siren teal/green/gold (sisik, surai oranye, air)
+    # -------------------------------------------------------------------
     PALETTE = {
-        # Skin - pale teal/blue-green
+        # Kulit - teal pucat
         "skin_darkest":   (35,  70,  75),
         "skin_dark":      (75, 120, 120),
         "skin_mid":       (125, 175, 165),
         "skin_light":     (175, 215, 200),
         "skin_shine":     (215, 240, 225),
 
-        # Scales - deep teal/green (tail)
+        # Sisik - teal/hijau tua (ekor)
         "scale_darkest":  (10,  35,  40),
         "scale_dark":     (25,  70,  75),
         "scale_mid":      (50, 120, 115),
@@ -1600,21 +1710,21 @@ class _NS_syrentha:
         "scale_high":     (150, 215, 195),
         "scale_shine":    (200, 240, 220),
 
-        # Hair/fins - orange/gold
+        # Surai/sirip - oranye/emas
         "hair_darkest":   (85,  35,  10),
         "hair_dark":      (145, 70,  20),
         "hair_mid":       (215, 130, 40),
         "hair_light":     (255, 180, 75),
         "hair_shine":     (255, 220, 130),
 
-        # Gold armor / trim
+        # Armor emas / trim
         "gold_darkest":   (75,  50,  10),
         "gold_dark":      (125, 90,  20),
         "gold_mid":       (185, 145, 40),
         "gold_light":     (235, 195, 80),
         "gold_shine":     (255, 235, 150),
 
-        # Water - cyan/teal
+        # Air - cyan/teal
         "water_darkest":  (5,   40,  50),
         "water_dark":     (15,  95, 110),
         "water_mid":      (45, 175, 175),
@@ -1623,20 +1733,20 @@ class _NS_syrentha:
         "water_hot":      (215, 255, 250),
         "water_white":    (240, 255, 253),
 
-        # Spear blade
+        # Daun tombak (baja)
         "blade_darkest":  (30,  45,  55),
         "blade_dark":     (75,  95, 110),
         "blade_mid":      (130, 155, 175),
         "blade_light":    (185, 205, 220),
         "blade_shine":    (230, 240, 250),
 
-        # Mirror image (translucent blue)
+        # Mirror image (biru transparan)
         "mirror_dark":    (30,  90, 130),
         "mirror_mid":     (65, 155, 190),
         "mirror_light":   (130, 210, 235),
         "mirror_hot":     (200, 240, 250),
 
-        # Eyes
+        # Mata
         "eye_dark":       (40,  90,  95),
         "eye_mid":        (100, 190, 180),
         "eye_bright":     (170, 235, 220),
@@ -1648,10 +1758,390 @@ class _NS_syrentha:
         "star_yellow":    (255, 230, 90),
     }
 
+    # ==================================================================
+    # ANIMATION CONTROLLER
+    # ==================================================================
+    def attack_phases_order():
+        return tuple(name for name, _a, _b in _NS_syrentha.ATTACK_PHASES)
 
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1 (None di luar serangan)."""
+        if progress is None:
+            return "NONE"
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_syrentha.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    def _resolve_anim_state(boss, attacking, phase):
+        """Tentukan state animasi yang DIINGINKAN frame ini."""
+        if not getattr(boss, "alive", True):
+            return "DEATH"
+        if int(getattr(boss, "_sy_hurt_frames", 0)) > 0:
+            return "HURT"
+        skill = getattr(boss, "active_skill", None)
+        if skill:
+            return "SPECIAL" if skill == "r" else "SKILL"
+        if attacking:
+            if phase in ("ANTICIPATION", "WINDUP"):
+                return "CHARGE"
+            if phase in ("SWING", "IMPACT"):
+                return "SWING"
+            return "ATTACK"
+        if getattr(boss, "_sy_moving_cached", False):
+            return "RUN" if float(getattr(boss, "speed", 1.0)) >= 2.2 \
+                else "WALK"
+        return "IDLE"
+
+    def _swing_hitbox(boss, cx, cy):
+        """Rect hitbox tusukan (ruang permukaan) saat jendela hit aktif."""
+        if not getattr(boss, "_sy_hit_active", False):
+            return None
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        scale = _NS_syrentha._fx_scale(boss)
+        reach = int(62 * scale)
+        top = int(cy - 34 * scale)
+        h = int(64 * scale)
+        left = int(cx) if f > 0 else int(cx) - reach
+        return pygame.Rect(left, top, max(8, reach), max(10, h))
+
+    def _update_syrentha_attack_anim(boss):
+        """ANIMATION CONTROLLER Syrentha - state, fase, timing, delta-time.
+
+        Satu-satunya sumber kebenaran untuk SEMUA state karakter:
+          * ``_sy_dt``              delta-time nyata (detik, dijepit)
+          * ``_sy_attack_active``   serangan sedang berjalan (nama lama)
+          * ``_sy_attack_frame``    frame ke-n dalam serangan (nama lama)
+          * ``_sy_attack_progress`` 0..1 sepanjang serangan (nama lama)
+          * ``_sy_attack_raw``      progress sebelum kurva (nama lama)
+          * ``_sy_attack_phase``    ANTICIPATION/.../RECOVERY
+          * ``_sy_hit_active``      True hanya di jendela hit aktif
+          * ``_sy_state`` / ``_sy_state_prev`` / ``_sy_state_time``
+          * ``_sy_hurt_frames``     sisa frame respons kena damage
+        """
+        G = _NS_syrentha
+
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                          # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_sy_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._sy_last_ms = now
+        boss._sy_dt = dt
+
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 44)))
+        timer = int(getattr(boss, "timer", 0))
+        previous = int(getattr(boss, "_sy_previous_timer", 0))
+        active = bool(getattr(boss, "_sy_attack_active", False))
+
+        # Serangan dikenali dari DUA hal: lompatan timer ke atas (cooldown
+        # dipasang saat attack mendarat) dan detak jam (timer turun ke 0).
+        triggered = timer >= cooldown - 1 and previous <= 1
+        if triggered:
+            boss._sy_attack_active = True
+            boss._sy_attack_frame = 0
+            boss._sy_attack_manual = False
+            active = True
+        elif active and timer > 0:
+            boss._sy_attack_frame = int(getattr(boss, "_sy_attack_frame",
+                                                 0)) + 1
+            boss._sy_attack_manual = False
+        elif timer <= 0:
+            if active and not getattr(boss, "_sy_attack_manual", False) \
+                    and float(getattr(boss, "_sy_attack_progress", 0.0)) > 0.0:
+                boss._sy_attack_manual = True
+                active = True
+            elif not getattr(boss, "_sy_attack_manual", False):
+                boss._sy_attack_active = False
+                boss._sy_attack_frame = 0
+                active = False
+            if not active:
+                boss._sy_attack_active = False
+                boss._sy_attack_frame = 0
+
+        boss._sy_previous_timer = timer
+        frame = int(getattr(boss, "_sy_attack_frame", 0)) if active else 0
+        span = max(1, cooldown - 1)
+        boss._sy_attack_frame = frame
+        if bool(getattr(boss, "_sy_attack_manual", False)) and active:
+            progress = min(1.0, max(0.0, float(getattr(
+                boss, "_sy_attack_progress", 0.0))))
+            boss._sy_attack_frame = int(round(progress * span))
+        else:
+            progress = min(1.0, frame / float(span)) if active else 0.0
+            boss._sy_attack_progress = progress
+
+        if not getattr(boss, "_sy_attack_active", False):
+            boss._sy_attack_active = False
+            boss._sy_attack_manual = False
+            active = False
+        phase = G.attack_phase(progress) if active else "NONE"
+        boss._sy_attack_phase = phase
+        lo, hi = G.ATTACK_ACTIVE_WINDOW
+        boss._sy_hit_active = bool(active and lo <= progress < hi)
+
+        # ── respons kena damage (HURT) ──────────────────────────────
+        hurt = int(getattr(boss, "_sy_hurt_frames", 0))
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash >= 8 and hurt <= 0:
+            hurt = 10
+        boss._sy_hurt_frames = max(0, hurt - 1) if hurt > 0 else 0
+
+        # ── state machine ber-prioritas ─────────────────────────────
+        want = G._resolve_anim_state(boss, active, phase)
+        cur = getattr(boss, "_sy_state", None)
+        if cur is None:
+            boss._sy_state = want
+            boss._sy_state_prev = want
+            boss._sy_state_time = 0.0
+        elif want != cur:
+            cur_p = G.ANIM_STATES.get(cur, 0)
+            new_p = G.ANIM_STATES.get(want, 0)
+            stime = float(getattr(boss, "_sy_state_time", 0.0))
+            if cur != "DEATH" and (new_p >= cur_p or stime > 0.08):
+                boss._sy_state_prev = cur
+                boss._sy_state = want
+                boss._sy_state_time = 0.0
+            else:
+                boss._sy_state_time = stime + dt
+        else:
+            boss._sy_state_time = float(getattr(boss, "_sy_state_time",
+                                                 0.0)) + dt
+
+    def _detect_moving(boss):
+        cur_x = float(getattr(boss, "x", 0.0))
+        cur_y = float(getattr(boss, "y", 0.0))
+        if not hasattr(boss, "_sy_last_x"):
+            boss._sy_last_x = cur_x
+            boss._sy_last_y = cur_y
+            boss._sy_moving_cached = False
+            return False
+        moved = abs(cur_x - boss._sy_last_x) + abs(cur_y - boss._sy_last_y)
+        boss._sy_last_x = cur_x
+        boss._sy_last_y = cur_y
+        moving = moved > 0.3
+        boss._sy_moving_cached = moving
+        return moving
+
+    # ==================================================================
+    # POSE STATE - satu sumber kebenaran untuk rig DAN semua FX
+    # ==================================================================
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, ap) - dipakai rig DAN anchor FX agar sinkron."""
+        active_skill = getattr(boss, "active_skill", None)
+        if active_skill == "q":
+            action = "riptide"
+        elif active_skill == "w":
+            action = "song"
+        elif active_skill == "e":
+            action = "mirror"
+        elif active_skill == "r":
+            action = "siren"
+        elif (getattr(boss, "_sy_attack_active", False)
+              or getattr(boss, "timer", 0) >
+              getattr(boss, "attack_cooldown", 44) - 15):
+            action = "attack"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+
+        phase = float(getattr(boss, "pulse", 0.0))
+        if action == "walk":
+            phase *= 2.0
+        ap = 0.0
+        if action == "attack":
+            raw = max(0.0, min(1.0, float(getattr(boss, "_sy_attack_progress",
+                                                  0.0))))
+            ap = _NS_syrentha._attack_curve(raw)
+            boss._sy_attack_raw = raw
+        return action, phase, ap
+
+    def _attack_curve(ap):
+        """Remap progres mentah (0..1) -> waktu pose (0..1), MONOTON naik."""
+        if ap < 0.30:
+            return ap * 0.8
+        if ap < 0.60:
+            return 0.24 + (ap - 0.30) * 1.6
+        return 0.72 + (ap - 0.60) * 0.7
+
+    def _tide_progress(boss, timer):
+        """Progres cast Q (0..1) dari sisa timer skill."""
+        cast_duration = _NS_syrentha.SKILL_DUR["q"]
+        elapsed = cast_duration - timer
+        return max(0.0, min(1.0, elapsed / cast_duration))
+
+    # ==================================================================
+    # KOORDINAT & SKALA FX
+    # ==================================================================
+    def _fx_scale(boss):
+        """Faktor skala efek skill (world-space). Boss asli = 1.0."""
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+    def _ring_r(boss, world_r):
+        return max(1, int(round(float(world_r) * _NS_syrentha._fx_scale(boss))))
+
+    def _world_to_local(boss, x, y, wx, wy):
+        """Titik dunia -> ruang gambar renderer (clamp ke canvas)."""
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        rng = int(getattr(boss, "range", 120) or 120)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
+
+    def _target_position(boss, x, y):
+        v = getattr(boss, "_render_scale", None)
+        try:
+            scale = float(v) if v is not None else 1.0
+        except (TypeError, ValueError):
+            scale = 1.0
+        if scale <= 0.0:
+            scale = 1.0
+        target = getattr(boss, "target", None)
+        if target is not None and getattr(target, "alive", True):
+            tx = x + (target.x - getattr(boss, "x", x)) / scale
+            ty = y + (target.y - getattr(boss, "y", y)) / scale
+            return int(tx), int(ty)
+        return int(x + 200 / scale * getattr(boss, "direction", 1)), int(y)
+
+    def _rig_shift(action, phase, ap):
+        """(lean, root_y) badan; ekor TIDAK ikut bergeser (mengambang)."""
+        lean = 0
+        root_y = int(math.sin(phase * 0.62) * 1.2)
+        if action == "walk":
+            lean = int(math.sin(phase * 1.72) * 2)
+            root_y -= int(abs(math.sin(phase * 1.15)) * 2.5)
+        elif action == "attack":
+            k = math.sin(ap * math.pi)
+            lean = int(k * 7)
+            root_y += int(k * 2)
+        elif action in ("riptide",):
+            lean = 4
+            root_y -= 1
+        elif action in ("song", "siren"):
+            root_y -= 2
+        elif action == "mirror":
+            root_y -= 1
+        return lean, root_y
+
+    def _s(v):
+        """Ukuran ruang lokal -> piksel layar."""
+        return max(1, int(round(v * _NS_syrentha.SCALE)))
+
+    def _local_to_screen(cx, cy, facing, lean, root_y, lx, ly):
+        """SATU pemetaan lokal -> layar: skala, arah hadap, bob/lean."""
+        f = 1 if facing >= 0 else -1
+        k = _NS_syrentha.SCALE
+        return (int(cx + (lx * f + lean * f) * k),
+                int(cy - _NS_syrentha.LIFT + (ly + root_y) * k))
+
+    def _local(boss, x, y, action, phase, ap, lx, ly):
+        """Ruang lokal rig -> piksel surface (dipakai FX eksternal)."""
+        facing = getattr(boss, "direction", 1) or 1
+        lean, root_y = _NS_syrentha._rig_shift(action, phase, ap)
+        return _NS_syrentha._local_to_screen(x, y, facing, lean, root_y,
+                                             lx, ly)
+
+    # ==================================================================
+    # GEOMETRI TOMBAK (weapon)
+    # ==================================================================
+    def _front_grip_local(action, ap=0.0, phase=0.0, compact=False):
+        """Pergelangan tangan depan (grip tombak), ruang lokal."""
+        rest = _NS_syrentha.SHOULDER_Y + 16                    # = 4
+        if compact:
+            return (14, rest + 2)
+        if action == "attack":
+            w = _NS_syrentha._SWING_WIND
+            h = _NS_syrentha._SWING_HIT
+            if ap < w:                       # tarik tombak ke belakang
+                e = (ap / w) ** 0.9
+                return (int(15 - 14 * e), int(rest - 3 * e))
+            if ap < h:                       # tusuk ke depan
+                u = (ap - w) / (h - w)
+                return (int(1 + 38 * u), int(rest + 2 * u))
+            u = (ap - h) / (1.0 - h)         # kembali ke siap
+            return (int(39 - 24 * u), int(rest + 2 - u))
+        if action == "riptide":
+            return (22, rest + 2)
+        if action == "mirror":
+            return (15, rest + 1)
+        if action in ("song", "siren"):
+            return (14, rest - 12)           # tangan terangkat (menyanyi)
+        if action == "walk":
+            s = math.sin(phase * 1.72)
+            return (int(15 + s * 3), int(rest - s * 2))
+        return (15, rest + int(math.sin(phase * 0.62)))
+
+    def _spear_angle(action, phase, ap=0.0):
+        """Sudut tombak (rad). tip = grip + (sin a * L, cos a * L).
+
+        a = 0 menunjuk LURUS KE BAWAH, a = pi/2 lurus ke depan, a = pi
+        lurus ke atas.
+        """
+        s = math.sin(phase * 1.72)
+        if action == "attack":
+            w = _NS_syrentha._SWING_WIND
+            h = _NS_syrentha._SWING_HIT
+            if ap < w:                       # angkat ke atas-belakang
+                u = ap / w
+                return 1.95 - 0.30 * u
+            if ap < h:                       # tusuk mendatar ke depan
+                u = (ap - w) / (h - w)
+                return 1.65 - 0.12 * u
+            u = (ap - h) / (1.0 - h)         # recovery -> siap
+            return 1.53 + 0.22 * u
+        if action == "riptide":              # Q: tombak mendatar
+            return 1.55
+        if action == "mirror":               # E: tombak tegak
+            return 1.75
+        if action in ("song", "siren"):      # menyanyi: tidak ada tombak
+            return 1.55
+        if action == "walk":
+            return 1.75 + s * 0.12
+        w = math.sin(phase * 0.5) * 0.05
+        return 1.75 + w
+
+    def _spear_len(action):
+        """Panjang tombak (ruang lokal)."""
+        return 40 if action in ("attack", "riptide") else 34
+
+    def _tip_local(action, phase, ap=0.0):
+        """Ujung tombak dalam ruang lokal (rig & FX pakai angka yang sama)."""
+        grip = _NS_syrentha._front_grip_local(action, ap, phase)
+        angle = _NS_syrentha._spear_angle(action, phase, ap)
+        L = _NS_syrentha._spear_len(action)
+        return (int(grip[0] + math.sin(angle) * L),
+                int(grip[1] + math.cos(angle) * L))
+
+    def _tip_screen(boss, x, y):
+        action, phase, ap = _NS_syrentha._resolve_pose(boss)
+        return _NS_syrentha._local(boss, x, y, action, phase, ap,
+                                   *_NS_syrentha._tip_local(action, phase, ap))
+
+    # ==================================================================
+    # COMPATIBILITY HELPERS (gambar prosedural, alpha aman)
+    # ==================================================================
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
-
 
     def _aacircle(surface, color, center, radius, width=0):
         color = _NS_syrentha._clamp(color)
@@ -1660,18 +2150,20 @@ class _NS_syrentha:
         if radius == 0:
             return
         if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
+            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4),
+                                  pygame.SRCALPHA)
+            pygame.draw.circle(temp, color, (radius + 2, radius + 2),
+                               radius, width)
             surface.blit(temp, (cx - radius - 2, cy - radius - 2))
             return
         if _NS_syrentha.HAS_AACIRCLE and radius > 1:
             try:
-                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius, width)
+                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius,
+                                     width)
                 return
             except Exception:
                 pass
         pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
-
 
     def _aaline(surface, color, start, end, width=1):
         color = _NS_syrentha._clamp(color)
@@ -1685,13 +2177,12 @@ class _NS_syrentha:
             if w <= 0 or h <= 0:
                 return
             temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.line(temp, color,
-                             (sx - min_x, sy - min_y),
+            pygame.draw.line(temp, color, (sx - min_x, sy - min_y),
                              (ex - min_x, ey - min_y), max(1, width))
             surface.blit(temp, (min_x, min_y))
             return
-        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
-
+        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey),
+                         max(1, width))
 
     def _poly(surface, color, points):
         if len(points) < 3:
@@ -1712,7 +2203,6 @@ class _NS_syrentha:
             return
         pygame.draw.polygon(surface, color[:3], points)
 
-
     def _ellipse(surface, color, rect, width=0):
         color = _NS_syrentha._clamp(color)
         if len(color) == 4 and color[3] < 255:
@@ -1725,7 +2215,6 @@ class _NS_syrentha:
             return
         pygame.draw.ellipse(surface, color[:3], rect, width)
 
-
     def _rect(surface, color, rect, border_radius=0):
         color = _NS_syrentha._clamp(color)
         if len(color) == 4 and color[3] < 255:
@@ -1733,86 +2222,874 @@ class _NS_syrentha:
             if rw <= 0 or rh <= 0:
                 return
             temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.rect(temp, color, (2, 2, rw, rh), border_radius=border_radius)
+            pygame.draw.rect(temp, color, (2, 2, rw, rh),
+                             border_radius=border_radius)
             surface.blit(temp, (rx - 2, ry - 2))
             return
-        pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
+        pygame.draw.rect(surface, color[:3], rect,
+                         border_radius=border_radius)
 
-
-    def _target_position(boss, x, y):
-        target = getattr(boss, "target", None)
-        if target is not None and getattr(target, "alive", True):
-            # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
-            scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
-            tx = x + (target.x - getattr(boss, "x", x)) / scale
-            ty = y + (target.y - getattr(boss, "y", y)) / scale
-            return int(tx), int(ty)
-        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
-
-
-    # ---------------------------------------------------------------------------
-    # Water helpers
-    # ---------------------------------------------------------------------------
+    # ==================================================================
+    # WATER HELPERS
+    # ==================================================================
     def _draw_water_splash(surface, x, y, size, phase, alpha=255):
         """Water splash particle."""
         flick = math.sin(phase * 3) * 0.15 + 1.0
         s = int(size * flick)
         if s < 1:
             return
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_darkest"], alpha // 3), (x, y), s + 3)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"], alpha // 2), (x, y), s + 1)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"], alpha), (x, y), s)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_light"], alpha), (x, y - 1),
-                  max(1, s - 2))
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_bright"], min(255, alpha)),
-                  (x, y - 2), max(1, s - 4))
+        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_darkest"],
+                                         alpha // 3), (x, y), s + 3)
+        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"],
+                                         alpha // 2), (x, y), s + 1)
+        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"],
+                                         alpha), (x, y), s)
+        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_light"],
+                                         alpha), (x, y - 1), max(1, s - 2))
+        _NS_syrentha._aacircle(surface,
+                               (*_NS_syrentha.PALETTE["water_bright"],
+                                min(255, alpha)), (x, y - 2),
+                               max(1, s - 4))
 
+    def _draw_water_droplet(surface, x, y, size, phase, alpha=255):
+        """Satu tetes air kecil (motif senjata & ornamen)."""
+        s = max(1, int(size))
+        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"],
+                                         alpha), (x, y + 1), s)
+        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"],
+                                         alpha), (x, y), s)
+        _NS_syrentha._aacircle(surface,
+                               (*_NS_syrentha.PALETTE["water_bright"],
+                                min(255, alpha)), (x, y - 1), max(1, s - 1))
 
     def _draw_music_note(surface, cx, cy, phase, alpha=220, size=1.0):
         """Draw a musical note."""
-        # Note head (oval)
-        head_r = int(3 * size)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"], alpha), (cx, cy), head_r + 1)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"], alpha), (cx, cy), head_r)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_light"], alpha),
-                  (cx - 1, cy - 1), max(1, head_r - 1))
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_bright"], min(255, alpha)),
-                  (cx - 1, cy - 1), max(1, head_r - 2))
-
-        # Stem going up
-        stem_h = int(10 * size)
-        _NS_syrentha._aaline(surface, (*_NS_syrentha.PALETTE["water_dark"], alpha),
-                (cx + head_r, cy), (cx + head_r, cy - stem_h), 2)
-        _NS_syrentha._aaline(surface, (*_NS_syrentha.PALETTE["water_mid"], alpha),
-                (cx + head_r, cy), (cx + head_r, cy - stem_h), 1)
-
-        # Flag on top
+        alpha = max(0, min(255, int(alpha)))
+        head_r = max(1, int(3 * size))
+        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"],
+                                         alpha), (cx, cy), head_r + 1)
+        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"],
+                                         alpha), (cx, cy), head_r)
+        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_light"],
+                                         alpha), (cx - 1, cy - 1),
+                               max(1, head_r - 1))
+        _NS_syrentha._aacircle(surface,
+                               (*_NS_syrentha.PALETTE["water_bright"],
+                                min(255, alpha)), (cx - 1, cy - 1),
+                               max(1, head_r - 2))
+        stem_h = max(1, int(10 * size))
+        _NS_syrentha._aaline(surface, (*_NS_syrentha.PALETTE["water_dark"],
+                                       alpha), (cx + head_r, cy),
+                             (cx + head_r, cy - stem_h), 2)
+        _NS_syrentha._aaline(surface, (*_NS_syrentha.PALETTE["water_mid"],
+                                       alpha), (cx + head_r, cy),
+                             (cx + head_r, cy - stem_h), 1)
         flag_pts = [
             (cx + head_r, cy - stem_h),
             (cx + head_r + int(4 * size), cy - stem_h + int(3 * size)),
             (cx + head_r + int(3 * size), cy - stem_h + int(6 * size)),
             (cx + head_r, cy - stem_h + int(4 * size)),
         ]
-        _NS_syrentha._poly(surface, (*_NS_syrentha.PALETTE["water_mid"], alpha), flag_pts)
-        _NS_syrentha._poly(surface, (*_NS_syrentha.PALETTE["water_light"], alpha), [
+        _NS_syrentha._poly(surface, (*_NS_syrentha.PALETTE["water_mid"],
+                                     alpha), flag_pts)
+        _NS_syrentha._poly(surface, (*_NS_syrentha.PALETTE["water_light"],
+                                     alpha), [
             (cx + head_r, cy - stem_h + 1),
             (cx + head_r + int(3 * size), cy - stem_h + int(3 * size)),
             (cx + head_r + int(2 * size), cy - stem_h + int(5 * size)),
             (cx + head_r, cy - stem_h + int(3 * size)),
         ])
 
+    def _draw_star(surface, cx, cy, size=4, color=None):
+        """Draw a 4-pointed star (stun indicator)."""
+        if color is None:
+            color = _NS_syrentha.PALETTE["star_yellow"]
+        _NS_syrentha._aaline(surface, color, (cx, cy - size),
+                             (cx, cy + size), 2)
+        _NS_syrentha._aaline(surface, color, (cx - size, cy),
+                             (cx + size, cy), 2)
+        _NS_syrentha._aaline(surface, color, (cx - size // 2, cy - size // 2),
+                             (cx + size // 2, cy + size // 2), 1)
+        _NS_syrentha._aaline(surface, color, (cx - size // 2, cy + size // 2),
+                             (cx + size // 2, cy - size // 2), 1)
+        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["white"],
+                               (cx, cy), 1)
 
-    # ---------------------------------------------------------------------------
-    # EFFECT SYSTEM
-    # ---------------------------------------------------------------------------
+    # ==================================================================
+    # FLOATING EFFECTS (background)
+    # ==================================================================
+    def _draw_shadow(surface, x, y):
+        shadow = pygame.Surface((120, 24), pygame.SRCALPHA)
+        for radius in range(12, 0, -1):
+            alpha = max(0, (12 - radius) * 14)
+            pygame.draw.ellipse(
+                shadow, (0, 0, 0, alpha),
+                (12 - radius, 12 - radius, 96 + radius * 2, radius * 2))
+        pygame.draw.ellipse(shadow, (*_NS_syrentha.PALETTE["water_darkest"],
+                                     60), (11, 5, 98, 12))
+        surface.blit(shadow, (x - 60, y - 12))
+
+    def _draw_floating_water(surface, cx, cy, phase, trail=False,
+                             facing=1, intense=False):
+        """Water mist below floating Syrentha."""
+        strength = 1.5 if intense else 1.0
+        mist = pygame.Surface((140, 45), pygame.SRCALPHA)
+        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
+        for radius in range(38, 3, -4):
+            alpha = int((38 - radius) * 2.2 * pulse * strength)
+            if alpha > 0:
+                pygame.draw.ellipse(
+                    mist, (*_NS_syrentha.PALETTE["water_darkest"],
+                           min(255, alpha)),
+                    (70 - radius * 2, 22 - radius // 3,
+                     radius * 4, max(3, radius // 2)))
+        surface.blit(mist, (cx - 70, cy - 12))
+        for i, offset in enumerate((-25, -12, 0, 12, 25)):
+            t = (phase * 0.5 + i * 0.2) % 1.0
+            sx = cx + offset + int(math.sin(phase + i) * 3)
+            sy = cy + 5 - int(t * 25)
+            alpha = max(0, min(255, int(200 * (1 - t) * strength)))
+            if alpha <= 0:
+                continue
+            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"],
+                                             alpha), (sx, sy), 5)
+            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"],
+                                             alpha), (sx, sy - 2), 3)
+            _NS_syrentha._aacircle(surface,
+                                   (*_NS_syrentha.PALETTE["water_bright"],
+                                    min(255, alpha)), (sx, sy - 3), 1)
+        for i in range(5):
+            angle = phase * 0.9 + i * math.pi * 2 / 5
+            r = 26 + int(math.sin(phase + i * 1.3) * 4)
+            sx = cx + int(math.cos(angle) * r)
+            sy = cy + int(math.sin(angle) * 7)
+            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_mid"],
+                                   (sx, sy), 3)
+            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_light"],
+                                   (sx, sy), 2)
+            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_hot"],
+                                   (sx, sy), 1)
+        if trail:
+            for i in range(5):
+                sx = cx - (i + 1) * 12 * facing
+                sy = cy + int(math.sin(phase + i) * 2)
+                alpha = max(0, 130 - i * 22)
+                _NS_syrentha._aacircle(surface,
+                                       (*_NS_syrentha.PALETTE["water_mid"],
+                                        alpha), (sx, sy), max(2, 5 - i))
+
+    def _draw_water_aura(surface, x, y, phase):
+        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
+        aura = pygame.Surface((200, 180), pygame.SRCALPHA)
+        for radius in range(80, 5, -4):
+            alpha = int((80 - radius) * 1.2 * pulse)
+            if alpha > 0:
+                _NS_syrentha._aacircle(
+                    aura, (*_NS_syrentha.PALETTE["water_darkest"],
+                           min(255, alpha)), (100, 90), radius)
+        surface.blit(aura, (x - 100, y - 90))
+
+    def _draw_ground_runes(surface, x, y, phase, skill):
+        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
+        ring = pygame.Surface((140, 48), pygame.SRCALPHA)
+        pygame.draw.ellipse(ring, (*_NS_syrentha.PALETTE["water_dark"], 140),
+                            (5, 10, 130, 28), 3)
+        pygame.draw.ellipse(ring, (*_NS_syrentha.PALETTE["water_mid"], 170),
+                            (22, 14, 96, 20), 2)
+        for i in range(10):
+            angle = phase * 0.2 + i * math.pi / 5
+            x1 = 70 + int(math.cos(angle) * 32)
+            y1 = 24 + int(math.sin(angle) * 8)
+            x2 = 70 + int(math.cos(angle) * 60)
+            y2 = 24 + int(math.sin(angle) * 12)
+            pygame.draw.line(ring, (*_NS_syrentha.PALETTE["water_bright"],
+                                    160), (x1, y1), (x2, y2), 1)
+        if skill:
+            pygame.draw.ellipse(ring,
+                                (*_NS_syrentha.PALETTE["water_hot"],
+                                 int(80 * pulse)), (15, 8, 110, 32), 1)
+        surface.blit(ring, (x - 70, y - 24))
+
+    def _draw_body_water_particles(surface, cx, cy, phase):
+        for i in range(8):
+            angle = phase * 0.4 + i * math.pi / 4
+            radius = 32 + int(math.sin(phase * 0.7 + i) * 6)
+            px = cx + int(math.cos(angle) * radius)
+            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
+            alpha = int(140 + math.sin(phase + i * 0.7) * 60)
+            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"],
+                                             alpha), (px, py), 2)
+            _NS_syrentha._aacircle(surface,
+                                   (*_NS_syrentha.PALETTE["water_bright"],
+                                    alpha // 2), (px, py), 1)
+        for i in range(5):
+            t = ((phase * 0.4 + i * 0.2) % 1.0)
+            px = cx + int(math.sin(phase + i) * 18) + (i - 2) * 4
+            py = cy + 30 - int(t * 60)
+            alpha = max(0, int(200 * (1 - t)))
+            if alpha > 0:
+                _NS_syrentha._aacircle(surface,
+                                       (*_NS_syrentha.PALETTE["water_light"],
+                                        alpha), (px, py), 1)
+                _NS_syrentha._aacircle(surface,
+                                       (*_NS_syrentha.PALETTE["water_hot"],
+                                        alpha), (px, py - 1), 1)
+
+    def _draw_cast_flash(surface, x, y, facing, progress):
+        """Kilatan sihir di tangan saat cast."""
+        P = _NS_syrentha.PALETTE
+        if progress < 0.2 or progress > 0.65:
+            return
+        t = (progress - 0.2) / 0.45
+        intensity = math.sin(t * math.pi)
+        fx = x + facing * 24
+        fy = y - 8
+        alpha = max(0, min(255, int(200 * intensity)))
+        radius = int(8 + intensity * 15)
+        _NS_syrentha._aacircle(surface, (*P["water_dark"], alpha // 2),
+                               (fx, fy), radius + 8)
+        _NS_syrentha._aacircle(surface, (*P["water_mid"], alpha),
+                               (fx, fy), radius)
+        _NS_syrentha._aacircle(surface, (*P["water_light"], alpha),
+                               (fx, fy), radius // 2)
+        _NS_syrentha._aacircle(surface, (*P["water_hot"], min(255, alpha)),
+                               (fx, fy), max(1, radius // 4))
+        _NS_syrentha._aacircle(surface, P["water_white"], (fx, fy),
+                               max(1, radius // 6))
+
+    def _draw_footfall_dust(surface, x, y, facing, phase):
+        P = _NS_syrentha.PALETTE
+        for i in range(3):
+            t = ((phase * 0.6 + i * 0.33) % 1.0)
+            dx = x - facing * int(t * 16)
+            dy = y + 4 + int(t * 6)
+            alpha = max(0, int(130 * (1 - t)))
+            if alpha > 0:
+                _NS_syrentha._aacircle(surface, (*P["water_dark"], alpha),
+                                       (dx, dy), 3)
+                _NS_syrentha._aacircle(surface, (*P["water_mid"], alpha),
+                                       (dx, dy), 2)
+
+    # ==================================================================
+    # BODY RENDERING - Naga Siren v3 (rig satu arah-hadap)
+    # ==================================================================
+    def _draw_syrentha_body(surface, cx, cy, facing, phase, action, ap=0.0,
+                            flash=0):
+        """Komposisi badan: ekor -> torso -> lengan/tombak -> kepala ->
+        surai. Semua titik lewat ``L`` (mirror facing + lean + bob)."""
+        NS = _NS_syrentha
+        lean, root_y = NS._rig_shift(action, phase, ap)
+
+        def L(lx, ly):
+            return NS._local_to_screen(cx, cy, facing, lean, root_y, lx, ly)
+
+        P = NS.PALETTE
+        hold_spear = action not in ("song", "siren")
+
+        # ── Ekor sisik (belakang badan) ──────────────────────────────
+        NS._draw_mermaid_tail(surface, cx, cy, facing, phase, L)
+
+        # ── Torso + bra emas ────────────────────────────────────────
+        NS._draw_torso(surface, cx, cy, facing, phase, L, flash)
+
+        # ── Lengan + tombak ─────────────────────────────────────────
+        if action == "melee":
+            NS._draw_melee_arms(surface, cx, cy, facing, phase, ap, L)
+        elif action in ("song", "siren"):
+            NS._draw_singing_arms(surface, cx, cy, facing, phase, L)
+        else:
+            NS._draw_idle_arms(surface, cx, cy, facing, phase, L, hold_spear)
+
+        # ── Kepala + surai sirip ────────────────────────────────────
+        NS._draw_head(surface, cx, cy, facing, phase, L)
+        NS._draw_fin_hair(surface, cx, cy, facing, phase, L)
+
+        # ── Partikel air di sekitar badan ───────────────────────────
+        NS._draw_body_water_particles(surface, cx, cy, phase)
+
+    def _draw_mermaid_tail(surface, cx, cy, facing, phase, L):
+        """Ekor sisik panjang yang melengkung turun (segmen)."""
+        P = _NS_syrentha.PALETTE
+        sway = math.sin(phase * 0.6) * 4
+        sway2 = math.sin(phase * 0.9 + 0.5) * 3
+
+        # Base (lebar di pinggul)
+        tail_base = [
+            (-15, -8), (15, -8), (18, 2), (16, 15), (13, 25),
+            (-13, 25), (-16, 15), (-18, 2),
+        ]
+        _NS_syrentha._poly(surface, (*P["shadow_deep"], 255),
+                           [L(p[0] + 2, p[1] + 2) for p in tail_base])
+        _NS_syrentha._poly(surface, P["scale_darkest"],
+                           [L(*p) for p in tail_base])
+        _NS_syrentha._poly(surface, P["scale_dark"], [L(*p) for p in [
+            (-13, -6), (13, -6), (16, 2), (14, 14), (11, 23),
+            (-11, 23), (-14, 14), (-16, 2)]])
+        _NS_syrentha._poly(surface, P["scale_mid"], [L(*p) for p in [
+            (-10, -4), (10, -4), (13, 2), (11, 12), (8, 20),
+            (-8, 20), (-11, 12), (-13, 2)]])
+        _NS_syrentha._aaline(surface, P["scale_high"], L(-6, -2), L(-4, 18), 1)
+
+        # Segmen tengah (lebih ramping)
+        mid_tail = [
+            (-13, 24), (13, 24), (11, 34), (8, 42), (-8, 42), (-11, 34),
+        ]
+        _NS_syrentha._poly(surface, P["scale_darkest"],
+                           [L(p[0] + sway, p[1]) for p in mid_tail])
+        _NS_syrentha._poly(surface, P["scale_dark"], [
+            L(-11 + sway, 25), L(11 + sway, 25), L(9 + sway, 33),
+            L(7 + sway, 40), L(-7 + sway, 40), L(-9 + sway, 33)])
+        _NS_syrentha._poly(surface, P["scale_mid"], [
+            L(-8 + sway, 26), L(8 + sway, 26), L(6 + sway, 32),
+            L(5 + sway, 38), L(-5 + sway, 38), L(-6 + sway, 32)])
+
+        # Segmen bawah + sirip ekor
+        bot_x = sway + sway2
+        _NS_syrentha._poly(surface, P["scale_darkest"], [
+            L(-8 + sway, 41), L(8 + sway, 41), L(5 + bot_x, 50),
+            L(-5 + bot_x, 50)])
+        _NS_syrentha._poly(surface, P["scale_dark"], [
+            L(-7 + sway, 42), L(7 + sway, 42), L(4 + bot_x, 49),
+            L(-4 + bot_x, 49)])
+
+        # Sirip ekor berbentuk kipas
+        fin_pts = [
+            (-4 + bot_x, 50), (4 + bot_x, 50),
+            (15 + sway2 + bot_x, 60), (10 + sway + bot_x, 65),
+            (bot_x, 62),
+            (-10 - sway + bot_x, 65), (-15 - sway2 + bot_x, 60),
+        ]
+        _NS_syrentha._poly(surface, (*P["shadow_deep"], 255),
+                           [L(p[0], p[1] + 2) for p in fin_pts])
+        _NS_syrentha._poly(surface, P["scale_darkest"],
+                           [L(*p) for p in fin_pts])
+        _NS_syrentha._poly(surface, P["scale_dark"], [L(*p) for p in [
+            (-3 + bot_x, 51), (3 + bot_x, 51), (12 + sway2 + bot_x, 59),
+            (8 + sway + bot_x, 63), (bot_x, 60),
+            (-8 - sway + bot_x, 63), (-12 - sway2 + bot_x, 59)]])
+        _NS_syrentha._poly(surface, P["scale_mid"], [L(*p) for p in [
+            (-2 + bot_x, 52), (2 + bot_x, 52), (8 + bot_x, 58),
+            (5 + bot_x, 61), (bot_x, 58),
+            (-5 + bot_x, 61), (-8 + bot_x, 58)]])
+        for i in range(-2, 3):
+            _NS_syrentha._aaline(surface, P["scale_high"], L(0, 52),
+                                 L(i * 4 + (sway2 if i > 0 else -sway2),
+                                   62 - abs(i)), 1)
+
+        # Sisik (pola teardrop)
+        for row in range(6):
+            for col in range(-2, 3):
+                sx = col * 5 + (row % 2) * 2
+                sy = -2 + row * 5
+                if 0 < sy < 40:
+                    _NS_syrentha._aacircle(surface, P["scale_darkest"],
+                                           L(sx, sy), 3)
+                    _NS_syrentha._aacircle(surface, P["scale_dark"],
+                                           L(sx, sy - 1), 2)
+                    _NS_syrentha._aacircle(surface, P["scale_mid"],
+                                           L(sx, sy - 1), 1)
+                    _NS_syrentha._aacircle(surface, P["scale_high"],
+                                           L(sx, sy - 1), 1)
+
+        # Sirip samping kecil
+        for side in (-1, 1):
+            pts = [
+                (side * 16, 8 - 3), (side * 24, 8 - 2), (side * 26, 8 + 4),
+                (side * 22, 8 + 8), (side * 16, 8 + 5),
+            ]
+            _NS_syrentha._poly(surface, P["scale_darkest"],
+                               [L(*p) for p in pts])
+            _NS_syrentha._poly(surface, P["scale_dark"], [L(*p) for p in [
+                (side * 17, 8 - 2), (side * 23, 8 - 1), (side * 24, 8 + 3),
+                (side * 21, 8 + 6), (side * 17, 8 + 4)]])
+            _NS_syrentha._aaline(surface, P["scale_high"], L(side * 18, 8),
+                                 L(side * 24, 8 + 4), 1)
+
+    def _draw_torso(surface, cx, cy, facing, phase, L, flash=0):
+        """Torso feminin + bra emas + trim pinggang."""
+        P = _NS_syrentha.PALETTE
+        _NS_syrentha._poly(surface, (*P["shadow_deep"], 255), [L(*p) for p in [
+            (-12, -10), (12, -10), (10, 12), (-10, 12)]])
+        _NS_syrentha._poly(surface, P["skin_darkest"], [L(*p) for p in [
+            (-12, -10), (-13, -5), (-11, 5), (-10, 12),
+            (10, 12), (11, 5), (13, -5), (12, -10)]])
+        _NS_syrentha._poly(surface, P["skin_dark"], [L(*p) for p in [
+            (-11, -9), (-12, -4), (-10, 4), (-8, 10),
+            (8, 10), (10, 4), (12, -4), (11, -9)]])
+        _NS_syrentha._poly(surface, P["skin_mid"], [L(*p) for p in [
+            (-9, -7), (-10, -3), (-8, 3), (-6, 8),
+            (6, 8), (8, 3), (10, -3), (9, -7)]])
+        _NS_syrentha._aacircle(surface, P["skin_light"], L(-5, -4), 2)
+        _NS_syrentha._aacircle(surface, P["skin_light"], L(5, -4), 2)
+        _NS_syrentha._aacircle(surface, P["skin_shine"], L(-5, -5), 1)
+        _NS_syrentha._aacircle(surface, P["skin_shine"], L(5, -5), 1)
+
+        # Bra emas (dua cup + konektor + permata)
+        for side in (-1, 1):
+            cup = L(side * 5, -2)
+            _NS_syrentha._aacircle(surface, P["gold_darkest"], cup, 5)
+            _NS_syrentha._aacircle(surface, P["gold_dark"], cup, 4)
+            _NS_syrentha._aacircle(surface, P["gold_mid"], L(side * 5 - 1, -3), 3)
+            _NS_syrentha._aacircle(surface, P["gold_light"], L(side * 5 - 1, -4), 2)
+            _NS_syrentha._aacircle(surface, P["gold_shine"], L(side * 5 - 2, -5), 1)
+        _NS_syrentha._aacircle(surface, P["gold_dark"], L(0, 0), 2)
+        _NS_syrentha._aacircle(surface, P["water_mid"], L(0, 0), 1)
+
+        # Trim pinggang emas
+        _NS_syrentha._rect(surface, P["gold_darkest"],
+                           (L(-12, 10)[0], L(-12, 10)[1], 24, 4))
+        _NS_syrentha._rect(surface, P["gold_dark"],
+                           (L(-11, 10)[0], L(-11, 10)[1], 22, 3))
+        _NS_syrentha._rect(surface, P["gold_mid"],
+                           (L(-10, 11)[0], L(-10, 11)[1], 20, 2))
+        _NS_syrentha._rect(surface, P["gold_light"],
+                           (L(-8, 11)[0], L(-8, 11)[1], 16, 1))
+        _NS_syrentha._aacircle(surface, P["gold_darkest"], L(0, 12), 3)
+        _NS_syrentha._aacircle(surface, P["water_dark"], L(0, 12), 2)
+        _NS_syrentha._aacircle(surface, P["water_bright"], L(0, 12), 1)
+
+    def _draw_arm_segment(surface, x1, y1, x2, y2):
+        """Segmen lengan (kulit telanjang)."""
+        P = _NS_syrentha.PALETTE
+        _NS_syrentha._aaline(surface, P["shadow_deep"], (x1 + 1, y1 + 1),
+                             (x2 + 1, y2 + 1), 6)
+        _NS_syrentha._aaline(surface, P["skin_darkest"], (x1, y1), (x2, y2), 5)
+        _NS_syrentha._aaline(surface, P["skin_dark"], (x1, y1), (x2, y2), 4)
+        _NS_syrentha._aaline(surface, P["skin_mid"], (x1, y1), (x2, y2), 2)
+        _NS_syrentha._aaline(surface, P["skin_light"], (x1 - 1, y1 - 1),
+                             (x2 - 1, y2 - 1), 1)
+
+    def _draw_naga_hand(surface, x, y):
+        P = _NS_syrentha.PALETTE
+        _NS_syrentha._aacircle(surface, P["shadow_deep"], (x + 1, y + 1), 4)
+        _NS_syrentha._aacircle(surface, P["skin_darkest"], (x, y), 3)
+        _NS_syrentha._aacircle(surface, P["skin_dark"], (x, y - 1), 3)
+        _NS_syrentha._aacircle(surface, P["skin_mid"], (x - 1, y - 1), 2)
+        _NS_syrentha._aacircle(surface, P["skin_light"], (x - 1, y - 2), 1)
+
+    def _draw_singing_hand(surface, x, y, phase):
+        _NS_syrentha._draw_naga_hand(surface, x, y)
+        P = _NS_syrentha.PALETTE
+        pulse = math.sin(phase * 2) * 0.3 + 0.7
+        _NS_syrentha._aacircle(surface, (*P["water_dark"], int(150 * pulse)),
+                               (x, y), 8)
+        _NS_syrentha._aacircle(surface, (*P["water_mid"], int(180 * pulse)),
+                               (x, y), 6)
+        _NS_syrentha._aacircle(surface, (*P["water_light"], int(200 * pulse)),
+                               (x, y), 4)
+        _NS_syrentha._aacircle(surface, (*P["water_hot"], int(230 * pulse)),
+                               (x, y), 2)
+        for i in range(4):
+            angle = phase * 2 + i * math.pi / 2
+            sx = x + int(math.cos(angle) * 8)
+            sy = y + int(math.sin(angle) * 8)
+            _NS_syrentha._aacircle(surface, P["water_white"], (sx, sy), 1)
+
+    def _draw_spear(surface, grip, angle, length, facing, phase,
+                    intense=False):
+        """Tombak Naga dengan daun bilah melengkung + kait belakang.
+
+        ``grip`` sudah dalam ruang LAYAR; ``angle`` dalam rad (sama
+        konvensi _spear_angle). ``facing`` dipakai untuk kait & aksen.
+        """
+        P = _NS_syrentha.PALETTE
+        hx, hy = int(grip[0]), int(grip[1])
+        f = 1 if facing >= 0 else -1
+        tip_x = hx + int(math.sin(angle) * length) * f
+        tip_y = hy + int(math.cos(angle) * length)
+
+        # Gagang
+        _NS_syrentha._aaline(surface, P["shadow_deep"], (hx + 2, hy + 2),
+                             (tip_x + 2, tip_y + 2), 4)
+        _NS_syrentha._aaline(surface, P["gold_darkest"], (hx, hy),
+                             (tip_x, tip_y), 3)
+        _NS_syrentha._aaline(surface, P["gold_dark"], (hx, hy),
+                             (tip_x, tip_y), 2)
+        _NS_syrentha._aaline(surface, P["gold_mid"], (hx - 1, hy - 1),
+                             (tip_x - 1, tip_y - 1), 1)
+        for i in range(3):
+            t = 0.25 + i * 0.25
+            rx = int(hx + (tip_x - hx) * t)
+            ry = int(hy + (tip_y - hy) * t)
+            _NS_syrentha._aacircle(surface, P["gold_darkest"], (rx, ry), 3)
+            _NS_syrentha._aacircle(surface, P["gold_mid"], (rx, ry), 2)
+            _NS_syrentha._aacircle(surface, P["gold_light"], (rx - 1, ry - 1), 1)
+
+        # Daun bilah (leaf-shape) di ujung
+        perp = angle + math.pi / 2
+        px = math.cos(perp) * f
+        py = math.sin(perp)
+        blade_len = 14
+        blade_tip_x = tip_x + int(math.sin(angle) * blade_len) * f
+        blade_tip_y = tip_y + int(math.cos(angle) * blade_len)
+        mid_x = tip_x + int(math.sin(angle) * blade_len * 0.5) * f
+        mid_y = tip_y + int(math.cos(angle) * blade_len * 0.5)
+        blade_pts = [
+            (tip_x + int(px * 1), tip_y + int(py * 1)),
+            (mid_x + int(px * 4), mid_y + int(py * 4)),
+            (blade_tip_x, blade_tip_y),
+            (mid_x - int(px * 4), mid_y - int(py * 4)),
+            (tip_x - int(px * 1), tip_y - int(py * 1)),
+        ]
+        _NS_syrentha._poly(surface, P["shadow_deep"],
+                           [(p[0] + 2, p[1] + 2) for p in blade_pts])
+        _NS_syrentha._poly(surface, P["blade_darkest"], blade_pts)
+        _NS_syrentha._poly(surface, P["blade_dark"], [
+            (tip_x, tip_y),
+            (mid_x + int(px * 3), mid_y + int(py * 3)),
+            (blade_tip_x, blade_tip_y),
+            (mid_x - int(px * 3), mid_y - int(py * 3))])
+        _NS_syrentha._poly(surface, P["blade_mid"], [
+            (tip_x, tip_y),
+            (mid_x + int(px * 2), mid_y + int(py * 2)),
+            (blade_tip_x, blade_tip_y),
+            (mid_x - int(px * 2), mid_y - int(py * 2))])
+        _NS_syrentha._aaline(surface, P["blade_light"], (tip_x, tip_y),
+                             (blade_tip_x, blade_tip_y), 1)
+        _NS_syrentha._aaline(surface, P["blade_shine"], (tip_x, tip_y),
+                             (blade_tip_x, blade_tip_y), 1)
+
+        if intense:
+            for i in range(4):
+                t = i / 4
+                bx = int(tip_x + (blade_tip_x - tip_x) * t)
+                by = int(tip_y + (blade_tip_y - tip_y) * t)
+                _NS_syrentha._aacircle(surface, (*P["water_mid"], 200),
+                                       (bx, by), 3)
+                _NS_syrentha._aacircle(surface, (*P["water_light"], 220),
+                                       (bx, by), 2)
+                _NS_syrentha._aacircle(surface, (*P["water_hot"], 240),
+                                       (bx, by), 1)
+
+        # Kait belakang (naga style) di pangkal bilah
+        hook_x = tip_x - int(math.sin(angle) * 3) * f
+        hook_y = tip_y - int(math.cos(angle) * 3)
+        _NS_syrentha._poly(surface, P["gold_dark"], [
+            (hook_x, hook_y),
+            (hook_x - int(px * 5), hook_y - int(py * 5)),
+            (hook_x + int(math.cos(angle - 0.5) * 6) * f,
+             hook_y + int(math.sin(angle - 0.5) * 6))])
+        _NS_syrentha._poly(surface, P["gold_mid"], [
+            (hook_x, hook_y),
+            (hook_x - int(px * 4), hook_y - int(py * 4)),
+            (hook_x + int(math.cos(angle - 0.5) * 5) * f,
+             hook_y + int(math.sin(angle - 0.5) * 5))])
+
+        # Pommel (ujung gagang)
+        pommel_x = hx - int(math.sin(angle) * 3) * f
+        pommel_y = hy - int(math.cos(angle) * 3)
+        _NS_syrentha._aacircle(surface, P["gold_darkest"],
+                               (pommel_x, pommel_y), 3)
+        _NS_syrentha._aacircle(surface, P["gold_mid"], (pommel_x, pommel_y), 2)
+        _NS_syrentha._aacircle(surface, P["gold_shine"],
+                               (pommel_x - 1, pommel_y - 1), 1)
+
+    def _draw_idle_arms(surface, cx, cy, facing, phase, L, hold_spear=True):
+        """Idle - tombak di satu tangan."""
+        sway = math.sin(phase * 0.7) * 2
+        if hold_spear:
+            sa = L(11, 2)
+            se = L(19, 8 + sway)
+            sh = L(23, 16 + sway)
+            _NS_syrentha._draw_arm_segment(surface, *sa, *se)
+            _NS_syrentha._draw_arm_segment(surface, *se, *sh)
+            grip = _NS_syrentha._local_to_screen(
+                cx, cy, facing, 0, 0,
+                *_NS_syrentha._front_grip_local("idle", 0.0, phase))
+            _NS_syrentha._draw_spear(surface, grip,
+                                     _NS_syrentha._spear_angle("idle", phase),
+                                     _NS_syrentha._spear_len("idle"),
+                                     facing, phase)
+        fa = L(-11, 2)
+        fe = L(-17, 8)
+        fh = L(-20, 14)
+        _NS_syrentha._draw_arm_segment(surface, *fa, *fe)
+        _NS_syrentha._draw_arm_segment(surface, *fe, *fh)
+        _NS_syrentha._draw_naga_hand(surface, *fh)
+
+    def _draw_melee_arms(surface, cx, cy, facing, phase, ap, L):
+        """Tombak menusuk ke depan (tusukan)."""
+        fa = L(-11, 2)
+        fe = L(-17, 8)
+        fh = L(-20, 14)
+        _NS_syrentha._draw_arm_segment(surface, *fa, *fe)
+        _NS_syrentha._draw_arm_segment(surface, *fe, *fh)
+        _NS_syrentha._draw_naga_hand(surface, *fh)
+
+        # Lengan tombak - mengikuti grip pose-driven
+        sa = L(11, 2)
+        grip = _NS_syrentha._local_to_screen(
+            cx, cy, facing, 0, 0,
+            *_NS_syrentha._front_grip_local("attack", ap, phase))
+        _NS_syrentha._draw_arm_segment(surface, *sa, *grip)
+        _NS_syrentha._draw_spear(surface, grip,
+                                 _NS_syrentha._spear_angle("attack", phase,
+                                                           ap),
+                                 _NS_syrentha._spear_len("attack"),
+                                 facing, phase,
+                                 intense=(0.3 < ap < 0.7))
+
+    def _draw_singing_arms(surface, cx, cy, facing, phase, L):
+        """Kedua lengan terangkat (pose menyanyi)."""
+        sway = math.sin(phase * 1.5) * 2
+        for side in (-1, 1):
+            sa = L(side * 11, 2)
+            se = L(side * 19, -5 + sway)
+            sh = L(side * 23, -17 + sway)
+            _NS_syrentha._draw_arm_segment(surface, *sa, *se)
+            _NS_syrentha._draw_arm_segment(surface, *se, *sh)
+            _NS_syrentha._draw_singing_hand(surface, *sh, phase)
+
+    def _draw_head(surface, cx, cy, facing, phase, L):
+        """Kepala Naga - kulit pucat, mata menyala teal."""
+        P = _NS_syrentha.PALETTE
+        _NS_syrentha._rect(surface, P["skin_dark"],
+                           (L(-3, 8)[0], L(-3, 8)[1], 6, 6))
+        _NS_syrentha._rect(surface, P["skin_mid"],
+                           (L(-2, 8)[0], L(-2, 8)[1], 4, 5))
+        _NS_syrentha._aacircle(surface, P["shadow_deep"], L(2, 2), 10)
+        _NS_syrentha._aacircle(surface, P["skin_darkest"], L(0, 0), 9)
+        _NS_syrentha._aacircle(surface, P["skin_dark"], L(-1, -1), 8)
+        _NS_syrentha._aacircle(surface, P["skin_mid"], L(-2, -2), 6)
+        _NS_syrentha._aacircle(surface, P["skin_light"], L(-3, -3), 3)
+        _NS_syrentha._aacircle(surface, P["skin_shine"], L(-3, -4), 1)
+        _NS_syrentha._aacircle(surface, (*P["scale_dark"], 60), L(-4, 3), 2)
+        _NS_syrentha._aacircle(surface, (*P["scale_dark"], 60), L(4, 3), 2)
+        _NS_syrentha._aaline(surface, P["skin_darkest"], L(-5, -3), L(-2, -3), 1)
+        _NS_syrentha._aaline(surface, P["skin_darkest"], L(2, -3), L(5, -3), 1)
+
+        eye_pulse = math.sin(phase * 2) * 0.2 + 0.8
+        for ex in (-3, 3):
+            _NS_syrentha._aacircle(surface, P["shadow_deep"], L(ex, -1), 2)
+            _NS_syrentha._aacircle(surface, P["eye_dark"], L(ex, -1),
+                                   max(1, int(2 * eye_pulse)))
+            _NS_syrentha._aacircle(surface, P["eye_mid"], L(ex, -1),
+                                   max(1, int(1 * eye_pulse)))
+            _NS_syrentha._aacircle(surface, P["eye_bright"], L(ex, -1), 1)
+        _NS_syrentha._aaline(surface, P["skin_dark"], L(0, 0), L(0, 2), 1)
+        _NS_syrentha._rect(surface, P["hair_darkest"],
+                           (L(-2, 4)[0], L(-2, 4)[1], 4, 2))
+        _NS_syrentha._rect(surface, P["hair_dark"],
+                           (L(-2, 4)[0], L(-2, 4)[1], 4, 1))
+        _NS_syrentha._aacircle(surface, P["gold_dark"], L(0, -6), 2)
+        _NS_syrentha._aacircle(surface, P["water_mid"], L(0, -6), 1)
+        _NS_syrentha._aacircle(surface, P["water_bright"], L(0, -6), 1)
+        for i in range(2):
+            _NS_syrentha._aaline(surface, P["scale_darkest"], L(-7, 3 + i * 2),
+                                 L(-5, 3 + i * 2), 1)
+            _NS_syrentha._aaline(surface, P["scale_darkest"], L(5, 3 + i * 2),
+                                 L(7, 3 + i * 2), 1)
+
+    def _draw_fin_hair(surface, cx, cy, facing, phase, L):
+        """Surai sirip oranye besar seperti mahkota + rambut terurai."""
+        P = _NS_syrentha.PALETTE
+        wave = math.sin(phase * 0.7) * 3
+        wave2 = math.sin(phase * 1.0 + 0.5) * 2
+
+        center_spikes = [
+            (0, -25, 5), (-6, -22, 4), (6, -22, 4), (-12, -18, 4),
+            (12, -18, 4), (-16, -12, 3), (16, -12, 3),
+        ]
+        for x_off, y_off, base_w in center_spikes:
+            tip = L(x_off + int(wave * (x_off / 15)),
+                    y_off - int(abs(wave2)))
+            base_l = L(int(x_off * 0.4), -6)
+            base_r = L(int(x_off * 0.4), -6)
+            b_left = L(int(x_off * 0.4) - base_w, -6)
+            b_right = L(int(x_off * 0.4) + base_w, -6)
+            _NS_syrentha._poly(surface, P["hair_darkest"],
+                               [b_left, b_right, tip])
+            _NS_syrentha._poly(surface, P["hair_dark"],
+                               [L(int(x_off * 0.4) - base_w + 1, -7),
+                                L(int(x_off * 0.4) + base_w - 1, -7),
+                                L(x_off, y_off + 1 - int(abs(wave2)))])
+            _NS_syrentha._poly(surface, P["hair_mid"],
+                               [L(int(x_off * 0.4) - base_w + 2, -8),
+                                L(int(x_off * 0.4) + base_w - 2, -8),
+                                L(x_off, y_off + 2 - int(abs(wave2)))])
+            _NS_syrentha._aaline(surface, P["hair_light"],
+                                 base_l, L(x_off, y_off + 3), 1)
+            _NS_syrentha._aacircle(surface, P["hair_shine"], tip, 1)
+
+        for side in (-1, 1):
+            _NS_syrentha._poly(surface, P["hair_darkest"], [L(*p) for p in [
+                (side * 8, -3), (side * 14 + int(wave * 0.5), 4),
+                (side * 18 + int(wave), 12),
+                (side * 16 + int(wave2), 22), (side * 12, 20),
+                (side * 8, 12), (side * 6, 3)]])
+            _NS_syrentha._poly(surface, P["hair_dark"], [L(*p) for p in [
+                (side * 8, -2), (side * 13, 4), (side * 16, 12),
+                (side * 14, 20), (side * 10, 18), (side * 7, 10)]])
+            _NS_syrentha._poly(surface, P["hair_mid"], [L(*p) for p in [
+                (side * 8, -1), (side * 11, 4), (side * 13, 10),
+                (side * 11, 16), (side * 8, 8)]])
+            _NS_syrentha._aaline(surface, P["hair_light"], L(side * 9, 1),
+                                 L(side * 12, 14), 1)
+
+        # Mahkota emas di dahi
+        _NS_syrentha._aaline(surface, P["gold_dark"], L(-8, -6), L(8, -6), 3)
+        _NS_syrentha._aaline(surface, P["gold_mid"], L(-8, -6), L(8, -6), 2)
+        _NS_syrentha._aaline(surface, P["gold_light"], L(-8, -7), L(8, -7), 1)
+        for i in (-6, -2, 2, 6):
+            _NS_syrentha._poly(surface, P["gold_dark"], [L(i - 1, -6),
+                                                         L(i + 1, -6),
+                                                         L(i, -9)])
+            _NS_syrentha._poly(surface, P["gold_mid"], [L(i, -6), L(i + 1, -6),
+                                                        L(i, -8)])
+
+    # ==================================================================
+    # THRUST TRAIL (canvas fallback)
+    # ==================================================================
+    def _draw_spear_thrust_trail(surface, x, y, facing, progress):
+        """Trail tusukan tombak dasar."""
+        if progress < 0.3 or progress > 0.7:
+            return
+        t = (progress - 0.3) / 0.4
+        trail_x = x + facing * (25 + int(t * 25))
+        trail_y = y - 3
+        for i in range(6):
+            seg_t = i / 6
+            ax = trail_x - facing * int(seg_t * 20)
+            ay = trail_y
+            alpha_seg = max(0, min(255, int(220 * (1 - seg_t))))
+            size = max(1, int(4 * (1 - seg_t * 0.4)))
+            _NS_syrentha._aacircle(surface,
+                                   (*_NS_syrentha.PALETTE["water_mid"],
+                                    alpha_seg), (ax, ay), size + 1)
+            _NS_syrentha._aacircle(surface,
+                                   (*_NS_syrentha.PALETTE["water_light"],
+                                    alpha_seg), (ax, ay), size)
+            _NS_syrentha._aacircle(surface,
+                                   (*_NS_syrentha.PALETTE["water_hot"],
+                                    alpha_seg), (ax, ay), max(1, size - 1))
+
+    def _draw_spear_water_trail(surface, x, y, facing, progress, phase):
+        """Trail air saat Riptide cast."""
+        if progress < 0.15 or progress > 0.75:
+            return
+        t = (progress - 0.15) / 0.6
+        trail_x = x + facing * (25 + int(t * 30))
+        trail_y = y - 3
+        for i in range(8):
+            seg_t = i / 8
+            ax = trail_x - facing * int(seg_t * 25)
+            ay = trail_y + int(math.sin(seg_t * math.pi + phase) * 3)
+            alpha_seg = max(0, min(255, int(240 * (1 - seg_t))))
+            size = max(1, int(5 * (1 - seg_t * 0.3)))
+            _NS_syrentha._aacircle(surface,
+                                   (*_NS_syrentha.PALETTE["water_dark"],
+                                    alpha_seg), (ax, ay), size + 2)
+            _NS_syrentha._aacircle(surface,
+                                   (*_NS_syrentha.PALETTE["water_mid"],
+                                    alpha_seg), (ax, ay), size + 1)
+            _NS_syrentha._aacircle(surface,
+                                   (*_NS_syrentha.PALETTE["water_light"],
+                                    alpha_seg), (ax, ay), size)
+            _NS_syrentha._aacircle(surface,
+                                   (*_NS_syrentha.PALETTE["water_bright"],
+                                    alpha_seg), (ax, ay), max(1, size - 1))
+            _NS_syrentha._aacircle(surface,
+                                   (*_NS_syrentha.PALETTE["water_hot"],
+                                    alpha_seg), (ax, ay), max(1, size - 2))
+
+    # ==================================================================
+    # POSE ENTRY POINTS
+    # ==================================================================
+    def _draw_syrentha_idle(surface, boss, x, y):
+        NS = _NS_syrentha
+        phase = float(getattr(boss, "pulse", 0.0))
+        action, _p, ap = NS._resolve_pose(boss, False)
+        bob = int(math.sin(phase * 0.8) * 2)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY + 11)
+            NS._draw_floating_water(surface, x, y + NS.GROUND_DY - 2, phase)
+        NS._draw_syrentha_body(surface, x, y + bob, boss.direction,
+                               phase, action, ap)
+
+    def _draw_syrentha_walk(surface, boss, x, y):
+        NS = _NS_syrentha
+        phase = boss.pulse * 2.2
+        action, _p, ap = NS._resolve_pose(boss, True)
+        bob = int(abs(math.sin(phase * 1.3)) * 3)
+        sway = int(math.sin(phase) * 2)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x + sway, y + NS.GROUND_DY + 11)
+            NS._draw_floating_water(surface, x + sway, y + NS.GROUND_DY - 2,
+                                    phase, trail=True, facing=boss.direction)
+            NS._draw_footfall_dust(surface, x + sway, y + NS.GROUND_DY,
+                                   boss.direction, phase)
+        NS._draw_syrentha_body(surface, x + sway, y - bob, boss.direction,
+                               phase, action, ap)
+
+    def _draw_syrentha_melee_attack(surface, boss, x, y):
+        NS = _NS_syrentha
+        action, phase, ap = NS._resolve_pose(boss)
+        raw = getattr(boss, "_sy_attack_progress", 0.0)
+        raw = max(0.0, min(1.0, raw))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        facing = getattr(boss, "direction", 1) or 1
+        recoil = int(math.sin(ap * math.pi) * 3) * -facing
+        if not portrait:
+            NS._draw_shadow(surface, x + recoil, y + NS.GROUND_DY + 11)
+            NS._draw_floating_water(surface, x + recoil,
+                                    y + NS.GROUND_DY - 2, boss.pulse,
+                                    intense=True)
+            NS._draw_spear_thrust_trail(surface, x + recoil, y, facing, raw)
+        NS._draw_syrentha_body(surface, x + recoil, y, boss.direction,
+                               boss.pulse, "melee", ap)
+
+    def _draw_syrentha_riptide_cast(surface, boss, x, y, timer, phase):
+        """Q - Riptide: tusukan yang melepaskan gelombang pasang."""
+        NS = _NS_syrentha
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        facing = getattr(boss, "direction", 1) or 1
+        cast_progress = NS._tide_progress(boss, timer)
+        ap = NS._attack_curve(max(0.0, min(1.0, cast_progress)))
+
+        # spawn wave dekat pertengahan tusukan (canvas fallback)
+        if (0.35 < cast_progress < 0.45
+                and not getattr(boss, "_sy_riptide_spawned", False)
+                and not getattr(boss, "_sy_live_owned", False)
+                and not portrait):
+            NS._spawn_riptide(boss, x, y)
+            boss._sy_riptide_spawned = True
+        if cast_progress < 0.2 or cast_progress > 0.9:
+            boss._sy_riptide_spawned = False
+
+        lunge = int(math.sin(cast_progress * math.pi) * 6) * facing
+        if not portrait:
+            NS._draw_shadow(surface, x + lunge, y + NS.GROUND_DY + 11)
+            NS._draw_floating_water(surface, x + lunge,
+                                    y + NS.GROUND_DY - 2, phase,
+                                    intense=True)
+            NS._draw_spear_water_trail(surface, x + lunge, y, facing,
+                                       cast_progress, phase)
+            NS._draw_cast_flash(surface, x + lunge, y, boss.direction,
+                                cast_progress)
+        NS._draw_syrentha_body(surface, x + lunge, y, boss.direction,
+                               phase, "riptide", ap)
+
+    def _draw_syrentha_singing(surface, boss, x, y, timer, phase):
+        """Kedua lengan terangkat, pose menyanyi (W dan R)."""
+        NS = _NS_syrentha
+        action, _p, ap = NS._resolve_pose(boss)
+        bob = int(math.sin(phase * 1.0) * 2)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY + 11)
+            NS._draw_floating_water(surface, x, y + NS.GROUND_DY - 2, phase,
+                                    intense=True)
+        NS._draw_syrentha_body(surface, x, y + bob, boss.direction,
+                               phase, action, ap)
+
+    # ==================================================================
+    # EFFECT SYSTEM (canvas fallback)
+    # ==================================================================
     class RiptideWave:
-        """Q - Water wave crescent that travels forward."""
+        """Q - Gelombang sabit air yang melaju ke depan."""
+
         def __init__(self, sx, sy, direction, max_dist=180):
             self.x = float(sx)
             self.y = float(sy)
@@ -1838,85 +3115,75 @@ class _NS_syrentha:
             t = self.age / self.max_age
             alpha = int(255 * (1 - t * 0.5))
             px, py = int(self.x), int(self.y)
+            P = _NS_syrentha.PALETTE
 
-            # Crescent wave
             for i in range(-13, 14):
                 curve = math.cos(i * 0.22) * 7
                 vy = py + i * 2
                 vx = px + int(curve) * self.direction
-
                 w_alpha = int(alpha * (1 - abs(i) / 14))
                 if w_alpha <= 0:
                     continue
-
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"], w_alpha), (vx, vy), 4)
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"], w_alpha), (vx, vy), 3)
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_light"], w_alpha), (vx, vy), 2)
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_bright"], w_alpha), (vx, vy), 1)
-
-            # Bright core arc
+                _NS_syrentha._aacircle(surface, (*P["water_dark"], w_alpha),
+                                       (vx, vy), 4)
+                _NS_syrentha._aacircle(surface, (*P["water_mid"], w_alpha),
+                                       (vx, vy), 3)
+                _NS_syrentha._aacircle(surface, (*P["water_light"], w_alpha),
+                                       (vx, vy), 2)
+                _NS_syrentha._aacircle(surface, (*P["water_bright"], w_alpha),
+                                       (vx, vy), 1)
             for i in range(-11, 12):
                 curve = math.cos(i * 0.22) * 7
                 vy = py + i * 2
                 vx = px + int(curve) * self.direction
-
                 core_alpha = int(alpha * (1 - abs(i) / 12))
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_hot"], core_alpha),
-                          (vx, vy), 2)
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_white"], core_alpha),
-                          (vx, vy), 1)
-
-            # Trailing splashes
+                _NS_syrentha._aacircle(surface, (*P["water_hot"], core_alpha),
+                                       (vx, vy), 2)
+                _NS_syrentha._aacircle(surface, (*P["water_white"], core_alpha),
+                                       (vx, vy), 1)
             for i in range(5):
                 angle = phase * 2 + i * math.pi / 2.5
                 r = 12 + int(math.sin(phase + i) * 4)
                 sx = px + int(math.cos(angle) * r) * self.direction
                 sy = py + int(math.sin(angle) * r)
-                _NS_syrentha._draw_water_splash(surface, sx, sy, 3, phase, alpha)
+                _NS_syrentha._draw_water_splash(surface, sx, sy, 3, phase,
+                                                alpha)
 
+    class _CanvasImpact:
+        """Semburan air sederhana (canvas fallback untuk impact)."""
 
-    # ---------------------------------------------------------------------------
-    # State management
-    # ---------------------------------------------------------------------------
-    def _detect_moving(boss):
-        if not hasattr(boss, "_sy_last_x"):
-            boss._sy_last_x = boss.x
-            boss._sy_last_y = boss.y
-            return False
-        dx = abs(boss.x - boss._sy_last_x)
-        dy = abs(boss.y - boss._sy_last_y)
-        boss._sy_last_x = boss.x
-        boss._sy_last_y = boss.y
-        return dx + dy > 0.3
+        def __init__(self, boss, x, y):
+            self.boss = boss
+            self.x = x
+            self.y = y
+            self.age = 0
+            self.max_age = 14
+            self.alive = True
 
+        def update(self):
+            self.age += 1
+            if self.age >= self.max_age:
+                self.alive = False
 
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
-        timer = int(getattr(boss, "timer", 0))
-        previous = int(getattr(boss, "_sy_prev_timer", 0))
-        active = bool(getattr(boss, "_sy_attack_active", False))
-
-        if timer >= cooldown - 1 and previous <= 1:
-            boss._sy_attack_active = True
-            boss._sy_attack_frame = 0
-            active = True
-        elif active:
-            boss._sy_attack_frame = int(getattr(boss, "_sy_attack_frame", 0)) + 1
-            if boss._sy_attack_frame > cooldown:
-                boss._sy_attack_active = False
-                boss._sy_attack_frame = 0
-                active = False
-        elif timer <= 0:
-            boss._sy_attack_active = False
-            boss._sy_attack_frame = 0
-            active = False
-
-        boss._sy_prev_timer = timer
-        boss._sy_attack_progress = (
-            min(1.0, getattr(boss, "_sy_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
-
+        def draw(self, surface, phase):
+            P = _NS_syrentha.PALETTE
+            t = self.age / self.max_age
+            alpha = max(0, int(220 * (1 - t)))
+            if alpha <= 0:
+                return
+            r = int(8 + 20 * t)
+            _NS_syrentha._aacircle(surface, (*P["water_dark"], alpha),
+                                   (self.x, self.y), r + 3)
+            _NS_syrentha._aacircle(surface, (*P["water_mid"], alpha),
+                                   (self.x, self.y), r)
+            _NS_syrentha._aacircle(surface, (*P["water_light"], alpha),
+                                   (self.x, self.y), max(2, r // 2))
+            for i in range(6):
+                ang = i * math.pi / 3 + phase
+                dx = int(self.x + math.cos(ang) * (r + 6))
+                dy = int(self.y + math.sin(ang) * (r + 6) * 0.5)
+                _NS_syrentha._draw_water_splash(surface, dx, dy, 2,
+                                                phase + i, alpha)
 
     def _manage_effects(boss, surface, phase):
         if not hasattr(boss, "_sy_effects"):
@@ -1926,1242 +3193,374 @@ class _NS_syrentha:
             e.draw(surface, phase)
         boss._sy_effects = [e for e in boss._sy_effects if e.alive]
 
-
     def _spawn_riptide(boss, x, y):
         if not hasattr(boss, "_sy_effects"):
             boss._sy_effects = []
         sx = x + 30 * boss.direction
         sy = y - 5
-        boss._sy_effects.append(_NS_syrentha.RiptideWave(sx, sy, boss.direction))
-
-
-    # ===================================================================
-    # MAIN DRAW ENTRY POINT
-    # ===================================================================
-    def draw_syrentha(surface, boss, x, y):
-        """Entry point."""
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_syrentha._detect_moving(boss)
-        _NS_syrentha._update_attack_anim(boss)
-
-        attacking = (
-            getattr(boss, "_sy_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
-
-        # ---------- Background layers ----------
-        _NS_syrentha._draw_water_aura(surface, x, y, pulse)
-        _NS_syrentha._draw_ground_runes(surface, x, y + 45, pulse, active_skill)
-
-        # ---------- Skill ground effects ----------
-        if active_skill == "w":
-            _NS_syrentha._draw_enchanting_song_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_syrentha._draw_song_of_siren_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # ---------- Mirror images (drawn before boss so boss appears on top) ----
-        if active_skill == "e":
-            _NS_syrentha._draw_mirror_images(surface, boss, x, y, skill_timer, pulse)
-
-        # ---------- Character body ----------
-        if active_skill == "q":
-            _NS_syrentha._draw_syrentha_riptide_cast(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_syrentha._draw_syrentha_singing(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_syrentha._draw_syrentha_singing(surface, boss, x, y, skill_timer, pulse)
-        elif attacking:
-            _NS_syrentha._draw_syrentha_melee_attack(surface, boss, x, y)
-        elif moving:
-            _NS_syrentha._draw_syrentha_walk(surface, boss, x, y)
-        else:
-            _NS_syrentha._draw_syrentha_idle(surface, boss, x, y)
-
-        # ---------- Effects (wave, etc) ----------
-        _NS_syrentha._manage_effects(boss, surface, pulse)
-
-        # ---------- Skill foreground effects ----------
-        if active_skill == "w":
-            _NS_syrentha._draw_enchanting_song_foreground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_syrentha._draw_song_of_siren_foreground(surface, boss, x, y, skill_timer, pulse)
-
-
-    # ===================================================================
-    # POSE MODES
-    # ===================================================================
-    def _draw_syrentha_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_syrentha._draw_shadow(surface, x, y + 55)
-        _NS_syrentha._draw_floating_water(surface, x, y + 42, boss.pulse)
-        _NS_syrentha._draw_syrentha_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
-
-    def _draw_syrentha_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_syrentha._draw_shadow(surface, x + sway, y + 55)
-        _NS_syrentha._draw_floating_water(surface, x + sway, y + 42, phase, trail=True,
-                            facing=boss.direction)
-        _NS_syrentha._draw_syrentha_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
-
-
-    def _draw_syrentha_melee_attack(surface, boss, x, y):
-        """Spear thrust animation."""
-        progress = getattr(boss, "_sy_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-
-        lunge = int(math.sin(progress * math.pi) * 6) * boss.direction
-        _NS_syrentha._draw_shadow(surface, x + lunge, y + 55)
-        _NS_syrentha._draw_floating_water(surface, x + lunge, y + 42, boss.pulse, intense=True)
-        _NS_syrentha._draw_syrentha_body(surface, x + lunge, y, boss.direction, boss.pulse,
-                           "melee", progress)
-        _NS_syrentha._draw_spear_thrust_trail(surface, x + lunge, y, boss.direction, progress)
-
-
-    def _draw_syrentha_riptide_cast(surface, boss, x, y, timer, phase):
-        """Q - Riptide cast."""
-        cast_duration = 40
-        elapsed = cast_duration - timer
-        progress = max(0.0, min(1.0, elapsed / cast_duration))
-
-        if 0.35 < progress < 0.45 and not getattr(boss, "_sy_riptide_spawned", False):
-            _NS_syrentha._spawn_riptide(boss, x, y)
-            boss._sy_riptide_spawned = True
-        if progress < 0.2 or progress > 0.9:
-            boss._sy_riptide_spawned = False
-
-        lunge = int(math.sin(progress * math.pi) * 6) * boss.direction
-        _NS_syrentha._draw_shadow(surface, x + lunge, y + 55)
-        _NS_syrentha._draw_floating_water(surface, x + lunge, y + 42, phase, intense=True)
-        _NS_syrentha._draw_syrentha_body(surface, x + lunge, y, boss.direction, phase,
-                           "melee", progress)
-        _NS_syrentha._draw_spear_water_trail(surface, x + lunge, y, boss.direction, progress, phase)
-
-
-    def _draw_syrentha_singing(surface, boss, x, y, timer, phase):
-        """Both arms raised, singing pose (for W and R)."""
-        bob = int(math.sin(phase * 1.0) * 2)
-        _NS_syrentha._draw_shadow(surface, x, y + 55)
-        _NS_syrentha._draw_floating_water(surface, x, y + 42, phase, intense=True)
-        _NS_syrentha._draw_syrentha_body(surface, x, y + bob, boss.direction, phase, "singing")
-
-
-    # ===================================================================
-    # BODY RENDERING – HD detailed Naga Siren
-    # ===================================================================
-    def _draw_syrentha_body(surface, cx, cy, facing, phase, action,
-                           attack_progress=0):
-        """Main body composition - upper humanoid + mermaid tail."""
-        # Mermaid tail (drawn first, behind body)
-        _NS_syrentha._draw_mermaid_tail(surface, cx, cy + 25, facing, phase)
-
-        # Torso/chest with gold bra armor
-        _NS_syrentha._draw_torso(surface, cx, cy - 5, phase)
-
-        # Arms
-        if action == "melee":
-            _NS_syrentha._draw_melee_arms(surface, cx, cy - 5, facing, phase, attack_progress)
-        elif action == "singing":
-            _NS_syrentha._draw_singing_arms(surface, cx, cy - 5, facing, phase)
-        else:
-            _NS_syrentha._draw_idle_arms(surface, cx, cy - 5, facing, phase)
-
-        # Head with big orange hair/fins
-        _NS_syrentha._draw_head(surface, cx, cy - 25, facing, phase)
-
-        # Big flowing fin-hair around head
-        _NS_syrentha._draw_fin_hair(surface, cx, cy - 25, facing, phase)
-
-        # Water particles around body
-        _NS_syrentha._draw_body_water_particles(surface, cx, cy, phase)
-
-
-    def _draw_mermaid_tail(surface, cx, cy, facing, phase):
-        """Long scaled mermaid tail curving down."""
-        sway = math.sin(phase * 0.6) * 4
-        sway2 = math.sin(phase * 0.9 + 0.5) * 3
-
-        # Tail curves - draw as multi-segment
-        # Base (widest at hips)
-        tail_base = [
-            (cx - 15, cy - 8),
-            (cx + 15, cy - 8),
-            (cx + 18, cy + 2),
-            (cx + 16, cy + 15),
-            (cx + 13, cy + 25),
-            (cx - 13, cy + 25),
-            (cx - 16, cy + 15),
-            (cx - 18, cy + 2),
-        ]
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in tail_base])
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_darkest"], tail_base)
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_dark"], [
-            (cx - 13, cy - 6),
-            (cx + 13, cy - 6),
-            (cx + 16, cy + 2),
-            (cx + 14, cy + 14),
-            (cx + 11, cy + 23),
-            (cx - 11, cy + 23),
-            (cx - 14, cy + 14),
-            (cx - 16, cy + 2),
-        ])
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_mid"], [
-            (cx - 10, cy - 4),
-            (cx + 10, cy - 4),
-            (cx + 13, cy + 2),
-            (cx + 11, cy + 12),
-            (cx + 8, cy + 20),
-            (cx - 8, cy + 20),
-            (cx - 11, cy + 12),
-            (cx - 13, cy + 2),
-        ])
-
-        # Highlight
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["scale_high"],
-                (cx - 6, cy - 2), (cx - 4, cy + 18), 1)
-
-        # Middle tail section (thinner)
-        mid_x = cx + int(sway)
-        mid_tail = [
-            (cx - 13, cy + 24),
-            (cx + 13, cy + 24),
-            (mid_x + 11, cy + 34),
-            (mid_x + 8, cy + 42),
-            (mid_x - 8, cy + 42),
-            (mid_x - 11, cy + 34),
-        ]
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_darkest"], mid_tail)
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_dark"], [
-            (cx - 11, cy + 25),
-            (cx + 11, cy + 25),
-            (mid_x + 9, cy + 33),
-            (mid_x + 7, cy + 40),
-            (mid_x - 7, cy + 40),
-            (mid_x - 9, cy + 33),
-        ])
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_mid"], [
-            (cx - 8, cy + 26),
-            (cx + 8, cy + 26),
-            (mid_x + 6, cy + 32),
-            (mid_x + 5, cy + 38),
-            (mid_x - 5, cy + 38),
-            (mid_x - 6, cy + 32),
-        ])
-
-        # Bottom tail with fin
-        bot_x = mid_x + int(sway2)
-        bot_tail = [
-            (mid_x - 8, cy + 41),
-            (mid_x + 8, cy + 41),
-            (bot_x + 5, cy + 50),
-            (bot_x - 5, cy + 50),
-        ]
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_darkest"], bot_tail)
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_dark"], [
-            (mid_x - 7, cy + 42),
-            (mid_x + 7, cy + 42),
-            (bot_x + 4, cy + 49),
-            (bot_x - 4, cy + 49),
-        ])
-
-        # ===== Tail fin at bottom =====
-        fin_x = bot_x
-        fin_y = cy + 50
-        # Fan-shaped fin
-        fin_pts = [
-            (fin_x - 4, fin_y),
-            (fin_x + 4, fin_y),
-            (fin_x + 15 + int(sway2), fin_y + 10),
-            (fin_x + 10 + int(sway), fin_y + 15),
-            (fin_x, fin_y + 12),
-            (fin_x - 10 - int(sway), fin_y + 15),
-            (fin_x - 15 - int(sway2), fin_y + 10),
-        ]
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["shadow_deep"], [(p[0] + 2, p[1] + 2) for p in fin_pts])
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_darkest"], fin_pts)
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_dark"], [
-            (fin_x - 3, fin_y + 1),
-            (fin_x + 3, fin_y + 1),
-            (fin_x + 12 + int(sway2), fin_y + 9),
-            (fin_x + 8 + int(sway), fin_y + 13),
-            (fin_x, fin_y + 10),
-            (fin_x - 8 - int(sway), fin_y + 13),
-            (fin_x - 12 - int(sway2), fin_y + 9),
-        ])
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_mid"], [
-            (fin_x - 2, fin_y + 2),
-            (fin_x + 2, fin_y + 2),
-            (fin_x + 8, fin_y + 8),
-            (fin_x + 5, fin_y + 11),
-            (fin_x, fin_y + 8),
-            (fin_x - 5, fin_y + 11),
-            (fin_x - 8, fin_y + 8),
-        ])
-        # Fin ridges
-        for i in range(-2, 3):
-            rx1 = fin_x
-            ry1 = fin_y + 2
-            rx2 = fin_x + i * 4 + int(sway2 if i > 0 else -sway2)
-            ry2 = fin_y + 12 - abs(i)
-            _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["scale_high"], (rx1, ry1), (rx2, ry2), 1)
-
-        # ===== Scale pattern on tail =====
-        for row in range(6):
-            for col in range(-2, 3):
-                sx = cx + col * 5 + (row % 2) * 2
-                sy = cy - 2 + row * 5
-                if 0 < sy - cy < 40:
-                    # Draw scale (small teardrop shape)
-                    _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["scale_darkest"], (sx, sy), 3)
-                    _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["scale_dark"], (sx, sy - 1), 2)
-                    _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["scale_mid"], (sx, sy - 1), 1)
-                    _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["scale_high"], (sx, sy - 1), 1)
-
-        # ===== Side fins (small) =====
-        for side in (-1, 1):
-            fin_side_x = cx + side * 16
-            fin_side_y = cy + 8
-            side_fin_pts = [
-                (fin_side_x, fin_side_y - 3),
-                (fin_side_x + side * 8, fin_side_y - 2),
-                (fin_side_x + side * 10, fin_side_y + 4),
-                (fin_side_x + side * 6, fin_side_y + 8),
-                (fin_side_x, fin_side_y + 5),
-            ]
-            _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_darkest"], side_fin_pts)
-            _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["scale_dark"], [
-                (fin_side_x + side * 1, fin_side_y - 2),
-                (fin_side_x + side * 7, fin_side_y - 1),
-                (fin_side_x + side * 8, fin_side_y + 3),
-                (fin_side_x + side * 5, fin_side_y + 6),
-                (fin_side_x + side * 1, fin_side_y + 4),
-            ])
-            _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["scale_high"],
-                    (fin_side_x + side * 2, fin_side_y),
-                    (fin_side_x + side * 8, fin_side_y + 4), 1)
-
-
-    def _draw_torso(surface, cx, cy, phase):
-        """Upper body with gold bra armor and pale skin."""
-        # Torso shape (feminine curves)
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["shadow_deep"], [
-            (cx - 12 + 2, cy - 10 + 2), (cx + 12 + 2, cy - 10 + 2),
-            (cx + 10 + 2, cy + 12 + 2), (cx - 10 + 2, cy + 12 + 2),
-        ])
-
-        torso_pts = [
-            (cx - 12, cy - 10),
-            (cx - 13, cy - 5),
-            (cx - 11, cy + 5),
-            (cx - 10, cy + 12),
-            (cx + 10, cy + 12),
-            (cx + 11, cy + 5),
-            (cx + 13, cy - 5),
-            (cx + 12, cy - 10),
-        ]
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["skin_darkest"], torso_pts)
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["skin_dark"], [
-            (cx - 11, cy - 9),
-            (cx - 12, cy - 4),
-            (cx - 10, cy + 4),
-            (cx - 8, cy + 10),
-            (cx + 8, cy + 10),
-            (cx + 10, cy + 4),
-            (cx + 12, cy - 4),
-            (cx + 11, cy - 9),
-        ])
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["skin_mid"], [
-            (cx - 9, cy - 7),
-            (cx - 10, cy - 3),
-            (cx - 8, cy + 3),
-            (cx - 6, cy + 8),
-            (cx + 6, cy + 8),
-            (cx + 8, cy + 3),
-            (cx + 10, cy - 3),
-            (cx + 9, cy - 7),
-        ])
-
-        # Highlight (shoulders/chest)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_light"], (cx - 5, cy - 4), 2)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_light"], (cx + 5, cy - 4), 2)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_shine"], (cx - 5, cy - 5), 1)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_shine"], (cx + 5, cy - 5), 1)
-
-        # ===== Gold bra / chest armor =====
-        # Two cups
-        for side in (-1, 1):
-            cup_x = cx + side * 5
-            cup_y = cy - 2
-            # Cup shape
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_darkest"], (cup_x, cup_y), 5)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_dark"], (cup_x, cup_y), 4)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_mid"], (cup_x - 1, cup_y - 1), 3)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_light"], (cup_x - 1, cup_y - 2), 2)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_shine"], (cup_x - 2, cup_y - 3), 1)
-
-        # Center connector between cups (gold gem)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_dark"], (cx, cy), 2)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_mid"], (cx, cy), 1)
-
-        # Waist/hip transition with gold trim
-        _NS_syrentha._rect(surface, _NS_syrentha.PALETTE["gold_darkest"], (cx - 12, cy + 10, 24, 4))
-        _NS_syrentha._rect(surface, _NS_syrentha.PALETTE["gold_dark"], (cx - 11, cy + 10, 22, 3))
-        _NS_syrentha._rect(surface, _NS_syrentha.PALETTE["gold_mid"], (cx - 10, cy + 11, 20, 2))
-        _NS_syrentha._rect(surface, _NS_syrentha.PALETTE["gold_light"], (cx - 8, cy + 11, 16, 1))
-
-        # Belt gem (water/teal)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_darkest"], (cx, cy + 12), 3)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_dark"], (cx, cy + 12), 2)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_bright"], (cx, cy + 12), 1)
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Idle - spear in one hand."""
-        sway = math.sin(phase * 0.7) * 2
-
-        # Spear arm (facing side)
-        sa_x = cx + facing * 11
-        sa_y = cy + 2
-        se_x = sa_x + facing * 8
-        se_y = cy + 8 + int(sway)
-        sh_x = se_x + facing * 4
-        sh_y = se_y + 8
-        _NS_syrentha._draw_arm_segment(surface, sa_x, sa_y, se_x, se_y)
-        _NS_syrentha._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-
-        # Spear
-        _NS_syrentha._draw_spear(surface, sh_x, sh_y, facing, phase, angle=0.3)
-
-        # Free arm (opposite)
-        fa_x = cx + (-facing) * 11
-        fa_y = cy + 2
-        fe_x = fa_x + (-facing) * 6
-        fe_y = cy + 8
-        fh_x = fe_x + (-facing) * 3
-        fh_y = fe_y + 6
-        _NS_syrentha._draw_arm_segment(surface, fa_x, fa_y, fe_x, fe_y)
-        _NS_syrentha._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y)
-        _NS_syrentha._draw_naga_hand(surface, fh_x, fh_y)
-
-
-    def _draw_melee_arms(surface, cx, cy, facing, phase, progress):
-        """Spear thrust animation."""
-        # Free arm stable
-        fa_x = cx + (-facing) * 11
-        fa_y = cy + 2
-        fe_x = fa_x + (-facing) * 6
-        fe_y = cy + 8
-        fh_x = fe_x + (-facing) * 3
-        fh_y = fe_y + 6
-        _NS_syrentha._draw_arm_segment(surface, fa_x, fa_y, fe_x, fe_y)
-        _NS_syrentha._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y)
-        _NS_syrentha._draw_naga_hand(surface, fh_x, fh_y)
-
-        # Spear arm - thrust forward
-        sa_x = cx + facing * 11
-        sa_y = cy + 2
-
-        if progress < 0.3:
-            # Wind up (pull back)
-            t = progress / 0.3
-            thrust = -6 * t
-        elif progress < 0.6:
-            # Thrust forward
-            t = (progress - 0.3) / 0.3
-            thrust = -6 + 24 * t
-        else:
-            # Recovery
-            t = (progress - 0.6) / 0.4
-            thrust = 18 - 18 * t
-
-        se_x = sa_x + facing * (8 + int(thrust * 0.5))
-        se_y = cy + 8
-        sh_x = se_x + facing * (5 + int(thrust * 0.5))
-        sh_y = se_y + 4
-
-        _NS_syrentha._draw_arm_segment(surface, sa_x, sa_y, se_x, se_y)
-        _NS_syrentha._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-
-        # Spear pointing forward
-        spear_angle = 0.1 if progress < 0.6 else 0.3
-        _NS_syrentha._draw_spear(surface, sh_x, sh_y, facing, phase, angle=spear_angle,
-                   intense=(0.3 < progress < 0.7))
-
-
-    def _draw_singing_arms(surface, cx, cy, facing, phase):
-        """Both arms raised up in singing pose."""
-        sway = math.sin(phase * 1.5) * 2
-
-        for side in (-1, 1):
-            sa_x = cx + side * 11
-            sa_y = cy + 2
-            # Elbow raised
-            se_x = sa_x + side * 8
-            se_y = cy - 5 + int(sway)
-            # Hand raised high
-            sh_x = se_x + side * 4
-            sh_y = se_y - 12 + int(sway)
-
-            _NS_syrentha._draw_arm_segment(surface, sa_x, sa_y, se_x, se_y)
-            _NS_syrentha._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-            _NS_syrentha._draw_singing_hand(surface, sh_x, sh_y, phase)
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Skin arm segment (bare)."""
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["shadow_deep"],
-                (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 6)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["skin_darkest"], (x1, y1), (x2, y2), 5)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["skin_dark"], (x1, y1), (x2, y2), 4)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["skin_mid"], (x1, y1), (x2, y2), 2)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["skin_light"], (x1 - 1, y1 - 1), (x2 - 1, y2 - 1), 1)
-
-
-    def _draw_naga_hand(surface, x, y):
-        """Naga hand with slight claws."""
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["shadow_deep"], (x + 1, y + 1), 4)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_darkest"], (x, y), 3)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_dark"], (x, y - 1), 3)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_mid"], (x - 1, y - 1), 2)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_light"], (x - 1, y - 2), 1)
-
-
-    def _draw_singing_hand(surface, x, y, phase):
-        """Hand raised while singing - with water sparkles."""
-        _NS_syrentha._draw_naga_hand(surface, x, y)
-        # Glow around hand
-        pulse = math.sin(phase * 2) * 0.3 + 0.7
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"], int(150 * pulse)), (x, y), 8)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"], int(180 * pulse)), (x, y), 6)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_light"], int(200 * pulse)), (x, y), 4)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_hot"], int(230 * pulse)), (x, y), 2)
-
-        # Small sparkles
-        for i in range(4):
-            angle = phase * 2 + i * math.pi / 2
-            sx = x + int(math.cos(angle) * 8)
-            sy = y + int(math.sin(angle) * 8)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_white"], (sx, sy), 1)
-
-
-    def _draw_spear(surface, hx, hy, facing, phase, angle=0, intense=False):
-        """Naga spear with curved blade."""
-        length = 40
-        tip_x = hx + int(math.cos(angle) * length) * facing
-        tip_y = hy + int(math.sin(angle) * length)
-
-        # Shaft
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["shadow_deep"],
-                (hx + 2, hy + 2), (tip_x + 2, tip_y + 2), 4)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["gold_darkest"], (hx, hy), (tip_x, tip_y), 3)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["gold_dark"], (hx, hy), (tip_x, tip_y), 2)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["gold_mid"], (hx - 1, hy - 1), (tip_x - 1, tip_y - 1), 1)
-
-        # Gold decorative rings on shaft
-        for i in range(3):
-            t = 0.25 + i * 0.25
-            rx = int(hx + (tip_x - hx) * t)
-            ry = int(hy + (tip_y - hy) * t)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_darkest"], (rx, ry), 3)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_mid"], (rx, ry), 2)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_light"], (rx - 1, ry - 1), 1)
-
-        # Spear blade at tip (curved leaf-shape)
-        perp_angle = angle + math.pi / 2
-        px = math.cos(perp_angle) * facing
-        py = math.sin(perp_angle)
-
-        blade_len = 14
-        blade_tip_x = tip_x + int(math.cos(angle) * blade_len) * facing
-        blade_tip_y = tip_y + int(math.sin(angle) * blade_len)
-
-        # Blade curve mid points
-        mid_x = tip_x + int(math.cos(angle) * blade_len * 0.5) * facing
-        mid_y = tip_y + int(math.sin(angle) * blade_len * 0.5)
-
-        blade_pts = [
-            (tip_x + int(px * 1), tip_y + int(py * 1)),
-            (mid_x + int(px * 4), mid_y + int(py * 4)),
-            (blade_tip_x, blade_tip_y),
-            (mid_x - int(px * 4), mid_y - int(py * 4)),
-            (tip_x - int(px * 1), tip_y - int(py * 1)),
-        ]
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in blade_pts])
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["blade_darkest"], blade_pts)
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["blade_dark"], [
-            (tip_x, tip_y),
-            (mid_x + int(px * 3), mid_y + int(py * 3)),
-            (blade_tip_x, blade_tip_y),
-            (mid_x - int(px * 3), mid_y - int(py * 3)),
-        ])
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["blade_mid"], [
-            (tip_x, tip_y),
-            (mid_x + int(px * 2), mid_y + int(py * 2)),
-            (blade_tip_x, blade_tip_y),
-            (mid_x - int(px * 2), mid_y - int(py * 2)),
-        ])
-        # Blade highlight
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["blade_light"],
-                (tip_x, tip_y), (blade_tip_x, blade_tip_y), 1)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["blade_shine"],
-                (tip_x, tip_y), (blade_tip_x, blade_tip_y), 1)
-
-        # Water aura on blade
-        if intense:
-            for i in range(4):
-                t = i / 4
-                bx = int(tip_x + (blade_tip_x - tip_x) * t)
-                by = int(tip_y + (blade_tip_y - tip_y) * t)
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"], 200), (bx, by), 3)
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_light"], 220), (bx, by), 2)
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_hot"], 240), (bx, by), 1)
-
-        # Small back-hook at base of blade (naga style)
-        hook_x = tip_x - int(math.cos(angle) * 3) * facing
-        hook_y = tip_y - int(math.sin(angle) * 3)
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["gold_dark"], [
-            (hook_x, hook_y),
-            (hook_x - int(px * 5), hook_y - int(py * 5)),
-            (hook_x + int(math.cos(angle - 0.5) * 6) * facing,
-             hook_y + int(math.sin(angle - 0.5) * 6)),
-        ])
-        _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["gold_mid"], [
-            (hook_x, hook_y),
-            (hook_x - int(px * 4), hook_y - int(py * 4)),
-            (hook_x + int(math.cos(angle - 0.5) * 5) * facing,
-             hook_y + int(math.sin(angle - 0.5) * 5)),
-        ])
-
-        # Pommel (butt of spear)
-        pommel_x = hx - int(math.cos(angle) * 3) * facing
-        pommel_y = hy - int(math.sin(angle) * 3)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_darkest"], (pommel_x, pommel_y), 3)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_mid"], (pommel_x, pommel_y), 2)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_shine"], (pommel_x - 1, pommel_y - 1), 1)
-
-
-    def _draw_head(surface, cx, cy, facing, phase):
-        """Naga head - pale skin, glowing eyes."""
-        # Neck
-        _NS_syrentha._rect(surface, _NS_syrentha.PALETTE["skin_dark"], (cx - 3, cy + 8, 6, 6))
-        _NS_syrentha._rect(surface, _NS_syrentha.PALETTE["skin_mid"], (cx - 2, cy + 8, 4, 5))
-
-        # Head shape
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["shadow_deep"], (cx + 2, cy + 2), 10)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_darkest"], (cx, cy), 9)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_dark"], (cx - 1, cy - 1), 8)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_mid"], (cx - 2, cy - 2), 6)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_light"], (cx - 3, cy - 3), 3)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["skin_shine"], (cx - 3, cy - 4), 1)
-
-        # Cheek shading
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["scale_dark"], 60), (cx - 4, cy + 3), 2)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["scale_dark"], 60), (cx + 4, cy + 3), 2)
-
-        # Eye ridges (small dark line above eyes)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["skin_darkest"],
-                (cx - 5, cy - 3), (cx - 2, cy - 3), 1)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["skin_darkest"],
-                (cx + 2, cy - 3), (cx + 5, cy - 3), 1)
-
-        # Eyes - glowing teal
-        eye_pulse = math.sin(phase * 2) * 0.2 + 0.8
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["shadow_deep"], (cx - 3, cy - 1), 2)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["shadow_deep"], (cx + 3, cy - 1), 2)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["eye_dark"], (cx - 3, cy - 1),
-                  max(1, int(2 * eye_pulse)))
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["eye_mid"], (cx - 3, cy - 1),
-                  max(1, int(1 * eye_pulse)))
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["eye_bright"], (cx - 3, cy - 1), 1)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["eye_dark"], (cx + 3, cy - 1),
-                  max(1, int(2 * eye_pulse)))
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["eye_mid"], (cx + 3, cy - 1),
-                  max(1, int(1 * eye_pulse)))
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["eye_bright"], (cx + 3, cy - 1), 1)
-
-        # Nose (small)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["skin_dark"], (cx, cy), (cx, cy + 2), 1)
-
-        # Lips (small, singing shape)
-        _NS_syrentha._rect(surface, _NS_syrentha.PALETTE["hair_darkest"], (cx - 2, cy + 4, 4, 2))
-        _NS_syrentha._rect(surface, _NS_syrentha.PALETTE["hair_dark"], (cx - 2, cy + 4, 4, 1))
-
-        # Small gold forehead gem
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["gold_dark"], (cx, cy - 6), 2)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_mid"], (cx, cy - 6), 1)
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_bright"], (cx, cy - 6), 1)
-
-        # Gill lines on neck/cheek
-        for i in range(2):
-            _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["scale_darkest"],
-                    (cx - 7, cy + 3 + i * 2), (cx - 5, cy + 3 + i * 2), 1)
-            _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["scale_darkest"],
-                    (cx + 5, cy + 3 + i * 2), (cx + 7, cy + 3 + i * 2), 1)
-
-
-    def _draw_fin_hair(surface, cx, cy, facing, phase):
-        """Big orange spiky fin-hair around head like a crown."""
-        wave = math.sin(phase * 0.7) * 3
-        wave2 = math.sin(phase * 1.0 + 0.5) * 2
-
-        # Draw multiple spike fins radiating outward from top of head
-        # Center top - large
-        center_spikes = [
-            (0, -25, 5),      # (x_offset, y_offset, base_width)
-            (-6, -22, 4),
-            (6, -22, 4),
-            (-12, -18, 4),
-            (12, -18, 4),
-            (-16, -12, 3),
-            (16, -12, 3),
-        ]
-
-        for x_off, y_off, base_w in center_spikes:
-            tip_x = cx + x_off + int(wave * (x_off / 15))
-            tip_y = cy + y_off - int(abs(wave2))
-            # Base position on head
-            base_x = cx + int(x_off * 0.4)
-            base_y = cy - 6
-
-            # Spike/fin shape
-            spike_pts = [
-                (base_x - base_w, base_y),
-                (base_x + base_w, base_y),
-                (tip_x, tip_y),
-            ]
-            _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["hair_darkest"], spike_pts)
-            _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["hair_dark"], [
-                (base_x - base_w + 1, base_y - 1),
-                (base_x + base_w - 1, base_y - 1),
-                (tip_x, tip_y + 1),
-            ])
-            _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["hair_mid"], [
-                (base_x - base_w + 2, base_y - 2),
-                (base_x + base_w - 2, base_y - 2),
-                (tip_x, tip_y + 2),
-            ])
-            # Highlight streak
-            _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["hair_light"],
-                    (base_x, base_y - 3), (tip_x, tip_y + 3), 1)
-            # Bright tip
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["hair_shine"], (tip_x, tip_y), 1)
-
-        # Side hair - long flowing back
-        for side in (-1, 1):
-            hair_pts = [
-                (cx + side * 8, cy - 3),
-                (cx + side * 14 + int(wave * 0.5), cy + 4),
-                (cx + side * 18 + int(wave), cy + 12),
-                (cx + side * 16 + int(wave2), cy + 22),
-                (cx + side * 12, cy + 20),
-                (cx + side * 8, cy + 12),
-                (cx + side * 6, cy + 3),
-            ]
-            _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["hair_darkest"], hair_pts)
-            _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["hair_dark"], [
-                (cx + side * 8, cy - 2),
-                (cx + side * 13, cy + 4),
-                (cx + side * 16, cy + 12),
-                (cx + side * 14, cy + 20),
-                (cx + side * 10, cy + 18),
-                (cx + side * 7, cy + 10),
-            ])
-            _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["hair_mid"], [
-                (cx + side * 8, cy - 1),
-                (cx + side * 11, cy + 4),
-                (cx + side * 13, cy + 10),
-                (cx + side * 11, cy + 16),
-                (cx + side * 8, cy + 8),
-            ])
-            # Hair streaks
-            _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["hair_light"],
-                    (cx + side * 9, cy + 1), (cx + side * 12, cy + 14), 1)
-
-        # Gold crown/circlet on forehead
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["gold_dark"],
-                (cx - 8, cy - 6), (cx + 8, cy - 6), 3)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["gold_mid"],
-                (cx - 8, cy - 6), (cx + 8, cy - 6), 2)
-        _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["gold_light"],
-                (cx - 8, cy - 7), (cx + 8, cy - 7), 1)
-
-        # Small crown points
-        for i in (-6, -2, 2, 6):
-            _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["gold_dark"], [
-                (cx + i - 1, cy - 6),
-                (cx + i + 1, cy - 6),
-                (cx + i, cy - 9),
-            ])
-            _NS_syrentha._poly(surface, _NS_syrentha.PALETTE["gold_mid"], [
-                (cx + i, cy - 6),
-                (cx + i + 1, cy - 6),
-                (cx + i, cy - 8),
-            ])
-
-
-    def _draw_body_water_particles(surface, cx, cy, phase):
-        """Water droplets around body."""
-        for i in range(8):
-            angle = phase * 0.4 + i * math.pi / 4
-            radius = 32 + int(math.sin(phase * 0.7 + i) * 6)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-            alpha = int(140 + math.sin(phase + i * 0.7) * 60)
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"], alpha), (px, py), 2)
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_bright"], alpha // 2), (px, py), 1)
-
-        # Rising water drops
-        for i in range(5):
-            t = ((phase * 0.4 + i * 0.2) % 1.0)
-            px = cx + int(math.sin(phase + i) * 18) + (i - 2) * 4
-            py = cy + 30 - int(t * 60)
-            alpha = int(200 * (1 - t))
-            if alpha > 0:
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_light"], alpha), (px, py), 1)
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_hot"], alpha), (px, py - 1), 1)
-
-
-    # ===================================================================
-    # FLOATING EFFECTS
-    # ===================================================================
-    def _draw_floating_water(surface, cx, cy, phase, trail=False,
-                            facing=1, intense=False):
-        """Water mist below floating Syrentha."""
-        strength = 1.5 if intense else 1.0
-
-        mist = pygame.Surface((140, 45), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(38, 3, -4):
-            alpha = int((38 - radius) * 2.2 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_syrentha.PALETTE["water_darkest"], min(255, alpha)),
-                    (70 - radius * 2, 22 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 70, cy - 12))
-
-        # Rising water wisps
-        for i, offset in enumerate((-25, -12, 0, 12, 25)):
-            t = (phase * 0.5 + i * 0.2) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 25)
-            alpha = max(0, min(255, int(200 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"], alpha), (sx, sy), 5)
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"], alpha), (sx, sy - 2), 3)
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_bright"], min(255, alpha)),
-                      (sx, sy - 3), 1)
-
-        # Orbiting water orbs
-        for i in range(5):
-            angle = phase * 0.9 + i * math.pi * 2 / 5
-            r = 26 + int(math.sin(phase + i * 1.3) * 4)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 7)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_mid"], (sx, sy), 3)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_light"], (sx, sy), 2)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_hot"], (sx, sy), 1)
-
-        if trail:
-            for i in range(5):
-                sx = cx - (i + 1) * 12 * facing
-                sy = cy + int(math.sin(phase + i) * 2)
-                alpha = max(0, 130 - i * 22)
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"], alpha),
-                          (sx, sy), max(2, 5 - i))
-
-
-    def _draw_shadow(surface, x, y):
-        shadow = pygame.Surface((110, 22), pygame.SRCALPHA)
-        for radius in range(11, 0, -1):
-            alpha = max(0, (11 - radius) * 15)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (11 - radius, 11 - radius, 88 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_syrentha.PALETTE["water_darkest"], 60),
-                           (10, 5, 90, 11))
-        surface.blit(shadow, (x - 55, y - 11))
-
-
-    def _draw_water_aura(surface, x, y, phase):
-        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((200, 180), pygame.SRCALPHA)
-        for radius in range(80, 5, -4):
-            alpha = int((80 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_syrentha._aacircle(aura, (*_NS_syrentha.PALETTE["water_darkest"], min(255, alpha)),
-                          (100, 90), radius)
-        surface.blit(aura, (x - 100, y - 90))
-
-
-    def _draw_ground_runes(surface, x, y, phase, skill):
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((140, 48), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_syrentha.PALETTE["water_dark"], 140),
-                            (5, 10, 130, 28), 3)
-        pygame.draw.ellipse(ring, (*_NS_syrentha.PALETTE["water_mid"], 170),
-                            (22, 14, 96, 20), 2)
-
-        for i in range(10):
-            angle = phase * 0.2 + i * math.pi / 5
-            x1 = 70 + int(math.cos(angle) * 32)
-            y1 = 24 + int(math.sin(angle) * 8)
-            x2 = 70 + int(math.cos(angle) * 60)
-            y2 = 24 + int(math.sin(angle) * 12)
-            pygame.draw.line(ring, (*_NS_syrentha.PALETTE["water_bright"], 160),
-                             (x1, y1), (x2, y2), 1)
-
-        if skill:
-            pygame.draw.ellipse(ring, (*_NS_syrentha.PALETTE["water_hot"], int(80 * pulse)),
-                                (15, 8, 110, 32), 1)
-
-        surface.blit(ring, (x - 70, y - 24))
-
-
-    def _draw_spear_thrust_trail(surface, x, y, facing, progress):
-        """Trail during basic spear thrust."""
-        if progress < 0.3 or progress > 0.7:
-            return
-        t = (progress - 0.3) / 0.4
-        trail_x = x + facing * (25 + int(t * 25))
-        trail_y = y - 3
-
-        # Line trail
-        for i in range(6):
-            seg_t = i / 6
-            ax = trail_x - facing * int(seg_t * 20)
-            ay = trail_y
-            alpha_seg = int(220 * (1 - seg_t))
-            size = int(4 * (1 - seg_t * 0.4))
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"], alpha_seg), (ax, ay), size + 1)
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_light"], alpha_seg), (ax, ay), size)
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_hot"], alpha_seg),
-                      (ax, ay), max(1, size - 1))
-
-
-    def _draw_spear_water_trail(surface, x, y, facing, progress, phase):
-        """Enhanced water trail during Riptide cast."""
-        if progress < 0.15 or progress > 0.75:
-            return
-
-        t = (progress - 0.15) / 0.6
-        trail_x = x + facing * (25 + int(t * 30))
-        trail_y = y - 3
-
-        for i in range(8):
-            seg_t = i / 8
-            ax = trail_x - facing * int(seg_t * 25)
-            ay = trail_y + int(math.sin(seg_t * math.pi + phase) * 3)
-            alpha_seg = int(240 * (1 - seg_t))
-            size = int(5 * (1 - seg_t * 0.3))
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_dark"], alpha_seg),
-                      (ax, ay), size + 2)
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_mid"], alpha_seg),
-                      (ax, ay), size + 1)
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_light"], alpha_seg),
-                      (ax, ay), size)
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_bright"], alpha_seg),
-                      (ax, ay), max(1, size - 1))
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_hot"], alpha_seg),
-                      (ax, ay), max(1, size - 2))
-
-
-    # ===================================================================
-    # SKILL W: ENCHANTING SONG
-    # ===================================================================
+        boss._sy_effects.append(_NS_syrentha.RiptideWave(sx, sy,
+                                                         boss.direction))
+
+    def _spawn_canvas_impact(boss, x, y):
+        """Percikan impact di layar (canvas fallback, tanpa modul FX)."""
+        if not hasattr(boss, "_sy_effects"):
+            boss._sy_effects = []
+        boss._sy_effects.append(_NS_syrentha._CanvasImpact(boss, x, y))
+
+    # ==================================================================
+    # SKILL FX (canvas)
+    # ==================================================================
     def _draw_enchanting_song_ground(surface, boss, x, y, timer, phase):
-        """Ground effect - concentric water rings."""
+        """W - lingkaran air konsentris di tanah."""
+        P = _NS_syrentha.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 100))
         pulse = math.sin(phase * 2) * 0.2 + 0.8
         radius = int(50 + progress * 30)
-
-        _NS_syrentha._ellipse(surface, (*_NS_syrentha.PALETTE["water_darkest"], int(150 * pulse)),
-                 (x - radius, y + 40 - radius // 3, radius * 2, radius * 2 // 3), 4)
-        _NS_syrentha._ellipse(surface, (*_NS_syrentha.PALETTE["water_dark"], int(180 * pulse)),
-                 (x - radius + 5, y + 42 - radius // 3,
-                  radius * 2 - 10, radius * 2 // 3 - 6), 3)
-        _NS_syrentha._ellipse(surface, (*_NS_syrentha.PALETTE["water_mid"], int(150 * pulse)),
-                 (x - radius + 10, y + 44 - radius // 3,
-                  radius * 2 - 20, radius * 2 // 3 - 12), 2)
-
+        _NS_syrentha._ellipse(surface, (*P["water_darkest"], int(150 * pulse)),
+                              (x - radius, y + 40 - radius // 3,
+                               radius * 2, radius * 2 // 3), 4)
+        _NS_syrentha._ellipse(surface, (*P["water_dark"], int(180 * pulse)),
+                              (x - radius + 5, y + 42 - radius // 3,
+                               radius * 2 - 10, radius * 2 // 3 - 6), 3)
+        _NS_syrentha._ellipse(surface, (*P["water_mid"], int(150 * pulse)),
+                              (x - radius + 10, y + 44 - radius // 3,
+                               radius * 2 - 20, radius * 2 // 3 - 12), 2)
 
     def _draw_enchanting_song_foreground(surface, boss, x, y, timer, pulse):
-        """Music notes rising and swirling."""
+        """W - not musik naik dan berputar + huruf Z (tidur)."""
+        P = _NS_syrentha.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 100))
-
-        # Music notes swirling around
         note_count = 10
         for i in range(note_count):
-            # Notes orbit outward
             base_angle = pulse * 0.8 + i * math.pi * 2 / note_count
             base_r = 30 + int(math.sin(pulse * 1.2 + i) * 5)
             rise = ((pulse * 0.4 + i * 0.1) % 1.0)
-
-            # Position
             note_x = x + int(math.cos(base_angle) * base_r)
-            note_y = y - 5 - int(rise * 40) + int(math.sin(base_angle) * base_r * 0.4)
-
-            alpha = int(230 * (1 - rise * 0.5))
+            note_y = y - 5 - int(rise * 40) + int(math.sin(base_angle)
+                                                 * base_r * 0.4)
+            alpha = max(0, min(255, int(230 * (1 - rise * 0.5))))
             size = 0.8 + math.sin(pulse * 2 + i) * 0.2
-            _NS_syrentha._draw_music_note(surface, note_x, note_y, pulse + i, alpha, size)
-
-        # Sparkles
+            _NS_syrentha._draw_music_note(surface, note_x, note_y,
+                                          pulse + i, alpha, size)
         for i in range(8):
             angle = pulse * 1.5 + i * math.pi / 4
             r = 45 + int(math.sin(pulse * 2 + i) * 6)
             sx = x + int(math.cos(angle) * r)
             sy = y + int(math.sin(angle) * r * 0.4)
-            alpha = int(200 * (math.sin(pulse * 3 + i) * 0.3 + 0.7))
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_hot"], alpha), (sx, sy), 2)
-            _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_white"], (sx, sy), 1)
-
-        # Sleep "Z" letters floating (if progress advanced)
+            alpha = max(0, int(200 * (math.sin(pulse * 3 + i) * 0.3 + 0.7)))
+            _NS_syrentha._aacircle(surface, (*P["water_hot"], alpha),
+                                   (sx, sy), 2)
+            _NS_syrentha._aacircle(surface, P["water_white"], (sx, sy), 1)
         if progress > 0.5:
             for i in range(3):
                 zx = x + (i - 1) * 25 + int(math.sin(pulse + i) * 4)
                 zy = y - 60 - int(((pulse * 0.3 + i * 0.2) % 1.0) * 20)
                 z_size = 6
-                # Z shape
-                _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["water_light"],
-                        (zx - z_size, zy - z_size),
-                        (zx + z_size, zy - z_size), 2)
-                _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["water_light"],
-                        (zx + z_size, zy - z_size),
-                        (zx - z_size, zy + z_size), 2)
-                _NS_syrentha._aaline(surface, _NS_syrentha.PALETTE["water_light"],
-                        (zx - z_size, zy + z_size),
-                        (zx + z_size, zy + z_size), 2)
-
-
-    # ===================================================================
-    # SKILL E: MIRROR IMAGE
-    # ===================================================================
-    def _draw_mirror_images(surface, boss, x, y, timer, phase):
-        """Draw 2-3 mirror image copies around Syrentha."""
-        progress = max(0.0, min(1.0, 1 - timer / 150))
-
-        # Position of mirror images
-        mirror_positions = [
-            (-70, 15),
-            (70, 15),
-            (-40, -20),
-        ]
-
-        for i, (ox, oy) in enumerate(mirror_positions):
-            # Delay per image
-            delay = i * 0.1
-            if progress < delay:
-                continue
-
-            img_progress = min(1.0, (progress - delay) / max(0.1, 1 - delay))
-
-            # Position (with slight offset animation)
-            mx = x + ox + int(math.sin(phase + i) * 3)
-            my = y + oy + int(math.sin(phase * 1.2 + i) * 3)
-
-            # Fade in
-            alpha = int(180 * min(1.0, img_progress * 2))
-
-            _NS_syrentha._draw_mirror_silhouette(surface, mx, my, boss.direction, phase + i, alpha)
-
+                _NS_syrentha._aaline(surface, P["water_light"],
+                                     (zx - z_size, zy - z_size),
+                                     (zx + z_size, zy - z_size), 2)
+                _NS_syrentha._aaline(surface, P["water_light"],
+                                     (zx + z_size, zy - z_size),
+                                     (zx - z_size, zy + z_size), 2)
+                _NS_syrentha._aaline(surface, P["water_light"],
+                                     (zx - z_size, zy + z_size),
+                                     (zx + z_size, zy + z_size), 2)
 
     def _draw_mirror_silhouette(surface, cx, cy, facing, phase, alpha=180):
-        """Simplified translucent water silhouette of Syrentha."""
-        # Draw an ethereal water version - simplified body
-
-        # Aura glow
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["mirror_dark"], alpha // 3), (cx, cy), 35)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["mirror_dark"], alpha // 2), (cx, cy), 25)
-
-        # Tail (simplified)
-        tail_pts = [
-            (cx - 12, cy - 5),
-            (cx + 12, cy - 5),
-            (cx + 14, cy + 5),
-            (cx + 10, cy + 20),
-            (cx + 5, cy + 30),
-            (cx - 5, cy + 30),
-            (cx - 10, cy + 20),
-            (cx - 14, cy + 5),
-        ]
-        _NS_syrentha._poly(surface, (*_NS_syrentha.PALETTE["mirror_dark"], alpha), tail_pts)
-        _NS_syrentha._poly(surface, (*_NS_syrentha.PALETTE["mirror_mid"], alpha), [
-            (cx - 10, cy - 4),
-            (cx + 10, cy - 4),
-            (cx + 12, cy + 5),
-            (cx + 8, cy + 18),
-            (cx + 4, cy + 27),
-            (cx - 4, cy + 27),
-            (cx - 8, cy + 18),
-            (cx - 12, cy + 5),
-        ])
-
-        # Fin at bottom
-        _NS_syrentha._poly(surface, (*_NS_syrentha.PALETTE["mirror_mid"], alpha), [
-            (cx - 4, cy + 30),
-            (cx + 4, cy + 30),
-            (cx + 10, cy + 38),
-            (cx + 5, cy + 42),
-            (cx, cy + 38),
-            (cx - 5, cy + 42),
-            (cx - 10, cy + 38),
-        ])
-
-        # Torso
-        _NS_syrentha._poly(surface, (*_NS_syrentha.PALETTE["mirror_dark"], alpha), [
-            (cx - 10, cy - 15),
-            (cx + 10, cy - 15),
-            (cx + 12, cy - 5),
-            (cx - 12, cy - 5),
-        ])
-        _NS_syrentha._poly(surface, (*_NS_syrentha.PALETTE["mirror_mid"], alpha), [
-            (cx - 8, cy - 14),
-            (cx + 8, cy - 14),
-            (cx + 10, cy - 6),
-            (cx - 10, cy - 6),
-        ])
-
-        # Head
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["mirror_dark"], alpha), (cx, cy - 22), 8)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["mirror_mid"], alpha), (cx - 1, cy - 23), 7)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["mirror_light"], alpha), (cx - 2, cy - 24), 4)
-
-        # Hair spikes
-        for x_off, y_off in [(0, -35), (-5, -32), (5, -32), (-10, -28), (10, -28)]:
-            _NS_syrentha._poly(surface, (*_NS_syrentha.PALETTE["mirror_mid"], alpha), [
+        """Siluet air ethereal Syrentha (sederhana)."""
+        P = _NS_syrentha.PALETTE
+        alpha = max(0, min(255, int(alpha)))
+        _NS_syrentha._aacircle(surface, (*P["mirror_dark"], alpha // 3),
+                               (cx, cy), 35)
+        _NS_syrentha._aacircle(surface, (*P["mirror_dark"], alpha // 2),
+                               (cx, cy), 25)
+        _NS_syrentha._poly(surface, (*P["mirror_dark"], alpha), [
+            (cx - 12, cy - 5), (cx + 12, cy - 5), (cx + 14, cy + 5),
+            (cx + 10, cy + 20), (cx + 5, cy + 30), (cx - 5, cy + 30),
+            (cx - 10, cy + 20), (cx - 14, cy + 5)])
+        _NS_syrentha._poly(surface, (*P["mirror_mid"], alpha), [
+            (cx - 10, cy - 4), (cx + 10, cy - 4), (cx + 12, cy + 5),
+            (cx + 8, cy + 18), (cx + 4, cy + 27), (cx - 4, cy + 27),
+            (cx - 8, cy + 18), (cx - 12, cy + 5)])
+        _NS_syrentha._poly(surface, (*P["mirror_mid"], alpha), [
+            (cx - 4, cy + 30), (cx + 4, cy + 30), (cx + 10, cy + 38),
+            (cx + 5, cy + 42), (cx, cy + 38), (cx - 5, cy + 42),
+            (cx - 10, cy + 38)])
+        _NS_syrentha._poly(surface, (*P["mirror_dark"], alpha), [
+            (cx - 10, cy - 15), (cx + 10, cy - 15),
+            (cx + 12, cy - 5), (cx - 12, cy - 5)])
+        _NS_syrentha._poly(surface, (*P["mirror_mid"], alpha), [
+            (cx - 8, cy - 14), (cx + 8, cy - 14),
+            (cx + 10, cy - 6), (cx - 10, cy - 6)])
+        _NS_syrentha._aacircle(surface, (*P["mirror_dark"], alpha),
+                               (cx, cy - 22), 8)
+        _NS_syrentha._aacircle(surface, (*P["mirror_mid"], alpha),
+                               (cx - 1, cy - 23), 7)
+        _NS_syrentha._aacircle(surface, (*P["mirror_light"], alpha),
+                               (cx - 2, cy - 24), 4)
+        for x_off, y_off in [(0, -35), (-5, -32), (5, -32), (-10, -28),
+                             (10, -28)]:
+            _NS_syrentha._poly(surface, (*P["mirror_mid"], alpha), [
                 (cx + int(x_off * 0.5) - 3, cy - 27),
                 (cx + int(x_off * 0.5) + 3, cy - 27),
-                (cx + x_off, cy + y_off),
-            ])
-
-        # Eyes (bright dots)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["mirror_hot"], min(255, alpha)),
-                  (cx - 3, cy - 22), 1)
-        _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["mirror_hot"], min(255, alpha)),
-                  (cx + 3, cy - 22), 1)
-
-        # Arms (simplified)
+                (cx + x_off, cy + y_off)])
+        _NS_syrentha._aacircle(surface, (*P["mirror_hot"], alpha),
+                               (cx - 3, cy - 22), 1)
+        _NS_syrentha._aacircle(surface, (*P["mirror_hot"], alpha),
+                               (cx + 3, cy - 22), 1)
         for side in (-1, 1):
-            _NS_syrentha._aaline(surface, (*_NS_syrentha.PALETTE["mirror_dark"], alpha),
-                    (cx + side * 10, cy - 12), (cx + side * 14, cy), 5)
-            _NS_syrentha._aaline(surface, (*_NS_syrentha.PALETTE["mirror_mid"], alpha),
-                    (cx + side * 10, cy - 12), (cx + side * 14, cy), 3)
-
-        # Water particles around image
+            _NS_syrentha._aaline(surface, (*P["mirror_dark"], alpha),
+                                 (cx + side * 10, cy - 12),
+                                 (cx + side * 14, cy), 5)
+            _NS_syrentha._aaline(surface, (*P["mirror_mid"], alpha),
+                                 (cx + side * 10, cy - 12),
+                                 (cx + side * 14, cy), 3)
         for i in range(4):
             angle = phase * 2 + i * math.pi / 2
             r = 20
             sx = cx + int(math.cos(angle) * r)
             sy = cy + int(math.sin(angle) * r * 0.6)
-            _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["mirror_hot"], alpha), (sx, sy), 1)
+            _NS_syrentha._aacircle(surface, (*P["mirror_hot"], alpha),
+                                   (sx, sy), 1)
 
+    def _draw_mirror_images(surface, boss, x, y, timer, phase):
+        """E - 2-3 copy mirror di sekitar Syrentha."""
+        progress = max(0.0, min(1.0, 1 - timer / 150))
+        mirror_positions = [(-70, 15), (70, 15), (-40, -20)]
+        for i, (ox, oy) in enumerate(mirror_positions):
+            delay = i * 0.1
+            if progress < delay:
+                continue
+            img_progress = min(1.0, (progress - delay) / max(0.1, 1 - delay))
+            mx = x + ox + int(math.sin(phase + i) * 3)
+            my = y + oy + int(math.sin(phase * 1.2 + i) * 3)
+            alpha = int(180 * min(1.0, img_progress * 2))
+            _NS_syrentha._draw_mirror_silhouette(surface, mx, my,
+                                                 boss.direction,
+                                                 phase + i, alpha)
 
-    # ===================================================================
-    # SKILL R: SONG OF THE SIREN
-    # ===================================================================
     def _draw_song_of_siren_ground(surface, boss, x, y, timer, phase):
-        """Massive spiral water pattern on ground."""
+        """R - pola spiral air masif di tanah."""
+        P = _NS_syrentha.PALETTE
         pulse = math.sin(phase * 2) * 0.2 + 0.8
-
-        # Spiral effect
         for i in range(4):
             r = 30 + i * 22
             alpha = int(150 * pulse) - i * 20
             if alpha > 0:
-                _NS_syrentha._ellipse(surface, (*_NS_syrentha.PALETTE["water_dark"], alpha),
-                         (x - r, y + 42 - r // 3,
-                          r * 2, r * 2 // 3), 3)
-                _NS_syrentha._ellipse(surface, (*_NS_syrentha.PALETTE["water_mid"], alpha),
-                         (x - r + 3, y + 44 - r // 3,
-                          r * 2 - 6, r * 2 // 3 - 4), 2)
-
+                _NS_syrentha._ellipse(surface, (*P["water_dark"], alpha),
+                                      (x - r, y + 42 - r // 3,
+                                       r * 2, r * 2 // 3), 3)
+                _NS_syrentha._ellipse(surface, (*P["water_mid"], alpha),
+                                      (x - r + 3, y + 44 - r // 3,
+                                       r * 2 - 6, r * 2 // 3 - 4), 2)
 
     def _draw_song_of_siren_foreground(surface, boss, x, y, timer, pulse):
-        """Huge spiral of music notes and stars - stunning waves."""
+        """R - spiral not musik + bintang (indikator stun)."""
+        P = _NS_syrentha.PALETTE
         progress = max(0.0, min(1.0, 1 - timer / 120))
-
-        # Concentric expanding water rings
         for ring_i in range(4):
             ring_phase = pulse - ring_i * 0.3
             ring_r = int(40 + (ring_phase % 2) * 60)
-            alpha = int(180 * (1 - (ring_phase % 2) / 2))
-
-            _NS_syrentha._ellipse(surface, (*_NS_syrentha.PALETTE["water_dark"], alpha),
-                     (x - ring_r, y - ring_r // 3,
-                      ring_r * 2, ring_r * 2 // 3), 3)
-            _NS_syrentha._ellipse(surface, (*_NS_syrentha.PALETTE["water_mid"], alpha),
-                     (x - ring_r + 3, y - ring_r // 3 + 2,
-                      ring_r * 2 - 6, ring_r * 2 // 3 - 4), 2)
-            _NS_syrentha._ellipse(surface, (*_NS_syrentha.PALETTE["water_bright"], alpha),
-                     (x - ring_r + 6, y - ring_r // 3 + 4,
-                      ring_r * 2 - 12, ring_r * 2 // 3 - 8), 1)
-
-        # Spiral music notes
+            alpha = max(0, min(255, int(180 * (1 - (ring_phase % 2) / 2))))
+            _NS_syrentha._ellipse(surface, (*P["water_dark"], alpha),
+                                  (x - ring_r, y - ring_r // 3,
+                                   ring_r * 2, ring_r * 2 // 3), 3)
+            _NS_syrentha._ellipse(surface, (*P["water_mid"], alpha),
+                                  (x - ring_r + 3, y - ring_r // 3 + 2,
+                                   ring_r * 2 - 6, ring_r * 2 // 3 - 4), 2)
+            _NS_syrentha._ellipse(surface, (*P["water_bright"], alpha),
+                                  (x - ring_r + 6, y - ring_r // 3 + 4,
+                                   ring_r * 2 - 12, ring_r * 2 // 3 - 8), 1)
         for i in range(15):
-            # Spiral outward
             angle = pulse * 1.2 + i * 0.5
             r = 20 + i * 8
             note_x = x + int(math.cos(angle) * r)
             note_y = y - 5 + int(math.sin(angle) * r * 0.5)
-
-            alpha = int(230 * (1 - i / 15 * 0.3))
+            alpha = max(0, min(255, int(230 * (1 - i / 15 * 0.3))))
             size = 1.0 - i * 0.03
             if size > 0.5:
-                _NS_syrentha._draw_music_note(surface, note_x, note_y, pulse + i, alpha, size)
-
-        # Stars (stun indicator)
+                _NS_syrentha._draw_music_note(surface, note_x, note_y,
+                                              pulse + i, alpha, size)
         for i in range(8):
             angle = pulse * 0.8 + i * math.pi / 4
             r = 70 + int(math.sin(pulse * 2 + i) * 8)
             sx = x + int(math.cos(angle) * r)
             sy = y - 20 + int(math.sin(angle) * r * 0.5)
             _NS_syrentha._draw_star(surface, sx, sy, size=4,
-                      color=_NS_syrentha.PALETTE["star_yellow"])
-
-        # Rising particles from center
+                                    color=P["star_yellow"])
         for i in range(10):
             t = ((pulse * 0.5 + i * 0.1) % 1.0)
             angle = i * math.pi / 5
             px = x + int(math.cos(angle) * 30 * (1 - t))
             py = y - int(t * 60)
-            alpha = int(220 * (1 - t))
+            alpha = max(0, int(220 * (1 - t)))
             if alpha > 0:
-                _NS_syrentha._aacircle(surface, (*_NS_syrentha.PALETTE["water_bright"], alpha), (px, py), 2)
-                _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["water_white"], (px, py), 1)
+                _NS_syrentha._aacircle(surface, (*P["water_bright"], alpha),
+                                       (px, py), 2)
+                _NS_syrentha._aacircle(surface, P["water_white"],
+                                       (px, py), 1)
 
+    # ==================================================================
+    # LAPISAN FX HIDUP (heroes/syrentha_fx)
+    # ==================================================================
+    #: Modul FX layar (diisi malas). False = percobaan gagal -> jalur canvas.
+    _LIVE_MOD = None
 
-    def _draw_star(surface, cx, cy, size=4, color=None):
-        """Draw a 4-pointed star (stun indicator)."""
-        if color is None:
-            color = _NS_syrentha.PALETTE["star_yellow"]
-        # Vertical spike
-        _NS_syrentha._aaline(surface, color, (cx, cy - size), (cx, cy + size), 2)
-        # Horizontal spike
-        _NS_syrentha._aaline(surface, color, (cx - size, cy), (cx + size, cy), 2)
-        # Diagonal (smaller)
-        _NS_syrentha._aaline(surface, color, (cx - size // 2, cy - size // 2),
-                (cx + size // 2, cy + size // 2), 1)
-        _NS_syrentha._aaline(surface, color, (cx - size // 2, cy + size // 2),
-                (cx + size // 2, cy - size // 2), 1)
-        # Bright center
-        _NS_syrentha._aacircle(surface, _NS_syrentha.PALETTE["white"], (cx, cy), 1)
+    def _live_module():
+        """Muat ``heroes.syrentha_fx`` sekali; None kalau tidak tersedia."""
+        NS = _NS_syrentha
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import syrentha_fx as mod  # noqa
+                NS._LIVE_MOD = mod if getattr(mod, "SYRENTHA_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
 
+    def live_fx_ready():
+        return _NS_syrentha._live_module() is not None
 
-    # ===================================================================
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Lapisan hidup untuk unit ini. Return ``(mod, owned)``."""
+        NS = _NS_syrentha
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    # ==================================================================
+    # MAIN DRAW ENTRY POINT
+    # ==================================================================
+    def draw_syrentha(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus heroes.render_hero().
+
+        Urutan lapisan mengikuti kontrak render order proyek:
+            GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/HEAD ->
+            WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+            SKILL FX -> IMPACT FX -> DEBUG
+        """
+        NS = _NS_syrentha
+        hero_lane = hasattr(boss, "_render_scale")
+        NS._update_syrentha_attack_anim(boss)
+        moving = NS._detect_moving(boss)
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._sy_pose_action = action
+        skill = getattr(boss, "active_skill", None)
+        timer = int(getattr(boss, "active_skill_timer", 0))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        facing = getattr(boss, "direction", 1) or 1
+        flash = 0
+        if getattr(boss, "hurt_flash_timer", 0) > 0:
+            flash = 120
+
+        live, owned = NS._live_fx(boss, surface, x, y,
+                                  not hero_lane, portrait)
+        boss._sy_live_owned = bool(owned)
+
+        # ── Latar ────────────────────────────────────────────────────
+        if not portrait:
+            NS._draw_water_aura(surface, x, y, phase)
+            NS._draw_ground_runes(surface, x, y + NS.GROUND_DY + 1, phase,
+                                  skill)
+
+        # ── Skill ground telegraph ───────────────────────────────────
+        if skill == "w" and not portrait:
+            NS._draw_enchanting_song_ground(surface, boss, x, y, timer, phase)
+        elif skill == "r" and not portrait:
+            NS._draw_song_of_siren_ground(surface, boss, x, y, timer, phase)
+
+        # ── Karakter ─────────────────────────────────────────────────
+        if skill == "q":
+            NS._draw_syrentha_riptide_cast(surface, boss, x, y, timer, phase)
+        elif skill == "w":
+            NS._draw_syrentha_singing(surface, boss, x, y, timer, phase)
+        elif skill == "e":
+            if not portrait:
+                NS._draw_mirror_images(surface, boss, x, y, timer, phase)
+            NS._draw_syrentha_body(surface, x, y, facing, phase,
+                                   action, ap, flash)
+        elif skill == "r":
+            NS._draw_syrentha_singing(surface, boss, x, y, timer, phase)
+        elif action == "attack":
+            NS._draw_syrentha_melee_attack(surface, boss, x, y)
+        elif action == "walk":
+            NS._draw_syrentha_walk(surface, boss, x, y)
+        else:
+            NS._draw_syrentha_idle(surface, boss, x, y)
+
+        # ── Foreground (canvas fallback: efek & skill) ──────────────
+        if not portrait:
+            if owned:
+                if getattr(boss, "_sy_effects", None):
+                    boss._sy_effects = []
+            else:
+                NS._manage_effects(boss, surface, phase)
+            if skill == "w":
+                NS._draw_enchanting_song_foreground(surface, boss, x, y,
+                                                    timer, phase)
+            elif skill == "r":
+                NS._draw_song_of_siren_foreground(surface, boss, x, y,
+                                                  timer, phase)
+
+        # ── Lapisan hidup bagian ATAS + debug ───────────────────────
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_syrentha_debug(surface, boss, x, y, action, owned)
+
+    # ==================================================================
+    # DEBUG OVERLAY  (DEBUG_CHARACTER = True)
+    # ==================================================================
+    def _draw_syrentha_debug(surface, boss, x, y, action, owned):
+        NS = _NS_syrentha
+        r = max(6, int(getattr(boss, "radius", 38) * 0.9 * NS.SCALE))
+        pygame.draw.rect(surface, (80, 170, 255, 150),
+                         pygame.Rect(int(x) - r, int(y) - r - 8,
+                                     r * 2, r * 2), 1)
+        rng = max(10, int(getattr(boss, "range", 120) * NS.SCALE * 0.9))
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        pygame.draw.line(surface, (255, 210, 60, 150), (int(x), int(y)),
+                         (int(x) + int(rng * f), int(y)), 1)
+        hb = NS._swing_hitbox(boss, x, y)
+        if hb is not None:
+            pygame.draw.rect(surface, (255, 70, 70, 190), hb, 2)
+        tip = NS._tip_screen(boss, x, y)
+        pygame.draw.circle(surface, (120, 255, 150), tip, 4, 1)
+        prog = float(getattr(boss, "_sy_attack_progress", 0.0))
+        bar = pygame.Rect(int(x) - 40, int(y) - 116, 80, 5)
+        pygame.draw.rect(surface, (30, 10, 40), bar)
+        pygame.draw.rect(surface, (255, 140, 220),
+                         (bar.x, bar.y, int(80 * prog), 5))
+        state = getattr(boss, "_sy_state", "IDLE")
+        idx = list(NS.ANIM_STATES).index(state) \
+            if state in NS.ANIM_STATES else 0
+        pygame.draw.rect(surface, (140, 255, 200),
+                         (bar.x, bar.y - 6, 4 + idx * 5, 4))
+
+    # ==================================================================
     # Backward-compatible entry point alias
-    # ===================================================================
+    # ==================================================================
     def draw_boss(surface, boss, x, y):
         _NS_syrentha.draw_syrentha(surface, boss, x, y)
+
+
 
 
 # ====================================================================
@@ -5287,7 +5686,6 @@ class _NS_thalgryn:
 
 
 
-# ====================================================================
 # ====================================================================
 # KUNKKA
 # ====================================================================

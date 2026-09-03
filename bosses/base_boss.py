@@ -877,6 +877,25 @@ class Boss(TowerDebuffMixin):
                                 self, self.target, self.damage, False)
                         except Exception:
                             pass
+                    # ═══ IMPACT FX SYRENTHA ═══
+                    # Syrentha menusuk dengan tombak (jarak <= MELEE_REACH
+                    # 120 px). FX-nya: pita tusukan tombak + flash air/baja,
+                    # serpihan, shockwave, shake, dan hit-stop 0.03-0.08 s
+                    # (lengkapnya di heroes/syrentha_fx). Difilter per
+                    # boss_type + try/except (paritas Gravefang/Nyxara/
+                    # Thalgryn/Kunkka).
+                    if getattr(self, 'boss_type', None) == 'syrentha':
+                        try:
+                            from heroes import syrentha_fx as _syfx
+                            if dist <= _syfx.MELEE_REACH:
+                                _syfx.notify_melee_impact(
+                                    self, self.target, self.damage, False)
+                            else:
+                                _syfx.notify_projectile_impact(
+                                    self, self.target.x, self.target.y,
+                                    0.0, self.damage, False, 'spear')
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -5303,6 +5322,23 @@ class Boss(TowerDebuffMixin):
                     e.take_damage(damage, self.team)
                     if hasattr(e, 'apply_slow'):
                         e.apply_slow(0.5, 180)
+
+        # ═══ SKILL FX SYRENTHA Q (lapisan hidup) ═══
+        # Riptide: tusukan yang melepaskan gelombang pasang ke depan
+        # (bulan sabit air + flash, serpihan, shockwave, shake, hit-stop)
+        # — heroes/syrentha_fx.
+        try:
+            from heroes import syrentha_fx as _syfx
+            _syfx.notify_skill_cast(self, 'q')
+            if self.target and self.target.alive:
+                _syfx.notify_skill_impact(self, self.target.x,
+                                          self.target.y, 250, 'q')
+            else:
+                _syfx.notify_skill_impact(
+                    self, self.x + dx * 220, self.y + dy * 220, 250, 'q')
+        except Exception:
+            pass
+
         self._shake_screen(12)
 
     def _syrentha_w(self, enemies):
@@ -5323,6 +5359,17 @@ class Boss(TowerDebuffMixin):
                         getattr(e, 'attack_timer', 0), 120)
                 if hasattr(e, 'apply_slow'):
                     e.apply_slow(0.7, 240)
+
+        # ═══ SKILL FX SYRENTHA W (lapisan hidup) ═══
+        # Enchanting Song: cincin air + not musik konsentris di sekitar
+        # boss (flash, shockwave, shake, hit-stop) — heroes/syrentha_fx.
+        try:
+            from heroes import syrentha_fx as _syfx
+            _syfx.notify_skill_cast(self, 'w')
+            _syfx.notify_skill_impact(self, self.x, self.y, 150, 'w')
+        except Exception:
+            pass
+
         self._shake_screen(14)
 
     def _syrentha_e(self):
@@ -5341,6 +5388,16 @@ class Boss(TowerDebuffMixin):
         # Heal 12% (siren vitality)
         heal = int(self.max_hp * 0.12)
         self.hp = min(self.max_hp, self.hp + heal)
+
+        # ═══ SKILL FX SYRENTHA E (lapisan hidup) ═══
+        # Mirror Image: siluet air ethereal bermunculan + kabut biru
+        # (flash, shockwave, shake, hit-stop) — heroes/syrentha_fx.
+        try:
+            from heroes import syrentha_fx as _syfx
+            _syfx.notify_skill_cast(self, 'e')
+            _syfx.notify_skill_impact(self, self.x, self.y, 150, 'e')
+        except Exception:
+            pass
 
         self._shake_screen(10)
 
@@ -5372,6 +5429,17 @@ class Boss(TowerDebuffMixin):
                     e.attack_timer = max(e.attack_timer, 150)
                 if hasattr(e, 'apply_slow'):
                     e.apply_slow(0.8, 300)
+
+        # ═══ SKILL FX SYRENTHA R (lapisan hidup) ═══
+        # Song of the Siren: spiral not + bintang stun masif di sekitar
+        # boss (flash, serpihan, shockwave, shake, hit-stop)
+        # — heroes/syrentha_fx.
+        try:
+            from heroes import syrentha_fx as _syfx
+            _syfx.notify_skill_cast(self, 'r')
+            _syfx.notify_skill_impact(self, self.x, self.y, 220, 'r')
+        except Exception:
+            pass
 
         self._shake_screen(22)
 
