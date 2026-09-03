@@ -33,18 +33,130 @@ _IS_LEVEL_BUNDLE = True
 # GRAVEWAKE
 # ====================================================================
 class _NS_gravewake:
-    """Namespace gravewake - isi asli tidak diubah."""
+    """Namespace gravewake - Tidehunter mini boss (PIXEL MASTERWORK v3).
 
-    # ---------------------------------------------------------------------------
-    # Compatibility helpers
-    # ---------------------------------------------------------------------------
+    "The Tidehunter" - Gravewake, mini boss Level 6. Kraken raksasa yang
+    MENGAMBANG dengan jangkar baja berkarat sebagai senjata.
+
+    Renderer 100% prosedural (tanpa PNG, sprite sheet, atau image.load).
+    Ditulis ulang penuh dari v2: rig, animasi, tebasan jangkar overhead,
+    proyektil Anchor Wave, dan seluruh FX skill Q/W/E/R.
+
+    Yang berubah di v3
+    ------------------
+    * RENDER. Badan kraken disusun ulang jadi LAYER rig satu arah-hadap
+      (facing) lewat ``_local``: rok tentakel -> torso otot + sabuk kulit
+      -> lengan -> jangkar -> kepala runcing bertaring -> duri punggung.
+      Setiap bidang memakai pola core gelap -> body -> plane cahaya ->
+      selout sisi bayangan -> specular 1-2 px. Hierarki nilai dikunci:
+      MATA > tulang/duri > kulit.
+    * JANGKAR. Jangkar kapal sungguhan (bukan tiga segmen inset): gagang
+      baja berkarat, cincin atas, crossbar, kait fluke melengkung, dan
+      tetesan air saat intens. Terbaca sebagai senjata berat.
+    * ANIMASI. Kurva serangan baru (anticipation -> tarik -> TEBAS
+      OVERHEAD -> HOLD -> follow-through) plus gerak sekunder: rok
+      tentakel, duri punggung, tetesan sekitar badan, dan mist air semua
+      tertinggal dari badan (lag).
+    * SWING. ``_draw_anchor_swing_trail`` menyapu pita tebasan dari
+      histori ujung jangkar sungguhan, tidak pernah lepas dari senjata.
+    * PROYEKTIL. Anchor Wave v3: bulan sabit air + jangkar air melaju ke
+      depan (Q), inti 3 lapis, after-image ter-kuantisasi.
+    * FX SKILL. Q/W/E/R ditulis ulang dengan bahasa yang sama: telegraph
+      -> aktivasi -> steady, semuanya world-space lewat ``_fx_scale``.
+
+    Kontrak yang TIDAK berubah (dipakai gameplay & tes regresi):
+      * ``draw_gravewake(surface, boss, x, y)`` entry point tunggal.
+      * ``SKILL_DUR`` sinkron dengan AI boss (base_boss._gravewake_*) dan
+        skill hero (hero_skills/_bundle.py).
+      * telapak dipatok di ``GROUND_DY``; jangkar pose-driven.
+      * atribut ``_gw_*`` dipakai controller & FX (nama lama dipertahankan).
+    """
+
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
+    HAS_AALINES = hasattr(pygame.draw, "aalines")
+    _STATIC_SURFACES = {}
 
-    # ---------------------------------------------------------------------------
-    # HD Color Palette - Tidehunter inspired teal/green sea monster
-    # ---------------------------------------------------------------------------
+    # ── SKALA BADAN ───────────────────────────────────────────────
+    # Gravewake adalah mini boss yang digambar 1:1 ke layar (jalur boss),
+    # dan dinormalisasi otomatis oleh pipeline hero saat dipakai sebagai
+    # kartu / preview (heroes/__init__._get_hero_scale).
+    SCALE = 1.0
+    LIFT = 0
+    # Telapak dalam RUANG LOKAL (y+ ke bawah); garis tanah dunia diturunkan
+    # dari sini supaya bayangan, rune tanah, dan telapak tidak saling lepas.
+    FEET_DY = 44
+    GROUND_DY = int(round(FEET_DY * SCALE)) - LIFT        # ~ 44
+
+    # Buffer rig: dibatasi dari extents TERUKUR semua pose + margin.
+    RIG_W, RIG_H = 180, 176
+    RIG_OX, RIG_OY = 90, 96
+
+    # Bidang acuan pass cahaya (lighting.py): kotak TETAP di dalam buffer.
+    GRAD_BOX = (RIG_OX - 60, RIG_OY - 52, 120, 96)
+
+    # Durasi status skill (frame) - HARUS sama dengan active_skill_timer
+    # yang diisi AI boss (bosses/base_boss.py) dan skill hero
+    # (hero_skills/_bundle.py).
+    SKILL_DUR = {"q": 45, "w": 80, "e": 70, "r": 90}
+
+    #: jarak (piksel dunia) jangkauan tebasan jangkar. = range boss_data.
+    MELEE_REACH = 65
+
+    # ==================================================================
+    # Batas fase = fraksi 0..1 dari DURASI SERANGAN (raw progress).
+    ATTACK_ANTICIPATION_END = 0.14
+    ATTACK_WINDUP_END = 0.30
+    ATTACK_SWING_END = 0.48
+    ATTACK_IMPACT_END = 0.62
+    ATTACK_FOLLOW_END = 0.82
+    #: jendela di mana jangkar secara geometris menebas depan badan
+    ATTACK_ACTIVE_WINDOW = (0.34, 0.62)
+    #: puncak benturan (dipakai FX untuk memicu spark di titik tebas)
+    ATTACK_IMPACT_FRAME = 0.52
+
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.14),
+        ("WINDUP",       0.14, 0.30),
+        ("SWING",        0.30, 0.48),
+        ("IMPACT",       0.48, 0.62),
+        ("FOLLOW",       0.62, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+
+    #: Prioritas state. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: Aktifkan untuk melihat hitbox/hurtbox/jangkauan/state di arena.
+    DEBUG_CHARACTER = False
+
+    # Kunci fase tebasan (dipakai grip, sudut, DAN pita swing) - nilai
+    # CURVE (dari _attack_curve).
+    _SWING_WIND = 0.24          # puncak tarik (jangkar diangkat atas kepala)
+    _SWING_HIT = 0.80           # frame impact (jangkar menebas bawah-depan)
+
+    # Tinggi badan dalam RUANG LOKAL (y=0 = garis pinggang, + ke bawah).
+    HEAD_Y = -28
+    SHOULDER_Y = -14
+    SHOULDER_FRONT = (26, SHOULDER_Y)
+
+    # -------------------------------------------------------------------
+    # PALETTE — Tidehunter teal/hijau laut + tulang + kulit + baja karat
+    # -------------------------------------------------------------------
     PALETTE = {
-        # Skin - deep sea green/teal
+        # Kulit - hijau laut tua
         "skin_darkest":   (12,  30,  28),
         "skin_dark":      (28,  55,  50),
         "skin_mid":       (55,  95,  80),
@@ -52,24 +164,25 @@ class _NS_gravewake:
         "skin_high":      (145, 190, 155),
         "skin_shine":     (195, 225, 195),
 
-        # Belly - lighter
+        # Perut - lebih terang
         "belly_dark":     (60,  80,  62),
         "belly_mid":      (110, 130, 100),
         "belly_light":    (165, 180, 145),
 
-        # Spikes / horns - bone
+        # Duri / tanduk - tulang
+        "bone_darkest":   (60,  62,  42),
         "bone_dark":      (85,  90,  60),
         "bone_mid":       (150, 155, 110),
         "bone_light":     (210, 210, 170),
         "bone_shine":     (245, 245, 220),
 
-        # Armor / harness - dark leather
-        "leather_darkest":(15,  10,   8),
-        "leather_dark":   (35,  22,  15),
-        "leather_mid":    (65,  42,  22),
-        "leather_light":  (100, 70,  40),
+        # Armor / sabuk - kulit gelap
+        "leather_darkest": (15,  10,   8),
+        "leather_dark":    (35,  22,  15),
+        "leather_mid":     (65,  42,  22),
+        "leather_light":   (100, 70,  40),
 
-        # Anchor - rusted steel
+        # Jangkar - baja berkarat
         "anchor_darkest": (25,  30,  35),
         "anchor_dark":    (55,  62,  70),
         "anchor_mid":     (95, 105, 115),
@@ -77,7 +190,7 @@ class _NS_gravewake:
         "anchor_shine":   (200, 208, 215),
         "anchor_rust":    (110, 65,  35),
 
-        # Water - cyan/tidal
+        # Air - cyan/pasang
         "water_darkest":  (5,   35,  50),
         "water_dark":     (15,  85, 105),
         "water_mid":      (45, 160, 175),
@@ -86,17 +199,19 @@ class _NS_gravewake:
         "water_hot":      (215, 255, 250),
         "water_white":    (240, 255, 253),
 
-        # Gold trim
+        # Trim emas
+        "gold_darkest":   (70,  45,  10),
         "gold_dark":      (95,  62,  15),
         "gold_mid":       (165, 125, 35),
         "gold_light":     (225, 185, 70),
+        "gold_shine":     (255, 225, 130),
 
-        # Teeth (white)
+        # Gigi (putih)
         "teeth_dark":     (180, 175, 160),
         "teeth_mid":      (220, 218, 200),
         "teeth_light":    (245, 245, 232),
 
-        # Eyes
+        # Mata
         "eye_dark":       (95,  15,  15),
         "eye_mid":        (195, 45,  40),
         "eye_bright":     (240, 130, 80),
@@ -108,10 +223,398 @@ class _NS_gravewake:
         "white":          (255, 255, 255),
     }
 
+    # ==================================================================
+    # ANIMATION CONTROLLER
+    # ==================================================================
+    def attack_phases_order():
+        return tuple(name for name, _a, _b in _NS_gravewake.ATTACK_PHASES)
 
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1 (None di luar serangan)."""
+        if progress is None:
+            return "NONE"
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_gravewake.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    def _resolve_anim_state(boss, attacking, phase):
+        """Tentukan state animasi yang DIINGINKAN frame ini."""
+        if not getattr(boss, "alive", True):
+            return "DEATH"
+        if int(getattr(boss, "_gw_hurt_frames", 0)) > 0:
+            return "HURT"
+        skill = getattr(boss, "active_skill", None)
+        if skill:
+            return "SPECIAL" if skill == "r" else "SKILL"
+        if attacking:
+            if phase in ("ANTICIPATION", "WINDUP"):
+                return "CHARGE"
+            if phase in ("SWING", "IMPACT"):
+                return "SWING"
+            return "ATTACK"
+        if getattr(boss, "_gw_moving_cached", False):
+            return "RUN" if float(getattr(boss, "speed", 1.0)) >= 2.2 \
+                else "WALK"
+        return "IDLE"
+
+    def _swing_hitbox(boss, cx, cy):
+        """Rect hitbox tebasan (ruang permukaan) saat jendela hit aktif."""
+        if not getattr(boss, "_gw_hit_active", False):
+            return None
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        scale = _NS_gravewake._fx_scale(boss)
+        reach = int(48 * scale)
+        top = int(cy - 40 * scale)
+        h = int(72 * scale)
+        left = int(cx) if f > 0 else int(cx) - reach
+        return pygame.Rect(left, top, max(8, reach), max(10, h))
+
+    def _update_gravewake_attack_anim(boss):
+        """ANIMATION CONTROLLER Gravewake - state, fase, timing, delta-time.
+
+        Satu-satunya sumber kebenaran untuk SEMUA state karakter:
+          * ``_gw_dt``              delta-time nyata (detik, dijepit)
+          * ``_gw_attack_active``   serangan sedang berjalan (nama lama)
+          * ``_gw_attack_frame``    frame ke-n dalam serangan (nama lama)
+          * ``_gw_attack_progress`` 0..1 sepanjang serangan (nama lama)
+          * ``_gw_attack_raw``      progress sebelum kurva (nama lama)
+          * ``_gw_attack_phase``    ANTICIPATION/.../RECOVERY
+          * ``_gw_hit_active``      True hanya di jendela hit aktif
+          * ``_gw_state`` / ``_gw_state_prev`` / ``_gw_state_time``
+          * ``_gw_hurt_frames``     sisa frame respons kena damage
+        """
+        G = _NS_gravewake
+
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                          # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_gw_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._gw_last_ms = now
+        boss._gw_dt = dt
+
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 46)))
+        timer = int(getattr(boss, "timer", 0))
+        previous = int(getattr(boss, "_gw_prev_timer", 0))
+        active = bool(getattr(boss, "_gw_attack_active", False))
+
+        # Serangan dikenali dari DUA hal: lompatan timer ke atas (cooldown
+        # dipasang saat attack mendarat) dan detak jam (timer turun ke 0).
+        triggered = timer >= cooldown - 1 and previous <= 1
+        if triggered:
+            boss._gw_attack_active = True
+            boss._gw_attack_frame = 0
+            boss._gw_attack_manual = False
+            active = True
+        elif active and timer > 0:
+            boss._gw_attack_frame = int(getattr(boss, "_gw_attack_frame",
+                                                 0)) + 1
+            boss._gw_attack_manual = False
+        elif timer <= 0:
+            if active and not getattr(boss, "_gw_attack_manual", False) \
+                    and float(getattr(boss, "_gw_attack_progress", 0.0)) > 0.0:
+                boss._gw_attack_manual = True
+                active = True
+            elif not getattr(boss, "_gw_attack_manual", False):
+                boss._gw_attack_active = False
+                boss._gw_attack_frame = 0
+                active = False
+            if not active:
+                boss._gw_attack_active = False
+                boss._gw_attack_frame = 0
+
+        boss._gw_prev_timer = timer
+        frame = int(getattr(boss, "_gw_attack_frame", 0)) if active else 0
+        span = max(1, cooldown - 1)
+        boss._gw_attack_frame = frame
+        if bool(getattr(boss, "_gw_attack_manual", False)) and active:
+            progress = min(1.0, max(0.0, float(getattr(
+                boss, "_gw_attack_progress", 0.0))))
+            boss._gw_attack_frame = int(round(progress * span))
+        else:
+            progress = min(1.0, frame / float(span)) if active else 0.0
+            boss._gw_attack_progress = progress
+
+        if not getattr(boss, "_gw_attack_active", False):
+            boss._gw_attack_active = False
+            boss._gw_attack_manual = False
+            active = False
+        phase = G.attack_phase(progress) if active else "NONE"
+        boss._gw_attack_phase = phase
+        lo, hi = G.ATTACK_ACTIVE_WINDOW
+        boss._gw_hit_active = bool(active and lo <= progress < hi)
+
+        # ── respons kena damage (HURT) ──────────────────────────────
+        hurt = int(getattr(boss, "_gw_hurt_frames", 0))
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash >= 8 and hurt <= 0:
+            hurt = 10
+        boss._gw_hurt_frames = max(0, hurt - 1) if hurt > 0 else 0
+
+        # ── state machine ber-prioritas ─────────────────────────────
+        want = G._resolve_anim_state(boss, active, phase)
+        cur = getattr(boss, "_gw_state", None)
+        if cur is None:
+            boss._gw_state = want
+            boss._gw_state_prev = want
+            boss._gw_state_time = 0.0
+        elif want != cur:
+            cur_p = G.ANIM_STATES.get(cur, 0)
+            new_p = G.ANIM_STATES.get(want, 0)
+            stime = float(getattr(boss, "_gw_state_time", 0.0))
+            if cur != "DEATH" and (new_p >= cur_p or stime > 0.08):
+                boss._gw_state_prev = cur
+                boss._gw_state = want
+                boss._gw_state_time = 0.0
+            else:
+                boss._gw_state_time = stime + dt
+        else:
+            boss._gw_state_time = float(getattr(boss, "_gw_state_time",
+                                                 0.0)) + dt
+
+    def _detect_moving(boss):
+        cur_x = float(getattr(boss, "x", 0.0))
+        cur_y = float(getattr(boss, "y", 0.0))
+        if not hasattr(boss, "_gw_last_x"):
+            boss._gw_last_x = cur_x
+            boss._gw_last_y = cur_y
+            boss._gw_moving_cached = False
+            return False
+        moved = abs(cur_x - boss._gw_last_x) + abs(cur_y - boss._gw_last_y)
+        boss._gw_last_x = cur_x
+        boss._gw_last_y = cur_y
+        moving = moved > 0.3
+        boss._gw_moving_cached = moving
+        return moving
+
+    # ==================================================================
+    # POSE STATE - satu sumber kebenaran untuk rig DAN semua FX
+    # ==================================================================
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, ap) - dipakai rig DAN anchor FX agar sinkron."""
+        active_skill = getattr(boss, "active_skill", None)
+        if active_skill == "q":
+            action = "smash"
+        elif active_skill == "w":
+            action = "tide"
+        elif active_skill == "e":
+            action = "shell"
+        elif active_skill == "r":
+            action = "ravage"
+        elif (getattr(boss, "_gw_attack_active", False)
+              or getattr(boss, "timer", 0) >
+              getattr(boss, "attack_cooldown", 46) - 15):
+            action = "attack"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+
+        phase = float(getattr(boss, "pulse", 0.0))
+        if action == "walk":
+            phase *= 2.0
+        ap = 0.0
+        if action == "attack":
+            raw = max(0.0, min(1.0, float(getattr(boss, "_gw_attack_progress",
+                                                  0.0))))
+            ap = _NS_gravewake._attack_curve(raw)
+            boss._gw_attack_raw = raw
+        return action, phase, ap
+
+    def _attack_curve(ap):
+        """Remap progres mentah (0..1) -> waktu pose (0..1), MONOTON naik."""
+        if ap < 0.30:
+            return ap * 0.8
+        if ap < 0.60:
+            return 0.24 + (ap - 0.30) * 1.6
+        return 0.72 + (ap - 0.60) * 0.7
+
+    def _skill_progress(boss, timer, skill):
+        """Progres cast skill 0..1 dari sisa timer (denominator = durasi)."""
+        dur = _NS_gravewake.SKILL_DUR.get(skill, 45)
+        elapsed = dur - timer
+        return max(0.0, min(1.0, elapsed / dur))
+
+    # ==================================================================
+    # KOORDINAT & SKALA FX
+    # ==================================================================
+    def _fx_scale(boss):
+        """Faktor skala efek skill (world-space). Boss asli = 1.0."""
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+    def _ring_r(boss, world_r):
+        return max(1, int(round(float(world_r) * _NS_gravewake._fx_scale(boss))))
+
+    def _world_to_local(boss, x, y, wx, wy):
+        """Titik dunia -> ruang gambar renderer (clamp ke canvas)."""
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        rng = int(getattr(boss, "range", 65) or 65)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
+
+    def _target_position(boss, x, y):
+        v = getattr(boss, "_render_scale", None)
+        try:
+            scale = float(v) if v is not None else 1.0
+        except (TypeError, ValueError):
+            scale = 1.0
+        if scale <= 0.0:
+            scale = 1.0
+        target = getattr(boss, "target", None)
+        if target is not None and getattr(target, "alive", True):
+            tx = x + (target.x - getattr(boss, "x", x)) / scale
+            ty = y + (target.y - getattr(boss, "y", y)) / scale
+            return int(tx), int(ty)
+        return int(x + 200 / scale * getattr(boss, "direction", 1)), int(y)
+
+    def _rig_shift(action, phase, ap):
+        """(lean, root_y) badan; rok tentakel TIDAK ikut geser (mengambang)."""
+        lean = 0
+        root_y = int(math.sin(phase * 0.62) * 1.4)
+        if action == "walk":
+            lean = int(math.sin(phase * 1.72) * 2)
+            root_y -= int(abs(math.sin(phase * 1.15)) * 3)
+        elif action == "attack":
+            k = math.sin(ap * math.pi)
+            lean = int(k * 8)
+            root_y += int(k * 3)
+        elif action in ("smash",):
+            lean = 5
+            root_y -= 1
+        elif action == "ravage":
+            root_y -= 3
+        elif action == "shell":
+            root_y += 2
+        elif action == "tide":
+            root_y -= 1
+        return lean, root_y
+
+    def _s(v):
+        """Ukuran ruang lokal -> piksel layar."""
+        return max(1, int(round(v * _NS_gravewake.SCALE)))
+
+    def _local_to_screen(cx, cy, facing, lean, root_y, lx, ly):
+        """SATU pemetaan lokal -> layar: skala, arah hadap, bob/lean."""
+        f = 1 if facing >= 0 else -1
+        k = _NS_gravewake.SCALE
+        return (int(cx + (lx * f + lean * f) * k),
+                int(cy - _NS_gravewake.LIFT + (ly + root_y) * k))
+
+    def _local(boss, x, y, action, phase, ap, lx, ly):
+        """Ruang lokal rig -> piksel surface (dipakai FX eksternal)."""
+        facing = getattr(boss, "direction", 1) or 1
+        lean, root_y = _NS_gravewake._rig_shift(action, phase, ap)
+        return _NS_gravewake._local_to_screen(x, y, facing, lean, root_y,
+                                              lx, ly)
+
+    # ==================================================================
+    # GEOMETRI JANGKAR (weapon)
+    # ==================================================================
+    def _front_grip_local(action, ap=0.0, phase=0.0, compact=False):
+        """Pergelangan tangan depan (grip jangkar), ruang lokal."""
+        rest = _NS_gravewake.SHOULDER_Y + 20                   # = 6
+        if compact:
+            return (17, rest + 2)
+        if action in ("attack", "smash"):
+            w = _NS_gravewake._SWING_WIND
+            h = _NS_gravewake._SWING_HIT
+            if ap < w:                       # angkat jangkar ke atas kepala
+                e = (ap / w) ** 0.9
+                return (int(17 - 12 * e), int(rest - 24 * e))
+            if ap < h:                       # tebas turun ke depan
+                u = (ap - w) / (h - w)
+                return (int(5 + 24 * u), int(rest - 24 + 28 * u))
+            u = (ap - h) / (1.0 - h)         # kembali ke siap
+            return (int(29 - 12 * u), int(rest + 4 - 3 * u))
+        if action == "smash":
+            return (24, rest + 3)
+        if action == "tide":
+            return (20, rest + 2)            # lengan ke samping (channel)
+        if action == "shell":
+            return (14, rest + 3)            # jangkar didekap
+        if action == "ravage":
+            return (16, rest - 10)           # jangkar terangkat (mengaum)
+        if action == "walk":
+            s = math.sin(phase * 1.72)
+            return (int(17 + s * 4), int(rest - s * 2))
+        return (17, rest + int(math.sin(phase * 0.62)))
+
+    def _anchor_angle(action, phase, ap=0.0):
+        """Sudut gagang jangkar (rad). tip = grip + (sin a * L, cos a * L).
+
+        a = 0 menunjuk LURUS KE BAWAH, a = pi/2 lurus ke depan, a = pi
+        lurus ke atas.
+        """
+        s = math.sin(phase * 1.72)
+        up = math.pi - 0.5                    # ~ 151 derajat (atas-depan)
+        if action in ("attack", "smash"):
+            w = _NS_gravewake._SWING_WIND
+            h = _NS_gravewake._SWING_HIT
+            if ap < w:                       # angkat overhead
+                u = ap / w
+                return 0.15 + (up - 0.15) * u
+            if ap < h:                       # tebas turun ke depan
+                u = (ap - w) / (h - w)
+                return up - (up - 0.55) * u
+            u = (ap - h) / (1.0 - h)         # recovery -> siap
+            return 0.55 - (0.55 - 0.15) * u
+        if action == "smash":                # Q: tebas penuh
+            return up
+        if action == "tide":                 # W: jangkar mendatar ke samping
+            return 1.55
+        if action == "shell":                # E: jangkar didekap
+            return 0.30
+        if action == "ravage":               # R: jangkar terangkat
+            return up - 0.3
+        if action == "walk":
+            return 0.45 + s * 0.10
+        w = math.sin(phase * 0.5) * 0.06
+        return 0.60 + w
+
+    def _anchor_len(action):
+        """Panjang gagang jangkar (ruang lokal)."""
+        return 40 if action in ("attack", "smash", "ravage") else 34
+
+    def _tip_local(action, phase, ap=0.0):
+        """Ujung jangkar (kepala crossbar) dalam ruang lokal (rig & FX)."""
+        grip = _NS_gravewake._front_grip_local(action, ap, phase)
+        angle = _NS_gravewake._anchor_angle(action, phase, ap)
+        L = _NS_gravewake._anchor_len(action)
+        return (int(grip[0] + math.sin(angle) * L),
+                int(grip[1] + math.cos(angle) * L))
+
+    def _tip_screen(boss, x, y):
+        action, phase, ap = _NS_gravewake._resolve_pose(boss)
+        return _NS_gravewake._local(boss, x, y, action, phase, ap,
+                                    *_NS_gravewake._tip_local(action, phase,
+                                                              ap))
+
+    # ==================================================================
+    # COMPATIBILITY HELPERS (gambar prosedural, alpha aman)
+    # ==================================================================
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
-
 
     def _aacircle(surface, color, center, radius, width=0):
         color = _NS_gravewake._clamp(color)
@@ -120,18 +623,20 @@ class _NS_gravewake:
         if radius == 0:
             return
         if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
+            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4),
+                                  pygame.SRCALPHA)
+            pygame.draw.circle(temp, color, (radius + 2, radius + 2),
+                               radius, width)
             surface.blit(temp, (cx - radius - 2, cy - radius - 2))
             return
         if _NS_gravewake.HAS_AACIRCLE and radius > 1:
             try:
-                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius, width)
+                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius,
+                                     width)
                 return
             except Exception:
                 pass
         pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
-
 
     def _aaline(surface, color, start, end, width=1):
         color = _NS_gravewake._clamp(color)
@@ -145,13 +650,12 @@ class _NS_gravewake:
             if w <= 0 or h <= 0:
                 return
             temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.line(temp, color,
-                             (sx - min_x, sy - min_y),
+            pygame.draw.line(temp, color, (sx - min_x, sy - min_y),
                              (ex - min_x, ey - min_y), max(1, width))
             surface.blit(temp, (min_x, min_y))
             return
-        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
-
+        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey),
+                         max(1, width))
 
     def _poly(surface, color, points):
         if len(points) < 3:
@@ -172,7 +676,6 @@ class _NS_gravewake:
             return
         pygame.draw.polygon(surface, color[:3], points)
 
-
     def _ellipse(surface, color, rect, width=0):
         color = _NS_gravewake._clamp(color)
         if len(color) == 4 and color[3] < 255:
@@ -185,7 +688,6 @@ class _NS_gravewake:
             return
         pygame.draw.ellipse(surface, color[:3], rect, width)
 
-
     def _rect(surface, color, rect, border_radius=0):
         color = _NS_gravewake._clamp(color)
         if len(color) == 4 and color[3] < 255:
@@ -193,70 +695,924 @@ class _NS_gravewake:
             if rw <= 0 or rh <= 0:
                 return
             temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.rect(temp, color, (2, 2, rw, rh), border_radius=border_radius)
+            pygame.draw.rect(temp, color, (2, 2, rw, rh),
+                             border_radius=border_radius)
             surface.blit(temp, (rx - 2, ry - 2))
             return
-        pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
+        pygame.draw.rect(surface, color[:3], rect,
+                         border_radius=border_radius)
 
-
-    def _target_position(boss, x, y):
-        target = getattr(boss, "target", None)
-        if target is not None and getattr(target, "alive", True):
-            # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
-            scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
-            tx = x + (target.x - getattr(boss, "x", x)) / scale
-            ty = y + (target.y - getattr(boss, "y", y)) / scale
-            return int(tx), int(ty)
-        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
-
-
-    # ---------------------------------------------------------------------------
-    # Water helpers
-    # ---------------------------------------------------------------------------
+    # ==================================================================
+    # WATER HELPERS
+    # ==================================================================
     def _draw_water_splash(surface, x, y, size, phase, alpha=255):
         """Water splash particle."""
         flick = math.sin(phase * 3) * 0.15 + 1.0
         s = int(size * flick)
         if s < 1:
             return
-        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_darkest"], alpha // 3), (x, y), s + 3)
-        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha // 2), (x, y), s + 1)
-        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha), (x, y), s)
-        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_light"], alpha), (x, y - 1),
-                  max(1, s - 2))
-        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_bright"], min(255, alpha)),
-                  (x, y - 2), max(1, s - 4))
+        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_darkest"],
+                                          alpha // 3), (x, y), s + 3)
+        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_dark"],
+                                          alpha // 2), (x, y), s + 1)
+        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"],
+                                          alpha), (x, y), s)
+        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_light"],
+                                          alpha), (x, y - 1), max(1, s - 2))
+        _NS_gravewake._aacircle(surface,
+                                (*_NS_gravewake.PALETTE["water_bright"],
+                                 min(255, alpha)), (x, y - 2),
+                                max(1, s - 4))
 
+    def _draw_water_droplet(surface, x, y, size, phase, alpha=255):
+        """Satu tetes air kecil (motif senjata & ornamen)."""
+        s = max(1, int(size))
+        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_dark"],
+                                          alpha), (x, y + 1), s)
+        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"],
+                                          alpha), (x, y), s)
+        _NS_gravewake._aacircle(surface,
+                                (*_NS_gravewake.PALETTE["water_bright"],
+                                 min(255, alpha)), (x, y - 1), max(1, s - 1))
 
-    def _draw_water_column(surface, cx, cy, height, width, phase, alpha=220):
-        """Vertical water column with wave motion."""
-        for i in range(height):
-            t = i / max(1, height)
-            wave = math.sin(phase * 3 + t * 6) * 3
-            w_here = int(width * (1 - t * 0.4))
-            layer_y = cy - i
-            layer_x = cx + int(wave)
-            _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha),
-                  (layer_x - w_here, layer_y, w_here * 2, 2))
-            _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha),
-                  (layer_x - w_here + 1, layer_y, w_here * 2 - 2, 2))
-            _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_light"], alpha),
-                  (layer_x - w_here // 2, layer_y, w_here, 2))
-            _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_hot"], alpha),
-                  (layer_x - w_here // 4, layer_y, max(1, w_here // 2), 2))
+    # ==================================================================
+    # FLOATING EFFECTS (background)
+    # ==================================================================
+    def _draw_shadow(surface, x, y):
+        shadow = pygame.Surface((130, 26), pygame.SRCALPHA)
+        for radius in range(12, 0, -1):
+            alpha = max(0, (12 - radius) * 15)
+            pygame.draw.ellipse(
+                shadow, (0, 0, 0, alpha),
+                (12 - radius, 12 - radius, 106 + radius * 2, radius * 2))
+        pygame.draw.ellipse(shadow, (*_NS_gravewake.PALETTE["water_darkest"],
+                                     60), (11, 5, 108, 12))
+        surface.blit(shadow, (x - 65, y - 13))
 
+    def _draw_floating_water(surface, cx, cy, phase, trail=False,
+                             facing=1, intense=False):
+        """Water mist below floating Gravewake."""
+        strength = 1.6 if intense else 1.0
+        mist = pygame.Surface((160, 48), pygame.SRCALPHA)
+        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
+        for radius in range(42, 3, -4):
+            alpha = int((42 - radius) * 2.0 * pulse * strength)
+            if alpha > 0:
+                pygame.draw.ellipse(
+                    mist, (*_NS_gravewake.PALETTE["water_darkest"],
+                           min(255, alpha)),
+                    (80 - radius * 2, 24 - radius // 3,
+                     radius * 4, max(3, radius // 2)))
+        surface.blit(mist, (cx - 80, cy - 13))
+        for i, offset in enumerate((-30, -15, 0, 15, 30)):
+            t = (phase * 0.5 + i * 0.2) % 1.0
+            sx = cx + offset + int(math.sin(phase + i) * 3)
+            sy = cy + 5 - int(t * 27)
+            alpha = max(0, min(255, int(200 * (1 - t) * strength)))
+            if alpha <= 0:
+                continue
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_dark"],
+                                     alpha), (sx, sy), 5)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_mid"],
+                                     alpha), (sx, sy - 2), 3)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_bright"],
+                                     min(255, alpha)), (sx, sy - 3), 1)
+        for i in range(5):
+            angle = phase * 0.9 + i * math.pi * 2 / 5
+            r = 30 + int(math.sin(phase + i * 1.3) * 4)
+            sx = cx + int(math.cos(angle) * r)
+            sy = cy + int(math.sin(angle) * 8)
+            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_mid"],
+                                    (sx, sy), 3)
+            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_light"],
+                                    (sx, sy), 2)
+            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_hot"],
+                                    (sx, sy), 1)
+        if trail:
+            for i in range(5):
+                sx = cx - (i + 1) * 14 * facing
+                sy = cy + int(math.sin(phase + i) * 2)
+                alpha = max(0, 130 - i * 22)
+                _NS_gravewake._aacircle(surface,
+                                        (*_NS_gravewake.PALETTE["water_mid"],
+                                         alpha), (sx, sy), max(2, 5 - i))
 
-    # ---------------------------------------------------------------------------
-    # EFFECT SYSTEM
-    # ---------------------------------------------------------------------------
+    def _draw_water_aura(surface, x, y, phase):
+        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
+        aura = pygame.Surface((220, 200), pygame.SRCALPHA)
+        for radius in range(88, 5, -4):
+            alpha = int((88 - radius) * 1.1 * pulse)
+            if alpha > 0:
+                _NS_gravewake._aacircle(
+                    aura, (*_NS_gravewake.PALETTE["water_darkest"],
+                           min(255, alpha)), (110, 100), radius)
+        surface.blit(aura, (x - 110, y - 100))
+
+    def _draw_ground_runes(surface, x, y, phase, skill):
+        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
+        ring = pygame.Surface((150, 50), pygame.SRCALPHA)
+        pygame.draw.ellipse(ring, (*_NS_gravewake.PALETTE["water_dark"], 140),
+                            (5, 10, 140, 30), 3)
+        pygame.draw.ellipse(ring, (*_NS_gravewake.PALETTE["water_mid"], 170),
+                            (25, 15, 100, 20), 2)
+        for i in range(10):
+            angle = phase * 0.2 + i * math.pi / 5
+            x1 = 75 + int(math.cos(angle) * 35)
+            y1 = 25 + int(math.sin(angle) * 8)
+            x2 = 75 + int(math.cos(angle) * 65)
+            y2 = 25 + int(math.sin(angle) * 12)
+            pygame.draw.line(ring, (*_NS_gravewake.PALETTE["water_bright"],
+                                    160), (x1, y1), (x2, y2), 1)
+        if skill:
+            pygame.draw.ellipse(ring,
+                                (*_NS_gravewake.PALETTE["water_hot"],
+                                 int(80 * pulse)), (15, 8, 120, 34), 1)
+        surface.blit(ring, (x - 75, y - 25))
+
+    def _draw_body_water_particles(surface, cx, cy, phase):
+        for i in range(8):
+            angle = phase * 0.4 + i * math.pi / 4
+            radius = 38 + int(math.sin(phase * 0.7 + i) * 6)
+            px = cx + int(math.cos(angle) * radius)
+            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
+            alpha = int(140 + math.sin(phase + i * 0.7) * 60)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_dark"],
+                                     alpha), (px, py), 2)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_bright"],
+                                     alpha // 2), (px, py), 1)
+        for i in range(5):
+            t = ((phase * 0.4 + i * 0.2) % 1.0)
+            px = cx + int(math.sin(phase + i) * 20) + (i - 2) * 5
+            py = cy + 28 - int(t * 60)
+            alpha = max(0, int(200 * (1 - t)))
+            if alpha > 0:
+                _NS_gravewake._aacircle(surface,
+                                        (*_NS_gravewake.PALETTE["water_light"],
+                                         alpha), (px, py), 1)
+                _NS_gravewake._aacircle(surface,
+                                        (*_NS_gravewake.PALETTE["water_hot"],
+                                         alpha), (px, py - 1), 1)
+
+    def _draw_cast_flash(surface, x, y, facing, progress):
+        """Kilatan sihir di tangan saat cast."""
+        P = _NS_gravewake.PALETTE
+        if progress < 0.2 or progress > 0.65:
+            return
+        t = (progress - 0.2) / 0.45
+        intensity = math.sin(t * math.pi)
+        fx = x + facing * 28
+        fy = y - 10
+        alpha = max(0, min(255, int(200 * intensity)))
+        radius = int(9 + intensity * 16)
+        _NS_gravewake._aacircle(surface, (*P["water_dark"], alpha // 2),
+                                (fx, fy), radius + 8)
+        _NS_gravewake._aacircle(surface, (*P["water_mid"], alpha),
+                                (fx, fy), radius)
+        _NS_gravewake._aacircle(surface, (*P["water_light"], alpha),
+                                (fx, fy), radius // 2)
+        _NS_gravewake._aacircle(surface, (*P["water_hot"], min(255, alpha)),
+                                (fx, fy), max(1, radius // 4))
+        _NS_gravewake._aacircle(surface, P["water_white"], (fx, fy),
+                                max(1, radius // 6))
+
+    def _draw_footfall_dust(surface, x, y, facing, phase):
+        P = _NS_gravewake.PALETTE
+        for i in range(3):
+            t = ((phase * 0.6 + i * 0.33) % 1.0)
+            dx = x - facing * int(t * 18)
+            dy = y + 4 + int(t * 7)
+            alpha = max(0, int(130 * (1 - t)))
+            if alpha > 0:
+                _NS_gravewake._aacircle(surface, (*P["water_dark"], alpha),
+                                        (dx, dy), 3)
+                _NS_gravewake._aacircle(surface, (*P["water_mid"], alpha),
+                                        (dx, dy), 2)
+
+    # ==================================================================
+    # BODY RENDERING - Tidehunter v3 (rig satu arah-hadap)
+    # ==================================================================
+    def _draw_gravewake_body(surface, cx, cy, facing, phase, action,
+                             ap=0.0, flash=0):
+        """Komposisi badan: rok tentakel -> torso -> lengan/jangkar ->
+        kepala -> duri punggung. Semua titik lewat ``L`` (mirror facing +
+        lean + bob)."""
+        NS = _NS_gravewake
+        lean, root_y = NS._rig_shift(action, phase, ap)
+
+        def L(lx, ly):
+            return NS._local_to_screen(cx, cy, facing, lean, root_y, lx, ly)
+
+        # ── Rok tentakel (belakang badan) ───────────────────────────
+        NS._draw_tentacle_skirt(surface, cx, cy, facing, phase, L)
+
+        # ── Duri punggung (belakang torso) ──────────────────────────
+        NS._draw_back_spikes(surface, cx, cy, facing, phase, L)
+
+        # ── Torso otot + sabuk kulit ────────────────────────────────
+        NS._draw_torso(surface, cx, cy, facing, phase, L, flash)
+
+        # ── Lengan + jangkar ────────────────────────────────────────
+        if action in ("attack", "smash"):
+            NS._draw_melee_arms(surface, cx, cy, facing, phase, ap, L)
+        else:
+            NS._draw_idle_arms(surface, cx, cy, facing, phase, L, action)
+
+        # ── Kepala runcing bertaring ────────────────────────────────
+        NS._draw_head(surface, cx, cy, facing, phase, L)
+
+        # ── Partikel air di sekitar badan ───────────────────────────
+        NS._draw_body_water_particles(surface, cx, cy, phase)
+
+    def _draw_tentacle_skirt(surface, cx, cy, facing, phase, L):
+        """Rok tentakel kraken menggantung dari pinggang (mengambang)."""
+        P = _NS_gravewake.PALETTE
+        sway = math.sin(phase * 0.6) * 3
+        sway2 = math.sin(phase * 0.9 + 0.5) * 2
+
+        # Sabuk pinggang (leather harness)
+        _NS_gravewake._poly(surface, (*P["shadow_deep"], 255),
+                            [L(p[0] + 2, p[1] + 2) for p in
+                             [(-20, -2), (20, -2), (22, 6), (-22, 6)]])
+        _NS_gravewake._rect(surface, P["leather_darkest"],
+                            (L(-21, -3)[0], L(-21, -3)[1], 42, 9))
+        _NS_gravewake._rect(surface, P["leather_dark"],
+                            (L(-19, -2)[0], L(-19, -2)[1], 38, 6))
+        _NS_gravewake._rect(surface, P["leather_mid"],
+                            (L(-17, -1)[0], L(-17, -1)[1], 34, 3))
+        # Kancing logam
+        for i in range(-2, 3):
+            bx = L(i * 9, 0)
+            _NS_gravewake._aacircle(surface, P["anchor_dark"],
+                                    (bx[0], bx[1] + 1), 2)
+            _NS_gravewake._aacircle(surface, P["anchor_mid"],
+                                    (bx[0], bx[1]), 1)
+        # Emblem jangkar emas di tengah sabuk
+        _NS_gravewake._aacircle(surface, P["gold_dark"], L(0, 1), 5)
+        _NS_gravewake._aacircle(surface, P["gold_mid"], L(0, 1), 4)
+        _NS_gravewake._aacircle(surface, P["gold_light"], L(-1, 0), 2)
+        _NS_gravewake._aaline(surface, P["leather_darkest"], L(0, -1),
+                              L(0, 3), 1)
+        _NS_gravewake._aaline(surface, P["leather_darkest"], L(-2, 1),
+                              L(2, 1), 1)
+
+        # Kain sobek di depan
+        for i, off in enumerate((-9, -4, 4, 9)):
+            wave = int(math.sin(phase * 0.8 + i) * 2)
+            _NS_gravewake._poly(surface, P["leather_dark"], [
+                L(off - 3, 5), L(off + 3, 5),
+                L(off + 2 + wave, 20), L(off - 2 + wave, 20)])
+            _NS_gravewake._poly(surface, P["leather_mid"], [
+                L(off - 2, 6), L(off + 2, 6),
+                L(off + 1 + wave, 17), L(off - 1 + wave, 17)])
+
+        # TENTAKEL menggantung (4 tentakel utama)
+        for i, base_x in enumerate((-14, -6, 6, 14)):
+            wave = math.sin(phase * 0.7 + i * 0.9) * 3
+            w2 = math.sin(phase * 1.1 + i) * 2
+            tip_x = base_x + int(wave) + int(w2)
+            tip_y = 46 + abs(i - 1.5) * 2
+            # badan tentakel meruncing
+            _NS_gravewake._poly(surface, P["skin_darkest"], [
+                L(base_x - 6, 4), L(base_x + 6, 4),
+                L(tip_x + 3, tip_y), L(tip_x - 3, tip_y)])
+            _NS_gravewake._poly(surface, P["skin_dark"], [
+                L(base_x - 4, 5), L(base_x + 4, 5),
+                L(tip_x + 2, tip_y - 2), L(tip_x - 2, tip_y - 2)])
+            _NS_gravewake._poly(surface, P["skin_mid"], [
+                L(base_x - 2, 6), L(base_x + 2, 6),
+                L(tip_x + 1, tip_y - 4), L(tip_x - 1, tip_y - 4)])
+            # pengisap (sucker) pada tentakel
+            for j in range(3):
+                sy = 12 + j * 9
+                sw = 1.0 - j * 0.28
+                _NS_gravewake._aacircle(
+                    surface, P["skin_dark"],
+                    L(base_x * sw + wave * (j + 1) * 0.2, sy), 3)
+                _NS_gravewake._aacircle(
+                    surface, P["belly_mid"],
+                    L(base_x * sw + wave * (j + 1) * 0.2, sy - 1), 2)
+                _NS_gravewake._aacircle(
+                    surface, P["belly_light"],
+                    L(base_x * sw + wave * (j + 1) * 0.2, sy - 1), 1)
+            # ujung tentakel melingkar (tip)
+            _NS_gravewake._aacircle(surface, P["skin_dark"],
+                                    L(tip_x, tip_y), 3)
+            _NS_gravewake._aacircle(surface, P["skin_light"],
+                                    L(tip_x - 1, tip_y - 1), 2)
+            _NS_gravewake._aacircle(surface, P["skin_shine"],
+                                    L(tip_x - 1, tip_y - 2), 1)
+
+        # Durip kecil di sisi pinggang
+        for side in (-1, 1):
+            _NS_gravewake._poly(surface, P["bone_dark"], [
+                L(side * 22, 0), L(side * 27, -5), L(side * 25, 4)])
+            _NS_gravewake._poly(surface, P["bone_mid"], [
+                L(side * 22, 0), L(side * 26, -4), L(side * 24, 3)])
+
+    def _draw_torso(surface, cx, cy, facing, phase, L, flash=0):
+        """Torso otot masif + perut + trim pinggang."""
+        P = _NS_gravewake.PALETTE
+        _NS_gravewake._poly(surface, (*P["shadow_deep"], 255), [L(*p) for p in [
+            (-26, -14), (26, -14), (29, 2), (24, 16), (-24, 16), (-29, 2)]])
+        _NS_gravewake._poly(surface, P["skin_darkest"], [L(*p) for p in [
+            (-26, -14), (-28, -6), (-27, 5), (-24, 16),
+            (24, 16), (27, 5), (28, -6), (26, -14)]])
+        _NS_gravewake._poly(surface, P["skin_dark"], [L(*p) for p in [
+            (-24, -12), (-26, -4), (-25, 4), (-22, 14),
+            (22, 14), (25, 4), (26, -4), (24, -12)]])
+        _NS_gravewake._poly(surface, P["skin_mid"], [L(*p) for p in [
+            (-22, -10), (-23, -3), (-22, 3), (-19, 12),
+            (19, 12), (22, 3), (23, -3), (22, -10)]])
+
+        # Otot dada (highlight)
+        _NS_gravewake._aacircle(surface, P["skin_light"], L(-9, -6), 5)
+        _NS_gravewake._aacircle(surface, P["skin_light"], L(9, -6), 5)
+        _NS_gravewake._aacircle(surface, P["skin_high"], L(-10, -8), 2)
+        _NS_gravewake._aacircle(surface, P["skin_high"], L(10, -8), 2)
+        # Garis bagi pectoral
+        _NS_gravewake._aaline(surface, P["skin_darkest"], L(0, -12),
+                              L(0, 0), 1)
+
+        # Perut (oval tengah lebih terang)
+        _NS_gravewake._poly(surface, P["belly_dark"], [L(*p) for p in [
+            (-12, 2), (12, 2), (14, 9), (10, 16), (-10, 16), (-14, 9)]])
+        _NS_gravewake._poly(surface, P["belly_mid"], [L(*p) for p in [
+            (-10, 3), (10, 3), (12, 9), (8, 14), (-8, 14), (-12, 9)]])
+        # Tekstur sisik perut
+        for row in range(3):
+            for col in range(-1, 2):
+                sx = col * 7 + (row % 2) * 3
+                sy = 6 + row * 4
+                _NS_gravewake._aacircle(surface, P["belly_dark"],
+                                        L(sx, sy), 2)
+                _NS_gravewake._aacircle(surface, P["belly_mid"],
+                                        L(sx, sy - 1), 1)
+                _NS_gravewake._aacircle(surface, P["belly_light"],
+                                        L(sx, sy - 1), 1)
+
+        # Sisik gelap di sisi torso (outer)
+        for i in range(8):
+            angle = phase * 0.1 + i * math.pi / 4
+            r = 19
+            sx = int(math.cos(angle) * r)
+            sy = -3 + int(math.sin(angle) * 9)
+            if abs(sx) > 14 or sy < -6:
+                _NS_gravewake._aacircle(surface, P["skin_darkest"],
+                                        L(sx, sy), 2)
+                _NS_gravewake._aacircle(surface, P["skin_dark"],
+                                        L(sx, sy - 1), 1)
+
+        # Barnacle / kerak di bahu
+        for side in (-1, 1):
+            _NS_gravewake._aacircle(surface, P["skin_darkest"],
+                                    L(side * 20, -10), 4)
+            _NS_gravewake._aacircle(surface, P["bone_mid"],
+                                    L(side * 20, -10), 3)
+            _NS_gravewake._aacircle(surface, P["bone_light"],
+                                    L(side * 20 - 1, -11), 1)
+
+        # Trim pinggang emas
+        _NS_gravewake._rect(surface, P["gold_darkest"],
+                            (L(-22, 10)[0], L(-22, 10)[1], 44, 4))
+        _NS_gravewake._rect(surface, P["gold_dark"],
+                            (L(-21, 10)[0], L(-21, 10)[1], 42, 3))
+        _NS_gravewake._rect(surface, P["gold_mid"],
+                            (L(-20, 11)[0], L(-20, 11)[1], 40, 2))
+        _NS_gravewake._aacircle(surface, P["gold_darkest"], L(0, 12), 3)
+        _NS_gravewake._aacircle(surface, P["water_dark"], L(0, 12), 2)
+        _NS_gravewake._aacircle(surface, P["water_bright"], L(0, 12), 1)
+
+        # Flash putih saat kena damage
+        if flash:
+            a = min(220, flash)
+            _NS_gravewake._poly(surface, (*P["white"], a), [L(*p) for p in [
+                (-26, -14), (26, -14), (29, 2), (24, 16), (-24, 16),
+                (-29, 2)]])
+
+    def _draw_back_spikes(surface, cx, cy, facing, phase, L):
+        """Deret duri tulang di punggung/bahu."""
+        P = _NS_gravewake.PALETTE
+        bob = math.sin(phase * 0.9) * 1
+        # Duri tengah besar
+        _NS_gravewake._poly(surface, P["bone_darkest"], [
+            L(-5, -10), L(5, -10), L(0, -32 + bob)])
+        _NS_gravewake._poly(surface, P["bone_dark"], [
+            L(-4, -10), L(4, -10), L(0, -30 + bob)])
+        _NS_gravewake._poly(surface, P["bone_mid"], [
+            L(-2, -11), L(2, -11), L(0, -27 + bob)])
+        _NS_gravewake._aaline(surface, P["bone_light"], L(0, -11),
+                              L(0, -28 + bob), 1)
+        _NS_gravewake._aacircle(surface, P["bone_shine"], L(0, -30 + bob), 1)
+
+        # Duri samping (menyebar ke luar)
+        for side_off, height in [(-9, 16), (9, 16), (-15, 13), (15, 13),
+                                 (-20, 10), (20, 10), (-24, 7), (24, 7)]:
+            lean = 1 if side_off > 0 else -1
+            _NS_gravewake._poly(surface, P["bone_darkest"], [
+                L(side_off - 4, -8), L(side_off + 4, -8),
+                L(side_off + lean * 3, -8 - height + bob)])
+            _NS_gravewake._poly(surface, P["bone_dark"], [
+                L(side_off - 3, -8), L(side_off + 3, -8),
+                L(side_off + lean * 2, -8 - height + 2 + bob)])
+            _NS_gravewake._poly(surface, P["bone_mid"], [
+                L(side_off - 2, -8), L(side_off + 2, -8),
+                L(side_off + lean, -8 - height + 3 + bob)])
+            _NS_gravewake._aaline(surface, P["bone_light"],
+                                  L(side_off, -8),
+                                  L(side_off + lean, -8 - height + 4 + bob),
+                                  1)
+            _NS_gravewake._aacircle(surface, P["bone_shine"],
+                                    L(side_off + lean * 2,
+                                      -8 - height + 1 + bob), 1)
+
+    def _draw_arm_segment(surface, x1, y1, x2, y2, thickness=8):
+        """Segmen lengan otot."""
+        P = _NS_gravewake.PALETTE
+        _NS_gravewake._aaline(surface, P["shadow_deep"], (x1 + 2, y1 + 2),
+                              (x2 + 2, y2 + 2), thickness + 1)
+        _NS_gravewake._aaline(surface, P["skin_darkest"], (x1, y1), (x2, y2),
+                              thickness)
+        _NS_gravewake._aaline(surface, P["skin_dark"], (x1, y1), (x2, y2),
+                              thickness - 2)
+        _NS_gravewake._aaline(surface, P["skin_mid"], (x1, y1), (x2, y2),
+                              max(1, thickness - 4))
+        _NS_gravewake._aaline(surface, P["skin_light"], (x1 - 1, y1 - 1),
+                              (x2 - 1, y2 - 1), 1)
+
+    def _draw_monster_hand(surface, x, y, phase):
+        """Tangan monster bercakar."""
+        P = _NS_gravewake.PALETTE
+        _NS_gravewake._aacircle(surface, P["shadow_deep"], (x + 1, y + 1), 6)
+        _NS_gravewake._aacircle(surface, P["skin_darkest"], (x, y), 5)
+        _NS_gravewake._aacircle(surface, P["skin_dark"], (x - 1, y - 1), 4)
+        _NS_gravewake._aacircle(surface, P["skin_mid"], (x - 1, y - 2), 3)
+        _NS_gravewake._aacircle(surface, P["skin_light"], (x - 2, y - 2), 1)
+        for i in range(-1, 2):
+            claw_angle = math.pi * 0.5 + i * 0.45
+            cx1 = x + int(math.cos(claw_angle) * 5)
+            cy1 = y + int(math.sin(claw_angle) * 5)
+            cx2 = x + int(math.cos(claw_angle) * 10)
+            cy2 = y + int(math.sin(claw_angle) * 10)
+            _NS_gravewake._aaline(surface, P["bone_dark"], (cx1, cy1),
+                                  (cx2, cy2), 2)
+            _NS_gravewake._aaline(surface, P["bone_mid"], (cx1, cy1),
+                                  (cx2, cy2), 1)
+            _NS_gravewake._aacircle(surface, P["bone_light"], (cx2, cy2), 1)
+
+    def _draw_idle_arms(surface, cx, cy, facing, phase, L, action="idle"):
+        """Lengan masif - satu memegang jangkar, satu bebas."""
+        P = _NS_gravewake.PALETTE
+        SY = _NS_gravewake.SHOULDER_Y
+        sway = math.sin(phase * 0.7) * 2
+
+        # Lengan bebas (sisi berlawanan) - menggantung bercakar
+        fa = L(-facing * 24, SY + 4)
+        fe = L(-facing * 30, SY + 18 + sway)
+        fh = L(-facing * 33, SY + 30)
+        _NS_gravewake._draw_arm_segment(surface, fa[0], fa[1], fe[0], fe[1],
+                                        thickness=10)
+        _NS_gravewake._draw_arm_segment(surface, fe[0], fe[1], fh[0], fh[1],
+                                        thickness=8)
+        _NS_gravewake._draw_monster_hand(surface, fh[0], fh[1], phase)
+
+        # Lengan jangkar (sisi hadap) - memegang jangkar di sisi
+        grip = _NS_gravewake._front_grip_local(action, 0.0, phase)
+        gs = L(*grip)
+        sh = L(facing * 24, SY + 4)
+        _NS_gravewake._draw_arm_segment(surface, sh[0], sh[1], gs[0], gs[1],
+                                        thickness=10)
+        _NS_gravewake._draw_monster_hand(surface, gs[0], gs[1], phase)
+        # Jangkar di tangan
+        angle = _NS_gravewake._anchor_angle(action, phase, 0.0)
+        length = _NS_gravewake._anchor_len(action)
+        _NS_gravewake._draw_anchor(surface, gs, angle, length, facing,
+                                   phase, intense=False)
+
+    def _draw_melee_arms(surface, cx, cy, facing, phase, ap, L):
+        """Tebasan jangkar overhead."""
+        SY = _NS_gravewake.SHOULDER_Y
+        # Lengan bebas stabil
+        fa = L(-facing * 24, SY + 4)
+        fe = L(-facing * 30, SY + 18)
+        fh = L(-facing * 33, SY + 30)
+        _NS_gravewake._draw_arm_segment(surface, fa[0], fa[1], fe[0], fe[1],
+                                        thickness=10)
+        _NS_gravewake._draw_arm_segment(surface, fe[0], fe[1], fh[0], fh[1],
+                                        thickness=8)
+        _NS_gravewake._draw_monster_hand(surface, fh[0], fh[1], phase)
+
+        # Lengan jangkar mengikuti grip pose-driven
+        grip = _NS_gravewake._front_grip_local("attack", ap, phase)
+        gs = L(*grip)
+        sh = L(facing * 24, SY + 4)
+        _NS_gravewake._draw_arm_segment(surface, sh[0], sh[1], gs[0], gs[1],
+                                        thickness=10)
+        _NS_gravewake._draw_monster_hand(surface, gs[0], gs[1], phase)
+        angle = _NS_gravewake._anchor_angle("attack", phase, ap)
+        length = _NS_gravewake._anchor_len("attack")
+        intense = bool(0.24 < ap < 0.80)
+        _NS_gravewake._draw_anchor(surface, gs, angle, length, facing,
+                                   phase, intense=intense)
+
+    def _draw_anchor(surface, grip, angle, length, facing, phase,
+                     intense=False):
+        """Jangkar kapal baja berkarat (cincin, gagang, crossbar, fluke).
+
+        ``grip`` sudah dalam ruang LAYAR; ``angle`` dalam rad (sama
+        konvensi _anchor_angle: 0 = bawah, pi/2 = depan, pi = atas).
+        """
+        P = _NS_gravewake.PALETTE
+        hx, hy = int(grip[0]), int(grip[1])
+        L = int(length)
+        cos_a, sin_a = math.cos(angle), math.sin(angle)
+        tip_x = hx + int(sin_a * L)
+        tip_y = hy + int(cos_a * L)
+        f = 1 if facing >= 0 else -1
+        # arah tegak lurus (crossbar)
+        px, py = cos_a * f, -sin_a
+
+        # Gagang (dari grip ke kepala crossbar)
+        _NS_gravewake._aaline(surface, P["shadow_deep"], (hx + 2, hy + 2),
+                              (tip_x + 2, tip_y + 2), 6)
+        _NS_gravewake._aaline(surface, P["anchor_darkest"], (hx, hy),
+                              (tip_x, tip_y), 5)
+        _NS_gravewake._aaline(surface, P["anchor_dark"], (hx, hy),
+                              (tip_x, tip_y), 4)
+        _NS_gravewake._aaline(surface, P["anchor_mid"], (hx, hy),
+                              (tip_x, tip_y), 2)
+        _NS_gravewake._aaline(surface, P["anchor_light"], (hx - 1, hy - 1),
+                              (tip_x - 1, tip_y - 1), 1)
+
+        # Cincin atas (tempat tali)
+        _NS_gravewake._aacircle(surface, P["anchor_darkest"], (hx, hy), 6)
+        _NS_gravewake._aacircle(surface, P["anchor_dark"], (hx, hy), 5, 2)
+        _NS_gravewake._aacircle(surface, P["anchor_mid"], (hx, hy), 4, 1)
+        _NS_gravewake._aacircle(surface, P["anchor_shine"], (hx - 1, hy - 1),
+                                1)
+
+        # Crossbar di kepala
+        bar = 13
+        bx1 = tip_x + int(px * bar)
+        by1 = tip_y + int(py * bar)
+        bx2 = tip_x - int(px * bar)
+        by2 = tip_y - int(py * bar)
+        _NS_gravewake._aaline(surface, P["shadow_deep"], (bx1 + 2, by1 + 2),
+                              (bx2 + 2, by2 + 2), 7)
+        _NS_gravewake._aaline(surface, P["anchor_darkest"], (bx1, by1),
+                              (bx2, by2), 6)
+        _NS_gravewake._aaline(surface, P["anchor_dark"], (bx1, by1),
+                              (bx2, by2), 4)
+        _NS_gravewake._aaline(surface, P["anchor_mid"], (bx1, by1),
+                              (bx2, by2), 2)
+        _NS_gravewake._aaline(surface, P["anchor_light"], (bx1 - 1, by1 - 1),
+                              (bx2 - 1, by2 - 1), 1)
+
+        # Fluke (kait melengkung) di kedua ujung crossbar
+        for side in (1, -1):
+            ex = tip_x + int(px * bar * side)
+            ey = tip_y + int(py * bar * side)
+            # ujung kait melengkung kembali ke arah gagang
+            hkx = ex + int(sin_a * 8) * side - int(cos_a * 6) * side
+            hky = ey + int(cos_a * 8) * side + int(sin_a * 6) * side
+            fluke = [
+                (ex - int(px * 3 * side), ey - int(py * 3 * side)),
+                (ex + int(px * 3 * side), ey + int(py * 3 * side)),
+                (hkx, hky),
+            ]
+            _NS_gravewake._poly(surface, P["shadow_deep"],
+                                [(p[0] + 2, p[1] + 2) for p in fluke])
+            _NS_gravewake._poly(surface, P["anchor_darkest"], fluke)
+            _NS_gravewake._poly(surface, P["anchor_dark"], [
+                (ex - int(px * 2 * side), ey - int(py * 2 * side)),
+                (ex + int(px * 2 * side), ey + int(py * 2 * side)),
+                (hkx, hky)])
+            _NS_gravewake._poly(surface, P["anchor_mid"], [
+                (ex - int(px * 1 * side), ey - int(py * 1 * side)),
+                (ex + int(px * 1 * side), ey + int(py * 1 * side)),
+                (hkx, hky)])
+            _NS_gravewake._aacircle(surface, P["anchor_shine"], (hkx, hky), 1)
+
+        # Bercak karat
+        for i in range(3):
+            angle_offset = i * math.pi * 2 / 3 + phase * 0.2
+            rx = hx + int(math.cos(angle_offset) * L * 0.4)
+            ry = hy + int(math.sin(angle_offset) * L * 0.4)
+            _NS_gravewake._aacircle(surface, P["anchor_rust"], (rx, ry), 2)
+
+        # Tetesan air saat intens
+        if intense:
+            for i in range(5):
+                t = ((phase * 2 + i * 0.3) % 1.0)
+                dx = tip_x + int(px * 6) + int(math.sin(phase + i) * 2)
+                dy = tip_y + int(py * 6) + int(t * 26)
+                alpha = int(220 * (1 - t))
+                _NS_gravewake._aacircle(surface, (*P["water_mid"], alpha),
+                                        (dx, dy), 2)
+                _NS_gravewake._aacircle(surface, (*P["water_bright"], alpha),
+                                        (dx, dy), 1)
+
+    def _draw_head(surface, cx, cy, facing, phase, L):
+        """Kepala monster kotak runcing dengan taring & mata menyala."""
+        P = _NS_gravewake.PALETTE
+        sway = math.sin(phase * 0.7) * 1
+
+        # Leher pendek tebal
+        _NS_gravewake._rect(surface, P["skin_darkest"],
+                            (L(-9, 10)[0], L(-9, 10)[1], 18, 9))
+        _NS_gravewake._rect(surface, P["skin_dark"],
+                            (L(-8, 10)[0], L(-8, 10)[1], 16, 7))
+        _NS_gravewake._rect(surface, P["skin_mid"],
+                            (L(-7, 11)[0], L(-7, 11)[1], 14, 5))
+
+        # Bentuk kepala (kotak runcing atas)
+        head = [L(*p) for p in [
+            (-17, 4 + sway), (-15, -5), (-10, -12), (0, -16), (10, -12),
+            (15, -5), (17, 4 + sway), (15, 12), (10, 18), (-10, 18),
+            (-15, 12)]]
+        _NS_gravewake._poly(surface, P["shadow_deep"],
+                            [(p[0] + 3, p[1] + 3) for p in head])
+        _NS_gravewake._poly(surface, P["skin_darkest"], head)
+        _NS_gravewake._poly(surface, P["skin_dark"], [L(*p) for p in [
+            (-16, 5), (-14, -4), (-9, -11), (0, -14), (9, -11),
+            (14, -4), (16, 5), (14, 11), (9, 16), (-9, 16), (-14, 11)]])
+        _NS_gravewake._poly(surface, P["skin_mid"], [L(*p) for p in [
+            (-13, 6), (-12, -2), (-7, -9), (0, -12), (7, -9),
+            (12, -2), (13, 6), (11, 10), (7, 13), (-7, 13), (-11, 10)]])
+
+        # Highlight kepala
+        _NS_gravewake._aacircle(surface, P["skin_light"], L(-6, -4), 3)
+        _NS_gravewake._aacircle(surface, P["skin_high"], L(-7, -5), 1)
+
+        # Duri kecil di kepala
+        for sx_off, sy_off in [(-13, -4), (-7, -11), (0, -15), (7, -11),
+                               (13, -4)]:
+            _NS_gravewake._poly(surface, P["bone_darkest"], [
+                L(sx_off - 2, sy_off + 3), L(sx_off + 2, sy_off + 3),
+                L(sx_off, sy_off - 5)])
+            _NS_gravewake._poly(surface, P["bone_mid"], [
+                L(sx_off - 1, sy_off + 3), L(sx_off + 1, sy_off + 3),
+                L(sx_off, sy_off - 4)])
+            _NS_gravewake._aacircle(surface, P["bone_light"],
+                                    L(sx_off, sy_off - 4), 1)
+
+        # Alis gelap + soket mata
+        _NS_gravewake._aaline(surface, P["skin_darkest"], L(-9, -2),
+                              L(-4, -2), 2)
+        _NS_gravewake._aaline(surface, P["skin_darkest"], L(4, -2),
+                              L(9, -2), 2)
+        _NS_gravewake._aacircle(surface, P["shadow_deep"], L(-6, 0), 3)
+        _NS_gravewake._aacircle(surface, P["shadow_deep"], L(6, 0), 3)
+
+        # Mata menyala merah/oranye
+        eye_pulse = math.sin(phase * 2) * 0.2 + 0.8
+        for ex in (-6, 6):
+            _NS_gravewake._aacircle(surface, P["eye_dark"], L(ex, 0),
+                                    max(1, int(2 * eye_pulse)))
+            _NS_gravewake._aacircle(surface, P["eye_mid"], L(ex, 0),
+                                    max(1, int(1 * eye_pulse)))
+            _NS_gravewake._aacircle(surface, P["eye_bright"], L(ex, 0), 1)
+
+        # Mulut besar bertaring
+        mouth_open = 2 + int(math.sin(phase * 1.2) * 1)
+        mouth = [L(*p) for p in [
+            (-11, 8), (11, 8), (9, 13 + mouth_open), (5, 15 + mouth_open),
+            (-5, 15 + mouth_open), (-9, 13 + mouth_open)]]
+        _NS_gravewake._poly(surface, P["shadow_deep"], mouth)
+        _NS_gravewake._poly(surface, P["eye_dark"], [L(*p) for p in [
+            (-9, 9), (9, 9), (7, 12 + mouth_open), (4, 14 + mouth_open),
+            (-4, 14 + mouth_open), (-7, 12 + mouth_open)]])
+
+        # Gigi atas
+        for i in range(5):
+            tx = -7 + i * 3.5
+            tooth_h = 3 + (1 if i in (1, 3) else 0)
+            _NS_gravewake._poly(surface, P["teeth_dark"], [
+                L(tx - 1, 8), L(tx + 1, 8), L(tx, 8 + tooth_h)])
+            _NS_gravewake._poly(surface, P["teeth_mid"], [
+                L(tx - 1, 8), L(tx + 1, 8), L(tx, 7 + tooth_h)])
+        # Gigi bawah
+        for i in range(4):
+            tx = -5 + i * 3.5
+            _NS_gravewake._poly(surface, P["teeth_dark"], [
+                L(tx - 1, 15 + mouth_open), L(tx + 1, 15 + mouth_open),
+                L(tx, 12 + mouth_open)])
+            _NS_gravewake._poly(surface, P["teeth_mid"], [
+                L(tx - 1, 15 + mouth_open), L(tx + 1, 15 + mouth_open),
+                L(tx, 13 + mouth_open)])
+        # Taring sudut besar
+        for side in (-1, 1):
+            cxp = side * 9
+            _NS_gravewake._poly(surface, P["teeth_dark"], [
+                L(cxp - 1, 8), L(cxp + 1, 8), L(cxp + side, 15)])
+            _NS_gravewake._poly(surface, P["teeth_mid"], [
+                L(cxp - 1, 8), L(cxp + 1, 8), L(cxp + side, 14)])
+
+    # ==================================================================
+    # SWING / WATER TRAIL (canvas fallback)
+    # ==================================================================
+    def _draw_anchor_swing_trail(surface, x, y, facing, progress):
+        """Trail tebasan jangkar dasar (arc overhead -> bawah-depan)."""
+        if progress < 0.28 or progress > 0.72:
+            return
+        t = (progress - 0.28) / 0.44
+        cx = x + facing * 6
+        cy = y - 22
+        radius = 42
+        start_angle = -(math.pi - 0.5)
+        end_angle = -0.55
+        current = start_angle + (end_angle - start_angle) * t
+        span = 1.6
+        segments = 12
+        for i in range(segments):
+            seg_t = i / segments
+            ang = current - span * seg_t
+            if ang < start_angle:
+                continue
+            ax = cx + int(math.cos(ang) * radius) * -facing
+            ay = cy + int(math.sin(ang) * radius)
+            alpha_seg = max(0, min(255, int(220 * (1 - seg_t))))
+            size = max(1, int(5 * (1 - seg_t * 0.4)))
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_dark"],
+                                     alpha_seg), (ax, ay), size + 2)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_mid"],
+                                     alpha_seg), (ax, ay), size + 1)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_light"],
+                                     alpha_seg), (ax, ay), size)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_hot"],
+                                     alpha_seg), (ax, ay), max(1, size - 2))
+
+    def _draw_anchor_water_trail(surface, x, y, facing, progress, phase):
+        """Trail air saat Anchor Smash (Q)."""
+        if progress < 0.15 or progress > 0.75:
+            return
+        t = (progress - 0.15) / 0.6
+        cx = x + facing * 6
+        cy = y - 22
+        radius = 46
+        start_angle = -(math.pi - 0.5)
+        end_angle = -0.5
+        current = start_angle + (end_angle - start_angle) * t
+        span = 2.0
+        segments = 16
+        for i in range(segments):
+            seg_t = i / segments
+            ang = current - span * seg_t
+            if ang < start_angle:
+                continue
+            ax = cx + int(math.cos(ang) * radius) * -facing
+            ay = cy + int(math.sin(ang) * radius)
+            alpha_seg = max(0, min(255, int(240 * (1 - seg_t))))
+            size = max(1, int(6 * (1 - seg_t * 0.3)))
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_darkest"],
+                                     alpha_seg), (ax, ay), size + 3)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_dark"],
+                                     alpha_seg), (ax, ay), size + 2)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_mid"],
+                                     alpha_seg), (ax, ay), size + 1)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_light"],
+                                     alpha_seg), (ax, ay), size)
+            _NS_gravewake._aacircle(surface,
+                                    (*_NS_gravewake.PALETTE["water_bright"],
+                                     alpha_seg), (ax, ay), max(1, size - 1))
+
+    # ==================================================================
+    # POSE ENTRY POINTS
+    # ==================================================================
+    def _draw_gravewake_idle(surface, boss, x, y):
+        NS = _NS_gravewake
+        phase = float(getattr(boss, "pulse", 0.0))
+        action, _p, ap = NS._resolve_pose(boss, False)
+        bob = int(math.sin(phase * 0.8) * 2)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY + 10)
+            NS._draw_floating_water(surface, x, y + NS.GROUND_DY - 4, phase)
+        NS._draw_gravewake_body(surface, x, y + bob, boss.direction,
+                                phase, action, ap)
+
+    def _draw_gravewake_walk(surface, boss, x, y):
+        NS = _NS_gravewake
+        phase = boss.pulse * 2.2
+        action, _p, ap = NS._resolve_pose(boss, True)
+        bob = int(abs(math.sin(phase * 1.3)) * 3)
+        sway = int(math.sin(phase) * 2)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x + sway, y + NS.GROUND_DY + 10)
+            NS._draw_floating_water(surface, x + sway, y + NS.GROUND_DY - 4,
+                                    phase, trail=True, facing=boss.direction)
+            NS._draw_footfall_dust(surface, x + sway, y + NS.GROUND_DY,
+                                   boss.direction, phase)
+        NS._draw_gravewake_body(surface, x + sway, y - bob, boss.direction,
+                                phase, action, ap)
+
+    def _draw_gravewake_melee_attack(surface, boss, x, y):
+        NS = _NS_gravewake
+        action, phase, ap = NS._resolve_pose(boss)
+        raw = getattr(boss, "_gw_attack_progress", 0.0)
+        raw = max(0.0, min(1.0, raw))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        facing = getattr(boss, "direction", 1) or 1
+        recoil = int(math.sin(ap * math.pi) * 4) * -facing
+        if not portrait:
+            NS._draw_shadow(surface, x + recoil, y + NS.GROUND_DY + 10)
+            NS._draw_floating_water(surface, x + recoil,
+                                    y + NS.GROUND_DY - 4, boss.pulse,
+                                    intense=True)
+            NS._draw_anchor_swing_trail(surface, x + recoil, y, facing, raw)
+        NS._draw_gravewake_body(surface, x + recoil, y, boss.direction,
+                                boss.pulse, "attack", ap)
+
+    def _draw_gravewake_anchor_smash(surface, boss, x, y, timer, phase):
+        """Q - Anchor Smash: tebas jangkar yang melepas gelombang."""
+        NS = _NS_gravewake
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        facing = getattr(boss, "direction", 1) or 1
+        cast_progress = NS._skill_progress(boss, timer, "q")
+        ap = NS._attack_curve(max(0.0, min(1.0, cast_progress)))
+
+        # spawn crescent + wave dekat pertengahan tebas (canvas fallback)
+        if (0.35 < cast_progress < 0.45
+                and not getattr(boss, "_gw_swing_spawned", False)
+                and not getattr(boss, "_gw_live_owned", False)
+                and not portrait):
+            NS._spawn_anchor_swing(boss, x, y)
+            NS._spawn_anchor_wave(boss, x, y)
+            boss._gw_swing_spawned = True
+        if cast_progress < 0.2 or cast_progress > 0.9:
+            boss._gw_swing_spawned = False
+
+        lunge = int(math.sin(cast_progress * math.pi) * 6) * facing
+        if not portrait:
+            NS._draw_shadow(surface, x + lunge, y + NS.GROUND_DY + 10)
+            NS._draw_floating_water(surface, x + lunge,
+                                    y + NS.GROUND_DY - 4, phase,
+                                    intense=True)
+            NS._draw_anchor_water_trail(surface, x + lunge, y, facing,
+                                        cast_progress, phase)
+            NS._draw_cast_flash(surface, x + lunge, y, boss.direction,
+                                cast_progress)
+        NS._draw_gravewake_body(surface, x + lunge, y, boss.direction,
+                                phase, "smash", ap)
+
+    def _draw_gravewake_channel(surface, boss, x, y, timer, phase):
+        """W - kedua lengan terangkat/ke samping, jangkar mendatar."""
+        NS = _NS_gravewake
+        action, _p, ap = NS._resolve_pose(boss)
+        bob = int(math.sin(phase * 1.0) * 2)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY + 10)
+            NS._draw_floating_water(surface, x, y + NS.GROUND_DY - 4, phase,
+                                    intense=True)
+        NS._draw_gravewake_body(surface, x, y + bob, boss.direction,
+                                phase, action, ap)
+
+    def _draw_gravewake_shell(surface, boss, x, y, timer, phase):
+        """E - badan meringkuk (brace) + cangkang air kraken."""
+        NS = _NS_gravewake
+        action, _p, ap = NS._resolve_pose(boss)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY + 10)
+            NS._draw_floating_water(surface, x, y + NS.GROUND_DY - 4, phase)
+        NS._draw_gravewake_body(surface, x, y + 2, boss.direction,
+                                phase, action, ap)
+        if not portrait:
+            NS._draw_kraken_shell(surface, boss, x, y, timer, phase)
+
+    def _draw_gravewake_ravage_pose(surface, boss, x, y, timer, phase):
+        """R - pose mengaum (jangkar terangkat)."""
+        NS = _NS_gravewake
+        action, _p, ap = NS._resolve_pose(boss)
+        bob = int(math.sin(phase * 1.4) * 2)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY + 10)
+            NS._draw_floating_water(surface, x, y + NS.GROUND_DY - 4, phase,
+                                    intense=True)
+        NS._draw_gravewake_body(surface, x, y + bob, boss.direction,
+                                phase, action, ap)
+
+    # ==================================================================
+    # EFFECT SYSTEM (canvas fallback)
+    # ==================================================================
     class AnchorSwing:
-        """Q anchor swing crescent effect."""
+        """Q - bulan sabit air tebasan jangkar."""
+
         def __init__(self, cx, cy, direction):
             self.cx = cx
             self.cy = cy
@@ -275,66 +1631,129 @@ class _NS_gravewake:
                 return
             t = self.age / self.max_age
             alpha = int(255 * (1 - t * 0.6))
-
-            # Big crescent wave slash
             for i in range(-14, 15):
                 curve = math.cos(i * 0.2) * 8
                 vy = self.cy + i * 2
-                vx = self.cx + int(curve) * self.direction + int(t * 40) * self.direction
-
+                vx = self.cx + int(curve) * self.direction \
+                    + int(t * 40) * self.direction
                 w_alpha = int(alpha * (1 - abs(i) / 15))
                 if w_alpha <= 0:
                     continue
+                _NS_gravewake._aacircle(surface,
+                                        (*_NS_gravewake.PALETTE["water_dark"],
+                                         w_alpha), (vx, vy), 5)
+                _NS_gravewake._aacircle(surface,
+                                        (*_NS_gravewake.PALETTE["water_mid"],
+                                         w_alpha), (vx, vy), 4)
+                _NS_gravewake._aacircle(surface,
+                                        (*_NS_gravewake.PALETTE["water_light"],
+                                         w_alpha), (vx, vy), 3)
+                _NS_gravewake._aacircle(surface,
+                                        (*_NS_gravewake.PALETTE["water_bright"],
+                                         w_alpha), (vx, vy), 2)
+                _NS_gravewake._aacircle(surface,
+                                        (*_NS_gravewake.PALETTE["water_hot"],
+                                         w_alpha), (vx, vy), 1)
 
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_dark"], w_alpha), (vx, vy), 5)
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"], w_alpha), (vx, vy), 4)
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_light"], w_alpha), (vx, vy), 3)
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_bright"], w_alpha), (vx, vy), 2)
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_hot"], w_alpha), (vx, vy), 1)
+    class AnchorWave:
+        """Q - gelombang air maju ke depan (line AOE)."""
 
+        def __init__(self, sx, sy, direction, max_dist=200):
+            self.x = float(sx)
+            self.y = float(sy)
+            self.start_x = float(sx)
+            self.direction = direction
+            self.max_dist = max_dist
+            self.speed = 9.0
+            self.alive = True
+            self.age = 0
+            self.max_age = 26
 
-    # ---------------------------------------------------------------------------
-    # State management
-    # ---------------------------------------------------------------------------
-    def _detect_moving(boss):
-        if not hasattr(boss, "_gw_last_x"):
-            boss._gw_last_x = boss.x
-            boss._gw_last_y = boss.y
-            return False
-        dx = abs(boss.x - boss._gw_last_x)
-        dy = abs(boss.y - boss._gw_last_y)
-        boss._gw_last_x = boss.x
-        boss._gw_last_y = boss.y
-        return dx + dy > 0.3
+        def update(self):
+            if not self.alive:
+                return
+            self.age += 1
+            self.x += self.speed * self.direction
+            if self.age >= self.max_age:
+                self.alive = False
 
+        def draw(self, surface, phase):
+            if not self.alive:
+                return
+            t = self.age / self.max_age
+            alpha = int(255 * (1 - t * 0.5))
+            px, py = int(self.x), int(self.y)
+            P = _NS_gravewake.PALETTE
+            for i in range(-13, 14):
+                curve = math.cos(i * 0.22) * 7
+                vy = py + i * 2
+                vx = px + int(curve) * self.direction
+                w_alpha = int(alpha * (1 - abs(i) / 14))
+                if w_alpha <= 0:
+                    continue
+                _NS_gravewake._aacircle(surface, (*P["water_dark"], w_alpha),
+                                        (vx, vy), 4)
+                _NS_gravewake._aacircle(surface, (*P["water_mid"], w_alpha),
+                                        (vx, vy), 3)
+                _NS_gravewake._aacircle(surface, (*P["water_light"], w_alpha),
+                                        (vx, vy), 2)
+                _NS_gravewake._aacircle(surface, (*P["water_bright"], w_alpha),
+                                        (vx, vy), 1)
+            for i in range(-11, 12):
+                curve = math.cos(i * 0.22) * 7
+                vy = py + i * 2
+                vx = px + int(curve) * self.direction
+                core_alpha = int(alpha * (1 - abs(i) / 12))
+                _NS_gravewake._aacircle(surface, (*P["water_hot"], core_alpha),
+                                        (vx, vy), 2)
+                _NS_gravewake._aacircle(surface, (*P["water_white"],
+                                                  core_alpha), (vx, vy), 1)
+            # Jangkar air kecil di kepala gelombang
+            ax = px + int(self.direction * 6)
+            _NS_gravewake._aaline(surface, (*P["water_dark"], alpha),
+                                  (ax, py - 8), (ax, py + 6), 3)
+            _NS_gravewake._aaline(surface, (*P["water_mid"], alpha),
+                                  (ax, py - 8), (ax, py + 6), 2)
+            _NS_gravewake._aaline(surface, (*P["water_light"], alpha),
+                                  (ax - 5, py + 5), (ax + 5, py + 5), 2)
+            _NS_gravewake._aacircle(surface, (*P["water_hot"], alpha),
+                                    (ax, py - 8), 2)
 
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
-        timer = int(getattr(boss, "timer", 0))
-        previous = int(getattr(boss, "_gw_prev_timer", 0))
-        active = bool(getattr(boss, "_gw_attack_active", False))
+    class _CanvasImpact:
+        """Semburan air sederhana (canvas fallback untuk impact)."""
 
-        if timer >= cooldown - 1 and previous <= 1:
-            boss._gw_attack_active = True
-            boss._gw_attack_frame = 0
-            active = True
-        elif active:
-            boss._gw_attack_frame = int(getattr(boss, "_gw_attack_frame", 0)) + 1
-            if boss._gw_attack_frame > cooldown:
-                boss._gw_attack_active = False
-                boss._gw_attack_frame = 0
-                active = False
-        elif timer <= 0:
-            boss._gw_attack_active = False
-            boss._gw_attack_frame = 0
-            active = False
+        def __init__(self, boss, x, y):
+            self.boss = boss
+            self.x = x
+            self.y = y
+            self.age = 0
+            self.max_age = 14
+            self.alive = True
 
-        boss._gw_prev_timer = timer
-        boss._gw_attack_progress = (
-            min(1.0, getattr(boss, "_gw_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
+        def update(self):
+            self.age += 1
+            if self.age >= self.max_age:
+                self.alive = False
 
+        def draw(self, surface, phase):
+            P = _NS_gravewake.PALETTE
+            t = self.age / self.max_age
+            alpha = max(0, int(220 * (1 - t)))
+            if alpha <= 0:
+                return
+            r = int(8 + 20 * t)
+            _NS_gravewake._aacircle(surface, (*P["water_dark"], alpha),
+                                    (self.x, self.y), r + 3)
+            _NS_gravewake._aacircle(surface, (*P["water_mid"], alpha),
+                                    (self.x, self.y), r)
+            _NS_gravewake._aacircle(surface, (*P["water_light"], alpha),
+                                    (self.x, self.y), max(2, r // 2))
+            for i in range(6):
+                ang = i * math.pi / 3 + phase
+                dx = int(self.x + math.cos(ang) * (r + 6))
+                dy = int(self.y + math.sin(ang) * (r + 6) * 0.5)
+                _NS_gravewake._draw_water_splash(surface, dx, dy, 2,
+                                                 phase + i, alpha)
 
     def _manage_effects(boss, surface, phase):
         if not hasattr(boss, "_gw_effects"):
@@ -344,997 +1763,64 @@ class _NS_gravewake:
             e.draw(surface, phase)
         boss._gw_effects = [e for e in boss._gw_effects if e.alive]
 
-
     def _spawn_anchor_swing(boss, x, y):
         if not hasattr(boss, "_gw_effects"):
             boss._gw_effects = []
         sx = x + 25 * boss.direction
         sy = y
-        boss._gw_effects.append(_NS_gravewake.AnchorSwing(sx, sy, boss.direction))
-
-
-    # ===================================================================
-    # MAIN DRAW ENTRY POINT
-    # ===================================================================
-    def draw_gravewake(surface, boss, x, y):
-        """Entry point."""
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_gravewake._detect_moving(boss)
-        _NS_gravewake._update_attack_anim(boss)
-
-        attacking = (
-            getattr(boss, "_gw_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
-
-        # ---------- Background layers ----------
-        _NS_gravewake._draw_water_aura(surface, x, y, pulse)
-        _NS_gravewake._draw_ground_runes(surface, x, y + 42, pulse, active_skill)
-
-        # ---------- Skill ground effects ----------
-        if active_skill == "w":
-            _NS_gravewake._draw_tidebringer_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_gravewake._draw_ravage_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # ---------- Character body ----------
-        if active_skill == "q":
-            _NS_gravewake._draw_gravewake_anchor_smash(surface, boss, x, y, skill_timer, pulse)
-        elif attacking:
-            _NS_gravewake._draw_gravewake_melee_attack(surface, boss, x, y)
-        elif moving:
-            _NS_gravewake._draw_gravewake_walk(surface, boss, x, y)
-        else:
-            _NS_gravewake._draw_gravewake_idle(surface, boss, x, y)
-
-        # Kraken Shell overlaps body
-        if active_skill == "e":
-            _NS_gravewake._draw_kraken_shell(surface, boss, x, y, skill_timer, pulse)
-
-        # ---------- Effects (anchor swings, etc) ----------
-        _NS_gravewake._manage_effects(boss, surface, pulse)
-
-        # ---------- Skill foreground effects ----------
-        if active_skill == "w":
-            _NS_gravewake._draw_tidebringer_foreground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_gravewake._draw_ravage_foreground(surface, boss, x, y, skill_timer, pulse)
-
-
-    # ===================================================================
-    # POSE MODES
-    # ===================================================================
-    def _draw_gravewake_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_gravewake._draw_shadow(surface, x, y + 52)
-        _NS_gravewake._draw_floating_water(surface, x, y + 40, boss.pulse)
-        _NS_gravewake._draw_gravewake_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
-
-    def _draw_gravewake_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_gravewake._draw_shadow(surface, x + sway, y + 52)
-        _NS_gravewake._draw_floating_water(surface, x + sway, y + 40, phase, trail=True,
-                            facing=boss.direction)
-        _NS_gravewake._draw_gravewake_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
-
-
-    def _draw_gravewake_melee_attack(surface, boss, x, y):
-        """Anchor swing basic attack."""
-        progress = getattr(boss, "_gw_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
-        _NS_gravewake._draw_shadow(surface, x + lunge, y + 52)
-        _NS_gravewake._draw_floating_water(surface, x + lunge, y + 40, boss.pulse, intense=True)
-        _NS_gravewake._draw_gravewake_body(surface, x + lunge, y, boss.direction, boss.pulse,
-                            "melee", progress)
-        _NS_gravewake._draw_anchor_swing_trail(surface, x + lunge, y, boss.direction, progress)
-
-
-    def _draw_gravewake_anchor_smash(surface, boss, x, y, timer, phase):
-        """Q - Anchor smash."""
-        cast_duration = 40
-        elapsed = cast_duration - timer
-        progress = max(0.0, min(1.0, elapsed / cast_duration))
-
-        # Spawn swing effect near mid-swing
-        if 0.35 < progress < 0.45 and not getattr(boss, "_gw_swing_spawned", False):
-            _NS_gravewake._spawn_anchor_swing(boss, x, y)
-            boss._gw_swing_spawned = True
-        if progress < 0.2 or progress > 0.9:
-            boss._gw_swing_spawned = False
-
-        lunge = int(math.sin(progress * math.pi) * 7) * boss.direction
-        _NS_gravewake._draw_shadow(surface, x + lunge, y + 52)
-        _NS_gravewake._draw_floating_water(surface, x + lunge, y + 40, phase, intense=True)
-        _NS_gravewake._draw_gravewake_body(surface, x + lunge, y, boss.direction, phase,
-                           "melee", progress)
-        _NS_gravewake._draw_anchor_water_trail(surface, x + lunge, y, boss.direction, progress, phase)
-
-
-    # ===================================================================
-    # BODY RENDERING – HD detailed Tidehunter
-    # ===================================================================
-    def _draw_gravewake_body(surface, cx, cy, facing, phase, action,
-                            attack_progress=0):
-        """Main body composition - massive hulking sea monster."""
-        # Anchor (drawn behind body when idle, arm animation for melee)
-        if action != "melee" or attack_progress < 0.25:
-            _NS_gravewake._draw_anchor(surface, cx + facing * 22, cy + 20, facing, phase, angle=0.5)
-
-        # Lower body / hip harness (short - most of body is torso)
-        _NS_gravewake._draw_lower_body(surface, cx, cy + 20, phase)
-
-        # Massive torso / chest
-        _NS_gravewake._draw_torso(surface, cx, cy - 5, phase)
-
-        # Back spikes (large row of bone spikes)
-        _NS_gravewake._draw_back_spikes(surface, cx, cy - 15, facing, phase)
-
-        # Arms (long, muscular)
-        if action == "melee":
-            _NS_gravewake._draw_melee_arms(surface, cx, cy - 5, facing, phase, attack_progress)
-        else:
-            _NS_gravewake._draw_idle_arms(surface, cx, cy - 5, facing, phase)
-
-        # Head with fanged mouth and small eyes
-        _NS_gravewake._draw_head(surface, cx, cy - 30, facing, phase)
-
-        # Water droplets around body
-        _NS_gravewake._draw_body_water_particles(surface, cx, cy, phase)
-
-
-    def _draw_lower_body(surface, cx, cy, phase):
-        """Lower hip area with belt/loincloth."""
-        # Hip base (wide)
-        hip_pts = [
-            (cx - 22, cy - 5),
-            (cx + 22, cy - 5),
-            (cx + 26, cy + 8),
-            (cx + 20, cy + 18),
-            (cx + 10, cy + 24),
-            (cx - 10, cy + 24),
-            (cx - 20, cy + 18),
-            (cx - 26, cy + 8),
-        ]
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["shadow_deep"], [(p[0] + 2, p[1] + 2) for p in hip_pts])
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["skin_darkest"], hip_pts)
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["skin_dark"], [
-            (cx - 20, cy - 4),
-            (cx + 20, cy - 4),
-            (cx + 24, cy + 7),
-            (cx + 18, cy + 17),
-            (cx + 8, cy + 22),
-            (cx - 8, cy + 22),
-            (cx - 18, cy + 17),
-            (cx - 24, cy + 7),
-        ])
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["skin_mid"], [
-            (cx - 17, cy - 2),
-            (cx + 17, cy - 2),
-            (cx + 20, cy + 6),
-            (cx + 14, cy + 14),
-            (cx + 5, cy + 18),
-            (cx - 5, cy + 18),
-            (cx - 14, cy + 14),
-            (cx - 20, cy + 6),
-        ])
-
-        # Belt / harness (leather)
-        _NS_gravewake._rect(surface, _NS_gravewake.PALETTE["leather_darkest"], (cx - 24, cy - 6, 48, 8))
-        _NS_gravewake._rect(surface, _NS_gravewake.PALETTE["leather_dark"], (cx - 22, cy - 5, 44, 6))
-        _NS_gravewake._rect(surface, _NS_gravewake.PALETTE["leather_mid"], (cx - 20, cy - 4, 40, 3))
-
-        # Belt studs / bolts
-        for i in range(-2, 3):
-            bx = cx + i * 9
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["anchor_dark"], (bx, cy - 2), 2)
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["anchor_mid"], (bx, cy - 2), 1)
-
-        # Central anchor emblem on belt
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["gold_dark"], (cx, cy - 1), 5)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["gold_mid"], (cx, cy - 1), 4)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["gold_light"], (cx - 1, cy - 2), 2)
-        # Small anchor shape
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["leather_darkest"],
-                (cx, cy - 3), (cx, cy + 2), 1)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["leather_darkest"],
-                (cx - 2, cy - 1), (cx + 2, cy - 1), 1)
-
-        # Loincloth hanging down (tattered)
-        for i, off in enumerate((-8, -3, 3, 8)):
-            wave = int(math.sin(phase * 0.8 + i) * 2)
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["leather_dark"], [
-                (cx + off - 3, cy + 2),
-                (cx + off + 3, cy + 2),
-                (cx + off + 2 + wave, cy + 18),
-                (cx + off - 2 + wave, cy + 18),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["leather_mid"], [
-                (cx + off - 2, cy + 3),
-                (cx + off + 2, cy + 3),
-                (cx + off + 1 + wave, cy + 15),
-                (cx + off - 1 + wave, cy + 15),
-            ])
-
-        # Small spike/detail on hip
-        for side in (-1, 1):
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["bone_dark"], [
-                (cx + side * 22, cy - 4),
-                (cx + side * 26, cy - 8),
-                (cx + side * 24, cy + 2),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["bone_mid"], [
-                (cx + side * 22, cy - 4),
-                (cx + side * 25, cy - 7),
-                (cx + side * 23, cy + 1),
-            ])
-
-
-    def _draw_torso(surface, cx, cy, phase):
-        """Massive muscular torso with belly."""
-        # Shadow
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["shadow_deep"], [
-            (cx - 24 + 3, cy - 12 + 3),
-            (cx + 24 + 3, cy - 12 + 3),
-            (cx + 27 + 3, cy + 5 + 3),
-            (cx + 22 + 3, cy + 22 + 3),
-            (cx - 22 + 3, cy + 22 + 3),
-            (cx - 27 + 3, cy + 5 + 3),
-        ])
-
-        # Main torso shape (huge, muscular)
-        torso_pts = [
-            (cx - 24, cy - 12),
-            (cx + 24, cy - 12),
-            (cx + 27, cy + 5),
-            (cx + 22, cy + 22),
-            (cx - 22, cy + 22),
-            (cx - 27, cy + 5),
-        ]
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["skin_darkest"], torso_pts)
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["skin_dark"], [
-            (cx - 22, cy - 10),
-            (cx + 22, cy - 10),
-            (cx + 25, cy + 5),
-            (cx + 20, cy + 20),
-            (cx - 20, cy + 20),
-            (cx - 25, cy + 5),
-        ])
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["skin_mid"], [
-            (cx - 20, cy - 8),
-            (cx + 20, cy - 8),
-            (cx + 22, cy + 4),
-            (cx + 17, cy + 17),
-            (cx - 17, cy + 17),
-            (cx - 22, cy + 4),
-        ])
-
-        # Highlight on chest muscles
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_light"], (cx - 8, cy - 3), 4)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_light"], (cx + 8, cy - 3), 4)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_high"], (cx - 9, cy - 5), 2)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_high"], (cx + 9, cy - 5), 2)
-
-        # Belly (lighter color - central oval)
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["belly_dark"], [
-            (cx - 12, cy + 2),
-            (cx + 12, cy + 2),
-            (cx + 14, cy + 10),
-            (cx + 10, cy + 18),
-            (cx - 10, cy + 18),
-            (cx - 14, cy + 10),
-        ])
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["belly_mid"], [
-            (cx - 10, cy + 3),
-            (cx + 10, cy + 3),
-            (cx + 12, cy + 10),
-            (cx + 8, cy + 16),
-            (cx - 8, cy + 16),
-            (cx - 12, cy + 10),
-        ])
-
-        # Belly scale texture
-        for row in range(3):
-            for col in range(-1, 2):
-                sx = cx + col * 6 + (row % 2) * 3
-                sy = cy + 6 + row * 4
-                _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["belly_dark"], (sx, sy), 2)
-                _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["belly_mid"], (sx, sy - 1), 1)
-                _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["belly_light"], (sx, sy - 1), 1)
-
-        # Scale texture on torso (dark spots)
-        for i in range(8):
-            angle = phase * 0.1 + i * math.pi / 4
-            r = 15
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy - 3 + int(math.sin(angle) * 8)
-            if abs(sx - cx) > 12 or sy < cy - 5:  # Only outer torso, not belly
-                _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_darkest"], (sx, sy), 2)
-                _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_dark"], (sx, sy - 1), 1)
-
-        # Pectoral divide line
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["skin_darkest"],
-                (cx, cy - 10), (cx, cy + 2), 1)
-
-
-    def _draw_back_spikes(surface, cx, cy, facing, phase):
-        """Row of bone spikes on the back/shoulders."""
-        # Large center spike
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["bone_dark"], [
-            (cx - 4, cy),
-            (cx + 4, cy),
-            (cx, cy - 15),
-        ])
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["bone_mid"], [
-            (cx - 3, cy),
-            (cx + 3, cy),
-            (cx, cy - 13),
-        ])
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["bone_light"], [
-            (cx - 1, cy - 2),
-            (cx + 1, cy - 2),
-            (cx, cy - 12),
-        ])
-
-        # Side spikes going out
-        for side_off, height in [(-8, 12), (8, 12), (-14, 10), (14, 10),
-                                   (-19, 8), (19, 8)]:
-            sx = cx + side_off
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["bone_dark"], [
-                (sx - 3, cy + 2),
-                (sx + 3, cy + 2),
-                (sx + (2 if side_off > 0 else -2), cy - height),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["bone_mid"], [
-                (sx - 2, cy + 2),
-                (sx + 2, cy + 2),
-                (sx + (1 if side_off > 0 else -1), cy - height + 1),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["bone_light"], [
-                (sx, cy - 2),
-                (sx + 1, cy - 2),
-                (sx + (1 if side_off > 0 else -1), cy - height + 2),
-            ])
-            # Tip highlight
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["bone_shine"],
-                      (sx + (2 if side_off > 0 else -2), cy - height), 1)
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Massive arms - one holding anchor, one at side."""
-        sway = math.sin(phase * 0.7) * 2
-
-        # Anchor arm (facing side) - holds anchor
-        aa_x = cx + facing * 22
-        aa_y = cy + 5
-        ae_x = aa_x + facing * 8
-        ae_y = cy + 18 + int(sway)
-        ah_x = ae_x + facing * 3  # hand on anchor
-        ah_y = cy + 25
-
-        _NS_gravewake._draw_arm_segment(surface, aa_x, aa_y, ae_x, ae_y, thickness=9)
-        _NS_gravewake._draw_arm_segment(surface, ae_x, ae_y, ah_x, ah_y, thickness=7)
-        _NS_gravewake._draw_monster_hand(surface, ah_x, ah_y, phase)
-
-        # Free arm (opposite side) - hangs at side, clawed
-        fa_x = cx + (-facing) * 22
-        fa_y = cy + 5
-        fe_x = fa_x + (-facing) * 7
-        fe_y = cy + 18
-        fh_x = fe_x + (-facing) * 4
-        fh_y = fe_y + 12
-
-        _NS_gravewake._draw_arm_segment(surface, fa_x, fa_y, fe_x, fe_y, thickness=9)
-        _NS_gravewake._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y, thickness=7)
-        _NS_gravewake._draw_monster_hand(surface, fh_x, fh_y, phase)
-
-
-    def _draw_melee_arms(surface, cx, cy, facing, phase, progress):
-        """Anchor swing animation."""
-        # Free arm stable
-        fa_x = cx + (-facing) * 22
-        fa_y = cy + 5
-        fe_x = fa_x + (-facing) * 7
-        fe_y = cy + 18
-        fh_x = fe_x + (-facing) * 4
-        fh_y = fe_y + 12
-        _NS_gravewake._draw_arm_segment(surface, fa_x, fa_y, fe_x, fe_y, thickness=9)
-        _NS_gravewake._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y, thickness=7)
-        _NS_gravewake._draw_monster_hand(surface, fh_x, fh_y, phase)
-
-        # Anchor arm - overhead swing
-        aa_x = cx + facing * 22
-        aa_y = cy + 5
-
-        if progress < 0.3:
-            # Wind up (raise anchor high)
-            t = progress / 0.3
-            arm_angle = -0.5 + (-1.3) * t  # from -0.5 to -1.8
-        elif progress < 0.6:
-            # Swing down and forward
-            t = (progress - 0.3) / 0.3
-            arm_angle = -1.8 + 2.8 * t  # from -1.8 to 1.0
-        else:
-            # Recovery
-            t = (progress - 0.6) / 0.4
-            arm_angle = 1.0 - 1.5 * t  # from 1.0 to -0.5
-
-        ae_x = aa_x + int(math.cos(arm_angle) * 15) * facing
-        ae_y = aa_y + int(math.sin(arm_angle) * 15)
-        ah_x = ae_x + int(math.cos(arm_angle) * 12) * facing
-        ah_y = ae_y + int(math.sin(arm_angle) * 12)
-
-        _NS_gravewake._draw_arm_segment(surface, aa_x, aa_y, ae_x, ae_y, thickness=9)
-        _NS_gravewake._draw_arm_segment(surface, ae_x, ae_y, ah_x, ah_y, thickness=7)
-
-        # Anchor at hand position with rotation
-        anchor_angle = arm_angle + 0.5
-        _NS_gravewake._draw_anchor(surface, ah_x, ah_y, facing, phase, angle=anchor_angle,
-                    intense=(0.3 < progress < 0.7))
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2, thickness=8):
-        """Thick muscular arm segment."""
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["shadow_deep"],
-                (x1 + 2, y1 + 2), (x2 + 2, y2 + 2), thickness + 1)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["skin_darkest"], (x1, y1), (x2, y2), thickness)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["skin_dark"], (x1, y1), (x2, y2), thickness - 2)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["skin_mid"], (x1, y1), (x2, y2),
-                max(1, thickness - 4))
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["skin_light"], (x1 - 1, y1 - 1),
-                (x2 - 1, y2 - 1), 1)
-
-
-    def _draw_monster_hand(surface, x, y, phase):
-        """Clawed monster hand."""
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["shadow_deep"], (x + 1, y + 1), 5)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_darkest"], (x, y), 5)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_dark"], (x - 1, y - 1), 4)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_mid"], (x - 1, y - 2), 3)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_light"], (x - 2, y - 2), 1)
-
-        # Claws
-        for i in range(-1, 2):
-            claw_angle = math.pi * 0.5 + i * 0.4
-            cx1 = x + int(math.cos(claw_angle) * 4)
-            cy1 = y + int(math.sin(claw_angle) * 4)
-            cx2 = x + int(math.cos(claw_angle) * 8)
-            cy2 = y + int(math.sin(claw_angle) * 8)
-            _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["bone_dark"], (cx1, cy1), (cx2, cy2), 2)
-            _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["bone_mid"], (cx1, cy1), (cx2, cy2), 1)
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["bone_light"], (cx2, cy2), 1)
-
-
-    def _draw_anchor(surface, hx, hy, facing, phase, angle=0, intense=False):
-        """Large rusted anchor weapon."""
-        # Anchor pole/shaft
-        pole_length = 35
-        pole_end_x = hx - int(math.cos(angle) * pole_length) * facing
-        pole_end_y = hy - int(math.sin(angle) * pole_length)
-
-        # Pole shadow
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["shadow_deep"],
-                (hx + 2, hy + 2), (pole_end_x + 2, pole_end_y + 2), 5)
-        # Pole
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["anchor_darkest"],
-                (hx, hy), (pole_end_x, pole_end_y), 4)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["anchor_dark"],
-                (hx, hy), (pole_end_x, pole_end_y), 3)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["anchor_mid"],
-                (hx, hy), (pole_end_x, pole_end_y), 2)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["anchor_light"],
-                (hx - 1, hy - 1), (pole_end_x - 1, pole_end_y - 1), 1)
-
-        # Anchor top ring (where rope goes)
-        ring_x = pole_end_x
-        ring_y = pole_end_y
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["anchor_darkest"], (ring_x, ring_y), 5)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["anchor_dark"], (ring_x, ring_y), 4, 2)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["anchor_mid"], (ring_x, ring_y), 3, 1)
-
-        # Anchor arms/flukes at bottom (T-crossbar)
-        # Perpendicular direction to angle
-        perp = angle + math.pi / 2
-        perp_x = math.cos(perp) * facing
-        perp_y = math.sin(perp)
-
-        # Cross-bar at bottom
-        bar_len = 20
-        bar_x1 = hx + int(perp_x * bar_len)
-        bar_y1 = hy + int(perp_y * bar_len)
-        bar_x2 = hx - int(perp_x * bar_len)
-        bar_y2 = hy - int(perp_y * bar_len)
-
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["shadow_deep"],
-                (bar_x1 + 2, bar_y1 + 2), (bar_x2 + 2, bar_y2 + 2), 6)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["anchor_darkest"],
-                (bar_x1, bar_y1), (bar_x2, bar_y2), 5)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["anchor_dark"],
-                (bar_x1, bar_y1), (bar_x2, bar_y2), 4)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["anchor_mid"],
-                (bar_x1, bar_y1), (bar_x2, bar_y2), 2)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["anchor_light"],
-                (bar_x1 - 1, bar_y1 - 1), (bar_x2 - 1, bar_y2 - 1), 1)
-
-        # Hook flukes at each end (curved barbs)
-        for side_dir, endx, endy in [(1, bar_x1, bar_y1), (-1, bar_x2, bar_y2)]:
-            # Fluke tip curves back toward the pole
-            curve_dir_x = -math.cos(angle) * facing * side_dir
-            curve_dir_y = -math.sin(angle) * side_dir
-            hook_x = endx + int(math.cos(angle) * 8) * facing + int(curve_dir_x * 5)
-            hook_y = endy + int(math.sin(angle) * 8) + int(curve_dir_y * 5)
-
-            # Triangular fluke shape
-            fluke_pts = [
-                (endx - int(perp_x * 3 * side_dir), endy - int(perp_y * 3 * side_dir)),
-                (endx + int(perp_x * 3 * side_dir), endy + int(perp_y * 3 * side_dir)),
-                (hook_x, hook_y),
-            ]
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["shadow_deep"],
-                  [(p[0] + 2, p[1] + 2) for p in fluke_pts])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["anchor_darkest"], fluke_pts)
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["anchor_dark"], [
-                (endx - int(perp_x * 2 * side_dir),
-                 endy - int(perp_y * 2 * side_dir)),
-                (endx + int(perp_x * 2 * side_dir),
-                 endy + int(perp_y * 2 * side_dir)),
-                (hook_x, hook_y),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["anchor_mid"], [
-                (endx - int(perp_x * 1 * side_dir),
-                 endy - int(perp_y * 1 * side_dir)),
-                (endx + int(perp_x * 1 * side_dir),
-                 endy + int(perp_y * 1 * side_dir)),
-                (hook_x, hook_y),
-            ])
-            # Sharp tip
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["anchor_shine"], (hook_x, hook_y), 1)
-
-        # Rust patches
-        for i in range(3):
-            angle_offset = i * math.pi * 2 / 3 + phase * 0.2
-            rx = hx + int(math.cos(angle_offset) * 4)
-            ry = hy + int(math.sin(angle_offset) * 4)
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["anchor_rust"], (rx, ry), 2)
-
-        # Water dripping from anchor if intense
-        if intense:
-            for i in range(5):
-                t = ((phase * 2 + i * 0.3) % 1.0)
-                drip_x = hx + int(math.cos(angle - math.pi / 2) * 8) * facing
-                drip_y = hy + int(math.sin(angle - math.pi / 2) * 8) + int(t * 30)
-                alpha = int(220 * (1 - t))
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha),
-                          (drip_x, drip_y), 2)
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_bright"], alpha),
-                          (drip_x, drip_y), 1)
-
-
-    def _draw_head(surface, cx, cy, facing, phase):
-        """Large head with fanged mouth, small eyes, spikes."""
-        # Neck (short and thick)
-        _NS_gravewake._rect(surface, _NS_gravewake.PALETTE["skin_darkest"], (cx - 8, cy + 10, 16, 8))
-        _NS_gravewake._rect(surface, _NS_gravewake.PALETTE["skin_dark"], (cx - 7, cy + 10, 14, 7))
-        _NS_gravewake._rect(surface, _NS_gravewake.PALETTE["skin_mid"], (cx - 6, cy + 11, 12, 5))
-
-        # Head shape (wide/blocky monster head)
-        head_pts = [
-            (cx - 15, cy - 5),
-            (cx - 14, cy - 10),
-            (cx - 8, cy - 13),
-            (cx + 8, cy - 13),
-            (cx + 14, cy - 10),
-            (cx + 15, cy - 5),
-            (cx + 15, cy + 6),
-            (cx + 10, cy + 12),
-            (cx - 10, cy + 12),
-            (cx - 15, cy + 6),
-        ]
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["shadow_deep"], [(p[0] + 3, p[1] + 3) for p in head_pts])
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["skin_darkest"], head_pts)
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["skin_dark"], [
-            (cx - 14, cy - 4),
-            (cx - 13, cy - 9),
-            (cx - 7, cy - 12),
-            (cx + 7, cy - 12),
-            (cx + 13, cy - 9),
-            (cx + 14, cy - 4),
-            (cx + 14, cy + 5),
-            (cx + 9, cy + 11),
-            (cx - 9, cy + 11),
-            (cx - 14, cy + 5),
-        ])
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["skin_mid"], [
-            (cx - 11, cy - 2),
-            (cx - 10, cy - 7),
-            (cx - 5, cy - 10),
-            (cx + 5, cy - 10),
-            (cx + 10, cy - 7),
-            (cx + 11, cy - 2),
-            (cx + 11, cy + 3),
-            (cx + 7, cy + 8),
-            (cx - 7, cy + 8),
-            (cx - 11, cy + 3),
-        ])
-
-        # Head highlight
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_light"], (cx - 5, cy - 6), 3)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["skin_high"], (cx - 6, cy - 7), 1)
-
-        # ===== Head spikes (small ones around head) =====
-        for spike_off, sy_off in [(-12, -8), (-6, -12), (0, -14),
-                                    (6, -12), (12, -8)]:
-            sx = cx + spike_off
-            sy = cy + sy_off
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["bone_dark"], [
-                (sx - 2, sy + 2),
-                (sx + 2, sy + 2),
-                (sx, sy - 4),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["bone_mid"], [
-                (sx - 1, sy + 2),
-                (sx + 1, sy + 2),
-                (sx, sy - 3),
-            ])
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["bone_light"], (sx, sy - 3), 1)
-
-        # ===== EYES (small, glowing red/orange) =====
-        eye_pulse = math.sin(phase * 2) * 0.2 + 0.8
-        # Eye ridges (dark shadow above)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["skin_darkest"],
-                (cx - 8, cy - 5), (cx - 4, cy - 5), 2)
-        _NS_gravewake._aaline(surface, _NS_gravewake.PALETTE["skin_darkest"],
-                (cx + 4, cy - 5), (cx + 8, cy - 5), 2)
-
-        # Eye sockets
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["shadow_deep"], (cx - 6, cy - 3), 2)
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["shadow_deep"], (cx + 6, cy - 3), 2)
-
-        # Glowing eyes
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["eye_dark"], (cx - 6, cy - 3),
-                  max(1, int(2 * eye_pulse)))
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["eye_mid"], (cx - 6, cy - 3),
-                  max(1, int(1 * eye_pulse)))
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["eye_bright"], (cx - 6, cy - 3), 1)
-
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["eye_dark"], (cx + 6, cy - 3),
-                  max(1, int(2 * eye_pulse)))
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["eye_mid"], (cx + 6, cy - 3),
-                  max(1, int(1 * eye_pulse)))
-        _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["eye_bright"], (cx + 6, cy - 3), 1)
-
-        # ===== HUGE FANGED MOUTH =====
-        # Mouth opens wide
-        mouth_open = 2 + int(math.sin(phase * 1.2) * 1)
-        mouth_pts = [
-            (cx - 10, cy + 2),
-            (cx + 10, cy + 2),
-            (cx + 8, cy + 8 + mouth_open),
-            (cx + 4, cy + 10 + mouth_open),
-            (cx - 4, cy + 10 + mouth_open),
-            (cx - 8, cy + 8 + mouth_open),
-        ]
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["shadow_deep"], mouth_pts)
-
-        # Inner mouth (dark red)
-        _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["eye_dark"], [
-            (cx - 8, cy + 3),
-            (cx + 8, cy + 3),
-            (cx + 6, cy + 7 + mouth_open),
-            (cx + 3, cy + 9 + mouth_open),
-            (cx - 3, cy + 9 + mouth_open),
-            (cx - 6, cy + 7 + mouth_open),
-        ])
-
-        # Upper teeth (row of fangs)
-        for i in range(5):
-            tx = cx - 7 + i * 3.5
-            # Different sizes for varied fangs
-            tooth_h = 3 + (1 if i in (1, 3) else 0)
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["teeth_dark"], [
-                (int(tx - 1), cy + 2),
-                (int(tx + 1), cy + 2),
-                (int(tx), cy + 2 + tooth_h),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["teeth_mid"], [
-                (int(tx - 1), cy + 2),
-                (int(tx + 1), cy + 2),
-                (int(tx), cy + 1 + tooth_h),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["teeth_light"], [
-                (int(tx), cy + 2),
-                (int(tx + 1), cy + 2),
-                (int(tx), cy + 1 + tooth_h),
-            ])
-
-        # Lower teeth (smaller row)
-        for i in range(4):
-            tx = cx - 5 + i * 3.5
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["teeth_dark"], [
-                (int(tx - 1), cy + 10 + mouth_open),
-                (int(tx + 1), cy + 10 + mouth_open),
-                (int(tx), cy + 10 + mouth_open - 3),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["teeth_mid"], [
-                (int(tx - 1), cy + 10 + mouth_open),
-                (int(tx + 1), cy + 10 + mouth_open),
-                (int(tx), cy + 10 + mouth_open - 2),
-            ])
-
-        # Extra large corner fangs
-        for side in (-1, 1):
-            cx1 = cx + side * 8
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["teeth_dark"], [
-                (cx1 - 1, cy + 2),
-                (cx1 + 1, cy + 2),
-                (cx1 + side, cy + 8),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["teeth_mid"], [
-                (cx1 - 1, cy + 2),
-                (cx1 + 1, cy + 2),
-                (cx1 + side, cy + 7),
-            ])
-            _NS_gravewake._poly(surface, _NS_gravewake.PALETTE["teeth_light"], [
-                (cx1, cy + 2),
-                (cx1 + 1, cy + 2),
-                (cx1 + side, cy + 6),
-            ])
-
-
-    def _draw_body_water_particles(surface, cx, cy, phase):
-        """Water droplets around body."""
-        for i in range(8):
-            angle = phase * 0.4 + i * math.pi / 4
-            radius = 32 + int(math.sin(phase * 0.7 + i) * 6)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-            alpha = int(140 + math.sin(phase + i * 0.7) * 60)
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha), (px, py), 2)
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_bright"], alpha // 2), (px, py), 1)
-
-        # Rising water drops
-        for i in range(4):
-            t = ((phase * 0.4 + i * 0.25) % 1.0)
-            px = cx + int(math.sin(phase + i) * 20) + (i - 1) * 4
-            py = cy + 20 - int(t * 55)
-            alpha = int(200 * (1 - t))
-            if alpha > 0:
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_light"], alpha), (px, py), 1)
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_hot"], alpha), (px, py - 1), 1)
-
-
-    # ===================================================================
-    # FLOATING EFFECTS
-    # ===================================================================
-    def _draw_floating_water(surface, cx, cy, phase, trail=False,
-                            facing=1, intense=False):
-        """Water mist below floating Gravewake."""
-        strength = 1.5 if intense else 1.0
-
-        # Base water mist
-        mist = pygame.Surface((140, 45), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(38, 3, -4):
-            alpha = int((38 - radius) * 2.2 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_gravewake.PALETTE["water_darkest"], min(255, alpha)),
-                    (70 - radius * 2, 22 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 70, cy - 12))
-
-        # Rising water wisps
-        for i, offset in enumerate((-25, -12, 0, 12, 25)):
-            t = (phase * 0.5 + i * 0.2) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 25)
-            alpha = max(0, min(255, int(200 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha), (sx, sy), 5)
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha), (sx, sy - 2), 3)
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_bright"], min(255, alpha)),
-                      (sx, sy - 3), 1)
-
-        # Orbiting water droplets
-        for i in range(5):
-            angle = phase * 0.9 + i * math.pi * 2 / 5
-            r = 26 + int(math.sin(phase + i * 1.3) * 4)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 7)
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_mid"], (sx, sy), 3)
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_light"], (sx, sy), 2)
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_hot"], (sx, sy), 1)
-
-        if trail:
-            for i in range(5):
-                sx = cx - (i + 1) * 12 * facing
-                sy = cy + int(math.sin(phase + i) * 2)
-                alpha = max(0, 130 - i * 22)
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha),
-                          (sx, sy), max(2, 5 - i))
-
-
-    def _draw_shadow(surface, x, y):
-        """Large shadow (Gravewake is big)."""
-        shadow = pygame.Surface((120, 25), pygame.SRCALPHA)
-        for radius in range(12, 0, -1):
-            alpha = max(0, (12 - radius) * 15)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (12 - radius, 12 - radius, 96 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_gravewake.PALETTE["water_darkest"], 60),
-                           (10, 5, 100, 12))
-        surface.blit(shadow, (x - 60, y - 12))
-
-
-    def _draw_water_aura(surface, x, y, phase):
-        """Background water aura."""
-        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((200, 180), pygame.SRCALPHA)
-        for radius in range(80, 5, -4):
-            alpha = int((80 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_gravewake._aacircle(aura, (*_NS_gravewake.PALETTE["water_darkest"], min(255, alpha)),
-                          (100, 90), radius)
-        surface.blit(aura, (x - 100, y - 90))
-
-
-    def _draw_ground_runes(surface, x, y, phase, skill):
-        """Water runes on ground."""
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((150, 50), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_gravewake.PALETTE["water_dark"], 140),
-                            (5, 10, 140, 30), 3)
-        pygame.draw.ellipse(ring, (*_NS_gravewake.PALETTE["water_mid"], 170),
-                            (25, 15, 100, 20), 2)
-
-        for i in range(10):
-            angle = phase * 0.2 + i * math.pi / 5
-            x1 = 75 + int(math.cos(angle) * 35)
-            y1 = 25 + int(math.sin(angle) * 8)
-            x2 = 75 + int(math.cos(angle) * 65)
-            y2 = 25 + int(math.sin(angle) * 12)
-            pygame.draw.line(ring, (*_NS_gravewake.PALETTE["water_bright"], 160),
-                             (x1, y1), (x2, y2), 1)
-
-        if skill:
-            pygame.draw.ellipse(ring, (*_NS_gravewake.PALETTE["water_hot"], int(80 * pulse)),
-                                (15, 8, 120, 34), 1)
-
-        surface.blit(ring, (x - 75, y - 25))
-
-
-    def _draw_anchor_swing_trail(surface, x, y, facing, progress):
-        """Trail during basic anchor swing."""
-        if progress < 0.3 or progress > 0.7:
-            return
-        t = (progress - 0.3) / 0.4
-        center_x = x + facing * 5
-        center_y = y - 5
-        radius = 50
-
-        start_angle = -math.pi / 2 - 0.5
-        end_angle = math.pi / 4
-        current_angle = start_angle + (end_angle - start_angle) * t
-
-        trail_length = 1.5
-        segments = 12
-        for i in range(segments):
-            seg_t = i / segments
-            angle = current_angle - trail_length * seg_t
-            if angle < start_angle:
-                continue
-
-            ax = center_x + int(math.cos(angle) * radius) * facing
-            ay = center_y + int(math.sin(angle) * radius)
-
-            alpha_seg = int(220 * (1 - seg_t))
-            size = int(5 * (1 - seg_t * 0.4))
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha_seg),
-                      (ax, ay), size + 2)
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha_seg),
-                      (ax, ay), size + 1)
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_light"], alpha_seg),
-                      (ax, ay), size)
-
-
-    def _draw_anchor_water_trail(surface, x, y, facing, progress, phase):
-        """Enhanced water trail during Anchor Smash."""
-        if progress < 0.15 or progress > 0.75:
-            return
-
-        t = (progress - 0.15) / 0.6
-        center_x = x + facing * 5
-        center_y = y - 5
-        radius = 55
-
-        start_angle = -math.pi / 2 - 0.5
-        end_angle = math.pi / 4
-        current_angle = start_angle + (end_angle - start_angle) * t
-
-        trail_length = 2.0
-        segments = 16
-        for i in range(segments):
-            seg_t = i / segments
-            angle = current_angle - trail_length * seg_t
-            if angle < start_angle:
-                continue
-
-            ax = center_x + int(math.cos(angle) * radius) * facing
-            ay = center_y + int(math.sin(angle) * radius)
-
-            alpha_seg = int(240 * (1 - seg_t))
-            size = int(6 * (1 - seg_t * 0.3))
-
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_darkest"], alpha_seg),
-                      (ax, ay), size + 3)
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha_seg),
-                      (ax, ay), size + 2)
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha_seg),
-                      (ax, ay), size + 1)
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_light"], alpha_seg),
-                      (ax, ay), size)
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_bright"], alpha_seg),
-                      (ax, ay), max(1, size - 2))
-            _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_hot"], alpha_seg),
-                      (ax, ay), max(1, size - 3))
-
-
-    # ===================================================================
-    # SKILL W: TIDEBRINGER - Anchor pillars summoned from ground
-    # ===================================================================
+        boss._gw_effects.append(_NS_gravewake.AnchorSwing(sx, sy,
+                                                          boss.direction))
+
+    def _spawn_anchor_wave(boss, x, y):
+        if not hasattr(boss, "_gw_effects"):
+            boss._gw_effects = []
+        sx = x + 30 * boss.direction
+        sy = y - 5
+        boss._gw_effects.append(_NS_gravewake.AnchorWave(sx, sy,
+                                                         boss.direction))
+
+    def _spawn_canvas_impact(boss, x, y):
+        """Percikan impact di layar (canvas fallback, tanpa modul FX)."""
+        if not hasattr(boss, "_gw_effects"):
+            boss._gw_effects = []
+        boss._gw_effects.append(_NS_gravewake._CanvasImpact(boss, x, y))
+
+    # ==================================================================
+    # SKILL FX (canvas)
+    # ==================================================================
     def _draw_tidebringer_ground(surface, boss, x, y, timer, phase):
-        """Ground indicator for anchor spawns."""
-        progress = max(0.0, min(1.0, 1 - timer / 120))
+        """W - indikator tanah totem jangkar di depan."""
+        P = _NS_gravewake.PALETTE
+        progress = _NS_gravewake._skill_progress(boss, timer, "w")
         facing = boss.direction
-
-        # Multiple anchor spawn points in front of Gravewake
         for i in range(3):
             offset = 40 + i * 40
             ax = x + facing * offset
             ay = y + 40
-
             pulse = math.sin(phase * 2 + i * 0.5) * 0.2 + 0.8
             radius = int(15 + progress * 8)
-
-            # Water circle on ground
-            _NS_gravewake._ellipse(surface, (*_NS_gravewake.PALETTE["water_dark"], int(180 * pulse)),
-                     (ax - radius, ay - radius // 3,
-                      radius * 2, radius * 2 // 3), 2)
-            _NS_gravewake._ellipse(surface, (*_NS_gravewake.PALETTE["water_mid"], int(150 * pulse)),
-                     (ax - radius + 3, ay - radius // 3 + 2,
-                      radius * 2 - 6, radius * 2 // 3 - 4), 1)
-
+            _NS_gravewake._ellipse(surface, (*P["water_dark"],
+                                             int(180 * pulse)),
+                                   (ax - radius, ay - radius // 3,
+                                    radius * 2, radius * 2 // 3), 2)
+            _NS_gravewake._ellipse(surface, (*P["water_mid"],
+                                             int(150 * pulse)),
+                                   (ax - radius + 3, ay - radius // 3 + 2,
+                                    radius * 2 - 6, radius * 2 // 3 - 4), 1)
 
     def _draw_tidebringer_foreground(surface, boss, x, y, timer, phase):
-        """Water anchor pillars rising from ground."""
-        progress = max(0.0, min(1.0, 1 - timer / 120))
+        """W - tiang jangkar air naik dari tanah."""
+        progress = _NS_gravewake._skill_progress(boss, timer, "w")
         facing = boss.direction
-
-        # 3 anchors in a line in front
         for i in range(3):
-            # Each anchor rises with slight delay
             delay = i * 0.15
-            anchor_progress = max(0.0, min(1.0, (progress - delay) / max(0.1, 1 - delay)))
-
+            anchor_progress = max(0.0, min(1.0, (progress - delay)
+                                           / max(0.1, 1 - delay)))
             if anchor_progress <= 0:
                 continue
-
             offset = 40 + i * 40
             ax = x + facing * offset
             ay = y + 20
-
-            # Rising water column beneath anchor
             column_h = int(30 * anchor_progress)
             for h in range(column_h):
                 t = h / max(1, column_h)
@@ -1343,189 +1829,165 @@ class _NS_gravewake:
                 layer_y = ay + 20 - h
                 layer_x = ax + int(wave)
                 alpha = int(220 * (1 - t * 0.3))
-                _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha),
-                      (layer_x - w_here, layer_y, w_here * 2, 2))
-                _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha),
-                      (layer_x - w_here + 1, layer_y, w_here * 2 - 2, 2))
-                _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_light"], alpha),
-                      (layer_x - w_here // 2, layer_y, w_here, 2))
-
-            # Draw ethereal water anchor at top of column
+                _NS_gravewake._rect(surface,
+                                    (*_NS_gravewake.PALETTE["water_dark"],
+                                     alpha),
+                                    (layer_x - w_here, layer_y,
+                                     w_here * 2, 2))
+                _NS_gravewake._rect(surface,
+                                    (*_NS_gravewake.PALETTE["water_mid"],
+                                     alpha),
+                                    (layer_x - w_here + 1, layer_y,
+                                     w_here * 2 - 2, 2))
+                _NS_gravewake._rect(surface,
+                                    (*_NS_gravewake.PALETTE["water_light"],
+                                     alpha),
+                                    (layer_x - w_here // 2, layer_y,
+                                     w_here, 2))
             if anchor_progress > 0.3:
                 anchor_y = ay - 5 + int(math.sin(phase * 2 + i) * 2)
-                anchor_alpha = int(255 * min(1.0, (anchor_progress - 0.3) / 0.7))
-                _NS_gravewake._draw_water_anchor(surface, ax, anchor_y, phase + i, anchor_alpha)
-
-            # Splashes around base
+                anchor_alpha = int(255 * min(1.0,
+                                             (anchor_progress - 0.3) / 0.7))
+                _NS_gravewake._draw_water_anchor(surface, ax, anchor_y,
+                                                 phase + i, anchor_alpha)
             for j in range(4):
                 angle = phase * 2 + j * math.pi / 2 + i
                 r = 12
                 sx = ax + int(math.cos(angle) * r)
                 sy = ay + 18 + int(math.sin(angle) * 4)
-                _NS_gravewake._draw_water_splash(surface, sx, sy, 3, phase + i + j, 200)
-
+                _NS_gravewake._draw_water_splash(surface, sx, sy, 3,
+                                                 phase + i + j, 200)
 
     def _draw_water_anchor(surface, cx, cy, phase, alpha=255):
-        """Ethereal water anchor floating."""
+        """Jangkar air ethereal mengambang (W)."""
+        P = _NS_gravewake.PALETTE
         pulse = math.sin(phase * 2) * 0.2 + 0.8
-
-        # Glow around
-        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_dark"], int(120 * pulse)),
-                  (cx, cy), 20)
-        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"], int(100 * pulse)),
-                  (cx, cy), 15)
-
-        # Anchor pole (vertical)
-        _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha),
-                (cx, cy - 15), (cx, cy + 10), 4)
-        _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha),
-                (cx, cy - 15), (cx, cy + 10), 3)
-        _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_bright"], alpha),
-                (cx, cy - 15), (cx, cy + 10), 2)
-        _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_hot"], alpha),
-                (cx, cy - 15), (cx, cy + 10), 1)
-
-        # Top ring
-        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha), (cx, cy - 15), 4)
-        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha), (cx, cy - 15), 4, 2)
-        _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_bright"], alpha), (cx, cy - 15), 3, 1)
-
-        # Cross bar at bottom
-        _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha),
-                (cx - 10, cy + 8), (cx + 10, cy + 8), 4)
-        _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha),
-                (cx - 10, cy + 8), (cx + 10, cy + 8), 3)
-        _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_bright"], alpha),
-                (cx - 10, cy + 8), (cx + 10, cy + 8), 2)
-        _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_hot"], alpha),
-                (cx - 10, cy + 8), (cx + 10, cy + 8), 1)
-
-        # Hook flukes on either side
+        _NS_gravewake._aacircle(surface, (*P["water_dark"], int(120 * pulse)),
+                                (cx, cy), 20)
+        _NS_gravewake._aacircle(surface, (*P["water_mid"], int(100 * pulse)),
+                                (cx, cy), 15)
+        _NS_gravewake._aaline(surface, (*P["water_dark"], alpha),
+                              (cx, cy - 15), (cx, cy + 10), 4)
+        _NS_gravewake._aaline(surface, (*P["water_mid"], alpha),
+                              (cx, cy - 15), (cx, cy + 10), 3)
+        _NS_gravewake._aaline(surface, (*P["water_bright"], alpha),
+                              (cx, cy - 15), (cx, cy + 10), 2)
+        _NS_gravewake._aaline(surface, (*P["water_hot"], alpha),
+                              (cx, cy - 15), (cx, cy + 10), 1)
+        _NS_gravewake._aacircle(surface, (*P["water_dark"], alpha),
+                                (cx, cy - 15), 4)
+        _NS_gravewake._aacircle(surface, (*P["water_mid"], alpha),
+                                (cx, cy - 15), 4, 2)
+        _NS_gravewake._aacircle(surface, (*P["water_bright"], alpha),
+                                (cx, cy - 15), 3, 1)
+        _NS_gravewake._aaline(surface, (*P["water_dark"], alpha),
+                              (cx - 10, cy + 8), (cx + 10, cy + 8), 4)
+        _NS_gravewake._aaline(surface, (*P["water_mid"], alpha),
+                              (cx - 10, cy + 8), (cx + 10, cy + 8), 3)
+        _NS_gravewake._aaline(surface, (*P["water_bright"], alpha),
+                              (cx - 10, cy + 8), (cx + 10, cy + 8), 2)
+        _NS_gravewake._aaline(surface, (*P["water_hot"], alpha),
+                              (cx - 10, cy + 8), (cx + 10, cy + 8), 1)
         for side in (-1, 1):
-            # Curved fluke
-            _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha),
-                    (cx + side * 10, cy + 8), (cx + side * 12, cy + 3), 3)
-            _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha),
-                    (cx + side * 10, cy + 8), (cx + side * 12, cy + 3), 2)
-            _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_bright"], alpha),
-                    (cx + side * 10, cy + 8), (cx + side * 12, cy + 3), 1)
+            _NS_gravewake._aaline(surface, (*P["water_dark"], alpha),
+                                  (cx + side * 10, cy + 8),
+                                  (cx + side * 12, cy + 3), 3)
+            _NS_gravewake._aaline(surface, (*P["water_mid"], alpha),
+                                  (cx + side * 10, cy + 8),
+                                  (cx + side * 12, cy + 3), 2)
+            _NS_gravewake._aaline(surface, (*P["water_bright"], alpha),
+                                  (cx + side * 10, cy + 8),
+                                  (cx + side * 12, cy + 3), 1)
 
-
-    # ===================================================================
-    # SKILL E: KRAKEN SHELL - Defense buff
-    # ===================================================================
     def _draw_kraken_shell(surface, boss, x, y, timer, phase):
-        """Water shell around Gravewake."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        """E - cangkang air kraken di sekitar Gravewake."""
+        P = _NS_gravewake.PALETTE
+        progress = _NS_gravewake._skill_progress(boss, timer, "e")
         pulse = math.sin(phase * 2) * 0.2 + 0.8
-
-        # Multi-layer water shell
         shell_layers = [
-            (55, _NS_gravewake.PALETTE["water_darkest"], 100),
-            (48, _NS_gravewake.PALETTE["water_dark"], 130),
-            (42, _NS_gravewake.PALETTE["water_mid"], 100),
-            (36, _NS_gravewake.PALETTE["water_light"], 80),
+            (58, P["water_darkest"], 100),
+            (50, P["water_dark"], 130),
+            (43, P["water_mid"], 100),
+            (36, P["water_light"], 80),
         ]
-
         for radius, color, alpha in shell_layers:
             a = int(alpha * pulse * progress)
-            _NS_gravewake._aacircle(surface, (*color, a), (x, y - 5), radius, 3)
-
-        # Spiky water shell shape (like kraken shell) - draw radiating spikes
+            _NS_gravewake._aacircle(surface, (*color, a), (x, y - 5),
+                                    radius, 3)
         for i in range(12):
             angle = phase * 0.8 + i * math.pi / 6
-            inner_r = 40
-            outer_r = 55 + int(math.sin(phase * 3 + i) * 4)
-
+            inner_r = 42
+            outer_r = 58 + int(math.sin(phase * 3 + i) * 4)
             ix = x + int(math.cos(angle) * inner_r)
             iy = y - 5 + int(math.sin(angle) * inner_r * 0.9)
             ox = x + int(math.cos(angle) * outer_r)
             oy = y - 5 + int(math.sin(angle) * outer_r * 0.9)
-
-            # Water spike
-            _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_dark"], 220),
-                    (ix, iy), (ox, oy), 4)
-            _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_mid"], 240),
-                    (ix, iy), (ox, oy), 3)
-            _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_light"], 250),
-                    (ix, iy), (ox, oy), 2)
-            _NS_gravewake._aaline(surface, (*_NS_gravewake.PALETTE["water_bright"], 255),
-                    (ix, iy), (ox, oy), 1)
-            # Tip
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_hot"], (ox, oy), 2)
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_white"], (ox, oy), 1)
-
-        # Small circulating orbs
+            _NS_gravewake._aaline(surface, (*P["water_dark"], 220),
+                                  (ix, iy), (ox, oy), 4)
+            _NS_gravewake._aaline(surface, (*P["water_mid"], 240),
+                                  (ix, iy), (ox, oy), 3)
+            _NS_gravewake._aaline(surface, (*P["water_light"], 250),
+                                  (ix, iy), (ox, oy), 2)
+            _NS_gravewake._aaline(surface, (*P["water_bright"], 255),
+                                  (ix, iy), (ox, oy), 1)
+            _NS_gravewake._aacircle(surface, P["water_hot"], (ox, oy), 2)
+            _NS_gravewake._aacircle(surface, P["water_white"], (ox, oy), 1)
         for i in range(6):
             angle = phase * 1.5 + i * math.pi / 3
-            r = 48
+            r = 50
             px = x + int(math.cos(angle) * r)
             py = y - 5 + int(math.sin(angle) * r * 0.9)
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_bright"], (px, py), 3)
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_hot"], (px, py), 2)
-            _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_white"], (px, py), 1)
+            _NS_gravewake._aacircle(surface, P["water_bright"], (px, py), 3)
+            _NS_gravewake._aacircle(surface, P["water_hot"], (px, py), 2)
+            _NS_gravewake._aacircle(surface, P["water_white"], (px, py), 1)
 
-
-    # ===================================================================
-    # SKILL R: RAVAGE - Huge tidal wave/tentacles
-    # ===================================================================
     def _draw_ravage_ground(surface, boss, x, y, timer, phase):
-        """Large expanding water shockwave on ground."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
+        """R - gelombang kejut air masif mengembang di tanah."""
+        P = _NS_gravewake.PALETTE
+        progress = _NS_gravewake._skill_progress(boss, timer, "r")
         pulse = math.sin(phase * 2) * 0.2 + 0.8
-
-        # Massive expanding rings
         for ring_i in range(3):
             ring_progress = progress - ring_i * 0.1
             if ring_progress <= 0 or ring_progress > 1:
                 continue
             radius = int(20 + ring_progress * 130)
             alpha = int(220 * (1 - ring_progress))
-
-            _NS_gravewake._ellipse(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha),
-                     (x - radius, y + 40 - radius // 3,
-                      radius * 2, radius * 2 // 3), 4)
-            _NS_gravewake._ellipse(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha),
-                     (x - radius + 4, y + 40 - radius // 3 + 2,
-                      radius * 2 - 8, radius * 2 // 3 - 4), 3)
-            _NS_gravewake._ellipse(surface, (*_NS_gravewake.PALETTE["water_bright"], alpha),
-                     (x - radius + 8, y + 40 - radius // 3 + 4,
-                      radius * 2 - 16, radius * 2 // 3 - 8), 2)
-
+            _NS_gravewake._ellipse(surface, (*P["water_dark"], alpha),
+                                   (x - radius, y + 40 - radius // 3,
+                                    radius * 2, radius * 2 // 3), 4)
+            _NS_gravewake._ellipse(surface, (*P["water_mid"], alpha),
+                                   (x - radius + 4, y + 40 - radius // 3 + 2,
+                                    radius * 2 - 8, radius * 2 // 3 - 4), 3)
+            _NS_gravewake._ellipse(surface, (*P["water_bright"], alpha),
+                                   (x - radius + 8, y + 40 - radius // 3 + 4,
+                                    radius * 2 - 16, radius * 2 // 3 - 8), 2)
 
     def _draw_ravage_foreground(surface, boss, x, y, timer, phase):
-        """Multiple water spikes/tentacles erupting outward."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
-
-        # Number of spikes around Gravewake, in concentric rings
+        """R - paku air / tentakel meletus keluar + splash."""
+        P = _NS_gravewake.PALETTE
+        progress = _NS_gravewake._skill_progress(boss, timer, "r")
         spike_rings = [
-            # (radius, count, delay)
             (40, 8, 0.0),
             (75, 12, 0.15),
             (110, 16, 0.3),
             (140, 20, 0.45),
         ]
-
         for ring_r, count, delay in spike_rings:
             if progress < delay:
                 continue
-
-            spike_progress = min(1.0, (progress - delay) / max(0.15, 1 - delay))
-
+            spike_progress = min(1.0, (progress - delay)
+                                 / max(0.15, 1 - delay))
             for i in range(count):
                 angle = i * math.pi * 2 / count + phase * 0.3
                 spike_x = x + int(math.cos(angle) * ring_r)
                 spike_y = y + 40 + int(math.sin(angle) * ring_r * 0.4)
-
-                # Skip spikes too far below character shadow
                 if abs(spike_y - (y + 40)) < 5 and abs(spike_x - x) < 30:
                     continue
-
-                # Rising water spike
-                spike_height = int(50 * spike_progress * (1 - min(1.0, (progress - delay) / 0.5)))
+                spike_height = int(50 * spike_progress
+                                   * (1 - min(1.0,
+                                              (progress - delay) / 0.5)))
                 if spike_height < 5:
                     continue
-
                 spike_width = 6
                 for h in range(spike_height):
                     t = h / max(1, spike_height)
@@ -1536,38 +1998,194 @@ class _NS_gravewake:
                     layer_y = spike_y - h
                     layer_x = spike_x + int(wave)
                     alpha = int(230 * (1 - t * 0.3))
-
-                    _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_dark"], alpha),
-                          (layer_x - w_here, layer_y, w_here * 2, 2))
-                    _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_mid"], alpha),
-                          (layer_x - w_here + 1, layer_y, w_here * 2 - 2, 2))
-                    _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_light"], alpha),
-                          (layer_x - w_here // 2, layer_y, w_here, 2))
-                    _NS_gravewake._rect(surface, (*_NS_gravewake.PALETTE["water_hot"], alpha),
-                          (layer_x - 1, layer_y, 2, 2))
-
-                # Spike tip splash
+                    _NS_gravewake._rect(surface, (*P["water_dark"], alpha),
+                                        (layer_x - w_here, layer_y,
+                                         w_here * 2, 2))
+                    _NS_gravewake._rect(surface, (*P["water_mid"], alpha),
+                                        (layer_x - w_here + 1, layer_y,
+                                         w_here * 2 - 2, 2))
+                    _NS_gravewake._rect(surface, (*P["water_light"], alpha),
+                                        (layer_x - w_here // 2, layer_y,
+                                         w_here, 2))
+                    _NS_gravewake._rect(surface, (*P["water_hot"], alpha),
+                                        (layer_x - 1, layer_y, 2, 2))
                 tip_y = spike_y - spike_height
-                tip_x = spike_x + int(math.sin(phase * 4 + spike_height * 0.05 + i) * 2)
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_mid"], 220), (tip_x, tip_y), 5)
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_bright"], 240), (tip_x, tip_y), 3)
-                _NS_gravewake._aacircle(surface, (*_NS_gravewake.PALETTE["water_hot"], 250), (tip_x, tip_y), 2)
-                _NS_gravewake._aacircle(surface, _NS_gravewake.PALETTE["water_white"], (tip_x, tip_y), 1)
-
-        # Additional splashes around Gravewake
+                tip_x = spike_x + int(math.sin(phase * 4
+                                               + spike_height * 0.05 + i)
+                                      * 2)
+                _NS_gravewake._aacircle(surface, (*P["water_mid"], 220),
+                                        (tip_x, tip_y), 5)
+                _NS_gravewake._aacircle(surface, (*P["water_bright"], 240),
+                                        (tip_x, tip_y), 3)
+                _NS_gravewake._aacircle(surface, (*P["water_hot"], 250),
+                                        (tip_x, tip_y), 2)
+                _NS_gravewake._aacircle(surface, P["water_white"],
+                                        (tip_x, tip_y), 1)
         for i in range(10):
             angle = phase * 1.2 + i * math.pi / 5
             r = 60 + int(math.sin(phase * 2 + i) * 15)
             sx = x + int(math.cos(angle) * r)
             sy = y + 40 + int(math.sin(angle) * r * 0.4)
-            _NS_gravewake._draw_water_splash(surface, sx, sy, 4, phase + i, 220)
+            _NS_gravewake._draw_water_splash(surface, sx, sy, 4,
+                                             phase + i, 220)
 
+    # ==================================================================
+    # LAPISAN FX HIDUP (heroes/gravewake_fx)
+    # ==================================================================
+    #: Modul FX layar (diisi malas). False = percobaan gagal -> jalur canvas.
+    _LIVE_MOD = None
 
-    # ===================================================================
+    def _live_module():
+        """Muat ``heroes.gravewake_fx`` sekali; None kalau tidak tersedia."""
+        NS = _NS_gravewake
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import gravewake_fx as mod  # noqa
+                NS._LIVE_MOD = mod if getattr(mod, "GRAVEWAKE_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    def live_fx_ready():
+        return _NS_gravewake._live_module() is not None
+
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Lapisan hidup untuk unit ini. Return ``(mod, owned)``."""
+        NS = _NS_gravewake
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    # ==================================================================
+    # MAIN DRAW ENTRY POINT
+    # ==================================================================
+    def draw_gravewake(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus heroes.render_hero().
+
+        Urutan lapisan mengikuti kontrak render order proyek:
+            GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/HEAD ->
+            WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+            SKILL FX -> IMPACT FX -> DEBUG
+        """
+        NS = _NS_gravewake
+        hero_lane = hasattr(boss, "_render_scale")
+        NS._update_gravewake_attack_anim(boss)
+        moving = NS._detect_moving(boss)
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._gw_pose_action = action
+        skill = getattr(boss, "active_skill", None)
+        timer = int(getattr(boss, "active_skill_timer", 0))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        facing = getattr(boss, "direction", 1) or 1
+        flash = 0
+        if getattr(boss, "hurt_flash_timer", 0) > 0:
+            flash = 120
+
+        live, owned = NS._live_fx(boss, surface, x, y,
+                                  not hero_lane, portrait)
+        boss._gw_live_owned = bool(owned)
+
+        # ── Latar ────────────────────────────────────────────────────
+        if not portrait:
+            NS._draw_water_aura(surface, x, y, phase)
+            NS._draw_ground_runes(surface, x, y + NS.GROUND_DY + 1, phase,
+                                  skill)
+
+        # ── Skill ground telegraph ───────────────────────────────────
+        if skill == "w" and not portrait:
+            NS._draw_tidebringer_ground(surface, boss, x, y, timer, phase)
+        elif skill == "r" and not portrait:
+            NS._draw_ravage_ground(surface, boss, x, y, timer, phase)
+
+        # ── Karakter ─────────────────────────────────────────────────
+        if skill == "q":
+            NS._draw_gravewake_anchor_smash(surface, boss, x, y, timer, phase)
+        elif skill == "w":
+            NS._draw_gravewake_channel(surface, boss, x, y, timer, phase)
+        elif skill == "e":
+            NS._draw_gravewake_shell(surface, boss, x, y, timer, phase)
+        elif skill == "r":
+            NS._draw_gravewake_ravage_pose(surface, boss, x, y, timer, phase)
+        elif action == "attack":
+            NS._draw_gravewake_melee_attack(surface, boss, x, y)
+        elif action == "walk":
+            NS._draw_gravewake_walk(surface, boss, x, y)
+        else:
+            NS._draw_gravewake_idle(surface, boss, x, y)
+
+        # ── Foreground (canvas fallback: efek & skill) ──────────────
+        if not portrait:
+            if owned:
+                if getattr(boss, "_gw_effects", None):
+                    boss._gw_effects = []
+            else:
+                NS._manage_effects(boss, surface, phase)
+            if skill == "w":
+                NS._draw_tidebringer_foreground(surface, boss, x, y,
+                                                timer, phase)
+            elif skill == "r":
+                NS._draw_ravage_foreground(surface, boss, x, y, timer, phase)
+
+        # ── Lapisan hidup bagian ATAS + debug ───────────────────────
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_gravewake_debug(surface, boss, x, y, action, owned)
+
+    # ==================================================================
+    # DEBUG OVERLAY  (DEBUG_CHARACTER = True)
+    # ==================================================================
+    def _draw_gravewake_debug(surface, boss, x, y, action, owned):
+        NS = _NS_gravewake
+        r = max(6, int(getattr(boss, "radius", 40) * 0.9 * NS.SCALE))
+        pygame.draw.rect(surface, (80, 170, 255, 150),
+                         pygame.Rect(int(x) - r, int(y) - r - 8,
+                                     r * 2, r * 2), 1)
+        rng = max(10, int(getattr(boss, "range", 65) * NS.SCALE * 0.9))
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        pygame.draw.line(surface, (255, 210, 60, 150), (int(x), int(y)),
+                         (int(x) + int(rng * f), int(y)), 1)
+        hb = NS._swing_hitbox(boss, x, y)
+        if hb is not None:
+            pygame.draw.rect(surface, (255, 70, 70, 190), hb, 2)
+        tip = NS._tip_screen(boss, x, y)
+        pygame.draw.circle(surface, (120, 255, 150), tip, 4, 1)
+        prog = float(getattr(boss, "_gw_attack_progress", 0.0))
+        bar = pygame.Rect(int(x) - 40, int(y) - 122, 80, 5)
+        pygame.draw.rect(surface, (30, 10, 40), bar)
+        pygame.draw.rect(surface, (255, 140, 220),
+                         (bar.x, bar.y, int(80 * prog), 5))
+        state = getattr(boss, "_gw_state", "IDLE")
+        idx = list(NS.ANIM_STATES).index(state) \
+            if state in NS.ANIM_STATES else 0
+        pygame.draw.rect(surface, (140, 255, 200),
+                         (bar.x, bar.y - 6, 4 + idx * 5, 4))
+
+    # ==================================================================
     # Backward-compatible entry point alias
-    # ===================================================================
+    # ==================================================================
     def draw_boss(surface, boss, x, y):
         _NS_gravewake.draw_gravewake(surface, boss, x, y)
+
+
 
 
 # ====================================================================

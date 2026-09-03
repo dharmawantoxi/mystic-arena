@@ -896,6 +896,26 @@ class Boss(TowerDebuffMixin):
                                     0.0, self.damage, False, 'spear')
                         except Exception:
                             pass
+                    # ═══ IMPACT FX GRAVEWAKE ═══
+                    # The Tidehunter mengayunkan jangkar berkarat (jarak
+                    # <= MELEE_REACH dunia 65 px). FX-nya: hantaman jangkar
+                    # + flash air/baja, serpihan karat, shockwave, shake,
+                    # dan hit-stop 0.03-0.08 s (lengkapnya di
+                    # heroes/gravewake_fx). Difilter per boss_type +
+                    # try/except (paritas Gravefang/Nyxara/Thalgryn/
+                    # Kunkka/Syrentha).
+                    if getattr(self, 'boss_type', None) == 'gravewake':
+                        try:
+                            from heroes import gravewake_fx as _gwfx
+                            if dist <= _gwfx.MELEE_REACH:
+                                _gwfx.notify_melee_impact(
+                                    self, self.target, self.damage, False)
+                            else:
+                                _gwfx.notify_projectile_impact(
+                                    self, self.target.x, self.target.y,
+                                    0.0, self.damage, False, 'anchor')
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -5545,6 +5565,23 @@ class Boss(TowerDebuffMixin):
                     e.take_damage(damage, self.team)
                     if hasattr(e, 'apply_slow'):
                         e.apply_slow(0.5, 180)
+
+        # ═══ SKILL FX GRAVEWAKE Q (lapisan hidup) ═══
+        # Anchor Smash: bulan sabit air + jangkar air melaju ke depan
+        # (flash, serpihan, shockwave, shake, hit-stop) —
+        # heroes/gravewake_fx.
+        try:
+            from heroes import gravewake_fx as _gwfx
+            _gwfx.notify_skill_cast(self, 'q')
+            if self.target and self.target.alive:
+                _gwfx.notify_skill_impact(self, self.target.x,
+                                          self.target.y, 200, 'q')
+            else:
+                _gwfx.notify_skill_impact(
+                    self, self.x + dx * 220, self.y + dy * 220, 200, 'q')
+        except Exception:
+            pass
+
         self._shake_screen(15)
 
     def _gravewake_w(self, enemies):
@@ -5566,6 +5603,17 @@ class Boss(TowerDebuffMixin):
                 if hasattr(e, 'attack_timer'):
                     e.attack_timer = max(
                         getattr(e, 'attack_timer', 0), 60)
+
+        # ═══ SKILL FX GRAVEWAKE W (lapisan hidup) ═══
+        # Tidebringer: cincin air + tiang air di titik target (flash,
+        # shockwave, shake, hit-stop) — heroes/gravewake_fx.
+        try:
+            from heroes import gravewake_fx as _gwfx
+            _gwfx.notify_skill_cast(self, 'w')
+            _gwfx.notify_skill_impact(self, tx, ty, 120, 'w')
+        except Exception:
+            pass
+
         self._shake_screen(14)
 
     def _gravewake_e(self):
@@ -5580,6 +5628,16 @@ class Boss(TowerDebuffMixin):
         # Heal 12% max HP
         heal = int(self.max_hp * 0.12)
         self.hp = min(self.max_hp, self.hp + heal)
+
+        # ═══ SKILL FX GRAVEWAKE E (lapisan hidup) ═══
+        # Kraken Shell: cangkang kraken + gelembung laut di caster
+        # (flash, shockwave, shake, hit-stop) — heroes/gravewake_fx.
+        try:
+            from heroes import gravewake_fx as _gwfx
+            _gwfx.notify_skill_cast(self, 'e')
+            _gwfx.notify_skill_impact(self, self.x, self.y, 90, 'e')
+        except Exception:
+            pass
 
         self._shake_screen(10)
 
@@ -5620,6 +5678,17 @@ class Boss(TowerDebuffMixin):
                     push_y = (e.y - self.y) / dist * 18
                     e.x += push_x
                     e.y += push_y
+
+        # ═══ SKILL FX GRAVEWAKE R (lapisan hidup) ═══
+        # Ravage: gelombang laut melingkar + 6 pilar air naik + mahkota
+        # percikan (flash, serpihan, shockwave, shake, hit-stop) —
+        # heroes/gravewake_fx.
+        try:
+            from heroes import gravewake_fx as _gwfx
+            _gwfx.notify_skill_cast(self, 'r')
+            _gwfx.notify_skill_impact(self, self.x, self.y, 200, 'r')
+        except Exception:
+            pass
 
         self._shake_screen(25)
 
