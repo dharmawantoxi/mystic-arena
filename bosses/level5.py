@@ -4358,1397 +4358,1639 @@ class _NS_vhalzun:
 
 
 # ====================================================================
-# KROBELLUS
+# KROBELLUS — THE DEATH PROPHET  (FULL REWRITE)
+# ====================================================================
+# Arsitektur "masterwork" (patron: gornak/nyzrak di level1/level3):
+#
+#   * RENDERER (file ini) — rig pixel-art + pose + telegraph tanah.
+#     Semua bentuk digambar prosedural (pygame.draw) dengan palet
+#     terbatas, tepi tajam (tanpa anti-aliasing), dan surface statis
+#     di-cache (bayangan, mist, rune circle, sprite hantu).
+#   * LAPISAN HIDUP (heroes/krobellus_fx.py) — trail sabit, partikel
+#     jiwa, proyektil soul bolt, FX skill Q/W/E/R, impact flash,
+#     screen shake, hit-stop 0.03-0.08 s. Digambar 1:1 ke layar,
+#     di luar cache sprite supaya tetap hidup 60 fps.
+#   * GAME FEEL BUS (heroes/combat_feel.py) — satu sumber hit-stop &
+#     shake untuk seluruh arena.
+#
+# Kontrak publik (dipakai heroes/__init__, bosses/base_boss, hero_skills,
+# tools, dan modul FX):
+#   draw_krobellus(surface, boss, x, y)   entry point (Boss.draw & render_hero)
+#   PALETTE                               palet karakter + FX (sumber benar)
+#   pose_of / anim_state / attack_phase   state animasi (sinkron dengan FX)
+#   scythe_points(boss, x, y)             (pivot, tip) Vector2 ruang layar
+#   body_scale / ground_dy                skala & garis tanah
+#   DEBUG_CHARACTER                       overlay hitbox/hurtbox/state
 # ====================================================================
 class _NS_krobellus:
-    """Namespace krobellus - isi asli tidak diubah."""
+    """Namespace krobellus — renderer Death Prophet (full rewrite)."""
 
-    # ---------------------------------------------------------------------------
-    # Compatibility helpers
-    # ---------------------------------------------------------------------------
-    HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
-
-    # ---------------------------------------------------------------------------
-    # HD Color Palette - Death Prophet inspired teal/purple/spectral
-    # ---------------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # PALETTE — dark fantasy: jubah ungu gelap, cahaya jiwa teal,
+    # void ungu, trim emas, mata api merah. Kunci identik dengan
+    # heroes/krobellus_fx.KROBELLS_PALETTE (modul FX menyalin dari sini).
+    # ------------------------------------------------------------------
     PALETTE = {
-        # Dress - dark purple
-        "dress_darkest":  (18,  10,  30),
-        "dress_dark":     (38,  20,  58),
-        "dress_mid":      (68,  38,  95),
-        "dress_light":    (105, 65, 140),
-        "dress_high":     (145, 100, 185),
-        "dress_shine":    (195, 160, 225),
-
-        # Corset/inner
-        "corset_darkest": (12,   6,   22),
-        "corset_dark":    (28,  15,  42),
-        "corset_mid":     (52,  30,  72),
-        "corset_light":   (85,  55, 110),
-
-        # Skin - pale ghostly
-        "skin_dark":      (135, 145, 148),
-        "skin_mid":       (180, 195, 195),
-        "skin_light":     (215, 228, 225),
-        "skin_shine":     (240, 250, 248),
-
-        # Ghost / spirit teal
-        "ghost_darkest":  (10,  40,  38),
-        "ghost_dark":     (30,  90,  85),
-        "ghost_mid":      (55, 160, 145),
-        "ghost_light":    (110, 220, 195),
-        "ghost_bright":   (170, 250, 225),
-        "ghost_hot":      (215, 255, 245),
-        "ghost_white":    (240, 255, 250),
-
-        # Hair - teal
-        "hair_darkest":   (15,  50,  45),
-        "hair_dark":      (35,  95,  85),
-        "hair_mid":       (60, 155, 140),
-        "hair_light":     (110, 210, 190),
-        "hair_shine":     (170, 245, 225),
-
-        # Purple magic (silence)
-        "magic_darkest":  (30,  10,  55),
-        "magic_dark":     (75,  25, 130),
-        "magic_mid":      (130, 55, 200),
-        "magic_light":    (185, 110, 240),
-        "magic_bright":   (220, 170, 255),
-        "magic_hot":      (240, 210, 255),
-
-        # Gold trim
-        "gold_dark":      (95,  62,  15),
-        "gold_mid":       (170, 125, 35),
-        "gold_light":     (230, 190, 75),
-        "gold_shine":     (255, 235, 150),
-
-        # Red eyes / gem
-        "red_dark":       (100, 15,  25),
-        "red_mid":        (180, 40,  50),
-        "red_bright":     (230, 80,  80),
-        "red_hot":        (255, 150, 140),
-
-        # Misc
-        "shadow":         (0,   0,   0),
-        "shadow_deep":    (5,   3,   10),
-        "white":          (255, 255, 255),
+        "outline":      (10,   6,  18),
+        "shadow_deep":  (18,   8,  30),
+        "shadow":       (30,  15,  48),
+        "robe_dark":    (44,  24,  70),
+        "robe_mid":     (70,  40, 106),
+        "robe_light":   (106, 66, 152),
+        "robe_shine":   (148, 106, 196),
+        "robe_fade":    (24,  12,  40),
+        "armor_dark":   (26,  13,  44),
+        "armor_mid":    (56,  32,  86),
+        "armor_light":  (92,  58, 130),
+        "skin_dark":    (140, 148, 148),
+        "skin_mid":     (188, 202, 198),
+        "skin_light":   (226, 238, 232),
+        "skin_shine":   (244, 252, 248),
+        "soul_dark":    (18,  72,  68),
+        "soul_mid":     (46, 148, 134),
+        "soul_light":   (96, 216, 194),
+        "soul_bright":  (168, 250, 232),
+        "soul_hot":     (228, 255, 248),
+        "soul_white":   (250, 255, 252),
+        "void_dark":    (40,  14,  74),
+        "void_mid":     (86,  34, 148),
+        "void_light":   (142, 74, 208),
+        "void_bright":  (196, 130, 244),
+        "void_hot":     (236, 192, 255),
+        "gold_dark":    (98,  64,  20),
+        "gold_mid":     (178, 132,  40),
+        "gold_light":   (238, 196,  84),
+        "gold_shine":   (255, 236, 156),
+        "eye_dark":     (96,  18,  28),
+        "eye_mid":      (190, 44,  54),
+        "eye_bright":   (240, 96,  86),
+        "eye_hot":      (255, 168, 150),
+        "scythe_dark":  (36,  30,  48),
+        "scythe_mid":   (92,  84, 116),
+        "scythe_light": (168, 160, 196),
+        "fx_white":     (245, 250, 252),
     }
 
+    # ------------------------------------------------------------------
+    # KONSTANTA RIG (ruang lokal: y=0 = pusat badan, + ke bawah;
+    # garis tanah +GROUND_DY; facing kanan, cermin untuk facing kiri)
+    # ------------------------------------------------------------------
+    GROUND_DY = 48
+    HEAD_Y = -40
+    SHOULDER_Y = -28
+    BELT_Y = -10
+    HEM_TOP = -8
+    HEM_BOT = 42
+    HOOD_R = 14
+    FACE_R = 8
+    # Sabit: panjang batang dari genggaman ke hub bilah
+    SCYTHE_SHAFT = 40
+    SCYTHE_R_OUT = 24
+    SCYTHE_R_IN = 16
+    SCYTHE_TIP_OFF = 0.42     # offset sudut ujung luar bilah dari θ
+    # Jangkauan dunia (px) untuk memilih swing vs soul bolt
+    MELEE_REACH = 110.0
+    # Jendela aktif ayunan (busur bilah menyapu depan badan)
+    ATTACK_ACTIVE_WINDOW = (0.30, 0.52)
+    ATTACK_IMPACT_FRAME = 0.46
+    ATTACK_RELEASE_FRAME = 0.52
 
-    def _clamp(color):
-        return tuple(max(0, min(255, int(c))) for c in color)
+    # ------------------------------------------------------------------
+    # TIMELINE SERANGAN (fraksi durasi; patahan = kurva pose)
+    # ------------------------------------------------------------------
+    ATTACK_ANTICIPATION_END = 0.12
+    ATTACK_WINDUP_END = 0.26
+    ATTACK_SWING_END = 0.42
+    ATTACK_IMPACT_END = 0.52
+    ATTACK_FOLLOW_END = 0.72
 
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.12),
+        ("WINDUP",       0.12, 0.26),
+        ("SWING",        0.26, 0.42),
+        ("IMPACT",       0.42, 0.52),
+        ("FOLLOW",       0.52, 0.72),
+        ("RECOVERY",     0.72, 1.00),
+    )
 
-    def _aacircle(surface, color, center, radius, width=0):
-        color = _NS_krobellus._clamp(color)
-        cx, cy = int(center[0]), int(center[1])
-        radius = max(0, int(radius))
-        if radius == 0:
-            return
-        if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
-            surface.blit(temp, (cx - radius - 2, cy - radius - 2))
-            return
-        if _NS_krobellus.HAS_AACIRCLE and radius > 1:
-            try:
-                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius, width)
-                return
-            except Exception:
-                pass
-        pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
+    # Prioritas state. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "HIT": 48,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HURT": 65,
+        "DEATH": 100,
+    }
 
+    #: Overlay debug (jalur boss 1:1). Jalur lane: krobellus_fx.DEBUG_CHARACTER.
+    DEBUG_CHARACTER = False
 
-    def _aaline(surface, color, start, end, width=1):
-        color = _NS_krobellus._clamp(color)
-        sx, sy = int(start[0]), int(start[1])
-        ex, ey = int(end[0]), int(end[1])
-        if len(color) == 4 and color[3] < 255:
-            min_x = min(sx, ex) - width
-            min_y = min(sy, ey) - width
-            w = abs(ex - sx) + width * 4 + 4
-            h = abs(ey - sy) + width * 4 + 4
-            if w <= 0 or h <= 0:
-                return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.line(temp, color,
-                             (sx - min_x, sy - min_y),
-                             (ex - min_x, ey - min_y), max(1, width))
-            surface.blit(temp, (min_x, min_y))
-            return
-        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
+    # ==================================================================
+    # UTIL
+    # ==================================================================
+    @staticmethod
+    def _alpha(a):
+        return int(max(0, min(255, int(a))))
 
+    @staticmethod
+    def _ease_out_quad(t):
+        t = max(0.0, min(1.0, t))
+        return 1.0 - (1.0 - t) ** 2
 
-    def _poly(surface, color, points):
-        if len(points) < 3:
-            return
-        color = _NS_krobellus._clamp(color)
-        if len(color) == 4 and color[3] < 255:
-            xs = [p[0] for p in points]
-            ys = [p[1] for p in points]
-            min_x, min_y = min(xs) - 2, min(ys) - 2
-            w = max(xs) - min_x + 4
-            h = max(ys) - min_y + 4
-            if w <= 0 or h <= 0:
-                return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            shifted = [(p[0] - min_x, p[1] - min_y) for p in points]
-            pygame.draw.polygon(temp, color, shifted)
-            surface.blit(temp, (min_x, min_y))
-            return
-        pygame.draw.polygon(surface, color[:3], points)
+    @staticmethod
+    def _ease_in_quad(t):
+        t = max(0.0, min(1.0, t))
+        return t * t
 
+    @staticmethod
+    def _ease_out_cubic(t):
+        t = max(0.0, min(1.0, t))
+        return 1.0 - (1.0 - t) ** 3
 
-    def _ellipse(surface, color, rect, width=0):
-        color = _NS_krobellus._clamp(color)
-        if len(color) == 4 and color[3] < 255:
-            rx, ry, rw, rh = rect
-            if rw <= 0 or rh <= 0:
-                return
-            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.ellipse(temp, color, (2, 2, rw, rh), width)
-            surface.blit(temp, (rx - 2, ry - 2))
-            return
-        pygame.draw.ellipse(surface, color[:3], rect, width)
+    @staticmethod
+    def _ease_in_cubic(t):
+        t = max(0.0, min(1.0, t))
+        return t ** 3
 
+    @staticmethod
+    def _ease_in_out_sine(t):
+        t = max(0.0, min(1.0, t))
+        return -(math.cos(math.pi * t) - 1.0) / 2.0
 
-    def _rect(surface, color, rect, border_radius=0):
-        color = _NS_krobellus._clamp(color)
-        if len(color) == 4 and color[3] < 255:
-            rx, ry, rw, rh = rect
-            if rw <= 0 or rh <= 0:
-                return
-            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.rect(temp, color, (2, 2, rw, rh), border_radius=border_radius)
-            surface.blit(temp, (rx - 2, ry - 2))
-            return
-        pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
+    @staticmethod
+    def _ease_in_out_cubic(t):
+        t = max(0.0, min(1.0, t))
+        return 4 * t * t * t if t < 0.5 else 1 - (-2 * t + 2) ** 3 / 2
 
+    @staticmethod
+    def _lerp(a, b, t):
+        if isinstance(a, tuple):
+            return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
+        return a + (b - a) * t
 
-    def _target_position(boss, x, y):
-        target = getattr(boss, "target", None)
-        if target is not None and getattr(target, "alive", True):
-            # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
-            scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
-            tx = x + (target.x - getattr(boss, "x", x)) / scale
-            ty = y + (target.y - getattr(boss, "y", y)) / scale
-            return int(tx), int(ty)
-        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+    @staticmethod
+    def _keyframes(kfs, p, eases):
+        """Interpolasi keyframe [(p, value), ...] dengan easing per segmen."""
+        p = max(0.0, min(1.0, p))
+        if p <= kfs[0][0]:
+            return kfs[0][1]
+        for i in range(len(kfs) - 1):
+            p0, v0 = kfs[i]
+            p1, v1 = kfs[i + 1]
+            if p0 <= p <= p1:
+                t = (p - p0) / max(1e-6, (p1 - p0))
+                return _NS_krobellus._lerp(v0, v1, eases[i](t))
+        return kfs[-1][1]
 
+    # ==================================================================
+    # API SKALA (dipakai modul FX & tools)
+    # ==================================================================
+    @staticmethod
+    def body_scale(boss):
+        sc = getattr(boss, "_render_scale", 1.0)
+        try:
+            sc = float(sc)
+        except (TypeError, ValueError):
+            sc = 1.0
+        return sc if sc > 0.01 else 1.0
 
-    # ---------------------------------------------------------------------------
-    # Spirit / ghost drawing helpers
-    # ---------------------------------------------------------------------------
-    def _draw_spirit_wisp(surface, x, y, size, phase, alpha=200, small_face=False):
-        """Draw a ghostly spirit wisp."""
-        flick = math.sin(phase * 2) * 0.15 + 1.0
-        s = int(size * flick)
-        if s < 1:
-            return
-        # Outer glow
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_darkest"], alpha // 3), (x, y), s + 4)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], alpha // 2), (x, y), s + 2)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], alpha), (x, y), s)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_light"], alpha), (x, y - 1),
-                  max(1, s - 2))
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_bright"], min(255, alpha)),
-                  (x, y - 2), max(1, s - 4))
+    @staticmethod
+    def ground_dy(boss):
+        return float(_NS_krobellus.GROUND_DY) * _NS_krobellus.body_scale(boss)
 
-        # Small ghostly face if requested
-        if small_face and s >= 5:
-            # Eye sockets
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_darkest"], (x - 2, y - 1), 1)
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_darkest"], (x + 2, y - 1), 1)
+    # ==================================================================
+    # ANIMATION CONTROLLER
+    # ==================================================================
+    def attack_phases_order():
+        """Urutan nama fase (dipakai test & alat audit)."""
+        return tuple(name for name, _a, _b in _NS_krobellus.ATTACK_PHASES)
 
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1 (None di luar serangan)."""
+        if progress is None:
+            return "NONE"
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_krobellus.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
 
-    def _draw_ghost_head(surface, cx, cy, phase, size=8, facing=1, alpha=220):
-        """Draw a small floating ghost head (skull-like spirit)."""
-        # Body/head shape (elongated tear-drop / ghost shape)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_darkest"], alpha // 3),
-                  (cx, cy), size + 4)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], alpha // 2),
-                  (cx, cy), size + 2)
+    def attack_progress(boss):
+        return float(getattr(boss, "_krb_attack_progress", 0.0) or 0.0)
 
-        # Main body
-        head_pts = [
-            (cx - size, cy - 2),
-            (cx - size + 1, cy - size + 2),
-            (cx, cy - size),
-            (cx + size - 1, cy - size + 2),
-            (cx + size, cy - 2),
-            (cx + size - 2, cy + size - 3),
-            (cx + 2, cy + size),
-            (cx - 2, cy + size),
-            (cx - size + 2, cy + size - 3),
-        ]
-        _NS_krobellus._poly(surface, (*_NS_krobellus.PALETTE["ghost_mid"], alpha), head_pts)
+    def _resolve_anim_state(boss, attacking, phase):
+        """Tentukan state animasi yang DIINGINKAN frame ini."""
+        if not getattr(boss, "alive", True):
+            return "DEATH"
+        if int(getattr(boss, "_krb_hurt_frames", 0)) > 0 and not attacking:
+            return "HURT"
+        skill = getattr(boss, "_krb_skill", None)
+        if skill:
+            return "SPECIAL" if skill == "r" else "SKILL"
+        if attacking:
+            kind = getattr(boss, "_krb_attack_kind", "swing")
+            if phase in ("ANTICIPATION", "WINDUP"):
+                return "CHARGE"
+            if phase in ("SWING", "IMPACT"):
+                if bool(getattr(boss, "_krb_hit_active", False)):
+                    return "HIT"
+                return "SWING" if kind == "swing" else "CAST"
+            return "ATTACK"
+        if getattr(boss, "_moving_cached", False):
+            return "RUN" if float(getattr(boss, "speed", 1.0) or 1.0) >= 2.2 \
+                else "WALK"
+        return "IDLE"
 
-        # Inner brighter shape
-        inner_pts = [
-            (cx - size + 2, cy - 1),
-            (cx - 1, cy - size + 2),
-            (cx + 1, cy - size + 2),
-            (cx + size - 2, cy - 1),
-            (cx + size - 3, cy + size - 4),
-            (cx, cy + size - 2),
-            (cx - size + 3, cy + size - 4),
-        ]
-        _NS_krobellus._poly(surface, (*_NS_krobellus.PALETTE["ghost_light"], alpha), inner_pts)
+    def _update_krb_anim(boss):
+        """ANIMATION CONTROLLER Krobellus — satu sumber kebenaran state.
 
-        # Eye sockets (dark)
-        eye_off = max(1, size // 3)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_darkest"],
-                  (cx - eye_off, cy - 1), max(1, size // 4))
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_darkest"],
-                  (cx + eye_off, cy - 1), max(1, size // 4))
-        # Eye glow
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_hot"],
-                  (cx - eye_off, cy - 1), max(1, size // 5))
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_hot"],
-                  (cx + eye_off, cy - 1), max(1, size // 5))
+        Menulis ke ``boss``:
+          * ``_krb_dt``                delta-time nyata (detik, dijepit)
+          * ``_krb_attack_active``     serangan sedang berjalan
+          * ``_krb_attack_frame``      frame ke-n dalam serangan
+          * ``_krb_attack_progress``   0..1 sepanjang serangan
+          * ``_krb_attack_raw``        progress sebelum remap
+          * ``_krb_attack_kind``       'swing' | 'bolt' (diputuskan saat
+                                       serangan mulai, dari jarak target)
+          * ``_krb_attack_phase``      ANTICIPATION..RECOVERY
+          * ``_krb_hit_active``        True hanya di jendela hit aktif
+          * ``_krb_hurt_frames``       sisa frame respons kena damage
+          * ``_krb_skill``             'q'/'w'/'e'/'r' (None = tidak ada)
+          * ``_krb_skill_progress``    0..1 sepanjang skill
+          * ``_krb_state`` / ``_krb_state_prev`` / ``_krb_state_time``
+          * ``_krb_death_age``         umur frame pose kematian
+        """
+        G = _NS_krobellus
 
-        # Tail wisps at bottom
-        wave = math.sin(phase * 3) * 2
-        for i in range(3):
-            off = (i - 1) * 3
-            tail_x = cx + off + int(wave)
-            tail_y = cy + size + 2 + i
-            _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], alpha // 2),
-                      (tail_x, tail_y), 2)
+        # ── delta time nyata ─────────────────────────────────────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                          # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_krb_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._krb_last_ms = now
+        boss._krb_dt = dt
 
-
-    # ---------------------------------------------------------------------------
-    # PROJECTILE SYSTEM - Spirit projectile
-    # ---------------------------------------------------------------------------
-    class SpiritProjectile:
-        """A spirit that flies at target."""
-        def __init__(self, sx, sy, tx, ty, speed=5.5, spirit_size=7):
-            self.x = float(sx)
-            self.y = float(sy)
-            self.tx = float(tx)
-            self.ty = float(ty)
-            self.speed = speed
-            self.alive = True
-            self.age = 0
-            self.trail = []
-            self.spirit_size = spirit_size
-            self.wobble = 0.0
-
-        def update(self):
-            if not self.alive:
-                return
-            self.age += 1
-            self.wobble += 0.35
-            dx = self.tx - self.x
-            dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < self.speed + 4:
-                self.alive = False
-                return
-            self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 10:
-                self.trail.pop(0)
-            # Wobble perpendicular for ghostly motion
-            nx = dx / dist
-            ny = dy / dist
-            wob = math.sin(self.wobble) * 1.5
-            self.x += nx * self.speed - ny * wob
-            self.y += ny * self.speed + nx * wob
-
-        def draw(self, surface, phase):
-            if not self.alive and self.age < 2:
-                return
-            # Trail
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(40 + i * 15)
-                r = max(1, self.spirit_size - (len(self.trail) - i))
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], alpha), (tx, ty), r + 1)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_light"], alpha // 2), (tx, ty), r - 1)
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                _NS_krobellus._draw_ghost_head(surface, px, py, phase, self.spirit_size)
-
-
-    class SilenceProjectile:
-        """Purple silence bolt."""
-        def __init__(self, sx, sy, tx, ty, speed=8.0):
-            self.x = float(sx)
-            self.y = float(sy)
-            self.tx = float(tx)
-            self.ty = float(ty)
-            self.speed = speed
-            self.alive = True
-            self.age = 0
-            self.trail = []
-            dx = tx - sx
-            dy = ty - sy
-            d = math.sqrt(dx * dx + dy * dy) or 1
-            self.angle = math.atan2(dy, dx)
-
-        def update(self):
-            if not self.alive:
-                return
-            self.age += 1
-            dx = self.tx - self.x
-            dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < self.speed + 4:
-                self.alive = False
-                return
-            self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 14:
-                self.trail.pop(0)
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
-
-        def draw(self, surface, phase):
-            if not self.alive and self.age < 3:
-                return
-            # Long trail
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(30 + i * 15)
-                r = max(1, 5 - (len(self.trail) - i) // 2)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["magic_dark"], alpha), (tx, ty), r + 2)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["magic_mid"], alpha), (tx, ty), r)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["magic_bright"], alpha // 2), (tx, ty), max(1, r - 1))
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                # Elongated bolt shape
-                perp = self.angle + math.pi / 2
-                tip_x = px + int(math.cos(self.angle) * 12)
-                tip_y = py + int(math.sin(self.angle) * 12)
-                back_x = px - int(math.cos(self.angle) * 6)
-                back_y = py - int(math.sin(self.angle) * 6)
-                side1_x = px + int(math.cos(perp) * 5)
-                side1_y = py + int(math.sin(perp) * 5)
-                side2_x = px - int(math.cos(perp) * 5)
-                side2_y = py - int(math.sin(perp) * 5)
-
-                _NS_krobellus._poly(surface, (*_NS_krobellus.PALETTE["magic_dark"], 200),
-                      [(tip_x, tip_y), (side1_x, side1_y),
-                       (back_x, back_y), (side2_x, side2_y)])
-                _NS_krobellus._poly(surface, (*_NS_krobellus.PALETTE["magic_mid"], 220),
-                      [(tip_x, tip_y),
-                       (px + int(math.cos(perp) * 3), py + int(math.sin(perp) * 3)),
-                       (back_x, back_y),
-                       (px - int(math.cos(perp) * 3), py - int(math.sin(perp) * 3))])
-                _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["magic_bright"], (px, py), 4)
-                _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["magic_hot"], (px, py), 2)
-
-
-    # ---------------------------------------------------------------------------
-    # State management
-    # ---------------------------------------------------------------------------
-    def _detect_moving(boss):
-        if not hasattr(boss, "_krb_last_x"):
-            boss._krb_last_x = boss.x
-            boss._krb_last_y = boss.y
-            return False
-        dx = abs(boss.x - boss._krb_last_x)
-        dy = abs(boss.y - boss._krb_last_y)
-        boss._krb_last_x = boss.x
-        boss._krb_last_y = boss.y
-        return dx + dy > 0.3
-
-
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
+        # ── timeline serangan ────────────────────────────────────────
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 46)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_krb_prev_timer", 0))
         active = bool(getattr(boss, "_krb_attack_active", False))
 
-        if timer >= cooldown - 1 and previous <= 1:
+        triggered = timer >= cooldown - 1 and previous <= 1
+        if triggered:
             boss._krb_attack_active = True
             boss._krb_attack_frame = 0
+            boss._krb_attack_manual = False
+            # PUTUSKAN JENIS: target dekat -> SWING (sabit), jauh -> BOLT
+            tgt = getattr(boss, "target", None)
+            if tgt is not None and getattr(tgt, "alive", True):
+                dist = math.hypot(
+                    float(getattr(tgt, "x", 0.0)) - float(getattr(boss, "x", 0.0)),
+                    float(getattr(tgt, "y", 0.0)) - float(getattr(boss, "y", 0.0)))
+            else:
+                dist = 1e9
+            boss._krb_attack_kind = "swing" if dist <= G.MELEE_REACH else "bolt"
             active = True
-        elif active:
-            boss._krb_attack_frame = int(getattr(boss, "_krb_attack_frame", 0)) + 1
-            if boss._krb_attack_frame > cooldown:
+        elif active and timer > 0:
+            boss._krb_attack_frame = int(getattr(boss, "_krb_attack_frame",
+                                                 0)) + 1
+            boss._krb_attack_manual = False
+        elif timer <= 0:
+            if active and not getattr(boss, "_krb_attack_manual", False) \
+                    and float(getattr(boss, "_krb_attack_progress", 0.0)) > 0.0:
+                # pemanggil eksternal menggerakkan progress manual (alat
+                # audit/test) — hormati, tandai manual
+                boss._krb_attack_manual = True
+                active = True
+            elif not getattr(boss, "_krb_attack_manual", False):
                 boss._krb_attack_active = False
                 boss._krb_attack_frame = 0
                 active = False
-        elif timer <= 0:
-            boss._krb_attack_active = False
-            boss._krb_attack_frame = 0
-            active = False
+            if not active:
+                boss._krb_attack_active = False
+                boss._krb_attack_frame = 0
 
         boss._krb_prev_timer = timer
-        boss._krb_attack_progress = (
-            min(1.0, getattr(boss, "_krb_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
+        frame = int(getattr(boss, "_krb_attack_frame", 0)) if active else 0
+        span = max(1, cooldown - 1)
+        boss._krb_attack_frame = frame
+        if bool(getattr(boss, "_krb_attack_manual", False)) and active:
+            progress = min(1.0, max(0.0, float(getattr(
+                boss, "_krb_attack_progress", 0.0))))
+            boss._krb_attack_frame = int(round(progress * span))
+        else:
+            progress = min(1.0, frame / float(span)) if active else 0.0
+            boss._krb_attack_progress = progress
+        boss._krb_attack_raw = progress
 
+        # ── fase + jendela hit ───────────────────────────────────────
+        if not getattr(boss, "_krb_attack_active", False):
+            boss._krb_attack_active = False
+            boss._krb_attack_manual = False
+            active = False
+        phase = G.attack_phase(progress) if active else "NONE"
+        boss._krb_attack_phase = phase
+        lo, hi = G.ATTACK_ACTIVE_WINDOW
+        boss._krb_hit_active = bool(active and lo <= progress < hi)
 
-    def _manage_projectiles(boss, surface, phase):
-        if not hasattr(boss, "_krb_projectiles"):
-            boss._krb_projectiles = []
-        for proj in boss._krb_projectiles:
-            proj.update()
-            proj.draw(surface, phase)
-        boss._krb_projectiles = [p for p in boss._krb_projectiles
-                                 if p.alive or p.age < 8]
+        # ── respons kena damage (HURT) ───────────────────────────────
+        hurt = int(getattr(boss, "_krb_hurt_frames", 0))
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash >= 8 and hurt <= 0:
+            hurt = 10
+        boss._krb_hurt_frames = max(0, hurt - 1) if hurt > 0 else 0
 
+        # ── skill (active_skill; jalur boss generik: ability -> 'q') ──
+        skill = getattr(boss, "active_skill", None)
+        if skill is None and getattr(boss, "ability_active", False) \
+                and int(getattr(boss, "ability_active_timer", 0) or 0) > 0:
+            skill = "q"
+        timer_s = 0
+        if skill:
+            timer_s = int(getattr(boss, "active_skill_timer", 0) or 0)
+            if timer_s <= 0 and getattr(boss, "active_skill", None) is None:
+                timer_s = int(getattr(boss, "ability_active_timer", 0) or 0)
+        prev_skill = getattr(boss, "_krb_skill_prev", None)
+        if skill != prev_skill:
+            if skill is not None and timer_s > 0:
+                boss._krb_skill_total = max(1, timer_s)
+        elif skill is not None and timer_s > 0:
+            boss._krb_skill_total = max(int(getattr(boss, "_krb_skill_total",
+                                                   60)), timer_s)
+        boss._krb_skill_prev = skill
+        boss._krb_skill = skill
+        boss._krb_skill_timer = timer_s
+        total = int(getattr(boss, "_krb_skill_total", 60) or 60)
+        boss._krb_skill_progress = (
+            max(0.0, min(1.0, 1.0 - timer_s / float(max(1, total))))
+            if skill is not None else 0.0)
 
-    def _spawn_basic_projectile(boss, x, y):
-        if not hasattr(boss, "_krb_projectiles"):
-            boss._krb_projectiles = []
-        tx, ty = _NS_krobellus._target_position(boss, x, y)
-        sx = x + 22 * getattr(boss, "direction", 1)
-        sy = y - 10
-        boss._krb_projectiles.append(_NS_krobellus.SpiritProjectile(sx, sy, tx, ty, speed=5.5))
+        # ── kematian (jalur probe/test; in-game Boss.draw skip mati) ──
+        if not getattr(boss, "alive", True):
+            boss._krb_death_age = int(getattr(boss, "_krb_death_age", 0)) + 1
 
+        # ── state machine ber-prioritas ─────────────────────────────
+        want = G._resolve_anim_state(boss, active, phase)
+        cur = getattr(boss, "_krb_state", None)
+        if cur is None:
+            boss._krb_state = want
+            boss._krb_state_prev = want
+            boss._krb_state_time = 0.0
+        elif want != cur:
+            cur_p = G.ANIM_STATES.get(cur, 0)
+            new_p = G.ANIM_STATES.get(want, 0)
+            stime = float(getattr(boss, "_krb_state_time", 0.0))
+            if cur != "DEATH" and (new_p >= cur_p or stime > 0.08):
+                boss._krb_state_prev = cur
+                boss._krb_state = want
+                boss._krb_state_time = 0.0
+            else:
+                boss._krb_state_time = stime + dt
+        else:
+            boss._krb_state_time = float(getattr(boss, "_krb_state_time",
+                                                 0.0)) + dt
 
-    def _spawn_silence_projectile(boss, x, y):
-        if not hasattr(boss, "_krb_projectiles"):
-            boss._krb_projectiles = []
-        tx, ty = _NS_krobellus._target_position(boss, x, y)
-        sx = x + 22 * getattr(boss, "direction", 1)
-        sy = y - 15
-        boss._krb_projectiles.append(_NS_krobellus.SilenceProjectile(sx, sy, tx, ty, speed=8.0))
+    def _detect_moving(boss):
+        cur_x = float(getattr(boss, "x", 0.0))
+        cur_y = float(getattr(boss, "y", 0.0))
+        if not hasattr(boss, "_krb_last_x"):
+            boss._krb_last_x = cur_x
+            boss._krb_last_y = cur_y
+            boss._moving_cached = False
+            return False
+        moved = abs(cur_x - boss._krb_last_x) + abs(cur_y - boss._krb_last_y)
+        boss._krb_last_x = cur_x
+        boss._krb_last_y = cur_y
+        moving = moved > 0.3
+        boss._moving_cached = moving
+        return moving
 
+    # ==================================================================
+    # POSE STATE — satu sumber kebenaran untuk rig DAN semua FX
+    # ==================================================================
+    ACTIONS = ("idle", "walk", "attack", "spin", "cast_w", "cast_e",
+               "slam", "hurt", "death")
 
-    # ===================================================================
-    # MAIN DRAW ENTRY POINT
-    # ===================================================================
-    def draw_krobellus(surface, boss, x, y):
-        """Entry point."""
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_krobellus._detect_moving(boss)
-        _NS_krobellus._update_attack_anim(boss)
-
-        attacking = (
-            getattr(boss, "_krb_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
-
-        # ---------- Background layers ----------
-        _NS_krobellus._draw_spectral_aura(surface, x, y, pulse)
-        _NS_krobellus._draw_ground_runes(surface, x, y + 38, pulse, active_skill)
-
-        # ---------- Skill ground effects ----------
-        if active_skill == "q":
-            _NS_krobellus._draw_exorcism_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_krobellus._draw_spirit_siphon_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_krobellus._draw_crypt_swarm_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # ---------- Character body ----------
-        if attacking:
-            _NS_krobellus._draw_krobellus_attack(surface, boss, x, y)
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, ap) — murni, boleh dipanggil ulang oleh FX."""
+        if not getattr(boss, "alive", True):
+            return ("death", float(getattr(boss, "pulse", 0.0)), 0.0)
+        skill = getattr(boss, "_krb_skill", None)
+        attacking = bool(getattr(boss, "_krb_attack_active", False))
+        if skill is not None:
+            if skill == "q":
+                action = "spin"
+            elif skill == "w":
+                action = "cast_w"
+            elif skill == "e":
+                action = "cast_e"
+            else:
+                action = "slam"
+        elif attacking:
+            action = "attack"
+        elif int(getattr(boss, "_krb_hurt_frames", 0)) > 0:
+            action = "hurt"
         elif moving:
-            _NS_krobellus._draw_krobellus_walk(surface, boss, x, y)
+            action = "walk"
         else:
-            _NS_krobellus._draw_krobellus_idle(surface, boss, x, y)
-
-        # ---------- Projectiles ----------
-        _NS_krobellus._manage_projectiles(boss, surface, pulse)
-
-        # ---------- Skill foreground effects ----------
-        if active_skill == "q":
-            _NS_krobellus._draw_exorcism(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_krobellus._draw_silence_cast(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_krobellus._draw_spirit_siphon(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_krobellus._draw_crypt_swarm(surface, boss, x, y, skill_timer, pulse)
-
-
-    # ===================================================================
-    # POSE MODES
-    # ===================================================================
-    def _draw_krobellus_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_krobellus._draw_shadow(surface, x, y + 48)
-        _NS_krobellus._draw_floating_wisps(surface, x, y + 35, boss.pulse)
-        _NS_krobellus._draw_krobellus_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-        # Companion ghost heads (like reference image)
-        _NS_krobellus._draw_companion_ghosts(surface, x, y + bob, boss.pulse)
-
-
-    def _draw_krobellus_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_krobellus._draw_shadow(surface, x + sway, y + 48)
-        _NS_krobellus._draw_floating_wisps(surface, x + sway, y + 35, phase, trail=True,
-                             facing=boss.direction)
-        _NS_krobellus._draw_krobellus_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
-        _NS_krobellus._draw_companion_ghosts(surface, x + sway, y - bob, phase, trailing=True,
-                               facing=boss.direction)
-
-
-    def _draw_krobellus_attack(surface, boss, x, y):
-        progress = getattr(boss, "_krb_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-
-        if 0.28 < progress < 0.35 and not getattr(boss, "_krb_proj_spawned", False):
-            _NS_krobellus._spawn_basic_projectile(boss, x, y)
-            boss._krb_proj_spawned = True
-        if progress < 0.1 or progress > 0.9:
-            boss._krb_proj_spawned = False
-
-        recoil = int(math.sin(progress * math.pi) * 3) * -boss.direction
-        _NS_krobellus._draw_shadow(surface, x + recoil, y + 48)
-        _NS_krobellus._draw_floating_wisps(surface, x + recoil, y + 35, boss.pulse, intense=True)
-        _NS_krobellus._draw_krobellus_body(surface, x + recoil, y, boss.direction, boss.pulse,
-                            "attack", progress)
-        _NS_krobellus._draw_companion_ghosts(surface, x + recoil, y, boss.pulse, intense=True)
-        _NS_krobellus._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
-
-
-    # ===================================================================
-    # BODY RENDERING – HD detailed Death Prophet
-    # ===================================================================
-    def _draw_krobellus_body(surface, cx, cy, facing, phase, action,
-                            attack_progress=0):
-        """Main body composition."""
-        # Long flowing dress (background)
-        _NS_krobellus._draw_flowing_dress(surface, cx, cy + 5, phase)
-
-        # Torso/corset
-        _NS_krobellus._draw_corset(surface, cx, cy - 8, phase)
-
-        # Shoulders / pauldrons (dark spiky)
-        _NS_krobellus._draw_shoulders(surface, cx, cy - 16, phase)
-
-        # Arms
+            action = "idle"
+        phase = float(getattr(boss, "pulse", 0.0))
+        if action == "walk":
+            phase *= 1.0        # fase sudah cukup cepat dari pulse engine
+        ap = 0.0
         if action == "attack":
-            _NS_krobellus._draw_casting_arms(surface, cx, cy - 8, facing, phase, attack_progress)
-        else:
-            _NS_krobellus._draw_idle_arms(surface, cx, cy - 8, facing, phase)
+            ap = max(0.0, min(1.0,
+                              float(getattr(boss, "_krb_attack_progress",
+                                            0.0))))
+        return action, phase, ap
 
-        # Head + hair
-        _NS_krobellus._draw_head(surface, cx, cy - 30, facing, phase)
-        _NS_krobellus._draw_flowing_hair(surface, cx, cy - 30, facing, phase)
+    def pose_of(boss):
+        """Publik: pose tersimpan (dipakai modul FX tanpa efek samping)."""
+        if not getattr(boss, "alive", True):
+            return ("death", float(getattr(boss, "pulse", 0.0)), 0.0)
+        skill = getattr(boss, "_krb_skill", None)
+        if skill is not None:
+            action = {"q": "spin", "w": "cast_w", "e": "cast_e",
+                      "r": "slam"}.get(skill, "idle")
+            return (action, float(getattr(boss, "pulse", 0.0)),
+                    float(getattr(boss, "_krb_skill_progress", 0.0) or 0.0))
+        if getattr(boss, "_krb_attack_active", False):
+            return ("attack", float(getattr(boss, "pulse", 0.0)),
+                    float(getattr(boss, "_krb_attack_progress", 0.0) or 0.0))
+        if getattr(boss, "_moving_cached", False):
+            return ("walk", float(getattr(boss, "pulse", 0.0)), 0.0)
+        return ("idle", float(getattr(boss, "pulse", 0.0)), 0.0)
 
-        # Body wisps / floating soul particles
-        _NS_krobellus._draw_body_soul_particles(surface, cx, cy, phase)
+    def anim_state(boss):
+        """Publik: nama state animasi aktif (IDLE/WALK/.../DEATH)."""
+        return str(getattr(boss, "_krb_state", "IDLE"))
 
+    # ==================================================================
+    # GEOMETRI SABIT (ruang lokal facing-kanan; cermin via x*facing)
+    # ==================================================================
+    _SCYTHE_REST = 1.10
 
-    def _draw_flowing_dress(surface, cx, cy, phase):
-        """Long tattered purple dress that floats."""
-        sway = int(math.sin(phase * 0.7) * 3)
-        sway2 = int(math.sin(phase * 0.5 + 1) * 2)
+    def _scythe_pivot_local(action, ap, phase, boss=None):
+        """Posisi genggaman (pivot sabit) ruang lokal, per pose."""
+        if action == "spin":
+            return (12, -16)
+        if action == "cast_w":
+            return (15, -18)
+        if action == "cast_e":
+            return (16, -18)
+        if action == "slam":
+            if ap < 0.35:
+                return _NS_krobellus._lerp_pt((12, -20), (13, -30),
+                                               _NS_krobellus._ease_out_cubic(ap / 0.35))
+            return (13, -16)
+        if action == "hurt":
+            return (10, -19)
+        if action == "death":
+            return (12, 8)
+        if action == "attack":
+            kind = getattr(boss, "_krb_attack_kind", "swing") if boss \
+                else "swing"
+            if kind == "bolt":
+                kfs = ((0.0, (11, -20)), (0.12, (9, -21)),
+                       (0.34, (12, -24)), (0.52, (14, -22)),
+                       (1.0, (11, -20)))
+                return _NS_krobellus._keyframes(
+                    kfs, ap,
+                    (_NS_krobellus._ease_out_quad,
+                     _NS_krobellus._ease_out_cubic,
+                     _NS_krobellus._ease_in_out_sine,
+                     _NS_krobellus._ease_in_out_sine))
+            kfs = ((0.0, (11, -20)), (0.12, (9, -21)),
+                   (0.42, (13, -18)), (1.0, (11, -20)))
+            p = _NS_krobellus._keyframes(
+                kfs, ap,
+                (_NS_krobellus._ease_out_quad,
+                 _NS_krobellus._ease_in_out_sine,
+                 _NS_krobellus._ease_in_out_sine))
+            return p
+        # idle / walk
+        bob = math.sin(phase * 0.8) * 0.8
+        return (11, -20 + bob)
 
-        # Outermost tattered dress silhouette
-        dress_outer = [
-            (cx - 20, cy),
-            (cx + 20, cy),
-            (cx + 26 + sway, cy + 15),
-            (cx + 24 + sway2, cy + 30),
-            (cx + 20, cy + 42),
-            (cx + 12, cy + 50 + sway2),
-            (cx + 3, cy + 54),
-            (cx - 3, cy + 54),
-            (cx - 12, cy + 50 - sway2),
-            (cx - 20, cy + 42),
-            (cx - 24 - sway2, cy + 30),
-            (cx - 26 - sway, cy + 15),
+    @staticmethod
+    def _lerp_pt(a, b, t):
+        return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
+
+    def _scythe_angle(action, ap, phase, boss=None):
+        """Sudut sabit θ (rad, ruang lokal, y ke bawah)."""
+        if action == "death":
+            age = min(1.0, (int(getattr(boss, "_krb_death_age", 0) or 0))
+                      / 30.0) if boss else 1.0
+            return _NS_krobellus._lerp(_NS_krobellus._SCYTHE_REST, 1.57,
+                                       _NS_krobellus._ease_in_out_cubic(age))
+        if action == "hurt":
+            return _NS_krobellus._SCYTHE_REST + 0.22 * math.sin(phase * 6.0)
+        if action == "spin":
+            t = min(1.0, ap / 0.55)
+            if t < 1.0:
+                return _NS_krobellus._SCYTHE_REST + \
+                    4.6 * _NS_krobellus._ease_in_out_cubic(t)
+            t2 = max(0.0, min(1.0, (ap - 0.55) / 0.45))
+            return _NS_krobellus._lerp(_NS_krobellus._SCYTHE_REST + 4.6,
+                                       _NS_krobellus._SCYTHE_REST + 2 *
+                                       math.pi,
+                                       _NS_krobellus._ease_in_out_sine(t2))
+        if action == "cast_w":
+            return _NS_krobellus._lerp(_NS_krobellus._SCYTHE_REST, 1.52,
+                                       _NS_krobellus._ease_out_cubic(
+                                           min(1.0, ap / 0.35)))
+        if action == "cast_e":
+            return _NS_krobellus._lerp(_NS_krobellus._SCYTHE_REST, 1.58,
+                                       _NS_krobellus._ease_out_cubic(
+                                           min(1.0, ap / 0.35)))
+        if action == "slam":
+            if ap < 0.30:
+                return _NS_krobellus._lerp(_NS_krobellus._SCYTHE_REST,
+                                           -2.50,
+                                           _NS_krobellus._ease_in_out_cubic(
+                                               ap / 0.30))
+            if ap < 0.38:
+                return _NS_krobellus._lerp(-2.50, 1.57,
+                                           _NS_krobellus._ease_in_quad(
+                                               (ap - 0.30) / 0.08))
+            if ap < 0.70:
+                return 1.57 + 0.05 * math.sin(phase * 9.0)
+            return _NS_krobellus._lerp(1.57, _NS_krobellus._SCYTHE_REST,
+                                       _NS_krobellus._ease_in_out_sine(
+                                           (ap - 0.70) / 0.30))
+        if action == "attack":
+            kind = getattr(boss, "_krb_attack_kind", "swing") if boss \
+                else "swing"
+            if kind == "bolt":
+                kfs = ((0.0, _NS_krobellus._SCYTHE_REST),
+                       (0.12, 1.45), (0.34, -0.90), (0.52, -0.85),
+                       (0.72, 0.40), (1.0, _NS_krobellus._SCYTHE_REST))
+                base = _NS_krobellus._keyframes(
+                    kfs, ap,
+                    (_NS_krobellus._ease_out_quad,
+                     _NS_krobellus._ease_out_cubic,
+                     _NS_krobellus._ease_in_out_sine,
+                     _NS_krobellus._ease_in_out_sine,
+                     _NS_krobellus._ease_in_out_sine))
+                if 0.34 <= ap < 0.52:      # gemetar saat orb terkumpul
+                    base += 0.05 * math.sin(phase * 10.0)
+                return base
+            # SWING — busur penuh khas sabit: sapu di bawah-behind,
+            # naik di belakang kepala, lalu tebasan depan-bawah.
+            # (konvensi: 0=depan, +pi/2=bawah, -pi/2=atas, pi=belakang)
+            kfs = ((0.0, _NS_krobellus._SCYTHE_REST),
+                   (0.12, 1.50),        # antisipasi: tarik ke bawah
+                   (0.34, -2.45),       # wind-up: di belakang kepala
+                   (0.46, 0.75),        # sapu selesai = frame benturan
+                   (0.52, 0.90),        # overshoot impact
+                   (0.72, 1.30),        # follow-through
+                   (1.0, _NS_krobellus._SCYTHE_REST))
+            return _NS_krobellus._keyframes(
+                kfs, ap,
+                (_NS_krobellus._ease_out_quad,    # pull-back
+                 _NS_krobellus._ease_in_out_cubic,  # lift halus
+                 _NS_krobellus._ease_in_quad,     # tebasan dipercepat
+                 _NS_krobellus._ease_out_quad,    # stop + overshoot
+                 _NS_krobellus._ease_in_out_sine,
+                 _NS_krobellus._ease_in_out_sine))
+        # idle / walk — sway pelan
+        return _NS_krobellus._SCYTHE_REST + 0.09 * math.sin(phase * 0.8)
+
+    def _scythe_hub_local(action, ap, phase, boss=None):
+        p = _NS_krobellus._scythe_pivot_local(action, ap, phase, boss)
+        th = _NS_krobellus._scythe_angle(action, ap, phase, boss)
+        L = _NS_krobellus.SCYTHE_SHAFT
+        return (p[0] + L * math.cos(th), p[1] + L * math.sin(th)), th
+
+    @staticmethod
+    def _map(cx, cy, sc, facing, lx, ly):
+        """Ruang lokal -> ruang layar (cermin x saat facing kiri)."""
+        return (int(cx + lx * facing * sc), int(cy + ly * sc))
+
+    def scythe_points(boss, x, y):
+        """(pivot, tip) pygame.Vector2 ruang LAYAR. Dipakai modul FX
+        (trail sabit, titik lahir bolt) dan overlay debug."""
+        action, phase, ap = _NS_krobellus.pose_of(boss)
+        facing = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        sc = _NS_krobellus.body_scale(boss)
+        p = _NS_krobellus._scythe_pivot_local(action, ap, phase, boss)
+        hub, th = _NS_krobellus._scythe_hub_local(action, ap, phase, boss)
+        tip_l = (hub[0] + _NS_krobellus.SCYTHE_R_OUT *
+                 math.cos(th + _NS_krobellus.SCYTHE_TIP_OFF),
+                 hub[1] + _NS_krobellus.SCYTHE_R_OUT *
+                 math.sin(th + _NS_krobellus.SCYTHE_TIP_OFF))
+        pivot = pygame.Vector2(x + p[0] * facing * sc, y + p[1] * sc)
+        tip = pygame.Vector2(x + tip_l[0] * facing * sc, y + tip_l[1] * sc)
+        return (pivot, tip)
+
+    def _swing_hitbox(boss, cx, cy):
+        """Rect hitbox ayunan (ruang permukaan) saat jendela hit aktif."""
+        if not getattr(boss, "_krb_hit_active", False):
+            return None
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        sc = _NS_krobellus.body_scale(boss)
+        reach = int(_NS_krobellus.MELEE_REACH * 0.85 * sc)
+        top = int(cy - 34 * sc)
+        h = int(64 * sc)
+        left = int(cx) if f > 0 else int(cx) - reach
+        return pygame.Rect(left, top, max(8, reach), max(10, h))
+
+    # ==================================================================
+    # CACHE SURFACE STATIS (dibangun sekali)
+    # ==================================================================
+    _CACHE = {}
+
+    def clear_cache():
+        _NS_krobellus._CACHE.clear()
+
+    def _cached(key, builder):
+        s = _NS_krobellus._CACHE.get(key)
+        if s is None:
+            s = builder()
+            _NS_krobellus._CACHE[key] = s
+        return s
+
+    @staticmethod
+    def _shadow_surf():
+        """Bayangan kontak (gradient ellipse chunky)."""
+        w, h = 104, 22
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        for i in range(9, 0, -1):
+            a = max(0, (9 - i) * 17)
+            pygame.draw.ellipse(s, (0, 0, 0, a),
+                                (12 + i, 11 - i, w - 24 - i * 2, i * 2))
+        pygame.draw.ellipse(s, (*_NS_krobellus.PALETTE["soul_dark"], 70),
+                            (14, 6, w - 28, 10))
+        return s
+
+    @staticmethod
+    def _mist_surf():
+        """Mist spectral di bawah jubah (teal lembut)."""
+        w, h = 150, 46
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        c = _NS_krobellus.PALETTE
+        for i in range(10, 0, -1):
+            a = max(0, (10 - i) * 14)
+            pygame.draw.ellipse(s, (*c["soul_dark"], a),
+                                (15 + i * 2, 23 - i, w - 30 - i * 4, i * 2))
+        for i in range(6):
+            a = 60 - i * 8
+            pygame.draw.ellipse(s, (*c["soul_mid"], max(8, a)),
+                                (30 + i * 4, 20 - i, w - 60 - i * 8, 4 + i))
+        return s
+
+    @staticmethod
+    def _rune_surf():
+        """Cincin rune necromantic (dasar statis; tick animasi live)."""
+        w, h = 168, 60
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        c = _NS_krobellus.PALETTE
+        cx, cy = w // 2, h // 2
+        pygame.draw.ellipse(s, (*c["soul_dark"], 150), (8, 12, w - 16, h - 24), 3)
+        pygame.draw.ellipse(s, (*c["soul_mid"], 130), (30, 20, w - 60, h - 40), 2)
+        pygame.draw.ellipse(s, (*c["soul_light"], 90), (52, 28, w - 104, h - 56), 1)
+        # rune marks (segmen pendek mengelilingi)
+        for i in range(12):
+            a = i * math.tau / 12
+            r1, r2 = 0.78, 0.92
+            p1 = (cx + math.cos(a) * (w / 2 - 12) * r1,
+                  cy + math.sin(a) * (h / 2 - 14) * r1 * 0.42)
+            p2 = (cx + math.cos(a) * (w / 2 - 12) * r2,
+                  cy + math.sin(a) * (h / 2 - 14) * r2 * 0.42)
+            pygame.draw.line(s, (*c["soul_bright"], 140), p1, p2, 1)
+        return s
+
+    @staticmethod
+    def _ghost_surf(size):
+        """Sprite hantu mini (untuk pendamping) — pixel art chunky."""
+        n = max(4, int(size))
+        w = n * 2 + 6
+        h = n * 2 + 8
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        c = _NS_krobellus.PALETTE
+        cx = w // 2
+        top = n
+        pts = [
+            (cx - n, top + 2), (cx - n + 2, top - 2 + 1), (cx - 1, top),
+            (cx + n - 3, top - 1), (cx + n, top + 2),
+            (cx + n - 1, top + n - 2), (cx + n // 2, top + n - 4),
+            (cx - n // 2, top + n - 3), (cx - n + 1, top + n - 2),
         ]
-        _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in dress_outer])
-        _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["dress_darkest"], dress_outer)
-
-        # Mid dress
-        dress_mid = [
-            (cx - 17, cy + 2),
-            (cx + 17, cy + 2),
-            (cx + 22 + sway, cy + 15),
-            (cx + 20 + sway2, cy + 28),
-            (cx + 16, cy + 40),
-            (cx + 8, cy + 46),
-            (cx - 8, cy + 46),
-            (cx - 16, cy + 40),
-            (cx - 20 - sway2, cy + 28),
-            (cx - 22 - sway, cy + 15),
+        pygame.draw.polygon(s, (*c["soul_dark"], 255), pts)
+        inner = [
+            (cx - n + 3, top + 2), (cx - n + 4, top + 1), (cx, top),
+            (cx + n - 4, top + 1), (cx + n - 3, top + 3),
+            (cx + n - 4, top + n - 4), (cx, top + n - 3),
+            (cx - n + 4, top + n - 4),
         ]
-        _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["dress_dark"], dress_mid)
+        pygame.draw.polygon(s, (*c["soul_mid"], 255), inner)
+        off = max(2, n // 3)
+        pygame.draw.circle(s, (*c["soul_dark"], 255), (cx - off, top), 1)
+        pygame.draw.circle(s, (*c["soul_dark"], 255), (cx + off, top), 1)
+        pygame.draw.circle(s, (*c["soul_bright"], 255), (cx - off, top), 1)
+        pygame.draw.circle(s, (*c["soul_hot"], 255), (cx + off, top), 1)
+        return s
 
-        # Inner dress with lighter shade
-        dress_inner = [
-            (cx - 13, cy + 4),
-            (cx + 13, cy + 4),
-            (cx + 17 + sway, cy + 15),
-            (cx + 14, cy + 26),
-            (cx + 10, cy + 36),
-            (cx - 10, cy + 36),
-            (cx - 14, cy + 26),
-            (cx - 17 - sway, cy + 15),
+    def _glow_surf(radius, color):
+        key = ("glow", int(radius), tuple(color))
+        return _NS_krobellus._cached(key, lambda: (
+            (lambda s: (pygame.draw.circle(
+                s, (*color, 60), (int(radius) + 1, int(radius) + 1),
+                int(radius)),
+                pygame.draw.circle(
+                    s, (*color, 110), (int(radius) + 1, int(radius) + 1),
+                    max(1, int(radius * 0.6))),
+                pygame.draw.circle(
+                    s, (255, 255, 255, 140),
+                    (int(radius) + 1, int(radius) + 1),
+                    max(1, int(radius * 0.25))),
+                s)[3])(pygame.Surface((radius * 2 + 2, radius * 2 + 2),
+                                       pygame.SRCALPHA))))
+
+    # ==================================================================
+    # LAPISAN TANAH (ground)
+    # ==================================================================
+    def _draw_shadow(surface, x, y):
+        s = _NS_krobellus._shadow_surf()
+        surface.blit(s, (int(x - s.get_width() / 2),
+                         int(y + _NS_krobellus.GROUND_DY - s.get_height() / 2)))
+
+    def _draw_mist(surface, x, y, phase):
+        s = _NS_krobellus._mist_surf()
+        k = int(200 + 40 * math.sin(phase * 1.0))
+        s.set_alpha(k)
+        surface.blit(s, (int(x - s.get_width() / 2),
+                         int(y + 24 - s.get_height() / 2)))
+        s.set_alpha(255)
+
+    def _draw_rune_circle(surface, x, y, phase, skill=None):
+        s = _NS_krobellus._rune_surf()
+        surface.blit(s, (int(x - s.get_width() / 2),
+                         int(y + _NS_krobellus.GROUND_DY - 14)))
+        # tick berputar (3 penanda live)
+        c = _NS_krobellus.PALETTE
+        cx = int(x)
+        cy = int(y + _NS_krobellus.GROUND_DY - 2)
+        for i in range(3):
+            a = phase * 0.35 + i * math.tau / 3
+            x1 = cx + math.cos(a) * 56
+            y1 = cy + math.sin(a) * 13
+            x2 = cx + math.cos(a) * 74
+            y2 = cy + math.sin(a) * 17
+            pygame.draw.line(surface, (*c["soul_bright"], 120),
+                             (int(x1), int(y1)), (int(x2), int(y2)), 1)
+        if skill:
+            a = int(90 + 60 * math.sin(phase * 2.0))
+            pygame.draw.ellipse(surface, (*c["soul_hot"], max(30, a)),
+                                (int(x - 62), int(y + _NS_krobellus.GROUND_DY - 14),
+                                 124, 28), 1)
+
+    def _draw_companions(surface, x, y, phase, facing, front=False,
+                         intense=False):
+        """Hantu pendamping kecil mengorbit (2 belakang, 1 depan)."""
+        c = _NS_krobellus.PALETTE
+        idxs = (0, 1) if not front else (2,)
+        for k, idx in enumerate(idxs):
+            a = phase * 0.55 + idx * math.tau / 3
+            rx = 40 + math.sin(phase * 0.8 + idx * 1.7) * 7
+            ry = 16 + math.sin(phase * 0.6 + idx) * 4
+            px = x + math.cos(a) * rx * facing
+            py = y - 22 + math.sin(a) * ry + math.sin(phase * 2.0 + idx) * 2
+            size = 7 if (intense or idx == 1) else 6
+            spr = _NS_krobellus._cached(("ghost", size),
+                                        lambda sz=size: _NS_krobellus._ghost_surf(sz))
+            spr.set_alpha(170 if not intense else 220)
+            surface.blit(spr, (int(px - spr.get_width() / 2),
+                               int(py - spr.get_height() / 2)))
+            spr.set_alpha(255)
+
+    # ==================================================================
+    # RIG — LAYERED PIXEL ART
+    # Urutan: hem -> torso -> pauldron -> head -> sabit -> lengan depan
+    #         -> highlight -> flash luka. Semua koordinat lokal
+    #         (facing kanan), dipetakan _map().
+    # ==================================================================
+    def _body_offsets(action, ap, phase, boss):
+        """(dx, dy, flare) offset badan per pose (ruang lokal, facing +)."""
+        if action == "attack":
+            kind = getattr(boss, "_krb_attack_kind", "swing") if boss else "swing"
+            if kind == "bolt":
+                dx = _NS_krobellus._keyframes(
+                    ((0.0, 0.0), (0.34, 3.0), (0.52, 5.0), (1.0, 0.0)), ap,
+                    (_NS_krobellus._ease_out_cubic,
+                     _NS_krobellus._ease_in_out_sine,
+                     _NS_krobellus._ease_in_out_sine))
+                return dx, -1.0, 0.0
+            dx = _NS_krobellus._keyframes(
+                ((0.0, 0.0), (0.12, -2.0), (0.26, -4.0), (0.42, 5.0),
+                 (0.62, 4.0), (1.0, 0.0)), ap,
+                (_NS_krobellus._ease_out_quad,
+                 _NS_krobellus._ease_in_quad,
+                 _NS_krobellus._ease_in_out_sine,
+                 _NS_krobellus._ease_in_out_sine,
+                 _NS_krobellus._ease_in_out_sine))
+            return dx, 0.0, 0.25
+        if action == "spin":
+            k = _NS_krobellus._ease_in_out_cubic(min(1.0, ap / 0.55))
+            return 0.0, -5.0 * k, 0.35 * k
+        if action == "slam":
+            if ap < 0.30:
+                return _NS_krobellus._lerp(0.0, -1.0, ap / 0.30), -4.0 * (ap / 0.30), 0.0
+            if ap < 0.70:
+                return 1.0, 3.0, 0.5
+            return _NS_krobellus._lerp(1.0, 0.0, (ap - 0.70) / 0.30), \
+                _NS_krobellus._lerp(3.0, 0.0, (ap - 0.70) / 0.30), 0.2
+        if action in ("cast_w", "cast_e"):
+            return 3.0, 0.0, 0.1
+        if action == "hurt":
+            return -3.0, 1.0, 0.15
+        if action == "walk":
+            bob = abs(math.sin(phase * 2.2)) * 2.5
+            return 2.0, -bob, 0.15
+        # idle
+        return 0.0, math.sin(phase * 0.8) * 2.0, 0.0
+
+    def _draw_hem(surface, cx, cy, sc, facing, phase, flare, action):
+        """Jubah bawah tattered — siluet utama Krobellus.
+
+        Semua titik dalam ruang LOKAL (0,0 = pusat badan), dipetakan
+        sekali lewat _map() — konsisten dengan seluruh rig.
+        """
+        c = _NS_krobellus.PALETTE
+        G = _NS_krobellus
+        sway = math.sin(phase * 0.9) * (2.5 + 3.0 * flare)
+        sway2 = math.sin(phase * 0.6 + 1.2) * (2.0 + 2.0 * flare)
+        top = G.HEM_TOP
+        bot = G.HEM_BOT + int(math.sin(phase * 0.7) * 2)
+        w = 20 + int(7 * flare)
+        P = lambda lx, ly: G._map(cx, cy, sc, facing, lx, ly)  # noqa: E731
+        # siluet luar (outline gelap)
+        outer = [
+            (-w, top), (w, top),
+            (w + 5, top + 12),
+            (w + 3 + sway, top + 24),
+            (w - 4, top + 34),
+            (w - 14 + sway2, bot),
+            (4, bot + 4),
+            (-4, bot + 4 - int(sway * 0.4)),
+            (-w + 12 - sway2, bot),
+            (-w + 4, top + 34),
+            (-w - 3 - sway, top + 24),
+            (-w - 5, top + 12),
         ]
-        _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["dress_mid"], dress_inner)
-
-        # Vertical light streaks (dress folds)
-        for xoff in (-8, -3, 3, 8):
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["dress_light"],
-                    (cx + xoff, cy + 6), (cx + xoff, cy + 30), 1)
-
-        # Tattered edges at bottom
-        for i in range(9):
-            tx = cx - 20 + i * 5
-            ty = cy + 44 + int(math.sin(phase * 1.5 + i) * 4)
-            _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["dress_darkest"], [
-                (tx - 3, cy + 40), (tx + 3, cy + 40),
-                (tx + 1, ty + 6), (tx - 1, ty + 6),
-            ])
-
-        # Purple glow beneath (spectral)
-        for i in range(5):
-            alpha = 60 - i * 10
-            _NS_krobellus._ellipse(surface, (*_NS_krobellus.PALETTE["magic_mid"], alpha),
-                     (cx - 25 + i * 2, cy + 48 - i, 50 - i * 4, 8))
-
-        # Gold belt / trim at waist
-        _NS_krobellus._rect(surface, _NS_krobellus.PALETTE["gold_dark"], (cx - 15, cy - 1, 30, 4))
-        _NS_krobellus._rect(surface, _NS_krobellus.PALETTE["gold_mid"], (cx - 13, cy, 26, 2))
-        _NS_krobellus._rect(surface, _NS_krobellus.PALETTE["gold_light"], (cx - 10, cy + 1, 20, 1))
-
-        # Belt gem (red)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["gold_dark"], (cx, cy + 1), 4)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_dark"], (cx, cy + 1), 3)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_bright"], (cx - 1, cy), 2)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_hot"], (cx - 1, cy), 1)
-
-
-    def _draw_corset(surface, cx, cy, phase):
-        """Dark corset/bodice."""
-        # Shadow
-        _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["shadow_deep"], [
-            (cx - 12 + 2, cy - 10 + 2), (cx + 12 + 2, cy - 10 + 2),
-            (cx + 14 + 2, cy + 12 + 2), (cx + 4 + 2, cy + 17 + 2),
-            (cx - 4 + 2, cy + 17 + 2), (cx - 14 + 2, cy + 12 + 2),
-        ])
-
-        corset = [
-            (cx - 12, cy - 10), (cx + 12, cy - 10),
-            (cx + 14, cy + 12), (cx + 4, cy + 17),
-            (cx - 4, cy + 17), (cx - 14, cy + 12),
+        pygame.draw.polygon(surface, (*c["outline"], 255),
+                            [P(x, y) for x, y in outer])
+        # isi jubah (2 pita warna)
+        inner1 = [
+            (-w + 2, top + 2), (w - 2, top + 2),
+            (w + 1 + sway, top + 24),
+            (w - 6, top + 33),
+            (w - 15 + sway2, bot - 2),
+            (-2, bot + 1),
+            (-w + 14 - sway2, bot - 2),
+            (-w + 6, top + 33),
+            (-w - 1 - sway, top + 24),
         ]
-        _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["corset_darkest"], corset)
-        _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["corset_dark"], [
-            (cx - 10, cy - 8), (cx + 10, cy - 8),
-            (cx + 12, cy + 10), (cx + 4, cy + 14),
-            (cx - 4, cy + 14), (cx - 12, cy + 10),
-        ])
-        _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["corset_mid"], [
-            (cx - 7, cy - 5), (cx + 7, cy - 5),
-            (cx + 9, cy + 8), (cx + 3, cy + 11),
-            (cx - 3, cy + 11), (cx - 9, cy + 8),
-        ])
+        pygame.draw.polygon(surface, (*c["robe_dark"], 255),
+                            [P(x, y) for x, y in inner1])
+        inner2 = [
+            (-w + 5, top + 3), (w - 5, top + 3),
+            (w - 4 + sway, top + 20),
+            (w - 10, top + 30),
+            (w - 19 + sway2, bot - 6),
+            (-2, bot - 2),
+            (-w + 19 - sway2, bot - 6),
+            (-w + 10, top + 30),
+            (-w + 4 - sway, top + 20),
+        ]
+        pygame.draw.polygon(surface, (*c["robe_mid"], 255),
+                            [P(x, y) for x, y in inner2])
+        # garis lipatan (streaks)
+        for off in (-10, -4, 4, 10):
+            x1 = off + (sway if off > 0 else -sway) * 0.6
+            y1 = top + 30 + (4 if abs(off) > 6 else 8)
+            pygame.draw.line(surface, (*c["robe_light"], 200),
+                             P(off, top + 6), P(x1, y1), 1)
+        # ujung tattered
+        for i in range(8):
+            tx = -w + 3 + i * ((2 * w - 6) / 7.0)
+            ty = bot + 3 + int(math.sin(phase * 1.6 + i * 1.1) * 3)
+            pygame.draw.polygon(surface, (*c["robe_fade"], 255),
+                                [P(tx, bot - 2), P(tx + 2, bot - 2),
+                                 P(tx + 1, ty)])
+        # cahaya jiwa di bawah jubah
+        a = int(90 + 40 * math.sin(phase * 1.2))
+        pygame.draw.ellipse(surface, (*c["soul_mid"], max(20, a)),
+                            (int(cx - 18 * sc), int(cy + 38 * sc),
+                             int(36 * sc), int(6 * sc)), 1)
+        pygame.draw.ellipse(surface, (*c["soul_dark"], max(30, a + 30)),
+                            (int(cx - 20 * sc), int(cy + 42 * sc),
+                             int(40 * sc), int(5 * sc)))
 
-        # Center chest gold decoration (V shape)
-        _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["gold_dark"], [
-            (cx - 6, cy - 6), (cx + 6, cy - 6),
-            (cx, cy + 10),
-        ])
-        _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["gold_mid"], [
-            (cx - 4, cy - 4), (cx + 4, cy - 4),
-            (cx, cy + 8),
-        ])
+    def _draw_torso(surface, cx, cy, sc, facing, phase, action):
+        """Korset + trim emas + gem jiwa."""
+        c = _NS_krobellus.PALETTE
+        G = _NS_krobellus
+        breathe = 1.0 if action in ("idle",) else 1.0
+        # outline
+        o = [
+            (cx - 13, cy + G.SHOULDER_Y - 2), (cx + 13, cy + G.SHOULDER_Y - 2),
+            (cx + 14, cy + G.BELT_Y + 2), (cx + 6, cy + G.BELT_Y + 6),
+            (cx - 6, cy + G.BELT_Y + 6), (cx - 14, cy + G.BELT_Y + 2),
+        ]
+        pygame.draw.polygon(surface, (*c["outline"], 255),
+                            [G._map(cx, cy, sc, facing, x - cx, y - cy)
+                             for x, y in o])
+        # bodi
+        b1 = [
+            (cx - 12, cy + G.SHOULDER_Y - 1), (cx + 12, cy + G.SHOULDER_Y - 1),
+            (cx + 13, cy + G.BELT_Y + 1), (cx + 5, cy + G.BELT_Y + 5),
+            (cx - 5, cy + G.BELT_Y + 5), (cx - 13, cy + G.BELT_Y + 1),
+        ]
+        pygame.draw.polygon(surface, (*c["armor_dark"], 255),
+                            [G._map(cx, cy, sc, facing, x - cx, y - cy)
+                             for x, y in b1])
+        b2 = [
+            (cx - 10, cy + G.SHOULDER_Y + 1), (cx + 10, cy + G.SHOULDER_Y + 1),
+            (cx + 11, cy + G.BELT_Y), (cx + 4, cy + G.BELT_Y + 4),
+            (cx - 4, cy + G.BELT_Y + 4), (cx - 11, cy + G.BELT_Y),
+        ]
+        pygame.draw.polygon(surface, (*c["armor_mid"], 255),
+                            [G._map(cx, cy, sc, facing, x - cx, y - cy)
+                             for x, y in b2])
+        # trim V emas di dada
+        v1 = [
+            (cx - 6, cy + G.SHOULDER_Y + 2), (cx + 6, cy + G.SHOULDER_Y + 2),
+            (cx, cy + G.BELT_Y - 2),
+        ]
+        pygame.draw.polygon(surface, (*c["gold_mid"], 255),
+                            [G._map(cx, cy, sc, facing, x - cx, y - cy)
+                             for x, y in v1])
+        v2 = [
+            (cx - 4, cy + G.SHOULDER_Y + 3), (cx + 4, cy + G.SHOULDER_Y + 3),
+            (cx, cy + G.BELT_Y - 4),
+        ]
+        pygame.draw.polygon(surface, (*c["gold_dark"], 255),
+                            [G._map(cx, cy, sc, facing, x - cx, y - cy)
+                             for x, y in v2])
+        # gem jiwa (teal, berdenyut)
+        pulse = 0.7 + 0.3 * math.sin(phase * 2.0)
+        gx, gy = G._map(cx, cy, sc, facing, 0, G.SHOULDER_Y + 8)
+        pygame.draw.rect(surface, (*c["gold_dark"], 255), (gx - 2, gy - 2, 4, 4))
+        pygame.draw.rect(surface, (*c["soul_mid"], 255), (gx - 1, gy - 1, 2, 2))
+        pygame.draw.rect(surface, (*c["soul_bright"], 255), (gx, gy, 1, 1))
+        if pulse > 0.85:
+            pygame.draw.rect(surface, (*c["soul_hot"], 200), (gx, gy - 1, 1, 1))
+        # ikat pinggang emas
+        by = G._map(cx, cy, sc, facing, 0, G.BELT_Y)
+        pygame.draw.rect(surface, (*c["gold_dark"], 255),
+                         (int(cx - 13 * sc), int(by[1]) - 2, int(26 * sc), 3))
+        pygame.draw.rect(surface, (*c["gold_light"], 255),
+                         (int(cx - 11 * sc), int(by[1]) - 1, int(22 * sc), 1))
+        # lacing
+        for i in range(3):
+            yy = G.SHOULDER_Y + 4 + i * 4
+            p1 = G._map(cx, cy, sc, facing, -3, yy)
+            p2 = G._map(cx, cy, sc, facing, 3, yy + 2)
+            p3 = G._map(cx, cy, sc, facing, -3, yy + 2)
+            p4 = G._map(cx, cy, sc, facing, 3, yy)
+            pygame.draw.line(surface, (*c["gold_light"], 220), p1, p2, 1)
+            pygame.draw.line(surface, (*c["gold_light"], 220), p3, p4, 1)
 
-        # Central red gem
-        pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_dark"], (cx, cy - 2), 3)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_mid"], (cx, cy - 2), 2)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_bright"], (cx, cy - 2),
-                  max(1, int(2 * pulse)))
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_hot"], (cx, cy - 2), 1)
-
-        # Corset lacing
-        for i in range(4):
-            y_off = cy - 4 + i * 4
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["gold_light"],
-                    (cx - 3, y_off), (cx + 3, y_off + 2), 1)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["gold_light"],
-                    (cx - 3, y_off + 2), (cx + 3, y_off), 1)
-
-        # Corset outline (dark)
-        for i in range(len(corset)):
-            p1 = corset[i]
-            p2 = corset[(i + 1) % len(corset)]
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["shadow_deep"], p1, p2, 1)
-
-
-    def _draw_shoulders(surface, cx, cy, phase):
-        """Dark spiky shoulder pieces."""
+    def _draw_pauldrons(surface, cx, cy, sc, facing, action):
+        """Bahu bersudut + spike (armor)."""
+        c = _NS_krobellus.PALETTE
+        G = _NS_krobellus
         for side in (-1, 1):
             sx = cx + side * 14
-            # Shadow
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["shadow_deep"], (sx + 2, cy + 2), 8)
-            # Shoulder pad
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["dress_darkest"], (sx, cy), 7)
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["dress_dark"], (sx - side, cy - 1), 5)
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["dress_mid"], (sx - side, cy - 2), 3)
-
-            # Spike protruding
-            _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["dress_darkest"], [
-                (sx - 2, cy - 4),
-                (sx + 2, cy - 4),
-                (sx + side * 3, cy - 12),
-            ])
-            _NS_krobellus._poly(surface, _NS_krobellus.PALETTE["dress_dark"], [
-                (sx - 1, cy - 4),
-                (sx + 1, cy - 4),
-                (sx + side * 2, cy - 10),
-            ])
-
-            # Small gold ornament
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["gold_mid"], (sx, cy - 1), 2)
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["gold_light"], (sx - 1, cy - 2), 1)
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Arms with pale skin, glowing hands."""
-        sway = math.sin(phase * 0.7) * 2
-        for side in (-1, 1):
-            shoulder_x = cx + side * 12
-            shoulder_y = cy + 2
-            elbow_x = shoulder_x + side * 6
-            elbow_y = cy + 12 + int(sway)
-            hand_x = elbow_x + side * 4
-            hand_y = elbow_y + 10
-
-            _NS_krobellus._draw_arm_segment(surface, shoulder_x, shoulder_y,
-                              elbow_x, elbow_y, sleeve=True)
-            _NS_krobellus._draw_arm_segment(surface, elbow_x, elbow_y,
-                              hand_x, hand_y, sleeve=False)
-            _NS_krobellus._draw_hand_wisp(surface, hand_x, hand_y, phase + side, 4)
-
-
-    def _draw_casting_arms(surface, cx, cy, facing, phase, progress):
-        """Casting pose."""
-        # Back arm
-        back_side = -facing
-        bs_x = cx + back_side * 12
-        bs_y = cy + 2
-        be_x = bs_x + back_side * 6
-        be_y = cy + 10
-        bh_x = be_x + back_side * 4
-        bh_y = be_y + 8
-        _NS_krobellus._draw_arm_segment(surface, bs_x, bs_y, be_x, be_y, sleeve=True)
-        _NS_krobellus._draw_arm_segment(surface, be_x, be_y, bh_x, bh_y, sleeve=False)
-        _NS_krobellus._draw_hand_wisp(surface, bh_x, bh_y, phase, 3)
-
-        # Front arm - casting forward
-        fs_x = cx + facing * 12
-        fs_y = cy + 2
-
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = -0.6 * t
-        elif progress < 0.5:
-            t = (progress - 0.3) / 0.2
-            arm_angle = -0.6 + 1.4 * t
-        else:
-            t = (progress - 0.5) / 0.5
-            arm_angle = 0.8 - 0.5 * t
-
-        fe_x = fs_x + int(math.cos(arm_angle) * 12) * facing
-        fe_y = fs_y + int(math.sin(arm_angle) * 12) - 2
-        fh_x = fe_x + int(math.cos(arm_angle) * 10) * facing
-        fh_y = fe_y + int(math.sin(arm_angle) * 10)
-
-        _NS_krobellus._draw_arm_segment(surface, fs_x, fs_y, fe_x, fe_y, sleeve=True)
-        _NS_krobellus._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y, sleeve=False)
-
-        # Big glow on casting hand
-        glow_size = 5 + int(math.sin(progress * math.pi) * 5)
-        _NS_krobellus._draw_hand_wisp(surface, fh_x, fh_y, phase, glow_size)
-
-        # Spirit energy from hand during cast
-        if 0.2 < progress < 0.6:
-            intensity = math.sin((progress - 0.2) / 0.4 * math.pi)
-            for i in range(4):
-                angle = phase * 4 + i * math.pi / 2
-                ex = fh_x + int(math.cos(angle) * 12 * intensity) * facing
-                ey = fh_y + int(math.sin(angle) * 10 * intensity)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_bright"], 200), (ex, ey), 2)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_hot"], 240), (ex, ey), 1)
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2, sleeve=True):
-        """Arm segment with dress sleeve or bare skin."""
-        if sleeve:
-            # Purple sleeve
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["shadow_deep"],
-                    (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 7)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["dress_darkest"], (x1, y1), (x2, y2), 6)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["dress_dark"], (x1, y1), (x2, y2), 4)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["dress_mid"], (x1, y1), (x2, y2), 2)
-        else:
-            # Bare arm (pale skin)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["shadow_deep"],
-                    (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 5)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["skin_dark"], (x1, y1), (x2, y2), 4)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["skin_mid"], (x1, y1), (x2, y2), 3)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["skin_light"], (x1 - 1, y1), (x2 - 1, y2), 1)
-
-
-    def _draw_hand_wisp(surface, x, y, phase, size=4):
-        """Glowing ghostly hand."""
-        pulse = math.sin(phase * 2.0) * 0.3 + 0.7
-        s = int(size * pulse)
-        # Hand base
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["skin_dark"], (x, y), 3)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["skin_mid"], (x, y - 1), 2)
-        # Ghost energy
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], 100), (x, y), s + 5)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], 160), (x, y), s + 2)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_light"], 200), (x, y), s)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_bright"], 220), (x, y), max(1, s - 2))
-
-        # Tiny wisps
-        for i in range(3):
-            angle = phase * 2 + i * math.pi * 2 / 3
-            sx = x + int(math.cos(angle) * (s + 4))
-            sy = y + int(math.sin(angle) * (s + 4))
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_hot"], (sx, sy), 1)
-
-
-    def _draw_head(surface, cx, cy, facing, phase):
-        """Death Prophet head - pale skin, glowing eyes."""
-        # Neck
-        _NS_krobellus._rect(surface, _NS_krobellus.PALETTE["skin_dark"], (cx - 3, cy + 8, 6, 5))
-        _NS_krobellus._rect(surface, _NS_krobellus.PALETTE["skin_mid"], (cx - 2, cy + 8, 4, 4))
-
-        # Head shape (oval)
-        # Shadow
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["shadow_deep"], (cx + 2, cy + 2), 10)
-        # Skin base
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["skin_dark"], (cx, cy), 9)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["skin_mid"], (cx - 1, cy - 1), 8)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["skin_light"], (cx - 2, cy - 3), 5)
-
-        # Cheek shading
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["dress_dark"], 60), (cx + 4, cy + 3), 3)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["dress_dark"], 60), (cx - 4, cy + 3), 3)
-
-        # Eyes - glowing red
-        eye_pulse = math.sin(phase * 2) * 0.2 + 0.8
-        # Eye socket
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["shadow_deep"], (cx - 3, cy - 1), 2)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["shadow_deep"], (cx + 3, cy - 1), 2)
-        # Eye glow
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_dark"], (cx - 3, cy - 1),
-                  max(1, int(2 * eye_pulse)))
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_bright"], (cx - 3, cy - 1), 1)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_dark"], (cx + 3, cy - 1),
-                  max(1, int(2 * eye_pulse)))
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_bright"], (cx + 3, cy - 1), 1)
-
-        # Nose
-        _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["skin_dark"], (cx, cy), (cx, cy + 3), 1)
-
-        # Mouth - slight open, dark
-        _NS_krobellus._rect(surface, _NS_krobellus.PALETTE["shadow_deep"], (cx - 2, cy + 4, 4, 2))
-        _NS_krobellus._rect(surface, _NS_krobellus.PALETTE["red_dark"], (cx - 1, cy + 4, 2, 1))
-
-        # Small forehead gem
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["gold_dark"], (cx, cy - 6), 2)
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["red_bright"], (cx, cy - 6), 1)
-
-
-    def _draw_flowing_hair(surface, cx, cy, facing, phase):
-        """Long flowing teal hair."""
-        wave1 = math.sin(phase * 0.8) * 4
-        wave2 = math.sin(phase * 1.1 + 0.5) * 3
-        wave3 = math.sin(phase * 1.3 + 1) * 3
-
-        # Back hair (behind head, flowing up and back)
-        for side in (-1, 1):
-            # Hair streams flowing upward and outward
-            for i in range(4):
-                base_x = cx + side * (3 + i * 2)
-                base_y = cy - 8
-                # Stream goes up and back
-                stream_pts = [
-                    (base_x, base_y),
-                    (base_x + side * (4 + i) + int(wave1 * 0.5), base_y - 8),
-                    (base_x + side * (8 + i * 2) + int(wave2), base_y - 16),
-                    (base_x + side * (10 + i * 2) + int(wave3), base_y - 22),
-                ]
-                for j in range(len(stream_pts) - 1):
-                    p1 = stream_pts[j]
-                    p2 = stream_pts[j + 1]
-                    _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_darkest"], p1, p2, 4)
-                    _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_dark"], p1, p2, 3)
-                    _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_mid"], p1, p2, 2)
-                    _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_light"], p1, p2, 1)
-
-        # Top of head hair
-        for i in range(-3, 4):
-            base_x = cx + i * 2
-            base_y = cy - 8
-            top_x = base_x + int(math.sin(phase + i * 0.5) * 2)
-            top_y = base_y - 6 - abs(i)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_darkest"], (base_x, base_y), (top_x, top_y), 3)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_mid"], (base_x, base_y), (top_x, top_y), 2)
-            _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_light"], (base_x, base_y - 1),
-                    (top_x, top_y), 1)
-
-        # Side hair falling down past shoulders
-        for side in (-1, 1):
-            hair_side_pts = [
-                (cx + side * 7, cy - 4),
-                (cx + side * 9, cy + 3),
-                (cx + side * 10 + int(wave1 * 0.5), cy + 12),
-                (cx + side * 8 + int(wave2 * 0.5), cy + 20),
+            sy = cy + G.SHOULDER_Y - 1
+            p = lambda lx, ly: G._map(cx, cy, sc, facing, lx - cx, ly - cy)  # noqa: E731
+            # plate
+            plate = [
+                (sx - 6, sy + 2), (sx + 6, sy + 2),
+                (sx + side * 8, sy - 4), (sx + side * 5, sy - 8),
+                (sx - side * 2, sy - 6),
             ]
-            for j in range(len(hair_side_pts) - 1):
-                p1 = hair_side_pts[j]
-                p2 = hair_side_pts[j + 1]
-                _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_darkest"], p1, p2, 5)
-                _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_dark"], p1, p2, 4)
-                _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_mid"], p1, p2, 2)
-                _NS_krobellus._aaline(surface, _NS_krobellus.PALETTE["hair_light"], p1, p2, 1)
+            pygame.draw.polygon(surface, (*c["outline"], 255),
+                                 [p(x, y) for x, y in plate])
+            pygame.draw.polygon(surface, (*c["armor_dark"], 255),
+                                 [p(x, y) for x, y in plate])
+            inner = [
+                (sx - 4, sy + 1), (sx + 5, sy + 1),
+                (sx + side * 6, sy - 3), (sx + side * 3, sy - 6),
+            ]
+            pygame.draw.polygon(surface, (*c["armor_mid"], 255),
+                                 [p(x, y) for x, y in inner])
+            pygame.draw.polygon(surface, (*c["armor_light"], 255),
+                                 [p(sx + side * 4, sy - 2),
+                                  p(sx + side * 6, sy - 4),
+                                  p(sx + side * 5, sy - 6)])
+            # spike
+            sp = [
+                (sx + side * 3, sy - 5), (sx + side * 7, sy - 5),
+                (sx + side * 9, sy - 11),
+            ]
+            pygame.draw.polygon(surface, (*c["armor_dark"], 255),
+                                 [p(x, y) for x, y in sp])
+            pygame.draw.polygon(surface, (*c["armor_light"], 255),
+                                 [p(sx + side * 5, sy - 6),
+                                  p(sx + side * 7, sy - 6),
+                                  p(sx + side * 8.5, sy - 10)])
+            # aksen emas
+            ga = p(sx - 2, sy)
+            pygame.draw.rect(surface, (*c["gold_mid"], 255),
+                             (int(ga[0]), int(ga[1]), 2, 2))
+            pygame.draw.rect(surface, (*c["gold_light"], 255),
+                             (int(ga[0]) + 1, int(ga[1]) - 1, 1, 1))
 
-        # Hair wisps (small teal particles rising from hair)
-        for i in range(5):
-            angle = phase * 0.8 + i * math.pi / 3
-            r = 12 + int(math.sin(phase + i) * 3)
-            px = cx + int(math.cos(angle) * r)
-            py = cy - 14 + int(math.sin(angle) * 3)
-            alpha = 180
-            _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["hair_mid"], alpha), (px, py), 2)
-            _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["hair_shine"], alpha), (px, py), 1)
-
-
-    def _draw_body_soul_particles(surface, cx, cy, phase):
-        """Floating soul particles around body."""
-        for i in range(10):
-            angle = phase * 0.4 + i * math.pi / 5
-            radius = 30 + int(math.sin(phase * 0.7 + i) * 8)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-            alpha = int(140 + math.sin(phase + i * 0.7) * 60)
-            _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], alpha), (px, py), 2)
-            _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_bright"], alpha // 2), (px, py), 1)
-
-
-    # ===================================================================
-    # COMPANION GHOSTS (from reference image)
-    # ===================================================================
-    def _draw_companion_ghosts(surface, cx, cy, phase, trailing=False,
-                              facing=1, intense=False):
-        """Small ghosts floating around Krobellus."""
-        count = 3 if not intense else 4
-        for i in range(count):
-            angle = phase * 0.5 + i * math.pi * 2 / count
-            r_x = 45 + int(math.sin(phase * 0.9 + i) * 8)
-            r_y = 20 + int(math.sin(phase * 0.7 + i * 1.4) * 6)
-            px = cx + int(math.cos(angle) * r_x)
-            py = cy - 25 + int(math.sin(angle) * r_y)
-
-            # Size varies
-            size = 6 + int(math.sin(phase + i) * 1)
-            alpha = 200 if not intense else 240
-            _NS_krobellus._draw_ghost_head(surface, px, py, phase + i, size, facing, alpha)
-
-
-    # ===================================================================
-    # FLOATING EFFECTS
-    # ===================================================================
-    def _draw_floating_wisps(surface, cx, cy, phase, trail=False,
-                            facing=1, intense=False):
-        """Spectral mist beneath floating Krobellus."""
-        strength = 1.5 if intense else 1.0
-
-        # Base mist
-        mist = pygame.Surface((120, 40), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(32, 3, -4):
-            alpha = int((32 - radius) * 2.5 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_krobellus.PALETTE["ghost_darkest"], min(255, alpha)),
-                    (60 - radius * 2, 20 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 60, cy - 10))
-
-        # Rising ghost wisps
-        for i, offset in enumerate((-20, -8, 8, 20)):
-            t = (phase * 0.5 + i * 0.25) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 24)
-            alpha = max(0, min(255, int(200 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], alpha), (sx, sy), 5)
-            _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], alpha), (sx, sy - 2), 3)
-            _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_bright"], min(255, alpha)),
-                      (sx, sy - 3), 1)
-
-        # Small orbiting soul balls
-        for i in range(5):
-            angle = phase * 0.9 + i * math.pi * 2 / 5
-            r = 22 + int(math.sin(phase + i * 1.3) * 4)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 6)
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_mid"], (sx, sy), 3)
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_light"], (sx, sy), 2)
-            _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_hot"], (sx, sy), 1)
-
-        if trail:
-            for i in range(5):
-                sx = cx - (i + 1) * 11 * facing
-                sy = cy + int(math.sin(phase + i) * 2)
-                alpha = max(0, 130 - i * 22)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], alpha),
-                          (sx, sy), max(2, 5 - i))
-
-
-    def _draw_shadow(surface, x, y):
-        """Ground shadow."""
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_krobellus.PALETTE["ghost_darkest"], 60), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
-
-
-    def _draw_spectral_aura(surface, x, y, phase):
-        """Green/purple background aura."""
-        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(72, 5, -4):
-            alpha = int((72 - radius) * 1.0 * pulse)
-            if alpha > 0:
-                _NS_krobellus._aacircle(aura, (*_NS_krobellus.PALETTE["dress_darkest"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
-
-        # Additional teal glow
-        aura2 = pygame.Surface((120, 100), pygame.SRCALPHA)
-        for radius in range(48, 5, -3):
-            alpha = int((48 - radius) * 0.8 * pulse)
-            if alpha > 0:
-                _NS_krobellus._aacircle(aura2, (*_NS_krobellus.PALETTE["ghost_darkest"], min(255, alpha)),
-                          (60, 50), radius)
-        surface.blit(aura2, (x - 60, y - 40))
-
-
-    def _draw_ground_runes(surface, x, y, phase, skill):
-        """Necromantic circle on ground."""
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_krobellus.PALETTE["ghost_dark"], 140),
-                            (5, 10, 120, 24), 3)
-        pygame.draw.ellipse(ring, (*_NS_krobellus.PALETTE["ghost_mid"], 170),
-                            (20, 14, 90, 16), 2)
-
-        # Rune marks
-        for i in range(10):
-            angle = phase * 0.2 + i * math.pi / 5
-            x1 = 65 + int(math.cos(angle) * 30)
-            y1 = 22 + int(math.sin(angle) * 6)
-            x2 = 65 + int(math.cos(angle) * 55)
-            y2 = 22 + int(math.sin(angle) * 10)
-            pygame.draw.line(ring, (*_NS_krobellus.PALETTE["ghost_bright"], 160),
-                             (x1, y1), (x2, y2), 1)
-
-        if skill:
-            pygame.draw.ellipse(ring, (*_NS_krobellus.PALETTE["ghost_hot"], int(80 * pulse)),
-                                (15, 8, 100, 28), 1)
-
-        surface.blit(ring, (x - 65, y - 22))
-
-
-    def _draw_cast_flash(surface, x, y, facing, progress):
-        """Flash effect during ranged attack."""
-        if progress < 0.2 or progress > 0.65:
-            return
-        t = (progress - 0.2) / 0.45
-        intensity = math.sin(t * math.pi)
-
-        flash_x = x + 22 * facing
-        flash_y = y - 10
-
-        alpha = int(180 * intensity)
-        radius = int(8 + intensity * 15)
-
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], alpha // 2),
-                  (flash_x, flash_y), radius + 8)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], alpha),
-                  (flash_x, flash_y), radius)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_bright"], alpha),
-                  (flash_x, flash_y), radius // 2)
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_hot"], min(255, alpha)),
-                  (flash_x, flash_y), max(1, radius // 4))
-
-
-    # ===================================================================
-    # SKILL Q: EXORCISM - Summon swarm of spirits
-    # ===================================================================
-    def _draw_exorcism_ground(surface, boss, x, y, timer, phase):
-        """Ground effect for exorcism."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-        radius = int(50 + progress * 30)
-
-        _NS_krobellus._ellipse(surface, (*_NS_krobellus.PALETTE["ghost_dark"], int(150 * pulse)),
-                 (x - radius, y + 30 - radius // 4, radius * 2, radius // 2), 3)
-        _NS_krobellus._ellipse(surface, (*_NS_krobellus.PALETTE["ghost_mid"], int(120 * pulse)),
-                 (x - radius + 5, y + 32 - radius // 4,
-                  radius * 2 - 10, radius // 2 - 4), 2)
-
-
-    def _draw_exorcism(surface, boss, x, y, timer, phase):
-        """Swarm of small ghost heads flying around."""
-        progress = max(0.0, min(1.0, 1 - timer / 100))
-
-        # Spawn ghosts orbiting Krobellus, then flying out at target
-        ghost_count = int(6 + progress * 6)
-
-        for i in range(ghost_count):
-            angle = phase * 1.5 + i * math.pi * 2 / ghost_count
-
-            if progress < 0.5:
-                # Orbit around Krobellus
-                r_x = 40 + int(math.sin(phase + i) * 8)
-                r_y = 20 + int(math.sin(phase * 0.7 + i) * 5)
-                gx = x + int(math.cos(angle) * r_x)
-                gy = y - 10 + int(math.sin(angle) * r_y)
-            else:
-                # Fly outward
-                fly_t = (progress - 0.5) / 0.5
-                r_x = 40 + int(fly_t * 100)
-                r_y = 20 + int(fly_t * 40)
-                gx = x + int(math.cos(angle) * r_x)
-                gy = y - 10 + int(math.sin(angle) * r_y)
-
-            size = 6 + int(math.sin(phase * 2 + i) * 1)
-            alpha = 220
-            _NS_krobellus._draw_ghost_head(surface, gx, gy, phase + i, size,
-                             boss.direction, alpha)
-
-            # Trailing wisp
-            for j in range(3):
-                tx = gx - int(math.cos(angle) * (j + 1) * 3)
-                ty = gy - int(math.sin(angle) * (j + 1) * 3)
-                a = max(0, alpha - (j + 1) * 60)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], a), (tx, ty), 2)
-
-
-    # ===================================================================
-    # SKILL W: SILENCE - Purple bolt
-    # ===================================================================
-    def _draw_silence_cast(surface, boss, x, y, timer, phase):
-        """Cast silence projectile."""
-        # Spawn projectile once
-        if not getattr(boss, "_krb_silence_spawned", False):
-            _NS_krobellus._spawn_silence_projectile(boss, x, y)
-            boss._krb_silence_spawned = True
-
-        # Reset when skill ends
-        if timer <= 5:
-            boss._krb_silence_spawned = False
-
-        # Casting flash at hand
-        hand_x = x + 20 * boss.direction
-        hand_y = y - 8
-        pulse = math.sin(phase * 4) * 0.3 + 0.7
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["magic_dark"], 150),
-                  (hand_x, hand_y), int(10 * pulse))
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["magic_mid"], 200),
-                  (hand_x, hand_y), int(7 * pulse))
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["magic_bright"], 230),
-                  (hand_x, hand_y), int(4 * pulse))
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["magic_hot"],
-                  (hand_x, hand_y), max(1, int(2 * pulse)))
-
-
-    # ===================================================================
-    # SKILL E: SPIRIT SIPHON - Green beam
-    # ===================================================================
-    def _draw_spirit_siphon_ground(surface, boss, x, y, timer, phase):
-        """Ground energy trail."""
-        tx, ty = _NS_krobellus._target_position(boss, x, y)
-        # Trail marks between boss and target
-        for i in range(5):
-            t = i / 5
-            px = int(x + (tx - x) * t)
-            py = int(y + 40 + (ty - y) * t * 0.3)
-            alpha = int(80 * math.sin(phase * 2 + i))
-            _NS_krobellus._ellipse(surface, (*_NS_krobellus.PALETTE["ghost_mid"], max(0, alpha)),
-                     (px - 10, py - 2, 20, 4))
-
-
-    def _draw_spirit_siphon(surface, boss, x, y, timer, phase):
-        """Green streaming beam pulling from target."""
-        tx, ty = _NS_krobellus._target_position(boss, x, y)
-        hand_x = x + 22 * boss.direction
-        hand_y = y - 8
-
-        # Small particles flowing FROM target TO Krobellus (siphon)
-        dx = hand_x - tx
-        dy = hand_y - ty
-        dist = math.sqrt(dx * dx + dy * dy) or 1
-
-        # Main energy stream (thin curved line with particles)
-        segments = int(dist / 8)
-        for i in range(segments):
-            t = i / max(1, segments)
-            # Curved path
-            wave = math.sin(t * math.pi * 3 + phase * 3) * 6
-            perp_x = -dy / dist
-            perp_y = dx / dist
-
-            # Multiple particles flowing along path (toward boss)
-            for particle_off in range(3):
-                flow_t = ((phase * 0.5 + particle_off * 0.33 + t) % 1.0)
-                px = int(tx + (hand_x - tx) * flow_t + perp_x * wave)
-                py = int(ty + (hand_y - ty) * flow_t + perp_y * wave)
-
-                # Particle
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], 200), (px, py), 4)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], 220), (px, py), 3)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_light"], 230), (px, py), 2)
-                _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_hot"], (px, py), 1)
-
-        # Impact at target - green drain effect
-        drain_pulse = math.sin(phase * 5) * 0.3 + 0.7
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], 150),
-                  (tx, ty), int(14 * drain_pulse))
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], 200),
-                  (tx, ty), int(10 * drain_pulse))
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_bright"], 230),
-                  (tx, ty), int(6 * drain_pulse))
-
-        # Rising soul particles at target
-        for i in range(4):
-            t = (phase + i * 0.3) % 1.0
-            px = tx + int(math.sin(phase * 2 + i) * 6)
-            py = ty - int(t * 25)
-            alpha = int(200 * (1 - t))
-            if alpha > 0:
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_light"], alpha), (px, py), 2)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_hot"], alpha), (px, py - 1), 1)
-
-        # Healing glow at Krobellus (receiving)
-        heal_pulse = math.sin(phase * 4) * 0.3 + 0.7
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_dark"], 100),
-                  (hand_x, hand_y), int(12 * heal_pulse))
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], 150),
-                  (hand_x, hand_y), int(8 * heal_pulse))
-        _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_bright"], 200),
-                  (hand_x, hand_y), int(5 * heal_pulse))
-        _NS_krobellus._aacircle(surface, _NS_krobellus.PALETTE["ghost_hot"],
-                  (hand_x, hand_y), max(1, int(3 * heal_pulse)))
-
-
-    # ===================================================================
-    # SKILL R: CRYPT SWARM - Army of ghosts
-    # ===================================================================
-    def _draw_crypt_swarm_ground(surface, boss, x, y, timer, phase):
-        """Ground shockwave and darkness."""
-        progress = max(0.0, min(1.0, 1 - timer / 120))
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-        radius = int(60 + progress * 40)
-
-        # Dark ground effect
-        _NS_krobellus._ellipse(surface, (*_NS_krobellus.PALETTE["dress_darkest"], int(200 * pulse)),
-                 (x - radius, y + 30 - radius // 3, radius * 2, radius * 2 // 3), 4)
-        _NS_krobellus._ellipse(surface, (*_NS_krobellus.PALETTE["magic_dark"], int(150 * pulse)),
-                 (x - radius + 5, y + 32 - radius // 3,
-                  radius * 2 - 10, radius * 2 // 3 - 6), 3)
-
-        # Cracks / rune lines
-        for i in range(8):
-            angle = phase * 0.3 + i * math.pi / 4
-            x1 = x + int(math.cos(angle) * (radius - 20))
-            y1 = y + 40 + int(math.sin(angle) * (radius // 3 - 8))
-            x2 = x + int(math.cos(angle) * radius)
-            y2 = y + 40 + int(math.sin(angle) * (radius // 3))
-            _NS_krobellus._aaline(surface, (*_NS_krobellus.PALETTE["ghost_bright"], int(150 * pulse)),
-                    (x1, y1), (x2, y2), 2)
-
-
-    def _draw_crypt_swarm(surface, boss, x, y, timer, pulse):
-        """Army of ghosts rising up around Krobellus."""
-        progress = max(0.0, min(1.0, 1 - timer / 120))
-
-        # Multiple layers of ghosts at different distances and positions
-        ghost_positions = [
-            # (angle_offset, radius_x, radius_y, size, delay)
-            (0.0, 55, 15, 8, 0.0),
-            (0.3, 70, 20, 7, 0.1),
-            (0.6, 45, 12, 6, 0.05),
-            (0.9, 80, 25, 9, 0.15),
-            (1.2, 60, 18, 7, 0.08),
-            (1.5, 75, 22, 8, 0.12),
-            (1.8, 50, 14, 6, 0.03),
-            (2.1, 65, 19, 7, 0.1),
-            (2.4, 78, 24, 8, 0.14),
-            (2.7, 48, 13, 6, 0.06),
-            (3.0, 72, 21, 7, 0.11),
-            (3.3, 58, 16, 7, 0.07),
+    def _draw_head(surface, cx, cy, sc, facing, phase, action):
+        """Tudung + wajah pucat + mata api merah."""
+        c = _NS_krobellus.PALETTE
+        G = _NS_krobellus
+        hy = G.HEAD_Y
+        bob = 0
+        if action in ("idle", "walk"):
+            bob = int(math.sin(phase * 0.8) * 1)
+        p = lambda lx, ly: G._map(cx, cy, sc, facing, lx, ly)  # noqa: E731
+        # leher
+        pygame.draw.rect(surface, (*c["skin_dark"], 255),
+                         (int(cx - 3 * sc * (1 if facing > 0 else 1)),
+                          int(cy + (hy + 8) * sc), int(6 * sc), int(5 * sc)))
+        # tudung: bentuk luar (siluet kuat: puncak runcing ke belakang)
+        hood = [
+            (cx - 13, cy + hy + 8), (cx + 13, cy + hy + 8),
+            (cx + 15, cy + hy + 2), (cx + 13, cy + hy - 8),
+            (cx + 6, cy + hy - 13), (cx - 4, cy + hy - 14),
+            (cx - 12, cy + hy - 8), (cx - 16, cy + hy - 1),
+            (cx - 16, cy + hy + 4),
         ]
+        pygame.draw.polygon(surface, (*c["outline"], 255),
+                             [p(x - cx, y - cy) for x, y in hood])
+        pygame.draw.polygon(surface, (*c["robe_dark"], 255),
+                             [p(x - cx, y - cy) for x, y in hood])
+        hood2 = [
+            (cx - 11, cy + hy + 7), (cx + 11, cy + hy + 7),
+            (cx + 13, cy + hy + 1), (cx + 11, cy + hy - 7),
+            (cx + 5, cy + hy - 11), (cx - 3, cy + hy - 12),
+            (cx - 10, cy + hy - 6), (cx - 13, cy + hy),
+            (cx - 13, cy + hy + 4),
+        ]
+        pygame.draw.polygon(surface, (*c["robe_mid"], 255),
+                             [p(x - cx, y - cy) for x, y in hood2])
+        # lipatan tudung
+        for i in range(3):
+            yy = hy - 9 + i * 3
+            p1 = p(-8 + i, yy)
+            p2 = p(-3 + i * 2, yy - 1)
+            pygame.draw.line(surface, (*c["robe_light"], 180), p1, p2, 1)
+        # interior gelap (frame wajah)
+        pygame.draw.ellipse(surface, (*c["shadow_deep"], 255),
+                            (int(cx - 8 * sc), int(cy + (hy - 3 + bob) * sc),
+                             int(16 * sc), int(13 * sc)))
+        # wajah pucat (kecil, condong ke arah hadap)
+        fx0 = int(cx + facing * sc - 6 * sc)
+        pygame.draw.ellipse(surface, (*c["skin_dark"], 255),
+                            (fx0, int(cy + (hy - 2 + bob) * sc),
+                             int(12 * sc), int(11 * sc)))
+        pygame.draw.ellipse(surface, (*c["skin_mid"], 255),
+                            (fx0 + 1, int(cy + (hy - 2 + bob) * sc),
+                             int(10 * sc), int(10 * sc)))
+        pygame.draw.ellipse(surface, (*c["skin_light"], 255),
+                            (fx0 + facing * sc, int(cy + (hy - 4 + bob) * sc),
+                             int(5 * sc), int(5 * sc)))
+        # bayangan alis (kedalaman)
+        pygame.draw.ellipse(surface, (*c["shadow_deep"], 160),
+                            (fx0 + 1, int(cy + (hy - 3 + bob) * sc),
+                             int(10 * sc), int(3 * sc)))
+        # Mata API MERAH (identitas Krobellus) — besar & menyala
+        eye_p = 0.75 + 0.25 * math.sin(phase * 2.2)
+        for side in (-1, 1):
+            ex = side * 3.2 + facing * 0.8
+            ey = hy + bob + 1
+            ep = p(ex, ey)
+            exi, eyi = int(ep[0]), int(ep[1])
+            pygame.draw.rect(surface, (*c["shadow_deep"], 255),
+                             (exi - 2, eyi - 1, 5, 3))
+            pygame.draw.rect(surface, (*c["eye_dark"], 255),
+                             (exi - 1, eyi, 3, 2))
+            pygame.draw.rect(surface, (*c["eye_bright"], 255),
+                             (exi, eyi, 2, 2))
+            pygame.draw.rect(surface, (*c["eye_hot"], 255),
+                             (exi, eyi, 1, 1))
+            # glow tipis di sekeliling mata
+            pygame.draw.rect(surface, (*c["eye_mid"], 90),
+                             (exi - 2, eyi - 2, 5, 5))
+        # mulut pucat tipis
+        pygame.draw.rect(surface, (*c["skin_dark"], 255),
+                         (int(cx + facing * sc - sc), int(cy + (hy + 4 + bob) * sc),
+                          int(3 * sc), 1))
+        gp = p(0, hy - 8)
+        pygame.draw.rect(surface, (*c["gold_dark"], 255), (int(gp[0]) - 1, int(gp[1]), 3, 2))
+        pygame.draw.rect(surface, (*c["soul_bright"], 255), (int(gp[0]), int(gp[1]), 1, 1))
 
-        for angle_off, rx, ry, size, delay in ghost_positions:
-            # Ghost appears based on delay
-            if progress < delay:
-                continue
+    def _draw_arm(surface, cx, cy, sc, facing, sx, sy, ex, ey, hand_x, hand_y,
+                  sleeve=True):
+        """Segmen lengan: bahu->siku->tangan (sleeve jubah atau kulit)."""
+        c = _NS_krobellus.PALETTE
+        G = _NS_krobellus
+        P = lambda lx, ly: G._map(cx, cy, sc, facing, lx, ly)  # noqa: E731
+        p0, p1, p2 = P(sx, sy), P(ex, ey), P(hand_x, hand_y)
+        if sleeve:
+            pygame.draw.line(surface, (*c["outline"], 255), p0, p1, max(2, int(6 * sc)))
+            pygame.draw.line(surface, (*c["robe_dark"], 255), p0, p1, max(2, int(4 * sc)))
+            pygame.draw.line(surface, (*c["robe_mid"], 255), p0, p1, max(1, int(2 * sc)))
+            pygame.draw.line(surface, (*c["outline"], 255), p1, p2, max(2, int(5 * sc)))
+            pygame.draw.line(surface, (*c["skin_dark"], 255), p1, p2, max(1, int(3 * sc)))
+            pygame.draw.line(surface, (*c["skin_mid"], 255), p1, p2, max(1, int(1 * sc)))
+        else:
+            pygame.draw.line(surface, (*c["outline"], 255), p0, p1, max(2, int(5 * sc)))
+            pygame.draw.line(surface, (*c["skin_dark"], 255), p0, p1, max(1, int(3 * sc)))
+            pygame.draw.line(surface, (*c["skin_light"], 255), p0, p1, max(1, int(1 * sc)))
+        # tangan + wisp jiwa
+        pygame.draw.circle(surface, (*c["skin_mid"], 255), p2, max(2, int(2.5 * sc)))
+        pygame.draw.circle(surface, (*c["soul_mid"], 120),
+                           (int(p2[0]), int(p2[1])), max(2, int(4 * sc)))
+        pygame.draw.circle(surface, (*c["soul_bright"], 160),
+                           (int(p2[0]), int(p2[1] - 1)), max(1, int(2 * sc)))
 
-            ghost_progress = min(1.0, (progress - delay) / max(0.1, 1 - delay))
+    def _draw_arms(surface, cx, cy, sc, facing, action, ap, phase, p_front):
+        """Lengan belakang + depan (depan memegang sabit di p_front)."""
+        c = _NS_krobellus.PALETTE
+        G = _NS_krobellus
+        sh_y = G.SHOULDER_Y + 1
+        # LEMBAR BELAKANG
+        back_sh = (-12, sh_y)
+        if action == "spin":
+            back_h = (-14, -14)
+        elif action == "slam" and ap < 0.38:
+            back_h = (-13, -26)
+        elif action in ("cast_w", "cast_e"):
+            back_h = (-10, -6)
+        else:
+            back_h = (-13, -16 + math.sin(phase * 0.7) * 1)
+        G._draw_arm(surface, cx, cy, sc, facing, back_sh[0], back_sh[1],
+                    -15, sh_y + 9, back_h[0], back_h[1])
+        # LENGAN DEPAN — ke genggaman sabit
+        front_sh = (12, sh_y)
+        if action == "attack":
+            # siku mengikuti arah ayunan (bukan teleport)
+            th = G._scythe_angle(action, ap, phase)
+            kx = 15 + 3 * math.cos(th)
+            ky = sh_y + 8 + 3 * math.sin(th)
+        elif action == "spin":
+            kx, ky = 16, sh_y + 6
+        elif action in ("cast_w", "cast_e"):
+            kx, ky = 18, -14
+        elif action == "slam":
+            kx, ky = (15, -30) if ap < 0.38 else (14, -8)
+        elif action == "hurt":
+            kx, ky = (14, -22)
+        else:
+            kx, ky = (14, sh_y + 7)
+        G._draw_arm(surface, cx, cy, sc, facing, front_sh[0], front_sh[1],
+                    kx, ky, p_front[0], p_front[1])
+        return
 
-            # Position
-            angle = angle_off + pulse * 0.3
-            base_x = x + int(math.cos(angle) * rx)
+    def _draw_highlights(surface, cx, cy, sc, phase, action):
+        """Titik jiwa melayang di sekitar badan (tanpa surface temp)."""
+        c = _NS_krobellus.PALETTE
+        G = _NS_krobellus
+        n = 5 if action == "idle" else 4
+        for i in range(n):
+            a = phase * 0.5 + i * math.tau / n
+            r = 26 + math.sin(phase * 0.8 + i * 1.3) * 6
+            lx = math.cos(a) * r
+            ly = -6 + math.sin(a) * r * 0.5
+            pt = G._map(cx, cy, sc, 1, lx, ly)   # orbit simetris (tak dicerminkan)
+            a2 = int(120 + 60 * math.sin(phase * 1.4 + i))
+            pygame.draw.circle(surface, (*c["soul_mid"], max(30, a2)), pt, 1)
+            pygame.draw.circle(surface, (*c["soul_bright"], max(20, a2 // 2)),
+                               (int(pt[0]), int(pt[1]) - 1), 1)
 
-            # Ghosts rise from ground
-            rise = ghost_progress * 40
-            base_y = y + 40 - int(rise) + int(math.sin(pulse + angle_off) * 3)
+    def _draw_flash_hurt(surface, cx, cy, sc, flash, facing, action, ap, phase):
+        """Overlay putih saat kena damage (hurt_flash_timer > 0)."""
+        if flash < 8:
+            return
+        a = int(min(120.0, flash * 0.72))
+        c = (255, 255, 255, a)
+        G = _NS_krobellus
+        # siluet: tudung + torso (bukan jubah — flash tetap terbaca sebagai
+        # "kena" tanpa menelan seluruh karakter)
+        hood = [
+            (cx - 13, cy + G.HEAD_Y + 8), (cx + 13, cy + G.HEAD_Y + 8),
+            (cx + 15, cy + G.HEAD_Y + 2), (cx + 13, cy + G.HEAD_Y - 8),
+            (cx + 6, cy + G.HEAD_Y - 13), (cx - 4, cy + G.HEAD_Y - 14),
+            (cx - 12, cy + G.HEAD_Y - 8), (cx - 16, cy + G.HEAD_Y - 1),
+            (cx - 16, cy + G.HEAD_Y + 4),
+        ]
+        pygame.draw.polygon(surface, c,
+                             [G._map(cx, cy, sc, facing, x - cx, y - cy)
+                              for x, y in hood])
+        torso = [
+            (cx - 13, cy + G.SHOULDER_Y - 2), (cx + 13, cy + G.SHOULDER_Y - 2),
+            (cx + 14, cy + G.BELT_Y + 2), (cx + 6, cy + G.BELT_Y + 6),
+            (cx - 6, cy + G.BELT_Y + 6), (cx - 14, cy + G.BELT_Y + 2),
+        ]
+        pygame.draw.polygon(surface, c,
+                             [G._map(cx, cy, sc, facing, x - cx, y - cy)
+                              for x, y in torso])
 
-            # Fade in
-            alpha = int(230 * min(1.0, ghost_progress * 2))
+    def _draw_krb_rig_at(surface, cx, cy, sc, facing, phase, action, ap,
+                         portrait, flash, boss):
+        """Komposisi penuh satu pose (dipakai entry point)."""
+        G = _NS_krobellus
+        dx, dy, flare = G._body_offsets(action, ap, phase, boss)
+        # death: dissolve naik (bagian atas lenyap duluan) + jatuh
+        dissolve = 0.0
+        if action == "death":
+            age = int(getattr(boss, "_krb_death_age", 0) or 0)
+            dissolve = min(1.0, age / 45.0)
+            dy += dissolve * 6.0
+        bx = cx + dx * facing * sc
+        by = cy + dy * sc
+        # HEM (paling belakang)
+        G._draw_hem(surface, bx, by, sc, facing, phase, flare, action)
+        # TORSO + PAULDRON
+        G._draw_torso(surface, bx, by, sc, facing, phase, action)
+        G._draw_pauldrons(surface, bx, by, sc, facing, action)
+        # HEAD
+        G._draw_head(surface, bx, by, sc, facing, phase, action)
+        # SABIT (di belakang lengan depan)
+        th = G._scythe_angle(action, ap, phase, boss)
+        p = G._scythe_pivot_local(action, ap, phase, boss)
+        glow_k = 0.0
+        if action == "attack":
+            kind = getattr(boss, "_krb_attack_kind", "swing") if boss else "swing"
+            if kind == "swing":
+                glow_k = 1.0 if 0.24 <= ap <= 0.58 else 0.45
+            else:
+                glow_k = 0.9 if 0.30 <= ap <= 0.56 else 0.3
+        elif action == "spin":
+            glow_k = 1.0
+        elif action == "slam":
+            glow_k = 1.0 if ap < 0.42 else 0.5
+        elif action in ("cast_w", "cast_e"):
+            glow_k = 0.5
+        G._draw_scythe_at(surface, bx, by, sc, facing, th, p, glow_k, action, ap, phase)
+        # LENGAN DEPAN (menimpa pangkal sabit)
+        G._draw_arms(surface, bx, by, sc, facing, action, ap, phase, p)
+        # HIGHLIGHT
+        if not portrait:
+            G._draw_highlights(surface, bx, by, sc, phase, action)
+        # CHARGE ORB (w/bolt): orb di ujung bilah saat gathering
+        if (action == "attack" and boss is not None and
+                getattr(boss, "_krb_attack_kind", "swing") == "bolt"
+                and 0.30 <= ap <= 0.56) or action == "cast_w":
+            hub, _th = G._scythe_hub_local(action, ap, phase, boss)
+            hp = G._map(bx, by, sc, facing, hub[0], hub[1])
+            pulse = 0.7 + 0.3 * math.sin(phase * 12.0)
+            col = G.PALETTE["void_mid"] if action == "cast_w" else G.PALETTE["soul_mid"]
+            hot = G.PALETTE["void_bright"] if action == "cast_w" else G.PALETTE["soul_bright"]
+            s = G._glow_surf(12, col)
+            s.set_alpha(int(170 * pulse))
+            surface.blit(s, (int(hp[0] - s.get_width() / 2),
+                             int(hp[1] - s.get_height() / 2)))
+            s.set_alpha(255)
+            pygame.draw.circle(surface, (*hot, 255), hp, 2)
+            pygame.draw.circle(surface, (255, 255, 255, 235), hp, 1)
+        # FLASH HURT
+        G._draw_flash_hurt(surface, bx, by, sc, flash, facing, action, ap, phase)
+        return
 
-            # Bobbing motion
-            bob = int(math.sin(pulse * 2 + angle_off) * 3)
+    def _draw_scythe_at(surface, cx, cy, sc, facing, angle, p, glow_k,
+                        action, ap, phase):
+        """Versi sabit dengan pivot eksplisit (dipanggil rig)."""
+        c = _NS_krobellus.PALETTE
+        G = _NS_krobellus
+        hub_l = (p[0] + G.SCYTHE_SHAFT * math.cos(angle),
+                 p[1] + G.SCYTHE_SHAFT * math.sin(angle))
+        P = lambda lx, ly: G._map(cx, cy, sc, facing, lx, ly)  # noqa: E731
+        p0 = P(p[0], p[1])
+        p1 = P(hub_l[0], hub_l[1])
+        pygame.draw.line(surface, (*c["outline"], 255), p0, p1, max(2, int(5 * sc)))
+        pygame.draw.line(surface, (*c["scythe_dark"], 255), p0, p1, max(2, int(3 * sc)))
+        pygame.draw.line(surface, (*c["scythe_mid"], 255), p0, p1, max(1, int(1 * sc)))
+        for i in range(3):
+            t = 0.12 + i * 0.10
+            gx = p[0] + (hub_l[0] - p[0]) * t
+            gy = p[1] + (hub_l[1] - p[1]) * t
+            gp = P(gx, gy)
+            pygame.draw.rect(surface, (*c["gold_dark"], 255),
+                             (int(gp[0]) - 1, int(gp[1]) - 1, 3, 3))
+        hp = P(hub_l[0], hub_l[1])
+        pygame.draw.circle(surface, (*c["scythe_dark"], 255), hp, max(2, int(3 * sc)))
+        pygame.draw.circle(surface, (*c["gold_mid"], 255),
+                           (int(hp[0]), int(hp[1]) - 1), max(1, int(1 * sc)))
+        th0, th1 = angle - 0.30, angle + 1.10
+        n = 10
+        outer, inner = [], []
+        for i in range(n + 1):
+            t = th0 + (th1 - th0) * i / n
+            outer.append(P(hub_l[0] + G.SCYTHE_R_OUT * math.cos(t),
+                           hub_l[1] + G.SCYTHE_R_OUT * math.sin(t)))
+        for i in range(n + 1):
+            t = th1 - (th1 - th0) * i / n
+            inner.append(P(hub_l[0] + G.SCYTHE_R_IN * math.cos(t),
+                           hub_l[1] + G.SCYTHE_R_IN * math.sin(t)))
+        pygame.draw.polygon(surface, (*c["outline"], 255), outer + inner)
+        inner2 = []
+        for i in range(n + 1):
+            t = th0 + (th1 - th0) * i / n
+            inner2.append(P(hub_l[0] + (G.SCYTHE_R_OUT - 2) * math.cos(t),
+                            hub_l[1] + (G.SCYTHE_R_OUT - 2) * math.sin(t)))
+        inner3 = []
+        for i in range(n + 1):
+            t = th1 - (th1 - th0) * i / n
+            inner3.append(P(hub_l[0] + G.SCYTHE_R_IN * math.cos(t),
+                            hub_l[1] + G.SCYTHE_R_IN * math.sin(t)))
+        pygame.draw.polygon(surface, (*c["scythe_mid"], 255), inner2 + inner3)
+        pygame.draw.polygon(surface, (*c["scythe_light"], 255), outer, max(1, int(2 * sc)))
+        if glow_k > 0.05:
+            a = int(150 * min(1.0, glow_k))
+            for i in range(0, n, 2):
+                t = th0 + (th1 - th0) * i / n
+                pt = P(hub_l[0] + G.SCYTHE_R_OUT * math.cos(t),
+                       hub_l[1] + G.SCYTHE_R_OUT * math.sin(t))
+                pygame.draw.circle(surface, (*c["soul_light"], a), pt, 1)
+            if glow_k > 0.5:
+                s = G._glow_surf(16, c["soul_mid"])
+                s.set_alpha(int(120 * glow_k))
+                surface.blit(s, (int(hp[0] - s.get_width() / 2),
+                                 int(hp[1] - s.get_height() / 2)))
+                s.set_alpha(255)
 
-            _NS_krobellus._draw_ghost_head(surface, base_x, base_y + bob, pulse + angle_off,
-                             size, boss.direction, alpha)
+    # ==================================================================
+    # LAPISAN FX HIDUP (heroes/krobellus_fx)
+    # ==================================================================
+    _LIVE_MOD = None
 
-            # Trail of wisps below (rising from ground)
-            for j in range(3):
-                wisp_y = base_y + 10 + j * 5
-                wisp_alpha = max(0, alpha - (j + 1) * 60)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_mid"], wisp_alpha),
-                          (base_x + int(math.sin(pulse + j) * 2), wisp_y),
-                          max(1, 3 - j))
+    def _live_module():
+        """Muat ``heroes.krobellus_fx`` sekali; None kalau tidak tersedia."""
+        NS = _NS_krobellus
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import krobellus_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "KROBELLS_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
 
-        # Extra particles rising
-        for i in range(15):
-            t = ((pulse * 0.5 + i * 0.12) % 1.0)
-            angle = i * math.pi * 2 / 15
-            r = 40 + int(math.sin(pulse + i) * 15)
-            px = x + int(math.cos(angle) * r)
-            py = y + 40 - int(t * 60) + int(math.sin(pulse + i) * 3)
-            alpha = int(200 * (1 - t))
-            if alpha > 0:
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_light"], alpha), (px, py), 2)
-                _NS_krobellus._aacircle(surface, (*_NS_krobellus.PALETTE["ghost_hot"], alpha), (px, py - 1), 1)
+    def live_fx_ready():
+        """True kalau lapisan hidup Krobellus bisa dipakai (dipakai tooling)."""
+        return _NS_krobellus._live_module() is not None
 
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Return (mod, owned). want_draw True pada jalur BOSS (draw tiap
+        frame tanpa cache); jalur HERO digambar heroes/__init__.py."""
+        NS = _NS_krobellus
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
 
-    # ===================================================================
-    # Backward-compatible entry point alias
-    # ===================================================================
+    # ==================================================================
+    # FALLBACK FX CANVAS (hanya jika modul FX tidak bisa dimuat)
+    # ==================================================================
+    def _draw_fallback_fx(surface, boss, x, y, phase):
+        """Versi sederhana di-canvas: bolt, orb, ghost, flash impact."""
+        G = _NS_krobellus
+        c = G.PALETTE
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        active = bool(getattr(boss, "_krb_attack_active", False))
+        kind = getattr(boss, "_krb_attack_kind", "swing")
+        ap = float(getattr(boss, "_krb_attack_progress", 0.0) or 0.0)
+        tgt = getattr(boss, "target", None)
+        tx = float(getattr(tgt, "x", x + 130 * f)) if tgt else x + 130 * f
+        ty = float(getattr(tgt, "y", y)) if tgt else y
+        if active and kind == "bolt" and ap >= G.ATTACK_RELEASE_FRAME:
+            # soul bolt sederhana: 3 lingkaran + trail
+            k = min(1.0, (ap - G.ATTACK_RELEASE_FRAME) /
+                    (1.0 - G.ATTACK_RELEASE_FRAME) * 1.6)
+            sx = x + 52 * f
+            sy = y - 18
+            px = sx + (tx - sx) * k
+            py = sy + (ty - sy) * k
+            for i in range(3):
+                bk = max(0.0, k - i * 0.06)
+                bx = sx + (tx - sx) * bk
+                by = sy + (ty - sy) * bk
+                a = max(30, 120 - i * 35)
+                pygame.draw.circle(surface, (*c["soul_mid"], a),
+                                   (int(bx), int(by)), max(1, 3 - i))
+            pygame.draw.circle(surface, (*c["soul_light"], 235),
+                               (int(px), int(py)), 4)
+            pygame.draw.circle(surface, (*c["soul_hot"], 255),
+                               (int(px), int(py)), 2)
+        skill = getattr(boss, "_krb_skill", None)
+        sp = float(getattr(boss, "_krb_skill_progress", 0.0) or 0.0)
+        if skill == "q" and sp >= 0.55:
+            r = int(20 + 90 * min(1.0, (sp - 0.55) / 0.45))
+            a = max(20, int(180 * (1 - (sp - 0.55) / 0.45)))
+            pygame.draw.ellipse(surface, (*c["soul_bright"], a),
+                                (int(x - r), int(y - 10 - r * 0.25),
+                                 r * 2, r * 0.5), 2)
+        elif skill == "w" and sp < 0.45:
+            hx, hy = x + 14 * f, y - 18
+            r = int(3 + 9 * (sp / 0.45))
+            pygame.draw.circle(surface, (*c["void_mid"], 235),
+                               (int(hx), int(hy)), r)
+            pygame.draw.circle(surface, (*c["void_bright"], 255),
+                               (int(hx), int(hy)), max(1, r - 3))
+        elif skill == "e":
+            # garis jiwa ke target
+            for i in range(6):
+                t = i / 5.0
+                px = tx + (x - tx) * t
+                py = ty + (y - 18 - ty) * t
+                a = int(120 + 60 * math.sin(phase * 8.0 + i))
+                pygame.draw.circle(surface, (*c["soul_mid"], max(40, a)),
+                                   (int(px), int(py)), 2)
+        elif skill == "r" and sp >= 0.35:
+            k = min(1.0, (sp - 0.35) / 0.55)
+            r = int(16 + 70 * (1 - (1 - k) ** 2))
+            a = max(16, int(190 * (1 - k)))
+            pygame.draw.ellipse(surface, (*c["void_bright"], a),
+                                (int(x - r), int(y + 40 - r * 0.2),
+                                 r * 2, r * 0.4), 2)
+            for i in range(8):
+                ang = i * math.tau / 8
+                gx = x + math.cos(ang) * (30 + 26 * k)
+                gy = y + 42 - k * 44 + math.sin(phase * 3.0 + i) * 2
+                a2 = int(220 * min(1.0, k * 3.0))
+                pygame.draw.circle(surface, (*c["soul_mid"], max(20, a2)),
+                                   (int(gx), int(gy)), 3)
+                pygame.draw.circle(surface, (*c["soul_bright"], max(20, a2)),
+                                   (int(gx), int(gy - 1)), 1)
+        # flash impact saat frame benturan
+        if active and kind == "swing" and ap >= G.ATTACK_IMPACT_FRAME and \
+                ap < G.ATTACK_IMPACT_FRAME + 0.06:
+            if tgt is not None:
+                pygame.draw.circle(surface, (*c["soul_hot"], 200),
+                                   (int(tx), int(ty)), 5)
+                pygame.draw.circle(surface, (255, 255, 255, 220),
+                                   (int(tx), int(ty)), 2)
+
+    # ==================================================================
+    # DEBUG OVERLAY (DEBUG_CHARACTER = True)
+    # ==================================================================
+    _DEBUG_FONT = None
+
+    def _debug_font():
+        NS = _NS_krobellus
+        if NS._DEBUG_FONT is None:
+            try:
+                NS._DEBUG_FONT = pygame.font.SysFont("monospace", 11)
+            except Exception:                          # pragma: no cover
+                NS._DEBUG_FONT = None
+        return NS._DEBUG_FONT
+
+    def _draw_krb_debug(surface, boss, x, y, action, owned):
+        """Hitbox, hurtbox, jangkauan, state/frame, FPS, partikel, skill,
+        timer serangan. Overlay PALING AKHIR (tidak pernah tertutup)."""
+        fnt = _NS_krobellus._debug_font()
+        if fnt is None:
+            return
+        G = _NS_krobellus
+        sc = G.body_scale(boss)
+        x, y = int(x), int(y)
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        r = int(22 * sc)
+        # hurtbox
+        pygame.draw.rect(surface, (255, 80, 80),
+                         (x - r, y - r - 20, r * 2, r * 2 + 20), 1)
+        # jangkauan basic
+        reach = int(G.MELEE_REACH)
+        pygame.draw.circle(surface, (80, 200, 255), (x, y), reach, 1)
+        pygame.draw.circle(surface, (80, 200, 255), (x, y), 4, 1)
+        # hitbox ayunan
+        hb = G._swing_hitbox(boss, x, y)
+        if hb is not None:
+            pygame.draw.rect(surface, (255, 220, 60), hb, 1)
+        # teks
+        ap = float(getattr(boss, "_krb_attack_progress", 0.0) or 0.0)
+        phase = getattr(boss, "_krb_attack_phase", "-")
+        skill = getattr(boss, "_krb_skill", None)
+        kind = getattr(boss, "_krb_attack_kind", "-")
+        n_parts = 0
+        if owned:
+            mod = G._live_module()
+            if mod is not None:
+                try:
+                    n_parts = int(mod.total_particles())
+                except Exception:
+                    n_parts = 0
+        lines = [
+            "KROBELLS state=%s pose=%s" % (G.anim_state(boss), action),
+            "atk %s p=%.2f ph=%s skill=%s" % (
+                kind if getattr(boss, "_krb_attack_active", False) else "-",
+                ap, phase, skill),
+            "timer=%d cd=%d hurt=%d" % (
+                int(getattr(boss, "timer", 0) or 0),
+                int(getattr(boss, "attack_cooldown", 0) or 0),
+                int(getattr(boss, "hurt_flash_timer", 0) or 0)),
+            "parts=%d live=%s" % (n_parts, "yes" if owned else "no"),
+        ]
+        yy = y - 92
+        for ln in lines:
+            t = fnt.render(ln, True, (220, 255, 240))
+            bg = t.copy()
+            bg.fill((0, 0, 0, 180))
+            surface.blit(bg, (x - 8, yy - 1))
+            surface.blit(t, (x - 7, yy))
+            yy += 13
+
+    # ==================================================================
+    # ENTRY POINT
+    # ==================================================================
+    def draw_krobellus(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus heroes.render_hero().
+
+        Urutan lapisan (kontrak render order proyek):
+          GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/HEAD ->
+          WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+          SKILL FX -> IMPACT FX -> DEBUG.
+        Trail ayunan, partikel, soul bolt, impact, shake, dan hit-stop
+        hidup di heroes/krobellus_fx.py (layar 1:1, di luar cache).
+        """
+        NS = _NS_krobellus
+        # jalur hero (lane): heroes/__init__ men-set _render_scale sebelum
+        # memanggil renderer -> lapisan hidup sudah dipicu di sana
+        hero_lane = hasattr(boss, "_render_scale")
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        NS._update_krb_anim(boss)
+        moving = NS._detect_moving(boss)
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._krb_pose_action = action
+        facing = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        flash = NS._alpha(170 * (getattr(boss, "hurt_flash_timer", 0) / 8.0))
+        live, owned = NS._live_fx(boss, surface, x, y,
+                                  not hero_lane, portrait)
+
+        # ── Latar (dibuang saat portrait agar auto-crop Hero Shop bersih)
+        if not portrait:
+            NS._draw_rune_circle(surface, x, y, phase,
+                                 getattr(boss, "_krb_skill", None))
+            NS._draw_shadow(surface, x, y)
+            NS._draw_mist(surface, x, y, phase)
+
+        # ── Hantu pendamping (belakang)
+        intense = bool(getattr(boss, "_krb_attack_active", False)) or \
+            getattr(boss, "_krb_skill", None) is not None
+        NS._draw_companions(surface, x, y, phase, facing, front=False,
+                            intense=intense)
+
+        # ── Karakter
+        NS._draw_krb_rig_at(surface, x, y, NS.body_scale(boss), facing,
+                            phase, action, ap, portrait, flash, boss)
+
+        # ── Fallback FX (hanya jalur boss & modul FX tidak diambil alih)
+        if not owned and not hero_lane and not portrait:
+            NS._draw_fallback_fx(surface, boss, x, y, phase)
+
+        # ── Hantu pendamping (depan)
+        NS._draw_companions(surface, x, y, phase, facing, front=True,
+                            intense=intense)
+
+        # ── Lapisan hidup bagian ATAS + debug
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_krb_debug(surface, boss, x, y, action, owned)
+
+    # ==================================================================
+    # Backward-compatible alias
+    # ==================================================================
     def draw_boss(surface, boss, x, y):
         _NS_krobellus.draw_krobellus(surface, boss, x, y)
 
