@@ -692,7 +692,7 @@ _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "alchemist", "ancient_apparition", "nyzrak",
                    "xerathis", "varkul", "ignis_drachorn", "zharok",
                    "vokrahn", "pyrenth", "krobellus", "vhalzun",
-                   "nyxara", "gravefang"}
+                   "nyxara", "gravefang", "thalgryn", "kunkka"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -718,6 +718,8 @@ _LIVE_FX_PATHS = {
     "vhalzun": "heroes.vhalzun_fx",
     "nyxara": "heroes.nyxara_fx",
     "gravefang": "heroes.gravefang_fx",
+    "thalgryn": "heroes.thalgryn_fx",
+    "kunkka": "heroes.kunkka_fx",
 }
 
 

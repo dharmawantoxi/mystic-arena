@@ -843,6 +843,40 @@ class Boss(TowerDebuffMixin):
                                     0.0, self.damage, False, 'grave')
                         except Exception:
                             pass
+                    # ═══ IMPACT FX THALGRYN ═══
+                    # The Shape of Water bertarung dua jarak: tebasan
+                    # bilah air (jarak <= MELEE_REACH dunia 78 px) atau
+                    # lemparan Water Spear (lebih jauh). Keduanya memicu
+                    # flash air, serpihan, shockwave, shake, dan hit-stop
+                    # 0.03-0.08 s (lengkapnya di heroes/thalgryn_fx).
+                    # Difilter per boss_type + try/except (paritas
+                    # Gravefang/Nyxara).
+                    if getattr(self, 'boss_type', None) == 'thalgryn':
+                        try:
+                            from heroes import thalgryn_fx as _tfx
+                            if dist <= _tfx.MELEE_REACH:
+                                _tfx.notify_melee_impact(
+                                    self, self.target, self.damage, False)
+                            else:
+                                _tfx.notify_projectile_impact(
+                                    self, self.target.x, self.target.y,
+                                    0.0, self.damage, False, 'spear')
+                        except Exception:
+                            pass
+                    # ═══ IMPACT FX KUNKKA ═══
+                    # Kunkka murni MELEE: satu tebasan cutlass di target
+                    # (jarak <= MELEE_REACH). FX-nya: busur cutlass + flash
+                    # air/baja, serpihan, shockwave, shake, hit-stop
+                    # 0.03-0.08 s (lengkapnya di heroes/kunkka_fx).
+                    # Difilter per boss_type + try/except (paritas
+                    # Gravefang/Nyxara/Thalgryn).
+                    if getattr(self, 'boss_type', None) == 'kunkka':
+                        try:
+                            from heroes import kunkka_fx as _kfx
+                            _kfx.notify_melee_impact(
+                                self, self.target, self.damage, False)
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -5049,6 +5083,16 @@ class Boss(TowerDebuffMixin):
         self.x += dx * surge_dist
         self.y += dy * surge_dist
 
+        # ═══ SKILL FX THALGRYN Q (lapisan hidup) ═══
+        # Waveform: arus air + percikan di titik kedatangan (flash,
+        # serpihan, shockwave, shake, hit-stop) — heroes/thalgryn_fx.
+        try:
+            from heroes import thalgryn_fx as _tfx
+            _tfx.notify_skill_cast(self, 'q')
+            _tfx.notify_skill_impact(self, self.x, self.y, 130, 'q')
+        except Exception:
+            pass
+
         self._shake_screen(18)
 
     def _thalgryn_w(self, enemies):
@@ -5071,6 +5115,20 @@ class Boss(TowerDebuffMixin):
                         e.x - self.target.x, e.y - self.target.y) <= 60:
                     e.take_damage(damage // 3, self.team)
 
+        # ═══ SKILL FX THALGRYN W (lapisan hidup) ═══
+        # Adaptive Strike: spear berat mendarat di target (flash, serpihan,
+        # shockwave, shake, hit-stop) — heroes/thalgryn_fx.
+        try:
+            from heroes import thalgryn_fx as _tfx
+            _tfx.notify_skill_cast(self, 'w')
+            if self.target and self.target.alive:
+                _tfx.notify_skill_impact(self, self.target.x,
+                                         self.target.y, 60, 'w')
+            else:
+                _tfx.notify_skill_impact(self, self.x, self.y, 60, 'w')
+        except Exception:
+            pass
+
         self._shake_screen(15)
 
     def _thalgryn_e(self):
@@ -5089,6 +5147,16 @@ class Boss(TowerDebuffMixin):
         # Heal 14% (water regeneration)
         heal = int(self.max_hp * 0.14)
         self.hp = min(self.max_hp, self.hp + heal)
+
+        # ═══ SKILL FX THALGRYN E (lapisan hidup) ═══
+        # Morph: kolom air atribut + mote sekitar badan (flash, serpihan,
+        # shake, hit-stop) — heroes/thalgryn_fx.
+        try:
+            from heroes import thalgryn_fx as _tfx
+            _tfx.notify_skill_cast(self, 'e')
+            _tfx.notify_skill_impact(self, self.x, self.y, 115, 'e')
+        except Exception:
+            pass
 
         self._shake_screen(10)
 
@@ -5117,6 +5185,16 @@ class Boss(TowerDebuffMixin):
                 e.take_damage(damage, self.team)
                 if hasattr(e, 'apply_slow'):
                     e.apply_slow(0.4, 180)
+
+        # ═══ SKILL FX THALGRYN R (lapisan hidup) ═══
+        # Replicate: klon air + burst AOE (flash, serpihan, shockwave,
+        # shake, hit-stop) — heroes/thalgryn_fx.
+        try:
+            from heroes import thalgryn_fx as _tfx
+            _tfx.notify_skill_cast(self, 'r')
+            _tfx.notify_skill_impact(self, self.x, self.y, 200, 'r')
+        except Exception:
+            pass
 
         self._shake_screen(22)
 
@@ -5613,6 +5691,21 @@ class Boss(TowerDebuffMixin):
                 if perp < line_width:
                     e.take_damage(damage, self.team)
 
+        # ═══ SKILL FX KUNKKA Q (lapisan hidup) ═══
+        # Tide Bringer: semburan arus air + bulan sabit air ke depan
+        # (flash, serpihan, shockwave, shake, hit-stop) — heroes/kunkka_fx.
+        try:
+            from heroes import kunkka_fx as _kfx
+            _kfx.notify_skill_cast(self, 'q')
+            if self.target and self.target.alive:
+                _kfx.notify_skill_impact(self, self.target.x,
+                                         self.target.y, 250, 'q')
+            else:
+                _kfx.notify_skill_impact(
+                    self, self.x + dx * 220, self.y + dy * 220, 250, 'q')
+        except Exception:
+            pass
+
         self._shake_screen(15)
 
     def _cast_w_x_marks(self, enemies):
@@ -5624,6 +5717,20 @@ class Boss(TowerDebuffMixin):
         if self.target and self.target.alive:
             self.x_mark_target = self.target
             self.x_mark_timer = 120  # 2 second delay
+
+        # ═══ SKILL FX KUNKKA W (lapisan hidup) ═══
+        # X Marks the Spot: tanda X air + cincin merah di titik target
+        # (flash, shockwave, shake, hit-stop) — heroes/kunkka_fx.
+        try:
+            from heroes import kunkka_fx as _kfx
+            _kfx.notify_skill_cast(self, 'w')
+            if self.x_mark_target and self.x_mark_target.alive:
+                _kfx.notify_skill_impact(self, self.x_mark_target.x,
+                                         self.x_mark_target.y, 120, 'w')
+            else:
+                _kfx.notify_skill_impact(self, self.x, self.y, 120, 'w')
+        except Exception:
+            pass
 
         self._shake_screen(8)
 
@@ -5672,6 +5779,21 @@ class Boss(TowerDebuffMixin):
         heal = int(self.max_hp * 0.15)
         self.hp = min(self.max_hp, self.hp + heal)
 
+        # ═══ SKILL FX KUNKKA E (lapisan hidup) ═══
+        # Ghost Ship: kapal hantu berlayar + kabut spectral di lintasan
+        # (flash, serpihan, shockwave, shake, hit-stop) — heroes/kunkka_fx.
+        try:
+            from heroes import kunkka_fx as _kfx
+            _kfx.notify_skill_cast(self, 'e')
+            if self.target and self.target.alive:
+                _kfx.notify_skill_impact(self, self.target.x,
+                                         self.target.y, 300, 'e')
+            else:
+                _kfx.notify_skill_impact(
+                    self, self.x + dx * 240, self.y + dy * 240, 300, 'e')
+        except Exception:
+            pass
+
         self._shake_screen(18)
 
         try:
@@ -5715,6 +5837,16 @@ class Boss(TowerDebuffMixin):
                     push_y = (e.y - ty) / dist * 20
                     e.x += push_x
                     e.y += push_y
+
+        # ═══ SKILL FX KUNKKA R (lapisan hidup) ═══
+        # Torrent: pilar air naik + mahkota percikan + AOE (flash,
+        # serpihan, shockwave, shake, hit-stop) — heroes/kunkka_fx.
+        try:
+            from heroes import kunkka_fx as _kfx
+            _kfx.notify_skill_cast(self, 'r')
+            _kfx.notify_skill_impact(self, tx, ty, 200, 'r')
+        except Exception:
+            pass
 
         self._shake_screen(28)
 
