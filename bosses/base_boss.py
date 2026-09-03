@@ -714,6 +714,27 @@ class Boss(TowerDebuffMixin):
                                     self, self.target, self.damage, False)
                         except Exception:
                             pass
+                    # ═══ IMPACT FX ZHAROK ═══
+                    # Zharok bertarung di dua jarak: panah api (jauh) dan
+                    # Ember Cleave dengan busur (dekat). Jaraknya sendiri
+                    # yang memilih paket benturan — di bawah MELEE_REACH
+                    # dunia (74 px) dia menebas, di atasnya dia menembak.
+                    # Keduanya memicu flash, serpihan, shake, dan hit-stop
+                    # 0.03-0.08 s (lengkapnya di heroes/zharok_fx).
+                    # Difilter per boss_type + try/except (paritas Ignis).
+                    if getattr(self, 'boss_type', None) == 'zharok':
+                        try:
+                            from heroes import zharok_fx as _zhfx
+                            if dist <= _zhfx.MELEE_REACH:
+                                self._zh_melee_swing = True
+                                _zhfx.notify_melee_impact(
+                                    self, self.target, self.damage, False)
+                            else:
+                                _zhfx.notify_projectile_impact(
+                                    self, self.target.x, self.target.y, 0.0,
+                                    self.damage, False, 'arrow')
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -3660,6 +3681,19 @@ class Boss(TowerDebuffMixin):
         if self.target and self.target.alive:
             self.target.take_damage(stats.get("skill_q_damage", 220), self.team)
         self._shake_screen(10)
+        # ═══ SKILL FX ZHAROK — Q "Strafe" ═══
+        # Lapisan hidup heroes/zharok_fx.py: koridor bidik meruncing,
+        # chevron maju, lalu voli 6 anak panah ke arah target. Damage
+        # sudah dijatuhkan di atas; notify hanya menyalakan visual +
+        # game-feel, jadi aman kalau modulnya tidak ada.
+        try:
+            from heroes import zharok_fx as _zhfx
+            _zhfx.notify_skill_cast(self, 'q')
+            if self.target is not None:
+                _zhfx.notify_skill_impact(self, self.target.x,
+                                          self.target.y, 60, 'q')
+        except Exception:
+            pass
 
     def _cast_zharok_w(self):
         stats = self._get_boss_stats()
@@ -3667,6 +3701,14 @@ class Boss(TowerDebuffMixin):
         self.active_skill = 'w'
         self.active_skill_timer = 40
         self._shake_screen(5)
+        # ═══ SKILL FX ZHAROK — W "Skeleton Walk" ═══
+        # Kolam asap + hantu tulang yang menyebar dari kaki caster.
+        try:
+            from heroes import zharok_fx as _zhfx
+            _zhfx.notify_skill_cast(self, 'w')
+            _zhfx.notify_skill_impact(self, self.x, self.y, 200, 'w')
+        except Exception:
+            pass
 
     def _cast_zharok_e(self, enemies):
         stats = self._get_boss_stats()
@@ -3677,6 +3719,15 @@ class Boss(TowerDebuffMixin):
             if math.hypot(e.x - self.x, e.y - self.y) <= 150:
                 e.take_damage(stats.get("skill_e_damage", 280), self.team)
         self._shake_screen(15)
+        # ═══ SKILL FX ZHAROK — E "Death Pact" ═══
+        # Pentagram + tengkorak melayang + berkas jiwa, radius 150 dunia
+        # persis sama dengan radius damage di atas.
+        try:
+            from heroes import zharok_fx as _zhfx
+            _zhfx.notify_skill_cast(self, 'e')
+            _zhfx.notify_skill_impact(self, self.x, self.y, 150, 'e')
+        except Exception:
+            pass
 
     def _cast_zharok_r(self, enemies):
         stats = self._get_boss_stats()
@@ -3687,6 +3738,16 @@ class Boss(TowerDebuffMixin):
             if math.hypot(e.x - self.x, e.y - self.y) <= 220:
                 e.take_damage(stats.get("skill_r_damage", 400), self.team)
         self._shake_screen(20)
+        # ═══ SKILL FX ZHAROK — R "Burning Army" ═══
+        # Retakan magma bergerigi, pilar api, kolom cahaya, dan 5
+        # tengkorak jiwa yang melesat keluar — radius 220 dunia sama
+        # dengan radius damage di atas.
+        try:
+            from heroes import zharok_fx as _zhfx
+            _zhfx.notify_skill_cast(self, 'r')
+            _zhfx.notify_skill_impact(self, self.x, self.y, 220, 'r')
+        except Exception:
+            pass
 
     # ===== PYRENTH AI (Demon Lord) =====
     def _smart_ai_pyrenth(self, enemies, target_dist):
