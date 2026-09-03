@@ -660,7 +660,7 @@ _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
                    "alchemist", "ancient_apparition", "nyzrak",
                    "xerathis", "varkul", "ignis_drachorn", "zharok",
-                   "vokrahn"}
+                   "vokrahn", "pyrenth"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -681,6 +681,7 @@ _LIVE_FX_PATHS = {
     "ignis_drachorn": "heroes.ignis_drachorn_fx",
     "zharok": "heroes.zharok_fx",
     "vokrahn": "heroes.vokrahn_fx",
+    "pyrenth": "heroes.pyrenth_fx",
 }
 
 
