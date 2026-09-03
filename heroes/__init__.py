@@ -679,12 +679,20 @@ _BEAM_PASS_HEROES = {"morgath"}
 # tengkorak + busur nether Nether Ward, tether jiwa berpilin Life Drain,
 # impact flash + shockwave + serpihan tulang, afterimage, hit-stop
 # 0.03-0.08 s, dan shake — semua hidup di luar cache sprite.
+# Gravefang (heroes/gravefang_fx.py) melengkapi daftar untuk The Bone
+# Devourer: pita hantaman gada dari histori kepala gada (busur
+# ANTICIPATION->RECOVERY), pecahan tulang & Rolling Boulder modular
+# (bilah bergerigi berputar + batu bergulir + trail debu + afterimage),
+# nova bergerigi + pilar batu Boulder Smash, jalur gilasan Rolling
+# Boulder, pasak tulang + rantai energi Geomagnetic Grip, orbit batu
+# tersedot Magnetize, impact flash + shockwave + retakan tanah +
+# puing, hit-stop 0.03-0.08 s, dan shake — semua di luar cache sprite.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
                    "alchemist", "ancient_apparition", "nyzrak",
                    "xerathis", "varkul", "ignis_drachorn", "zharok",
                    "vokrahn", "pyrenth", "krobellus", "vhalzun",
-                   "nyxara"}
+                   "nyxara", "gravefang"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -709,6 +717,7 @@ _LIVE_FX_PATHS = {
     "krobellus": "heroes.krobellus_fx",
     "vhalzun": "heroes.vhalzun_fx",
     "nyxara": "heroes.nyxara_fx",
+    "gravefang": "heroes.gravefang_fx",
 }
 
 

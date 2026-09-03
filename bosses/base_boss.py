@@ -54,7 +54,7 @@ BOSS_LABEL_TOP = {
     "grimkor": 75,
     "bhorgathul": 58,
     "ghrakmaal": 62,
-    "gravefang": 59,
+    "gravefang": 106,  # rig Bone Devourer: puncak gada terangkat 102 px, + aman
     "gravewake": 61,
     "emberwick": 58,
     "ignirus": 53,
@@ -820,6 +820,27 @@ class Boss(TowerDebuffMixin):
                                 _nyxfx.notify_projectile_impact(
                                     self, self.target.x, self.target.y,
                                     0.0, self.damage, False, 'nether')
+                        except Exception:
+                            pass
+                    # ═══ IMPACT FX GRAVEFANG ═══
+                    # The Bone Devourer bertarung dua wujud: hantaman
+                    # gada tulang (jarak <= MELEE_REACH dunia 78 px)
+                    # atau lemparan pecahan tulang bila lebih jauh.
+                    # Keduanya memicu flash kubur, puing batu, retakan
+                    # tanah, shockwave bergerigi, shake, dan hit-stop
+                    # 0.03-0.08 s (lengkapnya di heroes/gravefang_fx).
+                    # Difilter per boss_type + try/except (paritas
+                    # Nyxara/Vhalzun).
+                    if getattr(self, 'boss_type', None) == 'gravefang':
+                        try:
+                            from heroes import gravefang_fx as _gfvfx
+                            if dist <= _gfvfx.MELEE_REACH:
+                                _gfvfx.notify_melee_impact(
+                                    self, self.target, self.damage, False)
+                            else:
+                                _gfvfx.notify_projectile_impact(
+                                    self, self.target.x, self.target.y,
+                                    0.0, self.damage, False, 'grave')
                         except Exception:
                             pass
                     # Cleave splash damage to nearby enemy units
@@ -4268,6 +4289,15 @@ class Boss(TowerDebuffMixin):
             self.r_timer = stats.get("skill_r_cooldown", 620)
             self.active_skill = "r"
             self.active_skill_timer = 100
+            # FX Magnetize (heroes/gravefang_fx): tarikan medan + orbit
+            # batu + nova besar. try/except supaya AI tidak pernah
+            # gagal hanya karena modul FX absen.
+            try:
+                from heroes import gravefang_fx as _gfvfx
+                _gfvfx.notify_skill_cast(self, 'r')
+                _gfvfx.notify_skill_impact(self, self.x, self.y, 180, 'r')
+            except Exception:
+                pass
             for e in enemies:
                 if math.hypot(e.x - self.x, e.y - self.y) <= 180:
                     e.take_damage(stats.get("skill_r_damage", 380), self.team)
@@ -4278,6 +4308,12 @@ class Boss(TowerDebuffMixin):
             self.w_timer = stats.get("skill_w_cooldown", 300)
             self.active_skill = "w"
             self.active_skill_timer = 70
+            # FX Rolling Boulder: boulder modular menggelinding ke target.
+            try:
+                from heroes import gravefang_fx as _gfvfx
+                _gfvfx.notify_skill_cast(self, 'w')
+            except Exception:
+                pass
             self.target.take_damage(stats.get("skill_w_damage", 240), self.team)
             return
 
@@ -4286,6 +4322,12 @@ class Boss(TowerDebuffMixin):
             self.e_timer = stats.get("skill_e_cooldown", 280)
             self.active_skill = "e"
             self.active_skill_timer = 70
+            # FX Geomagnetic Grip: pasak tulang + rantai energi ke target.
+            try:
+                from heroes import gravefang_fx as _gfvfx
+                _gfvfx.notify_skill_cast(self, 'e')
+            except Exception:
+                pass
             self.target.take_damage(stats.get("skill_e_damage", 190), self.team)
             if hasattr(self.target, "attack_timer"):
                 self.target.attack_timer = max(self.target.attack_timer, 60)
@@ -4296,6 +4338,13 @@ class Boss(TowerDebuffMixin):
             self.q_timer = stats.get("skill_q_cooldown", 240)
             self.active_skill = "q"
             self.active_skill_timer = 60
+            # FX Boulder Smash: nova bergerigi + pilar batu + retakan.
+            try:
+                from heroes import gravefang_fx as _gfvfx
+                _gfvfx.notify_skill_cast(self, 'q')
+                _gfvfx.notify_skill_impact(self, self.x, self.y, 120, 'q')
+            except Exception:
+                pass
             for e in enemies:
                 if math.hypot(e.x - self.x, e.y - self.y) <= 120:
                     e.take_damage(stats.get("skill_q_damage", 260), self.team)
@@ -5871,6 +5920,18 @@ class Boss(TowerDebuffMixin):
                 try:
                     from heroes import nyxara_fx as _nyxfx
                     _nyxfx.notify_death(self)
+                except Exception:
+                    pass
+
+            # ═══ DEATH FX GRAVEFANG ═══
+            # Kerangka Bone Devourer berhamburan: hit-stop 0.08 s,
+            # shake, ledakan serpihan tulang + debu batu (lengkapnya
+            # di heroes/gravefang_fx.notify_death). Difilter per
+            # boss_type + try/except (paritas hook benturan).
+            if getattr(self, 'boss_type', None) == 'gravefang':
+                try:
+                    from heroes import gravefang_fx as _gfvfx
+                    _gfvfx.notify_death(self)
                 except Exception:
                     pass
 
