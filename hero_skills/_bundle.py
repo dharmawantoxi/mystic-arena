@@ -461,10 +461,13 @@ class _NS_boss_hero_skills:
         # 50/50/70/90 agar sinkron 1:1 dengan renderer v2
         # (bosses/level3.py SKILL_DUR) dan lapisan FX hidup
         # (heroes/nyzrak_fx.py SKILL_DUR) — CAST->CHARGE->RELEASE
-        # #match# dengan AI.  Hero lain tetap memakai default
-        # _DEFAULT_VISUAL_DURATION / SKILL_VISUAL_DURATION.
+        # #match# dengan AI.  Vhalzun (rewrite v2) memakai 60/80/60/100
+        # supaya lifecycle FX identik dengan versi boss-nya.  Hero lain
+        # tetap memakai default _DEFAULT_VISUAL_DURATION /
+        # SKILL_VISUAL_DURATION.
         BOSS_HERO_VISUAL_DURATION = {
             "nyzrak": {"q": 50, "w": 50, "e": 70, "r": 90},
+            "vhalzun": {"q": 60, "w": 80, "e": 60, "r": 100},
         }
 
         def _get_visual_duration(self, key):
@@ -533,6 +536,12 @@ class _NS_boss_hero_skills:
                 'w': '_cast_w_krobellus_silence',
                 'e': '_cast_e_krobellus_siphon',
                 'r': '_cast_r_krobellus_crypt',
+            },
+            "vhalzun": {
+                'q': '_cast_q_vhalzun_death_pulse',
+                'w': '_cast_w_vhalzun_heartstopper',
+                'e': '_cast_e_vhalzun_reapers_scythe',
+                'r': '_cast_r_vhalzun_ghost_shroud',
             },
             "kunkka": {
                 'q': '_cast_q_kunkka_tide',
@@ -1583,6 +1592,67 @@ class _NS_boss_hero_skills:
                 from heroes import krobellus_fx
                 krobellus_fx.notify_skill_cast(h, 'r')
                 krobellus_fx.notify_skill_impact(h, h.x, h.y, 200, 'r')
+            except Exception:
+                pass
+
+        # ═══════════════════════════════════════
+        # VHALZUN skills (Level 5 Mini Boss — hero unlock)
+        # Kit identik versi boss: Death Pulse / Heartstopper /
+        # Reaper's Scythe / Ghost Shroud. FX hidup di
+        # heroes/vhalzun_fx.py (nova jiwa, sigil heks + leech,
+        # gelombang sabit, wraith + cangkang spektral).
+        # ═══════════════════════════════════════
+
+        def _cast_q_vhalzun_death_pulse(self, h, enemies):
+            h.active_skill = 'q'; h.active_skill_timer = 60
+            for e in enemies:
+                if math.hypot(e.x-h.x, e.y-h.y) <= 130:
+                    e.take_damage(int(h.skill_damage * 1.5), h.team)
+            # ═══ SKILL FX VHALZUN (Death Pulse: nova jiwa bergerigi) ═══
+            try:
+                from heroes import vhalzun_fx
+                vhalzun_fx.notify_skill_cast(h, 'q')
+                vhalzun_fx.notify_skill_impact(h, h.x, h.y, 130, 'q')
+            except Exception:
+                pass
+
+        def _cast_w_vhalzun_heartstopper(self, h, enemies):
+            h.active_skill = 'w'; h.active_skill_timer = 80
+            for e in enemies:
+                if math.hypot(e.x-h.x, e.y-h.y) <= 150:
+                    e.take_damage(int(h.skill_damage * 1.0), h.team)
+                    if hasattr(e, 'attack_timer'):
+                        e.attack_timer = max(e.attack_timer, 60)
+            # ═══ SKILL FX VHALZUN (Heartstopper: sigil heks + leech) ═══
+            try:
+                from heroes import vhalzun_fx
+                vhalzun_fx.notify_skill_cast(h, 'w')
+                vhalzun_fx.notify_skill_impact(h, h.x, h.y, 150, 'w')
+            except Exception:
+                pass
+
+        def _cast_e_vhalzun_reapers_scythe(self, h, enemies):
+            h.active_skill = 'e'; h.active_skill_timer = 60
+            if h.target and h.target.alive:
+                h.target.take_damage(int(h.skill_damage * 1.8), h.team)
+            # ═══ SKILL FX VHALZUN (Reaper's Scythe: gelombang sabit) ═══
+            try:
+                from heroes import vhalzun_fx
+                vhalzun_fx.notify_skill_cast(h, 'e')
+            except Exception:
+                pass
+
+        def _cast_r_vhalzun_ghost_shroud(self, h, enemies):
+            h.active_skill = 'r'; h.active_skill_timer = 100
+            for e in enemies:
+                if math.hypot(e.x-h.x, e.y-h.y) <= 150:
+                    e.take_damage(int(h.skill_damage * 1.4), h.team)
+            heal = int(h.max_hp * 0.18); h.hp = min(h.max_hp, h.hp + heal)
+            # ═══ SKILL FX VHALZUN (Ghost Shroud: wraith + cangkang) ═══
+            try:
+                from heroes import vhalzun_fx
+                vhalzun_fx.notify_skill_cast(h, 'r')
+                vhalzun_fx.notify_skill_impact(h, h.x, h.y, 150, 'r')
             except Exception:
                 pass
 

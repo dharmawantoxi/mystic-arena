@@ -2857,20 +2857,118 @@ class _NS_gravefang:
 
 
 # ====================================================================
-# VHALZUN
+# VHALZUN — THE REAPER OF SOULS  (FULL REWRITE v2)
+# ====================================================================
+# Arsitektur "masterwork" (pola yang sama dengan krobellus/zharok):
+#
+#   * RENDERER (namespace ini) — rig pixel-art prosedural + pose +
+#     telegraph tanah.  Semua bentuk digambar via pygame.draw dengan
+#     palet terbatas, tepi tajam (TANPA anti-aliasing), koordinat
+#     ter-snap ke pixel, dan surface statis di-cache (bayangan, mist,
+#     rune circle, glow lentera).
+#   * LAPISAN HIDUP (heroes/vhalzun_fx.py) — trail sapuan sabit dari
+#     histori posisi ujung bilah, particle system jiwa, proyektil
+#     death pulse & reaper scythe (lifecycle penuh), FX skill Q/W/E/R,
+#     impact flash + shockwave + debris, afterimage, screen shake, dan
+#     hit-stop 0.03-0.08 s.  Digambar 1:1 ke layar, DI LUAR cache
+#     sprite supaya tetap hidup 60 fps.
+#   * GAME FEEL BUS (heroes/combat_feel.py) — satu sumber hit-stop &
+#     shake untuk seluruh arena.
+#
+# Kontrak publik (dipakai heroes/__init__, bosses/base_boss,
+# hero_skills, tools, dan heroes/vhalzun_fx):
+#   draw_vhalzun(surface, boss, x, y)  entry (Boss.draw & render_hero)
+#   draw_boss(surface, boss, x, y)     alias backward-compatible
+#   PALETTE                            palet karakter + FX (sumber benar)
+#   pose_of / anim_state / attack_phase / attack_kind
+#   scythe_points(boss, x, y)          (pivot, tip) Vector2 ruang layar
+#   body_scale / ground_dy             skala & garis tanah
+#   MELEE_REACH / SKILL_DUR / SKILL_RADIUS / ATTACK_ACTIVE_WINDOW /
+#   ATTACK_IMPACT_FRAME / ATTACK_RELEASE_FRAME        (dikunci tes)
+#   DEBUG_CHARACTER                    overlay hitbox/hurtbox/state
 # ====================================================================
 class _NS_vhalzun:
-    """Namespace vhalzun - isi asli tidak diubah."""
+    """Namespace vhalzun — renderer The Reaper of Souls (rewrite v2).
 
-    # ---------------------------------------------------------------------------
-    # Compatibility helpers
-    # ---------------------------------------------------------------------------
-    HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
+    Gaya: 2D pixel art dark-fantasy — chunky pixels, silhouette kuat
+    (kerudung runcing + jubah lebar + sabit panjang), palet terbatas,
+    tepi keras, highlight/shadow per-pixel.  100% prosedural.
+    """
 
-    # ---------------------------------------------------------------------------
-    # HD Color Palette - Necrophos inspired dark green / necrotic
-    # ---------------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # KONFIGURASI KARAKTER & KONTRAK TIMING
+    # ------------------------------------------------------------------
+    CHARACTER_NAME = "vhalzun"
+
+    #: Overlay debug (hitbox, hurtbox, range, state, FPS, partikel).
+    DEBUG_CHARACTER = False
+
+    #: Jarak dunia (px) — di bawahnya Vhalzun MENEBAS dengan sabit,
+    #: di atasnya ia melempar death pulse.  Hook benturan di
+    #: bosses/base_boss.py dan modul FX memakai angka yang sama.
+    MELEE_REACH = 96.0
+
+    #: Garis tanah dari titik jangkar (px lokal).
+    GROUND_DY = 48
+
+    #: Fase serangan (fraksi 0..1 dari durasi serangan) — satu
+    #: kosakata untuk renderer, lapisan hidup, dan overlay debug.
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.12),
+        ("WINDUP",       0.12, 0.30),
+        ("SWING",        0.30, 0.50),
+        ("IMPACT",       0.50, 0.62),
+        ("FOLLOW",       0.62, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+
+    #: Jendela hit aktif + frame benturan (swing) & rilis (pulse).
+    ATTACK_ACTIVE_WINDOW = (0.30, 0.55)
+    ATTACK_IMPACT_FRAME = 0.42
+    ATTACK_RELEASE_FRAME = 0.32
+
+    #: Durasi pose skill dalam FRAME — HARUS sama dengan timer yang
+    #: di-set _smart_ai_vhalzun / hero_skills (q 60, w 80, e 60, r 100).
+    SKILL_DUR = {"q": 60, "w": 80, "e": 60, "r": 100}
+
+    #: Radius efek di RUANG DUNIA — sama dengan radius damage AI.
+    SKILL_RADIUS = {"q": 130.0, "w": 150.0, "e": 60.0, "r": 150.0}
+
+    #: Prioritas state animasi — angka besar menang, DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: Lifecycle skill: CAST -> CHARGE -> RELEASE -> AREA -> AFTER.
+    SKILL_PHASES = (
+        ("CAST",    0.00, 0.16),
+        ("CHARGE",  0.16, 0.34),
+        ("RELEASE", 0.34, 0.46),
+        ("AREA",    0.46, 0.74),
+        ("IMPACT",  0.74, 0.86),
+        ("AFTER",   0.86, 1.00),
+    )
+
+    # ------------------------------------------------------------------
+    # PALETTE — Necrophos inspired: necro green + robe teal gelap +
+    # tulang pucat + trim emas + aksen ungu.  Kunci identik dengan
+    # heroes/vhalzun_fx.VHALZUN_PALETTE (modul FX menyalin dari sini).
+    # ------------------------------------------------------------------
     PALETTE = {
+        # outline gelap (pixel-art hard edge)
+        "outline":        (3,   8,   7),
+
         # Robe - dark teal/green
         "robe_darkest":   (8,   20,  18),
         "robe_dark":      (18,  42,  36),
@@ -2893,8 +2991,8 @@ class _NS_vhalzun:
         # Necrotic green - main magical color
         "necro_darkest":  (5,   30,  10),
         "necro_dark":     (18,  75,  25),
-        "necro_mid":      (40, 155,  55),
-        "necro_light":    (90, 220,  95),
+        "necro_mid":      (40, 155, 55),
+        "necro_light":    (90, 220, 95),
         "necro_bright":   (150, 250, 140),
         "necro_hot":      (200, 255, 180),
         "necro_white":    (235, 255, 220),
@@ -2918,13 +3016,13 @@ class _NS_vhalzun:
 
         # Eye glow
         "eye_dark":       (25,  75,  20),
-        "eye_mid":        (80, 200,  60),
+        "eye_mid":        (80, 200, 60),
         "eye_bright":     (170, 255, 130),
         "eye_hot":        (230, 255, 200),
 
         # Purple accent (small)
         "purple_dark":    (35,  15,  55),
-        "purple_mid":     (75,  40, 115),
+        "purple_mid":     (75,  40,  115),
 
         # Misc
         "shadow":         (0,   0,   0),
@@ -2932,1423 +3030,1293 @@ class _NS_vhalzun:
         "white":          (255, 255, 255),
     }
 
+    # ------------------------------------------------------------------
+    # GEOMETRI SABIT (ruang lokal facing-kanan; cermin via x*facing)
+    # ------------------------------------------------------------------
+    SCYTHE_SHAFT = 44.0        # panjang gagang dari pivot ke hub
+    SCYTHE_R_OUT = 24.0        # radius luar bilah
+    SCYTHE_R_IN = 10.0         # radius dalam bilah (ketebalan sabit)
+    SCYTHE_TIP_OFF = 0.22      # offset sudut ujung bilah dari hub
+    _SCYTHE_REST = -0.62       # sudut istirahat (bilah terangkat di punggung)
 
+    # ===================================================================
+    # HELPERS MATEMATIKA & PIXEL
+    # ===================================================================
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
 
+    def _lerp(a, b, t):
+        return a + (b - a) * t
 
-    def _aacircle(surface, color, center, radius, width=0):
-        color = _NS_vhalzun._clamp(color)
-        cx, cy = int(center[0]), int(center[1])
-        radius = max(0, int(radius))
-        if radius == 0:
-            return
-        if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
-            surface.blit(temp, (cx - radius - 2, cy - radius - 2))
-            return
-        if _NS_vhalzun.HAS_AACIRCLE and radius > 1:
-            try:
-                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius, width)
-                return
-            except Exception:
-                pass
-        pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
+    def _lerp_pt(a, b, t):
+        return (_NS_vhalzun._lerp(a[0], b[0], t),
+                _NS_vhalzun._lerp(a[1], b[1], t))
 
+    def _ease_out_cubic(t):
+        t = max(0.0, min(1.0, t))
+        return 1.0 - (1.0 - t) ** 3
 
-    def _aaline(surface, color, start, end, width=1):
-        color = _NS_vhalzun._clamp(color)
-        sx, sy = int(start[0]), int(start[1])
-        ex, ey = int(end[0]), int(end[1])
-        if len(color) == 4 and color[3] < 255:
-            min_x = min(sx, ex) - width
-            min_y = min(sy, ey) - width
-            w = abs(ex - sx) + width * 4 + 4
-            h = abs(ey - sy) + width * 4 + 4
-            if w <= 0 or h <= 0:
-                return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.line(temp, color,
-                             (sx - min_x, sy - min_y),
-                             (ex - min_x, ey - min_y), max(1, width))
-            surface.blit(temp, (min_x, min_y))
-            return
-        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
+    def _ease_in_cubic(t):
+        t = max(0.0, min(1.0, t))
+        return t * t * t
 
+    def _ease_in_out(t):
+        t = max(0.0, min(1.0, t))
+        return t * t * (3.0 - 2.0 * t)
 
-    def _poly(surface, color, points):
-        if len(points) < 3:
-            return
-        color = _NS_vhalzun._clamp(color)
-        if len(color) == 4 and color[3] < 255:
-            xs = [p[0] for p in points]
-            ys = [p[1] for p in points]
-            min_x, min_y = min(xs) - 2, min(ys) - 2
-            w = max(xs) - min_x + 4
-            h = max(ys) - min_y + 4
-            if w <= 0 or h <= 0:
-                return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            shifted = [(p[0] - min_x, p[1] - min_y) for p in points]
-            pygame.draw.polygon(temp, color, shifted)
-            surface.blit(temp, (min_x, min_y))
-            return
-        pygame.draw.polygon(surface, color[:3], points)
+    def _snap(v):
+        """Snap koordinat ke pixel penuh (pixel-art: tanpa sub-pixel)."""
+        return int(round(v))
 
+    def _qphase(phase, buckets=12):
+        """Kuantisasi fase animasi supaya surface cache tetap kecil."""
+        return int(phase * buckets) % buckets
 
-    def _ellipse(surface, color, rect, width=0):
-        color = _NS_vhalzun._clamp(color)
-        if len(color) == 4 and color[3] < 255:
-            rx, ry, rw, rh = rect
-            if rw <= 0 or rh <= 0:
-                return
-            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.ellipse(temp, color, (2, 2, rw, rh), width)
-            surface.blit(temp, (rx - 2, ry - 2))
-            return
-        pygame.draw.ellipse(surface, color[:3], rect, width)
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1."""
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_vhalzun.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
 
+    def attack_phases_order():
+        return tuple(n for n, _a, _b in _NS_vhalzun.ATTACK_PHASES)
 
-    def _rect(surface, color, rect, border_radius=0):
-        color = _NS_vhalzun._clamp(color)
-        if len(color) == 4 and color[3] < 255:
-            rx, ry, rw, rh = rect
-            if rw <= 0 or rh <= 0:
-                return
-            temp = pygame.Surface((rw + 4, rh + 4), pygame.SRCALPHA)
-            pygame.draw.rect(temp, color, (2, 2, rw, rh), border_radius=border_radius)
-            surface.blit(temp, (rx - 2, ry - 2))
-            return
-        pygame.draw.rect(surface, color[:3], rect, border_radius=border_radius)
+    def skill_phase(t):
+        """Nama fase skill untuk t 0..1."""
+        p = max(0.0, min(1.0, float(t)))
+        for name, a, b in _NS_vhalzun.SKILL_PHASES:
+            if a <= p < b:
+                return name
+        return "AFTER"
 
+    # ===================================================================
+    # CACHE SURFACE STATIS (dibangun sekali, dipakai semua unit)
+    # ===================================================================
+    _CACHE = {}
+    _CACHE_MAX = 96
 
+    def clear_cache():
+        _NS_vhalzun._CACHE.clear()
+
+    def _cached(key, builder):
+        s = _NS_vhalzun._CACHE.get(key)
+        if s is None:
+            if len(_NS_vhalzun._CACHE) >= _NS_vhalzun._CACHE_MAX:
+                _NS_vhalzun._CACHE.pop(next(iter(_NS_vhalzun._CACHE)))
+            s = builder()
+            _NS_vhalzun._CACHE[key] = s
+        return s
+
+    @staticmethod
+    def _shadow_surf():
+        """Bayangan kontak (ellipse chunky berlapis, dibangun sekali)."""
+        w, h = 96, 22
+        c = _NS_vhalzun.PALETTE
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.ellipse(s, (0, 0, 0, 110), (4, 4, w - 8, h - 8))
+        pygame.draw.ellipse(s, (0, 0, 0, 80), (12, 6, w - 24, h - 12))
+        pygame.draw.ellipse(s, (*c["necro_darkest"], 60),
+                            (18, 8, w - 36, h - 16))
+        return s
+
+    @staticmethod
+    def _mist_surf(bucket):
+        """Mist nekrotik di bawah Vhalzun melayang (6 bucket fase)."""
+        c = _NS_vhalzun.PALETTE
+        w, h = 116, 30
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        off = (bucket % 6) / 6.0
+        for i, (dx, rw) in enumerate(((-26, 34), (-6, 46), (18, 32))):
+            t = (off + i * 0.33) % 1.0
+            cy = 20 - int(t * 8)
+            a = int(70 * (1.0 - t))
+            if a <= 0:
+                continue
+            pygame.draw.ellipse(
+                s, (*c["necro_darkest"], min(255, a)),
+                (w // 2 + dx - rw // 2, cy - 4,
+                 rw, max(3, 8 - int(t * 4))))
+            pygame.draw.ellipse(
+                s, (*c["necro_dark"], a // 2),
+                (w // 2 + dx - rw // 2 + 3, cy - 3,
+                 rw - 6, max(2, 5 - int(t * 3))))
+        return s
+
+    @staticmethod
+    def _rune_surf(bucket, skill):
+        """Rune circle di tanah (8 bucket rotasi; versi skill lebih terang)."""
+        c = _NS_vhalzun.PALETTE
+        w, h = 132, 48
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        cx, cy = w // 2, h // 2
+        # cincin ellipse chunky (3px, tepi keras)
+        pygame.draw.ellipse(s, (*c["necro_dark"], 150),
+                            (6, 12, w - 12, 24), 3)
+        pygame.draw.ellipse(s, (*c["necro_mid"], 170),
+                            (20, 17, w - 40, 14), 2)
+        # rune tick yang berputar (garis pendek chunky)
+        base = bucket * (math.pi / 4.0)
+        for i in range(10):
+            ang = base + i * (math.pi / 5.0)
+            x1 = cx + int(math.cos(ang) * 34)
+            y1 = cy + int(math.sin(ang) * 8)
+            x2 = cx + int(math.cos(ang) * 56)
+            y2 = cy + int(math.sin(ang) * 14)
+            pygame.draw.line(s, (*c["necro_bright"], 160),
+                             (x1, y1), (x2, y2), 1)
+        if skill:
+            pygame.draw.ellipse(s, (*c["necro_hot"], 90),
+                                (12, 8, w - 24, 32), 1)
+        return s
+
+    @staticmethod
+    def _glow_surf(radius, color):
+        """Glow lembut (untuk mata/lentera) — dibangun sekali per radius."""
+        size = radius * 2 + 2
+        s = pygame.Surface((size, size), pygame.SRCALPHA)
+        for r in range(radius, 0, -1):
+            a = int(120 * (1.0 - r / float(radius)) ** 1.6)
+            if a > 0:
+                pygame.draw.circle(s, (*color[:3], min(255, a)),
+                                   (size // 2, size // 2), r)
+        return s
+
+    @staticmethod
     def _target_position(boss, x, y):
+        """Posisi target di ruang jangkar (dengan kompensasi scale)."""
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
-            # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
             scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
             tx = x + (target.x - getattr(boss, "x", x)) / scale
             ty = y + (target.y - getattr(boss, "y", y)) / scale
             return int(tx), int(ty)
-        return int(x + 200 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+        return int(x + 200 / (float(getattr(boss, "_render_scale", 1.0)) or 1.0)
+                   * getattr(boss, "direction", 1)), int(y)
 
+    # ===================================================================
+    # ANIMATION CONTROLLER — satu sumber kebenaran state
+    #
+    # Menulis ke ``boss``:
+    #   _vhz_dt                delta-time nyata (detik, dijepit)
+    #   _vhz_moving            unit bergerak frame ini
+    #   _vhz_attack_active     serangan sedang berjalan
+    #   _vhz_attack_frame      frame ke-n dalam serangan
+    #   _vhz_attack_progress   0..1 sepanjang serangan
+    #   _vhz_attack_kind       'swing' | 'pulse' (diputuskan saat mulai)
+    #   _vhz_attack_phase      ANTICIPATION..RECOVERY
+    #   _vhz_hit_active        True hanya di jendela hit aktif
+    #   _vhz_hurt_frames       sisa frame respons kena damage
+    #   _vhz_skill             'q'/'w'/'e'/'r' (None = tidak ada)
+    #   _vhz_skill_progress    0..1 sepanjang skill
+    #   _vhz_skill_total       durasi frame skill aktif
+    #   _vhz_state/_prev/_time/_frame   state machine + prioritas
+    #   _vhz_death_age         umur frame pose kematian
+    # ===================================================================
+    @staticmethod
+    def _update_vhalzun_anim(boss):
+        G = _NS_vhalzun
 
-    # ---------------------------------------------------------------------------
-    # Necro particle helpers
-    # ---------------------------------------------------------------------------
-    def _draw_necro_orb(surface, x, y, size, phase, alpha=255):
-        """Draw a glowing necrotic orb."""
-        flick = math.sin(phase * 3) * 0.15 + 1.0
-        s = int(size * flick)
-        if s < 1:
-            return
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_darkest"], alpha // 3), (x, y), s + 3)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], alpha // 2), (x, y), s + 1)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha), (x, y), s)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_light"], alpha), (x, y - 1),
-                  max(1, s - 2))
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], min(255, alpha)),
-                  (x, y - 2), max(1, s - 4))
-        if s > 3:
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_hot"], min(255, alpha)),
-                      (x, y - 2), max(1, s - 6))
+        # ── delta time nyata ─────────────────────────────────────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                          # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_vhz_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._vhz_last_ms = now
+        boss._vhz_dt = dt
 
+        # ── deteksi gerak ────────────────────────────────────────────
+        moving = G._detect_moving(boss)
+        boss._vhz_moving = moving
 
-    def _draw_mini_skull(surface, cx, cy, size=6, phase=0, alpha=220):
-        """Draw a small skull (for aura, ghost shroud, etc)."""
-        # Skull dome
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["bone_dark"], alpha), (cx, cy - 1), size)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["bone_mid"], alpha), (cx - 1, cy - 2), size - 1)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["bone_light"], alpha), (cx - 1, cy - 3),
-                  max(1, size - 3))
+        # ── timeline serangan ────────────────────────────────────────
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 44)))
+        timer = int(getattr(boss, "timer", 0))
+        previous = int(getattr(boss, "_vhz_prev_timer", 0))
+        active = bool(getattr(boss, "_vhz_attack_active", False))
 
-        # Jaw
-        _NS_vhalzun._rect(surface, (*_NS_vhalzun.PALETTE["bone_dark"], alpha),
-              (cx - size + 2, cy + size - 3, (size - 2) * 2, 3))
-        _NS_vhalzun._rect(surface, (*_NS_vhalzun.PALETTE["bone_mid"], alpha),
-              (cx - size + 3, cy + size - 3, (size - 3) * 2, 2))
+        triggered = timer >= cooldown - 1 and previous <= 1
+        if triggered:
+            boss._vhz_attack_active = True
+            boss._vhz_attack_frame = 0
+            boss._vhz_attack_manual = False
+            tgt = getattr(boss, "target", None)
+            if tgt is not None and getattr(tgt, "alive", True):
+                dist = math.hypot(
+                    float(getattr(tgt, "x", 0.0)) - float(getattr(boss, "x", 0.0)),
+                    float(getattr(tgt, "y", 0.0)) - float(getattr(boss, "y", 0.0)))
+            else:
+                dist = 1e9
+            boss._vhz_attack_kind = "swing" if dist <= G.MELEE_REACH else "pulse"
+            active = True
+        elif active and timer > 0:
+            boss._vhz_attack_frame = int(getattr(
+                boss, "_vhz_attack_frame", 0)) + 1
+        elif timer <= 0:
+            if active and not getattr(boss, "_vhz_attack_manual", False) \
+                    and float(getattr(boss, "_vhz_attack_progress", 0.0)) > 0.0:
+                # pemanggil eksternal menggerakkan progress manual (alat
+                # uji) — hormati, tandai manual
+                boss._vhz_attack_manual = True
+            elif not getattr(boss, "_vhz_attack_manual", False):
+                boss._vhz_attack_active = False
+                boss._vhz_attack_frame = 0
+                active = False
+            if not active:
+                boss._vhz_attack_active = False
+                boss._vhz_attack_frame = 0
+        boss._vhz_prev_timer = timer
 
-        # Teeth
-        for i in range(3):
-            tx = cx - 2 + i * 2
-            _NS_vhalzun._rect(surface, _NS_vhalzun.PALETTE["shadow_deep"], (tx, cy + size - 2, 1, 2))
+        frame = int(getattr(boss, "_vhz_attack_frame", 0)) if active else 0
+        span = max(1, cooldown - 1)
+        if bool(getattr(boss, "_vhz_attack_manual", False)) and active:
+            progress = min(1.0, max(0.0, float(getattr(
+                boss, "_vhz_attack_progress", 0.0))))
+            boss._vhz_attack_frame = int(round(progress * span))
+        else:
+            progress = min(1.0, frame / float(span)) if active else 0.0
+            boss._vhz_attack_progress = progress
 
-        # Eye sockets
-        eye_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        eye_size = max(1, int(size // 3 * eye_pulse))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["shadow_deep"],
-                  (cx - size // 2, cy - 1), eye_size + 1)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["shadow_deep"],
-                  (cx + size // 2, cy - 1), eye_size + 1)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_bright"],
-                  (cx - size // 2, cy - 1), eye_size)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_hot"],
-                  (cx - size // 2, cy - 1), max(1, eye_size - 1))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_bright"],
-                  (cx + size // 2, cy - 1), eye_size)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_hot"],
-                  (cx + size // 2, cy - 1), max(1, eye_size - 1))
+        # ── fase + jendela hit ───────────────────────────────────────
+        if not getattr(boss, "_vhz_attack_active", False):
+            boss._vhz_attack_active = False
+            boss._vhz_attack_manual = False
+            active = False
+        phase_name = G.attack_phase(progress) if active else "NONE"
+        boss._vhz_attack_phase = phase_name
+        lo, hi = G.ATTACK_ACTIVE_WINDOW
+        boss._vhz_hit_active = bool(active and lo <= progress < hi)
 
+        # ── respons kena damage (HURT) ───────────────────────────────
+        hurt = int(getattr(boss, "_vhz_hurt_frames", 0))
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash >= 8 and hurt <= 0:
+            hurt = 10
+        boss._vhz_hurt_frames = max(0, hurt - 1) if hurt > 0 else 0
 
-    def _draw_wraith(surface, cx, cy, phase, size=10, alpha=200):
-        """Draw a wraith / ghost shroud creature."""
-        wave = math.sin(phase * 2) * 2
+        # ── skill (active_skill; jalur boss generik: ability -> 'q') ──
+        skill = getattr(boss, "active_skill", None)
+        if skill is None and getattr(boss, "ability_active", False) \
+                and int(getattr(boss, "ability_active_timer", 0) or 0) > 0:
+            skill = "q"
+        if skill is not None:
+            timer_s = int(getattr(boss, "active_skill_timer", 0) or 0)
+            if skill == "q" and getattr(boss, "active_skill", None) is None:
+                timer_s = int(getattr(boss, "ability_active_timer", 0) or 0)
+            total = int(getattr(boss, "_vhz_skill_total", 0) or 0)
+            if getattr(boss, "_vhz_skill", None) != skill:
+                total = max(timer_s, G.SKILL_DUR.get(skill, 60))
+            boss._vhz_skill_total = max(total, timer_s, 1)
+            boss._vhz_skill_progress = max(
+                0.0, min(1.0, 1.0 - timer_s / float(boss._vhz_skill_total)))
+            boss._vhz_skill = skill
+        else:
+            boss._vhz_skill = None
+            boss._vhz_skill_progress = 0.0
+            boss._vhz_skill_total = 0
 
-        # Outer glow
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_darkest"], alpha // 3),
-                  (cx, cy), size + 4)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], alpha // 2),
-                  (cx, cy), size + 2)
+        # ── death age ────────────────────────────────────────────────
+        if not getattr(boss, "alive", True):
+            boss._vhz_death_age = int(getattr(boss, "_vhz_death_age", 0)) + 1
+        else:
+            boss._vhz_death_age = 0
 
-        # Wraith body (elongated tear shape)
-        body_pts = [
-            (cx - size + 1, cy - 2),
-            (cx, cy - size),
-            (cx + size - 1, cy - 2),
-            (cx + size - 2, cy + size - 2),
-            (cx + int(wave), cy + size + 2),
-            (cx - size + 2, cy + size - 2),
-        ]
-        _NS_vhalzun._poly(surface, (*_NS_vhalzun.PALETTE["necro_dark"], alpha), body_pts)
+        # ── state machine (prioritas) ────────────────────────────────
+        if not getattr(boss, "alive", True):
+            state = "DEATH"
+        elif boss._vhz_hurt_frames > 0:
+            state = "HURT"
+        elif skill is not None:
+            state = "SKILL" if skill in ("q", "w") else "SPECIAL"
+        elif active:
+            state = "SWING" if getattr(boss, "_vhz_attack_kind",
+                                       "pulse") == "swing" else "ATTACK"
+        elif moving:
+            state = "RUN" if getattr(boss, "is_enraged", False) else "WALK"
+        else:
+            state = "IDLE"
+        if state != getattr(boss, "_vhz_state", None):
+            boss._vhz_state_prev = getattr(boss, "_vhz_state", state)
+            boss._vhz_state = state
+            boss._vhz_state_time = 0
+            boss._vhz_state_frame = 0
+        else:
+            boss._vhz_state_time = getattr(boss, "_vhz_state_time", 0) + dt
+            boss._vhz_state_frame = int(getattr(boss, "_vhz_state_frame", 0)) + 1
+        return state
 
-        # Inner brighter
-        inner_pts = [
-            (cx - size + 3, cy - 1),
-            (cx, cy - size + 2),
-            (cx + size - 3, cy - 1),
-            (cx + size - 4, cy + size - 3),
-            (cx + int(wave * 0.5), cy + size),
-            (cx - size + 4, cy + size - 3),
-        ]
-        _NS_vhalzun._poly(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha), inner_pts)
-        _NS_vhalzun._poly(surface, (*_NS_vhalzun.PALETTE["necro_light"], alpha // 2), [
-            (cx - size // 2, cy),
-            (cx, cy - size // 2),
-            (cx + size // 2, cy),
-            (cx + size // 2 - 1, cy + size - 4),
-            (cx - size // 2 + 1, cy + size - 4),
-        ])
-
-        # Eye sockets
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["shadow_deep"],
-                  (cx - size // 3, cy - 1), max(1, size // 4))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["shadow_deep"],
-                  (cx + size // 3, cy - 1), max(1, size // 4))
-        # Eye glow
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_bright"],
-                  (cx - size // 3, cy - 1), max(1, size // 5))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_bright"],
-                  (cx + size // 3, cy - 1), max(1, size // 5))
-
-        # Tail wisps
-        for i in range(3):
-            tx = cx + (i - 1) * 2 + int(wave)
-            ty = cy + size + 2 + i
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha // 2),
-                      (tx, ty), max(1, 2 - i // 2))
-
-
-    # ---------------------------------------------------------------------------
-    # PROJECTILE SYSTEM
-    # ---------------------------------------------------------------------------
-    class DeathPulseProjectile:
-        """Green orb projectile from Death Pulse."""
-        def __init__(self, sx, sy, tx, ty, speed=6.0):
-            self.x = float(sx)
-            self.y = float(sy)
-            self.tx = float(tx)
-            self.ty = float(ty)
-            self.speed = speed
-            self.alive = True
-            self.age = 0
-            self.trail = []
-
-        def update(self):
-            if not self.alive:
-                return
-            self.age += 1
-            dx = self.tx - self.x
-            dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < self.speed + 4:
-                self.alive = False
-                return
-            self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 12:
-                self.trail.pop(0)
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
-
-        def draw(self, surface, phase):
-            if not self.alive and self.age < 2:
-                return
-            # Trail
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(50 + i * 15)
-                r = max(1, 6 - (len(self.trail) - i))
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], alpha), (tx, ty), r + 2)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha), (tx, ty), r)
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                _NS_vhalzun._draw_necro_orb(surface, px, py, 7, phase, 240)
-                # Orbiting sparks
-                for i in range(4):
-                    angle = phase * 5 + i * math.pi / 2
-                    sx = px + int(math.cos(angle) * 10)
-                    sy = py + int(math.sin(angle) * 10)
-                    _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_hot"], (sx, sy), 1)
-
-
-    class ReaperScytheProjectile:
-        """Scythe wave projectile that flies at target."""
-        def __init__(self, sx, sy, tx, ty, speed=9.0):
-            self.x = float(sx)
-            self.y = float(sy)
-            self.tx = float(tx)
-            self.ty = float(ty)
-            self.speed = speed
-            self.alive = True
-            self.age = 0
-            self.trail = []
-            dx = tx - sx
-            dy = ty - sy
-            self.angle = math.atan2(dy, dx)
-
-        def update(self):
-            if not self.alive:
-                return
-            self.age += 1
-            dx = self.tx - self.x
-            dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < self.speed + 4:
-                self.alive = False
-                return
-            self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 16:
-                self.trail.pop(0)
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
-
-        def draw(self, surface, phase):
-            if not self.alive and self.age < 3:
-                return
-            # Long crescent trail
-            for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(30 + i * 14)
-                r = max(1, 5 - (len(self.trail) - i) // 2)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], alpha), (tx, ty), r + 3)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha), (tx, ty), r + 1)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_light"], alpha), (tx, ty), r)
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                # Crescent/scythe wave shape
-                perp = self.angle + math.pi / 2
-                for i in range(-6, 7):
-                    offset = i
-                    # Curved wave shape
-                    curve = math.cos(i * 0.25) * 8
-                    wx = px + int(math.cos(perp) * offset - math.cos(self.angle) * curve)
-                    wy = py + int(math.sin(perp) * offset - math.sin(self.angle) * curve)
-                    _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], 180), (wx, wy), 3)
-                    _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], 220), (wx, wy), 2)
-                    _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], 240), (wx, wy), 1)
-
-                # Bright core
-                _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_hot"], (px, py), 3)
-                _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_white"], (px, py), 1)
-
-
-    # ---------------------------------------------------------------------------
-    # State management
-    # ---------------------------------------------------------------------------
+    @staticmethod
     def _detect_moving(boss):
-        if not hasattr(boss, "_vh_last_x"):
-            boss._vh_last_x = boss.x
-            boss._vh_last_y = boss.y
+        """Deteksi gerak dari delta posisi (cache 2 frame terakhir)."""
+        if not hasattr(boss, "_vhz_last_x"):
+            boss._vhz_last_x = boss.x
+            boss._vhz_last_y = boss.y
             return False
-        dx = abs(boss.x - boss._vh_last_x)
-        dy = abs(boss.y - boss._vh_last_y)
-        boss._vh_last_x = boss.x
-        boss._vh_last_y = boss.y
+        dx = abs(boss.x - boss._vhz_last_x)
+        dy = abs(boss.y - boss._vhz_last_y)
+        boss._vhz_last_x = boss.x
+        boss._vhz_last_y = boss.y
         return dx + dy > 0.3
 
+    # ===================================================================
+    # POSE STATE — satu sumber kebenaran untuk rig DAN semua FX
+    # ===================================================================
+    ACTIONS = ("idle", "walk", "attack", "swing", "cast_q", "cast_w",
+               "cast_e", "cast_r", "hurt", "death")
 
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
-        timer = int(getattr(boss, "timer", 0))
-        previous = int(getattr(boss, "_vh_prev_timer", 0))
-        active = bool(getattr(boss, "_vh_attack_active", False))
+    @staticmethod
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, ap) — murni, boleh dipanggil ulang oleh FX."""
+        if not getattr(boss, "alive", True):
+            return ("death", float(getattr(boss, "pulse", 0.0)), 0.0)
+        skill = getattr(boss, "_vhz_skill", None)
+        attacking = bool(getattr(boss, "_vhz_attack_active", False))
+        if skill is not None:
+            action = {"q": "cast_q", "w": "cast_w",
+                      "e": "cast_e", "r": "cast_r"}.get(skill, "cast_q")
+            ap = float(getattr(boss, "_vhz_skill_progress", 0.0) or 0.0)
+        elif attacking:
+            action = "swing" if getattr(boss, "_vhz_attack_kind",
+                                        "pulse") == "swing" else "attack"
+            ap = max(0.0, min(1.0, float(getattr(
+                boss, "_vhz_attack_progress", 0.0))))
+        elif int(getattr(boss, "_vhz_hurt_frames", 0)) > 0:
+            action, ap = "hurt", 0.0
+        elif moving:
+            action, ap = "walk", 0.0
+        else:
+            action, ap = "idle", 0.0
+        return action, float(getattr(boss, "pulse", 0.0)), ap
 
-        if timer >= cooldown - 1 and previous <= 1:
-            boss._vh_attack_active = True
-            boss._vh_attack_frame = 0
-            active = True
-        elif active:
-            boss._vh_attack_frame = int(getattr(boss, "_vh_attack_frame", 0)) + 1
-            if boss._vh_attack_frame > cooldown:
-                boss._vh_attack_active = False
-                boss._vh_attack_frame = 0
-                active = False
-        elif timer <= 0:
-            boss._vh_attack_active = False
-            boss._vh_attack_frame = 0
-            active = False
+    @staticmethod
+    def pose_of(boss):
+        """Publik: pose tersimpan (dipakai modul FX tanpa efek samping)."""
+        if not getattr(boss, "alive", True):
+            return ("death", float(getattr(boss, "pulse", 0.0)), 0.0)
+        skill = getattr(boss, "_vhz_skill", None)
+        if skill is not None:
+            action = {"q": "cast_q", "w": "cast_w",
+                      "e": "cast_e", "r": "cast_r"}.get(skill, "cast_q")
+            return (action, float(getattr(boss, "pulse", 0.0)),
+                    float(getattr(boss, "_vhz_skill_progress", 0.0) or 0.0))
+        if getattr(boss, "_vhz_attack_active", False):
+            action = "swing" if getattr(boss, "_vhz_attack_kind",
+                                        "pulse") == "swing" else "attack"
+            return (action, float(getattr(boss, "pulse", 0.0)),
+                    float(getattr(boss, "_vhz_attack_progress", 0.0) or 0.0))
+        if bool(getattr(boss, "_vhz_moving", False)):
+            return ("walk", float(getattr(boss, "pulse", 0.0)), 0.0)
+        return ("idle", float(getattr(boss, "pulse", 0.0)), 0.0)
 
-        boss._vh_prev_timer = timer
-        boss._vh_attack_progress = (
-            min(1.0, getattr(boss, "_vh_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
+    @staticmethod
+    def anim_state(boss):
+        """Publik: nama state animasi aktif (IDLE/WALK/.../DEATH)."""
+        return str(getattr(boss, "_vhz_state", "IDLE"))
 
+    @staticmethod
+    def attack_kind(boss):
+        return str(getattr(boss, "_vhz_attack_kind", "pulse"))
 
-    def _manage_projectiles(boss, surface, phase):
-        if not hasattr(boss, "_vh_projectiles"):
-            boss._vh_projectiles = []
-        for proj in boss._vh_projectiles:
-            proj.update()
-            proj.draw(surface, phase)
-        boss._vh_projectiles = [p for p in boss._vh_projectiles
-                                if p.alive or p.age < 8]
+    @staticmethod
+    def body_scale(boss):
+        sc = getattr(boss, "_render_scale", 1.0)
+        try:
+            sc = float(sc)
+        except (TypeError, ValueError):
+            sc = 1.0
+        return sc if sc > 0.01 else 1.0
 
-
-    def _spawn_basic_projectile(boss, x, y):
-        if not hasattr(boss, "_vh_projectiles"):
-            boss._vh_projectiles = []
-        tx, ty = _NS_vhalzun._target_position(boss, x, y)
-        sx = x + 22 * getattr(boss, "direction", 1)
-        sy = y - 12
-        boss._vh_projectiles.append(_NS_vhalzun.DeathPulseProjectile(sx, sy, tx, ty, speed=5.5))
-
-
-    def _spawn_scythe_projectile(boss, x, y):
-        if not hasattr(boss, "_vh_projectiles"):
-            boss._vh_projectiles = []
-        tx, ty = _NS_vhalzun._target_position(boss, x, y)
-        sx = x + 22 * getattr(boss, "direction", 1)
-        sy = y - 10
-        boss._vh_projectiles.append(_NS_vhalzun.ReaperScytheProjectile(sx, sy, tx, ty, speed=9.0))
-
+    @staticmethod
+    def ground_dy(boss):
+        return float(_NS_vhalzun.GROUND_DY) * _NS_vhalzun.body_scale(boss)
 
     # ===================================================================
-    # MAIN DRAW ENTRY POINT
+    # GEOMETRI SABIT — pivot + sudut per pose.
+    # Dipakai renderer (gambar) DAN heroes/vhalzun_fx (trail + titik
+    # lahir proyektil) lewat scythe_points() — mustahil beda frame.
+    # ===================================================================
+    @staticmethod
+    def _scythe_pivot_local(action, ap, phase, boss=None):
+        """Posisi genggaman (pivot sabit) ruang lokal, per pose."""
+        G = _NS_vhalzun
+        if action == "swing":
+            # langkah kecil ke depan saat menebas, mundur saat antisipasi
+            if ap < 0.12:
+                t = G._ease_out_cubic(ap / 0.12)
+                return G._lerp_pt((12, -18), (9, -18), t)
+            if ap < 0.30:
+                t = G._ease_out_cubic((ap - 0.12) / 0.18)
+                return G._lerp_pt((9, -18), (8, -20), t)
+            if ap < 0.62:
+                t = G._ease_in_out((ap - 0.30) / 0.32)
+                return G._lerp_pt((8, -20), (17, -12), t)
+            return G._lerp_pt((17, -12), (12, -18),
+                              G._ease_in_out((ap - 0.62) / 0.38))
+        if action == "attack":        # lempar death pulse
+            if ap < 0.32:
+                t = G._ease_out_cubic(ap / 0.32)
+                return G._lerp_pt((10, -16), (8, -22), t)
+            if ap < 0.50:
+                t = G._ease_in_cubic((ap - 0.32) / 0.18)
+                return G._lerp_pt((8, -22), (18, -14), t)
+            return G._lerp_pt((18, -14), (10, -16),
+                              G._ease_in_out((ap - 0.50) / 0.50))
+        if action == "cast_q":
+            return (10, -22 - int(math.sin(ap * math.pi) * 4))
+        if action == "cast_w":
+            return (6, -24)
+        if action == "cast_e":
+            if ap < 0.55:
+                return (13, -24)
+            return (16, -16)
+        if action == "cast_r":
+            return (9, -20 - int(math.sin(min(1.0, ap * 1.6) * math.pi) * 6))
+        if action == "hurt":
+            return (6, -16)
+        if action == "death":
+            return (14, -8 + min(1.0, ap + 0.4) * 10)
+        if action == "walk":
+            return (12, -18 + int(math.sin(phase * 2.2) * 2))
+        # idle + fallback: sway pelan
+        return (12, -18 + int(math.sin(phase * 0.8) * 1.5))
+
+    @staticmethod
+    def _scythe_angle(action, ap, phase, boss=None):
+        """Sudut gagang sabit (radian, ruang lokal facing-kanan).
+
+        Swing adalah busur KONTINYU: ANTICIPATION mundur -> WINDUP
+        terangkat -> SWING menyapu cepat -> IMPACT decel -> FOLLOW
+        THROUGH -> RECOVERY kembali.  Tidak ada lompatan sudut.
+        """
+        G = _NS_vhalzun
+        rest = G._SCYTHE_REST + math.sin(phase * 0.8) * 0.05
+        if action == "swing":
+            if ap < 0.12:                       # ANTICIPATION
+                t = G._ease_out_cubic(ap / 0.12)
+                return G._lerp(rest, -0.50, t)
+            if ap < 0.30:                       # WINDUP
+                t = G._ease_out_cubic((ap - 0.12) / 0.18)
+                return G._lerp(-0.50, -0.72, t)
+            if ap < 0.50:                       # SWING (cepat)
+                t = G._ease_in_cubic((ap - 0.30) / 0.20)
+                return G._lerp(-0.72, 0.75, t)
+            if ap < 0.62:                       # IMPACT (decel)
+                t = G._ease_out_cubic((ap - 0.50) / 0.12)
+                return G._lerp(0.75, 1.00, t)
+            if ap < 0.82:                       # FOLLOW THROUGH
+                t = G._ease_in_out((ap - 0.62) / 0.20)
+                return G._lerp(1.00, 1.35, t)
+            # RECOVERY
+            t = G._ease_in_out((ap - 0.82) / 0.18)
+            return G._lerp(1.35, rest, t)
+        if action == "attack":                  # jab lempar pulse
+            if ap < 0.32:
+                t = G._ease_out_cubic(ap / 0.32)
+                return G._lerp(rest, -0.95, t)
+            if ap < 0.50:
+                t = G._ease_in_cubic((ap - 0.32) / 0.18)
+                return G._lerp(-0.95, -0.10, t)
+            return G._lerp(-0.10, rest,
+                           G._ease_in_out((ap - 0.50) / 0.50))
+        if action == "cast_e":                  # spin-up lalu lepas
+            if ap < 0.55:
+                return rest + ap * (math.pi * 3.0) / 0.55
+            return G._lerp(rest + math.pi * 3.0, -0.35,
+                           G._ease_out_cubic((ap - 0.55) / 0.45))
+        if action == "cast_q":
+            return rest - ap * 0.55
+        if action == "cast_w":
+            return -1.55 + math.sin(phase * 2.0) * 0.10
+        if action == "cast_r":
+            return rest - 0.35 + math.sin(phase * 1.4) * 0.08
+        if action == "hurt":
+            return rest - 0.45
+        if action == "death":
+            return rest + min(1.0, ap + 0.4) * 1.25
+        if action == "walk":
+            return rest + math.sin(phase * 2.2) * 0.12
+        return rest + math.sin(phase * 0.8) * 0.05
+
+    @staticmethod
+    def scythe_points(boss, x, y):
+        """(pivot, tip) pygame.Vector2 ruang LAYAR.
+
+        Dipakai heroes/vhalzun_fx (trail sapuan, titik lahir proyektil)
+        dan overlay debug — jembatan satu-satunya ke geometri sabit.
+        """
+        G = _NS_vhalzun
+        action, phase, ap = G.pose_of(boss)
+        facing = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        sc = G.body_scale(boss)
+        p = G._scythe_pivot_local(action, ap, phase, boss)
+        th = G._scythe_angle(action, ap, phase, boss)
+        hub = (p[0] + G.SCYTHE_SHAFT * math.cos(th),
+               p[1] + G.SCYTHE_SHAFT * math.sin(th))
+        tip_l = (hub[0] + G.SCYTHE_R_OUT * math.cos(th + G.SCYTHE_TIP_OFF + 0.9),
+                 hub[1] + G.SCYTHE_R_OUT * math.sin(th + G.SCYTHE_TIP_OFF + 0.9))
+        pivot = pygame.Vector2(x + p[0] * facing * sc, y + p[1] * sc)
+        tip = pygame.Vector2(x + tip_l[0] * facing * sc, y + tip_l[1] * sc)
+        return (pivot, tip)
+
+    @staticmethod
+    def _swing_hitbox(boss, cx, cy):
+        """Rect hitbox ayunan (ruang canvas, sc=1) saat jendela aktif."""
+        if not getattr(boss, "_vhz_hit_active", False):
+            return None
+        f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        reach = int(_NS_vhalzun.MELEE_REACH * 0.9)
+        top = int(cy - 44)
+        h = 76
+        left = int(cx) if f > 0 else int(cx) - reach
+        return pygame.Rect(left, top, max(8, reach), max(10, h))
+
+    @staticmethod
+    def _hurtbox(boss, cx, cy):
+        """Hurtbox badan (ruang canvas, sc=1; untuk overlay debug)."""
+        w, h = 46, 74
+        return pygame.Rect(int(cx - w / 2), int(cy - 52), w, h)
+
+    # ===================================================================
+    # GERBANG LAPISAN HIDUP (heroes/vhalzun_fx)
+    #   Trail sabetan, partikel, proyektil, skill FX, impact, hit-stop,
+    #   dan screen shake hidup di RUANG LAYAR skala 1:1 supaya tidak
+    #   ikut beku / menyusut bersama sprite cache di lane hero. Kalau
+    #   modulnya tidak ada, owns() False dan renderer menggambar
+    #   fallback canvas sendiri (kehilangan polish, BUKAN efek).
+    # ===================================================================
+    _LIVE_MOD = None            # None = belum dicari, False = tidak ada
+
+    @staticmethod
+    def _live_module():
+        NS = _NS_vhalzun
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import vhalzun_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "VHALZUN_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    @staticmethod
+    def live_fx_ready():
+        return _NS_vhalzun._live_module() is not None
+
+    @staticmethod
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Pasang/gambar lapisan hidup. Return (mod_untuk_draw, owned)."""
+        NS = _NS_vhalzun
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+            if owned and not want_draw:
+                # Lane hero: yang menggambar lapisan hidup adalah
+                # pipeline heroes/__init__. Kalau ternyata TIDAK ada
+                # yang menggambarnya, jangan matikan fallback canvas.
+                checker = getattr(mod, "recently_drawn", None)
+                if checker is not None:
+                    owned = bool(checker(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    # ===================================================================
+    # OFFSET BADAN per pose (bob napas, lean, flare hem)
+    # ===================================================================
+    @staticmethod
+    def _body_offsets(action, ap, phase, boss=None):
+        """(dx, dy, flare) — offset badan relatif jangkar."""
+        G = _NS_vhalzun
+        if action == "idle":
+            breathe = math.sin(phase * 0.8)
+            return (0.0, breathe * 2.0, 0.25 + 0.1 * breathe)
+        if action == "walk":
+            step = math.sin(phase * 2.2)
+            return (step * 2.0, -abs(math.sin(phase * 2.2)) * 3.0,
+                    0.55 + 0.2 * abs(step))
+        if action == "swing":
+            if ap < 0.30:
+                t = G._ease_out_cubic(ap / 0.30)
+                return (G._lerp(0, -4, t), -1.0, G._lerp(0.3, 0.9, t))
+            if ap < 0.62:
+                t = G._ease_in_out((ap - 0.30) / 0.32)
+                return (G._lerp(-4, 7, t), 1.0, G._lerp(0.9, 1.5, t))
+            return (G._lerp(7, 0, G._ease_in_out((ap - 0.62) / 0.38)),
+                    0.0, G._lerp(1.5, 0.3, (ap - 0.62) / 0.38))
+        if action == "attack":
+            if ap < 0.32:
+                return (-2.0, -1.0, 0.6)
+            if ap < 0.50:
+                return (4.0, 0.0, 1.0)
+            return (2.0, 0.0, 0.5)
+        if action == "cast_q":
+            return (0.0, -3.0 * math.sin(min(1.0, ap * 1.4) * math.pi), 1.0)
+        if action == "cast_w":
+            return (0.0, -2.0, 1.2)
+        if action == "cast_e":
+            return (1.0 if ap >= 0.55 else -1.0, -1.0, 1.3)
+        if action == "cast_r":
+            return (0.0, -5.0 * math.sin(min(1.0, ap * 1.6) * math.pi), 1.6)
+        if action == "hurt":
+            return (-4.0, 1.0, 0.4)
+        if action == "death":
+            age = int(getattr(boss, "_vhz_death_age", 0) or 0) \
+                if boss is not None else 0
+            return (2.0, min(26.0, age * 0.55), 0.2)
+        return (0.0, 0.0, 0.3)
+
+    # ===================================================================
+    # RIG PIXEL-ART — komposisi berlapis
+    #   SHADOW -> HEM -> ROBE -> ARMOR -> HEAD -> WEAPON -> FRONT LIMB
+    #   -> HIGHLIGHT
+    # ===================================================================
+    @staticmethod
+    def _map(cx, cy, sc, facing, lx, ly):
+        """Peta koordinat lokal -> layar (mirror + snap pixel)."""
+        return (_NS_vhalzun._snap(cx + lx * facing * sc),
+                _NS_vhalzun._snap(cy + ly * sc))
+
+    @staticmethod
+    def _draw_hem(surface, bx, by, phase, flare, action):
+        """HEM jubah lebar compang-camping (silhouette dasar)."""
+        c = _NS_vhalzun.PALETTE
+        sway = math.sin(phase * 1.5) * 2
+        sway2 = math.sin(phase * 0.9 + 1.3) * 2
+        fl = flare * 4
+        pts = [
+            (bx - 20 - fl, by + 2),
+            (bx + 20 + fl, by + 2),
+            (bx + 26 + fl + sway, by + 16),
+            (bx + 24 + sway2, by + 30),
+            (bx + 18, by + 40),
+            # tepi compang: gigi segitiga chunky
+            (bx + 13, by + 34), (bx + 10 + sway2, by + 46),
+            (bx + 5, by + 38), (bx, by + 48 + sway),
+            (bx - 5, by + 38), (bx - 10 + sway2, by + 46),
+            (bx - 13, by + 34), (bx - 18, by + 40),
+            (bx - 24 - sway2, by + 30),
+            (bx - 26 - fl - sway, by + 16),
+        ]
+        # outline gelap 1px (offset), lalu isi
+        pygame.draw.polygon(surface, c["outline"],
+                            [(px + 2, py + 2) for px, py in pts])
+        pygame.draw.polygon(surface, c["robe_darkest"], pts)
+        # band tengah lebih terang
+        pygame.draw.polygon(surface, c["robe_dark"], [
+            (bx - 15 - fl * 0.6, by + 4), (bx + 15 + fl * 0.6, by + 4),
+            (bx + 20 + sway, by + 16), (bx + 18, by + 28),
+            (bx + 12, by + 36), (bx - 12, by + 36),
+            (bx - 18, by + 28), (bx - 20 - sway, by + 16),
+        ])
+        # lipatan jubah (garis vertikal chunky)
+        for xoff in (-10, -4, 3, 9):
+            top = by + 6
+            bot = by + 30 + math.sin(phase * 1.2 + xoff) * 2
+            pygame.draw.line(surface, c["robe_mid"],
+                             (bx + xoff, top), (bx + xoff, bot), 1)
+        # highlight rim kiri (cahaya jiwa)
+        pygame.draw.line(surface, c["robe_light"],
+                         (bx - 17 - fl * 0.7, by + 5),
+                         (bx - 22 - sway, by + 26), 1)
+
+    @staticmethod
+    def _draw_torso(surface, bx, by, phase, action):
+        """TORSO + sash + gem dada."""
+        c = _NS_vhalzun.PALETTE
+        pygame.draw.polygon(surface, c["outline"], [
+            (bx - 13, by - 26), (bx + 13, by - 26),
+            (bx + 15, by - 12), (bx + 12, by + 4),
+            (bx - 12, by + 4), (bx - 15, by - 12)])
+        pygame.draw.polygon(surface, c["robe_dark"], [
+            (bx - 12, by - 25), (bx + 12, by - 25),
+            (bx + 14, by - 12), (bx + 11, by + 3),
+            (bx - 11, by + 3), (bx - 14, by - 12)])
+        # interior kerudung (gelap)
+        pygame.draw.polygon(surface, c["inner_darkest"], [
+            (bx - 8, by - 22), (bx + 8, by - 22),
+            (bx + 9, by - 8), (bx - 9, by - 8)])
+        # sash pinggang + trim emas
+        pygame.draw.rect(surface, c["robe_darkest"],
+                         (bx - 15, by - 2, 30, 5))
+        pygame.draw.rect(surface, c["gold_dark"],
+                         (bx - 14, by - 1, 28, 1))
+        pygame.draw.rect(surface, c["gold_mid"],
+                         (bx - 12, by + 1, 24, 1))
+        # gem nekrotik dada (berdenyut)
+        pulse = 0.65 + 0.35 * math.sin(phase * 3.0)
+        pygame.draw.rect(surface, c["necro_dark"],
+                         (bx - 3, by - 16, 6, 6))
+        pygame.draw.rect(surface, c["necro_mid"],
+                         (bx - 2, by - 15, 4, 4))
+        if pulse > 0.55:
+            pygame.draw.rect(surface, c["necro_bright"],
+                             (bx - 1, by - 14, 2, 2))
+
+    @staticmethod
+    def _draw_pauldrons(surface, bx, by, phase, action):
+        """PAULDRON bahu chunky (armor band)."""
+        c = _NS_vhalzun.PALETTE
+        lift = 1 if action in ("cast_w", "cast_r") else 0
+        for side in (-1, 1):
+            sx = bx + side * 14
+            sy = by - 24 - (lift if side == -1 else 0)
+            pygame.draw.rect(surface, c["outline"],
+                             (sx - 7, sy - 4, 15, 10))
+            pygame.draw.rect(surface, c["robe_darkest"],
+                             (sx - 6, sy - 3, 13, 8))
+            pygame.draw.rect(surface, c["robe_dark"],
+                             (sx - 5, sy - 3, 11, 4))
+            # spike pauldron (silhouette)
+            pygame.draw.polygon(surface, c["robe_mid"], [
+                (sx - side * 6, sy - 3), (sx - side * 10, sy + 1),
+                (sx - side * 5, sy + 3)])
+            # pixel highlight
+            pygame.draw.rect(surface, c["robe_light"],
+                             (sx - 4, sy - 2, 3, 1))
+
+    @staticmethod
+    def _draw_head(surface, bx, by, facing, phase, action):
+        """HOOD runcing + tengkorak bercahaya di dalamnya."""
+        c = _NS_vhalzun.PALETTE
+        tilt = 0
+        if action == "idle":
+            tilt = int(math.sin(phase * 0.8) * 1)
+        elif action == "walk":
+            tilt = int(math.sin(phase * 2.2) * 1.5)
+        elif action == "hurt":
+            tilt = -2
+        elif action == "death":
+            tilt = 4
+        hx, hy = bx + tilt * 0.5, by - 34 + tilt
+        # HOOD luar (silhouette runcing condong ke belakang)
+        hood = [
+            (hx - 13, hy + 8), (hx - 12, hy - 4), (hx - 7, hy - 13),
+            (hx - facing * 2, hy - 17), (hx + 7, hy - 12),
+            (hx + 12, hy - 2), (hx + 13, hy + 8),
+            (hx + 8, hy + 12), (hx - 8, hy + 12),
+        ]
+        pygame.draw.polygon(surface, c["outline"],
+                            [(px + 2, py + 2) for px, py in hood])
+        pygame.draw.polygon(surface, c["robe_darkest"], hood)
+        # HOOD dalam (lebih terang, band)
+        pygame.draw.polygon(surface, c["robe_dark"], [
+            (hx - 10, hy + 6), (hx - 9, hy - 3), (hx - 5, hy - 10),
+            (hx + 5, hy - 10), (hx + 9, hy - 3), (hx + 10, hy + 6),
+            (hx + 6, hy + 9), (hx - 6, hy + 9)])
+        # bukaan hood (gelap total)
+        pygame.draw.polygon(surface, c["shadow_deep"], [
+            (hx - 7, hy + 5), (hx - 6, hy - 4), (hx, hy - 8),
+            (hx + 6, hy - 4), (hx + 7, hy + 5), (hx + 4, hy + 8),
+            (hx - 4, hy + 8)])
+        # glow interior (dari mata) — surface cache kecil
+        glow = _NS_vhalzun._cached(("eyeglow", 3), lambda:
+                                   _NS_vhalzun._glow_surf(3, c["necro_mid"]))
+        glow.set_alpha(150)
+        surface.blit(glow, (hx - glow.get_width() // 2,
+                            hy - glow.get_height() // 2))
+        glow.set_alpha(255)
+        # TENGKORAK: dome + rahang chunky
+        pygame.draw.circle(surface, c["bone_dark"], (int(hx), int(hy)), 6)
+        pygame.draw.circle(surface, c["bone_mid"], (int(hx - 1), int(hy - 1)), 5)
+        pygame.draw.rect(surface, c["bone_mid"], (hx - 4, hy + 4, 8, 3))
+        pygame.draw.rect(surface, c["bone_light"], (hx - 3, hy - 4, 3, 3))
+        # socket mata gelap + api jiwa (selalu menyala, intensitas naik-turun)
+        pygame.draw.rect(surface, c["shadow_deep"], (hx - 4, hy - 2, 3, 3))
+        pygame.draw.rect(surface, c["shadow_deep"], (hx + 1, hy - 2, 3, 3))
+        eye_pulse = 0.6 + 0.4 * math.sin(phase * 4.0)
+        pygame.draw.rect(surface, c["eye_mid"],
+                         (hx - 4 + (1 if facing > 0 else 0), hy - 1, 2, 2))
+        pygame.draw.rect(surface, c["eye_mid"],
+                         (hx + 1 + (1 if facing > 0 else 0), hy - 1, 2, 2))
+        if eye_pulse > 0.55:
+            pygame.draw.rect(surface, c["eye_bright"],
+                             (hx - 4, hy - 1, 2, 1))
+            pygame.draw.rect(surface, c["eye_bright"],
+                             (hx + 2, hy - 1, 2, 1))
+        if eye_pulse > 0.85:
+            pygame.draw.rect(surface, c["eye_hot"], (hx - 3, hy - 1, 1, 1))
+            pygame.draw.rect(surface, c["eye_hot"], (hx + 3, hy - 1, 1, 1))
+        # rongga hidung + gigi
+        pygame.draw.rect(surface, c["shadow_deep"], (hx - 1, hy + 2, 2, 1))
+        for i in range(3):
+            pygame.draw.rect(surface, c["shadow_deep"],
+                             (hx - 3 + i * 3, hy + 5, 1, 2))
+        # rim light atas hood
+        pygame.draw.line(surface, c["robe_mid"],
+                         (hx - 6, hy - 11), (hx + 4, hy - 11), 1)
+
+    @staticmethod
+    def _draw_scythe_at(surface, bx, by, sc, facing, angle, pivot, glow_k,
+                        phase):
+        """SABIT: gagang kayu + bilah sabit + lentera jiwa.
+
+        Bilah digambar sebagai polygon sabit (dua busur radius berbeda)
+        dengan glow nekrotik di tepi — glow_k 0..1 mengatur intensitas.
+        """
+        G = _NS_vhalzun
+        c = G.PALETTE
+        P = lambda lx, ly: G._map(bx, by, sc, facing, lx, ly)  # noqa: E731
+        hub = (pivot[0] + G.SCYTHE_SHAFT * math.cos(angle),
+               pivot[1] + G.SCYTHE_SHAFT * math.sin(angle))
+        p0 = P(pivot[0], pivot[1])
+        p1 = P(hub[0], hub[1])
+        w_shaft = max(2, int(5 * sc))
+        # gagang: outline + kayu 3 band
+        pygame.draw.line(surface, c["outline"],
+                         (p0[0] + 1, p0[1] + 1), (p1[0] + 1, p1[1] + 1),
+                         w_shaft + 2)
+        pygame.draw.line(surface, c["wood_dark"], p0, p1, w_shaft)
+        pygame.draw.line(surface, c["wood_mid"], p0, p1, max(1, w_shaft - 2))
+        pygame.draw.line(surface, c["wood_light"],
+                         (p0[0], p0[1] - 1), (p1[0], p1[1] - 1), 1)
+        # bungkus emas di gagang (3 titik chunky)
+        for i in range(3):
+            t = 0.15 + i * 0.11
+            gp = P(pivot[0] + (hub[0] - pivot[0]) * t,
+                   pivot[1] + (hub[1] - pivot[1]) * t)
+            pygame.draw.rect(surface, c["gold_dark"],
+                             (gp[0] - 1, gp[1] - 1, 3, 3))
+            pygame.draw.rect(surface, c["gold_mid"],
+                             (gp[0] - 1, gp[1] - 1, 2, 1))
+        # hub (sambungan bilah)
+        pygame.draw.circle(surface, c["gold_dark"], p1, max(2, int(3 * sc)))
+        pygame.draw.circle(surface, c["gold_light"],
+                           (p1[0] - 1, p1[1] - 1), max(1, int(1 * sc)))
+        # BILAH SABIT: busur luar (r_out) vs dalam (r_in)
+        th0 = angle - 0.35
+        th1 = angle + 1.15
+        n = 10
+        outer = []
+        for i in range(n + 1):
+            t = th0 + (th1 - th0) * i / n
+            outer.append(P(hub[0] + G.SCYTHE_R_OUT * math.cos(t),
+                           hub[1] + G.SCYTHE_R_OUT * math.sin(t)))
+        inner = []
+        for i in range(n + 1):
+            t = th1 - (th1 - th0) * i / n
+            inner.append(P(hub[0] + (G.SCYTHE_R_IN - 2.0) * math.cos(t),
+                           hub[1] + (G.SCYTHE_R_IN - 2.0) * math.sin(t)))
+        blade = outer + inner
+        pygame.draw.polygon(surface, c["outline"], blade)
+        pygame.draw.polygon(surface, c["blade_dark"], blade)
+        # band dalam bilah + shine tepi (hard edge)
+        band = []
+        for i in range(n + 1):
+            t = th0 + (th1 - th0) * i / n
+            band.append(P(hub[0] + (G.SCYTHE_R_OUT - 5.0) * math.cos(t),
+                          hub[1] + (G.SCYTHE_R_OUT - 5.0) * math.sin(t)))
+        pygame.draw.polygon(surface, c["blade_mid"], outer + band[::-1])
+        pygame.draw.lines(surface, c["blade_shine"], False, outer, 1)
+        # glow nekrotik di tepi bilah (pixel berdenyut, chunky)
+        if glow_k > 0.05:
+            gpulse = glow_k * (0.7 + 0.3 * math.sin(phase * 9.0))
+            for i in range(0, n + 1, 2):
+                t = th0 + (th1 - th0) * i / n
+                gpx = P(hub[0] + (G.SCYTHE_R_OUT + 1.5) * math.cos(t),
+                        hub[1] + (G.SCYTHE_R_OUT + 1.5) * math.sin(t))
+                if gpulse > 0.55:
+                    pygame.draw.rect(surface, c["necro_light"],
+                                     (gpx[0] - 1, gpx[1] - 1, 2, 2))
+                else:
+                    pygame.draw.rect(surface, c["necro_mid"],
+                                     (gpx[0], gpx[1], 1, 1))
+        # LENTERA jiwa di ujung bawah gagang (kebalikan hub)
+        lx = pivot[0] - math.cos(angle) * 12.0
+        ly = pivot[1] - math.sin(angle) * 12.0
+        lp = P(lx, ly)
+        lant_glow = G._cached(
+            ("lantglow", 5), lambda: G._glow_surf(5, c["necro_mid"]))
+        fpulse = 0.6 + 0.4 * math.sin(phase * 5.0)
+        lant_glow.set_alpha(int(160 * fpulse * max(0.4, glow_k)))
+        surface.blit(lant_glow, (lp[0] - lant_glow.get_width() // 2,
+                                 lp[1] - lant_glow.get_height() // 2))
+        lant_glow.set_alpha(255)
+        pygame.draw.rect(surface, c["gold_dark"],
+                         (lp[0] - 3, lp[1] - 3, 7, 7))
+        pygame.draw.rect(surface, c["gold_mid"],
+                         (lp[0] - 2, lp[1] - 2, 5, 5))
+        pygame.draw.rect(surface, c["necro_bright"],
+                         (lp[0] - 1, lp[1] - 1, 3, 3))
+        pygame.draw.rect(surface, c["necro_hot"], (lp[0], lp[1], 1, 1))
+
+    @staticmethod
+    def _draw_arms(surface, bx, by, sc, facing, action, ap, phase, pivot):
+        """Lengan baju (sleeve chunky 2 segmen) + tangan tulang."""
+        G = _NS_vhalzun
+        c = G.PALETTE
+        P = lambda lx, ly: G._map(bx, by, sc, facing, lx, ly)  # noqa: E731
+
+        def sleeve(p_from, p_to, width):
+            a = P(*p_from)
+            b = P(*p_to)
+            pygame.draw.line(surface, c["outline"],
+                             (a[0] + 1, a[1] + 1), (b[0] + 1, b[1] + 1),
+                             width + 2)
+            pygame.draw.line(surface, c["robe_darkest"], a, b, width)
+            pygame.draw.line(surface, c["robe_dark"], a, b, max(1, width - 2))
+            pygame.draw.line(surface, c["robe_mid"],
+                             (a[0], a[1] - 1), (b[0], b[1] - 1), 1)
+
+        def bone_hand(p_xy):
+            h = P(*p_xy)
+            pygame.draw.circle(surface, c["bone_dark"], h,
+                               max(2, int(2.5 * sc)))
+            pygame.draw.circle(surface, c["bone_mid"],
+                               (h[0] - 1, h[1] - 1), max(1, int(1.5 * sc)))
+
+        # ── lengan SABIT (memegang pivot) ──────────────────────────
+        shoulder = (pivot[0] - 7, pivot[1] + 10)
+        elbow = (pivot[0] - 3, pivot[1] + 4)
+        sleeve(shoulder, elbow, max(3, int(5 * sc)))
+        sleeve(elbow, pivot, max(3, int(4 * sc)))
+        bone_hand(pivot)
+
+        # ── lengan BEBAS (belakang saat idle, lurus saat cast) ─────
+        if action == "attack":
+            if ap < 0.32:
+                t = G._ease_out_cubic(ap / 0.32)
+                free_to = G._lerp_pt((-14, -8), (-6, -16), t)
+            elif ap < 0.50:
+                t = G._ease_in_cubic((ap - 0.32) / 0.18)
+                free_to = G._lerp_pt((-6, -16), (16, -12), t)
+            else:
+                t = G._ease_in_out((ap - 0.50) / 0.50)
+                free_to = G._lerp_pt((16, -12), (-14, -8), t)
+        elif action == "swing":
+            if ap < 0.30:
+                free_to = (-4, -24)
+            elif ap < 0.62:
+                free_to = (6, -6)
+            else:
+                free_to = (-12, -10)
+        elif action in ("cast_q", "cast_w"):
+            free_to = (-17, -18 - int(math.sin(phase * 3.0) * 2))
+        elif action == "cast_e":
+            free_to = (14, -20) if ap >= 0.55 else (-12, -20)
+        elif action == "cast_r":
+            free_to = (-8, -16)
+        elif action == "hurt":
+            free_to = (-15, -12)
+        elif action == "death":
+            free_to = (-6, -2)
+        elif action == "walk":
+            free_to = (-13, -10 + int(math.sin(phase * 2.2) * 2))
+        else:
+            free_to = (-14, -9 + int(math.sin(phase * 0.9) * 1.5))
+        f_shoulder = (-11, -16)
+        f_elbow = G._lerp_pt(f_shoulder, free_to, 0.55)
+        sleeve(f_shoulder, f_elbow, max(3, int(4 * sc)))
+        sleeve(f_elbow, free_to, max(2, int(3 * sc)))
+        bone_hand(free_to)
+        # glow tangan saat cast/pulse release
+        charging = (action == "attack" and 0.20 <= ap <= 0.55) or \
+                   action in ("cast_q", "cast_w", "cast_e", "cast_r")
+        if charging:
+            hp = P(*free_to)
+            k = math.sin(ap * math.pi) if action == "attack" else \
+                math.sin(phase * 5.0) * 0.5 + 0.5
+            r = int(3 + 3 * k)
+            hand_glow = G._cached(
+                ("handglow", r), lambda r=r: G._glow_surf(r, c["necro_light"]))
+            hand_glow.set_alpha(int(190 * max(0.3, k)))
+            surface.blit(hand_glow, (hp[0] - hand_glow.get_width() // 2,
+                                     hp[1] - hand_glow.get_height() // 2))
+            hand_glow.set_alpha(255)
+            pygame.draw.rect(surface, c["necro_bright"],
+                             (hp[0] - 1, hp[1] - 1, 2, 2))
+
+    @staticmethod
+    def _draw_highlights(surface, bx, by, phase, action):
+        """Highlight pixel: rim light + sparks jiwa statis di badan."""
+        c = _NS_vhalzun.PALETTE
+        # rim kiri torso
+        pygame.draw.line(surface, c["robe_light"],
+                         (bx - 13, by - 22), (bx - 14, by - 6), 1)
+        # dua titik terang di sash
+        pygame.draw.rect(surface, c["gold_shine"], (bx - 6, by - 1, 1, 1))
+        pygame.draw.rect(surface, c["gold_shine"], (bx + 5, by + 1, 1, 1))
+        # bara jiwa naik dari hem (2 pixel berdenyut)
+        t = (phase * 0.5) % 1.0
+        y0 = by + 34 - int(t * 26)
+        a = 1.0 - t
+        if a > 0.25:
+            pygame.draw.rect(surface, c["necro_light"],
+                             (bx - 18 + int(math.sin(phase + 1) * 3), y0, 1, 1))
+            pygame.draw.rect(surface, c["necro_hot"],
+                             (bx + 16 + int(math.sin(phase) * 3), y0 + 4, 1, 1))
+
+    @staticmethod
+    def _draw_flash_hurt(surface, bx, by, flash, facing):
+        """Tint putih singkat saat kena damage (hurt_flash_timer)."""
+        if flash <= 0:
+            return
+        overlay = pygame.Surface((52, 84), pygame.SRCALPHA)
+        pygame.draw.polygon(overlay, (255, 255, 255, min(90, flash)),
+                            [(2, 10), (50, 10), (48, 50), (30, 78),
+                             (8, 50)])
+        surface.blit(overlay, (bx - 26, by - 44))
+
+    # ===================================================================
+    # LAPISAN TANAH (runes + telegraph skill)
+    # ===================================================================
+    @staticmethod
+    def _draw_ground_layer(surface, boss, x, y, phase, skill, owned):
+        G = _NS_vhalzun
+        c = G.PALETTE
+        gy = y + G.GROUND_DY
+        # bayangan kontak
+        shadow = G._cached("shadow", G._shadow_surf)
+        surface.blit(shadow, (x - shadow.get_width() // 2,
+                              gy - shadow.get_height() // 2))
+        # mist nekrotik (melayang)
+        mist = G._cached(("mist", G._qphase(phase, 6)),
+                         lambda b=G._qphase(phase, 6): G._mist_surf(b))
+        surface.blit(mist, (x - mist.get_width() // 2, gy - 26))
+        # rune circle
+        rune = G._cached(("rune", G._qphase(phase, 8), bool(skill)),
+                         lambda b=G._qphase(phase, 8), s=bool(skill):
+                         G._rune_surf(b, s))
+        surface.blit(rune, (x - rune.get_width() // 2, gy - 24))
+        # telegraph skill di tanah (canvas fallback; versi hidup di
+        # vhalzun_fx.draw_ground_layer)
+        if not owned and skill:
+            prog = float(getattr(boss, "_vhz_skill_progress", 0.0) or 0.0)
+            r = int(G.SKILL_RADIUS.get(skill, 130))
+            color = c["necro_mid"] if skill in ("q", "w") else c["necro_light"]
+            pygame.draw.ellipse(surface, (*color, 120),
+                                (x - r, gy - r // 3, r * 2, r * 2 // 3), 2)
+            if prog > 0.34:
+                pygame.draw.ellipse(
+                    surface, (*c["necro_bright"], 150),
+                    (x - r + 4, gy - r // 3 + 2,
+                     r * 2 - 8, r * 2 // 3 - 4), 1)
+
+    # ===================================================================
+    # FALLBACK FX CANVAS (hanya jika modul hidup tidak tersedia)
+    # ===================================================================
+    @staticmethod
+    def _manage_projectiles(boss, surface, phase):
+        """Proyektil fallback sederhana (jalur tanpa heroes/vhalzun_fx)."""
+        projs = getattr(boss, "_vhz_projectiles", None)
+        if not projs:
+            return
+        c = _NS_vhalzun.PALETTE
+        keep = []
+        for p in projs:
+            p["x"] += p["vx"]
+            p["y"] += p["vy"]
+            p["age"] += 1
+            dist = math.hypot(p["tx"] - p["x"], p["ty"] - p["y"])
+            if dist < 8.0 or p["age"] > 140:
+                continue
+            px, py = int(p["x"]), int(p["y"])
+            # orb chunky 3 band
+            pygame.draw.circle(surface, c["necro_dark"], (px, py), 7)
+            pygame.draw.circle(surface, c["necro_mid"], (px, py), 5)
+            pygame.draw.circle(surface, c["necro_light"], (px - 1, py - 1), 3)
+            pygame.draw.circle(surface, c["necro_hot"], (px - 1, py - 2), 1)
+            keep.append(p)
+        boss._vhz_projectiles = keep
+
+    @staticmethod
+    def _spawn_fallback_projectile(boss, x, y, scythe=False):
+        c = _NS_vhalzun
+        if not hasattr(boss, "_vhz_projectiles"):
+            boss._vhz_projectiles = []
+        if len(boss._vhz_projectiles) >= 12:      # cap keras fallback
+            return
+        tx, ty = c._target_position(boss, x, y)
+        sx = x + 22 * getattr(boss, "direction", 1)
+        sy = y - 14
+        dx, dy = tx - sx, ty - sy
+        d = math.hypot(dx, dy) or 1.0
+        speed = 9.0 if scythe else 5.5
+        boss._vhz_projectiles.append({
+            "x": float(sx), "y": float(sy),
+            "vx": dx / d * speed, "vy": dy / d * speed,
+            "tx": float(tx), "ty": float(ty), "age": 0})
+
+    # ===================================================================
+    # ENTRY POINT
     # ===================================================================
     def draw_vhalzun(surface, boss, x, y):
-        """Entry point."""
+        """Entry point Boss.draw() sekaligus heroes.render_hero().
+
+        Urutan lapisan (kontrak render order proyek):
+          GROUND FX -> SHADOW -> BACK FX -> BODY/ARMOR/HEAD -> WEAPON
+          -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES -> SKILL FX
+          -> IMPACT FX -> DEBUG.
+        Trail ayunan, partikel, proyektil, skill FX, impact, hit-stop,
+        dan shake hidup di heroes/vhalzun_fx.py (layar 1:1, di luar
+        cache); canvas hanya fallback bila modul itu tidak tersedia.
+        """
+        NS = _NS_vhalzun
         pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_vhalzun._detect_moving(boss)
-        _NS_vhalzun._update_attack_anim(boss)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
 
-        attacking = (
-            getattr(boss, "_vh_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
+        # ── CONTROLLER ANIMASI ─────────────────────────────────────
+        NS._update_vhalzun_anim(boss)
+        moving = bool(getattr(boss, "_vhz_moving", False))
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._vhz_pose_action = action
 
-        # ---------- Background layers ----------
-        _NS_vhalzun._draw_necro_aura(surface, x, y, pulse)
-        _NS_vhalzun._draw_ground_runes(surface, x, y + 38, pulse, active_skill)
+        # ── LAPISAN HIDUP (ground) ─────────────────────────────────
+        live, owned = NS._live_fx(boss, surface, x, y, not hero_lane,
+                                  portrait)
+        boss._vhz_suppress_canvas_fx = owned
 
-        # ---------- Skill ground effects ----------
-        if active_skill == "q":
-            _NS_vhalzun._draw_death_pulse_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_vhalzun._draw_heartstopper_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_vhalzun._draw_ghost_shroud_ground(surface, boss, x, y, skill_timer, pulse)
+        # ── GROUND: runes + telegraph ──────────────────────────────
+        if not portrait:
+            NS._draw_ground_layer(surface, boss, x, y, pulse,
+                                  getattr(boss, "_vhz_skill", None), owned)
 
-        # ---------- Character body ----------
-        if attacking:
-            _NS_vhalzun._draw_vhalzun_attack(surface, boss, x, y)
-        elif moving:
-            _NS_vhalzun._draw_vhalzun_walk(surface, boss, x, y)
-        else:
-            _NS_vhalzun._draw_vhalzun_idle(surface, boss, x, y)
+        # ── RIG (komposit satu pose) ───────────────────────────────
+        # Konvensi pipeline hero (heroes/__init__): rig SELALU digambar
+        # 1:1 di ruang canvas; smoothscale pipeline yang mengecilkan.
+        # ``body_scale`` hanya untuk FX ruang layar (scythe_points)
+        # dan konversi dunia->canvas (target position).
+        facing = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+        sc = 1.0
+        dx, dy, flare = NS._body_offsets(action, ap, phase, boss)
+        # death: dissolve naik + jatuh
+        if action == "death":
+            age = int(getattr(boss, "_vhz_death_age", 0) or 0)
+            dy += min(26.0, age * 0.55)
+        bx = x + dx * facing
+        by = y - 14 + dy
 
-        # ---------- Projectiles ----------
-        _NS_vhalzun._manage_projectiles(boss, surface, pulse)
+        # lengan sabit (belakang) => hem => torso => armor => head
+        pivot = NS._scythe_pivot_local(action, ap, phase, boss)
+        angle = NS._scythe_angle(action, ap, phase, boss)
+        glow_k = 0.0
+        if action == "swing":
+            glow_k = 1.0 if 0.24 <= ap <= 0.60 else 0.45
+        elif action == "attack":
+            glow_k = 0.9 if 0.28 <= ap <= 0.55 else 0.3
+        elif action == "cast_e":
+            glow_k = 1.0
+        elif action.startswith("cast"):
+            glow_k = 0.6
 
-        # ---------- Skill foreground effects ----------
-        if active_skill == "q":
-            _NS_vhalzun._draw_death_pulse(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_vhalzun._draw_heartstopper_aura(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_vhalzun._draw_reapers_scythe(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_vhalzun._draw_ghost_shroud(surface, boss, x, y, skill_timer, pulse)
+        NS._draw_hem(surface, bx, by + 4, phase, flare, action)
+        NS._draw_torso(surface, bx, by, phase, action)
+        NS._draw_pauldrons(surface, bx, by, phase, action)
+        NS._draw_head(surface, bx, by, facing, phase, action)
+        NS._draw_scythe_at(surface, bx, by, sc, facing, angle, pivot,
+                           glow_k, pulse)
+        NS._draw_arms(surface, bx, by, sc, facing, action, ap, phase, pivot)
+        if not portrait:
+            NS._draw_highlights(surface, bx, by, pulse, action)
 
+        # flash hurt (di atas semuanya)
+        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        if flash > 0:
+            NS._draw_flash_hurt(surface, bx, by, flash * 6, facing)
+
+        # ── FALLBACK CANVAS FX (jalur boss tanpa modul hidup) ──────
+        if not portrait and not owned and not hero_lane:
+            kind = NS.attack_kind(boss)
+            active = bool(getattr(boss, "_vhz_attack_active", False))
+            if active and kind == "pulse" and \
+                    not getattr(boss, "_vhz_fallback_spawned", False) and \
+                    ap >= NS.ATTACK_RELEASE_FRAME:
+                NS._spawn_fallback_projectile(boss, x, y)
+                boss._vhz_fallback_spawned = True
+            if not active:
+                boss._vhz_fallback_spawned = False
+            skill = getattr(boss, "_vhz_skill", None)
+            if skill == "e" and \
+                    not getattr(boss, "_vhz_fallback_scythe", False) and \
+                    ap >= 0.42:
+                NS._spawn_fallback_projectile(boss, x, y, scythe=True)
+                boss._vhz_fallback_scythe = True
+            if skill != "e":
+                boss._vhz_fallback_scythe = False
+            NS._manage_projectiles(boss, surface, pulse)
+
+        # ── LAPISAN HIDUP DI ATAS (trail/proyektil/impact/skill) ───
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        # ── DEBUG ──────────────────────────────────────────────────
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_vh_debug(surface, boss, x, y)
 
     # ===================================================================
-    # POSE MODES
+    # OVERLAY DEBUG (DEBUG_CHARACTER = True)
     # ===================================================================
-    def _draw_vhalzun_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 2)
-        _NS_vhalzun._draw_shadow(surface, x, y + 48)
-        _NS_vhalzun._draw_floating_mist(surface, x, y + 35, boss.pulse)
-        _NS_vhalzun._draw_vhalzun_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+    _DBG_FONT = None
 
+    @staticmethod
+    def _dbg_font(size=12):
+        if _NS_vhalzun._DBG_FONT is None or \
+                _NS_vhalzun._DBG_FONT.get_height() != size:
+            try:
+                _NS_vhalzun._DBG_FONT = pygame.font.Font(None, size + 4)
+            except Exception:
+                _NS_vhalzun._DBG_FONT = pygame.font.Font(None, 16)
+        return _NS_vhalzun._DBG_FONT
 
-    def _draw_vhalzun_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_vhalzun._draw_shadow(surface, x + sway, y + 48)
-        _NS_vhalzun._draw_floating_mist(surface, x + sway, y + 35, phase, trail=True,
-                            facing=boss.direction)
-        _NS_vhalzun._draw_vhalzun_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
-
-
-    def _draw_vhalzun_attack(surface, boss, x, y):
-        progress = getattr(boss, "_vh_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-
-        if 0.28 < progress < 0.35 and not getattr(boss, "_vh_proj_spawned", False):
-            _NS_vhalzun._spawn_basic_projectile(boss, x, y)
-            boss._vh_proj_spawned = True
-        if progress < 0.1 or progress > 0.9:
-            boss._vh_proj_spawned = False
-
-        recoil = int(math.sin(progress * math.pi) * 3) * -boss.direction
-        _NS_vhalzun._draw_shadow(surface, x + recoil, y + 48)
-        _NS_vhalzun._draw_floating_mist(surface, x + recoil, y + 35, boss.pulse, intense=True)
-        _NS_vhalzun._draw_vhalzun_body(surface, x + recoil, y, boss.direction, boss.pulse,
-                           "attack", progress)
-        _NS_vhalzun._draw_cast_flash(surface, x + recoil, y, boss.direction, progress)
-
-
-    # ===================================================================
-    # BODY RENDERING – HD detailed Reaper
-    # ===================================================================
-    def _draw_vhalzun_body(surface, cx, cy, facing, phase, action,
-                           attack_progress=0):
-        """Main body composition."""
-        # Scythe staff (behind body - drawn first)
-        if action != "attack" or attack_progress < 0.3:
-            _NS_vhalzun._draw_scythe_staff(surface, cx + facing * 16, cy - 5, facing, phase,
-                              held=True)
-
-        # Robe (large outer shape)
-        _NS_vhalzun._draw_robe(surface, cx, cy + 5, phase)
-
-        # Torso robe inner
-        _NS_vhalzun._draw_robe_torso(surface, cx, cy - 8, phase)
-
-        # Hood shoulders
-        _NS_vhalzun._draw_hood_shoulders(surface, cx, cy - 14, phase)
-
-        # Arms - one holding staff, one free
-        if action == "attack":
-            _NS_vhalzun._draw_casting_arms(surface, cx, cy - 8, facing, phase, attack_progress)
-        else:
-            _NS_vhalzun._draw_idle_arms(surface, cx, cy - 8, facing, phase)
-
-        # Head (skull inside hood)
-        _NS_vhalzun._draw_hood_and_skull(surface, cx, cy - 30, facing, phase)
-
-        # Scythe staff in front if attacking mid-swing
-        if action == "attack" and attack_progress >= 0.3:
-            # Staff drawn during arm sequence
-            pass
-
-        # Floating soul particles
-        _NS_vhalzun._draw_body_soul_particles(surface, cx, cy, phase)
-
-
-    def _draw_robe(surface, cx, cy, phase):
-        """Long tattered robe."""
-        sway = int(math.sin(phase * 0.7) * 3)
-        sway2 = int(math.sin(phase * 0.5 + 1) * 2)
-
-        # Outermost robe silhouette
-        robe_outer = [
-            (cx - 22, cy),
-            (cx + 22, cy),
-            (cx + 28 + sway, cy + 15),
-            (cx + 26 + sway2, cy + 30),
-            (cx + 22, cy + 42),
-            (cx + 14, cy + 52 + sway2),
-            (cx + 4, cy + 56),
-            (cx - 4, cy + 56),
-            (cx - 14, cy + 52 - sway2),
-            (cx - 22, cy + 42),
-            (cx - 26 - sway2, cy + 30),
-            (cx - 28 - sway, cy + 15),
+    @staticmethod
+    def _draw_vh_debug(surface, boss, x, y):
+        G = _NS_vhalzun
+        hb = G._swing_hitbox(boss, x, y)
+        if hb is not None:
+            pygame.draw.rect(surface, (255, 80, 80), hb, 1)
+        hurt = G._hurtbox(boss, x, y)
+        pygame.draw.rect(surface, (80, 160, 255), hurt, 1)
+        pygame.draw.circle(surface, (255, 200, 60),
+                           (x, y), int(G.MELEE_REACH), 1)
+        pv, tip = G.scythe_points(boss, x, y)
+        pygame.draw.circle(surface, (90, 255, 90), (int(pv.x), int(pv.y)), 3, 1)
+        pygame.draw.circle(surface, (90, 255, 90), (int(tip.x), int(tip.y)), 3, 1)
+        pygame.draw.line(surface, (90, 255, 90),
+                         (int(pv.x), int(pv.y)), (int(tip.x), int(tip.y)), 1)
+        try:
+            clock = pygame.time.Clock()
+            fps = int(clock.get_fps())
+        except Exception:
+            fps = 0
+        lines = [
+            f"VHALZUN  state={getattr(boss, '_vhz_state', 'IDLE')}",
+            f"pose={getattr(boss, '_vhz_pose_action', '-')} "
+            f"kind={G.attack_kind(boss)} "
+            f"phase={getattr(boss, '_vhz_attack_phase', '-')}",
+            f"atk_t={float(getattr(boss, '_vhz_attack_progress', 0.0)):.2f} "
+            f"hit={bool(getattr(boss, '_vhz_hit_active', False))}",
+            f"skill={getattr(boss, '_vhz_skill', '-')} "
+            f"t={float(getattr(boss, '_vhz_skill_progress', 0.0)):.2f}",
+            f"fps~{fps}",
         ]
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in robe_outer])
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["robe_darkest"], robe_outer)
-
-        # Mid robe
-        robe_mid = [
-            (cx - 19, cy + 2),
-            (cx + 19, cy + 2),
-            (cx + 24 + sway, cy + 15),
-            (cx + 22 + sway2, cy + 28),
-            (cx + 18, cy + 40),
-            (cx + 10, cy + 48),
-            (cx - 10, cy + 48),
-            (cx - 18, cy + 40),
-            (cx - 22 - sway2, cy + 28),
-            (cx - 24 - sway, cy + 15),
-        ]
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["robe_dark"], robe_mid)
-
-        # Inner robe (with darker interior)
-        robe_inner = [
-            (cx - 15, cy + 4),
-            (cx + 15, cy + 4),
-            (cx + 19 + sway, cy + 15),
-            (cx + 16, cy + 26),
-            (cx + 12, cy + 36),
-            (cx - 12, cy + 36),
-            (cx - 16, cy + 26),
-            (cx - 19 - sway, cy + 15),
-        ]
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["inner_mid"], robe_inner)
-
-        # Robe fold lines (lighter highlights)
-        for xoff in (-10, -5, 0, 5, 10):
-            _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["robe_mid"],
-                    (cx + xoff, cy + 6), (cx + xoff, cy + 32), 1)
-
-        # Highlights
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["robe_light"],
-                (cx - 12, cy + 4), (cx - 15, cy + 30), 1)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["robe_light"],
-                (cx + 12, cy + 4), (cx + 15, cy + 30), 1)
-
-        # Tattered bottom edges
-        for i in range(10):
-            tx = cx - 22 + i * 5
-            ty = cy + 44 + int(math.sin(phase * 1.5 + i) * 5)
-            _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["robe_darkest"], [
-                (tx - 3, cy + 40), (tx + 3, cy + 40),
-                (tx + 1, ty + 7), (tx - 1, ty + 7),
-            ])
-
-        # Green necrotic glow beneath robe
-        for i in range(6):
-            alpha = 70 - i * 10
-            _NS_vhalzun._ellipse(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha),
-                     (cx - 28 + i * 2, cy + 50 - i, 56 - i * 4, 10))
-
-        # Rope/sash at waist
-        _NS_vhalzun._rect(surface, _NS_vhalzun.PALETTE["robe_darkest"], (cx - 16, cy - 1, 32, 5))
-        _NS_vhalzun._rect(surface, _NS_vhalzun.PALETTE["robe_dark"], (cx - 15, cy, 30, 3))
-        _NS_vhalzun._rect(surface, _NS_vhalzun.PALETTE["robe_mid"], (cx - 13, cy + 1, 26, 1))
-
-        # Green gem on sash
-        pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_darkest"], (cx, cy + 2), 4)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_dark"], (cx, cy + 2), 3)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_mid"], (cx, cy + 1),
-                  max(1, int(3 * pulse)))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_bright"], (cx, cy + 1),
-                  max(1, int(2 * pulse)))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_hot"], (cx, cy + 1), 1)
-
-
-    def _draw_robe_torso(surface, cx, cy, phase):
-        """Inner torso section under hood."""
-        # Inner shadow of hood
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["inner_darkest"], [
-            (cx - 11, cy - 8), (cx + 11, cy - 8),
-            (cx + 13, cy + 12), (cx + 4, cy + 17),
-            (cx - 4, cy + 17), (cx - 13, cy + 12),
-        ])
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["inner_dark"], [
-            (cx - 9, cy - 6), (cx + 9, cy - 6),
-            (cx + 11, cy + 10), (cx + 3, cy + 14),
-            (cx - 3, cy + 14), (cx - 11, cy + 10),
-        ])
-
-        # Gold chest decoration (like small chain necklace/emblem)
-        _NS_vhalzun._rect(surface, _NS_vhalzun.PALETTE["gold_dark"], (cx - 5, cy + 2, 10, 2))
-        _NS_vhalzun._rect(surface, _NS_vhalzun.PALETTE["gold_mid"], (cx - 4, cy + 2, 8, 1))
-
-        # Small green gem in center of chest
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_dark"], (cx, cy + 5), 3)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_mid"], (cx, cy + 5), 2)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_bright"], (cx, cy + 4), 1)
-
-
-    def _draw_hood_shoulders(surface, cx, cy, phase):
-        """Shoulders of the hood/robe."""
-        for side in (-1, 1):
-            sx = cx + side * 14
-            # Shadow
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["shadow_deep"], (sx + 2, cy + 2), 9)
-            # Shoulder pad
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["robe_darkest"], (sx, cy), 8)
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["robe_dark"], (sx - side, cy - 1), 6)
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["robe_mid"], (sx - side, cy - 2), 4)
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["robe_light"], (sx - side * 2, cy - 3), 2)
-
-
-    def _draw_hood_and_skull(surface, cx, cy, facing, phase):
-        """Hood covering skull - reaper look."""
-        # Hood - large outer piece
-        hood_pts = [
-            (cx - 14, cy - 4),
-            (cx - 12, cy - 13),
-            (cx - 6, cy - 17),
-            (cx, cy - 19),
-            (cx + 6, cy - 17),
-            (cx + 12, cy - 13),
-            (cx + 14, cy - 4),
-            (cx + 15, cy + 8),
-            (cx + 8, cy + 12),
-            (cx - 8, cy + 12),
-            (cx - 15, cy + 8),
-        ]
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in hood_pts])
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["robe_darkest"], hood_pts)
-
-        # Hood inner
-        hood_inner = [
-            (cx - 12, cy - 3),
-            (cx - 10, cy - 12),
-            (cx - 5, cy - 15),
-            (cx, cy - 17),
-            (cx + 5, cy - 15),
-            (cx + 10, cy - 12),
-            (cx + 12, cy - 3),
-            (cx + 13, cy + 6),
-            (cx + 7, cy + 10),
-            (cx - 7, cy + 10),
-            (cx - 13, cy + 6),
-        ]
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["robe_dark"], hood_inner)
-
-        # Hood edge highlight
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["robe_mid"],
-                (cx - 11, cy - 12), (cx, cy - 17), 1)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["robe_mid"],
-                (cx + 11, cy - 12), (cx, cy - 17), 1)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["robe_light"],
-                (cx - 6, cy - 15), (cx, cy - 17), 1)
-
-        # Dark interior of hood (where skull sits)
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["inner_darkest"], [
-            (cx - 9, cy - 8),
-            (cx - 8, cy - 12),
-            (cx, cy - 14),
-            (cx + 8, cy - 12),
-            (cx + 9, cy - 8),
-            (cx + 8, cy + 5),
-            (cx, cy + 8),
-            (cx - 8, cy + 5),
-        ])
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["shadow_deep"], [
-            (cx - 7, cy - 7),
-            (cx - 7, cy - 10),
-            (cx, cy - 12),
-            (cx + 7, cy - 10),
-            (cx + 7, cy - 7),
-            (cx + 6, cy + 4),
-            (cx, cy + 6),
-            (cx - 6, cy + 4),
-        ])
-
-        # SKULL inside hood
-        _NS_vhalzun._draw_skull_face(surface, cx, cy - 2, phase, facing)
-
-        # Green glow from hood interior
-        glow_pulse = math.sin(phase * 1.5) * 0.3 + 0.7
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], int(80 * glow_pulse)),
-                  (cx, cy), 12)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], int(60 * glow_pulse)),
-                  (cx, cy), 8)
-
-
-    def _draw_skull_face(surface, cx, cy, phase, facing):
-        """Skull face inside hood."""
-        # Skull dome
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["bone_dark"], (cx, cy - 1), 7)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["bone_mid"], (cx - 1, cy - 2), 6)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["bone_light"], (cx - 2, cy - 3), 3)
-
-        # Cheek bones shading
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["bone_dark"], (cx - 4, cy + 1), 2)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["bone_dark"], (cx + 4, cy + 1), 2)
-
-        # Eye sockets - deep dark with green glow
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["shadow_deep"], (cx - 3, cy - 1), 3)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["shadow_deep"], (cx + 3, cy - 1), 3)
-
-        # Glowing green eyes
-        eye_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        eye_size = max(1, int(2 * eye_pulse))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_dark"], (cx - 3, cy - 1), eye_size + 1)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_mid"], (cx - 3, cy - 1), eye_size)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_bright"], (cx - 3, cy - 1),
-                  max(1, eye_size - 1))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_hot"], (cx - 3, cy - 1), 1)
-
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_dark"], (cx + 3, cy - 1), eye_size + 1)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_mid"], (cx + 3, cy - 1), eye_size)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_bright"], (cx + 3, cy - 1),
-                  max(1, eye_size - 1))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["eye_hot"], (cx + 3, cy - 1), 1)
-
-        # Nose cavity (triangular)
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["shadow_deep"], [
-            (cx, cy + 1), (cx - 1, cy + 4), (cx + 1, cy + 4)
-        ])
-
-        # Jaw with teeth
-        _NS_vhalzun._rect(surface, _NS_vhalzun.PALETTE["bone_dark"], (cx - 5, cy + 5, 10, 3))
-        _NS_vhalzun._rect(surface, _NS_vhalzun.PALETTE["bone_mid"], (cx - 4, cy + 5, 8, 2))
-
-        # Teeth
-        for i in range(4):
-            tx = cx - 3 + i * 2
-            _NS_vhalzun._rect(surface, _NS_vhalzun.PALETTE["shadow_deep"], (tx, cy + 6, 1, 2))
-
-
-    def _draw_scythe_staff(surface, hx, hy, facing, phase, held=True):
-        """The scythe/reaper staff."""
-        # Staff top and bottom
-        staff_top_x = hx
-        staff_top_y = hy - 32
-        staff_bottom_x = hx + int(math.sin(phase * 0.5) * 1)
-        staff_bottom_y = hy + 24
-
-        # Staff shaft (wood)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["shadow_deep"],
-                (staff_top_x + 2, staff_top_y + 2),
-                (staff_bottom_x + 2, staff_bottom_y + 2), 5)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["wood_dark"],
-                (staff_top_x, staff_top_y),
-                (staff_bottom_x, staff_bottom_y), 4)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["wood_mid"],
-                (staff_top_x, staff_top_y),
-                (staff_bottom_x, staff_bottom_y), 3)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["wood_light"],
-                (staff_top_x - 1, staff_top_y),
-                (staff_bottom_x - 1, staff_bottom_y), 1)
-
-        # Wood grain (small dark lines)
-        for i in range(3):
-            yoff = staff_top_y + (i + 1) * 15
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["wood_dark"], (staff_top_x, yoff), 2)
-
-        # ===== SCYTHE BLADE (top) =====
-        blade_base_x = staff_top_x
-        blade_base_y = staff_top_y
-
-        # Blade extends to one side (curved crescent)
-        blade_dir = facing
-        blade_tip_x = blade_base_x + blade_dir * 22
-        blade_tip_y = blade_base_y - 8
-
-        # Blade curve points
-        blade_pts_outer = [
-            (blade_base_x, blade_base_y - 2),
-            (blade_base_x + blade_dir * 8, blade_base_y - 12),
-            (blade_base_x + blade_dir * 18, blade_base_y - 12),
-            (blade_tip_x, blade_tip_y),
-            (blade_base_x + blade_dir * 15, blade_base_y - 3),
-            (blade_base_x + blade_dir * 5, blade_base_y + 1),
-        ]
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["shadow_deep"],
-              [(p[0] + 2, p[1] + 2) for p in blade_pts_outer])
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["blade_dark"], blade_pts_outer)
-
-        # Blade inner
-        blade_inner = [
-            (blade_base_x + blade_dir * 2, blade_base_y - 3),
-            (blade_base_x + blade_dir * 8, blade_base_y - 10),
-            (blade_base_x + blade_dir * 16, blade_base_y - 10),
-            (blade_base_x + blade_dir * 20, blade_tip_y + 1),
-            (blade_base_x + blade_dir * 13, blade_base_y - 4),
-            (blade_base_x + blade_dir * 6, blade_base_y),
-        ]
-        _NS_vhalzun._poly(surface, _NS_vhalzun.PALETTE["blade_mid"], blade_inner)
-
-        # Blade shine (inner edge)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["blade_light"],
-                (blade_base_x + blade_dir * 3, blade_base_y - 5),
-                (blade_base_x + blade_dir * 18, blade_base_y - 8), 1)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["blade_shine"],
-                (blade_base_x + blade_dir * 4, blade_base_y - 6),
-                (blade_base_x + blade_dir * 17, blade_base_y - 9), 1)
-
-        # Green necrotic glow on blade edge
-        for i in range(6):
-            t = i / 6
-            gx = blade_base_x + int(blade_dir * (5 + t * 15))
-            gy = blade_base_y - int(3 + t * 5)
-            pulse = math.sin(phase * 3 + i) * 0.3 + 0.7
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], int(150 * pulse)),
-                      (gx, gy), 2)
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], int(180 * pulse)),
-                      (gx, gy), 1)
-
-        # Gold connector between blade and shaft
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["gold_dark"], (blade_base_x, blade_base_y), 4)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["gold_mid"], (blade_base_x, blade_base_y), 3)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["gold_light"],
-                  (blade_base_x - 1, blade_base_y - 1), 1)
-
-        # ===== LANTERN/ORB at bottom =====
-        lantern_x = staff_bottom_x
-        lantern_y = staff_bottom_y
-
-        # Lantern hanging chain
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["gold_dark"],
-                (lantern_x, lantern_y - 3), (lantern_x, lantern_y + 2), 1)
-
-        # Lantern frame
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["gold_dark"], (lantern_x, lantern_y + 4), 5)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["gold_mid"], (lantern_x, lantern_y + 4), 4)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["gold_light"], (lantern_x - 1, lantern_y + 3), 2)
-
-        # Green flame inside
-        flame_pulse = math.sin(phase * 4) * 0.3 + 0.7
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_darkest"], (lantern_x, lantern_y + 4), 3)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], 220),
-                  (lantern_x, lantern_y + 4), int(3 * flame_pulse))
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], 240),
-                  (lantern_x, lantern_y + 3), int(2 * flame_pulse))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_hot"],
-                  (lantern_x, lantern_y + 3), max(1, int(1 * flame_pulse)))
-
-        # Lantern glow radius
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], int(60 * flame_pulse)),
-                  (lantern_x, lantern_y + 4), 12)
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Arms - one holding scythe, one extended."""
-        sway = math.sin(phase * 0.7) * 2
-
-        # Staff hand (facing side) - up near staff
-        ss_x = cx + facing * 12
-        ss_y = cy + 2
-        se_x = ss_x + facing * 6
-        se_y = cy + 10
-        sh_x = cx + facing * 16  # goes to staff
-        sh_y = cy - 3
-
-        _NS_vhalzun._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_vhalzun._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-
-        # Extended free hand (opposite side) - reaching out with glow
-        fs_x = cx + (-facing) * 12
-        fs_y = cy + 2
-        fe_x = fs_x + (-facing) * 8
-        fe_y = cy + 10 + int(sway)
-        fh_x = fe_x + (-facing) * 6
-        fh_y = fe_y + 4
-
-        _NS_vhalzun._draw_arm_segment(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_vhalzun._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y)
-        _NS_vhalzun._draw_hand_glow(surface, fh_x, fh_y, phase, 5)
-
-
-    def _draw_casting_arms(surface, cx, cy, facing, phase, progress):
-        """Casting arms - one hand pointing forward."""
-        # Staff arm stays holding staff
-        ss_x = cx + facing * 12
-        ss_y = cy + 2
-        se_x = ss_x + facing * 6
-        se_y = cy + 10
-        sh_x = cx + facing * 16
-        sh_y = cy - 3
-        _NS_vhalzun._draw_arm_segment(surface, ss_x, ss_y, se_x, se_y)
-        _NS_vhalzun._draw_arm_segment(surface, se_x, se_y, sh_x, sh_y)
-
-        # But shift staff position based on progress for casting animation
-        staff_offset_y = int(math.sin(progress * math.pi) * -3)
-        _NS_vhalzun._draw_scythe_staff(surface, cx + facing * 16, cy - 5 + staff_offset_y,
-                           facing, phase, held=True)
-
-        # Casting arm - extends forward
-        fs_x = cx + (-facing) * 12
-        fs_y = cy + 2
-
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = -0.5 * t
-        elif progress < 0.5:
-            t = (progress - 0.3) / 0.2
-            arm_angle = -0.5 + 1.3 * t
-        else:
-            t = (progress - 0.5) / 0.5
-            arm_angle = 0.8 - 0.6 * t
-
-        # Note: casting arm goes toward facing direction (crosses body if needed)
-        # Actually for necrophos, the free hand extends toward target
-        # Since staff is on facing side, free hand also extends toward facing target
-        fe_x = fs_x + int(math.cos(arm_angle) * 12) * facing
-        fe_y = fs_y + int(math.sin(arm_angle) * 12) - 2
-        fh_x = fe_x + int(math.cos(arm_angle) * 10) * facing
-        fh_y = fe_y + int(math.sin(arm_angle) * 10)
-
-        _NS_vhalzun._draw_arm_segment(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_vhalzun._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y)
-
-        # Charging glow on hand
-        glow_size = 5 + int(math.sin(progress * math.pi) * 6)
-        _NS_vhalzun._draw_hand_glow(surface, fh_x, fh_y, phase, glow_size)
-
-        # Necrotic energy sparks
-        if 0.2 < progress < 0.6:
-            intensity = math.sin((progress - 0.2) / 0.4 * math.pi)
-            for i in range(4):
-                angle = phase * 4 + i * math.pi / 2
-                ex = fh_x + int(math.cos(angle) * 14 * intensity) * facing
-                ey = fh_y + int(math.sin(angle) * 12 * intensity)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], 220), (ex, ey), 2)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_hot"], 240), (ex, ey), 1)
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        """Robe sleeve arm segment."""
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["shadow_deep"],
-                (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 7)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["robe_darkest"], (x1, y1), (x2, y2), 6)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["robe_dark"], (x1, y1), (x2, y2), 4)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["robe_mid"], (x1, y1), (x2, y2), 2)
-        _NS_vhalzun._aaline(surface, _NS_vhalzun.PALETTE["robe_light"], (x1 - 1, y1), (x2 - 1, y2), 1)
-
-
-    def _draw_hand_glow(surface, x, y, phase, size=5):
-        """Glowing skeletal hand."""
-        pulse = math.sin(phase * 2.0) * 0.3 + 0.7
-        s = int(size * pulse)
-
-        # Skeletal hand hint
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["bone_dark"], (x, y), 3)
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["bone_mid"], (x, y - 1), 2)
-
-        # Necrotic glow
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_darkest"], 100), (x, y), s + 6)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], 150), (x, y), s + 3)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], 200), (x, y), s)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], 220), (x, y), max(1, s - 2))
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_hot"], 240), (x, y), max(1, s - 4))
-
-        # Sparks
-        for i in range(3):
-            angle = phase * 3 + i * math.pi * 2 / 3
-            sx = x + int(math.cos(angle) * (s + 4))
-            sy = y + int(math.sin(angle) * (s + 4))
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_hot"], (sx, sy), 1)
-
-
-    def _draw_body_soul_particles(surface, cx, cy, phase):
-        """Necrotic particles around body."""
-        for i in range(10):
-            angle = phase * 0.4 + i * math.pi / 5
-            radius = 30 + int(math.sin(phase * 0.7 + i) * 8)
-            px = cx + int(math.cos(angle) * radius)
-            py = cy - 5 + int(math.sin(angle) * radius * 0.5)
-            alpha = int(140 + math.sin(phase + i * 0.7) * 60)
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], alpha), (px, py), 2)
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], alpha // 2), (px, py), 1)
-
-        # Rising soul embers
-        for i in range(5):
-            t = ((phase * 0.4 + i * 0.2) % 1.0)
-            px = cx + int(math.sin(phase + i) * 20) + (i - 2) * 4
-            py = cy + 20 - int(t * 55)
-            alpha = int(200 * (1 - t))
-            if alpha > 0:
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_light"], alpha), (px, py), 1)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_hot"], alpha), (px, py - 1), 1)
-
-
-    # ===================================================================
-    # FLOATING EFFECTS
-    # ===================================================================
-    def _draw_floating_mist(surface, cx, cy, phase, trail=False,
-                           facing=1, intense=False):
-        """Necrotic mist below floating Vhalzun."""
-        strength = 1.5 if intense else 1.0
-
-        # Base mist
-        mist = pygame.Surface((120, 40), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        for radius in range(32, 3, -4):
-            alpha = int((32 - radius) * 2.5 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_vhalzun.PALETTE["necro_darkest"], min(255, alpha)),
-                    (60 - radius * 2, 20 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 60, cy - 10))
-
-        # Rising green wisps
-        for i, offset in enumerate((-20, -8, 8, 20)):
-            t = (phase * 0.5 + i * 0.25) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 24)
-            alpha = max(0, min(255, int(200 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], alpha), (sx, sy), 5)
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha), (sx, sy - 2), 3)
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], min(255, alpha)),
-                      (sx, sy - 3), 1)
-
-        # Small orbiting orbs
-        for i in range(5):
-            angle = phase * 0.9 + i * math.pi * 2 / 5
-            r = 22 + int(math.sin(phase + i * 1.3) * 4)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 6)
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_mid"], (sx, sy), 3)
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_light"], (sx, sy), 2)
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_hot"], (sx, sy), 1)
-
-        if trail:
-            for i in range(5):
-                sx = cx - (i + 1) * 11 * facing
-                sy = cy + int(math.sin(phase + i) * 2)
-                alpha = max(0, 130 - i * 22)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha),
-                          (sx, sy), max(2, 5 - i))
-
-
-    def _draw_shadow(surface, x, y):
-        """Ground shadow."""
-        shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-        for radius in range(10, 0, -1):
-            alpha = max(0, (10 - radius) * 16)
-            pygame.draw.ellipse(
-                shadow, (0, 0, 0, alpha),
-                (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-            )
-        pygame.draw.ellipse(shadow, (*_NS_vhalzun.PALETTE["necro_darkest"], 60), (8, 4, 84, 10))
-        surface.blit(shadow, (x - 50, y - 10))
-
-
-    def _draw_necro_aura(surface, x, y, phase):
-        """Background necrotic aura."""
-        pulse = math.sin(phase * 0.4) * 0.25 + 0.75
-        aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-        for radius in range(72, 5, -4):
-            alpha = int((72 - radius) * 1.2 * pulse)
-            if alpha > 0:
-                _NS_vhalzun._aacircle(aura, (*_NS_vhalzun.PALETTE["necro_darkest"], min(255, alpha)),
-                          (90, 80), radius)
-        surface.blit(aura, (x - 90, y - 80))
-
-
-    def _draw_ground_runes(surface, x, y, phase, skill):
-        """Necrotic runes on ground."""
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
-
-        pygame.draw.ellipse(ring, (*_NS_vhalzun.PALETTE["necro_dark"], 140),
-                            (5, 10, 120, 24), 3)
-        pygame.draw.ellipse(ring, (*_NS_vhalzun.PALETTE["necro_mid"], 170),
-                            (20, 14, 90, 16), 2)
-
-        # Runes
-        for i in range(10):
-            angle = phase * 0.2 + i * math.pi / 5
-            x1 = 65 + int(math.cos(angle) * 30)
-            y1 = 22 + int(math.sin(angle) * 6)
-            x2 = 65 + int(math.cos(angle) * 55)
-            y2 = 22 + int(math.sin(angle) * 10)
-            pygame.draw.line(ring, (*_NS_vhalzun.PALETTE["necro_bright"], 160),
-                             (x1, y1), (x2, y2), 1)
-
-        if skill:
-            pygame.draw.ellipse(ring, (*_NS_vhalzun.PALETTE["necro_hot"], int(80 * pulse)),
-                                (15, 8, 100, 28), 1)
-
-        surface.blit(ring, (x - 65, y - 22))
-
-
-    def _draw_cast_flash(surface, x, y, facing, progress):
-        """Flash effect during ranged attack."""
-        if progress < 0.2 or progress > 0.65:
-            return
-        t = (progress - 0.2) / 0.45
-        intensity = math.sin(t * math.pi)
-
-        # Flash near free hand
-        flash_x = x + facing * 24
-        flash_y = y - 8
-
-        alpha = int(180 * intensity)
-        radius = int(8 + intensity * 15)
-
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], alpha // 2),
-                  (flash_x, flash_y), radius + 8)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha),
-                  (flash_x, flash_y), radius)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], alpha),
-                  (flash_x, flash_y), radius // 2)
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_hot"], min(255, alpha)),
-                  (flash_x, flash_y), max(1, radius // 4))
-
-
-    # ===================================================================
-    # SKILL Q: DEATH PULSE
-    # ===================================================================
-    def _draw_death_pulse_ground(surface, boss, x, y, timer, phase):
-        """Expanding shockwave on ground."""
-        progress = max(0.0, min(1.0, 1 - timer / 60))
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-        radius = int(20 + progress * 90)
-
-        alpha = int(180 * (1 - progress) * pulse)
-        _NS_vhalzun._ellipse(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha),
-                 (x - radius, y + 32 - radius // 4, radius * 2, radius // 2), 3)
-        _NS_vhalzun._ellipse(surface, (*_NS_vhalzun.PALETTE["necro_bright"], alpha),
-                 (x - radius + 5, y + 34 - radius // 4,
-                  radius * 2 - 10, radius // 2 - 4), 2)
-
-
-    def _draw_death_pulse(surface, boss, x, y, timer, phase):
-        """Expanding ring of green death energy from Vhalzun."""
-        progress = max(0.0, min(1.0, 1 - timer / 60))
-
-        # Expanding pulse rings
-        for ring_i in range(2):
-            ring_progress = progress - ring_i * 0.15
-            if ring_progress <= 0 or ring_progress > 1:
-                continue
-            radius = int(15 + ring_progress * 100)
-            alpha = int(220 * (1 - ring_progress))
-
-            # Multi-layered ring
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], alpha // 2),
-                      (x, y - 10), radius + 4, 4)
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha),
-                      (x, y - 10), radius + 2, 3)
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], alpha),
-                      (x, y - 10), radius, 2)
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_hot"], alpha),
-                      (x, y - 10), max(1, radius - 2), 1)
-
-            # Particles along the ring
-            particle_count = int(12 + ring_progress * 8)
-            for i in range(particle_count):
-                angle = i * math.pi * 2 / particle_count + phase * 0.5
-                px = x + int(math.cos(angle) * radius)
-                py = y - 10 + int(math.sin(angle) * radius * 0.7)
-                _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_hot"], (px, py), 2)
-                _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_white"], (px, py), 1)
-
-        # Central burst
-        if progress < 0.3:
-            burst_r = int(30 * (1 - progress / 0.3))
-            burst_alpha = int(240 * (1 - progress / 0.3))
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], burst_alpha),
-                      (x, y - 10), burst_r)
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_hot"], burst_alpha),
-                      (x, y - 10), max(1, burst_r - 5))
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_white"], min(255, burst_alpha)),
-                      (x, y - 10), max(1, burst_r - 10))
-
-
-    # ===================================================================
-    # SKILL W: HEARTSTOPPER AURA
-    # ===================================================================
-    def _draw_heartstopper_ground(surface, boss, x, y, timer, phase):
-        """Aura ground circle."""
-        pulse = math.sin(phase * 1.5) * 0.2 + 0.8
-        radius = 65
-
-        # Large aura circle on ground
-        for i in range(3):
-            r = radius - i * 8
-            alpha = int(80 * pulse) - i * 15
-            if alpha > 0:
-                _NS_vhalzun._ellipse(surface, (*_NS_vhalzun.PALETTE["necro_mid"], alpha),
-                         (x - r, y + 32 - r // 4, r * 2, r // 2), 3)
-
-
-    def _draw_heartstopper_aura(surface, boss, x, y, timer, phase):
-        """Passive skull aura around Vhalzun."""
-        pulse = math.sin(phase * 1.5) * 0.2 + 0.8
-
-        # Orbiting skulls
-        skull_count = 6
-        for i in range(skull_count):
-            angle = phase * 0.6 + i * math.pi * 2 / skull_count
-            r_x = 55 + int(math.sin(phase + i) * 5)
-            r_y = 22 + int(math.sin(phase * 0.7 + i * 1.2) * 3)
-            sx = x + int(math.cos(angle) * r_x)
-            sy = y + 10 + int(math.sin(angle) * r_y)
-
-            bob = int(math.sin(phase * 2 + i * 0.5) * 3)
-            _NS_vhalzun._draw_mini_skull(surface, sx, sy + bob, size=5, phase=phase + i,
-                             alpha=int(230 * pulse))
-
-        # Heart-like pulse (small heart icons rising)
-        for i in range(3):
-            t = ((phase * 0.4 + i * 0.33) % 1.0)
-            hx = x + (i - 1) * 20 + int(math.sin(phase + i) * 5)
-            hy = y - 30 - int(t * 30)
-            alpha = int(200 * (1 - t) * pulse)
-            if alpha > 0:
-                # Simple heart shape (two circles + triangle)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_light"], alpha),
-                          (hx - 2, hy), 2)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_light"], alpha),
-                          (hx + 2, hy), 2)
-                _NS_vhalzun._poly(surface, (*_NS_vhalzun.PALETTE["necro_light"], alpha), [
-                    (hx - 3, hy + 1), (hx + 3, hy + 1), (hx, hy + 5)
-                ])
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], alpha), (hx, hy + 1), 1)
-
-        # Faint green damaging aura tint
-        aura_surf = pygame.Surface((160, 100), pygame.SRCALPHA)
-        for r in range(50, 5, -4):
-            alpha = int((50 - r) * 0.6 * pulse)
-            if alpha > 0:
-                _NS_vhalzun._aacircle(aura_surf, (*_NS_vhalzun.PALETTE["necro_mid"], min(80, alpha)),
-                          (80, 50), r)
-        surface.blit(aura_surf, (x - 80, y - 20))
-
-
-    # ===================================================================
-    # SKILL E: REAPER'S SCYTHE
-    # ===================================================================
-    def _draw_reapers_scythe(surface, boss, x, y, timer, phase):
-        """Launch scythe projectile at target."""
-        # Spawn scythe once
-        if not getattr(boss, "_vh_scythe_spawned", False):
-            _NS_vhalzun._spawn_scythe_projectile(boss, x, y)
-            boss._vh_scythe_spawned = True
-
-        if timer <= 5:
-            boss._vh_scythe_spawned = False
-
-        # Casting glow at hand
-        hand_x = x + boss.direction * 24
-        hand_y = y - 8
-        pulse = math.sin(phase * 4) * 0.3 + 0.7
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], 150),
-                  (hand_x, hand_y), int(12 * pulse))
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], 200),
-                  (hand_x, hand_y), int(8 * pulse))
-        _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_bright"], 230),
-                  (hand_x, hand_y), int(5 * pulse))
-        _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_hot"],
-                  (hand_x, hand_y), max(1, int(3 * pulse)))
-
-        # Scythe trail lines
-        for i in range(4):
-            angle = phase * 3 + i * math.pi / 2
-            ex = hand_x + int(math.cos(angle) * 15) * boss.direction
-            ey = hand_y + int(math.sin(angle) * 12)
-            _NS_vhalzun._aaline(surface, (*_NS_vhalzun.PALETTE["necro_bright"], 180),
-                    (hand_x, hand_y), (ex, ey), 2)
-
-
-    # ===================================================================
-    # SKILL R: GHOST SHROUD
-    # ===================================================================
-    def _draw_ghost_shroud_ground(surface, boss, x, y, timer, phase):
-        """Ground ring for ghost shroud."""
-        progress = max(0.0, min(1.0, 1 - timer / 120))
-        pulse = math.sin(phase * 2) * 0.2 + 0.8
-        radius = int(55 + progress * 25)
-
-        _NS_vhalzun._ellipse(surface, (*_NS_vhalzun.PALETTE["necro_darkest"], int(180 * pulse)),
-                 (x - radius, y + 30 - radius // 3, radius * 2, radius * 2 // 3), 4)
-        _NS_vhalzun._ellipse(surface, (*_NS_vhalzun.PALETTE["necro_dark"], int(150 * pulse)),
-                 (x - radius + 5, y + 32 - radius // 3,
-                  radius * 2 - 10, radius * 2 // 3 - 6), 3)
-        _NS_vhalzun._ellipse(surface, (*_NS_vhalzun.PALETTE["necro_mid"], int(120 * pulse)),
-                 (x - radius + 10, y + 34 - radius // 3,
-                  radius * 2 - 20, radius * 2 // 3 - 12), 2)
-
-        # Rune spots in circle
-        for i in range(8):
-            angle = phase * 0.3 + i * math.pi / 4
-            rx = x + int(math.cos(angle) * (radius - 8))
-            ry = y + 38 + int(math.sin(angle) * (radius // 3 - 4))
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_bright"], (rx, ry), 3)
-            _NS_vhalzun._aacircle(surface, _NS_vhalzun.PALETTE["necro_hot"], (rx, ry), 1)
-
-
-    def _draw_ghost_shroud(surface, boss, x, y, timer, phase):
-        """Wraiths rising up around Vhalzun."""
-        progress = max(0.0, min(1.0, 1 - timer / 120))
-
-        # Multiple wraiths at different positions
-        wraith_positions = [
-            # (angle_offset, radius_x, radius_y, size, delay)
-            (0.0, 55, 15, 10, 0.0),
-            (0.5, 70, 22, 9, 0.1),
-            (1.0, 45, 12, 8, 0.05),
-            (1.5, 78, 26, 11, 0.15),
-            (2.0, 60, 18, 9, 0.08),
-            (2.5, 72, 22, 10, 0.12),
-            (3.0, 48, 14, 8, 0.03),
-            (3.5, 65, 20, 9, 0.1),
-            (4.0, 76, 24, 10, 0.14),
-            (4.5, 50, 13, 8, 0.06),
-        ]
-
-        for angle_off, rx, ry, size, delay in wraith_positions:
-            if progress < delay:
-                continue
-
-            wraith_progress = min(1.0, (progress - delay) / max(0.1, 1 - delay))
-
-            angle = angle_off + phase * 0.3
-            base_x = x + int(math.cos(angle) * rx)
-
-            # Wraiths rise from ground
-            rise = wraith_progress * 40
-            base_y = y + 40 - int(rise) + int(math.sin(phase + angle_off) * 3)
-
-            alpha = int(230 * min(1.0, wraith_progress * 2))
-            bob = int(math.sin(phase * 2 + angle_off) * 3)
-
-            _NS_vhalzun._draw_wraith(surface, base_x, base_y + bob, phase + angle_off,
-                        size=size, alpha=alpha)
-
-            # Rising trail wisps below
-            for j in range(3):
-                wisp_y = base_y + 12 + j * 5
-                wisp_alpha = max(0, alpha - (j + 1) * 60)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_mid"], wisp_alpha),
-                          (base_x + int(math.sin(phase + j) * 2), wisp_y),
-                          max(1, 3 - j))
-
-        # Extra rising green particles
-        for i in range(15):
-            t = ((phase * 0.5 + i * 0.12) % 1.0)
-            angle = i * math.pi * 2 / 15
-            r = 40 + int(math.sin(phase + i) * 15)
-            px = x + int(math.cos(angle) * r)
-            py = y + 40 - int(t * 60) + int(math.sin(phase + i) * 3)
-            alpha = int(200 * (1 - t))
-            if alpha > 0:
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_light"], alpha), (px, py), 2)
-                _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_hot"], alpha), (px, py - 1), 1)
-
-        # Ghostly aura around Vhalzun (protection effect)
-        aura_pulse = math.sin(phase * 2) * 0.3 + 0.7
-        for r in range(35, 5, -3):
-            alpha = int((35 - r) * 3 * aura_pulse)
-            _NS_vhalzun._aacircle(surface, (*_NS_vhalzun.PALETTE["necro_dark"], min(80, alpha)),
-                      (x, y - 10), r)
-
+        font = G._dbg_font()
+        yy = y - 96
+        for ln in lines:
+            img = font.render(ln, True, (180, 255, 180))
+            surface.blit(img, (x - 90, yy))
+            yy += 13
 
     # ===================================================================
     # Backward-compatible entry point alias

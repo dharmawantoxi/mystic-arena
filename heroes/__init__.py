@@ -663,11 +663,19 @@ _BEAM_PASS_HEROES = {"morgath"}
 # asap Skeleton Walk, pentagram + berkas jiwa Death Pact, retakan
 # magma + pilar api Burning Army, impact flash + shockwave + serpihan,
 # hit-stop 0.03-0.08 s, dan shake — semuanya di luar cache sprite.
+# Vhalzun (heroes/vhalzun_fx.py) melengkapi daftar untuk The Reaper of
+# Souls: pita sapuan sabit dari histori ujung bilah (busur reaper
+# ANTICIPATION->RECOVERY), death pulse & gelombang Reaper's Scythe
+# modular (inti + glow + bentuk directional + trail + partikel jiwa),
+# nova jiwa bergerigi Death Pulse, sigil heks + leech Heartstopper,
+# wraith + cangkang spektral Ghost Shroud, impact flash + shockwave +
+# serpihan tulang, afterimage, hit-stop 0.03-0.08 s, dan shake —
+# semua hidup di luar cache sprite.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
                    "alchemist", "ancient_apparition", "nyzrak",
                    "xerathis", "varkul", "ignis_drachorn", "zharok",
-                   "vokrahn", "pyrenth", "krobellus"}
+                   "vokrahn", "pyrenth", "krobellus", "vhalzun"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -690,6 +698,7 @@ _LIVE_FX_PATHS = {
     "vokrahn": "heroes.vokrahn_fx",
     "pyrenth": "heroes.pyrenth_fx",
     "krobellus": "heroes.krobellus_fx",
+    "vhalzun": "heroes.vhalzun_fx",
 }
 
 
