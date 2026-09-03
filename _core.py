@@ -1397,6 +1397,14 @@ class Game:
         except Exception:
             pass
 
+        # Governor beban FX combat kembali penuh di awal match baru
+        # (jangan membawa sisa intensitas rendah dari match sebelumnya).
+        try:
+            from mobile.perf import reset_fx_load
+            reset_fx_load()
+        except Exception:
+            pass
+
         # ═══ BUS GAME-FEEL: WAJIB DIKOSONGKAN TIAP MATCH BARU ═══
         # BUG: HITSTOP/SHAKE di heroes/combat_feel.py adalah singleton
         # MODUL (global proses), bukan milik Game. Kalau match sebelumnya
@@ -2784,6 +2792,16 @@ class Game:
             if FrustumCuller.is_visible(m.x, m.y, m.radius):
                 m.draw(draw_target)
         _PH.mark("e.hero")
+        # ═══ GOVERNOR BEBAN FX COMBAT ═══
+        # Sekali per frame: hitung berapa hero live-FX yang sedang
+        # bertarung, lalu turunkan intensitas FX global (partikel &
+        # lapisan depan diselingi) supaya combat ramai tidak membuat
+        # game slow-motion atau FX menumpuk menutupi hero.
+        try:
+            from heroes import begin_fx_frame, count_busy_fx_heroes
+            begin_fx_frame(count_busy_fx_heroes(self.get_all_heroes()))
+        except Exception:
+            pass
         for h in self.get_all_heroes():
             if FrustumCuller.is_visible(h.x, h.y, h.radius):
                 h.draw(draw_target)

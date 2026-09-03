@@ -508,7 +508,22 @@ class _Quality:
         self.max_alpha_px = 1_000_000
         self.colorkey_gain = 1.0       # colorkey vs alpha, hasil ukur
         self.sprite_cache = False      # cache sprite unit (colorkey)
+        self._particle_ratio = 1.0     # nilai dasar (tanpa beban combat)
         self.apply(HIGH)
+
+    @property
+    def particle_ratio(self):
+        """Rasio partikel EFEKTIF = preset kualitas x beban combat.
+
+        Beban combat dikelola oleh governor (set_fx_load / fx_load):
+        saat banyak hero bertarung sekaligus, semua modul FX otomatis
+        menurunkan jumlah partikel tanpa perlu diubah satu per satu.
+        """
+        return self._particle_ratio * fx_load()
+
+    @particle_ratio.setter
+    def particle_ratio(self, value):
+        self._particle_ratio = float(value)
 
     def apply(self, level):
         self.level = level
@@ -546,6 +561,57 @@ class _Quality:
 
 
 Quality = _Quality()
+
+
+# ═══════════════════════════════════════════════════════
+# GOVERNOR BEBAN FX COMBAT (anti slow-motion saat banyak hero)
+#
+# Setiap hero "live FX" (heroes/*_fx.py) menggambar partikel, trail,
+# ring, dan glow sendiri tiap frame. Ketika banyak hero bertarung
+# sekaligus, biaya draw naik LINEAR dengan jumlah hero dan alpha-blit
+# kecil menumpuk -> FPS ambruk -> loop ber-clock.tick() melambat dan
+# game terasa slow-motion. Selain itu glow/ring additive yang menumpuk
+# menutupi sprite hero.
+#
+# Governor menghitung "beban" (jumlah hero FX yang aktif) sekali per
+# frame, lalu menurunkan intensitas FX global supaya total pekerjaan
+# tetap terbatas. fx_load() dibaca oleh Quality.particle_ratio, jadi
+# SEMUA modul FX ikut menyesuaikan tanpa diubah satu pun.
+# ═══════════════════════════════════════════════════════
+_FX_LOAD = 1.0
+_FX_LOAD_SMOOTH = 0.25     # seberapa cepat beban menyusul perubahan
+_FX_BASE_HEROES = 3.0      # jumlah hero FX yang masih boleh intensitas penuh
+_FX_LOAD_MIN = 0.35        # lantai intensitas (FX tidak pernah mati total)
+
+
+def set_fx_load(n_active):
+    """Panggil SEKALI per frame dengan jumlah hero FX yang sedang aktif.
+
+    Semakin banyak hero yang aktif -> intensitas FX global diturunkan
+    (partikel lebih sedikit, lapisan FX diselingi antar-frame) supaya
+    frame tetap murah dan FX tidak menumpuk menutupi hero.
+    """
+    global _FX_LOAD
+    try:
+        n_active = max(0, int(n_active or 0))
+    except Exception:
+        n_active = 0
+    if n_active <= _FX_BASE_HEROES:
+        target = 1.0
+    else:
+        target = max(_FX_LOAD_MIN, (_FX_BASE_HEROES / n_active) ** 0.5)
+    _FX_LOAD += (target - _FX_LOAD) * _FX_LOAD_SMOOTH
+
+
+def fx_load():
+    """Faktor intensitas FX global (0..1). 1.0 = normal."""
+    return _FX_LOAD
+
+
+def reset_fx_load():
+    """Kembalikan intensitas FX ke normal (ganti level / keluar match)."""
+    global _FX_LOAD
+    _FX_LOAD = 1.0
 
 
 # ═══════════════════════════════════════════════════════

@@ -740,6 +740,84 @@ def _live_fx_module(hero_type):
     return mod or None
 
 
+# ── GOVERNOR BEBAN FX COMBAT ─────────────────────────────
+# Saat banyak hero bertarung sekaligus, setiap hero live-FX menggambar
+# partikel/trail/ring sendiri tiap frame. Tanpa batas global, biaya draw
+# naik linear dengan jumlah hero -> FPS ambruk -> game terasa slow-motion,
+# dan glow/ring additive yang menumpuk menutupi sprite hero.
+#
+# _core.py memanggil begin_fx_frame() sekali per frame dengan jumlah hero
+# yang sedang aktif. fx_load() (mobile/perf.py) lalu menurunkan intensitas
+# FX global: partikel menyusut lewat Quality.particle_ratio, dan lapisan
+# FX depan hero yang sekadar auto-attack diselingi antar-frame (tetap
+# mulus, hanya setengah frekuensi) supaya tumpukan additive berkurang.
+_FX_FRAME = 0
+
+
+def begin_fx_frame(active_count=0):
+    """Panggil SEKALI per frame (dari Game.draw) untuk menyetel beban FX."""
+    global _FX_FRAME
+    _FX_FRAME += 1
+    try:
+        from mobile import perf as _perf
+        _perf.set_fx_load(active_count)
+    except Exception:
+        pass
+
+
+def _fx_busy(hero):
+    """True kalau hero sedang memproduksi FX (serang / skill / proyektil)."""
+    if getattr(hero, "active_skill", None):
+        return True
+    if int(getattr(hero, "attack_timer", 0) or 0) > 0:
+        return True
+    projs = getattr(hero, "projectiles", None)
+    if projs:
+        for p in projs:
+            if p.get("alive"):
+                return True
+    return False
+
+
+def count_busy_fx_heroes(heroes):
+    """Jumlah hero live-FX yang sedang aktif (untuk governor beban)."""
+    n = 0
+    for h in heroes:
+        if getattr(h, "hero_type", None) not in _LIVE_FX_HEROES:
+            continue
+        if getattr(h, "alive", True) and _fx_busy(h):
+            n += 1
+    return n
+
+
+def _fx_skip_this_frame(hero):
+    """Selang-seling lapisan FX hero ini saat beban combat tinggi.
+
+    Saat banyak hero bertarung sekaligus, tiap hero live-FX menggambar
+    partikel/trail/ring/glow sendiri tiap frame. Tanpa batas global,
+    biaya draw naik linear -> game terasa slow-motion, dan glow/ring
+    additive menumpuk menutupi sprite hero.
+
+    Di bawah beban tinggi, FX hero diselingi antar-frame (tetap hidup,
+    hanya setengah/ketiga frekuensi) supaya total blit per frame
+    terbatas. Hero yang sedang DIPILIH pemain (selected) tetap penuh.
+    """
+    try:
+        from mobile import perf as _perf
+        load = _perf.fx_load()
+    except Exception:
+        load = 1.0
+    if load >= 0.92:
+        return False
+    if getattr(hero, "selected", False):
+        return False
+    phase = id(hero) & 0xFFFF
+    if load < 0.6:
+        # Beban ekstrem: hanya 1 dari 3 frame.
+        return (_FX_FRAME + phase) % 3 != 0
+    return (_FX_FRAME + phase) % 2 == 1
+
+
 def _live_fx_pre(hero_type, surface, hero, x, y):
     """Lapisan FX di BAWAH sprite hero (ground FX, back particles)."""
     if hero_type not in _LIVE_FX_HEROES:
@@ -748,6 +826,14 @@ def _live_fx_pre(hero_type, surface, hero, x, y):
         return
     mod = _live_fx_module(hero_type)
     if mod is None:
+        return
+    if _fx_skip_this_frame(hero):
+        # Tetap majukan waktu FX (tick) walau gambar diselingi, supaya
+        # partikel/trail tidak beku pada frame yang dilewati.
+        try:
+            mod.tick()
+        except Exception:
+            pass
         return
     try:
         mod.draw_ground_layer(surface, hero, x, y)
@@ -760,6 +846,8 @@ def _live_fx_post(hero_type, surface, hero, x, y):
     if hero_type not in _LIVE_FX_HEROES:
         return
     if getattr(hero, "_portrait_hd", False):
+        return
+    if _fx_skip_this_frame(hero):
         return
     mod = _live_fx_module(hero_type)
     if mod is None:
