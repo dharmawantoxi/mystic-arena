@@ -1,0 +1,2591 @@
+# ============================================================================
+# heroes/nyxara_fx.py
+# ----------------------------------------------------------------------------
+# NYXARA — THE NETHER MATRON  ·  LAPISAN TEMPUR HIDUP (v2)
+#
+# Pasangan dari renderer ``bosses/level5.py :: _NS_nyxara``.  Pembagian
+# tugasnya tegas:
+#
+#   renderer   -> SATU-SATUNYA pemilik geometri badan & tongkat (rig,
+#                 palet, pose, controller animasi, ARC ayunan, telegraph
+#                 fallback)
+#   modul ini  -> SEMUA yang hidup di RUANG LAYAR skala 1:1 — swing
+#                 trail, particle system, proyektil (nether orb & nether
+#                 blast), skill FX q/w/e/r, impact FX, afterimage,
+#                 overlay debug
+#   combat_feel-> bus global hit-stop & screen shake (dipakai bersama)
+#
+# Kenapa dipisah?  Di lane hero, sprite badan di-*cache* lalu
+# ``smoothscale``-kan.  Efek apa pun yang digambar ke canvas badan ikut
+# BEKU dan ikut MENYUSUT.  Dengan memisahkan lapisan hidup ke ruang layar,
+# trail/partikel/proyektil selalu 60 fps sejati dan selalu setajam layar.
+#
+# Modul ini TIDAK pernah menghitung ulang pose.  Ia MEMBACA
+# ``_NS_nyxara.pose_of()`` / ``staff_points()`` lewat jembatan malas
+# ``_renderer()``, jadi tongkat dan trail-nya mustahil berbeda satu frame
+# pun.
+#
+# 100% PROSEDURAL: tidak ada PNG / JPG / GIF / sprite-sheet / aset
+# eksternal dan tidak ada ``pygame.image.load`` di mana pun.
+# ============================================================================
+
+import math
+import random
+
+import pygame
+
+try:
+    from heroes import combat_feel as _feel
+except Exception:                                # pragma: no cover
+    try:
+        import combat_feel as _feel              # type: ignore
+    except Exception:
+        _feel = None
+
+
+# ============================================================================
+# 1.  KONSTANTA & KONTRAK
+# ============================================================================
+
+#: Nama karakter yang dikerjakan (satu sumber kebenaran).
+CHARACTER_NAME = "nyxara"
+
+#: Overlay debug (hitbox, hurtbox, state, FPS, jumlah partikel, ...).
+DEBUG_CHARACTER = False
+
+#: Master switch lapisan hidup.  False -> renderer memakai fallback canvas.
+NYXARA_FX_ENABLED = True
+
+#: Cap keras — tidak ada satu pun sistem yang boleh tumbuh tanpa batas.
+MAX_PARTICLES = 220
+MAX_PROJECTILES = 10
+TRAIL_SAMPLES = 12
+MAX_IMPACTS = 8
+MAX_SKILLS = 4
+MAX_AFTERIMAGES = 8
+
+FIXED_DT = 1.0 / 60.0
+
+#: Kecepatan proyektil (px dunia / detik).
+ORB_SPEED = 320.0            # nether orb (serangan dasar jarak jauh)
+BLAST_SPEED = 470.0          # nether blast (skill Q)
+
+#: Durasi pose skill dalam FRAME — HARUS sama dengan
+#: ``bosses/level5._NS_nyxara.SKILL_DUR`` dan timer AI di base_boss
+#: (_smart_ai_nyxara: q 60, w 70, e 80, r 90).
+SKILL_DUR = {"q": 60, "w": 70, "e": 80, "r": 90}
+
+#: Radius efek di RUANG DUNIA — sama dengan radius damage AI.
+WORLD_RADIUS = {"q": 130.0, "w": 150.0, "e": 100.0, "r": 150.0}
+
+#: Jarak dunia (px) di bawahnya Nyxara mengayun tongkatnya.
+#: Satu sumber kebenaran bersama renderer + hook base_boss.
+MELEE_REACH = 88.0
+
+#: Fase serangan (fraksi 0..1) — identik dengan renderer.
+ATTACK_PHASES = (
+    ("ANTICIPATION", 0.00, 0.12),
+    ("WINDUP",       0.12, 0.30),
+    ("SWING",        0.30, 0.50),
+    ("IMPACT",       0.50, 0.62),
+    ("FOLLOW",       0.62, 0.82),
+    ("RECOVERY",     0.82, 1.00),
+)
+
+#: Jendela hit aktif + frame benturan/rilis.
+ATTACK_ACTIVE_WINDOW = (0.30, 0.55)
+ATTACK_IMPACT_FRAME = 0.42
+ATTACK_RELEASE_FRAME = 0.32
+ATK_IMPACT = ATTACK_IMPACT_FRAME
+ATK_RELEASE = ATTACK_RELEASE_FRAME
+
+#: Prioritas state animasi — angka besar menang, DEATH mengunci.
+ANIM_STATES = {
+    "IDLE": 0,
+    "WALK": 10,
+    "RUN": 15,
+    "CHARGE": 30,
+    "CAST": 35,
+    "ATTACK": 40,
+    "SWING": 45,
+    "SKILL": 50,
+    "SPECIAL": 55,
+    "HIT": 60,
+    "HURT": 65,
+    "DEATH": 100,
+}
+
+#: Lifecycle skill: CAST -> CHARGE -> RELEASE -> AREA -> IMPACT -> AFTER.
+SKILL_PHASES = (
+    ("CAST",    0.00, 0.16),
+    ("CHARGE",  0.16, 0.34),
+    ("RELEASE", 0.34, 0.46),
+    ("AREA",    0.46, 0.74),
+    ("IMPACT",  0.74, 0.86),
+    ("AFTER",   0.86, 1.00),
+)
+
+
+def attack_phase(progress):
+    """Nama fase serangan untuk progress 0..1 (identik renderer)."""
+    p = max(0.0, min(1.0, float(progress)))
+    for name, a, b in ATTACK_PHASES:
+        if a <= p < b:
+            return name
+    return "RECOVERY"
+
+
+def skill_phase(t):
+    """Nama fase skill untuk t 0..1."""
+    p = max(0.0, min(1.0, float(t)))
+    for name, a, b in SKILL_PHASES:
+        if a <= p < b:
+            return name
+    return "AFTER"
+
+
+# ============================================================================
+# 2.  PALETTE — Nether Matron (disinkronkan dari renderer)
+# ============================================================================
+
+#: Palet fallback — langsung tersedia saat modul diimpor.  Saat renderer
+#: ditemukan, ``_sync_palette()`` MUTASI dict ini in-place (bukan
+#: mengikat ulang nama) supaya semua referensi ``_P`` ikut terbarui.
+NYXARA_PALETTE = {
+    "outline": (6, 5, 10),
+    "skin_darkest": (25, 38, 15), "skin_dark": (55, 75, 30),
+    "skin_mid": (95, 120, 50), "skin_light": (140, 165, 75),
+    "skin_shine": (185, 210, 110),
+    "robe_darkest": (18, 10, 22), "robe_dark": (38, 22, 44),
+    "robe_mid": (68, 38, 70), "robe_light": (105, 65, 105),
+    "robe_high": (145, 100, 140), "robe_shine": (190, 155, 185),
+    "inner_darkest": (10, 6, 14), "inner_dark": (22, 13, 28),
+    "inner_mid": (40, 24, 48),
+    "leather_dark": (28, 18, 12), "leather_mid": (55, 35, 20),
+    "leather_light": (90, 62, 35),
+    "nether_darkest": (25, 35, 5), "nether_dark": (70, 95, 15),
+    "nether_mid": (140, 180, 30), "nether_light": (200, 240, 60),
+    "nether_bright": (230, 255, 120), "nether_hot": (245, 255, 180),
+    "nether_white": (255, 255, 220),
+    "bone_dark": (75, 85, 50), "bone_mid": (130, 145, 90),
+    "bone_light": (185, 200, 140), "bone_shine": (225, 235, 190),
+    "gold_dark": (90, 62, 15), "gold_mid": (165, 125, 35),
+    "gold_light": (225, 185, 70), "gold_shine": (250, 225, 140),
+    "horn_dark": (60, 20, 15), "horn_mid": (110, 40, 25),
+    "horn_light": (170, 75, 40), "horn_high": (220, 130, 70),
+    "wood_dark": (35, 22, 15), "wood_mid": (65, 42, 22),
+    "wood_light": (100, 70, 40),
+    "eye_dark": (70, 95, 5), "eye_mid": (170, 220, 30),
+    "eye_bright": (220, 250, 100), "eye_hot": (245, 255, 200),
+    "shadow": (0, 0, 0), "shadow_deep": (4, 6, 3),
+    "white": (255, 255, 255),
+}
+
+_P = NYXARA_PALETTE
+_PALETTE_SYNCED = False
+
+
+def _sync_palette():
+    """Salin palet dari renderer sekali (mutasi in-place, aman dipanggil
+    berkali-kali — termasuk sebelum ``_renderer`` didefinisikan)."""
+    global _PALETTE_SYNCED
+    if _PALETTE_SYNCED:
+        return
+    try:
+        G = _renderer()
+    except Exception:
+        G = None
+    if G is not None:
+        base = getattr(G, "PALETTE", None)
+        if isinstance(base, dict) and base:
+            _P.update(base)
+    _PALETTE_SYNCED = True
+
+
+# ============================================================================
+# 3.  GERBANG KUALITAS & UTILITAS GAMBAR PROSEDURAL
+# ============================================================================
+
+def _quality():
+    try:
+        from mobile.perf import Quality
+        return Quality
+    except Exception:                          # pragma: no cover
+        return None
+
+
+def particle_budget():
+    """Faktor jumlah partikel (0.0 = partikel dimatikan total)."""
+    Q = _quality()
+    if Q is None:
+        return 1.0
+    if not getattr(Q, "particles", True):
+        return 0.0
+    return float(getattr(Q, "particle_ratio", 1.0))
+
+
+def glow_allowed():
+    Q = _quality()
+    return True if Q is None else bool(getattr(Q, "glow", True))
+
+
+def shake_allowed():
+    if _feel is not None:
+        try:
+            return bool(getattr(_feel, "SHAKE", None) is not None)
+        except Exception:
+            pass
+    return True
+
+
+# ── jembatan renderer (lazy) ─────────────────────────────────────────
+_RENDERER = None          # None = belum dicari, False = tidak ada
+
+
+def _renderer():
+    """Muat ``_NS_nyxara`` dari bosses.level5 sekali; None kalau gagal."""
+    global _RENDERER
+    if _RENDERER is False:
+        return None
+    if _RENDERER is None:
+        try:
+            from bosses import level5 as _L
+            _RENDERER = getattr(_L, "_NS_nyxara", None) or False
+        except Exception:                      # pragma: no cover
+            _RENDERER = False
+    return _RENDERER or None
+
+
+def pose_of(boss):
+    """(action, phase, ap) dari renderer — sinkron dengan yang digambar."""
+    G = _renderer()
+    if G is not None:
+        try:
+            return G.pose_of(boss)
+        except Exception:
+            pass
+    skill = getattr(boss, "active_skill", None)
+    if skill:
+        return ("cast_" + str(skill), float(getattr(boss, "pulse", 0.0)), 0.0)
+    if getattr(boss, "_nx_attack_active", False):
+        return ("attack", float(getattr(boss, "pulse", 0.0)),
+                float(getattr(boss, "_nx_attack_progress", 0.0) or 0.0))
+    return ("idle", float(getattr(boss, "pulse", 0.0)), 0.0)
+
+
+def staff_points(boss, x, y):
+    """(pivot, tip) pygame.Vector2 ruang LAYAR dari renderer."""
+    G = _renderer()
+    if G is not None:
+        try:
+            return G.staff_points(boss, x, y)
+        except Exception:
+            pass
+    f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+    sc = body_scale(boss)
+    pivot = pygame.Vector2(x + 11 * f * sc, y - 18 * sc)
+    tip = pygame.Vector2(x + 20 * f * sc, y - 58 * sc)
+    return (pivot, tip)
+
+
+def body_scale(boss):
+    sc = getattr(boss, "_render_scale", 1.0)
+    try:
+        sc = float(sc)
+    except (TypeError, ValueError):
+        sc = 1.0
+    return sc if sc > 0.01 else 1.0
+
+
+def ground_dy(boss):
+    """Offset garis tanah dari titik jangkar (px layar)."""
+    G = _renderer()
+    base = float(getattr(G, "GROUND_DY", 48)) if G is not None else 48.0
+    return base * body_scale(boss)
+
+
+def screen_point(boss, x, y, lx, ly):
+    """Peta offset lokal rig -> ruang layar (mirror + skala)."""
+    f = 1 if (getattr(boss, "direction", 1) or 1) >= 0 else -1
+    sc = body_scale(boss)
+    return (x + lx * f * sc, y + ly * sc)
+
+
+# ── cache surface prosedural ─────────────────────────────────────────
+_CACHE = {}
+_CACHE_MAX = 160
+
+
+def _cache_put(key, surf):
+    if len(_CACHE) >= _CACHE_MAX:
+        _CACHE.pop(next(iter(_CACHE)))
+    _CACHE[key] = surf
+    return surf
+
+
+def clear_cache():
+    _CACHE.clear()
+
+
+def cache_size():
+    return len(_CACHE)
+
+
+def glow_surface(radius, color, power=1.0):
+    """Bola glow radial (cache per radius+warna+power)."""
+    radius = max(2, int(radius))
+    key = ("glow", radius, tuple(color[:3]), round(float(power), 2))
+    s = _CACHE.get(key)
+    if s is None:
+        size = radius * 2 + 2
+        s = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        for r in range(radius, 0, -1):
+            a = int(150 * power * (1.0 - r / float(radius)) ** 1.7)
+            if a > 0:
+                pygame.draw.circle(s, (*color[:3], min(255, a)), (c, c), r)
+        s = _cache_put(key, s)
+    return s
+
+
+def ring_surface(radius, thickness, color, alpha=255, teeth=0):
+    """Cincin chunky; ``teeth`` > 0 -> cincin bergerigi (bukan lingkaran
+    polos) — dipakai nova Nether Blast & shockwave."""
+    radius = max(2, int(radius))
+    key = ("ring", radius, int(thickness), tuple(color[:3]), int(alpha),
+           int(teeth))
+    s = _CACHE.get(key)
+    if s is None:
+        size = radius * 2 + 6
+        s = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        col = (*color[:3], max(0, min(255, int(alpha))))
+        if teeth > 0:
+            pts_o, pts_i = [], []
+            n = max(8, teeth * 2)
+            for i in range(n):
+                ang = i * math.tau / n
+                rr = radius if i % 2 == 0 else radius - thickness
+                pts_o.append((c + math.cos(ang) * rr, c + math.sin(ang) * rr))
+                inner_r = max(1.0, radius - thickness * 2)
+                pts_i.append((c + math.cos(ang + math.tau / n) * inner_r,
+                              c + math.sin(ang + math.tau / n) * inner_r))
+            pygame.draw.polygon(s, col, pts_o + pts_i[::-1])
+        else:
+            pygame.draw.circle(s, col, (c, c), radius, max(1, int(thickness)))
+        s = _cache_put(key, s)
+    return s
+
+
+def ellipse_ring_surface(rx, ry, thickness, color, alpha=255):
+    """Cincin ellipse (proyeksi tanah) — cache per ukuran."""
+    rx, ry = max(2, int(rx)), max(1, int(ry))
+    key = ("ering", rx, ry, int(thickness), tuple(color[:3]), int(alpha))
+    s = _CACHE.get(key)
+    if s is None:
+        w, h = rx * 2 + 6, ry * 2 + 6
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        col = (*color[:3], max(0, min(255, int(alpha))))
+        pygame.draw.ellipse(s, col, (3, 3, rx * 2, ry * 2),
+                            max(1, int(thickness)))
+        s = _cache_put(key, s)
+    return s
+
+
+def skull_decal(size, alpha=255):
+    """Tengkorak pixel-art kecil (cache) — nova Q, ward E, orbit R."""
+    size = max(4, int(size))
+    key = ("skull", size, int(alpha))
+    s = _CACHE.get(key)
+    if s is None:
+        w = h = size * 2 + 4
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        cx, cy = w // 2, h // 2
+        a = max(0, min(255, int(alpha)))
+        bone = (*_P["bone_mid"], a)
+        bone_hi = (*_P["bone_light"], a)
+        dark = (*_P["shadow_deep"], a)
+        eye = (*_P["eye_bright"], a)
+        pygame.draw.circle(s, bone, (cx, cy - 1), size)
+        pygame.draw.rect(s, bone, (cx - size + 2, cy - 1, (size - 2) * 2, 3))
+        pygame.draw.rect(s, bone_hi, (cx - size // 2, cy - size - 1, 2, 2))
+        pygame.draw.rect(s, dark, (cx - size // 2 - 1, cy - 2, 3, 3))
+        pygame.draw.rect(s, dark, (cx + size // 2 - 1, cy - 2, 3, 3))
+        pygame.draw.rect(s, eye, (cx - size // 2 - 1, cy - 1, 2, 2))
+        pygame.draw.rect(s, eye, (cx + size // 2 - 1, cy - 1, 2, 2))
+        pygame.draw.rect(s, dark, (cx - 1, cy + 1, 2, 2))
+        for i in range(3):
+            pygame.draw.rect(s, dark, (cx - 2 + i * 2, cy + 3, 1, 2))
+        s = _cache_put(key, s)
+    return s
+
+
+def ward_sprite(size, alpha=230):
+    """Nether Ward: totem tengkorak bertanduk pixel-art (skill E)."""
+    size = max(6, int(size))
+    key = ("ward", size, int(alpha))
+    s = _CACHE.get(key)
+    if s is None:
+        w = size * 2 + 8
+        h = size * 3 + 10
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        cx = w // 2
+        a = max(0, min(255, int(alpha)))
+        # tiang kayu
+        pygame.draw.rect(s, (*_P["outline"], a), (cx - 3, size, 7, h - size - 3))
+        pygame.draw.rect(s, (*_P["wood_dark"], a), (cx - 2, size, 5, h - size - 4))
+        pygame.draw.rect(s, (*_P["wood_mid"], a), (cx - 1, size, 3, h - size - 5))
+        # tengkorak
+        pygame.draw.circle(s, (*_P["outline"], a), (cx, size), size // 2 + 1)
+        pygame.draw.circle(s, (*_P["bone_dark"], a), (cx, size), size // 2)
+        pygame.draw.circle(s, (*_P["bone_mid"], a), (cx - 1, size - 1),
+                           max(1, size // 2 - 1))
+        # tanduk kecil
+        for k in (-1, 1):
+            pygame.draw.polygon(s, (*_P["horn_mid"], a), [
+                (cx + k * (size // 2), size - size // 3),
+                (cx + k * (size // 2 + 3), size - size),
+                (cx + k * (size // 3), size - size // 2)])
+        # mata nether
+        pygame.draw.rect(s, (*_P["nether_bright"], a),
+                         (cx - size // 3 - 1, size - 1, 2, 2))
+        pygame.draw.rect(s, (*_P["nether_bright"], a),
+                         (cx + size // 3 - 1, size - 1, 2, 2))
+        s = _cache_put(key, s)
+    return s
+
+
+def _blit_faded(surface, surf, cx, cy, alpha=255.0, additive=False):
+    """Blit surface dengan alpha dinamis (jalur murah: set_alpha)."""
+    alpha = max(0, min(255, int(alpha)))
+    if alpha <= 2 or surf is None:
+        return
+    cx, cy = int(cx), int(cy)
+    prev = surf.get_alpha()
+    surf.set_alpha(alpha)
+    if additive and glow_allowed():
+        surface.blit(surf, (cx - surf.get_width() // 2,
+                            cy - surf.get_height() // 2),
+                     special_flags=pygame.BLEND_RGB_ADD)
+    else:
+        surface.blit(surf, (cx - surf.get_width() // 2,
+                            cy - surf.get_height() // 2))
+    surf.set_alpha(prev)
+
+
+def blit_add(surface, src, pos, alpha=255):
+    """Blit aditif (BLEND_RGB_ADD) — untuk core glow panas."""
+    alpha = max(0, min(255, int(alpha)))
+    if alpha <= 2:
+        return
+    prev = src.get_alpha()
+    src.set_alpha(alpha)
+    surface.blit(src, (int(pos[0]), int(pos[1])),
+                 special_flags=pygame.BLEND_RGB_ADD)
+    src.set_alpha(prev)
+
+
+def shard_poly(surface, cx, cy, ang, length, width, color, alpha=255):
+    """Serpihan tajam (polygon) menghadap arah ``ang``."""
+    cx, cy = int(cx), int(cy)
+    dx, dy = math.cos(ang), math.sin(ang)
+    px, py = -dy, dx
+    L, W = length, width
+    pts = [
+        (cx + dx * L, cy + dy * L),
+        (cx + px * W, cy + py * W),
+        (cx - dx * L * 0.6, cy - dy * L * 0.6),
+        (cx - px * W, cy - py * W),
+    ]
+    pygame.draw.polygon(surface, (*color[:3], max(0, min(255, int(alpha)))),
+                        pts)
+
+
+def spark_star(surface, cx, cy, size, color, alpha, spikes=8, rot=0.3):
+    """Bintang kilat benturan (polygon berduri — bukan lingkaran)."""
+    cx, cy = int(cx), int(cy)
+    pts = []
+    for i in range(spikes * 2):
+        ang = rot + i * math.pi / spikes
+        r = size if i % 2 == 0 else size * 0.38
+        pts.append((cx + math.cos(ang) * r, cy + math.sin(ang) * r))
+    pygame.draw.polygon(surface, (*color[:3], max(0, min(255, int(alpha)))),
+                        pts)
+
+
+def taper_lane(surface, x0, y0, x1, y1, w0, w1, color, alpha):
+    """Pita meruncing (dipakai berkas Life Drain / Decrepify)."""
+    dx, dy = x1 - x0, y1 - y0
+    d = math.hypot(dx, dy) or 1.0
+    nx, ny = -dy / d, dx / d
+    pts = [
+        (x0 + nx * w0, y0 + ny * w0),
+        (x1 + nx * w1, y1 + ny * w1),
+        (x1 - nx * w1, y1 - ny * w1),
+        (x0 - nx * w0, y0 - ny * w0),
+    ]
+    pygame.draw.polygon(surface, (*color[:3], max(0, min(255, int(alpha)))),
+                        pts)
+
+
+def _clamp_color(color):
+    return tuple(max(0, min(255, int(c))) for c in color)
+
+
+def darken(color, k):
+    return _clamp_color((color[0] * k, color[1] * k, color[2] * k))
+
+
+# ============================================================================
+# 4.  PARTICLE SYSTEM  (reusable: posisi, kecepatan, akselerasi, umur,
+#     rotasi, alpha, gravity, arah, spread, burst)
+# ============================================================================
+
+class Particle:
+    """Satu partikel dengan atribut lengkap + fade + gravity + drag."""
+
+    __slots__ = ("x", "y", "vx", "vy", "ax", "ay", "life", "max_life",
+                 "size", "rotation", "rotation_speed", "alpha", "gravity",
+                 "color", "shape", "drag", "additive", "layer", "seed")
+
+    def __init__(self, x, y, vx, vy, life, size, color, shape="orb",
+                 gravity=0.0, rotation=0.0, rotation_speed=0.0,
+                 drag=0.0, additive=False, layer="front", seed=0.0,
+                 ax=0.0, ay=0.0):
+        self.x = float(x)
+        self.y = float(y)
+        self.vx = float(vx)
+        self.vy = float(vy)
+        self.ax = float(ax)
+        self.ay = float(ay)
+        self.life = float(life)
+        self.max_life = float(life)
+        self.size = float(size)
+        self.rotation = float(rotation)
+        self.rotation_speed = float(rotation_speed)
+        self.alpha = 255
+        self.gravity = float(gravity)
+        self.color = tuple(color[:3])
+        self.shape = shape
+        self.drag = float(drag)
+        self.additive = bool(additive)
+        self.layer = layer
+        self.seed = float(seed)
+
+    def update(self, dt):
+        if self.drag > 0.0:
+            k = math.exp(-self.drag * dt)
+            self.vx *= k
+            self.vy *= k
+        self.vx += self.ax * dt
+        self.vy += (self.ay + self.gravity) * dt
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.rotation += self.rotation_speed * dt
+        self.life -= dt
+        t = self.life / self.max_life if self.max_life > 0 else 0.0
+        # fade-out di 40% terakhir umur
+        self.alpha = int(255 * min(1.0, t / 0.4))
+
+    @property
+    def alive(self):
+        return self.life > 0.0
+
+    def draw(self, surface):
+        if self.alpha <= 4:
+            return
+        x, y = int(self.x), int(self.y)
+        c = self.color
+        a = self.alpha
+        s = self.size
+        sh = self.shape
+        if sh == "orb":
+            if glow_allowed() and s >= 2.5:
+                _blit_faded(surface, glow_surface(int(s * 2.2), c, 0.7),
+                            x, y, a * 0.75, additive=self.additive)
+            pygame.draw.circle(surface, (*c, a), (x, y), max(1, int(s * 0.7)))
+        elif sh == "spark":
+            if glow_allowed():
+                _blit_faded(surface, glow_surface(int(s * 2.0), c, 0.8),
+                            x, y, a * 0.8, additive=True)
+            pygame.draw.circle(surface, (255, 255, 255, a), (x, y),
+                               max(1, int(s * 0.5)))
+        elif sh == "streak":
+            ln = max(2, int(s * 2.2))
+            sp = math.hypot(self.vx, self.vy) or 1.0
+            dx, dy = self.vx / sp, self.vy / sp
+            pygame.draw.line(surface, (*c, a), (x, y),
+                             (x - int(dx * ln), y - int(dy * ln)),
+                             max(1, int(s * 0.6)))
+            pygame.draw.circle(surface, (255, 255, 255, a), (x, y),
+                               max(1, int(s * 0.4)))
+        elif sh == "shard":
+            ang = self.rotation
+            if ang == 0.0:
+                ang = math.atan2(self.vy, self.vx)
+            shard_poly(surface, x, y, ang,
+                       max(2.0, s * 1.6), max(1.0, s * 0.55), c, a)
+        elif sh == "bone":
+            # serpihan tulang chunky yang berputar
+            r = max(2, int(s))
+            dx, dy = math.cos(self.rotation), math.sin(self.rotation)
+            pygame.draw.line(surface, (*c, a),
+                             (x - int(dx * r), y - int(dy * r)),
+                             (x + int(dx * r), y + int(dy * r)),
+                             max(2, int(s * 0.8)))
+            pygame.draw.circle(surface, (*_P["bone_light"], a),
+                               (x - int(dx * r), y - int(dy * r)), 1)
+            pygame.draw.circle(surface, (*_P["bone_light"], a),
+                               (x + int(dx * r), y + int(dy * r)), 1)
+        elif sh == "wisp":
+            # wisp nether: kepala bulat + ekor mengecil ke atas
+            r = max(1, int(s * 0.8))
+            pygame.draw.circle(surface, (*c, a), (x, y), r)
+            pygame.draw.circle(surface, (*c, a // 2), (x, y - r - 1),
+                               max(1, r - 1))
+            pygame.draw.circle(surface, (255, 255, 255, a), (x, y - 1), 1)
+        elif sh == "ember":
+            pygame.draw.rect(surface, (*c, a),
+                             (x, y, max(1, int(s)), max(1, int(s))))
+            if a > 120:
+                pygame.draw.rect(surface, (255, 255, 255, a // 2), (x, y, 1, 1))
+        elif sh == "dust":
+            pygame.draw.circle(surface, (*c, max(8, a // 2)), (x, y),
+                               max(1, int(s)))
+        else:  # pragma: no cover - jaga-jaga
+            pygame.draw.circle(surface, (*c, a), (x, y), max(1, int(s)))
+
+
+class ParticleSystem:
+    """Pool partikel reusable dengan cap keras + spawn/burst/directional."""
+
+    def __init__(self, cap=MAX_PARTICLES):
+        self.cap = int(cap)
+        self.parts = []
+
+    def count(self):
+        return len(self.parts)
+
+    def spawn(self, x, y, vx, vy, life, size, color, shape="orb",
+              gravity=0.0, rotation=0.0, rotation_speed=0.0, drag=0.0,
+              additive=False, layer="front", seed=0.0, ax=0.0, ay=0.0):
+        if len(self.parts) >= self.cap:
+            self.parts.pop(0)
+        self.parts.append(Particle(x, y, vx, vy, life, size, color, shape,
+                                   gravity=gravity, rotation=rotation,
+                                   rotation_speed=rotation_speed, drag=drag,
+                                   additive=additive, layer=layer, seed=seed,
+                                   ax=ax, ay=ay))
+
+    def burst(self, x, y, n, speed=(60.0, 220.0), life=(0.2, 0.5),
+              size=(1.5, 3.5), colors=((140, 180, 30),), spread=math.tau,
+              direction=None, gravity=0.0, drag=1.0, shape="orb",
+              additive=False, layer="front", rotation_speed=None,
+              accel=(0.0, 0.0)):
+        """Ledakan n partikel dengan spread acak di sekitar direction."""
+        n = max(0, int(n * particle_budget()))
+        if n <= 0:
+            return
+        for _ in range(n):
+            if direction is None:
+                ang = random.uniform(0.0, math.tau)
+            else:
+                ang = direction + random.uniform(-spread / 2, spread / 2)
+            sp = random.uniform(*speed)
+            lf = random.uniform(*life)
+            sz = random.uniform(*size)
+            color = random.choice(colors)
+            rs = 0.0
+            if rotation_speed is not None:
+                rs = random.uniform(*rotation_speed)
+            self.spawn(x, y, math.cos(ang) * sp, math.sin(ang) * sp,
+                       lf, sz, color, shape=shape, gravity=gravity,
+                       drag=drag, rotation=random.uniform(0.0, math.tau),
+                       rotation_speed=rs, additive=additive, layer=layer,
+                       seed=random.uniform(0.0, 10.0),
+                       ax=accel[0], ay=accel[1])
+
+    def stream_toward(self, x, y, tx, ty, n, speed=(80.0, 160.0),
+                      life=(0.3, 0.6), size=(1.5, 3.0),
+                      colors=((200, 240, 60),), shape="wisp", drag=0.0,
+                      layer="front", accel=(0.0, 0.0)):
+        """Partikel yang bergerak MENUJU titik (vakum jiwa / life drain)."""
+        n = max(0, int(n * particle_budget()))
+        if n <= 0:
+            return
+        dx, dy = tx - x, ty - y
+        d = math.hypot(dx, dy) or 1.0
+        for _ in range(n):
+            off = random.uniform(6.0, max(7.0, d * 0.25))
+            sx = x + dx / d * off + random.uniform(-10, 10)
+            sy = y + dy / d * off + random.uniform(-10, 10)
+            sp = random.uniform(*speed)
+            self.spawn(sx, sy, dx / d * sp, dy / d * sp,
+                       random.uniform(*life), random.uniform(*size),
+                       random.choice(colors), shape=shape, drag=drag,
+                       layer=layer, rotation=random.uniform(0, math.tau),
+                       seed=random.uniform(0, 10),
+                       ax=accel[0], ay=accel[1])
+
+    def update(self, dt):
+        if not self.parts:
+            return
+        keep = []
+        for p in self.parts:
+            p.update(dt)
+            if p.alive:
+                keep.append(p)
+        self.parts = keep
+
+    def draw(self, surface, layer="front"):
+        for p in self.parts:
+            if p.layer == layer:
+                p.draw(surface)
+
+    def draw_all(self, surface, skip_layer=None):
+        for p in self.parts:
+            if p.layer != skip_layer:
+                p.draw(surface)
+
+    def clear(self):
+        self.parts.clear()
+
+
+# ============================================================================
+# 5.  SWING TRAIL  (ribbon dari histori posisi kepala tongkat)
+# ============================================================================
+
+class SwingTrail:
+    """Ribbon translusen yang mengikuti jejak kepala tongkat.
+
+    Menyimpan sampel posisi (OLD ... CURRENT) selama tongkat bergerak
+    cepat; digambar sebagai polygon memudar + partikel pixel di tepi.
+    Trail otomatis mengikuti ARAH serangan karena ia mengambil posisi
+    nyata kepala tongkat tiap frame.
+    """
+
+    __slots__ = ("samples", "life", "cap")
+
+    def __init__(self, cap=TRAIL_SAMPLES, life=0.16):
+        self.cap = int(cap)
+        self.life = float(life)
+        self.samples = []          # [Vector2, umur]
+
+    def reset(self):
+        self.samples.clear()
+
+    def push(self, tip_x, tip_y, heat=1.0):
+        """Tambah sampel CURRENT; heat 0 -> jejak memudar cepat."""
+        if heat <= 0.01:
+            for s in self.samples:
+                s[1] -= self.life * 0.8
+            return
+        self.samples.append([pygame.Vector2(tip_x, tip_y),
+                             self.life * heat])
+        while len(self.samples) > self.cap:
+            self.samples.pop(0)
+
+    def update(self, dt):
+        if not self.samples:
+            return
+        for s in self.samples:
+            s[1] -= dt
+        cutoff = 0
+        for i, s in enumerate(self.samples):
+            if s[1] <= 0.0:
+                cutoff = i + 1
+            else:
+                break
+        if cutoff:
+            del self.samples[:cutoff]
+
+    @property
+    def tip(self):
+        return self.samples[-1][0] if self.samples else None
+
+    def draw(self, surface):
+        n = len(self.samples)
+        if n < 2:
+            return
+        pts = [s[0] for s in self.samples]
+        ages = [s[1] for s in self.samples]
+        max_age = self.life
+        # ── ribbon utama: polygon antara garis luar & dalam ────────
+        for i in range(n - 1):
+            t0 = ages[i] / max_age
+            t1 = ages[i + 1] / max_age
+            if t1 <= 0.0:
+                continue
+            a0, a1 = int(200 * t0), int(210 * t1)
+            p0, p1 = pts[i], pts[i + 1]
+            d = p1 - p0
+            ln = d.length()
+            if ln < 0.3:
+                continue
+            nvec = pygame.Vector2(-d.y, d.x) / ln
+            w0 = max(1.0, 9.0 * t0)
+            w1 = max(1.0, 9.0 * t1)
+            quad = [
+                (p0.x + nvec.x * w0, p0.y + nvec.y * w0),
+                (p1.x + nvec.x * w1, p1.y + nvec.y * w1),
+                (p1.x - nvec.x * w1, p1.y - nvec.y * w1),
+                (p0.x - nvec.x * w0, p0.y - nvec.y * w0),
+            ]
+            if glow_allowed():
+                pygame.draw.polygon(
+                    surface, (*_P["nether_dark"], min(255, (a0 + a1) // 3)),
+                    quad)
+            pygame.draw.polygon(
+                surface, (*_P["nether_mid"], min(255, (a0 + a1) // 2)), quad)
+            pygame.draw.polygon(
+                surface, (*_P["nether_bright"], min(255, (a0 + a1) // 2)),
+                quad, 1)
+        # ── inti terang: garis tebal dari sampel lama ke CURRENT ───
+        if glow_allowed():
+            core = [(p.x, p.y) for p, a in zip(pts, ages) if a > 0.0]
+            if len(core) >= 2:
+                pygame.draw.lines(surface, (*_P["nether_light"], 150),
+                                  False, core, 2)
+                pygame.draw.lines(surface, (*_P["nether_hot"], 200),
+                                  False, core, 1)
+        # ── percikan pixel di sepanjang tepi (chunky) ──────────────
+        for i in range(0, n, 2):
+            t = ages[i] / max_age
+            if t <= 0.15:
+                continue
+            p = pts[i]
+            pygame.draw.rect(surface,
+                             (*_P["nether_bright"], int(230 * t)),
+                             (int(p.x) - 1, int(p.y) - 1, 2, 2))
+
+
+# ============================================================================
+# 6.  IMPACT FX  (hit flash + sparks + shockwave + debris + slash)
+# ============================================================================
+
+class ImpactFX:
+    """Satu kejadian benturan: flash bintang, shockwave bergerigi,
+    serpihan, slash fragment.  Hook hit-stop & shake dipanggil saat
+    spawn (lewat combat_feel)."""
+
+    __slots__ = ("x", "y", "kind", "angle", "power", "crit", "t", "dur",
+                 "alive")
+
+    def __init__(self, x, y, kind="nether", angle=0.0, power=1.0,
+                 crit=False, dur=0.34):
+        self.x = float(x)
+        self.y = float(y)
+        self.kind = str(kind)
+        self.angle = float(angle)
+        self.power = max(0.4, float(power))
+        self.crit = bool(crit)
+        self.t = 0.0
+        self.dur = float(dur) * (1.25 if crit else 1.0)
+        self.alive = True
+
+    def update(self, dt):
+        self.t += dt
+        if self.t >= self.dur:
+            self.alive = False
+
+    def draw(self, surface):
+        t01 = self.t / self.dur
+        inv = 1.0 - t01
+        k = self.power
+        if self.kind == "staff":
+            self._draw_slash(surface, t01, inv, k)
+        elif self.kind == "skill":
+            self._draw_skill(surface, t01, inv, k)
+        else:
+            self._draw_nether(surface, t01, inv, k)
+
+    # ── benturan tongkat: slash arc + debris + shockwave ───────────
+    def _draw_slash(self, surface, t, inv, k):
+        c = _P
+        ang = self.angle
+        if t < 0.55:
+            fade = 1.0 - t / 0.55
+            span = 1.9
+            r0, r1 = 16.0 * k, 40.0 * k
+            rot = ang + 0.9 - t * 2.6
+            n = 10
+            outer, inner = [], []
+            for i in range(n + 1):
+                a = rot - span / 2 + span * i / n
+                rr = r0 + (r1 - r0) * (i / n)
+                outer.append((self.x + math.cos(a) * rr,
+                              self.y + math.sin(a) * rr * 0.8))
+                inner.append((self.x + math.cos(a) * (rr - 9.0 * fade * k),
+                              self.y + math.sin(a) * (rr - 9.0 * fade * k) * 0.8))
+            poly = outer + inner[::-1]
+            pygame.draw.polygon(surface,
+                                (*c["nether_mid"], int(190 * fade)), poly)
+            pygame.draw.polygon(surface,
+                                (*c["nether_light"], int(230 * fade)), poly, 2)
+        if t < 0.5:
+            rr = (12.0 + t * 90.0) * k
+            a = int(210 * (1.0 - t / 0.5))
+            _blit_faded(surface, ring_surface(int(rr), 3, c["nether_light"],
+                                              a, teeth=7),
+                        self.x, self.y, a)
+        if t < 0.18:
+            s = (10.0 + 26.0 * k) * (1.0 - t / 0.18)
+            spark_star(surface, self.x, self.y, s, c["nether_white"],
+                       int(235 * (1.0 - t / 0.18)), spikes=6, rot=ang + 0.4)
+
+    # ── benturan nether orb ────────────────────────────────────────
+    def _draw_nether(self, surface, t, inv, k):
+        c = _P
+        if t < 0.22:
+            s = (9.0 + 18.0 * k) * inv
+            spark_star(surface, self.x, self.y, s, c["nether_white"],
+                       int(235 * inv), spikes=5, rot=self.angle)
+        if t < 0.6:
+            rr = (8.0 + t * 60.0) * k
+            a = int(200 * (1.0 - t / 0.6))
+            _blit_faded(surface, ring_surface(int(rr), 2, c["nether_bright"],
+                                              a, teeth=5),
+                        self.x, self.y, a)
+        # tengkorak kilat (khas Nether Matron)
+        if t < 0.30 and k >= 0.9:
+            sk = skull_decal(int(5 + 3 * inv))
+            _blit_faded(surface, sk, self.x, self.y - 2,
+                        200 * (1.0 - t / 0.30))
+
+    # ── benturan skill ─────────────────────────────────────────────
+    def _draw_skill(self, surface, t, inv, k):
+        c = _P
+        if t < 0.3:
+            s = (14.0 + 30.0 * k) * inv
+            spark_star(surface, self.x, self.y, s, c["nether_white"],
+                       int(240 * inv), spikes=8, rot=self.angle + 0.2)
+        rr = (14.0 + t * 110.0) * k
+        a = int(190 * inv)
+        _blit_faded(surface, ring_surface(int(rr), 3, c["nether_light"], a,
+                                          teeth=9),
+                    self.x, self.y, a)
+
+
+# ============================================================================
+# 7.  PROJECTILE SYSTEM  (modular: lifecycle penuh, Vector2, dt-based)
+# ============================================================================
+
+class BaseProjectile:
+    """Dasar proyektil: SPAWN -> TRAVEL -> TRAIL -> HIT -> IMPACT FX
+    -> DESTROY.  Subclass mengoverride travel()/emit()/draw()."""
+
+    __slots__ = ("pos", "vel", "speed", "damage", "lifetime", "target",
+                 "radius", "rotation", "active", "age", "trail",
+                 "on_impact", "ground", "hit_pos", "kind", "_total_dist")
+
+    def __init__(self, x, y, tx, ty, speed=ORB_SPEED, damage=0.0,
+                 target=None, radius=8.0, lifetime=3.0, on_impact=None,
+                 ground=48.0, kind="nether"):
+        self.pos = pygame.Vector2(float(x), float(y))
+        d = pygame.Vector2(float(tx) - float(x), float(ty) - float(y))
+        if d.length_squared() < 1.0:
+            d = pygame.Vector2(1.0, 0.0)
+        self.vel = d.normalize() * float(speed)
+        self.speed = float(speed)
+        self.damage = float(damage)
+        self.lifetime = float(lifetime)
+        self.target = target
+        self.radius = float(radius)
+        self.rotation = math.atan2(self.vel.y, self.vel.x)
+        self.active = True
+        self.age = 0.0
+        self.trail = []                 # [(Vector2, umur)]
+        self.on_impact = on_impact
+        self.ground = float(ground)
+        self.hit_pos = None
+        self.kind = str(kind)
+        self._total_dist = self.pos.distance_to(
+            pygame.Vector2(float(tx), float(ty)))
+
+    # -- lifecycle -----------------------------------------------------
+    def update(self, dt, system=None):
+        if not self.active:
+            self._decay_trail(dt)
+            return
+        self.age += dt
+        if self.age >= self.lifetime:
+            self.destroy(system, impact=False)
+            return
+        self.travel(dt)
+        self.update_trail(dt)
+        if system is not None:
+            self.emit(dt, system)
+        if self.check_collision():
+            self.destroy(system, impact=True)
+
+    def travel(self, dt):
+        self.pos += self.vel * dt
+        self.rotation = math.atan2(self.vel.y, self.vel.x)
+
+    def update_trail(self, dt):
+        self.trail.append([pygame.Vector2(self.pos), 0.16])
+        if len(self.trail) > 14:
+            self.trail.pop(0)
+        for s in self.trail:
+            s[1] -= dt
+
+    def _decay_trail(self, dt):
+        for s in self.trail:
+            s[1] -= dt
+        self.trail = [s for s in self.trail if s[1] > 0.0]
+
+    def emit(self, dt, system):
+        """Partikel pasif di sepanjang jalur (override)."""
+        return
+
+    def check_collision(self):
+        """Benturan vs target / titik tujuan.  Override bila perlu."""
+        if self.target is not None and getattr(self.target, "alive", True):
+            tx = float(getattr(self.target, "x", self.pos.x))
+            ty = float(getattr(self.target, "y", self.pos.y))
+            r = float(getattr(self.target, "radius", 14)) + self.radius
+            if (self.pos.x - tx) ** 2 + (self.pos.y - ty) ** 2 <= r * r:
+                self.hit_pos = pygame.Vector2(tx, ty - 4)
+                return True
+        if self.vel.length() > 0.0:
+            travelled = self.age * self.speed
+            if travelled >= self._total_dist - 4.0:
+                self.hit_pos = pygame.Vector2(self.pos)
+                return True
+        return False
+
+    def destroy(self, system=None, impact=True):
+        if not self.active:
+            return
+        self.active = False
+        self.hit_pos = self.hit_pos or pygame.Vector2(self.pos)
+        if impact:
+            if self.on_impact is not None:
+                try:
+                    self.on_impact(self)
+                except Exception:
+                    pass
+            elif system is not None:
+                system.push_impact(
+                    ImpactFX(self.hit_pos.x, self.hit_pos.y,
+                             kind="nether", angle=self.rotation, power=0.9))
+
+    def draw(self, surface):
+        self._draw_ribbon(surface)
+        if self.active:
+            self._draw_body(surface)
+
+    def _draw_ribbon(self, surface):
+        c = _P
+        n = len(self.trail)
+        for i in range(n - 1):
+            (p0, a0), (p1, a1) = self.trail[i], self.trail[i + 1]
+            if a1 <= 0.0:
+                continue
+            w0 = max(1.0, self.radius * 0.8 * (a0 / 0.16))
+            w1 = max(1.0, self.radius * 0.8 * (a1 / 0.16))
+            d = p1 - p0
+            ln = d.length()
+            if ln < 0.3:
+                continue
+            nv = pygame.Vector2(-d.y, d.x) / ln
+            quad = [
+                (p0.x + nv.x * w0, p0.y + nv.y * w0),
+                (p1.x + nv.x * w1, p1.y + nv.y * w1),
+                (p1.x - nv.x * w1, p1.y - nv.y * w1),
+                (p0.x - nv.x * w0, p0.y - nv.y * w0),
+            ]
+            pygame.draw.polygon(
+                surface, (*c["nether_dark"], int(140 * a1 / 0.16)), quad)
+
+    def _draw_body(self, surface):
+        pygame.draw.circle(surface, (*_P["nether_mid"], 255),
+                           (int(self.pos.x), int(self.pos.y)),
+                           int(self.radius))
+
+
+class NetherOrbProjectile(BaseProjectile):
+    """Nether orb — inti + glow + bentuk directional (tear) yang berotasi
+    mengikuti arah + trail + percikan orbit."""
+
+    def __init__(self, x, y, tx, ty, speed=ORB_SPEED, damage=0.0,
+                 target=None, on_impact=None, ground=48.0):
+        super().__init__(x, y, tx, ty, speed=speed, damage=damage,
+                         target=target, radius=8.0, lifetime=3.0,
+                         on_impact=on_impact, ground=ground, kind="nether")
+        self._home = 2.4          # kekuatan homing ringan
+
+    def travel(self, dt):
+        # homing ringan ke target (mengikuti kalau target bergeser)
+        if self.target is not None and getattr(self.target, "alive", True):
+            tx = float(getattr(self.target, "x", self.pos.x))
+            ty = float(getattr(self.target, "y", self.pos.y))
+            want = pygame.Vector2(tx - self.pos.x, ty - self.pos.y)
+            if want.length_squared() > 1.0:
+                want = want.normalize() * self.speed
+                steer = min(1.0, self._home * dt)
+                self.vel = self.vel.lerp(want, steer)
+                if self.vel.length_squared() > 1.0:
+                    self.vel = self.vel.normalize() * self.speed
+        self.pos += self.vel * dt
+        self.rotation = math.atan2(self.vel.y, self.vel.x)
+
+    def emit(self, dt, system):
+        if random.random() < dt * 42.0 * particle_budget():
+            system.particles.spawn(
+                self.pos.x + random.uniform(-3, 3),
+                self.pos.y + random.uniform(-3, 3),
+                random.uniform(-18, 18), random.uniform(-30, -6),
+                random.uniform(0.18, 0.4), random.uniform(1.5, 2.8),
+                random.choice((_P["nether_light"], _P["nether_bright"])),
+                shape="wisp", drag=1.2, additive=True)
+
+    def _draw_body(self, surface):
+        c = _P
+        x, y = int(self.pos.x), int(self.pos.y)
+        ang = self.rotation
+        if glow_allowed():
+            _blit_faded(surface, glow_surface(16, c["nether_mid"], 0.8),
+                        x, y, 190, additive=True)
+        # bentuk directional: tear (kepala lancip ke arah gerak)
+        dx, dy = math.cos(ang), math.sin(ang)
+        px, py = -dy, dx
+        pts = [
+            (x + dx * 11, y + dy * 11),
+            (x + px * 6, y + py * 6),
+            (x - dx * 5, y - dy * 5),
+            (x - px * 6, y - py * 6),
+        ]
+        pygame.draw.polygon(surface, (*c["nether_dark"], 255), pts)
+        pygame.draw.polygon(surface, (*c["nether_mid"], 255),
+                            [(qx - dx * 1, qy - dy * 1) for qx, qy in pts])
+        pygame.draw.circle(surface, (*c["nether_bright"], 255), (x, y), 4)
+        pygame.draw.circle(surface, (*c["nether_hot"], 255), (x - 1, y - 1), 2)
+        pygame.draw.circle(surface, (*c["nether_white"], 255), (x - 1, y - 2), 1)
+        # percikan orbit
+        for i in range(3):
+            a = self.age * 9.0 + i * math.tau / 3
+            sx = x + int(math.cos(a) * 11)
+            sy = y + int(math.sin(a) * 11)
+            pygame.draw.rect(surface, (*c["nether_bright"], 230),
+                             (sx - 1, sy - 1, 2, 2))
+
+
+class NetherBlastProjectile(BaseProjectile):
+    """Nether Blast (skill Q) — kometa nether besar: inti panas, cangkang
+    bergerigi berputar, afterimage, dan hujan bara."""
+
+    def __init__(self, x, y, tx, ty, speed=BLAST_SPEED, damage=0.0,
+                 target=None, on_impact=None, ground=48.0):
+        super().__init__(x, y, tx, ty, speed=speed, damage=damage,
+                         target=target, radius=14.0, lifetime=2.2,
+                         on_impact=on_impact, ground=ground, kind="blast")
+        self._spin = 0.0
+        self._aft = []               # afterimage [(pos, spin, umur)]
+
+    def travel(self, dt):
+        self._spin += dt * 11.0
+        self.pos += self.vel * dt
+        self.rotation = math.atan2(self.vel.y, self.vel.x)
+        self._aft.append([pygame.Vector2(self.pos), self._spin, 0.14])
+        if len(self._aft) > 8:
+            self._aft.pop(0)
+        for a in self._aft:
+            a[2] -= dt
+        self._aft = [a for a in self._aft if a[2] > 0.0]
+
+    def emit(self, dt, system):
+        if random.random() < dt * 34.0 * particle_budget():
+            system.particles.spawn(
+                self.pos.x + random.uniform(-8, 8),
+                self.pos.y + random.uniform(-8, 8),
+                random.uniform(-24, 24), random.uniform(-40, -8),
+                random.uniform(0.15, 0.35), random.uniform(1.5, 3.0),
+                random.choice((_P["nether_bright"], _P["nether_hot"])),
+                shape="spark", drag=1.6, additive=True)
+
+    def _draw_body(self, surface):
+        c = _P
+        x, y = int(self.pos.x), int(self.pos.y)
+        # afterimage cangkang (memudar)
+        for apos, aspin, aage in self._aft:
+            k = aage / 0.14
+            _blit_faded(surface,
+                        ring_surface(13, 3, c["nether_mid"], 150, teeth=6),
+                        apos.x, apos.y, 110 * k)
+        if glow_allowed():
+            _blit_faded(surface, glow_surface(26, c["nether_mid"], 0.9),
+                        x, y, 190, additive=True)
+        # cangkang bergerigi yang berputar (bukan lingkaran polos)
+        shell = ring_surface(14, 4, c["nether_light"], 235, teeth=7)
+        rot = pygame.transform.rotate(shell, -math.degrees(self._spin))
+        surface.blit(rot, (x - rot.get_width() // 2,
+                           y - rot.get_height() // 2))
+        # inti panas berlapis
+        pygame.draw.circle(surface, (*c["nether_mid"], 255), (x, y), 7)
+        pygame.draw.circle(surface, (*c["nether_bright"], 255), (x, y), 5)
+        pygame.draw.circle(surface, (*c["nether_hot"], 255), (x - 1, y - 1), 3)
+        pygame.draw.rect(surface, (*c["nether_white"], 255), (x - 1, y - 2, 2, 2))
+
+
+class ProjectileSystem:
+    """Kumpulan proyektil dengan cap + manajemen impact FX."""
+
+    def __init__(self, particles, cap=MAX_PROJECTILES):
+        self.particles = particles
+        self.cap = int(cap)
+        self.projectiles = []
+        self.impacts = []
+
+    def _make_room(self):
+        while len(self.projectiles) >= self.cap:
+            self.projectiles.pop(0)
+
+    def spawn_orb(self, x, y, tx, ty, **kw):
+        self._make_room()
+        p = NetherOrbProjectile(x, y, tx, ty, **kw)
+        self.projectiles.append(p)
+        return p
+
+    def spawn_blast(self, x, y, tx, ty, **kw):
+        self._make_room()
+        p = NetherBlastProjectile(x, y, tx, ty, **kw)
+        self.projectiles.append(p)
+        return p
+
+    def push_impact(self, fx):
+        self.impacts.append(fx)
+        while len(self.impacts) > MAX_IMPACTS:
+            self.impacts.pop(0)
+
+    def on_impact(self, proj):
+        """Callback default: impact FX + burst partikel + game feel."""
+        hp = proj.hit_pos or proj.pos
+        kind = "skill" if proj.kind == "blast" else "nether"
+        power = 1.3 if proj.kind == "blast" else 0.95
+        self.push_impact(ImpactFX(hp.x, hp.y, kind=kind,
+                                  angle=proj.rotation, power=power))
+        c = _P
+        if proj.kind == "blast":
+            self.particles.burst(
+                hp.x, hp.y, 18, speed=(90, 340), life=(0.2, 0.5),
+                size=(1.5, 3.5),
+                colors=(c["nether_bright"], c["nether_hot"], c["nether_white"]),
+                shape="shard", drag=2.2, additive=True,
+                rotation_speed=(-8, 8))
+            self.particles.burst(
+                hp.x, hp.y, 7, speed=(50, 150), life=(0.4, 0.8),
+                size=(1.5, 2.5), colors=(c["bone_mid"], c["bone_light"]),
+                shape="bone", gravity=340.0, drag=0.6,
+                rotation_speed=(-9, 9))
+            if _feel is not None:
+                _feel.hit_stop(0.06)
+                if shake_allowed():
+                    _feel.shake(7.0, 0.26)
+        else:
+            self.particles.burst(
+                hp.x, hp.y, 12, speed=(60, 240), life=(0.2, 0.45),
+                size=(1.5, 3.0),
+                colors=(c["nether_light"], c["nether_bright"],
+                        c["nether_white"]),
+                shape="wisp", drag=2.4, additive=True)
+            if _feel is not None:
+                _feel.hit_stop(0.04)
+                if shake_allowed():
+                    _feel.shake(4.5, 0.2)
+
+    def update(self, dt):
+        for p in self.projectiles:
+            p.update(dt, system=self)
+        self.projectiles = [p for p in self.projectiles
+                            if p.active or p.trail]
+        for im in self.impacts:
+            im.update(dt)
+        self.impacts = [im for im in self.impacts if im.alive]
+
+    def draw(self, surface):
+        for p in self.projectiles:
+            p.draw(surface)
+
+    def draw_impacts(self, surface):
+        for im in self.impacts:
+            im.draw(surface)
+
+    def count(self):
+        return len(self.projectiles)
+
+    def clear(self):
+        self.projectiles.clear()
+        self.impacts.clear()
+
+
+# ============================================================================
+# 8.  SKILL FX  — lifecycle CAST -> CHARGE -> RELEASE -> AREA -> IMPACT
+#     -> AFTER -> FADE.  Semua q/w/e/r dimajukan setiap frame (anti-
+#     kebocoran) dan dibuang setelah selesai.
+# ============================================================================
+
+class SkillFX:
+    """Satu kejadian skill.  ``t01`` bisa disinkronkan dari timer state
+    boss (set_engine_progress) supaya visual dan gameplay seirama."""
+
+    __slots__ = ("skill", "x", "y", "facing", "scale", "t01", "elapsed",
+                 "total", "done", "_fired", "target", "_cracks", "_wards")
+
+    def __init__(self, skill, x, y, facing=1, target=None, scale=1.0,
+                 total=None):
+        self.skill = str(skill)
+        self.x = float(x)
+        self.y = float(y)
+        self.facing = 1 if facing >= 0 else -1
+        self.target = target
+        self.scale = float(scale)
+        self.t01 = 0.0
+        self.elapsed = 0.0
+        self.total = float(total if total is not None else
+                           SKILL_DUR.get(self.skill, 60) * FIXED_DT * 1.35)
+        self.done = False
+        self._fired = set()
+        self._cracks = None
+        self._wards = None
+
+    def set_engine_progress(self, value):
+        """Sinkronkan progres dari timer boss (0..1)."""
+        v = max(0.0, min(1.0, float(value)))
+        if v >= self.t01:
+            self.t01 = v
+            self.elapsed = v * self.total
+
+    def follow(self, x, y):
+        self.x = float(x)
+        self.y = float(y)
+
+    def _once(self, key):
+        if key in self._fired:
+            return False
+        self._fired.add(key)
+        return True
+
+    def _target_xy(self):
+        t = self.target
+        if t is not None and getattr(t, "alive", True):
+            return (float(getattr(t, "x", self.x)),
+                    float(getattr(t, "y", self.y)) - 8.0)
+        return (self.x + self.facing * 150.0, self.y - 8.0)
+
+    def update(self, dt, particles):
+        self.elapsed += dt
+        if self.elapsed >= self.total:
+            self.done = True
+        # jangan biarkan t01 mundur
+        nat = min(1.0, self.elapsed / self.total)
+        if nat > self.t01:
+            self.t01 = nat
+        fn = getattr(self, "_upd_" + self.skill, None)
+        if fn is not None:
+            fn(self.t01, dt, particles)
+
+    def draw_ground(self, surface):
+        fn = getattr(self, "_gnd_" + self.skill, None)
+        if fn is not None:
+            fn(surface, self.t01)
+
+    def draw_front(self, surface):
+        fn = getattr(self, "_frn_" + self.skill, None)
+        if fn is not None:
+            fn(surface, self.t01)
+
+    # ==================================================================
+    # Q — NETHER BLAST: pengisian orb + nova bergerigi + retakan tanah
+    # ==================================================================
+    def _upd_q(self, t, dt, particles):
+        c = _P
+        ph = skill_phase(t)
+        # CAST+CHARGE: energi nether tersedot ke tongkat
+        if ph in ("CAST", "CHARGE"):
+            if random.random() < dt * 34.0:
+                ang = random.uniform(0.0, math.tau)
+                rr = random.uniform(40.0, 90.0) * self.scale
+                particles.stream_toward(
+                    self.x + math.cos(ang) * rr,
+                    self.y - 20 + math.sin(ang) * rr * 0.5,
+                    self.x, self.y - 20, 1,
+                    speed=(140, 240), life=(0.2, 0.4), size=(1.5, 2.8),
+                    colors=(c["nether_light"], c["nether_bright"]),
+                    shape="wisp")
+        # RELEASE: ledakan keluar + shockwave + serpihan
+        if ph == "RELEASE" and self._once("q_burst"):
+            particles.burst(
+                self.x, self.y - 14, 26, speed=(120, 420),
+                life=(0.25, 0.6), size=(1.5, 4.0),
+                colors=(c["nether_light"], c["nether_bright"],
+                        c["nether_hot"], c["nether_white"]),
+                shape="shard", drag=2.6, additive=True,
+                rotation_speed=(-8, 8))
+            particles.burst(
+                self.x, self.y - 14, 10, speed=(40, 120),
+                life=(0.5, 0.9), size=(2.0, 3.5),
+                colors=(c["bone_mid"], c["bone_light"]),
+                shape="bone", gravity=300.0, drag=0.8,
+                rotation_speed=(-9, 9))
+            if _feel is not None:
+                _feel.hit_stop(0.05)
+                if shake_allowed():
+                    _feel.shake(6.0, 0.24)
+        # AREA: bara naik dari tanah
+        if ph in ("AREA", "IMPACT") and random.random() < dt * 30.0:
+            rr = WORLD_RADIUS["q"] * self.scale * random.uniform(0.2, 0.9)
+            ang = random.uniform(0.0, math.tau)
+            particles.spawn(
+                self.x + math.cos(ang) * rr,
+                self.y + 34 * self.scale,
+                random.uniform(-8, 8), random.uniform(-70, -30),
+                random.uniform(0.4, 0.8), random.uniform(1.5, 3.0),
+                random.choice((c["nether_light"], c["nether_mid"])),
+                shape="ember", additive=True)
+
+    def _gnd_q(self, surface, t):
+        """Tanah: cincin bergerigi melebar + retakan."""
+        c = _P
+        ph = skill_phase(t)
+        r_world = WORLD_RADIUS["q"] * self.scale
+        if ph in ("CAST", "CHARGE"):
+            k = 1.0 - (t / 0.34)
+            rr = int(r_world * (0.35 + 0.65 * k))
+            _blit_faded(surface,
+                        ellipse_ring_surface(rr, max(3, rr // 3), 2,
+                                             c["nether_mid"], 200),
+                        self.x, self.y + 34 * self.scale, 200)
+            return
+        prog = (t - 0.34) / max(0.001, 1.0 - 0.34)
+        rr = int(r_world * min(1.0, prog * 1.15))
+        a = int(220 * max(0.0, 1.0 - prog))
+        _blit_faded(surface,
+                    ellipse_ring_surface(rr, max(3, rr // 3), 3,
+                                         c["nether_bright"], a),
+                    self.x, self.y + 34 * self.scale, a)
+        if self._cracks is not None:
+            for (x0, y0, x1, y1) in self._cracks:
+                pygame.draw.line(surface, (*c["nether_dark"], a),
+                                 (x0, y0), (x1, y1), 2)
+
+    def _frn_q(self, surface, t):
+        """Depan: orb pengisian lalu nova bergerigi ganda + tengkorak."""
+        c = _P
+        ph = skill_phase(t)
+        if ph in ("CAST", "CHARGE"):
+            k = t / 0.34
+            # orb mengisi di depan tongkat (mengecil + makin terang)
+            rr = 30.0 * (1.0 - k) + 6.0
+            _blit_faded(surface,
+                        ring_surface(int(rr), 2, c["nether_light"], 220,
+                                     teeth=6),
+                        self.x, self.y - 20, 220)
+            core = int(3 + 6 * k)
+            if glow_allowed():
+                _blit_faded(surface,
+                            glow_surface(core * 2, c["nether_mid"], 0.45),
+                            self.x, self.y - 20, 110, additive=True)
+            pygame.draw.circle(surface, (*c["nether_bright"], 255),
+                               (int(self.x), int(self.y - 20)), core)
+            pygame.draw.circle(surface, (*c["nether_white"], 255),
+                               (int(self.x), int(self.y - 20)),
+                               max(1, core // 2))
+            return
+        prog = min(1.0, (t - 0.34) / 0.5)
+        if prog >= 1.0:
+            return
+        for wave in (0.0, 0.12):
+            wp = min(1.0, max(0.0, prog - wave))
+            if wp <= 0.0:
+                continue
+            rr = 14.0 + wp * (WORLD_RADIUS["q"] * self.scale)
+            a = int(235 * (1.0 - wp))
+            _blit_faded(surface,
+                        ring_surface(int(rr), 3, c["nether_light"], a,
+                                     teeth=10),
+                        self.x, self.y - 12, a)
+            _blit_faded(surface,
+                        ring_surface(int(rr * 0.55), 2, c["nether_bright"],
+                                     a, teeth=6),
+                        self.x, self.y - 12, a)
+        if prog < 0.5:
+            for i in range(4):
+                ang = self.elapsed * 3.0 + i * math.tau / 4
+                rr = 20.0 + prog * 90.0 * self.scale
+                sx = self.x + math.cos(ang) * rr
+                sy = self.y - 12 + math.sin(ang) * rr * 0.7
+                _blit_faded(surface, skull_decal(5),
+                            sx, sy, 220 * (1.0 - prog * 2.0))
+
+    # ==================================================================
+    # W — DECREPIFY: kurva kutukan ungu-nether ke target + sigil heks
+    # ==================================================================
+    def _upd_w(self, t, dt, particles):
+        c = _P
+        ph = skill_phase(t)
+        tx, ty = self._target_xy()
+        if ph in ("CAST", "CHARGE") and self._once("w_cast"):
+            particles.burst(
+                self.x, self.y - 22, 10, speed=(50, 150), life=(0.25, 0.5),
+                size=(1.5, 3.0),
+                colors=(c["robe_light"], c["nether_light"]),
+                shape="wisp", drag=2.0, additive=True)
+        if ph == "RELEASE" and self._once("w_rel"):
+            ang = math.atan2(ty - (self.y - 20), tx - self.x)
+            particles.burst(
+                self.x, self.y - 20, 14, speed=(160, 320), life=(0.2, 0.45),
+                size=(1.5, 3.0), direction=ang, spread=0.7,
+                colors=(c["nether_light"], c["nether_bright"]),
+                shape="streak", drag=2.0, additive=True)
+            if _feel is not None:
+                _feel.hit_stop(0.035)
+                if shake_allowed():
+                    _feel.shake(3.5, 0.18)
+        # AREA: gelembung kutukan mengambang di target (melambatkan)
+        if ph in ("AREA", "IMPACT") and random.random() < dt * 26.0:
+            particles.spawn(
+                tx + random.uniform(-22, 22), ty + random.uniform(-6, 22),
+                random.uniform(-10, 10), random.uniform(-34, -12),
+                random.uniform(0.4, 0.8), random.uniform(1.5, 3.0),
+                random.choice((c["robe_high"], c["nether_mid"])),
+                shape="wisp", drag=0.8, additive=True)
+
+    def _gnd_w(self, surface, t):
+        """Tanah: sigil heks (segi-6, bukan lingkaran) di bawah target."""
+        c = _P
+        if skill_phase(t) in ("CAST", "CHARGE"):
+            return
+        tx, ty = self._target_xy()
+        gy = ty + 30 * self.scale
+        prog = min(1.0, (t - 0.34) / 0.66)
+        a = int(200 * (1.0 - prog * 0.7))
+        rr = 34.0 * self.scale
+        spin = self.elapsed * 1.4
+        pts = [(tx + math.cos(spin + i * math.tau / 6) * rr,
+                gy + math.sin(spin + i * math.tau / 6) * rr * 0.4)
+               for i in range(6)]
+        pygame.draw.polygon(surface, (*c["robe_mid"], a), pts, 2)
+        inner = [(tx + math.cos(-spin + i * math.tau / 3) * rr * 0.6,
+                  gy + math.sin(-spin + i * math.tau / 3) * rr * 0.4 * 0.6)
+                 for i in range(3)]
+        pygame.draw.polygon(surface, (*c["nether_mid"], a), inner, 2)
+
+    def _frn_w(self, surface, t):
+        """Depan: berkas kutukan melengkung dari tongkat ke target."""
+        c = _P
+        ph = skill_phase(t)
+        if ph in ("CAST", "CHARGE"):
+            # muatan berdenyut di kepala tongkat
+            k = t / 0.34
+            _blit_faded(surface,
+                        ring_surface(int(6 + 10 * (1.0 - k)), 2,
+                                     c["robe_high"], 210, teeth=6),
+                        self.x + self.facing * 16, self.y - 26, 210)
+            return
+        prog = min(1.0, (t - 0.34) / 0.4)
+        if prog >= 1.0:
+            return
+        fade = 1.0 - prog
+        tx, ty = self._target_xy()
+        sx, sy = self.x + self.facing * 16, self.y - 26
+        # kurva quadratic bezier (melengkung, bukan garis lurus)
+        mx = (sx + tx) / 2 + self.facing * 10
+        my = min(sy, ty) - 46 * self.scale
+        prev = None
+        n = 12
+        for i in range(n + 1):
+            u = i / n
+            px = (1 - u) ** 2 * sx + 2 * (1 - u) * u * mx + u * u * tx
+            py = (1 - u) ** 2 * sy + 2 * (1 - u) * u * my + u * u * ty
+            if prev is not None:
+                w0 = 5.0 * fade * (1.0 - u * 0.5)
+                w1 = 5.0 * fade * (1.0 - (u + 1.0 / n) * 0.5)
+                taper_lane(surface, prev[0], prev[1], px, py, w0, w1,
+                           c["robe_mid"], int(180 * fade))
+                pygame.draw.line(surface,
+                                 (*c["nether_light"], int(230 * fade)),
+                                 (int(prev[0]), int(prev[1])),
+                                 (int(px), int(py)), 2)
+            prev = (px, py)
+        # tengkorak kutukan mendarat di target
+        _blit_faded(surface, skull_decal(int(6 + 3 * fade)),
+                    tx, ty - 10, 230 * fade)
+
+    # ==================================================================
+    # E — NETHER WARD: totem tengkorak muncul mengelilingi Nyxara
+    # ==================================================================
+    def _upd_e(self, t, dt, particles):
+        c = _P
+        ph = skill_phase(t)
+        if ph in ("CAST", "CHARGE") and self._once("e_cast"):
+            particles.burst(
+                self.x, self.y + 20, 12, speed=(40, 130), life=(0.3, 0.6),
+                size=(1.5, 3.0),
+                colors=(c["nether_dark"], c["nether_mid"]),
+                shape="dust", drag=1.8, layer="back")
+        if ph == "RELEASE" and self._once("e_rel"):
+            # tanah pecah saat totem menancap
+            particles.burst(
+                self.x, self.y + 30, 18, speed=(90, 260), life=(0.3, 0.7),
+                size=(1.5, 3.5),
+                colors=(c["bone_mid"], c["bone_light"], c["nether_light"]),
+                shape="shard", gravity=420.0, drag=1.0,
+                rotation_speed=(-8, 8))
+            if _feel is not None:
+                _feel.hit_stop(0.045)
+                if shake_allowed():
+                    _feel.shake(5.5, 0.24)
+        # AREA: setiap ward memuntahkan percikan nether
+        if ph in ("AREA", "IMPACT") and self._wards \
+                and random.random() < dt * 26.0:
+            wx, wy = random.choice(self._wards)
+            particles.spawn(
+                self.x + wx, self.y + wy,
+                random.uniform(-16, 16), random.uniform(-60, -20),
+                random.uniform(0.25, 0.5), random.uniform(1.5, 2.8),
+                random.choice((c["nether_light"], c["nether_bright"])),
+                shape="spark", drag=1.4, additive=True)
+
+    def _gnd_e(self, surface, t):
+        c = _P
+        r_world = WORLD_RADIUS["e"] * self.scale
+        prog = min(1.0, t / 0.5)
+        rr = int(r_world * prog)
+        a = int(210 * (1.0 - t * 0.6))
+        _blit_faded(surface,
+                    ellipse_ring_surface(rr, max(3, rr // 3), 3,
+                                         c["nether_mid"], a),
+                    self.x, self.y + 34 * self.scale, a)
+
+    def _frn_e(self, surface, t):
+        """Depan: totem ward naik dari tanah + busur nether antar-ward."""
+        c = _P
+        if self._wards is None:
+            return
+        ph = skill_phase(t)
+        rise = 0.0 if ph == "CAST" else min(1.0, (t - 0.16) / 0.3)
+        fade = 1.0 if t < 0.86 else max(0.0, 1.0 - (t - 0.86) / 0.14)
+        pts = []
+        for wx, wy in self._wards:
+            px = self.x + wx
+            py = self.y + wy - 12 * rise * self.scale
+            pts.append((px, py))
+            spr = ward_sprite(int(9 * self.scale))
+            _blit_faded(surface, spr, px, py, 235 * rise * fade)
+        # busur nether antar-ward (pixel zigzag, bukan lingkaran)
+        if rise > 0.6 and len(pts) >= 2:
+            for i in range(len(pts)):
+                x0, y0 = pts[i]
+                x1, y1 = pts[(i + 1) % len(pts)]
+                seg = 4
+                prev = (x0, y0)
+                for s in range(1, seg + 1):
+                    u = s / seg
+                    jx = math.sin(self.elapsed * 14.0 + i + s) * 4.0
+                    nx = x0 + (x1 - x0) * u + jx
+                    ny = y0 + (y1 - y0) * u - 4.0
+                    pygame.draw.line(
+                        surface,
+                        (*c["nether_light"], int(170 * fade)),
+                        (int(prev[0]), int(prev[1])), (int(nx), int(ny)), 2)
+                    prev = (nx, ny)
+
+    # ==================================================================
+    # R — LIFE DRAIN: tether jiwa dari target ke Nyxara + aura pemulihan
+    # ==================================================================
+    def _upd_r(self, t, dt, particles):
+        c = _P
+        ph = skill_phase(t)
+        tx, ty = self._target_xy()
+        if ph in ("CAST", "CHARGE") and self._once("r_cast"):
+            particles.burst(
+                self.x, self.y - 24, 14, speed=(50, 170), life=(0.3, 0.6),
+                size=(1.5, 3.5),
+                colors=(c["nether_light"], c["nether_bright"]),
+                shape="wisp", drag=2.0, additive=True)
+            if _feel is not None and shake_allowed():
+                _feel.shake(4.0, 0.2)
+        if ph == "RELEASE" and self._once("r_rel"):
+            if _feel is not None:
+                _feel.hit_stop(0.06)
+                if shake_allowed():
+                    _feel.shake(7.5, 0.3)
+        # AREA: jiwa mengalir DARI target KE Nyxara (arah penting)
+        if ph in ("RELEASE", "AREA", "IMPACT"):
+            if random.random() < dt * 46.0:
+                particles.stream_toward(
+                    tx, ty, self.x, self.y - 20, 1,
+                    speed=(180, 300), life=(0.35, 0.6), size=(1.5, 3.2),
+                    colors=(c["nether_light"], c["nether_bright"],
+                            c["nether_white"]),
+                    shape="wisp")
+            # bara pemulihan naik dari Nyxara
+            if random.random() < dt * 20.0:
+                particles.spawn(
+                    self.x + random.uniform(-16, 16),
+                    self.y + random.uniform(0, 24),
+                    random.uniform(-6, 6), random.uniform(-70, -34),
+                    random.uniform(0.4, 0.7), random.uniform(1.5, 2.5),
+                    c["nether_hot"], shape="ember", additive=True)
+
+    def _gnd_r(self, surface, t):
+        c = _P
+        pulse = 0.5 + 0.5 * math.sin(self.elapsed * 7.0)
+        rr = int(WORLD_RADIUS["r"] * self.scale * (0.5 + 0.2 * pulse))
+        a = int(150 * (1.0 - t * 0.5))
+        _blit_faded(surface,
+                    ellipse_ring_surface(rr, max(3, rr // 3), 3,
+                                         c["nether_light"], a),
+                    self.x, self.y + 34 * self.scale, a)
+
+    def _frn_r(self, surface, t):
+        """Depan: tether jiwa berpilin + tengkorak mengalir ke Nyxara."""
+        c = _P
+        ph = skill_phase(t)
+        if ph == "CAST":
+            return
+        fade = 1.0 if t < 0.86 else max(0.0, 1.0 - (t - 0.86) / 0.14)
+        tx, ty = self._target_xy()
+        sx, sy = self.x, self.y - 22
+        d = math.hypot(tx - sx, ty - sy) or 1.0
+        nx, ny = -(ty - sy) / d, (tx - sx) / d
+        # dua pita berpilin (sinus berlawanan fase)
+        for sign, col in ((1.0, c["nether_mid"]), (-1.0, c["nether_light"])):
+            prev = None
+            n = 14
+            for i in range(n + 1):
+                u = i / n
+                amp = math.sin(u * math.pi) * 12.0 * self.scale
+                w = math.sin(u * 9.0 - self.elapsed * 11.0) * amp * sign
+                px = sx + (tx - sx) * u + nx * w
+                py = sy + (ty - sy) * u + ny * w
+                if prev is not None:
+                    pygame.draw.line(surface, (*col, int(200 * fade)),
+                                     (int(prev[0]), int(prev[1])),
+                                     (int(px), int(py)), 3)
+                    pygame.draw.line(surface,
+                                     (*c["nether_hot"], int(150 * fade)),
+                                     (int(prev[0]), int(prev[1])),
+                                     (int(px), int(py)), 1)
+                prev = (px, py)
+        # tengkorak jiwa mengalir dari target ke Nyxara
+        for i in range(3):
+            u = ((self.elapsed * 0.9 + i / 3.0) % 1.0)
+            px = tx + (sx - tx) * u
+            py = ty + (sy - ty) * u - math.sin(u * math.pi) * 14.0
+            _blit_faded(surface, skull_decal(5), px, py,
+                        220 * fade * (1.0 - abs(u - 0.5)))
+        # aura pemulihan di Nyxara: cincin denyut tipis (bukan bola pekat)
+        # supaya siluet karakter tetap terbaca saat menyerap jiwa.
+        if glow_allowed():
+            for k in (0.0, 0.5):
+                u = ((self.elapsed * 1.4 + k) % 1.0)
+                rr = int((10.0 + 16.0 * u) * self.scale)
+                aa = int(150 * fade * (1.0 - u))
+                if aa > 4:
+                    _blit_faded(surface,
+                                ring_surface(rr, 2, c["nether_light"], 255,
+                                             teeth=5),
+                                sx, sy, aa, additive=True)
+
+
+def _skillfx_postinit(fx):
+    """Geometri deterministik per skill (dibuat sekali saat cast)."""
+    rng = random.Random(int(fx.x * 7 + fx.y * 13))
+    if fx.skill == "q":
+        cracks = []
+        for i in range(6):
+            ang = i * math.tau / 6 + rng.uniform(-0.2, 0.2)
+            x0 = fx.x
+            y0 = fx.y + 34 * fx.scale
+            x1 = x0 + math.cos(ang) * 30
+            y1 = y0 + math.sin(ang) * 12
+            x2 = x1 + math.cos(ang + rng.uniform(-0.5, 0.5)) * 26
+            y2 = y1 + math.sin(ang + rng.uniform(-0.5, 0.5)) * 10
+            cracks.append((x0, y0, x1, y1))
+            cracks.append((x1, y1, x2, y2))
+        fx._cracks = cracks
+    elif fx.skill == "e":
+        # 5 totem ward mengelilingi Nyxara (ellipse tanah)
+        wards = []
+        for i in range(5):
+            ang = i * math.tau / 5 + 0.3
+            wards.append((math.cos(ang) * 52 * fx.scale,
+                          14 * fx.scale + math.sin(ang) * 20 * fx.scale))
+        fx._wards = wards
+
+
+# ============================================================================
+# 9.  DIRECTOR — mengikat semua sistem untuk SATU unit Nyxara
+# ============================================================================
+
+class NyxaraFXDirector:
+    """Mengikat trail, partikel, proyektil, skill, dampak, dan game feel
+    untuk satu Nyxara (boss lane maupun hero lane)."""
+
+    def __init__(self, unit=None):
+        self.unit = unit
+        self.particles = ParticleSystem(MAX_PARTICLES)
+        self.projectiles = ProjectileSystem(self.particles, MAX_PROJECTILES)
+        self.trail = SwingTrail(TRAIL_SAMPLES)
+        self.skills = []
+        self.impacts = []
+        self.afterimages = []
+
+        # posisi layar terakhir
+        self.x = 0.0
+        self.y = 0.0
+        self.have_pos = False
+        self.draw_age = 99.0
+
+        # pelacakan state animasi
+        self.state = "IDLE"
+        self.state_prev = "IDLE"
+        self.state_time = 0.0
+        self.anim_frame = 0
+
+        # pelacakan serangan
+        self.attack_progress = 0.0
+        self.attack_prev = -1.0
+        self.attack_kind = "orb"
+        self.swing_done = False
+        self.shot_done = False
+        self._pending_impact = None
+
+        # pelacakan skill
+        self.skill_key = None
+        self.skill_prev = None
+        self._skill_total = 1
+        self._blast_done = False
+
+        # lain-lain
+        self.hurt_prev = 0
+        self.ember_acc = 0.0
+        self.time = 0.0
+        self.dt = FIXED_DT
+        self._fps_acc = 0.0
+        self._fps_n = 0
+        self.fps = 60.0
+        self._was_alive = True
+
+    # ==================================================================
+    # SYNC — dipanggil tiap frame gambar (posisi layar diketahui)
+    # ==================================================================
+    def sync(self, boss, x, y):
+        self.unit = boss
+        self.x = float(x)
+        self.y = float(y)
+        self.have_pos = True
+        self.draw_age = 0.0
+        _sync_palette()
+
+        # -- state animasi dari renderer --------------------------------
+        st = getattr(boss, "_nx_state", None)
+        if st is None:
+            action, _phase, _ap = pose_of(boss)
+            st = {"idle": "IDLE", "walk": "WALK", "attack": "ATTACK",
+                  "swing": "SWING", "cast_q": "SKILL", "cast_w": "SKILL",
+                  "cast_e": "SPECIAL", "cast_r": "SPECIAL",
+                  "hurt": "HURT", "death": "DEATH"}.get(action, "IDLE")
+        if st != self.state:
+            self.state_prev = self.state
+            self.state = st
+            self.state_time = 0.0
+            self.anim_frame = 0
+
+        # -- serangan ----------------------------------------------------
+        self.attack_kind = getattr(boss, "_nx_attack_kind",
+                                   self.attack_kind) or "orb"
+        ap = float(getattr(boss, "_nx_attack_progress", 0.0) or 0.0)
+        active = bool(getattr(boss, "_nx_attack_active", False))
+        if not active:
+            self.attack_progress = 0.0
+            self.attack_prev = -1.0
+        else:
+            # reset flag saat cycle baru (progress mundur drastis)
+            if self.attack_prev >= 0.0 and ap < self.attack_prev - 0.5:
+                self.swing_done = False
+                self.shot_done = False
+                self._pending_impact = None
+            self.attack_progress = ap
+        self.attack_prev = self.attack_progress if active else -1.0
+
+        # -- skill --------------------------------------------------------
+        skill = getattr(boss, "_nx_skill", None)
+        timer = int(getattr(boss, "active_skill_timer", 0) or 0) \
+            if skill is not None else 0
+        if skill is not None and skill != self.skill_prev:
+            if not any(fx.skill == skill for fx in self.skills):
+                self.on_cast(self.x, self.y, skill)
+        if skill is not None:
+            self._skill_total = max(self._skill_total, timer, 1)
+            for fx in self.skills:
+                if fx.skill == skill:
+                    fx.set_engine_progress(
+                        1.0 - timer / float(max(1, self._skill_total)))
+        if skill != self.skill_key:
+            self.skill_key = skill
+            self._skill_total = max(1, timer) if skill is not None else 1
+        self.skill_prev = skill
+
+    # ==================================================================
+    # UPDATE — dimajukan lewat tick() (dt dari bus game-feel)
+    # ==================================================================
+    def update(self, dt):
+        self.time += dt
+        self.state_time += dt
+        self.anim_frame += 1
+        self.draw_age += dt
+
+        # FPS meter
+        self._fps_acc += dt
+        self._fps_n += 1
+        if self._fps_acc >= 0.5:
+            self.fps = self._fps_n / max(0.0001, self._fps_acc)
+            self._fps_acc = 0.0
+            self._fps_n = 0
+
+        u = self.unit
+        x, y = self.x, self.y
+
+        # ── HURT: edge naik dari hurt_flash_timer ────────────────────
+        if u is not None:
+            hurt = int(getattr(u, "hurt_flash_timer", 0) or 0)
+            if hurt >= 5 and hurt > self.hurt_prev:
+                self.on_hurt(x, y)
+            self.hurt_prev = hurt
+
+            # ── DEATH: ledakan nether sekali ──────────────────────────
+            alive = bool(getattr(u, "alive", True))
+            if self._was_alive and not alive:
+                self.on_death(x, y)
+            self._was_alive = alive
+
+        # ── SERANGAN: event per fase ──────────────────────────────────
+        # Baca state TERBARU langsung dari unit (bukan salinan sync) —
+        # hook gameplay (notify_*) bisa jalan sebelum frame gambar
+        # pertama, jadi tick() harus tetap melihat progress baru.
+        if u is not None:
+            kind_now = getattr(u, "_nx_attack_kind", None)
+            if kind_now:
+                self.attack_kind = kind_now
+            if getattr(u, "_nx_attack_active", False):
+                self.attack_progress = max(0.0, min(1.0, float(
+                    getattr(u, "_nx_attack_progress", 0.0) or 0.0)))
+        active = u is not None and bool(getattr(u, "_nx_attack_active",
+                                                False))
+        if not active and self._pending_impact is not None:
+            # serangan berakhir sebelum frame benturan (interupsi) ->
+            # lepas impact yang tertahan agar tidak menggantung selamanya
+            self._release_pending()
+        if active:
+            ap = self.attack_progress
+            kind = self.attack_kind
+            tp = self._target_point()
+
+            # spawn proyektil pada frame rilis (HANYA jalur boss;
+            # jalur hero memakai proyektil generik gameplay)
+            if kind == "orb" and not self.shot_done and ap >= ATK_RELEASE:
+                self.shot_done = True
+                if getattr(u, "_render_scale", None) is None:
+                    self._spawn_attack_orb(tp)
+            # impact swing pada frame benturan tongkat
+            if kind == "swing" and not self.swing_done and ap >= ATK_IMPACT:
+                self.swing_done = True
+                self._on_swing_impact_frame(x, y, tp)
+
+            # trail: sampel kepala tongkat selama jendela cepat
+            _pivot, tip = staff_points(u, x, y)
+            fast = 0.24 <= ap <= 0.62 and kind == "swing"
+            self.trail.push(tip.x, tip.y, 1.0 if fast else
+                            (0.6 if kind == "attack" else 0.0))
+        else:
+            self.trail.push(0, 0, 0.0)
+
+        # ── AFTERIMAGE tongkat saat spin skill E ─────────────────────
+        if u is not None:
+            action, _ph, ap = pose_of(u)
+            if action == "cast_e" and ap < 0.55:
+                self.push_afterimage()
+            # skill Q: lepaskan Nether Blast pada fase RELEASE
+            # (ambang 0.42 sama dengan fallback canvas renderer).
+            if action == "cast_q" and ap >= 0.42 and not self._blast_done:
+                self._blast_done = True
+                if getattr(u, "_render_scale", None) is None:
+                    self._spawn_blast()
+            elif action != "cast_q":
+                self._blast_done = False
+
+        # ── AMBIENT: bara nether & mist (rate-limited) ────────────────
+        self._ambient(dt)
+
+        # ── sistem ────────────────────────────────────────────────────
+        self.trail.update(dt)
+        self.projectiles.update(dt)
+        self.particles.update(dt)
+        for im in self.impacts:
+            im.update(dt)
+        self.impacts = [im for im in self.impacts if im.alive]
+        for ai in self.afterimages:
+            ai["life"] -= dt
+        self.afterimages = [ai for ai in self.afterimages if ai["life"] > 0.0]
+        for fx in self.skills:
+            fx.update(dt, self.particles)
+        self.skills = [fx for fx in self.skills if not fx.done]
+
+    # ------------------------------------------------------------------
+    # event helpers
+    # ------------------------------------------------------------------
+    def _target_point(self):
+        u = self.unit
+        tgt = getattr(u, "target", None) if u is not None else None
+        if tgt is not None and getattr(tgt, "alive", True):
+            return (float(getattr(tgt, "x", self.x)),
+                    float(getattr(tgt, "y", self.y)) - 6.0, tgt)
+        return None
+
+    def _spawn_attack_orb(self, tp):
+        u = self.unit
+        _pivot, tip = staff_points(u, self.x, self.y)
+        if tp is None:
+            f = 1 if (getattr(u, "direction", 1) or 1) >= 0 else -1
+            aim = (self.x + f * 140.0, self.y - 10.0)
+            tgt = None
+        else:
+            aim, tgt = (tp[0], tp[1]), tp[2]
+        self.projectiles.spawn_orb(
+            tip.x, tip.y, aim[0], aim[1], speed=ORB_SPEED, damage=0.0,
+            target=tgt, ground=ground_dy(u),
+            on_impact=lambda b: self._on_orb_hit(b))
+        self.particles.burst(
+            tip.x, tip.y, 7, speed=(90, 220), life=(0.12, 0.3),
+            size=(1.5, 3.0),
+            colors=(_P["nether_bright"], _P["nether_white"]),
+            shape="spark", drag=2.6, additive=True)
+
+    def _spawn_blast(self):
+        """Skill Q: Nether Blast besar melesat ke target."""
+        u = self.unit
+        _pivot, tip = staff_points(u, self.x, self.y)
+        tp = self._target_point()
+        if tp is None:
+            f = 1 if (getattr(u, "direction", 1) or 1) >= 0 else -1
+            aim, tgt = (self.x + f * 240.0, self.y - 10.0), None
+        else:
+            aim, tgt = (tp[0], tp[1]), tp[2]
+        self.projectiles.spawn_blast(
+            tip.x, tip.y, aim[0], aim[1], speed=BLAST_SPEED, damage=0.0,
+            target=tgt, ground=ground_dy(u),
+            on_impact=lambda b: self._on_orb_hit(b))
+        self.particles.burst(
+            tip.x, tip.y, 10, speed=(80, 240), life=(0.15, 0.35),
+            size=(1.5, 3.0),
+            colors=(_P["nether_hot"], _P["nether_bright"],
+                    _P["nether_white"]),
+            shape="spark", drag=2.6, additive=True)
+        if _feel is not None and shake_allowed():
+            _feel.shake(4.0, 0.18)
+
+    def _on_orb_hit(self, proj):
+        self.projectiles.on_impact(proj)
+        self._release_pending()
+
+    def _on_swing_impact_frame(self, x, y, tp):
+        """Frame tongkat menyentuh: full impact kalau target di busur."""
+        u = self.unit
+        _pivot, tip = staff_points(u, x, y)
+        f = 1 if (getattr(u, "direction", 1) or 1) >= 0 else -1
+        if tp is not None:
+            tx, ty = tp[0], tp[1]
+            dist = math.hypot(tx - x, ty - y)
+            front = (tx - x) * f
+            if dist <= MELEE_REACH + 20.0 and front > -18.0:
+                self.on_impact(tx, ty,
+                               math.atan2(ty - (y - 10), tx - x),
+                               1.2, False, kind="staff")
+        # percikan tanah walau meleset (feel sapuan)
+        self.particles.burst(
+            tip.x, tip.y + 20, 5, speed=(30, 110), life=(0.15, 0.35),
+            size=(1.0, 2.2), colors=(_P["nether_dark"], _P["nether_mid"]),
+            shape="dust", drag=2.0, layer="back")
+        self._release_pending()
+
+    def _release_pending(self):
+        if self._pending_impact is not None:
+            tx, ty, ang, power, crit, kind = self._pending_impact
+            self.on_impact(tx, ty, ang, power, crit, kind=kind)
+            self._pending_impact = None
+
+    def on_impact(self, x, y, angle=0.0, power=1.0, crit=False,
+                  kind="nether"):
+        """Impact penuh + partikel + game feel."""
+        self.impacts.append(ImpactFX(x, y, kind=kind, angle=angle,
+                                     power=power, crit=crit))
+        while len(self.impacts) > MAX_IMPACTS:
+            self.impacts.pop(0)
+        c = _P
+        if kind == "staff":
+            self.particles.burst(
+                x, y, 15, speed=(100, 340), life=(0.18, 0.45),
+                size=(1.5, 3.5),
+                colors=(c["nether_bright"], c["nether_hot"],
+                        c["nether_white"]),
+                shape="spark", drag=2.4, additive=True)
+            self.particles.burst(
+                x, y, 6, speed=(50, 160), life=(0.35, 0.7),
+                size=(1.5, 2.5), colors=(c["bone_mid"], c["bone_light"]),
+                shape="bone", gravity=320.0, drag=0.7,
+                rotation_speed=(-9, 9))
+            if _feel is not None:
+                _feel.hit_stop(0.055)
+                if shake_allowed():
+                    _feel.shake(6.5, 0.24)
+        else:
+            self.particles.burst(
+                x, y, 11, speed=(60, 240), life=(0.18, 0.4),
+                size=(1.5, 3.0),
+                colors=(c["nether_light"], c["nether_bright"]),
+                shape="wisp", drag=2.6, additive=True)
+            if _feel is not None:
+                _feel.hit_stop(0.038)
+                if shake_allowed():
+                    _feel.shake(4.0, 0.18)
+
+    def on_hurt(self, x, y):
+        """Kena pukul: serpihan nether + recoil kecil."""
+        self.particles.burst(
+            x, y - 16, 9, speed=(50, 190), life=(0.15, 0.35),
+            size=(1.5, 3.0),
+            colors=(_P["nether_light"], _P["robe_light"]),
+            shape="wisp", drag=2.2, additive=True)
+
+    def on_death(self, x, y):
+        """Mati: energi nether meledak keluar (FX global via bus)."""
+        c = _P
+        self.particles.burst(
+            x, y - 16, 30, speed=(60, 320), life=(0.4, 0.9),
+            size=(1.5, 4.0),
+            colors=(c["nether_light"], c["nether_bright"], c["bone_light"],
+                    c["nether_white"]),
+            shape="wisp", drag=1.4, additive=True)
+        self.particles.burst(
+            x, y - 16, 8, speed=(40, 130), life=(0.6, 1.1),
+            size=(2.0, 3.5), colors=(c["bone_mid"], c["bone_light"]),
+            shape="bone", gravity=260.0, drag=0.5,
+            rotation_speed=(-9, 9))
+        if _feel is not None:
+            _feel.hit_stop(0.08)
+            if shake_allowed():
+                _feel.shake(10.0, 0.34)
+
+    def on_cast(self, x, y, skill):
+        fx = SkillFX(skill, x, y,
+                     facing=(getattr(self.unit, "direction", 1) or 1),
+                     target=getattr(self.unit, "target", None),
+                     scale=body_scale(self.unit))
+        _skillfx_postinit(fx)
+        if len(self.skills) >= MAX_SKILLS:
+            self.skills.pop(0)
+        self.skills.append(fx)
+        return fx
+
+    def push_afterimage(self):
+        u = self.unit
+        _pivot, tip = staff_points(u, self.x, self.y)
+        self.afterimages.append({"x": tip.x, "y": tip.y, "life": 0.16,
+                                 "max": 0.16})
+        while len(self.afterimages) > MAX_AFTERIMAGES:
+            self.afterimages.pop(0)
+
+    def _ambient(self, dt):
+        """Bara nether pelan di sekitar badan (rate-limited + budget)."""
+        if not self.have_pos or particle_budget() <= 0.0:
+            return
+        self.ember_acc += dt * 9.0
+        while self.ember_acc >= 1.0:
+            self.ember_acc -= 1.0
+            self.particles.spawn(
+                self.x + random.uniform(-20, 20),
+                self.y + random.uniform(6, 34),
+                random.uniform(-4, 4), random.uniform(-26, -10),
+                random.uniform(0.5, 1.0), random.uniform(1.5, 2.5),
+                random.choice((_P["nether_mid"], _P["nether_dark"])),
+                shape="ember", layer="back", additive=True)
+
+    # ------------------------------------------------------------------
+    # draw layers
+    # ------------------------------------------------------------------
+    def draw_ground(self, surface):
+        for fx in self.skills:
+            fx.follow(self.x, self.y)
+            fx.draw_ground(surface)
+        self.particles.draw(surface, "back")
+
+    def draw_front(self, surface):
+        # afterimage kepala tongkat (di bawah trail utama)
+        for ai in self.afterimages:
+            k = ai["life"] / ai["max"]
+            _blit_faded(surface,
+                        ring_surface(8, 2, _P["nether_mid"], 180, teeth=5),
+                        ai["x"], ai["y"], 110 * k)
+        # trail ayunan
+        self.trail.draw(surface)
+        # proyektil + impact
+        self.projectiles.draw(surface)
+        self.projectiles.draw_impacts(surface)
+        for im in self.impacts:
+            im.draw(surface)
+        # partikel depan
+        self.particles.draw(surface, "front")
+        # skill front (di atas partikel supaya terbaca)
+        for fx in self.skills:
+            fx.draw_front(surface)
+
+    # ------------------------------------------------------------------
+    def stats(self):
+        return {
+            "state": self.state,
+            "state_prev": self.state_prev,
+            "state_time": round(self.state_time, 3),
+            "anim_frame": self.anim_frame,
+            "attack_kind": self.attack_kind,
+            "attack_progress": round(self.attack_progress, 3),
+            "attack_phase": attack_phase(self.attack_progress)
+            if self.attack_progress > 0.0 else "-",
+            "skill": self.skill_key,
+            "particles": self.particles.count(),
+            "projectiles": self.projectiles.count(),
+            "skills": len(self.skills),
+            "impacts": len(self.impacts),
+            "afterimages": len(self.afterimages),
+            "fps": round(self.fps, 1),
+        }
+
+    def reset(self):
+        self.particles.clear()
+        self.projectiles.clear()
+        self.trail.reset()
+        self.skills.clear()
+        self.impacts.clear()
+        self.afterimages.clear()
+        self.swing_done = False
+        self.shot_done = False
+        self.skill_key = None
+        self._pending_impact = None
+        self.have_pos = False
+
+
+# ============================================================================
+# 10. REGISTRI DIRECTOR  (pola identik heroes/vhalzun_fx.py)
+# ============================================================================
+
+_DIRECTORS = []
+MAX_DIRECTORS = 12
+
+
+def director_for(unit):
+    """Ambil (atau buat) director FX untuk satu unit Nyxara."""
+    _sync_palette()
+    d = getattr(unit, "_nyxara_fx", None)
+    if d is None:
+        d = NyxaraFXDirector(unit)
+        try:
+            unit._nyxara_fx = d
+        except Exception:                        # pragma: no cover
+            return d
+        _DIRECTORS.append(d)
+        if len(_DIRECTORS) > MAX_DIRECTORS:
+            _release(_DIRECTORS.pop(0))
+    return d
+
+
+def _release(director):
+    try:
+        if director.unit is not None:
+            director.unit._nyxara_fx = None
+            director.unit._nx_live_fx = False
+    except Exception:                            # pragma: no cover
+        pass
+    director.reset()
+
+
+def attach(unit):
+    """Pasang lapisan hidup pada unit (dipanggil pipeline render)."""
+    if not NYXARA_FX_ENABLED or unit is None:
+        return False
+    try:
+        director_for(unit)
+    except Exception:                            # pragma: no cover
+        return False
+    try:
+        unit._nx_live_fx = True
+    except Exception:                            # pragma: no cover
+        return False
+    return True
+
+
+def owns(unit):
+    """True kalau lapisan hidup sudah mengambil alih efek unit ini."""
+    if not NYXARA_FX_ENABLED or unit is None:
+        return False
+    if not getattr(unit, "_nx_live_fx", False):
+        return False
+    d = getattr(unit, "_nyxara_fx", None)
+    return d is not None and d in _DIRECTORS
+
+
+def recently_drawn(unit, max_age=0.35):
+    """True kalau lapisan hidup unit ini BENAR-BENAR digambar belakangan."""
+    d = getattr(unit, "_nyxara_fx", None)
+    if d is None:
+        return False
+    return bool(d.have_pos) and d.draw_age <= float(max_age)
+
+
+def tick(dt=None):
+    """Majukan waktu FX satu frame nyata; aman dipanggil berkali-kali."""
+    if not NYXARA_FX_ENABLED:
+        return 0.0
+    if dt is not None:
+        step = max(0.0, min(1.0 / 20.0, float(dt)))
+        _advance(step)
+        return step
+    if _feel is not None:
+        try:
+            step = float(_feel.fx_dt())
+        except Exception:                        # pragma: no cover
+            step = 0.0
+    else:                                        # pragma: no cover
+        step = FIXED_DT
+    _advance(step)
+    return step
+
+
+def _advance(step):
+    if step <= 0.0 or not _DIRECTORS:
+        return
+    step = max(0.0, min(1.0 / 20.0, step))
+    for d in _DIRECTORS:
+        d.update(step)
+
+
+def reset_all():
+    """Bersihkan seluruh state FX Nyxara (ganti level / keluar match)."""
+    for d in list(_DIRECTORS):
+        _release(d)
+    _DIRECTORS.clear()
+    clear_cache()
+
+
+def total_particles():
+    """Jumlah partikel Nyxara yang hidup (HUD performa + tes)."""
+    return sum(d.particles.count() for d in _DIRECTORS)
+
+
+def stats():
+    """Ringkasan global untuk overlay debug / profiling."""
+    out = {"directors": len(_DIRECTORS), "particles": 0, "projectiles": 0,
+           "skills": 0, "impacts": 0, "cache": cache_size()}
+    for d in _DIRECTORS:
+        s = d.stats()
+        out["particles"] += s["particles"]
+        out["projectiles"] += s["projectiles"]
+        out["skills"] += s["skills"]
+        out["impacts"] += s["impacts"]
+    return out
+
+
+# ============================================================================
+# 11.  API PUBLIK — dipanggil pipeline render & hook gameplay
+# ============================================================================
+
+def draw_ground_layer(surface, unit, x, y):
+    """Pre-pass: digambar SEBELUM sprite di-blit (ground FX, back)."""
+    if not NYXARA_FX_ENABLED:
+        return
+    if not attach(unit):
+        return
+    tick()
+    d = getattr(unit, "_nyxara_fx", None)
+    if d is not None:
+        d.sync(unit, x, y)
+        d.draw_ground(surface)
+
+
+def draw_live_layer(surface, unit, x, y):
+    """Post-pass: digambar SESUDAH sprite di-blit (trail, proj, impact)."""
+    if not NYXARA_FX_ENABLED:
+        return
+    d = director_for(unit)
+    d.draw_front(surface)
+    if DEBUG_CHARACTER:
+        try:
+            debug_overlay(surface, unit, x, y)
+        except Exception:
+            pass
+
+
+# ── hook gameplay ────────────────────────────────────────────────────
+
+def notify_melee_impact(unit, target, damage=0, crit=False):
+    """Tongkat Nyxara mendarat di target (basic attack swing).
+
+    Kalau ayunan masih di awal cycle (damage hook lebih dulu dari frame
+    visual benturan), impact DITAHAN sampai frame tongkat menyentuh —
+    jadi flash & hit-stop sinkron dengan kepala tongkat.
+    """
+    if not NYXARA_FX_ENABLED or unit is None or target is None:
+        return
+    try:
+        power = 0.75 + min(1.5, float(damage) / 70.0)
+    except (TypeError, ValueError):
+        power = 1.0
+    tx = float(getattr(target, "x", getattr(unit, "x", 0.0)))
+    ty = float(getattr(target, "y", getattr(unit, "y", 0.0))) - 6.0
+    ang = math.atan2(ty - float(getattr(unit, "y", 0.0)),
+                     tx - float(getattr(unit, "x", 0.0)))
+    d = director_for(unit)
+    active = bool(getattr(unit, "_nx_attack_active", False))
+    ap = float(getattr(unit, "_nx_attack_progress", 0.0) or 0.0)
+    kind = getattr(unit, "_nx_attack_kind", "swing") or "swing"
+    if active and kind == "swing" and ap < ATK_IMPACT:
+        d._pending_impact = (tx, ty, ang, power, bool(crit), "staff")
+        return
+    d.on_impact(tx, ty, ang, power, bool(crit), kind="staff")
+    d._pending_impact = None
+
+
+def notify_projectile_impact(unit, x, y, angle=0.0, damage=0, crit=False,
+                             kind="nether"):
+    """Nether orb mengenai target (basic attack jarak jauh)."""
+    if not NYXARA_FX_ENABLED or unit is None:
+        return
+    try:
+        power = 0.7 + min(1.6, float(damage) / 45.0)
+    except (TypeError, ValueError):
+        power = 1.0
+    d = director_for(unit)
+    active = bool(getattr(unit, "_nx_attack_active", False))
+    ap = float(getattr(unit, "_nx_attack_progress", 0.0) or 0.0)
+    atk_kind = getattr(unit, "_nx_attack_kind", "orb") or "orb"
+    hero_lane = getattr(unit, "_render_scale", None) is not None
+    if not hero_lane and active and atk_kind == "orb" \
+            and ap < ATK_RELEASE + 0.1:
+        # jalur BOSS: damage instan, impact visual ditahan sampai orb
+        # prosedural mendarat.
+        d._pending_impact = (float(x), float(y), float(angle), power,
+                             bool(crit), kind)
+        return
+    if hero_lane and active and atk_kind == "swing":
+        d._pending_impact = (float(x), float(y), float(angle), power,
+                             bool(crit), "staff")
+        return
+    d.on_impact(float(x), float(y), float(angle), power, bool(crit),
+                kind=kind)
+    d._pending_impact = None
+
+
+def notify_skill_cast(unit, skill, x=None, y=None):
+    """Skill dilepaskan (Q/W/E/R) — buat SkillFX lifecycle penuh."""
+    if not NYXARA_FX_ENABLED or unit is None:
+        return
+    d = director_for(unit)
+    skill = str(skill)
+    if any(fx.skill == skill for fx in d.skills):
+        return
+    px = float(x) if x is not None else float(getattr(unit, "x", 0.0))
+    py = float(y) if y is not None else float(getattr(unit, "y", 0.0))
+    d.on_cast(px, py, skill)
+
+
+def notify_skill_impact(unit, x, y, radius=None, skill="q"):
+    """Skill meledak di sebuah titik (AOE) — impact + shockwave."""
+    if not NYXARA_FX_ENABLED or unit is None:
+        return
+    d = director_for(unit)
+    if not any(fx.skill == skill for fx in d.skills):
+        d.on_cast(float(getattr(unit, "x", x)),
+                  float(getattr(unit, "y", y)), skill)
+    d.on_impact(float(x), float(y), angle=0.0,
+                power=1.2 if skill in ("q", "r") else 0.9,
+                crit=False, kind="skill")
+    if radius:
+        c = _P
+        d.particles.burst(
+            float(x), float(y), 14, speed=(80, 260), life=(0.2, 0.5),
+            size=(1.5, 3.5),
+            colors=(c["nether_light"], c["nether_bright"], c["nether_hot"]),
+            shape="shard", drag=2.2, additive=True,
+            rotation_speed=(-6, 6))
+
+
+def notify_death(unit):
+    """Unit mati — dipanggil hook base_boss.take_damage saat hp <= 0."""
+    if not NYXARA_FX_ENABLED or unit is None:
+        return
+    d = director_for(unit)
+    d.on_death(float(getattr(unit, "x", 0.0)),
+               float(getattr(unit, "y", 0.0)))
+
+
+# ============================================================================
+# 12.  OVERLAY DEBUG (DEBUG_CHARACTER = True)
+# ============================================================================
+
+_DBG_FONT = None
+
+
+def _dbg_font(size=12):
+    global _DBG_FONT
+    if _DBG_FONT is None:
+        try:
+            _DBG_FONT = pygame.font.Font(None, size + 4)
+        except Exception:                        # pragma: no cover
+            _DBG_FONT = pygame.font.Font(None, 16)
+    return _DBG_FONT
+
+
+def debug_overlay(surface, unit, x, y):
+    """Hitbox, hurtbox, range, state, frame, FPS, partikel, skill."""
+    d = getattr(unit, "_nyxara_fx", None)
+    if d is None:
+        return
+    sc = body_scale(unit)
+    # attack range (melee) & hurtbox
+    pygame.draw.circle(surface, (255, 200, 60), (int(x), int(y)),
+                       int(MELEE_REACH * sc), 1)
+    hurt = pygame.Rect(int(x - 22 * sc), int(y - 50 * sc),
+                       int(44 * sc), int(70 * sc))
+    pygame.draw.rect(surface, (80, 160, 255), hurt, 1)
+    # hitbox swing saat jendela aktif
+    if bool(getattr(unit, "_nx_hit_active", False)):
+        f = 1 if (getattr(unit, "direction", 1) or 1) >= 0 else -1
+        reach = int(MELEE_REACH * 0.9 * sc)
+        top = int(y - 42 * sc)
+        h = int(74 * sc)
+        left = int(x) if f > 0 else int(x) - reach
+        pygame.draw.rect(surface, (255, 80, 80),
+                         (left, top, max(8, reach), max(10, h)), 1)
+    # garis pivot->tip tongkat
+    pv, tip = staff_points(unit, x, y)
+    pygame.draw.line(surface, (200, 255, 90),
+                     (int(pv.x), int(pv.y)), (int(tip.x), int(tip.y)), 1)
+    pygame.draw.circle(surface, (200, 255, 90), (int(tip.x), int(tip.y)), 3, 1)
+    # teks state
+    s = d.stats()
+    lines = [
+        f"NYXARA[{CHARACTER_NAME}] state={s['state']}"
+        f"<{s['state_prev']}> t={s['state_time']:.2f}",
+        f"pose={pose_of(unit)[0]} kind={s['attack_kind']} "
+        f"phase={s['attack_phase']} ap={s['attack_progress']:.2f}",
+        f"skill={s['skill']} frame={s['anim_frame']}",
+        f"partikel={s['particles']} proj={s['projectiles']} "
+        f"impact={s['impacts']} fps={s['fps']:.0f}",
+    ]
+    font = _dbg_font()
+    yy = int(y - 100 * sc)
+    for ln in lines:
+        img = font.render(ln, True, (210, 255, 140))
+        surface.blit(img, (int(x - 100), yy))
+        yy += 13
