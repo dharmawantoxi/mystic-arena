@@ -3854,121 +3854,34 @@ class Hero(TowerDebuffMixin):
                 proj['y'] = float(ty)
                 proj['_hit_applied'] = True
 
-                # ═══ IMPACT FX ZEPHYR ═══
-                # Benturan bolt Zephyr memicu paket game-feel penuh:
-                # hit flash, spark, shockwave, debris, screen shake,
-                # dan hit-stop 0.03-0.08 s (lihat heroes/zephyr_fx.py).
-                if proj.get('hero_type') == 'zephyr' and not target_dead:
+                # ═══ IMPACT FX — HANYA PROYEKTIL SKILL ═══
+                # Serangan dasar TIDAK boleh memicu impact FX (tanpa
+                # flash / shockwave / serpihan / shake / hit-stop): pada
+                # combat ramai tumpukan additive-nya membuat FX
+                # kedap-kedip dan menutupi sprite. Impact FX tetap hidup
+                # untuk SKILL, dan satu-satunya penanda yang benar adalah
+                # ``is_skill`` — proyektil skill memang selalu damage == 0
+                # dan serangan dasar selalu > 0, tapi penanda eksplisit
+                # lebih aman daripada menebak dari damage.
+                #
+                # Dispatch generik lewat registry heroes/_LIVE_FX_PATHS
+                # (menggantikan 6 blok per-hero yang dulu hardcode di
+                # sini). Tidak semua modul punya notify_projectile_impact
+                # (grimjaw & kaizen tidak), jadi dibungkus hasattr +
+                # try/except: error visual tidak pernah memutus serangan.
+                if proj.get('is_skill') and not target_dead:
                     try:
-                        from heroes import zephyr_fx as _zfx
-                        _zfx.notify_projectile_impact(
-                            proj.get('source') or self,
-                            proj['x'], proj['y'],
-                            proj.get('angle', 0.0),
-                            proj.get('damage', 0),
-                            bool(proj.get('is_crit')))
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX VEX ═══
-                # Paket game-feel yang sama untuk Vex (range 130 = ranged,
-                # jadi serangan dasarnya mendarat lewat proyektil generik
-                # ini, bukan damage instan melee): flash, spark, pecahan
-                # rune, shockwave, screen shake, dan hit-stop 0.03-0.08 s
-                # - lengkapnya di heroes/vex_fx.notify_projectile_impact.
-                # Difilter per hero_type dan dibungkus try/except supaya
-                # error visual tidak pernah memutus alur serangan
-                # (paritas Zephyr / Kaizen).
-                if proj.get('hero_type') == 'vex' and not target_dead:
-                    try:
-                        from heroes import vex_fx as _vxfx
-                        _vxfx.notify_projectile_impact(
-                            proj.get('source') or self,
-                            proj['x'], proj['y'],
-                            proj.get('angle', 0.0),
-                            proj.get('damage', 0),
-                            bool(proj.get('is_crit')))
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX SYLARA ═══
-                # Sylara (range 130) menembak lewat proyektil generik ini,
-                # jadi pendaratan panahnya diumumkan di titik yang sama:
-                # flash bintang, sabit angin, serpihan kayu/baja, daun
-                # terlempar, screen shake, dan hit-stop 0.03-0.08 s -
-                # lengkapnya di heroes/sylara_fx.notify_projectile_impact.
-                # Difilter per hero_type dan dibungkus try/except supaya
-                # error visual tidak pernah memutus alur serangan
-                # (paritas Zephyr / Vex).
-                if proj.get('hero_type') == 'sylara' and not target_dead:
-                    try:
-                        from heroes import sylara_fx as _syfx
-                        _syfx.notify_projectile_impact(
-                            proj.get('source') or self,
-                            proj['x'], proj['y'],
-                            proj.get('angle', 0.0),
-                            proj.get('damage', 0),
-                            bool(proj.get('is_crit')))
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX RAZAK (molotov, jalur hero) ═══
-                # Serangan dasar Razak (range 130) mendarat lewat
-                # proyektil generik ini: pendaratan napalm diumumkan
-                # di titik yang sama — flash, kolam api, serpihan kaca
-                # & bara, screen shake, hit-stop 0.03-0.08 s (lengkapnya
-                # di heroes/razak_fx.notify_projectile_impact). Difilter
-                # per hero_type + try/except (paritas Zephyr/Sylara).
-                if proj.get('hero_type') == 'razak' and not target_dead:
-                    try:
-                        from heroes import razak_fx as _rfx
-                        _rfx.notify_projectile_impact(
-                            proj.get('source') or self,
-                            proj['x'], proj['y'],
-                            proj.get('angle', 0.0),
-                            proj.get('damage', 0),
-                            bool(proj.get('is_crit')))
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX ANCIENT APPARITION (ice shard) ═══
-                # Shard es AA (ranged) mendarat lewat proyektil generik
-                # ini: impact flash bintang es, shockwave elips, fragmen
-                # sabit goresan, serpihan kristal + salju, screen shake,
-                # dan hit-stop 0.03-0.08 s (lengkapnya di
-                # heroes/ancient_apparition_fx.notify_projectile_impact).
-                # Difilter per hero_type + try/except (paritas Vex/Razak).
-                if proj.get('hero_type') == 'ancient_apparition' \
-                        and not target_dead:
-                    try:
-                        from heroes import ancient_apparition_fx as _aafx
-                        _aafx.notify_projectile_impact(
-                            proj.get('source') or self,
-                            proj['x'], proj['y'],
-                            proj.get('angle', 0.0),
-                            proj.get('damage', 0),
-                            bool(proj.get('is_crit')))
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX KROBELLS (soul bolt, jalur hero) ═══
-                # Serangan dasar hero Krobellus (range 120) mendarat
-                # lewat proyektil generik ini: impact flash jiwa,
-                # serpihan, shockwave, shake, dan hit-stop 0.03-0.08 s
-                # (lengkapnya di heroes/krobellus_fx.notify_projectile_impact;
-                # modul sendiri menunda/diurutkan impact agar sinkron
-                # dengan frame benturan bilah saat mode swing). Difilter
-                # per hero_type + try/except (paritas Vex/Ancient
-                # Apparition).
-                if proj.get('hero_type') == 'krobellus' and not target_dead:
-                    try:
-                        from heroes import krobellus_fx as _krbfx
-                        _krbfx.notify_projectile_impact(
-                            proj.get('source') or self,
-                            proj['x'], proj['y'],
-                            proj.get('angle', 0.0),
-                            proj.get('damage', 0),
-                            bool(proj.get('is_crit')), 'soul')
+                        import heroes as _heroes_reg
+                        _fxmod = _heroes_reg._live_fx_module(
+                            proj.get('hero_type') or self.hero_type)
+                        if _fxmod is not None and \
+                                hasattr(_fxmod, 'notify_projectile_impact'):
+                            _fxmod.notify_projectile_impact(
+                                proj.get('source') or self,
+                                proj['x'], proj['y'],
+                                proj.get('angle', 0.0),
+                                proj.get('damage', 0),
+                                bool(proj.get('is_crit')))
                     except Exception:
                         pass
 
@@ -4431,133 +4344,15 @@ class Hero(TowerDebuffMixin):
                 self.target.take_damage(damage, self.team, source=self,
                                         school=self.dmg_school)
 
-                # ═══ IMPACT FX GORNAK ═══
-                # Damage melee diterapkan instan (tanpa proyektil), jadi
-                # umpan balik benturan tidak punya tempat lain untuk
-                # dipicu: flash, spark, debris, shake, hit-stop 0.03-0.08 s
-                # (paket lengkapnya di heroes/gornak_fx.notify_melee_impact).
-                # Sama seperti jalur Zephyr: dibungkus try/except dan
-                # difilter per hero_type, sehingga hero lain tidak menarik
-                # modul FX-nya dan error visual tidak pernah memutus
-                # alur serangan.
-                if self.hero_type == 'gornak':
-                    try:
-                        from heroes import gornak_fx as _gfx
-                        _gfx.notify_melee_impact(
-                            self, self.target, damage, is_crit)
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX GRIMJAW ═══
-                # Paket game-feel yang sama untuk Grimjaw (flash, spark,
-                # debris, shockwave, slash fragment, screen shake, dan
-                # hit-stop 0.03-0.08 s) - lengkapnya di
-                # heroes/grimjaw_fx.notify_melee_impact.  Difilter per
-                # hero_type dan dibungkus try/except supaya error visual
-                # tidak pernah memutus alur serangan (paritas Gornak).
-                if self.hero_type == 'grimjaw':
-                    try:
-                        from heroes import grimjaw_fx as _gjfx
-                        _gjfx.notify_melee_impact(
-                            self, self.target, damage, is_crit)
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX ABADDON ═══
-                # Bilah energi Abaddon mendarat: flash bintang, cincin
-                # chunky, serpihan api, shake, dan hit-stop 0.03-0.08 s
-                # (lengkapnya di heroes/abaddon_fx.notify_melee_impact).
-                # Difilter per hero_type + try/except (paritas Gornak).
-                if self.hero_type == 'abaddon':
-                    try:
-                        from heroes import abaddon_fx as _abfx
-                        _abfx.notify_melee_impact(
-                            self, self.target, damage, is_crit)
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX KAIZEN ═══
-                # Paket game-feel yang sama untuk Kaizen (flash, spark,
-                # serpihan baja, shockwave, slash fragment sian, screen
-                # shake, dan hit-stop 0.03-0.08 s) - lengkapnya di
-                # heroes/kaizen_fx.notify_melee_impact.  Difilter per
-                # hero_type dan dibungkus try/except supaya error visual
-                # tidak pernah memutus alur serangan (paritas Gornak /
-                # Grimjaw).
-                if self.hero_type == 'kaizen':
-                    try:
-                        from heroes import kaizen_fx as _kzfx
-                        _kzfx.notify_melee_impact(
-                            self, self.target, damage, is_crit)
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX SYLARA (sapuan limb busur) ═══
-                # Jalur ini hanya hidup kalau Sylara memukul dari jarak
-                # sangat dekat (riposte melee); damage tetap mengalir
-                # lewat rumus yang sama - yang ditambahkan hanya sabit
-                # angin, serpihan, shake, dan hit-stop.
-                if self.hero_type == 'sylara':
-                    try:
-                        from heroes import sylara_fx as _syfx2
-                        _syfx2.notify_melee_impact(
-                            self, self.target, damage, is_crit)
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX GORATH ═══
-                # Paket game-feel yang sama untuk Gorath (flash bintang,
-                # serpihan darah, shake, hit-stop 0.03-0.08 s) - lengkapnya
-                # di heroes/gorath_fx.notify_melee_impact. Difilter per
-                # hero_type dan dibungkus try/except (paritas Gornak).
-                if self.hero_type == 'gorath':
-                    try:
-                        from heroes import gorath_fx as _gfx
-                        _gfx.notify_melee_impact(
-                            self, self.target, damage, is_crit)
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX RAZAK ═══
-                # Machete api Razak mendarat: flash bintang, sabit api,
-                # serpihan bara, shake, hit-stop 0.03-0.08 s (lengkapnya
-                # di heroes/razak_fx.notify_melee_impact).  Difilter per
-                # hero_type + try/except (paritas Gornak/Gorath).
-                if self.hero_type == 'razak':
-                    try:
-                        from heroes import razak_fx as _rfx
-                        _rfx.notify_melee_impact(
-                            self, self.target, damage, is_crit)
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX ALCHEMIST ═══
-                # Cleaver Alchemist mendarat: flash bintang asam,
-                # serpihan kaca, shake, hit-stop 0.03-0.08 s
-                # (lengkapnya di heroes/alchemist_fx.notify_melee_impact).
-                # Difilter per hero_type + try/except (paritas Razak).
-                if self.hero_type == 'alchemist':
-                    try:
-                        from heroes import alchemist_fx as _afx
-                        _afx.notify_melee_impact(
-                            self, self.target, damage, is_crit)
-                    except Exception:
-                        pass
-
-                # ═══ IMPACT FX NYZRAK ═══
-                # Sapuan tombak es Nyzrak mendarat dari dekat: flash
-                # bintang es, serpihan, shockwave, shake, dan hit-stop
-                # 0.03-0.08 s (lengkapnya di
-                # heroes/nyzrak_fx.notify_melee_impact; paritas varian
-                # melee sweep — serangan jarak jauh memicu impact lewat
-                # proyektil di lapisan FX yang sama).
-                if self.hero_type == 'nyzrak':
-                    try:
-                        from heroes import nyzrak_fx as _nzfx
-                        _nzfx.notify_melee_impact(
-                            self, self.target, damage, is_crit)
-                    except Exception:
-                        pass
+                # ═══ TIDAK ADA IMPACT FX UNTUK SERANGAN DASAR ═══
+                # Sembilan blok `IMPACT FX <HERO>` (notify_melee_impact)
+                # yang dulu berdiri di sini sudah dibuang: benturan
+                # serangan dasar tidak boleh memicu flash / spark /
+                # debris / shockwave / screen shake / hit-stop 0.03-0.08 s.
+                # Impact FX sekarang eksklusif milik SKILL — lihat
+                # notify_skill_cast / notify_skill_impact di
+                # hero_skills/_bundle.py dan blok `SKILL FX` di
+                # bosses/base_boss.py.
 
                 if is_crit:
                     try:
@@ -4619,7 +4414,7 @@ class Hero(TowerDebuffMixin):
         set_damage_school(None)
 
     def _spawn_projectile(self, damage, is_crit=False, speed=None,
-                          target=None, hero_type=None):
+                          target=None, hero_type=None, is_skill=False):
         """Spawn projectile homing yang terbang & MENGENAI target.
 
         Kecepatan default 9.5 (basic attack; dulu 6 terlalu lambat &
@@ -4628,6 +4423,11 @@ class Hero(TowerDebuffMixin):
         (homing) jadi projectile selalu terarah & tidak meleset walau
         target bergerak. ``angle`` & ``age`` disimpan supaya renderer
         bisa menggambar ujung tepat di (px,py) mengarah ke target.
+
+        ``is_skill`` menandai proyektil SKILL (lihat
+        ``_spawn_skill_projectile``). Penanda inilah yang memutuskan
+        apakah benturan boleh memicu impact FX: serangan dasar TIDAK
+        boleh, skill boleh.
         """
         tgt = target if target is not None else self.target
         if tgt is None or not getattr(tgt, 'alive', False):
@@ -4655,6 +4455,7 @@ class Hero(TowerDebuffMixin):
             'age': 0,
             'source': self,
             'school': self.dmg_school,
+            'is_skill': bool(is_skill),
         })
 
     def _spawn_skill_projectile(self, target, speed=13.0, hero_type=None):
@@ -4665,9 +4466,13 @@ class Hero(TowerDebuffMixin):
         damage = 0 agar TIDAK menumpuk dengan damage instan skill
         (damage otoritatif tetap di hero_skills/_bundle.py); renderer
         update loop melewatkan efek hit saat damage == 0.
+
+        Ditandai ``is_skill=True`` supaya benturannya tetap boleh
+        memicu impact FX (serangan dasar tidak).
         """
         self._spawn_projectile(0, is_crit=False, speed=speed,
-                               target=target, hero_type=hero_type)
+                               target=target, hero_type=hero_type,
+                               is_skill=True)
 
     def take_damage(self, damage, from_team, damage_type='normal',
                     source=None, school=None):

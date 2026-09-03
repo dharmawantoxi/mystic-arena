@@ -1897,23 +1897,21 @@ class SkillFX:
                             [(px + 1, py + 1) for px, py in poly], 2)
         surface.blit(buf, (cx - c, cy - c))
 
-    # -- R  Mana Void: pilar runtuh + arus hisap + shockwave ──────────
+    # -- R  Mana Void: arus hisap + shockwave (TANPA pilar cahaya) ────
     def _draw_r(self, surface, x, y, a, hot):
         R = self.radius
         if self.phase == "charge":
-            t = a / max(0.001, self.t_charge)
-            hgt = int((40 + 88 * t))
-            wdt = max(3, int(20 * (1.0 - 0.62 * t)))
-            self._pillar(surface, x, y, hgt, wdt, int(70 + 110 * t), hot)
-        elif self.phase == "release":
+            # Pilar cahaya aktivasi DIBUANG. Kolom vertikal 40-128 px
+            # yang berdiri tepat di sumbu badan menutupi Gornak selama
+            # R di-cast; versi sebelumnya hanya dipersempit, tidak
+            # dihapus, jadi karakter tetap tertelan. Fase charge kini
+            # tidak menggambar lapisan ini sama sekali.
+            return
+        if self.phase == "release":
             t = (a - self.t_charge) / max(0.001,
                                           self.t_release - self.t_charge)
-            # Lebar pilar dijaga di bawah lebar bahu karakter: berkas
-            # putih selebar badan (versi lama 2x lebar bahu) menelannya
-            # utuh selama fase release.
-            self._pillar(surface, x, y, int(150 * (1.0 - t * 0.35)),
-                         int(26 + 18 * t), int(190 * (1 - t)),
-                         P["fx_white"])
+            # Pilar putih fase release juga dibuang (alasan sama).
+            # Shockwave cincin di bawah tetap hidup sebagai penanda R.
             rr = int(R * (0.25 + 1.05 * t))
             if rr > 6:
                 ring = ring_surface(rr, max(1, int(6 * (1 - t)) + 1),

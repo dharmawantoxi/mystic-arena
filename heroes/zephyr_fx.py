@@ -1207,7 +1207,7 @@ class SkillFX:
 
     # ------------------------------------------------------------------
     def draw_front(self, surface):
-        """Lapisan atas karakter: pilar, shockwave, kilat rilis."""
+        """Lapisan atas karakter: shockwave, kilat rilis."""
         if not self.active:
             return
         col_a, col_b = self.TINT[self.kind]
@@ -1215,23 +1215,12 @@ class SkillFX:
         x, y = int(self.x), int(self.y)
 
         if self.phase == "charge":
-            t = a / self.t_charge
-            # pilar cahaya menyempit sambil menguat
-            hgt = int(60 + 70 * t)
-            wdt = max(3, int(26 * (1.0 - 0.55 * t)))
-            buf = _scratch(wdt * 2 + 8, hgt + 8)
-            for i in range(3):
-                al = int((60 + 90 * t) / (i + 1))
-                pygame.draw.polygon(
-                    buf, (*col_b, al),
-                    [(buf.get_width() // 2 - wdt + i * 2, hgt),
-                     (buf.get_width() // 2 + wdt - i * 2, hgt),
-                     (buf.get_width() // 2 + wdt // 3, 2),
-                     (buf.get_width() // 2 - wdt // 3, 2)])
-            surface.blit(buf, (x - buf.get_width() // 2, y - hgt),
-                         special_flags=pygame.BLEND_RGB_ADD)
+            # Pilar cahaya charge DIBUANG: kolom 60-130 px yang berdiri
+            # tepat di sumbu badan menutupi Zephyr selama skill di-cast.
+            # Fase charge kini tidak menggambar lapisan depan apa pun.
+            return
 
-        elif self.phase == "release":
+        if self.phase == "release":
             t = (a - self.t_charge) / max(0.001,
                                           self.t_release - self.t_charge)
             r = int(self.radius * (0.4 + 1.1 * t))

@@ -3115,19 +3115,12 @@ class _NS_razak:
         fs = NS._fx_scale(boss)
         gy = y + NS.GROUND_DY
 
-        # AKTIVASI: pilar cahaya 4-lapis + bintang (12 frame pertama)
+        # AKTIVASI: bintang saja (TANPA pilar cahaya)
+        # Pilar 4-lapis setinggi 110 px di sumbu badan DIBUANG: kolom
+        # itu menutupi Razak selama Firestorm di-cast.
         if progress < 0.14:
             k = progress / 0.14
             ease = 1 - (1 - k) ** 2
-            ph = min(int(110 * fs), 230)
-            top = y - ph
-            for w, col, a in ((int(20 * fs), P["fire_dark"], 90),
-                              (int(14 * fs), P["fire_bright"], 130),
-                              (int(8 * fs), P["fire_hot"], 180),
-                              (int(3 * fs), P["fire_white"], 240)):
-                aa = int(a * (1 - ease * 0.5))
-                NS._rect(surface, (*col, aa),
-                         (x - w // 2, top, w, gy - top))
             NS._spark_star(surface, x, y - int(20 * fs), int(24 * fs),
                            P["fire_glow"], int(240 * (1 - ease * 0.4)),
                            spikes=8, rot=k * 3, core=P["fire_white"])
@@ -6337,14 +6330,19 @@ class _NS_gorath:
         # memanggil renderer, dan sprite-nya di-smoothscale -> pass FX
         # hidup dilakukan heroes/__init__; di sini hanya penanda.
         hero_lane = hasattr(boss, "_render_scale")
+        portrait = bool(getattr(boss, "_portrait_hd", False))
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
         moving = NS._detect_moving(boss)
+        # Selalu dijalankan di sini.  Untuk hero lane, sprite di-cache,
+        # jadi pada frame cache-HIT fungsi ini tidak dipanggil sama
+        # sekali -- heroes.render_hero yang memajukan controller pada
+        # frame itu (lihat heroes._tick_pose_controller).  Hasilnya
+        # controller maju tepat sekali per frame di kedua jalur.
         NS._update_gorath_attack_anim(boss)
         action, phase, ap = NS._resolve_pose(boss, moving)
         boss._gor_pose_action = action
-        portrait = bool(getattr(boss, "_portrait_hd", False))
 
         attacking = (
             getattr(boss, "_gor_attack_active", False)
@@ -7819,18 +7817,11 @@ class _NS_gorath:
         fs = _NS_gorath._fx_scale(boss)
         cx, cy = x, y - 12
 
-        # ── AKTIVASI: pilar darah 4 lapis + shockwave ganda + bintang ──
+        # ── AKTIVASI: shockwave ganda + bintang (TANPA pilar cahaya) ──
+        # Pilar darah 4-lapis setinggi 100 px di (cx, cy) DIBUANG:
+        # kolom itu menutupi badan Gorath selama Bloodrage di-cast.
         if progress < 0.18:
             t = progress / 0.18
-            top = int(cy - min(100 * fs, 240) * (0.6 + 0.4 * (1 - t)))
-            for wd, col, al in ((32, P["blood_darkest"], 110),
-                                (20, P["blood_dark"], 150),
-                                (11, P["blood_bright"], 190),
-                                (4, P["blood_glow"], 220)):
-                _NS_gorath._aaline(surface, (*col, int(al * (1 - t))),
-                                   (cx, top), (cx, cy), wd)
-            _NS_gorath._aaline(surface, (*P["blood_seam"], int(200 * (1 - t))),
-                               (cx, top), (cx, cy), 2)
             for k, rmax in ((0, 120), (1, 86)):
                 r = int((16 + t * rmax) * fs)
                 # gelombang menipis saat mengembang (thickness ikut t)
@@ -8219,18 +8210,11 @@ class _NS_gorath:
         tx, ty = _NS_gorath._target_position(boss, x, y)
         cx, cy = x, y - 14
 
-        # ── AKTIVASI: pilar cahaya darah 4 lapis + shockwave ganda ──
+        # ── AKTIVASI: shockwave ganda + bintang (TANPA pilar cahaya) ──
+        # Pilar cahaya darah 4-lapis setinggi 100 px di (cx, cy)
+        # DIBUANG: kolom itu menutupi badan Gorath selama R di-cast.
         if progress < 0.16:
             t = progress / 0.16
-            top = int(cy - min(100 * fs, 240) * (0.6 + 0.4 * (1 - t)))
-            for wd, col, al in ((34, P["blood_darkest"], 120),
-                                (22, P["blood_dark"], 155),
-                                (12, P["blood_bright"], 195),
-                                (5, P["blood_glow"], 225)):
-                _NS_gorath._aaline(surface, (*col, int(al * (1 - t))),
-                                   (cx, top), (cx, cy), wd)
-            _NS_gorath._aaline(surface, (*P["blood_seam"], int(210 * (1 - t))),
-                               (cx, top), (cx, cy), 3)
             for k, rmax in ((0, 130), (1, 92)):
                 r = int((18 + t * rmax) * fs)
                 _NS_gorath._ground_ring(

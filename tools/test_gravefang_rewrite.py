@@ -515,14 +515,15 @@ check("CHARACTER_NAME konsisten",
 
 # hook AI base_boss memanggil lapisan FX
 bb = _BB_SRC
-# Hook harus SPESIFIK gravefang: dulu pemeriksaan ini hanya mencari
-# "notify_melee_impact" sehingga lolos gara-gara hook boss LAIN.
-check("hook impact gravefang di base_boss",
-      "gravefang_fx as _gfvfx" in bb
-      and "_gfvfx.notify_melee_impact(" in bb
-      and "_gfvfx.notify_projectile_impact(" in bb)
-check("hook impact difilter boss_type gravefang",
-      "boss_type', None) == 'gravefang'" in bb)
+# KONTRAK BARU: serangan dasar TIDAK boleh memicu impact FX. Hook
+# melee/proyektil gravefang di base_boss sudah dibuang; impact FX
+# eksklusif milik skill (notify_skill_cast / notify_skill_impact).
+check("serangan dasar boss TIDAK memicu impact gravefang",
+      "_gfvfx.notify_melee_impact(" not in bb
+      and "_gfvfx.notify_projectile_impact(" not in bb)
+check("API impact gravefang tetap ada di modul",
+      callable(getattr(FX, "notify_melee_impact", None))
+      and callable(getattr(FX, "notify_projectile_impact", None)))
 check("hook death gravefang di base_boss",
       bb.count("_gfvfx.notify_death(self)") >= 1)
 for sk in "qwer":

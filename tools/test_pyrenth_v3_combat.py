@@ -911,16 +911,16 @@ def test_debug_overlay():
 def test_base_boss_integration():
     src = open(os.path.join(ROOT, "bosses", "base_boss.py"),
                "r", encoding="utf-8").read()
-    assert "from heroes import pyrenth_fx as _pyrfx" in src
     assert "_pyrfx.notify_skill_cast" in src
     assert "_pyrfx.notify_skill_impact" in src
-    assert "_pyrfx.notify_melee_impact" in src
     for skill in ("'q'", "'w'", "'e'", "'r'"):
         assert "_pyrfx.notify_skill_cast(self, %s)" % skill in src, skill
-    assert "_pyrfx.notify_melee_impact" in src, \
-        "hook melee pyrenth tidak terpasang di base_boss"
-    assert "boss_type', None) == 'pyrenth'" in src, \
-        "guard boss_type pyrenth hilang dari hook melee"
+    # KONTRAK BARU: serangan dasar tidak memicu impact FX; hook melee
+    # pyrenth di base_boss sudah dibuang. API modulnya tetap ada.
+    assert "_pyrfx.notify_melee_impact" not in src, \
+        "serangan dasar boss masih memicu impact FX pyrenth"
+    assert callable(getattr(F, "notify_melee_impact", None)), \
+        "API notify_melee_impact hilang dari pyrenth_fx"
     src4 = open(os.path.join(ROOT, "bosses", "level4.py"),
                 "r", encoding="utf-8").read()
     assert "heroes import pyrenth_fx as mod" in src4

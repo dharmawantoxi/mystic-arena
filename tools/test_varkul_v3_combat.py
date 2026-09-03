@@ -273,9 +273,12 @@ def test_hero_lane_pipeline():
 def test_base_boss_integration():
     src = open(os.path.join(ROOT, "bosses", "base_boss.py"),
                "r", encoding="utf-8").read()
-    assert "from heroes import varkul_fx as _vkfx" in src
     assert "_vkfx.notify_skill_impact" in src
-    assert "_vkfx.notify_projectile_impact" in src
+    # KONTRAK BARU: serangan dasar tidak memicu impact FX.
+    assert "_vkfx.notify_projectile_impact" not in src, \
+        "serangan dasar boss masih memicu impact FX varkul"
+    assert callable(getattr(F, "notify_projectile_impact", None)), \
+        "API notify_projectile_impact hilang dari varkul_fx"
     src3 = open(os.path.join(ROOT, "bosses", "level3.py"),
                 "r", encoding="utf-8").read()
     assert "from heroes import varkul_fx as _vfx" in src3

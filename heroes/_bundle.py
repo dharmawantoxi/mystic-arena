@@ -2636,16 +2636,11 @@ class _NS_grimjaw:
         rng = _NS_grimjaw._ring_r(hero, spin_range, surface)
         fire_ramp = (p["fire_light"], p["fire_mid"], p["fire_hot"])
 
-        # ── AKTIVASI: pilar api 4-lapis + spark star + nova (tanpa lingkaran) ──
+        # ── AKTIVASI: spark star + nova (TANPA pilar cahaya) ──
+        # Pilar api 4-lapis setinggi 150 px di (x, y) DIBUANG: kolom itu
+        # menutupi badan Grimjaw selama Q di-cast.
         if progress < 0.16:
             t = progress / 0.16
-            top = int(y - min(150 * fs, 260) * (0.55 + 0.45 * (1 - t)))
-            for wd, col, al in ((30, p["fire_darkest"], 95),
-                                (18, p["fire_dark"], 145),
-                                (8, p["fire_mid"], 205),
-                                (3, p["fire_hot"], 245)):
-                _NS_grimjaw._aaline(surface, (*col, int(al * (1 - t))),
-                                    (x, top), (x, y), max(1, int(wd * fs * .4)))
             _NS_grimjaw._spark_star(surface, x, y, int(34 * (1 - t * .5)),
                                     p["fire_hot"], int(245 * (1 - t)),
                                     10, rot=phase, core=p["white"])
@@ -3120,16 +3115,11 @@ class _NS_grimjaw:
         rng = _NS_grimjaw._ring_r(hero, 80, surface)
         rage_ramp = (p["rage_light"], p["rage_mid"], p["rage_bright"])
 
-        # ── AKTIVASI: pilar cahaya 4-lapis + shockwave ganda + nova ──
+        # ── AKTIVASI: burst radial + bintang + nova (TANPA pilar cahaya) ──
+        # Pilar cahaya 4-lapis setinggi 140 px yang berdiri di (x, y)
+        # DIBUANG: kolom itu menutupi badan Grimjaw selama R di-cast.
         if progress < 0.18:
             t = progress / 0.18
-            top = int(y - min(140 * fs, 260) * (0.6 + 0.4 * (1 - t)))
-            for wd, col, al in ((34, p["rage_dark"], 110),
-                                (20, p["rage_mid"], 155),
-                                (9, p["rage_light"], 210),
-                                (3, p["fire_hot"], 235)):
-                _NS_grimjaw._aaline(surface, (*col, int(al * (1 - t))),
-                                    (x, top), (x, y), max(1, int(wd * fs * .4)))
             # burst radial (pengganti shockwave bulat)
             for k, rmax in ((0, int(130 * fs)), (1, int(92 * fs))):
                 rr = int((16 + t * rmax))
@@ -11138,18 +11128,11 @@ class _NS_thorne:
         cx, cy = x, y - 16
         gy = y + 42
 
-        # ── AKTIVASI: pilar cahaya + shockwave ganda + bintang ──
+        # ── AKTIVASI: shockwave ganda + bintang (TANPA pilar cahaya) ──
+        # Pilar cahaya 4-lapis setinggi 100 px di (cx, cy) DIBUANG:
+        # kolom itu menutupi badan Thorne selama Warpath di-cast.
         if progress < 0.18:
             t = progress / 0.18
-            # 100*fs aman di dalam canvas cache (margin _canvas_size_for)
-            top = int(cy - min(100 * fs, 240) * (0.6 + 0.4 * (1 - t)))
-            for wd, col, al in ((30, p["rage_dark"], 110),
-                                (18, p["rage_mid"], 150),
-                                (8, p["rage_light"], 200)):
-                _NS_thorne._aaline(surface, (*col, int(al * (1 - t))),
-                                   (cx, top), (cx, cy), wd)
-            _NS_thorne._aaline(surface, (*p["quill_shine"], int(200 * (1 - t))),
-                               (cx, top), (cx, cy), 3)
             for k, rmax in ((0, 120), (1, 86)):
                 r = int((16 + t * rmax) * fs)
                 _skill_outlined_circle(
@@ -14121,18 +14104,11 @@ class _NS_vex:
         rng = _NS_vex._ring_r(boss, 180, surface)
         gy = y + int(58 * fs)
 
-        # ── AKTIVASI: pilar 4-lapis + shockwave triple + nova ──
+        # ── AKTIVASI: shockwave triple + nova (TANPA pilar cahaya) ──
+        # Pilar 4-lapis setinggi 150 px dari (x, gy) ke (x, top) DIBUANG:
+        # kolom itu menutupi badan Vex selama Essence Flux di-cast.
         if progress < .20:
             t = progress / .20
-            height = int(min(150 * fs, 240) * (1.0 - .35 * t))
-            top = max(2, y - height)
-            for wd, col, al in ((36, p["void_darkest"], 100),
-                                (24, p["void_dark"], 145),
-                                (12, p["void_mid"], 205),
-                                (5, p["void_hot"], 245)):
-                _NS_vex._aaline(surface, (*col, int(al * (1 - t))),
-                                (x, top), (x, gy),
-                                max(1, int(wd * fs * .42)))
             for k, mul in enumerate((1.0, .58, .30)):
                 rr = int((18 + rng * mul * t))
                 _skill_outlined_circle(
@@ -16554,25 +16530,18 @@ class _NS_zephyr:
                                   int(y+31 + math.sin(a_)*radius*.30)), 1)
 
     def _draw_shadow_realm(surface, boss, x, y, timer, phase):
-        """W foreground: glass dome + pilar cahaya 3-lapis + rune ring ganda."""
+        """W foreground: glass dome + rune ring ganda (tanpa pilar)."""
         p = _NS_zephyr.PALETTE
-        fs = _NS_zephyr._fx_scale(boss)
         dur = _NS_zephyr.SKILL_VISUAL_DURATION["w"]
         progress = max(0.0, min(1.0, 1 - timer / dur))
         envelope = min(1.0, progress*5.0, (1.0-progress)*5.0)
         rng = _NS_zephyr._ring_r(boss, 100, surface)
 
-        # ACTIVATION pillar of light (first 20%)
+        # ACTIVATION: bintang saja — pilar cahaya DIBUANG.
+        # Kolom 3-lapis setinggi 120 px di (x, y) menutupi badan Zephyr
+        # selama W di-cast.
         if progress < .20:
             t = progress / .20
-            pil_h = min(int(120 * t * fs), rng)
-            for layer, (col_, pal_) in enumerate(
-                    ((p["magic_dark"], 80), (p["magic_mid"], 130),
-                     (p["magic_bright"], 200))):
-                lw = max(1, (6-layer*2))
-                _NS_zephyr._aaline(surface,
-                                   (*col_, int(pal_*(1-t))),
-                                   (x, y), (x, y-pil_h), lw)
             _NS_zephyr._spark_star(surface, x, y, int(26*t),
                                    p["magic_bright"], int(240*t),
                                    spikes=8, rot=phase, core=p["magic_white"])
@@ -16711,16 +16680,11 @@ class _NS_zephyr:
                                      (*p["magic_mid"], 190-i*38),
                                      2 if i==0 else 1)
 
-        # ACTIVATION: pillar burst
+        # ACTIVATION: bintang saja — pilar cahaya DIBUANG.
+        # Kolom 4-lapis setinggi 100 px di (x, y) menutupi badan Zephyr
+        # selama Bedlam di-cast.
         if progress < .12:
             t = progress / .12
-            for layer, (col_, pal_) in enumerate(
-                    ((p["magic_dark"], 90), (p["magic_mid"], 140),
-                     (p["magic_bright"], 210), (p["magic_hot"], 250))):
-                lw = max(1, 8-layer*2)
-                pil = min(int(100*t*fs), rng)
-                _NS_zephyr._aaline(surface, (*col_, int(pal_*(1-t))),
-                                   (x, y), (x, y-pil), lw)
             _NS_zephyr._spark_star(surface, x, y, int(34*t),
                                    p["magic_bright"], int(255*t),
                                    spikes=8, rot=phase, core=p["magic_white"])
@@ -16814,16 +16778,10 @@ class _NS_zephyr:
                                 int(130*envelope), -phase*0.7,
                                 segments=9, thick=2)
 
-        # Pilar cahaya (ACTIVE phase) — 4 layers, clamped height
+        # Pilar cahaya (ACTIVE phase) DIBUANG — kolom 4-lapis setinggi
+        # 90 px di (x, y) menutupi badan Zephyr selama Shadow Realm
+        # aktif. Inti denyut di kaki tetap hidup.
         if envelope > .05:
-            pil = min(int(90*envelope*fs), rng-4)
-            for layer, (col_, pal_) in enumerate(
-                    ((p["magic_dark"], 80), (p["magic_mid"], 120),
-                     (p["magic_bright"], 180), (p["magic_hot"], 230))):
-                lw = max(1, 7-layer*2)
-                _NS_zephyr._aaline(surface,
-                                   (*col_, int(pal_*envelope)),
-                                   (x, y), (x, y-pil), lw)
             # Pulsing core
             _NS_zephyr._aacircle(surface,
                                  (*p["magic_white"], int(200*envelope)),

@@ -1786,20 +1786,21 @@ class SkillFX:
                                          int(min(255, 200 * k))),
                                (x, y), max(1, int(6 * k)))
 
-    # -- R  Firestorm: 8 pilar api mengorbit + erupsi + wisp spiral ───
+    # -- R  Firestorm: 8 pilar api mengorbit + wisp spiral ────────────
     def _draw_r(self, surface, x, y, a):
         R = self.radius * self.scale
         pulse = 0.6 + 0.4 * math.sin(a * 7.0)
         if self.phase == "charge":
-            k = a / max(0.001, self.t_charge)
-            # pilar awal di pusat (diri Razak)
-            self._pillar(surface, x, y - int(10 * k),
-                         int(30 + 70 * k), max(3, int(18 * k)), k)
-        elif self.phase in ("release", "area", "impact", "fade"):
+            # Pilar cahaya di pusat (diri Razak) DIBUANG: kolom 30-100 px
+            # tepat di sumbu badan menutupi karakter saat R di-cast.
+            return
+        if self.phase in ("release", "area", "impact", "fade"):
             fade = max(0.0, 1.0 - (a - self.t_release) /
                        max(0.001, self.total - self.t_release))
             ring_r = R * 0.62
-            # 8 pilar mengorbit di 0.62·R (sama dengan renderer v2)
+            # 8 pilar mengorbit di 0.62·R (sama dengan renderer v2).
+            # Dipertahankan: posisinya di radius telegraph, BUKAN di atas
+            # badan, jadi tidak menutupi karakter.
             for i in range(8):
                 ang = a * 0.8 + i * math.tau / 8
                 px = x + math.cos(ang) * ring_r
@@ -1807,10 +1808,9 @@ class SkillFX:
                 h = int((36 + 22 * pulse) * (0.7 + 0.3 * fade))
                 self._pillar(surface, int(px), int(py), h,
                              max(3, int(10 + 4 * pulse)), fade)
-            # erupsi pusat
-            h_c = int((60 + 30 * pulse) * fade)
-            self._pillar(surface, x, y - 6, h_c,
-                         max(4, int(26 + 8 * pulse)), fade)
+            # Erupsi pusat DIBUANG (alasan sama dengan pilar charge):
+            # kolom 60-90 px di (x, y-6) menelan badan Razak. Glow +
+            # wisp spiral di bawah tetap hidup sebagai penanda erupsi.
             if glow_allowed():
                 g = glow_surface(int(18 * fade + 8), P["fire_hot"],
                                  0.55 * fade)

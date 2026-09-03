@@ -405,17 +405,24 @@ def test_integration_wiring():
     import heroes as H
     assert "alchemist" in H._LIVE_FX_HEROES
     assert H._LIVE_FX_PATHS.get("alchemist") == "heroes.alchemist_fx"
+    # KONTRAK BARU: serangan dasar TIDAK boleh memicu impact FX.
+    # Hook melee/proyektil di bosses/base_boss.py & _entity.py sudah
+    # dibuang; impact FX eksklusif milik skill. API modulnya tetap ada
+    # (dipakai tooling & test unit), hanya call site-nya yang hilang.
     src_bb = open(os.path.join(ROOT, "bosses/base_boss.py")).read()
-    assert "alchemist_fx" in src_bb and \
-        "notify_melee_impact" in src_bb
+    assert "_afx.notify_melee_impact" not in src_bb, \
+        "serangan dasar boss masih memicu impact FX alchemist"
     src_ent = open(os.path.join(ROOT, "_entity.py")).read()
-    assert "alchemist_fx" in src_ent and \
-        "notify_melee_impact" in src_ent
+    assert "_afx.notify_melee_impact" not in src_ent, \
+        "serangan dasar hero masih memicu impact FX alchemist"
+    assert hasattr(A, "notify_melee_impact") and \
+        hasattr(A, "notify_projectile_impact"), \
+        "API impact FX modul hilang (masih dipakai skill/tooling)"
     # renderer memakai lapisan hidup + punya fallback canvas
     src_ns = inspect.getsource(NS.draw_alchemist)
     assert "_live_fx" in src_ns and "_draw_shockwave" in src_ns
     assert callable(getattr(NS, "live_fx_ready", None))
-    print("PASS integrasi (live FX heroes + hook melee boss & hero)")
+    print("PASS integrasi (live FX heroes; serangan dasar tanpa impact FX)")
 
 
 # ── 12. budget render ───────────────────────────────────────────

@@ -6035,15 +6035,10 @@ class _NS_morgath:
         fs = _NS_morgath._fx_scale(boss)
 
         if progress < 0.45:
-            # ── AKTIVASI: pilar cahaya 4 lapis + shockwave ganda ──
+            # ── AKTIVASI: shockwave ganda + bintang (TANPA pilar) ──
+            # Pilar cahaya 4-lapis setinggi 120 px di (x, y-10) DIBUANG:
+            # kolom itu menutupi badan Morgath selama Tempest di-cast.
             t = min(1.0, progress / 0.3)
-            top = int(y - min(120 * fs, 250) * (0.55 + 0.45 * (1 - t)))
-            for wd, col, al in ((34, P["arc_darkest"], 120),
-                                (22, P["flux_mid"], 150),
-                                (12, P["arc_mid"], 190),
-                                (4, P["white"], 220)):
-                _NS_morgath._aaline(surface, (*col, int(al * (1 - t))),
-                                    (x, top), (x, y - 10), wd)
             _NS_morgath._spark_star(surface, x, y - 10,
                                     int(34 * (1 - t * 0.4)), P["arc_shine"],
                                     int(235 * (1 - t)), spikes=8, rot=0.3,
