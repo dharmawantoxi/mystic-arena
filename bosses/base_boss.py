@@ -171,7 +171,7 @@ BOSS_LABEL_TOP = {
     "vorthakul": 58,
     "varkuthar": 58,
     "vessyra": 58,
-    "vhalzun": 59,
+    "vhalzun": 77,   # rig rewrite v2: puncak hood ~-71 px (diukur) + aman
     "ursath": 58,
     "verdanix": 58,
     "valekris": 58,
@@ -777,6 +777,26 @@ class Boss(TowerDebuffMixin):
                                     self, self.target, self.damage, False)
                             else:
                                 _krbfx.notify_projectile_impact(
+                                    self, self.target.x, self.target.y,
+                                    0.0, self.damage, False, 'soul')
+                        except Exception:
+                            pass
+                    # ═══ IMPACT FX VHALZUN ═══
+                    # The Reaper of Souls juga bertarung dua wujud: tebas
+                    # sabit nekrotik (jarak <= MELEE_REACH dunia 96 px)
+                    # atau death pulse (jarak lebih jauh). Keduanya memicu
+                    # flash jiwa, serpihan tulang, shockwave bergerigi,
+                    # shake, dan hit-stop 0.03-0.08 s (lengkapnya di
+                    # heroes/vhalzun_fx). Difilter per boss_type +
+                    # try/except (paritas Krobellus).
+                    if getattr(self, 'boss_type', None) == 'vhalzun':
+                        try:
+                            from heroes import vhalzun_fx as _vhzfx
+                            if dist <= _vhzfx.MELEE_REACH:
+                                _vhzfx.notify_melee_impact(
+                                    self, self.target, self.damage, False)
+                            else:
+                                _vhzfx.notify_projectile_impact(
                                     self, self.target.x, self.target.y,
                                     0.0, self.damage, False, 'soul')
                         except Exception:
@@ -4246,6 +4266,12 @@ class Boss(TowerDebuffMixin):
             if self.active_skill_timer <= 0:
                 self.active_skill = None
 
+        # Satu cast pada satu waktu: kalau animasi skill masih berjalan,
+        # jangan mulai cast lain (dulu Q menimpa E hanya 1 frame setelah
+        # E dilepas, memotong animasi Reaper's Scythe jadi 1 frame).
+        if self.active_skill:
+            return
+
         stats = self._get_boss_stats()
         nearby = sum(
             1 for e in enemies
@@ -4258,6 +4284,12 @@ class Boss(TowerDebuffMixin):
             self.active_skill = "r"
             self.active_skill_timer = 100
             self.hp = min(self.max_hp, self.hp + int(self.max_hp * 0.18))
+            # ═══ SKILL FX VHALZUN (Ghost Shroud: wraith + cangkang) ═══
+            try:
+                from heroes import vhalzun_fx as _vhzfx
+                _vhzfx.notify_skill_cast(self, 'r')
+            except Exception:
+                pass
             return
 
         # W - Heartstopper Aura saat banyak target
@@ -4265,16 +4297,34 @@ class Boss(TowerDebuffMixin):
             self.w_timer = stats.get("skill_w_cooldown", 300)
             self.active_skill = "w"
             self.active_skill_timer = 80
+            # ═══ SKILL FX VHALZUN (Heartstopper: sigil + leech) ═══
+            try:
+                from heroes import vhalzun_fx as _vhzfx
+                _vhzfx.notify_skill_cast(self, 'w')
+                _vhzfx.notify_skill_impact(self, self.x, self.y, 150, 'w')
+            except Exception:
+                pass
             for e in enemies:
                 if math.hypot(e.x - self.x, e.y - self.y) <= 150:
                     e.take_damage(stats.get("skill_w_damage", 170), self.team)
             return
 
-        # E - Reaper's Scythe pada target jauh
-        if self.target and target_dist > 150 and self.e_timer == 0:
+        # E - Reaper's Scythe pada target di luar jangkauan tebas sabit.
+        # BUGFIX rewrite v2: kondisi lama `target_dist > 150` tidak pernah
+        # tercapai karena smart AI ini hanya berjalan saat target SUDAH
+        # masuk range serang (dist <= range = 150). Ambang digeser ke
+        # jangkauan sabit (96 px, sama dengan vhalzun_fx.MELEE_REACH)
+        # sehingga skill E hidup kembali tanpa mengubah jangkauan AI.
+        if self.target and target_dist > 96 and self.e_timer == 0:
             self.e_timer = stats.get("skill_e_cooldown", 320)
             self.active_skill = "e"
             self.active_skill_timer = 60
+            # ═══ SKILL FX VHALZUN (Reaper's Scythe: gelombang sabit) ═══
+            try:
+                from heroes import vhalzun_fx as _vhzfx
+                _vhzfx.notify_skill_cast(self, 'e')
+            except Exception:
+                pass
             self.target.take_damage(stats.get("skill_e_damage", 280), self.team)
             return
 
@@ -4283,6 +4333,14 @@ class Boss(TowerDebuffMixin):
             self.q_timer = stats.get("skill_q_cooldown", 220)
             self.active_skill = "q"
             self.active_skill_timer = 60
+            # ═══ SKILL FX VHALZUN (Death Pulse: nova jiwa) ═══
+            try:
+                from heroes import vhalzun_fx as _vhzfx
+                _vhzfx.notify_skill_cast(self, 'q')
+                _vhzfx.notify_skill_impact(
+                    self, self.x, self.y, 130, 'q')
+            except Exception:
+                pass
             for e in enemies:
                 if math.hypot(e.x - self.x, e.y - self.y) <= 130:
                     e.take_damage(stats.get("skill_q_damage", 230), self.team)
@@ -5739,6 +5797,18 @@ class Boss(TowerDebuffMixin):
                     game.effects.shake_screen(shake)
             except Exception:
                 pass
+
+            # ═══ DEATH FX VHALZUN ═══
+            # Jiwa Reaper meledak keluar + wraith naik: hit-stop 0.08 s,
+            # shake, dan ledakan partikel jiwa (lengkapnya di
+            # heroes/vhalzun_fx.notify_death). Difilter per boss_type +
+            # try/except (paritas hook benturan).
+            if getattr(self, 'boss_type', None) == 'vhalzun':
+                try:
+                    from heroes import vhalzun_fx as _vhzfx
+                    _vhzfx.notify_death(self)
+                except Exception:
+                    pass
 
     # CATATAN: dulu ada override `apply_slow = pass` (boss kebal slow).
     # Sudah DIHAPUS - sesuai desain terbaru, debuff menara berlaku untuk
