@@ -8915,7 +8915,8 @@ class DevMode:
                          "kaizen_fx", "vex_fx", "sylara_fx",
                          "abaddon_fx", "gorath_fx", "razak_fx",
                          "alchemist_fx", "ancient_apparition_fx",
-                         "nyzrak_fx", "xerathis_fx", "varkul_fx"):
+                         "nyzrak_fx", "xerathis_fx", "varkul_fx",
+                         "krobellus_fx"):
                 try:
                     _m = __import__("heroes." + _mod, fromlist=["x"])
                     _hp += int(_m.total_particles())

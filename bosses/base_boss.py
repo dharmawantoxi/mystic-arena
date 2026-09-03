@@ -81,7 +81,7 @@ BOSS_LABEL_TOP = {
     "kenshiro": 53,
     "khalros": 57,
     "khazan": 34,
-    "krobellus": 68,
+    "krobellus": 62,   # rig The Death Prophet: puncak rig 56 px (diukur), + aman
     "krognarr": 59,
     "korokai": 55,
     "kunkka": 47,
@@ -762,6 +762,25 @@ class Boss(TowerDebuffMixin):
                                 self, self.target, self.damage, False)
                         except Exception:
                             pass
+                    # ═══ IMPACT FX KROBELLS ═══
+                    # The Death Prophet menyerang dalam dua wujud: sapuan
+                    # sabit spectral (jarak <= MELEE_REACH dunia 110 px)
+                    # atau soul bolt (jarak lebih jauh). Keduanya memicu
+                    # flash jiwa, serpihan, shockwave, shake, dan hit-stop
+                    # 0.03-0.08 s (lengkapnya di heroes/krobellus_fx).
+                    # Difilter per boss_type + try/except (paritas Zharok).
+                    if getattr(self, 'boss_type', None) == 'krobellus':
+                        try:
+                            from heroes import krobellus_fx as _krbfx
+                            if dist <= _krbfx.MELEE_REACH:
+                                _krbfx.notify_melee_impact(
+                                    self, self.target, self.damage, False)
+                            else:
+                                _krbfx.notify_projectile_impact(
+                                    self, self.target.x, self.target.y,
+                                    0.0, self.damage, False, 'soul')
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -1016,6 +1035,21 @@ class Boss(TowerDebuffMixin):
                 __main__.game_instance.effects.shake_screen(shake)
         except Exception:
             pass
+
+        # ═══ SKILL FX KROBELLS (ability generik -> visual Exorcism) ═══
+        # Boss Krobellus tidak punya smart AI khusus; ability generiknya
+        # dipetakan ke skill 'q' (Exorcism) supaya lapisan FX hidup dan
+        # pose skill di renderer ikut jalan. Difilter per boss_type +
+        # try/except.
+        if getattr(self, 'boss_type', None) == 'krobellus':
+            try:
+                from heroes import krobellus_fx as _krbfx
+                _krbfx.notify_skill_cast(self, 'q')
+                _krbfx.notify_skill_impact(
+                    self, self.x, self.y,
+                    getattr(self, 'ability_range', 120), 'q')
+            except Exception:
+                pass
 
     def _smart_ai_abaddon(self, enemies, target_dist):
         """Smart AI: pilih skill Q/W/E/R berdasarkan situasi"""

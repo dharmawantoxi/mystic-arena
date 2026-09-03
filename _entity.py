@@ -3951,6 +3951,27 @@ class Hero(TowerDebuffMixin):
                     except Exception:
                         pass
 
+                # ═══ IMPACT FX KROBELLS (soul bolt, jalur hero) ═══
+                # Serangan dasar hero Krobellus (range 120) mendarat
+                # lewat proyektil generik ini: impact flash jiwa,
+                # serpihan, shockwave, shake, dan hit-stop 0.03-0.08 s
+                # (lengkapnya di heroes/krobellus_fx.notify_projectile_impact;
+                # modul sendiri menunda/diurutkan impact agar sinkron
+                # dengan frame benturan bilah saat mode swing). Difilter
+                # per hero_type + try/except (paritas Vex/Ancient
+                # Apparition).
+                if proj.get('hero_type') == 'krobellus' and not target_dead:
+                    try:
+                        from heroes import krobellus_fx as _krbfx
+                        _krbfx.notify_projectile_impact(
+                            proj.get('source') or self,
+                            proj['x'], proj['y'],
+                            proj.get('angle', 0.0),
+                            proj.get('damage', 0),
+                            bool(proj.get('is_crit')), 'soul')
+                    except Exception:
+                        pass
+
                 # HIT! (hanya damage > 0 yang mengenai target & bersuara;
                 # projectile visual-only skill damage=0 diam saja)
                 if not target_dead and proj['damage'] > 0:

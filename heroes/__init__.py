@@ -625,6 +625,13 @@ _BEAM_PASS_HEROES = {"morgath"}
 # partikel void, proyektil serpihan, spike crystal W, kurungan astral E,
 # ledakan Essence Flux R, impact, hit-stop, dan shake — semuanya hidup
 # di luar cache sprite supaya tetap mulus 60 fps.
+# Krobellus (heroes/krobellus_fx.py) — The Death Prophet: ribbon trail
+# sabit spectral dari histori posisi bilah, soul bolt modular (inti +
+# glow + bentuk directional + trail + jiwa), partikel jiwa/serpihan,
+# skill FX Q Exorcism (blade-burst) / W Silence (bolt void + hex) /
+# E Spirit Siphon (arus jiwa + vortex) / R Crypt Swarm (erupsi + ghost
+# wave), impact flash + shockwave, hit-stop 0.03-0.08 s, dan shake —
+# semua hidup di luar cache sprite.
 # ═══════════════════════════════════════════════════════
 # Sylara (heroes/sylara_fx.py) melengkapi daftar ini: pita sapuan busur
 # arc-based, panah angin prosedural dengan lifecycle penuh, daun/gust
@@ -660,7 +667,7 @@ _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
                    "alchemist", "ancient_apparition", "nyzrak",
                    "xerathis", "varkul", "ignis_drachorn", "zharok",
-                   "vokrahn", "pyrenth"}
+                   "vokrahn", "pyrenth", "krobellus"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -682,6 +689,7 @@ _LIVE_FX_PATHS = {
     "zharok": "heroes.zharok_fx",
     "vokrahn": "heroes.vokrahn_fx",
     "pyrenth": "heroes.pyrenth_fx",
+    "krobellus": "heroes.krobellus_fx",
 }
 
 

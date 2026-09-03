@@ -1534,6 +1534,13 @@ class _NS_boss_hero_skills:
             for e in enemies:
                 if math.hypot(e.x-h.x, e.y-h.y) <= 150:
                     e.take_damage(int(h.skill_damage * 1.5), h.team)
+            # ═══ SKILL FX KROBELLS (Exorcism: blade-burst + impact) ═══
+            try:
+                from heroes import krobellus_fx
+                krobellus_fx.notify_skill_cast(h, 'q')
+                krobellus_fx.notify_skill_impact(h, h.x, h.y, 150, 'q')
+            except Exception:
+                pass
 
         def _cast_w_krobellus_silence(self, h, enemies):
             h.active_skill = 'w'; h.active_skill_timer = 60
@@ -1542,6 +1549,13 @@ class _NS_boss_hero_skills:
                     e.take_damage(int(h.skill_damage * 1.0), h.team)
                     if hasattr(e, 'attack_timer'):
                         e.attack_timer = max(e.attack_timer, 75)
+            # ═══ SKILL FX KROBELLS (Silence: bolt void + hex) ═══
+            try:
+                from heroes import krobellus_fx
+                krobellus_fx.notify_skill_cast(h, 'w')
+                krobellus_fx.notify_skill_impact(h, h.x, h.y, 120, 'w')
+            except Exception:
+                pass
 
         def _cast_e_krobellus_siphon(self, h):
             h.active_skill = 'e'; h.active_skill_timer = 50
@@ -1549,6 +1563,14 @@ class _NS_boss_hero_skills:
                 h.target.take_damage(int(h.skill_damage * 1.3), h.team)
                 heal = int(h.skill_damage * 0.5)
                 h.hp = min(h.max_hp, h.hp + heal)
+                # ═══ SKILL FX KROBELLS (Siphon: arus jiwa + vortex) ═══
+                try:
+                    from heroes import krobellus_fx
+                    krobellus_fx.notify_skill_cast(h, 'e')
+                    krobellus_fx.notify_skill_impact(
+                        h, h.target.x, h.target.y, 44, 'e')
+                except Exception:
+                    pass
 
         def _cast_r_krobellus_crypt(self, h, enemies):
             h.active_skill = 'r'; h.active_skill_timer = 90
@@ -1556,6 +1578,13 @@ class _NS_boss_hero_skills:
                 if math.hypot(e.x-h.x, e.y-h.y) <= 200:
                     e.take_damage(int(h.skill_damage * 2.5), h.team)
             heal = int(h.max_hp * 0.15); h.hp = min(h.max_hp, h.hp + heal)
+            # ═══ SKILL FX KROBELLS (Crypt: erupsi + ghost wave) ═══
+            try:
+                from heroes import krobellus_fx
+                krobellus_fx.notify_skill_cast(h, 'r')
+                krobellus_fx.notify_skill_impact(h, h.x, h.y, 200, 'r')
+            except Exception:
+                pass
 
         # ═══════════════════════════════════════
         # KUNKKA skills (Level 6 True Boss)
