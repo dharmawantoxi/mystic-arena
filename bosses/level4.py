@@ -33,16 +33,29 @@ _IS_LEVEL_BUNDLE = True
 # ZHAROK
 # ====================================================================
 class _NS_zharok:
-    """Namespace zharok - PIXEL MASTERWORK v2 + SKILL FX v2.1.
+    """Namespace zharok - PIXEL MASTERWORK v2 + COMBAT FX v3.
 
-    Rewrite penuh renderer `_NS_zharok` mengikuti standar
-    **Thorne v2 Pixel Masterwork + Thorne v2.1 Skill FX**
-    (lihat docs/THORNE_V2_RENDERER.md). Tetap 100% prosedural:
-    tidak ada PNG / sprite-sheet / image.load.
+    Renderer `_NS_zharok` mengikuti standar **Thorne v2 Pixel Masterwork**
+    untuk rig/palet/pose, lalu diangkat ke standar **v3 Combat FX**
+    (lihat docs/ZHAROK_V3_COMBAT_FX.md) dengan:
+
+      * controller animasi ber-delta-time + state/prioritas + fase serangan
+      * ARK ayunan stave busur (`BOW_ARC`) sebagai SATU sumber geometri
+        senjata yang dipakai renderer DAN lapisan hidup
+      * gerbang lapisan hidup `heroes/zharok_fx` (trail, partikel,
+        proyektil, skill FX, impact, hit-stop, screen shake)
+      * overlay DEBUG_CHARACTER
+
+    Tetap 100% prosedural: tidak ada PNG / sprite-sheet / image.load.
+    Seluruh FX canvas v2 dipertahankan sebagai FALLBACK saat modul
+    lapisan hidup tidak tersedia.
     """
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
+
+    #: Overlay debug renderer (hitbox/hurtbox/state/timer).
+    DEBUG_CHARACTER = False
 
     # ── cache (nama lama dipertahankan) ─────────────────────────────
     _shadow_cache = None
@@ -50,6 +63,13 @@ class _NS_zharok:
     _flash_buf = None
     _body_buf = None
     _record_shadow = None
+
+    #: Rig terakhir yang dikomposit (dipakai afterimage lapisan hidup).
+    _last_rig = None
+    _last_rig_off = (0, 0)
+
+    #: Modul lapisan hidup: None = belum dicari, False = tidak ada.
+    _LIVE_MOD = None
 
     _STATIC_SURFACES = {}
 
@@ -64,6 +84,64 @@ class _NS_zharok:
 
     SKILL_DUR = {"q": 50, "w": 40, "e": 60, "r": 80}
     SKILL_RADIUS = {"q": 250, "w": 200, "e": 150, "r": 220}
+
+    #: Fase serangan (fraksi 0..1 durasi serangan). Nama fase dipakai
+    #: renderer, lapisan hidup, dan overlay debug — satu kosakata.
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.12),
+        ("WINDUP",       0.12, 0.30),
+        ("SWING",        0.30, 0.50),
+        ("IMPACT",       0.50, 0.62),
+        ("FOLLOW",       0.62, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+
+    #: Jendela hit aktif + frame impact. 0.52 dipertahankan dari timeline
+    #: archery v2 (`_attack_pose` memuncak tepat di sana).
+    ATTACK_ACTIVE_WINDOW = (0.38, 0.62)
+    ATTACK_IMPACT_FRAME = 0.52
+
+    #: Prioritas state animasi. Angka besar menang; DEATH mengunci.
+    ANIM_STATES = {
+        "IDLE": 0,
+        "WALK": 10,
+        "RUN": 15,
+        "CHARGE": 30,
+        "CAST": 35,
+        "ATTACK": 40,
+        "SWING": 45,
+        "SKILL": 50,
+        "SPECIAL": 55,
+        "HIT": 60,
+        "HURT": 65,
+        "DEATH": 100,
+    }
+
+    #: ARK AYUNAN STAVE BUSUR — (t0, t1, theta0, theta1, ease).
+    #: theta = sudut stave dari sumbu ATAS (rad); positif berputar ke arah
+    #: depan (facing). Busur TIDAK PERNAH melompat: nilai akhir tiap
+    #: segmen SAMA dengan nilai awal segmen berikutnya, dan theta(0) ==
+    #: theta(1) supaya loop-nya mulus.
+    BOW_ARC = (
+        (0.00, 0.12,  2.30,  1.92, "out"),   # ANTICIPATION: tarik ke belakang
+        (0.12, 0.30,  1.92, -1.16, "io"),    # WIND-UP: angkat tinggi
+        (0.30, 0.50, -1.16,  1.74, "oc"),    # SWING: sapuan cepat ke depan
+        (0.50, 0.62,  1.74,  2.06, "hold"),  # IMPACT: overshoot + tahan bobot
+        (0.62, 0.82,  2.06,  2.64, "io"),    # FOLLOW THROUGH: stave turun
+        (0.82, 1.00,  2.64,  2.30, "io"),    # RECOVERY: kembali ke garda
+    )
+
+    #: Setengah panjang stave & offset grip dalam koordinat RIG (px rig,
+    #: sebelum dikalikan SCALE). Angka ini mengikuti `_draw_flaming_bow`
+    #: (limb membentang hy-28 .. hy+28) dan `_draw_bow_attack_arms`
+    #: (grip di cx + 24*f, cy) supaya geometri = gambar.
+    STAVE_HALF = 28.0
+    GRIP_RIG = (24.0, -12.0)
+
+    #: Jarak (px dunia) di mana Zharok beralih dari melepas anak panah ke
+    #: MENYABET dengan stave busur yang menyala. Di bawah nilai ini,
+    #: menarik busur tidak masuk akal — jadi dia meng-cleave.
+    MELEE_REACH = 74.0
 
     # ---------------------------------------------------------------------------
     # HD Emberborn Palette v2 - Bone Ivory / Hellfire / Obsidian Cloth / Gold
@@ -399,41 +477,168 @@ class _NS_zharok:
     _DECAL_CACHE = {}
     _DECAL_ORDER = []
 
+
+
     @staticmethod
     def _decal(key, size, builder):
-        hit = _NS_zharok._DECAL_CACHE.get(key)
+        NS = _NS_zharok
+        hit = NS._DECAL_CACHE.get(key)
         if hit is not None:
             return hit
         surf = builder(size)
-        _NS_zharok._DECAL_CACHE[key] = surf
-        _NS_zharok._DECAL_ORDER.append(key)
-        if len(_NS_zharok._DECAL_ORDER) > 128:
-            old = _NS_zharok._DECAL_ORDER.pop(0)
-            _NS_zharok._DECAL_CACHE.pop(old, None)
+        NS._DECAL_CACHE[key] = surf
+        NS._DECAL_ORDER.append(key)
+        # Versi PREMULTIPLIED dibuat sekali di sini, berbarengan dengan
+        # decal-nya, lalu hidup & mati bersama entri cache yang sama.
+        # Itu sebabnya radius yang berdenyut (tiap frame kunci baru)
+        # tidak pernah memicu premultiply berulang di jalur gambar.
+        NS._PREMUL[id(surf)] = surf.premul_alpha()
+        if len(NS._DECAL_ORDER) > 128:
+            old = NS._DECAL_ORDER.pop(0)
+            dead = NS._DECAL_CACHE.pop(old, None)
+            if dead is not None:
+                NS._PREMUL.pop(id(dead), None)
         return surf
 
+    #: Decal versi PREMULTIPLIED untuk surface yang TIDAK dibangun lewat
+    #: builder ber-`pm` (mis. hasil transform ad-hoc). Kunci id(decal).
+    _PREMUL = {}
+    #: Varian redup decal KECIL: (id(decal), level) -> (decal, surface).
+    _FADE_VARIANT = {}
+    _FADE_ORDER = []
+    _ADD_LEVELS = 6
+    #: Decal yang lebih besar dari ini tidak menyimpan varian redup —
+    #: telegraph AoE raksasa memang harus terbaca penuh, dan menyimpan
+    #: enam salinan 700x700 per decal akan memakan puluhan MB percuma.
+    _ADD_FADE_MAX_PX = 40_000
+    _FADE_CAP = 64
+
     @staticmethod
-    def _blit_decal(surface, decal, cx, cy, alpha=255, add=False):
+    def _pmc(col, a, pm, k=255):
+        """Warna RGBA untuk builder decal.
+
+        Dua hal dipanggang sekaligus di sini, dan keduanya gratis karena
+        fungsi draw pygame MENIMPA piksel (bukan mem-blend):
+
+        * ``pm`` -> RGB dikali alpha (premultiplied). Hasilnya identik
+          dengan ``premul_alpha()`` tapi tanpa lintasan tambahan pada
+          jalur cache-miss -- jalur yang justru diukur audit v2.
+        * ``k``  -> peredupan decal. Blit ber-``special_flags``
+          mengabaikan ``set_alpha()``, jadi meredupkan decal additif
+          selalu butuh salinan yang dikali. Dipanggang di sini,
+          peredupan itu tidak berbiaya sama sekali.
+        """
+        if k < 255:
+            a = a * k / 255.0
+        a = 0 if a < 0 else (255 if a > 255 else int(a))
+        if not pm:
+            return (col[0], col[1], col[2], a)
+        return (col[0] * a // 255, col[1] * a // 255, col[2] * a // 255, a)
+
+    @staticmethod
+    def _fade_level(alpha, levels=8):
+        """Peredupan dibulatkan ke kelipatan tetap supaya kunci cache
+        decal berulang, bukan lahir baru tiap frame."""
         alpha = _NS_zharok._alpha(alpha)
-        if alpha <= 0:
+        lv = int(alpha * levels / 255.0 + 0.5)
+        lv = max(0, min(levels, lv))
+        return lv * 255 // levels
+
+    @staticmethod
+    def _add_variant(decal, alpha, premul):
+        """Surface siap dipakai ``BLEND_RGBA_ADD``.
+
+        Blend additif menambahkan kanal warna **tanpa melihat alpha**,
+        jadi decal bergradien yang langsung ditambahkan muncul sebagai
+        cakram warna penuh bertepi keras. Sumbernya harus premultiplied.
+        Decal dari builder internal sudah lahir premultiplied (`_pmc`);
+        surface luar dipremultiply sekali lalu di-cache.
+        """
+        NS = _NS_zharok
+        if premul:
+            pm = decal
+        else:
+            pm = NS._PREMUL.get(id(decal))
+            if pm is None or pm.get_size() != decal.get_size():
+                pm = decal.premul_alpha()
+                # Surface tanpa pemilik yang meng-evict-nya dibatasi keras
+                # supaya cache tidak bocor.
+                if len(NS._PREMUL) > 192:
+                    NS._PREMUL.clear()
+                NS._PREMUL[id(decal)] = pm
+
+        w, h = pm.get_size()
+        if alpha >= 250 or w * h > NS._ADD_FADE_MAX_PX:
+            return pm
+        lv = int(alpha * NS._ADD_LEVELS / 255.0 + 0.5)
+        lv = max(1, min(NS._ADD_LEVELS, lv))
+        if lv >= NS._ADD_LEVELS:
+            return pm
+        ck = (id(pm), lv)
+        got = NS._FADE_VARIANT.get(ck)
+        if got is not None and got[0] is pm:
+            return got[1]
+        k = int(255 * lv / NS._ADD_LEVELS)
+        var = pm.copy()
+        var.fill((k, k, k, k), special_flags=pygame.BLEND_RGBA_MULT)
+        NS._FADE_VARIANT[ck] = (pm, var)
+        NS._FADE_ORDER.append(ck)
+        while len(NS._FADE_ORDER) > NS._FADE_CAP:
+            NS._FADE_VARIANT.pop(NS._FADE_ORDER.pop(0), None)
+        return var
+
+    @staticmethod
+    def _blit_decal(surface, decal, cx, cy, alpha=255, add=False,
+                    premul=False):
+        """Blit decal; mode ``add`` MENGHORMATI alpha per-piksel.
+
+        Dua jebakan yang diperbaiki di sini (v2 kena keduanya, dan itulah
+        kenapa aura Zharok muncul sebagai cakram oranye pekat bertepi
+        keras yang menelan siluetnya):
+
+        1. ``BLEND_RGB_ADD`` / ``BLEND_RGBA_ADD`` menambahkan kanal warna
+           **tanpa melihat alpha**. Decal bergradien yang sudah rapi
+           (`_build_radial_glow` menurunkan alpha ke 0 di tepi) tetap
+           menambahkan warna PENUH sampai ke tepi -> cakram datar bertepi
+           keras. Perbaikannya premultiply (RGB dikali alpha) SEBELUM
+           ditambahkan. Builder internal sudah memanggangnya lewat
+           `_pmc` (ditandai ``premul=True``); surface lain diurus
+           `_add_variant`.
+        2. ``Surface.set_alpha()`` **diabaikan** oleh blit ber-
+           ``special_flags``, jadi peredupan v2 pada mode add tidak
+           pernah benar-benar terjadi. Sekarang peredupan dipanggang ke
+           dalam varian yang di-cache.
+
+        Mode normal (``add=False``) memakai ``BLEND_RGBA_MULT`` pada
+        salinan, karena di sana pun ``set_alpha`` tidak bisa diandalkan
+        untuk surface ber-alpha per-piksel.
+        """
+        NS = _NS_zharok
+        alpha = NS._alpha(alpha)
+        if alpha <= 0 or decal is None:
             return
         w, h = decal.get_size()
         x0 = int(cx) - w // 2
         y0 = int(cy) - h // 2
-        flags = pygame.BLEND_RGBA_ADD if add else 0
-        if alpha < 255:
-            decal.set_alpha(alpha)
-            surface.blit(decal, (x0, y0), special_flags=flags)
-            decal.set_alpha(255)
-        else:
-            surface.blit(decal, (x0, y0), special_flags=flags)
+
+        if not add:
+            if alpha < 255:
+                decal = decal.copy()
+                decal.fill((255, 255, 255, alpha),
+                           special_flags=pygame.BLEND_RGBA_MULT)
+            surface.blit(decal, (x0, y0))
+            return
+
+        surface.blit(NS._add_variant(decal, alpha, premul), (x0, y0),
+                     special_flags=pygame.BLEND_RGBA_ADD)
 
     @staticmethod
     def _quantize(v, step=6):
         return max(step, int(round(float(v) / step) * step))
 
     @staticmethod
-    def _build_falloff_ring(size, color, core, thickness, softness, inner_glow):
+    def _build_falloff_ring(size, color, core, thickness, softness,
+                            inner_glow, pm=False, k=255):
         surf = pygame.Surface((size, size), pygame.SRCALPHA)
         c = size // 2
         r_nom = c - softness - 2
@@ -451,13 +656,16 @@ class _NS_zharok:
             if t <= 0.003:
                 continue
             col = _NS_zharok._mix(color, core, min(1.0, max(0.0, t - 0.45) * 1.5))
-            pygame.draw.circle(surf, (*col, int(200 * t)), (c, c), r, 1)
+            pygame.draw.circle(surf, _NS_zharok._pmc(col, 200 * t, pm, k),
+                               (c, c), r, 1)
         if inner_glow > 0:
             for r in range(lo, 0, -2):
                 t = (r / float(max(1, lo))) ** 2
                 a = int(inner_glow * t)
                 if a > 1:
-                    pygame.draw.circle(surf, (*color, a), (c, c), r, 2)
+                    pygame.draw.circle(surf,
+                                       _NS_zharok._pmc(color, a, pm, k),
+                                       (c, c), r, 2)
         return surf
 
     @staticmethod
@@ -468,15 +676,27 @@ class _NS_zharok:
             return
         pad = softness + thickness + 3
         size = radius * 2 + pad * 2
-        key = ("fring", radius, color, core, thickness, softness, inner_glow)
+        # `add` masuk ke kunci cache: decal untuk blend additif dibangun
+        # langsung dalam bentuk premultiplied (lihat `_pmc`).
+        # Mode additif: peredupan DIPANGGANG ke dalam decal (`k`) dan
+        # ikut jadi kunci cache. Blit ber-special_flags mengabaikan
+        # set_alpha, jadi alternatifnya salinan-yang-dikali tiap frame.
+        k = _NS_zharok._fade_level(alpha) if add else 255
+        if k <= 0:
+            return
+        key = ("fring", radius, color, core, thickness, softness,
+               inner_glow, add, k)
         decal = _NS_zharok._decal(
             key, size,
             lambda n: _NS_zharok._build_falloff_ring(
-                n, color, core, thickness, softness, inner_glow))
-        _NS_zharok._blit_decal(surface, decal, cx, cy, alpha, add=add)
+                n, color, core, thickness, softness, inner_glow,
+                pm=add, k=k))
+        _NS_zharok._blit_decal(surface, decal, cx, cy,
+                               255 if add else alpha, add=add, premul=add)
 
     @staticmethod
-    def _build_arc_ring(size, color, core, segments, span, thickness, softness, taper):
+    def _build_arc_ring(size, color, core, segments, span, thickness,
+                        softness, taper, pm=False, k=255):
         surf = pygame.Surface((size, size), pygame.SRCALPHA)
         c = size // 2
         r_nom = c - softness - thickness - 2
@@ -499,7 +719,8 @@ class _NS_zharok:
                 inner.append((c + ca * (r_nom - w), c + sa * (r_nom - w)))
             poly = outer + inner[::-1]
             if len(poly) >= 3:
-                pygame.draw.polygon(surf, (*color, 210), poly)
+                pygame.draw.polygon(surf, _NS_zharok._pmc(color, 210, pm, k),
+                                    poly)
                 if core:
                     core_pts = []
                     for s in range(1, steps):
@@ -508,7 +729,9 @@ class _NS_zharok:
                         ca, sa = math.cos(ang), math.sin(ang)
                         core_pts.append((c + ca * r_nom, c + sa * r_nom))
                     if len(core_pts) >= 2:
-                        pygame.draw.lines(surf, (*core, 230), False, core_pts, 1)
+                        pygame.draw.lines(surf,
+                                          _NS_zharok._pmc(core, 230, pm, k),
+                                          False, core_pts, 1)
         return surf
 
     @staticmethod
@@ -520,17 +743,34 @@ class _NS_zharok:
             return
         pad = int(thickness) + 8
         size = radius * 2 + pad * 2
-        key = ("rring", radius, color, core, segments, span, thickness, softness, taper)
+        # Rotasi IKUT dipanggang ke dalam kunci cache. Kalau tidak,
+        # `transform.rotate` melahirkan surface baru tiap frame: bukan
+        # cuma rotasinya yang dibayar ulang, tapi juga premultiply-nya
+        # (lihat `_add_variant`) — dan cache premul ikut bocor.
+        seg_arc = 360.0 / max(1, segments)
+        step = seg_arc / 12.0
+        deg = round(((-math.degrees(phase)) % seg_arc) / step) * step
+        # Mode additif: peredupan DIPANGGANG ke dalam decal (`k`) dan
+        # ikut jadi kunci cache. Blit ber-special_flags mengabaikan
+        # set_alpha, jadi alternatifnya salinan-yang-dikali tiap frame.
+        k = _NS_zharok._fade_level(alpha) if add else 255
+        if k <= 0:
+            return
+        key = ("rring", radius, color, core, segments, span, thickness,
+               softness, taper, round(deg, 2), add, k)
         decal = _NS_zharok._decal(
             key, size,
-            lambda n: _NS_zharok._build_arc_ring(
-                n, color, core, segments, span, thickness, softness, taper))
-        deg = -math.degrees(phase) % (360.0 / max(1, segments))
-        rot = pygame.transform.rotate(decal, deg)
-        _NS_zharok._blit_decal(surface, rot, cx, cy, alpha, add=add)
+            lambda n: pygame.transform.rotate(
+                _NS_zharok._build_arc_ring(
+                    n, color, core, segments, span, thickness, softness,
+                    taper, pm=add, k=k),
+                deg))
+        _NS_zharok._blit_decal(surface, decal, cx, cy,
+                               255 if add else alpha, add=add, premul=add)
 
     @staticmethod
-    def _build_zone_fill(size, color, core, falloff_exp, rim_boost):
+    def _build_zone_fill(size, color, core, falloff_exp, rim_boost,
+                         pm=False, k=255):
         surf = pygame.Surface((size, size), pygame.SRCALPHA)
         c = size // 2
         r_max = c - 2
@@ -545,7 +785,8 @@ class _NS_zharok:
             col = _NS_zharok._mix(color, core, min(1.0, t * 1.3))
             a = int(180 * t)
             if a > 0:
-                pygame.draw.circle(surf, (*col, a), (c, c), r, 2)
+                pygame.draw.circle(surf, _NS_zharok._pmc(col, a, pm, k),
+                                   (c, c), r, 2)
         return surf
 
     @staticmethod
@@ -555,12 +796,19 @@ class _NS_zharok:
         if radius < 8:
             return
         size = radius * 2 + 4
-        key = ("zfill", radius, color, core, falloff_exp, rim_boost)
+        # Mode additif: peredupan DIPANGGANG ke dalam decal (`k`) dan
+        # ikut jadi kunci cache. Blit ber-special_flags mengabaikan
+        # set_alpha, jadi alternatifnya salinan-yang-dikali tiap frame.
+        k = _NS_zharok._fade_level(alpha) if add else 255
+        if k <= 0:
+            return
+        key = ("zfill", radius, color, core, falloff_exp, rim_boost, add, k)
         decal = _NS_zharok._decal(
             key, size,
             lambda n: _NS_zharok._build_zone_fill(
-                n, color, core, falloff_exp, rim_boost))
-        _NS_zharok._blit_decal(surface, decal, cx, cy, alpha, add=add)
+                n, color, core, falloff_exp, rim_boost, pm=add, k=k))
+        _NS_zharok._blit_decal(surface, decal, cx, cy,
+                               255 if add else alpha, add=add, premul=add)
 
     @staticmethod
     def _build_scorch_patch(size, dark, mid, edge_blobs):
@@ -597,7 +845,7 @@ class _NS_zharok:
         _NS_zharok._blit_decal(surface, decal, cx, cy, alpha, add=False)
 
     @staticmethod
-    def _build_radial_glow(size, color, core):
+    def _build_radial_glow(size, color, core, pm=False, k=255):
         surf = pygame.Surface((size, size), pygame.SRCALPHA)
         c = size // 2
         r_max = c - 2
@@ -609,7 +857,8 @@ class _NS_zharok:
             col = _NS_zharok._mix(color, core, t * t)
             a = int(220 * t)
             if a > 0:
-                pygame.draw.circle(surf, (*col, a), (c, c), r, 2)
+                pygame.draw.circle(surf, _NS_zharok._pmc(col, a, pm, k),
+                                   (c, c), r, 2)
         return surf
 
     @staticmethod
@@ -619,11 +868,19 @@ class _NS_zharok:
         if radius < 4:
             return
         size = radius * 2 + 4
-        key = ("glow", radius, color, core)
+        # Mode additif: peredupan DIPANGGANG ke dalam decal (`k`) dan
+        # ikut jadi kunci cache. Blit ber-special_flags mengabaikan
+        # set_alpha, jadi alternatifnya salinan-yang-dikali tiap frame.
+        k = _NS_zharok._fade_level(alpha) if add else 255
+        if k <= 0:
+            return
+        key = ("glow", radius, color, core, add, k)
         decal = _NS_zharok._decal(
             key, size,
-            lambda n: _NS_zharok._build_radial_glow(n, color, core))
-        _NS_zharok._blit_decal(surface, decal, cx, cy, alpha, add=add)
+            lambda n: _NS_zharok._build_radial_glow(n, color, core,
+                                                    pm=add, k=k))
+        _NS_zharok._blit_decal(surface, decal, cx, cy,
+                               255 if add else alpha, add=add, premul=add)
 
     @staticmethod
     def _draw_shockwave(surface, cx, cy, radius, color, alpha, thickness=3):
@@ -633,6 +890,338 @@ class _NS_zharok:
         _NS_zharok._ground_ring(surface, cx, cy, radius, color,
                                 _NS_zharok.PALETTE["fire_white"], alpha,
                                 thickness=thickness, softness=4, add=True)
+
+    # ===================================================================
+    # GERBANG LAPISAN HIDUP (heroes/zharok_fx)
+    #   Trail sabetan, partikel, proyektil, skill FX, impact, hit-stop,
+    #   dan screen shake hidup di RUANG LAYAR skala 1:1 supaya tidak ikut
+    #   beku / menyusut bersama sprite cache di lane hero. Kalau modulnya
+    #   tidak ada, `owns()` False dan renderer menggambar semuanya sendiri
+    #   lewat jalur canvas v2 (visual kehilangan polish, TIDAK PERNAH
+    #   kehilangan efek).
+    # ===================================================================
+    @staticmethod
+    def _live_module():
+        NS = _NS_zharok
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import zharok_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "ZHAROK_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    @staticmethod
+    def live_fx_ready():
+        return _NS_zharok._live_module() is not None
+
+    @staticmethod
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Pasang/gambar lapisan hidup. Return (mod_untuk_draw, owned)."""
+        NS = _NS_zharok
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+            if owned and not want_draw:
+                # Lane hero: yang menggambar lapisan hidup adalah pipeline
+                # heroes/__init__ (_live_fx_pre/_live_fx_post). Kalau
+                # ternyata TIDAK ada yang menggambarnya, jangan matikan
+                # fallback canvas - karakter tidak boleh kehilangan FX
+                # secara diam-diam.
+                checker = getattr(mod, "recently_drawn", None)
+                if checker is not None:
+                    owned = bool(checker(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    # ===================================================================
+    # ANIMATION CONTROLLER
+    #   Satu-satunya sumber kebenaran state/fase/timing. Lapisan hidup,
+    #   overlay debug, dan alat uji semuanya membacanya dari sini.
+    # ===================================================================
+    @staticmethod
+    def _ease(kind, t):
+        if t <= 0.0:
+            return 0.0
+        if t >= 1.0:
+            return 1.0
+        if kind == "out":
+            return 1.0 - (1.0 - t) * (1.0 - t)
+        if kind == "oc":                              # out-cubic (cepat)
+            return 1.0 - (1.0 - t) ** 3
+        if kind == "in":
+            return t * t
+        if kind == "hold":
+            return math.sin(t * math.pi * 0.5)
+        return t * t * (3.0 - 2.0 * t)                # in-out (smoothstep)
+
+    @staticmethod
+    def attack_phases_order():
+        return tuple(name for name, _a, _b in _NS_zharok.ATTACK_PHASES)
+
+    @staticmethod
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1."""
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_zharok.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    @staticmethod
+    def _bow_lift(progress):
+        """Ketinggian relatif tangan busur saat mengayun (0..1)."""
+        p = max(0.0, min(1.0, float(progress)))
+        E = _NS_zharok._ease
+        if p < 0.30:
+            return E("out", p / 0.30)
+        if p < 0.50:
+            return 1.0 - E("oc", (p - 0.30) / 0.20) * 0.95
+        if p < 0.82:
+            return 0.05 + E("io", (p - 0.50) / 0.32) * 0.18
+        return 0.23 * (1.0 - E("io", (p - 0.82) / 0.18))
+
+    @staticmethod
+    def _bow_arc(progress):
+        """(theta, lift) ARK stave busur — SATU sumber kebenaran.
+
+        theta = sudut stave dari sumbu ATAS (rad), positif ke arah facing.
+        Tabel bersambung, jadi senjata tidak pernah teleport.
+        """
+        p = max(0.0, min(1.0, float(progress)))
+        NS = _NS_zharok
+        for t0, t1, a0, a1, kind in NS.BOW_ARC:
+            if t0 <= p < t1 or (p >= 1.0 and t1 >= 1.0):
+                e = NS._ease(kind, (p - t0) / max(0.0001, t1 - t0))
+                return a0 + (a1 - a0) * e, NS._bow_lift(p)
+        return NS.BOW_ARC[0][2], 0.0
+
+    @staticmethod
+    def _cleave_offset(progress):
+        """Dorongan badan ke depan (px rig) mengikuti bobot ayunan."""
+        p = max(0.0, min(1.0, float(progress)))
+        E = _NS_zharok._ease
+        if p < 0.12:
+            return -1.5 * E("out", p / 0.12)          # anticipation mundur
+        if p < 0.30:
+            return -1.5 - 2.0 * E("io", (p - 0.12) / 0.18)
+        if p < 0.50:
+            return -3.5 + 12.0 * E("oc", (p - 0.30) / 0.20)
+        if p < 0.62:
+            return 8.5 + 1.5 * E("hold", (p - 0.50) / 0.12)
+        if p < 0.82:
+            return 10.0 - 7.0 * E("io", (p - 0.62) / 0.20)
+        return 3.0 * (1.0 - E("io", (p - 0.82) / 0.18))
+
+    @staticmethod
+    def bow_geometry(facing, action, phase, ap=0.0):
+        """(grip, tip_atas, tip_bawah, theta) OFFSET LOKAL dari jangkar.
+
+        Nilai yang dikembalikan sudah dikalikan ``SCALE`` sehingga berada
+        di RUANG LAYAR (pada render_scale 1). Dipakai renderer (menggambar
+        busur) DAN lapisan hidup (trail + titik lahir proyektil), jadi
+        stave dan trail mustahil berbeda satu frame pun.
+        """
+        NS = _NS_zharok
+        f = 1 if facing >= 0 else -1
+        L = NS.STAVE_HALF
+        gx0, gy0 = NS.GRIP_RIG
+
+        if action in ("melee", "swing", "cleave"):
+            theta, lift = NS._bow_arc(ap)
+            lunge = NS._cleave_offset(ap)
+            gx = f * (gx0 + 4.0 * lift + lunge * 0.55)
+            gy = gy0 - 3.0 - 10.0 * lift
+        elif action in ("attack", "strafe"):
+            pose = NS._attack_pose(ap)
+            # busur tetap tegak saat membidik, hanya miring halus mengikuti
+            # tarikan tali & recoil pelepasan
+            theta = -0.10 * pose["draw"] + 0.26 * pose["impact"]
+            lift = 0.0
+            gx = f * (gx0 + pose["lunge"] * 0.8)
+            gy = gy0 + pose["dip"] * 0.5
+        elif action in ("e_cast", "r_cast", "cast", "skill", "charge"):
+            theta = 0.16 + math.sin(phase * 2.2) * 0.05
+            lift = 0.8
+            gx = f * (gx0 - 6.0)
+            gy = gy0 - 8.0
+        elif action in ("walk", "run"):
+            theta = 0.18 + math.sin(phase * 1.1) * 0.08
+            lift = 0.05
+            gx = f * (gx0 - 1.0)
+            gy = gy0 + 1.0
+        else:                                          # idle / hurt / death
+            theta = 0.10 + math.sin(phase * 0.8) * 0.05
+            lift = 0.0
+            gx = f * gx0
+            gy = gy0 + math.sin(phase * 0.8) * 0.8
+
+        dx = f * math.sin(theta) * L
+        dy = -math.cos(theta) * L
+        k = NS.SCALE
+        return ((gx * k, gy * k),
+                ((gx + dx) * k, (gy + dy) * k),
+                ((gx - dx) * k, (gy - dy) * k),
+                theta)
+
+    @staticmethod
+    def _melee_reach(boss):
+        """True kalau target cukup dekat untuk sabetan stave (bukan panah).
+
+        Zharok pemanah: pada jarak jauh ia melepas anak panah, tapi kalau
+        musuh menempel ia MENYABET dengan stave busur yang menyala.
+        """
+        tgt = getattr(boss, "target", None)
+        if tgt is None or not getattr(tgt, "alive", True):
+            return False
+        try:
+            d = math.hypot(float(getattr(tgt, "x", 0.0))
+                           - float(getattr(boss, "x", 0.0)),
+                           float(getattr(tgt, "y", 0.0))
+                           - float(getattr(boss, "y", 0.0)))
+        except (TypeError, ValueError):
+            return False
+        return d <= _NS_zharok.MELEE_REACH
+
+    @staticmethod
+    def _update_zharok_anim(boss, moving=False):
+        """Controller: delta time, state + prioritas, timeline serangan."""
+        NS = _NS_zharok
+
+        # ── delta time nyata ────────────────────────────────────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                              # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_zh_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._zh_last_ms = now
+        boss._zh_dt = dt
+
+        # ── timeline serangan (timer engine menghitung MUNDUR) ──────
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 40)))
+        timer = int(getattr(boss, "timer", 0))
+        previous = int(getattr(boss, "_zh_prev_timer", 0))
+        active = bool(getattr(boss, "_zh_attack_active", False))
+
+        # serangan baru: timer melonjak naik (di-reset ke cooldown)
+        if timer > previous + 1 and timer >= cooldown - 2:
+            boss._zh_attack_active = True
+            boss._zh_attack_frame = 0
+            boss._zh_atk_spawned = False
+            boss._zh_melee_swing = NS._melee_reach(boss)
+            active = True
+        elif active:
+            boss._zh_attack_frame = int(
+                getattr(boss, "_zh_attack_frame", 0)) + 1
+            if boss._zh_attack_frame > cooldown:
+                boss._zh_attack_active = False
+                boss._zh_attack_frame = 0
+                active = False
+        elif timer <= 0:
+            boss._zh_attack_active = False
+            boss._zh_attack_frame = 0
+            active = False
+
+        boss._zh_prev_timer = timer
+        frame = int(getattr(boss, "_zh_attack_frame", 0))
+        # durasi animasi dibatasi supaya tarikan busur tetap punya bobot
+        anim_len = max(10, min(cooldown - 1, 30))
+        progress = min(1.0, frame / float(anim_len)) if active else 0.0
+        boss._zh_attack_progress = progress
+        boss._zh_attack_phase = (NS.attack_phase(progress) if active
+                                 else "NONE")
+        lo, hi = NS.ATTACK_ACTIVE_WINDOW
+        boss._zh_hit_window = bool(active and lo <= progress <= hi)
+        if not active:
+            boss._zh_melee_swing = False
+
+        # ── prioritas state ─────────────────────────────────────────
+        skill = getattr(boss, "active_skill", None)
+        alive = bool(getattr(boss, "alive", True))
+        hurt = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        speed = float(getattr(boss, "_zh_speed", 0.0))
+        melee = bool(getattr(boss, "_zh_melee_swing", False))
+
+        if not alive:
+            state = "DEATH"
+        elif skill == "r":
+            state = "SPECIAL"
+        elif skill in ("q", "w", "e"):
+            state = "SKILL"
+        elif active and progress < 0.12:
+            state = "CHARGE"
+        elif active and progress < 0.30:
+            state = "ATTACK"
+        elif active:
+            if melee:
+                state = "SWING" if progress < 0.62 else "ATTACK"
+            else:
+                state = "CAST" if progress < 0.62 else "ATTACK"
+        elif hurt > 0:
+            state = "HURT"
+        elif moving:
+            state = "RUN" if speed > 1.6 else "WALK"
+        else:
+            state = "IDLE"
+
+        prev_state = getattr(boss, "_zh_state", "IDLE")
+        if prev_state != state:
+            boss._zh_state_prev = prev_state
+            boss._zh_state_time = 0.0
+        else:
+            boss._zh_state_time = getattr(boss, "_zh_state_time", 0.0) + dt
+        boss._zh_state = state
+        boss._zh_state_priority = NS.ANIM_STATES.get(state, 0)
+        return state
+
+    @staticmethod
+    def _resolve_pose(boss, moving):
+        """(action, phase, attack_progress) untuk renderer + lapisan hidup."""
+        NS = _NS_zharok
+        pulse = float(getattr(boss, "pulse", 0.0))
+        state = getattr(boss, "_zh_state", "IDLE")
+        ap = float(getattr(boss, "_zh_attack_progress", 0.0) or 0.0)
+        skill = getattr(boss, "active_skill", None)
+        timer = int(getattr(boss, "active_skill_timer", 0))
+
+        if state in ("SKILL", "SPECIAL") and skill in ("q", "w", "e", "r"):
+            dur = NS.SKILL_DUR.get(skill, 50)
+            prog = max(0.0, min(1.0, 1.0 - timer / float(dur)))
+            action = {"q": "strafe", "w": "smoke", "e": "e_cast",
+                      "r": "r_cast"}[skill]
+            return action, pulse, prog
+        if state in ("ATTACK", "SWING", "CHARGE", "CAST"):
+            if getattr(boss, "_zh_melee_swing", False):
+                return "melee", pulse, ap
+            return "attack", pulse, ap
+        if state == "RUN":
+            return "walk", pulse * 2.6, 0.0
+        if state == "WALK":
+            return "walk", pulse * 2.3, 0.0
+        if state == "DEATH":
+            return "death", pulse, 0.0
+        if state == "HURT":
+            return "hurt", pulse, 0.0
+        return "idle", pulse, 0.0
 
     # ===================================================================
     # ATTACK TIMELINE (7 keyframes + IMPACT frame at 0.52)
@@ -1257,6 +1846,105 @@ class _NS_zharok:
         shot_prog = (progress * 6.0) % 1.0
         _NS_zharok._draw_bow_attack_arms(surface, cx, cy, facing, phase, shot_prog)
 
+    # ── MELEE CLEAVE: stave busur dipakai seperti sabit ──────────────
+    @staticmethod
+    def _draw_cleaving_bow(surface, gx, gy, facing, theta, phase, heat=1.0):
+        """Stave busur menyala digambar SEPANJANG sumbu ``theta``.
+
+        Geometrinya diturunkan dari ``bow_geometry`` yang sama yang dibaca
+        lapisan hidup, jadi trail sabetan menempel persis di stave.
+        """
+        P = _NS_zharok.PALETTE
+        f = 1 if facing >= 0 else -1
+        L = _NS_zharok.STAVE_HALF
+
+        ax, ay = f * math.sin(theta), -math.cos(theta)      # sumbu stave
+        nx, ny = f * (-ay), f * ax                          # normal (ke depan)
+
+        pts = []
+        for i in range(13):
+            u = i / 12.0
+            t = (u - 0.5) * 2.0
+            parab = 1.0 - t * t
+            recurve = math.sin(u * math.pi * 2.0) * 2.5
+            along_x = ax * t * L
+            along_y = ay * t * L
+            bx = gx + along_x + nx * (12.0 * parab + recurve)
+            by = gy + along_y + ny * (12.0 * parab + recurve)
+            pts.append((bx, by))
+
+        for i in range(len(pts) - 1):
+            p0, p1 = pts[i], pts[i + 1]
+            _NS_zharok._aaline(surface, P["shadow_deep"],
+                               (p0[0] + f, p0[1] + 1), (p1[0] + f, p1[1] + 1), 4)
+            _NS_zharok._aaline(surface, P["wood_dark"], p0, p1, 4)
+            _NS_zharok._aaline(surface, P["wood_mid"], p0, p1, 3)
+            _NS_zharok._aaline(surface, P["wood_light"],
+                               (p0[0] - nx, p0[1] - ny), (p1[0] - nx, p1[1] - ny), 2)
+
+        # fitting emas + ujung menyala
+        for b_idx in (3, 9):
+            bx, by = pts[b_idx]
+            _NS_zharok._aacircle(surface, P["metal_darkest"], (bx, by), 3)
+            _NS_zharok._aacircle(surface, P["gold_mid"], (bx, by), 2)
+            _NS_zharok._aacircle(surface, P["gold_shine"], (bx - nx, by - ny), 1)
+        for tip in (pts[0], pts[-1]):
+            _NS_zharok._aacircle(surface, P["gold_dark"], tip, 3)
+            _NS_zharok._aacircle(surface, P["gold_light"], tip, 2)
+            _NS_zharok._aacircle(surface, P["fire_white"], tip, 1)
+
+        # bowstring tegang (garis lurus tip ke tip)
+        _NS_zharok._aaline(surface, P["metal_light"], pts[0], pts[-1], 1)
+        _NS_zharok._aaline(surface, P["fire_glow"], pts[0], pts[-1], 1)
+
+        # lidah api di sepanjang stave — makin panas saat jendela hit
+        span = 3 if heat < 0.5 else 5
+        for fl_idx in range(span):
+            idx = 2 + fl_idx * 2
+            if idx >= len(pts):
+                break
+            fx, fy = pts[idx]
+            wob = math.sin(phase * 4.0 + fl_idx) * 2.0
+            r = int(4 + 2 * heat)
+            _NS_zharok._aacircle(surface, P["fire_dark"], (fx + wob, fy), r)
+            _NS_zharok._aacircle(surface, P["fire_bright"], (fx + wob, fy), max(1, r - 2))
+            _NS_zharok._aacircle(surface, P["fire_hot"], (fx + wob, fy), max(1, r - 3))
+            _NS_zharok._aacircle(surface, P["fire_white"], (fx + wob, fy), 1)
+
+    @staticmethod
+    def _draw_bow_cleave_arms(surface, cx, cy, facing, phase, progress):
+        """Lengan sabetan: kedua tangan mengunci grip, badan ikut memutar."""
+        NS = _NS_zharok
+        f = 1 if facing >= 0 else -1
+        theta, lift = NS._bow_arc(progress)
+        lunge = NS._cleave_offset(progress)
+
+        gx = cx + (NS.GRIP_RIG[0] + 4.0 * lift + lunge * 0.55) * f
+        gy = cy + (NS.GRIP_RIG[1] + 12.0) - 3.0 - 10.0 * lift
+
+        sh_front_x, sh_front_y = cx + 8 * f, cy - 8
+        sh_back_x, sh_back_y = cx - 8 * f, cy - 8
+        # siku mengikuti arah stave supaya lengan tidak patah tak wajar
+        el_x = (sh_front_x + gx) * 0.5 + math.sin(theta) * 5.0 * f
+        el_y = (sh_front_y + gy) * 0.5 - 4.0
+
+        NS._draw_bone_arm(surface, sh_back_x, sh_back_y,
+                          (sh_back_x + gx) * 0.5 - 4 * f, (sh_back_y + gy) * 0.5)
+        NS._draw_bone_arm(surface, (sh_back_x + gx) * 0.5 - 4 * f,
+                          (sh_back_y + gy) * 0.5, gx - 4 * f, gy + 2)
+        NS._draw_cleaving_bow(surface, gx, gy, facing, theta, phase,
+                              heat=1.0 if 0.30 <= progress <= 0.62 else 0.4)
+        NS._draw_bone_arm(surface, sh_front_x, sh_front_y, el_x, el_y)
+        NS._draw_bone_arm(surface, el_x, el_y, gx, gy)
+        NS._draw_skeleton_hand(surface, gx, gy, facing)
+
+        # kilat benturan tepat di frame IMPACT
+        impact = 1.0 - min(1.0, abs(progress - NS.ATTACK_IMPACT_FRAME) / 0.10)
+        if impact > 0.1:
+            tip_x = gx + f * math.sin(theta) * NS.STAVE_HALF
+            tip_y = gy - math.cos(theta) * NS.STAVE_HALF
+            NS._draw_bow_release_flash(surface, tip_x, tip_y, impact)
+
     @staticmethod
     def _draw_e_cast_arms(surface, cx, cy, facing, phase):
         f = 1 if facing >= 0 else -1
@@ -1323,7 +2011,9 @@ class _NS_zharok:
         f = 1 if facing >= 0 else -1
         walk = action == "walk"
         attack = action == "attack"
-        ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
+        cleave = action in ("melee", "swing", "cleave")
+        ap = (max(0.0, min(1.0, attack_progress))
+              if (attack or cleave) else 0.0)
         breath = math.sin(phase * 0.8)
 
         if walk:
@@ -1331,6 +2021,15 @@ class _NS_zharok:
             sway = int(math.sin(phase * 1.2) * 2.5)
             lean = 3 * f
             cloth_lag = math.sin(phase * 2.0) * 3.0
+            pose = None
+        elif cleave:
+            # bobot sabetan: badan mundur saat wind-up, menerjang saat swing
+            lunge = _NS_zharok._cleave_offset(ap)
+            lift = _NS_zharok._bow_lift(ap)
+            root_y = int(-2.0 * lift + 1.5 * max(0.0, lunge) * 0.12)
+            sway = 0
+            lean = int(lunge * 0.42) * f
+            cloth_lag = -lunge * 0.55
             pose = None
         elif attack:
             pose = _NS_zharok._attack_pose(ap)
@@ -1355,14 +2054,17 @@ class _NS_zharok:
         ox = int(cx) + off_x
         oy = int(cy) + root_y
 
+        leg_action = "attack" if cleave else action
         _NS_zharok._draw_hood_back(surface, ox, oy - 14, facing, phase, cloth_lag=cloth_lag, f=f)
         _NS_zharok._draw_quiver(surface, ox, oy - 14, facing, phase, f=f)
         _NS_zharok._draw_pelvis(surface, ox, oy + 8, phase, f=f)
-        _NS_zharok._draw_skeleton_legs(surface, ox, oy + 8, facing, phase, action, f=f)
+        _NS_zharok._draw_skeleton_legs(surface, ox, oy + 8, facing, phase, leg_action, f=f)
         _NS_zharok._draw_ribcage(surface, ox, oy - 12, phase, sway=sway, f=f)
         _NS_zharok._draw_hooded_skull(surface, ox, oy - 26, facing, phase, action=action, f=f, stealth=stealth, detail=detail)
 
-        if attack:
+        if cleave:
+            _NS_zharok._draw_bow_cleave_arms(surface, ox, oy - 12, facing, phase, ap)
+        elif attack:
             _NS_zharok._draw_bow_attack_arms(surface, ox, oy - 12, facing, phase, ap)
         elif action == "strafe":
             _NS_zharok._draw_bow_strafe_arms(surface, ox, oy - 12, facing, phase, attack_progress)
@@ -1414,6 +2116,10 @@ class _NS_zharok:
         except Exception:
             pass
         surface.blit(sub, (ox, oy))
+        # simpan rig terakhir supaya lapisan hidup bisa membuat afterimage
+        # tanpa menggambar ulang badan (pose ghost otomatis selalu benar)
+        NS._last_rig = sub
+        NS._last_rig_off = (ox - int(cx), oy - int(cy))
 
     @staticmethod
     def _draw_zharok_elite(surface, cx, cy, facing=1, phase=0.0, action="idle",
@@ -1613,23 +2319,20 @@ class _NS_zharok:
         ly = getattr(boss, "_zh_last_y", y)
         boss._zh_last_x = x
         boss._zh_last_y = y
-        return (abs(x - lx) + abs(y - ly)) > 0.3
+        dx = abs(x - lx)
+        dy = abs(y - ly)
+        boss._zh_speed = dx + dy
+        return (dx + dy) > 0.3
 
     @staticmethod
     def _update_attack_anim(boss):
-        active = getattr(boss, "_zh_attack_active", False)
-        cd = max(2, int(getattr(boss, "attack_cooldown", 40)))
-        timer = int(getattr(boss, "timer", 0))
+        """API LAMA — dipertahankan untuk kompatibilitas mundur.
 
-        if timer >= cd - 15 and not active:
-            boss._zh_attack_active = True
-            boss._zh_attack_progress = 0.0
-
-        if getattr(boss, "_zh_attack_active", False):
-            boss._zh_attack_progress = getattr(boss, "_zh_attack_progress", 0.0) + 1.0 / 15.0
-            if boss._zh_attack_progress >= 1.0:
-                boss._zh_attack_active = False
-                boss._zh_attack_progress = 0.0
+        Sekarang mendelegasikan ke controller animasi v3 supaya tidak ada
+        dua sumber kebenaran yang saling menimpa `_zh_attack_progress`.
+        """
+        return _NS_zharok._update_zharok_anim(
+            boss, moving=(float(getattr(boss, "_zh_speed", 0.0)) > 0.3))
 
     @staticmethod
     def _manage_projectiles(boss, surface, phase):
@@ -1738,18 +2441,39 @@ class _NS_zharok:
         pose = _NS_zharok._attack_pose(progress)
         lunge = int(pose["lunge"] * _NS_zharok.SCALE) * facing
 
-        if 0.45 < progress < 0.55 and not getattr(boss, "_zh_atk_spawned", False):
-            tx, ty = _NS_zharok._target_position(boss, x, y)
-            sx = x + 24 * facing
-            sy = y - 4
-            _NS_zharok._spawn_fire_arrow(boss, sx, sy, tx, ty)
-            boss._zh_atk_spawned = True
-        if progress < 0.1 or progress > 0.9:
-            boss._zh_atk_spawned = False
+        # Proyektil canvas HANYA dipakai kalau lapisan hidup tidak
+        # mengambil alih (di sana anak panahnya jauh lebih kaya).
+        if not getattr(boss, "_zh_suppress_canvas_fx", False):
+            if 0.45 < progress < 0.55 and not getattr(boss, "_zh_atk_spawned", False):
+                tx, ty = _NS_zharok._target_position(boss, x, y)
+                sx = x + 24 * facing
+                sy = y - 4
+                _NS_zharok._spawn_fire_arrow(boss, sx, sy, tx, ty)
+                boss._zh_atk_spawned = True
+            if progress < 0.1 or progress > 0.9:
+                boss._zh_atk_spawned = False
 
         _NS_zharok._draw_shadow(surface, x + lunge, y + _NS_zharok.GROUND_DY)
         _NS_zharok._draw_fire_wisps(surface, x + lunge, y + 20, phase, intense=True)
         _NS_zharok._draw_zharok_body(surface, x + lunge, y, facing, phase, "attack", progress)
+
+    @staticmethod
+    def _draw_zh_melee(surface, boss, x, y):
+        """Sabetan stave busur (Ember Cleave) — pose berbasis ARK.
+
+        Senjata TIDAK dipindahkan langsung dari posisi awal ke akhir:
+        seluruh sudutnya berasal dari `BOW_ARC` yang bersambung, jadi
+        gerakannya benar-benar melengkung dan punya momentum.
+        """
+        progress = max(0.0, min(1.0, getattr(boss, "_zh_attack_progress", 0.0)))
+        facing = getattr(boss, "direction", 1)
+        phase = getattr(boss, "pulse", 0.0)
+        lunge = int(_NS_zharok._cleave_offset(progress) * _NS_zharok.SCALE) * facing
+
+        _NS_zharok._draw_shadow(surface, x + lunge, y + _NS_zharok.GROUND_DY)
+        _NS_zharok._draw_fire_wisps(surface, x + lunge, y + 20, phase, intense=True)
+        _NS_zharok._draw_zharok_body(surface, x + lunge, y, facing, phase,
+                                     "melee", progress)
 
     @staticmethod
     def _draw_zh_strafe(surface, boss, x, y, timer):
@@ -2016,54 +2740,210 @@ class _NS_zharok:
 
     @staticmethod
     def draw_zharok(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus jalur hero-lane.
+
+        Urutan render:
+          GROUND -> GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/
+          HEAD/WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+          SKILL FX -> IMPACT FX -> DEBUG.
+
+        Trail / partikel / proyektil / impact / hit-stop / shake hidup di
+        ``heroes/zharok_fx`` (ruang layar 1:1); canvas hanya fallback bila
+        modul itu tidak tersedia.
+        """
+        NS = _NS_zharok
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_zharok._detect_moving(boss)
-        _NS_zharok._update_attack_anim(boss)
-
-        attacking = (
-            getattr(boss, "_zh_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 40) - 15
-        )
-
         portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
 
+        # ── CONTROLLER ANIMASI ─────────────────────────────────────
+        moving = NS._detect_moving(boss)
+        NS._update_zharok_anim(boss, moving)
+        action, phase, ap = NS._resolve_pose(boss, moving)
+        boss._zh_pose_action = action
+        boss._zh_phase = phase
+
+        # ── LAPISAN HIDUP (ground) ─────────────────────────────────
+        live, owned = NS._live_fx(boss, surface, x, y, not hero_lane,
+                                  portrait)
+        boss._zh_suppress_canvas_fx = owned
+
+        # ── GROUND FX / AURA ───────────────────────────────────────
         if not portrait:
-            _NS_zharok._draw_fire_aura(surface, x, y, pulse, active_skill)
-            _NS_zharok._draw_ground_runes(surface, x, y + _NS_zharok.GROUND_DY, pulse, active_skill)
+            NS._draw_fire_aura(surface, x, y, pulse, active_skill)
+            NS._draw_ground_runes(surface, x, y + NS.GROUND_DY, pulse,
+                                  active_skill)
+            if not owned:
+                if active_skill == "q":
+                    NS._draw_strafe_ground(surface, boss, x, y, skill_timer,
+                                           pulse)
+                elif active_skill == "e":
+                    NS._draw_death_pact_ground(surface, boss, x, y,
+                                               skill_timer, pulse)
+                elif active_skill == "r":
+                    NS._draw_burning_army_ground(surface, boss, x, y,
+                                                 skill_timer, pulse)
 
-            if active_skill == "q":
-                _NS_zharok._draw_strafe_ground(surface, boss, x, y, skill_timer, pulse)
-            elif active_skill == "e":
-                _NS_zharok._draw_death_pact_ground(surface, boss, x, y, skill_timer, pulse)
-            elif active_skill == "r":
-                _NS_zharok._draw_burning_army_ground(surface, boss, x, y, skill_timer, pulse)
-
-        if active_skill == "w":
-            _NS_zharok._draw_zh_smoke(surface, boss, x, y, skill_timer, pulse)
+        # ── BADAN (shadow -> rig -> senjata, satu komposit) ────────
+        if action == "smoke":
+            NS._draw_zh_smoke(surface, boss, x, y, skill_timer, pulse)
+        elif action == "melee":
+            NS._draw_zh_melee(surface, boss, x, y)
+        elif action == "attack":
+            NS._draw_zh_attack(surface, boss, x, y)
+        elif action == "strafe":
+            NS._draw_zh_strafe(surface, boss, x, y, skill_timer)
+        elif action == "e_cast":
+            NS._draw_zh_ecast(surface, boss, x, y, skill_timer)
+        elif action == "r_cast":
+            NS._draw_zh_rcast(surface, boss, x, y, skill_timer)
+        elif action == "walk":
+            NS._draw_zh_walk(surface, boss, x, y)
         else:
-            if attacking:
-                _NS_zharok._draw_zh_attack(surface, boss, x, y)
-            elif active_skill == "q":
-                _NS_zharok._draw_zh_strafe(surface, boss, x, y, skill_timer)
-            elif active_skill == "e":
-                _NS_zharok._draw_zh_ecast(surface, boss, x, y, skill_timer)
-            elif active_skill == "r":
-                _NS_zharok._draw_zh_rcast(surface, boss, x, y, skill_timer)
-            elif moving:
-                _NS_zharok._draw_zh_walk(surface, boss, x, y)
-            else:
-                _NS_zharok._draw_zh_idle(surface, boss, x, y)
+            NS._draw_zh_idle(surface, boss, x, y)
 
-        if not portrait:
-            _NS_zharok._handle_skill_projectiles(boss, x, y, active_skill, skill_timer)
-            _NS_zharok._manage_projectiles(boss, surface, pulse)
-
+        # ── PROYEKTIL + SKILL FX DEPAN (fallback canvas) ───────────
+        if not portrait and not owned:
+            NS._handle_skill_projectiles(boss, x, y, active_skill,
+                                         skill_timer)
+            NS._manage_projectiles(boss, surface, pulse)
             if active_skill == "q":
-                _NS_zharok._draw_strafe_foreground(surface, boss, x, y, skill_timer, pulse)
+                NS._draw_strafe_foreground(surface, boss, x, y, skill_timer,
+                                           pulse)
             elif active_skill == "e":
-                _NS_zharok._draw_death_pact_foreground(surface, boss, x, y, skill_timer, pulse)
+                NS._draw_death_pact_foreground(surface, boss, x, y,
+                                               skill_timer, pulse)
+
+        # ── LAPISAN HIDUP DI ATAS (trail/proyektil/impact/skill) ───
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        # ── DEBUG ──────────────────────────────────────────────────
+        if NS.DEBUG_CHARACTER and not portrait:
+            NS._draw_zharok_debug(surface, boss, x, y)
+
+        _ = ap
+
+    # ===================================================================
+    # OVERLAY DEBUG RENDERER (DEBUG_CHARACTER = True)
+    # ===================================================================
+    _DBG_FONT = None
+
+    @staticmethod
+    def _dbg_font():
+        NS = _NS_zharok
+        if NS._DBG_FONT is None:
+            try:
+                if not pygame.font.get_init():
+                    pygame.font.init()
+                NS._DBG_FONT = pygame.font.SysFont("consolas,monospace", 11)
+            except Exception:                          # pragma: no cover
+                NS._DBG_FONT = False
+        return NS._DBG_FONT or None
+
+    @staticmethod
+    def _draw_zharok_debug(surface, boss, x, y):
+        """Hitbox stave, hurtbox, attack range, radius skill, state, FPS,
+        jumlah partikel, timer serangan — semuanya dari controller."""
+        NS = _NS_zharok
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        scale = float(getattr(boss, "_render_scale", 1.0) or 1.0)
+        ap = float(getattr(boss, "_zh_attack_progress", 0.0) or 0.0)
+        lo, hi = NS.ATTACK_ACTIVE_WINDOW
+        active = bool(getattr(boss, "_zh_hit_window", False))
+        action = getattr(boss, "_zh_pose_action", "idle")
+        phase = float(getattr(boss, "_zh_phase", getattr(boss, "pulse", 0.0)))
+
+        # jangkauan serangan (elips tanah)
+        rng = float(getattr(boss, "range", 180) or 180) / max(0.05, scale)
+        pygame.draw.ellipse(surface, (90, 200, 255),
+                            pygame.Rect(int(x - rng), int(y + NS.GROUND_DY
+                                                          - rng * 0.4),
+                                        int(rng * 2), int(rng * 0.8)), 1)
+        # jangkauan sabetan stave
+        mr = NS.MELEE_REACH / max(0.05, scale)
+        pygame.draw.ellipse(surface, (255, 160, 80),
+                            pygame.Rect(int(x - mr), int(y + NS.GROUND_DY
+                                                         - mr * 0.4),
+                                        int(mr * 2), int(mr * 0.8)), 1)
+        # radius skill aktif
+        skill = getattr(boss, "active_skill", None)
+        if skill in NS.SKILL_RADIUS:
+            rr = NS.SKILL_RADIUS[skill] / max(0.05, scale)
+            pygame.draw.ellipse(surface, (255, 120, 120),
+                                pygame.Rect(int(x - rr),
+                                            int(y + NS.GROUND_DY - rr * 0.4),
+                                            int(rr * 2), int(rr * 0.8)), 1)
+        # hurtbox
+        pygame.draw.rect(surface, (70, 240, 120),
+                         pygame.Rect(int(x - 26), int(y - 56), 52, 92), 1)
+        # hitbox stave (grip -> tip)
+        grip, tip_hi, tip_lo, _theta = NS.bow_geometry(facing, action, phase, ap)
+        col = (255, 80, 80) if active else (150, 150, 160)
+        pygame.draw.line(surface, col, (int(x + tip_lo[0]), int(y + tip_lo[1])),
+                         (int(x + tip_hi[0]), int(y + tip_hi[1])),
+                         2 if active else 1)
+        pygame.draw.circle(surface, col,
+                           (int(x + tip_hi[0]), int(y + tip_hi[1])), 12, 1)
+        pygame.draw.circle(surface, (240, 240, 90),
+                           (int(x + grip[0]), int(y + grip[1])), 2, 1)
+        # proyektil canvas fallback
+        for arrow in getattr(boss, "_zh_arrows", ()) or ():
+            pygame.draw.circle(surface, (255, 220, 90),
+                               (int(getattr(arrow, "x", x)),
+                                int(getattr(arrow, "y", y))), 6, 1)
+
+        font = NS._dbg_font()
+        if font is None:
+            return
+        parts = 0
+        proj = len(getattr(boss, "_zh_arrows", ()) or ())
+        try:
+            mod = NS._live_module()
+            if mod is not None:
+                st = mod.stats()
+                parts = st.get("particles", 0)
+                proj += st.get("projectiles", 0)
+        except Exception:                              # pragma: no cover
+            pass
+        dt = float(getattr(boss, "_zh_dt", 1.0 / 60.0)) or (1.0 / 60.0)
+        lines = [
+            "ZHAROK [renderer debug]",
+            "state %s <- %s (p%d)" % (
+                getattr(boss, "_zh_state", "?"),
+                getattr(boss, "_zh_state_prev", "-"),
+                int(getattr(boss, "_zh_state_priority", 0))),
+            "pose %s  dt %.4f  fps %.0f" % (action, dt, 1.0 / max(1e-4, dt)),
+            "attack %.2f %s%s" % (ap,
+                                  getattr(boss, "_zh_attack_phase", "NONE"),
+                                  "  <HIT>" if active else ""),
+            "window %.2f-%.2f  impact %.2f" % (lo, hi,
+                                               NS.ATTACK_IMPACT_FRAME),
+            "swing %s  timer %s cd %s" % (
+                "MELEE" if getattr(boss, "_zh_melee_swing", False) else "BOW",
+                getattr(boss, "timer", "-"),
+                getattr(boss, "attack_cooldown", "-")),
+            "skill %s t%s  live %s" % (
+                skill or "-", getattr(boss, "active_skill_timer", "-"),
+                "ON" if getattr(boss, "_zh_suppress_canvas_fx", False)
+                else "off"),
+            "part %d  proj %d" % (parts, proj),
+        ]
+        pad = 4
+        w = max(font.size(t)[0] for t in lines) + pad * 2
+        h = len(lines) * 13 + pad * 2
+        box = pygame.Surface((w, h), pygame.SRCALPHA)
+        box.fill((10, 8, 12, 190))
+        pygame.draw.rect(box, (255, 140, 60, 200), box.get_rect(), 1)
+        for i, t in enumerate(lines):
+            box.blit(font.render(t, True, (255, 224, 190)),
+                     (pad, pad + i * 13))
+        surface.blit(box, (int(x) - w - 46, int(y) - 100))
 
     @staticmethod
     def draw_boss(surface, boss, x, y):

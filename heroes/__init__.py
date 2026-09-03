@@ -649,10 +649,17 @@ _BEAM_PASS_HEROES = {"morgath"}
 # bergerigi, kerucut Splinter Blast, kurungan kristal Winter's Curse,
 # nova + kubah Cold Embrace, impact flash + shockwave + serpihan,
 # hit-stop 0.03-0.08 s, dan shake — 60 fps di luar cache sprite.
+# Zharok (heroes/zharok_fx.py): rig pemanah tulang berkerudung dari
+# level4 (canvas ter-cache) + lapisan hidup berisi pita sapuan busur
+# dari histori posisi bilah saat Ember Cleave, anak panah api modular
+# (inti + glow + sirip + trail + bara), koridor bidik Strafe, kolam
+# asap Skeleton Walk, pentagram + berkas jiwa Death Pact, retakan
+# magma + pilar api Burning Army, impact flash + shockwave + serpihan,
+# hit-stop 0.03-0.08 s, dan shake — semuanya di luar cache sprite.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
                    "sylara", "abaddon", "gorath", "razak",
                    "alchemist", "ancient_apparition", "nyzrak",
-                   "xerathis", "varkul", "ignis_drachorn"}
+                   "xerathis", "varkul", "ignis_drachorn", "zharok"}
 _LIVE_FX_MODULES = {}
 
 _LIVE_FX_PATHS = {
@@ -671,6 +678,7 @@ _LIVE_FX_PATHS = {
     "xerathis": "heroes.xerathis_fx",
     "varkul": "heroes.varkul_fx",
     "ignis_drachorn": "heroes.ignis_drachorn_fx",
+    "zharok": "heroes.zharok_fx",
 }
 
 
