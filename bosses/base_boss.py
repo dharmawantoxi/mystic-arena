@@ -749,6 +749,19 @@ class Boss(TowerDebuffMixin):
                                 self, self.target, self.damage, False)
                         except Exception:
                             pass
+                    # ═══ IMPACT FX PYRENTH ═══
+                    # Pedang api Pyrenth mendarat: flash, sabit api,
+                    # bara/jiwa, shake, dan hit-stop 0.03-0.08 s (paket
+                    # lengkapnya di heroes/pyrenth_fx.notify_melee_impact).
+                    # Pyrenth SELALU melee — tidak ada percabangan jarak
+                    # jauh. Difilter per boss_type + try/except.
+                    if getattr(self, 'boss_type', None) == 'pyrenth':
+                        try:
+                            from heroes import pyrenth_fx as _pyrfx
+                            _pyrfx.notify_melee_impact(
+                                self, self.target, self.damage, False)
+                        except Exception:
+                            pass
                     # Cleave splash damage to nearby enemy units
                     cleave_dmg = int(self.damage * getattr(self, 'cleave_ratio', 0.40))
                     if cleave_dmg > 0:
@@ -3805,6 +3818,12 @@ class Boss(TowerDebuffMixin):
         if self.target and self.target.alive:
             self.target.take_damage(stats.get("skill_q_damage", 320), self.team)
         self._shake_screen(12)
+        # ═══ SKILL FX PYRENTH — Q "Doom Chain" ═══
+        try:
+            from heroes import pyrenth_fx as _pyrfx
+            _pyrfx.notify_skill_cast(self, 'q')
+        except Exception:
+            pass
 
     def _cast_pyrenth_w(self):
         stats = self._get_boss_stats()
@@ -3814,6 +3833,12 @@ class Boss(TowerDebuffMixin):
         heal = int(self.max_hp * 0.08)
         self.hp = min(self.max_hp, self.hp + heal)
         self._shake_screen(10)
+        # ═══ SKILL FX PYRENTH — W "Devour" ═══
+        try:
+            from heroes import pyrenth_fx as _pyrfx
+            _pyrfx.notify_skill_cast(self, 'w')
+        except Exception:
+            pass
 
     def _cast_pyrenth_e(self, enemies):
         stats = self._get_boss_stats()
@@ -3824,6 +3849,14 @@ class Boss(TowerDebuffMixin):
             if math.hypot(e.x - self.x, e.y - self.y) <= 180:
                 e.take_damage(stats.get("skill_e_damage", 380), self.team)
         self._shake_screen(18)
+        # ═══ SKILL FX PYRENTH — E "Scorched Earth" ═══
+        try:
+            from heroes import pyrenth_fx as _pyrfx
+            _pyrfx.notify_skill_cast(self, 'e')
+            _pyrfx.notify_skill_impact(self, self.x, self.y, radius=180,
+                                       skill='e')
+        except Exception:
+            pass
 
     def _cast_pyrenth_r(self, enemies):
         stats = self._get_boss_stats()
@@ -3834,6 +3867,14 @@ class Boss(TowerDebuffMixin):
             if math.hypot(e.x - self.x, e.y - self.y) <= 220:
                 e.take_damage(stats.get("skill_r_damage", 550), self.team)
         self._shake_screen(25)
+        # ═══ SKILL FX PYRENTH — R "Infernal Blade" ═══
+        try:
+            from heroes import pyrenth_fx as _pyrfx
+            _pyrfx.notify_skill_cast(self, 'r')
+            _pyrfx.notify_skill_impact(self, self.x, self.y, radius=220,
+                                       skill='r')
+        except Exception:
+            pass
 
     # ===== VOKRAHN AI (Chaos Knight) =====
     def _smart_ai_vokrahn(self, enemies, target_dist):

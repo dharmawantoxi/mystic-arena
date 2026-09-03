@@ -2955,9 +2955,96 @@ class _NS_zharok:
 # PYRENTH
 # ====================================================================
 class _NS_pyrenth:
-    """Namespace pyrenth - isi asli tidak diubah."""
+    """Namespace pyrenth — PIXEL MASTERWORK + COMBAT FX v3.
+
+    Rewrite penuh renderer + sistem tempur **PYRENTH, THE DEVOURER**
+    (mini-boss level 4).
+
+    Pembagian kerja:
+
+      RENDERER (file ini)                  LAPISAN HIDUP (heroes/pyrenth_fx.py)
+      -----------------------------------  ------------------------------------------
+      rig demon lord bersayap + pedang     trail ayunan (histori posisi bilah NYATA)
+        api, 100% prosedural               particle system (bara/asap/jiwa/serpihan)
+      palette + outline + rim light        Doom Bolt / Soul Ember modular
+      ANIMATION CONTROLLER (state,         (SPAWN->TRAVEL->TRAIL->HIT->IMPACT)
+        fase, hit window, delta time)      IMPACT FX + hit-stop + screen shake
+      ARK ayunan bilah (BLADE_ARC)         SkillFX q/w/e/r lifecycle penuh
+      telegraph tanah q/w/e/r              overlay DEBUG_CHARACTER
+      fallback penuh saat modul FX         -- semua di luar cache sprite --
+        tidak tersedia
+
+    100% PROSEDURAL: tidak ada PNG / JPG / GIF / sprite-sheet, dan tidak
+    ada pemuat gambar eksternal apa pun.
+    """
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
+
+    #: flag debug global (hitbox/hurtbox/range/state/frame/FPS/partikel/
+    #: skill state/attack timer).  Diubah dari luar:
+    #:   ``bosses.level4._NS_pyrenth.DEBUG_CHARACTER = True``
+    DEBUG_CHARACTER = False
+
+    # ── STATE LAPISAN HIDUP ───────────────────────────────────────
+    _LIVE_MOD = None
+    _last_rig = None                 # rig terakhir (untuk afterimage FX)
+    _last_rig_off = (0, 0)
+    _body_buf = None
+    RIG_W, RIG_H = 320, 240
+    RIG_OX, RIG_OY = 160, 140
+    GROUND_DY = 58
+
+    # ── KONSTANTA TEMPUR (dikontrakkan dengan AI di base_boss) ──
+    #: durasi skill dalam FRAME engine (active_skill_timer) — SAMA PERSIS
+    #: dengan yang di-set ``_cast_pyrenth_*`` di bosses/base_boss.py.
+    SKILL_DUR = {"q": 50, "w": 40, "e": 60, "r": 70}
+    #: radius damage DUNIA (px) — sama dengan cek jarak di AI.
+    SKILL_RADIUS = {"q": 200, "w": 200, "e": 180, "r": 220}
+    #: jangkauan tebasan pedang api (px dunia) untuk overlay debug & tes.
+    MELEE_REACH = 96
+
+    #: jendela hit aktif (progress 0..1) + frame impact. ``0.52`` dipakai
+    #: renderer (puncak ayunan BLADE_ARC) DAN lapisan hidup (momen impact)
+    #: — satu angka, satu detak.
+    ATTACK_ACTIVE_WINDOW = (0.38, 0.62)
+    ATTACK_IMPACT_FRAME = 0.52
+
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.12),
+        ("WINDUP",       0.12, 0.30),
+        ("SWING",        0.30, 0.50),
+        ("IMPACT",       0.50, 0.62),
+        ("FOLLOW",       0.62, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+
+    #: prioritas state (besar menang) — dibaca controller + debug + FX.
+    ANIM_STATES = {
+        "IDLE": 0, "WALK": 10, "RUN": 15, "CHARGE": 30, "CAST": 35,
+        "ATTACK": 40, "SWING": 45, "SKILL": 50, "SPECIAL": 55,
+        "HIT": 60, "HURT": 65, "DEATH": 100,
+    }
+
+    # ── ARK BILAH: SATU SUMBER KEBENARAN ──────────────────────────
+    # (t0, t1, phi0, phi1, ease).  Konvensi ruang layar (y ke bawah):
+    #   tip = grip + (facing * cos(phi) * L, -sin(phi) * L)
+    # guard phi = 0.96 rad (~55° depan-atas).  Ayunan: guard -> wind-up
+    # ke atas-belakang (2.18-2.88) -> tebasan cepat ke bawah (2.88 ->
+    # -1.31, melewati 0.52 = IMPACT) -> follow-through -> kembali ke
+    # guard.  Loop TERTUTUP: phi(0) == phi(1), dan tidak ada satu pun
+    # segmen yang melompat — bilah tidak pernah teleport.  Lapisan hidup
+    # heroes/pyrenth_fx.py menyimpan tabel cadangan IDENTIK dan selalu
+    # membaca fungsi di sini bila tersedia.
+    BLADE_ARC = (
+        (0.00, 0.12,  0.96,  2.18, "out"),
+        (0.12, 0.30,  2.18,  2.88, "io"),
+        (0.30, 0.50,  2.88, -1.31, "oc"),
+        (0.50, 0.62, -1.31, -1.05, "hold"),
+        (0.62, 0.82, -1.05, -0.44, "io"),
+        (0.82, 1.00, -0.44,  0.96, "io"),
+    )
+    _BLADE_HALF = 34.0           # panjang bilah (px, skala layar 1)
+    _GRIP = (26.0, -8.7)         # grip diam (relatif jangkar badan)
 
     # ---------------------------------------------------------------------------
     # HD Demon Palette - Dark red skin / orange fire / black armor
@@ -3381,33 +3468,246 @@ class _NS_pyrenth:
                             2, int(200 * visibility))
 
 
+    # ===================================================================
+    # GERBANG LAPISAN HIDUP (heroes/pyrenth_fx)
+    #   Trail sabetan, partikel, proyektil, skill FX, impact, hit-stop,
+    #   dan screen shake hidup di RUANG LAYAR skala 1:1 supaya tidak ikut
+    #   beku / menyusut bersama sprite cache di lane hero. Kalau modulnya
+    #   tidak ada, owns() False dan renderer menggambar semuanya sendiri
+    #   lewat jalur canvas (visual kehilangan polish, TIDAK PERNAH
+    #   kehilangan efek).
+    # ===================================================================
+    @staticmethod
+    def _live_module():
+        NS = _NS_pyrenth
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import pyrenth_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "PYRENTH_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    @staticmethod
+    def live_fx_ready():
+        return _NS_pyrenth._live_module() is not None
+
+    @staticmethod
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Pasang/gambar lapisan hidup. Return (mod_untuk_draw, owned)."""
+        NS = _NS_pyrenth
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+            if owned and not want_draw:
+                # Lane hero: yang menggambar lapisan hidup adalah pipeline
+                # heroes/__init__ (_live_fx_pre/_live_fx_post). Kalau
+                # ternyata TIDAK ada yang menggambarnya, jangan matikan
+                # fallback canvas — karakter tidak boleh kehilangan FX
+                # secara diam-diam.
+                checker = getattr(mod, "recently_drawn", None)
+                if checker is not None:
+                    owned = bool(checker(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    # ===================================================================
+    # ANIMATION CONTROLLER
+    #   Satu-satunya sumber kebenaran state/fase/timing. Lapisan hidup,
+    #   overlay debug, dan alat uji semuanya membacanya dari sini.
+    # ===================================================================
+    @staticmethod
+    def _ease(kind, t):
+        if t <= 0.0:
+            return 0.0
+        if t >= 1.0:
+            return 1.0
+        if kind == "out":
+            return 1.0 - (1.0 - t) * (1.0 - t)
+        if kind == "oc":                              # out-cubic (cepat)
+            return 1.0 - (1.0 - t) ** 3
+        if kind == "in":
+            return t * t
+        if kind == "hold":
+            return math.sin(t * math.pi * 0.5)
+        return t * t * (3.0 - 2.0 * t)                # in-out (smoothstep)
+
+    @staticmethod
+    def attack_phases_order():
+        return tuple(name for name, _a, _b in _NS_pyrenth.ATTACK_PHASES)
+
+    @staticmethod
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1."""
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_pyrenth.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    # ── GEOMETRI BILAH (dipakai canvas, trail, & hitbox) ──────────
+    @staticmethod
+    def _blade_lift(progress):
+        """Kenaikan grip (0..1) saat ayunan.
+
+        Bilah tidak hanya BERPUTAR — grip-nya juga naik saat wind-up dan
+        menghunjam turun saat impact.  Itu yang memberi bobot: tangan
+        ikut bergerak, bukan cuma pedangnya yang berotasi di tempat.
+        Lapisan hidup punya fallback identik di
+        ``heroes/pyrenth_fx._fallback_lift``.
+        """
+        NS = _NS_pyrenth
+        p = max(0.0, min(1.0, float(progress)))
+        E = NS._ease
+        if p < 0.12:
+            return 0.5 * E("out", p / 0.12)
+        if p < 0.30:
+            return 0.5 + 0.4 * E("io", (p - 0.12) / 0.18)
+        if p < 0.50:
+            return 0.9 - 0.9 * E("oc", (p - 0.30) / 0.20)
+        if p < 0.62:
+            return -0.12 * E("hold", (p - 0.50) / 0.12)
+        if p < 0.82:
+            return -0.12 + 0.17 * E("io", (p - 0.62) / 0.20)
+        return 0.05 * (1.0 - E("io", (p - 0.82) / 0.18))
+
+    @staticmethod
+    def _blade_arc(progress):
+        """``(phi, lift)`` ARK bilah — SATU sumber kebenaran."""
+        NS = _NS_pyrenth
+        p = max(0.0, min(1.0, float(progress)))
+        for t0, t1, a0, a1, kind in NS.BLADE_ARC:
+            if t0 <= p < t1 or (p >= 1.0 and t1 >= 1.0):
+                e = NS._ease(kind, (p - t0) / max(0.0001, t1 - t0))
+                return a0 + (a1 - a0) * e, NS._blade_lift(p)
+        return NS.BLADE_ARC[0][2], 0.0
+
+    @staticmethod
+    def blade_geometry(facing, action, phase, attack_progress):
+        """``(grip, tip_atas, ujung_bawah, phi)`` bilah — lokal badan.
+
+        Titik-titik RELATIF jangkar badan ``(cx, cy)`` di skala layar 1.
+        Inilah satu-satunya fungsi yang menghitung posisi pedang:
+        canvas menggambar bilahnya, lapisan hidup mengukur trail &
+        hitbox-nya, overlay debug menggambar rentang-nya.
+        """
+        NS = _NS_pyrenth
+        ap = max(0.0, min(1.0, float(attack_progress)))
+        if action in ("swing", "attack", "melee"):
+            phi, lift = NS._blade_arc(ap)
+        elif action == "r_cast":
+            # INFERNAL BLADE: ayunan ultimate memakai ARK yang sama,
+            # jadi bilah ultimate juga tidak pernah teleport.
+            phi, lift = NS._blade_arc(ap)
+            lift += 0.25
+        elif action == "q_cast":
+            phi, lift = 0.20 + 0.05 * math.sin(phase), 0.10   # menuding
+        elif action == "w_cast":
+            phi, lift = 1.15, -0.10          # bilah turun, cakar bekerja
+        elif action == "e_cast":
+            phi, lift = 1.75 + 0.08 * math.sin(phase * 0.8), 0.55
+        elif action == "death":
+            phi, lift = 0.30, -0.15          # bilah terkulai
+        else:
+            phi = 0.96 + 0.06 * math.sin(phase * 0.8)
+            lift = 0.0
+        gx = facing * (NS._GRIP[0] + 5.0 * lift)
+        gy = NS._GRIP[1] - 9.0 * lift
+        L = NS._BLADE_HALF
+        dx = facing * math.cos(phi) * L
+        dy = -math.sin(phi) * L
+        return ((gx, gy),
+                (gx + dx, gy + dy),
+                (gx + facing * math.cos(phi) * L * 0.55,
+                 gy - math.sin(phi) * L * 0.55),
+                phi)
+
+    # ── TERJANGAN (skill R) ───────────────────────────────────────
+    @staticmethod
+    def _lunge_offset(progress):
+        """Geser visual terjangan Infernal Blade (px dunia, arah facing).
+
+        Puncak (46 px) jatuh di engine progress 0.302-0.605.  Lapisan
+        hidup membaca fungsi INI (bukan tabel sendiri) lewat
+        ``heroes/pyrenth_fx.lunge_offset``.
+        """
+        NS = _NS_pyrenth
+        p = max(0.0, min(1.0, float(progress)))
+        if p < 0.302:
+            return 46.0 * NS._ease("oc", p / 0.302)
+        if p < 0.605:
+            return 46.0
+        if p < 1.0:
+            return 46.0 * (1.0 - NS._ease("io", (p - 0.605) / 0.395))
+        return 0.0
+
     # ---------------------------------------------------------------------------
     # State management
     # ---------------------------------------------------------------------------
+    @staticmethod
     def _detect_moving(boss):
-        if not hasattr(boss, "_pyr_last_x"):
-            boss._pyr_last_x = boss.x
-            boss._pyr_last_y = boss.y
-            return False
-        dx = abs(boss.x - boss._pyr_last_x)
-        dy = abs(boss.y - boss._pyr_last_y)
-        boss._pyr_last_x = boss.x
-        boss._pyr_last_y = boss.y
-        return dx + dy > 0.3
+        x = getattr(boss, "x", 0)
+        y = getattr(boss, "y", 0)
+        lx = getattr(boss, "_pyr_last_x", x)
+        ly = getattr(boss, "_pyr_last_y", y)
+        boss._pyr_last_x = x
+        boss._pyr_last_y = y
+        dx = abs(x - lx)
+        dy = abs(y - ly)
+        boss._pyr_speed = dx + dy
+        return (dx + dy) > 0.3
 
+    @staticmethod
+    def _update_pyr_anim(boss, moving=False):
+        """Controller: delta time, state + prioritas, timeline serangan.
 
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
+        Pyrenth SELALU melee (pedang api) — tidak ada mode jarak jauh,
+        jadi tidak ada percabangan swing/tembak.
+        """
+        NS = _NS_pyrenth
+
+        # ── delta time nyata ────────────────────────────────────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                              # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_pyr_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._pyr_last_ms = now
+        boss._pyr_dt = dt
+
+        # ── timeline serangan (timer engine menghitung MUNDUR) ─────
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 42)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_pyr_prev_timer", 0))
         active = bool(getattr(boss, "_pyr_attack_active", False))
 
-        if timer >= cooldown - 1 and previous <= 1:
+        # serangan baru: timer melonjak naik (di-reset ke cooldown)
+        if timer > previous + 1 and timer >= cooldown - 2:
             boss._pyr_attack_active = True
             boss._pyr_attack_frame = 0
             active = True
         elif active:
-            boss._pyr_attack_frame = int(getattr(boss, "_pyr_attack_frame", 0)) + 1
+            boss._pyr_attack_frame = int(
+                getattr(boss, "_pyr_attack_frame", 0)) + 1
             if boss._pyr_attack_frame > cooldown:
                 boss._pyr_attack_active = False
                 boss._pyr_attack_frame = 0
@@ -3418,10 +3718,89 @@ class _NS_pyrenth:
             active = False
 
         boss._pyr_prev_timer = timer
-        boss._pyr_attack_progress = (
-            min(1.0, getattr(boss, "_pyr_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
+        frame = int(getattr(boss, "_pyr_attack_frame", 0))
+        # durasi animasi dibatasi supaya tebasan berat tetap berbobot
+        anim_len = max(10, min(cooldown - 1, 30))
+        progress = min(1.0, frame / float(anim_len)) if active else 0.0
+        boss._pyr_attack_progress = progress
+        boss._pyr_attack_phase = (NS.attack_phase(progress) if active
+                                  else "NONE")
+        lo, hi = NS.ATTACK_ACTIVE_WINDOW
+        boss._pyr_hit_window = bool(active and lo <= progress <= hi)
+
+        # ── prioritas state ─────────────────────────────────────────
+        skill = getattr(boss, "active_skill", None)
+        alive = bool(getattr(boss, "alive", True))
+        hurt = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        speed = float(getattr(boss, "_pyr_speed", 0.0))
+
+        if not alive:
+            state = "DEATH"
+        elif skill == "r":
+            state = "SPECIAL"
+        elif skill in ("q", "w", "e"):
+            state = "SKILL"
+        elif active and progress < 0.12:
+            state = "CHARGE"
+        elif active and progress < 0.30:
+            state = "ATTACK"
+        elif active:
+            state = "SWING" if progress < 0.62 else "ATTACK"
+        elif hurt > 0:
+            state = "HURT"
+        elif moving:
+            state = "RUN" if speed > 1.2 else "WALK"
+        else:
+            state = "IDLE"
+
+        prev_state = getattr(boss, "_pyr_state", "IDLE")
+        if prev_state != state:
+            boss._pyr_state_prev = prev_state
+            boss._pyr_state_time = 0.0
+        else:
+            boss._pyr_state_time = getattr(boss, "_pyr_state_time", 0.0) + dt
+        boss._pyr_state = state
+        boss._pyr_state_priority = NS.ANIM_STATES.get(state, 0)
+        return state
+
+    @staticmethod
+    def _update_attack_anim(boss):
+        """API LAMA — dipertahankan untuk kompatibilitas mundur.
+
+        Mendelegasikan ke controller animasi v3 supaya tidak ada dua
+        sumber kebenaran yang saling menimpa ``_pyr_attack_progress``.
+        """
+        return _NS_pyrenth._update_pyr_anim(
+            boss, moving=(float(getattr(boss, "_pyr_speed", 0.0)) > 0.3))
+
+    @staticmethod
+    def _resolve_pose_pyr(boss, moving):
+        """(action, phase, attack_progress) untuk renderer + lapisan hidup."""
+        NS = _NS_pyrenth
+        pulse = float(getattr(boss, "pulse", 0.0))
+        state = getattr(boss, "_pyr_state", "IDLE")
+        ap = float(getattr(boss, "_pyr_attack_progress", 0.0) or 0.0)
+        skill = getattr(boss, "active_skill", None)
+        timer = int(getattr(boss, "active_skill_timer", 0))
+
+        if state in ("SKILL", "SPECIAL") and skill in ("q", "w", "e", "r"):
+            dur = NS.SKILL_DUR.get(skill, 50)
+            prog = max(0.0, min(1.0, 1.0 - timer / float(dur)))
+            action = {"q": "q_cast", "w": "w_cast",
+                      "e": "e_cast", "r": "r_cast"}[skill]
+            return action, pulse, prog
+        if state in ("ATTACK", "SWING", "CHARGE"):
+            return "attack", pulse, ap
+        if state == "RUN":
+            return "run", pulse * 2.6, 0.0
+        if state == "WALK":
+            return "walk", pulse * 2.3, 0.0
+        if state == "DEATH":
+            return "death", pulse, 0.0
+        if state == "HURT":
+            return "hurt", pulse, 0.0
+        return "idle", pulse, 0.0
+
 
 
     def _manage_projectiles(boss, surface, phase):
@@ -3457,190 +3836,314 @@ class _NS_pyrenth:
     # MAIN ENTRY
     # ===================================================================
     def draw_pyrenth(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus jalur hero-lane.
+
+        Urutan render:
+          GROUND -> GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/
+          HEAD/WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+          SKILL FX -> IMPACT FX -> DEBUG.
+
+        Trail / partikel / proyektil / impact / hit-stop / shake hidup di
+        ``heroes/pyrenth_fx`` (ruang layar 1:1); canvas hanya fallback
+        bila modul itu tidak tersedia.
+        """
+        NS = _NS_pyrenth
         pulse = float(getattr(boss, "pulse", 0.0))
         active_skill = getattr(boss, "active_skill", None)
         skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_pyrenth._detect_moving(boss)
-        _NS_pyrenth._update_attack_anim(boss)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        hurt = int(getattr(boss, "hurt_flash_timer", 0) or 0)
 
-        attacking = (
-            getattr(boss, "_pyr_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
+        # ── CONTROLLER ANIMASI ─────────────────────────────────────
+        moving = NS._detect_moving(boss)
+        NS._update_pyr_anim(boss, moving)
+        action, phase, ap = NS._resolve_pose_pyr(boss, moving)
+        boss._pyr_pose_action = action
+        boss._pyr_phase = phase
 
-        # BG aura
-        _NS_pyrenth._draw_hellfire_aura(surface, x, y, pulse, active_skill)
-        _NS_pyrenth._draw_ground_runes(surface, x, y + 46, pulse, active_skill)
+        # ── LAPISAN HIDUP (ground) ─────────────────────────────────
+        live, owned = NS._live_fx(boss, surface, x, y, not hero_lane,
+                                  portrait)
+        boss._pyr_suppress_canvas_fx = owned
 
-        # Skill ground effects
-        if active_skill == "e":
-            _NS_pyrenth._draw_scorched_earth_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # Character
-        if attacking:
-            _NS_pyrenth._draw_pyr_attack(surface, boss, x, y)
-        elif active_skill == "q":
-            _NS_pyrenth._draw_pyr_qcast(surface, boss, x, y, skill_timer)
-        elif active_skill == "w":
-            _NS_pyrenth._draw_pyr_wcast(surface, boss, x, y, skill_timer)
-        elif active_skill == "e":
-            _NS_pyrenth._draw_pyr_ecast(surface, boss, x, y, skill_timer)
-        elif active_skill == "r":
-            _NS_pyrenth._draw_pyr_rcast(surface, boss, x, y, skill_timer)
-        elif moving:
-            _NS_pyrenth._draw_pyr_walk(surface, boss, x, y)
+        # ── GESER VISUAL (terjangan R / lunge tebas / flinch) ──────
+        if action == "r_cast":
+            dx = int(NS._lunge_offset(ap) * facing)
+        elif action in ("attack", "swing", "melee"):
+            dx = int(math.sin(ap * math.pi) * 5) * facing
+        elif action == "q_cast":
+            dx = int(math.sin(ap * math.pi * 2) * 2) * -facing
+        elif hurt > 0:
+            dx = int(min(3, hurt * 0.5)) * -facing
         else:
-            _NS_pyrenth._draw_pyr_idle(surface, boss, x, y)
+            dx = 0
+        bx, by = x + dx, y
 
-        # Skill triggers
-        _NS_pyrenth._handle_skill_projectiles(boss, x, y, active_skill, skill_timer)
+        # ── GROUND FX / AURA ───────────────────────────────────────
+        if not portrait:
+            NS._draw_hellfire_aura(surface, x, y, pulse, active_skill)
+            NS._draw_ground_runes(surface, x, y + 46, pulse, active_skill)
+            if not owned and active_skill == "e":
+                NS._draw_scorched_earth_ground(surface, boss, x, y,
+                                               skill_timer, pulse)
 
-        # Projectiles/effects
-        _NS_pyrenth._manage_projectiles(boss, surface, pulse)
+        # ── BADAN (shadow -> wisps -> rig+pedang, satu komposit) ──
+        bob = 0
+        if action in ("idle", "q_cast", "w_cast", "r_cast"):
+            bob = int(math.sin(pulse * 0.7) * 2)
+        elif action in ("walk", "run"):
+            bob = int(abs(math.sin(phase * 1.2)) * 3)
+        NS._draw_shadow(surface, bx, y + NS.GROUND_DY)
+        NS._draw_hellfire_wisps(surface, bx, y + 42, pulse,
+                                trail=action in ("walk", "run"),
+                                facing=facing,
+                                intense=(action in ("attack", "swing",
+                                                    "melee", "q_cast",
+                                                    "w_cast", "e_cast",
+                                                    "r_cast")))
+        NS._draw_pyr_body(surface, bx, by + bob, facing, phase, action,
+                          ap, hurt=hurt)
 
-        # Foreground skill effects
-        if active_skill == "e":
-            _NS_pyrenth._draw_scorched_earth(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_pyrenth._draw_devour_effect(surface, boss, x, y, skill_timer, pulse)
+        # ── PROYEKTIL + SKILL FX DEPAN (fallback canvas) ───────────
+        if not portrait and not owned:
+            if action in ("attack", "swing", "melee", "r_cast"):
+                NS._draw_sword_swing_arc(surface, bx, by, facing, ap)
+                NS._draw_swing_impact(surface, bx, by, facing, ap)
+            NS._handle_skill_projectiles(boss, x, y, active_skill,
+                                         skill_timer)
+            NS._manage_projectiles(boss, surface, pulse)
+            if active_skill == "e":
+                NS._draw_scorched_earth(surface, boss, x, y, skill_timer,
+                                        pulse)
+            elif active_skill == "w":
+                NS._draw_devour_effect(surface, boss, x, y, skill_timer,
+                                       pulse)
+
+        # ── LAPISAN HIDUP DI ATAS (trail/proyektil/impact/skill) ──
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        # ── DEBUG ──────────────────────────────────────────────────
+        if getattr(NS, "DEBUG_CHARACTER", False) and not portrait:
+            NS._draw_pyrenth_debug(surface, boss, x, y)
 
 
     def _handle_skill_projectiles(boss, x, y, active_skill, timer):
-        tx, ty = _NS_pyrenth._target_position(boss, x, y)
+        """Fallback canvas: lahirkan rantai Q / busur R sekali per cast.
+
+        Dipakai HANYA saat lapisan hidup tidak tersedia; durasi diambil
+        dari ``SKILL_DUR`` supaya tidak pernah menyimpang dari AI.
+        """
+        NS = _NS_pyrenth
+        tx, ty = NS._target_position(boss, x, y)
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
 
         if active_skill == "q":
-            duration = 70
-            progress = max(0.0, min(1.0, 1 - timer / duration))
-            if 0.25 < progress < 0.35 and not getattr(boss, "_pyr_q_spawned", False):
-                sx = x + 20 * boss.direction
-                sy = y - 5
-                _NS_pyrenth._spawn_doom_chain(boss, sx, sy, tx, ty)
+            duration = NS.SKILL_DUR["q"]
+            progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+            if 0.25 < progress < 0.35 and not getattr(boss,
+                                                      "_pyr_q_spawned",
+                                                      False):
+                NS._spawn_doom_chain(boss, x + 20 * facing, y - 5, tx, ty)
                 boss._pyr_q_spawned = True
             if progress > 0.7:
                 boss._pyr_q_spawned = False
 
         elif active_skill == "r":
-            duration = 60
-            progress = max(0.0, min(1.0, 1 - timer / duration))
-            if 0.35 < progress < 0.45 and not getattr(boss, "_pyr_r_spawned", False):
-                _NS_pyrenth._spawn_infernal_arc(boss, x + 15 * boss.direction, y, boss.direction)
+            duration = NS.SKILL_DUR["r"]
+            progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+            if 0.35 < progress < 0.45 and not getattr(boss,
+                                                      "_pyr_r_spawned",
+                                                      False):
+                NS._spawn_infernal_arc(boss, x + 15 * facing, y, facing)
                 boss._pyr_r_spawned = True
             if progress > 0.7:
                 boss._pyr_r_spawned = False
 
+        else:
+            boss._pyr_q_spawned = False
+            boss._pyr_r_spawned = False
+
 
     # ===================================================================
-    # POSE MODES
+    # POSE MODES — API LAMA
+    #   Dipertahankan supaya integrasi lama (alat uji, portrait, kode
+    #   pemanggil langsung) tidak patah. Semuanya kini mendelegasikan ke
+    #   pipeline komposit v3, jadi tidak ada dua jalur gambar yang bisa
+    #   menyimpang.
     # ===================================================================
     def _draw_pyr_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.8) * 3)
-        _NS_pyrenth._draw_shadow(surface, x, y + 58)
-        _NS_pyrenth._draw_hellfire_wisps(surface, x, y + 42, boss.pulse)
-        _NS_pyrenth._draw_pyr_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
+        NS = _NS_pyrenth
+        pulse = float(getattr(boss, "pulse", 0.0))
+        bob = int(math.sin(pulse * 0.8) * 3)
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        NS._draw_shadow(surface, x, y + NS.GROUND_DY)
+        NS._draw_hellfire_wisps(surface, x, y + 42, pulse)
+        NS._draw_pyr_body(surface, x, y + bob, facing, pulse, "idle")
 
 
     def _draw_pyr_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
+        NS = _NS_pyrenth
+        phase = float(getattr(boss, "pulse", 0.0)) * 2.2
         bob = int(math.sin(phase * 1.2) * 4)
         sway = int(math.sin(phase * 0.5) * 2)
-        _NS_pyrenth._draw_shadow(surface, x + sway, y + 58)
-        _NS_pyrenth._draw_hellfire_wisps(surface, x + sway, y + 42, phase, trail=True,
-                             facing=boss.direction)
-        _NS_pyrenth._draw_pyr_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        NS._draw_shadow(surface, x + sway, y + NS.GROUND_DY)
+        NS._draw_hellfire_wisps(surface, x + sway, y + 42, phase,
+                                trail=True, facing=facing)
+        NS._draw_pyr_body(surface, x + sway, y - bob, facing, phase, "walk")
 
 
     def _draw_pyr_attack(surface, boss, x, y):
-        progress = getattr(boss, "_pyr_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
+        NS = _NS_pyrenth
+        pulse = float(getattr(boss, "pulse", 0.0))
+        progress = max(0.0, min(1.0, getattr(boss, "_pyr_attack_progress",
+                                             0.0)))
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        lunge = int(math.sin(progress * math.pi) * 5) * facing
+        NS._draw_shadow(surface, x + lunge, y + NS.GROUND_DY)
+        NS._draw_hellfire_wisps(surface, x + lunge, y + 42, pulse,
+                                intense=True)
+        NS._draw_pyr_body(surface, x + lunge, y, facing, pulse, "attack",
+                          progress)
+        if not getattr(boss, "_pyr_suppress_canvas_fx", False):
+            NS._draw_sword_swing_arc(surface, x + lunge, y, facing,
+                                     progress)
+            NS._draw_swing_impact(surface, x + lunge, y, facing, progress)
 
-        _NS_pyrenth._draw_shadow(surface, x + lunge, y + 58)
-        _NS_pyrenth._draw_hellfire_wisps(surface, x + lunge, y + 42, boss.pulse, intense=True)
-        _NS_pyrenth._draw_pyr_body(surface, x + lunge, y, boss.direction, boss.pulse,
-                       "attack", progress)
-        _NS_pyrenth._draw_sword_swing_arc(surface, x + lunge, y, boss.direction, progress)
-        _NS_pyrenth._draw_swing_impact(surface, x + lunge, y, boss.direction, progress)
+
+    def _draw_pyr_cast(surface, boss, x, y, timer, key):
+        """Pose cast generik untuk q/w/e/r (durasi dari SKILL_DUR)."""
+        NS = _NS_pyrenth
+        pulse = float(getattr(boss, "pulse", 0.0))
+        duration = NS.SKILL_DUR.get(key, 50)
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        shift = (int(NS._lunge_offset(progress) * facing) if key == "r"
+                 else 0)
+        bob = int(math.sin(pulse * 0.7) * 2) if key != "r" else 0
+        NS._draw_shadow(surface, x + shift, y + NS.GROUND_DY)
+        NS._draw_hellfire_wisps(surface, x + shift, y + 42, pulse,
+                                intense=True)
+        NS._draw_pyr_body(surface, x + shift, y + bob, facing, pulse,
+                          key + "_cast", progress)
 
 
     def _draw_pyr_qcast(surface, boss, x, y, timer):
-        duration = 70
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_pyrenth._draw_shadow(surface, x, y + 58)
-        _NS_pyrenth._draw_hellfire_wisps(surface, x, y + 42, boss.pulse, intense=True)
-        _NS_pyrenth._draw_pyr_body(surface, x, y + bob, boss.direction, boss.pulse,
-                       "q_cast", progress)
+        _NS_pyrenth._draw_pyr_cast(surface, boss, x, y, timer, "q")
 
 
     def _draw_pyr_wcast(surface, boss, x, y, timer):
-        duration = 55
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_pyrenth._draw_shadow(surface, x, y + 58)
-        _NS_pyrenth._draw_hellfire_wisps(surface, x, y + 42, boss.pulse, intense=True)
-        _NS_pyrenth._draw_pyr_body(surface, x, y + bob, boss.direction, boss.pulse,
-                       "w_cast", progress)
+        _NS_pyrenth._draw_pyr_cast(surface, boss, x, y, timer, "w")
 
 
     def _draw_pyr_ecast(surface, boss, x, y, timer):
-        duration = 70
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_pyrenth._draw_shadow(surface, x, y + 58)
-        _NS_pyrenth._draw_hellfire_wisps(surface, x, y + 42, boss.pulse, intense=True)
-        _NS_pyrenth._draw_pyr_body(surface, x, y + bob, boss.direction, boss.pulse,
-                       "e_cast", progress)
+        _NS_pyrenth._draw_pyr_cast(surface, boss, x, y, timer, "e")
 
 
     def _draw_pyr_rcast(surface, boss, x, y, timer):
-        duration = 60
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        lunge = int(math.sin(progress * math.pi) * 8) * boss.direction
-
-        _NS_pyrenth._draw_shadow(surface, x + lunge, y + 58)
-        _NS_pyrenth._draw_hellfire_wisps(surface, x + lunge, y + 42, boss.pulse, intense=True)
-        _NS_pyrenth._draw_pyr_body(surface, x + lunge, y, boss.direction, boss.pulse,
-                       "r_cast", progress)
+        _NS_pyrenth._draw_pyr_cast(surface, boss, x, y, timer, "r")
 
 
-    # ===================================================================
-    # BODY RENDERING
-    # ===================================================================
-    def _draw_pyr_body(surface, cx, cy, facing, phase, action, attack_progress=0):
-        """Full demon composition."""
+    def _draw_pyr_body_raw(buf, ox, oy, facing, phase, action,
+                           attack_progress=0):
+        """Gambar iblis lengkap ke buffer — URUTAN LAYER v3.
+
+            sayap (back limb) -> ekor -> tubuh bawah -> torso -> armor
+            -> lengan + pedang -> kepala
+
+        Semua lengan mengambil posisi tangan dari ``blade_geometry()``
+        sehingga bilah, tangan, trail, dan hitbox mustahil berbeda.
+        """
+        NS = _NS_pyrenth
         is_casting = action.endswith("_cast")
 
-        # Wings drawn first (spread wide behind)
-        _NS_pyrenth._draw_wings(surface, cx, cy - 5, facing, phase, action)
-
-        # Tail (behind)
-        _NS_pyrenth._draw_tail(surface, cx, cy + 15, facing, phase)
-
-        # Lower body (loincloth + belt)
-        _NS_pyrenth._draw_lower_body(surface, cx, cy + 12, phase)
-
-        # Torso (huge muscular chest with armor)
-        _NS_pyrenth._draw_torso(surface, cx, cy - 5, phase, is_casting)
-
-        # Shoulder pauldrons
-        _NS_pyrenth._draw_pauldrons(surface, cx, cy - 15, phase)
-
-        # Arms + sword
-        if action == "attack":
-            _NS_pyrenth._draw_attack_arms(surface, cx, cy - 5, facing, phase, attack_progress)
+        # 1) sayap (paling belakang)
+        NS._draw_wings(buf, ox, oy - 5, facing, phase, action)
+        # 2) ekor
+        NS._draw_tail(buf, ox, oy + 15, facing, phase)
+        # 3) tubuh bawah (cawat + sabuk)
+        NS._draw_lower_body(buf, ox, oy + 12, phase)
+        # 4) torso (dada berotot + armor dada)
+        NS._draw_torso(buf, ox, oy - 5, phase, is_casting)
+        # 5) pauldron
+        NS._draw_pauldrons(buf, ox, oy - 15, phase)
+        # 6) lengan + pedang api
+        if action in ("attack", "swing", "melee"):
+            NS._draw_attack_arms(buf, ox, oy - 5, facing, phase,
+                                 attack_progress)
         elif action == "r_cast":
-            _NS_pyrenth._draw_r_arms(surface, cx, cy - 5, facing, phase, attack_progress)
+            NS._draw_r_arms(buf, ox, oy - 5, facing, phase,
+                            attack_progress)
         elif action == "q_cast":
-            _NS_pyrenth._draw_q_cast_arms(surface, cx, cy - 5, facing, phase)
+            NS._draw_q_cast_arms(buf, ox, oy - 5, facing, phase)
         elif action == "w_cast":
-            _NS_pyrenth._draw_w_cast_arms(surface, cx, cy - 5, facing, phase, attack_progress)
+            NS._draw_w_cast_arms(buf, ox, oy - 5, facing, phase,
+                                 attack_progress)
         elif action == "e_cast":
-            _NS_pyrenth._draw_e_cast_arms(surface, cx, cy - 5, facing, phase)
+            NS._draw_e_cast_arms(buf, ox, oy - 5, facing, phase)
         else:
-            _NS_pyrenth._draw_idle_arms(surface, cx, cy - 5, facing, phase)
+            NS._draw_idle_arms(buf, ox, oy - 5, facing, phase, action)
+        # 7) kepala bertanduk
+        NS._draw_pyr_head(buf, ox, oy - 30, facing, phase, is_casting)
 
-        # Head with horns
-        _NS_pyrenth._draw_pyr_head(surface, cx, cy - 30, facing, phase, is_casting)
+
+    def _draw_pyr_body(surface, cx, cy, facing, phase, action,
+                       attack_progress=0, hurt=0):
+        """Pipeline rig: buffer -> crop -> hit flash -> outline -> blit.
+
+        Menggambar ke buffer sekali lalu meng-outline hasil crop-nya
+        memberi SILUET 4-arah yang solid — jauh lebih terbaca daripada
+        meng-outline tiap bagian satu per satu, dan jauh lebih murah.
+        Rig hasilnya disimpan sebagai ``_last_rig`` supaya lapisan hidup
+        bisa membuat afterimage TANPA menggambar ulang badan.
+        """
+        NS = _NS_pyrenth
+        if NS._body_buf is None:
+            NS._body_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                          pygame.SRCALPHA)
+        buf = NS._body_buf
+        buf.fill((0, 0, 0, 0))
+        NS._draw_pyr_body_raw(buf, NS.RIG_OX, NS.RIG_OY, facing, phase,
+                              action, attack_progress)
+        used = buf.get_bounding_rect(min_alpha=1)
+        if used.width <= 2 or used.height <= 2:
+            return
+        used.inflate_ip(4, 4)
+        used.clamp_ip(buf.get_rect())
+        sub = buf.subsurface(used).copy()
+        ox = int(cx) - NS.RIG_OX + used.left
+        oy = int(cy) - NS.RIG_OY + used.top
+
+        # hit flash: rig memutih pudar saat baru terkena damage
+        if hurt > 0:
+            flash = sub.copy()
+            flash.fill((255, 240, 235, 255),
+                       special_flags=pygame.BLEND_RGB_MAX)
+            flash.set_alpha(min(210, int(hurt) * 30))
+            sub.blit(flash, (0, 0))
+
+        # outline 4-arah (siluet kuat, gaya pixel-art)
+        edge = sub.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + ddx, oy + ddy))
+        try:
+            import lighting as _lighting
+            if _lighting is not None:
+                _lighting.apply_to_rig(sub, rim_add=(52, 22, 12),
+                                       shade_mul=170)
+        except Exception:
+            pass
+        surface.blit(sub, (ox, oy))
+        # simpan rig terakhir untuk afterimage FX
+        NS._last_rig = sub
+        NS._last_rig_off = (ox - int(cx), oy - int(cy))
 
 
     def _draw_wings(surface, cx, cy, facing, phase, action):
@@ -4128,213 +4631,178 @@ class _NS_pyrenth:
                 _NS_pyrenth._aacircle(surface, _NS_pyrenth.PALETTE["horn_dark"], (rx, ry), 1)
 
 
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Sword in front hand, other arm at side."""
+    # ===================================================================
+    # LENGAN — SEMUA posisi tangan berasal dari blade_geometry()
+    #   Tidak ada satu pun lengan yang menghitung sudut pedangnya
+    #   sendiri; itu sebabnya bilah, tangan, trail, dan hitbox tidak
+    #   pernah bisa melenceng satu frame pun.
+    # ===================================================================
+    @staticmethod
+    def _grip_screen(cx, cy, facing, action, phase, progress):
+        """Titik grip (tangan senjata) dalam ruang buffer badan.
+
+        ``blade_geometry`` bekerja relatif JANGKAR BADAN, sedangkan
+        fungsi lengan dipanggil dengan jangkar bahu ``(cx, cy)`` =
+        jangkar badan + (0, -5).  Offset itu dikompensasi di sini.
+        """
+        NS = _NS_pyrenth
+        grip, tip_hi, tip_lo, phi = NS.blade_geometry(facing, action,
+                                                      phase, progress)
+        return ((cx + grip[0], cy + 5 + grip[1]),
+                (cx + tip_hi[0], cy + 5 + tip_hi[1]),
+                (cx + tip_lo[0], cy + 5 + tip_lo[1]), phi)
+
+    @staticmethod
+    def _draw_weapon_arm(surface, sh_x, sh_y, hand_x, hand_y, facing):
+        """Lengan dua ruas yang membengkok WAJAR ke tangan senjata.
+
+        Siku ditempatkan di tengah lalu digeser tegak lurus, jadi lengan
+        melengkung mengikuti ayunan alih-alih menjadi tongkat lurus.
+        """
+        NS = _NS_pyrenth
+        dx = hand_x - sh_x
+        dy = hand_y - sh_y
+        L = math.hypot(dx, dy) or 1.0
+        # geser siku tegak lurus: makin panjang jangkauan, makin lurus
+        bend = max(0.0, 1.0 - L / 44.0) * 9.0 + 3.0
+        mx = sh_x + dx * 0.5 - (dy / L) * bend * facing
+        my = sh_y + dy * 0.5 + (dx / L) * bend * facing
+        NS._draw_pyr_arm(surface, sh_x, sh_y, mx, my)
+        NS._draw_pyr_arm(surface, mx, my, hand_x, hand_y)
+        NS._draw_claw_hand(surface, int(hand_x), int(hand_y), facing)
+
+    @staticmethod
+    def _draw_off_arm(surface, cx, cy, facing, phase, lift=0.0,
+                      reach=0.0):
+        """Lengan bebas (tanpa senjata) — menggantung / terangkat."""
+        NS = _NS_pyrenth
+        side = -facing
         sway = math.sin(phase * 0.7) * 2
-
-        # Back arm - hanging
-        back_side = -facing
-        sh_x = cx + back_side * 16
+        sh_x = cx + side * 16
         sh_y = cy - 2
-        elbow_x = sh_x + back_side * 8
-        elbow_y = cy + 10 + int(sway)
-        hand_x = elbow_x + back_side * 4
-        hand_y = elbow_y + 10
+        elbow_x = sh_x + side * (8 + reach * 0.4)
+        elbow_y = cy + 10 - lift * 16 + sway
+        hand_x = elbow_x + side * (4 + reach * 0.6)
+        hand_y = elbow_y + 10 - lift * 14
+        NS._draw_pyr_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
+        NS._draw_pyr_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
+        NS._draw_claw_hand(surface, int(hand_x), int(hand_y), side)
+        return hand_x, hand_y
 
-        _NS_pyrenth._draw_pyr_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-        _NS_pyrenth._draw_pyr_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-        _NS_pyrenth._draw_claw_hand(surface, hand_x, hand_y, back_side)
-
-        # Front arm - holding sword
-        fs_x = cx + facing * 16
-        fs_y = cy - 2
-        fe_x = fs_x + facing * 8
-        fe_y = cy + 10 + int(sway)
-        fh_x = fe_x + facing * 4
-        fh_y = fe_y + 10
-
-        _NS_pyrenth._draw_pyr_arm(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_pyrenth._draw_pyr_arm(surface, fe_x, fe_y, fh_x, fh_y)
-        _NS_pyrenth._draw_claw_hand(surface, fh_x, fh_y, facing)
-
-        # Flaming sword held down/forward
-        _NS_pyrenth._draw_flaming_sword(surface, fh_x, fh_y, facing, "down", phase)
+    def _draw_idle_arms(surface, cx, cy, facing, phase, action="idle"):
+        """IDLE / WALK: lengan bebas menggantung, pedang ikut bernapas."""
+        NS = _NS_pyrenth
+        NS._draw_off_arm(surface, cx, cy, facing, phase)
+        grip, tip_hi, _lo, _phi = NS._grip_screen(cx, cy, facing, action,
+                                                  phase, 0.0)
+        NS._draw_weapon_arm(surface, cx + facing * 16, cy - 2,
+                            grip[0], grip[1], facing)
+        NS._draw_flaming_sword_line(surface, grip[0], grip[1], tip_hi[0],
+                                    tip_hi[1], facing, phase)
 
 
     def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
-        """Overhead sword swing."""
-        # Back arm at side
-        back_side = -facing
-        sh_x = cx + back_side * 16
-        sh_y = cy - 2
-        elbow_x = sh_x + back_side * 6
-        elbow_y = cy + 8
-        hand_x = elbow_x + back_side * 3
-        hand_y = elbow_y + 8
-        _NS_pyrenth._draw_pyr_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-        _NS_pyrenth._draw_pyr_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-        _NS_pyrenth._draw_claw_hand(surface, hand_x, hand_y, back_side)
+        """ATTACK: tebasan overhead — bilah MENGIKUTI BLADE_ARC.
 
-        # Front arm swings
-        fs_x = cx + facing * 16
-        fs_y = cy - 2
-
-        if progress < 0.25:
-            t = progress / 0.25
-            t = t * t * (3 - 2 * t)
-            arm_angle = -1.4 + 0.2 * t
-        elif progress < 0.55:
-            t = (progress - 0.25) / 0.30
-            t = 1 - (1 - t) ** 3
-            arm_angle = -1.2 + 2.4 * t
-        else:
-            t = (progress - 0.55) / 0.45
-            arm_angle = 1.2 - 0.9 * t
-
-        arm_len = 18
-        fh_x = fs_x + int(math.cos(arm_angle) * arm_len) * facing
-        fh_y = fs_y + int(math.sin(arm_angle) * arm_len)
-        elbow_x2 = fs_x + int(math.cos(arm_angle) * arm_len * 0.55) * facing
-        elbow_y2 = fs_y + int(math.sin(arm_angle) * arm_len * 0.55)
-
-        _NS_pyrenth._draw_pyr_arm(surface, fs_x, fs_y, elbow_x2, elbow_y2)
-        _NS_pyrenth._draw_pyr_arm(surface, elbow_x2, elbow_y2, fh_x, fh_y)
-        _NS_pyrenth._draw_claw_hand(surface, fh_x, fh_y, facing)
-
-        # Sword swinging
-        sword_angle = arm_angle + math.pi / 4 * facing
-        _NS_pyrenth._draw_flaming_sword_angled(surface, fh_x, fh_y, facing, sword_angle, phase)
+        Bilah tidak pernah dipindah dari pose A ke pose B; posisinya
+        selalu titik pada ARK, jadi ayunannya melengkung dan berbobot.
+        """
+        NS = _NS_pyrenth
+        # lengan bebas menahan keseimbangan (ikut tertarik saat impact)
+        lift = 0.25 * math.sin(max(0.0, min(1.0, progress)) * math.pi)
+        NS._draw_off_arm(surface, cx, cy, facing, phase, lift=lift)
+        grip, tip_hi, _lo, _phi = NS._grip_screen(cx, cy, facing, "attack",
+                                                  phase, progress)
+        NS._draw_weapon_arm(surface, cx + facing * 16, cy - 2,
+                            grip[0], grip[1], facing)
+        NS._draw_flaming_sword_line(surface, grip[0], grip[1], tip_hi[0],
+                                    tip_hi[1], facing, phase)
 
 
     def _draw_r_arms(surface, cx, cy, facing, phase, progress):
-        """R - Infernal Blade huge swing."""
-        # Similar to attack but bigger arc
-        back_side = -facing
-        sh_x = cx + back_side * 16
-        sh_y = cy - 2
-        hand_x = sh_x + back_side * 5
-        hand_y = cy + 10
-        _NS_pyrenth._draw_pyr_arm(surface, sh_x, sh_y, hand_x, hand_y)
-        _NS_pyrenth._draw_claw_hand(surface, hand_x, hand_y, back_side)
-
-        fs_x = cx + facing * 16
-        fs_y = cy - 2
-
-        if progress < 0.3:
-            t = progress / 0.3
-            arm_angle = -1.6 + 0.4 * t
-        elif progress < 0.6:
-            t = (progress - 0.3) / 0.3
-            arm_angle = -1.2 + 2.8 * t
-        else:
-            t = (progress - 0.6) / 0.4
-            arm_angle = 1.6 - 1.2 * t
-
-        arm_len = 20
-        fh_x = fs_x + int(math.cos(arm_angle) * arm_len) * facing
-        fh_y = fs_y + int(math.sin(arm_angle) * arm_len)
-        elbow_x = fs_x + int(math.cos(arm_angle) * arm_len * 0.55) * facing
-        elbow_y = fs_y + int(math.sin(arm_angle) * arm_len * 0.55)
-
-        _NS_pyrenth._draw_pyr_arm(surface, fs_x, fs_y, elbow_x, elbow_y)
-        _NS_pyrenth._draw_pyr_arm(surface, elbow_x, elbow_y, fh_x, fh_y)
-        _NS_pyrenth._draw_claw_hand(surface, fh_x, fh_y, facing)
-
-        sword_angle = arm_angle + math.pi / 4 * facing
-        _NS_pyrenth._draw_flaming_sword_angled(surface, fh_x, fh_y, facing, sword_angle, phase,
-                                    size=1.3)
+        """R — INFERNAL BLADE: ARK yang sama, bilah lebih besar."""
+        NS = _NS_pyrenth
+        NS._draw_off_arm(surface, cx, cy, facing, phase, lift=0.35)
+        grip, tip_hi, _lo, _phi = NS._grip_screen(cx, cy, facing, "r_cast",
+                                                  phase, progress)
+        NS._draw_weapon_arm(surface, cx + facing * 16, cy - 2,
+                            grip[0], grip[1], facing)
+        NS._draw_flaming_sword_line(surface, grip[0], grip[1], tip_hi[0],
+                                    tip_hi[1], facing, phase, size=1.3)
 
 
     def _draw_q_cast_arms(surface, cx, cy, facing, phase):
-        """Q cast - front arm extended forward, sword pointing."""
-        # Back arm
-        back_side = -facing
-        sh_x = cx + back_side * 16
-        sh_y = cy - 2
-        hand_x = sh_x + back_side * 5
-        hand_y = cy + 8
-        _NS_pyrenth._draw_pyr_arm(surface, sh_x, sh_y, hand_x, hand_y)
-        _NS_pyrenth._draw_claw_hand(surface, hand_x, hand_y, back_side)
-
-        # Front arm extended forward with pointing gesture
-        fs_x = cx + facing * 16
-        fs_y = cy - 2
-        fe_x = fs_x + facing * 10
-        fe_y = cy - 2
-        fh_x = fe_x + facing * 12
-        fh_y = fe_y
-
-        _NS_pyrenth._draw_pyr_arm(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_pyrenth._draw_pyr_arm(surface, fe_x, fe_y, fh_x, fh_y)
-        _NS_pyrenth._draw_claw_hand(surface, fh_x, fh_y, facing)
-
-        # Fire energy at pointing hand
+        """Q — DOOM: bilah MENUDING ke target, cakar bebas mengepal."""
+        NS = _NS_pyrenth
+        NS._draw_off_arm(surface, cx, cy, facing, phase, lift=0.15)
+        grip, tip_hi, _lo, _phi = NS._grip_screen(cx, cy, facing, "q_cast",
+                                                  phase, 0.0)
+        NS._draw_weapon_arm(surface, cx + facing * 16, cy - 2,
+                            grip[0], grip[1], facing)
+        NS._draw_flaming_sword_line(surface, grip[0], grip[1], tip_hi[0],
+                                    tip_hi[1], facing, phase)
+        # muatan doom di ujung bilah
         pulse = math.sin(phase * 4) * 0.3 + 0.7
         r = int(6 * pulse)
-        _NS_pyrenth._aacircle(surface, (*_NS_pyrenth.PALETTE["fire_darkest"], 150),
-                  (fh_x + facing * 3, fh_y), r + 4)
-        _NS_pyrenth._aacircle(surface, _NS_pyrenth.PALETTE["fire_mid"], (fh_x + facing * 3, fh_y), r + 2)
-        _NS_pyrenth._aacircle(surface, _NS_pyrenth.PALETTE["fire_bright"], (fh_x + facing * 3, fh_y), r)
-        _NS_pyrenth._aacircle(surface, _NS_pyrenth.PALETTE["fire_hot"], (fh_x + facing * 3, fh_y), max(1, r - 2))
-        _NS_pyrenth._aacircle(surface, _NS_pyrenth.PALETTE["fire_glow"], (fh_x + facing * 3, fh_y), max(1, r - 4))
+        tipx, tipy = int(tip_hi[0]), int(tip_hi[1])
+        NS._aacircle(surface, (*NS.PALETTE["fire_darkest"], 150),
+                     (tipx, tipy), r + 4)
+        NS._aacircle(surface, NS.PALETTE["fire_mid"], (tipx, tipy), r + 2)
+        NS._aacircle(surface, NS.PALETTE["fire_bright"], (tipx, tipy), r)
+        NS._aacircle(surface, NS.PALETTE["fire_hot"], (tipx, tipy),
+                     max(1, r - 2))
+        NS._aacircle(surface, NS.PALETTE["fire_glow"], (tipx, tipy),
+                     max(1, r - 4))
 
 
     def _draw_w_cast_arms(surface, cx, cy, facing, phase, progress):
-        """W - Devour, reach out with claw."""
-        # Back arm holds sword
-        back_side = -facing
-        sh_x = cx + back_side * 16
-        sh_y = cy - 2
-        elbow_x = sh_x + back_side * 6
-        elbow_y = cy + 8
-        hand_x = elbow_x + back_side * 4
-        hand_y = elbow_y + 8
-        _NS_pyrenth._draw_pyr_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-        _NS_pyrenth._draw_pyr_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-        _NS_pyrenth._draw_claw_hand(surface, hand_x, hand_y, back_side)
-        _NS_pyrenth._draw_flaming_sword(surface, hand_x, hand_y, back_side, "down", phase)
+        """W — DEVOUR: cakar depan MENJULUR menyedot jiwa."""
+        NS = _NS_pyrenth
+        # bilah turun ke sisi belakang (tangan senjata tidak menganggur)
+        grip, tip_hi, _lo, _phi = NS._grip_screen(cx, cy, -facing, "w_cast",
+                                                  phase, 0.0)
+        NS._draw_weapon_arm(surface, cx - facing * 16, cy - 2,
+                            grip[0], grip[1], -facing)
+        NS._draw_flaming_sword_line(surface, grip[0], grip[1], tip_hi[0],
+                                    tip_hi[1], -facing, phase)
 
-        # Front arm reaches forward with big claw
+        # cakar depan menjulur — jangkauan berdenyut mengikuti sedotan
+        reach = 15 + math.sin(max(0.0, min(1.0, progress)) * math.pi) * 5
         fs_x = cx + facing * 16
         fs_y = cy - 2
-        # Extended
-        reach = int(15 + math.sin(progress * math.pi) * 5)
         fe_x = fs_x + facing * 10
         fe_y = cy
         fh_x = fs_x + facing * (10 + reach)
         fh_y = cy - 2
-
-        _NS_pyrenth._draw_pyr_arm(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_pyrenth._draw_pyr_arm(surface, fe_x, fe_y, fh_x, fh_y)
-
-        # Big grasping claw
-        _NS_pyrenth._draw_big_claw(surface, fh_x, fh_y, facing, phase)
+        NS._draw_pyr_arm(surface, fs_x, fs_y, fe_x, fe_y)
+        NS._draw_pyr_arm(surface, fe_x, fe_y, fh_x, fh_y)
+        NS._draw_big_claw(surface, int(fh_x), int(fh_y), facing, phase)
 
 
     def _draw_e_cast_arms(surface, cx, cy, facing, phase):
-        """E - Scorched Earth, both arms raised."""
-        for side in (-1, 1):
-            sh_x = cx + side * 16
-            sh_y = cy - 2
-            # Both raised up
-            elbow_x = sh_x + side * 8
-            elbow_y = cy - 6
-            hand_x = elbow_x + side * 5
-            hand_y = cy - 14
-
-            _NS_pyrenth._draw_pyr_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-            _NS_pyrenth._draw_pyr_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-            _NS_pyrenth._draw_claw_hand(surface, hand_x, hand_y, side)
-
-            # Fire energy in both hands
-            pulse = math.sin(phase * 4 + side) * 0.3 + 0.7
+        """E — SCORCHED EARTH: bilah teracung, cakar bebas terangkat."""
+        NS = _NS_pyrenth
+        NS._draw_off_arm(surface, cx, cy, facing, phase, lift=0.9)
+        grip, tip_hi, _lo, _phi = NS._grip_screen(cx, cy, facing, "e_cast",
+                                                  phase, 0.0)
+        NS._draw_weapon_arm(surface, cx + facing * 16, cy - 2,
+                            grip[0], grip[1], facing)
+        NS._draw_flaming_sword_line(surface, grip[0], grip[1], tip_hi[0],
+                                    tip_hi[1], facing, phase)
+        # api terkumpul di kedua tangan
+        for hx, hy, sd in ((tip_hi[0], tip_hi[1], 1),
+                           (cx - facing * 25, cy - 12, -1)):
+            pulse = math.sin(phase * 4 + sd) * 0.3 + 0.7
             r = int(7 * pulse)
-            _NS_pyrenth._aacircle(surface, (*_NS_pyrenth.PALETTE["fire_darkest"], 150), (hand_x, hand_y), r + 4)
-            _NS_pyrenth._aacircle(surface, _NS_pyrenth.PALETTE["fire_mid"], (hand_x, hand_y), r + 2)
-            _NS_pyrenth._aacircle(surface, _NS_pyrenth.PALETTE["fire_bright"], (hand_x, hand_y), r)
-            _NS_pyrenth._aacircle(surface, _NS_pyrenth.PALETTE["fire_hot"], (hand_x, hand_y), max(1, r - 2))
-            _NS_pyrenth._aacircle(surface, _NS_pyrenth.PALETTE["fire_glow"], (hand_x, hand_y), max(1, r - 4))
-            _NS_pyrenth._aacircle(surface, _NS_pyrenth.PALETTE["fire_white"], (hand_x, hand_y), max(1, r - 5))
+            hx, hy = int(hx), int(hy)
+            NS._aacircle(surface, (*NS.PALETTE["fire_darkest"], 150),
+                         (hx, hy), r + 4)
+            NS._aacircle(surface, NS.PALETTE["fire_mid"], (hx, hy), r + 2)
+            NS._aacircle(surface, NS.PALETTE["fire_bright"], (hx, hy), r)
+            NS._aacircle(surface, NS.PALETTE["fire_hot"], (hx, hy),
+                         max(1, r - 2))
+            NS._aacircle(surface, NS.PALETTE["fire_glow"], (hx, hy),
+                         max(1, r - 4))
 
 
     def _draw_pyr_arm(surface, x1, y1, x2, y2):
@@ -4644,58 +5112,94 @@ class _NS_pyrenth:
 
 
     def _draw_sword_swing_arc(surface, x, y, facing, progress):
-        """Fire trail from sword swing."""
-        if progress < 0.28 or progress > 0.75:
-            return
-        if progress < 0.5:
-            visibility = (progress - 0.28) / 0.22
-        else:
-            visibility = 1.0 - (progress - 0.5) / 0.25
-        visibility = max(0.0, min(1.0, visibility))
+        """FALLBACK canvas: pita sabetan yang MENGIKUTI BLADE_ARC.
 
-        arc = pygame.Surface((180, 130), pygame.SRCALPHA)
-        for i in range(22):
-            t = i / 21
-            angle = -math.pi * 0.9 + t * math.pi * 1.1
-            px = 90 + int(math.cos(angle) * 65) * facing
-            py = 65 + int(math.sin(angle) * 48)
-            alpha = int((220 - i * 9) * visibility)
-            if alpha <= 0:
+        Dipakai hanya saat ``heroes/pyrenth_fx`` tidak tersedia.  Bedanya
+        dengan versi lama: titik-titiknya diambil dari ARK yang sama yang
+        dipakai bilah, jadi pita selalu menempel pada mata pedang alih-
+        alih menjadi busur hias yang berdiri sendiri.
+        """
+        NS = _NS_pyrenth
+        if progress < 0.24 or progress > 0.82:
+            return
+        if progress < 0.52:
+            visibility = (progress - 0.24) / 0.28
+        else:
+            visibility = 1.0 - (progress - 0.52) / 0.30
+        visibility = max(0.0, min(1.0, visibility))
+        if visibility <= 0.02:
+            return
+
+        # histori 10 pose ARK di BELAKANG progress sekarang
+        samples = []
+        for i in range(10):
+            p = progress - i * 0.026
+            if p < 0.0:
+                break
+            grip, tip_hi, _lo, _phi = NS.blade_geometry(facing, "attack",
+                                                        0.0, p)
+            samples.append(((x + grip[0], y + grip[1]),
+                            (x + tip_hi[0], y + tip_hi[1])))
+        if len(samples) < 3:
+            return
+
+        n = len(samples)
+        for i in range(n - 1):
+            f = (1.0 - i / float(n - 1)) * visibility
+            if f <= 0.03:
                 continue
-            _NS_pyrenth._aacircle(arc, (*_NS_pyrenth.PALETTE["fire_darkest"], alpha), (px, py), 11)
-            _NS_pyrenth._aacircle(arc, (*_NS_pyrenth.PALETTE["fire_dark"], alpha), (px, py), 8)
-            _NS_pyrenth._aacircle(arc, (*_NS_pyrenth.PALETTE["fire_mid"], alpha), (px, py), 6)
-            _NS_pyrenth._aacircle(arc, (*_NS_pyrenth.PALETTE["fire_bright"], alpha), (px, py), 4)
-            _NS_pyrenth._aacircle(arc, (*_NS_pyrenth.PALETTE["fire_hot"], alpha), (px, py), 2)
-            _NS_pyrenth._aacircle(arc, (*_NS_pyrenth.PALETTE["fire_glow"], min(255, alpha)), (px, py), 1)
-        surface.blit(arc, (x - 90, y - 65))
+            (r0, t0) = samples[i]
+            (r1, t1) = samples[i + 1]
+            # kuadrilateral hanya menutup bagian TERLUAR bilah supaya
+            # tidak menelan siluet karakter
+            k = 0.58
+            i0 = (r0[0] + (t0[0] - r0[0]) * k, r0[1] + (t0[1] - r0[1]) * k)
+            i1 = (r1[0] + (t1[0] - r1[0]) * k, r1[1] + (t1[1] - r1[1]) * k)
+            NS._poly(surface, (*NS.PALETTE["fire_darkest"], int(70 * f)),
+                     [t0, t1, i1, i0])
+            NS._poly(surface, (*NS.PALETTE["fire_mid"], int(120 * f)),
+                     [t0, t1,
+                      (i1[0] + (t1[0] - i1[0]) * 0.45,
+                       i1[1] + (t1[1] - i1[1]) * 0.45),
+                      (i0[0] + (t0[0] - i0[0]) * 0.45,
+                       i0[1] + (t0[1] - i0[1]) * 0.45)])
+            NS._aaline(surface, (*NS.PALETTE["fire_bright"], int(235 * f)),
+                       t0, t1, 2)
+            NS._aaline(surface, (*NS.PALETTE["fire_glow"], int(210 * f)),
+                       t0, t1, 1)
 
 
     def _draw_swing_impact(surface, x, y, facing, progress):
-        if progress < 0.5 or progress > 0.85:
+        """FALLBACK canvas: kilat benturan di UJUNG BILAH saat impact."""
+        NS = _NS_pyrenth
+        lo, hi = NS.ATTACK_ACTIVE_WINDOW
+        if progress < lo or progress > hi + 0.2:
             return
-        t = (progress - 0.5) / 0.35
-        intensity = math.sin(t * math.pi)
+        t = (progress - lo) / max(0.01, (hi + 0.2) - lo)
+        intensity = math.sin(max(0.0, min(1.0, t)) * math.pi)
+        if intensity <= 0.02:
+            return
 
-        impact_x = x + 45 * facing
-        impact_y = y + 5
+        _grip, tip_hi, _lo2, _phi = NS.blade_geometry(facing, "attack", 0.0,
+                                                      progress)
+        impact_x = int(x + tip_hi[0])
+        impact_y = int(y + tip_hi[1])
         alpha = int(240 * intensity)
-        radius = int(12 + intensity * 25)
+        radius = int(10 + intensity * 22)
 
-        _NS_pyrenth._aacircle(surface, (*_NS_pyrenth.PALETTE["fire_dark"], alpha // 2),
-                  (impact_x, impact_y), radius + 5)
-        _NS_pyrenth._aacircle(surface, (*_NS_pyrenth.PALETTE["fire_bright"], alpha),
-                  (impact_x, impact_y), radius, 3)
-        _NS_pyrenth._aacircle(surface, (*_NS_pyrenth.PALETTE["fire_hot"], alpha),
-                  (impact_x, impact_y), max(1, radius - 6), 2)
-        _NS_pyrenth._aacircle(surface, (*_NS_pyrenth.PALETTE["fire_glow"], alpha),
-                  (impact_x, impact_y), max(1, radius - 12))
-
+        NS._aacircle(surface, (*NS.PALETTE["fire_dark"], alpha // 2),
+                     (impact_x, impact_y), radius + 5)
+        NS._aacircle(surface, (*NS.PALETTE["fire_bright"], alpha),
+                     (impact_x, impact_y), radius, 3)
+        NS._aacircle(surface, (*NS.PALETTE["fire_hot"], alpha),
+                     (impact_x, impact_y), max(1, radius - 6), 2)
+        NS._aacircle(surface, (*NS.PALETTE["fire_glow"], alpha),
+                     (impact_x, impact_y), max(1, radius - 12))
         for i in range(12):
             angle = i * math.pi / 6 + progress * 3
             dx = impact_x + int(math.cos(angle) * radius * 1.3)
             dy = impact_y + int(math.sin(angle) * radius * 0.9)
-            _NS_pyrenth._draw_ember(surface, dx, dy, 2, alpha)
+            NS._draw_ember(surface, dx, dy, 2, alpha)
 
 
     # ===================================================================
@@ -4815,6 +5319,132 @@ class _NS_pyrenth:
                 fa = int(255 * (1 - t) * consume_t)
                 _NS_pyrenth._draw_ember(surface, fx, fy, 2, fa)
 
+
+    # ===================================================================
+    # OVERLAY DEBUG RENDERER (DEBUG_CHARACTER = True)
+    # ===================================================================
+    _DBG_FONT = None
+
+    @staticmethod
+    def _dbg_font():
+        NS = _NS_pyrenth
+        if NS._DBG_FONT is None:
+            try:
+                if not pygame.font.get_init():
+                    pygame.font.init()
+                NS._DBG_FONT = pygame.font.SysFont("consolas,monospace", 11)
+            except Exception:                          # pragma: no cover
+                NS._DBG_FONT = False
+        return NS._DBG_FONT or None
+
+    @staticmethod
+    def _draw_pyrenth_debug(surface, boss, x, y):
+        """Hitbox bilah, hurtbox, attack range, radius skill, state,
+        FPS, jumlah partikel, timer serangan — dari controller."""
+        NS = _NS_pyrenth
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        scale = float(getattr(boss, "_render_scale", 1.0) or 1.0)
+        ap = float(getattr(boss, "_pyr_attack_progress", 0.0) or 0.0)
+        lo, hi = NS.ATTACK_ACTIVE_WINDOW
+        active = bool(getattr(boss, "_pyr_hit_window", False))
+        action = getattr(boss, "_pyr_pose_action", "idle")
+        phase = float(getattr(boss, "_pyr_phase",
+                              getattr(boss, "pulse", 0.0)))
+
+        # jangkauan serangan (elips tanah)
+        rng = float(getattr(boss, "attack_range",
+                            getattr(boss, "range", 55)) or 55)
+        rng = rng / max(0.05, scale)
+        pygame.draw.ellipse(surface, (90, 200, 255),
+                            pygame.Rect(int(x - rng),
+                                        int(y + NS.GROUND_DY - rng * 0.4),
+                                        int(rng * 2), int(rng * 0.8)), 1)
+        # jangkauan tebasan pedang api
+        mr = NS.MELEE_REACH / max(0.05, scale)
+        pygame.draw.ellipse(surface, (255, 160, 80),
+                            pygame.Rect(int(x - mr),
+                                        int(y + NS.GROUND_DY - mr * 0.4),
+                                        int(mr * 2), int(mr * 0.8)), 1)
+        # radius skill aktif
+        skill = getattr(boss, "active_skill", None)
+        if skill in NS.SKILL_RADIUS:
+            rr = NS.SKILL_RADIUS[skill] / max(0.05, scale)
+            pygame.draw.ellipse(surface, (255, 120, 120),
+                                pygame.Rect(int(x - rr),
+                                            int(y + NS.GROUND_DY
+                                                      - rr * 0.4),
+                                            int(rr * 2), int(rr * 0.8)), 1)
+        # hurtbox
+        pygame.draw.rect(surface, (70, 240, 120),
+                         pygame.Rect(int(x - 26), int(y - 56), 52, 92), 1)
+        # hitbox bilah (grip -> tip)
+        grip, tip_hi, tip_lo, _phi = NS.blade_geometry(facing, action,
+                                                       phase, ap)
+        col = (255, 80, 80) if active else (150, 150, 160)
+        pygame.draw.line(surface, col,
+                         (int(x + tip_lo[0]), int(y + tip_lo[1])),
+                         (int(x + tip_hi[0]), int(y + tip_hi[1])),
+                         2 if active else 1)
+        pygame.draw.circle(surface, col,
+                           (int(x + tip_hi[0]), int(y + tip_hi[1])), 13, 1)
+        pygame.draw.circle(surface, (240, 240, 90),
+                           (int(x + grip[0]), int(y + grip[1])), 2, 1)
+        # proyektil canvas fallback
+        for ch in getattr(boss, "_pyr_chains", ()) or ():
+            pygame.draw.line(surface, (255, 220, 90),
+                             (int(ch.sx), int(ch.sy)),
+                             (int(ch.tx), int(ch.ty)), 1)
+        for arc in getattr(boss, "_pyr_arcs", ()) or ():
+            pygame.draw.circle(surface, (255, 220, 90),
+                               (int(arc.x), int(arc.y)),
+                               max(2, int(getattr(arc, "radius", 10))), 1)
+
+        font = NS._dbg_font()
+        if font is None:
+            return
+        parts = 0
+        proj = (len(getattr(boss, "_pyr_chains", ()) or ())
+                + len(getattr(boss, "_pyr_arcs", ()) or ()))
+        try:
+            mod = NS._live_module()
+            if mod is not None:
+                st = mod.stats()
+                parts = st.get("particles", 0)
+                proj += st.get("projectiles", 0)
+        except Exception:                              # pragma: no cover
+            pass
+        dt = float(getattr(boss, "_pyr_dt", 1.0 / 60.0)) or (1.0 / 60.0)
+        lines = [
+            "PYRENTH [renderer debug]",
+            "state %s <- %s (p%d)" % (
+                getattr(boss, "_pyr_state", "?"),
+                getattr(boss, "_pyr_state_prev", "-"),
+                int(getattr(boss, "_pyr_state_priority", 0))),
+            "pose %s  dt %.4f  fps %.0f" % (action, dt, 1.0 / max(1e-4, dt)),
+            "attack %.2f %s%s" % (ap,
+                                  getattr(boss, "_pyr_attack_phase", "NONE"),
+                                  "  <HIT>" if active else ""),
+            "window %.2f-%.2f  impact %.2f" % (lo, hi,
+                                               NS.ATTACK_IMPACT_FRAME),
+            "swing MELEE  timer %s cd %s" % (
+                getattr(boss, "timer", "-"),
+                getattr(boss, "attack_cooldown", "-")),
+            "skill %s t%s  live %s" % (
+                skill or "-", getattr(boss, "active_skill_timer", "-"),
+                "ON" if getattr(boss, "_pyr_suppress_canvas_fx", False)
+                else "off"),
+            "part %d  proj %d" % (parts, proj),
+        ]
+        pad = 4
+        w = max(font.size(t)[0] for t in lines) + pad * 2
+        h = len(lines) * 13 + pad * 2
+        box = pygame.Surface((w, h), pygame.SRCALPHA)
+        box.fill((10, 8, 12, 190))
+        pygame.draw.rect(box, (255, 150, 90, 200), box.get_rect(), 1)
+        for i, t in enumerate(lines):
+            box.blit(font.render(t, True, (255, 224, 190)),
+                     (pad, pad + i * 13))
+        surface.blit(box, (int(x) - w - 46, int(y) - 100))
 
     # ===================================================================
     # Backward compatible alias
