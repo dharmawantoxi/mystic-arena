@@ -903,16 +903,16 @@ def test_debug_overlay():
 def test_base_boss_integration():
     src = open(os.path.join(ROOT, "bosses", "base_boss.py"),
                "r", encoding="utf-8").read()
-    assert "from heroes import vokrahn_fx as _vokfx" in src
     assert "_vokfx.notify_skill_cast" in src
     assert "_vokfx.notify_skill_impact" in src
-    assert "_vokfx.notify_melee_impact" in src
     for skill in ("'q'", "'w'", "'e'", "'r'"):
         assert "_vokfx.notify_skill_cast(self, %s)" % skill in src, skill
-    assert "_vokfx.notify_melee_impact" in src, \
-        "hook melee vokrahn tidak terpasang di base_boss"
-    assert "boss_type', None) == 'vokrahn'" in src, \
-        "guard boss_type vokrahn hilang dari hook melee"
+    # KONTRAK BARU: serangan dasar tidak memicu impact FX; hook melee
+    # vokrahn di base_boss sudah dibuang. API modulnya tetap ada.
+    assert "_vokfx.notify_melee_impact" not in src, \
+        "serangan dasar boss masih memicu impact FX vokrahn"
+    assert callable(getattr(F, "notify_melee_impact", None)), \
+        "API notify_melee_impact hilang dari vokrahn_fx"
     src4 = open(os.path.join(ROOT, "bosses", "level4.py"),
                 "r", encoding="utf-8").read()
     assert "heroes import vokrahn_fx as mod" in src4

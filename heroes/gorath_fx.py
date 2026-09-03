@@ -1778,18 +1778,11 @@ class SkillFX:
     def _draw_q_front(self, surface, x, y, t, inv, phase):
         """BLOODRAGE: pilar aktivasi 4 lapis + mahkota api darah 2 ring +
         bintang 8 spike + glint orbit."""
-        # ── AKTIVASI: pilar darah 4 lapis ──
+        # ── AKTIVASI: glow saja (pilar darah DIBUANG) ──
+        # Kolom 4-lapis setinggi 70-116 px dari (x, top) ke (x, y)
+        # menutupi badan Gorath selama Bloodrage di-cast.
         if phase in ("cast", "charge"):
             pt = min(1.0, self.age / max(0.01, self.t_release))
-            top = y - int((70 + 46 * (1 - pt)) * (self.radius / 90.0))
-            for wd, col, al in ((30, P["blood_darkest"], 110),
-                                (20, P["blood_dark"], 150),
-                                (10, P["blood_bright"], 195),
-                                (4, P["blood_hot"], 230)):
-                pygame.draw.line(surface, (*col, int(al * (1 - pt * 0.3))),
-                                 (x, top), (x, y), wd)
-            pygame.draw.line(surface, (*P["fx_white"], int(200 * (1 - pt))),
-                             (x, top), (x, y), 2)
             if glow_allowed():
                 g = glow_surface(int(26 * (1 + pt)), P["blood_glow"],
                                  0.6 * (1 - pt * 0.4))
@@ -1930,19 +1923,10 @@ class SkillFX:
     # ------------------------------------------------------------------
     def _draw_r_front(self, surface, x, y, t, inv, phase):
         """RUPTURE: rantai darah bergelombang + wisp spiral 2 lengan +
-        ledakan + duri + pilar caster."""
-        # ── pilar aktivasi di caster ──
-        if phase in ("cast", "charge"):
-            pt = min(1.0, self.age / max(0.01, self.t_release))
-            top = y - int((90 + 40 * (1 - pt)) * (self.radius / 190.0))
-            for wd, col, al in ((36, P["blood_darkest"], 110),
-                                (24, P["blood_dark"], 150),
-                                (13, P["blood_bright"], 195),
-                                (5, P["blood_hot"], 230)):
-                pygame.draw.line(surface, (*col, int(al * (1 - pt * 0.25))),
-                                 (x, top), (x, y), wd)
-            pygame.draw.line(surface, (*P["fx_white"], int(200 * (1 - pt))),
-                             (x, top), (x, y), 2)
+        ledakan + duri."""
+        # Pilar aktivasi di caster DIBUANG: kolom 4-lapis setinggi
+        # 90-130 px dari (x, top) ke (x, y) menutupi badan Gorath
+        # selama Rupture di-cast.
         # ── rantai darah bergelombang ke arah aim ──
         if phase in ("release", "area", "impact"):
             aa = self.aim_angle

@@ -565,14 +565,22 @@ def test_public_api_intact():
 def test_base_boss_hooks_present():
     src = open(os.path.join(ROOT, "bosses", "base_boss.py"),
                encoding="utf-8").read()
-    assert "from heroes import vhalzun_fx as _vhzfx" in src
-    assert "_vhzfx.notify_melee_impact" in src
-    assert "_vhzfx.notify_projectile_impact" in src
     assert "_vhzfx.notify_death" in src
     assert "_vhzfx.notify_skill_cast" in src
+    # KONTRAK BARU: serangan dasar tidak memicu impact FX. Hook melee &
+    # proyektil vhalzun di base_boss sudah dibuang; impact FX eksklusif
+    # milik skill. API modulnya tetap ada (dipakai tooling & test unit).
+    assert "_vhzfx.notify_melee_impact" not in src, \
+        "serangan dasar boss masih memicu impact FX vhalzun"
+    assert "_vhzfx.notify_projectile_impact" not in src, \
+        "serangan dasar boss masih memicu impact FX vhalzun"
+    assert callable(getattr(FX, "notify_melee_impact", None)) and \
+        callable(getattr(FX, "notify_projectile_impact", None)), \
+        "API impact FX hilang dari vhalzun_fx"
     # BOSS_LABEL_TOP diperbarui untuk rig baru
     assert re_search(r'"vhalzun":\s*77', src)
-    print("PASS hook base_boss (impact + skill + death + label top)")
+    print("PASS hook base_boss (skill + death + label top; "
+          "serangan dasar tanpa impact FX)")
 
 
 def re_search(pattern, text):

@@ -91,9 +91,12 @@ def test_renderer_with_live_fx():
 
 def test_base_boss_integration():
     src = open(os.path.join(ROOT, "bosses", "base_boss.py"), "r").read()
-    assert "from heroes import xerathis_fx as _xfx" in src
     assert "_xfx.notify_skill_impact" in src
-    assert "_xfx.notify_projectile_impact" in src
+    # KONTRAK BARU: serangan dasar tidak memicu impact FX.
+    assert "_xfx.notify_projectile_impact" not in src, \
+        "serangan dasar boss masih memicu impact FX xerathis"
+    assert callable(getattr(F, "notify_projectile_impact", None)), \
+        "API notify_projectile_impact hilang dari xerathis_fx"
 
 
 def test_procedural_only():

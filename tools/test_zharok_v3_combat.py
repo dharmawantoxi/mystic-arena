@@ -848,13 +848,18 @@ def test_debug_overlay():
 def test_base_boss_integration():
     src = open(os.path.join(ROOT, "bosses", "base_boss.py"),
                "r", encoding="utf-8").read()
-    assert "from heroes import zharok_fx as _zhfx" in src
     assert "_zhfx.notify_skill_cast" in src
     assert "_zhfx.notify_skill_impact" in src
-    assert "_zhfx.notify_melee_impact" in src
-    assert "_zhfx.notify_projectile_impact" in src
     for skill in ("'q'", "'w'", "'e'", "'r'"):
         assert "_zhfx.notify_skill_cast(self, %s)" % skill in src, skill
+    # KONTRAK BARU: serangan dasar tidak memicu impact FX.
+    assert "_zhfx.notify_melee_impact" not in src, \
+        "serangan dasar boss masih memicu impact FX zharok"
+    assert "_zhfx.notify_projectile_impact" not in src, \
+        "serangan dasar boss masih memicu impact FX zharok"
+    assert callable(getattr(F, "notify_melee_impact", None)) and \
+        callable(getattr(F, "notify_projectile_impact", None)), \
+        "API impact FX modul hilang (masih dipakai skill/tooling)"
     src4 = open(os.path.join(ROOT, "bosses", "level4.py"),
                 "r", encoding="utf-8").read()
     assert "heroes.zharok_fx" in src4 or "heroes import zharok_fx" in src4

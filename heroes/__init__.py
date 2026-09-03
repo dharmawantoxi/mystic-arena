@@ -753,9 +753,17 @@ def _live_fx_module(hero_type):
 #
 # _core.py memanggil begin_fx_frame() sekali per frame dengan jumlah hero
 # yang sedang aktif. fx_load() (mobile/perf.py) lalu menurunkan intensitas
-# FX global: partikel menyusut lewat Quality.particle_ratio, dan lapisan
-# FX depan hero yang sekadar auto-attack diselingi antar-frame (tetap
-# mulus, hanya setengah frekuensi) supaya tumpukan additive berkurang.
+# FX global: partikel menyusut lewat Quality.particle_ratio, yang dibaca
+# SEMUA modul heroes/*_fx.py tanpa perlu diubah satu per satu.
+#
+# ⚠ Lapisan FX TIDAK PERNAH dilewati antar-frame. Versi pertama governor
+#   ini menyelingi draw (1 dari 2 frame, lalu 1 dari 3 saat beban ekstrem)
+#   supaya blit per frame lebih sedikit. Akibatnya skill FX berkedip
+#   (kedap-kedip) dan tiap hero berkedip pada fase berbeda karena offset
+#   id(hero) — persis keluhan "skill fx kedap kedip tidak stabil".
+#   Menghemat biaya dengan membuang frame = efek hilang-muncul, jadi satu-
+#   satunya tuas yang benar adalah INTENSITAS (jumlah partikel / ukuran
+#   glow), bukan frekuensi gambar.
 _FX_FRAME = 0
 
 
@@ -768,6 +776,11 @@ def begin_fx_frame(active_count=0):
         _perf.set_fx_load(active_count)
     except Exception:
         pass
+
+
+def fx_frame():
+    """Nomor frame governor saat ini (debug / overlay HUD)."""
+    return _FX_FRAME
 
 
 def _fx_busy(hero):
@@ -795,50 +808,20 @@ def count_busy_fx_heroes(heroes):
     return n
 
 
-def _fx_skip_this_frame(hero):
-    """Selang-seling lapisan FX hero ini saat beban combat tinggi.
-
-    Saat banyak hero bertarung sekaligus, tiap hero live-FX menggambar
-    partikel/trail/ring/glow sendiri tiap frame. Tanpa batas global,
-    biaya draw naik linear -> game terasa slow-motion, dan glow/ring
-    additive menumpuk menutupi sprite hero.
-
-    Di bawah beban tinggi, FX hero diselingi antar-frame (tetap hidup,
-    hanya setengah/ketiga frekuensi) supaya total blit per frame
-    terbatas. Hero yang sedang DIPILIH pemain (selected) tetap penuh.
-    """
-    try:
-        from mobile import perf as _perf
-        load = _perf.fx_load()
-    except Exception:
-        load = 1.0
-    if load >= 0.92:
-        return False
-    if getattr(hero, "selected", False):
-        return False
-    phase = id(hero) & 0xFFFF
-    if load < 0.6:
-        # Beban ekstrem: hanya 1 dari 3 frame.
-        return (_FX_FRAME + phase) % 3 != 0
-    return (_FX_FRAME + phase) % 2 == 1
-
-
 def _live_fx_pre(hero_type, surface, hero, x, y):
-    """Lapisan FX di BAWAH sprite hero (ground FX, back particles)."""
+    """Lapisan FX di BAWAH sprite hero (ground FX, back particles).
+
+    Selalu digambar tiap frame. Lihat catatan "GOVERNOR BEBAN FX COMBAT":
+    melewatkan frame membuat skill FX berkedip, jadi penghematan beban
+    dilakukan lewat intensitas partikel (Quality.particle_ratio), bukan
+    lewat frekuensi gambar.
+    """
     if hero_type not in _LIVE_FX_HEROES:
         return
     if getattr(hero, "_portrait_hd", False):
         return
     mod = _live_fx_module(hero_type)
     if mod is None:
-        return
-    if _fx_skip_this_frame(hero):
-        # Tetap majukan waktu FX (tick) walau gambar diselingi, supaya
-        # partikel/trail tidak beku pada frame yang dilewati.
-        try:
-            mod.tick()
-        except Exception:
-            pass
         return
     try:
         mod.draw_ground_layer(surface, hero, x, y)
@@ -847,18 +830,129 @@ def _live_fx_pre(hero_type, surface, hero, x, y):
 
 
 def _live_fx_post(hero_type, surface, hero, x, y):
-    """Lapisan FX di ATAS sprite hero (trail, projectile, impact)."""
+    """Lapisan FX di ATAS sprite hero (trail, projectile, skill, impact).
+
+    Selalu digambar tiap frame — alasan sama seperti ``_live_fx_pre``.
+    """
     if hero_type not in _LIVE_FX_HEROES:
         return
     if getattr(hero, "_portrait_hd", False):
-        return
-    if _fx_skip_this_frame(hero):
         return
     mod = _live_fx_module(hero_type)
     if mod is None:
         return
     try:
         mod.draw_live_layer(surface, hero, x, y)
+    except Exception:
+        pass
+
+
+# ═══════════════════════════════════════════════════════
+# CONTROLLER POSE PER-FRAME (di luar sprite cache)
+# ═══════════════════════════════════════════════════════
+#
+# Sebagian renderer MEMUTASI state animasi di dalam fungsi draw-nya.
+# Gorath: ``_update_gorath_attack_anim`` mengisi ``_gor_attack_frame``,
+# ``_gor_prev_timer``, dan ``_gor_attack_active`` setiap dipanggil.
+#
+# Masalahnya sprite hero di-cache dengan key ``attack_timer // 2``.
+# Serangan pertama mengisi bucket 16..0, jadi renderer jalan dan
+# animasi terlihat.  Pada serangan BERIKUTNYA bucket yang sama sudah
+# terisi -> cache hit -> renderer dilewati -> controller tidak maju
+# lagi dan pose membeku di fase terakhir.  Gejala di layar: Gorath
+# mengayun sekali lalu tidak pernah mengayun lagi.
+#
+# Karena itu controller pose dijalankan SETIAP frame di sini, sebelum
+# cache diperiksa.  Renderer yang bersangkutan lalu melewatinya di
+# jalur hero lane supaya tidak maju dua kali dalam satu frame.
+
+_POSE_CONTROLLER_SPECS = {
+    # hero_type: (nama modul, nama namespace, nama fungsi)
+    #
+    # Diisi dari audit tools/test_hero_pose_cache.py: hero yang urutan
+    # fase serangnya BERBEDA antara sprite-cache aktif (kondisi game)
+    # dan cache dimatikan (referensi).  Hero yang tidak ada di sini
+    # pose-nya murni fungsi attack_timer, jadi aman di-cache.
+    "abaddon":        ("bosses.level1", "_NS_abaddon",
+                       "_update_attack_anim"),
+    "alchemist":      ("bosses.level2", "_NS_alchemist",
+                       "_update_attack_anim"),
+    "gorath":         ("bosses.level2", "_NS_gorath",
+                       "_update_gorath_attack_anim"),
+    "gornak":         ("bosses.level1", "_NS_gornak",
+                       "_update_gnk_attack_anim"),
+    "gravefang":      ("bosses.level5", "_NS_gravefang",
+                       "_update_gravefang_anim"),
+    "gravewake":      ("bosses.level6", "_NS_gravewake",
+                       "_update_gravewake_attack_anim"),
+    "ignis_drachorn": ("bosses.level4", "_NS_ignis_drachorn",
+                       "_update_attack_anim"),
+    "krobellus":      ("bosses.level5", "_NS_krobellus",
+                       "_update_krb_anim"),
+    "kunkka":         ("bosses.level6", "_NS_kunkka",
+                       "_update_kunkka_attack_anim"),
+    "nyxara":         ("bosses.level5", "_NS_nyxara",
+                       "_update_nyxara_anim"),
+    "pyrenth":        ("bosses.level4", "_NS_pyrenth",
+                       "_update_attack_anim"),
+    "razak":          ("bosses.level2", "_NS_razak",
+                       "_update_attack_anim"),
+    "sylara":         ("heroes._bundle", "_NS_sylara",
+                       "_update_attack_anim"),
+    "syrentha":       ("bosses.level6", "_NS_syrentha",
+                       "_update_syrentha_attack_anim"),
+    "thalgryn":       ("bosses.level6", "_NS_thalgryn",
+                       "_update_thalgryn_attack_anim"),
+    "varkul":         ("bosses.level3", "_NS_varkul",
+                       "_update_attack_anim"),
+    "vhalzun":        ("bosses.level5", "_NS_vhalzun",
+                       "_update_vhalzun_anim"),
+    "vokrahn":        ("bosses.level4", "_NS_vokrahn",
+                       "_update_attack_anim"),
+    "xerathis":       ("bosses.level3", "_NS_xerathis",
+                       "_update_attack_anim"),
+    "zephyr":         ("heroes._bundle", "_NS_zephyr",
+                       "_update_attack_anim"),
+    "zharok":         ("bosses.level4", "_NS_zharok",
+                       "_update_attack_anim"),
+}
+
+_POSE_CONTROLLER_CACHE = {}
+
+
+def _pose_controller(hero_type):
+    """Ambil controller pose sebuah hero (di-resolve sekali, lalu cache).
+
+    Return ``None`` kalau hero tidak punya controller atau modulnya
+    gagal dimuat -- pemanggil lalu tidak melakukan apa-apa.
+    """
+    if hero_type in _POSE_CONTROLLER_CACHE:
+        return _POSE_CONTROLLER_CACHE[hero_type]
+    fn = None
+    spec = _POSE_CONTROLLER_SPECS.get(hero_type)
+    if spec is not None:
+        mod_name, ns_name, fn_name = spec
+        try:
+            import importlib
+            ns = getattr(importlib.import_module(mod_name), ns_name, None)
+            fn = getattr(ns, fn_name, None)
+        except Exception:
+            fn = None
+    _POSE_CONTROLLER_CACHE[hero_type] = fn
+    return fn
+
+
+def _tick_pose_controller(hero_type, hero):
+    """Majukan controller pose SEKALI per frame, di luar sprite cache.
+
+    Aman dipanggil untuk hero tanpa controller (no-op).  Exception
+    ditelan: pose yang gagal maju tidak boleh mematikan render hero.
+    """
+    fn = _pose_controller(hero_type)
+    if fn is None:
+        return
+    try:
+        fn(hero)
     except Exception:
         pass
 
@@ -1506,18 +1600,29 @@ def render_hero(hero_type, surface, hero, x, y):
         hero: Hero object
         x, y: position
     """
-    # Lapisan FX hidup (ground) HARUS di bawah sprite -> digambar dulu.
-    _live_fx_pre(hero_type, surface, hero, x, y)
-
     if not HERO_CACHE_ENABLED:
+        # Tanpa cache renderer jalan tiap frame, jadi renderer sendiri
+        # yang memajukan controller pose.
+        _live_fx_pre(hero_type, surface, hero, x, y)
         if not _render_hero_raw(hero_type, surface, hero, x, y):
             _draw_generic_hero(surface, hero, x, y)
         _live_fx_post(hero_type, surface, hero, x, y)
         return
 
     key = _hero_cache_key(hero_type, hero)
-
     entry = _hero_sprite_cache.get(key)
+
+    # Controller pose harus maju SETIAP frame.  Pada frame cache-MISS
+    # renderer yang menjalankannya (dia dipanggil di bawah); pada frame
+    # cache-HIT renderer dilewati, jadi kita yang menjalankan di sini.
+    # Dengan begitu controller maju tepat sekali per frame tanpa perlu
+    # mengubah renderer mana pun.  Lihat CONTROLLER POSE PER-FRAME.
+    if entry is not None:
+        _tick_pose_controller(hero_type, hero)
+
+    # Lapisan FX hidup (ground) HARUS di bawah sprite -> digambar dulu.
+    _live_fx_pre(hero_type, surface, hero, x, y)
+
     if entry is not None:
         _hero_cache_stats['hits'] += 1
         sprite, ax, ay = entry[0], entry[1], entry[2]

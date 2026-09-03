@@ -2460,17 +2460,10 @@ class SkillFX:
                        w=hgt * 0.3)
             blit_add(surface, tmp, (int(px - tmp.get_width() // 2),
                                     int(py - tmp.get_height() + 3)))
-        # kolom cahaya meruncing dari tanah ke atas (bukan kotak)
-        if 0.2 <= t < 0.7:
-            k = (t - 0.2) / 0.5
-            hgt = 120 * _ease("out", min(1.0, k * 2.0))
-            col = _scratch(90, int(hgt) + 10)
-            cw, ch = col.get_size()
-            taper_lane(col, cw // 2, ch - 4, cw // 2, 4, 26.0, 6.0,
-                       P["fire_dark"], int(76 * fade * (1 - k * 0.6)))
-            taper_lane(col, cw // 2, ch - 4, cw // 2, 4, 11.0, 2.5,
-                       P["fire_glow"], int(120 * fade * (1 - k * 0.6)))
-            blit_add(surface, col, (int(self.x - cw // 2), int(gy - ch + 4)))
+        # Kolom cahaya ultimate DIBUANG: berkas 120 px x ~52 px yang
+        # berdiri tepat di sumbu badan menutupi Zharok selama R aktif.
+        # 8 pilar api mengorbit di atas + cincin raungan di bawah tetap
+        # hidup sebagai penanda Burning Army.
         # cincin raungan
         if 0.3 <= t < 0.62:
             k = (t - 0.3) / 0.32

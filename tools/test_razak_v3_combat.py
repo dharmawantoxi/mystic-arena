@@ -669,10 +669,21 @@ def test_integrasi_pipeline_dan_hooks():
     assert '"razak_fx"' in core_src
     bb_src = open(os.path.join(ROOT, "bosses", "base_boss.py"),
                   encoding="utf-8").read()
-    assert "from heroes import razak_fx" in bb_src
-    assert "notify_melee_impact(self, self.target" in bb_src
     assert "notify_skill_impact(self, self.target" in bb_src
     assert "notify_skill_impact(self, self.x, self.y, 180, 'r')" in bb_src
+    # KONTRAK BARU: serangan dasar tidak memicu impact FX. Hook melee
+    # razak di base_boss & _entity sudah dibuang; impact FX eksklusif
+    # milik skill. API modulnya tetap ada (dipakai tooling & test unit).
+    assert "_rfx.notify_melee_impact" not in bb_src, \
+        "serangan dasar boss masih memicu impact FX razak"
+    ent_src = open(os.path.join(ROOT, "_entity.py"), encoding="utf-8").read()
+    assert "_rfx.notify_melee_impact" not in ent_src, \
+        "serangan dasar hero masih memicu impact FX razak"
+    assert "_rfx.notify_projectile_impact" not in ent_src, \
+        "proyektil serangan dasar masih memicu impact FX razak"
+    assert callable(getattr(F, "notify_melee_impact", None)) and \
+        callable(getattr(F, "notify_projectile_impact", None)), \
+        "API impact FX hilang dari razak_fx"
 
 
 def test_budget_lapisan_hidup():

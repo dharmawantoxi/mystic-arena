@@ -2265,37 +2265,10 @@ class SkillFX:
                        P["fire_hot"], int(130 * k), spikes=8,
                        rot=self.age * 4)
             return
-        fade = max(0.0, 1.0 - max(0.0, t - 0.55) / 0.45)
-        # kolom cahaya vertikal
-        if t < 0.7:
-            k = _ease("oc", min(1.0, (t - 0.34) / 0.2)) * fade
-            colw = int(34 * k)
-            if colw > 2:
-                H = 200
-                buf = _scratch(colw * 2 + 10, H + 8)
-                cxb = buf.get_width() // 2
-                for i, (sc, col, a0) in enumerate((
-                        (1.00, P["fire_darkest"], 80),
-                        (0.68, P["fire_dark"], 95),
-                        (0.40, P["fire_mid"], 110),
-                        (0.18, P["fire_light"], 130))):
-                    wdt = max(1, int(colw * sc))
-                    a = int(a0 * k)
-                    # meruncing ke atas + goyang api, bukan kotak keras
-                    pts = []
-                    for j in range(7):
-                        u = j / 6.0
-                        wob = math.sin(self.age * 7 + u * 5 + i) * 3 * u
-                        pts.append((cxb - wdt * (1.0 - 0.45 * u) + wob,
-                                    H - u * H))
-                    for j in range(6, -1, -1):
-                        u = j / 6.0
-                        wob = math.sin(self.age * 7 + u * 5 + i) * 3 * u
-                        pts.append((cxb + wdt * (1.0 - 0.45 * u) + wob,
-                                    H - u * H))
-                    pygame.draw.polygon(buf, (*col, a), pts)
-                blit_add(surface, buf, (int(self.x) - cxb,
-                                        int(self.y + 36 - H)))
+        # Kolom cahaya vertikal DIBUANG: berkas 200 px x ~68 px yang
+        # berdiri tepat di sumbu badan menelan Ignis Drachorn selama
+        # ultimate aktif. Cincin kejut + sayap api spektral di bawah
+        # tetap hidup sebagai penanda ultimate.
         # raungan: 3 cincin kejut vertikal memuai dari kepala
         for i in range(3):
             rt = t - 0.34 - i * 0.09
