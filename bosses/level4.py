@@ -4823,17 +4823,103 @@ class _NS_pyrenth:
         _NS_pyrenth.draw_pyrenth(surface, boss, x, y)
 
 
+
 # ====================================================================
 # VOKRAHN
 # ====================================================================
 class _NS_vokrahn:
-    """Namespace vokrahn - isi asli tidak diubah."""
+    """Namespace vokrahn - PIXEL MASTERWORK v2 + COMBAT FX v3.
+
+    Rewrite penuh renderer + sistem tempur **VOKRAHN, THE HARBINGER OF
+    CHAOS** (mini-boss level 4) mengikuti standar v3 Combat FX (lihat
+    docs/VOKRAHN_V3_COMBAT_FX.md).
+
+    Pembagian kerja:
+
+      RENDERER (file ini)                  LAPISAN HIDUP (heroes/vokrahn_fx.py)
+      -----------------------------------  ------------------------------------------
+      rig ksatria gelap + kuda jelaga +    trail ayunan greatsword (histori nyata)
+        pedang api, 100% prosedural        particle system (bara/asap/serpihan)
+      palette + outline + rim light        Chaos Bolt / Chaos Brand modular
+      ANIMATION CONTROLLER (state,         (SPAUN->TRAVEL->TRAIL->HIT->IMPACT)
+        fase, hit window, delta time)      IMPACT FX + hit-stop + screen shake
+      ark ayunan pedang (SWORD_ARC)        SkillFX q/w/e/r lifecycle penuh
+      telegraph tanah q/w/e/r              overlay DEBUG_CHARACTER
+      fallback penuh saat modul FX         -- semua di luar cache sprite --
+        tidak tersedia
+
+    100% PROSEDURAL: tidak ada PNG / JPG / GIF / sprite-sheet, dan tidak
+    ada pemuat gambar eksternal apa pun. Semua bentuk dari
+    pygame.Surface + pygame.draw + pygame.transform + pygame.mask.
+    """
 
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
 
-    # ---------------------------------------------------------------------------
-    # HD Chaos Palette - Black armor / red flame / dark horse
-    # ---------------------------------------------------------------------------
+    #: flag debug global (hitbox/hurtbox/range/state/frame/FPS/partikel/
+    #: skill state/attack timer).  Diubah dari luar:
+    #:   ``bosses.level4._NS_vokrahn.DEBUG_CHARACTER = True``
+    DEBUG_CHARACTER = False
+
+    # ── STATE LAPISAN HIDUP ───────────────────────────────────────
+    _LIVE_MOD = None
+    _last_rig = None                 # rig terakhir (untuk afterimage FX)
+    _last_rig_off = (0, 0)
+    _body_buf = None
+    RIG_W, RIG_H = 320, 240
+    RIG_OX, RIG_OY = 160, 140
+    GROUND_DY = 58
+
+    # ── KONSTANTA TEMPUR (dikontrakkan dengan AI di base_boss) ──
+    #: durasi skill dalam FRAME engine (active_skill_timer) — SAMA PERSIS
+    #: dengan yang di-set ``_cast_vokrahn_*`` di bosses/base_boss.py.
+    SKILL_DUR = {"q": 50, "w": 60, "e": 50, "r": 80}
+    #: radius damage DUNIA (px) — sama dengan cek jarak di AI.
+    SKILL_RADIUS = {"q": 250, "w": 220, "e": 150, "r": 220}
+    #: jangkauan tebasan greatsword (px dunia) untuk overlay debug & tes.
+    MELEE_REACH = 96
+
+    #: jendela hit aktif (progress 0..1) + frame impact. ``0.52`` dipakai
+    #: renderer (puncak ayunan SWORD_ARC) DAN lapisan hidup (momen impact)
+    #: — satu angka, satu detak.
+    ATTACK_ACTIVE_WINDOW = (0.38, 0.62)
+    ATTACK_IMPACT_FRAME = 0.52
+
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.12),
+        ("WINDUP",       0.12, 0.30),
+        ("SWING",        0.30, 0.50),
+        ("IMPACT",       0.50, 0.62),
+        ("FOLLOW",       0.62, 0.82),
+        ("RECOVERY",     0.82, 1.00),
+    )
+
+    #: prioritas state (besar menang) — dibaca controller + debug + FX.
+    ANIM_STATES = {
+        "IDLE": 0, "WALK": 10, "RUN": 15, "CHARGE": 30, "CAST": 35,
+        "ATTACK": 40, "SWING": 45, "SKILL": 50, "SPECIAL": 55,
+        "HIT": 60, "HURT": 65, "DEATH": 100,
+    }
+
+    # ── ARK PEDANG: SATU SUMBER KE BENARAN ────────────────────────
+    # (t0, t1, phi0, phi1, ease).  Konvensi ruang layar (y ke bawah):
+    #   tip = grip + (facing * cos(phi) * L, -sin(phi) * L)
+    # guard phi = 0.96 (rad, ~55deg ke depan-atas).  Ayunan: guard ->
+    # wind-up ke atas-belakang (2.18-2.88) -> tebasan cepat ke bawah
+    # (2.88 -> -1.31, melewati 0.52 = IMPACT) -> follow-through ->
+    # kembali ke guard.  Lapisan hidup heroes/vokrahn_fx.py menyimpan
+    # tabel cadangan IDENTIK dan selalu membaca fungsi di sini bila
+    # tersedia — tidak ada dua tabel yang bisa menyimpang.
+    SWORD_ARC = (
+        (0.00, 0.12,  0.96,  2.18, "out"),
+        (0.12, 0.30,  2.18,  2.88, "io"),
+        (0.30, 0.50,  2.88, -1.31, "oc"),
+        (0.50, 0.62, -1.31, -1.05, "hold"),
+        (0.62, 0.82, -1.05, -0.44, "io"),
+        (0.82, 1.00, -0.44,  0.96, "io"),
+    )
+    _SWORD_HALF = 48.0           # panjang bilah (px, skala layar 1)
+    _GRIP = (26.0, -8.7)         # grip diam (relatif jangkar badan)
+
     PALETTE = {
         # Armor - dark metal with red accents
         "arm_darkest":    (5,    3,   6),
@@ -4903,8 +4989,6 @@ class _NS_vokrahn:
         "shadow_deep":    (3,   2,   3),
         "white":          (255, 255, 255),
     }
-
-
     def _clamp(color):
         return tuple(max(0, min(255, int(c))) for c in color)
 
@@ -5233,46 +5317,6 @@ class _NS_vokrahn:
     # ---------------------------------------------------------------------------
     # State management
     # ---------------------------------------------------------------------------
-    def _detect_moving(boss):
-        if not hasattr(boss, "_vok_last_x"):
-            boss._vok_last_x = boss.x
-            boss._vok_last_y = boss.y
-            return False
-        dx = abs(boss.x - boss._vok_last_x)
-        dy = abs(boss.y - boss._vok_last_y)
-        boss._vok_last_x = boss.x
-        boss._vok_last_y = boss.y
-        return dx + dy > 0.3
-
-
-    def _update_attack_anim(boss):
-        cooldown = max(2, int(getattr(boss, "attack_cooldown", 50)))
-        timer = int(getattr(boss, "timer", 0))
-        previous = int(getattr(boss, "_vok_prev_timer", 0))
-        active = bool(getattr(boss, "_vok_attack_active", False))
-
-        if timer >= cooldown - 1 and previous <= 1:
-            boss._vok_attack_active = True
-            boss._vok_attack_frame = 0
-            active = True
-        elif active:
-            boss._vok_attack_frame = int(getattr(boss, "_vok_attack_frame", 0)) + 1
-            if boss._vok_attack_frame > cooldown:
-                boss._vok_attack_active = False
-                boss._vok_attack_frame = 0
-                active = False
-        elif timer <= 0:
-            boss._vok_attack_active = False
-            boss._vok_attack_frame = 0
-            active = False
-
-        boss._vok_prev_timer = timer
-        boss._vok_attack_progress = (
-            min(1.0, getattr(boss, "_vok_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
-        )
-
-
     def _manage_projectiles(boss, surface, phase):
         if not hasattr(boss, "_vok_projectiles"):
             boss._vok_projectiles = []
@@ -5311,182 +5355,563 @@ class _NS_vokrahn:
     # ===================================================================
     # MAIN ENTRY
     # ===================================================================
-    def draw_vokrahn(surface, boss, x, y):
-        pulse = float(getattr(boss, "pulse", 0.0))
-        active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_vokrahn._detect_moving(boss)
-        _NS_vokrahn._update_attack_anim(boss)
+    # ===================================================================
+    # GERBANG LAPISAN HIDUP (heroes/vokrahn_fx)
+    #   Trail sabetan, partikel, proyektil, skill FX, impact, hit-stop,
+    #   dan screen shake hidup di RUANG LAYAR skala 1:1 supaya tidak ikut
+    #   beku / menyusut bersama sprite cache di lane hero. Kalau modulnya
+    #   tidak ada, owns() False dan renderer menggambar semuanya sendiri
+    #   lewat jalur canvas (visual kehilangan polish, TIDAK PERNAH
+    #   kehilangan efek).
+    # ===================================================================
+    @staticmethod
+    def _live_module():
+        NS = _NS_vokrahn
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import vokrahn_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "VOKRAHN_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
 
-        attacking = (
-            getattr(boss, "_vok_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 50) - 15
-        )
+    @staticmethod
+    def live_fx_ready():
+        return _NS_vokrahn._live_module() is not None
 
-        # BG aura
-        _NS_vokrahn._draw_chaos_aura(surface, x, y, pulse, active_skill)
-        _NS_vokrahn._draw_ground_runes(surface, x, y + 48, pulse, active_skill)
+    @staticmethod
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Pasang/gambar lapisan hidup. Return (mod_untuk_draw, owned)."""
+        NS = _NS_vokrahn
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+            if owned and not want_draw:
+                # Lane hero: yang menggambar lapisan hidup adalah pipeline
+                # heroes/__init__ (_live_fx_pre/_live_fx_post). Kalau
+                # ternyata TIDAK ada yang menggambarnya, jangan matikan
+                # fallback canvas — karakter tidak boleh kehilangan FX
+                # secara diam-diam.
+                checker = getattr(mod, "recently_drawn", None)
+                if checker is not None:
+                    owned = bool(checker(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
 
-        # Ground skill effects
-        if active_skill == "w":
-            _NS_vokrahn._draw_realm_of_chaos_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_vokrahn._draw_phantasm_ground(surface, boss, x, y, skill_timer, pulse)
+    # ===================================================================
+    # ANIMATION CONTROLLER
+    #   Satu-satunya sumber kebenaran state/fase/timing. Lapisan hidup,
+    #   overlay debug, dan alat uji semuanya membacanya dari sini.
+    # ===================================================================
+    @staticmethod
+    def _ease(kind, t):
+        if t <= 0.0:
+            return 0.0
+        if t >= 1.0:
+            return 1.0
+        if kind == "out":
+            return 1.0 - (1.0 - t) * (1.0 - t)
+        if kind == "oc":                              # out-cubic (cepat)
+            return 1.0 - (1.0 - t) ** 3
+        if kind == "in":
+            return t * t
+        if kind == "hold":
+            return math.sin(t * math.pi * 0.5)
+        return t * t * (3.0 - 2.0 * t)                # in-out (smoothstep)
 
-        # Phantasm illusions (behind main body)
-        if active_skill == "r":
-            _NS_vokrahn._draw_phantasm_illusions(surface, boss, x, y, skill_timer, pulse)
+    @staticmethod
+    def attack_phases_order():
+        return tuple(name for name, _a, _b in _NS_vokrahn.ATTACK_PHASES)
 
-        # Character
-        if active_skill == "e":
-            _NS_vokrahn._draw_vok_dashing(surface, boss, x, y, skill_timer, pulse)
-        elif attacking:
-            _NS_vokrahn._draw_vok_attack(surface, boss, x, y)
-        elif active_skill == "q":
-            _NS_vokrahn._draw_vok_qcast(surface, boss, x, y, skill_timer)
+    @staticmethod
+    def attack_phase(progress):
+        """Nama fase serangan untuk progress 0..1."""
+        p = max(0.0, min(1.0, float(progress)))
+        for name, a, b in _NS_vokrahn.ATTACK_PHASES:
+            if a <= p < b:
+                return name
+        return "RECOVERY"
+
+    # ── GEOMETRI PEDANG (dipakai canvas, trail, & hitbox) ─────────
+    @staticmethod
+    def _sword_lift(progress):
+        """Kenaikan grip (0..1) saat ayunan — SANGGUP dibaca FX lewat
+        fallback identik di heroes/vokrahn_fx._fallback_lift."""
+        NS = _NS_vokrahn
+        p = max(0.0, min(1.0, float(progress)))
+        E = NS._ease
+        if p < 0.12:
+            return 0.5 * E("out", p / 0.12)
+        if p < 0.30:
+            return 0.5 + 0.4 * E("io", (p - 0.12) / 0.18)
+        if p < 0.50:
+            return 0.9 - 0.9 * E("oc", (p - 0.30) / 0.20)
+        if p < 0.62:
+            return -0.12 * E("hold", (p - 0.50) / 0.12)
+        if p < 0.82:
+            return -0.12 + 0.17 * E("io", (p - 0.62) / 0.20)
+        return 0.05 * (1.0 - E("io", (p - 0.82) / 0.18))
+
+    @staticmethod
+    def _sword_arc(progress):
+        """``(phi, lift)`` ARK pedang — SATU sumber kebenaran."""
+        NS = _NS_vokrahn
+        p = max(0.0, min(1.0, float(progress)))
+        for t0, t1, a0, a1, kind in NS.SWORD_ARC:
+            if t0 <= p < t1 or (p >= 1.0 and t1 >= 1.0):
+                e = NS._ease(kind, (p - t0) / max(0.0001, t1 - t0))
+                return a0 + (a1 - a0) * e, NS._sword_lift(p)
+        return NS.SWORD_ARC[0][2], 0.0
+
+    @staticmethod
+    def sword_geometry(facing, action, phase, attack_progress):
+        """``(grip, tip_atas, ujung_bawah, phi)`` pedang — lokal badan.
+
+        Titik-titik RELATIF jangkar badan ``(cx, cy)`` di skala layar 1.
+        Inilah satu-satunya fungsi yang menghitung posisi pedang:
+        canvas menggambar bilahnya, lapisan hidup mengukur trail &
+        hitbox-nya, overlay debug menggambar rentang-nya.
+        """
+        NS = _NS_vokrahn
+        ap = max(0.0, min(1.0, float(attack_progress)))
+        if action in ("swing", "attack", "melee"):
+            phi, lift = NS._sword_arc(ap)
+        elif action == "e_cast":
+            phi, lift = 0.22, 0.05                 # pedang teracung ke depan
+        elif action == "q_cast":
+            phi, lift = 1.9 + 0.10 * math.sin(phase), 0.35   # ke atas-bidik
+        elif action == "r_cast":
+            phi, lift = 2.0 + 0.08 * math.sin(phase * 0.7), 0.40
+        elif action == "w_cast":
+            phi, lift = 0.35, 0.0                  # pedang diayunkan rendah
+        elif action == "death":
+            phi, lift = 0.30, -0.15                # pedang terkulai
+        else:
+            phi = 0.96 + 0.06 * math.sin(phase * 0.8)
+            lift = 0.0
+        gx = facing * (NS._GRIP[0] + 5.0 * lift)
+        gy = NS._GRIP[1] - 9.0 * lift
+        L = NS._SWORD_HALF
+        dx = facing * math.cos(phi) * L
+        dy = -math.sin(phi) * L
+        return ((gx, gy),
+                (gx + dx, gy + dy),
+                (gx + facing * math.cos(phi) * L * 0.55,
+                 gy - math.sin(phi) * L * 0.55),
+                phi)
+
+    # ── DASH (skill E) ────────────────────────────────────────────
+    @staticmethod
+    def _dash_offset(progress):
+        """Geser visual dash Chaos Strike (px dunia, arah facing).
+
+        Puncak (80 px) jatuh di engine progress 0.302-0.605 — selaras
+        dengan pose E lama (keluar 0.3, kembali 0.6 dari 50 frame) tapi
+        dengan easing halus. Lapisan hidup membaca fungsi INI (bukan
+        tabel sendiri) lewat heroes/vokrahn_fx.dash_offset.
+        """
+        NS = _NS_vokrahn
+        p = max(0.0, min(1.0, float(progress)))
+        if p < 0.302:
+            return 80.0 * NS._ease("oc", p / 0.302)
+        if p < 0.605:
+            return 80.0
+        if p < 1.0:
+            return 80.0 * (1.0 - NS._ease("io", (p - 0.605) / 0.395))
+        return 0.0
+
+    @staticmethod
+    def _detect_moving(boss):
+        x = getattr(boss, "x", 0)
+        y = getattr(boss, "y", 0)
+        lx = getattr(boss, "_vok_last_x", x)
+        ly = getattr(boss, "_vok_last_y", y)
+        boss._vok_last_x = x
+        boss._vok_last_y = y
+        dx = abs(x - lx)
+        dy = abs(y - ly)
+        boss._vok_speed = dx + dy
+        return (dx + dy) > 0.3
+
+    @staticmethod
+    def _update_vok_anim(boss, moving=False):
+        """Controller: delta time, state + prioritas, timeline serangan.
+
+        Vokrahn SELALU melee (greatsword) — tidak ada mode jarak jauh,
+        jadi tidak ada percabangan swing/tembak seperti Zharok.
+        """
+        NS = _NS_vokrahn
+
+        # ── delta time nyata ────────────────────────────────────────
+        try:
+            now = pygame.time.get_ticks()
+        except Exception:                              # pragma: no cover
+            now = 0
+        prev_ms = getattr(boss, "_vok_last_ms", None)
+        if prev_ms is None:
+            dt = 1.0 / 60.0
+        else:
+            dt = (now - prev_ms) / 1000.0
+            if dt <= 0.0 or dt > 0.05:
+                dt = 1.0 / 60.0
+        boss._vok_last_ms = now
+        boss._vok_dt = dt
+
+        # ── timeline serangan (timer engine menghitung MUNDUR) ─────
+        cooldown = max(2, int(getattr(boss, "attack_cooldown", 44)))
+        timer = int(getattr(boss, "timer", 0))
+        previous = int(getattr(boss, "_vok_prev_timer", 0))
+        active = bool(getattr(boss, "_vok_attack_active", False))
+
+        # serangan baru: timer melonjak naik (di-reset ke cooldown)
+        if timer > previous + 1 and timer >= cooldown - 2:
+            boss._vok_attack_active = True
+            boss._vok_attack_frame = 0
+            active = True
+        elif active:
+            boss._vok_attack_frame = int(
+                getattr(boss, "_vok_attack_frame", 0)) + 1
+            if boss._vok_attack_frame > cooldown:
+                boss._vok_attack_active = False
+                boss._vok_attack_frame = 0
+                active = False
+        elif timer <= 0:
+            boss._vok_attack_active = False
+            boss._vok_attack_frame = 0
+            active = False
+
+        boss._vok_prev_timer = timer
+        frame = int(getattr(boss, "_vok_attack_frame", 0))
+        # durasi animasi dibatasi supaya tebasan berat tetap berbobot
+        anim_len = max(10, min(cooldown - 1, 30))
+        progress = min(1.0, frame / float(anim_len)) if active else 0.0
+        boss._vok_attack_progress = progress
+        boss._vok_attack_phase = (NS.attack_phase(progress) if active
+                                  else "NONE")
+        lo, hi = NS.ATTACK_ACTIVE_WINDOW
+        boss._vok_hit_window = bool(active and lo <= progress <= hi)
+
+        # ── prioritas state ─────────────────────────────────────────
+        skill = getattr(boss, "active_skill", None)
+        alive = bool(getattr(boss, "alive", True))
+        hurt = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+        speed = float(getattr(boss, "_vok_speed", 0.0))
+
+        if not alive:
+            state = "DEATH"
+        elif skill == "r":
+            state = "SPECIAL"
+        elif skill in ("q", "w", "e"):
+            state = "SKILL"
+        elif active and progress < 0.12:
+            state = "CHARGE"
+        elif active and progress < 0.30:
+            state = "ATTACK"
+        elif active:
+            state = "SWING" if progress < 0.62 else "ATTACK"
+        elif hurt > 0:
+            state = "HURT"
         elif moving:
-            _NS_vokrahn._draw_vok_walk(surface, boss, x, y)
+            state = "RUN" if speed > 1.2 else "WALK"
         else:
-            _NS_vokrahn._draw_vok_idle(surface, boss, x, y)
+            state = "IDLE"
 
-        # Skill projectile triggers
-        _NS_vokrahn._handle_skill_projectiles(boss, x, y, active_skill, skill_timer)
-
-        # Projectiles
-        _NS_vokrahn._manage_projectiles(boss, surface, pulse)
-
-        # Foreground skill effects
-        if active_skill == "w":
-            _NS_vokrahn._draw_realm_of_chaos(surface, boss, x, y, skill_timer, pulse)
-
-
-    def _handle_skill_projectiles(boss, x, y, active_skill, timer):
-        tx, ty = _NS_vokrahn._target_position(boss, x, y)
-
-        if active_skill == "q":
-            duration = 55
-            progress = max(0.0, min(1.0, 1 - timer / duration))
-            if 0.35 < progress < 0.45 and not getattr(boss, "_vok_q_spawned", False):
-                sx = x + 25 * boss.direction
-                sy = y - 15
-                _NS_vokrahn._spawn_chaos_bolt(boss, sx, sy, tx, ty)
-                boss._vok_q_spawned = True
-            if progress > 0.7:
-                boss._vok_q_spawned = False
-
-
-    # ===================================================================
-    # POSE MODES
-    # ===================================================================
-    def _draw_vok_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_vokrahn._draw_shadow(surface, x, y + 58)
-        _NS_vokrahn._draw_chaos_wisps(surface, x, y + 44, boss.pulse)
-        _NS_vokrahn._draw_vok_full(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
-
-    def _draw_vok_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.0
-        bob = int(abs(math.sin(phase * 1.2)) * 3)
-        sway = int(math.sin(phase * 0.5) * 2)
-        _NS_vokrahn._draw_shadow(surface, x + sway, y + 58)
-        _NS_vokrahn._draw_chaos_wisps(surface, x + sway, y + 44, phase, trail=True,
-                         facing=boss.direction)
-        _NS_vokrahn._draw_vok_full(surface, x + sway, y - bob, boss.direction, phase, "walk")
-
-
-    def _draw_vok_attack(surface, boss, x, y):
-        progress = getattr(boss, "_vok_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
-
-        _NS_vokrahn._draw_shadow(surface, x + lunge, y + 58)
-        _NS_vokrahn._draw_chaos_wisps(surface, x + lunge, y + 44, boss.pulse, intense=True)
-        _NS_vokrahn._draw_vok_full(surface, x + lunge, y, boss.direction, boss.pulse,
-                       "attack", progress)
-        _NS_vokrahn._draw_sword_swing_arc(surface, x + lunge, y, boss.direction, progress)
-        _NS_vokrahn._draw_swing_impact(surface, x + lunge, y, boss.direction, progress)
-
-
-    def _draw_vok_qcast(surface, boss, x, y, timer):
-        duration = 55
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        recoil = int(math.sin(progress * math.pi * 2) * 2) * -boss.direction
-        _NS_vokrahn._draw_shadow(surface, x + recoil, y + 58)
-        _NS_vokrahn._draw_chaos_wisps(surface, x + recoil, y + 44, boss.pulse, intense=True)
-        _NS_vokrahn._draw_vok_full(surface, x + recoil, y + bob, boss.direction, boss.pulse,
-                       "q_cast", progress)
-
-
-    def _draw_vok_dashing(surface, boss, x, y, timer, phase):
-        """E - Chaos Strike dash forward with motion blur."""
-        duration = 50
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        bob = int(math.sin(phase * 1.5) * 2)
-
-        # Dash offset - moves toward target then back
-        if progress < 0.3:
-            offset = int(80 * (progress / 0.3)) * boss.direction
-        elif progress < 0.6:
-            offset = int(80 * boss.direction)
-            # Spawn impact burst at peak
-            if not getattr(boss, "_vok_e_burst", False):
-                tx, ty = _NS_vokrahn._target_position(boss, x, y)
-                _NS_vokrahn._spawn_burst(boss, x + offset, y, size=35, life=25)
-                boss._vok_e_burst = True
+        prev_state = getattr(boss, "_vok_state", "IDLE")
+        if prev_state != state:
+            boss._vok_state_prev = prev_state
+            boss._vok_state_time = 0.0
         else:
-            t = (progress - 0.6) / 0.4
-            offset = int(80 * (1 - t)) * boss.direction
+            boss._vok_state_time = getattr(boss, "_vok_state_time", 0.0) + dt
+        boss._vok_state = state
+        boss._vok_state_priority = NS.ANIM_STATES.get(state, 0)
+        return state
 
-        if progress < 0.1:
-            boss._vok_e_burst = False
+    @staticmethod
+    def _update_attack_anim(boss):
+        """API LAMA — dipertahankan untuk kompatibilitas mundur.
 
-        _NS_vokrahn._draw_shadow(surface, x + offset, y + 58)
-        _NS_vokrahn._draw_chaos_wisps(surface, x + offset, y + 44, phase, intense=True)
+        Mendelegasikan ke controller animasi v3 supaya tidak ada dua
+        sumber kebenaran yang saling menimpa ``_vok_attack_progress``.
+        """
+        return _NS_vokrahn._update_vok_anim(
+            boss, moving=(float(getattr(boss, "_vok_speed", 0.0)) > 0.3))
 
-        # Motion blur behind
-        if 0.15 < progress < 0.65:
-            for i in range(4):
-                blur_offset = (i + 1) * -12 * boss.direction + offset
-                alpha = int(140 - i * 30)
-                temp = pygame.Surface((180, 180), pygame.SRCALPHA)
-                _NS_vokrahn._draw_vok_full(temp, 90, 90, boss.direction, phase, "dash")
-                temp.set_alpha(alpha)
-                surface.blit(temp, (x + blur_offset - 90, y + bob - 90))
+    @staticmethod
+    def _resolve_pose_vok(boss, moving):
+        """(action, phase, attack_progress) untuk renderer + lapisan hidup."""
+        NS = _NS_vokrahn
+        pulse = float(getattr(boss, "pulse", 0.0))
+        state = getattr(boss, "_vok_state", "IDLE")
+        ap = float(getattr(boss, "_vok_attack_progress", 0.0) or 0.0)
+        skill = getattr(boss, "active_skill", None)
+        timer = int(getattr(boss, "active_skill_timer", 0))
 
-        _NS_vokrahn._draw_vok_full(surface, x + offset, y + bob, boss.direction, phase, "dash")
-
-        # Sword trail
-        _NS_vokrahn._draw_dash_trail(surface, x + offset, y, boss.direction, progress)
-
+        if state in ("SKILL", "SPECIAL") and skill in ("q", "w", "e", "r"):
+            dur = NS.SKILL_DUR.get(skill, 50)
+            prog = max(0.0, min(1.0, 1.0 - timer / float(dur)))
+            action = {"q": "q_cast", "w": "w_cast",
+                      "e": "e_cast", "r": "r_cast"}[skill]
+            return action, pulse, prog
+        if state in ("ATTACK", "SWING", "CHARGE"):
+            return "swing", pulse, ap
+        if state == "RUN":
+            return "run", pulse * 2.6, 0.0
+        if state == "WALK":
+            return "walk", pulse * 2.3, 0.0
+        if state == "DEATH":
+            return "death", pulse, 0.0
+        if state == "HURT":
+            return "hurt", pulse, 0.0
+        return "idle", pulse, 0.0
 
     # ===================================================================
-    # FULL COMPOSITE - Horse + Knight rider
+    # BADAN — komposit rig (buffer -> crop -> outline -> blit)
+    #   Badan + pedang digambar ke buffer sekali, di-crop, diberi outline
+    #   4-arah + rim light, lalu di-blit. Hasilnya disimpan sebagai
+    #   ``_last_rig`` supaya lapisan hidup bisa membuat afterimage /
+    #   hantu Phantasm TANPA menggambar ulang (murah + selalu sinkron).
     # ===================================================================
-    def _draw_vok_full(surface, cx, cy, facing, phase, action, attack_progress=0):
-        # Cape drawn first (behind everything)
-        _NS_vokrahn._draw_cape(surface, cx - 6 * facing, cy - 20, facing, phase, action)
+    @staticmethod
+    def _draw_vok_body_raw(buf, ox, oy, facing, phase, action,
+                           attack_progress):
+        """Gambar ksatria + kuda + pedang (urutan layer v3)."""
+        NS = _NS_vokrahn
+        # 1) jubah (paling belakang)
+        NS._draw_cape(buf, ox - 6 * facing, oy - 20, facing, phase, action)
+        # 2) ekor kuda
+        NS._draw_horse_tail(buf, ox, oy + 12, facing, phase, action)
+        # 3) badan kuda
+        NS._draw_horse_body(buf, ox, oy + 8, facing, phase)
+        # 4) kaki kuda
+        NS._draw_horse_legs(buf, ox, oy + 22, facing, phase, action)
+        # 5) kepala kuda
+        NS._draw_horse_head(buf, ox + 20 * facing, oy + 5, facing, phase)
+        # 6) surai
+        NS._draw_horse_mane(buf, ox + 8 * facing, oy - 2, facing, phase)
+        # 7) ksatria penunggang (termasuk lengan + pedang)
+        NS._draw_knight_rider(buf, ox - 3 * facing, oy - 20, facing, phase,
+                              action, attack_progress)
 
-        # Horse tail (behind body)
-        _NS_vokrahn._draw_horse_tail(surface, cx, cy + 12, facing, phase, action)
+    @staticmethod
+    def _draw_vok_body(surface, cx, cy, facing, phase, action,
+                       attack_progress=0, hurt=0):
+        """Pipeline rig: buffer -> crop -> flash -> outline -> blit."""
+        NS = _NS_vokrahn
+        if NS._body_buf is None:
+            NS._body_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                          pygame.SRCALPHA)
+        buf = NS._body_buf
+        buf.fill((0, 0, 0, 0))
+        NS._draw_vok_body_raw(buf, NS.RIG_OX, NS.RIG_OY, facing, phase,
+                              action, attack_progress)
+        used = buf.get_bounding_rect(min_alpha=1)
+        if used.width <= 2 or used.height <= 2:
+            return
+        used.inflate_ip(4, 4)
+        used.clamp_ip(buf.get_rect())
+        sub = buf.subsurface(used).copy()
+        ox = int(cx) - NS.RIG_OX + used.left
+        oy = int(cy) - NS.RIG_OY + used.top
 
-        # Horse body
-        _NS_vokrahn._draw_horse_body(surface, cx, cy + 8, facing, phase)
+        # hit flash: rig putih pudar saat baru terkena damage
+        if hurt > 0:
+            flash = sub.copy()
+            flash.fill((255, 240, 235, 255),
+                       special_flags=pygame.BLEND_RGB_MAX)
+            flash.set_alpha(min(210, int(hurt) * 30))
+            sub.blit(flash, (0, 0))
 
-        # Horse legs
-        _NS_vokrahn._draw_horse_legs(surface, cx, cy + 22, facing, phase, action)
+        # outline 4-arah (siluet kuat, gaya pixel-art)
+        edge = sub.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + ddx, oy + ddy))
+        try:
+            import lighting as _lighting
+            if _lighting is not None:
+                _lighting.apply_to_rig(sub, rim_add=(46, 20, 16),
+                                       shade_mul=170)
+        except Exception:
+            pass
+        surface.blit(sub, (ox, oy))
+        # simpan rig terakhir untuk afterimage/hantu FX
+        NS._last_rig = sub
+        NS._last_rig_off = (ox - int(cx), oy - int(cy))
 
-        # Horse head (front)
-        _NS_vokrahn._draw_horse_head(surface, cx + 20 * facing, cy + 5, facing, phase)
+    # ===================================================================
+    # LERENGAN Ksatria — semua posisi tangan mengikuti sword_geometry()
+    #   (satu sumber; lengan tidak pernah melenceng dari bilah)
+    # ===================================================================
+    @staticmethod
+    def _draw_knight_rider(surface, cx, cy, facing, phase, action,
+                           attack_progress):
+        """Ksatria berat bertengger di punggung kuda.
 
-        # Horse mane (behind rider)
-        _NS_vokrahn._draw_horse_mane(surface, cx + 8 * facing, cy - 2, facing, phase)
+        ``(cx, cy)`` = JANGKAR KSATRIA (badan + (3f, 20)).
+        """
+        NS = _NS_vokrahn
+        sway = int(math.sin(phase * 0.6) * 1)
+        if action in ("walk", "run"):
+            sway += int(math.sin(phase * 2) * 1)
 
-        # KNIGHT rider on top
-        _NS_vokrahn._draw_knight_rider(surface, cx - 3 * facing, cy - 20, facing, phase, action,
-                           attack_progress)
+        # Kaki (berlengan) menunggang kuda
+        for side in (-1, 1):
+            lx = cx + side * 4
+            ly = cy + 12
+            NS._rect(surface, NS.PALETTE["shadow_deep"], (lx - 2 + 1, ly + 1,
+                                                          4, 7),
+                     border_radius=1)
+            NS._rect(surface, NS.PALETTE["arm_darkest"], (lx - 2, ly, 4, 7),
+                     border_radius=1)
+            NS._rect(surface, NS.PALETTE["arm_dark"], (lx - 2, ly, 4, 5))
+            NS._rect(surface, NS.PALETTE["arm_mid"], (lx - 1, ly + 1, 2, 3))
+            # trim merah
+            NS._rect(surface, NS.PALETTE["red_mid"], (lx - 2, ly + 6, 4, 1))
+            # sepatu logam
+            NS._rect(surface, NS.PALETTE["metal_darkest"],
+                     (lx - 3, ly + 7, 6, 3), border_radius=1)
+            NS._rect(surface, NS.PALETTE["metal_dark"], (lx - 2, ly + 7,
+                                                         4, 2))
+            NS._rect(surface, NS.PALETTE["metal_light"], (lx - 2, ly + 7,
+                                                          4, 1))
 
+        kx = cx + sway
+        NS._draw_knight_torso(surface, kx, cy, facing, phase)
+        NS._draw_shield(surface, kx, cy - 2, facing, phase)
+        NS._draw_knight_head(surface, kx, cy - 12, facing, phase)
+
+        # lengan + pedang (selalu lewat sword_geometry)
+        if action in ("swing", "attack", "melee"):
+            NS._draw_knight_swing_arms(surface, cx, cy, facing, phase,
+                                       attack_progress)
+        elif action == "e_cast":
+            NS._draw_knight_thrust_arms(surface, cx, cy, facing, phase)
+        elif action == "q_cast":
+            NS._draw_knight_cast_arms(surface, cx, cy, facing, phase)
+        elif action == "w_cast":
+            NS._draw_knight_wcast_arms(surface, cx, cy, facing, phase)
+        elif action == "r_cast":
+            NS._draw_knight_rcast_arms(surface, cx, cy, facing, phase)
+        elif action == "death":
+            NS._draw_knight_death_arms(surface, cx, cy, facing, phase)
+        else:
+            NS._draw_knight_idle_arms(surface, cx, cy, facing, phase)
+
+    @staticmethod
+    def _knight_grip(surface_unused, cx, cy, facing, phase, action, ap):
+        """Grip & ujung pedang dalam KOORDINAT LOKAL ksatria.
+
+        Jangkar ksatria = jangkar badan + (3f, 20), jadi posisi lokal
+        (dari sword_geometry, relatif badan) digeser ke balik itu.
+        """
+        grip, tip_hi, tip_lo, phi = _NS_vokrahn.sword_geometry(
+            facing, action, phase, ap)
+        gx = cx + 3 * facing + grip[0]
+        gy = cy + 20 + grip[1]
+        return (gx, gy), (cx + 3 * facing + tip_hi[0],
+                          cy + 20 + tip_hi[1]), phi
+
+    @staticmethod
+    def _draw_knight_arm_pair(surface, cx, cy, facing, phase, action, ap,
+                              both=False, back_offset=(-6.0, 3.0)):
+        """Lengan depan (dan opsional belakang) memegang grip + pedang."""
+        NS = _NS_vokrahn
+        (gx, gy), (tx, ty), _phi = NS._knight_grip(None, cx, cy, facing,
+                                                   phase, action, ap)
+        # bahu lengan depan
+        sh_x = cx + facing * 10
+        sh_y = cy - 4
+        ex = sh_x + (gx - sh_x) * 0.5
+        ey = sh_y + (gy - sh_y) * 0.5 + 2
+        NS._draw_knight_arm(surface, sh_x, sh_y, ex, ey)
+        NS._draw_knight_arm(surface, ex, ey, gx, gy)
+        NS._draw_gauntlet(surface, gx, gy)
+
+        if both:
+            sh_x2 = cx - facing * 10
+            sh_y2 = cy - 4
+            bx = gx + back_offset[0] * facing
+            by = gy + back_offset[1]
+            NS._draw_knight_arm(surface, sh_x2, sh_y2,
+                                (sh_x2 + bx) / 2, (sh_y2 + by) / 2 + 2)
+            NS._draw_knight_arm(surface, (sh_x2 + bx) / 2,
+                                (sh_y2 + by) / 2 + 2, bx, by)
+            NS._draw_gauntlet(surface, bx, by)
+
+        # pedang: dari grip ke ujung (bentuk api v2 — satu fungsi lama)
+        NS._draw_flaming_sword_line(surface, gx, gy, tx, ty, facing, phase)
+
+    @staticmethod
+    def _draw_knight_back_arm(surface, cx, cy, facing):
+        """Lengan belakang tetap di perisai."""
+        NS = _NS_vokrahn
+        sh_x2 = cx - facing * 10
+        sh_y2 = cy - 4
+        hand_x2 = sh_x2 - facing * 3
+        hand_y2 = cy + 4
+        NS._draw_knight_arm(surface, sh_x2, sh_y2, hand_x2, hand_y2)
+        NS._draw_gauntlet(surface, hand_x2, hand_y2)
+
+    @staticmethod
+    def _draw_knight_idle_arms(surface, cx, cy, facing, phase):
+        NS = _NS_vokrahn
+        NS._draw_knight_back_arm(surface, cx, cy, facing)
+        NS._draw_knight_arm_pair(surface, cx, cy, facing, phase, "idle", 0.0)
+
+    @staticmethod
+    def _draw_knight_swing_arms(surface, cx, cy, facing, phase, ap):
+        NS = _NS_vokrahn
+        NS._draw_knight_back_arm(surface, cx, cy, facing)
+        NS._draw_knight_arm_pair(surface, cx, cy, facing, phase, "swing", ap)
+
+    @staticmethod
+    def _draw_knight_thrust_arms(surface, cx, cy, facing, phase):
+        """Dash: kedua tangan mengacungkan pedang ke depan."""
+        NS = _NS_vokrahn
+        NS._draw_knight_arm_pair(surface, cx, cy, facing, phase, "e_cast",
+                                 0.0, both=True, back_offset=(-5.0, 1.0))
+
+    @staticmethod
+    def _draw_knight_cast_arms(surface, cx, cy, facing, phase):
+        """Q: satu tangan mengangkat pedang ke atas-bidik."""
+        NS = _NS_vokrahn
+        NS._draw_knight_back_arm(surface, cx, cy, facing)
+        NS._draw_knight_arm_pair(surface, cx, cy, facing, phase, "q_cast",
+                                 0.0)
+
+    @staticmethod
+    def _draw_knight_wcast_arms(surface, cx, cy, facing, phase):
+        """W: kedua tangan menggenggam pedang di depan bawah."""
+        NS = _NS_vokrahn
+        NS._draw_knight_arm_pair(surface, cx, cy, facing, phase, "w_cast",
+                                 0.0, both=True, back_offset=(-6.0, 1.0))
+
+    @staticmethod
+    def _draw_knight_rcast_arms(surface, cx, cy, facing, phase):
+        """R: kedua tangan mengangkat pedang ke atas (memanggil hantu)."""
+        NS = _NS_vokrahn
+        NS._draw_knight_arm_pair(surface, cx, cy, facing, phase, "r_cast",
+                                 0.0, both=True, back_offset=(-5.0, 0.0))
+
+    @staticmethod
+    def _draw_knight_death_arms(surface, cx, cy, facing, phase):
+        NS = _NS_vokrahn
+        NS._draw_knight_back_arm(surface, cx, cy, facing)
+        NS._draw_knight_arm_pair(surface, cx, cy, facing, phase, "death",
+                                 0.0)
 
     def _draw_cape(surface, cx, cy, facing, phase, action):
         """Tattered red cape behind knight."""
@@ -5793,49 +6218,6 @@ class _NS_vokrahn:
             _NS_vokrahn._aacircle(surface, _NS_vokrahn.PALETTE["mane_bright"], (mx + int(wave), my + 4), 1)
 
 
-    def _draw_knight_rider(surface, cx, cy, facing, phase, action, attack_progress):
-        """Heavy armored knight rider."""
-        sway = int(math.sin(phase * 0.6) * 1)
-        if action == "walk":
-            sway += int(math.sin(phase * 2) * 1)
-
-        # Legs (armored) straddling horse
-        for side in (-1, 1):
-            lx = cx + side * 4
-            ly = cy + 12
-            _NS_vokrahn._rect(surface, _NS_vokrahn.PALETTE["shadow_deep"], (lx - 2 + 1, ly + 1, 4, 7),
-                  border_radius=1)
-            _NS_vokrahn._rect(surface, _NS_vokrahn.PALETTE["arm_darkest"], (lx - 2, ly, 4, 7), border_radius=1)
-            _NS_vokrahn._rect(surface, _NS_vokrahn.PALETTE["arm_dark"], (lx - 2, ly, 4, 5))
-            _NS_vokrahn._rect(surface, _NS_vokrahn.PALETTE["arm_mid"], (lx - 1, ly + 1, 2, 3))
-            # Red trim
-            _NS_vokrahn._rect(surface, _NS_vokrahn.PALETTE["red_mid"], (lx - 2, ly + 6, 4, 1))
-            # Metal boot
-            _NS_vokrahn._rect(surface, _NS_vokrahn.PALETTE["metal_darkest"], (lx - 3, ly + 7, 6, 3), border_radius=1)
-            _NS_vokrahn._rect(surface, _NS_vokrahn.PALETTE["metal_dark"], (lx - 2, ly + 7, 4, 2))
-            _NS_vokrahn._rect(surface, _NS_vokrahn.PALETTE["metal_light"], (lx - 2, ly + 7, 4, 1))
-
-        # Torso
-        _NS_vokrahn._draw_knight_torso(surface, cx + sway, cy, facing, phase)
-
-        # Shield (back arm side)
-        _NS_vokrahn._draw_shield(surface, cx + sway, cy - 2, facing, phase)
-
-        # Head with helmet
-        _NS_vokrahn._draw_knight_head(surface, cx + sway, cy - 12, facing, phase)
-
-        # Arms + sword
-        if action == "attack":
-            _NS_vokrahn._draw_knight_attack_arms(surface, cx + sway, cy, facing, phase,
-                                      attack_progress)
-        elif action == "dash":
-            _NS_vokrahn._draw_knight_dash_arms(surface, cx + sway, cy, facing, phase)
-        elif action == "q_cast":
-            _NS_vokrahn._draw_knight_cast_arms(surface, cx + sway, cy, facing, phase)
-        else:
-            _NS_vokrahn._draw_knight_idle_arms(surface, cx + sway, cy, facing, phase)
-
-
     def _draw_knight_torso(surface, cx, cy, facing, phase):
         """Heavy armored torso."""
         # Shadow
@@ -6065,148 +6447,6 @@ class _NS_vokrahn:
         _NS_vokrahn._aacircle(surface, _NS_vokrahn.PALETTE["red_hot"], (cx, cy - 13), 1)
 
 
-    def _draw_knight_idle_arms(surface, cx, cy, facing, phase):
-        """One arm holding sword, other resting on shield."""
-        sway = math.sin(phase * 0.7) * 1
-
-        # Sword arm (front, facing)
-        sword_side = facing
-        sh_x = cx + sword_side * 10
-        sh_y = cy - 4
-        elbow_x = sh_x + sword_side * 4
-        elbow_y = cy + 4 + int(sway)
-        hand_x = elbow_x + sword_side * 2
-        hand_y = elbow_y + 6
-
-        _NS_vokrahn._draw_knight_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-        _NS_vokrahn._draw_knight_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-        _NS_vokrahn._draw_gauntlet(surface, hand_x, hand_y)
-
-        # Sword held pointing down/forward
-        _NS_vokrahn._draw_flaming_sword(surface, hand_x, hand_y, facing, "down", phase)
-
-        # Back arm (shield-holding)
-        other_side = -facing
-        sh_x2 = cx + other_side * 10
-        sh_y2 = cy - 4
-        hand_x2 = sh_x2 + other_side * 3
-        hand_y2 = cy + 4 + int(sway)
-        _NS_vokrahn._draw_knight_arm(surface, sh_x2, sh_y2, hand_x2, hand_y2)
-        _NS_vokrahn._draw_gauntlet(surface, hand_x2, hand_y2)
-
-
-    def _draw_knight_attack_arms(surface, cx, cy, facing, phase, progress):
-        """Overhead sword swing."""
-        # Back arm - stays with shield
-        other_side = -facing
-        sh_x2 = cx + other_side * 10
-        sh_y2 = cy - 4
-        hand_x2 = sh_x2 + other_side * 3
-        hand_y2 = cy + 4
-        _NS_vokrahn._draw_knight_arm(surface, sh_x2, sh_y2, hand_x2, hand_y2)
-        _NS_vokrahn._draw_gauntlet(surface, hand_x2, hand_y2)
-
-        # Sword arm - overhead swing
-        sword_side = facing
-        sh_x = cx + sword_side * 10
-        sh_y = cy - 4
-
-        if progress < 0.25:
-            # Wind up (raise sword back)
-            t = progress / 0.25
-            t = t * t * (3 - 2 * t)
-            arm_angle = -1.4 + 0.2 * t
-        elif progress < 0.55:
-            # Swing down (fast)
-            t = (progress - 0.25) / 0.30
-            t = 1 - (1 - t) ** 3
-            arm_angle = -1.2 + 2.4 * t
-        else:
-            # Recovery
-            t = (progress - 0.55) / 0.45
-            arm_angle = 1.2 - 0.9 * t
-
-        arm_len = 14
-        hand_x = sh_x + int(math.cos(arm_angle) * arm_len) * facing
-        hand_y = sh_y + int(math.sin(arm_angle) * arm_len)
-        elbow_x = sh_x + int(math.cos(arm_angle) * arm_len * 0.55) * facing
-        elbow_y = sh_y + int(math.sin(arm_angle) * arm_len * 0.55)
-
-        _NS_vokrahn._draw_knight_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-        _NS_vokrahn._draw_knight_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-        _NS_vokrahn._draw_gauntlet(surface, hand_x, hand_y)
-
-        # Sword angled
-        sword_angle = arm_angle + math.pi / 4 * facing
-        _NS_vokrahn._draw_flaming_sword_angled(surface, hand_x, hand_y, facing, sword_angle, phase)
-
-
-    def _draw_knight_dash_arms(surface, cx, cy, facing, phase):
-        """Dash pose - sword extended forward."""
-        # Back arm - shield
-        other_side = -facing
-        sh_x2 = cx + other_side * 10
-        sh_y2 = cy - 4
-        hand_x2 = sh_x2 + other_side * 3
-        hand_y2 = cy + 3
-        _NS_vokrahn._draw_knight_arm(surface, sh_x2, sh_y2, hand_x2, hand_y2)
-        _NS_vokrahn._draw_gauntlet(surface, hand_x2, hand_y2)
-
-        # Sword arm - extended forward
-        sword_side = facing
-        sh_x = cx + sword_side * 10
-        sh_y = cy - 4
-        elbow_x = sh_x + sword_side * 6
-        elbow_y = cy - 2
-        hand_x = elbow_x + sword_side * 8
-        hand_y = cy - 3
-
-        _NS_vokrahn._draw_knight_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-        _NS_vokrahn._draw_knight_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-        _NS_vokrahn._draw_gauntlet(surface, hand_x, hand_y)
-
-        # Sword forward
-        _NS_vokrahn._draw_flaming_sword(surface, hand_x, hand_y, facing, "forward", phase)
-
-
-    def _draw_knight_cast_arms(surface, cx, cy, facing, phase):
-        """Q cast - sword pointing forward, energy gathering."""
-        # Back arm - shield
-        other_side = -facing
-        sh_x2 = cx + other_side * 10
-        sh_y2 = cy - 4
-        hand_x2 = sh_x2 + other_side * 3
-        hand_y2 = cy + 3
-        _NS_vokrahn._draw_knight_arm(surface, sh_x2, sh_y2, hand_x2, hand_y2)
-        _NS_vokrahn._draw_gauntlet(surface, hand_x2, hand_y2)
-
-        # Sword forward
-        sword_side = facing
-        sh_x = cx + sword_side * 10
-        sh_y = cy - 4
-        elbow_x = sh_x + sword_side * 5
-        elbow_y = cy - 4
-        hand_x = elbow_x + sword_side * 8
-        hand_y = cy - 6
-
-        _NS_vokrahn._draw_knight_arm(surface, sh_x, sh_y, elbow_x, elbow_y)
-        _NS_vokrahn._draw_knight_arm(surface, elbow_x, elbow_y, hand_x, hand_y)
-        _NS_vokrahn._draw_gauntlet(surface, hand_x, hand_y)
-
-        _NS_vokrahn._draw_flaming_sword(surface, hand_x, hand_y, facing, "forward", phase)
-
-        # Energy gathering at sword tip
-        tip_x = hand_x + facing * 24
-        tip_y = hand_y - 8
-        pulse = math.sin(phase * 4) * 0.3 + 0.7
-        r = int(6 * pulse)
-        _NS_vokrahn._aacircle(surface, (*_NS_vokrahn.PALETTE["red_dark"], 150), (tip_x, tip_y), r + 4)
-        _NS_vokrahn._aacircle(surface, _NS_vokrahn.PALETTE["red_mid"], (tip_x, tip_y), r + 2)
-        _NS_vokrahn._aacircle(surface, _NS_vokrahn.PALETTE["red_bright"], (tip_x, tip_y), r)
-        _NS_vokrahn._aacircle(surface, _NS_vokrahn.PALETTE["red_hot"], (tip_x, tip_y), max(1, r - 2))
-        _NS_vokrahn._aacircle(surface, _NS_vokrahn.PALETTE["fire_glow"], (tip_x, tip_y), max(1, r - 4))
-
-
     def _draw_knight_arm(surface, x1, y1, x2, y2):
         """Armored arm segment."""
         _NS_vokrahn._aaline(surface, _NS_vokrahn.PALETTE["shadow_deep"], (x1 + 1, y1 + 1), (x2 + 1, y2 + 1), 6)
@@ -6225,30 +6465,6 @@ class _NS_vokrahn:
         _NS_vokrahn._aacircle(surface, _NS_vokrahn.PALETTE["arm_light"], (x - 1, y - 1), 1)
         # Red trim
         _NS_vokrahn._aacircle(surface, _NS_vokrahn.PALETTE["red_mid"], (x, y), 4, 1)
-
-
-    def _draw_flaming_sword(surface, hx, hy, facing, pose, phase):
-        """Long flaming sword."""
-        if pose == "forward":
-            # Handle horizontal
-            end_x = hx + facing * 24
-            end_y = hy
-            _NS_vokrahn._draw_flaming_sword_line(surface, hx, hy, end_x, end_y, facing, phase)
-        elif pose == "down":
-            # Handle diagonal down/forward
-            end_x = hx + facing * 12
-            end_y = hy + 20
-            _NS_vokrahn._draw_flaming_sword_line(surface, hx, hy, end_x, end_y, facing, phase)
-
-
-    def _draw_flaming_sword_angled(surface, hx, hy, facing, angle, phase):
-        """Sword at specific angle."""
-        sword_len = 28
-        dx = math.cos(angle) * facing
-        dy = math.sin(angle)
-        end_x = hx + int(dx * sword_len)
-        end_y = hy + int(dy * sword_len)
-        _NS_vokrahn._draw_flaming_sword_line(surface, hx, hy, end_x, end_y, facing, phase)
 
 
     def _draw_flaming_sword_line(surface, hx, hy, end_x, end_y, facing, phase):
@@ -6517,155 +6733,468 @@ class _NS_vokrahn:
             _NS_vokrahn._draw_ember(surface, dx, dy, 2, alpha)
 
 
-    def _draw_dash_trail(surface, x, y, facing, progress):
-        """Trail of fire during dash."""
-        for i in range(6):
-            offset = -(i + 1) * 15 * facing
-            alpha = max(0, 200 - i * 30)
-            r = 5 - i // 2
-            px = x + offset
-            py = y + 5 + int(math.sin(progress * 5 + i) * 3)
-            _NS_vokrahn._aacircle(surface, (*_NS_vokrahn.PALETTE["red_dark"], alpha), (px, py), r + 2)
-            _NS_vokrahn._aacircle(surface, (*_NS_vokrahn.PALETTE["red_bright"], alpha), (px, py), r)
-            _NS_vokrahn._aacircle(surface, (*_NS_vokrahn.PALETTE["fire_hot"], alpha), (px, py), max(1, r - 2))
-
-
     # ===================================================================
-    # SKILL W: REALM OF CHAOS
+    # SKILL CANVAS — FALLBACK saat lapisan hidup tidak tersedia
+    #   Semua durasi di SINI memakai NS.SKILL_DUR (dikunci ke AI): Q 50,
+    #   W 60, E 50, R 80 frame. (Renderer lama punya bug: Q pakai 55 &
+    #   W/R pakai 80/90 — dikoreksi di sini.)
     # ===================================================================
-    def _draw_realm_of_chaos_ground(surface, boss, x, y, timer, phase):
-        """Ground rune warning."""
-        duration = 80
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        pulse = math.sin(phase * 2) * 0.3 + 0.7
+    @staticmethod
+    def _handle_skill_projectiles(boss, x, y, active_skill, timer):
+        """Bolt Q versi canvas (dipanggil entry hanya kalau not owned)."""
+        NS = _NS_vokrahn
+        if active_skill == "q":
+            duration = int(NS.SKILL_DUR["q"])
+            progress = max(0.0, min(1.0, 1 - timer / duration))
+            if 0.35 < progress < 0.45 and not getattr(boss, "_vok_q_spawned",
+                                                      False):
+                tx, ty = NS._target_position(boss, x, y)
+                sx = x + 25 * boss.direction
+                sy = y - 15
+                NS._spawn_chaos_bolt(boss, sx, sy, tx, ty)
+                boss._vok_q_spawned = True
+            if progress > 0.7:
+                boss._vok_q_spawned = False
 
-        radius = int(60 + progress * 20)
-        _NS_vokrahn._ellipse(surface, (*_NS_vokrahn.PALETTE["red_darkest"], int(200 * pulse)),
-                 (x - radius, y + 45 - radius // 3, radius * 2, radius // 1.5), 3)
-        _NS_vokrahn._ellipse(surface, (*_NS_vokrahn.PALETTE["red_dark"], int(180 * pulse)),
-                 (x - radius + 5, y + 45 - radius // 3 + 2,
-                  radius * 2 - 10, radius // 1.5 - 4), 2)
-
-        # Rune symbols
-        for i in range(6):
-            angle = phase * 0.3 + i * math.pi / 3
-            rx = x + int(math.cos(angle) * (radius - 6))
-            ry = y + 45 + int(math.sin(angle) * (radius // 3 - 3))
-            _NS_vokrahn._aacircle(surface, (*_NS_vokrahn.PALETTE["red_hot"], int(200 * pulse)), (rx, ry), 2)
-
-
-    def _draw_realm_of_chaos(surface, boss, x, y, timer, phase):
-        """Ring of chaos spikes rising around boss."""
-        duration = 80
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-
-        if progress < 0.15:
+    @staticmethod
+    def _draw_q_charge_glow(surface, boss, x, y, timer, phase):
+        """Muatan chaos berkumpul di ujung bilah sebelum Q lepas."""
+        NS = _NS_vokrahn
+        progress = max(0.0, min(1.0, 1 - timer / int(NS.SKILL_DUR["q"])))
+        if progress < 0.10 or progress > 0.45:
             return
+        pulse = NS._resolve_pose_vok(boss, False)
+        _action, _ph, _ap = pulse
+        grip, tip_hi, _lo, _phi = NS.sword_geometry(boss.direction, "q_cast",
+                                                    phase, 0.0)
+        tx = x + tip_hi[0]
+        ty = y + tip_hi[1]
+        grow = min(1.0, max(0.0, (progress - 0.10) / 0.25))
+        s = int((4 + 8 * grow) * (0.85 + 0.15 * math.sin(phase * 3)))
+        if s < 1:
+            return
+        NS._aacircle(surface, (*NS.PALETTE["red_dark"], 90), (tx, ty),
+                     s + 4)
+        NS._aacircle(surface, (*NS.PALETTE["red_bright"], 140), (tx, ty),
+                     s + 2)
+        NS._aacircle(surface, (*NS.PALETTE["red_hot"], 200), (tx, ty), s)
+        NS._aacircle(surface, (*NS.PALETTE["red_glow"], 235), (tx, ty),
+                     max(1, s - 2))
+        _ = grip
 
-        # Erupt phase
-        if progress < 0.5:
-            erupt_t = (progress - 0.15) / 0.35
+    @staticmethod
+    def _draw_realm_of_chaos_ground(surface, boss, x, y, timer, phase):
+        """Telegraph W: LINGKARAN PENUH radius dunia 220 (kontrak)."""
+        NS = _NS_vokrahn
+        progress = max(0.0, min(1.0, 1 - timer / int(NS.SKILL_DUR["w"])))
+        # damage W jatuh saat cast -> lingkaran penuh sejak 20 % pertama
+        grow = min(1.0, progress / 0.20)
+        fade = 1.0 - max(0.0, (progress - 0.70) / 0.28)
+        if fade <= 0.02 or grow <= 0.02:
+            return
+        pulse = math.sin(phase * 2) * 0.2 + 0.8
+        r = int(220 * grow)
+        # cincin luar penuh (radius damage)
+        NS._ellipse(surface,
+                    (*NS.PALETTE["red_bright"],
+                     int(190 * pulse * fade * grow)),
+                    (x - r, y + 45 - r // 2, r * 2, r), 2)
+        # gerigi duri di pinggir (dekorasi, bukan lingkaran polos)
+        num = 14
+        for i in range(num):
+            angle = i * math.pi * 2 / num + phase * 0.15
+            sx = x + int(math.cos(angle) * r)
+            sy = y + 45 + int(math.sin(angle) * r * 0.5)
+            NS._aaline(surface,
+                       (*NS.PALETTE["red_hot"], int(150 * fade)),
+                       (sx, sy),
+                       (x + int(math.cos(angle) * r * 1.12),
+                        y + 45 + int(math.sin(angle) * r * 0.56)), 2)
+        # rune runik berputar di dalam
+        for i in range(8):
+            angle = phase * 0.5 + i * math.pi / 4
+            x1 = x + int(math.cos(angle) * r * 0.72)
+            y1 = y + 45 + int(math.sin(angle) * r * 0.36)
+            x2 = x + int(math.cos(angle) * r * 0.86)
+            y2 = y + 45 + int(math.sin(angle) * r * 0.43)
+            NS._aaline(surface,
+                       (*NS.PALETTE["red_glow"], int(130 * fade)),
+                       (x1, y1), (x2, y2), 1)
+        # genangan chaos di tengah
+        NS._ellipse(surface,
+                    (*NS.PALETTE["red_darkest"], int(110 * fade * grow)),
+                    (x - r // 2, y + 45 - r // 6, r, r // 3), 0)
+
+    @staticmethod
+    def _draw_realm_of_chaos(surface, boss, x, y, timer, phase):
+        """Ledakan duri W — DEPAN badan (momentum damage, awal jendela)."""
+        NS = _NS_vokrahn
+        progress = max(0.0, min(1.0, 1 - timer / int(NS.SKILL_DUR["w"])))
+        if progress < 0.16:
+            return
+        if progress < 0.62:
+            erupt_t = (progress - 0.16) / 0.46
         else:
-            erupt_t = 1.0 - (progress - 0.7) / 0.3 if progress > 0.7 else 1.0
+            erupt_t = 1.0 - (progress - 0.62) / 0.28
         erupt_t = max(0.0, min(1.0, erupt_t))
-
-        # Ring of spikes
-        ring_r = 60
+        if erupt_t <= 0.02:
+            return
+        # duri di sepanjang cincin radius dunia
+        ring_r = 205
         num_spikes = 14
         for i in range(num_spikes):
             angle = i * math.pi * 2 / num_spikes + phase * 0.05
             sx = x + int(math.cos(angle) * ring_r)
             sy = y + 45 + int(math.sin(angle) * ring_r * 0.5)
             spike_h = int(25 * erupt_t) + (i % 3) * 3
-
-            _NS_vokrahn._draw_chaos_spike(surface, sx, sy, sy - spike_h, 4, 240)
-
-        # Inner ring - smaller spikes
-        inner_r = 40
+            NS._draw_chaos_spike(surface, sx, sy, sy - spike_h, 4, 240)
+        # duri dalam
+        inner_r = 120
         for i in range(10):
             angle = (i + 0.5) * math.pi * 2 / 10 + phase * 0.1
             sx = x + int(math.cos(angle) * inner_r)
             sy = y + 45 + int(math.sin(angle) * inner_r * 0.5)
             spike_h = int(18 * erupt_t)
-            _NS_vokrahn._draw_chaos_spike(surface, sx, sy, sy - spike_h, 3, 220)
-
-        # Center big spike
+            NS._draw_chaos_spike(surface, sx, sy, sy - spike_h, 3, 220)
+        # duri pusat
         center_h = int(35 * erupt_t)
-        _NS_vokrahn._draw_chaos_spike(surface, x, y + 45, y + 45 - center_h, 5, 250)
-
-        # Sparks around
+        NS._draw_chaos_spike(surface, x, y + 45, y + 45 - center_h, 5, 250)
+        # percikan
         for i in range(10):
             angle = phase * 2 + i * math.pi / 5
             r = ring_r + int(math.sin(phase * 3 + i) * 6)
             sx = x + int(math.cos(angle) * r)
-            sy = y + 45 + int(math.sin(angle) * r * 0.5) - int(erupt_t * 12)
-            _NS_vokrahn._draw_ember(surface, sx, sy, 2, int(230 * erupt_t))
+            sy = (y + 45 + int(math.sin(angle) * r * 0.5)
+                  - int(erupt_t * 12))
+            NS._draw_ember(surface, sx, sy, 2, int(230 * erupt_t))
 
-
-    # ===================================================================
-    # SKILL R: PHANTASM (illusions)
-    # ===================================================================
+    @staticmethod
     def _draw_phantasm_ground(surface, boss, x, y, timer, phase):
-        """Ground summon circle for phantasm."""
-        duration = 90
-        progress = max(0.0, min(1.0, 1 - timer / duration))
+        """Telegraph R: LINGKARAN PENUH radius dunia 220 + rune."""
+        NS = _NS_vokrahn
+        progress = max(0.0, min(1.0, 1 - timer / int(NS.SKILL_DUR["r"])))
+        grow = min(1.0, progress / 0.20)
+        fade = 1.0 - max(0.0, (progress - 0.75) / 0.23)
+        if fade <= 0.02 or grow <= 0.02:
+            return
         pulse = math.sin(phase * 3) * 0.3 + 0.7
-
-        for i in range(3):
-            r = int(60 + i * 15 + math.sin(phase + i) * 4)
-            _NS_vokrahn._ellipse(surface, (*_NS_vokrahn.PALETTE["red_mid"], int(140 * pulse)),
-                     (x - r, y + 45 - r // 3, r * 2, r // 1.5), 2)
-
-        # Runic circle
+        r = int(220 * grow)
+        NS._ellipse(surface,
+                    (*NS.PALETTE["red_mid"], int(190 * pulse * fade * grow)),
+                    (x - r, y + 45 - r // 2, r * 2, r), 2)
+        # rune lingkaran
         for i in range(12):
             angle = phase * 0.4 + i * math.pi / 6
-            r1 = 55
-            r2 = 68
-            x1 = x + int(math.cos(angle) * r1)
-            y1 = y + 45 + int(math.sin(angle) * r1 * 0.5)
-            x2 = x + int(math.cos(angle) * r2)
-            y2 = y + 45 + int(math.sin(angle) * r2 * 0.5)
-            _NS_vokrahn._aaline(surface, (*_NS_vokrahn.PALETTE["red_hot"], int(200 * pulse)),
-                    (x1, y1), (x2, y2), 1)
+            x1 = x + int(math.cos(angle) * r * 0.78)
+            y1 = y + 45 + int(math.sin(angle) * r * 0.39)
+            x2 = x + int(math.cos(angle) * r * 0.92)
+            y2 = y + 45 + int(math.sin(angle) * r * 0.46)
+            NS._aaline(surface,
+                       (*NS.PALETTE["red_hot"], int(200 * fade * pulse)),
+                       (x1, y1), (x2, y2), 1)
+        # bintang chaos 8 titik di tengah (bukan lingkaran)
+        star_r = int(r * 0.5)
+        if star_r > 8:
+            pts = []
+            for i in range(16):
+                a = phase * 0.5 + i * math.pi / 8
+                rr = star_r if i % 2 == 0 else star_r * 0.45
+                pts.append((x + int(math.cos(a) * rr),
+                            y + 45 + int(math.sin(a) * rr * 0.5)))
+            NS._poly(surface, (*NS.PALETTE["red_darkest"], int(90 * fade)),
+                     pts)
 
-
+    @staticmethod
     def _draw_phantasm_illusions(surface, boss, x, y, timer, phase):
-        """Draw 2 illusion copies of boss behind/beside main body."""
-        duration = 90
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-
-        if progress < 0.25:
+        """2 hantu Phantasm (versi canvas, bila lapisan hidup absent)."""
+        NS = _NS_vokrahn
+        progress = max(0.0, min(1.0, 1 - timer / int(NS.SKILL_DUR["r"])))
+        if progress < 0.16:
             return
-
-        fade_t = min(1.0, (progress - 0.25) / 0.3)
+        fade_t = min(1.0, (progress - 0.16) / 0.25)
         alpha = int(180 * fade_t)
-
-        # Positions of illusions (left and right of main)
         positions = [
-            (x - 55 * boss.direction, y),  # behind
-            (x - 30 * boss.direction, y + 8),  # slightly behind
+            (x - 55 * boss.direction, y),
+            (x - 30 * boss.direction, y + 8),
         ]
-
         for i, (ix, iy) in enumerate(positions):
-            # Draw illusion on transparent surface
-            illusion = pygame.Surface((200, 200), pygame.SRCALPHA)
-            _NS_vokrahn._draw_vok_full(illusion, 100, 100, boss.direction, phase + i, "idle")
-            # Tint red
-            red_overlay = pygame.Surface((200, 200), pygame.SRCALPHA)
-            red_overlay.fill((*_NS_vokrahn.PALETTE["red_dark"], 80))
-            illusion.blit(red_overlay, (0, 0),
+            if NS._body_buf is None:
+                NS._body_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                              pygame.SRCALPHA)
+            buf = NS._body_buf
+            buf.fill((0, 0, 0, 0))
+            NS._draw_vok_body_raw(buf, NS.RIG_OX, NS.RIG_OY,
+                                  boss.direction, phase + i, "idle", 0.0)
+            used = buf.get_bounding_rect(min_alpha=1)
+            if used.width <= 2 or used.height <= 2:
+                continue
+            illusion = buf.subsurface(used).copy()
+            # tint merah gelap
+            overlay = pygame.Surface(illusion.get_size(), pygame.SRCALPHA)
+            overlay.fill((*NS.PALETTE["red_dark"], 110))
+            illusion.blit(overlay, (0, 0),
                           special_flags=pygame.BLEND_RGBA_MULT)
             illusion.set_alpha(alpha)
-            surface.blit(illusion, (ix - 100, iy - 100))
+            bob = int(math.sin(phase * 2 + i * 2) * 3)
+            surface.blit(illusion, (ix - used.width // 2,
+                                    iy - used.height // 2 + bob))
+            NS._aacircle(surface,
+                         (*NS.PALETTE["red_bright"],
+                          int(60 * fade_t * (1 - progress * 0.5))),
+                         (ix, iy), 40)
 
-            # Red glow behind illusion
-            _NS_vokrahn._aacircle(surface, (*_NS_vokrahn.PALETTE["red_bright"], int(60 * fade_t)),
-                      (ix, iy), 40)
+    @staticmethod
+    def _draw_dash_trail_fx(surface, x, y, facing, progress):
+        """Jalur api dash E versi canvas (nama baru, isi lama)."""
+        NS = _NS_vokrahn
+        if 0.1 < progress < 0.75:
+            for i in range(5):
+                bx = x - facing * (i + 1) * 14
+                by = y + int(math.sin(progress * 9 + i) * 3)
+                a = int(120 - i * 20)
+                if a > 10:
+                    NS._aacircle(surface,
+                                 (*NS.PALETTE["red_dark"], a), (bx, by + 8),
+                                 10 - i)
+                    NS._aacircle(surface,
+                                 (*NS.PALETTE["red_mid"],
+                                  int(a * 0.8)), (bx, by + 8), 6 - i)
+    # ===================================================================
+    # MAIN ENTRY — urutan render v3
+    #   CONTROLLER -> LAPISAN HIDUP (ground) -> AURA/RUNE -> TELEGRAPH
+    #   SKILL (canvas bila not owned) -> HANTU R (belakang) -> BADAN
+    #   (shadow + rig + pedang) -> PROYEKTIL/SKILL FX DEPAN (canvas bila
+    #   not owned) -> LAPISAN HIDUP (depan) -> DEBUG.
+    # ===================================================================
+    def draw_vokrahn(surface, boss, x, y):
+        """Entry point Boss.draw() sekaligus jalur hero-lane.
 
+        Urutan render:
+          GROUND -> GROUND FX -> SHADOW -> BACK PARTICLES -> BODY/ARMOR/
+          HEAD/WEAPON -> ATTACK TRAIL -> PROJECTILE -> FRONT PARTICLES ->
+          SKILL FX -> IMPACT FX -> DEBUG.
+
+        Trail / partikel / proyektil / impact / hit-stop / shake hidup di
+        ``heroes/vokrahn_fx`` (ruang layar 1:1); canvas hanya fallback
+        bila modul itu tidak tersedia.
+        """
+        NS = _NS_vokrahn
+        pulse = float(getattr(boss, "pulse", 0.0))
+        active_skill = getattr(boss, "active_skill", None)
+        skill_timer = int(getattr(boss, "active_skill_timer", 0))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        hero_lane = hasattr(boss, "_render_scale")
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        hurt = int(getattr(boss, "hurt_flash_timer", 0) or 0)
+
+        # ── CONTROLLER ANIMASI ─────────────────────────────────────
+        moving = NS._detect_moving(boss)
+        NS._update_vok_anim(boss, moving)
+        action, phase, ap = NS._resolve_pose_vok(boss, moving)
+        boss._vok_pose_action = action
+        boss._vok_phase = phase
+
+        # ── LAPISAN HIDUP (ground) ─────────────────────────────────
+        live, owned = NS._live_fx(boss, surface, x, y, not hero_lane,
+                                  portrait)
+        boss._vok_suppress_canvas_fx = owned
+
+        # ── GESESER VISUAL (dash E / lunge tebas / flinch) ─────────
+        if action == "e_cast":
+            dx = int(NS._dash_offset(ap) * facing)
+        elif action in ("swing", "attack", "melee"):
+            dx = int(math.sin(ap * math.pi) * 5) * facing
+        elif action == "q_cast":
+            dx = int(math.sin(ap * math.pi * 2) * 2) * -facing
+        elif hurt > 0:
+            dx = int(min(3, hurt * 0.5)) * -facing
+        else:
+            dx = 0
+        bx, by = x + dx, y
+
+        # ── GROUND FX / AURA ───────────────────────────────────────
+        if not portrait:
+            NS._draw_chaos_aura(surface, x, y, pulse, active_skill)
+            NS._draw_ground_runes(surface, x, y + NS.GROUND_DY, pulse,
+                                  active_skill)
+            if not owned:
+                if active_skill == "w":
+                    NS._draw_realm_of_chaos_ground(surface, boss, x, y,
+                                                   skill_timer, pulse)
+                elif active_skill == "r":
+                    NS._draw_phantasm_ground(surface, boss, x, y,
+                                             skill_timer, pulse)
+
+        # ── HANTU R (DI BELAKANG BADAN; canvas fallback) ──────────
+        if not portrait and not owned and active_skill == "r":
+            NS._draw_phantasm_illusions(surface, boss, x, y, skill_timer,
+                                        pulse)
+
+        # ── BADAN (shadow -> wisps -> rig+pedang, satu komposit) ──
+        bob = 0
+        if action in ("idle", "q_cast", "w_cast", "r_cast"):
+            bob = int(math.sin(pulse * 0.7) * 2)
+        elif action in ("walk", "run"):
+            bob = int(abs(math.sin(phase * 1.2)) * 3)
+        NS._draw_shadow(surface, bx, y + NS.GROUND_DY)
+        NS._draw_chaos_wisps(surface, bx, y + 44, pulse,
+                             trail=action in ("walk", "run", "dash"),
+                             facing=facing,
+                             intense=(action in ("swing", "attack", "melee",
+                                                 "e_cast", "q_cast",
+                                                 "w_cast", "r_cast")))
+        NS._draw_vok_body(surface, bx, by + bob, facing, phase, action,
+                          ap, hurt=hurt)
+
+        # ── PROYEKTIL + SKILL FX DEPAN (fallback canvas) ───────────
+        if not portrait and not owned:
+            if action in ("swing", "attack", "melee"):
+                NS._draw_sword_swing_arc(surface, bx, by, facing, ap)
+                NS._draw_swing_impact(surface, bx, by, facing, ap)
+            if action == "e_cast":
+                NS._draw_dash_trail_fx(surface, bx, by, facing, ap)
+            NS._handle_skill_projectiles(boss, x, y, active_skill,
+                                         skill_timer)
+            NS._manage_projectiles(boss, surface, pulse)
+            if active_skill == "q":
+                NS._draw_q_charge_glow(surface, boss, x, y, skill_timer,
+                                       pulse)
+            elif active_skill == "w":
+                NS._draw_realm_of_chaos(surface, boss, x, y, skill_timer,
+                                        pulse)
+
+        # ── LAPISAN HIDUP DI ATAS (trail/proyektil/impact/skill) ──
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
+
+        # ── DEBUG ──────────────────────────────────────────────────
+        if getattr(NS, "DEBUG_CHARACTER", False) and not portrait:
+            NS._draw_vokrahn_debug(surface, boss, x, y)
 
     # ===================================================================
-    # Backward compatible alias
+    # OVERLAY DEBUG RENDERER (DEBUG_CHARACTER = True)
     # ===================================================================
+    _DBG_FONT = None
+
+    @staticmethod
+    def _dbg_font():
+        NS = _NS_vokrahn
+        if NS._DBG_FONT is None:
+            try:
+                if not pygame.font.get_init():
+                    pygame.font.init()
+                NS._DBG_FONT = pygame.font.SysFont("consolas,monospace", 11)
+            except Exception:                          # pragma: no cover
+                NS._DBG_FONT = False
+        return NS._DBG_FONT or None
+
+    @staticmethod
+    def _draw_vokrahn_debug(surface, boss, x, y):
+        """Hitbox pedang, hurtbox, attack range, radius skill, state,
+        FPS, jumlah partikel, timer serangan — dari controller."""
+        NS = _NS_vokrahn
+        facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
+        scale = float(getattr(boss, "_render_scale", 1.0) or 1.0)
+        ap = float(getattr(boss, "_vok_attack_progress", 0.0) or 0.0)
+        lo, hi = NS.ATTACK_ACTIVE_WINDOW
+        active = bool(getattr(boss, "_vok_hit_window", False))
+        action = getattr(boss, "_vok_pose_action", "idle")
+        phase = float(getattr(boss, "_vok_phase",
+                              getattr(boss, "pulse", 0.0)))
+
+        # jangkauan serangan (elips tanah)
+        rng = float(getattr(boss, "attack_range",
+                            getattr(boss, "range", 55)) or 55)
+        rng = rng / max(0.05, scale)
+        pygame.draw.ellipse(surface, (90, 200, 255),
+                            pygame.Rect(int(x - rng),
+                                        int(y + NS.GROUND_DY - rng * 0.4),
+                                        int(rng * 2), int(rng * 0.8)), 1)
+        # jangkauan tebasan greatsword
+        mr = NS.MELEE_REACH / max(0.05, scale)
+        pygame.draw.ellipse(surface, (255, 160, 80),
+                            pygame.Rect(int(x - mr),
+                                        int(y + NS.GROUND_DY - mr * 0.4),
+                                        int(mr * 2), int(mr * 0.8)), 1)
+        # radius skill aktif
+        skill = getattr(boss, "active_skill", None)
+        if skill in NS.SKILL_RADIUS:
+            rr = NS.SKILL_RADIUS[skill] / max(0.05, scale)
+            pygame.draw.ellipse(surface, (255, 120, 120),
+                                pygame.Rect(int(x - rr),
+                                            int(y + NS.GROUND_DY
+                                                      - rr * 0.4),
+                                            int(rr * 2), int(rr * 0.8)), 1)
+        # hurtbox
+        pygame.draw.rect(surface, (70, 240, 120),
+                         pygame.Rect(int(x - 26), int(y - 56), 52, 92), 1)
+        # hitbox pedang (grip -> tip)
+        grip, tip_hi, tip_lo, _phi = NS.sword_geometry(facing, action, phase,
+                                                       ap)
+        col = (255, 80, 80) if active else (150, 150, 160)
+        pygame.draw.line(surface, col,
+                         (int(x + tip_lo[0]), int(y + tip_lo[1])),
+                         (int(x + tip_hi[0]), int(y + tip_hi[1])),
+                         2 if active else 1)
+        pygame.draw.circle(surface, col,
+                           (int(x + tip_hi[0]), int(y + tip_hi[1])), 13, 1)
+        pygame.draw.circle(surface, (240, 240, 90),
+                           (int(x + grip[0]), int(y + grip[1])), 2, 1)
+        # proyektil canvas fallback
+        for bolt in getattr(boss, "_vok_projectiles", ()) or ():
+            pygame.draw.circle(surface, (255, 220, 90),
+                               (int(bolt.x), int(bolt.y)), 8, 1)
+
+        font = NS._dbg_font()
+        if font is None:
+            return
+        parts = 0
+        proj = len(getattr(boss, "_vok_projectiles", ()) or ())
+        try:
+            mod = NS._live_module()
+            if mod is not None:
+                st = mod.stats()
+                parts = st.get("particles", 0)
+                proj += st.get("projectiles", 0)
+        except Exception:                              # pragma: no cover
+            pass
+        dt = float(getattr(boss, "_vok_dt", 1.0 / 60.0)) or (1.0 / 60.0)
+        lines = [
+            "VOKRAHN [renderer debug]",
+            "state %s <- %s (p%d)" % (
+                getattr(boss, "_vok_state", "?"),
+                getattr(boss, "_vok_state_prev", "-"),
+                int(getattr(boss, "_vok_state_priority", 0))),
+            "pose %s  dt %.4f  fps %.0f" % (action, dt, 1.0 / max(1e-4, dt)),
+            "attack %.2f %s%s" % (ap,
+                                  getattr(boss, "_vok_attack_phase", "NONE"),
+                                  "  <HIT>" if active else ""),
+            "window %.2f-%.2f  impact %.2f" % (lo, hi,
+                                               NS.ATTACK_IMPACT_FRAME),
+            "swing MELEE  timer %s cd %s" % (
+                getattr(boss, "timer", "-"),
+                getattr(boss, "attack_cooldown", "-")),
+            "skill %s t%s  live %s" % (
+                skill or "-", getattr(boss, "active_skill_timer", "-"),
+                "ON" if getattr(boss, "_vok_suppress_canvas_fx", False)
+                else "off"),
+            "part %d  proj %d" % (parts, proj),
+        ]
+        pad = 4
+        w = max(font.size(t)[0] for t in lines) + pad * 2
+        h = len(lines) * 13 + pad * 2
+        box = pygame.Surface((w, h), pygame.SRCALPHA)
+        box.fill((10, 8, 12, 190))
+        pygame.draw.rect(box, (255, 120, 160, 200), box.get_rect(), 1)
+        for i, t in enumerate(lines):
+            box.blit(font.render(t, True, (255, 224, 190)),
+                     (pad, pad + i * 13))
+        surface.blit(box, (int(x) - w - 46, int(y) - 100))
+
+    @staticmethod
     def draw_boss(surface, boss, x, y):
         _NS_vokrahn.draw_vokrahn(surface, boss, x, y)
 

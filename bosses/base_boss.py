@@ -181,7 +181,7 @@ BOSS_LABEL_TOP = {
     "vargroth": 58,
     "vhorethzir": 67,
     "vhyssarion": 47,
-    "vokrahn": 46,
+    "vokrahn": 84,  # rig masterwork v3: puncak tanduk ~-78 px (diukur)
     "vorenmarr": 61,
     "vorgath": 61,
     "vraskhan": 55,
@@ -733,6 +733,20 @@ class Boss(TowerDebuffMixin):
                                 _zhfx.notify_projectile_impact(
                                     self, self.target.x, self.target.y, 0.0,
                                     self.damage, False, 'arrow')
+                        except Exception:
+                            pass
+                    # ═══ IMPACT FX VOKRAHN ═══
+                    # Greatsword api Vokrahn mendarat: flash, sabit api,
+                    # serpihan baja, shake, dan hit-stop 0.03-0.08 s
+                    # (paket lengkapnya di
+                    # heroes/vokrahn_fx.notify_melee_impact). Vokrahn
+                    # SELALU melee — tidak ada percabangan jarak jauh.
+                    # Difilter per boss_type + try/except (paritas Zharok).
+                    if getattr(self, 'boss_type', None) == 'vokrahn':
+                        try:
+                            from heroes import vokrahn_fx as _vokfx
+                            _vokfx.notify_melee_impact(
+                                self, self.target, self.damage, False)
                         except Exception:
                             pass
                     # Cleave splash damage to nearby enemy units
@@ -3863,6 +3877,19 @@ class Boss(TowerDebuffMixin):
         if self.target and self.target.alive:
             self.target.take_damage(stats.get("skill_q_damage", 350), self.team)
         self._shake_screen(12)
+        # ═══ SKILL FX VOKRAHN — Q "Chaos Bolt" ═══
+        # Lapisan hidup heroes/vokrahn_fx.py: koridor bidik meruncing +
+        # reticle, muatan chaos di ujung bilah, lalu bolt cepuk dari
+        # titik lepas. Damage sudah dijatuhkan di atas; notify hanya
+        # menyalakan visual + game-feel, jadi aman kalau modulnya absent.
+        try:
+            from heroes import vokrahn_fx as _vokfx
+            _vokfx.notify_skill_cast(self, 'q')
+            if self.target is not None:
+                _vokfx.notify_skill_impact(self, self.target.x,
+                                           self.target.y, 70, 'q')
+        except Exception:
+            pass
 
     def _cast_vokrahn_w(self, enemies):
         stats = self._get_boss_stats()
@@ -3873,6 +3900,16 @@ class Boss(TowerDebuffMixin):
             if math.hypot(e.x - self.x, e.y - self.y) <= 220:
                 e.take_damage(stats.get("skill_w_damage", 250), self.team)
         self._shake_screen(18)
+        # ═══ SKILL FX VOKRAHN — W "Realm of Chaos" ═══
+        # Lingkaran penuh radius 220 dunia + duri kekacauan yang
+        # meledak dari tanah + shockwave. Radius 220 persis sama dengan
+        # radius damage di atas.
+        try:
+            from heroes import vokrahn_fx as _vokfx
+            _vokfx.notify_skill_cast(self, 'w')
+            _vokfx.notify_skill_impact(self, self.x, self.y, 220, 'w')
+        except Exception:
+            pass
 
     def _cast_vokrahn_e(self):
         stats = self._get_boss_stats()
@@ -3882,6 +3919,17 @@ class Boss(TowerDebuffMixin):
         if self.target and self.target.alive:
             self.target.take_damage(stats.get("skill_e_damage", 400), self.team)
         self._shake_screen(15)
+        # ═══ SKILL FX VOKRAHN — E "Chaos Strike" ═══
+        # Dash 80 px + jalur api + kejut mendarat di titik pendaratan.
+        # Titik impact = target (damage single-target sudah di atas).
+        try:
+            from heroes import vokrahn_fx as _vokfx
+            _vokfx.notify_skill_cast(self, 'e')
+            if self.target is not None:
+                _vokfx.notify_skill_impact(self, self.target.x,
+                                           self.target.y, 60, 'e')
+        except Exception:
+            pass
 
     def _cast_vokrahn_r(self, enemies):
         stats = self._get_boss_stats()
@@ -3892,6 +3940,16 @@ class Boss(TowerDebuffMixin):
             if math.hypot(e.x - self.x, e.y - self.y) <= 220:
                 e.take_damage(150, self.team)  # Phantasm illusions damage
         self._shake_screen(20)
+        # ═══ SKILL FX VOKRAHN — R "Phantasm" ═══
+        # Lingkaran penuh radius 220 dunia + bintang chaos 8 titik +
+        # 2 hantu salinan rig + Chaos Brand yang melayang. Radius 220
+        # sama dengan radius damage di atas.
+        try:
+            from heroes import vokrahn_fx as _vokfx
+            _vokfx.notify_skill_cast(self, 'r')
+            _vokfx.notify_skill_impact(self, self.x, self.y, 220, 'r')
+        except Exception:
+            pass
 
     def _smart_ai_nyxara(self, enemies, target_dist):
         if not hasattr(self, "q_timer"):
