@@ -27,7 +27,7 @@ BOSS_LABEL_TOP = {
     "azkharion": 55,
     "aelyrion": 58,
     "akashari": 59,
-    "alchemist": 100,  # rig masterwork v2: puncak botol W ~-77px
+    "alchemist": 112,  # rig masterwork v3: puncak botol W/e-hop ~-104px
     "ancient_apparition": 61,
     "astraelion": 53,
     "aurelion": 83,
