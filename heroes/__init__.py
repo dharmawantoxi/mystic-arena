@@ -1324,17 +1324,32 @@ def clear_hero_sprite_cache():
 
 # ═══ PARK RENDERER PROJECTILES SAAT CANVAS CACHE ═══
 # Renderer boss/starter menyimpan FX di list bertanda `_` (mis.
-# `_sy_projectiles`, `_aa_beams`, `_vk_chain_orbs`). Saat hero
-# digambar ke canvas cache di pusat (c, c) — BUKAN koordinat dunia —
-# list itu ikut di-update & di-blit, lalu sprite di-cache. Akibatnya
-# orb/panah “acak” menempel di sekitar badan hero setiap cache hit.
+# `_sy_projectiles`, `_aa_beams`, `_vk_chain_orbs`, `_gw_effects`,
+# `_alch_patches`, `_zh_arrows`, `_pyr_chains`). Saat hero digambar
+# ke canvas cache di pusat (c, c) — BUKAN koordinat dunia — list itu
+# ikut di-update & di-blit, lalu sprite di-cache. Akibatnya orb/panah
+# “acak” menempel di sekitar badan hero setiap cache hit.
 # Gameplay pakai `hero.projectiles` (tanpa `_`) yang digambar di
 # dunia oleh _entity.py; list itu JANGAN di-park.
+# Suffix sengaja dibuat lengkap: FX renderer menggunakan berbagai
+# akhiran (effects/patches/coins/arrows/skulls/arcs/chains/bursts/eclipse
+# beams/trail_samples/projs), bukan cuma projectiles/beams/shards.
 _RENDERER_FX_SUFFIXES = (
     "_projectiles",
     "_chain_orbs",
     "_beams",
     "_shards",
+    "_effects",
+    "_patches",
+    "_coins",
+    "_arrows",
+    "_skulls",
+    "_arcs",
+    "_chains",
+    "_bursts",
+    "_eclipse_beams",
+    "_trail_samples",
+    "_projs",
 )
 
 

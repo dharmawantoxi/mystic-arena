@@ -1985,14 +1985,15 @@ def world_anchor(hero, x, y, wx, wy):
 
 def target_screen(hero, x, y):
     """Posisi layar target (atau titik 160px di depan kalau tak ada)."""
-    scale = float(getattr(hero, "_render_scale", 1.0) or 1.0) or 1.0
     t = getattr(hero, "target", None)
     if t is not None and getattr(t, "alive", True):
         return world_anchor(hero, x, y,
                             float(getattr(t, "x", 0.0)),
                             float(getattr(t, "y", 0.0)))
     f = 1 if (getattr(hero, "direction", 1) or 1) >= 0 else -1
-    return (x + 160.0 / scale * f, y - 6.0)
+    # Lapisan hidup 1:1: 160 px adalah 160 px DUNIA/Layar, bukan canvas
+    # renderer (tanpa `_render_scale`).
+    return (x + 160.0 * f, y - 6.0)
 
 
 # ============================================================================

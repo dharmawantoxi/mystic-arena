@@ -350,18 +350,27 @@ def bottle_hand(boss, x, y):
 
 def target_screen(boss, x, y):
     """Posisi target (dunia) -> px layar pada jangkar unit."""
-    G = _renderer()
-    if G is not None:
-        try:
-            return Vector2(G._target_position(boss, x, y))
-        except Exception:                      # pragma: no cover
-            pass
+    # Renderer._target_position adalah konversi CANVAS: saat dipanggil di
+    # jalur HERO dengan _render_scale, x/y masih koordinat DUNIA yang
+    # dibagi skala -> titik mendarat molotov meleset. Gunakan jalurnya
+    # hanya untuk boss (tanpa _render_scale); hero langsung 1:1.
+    if getattr(boss, "_render_scale", None) is None:
+        G = _renderer()
+        if G is not None:
+            try:
+                return Vector2(G._target_position(boss, x, y))
+            except Exception:                  # pragma: no cover
+                pass
     tgt = getattr(boss, "target", None)
     f = 1 if getattr(boss, "direction", 1) >= 0 else -1
     if tgt is not None and getattr(tgt, "alive", False):
-        s = render_scale(boss)
-        return Vector2(x + (float(tgt.x) - float(getattr(boss, "x", x))) / s,
-                       y + (float(tgt.y) - float(getattr(boss, "y", y))) / s)
+        # Lapisan hidup digambar di LAYAR 1:1; posisi target dunia sudah
+        # merupakan koordinat layar. Jangan dikalikan / dibagi `_render_scale`
+        # (itu hanya untuk konversi canvas renderer) — kalau dibagi skala,
+        # titik mendarat molotov Q "nyasar" di luar target (FX terlihat
+        # muncul acak di peta).
+        return Vector2(x + (float(tgt.x) - float(getattr(boss, "x", x))),
+                       y + (float(tgt.y) - float(getattr(boss, "y", y))))
     return Vector2(x + f * 150, y + 10)
 
 

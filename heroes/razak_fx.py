@@ -2271,10 +2271,12 @@ class RazakFXDirector:
             self._proj_window_seen = True
             tgt = getattr(h, "target", None)
             if tgt is not None and getattr(tgt, "alive", False):
-                # konversi dunia -> layar (sama dengan _target_position)
-                scale = float(getattr(h, "_render_scale", 1.0) or 1.0)
-                tx = x + (float(tgt.x) - float(getattr(h, "x", x))) / scale
-                ty = y + (float(tgt.y) - float(getattr(h, "y", y))) / scale
+                # Lapisan hidup digambar 1:1 di layar: koordinat target
+                # DUNIA sudah merupakan koordinat layar. Membagi dengan
+                # `_render_scale` (formula canvas renderer) membuat molotov
+                # melewati target -> FX terlihat mendarat acak di peta.
+                tx = x + (float(tgt.x) - float(getattr(h, "x", x)))
+                ty = y + (float(tgt.y) - float(getattr(h, "y", y)))
             else:
                 fl = 1 if getattr(h, "direction", 1) >= 0 else -1
                 tx, ty = x + fl * 140, y + 18
