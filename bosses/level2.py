@@ -12478,122 +12478,138 @@ class _NS_alchemist:
                          (bx, by - 6), 13)
 
     def _draw_ogre_head(surface, hx, hy, f, phase, action, rage):
-        """Kepala ogre: tengkorak berat, brow menggantung, mata cekung
-        menyala, hidung bulat, RAHANG UNDERBITE menonjol ke depan dengan
-        gigi taring bawah, telinga lebar, ikat kain + war-paint asam."""
+        """Kepala ogre — dibangun ulang v3.1 agar WAJAH RAPI.
+
+        Kesalahan versi sebelumnya (kenapa wajahnya berantakan):
+          * dua garis war-paint hijau ditarik dari dahi menembus MATA
+            sampai rahang, jadi terbaca seperti ingus/air mata dan
+            menutupi fitur utama;
+          * taring kiri/kanan beda tinggi (8 vs 9 px) dan digambar
+            memakai 4 poligon bertumpuk -> tepi bergerigi & asimetris
+            tanpa alasan;
+          * tempurung memakai 6 ellipse konsentris yang semuanya rata
+            (lebar 26 -> tinggi 26) sehingga kepala jadi bulat gepeng;
+          * gigi atas 5 buah dijejalkan di rahang selebar 16 px.
+
+        Prinsip v3.1: SATU fokus (mata), fitur tidak saling menimpa,
+        semua elemen simetris terhadap sumbu wajah, dan war-paint
+        dipindah ke pipi LUAR (tidak menyentuh mata).
+        """
         NS = _NS_alchemist
         P = NS.PALETTE
         nod = int(math.sin(phase * 0.9)) if action == "idle" else 0
         hy += nod
+        # sumbu wajah: sedikit condong ke arah hadap
+        fx = hx + f * 2
 
-        # ── telinga lebar (di belakang tengkorak) ─────────────────
+        # ══ 1. TELINGA (paling belakang) ═══════════════════════════
         for sgn in (-1, 1):
-            ex = hx + sgn * 12
-            flick = int(math.sin(phase * 1.6 + sgn) * 1.2)
-            tip = (ex + sgn * 10, hy - 8 + flick)
+            ex = hx + sgn * 11
+            flick = math.sin(phase * 1.6 + sgn) * 1.2
+            tipx, tipy = ex + sgn * 9, hy - 7 + flick
             NS._poly(surface, P["shadow_deep"], [
-                (ex, hy - 5), tip, (ex + sgn * 8, hy + 5)])
+                (ex, hy - 5), (tipx, tipy), (ex + sgn * 7, hy + 5)])
             NS._poly(surface, P["ogre_darkest"], [
-                (ex, hy - 4), (tip[0] - sgn, tip[1] + 1),
-                (ex + sgn * 7, hy + 4)])
-            NS._poly(surface, P["ogre_dark" if sgn < 0 else "ogre_darkest"],
-                     [(ex + sgn, hy - 3), (tip[0] - sgn * 3, tip[1] + 2),
-                      (ex + sgn * 5, hy + 2)])
-            if sgn < 0:                     # telinga sisi cahaya
-                NS._aaline(surface, P["ogre_mid"], (ex - 1, hy - 2),
-                           (tip[0] + 3, tip[1] + 3), 1)
-            # anting kuningan
+                (ex, hy - 4), (tipx - sgn, tipy + 1),
+                (ex + sgn * 6, hy + 4)])
+            # dalam telinga: sisi cahaya lebih terang
+            NS._poly(surface, P["ogre_mid"] if sgn < 0 else P["ogre_dark"],
+                     [(ex + sgn, hy - 2), (tipx - sgn * 3, tipy + 3),
+                      (ex + sgn * 4, hy + 2)])
             NS._aacircle(surface, P["brass_mid"],
-                         (ex + sgn * 6, hy + 4), 2, 1)
+                         (int(ex + sgn * 5), int(hy + 4)), 2, 1)
 
-        # ── TENGKORAK: massa utama + ramp ─────────────────────────
-        NS._ellipse(surface, P["shadow_deep"], (hx - 14, hy - 15, 28, 28))
-        NS._ellipse(surface, P["ogre_darkest"], (hx - 13, hy - 14, 26, 26))
-        NS._ellipse(surface, P["ogre_dark"], (hx - 12, hy - 13, 23, 23))
-        NS._ellipse(surface, P["ogre_mid"], (hx - 10, hy - 12, 18, 18))
-        NS._ellipse(surface, P["ogre_light"], (hx - 9, hy - 11, 12, 12))
-        NS._ellipse(surface, P["ogre_high"], (hx - 8, hy - 10, 7, 7))
+        # ══ 2. TEMPURUNG — lebih TINGGI dari lebar (26w x 30h) supaya
+        #      tidak gepeng, dengan dahi menonjol ═══════════════════
+        NS._ellipse(surface, P["shadow_deep"], (hx - 14, hy - 18, 28, 32))
+        NS._ellipse(surface, P["ogre_darkest"], (hx - 13, hy - 17, 26, 30))
+        NS._ellipse(surface, P["ogre_dark"], (hx - 12, hy - 16, 23, 27))
+        # bidang wajah (digeser ke arah hadap + ke sisi cahaya)
+        NS._ellipse(surface, P["ogre_mid"], (hx - 11, hy - 14, 19, 23))
+        NS._ellipse(surface, P["ogre_light"], (hx - 10, hy - 13, 13, 17))
+        NS._ellipse(surface, P["ogre_high"], (hx - 9, hy - 12, 7, 9))
 
-        # ── RAHANG UNDERBITE menonjol ke arah hadap ───────────────
-        jx = hx + f * 5
-        NS._ellipse(surface, P["shadow_deep"], (jx - 11, hy + 1, 22, 15))
-        NS._ellipse(surface, P["ogre_darkest"], (jx - 10, hy + 1, 20, 14))
-        NS._ellipse(surface, P["ogre_dark"], (jx - 9, hy + 2, 18, 11))
-        NS._ellipse(surface, P["ogre_mid"], (jx - 7, hy + 3, 13, 8))
-        NS._ellipse(surface, P["ogre_light"], (jx - 6, hy + 4, 7, 4))
-        # garis mulut
-        NS._aaline(surface, P["ogre_darkest"], (jx - 8, hy + 4),
-                   (jx + 8, hy + 4), 2)
-        NS._aaline(surface, P["shadow_deep"], (jx - 7, hy + 5),
-                   (jx + 7, hy + 5), 1)
+        # ══ 3. RAHANG UNDERBITE — satu massa bersih ════════════════
+        jy = hy + 7
+        NS._ellipse(surface, P["shadow_deep"], (fx - 11, jy - 1, 22, 14))
+        NS._ellipse(surface, P["ogre_darkest"], (fx - 10, jy - 1, 20, 13))
+        NS._ellipse(surface, P["ogre_dark"], (fx - 9, jy, 18, 11))
+        NS._ellipse(surface, P["ogre_mid"], (fx - 8, jy + 1, 13, 7))
+        NS._ellipse(surface, P["ogre_light"], (fx - 7, jy + 2, 7, 3))
+        # celah mulut: rongga gelap + bibir bawah (dagu tidak lagi
+        # kosong melompong seperti versi sebelumnya)
+        NS._poly(surface, P["shadow_deep"], [
+            (fx - 8, jy + 1), (fx + 8, jy + 1), (fx + 7, jy + 3),
+            (fx - 7, jy + 3)])
+        NS._aaline(surface, P["ogre_darkest"], (fx - 8, jy + 1),
+                   (fx + 8, jy + 1), 1)
+        NS._aaline(surface, P["ogre_mid"], (fx - 7, jy + 4),
+                   (fx + 6, jy + 4), 1)
+        # lipatan dagu
+        NS._aaline(surface, P["ogre_dark"], (fx - 5, jy + 8),
+                   (fx + 4, jy + 8), 1)
 
-        # ── TARING bawah besar mencuat ke atas (khas ogre) ────────
-        for tx_, hgt in ((jx - 6, 8), (jx + 6, 9)):
-            NS._poly(surface, P["shadow_deep"], [
-                (tx_ - 3, hy + 5), (tx_ + 3, hy + 5),
-                (tx_ + 1, hy + 5 - hgt)])
-            NS._poly(surface, P["bone_dark"], [
-                (tx_ - 3, hy + 4), (tx_ + 3, hy + 4),
-                (tx_ + 1, hy + 4 - hgt)])
-            NS._poly(surface, P["bone_mid"], [
-                (tx_ - 2, hy + 4), (tx_ + 2, hy + 4),
-                (tx_ + 1, hy + 5 - hgt)])
-            NS._poly(surface, P["bone_light"], [
-                (tx_ - 2, hy + 3), (tx_, hy + 3),
-                (tx_ + 0, hy + 6 - hgt)])
-        # gigi kecil atas
-        for i in range(-2, 3):
-            NS._poly(surface, P["bone_dark"], [
-                (jx + i * 3 - 1, hy + 4), (jx + i * 3 + 1, hy + 4),
-                (jx + i * 3, hy + 7)])
-
-        # ── BROW RIDGE berat menggantung (bayangan mata) ──────────
+        # ══ 5. BROW RIDGE — menggantung, memayungi mata ════════════
         NS._poly(surface, P["ogre_darkest"], [
-            (hx - 12, hy - 6), (hx + 11, hy - 6), (hx + 10, hy + 1),
-            (hx - 11, hy + 1)])
+            (hx - 12, hy - 7), (hx + 11, hy - 7), (hx + 10, hy - 1),
+            (hx - 11, hy - 1)])
         NS._poly(surface, P["ogre_dark"], [
-            (hx - 11, hy - 6), (hx + 10, hy - 6), (hx + 9, hy - 3),
-            (hx - 10, hy - 3)])
-        NS._aaline(surface, P["ogre_mid"], (hx - 10, hy - 6),
-                   (hx + 2, hy - 7), 1)
-        # kerut dahi
-        NS._aaline(surface, P["ogre_darkest"], (hx - 8, hy - 9),
-                   (hx + 6, hy - 10), 1)
-        NS._aaline(surface, P["ogre_darkest"], (hx - 6, hy - 12),
-                   (hx + 4, hy - 12), 1)
+            (hx - 11, hy - 7), (hx + 10, hy - 7), (hx + 9, hy - 4),
+            (hx - 10, hy - 4)])
+        NS._aaline(surface, P["ogre_mid"], (hx - 10, hy - 7),
+                   (hx + 3, hy - 8), 1)
+        # kerut dahi (2 garis halus, tidak menyentuh mata)
+        NS._aaline(surface, P["ogre_dark"], (hx - 7, hy - 10),
+                   (hx + 5, hy - 11), 1)
+        NS._aaline(surface, P["ogre_dark"], (hx - 5, hy - 13),
+                   (hx + 3, hy - 13), 1)
 
-        # ── MATA cekung di bawah brow, menyala ────────────────────
+        # ══ 6. MATA — FOKUS UTAMA, bersih, tidak ditimpa apa pun ═══
         blink = 1 if (phase % (math.pi * 5.0)) < 0.14 else 0
         eye_c = P["eye_rage"] if rage else P["eye_hot"]
-        for ex in (hx - 6, hx + 5):
-            NS._ellipse(surface, P["shadow_deep"], (ex - 4, hy - 3, 8, 6))
+        for sgn in (-1, 1):
+            ex = fx + sgn * 5
+            # rongga mata gelap (memberi kedalaman di bawah brow)
+            NS._ellipse(surface, P["shadow_deep"], (ex - 4, hy - 4, 8, 7))
             if blink:
                 NS._aaline(surface, P["ogre_dark"], (ex - 3, hy),
                            (ex + 3, hy), 2)
                 continue
-            NS._ellipse(surface, P["eye_dark"], (ex - 3, hy - 2, 6, 5))
-            NS._aacircle(surface, (*eye_c, 90), (ex, hy), 4)
+            NS._ellipse(surface, P["eye_dark"], (ex - 3, hy - 3, 6, 6))
+            NS._aacircle(surface, (*eye_c, 70), (ex, hy), 4)
             NS._aacircle(surface, eye_c, (ex, hy), 2)
+            # pupil + kilau (memberi arah pandang)
+            NS._aacircle(surface, P["ogre_darkest"], (ex + f, hy), 1)
             NS._aacircle(surface, P["white"], (ex - 1, hy - 1), 1)
 
-        # ── hidung bulat besar dengan lubang ──────────────────────
-        nx = hx + f * 2
-        NS._ellipse(surface, P["ogre_dark"], (nx - 5, hy + 1, 10, 7))
-        NS._ellipse(surface, P["ogre_mid"], (nx - 4, hy + 1, 8, 5))
-        NS._aacircle(surface, P["ogre_light"], (nx - 2, hy + 2), 2)
-        NS._aacircle(surface, P["ogre_darkest"], (nx - 2, hy + 5), 1)
-        NS._aacircle(surface, P["ogre_darkest"], (nx + 2, hy + 5), 1)
+        # ══ 7. HIDUNG — di antara & DI BAWAH mata, tidak menabrak ══
+        NS._ellipse(surface, P["ogre_dark"], (fx - 3, hy + 4, 7, 6))
+        NS._ellipse(surface, P["ogre_mid"], (fx - 3, hy + 4, 5, 4))
+        NS._aacircle(surface, P["ogre_light"], (fx - 1, hy + 5), 1)
+        NS._aacircle(surface, P["ogre_darkest"], (fx - 1, hy + 7), 1)
+        NS._aacircle(surface, P["ogre_darkest"], (fx + 1, hy + 7), 1)
 
-        # ── ikat kain: MELENGKUNG mengikuti tempurung kepala
-        #    (rig lama memakai persegi panjang datar yang memotong
-        #    tengkorak jadi dua — itu yang membuat kepala terbaca
-        #    seperti kotak) ──────────────────────────────────────────
+        # ══ 7b. TARING bawah — digambar SETELAH hidung supaya tidak
+        #        tertimpa; simetris kiri-kanan, tumbuh dari garis
+        #        mulut ke atas. ══════════════════════════════════════
+        for sgn in (-1, 1):
+            tx_ = fx + sgn * 8
+            top = jy - 4                      # ujung taring
+            NS._poly(surface, P["shadow_deep"], [
+                (tx_ - 3, jy + 3), (tx_ + 3, jy + 3), (tx_ + 1, top)])
+            NS._poly(surface, P["bone_dark"], [
+                (tx_ - 3, jy + 2), (tx_ + 3, jy + 2), (tx_ + 1, top)])
+            NS._poly(surface, P["bone_mid"], [
+                (tx_ - 2, jy + 2), (tx_ + 2, jy + 2), (tx_ + 1, top + 1)])
+            NS._aaline(surface, P["bone_light"], (tx_ - 1, jy + 1),
+                       (tx_ + 1, top + 2), 1)
+
+        # ══ 8. IKAT KEPALA melengkung mengikuti tempurung ══════════
         band = []
         for i in range(11):
             t = i / 10.0
-            axp = hx - 13 + t * 26
-            ayp = hy - 9 - math.sin(t * math.pi) * 6.5
-            band.append((axp, ayp))
+            band.append((hx - 13 + t * 26,
+                         hy - 12 - math.sin(t * math.pi) * 6.0))
         low = [(x_, y_ + 6) for x_, y_ in reversed(band)]
         NS._poly(surface, P["shadow_deep"],
                  [(x_, y_ - 1) for x_, y_ in band] +
@@ -12602,28 +12618,44 @@ class _NS_alchemist:
         NS._poly(surface, P["leather_dark"],
                  [(x_, y_ + 1) for x_, y_ in band] +
                  [(x_, y_ - 1) for x_, y_ in low])
-        # lipatan kain + kilau sisi cahaya
         mid_band = [(x_, y_ + 3) for x_, y_ in band]
         NS._aalines_soft(surface, P["leather_mid"], mid_band, 2)
         NS._aalines_soft(surface, P["leather_high"], mid_band[:5], 1)
-        for i in (2, 4, 6, 8):
+        for i in (3, 6):
             NS._aaline(surface, P["leather_darkest"],
                        (int(band[i][0]), int(band[i][1] + 1)),
                        (int(band[i][0] + 1), int(band[i][1] + 5)), 1)
-        # simpul kain menjuntai di belakang
+        # simpul kain menjuntai ke BELAKANG (berlawanan arah hadap)
         kx = hx - f * 13
         NS._poly(surface, P["leather_dark"], [
-            (kx, hy - 13), (kx - f * 6, hy - 9), (kx - f * 4, hy - 4),
-            (kx, hy - 8)])
-        NS._aaline(surface, P["leather_mid"], (kx - f, hy - 12),
-                   (kx - f * 5, hy - 8), 1)
-        # war-paint asam di pipi
-        NS._aaline(surface, P["acid_mid"], (hx - 8, hy - 1),
-                   (hx - 5, hy + 8), 2)
-        NS._aaline(surface, P["acid_bright"], (hx - 8, hy - 1),
-                   (hx - 6, hy + 4), 1)
-        NS._aaline(surface, P["acid_mid"], (hx + 7, hy - 1),
-                   (hx + 4, hy + 8), 2)
+            (kx, hy - 11), (kx - f * 6, hy - 7), (kx - f * 4, hy - 2),
+            (kx, hy - 6)])
+        NS._aaline(surface, P["leather_mid"], (kx - f, hy - 10),
+                   (kx - f * 5, hy - 6), 1)
+
+        # ══ 9. WAR-PAINT — di PIPI LUAR saja, TIDAK menyentuh mata.
+        #      Inilah perbaikan terbesar: dulu garis ini ditarik dari
+        #      dahi menembus mata sampai rahang. ═══════════════════
+        for sgn in (-1, 1):
+            cxp = hx + sgn * 11
+            NS._aaline(surface, P["acid_dark"], (cxp, hy + 3),
+                       (cxp - sgn * 1, hy + 7), 2)
+            NS._aaline(surface, P["acid_mid"], (cxp, hy + 4),
+                       (cxp - sgn * 1, hy + 6), 1)
+
+        # ══ 10. rage: mata + uap asam dari mulut ══════════════════
+        if rage:
+            pul = 0.5 + 0.5 * math.sin(phase * 6.0)
+            NS._aacircle(surface, (*P["acid_glow"], int(60 + 70 * pul)),
+                         (int(fx - 5), int(hy)), 5)
+            NS._aacircle(surface, (*P["acid_glow"], int(60 + 70 * pul)),
+                         (int(fx + 5), int(hy)), 5)
+            for s_ in range(2):
+                st = (phase * 0.5 + s_ * 0.5) % 1.0
+                NS._aacircle(
+                    surface, (*P["acid_bright"], int(130 * (1 - st))),
+                    (int(fx + f * 4 + math.sin(phase + s_) * 2),
+                     int(jy + 4 + st * 5)), 1 + int(st * 2))
 
     def _draw_acid_gun(surface, hx, hy, ang, f, firing, phase):
         """Acid gun goblin: laras kuningan, tangki kaca, moncong corong."""
