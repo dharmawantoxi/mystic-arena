@@ -1,8 +1,16 @@
-# Kaizen v3 — Renderer Pixel-Art + Skill FX + Swing + Projectile
+# Kaizen v5 — Renderer Pixel-Art + Skill FX + Swing + Projectile
 
 > Rewrite penuh namespace `_NS_kaizen` di `heroes/_bundle.py`.
 > Standar **Thorne v2 Pixel Masterwork + Grimjaw v2.1 Skill FX / swing trail**.
 > Tetap **100% prosedural** — tidak ada PNG / sprite-sheet / `image.load`.
+
+> **v5 (rig rewrite from zero)**: `_draw_kaizen_elite` ditulis ulang supaya
+> siluet bersih dan mudah dibaca di ukuran arena. Perubahan utama:
+> wajah ¾ depan dengan dua mata jelas di bawah hachimaki (bukan profil yang
+> kepalanya tampak besar), rambut kompak terjumbai di belakang kepala,
+> badan tertutup rapi dengan kerah V dan sash, pauldron pindah ke belakang
+> bahu, hakama/kaki memakai panel besar yang rapi, saya pendek dan bersih,
+> dan aura/rim di ground di-render tipis supaya badan menonjol.
 
 ## Apa yang berubah (v3 rewrite)
 
