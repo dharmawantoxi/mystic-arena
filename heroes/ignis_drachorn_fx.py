@@ -1684,7 +1684,7 @@ class SkillFX:
         self.life = SKILL_TOTAL.get(skill, 1.1)
         self.active = True
         self.seed = random.randint(0, 9999)
-        self.radius = WORLD_RADIUS.get(skill, 120.0) * self.scale
+        self.radius = WORLD_RADIUS.get(skill, 120.0)
         self._released = False
         self._impacted = False
         self._meteors_sent = 0

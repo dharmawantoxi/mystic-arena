@@ -507,21 +507,28 @@ def launch_point(boss, x, y):
 
 
 def target_point(boss, x, y):
-    """Titik target serangan dasar di ruang LAYAR (untuk proyektil)."""
+    """Titik target serangan dasar di ruang LAYAR (untuk proyektil).
+
+    Lapisan hidup digambar 1:1 di layar, sedangkan posisi unit/target
+    sudah berupa koordinat dunia = koordinat layar. Target TIDAK boleh
+    dibagi-``_render_scale``: konversi canvas itu hanya berlaku di
+    jalur renderer sprite yang di-scale saat di-blit. Tanpa koreksi ini
+    proyektil mendarat jauh DI BELAKANG target (FX terlihat nyasar ke
+    titik acak di peta).
+    """
     tgt = getattr(boss, "target", None)
     if tgt is not None and getattr(tgt, "alive", False):
-        k = render_scale(boss)
         bx = float(getattr(boss, "x", x))
         by = float(getattr(boss, "y", y))
-        return (x + (float(getattr(tgt, "x", bx)) - bx) / k,
-                y + (float(getattr(tgt, "y", by)) - by) / k - 6.0)
+        return (x + (float(getattr(tgt, "x", bx)) - bx),
+                y + (float(getattr(tgt, "y", by)) - by) - 6.0)
     facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
     return (x + facing * 180.0, y - 10.0)
 
 
 def ring_radius(boss, world_px):
-    """Radius dunia -> radius layar (kompensasi skala hero-lane)."""
-    return float(world_px) / max(0.05, render_scale(boss))
+    """Radius dunia -> radius layar (lapisan hidup 1:1)."""
+    return float(world_px)
 
 
 def _quality():
@@ -2034,8 +2041,8 @@ class SkillFX:
             self.phase = skill_phase(self.t)
 
     def r_screen(self, mul=1.0):
-        """Radius dunia -> radius layar (kompensasi skala hero-lane)."""
-        return self.radius * mul / max(0.05, self.scale)
+        """Radius dunia -> radius layar (lapisan hidup 1:1, tanpa skala)."""
+        return self.radius * mul
 
     @staticmethod
     def _fit(surface, r):
@@ -2090,7 +2097,7 @@ class SkillFX:
             self._acc += dt
             if self._acc >= 0.03 and self.director is not None:
                 self._acc = 0.0
-                lp = (self.x + self.facing * 20.0 / self.scale, self.y - 8.0)
+                lp = (self.x + self.facing * 20.0 * self.scale, self.y - 8.0)
                 if self.director.unit is not None:
                     try:
                         lp = launch_point(self.director.unit, self.x, self.y)
@@ -2110,7 +2117,7 @@ class SkillFX:
         # RELEASE: lepaskan bolt dari ujung bilah
         if 0.34 <= t < 0.46 and self._once("release") and \
                 self.director is not None:
-            lp = (self.x + self.facing * 20.0 / self.scale, self.y - 8.0)
+            lp = (self.x + self.facing * 20.0 * self.scale, self.y - 8.0)
             if self.director.unit is not None:
                 try:
                     lp = launch_point(self.director.unit, self.x, self.y)
@@ -2330,7 +2337,7 @@ class SkillFX:
         a255 = int(120 * grow * (1.0 - max(0.0, (t - 0.45) / 0.4)))
         if a255 < 4:
             return
-        taper_lane(surface, self.x + self.facing * 14.0 / self.scale,
+        taper_lane(surface, self.x + self.facing * 14.0 * self.scale,
                    self.y - 6.0, ax, ay, 2.0 * grow, 14.0 * grow,
                    P["chaos_mid"], a255)
         # reticle kurung siku di target (bukan lingkaran penuh)
@@ -2451,7 +2458,7 @@ class SkillFX:
         t = self.t
         if t >= 0.46:
             return
-        lp = (self.x + self.facing * 20.0 / self.scale, self.y - 8.0)
+        lp = (self.x + self.facing * 20.0 * self.scale, self.y - 8.0)
         if self.director is not None and self.director.unit is not None:
             try:
                 lp = launch_point(self.director.unit, self.x, self.y)
@@ -2923,7 +2930,7 @@ class VokrahnFXDirector:
             # 80 px ke depan. Titik "bidik" FX = titik pendaratan dash,
             # supaya lane telegraph, jalur, dan kejut mendarat di satu
             # tempat yang sama dengan sprite.
-            fx.target_point = (x + facing * 80.0 * k, y + 10.0)
+            fx.target_point = (x + facing * 80.0, y + 10.0)
         else:
             fx.target_point = target_point(boss, x, y)
         if len(self.skills) >= MAX_SKILLS:

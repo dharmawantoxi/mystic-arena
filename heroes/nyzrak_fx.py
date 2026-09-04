@@ -1699,9 +1699,12 @@ class NyzrakFXDirector:
                 if variant == "thrust":
                     tgt = getattr(hero, "target", None)
                     if tgt is not None and getattr(tgt, "alive", False):
-                        sc = scale
-                        tx = x + (tgt.x - self.x) * sc
-                        ty = y + (tgt.y - self.y) * sc
+                        # Lapisan hidup 1:1: target DUNIA = koordinat layar.
+                        # Mengalikan offset dengan `_render_scale` membuat
+                        # tombak mendarat lebih dekat dari target (terlihat
+                        # nyasar/acak di peta di jalur hero).
+                        tx = x + (float(tgt.x) - float(self.x))
+                        ty = y + (float(tgt.y) - float(self.y))
                     else:
                         tx = tip.x + facing * 200.0
                         ty = tip.y
@@ -1717,9 +1720,11 @@ class NyzrakFXDirector:
         if skill in SKILL_DUR and skill != self._prev_skill:
             tgt = getattr(hero, "target", None)
             if tgt is not None and getattr(tgt, "alive", False):
-                sc = scale
-                tx = x + (tgt.x - self.x) * sc
-                ty = y + (tgt.y - self.y) * sc
+                # Lapisan hidup 1:1: target DUNIA = koordinat layar (tanpa
+                # `_render_scale`), supaya FX Q/W/E/R mendarat tepat di
+                # target, bukan di titik antara hero & target.
+                tx = x + (float(tgt.x) - float(self.x))
+                ty = y + (float(tgt.y) - float(self.y))
                 aim = math.atan2(ty - (y - 30), tx - x)
             else:
                 tx = x + 180.0 * facing

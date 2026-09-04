@@ -1511,7 +1511,7 @@ class SkillFX:
         if ps is None:
             return True
         kind = self.kind
-        R = self.radius * self.scale
+        R = self.radius
         ang = self.aim_angle
         dark, hot = self.TINT[kind]
 
@@ -1600,7 +1600,7 @@ class SkillFX:
             return
         dark, hot = self.TINT[self.kind]
         a = self.age
-        R = self.radius * self.scale
+        R = self.radius
         x = int(self.x)
         gy = int(self.y + self.ground)
 
@@ -1650,7 +1650,7 @@ class SkillFX:
 
     def ground_ring_radius(self, t):
         """Radius gelombang tekan (px layar relatif) untuk umur fraksi t."""
-        base = self.radius * self.scale
+        base = self.radius
         if self.kind in ("e", "r"):
             return base * (0.3 + 0.8 * t)
         return base * 1.5 * (0.3 + 0.8 * t)
@@ -1693,7 +1693,7 @@ class SkillFX:
 
     # -- Q  Sticky Napalm: bola-bola lengket menyala + bara berdenyut ──
     def _draw_q(self, surface, x, y, a):
-        R = self.radius * self.scale
+        R = self.radius
         t = min(1.0, a / max(0.001, self.total))
         pulse = 0.5 + 0.5 * math.sin(a * 6.0)
         if self.phase in ("area", "impact", "fade"):
@@ -1730,7 +1730,7 @@ class SkillFX:
     # -- W  Flamebreak: kerucut api 3 band dari moncong ke target ─────
     def _draw_w(self, surface, x, y, a):
         ang = self.aim_angle
-        R = self.radius * self.scale
+        R = self.radius
         if self.phase in ("charge", "release"):
             mint = min(1.0, a / max(0.001, self.t_release))
             length = int(R * 0.5 * mint if self.phase == "charge"
@@ -1804,7 +1804,7 @@ class SkillFX:
 
     # -- E  Firefly: cincin mendarat + jejak api yang memudar ─────────
     def _draw_e(self, surface, x, y, a):
-        R = self.radius * self.scale
+        R = self.radius
         t = min(1.0, a / max(0.001, self.total))
         if self.phase in ("release", "area"):
             k = (1.0 if self.phase == "release"
@@ -1845,7 +1845,7 @@ class SkillFX:
 
     # -- R  Firestorm: 8 pilar api mengorbit + wisp spiral ────────────
     def _draw_r(self, surface, x, y, a):
-        R = self.radius * self.scale
+        R = self.radius
         pulse = 0.6 + 0.4 * math.sin(a * 7.0)
         if self.phase == "charge":
             # Pilar cahaya di pusat (diri Razak) DIBUANG: kolom 30-100 px
@@ -2271,10 +2271,12 @@ class RazakFXDirector:
             self._proj_window_seen = True
             tgt = getattr(h, "target", None)
             if tgt is not None and getattr(tgt, "alive", False):
-                # konversi dunia -> layar (sama dengan _target_position)
-                scale = float(getattr(h, "_render_scale", 1.0) or 1.0)
-                tx = x + (float(tgt.x) - float(getattr(h, "x", x))) / scale
-                ty = y + (float(tgt.y) - float(getattr(h, "y", y))) / scale
+                # Lapisan hidup digambar 1:1 di layar: koordinat target
+                # DUNIA sudah merupakan koordinat layar. Membagi dengan
+                # `_render_scale` (formula canvas renderer) membuat molotov
+                # melewati target -> FX terlihat mendarat acak di peta.
+                tx = x + (float(tgt.x) - float(getattr(h, "x", x)))
+                ty = y + (float(tgt.y) - float(getattr(h, "y", y)))
             else:
                 fl = 1 if getattr(h, "direction", 1) >= 0 else -1
                 tx, ty = x + fl * 140, y + 18

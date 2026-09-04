@@ -1554,7 +1554,7 @@ class SkillFX:
         # AREA: bara kubur naik dari retakan
         if ph in ("AREA", "IMPACT"):
             if random.random() < dt * 26.0:
-                rr = random.uniform(20.0, WORLD_RADIUS["q"] * 0.7) * self.scale
+                rr = random.uniform(20.0, WORLD_RADIUS["q"] * 0.7)
                 ang = random.uniform(0.0, math.tau)
                 particles.spawn(
                     self.x + math.cos(ang) * rr,
@@ -1572,7 +1572,7 @@ class SkillFX:
         if ph in ("CAST", "CHARGE"):
             # telegraph: lingkaran mengecil (peringatan area)
             k = t / 0.34
-            rr = int(WORLD_RADIUS["q"] * self.scale * (1.25 - 0.25 * k))
+            rr = int(WORLD_RADIUS["q"] * (1.25 - 0.25 * k))
             _blit_faded(surface,
                         ellipse_ring_surface(rr, max(3, rr // 3), 2,
                                              c["grave_dark"], 150),
@@ -1586,14 +1586,14 @@ class SkillFX:
             a = int(220 * (1.0 - prog))
             for ang, ln, seed in self._cracks:
                 ground_crack(surface, self.x, gy, ang,
-                             ln * self.scale * min(1.0, prog * 2.2),
+                             ln * min(1.0, prog * 2.2),
                              c["grave_bright"], a, seed=seed)
         # nova bergerigi ganda yang mengembang
         for wave in (0.0, 0.14):
             wp = min(1.0, max(0.0, prog - wave))
             if wp <= 0.0:
                 continue
-            rr = int(WORLD_RADIUS["q"] * self.scale * wp)
+            rr = int(WORLD_RADIUS["q"] * wp)
             a = int(210 * (1.0 - wp))
             if a <= 4:
                 continue
@@ -1615,11 +1615,11 @@ class SkillFX:
             # pilar naik cepat lalu turun perlahan
             k = min(1.0, prog * 3.0)
             fall = max(0.0, (prog - 0.55) / 0.45)
-            up = hgt * self.scale * k * (1.0 - fall * 0.85)
+            up = hgt * k * (1.0 - fall * 0.85)
             if up <= 1.0:
                 continue
-            px = self.x + math.cos(ang) * dist * self.scale
-            py = gy + math.sin(ang) * dist * self.scale * 0.35
+            px = self.x + math.cos(ang) * dist
+            py = gy + math.sin(ang) * dist * 0.35
             a = int(255 * (1.0 - fall))
             # pilar: trapesium batu bersudut
             w = 7 * self.scale
@@ -1758,7 +1758,7 @@ class SkillFX:
         ph = skill_phase(t)
         gy = self.y + 34 * self.scale
         pulse = 0.5 + 0.5 * math.sin(self.elapsed * 8.0)
-        rr = int(WORLD_RADIUS["e"] * self.scale * (0.55 + 0.15 * pulse))
+        rr = int(WORLD_RADIUS["e"] * (0.55 + 0.15 * pulse))
         a = int(170 * (1.0 - t * 0.5))
         _blit_faded(surface,
                     ellipse_ring_surface(rr, max(3, rr // 3), 3,
@@ -1844,7 +1844,7 @@ class SkillFX:
         if ph in ("RELEASE", "AREA", "IMPACT"):
             if random.random() < dt * 52.0:
                 ang = random.uniform(0.0, math.tau)
-                rr = WORLD_RADIUS["r"] * self.scale
+                rr = WORLD_RADIUS["r"]
                 particles.stream_toward(
                     self.x + math.cos(ang) * rr,
                     self.y + math.sin(ang) * rr * 0.45,
@@ -1858,14 +1858,14 @@ class SkillFX:
         c = _P
         gy = self.y + 34 * self.scale
         pulse = 0.5 + 0.5 * math.sin(self.elapsed * 7.0)
-        rr = int(WORLD_RADIUS["r"] * self.scale * (0.5 + 0.2 * pulse))
+        rr = int(WORLD_RADIUS["r"] * (0.5 + 0.2 * pulse))
         a = int(160 * (1.0 - t * 0.5))
         _blit_faded(surface,
                     ellipse_ring_surface(rr, max(3, rr // 3), 3,
                                          c["grave_light"], a),
                     self.x, gy, a)
         # cincin tarikan kedua (lebih rapat, berlawanan fase)
-        rr2 = int(WORLD_RADIUS["r"] * self.scale * (0.68 - 0.18 * pulse))
+        rr2 = int(WORLD_RADIUS["r"] * (0.68 - 0.18 * pulse))
         _blit_faded(surface,
                     ellipse_ring_surface(rr2, max(2, rr2 // 3), 2,
                                          c["grave_bright"], a),

@@ -1483,7 +1483,7 @@ class SkillFX:
                     _feel.shake(6.0, 0.24)
         # AREA: bara naik dari tanah
         if ph in ("AREA", "IMPACT") and random.random() < dt * 30.0:
-            rr = WORLD_RADIUS["q"] * self.scale * random.uniform(0.2, 0.9)
+            rr = WORLD_RADIUS["q"] * random.uniform(0.2, 0.9)
             ang = random.uniform(0.0, math.tau)
             particles.spawn(
                 self.x + math.cos(ang) * rr,
@@ -1497,7 +1497,7 @@ class SkillFX:
         """Tanah: cincin bergerigi melebar + retakan."""
         c = _P
         ph = skill_phase(t)
-        r_world = WORLD_RADIUS["q"] * self.scale
+        r_world = WORLD_RADIUS["q"]
         if ph in ("CAST", "CHARGE"):
             # ring menguncup (telegraph)
             k = 1.0 - (t / 0.34)
@@ -1541,7 +1541,7 @@ class SkillFX:
             wp = min(1.0, max(0.0, prog - wave))
             if wp <= 0.0:
                 continue
-            rr = 14.0 + wp * (WORLD_RADIUS["q"] * self.scale)
+            rr = 14.0 + wp * WORLD_RADIUS["q"]
             a = int(235 * (1.0 - wp))
             _blit_faded(surface,
                         ring_surface(int(rr), 3, c["necro_light"], a,
@@ -1555,7 +1555,7 @@ class SkillFX:
         if prog < 0.5:
             for i in range(4):
                 ang = self.elapsed * 3.0 + i * math.tau / 4
-                rr = 20.0 + prog * 90.0 * self.scale
+                rr = 20.0 + prog * 90.0
                 sx = self.x + math.cos(ang) * rr
                 sy = self.y - 10 + math.sin(ang) * rr * 0.7
                 _blit_faded(surface, skull_decal(5),
@@ -1576,7 +1576,7 @@ class SkillFX:
         # sepanjang hidup: jiwa tersedot ke Vhalzun (leech stream)
         if ph in ("CHARGE", "RELEASE", "AREA"):
             if random.random() < dt * 26.0:
-                rr = WORLD_RADIUS["w"] * self.scale * random.uniform(0.7, 1.0)
+                rr = WORLD_RADIUS["w"] * random.uniform(0.7, 1.0)
                 ang = random.uniform(0.0, math.tau)
                 particles.spawn(
                     self.x + math.cos(ang) * rr,
@@ -1600,7 +1600,7 @@ class SkillFX:
         """Tanah: sigil heksagonal berputar (bukan lingkaran)."""
         c = _P
         a0 = int(120 + 60 * math.sin(self.elapsed * 5.0))
-        r = int(WORLD_RADIUS["w"] * self.scale)
+        r = int(WORLD_RADIUS["w"])
         gy = self.y + 34 * self.scale
         # sigil: 2 heksagon saling silang
         for rot in (self.elapsed * 0.8, -self.elapsed * 0.6 + math.pi / 6):
@@ -1709,7 +1709,7 @@ class SkillFX:
             f = self.facing
             x0 = self.x + 20 * f
             y0 = self.y - 16
-            ln = 200.0 * self.scale * prog
+            ln = 200.0 * prog
             taper_lane(surface, x0, y0, x0 + ln * f, y0, 10, 2,
                        c["necro_light"], int(190 * (1.0 - prog)))
 
@@ -1733,7 +1733,7 @@ class SkillFX:
         if ph in ("RELEASE", "AREA", "IMPACT"):
             if random.random() < dt * 16.0:
                 ang = random.uniform(0.0, math.tau)
-                rr = WORLD_RADIUS["r"] * self.scale * random.uniform(0.4, 1.0)
+                rr = WORLD_RADIUS["r"] * random.uniform(0.4, 1.0)
                 particles.spawn(
                     self.x + math.cos(ang) * rr,
                     self.y + 30 * self.scale,
@@ -1754,7 +1754,7 @@ class SkillFX:
         """Tanah: lingkar kubur + rune naik."""
         c = _P
         ph = skill_phase(t)
-        r = int(WORLD_RADIUS["r"] * self.scale)
+        r = int(WORLD_RADIUS["r"])
         gy = self.y + 34 * self.scale
         if ph in ("CAST", "CHARGE"):
             k = t / 0.34
