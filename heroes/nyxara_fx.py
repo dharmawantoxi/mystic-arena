@@ -1434,7 +1434,7 @@ class SkillFX:
                     _feel.shake(6.0, 0.24)
         # AREA: bara naik dari tanah
         if ph in ("AREA", "IMPACT") and random.random() < dt * 30.0:
-            rr = WORLD_RADIUS["q"] * self.scale * random.uniform(0.2, 0.9)
+            rr = WORLD_RADIUS["q"] * random.uniform(0.2, 0.9)
             ang = random.uniform(0.0, math.tau)
             particles.spawn(
                 self.x + math.cos(ang) * rr,
@@ -1448,7 +1448,7 @@ class SkillFX:
         """Tanah: cincin bergerigi melebar + retakan."""
         c = _P
         ph = skill_phase(t)
-        r_world = WORLD_RADIUS["q"] * self.scale
+        r_world = WORLD_RADIUS["q"]
         if ph in ("CAST", "CHARGE"):
             k = 1.0 - (t / 0.34)
             rr = int(r_world * (0.35 + 0.65 * k))
@@ -1499,7 +1499,7 @@ class SkillFX:
             wp = min(1.0, max(0.0, prog - wave))
             if wp <= 0.0:
                 continue
-            rr = 14.0 + wp * (WORLD_RADIUS["q"] * self.scale)
+            rr = 14.0 + wp * WORLD_RADIUS["q"]
             a = int(235 * (1.0 - wp))
             _blit_faded(surface,
                         ring_surface(int(rr), 3, c["nether_light"], a,
@@ -1512,7 +1512,7 @@ class SkillFX:
         if prog < 0.5:
             for i in range(4):
                 ang = self.elapsed * 3.0 + i * math.tau / 4
-                rr = 20.0 + prog * 90.0 * self.scale
+                rr = 20.0 + prog * 90.0
                 sx = self.x + math.cos(ang) * rr
                 sy = self.y - 12 + math.sin(ang) * rr * 0.7
                 _blit_faded(surface, skull_decal(5),
@@ -1649,7 +1649,7 @@ class SkillFX:
 
     def _gnd_e(self, surface, t):
         c = _P
-        r_world = WORLD_RADIUS["e"] * self.scale
+        r_world = WORLD_RADIUS["e"]
         prog = min(1.0, t / 0.5)
         rr = int(r_world * prog)
         a = int(210 * (1.0 - t * 0.6))
@@ -1732,7 +1732,7 @@ class SkillFX:
     def _gnd_r(self, surface, t):
         c = _P
         pulse = 0.5 + 0.5 * math.sin(self.elapsed * 7.0)
-        rr = int(WORLD_RADIUS["r"] * self.scale * (0.5 + 0.2 * pulse))
+        rr = int(WORLD_RADIUS["r"] * (0.5 + 0.2 * pulse))
         a = int(150 * (1.0 - t * 0.5))
         _blit_faded(surface,
                     ellipse_ring_surface(rr, max(3, rr // 3), 3,

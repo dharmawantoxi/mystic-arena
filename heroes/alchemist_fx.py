@@ -1524,7 +1524,7 @@ class SkillFX:
         if ps is None:
             return True
         kind = self.kind
-        R = self.radius * self.scale
+        R = self.radius
         ang = self.aim_angle
         dark, hot = self.TINT[kind]
 
@@ -1624,7 +1624,7 @@ class SkillFX:
         if not self.active:
             return
         t = self.age / self.total
-        R = self.radius * self.scale
+        R = self.radius
         gy = self.y + self.ground * 0.55
         if self.kind == "q":
             if self.phase in ("area", "impact", "fade"):
@@ -1674,7 +1674,7 @@ class SkillFX:
             return
         t = self.age / self.total
         inv = 1.0 - t
-        R = self.radius * self.scale
+        R = self.radius
         ang = self.aim_angle
         dark, hot = self.TINT[self.kind]
         x, y = int(self.x), int(self.y)
