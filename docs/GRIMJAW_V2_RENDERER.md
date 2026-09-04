@@ -7,12 +7,24 @@
 > supaya siluet bersih dan mudah dibaca di ukuran arena: mahkota api jadi
 > **kipas 5 lidah besar** dengan ramp gelap→terang per lidah (bukan balok
 > menyatu), kaki **dua kolom chunky dengan gap tegas** (paha → greave →
-> boot, masing-masing bidang planar lebar), mask putih dua celah mata
-> tetap dengan streak darah, baja/emas sebagai bidang lebar tanpa hiasan
-> 1 px, dan di akhir serang badan/lengan kembali **piksel-demi-piksel ke
-> pose jaga** (loop closure). API, palet, pose-helper geometri yang dibaca
-> FX layer (`_blade_angle`, `_blade_grip_local`, `_blade_tip_local`,
-> `_render_scale`) serta kontrak tebasan ATAS→BAWAH tidak berubah.
+> boot, masing-masing bidang planar lebar), baja/emas sebagai bidang
+> lebar tanpa hiasan 1 px, dan di akhir serang badan/lengan kembali
+> **piksel-demi-piksel ke pose jaga** (loop closure). API, palet,
+> pose-helper geometri yang dibaca FX layer (`_blade_angle`,
+> `_blade_grip_local`, `_blade_tip_local`, `_render_scale`) serta kontrak
+> tebasan ATAS→BAWAH tidak berubah.
+
+> **v2.6 (topeng/wajah terbaca jelas)** — kepala dirombak supaya muka
+> tidak tenggelam oleh api: **tengkorak gelap** ditambah sebagai volume
+> kepala di belakang topeng, **mahkota api jadi halo di atas-belakang
+> kepala** (lidah samping tidak lagi menjilat pipi), **topeng diperbesar
+> dan bidangnya hampir seluruhnya ivory terang** (ramp gelap hanya tepi +
+> dagu, jadi saat downscale ke arena topeng tetap putih, bukan abu metal),
+> **dua mata merah menyala SELALU** (idle ikut glow, bukan hanya
+> combat) dengan soket gelap kompak, emblem dahi diperkecil, dan streak
+> darah dipindah ke pelipis supaya pipi putih bersih. Terverifikasi di
+> arena scale (30 px) & portrait LOD: bbox idle 75×192, 8 frame walk /
+> 10 pose attack unik, akhir serang kembali ke pose jaga (diff 6 px).
 
 ## Apa yang berubah
 

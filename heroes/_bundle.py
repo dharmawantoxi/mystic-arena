@@ -1523,7 +1523,22 @@ class _NS_grimjaw:
         if crit or omni:
             flare *= 1.06
 
-        # ==== 2. MAHKOTA API BELAKANG (halo kompak di belakang kepala) ====
+        # ==== 2. TENGGORAK GELAP (volume kepala di belakang topeng) ====
+        # Topeng putih menempel di tengkorak gelap - bukan menempel
+        # langsung ke api - sehingga wajah terbaca sebagai wajah.
+        skull = [(-15, -54), (-14, -68), (-12, -80), (-8, -92),
+                 (-3, -99), (2, -101), (8, -96), (13, -86), (16, -72),
+                 (16, -56)]
+        poly(p["hair_darkest"], skull, False)
+        poly(p["hair_dark"], [(-12, -56), (-12, -68), (-10, -79),
+              (-7, -88), (-2, -95), (2, -96), (7, -92), (11, -84),
+              (13, -72), (13, -58)], False)
+        _NS_grimjaw._aaline(surface, p["hair_mid"], pt(-15, -68),
+                            pt(-9, -89), 1)
+
+        # ==== 2b. MAHKOTA API (halo DITUMPANG di atas tengkorak) ====
+        # Lidah api ditaruh SETELAH tengkorak sehingga menyala membingkai
+        # kepala dari belakang-atas, tidak tertelan volume gelap.
         _NS_grimjaw._draw_elite_flame_mane(surface, pt, poly, f, phase,
                                            action, crest_tilt, flare)
 
@@ -1810,193 +1825,204 @@ class _NS_grimjaw:
 
     def _draw_elite_flame_mane(surface, pt, poly, f, phase, action,
                                crest_tilt=0.0, flare=1.0):
-        """Mahkota api kompak - kipas lidah api besar di belakang kepala.
-        Bukan balok dan bukan semburan 9 lick acak: lima lidah jelas dengan
-        lidah tengah tertinggi, tiap lidah dapat ramp gelap->terang sendiri,
-        flicker deterministik di ujung + ember.  crest_tilt = inersia lean,
+        """Mahkota api - HALO di atas-belakang kepala, bukan fireball.
+
+        Kepala dibaca sebagai WAJAH: lidah api naik dari belakang
+        ubun-ubun (di atas tengkorak gelap) dan menjilat keluar di sisi
+        samping, tidak pernah menutupi topeng.  Lidah tengah tertinggi,
+        tiap lidah ramp gelap->terang sendiri; crest_tilt = inersia lean,
         flare (fury/crit/omni) melebar dari pangkal.
         """
         p = _NS_grimjaw.PALETTE
         wave = int(math.sin(phase * 1.1) * 1.5)
-        tilt_shear = int(crest_tilt * 44)
+        tilt = int(crest_tilt * 40)
 
         def jit(i):
             return 1 if int(phase * 5.0 + i * 1.7) % 3 == 0 else 0
 
-        # Pangkal halo di belakang ubun-ubun; lidah naik membingkai kepala.
-        base_top = -66
-        tongues = [(-21, -90, 9), (-11, -101, 11), (0, -112, 13),
-                   (11, -101, 11), (21, -90, 9)]
-
-        def tongue(color, tx, ty, w, s, alpha=None):
-            shear = int(tilt_shear * (ty - base_top) / 46.0)
-            yb = base_top + int((1.0 - s) * 5)
-            if alpha is not None:
-                _NS_grimjaw._poly(
-                    surface, (*color, alpha),
-                    [pt(int(tx - w * s) + shear, yb),
-                     pt(int(tx + w * s) + shear, yb),
-                     pt(int(tx + w * 0.40 * s) + shear,
-                        ty + int(wave * 0.4) - jit(0)),
-                     pt(int(tx - w * 0.40 * s) + shear,
-                        ty + int(wave * 0.4) - jit(0))])
-            else:
-                poly(color, [(int(tx - w * s) + shear, yb),
-                             (int(tx + w * s) + shear, yb),
-                             (int(tx + w * 0.40 * s) + shear,
-                              ty + int(wave * 0.4) - jit(0)),
-                             (int(tx - w * 0.40 * s) + shear,
-                              ty + int(wave * 0.4) - jit(0))], False)
-
-        # ramp tiap lidah: gelap pangkal -> api muda puncak
+        # 5 lidah atas: pangkal di belakang tengkorak (y ~ -86..-96),
+        # ujung naik ke -118.  Lidah luar ikut flare/fury.
+        tongues = [(-26, -98, 9), (-14, -109, 11), (0, -118, 13),
+                   (14, -109, 11), (26, -98, 9)]
+        for s, col in ((1.00, p["hair_darkest"]), (0.74, p["hair_dark"]),
+                       (0.52, p["fire_dark"]), (0.34, p["fire_mid"]),
+                       (0.18, p["fire_light"])):
+            for (tx, ty, w) in tongues:
+                wf = w * flare
+                # pangkal lidah ikut flare; geser shear saat lean
+                sh = int(tilt * (ty + 92) / 26.0)
+                yb = -84 + int((1.0 - s) * 4)
+                bx = wf * (0.30 + 0.70 * s)
+                px = wf * 0.34 * s
+                if s < 0.52:
+                    _NS_grimjaw._poly(
+                        surface, (*col, 200),
+                        [pt(tx - bx + sh, yb + 6), pt(tx + bx + sh, yb + 6),
+                         pt(tx + px + sh, ty + int(wave * 0.5) - jit(1)),
+                         pt(tx - px + sh, ty + int(wave * 0.5) - jit(1))])
+                else:
+                    poly(col, [(tx - bx + sh, yb + 6),
+                               (tx + bx + sh, yb + 6),
+                               (tx + px + sh,
+                                ty + int(wave * 0.5) - jit(1)),
+                               (tx - px + sh,
+                                ty + int(wave * 0.5) - jit(1))], False)
+        # Lidah samping: HANYA di atas garis alis (y <= -74), jadi tidak
+        # ada api yang menutupi pipi topeng.  Wajah tetap bidang putih.
+        for side in (-1, 1):
+            for k, (ty, w) in enumerate(((-102, 8), (-84, 6))):
+                tx = side * 24
+                sway = int(math.sin(phase * 1.3 + k + side) * 2)
+                sh = int(tilt * 10)
+                poly(p["hair_darkest"],
+                     [(tx - w * side + sway, -72), (tx + w * side, -76),
+                      (tx + int(12 * side) + sway, ty)],
+                     False)
+                poly(p["fire_dark"],
+                     [(tx - w * side + sway, -73), (tx + 0 * side, -76),
+                      (tx + int(8 * side) + sway, ty - 4)], False)
+                _NS_grimjaw._aacircle(surface, (*p["fire_core"], 220),
+                                      pt(tx + int(9 * side) + sway, ty - 6),
+                                      1, False)
+        # ember di ujung lidah atas
         for (tx, ty, w) in tongues:
-            wf = w * flare
-            tongue(p["hair_darkest"], tx, ty, wf, 1.00)
-        for (tx, ty, w) in tongues:
-            wf = w * flare
-            tongue(p["hair_dark"], tx, ty, wf, 0.72)
-            tongue(p["fire_dark"], tx, ty, wf, 0.50)
-            tongue(p["fire_mid"], tx, ty, wf, 0.32)
-            tongue(p["fire_light"], tx, ty, wf, 0.18)
-        # ember di puncak tiap lidah
-        for (tx, ty, w) in tongues:
-            tip = (int(tx + tilt_shear * (ty - base_top) / 46.0),
-                   ty + int(wave * 0.4) - jit(0))
-            if tip[1] < -80:
-                _NS_grimjaw._aacircle(
-                    surface, (*p["fire_light"], int(205 - jit(3) * 40)),
-                    pt(*tip), 2, False)
-                _NS_grimjaw._aacircle(
-                    surface, (*p["fire_core"], 235),
-                    pt(tip[0] + 1, tip[1] + 1), 1, False)
+            tip = (tx + int(tilt * (ty + 92) / 26.0),
+                   ty + int(wave * 0.5) - jit(1))
+            if tip[1] < -88:
+                _NS_grimjaw._aacircle(surface,
+                                      (*p["fire_light"],
+                                       int(200 - jit(3) * 45)),
+                                      pt(*tip), 2, False)
+                _NS_grimjaw._aacircle(surface, (*p["fire_core"], 235),
+                                      pt(tip[0] + 1, tip[1] + 1), 1, False)
 
     def _draw_elite_mane_front(surface, pt, poly, f, phase, action,
                                crest_tilt=0.0):
-        """Fringe api depan: 3 forelock di atas dahi + api samping mask.
-        Ringkas (bukan fringe acak), mengikuti kemiringan kepala.
+        """Fringe api depan yang RINGKAS: satu forelock kecil di atas
+        alis topeng.  Tidak ada api yang menutupi pipi/mata topeng -
+        identitas wajah Grimjaw tetap terbaca.
         """
         p = _NS_grimjaw.PALETTE
         wave = int(math.sin(phase * 1.1) * 1.5)
-        tilt = int(crest_tilt * 44)
-        # forelock tengah (di atas mahkota mask)
-        fx = (1, -71, 4, -80 + wave)
-        poly(p["hair_darkest"], [(fx[0] - 3, fx[1]), (fx[2] - 3, fx[3]),
+        tilt = int(crest_tilt * 40)
+        # forelock tengah kecil di atas dahi topeng
+        fx = (0, -78, 3, -90 + wave + tilt)
+        poly(p["hair_darkest"], [(fx[0] - 4, fx[1]), (fx[2] - 2, fx[3]),
+             (fx[0] + 4, fx[1])], False)
+        poly(p["fire_dark"], [(fx[0] - 3, fx[1]), (fx[2] - 1, fx[3]),
              (fx[0] + 3, fx[1])], False)
-        poly(p["fire_dark"], [(fx[0] - 2, fx[1]), (fx[2] - 2, fx[3]),
-             (fx[0] + 2, fx[1])], False)
-        _NS_grimjaw._aaline(surface, p["fire_light"], pt(fx[0], fx[1] - 1),
+        _NS_grimjaw._aaline(surface, p["fire_light"], pt(fx[0], fx[1] - 2),
                             pt(fx[2], fx[3] + 2), 1)
-        # lidah kiri-kanan dahi
+        # dua jambang api sangat pendek di sisi atas topeng (ujung di
+        # atas garis alis, tidak menutupi pipi)
         for side in (-1, 1):
-            px = side * 7
-            ty2 = -72 - int(wave * 0.6) + side * tilt
-            poly(p["hair_darkest"], [(px - 2, -69), (px + 2 * side, ty2),
-                 (px + 2, -69)], False)
-            poly(p["fire_mid"], [(px - 1, -69), (px + side, ty2),
-                 (px + 1, -69)], False)
-        # api samping mask (sideburn) - 1 lidah pendek per sisi
-        for side in (-1, 1):
-            sx = side * 13
-            sway = int(math.sin(phase * 1.3 + side) * 2)
-            poly(p["hair_darkest"], [(sx - 2, -58), (sx + 2, -58),
-                 (sx + 6 * side + sway, -47), (sx + 2 * side, -42),
-                 (sx - 1 * side, -49)], False)
-            poly(p["fire_dark"], [(sx - 1, -56), (sx + 1, -56),
-                 (sx + 4 * side + sway, -48), (sx + 1 * side, -44)],
-                 False)
-            _NS_grimjaw._aaline(surface, p["hair_mid"], pt(sx, -55),
-                                pt(sx + 4 * side + sway, -47), 1)
+            sx = side * 11
+            sway = int(math.sin(phase * 1.3 + side) * 1)
+            poly(p["fire_dark"], [(sx - 1, -71), (sx + 1 * side, -71),
+                 (sx + 3 * side + sway, -79)], False)
 
     def _draw_elite_mask(surface, pt, poly, dot, f, phase, action, ap,
                          detail=False, ward=False, crit=False):
-        """Mask putih bersih (rewrite): bidang besar 5-ramp, alis tegas,
-        dua celah mata menyala miring, grille dagu, emblem emas dahi, dan
-        dua streak darah tebal - bukan kumpulan garis 1 px.
+        """Topeng putih yang JELAS TERBACA sebagai wajah.
+
+        Bidang putih lebar (alis -78 ke dagu -34), dua celah mata
+        menyala miring dengan soket gelap, emblem emas di dahi, grille
+        napas, streak darah tipis - bukan fireball yang menelan kepala.
         """
         p = _NS_grimjaw.PALETTE
         eyes_glow = action in ("attack", "spin") or ap > 0.35 or crit
         eye_col = p["heal_light"] if ward else p["eye_glow"]
 
-        # siluet mask (bidang utama) - dari alis atas -70 ke dagu -36
-        m = [(-11, -54), (-9, -64), (-5, -68), (2, -70), (8, -67),
-             (12, -60), (13, -51), (12, -43), (8, -38), (1, -36),
-             (-5, -38), (-10, -43), (-12, -50)]
+        # siluet topeng: bidang besar 5-ramp, dahi -78, dagu -34
+        m = [(-13, -56), (-12, -67), (-9, -73), (-4, -77), (1, -78),
+             (6, -76), (10, -72), (14, -65), (15, -56), (14, -46),
+             (11, -39), (6, -35), (1, -34), (-4, -35), (-9, -38),
+             (-13, -45), (-15, -52)]
         poly(p["mask_shadow"], m)
+        # Bidang utama: mask_mid hampir memenuhi topeng (bukan ramp
+        # gelap lebar) sehingga di downscale arena topeng tetap IVORY,
+        # bukan abu-abu metal.  Hanya tepi 1 px + dagu yang gelap.
         poly(p["mask_dark"],
-             [(-10, -53), (-8, -62), (-4, -66), (2, -68), (8, -65),
-              (11, -59), (12, -50), (11, -43), (7, -39), (1, -37),
-              (-5, -39), (-9, -43), (-11, -49)], False)
-        # pita cahaya kiri-atas + bidang tengah
+             [(-13, -56), (-12, -67), (-9, -73), (-4, -77), (1, -78),
+              (6, -76), (10, -72), (14, -65), (15, -56), (14, -46),
+              (11, -39), (6, -35), (1, -34), (-4, -35), (-9, -38),
+              (-13, -45), (-15, -52),
+              (-14, -54), (-13, -62), (-10, -70), (-5, -75),
+              (1, -76), (7, -73), (12, -66), (14, -58), (13, -49),
+              (10, -41), (5, -36), (1, -36), (-3, -37), (-8, -41),
+              (-12, -48)], False)
         poly(p["mask_mid"],
-             [(-8, -60), (-4, -65), (3, -66), (9, -61), (10, -48),
-              (7, -41), (2, -39), (-5, -41), (-8, -48)], False)
+             [(-11, -56), (-10, -66), (-7, -72), (-2, -75), (1, -76),
+              (5, -74), (9, -70), (13, -63), (14, -55), (13, -46),
+              (10, -40), (5, -36), (1, -35), (-4, -36), (-9, -40),
+              (-12, -47), (-13, -53)], False)
+        # pita cahaya kiri-atas (key light konsisten)
         poly(p["mask_light"],
-             [(-8, -62), (-2, -66), (5, -65), (0, -55), (-7, -52)], False)
-        _NS_grimjaw._aacircle(surface, p["mask_shine"], pt(-f * 4, -62), 2)
-        # dahi: emblem emas diamond + garis alis gelap
-        poly(p["gold_darkest"], [(-3, -67), (3, -67), (4, -62), (0, -60),
-             (-4, -62)], False)
-        poly(p["gold_mid"], [(-2, -66), (2, -66), (3, -62), (0, -61),
-             (-3, -62)], False)
-        _NS_grimjaw._aacircle(surface, p["gold_shine"], pt(0, -63), 1)
-        _NS_grimjaw._aaline(surface, p["mask_line"], pt(-11, -59),
-                            pt(-3, -62), 2)
-        _NS_grimjaw._aaline(surface, p["mask_line"], pt(11, -59),
-                            pt(3, -62), 2)
-        _NS_grimjaw._aaline(surface, p["mask_line"], pt(0, -63),
-                            pt(0, -50), 1)
-        # mata: soket gelap miring + celah menyala (blink saat idle)
+             [(-10, -66), (-5, -73), (1, -74), (4, -66), (-1, -57),
+              (-7, -55), (-11, -60)], False)
+        # kilau utama
+        _NS_grimjaw._aacircle(surface, p["mask_shine"], pt(-f * 6, -68), 2)
+        _NS_grimjaw._aacircle(surface, p["mask_shine"], pt(-f * 4, -58), 1,
+                              False)
+        # garis gelap atas (brow band) memisahkan topeng dari tengkorak
+        _NS_grimjaw._aaline(surface, p["mask_shadow"], pt(-13, -72),
+                            pt(13, -72), 1)
+        # emblem emas dahi (kecil - tidak menyaingi mata)
+        poly(p["gold_darkest"], [(-2, -76), (2, -76), (3, -72), (0, -70),
+             (-3, -72)], False)
+        _NS_grimjaw._aacircle(surface, p["gold_shine"], pt(0, -73), 1,
+                              False)
+        # garis alis gelap tegas
+        _NS_grimjaw._aaline(surface, p["mask_line"], pt(-12, -66),
+                            pt(-4, -69), 2)
+        _NS_grimjaw._aaline(surface, p["mask_line"], pt(12, -66),
+                            pt(4, -69), 2)
+        # MATA: soket gelap + celah menyala miring BESAR.  Mata Grimjaw
+        # SELALU menyala merah (berserker) - bukan hanya saat combat -
+        # jadi identitas topeng terbaca juga saat idle di ukuran arena.
         blink = (action == "idle" and math.sin(phase * 0.9 + 1.3) > 0.985)
-        for ex in (-6, 6):
+        for ex in (-7, 7):
+            # soket lebih kompak (6 px) supaya bidang putih topeng tetap
+            # dominan; celah mata menyala di dalam soket
             poly(p["dark_eye"],
-                 [(ex - f * 3, -57), (ex + f * 3, -55),
-                  (ex + f * 2, -48), (ex - f * 3, -50)], False)
-            x, y = pt(ex, -52)
-            if blink and not eyes_glow:
+                 [(ex - f * 3, -62), (ex + f * 3, -60), (ex + f * 2, -52),
+                  (ex - f * 3, -54)], False)
+            x, y = pt(ex, -56)
+            if blink:
                 _NS_grimjaw._aaline(surface, p["mask_line"],
                                     (x - f * 4, y), (x + f * 4, y), 2)
             else:
-                # celah mata menyala miring (2-3 px tebal)
+                # titik api + kilau putih - selalu menyala (berserker)
+                _NS_grimjaw._aacircle(surface, eye_col, (x, y - 1), 4)
+                _NS_grimjaw._aacircle(surface, p["white"], (x - f, y - 2), 2)
                 if eyes_glow:
-                    _NS_grimjaw._aacircle(surface, eye_col, (x, y - 1), 3)
-                    _NS_grimjaw._aacircle(surface, p["white"],
-                                          (x - f, y - 2), 1)
-                else:
-                    _NS_grimjaw._aaline(surface, eye_col,
-                                        (x - f * 3, y - 2),
-                                        (x + f * 3, y + 2), 2)
-                    _NS_grimjaw._aacircle(surface, eye_col,
-                                          (x + f * 2, y + 1), 1)
-        # hidung: bidang solid + garis tengah tipis
+                    _NS_grimjaw._aacircle(surface, p["fire_hot"],
+                                          (x + f, y + 1), 1, False)
+        # hidung: bidang + garis tengah tipis
+        _NS_grimjaw._aaline(surface, p["mask_line"], pt(-1, -66),
+                            pt(0, -50), 1)
         _NS_grimjaw._aaline(surface, p["mask_line"], pt(0, -50),
                             pt(1, -44), 1)
-        # grille dagu (celah nafas tebal, bukan taring halus)
-        poly(p["shadow"], [(-6, -43), (6, -43), (6, -38), (-6, -38)],
+        # grille napas di dagu
+        poly(p["shadow"], [(-7, -45), (7, -45), (7, -39), (-7, -39)],
              False)
-        for tx in (-3, -1, 2, 4):
+        for tx in (-4, -1, 2, 5):
             _NS_grimjaw._rect(surface, p["mask_mid"],
-                              (int(pt(tx, -43)[0]) - 1,
-                               int(pt(tx, -43)[1]), 3, 4))
-        _NS_grimjaw._aaline(surface, p["mask_shadow"], pt(-7, -37),
-                            pt(7, -37), 1)
-        # streak darah tebal (2-3 px) di pipi depan + bekas luka alis
-        poly(p["blood_darkest"], [(-10, -52), (-7, -55), (-3, -46),
-             (-6, -43), (-11, -47)], False)
-        poly(p["blood_mid"], [(-9, -52), (-7, -54), (-4, -47),
-             (-6, -45)], False)
-        _NS_grimjaw._aaline(surface, p["blood_light"], pt(-9, -53),
-                            pt(-5, -47), 1)
-        poly(p["blood_darkest"], [(5, -63), (8, -62), (10, -52),
-             (7, -52)], False)
-        poly(p["blood_mid"], [(6, -62), (7, -62), (9, -53),
-             (8, -53)], False)
-        # bekas luka (detail portrait)
+                              (int(pt(tx, -45)[0]) - 1,
+                               int(pt(tx, -45)[1]), 3, 4))
+        # streak darah tipis DI ATAS mata kanan (pelipis) - pipi tetap
+        # putih bersih supaya topeng terbaca
+        _NS_grimjaw._aaline(surface, p["blood_dark"], pt(9, -70),
+                            pt(6, -58), 2)
+        _NS_grimjaw._aaline(surface, p["blood_mid"], pt(8, -69),
+                            pt(6, -59), 1)
+        # slash kecil pelipis kiri (bekas luka, di atas alis)
+        _NS_grimjaw._aaline(surface, p["blood_dark"], pt(-9, -66),
+                            pt(-12, -57), 1)
         if detail:
-            _NS_grimjaw._aaline(surface, p["mask_line"], pt(7, -46),
-                                pt(11, -43), 1)
-            _NS_grimjaw._aaline(surface, p["mask_line"], pt(-4, -64),
-                                pt(-1, -67), 1)
-            _NS_grimjaw._aacircle(surface, p["mask_shine"], pt(-8, -45), 1)
+            _NS_grimjaw._aaline(surface, p["mask_line"], pt(6, -47),
+                                pt(10, -44), 1)
+            _NS_grimjaw._aacircle(surface, p["mask_shine"], pt(-8, -44), 1)
 
     def _draw_elite_flame_blade(surface, pt, f, grip, angle, length, phase,
                                 detail, hot=False, omni=False):
