@@ -579,26 +579,49 @@ Quality = _Quality()
 # SEMUA modul FX ikut menyesuaikan tanpa diubah satu pun.
 # ═══════════════════════════════════════════════════════
 _FX_LOAD = 1.0
-_FX_LOAD_SMOOTH = 0.35     # seberapa cepat beban menyusul perubahan
-_FX_BASE_HEROES = 1.5      # jumlah hero FX yang masih boleh intensitas penuh
-_FX_LOAD_MIN = 0.20        # lantai intensitas (FX tidak pernah mati total)
-_FX_LOAD_EXP = 1.1         # makin besar = turun lebih agresif saat 3+ hero
+_FX_LOAD_SMOOTH = 0.40     # seberapa cepat beban menyusul perubahan
+_FX_BASE_HEROES = 1.25     # jumlah hero FX yang masih boleh intensitas penuh
+_FX_LOAD_MIN = 0.16        # lantai intensitas (FX tidak pernah mati total)
+_FX_LOAD_EXP = 1.20        # makin besar = turun lebih agresif saat 3+ hero
+
+# Anggaran KERAS per frame di atas particle_ratio. Modul FX yang mengabaikan
+# anggaran (atau memakai pool yang selalu "penuh") tetap dipotong di sini
+# lewat wrap spawn global di heroes/__init__.py — tanpa mengedit 27 *_fx.py.
+_FX_PARTICLE_CAP = 280     # token spawn partikel pada load 1.0
+_FX_PROJ_CAP = 36          # token spawn proyektil visual FX
+_FX_SKILL_PROJ_CAP = 18    # token proyektil skill di Hero.projectiles
+_FX_PARTICLE_LEFT = _FX_PARTICLE_CAP
+_FX_PROJ_LEFT = _FX_PROJ_CAP
+_FX_SKILL_PROJ_LEFT = _FX_SKILL_PROJ_CAP
+# Token hanya dipotong saat Game.draw memanggil begin_fx_frame/set_fx_load.
+# Tes unit yang spawn partikel tanpa loop game tidak boleh kehabisan
+# anggaran 280-token proses-lebar (itu yang merusak tes combat).
+_FX_TOKENS_ACTIVE = False
+
+
+def _reset_fx_tokens():
+    """Isi ulang token spawn sesuai beban combat frame ini."""
+    global _FX_PARTICLE_LEFT, _FX_PROJ_LEFT, _FX_SKILL_PROJ_LEFT
+    load = max(_FX_LOAD_MIN, float(_FX_LOAD))
+    _FX_PARTICLE_LEFT = max(56, int(_FX_PARTICLE_CAP * load))
+    _FX_PROJ_LEFT = max(10, int(_FX_PROJ_CAP * load))
+    _FX_SKILL_PROJ_LEFT = max(5, int(_FX_SKILL_PROJ_CAP * load))
 
 
 def set_fx_load(n_active):
     """Panggil SEKALI per frame dengan jumlah hero FX yang sedang aktif.
 
     Semakin banyak hero yang aktif -> intensitas FX global diturunkan
-    (partikel lebih sedikit, lapisan FX diselingi antar-frame) supaya
-    frame tetap murah dan FX tidak menumpuk menutupi hero.
+    (partikel lebih sedikit, token spawn per frame lebih ketat) supaya
+    frame tetap murah dan FX tidak menumpuk menutupi hero. Lapisan FX
+    TETAP digambar setiap frame — penghematan lewat intensitas, bukan
+    lewat frekuensi gambar.
 
-    Dugaan lapangan: saat pemain meletakkan 5 hero starter (zephyr,
-    grimjaw, kaizen, vex, sylara) sekaligus, governor lama (base 3,
-    eksponen 0.5) hanya turun ke sekitar 0.78 — tidak cukup. Base 2 +
-    eksponen 0.75 membuat 5 hero aktif turun ke sekitar 0.55, dan 8+ hero
-    menyentuh lantai 0.22 tanpa pernah menghilangkan FX.
+    5 hero aktif settle di sekitar 0.20; 10+ hero menyentuh lantai
+    0.16 tanpa pernah menghilangkan FX.
     """
-    global _FX_LOAD
+    global _FX_LOAD, _FX_TOKENS_ACTIVE
+    _FX_TOKENS_ACTIVE = True
     try:
         n_active = max(0, int(n_active or 0))
     except Exception:
@@ -609,6 +632,7 @@ def set_fx_load(n_active):
         target = max(_FX_LOAD_MIN,
                      (_FX_BASE_HEROES / n_active) ** _FX_LOAD_EXP)
     _FX_LOAD += (target - _FX_LOAD) * _FX_LOAD_SMOOTH
+    _reset_fx_tokens()
 
 
 def fx_load():
@@ -618,8 +642,58 @@ def fx_load():
 
 def reset_fx_load():
     """Kembalikan intensitas FX ke normal (ganti level / keluar match)."""
-    global _FX_LOAD
+    global _FX_LOAD, _FX_TOKENS_ACTIVE
     _FX_LOAD = 1.0
+    _FX_TOKENS_ACTIVE = False
+    _reset_fx_tokens()
+
+
+def claim_fx_particle():
+    """Ambil 1 token spawn partikel. False = anggaran frame habis."""
+    global _FX_PARTICLE_LEFT
+    if not _FX_TOKENS_ACTIVE:
+        return True
+    if _FX_PARTICLE_LEFT <= 0:
+        return False
+    _FX_PARTICLE_LEFT -= 1
+    return True
+
+
+def refund_fx_particle():
+    """Kembalikan token kalau spawn asli menolak (cap director penuh)."""
+    global _FX_PARTICLE_LEFT
+    if not _FX_TOKENS_ACTIVE:
+        return
+    _FX_PARTICLE_LEFT += 1
+
+
+def claim_fx_projectile():
+    """Ambil 1 token spawn proyektil visual FX."""
+    global _FX_PROJ_LEFT
+    if not _FX_TOKENS_ACTIVE:
+        return True
+    if _FX_PROJ_LEFT <= 0:
+        return False
+    _FX_PROJ_LEFT -= 1
+    return True
+
+
+def refund_fx_projectile():
+    global _FX_PROJ_LEFT
+    if not _FX_TOKENS_ACTIVE:
+        return
+    _FX_PROJ_LEFT += 1
+
+
+def allow_skill_projectile():
+    """True kalau proyektil skill Hero.projectiles masih boleh spawn."""
+    global _FX_SKILL_PROJ_LEFT
+    if not _FX_TOKENS_ACTIVE:
+        return True
+    if _FX_SKILL_PROJ_LEFT <= 0:
+        return False
+    _FX_SKILL_PROJ_LEFT -= 1
+    return True
 
 
 # ═══════════════════════════════════════════════════════
