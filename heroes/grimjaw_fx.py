@@ -235,6 +235,19 @@ def particle_budget():
     return float(getattr(Q, "particle_ratio", 1.0))
 
 
+def skill_detail():
+    """Detail telegraf/skill 0..1 (turunan beban FX).
+
+    Dipakai untuk mengurangi jumlah retakan, rune, dan segmen cincin
+    saat banyak hero live-FX bertarung. Hanya intensitas yang dikurangi
+    (bukan frame yang dilewati), sehingga skill tidak berkedip.
+    """
+    Q = _quality()
+    if Q is None:
+        return 1.0
+    return max(0.35, float(getattr(Q, "particle_ratio", 1.0)))
+
+
 def glow_allowed():
     Q = _quality()
     return True if Q is None else bool(getattr(Q, "glow", True))
@@ -251,7 +264,25 @@ def shake_allowed():
 # ============================================================================
 
 def _clamp_color(color):
-    """Jepit komponen warna ke 0-255 dan pastikan tuple int."""
+    """Jepit komponen warna ke 0-255 dan pastikan tuple int.
+
+    Fast path: palette sudah int valid (99% panggilan). Menghindari
+    genexpr + max/min per partikel, yang panas di profil 5 hero starter.
+    """
+    if isinstance(color, (tuple, list)):
+        n = len(color)
+        if n == 3:
+            r, g, b = color[0], color[1], color[2]
+            if (isinstance(r, int) and isinstance(g, int) and
+                    isinstance(b, int) and
+                    0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
+                return (r, g, b)
+        elif n >= 4:
+            r, g, b = color[0], color[1], color[2]
+            if (isinstance(r, int) and isinstance(g, int) and
+                    isinstance(b, int) and
+                    0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
+                return color if isinstance(color, tuple) else (r, g, b)
     return tuple(max(0, min(255, int(c))) for c in color)
 
 
@@ -715,7 +746,19 @@ class ParticleSystem:
 
     # ------------------------------------------------------------------
     def spawn(self, x, y, vx, vy, life, size, color, **kw):
-        """Spawn satu partikel.  Return partikel, atau None kalau penuh."""
+        """Spawn satu partikel.  Return partikel, atau None kalau penuh.
+
+        Gerbang anggaran juga dipasang di sini karena banyak emisi
+        kontinu (skill steady-state) tidak lewat ``burst()``. Tanpa ini
+        governor Q.particle_ratio hanya memangkas burst, sehingga paket
+        partikel 5 hero starter nyaris tidak berkurang.
+        """
+        budget = particle_budget()
+        if budget <= 0.0:
+            return None
+        if (budget < 1.0 and not getattr(self, "_in_burst", 0)
+                and random.random() >= budget):
+            return None
         if len(self._live) >= self.cap:
             return None
         p = self._acquire().spawn(x, y, vx, vy, life, size, color, **kw)
@@ -742,21 +785,25 @@ class ParticleSystem:
         if room <= 0:
             return 0
         n = min(int(count), room)
-        for i in range(n):
-            ang = direction + (random.random() - 0.5) * spread
-            spd = random.uniform(speed[0], speed[1])
-            self.spawn(
-                x, y,
-                math.cos(ang) * spd, math.sin(ang) * spd,
-                random.uniform(life[0], life[1]),
-                random.uniform(size[0], size[1]),
-                colors[i % len(colors)],
-                gravity=gravity, drag=drag, shape=shape,
-                additive=additive, fade_pow=fade_pow,
-                rotation=random.random() * math.tau,
-                rotation_speed=random.uniform(rotation_speed[0],
-                                              rotation_speed[1]),
-                back=back)
+        self._in_burst = getattr(self, "_in_burst", 0) + 1
+        try:
+            for i in range(n):
+                ang = direction + (random.random() - 0.5) * spread
+                spd = random.uniform(speed[0], speed[1])
+                self.spawn(
+                    x, y,
+                    math.cos(ang) * spd, math.sin(ang) * spd,
+                    random.uniform(life[0], life[1]),
+                    random.uniform(size[0], size[1]),
+                    colors[i % len(colors)],
+                    gravity=gravity, drag=drag, shape=shape,
+                    additive=additive, fade_pow=fade_pow,
+                    rotation=random.random() * math.tau,
+                    rotation_speed=random.uniform(rotation_speed[0],
+                                                  rotation_speed[1]),
+                    back=back)
+        finally:
+            self._in_burst -= 1
         return n
 
     # ------------------------------------------------------------------
@@ -1667,9 +1714,11 @@ class SkillFX:
             pygame.draw.ellipse(buf, (*P["fx_white"], alpha // 3),
                                 rect.inflate(-6, -3), 1)
         else:
-            for i in range(16):
-                a0 = i * math.tau / 16 + phase
-                if i % 2:
+            detail = skill_detail()
+            segs = max(8, min(16, int(16 * detail)))
+            for i in range(segs):
+                a0 = i * math.tau / segs + phase
+                if i % 2 and detail >= 0.55:
                     continue
                 x0 = cx + math.cos(a0) * radius
                 y0 = cy + math.sin(a0) * radius * 0.42
@@ -1683,15 +1732,18 @@ class SkillFX:
         """Retakan tanah bergaris (bukan lingkaran) — deterministik."""
         if alpha <= 6:
             return
-        for i in range(5):
+        detail = skill_detail()
+        n_cracks = max(2, min(5, int(round(5 * detail))))
+        for i in range(n_cracks):
             base = _hash01(self.seed + i * 31) * math.tau
             length = R * (0.55 + _hash01(self.seed + i * 77) * 0.5)
             px, py = self.x, self.y
             ang = base
-            for seg in range(4):
+            segs = max(2, min(4, int(round(4 * detail))))
+            for seg in range(segs):
                 ang += (_hash01(self.seed + i * 13 + seg) - 0.5) * 0.9
-                nx = px + math.cos(ang) * (length / 4)
-                ny = py + math.sin(ang) * (length / 4) * 0.42
+                nx = px + math.cos(ang) * (length / segs)
+                ny = py + math.sin(ang) * (length / segs) * 0.42
                 pygame.draw.line(surface, _clamp_color(color),
                                  (int(px), int(py)), (int(nx), int(ny)),
                                  max(1, 3 - seg))
@@ -1754,7 +1806,9 @@ class SkillFX:
         """Deretan chevron yang meluncur ke depan (telegraph cone E)."""
         f = 1.0 if getattr(self, "_facing", 0) >= 0 else -1
         col = self.col_b
-        for i in range(4):
+        detail = skill_detail()
+        n_chev = max(2, min(4, int(round(4 * detail))))
+        for i in range(n_chev):
             prog = (t * 1.6 + i * 0.25) % 1.0
             dx = int(f * (14 + prog * self.radius))
             dy = -8 - int((1.0 - prog) * 10)
@@ -1773,6 +1827,8 @@ class SkillFX:
         """Rune diamond mengorbit — bukan lingkaran kontinu."""
         if alpha <= 5:
             return
+        detail = skill_detail()
+        marks = max(3, int(round(marks * (0.4 + 0.6 * detail))))
         for i in range(marks):
             ang = rot + i * math.tau / marks
             px = cx + math.cos(ang) * radius

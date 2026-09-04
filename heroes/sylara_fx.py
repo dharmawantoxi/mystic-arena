@@ -269,6 +269,19 @@ def particle_budget():
     return float(getattr(Q, "particle_ratio", 1.0))
 
 
+def skill_detail():
+    """Detail telegraf/skill 0..1 (turunan beban FX).
+
+    Dipakai untuk mengurangi jumlah chevron, bilah rumput, dan irisan
+    cincin saat banyak hero live-FX bertarung. Hanya intensitas yang
+    dikurangi (bukan frame yang dilewati), sehingga skill tidak berkedip.
+    """
+    Q = _quality()
+    if Q is None:
+        return 1.0
+    return max(0.35, float(getattr(Q, "particle_ratio", 1.0)))
+
+
 def glow_allowed():
     Q = _quality()
     return True if Q is None else bool(getattr(Q, "glow", True))
@@ -285,7 +298,26 @@ def shake_allowed():
 # ============================================================================
 
 def _clamp_color(color):
-    """Jepit komponen warna ke 0-255 dan pastikan tuple int."""
+    """Jepit komponen warna ke 0-255 dan pastikan tuple int.
+
+    Fast path: palette sudah int valid (99% panggilan). Menghindari
+    genexpr + max/min per partikel, yang panas di profil 5 hero starter.
+    """
+    if isinstance(color, (tuple, list)):
+        n = len(color)
+        if n == 3:
+            r, g, b = color[0], color[1], color[2]
+            if (isinstance(r, int) and isinstance(g, int) and
+                    isinstance(b, int) and
+                    0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
+                return (r, g, b)
+        elif n == 4:
+            r, g, b, a = color
+            if (isinstance(r, int) and isinstance(g, int) and
+                    isinstance(b, int) and isinstance(a, int) and
+                    0 <= r <= 255 and 0 <= g <= 255 and
+                    0 <= b <= 255 and 0 <= a <= 255):
+                return (r, g, b, a)
     return tuple(max(0, min(255, int(c))) for c in color)
 
 
@@ -962,7 +994,17 @@ class ParticleSystem:
 
     # ------------------------------------------------------------------
     def spawn(self, x, y, vx, vy, life, size, color, **kw):
-        """Spawn satu partikel.  Return partikel, atau None kalau penuh."""
+        """Spawn satu partikel.  Return partikel, atau None kalau penuh.
+
+        Gerbang anggaran dipasang di sini supaya emisi kontinu (bukan
+        hanya burst) ikut turun saat 5 hero starter berbarengan.
+        """
+        budget = particle_budget()
+        if budget <= 0.0:
+            return None
+        if (budget < 1.0 and not getattr(self, "_in_burst", 0)
+                and random.random() >= budget):
+            return None
         if len(self._live) >= self.cap:
             return None
         p = self._acquire().spawn(x, y, vx, vy, life, size, color, **kw)
@@ -992,22 +1034,26 @@ class ParticleSystem:
             return 0
         count = min(count, room)
         n = 0
-        for i in range(int(count)):
-            ang = direction + (random.random() - 0.5) * spread
-            spd = random.uniform(speed[0], speed[1])
-            rs = random.uniform(rotation_speed[0], rotation_speed[1]) \
-                if rotation_speed[1] != rotation_speed[0] else 0.0
-            if self.spawn(x, y,
-                          math.cos(ang) * spd, math.sin(ang) * spd,
-                          random.uniform(life[0], life[1]),
-                          random.uniform(size[0], size[1]),
-                          colors[i % len(colors)],
-                          gravity=gravity, drag=drag, shape=shape,
-                          additive=additive, fade_pow=fade_pow,
-                          back=back, swirl=swirl, flutter=flutter,
-                          rotation=random.random() * math.tau,
-                          rotation_speed=rs):
-                n += 1
+        self._in_burst = getattr(self, "_in_burst", 0) + 1
+        try:
+            for i in range(int(count)):
+                ang = direction + (random.random() - 0.5) * spread
+                spd = random.uniform(speed[0], speed[1])
+                rs = random.uniform(rotation_speed[0], rotation_speed[1]) \
+                    if rotation_speed[1] != rotation_speed[0] else 0.0
+                if self.spawn(x, y,
+                              math.cos(ang) * spd, math.sin(ang) * spd,
+                              random.uniform(life[0], life[1]),
+                              random.uniform(size[0], size[1]),
+                              colors[i % len(colors)],
+                              gravity=gravity, drag=drag, shape=shape,
+                              additive=additive, fade_pow=fade_pow,
+                              back=back, swirl=swirl, flutter=flutter,
+                              rotation=random.random() * math.tau,
+                              rotation_speed=rs):
+                    n += 1
+        finally:
+            self._in_burst -= 1
         return n
 
     # ------------------------------------------------------------------
@@ -1051,27 +1097,31 @@ class ParticleSystem:
             return 0
         colors = colors or (P["fx_mid"], P["leaf_gold"], P["fx_light"])
         n = 0
-        for i in range(int(count)):
-            ang = (i / float(count)) * math.tau + random.uniform(-0.12, 0.12)
-            spd = random.uniform(speed[0], speed[1])
-            dx, dy = math.cos(ang) * spd, math.sin(ang) * spd * squash
-            if inward:
-                px = x + math.cos(ang) * radius
-                py = y + math.sin(ang) * radius * squash
-                dx, dy = -dx, -dy
-            else:
-                px = x + math.cos(ang) * radius * 0.35
-                py = y + math.sin(ang) * radius * squash * 0.35
-            if self.spawn(px, py, dx, dy,
-                          random.uniform(life[0], life[1]),
-                          random.uniform(size[0], size[1]),
-                          colors[i % len(colors)],
-                          drag=1.8, shape=shape,
-                          color_end=P["fx_deep"],
-                          rotation=random.random() * math.tau,
-                          rotation_speed=random.uniform(-7, 7),
-                          swirl=swirl, back=back):
-                n += 1
+        self._in_burst = getattr(self, "_in_burst", 0) + 1
+        try:
+            for i in range(int(count)):
+                ang = (i / float(count)) * math.tau + random.uniform(-0.12, 0.12)
+                spd = random.uniform(speed[0], speed[1])
+                dx, dy = math.cos(ang) * spd, math.sin(ang) * spd * squash
+                if inward:
+                    px = x + math.cos(ang) * radius
+                    py = y + math.sin(ang) * radius * squash
+                    dx, dy = -dx, -dy
+                else:
+                    px = x + math.cos(ang) * radius * 0.35
+                    py = y + math.sin(ang) * radius * squash * 0.35
+                if self.spawn(px, py, dx, dy,
+                              random.uniform(life[0], life[1]),
+                              random.uniform(size[0], size[1]),
+                              colors[i % len(colors)],
+                              drag=1.8, shape=shape,
+                              color_end=P["fx_deep"],
+                              rotation=random.random() * math.tau,
+                              rotation_speed=random.uniform(-7, 7),
+                              swirl=swirl, back=back):
+                    n += 1
+        finally:
+            self._in_burst -= 1
         return n
 
     # ------------------------------------------------------------------
@@ -2030,13 +2080,15 @@ class SkillFX:
         gy = int(self.y + 30)
         # koridor tembak: dua garis pandu + chevron berjalan
         length = int(self.radius)
+        detail = skill_detail()
         for side in (-1, 1):
             pygame.draw.line(
                 surface, (*P["fx_dark"], a),
                 (int(self.x), gy + side * 8),
                 (int(self.x + f * length), gy + side * 4), 1)
-        for i in range(5):
-            t = ((p * 1.6 + i / 5.0) % 1.0)
+        n_chev = max(3, int(round(5 * detail)))
+        for i in range(n_chev):
+            t = ((p * 1.6 + i / n_chev) % 1.0)
             cx = int(self.x + f * length * t)
             ch = chevron_surface(5, P["fx_light"], 2)
             if f < 0:
@@ -2057,14 +2109,17 @@ class SkillFX:
         if a <= 6:
             return
         gy = int(self.y + 26)
+        detail = skill_detail()
+        blades = max(10, int(round(20 * detail)))
         halo = grass_halo_surface(int(self.radius), P["fx_mid"],
-                                  blades=20, squash=0.42)
+                                  blades=blades, squash=0.42)
         halo.set_alpha(a)
         surface.blit(halo, (int(self.x) - halo.get_width() // 2,
                             gy - halo.get_height() // 2))
         halo.set_alpha(255)
+        segs = max(6, int(round(10 * detail)))
         dr = dashed_ring_surface(int(self.radius * 0.72), 2, P["fx_light"],
-                                 segments=10, span=0.34,
+                                 segments=segs, span=0.34,
                                  rot_step=p * 400.0)
         dr.set_alpha(int(a * 0.8))
         surface.blit(dr, (int(self.x) - dr.get_width() // 2,
@@ -2097,7 +2152,8 @@ class SkillFX:
         surface.blit(gl, (int(self.x) - gl.get_width() // 2,
                           gy - gl.get_height() // 2))
         gl.set_alpha(255)
-        dr = dashed_ring_surface(r, 2, P["leaf_gold"], segments=8,
+        segs = max(5, int(round(8 * skill_detail())))
+        dr = dashed_ring_surface(r, 2, P["leaf_gold"], segments=segs,
                                  span=0.3, rot_step=-p * 520.0)
         dr.set_alpha(a)
         surface.blit(dr, (int(self.x) - dr.get_width() // 2,
@@ -2126,9 +2182,11 @@ class SkillFX:
         a = int(220 * (1.0 - p) ** 0.6)
         if a <= 6:
             return
-        # kipas pita angin dari nock
-        for i in range(4):
-            ang = (0.0 if f > 0 else math.pi) + (i - 1.5) * 0.16
+        # kipas pita angin dari nock (detail ikut beban FX)
+        detail = skill_detail()
+        n_fans = max(2, int(round(4 * detail)))
+        for i in range(n_fans):
+            ang = (0.0 if f > 0 else math.pi) + (i - (n_fans - 1) * 0.5) * 0.16
             gs = gust_surface(16 + i * 5, P["fx_light"], 0.55, 2)
             gs = rotated_cached(("qfan", i), gs,
                                 -int(math.degrees(ang)))
@@ -2138,8 +2196,9 @@ class SkillFX:
                          special_flags=pygame.BLEND_RGB_ADD)
             gs.set_alpha(255)
         # spiral fletching mengorbit nock
-        for i in range(3):
-            aa = p * 9.0 + i * math.tau / 3
+        n_feats = max(2, int(round(3 * detail)))
+        for i in range(n_feats):
+            aa = p * 9.0 + i * math.tau / n_feats
             fx = nx + int(math.cos(aa) * 15)
             fy = ny + int(math.sin(aa) * 11)
             ft = feather_surface(4, P["leaf_gold"])

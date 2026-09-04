@@ -144,6 +144,62 @@ saat governor aktif.
 Angka bervariasi antar run karena ada komponen acak; yang penting tren
 turun pada modul yang sebelumnya tidak di-scale.
 
+## Ronde 2: 5 hero starter (kasus yang dikeluhkan pemain)
+
+Starter = `kaizen`, `grimjaw`, `sylara`, `vex`, `zephyr` (pasangan
+populer yang biasa di-letakkan barengan). Benchmark skenario terburuk:
+5 hero sejenis, semua skill (q/w/e/r) + impact aktif bersamaan.
+
+### Akar masalah ronde 2
+
+1. **Governor lama tidak cukup agresif.** Dengan `_FX_BASE_HEROES=3`,
+   `_FX_LOAD_EXP=0.5`, 5 hero aktif hanya turun ke ~0.78 — hampir tidak
+   berpengaruh. Sekarang `BASE=1.5`, `EXP=1.1`, `MIN=0.20` membuat 5 hero
+   aktif settle di `fx_load ≈ 0.27`, sehingga partikel dan detail skill
+   ikut turun nyata.
+2. **Emisi kontinu tidak lewat `burst()`.** Banyak sumber partikel
+   (aura, trail, idle skill) memanggil `ParticleSystem.spawn()` langsung,
+   sehingga meski `burst()` sudah memakai anggaran, jumlah partikel tetap
+   tinggi. Sekarang `spawn()` punya gerbang probabilitas di semua modul
+   starter (dan modul mana pun yang memakai `_in_burst`).
+3. **Detail skill tidak diskalakan.** Cincin putus-putus, retakan tanah,
+   dan rune menggambar jumlah segmen tetap per hero. Sekarang jumlah
+   segmen/retakan/chevron dikalikan `skill_detail()` (turunan
+   `Quality.particle_ratio`) — intensitas dikurangi, tidak ada frame
+   skill yang dilewati.
+4. **`_clamp_color()` panas.** Genexpr + `max/min` dipanggil ribuan kali
+   per frame di 5 hero. Fast path untuk warna tuple int valid memangkas
+   sebagian besar biaya warna.
+
+### Hasil 5 hero starter (skill-matic, 5 unit per modul)
+
+`fx_load` di-settle lewat governor (≈0.27), `quality=high`:
+
+| Modul | ms (5 unit) | ms/hero | partikel |
+|---|---:|---:|---:|
+| kaizen  | 1.89 | 0.38 | 26 |
+| grimjaw | 4.40 | 0.88 | 119 |
+| sylara  | 2.71 | 0.54 | 27 |
+| vex     | 1.34 | 0.27 | 19 |
+| zephyr  | 2.64 | 0.53 | 75 |
+| **total** | **12.98** | 2.60 | — |
+
+Sebelum perbaikan ronde 2 total skenario yang sama sekitar **20 ms/frame**
+pada PC; jadi total turun ~35%. Di HP dengan multiplier ~2x, angka ini
+berada di sekitar 26 ms/frame — sudah masuk wilayah 30–40 FPS/30 FPS yang
+jauh lebih stabil dibandingkan >40 ms sebelumnya.
+
+### Yang diubah di ronde 2
+
+- `mobile/perf.py`: kurva governor lebih agresif (`BASE=1.5`, `EXP=1.1`,
+  `MIN=0.20`, `SMOOTH=0.35`).
+- `zephyr_fx.py`, `grimjaw_fx.py`, `kaizen_fx.py`, `sylara_fx.py`,
+  `vex_fx.py`: `particle_budget()`/`skill_detail()` + gerbang `spawn()`
+  + detail skill dinamis + `_clamp_color()` fast path.
+- `burst/stream/ring` memakai bendera `_in_burst` supaya anggaran hanya
+  dihitung sekali (tidak double-scale) — ini menjaga kontrak tes
+  "burst menghormati anggaran kualitas".
+
 ## Rekomendasi berikutnya
 
 1. **Jalankan `tools/bench_fx_heroes.py` di HP asli** (atau
@@ -161,3 +217,6 @@ turun pada modul yang sebelumnya tidak di-scale.
    partikel masih belum cukup, tambahkan cache premultiply alpha (mis.
    `(ukuran, warna_kuantisasi, bucket_alpha)`) agar `blit_add` tidak perlu
    menyalin surface tiap frame.
+6. **Kalibrasi governor di HP asli**: konstanta baru ini sengaja lebih
+   agresif untuk 5 hero. Sebelum naik lagi, ukur dulu di perangkat target
+   agar tidak memangkas visual secara berlebihan di skenario 1–2 hero.

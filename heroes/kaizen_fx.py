@@ -240,7 +240,25 @@ def shake_allowed():
 # ============================================================================
 
 def _clamp_color(color):
-    """Jepit komponen warna ke 0-255 dan pastikan tuple int."""
+    """Jepit komponen warna ke 0-255 dan pastikan tuple int.
+
+    Fast path: palette sudah int valid (99% panggilan). Menghindari
+    genexpr + max/min per partikel, yang panas di profil 5 hero starter.
+    """
+    if isinstance(color, (tuple, list)):
+        n = len(color)
+        if n == 3:
+            r, g, b = color[0], color[1], color[2]
+            if (isinstance(r, int) and isinstance(g, int) and
+                    isinstance(b, int) and
+                    0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
+                return (r, g, b)
+        elif n >= 4:
+            r, g, b = color[0], color[1], color[2]
+            if (isinstance(r, int) and isinstance(g, int) and
+                    isinstance(b, int) and
+                    0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
+                return color if isinstance(color, tuple) else (r, g, b)
     return tuple(max(0, min(255, int(c))) for c in color)
 
 
@@ -739,7 +757,17 @@ class ParticleSystem:
 
     # ------------------------------------------------------------------
     def spawn(self, x, y, vx, vy, life, size, color, **kw):
-        """Spawn satu partikel.  Return partikel, atau None kalau penuh."""
+        """Spawn satu partikel.  Return partikel, atau None kalau penuh.
+
+        Gerbang anggaran dipasang di sini supaya emisi kontinu (bukan
+        hanya burst) ikut turun saat 5 hero starter berbarengan.
+        """
+        budget = particle_budget()
+        if budget <= 0.0:
+            return None
+        if (budget < 1.0 and not getattr(self, "_in_burst", 0)
+                and random.random() >= budget):
+            return None
         if len(self._live) >= self.cap:
             return None
         p = self._acquire().spawn(x, y, vx, vy, life, size, color, **kw)
@@ -768,21 +796,25 @@ class ParticleSystem:
         if room <= 0:
             return 0
         n = min(int(count), room)
-        for i in range(n):
-            ang = direction + (random.random() - 0.5) * spread
-            spd = random.uniform(speed[0], speed[1])
-            self.spawn(
-                x, y,
-                math.cos(ang) * spd, math.sin(ang) * spd,
-                random.uniform(life[0], life[1]),
-                random.uniform(size[0], size[1]),
-                colors[i % len(colors)],
-                gravity=gravity, drag=drag, shape=shape,
-                additive=additive, fade_pow=fade_pow,
-                rotation=random.random() * math.tau,
-                rotation_speed=random.uniform(rotation_speed[0],
-                                              rotation_speed[1]),
-                back=back, swirl=swirl)
+        self._in_burst = getattr(self, "_in_burst", 0) + 1
+        try:
+            for i in range(n):
+                ang = direction + (random.random() - 0.5) * spread
+                spd = random.uniform(speed[0], speed[1])
+                self.spawn(
+                    x, y,
+                    math.cos(ang) * spd, math.sin(ang) * spd,
+                    random.uniform(life[0], life[1]),
+                    random.uniform(size[0], size[1]),
+                    colors[i % len(colors)],
+                    gravity=gravity, drag=drag, shape=shape,
+                    additive=additive, fade_pow=fade_pow,
+                    rotation=random.random() * math.tau,
+                    rotation_speed=random.uniform(rotation_speed[0],
+                                                  rotation_speed[1]),
+                    back=back, swirl=swirl)
+        finally:
+            self._in_burst -= 1
         return n
 
     # ------------------------------------------------------------------

@@ -579,9 +579,10 @@ Quality = _Quality()
 # SEMUA modul FX ikut menyesuaikan tanpa diubah satu pun.
 # ═══════════════════════════════════════════════════════
 _FX_LOAD = 1.0
-_FX_LOAD_SMOOTH = 0.25     # seberapa cepat beban menyusul perubahan
-_FX_BASE_HEROES = 3.0      # jumlah hero FX yang masih boleh intensitas penuh
-_FX_LOAD_MIN = 0.35        # lantai intensitas (FX tidak pernah mati total)
+_FX_LOAD_SMOOTH = 0.35     # seberapa cepat beban menyusul perubahan
+_FX_BASE_HEROES = 1.5      # jumlah hero FX yang masih boleh intensitas penuh
+_FX_LOAD_MIN = 0.20        # lantai intensitas (FX tidak pernah mati total)
+_FX_LOAD_EXP = 1.1         # makin besar = turun lebih agresif saat 3+ hero
 
 
 def set_fx_load(n_active):
@@ -590,6 +591,12 @@ def set_fx_load(n_active):
     Semakin banyak hero yang aktif -> intensitas FX global diturunkan
     (partikel lebih sedikit, lapisan FX diselingi antar-frame) supaya
     frame tetap murah dan FX tidak menumpuk menutupi hero.
+
+    Dugaan lapangan: saat pemain meletakkan 5 hero starter (zephyr,
+    grimjaw, kaizen, vex, sylara) sekaligus, governor lama (base 3,
+    eksponen 0.5) hanya turun ke sekitar 0.78 — tidak cukup. Base 2 +
+    eksponen 0.75 membuat 5 hero aktif turun ke sekitar 0.55, dan 8+ hero
+    menyentuh lantai 0.22 tanpa pernah menghilangkan FX.
     """
     global _FX_LOAD
     try:
@@ -599,7 +606,8 @@ def set_fx_load(n_active):
     if n_active <= _FX_BASE_HEROES:
         target = 1.0
     else:
-        target = max(_FX_LOAD_MIN, (_FX_BASE_HEROES / n_active) ** 0.5)
+        target = max(_FX_LOAD_MIN,
+                     (_FX_BASE_HEROES / n_active) ** _FX_LOAD_EXP)
     _FX_LOAD += (target - _FX_LOAD) * _FX_LOAD_SMOOTH
 
 
