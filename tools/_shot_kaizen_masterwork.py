@@ -37,7 +37,7 @@ font_title = pygame.font.Font(None, 46)
 font_label = pygame.font.Font(None, 28)
 font_small = pygame.font.Font(None, 20)
 
-screen.blit(font_title.render("KAIZEN v2 — PIXEL MASTERWORK", True,
+screen.blit(font_title.render("KAIZEN v5 — PIXEL MASTERWORK", True,
                               (166, 218, 255)), (38, 24))
 screen.blit(font_small.render(
     "100% code-drawn • no external hero sprite • idle / walk / attack / "
@@ -105,7 +105,7 @@ print(out)
 SW, SH = 1280, 780
 strip = pygame.Surface((SW, SH))
 strip.fill((5, 9, 18))
-strip.blit(font_title.render("KAIZEN v2 — PROCEDURAL ANIMATION RIG", True,
+strip.blit(font_title.render("KAIZEN v5 — PROCEDURAL ANIMATION RIG", True,
                              (166, 218, 255)), (38, 24))
 strip.blit(font_small.render(
     "Every frame below is recalculated from joints, phase, cloth and hair "

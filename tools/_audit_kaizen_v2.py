@@ -233,7 +233,7 @@ font_small = pygame.font.Font(None, 21)
 W, H = 1400, 860
 sheet = pygame.Surface((W, H))
 sheet.fill((6, 10, 20))
-sheet.blit(font_title.render("KAIZEN v2 - PIXEL MASTERWORK (100% prosedural)",
+sheet.blit(font_title.render("KAIZEN v5 - PIXEL MASTERWORK (100% prosedural)",
                              True, (150, 210, 255)), (36, 22))
 sheet.blit(font_small.render(
     "rig 1.5x native • ramp hue-shift • selout • tuft silhouette • "
@@ -278,7 +278,7 @@ print(out1)
 SW, SH = 1400, 900
 strip = pygame.Surface((SW, SH))
 strip.fill((6, 10, 20))
-strip.blit(font_title.render("KAIZEN v2 - PROSEDURAL ANIMATION RIG", True,
+strip.blit(font_title.render("KAIZEN v5 - PROSEDURAL ANIMATION RIG", True,
                              (150, 210, 255)), (36, 22))
 strip.blit(font_small.render(
     "setiap frame dihitung ulang dari sendi + fase + inersia kain/rambut",
@@ -345,7 +345,7 @@ KW, KH = 1500, 1160
 skills_sheet = pygame.Surface((KW, KH))
 skills_sheet.fill((6, 10, 20))
 skills_sheet.blit(font_title.render(
-    "KAIZEN v2 - SKILL FX MEWAH (world-space, 100% prosedural)", True,
+    "KAIZEN v5 - SKILL FX MEWAH (world-space, 100% prosedural)", True,
     (150, 210, 255)), (36, 22))
 skills_sheet.blit(font_small.render(
     "Q Steel Wind • W Wind Wall • E Sweep • R Tornado — "
