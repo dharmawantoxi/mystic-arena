@@ -1335,7 +1335,13 @@ class _NS_gornak:
         # memanggil renderer, dan _finish_hd_sprite sudah menambah
         # rim/terminator -> pass di sini dilewati (lihat _draw_gnk_rig_at).
         hero_lane = hasattr(boss, "_render_scale")
-        NS._HERO_LANE.v = hero_lane
+        # Cache sprite BOSS (heroes.render_boss) juga men-set
+        # _render_scale — tapi pada skala NATIF 1.0 dan TANPA pass
+        # heroes._finish_hd_sprite. Penanda _boss_native_cache membuat
+        # pass cahaya renderer tetap jalan, jadi tampilan boss tidak
+        # berubah walau badannya sekarang di-cache seperti hero.
+        NS._HERO_LANE.v = hero_lane and not getattr(
+            boss, "_boss_native_cache", False)
         NS._update_gnk_attack_anim(boss)
         action, phase, ap = NS._resolve_pose(boss, NS._detect_moving(boss))
         boss._gnk_pose_action = action
@@ -3617,7 +3623,12 @@ class _NS_morgath:
         # Jalur hero (lane): heroes/__init__ men-set _render_scale, dan
         # _finish_hd_sprite sudah menambah rim/terminator -> pass cahaya
         # di _draw_mor_rig_at dilewati (supaya tidak dobel).
-        _NS_morgath._MOR_LANE.v = hasattr(boss, "_render_scale")
+        # Pengecualian: cache sprite BOSS (heroes.render_boss) men-set
+        # _render_scale pada skala native 1.0 TANPA HD pass, jadi pass
+        # cahaya di sini harus tetap jalan (_boss_native_cache).
+        _NS_morgath._MOR_LANE.v = (
+            hasattr(boss, "_render_scale")
+            and not getattr(boss, "_boss_native_cache", False))
         _NS_morgath._MOR_K.v = _NS_morgath.SCALE
         _NS_morgath._MOR_SKILL.v = getattr(boss, "active_skill", None)
         _NS_morgath._update_mor_attack_anim(boss)

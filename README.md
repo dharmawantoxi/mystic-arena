@@ -783,6 +783,30 @@ buildozer android release      # AAB untuk Play Store
 
 Rinciannya di [docs/PANDUAN_ANDROID.md § 3](docs/PANDUAN_ANDROID.md).
 
+## Mini boss & true boss selancar hero unlock
+
+Karakter yang sama dulu terasa kaku sebagai mini/true boss tapi mulus sebagai
+hero unlock. Tiga penyebabnya sudah diperbaiki:
+
+| | Sebelum | Sesudah |
+|---|---|---|
+| Draw boss per frame | renderer prosedural penuh, median 2,22 ms (maks 7,04 ms) | **cache sprite seperti hero**, 0,06–1,00 ms |
+| Selisih frame adegan (boss vs hero) | +0,90…+2,41 ms/frame (1,29–1,91×) | **−0,19…+0,27 ms/frame (0,92–1,11×)** |
+| Gerak di waypoint lane | 5–6 frame stall per 120 frame | **0 stall** (432 jalur boss) |
+| Jam animasi (`pulse`) | 0,05/frame (setengah hero) | **0,1/frame = hero** |
+| Arah hadap saat ayunan | bisa berbalik di tengah swing | **terkunci** (paritas hero) |
+
+Tampilan tidak berubah: 12 boss dibandingkan piksel-demi-piksel antara jalur
+lama dan baru, selisih **0,000**. Pose skill 9 boss yang FX-nya melebar jauh
+sengaja tetap digambar langsung supaya tidak ada FX terpotong.
+Rincian diagnosa, angka, dan katup pengaman:
+[docs/BOSS_HERO_SMOOTH_PARITY.md](docs/BOSS_HERO_SMOOTH_PARITY.md).
+
+```bash
+python tools/test_boss_hero_smooth_parity.py --all   # 14 pemeriksaan, 216 boss
+MYSTIC_BOSS_CACHE=0 python main.py                   # bandingkan tanpa cache boss
+```
+
 ## Perkakas
 
 ```bash
@@ -790,6 +814,9 @@ python tools/bench_mobile.py       # benchmark adegan intro + uji gesture/HUD
 python tools/bench_heavy.py        # benchmark gameplay (--quality low/high)
 python tools/bench_minions.py      # skala jumlah minion
 python tools/test_spritecache.py   # uji kebenaran cache sprite (piksel)
+python tools/test_boss_hero_smooth_parity.py --all  # boss selancar hero (216 boss)
+python tools/_diag_scene_boss_vs_hero.py 1 gornak   # frame: boss vs hero unlock
+python tools/_diag_boss_scene_smoke.py 1:gornak     # smoke test loop game nyata
 python tools/gen_boss_index.py     # regenerasi indeks boss setelah tambah boss
 python tools/_shot_ui.py           # screenshot headless semua layar menu
 python tools/_shot_game_ui.py      # screenshot headless UI in-game
