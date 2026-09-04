@@ -79,7 +79,7 @@ BOSS_LABEL_TOP = {
     "kaineroth": 72,
     "kaelthorn": 35,
     "kenshiro": 53,
-    "khalros": 57,
+    "khalros": 72,   # rig v2: puncak tanduk/bilah diukur -68 px, +4 aman
     "khazan": 34,
     "krobellus": 62,   # rig The Death Prophet: puncak rig 56 px (diukur), + aman
     "krognarr": 59,
