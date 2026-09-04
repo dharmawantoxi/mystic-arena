@@ -10,6 +10,54 @@ from settings import *
 from bosses.boss_data import get_all_boss_types
 from _render import get_font
 
+# ═══════════════════════════════════════════════════════
+# CACHE SURFACE AURA BOSS (berlaku global: SEMUA mini & true boss)
+# ═══════════════════════════════════════════════════════
+# Boss.draw() menggambar aura ability, aura enrage/frenzy, dan aura
+# true boss dari nol SETIAP frame: satu Surface baru (sampai ±330² px)
+# plus belasan lingkaran konsentris, lalu langsung dibuang. Untuk true
+# boss dan boss enraged lapisan ini menyala PERMANEN, jadi alokasi +
+# fill + blit-nya memakan budget frame di HP tepat saat pertarungan
+# boss seharusnya paling lancar.
+#
+# Bentuk aura murni fungsi (radius, fase denyut, warna): denyut sinus
+# dikuantisasi ke beberapa langkah dan surface-nya dipakai ulang,
+# lintas frame DAN lintas boss. Piksel hasil identik; yang hilang
+# hanya pekerjaan berulangnya. Anggaran piksel total menjaga memori.
+_BOSS_AURA_CACHE = {}
+_BOSS_AURA_PIXELS = [0]
+_BOSS_AURA_PIXEL_BUDGET = 1500 * 1000    # ~6 MB @4 B/px, LRU
+
+
+def _aura_surface(key, builder):
+    """Ambil surface aura dari cache (bangun sekali per kunci unik)."""
+    ent = _BOSS_AURA_CACHE.pop(key, None)
+    if ent is not None:
+        _BOSS_AURA_CACHE[key] = ent          # LRU: pindah ke belakang
+        return ent
+    surf = builder()
+    px = surf.get_width() * surf.get_height()
+    sisa = _BOSS_AURA_PIXEL_BUDGET - px
+    while _BOSS_AURA_CACHE and _BOSS_AURA_PIXELS[0] > sisa:
+        _k, _v = next(iter(_BOSS_AURA_CACHE.items()))
+        _BOSS_AURA_PIXELS[0] -= _v.get_width() * _v.get_height()
+        del _BOSS_AURA_CACHE[_k]
+    if _BOSS_AURA_PIXELS[0] <= sisa:
+        _BOSS_AURA_CACHE[key] = surf
+        _BOSS_AURA_PIXELS[0] += px
+    return surf
+
+
+# Fase denyut aura saat diraster: 12 langkah per siklus sinus cukup
+# mulus (radius denyut berubah ~1 px per langkah — di bawah ketebalan
+# garis auranya sendiri).
+_AURA_PHASES = 12
+
+
+def _aura_phase(sin_value):
+    """Kuantisasi output sinus [-1..1] ke ember fase aura."""
+    return int((sin_value + 1.0) * 0.5 * (_AURA_PHASES - 1) + 0.5)
+
 
 # ═══════════════════════════════════════════════════════
 # OFFSET LABEL NAMA BOSS
@@ -3459,7 +3507,6 @@ class Boss(TowerDebuffMixin):
 
         nearby = sum(1 for e in enemies
                      if math.hypot(e.x - self.x, e.y - self.y) <= 220)
-        hp_ratio = self.hp / self.max_hp
 
         if nearby >= 4 and self.r_timer == 0:
             self._xerathis_r(enemies);
@@ -4398,7 +4445,6 @@ class Boss(TowerDebuffMixin):
         if self.active_skill_timer > 0:
             self.active_skill_timer -= 1
             if self.active_skill_timer <= 0: self.active_skill = None
-        stats = self._get_boss_stats()
         nearby = sum(1 for e in enemies if math.hypot(e.x - self.x, e.y - self.y) <= 200)
         hp_ratio = self.hp / self.max_hp
         if hp_ratio < 0.4 and nearby >= 2 and self.r_timer == 0:
@@ -5865,10 +5911,6 @@ class Boss(TowerDebuffMixin):
         except Exception:
             pass
 
-    def take_damage_with_defense(self, damage, from_team):
-        """Override take_damage untuk defense boost"""
-        self.take_damage(damage, from_team)
-
     def _get_boss_stats(self):
         """Helper - get stats dari boss_data.
 
@@ -6086,20 +6128,27 @@ class Boss(TowerDebuffMixin):
             self._draw_entrance(surface, x, y, max_entrance)
             return
 
-        # ═══ ABILITY AURA ═══
+        # ═══ ABILITY AURA (surface di-cache, paritas aura enrage) ═══
         if self.ability_active:
             pulse = math.sin(self.anim_time * 0.2) * 0.3 + 0.7
             aura_r = int(self.ability_range * pulse)
-            aura_surf = pygame.Surface(
-                (aura_r * 2, aura_r * 2), pygame.SRCALPHA)
-            for ar in range(aura_r, aura_r - 20, -3):
-                alpha = max(0, min(255,
-                                   int((aura_r - ar) * 8 * pulse)))
-                if alpha > 0:
-                    pygame.draw.circle(aura_surf,
-                                       (*self.entrance_color, alpha),
-                                       (aura_r, aura_r), ar)
-            surface.blit(aura_surf, (x - aura_r, y - aura_r))
+            key = ("abl", tuple(self.entrance_color), aura_r,
+                   _aura_phase(math.sin(self.anim_time * 0.2)))
+
+            def _buat_ability_aura():
+                aura_surf = pygame.Surface(
+                    (aura_r * 2, aura_r * 2), pygame.SRCALPHA)
+                for ar in range(aura_r, aura_r - 20, -3):
+                    alpha = max(0, min(255,
+                                       int((aura_r - ar) * 8 * pulse)))
+                    if alpha > 0:
+                        pygame.draw.circle(aura_surf,
+                                           (*self.entrance_color, alpha),
+                                           (aura_r, aura_r), ar)
+                return aura_surf
+
+            surface.blit(_aura_surface(key, _buat_ability_aura),
+                         (x - aura_r, y - aura_r))
 
         # ═══ ENRAGE / FRENZY AURA ═══
         if getattr(self, 'is_enraged', False):
@@ -6219,21 +6268,28 @@ class Boss(TowerDebuffMixin):
         surface.blit(name_text, name_rect)
 
     def _draw_enrage_aura(self, surface, x, y):
-        """Enrage / Frenzy visual aura"""
+        """Enrage / Frenzy visual aura (surface di-cache — lihat
+        _BOSS_AURA_CACHE; dulu dialokasi & digambar ulang tiap frame,
+        padahal aura enrage menyala permanen di sepertiga akhir duel)."""
         pulse = math.sin(getattr(self, 'enrage_pulse', 0.0)) * 0.3 + 0.7
         aura_r = self.radius + int(14 * pulse)
-        aura_surf = pygame.Surface(
-            (aura_r * 2 + 10, aura_r * 2 + 10), pygame.SRCALPHA)
         center = aura_r + 5
         color = (255, 50, 40) if self.boss_class == "true" else (255, 140, 30)
+        key = ("enr", self.boss_class, aura_r,
+               _aura_phase(math.sin(getattr(self, 'enrage_pulse', 0.0))))
 
-        for r_off in range(aura_r, max(5, aura_r - 18), -3):
-            alpha = max(0, min(200, int((aura_r - r_off) * 12 * pulse)))
-            if alpha > 0:
-                pygame.draw.circle(aura_surf, (*color, alpha),
-                                   (center, center), r_off, 2)
+        def _buat():
+            aura_surf = pygame.Surface(
+                (aura_r * 2 + 10, aura_r * 2 + 10), pygame.SRCALPHA)
+            for r_off in range(aura_r, max(5, aura_r - 18), -3):
+                alpha = max(0, min(200,
+                                   int((aura_r - r_off) * 12 * pulse)))
+                if alpha > 0:
+                    pygame.draw.circle(aura_surf, (*color, alpha),
+                                       (center, center), r_off, 2)
+            return aura_surf
 
-        surface.blit(aura_surf, (x - center, y - center))
+        surface.blit(_aura_surface(key, _buat), (x - center, y - center))
 
     def _draw_generic_body(self, surface, x, y, is_true):
         """Generic boss body (dipakai boss yang belum punya custom render)"""
@@ -6286,21 +6342,28 @@ class Boss(TowerDebuffMixin):
         surface.blit(glow_surf, (x - 10, y - r // 4 - 4))
 
     def _draw_true_boss_aura(self, surface, x, y):
-        """Extra dark aura untuk true boss"""
+        """Extra dark aura untuk true boss (surface di-cache — aura ini
+        menyala SETIAP frame selama true boss hidup; dulu Surface 330²
+        px dialokasi + diisi + dibuang per frame per true boss)."""
         pulse = math.sin(self.pulse) * 0.3 + 0.7
         aura_r = self.radius + 15
-        aura_surf = pygame.Surface(
-            (aura_r * 3, aura_r * 3), pygame.SRCALPHA)
+        key = ("tba", tuple(self.color), aura_r,
+               _aura_phase(math.sin(self.pulse)))
 
-        for r_off in range(aura_r, aura_r - 15, -2):
-            alpha = max(0, min(255,
-                               int((aura_r - r_off) * 5 * pulse)))
-            if alpha > 0:
-                pygame.draw.circle(aura_surf,
-                                   (*self.color, alpha),
-                                   (aura_r * 3 // 2, aura_r * 3 // 2), r_off)
+        def _buat():
+            aura_surf = pygame.Surface(
+                (aura_r * 3, aura_r * 3), pygame.SRCALPHA)
+            for r_off in range(aura_r, aura_r - 15, -2):
+                alpha = max(0, min(255,
+                                   int((aura_r - r_off) * 5 * pulse)))
+                if alpha > 0:
+                    pygame.draw.circle(aura_surf,
+                                       (*self.color, alpha),
+                                       (aura_r * 3 // 2, aura_r * 3 // 2),
+                                       r_off)
+            return aura_surf
 
-        surface.blit(aura_surf,
+        surface.blit(_aura_surface(key, _buat),
                      (x - aura_r * 3 // 2, y - aura_r * 3 // 2))
 
     def _draw_entrance(self, surface, x, y, max_timer):
