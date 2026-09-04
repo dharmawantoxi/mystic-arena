@@ -839,10 +839,27 @@ def test_render_hero_penuh_dengan_live_layer():
     assert F.owns(h)
 
 
-def test_hook_melee_ada_di_entity():
-    """_entity.py harus memanggil notify_melee_impact untuk grimjaw."""
+def test_serangan_dasar_tanpa_hook_impact_di_entity():
+    """Serangan dasar Grimjaw TIDAK boleh memicu impact FX di _entity.py.
+
+    Kontrak performa: impact FX (spark/shake/hit-stop) eksklusif milik
+    SKILL. Jalur serangan dasar harus tetap NOL panggilan
+    ``notify_melee_impact``; linker lapisan hidup tetap menyambung lewat
+    ``heroes/_bundle.py`` (renderer) dan API ``grimjaw_fx``.
+    """
     src = open(os.path.join(ROOT, "_entity.py"), encoding="utf-8").read()
-    assert "grimjaw_fx" in src and "notify_melee_impact" in src
+    # Panggilan nyata = bukan sekadar komentar lama.
+    assert "notify_melee_impact(" not in src.replace(
+        "# Sembilan blok `IMPACT FX <HERO>` (notify_melee_impact)", ""), \
+        "_entity.py masih memanggil notify_melee_impact untuk serangan dasar"
+
+    # Lapisan hidup/API FX tetap tersedia lewat renderer + modul FX.
+    bundle = open(os.path.join(ROOT, "heroes", "_bundle.py"),
+                  encoding="utf-8").read()
+    assert "grimjaw_fx" in bundle
+    for name in ("notify_melee_impact", "notify_skill_impact",
+                 "notify_skill_cast"):
+        assert hasattr(F, name), "grimjaw_fx API hilang: %s" % name
 
 
 def test_hud_core_menghitung_partikel_grimjaw():
