@@ -6,6 +6,7 @@
 
 import pygame
 import math
+import time as _time
 
 # Pass cahaya bersama untuk SEMUA sprite hero (dipakai _finish_hd_sprite).
 # Impornya di sini, bukan di tiap renderer: satu titik ubah untuk 200+ unit.
@@ -793,10 +794,17 @@ def fx_frame():
 
 
 def _fx_busy(hero):
-    """True kalau hero sedang memproduksi FX (serang / skill / proyektil)."""
+    """True kalau hero sedang memproduksi FX (serang / skill / proyektil).
+
+    Juga dipakai untuk BOSS (mini/true) sejak boss memakai lapisan FX
+    hidup yang sama lewat ``render_boss`` — nama atribut timer serangan
+    boss adalah ``timer``, hero ``attack_timer``.
+    """
     if getattr(hero, "active_skill", None):
         return True
     if int(getattr(hero, "attack_timer", 0) or 0) > 0:
+        return True
+    if int(getattr(hero, "timer", 0) or 0) > 0:
         return True
     projs = getattr(hero, "projectiles", None)
     if projs:
@@ -807,10 +815,17 @@ def _fx_busy(hero):
 
 
 def count_busy_fx_heroes(heroes):
-    """Jumlah hero live-FX yang sedang aktif (untuk governor beban)."""
+    """Jumlah unit live-FX yang sedang aktif (untuk governor beban).
+
+    Menerima hero MAUPUN boss: boss tidak punya ``hero_type`` melainkan
+    ``boss_type``, dan sejak ``render_boss`` memakai lapisan FX hidup
+    yang sama, bebannya harus ikut dihitung supaya governor menurunkan
+    intensitas partikel saat boss sedang bertarung ramai.
+    """
     n = 0
     for h in heroes:
-        if getattr(h, "hero_type", None) not in _LIVE_FX_HEROES:
+        kind = getattr(h, "hero_type", None) or getattr(h, "boss_type", None)
+        if kind not in _LIVE_FX_HEROES:
             continue
         if getattr(h, "alive", True) and _fx_busy(h):
             n += 1
@@ -1295,8 +1310,7 @@ def hero_cache_bytes():
     total = 0
     for entry in _hero_sprite_cache.values():
         try:
-            surf = entry[0]
-            total += surf.get_width() * surf.get_height() * 4
+            total += _sprite_pixels(entry) * 4
         except Exception:
             pass
     return total / (1024.0 * 1024.0)
@@ -1381,6 +1395,55 @@ def _restore_renderer_fx(entity, parked):
     for name, val in parked.items():
         setattr(entity, name, val)
     entity._skip_renderer_projectiles = False
+
+
+_BOSS_WALLCLOCK = {}       # tipe -> renderer memakai jam dinding?
+BOSS_WALL_QUANT_MS = 66    # granularitas fase jam dinding (2 frame)
+
+
+def _boss_uses_wallclock(boss_type):
+    """Renderer tipe ini menggerakkan animasi dari waktu dinding?
+
+    Sebagian rig (krobellus, vhalzun) memakai pygame.time.get_ticks()
+    sebagai jam animasinya: gambar berubah terus walau state boss sama.
+    Tanpa fase jam di kunci cache, sprite bisa membekukan satu titik
+    waktu dan terlihat melenceng dari jalur langsung. Dengan fase
+    terkuantisasi di kunci, sprite tetap maju tiap BOSS_WALL_QUANT_MS —
+    kadensnya sama seperti kuantisasi pose hero.
+
+    Diisi oleh probe (_boss_probe_diff_direct): dua render langsung pada
+    tick virtual SAMA lalu pada tick yang DIMAJUKAN — kalau hanya yang
+    kedua yang berbeda, renderer ber-jam dinding.
+    """
+    return _BOSS_WALLCLOCK.get(boss_type, False)
+
+
+def _boss_has_renderer_fx(boss):
+    """Ada proyektil/FX renderer yang sedang aktif di objek ini?"""
+    try:
+        items = vars(boss).items()
+    except TypeError:
+        return False
+    for name, val in items:
+        if not name.startswith("_") or not isinstance(val, list):
+            continue
+        if val and any(name.endswith(sfx)
+                       for sfx in _RENDERER_FX_SUFFIXES):
+            return True
+    return False
+
+
+def _boss_fx_parkable(boss_type):
+    """Bolehkah FX proyektil renderer di-park untuk tipe ini?
+
+    Park hanya benar kalau ada lapisan HIDUP yang menggambarnya ulang
+    tiap frame (lihat _BOSS_LIVE_STEP_SPECS / _BOSS_LIVE_DRAW_SPECS).
+    Untuk tipe lain proyektil renderer adalah bagian dari gambar: kalau
+    di-park, FX serangan itu HILANG dari layar (regresi visual nyata,
+    mis. krobellus/atk) karena tidak ada yang menggantikannya.
+    """
+    return (boss_type in _BOSS_LIVE_STEP_SPECS
+            or boss_type in _BOSS_LIVE_DRAW_SPECS)
 
 
 def _call_renderer_on_canvas(renderer, canvas, entity, x, y):
@@ -1748,6 +1811,1268 @@ def render_hero(hero_type, surface, hero, x, y):
     # sprite supaya berada di depan badan - dan di luar cache supaya
     # tetap bergerak 60 fps walau pose sprite sedang dipakai ulang.
     _live_fx_post(hero_type, surface, hero, x, y)
+
+
+# ═══════════════════════════════════════════════════════
+# CACHE SPRITE BOSS — PARITAS MINI BOSS / TRUE BOSS DENGAN HERO
+# ═══════════════════════════════════════════════════════
+#
+# MASALAH (terukur — tools/bench_boss_vs_hero.py, pygame-ce 2.5.8, PC):
+#
+#   Karakter yang SAMA persis (rig, renderer, palette) punya dua jalur
+#   gambar yang berbeda:
+#
+#     jadi HERO unlock -> heroes.render_hero()
+#                         badan dirender ke canvas HANYA saat pose
+#                         berganti (kunci terkuantisasi), frame lainnya
+#                         satu blit murah          = 0,66-0,74 ms/frame
+#     jadi MINI/TRUE BOSS -> Boss.draw() -> draw_<boss>()
+#                         renderer prosedural dipanggil LANGSUNG ke
+#                         layar SETIAP frame        = 1,9-7,0 ms/frame
+#                                                   (median 2,2 ms dari
+#                                                    216 boss)
+#
+#   Jadi boss 3-5x lebih mahal daripada versi hero-nya. Di HP (CPU 3-5x
+#   lebih lambat dari PC) satu boss memakan 7-35 ms dari budget 16,7 ms
+#   -> FPS jatuh, dan yang paling terlihat justru boss itu sendiri:
+#   gerakannya patah-patah dan animasinya tidak selancar versi hero.
+#   Ukur adegan penuh (tools/bench_boss_vs_hero.py --scene):
+#     level 1 + BOSS gornak  : 5,95 ms/frame
+#     level 1 + HERO gornak  : 2,77 ms/frame   (2,15x lebih ringan)
+#
+# SOLUSI: boss memakai pipeline cache yang SAMA dengan hero, pada skala
+# NATIF boss (1.0 — ukuran & tampilan boss tidak berubah):
+#   * badan dirender ke canvas hanya saat kunci pose berganti,
+#   * lapisan FX hidup (heroes/*_fx.py) TETAP digambar setiap frame di
+#     luar cache (ground sebelum sprite, live sesudahnya) -> 60 fps,
+#   * controller pose dimajukan SEKALI per frame walau cache hit, jadi
+#     animasi serangan tidak pernah membeku (pola yang sama dengan
+#     _tick_pose_controller di jalur hero),
+#   * beam morgath & proyektil canvas drakar tetap hidup per frame.
+#
+# Kunci cache memakai state BOSS (timer/direction/boss_class/...), bukan
+# state hero (attack_timer/facing/level) — lihat _boss_cache_key.
+#
+# Matikan untuk membandingkan: MYSTIC_BOSS_CACHE=0 python main.py
+# ═══════════════════════════════════════════════════════
+
+BOSS_CACHE_ENABLED = _os.environ.get("MYSTIC_BOSS_CACHE", "1") != "0"
+
+# Granularitas pose disamakan dengan hero supaya dua jalur terasa sama.
+BOSS_ANIM_PHASES = HERO_ANIM_PHASES
+BOSS_ATK_QUANT = HERO_ATK_QUANT
+BOSS_SKILL_QUANT = HERO_SKILL_QUANT
+
+_boss_sprite_cache = _OD()
+_BOSS_CACHE_MAX = 200
+# Anggaran total piksel sprite (Android: 4 byte/px). 8 juta px ~= 32 MB
+# batas atas; evict LRU jalan begitu salah satu anggaran terlampaui.
+_BOSS_CACHE_PIXEL_BUDGET = 8 * 1000 * 1000
+_boss_cache_pixels = [0]
+_boss_cache_stats = {"hits": 0, "misses": 0, "fallback": 0,
+                     "grow": 0, "unsafe": 0, "nocache": 0,
+                     "downgrade": 0, "probefail": 0,
+                     "uncache": 0}
+
+# Canvas boss harus memuat badan + FX canvas (aura/rune/telegraph dekat
+# badan). Pengukuran tools/_diag_boss_bbox.py:
+#   idle/walk/attack  p50=85  p90=99  p99=279 px (setengah ukuran)
+#   skill             p50=160 p90=357 max 552 px
+# Canvas mulai kecil (hemat memori & murah di-blit) dan MEMBESAR otomatis
+# kalau konten menyentuh tepinya. Kalau sudah mentok di batas atas, pose
+# itu ditandai TIDAK AMAN di-cache dan digambar langsung ke layar seperti
+# sebelumnya (FX jauh tidak boleh terpotong tepi canvas).
+BOSS_CANVAS_MIN_HALF = 150
+BOSS_CANVAS_MAX_HALF = 460
+# Sprite lebih besar dari ini tidak di-cache: blit-nya sudah tidak lebih
+# murah daripada menggambar langsung (dan memakan memori besar di HP).
+BOSS_SPRITE_MAX_SIDE = 900
+# Rect crop disimpan PER (TIPE, POSE) dan tidak dihitung ulang tiap miss:
+#   * get_bounding_rect() itu mahal (0,30 ms di canvas 300px, 1,58 ms di
+#     640px) — dulu dipanggil setiap cache miss,
+#   * rect tetap = anchor tetap = tidak ada pergeseran 1 px antar pose,
+#   * per pose (bukan per tipe) supaya skill yang melebar tidak membuat
+#     sprite idle/walk ikut besar.
+# Deteksi "konten keluar rect" memakai 4 strip 2 px (0,02 ms), dan rect
+# hanya dihitung ulang saat strip itu benar-benar kena tinta.
+BOSS_CROP_MARGIN = 24
+_BOSS_GEOM = {}
+_BOSS_UNSAFE = set()
+
+# Boss yang proyektil/beam-nya milik renderer (bukan modul FX hidup) dan
+# HARUS tetap bergerak 60 fps di luar cache sprite.
+#   drakar  : _drk_projs (gelombang tebasan, chip, ember) — di-step dan
+#             digambar sendiri tiap frame; saat canvas render list ini
+#             di-park supaya tidak terpanggang beku.
+#   morgath : beam serangan (lihat _BEAM_PASS_HEROES) — digambar live di
+#             layar pada skala 1.0.
+_BOSS_LIVE_STEP_SPECS = {
+    "drakar": ("bosses.level1", "_NS_drakar", "_drk_step_projectiles"),
+}
+_BOSS_LIVE_DRAW_SPECS = {
+    "drakar": ("bosses.level1", "_NS_drakar", "_drk_draw_projectiles"),
+}
+_BOSS_LIVE_STEP_FN = {}
+_BOSS_LIVE_DRAW_FN = {}
+
+
+def boss_cache_stats():
+    """Statistik cache sprite boss (debug overlay / alat uji)."""
+    h = _boss_cache_stats["hits"]
+    m = _boss_cache_stats["misses"]
+    tot = h + m
+    return {
+        "entries": len(_boss_sprite_cache),
+        "hits": h,
+        "misses": m,
+        "hit_rate": f"{(h / tot * 100) if tot else 0:.1f}%",
+        "fallback": _boss_cache_stats["fallback"],
+        "grow": _boss_cache_stats["grow"],
+        "unsafe": _boss_cache_stats["unsafe"],
+        "nocache": _boss_cache_stats["nocache"],
+        "types_nocache": len(_BOSS_NO_CACHE),
+        "enabled": BOSS_CACHE_ENABLED,
+    }
+
+
+def boss_cache_bytes():
+    """Perkiraan memori cache sprite boss, dalam MB."""
+    total = 0
+    for entry in _boss_sprite_cache.values():
+        try:
+            surf = entry[0]
+            total += surf.get_width() * surf.get_height() * 4
+        except Exception:
+            pass
+    return total / (1024.0 * 1024.0)
+
+
+def clear_boss_sprite_cache():
+    """Panggil saat ganti level / resolusi berubah (paritas hero)."""
+    _boss_sprite_cache.clear()
+    _BOSS_GEOM.clear()
+    _BOSS_UNSAFE.clear()
+    _BOSS_PROBE_FAIL.clear()
+    _BOSS_PROBE_TRY.clear()
+    _BOSS_PROBE_ERRORS.clear()
+    _BOSS_KIND_HM.clear()
+    _BOSS_MISS_MS.clear()
+    _BOSS_FAST_DIFF.clear()
+    _BOSS_DIRECT_DRIFT.clear()
+    _boss_cache_pixels[0] = 0
+    _boss_cache_stats["hits"] = 0
+    _boss_cache_stats["misses"] = 0
+    _boss_cache_stats["fallback"] = 0
+    _boss_cache_stats["grow"] = 0
+    _boss_cache_stats["unsafe"] = 0
+    _boss_cache_stats["nocache"] = 0
+
+
+def _boss_cache_key(boss_type, boss):
+    """Kunci cache sprite boss. State yang mengubah gambar harus masuk.
+
+    Paritas dengan ``_hero_cache_key``, tapi membaca atribut BOSS:
+      * ``timer``            (hero: attack_timer)
+      * ``direction``        (hero: facing)
+      * ``boss_class``       (true boss punya rig/aura berbeda)
+      * ``hurt_flash_timer`` diquantisasi 2 frame — flash putih harus
+        tetap terlihat sebagai feedback damage, tapi tidak boleh
+        membuat cache miss setiap frame.
+    Posisi & HP tidak masuk kunci (tidak mengubah gambar).
+    """
+    try:
+        from mobile.perf import Quality as _Qb
+        _q = 1 if _Qb.cheap_alpha else 2
+    except Exception:
+        _q = 1
+
+    timer = int(getattr(boss, "timer", 0) or 0)
+    skill = getattr(boss, "active_skill", None)
+    skill_t = int(getattr(boss, "active_skill_timer", 0) or 0)
+    facing = 1 if int(getattr(boss, "direction", -1) or -1) >= 0 else -1
+    klass = getattr(boss, "boss_class", "mini")
+    team = getattr(boss, "team", "red")
+    hurt = min(4, int(getattr(boss, "hurt_flash_timer", 0) or 0) // 2)
+    rage = 1 if (getattr(boss, "is_enraged", False)
+                 or getattr(boss, "rage_active", False)) else 0
+    ability = 1 if getattr(boss, "ability_active", False) else 0
+    alive = 1 if getattr(boss, "alive", True) else 0
+    moving = bool(getattr(boss, "_moving_cached", False))
+
+    head = (boss_type, "B", klass, team, facing, hurt, rage, alive)
+
+    # Proyektil milik renderer yang TIDAK punya lapisan hidup pengganti
+    # harus digambar jalur langsung (lihat render_boss): kalau masuk
+    # sprite, proyektil yang terbang jauh dari badan akan terpotong crop
+    # dan hilang dari layar.
+    proj = 1 if (not _boss_fx_parkable(boss_type)
+                 and _boss_has_renderer_fx(boss)) else 0
+    # Fase jam dinding TIDAK masuk kunci: memasukkannya membuat tipe
+    # ber-jam dinding (gornak dkk.) miss tiap 2 frame dan justru lebih
+    # lambat daripada tanpa cache (terukur di smoke test). Membekukan
+    # animasi dinding seumur jendela pose (<= ~5 frame) adalah perilaku
+    # kuantisasi yang sama dengan pose hero, dan perbandingan visual
+    # tools/_diag_boss_pixel_parity.py memakai jam virtual per shot
+    # sehingga kedua jalur tetap dibandingkan pada fase yang sama.
+    wq = 0
+    if skill:
+        return head + ("skill", skill,
+                       skill_t // (BOSS_SKILL_QUANT * _q), ability, proj, wq)
+    if timer > 0:
+        # Pose serangan berubah tiap BOSS_ATK_QUANT frame (30 fps) —
+        # sama seperti hero, cukup mulus dan separuh biaya render.
+        return head + ("atk", timer // (BOSS_ATK_QUANT * _q), ability,
+                       proj, wq)
+    phase = int(getattr(boss, "pulse", 0.0) * 2.0) % BOSS_ANIM_PHASES
+    if _BOSS_PATH.get((boss_type, "idle")) == "affine":
+        # Jalur affine membayar 2 render per miss: untuk pose idle
+        # (mayoritas frame) granularitas fase dibelah dua supaya miss
+        # lebih jarang — bob idle tetap terlihat hidup karena offset
+        # rig berubah halus di dalam satu fase cache.
+        phase //= 2
+    return head + ("idle", phase, moving, ability, proj, wq)
+
+
+def _boss_namespace(boss_type):
+    """Cari kelas namespace ``_NS_<boss>`` milik renderer sebuah boss.
+
+    Return ``None`` kalau tidak ketemu (pemanggil lalu tidak melakukan
+    apa-apa). Hasil di-cache di ``_BOSS_NS_CACHE``.
+    """
+    if boss_type in _BOSS_NS_CACHE:
+        return _BOSS_NS_CACHE[boss_type]
+    ns = None
+    try:
+        import importlib
+        from bosses._boss_index import BOSS_INDEX
+        entry = BOSS_INDEX.get(boss_type)
+        if entry:
+            module = importlib.import_module("bosses." + entry[0])
+            ns = getattr(module, "_NS_" + boss_type, None)
+            if ns is None:
+                # Nama namespace tidak selalu sama dengan nama boss
+                # (mis. bundle level yang menamai ulang). Cari kelas
+                # _NS_* yang benar-benar punya fungsi draw boss ini.
+                draw_name = entry[1]
+                for name in dir(module):
+                    if not name.startswith("_NS_"):
+                        continue
+                    cand = getattr(module, name, None)
+                    if callable(getattr(cand, draw_name, None)):
+                        ns = cand
+                        break
+    except Exception:
+        ns = None
+    _BOSS_NS_CACHE[boss_type] = ns
+    return ns
+
+
+_BOSS_NS_CACHE = {}
+_BOSS_POSE_TICK_CACHE = {}
+
+
+def _boss_pose_tick(boss_type):
+    """Controller pose sebuah boss (di-resolve sekali, lalu di-cache).
+
+    Urutan pilihan:
+      1. tabel ``_POSE_CONTROLLER_SPECS`` (sudah diaudit untuk jalur
+         hero — tools/test_hero_pose_cache.py),
+      2. ``_update_attack_anim`` di namespace boss (konvensi umum;
+         untuk 7 boss yang punya dua fungsi ``_update_*_anim``, nama
+         ini adalah alias yang mendelegasikan ke controller asli),
+      3. satu-satunya ``_update_*_anim`` yang ada.
+
+    Hanya SATU fungsi yang dipanggil supaya state tidak maju dua kali
+    dalam satu frame.
+    """
+    if boss_type in _BOSS_POSE_TICK_CACHE:
+        return _BOSS_POSE_TICK_CACHE[boss_type]
+    fn = _pose_controller(boss_type)
+    if fn is None:
+        ns = _boss_namespace(boss_type)
+        if ns is not None:
+            cand = getattr(ns, "_update_attack_anim", None)
+            if not callable(cand):
+                alts = sorted(
+                    n for n in dir(ns)
+                    if n.startswith("_update_") and n.endswith("_anim")
+                    and callable(getattr(ns, n, None)))
+                cand = getattr(ns, alts[0]) if len(alts) == 1 else None
+            fn = cand if callable(cand) else None
+    _BOSS_POSE_TICK_CACHE[boss_type] = fn
+    return fn
+
+
+def _tick_boss_pose(boss_type, boss):
+    """Majukan controller pose boss SEKALI per frame (juga saat cache hit).
+
+    Tanpa ini, renderer yang memutar state animasi di dalam fungsi
+    draw-nya (215 dari 216 boss punya ``_update_*_anim``) akan membeku
+    di frame cache-hit — persis bug "Gorath mengayun sekali lalu tidak
+    pernah mengayun lagi" yang sudah diperbaiki di jalur hero.
+    """
+    fn = _boss_pose_tick(boss_type)
+    if fn is None:
+        return
+    try:
+        fn(boss)
+    except Exception:
+        pass
+
+
+def _boss_live_hook(cache, specs, boss_type):
+    """Resolve satu hook FX hidup milik renderer (lazy + cache)."""
+    if boss_type in cache:
+        return cache[boss_type]
+    fn = None
+    spec = specs.get(boss_type)
+    if spec is not None:
+        try:
+            import importlib
+            mod_name, ns_name, fn_name = spec
+            ns = getattr(importlib.import_module(mod_name), ns_name, None)
+            cand = getattr(ns, fn_name, None)
+            fn = cand if callable(cand) else None
+        except Exception:
+            fn = None
+    cache[boss_type] = fn
+    return fn
+
+
+def _boss_live_step(boss_type, boss):
+    """Step FX milik renderer yang harus maju SETIAP frame.
+
+    Dipanggil sebelum render/blit. Pada frame cache-MISS renderer ikut
+    memanggil fungsi yang sama, tapi list-nya sedang di-park (kosong)
+    sehingga tidak maju dua kali.
+    """
+    fn = _boss_live_hook(_BOSS_LIVE_STEP_FN, _BOSS_LIVE_STEP_SPECS,
+                         boss_type)
+    if fn is None:
+        return
+    try:
+        fn(boss)
+    except Exception:
+        pass
+
+
+def _boss_live_draw(boss_type, surface, boss, x, y):
+    """Gambar FX milik renderer langsung ke layar (di luar cache)."""
+    fn = _boss_live_hook(_BOSS_LIVE_DRAW_FN, _BOSS_LIVE_DRAW_SPECS,
+                         boss_type)
+    if fn is not None:
+        try:
+            fn(surface, boss, x, y)
+        except Exception:
+            pass
+    # Beam pass (morgath): sama seperti jalur hero — body di-cache,
+    # beam digambar live di layar skala 1.0 supaya tidak mengecil /
+    # terpanggang beku.
+    if boss_type in _BEAM_PASS_HEROES:
+        renderer = BOSS_RENDERERS.get(boss_type)
+        if renderer is not None:
+            saved_scale = getattr(boss, "_render_scale", None)
+            had_scale = hasattr(boss, "_render_scale")
+            boss._render_scale = 1.0
+            boss._beam_pass_only = True
+            try:
+                renderer(surface, boss, x, y)
+            except Exception:
+                pass
+            finally:
+                boss._beam_pass_only = False
+                if had_scale:
+                    boss._render_scale = saved_scale
+                else:
+                    try:
+                        del boss._render_scale
+                    except AttributeError:
+                        pass
+
+
+def _boss_geom(boss_type, kind, boss):
+    """Geometri cache satu (tipe boss, pose): ``[half_canvas, rect|None]``.
+
+    ``rect_crop`` dihitung SEKALI (dari bounding rect render pertama pose
+    itu) lalu dipakai ulang, sehingga
+      * ``get_bounding_rect()`` yang mahal tidak dipanggil tiap miss,
+      * anchor sprite tidak bergeser antar frame,
+      * pose skill yang melebar tidak membesarkan sprite idle/walk.
+    """
+    gk = (boss_type, kind)
+    g = _BOSS_GEOM.get(gk)
+    if g is None:
+        r = int(getattr(boss, "radius", 30) or 30)
+        half = max(BOSS_CANVAS_MIN_HALF, min(BOSS_CANVAS_MAX_HALF,
+                                             r + 110))
+        g = _BOSS_GEOM[gk] = [half, None]
+    return g
+
+
+# Latar dua pass probe afine. Semua operasi gambar (alpha diabaikan di
+# permukaan opak, aditif, blend) bersifat AFIN terhadap latar, jadi dua
+# pass dengan latar berbeda cukup untuk menyelesaikan
+#     O = src * t + latar * (1 - t)
+# per piksel. Hasilnya sprite alpha + lapisan aditif yang merekonstruksi
+# tampilan jalur LAMA secara eksak di atas latar peta mana pun — termasuk
+# renderer yang memakai warna RGBA ber-alpha lewat pygame.draw.* (di
+# layar opak alpha itu diabaikan; di canvas SRCALPHA tidak, itulah sebab
+# cache canvas polos mengubah tampilan 107 dari 216 boss).
+_BOSS_BG1 = (0, 0, 0)
+_BOSS_BG2 = (85, 85, 85)
+_BOSS_OPAQUE_POOL = {}
+
+
+def _boss_get_opaque(size, bg):
+    """Permukaan "latar padat" pakai-ulang per (ukuran, warna latar).
+
+    Layar game juga non-SRCALPHA, jadi dua pass ini melihat perilaku
+    blending yang sama persis dengan jalur langsung.
+    """
+    key = (size, bg)
+    surf = _BOSS_OPAQUE_POOL.get(key)
+    if surf is None:
+        surf = pygame.Surface((size, size))
+        _BOSS_OPAQUE_POOL[key] = surf
+    surf.fill(bg)
+    return surf
+
+
+def _boss_solve_layers(a1, a2, np):
+    """Pecah dua pass opak jadi (rgb, alpha, add, addmask)."""
+    f1 = a1.astype(np.float32)
+    one_minus_t = np.clip((f1 - a2.astype(np.float32))
+                          / float(_BOSS_BG1[0] - _BOSS_BG2[0]), 0.0, 1.0)
+    t = 1.0 - one_minus_t.mean(axis=2)
+    t_safe = np.where(t > 0.02, t, 1.0)
+    src = (f1 - np.asarray(_BOSS_BG1, np.float32) * one_minus_t) \
+        / t_safe[..., None]
+    rgb = np.clip(src, 0, 255).astype(np.uint8)
+    alpha = np.where(t > 0.02, np.clip(t * 255.0, 0.0, 255.0),
+                     0).astype(np.uint8)
+    add = np.clip(f1 - np.asarray(_BOSS_BG1, np.float32), 0, 255)
+    addmask = (t < 0.02) & (add.sum(axis=2) > 6)
+    return rgb, alpha, add, addmask
+
+
+_BOSS_CANVAS_POOL = {}
+
+
+def _rect_edges_inked(canvas, rect):
+    """Ada tinta di tepi ``rect``? (4 strip 2 px, ~0,02 ms).
+
+    Pengganti murah untuk ``get_bounding_rect()`` penuh (0,30 ms pada
+    canvas 300 px, 1,58 ms pada 640 px) — cukup untuk tahu KAPAN rect
+    crop perlu dihitung ulang.
+    """
+    x, y, w, h = rect.x, rect.y, rect.width, rect.height
+    if w < 6 or h < 6:
+        return True
+    for s in (pygame.Rect(x, y, w, 2), pygame.Rect(x, y + h - 2, w, 2),
+              pygame.Rect(x, y, 2, h), pygame.Rect(x + w - 2, y, 2, h)):
+        try:
+            if canvas.subsurface(s).get_bounding_rect(min_alpha=8).width:
+                return True
+        except Exception:
+            return True
+    return False
+
+
+def _boss_get_canvas(size):
+    """Canvas pakai-ulang per ukuran (alokasi Surface ~0,4 ms di HP)."""
+    canvas = _BOSS_CANVAS_POOL.get(size)
+    if canvas is None:
+        canvas = pygame.Surface((size, size), pygame.SRCALPHA)
+        _BOSS_CANVAS_POOL[size] = canvas
+    canvas.fill((0, 0, 0, 0))
+    return canvas
+
+
+def _boss_render_sprite_fast(boss_type, boss, draw_fn, kind):
+    """Jalur CEPAT (1 render) untuk renderer yang aman di canvas SRCALPHA.
+
+    Return ``(sprite, None, ax, ay)`` atau ``None``.
+
+    Hanya dipakai untuk (tipe, pose) yang probe paritasnya membuktikan
+    canvas SRCALPHA == render langsung (tidak ada pygame.draw.* ber-alpha
+    / blend aditif). Return 3-nilai diubah jadi 4 supaya format entri
+    cache sama dengan jalur afine.
+
+    ``ax``/``ay`` = posisi titik jangkar di dalam sprite, sehingga blit
+    di ``(x - ax, y - ay)`` mendarat PERSIS di ``(x, y)``. FX yang
+    melebar jauh tetap dijaga: canvas membesar otomatis, dan kalau
+    mentok pose didaftarkan ke ``_BOSS_UNSAFE`` (jalur langsung).
+    """
+    geom = _boss_geom(boss_type, kind + "~f", boss)
+    half = geom[0]
+    size = half * 2
+    canvas = _boss_get_canvas(size)
+    c = half
+
+    had_scale = hasattr(boss, "_render_scale")
+    saved_scale = getattr(boss, "_render_scale", None)
+    # _render_scale = penanda "jalur lane" untuk renderer: lapisan
+    # FX hidup di-attach (bukan digambar) sehingga tidak terpanggang
+    # ke cache, dan FX canvas fallback diserahkan ke lapisan hidup.
+    # Nilai 1.0 -> ukuran & kompensasi world-space tidak berubah.
+    if boss_type in _LIVE_FX_HEROES:
+        boss._render_scale = 1.0
+    pakai_lane = boss_type in _LIVE_FX_HEROES
+    # Penanda "cache native boss": renderer TIDAK boleh melewati
+    # pass cahayanya sendiri (di jalur hero pass itu diambil alih
+    # heroes._finish_hd_sprite; di sini tidak ada HD pass karena
+    # boss digambar 1:1 seperti sebelumnya).
+    boss._boss_native_cache = True
+    if boss_type in _BEAM_PASS_HEROES:
+        boss._skip_beam = True
+    try:
+        if _boss_fx_parkable(boss_type):
+            _call_renderer_on_canvas(draw_fn, canvas, boss, c, c)
+        else:
+            draw_fn(canvas, boss, c, c)
+    except Exception:
+        _boss_cache_stats["fallback"] += 1
+        return None
+    finally:
+        boss._boss_native_cache = False
+        boss._skip_beam = False
+        if pakai_lane:
+            if had_scale:
+                boss._render_scale = saved_scale
+            else:
+                try:
+                    del boss._render_scale
+                except AttributeError:
+                    pass
+
+    box = canvas.get_bounding_rect(min_alpha=8)
+    rect = geom[1]
+    if (rect is not None and box.width > 0 and box.height > 0
+            and box.left >= rect.left + 2 and box.top >= rect.top + 2
+            and box.right <= rect.right - 3
+            and box.bottom <= rect.bottom - 3):
+        # Kasus cepat: SELURUH konten masih di dalam rect crop yang
+        # tersimpan. (Memeriksa cincin tepi rect saja tidak cukup:
+        # halo bisa melebar ke luar rect tanpa menyentuh cincin itu,
+        # lalu FX-nya terpotong dari sprite.)
+        return (canvas.subsurface(rect).copy(), None,
+                c - rect.x, c - rect.y)
+
+    if box.width <= 0 or box.height <= 0:
+        return None
+    if (box.left <= BOSS_CROP_MARGIN or box.top <= BOSS_CROP_MARGIN
+            or box.right >= size - 1 - BOSS_CROP_MARGIN
+            or box.bottom >= size - 1 - BOSS_CROP_MARGIN):
+        # Konten + margin crop menyentuh tepi canvas: sprite akan punya
+        # tinta di pinggirnya (FX terpotong) -> canvas membesar dulu.
+        if half < BOSS_CANVAS_MAX_HALF:
+            geom[0] = min(BOSS_CANVAS_MAX_HALF, half + 55)
+            geom[1] = None
+            _boss_cache_stats["grow"] += 1
+        else:
+            # Mentok: pose ini tidak aman di-cache. Gambar langsung
+            # (jalur lama) supaya FX jauh tetap utuh.
+            _BOSS_UNSAFE.add((boss_type, kind))
+            _boss_cache_stats["fallback"] += 1
+            _boss_cache_stats["unsafe"] += 1
+        return None
+
+    new_rect = box.inflate(BOSS_CROP_MARGIN * 2,
+                           BOSS_CROP_MARGIN * 2)
+    full = canvas.get_rect()
+    # clip (irisan), BUKAN clamp: clamp menggeser rect yang lebih besar
+    # dari canvas sehingga konten bisa pindah ke luar rect = terpotong.
+    new_rect = new_rect.clip(full)
+    if new_rect.width <= 0 or new_rect.height <= 0:
+        _boss_dbg(boss_type, kind, f"new_rect kosong {new_rect} full={full}")
+        return None
+    if max(new_rect.width, new_rect.height) > BOSS_SPRITE_MAX_SIDE:
+        # Terlalu besar untuk di-cache: gambar langsung saja.
+        _boss_dbg(boss_type, kind, f"sprite terlalu besar {new_rect.size}")
+        _BOSS_UNSAFE.add((boss_type, kind))
+        _boss_cache_stats["fallback"] += 1
+        _boss_cache_stats["unsafe"] += 1
+        return None
+    if rect is not None:
+        # Rect berubah -> anchor sprite lama tidak berlaku lagi. Buang
+        # semuanya (dan kembalikan anggaran pikselnya) supaya evict LRU
+        # tidak makin agresif seiring waktu.
+        for k in [k for k in _boss_sprite_cache
+                  if k[0] == boss_type and k[8] == kind]:
+            _old = _boss_sprite_cache.pop(k)
+            _boss_cache_pixels[0] -= (_old[0].get_width()
+                                      * _old[0].get_height())
+    geom[1] = new_rect
+    return (canvas.subsurface(new_rect).copy(), None,
+            c - new_rect.x, c - new_rect.y)
+
+
+
+
+# ═══ PROBE PARITAS PIKSEL (sekali per tipe boss) ═══════════════════
+# Rekonstruksi afine dua pass membuat sprite cache setara jalur lama
+# untuk operasi gambar yang afin terhadap latar. Renderer yang memakai
+# trik NON-afin (colorkey, set_alpha permukaan tujuan, dsb.) tetap bisa
+# berbeda, jadi setiap tipe di-probe SEKALI: hasil "sprite + blit
+# (+ lapisan hidup)" dibanding dengan render langsung ala jalur lama.
+# Kalau selisihnya melewati toleransi, SELURUH tipe itu digambar
+# langsung seperti sebelumnya (perbaikan gerak & jam animasi tetap
+# berlaku untuk mereka).
+BOSS_PARITY_TOLERANCE = 0.35
+# Batas untuk TURUN dari jalur afine ke jalur cepat ketika jalur afine
+# terbukti tidak menguntungkan (terlalu sering miss). Sengaja KETAT
+# (0.25, di bawah BOSS_PARITY_TOLERANCE): turun jalur hanya boleh untuk
+# sprite yang nyaris identik. Di atas angka itu selisih jalur cepat
+# sudah terlihat mata — pengukuran tools/_diag_boss_pixel_parity.py:
+# krobellus/atk punya selisih probe 0.43 tetapi selisih visual nyata
+# 1.55 (gaya gambarnya berubah), jadi pose seperti itu harus kembali ke
+# jalur langsung, bukan dipaksa pakai jalur cepat.
+BOSS_FAST_FALLBACK_DIFF = 0.25
+# Jalur AFIN memecah alpha secara matematis dari dua pass opak, jadi
+# selisihnya terhadap jalur langsung didominasi noise renderer stateful
+# dan lapisan FX hidup — bukan kesalahan komposisi. Batasnya lebih
+# longgar daripada jalur cepat (yang menggambar di canvas SRCALPHA dan
+# bisa benar-benar mengubah gaya gambar, mis. orb gravefang).
+BOSS_PARITY_TOLERANCE_AFFINE = 0.60
+# Kalau dua render LANGSUNG berturut-turut (tanpa update di antaranya)
+# sudah berbeda lebih dari ini, renderer punya jam animasi/state acak
+# internal yang maju per draw (mis. krobellus: fase sapuan & orb ikut
+# jam itu). Sprite cache akan membekukan jam tersebut dan tampilannya
+# menyimpang dari jalur langsung, jadi pose seperti itu tidak di-cache.
+BOSS_STATEFUL_DRIFT = 0.08
+_BOSS_PARITY_DIFF = {}
+_BOSS_NO_CACHE = set()
+# Tipe yang secara permanen TIDAK di-cache sprite, dengan alasan terukur
+# (lihat tools/_diag_boss_pixel_parity.py):
+#   krobellus: state FX hidup (trail sabit, star flash, orb) berada di
+#     namespace MODUL dan maju per panggilan renderer; dibekukan ke
+#     sprite membuat FX serangan hilang/bergeser (selisih visual 1.5).
+#     Render langsungnya murah (~0.6 ms) jadi tidak ada yang dikorbankan.
+_BOSS_CACHE_DENY = {
+    "krobellus",
+    # FX serangan satu-shot yang KONSUMSI-per-draw: gambar gelombang/
+    # tebasan hanya muncul pada panggilan renderer yang pertama, lalu
+    # state-nya habis. Dibekukan ke sprite = FX hilang di layar
+    # (terukur tools/_diag_boss_pixel_parity.py: selisih 0.7-1.7).
+    "gravewake", "kunkka", "syrentha", "vhalzun",
+}
+_BOSS_PROBE_FAIL = {}      # (tipe,pose) -> alasan probe gagal
+_BOSS_PROBE_TRY = {}       # (tipe,pose) -> jumlah percobaan probe
+_BOSS_MISS_MS = {}         # (tipe,pose) -> [total ms miss, jumlah miss]
+_BOSS_FAST_DIFF = {}       # (tipe,pose) -> selisih jalur cepat (walau
+                           #   akhirnya jalur afine yang dipilih)
+_BOSS_DIRECT_DRIFT = {}    # (tipe,pose) -> selisih jalur langsung vs
+                           #   dirinya sendiri tanpa update (jam animasi
+                           #   internal renderer yang maju per draw)
+_WT = [1000000]            # jam virtual probe (ms) untuk uji jam dinding
+_BOSS_DIRECT_MS = {}       # tipe -> ms render langsung (diukur saat probe)
+# Jalur render per (tipe, pose): "fast" (1 render, canvas SRCALPHA) atau
+# "affine" (2 render + rekonstruksi eksak). Di-set oleh probe.
+_BOSS_PATH = {}
+# Hit/miss per (tipe, pose) untuk downgrade adaptif jalur affine: kalau
+# pose terlalu sering miss, cache tidak menghemat apa-apa -> jalur
+# langsung (tampilan lama, pasti identik).
+_BOSS_KIND_HM = {}
+_BOSS_AFFINE_MIN_HITRATE = 0.85
+_BOSS_AFFINE_MIN_MISS = 12
+# List proyektil milik renderer yang dikosongkan selama probe supaya
+# kedua sisi dibandingkan pada keadaan FX yang sama.
+_BOSS_LIVE_LIST_SPECS = {
+    "drakar": ("bosses.level1", "_NS_drakar", "_drk_projs"),
+}
+
+
+def _boss_probe_park(boss_type):
+    """Kosongkan list proyektil renderer; return state untuk unpark."""
+    spec = _BOSS_LIVE_LIST_SPECS.get(boss_type)
+    if not spec:
+        return None
+    try:
+        import importlib
+        ns = getattr(importlib.import_module(spec[0]), spec[1], None)
+        if ns is None:
+            return None
+        saved = getattr(ns, spec[2], None)
+        setattr(ns, spec[2], [])
+        return (ns, spec[2], saved)
+    except Exception:
+        return None
+
+
+def _boss_probe_unpark(state):
+    if not state:
+        return
+    try:
+        ns, attr, saved = state
+        setattr(ns, attr, saved)
+    except Exception:
+        pass
+
+
+def _np_abs_diff(sa, sb):
+    """Selisih rata-rata |a-b| dua permukaan (skala 0-255 per channel)."""
+    a = pygame.surfarray.array3d(sa).astype(int)
+    b = pygame.surfarray.array3d(sb).astype(int)
+    return abs(a - b).mean()
+
+
+def _boss_probe_diff_direct(boss_type, boss, draw_fn, sprite, add_surf,
+                            ax, ay, size, kind="idle"):
+    """Selisih rata-rata |langsung - (sprite+aditif)| pada panel uji."""
+    c = size // 2
+    bg = (24, 20, 30)
+    ref = pygame.Surface((size, size))
+    ref.fill(bg)
+    had_beam = boss_type in _BEAM_PASS_HEROES
+    park = _boss_probe_park(boss_type)   # kedua sisi tanpa proyektil live
+    if had_beam:
+        boss._skip_beam = True
+    _jam_asli = pygame.time.get_ticks
+    pygame.time.get_ticks = lambda: _WT[0]
+    try:
+        _t0 = _time.perf_counter()
+        draw_fn(ref, boss, c, c)
+        _dt = (_time.perf_counter() - _t0) * 1000.0
+        lama = _BOSS_DIRECT_MS.get(boss_type)
+        if lama is None or _dt < lama:
+            _BOSS_DIRECT_MS[boss_type] = _dt
+        # Jam animasi internal? Render kedua pada tick virtual SAMA,
+        # lalu render ketiga pada tick DIMAJUKAN:
+        #   beda pada tick sama  -> state/acak per draw -> tidak aman
+        #                         dibekukan ke sprite,
+        #   beda hanya saat tick maju -> renderer ber-jam dinding ->
+        #                         kunci cache perlu fase jam (wq).
+        ref2 = pygame.Surface((size, size))
+        ref2.fill(bg)
+        draw_fn(ref2, boss, c, c)
+        drift_same = float(_np_abs_diff(ref, ref2))
+        ref3 = pygame.Surface((size, size))
+        ref3.fill(bg)
+        _WT[0] += BOSS_WALL_QUANT_MS * 4
+        draw_fn(ref3, boss, c, c)
+        drift_time = float(_np_abs_diff(ref, ref3))
+        _BOSS_DIRECT_DRIFT[(boss_type, kind)] = drift_same
+        if drift_time > BOSS_STATEFUL_DRIFT:
+            _BOSS_WALLCLOCK[boss_type] = True
+    finally:
+        pygame.time.get_ticks = _jam_asli
+        if had_beam:
+            boss._skip_beam = False
+        _boss_probe_unpark(park)
+    new = pygame.Surface((size, size))
+    new.fill(bg)
+    new.blit(sprite, (c - ax, c - ay))
+    if add_surf is not None:
+        new.blit(add_surf, (c - ax, c - ay),
+                 special_flags=pygame.BLEND_RGB_ADD)
+    a = pygame.surfarray.array3d(ref).astype(int)
+    b = pygame.surfarray.array3d(new).astype(int)
+    return float(abs(a - b).mean())
+
+
+_BOSS_PROBE_ERRORS = {}    # (tipe,pose) -> pesan error terakhir
+
+
+def _boss_probe_parity(boss_type, boss, draw_fn, kind="idle"):
+    """Pilih jalur cache untuk satu (tipe, pose) + ukur selisihnya.
+
+    Urutan: coba jalur CEPAT (1 render). Kalau tampilannya beda dari
+    jalur langsung (renderer memakai alpha/aditif yang berperilaku lain
+    di canvas SRCALPHA), coba jalur AFIN (2 render, eksak). Kalau ambos
+    beda, tipe tidak di-cache sama sekali.
+
+    Return ``(selisih, aman)`` atau ``None`` kalau sprite belum bisa
+    dibuat (geometri canvas sedang tumbuh).
+    """
+    size = 320
+    grow0 = _boss_cache_stats["grow"]
+    park = _boss_probe_park(boss_type)
+    # Lapisan FX hidup DIMATIKAN selama probe: pertukaran "FX canvas
+    # baked" -> "lapisan hidup" untuk tipe terdaftar adalah perilaku
+    # paritas-hero yang DISENGAJA (FX itu harus bergerak 60 fps, tidak
+    # boleh terpanggang ke pose). Probe hanya menilai fidelitas BADAN +
+    # lapisan canvas terhadap jalur langsung.
+    pakai_live = boss_type in _LIVE_FX_HEROES
+    if pakai_live:
+        _LIVE_FX_HEROES.discard(boss_type)
+    try:
+        out = _boss_render_sprite_fast(boss_type, boss, draw_fn, kind)
+        if out is None:
+            # None karena canvas sedang membesar = coba lagi frame depan.
+            # None tanpa pertumbuhan = sprite memang tidak bisa dibuat
+            # (renderer tidak cocok dengan canvas) -> jangan di-cache.
+            if _boss_cache_stats["grow"] == grow0:
+                _BOSS_PROBE_ERRORS[(boss_type, kind)] = "fast: sprite None"
+                return 9.9, False
+            return None
+        diff = _boss_probe_diff_direct(boss_type, boss, draw_fn,
+                                       out[0], out[1], out[2], out[3],
+                                       size, kind)
+        _BOSS_FAST_DIFF[(boss_type, kind)] = diff
+        if _BOSS_DIRECT_DRIFT.get((boss_type, kind), 0.0) \
+                > BOSS_STATEFUL_DRIFT:
+            return diff, False          # jam internal: jangan di-cache
+        if diff <= BOSS_PARITY_TOLERANCE:
+            _BOSS_PATH[(boss_type, kind)] = "fast"
+            _BOSS_PARITY_DIFF[(boss_type, kind)] = diff
+            return diff, True
+        # Jalur AFIN (2 render + numpy permukaan penuh per miss) secara
+        # matematis lebih eksak, tetapi pengukuran loop game nyata
+        # (tools/_diag_boss_scene_smoke.py) menunjukkan biaya miss-nya
+        # membuat frame gameplay LEBIH berat daripada tanpa cache untuk
+        # boss ber-FX berat. Maka pose yang lolos jalur cepat dipakai;
+        # yang tidak, kembali ke jalur langsung (tampilan lama utuh).
+        # Fungsi affine dipertahankan (teruji) untuk pemakaian kelak.
+        return diff, diff <= BOSS_PARITY_TOLERANCE
+    except Exception as exc:
+        _BOSS_PROBE_ERRORS[(boss_type, kind)] = f"{type(exc).__name__}: {exc}"
+        return None
+    finally:
+        if pakai_live:
+            _LIVE_FX_HEROES.add(boss_type)
+        _boss_probe_unpark(park)
+
+
+def _boss_dbg(boss_type, kind, pesan):
+    """Catat alasan sprite gagal dibuat (aktif lewat MYSTIC_BOSS_DEBUG)."""
+    _BOSS_PROBE_ERRORS[(boss_type, kind)] = pesan
+    if _BOSS_DEBUG:
+        print(f"[BOSS-DBG] {boss_type}/{kind}: {pesan}")
+
+
+_BOSS_DEBUG = bool(_os.environ.get("MYSTIC_BOSS_DEBUG"))
+
+
+def _boss_render_sprite(boss_type, boss, draw_fn, kind):
+    """Render badan boss ke sprite cache (rekonstruksi afine dua pass).
+
+    Return ``(sprite, add_sprite|None, ax, ay)`` atau ``None`` kalau
+    gagal / tidak aman di-cache (pemanggil lalu memakai jalur gambar
+    langsung yang lama). ``ax``/``ay`` = posisi titik jangkar di dalam
+    sprite, sehingga blit di ``(x - ax, y - ay)`` mendarat PERSIS di
+    ``(x, y)`` — skala 1.0 membuat semua angka ini bilangan bulat, jadi
+    tidak ada pergeseran sub-piksel antar pose.
+
+    FX yang melebar jauh (skill jarak jauh, beam ke target) TIDAK BOLEH
+    terpotong tepi canvas: kalau canvas sudah mentok di
+    ``BOSS_CANVAS_MAX_HALF``, pose itu didaftarkan ke ``_BOSS_UNSAFE``
+    dan digambar langsung seperti sebelumnya.
+    """
+    try:
+        import numpy as np
+    except Exception:
+        _boss_dbg(boss_type, kind, "numpy tidak ada")
+        return None
+    geom = _boss_geom(boss_type, kind, boss)
+    half = geom[0]
+    size = half * 2
+    c = half
+
+    had_scale = hasattr(boss, "_render_scale")
+    saved_scale = getattr(boss, "_render_scale", None)
+    # _render_scale = penanda "jalur lane" untuk renderer: lapisan FX
+    # hidup di-attach (bukan digambar) sehingga tidak terpanggang ke
+    # cache, dan FX canvas fallback diserahkan ke lapisan hidup.
+    #
+    # HANYA tipe yang lapisan FX hidupnya terdaftar (_LIVE_FX_HEROES)
+    # yang boleh memakai penanda ini. Renderer tipe lain menggambar FX
+    # canvas-nya sendiri setiap frame; kalau mereka dikira "jalur lane",
+    # FX itu dilewati dan TIDAK ADA yang menggantinya (hilang dari
+    # sprite). Untuk mereka render dilakukan PERSIS seperti jalur lama
+    # (tanpa _render_scale) sehingga FX ikut masuk sprite.
+    pakai_lane = boss_type in _LIVE_FX_HEROES
+    if pakai_lane:
+        boss._render_scale = 1.0
+    # Penanda "cache native boss": renderer TIDAK boleh melewati
+    # pass cahayanya sendiri (di jalur hero pass itu diambil alih
+    # heroes._finish_hd_sprite; di sini tidak ada HD pass karena
+    # boss digambar 1:1 seperti sebelumnya).
+    boss._boss_native_cache = True
+    if boss_type in _BEAM_PASS_HEROES:
+        boss._skip_beam = True
+    try:
+        o1 = _boss_get_opaque(size, _BOSS_BG1)
+        o2 = _boss_get_opaque(size, _BOSS_BG2)
+        try:
+            if _boss_fx_parkable(boss_type):
+                park = _park_renderer_fx(boss)
+            else:
+                park = None
+            try:
+                draw_fn(o1, boss, c, c)
+                draw_fn(o2, boss, c, c)
+            finally:
+                if park is not None:
+                    _restore_renderer_fx(boss, park)
+        except Exception as exc:
+            _boss_cache_stats["fallback"] += 1
+            _boss_dbg(boss_type, kind, f"renderer error: "
+                                       f"{type(exc).__name__}: {exc}")
+            return None
+        # BBox konten lewat pygame.mask (level C) — jauh lebih murah
+        # daripada array3d permukaan penuh, dan array3d lalu hanya
+        # dipakai untuk area crop.
+        #
+        # PENTING soal semantik: from_threshold() menandai piksel yang
+        # SEMUA channel-nya berbeda KURANG dari threshold terhadap warna
+        # acuan — jadi dengan threshold (1,1,1,255) yang tertandai adalah
+        # piksel LATAR (selisih 0), dan mask-nya harus di-invert. Hasil
+        # invert = "ada selisih >= 1 pada salah satu channel RGB" =
+        # definisi konten yang persis sama dengan mask `beda` di bawah,
+        # sehingga margin crop tidak pernah memotong halo tipis.
+        # (Threshold longgar seperti (2,2,2,...) membuat halo tipis di
+        # luar bbox terpotong; tanpa invert bbox-nya adalah bbox LATAR,
+        # yang kosong sama sekali untuk boss ber-aura penuh.)
+        m1 = pygame.mask.from_threshold(o1, _BOSS_BG1, (1, 1, 1, 255))
+        m2 = pygame.mask.from_threshold(o2, _BOSS_BG2, (1, 1, 1, 255))
+        m1.invert()
+        m2.invert()
+        mrects = m1.get_bounding_rects() + m2.get_bounding_rects()
+        if not mrects:
+            _boss_dbg(boss_type, kind, "mask konten kosong")
+            return None
+        box0 = mrects[0].copy()
+        for r in mrects[1:]:
+            box0.union_ip(r)
+        if box0.width <= 0 or box0.height <= 0:
+            _boss_dbg(boss_type, kind, f"box0 kosong {box0}")
+            return None
+        # Area kerja = bbox konten + margin crop. clip (irisan), bukan
+        # clamp: clamp bisa menggeser origin ke negatif lalu subsurface
+        # jatuh di luar permukaan (ValueError).
+        cl = box0.inflate(BOSS_CROP_MARGIN * 2,
+                          BOSS_CROP_MARGIN * 2).clip(o1.get_rect())
+        if cl.width <= 0 or cl.height <= 0:
+            _boss_dbg(boss_type, kind, f"area kerja kosong box0={box0}")
+            cl = box0.clip(o1.get_rect())
+        ox, oy = cl.x, cl.y
+        a1 = pygame.surfarray.array3d(o1.subsurface(cl))   # (w, h, 3)
+        a2 = pygame.surfarray.array3d(o2.subsurface(cl))
+    finally:
+        boss._boss_native_cache = False
+        boss._skip_beam = False
+        if pakai_lane:
+            if had_scale:
+                boss._render_scale = saved_scale
+            else:
+                try:
+                    del boss._render_scale
+                except AttributeError:
+                    pass
+
+    # Piksel yang terpengambar = yang tidak sama dengan latarnya.
+    # (Bukan "dua pass berbeda": gambar OPAK — termasuk badan boss dan
+    # semua pygame.draw.* ber-alpha yang di layar opak alpha-nya
+    # diabaikan — menghasilkan warna yang SAMA di kedua pass, jadi
+    # selisih antar pass hanya melihat glow/aditif.)
+    beda = (np.any(a1 != np.asarray(_BOSS_BG1, np.uint8), axis=2)
+            | np.any(a2 != np.asarray(_BOSS_BG2, np.uint8), axis=2))
+    if not beda.any():
+        _boss_dbg(boss_type, kind, "beda kosong (semua piksel = latar)")
+        return None
+    ys, xs = np.nonzero(beda)
+    # a1/a2 ber-origin di (ox, oy) -> kembalikan ke koordinat canvas.
+    x0, x1 = ox + int(xs.min()), ox + int(xs.max())
+    y0, y1 = oy + int(ys.min()), oy + int(ys.max())
+    if (x0 <= BOSS_CROP_MARGIN or y0 <= BOSS_CROP_MARGIN
+            or x1 >= size - 1 - BOSS_CROP_MARGIN
+            or y1 >= size - 1 - BOSS_CROP_MARGIN):
+        # Konten + margin crop menyentuh tepi canvas: sprite akan punya
+        # tinta di pinggirnya (FX terpotong) -> canvas membesar dulu.
+        if half < BOSS_CANVAS_MAX_HALF:
+            geom[0] = min(BOSS_CANVAS_MAX_HALF, half + 55)
+            geom[1] = None
+            _boss_cache_stats["grow"] += 1
+            _boss_dbg(boss_type, kind, f"canvas membesar {half} -> {geom[0]}")
+        else:
+            _BOSS_UNSAFE.add((boss_type, kind))
+            _boss_cache_stats["fallback"] += 1
+            _boss_cache_stats["unsafe"] += 1
+            _boss_dbg(boss_type, kind,
+                      f"konten mentok tepi canvas (half={half})")
+        return None
+
+    rect = geom[1]
+    box = pygame.Rect(x0, y0, x1 - x0 + 1, y1 - y0 + 1)
+    if rect is not None:
+        # Kasus cepat: cek apakah ada tinta DI LUAR rect crop tersimpan
+        # (iris tipis, murah). Kalau tidak, pakai rect lama apa adanya.
+        luar = False
+        if box.left < rect.left or box.top < rect.top \
+                or box.right >= rect.right or box.bottom >= rect.bottom:
+            luar = True
+        if (rect.left < ox or rect.top < oy
+                or rect.right > ox + a1.shape[0]
+                or rect.bottom > oy + a1.shape[1]):
+            luar = True      # rect lama di luar area kerja -> hitung ulang
+        if not luar:
+            sub1 = a1[rect.x - ox:rect.x - ox + rect.width,
+                      rect.y - oy:rect.y - oy + rect.height]
+            sub2 = a2[rect.x - ox:rect.x - ox + rect.width,
+                      rect.y - oy:rect.y - oy + rect.height]
+            rgb, alpha, add, addmask = _boss_solve_layers(sub1, sub2, np)
+            return _boss_pack_layers(rgb, alpha, add, addmask, np,
+                                     c - rect.x, c - rect.y)
+
+    new_rect = box.inflate(BOSS_CROP_MARGIN * 2, BOSS_CROP_MARGIN * 2)
+    new_rect = new_rect.clip(cl)
+    if new_rect.width <= 0 or new_rect.height <= 0:
+        return None
+    if max(new_rect.width, new_rect.height) > BOSS_SPRITE_MAX_SIDE:
+        # Terlalu besar untuk di-cache: gambar langsung saja.
+        _BOSS_UNSAFE.add((boss_type, kind))
+        _boss_cache_stats["fallback"] += 1
+        _boss_cache_stats["unsafe"] += 1
+        return None
+    if rect is not None:
+        # Rect berubah -> anchor sprite lama tidak berlaku lagi. Buang
+        # semuanya (dan kembalikan anggaran pikselnya) supaya evict LRU
+        # tidak makin agresif seiring waktu.
+        for k in [k for k in _boss_sprite_cache
+                  if k[0] == boss_type and k[8] == kind]:
+            _boss_cache_pixels[0] -= _sprite_pixels(
+                _boss_sprite_cache.pop(k))
+    geom[1] = new_rect
+    sub1 = a1[new_rect.x - ox:new_rect.x - ox + new_rect.width,
+              new_rect.y - oy:new_rect.y - oy + new_rect.height]
+    sub2 = a2[new_rect.x - ox:new_rect.x - ox + new_rect.width,
+              new_rect.y - oy:new_rect.y - oy + new_rect.height]
+    rgb, alpha, add, addmask = _boss_solve_layers(sub1, sub2, np)
+    return _boss_pack_layers(rgb, alpha, add, addmask, np,
+                             c - new_rect.x, c - new_rect.y)
+
+
+def _boss_pack_layers(rgb, alpha, add, addmask, np, ax, ay):
+    """Kemas hasil solve jadi (sprite RGBA, sprite aditif|None, ax, ay).
+
+    Masukan berbentuk (W, H, 3/2) seperti keluaran
+    ``pygame.surfarray.array3d``; ``frombuffer`` menuntut urutan
+    scanline (H, W, 4) jadi di-transpose dulu.
+    """
+    w, h = alpha.shape
+    rgba = np.empty((w, h, 4), dtype=np.uint8)
+    rgba[..., :3] = rgb
+    rgba[..., 3] = alpha
+    buf = np.ascontiguousarray(np.transpose(rgba, (1, 0, 2)))
+    sprite = pygame.image.frombuffer(buf.tobytes(), (w, h), "RGBA")
+    add_surf = None
+    if addmask.any():
+        addrgb = np.where(addmask[..., None], add, 0).astype(np.uint8)
+        buf = np.ascontiguousarray(np.transpose(addrgb, (1, 0, 2)))
+        add_surf = pygame.image.frombuffer(buf.tobytes(), (w, h), "RGB")
+    return sprite, add_surf, ax, ay
+
+
+def _sprite_edges_inked(sprite, strip=2, min_alpha=8):
+    """True kalau ada tinta di cincin 2 px tepi sprite (FX terpotong)."""
+    w, h = sprite.get_width(), sprite.get_height()
+    if w < strip * 4 or h < strip * 4:
+        return False
+    for r in (pygame.Rect(0, 0, w, strip), pygame.Rect(0, h - strip, w, strip),
+              pygame.Rect(0, 0, strip, h), pygame.Rect(w - strip, 0, strip, h)):
+        try:
+            if sprite.subsurface(r).get_bounding_rect(min_alpha=min_alpha).width:
+                return True
+        except Exception:
+            return True
+    return False
+
+
+def _sprite_pixels(entry):
+    """Jumlah piksel satu entri cache (sprite + lapisan aditif)."""
+    total = entry[0].get_width() * entry[0].get_height()
+    if entry[1] is not None:
+        total += entry[1].get_width() * entry[1].get_height()
+    return total
+
+
+def _boss_cache_store(key, sprite, add_surf, ax, ay):
+    """Simpan sprite dengan anggaran jumlah entri DAN total piksel."""
+    entry = (sprite, add_surf, ax, ay)
+    _boss_cache_pixels[0] += _sprite_pixels(entry)
+    while (len(_boss_sprite_cache) >= _BOSS_CACHE_MAX
+           or _boss_cache_pixels[0] > _BOSS_CACHE_PIXEL_BUDGET):
+        if not _boss_sprite_cache:
+            break
+        _boss_cache_pixels[0] -= _sprite_pixels(
+            _boss_sprite_cache.popitem(last=False)[1])
+    _boss_sprite_cache[key] = entry
+
+
+def render_boss(boss_type, surface, boss, x, y, draw_fn=None):
+    """Render mini boss / true boss lewat cache sprite (paritas hero).
+
+    Return ``True`` kalau gambar sudah ditangani di sini; ``False``
+    berarti pemanggil harus memakai jalur lama (renderer langsung ke
+    layar) — dipakai sebagai jaring pengaman supaya boss tetap tampil
+    apa pun yang terjadi.
+
+    Urutan lapisan sama persis dengan Boss.draw lama:
+        GROUND FX -> BADAN (sprite cache) -> FX RENDERER -> LIVE FX ATAS
+    """
+    if not BOSS_CACHE_ENABLED:
+        return False
+    if getattr(boss, "_portrait_hd", False):
+        return False                      # portrait Hero Shop: jalur sendiri
+    fn = draw_fn if callable(draw_fn) else BOSS_RENDERERS.get(boss_type)
+    if fn is None or not callable(fn):
+        return False
+
+    if boss_type in _BOSS_NO_CACHE or boss_type in _BOSS_CACHE_DENY:
+        # Renderer tipe ini terbukti berubah tampilan saat dirender ke
+        # canvas (probe paritas), atau memang dilarang di-cache:
+        # pakai jalur langsung selamanya.
+        return False
+
+    key = _boss_cache_key(boss_type, boss)
+    kind = key[8]
+    probe_baru = (boss_type, kind) not in _BOSS_PARITY_DIFF
+    if (boss_type, kind) in _BOSS_PROBE_FAIL:
+        # Probe gagal (renderer error di canvas / geometri mentok):
+        # jangan diulang tiap frame — pakai jalur langsung selamanya.
+        return False
+    if (boss_type, kind) in _BOSS_UNSAFE:
+        # Pose FX melebar (skill jarak jauh / beam): jalur langsung
+        # supaya tidak ada yang terpotong canvas.
+        return False
+
+    if (boss_type, kind) not in _BOSS_PARITY_DIFF:
+        # Probe sekali per (tipe, pose) (~2 render): pastikan badan yang
+        # di-cache terlihat SAMA dengan jalur langsung sebelum cache
+        # dipakai. Pose berbeda memakai FX berbeda (skill paling rawan),
+        # jadi masing-masing di-probe sendiri.
+        grow0 = _boss_cache_stats["grow"]
+        diff = _boss_probe_parity(boss_type, boss, fn, kind)
+        if diff is None:
+            gk0 = (boss_type, kind)
+            if _boss_cache_stats["grow"] != grow0:
+                return False        # canvas sedang membesar: bukan kegagalan
+            n = _BOSS_PROBE_TRY[gk0] = _BOSS_PROBE_TRY.get(gk0, 0) + 1
+            if n >= 8:
+                # 3x gagal = bukan sekadar geometri yang sedang tumbuh;
+                # hentikan percobaan supaya tidak ada biaya tersembunyi
+                # tiap frame (jalur langsung = tampilan lama, aman).
+                _BOSS_PROBE_FAIL[gk0] = _BOSS_PROBE_ERRORS.get(gk0,
+                                                               "sprite None")
+                _boss_cache_stats["probefail"] += 1
+            return False
+        if not diff[1]:
+            # Pose ini tidak bisa dipakai cache (renderer tidak cocok
+            # dengan canvas, atau selisihnya terlalu besar di kedua
+            # jalur). Batasi per POSE supaya pose lain dari tipe yang
+            # sama tetap bisa di-cache.
+            _BOSS_UNSAFE.add((boss_type, kind))
+            _boss_cache_stats["nocache"] += 1
+            return False
+    if probe_baru:
+        # Probe bisa menandai renderer ber-jam dinding -> kunci cache
+        # berubah (fase wq masuk); hitung ulang sebelum lookup/store.
+        key = _boss_cache_key(boss_type, boss)
+
+    if key[-2]:
+        # FX proyektil renderer aktif tanpa lapisan hidup pengganti:
+        # gambar jalur langsung supaya FX-nya utuh & bergerak tiap frame.
+        return False
+    gk = (boss_type, kind)
+    hm = _BOSS_KIND_HM.setdefault(gk, [0, 0])
+    entry = _boss_sprite_cache.get(key)
+    if entry is not None:
+        sprite, add_surf, ax, ay = entry
+        _boss_cache_stats["hits"] += 1
+        hm[0] += 1
+        _boss_sprite_cache.move_to_end(key)     # LRU: tandai baru dipakai
+    else:
+        if (_BOSS_PATH.get(gk) == "affine"
+                and hm[1] >= _BOSS_AFFINE_MIN_MISS
+                and hm[0] / max(1, hm[0] + hm[1]) < _BOSS_AFFINE_MIN_HITRATE):
+            # Pose ini terlalu sering miss: cache affine (2 render per
+            # miss) tidak menghemat apa-apa. Turun ke jalur cepat
+            # (1 render per miss) — badan sedikit kurang persis
+            # (selisihnya terukur saat probe) tetapi lebih murah.
+            _BOSS_PATH[gk] = "fast"
+            hm = _BOSS_KIND_HM[gk] = [0, 0]
+            _boss_cache_stats["downgrade"] += 1
+        _t0 = _time.perf_counter()
+        out = (_boss_render_sprite_fast(boss_type, boss, fn, kind)
+               if _BOSS_PATH.get(gk) == "fast"
+               else _boss_render_sprite(boss_type, boss, fn, kind))
+        _dt = (_time.perf_counter() - _t0) * 1000.0
+        if out is None:
+            return False                        # fallback jalur langsung
+        sprite, add_surf, ax, ay = out
+        if _sprite_edges_inked(sprite):
+            # Garansi keras: sprite dengan tinta di pinggiran 2 px
+            # berarti ada FX yang terpotong crop -> pose ini tidak
+            # boleh di-cache (jalur langsung = tampilan lama utuh).
+            _BOSS_UNSAFE.add(gk)
+            _boss_cache_stats["unsafe"] += 1
+            _boss_dbg(boss_type, kind, "sprite punya tinta di tepi")
+            return False
+        hm[1] += 1
+        mm = _BOSS_MISS_MS.setdefault(gk, [0.0, 0])
+        mm[0] += _dt
+        mm[1] += 1
+        _boss_cache_stats["misses"] += 1
+        _boss_cache_store(key, sprite, add_surf, ax, ay)
+
+    # Kebijakan adaptif berbasis BIAYA TERUKUR. Cache baru menguntungkan
+    # kalau penghematan saat hit (render langsung tidak jalan) lebih
+    # besar daripada kerugian saat miss (render sprite + tetap harus
+    # menunggu). Untuk boss yang renderer-nya sudah ringan, cache bisa
+    # jadi lebih lambat -> kembalikan ke jalur langsung.
+    if hm[0] + hm[1] >= 20:
+        _langsung = _BOSS_DIRECT_MS.get(boss_type)
+        _mm = _BOSS_MISS_MS.get(gk)
+        if _langsung and _mm and _mm[1]:
+            _h = hm[0] / float(hm[0] + hm[1])
+            _miss = _mm[0] / _mm[1]
+            _untung = (_h * (_langsung - 0.10)
+                       - (1.0 - _h) * max(0.0, _miss - _langsung))
+            if _untung <= 0.0:
+                # Jalur affine tidak menguntungkan untuk pola pose ini.
+                # Jangan langsung menyerah ke jalur langsung: coba jalur
+                # cepat (1 render per miss) selama selisih tampilannya
+                # masih di bawah batas longgar — boss FX berat (mis.
+                # nyrethzalv/nyxaris) justru paling butuh cache.
+                if (_BOSS_PATH.get(gk) == "affine"
+                        and _BOSS_FAST_DIFF.get(gk, 9.9)
+                        <= BOSS_FAST_FALLBACK_DIFF):
+                    _BOSS_PATH[gk] = "fast"
+                    hm[:] = [0, 0]
+                    _BOSS_MISS_MS.pop(gk, None)
+                    _boss_cache_stats["downgrade"] += 1
+                else:
+                    _BOSS_UNSAFE.add(gk)
+                    _boss_cache_stats["uncache"] += 1
+                    return False
+
+    # FX milik renderer yang harus maju tiap frame (proyektil drakar).
+    _boss_live_step(boss_type, boss)
+
+    if entry is not None:
+        # Cache HIT: renderer dilewati, jadi controller pose diurus di
+        # sini (paritas dengan hero: cache HIT tidak menghentikan anim).
+        _tick_boss_pose(boss_type, boss)
+
+    # Lapisan FX hidup di BAWAH sprite (ground FX, back particles) —
+    # SETIAP frame, di luar cache, sama seperti jalur hero.
+    _live_fx_pre(boss_type, surface, boss, x, y)
+
+    surface.blit(sprite, (int(x - ax), int(y - ay)))
+    if add_surf is not None:
+        # Lapisan ADITIF hasil pemecahan affine (glow/starburst yang
+        # digambar BLEND_ADD oleh renderer). Tanpa blit ini cahaya itu
+        # hilang dari layar — probe membandingkannya, jadi hanya layar
+        # pemain yang rugi.
+        surface.blit(add_surf, (int(x - ax), int(y - ay)),
+                     special_flags=pygame.BLEND_RGB_ADD)
+
+    # FX milik renderer (proyektil drakar) + beam (morgath) di layar.
+    _boss_live_draw(boss_type, surface, boss, x, y)
+
+    # Lapisan FX hidup di ATAS sprite (trail, proyektil, skill, impact).
+    _live_fx_post(boss_type, surface, boss, x, y)
+    return True
 
 
 def _draw_generic_hero(surface, hero, x, y):

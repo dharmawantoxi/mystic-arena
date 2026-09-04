@@ -783,6 +783,34 @@ buildozer android release      # AAB untuk Play Store
 
 Rinciannya di [docs/PANDUAN_ANDROID.md § 3](docs/PANDUAN_ANDROID.md).
 
+## Mini boss & true boss selancar hero unlock
+
+Karakter yang sama dulu terasa kaku sebagai mini/true boss tapi mulus sebagai
+hero unlock. Tiga penyebabnya sudah diperbaiki:
+
+| | Sebelum | Sesudah |
+|---|---|---|
+| Draw boss per frame | renderer prosedural penuh, median 2,22 ms (maks 7,04 ms) | **cache sprite seperti hero**; median tipe ter-cache 0,21× hero, dan tidak satu tipe pun lebih lambat dari jalur lamanya (diukur berselang-seling) |
+| Frame adegan nyata (600 frame/level, cache ON vs OFF) | — | **Lv1 −42 % · Lv10 −39 % · Lv30 −10 % · Lv54 −3 %** |
+| Gerak di waypoint lane | 5–6 frame stall per 120 frame | **0 stall** (432 jalur boss) |
+| Jam animasi (`pulse`) | 0,05/frame (setengah hero) | **0,1/frame = hero** |
+| Arah hadap saat ayunan | bisa berbalik di tengah swing | **terkunci** (paritas hero) |
+
+Tampilan tidak berubah: 22 tipe dibandingkan piksel-demi-piksel antara jalur
+lama dan baru dengan jam virtual + drift floor
+(`tools/_diag_boss_pixel_parity.py`) — **0 regresi visual**. Probe paritas
+per (tipe, pose) menahan cache bila selisihnya > 0,35 terhadap jalur
+langsung, dan pose/tipe ber-FX satu-shot (krobellus dkk.) tetap digambar
+langsung supaya tidak ada FX yang hilang atau terpotong.
+Rincian diagnosa, angka, dan katup pengaman:
+[docs/BOSS_HERO_SMOOTH_PARITY.md](docs/BOSS_HERO_SMOOTH_PARITY.md).
+
+```bash
+python tools/test_boss_hero_smooth_parity.py --all   # 16 pemeriksaan, 216 boss
+python tools/_diag_boss_pixel_parity.py              # paritas piksel lama-vs-baru
+MYSTIC_BOSS_CACHE=0 python main.py                   # bandingkan tanpa cache boss
+```
+
 ## Perkakas
 
 ```bash
@@ -790,6 +818,9 @@ python tools/bench_mobile.py       # benchmark adegan intro + uji gesture/HUD
 python tools/bench_heavy.py        # benchmark gameplay (--quality low/high)
 python tools/bench_minions.py      # skala jumlah minion
 python tools/test_spritecache.py   # uji kebenaran cache sprite (piksel)
+python tools/test_boss_hero_smooth_parity.py --all  # boss selancar hero (216 boss)
+python tools/_diag_scene_boss_vs_hero.py 1 gornak   # frame: boss vs hero unlock
+python tools/_diag_boss_scene_smoke.py 1:gornak     # smoke test loop game nyata
 python tools/gen_boss_index.py     # regenerasi indeks boss setelah tambah boss
 python tools/_shot_ui.py           # screenshot headless semua layar menu
 python tools/_shot_game_ui.py      # screenshot headless UI in-game

@@ -437,6 +437,26 @@ class Boss(TowerDebuffMixin):
         self.ability_active = False
         self.ability_active_timer = 0
 
+        # ═══ STATE GERAK & KUNCI ARAH (paritas hero) ═══
+        # is_moving / _moving_cached dibaca renderer untuk memilih pose
+        # WALK vs IDLE. Dihitung dari perpindahan NYATA di update()
+        # (bukan dari draw()) karena sprite boss sekarang di-cache ->
+        # renderer tidak lagi jalan setiap frame.
+        self.is_moving = False
+        self._moving_cached = False
+        self._prev_x = self.x
+        self._prev_y = self.y
+        # Arah hadap dikunci sebentar saat ayunan dimulai (paritas
+        # Hero._attack_facing di heroes/__init__._adapt_hero_to_boss):
+        # tanpa ini boss yang berganti target di tengah swing membalik
+        # pose setiap frame -> animasi terlihat "kacau"/patah.
+        self._attack_facing = None
+        self._attack_lock_timer = 0
+        # Histeresis kiting boss ranged: tanpa ini boss maju-mundur
+        # beberapa piksel tiap frame di batas min/prefer distance,
+        # terlihat gemetar dan pose walk/idle-nya berkedip.
+        self._kite_mode = "hold"
+
         # ═══ DEBUFF MENARA (Ice/Mage/Cannon) ═══
         # slow gerak+serang, skill down, anti-heal, burn - semuanya
         # berlaku untuk mini boss dan true boss.
@@ -501,7 +521,32 @@ class Boss(TowerDebuffMixin):
             return
 
         self.anim_time += 1
-        self.pulse += 0.05
+        # ═══ JAM ANIMASI BOSS = JAM HERO ═══
+        # Hero menambah pulse 0.1/frame (Hero.update di _entity.py);
+        # boss dulu 0.05, jadi rig yang SAMA PERSIS beranimasi setengah
+        # kecepatan saat menjadi mini/true boss. Karena offset rig
+        # di-kuantisasi ke bilangan bulat (bob/sway/lift =
+        # int(sin(pulse*k)*n)), fase yang lebih lambat berarti satu
+        # nilai ditahan lebih lama lalu melompat -> inilah salah satu
+        # sebab "animasi boss tidak selancar versi hero-nya".
+        self.pulse += 0.1
+
+        # ═══ DETEKSI GERAK (pose WALK vs IDLE) ═══
+        # Diukur dari perpindahan sejak update() sebelumnya, BUKAN dari
+        # jeda antar pemanggilan draw(): sprite boss sekarang di-cache
+        # (heroes.render_boss) sehingga renderer — yang dulu memanggil
+        # _detect_moving — tidak lagi jalan setiap frame.
+        _moved = math.hypot(self.x - self._prev_x, self.y - self._prev_y)
+        self._prev_x = self.x
+        self._prev_y = self.y
+        self.is_moving = _moved > 0.05
+        self._moving_cached = self.is_moving
+
+        # Kunci arah hadap selama ayunan serangan (lihat _face()).
+        if self._attack_lock_timer > 0:
+            self._attack_lock_timer -= 1
+            if self._attack_lock_timer <= 0:
+                self._attack_facing = None
 
         # ═══ TICK DEBUFF MENARA (Ice/Mage/Cannon) ═══
         # slow, atk_slow, skill_down, anti_heal, burn (mini & true boss)
@@ -604,6 +649,12 @@ class Boss(TowerDebuffMixin):
                               self.target.y - self.y)
 
             if dist <= self.range:
+                # Hadap sasaran sebelum memukul. Dulu arah hadap TIDAK
+                # pernah diperbarui di cabang ini (hanya di cabang
+                # kejar), jadi boss yang sasarannya berpindah sisi
+                # tetap menebas membelakangi target.
+                self._face(self.target.x - self.x,
+                           self.target.y - self.y)
                 if self.timer == 0:
                     self.target.take_damage(self.damage, self.team,
                                             school='physical',
@@ -626,6 +677,17 @@ class Boss(TowerDebuffMixin):
                     # Attack cooldown efektif (dipanjangkan saat kena
                     # debuff attack-speed dari Ice Tower)
                     self.timer = self._eff_attack_cd(self.attack_cooldown)
+                    # ═══ KUNCI ARAH HADAP SELAMA AYUNAN ═══
+                    # Paritas hero: Hero._do_attack menyimpan
+                    # _attack_facing dan heroes._adapt_hero_to_boss
+                    # mengunci direction selama attack_timer > 0, sebab
+                    # pose swing yang dibalik di tengah ayunan terlihat
+                    # seperti animasi rusak. Boss memakai kunci pendek
+                    # (6-15 frame, seumur wind-up s/d impact) supaya
+                    # tetap bisa berputar mengejar target setelahnya.
+                    self._attack_facing = self.direction
+                    self._attack_lock_timer = min(
+                        15, max(6, int(self.attack_cooldown // 3)))
                     # Boss memakai DUA suara global yang sama seperti
                     # hero: melee vs ranged (lihat _suara_serangan).
                     try:
@@ -800,7 +862,8 @@ class Boss(TowerDebuffMixin):
                 dx = self.target.x - self.x
                 dy = self.target.y - self.y
                 d = math.hypot(dx, dy)
-                # ═══ RANGED BOSS KITING ═══
+                sp = float(self.speed)
+                # ═══ RANGED BOSS KITING (dengan histeresis) ═══
                 if self.boss_type in ("ancient_apparition", "morgath",
                                       "razak", "varkul", "xerathis", "nyzrak",
                                       "syrentha", "thalgryn", "nyxarath",
@@ -808,47 +871,147 @@ class Boss(TowerDebuffMixin):
                     stats = self._get_boss_stats()
                     min_dist = stats.get("min_distance", 200)
                     prefer_dist = stats.get("prefer_distance", 280)
-                    if d < min_dist and d > 0:
-                        # KITE: mundur dari target
-                        self.x -= self.speed * dx / d
-                        self.y -= self.speed * dy / d
-                        self.direction = 1 if dx > 0 else -1
-                    elif d > prefer_dist and d > 0:
-                        # Approach ke prefer distance
-                        self.x += self.speed * dx / d
-                        self.y += self.speed * dy / d
-                        self.direction = 1 if dx > 0 else -1
-                    # Kalau di antara min & prefer → stay position
-                else:
-                    # Normal melee boss behavior
+                    # BUG LAMA: batasnya keras (d < min -> mundur,
+                    # d > prefer -> maju, selain itu DIAM). Boss yang
+                    # jaraknya bergetar di sekitar batas maju-mundur
+                    # beberapa piksel tiap frame -> terlihat gemetar,
+                    # dan pose WALK/IDLE berkedip karena perpindahan
+                    # per frame kadang di bawah ambang deteksi gerak
+                    # renderer (0,3 px). Sekarang ada band histeresis:
+                    # sekali mundur, boss baru berhenti setelah cukup
+                    # jauh keluar dari min_distance.
+                    band = 12.0
                     if d > 0:
-                        self.x += self.speed * dx / d
-                        self.y += self.speed * dy / d
-                        self.direction = 1 if dx > 0 else -1
+                        if d < min_dist:
+                            self._kite_mode = "back"
+                        elif d > prefer_dist:
+                            self._kite_mode = "in"
+                        elif self._kite_mode == "back" and d < min_dist + band:
+                            pass            # teruskan mundur sampai aman
+                        elif self._kite_mode == "in" and d > prefer_dist - band:
+                            pass            # teruskan maju sampai masuk
+                        else:
+                            self._kite_mode = "hold"
+
+                    if d > 0 and sp > 0 and self._kite_mode == "back":
+                        step = min(sp, max(0.0, (min_dist + band) - d))
+                        if step > 0:
+                            self.x -= step * dx / d
+                            self.y -= step * dy / d
+                            self._face(-dx, -dy)
+                    elif d > 0 and sp > 0 and self._kite_mode == "in":
+                        step = min(sp, max(0.0, d - (prefer_dist - band)))
+                        if step > 0:
+                            self.x += step * dx / d
+                            self.y += step * dy / d
+                            self._face(dx, dy)
+                    # "hold" -> diam di jarak tembak ideal
+                else:
+                    # Normal melee boss behavior.
+                    # step di-clamp ke jarak tersisa: tanpa clamp boss
+                    # yang kecepatannya lebih besar dari jarak ke target
+                    # melompat MELEWATI target lalu berbalik arah tiap
+                    # frame (osilasi 1 px yang terbaca sebagai getaran).
+                    if d > 0 and sp > 0:
+                        step = min(sp, d)
+                        self.x += step * dx / d
+                        self.y += step * dy / d
+                        self._face(dx, dy)
         else:
             self._move_forward()
 
+    # ═══════════════════════════════════════════════════════
+    # GERAK & ARAH HADAP (paritas dengan Hero._move_toward)
+    # ═══════════════════════════════════════════════════════
+
+    def _face(self, dx, dy):
+        """Set arah hadap dari vektor gerak/serang.
+
+        Dua pengaman kelancaran:
+          * selama kunci ayunan aktif, arah TIDAK diubah (pose swing
+            tidak boleh terbalik di tengah animasi),
+          * komponen horizontal yang sangat kecil (gerak hampir
+            vertikal) tidak membalik arah, supaya sprite tidak
+            berkedip kiri/kanan saat boss menyusuri lane berbelok.
+        """
+        if self._attack_lock_timer > 0:
+            if self._attack_facing:
+                self.direction = self._attack_facing
+            return
+        if abs(dx) < 0.35 * max(1e-6, abs(dy)):
+            return
+        self.direction = 1 if dx > 0 else -1
+
+    def _lane_target(self):
+        """Titik lane yang sedang dituju (waypoint atau base musuh)."""
+        if self.lane_path and 0 <= self.waypoint_index < len(self.lane_path):
+            return self.lane_path[self.waypoint_index]
+        return (BLUE_BASE_X, BLUE_BASE_Y)
+
+    def _advance_waypoint(self):
+        """Turun ke waypoint berikutnya. False kalau lane sudah habis."""
+        if not self.lane_path:
+            return False
+        self.waypoint_index -= 1
+        return self.waypoint_index >= 0
+
     def _move_forward(self):
-        if not self.lane_path or self.waypoint_index < 0:
-            dx = BLUE_BASE_X - self.x
-            dy = BLUE_BASE_Y - self.y
+        """Susuri lane ke base musuh TANPA kehilangan frame gerak.
+
+        BUG LAMA (terukur 5-6 frame stall per 120 frame — lihat
+        tools/bench_boss_vs_hero.py):
+
+            if d < 15:
+                self.waypoint_index -= 1
+                return            <-- boss DIAM satu frame penuh
+
+        Setiap waypoint mencuri satu frame tanpa perpindahan, jadi
+        gerakan boss tersendak berkala di sepanjang lane, dan renderer
+        (yang memilih pose dari perpindahan) berkedip ke IDLE tepat di
+        frame itu. Hero tidak punya masalah ini karena jalurnya tidak
+        memakai waypoint.
+
+        Sekarang budget gerak frame ini (speed, sudah termasuk slow)
+        dipakai sampai habis: waypoint yang tercapai di-snap lalu sisa
+        jaraknya dilanjutkan ke waypoint berikut pada frame yang sama.
+        """
+        budget = float(self.speed)
+        if budget <= 0:
+            return
+
+        guard = 0
+        while budget > 1e-3 and guard < 16:
+            guard += 1                      # pengaman lane patologis
+            tx, ty = self._lane_target()
+            dx = tx - self.x
+            dy = ty - self.y
             d = math.hypot(dx, dy)
-            if d > 1:
-                self.x += self.speed * dx / d
-                self.y += self.speed * dy / d
-            return
+            has_next = bool(self.lane_path) and self.waypoint_index >= 0
 
-        tx, ty = self.lane_path[self.waypoint_index]
-        dx = tx - self.x
-        dy = ty - self.y
-        d = math.hypot(dx, dy)
+            if d <= 1e-6:
+                # Sudah persis di titik tujuan: lanjut ke waypoint
+                # berikutnya; kalau tidak ada lagi, berhenti (sudah
+                # menempel di base musuh).
+                if not has_next:
+                    break
+                self._advance_waypoint()
+                continue
 
-        if d < 15:
-            self.waypoint_index -= 1
-            return
-        if d > 0:
-            self.x += self.speed * dx / d
-            self.y += self.speed * dy / d
+            if d <= budget:
+                # Tiba di waypoint: snap, turunkan indeks, dan pakai
+                # SISA langkah frame ini untuk segmen berikutnya.
+                self.x = float(tx)
+                self.y = float(ty)
+                budget -= d
+                self._face(dx, dy)
+                if has_next:
+                    self._advance_waypoint()
+                continue
+
+            self.x += budget * dx / d
+            self.y += budget * dy / d
+            self._face(dx, dy)
+            budget = 0.0
 
     def _use_ability(self, enemies):
         self.ability_timer = self.ability_cooldown_max
@@ -5962,7 +6125,26 @@ class Boss(TowerDebuffMixin):
         # modul level hanya dimuat saat boss-nya pertama digambar).
         _draw_fn = _get_boss_draw_func(self.boss_type)
         if _draw_fn is not None:
-            _draw_fn(surface, self, x, y)
+            # ═══ PARITAS HERO: badan boss lewat cache sprite ═══
+            # Sebelumnya boss digambar prosedural penuh SETIAP frame:
+            # 1,9-7,0 ms/boss di PC (median 2,2 ms dari 216 boss),
+            # sementara karakter yang sama sebagai hero unlock hanya
+            # 0,66-0,74 ms karena sprite-nya di-cache. Di HP selisih
+            # itu membuat FPS jatuh tepat saat boss muncul, jadi
+            # gerakan & animasi boss terasa patah-patah.
+            # heroes.render_boss() menjalankan pipeline cache hero pada
+            # skala NATIF 1.0 (ukuran/tampilan boss tidak berubah) dan
+            # tetap menggambar lapisan FX hidup setiap frame.
+            # Kalau ditolak/gagal -> jalur langsung yang lama.
+            _cached = False
+            try:
+                from heroes import render_boss
+                _cached = render_boss(self.boss_type, surface, self,
+                                      x, y, _draw_fn)
+            except Exception:
+                _cached = False
+            if not _cached:
+                _draw_fn(surface, self, x, y)
         else:
             self._draw_generic_body(surface, x, y, is_true)
 

@@ -143,6 +143,21 @@ class DebugOverlay:
                               h.get("entries", 0)))
         except Exception:
             pass
+        # Cache BOSS: mini/true boss memakai pipeline yang sama sejak
+        # perbaikan "boss tidak selancar hero". Tanpa baris ini tidak
+        # kelihatan apakah cache boss benar-benar menyala di perangkat.
+        try:
+            import heroes
+            b = heroes.boss_cache_stats()
+            tot = b.get("hits", 0) + b.get("misses", 0)
+            if tot:
+                bagian += ("   cache BOSS hit %d%% (%d miss, %d entri)"
+                           % (100 * b["hits"] // tot, b["misses"],
+                              b.get("entries", 0)))
+            elif not b.get("enabled", True):
+                bagian += "   cache BOSS MATI"
+        except Exception:
+            pass
         return bagian
 
     @staticmethod

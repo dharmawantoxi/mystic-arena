@@ -1396,6 +1396,13 @@ class Game:
             clear_hero_sprite_cache()
         except Exception:
             pass
+        # Cache sprite BOSS (mini/true boss) dibersihkan bersama:
+        # boss level berikutnya punya rig & pose yang berbeda.
+        try:
+            from heroes import clear_boss_sprite_cache
+            clear_boss_sprite_cache()
+        except Exception:
+            pass
 
         # Governor beban FX combat kembali penuh di awal match baru
         # (jangan membawa sisa intensitas rendah dari match sebelumnya).
@@ -2797,9 +2804,16 @@ class Game:
         # bertarung, lalu turunkan intensitas FX global (partikel &
         # lapisan depan diselingi) supaya combat ramai tidak membuat
         # game slow-motion atau FX menumpuk menutupi hero.
+        # Boss ikut dihitung: sejak render_boss memakai lapisan FX
+        # hidup yang sama dengan hero, mini/true boss juga menyumbang
+        # beban partikel (kalau tidak, governor meremehkan beban tepat
+        # saat pertarungan boss paling ramai).
         try:
             from heroes import begin_fx_frame, count_busy_fx_heroes
-            begin_fx_frame(count_busy_fx_heroes(self.get_all_heroes()))
+            _fx_units = self.get_all_heroes()
+            if self.active_boss is not None and self.active_boss.alive:
+                _fx_units = _fx_units + [self.active_boss]
+            begin_fx_frame(count_busy_fx_heroes(_fx_units))
         except Exception:
             pass
         for h in self.get_all_heroes():
