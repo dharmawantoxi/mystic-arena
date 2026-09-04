@@ -279,7 +279,25 @@ def shake_allowed():
 # ============================================================================
 
 def _clamp_color(color):
-    """Jepit komponen warna ke 0-255 dan pastikan tuple int."""
+    """Jepit komponen warna ke 0-255 dan pastikan tuple int.
+
+    Fast path: palette sudah int valid (99% panggilan). Menghindari
+    genexpr + max/min per partikel, yang panas di profil 5 hero starter.
+    """
+    if isinstance(color, (tuple, list)):
+        n = len(color)
+        if n == 3:
+            r, g, b = color[0], color[1], color[2]
+            if (isinstance(r, int) and isinstance(g, int) and
+                    isinstance(b, int) and
+                    0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
+                return (r, g, b)
+        elif n >= 4:
+            r, g, b = color[0], color[1], color[2]
+            if (isinstance(r, int) and isinstance(g, int) and
+                    isinstance(b, int) and
+                    0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
+                return color if isinstance(color, tuple) else (r, g, b)
     return tuple(max(0, min(255, int(c))) for c in color)
 
 
@@ -924,7 +942,17 @@ class ParticleSystem:
 
     # ------------------------------------------------------------------
     def spawn(self, x, y, vx, vy, life, size, color, **kw):
-        """Spawn satu partikel.  Return partikel, atau None kalau penuh."""
+        """Spawn satu partikel.  Return partikel, atau None kalau penuh.
+
+        Gerbang anggaran dipasang di sini supaya emisi kontinu (bukan
+        hanya burst) ikut turun saat 5 hero starter berbarengan.
+        """
+        budget = particle_budget()
+        if budget <= 0.0:
+            return None
+        if (budget < 1.0 and not getattr(self, "_in_burst", 0)
+                and random.random() >= budget):
+            return None
         if len(self._live) >= self.cap:
             return None
         p = self._acquire().spawn(x, y, vx, vy, life, size, color, **kw)
@@ -953,21 +981,25 @@ class ParticleSystem:
         if room <= 0:
             return 0
         n = min(int(count), room)
-        for i in range(n):
-            ang = direction + (random.random() - 0.5) * spread
-            spd = random.uniform(speed[0], speed[1])
-            self.spawn(
-                x, y,
-                math.cos(ang) * spd, math.sin(ang) * spd,
-                random.uniform(life[0], life[1]),
-                random.uniform(size[0], size[1]),
-                colors[i % len(colors)],
-                gravity=gravity, drag=drag, shape=shape,
-                additive=additive, fade_pow=fade_pow,
-                rotation=random.random() * math.tau,
-                rotation_speed=random.uniform(rotation_speed[0],
-                                              rotation_speed[1]),
-                back=back, swirl=swirl)
+        self._in_burst = getattr(self, "_in_burst", 0) + 1
+        try:
+            for i in range(n):
+                ang = direction + (random.random() - 0.5) * spread
+                spd = random.uniform(speed[0], speed[1])
+                self.spawn(
+                    x, y,
+                    math.cos(ang) * spd, math.sin(ang) * spd,
+                    random.uniform(life[0], life[1]),
+                    random.uniform(size[0], size[1]),
+                    colors[i % len(colors)],
+                    gravity=gravity, drag=drag, shape=shape,
+                    additive=additive, fade_pow=fade_pow,
+                    rotation=random.random() * math.tau,
+                    rotation_speed=random.uniform(rotation_speed[0],
+                                                  rotation_speed[1]),
+                    back=back, swirl=swirl)
+        finally:
+            self._in_burst -= 1
         return n
 
     # ------------------------------------------------------------------
@@ -979,22 +1011,26 @@ class ParticleSystem:
             return 0
         colors = colors or (P["fx_mid"], P["fx_light"])
         n = 0
-        for i in range(int(count)):
-            t = i / max(1, count)
-            px = x + (tx - x) * t + random.uniform(-4, 4)
-            py = y + (ty - y) * t + random.uniform(-3, 3)
-            dx, dy = tx - px, ty - py
-            dist = max(1.0, math.hypot(dx, dy))
-            spd = random.uniform(90.0, 210.0)
-            if self.spawn(px, py, dx / dist * spd, dy / dist * spd,
-                          random.uniform(life[0], life[1]),
-                          random.uniform(size[0], size[1]),
-                          colors[i % len(colors)],
-                          drag=drag, shape=shape,
-                          color_end=P["fx_deepest"],
-                          rotation=random.random() * math.tau,
-                          rotation_speed=random.uniform(-6, 6)):
-                n += 1
+        self._in_burst = getattr(self, "_in_burst", 0) + 1
+        try:
+            for i in range(int(count)):
+                t = i / max(1, count)
+                px = x + (tx - x) * t + random.uniform(-4, 4)
+                py = y + (ty - y) * t + random.uniform(-3, 3)
+                dx, dy = tx - px, ty - py
+                dist = max(1.0, math.hypot(dx, dy))
+                spd = random.uniform(90.0, 210.0)
+                if self.spawn(px, py, dx / dist * spd, dy / dist * spd,
+                              random.uniform(life[0], life[1]),
+                              random.uniform(size[0], size[1]),
+                              colors[i % len(colors)],
+                              drag=drag, shape=shape,
+                              color_end=P["fx_deepest"],
+                              rotation=random.random() * math.tau,
+                              rotation_speed=random.uniform(-6, 6)):
+                    n += 1
+        finally:
+            self._in_burst -= 1
         return n
 
     # ------------------------------------------------------------------
@@ -1011,27 +1047,31 @@ class ParticleSystem:
             return 0
         colors = colors or (P["fx_mid"], P["fx_light"], P["fx_bright"])
         n = 0
-        for i in range(int(count)):
-            ang = (i / float(count)) * math.tau + random.uniform(-0.12, 0.12)
-            spd = random.uniform(speed[0], speed[1])
-            dx, dy = math.cos(ang) * spd, math.sin(ang) * spd * squash
-            if inward:
-                px = x + math.cos(ang) * radius
-                py = y + math.sin(ang) * radius * squash
-                dx, dy = -dx, -dy
-            else:
-                px = x + math.cos(ang) * radius * 0.35
-                py = y + math.sin(ang) * radius * squash * 0.35
-            if self.spawn(px, py, dx, dy,
-                          random.uniform(life[0], life[1]),
-                          random.uniform(size[0], size[1]),
-                          colors[i % len(colors)],
-                          drag=1.8, shape=shape,
-                          color_end=P["fx_deep"],
-                          rotation=random.random() * math.tau,
-                          rotation_speed=random.uniform(-7, 7),
-                          swirl=swirl, back=back):
-                n += 1
+        self._in_burst = getattr(self, "_in_burst", 0) + 1
+        try:
+            for i in range(int(count)):
+                ang = (i / float(count)) * math.tau + random.uniform(-0.12, 0.12)
+                spd = random.uniform(speed[0], speed[1])
+                dx, dy = math.cos(ang) * spd, math.sin(ang) * spd * squash
+                if inward:
+                    px = x + math.cos(ang) * radius
+                    py = y + math.sin(ang) * radius * squash
+                    dx, dy = -dx, -dy
+                else:
+                    px = x + math.cos(ang) * radius * 0.35
+                    py = y + math.sin(ang) * radius * squash * 0.35
+                if self.spawn(px, py, dx, dy,
+                              random.uniform(life[0], life[1]),
+                              random.uniform(size[0], size[1]),
+                              colors[i % len(colors)],
+                              drag=1.8, shape=shape,
+                              color_end=P["fx_deep"],
+                              rotation=random.random() * math.tau,
+                              rotation_speed=random.uniform(-7, 7),
+                              swirl=swirl, back=back):
+                    n += 1
+        finally:
+            self._in_burst -= 1
         return n
 
     # ------------------------------------------------------------------

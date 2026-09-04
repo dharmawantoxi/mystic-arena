@@ -309,10 +309,15 @@ def gun_end(boss, x, y):
 # ============================================================================
 
 def _quality():
-    """Preset kualitas mobile (0..1) — fallback aman untuk tooling."""
+    """Faktor intensitas FX (preset kualitas x beban governor).
+
+    Memakai ``Quality.particle_ratio`` supaya governor beban FX ikut
+    menurunkan partikel saat combat ramai (mis. 6 hero sebangku), bukan
+    hanya preset tinggi/sedang/rendah.
+    """
     try:
         from mobile.perf import Quality as Q
-        return float(getattr(Q, "quality", 1.0) or 1.0)
+        return float(getattr(Q, "particle_ratio", 1.0) or 1.0)
     except Exception:                          # pragma: no cover
         return 1.0
 

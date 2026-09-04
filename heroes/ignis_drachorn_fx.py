@@ -431,9 +431,23 @@ def target_point(boss, x, y):
     return (x + facing * 160.0, y - 10.0)
 
 
+def _quality():
+    """Kualitas render mobile (objek Quality) — fallback aman."""
+    try:
+        from mobile.perf import Quality as Q
+        return Q
+    except Exception:                          # pragma: no cover
+        return None
+
+
 def particle_budget():
-    """Jumlah partikel total yang diizinkan per director."""
-    return MAX_PARTICLES
+    """Faktor jumlah partikel 0..1 (preset kualitas x governor beban FX)."""
+    Q = _quality()
+    if Q is None:
+        return 1.0
+    if not getattr(Q, "particles", True):
+        return 0.0
+    return float(getattr(Q, "particle_ratio", 1.0))
 
 
 def glow_allowed():
@@ -554,9 +568,10 @@ def _blit_faded(surface, surf, cx, cy, alpha=255, additive=False):
     if alpha >= 255:
         surface.blit(surf, rect.topleft)
         return
-    tmp = surf.copy()
-    tmp.set_alpha(int(alpha))
-    surface.blit(tmp, rect.topleft)
+    # Non-additif: set_alpha langsung, tanpa salinan per partikel.
+    surf.set_alpha(int(alpha))
+    surface.blit(surf, rect.topleft)
+    surf.set_alpha(255)
 
 
 def glow_surface(radius, color, power=1.0):
@@ -905,7 +920,12 @@ class ParticleSystem:
         return p
 
     def spawn(self, x, y, **kw):
-        """Satu partikel dengan parameter penuh."""
+        """Satu partikel dengan parameter penuh (mengikuti anggaran FX)."""
+        budget = particle_budget()
+        if budget <= 0.0:
+            return None
+        if budget < 1.0 and random.random() >= budget:
+            return None
         return self._next().spawn(x, y, **kw)
 
     def burst(self, x, y, count, speed=(40, 140), life=(0.2, 0.5),
@@ -914,7 +934,15 @@ class ParticleSystem:
               additive=True, layer="front", rotation_speed=(0.0, 0.0),
               scatter=0.0, lift=0.0):
         """Ledakan partikel terarah dengan sebaran acak."""
+        budget = particle_budget()
+        if budget <= 0.0:
+            return 0
         count = max(0, int(count))
+        if budget < 1.0:
+            if count > 1:
+                count = max(1, int(count * budget))
+            elif random.random() >= budget:
+                return 0
         for i in range(count):
             p = self._next()
             ang = direction + random.uniform(-spread / 2.0, spread / 2.0)

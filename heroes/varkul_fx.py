@@ -473,17 +473,22 @@ def target_point(boss, x, y):
 
 
 def _quality():
-    """Kualitas render: kalau tidak bisa, paksa sederhana."""
+    """Kualitas render mobile (objek Quality) — fallback aman."""
     try:
-        pygame.display.get_surface()
-        return "high"
+        from mobile.perf import Quality as Q
+        return Q
     except Exception:                          # pragma: no cover
-        return "high"
+        return None
 
 
 def particle_budget():
-    """Jumlah partikel total yang diizinkan."""
-    return MAX_PARTICLES
+    """Faktor jumlah partikel 0..1 (preset kualitas x governor beban FX)."""
+    Q = _quality()
+    if Q is None:
+        return 1.0
+    if not getattr(Q, "particles", True):
+        return 0.0
+    return float(getattr(Q, "particle_ratio", 1.0))
 
 
 def glow_allowed():
@@ -712,11 +717,18 @@ def _blit_faded(surface, surf, cx, cy, alpha=255, additive=False):
         flags = pygame.BLEND_RGB_ADD if additive else 0
         surface.blit(surf, rect.topleft, special_flags=flags)
         return
-    tmp = _scratch(rect.width, rect.height)
-    tmp.blit(surf, (0, 0))
-    tmp.set_alpha(alpha)
-    surface.blit(tmp, rect.topleft,
-                 special_flags=pygame.BLEND_RGB_ADD if additive else 0)
+    # Non-additif: set_alpha langsung pada surface cache (tanpa copy).
+    # Jalur aditif tetap lewat _scratch supaya premultiply alpha dipertahankan.
+    if additive:
+        tmp = _scratch(rect.width, rect.height)
+        tmp.blit(surf, (0, 0))
+        tmp.set_alpha(alpha)
+        surface.blit(tmp, rect.topleft,
+                     special_flags=pygame.BLEND_RGB_ADD)
+        return
+    surf.set_alpha(int(alpha))
+    surface.blit(surf, rect.topleft)
+    surf.set_alpha(255)
 
 
 # ============================================================================
@@ -867,7 +879,15 @@ class ParticleSystem:
               direction=0.0, gravity=0.0, drag=0.0, shape="spark",
               additive=False, layer="front", rotation_speed=(0, 0),
               scatter=0.0):
+        budget = particle_budget()
+        if budget <= 0.0:
+            return 0
         count = max(0, int(count))
+        if budget < 1.0:
+            if count > 1:
+                count = max(1, int(count * budget))
+            elif random.random() >= budget:
+                return 0
         for _ in range(count):
             p = self._next()
             ang = direction + random.uniform(-spread / 2.0, spread / 2.0)
