@@ -476,8 +476,23 @@ def ring_radius(boss, world_px):
     return float(world_px) / max(0.05, render_scale(boss))
 
 
+def _quality():
+    """Kualitas render mobile (objek Quality) — fallback aman."""
+    try:
+        from mobile.perf import Quality as Q
+        return Q
+    except Exception:                          # pragma: no cover
+        return None
+
+
 def particle_budget():
-    return MAX_PARTICLES
+    """Faktor jumlah partikel 0..1 (preset kualitas x governor beban FX)."""
+    Q = _quality()
+    if Q is None:
+        return 1.0
+    if not getattr(Q, "particles", True):
+        return 0.0
+    return float(getattr(Q, "particle_ratio", 1.0))
 
 
 def glow_allowed():
@@ -507,6 +522,20 @@ def _clamp_color(color):
 def _mix(a, b, t):
     t = max(0.0, min(1.0, t))
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+_QLUM_STEP = 24
+
+
+def _quant_color(color):
+    """Kuantisasi warna agar cache surface benar-benar terpakai.
+
+    Partikel ember memodifikasi ``_mix`` sedikit demi sedikit setiap frame
+    (seiring umur), sehingga tanpa kuantisasi tiap partikel membuat surface
+    BARU tiap frame (cache thrash) dan biaya draw naik linier.
+    """
+    return tuple(min(255, ((int(c) + _QLUM_STEP // 2) // _QLUM_STEP)
+                     * _QLUM_STEP) for c in color[:3])
 
 
 def _hash01(seed):
@@ -596,9 +625,12 @@ def _blit_faded(surface, surf, cx, cy, alpha=255, additive=False):
     if alpha >= 255:
         surface.blit(surf, rect.topleft)
         return
-    tmp = surf.copy()
-    tmp.set_alpha(int(alpha))
-    surface.blit(tmp, rect.topleft)
+    # Jalur non-additif: set_alpha dipakai langsung pada surface cache.
+    # Tiap pemakaian men-set alpha sebelum blit, jadi tanpa salinan per
+    # partikel (copy + set_alpha tiap frame = biaya besar di HP).
+    surf.set_alpha(int(alpha))
+    surface.blit(surf, rect.topleft)
+    surf.set_alpha(255)
 
 
 # -- primitif ber-cache -----------------------------------------------------
@@ -608,7 +640,7 @@ def glow_surface(radius, color, power=1.0):
     bukan tumpukan lingkaran penuh — tumpukan lingkaran membuat alpha
     menumpuk di tengah dan menghasilkan cakram bertepi keras."""
     r = max(2, int(radius))
-    col = _clamp_color(color)
+    col = _quant_color(color)
     key = ("glow", r, col, round(float(power), 2))
     got = _CACHE.get(key)
     if got is not None:
@@ -634,7 +666,7 @@ def ring_surface(radius, thickness, color, alpha=255, dashed=0):
     """Cincin (opsional putus-putus) — dipakai shockwave & telegraph."""
     r = max(2, int(radius))
     th = max(1, int(thickness))
-    col = _clamp_color(color)
+    col = _quant_color(color)
     key = ("ring", r, th, col, int(alpha), int(dashed))
     got = _CACHE.get(key)
     if got is not None:
@@ -658,7 +690,7 @@ def ellipse_ring_surface(rx, ry, thickness, color, alpha=255):
     rx = max(2, int(rx))
     ry = max(1, int(ry))
     th = max(1, int(thickness))
-    col = _clamp_color(color)
+    col = _quant_color(color)
     key = ("ering", rx, ry, th, col, int(alpha))
     got = _CACHE.get(key)
     if got is not None:
@@ -673,7 +705,7 @@ def ellipse_ring_surface(rx, ry, thickness, color, alpha=255):
 def ground_pool_surface(rx, color, power=0.35):
     """Genangan tanah elips ber-falloff (bara / lava / darah jiwa)."""
     rx = max(3, int(rx))
-    col = _clamp_color(color)
+    col = _quant_color(color)
     key = ("pool", rx, col, round(float(power), 2))
     got = _CACHE.get(key)
     if got is not None:
@@ -694,7 +726,7 @@ def ground_pool_surface(rx, color, power=0.35):
 def ember_surface(size, color):
     """Bara kecil chunky (pixel-art): inti keras + halo 1 px."""
     s = max(1, int(size))
-    col = _clamp_color(color)
+    col = _quant_color(color)
     key = ("ember", s, col)
     got = _CACHE.get(key)
     if got is not None:
@@ -722,7 +754,7 @@ def arc_ring_surface(radius, segments, span, thickness, color, alpha=255,
     th = max(1, int(thickness))
     sq = max(0.05, min(1.0, float(squash)))
     ry = max(2, int(r * sq))
-    col = _clamp_color(color)
+    col = _quant_color(color)
     key = ("arcring", r, ry, int(segments), round(float(span), 2), th, col,
            int(alpha), round(float(rot), 2))
     got = _CACHE.get(key)
@@ -1055,6 +1087,11 @@ class ParticleSystem:
         return p
 
     def spawn(self, x, y, **kw):
+        budget = particle_budget()
+        if budget <= 0.0:
+            return None
+        if budget < 1.0 and random.random() >= budget:
+            return None
         return self._next().spawn(x, y, **kw)
 
     def burst(self, x, y, count, speed=(40, 140), life=(0.2, 0.5),
@@ -1064,7 +1101,15 @@ class ParticleSystem:
               scatter=0.0, lift=0.0):
         """Ledakan partikel terarah (sudut, sebaran, kecepatan, umur,
         ukuran, warna, gravitasi, drag, rotasi) dalam satu panggilan."""
+        budget = particle_budget()
+        if budget <= 0.0:
+            return 0
         count = max(0, int(count))
+        if budget < 1.0:
+            if count > 1:
+                count = max(1, int(count * budget))
+            elif random.random() >= budget:
+                return 0
         for i in range(count):
             p = self._next()
             ang = direction + random.uniform(-spread / 2.0, spread / 2.0)

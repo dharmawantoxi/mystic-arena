@@ -370,10 +370,15 @@ def target_screen(boss, x, y):
 # ============================================================================
 
 def _quality():
-    """Preset kualitas mobile (0..1) — fallback aman untuk tooling."""
+    """Faktor intensitas FX (preset kualitas x beban governor).
+
+    Memakai ``Quality.particle_ratio`` (bukan ``Quality.quality``) supaya
+    governor beban FX (set_fx_load / fx_load) ikut menurunkan partikel saat
+    banyak hero live-FX bertarung, bukan hanya preset tinggi/sedang/rendah.
+    """
     try:
         from mobile.perf import Quality as Q
-        return float(getattr(Q, "quality", 1.0) or 1.0)
+        return float(getattr(Q, "particle_ratio", 1.0) or 1.0)
     except Exception:                          # pragma: no cover
         return 1.0
 
@@ -577,15 +582,16 @@ def _blit_faded(surface, surf, cx, cy, alpha=255, additive=False):
     if alpha >= 250 and not additive:
         surface.blit(surf, (x, y))
         return
-    tmp = surf
-    if alpha < 250:
+    if additive:
         tmp = surf.copy()
         tmp.fill((255, 255, 255, int(alpha)),
                  special_flags=pygame.BLEND_RGBA_MULT)
-    if additive:
         surface.blit(tmp, (x, y), special_flags=pygame.BLEND_RGBA_ADD)
-    else:
-        surface.blit(tmp, (x, y))
+        return
+    # Non-additif: set_alpha langsung pada surface cache (tanpa copy).
+    surf.set_alpha(int(alpha))
+    surface.blit(surf, (x, y))
+    surf.set_alpha(255)
 
 
 # ============================================================================

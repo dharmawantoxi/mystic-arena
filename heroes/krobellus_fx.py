@@ -456,20 +456,26 @@ def ghost_sprite(size, tint=None):
 
 
 def _blit_faded(surface, surf, cx, cy, alpha=255.0, additive=False):
-    """Blit dengan alpha dinamis tanpa mengotori surface cache."""
+    """Blit dengan alpha dinamis tanpa salinan per partikel.
+
+    ``BLEND_RGB_ADD`` mengabaikan set_alpha, jadi jalur aditif cukup blit
+    langsung (visual identik dengan copy + set_alpha lama, tanpa biaya).
+    Non-additif memakai set_alpha pada surface cache lalu dipulihkan.
+    """
     alpha = max(0.0, min(255.0, alpha))
     if alpha <= 1.0:
         return
-    if alpha >= 254.0 and not additive:
-        surface.blit(surf, (int(cx - surf.get_width() / 2),
-                            int(cy - surf.get_height() / 2)))
+    pos = (int(cx - surf.get_width() / 2),
+           int(cy - surf.get_height() / 2))
+    if additive:
+        surface.blit(surf, pos, special_flags=pygame.BLEND_RGB_ADD)
         return
-    tmp = surf.copy()
-    tmp.set_alpha(int(alpha))
-    flags = pygame.BLEND_RGB_ADD if additive else 0
-    surface.blit(tmp, (int(cx - surf.get_width() / 2),
-                       int(cy - surf.get_height() / 2)),
-                 special_flags=flags)
+    if alpha >= 254.0:
+        surface.blit(surf, pos)
+        return
+    surf.set_alpha(int(alpha))
+    surface.blit(surf, pos)
+    surf.set_alpha(255)
 
 
 # ============================================================================
