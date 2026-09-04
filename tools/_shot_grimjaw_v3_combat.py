@@ -176,10 +176,10 @@ snap(0, 0, lambda u: None, frames=18)                    # idle + napas
 snap(1, 0, scene_walk, frames=30)                        # jalan + debu
 snap(2, 0, make_attack, frames=26)                       # tebasan + trail
 snap(3, 0, make_attack_crit, frames=26)                  # tebasan crit + impact
-snap(0, 1, scene_q, frames=30)                           # blade fury
+snap(0, 1, scene_q, frames=48)                           # blade fury
 snap(1, 1, scene_w, frames=40)                           # healing ward
-snap(2, 1, scene_e, frames=30)                           # crit strike + wave
-snap(3, 1, scene_r, frames=30)                           # omnislash
+snap(2, 1, scene_e, frames=46)                           # crit strike + wave
+snap(3, 1, scene_r, frames=52)                           # omnislash
 
 out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
     ROOT, "docs", "grimjaw_v3_combat_sheet.png")

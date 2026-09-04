@@ -68,13 +68,45 @@ Jaminan arsitektur (sama dengan kontrak Gornak v3):
 | `Particle` | `position, velocity, acceleration, life, max_life, size, rotation, rotation_speed, alpha, gravity, color, color_end, drag, fade_pow, back`; bentuk: `pixel, glow, spark, shard, streak, ember, smoke` — semua hard-edge, pixel-snapped |
 | `ParticleSystem` | pool reusable + cap keras (`MAX_PARTICLES=180`), `spawn/burst/stream/update/draw`, lapisan `back/front`, jumlah mengikuti preset kualitas mobile (`particle_budget`) |
 | `SwingTrail` | histori `(grip, tip, umur)` → pita poligon **4 band** (selubung gelap → badan api → inti membara → garis ujung putih), umur 0.26 s, mode `spin_mode` untuk Blade Fury; otomatis mengikuti arah tebasan karena murni turunan lintasan bilah |
-| `ImpactFX` | flash bintang 8 arah, **shockwave elips berarah** (bukan lingkaran), spoke debris, 3 slash-fragment busur, silang + pilar pendek (`omni`), lengkung sapuan horizontal (`spin`); varian `crit` emas |
+| `ImpactFX` | flash bintang 8 arah, **shockwave elips berarah** (bukan lingkaran), spoke debris, 3 slash-fragment busur, silang + pilar pendek (`omni`), **sapuan bawah dekat lantai** (`spin`, radius ≤ ~30 px); varian `crit` emas |
 | `GrimjawProjectile` | kontrak penuh `position/velocity/speed/damage/lifetime/target/radius/rotation/trail/particles/active`; lifecycle `SPAWN→TRAVEL→TRAIL→HIT→IMPACT FX→DESTROY`; homing halus, tumbukan radius vs target, callback `on_impact`; **visual-only** (damage gameplay tetap di `hero_skills`) |
 | `ProjectileSystem` | cap 20, spawn/update/draw + auto-cleanup |
-| `SkillFX` | lifecycle `CAST→CHARGE→RELEASE→TRAVEL/AREA→IMPACT→AFTER→FADE` untuk Q/W/E/R: pilar cahaya, nova ring, retakan tanah deterministik, rune diamond orbit, chevron kerucut (E), mote hijau (W), burst shard (R) |
+| `SkillFX` | lifecycle `CAST→CHARGE→RELEASE→TRAVEL/AREA→IMPACT→AFTER→FADE` untuk Q/W/E/R: **tanah berlapis** (arang/lumut → pita beralur → putus-putus berputar → rim → titik orbit), kerucut sabit berarah (E), totem ward (W), silang tebasan (R), sapuan pinggang (Q); lihat *Bahasa visual skill* di bawah |
 | `GrimjawFXDirector` | satu per unit: state machine + event FX (lihat §4) |
 | `draw_debug_overlay` | `DEBUG_CHARACTER=True` → hitbox kerucut, hurtbox, attack range, radius Q, lingkar tumbukan proyektil, state/fase/FPS/jumlah partikel/timer skill |
 | API modul | `attach / owns / director_for / tick / reset_all / total_particles / total_projectiles / draw_ground_layer / draw_live_layer / notify_melee_impact / notify_skill_impact / notify_skill_cast / notify_hurt / draw_blade_wave / hit_stop / shake / should_freeze_frame / clear_cache` |
+
+### Bahasa visual skill FX
+
+Aturan desain yang dipakai di pass ulang visual (dan dijaga oleh regresi
+prosedural + sheet review):
+
+1. **Tidak ada lingkaran tegak raksasa di atas badan.** Versi lama
+   menggambar "nova ring" berupa lingkaran vertikal radius sampai 1.5×
+   radius skill di titik kaki — hasilnya satu massa putih rata yang
+   menutupi Grimjaw. Sekarang lapisan depan (`draw_front`) cuma memakai
+   bentuk compact dekat lantai: cincin gepeng yang meluas di depan kaki,
+   totem ward kecil, silang tebasan, sabit chevron berarah, lajur bara di
+   pinggang. `ImpactFX` tipe `spin` juga dipersempit (radius ≤ ~30 px,
+   busur bawah 0..π) supaya tick Blade Fury tidak melukis cincin raksasa.
+2. **Tanah selalu berlapis** — komposisi bertingkat dengan 5-6 peran:
+   noda arang/lumut gelap-lebar → pita jenuh beralur (selubung redup tebal
+   + tepi terang tipis) → aksen putus-putus berputar → rim terang tipis →
+   titik orbit deterministik. Satu skill = satu bahasa warna (`ramp`
+   6-warna + `edge`/`accent` di-*initialize* per kind), jadi q merah-api,
+   w hijau-heal, e emas, r crimson selalu konsisten.
+3. **E berbentuk kerucut, bukan lingkaran**: 4 sabit cahaya bertumpuk yang
+   menyapu ke arah `facing` + separuh lingkaran belakang yang redup.
+   `SkillFX` menerima `facing` dari director supaya kiri/kanan simetris.
+4. **Glow additive kecil & berwarna, tidak putih raksasa** — glow putih
+   hanya dipakai sebagai titik inti kecil; panggung tanah memakai warna
+   ramp dengan daya ≤ 0.15 supaya tidak mencuci tekstur cincin.
+5. **Statis + dinamis dipisah demi budget**: panggung tanah (arang, pita,
+   rim, retakan bara, kerucut E) di-bake ke `_SURF_CACHE` per
+   `(kind, bucket radius 4 px, facing, seed%3)` dan di-blit sekali per
+   frame; yang hidup (putus-putus berputar, titik orbit, gigi sapuan)
+   digambar per frame di atasnya. Retakan ikut di-bake — tidak ada scratch
+   besar per frame.
 
 ## 4. Animation controller (cermin renderer)
 
@@ -147,8 +179,14 @@ dipasang director (potret hanya rig).
 * Semua glow/ring/spark/crescent **di-cache** (`_SURF_CACHE`, ≤ 384 entri,
   evict 25% tertua); partikel & pita memakai **scratch-surface pool**
   berpangkat-2 — nol alokasi `pygame.Surface` per frame pada jalur stabil.
+  Panggung tanah skill FX ikut di-bake (lihat *Bahasa visual*) sehingga
+  area Q/W/E/R hanya 1 blit statis + beberapa aksen kecil per frame.
 * Anggaran partikel mengikuti `mobile.perf.Quality` (`particle_budget`
   0.0–1.0); cap per director 180, registry director ≤ 12 unit.
+* Dash-ring memakai **garis per-segmen kecil** (scratch ~32 px) — bukan
+  satu buffer selebar cincin yang diisi ulang tiap frame; retakan tanah
+  di-bake ke panggung statis. Keduanya menjaga `test_budget_lapisan_hidup`
+  tetap hijau dengan ruang napas.
 * Emisi kontinu (bara fury, emas crit, mote ward) rate-limited dengan
   akumulator; `tick()` aman dipanggil berkali-kali dalam satu frame.
 * **Pagar anti-beku**: timer gameplay selalu berkurang tiap langkah

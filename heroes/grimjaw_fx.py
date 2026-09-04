@@ -294,6 +294,134 @@ def _mix(a, b, t):
             int(a[2] + (b[2] - a[2]) * t))
 
 
+def _ramp(a, b, n=6):
+    """Ramp gradasi n warna dari a ke b — bahasa warna per skill."""
+    return tuple(_mix(a, b, i / float(n - 1)) for i in range(n))
+
+
+def _fade01(a0, a1, x):
+    """Kemajuan 0..1 dari x di dalam jendela [a0, a1] (dipotong)."""
+    d = a1 - a0
+    if d <= 0.0:
+        return 0.0
+    return max(0.0, min(1.0, (x - a0) / d))
+
+
+def _ellipse_pt(cx, cy, rx, ry, ang):
+    """Titik pada elips (rx, ry) berpusat (cx, cy) di sudut ang."""
+    return (cx + math.cos(ang) * rx, cy + math.sin(ang) * ry)
+
+
+# ── stamp primitives: gambar lewat scratch SRCALPHA lalu satu blit ───────
+# Semua gambar ke scratch dulu supaya komponen alpha SELALU dihormati —
+# pygame.draw mengabaikan alpha tuple saat target bukan surface ber-per-
+# pixel-alpha (layar arena), dan itu membuat cincin/garis tampil 100%
+# pekat alias 'jelek rata'.
+
+def _stamp_ellipse(surface, cx, cy, rx, ry, color, alpha=255, width=0):
+    """Elips (isi atau outline) dengan alpha terhormat."""
+    if alpha <= 4 or rx < 1.5 or ry < 1.0:
+        return
+    w = int(rx * 2) + max(1, int(width)) * 2 + 6
+    h = int(ry * 2) + max(1, int(width)) * 2 + 6
+    s = _scratch(w, h)
+    c = (w // 2, h // 2)
+    rect = pygame.Rect(c[0] - int(rx), c[1] - int(ry),
+                       max(2, int(rx * 2)), max(2, int(ry * 2)))
+    col = (*_clamp_color(color)[:3], int(max(0, min(255, alpha))))
+    if width <= 0:
+        pygame.draw.ellipse(s, col, rect)
+        return
+    wd = max(1, min(int(width), max(1, int(min(rx, ry)) - 1)))
+    pygame.draw.ellipse(s, col, rect, wd)
+    surface.blit(s, (int(cx) - c[0], int(cy) - c[1]))
+
+
+def _stamp_arc(surface, cx, cy, rx, ry, color, alpha, width,
+               a0=-1.05, a1=1.05, flip=False):
+    """Busur elips (sabit). flip=True mencerminkan sumbu X (facing kiri)."""
+    if alpha <= 4 or rx < 3 or ry < 2:
+        return
+    w = int(rx * 2) + max(1, int(width)) * 2 + 8
+    h = int(ry * 2) + max(1, int(width)) * 2 + 8
+    s = _scratch(w, h)
+    c = (w // 2, h // 2)
+    rect = pygame.Rect(c[0] - int(rx), c[1] - int(ry),
+                       max(2, int(rx * 2)), max(2, int(ry * 2)))
+    col = (*_clamp_color(color)[:3], int(max(0, min(255, alpha))))
+    try:
+        if flip:
+            # pantulkan sumbu X: busur kanan menjadi busur kiri
+            pygame.draw.arc(s, col, rect, math.pi - a1, math.pi - a0,
+                            max(1, int(width)))
+        else:
+            pygame.draw.arc(s, col, rect, a0, a1, max(1, int(width)))
+    except (ValueError, pygame.error):          # pragma: no cover
+        return
+    if flip:
+        s = pygame.transform.flip(s, True, False)
+    surface.blit(s, (int(cx) - c[0], int(cy) - c[1]))
+
+
+def _stamp_dash_ellipse(surface, cx, cy, rx, ry, color, alpha, width,
+                        segs=16, phase=0.0, skip=None, dash=0.5,
+                        span=math.tau, start=0.0, flip=False):
+    """Cincin elips putus-putus — aksen bergerak yang tidak 'solid'.
+
+    Tiap segmen digambar lewat _stamp_line (scratch kecil) — jauh lebih
+    murah daripada satu buffer selebar cincin yang diisi ulang tiap frame.
+    """
+    if alpha <= 4 or rx < 2.5 or ry < 1.5 or segs < 6:
+        return
+    step = span / float(segs)
+    for i in range(segs):
+        if skip is not None and i % skip == 0:
+            continue
+        a0 = start + phase + i * step
+        a1 = a0 + step * dash
+        x0 = cx + math.cos(a0) * rx
+        y0 = cy + math.sin(a0) * ry
+        x1 = cx + math.cos(a1) * rx
+        y1 = cy + math.sin(a1) * ry
+        if flip:
+            x0 = 2.0 * cx - x0
+            x1 = 2.0 * cx - x1
+        _stamp_line(surface, x0, y0, x1, y1, color, width, alpha)
+
+
+def _stamp_diamond(surface, cx, cy, r, color, alpha=255, width=0):
+    """Wajik kecil (rune / titik orbit) dengan alpha terhormat."""
+    if alpha <= 4 or r < 1:
+        return
+    s = _scratch(r * 2 + 4, r * 2 + 4)
+    c = r + 2
+    col = (*_clamp_color(color)[:3], int(max(0, min(255, alpha))))
+    pts = [(c, c - r), (c + r, c), (c, c + r), (c - r, c)]
+    if width > 0:
+        pygame.draw.polygon(s, col, pts, int(width))
+    else:
+        pygame.draw.polygon(s, col, pts)
+    surface.blit(s, (int(cx) - c, int(cy) - c))
+
+
+def _stamp_line(surface, x0, y0, x1, y1, color, width, alpha=255):
+    """Garis dengan alpha terhormat (satu scratch + satu blit)."""
+    if alpha <= 4 or width < 1:
+        return
+    x0i, y0i, x1i, y1i = int(x0), int(y0), int(x1), int(y1)
+    mx, my = min(x0i, x1i), min(y0i, y1i)
+    w = abs(x1i - x0i) + max(1, int(width)) * 2 + 4
+    h = abs(y1i - y0i) + max(1, int(width)) * 2 + 4
+    s = _scratch(w, h)
+    off = max(1, int(width)) + 2
+    col = (*_clamp_color(color)[:3], int(max(0, min(255, alpha))))
+    pygame.draw.line(s, col,
+                     (x0i - mx + off, y0i - my + off),
+                     (x1i - mx + off, y1i - my + off),
+                     max(1, int(width)))
+    surface.blit(s, (mx - off, my - off))
+
+
 def _hash01(seed):
     """Pseudo-random deterministik [0,1) dari integer."""
     h = int(seed) * 2654435761 & 0xFFFFFFFF
@@ -1156,23 +1284,29 @@ class ImpactFX:
                     [(7, hgt + 2), (7 - 3, 2), (7 + 3, 2)])
                 surface.blit(pl, (x - 7, y - hgt - 20))
 
-        # ── 4c. SPIN — lengkung sapuan horizontal di ketinggian badan─
-        if self.kind == "spin" and t < 0.45:
-            st = 1.0 - t / 0.45
-            rr = int((18 + 42 * pw) * (0.55 + 0.85 * t))
+        # ── 4c. SPIN — sapuan bawah dekat lantai (tick Blade Fury) ─────
+        # Radius sengaja DIPERKECIL + busur BAWAH (0..pi): versi lama
+        # menggambar busur atas radius sampai ~70 px, sehingga setiap
+        # tick melukis 'cincin putih raksasa' menutupi badan Grimjaw.
+        if self.kind == "spin" and t < 0.5:
+            st = 1.0 - t / 0.5
+            rr = int((9 + 15 * pw) * (0.55 + 0.9 * t))
+            if rr <= 4:
+                return
             buf_r = rr + 6
-            buf = _scratch(buf_r * 2, buf_r)
-            c, cy = buf_r, buf_r // 2
-            rect = pygame.Rect(c - rr, cy - rr // 2, rr * 2, rr)
+            buf = _scratch(buf_r * 2, buf_r * 2)
+            c = buf_r
+            rect = pygame.Rect(c - rr, c - rr, rr * 2, rr * 2)
             try:
-                pygame.draw.arc(buf, (*P["fx_hot"], int(220 * st)),
-                                rect, math.pi, math.tau, 3)
-                pygame.draw.arc(buf, (*P["fx_white"], int(170 * st)),
-                                rect.inflate(-8, -4), math.pi,
-                                math.tau, 1)
+                pygame.draw.arc(buf, (*P["fx_light"], int(150 * st)),
+                                rect, 0, math.pi, 3)
+                pygame.draw.arc(buf, (*P["fx_hot"], int(210 * st)),
+                                rect.inflate(-6, -6), 0, math.pi, 2)
+                pygame.draw.arc(buf, (*P["fx_white"], int(120 * st)),
+                                rect.inflate(-14, -14), 0, math.pi, 1)
             except (ValueError, pygame.error):
                 pass
-            surface.blit(buf, (x - c, y - cy - 14))
+            surface.blit(buf, (x - c, y - c - 12))
 
         # ── 5. INTI benturan ─────────────────────────────────────────
         if t < 0.42:
@@ -1488,7 +1622,8 @@ class SkillFX:
 
     RADIUS = {"q": 76, "w": 100, "e": 60, "r": 86}
 
-    def __init__(self, kind, x, y, particles=None, radius=None):
+    def __init__(self, kind, x, y, particles=None, radius=None,
+                 facing=1.0):
         _sync_palette()
         self.kind = kind if kind in self.TIMELINE else "q"
         self.x = float(x)
@@ -1508,14 +1643,29 @@ class SkillFX:
         self._impacted = False
         self._emit = 0.0
         self.seed = random.randint(0, 9999)
+        self.facing = 1.0 if float(facing) >= 0 else -1.0
+        # Ramp gradasi 6 warna + aksen paling panas: semua lapisan draw
+        # memakai ramp ini supaya satu skill memakai satu bahasa warna
+        # yang konsisten (gelap -> jenuh -> terang -> putih-aksen).
         if self.kind == "q":
-            self.col_a, self.col_b = P["fx_dark"], P["fx_hot"]
+            self.ramp = _ramp(P["fx_dark"], P["fx_bright"])
+            self.edge = P["fx_hot"]
+            self.accent = P["ember"]
         elif self.kind == "w":
-            self.col_a, self.col_b = P["heal_dark"], P["heal_core"]
+            self.ramp = _ramp(P["heal_dark"], P["heal_light"])
+            self.edge = P["heal_core"]
+            self.accent = P["heal_light"]
         elif self.kind == "e":
-            self.col_a, self.col_b = P["gold"], P["gold_hot"]
+            self.ramp = _ramp(_mix(P["gold"], P["fx_darkest"], 0.40),
+                              P["gold_hot"])
+            self.edge = P["gold_hot"]
+            self.accent = P["gold"]
         else:
-            self.col_a, self.col_b = P["rage_dark"], P["rage_bright"]
+            self.ramp = _ramp(P["rage_dark"], P["rage_bright"])
+            self.edge = _mix(P["rage_bright"], P["fx_white"], 0.25)
+            self.accent = P["rage_light"]
+        self.col_a = self.ramp[0]
+        self.col_b = self.edge
 
     # ------------------------------------------------------------------
     def _set_phase(self):
@@ -1658,187 +1808,467 @@ class SkillFX:
         return True
 
     # ------------------------------------------------------------------
+    def _ground_env(self):
+        """Envelope kecerahan tanah: fade-in 0.12 s + fade-out akhir."""
+        a = self.age
+        fin = min(1.0, a / 0.12)
+        span = max(0.001, self.total - self.t_impact)
+        fout = 1.0 - _fade01(0.0, 1.0, (a - self.t_impact) / span)
+        return max(0.0, fin * fout)
+
+    def _ground_env(self):
+        """Envelope kecerahan tanah: fade-in 0.12 s + fade-out akhir."""
+        a = self.age
+        fin = min(1.0, a / 0.12)
+        span = max(0.001, self.total - self.t_impact)
+        fout = 1.0 - _fade01(0.0, 1.0, (a - self.t_impact) / span)
+        return max(0.0, fin * fout)
+
     def draw_ground(self, surface):
-        """Lapisan bawah karakter: kabut tanah, cincin, retakan, scorch."""
+        """Lapisan bawah karakter: panggung statis + aksen dinamis.
+
+        Komposisi tanah dibagi dua supaya murah DAN berlapis:
+          * panggung statis (arang, pita beralur, rim) di-bake ke cache
+            per bucket radius lalu di-blit sekali per frame;
+          * aksen hidup (retak, putus-putus berputar, titik orbit)
+            digambar per frame di atasnya.
+        """
         if not self.active:
             return
-        col_a, col_b = self.col_a, self.col_b
         a = self.age
         R = self.radius
-
-        # kabut/glow tanah (additive) — radius & daya DIKUANTISASI supaya
-        # jumlah entri cache tetap kecil.
-        t_all = min(1.0, a / self.total)
-        haze = int(R * (0.9 + 0.25 * math.sin(a * 4.0))) // 8 * 8
-        power = round(0.30 * (1.0 - abs(t_all - 0.35) * 1.4) / 0.05) * 0.05
-        if power > 0.02 and haze >= 8 and glow_allowed():
-            hs = ground_glow_surface(haze, col_a, power)
-            surface.blit(hs, (int(self.x) - hs.get_width() // 2,
-                              int(self.y) - hs.get_height() // 2),
-                         special_flags=pygame.BLEND_RGB_ADD)
-
-        if self.phase == "charge":
-            t = a / self.t_charge
-            rr = int(R * (1.25 - 0.25 * t))
-            self._ground_ring(surface, rr, col_a, int(120 + 90 * t),
-                              dashed=True, phase=t * 6.0)
-        elif self.phase in ("release", "area"):
-            t = min(1.0, (a - self.t_charge) /
-                    max(0.001, self.t_area - self.t_charge))
-            self._ground_ring(surface, int(R), col_a,
-                              int(200 - 90 * t), dashed=False)
-            self._ground_ring(surface, int(R * 0.66), col_b,
-                              int(160 - 70 * t), dashed=True,
-                              phase=-t * 5.0)
-            if self.kind != "w":
-                self._ground_cracks(surface, R, col_b,
-                                    int(170 * (1.0 - t)))
-        else:
-            t = min(1.0, (a - self.t_area) /
-                    max(0.001, self.total - self.t_area))
-            self._ground_ring(surface, int(R * (1.0 + 0.35 * t)), col_b,
-                              int(150 * (1.0 - t)), dashed=False)
-
-    def _ground_ring(self, surface, radius, color, alpha,
-                     dashed=False, phase=0.0):
-        if alpha <= 5 or radius <= 3:
+        x, y = self.x, self.y
+        env = self._ground_env()
+        if env <= 0.02:
             return
-        w = radius * 2 + 8
-        h = int(radius * 0.9) + 8
-        buf = _scratch(w, h)
-        cx, cy = w // 2, h // 2
-        rect = pygame.Rect(cx - radius, cy - int(radius * 0.42),
-                           radius * 2, int(radius * 0.84))
-        if not dashed:
-            pygame.draw.ellipse(buf, (*color, alpha), rect, 3)
-            pygame.draw.ellipse(buf, (*P["fx_white"], alpha // 3),
-                                rect.inflate(-6, -3), 1)
-        else:
-            detail = skill_detail()
-            segs = max(8, min(16, int(16 * detail)))
-            for i in range(segs):
-                a0 = i * math.tau / segs + phase
-                if i % 2 and detail >= 0.55:
-                    continue
-                x0 = cx + math.cos(a0) * radius
-                y0 = cy + math.sin(a0) * radius * 0.42
-                x1 = cx + math.cos(a0 + 0.26) * radius
-                y1 = cy + math.sin(a0 + 0.26) * radius * 0.42
-                pygame.draw.line(buf, (*color, alpha),
-                                 (int(x0), int(y0)), (int(x1), int(y1)), 3)
-        surface.blit(buf, (int(self.x) - cx, int(self.y) - cy))
+        ram = self.ramp
+        phase = self.phase
 
-    def _ground_cracks(self, surface, R, color, alpha):
-        """Retakan tanah bergaris (bukan lingkaran) — deterministik."""
-        if alpha <= 6:
+        # kabut cahaya warna (additive, redup) DI BAWAH tekstur cincin,
+        # supaya glow tidak mencuci warna struktur menjadi putih rata.
+        if glow_allowed() and phase != "charge":
+            hz = int(R * (0.92 + 0.10 * math.sin(a * 4.0))) // 8 * 8
+            if hz >= 10:
+                hs = ground_glow_surface(hz, ram[2], round(0.12 * env, 3))
+                ex = self.facing * R * 0.3 if self.kind == "e" else 0.0
+                surface.blit(hs, (int(x + ex) - hs.get_width() // 2,
+                                  int(y) - hs.get_height() // 2),
+                             special_flags=pygame.BLEND_RGB_ADD)
+
+        if phase == "charge":
+            self._ground_charge(surface, R, ram, env, x, y)
+        else:
+            if phase == "release":
+                trel = _fade01(self.t_charge, self.t_release, a)
+                self._blit_static(surface, env * (0.3 + 0.7 * trel))
+                self._ground_release(surface, R, ram, env, x, y)
+            else:
+                self._blit_static(surface, env)
+                self._ground_area(surface, R, ram, env, x, y)
+
+    # ------------------------------------------------------------------
+    def _ground_charge(self, surface, R, ram, env, x, y):
+        """Telegraph charge: cincin putus menyala + titik lock-on orbit."""
+        t = _fade01(0.0, max(0.001, self.t_charge), self.age)
+        rr = R * (1.08 - 0.12 * t)
+        self._dash_ring(surface, x, y, rr, rr * 0.5, ram[3],
+                        int((50 + 130 * t) * env), 2,
+                        segs=14, phase=self.age * 3.0)
+        n = max(4, min(8, int(round(8 * skill_detail()))))
+        base = self.seed * 0.73
+        for i in range(n):
+            ang = base + i * math.tau / n + self.age * 1.6
+            px, py = _ellipse_pt(x, y, R * 0.88, R * 0.44, ang)
+            col = self.edge if self.kind != "q" else ram[4]
+            _stamp_diamond(surface, px, py, 2, col, int(120 * t * env))
+
+    # ------------------------------------------------------------------
+    def _ground_release(self, surface, R, ram, env, x, y):
+        """Blast release: cincin ganda meluas di atas panggung statis."""
+        t = _fade01(self.t_charge, self.t_release, self.age)
+        e = env * (1.0 - t)
+        if e <= 0.02:
+            return
+        rr = R * (0.46 + 0.60 * t)
+        _stamp_ellipse(surface, x, y, rr + 5, (rr + 5) * 0.5, ram[1],
+                       int(70 * e), width=7)
+        _stamp_ellipse(surface, x, y, rr, rr * 0.5, ram[3],
+                       int(150 * e), width=3)
+        _stamp_ellipse(surface, x, y, rr - 3, (rr - 3) * 0.5,
+                       _mix(self.edge, P["fx_white"], 0.3),
+                       int(200 * e), width=2)
+
+    # ------------------------------------------------------------------
+    def _ground_area(self, surface, R, ram, env, x, y):
+        """Aksen hidup di atas panggung statis: retak, putus, orbit."""
+        k = self.kind
+        a = self.age
+        pulse = 0.5 + 0.5 * math.sin(a * 5.0 + (self.seed % 11) * 0.6)
+        detail = skill_detail()
+        if k == "e":
+            f = self.facing
+            _stamp_dash_ellipse(surface, x + f * R * 0.10, y,
+                                R * 0.88, R * 0.44, ram[4],
+                                int(110 * env), 2, segs=10,
+                                phase=a * 3.2, skip=2, span=2.2,
+                                start=-1.1, flip=(f < 0))
+            return
+        # (retakan sudah di-bake ke panggung statis)
+        # lajur putus-putus berputar (dua arah untuk q/r)
+        spd = {"q": 2.2, "r": 1.9, "w": -1.5}.get(k, 0.0)
+        dash_col = self.edge if k == "w" else self.accent
+        _stamp_dash_ellipse(surface, x, y, R * 0.84, R * 0.42,
+                            dash_col, int(150 * env), 2,
+                            segs=12, phase=a * spd, skip=2)
+        if k in ("q", "r"):
+            _stamp_dash_ellipse(surface, x, y, R * 0.54, R * 0.27,
+                                _mix(self.edge, P["fx_white"], 0.5),
+                                int(100 * env), 1, segs=8,
+                                phase=-a * spd * 0.7, skip=2,
+                                start=self.seed * 0.01)
+        # titik orbit deterministik (tekstur hidup walau frame statis)
+        n = max(4, int(round(6 * detail)))
+        base = self.seed * 0.37
+        for i in range(n):
+            ang = base + i * math.tau / n + a * (1.4 if i % 2 else -1.7)
+            px, py = _ellipse_pt(x, y, R * 0.70, R * 0.35, ang)
+            col = self.edge if i % 2 else _mix(self.edge,
+                                               P["fx_white"], 0.4)
+            _stamp_diamond(surface, px, py, 2 if i % 2 else 3, col,
+                           int((130 + 90 * pulse) * env))
+        # 'gigi' sapuan bilah di tanah — Q Blade Fury berputar di lantai
+        if k == "q":
+            rq = R * 0.60
+            for i in range(4):
+                ang = base + i * math.tau / 6 + a * 2.8
+                px, py = _ellipse_pt(x, y, rq + 5, (rq + 5) * 0.5, ang)
+                px2, py2 = _ellipse_pt(x, y, rq + R * 0.15,
+                                       (rq + R * 0.15) * 0.5, ang)
+                _stamp_line(surface, px, py, px2, py2, self.accent, 2,
+                            int(110 * env * pulse))
+
+    # ------------------------------------------------------------------
+    def _static_ground_surface(self):
+        """Panggung statis tanah area, di-bake per (kind, bucket, facing).
+
+        Isi: dasar arang/lumut + pita beralur + rim + lingkup luar (+
+        kerucut E).  Bagian yang berputar (dash, orbit, retak) TIDAK
+        ikut di-bake supaya cache tetap kecil dan gerak tetap hidup.
+        """
+        k = self.kind
+        Rb = max(8, int(self.radius) // 4 * 4)
+        f = int(self.facing)
+        fh = self.seed % 3 if k in ("q", "r") else 0
+        key = ("gstat", k, Rb, f, fh)
+        s = _SURF_CACHE.get(key)
+        if s is not None:
+            return s
+        R = float(Rb)
+        cx = self.x
+        cy = self.y
+        w = int(R * 2.2) + 16
+        h = int(R * 1.12) + 16
+        buf = pygame.Surface((w, h), pygame.SRCALPHA)
+        ox, oy = cx - w // 2, cy - h // 2
+        # gambar dengan koordinat lokal terhadap (ox, oy)
+        gx = cx - ox
+        gy = cy - oy
+        ram = self.ramp
+        if k == "w":
+            # lumut segar: pusat terang + cincin luar + kelopak bermata
+            _stamp_ellipse(buf, gx, gy, R * 0.38, R * 0.19, ram[2], 70)
+            _stamp_ellipse(buf, gx, gy, R * 0.24, R * 0.12, ram[3], 130)
+            _stamp_ellipse(buf, gx, gy, R * 0.42, R * 0.21,
+                           _mix(self.edge, P["fx_white"], 0.15), 90,
+                           width=2)
+            for i in range(8):
+                ang = i * math.tau / 8.0
+                px, py = _ellipse_pt(gx, gy, R * 0.30, R * 0.15, ang)
+                _stamp_ellipse(buf, px, py, 4.4, 2.2,
+                               ram[3] if i % 2 else ram[2], 150)
+                _stamp_diamond(buf, px, py, 1.4, P["fx_white"], 130)
+        else:
+            deep = _mix(ram[0], (8, 6, 10), 0.5)
+            for fr, al in ((1.02, 44), (0.76, 38), (0.50, 28)):
+                _stamp_ellipse(buf, gx, gy, R * fr, R * fr * 0.5, deep, al)
+            _stamp_ellipse(buf, gx, gy, R * 0.98, R * 0.49, ram[1],
+                           56, width=2)
+            _stamp_ellipse(buf, gx, gy, R * 0.22, R * 0.11, ram[3], 38)
+        if k in ("q", "r"):
+            self._paint_cracks(buf, gx, gy, R * 0.74, ram[0], ram[3], 58)
+        r1 = R * (0.60 if k != "w" else 0.50)
+        _stamp_ellipse(buf, gx, gy, r1 + 6, (r1 + 6) * 0.5, ram[1],
+                       78, width=7)
+        _stamp_ellipse(buf, gx, gy, r1, r1 * 0.5, ram[3], 160, width=3)
+        _stamp_ellipse(buf, gx, gy, r1 - 4, (r1 - 4) * 0.5,
+                       _mix(self.edge, P["fx_white"], 0.25), 185, width=2)
+        _stamp_ellipse(buf, gx, gy, R * 0.96, R * 0.48,
+                       _mix(self.edge, P["fx_white"], 0.2), 115, width=2)
+        _stamp_ellipse(buf, gx, gy, R * 1.06, R * 0.53, ram[1], 44,
+                       width=4)
+        if k == "e":
+            _stamp_ellipse(buf, gx + f * R * 0.2, gy, R * 0.34, R * 0.17,
+                           _mix(ram[0], (10, 6, 8), 0.35), 52)
+            _stamp_arc(buf, gx, gy, R * 0.88, R * 0.44, ram[1], 50, 3,
+                       a0=-1.15, a1=1.15, flip=(f < 0))
+            for i, d0 in enumerate((0.12, 0.36, 0.60, 0.84)):
+                rr = R * (0.70 - 0.14 * i)
+                if rr < 5:
+                    continue
+                cxx = gx + f * (R * d0 - rr)
+                col = ram[2 + i] if i < 3 else _mix(ram[5],
+                                                     P["fx_white"], 0.4)
+                _stamp_arc(buf, cxx, gy, rr, rr * 0.30, col,
+                           70 + i * 36, 5 - i if i < 4 else 2,
+                           a0=-1.05, a1=1.05, flip=(f < 0))
+        return _cache_put(key, buf)
+
+    # ------------------------------------------------------------------
+    def _blit_static(self, surface, env):
+        """Blit panggung statis tanah dengan envelope alpha."""
+        if env <= 0.02:
+            return
+        s = self._static_ground_surface()
+        w, h = s.get_size()
+        a = int(255 * min(1.0, env))
+        if a < 6:
+            return
+        pos = (int(self.x) - w // 2, int(self.y) - h // 2)
+        if a >= 250:
+            surface.blit(s, pos)
+            return
+        s.set_alpha(a)
+        surface.blit(s, pos)
+        s.set_alpha(255)
+
+
+    def _ground_cracks(self, surface, R, dark, glow, alpha):
+        """Retakan bara (API lama — gambar ke target sebarang)."""
+        self._paint_cracks(surface, self.x, self.y, R, dark, glow, alpha)
+
+    # ------------------------------------------------------------------
+    def _paint_cracks(self, target, cx, cy, R, dark, glow, alpha):
+        """Lukis retakan bara ke target (biasanya panggung statis tanah).
+
+        Deterministik per seed; tidak mengalokasi scratch per frame —
+        retakan ikut di-bake ke surface statis.
+        """
+        if alpha <= 5 or R < 10:
             return
         detail = skill_detail()
-        n_cracks = max(2, min(5, int(round(5 * detail))))
-        for i in range(n_cracks):
+        n = max(3, min(5, int(round(5 * detail))))
+        for i in range(n):
             base = _hash01(self.seed + i * 31) * math.tau
-            length = R * (0.55 + _hash01(self.seed + i * 77) * 0.5)
-            px, py = self.x, self.y
-            ang = base
+            r0 = R * (0.30 + _hash01(self.seed + i * 13) * 0.26)
+            px = cx + math.cos(base) * r0
+            py = cy + math.sin(base) * r0 * 0.5
             segs = max(2, min(4, int(round(4 * detail))))
+            ang = base
             for seg in range(segs):
-                ang += (_hash01(self.seed + i * 13 + seg) - 0.5) * 0.9
-                nx = px + math.cos(ang) * (length / segs)
-                ny = py + math.sin(ang) * (length / segs) * 0.42
-                pygame.draw.line(surface, _clamp_color(color),
-                                 (int(px), int(py)), (int(nx), int(ny)),
-                                 max(1, 3 - seg))
+                ang += (_hash01(self.seed + i * 7 + seg) - 0.5) * 0.8
+                ln = R * 0.16
+                nx = px + math.cos(ang) * ln
+                ny = py + math.sin(ang) * ln * 0.5
+                wd = max(1, 3 - seg)
+                a2 = int(alpha * (1.0 - seg * 0.22) *
+                         (0.55 if seg else 1.0))
+                if a2 > 4:
+                    pygame.draw.line(target, (*dark, a2),
+                                     (int(px), int(py)),
+                                     (int(nx), int(ny)), wd)
+                if seg == 0:
+                    pygame.draw.line(target, (*glow, int(a2 * 0.5)),
+                                     (int(px), int(py)),
+                                     (int(nx), int(ny)), 1)
                 px, py = nx, ny
 
+
     # ------------------------------------------------------------------
+    def _dash_ring(self, surface, cx, cy, rx, ry, color, alpha, width,
+                   segs=16, phase=0.0, skip=2, dash=0.5,
+                   span=math.tau, start=0.0):
+        """Cincin putus-putus (gaya tanah) — selubung _stamp_dash_ellipse."""
+        _stamp_dash_ellipse(surface, cx, cy, rx, ry, color, alpha, width,
+                            segs=segs, phase=phase, skip=skip, dash=dash,
+                            span=span, start=start)
+
+    # ------------------------------------------------------------------
+    def _front_env(self):
+        """Envelope lapisan depan: masuk cepat, meredup saat fade."""
+        a = self.age
+        fin = min(1.0, a / 0.05)
+        if a < self.t_impact:
+            return fin
+        span = max(0.001, self.total - self.t_impact)
+        fout = 1.0 - _fade01(0.0, 1.0, (a - self.t_impact) / span)
+        return max(0.0, fin * fout)
+
     def draw_front(self, surface):
-        """Lapisan atas karakter: nova, chevron, rune diamond."""
+        """Lapisan atas karakter: sembulan release, aksen area, totem.
+
+        Aturan: JANGAN menggambar lingkaran tegak raksasa di atas badan.
+        Semua lapisan depan compact, dekat lantai, dan cepat meredup
+        supaya Grimjaw tetap terbaca di tengah efeknya sendiri.
+        """
         if not self.active:
             return
-        col_a, col_b = self.col_a, self.col_b
         a = self.age
+        R = self.radius
         x, y = int(self.x), int(self.y)
-
-        if self.phase == "charge":
-            # Pilar cahaya charge DIBUANG: kolom 60-134 px yang berdiri
-            # tepat di sumbu badan menutupi Grimjaw selama skill di-cast.
-            # Fase charge kini tidak menggambar lapisan depan apa pun.
+        ram = self.ramp
+        env = self._front_env()
+        if env <= 0.02:
             return
+        k = self.kind
+        phase = self.phase
 
-        if self.phase == "release":
-            t = (a - self.t_charge) / max(0.001,
-                                          self.t_release - self.t_charge)
-            r = int(self.radius * (0.4 + 1.1 * t))
-            if glow_allowed():
-                g = glow_surface(r // 3 * 3, P["fx_white"],
-                                 round(0.8 * (1.0 - t), 2))
-                surface.blit(g, (x - r, y - r),
-                             special_flags=pygame.BLEND_RGB_ADD)
-            ring = ring_surface(r, max(1, int(5 * (1 - t))), col_b, 255)
-            ring.set_alpha(int(230 * (1 - t)))
-            surface.blit(ring, (x - ring.get_width() // 2,
-                                y - ring.get_height() // 2))
-
-        elif self.phase == "area":
-            t = (a - self.t_release) / max(0.001,
-                                           self.t_area - self.t_release)
-            if self.kind == "e":
-                # E: chevron api berbaris ke depan (kerucut crit)
-                self._chevrons(surface, t)
+        if phase == "charge":
+            return                      # hero tetap terbaca saat cast
+        if phase == "release":
+            self._front_release(surface, R, ram, env, x, y, k)
+        elif phase == "area":
+            if k == "q":
+                self._front_q_area(surface, R, ram, env, x, y, a)
+            elif k == "w":
+                self._front_w_totem(surface, R, ram, env, x, y, a)
+            elif k == "e":
+                self._front_e_area(surface, R, ram, env, x, y, a)
             else:
-                # cincin rune berputar (dua arah berlawanan)
-                for k, spd in ((0, 2.3), (1, -1.6)):
-                    rr = int(self.radius * (0.55 + 0.22 * k))
-                    self._rune_ring(surface, x, y - 6, rr,
-                                    col_b if k else col_a,
-                                    int(150 - 60 * t), a * spd, 8 + k * 4)
-
-        elif self.phase == "impact":
-            t = (a - self.t_area) / max(0.001, self.t_impact - self.t_area)
-            r = int(self.radius * (0.6 + 0.9 * t))
-            ring = ring_surface(r, max(1, int(6 * (1 - t))),
-                                P["fx_white"], 255)
-            ring.set_alpha(int(220 * (1 - t)))
-            surface.blit(ring, (x - ring.get_width() // 2,
-                                y - ring.get_height() // 2))
+                self._front_r_area(surface, R, ram, env, x, y, a)
+        else:
+            self._front_pulse(surface, R, ram, env, x, y, a)
 
     # ------------------------------------------------------------------
-    def _chevrons(self, surface, t):
-        """Deretan chevron yang meluncur ke depan (telegraph cone E)."""
-        f = 1.0 if getattr(self, "_facing", 0) >= 0 else -1
-        col = self.col_b
+    def _front_release(self, surface, R, ram, env, x, y, k):
+        """Sembulan release: cincin lantai gepeng + pop kecil di pusat."""
+        t = _fade01(self.t_charge, self.t_release, self.age)
+        e = env * (1.0 - t)
+        if e <= 0.02:
+            return
+        rr = R * (0.26 + 0.42 * t)
+        cy = y + int(R * 0.10)
+        _stamp_ellipse(surface, x, cy, rr + 4, (rr + 4) * 0.4, ram[1],
+                       int(80 * e), width=6)
+        _stamp_ellipse(surface, x, cy, rr, rr * 0.4,
+                       _mix(self.edge, P["fx_white"], 0.3),
+                       int(200 * e), width=3)
+        if glow_allowed():
+            g = glow_surface(max(8, min(22, int(10 + 26 * e))), ram[4],
+                             round(0.35 * e, 2))
+            surface.blit(g, (x - g.get_width() // 2,
+                             y - g.get_height() // 2),
+                         special_flags=pygame.BLEND_RGB_ADD)
+        _stamp_diamond(surface, x, y - 4, 3 + int(4 * (1.0 - t)),
+                       self.edge, int(230 * e))
+
+    # ------------------------------------------------------------------
+    def _front_q_area(self, surface, R, ram, env, x, y, a):
+        """Q: lajur bara pendek berputar di pinggang (bukan halo tegak)."""
+        t = _fade01(self.t_release, self.t_area, a)
+        e = env * (1.0 - 0.4 * t)
+        if e <= 0.02:
+            return
+        rr = R * 0.30
+        # busur BAWAH saja (separuh yang dekat penonton) — badan tetap
+        # terbaca; sisi belakang ditutup oleh trail putaran bilah.
+        _stamp_dash_ellipse(surface, x, y - int(R * 0.14), rr, rr * 0.34,
+                            _mix(self.edge, P["fx_white"], 0.35),
+                            int(120 * e), 2, segs=6, phase=a * 5.0,
+                            skip=2, span=math.pi)
+        # dua titik bara melawan arah putaran
+        for i in (0, 1):
+            ang = self.seed * 0.013 + a * (3.0 if i else -3.4)
+            px, py = _ellipse_pt(x, y - int(R * 0.14), rr * 0.9,
+                                 rr * 0.30, ang)
+            _stamp_diamond(surface, px, py, 2, P["fx_white"],
+                           int(150 * e))
+
+    # ------------------------------------------------------------------
+    def _front_w_totem(self, surface, R, ram, env, x, y, a):
+        """W: totem ward kecil — poros + mahkota + kelopak dasar."""
+        t = _fade01(self.t_release, self.t_area, a)
+        e = env * (1.0 - 0.3 * t)
+        if e <= 0.02:
+            return
+        bob = math.sin(a * 3.0) * 1.4
+        ty0 = y - 20 + int(bob)
+        _stamp_line(surface, x, ty0, x, y, ram[2], 2, int(150 * e))
+        _stamp_line(surface, x, ty0, x, y, ram[4], 1, int(80 * e))
+        for sgn in (-1, 1):
+            _stamp_ellipse(surface, x + sgn * 5, y - 1, 3.6, 1.8,
+                           ram[3], int(110 * e))
+        cy = y - 27 + int(bob)
+        _stamp_diamond(surface, x, cy, 4, self.edge, int(220 * e))
+        _stamp_diamond(surface, x, cy, 2, P["fx_white"], int(180 * e))
+        if glow_allowed():
+            g = glow_surface(12, P["heal_light"], round(0.20 * e, 2))
+            surface.blit(g, (x - g.get_width() // 2,
+                             cy - 6 - g.get_height() // 2),
+                         special_flags=pygame.BLEND_RGB_ADD)
+
+    # ------------------------------------------------------------------
+    def _front_e_area(self, surface, R, ram, env, x, y, a):
+        """E: sabit chevron meluncur ke depan mengikuti arah tebasan."""
+        t = _fade01(self.t_release, self.t_area, a)
+        e = env * (1.0 - 0.35 * t)
+        if e <= 0.02:
+            return
+        f = self.facing
         detail = skill_detail()
-        n_chev = max(2, min(4, int(round(4 * detail))))
-        for i in range(n_chev):
-            prog = (t * 1.6 + i * 0.25) % 1.0
-            dx = int(f * (14 + prog * self.radius))
-            dy = -8 - int((1.0 - prog) * 10)
-            al = int(210 * (1.0 - prog) * (0.4 + 0.6 * t))
+        n = max(2, min(4, int(round(4 * detail))))
+        for i in range(n):
+            prog = (t * 1.5 + i * 0.26) % 1.0
+            al = int(225 * (0.35 + 0.65 * t) * (1.0 - prog * 0.75) * e)
             if al <= 6:
                 continue
-            cx = int(self.x) + dx
-            cy = int(self.y) + dy
-            w = 6 + i
-            pts = [(cx + f * 7, cy), (cx - f * 3, cy - w),
-                   (cx - f * 1, cy), (cx - f * 3, cy + w)]
-            pygame.draw.polygon(surface, (*col, al), pts, 2)
+            rr = max(8, self.radius * (0.30 + 0.10 * i))
+            d = 6 + prog * self.radius
+            cx = x + f * (d - rr)
+            cy = y - 2 - int(prog * 6)
+            col = ram[2 + i] if i < 3 else _mix(self.edge,
+                                                 P["fx_white"], 0.3)
+            _stamp_arc(surface, cx, cy, rr, rr * 0.42, col, al,
+                       4 if i else 3, a0=-1.05, a1=1.05, flip=(f < 0))
 
-    def _rune_ring(self, surface, cx, cy, radius, color, alpha,
-                   rot, marks):
-        """Rune diamond mengorbit — bukan lingkaran kontinu."""
-        if alpha <= 5:
+    # ------------------------------------------------------------------
+    def _front_r_area(self, surface, R, ram, env, x, y, a):
+        """R: silang tebasan di titik cast + uap rage pendek ke atas."""
+        t = _fade01(self.t_release, self.t_area, a)
+        e = env * (1.0 - 0.3 * t)
+        if e <= 0.02:
             return
-        detail = skill_detail()
-        marks = max(3, int(round(marks * (0.4 + 0.6 * detail))))
-        for i in range(marks):
-            ang = rot + i * math.tau / marks
-            px = cx + math.cos(ang) * radius
-            py = cy + math.sin(ang) * radius * 0.55
-            sz = 3 if i % 2 else 2
-            s = _scratch(sz * 2 + 4, sz * 2 + 4)
-            pygame.draw.polygon(s, (*color, alpha),
-                                [(sz + 2, 0), (sz * 2 + 3, sz + 2),
-                                 (sz + 2, sz * 2 + 3), (1, sz + 2)])
-            surface.blit(s, (int(px) - sz - 2, int(py) - sz - 2))
+        L = R * (0.16 + 0.05 * math.sin(a * 7.0))
+        cx, cy = x, y - int(R * 0.07)
+        for sgn in (-1, 1):
+            ang = math.pi / 2 + sgn * 0.62
+            dx, dy = math.cos(ang) * L, math.sin(ang) * L
+            _stamp_line(surface, cx - dx, cy - dy, cx + dx, cy + dy,
+                        ram[4], 4, int(140 * e))
+            _stamp_line(surface, cx - dx, cy - dy, cx + dx, cy + dy,
+                        P["fx_white"], 1, int(110 * e))
+        _stamp_line(surface, x, y - 2, x, y - int(R * 0.16), ram[3], 2,
+                    int(90 * e * (0.6 + 0.4 * math.sin(a * 9.0))))
+
+    # ------------------------------------------------------------------
+    def _front_pulse(self, surface, R, ram, env, x, y, a):
+        """Denyut penutup impact — cincin lantai kecil lalu meredup."""
+        t = _fade01(self.t_area, self.t_impact, a)
+        e = env
+        if e <= 0.02:
+            return
+        rr = R * (0.40 + 0.5 * t)
+        cy = y + int(R * 0.10)
+        _stamp_ellipse(surface, x, cy, rr + 4, (rr + 4) * 0.38, ram[3],
+                       int(90 * e), width=4)
+        _stamp_ellipse(surface, x, cy, rr, rr * 0.38,
+                       _mix(self.edge, P["fx_white"], 0.3),
+                       int(150 * e), width=2)
+        if glow_allowed() and t < 0.45:
+            g = glow_surface(int(8 + 12 * (1.0 - t)), ram[5],
+                             round(0.3 * e, 2))
+            surface.blit(g, (x - g.get_width() // 2,
+                             y - g.get_height() // 2),
+                         special_flags=pygame.BLEND_RGB_ADD)
 
 
 # ============================================================================
@@ -2215,7 +2645,9 @@ class GrimjawFXDirector:
                 radius = float(getattr(self.hero, "skill_range", 0)) or None
             except Exception:              # pragma: no cover
                 radius = None
-        fx = SkillFX(skill, x, y, self.particles, radius)
+        f_hero = 1.0 if float(getattr(self.hero, "facing", 1)) >= 0 \
+            else -1.0
+        fx = SkillFX(skill, x, y, self.particles, radius, facing=f_hero)
         self.skills.append(fx)
 
         if skill == "q":
