@@ -185,3 +185,44 @@ trail berisi & meluruh, cap partikel, lifecycle proyektil + skill,
 hit-stop 2–5 frame, shake kembali 0, supresi ganda, aftermath bersih
 (0 partikel setelah 420 frame), API publik lama utuh (54/54), dan budget
 frame. Lembar preview ditulis ke `docs/razak_v3_*.png`.
+
+## 10. Perbaikan: FX putih menutupi Razak saat mengeluarkan skill
+
+**Gejala.** Saat Razak (mini boss level 2) melepas skill — paling parah
+`R Firestorm` — badannya tertelan bercak putih-kuning besar; hal yang
+sama terjadi setiap kali dia kena damage.
+
+**Akar masalah.** `pygame.BLEND_RGB_ADD` **mengabaikan kanal alpha**.
+Tiga jalur di `heroes/razak_fx.py` menggambar dengan RGB penuh + alpha
+menurun lalu mem-blit-nya additive, sehingga gradien lembut berubah
+menjadi cakram warna solid:
+
+| Jalur | Sebelum | Sesudah |
+|---|---|---|
+| `glow_surface` | `circle(col, alpha=120·falloff)` | intensitas dikalikan ke RGB **dan** alpha (premultiplied) |
+| `ground_glow_surface` | `ellipse(col, alpha=90·falloff)` | premultiplied, sama |
+| `_blit_faded(additive=True)` | `set_alpha()` (tidak berefek pada mode additive) | salinan ter-cache yang diredam `BLEND_RGBA_MULT` |
+| `_draw_hit_flash` | cakram `fire_white` r≈76 px + glow r≈46 px di atas badan | glow hangat r≈30 px + kilat bintang kecil di dada, diredam 0.35× kalau lane boss sudah menyalakan `hurt_flash_timer` |
+
+**Hasil terukur** (`tools/_shot_razak_combat_white.py`, piksel sangat
+terang di dalam siluet badan):
+
+| Momen | Sebelum | Sesudah |
+|---|---|---|
+| R Firestorm puncak | 20.2 % badan (naik-lum +81) | 1.2 % (naik-lum +26) |
+| Hit flash baru kena damage | 84.4 % badan | 3.2 % |
+| Hit flash memudar (k=0.5) | 44.8 % | 3.1 % |
+
+Skill Q/W/E ikut turun karena memakai helper glow yang sama; FX-nya
+**tetap terlihat** (kenaikan luminansi +13…+27 di badan), hanya tidak
+lagi menutupi siluet. Hurt-flash siluet milik lane boss
+(`hurt_flash_timer`, konvensi level1/level2) sengaja dipertahankan.
+
+**Verifikasi**
+
+```
+python3 tools/test_razak_no_white_cover.py     # kontrak anti white-out
+python3 tools/_shot_razak_combat_white.py      # docs/razak_combat_white.png
+python3 -m pytest tools/test_razak_v3_combat.py -q
+python3 tools/test_level2_masterwork.py
+```
