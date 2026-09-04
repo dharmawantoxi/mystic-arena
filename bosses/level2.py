@@ -3210,95 +3210,238 @@ class _NS_razak:
 
 
 # ====================================================================
-# KHALROS
+# KHALROS — PIXEL MASTERWORK v2 (rewrite dari nol)
 # ====================================================================
 class _NS_khalros:
-    """Namespace khalros - isi asli tidak diubah."""
+    """Namespace khalros - PIXEL MASTERWORK v2 + SKILL FX v2.1.
 
+    Rewrite PENUH renderer `_NS_khalros` mengikuti standar
+    **Thorne v2 Pixel Masterwork + v2.1 Skill FX** (docs/THORNE_V2_RENDERER.md),
+    pola yang sama dengan `_NS_razak` / `_NS_gorath` di file ini. Tetap
+    100% prosedural: tanpa PNG, sprite-sheet, maupun pemuatan citra.
+
+    Karakter
+    --------
+    Khalros "The Beastlord" - panglima perang barbar penjinak binatang:
+    dua kapak tempur bergerigi, helm bertanduk babi hutan, jubah kulit
+    serigala, dan elang pendamping di bahu. Skill (sinkron dengan AI
+    `bosses/base_boss.py::_khalros_*`):
+
+        Q Wild Axes      50 frame, AOE 70 px dunia DI TARGET (voli kapak)
+        W Call of Wild   60 frame, AOE 120 px dunia DI DIRI (pack howl+heal)
+        E Boar Charge    45 frame, dash + AOE 85 px dunia DI DIRI (pendaratan)
+        R Hawk Storm     70 frame, AOE 200 px dunia DI DIRI (hujan elang)
+
+    Yang naik dibanding v1
+    ----------------------
+    1. RIG di-*author* 1.5x di resolusi NATIVE (puncak tanduk -100, sol
+       sepatu +66) lalu ditampilkan lewat SATU `SCALE = 0.62` untuk semua
+       jalur (boss langsung, lane hero, portrait). Ukuran DI LAYAR tetap
+       sekelas keluarga level-2 (alchemist true boss >= khalros mini);
+       yang berubah adalah KEPADATAN detail per piksel layar.
+    2. DISIPLIN PIXEL-ART: 4-7 band ramp ber-hue-shift per material
+       (kulit didorong dingin di bayangan / hangat di highlight, bulu
+       serigala biru-kecil, baja kapak 5 band + fuller gelap), selout
+       `shadow_deep` di (+facing, +1) tiap limb, outline hitam 1 px
+       4 arah TERAKHIR (setelah penskalaan), siluet bergerigi lewat
+       `_tuft_points` (hem jubah, bulu pauldron, janggut dikepang),
+       specular cluster 2-3 px (helm, mata kapak, gesper emas, paruh
+       elang), `_dither_dots` di transisi perut & membran sayap elang.
+    3. ANIMASI: solver langkah dua kaki (heel-off -> contact -> toe-off,
+       debu kontak), inersia sekunder jubah/rambut/ekor elang, idle hidup
+       (napas, kedip elang, bara naik, binar mata), serangan 7 keyframe
+       dengan frame IMPACT tersendiri di `ap = 0.54`.
+    4. SKILL FX world-space (`_fx_scale`, cap 2.6) 3 tahap
+       (AKTIVASI / STEADY / TELEGRAPH). FX tanah memakai DECAL ber-falloff
+       (`_ground_scorch` + `_zone_fill` edge-weighted + `_ground_ring` +
+       `_rune_ring`), bukan stroke vektor per-frame.
+    """
+
+    # ---------------------------------------------------------------------------
+    # Compatibility helpers
+    # ---------------------------------------------------------------------------
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     HAS_AALINES = hasattr(pygame.draw, "aalines")
 
-    # ── ORIGINAL-MAX cache (piksel-identik, dibangun lazy) ──────────
+    # ── cache (nama lama dipertahankan) ─────────────────────────────
     _shadow_cache = None
     _aura_cache = None
+    _rune_cache = None
     _flash_buf = None
-    _body_buf = None        # buffer badan untuk outline+lighting
     _record_shadow = None
+    _body_buf = None        # buffer badan untuk outline+lighting
+    _ghost_buf = None       # afterimage dash (dirender 1x, di-blit 4x)
+    _STATIC_SURFACES = {}   # surface statis: dibangun SEKALI, di-blit
+    _EMBER_CACHE = {}       # api/bara per (size, fase-bucket, alpha)
+    _PILLAR_CACHE = {}      # kolom angin/debu vertikal
+    _BEAST_CACHE = {}       # siluet boar / wolf / hawk yang di-cache
+    _CLAMP_MEMO = {}
+
+    # ── metrik rig v2 ───────────────────────────────────────────────
+    RIG_SCALE = 1.5
+    # Buffer badan dibatasi extents TERUKUR semua pose (idle/walk/attack
+    # 7 keyframe/charge, dua arah hadap) + margin smear kapak.
+    RIG_W, RIG_H = 210, 192
+    RIG_OX, RIG_OY = 105, 112
+
+    # Satu SCALE untuk SEMUA jalur (boss langsung, lane hero, portrait).
+    # PERINGATAN: jangan pisahkan SCALE per jalur - itu merusak
+    # normalisasi _measure_native_size di heroes/__init__.py.
+    #
+    # Kenapa 0.68, bukan 0.62 seperti razak/gorath/alchemist: mereka membeli
+    # lebar siluet dari sayap api / kolom kabut / totem sehingga body-only
+    # boleh lebih kecil. Khalros berdiri di tanah dengan dua kapak - tanpa
+    # pembentang siluet - jadi faktor tampilnya dinaikkan supaya bbox DI
+    # LAYAR setara keluarga (razak 96x107, gorath 112x98, khalros ~100x115)
+    # dan tetap di bawah alchemist (130x133). Tetap SATU angka untuk SEMUA
+    # jalur (boss, lane hero, portrait) - dan itu yang dijaga normalisasi.
+    SCALE = 0.68
+    # Garis tanah (sol sepatu native +66 -> layar) relatif jangkar badan.
+    GROUND_DY = 44
+
+    # Durasi visual skill (frame) - HARUS sama dengan active_skill_timer
+    # yang diisi AI di bosses/base_boss.py (_khalros_q/w/e/r).
+    SKILL_DUR = {"q": 50, "w": 60, "e": 45, "r": 70}
+
+    # Radius gameplay tiap skill dalam PX DUNIA (bosses/base_boss.py):
+    #   q -> AOE 70 di target, w -> AOE 120 di sekitar DIRI,
+    #   e -> AOE 85 setelah dash, r -> AOE 200 di sekitar DIRI.
+    # Telegraph digambar TEPAT di angka ini lewat `_ring_r`.
+    SKILL_RADIUS = {"q": 70, "w": 120, "e": 85, "r": 200}
+
+    # ── controller animasi (dipakai juga oleh heroes/khalros_fx.py) ──
+    #: Overlay debug hitbox/hurtbox/state - sama seperti karakter v3 lain.
+    DEBUG_CHARACTER = False
+
+    ANIM_PRIORITY = {
+        "IDLE": 10, "WALK": 20, "RUN": 25, "CHARGE": 40,
+        "ATTACK": 45, "SWING": 50, "CAST": 55, "SKILL": 56,
+        "SPECIAL": 60, "HIT": 62, "HURT": 65, "DEATH": 100,
+    }
+
+    #: Timeline serangan (fraksi progress 0..1). Fase ini dipakai
+    #: renderer DAN lapisan hidup - satu sumber kebenaran.
+    ATTACK_WINDUP_END = 0.30
+    ATTACK_IMPACT = 0.54
+    ATTACK_SWING_END = 0.62
+    ATTACK_FOLLOW_END = 0.80
+    ATTACK_PHASES = (
+        ("ANTICIPATION", 0.00, 0.09),
+        ("WINDUP",       0.09, 0.30),
+        ("SWING",        0.30, 0.50),
+        ("IMPACT",       0.50, 0.62),
+        ("FOLLOW",       0.62, 0.80),
+        ("RECOVERY",     0.80, 1.00),
+    )
+
+    #: Geometri kapak (ruang native rig; dipakai swing trail & hitbox).
+    AXE_HANDLE = 24
+    AXE_BLADE = 27
+    AXE_ARM_LEN = 17
 
     # ---------------------------------------------------------------------------
-    # HD Palette - Rustic barbarian browns / orange fire
+    # HD Palette v2 - rustic barbarian: kulit tan, baja, bulu, api primal.
+    # Semua kunci v1 dipertahankan (nilainya di-tuning dengan hue-shift)
+    # + kunci baru untuk rim, debu, asap, tulang, dan angin.
     # ---------------------------------------------------------------------------
     PALETTE = {
-        # Skin - rugged tan
-        "skin_darkest":   (55,  30,  20),
-        "skin_dark":      (115, 68,  45),
-        "skin_mid":       (170, 108, 72),
-        "skin_light":     (215, 158, 108),
-        "skin_high":      (240, 200, 155),
-        "skin_shine":     (255, 230, 195),
+        # Kulit barbar - bayangan didorong ungu-dingin, highlight kuning-hangat
+        "skin_darkest":   (38,  20,  20),
+        "skin_dark":      (102, 60,  40),
+        "skin_mid":       (168, 106, 66),
+        "skin_light":     (214, 156, 104),
+        "skin_high":      (242, 200, 152),
+        "skin_shine":     (255, 232, 196),
+        "skin_rim":       (255, 244, 216),
 
-        # Hair - dark brown
-        "hair_darkest":   (18,  12,   8),
-        "hair_dark":      (48,  32,  20),
-        "hair_mid":       (85,  58,  35),
-        "hair_high":      (135, 95,  55),
+        # Rambut & janggut - cokelat tua (merah di highlight)
+        "hair_darkest":   (16,  11,   9),
+        "hair_dark":      (44,  29,  20),
+        "hair_mid":       (82,  54,  34),
+        "hair_light":     (124, 84,  52),
+        "hair_high":      (168, 122, 74),
 
-        # Leather / clothing
-        "leather_darkest": (25, 15,  8),
-        "leather_dark":   (55,  32,  15),
-        "leather_mid":    (95,  62,  32),
-        "leather_light":  (150, 100, 55),
-        "leather_high":   (200, 148, 88),
+        # Kulit samak / tali
+        "leather_darkest": (22,  14,   9),
+        "leather_dark":   (52,  32,  16),
+        "leather_mid":    (92,  60,  31),
+        "leather_light":  (146, 98,  54),
+        "leather_high":   (196, 145, 86),
 
-        # Metal (axes, buckles)
-        "metal_darkest":  (18,  16,  18),
-        "metal_dark":     (52,  48,  55),
-        "metal_mid":      (105, 100, 108),
-        "metal_light":    (170, 165, 175),
-        "metal_shine":    (225, 220, 225),
-        "metal_edge":     (250, 245, 250),
+        # Baja kapak & helm (bayangan kebiruan, highlight hangat-sedikit)
+        "metal_darkest":  (16,  14,  19),
+        "metal_dark":     (48,  45,  54),
+        "metal_mid":      (102, 98, 110),
+        "metal_light":    (168, 164, 178),
+        "metal_shine":    (226, 224, 232),
+        "metal_edge":     (250, 248, 252),
 
-        # Gold accents
-        "gold_dark":      (90,  60,  15),
-        "gold_mid":       (170, 130, 40),
-        "gold_light":     (230, 190, 80),
-        "gold_shine":     (255, 230, 150),
+        # Emas (gesper, rivet, cincin elang)
+        "gold_dark":      (92,  62,  16),
+        "gold_mid":       (172, 128, 40),
+        "gold_light":     (232, 190, 82),
+        "gold_shine":     (255, 232, 152),
 
-        # Fire / rage - orange
-        "fire_dark":      (75,  20,   5),
-        "fire_mid":       (185, 60,  15),
-        "fire_bright":    (235, 120, 30),
-        "fire_hot":       (255, 180, 60),
-        "fire_glow":      (255, 220, 130),
-        "fire_white":     (255, 245, 200),
+        # Api primal / aura beastlord
+        "fire_darkest":   (62,  16,   5),
+        "fire_dark":      (138, 34,   8),
+        "fire_mid":       (212, 78,  15),
+        "fire_bright":    (252, 132, 32),
+        "fire_hot":       (255, 184, 66),
+        "fire_glow":      (255, 222, 136),
+        "fire_white":     (255, 248, 214),
 
-        # Red horns / warpaint
-        "red_dark":       (85,  15,  12),
-        "red_mid":        (170, 30,  25),
-        "red_bright":     (225, 55,  45),
-        "red_hot":        (255, 100, 80),
+        # War paint merah-oker
+        "red_dark":       (78,  14,  12),
+        "red_mid":        (166, 32,  26),
+        "red_bright":     (224, 58,  46),
+        "red_hot":        (255, 108, 84),
 
-        # Beast fur - boar (dark brown)
-        "boar_darkest":   (30,  18,  12),
-        "boar_dark":      (65,  40,  22),
-        "boar_mid":       (110, 72,  42),
-        "boar_light":     (160, 110, 68),
-        "boar_high":      (200, 150, 100),
+        # Bulu babi hutan (pauldron / taring)
+        "boar_darkest":   (26,  16,  12),
+        "boar_dark":      (62,  38,  22),
+        "boar_mid":       (108, 70,  41),
+        "boar_light":     (158, 108, 66),
+        "boar_high":      (204, 154, 102),
 
-        # Beast fur - wolf (gray)
-        "wolf_darkest":   (25,  22,  25),
-        "wolf_dark":      (55,  52,  58),
-        "wolf_mid":       (95,  92, 100),
-        "wolf_light":     (150, 148, 155),
-        "wolf_high":      (200, 198, 205),
+        # Kulit serigala (jubah) - abu kebiruan dingin
+        "wolf_darkest":   (20,  20,  28),
+        "wolf_dark":      (48,  48,  60),
+        "wolf_mid":       (90,  90, 104),
+        "wolf_light":     (146, 146, 160),
+        "wolf_high":      (200, 202, 214),
+        "wolf_rim":       (228, 234, 248),
 
-        # Hawk (brown/tan)
-        "hawk_darkest":   (28,  18,  12),
-        "hawk_dark":      (65,  42,  22),
-        "hawk_mid":       (120, 78,  42),
-        "hawk_light":     (175, 128, 78),
-        "hawk_high":      (225, 180, 130),
-        "hawk_beak":      (245, 210, 100),
+        # Elang pendamping / badai elang
+        "hawk_darkest":   (26,  17,  12),
+        "hawk_dark":      (62,  40,  22),
+        "hawk_mid":       (118, 76,  42),
+        "hawk_light":     (174, 126, 78),
+        "hawk_high":      (224, 180, 132),
+        "hawk_beak":      (246, 210, 102),
+
+        # Tulang (taring, kalung, gagang)
+        "bone_darkest":   (44,  38,  30),
+        "bone_dark":      (108, 94,  70),
+        "bone_mid":       (168, 152, 118),
+        "bone_light":     (222, 212, 178),
+        "bone_shine":     (248, 242, 222),
+
+        # Debu tanah / asap / angin (FX binatang)
+        "dust_dark":      (72,  56,  38),
+        "dust_mid":       (126, 100, 68),
+        "dust_light":     (186, 160, 122),
+        "smoke_dark":     (34,  28,  30),
+        "smoke_mid":      (72,  62,  60),
+        "wind_dark":      (34,  52,  62),
+        "wind_mid":       (86, 130, 146),
+        "wind_light":     (160, 210, 224),
+        "wind_shine":     (220, 246, 255),
+
+        # Mata menyala (primal)
+        "eye_dark":       (74,  20,   6),
+        "eye_bright":     (255, 214,  96),
+        "eye_hot":        (255, 250, 208),
 
         # Misc
         "shadow":         (0,   0,   0),
@@ -3306,10 +3449,47 @@ class _NS_khalros:
         "white":          (255, 255, 255),
     }
 
+    # ===================================================================
+    # PRIMITIF DASAR (standar keluarga masterwork)
+    # ===================================================================
+    def _static(key, builder):
+        """Surface statis ter-cache (dibangun sekali, dipakai ulang)."""
+        surf = _NS_khalros._STATIC_SURFACES.get(key)
+        if surf is None:
+            surf = builder()
+            _NS_khalros._STATIC_SURFACES[key] = surf
+        return surf
 
     def _clamp(color):
-        return tuple(max(0, min(255, int(c))) for c in color)
+        """Clamp channel warna (RGB/RGBA) - di-memo, dipanggil ribuan kali."""
+        try:
+            hit = _NS_khalros._CLAMP_MEMO.get(color)
+        except TypeError:
+            return tuple(max(0, min(255, int(c))) for c in color)
+        if hit is not None:
+            return hit
+        out = tuple(max(0, min(255, int(c))) for c in color)
+        memo = _NS_khalros._CLAMP_MEMO
+        if len(memo) > 8192:
+            memo.clear()
+        memo[color] = out
+        return out
 
+    def _alpha(v):
+        return max(0, min(255, int(v)))
+
+    def _mix(a, b, t):
+        """Blend linear dua warna palette (t=0 -> a, t=1 -> b)."""
+        t = max(0.0, min(1.0, t))
+        return _NS_khalros._clamp(
+            (a[0] + (b[0] - a[0]) * t,
+             a[1] + (b[1] - a[1]) * t,
+             a[2] + (b[2] - a[2]) * t))
+
+    def _hash01(i):
+        """Pseudo-random deterministik 0..1 (stabil antar frame & cache)."""
+        x = math.sin(i * 127.1 + 311.7) * 43758.5453
+        return x - math.floor(x)
 
     def _aacircle(surface, color, center, radius, width=0):
         color = _NS_khalros._clamp(color)
@@ -3318,23 +3498,26 @@ class _NS_khalros:
         if radius == 0:
             return
         if len(color) == 4 and color[3] < 255:
-            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color, (radius + 2, radius + 2), radius, width)
+            temp = pygame.Surface((radius * 2 + 4, radius * 2 + 4),
+                                  pygame.SRCALPHA)
+            pygame.draw.circle(temp, color, (radius + 2, radius + 2),
+                               radius, width)
             surface.blit(temp, (cx - radius - 2, cy - radius - 2))
             return
         if _NS_khalros.HAS_AACIRCLE and radius > 1:
             try:
-                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius, width)
+                pygame.draw.aacircle(surface, color[:3], (cx, cy), radius,
+                                     width)
                 return
             except Exception:
                 pass
         pygame.draw.circle(surface, color[:3], (cx, cy), radius, width)
 
-
     def _aaline(surface, color, start, end, width=1):
         color = _NS_khalros._clamp(color)
         sx, sy = int(start[0]), int(start[1])
         ex, ey = int(end[0]), int(end[1])
+        width = int(width)
         if len(color) == 4 and color[3] < 255:
             min_x = min(sx, ex) - width - 2
             min_y = min(sy, ey) - width - 2
@@ -3343,18 +3526,19 @@ class _NS_khalros:
             if w <= 0 or h <= 0:
                 return
             temp = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.line(temp, color,
-                             (sx - min_x, sy - min_y),
+            pygame.draw.line(temp, color, (sx - min_x, sy - min_y),
                              (ex - min_x, ey - min_y), max(1, width))
             surface.blit(temp, (min_x, min_y))
             return
-        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey), max(1, width))
-
+        pygame.draw.line(surface, color[:3], (sx, sy), (ex, ey),
+                         max(1, width))
 
     def _poly(surface, color, points):
         if len(points) < 3:
             return
         color = _NS_khalros._clamp(color)
+        if any(isinstance(v, float) for p in points for v in p[:2]):
+            points = [(int(p[0]), int(p[1])) for p in points]
         if len(color) == 4 and color[3] < 255:
             xs = [p[0] for p in points]
             ys = [p[1] for p in points]
@@ -3363,13 +3547,12 @@ class _NS_khalros:
             h = max(ys) - min_y + 4
             if w <= 0 or h <= 0:
                 return
-            temp = pygame.Surface((w, h), pygame.SRCALPHA)
+            temp = pygame.Surface((int(w), int(h)), pygame.SRCALPHA)
             shifted = [(p[0] - min_x, p[1] - min_y) for p in points]
             pygame.draw.polygon(temp, color, shifted)
             surface.blit(temp, (min_x, min_y))
             return
         pygame.draw.polygon(surface, color[:3], points)
-
 
     def _ellipse(surface, color, rect, width=0):
         color = _NS_khalros._clamp(color)
@@ -3377,13 +3560,14 @@ class _NS_khalros:
             rx, ry, rw, rh = rect
             if rw <= 0 or rh <= 0:
                 return
-            temp = pygame.Surface((int(rw) + 4, int(rh) + 4), pygame.SRCALPHA)
+            temp = pygame.Surface((int(rw) + 4, int(rh) + 4),
+                                  pygame.SRCALPHA)
             pygame.draw.ellipse(temp, color, (2, 2, int(rw), int(rh)), width)
             surface.blit(temp, (rx - 2, ry - 2))
             return
         pygame.draw.ellipse(surface, color[:3],
-                            (rect[0], rect[1], int(rect[2]), int(rect[3])), width)
-
+                            (rect[0], rect[1], int(rect[2]), int(rect[3])),
+                            width)
 
     def _rect(surface, color, rect, border_radius=0):
         color = _NS_khalros._clamp(color)
@@ -3400,36 +3584,970 @@ class _NS_khalros:
                          (rect[0], rect[1], int(rect[2]), int(rect[3])),
                          border_radius=border_radius)
 
+    def _ring(surface, center, radius, width, color, alpha):
+        """Cincin: stroke gelap di belakang + cincin terang di atas."""
+        alpha = _NS_khalros._alpha(alpha)
+        if alpha <= 0:
+            return
+        cx, cy = int(center[0]), int(center[1])
+        r = int(radius)
+        if r <= 0:
+            return
+        _NS_khalros._aacircle(surface, (6, 3, 3, alpha), (cx, cy), r + 1,
+                              max(1, width + 2))
+        _NS_khalros._aacircle(surface, (*color, alpha), (cx, cy), r,
+                              max(1, width))
+
+    # ---------------------------------------------------------------------------
+    # Konversi ruang dunia <-> canvas renderer
+    # ---------------------------------------------------------------------------
+    def _world_to_local(boss, x, y, wx, wy):
+        """Titik DUNIA -> ruang gambar renderer (kompensasi _render_scale)."""
+        scale = getattr(boss, "_render_scale", None)
+        if scale is None:
+            return int(wx), int(wy)
+        scale = float(scale) or 1.0
+        ox = (float(wx) - float(getattr(boss, "x", x))) / scale
+        oy = (float(wy) - float(getattr(boss, "y", y))) / scale
+        rng = int(getattr(boss, "range", 130) or 130)
+        half = max(120, int(rng / scale) + 40)
+        max_off = half - 20
+        d = math.hypot(ox, oy)
+        if d > max_off:
+            ox *= max_off / d
+            oy *= max_off / d
+        return int(x + ox), int(y + oy)
 
     def _target_position(boss, x, y):
+        """Pusat jangkar target dalam ruang gambar renderer.
+
+        Hero/boss digambar ke canvas offscreen lalu di-scale saat blit,
+        jadi titik canvas = (delta dunia) / scale supaya FX mendarat
+        TEPAT di target setelah blit. Boss langsung: scale = 1.
+        """
         target = getattr(boss, "target", None)
         if target is not None and getattr(target, "alive", True):
-            # Konversi koordinat DUNIA target ke ruang jangkar (x, y)
-            # DENGAN kompensasi scale. Hero di-render ke canvas
-            # offscreen lalu di-scale saat blit (heroes/__init__.py),
-            # jadi titik canvas harus = (delta dunia)/scale supaya
-            # beam/proyektil mendarat TEPAT di target setelah blit.
-            # Boss yang digambar langsung di layar tidak terpengaruh
-            # (scale = 1).
-            scale = float(getattr(boss, "_render_scale", 1.0)) or 1.0
+            scale = float(getattr(boss, "_render_scale", 1.0) or 1.0)
             tx = x + (target.x - getattr(boss, "x", x)) / scale
             ty = y + (target.y - getattr(boss, "y", y)) / scale
             return int(tx), int(ty)
-        return int(x + 150 / float(getattr(boss, "_render_scale", 1.0) or 1.0) * getattr(boss, "direction", 1)), int(y)
+        return (int(x + 190 / float(getattr(boss, "_render_scale", 1.0) or 1.0)
+                    * getattr(boss, "direction", 1)), int(y))
+
+    # ===================================================================
+    # SKILL FX PRIMITIVES (standar Thorne v2.1 - kosakata keluarga)
+    # ===================================================================
+    def _fx_scale(boss):
+        """Faktor skala efek skill (world-space), cap 2.6.
+
+        Unit lane dirender ke canvas lalu dikecilkan `_render_scale` saat
+        blit -> efek ikut menyusut. Dengan 1/_render_scale ukuran EFEK DI
+        LAYAR setara boss asli. Boss langsung = 1.0.
+        """
+        scale = getattr(boss, "_render_scale", None)
+        if not scale:
+            return 1.0
+        return max(1.0, min(2.6, 1.0 / float(scale)))
+
+    def _ring_r(boss, world_px, surface):
+        """Radius dunia (px) -> px canvas, di-clamp ke dalam canvas."""
+        scale = getattr(boss, "_render_scale", None)
+        r = float(world_px) / float(scale) if scale else float(world_px)
+        margin = min(surface.get_width(), surface.get_height()) // 2 - 10
+        return int(max(4, min(r, margin)))
+
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+                    core=None):
+        """Bintang kilat: spike panjang-pendek selang-seling + inti."""
+        alpha = _NS_khalros._alpha(alpha)
+        if alpha <= 0 or size <= 0:
+            return
+        for k in range(spikes):
+            ang = rot + k * math.pi * 2 / spikes
+            ln = size * (1.0 if k % 2 == 0 else 0.55)
+            _NS_khalros._aaline(surface, (*color, alpha), (int(cx), int(cy)),
+                                 (int(cx + math.cos(ang) * ln),
+                                  int(cy + math.sin(ang) * ln * .8)),
+                                 2 if k % 2 == 0 else 1)
+        if core:
+            _NS_khalros._aacircle(surface, (*core, alpha), (int(cx), int(cy)),
+                                  max(1, int(size * .3)))
+
+    def _chevron(surface, cx, cy, ang, size, color, alpha, width=3):
+        """Satu panah '>' menghadap arah ``ang`` (telegraph bergerak)."""
+        alpha = _NS_khalros._alpha(alpha)
+        if alpha <= 0 or size <= 0:
+            return
+        ca, sa = math.cos(ang), math.sin(ang)
+        px, py = -sa, ca
+        tipx, tipy = cx + ca * size, cy + sa * size
+        for s in (-1, 1):
+            _NS_khalros._aaline(
+                surface, (*color, alpha),
+                (int(cx + px * s * size * .55 - ca * size * .5),
+                 int(cy + py * s * size * .55 - sa * size * .5)),
+                (int(tipx), int(tipy)), width)
+
+    def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
+                     segments=10, thick=3, span=0.6, squash=.92):
+        """Cincin putus-putus berputar (marker AOE / rune ring)."""
+        alpha = _NS_khalros._alpha(alpha)
+        if alpha <= 0 or radius <= 1:
+            return
+        for i in range(segments):
+            a0 = phase + i * math.pi * 2 / segments
+            a1 = a0 + math.pi * 2 / segments * span
+            p0 = (cx + math.cos(a0) * radius,
+                  cy + math.sin(a0) * radius * squash)
+            p1 = (cx + math.cos(a1) * radius,
+                  cy + math.sin(a1) * radius * squash)
+            _NS_khalros._aaline(surface, (*color, alpha), p0, p1, thick)
+
+    def _wind_sweep(surface, cx, cy, radius, alpha, phase, arcs=3,
+                    color=None, core=None):
+        """Sapuan angin melengkung (pernafasan badai elang)."""
+        P = _NS_khalros.PALETTE
+        color = color or P["wind_light"]
+        core = core or P["wind_shine"]
+        alpha = _NS_khalros._alpha(alpha)
+        if alpha <= 0:
+            return
+        for k in range(arcs):
+            rr = int(radius * (0.55 + 0.22 * k))
+            base = phase * (1.4 + 0.3 * k) + k * 2.1
+            pts = []
+            for i in range(9):
+                t = i / 8.0
+                ang = base + t * math.pi * 1.15
+                pts.append((cx + math.cos(ang) * rr,
+                            cy + math.sin(ang) * rr * 0.5))
+            for i in range(len(pts) - 1):
+                taper = max(1, int(3 * (1 - abs(i - 4) / 5.0)))
+                _NS_khalros._aaline(surface, (*color, int(alpha * 0.75)),
+                                    pts[i], pts[i + 1], taper + 1)
+                _NS_khalros._aaline(surface, (*core, alpha), pts[i],
+                                    pts[i + 1], max(1, taper - 1))
+
+    # -------------------------------------------------------------------
+    # DECAL TANAH (dibangun sekali per (radius, gaya); LRU 48)
+    # -------------------------------------------------------------------
+    _DECAL_CACHE = {}
+    _DECAL_ORDER = []
+
+    def _decal(key, size, builder):
+        """Surface decal ter-cache; LRU sederhana supaya memori terbatas."""
+        hit = _NS_khalros._DECAL_CACHE.get(key)
+        if hit is not None:
+            return hit
+        surf = builder(max(4, int(size)))
+        _NS_khalros._DECAL_CACHE[key] = surf
+        _NS_khalros._DECAL_ORDER.append(key)
+        if len(_NS_khalros._DECAL_ORDER) > 48:
+            old = _NS_khalros._DECAL_ORDER.pop(0)
+            _NS_khalros._DECAL_CACHE.pop(old, None)
+        return surf
+
+    def _decal_alpha(alpha):
+        """Bucket alpha 16-step untuk kunci decal (cache tetap panas).
+
+        Dikuantisasi supaya variasi cache sedikit (LRU 48) dan tiap varian
+        dibangun sekali; hasilnya dipanggang ke decal lewat `_bake` - RGB
+        untuk jalur additive, kanal alpha untuk jalur normal.
+        """
+        a = _NS_khalros._alpha(alpha)
+        if a <= 0:
+            return 0
+        return max(16, min(255, (a + 15) // 16 * 16))
+
+    def _premul(color, a):
+        """Warna yang RGB-nya sudah dikalikan alpha - WAJIB untuk decal additive.
+
+        `BLEND_RGBA_ADD` di SDL menjumlahkan kanal RGB mentah dan MENGABAIKAN
+        alpha sumber (verifikasi di pygame-ce 2.5.8: surface SRCALPHA dengan
+        `set_alpha(40)` yang di-blit additive tetap menyumbang RGB penuh).
+        Decal yang dipakai additive karenanya harus menyimpan cahayanya DI
+        RGB - kalau tidak, tiap "glow" jadi piringan keras secerah warna
+        aslinya dan tiga lapis tumpangan langsung putus ke putih.
+        """
+        k = max(0, min(255, int(a))) / 255.0
+        return (int(color[0] * k), int(color[1] * k), int(color[2] * k))
+
+    def _bake(surf, alpha, add=False):
+        """Skala decal dengan alpha bucket (sekali per build, lalu di-cache).
+
+        add=True  -> RGB yang diskala (alpha sumber toh diabaikan SDL)
+        add=False -> kanal alpha yang diskala (jalur blit normal)
+        """
+        if alpha >= 255:
+            return surf
+        if add:
+            surf.fill((alpha, alpha, alpha, 255),
+                      special_flags=pygame.BLEND_RGBA_MULT)
+        else:
+            surf.fill((255, 255, 255, alpha),
+                      special_flags=pygame.BLEND_RGBA_MULT)
+        return surf
+
+    def _blit_decal(surface, decal, cx, cy, alpha=255, add=False):
+        """Blit decal ter-pusat di (cx, cy).
+
+        `alpha` hanya berlaku untuk jalur NORMAL (SDL menghormati
+        `set_alpha` di sana). Decal additive membawa cahayanya sendiri di
+        RGB - lihat `_premul` - jadi pemanggil additive mengirim 255 dan
+        mengandalkan `_bake`.
+        """
+        alpha = _NS_khalros._alpha(alpha)
+        if alpha <= 0:
+            return
+        w, h = decal.get_size()
+        if not add:
+            decal.set_alpha(alpha)
+        surface.blit(decal, (int(cx) - w // 2, int(cy) - h // 2),
+                     special_flags=pygame.BLEND_RGBA_ADD if add else 0)
+        if not add:
+            decal.set_alpha(255)
+
+    def _quantize(v, step=6):
+        """Bulatkan radius ke kelipatan `step` supaya decal cache nyangkut."""
+        return max(step, int(round(float(v) / step) * step))
+
+    def _build_falloff_ring(size, color, core, thickness, softness,
+                            inner_glow, add=False):
+        """Cincin ber-gradien: inti terang -> falloff halus ke luar.
+
+        `add=True` menuntut warna premultiplied (lihat `_premul`) - cincin
+        telegraph yang di-blit additive dengan RGB mentah langsung terlihat
+        seperti neon yang terbakar habis.
+        """
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r_nom = c - softness - 2
+        if r_nom < 2:
+            return surf
+        lo = max(1, int(r_nom - thickness - softness))
+        hi = int(r_nom + softness)
+        for r in range(lo, hi + 1):
+            d = abs(r - r_nom)
+            if d <= thickness * 0.5:
+                t = 1.0
+            else:
+                t = max(0.0, 1.0 - (d - thickness * 0.5) / max(1.0, softness))
+                t = t * t
+            if t <= 0.003:
+                continue
+            a = int(200 * t)
+            col = _NS_khalros._mix(color, core,
+                                   min(1.0, max(0.0, t - 0.45) * 1.5))
+            if add:
+                col = _NS_khalros._premul(col, a)
+            pygame.draw.circle(surf, (*col, a), (c, c), r, 1)
+        if inner_glow > 0:
+            for r in range(lo, 0, -2):
+                t = (r / float(max(1, lo))) ** 2
+                a = int(inner_glow * t)
+                if a > 1:
+                    col = _NS_khalros._premul(color, a) if add else color
+                    pygame.draw.circle(surf, (*col, a), (c, c), r, 2)
+        return surf
+
+    def _ground_ring(surface, cx, cy, radius, color, core, alpha,
+                     thickness=3, softness=7, inner_glow=0, add=True):
+        """Cincin AOE kelas produksi: decal ber-falloff, additive."""
+        radius = _NS_khalros._quantize(radius, 6)
+        ab = _NS_khalros._decal_alpha(alpha)
+        if radius < 6 or ab <= 0:
+            return
+        pad = softness + thickness + 3
+        size = radius * 2 + pad * 2
+        key = ("fring", radius, color, core, thickness, softness, inner_glow,
+               ab, add)
+        decal = _NS_khalros._decal(
+            key, size,
+            lambda n: _NS_khalros._bake(
+                _NS_khalros._build_falloff_ring(
+                    n, color, core, thickness, softness, inner_glow, add), ab,
+                add=add))
+        _NS_khalros._blit_decal(surface, decal, cx, cy, 255, add=add)
 
 
-    # ---------------------------------------------------------------------------
-    # PROJECTILE SYSTEM (Wild Axes + Hawk)
-    # ---------------------------------------------------------------------------
+    def _build_arc_ring(size, color, core, segments, span, thickness,
+                        softness, taper, add=False):
+        """Cincin busur: tiap segmen meruncing di kedua ujung."""
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r_nom = c - softness - thickness - 2
+        if r_nom < 3:
+            return surf
+        step = math.tau / segments
+        for i in range(segments):
+            a0 = i * step
+            a1 = a0 + step * span
+            steps = max(3, int(span * 14))
+            outer, inner = [], []
+            for k in range(steps + 1):
+                t = k / steps
+                ang = a0 + (a1 - a0) * t
+                w = thickness * (taper + (1 - taper) * math.sin(t * math.pi))
+                outer.append((c + math.cos(ang) * (r_nom + w * .5),
+                              c + math.sin(ang) * (r_nom + w * .5)))
+                inner.append((c + math.cos(ang) * (r_nom - w * .5),
+                              c + math.sin(ang) * (r_nom - w * .5)))
+            pts = outer + inner[::-1]
+            ca, cb = 150, 205
+            if add:
+                col_a = _NS_khalros._premul(color, ca)
+                col_b = _NS_khalros._premul(core, cb)
+            else:
+                col_a, col_b = color, core
+            pygame.draw.polygon(surf, (*col_a, ca), pts)
+            mid = [(c + (px - c) * .997, c + (py - c) * .997)
+                   for px, py in outer[1:-1]] + \
+                  [(c + (px - c) * 1.003, c + (py - c) * 1.003)
+                   for px, py in inner[1:-1]][::-1]
+            if len(mid) >= 3:
+                pygame.draw.polygon(surf, (*col_b, cb), mid)
+        return surf
+
+    def _rune_ring(surface, cx, cy, radius, color, core, alpha, spin,
+                   segments=12, span=0.42, thickness=3.0, taper=0.85,
+                   add=True):
+        """Cincin busur berputar (telegraph 'rune binatang terbakar').
+
+        Geometri decal TIDAK dibangun ulang per frame - hanya sudutnya:
+        decal ter-cache diputar dengan `transform.rotate` dan sudutnya
+        dikunci ke dalam satu pitch segmen (`% 360/segments`), karena
+        cincin dengan `segments` segmen identik berulang tiap pitch, jadi
+        sisa sudut di luar satu pitch tidak menambah apa-apa.
+
+        Kenapa hasil rotasi TIDAK di-cache (pernah dicoba, jangan diulang):
+        kuncinya (radius x bucket sudut) menghasilkan 227 surface 400-580 px
+        = ~105 MB per kelas boss (razak/gorath: 0.03 MB), sementara `rotate`
+        cuma 0.4-0.6 ms dan masih di dalam budget. Kalau rotasi mau di-cache
+        lagi, batasi BYTE, bukan jumlah entri.
+        """
+        radius = _NS_khalros._coarse(radius)
+        ab = _NS_khalros._decal_alpha(alpha)
+        if radius < 8 or ab <= 0:
+            return
+        pad = int(thickness) + 8
+        size = radius * 2 + pad * 2
+        key = ("arcring", radius, color, core, segments, round(span, 2),
+               round(thickness, 1), round(taper, 2), ab, add)
+        decal = _NS_khalros._decal(
+            key, size,
+            lambda n: _NS_khalros._bake(
+                _NS_khalros._build_arc_ring(
+                    n, color, core, segments, span, thickness, 6, taper,
+                    add), ab, add=add))
+        deg = -math.degrees(spin) % (360.0 / max(1, segments))
+        rot = pygame.transform.rotate(decal, deg)
+        _NS_khalros._blit_decal(surface, rot, cx, cy, 255, add=True)
+
+
+    def _build_scorch(size, color, edge, seed):
+        """Noda tanah: gumpalan lembut ber-tepi tidak beraturan."""
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r = c - 2
+        for i in range(r, 0, -2):
+            t = 1.0 - i / float(r)
+            a = int(120 * (t ** 1.6))
+            if a > 1:
+                col = _NS_khalros._mix(edge, color, t)
+                pygame.draw.circle(surf, (*col, a), (c, c), i)
+        for i in range(20):
+            ang = _NS_khalros._hash01(seed * 31 + i) * math.tau
+            rr = r * (0.80 + 0.16 * _NS_khalros._hash01(seed * 17 + i))
+            br = max(3, int(r * 0.15 * (0.5 + _NS_khalros._hash01(seed * 7 + i))))
+            bx = int(c + math.cos(ang) * rr)
+            by = int(c + math.sin(ang) * rr)
+            for k in range(br, 0, -1):
+                a = int(70 * (1.0 - k / float(br)) ** 1.5)
+                if a > 1:
+                    pygame.draw.circle(surf, (*edge, a), (bx, by), k)
+        return surf
+
+    def _coarse(v):
+        """Kuantisasi radius BESAR lebih kasar (1/14 jangkauan, min 10 px).
+
+        Telegraph yang tumbuh mengikuti `progress` menghasilkan radius baru
+        tiap frame; dengan step tetap 8-10 px satu cast menghasilkan 40+
+        varian decal - LRU 48 jadi thrashing dan tiap frame membangun ulang
+        piringan 400-600 px. Untuk alas selebar itu, 20 px perbedaan tidak
+        terlihat, tapi 3x lebih sedikit build terasa di FPS.
+        """
+        return _NS_khalros._quantize(v, max(10, int(v) // 14))
+
+    def _ground_scorch(surface, cx, cy, radius, color, edge, alpha, seed=1):
+        """Alas tanah ter-cache di bawah telegraph (menempel di lantai)."""
+        radius = _NS_khalros._coarse(radius)
+        ab = _NS_khalros._decal_alpha(alpha)
+        if radius < 8 or ab <= 0:
+            return
+        size = radius * 2 + 6
+        key = ("scorch", radius, color, edge, seed, ab)
+        decal = _NS_khalros._decal(
+            key, size,
+            lambda n: _NS_khalros._bake(
+                _NS_khalros._build_scorch(n, color, edge, seed), ab))
+        _NS_khalros._blit_decal(surface, decal, cx, cy, 255)
+
+
+    def _build_zone_fill(size, color, edge_bias, add=False):
+        """Isi zona AOE: paling pekat DI DEKAT TEPI, memudar ke tengah.
+
+        Digambar sebagai annulus 1 px dari luar ke dalam supaya tiap piksel
+        ditulis SATU kali: tanpa akumulasi blend, kurva falloff yang
+        dirancang = yang sampai ke layar.
+        """
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        r = c - 1
+        for i in range(r, 0, -1):
+            t = i / float(r)
+            a = int(115 * (t ** edge_bias))
+            if a > 1:
+                col = _NS_khalros._premul(color, a) if add else color
+                pygame.draw.circle(surf, (*col, a), (c, c), i, 1)
+        return surf
+
+    def _zone_fill(surface, cx, cy, radius, color, alpha, edge_bias=3.2,
+                   add=True):
+        """Wash zona AOE ter-cache (edge-weighted; lihat builder-nya)."""
+        radius = _NS_khalros._coarse(radius)
+        ab = _NS_khalros._decal_alpha(alpha)
+        if radius < 6 or ab <= 0:
+            return
+        decal = _NS_khalros._decal(
+            ("zone", radius, color, round(edge_bias, 1), ab, add),
+            radius * 2,
+            lambda n: _NS_khalros._bake(
+                _NS_khalros._build_zone_fill(n, color, edge_bias, add), ab,
+                add=add))
+        _NS_khalros._blit_decal(surface, decal, cx, cy, 255, add=add)
+
+
+    def _build_radial_grad(size, color, add=False):
+        """Gradien radial lembut (glow / dasar kolom).
+
+        Annulus 1 px + warna premultiplied untuk mode additive: glow harus
+        memudar di RGB, bukan hanya di alpha.
+        """
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
+        c = size // 2
+        for i in range(c, 0, -1):
+            t = 1.0 - i / float(c)
+            a = int(190 * (t ** 2.2))
+            if a > 1:
+                col = _NS_khalros._premul(color, a) if add else color
+                pygame.draw.circle(surf, (*col, a), (c, c), i, 1)
+        return surf
+
+    def _glow(surface, cx, cy, radius, color, alpha, add=True):
+        """Glow radial ter-cache (pengganti tumpukan `_aacircle`)."""
+        radius = _NS_khalros._coarse(radius)
+        ab = _NS_khalros._decal_alpha(alpha)
+        if radius < 4 or ab <= 0:
+            return
+        decal = _NS_khalros._decal(
+            ("glow", radius, color, ab, add), radius * 2,
+            lambda n: _NS_khalros._bake(
+                _NS_khalros._build_radial_grad(n, color, add), ab, add=add))
+        _NS_khalros._blit_decal(surface, decal, cx, cy, 255, add=add)
+
+
+    def _jagged_crack(surface, cx, cy, ang, length, colors, alpha, seed,
+                      width=3):
+        """Retakan tanah berzigzag (3 segmen) dengan seam menyala."""
+        alpha = _NS_khalros._alpha(alpha)
+        if alpha <= 0 or length <= 0:
+            return
+        x, y, a = cx, cy, ang
+        pts = [(x, y)]
+        for i in range(3):
+            a += (_NS_khalros._hash01(seed * 7 + i * 13) - .5) * .8
+            seg = length / 3.0
+            x += math.cos(a) * seg
+            y += math.sin(a) * seg * .55      # perspektif tanah
+            pts.append((x, y))
+        for i in range(len(pts) - 1):
+            _NS_khalros._aaline(surface, (*colors[0], alpha), pts[i],
+                                pts[i + 1], width + 2)
+            _NS_khalros._aaline(surface, (*colors[1], alpha), pts[i],
+                                pts[i + 1], width)
+
+    def _tuft_points(spine, depth=4.0, min_len=7.0, seed=0):
+        """Ubah spine halus jadi tepi bergerigi (kain robek / bulu).
+
+        Deterministik (hash) - aman untuk cache sprite.
+        """
+        out = [spine[0]]
+        for i in range(len(spine) - 1):
+            ax, ay = spine[i]
+            bx, by = spine[i + 1]
+            seg = math.hypot(bx - ax, by - ay)
+            n = max(1, int(seg / min_len))
+            nx, ny = (by - ay), -(bx - ax)
+            ln = math.hypot(nx, ny) or 1.0
+            nx, ny = nx / ln, ny / ln
+            for j in range(n):
+                t = (j + 0.5) / n
+                px, py = ax + (bx - ax) * t, ay + (by - ay) * t
+                d = depth * (0.55 + 0.45 * _NS_khalros._hash01(
+                    i * 7 + j * 13 + seed))
+                if j % 2 == 0:
+                    out.append((px + nx * d, py + ny * d))
+                else:
+                    out.append((px - nx * d * 0.45, py - ny * d * 0.45))
+            out.append((bx, by))
+        return out
+
+    def _dither_dots(surface, color, points, alpha=80):
+        """Dither band 50% klasik (bertahan setelah downscale)."""
+        col = (*color, _NS_khalros._alpha(alpha))
+        for i, (px, py) in enumerate(points):
+            if i % 2 == 0:
+                _NS_khalros._aacircle(surface, col, (int(px), int(py)), 1)
+
+    def _selout_poly(surface, color, points, facing=1, dy=1, off=1):
+        """Selout: salinan warna gelap digeser ke sisi bayangan (kanan-bawah)."""
+        _NS_khalros._poly(surface, color,
+                          [(p[0] + facing * off, p[1] + dy) for p in points])
+
+    # ===================================================================
+    # API / FLAME / DEBU (nama lama dipertahankan, versi v2 lebih hemat)
+    # ===================================================================
+    def _draw_flame(surface, cx, cy, size, phase, alpha=255):
+        """Api tunggal ber-lapis; di-cache per (size, fase, alpha bucket)."""
+        NS = _NS_khalros
+        height = int(size * 2)
+        pb = int(phase * 4) % 8
+        ab = int(alpha / 32) * 32
+        key = (int(size), pb, ab)
+        spr = NS._EMBER_CACHE.get(("flame",) + key)
+        if spr is None:
+            spr = pygame.Surface((int(size * 2) + 6, height + 4),
+                                 pygame.SRCALPHA)
+            base = int(size) + 3
+            for h in range(height):
+                t = h / max(1, height)
+                w = int(size * (1 - t * 0.7))
+                fx = base + int(math.sin((pb / 4.0) * 3 + t * 4) * 2)
+                fy = height + 1 - h
+                a = int(ab * (1 - t * 0.4))
+                if t < 0.3:
+                    color = NS.PALETTE["fire_darkest"]
+                elif t < 0.55:
+                    color = NS.PALETTE["fire_mid"]
+                elif t < 0.8:
+                    color = NS.PALETTE["fire_bright"]
+                else:
+                    color = NS.PALETTE["fire_hot"]
+                NS._aacircle(spr, (*color, a), (fx, fy), max(1, w))
+            NS._aacircle(spr, (*NS.PALETTE["fire_glow"], ab),
+                         (base, height + 1 - height // 3), size // 2)
+            NS._aacircle(spr, (*NS.PALETTE["fire_white"], ab),
+                         (base, height + 1 - height // 4), max(1, size // 4))
+            if len(NS._EMBER_CACHE) > 192:
+                NS._EMBER_CACHE.clear()
+            NS._EMBER_CACHE[("flame",) + key] = spr
+        surface.blit(spr, (cx - (spr.get_width() // 2), cy - (height + 1)))
+
+    def _draw_ember(surface, cx, cy, size=2, alpha=255):
+        """Bara 3-band + inti putih (murah, tanpa alokasi)."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        size = max(1, int(size))
+        NS._aacircle(surface, (*P["fire_dark"], alpha), (cx, cy), size + 1)
+        NS._aacircle(surface, (*P["fire_bright"], alpha), (cx, cy), size)
+        NS._aacircle(surface, (*P["fire_hot"], alpha), (cx, cy),
+                     max(1, size - 1))
+        NS._aacircle(surface, (*P["fire_glow"], min(255, alpha)), (cx, cy), 1)
+
+    def _draw_dust_puff(surface, cx, cy, radius, alpha, seed=0):
+        """Debu tanah kontak kaki - gumpalan 3-tone, tanpa surface baru."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        alpha = NS._alpha(alpha)
+        if alpha <= 8 or radius <= 0:
+            return
+        for i in range(4):
+            ang = NS._hash01(seed * 13 + i * 5) * math.tau
+            rr = radius * (0.35 + 0.65 * NS._hash01(seed * 7 + i))
+            px = cx + math.cos(ang) * radius * 0.8
+            py = cy + math.sin(ang) * radius * 0.28
+            sz = max(1, int(rr))
+            NS._aacircle(surface, (*P["dust_dark"], int(alpha * 0.55)),
+                         (int(px), int(py)), sz)
+            NS._aacircle(surface, (*P["dust_mid"], int(alpha * 0.7)),
+                         (int(px) - 1, int(py) - 1), max(1, sz - 1))
+            NS._aacircle(surface, (*P["dust_light"], int(alpha * 0.5)),
+                         (int(px) - 1, int(py) - 2), max(1, sz // 2))
+
+    def _draw_wind_column(surface, cx, cy, height, width, phase):
+        """Kolom angin vertikal ter-cache (aktivasi R / pilar panggilan).
+
+        Pengganti tumpukan `aacircle` ber-alpha per frame. Sway dikunci
+        ke 6 bucket fase; tinggi dikuantisasi 4 px supaya cache nyangkut.
+        """
+        NS = _NS_khalros
+        P = NS.PALETTE
+        height = max(6, int(height))
+        width = max(2, int(width))
+        hq = (height // 4) * 4
+        pb = int(phase * 3) % 6
+        key = ("col", hq, width, pb)
+        spr = NS._PILLAR_CACHE.get(key)
+        if spr is None:
+            w_s = width * 2 + 10
+            spr = pygame.Surface((w_s, hq + 8), pygame.SRCALPHA)
+            base_x = w_s // 2
+            for h in range(0, hq, 2):
+                t = h / max(1, hq)
+                w = max(1, int(width * (1 - t * 0.45)))
+                fxp = base_x + int(math.sin(pb * 1.05 + h * 0.32) * 3)
+                fyp = hq + 2 - h
+                alpha = int(210 * (1 - t * 0.55))
+                if t < 0.3:
+                    color = P["wind_dark"]
+                elif t < 0.62:
+                    color = P["wind_mid"]
+                elif t < 0.86:
+                    color = P["wind_light"]
+                else:
+                    color = P["wind_shine"]
+                pygame.draw.circle(spr, (*color, alpha), (fxp, fyp), w)
+            # serat angin naik di dalam kolom
+            for i in range(6):
+                t = (i + 0.5) / 6.0
+                yy = hq + 2 - int(t * hq)
+                xx = base_x + int(math.sin(pb + i * 1.4) * width * 0.6)
+                NS._aaline(spr, (*P["wind_shine"], int(150 * (1 - t))),
+                           (xx - width, yy), (xx + width, yy - 2), 1)
+            if len(NS._PILLAR_CACHE) > 96:
+                NS._PILLAR_CACHE.clear()
+            NS._PILLAR_CACHE[key] = spr
+        surface.blit(spr, (int(cx) - spr.get_width() // 2,
+                           int(cy) + 2 - spr.get_height()))
+
+    # -------------------------------------------------------------------
+    # BINATANG (siluet ter-cache per (jenis, facing, bucket fase, ukuran))
+    # -------------------------------------------------------------------
+    def _beast(kind, facing, phase, size, alpha, palette):
+        """Ambil sprite binatang ter-cache; dibangun sekali per kunci."""
+        NS = _NS_khalros
+        f = 1 if facing >= 0 else -1
+        pb = int(phase * 3) % 8
+        sb = max(4, int(size / 3) * 3)
+        ab = int(alpha / 32) * 32
+        key = (kind, f, pb, sb, ab)
+        spr = NS._BEAST_CACHE.get(key)
+        if spr is None:
+            w = int(sb * 5.2) + 8
+            h = int(sb * 3.4) + 8
+            spr = pygame.Surface((w, h), pygame.SRCALPHA)
+            if kind == "boar":
+                NS._paint_boar(spr, w // 2, h - 6, f, pb, sb, ab, palette)
+            elif kind == "wolf":
+                NS._paint_wolf(spr, w // 2, h - 6, f, pb, sb, ab, palette)
+            else:
+                NS._paint_hawk(spr, w // 2, h // 2, f, pb, sb, ab, palette)
+            if len(NS._BEAST_CACHE) > 160:
+                NS._BEAST_CACHE.clear()
+            NS._BEAST_CACHE[key] = spr
+        surface_w = spr.get_width()
+        return spr, (int(-surface_w // 2), 0)
+
+    def _paint_boar(s, cx, base_y, f, flap, size, alpha, P):
+        """Babi hutan pembajak - ramp 5 band, bulu bergerigi, taring ivory."""
+        NS = _NS_khalros
+        u = size / 12.0
+        bob = math.sin(flap * 0.8) * 1.5 * u
+        cy = base_y - 9 * u + bob
+        # bayangan contact
+        NS._ellipse(s, (*P["shadow_deep"], int(alpha * 0.55)),
+                    (cx - 17 * u, base_y - 3 * u, 34 * u, 5 * u))
+        # kaki (4, dua-dua ditumpuk) - fase mengikuti flap
+        for i, sx in enumerate((-9, -2, 5, 11)):
+            lift = int(max(0.0, math.sin(flap * 1.6 + i * 1.7)) * 3 * u)
+            x0 = cx + sx * u * f
+            NS._rect(s, (*P["boar_darkest"], alpha),
+                     (x0 - 2 * u, cy + 5 * u, 4 * u, 9 * u - lift))
+            NS._rect(s, (*P["boar_dark"], alpha),
+                     (x0 - 1 * u, cy + 6 * u, 2 * u, 8 * u - lift))
+            NS._rect(s, (*P["bone_dark"], alpha),
+                     (x0 - 2 * u, cy + 13 * u - lift, 4 * u, 2 * u))
+        # badan: gundukan bahu tinggi, pinggul turun
+        spine = [(cx - 15 * u * f, cy + 2 * u),
+                 (cx - 8 * u * f, cy - 6 * u),
+                 (cx + 1 * u * f, cy - 8 * u),
+                 (cx + 9 * u * f, cy - 4 * u),
+                 (cx + 15 * u * f, cy + 3 * u),
+                 (cx + 12 * u * f, cy + 8 * u),
+                 (cx - 11 * u * f, cy + 9 * u)]
+        NS._selout_poly(s, (*P["shadow_deep"], alpha), spine, f, 1, 1)
+        NS._poly(s, (*P["boar_dark"], alpha), spine)
+        edge = NS._tuft_points(spine[:-2], depth=2.6 * u, min_len=4.0,
+                              seed=3)
+        NS._poly(s, (*P["boar_mid"], alpha),
+                 [(cx + (p[0] - cx) * 0.86, cy + (p[1] - cy) * 0.82)
+                  for p in edge])
+        lit = [(cx + 4 * u * f, cy - 7 * u), (cx + 11 * u * f, cy - 3 * u),
+               (cx + 6 * u * f, cy + 1 * u), (cx - 2 * u * f, cy - 3 * u)]
+        NS._poly(s, (*P["boar_light"], alpha), lit)
+        NS._poly(s, (*P["boar_high"], min(255, int(alpha * 0.8))),
+                 [(cx + 6 * u * f, cy - 6 * u), (cx + 10 * u * f, cy - 4 * u),
+                  (cx + 7 * u * f, cy - 2 * u)])
+        # bulu kuduk bergerigi di punggung
+        ruff = NS._tuft_points([(cx - 8 * u * f, cy - 6 * u),
+                               (cx + 1 * u * f, cy - 9 * u),
+                               (cx + 9 * u * f, cy - 5 * u)],
+                              depth=3.2 * u, min_len=3.0, seed=11)
+        NS._poly(s, (*P["boar_darkest"], alpha), ruff)
+        # kepala rendah + moncong datar + taring
+        hx, hy = cx + 17 * u * f, cy + 2 * u
+        NS._poly(s, (*P["boar_dark"], alpha),
+                 [(hx - 6 * u * f, hy - 6 * u), (hx + 5 * u * f, hy - 3 * u),
+                  (hx + 6 * u * f, hy + 4 * u), (hx - 5 * u * f, hy + 6 * u)])
+        NS._poly(s, (*P["boar_mid"], alpha),
+                 [(hx - 4 * u * f, hy - 4 * u), (hx + 3 * u * f, hy - 2 * u),
+                  (hx + 3 * u * f, hy + 2 * u), (hx - 4 * u * f, hy + 3 * u)])
+        NS._poly(s, (*P["bone_light"], alpha),
+                 [(hx + 4 * u * f, hy + 2 * u), (hx + 8 * u * f, hy - 4 * u),
+                  (hx + 5 * u * f, hy + 3 * u)])
+        NS._aacircle(s, (*P["bone_shine"], min(255, alpha)),
+                     (int(hx + 6 * u * f), int(hy - 2 * u)), max(1, u))
+        # mata merah menyala + telinga
+        NS._aacircle(s, (*P["red_bright"], alpha), (hx + 1 * u * f, hy - 3 * u),
+                     max(1, 1.4 * u))
+        NS._aacircle(s, (*P["fire_hot"], min(255, alpha)),
+                     (hx + 1 * u * f, hy - 3 * u), max(1, u))
+        # napas debu dari moncong
+        if flap % 4 < 2:
+            NS._draw_dust_puff(s, hx + 8 * u * f, hy + 4 * u, 3 * u,
+                               int(alpha * 0.6), seed=5)
+
+    def _paint_wolf(s, cx, base_y, f, flap, size, alpha, P):
+        """Serigala pack - ramp 5 band, ekor & telinga bergerigi."""
+        NS = _NS_khalros
+        u = size / 12.0
+        bob = math.sin(flap * 1.1) * 1.4 * u
+        cy = base_y - 11 * u + bob
+        NS._ellipse(s, (*P["shadow_deep"], int(alpha * 0.5)),
+                    (cx - 16 * u, base_y - 2 * u, 32 * u, 4 * u))
+        for i, sx in enumerate((-10, -3, 4, 10)):
+            lift = int(max(0.0, math.sin(flap * 2.0 + i * 1.9)) * 4 * u)
+            x0 = cx + sx * u * f
+            NS._aaline(s, (*P["wolf_darkest"], alpha),
+                       (x0, cy + 4 * u), (x0 + lift * 0.3, base_y - 2 * u - lift),
+                       max(2, int(3 * u)))
+            NS._aaline(s, (*P["wolf_dark"], alpha),
+                       (x0, cy + 5 * u), (x0, base_y - 3 * u - lift),
+                       max(1, int(2 * u)))
+        spine = [(cx - 14 * u * f, cy + 1 * u),
+                 (cx - 6 * u * f, cy - 6 * u),
+                 (cx + 3 * u * f, cy - 7 * u),
+                 (cx + 11 * u * f, cy - 3 * u),
+                 (cx + 13 * u * f, cy + 3 * u),
+                 (cx - 8 * u * f, cy + 6 * u)]
+        NS._selout_poly(s, (*P["shadow_deep"], alpha), spine, f, 1, 1)
+        NS._poly(s, (*P["wolf_dark"], alpha), spine)
+        NS._poly(s, (*P["wolf_mid"], alpha),
+                 [(cx + (p[0] - cx) * 0.88, cy + (p[1] - cy) * 0.8)
+                  for p in spine])
+        NS._poly(s, (*P["wolf_light"], alpha),
+                 [(cx + 2 * u * f, cy - 6 * u), (cx + 10 * u * f, cy - 3 * u),
+                  (cx + 4 * u * f, cy + 0 * u)])
+        # ekor mengibas (bergerigi)
+        tail = [(cx - 14 * u * f, cy + 1 * u),
+                (cx - 21 * u * f, cy - 3 * u + math.sin(flap * 1.8) * 3 * u),
+                (cx - 24 * u * f, cy + 2 * u)]
+        NS._poly(s, (*P["wolf_dark"], alpha),
+                 NS._tuft_points([(cx - 13 * u * f, cy + 3 * u)] + tail,
+                                 depth=2.6 * u, min_len=3.5, seed=6))
+        NS._aacircle(s, (*P["wolf_high"], alpha),
+                     (int(cx - 22 * u * f), int(cy + 0 * u)), max(1, 2 * u))
+        # kepala moncong panjang + telinga runcing
+        hx, hy = cx + 16 * u * f, cy - 3 * u
+        NS._poly(s, (*P["wolf_dark"], alpha),
+                 [(hx - 5 * u * f, hy - 4 * u), (hx + 7 * u * f, hy - 1 * u),
+                  (hx + 8 * u * f, hy + 2 * u), (hx - 4 * u * f, hy + 4 * u)])
+        NS._poly(s, (*P["wolf_mid"], alpha),
+                 [(hx - 3 * u * f, hy - 3 * u), (hx + 5 * u * f, hy - 1 * u),
+                  (hx - 2 * u * f, hy + 2 * u)])
+        for sgn in (-1, 1):
+            NS._poly(s, (*P["wolf_darkest"], alpha),
+                     [(hx + sgn * 2 * u * f, hy - 4 * u),
+                      (hx + (sgn * 2 - 3) * u * f, hy - 11 * u),
+                      (hx + (sgn * 2 + 3) * u * f, hy - 5 * u)])
+        NS._aacircle(s, (*P["fire_hot"], alpha), (hx + 1 * u * f, hy - 1 * u),
+                     max(1, 1.3 * u))
+        NS._poly(s, (*P["bone_light"], alpha),
+                 [(hx + 7 * u * f, hy + 1 * u), (hx + 9 * u * f, hy + 3 * u),
+                  (hx + 6 * u * f, hy + 3 * u)])
+
+    def _paint_hawk(s, cx, cy, f, flap, size, alpha, P):
+        """Elang - sayap 4-band dengan jari + bulu ekor runcing."""
+        NS = _NS_khalros
+        u = size / 8.0
+        fs = math.sin(flap * 1.25)
+        # sayap belakang
+        for side_i, (span, yoff, col) in enumerate(
+                ((20, -6, "hawk_dark"), (16, 2, "hawk_mid"))):
+            for side in (-1, 1):
+                tipx = cx + side * span * u
+                tipy = cy + yoff * u - fs * 7 * u * (1 if side_i == 0 else -1)
+                midx = cx + side * span * 0.55 * u
+                midy = cy - fs * 3 * u
+                shape = [(cx + side * 2 * u, cy - 2 * u),
+                         (midx, midy - 3 * u), (tipx, tipy),
+                         (cx + side * span * 0.8 * u, cy + 3 * u + fs * 2 * u),
+                         (cx + side * 3 * u, cy + 4 * u)]
+                NS._poly(s, (*P[col], alpha),
+                         NS._tuft_points(shape[1:4], depth=2.0 * u,
+                                         min_len=3.5, seed=side_i * 3 + side))
+        # badan + kepala
+        NS._ellipse(s, (*P["shadow_deep"], alpha),
+                    (cx - 6 * u, cy - 5 * u + 1, 12 * u, 13 * u))
+        NS._ellipse(s, (*P["hawk_mid"], alpha),
+                    (cx - 6 * u, cy - 5 * u, 12 * u, 13 * u))
+        NS._ellipse(s, (*P["hawk_light"], alpha),
+                    (cx - 4 * u, cy - 4 * u, 7 * u, 8 * u))
+        NS._ellipse(s, (*P["hawk_high"], alpha),
+                    (cx - 3 * u, cy - 4 * u, 4 * u, 4 * u))
+        hx = cx + 5 * u * f
+        NS._aacircle(s, (*P["hawk_darkest"], alpha), (hx, cy - 6 * u), 4 * u)
+        NS._aacircle(s, (*P["hawk_light"], alpha), (hx, cy - 6.5 * u), 3 * u)
+        NS._poly(s, (*P["hawk_beak"], alpha),
+                 [(hx + 3 * u * f, cy - 7 * u), (hx + 7 * u * f, cy - 5 * u),
+                  (hx + 3 * u * f, cy - 4 * u)])
+        NS._aacircle(s, (*P["fire_hot"], alpha), (hx + 1 * u * f, cy - 7.5 * u),
+                     max(1, u))
+        NS._aacircle(s, (*P["white"], min(255, alpha)),
+                     (hx + 1 * u * f, cy - 8 * u), max(1, u * 0.6))
+        # ekor runcing
+        NS._poly(s, (*P["hawk_darkest"], alpha),
+                 [(cx - 2 * u, cy + 6 * u), (cx - 9 * u * f, cy + 14 * u),
+                  (cx + 3 * u, cy + 7 * u)])
+        NS._poly(s, (*P["hawk_dark"], alpha),
+                 [(cx - 1 * u, cy + 6 * u), (cx - 6 * u * f, cy + 12 * u),
+                  (cx + 2 * u, cy + 7 * u)])
+        # cakar
+        for sgn in (-1, 1):
+            NS._aaline(s, (*P["gold_mid"], alpha),
+                       (cx + sgn * 2 * u, cy + 6 * u),
+                       (cx + sgn * 3 * u, cy + 9 * u), max(1, u))
+
+    def _draw_boar(surface, cx, cy, facing, phase, alpha=255):
+        """Babi hutan (kompat nama v1) - sprite ter-cache + glow."""
+        NS = _NS_khalros
+        spr, off = NS._beast("boar", facing, phase, 12.0, alpha, NS.PALETTE)
+        surface.blit(spr, (int(cx) + off[0], int(cy) + off[1]))
+
+    def _draw_wolf(surface, cx, cy, facing, phase, alpha=255):
+        """Serigala pack (kompat nama v1) - sprite ter-cache."""
+        NS = _NS_khalros
+        spr, off = NS._beast("wolf", facing, phase, 12.0, alpha, NS.PALETTE)
+        surface.blit(spr, (int(cx) + off[0], int(cy) + off[1]))
+
+    def _draw_flying_hawk(surface, cx, cy, facing, wing_phase, size=1.0):
+        """Elang terbang (proyektil R + kawanan) - ter-cache."""
+        NS = _NS_khalros
+        spr, off = NS._beast("hawk", facing, wing_phase, 8.0 * max(0.6, size),
+                             255, NS.PALETTE)
+        surface.blit(spr, (int(cx) + off[0], int(cy) + off[1] - 4))
+
+    def _draw_spinning_axe(surface, cx, cy, spin, size=1.0):
+        """Kapak terbang berputar - baja 5 band + fuller + edge menyala.
+
+        Bangun geometri SATU kali per (bucket spin, ukuran) lewat cache
+        sprite; rotasi memakai `transform.rotate` (murah, kualitas sama).
+        """
+        NS = _NS_khalros
+        P = NS.PALETTE
+        sb = max(4, int(size * 12) // 2 * 2)
+        spr = NS._STATIC_SURFACES.get(("axe", sb))
+        if spr is None:
+            u = sb / 12.0
+            w = int(34 * u) + 8
+            h = int(34 * u) + 8
+            spr = pygame.Surface((w, h), pygame.SRCALPHA)
+            ox, oy = w // 2, h // 2
+            # gagang kulit: 3 band + lilitan
+            NS._aaline(spr, (*P["leather_darkest"], 255),
+                       (ox - 12 * u, oy + 8 * u), (ox + 6 * u, oy - 5 * u),
+                       max(2, int(4 * u)))
+            NS._aaline(spr, (*P["leather_mid"], 255),
+                       (ox - 11 * u, oy + 7 * u), (ox + 5 * u, oy - 5 * u),
+                       max(1, int(2 * u)))
+            for i in range(4):
+                t = i / 4.0
+                gx = ox - 12 * u + t * 16 * u
+                gy = oy + 8 * u - t * 12 * u
+                NS._aaline(spr, (*P["leather_high"], 200),
+                           (gx - 1, gy + 2), (gx + 2, gy - 1), 1)
+            # mata kapak: bilah bergerigi (notch) 5 band
+            blade = [(ox + 4 * u, oy - 10 * u),
+                     (ox + 14 * u, oy - 8 * u),
+                     (ox + 17 * u, oy - 1 * u),
+                     (ox + 13 * u, oy + 6 * u),
+                     (ox + 5 * u, oy + 3 * u),
+                     (ox + 8 * u, oy - 2 * u)]
+            NS._poly(spr, (*P["metal_darkest"], 255), blade)
+            NS._poly(spr, (*P["metal_dark"], 255),
+                     [(p[0] - 1 * u, p[1] + 1 * u) for p in blade])
+            inner = [(ox + (p[0] - ox) * 0.78, oy + (p[1] - oy) * 0.78)
+                     for p in blade]
+            NS._poly(spr, (*P["metal_mid"], 255), inner)
+            NS._poly(spr, (*P["metal_light"], 255),
+                     [(ox + 6 * u, oy - 8 * u), (ox + 13 * u, oy - 6 * u),
+                      (ox + 11 * u, oy + 1 * u), (ox + 6 * u, oy - 1 * u)])
+            # fuller gelap + edge highlight
+            NS._aaline(spr, (*P["metal_darkest"], 235),
+                       (ox + 6 * u, oy - 6 * u), (ox + 12 * u, oy + 2 * u),
+                       max(1, int(2 * u)))
+            NS._aaline(spr, (*P["metal_shine"], 255),
+                       (ox + 14 * u, oy - 8 * u), (ox + 17 * u, oy - 1 * u),
+                       max(1, int(1.6 * u)))
+            NS._aacircle(spr, (*P["metal_edge"], 235),
+                         (ox + 15 * u, oy - 5 * u), max(1, u))
+            # paku emas + bara di tepi
+            NS._aacircle(spr, (*P["gold_mid"], 255), (ox + 7 * u, oy - 4 * u),
+                         max(1, 1.3 * u))
+            NS._aacircle(spr, (*P["gold_shine"], 235),
+                         (ox + 6.5 * u, oy - 4.6 * u), max(1, 0.6 * u))
+            NS._aacircle(spr, (*P["fire_bright"], 190),
+                         (ox + 16 * u, oy - 4 * u), max(1, 2 * u))
+            NS._aacircle(spr, (*P["fire_hot"], 220), (ox + 16 * u, oy - 4 * u),
+                         max(1, u))
+            if len(NS._STATIC_SURFACES) > 260:
+                NS._STATIC_SURFACES.clear()
+            NS._STATIC_SURFACES[("axe", sb)] = spr
+        ang = math.degrees(spin)
+        rot = pygame.transform.rotate(spr, -ang)
+        surface.blit(rot, (int(cx) - rot.get_width() // 2,
+                           int(cy) - rot.get_height() // 2))
+
+    # ===================================================================
+    # PROYEKTIL
+    # ===================================================================
     class AxeProjectile:
-        """Spinning axe projectile."""
-        def __init__(self, sx, sy, tx, ty, speed=7.0, facing=1):
+        """Wild Axe - kapak berputar dengan jejak bara + asap.
+
+        v2: busur pendek (arc) bukan garis lurus, trail 3-tone, dan
+        kilau panas; tetap memakai API lama (update/draw/alive).
+        """
+
+        def __init__(self, sx, sy, tx, ty, speed=7.0, facing=1, arc=16):
             self.x = float(sx)
             self.y = float(sy)
+            self.sx = float(sx)
+            self.sy = float(sy)
             self.tx = float(tx)
             self.ty = float(ty)
-            self.speed = speed
+            self.speed = float(speed)
             self.facing = facing
+            self.arc = float(arc)
             self.alive = True
             self.age = 0
             self.spin = 0.0
@@ -3439,226 +4557,165 @@ class _NS_khalros:
             if not self.alive:
                 return
             self.age += 1
-            self.spin += 0.55
+            self.spin += 0.62
             dx = self.tx - self.x
             dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
+            dist = math.hypot(dx, dy)
             if dist < self.speed + 4:
                 self.alive = False
                 return
             self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 8:
+            if len(self.trail) > 9:
                 self.trail.pop(0)
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
+            ux, uy = dx / (dist or 1.0), dy / (dist or 1.0)
+            # busur: simpulan naik-turun yang meluruh menuju target,
+            # jadi kapak tampak "diarahkan" dan mendarat TEPAT di titik
+            # radius gameplay (70 px dunia).
+            arc_y = -math.sin(min(1.0, self.age / 14.0) * math.pi) \
+                * self.arc * 0.35
+            self.x += ux * self.speed
+            self.y += uy * self.speed + arc_y
 
         def draw(self, surface, phase):
-            # Trail (fire streak)
+            NS = _NS_khalros
+            P = NS.PALETTE
+            n = len(self.trail)
             for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(60 + i * 15)
-                r = max(1, 4 - (len(self.trail) - i))
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_dark"], alpha), (tx, ty), r + 2)
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], alpha), (tx, ty), r)
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], alpha), (tx, ty), max(1, r - 1))
-
-            if self.alive:
-                px, py = int(self.x), int(self.y)
-                _NS_khalros._draw_spinning_axe(surface, px, py, self.spin, size=1.0)
-
-                # Fire glow
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_dark"], 120), (px, py), 12)
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], 80), (px, py), 8)
-
+                k = i / max(1, n - 1)
+                alpha = int(30 + k * 165)
+                r = max(1, int(1 + k * 4))
+                if k < 0.4:
+                    NS._aacircle(surface, (*P["smoke_dark"], int(alpha * 0.7)),
+                                 (tx, ty), r + 1)
+                    NS._aacircle(surface, (*P["smoke_mid"], int(alpha * 0.5)),
+                                 (tx, ty - 1), r)
+                else:
+                    NS._aacircle(surface, (*P["fire_dark"], alpha), (tx, ty),
+                                 r + 1)
+                    NS._aacircle(surface, (*P["fire_bright"], alpha), (tx, ty),
+                                 r)
+                    NS._aacircle(surface, (*P["fire_hot"], int(alpha * 0.85)),
+                                 (tx, ty - 1), max(1, r - 2))
+            if not self.alive:
+                return
+            px, py = int(self.x), int(self.y)
+            NS._glow(surface, px, py, 16, P["fire_mid"], 110)
+            NS._draw_spinning_axe(surface, px, py, self.spin, size=1.15)
 
     class HawkProjectile:
-        """Diving hawk projectile."""
+        """Elang penyelam - jalur melengkung predator + jejak bulu."""
+
         def __init__(self, sx, sy, tx, ty, speed=5.0):
             self.x = float(sx)
             self.y = float(sy)
             self.tx = float(tx)
             self.ty = float(ty)
-            self.speed = speed
+            self.speed = float(speed)
             self.alive = True
             self.age = 0
             self.wing_phase = 0.0
+            self.facing = 1 if tx >= sx else -1
             self.trail = []
 
         def update(self):
             if not self.alive:
                 return
             self.age += 1
-            self.wing_phase += 0.4
+            self.wing_phase += 0.5
             dx = self.tx - self.x
             dy = self.ty - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
+            dist = math.hypot(dx, dy)
             if dist < self.speed + 6:
                 self.alive = False
                 return
             self.trail.append((int(self.x), int(self.y)))
-            if len(self.trail) > 6:
+            if len(self.trail) > 7:
                 self.trail.pop(0)
-            # Curve path slightly (predator style)
+            glide = math.sin(self.age * 0.22) * 1.4
             self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed + math.sin(self.age * 0.2) * 0.8
+            self.y += (dy / dist) * self.speed + glide
 
         def draw(self, surface, phase):
+            NS = _NS_khalros
+            P = NS.PALETTE
+            n = len(self.trail)
             for i, (tx, ty) in enumerate(self.trail):
-                alpha = int(40 + i * 15)
-                r = max(1, 3 - (len(self.trail) - i))
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["hawk_dark"], alpha), (tx, ty), r)
+                k = i / max(1, n - 1)
+                alpha = int(28 + k * 110)
+                NS._aacircle(surface, (*P["hawk_dark"], alpha), (tx, ty),
+                             max(1, int(1 + k * 2)))
+                if i % 3 == 0:
+                    NS._aacircle(surface, (*P["hawk_light"], int(alpha * 0.7)),
+                                 (tx + 1, ty - 1), 1)
+            if not self.alive:
+                return
+            facing = getattr(self, "facing", 1) or 1
+            NS._glow(surface, int(self.x), int(self.y), 14, P["wind_dark"], 70)
+            NS._draw_flying_hawk(surface, int(self.x), int(self.y), facing,
+                                 self.wing_phase, size=1.1)
+            # bayangan penyelam di tanah (menjaga konteks 3/4 view)
+            dy_ground = 26 + int(6 * math.sin(self.age * 0.2))
+            NS._ellipse(surface, (*P["shadow_deep"], 90),
+                        (int(self.x) - 9, int(self.y) + dy_ground, 18, 5))
 
-            if self.alive:
-                dx = self.tx - self.x
-                facing = 1 if dx > 0 else -1
-                _NS_khalros._draw_flying_hawk(surface, int(self.x), int(self.y),
-                                  facing, self.wing_phase, size=1.0)
+    def _spawn_axe(boss, sx, sy, tx, ty, arc=16):
+        if not hasattr(boss, "_khal_projectiles"):
+            boss._khal_projectiles = []
+        boss._khal_projectiles.append(
+            _NS_khalros.AxeProjectile(sx, sy, tx, ty, speed=7.0,
+                                      facing=getattr(boss, "direction", 1),
+                                      arc=arc))
 
+    def _spawn_hawk(boss, sx, sy, tx, ty):
+        if not hasattr(boss, "_khal_projectiles"):
+            boss._khal_projectiles = []
+        boss._khal_projectiles.append(
+            _NS_khalros.HawkProjectile(sx, sy, tx, ty, speed=5.5))
 
-    def _draw_spinning_axe(surface, cx, cy, spin, size=1.0):
-        """A thrown axe that spins."""
-        handle_len = int(10 * size)
-        head_size = int(7 * size)
+    def _manage_projectiles(boss, surface, phase):
+        """Update + gambar proyektil milik boss (API lama dipertahankan)."""
+        if not hasattr(boss, "_khal_projectiles"):
+            boss._khal_projectiles = []
+        for proj in boss._khal_projectiles:
+            proj.update()
+            proj.draw(surface, phase)
+        boss._khal_projectiles = [p for p in boss._khal_projectiles
+                                  if p.alive or p.age < 5]
 
-        # Handle
-        ex = cx + int(math.cos(spin) * handle_len)
-        ey = cy + int(math.sin(spin) * handle_len)
-        hx = cx - int(math.cos(spin) * handle_len * 0.5)
-        hy = cy - int(math.sin(spin) * handle_len * 0.5)
-
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_darkest"], (hx, hy), (ex, ey), 4)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_dark"], (hx, hy), (ex, ey), 3)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_mid"], (hx, hy), (ex, ey), 1)
-
-        # Axe head
-        perp_x = -math.sin(spin)
-        perp_y = math.cos(spin)
-
-        axe_pts = [
-            (ex + int(perp_x * head_size), ey + int(perp_y * head_size)),
-            (ex + int(math.cos(spin) * head_size * 0.6) + int(perp_x * head_size * 0.6),
-             ey + int(math.sin(spin) * head_size * 0.6) + int(perp_y * head_size * 0.6)),
-            (ex + int(math.cos(spin) * head_size * 0.6) - int(perp_x * head_size * 0.6),
-             ey + int(math.sin(spin) * head_size * 0.6) - int(perp_y * head_size * 0.6)),
-            (ex - int(perp_x * head_size), ey - int(perp_y * head_size)),
-            (ex - int(math.cos(spin) * head_size * 0.3), ey - int(math.sin(spin) * head_size * 0.3)),
-        ]
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_darkest"], axe_pts)
-        # Inner brighter
-        inner_pts = [
-            (ex + int(perp_x * (head_size - 2)), ey + int(perp_y * (head_size - 2))),
-            (ex, ey),
-            (ex - int(perp_x * (head_size - 2)), ey - int(perp_y * (head_size - 2))),
-        ]
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_mid"], inner_pts)
-
-        # Sharp edge
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["metal_shine"],
-                (ex + int(perp_x * head_size), ey + int(perp_y * head_size)),
-                (ex - int(perp_x * head_size), ey - int(perp_y * head_size)), 1)
-
-        # Fire trailing on axe
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], 200), (ex, ey), 3)
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], 220), (ex, ey), 1)
-
-
-    def _draw_flying_hawk(surface, cx, cy, facing, wing_phase, size=1.0):
-        """Draw a hawk in flight."""
-        wing_y_off = int(math.sin(wing_phase) * 5)
-
-        # Body
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["shadow_deep"], (cx + 1, cy + 1), int(5 * size))
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["hawk_darkest"], (cx, cy), int(5 * size))
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["hawk_dark"], (cx - 1, cy - 1), int(4 * size))
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["hawk_mid"], (cx - 1, cy - 1), int(3 * size))
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["hawk_light"], (cx - 2, cy - 2), int(2 * size))
-
-        # Head (small, forward)
-        hx = cx + int(4 * facing * size)
-        hy = cy - 1
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["hawk_dark"], (hx, hy), int(3 * size))
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["hawk_mid"], (hx, hy), int(2 * size))
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["hawk_light"], (hx - int(facing), hy - 1), 1)
-
-        # Beak
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["hawk_beak"], [
-            (hx + int(3 * facing), hy),
-            (hx + int(6 * facing), hy + 1),
-            (hx + int(3 * facing), hy + 2),
-        ])
-
-        # Eye
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["fire_hot"], (hx + int(facing), hy - 1), 1)
-
-        # Wings (top view / spread)
-        # Upper wing
-        wing_upper = [
-            (cx, cy - 2),
-            (cx - int(12 * size), cy - 4 + wing_y_off),
-            (cx - int(9 * size), cy + wing_y_off),
-            (cx, cy + 1),
-        ]
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["hawk_darkest"], wing_upper)
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["hawk_dark"], [
-            (cx, cy - 1),
-            (cx - int(10 * size), cy - 2 + wing_y_off),
-            (cx - int(7 * size), cy + 1 + wing_y_off),
-            (cx, cy + 1),
-        ])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["hawk_mid"], [
-            (cx, cy),
-            (cx - int(7 * size), cy - 1 + wing_y_off),
-            (cx - int(5 * size), cy + 1 + wing_y_off),
-        ])
-
-        # Lower / other wing
-        wing_lower = [
-            (cx, cy - 1),
-            (cx + int(10 * size) * facing - int(3 * facing), cy - 3 - wing_y_off),
-            (cx + int(7 * size) * facing - int(2 * facing), cy - wing_y_off),
-            (cx, cy + 1),
-        ]
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["hawk_darkest"], wing_lower)
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["hawk_dark"], [
-            (cx, cy),
-            (cx + int(8 * size) * facing - int(3 * facing), cy - 1 - wing_y_off),
-            (cx + int(5 * size) * facing - int(2 * facing), cy + 1 - wing_y_off),
-        ])
-
-        # Tail feathers
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["hawk_dark"], [
-            (cx - int(3 * facing), cy + 1),
-            (cx - int(7 * facing), cy + 3),
-            (cx - int(5 * facing), cy + 1),
-        ])
-
-
-    # ---------------------------------------------------------------------------
-    # State management
-    # ---------------------------------------------------------------------------
+    # ===================================================================
+    # STATE / ANIMASI
+    # ===================================================================
     def _detect_moving(boss):
+        """True bila posisi berubah > 0.3 px sejak frame lalu (solver kaki)."""
         if not hasattr(boss, "_khal_last_x"):
-            boss._khal_last_x = boss.x
-            boss._khal_last_y = boss.y
+            boss._khal_last_x = getattr(boss, "x", 0.0)
+            boss._khal_last_y = getattr(boss, "y", 0.0)
             return False
-        dx = abs(boss.x - boss._khal_last_x)
-        dy = abs(boss.y - boss._khal_last_y)
-        boss._khal_last_x = boss.x
-        boss._khal_last_y = boss.y
+        dx = abs(getattr(boss, "x", 0.0) - getattr(boss, "_khal_last_x", 0.0))
+        dy = abs(getattr(boss, "y", 0.0) - getattr(boss, "_khal_last_y", 0.0))
+        boss._khal_last_x = getattr(boss, "x", 0.0)
+        boss._khal_last_y = getattr(boss, "y", 0.0)
         return dx + dy > 0.3
 
-
     def _update_attack_anim(boss):
+        """Timeline serangan 16 frame -> `_khal_attack_progress` kontinu.
+
+        Keyframe IMPACT berada di `ATTACK_IMPACT` (0.54) - frame tempat
+        bintang benturan, retakan tanah, dan hit-window dibuka.
+        """
         cooldown = max(2, int(getattr(boss, "attack_cooldown", 45)))
         timer = int(getattr(boss, "timer", 0))
         previous = int(getattr(boss, "_khal_prev_timer", 0))
         active = bool(getattr(boss, "_khal_attack_active", False))
+        swing_len = max(10, min(22, cooldown // 2))
 
         if timer >= cooldown - 1 and previous <= 1:
             boss._khal_attack_active = True
             boss._khal_attack_frame = 0
             active = True
         elif active:
-            boss._khal_attack_frame = int(getattr(boss, "_khal_attack_frame", 0)) + 1
+            boss._khal_attack_frame = int(
+                getattr(boss, "_khal_attack_frame", 0)) + 1
             if boss._khal_attack_frame > cooldown:
                 boss._khal_attack_active = False
                 boss._khal_attack_frame = 0
@@ -3669,1310 +4726,2487 @@ class _NS_khalros:
             active = False
 
         boss._khal_prev_timer = timer
+        frame = int(getattr(boss, "_khal_attack_frame", 0))
         boss._khal_attack_progress = (
-            min(1.0, getattr(boss, "_khal_attack_frame", 0) / max(1, cooldown - 1))
-            if active else 0.0
+            min(1.0, frame / float(swing_len)) if active else 0.0)
+        # jendela benturan (dipakai audio/hit hook & lapisan hidup)
+        boss._khal_hit_active = bool(active and 0.30 <= boss._khal_attack_progress
+                                      <= 0.62)
+        boss._khal_attack_raw = frame
+
+    def _attack_pose(ap):
+        """Interpolasi keyframe serang -> dict pose.
+
+        Keyframe: (progress, lunge, lean, dip, arm_a, flare, tremble)
+          0.14  wind-up   : kapak diangkat ke atas-belakang, badan mundur
+          0.30  tension    : gemetar 1 px, jubah & janggut tertinggal
+          0.48  strike     : ayunan tercepat (smear sabit baja aktif)
+          0.54  IMPACT     : squash + bintang 8-spike + retakan tanah
+          0.72  follow     : rebound overshoot
+          1.00  recover    : kembali ke pose istirahat
+        """
+        keys = (
+            (0.00, 0.0,  0.0,  0.0, -2.35, 1.00, 0),
+            (0.14, -3.0, -5.0, 2.5, -2.95, 1.10, 0),
+            (0.30, -4.5, -6.5, 3.5, -3.10, 1.18, 1),
+            (0.48, 8.0,  6.5, -2.5, 0.55, 1.06, 0),
+            (0.54, 10.5, 8.5, 4.0, 1.05, 1.00, 0),
+            (0.72, 4.0,  3.0, 1.5, 1.55, 1.00, 0),
+            (1.00, 0.0,  0.0, 0.0, -2.35, 1.00, 0),
         )
+        ap = max(0.0, min(1.0, ap))
+        for i in range(len(keys) - 1):
+            k0, k1 = keys[i], keys[i + 1]
+            if k0[0] <= ap <= k1[0]:
+                span = max(1e-6, k1[0] - k0[0])
+                t = (ap - k0[0]) / span
+                t = t * t * (3 - 2 * t)              # smoothstep
+                vals = tuple(a + (b - a) * t for a, b in zip(k0[1:6],
+                                                             k1[1:6]))
+                return {
+                    "lunge": vals[0], "lean": vals[1], "dip": vals[2],
+                    "arm_a": vals[3], "flare": vals[4],
+                    "tremble": 1 if (k0[6] and t < 0.9) else 0,
+                    "impact": 1.0 - min(1.0, abs(ap - _NS_khalros.ATTACK_IMPACT)
+                                        / 0.10),
+                }
+        return {"lunge": 0.0, "lean": 0.0, "dip": 0.0, "arm_a": -2.35,
+                "flare": 1.0, "tremble": 0, "impact": 0.0}
 
+    def _stride_solver(action, phase):
+        """Solver langkah dua kaki untuk unit BERDIRI (pengganti float-solver).
 
-    def _manage_projectiles(boss, surface, phase):
-        if not hasattr(boss, "_khal_projectiles"):
-            boss._khal_projectiles = []
-        for proj in boss._khal_projectiles:
-            proj.update()
-            proj.draw(surface, phase)
-        boss._khal_projectiles = [p for p in boss._khal_projectiles
-                                   if p.alive or p.age < 5]
+        Return (swing_a, swing_b, lift_a, lift_b, contact, bob) - `contact`
+        0..1 memicu debu tanah saat tumit menyentuh lantai, `bob` mengunci
+        badan ke ritme langkah supaya langkah terasa menopang berat.
+        """
+        if action != "walk":
+            return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+        p = phase
+        a = math.sin(p)
+        b = math.sin(p + math.pi)
+        # heel-off (naik) saat kaki ke depan, toe-off saat ke belakang
+        lift_a = max(0.0, a) * 3.0
+        lift_b = max(0.0, b) * 3.0
+        # kontak = kaki melewati titik terendah (akselerasi turun)
+        contact = max(0.0, -math.cos(p)) * max(0.0, a)
+        contact = min(1.0, contact * 2.2)
+        bob = -abs(math.sin(p)) * 2.2
+        return a, b, lift_a, lift_b, contact, bob
 
+    def _resolve_pose(boss, moving=False):
+        """(action, phase, ap) - murni, tanpa efek samping.
 
-    def _spawn_axe(boss, sx, sy, tx, ty):
-        if not hasattr(boss, "_khal_projectiles"):
-            boss._khal_projectiles = []
-        boss._khal_projectiles.append(
-            _NS_khalros.AxeProjectile(sx, sy, tx, ty, speed=7.0, facing=boss.direction))
+        Dipakai dispatch gambar DAN semua efek eksternal (trail, proyektil,
+        lapisan hidup) supaya bilah, badan, dan FX tidak pernah beda frame.
+        """
+        NS = _NS_khalros
+        skill = getattr(boss, "active_skill", None)
+        attacking = (
+            getattr(boss, "_khal_attack_active", False)
+            or getattr(boss, "timer", 0)
+            > getattr(boss, "attack_cooldown", 45) - 15
+        )
+        if skill == "e":
+            action = "charge"
+        elif attacking:
+            action = "attack"
+        elif skill in ("q", "w", "r"):
+            action = "attack"
+        elif moving:
+            action = "walk"
+        else:
+            action = "idle"
+        phase = float(getattr(boss, "pulse", 0.0) or 0.0)
+        ap = 0.0
+        if action in ("attack", "cast", "charge"):
+            ap = max(0.0, min(1.0, float(
+                getattr(boss, "_khal_attack_progress", 0.0) or 0.0)))
+        return action, phase, ap
 
+    # -------------------------------------------------------------------
+    # Pemetaan ruang lokal rig -> layar (dipakai FX eksternal)
+    # -------------------------------------------------------------------
+    def _body_offset(action, phase, ap, facing=1):
+        """(dx, dy) layar sebelum _draw_khalros_body (sinkron dengan raw)."""
+        NS = _NS_khalros
+        f = 1 if facing >= 0 else -1
+        if action == "attack":
+            pose = NS._attack_pose(ap)
+            return int(pose["lunge"] * NS.SCALE) * f, int(math.sin(phase * 0.8) * 2)
+        if action == "charge":
+            return int(9 * NS.SCALE) * f, 3
+        if action == "cast":
+            return int(-2 * NS.SCALE) * f, int(math.sin(phase * 1.6) * 2)
+        if action == "walk":
+            pw = phase * 2.4
+            _, _, _, _, _, bob = NS._stride_solver("walk", pw)
+            return int(math.sin(pw * 0.5) * 2), int(bob)
+        return 0, int(math.sin(phase * 0.7) * 2) - 1
 
-    def _spawn_hawk(boss, sx, sy, tx, ty):
-        if not hasattr(boss, "_khal_projectiles"):
-            boss._khal_projectiles = []
-        boss._khal_projectiles.append(_NS_khalros.HawkProjectile(sx, sy, tx, ty, speed=5.5))
+    def _raw_shift(action, phase, ap, facing=1):
+        """(lean_f, root_y, tremble, sway) ruang native `_..._body_raw`."""
+        NS = _NS_khalros
+        f = 1 if facing >= 0 else -1
+        breath = math.sin(phase * 0.72)
+        sway = int(math.sin(phase * 0.6) * 1)
+        if action == "attack":
+            pose = NS._attack_pose(ap)
+            tremble = 1 if (pose["tremble"] and int(phase * 30) % 2) else 0
+            return int(pose["lean"]) * f, int(pose["dip"]), tremble, sway
+        if action == "charge":
+            return 7 * f, 2, 0, int(math.sin(phase * 3.0) * 2)
+        if action == "cast":
+            return 1 * f, int(breath * 1.4), 0, sway
+        if action == "walk":
+            return 2 * f, int(breath * 1.4), 0, sway
+        return int(math.sin(phase * 0.5 + 1.1) * 1.5), int(breath * 1.9), 0, sway
 
+    def _local_to_screen(cx, cy, facing, lean_f, root_y, tremble, sway,
+                         lx, ly):
+        """SATU pemetaan lokal badan -> layar (x maju mengikuti facing)."""
+        k = _NS_khalros.SCALE
+        return (int(cx + (lx * (1 if facing >= 0 else -1) + lean_f + tremble
+                          + sway) * k),
+                int(cy + (ly + root_y) * k))
+
+    def _local(boss, x, y, action, phase, ap, lx, ly):
+        """Ruang lokal rig -> piksel surface (dipakai heroes/khalros_fx)."""
+        NS = _NS_khalros
+        facing = getattr(boss, "direction", 1) or 1
+        dx, dy = NS._body_offset(action, phase, ap, facing)
+        lean_f, root_y, tremble, sway = NS._raw_shift(action, phase, ap, facing)
+        return NS._local_to_screen(x + dx, y + dy, facing, lean_f, root_y,
+                                   tremble, sway, lx, ly)
+
+    def _axe_grip_local(action, phase, ap, facing=1):
+        """Pergelangan tangan pemegang kapak (ruang lokal native).
+
+        Kembaran matematis `_draw_attack_arms` / `_draw_idle_arms` - angka
+        di sini HARUS tetap sejalan dengan yang digambar.
+        """
+        NS = _NS_khalros
+        f = 1 if facing >= 0 else -1
+        sway_arm = int(math.sin(phase * 0.7) * 1.6)
+        if action == "attack":
+            pose = NS._attack_pose(ap)
+            arm = pose["arm_a"]
+            return (f * 14 + int(math.cos(arm) * NS.AXE_ARM_LEN) * f,
+                    -34 + int(math.sin(arm) * NS.AXE_ARM_LEN))
+        if action == "charge":
+            return f * 22, -22
+        if action == "cast":
+            # tangan naik ke samping kepala (mengacung ke langit) - jangan
+            # terlalu tinggi supaya bilah tidak menumpuk dengan tanduk
+            return f * 13, -46 + sway_arm
+        if action == "walk":
+            return f * 22, -29 + sway_arm
+        return f * 19, -26 + sway_arm
+
+    def _axe_tip_local(action, phase, ap, facing=1):
+        """Ujung bilah kapak (ruang lokal native) - untuk trail & hitbox."""
+        NS = _NS_khalros
+        f = 1 if facing >= 0 else -1
+        gx, gy = NS._axe_grip_local(action, phase, ap, facing)
+        total = NS.AXE_HANDLE + NS.AXE_BLADE
+        if action == "attack":
+            pose = NS._attack_pose(ap)
+            ang = pose["arm_a"] + 0.72
+            return gx + int(math.cos(ang) * total) * f, gy + int(
+                math.sin(ang) * total)
+        if action == "charge":
+            return gx + 20 * f, gy + 14
+        if action == "cast":
+            return gx + 8 * f, gy - 30
+        # idle / walk: kapak disandang menyilang ke atas bahu - ujung bilah
+        # muncul di atas kepala (siluet khas beastlord, bukan garis lurus)
+        return gx + 15 * f, gy - 36
+
+    def _axe_grip_screen(boss, x, y):
+        action, phase, ap = _NS_khalros._resolve_pose(
+            boss, bool(getattr(boss, "_khal_moving", False)))
+        facing = getattr(boss, "direction", 1) or 1
+        lx, ly = _NS_khalros._axe_grip_local(action, phase, ap, facing)
+        return _NS_khalros._local(boss, x, y, action, phase, ap, lx, ly)
+
+    def _axe_tip_screen(boss, x, y):
+        action, phase, ap = _NS_khalros._resolve_pose(
+            boss, bool(getattr(boss, "_khal_moving", False)))
+        facing = getattr(boss, "direction", 1) or 1
+        lx, ly = _NS_khalros._axe_tip_local(action, phase, ap, facing)
+        return _NS_khalros._local(boss, x, y, action, phase, ap, lx, ly)
+
+    def _swing_hitbox(boss, x, y):
+        """AABB jendela benturan (SWING/IMPACT) - dipakai debug overlay."""
+        NS = _NS_khalros
+        action, phase, ap = NS._resolve_pose(
+            boss, bool(getattr(boss, "_khal_moving", False)))
+        if action != "attack" or not (0.30 <= ap <= 0.78):
+            return None
+        facing = getattr(boss, "direction", 1) or 1
+        gx, gy = NS._axe_grip_screen(boss, x, y)
+        tx, ty = NS._axe_tip_screen(boss, x, y)
+        pad = 11
+        rect = pygame.Rect(int(min(gx, tx)) - pad, int(min(gy, ty)) - pad,
+                           int(abs(tx - gx)) + pad * 2,
+                           int(abs(ty - gy)) + pad * 2)
+        if facing < 0 and rect.right > x:
+            rect.width = max(4, int(x - rect.left))
+        return rect
+
+    # ===================================================================
+    # LAPISAN FX HIDUP (heroes/khalros_fx.py)
+    # ===================================================================
+    #: Modul FX layar (diisi malas). False = gagal -> jalur canvas penuh.
+    _LIVE_MOD = None
+
+    def _live_module():
+        """Muat ``heroes.khalros_fx`` sekali; None kalau tidak tersedia."""
+        NS = _NS_khalros
+        if NS._LIVE_MOD is None:
+            try:
+                from heroes import khalros_fx as mod
+                NS._LIVE_MOD = mod if getattr(mod, "KHALROS_FX_ENABLED",
+                                              True) else False
+            except Exception:
+                NS._LIVE_MOD = False
+        return NS._LIVE_MOD or None
+
+    def live_fx_ready():
+        """True bila lapisan hidup Khalros bisa dipakai (dipakai tooling)."""
+        return _NS_khalros._live_module() is not None
+
+    def _live_fx(boss, surface, x, y, want_draw, portrait):
+        """Lapisan hidup untuk unit ini -> ``(mod, owned)``.
+
+        ``want_draw`` True pada jalur BOSS (digambar tiap frame, tanpa
+        cache sprite). Pada jalur lane, penggambaran dilakukan
+        heroes/__init__.py, jadi di sini hanya dipasang penanda.
+
+        PENTING: lapisan hidup TIDAK lagi menggambar badan - rig
+        masterwork di namespace ini satu-satunya sumber bentuk, supaya
+        tidak ada dua interpretasi siluet Khalros (penyebab v1 "jelek").
+        """
+        NS = _NS_khalros
+        if portrait:
+            return None, False
+        mod = NS._live_module()
+        if mod is None:
+            return None, False
+        try:
+            if want_draw:
+                mod.draw_ground_layer(surface, boss, x, y)
+            else:
+                mod.attach(boss)
+        except Exception:
+            return None, False
+        try:
+            owned = bool(mod.owns(boss))
+        except Exception:
+            owned = False
+        return (mod if want_draw else None), owned
+
+    def _fx_owned(boss):
+        """True bila lapisan hidup sudah mengambil alih EFEK unit ini."""
+        mod = _NS_khalros._live_module()
+        if mod is None:
+            return False
+        try:
+            return bool(mod.owns(boss))
+        except Exception:
+            return False
 
     # ===================================================================
     # MAIN ENTRY
     # ===================================================================
     def draw_khalros(surface, boss, x, y):
-        pulse = float(getattr(boss, "pulse", 0.0))
+        """Entry point `Boss.draw()` sekaligus `heroes.render_hero()`.
+
+        Urutan lapisan proyek:
+
+            AURA -> GROUND FX (pool/rune/telegraph) -> SHADOW -> BADAN
+            (rig native 1.5x -> SCALE -> selout -> lighting -> outline)
+            -> SWING TRAIL -> PROYEKTIL -> SKILL FX DEPAN -> LAPISAN HIDUP
+
+        Semua FX skill world-space lewat `_fx_scale`; semua nama publik v1
+        dipertahankan. Bila lapisan hidup tidak tersedia, seluruh efek
+        digambar di-canvas ini (jalur fallback).
+        """
+        NS = _NS_khalros
+        pulse = float(getattr(boss, "pulse", 0.0) or 0.0)
         active_skill = getattr(boss, "active_skill", None)
-        skill_timer = int(getattr(boss, "active_skill_timer", 0))
-        moving = _NS_khalros._detect_moving(boss)
-        _NS_khalros._update_attack_anim(boss)
-        # ekspos state bergerak ke lapisan FX hidup (heroes/khalros_fx)
+        skill_timer = int(getattr(boss, "active_skill_timer", 0) or 0)
+        moving = NS._detect_moving(boss)
+        NS._update_attack_anim(boss)
+        # ekspos state bergerak ke lapisan hidup (heroes/khalros_fx)
         try:
             boss._khal_moving = moving
         except Exception:
             pass
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        in_cache = bool(getattr(boss, "_skip_renderer_projectiles", False))
 
-        attacking = (
-            getattr(boss, "_khal_attack_active", False)
-            or getattr(boss, "timer", 0) > getattr(boss, "attack_cooldown", 45) - 15
-        )
-
-        _NS_khalros._draw_primal_aura(surface, x, y, pulse, active_skill)
-        _NS_khalros._draw_ground_runes(surface, x, y + 40, pulse, active_skill)
-
-        # Ground skill effects
-        if active_skill == "w":
-            _NS_khalros._draw_call_of_wild_ground(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_khalros._draw_boar_ground(surface, boss, x, y, skill_timer, pulse)
-
-        # PERTAGAS: gelombang kejut aktivasi skill (12 frame pertama)
-        if active_skill in ("q", "w", "e", "r"):
-            dur = {"q": 50, "w": 60, "e": 45, "r": 70}[active_skill]
-            age = dur - skill_timer
-            if 0 <= age < 12:
-                _NS_khalros._draw_shockwave(surface, x, y + 48, age, 12,
-                                            _NS_khalros.PALETTE["fire_hot"],
-                                            _NS_khalros.PALETTE["fire_glow"])
-
-        # ────────────────────────────────────────────────────────────
-        # LAPISAN FX HIDUP KHALROS (heroes/khalros_fx.py)
-        # Render badan prosedural + swing trail + proyektil + skill FX +
-        # partikel + impact + screen-shake + hit-stop hidup di sini,
-        # di luar cache sprite supaya tetap 60 fps. Bila modul tak
-        # tersedia / gagal, kode inline di bawah tetap jalan (fallback
-        # aman - game tidak ikut rusak).
-        # ────────────────────────────────────────────────────────────
+        action, phase, ap = NS._resolve_pose(boss, moving)
         try:
-            from heroes import khalros_fx as _kfx
-            if _kfx.KHALROS_FX_ENABLED and _kfx.render_khalros(
-                    surface, boss, x, y):
-                return
+            boss._khal_pose_action = action
         except Exception:
             pass
+        # badan bereaksi ke state skill
+        rage = active_skill in ("w", "r")
+        hunting = active_skill in ("q", "e")
 
-        # ORIGINAL-MAX hurt flash: badan dibanjiri putih-hangat, bayangan
-        # tanah tidak ikut menyala (rect shadow direkam lalu dikeluarkan).
+        # ---------- Lapisan hidup (ground pass) ----------
+        hero_lane = hasattr(boss, "_render_scale")
+        live, owned = NS._live_fx(boss, surface, x, y, not hero_lane, portrait)
+
+        # ---------- Background layers (dibuang di portrait LOD) ----------
+        if not portrait:
+            NS._draw_primal_aura(surface, x, y, pulse, active_skill)
+            NS._draw_ground_runes(surface, x, y + NS.GROUND_DY, pulse,
+                                  active_skill)
+            if not owned and not in_cache:
+                NS._draw_scorch_marks(boss, surface, pulse, x, y)
+
+            # ---------- Skill ground telegraph (world-space) ----------
+            if active_skill == "q":
+                NS._draw_wild_axes_ground(surface, boss, x, y, skill_timer,
+                                          pulse)
+            elif active_skill == "w":
+                NS._draw_call_of_wild_ground(surface, boss, x, y, skill_timer,
+                                             pulse)
+            elif active_skill == "e":
+                NS._draw_boar_ground(surface, boss, x, y, skill_timer, pulse)
+            elif active_skill == "r":
+                NS._draw_hawk_storm_ground(surface, boss, x, y, skill_timer,
+                                           pulse)
+
+            # AKTIVASI: gelombang kejut + bintang (12 frame pertama).
+            # Saat lapisan hidup mengambil alih, gelombang digambar di
+            # sana supaya tidak dobel dan tetap 60 fps.
+            if active_skill in ("q", "w", "e", "r") and not owned:
+                dur = NS.SKILL_DUR[active_skill]
+                age = dur - skill_timer
+                if 0 <= age < 12:
+                    NS._draw_shockwave(
+                        surface, x, y + NS.GROUND_DY, age, 12,
+                        NS.PALETTE["fire_hot"], NS.PALETTE["fire_glow"],
+                        fs=NS._fx_scale(boss))
+
+        # ---------- ORIGINAL-MAX hurt flash (badan saja) ----------
         flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
         _tgt, _tx, _ty = surface, x, y
         if flash > 0:
-            B = _NS_khalros
-            if B._flash_buf is None:
-                B._flash_buf = pygame.Surface((240, 260), pygame.SRCALPHA)
-            B._flash_buf.fill((0, 0, 0, 0))
-            B._record_shadow = []
-            _tgt, _tx, _ty = B._flash_buf, 120, 135
+            if NS._flash_buf is None:
+                NS._flash_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                               pygame.SRCALPHA)
+            NS._flash_buf.fill((0, 0, 0, 0))
+            NS._record_shadow = []
+            _tgt, _tx, _ty = NS._flash_buf, NS.RIG_OX, NS.RIG_OY
 
-        # Character
-        if attacking:
-            _NS_khalros._draw_khalros_attack(_tgt, boss, _tx, _ty)
-        elif moving:
-            _NS_khalros._draw_khalros_walk(_tgt, boss, _tx, _ty)
+        # ---------- Character ----------
+        if action == "charge":
+            NS._draw_khalros_charge(_tgt, boss, _tx, _ty, skill_timer, rage)
+        elif action == "attack":
+            NS._draw_khalros_attack(_tgt, boss, _tx, _ty, rage, hunting)
+        elif action == "cast":
+            NS._draw_khalros_cast(_tgt, boss, _tx, _ty, active_skill,
+                                  skill_timer, rage)
+        elif action == "walk":
+            NS._draw_khalros_walk(_tgt, boss, _tx, _ty, rage, hunting)
         else:
-            _NS_khalros._draw_khalros_idle(_tgt, boss, _tx, _ty)
+            NS._draw_khalros_idle(_tgt, boss, _tx, _ty, rage, hunting)
 
         if flash > 0:
-            B = _NS_khalros
-            surface.blit(B._flash_buf, (x - _tx, y - _ty))
+            surface.blit(NS._flash_buf, (x - _tx, y - _ty))
             w = int(235 * min(1.0, flash / 8.0))
-            m = pygame.mask.from_surface(B._flash_buf, 50)
+            m = pygame.mask.from_surface(NS._flash_buf, 50)
             wht = m.to_surface(setcolor=(w, int(w * 0.9), int(w * 0.8), 255),
                                unsetcolor=(0, 0, 0, 0))
-            for rect in (B._record_shadow or ()):
+            for rect in (NS._record_shadow or ()):
                 wht.fill((0, 0, 0, 0), rect)
             surface.blit(wht, (x - _tx, y - _ty),
                          special_flags=pygame.BLEND_RGB_ADD)
-            B._record_shadow = None
+            NS._record_shadow = None
 
-        _NS_khalros._manage_projectiles(boss, surface, pulse)
+        # ---------- Projectiles ----------
+        if not portrait:
+            if not owned:
+                NS._manage_projectiles(boss, surface, pulse)
 
-        # Foreground skill effects
-        if active_skill == "q":
-            _NS_khalros._draw_wild_axes(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "w":
-            _NS_khalros._draw_call_of_wild(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "e":
-            _NS_khalros._draw_boar_charge(surface, boss, x, y, skill_timer, pulse)
-        elif active_skill == "r":
-            _NS_khalros._draw_hawk_summon(surface, boss, x, y, skill_timer, pulse)
+            # ---------- Foreground skill effects (fallback canvas) ----------
+            if not owned:
+                if active_skill == "q":
+                    NS._draw_wild_axes(surface, boss, x, y, skill_timer, pulse)
+                elif active_skill == "w":
+                    NS._draw_call_of_wild(surface, boss, x, y, skill_timer,
+                                          pulse)
+                elif active_skill == "e":
+                    NS._draw_boar_charge(surface, boss, x, y, skill_timer,
+                                         pulse)
+                elif active_skill == "r":
+                    NS._draw_hawk_summon(surface, boss, x, y, skill_timer,
+                                         pulse)
 
+        # ---------- Lapisan hidup bagian ATAS + debug ----------
+        if live is not None:
+            try:
+                live.draw_live_layer(surface, boss, x, y)
+            except Exception:
+                pass
 
-    def _draw_shockwave(surface, x, y, age, total, c1, c2):
-        """Gelombang kejut aktivasi skill - 12 frame pertama."""
+    def _draw_shockwave(surface, x, y, age, total, c1, c2, fs=1.0):
+        """Gelombang kejut aktivasi skill - 12 frame pertama, world-space."""
         t = age / float(total)
-        ease = 1 - (1 - t) ** 2
-        r = int(14 + ease * 58)
-        a = max(0, min(255, int(235 * (1 - t))))
-        pygame.draw.ellipse(surface, (*c1, a),
-                            (x - r, y - r // 3, r * 2, r * 2 // 3), 2)
-        pygame.draw.ellipse(surface, (*c2, a),
-                            (x - r // 2, y - r // 6, r, r // 3), 1)
-        ri = max(3, r // 2)
-        _NS_khalros._aacircle(surface, (*c1, int(a * 0.8)),
-                              (x, y - (r // 6)), ri)
-
-
-    # ===================================================================
-    # POSE MODES
-    # ===================================================================
-    def _draw_khalros_idle(surface, boss, x, y):
-        bob = int(math.sin(boss.pulse * 0.7) * 2)
-        _NS_khalros._draw_shadow(surface, x, y + 48)
-        _NS_khalros._draw_wild_wisps(surface, x, y + 32, boss.pulse)
-        _NS_khalros._draw_khalros_body(surface, x, y + bob, boss.direction, boss.pulse, "idle")
-
-
-    def _draw_khalros_walk(surface, boss, x, y):
-        phase = boss.pulse * 2.2
-        bob = int(abs(math.sin(phase * 1.3)) * 3)
-        sway = int(math.sin(phase) * 2)
-        _NS_khalros._draw_shadow(surface, x + sway, y + 48)
-        _NS_khalros._draw_wild_wisps(surface, x + sway, y + 32, phase, trail=True,
-                         facing=boss.direction)
-        _NS_khalros._draw_khalros_body(surface, x + sway, y - bob, boss.direction, phase, "walk")
-
-
-    def _draw_khalros_attack(surface, boss, x, y):
-        progress = getattr(boss, "_khal_attack_progress", 0.0)
-        progress = max(0.0, min(1.0, progress))
-        lunge = int(math.sin(progress * math.pi) * 5) * boss.direction
-
-        _NS_khalros._draw_shadow(surface, x + lunge, y + 48)
-        _NS_khalros._draw_wild_wisps(surface, x + lunge, y + 32, boss.pulse, intense=True)
-        _NS_khalros._draw_khalros_body(surface, x + lunge, y, boss.direction, boss.pulse,
-                           "attack", progress)
-        _NS_khalros._draw_axe_swing_arc(surface, x + lunge, y, boss.direction, progress)
-        _NS_khalros._draw_swing_impact(surface, x + lunge, y, boss.direction, progress)
-
-
-    # ===================================================================
-    # BODY RENDERING
-    # ===================================================================
-    def _draw_khalros_body_raw(surface, cx, cy, facing, phase, action, attack_progress=0):
-        sway = int(math.sin(phase * 0.6) * (2 if action != "idle" else 1))
-
-        _NS_khalros._draw_loincloth(surface, cx, cy + 8, phase, sway)
-        _NS_khalros._draw_torso(surface, cx, cy - 5, phase, sway)
-        _NS_khalros._draw_shoulders(surface, cx, cy - 12, phase)
-
-        if action == "attack":
-            _NS_khalros._draw_attack_arms(surface, cx, cy - 8, facing, phase, attack_progress)
-        else:
-            _NS_khalros._draw_idle_arms(surface, cx, cy - 8, facing, phase)
-
-        _NS_khalros._draw_khalros_head(surface, cx, cy - 26, facing, phase)
-
-    def _draw_khalros_body(surface, cx, cy, facing, phase, action, attack_progress=0):
-        """Komposit ORIGINAL-MAX: badan -> buffer tetap -> outline siluet
-        gelap 1 px + pass pencahayaan (rim/shade) -> blit posisi dunia sama."""
-        NS = _NS_khalros
-        B = 200
-        if NS._body_buf is None:
-            NS._body_buf = pygame.Surface((B, B), pygame.SRCALPHA)
-        buf = NS._body_buf
-        buf.fill((0, 0, 0, 0))
-        NS._draw_khalros_body_raw(buf, B // 2, B // 2, facing, phase, action, attack_progress)
-        used = buf.get_bounding_rect(min_alpha=1)
-        if used.width <= 2 or used.height <= 2:
+        if t >= 1.0:
             return
-        used.inflate_ip(4, 4)
-        used.clamp_ip(buf.get_rect())
-        sub = buf.subsurface(used).copy()
-        ox = int(cx) - (B // 2) + used.left
-        oy = int(cy) - (B // 2) + used.top
-        edge = sub.copy()
-        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
-        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-            surface.blit(edge, (ox + ddx, oy + ddy))
-        if _lighting is not None:
-            _lighting.apply_to_rig(sub, rim_add=(40, 28, 16), shade_mul=168)
-        surface.blit(sub, (ox, oy))
-
-
-    def _draw_loincloth(surface, cx, cy, phase, sway):
-        """Tattered fur / leather loincloth."""
-        # Belt
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["leather_darkest"], (cx - 16, cy - 4, 32, 7))
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["leather_dark"], (cx - 15, cy - 3, 30, 5))
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["leather_mid"], (cx - 14, cy - 2, 28, 3))
-
-        # Belt buckle - gold beast head
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["gold_dark"], (cx, cy - 1), 5)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["gold_mid"], (cx, cy - 1), 4)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["gold_light"], (cx - 1, cy - 2), 2)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["gold_shine"], (cx - 1, cy - 2), 1)
-        # Buckle horns
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["gold_dark"], [
-            (cx - 5, cy - 2), (cx - 7, cy - 5), (cx - 3, cy - 3),
-        ])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["gold_dark"], [
-            (cx + 5, cy - 2), (cx + 7, cy - 5), (cx + 3, cy - 3),
-        ])
-
-        # Fur strips
-        for i, offset in enumerate([-12, -6, 0, 6, 12]):
-            wave = math.sin(phase * 1.2 + i) * 2
-            length = 22 + (i % 2) * 3
-
-            # Base strip
-            _NS_khalros._poly(surface, _NS_khalros.PALETTE["shadow_deep"], [
-                (cx + offset - 4, cy + 3),
-                (cx + offset + 4, cy + 3),
-                (cx + offset + 3 + int(wave), cy + length),
-                (cx + offset - 3 + int(wave), cy + length),
-            ])
-            _NS_khalros._poly(surface, _NS_khalros.PALETTE["leather_darkest"], [
-                (cx + offset - 4, cy + 2),
-                (cx + offset + 4, cy + 2),
-                (cx + offset + 3 + int(wave), cy + length - 1),
-                (cx + offset - 3 + int(wave), cy + length - 1),
-            ])
-            _NS_khalros._poly(surface, _NS_khalros.PALETTE["leather_dark"], [
-                (cx + offset - 3, cy + 3),
-                (cx + offset + 3, cy + 3),
-                (cx + offset + 2 + int(wave), cy + length - 3),
-                (cx + offset - 2 + int(wave), cy + length - 3),
-            ])
-            _NS_khalros._poly(surface, _NS_khalros.PALETTE["leather_mid"], [
-                (cx + offset - 2, cy + 4),
-                (cx + offset + 2, cy + 4),
-                (cx + offset + 1 + int(wave), cy + length - 5),
-                (cx + offset - 1 + int(wave), cy + length - 5),
-            ])
-            # Fur tuft highlight
-            _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_high"],
-                    (cx + offset, cy + 5),
-                    (cx + offset + int(wave * 0.5), cy + length - 6), 1)
-
-
-    def _draw_torso(surface, cx, cy, phase, sway):
-        """Muscular torso with leather chest strap."""
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["shadow_deep"], [
-            (cx - 14 + 2, cy - 8 + 2), (cx + 14 + 2, cy - 8 + 2),
-            (cx + 13 + 2, cy + 14 + 2), (cx + 6 + 2, cy + 18 + 2),
-            (cx - 6 + 2, cy + 18 + 2), (cx - 13 + 2, cy + 14 + 2),
-        ])
-
-        torso = [
-            (cx - 14, cy - 8), (cx + 14, cy - 8),
-            (cx + 13, cy + 14), (cx + 6, cy + 18),
-            (cx - 6, cy + 18), (cx - 13, cy + 14),
-        ]
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["skin_darkest"], torso)
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["skin_dark"], [
-            (cx - 12, cy - 7), (cx + 12, cy - 7),
-            (cx + 11, cy + 12), (cx + 5, cy + 16),
-            (cx - 5, cy + 16), (cx - 11, cy + 12),
-        ])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["skin_mid"], [
-            (cx - 9, cy - 5), (cx + 9, cy - 5),
-            (cx + 8, cy + 10), (cx + 3, cy + 14),
-            (cx - 3, cy + 14), (cx - 8, cy + 10),
-        ])
-
-        # Chest highlights (pectorals)
-        for side in (-1, 1):
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_light"],
-                      (cx + side * 5, cy - 2), 4)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_high"],
-                      (cx + side * 5 - 1, cy - 3), 2)
-
-        # Abs
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["skin_darkest"], (cx, cy + 2), (cx, cy + 14), 1)
-        for yoff in (4, 8, 12):
-            _NS_khalros._aaline(surface, _NS_khalros.PALETTE["skin_darkest"],
-                    (cx - 5, cy + yoff), (cx + 5, cy + yoff), 1)
-
-        # Leather chest strap (diagonal)
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["leather_darkest"], [
-            (cx - 12, cy - 4), (cx - 9, cy - 6),
-            (cx + 12, cy + 10), (cx + 9, cy + 12),
-        ])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["leather_dark"], [
-            (cx - 11, cy - 4), (cx - 9, cy - 5),
-            (cx + 11, cy + 9), (cx + 9, cy + 10),
-        ])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["leather_mid"], [
-            (cx - 10, cy - 3), (cx - 9, cy - 4),
-            (cx + 10, cy + 8), (cx + 9, cy + 9),
-        ])
-
-        # Chest emblem - beast head badge
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["leather_darkest"], (cx - 4, cy + 4, 8, 9),
-              border_radius=2)
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["leather_dark"], (cx - 3, cy + 5, 6, 7),
-              border_radius=1)
-        # Red beast face
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["red_dark"], (cx, cy + 8), 3)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["red_mid"], (cx, cy + 8), 2)
-        # Beast horns
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["red_mid"], (cx - 3, cy + 6, 1, 2))
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["red_mid"], (cx + 2, cy + 6, 1, 2))
-
-
-    def _draw_shoulders(surface, cx, cy, phase):
-        """Muscular shoulders with fur pauldrons."""
-        for side in (-1, 1):
-            sx = cx + side * 14
-            # Shadow
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["shadow_deep"], (sx + 2, cy + 2), 10)
-
-            # Fur pauldron (spiky)
-            for i in range(4):
-                fx = sx + side * (i - 2) - side * 3
-                fy = cy - 4 + (i % 2) * 2
-                _NS_khalros._poly(surface, _NS_khalros.PALETTE["leather_darkest"], [
-                    (fx - 3, fy + 3),
-                    (fx + 3, fy + 3),
-                    (fx + int(math.sin(phase * 0.5 + i) * 1), fy - 4),
-                ])
-                _NS_khalros._poly(surface, _NS_khalros.PALETTE["leather_dark"], [
-                    (fx - 2, fy + 3),
-                    (fx + 2, fy + 3),
-                    (fx + int(math.sin(phase * 0.5 + i) * 1), fy - 3),
-                ])
-                _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_high"],
-                        (fx, fy + 2), (fx, fy - 3), 1)
-
-            # Shoulder muscle
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_darkest"], (sx, cy + 2), 8)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_dark"], (sx - side, cy + 1), 7)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_mid"], (sx - side * 2, cy), 5)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_light"], (sx - side * 3, cy - 1), 3)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_high"], (sx - side * 3, cy - 2), 1)
-
-            # Metal band on upper arm
-            _NS_khalros._rect(surface, _NS_khalros.PALETTE["metal_darkest"], (sx - 5, cy + 4, 10, 3),
-                  border_radius=1)
-            _NS_khalros._rect(surface, _NS_khalros.PALETTE["metal_mid"], (sx - 4, cy + 5, 8, 1))
-            _NS_khalros._rect(surface, _NS_khalros.PALETTE["gold_mid"], (sx - 1, cy + 5, 2, 1))
-
-
-    def _draw_khalros_head(surface, cx, cy, facing, phase):
-        """Barbarian head with horned helm and beard."""
-        # Neck
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["skin_darkest"], (cx - 4, cy + 8, 8, 6))
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["skin_dark"], (cx - 3, cy + 8, 6, 5))
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["skin_mid"], (cx - 2, cy + 8, 4, 3))
-
-        # Head shadow
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["shadow_deep"], (cx + 2, cy + 2), 12)
-
-        # Head base
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_darkest"], (cx, cy), 11)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_dark"], (cx - 1, cy - 1), 9)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_mid"], (cx - 2, cy - 2), 7)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_light"], (cx - 3, cy - 4), 3)
-
-        # Beard (bushy, lower half of face)
-        beard = [
-            (cx - 9, cy + 1),
-            (cx - 10, cy + 6),
-            (cx - 6, cy + 12),
-            (cx, cy + 14),
-            (cx + 6, cy + 12),
-            (cx + 10, cy + 6),
-            (cx + 9, cy + 1),
-        ]
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["hair_darkest"], beard)
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["hair_dark"], [
-            (cx - 8, cy + 2),
-            (cx - 9, cy + 6),
-            (cx - 5, cy + 11),
-            (cx, cy + 13),
-            (cx + 5, cy + 11),
-            (cx + 9, cy + 6),
-            (cx + 8, cy + 2),
-        ])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["hair_mid"], [
-            (cx - 6, cy + 3),
-            (cx - 6, cy + 6),
-            (cx - 3, cy + 10),
-            (cx, cy + 11),
-            (cx + 3, cy + 10),
-            (cx + 6, cy + 6),
-            (cx + 6, cy + 3),
-        ])
-
-        # Beard hair strands highlight
-        for xoff in (-5, -2, 2, 5):
-            _NS_khalros._aaline(surface, _NS_khalros.PALETTE["hair_high"],
-                    (cx + xoff, cy + 4), (cx + xoff, cy + 10), 1)
-
-        # Fierce eyes (small red glow)
-        for side in (-1, 1):
-            ex = cx + side * 3
-            ey = cy - 1
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["shadow_deep"], (ex, ey), 2)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["red_dark"], (ex, ey), 1)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["red_hot"], (ex, ey), 1)
-            # Angry eyebrow above
-            _NS_khalros._aaline(surface, _NS_khalros.PALETTE["hair_darkest"],
-                    (ex - 2, ey - 3), (ex + 2, ey - 2), 2)
-
-        # Nose
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["skin_dark"], [
-            (cx, cy + 1),
-            (cx - 2, cy + 4),
-            (cx + 2, cy + 4),
-        ])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["skin_mid"], [
-            (cx, cy + 2),
-            (cx - 1, cy + 4),
-            (cx + 1, cy + 4),
-        ])
-
-        # HELM with horns (Beastmaster signature)
-        _NS_khalros._draw_helm(surface, cx, cy - 5, phase)
-
-        # Red war paint stripe on forehead
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["red_dark"], (cx - 4, cy - 4, 8, 2))
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["red_bright"], (cx - 3, cy - 4, 6, 1))
-
-
-    def _draw_helm(surface, cx, cy, phase):
-        """Horned barbarian helm."""
-        # Helm cap
-        helm = [
-            (cx - 11, cy + 2),
-            (cx - 9, cy - 4),
-            (cx - 3, cy - 7),
-            (cx + 3, cy - 7),
-            (cx + 9, cy - 4),
-            (cx + 11, cy + 2),
-        ]
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["shadow_deep"], [(p[0] + 1, p[1] + 1) for p in helm])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_darkest"], helm)
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_dark"], [
-            (cx - 10, cy + 1),
-            (cx - 8, cy - 3),
-            (cx - 3, cy - 6),
-            (cx + 3, cy - 6),
-            (cx + 8, cy - 3),
-            (cx + 10, cy + 1),
-        ])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_mid"], [
-            (cx - 8, cy),
-            (cx - 6, cy - 3),
-            (cx - 2, cy - 5),
-            (cx + 2, cy - 5),
-            (cx + 6, cy - 3),
-            (cx + 8, cy),
-        ])
-        # Helm highlight
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["metal_light"],
-                (cx - 5, cy - 4), (cx + 5, cy - 4), 1)
-
-        # Gold trim rim
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["gold_mid"], (cx - 11, cy + 2), (cx + 11, cy + 2), 1)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["gold_light"], (cx - 10, cy + 2), (cx + 10, cy + 2), 1)
-
-        # HORNS (huge bull-like horns going outward)
-        for side in (-1, 1):
-            # Horn base
-            _NS_khalros._poly(surface, _NS_khalros.PALETTE["shadow_deep"], [
-                (cx + side * 8 + 1, cy - 3 + 1),
-                (cx + side * 16 + 1, cy - 8 + 1),
-                (cx + side * 20 + 1, cy - 4 + 1),
-                (cx + side * 15 + 1, cy - 1 + 1),
-            ])
-            # Main horn
-            _NS_khalros._poly(surface, _NS_khalros.PALETTE["hair_darkest"], [
-                (cx + side * 8, cy - 3),
-                (cx + side * 16, cy - 8),
-                (cx + side * 20, cy - 4),
-                (cx + side * 15, cy - 1),
-            ])
-            _NS_khalros._poly(surface, _NS_khalros.PALETTE["hair_dark"], [
-                (cx + side * 9, cy - 3),
-                (cx + side * 15, cy - 7),
-                (cx + side * 18, cy - 4),
-                (cx + side * 14, cy - 1),
-            ])
-            _NS_khalros._poly(surface, _NS_khalros.PALETTE["bone_dark" if False else "leather_high"], [
-                (cx + side * 10, cy - 3),
-                (cx + side * 14, cy - 6),
-                (cx + side * 16, cy - 4),
-                (cx + side * 13, cy - 2),
-            ]) if False else None
-
-            # Highlight on horn
-            _NS_khalros._aaline(surface, _NS_khalros.PALETTE["hair_mid"],
-                    (cx + side * 10, cy - 4),
-                    (cx + side * 18, cy - 5), 1)
-
-            # Horn tip (sharper, lighter)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["hair_high"], (cx + side * 20, cy - 4), 1)
-
-        # HAIR (spiky mohawk between horns)
-        for i in range(3):
-            sx = cx - 3 + i * 3
-            _NS_khalros._poly(surface, _NS_khalros.PALETTE["hair_darkest"], [
-                (sx - 2, cy - 6),
-                (sx + 2, cy - 6),
-                (sx + int(math.sin(phase * 0.3 + i) * 1), cy - 13),
-            ])
-            _NS_khalros._poly(surface, _NS_khalros.PALETTE["hair_dark"], [
-                (sx - 1, cy - 6),
-                (sx + 1, cy - 6),
-                (sx + int(math.sin(phase * 0.3 + i) * 1), cy - 12),
-            ])
-
-
-    def _draw_idle_arms(surface, cx, cy, facing, phase):
-        """Arms holding axes at ready."""
-        sway = math.sin(phase * 0.7) * 2
-        for side in (-1, 1):
-            sh_x = cx + side * 13
-            sh_y = cy + 2
-            elbow_x = sh_x + side * 10
-            elbow_y = cy + 12 + int(sway)
-            hand_x = elbow_x + side * 6
-            hand_y = elbow_y + 10
-
-            _NS_khalros._draw_arm_segment(surface, sh_x, sh_y, elbow_x, elbow_y)
-            _NS_khalros._draw_arm_segment(surface, elbow_x, elbow_y, hand_x, hand_y)
-            _NS_khalros._draw_hand(surface, hand_x, hand_y)
-            # Axe held vertically
-            _NS_khalros._draw_axe_held(surface, hand_x, hand_y, side, phase)
-
-
-    def _draw_attack_arms(surface, cx, cy, facing, phase, progress):
-        """One arm swings axe."""
-
-        # Back arm - just holds axe
-        back_side = -facing
-        bs_x = cx + back_side * 13
-        bs_y = cy + 2
-        be_x = bs_x + back_side * 8
-        be_y = cy + 12
-        bh_x = be_x + back_side * 6
-        bh_y = be_y + 9
-        _NS_khalros._draw_arm_segment(surface, bs_x, bs_y, be_x, be_y)
-        _NS_khalros._draw_arm_segment(surface, be_x, be_y, bh_x, bh_y)
-        _NS_khalros._draw_hand(surface, bh_x, bh_y)
-        _NS_khalros._draw_axe_held(surface, bh_x, bh_y, back_side, phase)
-
-        # Front arm swings
-        fs_x = cx + facing * 13
-        fs_y = cy + 2
-
-        if progress < 0.25:
-            # Wind up
-            t = progress / 0.25
-            t = t * t * (3 - 2 * t)
-            arm_angle = -1.4 + 0.2 * t
-        elif progress < 0.55:
-            # Swing
-            t = (progress - 0.25) / 0.30
-            t = 1 - (1 - t) ** 3
-            arm_angle = -1.2 + 2.4 * t
-        else:
-            # Recovery
-            t = (progress - 0.55) / 0.45
-            arm_angle = 1.2 - 0.9 * t
-
-        arm_len = 16
-        fe_x = fs_x + int(math.cos(arm_angle) * arm_len) * facing
-        fe_y = fs_y + int(math.sin(arm_angle) * arm_len)
-        fh_x = fe_x + int(math.cos(arm_angle) * 10) * facing
-        fh_y = fe_y + int(math.sin(arm_angle) * 10)
-
-        _NS_khalros._draw_arm_segment(surface, fs_x, fs_y, fe_x, fe_y)
-        _NS_khalros._draw_arm_segment(surface, fe_x, fe_y, fh_x, fh_y)
-        _NS_khalros._draw_hand(surface, fh_x, fh_y)
-
-        # Large swinging axe
-        axe_angle = arm_angle + math.pi / 4 * facing
-        _NS_khalros._draw_axe_swinging(surface, fh_x, fh_y, facing, axe_angle, size=1.2)
-
-
-    def _draw_arm_segment(surface, x1, y1, x2, y2):
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["shadow_deep"], (x1 + 2, y1 + 2), (x2 + 2, y2 + 2), 8)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["skin_darkest"], (x1, y1), (x2, y2), 7)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["skin_dark"], (x1, y1), (x2, y2), 5)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["skin_mid"], (x1, y1), (x2, y2), 3)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["skin_light"], (x1 - 1, y1), (x2 - 1, y2), 1)
-
-
-    def _draw_hand(surface, x, y):
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["shadow_deep"], (x + 1, y + 1), 5)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_darkest"], (x, y), 4)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_dark"], (x, y), 3)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["skin_mid"], (x - 1, y - 1), 2)
-        # Leather wrap
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["leather_dark"], (x - 4, y - 5, 8, 3),
-              border_radius=1)
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["leather_mid"], (x - 3, y - 5, 6, 1))
-        _NS_khalros._rect(surface, _NS_khalros.PALETTE["red_mid"], (x - 3, y - 4, 6, 1))
-
-
-    def _draw_axe_held(surface, hx, hy, side, phase):
-        """Axe held vertically at rest."""
-        # Handle (down from hand)
-        handle_bot_x = hx + int(side * 1)
-        handle_bot_y = hy + 16
-        handle_top_y = hy - 12
-
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["shadow_deep"],
-                (hx + 1, handle_top_y + 1), (handle_bot_x + 1, handle_bot_y + 1), 4)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_darkest"],
-                (hx, handle_top_y), (handle_bot_x, handle_bot_y), 3)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_dark"],
-                (hx, handle_top_y), (handle_bot_x, handle_bot_y), 2)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_mid"],
-                (hx, handle_top_y), (handle_bot_x, handle_bot_y), 1)
-
-        # Red wrap on handle
-        for i in range(3):
-            wy = hy - 6 + i * 5
-            _NS_khalros._rect(surface, _NS_khalros.PALETTE["red_dark"], (hx - 2, wy, 4, 2))
-            _NS_khalros._rect(surface, _NS_khalros.PALETTE["red_mid"], (hx - 1, wy, 3, 1))
-
-        # Axe head at top
-        ax = hx
-        ay = handle_top_y
-
-        # Main axe head (large curved blade)
-        head_pts = [
-            (ax - side * 2, ay + 2),
-            (ax - side * 8, ay - 2),
-            (ax - side * 10, ay - 6),
-            (ax - side * 8, ay - 10),
-            (ax - side * 3, ay - 8),
-            (ax, ay - 4),
-        ]
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["shadow_deep"],
-              [(p[0] + 1, p[1] + 1) for p in head_pts])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_darkest"], head_pts)
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_dark"], [
-            (ax - side * 3, ay + 1),
-            (ax - side * 7, ay - 2),
-            (ax - side * 9, ay - 6),
-            (ax - side * 7, ay - 9),
-            (ax - side * 3, ay - 7),
-            (ax - side * 1, ay - 4),
-        ])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_mid"], [
-            (ax - side * 4, ay),
-            (ax - side * 6, ay - 3),
-            (ax - side * 7, ay - 6),
-            (ax - side * 6, ay - 8),
-            (ax - side * 4, ay - 7),
-        ])
-
-        # Sharp edge highlight
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["metal_shine"],
-                (ax - side * 8, ay - 2), (ax - side * 8, ay - 10), 1)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["metal_edge"],
-                (ax - side * 9, ay - 6), (ax - side * 9, ay - 8), 1)
-
-        # Handle top cap
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["metal_darkest"], (ax, ay - 1), 2)
-        _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["metal_mid"], (ax, ay - 1), 1)
-
-
-    def _draw_axe_swinging(surface, hx, hy, facing, angle, size=1.0):
-        """Big axe in motion — angled."""
-        handle_len = int(20 * size)
-        dx = math.cos(angle) * facing
-        dy = math.sin(angle)
-
-        # Handle from hand to axe head
-        head_x = hx + int(dx * handle_len)
-        head_y = hy + int(dy * handle_len)
-
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["shadow_deep"],
-                (hx + 2, hy + 2), (head_x + 2, head_y + 2), 5)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_darkest"], (hx, hy), (head_x, head_y), 4)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_dark"], (hx, hy), (head_x, head_y), 3)
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["leather_mid"], (hx, hy), (head_x, head_y), 1)
-
-        # Red wraps
-        for i in range(3):
-            t = 0.3 + i * 0.2
-            wx = hx + int(dx * handle_len * t)
-            wy = hy + int(dy * handle_len * t)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["red_dark"], (wx, wy), 2)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["red_mid"], (wx, wy), 1)
-
-        # Axe head
-        perp_x = -math.sin(angle)
-        perp_y = math.cos(angle) * facing
-        head_size = int(11 * size)
-
-        head_pts = [
-            (head_x + int(perp_x * head_size), head_y + int(perp_y * head_size)),
-            (head_x + int(dx * head_size * 0.4) + int(perp_x * head_size * 0.9),
-             head_y + int(dy * head_size * 0.4) + int(perp_y * head_size * 0.9)),
-            (head_x + int(dx * head_size * 0.4) - int(perp_x * head_size * 0.9),
-             head_y + int(dy * head_size * 0.4) - int(perp_y * head_size * 0.9)),
-            (head_x - int(perp_x * head_size), head_y - int(perp_y * head_size)),
-            (head_x - int(dx * head_size * 0.3), head_y - int(dy * head_size * 0.3)),
-        ]
-
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["shadow_deep"], [(p[0] + 1, p[1] + 1) for p in head_pts])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_darkest"], head_pts)
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_dark"], [
-            (head_x + int(perp_x * (head_size - 2)), head_y + int(perp_y * (head_size - 2))),
-            (head_x + int(dx * head_size * 0.3), head_y + int(dy * head_size * 0.3)),
-            (head_x - int(perp_x * (head_size - 2)), head_y - int(perp_y * (head_size - 2))),
-        ])
-        _NS_khalros._poly(surface, _NS_khalros.PALETTE["metal_mid"], [
-            (head_x + int(perp_x * (head_size - 4)), head_y + int(perp_y * (head_size - 4))),
-            (head_x, head_y),
-            (head_x - int(perp_x * (head_size - 4)), head_y - int(perp_y * (head_size - 4))),
-        ])
-
-        # Sharp edge highlight
-        _NS_khalros._aaline(surface, _NS_khalros.PALETTE["metal_shine"],
-                (head_x + int(perp_x * head_size), head_y + int(perp_y * head_size)),
-                (head_x - int(perp_x * head_size), head_y - int(perp_y * head_size)), 1)
-
-        # Fire aura on head
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], 150), (head_x, head_y), 4)
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], 180), (head_x, head_y), 2)
-
+        P = _NS_khalros.PALETTE
+        ease = 1 - (1 - t) ** 2
+        r = int((14 + ease * 58) * fs)
+        a = _NS_khalros._alpha(235 * (1 - t))
+        _NS_khalros._ground_ring(surface, x, y, r, c1, c2, a,
+                                  thickness=max(1.5, 5 - ease * 3.5),
+                                  softness=10)
+        _NS_khalros._ground_ring(surface, x, y, int(r * 0.72), c2,
+                                  P["white"], int(a * 0.55),
+                                  thickness=max(1.0, 3 - ease * 2),
+                                  softness=7)
+        _NS_khalros._glow(surface, x, y, max(6, int(r * 0.5)), c1,
+                          int(a * 0.75 * (1 - ease * 0.6)))
+        _NS_khalros._spark_star(surface, x, y, int(20 * fs), c2, a,
+                                spikes=8, rot=t * 2.2, core=P["white"])
 
     # ===================================================================
-    # FLOATING EFFECTS
+    # LAPISAN TANAH / AMBIENT
     # ===================================================================
-    def _draw_wild_wisps(surface, cx, cy, phase, trail=False, facing=1, intense=False):
-        """Primal dust wisps."""
-        strength = 1.5 if intense else 1.0
-        mist = pygame.Surface((120, 40), pygame.SRCALPHA)
-        pulse = math.sin(phase * 1.2) * 0.25 + 0.75
-        for radius in range(30, 3, -4):
-            alpha = int((30 - radius) * 2.5 * pulse * strength)
-            if alpha > 0:
-                pygame.draw.ellipse(
-                    mist, (*_NS_khalros.PALETTE["leather_darkest"], min(255, alpha)),
-                    (60 - radius * 2, 20 - radius // 3,
-                     radius * 4, max(3, radius // 2)),
-                )
-        surface.blit(mist, (cx - 60, cy - 10))
+    def _draw_scorch_marks(boss, surface, phase, x=0, y=0):
+        """Bekas cakar/bantingan di tanah - memudar, ter-cache per usia.
 
-        # Rising fire/energy wisps
-        for i, offset in enumerate((-20, -8, 8, 20)):
-            t = (phase * 0.5 + i * 0.25) % 1.0
-            sx = cx + offset + int(math.sin(phase + i) * 3)
-            sy = cy + 5 - int(t * 24)
-            alpha = max(0, min(255, int(200 * (1 - t) * strength)))
-            if alpha <= 0:
-                continue
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_dark"], alpha), (sx, sy), 5)
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], alpha), (sx, sy - 2), 3)
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], alpha), (sx, sy - 3), 1)
+        Disimpan sebagai OFFSET relatif jangkar badan supaya tetap benar
+        baik di layar 1:1 (jalur boss) maupun di canvas cache lane hero.
+        Alpha dijaga < 100 agar tidak dibaca sebagai siluet badan.
+        """
+        marks = getattr(boss, "_khal_ground_marks", None)
+        if not marks:
+            return
+        P = _NS_khalros.PALETTE
+        alive = []
+        for (wx, wy, r, life) in marks:
+            k = max(0.0, min(1.0, life / 90.0))
+            a = int(150 * k)
+            if a > 6:
+                _NS_khalros._ground_scorch(surface, wx, wy, r,
+                                           P["fire_darkest"], P["shadow_deep"],
+                                           a, seed=int(r) % 7 + 2)
+                _NS_khalros._zone_fill(surface, wx, wy, int(r * 0.8),
+                                       P["fire_dark"], int(60 * k))
+            life -= 1
+            if life > 0:
+                alive.append((wx, wy, r, life))
+        boss._khal_ground_marks = alive
 
-        # Ember particles
-        for i in range(5):
-            angle = phase * 0.9 + i * math.pi * 2 / 5
-            r = 22 + int(math.sin(phase + i * 1.3) * 5)
-            sx = cx + int(math.cos(angle) * r)
-            sy = cy + int(math.sin(angle) * 8)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["fire_bright"], (sx, sy), 2)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["fire_hot"], (sx, sy), 1)
+    def note_ground_mark(boss, x, y, radius=26, life=90, ax=None, ay=None):
+        """Tinggalkan bekas cakar/bantingan di tanah (offset relatif jangkar).
 
-        if trail:
-            for i in range(4):
-                sx = cx - (i + 1) * 12 * facing
-                sy = cy + int(math.sin(phase + i) * 2)
-                alpha = max(0, 130 - i * 22)
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["leather_dark"], alpha),
-                          (sx, sy), max(2, 5 - i))
-
+        ``ax/ay`` = jangkar badan saat ini; kalau tidak diberi, memakai
+        posisi boss (jalur 1:1).
+        """
+        if ax is None:
+            ax = getattr(boss, "x", x)
+        if ay is None:
+            ay = getattr(boss, "y", y)
+        marks = getattr(boss, "_khal_ground_marks", None)
+        if marks is None:
+            marks = []
+            try:
+                boss._khal_ground_marks = marks
+            except Exception:
+                return
+        try:
+            marks.append((int(x - ax), int(y - ay), int(radius), int(life)))
+        except Exception:
+            return
+        if len(marks) > 6:
+            del marks[:-6]
 
     def _draw_shadow(surface, x, y, lift=0):
-        # ORIGINAL-MAX: cache tekstur + reaktif (menyusut saat badan
-        # terangkat, dasar tetap menapak tanah).
+        """Bayangan tanah ter-cache; menyusut saat lift, dasar tetap menapak."""
         NS = _NS_khalros
-        if NS._shadow_cache is None:
-            shadow = pygame.Surface((100, 20), pygame.SRCALPHA)
-            for radius in range(10, 0, -1):
-                alpha = max(0, (10 - radius) * 16)
+        P = NS.PALETTE
+
+        def build():
+            shadow = pygame.Surface((112, 24), pygame.SRCALPHA)
+            for radius in range(12, 0, -1):
+                alpha = max(0, (12 - radius) * 15)
                 pygame.draw.ellipse(
                     shadow, (0, 0, 0, alpha),
-                    (10 - radius, 10 - radius, 80 + radius * 2, radius * 2),
-                )
-            pygame.draw.ellipse(shadow, (*NS.PALETTE["fire_dark"], 60),
-                                (8, 4, 84, 10))
-            NS._shadow_cache = shadow
-        spr = NS._shadow_cache
+                    (12 - radius, 12 - radius, 88 + radius * 2, radius * 2))
+            # sentuhan warna: bara redup di bawah unit beastlord
+            pygame.draw.ellipse(shadow, (*P["fire_dark"], 52),
+                                (11, 6, 90, 12))
+            return shadow
+
+        spr = NS._shadow_cache if NS._shadow_cache is not None else build()
+        if NS._shadow_cache is None:
+            NS._shadow_cache = spr
         w = spr.get_width()
         h = spr.get_height()
         if lift:
             k = max(0.12, 1.0 - lift * 0.05)
             w = max(6, int(w * k))
             h = max(2, int(h * k))
-            spr = pygame.transform.smoothscale(spr, (w, h))
+            spr = pygame.transform.smoothscale(NS._shadow_cache, (w, h))
         bx = x - w // 2
-        by = (y + 10) - h          # bottom tetap di y+10
+        by = (y + 12) - h          # dasar menapak di y+12
         surface.blit(spr, (bx, by))
         if NS._record_shadow is not None:
             NS._record_shadow.append(pygame.Rect(bx, by, w, h))
 
-
     def _draw_primal_aura(surface, x, y, phase, active_skill):
-        """Background aura."""
+        """Aura primal ter-cache: bara redap + rim panas; menguat saat skill."""
         NS = _NS_khalros
-        if NS._aura_cache is None:
-            aura = pygame.Surface((180, 160), pygame.SRCALPHA)
-            for radius in range(72, 5, -4):
-                alpha = int((72 - radius) * 1.2)
-                if alpha > 0:
-                    NS._aacircle(aura, (*NS.PALETTE["fire_dark"],
-                                        min(255, alpha)), (90, 80), radius)
-            NS._aura_cache = aura
-        pulse = math.sin(phase * 0.5) * 0.25 + 0.75
-        strength = 1.4 if active_skill in ("q", "r") else 1.0
-        a = int(255 * min(1.0, pulse * strength))
-        spr = NS._aura_cache.copy()
-        spr.set_alpha(a)
-        surface.blit(spr, (x - 90, y - 80))
+        P = NS.PALETTE
 
+        def build():
+            aura = pygame.Surface((208, 176), pygame.SRCALPHA)
+            # kolom heat di belakang badan (lebar mengecil ke atas)
+            for i in range(30):
+                t = i / 29.0
+                w = int(52 + 26 * (1 - t))
+                yy = int(150 - t * 120)
+                a = int(17 * (1 - t) ** 1.4)
+                col = NS._mix(P["fire_darkest"], P["fire_dark"], t)
+                NS._ellipse(aura, (*col, a), (104 - w, yy - 8, w * 2, 16))
+            # lingkaran bara bawah
+            for radius in range(64, 6, -4):
+                a = int((64 - radius) * 0.34)
+                if a > 0:
+                    NS._aacircle(aura, (*P["fire_darkest"], min(255, a)),
+                                 (104, 120), radius)
+            return aura
+
+        aura = NS._static(("primal_aura",), build)
+        # `_aura_cache` = nama publik v1; menunjuk ke surface yang sama supaya
+        # pembanding/penguji lama masih bisa memeriksa "dibangun sekali".
+        NS._aura_cache = aura
+        pulse = math.sin(phase * 0.55) * 0.25 + 0.75
+        strength = 1.7 if active_skill in ("q", "w", "r") else 1.0
+        # JANGAN copy per frame (208x176 tiap boss tiap frame = 36rb px sia-sia):
+        # set_alpha pada surface cache, blit, lalu lepas lagi (pola
+        # `_blit_decal`). Blit NORMAL menghormati set_alpha; additive tidak.
+        aura.set_alpha(NS._alpha(255 * min(1.0, pulse * strength)))
+        surface.blit(aura, (int(x) - 104, int(y) - 112))
+        aura.set_alpha(255)
+        # bara yang naik (deterministik - tidak mengubah bbox tiap frame)
+        n = 7 if active_skill else 5
+        for i in range(n):
+            t = (phase * 0.42 + NS._hash01(i * 9.3)) % 1.0
+            ex = x + int((NS._hash01(i * 5.1) - 0.5) * 74)
+            ey = y + 34 - int(t * 92)
+            ea = int(160 * (1 - t))
+            if ea > 10:
+                NS._draw_ember(surface, ex, ey, 1 if i % 3 else 2, ea)
 
     def _draw_ground_runes(surface, x, y, phase, active_skill):
-        """Ground runes."""
-        pulse = math.sin(phase * 1.0) * 0.25 + 0.75
-        ring = pygame.Surface((130, 44), pygame.SRCALPHA)
+        """Cincin rune binatang di lantai - decal ter-cache, bukan stroke.
 
-        pygame.draw.ellipse(ring, (*_NS_khalros.PALETTE["fire_dark"], 140),
-                            (5, 10, 120, 24), 3)
-        pygame.draw.ellipse(ring, (*_NS_khalros.PALETTE["fire_mid"], 170),
-                            (20, 14, 90, 16), 2)
+        ALPHA sengaja dijaga DI BAWAH 100: ambang itu dipakai
+        `get_bounding_rect(min_alpha=100)` oleh regresi keluarga
+        (`tools/test_level2_masterwork.py`) dan oleh
+        `heroes._measure_native_size`. Dengan begitu cincin lantai terbaca
+        sebagai cahaya di tanah TANPA membuat siluet khalros membengkak
+        melewati alchemist (true boss) atau menggeser normalisasi skala di
+        lane hero.
+        """
+        NS = _NS_khalros
+        P = NS.PALETTE
+        pulse = math.sin(phase * 1.1) * 0.3 + 0.7
+        boost = 1.4 if active_skill else 1.0
+        # Saat IDEL semua lapis ambient digambar NON-additive: blit additive
+        # juga MENAMBAH kanal alpha, dan canvas cache lane hero / portrait
+        # menilai siluet dari alpha >= 100 - piringan lantai tidak boleh
+        # ikut dihitung sebagai badan.
+        amb = not active_skill
+        r = 26
+        NS._glow(surface, x, y, int(r * 1.25), P["fire_dark"],
+                 int(26 * pulse * boost), add=amb)
+        NS._ground_ring(surface, x, y, r, P["fire_mid"], P["fire_hot"],
+                        int(48 * pulse * boost), thickness=1.8, softness=6,
+                        inner_glow=5, add=not amb)
+        NS._rune_ring(surface, x, y, int(r * 0.68), P["fire_dark"],
+                      P["fire_glow"], int(46 * pulse * boost), phase * 0.35,
+                      segments=9, span=0.44, thickness=2.0, add=not amb)
+        # 3 bekas cakar di cincin dalam
+        for i in range(3):
+            ang = phase * 0.35 + i * math.tau / 3
+            cx2 = x + math.cos(ang) * r * 0.7
+            cy2 = y + math.sin(ang) * r * 0.7
+            NS._chevron(surface, cx2, cy2, ang + math.pi / 2, 5,
+                        P["fire_hot"], int(64 * pulse * boost), width=2)
 
-        # Tribal rune marks
-        for i in range(8):
-            angle = phase * 0.15 + i * math.pi / 4
-            x1 = 65 + int(math.cos(angle) * 30)
-            y1 = 22 + int(math.sin(angle) * 6)
-            x2 = 65 + int(math.cos(angle) * 55)
-            y2 = 22 + int(math.sin(angle) * 10)
-            pygame.draw.line(ring, (*_NS_khalros.PALETTE["fire_hot"], 160),
-                             (x1, y1), (x2, y2), 1)
+    def _draw_wild_wisps(surface, cx, cy, phase, trail=False, facing=1,
+                         intense=False):
+        """Pita kabut primal di belakang unit (nama v1 dipertahankan).
 
-        if active_skill:
-            pygame.draw.ellipse(ring, (*_NS_khalros.PALETTE["fire_bright"], int(80 * pulse)),
-                                (15, 8, 100, 28), 1)
+        v2: 3 helai pita ber-falloff yang mengikuti arah gerak, bukan
+        tumpukan lingkaran; murah (satu surface per frame di-buffer kecil).
+        """
+        NS = _NS_khalros
+        P = NS.PALETTE
+        n = 5 if intense else 3
+        for i in range(n):
+            t = (phase * (0.55 if trail else 0.34) + i * 0.37) % 1.0
+            wob = math.sin(phase * 1.3 + i * 2.1) * 6
+            x0 = cx - facing * (8 + i * 5) + wob * 0.4
+            y0 = cy + 18 - t * 58
+            alpha = int((140 if intense else 95) * (1 - t))
+            if alpha <= 8:
+                continue
+            col = NS._mix(P["fire_dark"], P["fire_glow"], t * 0.6)
+            NS._aaline(surface, (*col, alpha), (x0, y0),
+                       (x0 - facing * 5 + wob, y0 - 9), max(1, 3 - i // 2))
+            NS._aacircle(surface, (*P["fire_hot"], int(alpha * 0.8)),
+                         (x0 - facing * 5 + wob, y0 - 9), 1)
 
-        surface.blit(ring, (x - 65, y - 22))
+    # ===================================================================
+    # POSE MODES  (jangkar tanah = +GROUND_DY; ground FX mengikuti)
+    # ===================================================================
+    def _draw_khalros_idle(surface, boss, x, y, rage=False, hunting=False):
+        NS = _NS_khalros
+        phase = float(getattr(boss, "pulse", 0.0) or 0.0)
+        bob = int(math.sin(phase * 0.7) * 2) - 1
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY)
+            NS._draw_wild_wisps(surface, x, y + 26, phase)
+        NS._draw_khalros_body(surface, x, y + bob,
+                              getattr(boss, "direction", 1), phase, "idle",
+                              0, boss=boss)
 
+    def _draw_khalros_walk(surface, boss, x, y, rage=False, hunting=False):
+        NS = _NS_khalros
+        phase = float(getattr(boss, "pulse", 0.0) or 0.0) * 2.4
+        facing = getattr(boss, "direction", 1)
+        _, _, _, _, contact, bob = NS._stride_solver("walk", phase)
+        sway = int(math.sin(phase * 0.5) * 2)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x + sway, y + NS.GROUND_DY)
+            if contact > 0.45:
+                NS._draw_dust_puff(surface, x + sway - facing * 10,
+                                   y + NS.GROUND_DY, 7 + contact * 4,
+                                   int(150 * contact), seed=int(phase) % 5)
+            NS._draw_wild_wisps(surface, x + sway, y + 26, phase, trail=True,
+                                facing=facing)
+        NS._draw_khalros_body(surface, x + sway, y + int(bob), facing, phase,
+                              "walk", 0, boss=boss)
 
+    def _draw_khalros_attack(surface, boss, x, y, rage=False, hunting=False):
+        NS = _NS_khalros
+        progress = max(0.0, min(1.0, float(
+            getattr(boss, "_khal_attack_progress", 0.0) or 0.0)))
+        phase = float(getattr(boss, "pulse", 0.0) or 0.0)
+        facing = getattr(boss, "direction", 1) or 1
+        pose = NS._attack_pose(progress)
+        bob = int(math.sin(phase * 0.8) * 2)
+        lunge = int(pose["lunge"] * NS.SCALE) * facing
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x + lunge, y + NS.GROUND_DY,
+                            lift=max(0, int(progress * 3)))
+            NS._draw_wild_wisps(surface, x + lunge, y + 26, phase,
+                                intense=True, facing=facing)
+        NS._draw_khalros_body(surface, x + lunge, y + bob, facing, phase,
+                              "attack", progress, boss=boss)
+        # smear kapak HANYA kalau lapisan hidup tidak mengambil alih
+        # (trail layar memakai histori ujung bilah yang sebenarnya).
+        if not portrait and not NS._fx_owned(boss):
+            NS._draw_axe_swing_arc(surface, x + lunge, y + bob, facing,
+                                   progress)
+            NS._draw_swing_impact(surface, x + lunge, y + bob, facing,
+                                  progress)
+
+    def _draw_khalros_cast(surface, boss, x, y, skill, timer, rage=False):
+        """Pose skill (Q/W/R): badan menegak, kapak terangkat, raungan.
+
+        Hanya POSE yang berubah di sini - telegraph & FX zona digambar
+        `draw_khalros` di lantai (world-space), supaya keduanya tidak
+        saling menutupi.
+        """
+        NS = _NS_khalros
+        P = NS.PALETTE
+        phase = float(getattr(boss, "pulse", 0.0) or 0.0)
+        facing = getattr(boss, "direction", 1) or 1
+        duration = NS.SKILL_DUR.get(skill, 50)
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        # naik-turun badan: menunduk saat menarik napas, bangkit saat memanggil
+        dip = -int(3 * math.sin(min(1.0, progress * 1.6) * math.pi))
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x, y + NS.GROUND_DY, lift=abs(dip))
+            NS._draw_wild_wisps(surface, x, y + 26, phase * 1.5,
+                                intense=True, facing=facing)
+        NS._draw_khalros_body(surface, x, y + dip, facing, phase, "cast",
+                              0, boss=boss)
+        if portrait:
+            return
+        # raungan: tiga cincin suara membesar dari kepala (paruh pertama)
+        if progress < 0.5:
+            t = progress / 0.5
+            hx, hy = x + 6 * facing, y - 34 + dip
+            for i in range(3):
+                k = max(0.0, min(1.0, t * 1.9 - i * 0.28))
+                if k <= 0.0 or k >= 1.0:
+                    continue
+                rr = int((10 + k * 40) * NS._fx_scale(boss))
+                a = NS._alpha(190 * (1 - k))
+                NS._aacircle(surface, (*P["fire_bright"], a), (hx, hy), rr, 2)
+                NS._aacircle(surface, (*P["fire_glow"], int(a * 0.6)),
+                             (hx, hy), int(rr * 0.7), 1)
+
+    def _draw_khalros_charge(surface, boss, x, y, timer, rage=False):
+        """Bantingan babi hutan (skill E) - merendah + afterimage 4x."""
+        NS = _NS_khalros
+        phase = float(getattr(boss, "pulse", 0.0) or 0.0)
+        facing = getattr(boss, "direction", 1) or 1
+        duration = NS.SKILL_DUR["e"]
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        lean = int(6 + 8 * math.sin(progress * math.pi)) * facing
+        bob = int(math.sin(phase * 2.2) * 2)
+        portrait = bool(getattr(boss, "_portrait_hd", False))
+        if not portrait:
+            NS._draw_shadow(surface, x + lean, y + NS.GROUND_DY, lift=3)
+            NS._draw_wild_wisps(surface, x + lean, y + 26, phase * 1.6,
+                                trail=True, facing=facing, intense=True)
+            # debu jalur bantingan
+            for i in range(4):
+                a = int(150 * (1 - i / 4.0) * (1 - progress * 0.6))
+                NS._draw_dust_puff(surface, x - facing * (16 + i * 13),
+                                   y + NS.GROUND_DY - i, 8 + i * 2, a,
+                                   seed=i + 3)
+
+        # SATU render rig, di-blit 5x (4 afterimage + badan). Dulu ghost
+        # dirender ulang ke buffer sendiri: biayanya sama besar dengan badan
+        # utama, jadi E dua kali lebih mahal dari skill lain.
+        comp = None if portrait else NS._compose_body(facing, phase, "charge",
+                                                      progress, boss)
+        if comp is not None:
+            sub, edge, offx, offy = comp
+            for i in range(4):
+                sub.set_alpha(int(96 - i * 20))
+                surface.blit(sub, (int(x + lean) + offx
+                                   - facing * (i + 1) * 11,
+                                   int(y + bob) + offy))
+            sub.set_alpha(255)
+            ox, oy = int(x + lean) + offx, int(y + bob) + offy
+            for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                surface.blit(edge, (ox + ddx, oy + ddy))
+            surface.blit(sub, (ox, oy))
+        else:
+            NS._draw_khalros_body(surface, x + lean, y + bob, facing, phase,
+                                  "charge", progress, boss=boss)
+
+    # ===================================================================
+    # RIG - KOMPOSIT (outline & lighting SETELAH penskalaan)
+    # ===================================================================
+    def _compose_body(facing, phase, action, attack_progress=0, boss=None):
+        """Rig native 1.5x -> SCALE -> selout -> lighting -> outline buffer.
+
+        Return ``(sub, edge, offx, offy)`` atau ``None`` bila kosong. Dipisah
+        dari blit supaya pemanggil yang butuh hasil yang sama berkali-kali
+        (afterimage bantingan) cukup merender SEKALI lalu men-blit 4x -
+        rig penuh itu ~1,3 ms, jadi render-ulang = 2x budget kebuang.
+        """
+        NS = _NS_khalros
+        if NS._body_buf is None:
+            NS._body_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
+                                          pygame.SRCALPHA)
+        buf = NS._body_buf
+        buf.fill((0, 0, 0, 0))
+        NS._draw_khalros_body_raw(buf, NS.RIG_OX, NS.RIG_OY, facing, phase,
+                                  action, attack_progress, boss=boss)
+        used = buf.get_bounding_rect(min_alpha=1)
+        if used.width <= 2 or used.height <= 2:
+            return
+        used.inflate_ip(4, 4)
+        used.clamp_ip(buf.get_rect())
+        sub = buf.subsurface(used).copy()
+        lx = used.left - NS.RIG_OX
+        ly = used.top - NS.RIG_OY
+
+        k = NS.SCALE
+        if abs(k - 1.0) >= 0.02:
+            tw = max(1, int(round(sub.get_width() * k)))
+            th = max(1, int(round(sub.get_height() * k)))
+            sub = pygame.transform.smoothscale(sub, (tw, th))
+        edge = sub.copy()
+        edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        if _lighting is not None:
+            _lighting.apply_to_rig(sub, rim_add=(44, 26, 16), shade_mul=170)
+        return sub, edge, int(round(lx * k)), int(round(ly * k))
+
+    def _draw_khalros_body(surface, cx, cy, facing, phase, action,
+                           attack_progress=0, boss=None):
+        """Komposit badan: rig native 1.5x -> buffer -> turun ke SCALE ->
+        outline siluet gelap 1 px -> pass cahaya (rim/shade) -> blit.
+
+        Outline & lighting dikerjakan SETELAH penskalaan supaya tetap
+        setebal 1 px di layar (konvensi `_finish_hd_sprite`). Return hasil
+        `_compose_body` (atau None) supaya pemanggil bisa memakai ulang
+        surface yang sama tanpa merender dua kali.
+        """
+        NS = _NS_khalros
+        comp = NS._compose_body(facing, phase, action, attack_progress, boss)
+        if comp is None:
+            return None
+        sub, edge, offx, offy = comp
+        ox = int(cx) + offx
+        oy = int(cy) + offy
+        for ddx, ddy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            surface.blit(edge, (ox + ddx, oy + ddy))
+        surface.blit(sub, (ox, oy))
+        return sub, ox, oy
+
+    def _draw_khalros_body_raw(surface, cx, cy, facing, phase, action,
+                               attack_progress=0, boss=None):
+        """Rig masterwork v2 - Khalros Beastlord, 100% prosedural.
+
+        Koordinat lokal ~1.5x v1: (0,0) = jangkar panggul, x maju
+        (mengikuti ``facing``), y ke bawah. Puncak tanduk -102, sol
+        sepatu +66, jangkar kepala -66.
+        """
+        NS = _NS_khalros
+        f = 1 if facing >= 0 else -1
+        attack = action == "attack"
+        ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
+        pose = NS._attack_pose(ap) if attack else None
+
+        # ═══ gerak badan + inersia sekunder ═══
+        breath = math.sin(phase * 0.72)
+        lean = sway = root_y = tremble = 0
+        cape_lag = beard_lag = 0.0
+        stride = (0.0, 0.0, 0.0, 0.0, 0.0)
+        if action == "walk":
+            sw_a, sw_b, lf_a, lf_b, contact, bob = NS._stride_solver(
+                "walk", phase)
+            stride = (sw_a, sw_b, lf_a, lf_b, contact)
+            lean = 2 * f
+            root_y = int(bob)
+            cape_lag = -3.0
+            beard_lag = -2.0
+        elif action == "attack":
+            lean = int(pose["lean"]) * f
+            root_y = int(pose["dip"])
+            tremble = 1 if pose["tremble"] else 0
+            cape_lag = -pose["lean"] * 0.55
+            beard_lag = -pose["lean"] * 0.35
+        elif action == "charge":
+            lean = 7 * f
+            root_y = 2
+            cape_lag = -7.0
+            beard_lag = -5.0
+            stride = (0.42, -0.42, 1.5, 0.0, 0.0)
+        elif action == "cast":
+            lean = 1 * f
+            root_y = int(breath * 1.4)
+            cape_lag = math.sin(phase * 1.4) * 2.0
+            beard_lag = math.sin(phase * 1.1) * 1.4
+        else:
+            lean = int(math.sin(phase * 0.5 + 1.1) * 1.5)
+            root_y = int(breath * 1.9)
+            cape_lag = math.sin(phase * 0.55) * 2.2
+            beard_lag = math.sin(phase * 0.5) * 1.8
+            stride = (math.sin(phase * 0.7) * 0.06,
+                      -math.sin(phase * 0.7) * 0.06, 0.0, 0.0, 0.0)
+
+        ox = int(cx) + lean + tremble
+        oy = int(cy) + root_y
+        rage = bool(boss is not None and getattr(boss, "active_skill", None)
+                    in ("w", "r"))
+
+        # ═══ lapisan belakang -> depan ═══
+        #
+        # CATATAN `late`: kapak digambar DUA kali. Pass pertama (late=False)
+        # menggambar kedua lengan + kapak seperti biasa, lalu kepala menimpanya
+        # - bagus untuk idle, tapi kapak yang diayun jadi "hilang" di balik
+        # helm/tanduk tepat pada frame IMPACT, padahal itu frame yang paling
+        # dibaca pemain. Karena itu setelah kepala ada pass kedua (late=True)
+        # yang hanya menggambar sisi DEPAN (bilah + tangan penggenggam); pass
+        # ini melukis ulang piksel yang sama, bukan menambah lapisan baru, jadi
+        # siluetnya identik dan biayanya cuma sebagian dari satu pass.
+        NS._draw_beast_cape(surface, ox, oy, f, phase, action, cape_lag)
+        NS._draw_hawk_companion(surface, ox - 27 * f, oy - 50, f, phase,
+                                action, rage)
+        NS._draw_legs(surface, ox, oy, f, phase, action, stride)
+        NS._draw_loincloth(surface, ox, oy + 6, phase, sway, action=action)
+        NS._draw_torso(surface, ox, oy - 1, phase, sway, action=action,
+                       rage=rage, ap=ap)
+        NS._draw_shoulders(surface, ox, oy - 6, phase, f, action=action,
+                           rage=rage)
+        if action in ("attack", "charge"):
+            NS._draw_attack_arms(surface, ox, oy, f, phase,
+                                 ap if attack else 0.0, action=action)
+        else:
+            NS._draw_idle_arms(surface, ox, oy, f, phase, action=action)
+        NS._draw_khalros_head(surface, ox, oy - 58, f, phase, action=action,
+                              rage=rage, beard_lag=beard_lag, ap=ap)
+        # ── pass depan: senjata di atas kepala (lihat catatan `late`) ──
+        if action in ("attack", "charge"):
+            NS._draw_attack_arms(surface, ox, oy, f, phase,
+                                 ap if attack else 0.0, action=action,
+                                 late=True)
+        else:
+            NS._draw_idle_arms(surface, ox, oy, f, phase, action=action,
+                               late=True)
+
+    # ===================================================================
+    # ANATOMI (ruang native rig 1.5x)
+    # ===================================================================
+    def _draw_beast_cape(surface, cx, cy, facing, phase, action, lag=0.0):
+        """Jubah kulit serigala di punggung - siluet bergerigi + mata jahit."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = facing
+        sway = lag + math.sin(phase * 0.65) * 2.0
+        top_y = cy - 46
+        hem = cy + 10 + abs(lag) * 0.6
+        spine = [(cx - 4 * f, top_y),
+                 (cx - 27 * f, top_y + 7),
+                 (cx - 30 * f + sway, cy - 12),
+                 (cx - 21 * f + sway * 1.4, hem - 4),
+                 (cx - 11 * f + sway * 1.6, hem),
+                 (cx + 2 * f + sway * 1.2, hem - 3),
+                 (cx + 12 * f, cy - 6),
+                 (cx + 16 * f, top_y + 6)]
+        edge = NS._tuft_points(spine[1:-2], depth=3.4, min_len=8.0, seed=5)
+        shape = [spine[0]] + edge + spine[-2:]
+        NS._poly(surface, (*P["shadow_deep"], 235),
+                 [(p[0] + f, p[1] + 1) for p in shape])
+        NS._poly(surface, P["wolf_darkest"], shape)
+        inner = [(cx + (p[0] - cx) * 0.9, cy + (p[1] - cy) * 0.9)
+                 for p in shape]
+        NS._poly(surface, P["wolf_dark"], inner)
+        # lembar bulu di sisi cahaya - terang hanya selebar 3-4 px supaya
+        # jubah tidak terbaca sebagai blob abu-abu di belakang badan
+        NS._poly(surface, P["wolf_mid"],
+                 [(cx - 17 * f, top_y + 10), (cx - 20 * f, cy - 10),
+                  (cx - 13 * f, cy - 2), (cx - 8 * f, top_y + 12)])
+        NS._poly(surface, P["wolf_light"],
+                 [(cx - 14 * f, top_y + 12), (cx - 16 * f, cy - 12),
+                  (cx - 12 * f, cy - 8), (cx - 10 * f, top_y + 13)])
+        # dither di transisi bulu
+        dith = [(cx - (8 + k * 3) * f, top_y + 14 + k * 5) for k in range(5)]
+        NS._dither_dots(surface, P["wolf_high"], dith, alpha=52)
+        # kepala serigala sebagai pengikat (di bahu) + mata jahit
+        hx = cx + 6 * f
+        NS._poly(surface, P["wolf_darkest"],
+                 [(hx, top_y - 4), (hx + 9 * f, top_y - 1),
+                  (hx + 6 * f, top_y + 7), (hx - 2 * f, top_y + 5)])
+        NS._poly(surface, P["wolf_mid"],
+                 [(hx + 1 * f, top_y - 2), (hx + 7 * f, top_y),
+                  (hx + 5 * f, top_y + 5), (hx, top_y + 4)])
+        NS._aacircle(surface, P["fire_mid"], (hx + 4 * f, top_y + 1), 1)
+        for i in range(4):
+            yy = top_y + 8 + i * 9
+            NS._aaline(surface, P["bone_mid"],
+                       (cx - (24 - i) * f, yy), (cx - (18 - i) * f, yy + 2), 1)
+
+    def _draw_hawk_companion(surface, cx, cy, facing, phase, action, rage):
+        """Elang pendamping di bahu belakang - hidup: kedip, regang, goyang."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = facing
+        u = 0.52
+        blink = int(phase * 1.7) % 11 == 0
+        ruffle = math.sin(phase * 1.9) * (1.6 if action == "idle" else 2.6)
+        flap = max(0.0, math.sin(phase * (2.6 if rage else 1.2))) * (
+            5 if rage else 2)
+        # cakar mencengkeram bahu
+        NS._aaline(surface, P["gold_mid"], (cx + 3 * f, cy + 8),
+                   (cx + 6 * f, cy + 12), 2)
+        NS._aaline(surface, P["gold_mid"], (cx - 1 * f, cy + 8),
+                   (cx + 2 * f, cy + 12), 2)
+        # sayap terlipat (bergerigi)
+        wing = [(cx - 6 * f, cy - 3), (cx - 14 * f, cy - 1 - ruffle * .5),
+                (cx - 16 * f, cy + 6), (cx - 5 * f, cy + 6)]
+        NS._poly(surface, P["hawk_dark"],
+                 [wing[0]] + NS._tuft_points(wing[1:], depth=1.8,
+                                             min_len=4.0, seed=2) + [wing[3]])
+        NS._poly(surface, P["hawk_mid"],
+                 [(cx - 7 * f, cy - 1), (cx - 12 * f, cy),
+                  (cx - 11 * f, cy + 4), (cx - 6 * f, cy + 4)])
+        if flap > 0.4:      # regang sayap saat marah / skill
+            NS._poly(surface, P["hawk_light"],
+                     [(cx - 8 * f, cy - 2), (cx - 18 * f, cy - 6 - flap),
+                      (cx - 14 * f, cy + 1)])
+        # badan + dada
+        NS._ellipse(surface, P["hawk_darkest"],
+                    (cx - 5 * u * 2 - 1, cy - 6, 5 * u * 2 + 4, 13))
+        NS._aacircle(surface, P["hawk_mid"], (cx, cy), 5)
+        NS._aacircle(surface, P["hawk_light"], (cx - 1 * f, cy - 1), 3)
+        # kepala + paruh + mata
+        hx, hy = cx + 4 * f, cy - 6
+        NS._aacircle(surface, P["hawk_dark"], (hx, hy), 4)
+        NS._aacircle(surface, P["hawk_high"], (hx - f, hy - 1), 2)
+        NS._poly(surface, P["hawk_beak"],
+                 [(hx + 3 * f, hy), (hx + 7 * f, hy + 2), (hx + 3 * f, hy + 3)])
+        NS._aacircle(surface, (*P["fire_hot"], 235), (hx + f, hy - 1), 1)
+        if blink:
+            NS._aaline(surface, P["hawk_darkest"], (hx - f, hy - 1),
+                       (hx + 2 * f, hy - 1), 1)
+        # tungging bulu di kepala (siluet bergerigi)
+        NS._poly(surface, P["hawk_darkest"],
+                 NS._tuft_points([(hx - 3 * f, hy - 4), (hx - 7 * f, hy - 7)],
+                                 depth=1.8, min_len=3.0, seed=9))
+
+    def _draw_legs(surface, cx, cy, facing, phase, action, stride):
+        """Dua kaki berat: paha kuadrisep, pelindung lutut, betis bulu, boot.
+
+        Proporsi adalah bagian yang paling mudah salah di sini: badan Khalros
+        lebar (sabuk 36 px rig + pauldron), jadi kalau pahanya 16 px dia
+        terbaca sebagai tong dengan dua tusuk gigi. Kaki diambil ~23 px lebar
+        di paha dan boot-nya melebar ke bawah supaya ada tempat berpijak.
+
+        Jangkar vertikal TIDAK diubah (paha cy+8, lutut cy+30, pergelangan
+        cy+48, sol cy+60) - `GROUND_DY`, solver langkah, dan penyempitan
+        bayangan saat melayang bergantung padanya.
+        """
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = facing
+        sw_a, sw_b, lift_a, lift_b, _contact = stride
+        for i, (swing, lift, back) in enumerate(((sw_a, lift_a, 1),
+                                                 (sw_b, lift_b, 0))):
+            # kaki belakang: lebih gelap & sedikit lebih ramping (depth cue)
+            shade = P["skin_darkest"] if back else P["skin_dark"]
+            mid = P["skin_dark"] if back else P["skin_mid"]
+            k = 0.9 if back else 1.0
+            hipx = cx + (14 - i * 28) * f * 0.46
+            hipy = cy + 8
+            kx = hipx + swing * 12 * f
+            ky = cy + 30 - lift * 0.8
+            ax = hipx + swing * 17 * f
+            ay = cy + 48 - lift
+            my = (ky + ay) / 2.0
+            th, kn, ca, an = 11.5 * k, 8.5 * k, 9.5 * k, 6.5 * k
+            pts = [(hipx - th, hipy - 3), (kx - kn, ky - 1),
+                   (ax - ca, my + 2), (ax - an, ay),
+                   (ax + an, ay), (ax + ca, my + 2),
+                   (kx + kn, ky - 1), (hipx + th, hipy - 3)]
+            NS._selout_poly(surface, (*P["shadow_deep"], 255), pts, f)
+            NS._poly(surface, shade, pts)
+            inner = [(cx + (p[0] - cx) * 0.87, cy + (p[1] - cy) * 0.92)
+                     for p in pts]
+            NS._poly(surface, mid, inner)
+            # kuadrisep di sisi cahaya, meruncing ke lutut
+            NS._poly(surface, P["skin_light"] if not back else P["skin_mid"],
+                     [(hipx - 8 * f, hipy + 1), (hipx + 2 * f, hipy),
+                      (kx + 1 * f, ky - 5), (kx - 5 * f, ky - 3)])
+            NS._poly(surface, (*P["shadow_deep"], 72),
+                     [(hipx + th - 3 * f, hipy + 1), (kx + kn - 2 * f, ky),
+                      (ax + an, ay - 2), (ax + an - 4 * f, ay - 2),
+                      (kx + kn - 7 * f, ky - 3)])
+            # pelindung lutut kulit + paku kuningan
+            NS._poly(surface, P["leather_darkest"],
+                     [(kx - 6.5 * k, ky - 4), (kx + 6.5 * k, ky - 4),
+                      (kx + 5.5 * k, ky + 4.5), (kx - 5.5 * k, ky + 4.5)])
+            NS._poly(surface, P["leather_mid"],
+                     [(kx - 4.5 * k, ky - 2.5), (kx + 3.5 * k, ky - 2.5),
+                      (kx + 3 * k, ky + 2), (kx - 3.5 * k, ky + 2)])
+            NS._aacircle(surface, P["skin_high"] if not back
+                         else P["skin_light"], (int(kx - 1.5 * f),
+                         int(ky - 2)), 2)
+            NS._aacircle(surface, P["gold_shine"], (int(kx - 4 * f), int(ky - 1)), 1)
+            # tali paha: kulit melintang + gesper emas
+            sx = (hipx + kx) / 2.0
+            sy = (hipy + ky) / 2.0 + 1.5
+            NS._poly(surface, P["leather_darkest"],
+                     [(sx - th + 1, sy - 2.5), (sx + th - 1, sy - 2.5),
+                      (sx + th - 2, sy + 2.5), (sx - th + 2, sy + 2.5)])
+            NS._poly(surface, P["leather_light"],
+                     [(sx - th + 2.5, sy - 1.5), (sx + 1, sy - 1.5),
+                      (sx + 1, sy + 0.5), (sx - th + 3.5, sy + 0.5)])
+            NS._aacircle(surface, P["gold_mid"], (int(sx - 3 * f), int(sy)), 2)
+            # betis berbulu + dither transisi
+            fur = NS._tuft_points([(ax - ca + 1, my + 3), (ax + ca - 1, my + 3)],
+                                  depth=2.4, min_len=3.4, seed=12 + i)
+            NS._poly(surface, P["hair_darkest"], fur)
+            NS._dither_dots(surface, P["skin_high"],
+                            [(int(ax - ca + 2 + j * 3.4), int(my + 6.5))
+                             for j in range(4)], alpha=70)
+            # sepatu bulu: melebar ke bawah, bukan mengecil jadi titik
+            boot = [(ax - an - 2.5 * k, ay - 3), (ax + an + 2.5 * k, ay - 3),
+                    (ax + 10.5 * k * f, ay + 12), (ax - 8.5 * k * f, ay + 12)]
+            NS._poly(surface, P["leather_darkest"], boot)
+            NS._poly(surface, P["leather_mid"],
+                     [(ax - an - 1 * k, ay - 1), (ax + an + 1 * k, ay - 1),
+                      (ax + 9.5 * k * f, ay + 10), (ax - 8 * k * f, ay + 10)])
+            NS._poly(surface, P["leather_high"],
+                     [(ax - an, ay - 1.5), (ax - 1 * f, ay - 1),
+                      (ax - 1 * f, ay + 8), (ax - 7 * k * f, ay + 9)])
+            cuff = NS._tuft_points([(ax - an - 2, ay - 2), (ax + an + 2, ay - 2)],
+                                   depth=2.8, min_len=4.2, seed=4 + i)
+            NS._poly(surface, P["boar_dark"], cuff)
+            # sol + cakar. Solnya TIDAK boleh ditulis `(ax - c * f)`: lebar
+            # rect tidak ikut ter-mirror, jadi saat facing=-1 sol bergeser
+            # seluruhnya ke satu sisi dan kelihatan seperti goresan lepas di
+            # samping kaki. Jarak tumit/ujung kaki dihitung terpisah.
+            heel = 8.5 * k
+            toe = 10.5 * k
+            sole_x = ax - (heel if f > 0 else toe)
+            sole_w = heel + toe
+            NS._rect(surface, P["metal_dark"], (sole_x, ay + 12, sole_w, 3))
+            NS._rect(surface, P["metal_light"], (sole_x, ay + 12, sole_w, 1))
+            for c in range(4):
+                NS._aaline(surface, P["bone_light"],
+                           (ax + (7 - c * 4.6) * f, ay + 13),
+                           (ax + (10.5 - c * 4.6) * f, ay + 16), 2)
+    def _draw_loincloth(surface, cx, cy, phase, sway, action="idle"):
+        """Rok bulu babi hutan dengan hem robek bergerigi + sabuk tulang."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = 1
+        lag = math.sin(phase * 0.9) * (2.0 if action == "walk" else 0.8)
+        # panel depan
+        # hem sengaja berhenti di ATAS lutut: kalau panelnya panjang, kaki
+        # hanya menyisakan betis + boot dan badan terbaca berjalan di atas dua
+        # tusuk gigi.
+        spine = [(cx - 16, cy + 2), (cx - 18, cy + 17),
+                 (cx - 9, cy + 24 + lag), (cx, cy + 26 + lag * 1.2),
+                 (cx + 10, cy + 23 + lag), (cx + 18, cy + 16),
+                 (cx + 16, cy + 2)]
+        hem = NS._tuft_points(spine[1:6], depth=3.6, min_len=6.0, seed=8)
+        shape = [spine[0]] + hem + [spine[-1]]
+        NS._poly(surface, (*P["shadow_deep"], 255),
+                 [(p[0] + 1, p[1] + 1) for p in shape])
+        NS._poly(surface, P["boar_darkest"], shape)
+        NS._poly(surface, P["boar_dark"],
+                 [(cx + (p[0] - cx) * 0.88, cy + (p[1] - cy) * 0.86)
+                  for p in shape])
+        NS._poly(surface, P["boar_mid"],
+                 [(cx - 10, cy + 4), (cx + 10, cy + 4), (cx + 7, cy + 16),
+                  (cx - 7, cy + 16)])
+        NS._poly(surface, P["boar_light"],
+                 [(cx - 6, cy + 4), (cx + 2, cy + 5), (cx + 1, cy + 14),
+                  (cx - 5, cy + 13)])
+        # dither transisi
+        NS._dither_dots(surface, P["boar_high"],
+                        [(cx - 9 + k * 5, cy + 19) for k in range(4)],
+                        alpha=80)
+        # dua untai bulu menggantung di sisi
+        for sgn in (-1, 1):
+            strand = [(cx + sgn * 16, cy + 4), (cx + sgn * 20, cy + 16 + lag),
+                      (cx + sgn * 17, cy + 26 + lag * 1.4)]
+            NS._poly(surface, P["leather_darkest"],
+                     [(p[0] - sgn * 2, p[1]) for p in strand] +
+                     [(p[0] + sgn * 2, p[1] + 1) for p in strand[::-1]])
+        # sabuk: kulit + geligi + gesper emas kepala binatang
+        NS._rect(surface, P["leather_darkest"], (cx - 18, cy - 5, 36, 9))
+        NS._rect(surface, P["leather_light"], (cx - 17, cy - 4, 34, 4))
+        NS._rect(surface, P["leather_high"], (cx - 16, cy - 4, 12, 2))
+        for i in range(5):
+            xx = cx - 14 + i * 7
+            NS._poly(surface, P["bone_light"],
+                     [(xx, cy + 3), (xx + 3, cy + 3), (xx + 1, cy + 8)])
+        NS._aacircle(surface, P["gold_dark"], (cx, cy - 1), 6)
+        NS._aacircle(surface, P["gold_mid"], (cx - 1, cy - 2), 5)
+        NS._aacircle(surface, P["gold_light"], (cx - 2, cy - 3), 2)
+        NS._aacircle(surface, P["gold_shine"], (cx - 2, cy - 3), 1)
+        # taring boar di sabuk
+        NS._poly(surface, P["bone_mid"], [(cx + 12, cy - 3), (cx + 18, cy + 2),
+                                          (cx + 13, cy + 1)])
+
+    def _draw_torso(surface, cx, cy, phase, sway, action="idle", rage=False,
+                    ap=0.0):
+        """Torso 6-band: dada bidah, otot, war paint merah, luka parut."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        breath = math.sin(phase * 0.72) * (1.6 if action != "attack" else 0.8)
+        # siluet dada lebar -> pinggang (trapezoid) + selout
+        sh_y = cy - 40
+        waist = cy - 2
+        pts = [(cx - 29, sh_y - 3), (cx + 29, sh_y - 3),
+               (cx + 23, sh_y + 16), (cx + 13, waist),
+               (cx - 13, waist), (cx - 23, sh_y + 16)]
+        NS._poly(surface, (*P["shadow_deep"], 255),
+                 [(p[0] + 2, p[1] + 2) for p in pts])
+        NS._poly(surface, P["skin_dark"], pts)
+        # 6 band ramp (bayangan -> highlight) dengan hue-shift
+        b2 = [(cx - 24, sh_y), (cx + 24, sh_y), (cx + 17, sh_y + 18),
+              (cx - 17, sh_y + 18)]
+        NS._poly(surface, P["skin_mid"], b2)
+        b3 = [(cx - 16, sh_y + 3), (cx + 15, sh_y + 2), (cx + 10, sh_y + 16),
+              (cx - 11, sh_y + 15)]
+        NS._poly(surface, P["skin_light"], b3)
+        b4 = [(cx - 12, sh_y + 4), (cx + 6, sh_y + 3), (cx + 4, sh_y + 13),
+              (cx - 9, sh_y + 12)]
+        NS._poly(surface, P["skin_high"], b4)
+        NS._poly(surface, P["skin_shine"],
+                 [(cx - 8, sh_y + 5), (cx - 1, sh_y + 4), (cx - 2, sh_y + 8),
+                  (cx - 7, sh_y + 9)])
+        # garis tengah dada + otot perut (VALUE, bukan outline)
+        NS._aaline(surface, P["skin_darkest"], (cx - 1, sh_y + 2),
+                   (cx - 1, cy - 6), 2)
+        NS._aaline(surface, P["skin_dark"], (cx - 1, sh_y + 3),
+                   (cx - 1, cy - 7), 1)
+        for i in range(3):
+            yy = sh_y + 21 + i * 5
+            w = 11 - i * 2
+            NS._aaline(surface, (*P["skin_darkest"], 190), (cx - w, yy),
+                       (cx + w, yy), 1)
+            NS._aaline(surface, (*P["skin_high"], 120), (cx - w, yy - 2),
+                       (cx + w, yy - 2), 1)
+        # perut bawah (nilai lebih gelap) + dither transisi
+        NS._poly(surface, (*P["skin_dark"], 210),
+                 [(cx - 11, cy - 8), (cx + 11, cy - 8), (cx + 8, cy - 1),
+                  (cx - 8, cy - 1)])
+        NS._dither_dots(surface, P["skin_mid"],
+                        [(cx - 9 + k * 5, cy - 3) for k in range(4)], alpha=90)
+        # war paint: telapak tangan merah di dada + garis pipi
+        paint = 235 if not rage else 255
+        NS._poly(surface, (*P["red_mid"], paint),
+                 [(cx - 17, sh_y + 6), (cx - 8, sh_y + 4), (cx - 7, sh_y + 15),
+                  (cx - 16, sh_y + 17)])
+        for i in range(3):
+            NS._aaline(surface, (*P["red_bright"], 190),
+                       (cx - 16 + i * 3, sh_y + 6), (cx - 15 + i * 3,
+                                                     sh_y + 15), 1)
+        NS._poly(surface, (*P["red_mid"], paint),
+                 [(cx + 8, sh_y + 5), (cx + 16, sh_y + 7), (cx + 15,
+                                                             sh_y + 16),
+                  (cx + 9, sh_y + 14)])
+        # silang dada (harness kulit tipis ber-jahitan)
+        NS._aaline(surface, (*P["leather_darkest"], 235), (cx - 23, sh_y - 1),
+                   (cx + 13, cy - 5), 4)
+        NS._aaline(surface, (*P["leather_mid"], 235), (cx - 23, sh_y - 1),
+                   (cx + 13, cy - 5), 2)
+        NS._aaline(surface, (*P["leather_darkest"], 225), (cx + 23, sh_y - 1),
+                   (cx - 12, cy - 4), 4)
+        NS._aaline(surface, (*P["leather_light"], 210), (cx + 22, sh_y - 1),
+                   (cx - 12, cy - 4), 1)
+        for i in range(5):
+            t = i / 5.0
+            NS._aacircle(surface, (*P["leather_high"], 180),
+                         (int(cx - 24 + t * 38), int(sh_y - 2 + t * 36)), 1)
+        # kalung taring di leher
+        for i in range(5):
+            tx = cx - 10 + i * 5
+            NS._poly(surface, P["bone_light"],
+                     [(tx, sh_y + 1), (tx + 3, sh_y + 1), (tx + 1, sh_y + 6)])
+        NS._aacircle(surface, P["bone_shine"], (cx + 2, sh_y + 2), 1)
+        # bara primal menempel di dada saat skill
+        if rage or action == "attack":
+            glow = 200 if not rage else 255
+            for i in range(3):
+                t = (phase * 0.6 + i * 0.33) % 1.0
+                gx = cx + (NS._hash01(i * 7.7) - 0.5) * 26
+                gy = sh_y + 20 - t * 26
+                NS._aacircle(surface, (*P["fire_bright"], int(glow * (1 - t))),
+                             (int(gx), int(gy)), 2 if i % 2 else 1)
+        # bekas luka (garis pucat diagonal)
+        NS._aaline(surface, (*P["skin_shine"], 150), (cx + 4, sh_y + 8),
+                   (cx + 18, sh_y + 18), 2)
+        NS._aaline(surface, (*P["skin_darkest"], 150), (cx + 4, sh_y + 10),
+                   (cx + 17, sh_y + 20), 1)
+
+    def _draw_shoulders(surface, cx, cy, phase, facing=1, action="idle",
+                        rage=False):
+        """Pauldron: bahu depan = bulu babi hutan berduri, belakang = besi."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        sh_y = cy - 36
+        for side in (1, -1):
+            front = side > 0
+            bx = cx + side * 27 * f * (1 if front else 0.94)
+            by = sh_y + (0 if front else 1)
+            if front:
+                # bulu babi + duri tulang
+                spike = [(bx - 11, by - 5), (bx + 10, by - 8),
+                         (bx + 14, by + 3), (bx + 6, by + 11),
+                         (bx - 10, by + 8)]
+                edge = NS._tuft_points(spike[1:4], depth=3.0, min_len=5.0,
+                                       seed=12)
+                NS._poly(surface, (*P["shadow_deep"], 255),
+                         [(p[0] + 2, p[1] + 2) for p in spike])
+                NS._poly(surface, P["boar_dark"], spike)
+                NS._poly(surface, P["boar_mid"],
+                         [(bx + (p[0] - bx) * 0.8, by + (p[1] - by) * 0.78)
+                          for p in spike[:3] + edge])
+                NS._poly(surface, P["boar_light"],
+                         [(bx - 6, by - 3), (bx + 6, by - 5),
+                          (bx + 4, by + 1), (bx - 5, by + 2)])
+                NS._poly(surface, P["bone_light"],
+                         [(bx + 4, by - 7), (bx + 12, by - 17),
+                          (bx + 9, by - 6)])
+                NS._poly(surface, P["bone_mid"],
+                         [(bx - 5, by - 5), (bx + 1, by - 14),
+                          (bx - 1, by - 4)])
+                NS._aacircle(surface, P["bone_shine"], (bx + 10, by - 14), 1)
+                NS._dither_dots(surface, P["boar_high"],
+                                [(bx - 7 + k * 4, by + 6) for k in range(4)],
+                                alpha=80)
+                # rivet emas
+                for i in range(3):
+                    NS._aacircle(surface, P["gold_mid"],
+                                 (int(bx - 5 + i * 6), int(by + 6)), 2)
+                    NS._aacircle(surface, P["gold_shine"],
+                                 (int(bx - 5.5 + i * 6), int(by + 5)), 1)
+            else:
+                # pelat besi bertingkat
+                plate = [(bx - 12, by - 4), (bx + 9, by - 7),
+                         (bx + 12, by + 4), (bx + 3, by + 11),
+                         (bx - 11, by + 8)]
+                NS._poly(surface, (*P["shadow_deep"], 255),
+                         [(p[0] + 2, p[1] + 2) for p in plate])
+                NS._poly(surface, P["metal_dark"], plate)
+                NS._poly(surface, P["metal_mid"],
+                         [(bx + (p[0] - bx) * 0.82, by + (p[1] - by) * 0.8)
+                          for p in plate])
+                NS._poly(surface, P["metal_light"],
+                         [(bx - 8, by - 2), (bx + 4, by - 4),
+                          (bx + 3, by + 2), (bx - 7, by + 3)])
+                NS._poly(surface, P["metal_shine"],
+                         [(bx - 5, by - 2), (bx - 1, by - 3),
+                          (bx - 2, by + 1)])
+                for i in range(3):
+                    NS._aacircle(surface, P["metal_darkest"],
+                                 (int(bx - 6 + i * 6), int(by + 6)), 2)
+                    NS._aacircle(surface, P["metal_shine"],
+                                 (int(bx - 6.5 + i * 6), int(by + 5)), 1)
+            if rage:
+                NS._aacircle(surface, (*P["fire_bright"], 90),
+                             (int(bx), int(by)), 9)
+
+    def _draw_khalros_head(surface, cx, cy, facing, phase, action="idle",
+                           rage=False, beard_lag=0.0, ap=0.0):
+        """Kepala: tengkorak, rahang bergeraut, janggut berkepang, helm.
+
+        ``cy`` = pusat kepala (ruang native). Mata menyala di balik celah
+        helm; kedip & geram mengikuti fase.
+        """
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        growl = 1.0 if action == "attack" else (0.6 if rage else 0.0)
+        tilt = -2 if action == "attack" else 0
+
+        # ── leher ──
+        NS._poly(surface, P["skin_darkest"],
+                 [(cx - 8, cy + 8), (cx + 8, cy + 8), (cx + 10, cy + 18),
+                  (cx - 10, cy + 18)])
+        NS._poly(surface, P["skin_dark"],
+                 [(cx - 7, cy + 9), (cx + 6, cy + 9), (cx + 8, cy + 16),
+                  (cx - 8, cy + 16)])
+
+        # ── tengkorak (6 band + selout) ──
+        skull = [(cx - 12 * f + 1, cy - 10 + tilt), (cx + 12 * f, cy - 12 + tilt),
+                 (cx + 14 * f, cy - 1 + tilt), (cx + 9 * f, cy + 10 + tilt),
+                 (cx - 6 * f, cy + 12 + tilt), (cx - 13 * f, cy + 2 + tilt)]
+        NS._poly(surface, (*P["shadow_deep"], 255),
+                 [(p[0] + f, p[1] + 2) for p in skull])
+        NS._poly(surface, P["skin_dark"], skull)
+        NS._poly(surface, P["skin_mid"],
+                 [(cx + (p[0] - cx) * 0.86, cy + (p[1] - cy) * 0.84)
+                  for p in skull])
+        NS._poly(surface, P["skin_light"],
+                 [(cx - 9 * f, cy - 7 + tilt), (cx + 7 * f, cy - 9 + tilt),
+                  (cx + 5 * f, cy + 2 + tilt), (cx - 8 * f, cy + 3 + tilt)])
+        NS._poly(surface, P["skin_high"],
+                 [(cx - 6 * f, cy - 6 + tilt), (cx + 1 * f, cy - 7 + tilt),
+                  (cx + 1, cy - 1 + tilt), (cx - 5 * f, cy + 0 + tilt)])
+        NS._aacircle(surface, P["skin_shine"], (int(cx - 3 * f),
+                                                int(cy - 5 + tilt)), 2)
+
+        # ── war paint pipi ──
+        for i in range(3):
+            NS._aaline(surface, (*P["red_bright"], 210),
+                       (cx - 8 * f + i * 3 * f, cy + 2 + tilt),
+                       (cx - 6 * f + i * 3 * f, cy + 7 + tilt), 2)
+
+        # ── rahang & geretan gigi (makin garang saat serang) ──
+        jaw_drop = int(1 + growl * 2)
+        NS._poly(surface, P["skin_darkest"],
+                 [(cx + 2 * f, cy + 5 + tilt), (cx + 12 * f, cy + 3 + tilt),
+                  (cx + 11 * f, cy + 9 + jaw_drop + tilt),
+                  (cx + 2 * f, cy + 11 + jaw_drop + tilt)])
+        teeth = [(cx + 4 * f, cy + 6 + tilt), (cx + 10 * f, cy + 5 + tilt)]
+        for i, (tx, ty) in enumerate(teeth):
+            NS._poly(surface, P["bone_light"],
+                     [(tx, ty), (tx + 2 * f, ty), (tx + f, ty + 3)])
+        if growl:
+            NS._poly(surface, (*P["red_hot"], 160),
+                     [(cx + 3 * f, cy + 7 + tilt), (cx + 11 * f, cy + 6 + tilt),
+                      (cx + 10 * f, cy + 8 + tilt), (cx + 3 * f, cy + 9 + tilt)])
+        # hidung
+        NS._aaline(surface, P["skin_darkest"], (cx + 11 * f, cy - 2 + tilt),
+                   (cx + 13 * f, cy + 3 + tilt), 3)
+        NS._aacircle(surface, P["skin_high"], (int(cx + 12 * f),
+                                               int(cy - 3 + tilt)), 1)
+
+        # ── janggut berkepang, tepi bergerigi, ikut inersia ──
+        bL = beard_lag
+        braid = [(cx + 1 * f, cy + 9 + tilt),
+                 (cx + 11 * f, cy + 12 + tilt),
+                 (cx + 8 * f + bL, cy + 22 + tilt),
+                 (cx + 2 * f + bL * 1.4, cy + 30 + tilt),
+                 (cx - 6 * f + bL * 1.2, cy + 24 + tilt),
+                 (cx - 9 * f, cy + 12 + tilt)]
+        edge = NS._tuft_points(braid[2:5], depth=2.8, min_len=4.5, seed=3)
+        NS._poly(surface, P["hair_darkest"],
+                 [braid[0], braid[1]] + edge + [braid[4], braid[5]])
+        NS._poly(surface, P["hair_dark"],
+                 [(cx + (p[0] - cx) * 0.88, cy + (p[1] - cy) * 0.9)
+                  for p in braid])
+        NS._poly(surface, P["hair_mid"],
+                 [(cx - 2 * f, cy + 13 + tilt), (cx + 6 * f, cy + 14 + tilt),
+                  (cx + 4 * f + bL, cy + 24 + tilt), (cx - 3 * f + bL, cy + 22 + tilt)])
+        # jahitan kepang + cincin emas di ujung
+        for i in range(3):
+            yy = cy + 16 + i * 5 + tilt
+            NS._aaline(surface, P["hair_high"], (cx - 4 * f + bL * i / 2, yy),
+                       (cx + 6 * f + bL * i / 2, yy + 2), 1)
+        NS._aacircle(surface, P["gold_mid"], (int(cx + 2 * f + bL * 1.2),
+                                             int(cy + 29 + tilt)), 3)
+        NS._aacircle(surface, P["gold_shine"], (int(cx + 1.5 * f + bL * 1.2),
+                                               int(cy + 28 + tilt)), 1)
+
+        # ── kumis & brew (menumpuk di atas janggut) ──
+        NS._poly(surface, P["hair_darkest"],
+                 [(cx + 6 * f, cy + 1 + tilt), (cx + 16 * f, cy + 2 + tilt),
+                  (cx + 13 * f, cy + 7 + tilt), (cx + 5 * f, cy + 5 + tilt)])
+        NS._poly(surface, P["hair_mid"],
+                 [(cx + 7 * f, cy + 2 + tilt), (cx + 14 * f, cy + 3 + tilt),
+                  (cx + 12 * f, cy + 5 + tilt)])
+
+        # ── helm bertanduk ──
+        NS._draw_helm(surface, cx, cy + tilt, f, phase, action=action,
+                      rage=rage)
+
+        # ── mata menyala di celah helm (digambar setelah helm) ──
+        blink = int(phase * 1.55) % 13 == 0 and not growl
+        eye_x, eye_y = cx + 9 * f, cy - 3 + tilt
+        if blink:
+            NS._aaline(surface, P["metal_darkest"], (eye_x - 3, eye_y),
+                       (eye_x + 3, eye_y), 2)
+        else:
+            col = P["eye_hot"] if (growl or rage) else P["eye_bright"]
+            NS._aacircle(surface, (*P["eye_dark"], 235), (eye_x, eye_y), 4)
+            NS._aacircle(surface, (*col, 255), (eye_x, eye_y), 3)
+            NS._aacircle(surface, (*P["fire_glow"], 200),
+                         (eye_x - 1 * f, eye_y - 1), 2)
+            NS._aacircle(surface, P["white"], (eye_x - f, eye_y - 1), 1)
+            # seberkas cahaya mata
+            NS._aaline(surface, (*col, 110), (eye_x, eye_y),
+                       (eye_x + 6 * f, eye_y + 1), 2)
+
+    def _draw_helm(surface, cx, cy, facing=1, phase=0.0, action="idle",
+                   rage=False):
+        """Helm tempur: kubah baja ber-ring, linggis hidung, buah bulu,
+        dua taring babi hutan melengkung, dan bulu elang di punggungan."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        crown = cy - 10
+        # dome baja 5 band
+        dome = [(cx - 13, crown + 2), (cx - 10, crown - 6), (cx, crown - 9),
+                (cx + 10, crown - 6), (cx + 13, crown + 2), (cx + 11, crown + 6),
+                (cx - 11, crown + 6)]
+        NS._poly(surface, (*P["shadow_deep"], 255),
+                 [(p[0] + f, p[1] + 2) for p in dome])
+        NS._poly(surface, P["metal_dark"], dome)
+        NS._poly(surface, P["metal_mid"],
+                 [(cx + (p[0] - cx) * 0.84, cy + (p[1] - cy) * 0.84)
+                  for p in dome])
+        NS._poly(surface, P["metal_light"],
+                 [(cx - 10, crown - 3), (cx - 1, crown - 7), (cx - 2, crown + 3),
+                  (cx - 9, crown + 4)])
+        NS._poly(surface, P["metal_shine"],
+                 [(cx - 7, crown - 3), (cx - 3, crown - 5), (cx - 4, crown + 0),
+                  (cx - 7, crown + 1)])
+        # palang tengah + rivet
+        NS._aaline(surface, P["metal_darkest"], (cx, crown - 8), (cx, crown + 6), 3)
+        NS._aaline(surface, P["metal_light"], (cx - 1, crown - 7), (cx - 1,
+                                                                    crown + 5), 1)
+        for i in range(5):
+            rx = cx - 10 + i * 5
+            NS._aacircle(surface, P["metal_darkest"], (rx, crown + 6), 2)
+            NS._aacircle(surface, P["gold_mid"], (rx - 1, crown + 5), 1)
+            NS._aacircle(surface, P["gold_shine"], (rx - 1, crown + 5), 1)
+        # linggis hidung (nose guard)
+        NS._poly(surface, P["metal_dark"],
+                 [(cx + 8 * f, crown + 5), (cx + 14 * f, crown + 6),
+                  (cx + 13 * f, crown + 14), (cx + 8 * f, crown + 12)])
+        NS._poly(surface, P["metal_light"],
+                 [(cx + 9 * f, crown + 7), (cx + 12 * f, crown + 8),
+                  (cx + 11 * f, crown + 11), (cx + 9 * f, crown + 10)])
+        NS._aacircle(surface, P["metal_edge"], (int(cx + 11 * f),
+                                                int(crown + 8)), 1)
+        # trim bulu di pinggiran helm (bergerigi)
+        fur_spine = [(cx - 14, crown + 4), (cx - 6, crown + 7),
+                     (cx + 6, crown + 7), (cx + 14, crown + 4)]
+        NS._poly(surface, P["boar_darkest"],
+                 NS._tuft_points(fur_spine, depth=3.2, min_len=5.0, seed=17))
+        NS._poly(surface, P["boar_mid"],
+                 [(cx - 12, crown + 4), (cx + 12, crown + 4),
+                  (cx + 6, crown + 7), (cx - 6, crown + 7)])
+        NS._dither_dots(surface, P["boar_high"],
+                        [(cx - 10 + k * 5, crown + 5) for k in range(5)],
+                        alpha=90)
+        # dua taring babi sebagai tanduk (ivory 3 band + bayangan)
+        for sgn in (-1, 1):
+            bx = cx + sgn * 12
+            by = crown - 2
+            tipx, tipy = bx + sgn * 17, by - 22
+            midx, midy = bx + sgn * 11, by - 10
+            horn = [(bx - sgn * 2, by + 2), (midx - sgn, midy + 2),
+                    (tipx, tipy), (tipx + sgn * 3, tipy + 2),
+                    (midx + 3 * sgn, midy + 5), (bx + sgn * 4, by + 5)]
+            NS._poly(surface, (*P["shadow_deep"], 255),
+                     [(p[0] + f, p[1] + 2) for p in horn])
+            NS._poly(surface, P["bone_dark"], horn)
+            NS._poly(surface, P["bone_mid"],
+                     [(bx + (p[0] - bx) * 0.8, by + (p[1] - by) * 0.86)
+                      for p in horn])
+            NS._poly(surface, P["bone_light"],
+                     [(bx + sgn * 1, by), (midx + sgn, midy + 1),
+                      (tipx + sgn, tipy + 1), (tipx - sgn, tipy + 3),
+                      (midx - sgn * 2, midy + 4)])
+            NS._aacircle(surface, P["bone_shine"], (int(tipx), int(tipy + 1)), 1)
+            # guratan taring
+            for i in range(2):
+                NS._aaline(surface, (*P["bone_darkest"], 190),
+                           (bx + sgn * (3 + i * 3), by - i * 5 - 2),
+                           (bx + sgn * (5 + i * 3), by - i * 5 + 1), 1)
+        # bulu elang di punggungan (bergoyang)
+        sway = math.sin(phase * 1.4) * 2
+        plume = [(cx - 2 * f, crown - 8), (cx - 10 * f + sway, crown - 20),
+                 (cx - 16 * f + sway * 1.5, crown - 16)]
+        NS._aaline(surface, P["hawk_dark"], plume[0], plume[1], 3)
+        NS._aaline(surface, P["hawk_mid"], plume[0], plume[1], 2)
+        NS._poly(surface, P["hawk_light"],
+                 [(plume[1][0], plume[1][1]),
+                  (plume[2][0], plume[2][1] + 2),
+                  (plume[2][0] + 3 * f, plume[2][1])])
+        NS._poly(surface, P["hawk_high"],
+                 [(plume[1][0], plume[1][1]), (plume[2][0] + f, plume[2][1] + 1),
+                  (plume[2][0] + 2 * f, plume[2][1] + 3)])
+        if rage:
+            NS._glow(surface, cx, crown - 2, 22, P["fire_mid"], 90)
+
+    # ===================================================================
+    # LENGAN + KAPAK
+    # ===================================================================
+    def _draw_arm_segment(surface, x1, y1, x2, y2, wrap=True, bulk=9):
+        """Segmen lengan: 3 band ramp + lilitan kulit (v1 signature)."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        dx, dy = x2 - x1, y2 - y1
+        ln = math.hypot(dx, dy) or 1.0
+        nx, ny = -dy / ln, dx / ln
+        a = (x1 + nx * bulk, y1 + ny * bulk)
+        b = (x1 - nx * bulk, y1 - ny * bulk)
+        c = (x2 - nx * bulk * 0.62, y2 - ny * bulk * 0.62)
+        d = (x2 + nx * bulk * 0.62, y2 + ny * bulk * 0.62)
+        NS._poly(surface, (*P["shadow_deep"], 255),
+                 [(p[0] + 1, p[1] + 1) for p in (a, b, c, d)])
+        NS._poly(surface, P["skin_dark"], [a, b, c, d])
+        inner = [((a[0] + x1) / 2, (a[1] + y1) / 2),
+                 ((b[0] + x1) / 2, (b[1] + y1) / 2),
+                 ((c[0] + x2) / 2, (c[1] + y2) / 2),
+                 ((d[0] + x2) / 2, (d[1] + y2) / 2)]
+        NS._poly(surface, P["skin_mid"], inner)
+        NS._poly(surface, P["skin_light"],
+                 [(inner[0][0] * .5 + inner[3][0] * .5,
+                   inner[0][1] * .5 + inner[3][1] * .5 - 1),
+                  inner[0], inner[1],
+                  (inner[1][0] + nx * 2, inner[1][1] + ny * 2)])
+        if wrap:
+            # lilitan kulit di lengan bawah (3 gelang + jahitan)
+            for i in range(3):
+                t = 0.42 + i * 0.16
+                px, py = x1 + dx * t, y1 + dy * t
+                NS._aaline(surface, P["leather_darkest"],
+                           (px + nx * bulk * .75, py + ny * bulk * .75),
+                           (px - nx * bulk * .75, py - ny * bulk * .75), 3)
+                NS._aaline(surface, P["leather_light"],
+                           (px + nx * bulk * .7, py + ny * bulk * .7 - 1),
+                           (px - nx * bulk * .7, py - ny * bulk * .7 - 1), 1)
+                NS._aacircle(surface, P["gold_mid"], (int(px + nx * 4),
+                                                     int(py + ny * 4)), 1)
+
+    def _draw_hand(surface, x, y, facing=1, grip=False):
+        """Kekepalkan tangan: 3 band + buku-buku jari + cincin."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        NS._ellipse(surface, (*P["shadow_deep"], 255), (x - 6 + f, y - 5 + 1, 12, 11))
+        NS._aacircle(surface, P["skin_dark"], (x, y), 6)
+        NS._aacircle(surface, P["skin_mid"], (x - 1, y - 1), 5)
+        NS._aacircle(surface, P["skin_light"], (x - 2, y - 2), 3)
+        for i in range(3):
+            NS._aacircle(surface, P["skin_darkest"], (x + 3 * f, y - 3 + i * 3), 1)
+            NS._aacircle(surface, P["skin_high"], (x + 2 * f, y - 4 + i * 3), 1)
+        if grip:
+            NS._aacircle(surface, P["gold_light"], (x + 4 * f, y + 2), 2)
+            NS._aacircle(surface, P["gold_shine"], (x + 4 * f, y + 1), 1)
+
+    def _axe_blade_shape(cx, cy, ang, size=1.0):
+        """Titik bilah kapak (native) untuk sudut ``ang`` di (cx,cy)."""
+        ca, sa = math.cos(ang), math.sin(ang)
+        nx, ny = -sa, ca
+        bx = cx + ca * _NS_khalros.AXE_HANDLE * size
+        by = cy + sa * _NS_khalros.AXE_HANDLE * size
+        L = _NS_khalros.AXE_BLADE * size
+        return bx, by, nx, ny, L
+
+    def _draw_axe_swinging(surface, hx, hy, facing, angle, size=1.0,
+                           hot=0.0):
+        """Kapak tempur berputar di tangan: gagang + bilah bergerigi 5 band.
+
+        ``hot`` 0..1 = bilah membara (state rage / frame impact).
+
+        ATURAN CERMIN: yang berubah saat `facing` balik adalah HADAP, bukan
+        atas-bawah. `ang = angle * f` membalik sumbu Y (kapak idle yang harusnya
+        menengadah ke kiri malah menukik ke kanan bawah) - jadi arah bilah
+        dihitung dari (cos*face, sin) dan sudutnya diambil dari vektor itu.
+        Konvensi ini sama dengan `_axe_tip_local`, sehingga trail ayunan dan
+        bintang impact mendarat DI BILAH, bukan di udara.
+        """
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        ca0, sa0 = math.cos(angle) * f, math.sin(angle)
+        ang = math.atan2(sa0, ca0)
+        bx, by, nx, ny, L = NS._axe_blade_shape(hx, hy, ang, size)
+        tipx, tipy = bx + math.cos(ang) * L, by + math.sin(ang) * L
+        # gagang kulit: 3 band + lilitan
+        NS._aaline(surface, P["leather_darkest"],
+                   (hx - math.cos(ang) * 8 * size, hy - math.sin(ang) * 8 * size),
+                   (bx, by), max(3, int(5 * size)))
+        NS._aaline(surface, P["leather_mid"],
+                   (hx - math.cos(ang) * 7 * size, hy - math.sin(ang) * 7 * size),
+                   (bx, by), max(2, int(3 * size)))
+        NS._aaline(surface, P["leather_high"],
+                   (hx - math.cos(ang) * 7 * size, hy - math.sin(ang) * 7 * size - 1),
+                   (bx - nx * 1.5, by - ny * 1.5), 1)
+        for i in range(3):
+            t = 0.2 + i * 0.22
+            px = hx - math.cos(ang) * 8 * size + (bx - hx + math.cos(ang) * 8 * size) * t
+            py = hy - math.sin(ang) * 8 * size + (by - hy + math.sin(ang) * 8 * size) * t
+            NS._aaline(surface, P["leather_light"], (px + nx * 2, py + ny * 2),
+                       (px - nx * 2, py - ny * 2), 1)
+        # bilah: kipas bergerigi dengan notch (siluet khas)
+        half = L * 0.52
+        outer = [(bx + nx * half * 0.35, by + ny * half * 0.35),
+                 (bx + math.cos(ang) * L * 0.5 + nx * half,
+                  by + math.sin(ang) * L * 0.5 + ny * half),
+                 (tipx + nx * half * 0.55, tipy + ny * half * 0.55),
+                 (tipx - nx * half * 0.45, tipy - ny * half * 0.45),
+                 (bx + math.cos(ang) * L * 0.45 - nx * half * 0.85,
+                  by + math.sin(ang) * L * 0.45 - ny * half * 0.85),
+                 (bx - nx * half * 0.3, by - ny * half * 0.3)]
+        edge = NS._tuft_points(outer[1:4], depth=2.4 * size, min_len=5.0, seed=6)
+        shape = [outer[0]] + edge + outer[3:]
+        NS._poly(surface, (*P["shadow_deep"], 255),
+                 [(p[0] + f, p[1] + 2) for p in shape])
+        NS._poly(surface, P["metal_dark"], shape)
+        NS._poly(surface, P["metal_mid"],
+                 [(bx + (p[0] - bx) * 0.86, by + (p[1] - by) * 0.88)
+                  for p in shape])
+        NS._poly(surface, P["metal_light"],
+                 [(bx + (p[0] - bx) * 0.66, by + (p[1] - by) * 0.68)
+                  for p in shape[:3]])
+        # fuller gelap + tepi tajam
+        NS._aaline(surface, P["metal_darkest"],
+                   (bx + math.cos(ang) * L * 0.15, by + math.sin(ang) * L * 0.15),
+                   (tipx - nx * half * 0.1, tipy - ny * half * 0.1),
+                   max(2, int(3 * size)))
+        NS._aaline(surface, P["metal_shine"], outer[1], outer[2],
+                   max(1, int(2 * size)))
+        NS._aaline(surface, P["metal_edge"],
+                   (outer[2][0] - nx, outer[2][1] - ny),
+                   (outer[3][0] - nx, outer[3][1] - ny), 1)
+        # paku emas + mata kapak (specular cluster)
+        NS._aacircle(surface, P["gold_mid"],
+                     (int(bx + math.cos(ang) * 4 * size),
+                      int(by + math.sin(ang) * 4 * size)), max(2, int(3 * size)))
+        NS._aacircle(surface, P["gold_shine"],
+                     (int(bx + math.cos(ang) * 3.5 * size),
+                      int(by + math.sin(ang) * 3.5 * size - 1)),
+                     max(1, int(1.4 * size)))
+        # membara saat rage / impact
+        if hot > 0.02:
+            a = NS._alpha(230 * hot)
+            NS._aaline(surface, (*P["fire_bright"], a), outer[1], outer[2],
+                       max(1, int(3 * size)))
+            NS._aacircle(surface, (*P["fire_hot"], a),
+                         (int(tipx), int(tipy)), max(2, int(4 * size)))
+            NS._aacircle(surface, (*P["fire_glow"], a),
+                         (int(tipx), int(tipy)), max(1, int(2 * size)))
+        return tipx, tipy
+
+    def _draw_axe_held(surface, hx, hy, side, phase, hot=0.0):
+        """Kapak kedua yang tersandang di punggung (side = -1 belakang)."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        # -1.32 rad = hampir tegak: yang kelihatan hanya kepala bilah di atas
+        # bahu. Kalau sudutnya landai, gagang kapak cadangan jadi tombak yang
+        # melebarkan siluet 13 px dan mencuri tempat dari elang.
+        ang = -1.32 + math.sin(phase * 0.5) * 0.03
+        f = 1 if side >= 0 else -1
+        # cermin horizontal (lihat `_draw_axe_swinging`); seluruh jarak
+        # sepanjang sumbu bilah dikalikan f supaya bentuknya ikut terbalik
+        ca, sa = math.cos(ang) * f, math.sin(ang)
+        ang = math.atan2(sa, ca)
+        bx, by, nx, ny, L = NS._axe_blade_shape(hx, hy, ang, 0.68)
+        NS._aaline(surface, P["leather_darkest"],
+                   (hx - ca * 10, hy - sa * 10), (bx, by), 4)
+        NS._aaline(surface, P["leather_mid"],
+                   (hx - ca * 9, hy - sa * 9), (bx, by), 2)
+        shape = [(bx + nx * 6, by + ny * 6), (bx + f * L * 0.5, by - 4),
+                 (bx + f * L * 0.75, by + 3), (bx + nx * 2, by + ny * 8),
+                 (bx - nx * 5, by - ny * 5)]
+        NS._poly(surface, P["metal_darkest"], shape)
+        NS._poly(surface, P["metal_mid"],
+                 [(bx + (p[0] - bx) * 0.8, by + (p[1] - by) * 0.8)
+                  for p in shape])
+        NS._poly(surface, P["metal_light"],
+                 [(bx + f, by - 3), (bx + f * L * 0.6, by - 2),
+                  (bx + f * L * 0.5, by + 1)])
+        NS._aacircle(surface, P["metal_shine"],
+                     (int(bx + f * L * 0.55), int(by - 1)), 1)
+        if hot > 0.02:
+            NS._aacircle(surface, (*P["fire_bright"], NS._alpha(180 * hot)),
+                         (int(bx + f * L * 0.5), int(by)), 4)
+
+    def _draw_idle_arms(surface, cx, cy, facing, phase, action="idle",
+                        late=False):
+        """Dua lengan: depan memegang kapak tempur, belakang kapak cadangan.
+
+        ``cx/cy`` = jangkar panggul rig; bahu di cy-42. ``late=True`` =
+        second pass dari `_draw_khalros_body_raw` yang mengulang sisi DEPAN
+        saja (kapak idle di atas kepala/tanduk) - lihat catatan `late` di
+        sana; bagian belakang sengaja tidak dilukis ulang supaya janggut dan
+        helm tetap menutupi bahu.
+        """
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        sway = int(math.sin(phase * 0.7) * 1.6)
+        sh_y = cy - 42
+        if late:
+            # pass depan saja - lihat `_draw_khalros_body_raw`
+            gx, gy = NS._axe_grip_local(action, phase, 0.0, f)
+            fx, fy = cx + gx * f, cy + gy
+            if action == "cast":
+                ang = -0.35 + math.sin(phase * 1.6) * 0.10
+                hot = 0.55
+            else:
+                ang = -1.25 + math.sin(phase * 0.7) * 0.06
+                hot = 0.0
+            NS._draw_axe_swinging(surface, fx, fy, f, ang, 1.0, hot=hot)
+            NS._draw_hand(surface, int(fx), int(fy), f, grip=True)
+            return
+        # lengan belakang (lebih gelap, di belakang badan)
+        be_sx = cx - 22 * f
+        be_hx = be_sx - 8 * f
+        be_hy = sh_y + 30 + sway
+        NS._draw_arm_segment(surface, be_sx, sh_y + 4, be_hx - 2 * f, be_hy,
+                             bulk=8)
+        NS._draw_hand(surface, int(be_hx - 2 * f), int(be_hy), f)
+        NS._draw_axe_held(surface, int(be_hx - 1 * f), int(be_hy - 4), -f,
+                          phase)
+        # lengan depan -> grip kapak (sinkron `_axe_grip_local`)
+        gx, gy = NS._axe_grip_local(action, phase, 0.0, f)
+        fx, fy = cx + gx * f, cy + gy
+        fe_sx = cx + 22 * f
+        elbow = ((fe_sx + fx) / 2 + 5 * f, (sh_y + fy) / 2 + 6)
+        NS._draw_arm_segment(surface, fe_sx, sh_y + 2, elbow[0], elbow[1],
+                             bulk=9)
+        NS._draw_arm_segment(surface, elbow[0], elbow[1], fx, fy, bulk=7)
+        NS._draw_deltoid(surface, fe_sx, sh_y, f)
+        if action == "cast":
+            ang = -0.35 + math.sin(phase * 1.6) * 0.10
+            hot = 0.55
+        else:
+            ang = -1.25 + math.sin(phase * 0.7) * 0.06
+            hot = 0.0
+        NS._draw_axe_swinging(surface, fx, fy, f, ang, 1.0, hot=hot)
+        NS._draw_hand(surface, int(fx), int(fy), f, grip=True)
+
+    def _draw_attack_arms(surface, cx, cy, facing, phase, progress,
+                          action="attack", late=False):
+        """Lengan saat ayunan: keyframe `arm_a` menggerakkan grip + kapak.
+
+        ``late=True`` = pass depan untuk bilah + tangan penggenggam saja,
+        supaya kepala tidak menutupi kapak pada frame IMPACT (lihat catatan
+        `late` di `_draw_khalros_body_raw`).
+        """
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        pose = NS._attack_pose(progress)
+        sh_y = cy - 42
+        gx, gy = NS._axe_grip_local(action, phase, progress, f)
+        fx, fy = cx + gx * f, cy + gy
+        if late:
+            # pass depan: bilah tidak pernah hilang di balik helm/tanduk
+            NS._draw_axe_swinging(surface, fx, fy, f, pose["arm_a"] + 0.72,
+                                  1.0,
+                                  hot=pose["impact"] if action == "attack"
+                                  else 0.55)
+            NS._draw_hand(surface, int(fx), int(fy), f, grip=True)
+            return
+        fe_sx = cx + 21 * f
+        elbow = ((fe_sx + fx) / 2 + 4 * f, (sh_y + fy) / 2 + 4)
+        # lengan belakang mengayuh ke belakang untuk keseimbangan
+        be_sx = cx - 21 * f
+        be_hx = be_sx - 13 * f
+        be_hy = sh_y + 26 - pose["lean"] * 0.5
+        NS._draw_arm_segment(surface, be_sx, sh_y + 3, be_hx, be_hy, bulk=8)
+        NS._draw_hand(surface, int(be_hx), int(be_hy), f)
+        NS._draw_arm_segment(surface, fe_sx, sh_y + 1, elbow[0], elbow[1],
+                             bulk=9)
+        NS._draw_arm_segment(surface, elbow[0], elbow[1], fx, fy, bulk=7)
+        NS._draw_deltoid(surface, fe_sx, sh_y, f)
+        ang = pose["arm_a"] + 0.72
+        hot = pose["impact"] if action == "attack" else 0.55
+        NS._draw_axe_swinging(surface, fx, fy, f, ang, 1.0, hot=hot)
+        NS._draw_hand(surface, int(fx), int(fy), f, grip=True)
+        # ketegangan otot bergetar di fase tension
+        if pose["tremble"]:
+            NS._aacircle(surface, (*P["skin_shine"], 90), (int(fe_sx),
+                                                           int(sh_y + 2)), 3)
+
+    def _draw_deltoid(surface, x, y, facing=1):
+        """Bahu berotot: 3 band + sorot cahaya kiri-atas."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        f = 1 if facing >= 0 else -1
+        NS._aacircle(surface, (*P["shadow_deep"], 235), (x + f, y + 1), 9)
+        NS._aacircle(surface, P["skin_dark"], (x, y), 9)
+        NS._aacircle(surface, P["skin_mid"], (x - 1, y - 1), 7)
+        NS._aacircle(surface, P["skin_light"], (x - 2 * f, y - 3), 4)
+        NS._aacircle(surface, P["skin_high"], (x - 2 * f, y - 3), 2)
+        NS._aaline(surface, P["skin_darkest"], (x - 6 * f, y + 3),
+                   (x + 5 * f, y + 6), 2)
+
+    # ===================================================================
+    # SMEME AYUNAN + BENTURAN (canvas fallback; lapisan hidup memakainya
+    # lewat geometri yang sama -> trail di layar)
+    # ===================================================================
     def _draw_axe_swing_arc(surface, x, y, facing, progress):
-        """Axe swing motion trail (fire orange)."""
-        if progress < 0.28 or progress > 0.75:
+        """Smear sabit baja 3 lapis + tepi menyala, mengikuti busur kapak."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        if progress < 0.26 or progress > 0.80:
             return
         if progress < 0.5:
-            visibility = (progress - 0.28) / 0.22
+            vis = (progress - 0.26) / 0.24
         else:
-            visibility = 1.0 - (progress - 0.5) / 0.25
-        visibility = max(0.0, min(1.0, visibility))
-
-        arc = pygame.Surface((140, 110), pygame.SRCALPHA)
-        for i in range(16):
-            t = i / 15
-            angle = -math.pi * 0.9 + t * math.pi * 1.1
-            px = 70 + int(math.cos(angle) * 52) * facing
-            py = 55 + int(math.sin(angle) * 40)
-            alpha = int((200 - i * 10) * visibility)
-            if alpha <= 0:
-                continue
-            _NS_khalros._aacircle(arc, (*_NS_khalros.PALETTE["fire_dark"], alpha), (px, py), 8)
-            _NS_khalros._aacircle(arc, (*_NS_khalros.PALETTE["fire_bright"], alpha), (px, py), 5)
-            _NS_khalros._aacircle(arc, (*_NS_khalros.PALETTE["fire_hot"], alpha), (px, py), 3)
-            _NS_khalros._aacircle(arc, (*_NS_khalros.PALETTE["fire_glow"], min(255, alpha)), (px, py), 1)
-        surface.blit(arc, (x - 70, y - 55))
-
+            vis = 1.0 - (progress - 0.5) / 0.30
+        vis = max(0.0, min(1.0, vis))
+        f = 1 if facing >= 0 else -1
+        R = int(56 * NS.SCALE) + 10
+        arc = pygame.Surface((R * 2 + 12, R * 2 + 12), pygame.SRCALPHA)
+        acx = acy = R + 6
+        sweep = min(1.0, (progress - 0.22) / 0.36)
+        a_end = (-2.05 + sweep * 3.1)
+        n = 16
+        for band, (col, rr, wid) in enumerate((
+                (P["metal_dark"], R, 10),
+                (P["metal_light"], R - 4, 6),
+                (P["fire_bright"], R - 8, 3))):
+            pts_o, pts_i = [], []
+            for i in range(n + 1):
+                t = i / n
+                ang = a_end - t * 1.95
+                w = wid * (1.0 - t * 0.72)
+                ca = math.cos(ang) * f
+                sa = math.sin(ang)
+                pts_o.append((acx + ca * (rr + w), acy + sa * (rr + w)))
+                pts_i.append((acx + ca * (rr - w), acy + sa * (rr - w)))
+            NS._poly(arc, (*col, int((140 - band * 28) * vis)),
+                     pts_o + pts_i[::-1])
+        # leading edge putih
+        ca, sa = math.cos(a_end) * f, math.sin(a_end)
+        NS._aaline(arc, (*P["metal_edge"], int(225 * vis)),
+                   (acx + ca * (R - 12), acy + sa * (R - 12)),
+                   (acx + ca * (R + 8), acy + sa * (R + 8)), 3)
+        NS._aacircle(arc, (*P["fire_glow"], int(235 * vis)),
+                     (int(acx + ca * R), int(acy + sa * R)), 5)
+        NS._aacircle(arc, (*P["fire_white"], int(255 * vis)),
+                     (int(acx + ca * R), int(acy + sa * R)), 2)
+        # bara terlempar dari busur (deterministik)
+        for i in range(5):
+            t = 0.15 + 0.16 * i
+            ang = a_end - t * 1.9
+            rr = R * (0.9 + NS._hash01(i * 13) * 0.25)
+            ex = acx + math.cos(ang) * f * rr
+            ey = acy + math.sin(ang) * rr
+            NS._draw_ember(arc, int(ex), int(ey), 1,
+                           int(190 * vis * (1 - t)))
+        surface.blit(arc, (int(x) - acx, int(y) - 42 - acy))
 
     def _draw_swing_impact(surface, x, y, facing, progress):
-        if progress < 0.45 or progress > 0.85:
+        """Frame IMPACT: bintang 8-spike, retakan tanah, debu kaki."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        imp = 1.0 - min(1.0, abs(progress - NS.ATTACK_IMPACT) / 0.12)
+        if imp <= 0.02:
             return
-        t = (progress - 0.45) / 0.40
-        intensity = math.sin(t * math.pi)
+        f = 1 if facing >= 0 else -1
+        tx, ty = NS._axe_tip_screen_from(x, y, f, progress)
+        a = NS._alpha(255 * imp)
+        NS._glow(surface, tx, ty, int(30 * imp) + 8, P["fire_mid"],
+                 int(150 * imp))
+        NS._spark_star(surface, tx, ty, int(26 * imp), P["fire_glow"], a,
+                       spikes=8, rot=progress * 6, core=P["fire_white"])
+        NS._ground_ring(surface, tx, ty, int(12 + 26 * imp), P["fire_bright"],
+                        P["fire_hot"], int(180 * imp), thickness=2, softness=6)
+        # retakan tanah dari titik bentur
+        for i in range(3):
+            ang = (0.25 + i * 0.5) * math.pi * (1 if f > 0 else -1)
+            NS._jagged_crack(surface, tx, y + NS.GROUND_DY - 2, ang,
+                             26 * imp, (P["shadow_deep"], P["fire_bright"]),
+                             int(200 * imp), seed=11 + i, width=2)
+        NS._draw_dust_puff(surface, tx, y + NS.GROUND_DY, 9 + imp * 5,
+                           int(160 * imp), seed=7)
 
-        impact_x = x + 38 * facing
-        impact_y = y + 3
-        alpha = int(230 * intensity)
-        radius = int(8 + intensity * 22)
-
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_dark"], alpha // 2),
-                  (impact_x, impact_y), radius + 4)
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], alpha),
-                  (impact_x, impact_y), radius, 3)
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], alpha),
-                  (impact_x, impact_y), max(1, radius - 5), 2)
-
-        # Sparks
-        for i in range(10):
-            angle = i * math.pi / 5 + progress * 3
-            dx = impact_x + int(math.cos(angle) * radius * 1.3)
-            dy = impact_y + int(math.sin(angle) * radius * 0.9)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["fire_hot"], (dx, dy), 2)
-            _NS_khalros._aacircle(surface, _NS_khalros.PALETTE["fire_glow"], (dx, dy), 1)
-
+    def _axe_tip_screen_from(x, y, facing, progress):
+        """Ujung bilah di layar untuk pose serangan tertentu (dipakai FX)."""
+        NS = _NS_khalros
+        phase = 0.0
+        lx, ly = NS._axe_tip_local("attack", phase, progress, facing)
+        lean_f, root_y, tremble, sway = NS._raw_shift("attack", phase,
+                                                      progress, facing)
+        dx, dy = NS._body_offset("attack", phase, progress, facing)
+        return NS._local_to_screen(x + dx, y + dy, facing, lean_f, root_y,
+                                   tremble, sway, lx, ly)
 
     # ===================================================================
-    # SKILL Q: WILD AXES
+    # SKILL GROUND TELEGRAPHS (world-space; radius = px DUNIA gameplay)
+    # ===================================================================
+    def _draw_wild_axes_ground(surface, boss, x, y, timer, phase):
+        """Q telegraph: ring TEPAT 70 px dunia DI TARGET + jalur lempar."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        duration = NS.SKILL_DUR["q"]
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        fs = NS._fx_scale(boss)
+        tx, ty = NS._target_position(boss, x, y)
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["q"], surface)
+        pulse = math.sin(phase * 2.6) * 0.3 + 0.7
+
+        NS._ground_scorch(surface, tx, ty, int(r * 1.02), P["fire_darkest"],
+                          P["shadow_deep"], int(140 * pulse), seed=4)
+        NS._zone_fill(surface, tx, ty, r, P["fire_dark"], int(85 * pulse),
+                      edge_bias=3.0)
+        NS._ground_ring(surface, tx, ty, r, P["fire_bright"], P["fire_glow"],
+                        int(215 * pulse), thickness=3, softness=8,
+                        inner_glow=24)
+        # rune Dalam = HIASAN:alpha-nya harus di bawah cincin gameplay
+        # (215) supaya tepi AOE terbaca sebagai batas yang paling terang;
+        # cincin yang lebih terang di dalam bikin radius terbaca salah.
+        NS._rune_ring(surface, tx, ty, int(r * 0.7), P["fire_mid"],
+                      P["fire_hot"], int(118 * pulse), phase * 1.4,
+                      segments=9, span=0.46)
+        # tiga bekas cakar konvergen ke pusat
+        for i in range(3):
+            ang = i * math.tau / 3 + phase * 0.5
+            cx0 = tx + math.cos(ang) * r * 0.85
+            cy0 = ty + math.sin(ang) * r * 0.85
+            for k in range(3):
+                off = (k - 1) * 3
+                NS._aaline(surface, (*P["bone_light"], int(190 * pulse)),
+                           (cx0 + off, cy0 + off // 2),
+                           (tx + (cx0 - tx) * 0.35 + off,
+                            ty + (cy0 - ty) * 0.35 + off // 2), 2)
+        # ring konvergen ("kapak mendarat") di paruh kedua
+        if progress > 0.45:
+            conv = 1.0 - ((progress - 0.45) / 0.55)
+            NS._ground_ring(surface, tx, ty, NS._coarse(max(6, int(r * conv))),
+                            P["fire_hot"], P["fire_white"],
+                            int(150 * (1 - conv)), thickness=2, softness=5)
+        # chevron berbaris dari caster ke target
+        dx, dy = tx - x, ty - (y + NS.GROUND_DY)
+        ang = math.atan2(dy, dx)
+        for i in range(3):
+            t = ((phase * 0.5 + i / 3.0) % 1.0)
+            NS._chevron(surface, x + dx * t, (y + NS.GROUND_DY) + dy * t, ang,
+                        7 * fs, P["fire_hot"], int(200 * (1 - t) * pulse),
+                        width=3)
+        NS._spark_star(surface, tx, ty, int(9 * fs), P["fire_glow"],
+                       int(205 * pulse), spikes=4, rot=phase * 1.7,
+                       core=P["fire_white"])
+
+    def _draw_call_of_wild_ground(surface, boss, x, y, timer, phase):
+        """W telegraph: ring 120 px dunia DI DIRI + jejak kaki pack."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        duration = NS.SKILL_DUR["w"]
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        gy = y + NS.GROUND_DY
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["w"], surface)
+        pulse = math.sin(phase * 2.1) * 0.3 + 0.7
+
+        NS._ground_scorch(surface, x, gy, int(r * 0.98), P["fire_darkest"],
+                          P["shadow_deep"], int(130 * pulse), seed=8)
+        NS._zone_fill(surface, x, gy, r, P["fire_dark"], int(78 * pulse),
+                      edge_bias=3.4)
+        NS._ground_ring(surface, x, gy, r, P["fire_bright"], P["fire_glow"],
+                        int(205 * pulse), thickness=3, softness=9,
+                        inner_glow=20)
+        NS._rune_ring(surface, x, gy, int(r * 0.82), P["fire_mid"],
+                      P["fire_hot"], int(150 * pulse), phase * 0.75,
+                      segments=13, span=0.38)
+        # jejak cakar mengarah masuk (pack berlari ke centre)
+        for i in range(6):
+            ang = i * math.tau / 6 + 0.32 + progress * 0.7
+            rr = r * (0.96 - 0.42 * ((progress + i / 6.0) % 1.0))
+            px = x + math.cos(ang) * rr
+            py = gy + math.sin(ang) * rr * 0.92
+            a = int(180 * pulse * (1 - ((progress + i / 6.0) % 1.0) * 0.6))
+            NS._poly(surface, (*P["bone_mid"], a),
+                     [(px, py - 3), (px + 4, py + 1), (px, py + 4),
+                      (px - 4, py + 1)])
+            for k in (-2, 0, 2):
+                NS._aacircle(surface, (*P["bone_light"], a),
+                             (int(px + k), int(py - 5)), 1)
+        # akar/umi penahan (efek slow) berdenyut di tepi
+        for i in range(8):
+            ang = i * math.tau / 8 + phase * 0.4
+            rr = r * 0.88
+            px = x + math.cos(ang) * rr
+            py = gy + math.sin(ang) * rr * 0.9
+            hh = 8 + 5 * math.sin(phase * 3 + i)
+            NS._aaline(surface, (*P["boar_dark"], int(190 * pulse)),
+                       (px, py), (px + math.cos(ang) * 3, py - hh), 3)
+            NS._aaline(surface, (*P["boar_light"], int(150 * pulse)),
+                       (px, py), (px + math.cos(ang) * 3, py - hh + 1), 1)
+
+    def _draw_boar_ground(surface, boss, x, y, timer, phase):
+        """E telegraph: ring pendaratan 85 px dunia + jalur bantingan."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        duration = NS.SKILL_DUR["e"]
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        fs = NS._fx_scale(boss)
+        gy = y + NS.GROUND_DY
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["e"], surface)
+        pulse = math.sin(phase * 3.1) * 0.3 + 0.7
+        f = getattr(boss, "direction", 1) or 1
+
+        NS._ground_scorch(surface, x, gy, int(r * 0.95), P["fire_darkest"],
+                          P["shadow_deep"], int(150 * pulse), seed=13)
+        NS._zone_fill(surface, x, gy, r, P["fire_dark"], int(90 * pulse),
+                      edge_bias=2.8)
+        NS._ground_ring(surface, x, gy, r, P["fire_bright"], P["fire_glow"],
+                        int(220 * pulse), thickness=4, softness=8,
+                        inner_glow=26)
+        NS._dashed_ring(surface, x, gy, int(r * 0.78), P["fire_hot"],
+                        int(150 * pulse), -phase * 2.2 + progress * 3.0,
+                        segments=11, thick=2, span=0.5, squash=1.0)
+        # ring konvergen mengecil = "bantingan akan mendarat"
+        conv = 1.0 - (progress * 1.5 % 1.0)
+        NS._ground_ring(surface, x, gy, NS._coarse(max(6, int(r * conv))),
+                        P["fire_hot"], P["fire_white"], int(150 * (1 - conv)),
+                        thickness=2, softness=5)
+        # jalur tanah terbelah di belakang arah dash
+        for i in range(4):
+            px = x - (16 + i * 15) * fs * f
+            a = int(170 * (1 - i / 4.0) * pulse)
+            NS._jagged_crack(surface, px, gy, math.pi if f > 0 else 0.0,
+                             12 * fs, (P["shadow_deep"], P["fire_dark"]), a,
+                             seed=21 + i, width=2)
+            NS._draw_dust_puff(surface, px, gy, int(9 * fs),
+                               int(130 * (1 - i / 4.0) * pulse), seed=i)
+        # chevron ganda ke arah bantingan
+        for i in range(2):
+            NS._chevron(surface, x + (26 + i * 12) * fs * f, gy - 6 - i * 3,
+                        0.0 if f > 0 else math.pi, 9 * fs, P["fire_glow"],
+                        int(200 * pulse * (1 - i * 0.4)), width=3)
+
+    def _draw_hawk_storm_ground(surface, boss, x, y, timer, phase):
+        """R telegraph: ring badai 200 px dunia DI CASTER + bendera angin."""
+        NS = _NS_khalros
+        P = NS.PALETTE
+        duration = NS.SKILL_DUR["r"]
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        fs = NS._fx_scale(boss)
+        gy = y + NS.GROUND_DY
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["r"], surface)
+        pulse = math.sin(phase * 1.9) * 0.3 + 0.7
+
+        NS._ground_scorch(surface, x, gy, int(r * 1.02), P["wind_dark"],
+                          P["shadow_deep"], int(120 * pulse), seed=24)
+        NS._zone_fill(surface, x, gy, r, P["fire_dark"], int(70 * pulse),
+                      edge_bias=3.6)
+        NS._ground_ring(surface, x, gy, r, P["fire_bright"], P["fire_glow"],
+                        int(225 * pulse), thickness=4, softness=10,
+                        inner_glow=26)
+        NS._rune_ring(surface, x, gy, int(r * 0.86), P["fire_mid"],
+                      P["fire_hot"], int(165 * pulse), phase * 0.65,
+                      segments=15, span=0.36)
+        # Cincin dalam: `_dashed_ring`, BUKAN `_rune_ring`. Both berputar,
+        # tapi `_rune_ring` memutar decal lewat `transform.rotate` dan pada
+        # radius R (200 px dunia -> 420-560 px canvas) satu rotate = 0.9-1.1
+        # ms. Dua-duanya bikin ultimate ini 2x lebih mahal dari keluarga.
+        # Razak/Gorath menyelesaikan hal yang sama dengan SATU rune ring;
+        # di sini cincin angin dalam jadi stroke berfasa (murah, tetap
+        # berputar, dan tetap di bawah alpha cincin gameplay).
+        NS._dashed_ring(surface, x, gy, int(r * 0.6), P["wind_shine"],
+                        int(120 * pulse), -phase * 1.1, segments=10,
+                        thick=2, span=0.42, squash=.96)
+        # bulu berjatuhan menandai lingkaran bahaya
+        for i in range(7):
+            t = (phase * 0.5 + i / 7.0) % 1.0
+            ang = i * math.tau / 7 + progress * 1.2
+            rr = r * (0.94 - 0.10 * math.sin(t * math.pi))
+            fx = x + math.cos(ang) * rr
+            fy = gy + math.sin(ang) * rr * 0.9 - (1 - t) * 26
+            NS._poly(surface, (*P["hawk_light"], int(200 * (1 - t * 0.7))),
+                     [(fx, fy), (fx + 4, fy + 3), (fx + 1, fy + 9),
+                      (fx - 3, fy + 4)])
+            NS._aacircle(surface, (*P["hawk_high"], int(150 * (1 - t))),
+                         (int(fx), int(fy + 2)), 1)
+        # 6 chevron mengarah turun ke dalam (hujan dari langit)
+        for i in range(6):
+            ang = i * math.tau / 6 + phase * 0.25
+            t = (progress * 1.2 + i * 0.13) % 1.0
+            rr = r * (1.02 - t * 0.5)
+            px = x + math.cos(ang) * rr
+            py = gy + math.sin(ang) * rr * 0.92
+            NS._chevron(surface, px, py, ang + math.pi, 9 * fs,
+                        P["fire_hot"], int(190 * pulse * (1 - t * 0.5)),
+                        width=3)
+        if progress > 0.5:
+            conv = 1.0 - ((progress - 0.5) / 0.5)
+            NS._ground_ring(surface, x, gy, NS._coarse(max(8, int(r * conv))),
+                            P["fire_hot"], P["fire_white"],
+                            int(140 * (1 - conv)), thickness=2, softness=6)
+
+    # ===================================================================
+    # SKILL Q - WILD AXES (voli kapak berputar; aktivasi -> steady -> impact)
     # ===================================================================
     def _draw_wild_axes(surface, boss, x, y, timer, phase):
-        """Two axes thrown - spawn projectiles."""
         duration = 50
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        tx, ty = _NS_khalros._target_position(boss, x, y)
+        NS = _NS_khalros
+        P = NS.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        fs = NS._fx_scale(boss)
+        tx, ty = NS._target_position(boss, x, y)
+        f = getattr(boss, "direction", 1) or 1
 
-        if progress < 0.15 and not getattr(boss, "_khal_axes_spawned", False):
-            # Spawn 2 axes with slight spread
-            for i, offset in enumerate((-10, 10)):
-                sx = x + 12 * boss.direction
-                sy = y - 10 + offset
-                _NS_khalros._spawn_axe(boss, sx, sy, tx + offset * 0.5, ty)
-            boss._khal_axes_spawned = True
-        if progress > 0.5:
-            boss._khal_axes_spawned = False
+        # AKTIVASI: pusaran kapak di atas kepala + lingkaran rune kecil
+        if progress < 0.34:
+            k = 1 - progress / 0.34
+            ax, ay = x - 6 * f, y - 56
+            a = NS._alpha(255 * k)
+            NS._glow(surface, ax, ay, int(24 * fs), P["fire_mid"],
+                     int(150 * k))
+            NS._dashed_ring(surface, ax, ay, int(17 * fs), P["fire_hot"], a,
+                            phase * 4.2, segments=6, thick=2, span=0.6,
+                            squash=1.0)
+            NS._dashed_ring(surface, ax, ay, int(24 * fs), P["fire_bright"],
+                            int(a * 0.7), -phase * 3.1, segments=8, thick=2,
+                            span=0.5, squash=1.0)
+            for i in range(3):
+                ang = phase * 5.0 + i * math.tau / 3
+                rx = ax + math.cos(ang) * 20 * fs
+                ry = ay + math.sin(ang) * 12 * fs
+                NS._draw_spinning_axe(surface, rx, ry, ang * 1.4, size=0.55)
+            NS._spark_star(surface, ax, ay, int(13 * fs), P["fire_glow"], a,
+                           spikes=6, rot=progress * 9, core=P["fire_white"])
 
-        # Aim line
-        if progress < 0.4:
-            alpha = int(150 * (1 - progress / 0.4))
-            start_x = x + 15 * boss.direction
-            start_y = y - 10
-            for i in range(0, 100, 8):
-                t = i / 100
-                px = int(start_x + (tx - start_x) * t)
-                py = int(start_y + (ty - start_y) * t)
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], alpha), (px, py), 2)
+        # LEPAS: spawn 2 kapak di puncak ayunan (guard sekali-pakai)
+        if 0.30 <= progress <= 0.44 and not getattr(boss,
+                                                     "_khal_axe_spawned",
+                                                     False):
+            gx, gy = NS._axe_tip_screen(boss, x, y)
+            for i in range(2):
+                spread = (i - 0.5) * 16
+                NS._spawn_axe(boss, gx + i * 6 * f, gy - 4, tx + spread,
+                              ty + spread * 0.4, arc=14 + i * 6)
+            boss._khal_axe_spawned = True
+            NS._spark_star(surface, gx, gy, int(18 * fs), P["fire_hot"], 235,
+                           spikes=8, rot=phase * 2.0, core=P["fire_white"])
+        if progress < 0.30 or progress > 0.8:
+            boss._khal_axe_spawned = False
 
-            # ORIGINAL-MAX: orb target menyala saat pelemparan
-            orb_pulse = 0.6 + 0.4 * math.sin(phase * 6)
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_dark"], int(180 * orb_pulse)),
-                                  (int(tx), int(ty)), 10)
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], int(230 * orb_pulse)),
-                                  (int(tx), int(ty)), 7)
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], int(255 * orb_pulse)),
-                                  (int(tx), int(ty)), 4)
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_white"], 255),
-                                  (int(tx), int(ty)), 2)
-
-
-    # ===================================================================
-    # SKILL W: CALL OF THE WILD (Summon boar + wolf)
-    # ===================================================================
-    def _draw_call_of_wild_ground(surface, boss, x, y, timer, phase):
-        """Summon circles beside Khalros."""
-        duration = 60
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        pulse = math.sin(phase * 2) * 0.3 + 0.7
-
-        for side, off in [(-1, -40), (1, 40)]:
-            sx = x + off
-            sy = y + 32
-            radius = int(20 + progress * 10)
-            _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["fire_dark"], int(180 * pulse)),
-                     (sx - radius, sy - radius // 3, radius * 2, radius // 1.5))
-            _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["fire_bright"], int(150 * pulse)),
-                     (sx - radius + 4, sy - radius // 3 + 2,
-                      radius * 2 - 8, radius // 1.5 - 4))
-
-            # Rune symbols
+        # STEADY: angin berputar mengelilingi badan + sisa bara
+        if 0.34 <= progress < 0.9:
+            vis = 1.0 - abs(progress - 0.55) / 0.35
+            vis = max(0.0, min(1.0, vis))
+            NS._wind_sweep(surface, x, y - 18, int(34 * fs),
+                           int(150 * vis), phase * 2.4, arcs=3)
             for i in range(4):
-                angle = phase * 0.3 + i * math.pi / 2
-                rx = sx + int(math.cos(angle) * (radius - 3))
-                ry = sy + int(math.sin(angle) * (radius // 3))
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], int(200 * pulse)),
-                          (rx, ry), 2)
+                t = (phase * 0.9 + i * 0.25) % 1.0
+                ex = x - f * (10 + t * 34) + math.sin(t * 6 + i) * 6
+                ey = y - 8 - t * 26
+                NS._draw_ember(surface, ex, ey, 1, int(190 * vis * (1 - t)))
 
+        # IMPACT di target: splat dua ring + bekas cakar di tanah
+        if 0.55 < progress < 0.95:
+            imp = 1 - abs(progress - 0.72) / 0.20
+            imp = max(0.0, min(1.0, imp))
+            ir = int((8 + imp * 24) * fs)
+            ia = NS._alpha(235 * imp)
+            NS._glow(surface, tx, ty, int(26 * fs), P["fire_mid"],
+                     int(150 * imp))
+            NS._ground_ring(surface, tx, ty, ir, P["fire_bright"],
+                            P["fire_glow"], ia, thickness=3, softness=7)
+            NS._ground_ring(surface, tx, ty, int(ir * 0.5), P["fire_hot"],
+                            P["fire_white"], int(ia * 0.7), thickness=2,
+                            softness=5)
+            for i in range(3):
+                ang = i * 1.05 - 0.5
+                NS._jagged_crack(surface, tx, ty, ang, ir * 1.15,
+                                 (P["shadow_deep"], P["fire_bright"]),
+                                 int(200 * imp), seed=33 + i, width=2)
+            NS._spark_star(surface, tx, ty, int(15 * fs * imp),
+                           P["fire_glow"], ia, spikes=6, rot=progress * 7,
+                           core=P["fire_white"])
+            if imp > 0.55 and not getattr(boss, "_khal_q_marked", False):
+                NS.note_ground_mark(boss, tx, ty + 12, 24, 80)
+                boss._khal_q_marked = True
+            if imp < 0.4:
+                boss._khal_q_marked = False
+
+    # ===================================================================
+    # SKILL W - CALL OF WILD (panggilan pack: howl + slow + pulih)
+    # ===================================================================
+    def _draw_call_of_wild_ground_legacy(surface, boss, x, y, timer, phase):
+        """Alias lama - sama dengan telegraph W."""
+        _NS_khalros._draw_call_of_wild_ground(surface, boss, x, y, timer,
+                                              phase)
 
     def _draw_call_of_wild(surface, boss, x, y, timer, phase):
-        """Boar (left) and wolf (right) rising from summon circles."""
         duration = 60
-        progress = max(0.0, min(1.0, 1 - timer / duration))
+        NS = _NS_khalros
+        P = NS.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        fs = NS._fx_scale(boss)
+        f = getattr(boss, "direction", 1) or 1
+        gy = y + NS.GROUND_DY
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["w"], surface)
 
-        # Boar on left
-        boar_x = x - 40
-        boar_y = y + 20
+        # AKTIVASI: pilar suara + shockwave ganda + bintang 8-spike
+        if progress < 0.28:
+            k = 1 - progress / 0.28
+            a = NS._alpha(250 * k)
+            NS._draw_wind_column(surface, x, y + 24, int((70 + 60 * k) * fs),
+                                 int(9 * fs), phase * 2.0)
+            NS._glow(surface, x, y - 20, int(34 * fs), P["fire_mid"],
+                     int(150 * k))
+            for i, (rr, th) in enumerate(((1.0, 4), (0.7, 2))):
+                NS._ground_ring(surface, x, gy, int(r * rr * progress * 2.4),
+                                P["fire_bright"] if i == 0 else P["fire_glow"],
+                                P["fire_hot"], int(a * (1 - i * 0.35)),
+                                thickness=th, softness=8)
+            NS._spark_star(surface, x, y - 26, int(22 * fs), P["fire_glow"],
+                           a, spikes=8, rot=progress * 6, core=P["fire_white"])
+            # gelombang suara: 3 cincin melebar dari kepala
+            for i in range(3):
+                t = (progress * 2.6 + i * 0.3) % 1.0
+                rr = int((16 + t * 46) * fs)
+                NS._aaline(surface, (*P["fire_hot"], int(180 * (1 - t))),
+                           (x - rr, y - 30), (x - rr * 0.7, y - 40), 2)
+                NS._aaline(surface, (*P["fire_hot"], int(180 * (1 - t))),
+                           (x + rr, y - 30), (x + rr * 0.7, y - 40), 2)
+
+        # STEADY: pack berlari mengelilingi caster (2 serigala + 1 babi)
         if progress > 0.2:
-            rise_t = min(1.0, (progress - 0.2) / 0.5)
-            _NS_khalros._draw_boar(surface, boar_x, boar_y - int(20 * rise_t),
-                       -1, phase, alpha=int(255 * rise_t))
-
-        # Wolf on right
-        wolf_x = x + 40
-        wolf_y = y + 20
-        if progress > 0.3:
-            rise_t = min(1.0, (progress - 0.3) / 0.5)
-            _NS_khalros._draw_wolf(surface, wolf_x, wolf_y - int(20 * rise_t),
-                       1, phase, alpha=int(255 * rise_t))
-
-
-    def _draw_boar(surface, cx, cy, facing, phase, alpha=255):
-        """Draw a boar creature."""
-        # Body shadow
-        _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["shadow_deep"], alpha),
-                 (cx - 16, cy - 4, 32, 16))
-
-        # Body
-        _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["boar_darkest"], alpha),
-                 (cx - 15, cy - 6, 30, 15))
-        _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["boar_dark"], alpha),
-                 (cx - 13, cy - 5, 26, 12))
-        _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["boar_mid"], alpha),
-                 (cx - 11, cy - 4, 22, 9))
-        _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["boar_light"], alpha),
-                 (cx - 9, cy - 5, 18, 5))
-
-        # Head (front)
-        hx = cx + facing * 13
-        hy = cy - 3
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["boar_darkest"], alpha), (hx, hy), 6)
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["boar_dark"], alpha), (hx, hy), 5)
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["boar_mid"], alpha), (hx - facing, hy - 1), 3)
-
-        # Snout
-        _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["boar_darkest"], alpha), [
-            (hx + facing * 4, hy - 1),
-            (hx + facing * 8, hy),
-            (hx + facing * 8, hy + 3),
-            (hx + facing * 4, hy + 2),
-        ])
-        _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["boar_dark"], alpha), [
-            (hx + facing * 5, hy),
-            (hx + facing * 7, hy + 1),
-            (hx + facing * 7, hy + 2),
-            (hx + facing * 5, hy + 2),
-        ])
-
-        # Tusks (curved white)
-        for side_off in (-1, 1):
-            tusk_y = hy + 1 + side_off
-            _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["metal_light"], alpha), [
-                (hx + facing * 6, tusk_y),
-                (hx + facing * 10, tusk_y - 2 * side_off),
-                (hx + facing * 8, tusk_y - side_off),
-            ])
-            _NS_khalros._aaline(surface, (*_NS_khalros.PALETTE["metal_shine"], alpha),
-                    (hx + facing * 7, tusk_y - side_off),
-                    (hx + facing * 9, tusk_y - 2 * side_off), 1)
-
-        # Eye
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], alpha), (hx - facing, hy - 2), 1)
-
-        # Ears
-        _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["boar_darkest"], alpha), [
-            (hx - facing * 2, hy - 5),
-            (hx + facing, hy - 8),
-            (hx + facing * 3, hy - 5),
-        ])
-
-        # Legs
-        for lx in (cx - 8, cx - 4, cx + 4, cx + 8):
-            offset_y = int(math.sin(phase * 2 + lx) * 1)
-            _NS_khalros._rect(surface, (*_NS_khalros.PALETTE["boar_darkest"], alpha),
-                  (lx - 1, cy + 6, 3, 6 + offset_y))
-            _NS_khalros._rect(surface, (*_NS_khalros.PALETTE["boar_dark"], alpha),
-                  (lx, cy + 6, 2, 5 + offset_y))
-
-        # Spiky back mane
-        for i, mx in enumerate([-8, -4, 0, 4, 8]):
-            _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["hair_darkest"], alpha), [
-                (cx + mx - 1, cy - 6),
-                (cx + mx + 1, cy - 6),
-                (cx + mx, cy - 10 - (i % 2)),
-            ])
-
-        # Tail
-        _NS_khalros._aaline(surface, (*_NS_khalros.PALETTE["boar_darkest"], alpha),
-                (cx - facing * 14, cy - 2),
-                (cx - facing * 18, cy - 5), 2)
-
-
-    def _draw_wolf(surface, cx, cy, facing, phase, alpha=255):
-        """Draw a wolf creature."""
-        # Body shadow
-        _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["shadow_deep"], alpha),
-                 (cx - 15, cy - 3, 30, 14))
-
-        # Body (leaner than boar)
-        _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["wolf_darkest"], alpha),
-                 (cx - 14, cy - 5, 28, 13))
-        _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["wolf_dark"], alpha),
-                 (cx - 12, cy - 4, 24, 10))
-        _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["wolf_mid"], alpha),
-                 (cx - 10, cy - 3, 20, 7))
-        _NS_khalros._ellipse(surface, (*_NS_khalros.PALETTE["wolf_light"], alpha),
-                 (cx - 8, cy - 4, 16, 4))
-
-        # Head
-        hx = cx + facing * 12
-        hy = cy - 3
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["wolf_darkest"], alpha), (hx, hy), 6)
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["wolf_dark"], alpha), (hx, hy), 5)
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["wolf_mid"], alpha), (hx - facing, hy - 1), 3)
-
-        # Snout (pointier than boar)
-        _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["wolf_darkest"], alpha), [
-            (hx + facing * 3, hy),
-            (hx + facing * 9, hy),
-            (hx + facing * 8, hy + 3),
-            (hx + facing * 3, hy + 2),
-        ])
-        _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["wolf_dark"], alpha), [
-            (hx + facing * 4, hy + 1),
-            (hx + facing * 8, hy + 1),
-            (hx + facing * 7, hy + 2),
-            (hx + facing * 4, hy + 2),
-        ])
-
-        # Nose
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["shadow_deep"], alpha),
-                  (hx + facing * 8, hy + 1), 1)
-
-        # Fangs
-        _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["white"], alpha), [
-            (hx + facing * 5, hy + 2),
-            (hx + facing * 6, hy + 4),
-            (hx + facing * 7, hy + 2),
-        ])
-
-        # Glowing red eye (feral)
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], alpha), (hx - facing, hy - 2), 1)
-        _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["red_bright"], alpha), (hx - facing, hy - 2), 1)
-
-        # Pointy ears
-        for ear_off in (-3, 1):
-            _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["wolf_darkest"], alpha), [
-                (hx + facing * ear_off, hy - 5),
-                (hx + facing * (ear_off + 1), hy - 9),
-                (hx + facing * (ear_off + 3), hy - 5),
-            ])
-            _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["wolf_dark"], alpha), [
-                (hx + facing * (ear_off + 1), hy - 5),
-                (hx + facing * (ear_off + 2), hy - 8),
-                (hx + facing * (ear_off + 3), hy - 5),
-            ])
-
-        # Legs (longer than boar)
-        for lx in (cx - 8, cx - 3, cx + 3, cx + 8):
-            offset_y = int(math.sin(phase * 2.5 + lx) * 1)
-            _NS_khalros._rect(surface, (*_NS_khalros.PALETTE["wolf_darkest"], alpha),
-                  (lx - 1, cy + 5, 3, 7 + offset_y))
-            _NS_khalros._rect(surface, (*_NS_khalros.PALETTE["wolf_dark"], alpha),
-                  (lx, cy + 5, 2, 6 + offset_y))
-
-        # Bushy tail
-        _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["wolf_darkest"], alpha), [
-            (cx - facing * 12, cy - 2),
-            (cx - facing * 20, cy - 4),
-            (cx - facing * 18, cy + 2),
-            (cx - facing * 12, cy),
-        ])
-        _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["wolf_dark"], alpha), [
-            (cx - facing * 13, cy - 2),
-            (cx - facing * 18, cy - 3),
-            (cx - facing * 16, cy + 1),
-            (cx - facing * 13, cy),
-        ])
-
-        # Fur tuft on back
-        _NS_khalros._aaline(surface, (*_NS_khalros.PALETTE["wolf_high"], alpha),
-                (cx - 5, cy - 5), (cx + 5, cy - 5), 1)
-
+            vis = max(0.0, min(1.0, (progress - 0.2) / 0.22)) * \
+                max(0.0, min(1.0, (0.98 - progress) / 0.12))
+            for i, kind in enumerate(("wolf", "boar", "wolf")):
+                ang = phase * 0.85 + i * math.tau / 3
+                rr = r * 0.74
+                bx = x + math.cos(ang) * rr
+                by = gy + math.sin(ang) * rr * 0.42 - 2
+                alpha = NS._alpha(255 * vis)
+                if kind == "boar":
+                    NS._draw_boar(surface, bx, by, -1 if math.cos(ang) < 0 else 1,
+                                  phase * 3 + i, alpha)
+                else:
+                    NS._draw_wolf(surface, bx, by,
+                                  -1 if math.cos(ang) < 0 else 1,
+                                  phase * 3.4 + i, alpha)
+                NS._draw_dust_puff(surface, bx, gy + math.sin(ang) * rr * 0.42,
+                                   8, int(120 * vis), seed=i * 3)
+                # bara mengikuti hidung binatang
+                NS._draw_ember(surface, bx + (12 if math.cos(ang) > 0 else -12),
+                               by - 8, 2, int(200 * vis))
+            # uap pemulihan mengalir ke badan caster (heal)
+            for i in range(6):
+                t = (phase * 0.6 + i * 0.17) % 1.0
+                ang = i * math.tau / 6
+                hx = x + math.cos(ang) * r * 0.5 * (1 - t)
+                hy = gy - t * 46
+                a = int(210 * (1 - t))
+                NS._aacircle(surface, (*P["gold_light"], a), (int(hx), int(hy)),
+                             2)
+                NS._aacircle(surface, (*P["gold_shine"], a), (int(hx),
+                                                             int(hy - 1)), 1)
 
     # ===================================================================
-    # SKILL E: BOAR (fast charging boar)
+    # SKILL E - BOAR CHARGE (bantingan babi hutan + AOE pendaratan)
     # ===================================================================
-    def _draw_boar_ground(surface, boss, x, y, timer, phase):
-        """Trail of dust as boar charges."""
-        tx, ty = _NS_khalros._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 45))
-
-        # Charging trail
-        start_x = x + 15 * boss.direction
-        start_y = y + 25
-        for i in range(6):
-            t = max(0, progress - i * 0.08)
-            px = int(start_x + (tx - start_x) * t)
-            py = int(start_y + (ty - start_y) * t)
-            alpha = int(150 - i * 22)
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["leather_dark"], alpha), (px, py), 5)
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["leather_mid"], alpha), (px, py), 3)
-
-
     def _draw_boar_charge(surface, boss, x, y, timer, phase):
-        """Boar charging toward target."""
-        tx, ty = _NS_khalros._target_position(boss, x, y)
-        progress = max(0.0, min(1.0, 1 - timer / 45))
-        start_x = x + 15 * boss.direction
-        start_y = y + 25
+        duration = 45
+        NS = _NS_khalros
+        P = NS.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        fs = NS._fx_scale(boss)
+        f = getattr(boss, "direction", 1) or 1
+        gy = y + NS.GROUND_DY
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["e"], surface)
 
-        bx = int(start_x + (tx - start_x) * progress)
-        by = int(start_y + (ty - start_y) * progress)
+        # BANTING: hantaman tanah + bintang 8-spike + debu
+        if progress < 0.32:
+            k = 1 - progress / 0.32
+            NS._glow(surface, x + 20 * f, y + 6, int(30 * fs), P["fire_mid"],
+                     int(170 * k))
+            NS._spark_star(surface, x + 22 * f, y + 4, int(26 * fs * k),
+                           P["fire_hot"], NS._alpha(240 * k), spikes=8,
+                           rot=progress * 8, core=P["fire_white"])
+            for i in range(5):
+                t = i / 5.0
+                px = x + f * (18 + t * 30)
+                NS._draw_dust_puff(surface, px, gy - t * 4, int(9 + t * 9 * fs),
+                                   int(190 * k * (1 - t)), seed=i + 2)
+            NS._ground_ring(surface, x, gy, int(r * 0.55 * (0.4 + progress)),
+                            P["fire_bright"], P["fire_glow"],
+                            int(180 * k), thickness=3, softness=7)
 
-        facing = 1 if tx > x else -1
+        # STEADY: bayangan babi hutan menubruk di depan + serpihan tanah
+        if progress > 0.22:
+            vis = max(0.0, min(1.0, (progress - 0.22) / 0.2)) * \
+                max(0.0, min(1.0, (0.95 - progress) / 0.1))
+            bx = x + f * (30 + 8 * vis)
+            by = y + 26
+            NS._draw_boar(surface, bx, by, f, phase * 4.0 + 1,
+                          NS._alpha(235 * vis))
+            NS._glow(surface, bx, by - 8, int(26 * fs), P["fire_dark"],
+                     int(120 * vis))
+            for i in range(4):
+                t = (phase * 1.4 + i * 0.25) % 1.0
+                px = x - f * (14 + t * 40)
+                py = gy - math.sin(t * math.pi) * 10
+                NS._poly(surface, (*P["dust_mid"], int(190 * vis * (1 - t))),
+                         [(px, py), (px + 4, py - 3), (px + 7, py + 1),
+                          (px + 2, py + 4)])
+                NS._draw_ember(surface, px - 2, py - 2, 1,
+                               int(170 * vis * (1 - t)))
+            # retakan di jalur bantingan
+            for i in range(2):
+                NS._jagged_crack(surface, x - f * (12 + i * 26), gy,
+                                 math.pi if f > 0 else 0.0, 22 * fs,
+                                 (P["shadow_deep"], P["fire_dark"]),
+                                 int(150 * vis), seed=45 + i, width=2)
 
-        # Trail of dust/sparks
-        for i in range(5):
-            trail_t = max(0.0, progress - i * 0.06)
-            px = int(start_x + (tx - start_x) * trail_t)
-            py = int(start_y + (ty - start_y) * trail_t)
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_dark"], 150 - i * 25),
-                      (px, py), max(2, 6 - i))
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], 100 - i * 15),
-                      (px, py), max(1, 4 - i))
-
-        # The boar itself
-        _NS_khalros._draw_boar(surface, bx, by, facing, phase * 2)
-
-        # Impact at end
-        if progress > 0.85:
-            t = (progress - 0.85) / 0.15
-            intensity = 1 - t
-            radius = int(20 * intensity)
-            _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_hot"], int(230 * intensity)),
-                      (tx, ty), radius, 3)
-            for i in range(8):
-                angle = i * math.pi / 4
-                ex = tx + int(math.cos(angle) * radius)
-                ey = ty + int(math.sin(angle) * radius)
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["fire_bright"], int(200 * intensity)),
-                          (ex, ey), 2)
-
+        # AKHIR: bekas bantingan tertinggal di tanah
+        if 0.6 < progress < 0.8 and not getattr(boss, "_khal_e_marked", False):
+            NS.note_ground_mark(boss, x, gy, 30, 90)
+            boss._khal_e_marked = True
+        if progress < 0.6 or progress > 0.8:
+            boss._khal_e_marked = False
 
     # ===================================================================
-    # SKILL R: HAWK (flying projectile)
+    # SKILL R - HAWK STORM (hujan elang penyelam mengelilingi caster)
     # ===================================================================
     def _draw_hawk_summon(surface, boss, x, y, timer, phase):
-        """Hawk flies from Khalros toward target."""
         duration = 70
-        progress = max(0.0, min(1.0, 1 - timer / duration))
-        tx, ty = _NS_khalros._target_position(boss, x, y)
+        NS = _NS_khalros
+        P = NS.PALETTE
+        progress = max(0.0, min(1.0, 1 - timer / float(duration)))
+        fs = NS._fx_scale(boss)
+        gy = y + NS.GROUND_DY
+        r = NS._ring_r(boss, NS.SKILL_RADIUS["r"], surface)
+        f = getattr(boss, "direction", 1) or 1
 
-        # Spawn hawk projectile at start
-        if progress < 0.1 and not getattr(boss, "_khal_hawk_spawned", False):
-            sx = x + 5 * boss.direction
-            sy = y - 30
-            _NS_khalros._spawn_hawk(boss, sx, sy, tx, ty - 20)
-            boss._khal_hawk_spawned = True
-        if progress > 0.5:
-            boss._khal_hawk_spawned = False
+        # AKTIVASI: kolom panggilan + shockwave ganda + bintang
+        if progress < 0.22:
+            k = 1 - progress / 0.22
+            NS._draw_wind_column(surface, x, y + 30, int((90 + 70 * k) * fs),
+                                 int(13 * fs), phase * 1.7)
+            for i, rr in enumerate((0.9, 0.6)):
+                NS._ground_ring(surface, x, gy, int(r * rr * (0.3 + progress * 2.2)),
+                                P["fire_bright"] if i == 0 else P["wind_shine"],
+                                P["fire_glow"], int(200 * k * (1 - i * 0.4)),
+                                thickness=4 - i, softness=9)
+            NS._spark_star(surface, x, y - 30, int(24 * fs), P["fire_glow"],
+                           NS._alpha(250 * k), spikes=8, rot=progress * 5,
+                           core=P["fire_white"])
+            # 4 kapak-bulu terlempar ke langit
+            for i in range(4):
+                ang = i * math.tau / 4 + progress * 3.0
+                fx2 = x + math.cos(ang) * 26 * fs
+                fy2 = y - 30 - math.sin(progress * 6 + i) * 14
+                NS._poly(surface, (*P["hawk_light"], NS._alpha(220 * k)),
+                         [(fx2, fy2), (fx2 + 5, fy2 + 3), (fx2 + 1, fy2 + 9),
+                          (fx2 - 4, fy2 + 3)])
 
-        # Feathers falling from spawn point
-        if progress < 0.4:
-            for i in range(3):
-                angle = phase + i * math.pi * 2 / 3
-                fx = x + int(math.cos(angle) * 20)
-                fy = y - 30 + int(progress * 30) + int(math.sin(angle) * 5)
-                alpha = int(180 * (1 - progress / 0.4))
-                _NS_khalros._poly(surface, (*_NS_khalros.PALETTE["hawk_dark"], alpha), [
-                    (fx, fy),
-                    (fx + 2, fy + 4),
-                    (fx - 2, fy + 4),
-                ])
-                _NS_khalros._aacircle(surface, (*_NS_khalros.PALETTE["hawk_mid"], alpha), (fx, fy + 2), 1)
+        # STEADY: 6 elang penyelam mengorbit di 0.62 R + bayangan penyelam
+        if progress > 0.18:
+            vis = max(0.0, min(1.0, (progress - 0.18) / 0.18)) * \
+                max(0.0, min(1.0, (0.99 - progress) / 0.12))
+            n_hawks = 6
+            for i in range(n_hawks):
+                ang = phase * 1.15 + i * math.tau / n_hawks
+                dive = math.sin(progress * 6.0 + i * 1.2)
+                rr = r * (0.62 + 0.16 * dive)
+                hx = x + math.cos(ang) * rr
+                hy = y - 44 - dive * 26 + math.sin(ang) * rr * 0.22
+                hf = -1 if math.cos(ang) < 0 else 1
+                NS._draw_flying_hawk(surface, hx, hy, hf,
+                                     phase * 6.0 + i * 1.7,
+                                     size=1.15 + 0.15 * dive)
+                NS._glow(surface, hx, hy, int(16 * fs), P["fire_dark"],
+                         int(80 * vis))
+                # bayangan penyelam di lantai (memberi kedalaman)
+                shx = x + math.cos(ang) * rr * 0.86
+                shy = gy + math.sin(ang) * rr * 0.86 * 0.42
+                NS._ellipse(surface, (*P["shadow_deep"], int(120 * vis)),
+                            (shx - 10, shy - 3, 20, 6))
+                # bulu rontok
+                t = (phase * 0.7 + i * 0.2) % 1.0
+                NS._poly(surface, (*P["hawk_high"], int(170 * vis * (1 - t))),
+                         [(hx + 3, hy + 4 + t * 22), (hx + 7, hy + 7 + t * 22),
+                          (hx + 3, hy + 11 + t * 22)])
+            # angin berputar di tanah (2 lengan spiral)
+            for arm in range(2):
+                for i in range(7):
+                    t = i / 7.0
+                    ang2 = phase * 1.7 + arm * math.pi + t * math.tau * 0.6
+                    rr2 = r * (0.30 + 0.62 * t)
+                    wx = x + math.cos(ang2) * rr2
+                    wy = gy + math.sin(ang2) * rr2 * 0.4
+                    a = int(150 * vis * (1 - t * 0.7))
+                    NS._aaline(surface, (*P["wind_light"], a), (wx, wy),
+                               (x + math.cos(ang2 + 0.28) * rr2,
+                                gy + math.sin(ang2 + 0.28) * rr2 * 0.4),
+                               3 - (i % 3))
+                    NS._aacircle(surface, (*P["wind_shine"], a),
+                                 (int(wx), int(wy)), 1)
 
+        # IMPACT: target dihantam + bekas di tanah
+        if 0.4 < progress < 0.9:
+            imp = 1 - abs(progress - 0.62) / 0.26
+            imp = max(0.0, min(1.0, imp))
+            tx, ty = NS._target_position(boss, x, y)
+            NS._ground_ring(surface, tx, ty, int((12 + 22 * imp) * fs),
+                            P["wind_light"], P["wind_shine"],
+                            int(190 * imp), thickness=3, softness=7)
+            NS._spark_star(surface, tx, ty, int(18 * fs * imp), P["fire_glow"],
+                           NS._alpha(220 * imp), spikes=6, rot=progress * 5,
+                           core=P["white"])
+            if imp > 0.6 and not getattr(boss, "_khal_r_marked", False):
+                NS.note_ground_mark(boss, tx, ty + 10, 26, 85)
+                boss._khal_r_marked = True
+            if imp < 0.4:
+                boss._khal_r_marked = False
 
-    # ===================================================================
-    # Backward compatible alias
-    # ===================================================================
     def draw_boss(surface, boss, x, y):
         _NS_khalros.draw_khalros(surface, boss, x, y)
 

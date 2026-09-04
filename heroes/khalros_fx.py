@@ -1,13 +1,17 @@
 # ============================================================================
 # heroes/khalros_fx.py
 # ----------------------------------------------------------------------------
-# LAPISAN FX HIDUP + RENDERER PROSEDURAL KHALROS "THE BEASTLORD"
-# (boss Level 2 / boss-hero).
+# LAPISAN FX HIDUP KHALROS "THE BEASTLORD" (boss Level 2 / boss-hero).
 #
-# Satu modul mandiri yang menggantikan SELURUH sistem visual & gameplay
-# KHALROS secara prosedural tanpa aset eksternal:
+# V2: BADAN TIDAK LAGI DIGAMBAR DI SINI. Rig pixel masterwork hidup di
+# ``bosses/level2.py::_NS_khalros`` (satu sumber kebenaran untuk jalur boss,
+# lane hero, dan portrait) - lihat docs/KHALROS_V2_RENDERER.md. Modul ini
+# tinggal lapisan HIDUP yang tidak mungkin di-cache: trail ayunan, partikel,
+# proyektil, FX skill, impact, dan game feel. ``KhalrosRenderer`` dipertahankan
+# hanya sebagai penentu state + geometri senjata (dipakai trail & debug), dan
+# ``draw_character`` menjadi jembatan tipis ke rig boss.
 #
-#   1. RENDER        - KhalrosRenderer (layered, silhouette kuat)
+#   1. STATE         - KhalrosRenderer.state_for + geometry kapak (rig boss)
 #   2. ANIMATION     - AnimationController (IDLE/WALK/RUN/ATTACK/SWING/
 #                      CAST/SKILL/HIT/HURT/DEATH/CHARGE/SPECIAL, dt-based)
 #   3. SWING ATTACK  - ayunan kapak arc-based + window aktif + hitbox
@@ -23,7 +27,8 @@
 # Aturan pakai (sama dengan abaddon_fx / razak_fx):
 #   * ``draw_ground_layer`` -> pre-pass  (di bawah sprite)
 #   * ``draw_live_layer``   -> post-pass (di atas sprite)
-#   * ``render_khalros``    -> entry all-in-one untuk draw_khalros (boss)
+#   * ``render_khalros``    -> entry all-in-one (ground + badan via rig boss
+#                              + live FX); BUKAN renderer badan
 #   * ``attach`` / ``owns`` -> boss memutuskan apakah efek diambil alih
 #   * benturan               -> hit_stop(0.03-0.08) + shake via combat_feel
 #
@@ -1033,44 +1038,89 @@ class KhalrosRenderer(object):
         return "IDLE"
 
     # ------------------------------------------------------------------
-    # Grip & ujung kapak dalam ruang layar (dipakai renderer + trail).
-    def weapon_grip(self, x, y, facing):
-        # grip bahu (anchor kaki di y; bahu ~ y-20)
+    # Geometri kapak dalam ruang LAYAR. V2: angka diambil dari rig boss
+    # (`_NS_khalros._axe_grip_screen` / `_axe_tip_screen`) supaya trail,
+    # hitbox, dan bilah yang digambar tidak pernah berbeda satu piksel pun
+    # dengan kapak di sprite. ``SHOULDER_DX``/``WEAPON_LEN`` di bawah ini
+    # tetap ada sebagai fallback kalau rig belum bisa diimpor.
+    def _rig(self):
+        try:
+            from bosses.level2 import _NS_khalros as G
+            return G
+        except Exception:                 # pragma: no cover
+            return None
+
+    def weapon_grip(self, x, y, facing, boss=None):
+        G = self._rig()
+        if G is not None and boss is not None:
+            try:
+                return G._axe_grip_screen(boss, x, y)
+            except Exception:             # pragma: no cover
+                pass
         return (x + facing * SHOULDER_DX, y - 20)
 
     def weapon_angle(self, boss, facing):
-        """Sudut kapak (radian, ruang layar) sesuai state/progress."""
+        """Sudut kapak (radian, ruang layar) dari keyframe rig."""
+        G = self._rig()
         state = self.state_for(boss)
         prog = float(getattr(boss, "_khal_attack_progress", 0.0))
+        if G is not None and state in ("ATTACK", "CHARGE", "SKILL",
+                                       "SPECIAL", "IDLE", "WALK", "RUN"):
+            try:
+                act = {"ATTACK": "attack", "CHARGE": "charge",
+                       "SKILL": "cast", "SPECIAL": "cast",
+                       "RUN": "walk", "WALK": "walk"}.get(state, "idle")
+                pose = G._attack_pose(prog) if act == "attack" else None
+                if pose is not None:
+                    return pose["arm_a"] + 0.72
+                return -1.25 + math.sin(float(getattr(boss, "pulse", 0.0))
+                                         * 0.7) * 0.06
+            except Exception:             # pragma: no cover
+                pass
         if state == "ATTACK":
-            # ANTICIPATION(-2.5) -> WINDUP(-2.2) -> SWING(cepat ke +0.7)
-            # -> IMPACT -> FOLLOW -> RECOVERY
-            if prog < 0.25:                       # wind-up (angkat)
-                base = _lerp(-1.7, -2.4, _ease_in(prog / 0.25))
-            elif prog < 0.6:                      # swing cepat
-                p = (prog - 0.25) / 0.35
-                base = _lerp(-2.4, 0.7, _ease_in_out(p))
-            else:                                 # follow-through + recovery
-                p = (prog - 0.6) / 0.4
-                base = _lerp(0.7, -0.4, _ease_out(p))
-            return base
+            if prog < 0.25:
+                return _lerp(-1.7, -2.4, _ease_in(prog / 0.25))
+            if prog < 0.6:
+                return _lerp(-2.4, 0.7, _ease_in_out((prog - 0.25) / 0.35))
+            return _lerp(0.7, -0.4, _ease_out((prog - 0.6) / 0.4))
         if state in ("SKILL", "SPECIAL", "CHARGE"):
             return -1.9 + math.sin(getattr(boss, "pulse", 0.0)) * 0.05
-        # idle / walk: kapak disandang menyamping
         return -0.5 + math.sin(getattr(boss, "pulse", 0.0) * 0.7) * 0.06
 
     def swing_tip(self, boss, x, y):
-        """[module-level helper dipanggil director] ujung kapak + window."""
+        """[dipanggil director] grip + ujung bilah + window aktif.
+
+        Dua sumber kebenaran itu bahaya: trail bisa muncul beberapa piksel
+        dari bilah yang kelihatan. Karena itu angka diambil dari rig, dan
+        ``WEAPON_LEN`` lama hanya dipakai bila rig tidak tersedia.
+        """
         facing = int(getattr(boss, "direction", 1)) or 1
         active = bool(getattr(boss, "_khal_attack_active", False))
         prog = float(getattr(boss, "_khal_attack_progress", 0.0))
-        gx, gy = self.weapon_grip(x, y, facing)
+        G = self._rig()
+        if G is not None:
+            try:
+                gx, gy = G._axe_grip_screen(boss, x, y)
+                tx, ty = G._axe_tip_screen(boss, x, y)
+                ang = math.atan2(ty - gy, (tx - gx) * (1.0 if facing >= 0
+                                                        else -1.0))
+                if not active:
+                    return {"active": False, "tip_x": tx, "tip_y": ty,
+                            "grip_x": gx, "grip_y": gy, "ang": ang,
+                            "trailing": False, "swing_id": None,
+                            "impact_frame": G.ATTACK_IMPACT}
+                trailing = 0.2 <= prog <= 0.85
+                sid = int(getattr(boss, "_khal_attack_frame", 0) // 4)
+                return {"active": True, "tip_x": tx, "tip_y": ty,
+                        "grip_x": gx, "grip_y": gy, "ang": ang,
+                        "trailing": trailing, "swing_id": sid,
+                        "impact_frame": G.ATTACK_IMPACT, "ap": prog}
+            except Exception:             # pragma: no cover
+                pass
+        gx, gy = self.weapon_grip(x, y, facing, boss)
         ang = self.weapon_angle(boss, facing)
-        # transformasi lokal -> dunia (flip x oleh facing)
-        lx = math.cos(ang) * WEAPON_LEN
-        ly = math.sin(ang) * WEAPON_LEN
-        tip_x = gx + lx * facing
-        tip_y = gy + ly
+        tip_x = gx + math.cos(ang) * WEAPON_LEN * facing
+        tip_y = gy + math.sin(ang) * WEAPON_LEN
         if not active:
             return {"active": False, "tip_x": tip_x, "tip_y": tip_y,
                     "grip_x": gx, "grip_y": gy, "ang": ang,
@@ -1084,265 +1134,55 @@ class KhalrosRenderer(object):
 
     # ------------------------------------------------------------------
     # Draw badan lengkap (layered).
-    def draw(self, surface, boss, x, y, fx, progress=0.0):
-        P = PALETTE
-        facing = int(getattr(boss, "direction", 1)) or 1
-        state = self.state_for(boss)
-        pulse = float(getattr(boss, "pulse", 0.0))
-        flash = int(getattr(boss, "hurt_flash_timer", 0) or 0)
-
-        bob = int(math.sin(pulse * 0.7) * 2)
-        if state in ("WALK", "RUN"):
-            ph = pulse * (2.2 if state == "WALK" else 3.0)
-            bob = -int(abs(math.sin(ph * 1.3)) * 3)
-            sway = int(math.sin(ph) * 2)
-        else:
-            sway = int(math.sin(pulse * 0.6) * 1)
-        if state == "ATTACK":
-            bob = 0
-            lunge = int(math.sin(progress * math.pi) * 5) * facing
-            x += lunge
-        if state == "CHARGE":
-            bob = 3
-            x -= facing * 2
-        if state == "DEATH":
-            return self._draw_death(surface, x, y, facing, pulse)
-
-        # ---- bayangan ----
-        self._shadow(surface, x + sway, y + 6)
-        # ---- wisps primal (dekorasi belakang) ----
-        self._wisps(surface, x + sway, y - 18, pulse,
-                    intense=(state in ("ATTACK", "SKILL", "SPECIAL", "CHARGE")))
-
-        cx = x + sway
-        cy = y + bob
-        back_leg, front_leg = self._leg_phase(state, pulse)
-
-        # ---- BACK LIMB (kaki/bra tanpa hadap) ----
-        self._leg(surface, cx - 6, cy, back_leg, 1, P["skin_dark"])
-        self._back_arm(surface, cx, cy, facing, state, pulse, P)
-
-        # ---- BODY / TORSO ----
-        self._torso(surface, cx, cy, facing, state, pulse, P)
-        # ---- ARMOR (dada kulit + tulang) ----
-        self._armor(surface, cx, cy, facing, P)
-        # ---- HEAD (helm binatang + tanduk) ----
-        self._head(surface, cx, cy - HEAD_DY + 30, facing, pulse, state, P)
-
-        # ---- WEAPON (kapak, rotasi arc) ----
-        grip = self.weapon_grip(x, y, facing)
-        ang = self.weapon_angle(boss, facing)
-        self._axe(surface, grip[0], grip[1], ang, facing, state, P)
-
-        # ---- FRONT LIMB (bra depan memegang kapak) ----
-        self._front_arm(surface, cx, cy, grip, facing, state, progress, P)
-
-        # ---- HIGHLIGHTS (rim + senjata) ----
-        self._highlights(surface, cx, cy, facing, P)
-
-        # ---- hurt flash (overlay putih hangat) ----
-        if flash > 0:
-            self._hurt_flash(surface, cx, y, flash)
-
     # ------------------------------------------------------------------
-    def _shadow(self, surface, x, y):
-        _ellipse_shadow(surface, x, y, 26, 8)
+    # V2: TIDAK ADA RIG BADAN DI SINI.
+    #
+    # Dulu kelas ini menggambar kepala/badan/lengan sendiri (kotak-kotak
+    # kasar) dan hasilnya menimpa renderer boss. Sekarang satu-satunya
+    # sumber bentuk adalah `_NS_khalros` di bosses/level2.py; `draw` &
+    # `draw_body` tinggal jembatan supaya pemanggil lama (director,
+    # demo __main__, jalur portrait/cache) tetap dapat sprite yang SAMA.
+    def draw(self, surface, boss, x, y, fx=None, progress=0.0):
+        self.draw_body(surface, boss, x, y)
 
-    def _wisps(self, surface, x, y, pulse, intense=False, facing=1, trail=False):
-        P = PALETTE
-        n = 5 if intense else 3
-        for i in range(n):
-            a = pulse * 1.7 + i * 1.3
-            wx = x + math.cos(a) * (10 + i * 3)
-            wy = y - 10 - ((pulse * 18 + i * 12) % 34)
-            _disc(surface, P["fire_dark"], _a(120 if intense else 80),
-                  wx, wy, 2)
-            _disc(surface, P["fire_mid"], _a(150 if intense else 100),
-                  wx, wy, 1)
+    def draw_body(self, surface, boss, x, y):
+        """Delegasi ke renderer boss; diam kalau modul boss tak tersedia.
 
-    def _leg_phase(self, state, pulse):
-        if state in ("WALK", "RUN"):
-            ph = pulse * (2.2 if state == "WALK" else 3.0)
-            return math.sin(ph), math.sin(ph + math.pi)
-        return 0.0, 0.0
-
-    def _leg(self, surface, hx, cy, swing, side, col):
-        P = PALETTE
-        # paha + betis + kaki
-        ly = cy - 30 + swing * 4
-        _poly(surface, P["leather_darkest"],
-              [(hx - 6, cy - 46), (hx + 6, cy - 46), (hx + 5, ly), (hx - 5, ly)])
-        _poly(surface, P["leather_mid"],
-              [(hx - 4, cy - 45), (hx + 4, cy - 45), (hx + 3, ly), (hx - 3, ly)],
-              alpha=235)
-        # kaki (cakar)
-        _poly(surface, P["skin_dark"],
-              [(hx - 6, ly), (hx + 6, ly), (hx + 4, ly + 12), (hx - 4, ly + 12)])
-        _rect4(surface, P["skin_darkest"], 235, hx - 6, ly + 10, 12, 4)
-
-    def _back_arm(self, surface, cx, cy, facing, state, pulse, P):
-        # bra belakang (tanpa hadap) - sedikit di belakang torso
-        bx = cx - facing * 6
-        by = cy - 36
-        _poly(surface, P["skin_darkest"],
-              [(bx - 4, by - 6), (bx + 4, by - 6), (bx + 2, by + 22),
-               (bx - 2, by + 22)])
-        _poly(surface, P["skin_dark"],
-              [(bx - 3, by - 5), (bx + 3, by - 5), (bx + 1, by + 21),
-               (bx - 1, by + 21)], alpha=235)
-
-    def _torso(self, surface, cx, cy, facing, state, pulse, P):
-        # torso otot (trapezoid lebar bahu -> pinggang)
-        sh_y = cy - SHOULDER_DY + 30
-        hip_y = cy - 6
-        _poly(surface, P["skin_darkest"],
-              [(cx - 18, sh_y - 6), (cx + 18, sh_y - 6),
-               (cx + 12, hip_y + 6), (cx - 12, hip_y + 6)])
-        _poly(surface, P["skin_mid"],
-              [(cx - 16, sh_y - 4), (cx + 16, sh_y - 4),
-               (cx + 11, hip_y + 4), (cx - 11, hip_y + 4)], alpha=235)
-        # dada (highlight tengah)
-        _poly(surface, P["skin_light"],
-              [(cx - 10, sh_y), (cx + 10, sh_y), (cx + 6, hip_y), (cx - 6, hip_y)],
-              alpha=200)
-        # perut (shading)
-        _poly(surface, P["skin_dark"],
-              [(cx - 8, sh_y + 14), (cx + 8, sh_y + 14), (cx + 5, hip_y),
-               (cx - 5, hip_y)], alpha=160)
-
-    def _armor(self, surface, cx, cy, facing, P):
-        sh_y = cy - SHOULDER_DY + 30
-        # dada kulit + sabuk tulang
-        _rect4(surface, P["leather_darkest"], 235, cx - 14, sh_y + 2, 28, 16)
-        _rect4(surface, P["leather_mid"], 235, cx - 13, sh_y + 3, 26, 10)
-        _rect4(surface, P["leather_light"], 220, cx - 12, sh_y + 4, 24, 4)
-        # tulang silang di dada
-        _seg(surface, P["leather_high"],
-             _a(200), cx - 9, sh_y + 4, cx + 9, sh_y + 16, 3)
-        _seg(surface, P["leather_high"], 200, cx + 9, sh_y + 4, cx - 9, sh_y + 16, 3)
-        # sabuk + gesper emas kepala binatang
-        _rect4(surface, P["leather_darkest"], 235, cx - 15, cy - 14, 30, 7)
-        _aacircle(surface, P["gold_dark"], (cx, cy - 10), 5)
-        _aacircle(surface, P["gold_mid"], (cx, cy - 10), 4)
-        _aacircle(surface, P["gold_light"], (cx - 1, cy - 11), 2)
-        # bahu (pauldron kulit)
-        for s in (-1, 1):
-            _poly(surface, P["leather_darkest"],
-                  [(cx + s * 14, sh_y - 4), (cx + s * 22, sh_y - 2),
-                   (cx + s * 18, sh_y + 8), (cx + s * 12, sh_y + 6)])
-            _poly(surface, P["leather_mid"],
-                  [(cx + s * 15, sh_y - 3), (cx + s * 20, sh_y - 1),
-                   (cx + s * 17, sh_y + 6), (cx + s * 13, sh_y + 5)], alpha=235)
-
-    def _head(self, surface, hx, hy, facing, pulse, state, P):
-        # hx,hy = pusat kepala
-        # wajah (kulit)
-        _aacircle(surface, P["skin_darkest"], (hx, hy), 12)
-        _aacircle(surface, P["skin_mid"], (hx, hy), 10)
-        _aacircle(surface, P["skin_light"], (hx - 1, hy - 1), 7)
-        # janggut
-        _poly(surface, P["hair_darkest"],
-              [(hx - 9, hy + 2), (hx + 9, hy + 2), (hx + 5, hy + 16),
-               (hx - 5, hy + 16)])
-        _poly(surface, P["hair_dark"],
-              [(hx - 7, hy + 3), (hx + 7, hy + 3), (hx + 4, hy + 14),
-               (hx - 4, hy + 14)], alpha=235)
-        # helm binatang (tanduk)
-        _poly(surface, P["leather_darkest"],
-              [(hx - 11, hy - 4), (hx + 11, hy - 4), (hx + 8, hy - 14),
-               (hx - 8, hy - 14)])
-        _poly(surface, P["leather_mid"],
-              [(hx - 9, hy - 5), (hx + 9, hy - 5), (hx + 6, hy - 13),
-               (hx - 6, hy - 13)], alpha=235)
-        # tanduk
-        for s in (-1, 1):
-            _poly(surface, P["leather_high"],
-                  [(hx + s * 8, hy - 12), (hx + s * 16, hy - 24),
-                   (hx + s * 10, hy - 12)])
-        # mata menyala (primal)
-        eye = P["fire_bright"] if state in ("ATTACK", "SKILL", "SPECIAL",
-                                            "CHARGE") else P["fire_mid"]
-        _disc(surface, eye, 230, hx + facing * 3, hy - 1, 2)
-        _disc(surface, P["fire_hot"], 235, hx + facing * 3, hy - 1, 1)
-        # alis garang
-        _seg(surface, P["hair_darkest"], 230, hx + facing * 1, hy - 4,
-             hx + facing * 7, hy - 6, 2)
-
-    def _axe(self, surface, gx, gy, ang, facing, state, P):
-        ca, sa = math.cos(ang), math.sin(ang)
-        nx, ny = -sa, ca
-        # gagang
-        ex = gx + ca * WEAPON_LEN
-        ey = gy + sa * WEAPON_LEN
-        _seg(surface, P["leather_darkest"], 240, gx, gy, ex, ey, 5)
-        _seg(surface, P["leather_mid"], 235, gx, gy, ex, ey, 3)
-        # kepala kapak (segitiga besar di ujung)
-        tip = (gx + ca * (WEAPON_LEN + 6), gy + sa * (WEAPON_LEN + 6))
-        w1 = (ex + nx * 15, ey + ny * 15)
-        w2 = (ex - nx * 12, ey - ny * 12)
-        _poly(surface, P["metal_darkest"], [w2, w1, tip])
-        _poly(surface, P["metal_mid"], [w2, (ex + nx * 9, ey + ny * 9), tip],
-              alpha=235)
-        _poly(surface, P["metal_light"], [w2, (ex + nx * 5, ey + ny * 5), tip],
-              alpha=210)
-        _poly(surface, P["metal_edge"], [tip, w1, (ex + nx * 9, ey + ny * 9)],
-              alpha=220)
-        # api primal di tepi kapak
-        _disc(surface, P["fire_mid"], 215, tip[0], tip[1], 4)
-        _disc(surface, P["fire_bright"], 225, tip[0], tip[1], 2)
-        _disc(surface, P["fire_hot"], 235, tip[0], tip[1], 1)
-
-    def _front_arm(self, surface, cx, cy, grip, facing, state, progress, P):
-        sh_y = cy - SHOULDER_DY + 30
-        # bra depan dari bahu ke grip kapak
-        sx = cx + facing * 12
-        sy = sh_y + 2
-        _seg(surface, P["skin_darkest"], 240, sx, sy, grip[0], grip[1], 7)
-        _seg(surface, P["skin_mid"], 235, sx, sy, grip[0], grip[1], 5)
-        # tangan (tinju) di grip
-        _aacircle(surface, P["skin_darkest"], (grip[0], grip[1]), 5)
-        _aacircle(surface, P["skin_mid"], (grip[0], grip[1]), 3)
-
-    def _highlights(self, surface, cx, cy, facing, P):
-        # rim light hangat di sisi hadap
-        sh_y = cy - SHOULDER_DY + 30
-        _seg(surface, P["skin_high"], 150, cx + facing * 16, sh_y,
-             cx + facing * 12, cy - 8, 2)
-        # shine senjata di gagang
-        _seg(surface, P["metal_shine"], 180, cx + facing * 10, sh_y + 6,
-             cx + facing * 6, cy - 6, 1)
-
-    def _hurt_flash(self, surface, cx, y, flash):
-        # overlay kilat hangat di sekitar badan (chunky, dengan mask manual)
-        P = PALETTE
-        a = _a(170 * min(1.0, flash / 8.0))
-        if a <= 4:
+        Tidak ada fallback ke "rig lama" - kalau rig boss gagal dimuat,
+        lebih baik tidak menggambar apa pun daripada menampilkan dua
+        Khalros dengan bahasa visual berbeda.
+        """
+        try:
+            from bosses.level2 import _NS_khalros as G
+        except Exception:                 # pragma: no cover
             return
-        # tubuh
-        _poly(surface, P["fire_white"],
-              [(cx - 18, y - 56), (cx + 18, y - 56),
-               (cx + 12, y - 6), (cx - 12, y - 6)], alpha=a)
-        # kepala
-        _aacircle(surface, P["fire_white"], (cx, y - 54), 11)
-        # kapak (kilat di ujung)
-        _aacircle(surface, P["fire_hot"], (cx + 40, y - 40), 6)
+        boss = boss or getattr(self, "hero", None)
+        if boss is None:
+            return
+        try:
+            action, _phase, _ap = G._resolve_pose(
+                boss, bool(getattr(boss, "_khal_moving", False)))
+        except Exception:                 # pragma: no cover
+            action = "idle"
+        rage = getattr(boss, "active_skill", None) in ("w", "r")
+        hunting = getattr(boss, "active_skill", None) in ("q", "e")
+        timer = int(getattr(boss, "active_skill_timer", 0) or 0)
+        try:
+            if action == "charge":
+                G._draw_khalros_charge(surface, boss, x, y, timer, rage)
+            elif action == "cast":
+                G._draw_khalros_cast(surface, boss, x, y,
+                                     getattr(boss, "active_skill", None),
+                                     timer, rage)
+            elif action == "attack":
+                G._draw_khalros_attack(surface, boss, x, y, rage, hunting)
+            elif action == "walk":
+                G._draw_khalros_walk(surface, boss, x, y, rage, hunting)
+            else:
+                G._draw_khalros_idle(surface, boss, x, y, rage, hunting)
+        except Exception:                 # pragma: no cover
+            pass
 
-    def _draw_death(self, surface, x, y, facing, pulse):
-        P = PALETTE
-        # roboh: badan miring + hilang perlahan (alpha menurun via caller)
-        _ellipse_shadow(surface, x, y + 4, 30, 9)
-        ang = -facing * 1.2
-        ca, sa = math.cos(ang), math.sin(ang)
-        cx, cy = x, y - 30
-        _poly(surface, P["skin_darkest"],
-              [(cx + ca * -16 - sa * 0, cy + sa * -16),
-               (cx + ca * 16, cy + sa * 16 - 6),
-               (cx + ca * 12, cy + sa * 12 + 18),
-               (cx + ca * -12, cy + sa * -12 + 18)])
-        _aacircle(surface, P["skin_mid"], (cx + ca * 8, cy + sa * 8), 9)
-        _poly(surface, P["leather_mid"],
-              [(cx + ca * -14, cy + sa * -14), (cx + ca * -6, cy + sa * -6),
-               (cx + ca * -2, cy + sa * -2 + 14)], alpha=235)
 
 
 def _ellipse_shadow(surface, x, y, rx, ry):

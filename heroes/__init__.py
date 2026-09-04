@@ -687,8 +687,16 @@ _BEAM_PASS_HEROES = {"morgath"}
 # Boulder, pasak tulang + rantai energi Geomagnetic Grip, orbit batu
 # tersedot Magnetize, impact flash + shockwave + retakan tanah +
 # puing, hit-stop 0.03-0.08 s, dan shake — semua di luar cache sprite.
+# Khalros (heroes/khalros_fx.py) - The Beastlord. BADANNya digambar
+# renderer boss (bosses/level2._NS_khalros, rig v2); modul ini hanya lapisan
+# hidup: pita ayunan dari histori UJUNG BILAH rig (bukan perkiraan bahu),
+# kapak berputar & elang penyelam, debu bantingan + jejak cakar di lantai,
+# gemuruh Call of the Wild, impact flash + shockwave + bara, hit-stop
+# 0.03-0.08 s, dan shake — semua di luar cache sprite. Tanpa entri ini lane
+# hero memasang lapisan (attach -> renderer menyerahkan FX sendiri) namun
+# tidak ada yang men-tick-nya, sehingga Q/W/E/R hilang di lane.
 _LIVE_FX_HEROES = {"zephyr", "gornak", "grimjaw", "kaizen", "vex",
-                   "sylara", "abaddon", "gorath", "razak",
+                   "sylara", "abaddon", "gorath", "razak", "khalros",
                    "alchemist", "ancient_apparition", "nyzrak",
                    "xerathis", "varkul", "ignis_drachorn", "zharok",
                    "vokrahn", "pyrenth", "krobellus", "vhalzun",
@@ -706,6 +714,7 @@ _LIVE_FX_PATHS = {
     "abaddon": "heroes.abaddon_fx",
     "gorath": "heroes.gorath_fx",
     "razak": "heroes.razak_fx",
+    "khalros": "heroes.khalros_fx",
     "alchemist": "heroes.alchemist_fx",
     "ancient_apparition": "heroes.ancient_apparition_fx",
     "nyzrak": "heroes.nyzrak_fx",
