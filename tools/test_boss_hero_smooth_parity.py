@@ -248,7 +248,7 @@ for t in SAMPLING:
             ms_lama = t_lama / N * 1000
     heroes.BOSS_CACHE_ENABLED = True
     heroes.clear_boss_sprite_cache()
-    pakai_cache = any(k[0] == t for k in heroes._BOSS_PATH)
+    pakai_cache = any(k[0] == t for k in heroes._BOSS_PARITY_DIFF)
 
     h = Hero(t, "red", x=b.x, y=b.y)
     h.update([], [], [])
