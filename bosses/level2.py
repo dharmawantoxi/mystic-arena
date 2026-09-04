@@ -10545,7 +10545,7 @@ class _NS_gorath:
 # ALCHEMIST
 # ====================================================================
 class _NS_alchemist:
-    """Namespace ALCHEMIST — PIXEL MASTERWORK v2 + COMBAT FX v3.
+    """Namespace ALCHEMIST — PIXEL MASTERWORK v3 + COMBAT FX v3.
 
     FULL REWRITE dari rig ORIGINAL-MAX lama, mengikuti standar
     **Gorath v2 Pixel Masterwork + Razak v3 Combat FX**
@@ -10554,8 +10554,40 @@ class _NS_alchemist:
     pemuatan aset eksternal. Semua bentuk lahir dari pygame.draw +
     Surface + transform + mask.
 
-    Apa yang naik dibanding rig lama
-    --------------------------------
+    Apa yang diperbaiki di RIG v3 (tulis ulang lapisan gambar)
+    ----------------------------------------------------------
+    Kontrak animasi / FX / cache v2 dipertahankan utuh; yang ditulis
+    ulang dari nol adalah bagian yang menggambar piksel:
+
+    a. ANATOMI. Rig v2 memakai ``ky = hipy + sin(ang) * 20`` untuk
+       lutut, jadi pada pose diam (ang = 0.08) kaki cuma turun ~1.6 px
+       dan seluruh tungkai berhenti di y = +38 — tertelan perut yang
+       turun sampai +42, sehingga sosok tampak MENGAMBANG di atas
+       bayangannya. Sekarang panjang tungkai bersifat vertikal (cos)
+       dan ayunan yang horizontal (sin): pinggul +18 -> lutut +39 ->
+       telapak +60, mendarat tepat di GROUND_DY.
+    b. VOLUME. Lengan/kaki v2 adalah poligon lebar-tetap tanpa siku
+       ("sosis") dengan satu garis highlight. Sekarang lewat ``_limb``
+       (meruncing, ramp 4 band, siku/lutut nyata) dan ``_ball``
+       (terminator + specular) — anggota badan punya massa.
+    c. CAHAYA. v2 mengalikan posisi highlight dengan ``f`` (facing),
+       jadi saat hadap kiri sumber cahaya ikut pindah dan volume
+       terbaca rata. ``_lit_side`` sekarang mengunci key light di
+       kiri-atas RUANG LAYAR, tidak peduli arah hadap.
+    d. SILUET. Kepala ogre v2 tertutup penuh badan goblin (wajah tidak
+       pernah terlihat) dan sudut cleaver tidak pernah dicerminkan
+       saat hadap kiri. Sekarang goblin duduk di bahu belakang,
+       kepala ogre digeser maju, lengan+senjata goblin digambar pada
+       lapisan terpisah di atas kepala ogre, dan sudut bilah dipetakan
+       lewat ``S()`` (pi - a) saat mirror.
+    e. DETAIL. Cleaver jagal berpunggung tebal + lubang gantung, botol
+       ransel mendidih dengan permukaan cairan bergoyang, pauldron
+       berlapis + duri, sabuk berlubang + botol gantung, dan ikat
+       kepala melengkung mengikuti tempurung (v2: persegi datar yang
+       memotong tengkorak jadi dua).
+
+    Warisan yang tetap berlaku dari v2
+    ----------------------------------
     1. RIG LEBIH BESAR & BERLAPIS (shadow -> back limb -> body -> armor
        -> head -> weapon -> front limb -> highlights). Ogre duo (ogre
        + goblin rider) tinggi ~150 px di jalur boss: true boss level-2
@@ -10607,12 +10639,14 @@ class _NS_alchemist:
     #: Overlay debug renderer (hitbox/hurtbox/jangkauan/state/FPS).
     DEBUG_CHARACTER = False
 
-    #: Ukuran buffer badan & jangkar. Extents terukur dari semua pose:
-    #: botol W -77 (glow), e_cast hop -83, kaki +60, bayangan +73,
-    #: wisps mist +73, swing lunge +-88 -> buffer 180x166 berpusat
-    #: di (90, 86).
-    RIG_W, RIG_H = 180, 166
-    RIG_OX, RIG_OY = 90, 86
+    #: Ukuran buffer badan & jangkar. Extents terukur ulang untuk rig
+    #: v3 (duo lebih tinggi): ujung topi goblin -93, glow botol W -113,
+    #: e_cast hop -121, telapak kaki +64, boot/cakar +70, ayunan lunge
+    #: +-92 -> buffer 200x210 berpusat di (100, 132).
+    #: Kalau angka ini kekecilan, kepala/topi goblin akan TERPOTONG di
+    #: tepi buffer (cacat yang muncul saat rig ditinggikan).
+    RIG_W, RIG_H = 200, 210
+    RIG_OX, RIG_OY = 100, 132
 
     #: Rig di-author di RUANG LAYAR (SCALE 1.0) — jalur boss langsung
     #: 1:1; jalur hero di-normalisasi heroes/__init__ lewat pengukuran
@@ -11253,27 +11287,32 @@ class _NS_alchemist:
                                               root_y, lx, ly)
 
     def _cleaver_grip_local(action, phase, ap=0.0, back=False):
-        """Pergelangan tangan (grip cleaver) ruang lokal."""
+        """Pergelangan tangan (grip cleaver) ruang lokal.
+
+        Bahu ada di (+-19, -32); jangkauan lengan ogre ~30 px, jadi
+        semua genggaman dijaga di dalam radius itu supaya lengan tidak
+        pernah tampak "putus" dari bahu (cacat rig lama saat pose e/r).
+        """
         if action == "attack":
             pose = _NS_alchemist._attack_pose(ap)
             ang = pose["blade_b"] if back else pose["blade_f"]
-            reach = 20 + 10 * math.sin(min(1.0, ap * 1.6) * math.pi)
-            sx = -16 if back else 16
+            reach = 22 + 10 * math.sin(min(1.0, ap * 1.6) * math.pi)
+            sx = -19 if back else 19
             return (int(sx + math.cos(ang) * reach),
-                    int(-30 + math.sin(ang) * reach + 8))
+                    int(-32 + math.sin(ang) * reach + 10))
         if action == "walk":
             swing = math.sin(phase + (math.pi if back else 0.0)) * 7
-            return (int((-16 if back else 17) + swing), 2)
+            return (int((-20 if back else 21) + swing), 4)
         if action == "q_cast":
-            return (18, 6) if not back else (-22, 6)
+            return (22, 8) if not back else (-25, 8)
         if action == "w_cast":
-            return (14, -18) if not back else (-14, -18)
+            return (19, -14) if not back else (-19, -14)
         if action == "e_cast":
-            return (26, -4) if not back else (-26, -4)
+            return (29, -10) if not back else (-29, -10)
         if action == "r_cast":
-            return (16, -28) if not back else (-16, -28)
+            return (21, -26) if not back else (-21, -26)
         bob = math.sin(phase * 0.7 + (0.9 if back else 0.4)) * 1.8
-        return (-25 if back else 24, int(4 + bob))
+        return (-27 if back else 27, int(6 + bob))
 
     def _cleaver_angle_local(action, phase, ap=0.0, back=False):
         """Sudut cleaver (rad) ruang lokal — ARC tunggal, bukan snap."""
@@ -11782,17 +11821,118 @@ class _NS_alchemist:
         NS._aacircle(surface, (*c1, int(a * 0.8)),
                      (x, y - (r // 6)), ri)
 
+    def _lit_side(dx, dy):
+        """Sisi perpendicular yang menghadap key light (kiri-atas LAYAR).
+
+        Rig di-mirror lewat ``facing``, tapi CAHAYA TIDAK ikut mirror —
+        inilah bug rig lama: highlight pindah sisi saat hadap kiri, jadi
+        volume-nya terbaca rata. Semua helper limb memakai ini.
+        """
+        px, py = -dy, dx
+        return 1.0 if (px * -0.70 + py * -0.70) > 0 else -1.0
+
+    def _aalines_soft(surface, color, points, width=1):
+        """Polyline pendek (dipakai kain/ikat yang melengkung)."""
+        NS = _NS_alchemist
+        for a, b in zip(points, points[1:]):
+            NS._aaline(surface, color, (int(a[0]), int(a[1])),
+                       (int(b[0]), int(b[1])), width)
+
+    def _limb(surface, p0, w0, p1, w1, c_dark, c_mid, c_hi,
+              c_shine=None):
+        """Anggota badan meruncing (kapsul poligon) + ramp 3-4 band.
+
+        Rig lama menggambar lengan/kaki sebagai poligon lebar-tetap
+        dengan satu garis highlight, jadi terbaca sebagai 'sosis'.
+        Di sini lebar mengecil dari pangkal ke ujung, band gelap /
+        mid / terang mengikuti sumbu, dan sisi terang selalu sisi
+        yang menghadap cahaya di RUANG LAYAR.
+        """
+        NS = _NS_alchemist
+        x0, y0 = float(p0[0]), float(p0[1])
+        x1, y1 = float(p1[0]), float(p1[1])
+        dx, dy = x1 - x0, y1 - y0
+        ln = math.hypot(dx, dy)
+        if ln < 0.5:
+            return
+        dx, dy = dx / ln, dy / ln
+        px, py = -dy, dx
+        s = NS._lit_side(dx, dy)
+
+        def quad(a0, a1, off=0.0, lo=0.0, hi=1.0):
+            """Poligon meruncing: a0/a1 = setengah lebar pangkal/ujung,
+            off = geser sepanjang perpendicular, lo/hi = potong sumbu."""
+            bx, by = x0 + dx * ln * lo, y0 + dy * ln * lo
+            ex, ey = x0 + dx * ln * hi, y0 + dy * ln * hi
+            b = a0 + (a1 - a0) * lo
+            e = a0 + (a1 - a0) * hi
+            return [(bx + px * (off * b - b), by + py * (off * b - b)),
+                    (ex + px * (off * e - e), ey + py * (off * e - e)),
+                    (ex + px * (off * e + e), ey + py * (off * e + e)),
+                    (bx + px * (off * b + b), by + py * (off * b + b))]
+
+        # selout kontak (offset ke sisi gelap, bukan kotak hitam penuh)
+        NS._poly(surface, NS.PALETTE["shadow_deep"],
+                 [(vx - s * px * 1.0 + 0.6, vy - s * py * 1.0 + 0.9)
+                  for vx, vy in quad(w0 + 0.7, w1 + 0.7)])
+        NS._poly(surface, c_dark, quad(w0, w1))
+        # band mid: digeser ke sisi cahaya, lebih ramping
+        NS._poly(surface, c_mid,
+                 [(vx + s * px * 0.55, vy + s * py * 0.55)
+                  for vx, vy in quad(w0 * 0.72, w1 * 0.72)])
+        # band terang: pita sempit menempel tepi cahaya
+        NS._poly(surface, c_hi,
+                 [(vx + s * px * (w0 * 0.52), vy + s * py * (w0 * 0.52))
+                  for vx, vy in quad(w0 * 0.30, w1 * 0.30, lo=0.08,
+                                     hi=0.86)])
+        if c_shine is not None and ln > 9:
+            NS._poly(surface, c_shine,
+                     [(vx + s * px * (w0 * 0.66),
+                       vy + s * py * (w0 * 0.66))
+                      for vx, vy in quad(w0 * 0.13, w1 * 0.13, lo=0.16,
+                                         hi=0.52)])
+
+    def _ball(surface, cx, cy, r, c_dark, c_mid, c_hi, c_shine=None):
+        """Massa bulat ber-volume: terminator + specular kiri-atas."""
+        NS = _NS_alchemist
+        cx, cy, r = int(cx), int(cy), max(1, int(r))
+        NS._aacircle(surface, c_dark, (cx, cy), r)
+        NS._aacircle(surface, c_mid, (cx - max(1, r // 5),
+                                      cy - max(1, r // 5)),
+                     max(1, int(r * 0.74)))
+        NS._aacircle(surface, c_hi, (cx - int(r * 0.34),
+                                     cy - int(r * 0.38)),
+                     max(1, int(r * 0.42)))
+        if c_shine is not None and r >= 4:
+            NS._aacircle(surface, c_shine, (cx - int(r * 0.44),
+                                            cy - int(r * 0.48)),
+                         max(1, r // 5))
+
     # ==================================================================
-    # RIG PIXEL-ART v2 — ogre chemist + goblin rider (ruang lokal).
+    # RIG PIXEL-ART v3 — ogre chemist + goblin rider (ruang lokal).
     # Konvensi: (0,0) = jangkar pinggul; +x maju (dikali facing); y ke
-    # bawah. Semua bentuk poligon/ellipse keras + ramp 4-6 band.
+    # bawah; tanah = +GROUND_DY. Key light TETAP di kiri-atas layar.
+    #
+    # Yang diperbaiki dari rig v2 (sumber "jelek"-nya):
+    #   * kaki berakhir di y=+38 sementara perut turun sampai +42 dan
+    #     bayangan di +62 -> kaki tertelan perut & sosok mengambang.
+    #     Sekarang pinggul +18 -> lutut +38 -> telapak +60 menyentuh
+    #     garis tanah yang sama dengan bayangan.
+    #   * lengan/kaki poligon lebar-tetap tanpa siku -> "sosis".
+    #     Sekarang lewat _limb (meruncing, ramp 4 band, siku nyata).
+    #   * highlight ikut ter-mirror bersama facing -> volume rata.
+    #     Sekarang _lit_side mengunci cahaya ke ruang layar.
+    #   * kepala ogre tertutup penuh badan goblin -> siluet tanpa
+    #     wajah. Sekarang kepala digeser maju + goblin mundur ke bahu
+    #     belakang, keduanya terbaca.
+    #   * sudut cleaver tidak di-mirror saat hadap kiri.
     # ==================================================================
     def _draw_cleaver(surface, gx, gy, ang, f, phase=0.0, glow=0.0):
         """Cleaver jagal berputar mengikuti SUDUT (arc-based).
 
-        gx,gy = layar; ang = sudut layar (0 maju, pi/2 bawah).
-        Bilah = poligon dari basis ke ujung memakai cos/sin — tidak
-        pernah ada lerp posisi awal->akhir.
+        gx,gy = layar; ang = sudut LAYAR (0 kanan, pi/2 bawah) — sudah
+        di-mirror pemanggil. Bilah = poligon dari basis ke ujung memakai
+        cos/sin, jadi tidak pernah ada lerp posisi awal->akhir.
         """
         NS = _NS_alchemist
         P = NS.PALETTE
@@ -11800,380 +11940,693 @@ class _NS_alchemist:
         px, py = -sa, ca
         H = NS.CLEAVER_HANDLE
         B = NS.CLEAVER_BLADE
+        lit = NS._lit_side(ca, sa)
 
         def pt(dist, side):
-            return (int(gx + ca * dist + px * side),
-                    int(gy + sa * dist + py * side))
+            return (gx + ca * dist + px * side,
+                    gy + sa * dist + py * side)
 
-        h0, h1 = pt(0, 0), pt(H, 0)                      # gagang
-        NS._poly(surface, P["leather_darkest"], [
-            pt(0, -2), pt(H, -2), pt(H, 2), pt(0, 2)])
-        NS._poly(surface, P["leather_mid"], [
-            pt(0, -1), pt(H - 1, -1), pt(H - 1, 1), pt(0, 1)])
-        b0s, b0e = pt(H, -3), pt(H, 4)                   # basis bilah
-        b1s, b1e = pt(H + B, -2), pt(H + B, 6)           # ujung bilah
-        # selout sisi bayangan
-        NS._poly(surface, P["shadow_deep"],
-                 [(b0s[0] + 1, b0s[1] + 1), (b0e[0] + 1, b0e[1] + 1),
-                  (b1e[0] + 1, b1e[1] + 1), (b1s[0] + 1, b1s[1] + 1)])
-        # badan bilah
-        NS._poly(surface, P["metal_darkest"],
-                 [b0s, b0e, b1e, b1s])
-        NS._poly(surface, P["metal_dark"],
-                 [pt(H + 1, -2), pt(H + 1, 4), pt(H + B - 1, 5),
-                  pt(H + B - 1, -1)])
-        NS._poly(surface, P["metal_mid"],
-                 [pt(H + 2, -2), pt(H + 2, 2), pt(H + B - 2, 3),
-                  pt(H + B - 2, -1)])
-        # band specular sepanjang tulang (3 cluster, bukan garis penuh)
+        def ipt(dist, side):
+            p = pt(dist, side)
+            return (int(p[0]), int(p[1]))
+
+        # ── gagang kayu berbalut kulit + pommel kuningan ──────────
+        NS._limb(surface, pt(-3, 0), 2.6, pt(H, 0), 2.2,
+                 P["leather_darkest"], P["leather_mid"],
+                 P["leather_high"])
         for t in (0.25, 0.55, 0.85):
-            d = H + 2 + int(t * (B - 5))
-            NS._poly(surface, P["metal_light"],
-                     [pt(d, -2), pt(d + 2, -2), pt(d + 2, 0),
-                      pt(d, 0)])
-        # mata tebang (edge) + etching asam
-        NS._aaline(surface, P["metal_edge"], pt(H + 1, 4),
-                   pt(H + B, 6), 1)
-        NS._aaline(surface, P["acid_dark"], pt(H + 6, 1),
-                   pt(H + B - 4, 3), 1)
-        NS._aacircle(surface, P["brass_mid"], (h0[0], h0[1]), 2)
-        NS._aacircle(surface, P["brass_light"],
-                     (h0[0] - f, h0[1] - 1), 1)
-        # glint periodik di ujung bilah
+            d = -3 + (H + 3) * t
+            NS._aaline(surface, P["leather_darkest"],
+                       ipt(d, -2), ipt(d, 2), 1)
+        # ── bolster / cincin kuningan pemisah gagang-bilah ─────────
+        NS._poly(surface, P["brass_dark"],
+                 [ipt(H - 1, -4), ipt(H + 2, -4), ipt(H + 2, 5),
+                  ipt(H - 1, 5)])
+        NS._poly(surface, P["brass_mid"],
+                 [ipt(H - 1, -3), ipt(H + 1, -3), ipt(H + 1, 4),
+                  ipt(H - 1, 4)])
+        NS._aaline(surface, P["brass_shine"], ipt(H - 1, -3),
+                   ipt(H + 1, -3), 1)
+
+        # ── BILAH: persegi berat khas cleaver jagal, punggung tebal,
+        #    mata tebang melebar ke ujung (bukan bilah pipih 6 px) ──
+        back0, back1 = -4.0, -5.5          # punggung (spine)
+        edge0, edge1 = 6.5, 10.5           # mata tebang
+        spine = [ipt(H + 1, back0), ipt(H + B, back1)]
+        # selout arah bayangan
+        NS._poly(surface, P["shadow_deep"], [
+            (int(pt(H + 1, back0)[0] + 1), int(pt(H + 1, back0)[1] + 1)),
+            (int(pt(H + B, back1)[0] + 1), int(pt(H + B, back1)[1] + 1)),
+            (int(pt(H + B, edge1)[0] + 1), int(pt(H + B, edge1)[1] + 1)),
+            (int(pt(H + 1, edge0)[0] + 1), int(pt(H + 1, edge0)[1] + 1))])
+        NS._poly(surface, P["metal_darkest"], [
+            ipt(H + 1, back0), ipt(H + B, back1), ipt(H + B, edge1),
+            ipt(H + 1, edge0)])
+        # bevel utama (mengikuti sisi cahaya, bukan selalu sisi yg sama)
+        NS._poly(surface, P["metal_dark"], [
+            ipt(H + 2, back0 + 0.8), ipt(H + B - 1, back1 + 0.8),
+            ipt(H + B - 1, edge1 - 1.0), ipt(H + 2, edge0 - 1.0)])
+        NS._poly(surface, P["metal_mid"], [
+            ipt(H + 3, back0 + 1.6 * lit), ipt(H + B - 2, back1 + 1.6 * lit),
+            ipt(H + B - 2, edge1 * 0.45), ipt(H + 3, edge0 * 0.45)])
+        # pita specular sepanjang tulang bilah
+        NS._poly(surface, P["metal_light"], [
+            ipt(H + 4, back0 + 1.4), ipt(H + B - 4, back1 + 1.6),
+            ipt(H + B - 4, back1 + 3.4), ipt(H + 4, back0 + 3.2)])
+        # lubang gantung khas cleaver (di dekat punggung)
+        hole = ipt(H + B - 6, back1 + 3.0)
+        NS._aacircle(surface, P["metal_darkest"], hole, 2)
+        NS._aacircle(surface, P["metal_dark"], (hole[0], hole[1] + 1), 1)
+        # mata tebang: garis putih tipis + gerigi karat asam
+        NS._aaline(surface, P["metal_shine"], ipt(H + 1, edge0),
+                   ipt(H + B, edge1), 2)
+        NS._aaline(surface, P["metal_edge"], ipt(H + 3, edge0 + 0.4),
+                   ipt(H + B - 1, edge1 + 0.2), 1)
+        # etsa asam / noda kimia di badan bilah
+        NS._aaline(surface, P["acid_dark"], ipt(H + 6, edge0 - 2.6),
+                   ipt(H + B - 5, edge1 - 3.4), 1)
+        NS._aacircle(surface, (*P["acid_mid"], 120),
+                     ipt(H + B - 9, edge1 - 5.0), 2)
+        # tetes asam menggantung di mata bilah
+        drip = (phase * 0.6 + gx * 0.01) % 1.0
+        if drip < 0.55:
+            dp = pt(H + B - 7, edge1 - 1.0)
+            NS._aacircle(surface, (*P["acid_bright"],
+                                   int(210 * (1 - drip / 0.55))),
+                         (int(dp[0]), int(dp[1] + drip * 7)), 1)
+        # pommel
+        NS._ball(surface, *ipt(-3, 0), 3, P["brass_dark"],
+                 P["brass_mid"], P["brass_light"], P["brass_shine"])
+        # glint periodik di ujung
         if math.sin(phase * 2.6 + ang) > 0.90:
-            tip = pt(H + B - 2, 4)
-            NS._aacircle(surface, P["metal_edge"],
-                         (tip[0], tip[1]), 1)
-            NS._aacircle(surface, P["white"],
-                         (tip[0] - f, tip[1] - 1), 1)
+            tip = ipt(H + B - 1, edge1 - 1)
+            NS._aacircle(surface, P["metal_edge"], tip, 2)
+            NS._aacircle(surface, P["white"], (tip[0] - 1, tip[1] - 1), 1)
         if glow > 0.02:
             g = int(150 * min(1.0, glow))
-            NS._aacircle(surface, (*P["acid_bright"], g),
-                         (h1[0], h1[1]), 5)
+            NS._aacircle(surface, (*P["acid_bright"],
+                                   int(g * 0.55)),
+                         ipt(H + B * 0.6, edge0), 7)
             NS._aacircle(surface, (*P["acid_hot"], g),
-                         (h1[0], h1[1]), 3)
+                         ipt(H + B * 0.6, edge0), 4)
 
     def _draw_ogre_arm(surface, sx, sy, gx, gy, f, back=False,
                        flex=0.0):
-        """Lengan ogre chunky: bahu -> siku (droop) -> pergelangan."""
+        """Lengan ogre: deltoid -> biceps -> SIKU nyata -> lengan bawah
+        -> sarung tangan. Siku diletakkan di luar garis bahu-genggaman
+        (offset perpendicular) supaya ada tekukan, bukan garis lurus."""
         NS = _NS_alchemist
         P = NS.PALETTE
-        mx, my = (sx + gx) / 2.0, (sy + gy) / 2.0 + 6 - flex * 4
-        c_dark = P["ogre_dark"] if back else P["ogre_mid"]
-        c_mid = P["ogre_mid"] if back else P["ogre_light"]
-        c_hi = P["ogre_light"] if back else P["ogre_high"]
-        # selout
-        NS._poly(surface, P["shadow_deep"], [
-            (sx + 1, sy + 2), (mx + 1, my + 3), (gx + 1, gy + 2),
-            (gx - 2, gy + 1), (mx - 3, my + 1), (sx - 3, sy)])
-        # lengan atas + bawah sebagai poligon tebal 2 band
-        NS._poly(surface, c_dark, [
-            (sx - 4, sy - 2), (mx - 4, my), (gx - 3, gy - 1),
-            (gx + 3, gy + 2), (mx + 4, my + 3), (sx + 4, sy + 3)])
-        NS._poly(surface, c_mid, [
-            (sx - 3, sy - 2), (mx - 3, my - 1), (gx - 2, gy - 1),
-            (gx + 2, gy + 1), (mx + 3, my + 2), (sx + 3, sy + 2)])
-        # highlight atas
-        NS._aaline(surface, c_hi, (sx - 2, sy - 2), (mx - 2, my - 2), 1)
-        NS._aaline(surface, c_hi, (mx - 2, my - 2), (gx - 1, gy - 1), 1)
-        # bahu berotot + pergelangan
-        NS._aacircle(surface, c_dark, (sx, sy), 7 if not back else 6)
-        NS._aacircle(surface, c_mid, (sx - f, sy - 1), 5 if not back
-                     else 4)
-        NS._aacircle(surface, c_hi, (sx - f * 2, sy - 2), 2)
-        NS._aacircle(surface, P["ogre_dark"], (gx, gy), 5)
-        NS._aacircle(surface, c_mid, (gx - f, gy - 1), 4)
-        NS._aacircle(surface, c_hi, (gx - f * 2, gy - 2), 1)
-        # sarung tangan kulit
-        NS._aacircle(surface, P["leather_dark"],
-                     (gx + f, gy + 2), 3)
-        NS._aacircle(surface, P["leather_mid"],
-                     (gx + f, gy + 1), 2)
+        dx, dy = gx - sx, gy - sy
+        ln = max(1.0, math.hypot(dx, dy))
+        ux, uy = dx / ln, dy / ln
+        pxx, pyy = -uy, ux
+        # siku menonjol keluar dari torso + turun karena berat
+        bulge = (5.5 + flex * 3.0) * (-1.0 if back else 1.0)
+        ex = sx + ux * ln * 0.48 + pxx * bulge
+        ey = sy + uy * ln * 0.48 + pyy * bulge + 3.0 - flex * 2.0
+        if back:
+            c_d, c_m, c_h = (P["ogre_darkest"], P["ogre_dark"],
+                             P["ogre_mid"])
+            c_s = None
+            w_up, w_el, w_lo = 7.0, 5.4, 4.4
+        else:
+            c_d, c_m, c_h = (P["ogre_dark"], P["ogre_mid"],
+                             P["ogre_light"])
+            c_s = P["ogre_high"]
+            w_up, w_el, w_lo = 8.4, 6.2, 5.0
+        # lengan atas (biceps gemuk) + lengan bawah (meruncing)
+        NS._limb(surface, (sx, sy), w_up, (ex, ey), w_el,
+                 c_d, c_m, c_h, c_s)
+        NS._limb(surface, (ex, ey), w_el, (gx, gy), w_lo,
+                 c_d, c_m, c_h, c_s)
+        # deltoid
+        NS._ball(surface, sx, sy, 8 if not back else 7,
+                 c_d, c_m, c_h, c_s)
+        # ikat lengan kulit di atas siku
+        bx = sx + ux * ln * 0.30 + pxx * bulge * 0.30
+        by = sy + uy * ln * 0.30 + pyy * bulge * 0.30 + 1
+        NS._limb(surface, (bx - pxx * w_up * 0.9, by - pyy * w_up * 0.9),
+                 2.2, (bx + pxx * w_up * 0.9, by + pyy * w_up * 0.9),
+                 2.2, P["leather_darkest"], P["leather_mid"],
+                 P["leather_high"])
+        # siku (buku jari tulang)
+        NS._ball(surface, ex, ey, 5 if not back else 4,
+                 c_d, c_m, c_h)
+        # otot lengan bawah + urat
+        if not back:
+            NS._aaline(surface, P["ogre_dark"],
+                       (int(ex + ux * 4), int(ey + uy * 4)),
+                       (int(gx - ux * 4), int(gy - uy * 4)), 1)
+        # sarung tangan kulit berpaku + kepalan
+        NS._ball(surface, gx, gy, 5, P["leather_darkest"],
+                 P["leather_dark"], P["leather_mid"], P["leather_high"])
+        for kx, ky in ((-2, -2), (1, -3), (3, 0)):
+            NS._aacircle(surface, P["brass_mid"],
+                         (int(gx + kx), int(gy + ky)), 1)
 
     def _draw_ogre_leg(surface, hipx, hipy, ang, lift, front, f):
-        """Satu kaki ogre: paha -> lutut -> kaki (foot plant timing)."""
+        """Kaki ogre: paha -> LUTUT -> betis -> telapak MENAPAK TANAH.
+
+        Rig lama memakai ky = hipy + sin(ang)*20 sehingga pada pose
+        diam (ang=0.08) lutut cuma turun ~1.6 px dan seluruh kaki
+        berakhir di y=+38 — tertelan perut yang turun sampai +42.
+        Di sini panjang tungkai bersifat VERTIKAL (cos) dan ayunan
+        yang horizontal (sin), jadi telapak selalu mendarat di
+        sekitar GROUND_DY.
+        """
         NS = _NS_alchemist
         P = NS.PALETTE
-        ca, sa = math.cos(ang), math.sin(ang)
-        kx = hipx + ca * 15
-        ky = hipy + sa * 20
-        ax = kx + ca * 12
-        ay = ky + 16 - lift
-        c_base = P["ogre_mid"] if front else P["ogre_dark"]
-        c_hi = P["ogre_light"] if front else P["ogre_mid"]
-        # selout
+        THIGH, SHIN = 21.0, 19.0
+        sa, ca = math.sin(ang), math.cos(ang)
+        kx = hipx + sa * THIGH
+        ky = hipy + ca * THIGH
+        # betis kontra-rotasi (lutut menekuk ke belakang) + angkat
+        sa2 = math.sin(-ang * 0.45)
+        ca2 = math.cos(-ang * 0.45)
+        ax = kx + sa2 * SHIN
+        ay = ky + ca2 * SHIN - lift
+        if front:
+            c_d, c_m, c_h = (P["ogre_dark"], P["ogre_mid"],
+                             P["ogre_light"])
+            c_s = P["ogre_high"]
+            w_th, w_kn, w_sh = 10.0, 7.0, 5.6
+        else:
+            c_d, c_m, c_h = (P["ogre_darkest"], P["ogre_dark"],
+                             P["ogre_mid"])
+            c_s = None
+            w_th, w_kn, w_sh = 9.0, 6.2, 5.0
+        # paha (gemuk) + betis (berotot lalu meruncing ke mata kaki)
+        NS._limb(surface, (hipx, hipy), w_th, (kx, ky), w_kn,
+                 c_d, c_m, c_h, c_s)
+        NS._limb(surface, (kx, ky), w_kn, (ax, ay), w_sh,
+                 c_d, c_m, c_h, c_s)
+        # tempurung lutut
+        NS._ball(surface, kx, ky, 6 if front else 5, c_d, c_m, c_h)
+        # ikat betis kulit
+        wx, wy = (kx + ax) / 2.0, (ky + ay) / 2.0
+        NS._limb(surface, (wx - w_sh, wy - 1), 2.0,
+                 (wx + w_sh, wy - 1), 2.0,
+                 P["leather_darkest"], P["leather_dark"],
+                 P["leather_mid"])
+        # ── telapak: boot kulit besar menapak, dengan sol & jari ──
+        fy = ay + 4
+        toe = f * (9 if front else 7)
         NS._poly(surface, P["shadow_deep"], [
-            (hipx + 2, hipy + 3), (kx + 2, ky + 3), (ax + 2, ay + 2),
-            (ax - 2, ay + 1), (kx - 3, ky), (hipx - 3, hipy)])
-        # paha + betis
-        NS._poly(surface, P["ogre_dark"], [
-            (hipx - 6, hipy - 2), (kx - 5, ky), (ax - 4, ay - 1),
-            (ax + 4, ay + 1), (kx + 5, ky + 3), (hipx + 6, hipy + 3)])
-        NS._poly(surface, c_base, [
-            (hipx - 5, hipy - 2), (kx - 4, ky - 1), (ax - 3, ay - 1),
-            (ax + 3, ay), (kx + 4, ky + 2), (hipx + 5, hipy + 2)])
-        NS._aaline(surface, c_hi, (hipx - 3, hipy), (kx - 3, ky), 2)
-        NS._aacircle(surface, c_base, (kx, ky), 5)
-        # kaki (sepatu kulit besar) menapak tanah
-        fy = ay + 2
-        NS._ellipse(surface, P["leather_darkest"],
-                    (ax - 7, fy - 3, 14 + (4 if front else 2), 7))
-        NS._ellipse(surface, P["leather_dark"],
-                    (ax - 6, fy - 3, 12 + (4 if front else 2), 5))
-        NS._ellipse(surface, P["leather_mid"],
-                    (ax - 5, fy - 2, 8, 2))
-        # jahitan boot
-        NS._aaline(surface, P["leather_high"],
-                   (ax - 3, fy + 2), (ax + 4, fy + 2), 1)
+            (int(ax - 7), int(fy + 1)), (int(ax + toe), int(fy + 1)),
+            (int(ax + toe), int(fy + 4)), (int(ax - 7), int(fy + 4))])
+        NS._poly(surface, P["leather_darkest"], [
+            (int(ax - 7), int(fy - 5)), (int(ax + toe * 0.8), int(fy - 5)),
+            (int(ax + toe), int(fy)), (int(ax + toe), int(fy + 3)),
+            (int(ax - 7), int(fy + 3))])
+        NS._poly(surface, P["leather_dark"], [
+            (int(ax - 6), int(fy - 4)), (int(ax + toe * 0.7), int(fy - 4)),
+            (int(ax + toe - 1), int(fy)), (int(ax + toe - 1), int(fy + 1)),
+            (int(ax - 6), int(fy + 1))])
+        NS._aaline(surface, P["leather_mid"], (int(ax - 5), int(fy - 3)),
+                   (int(ax + toe * 0.6), int(fy - 3)), 1)
+        # sol karet + jahitan
+        NS._poly(surface, P["metal_darkest"], [
+            (int(ax - 7), int(fy + 2)), (int(ax + toe), int(fy + 2)),
+            (int(ax + toe), int(fy + 4)), (int(ax - 7), int(fy + 4))])
+        for t in (0.25, 0.55, 0.85):
+            sxp = int(ax - 6 + (toe + 5) * t)
+            NS._aacircle(surface, P["leather_high"], (sxp, int(fy - 1)), 1)
+        # cakar kuku tebal mencuat dari ujung boot
+        for i in (-1, 1):
+            NS._poly(surface, P["bone_mid"], [
+                (int(ax + toe), int(fy - 1 + i)),
+                (int(ax + toe + f * 3), int(fy + i)),
+                (int(ax + toe), int(fy + 1 + i))])
 
     def _draw_ogre_torso(surface, ox, oy, phase, flare, rage, f):
-        """Torso massive: perut barel + dada + pektoral + collar."""
+        """Torso ogre: dada bidang -> pektoral -> perut barel bertekstur.
+
+        Massa dibangun dari DUA volume yang tumpang tindih (dada lebar
+        di atas, perut bulat di bawah) bukan satu ellipse raksasa, jadi
+        siluetnya punya pinggang dan tidak terbaca sebagai telur.
+        """
         NS = _NS_alchemist
         P = NS.PALETTE
         fl = max(0.9, min(1.3, flare))
-        bw = int(23 * fl)
-        bh = int(26 / fl)
-        # selout seluruh massa
+        breath = math.sin(phase * 0.7) * 0.6
+        bw = 23.0 * fl
+        bh = 20.0 / fl + breath
+
+        # ── selout massa keseluruhan ──────────────────────────────
         NS._ellipse(surface, P["shadow_deep"],
-                    (ox - bw - 2, oy - bh - 2 + 14,
-                     bw * 2 + 4, bh * 2 + 4))
-        # perut (barel) — ramp 4 band dengan dither band tengah
+                    (ox - bw - 2, oy - 10, bw * 2 + 4, bh * 2 + 4))
+        NS._ellipse(surface, P["shadow_deep"],
+                    (ox - 21, oy - 38, 42, 30))
+
+        # ── PERUT (barel) ramp 5 band, pusat massa digeser ke kanan
+        #    bawah supaya terminator terbaca ────────────────────────
         NS._ellipse(surface, P["ogre_darkest"],
-                    (ox - bw, oy - bh + 14, bw * 2, bh * 2))
+                    (ox - bw, oy - 8, bw * 2, bh * 2))
         NS._ellipse(surface, P["ogre_dark"],
-                    (ox - bw + 2, oy - bh + 16, bw * 2 - 4, bh * 2 - 4))
+                    (ox - bw + 2, oy - 7, bw * 2 - 5, bh * 2 - 4))
         NS._ellipse(surface, P["ogre_mid"],
-                    (ox - bw + 5, oy - bh + 19, bw * 2 - 10,
-                     bh * 2 - 10))
+                    (ox - bw + 4, oy - 6, bw * 2 - 12, bh * 2 - 9))
         NS._ellipse(surface, P["ogre_light"],
-                    (ox - bw + 9, oy - bh + 23, bw * 2 - 19,
-                     bh * 2 - 17))
-        # dada atas
-        NS._ellipse(surface, P["ogre_dark"],
-                    (ox - 16, oy - 22, 32, 20))
-        NS._ellipse(surface, P["ogre_mid"],
-                    (ox - 14, oy - 21, 28, 17))
-        NS._ellipse(surface, P["ogre_light"],
-                    (ox - 10, oy - 19, 18, 11))
-        # pektoral kiri-kanan (arc bawah)
-        NS._aaline(surface, P["ogre_dark"],
-                   (ox - 11, oy - 12), (ox - 2, oy - 9), 2)
-        NS._aaline(surface, P["ogre_dark"],
-                   (ox + 2, oy - 9), (ox + 11, oy - 12), 2)
-        # specular cluster (kiri-atas, konsisten key light)
-        NS._aacircle(surface, P["ogre_high"],
-                     (ox - bw + 12, oy - bh + 26), 3)
-        NS._aacircle(surface, P["ogre_shine"],
-                     (ox - bw + 13, oy - bh + 25), 1)
-        NS._aacircle(surface, P["ogre_high"],
-                     (ox - 8, oy - 18), 2)
-        # dither band perut (transisi mid->light)
-        for i in range(5):
-            dx = ox - bw + 10 + i * 5
-            dy = oy - bh + 22 + (i % 2)
-            NS._aacircle(surface, P["ogre_mid"], (dx, dy), 1)
-        # pusar + bulu dada
-        NS._aacircle(surface, P["ogre_darkest"], (ox + 2, oy + 12), 2)
-        NS._aacircle(surface, P["ogre_dark"], (ox - 4, oy - 8), 1)
-        NS._aacircle(surface, P["ogre_dark"], (ox + 5, oy - 6), 1)
-        NS._aacircle(surface, P["ogre_dark"], (ox, oy - 2), 1)
-        # denyut vena saat rage
+                    (ox - bw + 7, oy - 5, bw * 2 - 23, bh * 2 - 17))
+        NS._ellipse(surface, P["ogre_high"],
+                    (ox - bw + 10, oy - 3, bw * 2 - 34, bh * 2 - 26))
+
+        # ── DADA: dua pektoral berat + tulang selangka ─────────────
+        NS._ellipse(surface, P["ogre_darkest"], (ox - 20, oy - 37, 40, 28))
+        NS._ellipse(surface, P["ogre_dark"], (ox - 18, oy - 36, 36, 25))
+        for sgn in (-1, 1):
+            pxp = ox + sgn * 9
+            NS._ellipse(surface, P["ogre_mid"],
+                        (pxp - 10, oy - 34, 20, 18))
+            NS._ellipse(surface, P["ogre_light"],
+                        (pxp - 8 - sgn, oy - 33, 15, 13))
+            if sgn < 0:                       # pektoral sisi cahaya
+                NS._ellipse(surface, P["ogre_high"],
+                            (pxp - 7, oy - 32, 10, 8))
+        # belahan dada + garis bawah pektoral
+        NS._aaline(surface, P["ogre_darkest"], (ox, oy - 33),
+                   (ox, oy - 16), 2)
+        NS._aaline(surface, P["ogre_dark"], (ox - 16, oy - 19),
+                   (ox - 3, oy - 15), 2)
+        NS._aaline(surface, P["ogre_dark"], (ox + 3, oy - 15),
+                   (ox + 16, oy - 19), 2)
+        # tulang selangka
+        NS._aaline(surface, P["ogre_light"], (ox - 14, oy - 36),
+                   (ox - 3, oy - 34), 1)
+        NS._aaline(surface, P["ogre_mid"], (ox + 3, oy - 34),
+                   (ox + 14, oy - 36), 1)
+
+        # ── perut: gulungan lemak + pusar (tekstur, bukan dither acak)
+        for i, (ry, rw) in enumerate(((-1, 17), (7, 19), (15, 16))):
+            NS._aaline(surface, P["ogre_dark"],
+                       (ox - rw, oy + ry), (ox + rw - 4, oy + ry + 2), 2)
+            NS._aaline(surface, P["ogre_light"],
+                       (ox - rw + 1, oy + ry - 1),
+                       (ox + rw - 6, oy + ry + 1), 1)
+        NS._aacircle(surface, P["ogre_darkest"], (ox + 1, oy + 11), 2)
+        NS._aacircle(surface, P["ogre_dark"], (ox + 1, oy + 10), 1)
+
+        # ── specular utama (kiri-atas layar, tetap saat mirror) ────
+        NS._ball(surface, ox - bw + 12, oy + 1, 4, P["ogre_light"],
+                 P["ogre_high"], P["ogre_shine"])
+        NS._aacircle(surface, P["ogre_shine"], (ox - 13, oy - 30), 2)
+        NS._aacircle(surface, P["white"], (ox - 14, oy - 31), 1)
+
+        # ── bekas luka & noda asam (cerita karakter) ───────────────
+        NS._aaline(surface, P["ogre_high"], (ox + 8, oy - 28),
+                   (ox + 13, oy - 18), 1)
+        NS._aaline(surface, P["ogre_high"], (ox + 6, oy - 24),
+                   (ox + 12, oy - 22), 1)
+        for sx_, sy_, rr in ((ox - 9, oy + 6, 3), (ox + 11, oy + 3, 2),
+                             (ox + 4, oy + 16, 2)):
+            NS._aacircle(surface, (*P["acid_dark"], 110), (sx_, sy_), rr)
+            NS._aacircle(surface, (*P["acid_mid"], 90), (sx_, sy_), rr - 1)
+
+        # ── denyut vena saat rage ─────────────────────────────────
         if rage:
             pul = 0.5 + 0.5 * math.sin(phase * 6.0)
-            NS._aaline(surface, (*P["acid_mid"], int(120 + 100 * pul)),
-                       (ox - 8, oy - 4), (ox - 2, oy + 2), 1)
-            NS._aaline(surface, (*P["acid_mid"], int(120 + 100 * pul)),
-                       (ox + 6, oy - 8), (ox + 9, oy - 1), 1)
+            a = int(110 + 120 * pul)
+            for x0_, y0_, x1_, y1_ in ((-14, -22, -6, -10),
+                                       (-6, -10, -9, 2),
+                                       (9, -26, 13, -14),
+                                       (13, -14, 9, -2)):
+                NS._aaline(surface, (*P["acid_bright"], a),
+                           (ox + x0_, oy + y0_), (ox + x1_, oy + y1_), 2)
+            NS._aacircle(surface, (*P["acid_hot"], int(a * 0.6)),
+                         (ox - 6, oy - 10), 3)
 
     def _draw_ogre_armor(surface, ox, oy, phase, f, rage):
-        """Harness X + pauldron baja + sabuk kuningan."""
+        """Harness X berjahit + pauldron baja berpaku + sabuk kuningan
+        + botol sabuk. Semua plat punya bevel (gelap->mid->kilau) supaya
+        terbaca sebagai logam, bukan kotak datar."""
         NS = _NS_alchemist
         P = NS.PALETTE
-        # harness diagonal (dua tali kulit berjahit)
+
+        # ── tali harness diagonal (dua arah, dengan jahitan) ───────
         for sgn in (1, -1):
-            x0 = ox - sgn * 15
-            y0 = oy - 22
-            x1 = ox + sgn * 14
-            y1 = oy + 8
-            NS._aaline(surface, P["leather_darkest"],
-                       (x0 - f, y0), (x1 - f, y1), 4)
-            NS._aaline(surface, P["leather_mid"], (x0 - f, y0),
-                       (x1 - f, y1), 2)
-            for t in (0.3, 0.55, 0.8):
-                sxp = int(x0 + (x1 - x0) * t) - f
+            x0, y0 = ox - sgn * 16, oy - 35
+            x1, y1 = ox + sgn * 15, oy + 6
+            NS._limb(surface, (x0, y0), 3.4, (x1, y1), 3.0,
+                     P["leather_darkest"], P["leather_dark"],
+                     P["leather_mid"], P["leather_high"])
+            for t in (0.22, 0.42, 0.62, 0.82):
+                sxp = int(x0 + (x1 - x0) * t)
                 syp = int(y0 + (y1 - y0) * t)
-                NS._aacircle(surface, P["leather_light"],
-                             (sxp, syp), 1)
-        # gesper tengah (brass + sigil gold)
-        NS._rect(surface, P["brass_dark"],
-                 (ox - 4 - f, oy - 9, 8, 8), border_radius=1)
-        NS._rect(surface, P["brass_mid"],
-                 (ox - 3 - f, oy - 8, 6, 6), border_radius=1)
-        NS._aacircle(surface, P["gold_light"], (ox - f, oy - 5), 2)
-        NS._aacircle(surface, P["gold_shine"], (ox - f - 1, oy - 6), 1)
-        # pauldron bahu depan (plat baja berpaku)
-        px, py = ox + f * 17, oy - 30
-        NS._ellipse(surface, P["metal_darkest"],
-                    (px - 9, py - 5, 18, 13))
-        NS._ellipse(surface, P["metal_dark"],
-                    (px - 7, py - 4, 14, 10))
-        NS._ellipse(surface, P["metal_mid"],
-                    (px - 5, py - 3, 9, 6))
-        NS._aacircle(surface, P["metal_light"], (px - 3, py - 2), 2)
-        for rv in ((-5, -3), (3, -3), (0, 1)):
-            NS._aacircle(surface, P["metal_shine"],
+                NS._aacircle(surface, P["leather_high"], (sxp, syp), 1)
+                NS._aacircle(surface, P["brass_dark"], (sxp, syp + 2), 1)
+
+        # ── gesper dada: plat kuningan + sigil asam ────────────────
+        NS._poly(surface, P["brass_dark"], [
+            (ox - 6, oy - 18), (ox + 6, oy - 18), (ox + 7, oy - 10),
+            (ox, oy - 6), (ox - 7, oy - 10)])
+        NS._poly(surface, P["brass_mid"], [
+            (ox - 5, oy - 17), (ox + 5, oy - 17), (ox + 5, oy - 11),
+            (ox, oy - 8), (ox - 5, oy - 11)])
+        NS._aaline(surface, P["brass_shine"], (ox - 4, oy - 16),
+                   (ox + 3, oy - 16), 1)
+        glow = 0.5 + 0.5 * math.sin(phase * 2.2)
+        NS._aacircle(surface, P["acid_dark"], (ox, oy - 13), 3)
+        NS._aacircle(surface, (*P["acid_bright"], int(170 + 80 * glow)),
+                     (ox, oy - 13), 2)
+        NS._aacircle(surface, P["acid_glow"], (ox - 1, oy - 14), 1)
+
+        # (pauldron depan digambar terpisah lewat _draw_pauldron, SETELAH
+        #  lengan depan — kalau digambar di sini, deltoid ogre menimpanya
+        #  dan bahu terlihat seperti bola telanjang; itu cacat rig lama.)
+
+    def _draw_pauldron(surface, ox, oy, phase, f, rage):
+        """Plat bahu depan berlapis + paku keling + duri baja."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        px, py = ox + f * 23, oy - 31
+        NS._ellipse(surface, P["shadow_deep"], (px - 12, py - 7, 24, 18))
+        NS._ellipse(surface, P["metal_darkest"], (px - 11, py - 7, 22, 17))
+        NS._ellipse(surface, P["metal_dark"], (px - 10, py - 6, 19, 14))
+        NS._ellipse(surface, P["metal_mid"], (px - 8, py - 5, 14, 10))
+        NS._ellipse(surface, P["metal_light"], (px - 7, py - 4, 9, 6))
+        NS._aacircle(surface, P["metal_shine"], (px - 5, py - 3), 2)
+        NS._aacircle(surface, P["white"], (px - 6, py - 4), 1)
+        # lapis kedua (lame bawah)
+        NS._ellipse(surface, P["metal_darkest"], (px - 10, py + 5, 20, 8))
+        NS._ellipse(surface, P["metal_dark"], (px - 9, py + 5, 18, 6))
+        NS._aaline(surface, P["metal_mid"], (px - 7, py + 7),
+                   (px + 6, py + 7), 1)
+        # paku keling
+        for rv in ((-7, -1), (-1, -5), (5, -1), (2, 4)):
+            NS._aacircle(surface, P["metal_darkest"],
+                         (px + rv[0], py + rv[1] + 1), 2)
+            NS._aacircle(surface, P["metal_light"],
                          (px + rv[0], py + rv[1]), 1)
-        # baut rage menyala
+        # duri baja di puncak pauldron
+        NS._poly(surface, P["metal_dark"], [
+            (px - 3, py - 6), (px + 1, py - 13), (px + 4, py - 5)])
+        NS._poly(surface, P["metal_light"], [
+            (px - 1, py - 6), (px + 1, py - 12), (px + 2, py - 6)])
         if rage:
             pul = 0.5 + 0.5 * math.sin(phase * 5.0)
-            NS._aacircle(surface, (*P["acid_hot"],
-                                   int(120 + 120 * pul)),
+            NS._aacircle(surface, (*P["acid_hot"], int(110 + 120 * pul)),
+                         (px, py - 1), 4)
+            NS._aacircle(surface, (*P["acid_glow"], int(90 + 100 * pul)),
                          (px, py - 1), 2)
-        # sabuk pinggang + gesper besar
-        NS._rect(surface, P["leather_darkest"],
-                 (ox - 21, oy + 14, 42, 9))
-        NS._rect(surface, P["leather_dark"],
-                 (ox - 19, oy + 15, 38, 6))
-        NS._rect(surface, P["leather_mid"],
-                 (ox - 17, oy + 16, 34, 3))
-        NS._rect(surface, P["brass_dark"],
-                 (ox - 6, oy + 14, 12, 9), border_radius=1)
-        NS._rect(surface, P["brass_mid"],
-                 (ox - 5, oy + 15, 10, 7), border_radius=1)
-        NS._rect(surface, P["brass_light"],
-                 (ox - 4, oy + 15, 8, 2))
-        NS._aacircle(surface, P["gold_shine"], (ox, oy + 18), 2)
-        NS._aacircle(surface, P["gold_light"], (ox, oy + 18), 1)
+
+        return
+
+    def _draw_belt(surface, ox, oy, phase, f, rage):
+        """Sabuk pinggang tebal + gesper kuningan + botol sabuk."""
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        # ── SABUK pinggang tebal + gesper besar + botol sabuk ──────
+        NS._poly(surface, P["shadow_deep"], [
+            (ox - 24, oy + 13), (ox + 24, oy + 13), (ox + 23, oy + 25),
+            (ox - 23, oy + 25)])
+        NS._poly(surface, P["leather_darkest"], [
+            (ox - 23, oy + 13), (ox + 23, oy + 13), (ox + 22, oy + 24),
+            (ox - 22, oy + 24)])
+        NS._poly(surface, P["leather_dark"], [
+            (ox - 21, oy + 14), (ox + 21, oy + 14), (ox + 20, oy + 22),
+            (ox - 20, oy + 22)])
+        NS._aaline(surface, P["leather_mid"], (ox - 20, oy + 16),
+                   (ox + 19, oy + 16), 2)
+        NS._aaline(surface, P["leather_high"], (ox - 19, oy + 15),
+                   (ox + 5, oy + 15), 1)
+        # lubang sabuk
+        for i in range(-3, 4):
+            NS._aacircle(surface, P["leather_darkest"],
+                         (ox + i * 6, oy + 20), 1)
+        # gesper kuningan besar
+        NS._poly(surface, P["brass_dark"], [
+            (ox - 8, oy + 12), (ox + 8, oy + 12), (ox + 8, oy + 25),
+            (ox - 8, oy + 25)])
+        NS._poly(surface, P["brass_mid"], [
+            (ox - 6, oy + 14), (ox + 6, oy + 14), (ox + 6, oy + 23),
+            (ox - 6, oy + 23)])
+        NS._poly(surface, P["brass_light"], [
+            (ox - 5, oy + 15), (ox + 5, oy + 15), (ox + 5, oy + 17),
+            (ox - 5, oy + 17)])
+        NS._aacircle(surface, P["gold_shine"], (ox, oy + 19), 3)
+        NS._aacircle(surface, P["gold_light"], (ox, oy + 19), 2)
+        NS._aacircle(surface, P["white"], (ox - 1, oy + 18), 1)
+        # botol kecil tergantung di sabuk (sisi belakang)
+        for i, bxo in enumerate((-18, -13)):
+            byo = oy + 25 + (i % 2)
+            NS._poly(surface, P["glass_dark"],
+                     [(ox + bxo - 2, byo), (ox + bxo + 2, byo),
+                      (ox + bxo + 3, byo + 7), (ox + bxo - 3, byo + 7)])
+            NS._poly(surface, P["acid_mid"],
+                     [(ox + bxo - 2, byo + 3), (ox + bxo + 2, byo + 3),
+                      (ox + bxo + 2, byo + 6), (ox + bxo - 2, byo + 6)])
+            NS._aacircle(surface, P["glass_shine"],
+                         (ox + bxo - 1, byo + 2), 1)
+            NS._aaline(surface, P["brass_mid"], (ox + bxo - 2, byo),
+                       (ox + bxo + 2, byo), 1)
 
     def _draw_backpack(surface, bx, by, phase, f, rage):
-        """Rangka kayu + 3 botol ramuan berkilau di punggung ogre."""
+        """Rangka kayu + tabung distilasi + 3 botol ramuan mendidih."""
         NS = _NS_alchemist
         P = NS.PALETTE
-        # rangka kulit-kayu
-        NS._poly(surface, P["shadow_deep"],
-                 [(bx - 9, by - 12), (bx + 9, by - 12), (bx + 9, by + 12),
-                  (bx - 9, by + 12)])
-        NS._poly(surface, P["leather_darkest"],
-                 [(bx - 8, by - 11), (bx + 8, by - 11), (bx + 8, by + 11),
-                  (bx - 8, by + 11)])
-        NS._poly(surface, P["leather_dark"],
-                 [(bx - 6, by - 9), (bx + 6, by - 9), (bx + 6, by + 9),
-                  (bx - 6, by + 9)])
-        NS._aaline(surface, P["leather_mid"],
-                   (bx - 6, by), (bx + 6, by), 1)
-        # tali silang
-        NS._aaline(surface, P["leather_darkest"],
-                   (bx - 6, by - 9), (bx + 6, by + 9), 1)
-        NS._aaline(surface, P["leather_darkest"],
-                   (bx + 6, by - 9), (bx - 6, by + 9), 1)
-        # 3 botol: asam (hijau), ramuan (ungu), emas
-        contents = (
-            (P["glass_dark"], P["glass_mid"], P["glass_light"],
-             P["acid_hot"]),
-            (P["gob_darkest"], P["gob_dark"], P["gob_mid"],
-             P["gob_high"]),
-            (P["gold_darkest"], P["gold_dark"], P["gold_mid"],
-             P["gold_light"]),
-        )
-        for i, (dar, mid, lig, hot) in enumerate(contents):
-            bxx = bx - 5 + i * 5
-            byy = by - 5 + (i % 2) * 4
-            slosh = int(math.sin(phase * 1.6 + i * 2.1) * 1)
-            NS._rect(surface, dar, (bxx - 2, byy - 3, 4, 8),
-                     border_radius=1)
-            NS._rect(surface, mid, (bxx - 1, byy - 2 + slosh, 2, 6),
-                     border_radius=1)
-            NS._aacircle(surface, lig, (bxx, byy + 3 - slosh), 1)
-            NS._aacircle(surface, P["leather_dark"],
-                         (bxx, byy - 4), 1)
-            if rage and i == 0:
-                NS._aacircle(surface, (*P["acid_bright"], 160),
-                             (bxx, byy), 4)
-        # gelembung asam kecil naik dari botol hijau
-        bt = (phase * 0.7) % 1.0
-        NS._aacircle(surface, (*P["acid_bright"],
-                               int(180 * (1 - bt))),
-                     (bx - 5, by - 6 - int(bt * 6)), 1)
+        # ── rangka kayu berikat besi ──────────────────────────────
+        NS._poly(surface, P["shadow_deep"], [
+            (bx - 11, by - 15), (bx + 10, by - 16), (bx + 11, by + 14),
+            (bx - 10, by + 15)])
+        NS._poly(surface, P["leather_darkest"], [
+            (bx - 10, by - 14), (bx + 9, by - 15), (bx + 10, by + 13),
+            (bx - 9, by + 14)])
+        NS._poly(surface, P["leather_dark"], [
+            (bx - 8, by - 12), (bx + 7, by - 13), (bx + 8, by + 11),
+            (bx - 7, by + 12)])
+        NS._poly(surface, P["leather_mid"], [
+            (bx - 6, by - 10), (bx + 2, by - 11), (bx + 3, by + 2),
+            (bx - 5, by + 3)])
+        # papan kayu vertikal
+        for i in (-4, 1, 6):
+            NS._aaline(surface, P["leather_darkest"],
+                       (bx + i, by - 13), (bx + i + 1, by + 12), 1)
+        # ikat besi horizontal
+        for yy in (-9, 3):
+            NS._aaline(surface, P["metal_dark"], (bx - 10, by + yy),
+                       (bx + 10, by + yy), 2)
+            NS._aaline(surface, P["metal_light"], (bx - 9, by + yy - 1),
+                       (bx + 4, by + yy - 1), 1)
+            for rv in (-7, 0, 7):
+                NS._aacircle(surface, P["metal_shine"],
+                             (bx + rv, by + yy), 1)
+
+        # ── 3 botol ramuan berdiri di rak atas ────────────────────
+        boil = phase * 3.0
+        for i, (bxo, h, key) in enumerate((
+                (-7, 11, "acid"), (0, 14, "acid"), (7, 10, "gold"))):
+            tx = bx + bxo
+            ty = by - 14
+            liquid = (P["acid_mid"], P["acid_bright"], P["acid_glow"]) \
+                if key == "acid" else (P["gold_dark"], P["gold_mid"],
+                                       P["gold_light"])
+            # kaca badan botol
+            NS._poly(surface, P["shadow_deep"], [
+                (tx - 4, ty - h), (tx + 4, ty - h), (tx + 5, ty + 1),
+                (tx - 5, ty + 1)])
+            NS._poly(surface, P["glass_dark"], [
+                (tx - 4, ty - h + 1), (tx + 4, ty - h + 1),
+                (tx + 4, ty), (tx - 4, ty)])
+            # cairan (permukaan bergoyang)
+            lv = ty - h * 0.55 + math.sin(boil + i * 2.1) * 0.8
+            NS._poly(surface, liquid[0],
+                     [(tx - 4, lv), (tx + 4, lv), (tx + 4, ty),
+                      (tx - 4, ty)])
+            NS._poly(surface, liquid[1],
+                     [(tx - 3, lv + 1), (tx + 2, lv + 1), (tx + 2, ty - 1),
+                      (tx - 3, ty - 1)])
+            NS._aaline(surface, liquid[2], (tx - 4, lv), (tx + 4, lv), 1)
+            # gelembung mendidih
+            for b in range(2):
+                bt = (boil * 0.7 + i * 0.5 + b * 0.5) % 1.0
+                NS._aacircle(surface, (*liquid[2], int(200 * (1 - bt))),
+                             (int(tx - 2 + b * 3),
+                              int(ty - 1 - bt * (h * 0.5))), 1)
+            # kilau kaca + leher + sumbat gabus
+            NS._aaline(surface, P["glass_shine"], (tx - 3, ty - h + 3),
+                       (tx - 3, ty - 3), 1)
+            NS._poly(surface, P["glass_mid"], [
+                (tx - 2, ty - h - 2), (tx + 2, ty - h - 2),
+                (tx + 2, ty - h + 1), (tx - 2, ty - h + 1)])
+            NS._poly(surface, P["leather_mid"], [
+                (tx - 2, ty - h - 4), (tx + 2, ty - h - 4),
+                (tx + 2, ty - h - 2), (tx - 2, ty - h - 2)])
+            NS._aacircle(surface, P["leather_high"], (tx - 1, ty - h - 4), 1)
+            # asap tipis dari botol tengah
+            if i == 1:
+                for s_ in range(3):
+                    st = (boil * 0.35 + s_ * 0.33) % 1.0
+                    NS._aacircle(
+                        surface, (*P["acid_glow"], int(120 * (1 - st))),
+                        (int(tx + math.sin(boil + s_) * 3),
+                         int(ty - h - 5 - st * 9)),
+                        1 + int(st * 2))
+
+        # ── pipa distilasi tembaga melingkar di sisi ──────────────
+        for a in range(5):
+            t = a / 4.0
+            NS._aacircle(surface, P["brass_dark"],
+                         (int(bx + 11 - math.sin(t * 3.1) * 3),
+                          int(by - 6 + t * 16)), 2)
+            NS._aacircle(surface, P["brass_light"],
+                         (int(bx + 10 - math.sin(t * 3.1) * 3),
+                          int(by - 7 + t * 16)), 1)
+        if rage:
+            pul = 0.5 + 0.5 * math.sin(phase * 5.0)
+            NS._aacircle(surface, (*P["acid_hot"], int(70 + 70 * pul)),
+                         (bx, by - 6), 13)
 
     def _draw_ogre_head(surface, hx, hy, f, phase, action, rage):
-        """Kepala ogre: brow berat, underbite bertaring, telinga,
-        ikat kain, war-paint asam, mata menyala saat rage."""
+        """Kepala ogre: tengkorak berat, brow menggantung, mata cekung
+        menyala, hidung bulat, RAHANG UNDERBITE menonjol ke depan dengan
+        gigi taring bawah, telinga lebar, ikat kain + war-paint asam."""
         NS = _NS_alchemist
         P = NS.PALETTE
-        nod = int(math.sin(phase * 0.9) * 1) if action == "idle" else 0
+        nod = int(math.sin(phase * 0.9)) if action == "idle" else 0
         hy += nod
-        # tengkorak
-        NS._ellipse(surface, P["shadow_deep"],
-                    (hx - 12, hy - 11 + 2, 24, 22))
-        NS._ellipse(surface, P["ogre_darkest"],
-                    (hx - 11, hy - 10 + 2, 22, 20))
-        NS._ellipse(surface, P["ogre_dark"],
-                    (hx - 9, hy - 8 + 2, 18, 16))
-        NS._ellipse(surface, P["ogre_mid"],
-                    (hx - 6, hy - 6 + 2, 12, 11))
-        # moncong / rahang underbite
-        NS._ellipse(surface, P["ogre_dark"],
-                    (hx + f * 3 - 6, hy + 3, 13, 8))
-        NS._ellipse(surface, P["ogre_mid"],
-                    (hx + f * 3 - 4, hy + 4, 9, 5))
-        # brow ridge berat
+
+        # ── telinga lebar (di belakang tengkorak) ─────────────────
+        for sgn in (-1, 1):
+            ex = hx + sgn * 12
+            flick = int(math.sin(phase * 1.6 + sgn) * 1.2)
+            tip = (ex + sgn * 10, hy - 8 + flick)
+            NS._poly(surface, P["shadow_deep"], [
+                (ex, hy - 5), tip, (ex + sgn * 8, hy + 5)])
+            NS._poly(surface, P["ogre_darkest"], [
+                (ex, hy - 4), (tip[0] - sgn, tip[1] + 1),
+                (ex + sgn * 7, hy + 4)])
+            NS._poly(surface, P["ogre_dark" if sgn < 0 else "ogre_darkest"],
+                     [(ex + sgn, hy - 3), (tip[0] - sgn * 3, tip[1] + 2),
+                      (ex + sgn * 5, hy + 2)])
+            if sgn < 0:                     # telinga sisi cahaya
+                NS._aaline(surface, P["ogre_mid"], (ex - 1, hy - 2),
+                           (tip[0] + 3, tip[1] + 3), 1)
+            # anting kuningan
+            NS._aacircle(surface, P["brass_mid"],
+                         (ex + sgn * 6, hy + 4), 2, 1)
+
+        # ── TENGKORAK: massa utama + ramp ─────────────────────────
+        NS._ellipse(surface, P["shadow_deep"], (hx - 14, hy - 15, 28, 28))
+        NS._ellipse(surface, P["ogre_darkest"], (hx - 13, hy - 14, 26, 26))
+        NS._ellipse(surface, P["ogre_dark"], (hx - 12, hy - 13, 23, 23))
+        NS._ellipse(surface, P["ogre_mid"], (hx - 10, hy - 12, 18, 18))
+        NS._ellipse(surface, P["ogre_light"], (hx - 9, hy - 11, 12, 12))
+        NS._ellipse(surface, P["ogre_high"], (hx - 8, hy - 10, 7, 7))
+
+        # ── RAHANG UNDERBITE menonjol ke arah hadap ───────────────
+        jx = hx + f * 5
+        NS._ellipse(surface, P["shadow_deep"], (jx - 11, hy + 1, 22, 15))
+        NS._ellipse(surface, P["ogre_darkest"], (jx - 10, hy + 1, 20, 14))
+        NS._ellipse(surface, P["ogre_dark"], (jx - 9, hy + 2, 18, 11))
+        NS._ellipse(surface, P["ogre_mid"], (jx - 7, hy + 3, 13, 8))
+        NS._ellipse(surface, P["ogre_light"], (jx - 6, hy + 4, 7, 4))
+        # garis mulut
+        NS._aaline(surface, P["ogre_darkest"], (jx - 8, hy + 4),
+                   (jx + 8, hy + 4), 2)
+        NS._aaline(surface, P["shadow_deep"], (jx - 7, hy + 5),
+                   (jx + 7, hy + 5), 1)
+
+        # ── TARING bawah besar mencuat ke atas (khas ogre) ────────
+        for tx_, hgt in ((jx - 6, 8), (jx + 6, 9)):
+            NS._poly(surface, P["shadow_deep"], [
+                (tx_ - 3, hy + 5), (tx_ + 3, hy + 5),
+                (tx_ + 1, hy + 5 - hgt)])
+            NS._poly(surface, P["bone_dark"], [
+                (tx_ - 3, hy + 4), (tx_ + 3, hy + 4),
+                (tx_ + 1, hy + 4 - hgt)])
+            NS._poly(surface, P["bone_mid"], [
+                (tx_ - 2, hy + 4), (tx_ + 2, hy + 4),
+                (tx_ + 1, hy + 5 - hgt)])
+            NS._poly(surface, P["bone_light"], [
+                (tx_ - 2, hy + 3), (tx_, hy + 3),
+                (tx_ + 0, hy + 6 - hgt)])
+        # gigi kecil atas
+        for i in range(-2, 3):
+            NS._poly(surface, P["bone_dark"], [
+                (jx + i * 3 - 1, hy + 4), (jx + i * 3 + 1, hy + 4),
+                (jx + i * 3, hy + 7)])
+
+        # ── BROW RIDGE berat menggantung (bayangan mata) ──────────
         NS._poly(surface, P["ogre_darkest"], [
-            (hx - 9, hy - 3), (hx + 8, hy - 3), (hx + 7, hy - 1),
-            (hx - 8, hy - 1)])
+            (hx - 12, hy - 6), (hx + 11, hy - 6), (hx + 10, hy + 1),
+            (hx - 11, hy + 1)])
         NS._poly(surface, P["ogre_dark"], [
-            (hx - 8, hy - 3), (hx + 7, hy - 3), (hx + 6, hy - 2),
-            (hx - 7, hy - 2)])
-        # mata (kedip deterministik ~2.6 dtk) + glow rage
+            (hx - 11, hy - 6), (hx + 10, hy - 6), (hx + 9, hy - 3),
+            (hx - 10, hy - 3)])
+        NS._aaline(surface, P["ogre_mid"], (hx - 10, hy - 6),
+                   (hx + 2, hy - 7), 1)
+        # kerut dahi
+        NS._aaline(surface, P["ogre_darkest"], (hx - 8, hy - 9),
+                   (hx + 6, hy - 10), 1)
+        NS._aaline(surface, P["ogre_darkest"], (hx - 6, hy - 12),
+                   (hx + 4, hy - 12), 1)
+
+        # ── MATA cekung di bawah brow, menyala ────────────────────
         blink = 1 if (phase % (math.pi * 5.0)) < 0.14 else 0
         eye_c = P["eye_rage"] if rage else P["eye_hot"]
-        for ex in (hx - 5, hx + 4):
+        for ex in (hx - 6, hx + 5):
+            NS._ellipse(surface, P["shadow_deep"], (ex - 4, hy - 3, 8, 6))
             if blink:
-                NS._aaline(surface, P["ogre_darkest"],
-                           (ex - 1, hy - 1), (ex + 2, hy - 1), 1)
-            else:
-                NS._aacircle(surface, P["eye_dark"], (ex, hy), 2)
-                NS._aacircle(surface, eye_c, (ex, hy), 1)
-        # taring atas-bawah (underbite: taring bawah naik)
-        for tx, up in ((hx - 5, 1), (hx + 5, 1), (hx - 2, -1)):
-            ty = hy + 8 if up > 0 else hy + 6
-            d = -3 if up > 0 else 3
-            NS._poly(surface, P["bone_dark"], [
-                (tx - 1, ty), (tx + 2, ty), (tx + 1, ty + d),
-                (tx, ty + d)])
-            NS._poly(surface, P["bone_mid"], [
-                (tx - 1, ty), (tx + 1, ty), (tx + 1, ty + d),
-                (tx, ty + d)])
-            NS._aacircle(surface, P["bone_light"],
-                         (tx + f, ty + d), 1)
-        # hidung
-        NS._aacircle(surface, P["ogre_darkest"],
-                     (hx + f * 1, hy + 1), 2)
-        # telinga runcing
-        for sgn in (-1, 1):
-            ex = hx + sgn * 11
-            NS._poly(surface, P["ogre_darkest"],
-                     [(ex, hy - 2), (ex + sgn * 6, hy - 7),
-                      (ex + sgn * 5, hy + 2)])
-            NS._poly(surface, P["ogre_dark"],
-                     [(ex, hy - 1), (ex + sgn * 4, hy - 5),
-                      (ex + sgn * 4, hy + 1)])
-        # ikat kain + war paint
-        NS._rect(surface, P["leather_darkest"],
-                 (hx - 11, hy - 12 + 2, 22, 5))
-        NS._rect(surface, P["leather_dark"],
-                 (hx - 10, hy - 11 + 2, 20, 3))
-        NS._aaline(surface, P["acid_mid"],
-                   (hx - 6, hy - 4), (hx - 2, hy + 6), 2)
-        NS._aaline(surface, P["acid_mid"],
-                   (hx + 6, hy - 4), (hx + 2, hy + 6), 2)
-        # topknot kecil
-        NS._aacircle(surface, P["leather_mid"],
-                     (hx - f * 2, hy - 11), 3)
-        NS._aacircle(surface, P["leather_light"],
-                     (hx - f * 3, hy - 12), 2)
+                NS._aaline(surface, P["ogre_dark"], (ex - 3, hy),
+                           (ex + 3, hy), 2)
+                continue
+            NS._ellipse(surface, P["eye_dark"], (ex - 3, hy - 2, 6, 5))
+            NS._aacircle(surface, (*eye_c, 90), (ex, hy), 4)
+            NS._aacircle(surface, eye_c, (ex, hy), 2)
+            NS._aacircle(surface, P["white"], (ex - 1, hy - 1), 1)
+
+        # ── hidung bulat besar dengan lubang ──────────────────────
+        nx = hx + f * 2
+        NS._ellipse(surface, P["ogre_dark"], (nx - 5, hy + 1, 10, 7))
+        NS._ellipse(surface, P["ogre_mid"], (nx - 4, hy + 1, 8, 5))
+        NS._aacircle(surface, P["ogre_light"], (nx - 2, hy + 2), 2)
+        NS._aacircle(surface, P["ogre_darkest"], (nx - 2, hy + 5), 1)
+        NS._aacircle(surface, P["ogre_darkest"], (nx + 2, hy + 5), 1)
+
+        # ── ikat kain: MELENGKUNG mengikuti tempurung kepala
+        #    (rig lama memakai persegi panjang datar yang memotong
+        #    tengkorak jadi dua — itu yang membuat kepala terbaca
+        #    seperti kotak) ──────────────────────────────────────────
+        band = []
+        for i in range(11):
+            t = i / 10.0
+            axp = hx - 13 + t * 26
+            ayp = hy - 9 - math.sin(t * math.pi) * 6.5
+            band.append((axp, ayp))
+        low = [(x_, y_ + 6) for x_, y_ in reversed(band)]
+        NS._poly(surface, P["shadow_deep"],
+                 [(x_, y_ - 1) for x_, y_ in band] +
+                 [(x_, y_ + 1) for x_, y_ in low])
+        NS._poly(surface, P["leather_darkest"], band + low)
+        NS._poly(surface, P["leather_dark"],
+                 [(x_, y_ + 1) for x_, y_ in band] +
+                 [(x_, y_ - 1) for x_, y_ in low])
+        # lipatan kain + kilau sisi cahaya
+        mid_band = [(x_, y_ + 3) for x_, y_ in band]
+        NS._aalines_soft(surface, P["leather_mid"], mid_band, 2)
+        NS._aalines_soft(surface, P["leather_high"], mid_band[:5], 1)
+        for i in (2, 4, 6, 8):
+            NS._aaline(surface, P["leather_darkest"],
+                       (int(band[i][0]), int(band[i][1] + 1)),
+                       (int(band[i][0] + 1), int(band[i][1] + 5)), 1)
+        # simpul kain menjuntai di belakang
+        kx = hx - f * 13
+        NS._poly(surface, P["leather_dark"], [
+            (kx, hy - 13), (kx - f * 6, hy - 9), (kx - f * 4, hy - 4),
+            (kx, hy - 8)])
+        NS._aaline(surface, P["leather_mid"], (kx - f, hy - 12),
+                   (kx - f * 5, hy - 8), 1)
+        # war-paint asam di pipi
+        NS._aaline(surface, P["acid_mid"], (hx - 8, hy - 1),
+                   (hx - 5, hy + 8), 2)
+        NS._aaline(surface, P["acid_bright"], (hx - 8, hy - 1),
+                   (hx - 6, hy + 4), 1)
+        NS._aaline(surface, P["acid_mid"], (hx + 7, hy - 1),
+                   (hx + 4, hy + 8), 2)
 
     def _draw_acid_gun(surface, hx, hy, ang, f, firing, phase):
-        """Acid gun goblin: laras kuningan + tangki kaca + moncong."""
+        """Acid gun goblin: laras kuningan, tangki kaca, moncong corong."""
         NS = _NS_alchemist
         P = NS.PALETTE
         ca, sa = math.cos(ang), math.sin(ang)
@@ -12183,38 +12636,48 @@ class _NS_alchemist:
             return (int(hx + ca * dist + px * side),
                     int(hy + sa * dist + py * side))
 
-        # laras
-        NS._poly(surface, P["shadow_deep"],
-                 [pt(-2, -3), pt(13, -3), pt(13, 3), pt(-2, 3)])
-        NS._poly(surface, P["brass_dark"],
-                 [pt(-1, -3), pt(12, -3), pt(12, 3), pt(-1, 3)])
-        NS._poly(surface, P["brass_mid"],
-                 [pt(-1, -2), pt(11, -2), pt(11, 2), pt(-1, 2)])
-        NS._aaline(surface, P["brass_light"], pt(0, -1), pt(10, -1), 1)
-        # cincin laras
-        for d in (3, 8):
-            NS._aaline(surface, P["brass_dark"], pt(d, -3), pt(d, 3), 1)
-        # tangki kaca asam di atas laras
-        tk = pt(4, -5)
-        slosh = int(math.sin(phase * 2.2) * 1)
-        NS._ellipse(surface, P["glass_dark"],
-                    (tk[0] - 3, tk[1] - 3 + slosh, 6, 7))
-        NS._ellipse(surface, P["glass_mid"],
-                    (tk[0] - 2, tk[1] - 2 + slosh, 4, 5))
-        NS._aacircle(surface, P["glass_shine"], (tk[0] - 1, tk[1] - 2),
-                     1)
-        NS._aacircle(surface, P["acid_hot"], (tk[0], tk[1] + 1), 1)
-        # pegangan + pelatuk
-        gp = pt(0, 4)
-        NS._poly(surface, P["leather_darkest"],
-                 [pt(-1, 3), pt(2, 3), pt(1, 7), pt(-2, 7)])
-        NS._aacircle(surface, P["leather_mid"], (gp[0], gp[1]), 2)
-        # moncong: uap tetes saat idle, semburan saat firing
-        mz = pt(13, 0)
+        # ── laras utama (kuningan, ber-bevel) ─────────────────────
+        NS._limb(surface, pt(-3, 0), 3.4, pt(12, 0), 2.8,
+                 P["brass_dark"], P["brass_mid"], P["brass_light"],
+                 P["brass_shine"])
+        # cincin penguat laras
+        for d in (2, 7):
+            NS._limb(surface, pt(d, -4), 1.4, pt(d, 4), 1.4,
+                     P["brass_dark"], P["brass_mid"], P["brass_light"])
+        # ── moncong corong ────────────────────────────────────────
+        NS._poly(surface, P["brass_dark"], [
+            pt(11, -3), pt(15, -5), pt(15, 5), pt(11, 3)])
+        NS._poly(surface, P["brass_mid"], [
+            pt(12, -2), pt(14, -4), pt(14, 4), pt(12, 2)])
+        NS._aaline(surface, P["brass_shine"], pt(12, -2), pt(14, -4), 1)
+        # ── tangki kaca asam di punggung laras ────────────────────
+        tk = pt(4, -6)
+        slosh = math.sin(phase * 2.2) * 0.8
+        NS._ellipse(surface, P["shadow_deep"], (tk[0] - 5, tk[1] - 4, 10, 9))
+        NS._ellipse(surface, P["glass_dark"], (tk[0] - 4, tk[1] - 4, 8, 8))
+        NS._ellipse(surface, P["acid_mid"],
+                    (tk[0] - 3, tk[1] - 1 + slosh, 6, 4))
+        NS._ellipse(surface, P["acid_bright"],
+                    (tk[0] - 2, tk[1] + slosh, 4, 2))
+        NS._aacircle(surface, P["glass_shine"], (tk[0] - 2, tk[1] - 2), 1)
+        # selang tangki -> laras
+        NS._aaline(surface, P["metal_dark"], (tk[0] + 3, tk[1] + 2),
+                   pt(8, -2), 2)
+        NS._aaline(surface, P["metal_light"], (tk[0] + 3, tk[1] + 1),
+                   pt(8, -3), 1)
+        # ── pegangan pistol + pelatuk ─────────────────────────────
+        NS._limb(surface, pt(0, 3), 3.0, pt(-2, 9), 2.4,
+                 P["leather_darkest"], P["leather_dark"], P["leather_mid"])
+        NS._aaline(surface, P["metal_mid"], pt(2, 3), pt(1, 6), 1)
+        NS._poly(surface, P["metal_dark"], [
+            pt(3, 3), pt(4, 8), pt(0, 9), pt(0, 7)])
+        # ── moncong: tetes saat idle, semburan saat menembak ──────
+        mz = pt(15, 0)
         if firing:
-            NS._aacircle(surface, (*P["acid_white"], 230),
-                         (mz[0], mz[1]), 4)
-            NS._aacircle(surface, P["acid_hot"], (mz[0], mz[1]), 2)
+            NS._aacircle(surface, (*P["acid_glow"], 120), mz, 8)
+            NS._aacircle(surface, (*P["acid_white"], 235), mz, 5)
+            NS._aacircle(surface, P["acid_hot"], mz, 3)
+            NS._aacircle(surface, P["white"], mz, 1)
         else:
             drip = (phase * 0.5) % 1.0
             NS._aacircle(surface, (*P["acid_bright"],
@@ -12232,90 +12695,166 @@ class _NS_alchemist:
         """
         NS = _NS_alchemist
         P = NS.PALETTE
-        bob = int(math.sin(phase * 1.1) * 1)
-        gx += 0
+        bob = math.sin(phase * 1.1) * 1.2
         gy += bob
-        # badan goblin
-        NS._poly(surface, P["shadow_deep"],
-                 [(gx - 6, gy - 8), (gx + 6, gy - 8), (gx + 6, gy + 8),
-                  (gx - 6, gy + 8)])
-        NS._poly(surface, P["gob_darkest"],
-                 [(gx - 5, gy - 7), (gx + 5, gy - 7), (gx + 5, gy + 7),
-                  (gx - 5, gy + 7)])
-        NS._poly(surface, P["gob_dark"],
-                 [(gx - 4, gy - 6), (gx + 4, gy - 6), (gx + 4, gy + 5),
-                  (gx - 4, gy + 5)])
-        NS._poly(surface, P["gob_mid"],
-                 [(gx - 3, gy - 5), (gx + 3, gy - 5), (gx + 3, gy + 3),
-                  (gx - 3, gy + 3)])
-        # rompi kulit + gesper
-        NS._rect(surface, P["leather_darkest"],
-                 (gx - 4, gy - 2, 8, 7))
-        NS._rect(surface, P["leather_dark"], (gx - 3, gy - 1, 6, 5))
-        NS._aacircle(surface, P["brass_light"], (gx, gy + 1), 1)
-        # kaki mencengkeram bahu ogre
-        NS._aaline(surface, P["gob_darkest"],
-                   (gx - 3, gy + 6), (gx - 6 + f * 3, gy + 10), 2)
-        NS._aaline(surface, P["gob_darkest"],
-                   (gx + 3, gy + 6), (gx + 6 + f * 3, gy + 10), 2)
-        # kepala goblin
-        NS._ellipse(surface, P["shadow_deep"],
-                    (gx - 6, gy - 15, 12, 11))
-        NS._ellipse(surface, P["gob_darkest"],
-                    (gx - 5, gy - 14, 10, 9))
-        NS._ellipse(surface, P["gob_dark"],
-                    (gx - 4, gy - 13, 8, 7))
-        NS._ellipse(surface, P["gob_mid"],
-                    (gx - 2, gy - 12, 4, 5))
-        # mata glow (kuning-panas; rage = hijau)
-        eye = P["eye_rage"] if rage else P["eye_hot"]
-        NS._aacircle(surface, eye, (gx + f * 1 - 1, gy - 11), 1)
-        NS._aacircle(surface, eye, (gx + f * 1 + 2, gy - 11), 1)
-        # hidung bawang + senyum snaggle
-        NS._aacircle(surface, P["gob_mid"],
-                     (gx + f * 4, gy - 9), 2)
-        NS._aacircle(surface, P["gob_high"],
-                     (gx + f * 4, gy - 10), 1)
-        NS._aaline(surface, P["gob_darkest"],
-                   (gx + f * 1, gy - 7), (gx + f * 4, gy - 7), 1)
-        NS._aacircle(surface, P["bone_light"],
-                     (gx + f * 3, gy - 7), 1)
-        # telinga
-        for sgn in (-1, 1):
-            ex = gx + sgn * 5
-            NS._poly(surface, P["gob_darkest"],
-                     [(ex, gy - 12), (ex + sgn * 6, gy - 15),
-                      (ex + sgn * 5, gy - 9)])
-            NS._poly(surface, P["gob_dark"],
-                     [(ex, gy - 12), (ex + sgn * 4, gy - 14),
-                      (ex + sgn * 4, gy - 10)])
-        # topi alkemis (topi kulit ber-band kuningan + kaca)
-        NS._poly(surface, P["shadow_deep"],
-                 [(gx - 6, gy - 17), (gx + 6, gy - 17), (gx + 5, gy - 25),
-                  (gx - 5, gy - 25)])
-        NS._poly(surface, P["leather_darkest"],
-                 [(gx - 5, gy - 17), (gx + 5, gy - 17), (gx + 4, gy - 24),
-                  (gx - 4, gy - 24)])
-        NS._poly(surface, P["leather_mid"],
-                 [(gx - 4, gy - 18), (gx + 4, gy - 18), (gx + 3, gy - 23),
-                  (gx - 3, gy - 23)])
-        NS._aaline(surface, P["brass_mid"],
-                   (gx - 4, gy - 19), (gx + 4, gy - 19), 2)
-        NS._aacircle(surface, P["glass_shine"], (gx, gy - 21), 1)
-        NS._aacircle(surface, P["acid_hot"], (gx, gy - 21), 1)
 
-        # ── lengan & pose ──────────────────────────────────────────
+        # ── kaki mencangkung mencengkeram bahu ogre ───────────────
+        for sgn in (-1, 1):
+            kx = gx + sgn * 5
+            NS._limb(surface, (gx + sgn * 3, gy + 3), 3.0,
+                     (kx + f * 2, gy + 9), 2.4,
+                     P["gob_darkest"], P["gob_dark"], P["gob_mid"])
+            NS._limb(surface, (kx + f * 2, gy + 9), 2.4,
+                     (kx + f * 6, gy + 12), 2.0,
+                     P["gob_darkest"], P["gob_dark"], P["gob_mid"])
+            NS._aacircle(surface, P["leather_dark"],
+                         (int(kx + f * 6), int(gy + 12)), 2)
+
+        # ── torso kecil + rompi kulit berkantong ──────────────────
+        NS._ellipse(surface, P["shadow_deep"], (gx - 7, gy - 9, 14, 18))
+        NS._ellipse(surface, P["gob_darkest"], (gx - 6, gy - 8, 12, 16))
+        NS._ellipse(surface, P["gob_dark"], (gx - 5, gy - 7, 10, 13))
+        NS._ellipse(surface, P["gob_mid"], (gx - 4, gy - 6, 6, 9))
+        NS._aacircle(surface, P["gob_light"], (gx - 2, gy - 4), 2)
+        # rompi + tali bandolier botol mini
+        NS._poly(surface, P["leather_darkest"], [
+            (gx - 5, gy - 4), (gx + 5, gy - 4), (gx + 4, gy + 5),
+            (gx - 4, gy + 5)])
+        NS._poly(surface, P["leather_dark"], [
+            (gx - 4, gy - 3), (gx + 4, gy - 3), (gx + 3, gy + 4),
+            (gx - 3, gy + 4)])
+        NS._aaline(surface, P["leather_mid"], (gx - 4, gy - 2),
+                   (gx + 4, gy + 2), 2)
+        for i, bxo in enumerate((-3, 0, 3)):
+            NS._aacircle(surface, P["acid_bright"],
+                         (gx + bxo, gy - 1 + i), 1)
+        NS._aacircle(surface, P["brass_light"], (gx, gy + 2), 1)
+
+        # ── telinga panjang goblin ────────────────────────────────
+        for sgn in (-1, 1):
+            ex = gx + sgn * 4
+            flick = math.sin(phase * 2.2 + sgn * 1.5) * 1.5
+            tip = (ex + sgn * 9, gy - 17 + flick)
+            NS._poly(surface, P["shadow_deep"], [
+                (ex, gy - 13), tip, (ex + sgn * 5, gy - 9)])
+            NS._poly(surface, P["gob_darkest"], [
+                (ex, gy - 12), (tip[0] - sgn, tip[1] + 1),
+                (ex + sgn * 4, gy - 9)])
+            NS._poly(surface, P["gob_dark"], [
+                (ex + sgn, gy - 12), (tip[0] - sgn * 3, tip[1] + 2),
+                (ex + sgn * 3, gy - 10)])
+
+        # ── kepala + moncong runcing ──────────────────────────────
+        NS._ellipse(surface, P["shadow_deep"], (gx - 7, gy - 18, 14, 13))
+        NS._ellipse(surface, P["gob_darkest"], (gx - 6, gy - 17, 12, 12))
+        NS._ellipse(surface, P["gob_dark"], (gx - 5, gy - 16, 10, 10))
+        NS._ellipse(surface, P["gob_mid"], (gx - 5, gy - 16, 7, 7))
+        NS._ellipse(surface, P["gob_light"], (gx - 4, gy - 15, 4, 4))
+        # hidung bengkok panjang
+        NS._poly(surface, P["gob_dark"], [
+            (gx + f * 2, gy - 12), (gx + f * 9, gy - 9),
+            (gx + f * 2, gy - 8)])
+        NS._poly(surface, P["gob_mid"], [
+            (gx + f * 2, gy - 11), (gx + f * 7, gy - 9),
+            (gx + f * 2, gy - 9)])
+        NS._aacircle(surface, P["gob_high"], (int(gx + f * 4), gy - 10), 1)
+        # senyum snaggle-tooth
+        NS._aaline(surface, P["gob_darkest"], (gx - f * 1, gy - 7),
+                   (gx + f * 4, gy - 8), 1)
+        NS._poly(surface, P["bone_light"], [
+            (gx + f * 2, gy - 8), (gx + f * 3, gy - 8),
+            (gx + f * 2, gy - 5)])
+        # mata + goggle sebelah
+        eye = P["eye_rage"] if rage else P["eye_hot"]
+        NS._aacircle(surface, (*eye, 110), (int(gx + f * 1), gy - 13), 3)
+        NS._aacircle(surface, eye, (int(gx + f * 1), gy - 13), 1)
+        NS._aacircle(surface, P["metal_dark"], (int(gx - f * 3), gy - 13), 3)
+        NS._aacircle(surface, P["glass_mid"], (int(gx - f * 3), gy - 13), 2)
+        NS._aacircle(surface, P["glass_shine"],
+                     (int(gx - f * 4), gy - 14), 1)
+        NS._aaline(surface, P["leather_dark"], (gx - f * 6, gy - 13),
+                   (gx + f * 5, gy - 14), 1)
+
+        # ── topi alkemis lancip berikat kuningan ──────────────────
+        tilt = f * 2
+        NS._poly(surface, P["shadow_deep"], [
+            (gx - 9, gy - 18), (gx + 9, gy - 18), (gx + 8, gy - 21),
+            (gx - 8, gy - 21)])
+        NS._poly(surface, P["leather_darkest"], [
+            (gx - 9, gy - 19), (gx + 9, gy - 19), (gx + 7, gy - 22),
+            (gx - 7, gy - 22)])
+        NS._poly(surface, P["leather_dark"], [
+            (gx - 7, gy - 20), (gx + 7, gy - 20), (gx + 6, gy - 22),
+            (gx - 6, gy - 22)])
+        # kerucut topi
+        NS._poly(surface, P["shadow_deep"], [
+            (gx - 7, gy - 21), (gx + 7, gy - 21),
+            (gx + tilt + 2, gy - 33)])
+        NS._poly(surface, P["leather_darkest"], [
+            (gx - 6, gy - 21), (gx + 6, gy - 21),
+            (gx + tilt + 1, gy - 32)])
+        NS._poly(surface, P["leather_dark"], [
+            (gx - 5, gy - 22), (gx + 4, gy - 22),
+            (gx + tilt + 1, gy - 31)])
+        NS._poly(surface, P["leather_mid"], [
+            (gx - 4, gy - 22), (gx - 1, gy - 22),
+            (gx + tilt, gy - 30)])
+        # band kuningan + botol kecil terselip
+        NS._poly(surface, P["brass_dark"], [
+            (gx - 7, gy - 23), (gx + 7, gy - 23), (gx + 6, gy - 26),
+            (gx - 6, gy - 26)])
+        NS._poly(surface, P["brass_mid"], [
+            (gx - 6, gy - 24), (gx + 6, gy - 24), (gx + 5, gy - 25),
+            (gx - 5, gy - 25)])
+        NS._aacircle(surface, P["brass_shine"], (gx - 4, gy - 25), 1)
+        glow = 0.5 + 0.5 * math.sin(phase * 3.0)
+        NS._aacircle(surface, (*P["acid_glow"], int(90 + 90 * glow)),
+                     (int(gx + 4), gy - 25), 3)
+        NS._aacircle(surface, P["acid_hot"], (int(gx + 4), gy - 25), 1)
+        # ujung topi menjuntai
+        NS._aacircle(surface, P["gold_light"],
+                     (int(gx + tilt + 1), gy - 32), 2)
+        NS._aacircle(surface, P["gold_shine"],
+                     (int(gx + tilt), gy - 33), 1)
+
+        # Lengan + senjata goblin digambar TERPISAH (_draw_goblin_arms)
+        # SETELAH kepala ogre, kalau tidak laras senapan & botol W
+        # tenggelam di belakang tengkorak ogre — cacat rig lama.
+        return NS._draw_goblin_arms(surface, gx, gy - bob, f, phase,
+                                    action, ap, rage, aim_angle)
+
+    def _draw_goblin_arms(surface, gx, gy, f, phase, action, ap,
+                          rage, aim_angle=None):
+        """Lengan + senjata goblin (lapisan DEPAN, di atas kepala ogre).
+
+        Return (gun_hand, bottle_hand) dalam piksel layar.
+        """
+        NS = _NS_alchemist
+        P = NS.PALETTE
+        gy += math.sin(phase * 1.1) * 1.2
         gun_hand = (gx + f * 9, gy - 4)
         bottle_hand = (gx + f * 3, gy - 10)
         aim_ang = (float(aim_angle) if aim_angle is not None
                    else -0.1 + math.sin(phase) * 0.06)
+
+        def arm(p0, p1, bulge=2.5):
+            """Lengan goblin bersiku."""
+            dxx, dyy = p1[0] - p0[0], p1[1] - p0[1]
+            lnn = max(1.0, math.hypot(dxx, dyy))
+            exx = p0[0] + dxx * 0.5 - dyy / lnn * bulge
+            eyy = p0[1] + dyy * 0.5 + dxx / lnn * bulge + 1.5
+            NS._limb(surface, p0, 3.0, (exx, eyy), 2.4,
+                     P["gob_darkest"], P["gob_dark"], P["gob_mid"])
+            NS._limb(surface, (exx, eyy), 2.4, p1, 1.9,
+                     P["gob_darkest"], P["gob_dark"], P["gob_mid"])
+            NS._aacircle(surface, P["leather_dark"],
+                         (int(p1[0]), int(p1[1])), 2)
+
         if action == "q_cast":
             gun_hand = (gx + f * 8, gy - 6)
-            NS._aaline(surface, P["gob_dark"],
-                       (gx + 3, gy - 4), gun_hand, 3)
-            NS._aaline(surface, P["gob_mid"],
-                       (gx + 3, gy - 5), gun_hand, 1)
-            recoil = int(math.sin(phase * 8.0) * 1)
+            arm((gx + f * 3, gy - 4), gun_hand)
+            arm((gx - f * 3, gy - 3), (gx + f * 2, gy - 1), -2.0)
+            recoil = math.sin(phase * 8.0) * 1.2
             mz = NS._draw_acid_gun(surface, gun_hand[0] + f * 2,
                                    gun_hand[1] + recoil, aim_ang, f,
                                    firing=True, phase=phase)
@@ -12323,48 +12862,63 @@ class _NS_alchemist:
         elif action == "w_cast":
             trem = 1 if int(phase * 26) % 2 else 0
             bottle_hand = (gx + f * (2 + trem), gy - 30)
-            NS._aaline(surface, P["gob_dark"],
-                       (gx + 2, gy - 5), bottle_hand, 3)
-            NS._aaline(surface, P["gob_mid"],
-                       (gx + 2, gy - 6), bottle_hand, 1)
-            glow = 0.5 + 0.5 * math.sin(phase * 6.0)
-            NS._aacircle(surface, P["glass_dark"],
-                         bottle_hand, 4)
-            NS._aacircle(surface, P["glass_mid"], bottle_hand, 3)
-            NS._aacircle(surface, P["acid_bright"], bottle_hand, 2)
-            NS._aacircle(surface, P["acid_hot"],
-                         (bottle_hand[0] - 1, bottle_hand[1] - 1), 1)
-            NS._aacircle(surface, (*P["acid_glow"],
-                                   int(140 * glow)), bottle_hand, 7)
-            # tangan satunya pegang tali
-            NS._aaline(surface, P["gob_dark"],
-                       (gx - 3, gy - 3), (gx - 7, gy + 2), 2)
+            arm((gx + f * 2, gy - 5), bottle_hand, 3.5)
+            arm((gx - f * 3, gy - 4), (gx - f * 7, gy + 1), -2.0)
+            # ── BOTOL UNSTABLE CONCOCTION (kaca + cairan mendidih) ─
+            bxp, byp = int(bottle_hand[0]), int(bottle_hand[1])
+            glow2 = 0.5 + 0.5 * math.sin(phase * 6.0)
+            NS._aacircle(surface, (*P["acid_glow"], int(60 + 70 * glow2)),
+                         (bxp, byp), 11)
+            NS._aacircle(surface, (*P["acid_hot"], int(90 + 90 * glow2)),
+                         (bxp, byp), 7)
+            NS._ellipse(surface, P["shadow_deep"], (bxp - 6, byp - 5, 12, 13))
+            NS._ellipse(surface, P["glass_dark"], (bxp - 5, byp - 4, 10, 11))
+            NS._ellipse(surface, P["acid_dark"], (bxp - 4, byp - 1, 8, 7))
+            NS._ellipse(surface, P["acid_bright"], (bxp - 3, byp, 6, 5))
+            NS._ellipse(surface, P["acid_hot"], (bxp - 2, byp + 1, 3, 3))
+            NS._aaline(surface, P["glass_shine"], (bxp - 4, byp - 2),
+                       (bxp - 4, byp + 3), 1)
+            # leher + sumbat
+            NS._poly(surface, P["glass_mid"], [
+                (bxp - 2, byp - 8), (bxp + 2, byp - 8),
+                (bxp + 2, byp - 4), (bxp - 2, byp - 4)])
+            NS._poly(surface, P["leather_mid"], [
+                (bxp - 2, byp - 10), (bxp + 2, byp - 10),
+                (bxp + 2, byp - 8), (bxp - 2, byp - 8)])
+            # gelembung
+            for b in range(3):
+                bt = (phase * 0.8 + b * 0.33) % 1.0
+                NS._aacircle(surface, (*P["acid_glow"], int(220 * (1 - bt))),
+                             (bxp - 2 + b * 2, int(byp + 2 - bt * 6)), 1)
         else:
-            # genggam senapan ke atas-depan
             gun_hand = (gx + f * 8, gy - 8)
-            NS._aaline(surface, P["gob_dark"],
-                       (gx + 3, gy - 5), gun_hand, 3)
-            NS._aaline(surface, P["gob_mid"],
-                       (gx + 3, gy - 6), gun_hand, 1)
+            arm((gx + f * 3, gy - 5), gun_hand)
             mz = NS._draw_acid_gun(surface, gun_hand[0], gun_hand[1],
                                    -0.55 + math.sin(phase * 0.9) * 0.08,
                                    f, firing=False, phase=phase)
             gun_hand = mz
             if action in ("e_cast", "r_cast"):
-                pump = int(math.sin(phase * 3.0) * 3)
-                bottle_hand = (gx - f * 6, gy - 12 - pump)
-                NS._aaline(surface, P["gob_dark"],
-                           (gx - 3, gy - 4), bottle_hand, 3)
-                NS._aacircle(surface, P["gob_mid"], bottle_hand, 2)
+                pump = math.sin(phase * 3.0) * 3
+                bottle_hand = (gx - f * 6, gy - 14 - pump)
+                arm((gx - f * 3, gy - 4), bottle_hand, -3.0)
+                bxp, byp = int(bottle_hand[0]), int(bottle_hand[1])
                 if action == "r_cast":
-                    NS._aacircle(surface, P["gold_light"],
-                                 bottle_hand, 2)
-                    NS._aacircle(surface, P["gold_shine"],
-                                 (bottle_hand[0], bottle_hand[1] - 1),
-                                 1)
+                    c0, c1, c2 = (P["gold_dark"], P["gold_light"],
+                                  P["gold_shine"])
+                else:
+                    c0, c1, c2 = (P["acid_dark"], P["acid_bright"],
+                                  P["acid_glow"])
+                NS._aacircle(surface, (*c2, 110), (bxp, byp), 7)
+                NS._ellipse(surface, P["glass_dark"],
+                            (bxp - 4, byp - 4, 8, 9))
+                NS._ellipse(surface, c0, (bxp - 3, byp - 1, 6, 5))
+                NS._ellipse(surface, c1, (bxp - 2, byp, 4, 3))
+                NS._aacircle(surface, c2, (bxp - 2, byp - 2), 1)
+                NS._poly(surface, P["leather_mid"], [
+                    (bxp - 2, byp - 7), (bxp + 2, byp - 7),
+                    (bxp + 2, byp - 4), (bxp - 2, byp - 4)])
             else:
-                NS._aaline(surface, P["gob_dark"],
-                           (gx - 3, gy - 3), (gx - 7, gy + 2), 2)
+                arm((gx - f * 3, gy - 3), (gx - f * 8, gy + 2), -2.0)
         return gun_hand, bottle_hand
 
     # ==================================================================
@@ -12374,13 +12928,20 @@ class _NS_alchemist:
     def _draw_alch_full_raw(surface, cx, cy, facing, phase, action,
                             attack_progress=0, rage=False,
                             detail=False, boss=None):
-        """Rig masterwork v2 — ogre chemist + goblin rider, prosedural.
+        """Rig masterwork v3 — ogre chemist + goblin rider, prosedural.
 
-        Semua koordinat lokal: (0,0) = jangkar pinggul, +x maju
-        (facing), y ke bawah. Topi goblin -68, botol W -88, kaki +56.
-        Urutan lapisan: backpack -> goblin -> back arm -> legs ->
-        skirt -> torso -> armor -> head -> goblin arms/weapon ->
-        front arm + cleaver.
+        Koordinat lokal: (0,0) = jangkar pinggul, +x maju (dikali
+        facing), y ke bawah, tanah = +GROUND_DY (62).
+
+        Tata letak vertikal (lokal):
+            -79 ujung topi goblin   -62 kepala goblin
+            -66 puncak tengkorak    -52 pusat kepala ogre
+            -40 dada                  0 pinggul
+            +18 pangkal paha        +39 lutut       +60 telapak
+
+        Urutan lapisan: backpack -> goblin -> lengan belakang +
+        cleaver belakang -> kaki -> cawat -> torso -> armor -> leher
+        -> kepala -> lengan depan + cleaver utama -> highlight.
         """
         NS = _NS_alchemist
         P = NS.PALETTE
@@ -12394,22 +12955,29 @@ class _NS_alchemist:
         L = lambda lx, ly: NS._local_to_screen(cx, cy, f, lean,
                                                root_y, lx, ly)
 
+        # Sudut senjata di-author di ruang LOKAL (+x maju). Saat rig
+        # di-mirror, sudut layar harus ikut dicerminkan terhadap sumbu
+        # vertikal — rig lama lupa ini, jadi saat hadap kiri cleaver
+        # menunjuk ke arah yang salah.
+        S = (lambda a: a) if f > 0 else (lambda a: math.pi - a)
+
         pose = NS._attack_pose(ap) if attack else None
         flare = pose["flare"] if pose else 1.0
 
-        # ═══ 2. BACKPACK (paling belakang) ═══
-        NS._draw_backpack(surface, *L(-17, -12), phase, f, rage)
+        # ═══ 2. BACKPACK (paling belakang, di punggung) ═══
+        NS._draw_backpack(surface, *L(-25, -26), phase, f, rage)
 
-        # ═══ 3. GOBLIN RIDER (di belakang torso, di atas backpack) ═══
+        # ═══ 3. GOBLIN RIDER — duduk di bahu BELAKANG supaya tidak
+        #        menutupi kepala ogre (siluet duo tetap terbaca) ═══
         aim_angle = None
         if action == "q_cast":
             if boss is not None:
                 tx, ty = NS._target_position(boss, cx, cy)
-                hx, hy = L(-13 + 8, -36 - 6)
+                hx, hy = L(-23 + f * 8, -60 - 6)
                 aim_angle = math.atan2(ty - hy, tx - hx)
             else:
-                aim_angle = -0.1
-        goblin_x, goblin_y = L(-13, -44)
+                aim_angle = S(-0.1)
+        goblin_x, goblin_y = L(-23, -60)
         NS._draw_goblin_rider(surface, goblin_x, goblin_y, f, phase,
                               action, ap, rage, aim_angle=aim_angle)
 
@@ -12417,85 +12985,104 @@ class _NS_alchemist:
         grip_b = NS._cleaver_grip_local(action, phase, ap, back=True)
         ang_b = NS._cleaver_angle_local(action, phase, ap, back=True)
         gb = L(*grip_b)
-        shb = L(-17, -30)
+        shb = L(-19, -32)
         flex = 1.0 if action == "e_cast" else 0.0
         NS._draw_ogre_arm(surface, shb[0], shb[1], gb[0], gb[1], f,
                           back=True, flex=flex)
-        NS._draw_cleaver(surface, gb[0], gb[1], ang_b, f, phase)
+        NS._draw_cleaver(surface, gb[0], gb[1], S(ang_b), f, phase)
 
-        # ═══ 5. KAKI (alternating walk + foot plant) ═══
+        # ═══ 5. KAKI — pangkal paha +18, telapak mendarat di tanah.
+        #        Ayunan HORIZONTAL (sudut kecil), panjang tungkai
+        #        vertikal, jadi kaki tidak pernah tertelan perut. ═══
         if action == "walk":
-            la = math.sin(phase) * 0.5
-            lift_a = max(0.0, math.sin(phase + 0.4)) * 5
-            lift_b = max(0.0, math.sin(phase + math.pi + 0.4)) * 5
+            la = math.sin(phase) * 0.42
+            lift_a = max(0.0, math.sin(phase + 0.4)) * 6
+            lift_b = max(0.0, math.sin(phase + math.pi + 0.4)) * 6
         else:
-            la = 0.08
+            la = 0.10
             lift_a = lift_b = 0.0
             if attack:
-                la = 0.10 + pose["lunge"] * 0.012
-        hA = L(-8, 20)
-        hB = L(8, 20)
-        NS._draw_ogre_leg(surface, hB[0], hB[1], la, lift_a, True, f)
+                la = 0.12 + pose["lunge"] * 0.010
+        hA = L(-10, 18)          # kaki belakang
+        hB = L(10, 18)           # kaki depan
         NS._draw_ogre_leg(surface, hA[0], hA[1], -la, lift_b, False, f)
+        NS._draw_ogre_leg(surface, hB[0], hB[1], la, lift_a, True, f)
 
-        # ═══ 6. ROK ROMPUL ROBEK (3 helai, inersia tertinggal) ═══
-        lag = 0.0
+        # ═══ 6. CAWAT KULIT ROBEK (3 helai, inersia tertinggal).
+        #        Dipendekkan dari rig lama (yang menutup seluruh kaki
+        #        sampai lutut) menjadi cawat pinggul saja. ═══
         if action == "walk":
-            lag = math.sin(phase + 2.1) * 3.2
+            lag = math.sin(phase + 2.1) * 3.0
         elif attack:
-            lag = -pose["lean"] * 0.9
+            lag = -pose["lean"] * 0.8
         else:
-            lag = math.sin(phase * 0.55) * 1.6
-        for i, off in enumerate((-14, -4, 7)):
-            wave = int(lag + math.sin(phase * 1.0 + i) * 2)
-            length = 22 + (i % 2) * 5
-            p0 = L(off - 4, 22)
-            p1 = L(off + 4, 22)
-            p2 = L(off + 3 + wave, 22 + length)
-            p3 = L(off - 3 + wave, 22 + length)
+            lag = math.sin(phase * 0.55) * 1.4
+        for i, off in enumerate((-12, -1, 10)):
+            wave = lag + math.sin(phase * 1.0 + i) * 1.8
+            length = 15 + (i % 2) * 4
+            p0 = L(off - 5, 20)
+            p1 = L(off + 5, 20)
+            p2 = L(off + 4 + wave, 20 + length)
+            p3 = L(off - 4 + wave, 20 + length)
             NS._poly(surface, P["shadow_deep"],
-                     [(p2[0] + 1, p2[1] + 1), (p3[0] + 1, p3[1] + 1),
-                      (p1[0] + 1, p1[1] + 1)])
-            NS._poly(surface, P["leather_darkest"],
-                     [p0, p1, p2, p3])
+                     [(p0[0] + 1, p0[1] + 1), (p1[0] + 1, p1[1] + 1),
+                      (p2[0] + 1, p2[1] + 1), (p3[0] + 1, p3[1] + 1)])
+            NS._poly(surface, P["leather_darkest"], [p0, p1, p2, p3])
             NS._poly(surface, P["leather_dark"], [
-                L(off - 3, 23), L(off + 3, 23),
-                L(off + 2 + wave, 22 + length - 2),
-                L(off - 2 + wave, 22 + length - 2)])
+                L(off - 4, 21), L(off + 4, 21),
+                L(off + 3 + wave, 20 + length - 2),
+                L(off - 3 + wave, 20 + length - 2)])
             NS._poly(surface, P["leather_mid"], [
-                L(off - 2, 24), L(off + 2, 24),
-                L(off + 1 + wave, 22 + length - 5),
-                L(off - 1 + wave, 22 + length - 5)])
+                L(off - 3, 22), L(off + 1, 22),
+                L(off + 1 + wave, 20 + length - 5),
+                L(off - 2 + wave, 20 + length - 5)])
+            # ujung robek + jahitan
+            NS._aacircle(surface, P["leather_high"],
+                         L(off, 23), 1)
 
-        # ═══ 7. TORSO + ARMOR + KEPALA ═══
-        NS._draw_ogre_torso(surface, *L(0, 2), phase, flare, rage, f)
-        NS._draw_ogre_armor(surface, *L(0, 0), phase, f, rage)
-        # leher tebal
-        nck0, nck1 = L(-8, -30), L(8, -18)
-        NS._poly(surface, NS.PALETTE["ogre_dark"],
-                 [nck0, (nck1[0], nck0[1]), (nck1[0], nck1[1]),
-                  (nck0[0], nck1[1])])
-        hd = L(4, -50)
+        # ═══ 7. TORSO + ARMOR + LEHER + KEPALA ═══
+        NS._draw_ogre_torso(surface, *L(0, -2), phase, flare, rage, f)
+        NS._draw_ogre_armor(surface, *L(0, -2), phase, f, rage)
+        NS._draw_belt(surface, *L(0, -2), phase, f, rage)
+        # leher tebal berotot (trapezius menyatu ke rahang)
+        nk0 = L(f * 2, -50)
+        nk1 = L(f * 3, -38)
+        NS._limb(surface, nk1, 7.5, nk0, 6.0,
+                 P["ogre_darkest"], P["ogre_dark"], P["ogre_mid"])
+        # otot trapezius: melebar dari leher ke KEDUA bahu, tetap di
+        # atas garis dada supaya tidak menyilang pektoral
+        for sgn in (-1, 1):
+            NS._limb(surface, L(f * 3, -42), 3.5,
+                     L(sgn * 13, -39), 5.0,
+                     P["ogre_darkest"], P["ogre_dark"],
+                     P["ogre_dark"] if sgn * f > 0 else P["ogre_mid"])
+        hd = L(5, -60)
         if action == "attack":
             hd = (hd[0], hd[1] + int(pose["dip"] * 0.4))
         NS._draw_ogre_head(surface, hd[0], hd[1], f, phase, action,
                            rage)
 
-        # ═══ 8. LENGAN DEPAN + CLEAVER UTAMA (paling depan) ═══
+        # ═══ 8. LENGAN + SENJATA GOBLIN (di atas kepala ogre) ═══
+        NS._draw_goblin_arms(surface, goblin_x, goblin_y, f, phase,
+                             action, ap, rage, aim_angle=aim_angle)
+
+        # ═══ 9. LENGAN DEPAN + CLEAVER UTAMA (paling depan) ═══
         grip_f = NS._cleaver_grip_local(action, phase, ap, back=False)
         ang_f = NS._cleaver_angle_local(action, phase, ap, back=False)
         gf = L(*grip_f)
-        shf = L(17, -30)
+        shf = L(19, -32)
         NS._draw_ogre_arm(surface, shf[0], shf[1], gf[0], gf[1], f,
                           back=False, flex=flex)
-        NS._draw_cleaver(surface, gf[0], gf[1], ang_f, f, phase)
+        NS._draw_pauldron(surface, *L(0, -2), phase, f, rage)
+        NS._draw_cleaver(surface, gf[0], gf[1], S(ang_f), f, phase,
+                         glow=0.7 if rage else 0.0)
 
-        # ═══ 9. HIGHLIGHTS / detail portrait ═══
+        # ═══ 10. HIGHLIGHTS / detail portrait ═══
         if rage:
             pul = 0.5 + 0.5 * math.sin(phase * 7.0)
             NS._aacircle(surface, (*P["acid_hot"],
-                                   int(150 + 100 * pul)),
-                         (gf[0], gf[1]), 4)
+                                   int(90 + 90 * pul)),
+                         (gf[0], gf[1]), 5)
         if detail:
             NS._draw_alch_masterwork_details(surface, L, f, phase)
 
