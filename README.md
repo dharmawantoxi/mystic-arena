@@ -790,20 +790,24 @@ hero unlock. Tiga penyebabnya sudah diperbaiki:
 
 | | Sebelum | Sesudah |
 |---|---|---|
-| Draw boss per frame | renderer prosedural penuh, median 2,22 ms (maks 7,04 ms) | **cache sprite seperti hero**, 0,06–1,00 ms |
-| Selisih frame adegan (boss vs hero) | +0,90…+2,41 ms/frame (1,29–1,91×) | **−0,19…+0,27 ms/frame (0,92–1,11×)** |
+| Draw boss per frame | renderer prosedural penuh, median 2,22 ms (maks 7,04 ms) | **cache sprite seperti hero**; median tipe ter-cache 0,21× hero, dan tidak satu tipe pun lebih lambat dari jalur lamanya (diukur berselang-seling) |
+| Frame adegan nyata (600 frame/level, cache ON vs OFF) | — | **Lv1 −42 % · Lv10 −39 % · Lv30 −10 % · Lv54 −3 %** |
 | Gerak di waypoint lane | 5–6 frame stall per 120 frame | **0 stall** (432 jalur boss) |
 | Jam animasi (`pulse`) | 0,05/frame (setengah hero) | **0,1/frame = hero** |
 | Arah hadap saat ayunan | bisa berbalik di tengah swing | **terkunci** (paritas hero) |
 
-Tampilan tidak berubah: 12 boss dibandingkan piksel-demi-piksel antara jalur
-lama dan baru, selisih **0,000**. Pose skill 9 boss yang FX-nya melebar jauh
-sengaja tetap digambar langsung supaya tidak ada FX terpotong.
+Tampilan tidak berubah: 22 tipe dibandingkan piksel-demi-piksel antara jalur
+lama dan baru dengan jam virtual + drift floor
+(`tools/_diag_boss_pixel_parity.py`) — **0 regresi visual**. Probe paritas
+per (tipe, pose) menahan cache bila selisihnya > 0,35 terhadap jalur
+langsung, dan pose/tipe ber-FX satu-shot (krobellus dkk.) tetap digambar
+langsung supaya tidak ada FX yang hilang atau terpotong.
 Rincian diagnosa, angka, dan katup pengaman:
 [docs/BOSS_HERO_SMOOTH_PARITY.md](docs/BOSS_HERO_SMOOTH_PARITY.md).
 
 ```bash
-python tools/test_boss_hero_smooth_parity.py --all   # 14 pemeriksaan, 216 boss
+python tools/test_boss_hero_smooth_parity.py --all   # 16 pemeriksaan, 216 boss
+python tools/_diag_boss_pixel_parity.py              # paritas piksel lama-vs-baru
 MYSTIC_BOSS_CACHE=0 python main.py                   # bandingkan tanpa cache boss
 ```
 

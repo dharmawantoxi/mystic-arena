@@ -231,39 +231,64 @@ langsung.
 | kecepatan `pulse` | 0,05/frame | **0,100/frame = hero** |
 | arah berbalik saat swing | bisa tiap frame | **0 flip** (kunci 6 frame) |
 
-### 3.4 Cache & memori (216 boss × 4 pose, `--all`)
+### 3.4 Cache & memori (216 boss, `--all`)
 
-* 2 870 miss / 7 295 hit → **hit rate 71,8 %** (jalur jalan/idle: 89 %).
-* canvas membesar otomatis 147× (tidak ada FX terpotong).
-* 164 entri, median sprite 219×219, terbesar 434×249, **30,4 MB** saat
-  seluruh 216 boss di-cycle bergantian (satu level nyata hanya 1–3 boss →
-  beberapa MB).
+* 851 miss / 2 285 hit pada siklus 216 boss × 4 pose × 12 frame; jalur
+  idle/jalan sampel: **89 % hit**.
+* canvas membesar otomatis 291× (margin crop ikut dijaga, lihat §4).
+* 192 entri saat seluruh tipe di-cycle; satu level nyata hanya memakai
+  1–3 boss → beberapa MB (`boss_cache_bytes()`).
+* Sprite dengan tinta di cincin 2 px tepinya **tidak pernah disimpan**
+  (guard `_sprite_edges_inked`): pose seperti itu pindah jalur langsung.
 
-### 3.5 Regresi visual: tidak ada
+### 3.5 Regresi visual: tidak ada (diukur, bukan diasumsikan)
 
-* **12 boss pixel-identical** (rata-rata selisih piksel **0,000**) antara
-  jalur lama (`MYSTIC_BOSS_CACHE=0`) dan jalur baru pada pose yang sama.
-  Bukti gambarnya ditulis `tools/_diag_boss_cache_visual.py` ke
-  `docs/_boss_cache_<tipe>.png` (kiri: jalur lama, kanan: jalur baru);
-  file PNG-nya artefak generatif sehingga tidak ikut di-commit.
+Klaim lama "pixel-identical 0,000" di dokumen ini **ditarik**: diag
+visual lama menggambar boss di luar panel uji sehingga kedua sisi sama-
+sama kosong. Pengganti yang sah: `tools/_diag_boss_pixel_parity.py` —
+boss digambar DI DALAM panel 320 px, instance baru per shot, jam
+virtual per shot (renderer ber-jam dinding seperti krobellus/vhalzun
+ kalau tidak tidak bisa dibandingkan), lapisan FX hidup dimatikan di kedua
+ jalur, plus *drift floor* (selisih jalur-lama-vs-dirinya-sendiri) agar
+  renderer stateful tidak dihukum salah:
+
+* **0 dari 22 tipe** regresi visual nyata (ambang `max(0,5; 3×drift)`).
+  Contoh terukur: aeralith 0,151 · gravefang 0,116 · thalgryn 0,19 ·
+  gornak 0,0–0,26 (drift 0,24) · krobellus 0,038 (tipe di-exclude).
+* **0 sprite terpotong** dari 192 sprite cache (pemeriksaan otomatis di
+  test paritas, cincin 2 px, `min_alpha=8`).
 * **Anchor 0 px** selisih bbox untuk semua tipe yang dibandingkan.
-* **0 sprite terpotong** dari 164 sprite cache (tinta tidak menyentuh tepi
-  sprite — diperiksa otomatis di test).
 * **0 exception** pada 216 tipe × 4 pose × 12 frame.
+* Bukti gambar per tipe: `docs/_boss_cache_<tipe>.png` (artefak, tidak
+  di-commit; see `.gitignore`).
 
-### 3.6 Pengecualian yang disengaja: 9 pose skill
+### 3.6 Jalur render: cepat (1 render/miss), probe per pose
 
-Pose **skill** dari 9 boss FX-nya melebar melebihi batas sprite
-(> 900 px sisi / canvas > 460 px setengah), jadi pose itu **tetap digambar
-langsung ke layar** seperti sebelumnya — lebih baik membayar 2–4 ms selama
-beberapa detik skill daripada memotong FX:
+Dua jalur sempat dibangun: **cepat** (canvas SRCALPHA, 1 render per
+miss) dan **afin** (2 pass opak + pemecahan alpha via numpy, eksak).
+Pengukuran loop game nyata menunjukkan biaya miss jalur afin (2 render
++ array permukaan penuh) membuat frame gameplay lebih berat daripada
+tanpa cache untuk boss ber-FX berat, jadi jalur permainan memakai
+**jalur cepat saja**; fungsi afin dipertahankan teruji untuk pemakaian
+kelak. Probe paritas per (tipe, pose) memilih: cache jalur cepat bila
+selisih terhadap jalur langsung ≤ `BOSS_PARITY_TOLERANCE` = 0,35,
+otherwise jalur langsung (tampilan lama utuh). Distribusi selisih probe
+(593 pose): median 0,138 · p90 0,488.
 
-`nyrethzalv` 4,34 ms · `zyvareth` 4,05 · `zarethyr` 3,39 · `pyrhaan` 3,24 ·
-`xarnthuul` 2,93 · `morkhelvis` 2,85 · `zorothrax` 2,79 · `aelyrion` 2,23 ·
-`selunara` 2,16 ms.
+### 3.7 Pengecualian yang disengaja
 
-Perbaikan gerak/animasi (§2.2) tetap berlaku penuh untuk kesembilan boss ini;
-di level 30 rasio frame-nya tetap 0,90–1,10× hero (§3.2).
+* **Per pose**: selisih probe > 0,35; renderer acak/per-draw (dua render
+  langsung pada tick sama berbeda > `BOSS_STATEFUL_DRIFT` = 0,08);
+  konten melebihi canvas maksimum; sprite ber-tinta-tepi; atau kebijakan
+  biaya terukur menilai cache tidak menguntungkan untuk pola pose itu.
+  Pose tersebut digambar langsung persis seperti sebelum PR ini.
+* **Per tipe** (`_BOSS_CACHE_DENY`): `krobellus`, `gravewake`, `kunkka`,
+  `syrentha`, `vhalzun` — FX serangan mereka satu-shot/konsumsi-per-draw
+  atau state-nya di namespace modul, sehingga membekukannya ke sprite
+  menghilangkan FX di layar (terukur 0,7–1,7). Render langsung mereka
+  murah (≤ ~1 ms) jadi tidak ada performa yang dikorbankan.
+* Perbaikan gerak/animasi (§2.2) tetap berlaku penuh untuk semua tipe
+  di atas; yang berubah hanya apakah badan boleh di-cache.
 
 ---
 
@@ -278,6 +303,11 @@ di level 30 rasio frame-nya tetap 0,90–1,10× hero (§3.2).
 | masih kebesaran setelah mentok | pose didaftarkan ke `_BOSS_UNSAFE` → digambar langsung, tidak di-cache |
 | sprite > `BOSS_SPRITE_MAX_SIDE` | tidak di-cache (blit-nya tidak lebih murah daripada render) |
 | memori | LRU + anggaran piksel; `clear_boss_sprite_cache()` saat ganti level |
+| probe paritas per (tipe,pose) | selisih > 0,35 vs jalur langsung → pose tidak di-cache |
+| renderer acak / jam-dinding-per-draw | drift dua render langsung > 0,08 → pose tidak di-cache |
+| kebijakan biaya terukur | miss lebih mahal daripada hematnya → pose turun ke jalur langsung |
+| proyektil renderer tanpa lapisan hidup | kunci cache ber-flag → frame itu digambar langsung |
+| `_BOSS_CACHE_DENY` | tipe ber-FX satu-shot permanen jalur langsung |
 
 Prinsipnya: **kalau ragu, gambar langsung** — cache tidak boleh mengubah
 tampilan atau memotong FX.
@@ -298,6 +328,12 @@ python3 tools/_diag_scene_boss_vs_hero.py 1 gornak morgath drakar
 # smoke test loop game NYATA (update+draw, governor FX, wave/minion/tower)
 python3 tools/_diag_boss_scene_smoke.py 1:gornak 30:nyrethzalv
 MYSTIC_BOSS_CACHE=0 python3 tools/_diag_boss_scene_smoke.py   # pembanding
+
+# paritas piksel lama-vs-baru per tipe (22 tipe, jam virtual, drift floor)
+python3 tools/_diag_boss_pixel_parity.py
+
+# distribusi selisih probe seluruh tipe x pose (alat keputusan toleransi)
+python3 tools/_diag_boss_probe_dist.py
 
 # survei kliping canvas semua boss + PNG banding lama-vs-baru
 python3 tools/_diag_boss_cache_visual.py gornak morgath drakar

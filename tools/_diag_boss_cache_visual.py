@@ -90,11 +90,17 @@ for t, half, need, fase in sorted(klip, key=lambda z: -(z[2] - z[1]))[:20]:
 # ── 2. potret banding ────────────────────────────────────────────
 fx_asli = set(heroes._LIVE_FX_HEROES)
 heroes._LIVE_FX_HEROES.clear()      # samakan: tanpa partikel lapisan hidup
-PANEL = 460
+# Boss digambar di TENGAH panel (dulu di 640,360 pada panel 460 px ->
+# badan berada DI LUAR panel dan kedua potret kosong: banding jadi
+# vacuous). Panel 560 px cukup untuk pose serangan + aura.
+PANEL = 560
+CX = CY = PANEL // 2
+kosong = []
+terbesar = 0.0
 for t in TYPES:
     b = Boss(t, LANE)
     b.entrance_timer = 0
-    b.x, b.y = 640.0, 360.0
+    b.x, b.y = float(CX), float(CY)
     foe = Minion("orc", "blue", "mid")
     foe.x, foe.y = b.x - min(120, b.range), b.y
     for _ in range(30):
@@ -112,6 +118,18 @@ for t in TYPES:
         b.draw(s)
         shots.append(s)
     heroes.BOSS_CACHE_ENABLED = True
+    a = pygame.surfarray.array3d(shots[0]).astype(int)
+    bb = pygame.surfarray.array3d(shots[1]).astype(int)
+    # Panel diisi warna latar OPAK, jadi "kosong" diukur sebagai
+    # selisih terhadap warna latar (bukan bounding rect alpha).
+    isi = [float(abs(arr - [24, 20, 30]).mean()) for arr in (a, bb)]
+    if isi[0] < 0.01 or isi[1] < 0.01:
+        kosong.append(t)
+        print(f"  {t:16s} !! POTRET KOSONG "
+              f"(isi lama {isi[0]:.3f}, baru {isi[1]:.3f})")
+        continue
+    diff = float(abs(a - bb).mean())
+    terbesar = max(terbesar, diff)
     out = pygame.Surface((PANEL * 2 + 12, PANEL + 26))
     out.fill((12, 10, 16))
     out.blit(shots[0], (0, 26))
@@ -124,9 +142,8 @@ for t in TYPES:
              (PANEL + 18, 4))
     path = f"docs/_boss_cache_{t}.png"
     pygame.image.save(out, path)
-    diff = 0
-    a = pygame.surfarray.array3d(shots[0]).astype(int)
-    bb = pygame.surfarray.array3d(shots[1]).astype(int)
-    diff = float(abs(a - bb).mean())
     print(f"  {t:16s} -> {path}  (rata-rata selisih piksel {diff:.3f})")
 heroes._LIVE_FX_HEROES.update(fx_asli)
+print(f"  ringkasan: {len(TYPES) - len(kosong)} potret terisi, "
+      f"selisih terbesar {terbesar:.3f}"
+      + (f", KOSONG: {kosong}" if kosong else ""))
