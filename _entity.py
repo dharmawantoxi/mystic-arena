@@ -3222,6 +3222,15 @@ from _system import SoundManager
 # (teks HEAL, ring range, dll.) - hindari alokasi Surface tiap frame.
 _HERO_UI_CACHE = {}
 
+# Batas global proyektil visual Hero.projectiles. Tanpa umur/jarak,
+# homing ke _last_tx/_last_ty (target sudah mati) membuat orb "terbang
+# random" selamanya saat banyak hero skill sekaligus — itu yang
+# meruntuhkan FPS. Berlaku ke SEMUA hero, bukan patch per-hero.
+_HERO_PROJ_MAX = 6
+_HERO_PROJ_MAX_AGE = 72          # ~1.2 s @ 60 fps
+_HERO_PROJ_DEAD_AGE = 36         # target mati: jangan terbang selamanya
+_HERO_PROJ_MAX_DIST = 380
+
 
 class Hero(TowerDebuffMixin):
     # ── Property: skill_damage dipotong saat kena debuff Mage Tower ──
@@ -3833,6 +3842,17 @@ class Hero(TowerDebuffMixin):
                 proj['_last_ty'] = float(ty)
 
             proj['age'] = proj.get('age', 0) + 1
+            if proj['age'] > _HERO_PROJ_MAX_AGE:
+                proj['alive'] = False
+                continue
+            if target_dead and proj['age'] > _HERO_PROJ_DEAD_AGE:
+                proj['alive'] = False
+                continue
+            ox = proj.get('_ox', proj['x'])
+            oy = proj.get('_oy', proj['y'])
+            if math.hypot(proj['x'] - ox, proj['y'] - oy) > _HERO_PROJ_MAX_DIST:
+                proj['alive'] = False
+                continue
 
             # Homing tiap frame ke target yang bergerak
             dx = tx - proj['x']
@@ -4435,15 +4455,34 @@ class Hero(TowerDebuffMixin):
         if speed is None:
             speed = 9.5
 
+        if is_skill:
+            try:
+                from mobile.perf import allow_skill_projectile
+                if not allow_skill_projectile():
+                    return
+            except Exception:
+                pass
+        if len(self.projectiles) >= _HERO_PROJ_MAX:
+            drop_i = 0
+            for i, p in enumerate(self.projectiles):
+                if p.get('is_skill'):
+                    drop_i = i
+                    break
+            self.projectiles.pop(drop_i)
+
         # Arah awal langsung ke target (bukan facing hero) supaya
         # sejak frame pertama projectile sudah terarah.
         dx = tgt.x - self.x
         dy = (tgt.y - 5) - self.y
         start_angle = math.atan2(dy, dx) if (dx or dy) else 0.0
+        ox = float(self.x)
+        oy = float(self.y - 5)
 
         self.projectiles.append({
-            'x': float(self.x),
-            'y': float(self.y - 5),  # sedikit di atas hero
+            'x': ox,
+            'y': oy,  # sedikit di atas hero
+            '_ox': ox,
+            '_oy': oy,
             'target': tgt,
             'damage': damage,
             'speed': float(speed),
@@ -4787,26 +4826,8 @@ class Hero(TowerDebuffMixin):
         # ═══ INDIKATOR DEBUFF MENARA (slow ring, burn api, pip ikon) ═══
         self._draw_tower_debuff_fx(surface, x, y, self.radius)
 
-        # ═══ SKILL SPIN EFFECT (kalau active, surface di-cache) ═══
-        if self.skill_active:
-            spin_r = self.skill_data["skill_range"]
-            spin_size = (spin_r + 10) * 2
-            cx = spin_size // 2
-            # Rotasi dikuantisasi 16 arah - cukup mulus, murah di-blit
-            angle_step = int((self.pulse * 2) * 180 / math.pi) % 16
-            key = ("spin", spin_r, angle_step)
-            spin_surf = _HERO_UI_CACHE.get(key)
-            if spin_surf is None:
-                spin_surf = pygame.Surface((spin_size, spin_size),
-                                           pygame.SRCALPHA)
-                for i in range(8):
-                    a = angle_step * math.pi / 8 + i * math.pi / 4
-                    sx = cx + math.cos(a) * (spin_r - 10)
-                    sy = cx + math.sin(a) * (spin_r - 10)
-                    pygame.draw.line(spin_surf, (255, 100, 0, 150),
-                                     (cx, cx), (int(sx), int(sy)), 3)
-                _HERO_UI_CACHE[key] = spin_surf
-            surface.blit(spin_surf, (x - cx, y - cx))
+        # skill_active tidak pernah True (Blade Fury legacy sudah dihapus
+        # dari update); blok spin-surface-nya dibuang sebagai unused.
 
         # ═══ HERO SHAPE ═══
         self._draw_hero_shape(surface, x, y)

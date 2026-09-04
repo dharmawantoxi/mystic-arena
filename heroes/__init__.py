@@ -752,7 +752,87 @@ def _live_fx_module(hero_type):
             print(f"[HERO WARNING] live FX {hero_type} failed: {_e}")
             mod = False
         _LIVE_FX_MODULES[hero_type] = mod
+    if mod:
+        _install_global_fx_caps(mod)
     return mod or None
+
+
+# ── CAP SPAWN GLOBAL (semua hero live-FX, tanpa edit 27 *_fx.py) ──
+# ParticleSystem.spawn / ProjectileSystem.spawn di tiap modul di-wrap
+# sekali setelah impor. Token di-claim SEBELUM spawn asli; dikembalikan
+# kalau jumlah hidup tidak bertambah (director menolak / pool penuh).
+# Particle.spawn (factory instance) TIDAK di-wrap — itu dipanggil dari
+# ParticleSystem dan akan double-count.
+_FX_WRAP_FLAG = "_mystic_global_fx_cap"
+
+
+def _fx_sys_live_count(sys):
+    """Jumlah partikel/proyektil hidup di satu sistem FX."""
+    cnt = getattr(sys, "count", None)
+    if callable(cnt):
+        try:
+            return int(cnt())
+        except Exception:
+            pass
+    for attr in ("_live", "live", "items", "projectiles", "projs"):
+        v = getattr(sys, attr, None)
+        if isinstance(v, list):
+            return len(v)
+    pool = getattr(sys, "particles", None)
+    if isinstance(pool, list):
+        n = 0
+        for p in pool:
+            if getattr(p, "active", True):
+                n += 1
+        return n
+    return -1
+
+
+def _wrap_fx_spawn(orig, kind):
+    """Bungkus spawn: claim token dulu, refund kalau spawn gagal."""
+
+    def spawn(self, *args, **kwargs):
+        try:
+            from mobile import perf as _p
+            if not getattr(_p, "_FX_TOKENS_ACTIVE", False):
+                return orig(self, *args, **kwargs)
+            if kind == "particle":
+                claim, refund = _p.claim_fx_particle, _p.refund_fx_particle
+            else:
+                claim, refund = _p.claim_fx_projectile, _p.refund_fx_projectile
+        except Exception:
+            return orig(self, *args, **kwargs)
+        if not claim():
+            return None
+        before = _fx_sys_live_count(self)
+        out = orig(self, *args, **kwargs)
+        after = _fx_sys_live_count(self)
+        if before >= 0 and after <= before:
+            refund()
+        return out
+
+    spawn.__name__ = getattr(orig, "__name__", "spawn")
+    spawn.__doc__ = getattr(orig, "__doc__", None)
+    setattr(spawn, _FX_WRAP_FLAG, True)
+    return spawn
+
+
+def _install_global_fx_caps(mod):
+    """Pasang wrap spawn pada ParticleSystem / ProjectileSystem modul ini."""
+    if not mod or getattr(mod, _FX_WRAP_FLAG, False):
+        return
+    for cls_name, kind in (("ParticleSystem", "particle"),
+                           ("ProjectileSystem", "projectile")):
+        cls = getattr(mod, cls_name, None)
+        if cls is None:
+            continue
+        for name, attr in list(vars(cls).items()):
+            if not name.startswith("spawn") or not callable(attr):
+                continue
+            if getattr(attr, _FX_WRAP_FLAG, False):
+                continue
+            setattr(cls, name, _wrap_fx_spawn(attr, kind))
+    setattr(mod, _FX_WRAP_FLAG, True)
 
 
 # ── GOVERNOR BEBAN FX COMBAT ─────────────────────────────
@@ -786,6 +866,9 @@ def begin_fx_frame(active_count=0):
         _perf.set_fx_load(active_count)
     except Exception:
         pass
+    for _mod in _LIVE_FX_MODULES.values():
+        if _mod:
+            _install_global_fx_caps(_mod)
 
 
 def fx_frame():
@@ -2024,12 +2107,6 @@ def _boss_cache_key(boss_type, boss):
         return head + ("atk", timer // (BOSS_ATK_QUANT * _q), ability,
                        proj, wq)
     phase = int(getattr(boss, "pulse", 0.0) * 2.0) % BOSS_ANIM_PHASES
-    if _BOSS_PATH.get((boss_type, "idle")) == "affine":
-        # Jalur affine membayar 2 render per miss: untuk pose idle
-        # (mayoritas frame) granularitas fase dibelah dua supaya miss
-        # lebih jarang — bob idle tetap terlihat hidup karena offset
-        # rig berubah halus di dalam satu fase cache.
-        phase //= 2
     return head + ("idle", phase, moving, ability, proj, wq)
 
 
@@ -2256,26 +2333,6 @@ def _boss_solve_layers(a1, a2, np):
 
 
 _BOSS_CANVAS_POOL = {}
-
-
-def _rect_edges_inked(canvas, rect):
-    """Ada tinta di tepi ``rect``? (4 strip 2 px, ~0,02 ms).
-
-    Pengganti murah untuk ``get_bounding_rect()`` penuh (0,30 ms pada
-    canvas 300 px, 1,58 ms pada 640 px) — cukup untuk tahu KAPAN rect
-    crop perlu dihitung ulang.
-    """
-    x, y, w, h = rect.x, rect.y, rect.width, rect.height
-    if w < 6 or h < 6:
-        return True
-    for s in (pygame.Rect(x, y, w, 2), pygame.Rect(x, y + h - 2, w, 2),
-              pygame.Rect(x, y, 2, h), pygame.Rect(x + w - 2, y, 2, h)):
-        try:
-            if canvas.subsurface(s).get_bounding_rect(min_alpha=8).width:
-                return True
-        except Exception:
-            return True
-    return False
 
 
 def _boss_get_canvas(size):
@@ -2993,9 +3050,9 @@ def render_boss(boss_type, surface, boss, x, y, draw_fn=None):
             hm = _BOSS_KIND_HM[gk] = [0, 0]
             _boss_cache_stats["downgrade"] += 1
         _t0 = _time.perf_counter()
-        out = (_boss_render_sprite_fast(boss_type, boss, fn, kind)
-               if _BOSS_PATH.get(gk) == "fast"
-               else _boss_render_sprite(boss_type, boss, fn, kind))
+        # Probe hanya pernah menulis "fast" (jalur affine tidak dipilih).
+        # Selalu pakai blit cepat — _boss_render_sprite (affine) dead path.
+        out = _boss_render_sprite_fast(boss_type, boss, fn, kind)
         _dt = (_time.perf_counter() - _t0) * 1000.0
         if out is None:
             return False                        # fallback jalur langsung

@@ -76,21 +76,24 @@ def _fx_pixels_per_frame(hero_type, load, frames=FRAMES):
 
     surf = pygame.Surface((400, 400), pygame.SRCALPHA)
     out = []
-    for _ in range(frames):
-        # Governor dinyalakan seperti di Game.draw(), lalu beban
-        # dikunci supaya pengukuran tidak digeser smoothing.
-        heroes.begin_fx_frame(16)
-        perf._FX_LOAD = load
-        surf.fill((0, 0, 0, 0))
-        heroes._live_fx_pre(hero_type, surf, h, 200, 200)
-        heroes._live_fx_post(hero_type, surf, h, 200, 200)
-        view = pygame.surfarray.pixels_alpha(surf)
-        out.append(int((view > 0).sum()))
-        del view
     try:
-        mod.reset_all()
-    except Exception:
-        pass
+        for _ in range(frames):
+            # Governor dinyalakan seperti di Game.draw(), lalu beban
+            # dikunci supaya pengukuran tidak digeser smoothing.
+            heroes.begin_fx_frame(16)
+            perf._FX_LOAD = load
+            surf.fill((0, 0, 0, 0))
+            heroes._live_fx_pre(hero_type, surf, h, 200, 200)
+            heroes._live_fx_post(hero_type, surf, h, 200, 200)
+            view = pygame.surfarray.pixels_alpha(surf)
+            out.append(int((view > 0).sum()))
+            del view
+    finally:
+        try:
+            mod.reset_all()
+        except Exception:
+            pass
+        perf.reset_fx_load()
     return out
 
 
@@ -164,6 +167,30 @@ def test_fx_tidak_berkedip_selang_seling():
 # ══════════════════════════════════════════════════════════════════════
 # 3. GOVERNOR INTENSITAS TETAP HIDUP (penghematan tidak ikut dibuang)
 # ══════════════════════════════════════════════════════════════════════
+def test_token_spawn_hanya_saat_governor_aktif():
+    """Cap spawn hanya hidup di loop game (begin_fx_frame).
+
+    Tes combat memanggil ParticleSystem.spawn tanpa loop game; kalau
+    token selalu dipotong, 280 spawn pertama menghabiskan anggaran
+    proses-lebar dan tes hurt/burst berikutnya melihat 0 partikel.
+    """
+    perf.reset_fx_load()
+    for _ in range(400):
+        assert perf.claim_fx_particle(), \
+            "tanpa begin_fx_frame token spawn tidak boleh habis"
+        assert perf.allow_skill_projectile()
+    heroes.begin_fx_frame(1)
+    n = 0
+    while perf.claim_fx_particle():
+        n += 1
+        if n > 10000:
+            break
+    assert 50 <= n <= 280, \
+        "setelah begin_fx_frame token harus terbatas, dapat %d" % n
+    perf.reset_fx_load()
+    assert perf.claim_fx_particle()
+
+
 def test_governor_intensitas_tetap_jalan():
     perf.reset_fx_load()
     assert perf.fx_load() == 1.0
