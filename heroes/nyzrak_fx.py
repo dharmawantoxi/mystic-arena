@@ -353,6 +353,8 @@ def _cache_put(key, surf):
 
 def clear_cache():
     _CACHE.clear()
+    _FADE_CACHE.clear()
+    _FADE_ORDER.clear()
 
 
 def cache_size():
@@ -360,7 +362,14 @@ def cache_size():
 
 
 def glow_surface(radius, color, power=1.0):
-    """Halo radial lembut (cached) — dipakai muzzle/impact/nova."""
+    """Halo radial lembut PREMULTIPLIED (cached) — muzzle/impact/nova.
+
+    ``BLEND_RGB_ADD`` MENGABAIKAN kanal alpha, jadi lingkaran ber-RGB
+    penuh + alpha menurun berubah menjadi CAKRAM warna solid saat di-blit
+    additive — penyebab Nyzrak tertelan bola putih saat R Nova di-cast.
+    Intensitas dikalikan ke RGB **dan** disalin ke alpha supaya surface
+    yang sama benar untuk blit normal maupun additive.
+    """
     key = ("glow", int(radius), tuple(color), round(power, 1))
     s = _CACHE.get(key)
     if s is not None:
@@ -372,10 +381,12 @@ def glow_surface(radius, color, power=1.0):
     steps = max(2, int(r / 1.5))
     for i in range(steps, 0, -1):
         rr = int(r * i / steps)
-        a = int(120 * power * (1 - i / (steps + 1)) ** 1.5) + 8
-        if a <= 0:
+        k = 0.47 * power * (1 - i / (steps + 1)) ** 1.5 + 0.03
+        if k <= 0.008:
             continue
-        pygame.draw.circle(surf, (cr, cg, cb, min(255, a)), (r + 1, r + 1), rr)
+        pygame.draw.circle(surf,
+                           (int(cr * k), int(cg * k), int(cb * k),
+                            min(255, int(255 * k))), (r + 1, r + 1), rr)
     return _cache_put(key, surf)
 
 
@@ -459,11 +470,33 @@ def snowflake_surface(size, color):
     return _cache_put(key, surf)
 
 
+_FADE_CACHE = {}
+_FADE_ORDER = []
+
+
+def _fade_copy(surf, alpha):
+    """Salinan surface yang RGB-nya ikut diredam (untuk blit additive)."""
+    a = max(1, min(255, int(alpha))) // 8 * 8 or 8
+    key = (id(surf), surf.get_size(), a)
+    hit = _FADE_CACHE.get(key)
+    if hit is not None:
+        return hit[1]
+    cp = surf.copy()
+    cp.fill((a, a, a, a), special_flags=pygame.BLEND_RGBA_MULT)
+    _FADE_CACHE[key] = (surf, cp)          # tahan sumber: id() tetap unik
+    _FADE_ORDER.append(key)
+    while len(_FADE_ORDER) > 256:
+        _FADE_CACHE.pop(_FADE_ORDER.pop(0), None)
+    return cp
+
+
 def _blit_faded(surface, surf, cx, cy, alpha=255.0, additive=False):
     """Blit dengan alpha dinamis tanpa salinan per partikel.
 
-    ``BLEND_RGB_ADD`` mengabaikan set_alpha, jadi jalur aditif cukup blit
-    langsung (visual identik dengan copy + set_alpha lama, tanpa biaya).
+    ``BLEND_RGB_ADD`` MENGABAIKAN set_alpha: kalau jalur aditif blit
+    langsung, glow yang "memudar" tetap ditambahkan penuh dan menumpuk
+    jadi bercak putih di atas sprite. Jalur aditif karena itu memakai
+    salinan ter-cache yang RGB-nya sudah diredam.
     Non-additif memakai set_alpha pada surface cache lalu dipulihkan.
     """
     alpha = max(0.0, min(255.0, alpha))
@@ -472,6 +505,10 @@ def _blit_faded(surface, surf, cx, cy, alpha=255.0, additive=False):
     pos = (int(cx - surf.get_width() / 2),
            int(cy - surf.get_height() / 2))
     if additive:
+        if alpha < 250.0:
+            surf = _fade_copy(surf, alpha)
+            pos = (int(cx - surf.get_width() / 2),
+                   int(cy - surf.get_height() / 2))
         surface.blit(surf, pos, special_flags=pygame.BLEND_RGB_ADD)
         return
     if alpha >= 254.0:
@@ -1477,7 +1514,13 @@ class SkillFX:
         if dome_k > 0.0:
             R = int(46 * dome_k)
             if R > 5:
+                # Panel kubah dibuat sebagai CANGKANG (pita di tepi),
+                # bukan segitiga dari titik pusat. Versi lama menggambar
+                # 7 baji penuh dari (cx, cy) ke radius 46 — persis di atas
+                # badan Nyzrak — sehingga ultimate menutupinya dengan
+                # kipas abu-abu buram.
                 panels = 7
+                inner = 0.62
                 for i in range(panels):
                     a0 = i * math.pi / panels + 0.15
                     a1 = (i + 1) * math.pi / panels + 0.15
@@ -1485,9 +1528,13 @@ class SkillFX:
                           cy + math.sin(a0) * R * 0.9)
                     p1 = (cx + math.cos(a1) * R,
                           cy + math.sin(a1) * R * 0.9)
+                    q1 = (cx + math.cos(a1) * R * inner,
+                          cy + math.sin(a1) * R * 0.9 * inner)
+                    q0 = (cx + math.cos(a0) * R * inner,
+                          cy + math.sin(a0) * R * 0.9 * inner)
                     col = P["fx_mid"] if i % 2 else P["fx_light"]
                     pygame.draw.polygon(
-                        surface, (*col, int(60 * fade)), [(cx, cy), p0, p1])
+                        surface, (*col, int(70 * fade)), [p0, p1, q1, q0])
                 pygame.draw.ellipse(
                     surface, (*P["fx_bright"], int(95 * fade)),
                     (cx - R, cy - int(R * 0.92), R * 2, int(R * 1.84)), 2)
@@ -1779,16 +1826,34 @@ class NyzrakFXDirector:
             draw_debug_overlay(surface, self, x, y)
 
     def _draw_hit_flash(self, surface):
+        """IMPACT FLASH: glow es kecil — BUKAN cakram putih di atas badan.
+
+        Versi lama menggambar lingkaran ``fx_white`` radius ~44 px dengan
+        alpha 70, lalu mem-blit-nya ``BLEND_RGB_ADD``. Mode itu MENGABAIKAN
+        alpha, jadi yang muncul adalah cakram putih JENUH yang menutupi
+        ~75% siluet Nyzrak setiap kali dia kena damage.
+        """
         if self._hit_flash <= 0.0:
             return
-        k = self._hit_flash / 0.16
+        k = max(0.0, min(1.0, self._hit_flash / 0.16))
+        # Lane boss menggambar flash siluetnya sendiri (hurt_flash_timer);
+        # dua flash penuh di frame yang sama terbaca sebagai white-out.
+        if int(getattr(self.hero, "hurt_flash_timer", 0) or 0) > 0:
+            k *= 0.35
+        if k <= 0.02:
+            return
         cx, cy = int(self.x), int(self.y - 26)
-        r = int(44 * render_scale(self.hero))
-        s = pygame.Surface((r * 2 + 4, r * 2 + 4), pygame.SRCALPHA)
-        pygame.draw.circle(s, (*P["fx_white"], int(70 * k)),
-                           (r + 2, r + 2), r)
-        surface.blit(s, (cx - r - 2, cy - r - 2),
-                     special_flags=pygame.BLEND_RGB_ADD)
+        rs = render_scale(self.hero)
+        r = max(6, int(20 * rs))
+        if glow_allowed():
+            g = glow_surface(r, P["fx_bright"], 0.5 * k)
+            _blit_faded(surface, g, cx, cy, int(220 * k), additive=True)
+        s = max(3, int(9 * rs * (0.5 + 0.5 * k)))
+        star = spark_surface(s, P["fx_white"])
+        star.set_alpha(int(165 * k))
+        surface.blit(star, (cx - star.get_width() // 2,
+                            cy - star.get_height() // 2))
+        star.set_alpha(255)
 
     def clear(self):
         self.particles.clear()

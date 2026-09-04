@@ -316,7 +316,13 @@ def _range_val(v):
 
 
 def glow_surface(radius, color, power=1.0):
-    """Halo radial halus (additive-friendly) — dibangun sekali, di-cache."""
+    """Halo radial halus PREMULTIPLIED — dibangun sekali, di-cache.
+
+    ``BLEND_RGB_ADD`` MENGABAIKAN kanal alpha, jadi gradien yang hanya
+    menurun di alpha berubah jadi CAKRAM warna solid saat di-blit
+    additive — penyebab bola cahaya menutupi dada Ancient Apparition saat
+    skill di-charge. Intensitas dikalikan ke RGB **dan** disalin ke alpha.
+    """
     key = ("glow", int(radius), _clamp_color(color), round(power, 2))
     surf = _SURF_CACHE.get(key)
     if surf is not None:
@@ -329,10 +335,13 @@ def glow_surface(radius, color, power=1.0):
     for i in range(steps):
         t = i / max(1, steps - 1)
         rr = int(r * (1.0 - t))
-        alpha = int(150 * power * (1.0 - t) ** 1.6)
-        if alpha <= 0:
+        k = 0.59 * power * (1.0 - t) ** 1.6
+        if k <= 0.008:
             continue
-        pygame.draw.circle(surf, (cr, cg, cb, alpha), (r + 1, r + 1), max(0, rr))
+        pygame.draw.circle(surf,
+                           (int(cr * k), int(cg * k), int(cb * k),
+                            min(255, int(255 * k))),
+                           (r + 1, r + 1), max(0, rr))
     _cache_put(key, surf)
     return surf
 

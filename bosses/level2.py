@@ -10859,14 +10859,18 @@ class _NS_alchemist:
             if math.sin(c["spin"] * 3) > 0.7:
                 NS._aacircle(surface, (*P["gold_shine"], a),
                              (int(c["x"]) - 1, int(c["y"]) - 1), 1)
-        # kilau greed aura
+        # Kilau greed aura — CINCIN, bukan cakram penuh.
+        # Versi lama menumpuk lingkaran PADAT beradius 44..18 px tepat di
+        # (x, y-8): piringan emas itu menutupi badan Alchemist selama
+        # Greevil's Greed di-cast. Sekarang digambar sebagai cincin tipis
+        # (thickness 2) sehingga aura tetap terbaca tapi siluetnya utuh.
         pul = 0.5 + 0.5 * math.sin(phase * 2.2)
         for radius in range(44, 18, -5):
             alpha = int((44 - radius) * 4 * pul)
             if alpha > 0:
-                NS._aacircle(surface, (*P["gold_darkest"],
-                                       min(200, alpha)),
-                             (x, y - 8), radius)
+                pygame.draw.circle(surface,
+                                   (*P["gold_darkest"], min(200, alpha)),
+                                   (int(x), int(y - 8)), int(radius), 2)
 
     # ==================================================================
     # LAPISAN FX HIDUP  (heroes/alchemist_fx.py)

@@ -388,6 +388,8 @@ def clear_cache():
     """Kosongkan seluruh cache surface (ganti level / reset)."""
     _SURF_CACHE.clear()
     _SURF_ORDER.clear()
+    _FADE_CACHE.clear()
+    _FADE_ORDER.clear()
 
 
 def cache_size():
@@ -395,8 +397,14 @@ def cache_size():
 
 
 def glow_surface(radius, color, power=1.0):
-    """Halo radial lembut (additive). Radius & alpha di-kuantisasi supaya
-    animasi yang terus membesar tidak meledakkan cache."""
+    """Halo radial lembut PREMULTIPLIED (benar untuk blit additive).
+
+    ``BLEND_RGB_ADD`` MENGABAIKAN kanal alpha: menggambar lingkaran dengan
+    RGB penuh + alpha menurun menghasilkan CAKRAM warna solid saat di-blit
+    additive — inilah yang membuat Gorath tenggelam di bola putih tiap kali
+    kena damage / melepas skill. Intensitas dikalikan ke RGB **dan**
+    disalin ke alpha, jadi surface yang sama benar untuk kedua mode.
+    """
     r = max(3, int(radius))
     if r % 2 == 0:
         r += 1
@@ -410,10 +418,12 @@ def glow_surface(radius, color, power=1.0):
     try:
         for i in range(r, 1, -1):
             t = i / float(r)
-            al = int(a * (1.0 - t) ** 2)
-            if al <= 0:
+            k = (a / 255.0) * (1.0 - t) ** 2
+            if k <= 0.004:
                 continue
-            pygame.draw.circle(surf, (*c, al), (r, r), i)
+            pygame.draw.circle(surf,
+                               (int(c[0] * k), int(c[1] * k), int(c[2] * k),
+                                min(255, int(255 * k))), (r, r), i)
     except Exception:                          # pragma: no cover
         pygame.draw.circle(surf, (*c, a), (r, r), r)
     _cache_put(key, surf)
@@ -506,7 +516,12 @@ def ellipse_ring_surface(rx, ry, thickness, color, angle_deg=0):
 
 
 def ground_glow_surface(radius, color, power=0.3):
-    """Cahaya tanah ber-falloff (decal, additive) — kolam darah dll."""
+    """Cahaya tanah ber-falloff PREMULTIPLIED (decal additive).
+
+    Alasan premultiply sama dengan `glow_surface`: alpha diabaikan oleh
+    ``BLEND_RGB_ADD``, jadi intensitas harus masuk ke RGB supaya kolam
+    darah tidak menjadi piringan terang yang menelan kaki Gorath.
+    """
     r = max(4, int(radius))
     if r % 2 == 0:
         r += 1
@@ -519,10 +534,12 @@ def ground_glow_surface(radius, color, power=0.3):
     c = _clamp_color(color)
     for i in range(r, 1, -1):
         t = i / float(r)
-        al = int(a * (1.0 - t) ** 1.6)
-        if al <= 0:
+        k = (a / 255.0) * (1.0 - t) ** 1.6
+        if k <= 0.004:
             continue
-        pygame.draw.ellipse(surf, (*c, al),
+        pygame.draw.ellipse(surf,
+                            (int(c[0] * k), int(c[1] * k), int(c[2] * k),
+                             min(255, int(255 * k))),
                             (r - i, int((r - i) * 0.62), i * 2,
                              max(2, int(i * 1.24))))
     _cache_put(key, surf)
@@ -548,21 +565,48 @@ def _scratch(w, h):
     return s
 
 
+_FADE_CACHE = {}
+_FADE_ORDER = []
+
+
+def _fade_copy(surf, alpha):
+    """Salinan surface yang RGB-nya ikut diredam (untuk blit additive).
+
+    ``set_alpha`` TIDAK berpengaruh pada ``BLEND_RGB_ADD``; tanpa langkah
+    ini setiap glow yang "memudar" tetap ditambahkan dengan intensitas
+    penuh dan menumpuk jadi bercak putih di atas badan.
+    """
+    a = max(1, min(255, int(alpha))) // 8 * 8 or 8
+    key = (id(surf), surf.get_size(), a)
+    hit = _FADE_CACHE.get(key)
+    if hit is not None:
+        return hit[1]
+    cp = surf.copy()
+    cp.fill((a, a, a, a), special_flags=pygame.BLEND_RGBA_MULT)
+    # Sumbernya ikut disimpan supaya id() tidak didaur ulang objek lain.
+    _FADE_CACHE[key] = (surf, cp)
+    _FADE_ORDER.append(key)
+    while len(_FADE_ORDER) > 256:
+        _FADE_CACHE.pop(_FADE_ORDER.pop(0), None)
+    return cp
+
+
 def _blit_faded(surface, surf, cx, cy, alpha=255, additive=False):
     """Blit surface di tengah (cx, cy) dengan alpha; additive bila diminta."""
     if alpha <= 0:
         return
     a = max(0, min(255, int(alpha)))
-    if a >= 255:
-        surf.set_alpha(255)
-    else:
-        surf.set_alpha(a)
     w, h = surf.get_size()
     if additive:
+        if a < 250:
+            surf = _fade_copy(surf, a)
+            w, h = surf.get_size()
         surface.blit(surf, (int(cx) - w // 2, int(cy) - h // 2),
                      special_flags=pygame.BLEND_RGB_ADD)
-    else:
-        surface.blit(surf, (int(cx) - w // 2, int(cy) - h // 2))
+        return
+    surf.set_alpha(a)
+    surface.blit(surf, (int(cx) - w // 2, int(cy) - h // 2))
+    surf.set_alpha(255)
 
 
 def _shard_poly(surface, cx, cy, ang, length, width, color, alpha=255):
@@ -1809,7 +1853,7 @@ class SkillFX:
                         2 if i % 2 else 1)
             self._star(surface, x, y - 10, int(26 * (self.radius / 90.0)),
                        P["blood_glow"], int(190 * pulse), spikes=8,
-                       rot=self.age * 1.4, core=P["fx_white"])
+                       rot=self.age * 1.4, core=P["fx_white"], hollow=0.5)
             for k in range(3):
                 a = self.age * 2.1 + k * math.tau / 3
                 rr = int((26 + 8 * math.sin(self.age * 3 + k)) *
@@ -1897,9 +1941,10 @@ class SkillFX:
                 surface.blit(g, (x - g.get_width() // 2,
                                  y - g.get_height() // 2),
                              special_flags=pygame.BLEND_RGB_ADD)
+            # hollow: ledakan berpusat di badan Gorath sendiri
             self._star(surface, x, y, int(rr * 1.05), P["blood_hot"],
                        int(230 * st), spikes=8, rot=self.age * 2.2,
-                       core=P["fx_white"])
+                       core=P["fx_white"], hollow=0.55)
             for i in range(8):
                 a = self.seed * 0.4 + i * math.tau / 8
                 L = int(rr * (0.8 + 0.5 * _hash01(self.seed + i)))
@@ -1971,9 +2016,10 @@ class SkillFX:
                 surface.blit(g, (x - g.get_width() // 2,
                                  y - g.get_height() // 2),
                              special_flags=pygame.BLEND_RGB_ADD)
+            # hollow: Rupture meledak DI caster - jangan tutupi siluet
             self._star(surface, x, y, int(rr * 1.1), P["blood_glow"],
                        int(235 * st), spikes=10, rot=self.age * 1.6,
-                       core=P["fx_white"])
+                       core=P["fx_white"], hollow=0.6)
             for i in range(12):
                 a = self.seed * 0.3 + i * math.tau / 12
                 L = int(rr * (0.9 + 0.6 * _hash01(self.seed + i)))
@@ -1995,21 +2041,35 @@ class SkillFX:
 
     # ------------------------------------------------------------------
     def _star(self, surface, x, y, radius, color, alpha, spikes=8, rot=0.0,
-              core=None):
-        """Bintang tajam ber-spike (bukan lingkaran)."""
+              core=None, hollow=0.0):
+        """Bintang tajam ber-spike (bukan lingkaran).
+
+        ``hollow`` (0..0.9) mengosongkan bagian tengah: dipakai untuk
+        ledakan yang berpusat di CASTER (E pendaratan, R Rupture). Tanpa
+        itu, poligon padat beradius ~176 px di alpha 235 digambar tepat
+        di atas badan Gorath dan menelan siluetnya selama ultimate.
+        """
         if radius <= 2 or alpha <= 4:
             return
-        pts = []
+        col = (*_clamp_color(color), int(alpha))
+        hollow = max(0.0, min(0.9, float(hollow)))
+        outer = []
         for i in range(spikes * 2):
             a = rot + i * math.pi / spikes
             rr = radius if i % 2 == 0 else radius * 0.42
-            pts.append((x + math.cos(a) * rr, y + math.sin(a) * rr))
+            outer.append((x + math.cos(a) * rr, y + math.sin(a) * rr))
         try:
-            pygame.draw.polygon(surface, (*_clamp_color(color),
-                                          int(alpha)), pts)
+            if hollow <= 0.01:
+                pygame.draw.polygon(surface, col, outer)
+            else:
+                # cincin bintang: kontur luar + kontur dalam terbalik,
+                # jadi pusatnya (badan) tetap terbaca.
+                inner = [(x + (px - x) * hollow, y + (py - y) * hollow)
+                         for px, py in outer]
+                pygame.draw.polygon(surface, col, outer + inner[::-1])
         except (ValueError, pygame.error):
             return
-        if core is not None:
+        if core is not None and hollow <= 0.01:
             pygame.draw.circle(surface, (*_clamp_color(core), int(alpha)),
                                (x, y), max(1, int(radius * 0.22)))
 
@@ -2437,19 +2497,32 @@ class GorathFXDirector:
             draw_debug_overlay(surface, self)
 
     def _draw_hit_flash(self, surface, x, y):
-        """IMPACT FLASH: Surface transparan di atas badan (bukan tint RGB)."""
+        """IMPACT FLASH: glow darah kecil + kilat dada — BUKAN white-out.
+
+        Versi lama menumpuk cakram ``fx_white`` radius ~76 px (alpha 120,
+        tapi di-blit ``BLEND_RGB_ADD`` yang mengabaikan alpha) tepat di
+        atas badan: ~100% siluet Gorath jadi bola putih SETIAP tick
+        damage. Cakram itu dibuang; benturan tetap terbaca dari glow
+        hangat kecil + kilat bintang di dada.
+        """
         k = max(0.0, min(1.0, self.hit_flash / 0.16))
-        r = int(20 + 26 * k)
+        # Lane boss punya flash siluetnya sendiri (hurt_flash_timer);
+        # dua flash penuh di frame yang sama = white-out.
+        if int(getattr(self.hero, "hurt_flash_timer", 0) or 0) > 0:
+            k *= 0.35
+        if k <= 0.02:
+            return
+        r = int(16 + 14 * k)
         if glow_allowed():
-            g = glow_surface(r, P["blood_hot"], 0.7 * k)
-            surface.blit(g, (int(x) - r, int(y) - r - 6),
-                         special_flags=pygame.BLEND_RGB_ADD)
-        size = int(30 + 46 * k)
-        buf = _scratch(size * 2, size * 2)
-        pygame.draw.circle(buf, (*P["fx_white"], int(120 * k)),
-                           (size, size), int(size * 0.72))
-        surface.blit(buf, (int(x) - size, int(y) - size - 8),
-                     special_flags=pygame.BLEND_RGB_ADD)
+            g = glow_surface(r, P["blood_hot"], 0.5 * k)
+            _blit_faded(surface, g, int(x), int(y) - 8, int(220 * k),
+                        additive=True)
+        s = max(3, int(4 + 8 * k))
+        star = spark_surface(s, P["fx_white"])
+        star.set_alpha(int(165 * k))
+        surface.blit(star, (int(x) - star.get_width() // 2,
+                            int(y) - 16 - star.get_height() // 2))
+        star.set_alpha(255)
 
     # ------------------------------------------------------------------
     def clear(self):
