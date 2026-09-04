@@ -3,6 +3,17 @@
 > Rewrite penuh namespace `_NS_grimjaw` di `heroes/_bundle.py`.
 > Tetap **100% prosedural** — tidak ada PNG / sprite-sheet / `image.load`.
 
+> **v2.5 (rig rewrite from zero)** — `_draw_grimjaw_elite` ditulis ulang
+> supaya siluet bersih dan mudah dibaca di ukuran arena: mahkota api jadi
+> **kipas 5 lidah besar** dengan ramp gelap→terang per lidah (bukan balok
+> menyatu), kaki **dua kolom chunky dengan gap tegas** (paha → greave →
+> boot, masing-masing bidang planar lebar), mask putih dua celah mata
+> tetap dengan streak darah, baja/emas sebagai bidang lebar tanpa hiasan
+> 1 px, dan di akhir serang badan/lengan kembali **piksel-demi-piksel ke
+> pose jaga** (loop closure). API, palet, pose-helper geometri yang dibaca
+> FX layer (`_blade_angle`, `_blade_grip_local`, `_blade_tip_local`,
+> `_render_scale`) serta kontrak tebasan ATAS→BAWAH tidak berubah.
+
 ## Apa yang berubah
 
 | Aspek | v1 (lama) | v2 (baru) |
