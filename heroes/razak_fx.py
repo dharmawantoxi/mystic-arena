@@ -387,9 +387,16 @@ def _cache_put(key, surf):
     return surf
 
 
+#: Cache salinan-redup untuk blit additive (lihat `_fade_copy`).
+_FADE_CACHE = {}
+_FADE_ORDER = []
+
+
 def clear_cache():
     _SURF_CACHE.clear()
     _SURF_ORDER.clear()
+    _FADE_CACHE.clear()
+    _FADE_ORDER.clear()
 
 
 def cache_size():
@@ -397,7 +404,15 @@ def cache_size():
 
 
 def glow_surface(radius, color, power=1.0):
-    """Radial glow additive (quantized) — dibangun sekali, dipakai ulang."""
+    """Radial glow PREMULTIPLIED (quantized) — sekali bangun, dipakai ulang.
+
+    ``BLEND_RGB_ADD`` MENGABAIKAN kanal alpha: kalau lingkaran digambar
+    dengan RGB penuh + alpha menurun, hasil additive-nya menjadi CAKRAM
+    warna solid — inilah yang membuat Razak tertelan cahaya putih-kuning
+    saat Firestorm (R) / skill lain di-cast. Intensitas dikalikan ke RGB
+    DAN disalin ke alpha, jadi surface yang sama benar untuk blit normal
+    maupun additive (pola yang sama dipakai gornak/zephyr/kaizen).
+    """
     radius = max(3, int(radius))
     power = max(0.05, min(2.0, round(power / 0.05) * 0.05))
     key = ("glow", radius, color, power)
@@ -411,10 +426,12 @@ def glow_surface(radius, color, power=1.0):
     for i in range(steps, 0, -1):
         t = i / float(steps)
         rr = int(radius * t)
-        al = int(120 * power * (1.0 - t) ** 1.7)
-        if al <= 2:
+        k = 0.47 * power * (1.0 - t) ** 1.7
+        if k <= 0.008:
             continue
-        pygame.draw.circle(surf, (*col, max(1, al)),
+        pygame.draw.circle(surf,
+                           (int(col[0] * k), int(col[1] * k),
+                            int(col[2] * k), min(255, int(255 * k))),
                            (radius + 1, radius + 1), rr)
     return _cache_put(key, surf)
 
@@ -501,7 +518,12 @@ def ellipse_ring_surface(rx, ry, thickness, color, angle_deg=0):
 
 
 def ground_glow_surface(radius, color, power=0.35):
-    """Glow tanah (elips lebar, bukan bola) — kedalaman di bawah badan."""
+    """Glow tanah (elips lebar) PREMULTIPLIED — dipakai untuk blit additive.
+
+    Sama seperti `glow_surface`: alpha diabaikan oleh ``BLEND_RGB_ADD``,
+    jadi intensitas harus masuk ke RGB supaya kabut tanah tidak menjadi
+    piringan terang yang menelan bayangan & kaki Razak.
+    """
     radius = max(8, int(radius))
     power = max(0.05, min(1.0, round(power / 0.05) * 0.05))
     key = ("gglow", radius, color, power)
@@ -517,10 +539,12 @@ def ground_glow_surface(radius, color, power=0.35):
         t = i / float(steps)
         rr = int(radius * t)
         rh = max(2, int((radius * 0.30) * t))
-        al = int(90 * power * (1.0 - t) ** 1.6)
-        if al <= 2:
+        k = 0.35 * power * (1.0 - t) ** 1.6
+        if k <= 0.008:
             continue
-        pygame.draw.ellipse(surf, (*col, al),
+        pygame.draw.ellipse(surf,
+                            (int(col[0] * k), int(col[1] * k),
+                             int(col[2] * k), min(255, int(255 * k))),
                             (w // 2 - rr, h // 2 - rh, rr * 2, rh * 2))
     return _cache_put(key, surf)
 
@@ -559,16 +583,44 @@ def _scratch(w, h):
     return surf
 
 
+def _fade_copy(surf, alpha):
+    """Salinan surface dengan RGB *dan* alpha diredam (untuk blit additive).
+
+    ``set_alpha`` tidak berpengaruh pada ``BLEND_RGB_ADD`` — tanpa langkah
+    ini, glow yang "memudar" tetap ditambahkan dengan intensitas penuh dan
+    menumpuk jadi bercak putih di atas badan Razak.
+    """
+    a = max(1, min(255, int(alpha))) // 8 * 8 or 8
+    key = (id(surf), surf.get_size(), a)
+    hit = _FADE_CACHE.get(key)
+    if hit is not None:
+        return hit[1]
+    cp = surf.copy()
+    cp.fill((a, a, a, a), special_flags=pygame.BLEND_RGBA_MULT)
+    # Simpan JUGA sumbernya: menahan objek asli tetap hidup supaya id()
+    # tidak didaur ulang oleh surface lain (kunci cache tetap valid).
+    _FADE_CACHE[key] = (surf, cp)
+    _FADE_ORDER.append(key)
+    while len(_FADE_ORDER) > 256:
+        _FADE_CACHE.pop(_FADE_ORDER.pop(0), None)
+    return cp
+
+
 def _blit_faded(surface, surf, cx, cy, alpha=255, additive=False):
     if alpha <= 2:
         return
     a = max(2, min(255, int(alpha)))
+    if additive:
+        if a < 250:
+            surf = _fade_copy(surf, a)
+        surface.blit(surf, (int(cx - surf.get_width() // 2),
+                            int(cy - surf.get_height() // 2)),
+                     special_flags=pygame.BLEND_RGB_ADD)
+        return
     if a < 255:
         surf.set_alpha(a)
-    flags = pygame.BLEND_RGB_ADD if additive else 0
     surface.blit(surf, (int(cx - surf.get_width() // 2),
-                        int(cy - surf.get_height() // 2)),
-                 special_flags=flags)
+                        int(cy - surf.get_height() // 2)))
     surf.set_alpha(255)
 
 
@@ -2400,19 +2452,34 @@ class RazakFXDirector:
             draw_debug_overlay(surface, self)
 
     def _draw_hit_flash(self, surface, x, y):
-        """IMPACT FLASH: Surface transparan di atas badan (bukan tint RGB)."""
+        """IMPACT FLASH: glow api kecil + kilat di dada — BUKAN white-out.
+
+        Versi lama menambahkan cakram PUTIH radius ~76 px (fire_white,
+        alpha 120 tapi di-blit ``BLEND_RGB_ADD`` yang mengabaikan alpha)
+        tepat di atas badan: ~84% siluet Razak berubah jadi blob putih
+        SETIAP kali kena damage, dan karena efeknya ter-retrigger tiap
+        tick damah/DoT, Razak praktis "dibungkus cahaya" sepanjang baku
+        hantam. Cakram itu dibuang; sinyal benturan tetap terbaca lewat
+        glow hangat kecil + kilat bintang di dada.
+        """
         k = max(0.0, min(1.0, self.hit_flash / 0.16))
-        r = int(20 + 26 * k)
+        # Lane boss juga menggambar flash siluet sendiri (hurt_flash_timer
+        # -> _flash_buf di bosses/level2.py); dua flash penuh di frame yang
+        # sama terbaca sebagai white-out, jadi bagian ini diredam di sana.
+        if int(getattr(self.hero, "hurt_flash_timer", 0) or 0) > 0:
+            k *= 0.35
+        if k <= 0.02:
+            return
+        r = int(16 + 14 * k)
         if glow_allowed():
-            g = glow_surface(r, P["fire_hot"], 0.7 * k)
-            surface.blit(g, (int(x) - r, int(y) - r - 6),
-                         special_flags=pygame.BLEND_RGB_ADD)
-        size = int(30 + 46 * k)
-        buf = _scratch(size * 2, size * 2)
-        pygame.draw.circle(buf, (*P["fire_white"], int(120 * k)),
-                           (size, size), int(size * 0.72))
-        surface.blit(buf, (int(x) - size, int(y) - size - 8),
-                     special_flags=pygame.BLEND_RGB_ADD)
+            g = glow_surface(r, P["fire_hot"], 0.5 * k)
+            _blit_faded(surface, g, int(x), int(y) - 8, int(220 * k),
+                        additive=True)
+        s = max(3, int(4 + 8 * k))
+        star = spark_surface(s, P["fire_white"])
+        star.set_alpha(int(165 * k))
+        surface.blit(star, (int(x) - s, int(y) - 16 - s))
+        star.set_alpha(255)
 
     # ------------------------------------------------------------------
     def clear(self):

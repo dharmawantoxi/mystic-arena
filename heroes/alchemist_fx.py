@@ -443,6 +443,8 @@ def clear_cache():
     """Kosongkan seluruh cache primitive (dipakai test / ganti tema)."""
     _SURF_CACHE.clear()
     del _SURF_ORDER[:]
+    _FADE_CACHE.clear()
+    del _FADE_ORDER[:]
 
 
 def cache_size():
@@ -450,7 +452,14 @@ def cache_size():
 
 
 def glow_surface(radius, color, power=1.0):
-    """Lingkaran glow ber-gradien (additive-friendly), ter-cache."""
+    """Lingkaran glow ber-gradien PREMULTIPLIED, ter-cache.
+
+    ``BLEND_RGB_ADD`` MENGABAIKAN kanal alpha: gradien yang hanya menurun
+    di alpha berubah jadi CAKRAM warna solid saat di-blit additive —
+    penyebab Alchemist tertutup bola putih/kuning saat kena damage dan
+    saat ultimate. Intensitas dikalikan ke RGB **dan** disalin ke alpha,
+    jadi surface yang sama benar untuk blit normal maupun additive.
+    """
     radius = max(2, int(radius))
     power = max(0.2, min(3.0, float(power)))
     key = ("glow", radius, _clamp_color(color), round(power, 2))
@@ -463,9 +472,12 @@ def glow_surface(radius, color, power=1.0):
         for i in range(steps):
             t = i / float(steps)
             r = int(radius * (1.0 - t))
-            a = int(255 * (1.0 - t) ** power)
-            if a > 0 and r > 0:
-                pygame.draw.circle(surf, (*col, a), (radius, radius), r)
+            k = (1.0 - t) ** power
+            if k > 0.004 and r > 0:
+                pygame.draw.circle(surf,
+                                   (int(col[0] * k), int(col[1] * k),
+                                    int(col[2] * k), min(255, int(255 * k))),
+                                   (radius, radius), r)
         surf = _cache_put(key, surf)
     return surf
 
@@ -522,7 +534,12 @@ def ring_surface(radius, thickness, color, alpha=255, dashed=0):
 
 
 def ground_glow_surface(radius, color, power=0.35):
-    """Glow elips tanah (falloff cepat), ter-cache."""
+    """Glow elips tanah PREMULTIPLIED (falloff cepat), ter-cache.
+
+    Alasan premultiply sama dengan `glow_surface`: alpha diabaikan oleh
+    ``BLEND_RGB_ADD``, jadi intensitas harus masuk ke RGB supaya kabut
+    tanah tidak jadi piringan terang yang menelan kaki Alchemist.
+    """
     radius = max(3, int(radius))
     key = ("gglow", radius, _clamp_color(color), round(power, 2))
     surf = _SURF_CACHE.get(key)
@@ -536,9 +553,12 @@ def ground_glow_surface(radius, color, power=0.35):
             t = i / float(steps)
             rw = int(radius * (1.0 - t))
             rh = max(1, int(radius // 2 * (1.0 - t)))
-            a = int(255 * (1.0 - t) ** (1.0 / max(0.1, power)))
-            if a > 0:
-                pygame.draw.ellipse(surf, (*col, a),
+            k = (1.0 - t) ** (1.0 / max(0.1, power))
+            if k > 0.004:
+                pygame.draw.ellipse(surf,
+                                    (int(col[0] * k), int(col[1] * k),
+                                     int(col[2] * k),
+                                     min(255, int(255 * k))),
                                     (radius - rw, radius // 2 - rh,
                                      rw * 2, rh * 2))
         surf = _cache_put(key, surf)
@@ -573,6 +593,26 @@ def _shard_poly(surface, cx, cy, ang, length, width, color, alpha=255,
         pygame.draw.polygon(surface, col, pts)
 
 
+_FADE_CACHE = {}
+_FADE_ORDER = []
+
+
+def _fade_copy(surf, alpha):
+    """Salinan surface dengan RGB *dan* alpha diredam (blit additive)."""
+    a = max(1, min(255, int(alpha))) // 8 * 8 or 8
+    key = (id(surf), surf.get_size(), a)
+    hit = _FADE_CACHE.get(key)
+    if hit is not None:
+        return hit[1]
+    cp = surf.copy()
+    cp.fill((a, a, a, a), special_flags=pygame.BLEND_RGBA_MULT)
+    _FADE_CACHE[key] = (surf, cp)          # tahan sumber: id() tetap unik
+    _FADE_ORDER.append(key)
+    while len(_FADE_ORDER) > 256:
+        _FADE_CACHE.pop(_FADE_ORDER.pop(0), None)
+    return cp
+
+
 def _blit_faded(surface, surf, cx, cy, alpha=255, additive=False):
     """Blit surf di (cx, cy) dengan alpha/blend global murah."""
     if alpha <= 2:
@@ -583,9 +623,11 @@ def _blit_faded(surface, surf, cx, cy, alpha=255, additive=False):
         surface.blit(surf, (x, y))
         return
     if additive:
-        tmp = surf.copy()
-        tmp.fill((255, 255, 255, int(alpha)),
-                 special_flags=pygame.BLEND_RGBA_MULT)
+        # RGB harus ikut diredam: BLEND_RGBA_ADD menambah kanal warna apa
+        # adanya, jadi meredam alpha saja membuat glow yang "memudar"
+        # tetap ditambahkan penuh dan menumpuk jadi bercak putih.
+        a = max(1, min(255, int(alpha)))
+        tmp = _fade_copy(surf, a)
         surface.blit(tmp, (x, y), special_flags=pygame.BLEND_RGBA_ADD)
         return
     # Non-additif: set_alpha langsung pada surface cache (tanpa copy).
@@ -2225,12 +2267,28 @@ class AlchemistFXDirector:
             draw_debug_overlay(surface, self)
 
     def _draw_hit_flash(self, surface, x, y):
-        """IMPACT FLASH: surface transparan di atas badan."""
-        t = self.hit_flash / 0.16
-        r = max(10, int(34 * (1.2 - t * 0.4)))
-        glow = glow_surface(r, P["blue_hot"])
-        _blit_faded(surface, glow, x, y - 12, int(120 * t),
-                    additive=glow_allowed())
+        """IMPACT FLASH: glow kecil + kilat dada — bukan cakram di badan."""
+        k = max(0.0, min(1.0, self.hit_flash / 0.16))
+        # Lane boss punya flash siluetnya sendiri (hurt_flash_timer); dua
+        # flash penuh di frame yang sama terbaca sebagai white-out.
+        if int(getattr(self.hero, "hurt_flash_timer", 0) or 0) > 0:
+            k *= 0.35
+        if k <= 0.02:
+            return
+        r = max(8, int(14 + 8 * k))
+        if glow_allowed():
+            # power 2.2 = falloff tajam: inti kecil, tepi cepat habis,
+            # jadi glow membaca sebagai "kena pukul" tanpa membanjiri
+            # badan Alchemist yang lebar.
+            glow = glow_surface(r, P["blue_hot"], 2.2)
+            _blit_faded(surface, glow, x, y - 12, int(150 * k),
+                        additive=True)
+        s = max(3, int(3 + 5 * k))
+        star = spark_surface(s, P["acid_white"])
+        star.set_alpha(int(150 * k))
+        surface.blit(star, (int(x) - star.get_width() // 2,
+                            int(y) - 18 - star.get_height() // 2))
+        star.set_alpha(255)
 
 
 # ============================================================================
