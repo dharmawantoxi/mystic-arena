@@ -69,7 +69,7 @@ class SpatialGrid:
         else:
             bucket.append(entity)
 
-    def query_range(self, x, y, radius):
+    def query_range(self, x, y, radius, team=None):
         """Kembalikan entitas dalam radius dari (x, y).
 
         Setiap entitas di-insert ke PERSIS satu bucket (sel dari titik
@@ -77,6 +77,14 @@ class SpatialGrid:
         ``seen`` per kueri. Radius dibandingkan dengan jarak kuadrat
         (menghindari math.hypot/sqrt yang di profil menyumbang >1,3 juta
         panggilan per menit yang sama) pada wave besar.
+
+        Kalau ``team`` diberikan, filter musuh (``e.team != team and
+        e.alive``) dilakukan DI SINI, di dalam loop yang sama. Sebelumnya
+        ``query_enemies_in_range`` melakukan filter itu sebagai list
+        comprehension terpisah: satu alokasi list ekstra + satu iterasi
+        penuh atas hasil + 2 akses atribut per kandidat. Kueri ini jalan
+        ~100x per frame (sekali per minion/hero), jadi loop gandanya
+        terlihat di profil wave besar.
         """
         results = []
         cs = self.cell_size
@@ -90,22 +98,40 @@ class SpatialGrid:
         max_cx = int(x1 // cs)
         min_cy = int(y0 // cs)
         max_cy = int(y1 // cs)
-        for cx in range(min_cx, max_cx + 1):
-            for cy in range(min_cy, max_cy + 1):
-                bucket = get((cx, cy))
-                if not bucket:
-                    continue
-                for entity in bucket:
-                    # Pemeriksaan kotak kasar dulu (murah, tanpa cabang
-                    # dist / sqrt) sebelum jarak kuadrat penuh - memangkas
-                    # kandidat jauh dari bucket besar.
-                    if entity.x < x0 or entity.x > x1 \
-                            or entity.y < y0 or entity.y > y1:
+        append = results.append
+        if team is None:
+            for cx in range(min_cx, max_cx + 1):
+                for cy in range(min_cy, max_cy + 1):
+                    bucket = get((cx, cy))
+                    if not bucket:
                         continue
-                    dx = entity.x - x
-                    dy = entity.y - y
-                    if dx * dx + dy * dy <= r2:
-                        results.append(entity)
+                    for entity in bucket:
+                        # Pemeriksaan kotak kasar dulu (murah, tanpa cabang
+                        # dist / sqrt) sebelum jarak kuadrat penuh -
+                        # memangkas kandidat jauh dari bucket besar.
+                        if entity.x < x0 or entity.x > x1 \
+                                or entity.y < y0 or entity.y > y1:
+                            continue
+                        dx = entity.x - x
+                        dy = entity.y - y
+                        if dx * dx + dy * dy <= r2:
+                            append(entity)
+        else:
+            for cx in range(min_cx, max_cx + 1):
+                for cy in range(min_cy, max_cy + 1):
+                    bucket = get((cx, cy))
+                    if not bucket:
+                        continue
+                    for entity in bucket:
+                        if entity.x < x0 or entity.x > x1 \
+                                or entity.y < y0 or entity.y > y1:
+                            continue
+                        if entity.team == team or not entity.alive:
+                            continue
+                        dx = entity.x - x
+                        dy = entity.y - y
+                        if dx * dx + dy * dy <= r2:
+                            append(entity)
         return results
 
 
@@ -148,10 +174,11 @@ def query_enemies_in_range(x, y, radius, team):
     update_spatial_grid), dan semuanya punya atribut ``team`` dan
     ``alive`` - jadi filter cukup akses langsung tanpa ``hasattr`` per
     kandidat (profil: ~660 ribu panggilan hasattr saat combat ramai).
+
+    Filter musuh diteruskan ke ``query_range`` supaya jalan di dalam
+    loop kueri - tanpa list comprehension perantara.
     """
-    candidates = _grid.query_range(x, y, radius)
-    return [e for e in candidates
-            if e.team != team and e.alive]
+    return _grid.query_range(x, y, radius, team)
 
 
 
