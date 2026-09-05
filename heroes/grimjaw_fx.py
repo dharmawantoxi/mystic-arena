@@ -344,18 +344,23 @@ def glow_surface(radius, color, power=1.0):
     size = radius * 2 + 2
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
     c = radius + 1
-    steps = max(4, min(radius, 14))
-    for i in range(steps, 0, -1):
-        t = i / float(steps)
-        r = max(1, int(radius * t))
-        k = power * (1.0 - t) ** 1.7
+    # Posterized ala spidol: 4 band cahaya TEGAS (bukan gradien halus)
+    # supaya konsisten dengan renderer doodle. Pusat tiap band
+    # digeser 1 px secara deterministik - blob "ditekan tangan".
+    for bi, f in enumerate((0.22, 0.45, 0.70, 1.0)):
+        k = power * f
         if k <= 0.004:
             continue
+        r = max(1, int(radius * (1.05 - 0.75 * f)))
+        dx = dy = 0
+        if radius >= 7:
+            dx = int(round((_hash01(radius * 31 + bi * 7) - 0.5) * 2))
+            dy = int(round((_hash01(radius * 57 + bi * 13) - 0.5) * 2))
         pygame.draw.circle(
             surf,
             (int(color[0] * k), int(color[1] * k), int(color[2] * k),
              min(255, int(255 * k))),
-            (c, c), r)
+            (c + dx, c + dy), r)
     return _cache_put(key, surf)
 
 
@@ -371,12 +376,15 @@ def spark_surface(size, color):
     s = size * 2 + 1
     surf = pygame.Surface((s, s), pygame.SRCALPHA)
     c = size
-    pygame.draw.polygon(surf, (*color, 235), [
-        (c, 0), (c + max(1, size // 3), c),
-        (c, s - 1), (c - max(1, size // 3), c)])
-    pygame.draw.polygon(surf, (*color, 190), [
-        (0, c), (c, c - max(1, size // 4)),
-        (s - 1, c), (c, c + max(1, size // 4))])
+    # Asterisk 5 jarum dengan sudut & panjang tidak rata (coretan
+    # tangan), deterministik dari size supaya cache konsisten.
+    for k in range(5):
+        a = k * math.tau / 5 + _hash01(size * 31 + k) * 0.6
+        L = size * (0.65 + 0.35 * _hash01(size * 17 + k * 7))
+        pygame.draw.line(
+            surf, (*color, 235), (c, c),
+            (c + int(math.cos(a) * L), c + int(math.sin(a) * L)),
+            2 if k % 2 == 0 else 1)
     pygame.draw.circle(surf, (255, 255, 255, 255), (c, c),
                        max(1, size // 4))
     return _cache_put(key, surf)
@@ -392,10 +400,24 @@ def ring_surface(radius, thickness, color, alpha=255):
     if surf is not None:
         return surf
 
-    size = radius * 2 + thickness * 2 + 2
+    size = radius * 2 + thickness * 2 + 6
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
     c = size // 2
-    pygame.draw.circle(surf, (*color, int(alpha)), (c, c), radius, thickness)
+    # Cincin coret-tangan: radius tiap vertex di-jitter deterministik,
+    # lalu pass kedua lebih tipis & bergeser (garis rangkap doodle).
+    n = max(10, min(22, radius // 3))
+    pts = []
+    for i in range(n):
+        a = i * math.tau / n
+        wob = 1.0 + (_hash01(radius * 13 + i * 7) - 0.5) *             min(0.09, 3.0 / max(4, radius))
+        pts.append((int(c + math.cos(a) * radius * wob + 0.5),
+                    int(c + math.sin(a) * radius * wob + 0.5)))
+    pygame.draw.lines(surf, (*color, int(alpha)), True, pts,
+                      max(1, int(thickness * 0.8)))
+    if radius >= 8:
+        pts2 = [(px + (1 if i % 2 else -1), py)
+                for i, (px, py) in enumerate(pts)]
+        pygame.draw.lines(surf, (*color, int(alpha * 0.5)), True, pts2, 1)
     return _cache_put(key, surf)
 
 
@@ -415,11 +437,25 @@ def ellipse_ring_surface(rx, ry, thickness, color, angle_deg=0):
     if surf is not None:
         return surf
 
-    pad = thickness + 2
+    pad = thickness + 5
     base = pygame.Surface((rx * 2 + pad * 2, ry * 2 + pad * 2),
                           pygame.SRCALPHA)
-    pygame.draw.ellipse(base, (*color, 255),
-                        (pad, pad, rx * 2, ry * 2), thickness)
+    cx = rx + pad
+    cy = ry + pad
+    # Elips coret-tangan: vertex parametrik di-jitter radial.
+    n = max(10, min(24, (rx + ry) // 4))
+    pts = []
+    for i in range(n):
+        a = i * math.tau / n
+        wob = 1.0 + (_hash01(rx * 13 + ry * 7 + i * 11) - 0.5) *             min(0.09, 3.0 / max(4, (rx + ry) // 2))
+        pts.append((int(cx + math.cos(a) * rx * wob + 0.5),
+                    int(cy + math.sin(a) * ry * wob + 0.5)))
+    pygame.draw.lines(base, (*color, 255), True, pts,
+                      max(1, int(thickness * 0.85)))
+    if rx >= 8:
+        pts2 = [(px + (1 if i % 2 else -1), py)
+                for i, (px, py) in enumerate(pts)]
+        pygame.draw.lines(base, (*color, 120), True, pts2, 1)
     if step:
         base = pygame.transform.rotate(base, -step)
     return _cache_put(key, base)
@@ -437,19 +473,29 @@ def ground_glow_surface(radius, color, power=0.3):
     w = radius * 2 + 4
     h = radius + 4
     surf = pygame.Surface((w, h), pygame.SRCALPHA)
-    steps = max(4, min(radius // 2, 12))
-    for i in range(steps, 0, -1):
-        t = i / float(steps)
-        rx = max(2, int(radius * t))
-        ry = max(1, int(radius * t * 0.5))
-        k = power * (1.0 - t) ** 1.5
+    # 3 band tegas (posterized) + coretan horizontal di band tengah:
+    # kabut dibaca sebagai arsiran spidol, bukan blur.
+    for bi, f in enumerate((0.30, 0.58, 1.0)):
+        k = power * f
         if k <= 0.004:
             continue
+        rx = max(2, int(radius * f))
+        ry = max(1, int(radius * f * 0.5))
+        dy = int(round((_hash01(radius * 23 + bi * 5) - 0.5) * 2))
         pygame.draw.ellipse(
             surf,
             (int(color[0] * k), int(color[1] * k), int(color[2] * k),
              min(255, int(255 * k))),
-            (w // 2 - rx, h // 2 - ry, rx * 2, ry * 2))
+            (w // 2 - rx, h // 2 - ry + dy, rx * 2, ry * 2))
+    for k in range(3):
+        sx = int(w * (0.30 + 0.20 * k))
+        ln = int(radius * (0.22 + 0.10 * _hash01(radius * 7 + k)))
+        yy = h // 2 + int((_hash01(radius * 11 + k * 3) - 0.5) *
+                          radius * 0.6)
+        pygame.draw.line(
+            surf, (int(color[0] * power), int(color[1] * power),
+                   int(color[2] * power), min(255, int(190 * power))),
+            (sx, yy), (sx + ln, yy + 1), 1)
     return _cache_put(key, surf)
 
 
@@ -470,17 +516,29 @@ def crescent_surface(radius, color, depth=0.62):
     size = radius * 2 + 6
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
     c = size // 2
-    outer = pygame.Rect(c - radius, c - radius, radius * 2, radius * 2)
-    off = int(radius * (1.0 - depth))
-    inner = pygame.Rect(c - radius + off, c - radius,
-                        radius * 2, radius * 2)
-    try:
-        pygame.draw.arc(surf, (*color, 235), outer, math.pi * 0.5,
-                        math.pi * 1.5, max(2, radius // 4))
-        pygame.draw.arc(surf, (*color, 200), inner, math.pi * 0.62,
-                        math.pi * 1.38, max(1, radius // 6))
-    except (ValueError, pygame.error):        # pragma: no cover
-        pass
+
+    def _arc_pts(r, a0, a1, salt, wob):
+        n = max(7, min(18, int(r)))
+        pts = []
+        for i in range(n + 1):
+            t = i / n
+            a = a0 + (a1 - a0) * t
+            wv = 1.0 + (_hash01(radius * 29 + salt + i * 11) - 0.5) * wob
+            pts.append((int(c + math.cos(a) * r * wv + 0.5),
+                        int(c + math.sin(a) * r * wv + 0.5)))
+        return pts
+
+    # busur luar tebal (coretan utama) + busur dalam ramping;
+    # jitter radial kecil supaya terlihat digambar tangan.
+    pygame.draw.lines(surf, (*color, 235), False,
+                      _arc_pts(radius, math.pi * 0.50, math.pi * 1.50,
+                               0, 0.07),
+                      max(2, radius // 4))
+    off = radius * (1.0 - depth)
+    pygame.draw.lines(surf, (*color, 200), False,
+                      _arc_pts(radius - off, math.pi * 0.62,
+                               math.pi * 1.38, 40, 0.09),
+                      max(1, radius // 6))
     return _cache_put(key, surf)
 
 
@@ -885,6 +943,7 @@ class SwingTrail:
         self.width_boost = 1.0
         self.spin_mode = False      # True saat Blade Fury (pita lebih panas)
         self.active = False
+        self.seed = 13              # seed wobble kontur tinta (deterministik)
 
     # ------------------------------------------------------------------
     def reset(self):
@@ -946,6 +1005,24 @@ class SwingTrail:
 
         hot = 1.25 if self.spin_mode else 1.0
 
+        # ── lapis 0: kontur tinta di tepi luar (ujung bilah) ─────────
+        # garis rangkap doodle: tepi trail digambar tinta gelap dulu
+        # supaya band api di atasnya terbaca sebagai coretan spidol.
+        ink_pts = []
+        for i, (_g, t, a) in enumerate(self.points):
+            fade = max(0.0, 1.0 - a / self.life)
+            if fade <= 0.05:
+                continue
+            jx = int(round((_hash01(self.seed * 13 + i * 7) - 0.5) * 2))
+            jy = int(round((_hash01(self.seed * 29 + i * 11) - 0.5) * 2))
+            ink_pts.append((loc(t)[0] + jx, loc(t)[1] + jy))
+        if len(ink_pts) >= 2:
+            pygame.draw.lines(
+                buf, (*P["fx_darkest"], 120), False, ink_pts, 2)
+            pygame.draw.lines(
+                buf, (*P["fx_darkest"], 70), False,
+                [(px + 1, py - 1) for px, py in ink_pts], 1)
+
         # ── lapis 1: selubung gelap (lebar penuh, api paling gelap) ──
         for i in range(n - 1):
             g0, t0, a0 = self.points[i]
@@ -987,16 +1064,19 @@ class SwingTrail:
                 buf, (*self.color_core, min(255, alpha)),
                 [loc(m0), loc(t0), loc(t1), loc(m1)])
 
-        # ── lapis 4: garis ujung 1-2 px (hard edge pixel-art) ────────
-        for i in range(n - 1):
-            _g0, t0, a0 = self.points[i]
-            _g1, t1, _a1 = self.points[i + 1]
-            fade = max(0.0, 1.0 - a0 / self.life)
+        # ── lapis 4: garis inti ujung (coretan putih, wobble 1 px) ──
+        core_pts = []
+        for i, (_g, t, a) in enumerate(self.points):
+            fade = max(0.0, 1.0 - a / self.life)
             alpha = int(245 * self._quad_alpha(i, n) * fade)
             if alpha <= 8:
                 continue
-            pygame.draw.line(buf, (*P["fx_white"], min(255, alpha)),
-                             loc(t0), loc(t1), 2)
+            jx = int(round((_hash01(self.seed * 7 + i * 5) - 0.5) * 2))
+            jy = int(round((_hash01(self.seed * 19 + i * 3) - 0.5) * 2))
+            core_pts.append((loc(t)[0] + jx, loc(t)[1] + jy))
+        if len(core_pts) >= 2:
+            pygame.draw.lines(buf, (*P["fx_white"], 235), False,
+                              core_pts, 2)
 
         surface.blit(buf, (minx, miny))
 
@@ -1423,21 +1503,30 @@ def draw_blade_wave(surface, px, py, angle=0.0, age=0, crit=False,
         s = rad * 2 + 6
         body = pygame.Surface((s, s), pygame.SRCALPHA)
         c = s // 2
-        outer = pygame.Rect(c - rad, c - rad, rad * 2, rad * 2)
-        inner = pygame.Rect(c - rad + rad // 3, c - rad,
-                            rad * 2, rad * 2)
-        try:
-            # sabit menghadap +x (arah terbang), busur kiri-atas ke kiri-bawah
-            pygame.draw.arc(body, (*P["fx_mid"], 235), outer,
-                            math.pi * 0.55, math.pi * 1.45,
-                            max(2, rad // 3))
-            pygame.draw.arc(body, (*P["fx_light"], 235), inner,
-                            math.pi * 0.65, math.pi * 1.35,
-                            max(1, rad // 5))
-            pygame.draw.arc(body, (*P["fx_hot"], 220), inner.inflate(
-                -rad // 3, -rad // 3), math.pi * 0.75, math.pi * 1.25, 1)
-        except (ValueError, pygame.error):        # pragma: no cover
-            pass
+
+        def _warc(r, a0, a1, salt):
+            # busur coret-tangan: polyline dengan jitter radial kecil
+            n = max(6, min(16, rad))
+            pts = []
+            for i in range(n + 1):
+                t = i / n
+                a = a0 + (a1 - a0) * t
+                wv = 1.0 + (_hash01(rad * 37 + salt + i * 13) - 0.5) * 0.08
+                pts.append((int(c + math.cos(a) * r * wv + 0.5),
+                            int(c + math.sin(a) * r * wv + 0.5)))
+            return pts
+
+        # sabit menghadap +x (arah terbang), busur kiri-atas ke kiri-bawah
+        pygame.draw.lines(body, (*P["fx_mid"], 235), False,
+                          _warc(rad, math.pi * 0.55, math.pi * 1.45, 0),
+                          max(2, rad // 3))
+        pygame.draw.lines(body, (*P["fx_light"], 235), False,
+                          _warc(rad - rad // 3, math.pi * 0.65,
+                                math.pi * 1.35, 50),
+                          max(1, rad // 5))
+        pygame.draw.lines(body, (*P["fx_hot"], 220), False,
+                          _warc(rad - rad // 3 - rad // 4, math.pi * 0.75,
+                                math.pi * 1.25, 90), 1)
         # inti depan (kepala sabit)
         pygame.draw.circle(body, (*P["fx_white"], 255),
                            (c + rad - 2, c), max(1, rad // 4))

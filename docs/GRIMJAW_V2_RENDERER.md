@@ -1,5 +1,10 @@
 # Grimjaw v2 — Renderer Pixel-Art Masterwork
 
+> ⚠️ **Usang** — renderer Grimjaw kini **doodle sketch v4**; lihat
+> [GRIMJAW_V4_DOODLE_RENDERER.md](GRIMJAW_V4_DOODLE_RENDERER.md).
+> Dokumen ini dipertahankan sebagai referensi historis (dipakai oleh
+> v3 combat FX dan audit metric lama).
+
 > Rewrite penuh namespace `_NS_grimjaw` di `heroes/_bundle.py`.
 > Tetap **100% prosedural** — tidak ada PNG / sprite-sheet / `image.load`.
 
