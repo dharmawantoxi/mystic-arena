@@ -3,7 +3,8 @@
 # ----------------------------------------------------------------------------
 # RAZAK — COMBAT / GAME-FEEL ENGINE  (screen-space live layer)
 #
-# Badan Razak digambar lewat ``_NS_razak`` (bosses/level2.py) ke canvas
+# Badan Razak digambar lewat ``_NS_razak`` (bosses/razak_v4.py, re-export
+# dari bosses/level2.py) ke canvas
 # yang DI-CACHE lalu di-scale oleh pipeline hero.  Artinya semua yang butuh
 # gerak 60 fps sejati — trail machete api, partikel, napalm, impact,
 # guncangan layar — TIDAK boleh hidup di dalam canvas itu: hasilnya ikut
@@ -1741,6 +1742,17 @@ class SkillFX:
                 pygame.draw.circle(surface,
                                    (*P["fire_white"], 240),
                                    (x + ox, y + oy - 2), max(1, r - 1))
+            # v4: splash droplets flung from the sticky pool
+            for i in range(4):
+                gg = _hash01(self.seed + i * 61)
+                ang = gg * math.tau
+                d = R * (0.35 + 0.45 * _hash01(self.seed + i * 73))
+                dx = int(math.cos(ang) * d)
+                dy = int(math.sin(ang) * d * 0.45)
+                pygame.draw.circle(surface, (*P["fire_hot"], int(160 * k)),
+                                   (x + dx, y + dy - 2), 2)
+                pygame.draw.circle(surface, (*P["fire_bright"], int(180 * k)),
+                                   (x + dx, y + dy - 3), 1)
         elif self.phase == "charge":
             # bola api kecil menyala di tangan sebelum lempar (muzzle)
             r = int(6 + 4 * (a / max(0.001, self.t_charge)))
@@ -1768,6 +1780,11 @@ class SkillFX:
             width = int(10 + 22 * mint)
             self._flame_cone(surface, x, y, ang, length, width,
                              int(230 * mint), a)
+            # v4: muzzle flare at the flamethrower (compact, not a white disk)
+            pygame.draw.circle(surface, (*P["fire_hot"], int(200 * mint)),
+                               (x, y), max(2, int(4 * mint)))
+            pygame.draw.circle(surface, (*P["fire_glow"], int(220 * mint)),
+                               (x, y), max(1, int(2 * mint)))
         elif self.phase in ("area", "impact"):
             fade = 1.0 if self.phase == "area" else (
                 1.0 - (a - self.t_area) /
@@ -1868,6 +1885,13 @@ class SkillFX:
             pygame.draw.circle(surface, (*P["fire_white"],
                                          int(min(255, 200 * k))),
                                (x, y), max(1, int(6 * k)))
+            # v4: landing embers around the dash ring
+            for i in range(5):
+                gg = _hash01(self.seed + i * 19)
+                ox = int((gg - 0.5) * R * 0.9)
+                oy = int((_hash01(self.seed + i * 37) - 0.5) * 14)
+                pygame.draw.circle(surface, (*P["fire_hot"], int(150 * k)),
+                                   (x + ox, y + int(self.ground) + oy), 2)
 
     # -- R  Firestorm: 8 pilar api mengorbit + wisp spiral ────────────
     def _draw_r(self, surface, x, y, a):
@@ -1910,6 +1934,15 @@ class SkillFX:
                 pygame.draw.circle(surface,
                                    (*P["fire_white"], int(200 * fade)),
                                    (int(wx), int(wy - 1)), 1)
+            # v4: extra orbit embers between the 8 pillars
+            for i in range(6):
+                ang = a * 1.1 + i * math.tau / 6 + 0.4
+                ex = x + math.cos(ang) * (ring_r * 0.82)
+                ey = y + self.ground + math.sin(ang) * (ring_r * 0.32)
+                pygame.draw.circle(surface, (*P["fire_hot"], int(160 * fade)),
+                                   (int(ex), int(ey)), 2)
+                pygame.draw.circle(surface, (*P["fire_bright"], int(180 * fade)),
+                                   (int(ex), int(ey - 1)), 1)
 
     def _pillar(self, surface, cx, cy, height, width, alpha):
         """Pilar api ter-cache per bucket tinggi/lebar/alpha."""

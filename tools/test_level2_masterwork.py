@@ -197,9 +197,13 @@ def _extract_duration(src, fname):
 
 def test_durations_match_ai():
     src = inspect.getsource(L)
+    # Razak lives in bosses/razak_v4.py and is re-exported from level2.
+    import bosses.razak_v4 as _razak_v4
+    razak_src = inspect.getsource(_razak_v4)
     for boss, pairs in SKILL_FN.items():
+        body = razak_src if boss == "razak" else src
         for fname, key in pairs:
-            got = _extract_duration(src, fname)
+            got = _extract_duration(body, fname)
             want = AI[boss][key]
             assert got == want, \
                 f"{boss}.{fname} durasi={got} != AI {want}"
@@ -312,6 +316,8 @@ def test_outline_and_lighting_present():
 def test_procedural_only():
     src = inspect.getsource(L)
     assert "pygame.image.load" not in src
+    import bosses.razak_v4 as _razak_v4
+    assert "pygame.image.load" not in inspect.getsource(_razak_v4)
 
 
 if __name__ == "__main__":
