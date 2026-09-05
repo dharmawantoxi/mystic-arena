@@ -168,16 +168,13 @@ def main():
 
     touch = touch_mod.TouchManager()
     hud = hud_mod.TouchHUD(get_font)
-    # Tombol FPS: TAMPIL selama masih menyetel performa.
-    # Untuk rilis Play Store, ganti baris ini jadi:
-    #     hud.show_debug_button = False
-    # Tombol FPS tampil (di bawah panel gold). Untuk rilis Play Store
-    # cukup set MYSTIC_DEBUG=0 atau ubah baris ini jadi False.
-    # Tombol FPS DIMATIKAN secara default (v30): game sudah lancar,
-    # dan panel debug itu sendiri memakan 4 ms dari 12,5 ms waktu
-    # gambar. Masih bisa dinyalakan untuk diagnosa dengan
-    # MYSTIC_DEBUG=1, atau tekan-tahan tombol JEDA.
-    hud.show_debug_button = os.environ.get("MYSTIC_DEBUG") == "1"
+    # Tombol FPS: TAMPIL lagi secara default (mode debug diaktifkan
+    # kembali). Untuk rilis Play Store cukup set MYSTIC_DEBUG=0 atau
+    # ganti baris ini jadi False.
+    # Catatan v30: panel debug sendiri memakan ~4 ms dari 12,5 ms
+    # waktu gambar - matikan saat mengukur performa final.
+    # Pintasan lain: tekan-tahan tombol JEDA untuk buka/tutup overlay.
+    hud.show_debug_button = os.environ.get("MYSTIC_DEBUG") != "0"
     debug = debug_mod.DebugOverlay(get_font, frame_timer)
 
     # ═══ LAYAR DIAGNOSTIK (Android / MYSTIC_BOOTCHECK=1) ═══
