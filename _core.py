@@ -1583,6 +1583,11 @@ class Game:
         self.next_level_requested = False
         self.replay_requested = False
         self.bosses_defeated_this_run = 0
+        # Boss (mini/true) yang dikalahkan di match INI. Kalau match
+        # berakhir MENANG (castle musuh hancur), semua boss di daftar ini
+        # otomatis dibuka GRATIS di Hero Shop (lihat _grant_meta_reward).
+        self.bosses_defeated_this_match = []
+        self.heroes_unlocked_this_match = []
 
         # Load save
         from _system import SaveManager
@@ -2110,14 +2115,21 @@ class Game:
                 boss.x, boss.y, boss.gold_reward)
             ...
 
+            self.bosses_defeated_this_run += 1
+            if boss_type not in self.bosses_defeated_this_match:
+                self.bosses_defeated_this_match.append(boss_type)
+
             if boss_type not in self.unlocked_bosses:
                 self.unlocked_bosses.append(boss_type)
 
                 prefix = "TRUE BOSS" if boss.boss_class == "true" \
                     else "BOSS"
+                already_owned = boss_type in self.purchased_heroes
                 self.effects.unlock_achievement(
                     f"{prefix}: {boss.name} Defeated!",
-                    f"{boss.name} unlocked as hero!",
+                    (f"{boss.name} already owned!" if already_owned
+                     else f"Destroy the enemy castle to unlock "
+                          f"{boss.name} for FREE!"),
                     "skull")
 
                 from _system import SaveManager
@@ -2291,6 +2303,49 @@ class Game:
             self.active_boss.update(
                 all_units, self.towers, self.bases)
 
+    def _auto_unlock_defeated_boss_heroes(self):
+        """Buka gratis semua boss hero yang dikalahkan di match ini.
+
+        Dipanggil HANYA saat menang (castle musuh hancur). Mengembalikan
+        list boss_type yang baru dibuka (untuk ditampilkan di overlay).
+        """
+        newly = []
+        purchased = self.save_data.setdefault('purchased_heroes', [])
+        if purchased is not self.purchased_heroes:
+            # Sinkronkan referensi supaya shop in-game & save konsisten.
+            for ht in self.purchased_heroes:
+                if ht not in purchased:
+                    purchased.append(ht)
+            self.purchased_heroes = purchased
+        unlocked_bosses = self.save_data.setdefault('unlocked_bosses', [])
+        for boss_type in list(getattr(self, "bosses_defeated_this_match",
+                                      [])):
+            if boss_type not in unlocked_bosses:
+                unlocked_bosses.append(boss_type)
+            if boss_type in purchased:
+                continue
+            purchased.append(boss_type)
+            newly.append(boss_type)
+        self.unlocked_bosses = unlocked_bosses
+        self.heroes_unlocked_this_match = newly
+        if newly:
+            try:
+                catalog = get_all_hero_types()
+                names = [catalog.get(bt, {}).get("name", bt.title())
+                         for bt in newly]
+            except Exception:
+                names = [bt.title() for bt in newly]
+            print(f"[HERO UNLOCK] Free unlock (castle destroyed): "
+                  f"{', '.join(names)}")
+            try:
+                self.effects.unlock_achievement(
+                    "NEW HERO UNLOCKED!",
+                    f"{', '.join(names)} now FREE in Hero Shop!",
+                    "skull")
+            except Exception:
+                pass
+        return newly
+
     def _grant_meta_reward(self, victory):
         if self._meta_reward_granted:
             return
@@ -2327,6 +2382,13 @@ class Game:
 
         # ═══ MARK LEVEL AS COMPLETED (if victory) ═══
         if victory:
+            # ═══ AUTO-UNLOCK BOSS HERO (GRATIS) ═══
+            # Syarat: boss (mini/true) dikalahkan di match ini DAN match
+            # dimenangkan dengan menghancurkan castle musuh. Hero langsung
+            # masuk purchased_heroes tanpa memotong Hero Gold, sehingga di
+            # Hero Shop tampil sebagai OWNED.
+            self._auto_unlock_defeated_boss_heroes()
+
             completed = self.save_data.setdefault('completed_levels', [])
             if self.level_number not in completed:
                 completed.append(self.level_number)
@@ -2913,11 +2975,23 @@ class Game:
                 action_text = (f"[{rp}] Replay  [{mn}] Menu  "
                                f"(You cleared all levels!)")
 
+            subtitle = (f"Score: {self.score} | "
+                        f"+{self.meta_reward_earned} Hero Gold")
+            newly = getattr(self, "heroes_unlocked_this_match", [])
+            if newly:
+                try:
+                    catalog = get_all_hero_types()
+                    names = [catalog.get(bt, {}).get("name", bt.title())
+                             for bt in newly]
+                except Exception:
+                    names = [bt.title() for bt in newly]
+                subtitle += f" | NEW HERO: {', '.join(names)}"
+
             self.ui.draw_overlay(
                 self.screen,
                 f"VICTORY! LV.{self.level_number}",
                 GOLD,
-                f"Score: {self.score} | +{self.meta_reward_earned} Hero Gold",
+                subtitle,
                 action_text
             )
 
