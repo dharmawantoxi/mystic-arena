@@ -49,11 +49,25 @@ _RENDERING_TO_CACHE = False
 # UTILITIES (dipakai semua minions)
 # ═══════════════════════════════════════════════════════
 
+# Bayangan minion: bentuk & warnanya TIDAK pernah berubah, hanya ukuran
+# dan alpha-nya. Dulu sebuah Surface SRCALPHA baru dialokasi + digambar
+# untuk SETIAP minion SETIAP frame (80 minion = 80 alokasi + 80 ellipse
+# per frame). Sekarang hasilnya di-cache per (lebar, tinggi, alpha).
+_SHADOW_CACHE = {}
+
+
 def draw_shadow(surface, x, y, w, h=4, alpha=100):
-    """Draw ground shadow di bawah minion"""
-    shadow_surf = pygame.Surface((max(1, w), max(1, h)), pygame.SRCALPHA)
-    pygame.draw.ellipse(shadow_surf, (0, 0, 0, alpha),
-                        (0, 0, max(1, w), max(1, h)))
+    """Draw ground shadow di bawah minion (surface di-cache per ukuran)."""
+    w = max(1, w)
+    h = max(1, h)
+    key = (w, h, alpha)
+    shadow_surf = _SHADOW_CACHE.get(key)
+    if shadow_surf is None:
+        shadow_surf = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow_surf, (0, 0, 0, alpha), (0, 0, w, h))
+        if len(_SHADOW_CACHE) > 64:
+            _SHADOW_CACHE.clear()
+        _SHADOW_CACHE[key] = shadow_surf
     surface.blit(shadow_surf, (x - w // 2, y - h // 2))
 
 
@@ -232,6 +246,11 @@ def cached_minion_draw(surface, minion, x, y, draw_func):
         draw_func(surface, minion, x, y)
         return
 
+    # CATATAN: impor ini HARUS tetap di dalam fungsi. `sprite_cache`
+    # bukan berkas di repo - namanya didaftarkan ke sys.modules oleh
+    # _core.py (alias ke _render) SETELAH modul ini dimuat, jadi
+    # menyelesaikannya di level modul akan menangkap None permanen dan
+    # mematikan cache sprite minion diam-diam.
     try:
         from sprite_cache import get_cached_sprite_cropped
     except Exception:
