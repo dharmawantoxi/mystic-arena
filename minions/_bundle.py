@@ -90,11 +90,6 @@ def draw_hp_bar(surface, x, y, w, hp_ratio, team):
     pygame.draw.rect(surface, border_color, (bx, y, w, bar_h), 1)
 
 
-def draw_team_indicator(surface, x, y, team):
-    """Tidak dipakai lagi - identitas tim sekarang lewat pewarnaan
-    ulang seluruh body (merah karat untuk musuh) + HP bar berwarna
-    tim. Cincin di kaki dihapus karena terlihat berantakan."""
-    pass
 
 
 def draw_slow_effect(surface, x, y, radius, timer):
@@ -690,8 +685,6 @@ class _NS_goblin:
         if minion.slash_effects:
             draw_slash_effects(surface, draw_x, draw_y, minion.slash_effects)
 
-        # Team indicator
-        draw_team_indicator(surface, x, y + minion.radius + 6, minion.team)
 
         # HP bar
         bar_w = minion.radius * 2 + 6
@@ -2577,8 +2570,6 @@ class _NS_orc:
         if minion.slash_effects:
             draw_slash_effects(surface, draw_x, draw_y, minion.slash_effects)
 
-        # Team indicator
-        draw_team_indicator(surface, x, y + minion.radius + 6, minion.team)
 
         # HP bar
         bar_w = minion.radius * 2 + 8
@@ -4393,8 +4384,6 @@ class _NS_troll:
         if minion.slash_effects:
             draw_slash_effects(surface, draw_x, draw_y, minion.slash_effects)
 
-        # Team indicator
-        draw_team_indicator(surface, x, y + minion.radius + 6, minion.team)
 
         # HP bar
         bar_w = minion.radius * 2 + 8
@@ -6246,8 +6235,6 @@ class _NS_undead:
         if minion.slash_effects:
             draw_slash_effects(surface, draw_x, draw_y, minion.slash_effects)
 
-        # Team indicator
-        draw_team_indicator(surface, x, y + minion.radius + 6, minion.team)
 
         # HP bar
         bar_w = minion.radius * 2 + 8
@@ -8112,8 +8099,6 @@ class _NS_dark_rider:
         if minion.slash_effects:
             draw_slash_effects(surface, draw_x, draw_y, minion.slash_effects)
 
-        # Team indicator
-        draw_team_indicator(surface, x, y + minion.radius + 8, minion.team)
 
         # HP bar
         bar_w = minion.radius * 2 + 12

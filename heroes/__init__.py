@@ -855,12 +855,51 @@ def _install_global_fx_caps(mod):
 #   satunya tuas yang benar adalah INTENSITAS (jumlah partikel / ukuran
 #   glow), bukan frekuensi gambar.
 _FX_FRAME = 0
+# Jumlah unit live-FX yang sedang aktif pada frame terakhir. Diisi oleh
+# begin_fx_frame(); dibaca oleh _skill_quant() untuk menyesuaikan
+# granularitas pose skill dengan beban combat.
+_FX_BUSY_COUNT = 0
+
+
+def _skill_quant():
+    """Granularitas pose skill: makin ramai combat, makin kasar.
+
+    Ini inti dari perbaikan lag "saat wave besar / banyak hero".
+
+    Angka terukur (tools/bench_hero_cache.py, 10 hero + 120 minion):
+
+        skill quant 2  : 10.00 ms/frame, hit rate 78.5%, 600 entri
+        skill quant 12 :  5.38 ms/frame, hit rate 95.2%, 343 entri
+
+    Kenapa bisa sejauh itu: ``active_skill_timer`` berjalan 0..240.
+    Dengan quant 2 satu cast menghasilkan sampai 120 pose unik, dan
+    tiap pose cuma dipakai 2 frame — jadi hit rate maksimal secara
+    matematis hanya ~50%, dan sisanya bayar cache-MISS 4.12 ms
+    (lebih mahal daripada render langsung 3.07 ms).
+
+    Tapi quant kasar tidak boleh dipatok permanen: saat combat sepi
+    (1-2 hero) tidak ada alasan mengorbankan kehalusan animasi.
+    Maka granularitas mengikuti jumlah unit yang sedang bertarung —
+    persis pola governor FX yang sudah dipakai untuk partikel.
+    """
+    n = _FX_BUSY_COUNT
+    if n <= 2:
+        return HERO_SKILL_QUANT           # 2  - combat sepi, animasi halus
+    if n <= 4:
+        return 4
+    if n <= 6:
+        return 8
+    return 12                             # wave besar: FPS diprioritaskan
 
 
 def begin_fx_frame(active_count=0):
     """Panggil SEKALI per frame (dari Game.draw) untuk menyetel beban FX."""
-    global _FX_FRAME
+    global _FX_FRAME, _FX_BUSY_COUNT
     _FX_FRAME += 1
+    try:
+        _FX_BUSY_COUNT = max(0, int(active_count or 0))
+    except Exception:
+        _FX_BUSY_COUNT = 0
     try:
         from mobile import perf as _perf
         _perf.set_fx_load(active_count)
@@ -1387,15 +1426,53 @@ _hero_sprite_cache = _OD()
 _HERO_CACHE_MAX = 600
 _hero_cache_stats = {'hits': 0, 'misses': 0}
 
+# ═══ DUA CACHE TERPISAH: POSE BIASA vs POSE SKILL (v31) ═══
+# Terukur (tools/bench_hero_cache.py, 10 hero + 120 minion, PC):
+#
+#     satu cache 600 entri : 10.00 ms/frame, hit 78.5%, 600 entri penuh
+#     skill dipisah        :  5.38 ms/frame, hit 95.2%, 343 entri
+#
+# Penyebabnya: pose SKILL memonopoli cache. active_skill_timer
+# berjalan 0..240 dan di-kuantisasi tiap 2 frame -> sampai 120 pose
+# unik per hero per arah hadap. Sepuluh hero yang sedang cast
+# menghasilkan 463 entri skill dari 600 slot, padahal pose itu hanya
+# dipakai sekali lalu tidak pernah diminta lagi sampai cooldown
+# berikutnya (240-900 frame kemudian) — jauh setelah ter-evict.
+#
+# Korbannya pose ATTACK, yang justru dipakai ulang terus-menerus
+# (tiap 28-46 frame sekali serang). Begitu pose attack terbuang,
+# frame berikutnya bayar cache-MISS 4.12 ms — LEBIH MAHAL daripada
+# render langsung tanpa cache (3.07 ms). Jadi thrashing di sini
+# bukan sekadar "tidak untung", tapi rugi bersih.
+#
+# Dengan cache terpisah, pose skill tidak pernah bisa mengusir pose
+# attack. Granularitas animasi TIDAK diubah (tetap quant 2), jadi
+# tampilan identik — yang berubah hanya siapa yang boleh menginap.
+_hero_skill_cache = _OD()
+_HERO_SKILL_CACHE_MAX = 320
+
+
+def _cache_for(key):
+    """Pilih cache sesuai jenis pose pada key.
+
+    ``key[4]`` adalah state yang ditulis ``_hero_cache_key``:
+    'skill' | 'atk' | 'idle'. Lihat komentar DI ATAS untuk alasan
+    pemisahan ini.
+    """
+    if key[4] == 'skill':
+        return _hero_skill_cache, _HERO_SKILL_CACHE_MAX
+    return _hero_sprite_cache, _HERO_CACHE_MAX
+
 
 def hero_cache_bytes():
     """Perkiraan pemakaian memori cache sprite hero, dalam MB."""
     total = 0
-    for entry in _hero_sprite_cache.values():
-        try:
-            total += _sprite_pixels(entry) * 4
-        except Exception:
-            pass
+    for cache in (_hero_sprite_cache, _hero_skill_cache):
+        for entry in cache.values():
+            try:
+                total += _sprite_pixels(entry) * 4
+            except Exception:
+                pass
     return total / (1024.0 * 1024.0)
 
 
@@ -1405,7 +1482,7 @@ def hero_cache_stats():
     m = _hero_cache_stats['misses']
     tot = h + m
     return {
-        'entries': len(_hero_sprite_cache),
+        'entries': len(_hero_sprite_cache) + len(_hero_skill_cache),
         'hits': h,
         'misses': m,
         'hit_rate': f"{(h / tot * 100) if tot else 0:.1f}%",
@@ -1415,6 +1492,7 @@ def hero_cache_stats():
 def clear_hero_sprite_cache():
     """Panggil saat ganti level / resolusi berubah."""
     _hero_sprite_cache.clear()
+    _hero_skill_cache.clear()
     _hero_cache_stats['hits'] = 0
     _hero_cache_stats['misses'] = 0
 
@@ -1545,7 +1623,7 @@ def _hero_cache_key(hero_type, hero):
 
     if skill:
         return (hero_type, team, level, facing, 'skill', skill,
-                skill_t // (HERO_SKILL_QUANT * _q))
+                skill_t // (_skill_quant() * _q))
     if timer > 0:
         # _pose_variant: varian pose yang dipilih renderer sendiri
         # (mis. Sylara memilih sapuan melee vs tembakan tergantung jarak
@@ -1759,7 +1837,9 @@ def render_hero(hero_type, surface, hero, x, y):
         return
 
     key = _hero_cache_key(hero_type, hero)
-    entry = _hero_sprite_cache.get(key)
+    # Pose skill dan pose biasa punya cache sendiri (lihat _cache_for).
+    cache, cache_max = _cache_for(key)
+    entry = cache.get(key)
 
     # Controller pose harus maju SETIAP frame.  Pada frame cache-MISS
     # renderer yang menjalankannya (dia dipanggil di bawah); pada frame
@@ -1791,8 +1871,8 @@ def render_hero(hero_type, surface, hero, x, y):
                     sprite = to_colorkey_sprite(sprite)
             except Exception:
                 pass
-        _hero_sprite_cache[key] = (sprite, ax, ay, uses + 1)
-        _hero_sprite_cache.move_to_end(key)      # LRU: tandai baru dipakai
+        cache[key] = (sprite, ax, ay, uses + 1)
+        cache.move_to_end(key)      # LRU: tandai baru dipakai
 
         surface.blit(sprite, (int(x - ax), int(y - ay)))
     else:
@@ -1842,12 +1922,12 @@ def render_hero(hero_type, surface, hero, x, y):
             ax = (c - rect.x) * scale + edge_pad
             ay = (c - rect.y) * scale + edge_pad
 
-            if len(_hero_sprite_cache) >= _HERO_CACHE_MAX:
-                _hero_sprite_cache.pop(next(iter(_hero_sprite_cache)))
+            if len(cache) >= cache_max:
+                cache.pop(next(iter(cache)))
 
             # Simpan apa adanya dulu; konversi colorkey menyusul pada
             # pemakaian kedua (lihat jalur "hit" di atas).
-            _hero_sprite_cache[key] = (sub, ax, ay, 1)
+            cache[key] = (sub, ax, ay, 1)
             surface.blit(sub, (int(x - ax), int(y - ay)))
 
     # ═══ BEAM PASS LIVE (hero ranged seperti morgath) ═══

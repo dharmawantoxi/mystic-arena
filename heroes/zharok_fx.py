@@ -523,6 +523,11 @@ _CACHE_CAP = 210
 
 
 def _clamp_color(color):
+    if type(color) is tuple and len(color) >= 3:
+        _r, _g, _b = color[0], color[1], color[2]
+        if (type(_r) is int and type(_g) is int and type(_b) is int
+                and 0 <= _r <= 255 and 0 <= _g <= 255 and 0 <= _b <= 255):
+            return (_r, _g, _b)
     return tuple(int(max(0, min(255, c))) for c in color[:3])
 
 
