@@ -204,6 +204,44 @@ def test_beam_is_born_from_the_palm():
     assert dist <= 4, f"beam tidak menempel di telapak: jarak {dist}px"
 
 
+def test_beam_tetap_muncul_saat_timer_renderer_basi():
+    """Beam basic attack tidak boleh bergantung pada previous timer render.
+
+    Jika Morgath sempat tidak digambar/off-screen, previous timer di
+    renderer bisa tertinggal pada nilai > 1.  Event _basic_attack_seq dari
+    engine harus tetap menyalakan state attack dan beam di frame saat unit
+    kembali tergambar.
+    """
+    x, y = 200, 180
+    boss = probe(x, y)
+    boss.target = SimpleNamespace(x=x + 180, y=y, alive=True)
+    boss._mor_previous_timer = 18       # nilai basi dari serangan lama
+    boss._basic_attack_seq = 1          # serangan baru sudah dilepas engine
+    boss.timer = 20                     # progress > 0.55 untuk cooldown 48
+    boss._beam_pass_only = True
+    s = pygame.Surface((460, 300), pygame.SRCALPHA)
+    M.draw_morgath(s, boss, x, y)
+    assert boss._mor_attack_active
+    assert boss._mor_attack_progress > 0.55
+    assert s.get_bounding_rect(min_alpha=8).width > 30
+
+
+def test_beam_controller_idempoten_saat_dipanggil_ganda():
+    """Cache/probe/beam pass boleh memanggil controller lebih dari sekali."""
+    boss = probe(200, 180)
+    boss._basic_attack_seq = 1
+    boss.timer = boss.attack_cooldown
+    M._update_mor_attack_anim(boss)
+    assert boss._mor_attack_frame == 0
+    M._update_mor_attack_anim(boss)
+    assert boss._mor_attack_frame == 0
+    boss.timer = boss.attack_cooldown - 1
+    M._update_mor_attack_anim(boss)
+    assert boss._mor_attack_frame == 1
+    M._update_mor_attack_anim(boss)
+    assert boss._mor_attack_frame == 1
+
+
 def test_outline_silhouette_present():
     """Outline 1 px gelap: bagian boss tetap terpisah saat menumpuk."""
     surf = pygame.Surface((SIZE, SIZE), pygame.SRCALPHA)

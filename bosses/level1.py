@@ -833,27 +833,49 @@ class _NS_gornak:
         previous = int(getattr(boss, "_gnk_previous_timer", 0))
         active = bool(getattr(boss, "_gnk_attack_active", False))
 
-        # Serangan dikenali dari DUA hal: lompatan timer ke atas (cooldown
-        # dipasang saat attack mendarat) dan detak jam (satu siklus penuh
-        # timer turun ke 0). Yang kedua menjaga animasi tetap jalan untuk
-        # pemanggil yang mengisi timer manual (alat preview / tes).
-        triggered = timer >= cooldown - 1 and previous <= 1
+        # Serangan dikenali dari event eksplisit bila tersedia
+        # (``_basic_attack_seq`` ditulis Hero._do_attack / Boss.update),
+        # dengan fallback pola timer lama untuk alat preview/test.  Pola
+        # lama ``timer >= cooldown-1 and previous <= 1`` rapuh: kalau unit
+        # sempat tidak dirender, ``previous`` bisa tertinggal di nilai >1
+        # sehingga swing berikutnya tidak pernah start.  Selain itu frame
+        # serangan kini diturunkan dari sisa timer, bukan di-increment per
+        # pemanggilan renderer, agar cache probe / beam pass yang memanggil
+        # renderer beberapa kali pada frame yang sama tidak mempercepat
+        # ayunan dan membuat trail terlihat hilang.
+        span = max(1, cooldown - 1)
+        seq_present = hasattr(boss, "_basic_attack_seq")
+        seq = int(getattr(boss, "_basic_attack_seq", 0) or 0)
+        last_seq = getattr(boss, "_gnk_last_attack_seq", None)
+        seq_changed = seq_present and seq != last_seq
+        timer_started = (timer >= cooldown - 1
+                         and (previous <= 1 or timer > previous))
+        triggered = bool(timer > 0 and
+                         (seq_changed or (not seq_present and timer_started)))
+
+        if seq_changed:
+            boss._gnk_last_attack_seq = seq
+
         if triggered:
             boss._gnk_attack_active = True
-            boss._gnk_attack_frame = 0
             boss._gnk_attack_manual = False
             active = True
-        elif active and timer > 0:
-            boss._gnk_attack_frame = int(getattr(boss, "_gnk_attack_frame",
-                                                 0)) + 1
+        elif timer > 0 and active:
+            # Engine-timed attack sedang berjalan.  Jangan tambah frame
+            # secara mutatif; timer adalah sumber kebenaran yang idempoten.
             boss._gnk_attack_manual = False
         elif timer <= 0:
-            if active and not getattr(boss, "_gnk_attack_manual", False) \
-                    and int(getattr(boss, "_gnk_attack_progress", 0.0)) > 0.0:
+            manual_progress = float(getattr(
+                boss, "_gnk_attack_progress", 0.0) or 0.0)
+            if (active and not seq_present and previous <= 0
+                    and not getattr(boss, "_gnk_attack_manual", False)
+                    and manual_progress > 0.0):
                 # Ada yang mengaktifkan serangan TANPA menyentuh timer
                 # (alat audit, preview kartu, test). Itu bukan serangan
                 # engine: hormati, tandai manual, dan jangan dimatikan di
-                # sini - yang mematikan ya pemanggilnya sendiri.
+                # sini - yang mematikan ya pemanggilnya sendiri.  Syarat
+                # ``previous <= 0`` mencegah akhir serangan engine
+                # tersalah-baca sebagai mode manual.
                 boss._gnk_attack_manual = True
                 active = True
             elif not getattr(boss, "_gnk_attack_manual", False):
@@ -865,9 +887,6 @@ class _NS_gornak:
                 boss._gnk_attack_frame = 0
 
         boss._gnk_previous_timer = timer
-        frame = int(getattr(boss, "_gnk_attack_frame", 0)) if active else 0
-        span = max(1, cooldown - 1)
-        boss._gnk_attack_frame = frame
         boss._gnk_frame_duration = dt
         if bool(getattr(boss, "_gnk_attack_manual", False)) and active:
             # Alat preview / tes menggerakkan ``_gnk_attack_progress``
@@ -878,6 +897,8 @@ class _NS_gornak:
                 boss, "_gnk_attack_progress", 0.0))))
             boss._gnk_attack_frame = int(round(progress * span))
         else:
+            frame = max(0, min(span, cooldown - timer)) if active else 0
+            boss._gnk_attack_frame = frame
             progress = min(1.0, frame / float(span)) if active else 0.0
             boss._gnk_attack_progress = progress
 
@@ -3503,11 +3524,34 @@ class _NS_morgath:
         previous = int(getattr(boss, "_mor_previous_timer", 0))
         active = bool(getattr(boss, "_mor_attack_active", False))
 
-        if timer >= cooldown - 1 and previous <= 1:
+        # Start serangan memakai event eksplisit bila tersedia
+        # (``_basic_attack_seq``).  Fallback timer lama tetap dipakai untuk
+        # preview/test yang hanya mengisi ``timer``.  Kondisi lama hanya
+        # menerima ``previous <= 1``; saat Morgath sempat tidak dirender,
+        # previous bisa basi (>1) dan beam petir serangan berikutnya tidak
+        # pernah lahir.  Frame juga dihitung dari timer agar pemanggilan
+        # renderer ganda pada frame yang sama (cache probe + beam pass)
+        # tidak mempercepat animasi.
+        span = max(1, cooldown - 1)
+        seq_present = hasattr(boss, "_basic_attack_seq")
+        seq = int(getattr(boss, "_basic_attack_seq", 0) or 0)
+        last_seq = getattr(boss, "_mor_last_attack_seq", None)
+        seq_changed = seq_present and seq != last_seq
+        timer_started = (timer >= cooldown - 1
+                         and (previous <= 1 or timer > previous))
+        triggered = bool(timer > 0 and
+                         (seq_changed or (not seq_present and timer_started)))
+
+        if seq_changed:
+            boss._mor_last_attack_seq = seq
+
+        if triggered:
             boss._mor_attack_active = True
-            boss._mor_attack_frame = 0
             # Kunci arah + posisi target saat serangan dimulai (beam
-            # terbang lurus ke titik yang SAMA selama animasi).
+            # terbang lurus ke titik yang SAMA selama animasi).  Kalau
+            # renderer baru melihat event di tengah cooldown, progress di
+            # bawah langsung mengejar timer sehingga beam tetap muncul di
+            # frame yang benar.
             boss._mor_attack_dir = int(getattr(boss, "direction", 1))
             _t = getattr(boss, "target", None)
             if _t is not None and getattr(_t, "alive", True):
@@ -3521,17 +3565,16 @@ class _NS_morgath:
                     int(tx) - int(getattr(boss, "x", 0)),
                     int(ty) - int(getattr(boss, "y", 0)))
             active = True
-        elif active and timer > 0:
-            boss._mor_attack_frame = int(getattr(boss, "_mor_attack_frame", 0)) + 1
         elif timer <= 0:
             boss._mor_attack_active = False
             boss._mor_attack_frame = 0
             active = False
 
         boss._mor_previous_timer = timer
+        frame = max(0, min(span, cooldown - timer)) if active else 0
+        boss._mor_attack_frame = frame
         boss._mor_attack_progress = (
-            min(1.0, getattr(boss, "_mor_attack_frame", 0)
-                / max(1, cooldown - 1)) if active else 0.0)
+            min(1.0, frame / float(span)) if active else 0.0)
 
     def _detect_moving(boss):
         if not hasattr(boss, "_mor_last_x"):
@@ -3553,7 +3596,9 @@ class _NS_morgath:
         t = int(getattr(boss, "timer", 0) or 0)
         cd = max(2, int(getattr(boss, "attack_cooldown", 48)))
         if getattr(boss, "_mor_attack_active", False):
-            return max(0.0, min(1.0, (cd - 1 - t)
+            # Sama dengan _mor_attack_progress di controller: progress
+            # berasal dari sisa timer, bukan jumlah pemanggilan renderer.
+            return max(0.0, min(1.0, (cd - t)
                                   / max(1.0, float(cd - 1))))
         return 0.0
 
