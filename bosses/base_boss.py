@@ -734,6 +734,13 @@ class Boss(TowerDebuffMixin):
                     # (6-15 frame, seumur wind-up s/d impact) supaya
                     # tetap bisa berputar mengejar target setelahnya.
                     self._attack_facing = self.direction
+                    # Nomor urut serangan dasar yang benar-benar dilepas.
+                    # Renderer Gornak/Morgath membaca edge eksplisit ini
+                    # agar swing/beam tidak hilang saat boss sempat tidak
+                    # digambar atau cache probe membuat timer sebelumnya
+                    # tertinggal pada nilai lama.
+                    self._basic_attack_seq = int(getattr(
+                        self, "_basic_attack_seq", 0) or 0) + 1
                     self._attack_lock_timer = min(
                         15, max(6, int(self.attack_cooldown // 3)))
                     # Boss memakai DUA suara global yang sama seperti

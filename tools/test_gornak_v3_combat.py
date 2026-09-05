@@ -436,6 +436,44 @@ def test_kurva_serangan_ada_hold_dan_akselerasi():
                                                  abs=0.02)
 
 
+def test_engine_swing_tidak_hilang_saat_timer_renderer_basi():
+    """Start swing harus membaca event serangan, bukan previous timer basi."""
+    h = fresh_hero(cooldown=COOLDOWN)
+    h._gnk_previous_timer = 12          # tersisa dari frame/off-screen lama
+    h._basic_attack_seq = 1             # ditulis engine saat basic attack
+    h.timer = 24                        # serangan sudah masuk jendela swing
+    G._update_gnk_attack_anim(h)
+    assert h._gnk_attack_active
+    assert h._gnk_attack_phase == "SWING"
+    assert h._gnk_hit_active
+
+
+def test_engine_swing_idempoten_dan_selesai_di_timer_nol():
+    """Renderer/cache boleh memanggil controller berkali-kali per frame.
+
+    Frame swing tidak boleh maju kalau timer belum berubah, dan akhir
+    cooldown engine tidak boleh tersalah-baca sebagai mode manual.
+    """
+    h = fresh_hero(cooldown=COOLDOWN)
+    h._basic_attack_seq = 1
+    h.timer = COOLDOWN
+    G._update_gnk_attack_anim(h)
+    assert h._gnk_attack_frame == 0
+    G._update_gnk_attack_anim(h)
+    assert h._gnk_attack_frame == 0
+    h.timer = COOLDOWN - 1
+    G._update_gnk_attack_anim(h)
+    assert h._gnk_attack_frame == 1
+    G._update_gnk_attack_anim(h)
+    assert h._gnk_attack_frame == 1
+    for t in range(COOLDOWN - 2, -1, -1):
+        h.timer = t
+        G._update_gnk_attack_anim(h)
+    assert not h._gnk_attack_active
+    assert not getattr(h, "_gnk_attack_manual", False)
+    assert h._gnk_attack_phase == "NONE"
+
+
 def test_trail_dibangun_dari_histori_dan_meluruh():
     trail = F.SwingTrail()
     for i in range(F.TRAIL_SAMPLES + 8):

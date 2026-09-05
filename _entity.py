@@ -4284,6 +4284,15 @@ class Hero(TowerDebuffMixin):
             if _atk_dx != 0:
                 self.facing = 1 if _atk_dx > 0 else -1
             self._attack_facing = self.facing
+            # Nomor urut serangan dasar yang benar-benar dilepas.
+            # Renderer boss-hero tertentu (Gornak swing, Morgath beam)
+            # dulu menebak start serangan dari pola attack_timer naik
+            # dari 0. Kalau unit sempat tidak dirender/off-screen, nilai
+            # timer terakhir di renderer bisa basi (>1) sehingga start
+            # baru tidak terdeteksi dan visual attack hilang. Sequence
+            # eksplisit ini membuat deteksi edge tetap akurat.
+            self._basic_attack_seq = int(getattr(
+                self, "_basic_attack_seq", 0) or 0) + 1
 
             # Boss hero (morgath, ancient_apparition, dll.) render
             # pakai renderer boss yang SUDAH menggambar visual
