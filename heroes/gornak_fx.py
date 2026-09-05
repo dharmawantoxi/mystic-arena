@@ -104,34 +104,35 @@ def attack_phase(p):
 # tools/test_gornak_v3_combat.py::test_palet_... dari drift).
 # ═════════════════════════════════════════════════════════════════════
 GORNAK_PALETTE = {
-    # ramp utama karakter (sinkron renderer)
-    "dark":      (58, 19, 108),
-    "mid":       (130, 55, 200),
-    "light":     (186, 111, 241),
-    "highlight": (221, 161, 255),
-    "body":      (88, 120, 58),
-    "weapon":    (164, 170, 196),
+    # ramp utama karakter (IDENTITAS ANTI-MAGE: nilai cadangan = renderer
+    # v5; saat import _sync_palette menyalin ulang dari sumbernya)
+    "dark":      (24, 64, 128),
+    "mid":       (56, 132, 208),
+    "light":     (108, 190, 236),
+    "highlight": (164, 222, 250),
+    "body":      (122, 134, 152),
+    "weapon":    (150, 214, 242),
     "outline":   (7, 6, 12),
     "shadow":    (0, 0, 0),
-    "fx":        (245, 210, 255),
+    "fx":        (208, 238, 255),
     # ramp efek (eksklusif lapisan hidup)
-    "fx_darkest": (36, 7, 70),
-    "fx_dark":    (24, 5, 44),
-    "fx_mid":     (130, 55, 200),
-    "fx_light":   (186, 111, 241),
-    "fx_bright":  (221, 161, 255),
-    "fx_hot":     (245, 210, 255),
-    "fx_white":   (255, 236, 255),
-    "steel_dark": (36, 34, 52),
-    "steel_mid":  (96, 100, 128),
-    "steel_edge": (188, 204, 236),
-    "steel_hot":  (212, 218, 242),
-    "brass":      (172, 132, 51),
-    "brass_hot":  (230, 202, 116),
-    "robe":       (64, 33, 104),
-    "dust":       (150, 100, 55),
-    "ash":        (92, 82, 96),
-    "smoke":      (48, 44, 58),
+    "fx_darkest": (10, 14, 44),
+    "fx_dark":    (12, 28, 68),
+    "fx_mid":     (56, 132, 208),
+    "fx_light":   (108, 190, 236),
+    "fx_bright":  (164, 222, 250),
+    "fx_hot":     (208, 238, 255),
+    "fx_white":   (240, 251, 255),
+    "steel_dark": (28, 44, 66),
+    "steel_mid":  (88, 128, 168),
+    "steel_edge": (150, 214, 242),
+    "steel_hot":  (208, 242, 255),
+    "brass":      (150, 124, 84),
+    "brass_hot":  (206, 184, 140),
+    "robe":       (34, 52, 92),
+    "dust":       (118, 116, 128),
+    "ash":        (84, 90, 106),
+    "smoke":      (44, 52, 70),
 }
 
 #: kunci FX -> kunci palet renderer (satu-satunya jembatan yang sah)
@@ -1562,17 +1563,27 @@ class SkillFX:
                             int(y - 8) - star.get_height() // 2,
                             _alpha(240 * (1 - t)), add)
         elif k == "r":
-            # ruang hisap: pilar gelap + cincin konvergen + core putih
+            # ruang hisap: lantai menghitam (cakram gepeng) + cincin
+            # konvergen + core putih — BUKAN pilar vertikal (era v3:
+            # slab gelap 120px menutupi badan & dibaca "berantakan").
             rr = max(8, int(self.radius * (0.9 - 0.72 * min(
                 1.0, t + (0.34 if ph == "area" else 0.0))))) * comp
+            gy = y + 54 * comp
             if ph in ("charge", "area"):
-                pygame.draw.polygon(
-                    surface, (*p["fx_dark"],
-                              _alpha(120 if ph == "area" else 80)),
-                    [(x - rr * 0.24, y + 54 * comp),
-                     (x - rr * 0.10, y - 74 * comp),
-                     (x + rr * 0.10, y - 74 * comp),
-                     (x + rr * 0.24, y + 54 * comp)])
+                a0 = 132 if ph == "area" else 96
+                for i, (fw, fh, ka) in enumerate(((0.58, 0.17, 1.0),
+                                                   (0.36, 0.11, 0.85),
+                                                   (0.18, 0.06, 1.0))):
+                    w = rr * fw * 2
+                    h = max(5.0, rr * fh * 2)
+                    pygame.draw.ellipse(
+                        surface, (*p["fx_dark"], _alpha(a0 * ka)),
+                        (int(x - w / 2), int(gy - h / 2 + i * 2 * comp),
+                         int(w), int(h)))
+                    pygame.draw.ellipse(
+                        surface, (*p["fx_bright"], _alpha(a0 * 0.35)),
+                        (int(x - w / 2), int(gy - h / 2 + i * 2 * comp),
+                         int(w), int(h)), 1)
             if ph in ("area", "impact"):
                 n = 3
                 for i in range(n):

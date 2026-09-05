@@ -2,8 +2,9 @@
 """Regresi visual untuk Gornak Procedural Rig v4 "SPELLBREAKER".
 
 Gornak (mini boss anti-mage level 1, sekaligus hero yang bisa di-unlock)
-dirender 100% prosedural. v4 ditulis ulang penuh dari v3: kulit ork hijau,
-satu cleaver spellbreaker + belati pendek, tiga titik fokus, tiga nilai
+dirender 100% prosedural. v4 ditulis ulang penuh dari v3: biarawan
+anti-mage (botak bertato biru, bulu putih, dua bilah kristal),
+satu wraith-blade utama + bilah kedua, tiga titik fokus, tiga nilai
 per bidang, FX world-space.
 
 Uji ini mengunci hasil rewrite:
@@ -126,18 +127,27 @@ def test_v4_is_procedural_single_rig():
 
 
 def test_v4_identity_green_spellbreaker():
-    """Identitas v4: ork hijau anti-mage + SATU cleaver utama.
+    """Identitas ANTI-MAGE: biarawan pucat + bilah kristal biru.
 
-    * ramp kulit didominasi kanal HIJAU (bukan sawo v3 yang melebur
-      dengan jubah ungu);
-    * ramp sihir & bilah tidak boleh berubah nilai (heroes/gornak_fx
-      men-sync-nya lewat _PALETTE_SYNC - kalau berubah, efek hidup
-      melenceng dari badan);
-    * senjata depan (cleaver) jauh lebih panjang dari belati belakang:
+    * ramp kulit DINGIN (kanal B > R, kontras dengan celana navy supaya
+      badan tidak melebur ke kain);
+    * bulu bahu putih terang (hair_light/_shine) jadi pemisah bahu;
+    * magic ramp BIRU ELEKTRIK — nilainya mengalir ke heroes/gornak_fx
+      lewat _PALETTE_SYNC (trail/bolt/cincin ikut ramp ini), jadi bila
+      salah satu melenceng, badan dan efek jadi dua karakter berbeda;
+    * bilah utama (wraith blade) jauh lebih panjang dari bilah kedua:
       lebar siluet berasal dari tubuh, bukan dua pedang panjang.
     """
     skin = G.PALETTE["skin_mid"]
-    assert skin[1] > skin[0] and skin[1] > skin[2], skin
+    assert skin[2] > skin[0], skin                      # cool-toned
+    robe = G.PALETTE["robe_mid"]
+    assert sum(skin) > sum(robe) + 60, (skin, robe)     # kulit vs kain
+    fur = G.PALETTE["hair_light"]
+    assert min(fur) >= 180, fur                         # bulu putih
+    blade = G.PALETTE["blade_mid"]
+    assert blade[2] > blade[0] + 60 and blade[2] > 150, blade
+    magic = G.PALETTE["magic_mid"]
+    assert magic[2] > magic[0] + 80, magic              # biru, bukan ungu-oranye
     for key in ("magic_darkest", "magic_dark", "magic_mid", "magic_light",
                 "magic_hot", "magic_shine", "blade_dark", "blade_mid",
                 "blade_light", "blade_shine", "armor_darkest"):
@@ -147,7 +157,7 @@ def test_v4_identity_green_spellbreaker():
     assert gornak_fx.P["mid"] == G.PALETTE["magic_mid"]
     assert gornak_fx.P["weapon"] == G.PALETTE["blade_light"]
     assert gornak_fx.P["dark"] == G.PALETTE["magic_dark"]
-    # Satu senjata utama + belati penyeimbang.
+    # Satu senjata utama + bilah kedua penyeimbang.
     for action in ("idle", "attack", "surge", "ward", "void"):
         assert G._blade_len(action, False) >= G._blade_len(action, True) * 1.8, \
             action
@@ -525,26 +535,26 @@ def test_hero_visual_quality():
     assert box.left >= 2 and box.top >= 2, box
     assert box.right <= 158 and box.bottom <= 158, box
 
-    # (2) mata: piksel hangat-terang harus ADA DI KEPALA (pita atas crop).
+    # (2) mata: piksel glow PUTIH-CYAN harus ADA DI KEPALA (pita atas
+    # crop). eye_glow satu-satunya nilai secerah ini di badan.
     band_h = max(6, int(box.height * 0.42))
     eyes = 0
     for y in range(max(0, box.top), min(160, box.top + band_h)):
         for x in range(max(0, box.left), min(160, box.right)):
             px = canvas.get_at((x, y))
-            if px.a > 120 and px.r >= 200 and px.b >= 200 \
-                    and px.r - px.g >= 12 and px.g >= 130:
+            if px.a > 120 and px.r >= 220 and px.g >= 240 and px.b >= 240:
                 eyes += 1
     assert eyes >= 2, f"tidak ada piksel mata di area kepala ({eyes})"
 
-    # (3) identitas DI BADAN: kulit hijau ork + ungu tema.
+    # (3) identitas DI BADAN: kulit pucat + tato biru + bulu putih.
     body_cols = colors(canvas)
-    greens = {G.PALETTE["skin_mid"], G.PALETTE["skin_dark"],
-              G.PALETTE["skin_light"]}
+    skin_cols = {G.PALETTE["skin_mid"], G.PALETTE["skin_dark"],
+                 G.PALETTE["skin_light"]}
     theme = {G.PALETTE["magic_hot"], G.PALETTE["magic_mid"],
              G.PALETTE["magic_light"], G.PALETTE["hair_light"],
              G.PALETTE["hair_shine"]}
-    assert body_cols & greens, "kulit hijau ork tidak terlihat pada badan"
-    assert body_cols & theme, "ungu anti-sihir tidak terlihat pada badan"
+    assert body_cols & skin_cols, "kulit biarawan tidak terlihat pada badan"
+    assert body_cols & theme, "biru anti-sihir/bulu putih tidak terlihat"
 
     # (4) dua kaki terpisah: scan baris di bawah kilt
     rig = render("idle", detail=True)
@@ -666,7 +676,7 @@ if __name__ == "__main__":
     test_secondary_motion_exists()
     test_skill_fx_are_world_space()
     test_perf_budget()
-    print("OK - Gornak v4 SPELLBREAKER: rig tunggal, ork hijau, kaki "
-          "menapak, cleaver pose-driven (overhead chop), proc di ujung "
-          "cleaver, outline, portrait LOD, Q/W/E/R world-space "
-          "(E100/R180), ukuran keluarga tervalidasi")
+    print("OK - Gornak v5 ANTI-MAGE: rig tunggal, biarawan pucat "
+          "bertato, bulu putih, kaki menapak, wraith-blade pose-driven "
+          "(overhead chop), proc di ujung bilah, outline, portrait LOD, "
+          "Q/W/E/R world-space (E100/R180), ukuran keluarga tervalidasi")
