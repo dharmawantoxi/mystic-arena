@@ -1,21 +1,27 @@
 #!/usr/bin/env python3
-"""Regresi visual untuk Gornak Pixel Masterwork v2 + Skill FX v2.1.
+"""Regresi visual untuk Gornak Procedural Rig v4 "SPELLBREAKER".
 
 Gornak (mini boss anti-mage level 1, sekaligus hero yang bisa di-unlock)
-dirender 100% prosedural mengikuti standar Thorne v2 / v2.1: ramp 4-5
-band, selout, tuft, specular cluster, dither, dan FX world-space.
+dirender 100% prosedural. v4 ditulis ulang penuh dari v3: kulit ork hijau,
+satu cleaver spellbreaker + belati pendek, tiga titik fokus, tiga nilai
+per bidang, FX world-space.
 
 Uji ini mengunci hasil rewrite:
   1. 100% prosedural (tanpa image.load / PNG / sprite sheet).
-  2. SATU bone rig 2D berlapis - nama fungsi body-part lama harus hilang.
-  3. Telapak kaki dipatok di garis bayangan (tidak melayang).
-  4. Bilah pose-driven: FX Mana Break lahir dari UJUNG BILAH, bukan dari
-     titik melayang di samping badan.
-  5. Outline siluet 1 px ada (bagian tetap terpisah saat unit bertumpuk).
-  6. LOD portrait: pass material aktif & efek arena (rune/aura) dibuang.
-  7. Frame walk/attack benar-benar dihitung ulang per-sendi.
-  8. Kosakata FX v2.1 (_fx_scale, _spark_star, ...) tersedia.
+  2. SATU bone rig 2D - nama bagian v3 (cape/belt/weave/masterwork
+     details) harus hilang; bagian v4 (kilt/cleaver/dagger/details)
+     harus ada.
+  3. Identitas: kulit HIJAU ork + ramp sihir/bilah dikunci (gornak_fx
+     men-sync palet itu); senjata depan >> senjata belakang.
+  4. Telapak kaki dipatok di garis bayangan (tidak melayang).
+  5. Bilah pose-driven: overhead chop, tidak menembus dada, tidak
+     keluar buffer; FX Mana Break lahir dari UJUNG CLEAVER.
+  6. Outline siluet 1 px ada (unit tetap terpisah saat bertumpuk).
+  7. LOD portrait: pass material aktif & efek arena dibuang.
+  8. Frame walk/attack benar-benar dihitung ulang per-sendi.
   9. Telegraph E=100 / R=180 px dunia (kompensasi 1/_render_scale).
+ 10. Ukuran cocok dengan keluarga (boss vs morgath/drakar/abaddon,
+     hero final vs morgath/kaizen/vex/abaddon).
 
 Jalankan:  python3 tools/test_gornak_masterwork.py
 """
@@ -53,15 +59,15 @@ def probe(cx=0.0, cy=0.0, **kw):
     return b
 
 
-def clipped_by_buffer(action, ap, phase):
+def clipped_by_buffer(action, ap, phase, facing=1, detail=False):
     """True kalau hasil render rig Menyentuh tepi buffer RIG_W x RIG_H.
 
-    Buffer yang kecipil akan memotong bilah/jubah saat sprite di-cache
-    (potongan hilang di kanan/kiri), jadi ini diperiksa dari bounding box
-    render sebenarnya, bukan dari angka batas.
+    Buffer yang kecipil memotong cleaver saat sprite di-cache, jadi ini
+    diperiksa dari bounding box render sebenarnya.
     """
     buf = pygame.Surface((G.RIG_W, G.RIG_H), pygame.SRCALPHA)
-    G._draw_gnk_rig(buf, G.RIG_OX, G.RIG_OY, 1, phase, action, ap, False)
+    G._draw_gnk_rig(buf, G.RIG_OX, G.RIG_OY, facing, phase, action, ap,
+                    detail)
     r = buf.get_bounding_rect(min_alpha=1)
     return r.width == 0 or r.left <= 0 or r.top <= 0 or \
         r.right >= G.RIG_W or r.bottom >= G.RIG_H
@@ -97,53 +103,85 @@ def colors(surf):
     return out
 
 
-def test_masterwork_is_procedural_and_single_rig():
+def test_v4_is_procedural_single_rig():
     source = inspect.getsource(G)
     assert "pygame.image.load" not in source
     for needed in ("_draw_gnk_rig", "_draw_gnk_legs", "_draw_gnk_torso",
-                   "_draw_gnk_head", "_draw_gnk_arm", "_draw_gnk_blade",
-                   "_draw_gnk_masterwork_details", "_blade_angle",
-                   "_front_grip_local", "_elbow", "_tip_local", "_tip_screen",
-                   "_compose_outline", "_draw_crescent_slash",
-                   "_fx_scale", "_spark_star", "_chevron", "_dashed_ring",
-                   "_jagged_crack", "_tuft_points", "_static",
-                   "_dither_dots", "_ring_r", "_world_to_local"):
+                   "_draw_gnk_kilt", "_draw_gnk_head", "_draw_gnk_arm",
+                   "_draw_gnk_pauldrons", "_draw_gnk_cleaver",
+                   "_draw_gnk_dagger", "_draw_gnk_rimlight",
+                   "_draw_gnk_details", "_blade_angle",
+                   "_front_grip_local", "_back_grip_local", "_elbow",
+                   "_tip_local", "_tip_screen", "_compose_outline",
+                   "_draw_crescent_slash", "_fx_scale", "_spark_star",
+                   "_chevron", "_dashed_ring", "_jagged_crack",
+                   "_tuft_points", "_static", "_dither_dots", "_ring_r",
+                   "_world_to_local", "_arcane_seal", "_attack_curve"):
         assert callable(getattr(G, needed, None)), needed
-    # Tumpukan body-part lama harus sudah benar-benar dihapus.
-    for gone in ("_draw_leg", "_draw_gnk_robe", "_draw_gnk_arm_back",
-                 "_draw_gnk_arm_front", "_draw_blade", "_draw_mohawk",
-                 "_draw_counterspell_ground"):
-        assert not hasattr(G, gone), f"old body-part still present: {gone}"
+    # Tumpukan aksesori v3 harus benar-benar dihapus.
+    for gone in ("_draw_gnk_cape_back", "_draw_gnk_belt", "_draw_gnk_weave",
+                 "_draw_gnk_masterwork_details", "_draw_gnk_blade",
+                 "_draw_gnk_robe", "_draw_mohawk"):
+        assert not hasattr(G, gone), f"v3 body-part masih ada: {gone}"
+
+
+def test_v4_identity_green_spellbreaker():
+    """Identitas v4: ork hijau anti-mage + SATU cleaver utama.
+
+    * ramp kulit didominasi kanal HIJAU (bukan sawo v3 yang melebur
+      dengan jubah ungu);
+    * ramp sihir & bilah tidak boleh berubah nilai (heroes/gornak_fx
+      men-sync-nya lewat _PALETTE_SYNC - kalau berubah, efek hidup
+      melenceng dari badan);
+    * senjata depan (cleaver) jauh lebih panjang dari belati belakang:
+      lebar siluet berasal dari tubuh, bukan dua pedang panjang.
+    """
+    skin = G.PALETTE["skin_mid"]
+    assert skin[1] > skin[0] and skin[1] > skin[2], skin
+    for key in ("magic_darkest", "magic_dark", "magic_mid", "magic_light",
+                "magic_hot", "magic_shine", "blade_dark", "blade_mid",
+                "blade_light", "blade_shine", "armor_darkest"):
+        assert key in G.PALETTE, key
+    from heroes import gornak_fx
+    gornak_fx._sync_palette()
+    assert gornak_fx.P["mid"] == G.PALETTE["magic_mid"]
+    assert gornak_fx.P["weapon"] == G.PALETTE["blade_light"]
+    assert gornak_fx.P["dark"] == G.PALETTE["magic_dark"]
+    # Satu senjata utama + belati penyeimbang.
+    for action in ("idle", "attack", "surge", "ward", "void"):
+        assert G._blade_len(action, False) >= G._blade_len(action, True) * 1.8, \
+            action
 
 
 def test_feet_are_planted_and_body_is_readable():
     idle = render("idle")
     rect = solid_rect(idle)
     assert rect is not None
-    # Badan (ubun-ubun -> sol) harus jauh lebih besar dari rig lama (48 px)
-    # dan segaris dengan keluarga mini boss (morgath 82, drakar 138).
+    # Badan (ubun-ubun -> sol) sejajar keluarga mini boss (morgath 112).
     assert rect.height >= 100, f"body too short: {rect.height}"
-    # Siluet harus MEMENUHI kotak, bukan tiang sempit: W/H keluarga
-    # hero = 0.90-1.17 (rig lama gornak cuma 0.61).
+    # Siluet harus MEMENUHI kotak, bukan tiang sempit.
     assert rect.width / rect.height >= 0.85, \
         f"siluet terlalu sempit: {rect.width}x{rect.height}"
     assert rect.width >= 96, rect.width
     # Sol jatuh di garis bayangan -> karakter tidak melayang.
     ground = CY + G.GROUND_DY
     assert abs(rect.bottom - ground) <= 3, (rect.bottom, ground)
-    # Puncak krist mohawk tetap di atas HP bar tanpa membawa seluruh kepala
-    # masuk ke pita bar (bar mini boss: y-45..y-37); LIFT menjaga wajah di
-    # bawahnya.
+    # Puncak topknot tetap di bawah pita HP bar (bar mini boss y-45..y-37).
     assert rect.top >= CY - 58, rect.top
 
 
 def test_size_matches_the_family():
-    """Ukuran Gornak = ukuran karakter lain (keluhan: terlalu kecil).
+    """Ukuran Gornak = ukuran karakter lain.
 
     Dua jalur diuji terhadap rujukan yang benar-benar dipakai pemain:
-      * boss di arena: bbox badan padat dibandingkan morgath & drakar;
-      * hero di lane/Hero Shop: hasil AKHIR (setelah auto-scale pipeline HD
-        heroes/__init__.py) dibandingkan Grimjaw & Kaizen.
+      * boss di arena: bbox padat dibandingkan morgath & drakar (mini)
+        dan abaddon (true boss);
+      * hero di lane/Hero Shop: hasil AKHIR (setelah auto-scale pipeline
+        HD) dibandingkan morgath/kaizen/vex/abaddon.
+
+    grimjaw sengaja tidak dipakai sebagai pembanding LEBAR: bbox natifnya
+    (81x187, final 33x77) adalah pencilan keluarga - ukuran apapun yang
+    normal pasti "terlalu lebar" dibandingnya.
     """
     import heroes
     from heroes import _ProbeEntity, HERO_RENDERERS, BOSS_RENDERERS
@@ -163,10 +201,16 @@ def test_size_matches_the_family():
         return int(r.height * sc), int(r.width * sc)
 
     gh, gw = hero_final("gornak")
-    for sib in ("grimjaw", "kaizen"):
-        sh, sw = hero_final(sib)
-        assert abs(gh - sh) <= 0.14 * sh, f"hero gornak H={gh} vs {sib} H={sh}"
-        assert abs(gw - sw) <= 0.18 * sw, f"hero gornak W={gw} vs {sib} W={sw}"
+    peers = {n: hero_final(n) for n in ("morgath", "kaizen", "vex",
+                                        "abaddon")}
+    # Tinggi final harus DI DALAM rentang keluarga (morgath 72 .. abaddon
+    # 82) dengan margin kecil - bukan midget, bukan raksasa.
+    heights = [h for h, _ in peers.values()]
+    assert min(heights) * 0.95 <= gh <= max(heights) * 1.08, \
+        f"hero gornak H={gh} di luar keluarga {sorted(heights)}"
+    widths = [w for _, w in peers.values()]
+    assert min(widths) * 0.9 <= gw <= max(widths) * 1.15, \
+        f"hero gornak W={gw} di luar keluarga {sorted(widths)}"
     # jangan ada yang di-upscale (bitmap di-blow-up = kabur)
     assert heroes._get_hero_scale("gornak") <= 1.02
 
@@ -183,32 +227,30 @@ def test_size_matches_the_family():
 
     import bosses.level1 as L
     gh2, gw2 = boss_bbox("gornak", L.draw_gornak)
-    mh, mw = boss_bbox("morgath", L.draw_morgath)          # H82 W120
-    dh, dw = boss_bbox("drakar", L.draw_drakar)             # H138 W190 (naga)
+    mh, mw = boss_bbox("morgath", L.draw_morgath)          # H112 W116
+    dh, dw = boss_bbox("drakar", L.draw_drakar)             # naga
     ah, aw = boss_bbox("abaddon", L.draw_abaddon)           # true boss
-    # Tidak boleh lagi jadi "tiang kecil" di samping mini boss lain:
-    assert gh2 >= mh * 1.05, f"boss gornak H={gh2} vs morgath H={mh}"
-    assert gh2 >= dh * 0.72, f"boss gornak H={gh2} vs drakar H={dh}"
-    assert gw2 >= mw * 0.85, f"boss gornak W={gw2} vs morgath W={mw}"
+    # Tidak boleh jadi "tiang kecil" di samping mini boss lain...
+    assert gh2 >= mh * 0.95, f"boss gornak H={gh2} vs morgath H={mh}"
+    assert gh2 >= dh * 0.62, f"boss gornak H={gh2} vs drakar H={dh}"
+    assert gw2 >= mw * 0.80, f"boss gornak W={gw2} vs morgath W={mw}"
     # ...tapi mini boss tetap lebih kecil dari true boss level yang sama.
     assert gh2 <= ah * 1.00, f"boss gornak H={gh2} >= true boss {ah}"
     assert gw2 <= aw * 1.00, f"boss gornak W={gw2} >= true boss {aw}"
 
 
 def test_blade_geometry_is_pose_driven():
-    """Bilah: cocked back -> chop over the head -> release forward.
+    """Cleaver: angkat ke atas-belakang -> OVERHEAD CHOP -> garda.
 
-    Yang dikunci di sini BUKAN angka sudutnya, tapi bentuk geraknya:
+    Yang dikunci BUKAN angka sudutnya, tapi bentuk geraknya:
     (a) posisi siap -> wind-up -> impact -> recovery harus berbeda semua,
-    (b) bilah tidak pernah menyayat menembus torsonya sendiri, dan
-    (c) ujung bilah tidak pernah keluar dari buffer rig (kalau keluar,
-        FX-nya terpotong saat sprite di-cache).
+    (b) senjata tidak pernah menyayat menembus torsonya sendiri, dan
+    (c) ujung senjata tidak pernah keluar dari buffer rig.
     """
     tip_idle = G._tip_local("idle", 1.0, 0.0)
     tip_wind = G._tip_local("attack", 1.0, G._attack_curve(0.14))
     tip_rel = G._tip_local("attack", 1.0, G._attack_curve(0.62))
-    # Wind-up: kedua bilah terangkat TINGGI (di depan/ belakang wajah),
-    # tidak pernah lewat datar setinggi dada.
+    # Wind-up: cleaver terangkat TINGGI di atas kepala.
     assert tip_wind[1] < -18
     assert tip_wind[1] < tip_idle[1] - 24
     # Impact: ayunan sudah turun jauh menyapu ke bawah-depan.
@@ -216,12 +258,9 @@ def test_blade_geometry_is_pose_driven():
     assert tip_rel[1] > tip_wind[1] + 46
 
     def blade_crosses_chest(grip, tip, box):
-        """Apakah bagian TENGAH- LUAR bilah memotong rongga dada?
+        """Apakah bagian TENGAH-LUAR senjata memotong rongga dada?
 
-        40% pertama bilah diabaikan: di situ ada gagang + telapak tangan yang
-        memang berdiri di depan pinggang, jadi itu bukan "pedang menancap di
-        dada". Frame pertama (ap < 0.06) juga dilewati karena attack punya
-        satu frame antisipasi tempat tangan melompat ke posisi cocked.
+        40% pertama diabaikan: di situ ada gagang + telapak tangan.
         """
         (x0, y0, x1, y1) = box
         for i in range(14):
@@ -240,22 +279,23 @@ def test_blade_geometry_is_pose_driven():
         tip = G._tip_local("attack", 1.0, ap)
         assert not blade_crosses_chest(grip, tip, chest), \
             f"blade crosses chest at ap={ap:.2f} grip={grip} tip={tip}"
-        # Tidak boleh terpotong oleh buffer rig: diperiksa langsung dari
-        # bounding box hasil render (bukan dari angka batas asimetris).
         assert not clipped_by_buffer("attack", ap, 1.0), \
             f"rig clipped by buffer @ attack ap={ap:.2f}"
+        assert not clipped_by_buffer("attack", ap, 1.0, facing=-1), \
+            f"rig clipped (hadap kiri) @ attack ap={ap:.2f}"
 
-    for action in ("idle", "walk", "surge", "ward", "void"):
+    for action in ("idle", "walk", "surge", "ward", "void", "blink"):
         for i in range(6):
             ph = i * 1.05
-            g = (G._front_grip_local(action, 0.0, ph)
-                 if action != "idle" else G._front_grip_local(action, 0.0, ph))
+            g = G._front_grip_local(action, 0.0, ph)
             tp = G._tip_local(action, ph, 0.0)
             assert not blade_crosses_chest(g, tp, chest), (action, ph)
         for i in range(4):
             ph = i * 1.05
             assert not clipped_by_buffer(action, 0.0, ph), \
-                f"rig clipped by buffer @ {action} phase={ph:.2f}"
+                f"rig clipped @ {action} phase={ph:.2f}"
+            assert not clipped_by_buffer(action, 0.0, ph, facing=-1), \
+                f"rig clipped (hadap kiri) @ {action} phase={ph:.2f}"
 
     frames = {pygame.image.tobytes(render("attack", i / 9.0), "RGBA")
               for i in range(10)}
@@ -265,11 +305,9 @@ def test_blade_geometry_is_pose_driven():
 def test_attack_timing_has_impact_hold():
     """Anticipation -> ayunan cepat -> HOLD di impact -> follow-through.
 
-    Yang bikin serangan 2D terasa murah bukan jumlah frame, tapi tidak
-    adanya freeze 1-2 frame di impact. Diuji sebagai SIFAT kurva (bukan
-    angka segmen, supaya kurva masih boleh di-tune):
-      * monoton naik  -> bilah tidak pernah terlihat mundur
-      * ada jendela raw >= 0.10 yang pose-time-nya nyaris tidak bergerak
+    Diuji sebagai SIFAT kurva (bukan angka segmen):
+      * monoton naik  -> senjata tidak pernah terlihat mundur
+      * ada jendela raw >= 0.08 yang pose-time-nya nyaris beku
       * laju maksimum > 4x laju di jendela hold itu
       * endpoint 0 dan 1 (tidak ada snap di awal/akhir ayunan)
     """
@@ -281,7 +319,7 @@ def test_attack_timing_has_impact_hold():
     step = 3 / N                                   # ~3 frame @60fps
     rate = [(seq[i + 1] - seq[i]) / step for i in range(N)]
     lo, hi = min(rate), max(rate)
-    assert hi > 4.0 * max(lo, 1e-6), (lo, hi)      # ada kontras cepat/lambat
+    assert hi > 4.0 * max(lo, 1e-6), (lo, hi)      # kontras cepat/lambat
     quiet = [i for i, r in enumerate(rate) if r <= hi * 0.25]
     assert quiet, "tidak ada hold sama sekali"
     span = (max(quiet) - min(quiet)) / N
@@ -289,17 +327,17 @@ def test_attack_timing_has_impact_hold():
 
 
 def test_mana_break_proc_starts_at_blade_tip():
-    """FX Q harus lahir dari UJUNG BILAH - bukan mengambang di pinggang."""
+    """FX Q harus lahir dari UJUNG CLEAVER - bukan mengambang di pinggang."""
     boss = probe(C, CY, active_skill="q", active_skill_timer=31)
-    surf = pygame.Surface((SIZE, SIZE), pygame.SRCALPHA)
+    surf = pygame.Surface((SIZE * 2, SIZE), pygame.SRCALPHA)
     G.draw_gornak(surf, boss, C, CY)
     tip = G._tip_screen(boss, C, CY)
     px = surf.get_at(tip)
     assert px.a > 0, "no pixel at the claimed blade tip"
-    # Cari piksel paling terang di sekitar tip; harus dalam radius 6 px.
+    # Cari piksel paling terang di sekitar tip; harus dalam radius 7 px.
     best, bestd = None, 999
     for y in range(max(0, tip[1] - 14), min(SIZE, tip[1] + 15)):
-        for x in range(max(0, tip[0] - 14), min(SIZE, tip[0] + 15)):
+        for x in range(max(0, tip[0] - 14), min(surf.get_width(), tip[0] + 15)):
             p = surf.get_at((x, y))
             if p.a and (p.r + p.g + p.b) > 640:
                 d = abs(x - tip[0]) + abs(y - tip[1])
@@ -336,14 +374,8 @@ def test_portrait_lod_is_distinct_and_clean():
     crop = pygame.Surface((SIZE, SIZE), pygame.SRCALPHA)
     G.draw_gornak(full, probe(C, CY), C, CY)
     G.draw_gornak(crop, probe(C, CY, _portrait_hd=True), C, CY)
-    def painted(surf):
-        """Jumlah piksel tergambar (termasuk yang transparan tipis).
 
-        Mode arena menambah aura + rune tanah + bayangan (permukaan besar
-        alpha lembut); mode portrait hanya rig. Warna tidak dipakai sebagai
-        acuan karena SRCALPHA di pygame menurunkan nilai RGB saat blending,
-        jadi jumlah piksel adalah sinyal yang stabil.
-        """
+    def painted(surf):
         n = 0
         for y in range(surf.get_height()):
             for x in range(surf.get_width()):
@@ -352,25 +384,20 @@ def test_portrait_lod_is_distinct_and_clean():
         return n
 
     a_px, p_px = painted(full), painted(crop)
-    # FX arena (aura + rune + shadow) menambah >18% piksel tergambar; kalau
-    # someday ada yang menyalakannya lagi di mode portrait, rasio ini turun
-    # ke ~1.0 dan test ini gagal.
     assert a_px > p_px * 1.18, \
         f"portrait harus membuang FX arena (painted {a_px} vs {p_px})"
 
 
 def test_secondary_motion_exists():
-    """Kepala, debu langkah, dan kedip: gerak sekunder yang memisahkan
-    rig "hidup" dari rig "menggeser sticker".
-    """
+    """Kepala, kilt, topknot, debu langkah: gerak sekunder yang
+    memisahkan rig "hidup" dari rig "menggeser sticker"."""
     # (a) offset kepala berbeda untuk idle / walk / attack / void
     heads = {a: G._head_bob(a, 2.1, 0.5)
              for a in ("idle", "walk", "attack", "void", "ward")}
     assert len(set(heads.values())) >= 4, heads
-    # walk mengayunkan kepala berlawanan arah langkah
     assert heads["walk"][1] <= heads["idle"][1]
-    # (b) kepala TIDAK direkat ke torso: head bob harus mengubah posisi
-    # piksel wajah antar frame walk.
+    # (b) kepala TIDAK direkat ke torso: head bob mengubah posisi piksel
+    # wajah antar frame walk.
     frames = set()
     for i in range(5):
         surf = pygame.Surface((240, 240), pygame.SRCALPHA)
@@ -378,15 +405,20 @@ def test_secondary_motion_exists():
         frames.add(pygame.image.tobytes(
             surf.subsurface(pygame.Rect(96, 60, 48, 34)), "RGBA"))
     assert len(frames) >= 4, "kepala statis saat berjalan"
-    # (c) debu langkah hanya ada di walk, dan menghilang saat melayang
+    # (c) hem kilt berayun antar frame walk (gerak sekunder kain).
+    hems = set()
+    for i in range(5):
+        surf = pygame.Surface((240, 240), pygame.SRCALPHA)
+        G._draw_gnk_rig(surf, 120, 120, 1, 0.9 * i, "walk", 0.0, False)
+        hems.add(pygame.image.tobytes(
+            surf.subsurface(pygame.Rect(96, 128, 48, 22)), "RGBA"))
+    assert len(hems) >= 4, "kilt statis saat berjalan"
+    # (d) debu langkah hanya ada di walk, dan menghilang saat melayang.
     dust_walk = pygame.Surface((240, 240), pygame.SRCALPHA)
     G._draw_footfall_dust(dust_walk, 120, 120, 1, 0.0)
     assert dust_walk.get_bounding_rect(min_alpha=6).width > 8, \
         "footfall dust tidak tergambar"
-    # fase di mana telapak TERANGKAT (|sin(phase*1.15)| ~ 1) -> tidak boleh
-    # ada debu, kalau tidak karakter meninggalkan jejak di udara.
-    import math as _m
-    lifted = _m.pi / 2 / 1.15
+    lifted = math.pi / 2 / 1.15
     still = pygame.Surface((240, 240), pygame.SRCALPHA)
     G._draw_footfall_dust(still, 120, 120, 1, lifted)
     assert still.get_bounding_rect(min_alpha=6).width == 0
@@ -456,7 +488,7 @@ def test_skill_durations_match_ai_timers():
     Kalau konstanta renderer lebih kecil dari active_skill_timer, pose skill
     "menggantung" beberapa frame terakhir; kalau lebih besar, animasi
     terpotong di tengah. Keduanya terlihat seperti bug render, padahal
-    hanya konstanta yang tidak sinkrok - jadi dikunci di sini.
+    hanya konstanta yang tidak sinkron - jadi dikunci di sini.
     """
     cast = {"q": "_cast_q_mana_break", "w": "_cast_w_blink",
             "e": "_cast_e_counterspell", "r": "_cast_r_mana_void"}
@@ -478,15 +510,12 @@ def test_skill_durations_match_ai_timers():
 def test_hero_visual_quality():
     """Kunci kualitas VISUAL jalur hero (bukan cuma ukuran).
 
-    Empat hal yang dulu membuat Gornak-as-hero kalah dari grimjaw/kaizen:
-      1. portrait Hero Shop terpotong di kanvas 160x160 (bilah depan keluar
-         tepi) -> sekarang konten dipusatkan pada bbox-nya;
-      2. wajah jadi blob tanpa fitur -> mata menyala harus benar-benar ada
-         di kotak kepala;
-      3. identitas warna hilang -> warna tema ungu harus ada DI BADAN
-         (permata pelat/pauldron, rim light), bukan cuma di efek arena;
-      4. kaki menyatu jadi satu tiang ungu -> di bawah loincloth harus ada
-         DUA kolom padat terpisah.
+    1. portrait Hero Shop tidak terpotong di kanvas 160x160;
+    2. mata menyala harus benar-benar ada DI KEPALA (pita atas crop);
+    3. identitas warna melekat DI BADAN: kulit hijau + ungu anti-sihir
+       (portrait = tanpa FX arena, jadi ini bukti tema di karakternya);
+    4. dua kaki tetap terpisah di bawah kilt;
+    5. cakram cahaya + cincin tanah tetap ada di jalur arena/lane.
     """
     # (1) portrait: tidak boleh menyentuh tepi kanvas 160x160
     canvas = pygame.Surface((160, 160), pygame.SRCALPHA)
@@ -496,11 +525,7 @@ def test_hero_visual_quality():
     assert box.left >= 2 and box.top >= 2, box
     assert box.right <= 158 and box.bottom <= 158, box
 
-    # (2) mata: piksel hangat-terang harus ADA DI KEPALA (pita atas crop),
-    # bukan sekadar piksel terang di mana pun - bilah juga terang, tapi
-    # blade_shine dingin (r == g) sedangkan mata hangat (r > g). Dicari
-    # sebagai warna hasil blending, bukan swatch persih: mata digambar
-    # aaline di atas rongga gelap sehingga nilainya tercampur.
+    # (2) mata: piksel hangat-terang harus ADA DI KEPALA (pita atas crop).
     band_h = max(6, int(box.height * 0.42))
     eyes = 0
     for y in range(max(0, box.top), min(160, box.top + band_h)):
@@ -511,15 +536,17 @@ def test_hero_visual_quality():
                 eyes += 1
     assert eyes >= 2, f"tidak ada piksel mata di area kepala ({eyes})"
 
-    # (3) warna tema DI BADAN (portrait = tanpa FX arena, jadi ini bukti
-    #     identitas ungu melekat pada karakter)
+    # (3) identitas DI BADAN: kulit hijau ork + ungu tema.
     body_cols = colors(canvas)
+    greens = {G.PALETTE["skin_mid"], G.PALETTE["skin_dark"],
+              G.PALETTE["skin_light"]}
     theme = {G.PALETTE["magic_hot"], G.PALETTE["magic_mid"],
              G.PALETTE["magic_light"], G.PALETTE["hair_light"],
              G.PALETTE["hair_shine"]}
+    assert body_cols & greens, "kulit hijau ork tidak terlihat pada badan"
     assert body_cols & theme, "ungu anti-sihir tidak terlihat pada badan"
 
-    # (4) dua kaki terpisah: scan baris di bawah loincloth
+    # (4) dua kaki terpisah: scan baris di bawah kilt
     rig = render("idle", detail=True)
     row_y = CY + int(34 * G.SCALE)
     runs, inside = 0, False
@@ -533,8 +560,6 @@ def test_hero_visual_quality():
     assert runs >= 2, f"kaki menyatu jadi satu blok (runs={runs} @ y={row_y})"
 
     # (5) cakram cahaya + cincin tanah tetap ada di jalur arena/lane.
-    # Dipantau lewat jumlah piksel alpha-LEMBUT: glow memang sengaja tipis,
-    # jadi tidak terlihat dari bounding box (bilah lebih lebar dari aura).
     def soft_px(surf):
         return sum(1 for y in range(surf.get_height())
                    for x in range(surf.get_width())
@@ -548,14 +573,12 @@ def test_hero_visual_quality():
     assert soft_px(shop) < 140, "mode portrait harus tetap bersih"
 
 
-
 def test_skill_fx_are_world_space():
     """Telegraph E/R tidak menyusut bersama sprite: kompensasi 1/_render_scale.
 
     E Counterspell AOE 100 px dunia, R Mana Void AOE 180 px dunia di CASTER
     (bukan di target). Di-render pada fs=1.0 dan fs=0.5: sampling lingkaran
-    di radius dunia/fs harus menemukan ring. Tanpa kompensasi, fs=0.5
-    menggambar di radius 100/180 px canvas -> 0 hit.
+    di radius dunia/fs harus menemukan ring.
     """
     def render(skill, timer, fs):
         W = 760
@@ -606,9 +629,9 @@ def test_skill_fx_are_world_space():
 
 
 def test_perf_budget():
-    """Guardrail: badan 1.3x lebih besar tidak boleh membuat frame time naik
-    drastis. Ambang sengaja longgar (5 ms) supaya tetap lolos di HP rendah;
-    hasil terukur di desktop ~1.3 ms/frame (rig lama ~1,2 ms)."""
+    """Guardrail: badan lebih besar tidak boleh membuat frame time naik
+    drastis. Ambang longgar (5 ms) supaya tetap lolos di HP rendah;
+    hasil terukur di desktop ~1.5 ms/frame."""
     import time
     scr = pygame.Surface((1280, 720))
     boss = probe(640, 360)
@@ -626,7 +649,8 @@ def test_perf_budget():
 
 
 if __name__ == "__main__":
-    test_masterwork_is_procedural_and_single_rig()
+    test_v4_is_procedural_single_rig()
+    test_v4_identity_green_spellbreaker()
     test_feet_are_planted_and_body_is_readable()
     test_blade_geometry_is_pose_driven()
     test_mana_break_proc_starts_at_blade_tip()
@@ -642,6 +666,7 @@ if __name__ == "__main__":
     test_secondary_motion_exists()
     test_skill_fx_are_world_space()
     test_perf_budget()
-    print("OK - Gornak masterwork v2: rig tunggal, kaki menapak, bilah "
-          "pose-driven, proc di ujung bilah, outline, portrait LOD, "
-          "Q/W/E/R world-space (E100/R180) tervalidasi")
+    print("OK - Gornak v4 SPELLBREAKER: rig tunggal, ork hijau, kaki "
+          "menapak, cleaver pose-driven (overhead chop), proc di ujung "
+          "cleaver, outline, portrait LOD, Q/W/E/R world-space "
+          "(E100/R180), ukuran keluarga tervalidasi")

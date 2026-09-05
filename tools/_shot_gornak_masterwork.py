@@ -92,11 +92,11 @@ font_small = pygame.font.Font(None, 20)
 W, H = 1280, 1120
 screen = pygame.Surface((W, H))
 screen.fill(BG)
-screen.blit(font_title.render("GORNAK — PIXEL MASTERWORK v2 + FX v2.1", True, ACCENT),
+screen.blit(font_title.render("GORNAK — PROCEDURAL RIG v4 “SPELLBREAKER”", True, ACCENT),
             (38, 18))
 screen.blit(font_small.render(
-    "100% code-drawn • tanpa PNG / sprite sheet • selout • tuft • dither • "
-    "specular • FX world-space E=100 / R=180 di caster", True, SUB), (40, 66))
+    "100% code-drawn • ork hijau anti-mage • satu cleaver + belati • tiga "
+    "titik fokus • FX world-space E=100 / R=180 di caster", True, SUB), (40, 66))
 
 cases = []
 cases.append(("IDLE", probe(pulse=1.25), 2.1))
