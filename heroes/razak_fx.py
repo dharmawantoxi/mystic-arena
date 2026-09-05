@@ -63,17 +63,17 @@ DEBUG_CHARACTER = False
 RAZAK_FX_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 170
+MAX_PARTICLES = 102
 
 #: Batas keras proyektil visual per director.
-MAX_PROJECTILES = 12
+MAX_PROJECTILES = 7
 
 #: Panjang histori trail senjata (jumlah sample posisi bilah).
-TRAIL_SAMPLES = 14
+TRAIL_SAMPLES = 9
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -1564,20 +1564,20 @@ class SkillFX:
         elif self.phase == "release" and not self._released:
             self._released = True
             if kind == "q":
-                ps.burst(self.x, self.y, 10,
+                ps.burst(self.x, self.y, 5,
                          speed=(100, 300), life=(0.16, 0.36), size=(2, 4),
                          colors=(P["fire_white"], hot, P["fire_hot"]),
                          spread=1.2, direction=ang, drag=3.4,
                          shape="streak", additive=True)
             elif kind == "w":
                 ps.burst(self.x + math.cos(ang) * 6,
-                         self.y + math.sin(ang) * 6, 12,
+                         self.y + math.sin(ang) * 6, 6,
                          speed=(160, 380), life=(0.18, 0.4), size=(2, 4),
                          colors=(P["fire_white"], hot, P["fire_glow"]),
                          spread=0.9, direction=ang, drag=3.0,
                          shape="streak", additive=True)
             else:
-                ps.burst(self.x, self.y + self.ground * 0.5, 14,
+                ps.burst(self.x, self.y + self.ground * 0.5, 7,
                          speed=(110, 320), life=(0.24, 0.52), size=(2, 5),
                          colors=(hot, P["fire_bright"], P["dust"]),
                          spread=math.tau, gravity=200.0, drag=1.6,
@@ -1609,12 +1609,12 @@ class SkillFX:
         # IMPACT: serpihan jatuh + debu (satu kali)
         elif self.phase == "impact" and not self._impacted:
             self._impacted = True
-            ps.burst(self.x, self.y + self.ground * 0.4, 10,
+            ps.burst(self.x, self.y + self.ground * 0.4, 5,
                      speed=(90, 250), life=(0.3, 0.6), size=(2, 5),
                      colors=(hot, P["brass"], P["dust"]),
                      gravity=430.0, drag=1.0, shape="shard",
                      rotation_speed=(-13.0, 13.0))
-            ps.burst(self.x, self.y + self.ground, 8,
+            ps.burst(self.x, self.y + self.ground, 4,
                      speed=(40, 140), life=(0.4, 0.9), size=(2, 6),
                      colors=(P["smoke"], P["ash"], dark),
                      gravity=-40.0, drag=1.4, shape="smoke", layer="back")
@@ -1908,7 +1908,7 @@ class SkillFX:
             # 8 pilar mengorbit di 0.62·R (sama dengan renderer v2).
             # Dipertahankan: posisinya di radius telegraph, BUKAN di atas
             # badan, jadi tidak menutupi karakter.
-            for i in range(8):
+            for i in range(4):
                 ang = a * 0.8 + i * math.tau / 8
                 px = x + math.cos(ang) * ring_r
                 py = y + self.ground + math.sin(ang) * ring_r * 0.4
@@ -2084,7 +2084,7 @@ class RazakFXDirector:
         self.swing_active = True
         gy = y + self._ground_dy()
         self.particles.burst(
-            x + facing * 4, gy, 5,
+            x + facing * 4, gy, 2,
             speed=(26, 86), life=(0.16, 0.36), size=(2, 4),
             colors=(P["dust"], P["ash"], P["smoke"]),
             spread=1.2, direction=math.pi if facing > 0 else 0.0,
@@ -2098,7 +2098,7 @@ class RazakFXDirector:
         grip, tip = machete_points(self.hero, x, y)
         ang = math.atan2(tip.y - grip.y, tip.x - grip.x)
         self.particles.burst(
-            tip.x, tip.y, 8,
+            tip.x, tip.y, 4,
             speed=(120, 280), life=(0.1, 0.26), size=(1, 3),
             colors=(P["fire_hot"], P["fire_white"], P["fire_glow"]),
             spread=1.6, direction=ang, drag=3.6, shape="streak",
@@ -2137,12 +2137,12 @@ class RazakFXDirector:
             scale=_rscale(self.hero)))
         self.on_impact(hx, hy, -math.pi / 2, 1.25, False, kind="napalm")
         self.particles.burst(
-            hx, hy + self._ground_dy() * 0.4, 14,
+            hx, hy + self._ground_dy() * 0.4, 7,
             speed=(80, 260), life=(0.3, 0.7), size=(2, 5),
             colors=(P["fire_bright"], P["fire_hot"], P["fire_dark"]),
             spread=math.tau, gravity=330.0, drag=1.2, shape="fire")
         self.particles.burst(
-            hx, hy + self._ground_dy() * 0.6, 10,
+            hx, hy + self._ground_dy() * 0.6, 5,
             speed=(30, 120), life=(0.5, 1.0), size=(2, 6),
             colors=(P["smoke"], P["ash"]), spread=math.tau,
             gravity=-40.0, drag=1.4, shape="smoke", layer="back")
@@ -2164,7 +2164,7 @@ class RazakFXDirector:
         if skill == "q":
             # lempar molotov dari moncong flamethrower
             self.particles.burst(
-                gun.x, gun.y, 8,
+                gun.x, gun.y, 4,
                 speed=(80, 240), life=(0.1, 0.24), size=(1, 3),
                 colors=(P["fire_white"], P["fire_hot"], P["fire_bright"]),
                 spread=1.4, direction=math.atan2(
@@ -2189,13 +2189,13 @@ class RazakFXDirector:
             _feel_shake(5.0 if skill != "r" else 12.0,
                         0.16 if skill != "r" else 0.38)
         self.particles.burst(
-            x, y + gy * 0.35, 12,
+            x, y + gy * 0.35, 6,
             speed=(60, 200), life=(0.2, 0.5), size=(2, 4),
             colors=(P["fire_mid"], P["dust"], P["ash"]),
             spread=math.tau, gravity=150.0, drag=2.0,
             shape="fire", layer="back")
         if skill == "r":
-            _feel_hit_stop(0.06)
+            _feel_hit_stop(0.036)
 
     def on_impact(self, x, y, angle=0.0, power=1.0, crit=False,
                   kind="slash"):
@@ -2223,13 +2223,13 @@ class RazakFXDirector:
             gravity=470.0, drag=1.1, shape="shard",
             rotation_speed=(-16.0, 16.0))
         self.particles.burst(
-            x, y + self._ground_dy() * 0.4, 6,
+            x, y + self._ground_dy() * 0.4, 3,
             speed=(40, 140), life=(0.3, 0.66), size=(2, 6),
             colors=(P["smoke"], P["ash"]), spread=math.tau,
             gravity=-30.0, drag=1.4, shape="smoke", layer="back")
         if crit:
             self.particles.burst(
-                x, y, 8, speed=(180, 380), life=(0.2, 0.5), size=(2, 4),
+                x, y, 4, speed=(180, 380), life=(0.2, 0.5), size=(2, 4),
                 colors=(P["brass_hot"], P["brass"], hot),
                 spread=math.tau, gravity=120.0, drag=2.0, shape="spark",
                 additive=True)
@@ -2246,11 +2246,11 @@ class RazakFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 8, 7, speed=(80, 210), life=(0.14, 0.3), size=(2, 4),
+            hx, hy - 8, 3, speed=(80, 210), life=(0.14, 0.3), size=(2, 4),
             colors=(P["blue_hot"], P["fire_hot"], P["leather"]),
             drag=3.0, shape="spark", additive=True)
         self.particles.burst(
-            hx, hy + 6, 5, speed=(30, 100), life=(0.22, 0.5), size=(2, 6),
+            hx, hy + 6, 2, speed=(30, 100), life=(0.22, 0.5), size=(2, 6),
             colors=(P["bat_dark"], P["smoke"], P["leather"]),
             gravity=200.0, drag=2.0, shape="dust", layer="back")
 
@@ -2266,7 +2266,7 @@ class RazakFXDirector:
                                    scale=_rscale(self.hero)))
         self.on_impact(x, y, 0.0, 1.1, False, kind="dash")
         self.particles.burst(
-            x, y + gy * 0.55, 12,
+            x, y + gy * 0.55, 6,
             speed=(90, 250), life=(0.2, 0.5), size=(2, 5),
             colors=(P["fire_bright"], P["fire_hot"], P["dust"]),
             spread=math.tau, gravity=230.0, drag=1.8,
@@ -2283,19 +2283,19 @@ class RazakFXDirector:
         self.impacts.append(ImpactFX(x, y + gy * 0.3, -math.pi / 2, 2.2,
                                      True, kind="storm", seed=7,
                                      ground=gy))
-        self.particles.burst(x, y, 22, speed=(90, 330), life=(0.5, 1.1),
+        self.particles.burst(x, y, 11, speed=(90, 330), life=(0.5, 1.1),
                              size=(2, 6),
                              colors=(P["fire_bright"], P["bat_mid"],
                                      P["brass"], P["leather"]),
                              spread=math.tau, gravity=430.0, drag=1.1,
                              shape="shard", rotation_speed=(-18.0, 18.0))
-        self.particles.burst(x, y + gy, 18, speed=(40, 150),
+        self.particles.burst(x, y + gy, 9, speed=(40, 150),
                              life=(0.5, 1.0), size=(3, 7),
                              colors=(P["dust"], P["smoke"], P["ash"]),
                              spread=math.tau, gravity=-30.0, drag=1.5,
                              shape="smoke", layer="back")
         if shake_allowed():
-            _feel_shake(9.0, 0.42)
+            _feel_shake(4.5, 0.42)
 
     # ------------------------------------------------------------------
     def _skill_dedupe_impact(self, kind, x, y, window):

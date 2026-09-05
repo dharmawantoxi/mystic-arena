@@ -31,8 +31,9 @@ import pygame
 HIT_STOP_ENABLED = True
 
 #: Jendela hit-stop yang diizinkan (detik). Di luar ini dibuang.
-HIT_STOP_MIN = 0.03
-HIT_STOP_MAX = 0.08
+#: DIKURANGI untuk hilangkan patah-patah saat skill: max 0.04s, min 0.02s
+HIT_STOP_MIN = 0.02
+HIT_STOP_MAX = 0.04
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -61,7 +62,8 @@ class ScreenShake:
         self._max_duration = 0.0001
         self.enabled = True
         #: ambang minimum supaya layar tidak bergetar demi hal tak penting
-        self.threshold = 0.4
+        #: DITINGKATKAN 0.4->1.0 untuk kurangi noisy shake Q/W
+        self.threshold = 1.0
 
     # ------------------------------------------------------------------
     def add(self, strength, duration=0.22):
@@ -129,8 +131,8 @@ class HitStop:
 
     MIN_SECONDS = HIT_STOP_MIN
     MAX_SECONDS = HIT_STOP_MAX
-    #: pengaman: tidak pernah lebih dari 5 langkah simulasi
-    MAX_FRAMES = 5
+    #: pengaman: tidak pernah lebih dari 2 langkah (dulu 5) untuk hilangkan patah
+    MAX_FRAMES = 2
 
     def __init__(self):
         self.frames = 0
@@ -144,8 +146,12 @@ class HitStop:
             seconds = float(seconds)
         except (TypeError, ValueError):
             return
+        # HANYA izinkan hit-stop >=0.035s (R skill / crit) - Q/W 0.02-0.03 diabaikan
+        # untuk hilangkan patah-patah saat hero cast skill biasa
+        if seconds < 0.035:
+            return
         seconds = max(self.MIN_SECONDS, min(self.MAX_SECONDS, seconds))
-        frames = max(2, int(round(seconds / FIXED_DT)))
+        frames = max(1, int(round(seconds / FIXED_DT)))
         frames = min(self.MAX_FRAMES, frames)
         if frames > self.frames:
             self.frames = frames
@@ -194,7 +200,7 @@ def hit_stop(seconds=0.045):
 
 
 def shake(strength=5.0, duration=0.22, forward_to_camera=True):
-    """Goyangkan layar.
+    """Goyangkan layar - DIKURANGI untuk hilangkan noisy shake.
 
     ``forward_to_camera`` -> nilai yang sama diteruskan ke
     ``EffectManager.shake_screen`` milik game, karena kamera dunia
@@ -203,14 +209,24 @@ def shake(strength=5.0, duration=0.22, forward_to_camera=True):
     ``ScreenShake.enabled`` yang di-sync dari GameSettings), jadi tidak
     perlu dicek ulang di sini.
     """
-    SHAKE.add(strength, duration)
+    # HANYA shake >=4.0 (R / heavy) yang diizinkan, Q/W 2-3 diabaikan
+    # Skala kekuatan 50% + durasi 70% untuk kurangi patah
+    try:
+        s = float(strength)
+    except Exception:
+        return
+    if s < 4.0:
+        return
+    s = s * 0.5
+    d = max(0.0, float(duration)) * 0.7
+    SHAKE.add(s, d)
     if not forward_to_camera:
         return
     try:
         import __main__
         game = getattr(__main__, "game_instance", None)
         if game is not None and getattr(game, "effects", None) is not None:
-            game.effects.shake_screen(strength)
+            game.effects.shake_screen(s * 0.5)
     except Exception:
         pass
 

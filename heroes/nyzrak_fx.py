@@ -60,17 +60,17 @@ DEBUG_CHARACTER = False
 NYZRAK_FX_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 170
+MAX_PARTICLES = 102
 
 #: Batas keras proyektil visual per director.
-MAX_PROJECTILES = 18
+MAX_PROJECTILES = 10
 
 #: Panjang histori trail senjata (jumlah sample posisi tombak).
-TRAIL_SAMPLES = 14
+TRAIL_SAMPLES = 9
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -1011,7 +1011,7 @@ class NyzrakProjectile:
         self.active = False
         if impact and self.particles is not None:
             self.particles.burst(
-                self.position.x, self.position.y, 8, (60, 260),
+                self.position.x, self.position.y, 4, (60, 260),
                 (0.15, 0.4), (1, 2), P["fx_light"], "chunk", "front",
                 spread=math.tau, gravity=300.0, drag=1.0)
             self.particles.burst(
@@ -1267,7 +1267,7 @@ class SkillFX:
         if self.kind == "q":
             # muzzle + impact besar di target
             if ps is not None:
-                ps.burst(self.x, self.y - 44, 10, (60, 240), (0.2, 0.5),
+                ps.burst(self.x, self.y - 44, 5, (60, 240), (0.2, 0.5),
                          (1, 2), P["frost_bright"], "shard", "front",
                          spread=math.tau, rot_speed=(-8, 8))
         elif self.kind == "w":
@@ -1283,25 +1283,25 @@ class SkillFX:
                               speed=SPLINTER_SPEED, kind="splinter",
                               radius=5.0, lifetime=0.8, damage=40.0)
             if ps is not None:
-                ps.burst(self.x + 20, self.y - 20, 12, (80, 300),
+                ps.burst(self.x + 20, self.y - 20, 6, (80, 300),
                          (0.15, 0.4), (1, 3), P["fx_light"], "chunk",
                          "front", spread=1.2, ang0=base - 0.6)
         elif self.kind == "e":
             # erupsi kristal di titik target
             if ps is not None:
-                ps.burst(self.ex, self.ey, 22, (60, 300), (0.25, 0.7),
+                ps.burst(self.ex, self.ey, 11, (60, 300), (0.25, 0.7),
                          (1, 3), P["fx_bright"], "shard", "front",
                          spread=math.tau, gravity=420.0, drag=0.8,
                          rot_speed=(-9, 9))
-                ps.burst(self.ex, self.ey, 8, (20, 90), (0.4, 0.9), (3, 6),
+                ps.burst(self.ex, self.ey, 4, (20, 90), (0.4, 0.9), (3, 6),
                          P["mist"], "smoke", "back", spread=math.tau)
         elif self.kind == "r":
             if ps is not None:
-                ps.burst(self.x, self.y - 10, 26, (120, 460), (0.25, 0.7),
+                ps.burst(self.x, self.y - 10, 13, (120, 460), (0.25, 0.7),
                          (1, 3), P["fx_bright"], "shard", "front",
                          spread=math.tau, gravity=160.0, drag=1.3,
                          rot_speed=(-8, 8))
-                ps.burst(self.x, self.y - 6, 12, (20, 110), (0.5, 1.1),
+                ps.burst(self.x, self.y - 6, 6, (20, 110), (0.5, 1.1),
                          (3, 7), P["mist"], "smoke", "back",
                          spread=math.tau)
                 for i in range(6):
@@ -1541,7 +1541,7 @@ class SkillFX:
                     (cx - R, cy - int(R * 0.92), R * 2, int(R * 1.84)), 2)
         # salju orbit
         time = pygame.time.get_ticks() * 0.004
-        for i in range(7):
+        for i in range(3):
             a = time + i * math.tau / 7
             rr = 40 + 26 * dome_k
             x2 = cx + math.cos(a) * rr
@@ -1586,14 +1586,14 @@ class NyzrakFXDirector:
     # ------------------------------------------------------------------
     def on_swing_start(self, x, y, facing):
         """Whoosh: debu es dari titik awal ayunan."""
-        self.particles.burst(x + 10 * facing, y - 30, 6, (30, 120),
+        self.particles.burst(x + 10 * facing, y - 30, 3, (30, 120),
                              (0.2, 0.45), (1, 2), P["fx_light"], "chunk",
                              "front", spread=math.tau, gravity=110.0)
-        shake(1.5, 0.1)
+        shake(0.8, 0.1)
 
     def on_swing_impact_frame(self, x, y, facing):
         """Bingkai IMPACT sapuan melee (aktif walau belum kena target)."""
-        self.particles.burst(x + 30 * facing, y - 18, 8, (60, 200),
+        self.particles.burst(x + 30 * facing, y - 18, 4, (60, 200),
                              (0.15, 0.4), (1, 2), P["fx_bright"], "chunk",
                              "front", spread=2.0, ang0=-1.2 + (0 if facing > 0 else math.pi),
                              gravity=220.0)
@@ -1604,7 +1604,7 @@ class NyzrakFXDirector:
                                kind="shard", radius=6.0, lifetime=1.1,
                                damage=getattr(self.hero, "damage", 0.0)
                                or 0.0)
-        self.particles.burst(sx, sy, 6, (40, 160), (0.12, 0.3), (1, 2),
+        self.particles.burst(sx, sy, 3, (40, 160), (0.12, 0.3), (1, 2),
                              P["fx_bright"], "spark", "front",
                              spread=1.4, ang0=math.atan2(ty - sy, tx - sx)
                              - 0.7)
@@ -1637,11 +1637,11 @@ class NyzrakFXDirector:
 
     def on_death(self, x, y):
         """Shatter es: wyvern pecah jadi serpihan."""
-        self.particles.burst(x, y - 24, 40, (60, 420), (0.3, 0.9), (1, 4),
+        self.particles.burst(x, y - 24, 20, (60, 420), (0.3, 0.9), (1, 4),
                              P["fx_bright"], "shard", "front",
                              spread=math.tau, gravity=420.0, drag=0.6,
                              rot_speed=(-10, 10))
-        self.particles.burst(x, y - 10, 14, (20, 120), (0.6, 1.4), (4, 8),
+        self.particles.burst(x, y - 10, 7, (20, 120), (0.6, 1.4), (4, 8),
                              P["mist"], "smoke", "back", spread=math.tau)
         self.on_impact(x, y - 20, 0.0, 1.8, True, "nova")
         self.trail.reset()
@@ -1733,8 +1733,8 @@ class NyzrakFXDirector:
                 aim = 0.0 if facing > 0 else math.pi
             self.on_cast(x, y, skill, aim, tx, ty)
             if skill == "r":
-                hit_stop(0.05)
-                shake(9.0, 0.3)
+                hit_stop(0.030)
+                shake(4.5, 0.3)
         self._prev_skill = skill
 
         # maju semua skill FX dengan progress dari timer AI

@@ -503,13 +503,15 @@ class _Quality:
         med = level == MEDIUM
 
         # Efek yang boleh dimatikan tanpa merusak gameplay
+        # DIKURANGI untuk hilangkan noisy: particle 0.20/0.40/0.70
         self.particles = not low
-        self.particle_ratio = 0.35 if low else (0.65 if med else 1.0)
+        self.particle_ratio = 0.20 if low else (0.40 if med else 0.70)
         self.fog = not low
         self.shadows = True
         self.soft_shadows = not (low or med)
         self.glow = not low
-        self.screen_shake = True
+        # Screen shake HANYA di HIGH, LOW/MEDIUM mati untuk kurangi patah
+        self.screen_shake = level == HIGH
         self.aa_circles = not low          # pakai draw.circle biasa saat LOW
         # Cache sprite minion: SUDAH DIUKUR TERNYATA LEBIH LAMBAT
         # (60 minion: 0,66 ms tanpa cache vs 1,07 ms dengan cache),
@@ -549,7 +551,7 @@ class _Quality:
         # dalam satu frame; sisanya memakai ulang sprite terakhirnya
         # (1-2 frame lebih tua - tidak terlihat untuk badan hero, dan
         # lapisan FX tetap digambar penuh setiap frame).
-        self.max_hero_render = 2 if low else (3 if med else 6)
+        self.max_hero_render = 3 if low else (4 if med else 8)
 
         # ══ LANTAI KUANTISASI POSE HERO (v32) ══
         # Pose skill/attack yang di-cache diperbarui tiap N frame. Makin
@@ -561,8 +563,8 @@ class _Quality:
         # (partikel/trail/proyektil/impact) tetap digambar penuh 60 fps
         # di luar cache, jadi skill tetap terlihat hidup.
         # Preset HIGH tidak berubah sama sekali (lantai = nilai lama).
-        self.skill_quant_floor = 12 if low else (6 if med else 2)
-        self.atk_quant_floor = 4 if low else 2
+        self.skill_quant_floor = 12 if low else (8 if med else 4)
+        self.atk_quant_floor = 6 if low else (4 if med else 3)
 
         # ══ ANGGARAN LAPISAN FX TANAH (v32) ══
         # Berapa hero yang boleh menggambar lapisan dekorasi di bawah
@@ -571,7 +573,7 @@ class _Quality:
         # Terukur: lapisan tanah = 2,57 ms/frame untuk 10 hero di PC
         # (~8-13 ms di HP). 99 = tidak pernah membatasi.
         # Lihat ANGGARAN LAPISAN FX TANAH di heroes/__init__.py.
-        self.fx_ground_budget = 3 if low else (6 if med else 99)
+        self.fx_ground_budget = 2 if low else (3 if med else 6)
 
         _apply_aa_switch(self.aa_circles)
 
@@ -599,16 +601,16 @@ Quality = _Quality()
 # ═══════════════════════════════════════════════════════
 _FX_LOAD = 1.0
 _FX_LOAD_SMOOTH = 0.40     # seberapa cepat beban menyusul perubahan
-_FX_BASE_HEROES = 1.25     # jumlah hero FX yang masih boleh intensitas penuh
-_FX_LOAD_MIN = 0.16        # lantai intensitas (FX tidak pernah mati total)
-_FX_LOAD_EXP = 1.20        # makin besar = turun lebih agresif saat 3+ hero
+_FX_BASE_HEROES = 1.0      # jumlah hero FX yang masih boleh intensitas penuh (lebih agresif)
+_FX_LOAD_MIN = 0.10        # lantai intensitas (lebih rendah untuk hilangkan noisy)
+_FX_LOAD_EXP = 1.5         # makin besar = turun lebih agresif saat 3+ hero
 
 # Anggaran KERAS per frame di atas particle_ratio. Modul FX yang mengabaikan
 # anggaran (atau memakai pool yang selalu "penuh") tetap dipotong di sini
 # lewat wrap spawn global di heroes/__init__.py — tanpa mengedit 27 *_fx.py.
-_FX_PARTICLE_CAP = 280     # token spawn partikel pada load 1.0
-_FX_PROJ_CAP = 36          # token spawn proyektil visual FX
-_FX_SKILL_PROJ_CAP = 18    # token proyektil skill di Hero.projectiles
+_FX_PARTICLE_CAP = 140     # token spawn partikel (dulu 280) untuk kurangi noisy
+_FX_PROJ_CAP = 18          # token spawn proyektil visual FX (dulu 36)
+_FX_SKILL_PROJ_CAP = 10    # token proyektil skill (dulu 18)
 _FX_PARTICLE_LEFT = _FX_PARTICLE_CAP
 _FX_PROJ_LEFT = _FX_PROJ_CAP
 _FX_SKILL_PROJ_LEFT = _FX_SKILL_PROJ_CAP

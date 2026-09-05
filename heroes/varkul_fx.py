@@ -64,17 +64,17 @@ DEBUG_CHARACTER = False
 VARKUL_FX_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 190
+MAX_PARTICLES = 114
 
 #: Batas keras proyektil visual per director.
-MAX_PROJECTILES = 18
+MAX_PROJECTILES = 10
 
 #: Panjang histori trail senjata (jumlah sample posisi crystal staff).
-TRAIL_SAMPLES = 16
+TRAIL_SAMPLES = 10
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
-MAX_IMPACTS = 8
-MAX_SKILLS = 5
+MAX_IMPACTS = 4
+MAX_SKILLS = 3
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -1080,7 +1080,7 @@ class ImpactFX:
         arc_pts = []
         start = self.angle - 0.9
         end = self.angle + 0.9
-        for i in range(7):
+        for i in range(3):
             a = start + (end - start) * i / 6.0
             rr2 = (20 + 8 * p) * (0.4 + 0.8 * t)
             arc_pts.append((self.x + math.cos(a) * rr2,
@@ -1518,48 +1518,48 @@ class SkillFX:
         x, y = self.aim[0], self.aim[1]
         if self.skill == "q":
             # ledakan frost: serpihan shard + spark
-            self.particles.burst(x, y, 20, speed=(90, 280),
+            self.particles.burst(x, y, 10, speed=(90, 280),
                                  life=(0.18, 0.65), size=(2, 5),
                                  colors=(P["ice_hot"], P["ice_edge"],
                                          P["ice_light"]),
                                  spread=math.tau, gravity=110.0,
                                  shape="shard", additive=True,
                                  rotation_speed=(-18, 18))
-            self.particles.burst(x, y, 10, speed=(30, 120),
+            self.particles.burst(x, y, 5, speed=(30, 120),
                                  life=(0.3, 0.8), size=(1, 3),
                                  colors=(P["ice_light"], P["ice_mid"]),
                                  spread=math.tau, gravity=40.0,
                                  shape="snow", rotation_speed=(-3, 3))
         elif self.skill == "w":
             # kurungan es terbentuk: serpihan naik + kabut dingin
-            self.particles.burst(x, y, 14, speed=(30, 150),
+            self.particles.burst(x, y, 7, speed=(30, 150),
                                  life=(0.25, 0.7), size=(2, 4),
                                  colors=(P["ice_hot"], P["fx_bright"]),
                                  spread=math.tau, gravity=-60.0,
                                  shape="shard", additive=True,
                                  rotation_speed=(-14, 14))
-            self.particles.burst(x, y, 10, speed=(6, 40),
+            self.particles.burst(x, y, 5, speed=(6, 40),
                                  life=(0.5, 1.1), size=(3, 6),
                                  colors=(P["ice_mid"], P["ice_dark"]),
                                  spread=math.tau, shape="mist",
                                  additive=True, layer="back")
         elif self.skill == "e":
             # jiwa terbangun dari lingkaran pengorbanan
-            self.particles.burst(x, y + 10, 16, speed=(18, 70),
+            self.particles.burst(x, y + 10, 8, speed=(18, 70),
                                  life=(0.5, 1.2), size=(2, 4),
                                  colors=(P["fx_bright"], P["fx_hot"],
                                          P["ice_light"]),
                                  spread=0.7, direction=-math.pi / 2,
                                  gravity=-70.0, drag=1.2,
                                  shape="spark", additive=True)
-            self.particles.burst(x, y + 14, 8, speed=(10, 50),
+            self.particles.burst(x, y + 14, 4, speed=(10, 50),
                                  life=(0.6, 1.3), size=(3, 6),
                                  colors=(P["ice_mid"], P["smoke"]),
                                  spread=math.tau, gravity=-25.0,
                                  shape="mist", additive=True, layer="back")
         elif self.skill == "r":
             # lepas orb: burst ledakan kecil + salju
-            self.particles.burst(self.x, self.y - 20, 18, speed=(80, 240),
+            self.particles.burst(self.x, self.y - 20, 9, speed=(80, 240),
                                  life=(0.2, 0.6), size=(2, 5),
                                  colors=(P["fx_white"], P["ice_edge"],
                                          P["ice_light"]),
@@ -1573,13 +1573,13 @@ class SkillFX:
             return
         x, y = self.aim[0], self.aim[1]
         if self.skill in ("q", "w"):
-            self.particles.burst(x, y + 8, 7, speed=(14, 60),
+            self.particles.burst(x, y + 8, 3, speed=(14, 60),
                                  life=(0.3, 0.8), size=(2, 5),
                                  colors=(P["fx_dark"], P["ice_mid"]),
                                  spread=math.tau, gravity=90.0,
                                  shape="dust", layer="back")
         elif self.skill == "r":
-            self.particles.burst(x, y, 6, speed=(12, 50),
+            self.particles.burst(x, y, 3, speed=(12, 50),
                                  life=(0.4, 0.9), size=(2, 4),
                                  colors=(P["ice_mid"], P["ice_dark"]),
                                  spread=math.tau, shape="snow",
@@ -1694,7 +1694,7 @@ class SkillFX:
             tt = t / 0.42
             cur_x = sx + (ex - sx) * tt
             cur_y = sy - 18 + (ey - sy + 18) * tt
-            for i in range(7):
+            for i in range(3):
                 bt = max(0.0, tt - i * 0.07)
                 px = sx + (ex - sx) * bt
                 py = (sy - 18) + (ey - sy + 18) * bt
@@ -1862,7 +1862,7 @@ class SkillFX:
         if t < 0.45:
             # CHARGE: shard spiral masuk ke orb tangan
             charge = t / 0.45
-            for i in range(7):
+            for i in range(3):
                 a = t * 10.0 - i * 0.8
                 rr = (1.0 - charge) * 30 + 8 + i * 2.2
                 px = hand[0] + math.cos(a) * rr
@@ -1934,7 +1934,7 @@ class VarkulFXDirector:
         self.swing_active = True
         gy = 36
         self.particles.burst(
-            x - facing * 7, y + gy, 6,
+            x - facing * 7, y + gy, 3,
             speed=(25, 90), life=(0.18, 0.4), size=(2, 4),
             colors=(P["dust"], P["ice_mid"], P["fx_dark"]),
             spread=1.2, direction=0.0 if facing > 0 else math.pi,
@@ -1948,13 +1948,13 @@ class VarkulFXDirector:
         _g, tip = staff_points(self.hero, x, y, False)
         ang = math.atan2(tip[1] - _g[1], tip[0] - _g[0])
         self.particles.burst(
-            tip[0], tip[1], 8,
+            tip[0], tip[1], 4,
             speed=(100, 240), life=(0.1, 0.26), size=(1, 3),
             colors=(P["ice_hot"], P["ice_edge"], P["ice_light"]),
             spread=1.6, direction=ang - math.pi / 2, drag=3.5,
             shape="streak", additive=True)
         self.particles.burst(
-            tip[0], tip[1], 5,
+            tip[0], tip[1], 2,
             speed=(60, 160), life=(0.14, 0.34), size=(2, 4),
             colors=(P["ice_light"], P["ice_mid"]),
             spread=1.5, direction=ang + math.pi, drag=3.0,
@@ -1964,7 +1964,7 @@ class VarkulFXDirector:
         self.impacts.append(ImpactFX(tip[0], tip[1], ang, 0.55, False,
                                      kind="ice", seed=int(self.frames)))
         if shake_allowed():
-            _feel_shake(3.2, 0.12)
+            _feel_shake(1.6, 0.12)
 
     # ------------------------------------------------------------------
     # SKILL
@@ -1987,8 +1987,8 @@ class VarkulFXDirector:
             _feel_shake(6.0 if not heavy else 13.0,
                         0.16 if not heavy else 0.34)
         if heavy:
-            _feel_hit_stop(0.055)
-        self.particles.burst(x, y + 14, 10,
+            _feel_hit_stop(0.033)
+        self.particles.burst(x, y + 14, 5,
                              speed=(60, 170), life=(0.2, 0.5), size=(2, 4),
                              colors=(P["fx_mid"], P["fx_dark"], P["dust"]),
                              spread=math.tau, gravity=140.0, drag=2.0,
@@ -2011,7 +2011,7 @@ class VarkulFXDirector:
                                                kind="ice"),
             seed=int(self.frames))
         if shake_allowed():
-            _feel_shake(7.0, 0.2)
+            _feel_shake(3.5, 0.2)
         return orb
 
     def on_chain_bounce(self, orb):
@@ -2021,20 +2021,20 @@ class VarkulFXDirector:
         self.impacts.append(ImpactFX(orb.x, orb.y, -math.pi / 2, 0.9,
                                      False, kind="ice",
                                      seed=int(self.frames) + 3))
-        self.particles.burst(orb.x, orb.y, 10, speed=(70, 200),
+        self.particles.burst(orb.x, orb.y, 5, speed=(70, 200),
                              life=(0.15, 0.4), size=(2, 4),
                              colors=(P["ice_hot"], P["ice_edge"],
                                      P["ice_light"]),
                              spread=math.tau, gravity=60.0,
                              shape="shard", additive=True,
                              rotation_speed=(-14, 14))
-        self.particles.burst(orb.x, orb.y, 5, speed=(10, 60),
+        self.particles.burst(orb.x, orb.y, 2, speed=(10, 60),
                              life=(0.3, 0.8), size=(2, 5),
                              colors=(P["ice_mid"], P["ice_dark"]),
                              spread=math.tau, shape="mist",
                              additive=True, layer="back")
         if shake_allowed():
-            _feel_shake(3.5, 0.14)
+            _feel_shake(1.8, 0.14)
 
     # ------------------------------------------------------------------
     # BASIC ATTACK PROYECTILE
@@ -2085,7 +2085,7 @@ class VarkulFXDirector:
             layer="back")
         if crit:
             self.particles.burst(
-                x, y, 9, speed=(180, 380), life=(0.22, 0.5), size=(2, 4),
+                x, y, 4, speed=(180, 380), life=(0.22, 0.5), size=(2, 4),
                 colors=(P["gold_hot"], P["gold"], spark),
                 spread=math.tau, gravity=120.0, drag=2.0,
                 shape="spark", additive=True)
@@ -2102,7 +2102,7 @@ class VarkulFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 8, 7, speed=(80, 210), life=(0.16, 0.34), size=(2, 4),
+            hx, hy - 8, 3, speed=(80, 210), life=(0.16, 0.34), size=(2, 4),
             colors=(P["ice_edge"], P["gold_hot"], P["ice_light"]),
             drag=3.0, shape="streak", additive=True)
         self.particles.burst(
@@ -2112,21 +2112,21 @@ class VarkulFXDirector:
 
     def _death_shatter(self, x, y):
         """Kematian: badan pecah jadi serpihan kristal + kabut."""
-        self.particles.burst(x, y - 10, 26, speed=(60, 260),
+        self.particles.burst(x, y - 10, 13, speed=(60, 260),
                              life=(0.4, 1.1), size=(2, 6),
                              colors=(P["ice_light"], P["ice_edge"],
                                      P["bone_light"]),
                              spread=math.tau, gravity=420.0, drag=0.8,
                              shape="shard", rotation_speed=(-20, 20),
                              additive=True)
-        self.particles.burst(x, y - 6, 10, speed=(15, 80),
+        self.particles.burst(x, y - 6, 5, speed=(15, 80),
                              life=(0.6, 1.4), size=(4, 8),
                              colors=(P["ice_mid"], P["smoke"]),
                              spread=math.tau, gravity=-45.0, drag=1.0,
                              shape="mist", additive=True, layer="back")
         if shake_allowed():
-            _feel_shake(10.0, 0.3)
-        _feel_hit_stop(0.05)
+            _feel_shake(5.0, 0.3)
+        _feel_hit_stop(0.030)
 
     # ------------------------------------------------------------------
     # UPDATE

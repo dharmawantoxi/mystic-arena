@@ -67,19 +67,19 @@ DEBUG_CHARACTER = False
 KROBELLS_FX_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 220
+MAX_PARTICLES = 132
 
 #: Batas keras proyektil visual per director.
-MAX_PROJECTILES = 6
+MAX_PROJECTILES = 4
 
 #: Batas skill FX simultan per director.
-MAX_SKILLS = 3
+MAX_SKILLS = 2
 
 #: Batas dampak aktif per director.
-MAX_IMPACTS = 8
+MAX_IMPACTS = 4
 
 #: Jumlah sample posisi bilah untuk ribbon trail.
-TRAIL_SAMPLES = 10
+TRAIL_SAMPLES = 6
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -407,7 +407,7 @@ def flash_star(radius, color):
     c0 = size // 2
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
     c = color[:3]
-    for i in range(8):
+    for i in range(4):
         a = i * math.pi / 4
         ln = n if i % 2 == 0 else int(n * 0.62)
         ex = c0 + math.cos(a) * ln
@@ -1065,7 +1065,7 @@ class SkillFX:
         if self.skill == 'q':
             # Ledakan cincin jiwa: blade-burst radial + guncangan
             if shake_allowed():
-                _feel_shake(6.0, 0.18)
+                _feel_shake(3.0, 0.18)
             _feel_hit_stop(HITSTOP_SKILL)
             n = int(14 * particle_budget())
             for i in range(max(1, n)):
@@ -1101,7 +1101,7 @@ class SkillFX:
                         b, kind="void") if self.director is not None
                     else _bolt_impact(b, kind="void"))
             if shake_allowed():
-                _feel_shake(4.5, 0.14)
+                _feel_shake(2.2, 0.14)
         elif self.skill == 'r':
             # Erupsi crypt: gelombang hantu + puing + debu
             self._ghosts = []
@@ -1125,7 +1125,7 @@ class SkillFX:
                                                       _P["shadow_deep"]),
                                  spread=math.tau, gravity=60.0, drag=1.4,
                                  shape="dust", layer="back")
-            _feel_shake(13.0, 0.40)
+            _feel_shake(6.5, 0.40)
             _feel_hit_stop(HITSTOP_R)
         elif self.skill == 'e':
             self.particles.burst(self.x + 16, self.y - 18,
@@ -1180,7 +1180,7 @@ class SkillFX:
         if t < rel:
             # charge: spiral jiwa menyatu ke sabit
             k = t / rel
-            for i in range(7):
+            for i in range(3):
                 a = self.age * 5.0 + i * math.tau / 7
                 r = 46 * (1 - k) + 12
                 px = self.x + math.cos(a) * r
@@ -1369,7 +1369,7 @@ def _bolt_impact(bolt, kind="void"):
             d.on_impact(x, y, bolt.rotation, 1.15, False, kind=kind)
             return
     if shake_allowed():
-        _feel_shake(4.0, 0.15)
+        _feel_shake(2.0, 0.15)
     _feel_hit_stop(HITSTOP_BOLT)
 
 
@@ -1537,7 +1537,7 @@ class KrobellusFXDirector:
             tip.x, tip.y, aim[0], aim[1], speed=BOLT_SPEED, damage=0,
             target=tgt, kind="soul", ground=ground_dy(h),
             on_impact=lambda b: self._on_bolt_hit(b))
-        self.particles.burst(tip.x, tip.y, 6, speed=(90, 220),
+        self.particles.burst(tip.x, tip.y, 3, speed=(90, 220),
                              life=(0.12, 0.3), size=(1.5, 3),
                              colors=(_P["soul_white"], _P["soul_bright"]),
                              spread=1.9, drag=3.2, shape="spark",
@@ -1571,7 +1571,7 @@ class KrobellusFXDirector:
                 self._air_done = True
                 ang = math.atan2(tip.y - y, tip.x - x)
                 self.particles.burst(
-                    tip.x, tip.y, 6, speed=(110, 240), life=(0.1, 0.24),
+                    tip.x, tip.y, 3, speed=(110, 240), life=(0.1, 0.24),
                     size=(1.5, 3),
                     colors=(_P["soul_bright"], _P["soul_hot"]),
                     spread=1.5, direction=ang, drag=3.4, shape="streak",
@@ -1616,7 +1616,7 @@ class KrobellusFXDirector:
             spread=math.tau, gravity=-60.0, drag=1.6, shape="soul")
         if crit:
             self.particles.burst(
-                x, y, 8, speed=(180, 380), life=(0.22, 0.5), size=(2, 4),
+                x, y, 4, speed=(180, 380), life=(0.22, 0.5), size=(2, 4),
                 colors=(spark, hot), spread=math.tau, gravity=120.0,
                 drag=2.0, shape="spark", additive=True)
         if shake_allowed():
@@ -1678,7 +1678,7 @@ class KrobellusFXDirector:
         if heavy:
             _feel_hit_stop(HITSTOP_R)
         self.particles.burst(
-            x, y + ground_dy(h) * 0.4, 10,
+            x, y + ground_dy(h) * 0.4, 5,
             speed=(60, 190), life=(0.2, 0.5), size=(2, 4),
             colors=(_P["soul_dark"], _P["robe_fade"], _P["shadow"]),
             spread=math.tau, gravity=150.0, drag=2.0, shape="dust",

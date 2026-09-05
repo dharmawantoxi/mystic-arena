@@ -68,17 +68,17 @@ SYLARA_FX_ENABLED = True
 HIT_STOP_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 165
+MAX_PARTICLES = 99
 
 #: Batas keras proyektil visual per director.
-MAX_PROJECTILES = 16
+MAX_PROJECTILES = 9
 
 #: Panjang histori trail senjata (jumlah sample posisi busur).
-TRAIL_SAMPLES = 12
+TRAIL_SAMPLES = 7
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -621,7 +621,7 @@ def chevron_surface(size, color, thick=2):
     return _cache_put(key, surf)
 
 
-def dashed_ring_surface(radius, thickness, color, segments=8, span=0.42,
+def dashed_ring_surface(radius, thickness, color, segments=4, span=0.42,
                         rot_step=0):
     """Cincin putus-putus berputar (halo rumput / telegraph) — cached."""
     radius = max(4, int(radius))
@@ -1421,7 +1421,7 @@ class ImpactFX:
         if t < 0.55:
             st = 1.0 - t / 0.55
             r0 = int((6 + 18 * pw) * (0.3 + 1.1 * t))
-            for k in range(8):
+            for i in range(4):
                 ang = self.angle + k * math.pi / 4 + 0.19
                 L = (6 + 14 * pw) * st * (1.0 if k % 2 else 0.55)
                 pygame.draw.line(
@@ -1617,7 +1617,7 @@ class SylaraProjectile:
             ang = self.rotation
             self.particles.burst(
                 self.position.x, self.position.y,
-                7, speed=(90, 240), life=(0.14, 0.34), size=(1, 3),
+                3, speed=(90, 240), life=(0.14, 0.34), size=(1, 3),
                 colors=(P["fx_pale"], P["fx_bright"], P["leaf_gold"]),
                 spread=2.2, direction=ang + math.pi, drag=3.4,
                 shape="streak")
@@ -2051,16 +2051,16 @@ class SkillFX:
                     target=tgt if i == 2 else None,
                     homing=2.0 if i == 2 else 0.0)
         self.particles.burst(
-            nx, ny, 16, speed=(220, 460), life=(0.2, 0.44), size=(2, 4),
+            nx, ny, 8, speed=(220, 460), life=(0.2, 0.44), size=(2, 4),
             colors=(P["fx_pale"], P["fx_bright"], P["leaf_gold"]),
             spread=math.pi / 5, direction=base, drag=2.2, shape="streak")
         self.particles.burst(
-            nx, ny - 4, 8, speed=(60, 170), life=(0.4, 0.8), size=(2, 4),
+            nx, ny - 4, 4, speed=(60, 170), life=(0.4, 0.8), size=(2, 4),
             colors=(P["leaf_gold"], P["leaf_ember"]),
             spread=math.pi / 3, direction=base + math.pi, drag=1.4,
             shape="leaf", flutter=0.7)
-        shake(9.0, 0.34)
-        hit_stop(0.062)
+        shake(4.5, 0.34)
+        hit_stop(0.037)
 
     # ------------------------------------------------------------------
     def draw_ground(self, surface):
@@ -2102,7 +2102,7 @@ class SkillFX:
             surface.blit(ch, (cx - ch.get_width() // 2,
                               gy - ch.get_height() // 2))
             ch.set_alpha(255)
-        gl = ground_glow_surface(int(34), P["fx_deep"], 0.28)
+        gl = ground_glow_surface(int(34), P["fx_deep"], 0.12)
         gl.set_alpha(a)
         surface.blit(gl, (int(self.x) - gl.get_width() // 2,
                           gy - gl.get_height() // 2))
@@ -2699,12 +2699,12 @@ class SylaraFXDirector:
             if len(self.impacts) > MAX_IMPACTS:
                 self.impacts.pop(0)
             self.particles.burst(
-                tip[0], tip[1], 9, speed=(140, 320), life=(0.14, 0.34),
+                tip[0], tip[1], 4, speed=(140, 320), life=(0.14, 0.34),
                 size=(1, 3),
                 colors=(P["fx_pale"], P["fx_bright"], P["leaf_gold"]),
                 spread=1.5, direction=ang, drag=3.4, shape="streak")
-            shake(4.0, 0.16)
-            hit_stop(0.034)
+            shake(2.0, 0.16)
+            hit_stop(0.020)
             return
 
         # Tembakan: proyektil visual + kilat busur
@@ -2723,7 +2723,7 @@ class SylaraFXDirector:
             target=tgt, homing=3.0,
             lifetime=min(1.4, dist / ARROW_SPEED + 0.35))
         self.particles.burst(
-            nock[0], nock[1], 8, speed=(150, 340), life=(0.12, 0.3),
+            nock[0], nock[1], 4, speed=(150, 340), life=(0.12, 0.3),
             size=(1, 3),
             colors=(P["fx_pale"], P["fx_bright"], P["string"]),
             spread=0.9, direction=ang, drag=3.8, shape="streak")
@@ -2732,7 +2732,7 @@ class SylaraFXDirector:
             size=(2, 4), colors=(P["leaf_gold"], P["leaf_ember"]),
             spread=2.0, direction=ang + math.pi, drag=1.4,
             shape="leaf", flutter=0.6)
-        shake(2.6, 0.12)
+        shake(1.3, 0.12)
 
     def on_cast(self, x, y, skill):
         """Skill dilepas: FX lifecycle + hentakan awal khas ranger."""
@@ -2761,13 +2761,13 @@ class SylaraFXDirector:
         if skill == "q":
             # Focus Fire: kipas angin dari nock + hentakan ringan
             self.particles.burst(
-                x + f * 20, y - 16, 10, speed=(140, 300),
+                x + f * 20, y - 16, 5, speed=(140, 300),
                 life=(0.16, 0.36), size=(1, 3),
                 colors=(P["fx_pale"], P["fx_bright"], P["leaf_gold"]),
                 spread=0.8, direction=0.0 if f > 0 else math.pi,
                 drag=3.0, shape="streak")
-            shake(4.0, 0.18)
-            hit_stop(0.032)
+            shake(2.0, 0.18)
+            hit_stop(0.020)
         elif skill == "w":
             # Windrun: ledakan daun melingkar + debu tanah
             self.particles.ring(
@@ -2776,33 +2776,33 @@ class SylaraFXDirector:
                 colors=(P["leaf_gold"], P["fx_light"], P["leaf_ember"]),
                 speed=(80, 190), squash=0.45, shape="leaf", swirl=2.2)
             self.particles.burst(
-                x, y + 30, 8, speed=(50, 140), life=(0.3, 0.6),
+                x, y + 30, 4, speed=(50, 140), life=(0.3, 0.6),
                 size=(2, 4), colors=(P["dust"], P["dust_light"]),
                 spread=2.6, direction=-math.pi / 2, gravity=230.0,
                 drag=1.6, shape="pixel", back=True)
-            shake(5.0, 0.22)
+            shake(2.5, 0.22)
         elif skill == "e":
             # Shackle: sulur meledak di target
             tgt = fx.target
             tx = float(getattr(tgt, "x", x + f * 90.0))
             ty = float(getattr(tgt, "y", y))
             self.particles.burst(
-                tx, ty - 6, 10, speed=(60, 170), life=(0.25, 0.55),
+                tx, ty - 6, 5, speed=(60, 170), life=(0.25, 0.55),
                 size=(2, 3),
                 colors=(P["vine_light"], P["vine_mid"], P["leaf_gold"]),
                 spread=math.tau, drag=2.0, shape="leaf", swirl=1.8,
                 flutter=0.5)
             self.impacts.append(ImpactFX(tx, ty - 8, 0.0, 1.1, False,
                                          "vine"))
-            shake(3.4, 0.18)
+            shake(1.7, 0.18)
         elif skill == "r":
             # Powershot: tarikan tekanan (release-nya di SkillFX)
             self.particles.burst(
-                x + f * 18, y - 18, 10, speed=(40, 120),
+                x + f * 18, y - 18, 5, speed=(40, 120),
                 life=(0.24, 0.5), size=(2, 4),
                 colors=(P["fx_light"], P["leaf_gold"]),
                 spread=math.tau, drag=0.9, shape="gust", swirl=2.0)
-            shake(3.0, 0.2)
+            shake(1.5, 0.2)
 
     def on_impact(self, x, y, angle=0.0, power=1.0, crit=False,
                   kind="arrow"):
@@ -2857,7 +2857,7 @@ class SylaraFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 14, 6, speed=(70, 190), life=(0.18, 0.36),
+            hx, hy - 14, 3, speed=(70, 190), life=(0.18, 0.36),
             size=(1, 3), colors=(P["fx_bright"], P["leaf_gold"]),
             drag=3.0, shape="streak")
 
@@ -2867,21 +2867,21 @@ class SylaraFXDirector:
         x = float(getattr(h, "x", 0.0))
         y = float(getattr(h, "y", 0.0))
         self.particles.burst(
-            x, y - 18, 14, speed=(50, 180), life=(0.5, 1.05), size=(2, 4),
+            x, y - 18, 7, speed=(50, 180), life=(0.5, 1.05), size=(2, 4),
             colors=(P["leaf_gold"], P["leaf_ember"], P["fx_light"]),
             spread=math.tau, drag=1.4, shape="leaf", swirl=1.6,
             flutter=0.8, fade_pow=1.4)
         self.particles.burst(
-            x, y - 34, 8, speed=(40, 130), life=(0.5, 0.95), size=(2, 4),
+            x, y - 34, 4, speed=(40, 130), life=(0.5, 0.95), size=(2, 4),
             colors=(P["fx_light"], P["fx_dark"]),
             spread=math.tau, drag=1.6, shape="gust")
         self.particles.burst(
-            x, y + 30, 8, speed=(30, 95), life=(0.5, 0.9), size=(3, 6),
+            x, y + 30, 4, speed=(30, 95), life=(0.5, 0.9), size=(3, 6),
             colors=(P["dust"], P["smoke"]),
             spread=2.6, direction=-math.pi / 2, gravity=-16.0,
             drag=1.5, shape="smoke", back=True)
         self.trail.reset()
-        shake(4.5, 0.32)
+        shake(2.2, 0.32)
 
     # ------------------------------------------------------------------
     # State machine (prioritas + transisi)

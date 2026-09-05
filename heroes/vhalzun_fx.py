@@ -55,11 +55,11 @@ DEBUG_CHARACTER = False
 VHALZUN_FX_ENABLED = True
 
 #: Cap keras — tidak ada satu pun sistem yang boleh tumbuh tanpa batas.
-MAX_PARTICLES = 220
-MAX_PROJECTILES = 10
-TRAIL_SAMPLES = 12
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_PARTICLES = 132
+MAX_PROJECTILES = 6
+TRAIL_SAMPLES = 7
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 MAX_AFTERIMAGES = 8
 
 FIXED_DT = 1.0 / 60.0
@@ -532,7 +532,7 @@ def shard_poly(surface, cx, cy, ang, length, width, color, alpha=255):
                         pts)
 
 
-def spark_star(surface, cx, cy, size, color, alpha, spikes=8, rot=0.3):
+def spark_star(surface, cx, cy, size, color, alpha, spikes=4, rot=0.3):
     """Bintang kilat benturan (polygon berduri — bukan lingkaran)."""
     cx, cy = int(cx), int(cy)
     pts = []
@@ -973,7 +973,7 @@ class ImpactFX:
         if t < 0.18:
             s = (10.0 + 26.0 * k) * (1.0 - t / 0.18)
             spark_star(surface, self.x, self.y, s, c["necro_white"],
-                       int(235 * (1.0 - t / 0.18)), spikes=6,
+                       int(235 * (1.0 - t / 0.18)), spikes=3,
                        rot=ang + 0.4)
 
     # ── benturan death pulse (soul) ────────────────────────────────
@@ -1003,7 +1003,7 @@ class ImpactFX:
         if t < 0.3:
             s = (14.0 + 30.0 * k) * inv
             spark_star(surface, self.x, self.y, s, c["necro_white"],
-                       int(240 * inv), spikes=8, rot=self.angle + 0.2)
+                       int(240 * inv), spikes=4, rot=self.angle + 0.2)
         rr = (14.0 + t * 110.0) * k
         a = int(190 * inv)
         _blit_faded(surface, ring_surface(int(rr), 3, c["necro_light"], a,
@@ -1331,29 +1331,29 @@ class ProjectileSystem:
         c = _P
         if kind == "scythe":
             self.particles.burst(
-                hp.x, hp.y, 16, speed=(90, 320), life=(0.2, 0.5),
+                hp.x, hp.y, 8, speed=(90, 320), life=(0.2, 0.5),
                 size=(1.5, 3.5),
                 colors=(c["necro_bright"], c["blade_light"], c["necro_hot"]),
                 shape="spark", drag=2.2, additive=True)
             self.particles.burst(
-                hp.x, hp.y, 7, speed=(50, 150), life=(0.4, 0.8),
+                hp.x, hp.y, 3, speed=(50, 150), life=(0.4, 0.8),
                 size=(1.5, 2.5), colors=(c["bone_mid"], c["bone_light"]),
                 shape="bone", gravity=340.0, drag=0.6, layer="front",
                 rotation_speed=(-9.0, 9.0))
             if _feel is not None:
-                _feel.hit_stop(0.06)
+                _feel.hit_stop(0.022)
                 if shake_allowed():
-                    _feel.shake(7.0, 0.26)
+                    _feel.shake(1.8, 0.26)
         else:
             self.particles.burst(
-                hp.x, hp.y, 12, speed=(60, 240), life=(0.2, 0.45),
+                hp.x, hp.y, 6, speed=(60, 240), life=(0.2, 0.45),
                 size=(1.5, 3.0),
                 colors=(c["necro_light"], c["necro_bright"], c["necro_white"]),
                 shape="soul", drag=2.4, additive=True)
             if _feel is not None:
-                _feel.hit_stop(0.04)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(4.5, 0.2)
+                    _feel.shake(1.1, 0.2)
 
     def update(self, dt):
         for p in self.projectiles:
@@ -1463,29 +1463,29 @@ class SkillFX:
         if ph in ("CAST", "CHARGE"):
             if self._once("q_in"):
                 particles.burst(
-                    self.x, self.y - 12, 10, speed=(150, 260),
+                    self.x, self.y - 12, 5, speed=(150, 260),
                     life=(0.25, 0.4), size=(1.5, 3.0),
                     colors=(c["necro_light"], c["necro_bright"]),
                     shape="soul", drag=0.0, additive=True)
         # RELEASE: ledakan keluar + shockwave + tengkorak
         if ph == "RELEASE" and self._once("q_burst"):
             particles.burst(
-                self.x, self.y - 12, 26, speed=(120, 420),
+                self.x, self.y - 12, 13, speed=(120, 420),
                 life=(0.25, 0.6), size=(1.5, 4.0),
                 colors=(c["necro_light"], c["necro_bright"], c["necro_hot"],
                         c["necro_white"]),
                 shape="shard", drag=2.6, additive=True,
                 rotation_speed=(-8, 8))
             particles.burst(
-                self.x, self.y - 12, 10, speed=(40, 120),
+                self.x, self.y - 12, 5, speed=(40, 120),
                 life=(0.5, 0.9), size=(2.0, 3.5),
                 colors=(c["bone_mid"], c["bone_light"]),
                 shape="bone", gravity=300.0, drag=0.8,
                 rotation_speed=(-9, 9))
             if _feel is not None:
-                _feel.hit_stop(0.05)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(6.0, 0.24)
+                    _feel.shake(1.5, 0.24)
         # AREA: bara naik dari tanah
         if ph in ("AREA", "IMPACT") and random.random() < dt * 30.0:
             rr = WORLD_RADIUS["q"] * random.uniform(0.2, 0.9)
@@ -1570,7 +1570,7 @@ class SkillFX:
             spark_star(surface, self.x, self.y - 12,
                        (16 + 30 * (1.0 - prog / 0.2)) * self.scale,
                        c["necro_white"], int(240 * (1.0 - prog / 0.2)),
-                       spikes=8)
+                       spikes=4)
 
     # ==================================================================
     # W — HEARTSTOPPER AURA: sigil heks, tengkorak orbit, aliran hisap
@@ -1594,12 +1594,12 @@ class SkillFX:
                     ay=-math.sin(ang) * 90.0)
         if ph == "RELEASE" and self._once("w_pulse"):
             particles.burst(
-                self.x, self.y - 12, 14, speed=(70, 200),
+                self.x, self.y - 12, 7, speed=(70, 200),
                 life=(0.2, 0.45), size=(1.5, 3.0),
                 colors=(c["necro_bright"], c["necro_hot"]),
                 shape="spark", drag=2.0, additive=True)
             if _feel is not None and shake_allowed():
-                _feel.shake(3.5, 0.18)
+                _feel.shake(0.9, 0.18)
 
     def _gnd_w(self, surface, t):
         """Tanah: sigil heksagonal berputar (bukan lingkaran)."""
@@ -1673,9 +1673,9 @@ class SkillFX:
                     shape="spark", drag=0.0, additive=True)
         if ph == "RELEASE" and self._once("e_throw"):
             if _feel is not None:
-                _feel.hit_stop(0.045)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(5.0, 0.22)
+                    _feel.shake(1.2, 0.22)
 
     def _gnd_e(self, surface, t):
         """Tanah: koridor sapuan (telegraph arah lempar)."""
@@ -1726,14 +1726,14 @@ class SkillFX:
         ph = skill_phase(t)
         if ph == "RELEASE" and self._once("r_burst"):
             particles.burst(
-                self.x, self.y - 14, 22, speed=(80, 300),
+                self.x, self.y - 14, 11, speed=(80, 300),
                 life=(0.3, 0.7), size=(1.5, 3.5),
                 colors=(c["necro_bright"], c["necro_white"], c["purple_mid"]),
                 shape="soul", drag=1.8, additive=True)
             if _feel is not None:
-                _feel.hit_stop(0.06)
+                _feel.hit_stop(0.022)
                 if shake_allowed():
-                    _feel.shake(8.0, 0.3)
+                    _feel.shake(2.0, 0.3)
         # wraith terus naik selama AREA
         if ph in ("RELEASE", "AREA", "IMPACT"):
             if random.random() < dt * 16.0:
@@ -1776,7 +1776,7 @@ class SkillFX:
                                              c["necro_bright"], a),
                         self.x, gy, a)
             # rune tick naik-turun di sepanjang lingkar
-            for i in range(8):
+            for i in range(4):
                 ang = self.elapsed * 1.2 + i * math.tau / 8
                 px = self.x + math.cos(ang) * r
                 py = gy + math.sin(ang) * (r // 2.6)
@@ -2084,7 +2084,7 @@ class VhalzunFXDirector:
             target=tgt, ground=ground_dy(u),
             on_impact=lambda b: self._on_orb_hit(b))
         self.particles.burst(
-            tip.x, tip.y, 7, speed=(90, 220), life=(0.12, 0.3),
+            tip.x, tip.y, 3, speed=(90, 220), life=(0.12, 0.3),
             size=(1.5, 3.0),
             colors=(_P["necro_bright"], _P["necro_white"]),
             spread=1.9, drag=3.0, shape="spark", additive=True)
@@ -2095,14 +2095,14 @@ class VhalzunFXDirector:
             ImpactFX(hp.x, hp.y, kind="soul", angle=bolt.rotation,
                      power=0.95))
         self.particles.burst(
-            hp.x, hp.y, 12, speed=(60, 240), life=(0.2, 0.45),
+            hp.x, hp.y, 6, speed=(60, 240), life=(0.2, 0.45),
             size=(1.5, 3.0),
             colors=(_P["necro_light"], _P["necro_bright"], _P["necro_white"]),
             shape="soul", drag=2.4, additive=True)
         if _feel is not None:
-            _feel.hit_stop(0.04)
+            _feel.hit_stop(0.020)
             if shake_allowed():
-                _feel.shake(4.5, 0.2)
+                _feel.shake(1.1, 0.2)
 
     def _spawn_scythe_wave(self):
         """Skill E: gelombang sabit besar melesat ke target."""
@@ -2119,12 +2119,12 @@ class VhalzunFXDirector:
             damage=0.0, target=tgt, ground=ground_dy(u),
             on_impact=lambda b: self._on_orb_hit(b))
         self.particles.burst(
-            tip.x, tip.y, 10, speed=(80, 240), life=(0.15, 0.35),
+            tip.x, tip.y, 5, speed=(80, 240), life=(0.15, 0.35),
             size=(1.5, 3.0),
             colors=(_P["blade_shine"], _P["necro_bright"], _P["necro_white"]),
             shape="spark", drag=2.6, additive=True)
         if _feel is not None and shake_allowed():
-            _feel.shake(4.0, 0.18)
+            _feel.shake(1.0, 0.18)
 
     def _on_swing_impact_frame(self, x, y, tp):
         """Frame bilah menyentuh: full impact kalau target di dalam busur."""
@@ -2141,7 +2141,7 @@ class VhalzunFXDirector:
                                1.2, False, kind="scythe")
         # percikan tanah walau meleset (feel sapuan)
         self.particles.burst(
-            tip.x, tip.y + 20, 5, speed=(30, 110), life=(0.15, 0.35),
+            tip.x, tip.y + 20, 2, speed=(30, 110), life=(0.15, 0.35),
             size=(1.0, 2.2), colors=(_P["necro_dark"], _P["necro_mid"]),
             shape="dust", drag=2.0, layer="back")
         self._release_pending()
@@ -2162,34 +2162,34 @@ class VhalzunFXDirector:
         c = _P
         if kind == "scythe":
             self.particles.burst(
-                x, y, 15, speed=(100, 340), life=(0.18, 0.45),
+                x, y, 7, speed=(100, 340), life=(0.18, 0.45),
                 size=(1.5, 3.5),
                 colors=(c["necro_bright"], c["blade_shine"], c["necro_hot"]),
                 shape="spark", drag=2.4, additive=True)
             self.particles.burst(
-                x, y, 6, speed=(50, 160), life=(0.35, 0.7),
+                x, y, 3, speed=(50, 160), life=(0.35, 0.7),
                 size=(1.5, 2.5), colors=(c["bone_mid"], c["bone_light"]),
                 shape="bone", gravity=320.0, drag=0.7,
                 rotation_speed=(-9, 9))
             if _feel is not None:
-                _feel.hit_stop(0.055)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(6.5, 0.24)
+                    _feel.shake(1.6, 0.24)
         else:
             self.particles.burst(
-                x, y, 11, speed=(60, 240), life=(0.18, 0.4),
+                x, y, 5, speed=(60, 240), life=(0.18, 0.4),
                 size=(1.5, 3.0),
                 colors=(c["necro_light"], c["necro_bright"]),
                 shape="soul", drag=2.6, additive=True)
             if _feel is not None:
-                _feel.hit_stop(0.038)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(4.0, 0.18)
+                    _feel.shake(1.0, 0.18)
 
     def on_hurt(self, x, y):
         """Kena pukul: serpihan jiwa + recoil kecil."""
         self.particles.burst(
-            x, y - 16, 9, speed=(50, 190), life=(0.15, 0.35),
+            x, y - 16, 4, speed=(50, 190), life=(0.15, 0.35),
             size=(1.5, 3.0),
             colors=(_P["necro_light"], _P["robe_light"]),
             shape="soul", drag=2.2, additive=True)
@@ -2198,20 +2198,20 @@ class VhalzunFXDirector:
         """Mati: jiwa meledak keluar + wraith naik (FX global via bus)."""
         c = _P
         self.particles.burst(
-            x, y - 16, 30, speed=(60, 320), life=(0.4, 0.9),
+            x, y - 16, 15, speed=(60, 320), life=(0.4, 0.9),
             size=(1.5, 4.0),
             colors=(c["necro_light"], c["necro_bright"], c["bone_light"],
                     c["necro_white"]),
             shape="soul", drag=1.4, additive=True)
         self.particles.burst(
-            x, y - 16, 8, speed=(40, 130), life=(0.6, 1.1),
+            x, y - 16, 4, speed=(40, 130), life=(0.6, 1.1),
             size=(2.0, 3.5), colors=(c["bone_mid"], c["bone_light"]),
             shape="bone", gravity=260.0, drag=0.5,
             rotation_speed=(-9, 9))
         if _feel is not None:
-            _feel.hit_stop(0.08)
+            _feel.hit_stop(0.024)
             if shake_allowed():
-                _feel.shake(10.0, 0.34)
+                _feel.shake(2.5, 0.34)
 
     def on_cast(self, x, y, skill):
         fx = SkillFX(skill, x, y,
@@ -2546,7 +2546,7 @@ def notify_skill_impact(unit, x, y, radius=None, skill="q"):
     if radius:
         c = _P
         d.particles.burst(
-            float(x), float(y), 14, speed=(80, 260), life=(0.2, 0.5),
+            float(x), float(y), 7, speed=(80, 260), life=(0.2, 0.5),
             size=(1.5, 3.5),
             colors=(c["necro_light"], c["necro_bright"], c["necro_hot"]),
             shape="shard", drag=2.2, additive=True,

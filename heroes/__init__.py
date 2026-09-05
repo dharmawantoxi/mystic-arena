@@ -1480,9 +1480,10 @@ def _get_hero_scale(hero_type):
 
 # Berapa fase animasi idle yang di-cache per kombinasi.
 # Makin besar = animasi makin halus tapi cache makin banyak.
-HERO_ANIM_PHASES = 12
+HERO_ANIM_PHASES = 8
 
 # ═══ CACHE TERKUANTISASI UNTUK KOMBAT ═══
+# DINAikkan untuk hilangkan patah-patah saat skill (dulu 12 phase, sekarang 8)
 # Sebelumnya hero yang sedang menyerang/cast skill TIDAK di-cache
 # sama sekali (render penuh tiap frame). Di wave 15+, hampir semua
 # hero selalu bertarung -> 9 hero x ~1.3 ms = ~12 ms/frame (60%+ dari
@@ -1492,8 +1493,8 @@ HERO_ANIM_PHASES = 12
 #   HERO_SKILL_QUANT = 2  -> fase skill baru tiap 2 frame
 # Hasil: render penuh hanya saat fase berganti (setengah frekuensi),
 # sisanya blit murah. Visual tetap terasa mulus karena fase 30fps.
-HERO_ATK_QUANT = 2
-HERO_SKILL_QUANT = 2
+HERO_ATK_QUANT = 4
+HERO_SKILL_QUANT = 6
 
 # Ukuran canvas cache (cukup untuk sprite terbesar + efek).
 _HERO_CANVAS = 240
@@ -2484,8 +2485,8 @@ BOSS_CACHE_ENABLED = _os.environ.get("MYSTIC_BOSS_CACHE", "1") != "0"
 #     mengembalikan renderer ringan ke jalur langsung bila cache tidak
 #     menguntungkan.
 BOSS_ANIM_PHASES = HERO_ANIM_PHASES
-BOSS_ATK_QUANT = HERO_ATK_QUANT
-BOSS_SKILL_QUANT = HERO_SKILL_QUANT
+BOSS_ATK_QUANT = 4
+BOSS_SKILL_QUANT = 6
 BOSS_FX_FRAME_QUANT = 1     # pose swing/skill per frame (60 fps)
 
 _boss_sprite_cache = _OD()

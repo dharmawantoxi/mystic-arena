@@ -1921,18 +1921,34 @@ class Game:
         if self.state != "playing":
             return
 
-        # ═══ HIT STOP (game feel) ═══
-        # Benturan berat membekukan simulasi 0.03-0.08 detik supaya
-        # pukulan terasa punya bobot. Frame gambar TETAP jalan, jadi
-        # partikel & flash benturan tetap terlihat bergerak pelan.
-        # Dibatasi keras di HitStop.trigger() (maks ~5 langkah).
-        # Busnya SHARED (heroes/combat_feel.py): Zephyr dan Gornak memicu
-        # freeze yang sama tanpa menumpuk - satu-satunya tempat hit-stop
-        # dibekukan adalah di sini, jadi karakter tambahan tidak perlu
-        # menambah gate sendiri.
+        # ═══ HIT STOP (game feel) - FIX PATAH-PATAH ═══
+        # Dulu: freeze seluruh Game.update -> Hero.update/active_skill_timer
+        # ikut berhenti -> animasi hero beku di tengah skill -> patah-patah.
+        # Sekarang: saat hitstop aktif, hero timer tetap jalan supaya animasi
+        # skill mulus 60fps, hanya movement/combat lain yang dibekukan.
+        # Hitstop sendiri sudah dipersempit di combat_feel.py (hanya R/crit).
         try:
             from heroes import combat_feel as _feel
             if _feel.should_freeze_frame():
+                # Tetap tick timer hero agar animasi skill tidak patah
+                try:
+                    for _h in getattr(self, 'heroes', []) + getattr(getattr(self, 'ai', None), 'heroes', []):
+                        if hasattr(_h, 'active_skill_timer') and _h.active_skill_timer > 0:
+                            _h.active_skill_timer -= 1
+                            if _h.active_skill_timer <= 0:
+                                _h.active_skill = None
+                        if hasattr(_h, 'skill_cooldowns'):
+                            for _k in list(_h.skill_cooldowns.keys()):
+                                if _h.skill_cooldowns[_k] > 0:
+                                    _h.skill_cooldowns[_k] -= 1
+                        if hasattr(_h, 'pulse'):
+                            _h.pulse += 0.1
+                        if hasattr(_h, '_tick_tower_debuffs'):
+                            _h._tick_tower_debuffs()
+                    # Efek tetap update supaya tidak beku
+                    self.effects.update()
+                except Exception:
+                    pass
                 return
         except Exception:
             pass

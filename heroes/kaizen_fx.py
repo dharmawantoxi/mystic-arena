@@ -61,17 +61,17 @@ DEBUG_CHARACTER = False
 KAIZEN_FX_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 160
+MAX_PARTICLES = 96
 
 #: Batas keras proyektil visual per director.
-MAX_PROJECTILES = 14
+MAX_PROJECTILES = 8
 
 #: Panjang histori trail senjata (jumlah sample posisi bilah).
-TRAIL_SAMPLES = 12
+TRAIL_SAMPLES = 7
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -1119,7 +1119,7 @@ class ImpactFX:
         if t < 0.55:
             st = 1.0 - t / 0.55
             r0 = int((6 + 18 * pw) * (0.3 + 1.1 * t))
-            for k in range(8):
+            for i in range(4):
                 ang = self.angle + k * math.pi / 4 + 0.19
                 L = (6 + 14 * pw) * st * (1.0 if k % 2 else 0.55)
                 pygame.draw.line(
@@ -1324,7 +1324,7 @@ class KaizenProjectile:
         # ── emisi partikel ekor (rate-limited) ───────────────────────
         if self.particles is not None:
             self._emit_acc += dt
-            if self._emit_acc >= 0.035:
+            if self._emit_acc >= 0.07:
                 self._emit_acc = 0.0
                 ang = self.rotation + math.pi + (random.random() - .5) * 0.9
                 spd = random.uniform(20, 70)
@@ -1554,7 +1554,7 @@ class SkillFX:
             return True
 
         self._emit += dt
-        if self._emit < 0.05:
+        if self._emit < 0.08:
             return True
         self._emit = 0.0
 
@@ -2126,12 +2126,12 @@ class KaizenFXDirector:
             x + facing * 30, y + 6, math.atan2(0.3, facing),
             0.5, crit=crit, kind="crit" if crit else "slash"))
         self.particles.burst(
-            x + facing * 30, y + 6, 5,
+            x + facing * 30, y + 6, 2,
             speed=(70, 180), life=(0.14, 0.3), size=(1, 3),
             colors=(P["fx_pale"], P["fx_bright"]),
             spread=1.3, direction=math.atan2(0.2, facing), drag=3.6,
             shape="streak")
-        shake(2.4, 0.13)
+        shake(1.2, 0.13)
 
     def on_cast(self, x, y, skill):
         """Skill dilepas: buat SkillFX + bahasa per-skill + shake."""
@@ -2151,7 +2151,7 @@ class KaizenFXDirector:
 
         if skill == "q":
             # Q Steel Wind: sabit ganda + streak + 2 proyektil visual
-            self.particles.burst(x + f * 18, y - 8, 10,
+            self.particles.burst(x + f * 18, y - 8, 5,
                                  speed=(140, 300), life=(0.16, 0.34),
                                  size=(1, 3),
                                  colors=(P["fx_pale"], P["fx_white"],
@@ -2169,12 +2169,12 @@ class KaizenFXDirector:
                     speed=SLASH_SPEED * 0.82 + i * 40.0, target=tgt,
                     radius=6.0 + (1 if i == 0 else 0), kind="slash",
                     on_impact=self._slash_impact)
-            shake(4.5, 0.2)
-            hit_stop(0.035)
+            shake(2.2, 0.2)
+            hit_stop(0.021)
         elif skill == "w":
             # W Wind Wall: spark pembentukan dinding + mote naik
             wx = x + f * 34
-            self.particles.burst(wx, y - 4, 10,
+            self.particles.burst(wx, y - 4, 5,
                                  speed=(30, 110), life=(0.3, 0.6),
                                  size=(1, 3),
                                  colors=(P["fx_bright"], P["fx_light"],
@@ -2182,10 +2182,10 @@ class KaizenFXDirector:
                                  spread=0.9,
                                  direction=-math.pi / 2, drag=1.4,
                                  shape="mote", swirl=2.2)
-            shake(2.2, 0.14)
+            shake(1.1, 0.14)
         elif skill == "e":
             # E Sweep: lompatan — debu lepas landas + cincin gale
-            self.particles.burst(x, y + 36, 10,
+            self.particles.burst(x, y + 36, 5,
                                  speed=(60, 160), life=(0.3, 0.6),
                                  size=(2, 4),
                                  colors=(P["dust"], P["dust_light"]),
@@ -2196,26 +2196,26 @@ class KaizenFXDirector:
                 self.impacts.pop(0)
             self.impacts.append(ImpactFX(x, y + 26, 0.0, 1.1,
                                          kind="gale"))
-            shake(5.0, 0.22)
-            hit_stop(0.04)
+            shake(2.5, 0.22)
+            hit_stop(0.024)
         elif skill == "r":
             # R Tornado: hisapan awal + daun meledak naik + badai
-            self.particles.burst(x, y + 24, 14,
+            self.particles.burst(x, y + 24, 7,
                                  speed=(90, 240), life=(0.4, 0.8),
                                  size=(2, 4),
                                  colors=(P["fx_bright"], P["fx_light"],
                                          P["leaf"]),
                                  spread=math.tau, drag=1.0,
                                  shape="streak", swirl=3.0)
-            self.particles.burst(x, y + 10, 8,
+            self.particles.burst(x, y + 10, 4,
                                  speed=(40, 130), life=(0.5, 0.9),
                                  size=(2, 4),
                                  colors=(P["leaf"], P["leaf_dark"]),
                                  spread=math.tau, gravity=-160.0,
                                  drag=0.8, shape="leaf", swirl=2.6,
                                  rotation_speed=(-10.0, 10.0))
-            shake(9.0, 0.4)
-            hit_stop(0.07)
+            shake(4.5, 0.4)
+            hit_stop(0.040)
 
     def _slash_impact(self, proj):
         """Callback projectile: paket impact di titik benturan."""
@@ -2225,7 +2225,7 @@ class KaizenFXDirector:
             proj.hit_pos.x, proj.hit_pos.y, proj.rotation,
             0.7, kind="slash"))
         self.particles.burst(
-            proj.hit_pos.x, proj.hit_pos.y, 7,
+            proj.hit_pos.x, proj.hit_pos.y, 3,
             speed=(100, 250), life=(0.16, 0.36), size=(1, 3),
             colors=(P["fx_white"], P["fx_pale"], P["fx_bright"]),
             spread=2.2, direction=proj.rotation, drag=3.4, shape="streak")
@@ -2233,19 +2233,19 @@ class KaizenFXDirector:
     def on_dash(self, x, y, facing):
         """Q2 Dash Strike: garis debu + afterimage streak + hit-stop."""
         self.particles.burst(
-            x - facing * 10, y + 30, 10,
+            x - facing * 10, y + 30, 5,
             speed=(120, 280), life=(0.2, 0.4), size=(2, 4),
             colors=(P["dust_light"], P["fx_light"], P["fx_pale"]),
             spread=0.6, direction=math.pi if facing > 0 else 0.0,
             drag=2.8, shape="streak", back=True)
         self.particles.burst(
-            x, y - 6, 6,
+            x, y - 6, 3,
             speed=(60, 150), life=(0.16, 0.3), size=(1, 3),
             colors=(P["fx_pale"], P["fx_white"]),
             spread=0.5, direction=math.pi if facing > 0 else 0.0,
             drag=2.2, shape="streak")
-        shake(5.5, 0.2)
-        hit_stop(0.045)
+        shake(2.8, 0.2)
+        hit_stop(0.027)
 
     def on_impact(self, x, y, angle=0.0, power=1.0, crit=False,
                   kind="slash"):
@@ -2282,7 +2282,7 @@ class KaizenFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 10, 6, speed=(70, 190), life=(0.18, 0.36),
+            hx, hy - 10, 3, speed=(70, 190), life=(0.18, 0.36),
             size=(1, 3), colors=(P["fx_bright"], P["fx_light"]),
             drag=3.0, shape="streak")
 
@@ -2292,23 +2292,23 @@ class KaizenFXDirector:
         x = float(getattr(h, "x", 0.0))
         y = float(getattr(h, "y", 0.0))
         self.particles.burst(
-            x, y - 14, 14, speed=(50, 170), life=(0.5, 1.0),
+            x, y - 14, 7, speed=(50, 170), life=(0.5, 1.0),
             size=(2, 4),
             colors=(P["fx_light"], P["fx_mid"], P["fx_dark"]),
             spread=math.tau, drag=1.4, shape="mote", swirl=1.8,
             fade_pow=1.4)
         self.particles.burst(
-            x, y - 8, 7, speed=(30, 100), life=(0.6, 1.2),
+            x, y - 8, 3, speed=(30, 100), life=(0.6, 1.2),
             size=(2, 4), colors=(P["leaf"], P["leaf_dark"]),
             spread=math.tau, gravity=130.0, drag=1.2, shape="leaf",
             rotation_speed=(-7.0, 7.0))
         self.particles.burst(
-            x, y + 28, 8, speed=(30, 90), life=(0.5, 0.9),
+            x, y + 28, 4, speed=(30, 90), life=(0.5, 0.9),
             size=(3, 6), colors=(P["dust"], P["smoke"]),
             spread=2.6, direction=-math.pi / 2, gravity=-16.0,
             drag=1.5, shape="smoke", back=True)
         self.trail.reset()
-        shake(4.0, 0.3)
+        shake(2.0, 0.3)
 
     # ------------------------------------------------------------------
     # State machine (prioritas + transisi)
@@ -2516,7 +2516,7 @@ class KaizenFXDirector:
         # ── emisi kontinu: dinding W & badai R ────────────────────────
         if wall_live:
             self._emit_wall += dt
-            if self._emit_wall >= 0.07:
+            if self._emit_wall >= 0.12:
                 self._emit_wall = 0.0
                 wx = hx + facing * 34
                 self.particles.spawn(
@@ -2529,7 +2529,7 @@ class KaizenFXDirector:
                     shape="mote", swirl=random.uniform(-2.5, 2.5))
         if ulti_live:
             self._emit_storm += dt
-            if self._emit_storm >= 0.06:
+            if self._emit_storm >= 0.10:
                 self._emit_storm = 0.0
                 ang = random.random() * math.tau
                 rr = random.uniform(30, 90)

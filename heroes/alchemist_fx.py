@@ -63,17 +63,17 @@ DEBUG_CHARACTER = False
 ALCHEMIST_FX_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 170
+MAX_PARTICLES = 102
 
 #: Batas keras proyektil hidup per director.
-MAX_PROJECTILES = 14
+MAX_PROJECTILES = 8
 
 #: Panjang histori trail senjata (jumlah sample posisi bilah).
-TRAIL_SAMPLES = 14
+TRAIL_SAMPLES = 9
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -1401,19 +1401,19 @@ class ProjectileSystem:
     def _landing_burst(self, pr):
         ps = self.particles
         if pr.kind == "bottle":
-            ps.burst(pr.x, pr.y, 14,
+            ps.burst(pr.x, pr.y, 7,
                      speed=(70, 300), life=(0.2, 0.5), size=(2, 4),
                      colors=(P["acid_white"], P["acid_hot"],
                              P["acid_bright"]),
                      spread=math.tau, gravity=380.0, drag=1.2,
                      shape="drop")
-            ps.burst(pr.x, pr.y, 8,
+            ps.burst(pr.x, pr.y, 4,
                      speed=(30, 110), life=(0.4, 0.8), size=(3, 7),
                      colors=(P["smoke"], P["ash"]),
                      spread=math.tau, gravity=-46.0, drag=1.6,
                      shape="smoke", layer="back")
         elif pr.kind == "droplet":
-            ps.burst(pr.x, pr.y, 5,
+            ps.burst(pr.x, pr.y, 2,
                      speed=(30, 130), life=(0.14, 0.3), size=(1, 2),
                      colors=(P["acid_bright"], P["acid_hot"]),
                      spread=math.tau, gravity=260.0, drag=1.4,
@@ -1558,7 +1558,7 @@ class SkillFX:
         elif self.phase == "release" and not self._released:
             self._released = True
             if kind == "q":
-                ps.burst(self.x, self.y, 12,
+                ps.burst(self.x, self.y, 6,
                          speed=(120, 330), life=(0.16, 0.36),
                          size=(2, 4),
                          colors=(P["acid_white"], hot,
@@ -1566,21 +1566,21 @@ class SkillFX:
                          spread=1.1, direction=ang, drag=3.2,
                          shape="drop", additive=True)
             elif kind == "w":
-                ps.burst(self.x, self.y, 14,
+                ps.burst(self.x, self.y, 7,
                          speed=(90, 260), life=(0.2, 0.42),
                          size=(2, 4),
                          colors=(P["acid_white"], hot,
                                  P["acid_bright"]),
                          spread=math.tau, drag=2.6, shape="drop")
             elif kind == "e":
-                ps.burst(self.x, self.y + self.ground * 0.4, 12,
+                ps.burst(self.x, self.y + self.ground * 0.4, 6,
                          speed=(80, 220), life=(0.24, 0.5),
                          size=(2, 5),
                          colors=(hot, P["acid_bright"], P["vapor"]),
                          spread=math.tau, gravity=-160.0, drag=1.8,
                          shape="smoke", layer="back")
             else:
-                ps.burst(self.x, self.y, 18,
+                ps.burst(self.x, self.y, 9,
                          speed=(140, 400), life=(0.2, 0.55),
                          size=(2, 4),
                          colors=(P["gold_shine"], P["gold_light"],
@@ -1806,7 +1806,7 @@ class AlchemistFXDirector:
         self.swing_active = True
         gy = y + self._ground_dy()
         self.particles.burst(
-            x + facing * 4, gy, 6,
+            x + facing * 4, gy, 3,
             speed=(26, 92), life=(0.16, 0.38), size=(2, 4),
             colors=(P["dust"], P["ash"], P["smoke"]),
             spread=1.2, direction=math.pi if facing > 0 else 0.0,
@@ -1820,7 +1820,7 @@ class AlchemistFXDirector:
         grip, tip = cleaver_points(self.hero, x, y)
         ang = math.atan2(tip.y - grip.y, tip.x - grip.x)
         self.particles.burst(
-            tip.x, tip.y, 9,
+            tip.x, tip.y, 4,
             speed=(130, 300), life=(0.1, 0.26), size=(1, 3),
             colors=(P["acid_hot"], P["acid_white"], P["acid_glow"]),
             spread=1.6, direction=ang, drag=3.6, shape="streak",
@@ -1861,12 +1861,12 @@ class AlchemistFXDirector:
             scale=_rscale(self.hero)))
         self.on_impact(hx, hy, -math.pi / 2, 1.35, False, kind="conc")
         self.particles.burst(
-            hx, hy + self._ground_dy() * 0.4, 16,
+            hx, hy + self._ground_dy() * 0.4, 8,
             speed=(80, 300), life=(0.3, 0.7), size=(2, 5),
             colors=(P["acid_bright"], P["acid_hot"], P["acid_dark"]),
             spread=math.tau, gravity=360.0, drag=1.2, shape="drop")
         self.particles.burst(
-            hx, hy + self._ground_dy() * 0.6, 10,
+            hx, hy + self._ground_dy() * 0.6, 5,
             speed=(30, 120), life=(0.5, 1.0), size=(3, 7),
             colors=(P["smoke"], P["ash"]),
             spread=math.tau, gravity=-40.0, drag=1.4, shape="smoke",
@@ -1878,7 +1878,7 @@ class AlchemistFXDirector:
         aim = target_screen(self.hero, x, y)
         ang = math.atan2(aim.y - gy, aim.x - gx)
         self.particles.burst(
-            gx, gy, 10,
+            gx, gy, 5,
             speed=(80, 240), life=(0.1, 0.24), size=(1, 3),
             colors=(P["acid_white"], P["acid_hot"], P["acid_bright"]),
             spread=1.3, direction=ang, drag=3.0, shape="streak",
@@ -1891,7 +1891,7 @@ class AlchemistFXDirector:
             facing=1 if getattr(self.hero, "direction", 1) >= 0 else -1,
             scale=_rscale(self.hero)))
         # droplet balistik mendarat di sepanjang kerucut
-        for i in range(7):
+        for i in range(3):
             a = ang + (random.random() - 0.5) * 0.5
             dist = random.uniform(60.0, 150.0) * _rscale(self.hero)
             tx = gx + math.cos(a) * dist
@@ -1913,7 +1913,7 @@ class AlchemistFXDirector:
             scale=_rscale(self.hero)))
         self.on_impact(x, y - 6, 0.0, 1.15, False, kind="rage")
         self.particles.burst(
-            x, y + self._ground_dy() * 0.4, 14,
+            x, y + self._ground_dy() * 0.4, 7,
             speed=(60, 200), life=(0.3, 0.7), size=(2, 5),
             colors=(P["acid_hot"], P["vapor"], P["acid_bright"]),
             spread=math.tau, gravity=-140.0, drag=1.6, shape="smoke")
@@ -1957,7 +1957,7 @@ class AlchemistFXDirector:
                     y + (float(getattr(self.hero, "w_target_y", 0.0))
                          - float(getattr(self.hero, "y", y))) / s)
             self.particles.burst(
-                hand.x, hand.y, 8,
+                hand.x, hand.y, 4,
                 speed=(60, 180), life=(0.12, 0.28), size=(1, 3),
                 colors=(P["acid_white"], P["acid_hot"]),
                 spread=math.tau, drag=2.8, shape="bubble",
@@ -1971,13 +1971,13 @@ class AlchemistFXDirector:
             _feel_shake(5.0 if skill != "r" else 12.0,
                         0.16 if skill != "r" else 0.38)
         self.particles.burst(
-            x, y + gy * 0.35, 12,
+            x, y + gy * 0.35, 6,
             speed=(60, 200), life=(0.2, 0.5), size=(2, 4),
             colors=(P["acid_mid"], P["dust"], P["ash"]),
             spread=math.tau, gravity=150.0, drag=2.0, shape="dust",
             layer="back")
         if skill == "r":
-            _feel_hit_stop(0.06)
+            _feel_hit_stop(0.036)
 
     def on_impact(self, x, y, angle=0.0, power=1.0, crit=False,
                   kind="slash"):
@@ -2011,13 +2011,13 @@ class AlchemistFXDirector:
             gravity=470.0, drag=1.1, shape="shard",
             rotation_speed=(-16.0, 16.0))
         self.particles.burst(
-            x, y + self._ground_dy() * 0.4, 6,
+            x, y + self._ground_dy() * 0.4, 3,
             speed=(40, 140), life=(0.3, 0.66), size=(2, 6),
             colors=(P["smoke"], P["ash"]), spread=math.tau,
             gravity=-30.0, drag=1.4, shape="smoke", layer="back")
         if crit:
             self.particles.burst(
-                x, y, 8, speed=(180, 380), life=(0.2, 0.5),
+                x, y, 4, speed=(180, 380), life=(0.2, 0.5),
                 size=(2, 4),
                 colors=(P["brass_hot"], P["brass"], hot),
                 spread=math.tau, gravity=120.0, drag=2.0,
@@ -2034,12 +2034,12 @@ class AlchemistFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 10, 7, speed=(80, 210), life=(0.14, 0.3),
+            hx, hy - 10, 3, speed=(80, 210), life=(0.14, 0.3),
             size=(2, 4),
             colors=(P["blue_hot"], P["acid_hot"], P["leather"]),
             drag=3.0, shape="spark", additive=True)
         self.particles.burst(
-            hx, hy + 6, 5, speed=(30, 100), life=(0.22, 0.5),
+            hx, hy + 6, 2, speed=(30, 100), life=(0.22, 0.5),
             size=(2, 6),
             colors=(P["ogre_dark"], P["smoke"], P["leather"]),
             gravity=200.0, drag=2.0, shape="dust", layer="back")
@@ -2056,22 +2056,22 @@ class AlchemistFXDirector:
                                      2.2, True, kind="conc", seed=7,
                                      ground=gy))
         self.particles.burst(
-            x, y, 24, speed=(90, 340), life=(0.5, 1.1), size=(2, 6),
+            x, y, 12, speed=(90, 340), life=(0.5, 1.1), size=(2, 6),
             colors=(P["acid_bright"], P["ogre_mid"], P["brass"],
                     P["leather"]),
             spread=math.tau, gravity=430.0, drag=1.1, shape="shard",
             rotation_speed=(-18.0, 18.0))
         self.particles.burst(
-            x, y, 14, speed=(140, 320), life=(0.3, 0.6), size=(2, 4),
+            x, y, 7, speed=(140, 320), life=(0.3, 0.6), size=(2, 4),
             colors=(P["acid_hot"], P["acid_glow"], P["acid_white"]),
             spread=math.tau, gravity=260.0, drag=1.4, shape="drop")
         self.particles.burst(
-            x, y + gy, 18, speed=(40, 150), life=(0.5, 1.0),
+            x, y + gy, 9, speed=(40, 150), life=(0.5, 1.0),
             size=(3, 7), colors=(P["dust"], P["smoke"], P["ash"]),
             spread=math.tau, gravity=-30.0, drag=1.5, shape="smoke",
             layer="back")
         if shake_allowed():
-            _feel_shake(9.0, 0.42)
+            _feel_shake(4.5, 0.42)
 
     # ------------------------------------------------------------------
     def _skill_dedupe_impact(self, kind, x, y, window):

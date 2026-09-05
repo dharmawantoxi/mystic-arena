@@ -60,17 +60,17 @@ DEBUG_CHARACTER = False
 XERATHIS_FX_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 190
+MAX_PARTICLES = 114
 
 #: Batas keras proyektil visual per director.
-MAX_PROJECTILES = 18
+MAX_PROJECTILES = 10
 
 #: Panjang histori trail senjata (jumlah sample posisi bilah).
-TRAIL_SAMPLES = 16
+TRAIL_SAMPLES = 10
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
-MAX_IMPACTS = 8
-MAX_SKILLS = 5
+MAX_IMPACTS = 4
+MAX_SKILLS = 3
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -901,7 +901,7 @@ class ImpactFX:
         arc_pts = []
         start = self.angle - 0.9
         end = self.angle + 0.9
-        for i in range(7):
+        for i in range(3):
             a = start + (end - start) * i / 6.0
             rr2 = (20 + 8 * p) * (0.4 + 0.8 * t)
             arc_pts.append((self.x + math.cos(a) * rr2,
@@ -1177,50 +1177,50 @@ class SkillFX:
             return
         x, y = self.aim[0], self.aim[1]
         if self.skill == "q":
-            self.particles.burst(x, y, 22, speed=(80, 260),
+            self.particles.burst(x, y, 11, speed=(80, 260),
                                  life=(0.18, 0.7), size=(2, 5),
                                  colors=(P["ice_hot"], P["ice_edge"],
                                          P["ice_light"]),
                                  spread=math.tau, gravity=90.0,
                                  shape="shard", additive=True,
                                  rotation_speed=(-18, 18))
-            self.particles.burst(x, y, 12, speed=(20, 110),
+            self.particles.burst(x, y, 6, speed=(20, 110),
                                  life=(0.3, 0.8), size=(1, 3),
                                  colors=(P["ice_light"], P["ice_mid"]),
                                  spread=math.tau, gravity=30.0,
                                  shape="spark", additive=True)
         elif self.skill == "w":
-            self.particles.burst(x, y, 16, speed=(30, 160),
+            self.particles.burst(x, y, 8, speed=(30, 160),
                                  life=(0.2, 0.6), size=(2, 4),
                                  colors=(P["ice_hot"], P["fx_bright"]),
                                  spread=math.tau, gravity=120.0,
                                  shape="shard", additive=True,
                                  rotation_speed=(-14, 14))
-            self.particles.burst(x, y, 8, speed=(10, 80),
+            self.particles.burst(x, y, 4, speed=(10, 80),
                                  life=(0.4, 0.9), size=(1, 3),
                                  colors=(P["ice_mid"], P["ice_dark"]),
                                  spread=math.tau, shape="crystal",
                                  rotation_speed=(-6, 6))
         elif self.skill == "e":
-            self.particles.burst(x, y, 18, speed=(40, 150),
+            self.particles.burst(x, y, 9, speed=(40, 150),
                                  life=(0.4, 1.0), size=(2, 4),
                                  colors=(P["fx_bright"], P["fx_hot"]),
                                  spread=math.tau, gravity=-50.0,
                                  shape="spark", additive=True)
-            self.particles.burst(x, y, 10, speed=(15, 80),
+            self.particles.burst(x, y, 5, speed=(15, 80),
                                  life=(0.5, 1.2), size=(2, 5),
                                  colors=(P["ice_light"], P["fx_light"]),
                                  spread=math.tau, gravity=-30.0,
                                  shape="dust", layer="back")
         elif self.skill == "r":
-            self.particles.burst(x, y, 30, speed=(100, 320),
+            self.particles.burst(x, y, 15, speed=(100, 320),
                                  life=(0.2, 0.9), size=(2, 6),
                                  colors=(P["fx_white"], P["ice_edge"],
                                          P["ice_light"]),
                                  spread=math.tau, gravity=-20.0,
                                  shape="shard", additive=True,
                                  rotation_speed=(-22, 22))
-            self.particles.burst(x, y, 16, speed=(30, 150),
+            self.particles.burst(x, y, 8, speed=(30, 150),
                                  life=(0.5, 1.2), size=(2, 5),
                                  colors=(P["fx_bright"], P["ice_mid"]),
                                  spread=math.tau, gravity=40.0,
@@ -1230,7 +1230,7 @@ class SkillFX:
         if self.particles is None:
             return
         x, y = self.aim[0], self.aim[1]
-        self.particles.burst(x, y, 8, speed=(20, 80), life=(0.2, 0.6),
+        self.particles.burst(x, y, 4, speed=(20, 80), life=(0.2, 0.6),
                              size=(2, 4),
                              colors=(P["fx_dark"], P["fx_light"]),
                              spread=math.tau, gravity=80.0,
@@ -1257,7 +1257,7 @@ class SkillFX:
                                         (*P["fx_bright"], 170))
             _blit_faded(surface, ring, x, y + 10, int(180 * fade),
                         additive=True)
-            for i in range(8):
+            for i in range(4):
                 a = t * 2.5 + i * math.pi / 4
                 px = x + math.cos(a) * r * 0.9
                 py = y + 12 + math.sin(a) * r * 0.38
@@ -1286,7 +1286,7 @@ class SkillFX:
             # rising crystal spikes + nova
             if t < 0.35:
                 tt = t / 0.35
-                for i in range(7):
+                for i in range(3):
                     a = i * math.tau / 7 + t * 2.0
                     px = x + math.cos(a) * 18 * (0.4 + 0.6 * tt)
                     py = y - 8 - int(tt * 26)
@@ -1342,7 +1342,7 @@ class SkillFX:
                                         int(ey + math.sin(a) * size * 1.1)), 1)
         elif self.skill == "e":
             # rising energy from body
-            for i in range(8):
+            for i in range(4):
                 ss = (t * 1.6 + i * 0.12) % 1.0
                 a = i * math.pi / 4 + t * 2.0
                 px = x + math.cos(a) * (16 + 12 * ss)
@@ -1359,7 +1359,7 @@ class SkillFX:
                         additive=True)
         elif self.skill == "r":
             # switching ice crystals + swirling storm
-            for i in range(8):
+            for i in range(4):
                 cp = (t * 2.2 + i * 0.35) % 1.0
                 grow = math.sin(cp * math.pi)
                 a = i * math.pi / 4 + i * 0.6 + t * 1.8
@@ -1430,7 +1430,7 @@ class XerathisFXDirector:
         self.swing_active = True
         gy = y + 36
         self.particles.burst(
-            x + facing * 7, gy, 6,
+            x + facing * 7, gy, 3,
             speed=(25, 90), life=(0.18, 0.4), size=(2, 4),
             colors=(P["dust"], P["ice_mid"], P["fx_dark"]),
             spread=1.2, direction=math.pi if facing > 0 else 0.0,
@@ -1444,13 +1444,13 @@ class XerathisFXDirector:
         _g, tip = staff_points(self.hero, x, y, False)
         ang = math.atan2(tip[1] - _g[1], tip[0] - _g[0])
         self.particles.burst(
-            tip[0], tip[1], 8,
+            tip[0], tip[1], 4,
             speed=(100, 240), life=(0.1, 0.26), size=(1, 3),
             colors=(P["ice_hot"], P["ice_edge"], P["ice_light"]),
             spread=1.6, direction=ang - math.pi / 2, drag=3.5,
             shape="streak", additive=True)
         self.particles.burst(
-            tip[0], tip[1], 5,
+            tip[0], tip[1], 2,
             speed=(60, 160), life=(0.14, 0.34), size=(2, 4),
             colors=(P["ice_light"], P["ice_mid"]),
             spread=1.5, direction=ang + math.pi, drag=3.0,
@@ -1477,8 +1477,8 @@ class XerathisFXDirector:
             _feel_shake(6.0 if not heavy else 14.0,
                         0.16 if not heavy else 0.42)
         if heavy:
-            _feel_hit_stop(0.06)
-        self.particles.burst(x, y + gy * 0.35, 10,
+            _feel_hit_stop(0.036)
+        self.particles.burst(x, y + gy * 0.35, 5,
                              speed=(60, 170), life=(0.2, 0.5), size=(2, 4),
                              colors=(P["fx_mid"], P["fx_dark"], P["dust"]),
                              spread=math.tau, gravity=140.0, drag=2.0,
@@ -1525,7 +1525,7 @@ class XerathisFXDirector:
             rotation_speed=(-16, 16))
         if crit:
             self.particles.burst(
-                x, y, 9, speed=(180, 380), life=(0.22, 0.5), size=(2, 4),
+                x, y, 4, speed=(180, 380), life=(0.22, 0.5), size=(2, 4),
                 colors=(P["gold_hot"], P["gold"], spark),
                 spread=math.tau, gravity=120.0, drag=2.0,
                 shape="spark", additive=True)
@@ -1542,7 +1542,7 @@ class XerathisFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 8, 7, speed=(80, 210), life=(0.16, 0.34), size=(2, 4),
+            hx, hy - 8, 3, speed=(80, 210), life=(0.16, 0.34), size=(2, 4),
             colors=(P["ice_edge"], P["gold_hot"], P["ice_light"]),
             drag=3.0, shape="streak", additive=True)
         self.particles.burst(
