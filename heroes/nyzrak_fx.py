@@ -4,10 +4,11 @@
 # NYZRAK — COMBAT / GAME-FEEL ENGINE  (screen-space live layer)
 #
 # Badan Nyzrak (rig pixel-art wyvern + rider) digambar lewat ``_NS_nyzrak``
-# (bosses/level3.py).  Semua yang butuh gerak 60 fps sejati — trail tombak,
-# partikel es/salju, proyektil shard, beam Arctic Burn, impact, guncangan
-# layar, hit-stop — hidup di modul ini dan digambar LANGSUNG ke layar pada
-# skala 1:1 tiap frame (tidak pernah masuk canvas sprite yang di-cache).
+# (bosses/nyzrak_v4.py, di-re-export dari bosses/level3.py). Semua yang
+# butuh gerak 60 fps sejati — trail tombak, partikel es/salju, proyektil
+# shard, beam Arctic Burn, impact, guncangan layar, hit-stop — hidup di
+# modul ini dan digambar LANGSUNG ke layar pada skala 1:1 tiap frame
+# (tidak pernah masuk canvas sprite yang di-cache).
 #
 # Pembagian kerja (tidak ada efek yang digambar dua kali):
 #

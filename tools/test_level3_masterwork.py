@@ -167,6 +167,10 @@ def test_reactive_shadow():
 def _namespaced(src, ns):
     """Potong source jadi satu namespace kelas (untuk nama fungsi yang sama
     muncul di lebih dari satu boss)."""
+    if ns == "nyzrak":
+        # Renderer v4 hidup di modul sendiri; re-export dari level3.
+        import bosses.nyzrak_v4 as nyz_mod
+        src = inspect.getsource(nyz_mod)
     m = re.search(r"^class _NS_%s:" % ns, src, re.M)
     assert m, f"class namespace {ns} tidak ditemukan"
     start = m.start()
