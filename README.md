@@ -488,6 +488,68 @@ Lembar review (regenerasi `python tools/_audit_gornak_v3.py`, 46 cek terukur):
 Uji regresi: `python -m pytest tools/test_gornak_v3_combat.py -q` (60 cek) dan
 `python tools/test_gornak_masterwork.py` (16 cek, tetap hijau).
 
+### Pass keenam Gornak — rewrite penuh v4 “SPELLBREAKER”
+
+Lima pass pertama menambal renderer lama tanpa pernah menyentuh
+*KONSEP*-nya, dan hasilnya tetap terbaca jelek: kulit sawo + jubah ungu
+saling melebur jadi lumpur, mohawk-jenggot-sirklet-harness-rantai-kantong
+berlapis dither menumpuk jadi noise pada ukuran arena, dan DUA pedang
+panjang yang menyilang mengubur badan jadi “palang”. v4 menghapus seluruh
+namespace `_NS_gornak` (~3.100 baris) dan menulisnya ulang dari nol:
+
+* **KULIT HIJAU ORK.** Kit-nya (Mana Break / Blink / Counterspell /
+  Mana Void) adalah kit anti-mage klasik — warnanya akhirnya bicara
+  sendiri: hijau zaitun + ungu anti-sihir + baja biru gelap. Komplemen,
+  bukan lumpur. Ramp sihir & bilah tidak berubah satu nilai pun karena
+  `heroes/gornak_fx` men-sync-nya (termasuk `armor_darkest` yang jadi
+  default fallback `outline`).
+* **TIGA TITIK FOKUS saja.** (1) Wajah: kepala plontos ber-topknot, alis
+  berat, MATA ungu menyala sebagai piksel terang tertinggi, taring;
+  (2) SATU cleaver “spellbreaker” — slab tebal ber-clip-point dengan
+  mata bilah menyala + fuller rune ungu — di tangan depan, plus belati
+  pendek reverse-grip sebagai penyeimbang, bukan dua pedang panjang
+  yang bersaing memperebutkan perhatian; (3) permata mana di pelat dada
+  yang membesar saat Counterspell / Mana Void.
+* **TIGA NILAI PER BIDANG.** Setiap bagian = 1 poligon dasar + 1 bidang
+  cahaya + maksimal 1 aksen 1-px; tidak ada inset berlapis, tidak ada
+  dither di arena LOD. Siluet kini berasal dari BENTUK TUBUH: pauldron
+  berpuncak, dada V-taper, kilt perang ungu, kaki A-stance.
+* **Bug alpha lama ditemukan & diperbaiki.** `_clamp()` membuang
+  komponen alpha sehingga seluruh cabang alpha-aware di
+  `_aacircle/_aaline/_poly/_ellipse/_rect` adalah kode mati — bayangan
+  & aura selama ini tergambar OPAQUE. Alpha kini dipertahankan:
+  cakram aura & bayangan benar-benar lembut (soft-pixel arena 1276,
+  sebelumnya 3).
+* **Ayunan = OVERHEAD CHOP.** Angkat ke atas-belakang kepala → tebas
+  turun menyapu depan → HOLD di impact → recovery. Kurva timing v3
+  dipertahankan (sudah benar), grip/tip tetap satu sumber untuk rig,
+  trail, dan proc Mana Break.
+* **Kontrak tidak berubah:** `draw_gornak`, `SKILL_DUR` 40/25/60/90,
+  `GROUND_DY`, `_tip_screen`, telegraph E=100/R=180 px dunia, seluruh
+  state `_gnk_*`, dan jangkar `heroes/gornak_fx` — AI boss, lane hero,
+  Hero Shop, dan lapisan FX hidup tidak menyentuh satu baris pun.
+
+Terukur: boss 1x 115x100 px (morgath 112x116, abaddon 150x150), hero
+final 77x84 px tanpa upscale (morgath 75x72, kaizen 79x76, abaddon
+82x82), render 1.3 ms/frame, dua kaki tetap terpisah, mata tetap jadi
+piksel terang tertinggi.
+
+Before/after (v3 diambil dari git HEAD, zoom sama):
+[docs/gornak_v4_before_after.png](docs/gornak_v4_before_after.png).
+Skill FX v4: [docs/gornak_v4_skills.png](docs/gornak_v4_skills.png).
+Di lane (paritas keluarga):
+[docs/gornak_v4_ingame.png](docs/gornak_v4_ingame.png).
+Sheet utama diregenerasi:
+[docs/gornak_masterwork_preview.png](docs/gornak_masterwork_preview.png),
+[docs/gornak_animation_strip.png](docs/gornak_animation_strip.png),
+[docs/gornak_portrait_preview.png](docs/gornak_portrait_preview.png)
+(`python tools/_shot_gornak_v4.py` untuk ketiga sheet pertama).
+
+Uji regresi: `python tools/test_gornak_masterwork.py` (17 kelompok cek,
+ditulis ulang untuk arsitektur v4) dan
+`python -m pytest tools/test_gornak_v3_combat.py -q` (60 cek lapisan
+hidup, tetap hijau — palet & jangkar tidak berubah).
+
 ### Pass Grimjaw — combat FX hidup (lapisan 1:1, 100% prosedural)
 
 Renderer masterwork v2 Grimjaw bagus, tapi tempurnya belum: smear ayunan dan
