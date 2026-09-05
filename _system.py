@@ -118,8 +118,20 @@ class SpatialGrid:
 _grid = SpatialGrid(cell_size=60)
 
 
-def update_spatial_grid(minions, heroes, towers):
-    """Panggil sekali per frame di game.update()"""
+def update_spatial_grid(minions, heroes):
+    """Panggil sekali per frame di game.update().
+
+    Hanya minion & hero (termasuk boss, yang diteruskan lewat `heroes`)
+    yang diindeks. Tower & base SENGAJA tidak ikut: jumlahnya sedikit
+    (maks. belasan) sehingga ``Minion._get_enemies`` / target hero
+    memeriksanya langsung lebih murah daripada memelihara bucket grid
+    untuk mereka.
+
+    Parameter `towers` yang dulu ada di signature TIDAK PERNAH dipakai
+    di dalam fungsi ini (diverifikasi: tidak muncul di co_names body),
+    jadi dihapus supaya tidak menyesatkan — pembaca kode bisa mengira
+    tower sudah terindeks dan melewatkannya di pemeriksaan langsung.
+    """
     _grid.clear()
     for m in minions:
         if m.alive:

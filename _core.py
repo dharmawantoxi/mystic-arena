@@ -1987,11 +1987,9 @@ class Game:
             spatial_heroes = self.get_all_heroes()
             if self.active_boss and self.active_boss.alive:
                 spatial_heroes = spatial_heroes + [self.active_boss]
-            update_spatial_grid(
-                self.minions,
-                spatial_heroes,
-                self.towers
-            )
+            # Tower tidak diindeks (lihat update_spatial_grid): jumlahnya
+            # sedikit dan sudah diperiksa langsung oleh _get_enemies.
+            update_spatial_grid(self.minions, spatial_heroes)
 
         # ═══ TAMBAH: Track mouse & hover ═══
         self.mouse_x, self.mouse_y = pygame.mouse.get_pos()

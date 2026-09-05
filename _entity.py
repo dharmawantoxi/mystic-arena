@@ -5634,15 +5634,41 @@ class Minion(TowerDebuffMixin):
             enemies = [u for u in all_units
                        if u.team != self.team and u.alive]
 
-        # Towers and bases are few enough for a direct check. Heroes, minions,
-        # and true boss are already indexed in SpatialGrid.
-        for entity in list(all_towers) + list(all_bases):
-            if entity in enemies or not getattr(entity, "alive", False):
+        # Tower & base jumlahnya sedikit, jadi dicek langsung. Hero,
+        # minion, dan true boss sudah terindeks di SpatialGrid.
+        #
+        # ⚠ Tower/base TIDAK PERNAH ada di dalam `enemies`:
+        # update_spatial_grid() hanya meng-insert minion & hero (lihat
+        # _system.py), jadi hasil query_enemies_in_range() tidak pernah
+        # berisi tower/base. Pemeriksaan keanggotaan
+        # ``entity in enemies`` yang dulu ada di sini karena itu SELALU
+        # False — tetapi biayanya O(n) per tower per minion (scan list
+        # + pembandingan objek), dan fungsi ini dipanggil sekali per
+        # minion per frame. Pada wave 120 minion itu puluhan ribu
+        # pembandingan sia-sia tiap frame. Dihapus.
+        #
+        # `list(all_towers) + list(all_bases)` juga dihilangkan: itu
+        # mengalokasikan tiga list per panggilan hanya untuk di-iterasi
+        # sekali. Jarak dibandingkan kuadrat (tanpa sqrt).
+        team = self.team
+        sx = self.x
+        sy = self.y
+        r2 = radius * radius
+        append = enemies.append
+        for entity in all_towers:
+            if not entity.alive or entity.team == team:
                 continue
-            if getattr(entity, "team", self.team) == self.team:
+            dx = entity.x - sx
+            dy = entity.y - sy
+            if dx * dx + dy * dy <= r2:
+                append(entity)
+        for entity in all_bases:
+            if not entity.alive or entity.team == team:
                 continue
-            if math.hypot(entity.x - self.x, entity.y - self.y) <= radius:
-                enemies.append(entity)
+            dx = entity.x - sx
+            dy = entity.y - sy
+            if dx * dx + dy * dy <= r2:
+                append(entity)
         return enemies
 
     def _find_target_smart(self, enemies):

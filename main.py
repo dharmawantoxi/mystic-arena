@@ -250,6 +250,26 @@ def main():
     menu.controller_mgr = None          # tidak ada controller di HP
     splash = SplashScreen(screen)
 
+    # ═══ IMPOR SEKALI, BUKAN TIAP FRAME ═══
+    # Tiga baris `from ... import ...` dulu ada DI DALAM loop dan
+    # dijalankan 30-60x per detik. Meski Python meng-cache modul di
+    # sys.modules, tiap baris tetap membayar: lookup sys.modules +
+    # getattr + binding nama lokal. Di HP (CPU 3-5x lebih lambat untuk
+    # kode Python) itu murni biaya tetap yang bisa dihapus tanpa
+    # mengubah perilaku sama sekali.
+    try:
+        from mobile.cloud_save import manager as _cloud_mgr
+    except Exception:
+        _cloud_mgr = None
+    try:
+        from mobile import blitwatch as _blitwatch
+    except Exception:
+        _blitwatch = None
+    try:
+        from game_settings import GameSettings as _GameSettings
+    except Exception:
+        _GameSettings = None
+
     game = None
     current_state = STATE_SPLASH
 
@@ -290,9 +310,26 @@ def main():
     #
     # MAX_CATCHUP membatasi kejaran supaya tidak terjadi "spiral
     # kematian" saat ada hentakan panjang (mis. GC atau loading).
+    #
+    # ⚠ NILAI DITURUNKAN 8 -> 4 (v31), dan ini penting untuk HP.
+    # Terukur (tools/bench_wave.py, 120 minion + 10 hero, PC):
+    #     update() = 1,40 ms rata-rata
+    #     8 langkah catch-up = 11,2 ms  -> di HP (CPU 3-5x lebih
+    #     lambat untuk kode Python) berarti 34-56 ms SEKALI frame.
+    # Anggaran frame @30 FPS cuma 33 ms. Jadi begitu satu frame
+    # tersendat, kejaran 8 langkah memakan SELURUH anggaran frame
+    # berikutnya -> frame itu pun tersendat -> kejaran lagi. Itu
+    # "spiral kematian": game terasa makin patah justru saat sudah
+    # berat, persis keluhan "patah-patah saat wave besar".
+    #
+    # 4 langkah masih mengejar penuh sampai 15 FPS (66 ms/frame) -
+    # jauh di bawah target 30 FPS preset LOW, jadi pada operasi
+    # normal tidak ada slow-motion sama sekali. Di bawah 15 FPS
+    # game sedikit melambat, tetapi itu jauh lebih enak dilihat
+    # daripada spiral yang membuat FPS terus jatuh.
     # ═══════════════════════════════════════════════════════
     FIXED_DT_MS = 1000.0 / 60.0
-    MAX_CATCHUP = 8          # 8 langkah = frame 133 ms masih terkejar
+    MAX_CATCHUP = 4          # 4 langkah = frame 66 ms (15 FPS) terkejar
     sim_acc = 0.0
     sim_steps = 0
     sim_capped = 0           # berapa kali mentok (waktu game tertinggal)
@@ -351,11 +388,11 @@ def main():
         # Proses hasil operasi cloud (upload/download/sign-in) dari
         # Java, berjalan di semua state supaya auto-upload tiap save
         # tidak pernah macet saat pemain sedang bermain.
-        try:
-            from mobile.cloud_save import manager as _cloud
-            _cloud.poll()
-        except Exception as exc:
-            print("[CLOUD] poll gagal:", exc)
+        if _cloud_mgr is not None:
+            try:
+                _cloud_mgr.poll()
+            except Exception as exc:
+                print("[CLOUD] poll gagal:", exc)
 
         # ─────────────────────────────── AKSI SENTUH
         cine = _cinematic_active(game)
@@ -470,8 +507,6 @@ def main():
                 menu.update()
                 sim_acc -= FIXED_DT_MS
                 _n += 1
-            if _n == 0:
-                pass
             _gambar_panel()
             frame_timer.start("draw")
             menu.draw()
@@ -582,12 +617,12 @@ def main():
         debug.draw(screen, clock, game, touch)
         perf.PHASES.end()
 
-        try:
-            from mobile import blitwatch
-            if blitwatch.enabled():
-                blitwatch.new_frame()
-        except Exception:
-            pass
+        if _blitwatch is not None:
+            try:
+                if _blitwatch.enabled():
+                    _blitwatch.new_frame()
+            except Exception:
+                pass
 
         frame_timer.start("flip")
         plat.present()
@@ -596,11 +631,12 @@ def main():
         # ─────────────────────────────── FPS
         # Preset kualitas menentukan batas atas FPS di HP (LOW = 30).
         # Setting pemain hanya boleh MENURUNKAN, bukan menaikkan.
-        try:
-            from game_settings import GameSettings
-            limit = GameSettings().fps_limit
-        except Exception:
-            limit = 0
+        limit = 0
+        if _GameSettings is not None:
+            try:
+                limit = _GameSettings().fps_limit
+            except Exception:
+                limit = 0
         if not limit or limit <= 0:
             limit = perf.Quality.target_fps
         elif plat.TOUCH_MODE:

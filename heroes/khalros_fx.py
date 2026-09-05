@@ -159,6 +159,11 @@ def _sync_palette():
 
 
 def _clamp(c):
+    if type(c) is tuple and len(c) == 3:
+        _r, _g, _b = c
+        if (type(_r) is int and type(_g) is int and type(_b) is int
+                and 0 <= _r <= 255 and 0 <= _g <= 255 and 0 <= _b <= 255):
+            return c
     return tuple(max(0, min(255, int(v))) for v in c)
 
 

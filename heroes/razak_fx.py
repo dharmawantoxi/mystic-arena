@@ -1005,13 +1005,29 @@ class SwingTrail:
                 continue
             buf = _scratch(w, h)
 
-            def polar(cx, cy, ang, rad):
-                return (int(cx + math.cos(ang) * rad) - minx,
-                        int(cy + math.sin(ang) * rad) - miny)
+            # ── OPTIMASI (v31) ──
+            # Dua pemborosan di loop ini terukur di profil (satu hero
+            # Razak saja: 0.55 ms/frame, 506 panggilan fungsi/frame):
+            #
+            #  1. `polar()` adalah closure yang DIBUAT ULANG tiap strip
+            #     dan dipanggil 5x per titik. Kelimanya memakai sudut
+            #     `aa` yang sama, jadi cos/sin dihitung 5 kali untuk
+            #     nilai identik. Sekarang cos/sin dihitung SEKALI per
+            #     titik lalu dipakai ulang.
+            #  2. `glint` diisi dengan `polar(g1.x, g1.y, aa, rr)` —
+            #     argumen PERSIS sama dengan `outer`. Jadi isinya selalu
+            #     identik dengan `outer` dan list-nya mubazir; digambar
+            #     langsung dari `outer`.
+            #
+            # Urutan operasi dijaga sama (`int(cx + cos*rad) - minx`,
+            # bukan `int(cx - minx + cos*rad)`) supaya pembulatan
+            #     truncation tidak bergeser satu piksel pun.
 
             for j in range(m - 1):
                 (g0, a0, r0, age0) = strip[j]
                 (g1, a1, r1, _age1) = strip[j + 1]
+                gx1 = g1.x
+                gy1 = g1.y
                 da = self._ang_delta(a1, a0)
                 if abs(da) < 0.02:
                     continue
@@ -1023,18 +1039,26 @@ class SwingTrail:
                     continue
                 thin = 0.05 + 0.075 * rank
                 steps = max(1, min(8, int(abs(da) / self.ARC_STEP) + 1))
-                outer, inner, cout, cin, glint = [], [], [], [], []
+                outer, inner, cout, cin = [], [], [], []
+                k_thin = 1.0 - thin
+                k_core = 1.0 - thin * 0.40
                 for q in range(steps + 1):
                     f = q / float(steps)
                     aa = a0 + da * f
                     rr = (r0 + (r1 - r0) * f) * 0.97
-                    ri = rr * (1.0 - thin)
-                    rc = rr * (1.0 - thin * 0.40)
-                    outer.append(polar(g1.x, g1.y, aa, rr))
-                    inner.append(polar(g1.x, g1.y, aa, ri))
-                    cout.append(polar(g1.x, g1.y, aa, rr * 0.985))
-                    cin.append(polar(g1.x, g1.y, aa, rc))
-                    glint.append(polar(g1.x, g1.y, aa, rr))
+                    ca = math.cos(aa)
+                    sa = math.sin(aa)
+                    ri = rr * k_thin
+                    rc = rr * k_core
+                    ro = rr * 0.985
+                    outer.append((int(gx1 + ca * rr) - minx,
+                                  int(gy1 + sa * rr) - miny))
+                    inner.append((int(gx1 + ca * ri) - minx,
+                                  int(gy1 + sa * ri) - miny))
+                    cout.append((int(gx1 + ca * ro) - minx,
+                                 int(gy1 + sa * ro) - miny))
+                    cin.append((int(gx1 + ca * rc) - minx,
+                                int(gy1 + sa * rc) - miny))
                 # wash lebar sengaja LEMAH supaya tidak menutupi badan
                 a_edge = int(base_alpha * k * 0.62)
                 if a_edge > 5:
@@ -1046,8 +1070,10 @@ class SwingTrail:
                                         cout + cin[::-1])
                 a_tip = int(235 * k)
                 if a_tip > 14:
+                    # `glint` dulu salinan persis `outer` (lihat catatan
+                    # di atas) -> dipakai langsung.
                     pygame.draw.lines(buf, (*tip_col, min(255, a_tip)),
-                                      False, glint, 2 if k > 0.78 else 1)
+                                      False, outer, 2 if k > 0.78 else 1)
             surface.blit(buf, (minx, miny))
 
     # ------------------------------------------------------------------

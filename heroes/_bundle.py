@@ -282,6 +282,11 @@ class _NS_grimjaw:
                         and type(a) is int:
                     return color
                 return (int(r), int(g), int(b), int(a))
+        if type(color) is tuple and len(color) == 3:
+            _r, _g, _b = color
+            if (type(_r) is int and type(_g) is int and type(_b) is int
+                    and 0 <= _r <= 255 and 0 <= _g <= 255 and 0 <= _b <= 255):
+                return color
         return tuple(max(0, min(255, int(c))) for c in color)
 
     def _mix(a, b, t):
@@ -2913,6 +2918,11 @@ class _NS_sylara:
 
 
     def _clamp(color):
+        if type(color) is tuple and len(color) == 3:
+            _r, _g, _b = color
+            if (type(_r) is int and type(_g) is int and type(_b) is int
+                    and 0 <= _r <= 255 and 0 <= _g <= 255 and 0 <= _b <= 255):
+                return color
         return tuple(max(0, min(255, int(c))) for c in color)
 
 
@@ -6310,6 +6320,11 @@ class _NS_kaizen:
                         and type(a) is int:
                     return color
                 return (int(r), int(g), int(b), int(a))
+        if type(color) is tuple and len(color) == 3:
+            _r, _g, _b = color
+            if (type(_r) is int and type(_g) is int and type(_b) is int
+                    and 0 <= _r <= 255 and 0 <= _g <= 255 and 0 <= _b <= 255):
+                return color
         return tuple(max(0, min(255, int(c))) for c in color)
 
     def _mix(a, b, t):
@@ -8773,6 +8788,11 @@ class _NS_thorne:
 
 
     def _clamp(color):
+        if type(color) is tuple and len(color) == 3:
+            _r, _g, _b = color
+            if (type(_r) is int and type(_g) is int and type(_b) is int
+                    and 0 <= _r <= 255 and 0 <= _g <= 255 and 0 <= _b <= 255):
+                return color
         return tuple(max(0, min(255, int(c))) for c in color)
 
 
@@ -11063,6 +11083,11 @@ class _NS_vex:
 
 
     def _clamp(color):
+        if type(color) is tuple and len(color) == 3:
+            _r, _g, _b = color
+            if (type(_r) is int and type(_g) is int and type(_b) is int
+                    and 0 <= _r <= 255 and 0 <= _g <= 255 and 0 <= _b <= 255):
+                return color
         return tuple(max(0, min(255, int(c))) for c in color)
 
 
@@ -14196,6 +14221,11 @@ class _NS_zephyr:
     # Low-level drawing primitives
     # ---------------------------------------------------------------
     def _clamp(color):
+        if type(color) is tuple and len(color) == 3:
+            _r, _g, _b = color
+            if (type(_r) is int and type(_g) is int and type(_b) is int
+                    and 0 <= _r <= 255 and 0 <= _g <= 255 and 0 <= _b <= 255):
+                return color
         return tuple(max(0, min(255, int(c))) for c in color)
 
     def _static(key, builder):

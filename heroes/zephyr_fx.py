@@ -118,6 +118,11 @@ def _clamp_color(color):
                     0 <= r <= 255 and 0 <= g <= 255 and
                     0 <= b <= 255 and 0 <= a <= 255):
                 return (r, g, b, a)
+    if type(color) is tuple and len(color) == 3:
+        _r, _g, _b = color
+        if (type(_r) is int and type(_g) is int and type(_b) is int
+                and 0 <= _r <= 255 and 0 <= _g <= 255 and 0 <= _b <= 255):
+            return color
     return tuple(max(0, min(255, int(c))) for c in color)
 
 
