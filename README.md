@@ -237,6 +237,10 @@ Uji regresi: `python tools/test_zephyr_masterwork.py`.
 
 ### Contoh maksimal kelima: Grimjaw Masterwork
 
+> Renderer Grimjaw kini **doodle sketch v4** (lihat
+> [docs/GRIMJAW_V4_DOODLE_RENDERER.md](docs/GRIMJAW_V4_DOODLE_RENDERER.md));
+> deskripsi pixel-masterwork di bawah berlaku untuk v2 (historis).
+
 Grimjaw (Juggernaut — *The Blade Fury*) kini menerima upgrade penuh yang
 sama: kumpulan body-part statis lama (torso/pauldron/head-mask/hair
 back-front/left-sword arm/fire sword) **dihapus** dan diganti satu
