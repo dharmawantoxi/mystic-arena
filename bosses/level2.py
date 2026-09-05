@@ -3271,6 +3271,9 @@ class _NS_khalros:
     _record_shadow = None
     _body_buf = None        # buffer badan untuk outline+lighting
     _ghost_buf = None       # afterimage dash (dirender 1x, di-blit 4x)
+    _POSE_CACHE = {}        # pose badan komposit (key -> (sub, edge, ox, oy))
+    _POSE_ORDER = []        # urutan LRU untuk eviction
+    _POSE_CACHE_MAX = 48
     _STATIC_SURFACES = {}   # surface statis: dibangun SEKALI, di-blit
     _EMBER_CACHE = {}       # api/bara per (size, fase-bucket, alpha)
     _PILLAR_CACHE = {}      # kolom angin/debu vertikal
@@ -5508,6 +5511,22 @@ class _NS_khalros:
     # ===================================================================
     # RIG - KOMPOSIT (outline & lighting SETELAH penskalaan)
     # ===================================================================
+    def _pose_bucket(action, phase, ap):
+        """Kuantum pose yang stabil untuk cache badan (idiom alchemist).
+
+        Serangan memakai bucket dari ``attack_progress`` SAJA (29 langkah)
+        karena pose serang ditentukan penuh oleh progress, bukan fase; fase
+        hanya menambah hembusan napas sub-piksel yang boleh diabaikan saat
+        casting. Idle/walk/cast/charge memakai siklus fase 24 langkah.
+        Kajian pengujian ``test_rig_has_real_animation_frames``: sampel
+        serang 0.0/0.15/0.30/0.48/0.54/0.66/0.85/1.0 -> 8 bucket beda, dan
+        walk fase 0.55 x 9 -> 9 bucket beda, jadi animasi tetap terlihat.
+        """
+        if action == "attack":
+            return int(max(0.0, min(1.0, ap)) * 29)
+        cyc = (phase / (math.pi * 2.0)) % 1.0
+        return int(cyc * 24.0) % 24
+
     def _compose_body(facing, phase, action, attack_progress=0, boss=None):
         """Rig native 1.5x -> SCALE -> selout -> lighting -> outline buffer.
 
@@ -5515,8 +5534,19 @@ class _NS_khalros:
         dari blit supaya pemanggil yang butuh hasil yang sama berkali-kali
         (afterimage bantingan) cukup merender SEKALI lalu men-blit 4x -
         rig penuh itu ~1,3 ms, jadi render-ulang = 2x budget kebuang.
+
+        Pose di-cache LRU per kuantum (idiom ``_NS_alchemist``): saat cast
+        pose serang/berdiri hampir statis, jadi komposit doodle yang berat
+        (subdivisi + jitter + hatch) tidak dirender ulang tiap frame.
         """
         NS = _NS_khalros
+        rage = bool(boss is not None and
+                    getattr(boss, "active_skill", None) in ("w", "r"))
+        key = (action, 1 if facing >= 0 else -1,
+               NS._pose_bucket(action, phase, attack_progress), rage)
+        hit = NS._POSE_CACHE.get(key)
+        if hit is not None:
+            return hit
         if NS._body_buf is None:
             NS._body_buf = pygame.Surface((NS.RIG_W, NS.RIG_H),
                                           pygame.SRCALPHA)
@@ -5540,9 +5570,16 @@ class _NS_khalros:
             sub = pygame.transform.smoothscale(sub, (tw, th))
         edge = sub.copy()
         edge.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
-        if _lighting is not None:
-            _lighting.apply_to_rig(sub, rim_add=(44, 26, 16), shade_mul=170)
-        return sub, edge, int(round(lx * k)), int(round(ly * k))
+        # DOODLE: pass cahaya dimatikan supaya warna tetap flat (garis
+        # spidol + blok warna, bukan gradasi rim/shade pixel-art). Outline
+        # gelap 1 px tetap dipasang agar siluet tertutup di layar.
+        result = (sub, edge, int(round(lx * k)), int(round(ly * k)))
+        NS._POSE_CACHE[key] = result
+        NS._POSE_ORDER.append(key)
+        if len(NS._POSE_ORDER) > NS._POSE_CACHE_MAX:
+            old = NS._POSE_ORDER.pop(0)
+            NS._POSE_CACHE.pop(old, None)
+        return result
 
     def _draw_khalros_body(surface, cx, cy, facing, phase, action,
                            attack_progress=0, boss=None):
@@ -5566,21 +5603,138 @@ class _NS_khalros:
         surface.blit(sub, (ox, oy))
         return sub, ox, oy
 
+
+    # ===================================================================
+    # DOODLE PRIMITIVES  (sketsa spidol: outline gores + flat + arsiran)
+    # ===================================================================
+    def _dl_jit(i, seed):
+        """Jitter deterministik -1..1 untuk goresan tangan (stabil)."""
+        x = math.sin(i * 127.1 + seed * 311.7) * 43758.5453
+        return (x - math.floor(x)) * 2.0 - 1.0
+
+    def _doodle_seg(surface, color, p0, p1, width, seed, wobble=1.1):
+        """Satu garis spidol ber-gores (beberapa sub-segmen offset)."""
+        dx, dy = p1[0] - p0[0], p1[1] - p0[1]
+        n = max(1, int(math.hypot(dx, dy) / 11.0))
+        for i in range(n):
+            t0, t1 = i / n, (i + 1) / n
+            j0 = _NS_khalros._dl_jit(seed * 3 + i, seed)
+            j1 = _NS_khalros._dl_jit(seed * 3 + i + 1, seed)
+            x0 = p0[0] + dx * t0 + j0 * wobble
+            y0 = p0[1] + dy * t0 + j0 * wobble
+            x1 = p0[0] + dx * t1 + j1 * wobble
+            y1 = p0[1] + dy * t1 + j1 * wobble
+            pygame.draw.line(surface, color, (int(x0), int(y0)),
+                             (int(x1), int(y1)), int(max(1, width)))
+
+    def _doodle_line(surface, color, pts, width=4, seed=0, wobble=1.1,
+                     close=False):
+        """Polyline spidol tebal; close=True menutup loop.
+
+        Subdivisi + jitter vertex dihitung sekaligus, lalu digambar dalam
+        SATU panggilan ``pygame.draw.lines`` (bukan ratusan draw.line) -
+        tampilan goresan tangan sama, biaya render jauh lebih murah.
+        """
+        seq = pts[:]
+        if close and len(seq) > 2:
+            seq = seq + [seq[0]]
+        if len(seq) < 2:
+            return
+        verts = []
+        width = int(max(1, width))
+        for i in range(len(seq) - 1):
+            x0, y0 = float(seq[i][0]), float(seq[i][1])
+            x1, y1 = float(seq[i + 1][0]), float(seq[i + 1][1])
+            n = max(1, int(math.hypot(x1 - x0, y1 - y0) / 11.0))
+            for k in range(n):
+                t = k / n
+                j = _NS_khalros._dl_jit(seed * 3 + (i * 7 + k) % 97, seed)
+                verts.append((int(x0 + (x1 - x0) * t + j * wobble),
+                              int(y0 + (y1 - y0) * t + j * wobble)))
+        # titik ujung terakhir (bukan subdivisi) biar polyline tertutup
+        verts.append((int(float(seq[-1][0])),
+                      int(float(seq[-1][1]))))
+        if len(verts) >= 2:
+            pygame.draw.lines(surface, color, False, verts, width)
+
+    def _doodle_poly(surface, fill, outline, pts, width=4, seed=0,
+                     wobble=1.2):
+        """Polygon doodle: isi flat + outline spidol tebal ber-gores."""
+        pts = [(float(p[0]), float(p[1])) for p in pts]
+        if fill is not None and len(pts) >= 3:
+            pygame.draw.polygon(surface, fill,
+                                [(int(p[0]), int(p[1])) for p in pts])
+        if outline is not None:
+            _NS_khalros._doodle_line(surface, outline, pts, width, seed,
+                                     wobble, close=True)
+
+    def _doodle_inside(poly, px, py):
+        """Ray-cast point-in-polygon."""
+        n = len(poly)
+        inside = False
+        j = n - 1
+        for i in range(n):
+            xi, yi = poly[i]
+            xj, yj = poly[j]
+            if ((yi > py) != (yj > py)) and \
+                    (px < (xj - xi) * (py - yi) / (yj - yi + 1e-9) + xi):
+                inside = not inside
+            j = i
+        return inside
+
+    def _doodle_hatch(surface, color, pts, spacing=6, angle=0.55,
+                      width=1, alpha=150):
+        """Arsiran coret-coretan diagonal di dalam poligon."""
+        if len(pts) < 3:
+            return
+        pts = [(float(p[0]), float(p[1])) for p in pts]
+        xs = [p[0] for p in pts]
+        ys = [p[1] for p in pts]
+        x0, x1 = min(xs), max(xs)
+        y0, y1 = min(ys), max(ys)
+        ca, sa = math.cos(angle), math.sin(angle)
+        col = (color[0], color[1], color[2], _NS_khalros._alpha(alpha)) \
+            if len(color) >= 4 else (*color, int(alpha))
+        edge = [(int(p[0]), int(p[1])) for p in pts]
+        step = max(4, int(spacing))
+        # garis miring: sampel dari kiri-bawah ke kanan-atas (jarang &
+        # murah; hanya titik di dalam poligon yang digambar)
+        length = int((x1 - x0) + (y1 - y0))
+        for k in range(0, length + 1, step):
+            ax, ay = x0 + k, y1
+            bx, by = ax + (y1 - y0), y0
+            for _i in range(0, 12):
+                t = _i / 12.0
+                px = ax + (bx - ax) * t
+                py = ay + (by - ay) * t
+                if _NS_khalros._doodle_inside(edge, px, py):
+                    pygame.draw.circle(surface, col, (int(px), int(py)),
+                                       max(1, width))
+
+    def _doodle_dot(surface, color, pts, r=3):
+        """Marker titik spidol."""
+        for (x, y) in pts:
+            pygame.draw.circle(surface, color, (int(x), int(y)),
+                               max(1, int(r)))
+
     def _draw_khalros_body_raw(surface, cx, cy, facing, phase, action,
                                attack_progress=0, boss=None):
-        """Rig masterwork v2 - Khalros Beastlord, 100% prosedural.
+        """Rig DOODLE - Khalros Beastlord, 100% prosedural.
 
-        Koordinat lokal ~1.5x v1: (0,0) = jangkar panggul, x maju
-        (mengikuti ``facing``), y ke bawah. Puncak tanduk -102, sol
-        sepatu +66, jangkar kepala -66.
+        Gaya sketsa spidol: outline hitam tebal ber-gores, warna blok flat,
+        arsiran coret-coretan, proporsi kartun. Koordinat lokal ~sama dgn
+        rig masterwork supaya ukuran DI LAYAR tetap sekelas keluarga level-2:
+        (0,0) = jangkar panggul, x maju (``facing``), y ke bawah; puncak
+        tanduk -100, sol sepatu +66, jangkar kepala -58.
         """
         NS = _NS_khalros
+        P = NS.PALETTE
         f = 1 if facing >= 0 else -1
         attack = action == "attack"
         ap = max(0.0, min(1.0, attack_progress)) if attack else 0.0
         pose = NS._attack_pose(ap) if attack else None
 
-        # ═══ gerak badan + inersia sekunder ═══
+        # ═══ gerak badan + inersia sekunder (sama dgn rig masterwork) ═══
         breath = math.sin(phase * 0.72)
         lean = sway = root_y = tremble = 0
         cape_lag = beard_lag = 0.0
@@ -5624,15 +5778,6 @@ class _NS_khalros:
                     in ("w", "r"))
 
         # ═══ lapisan belakang -> depan ═══
-        #
-        # CATATAN `late`: kapak digambar DUA kali. Pass pertama (late=False)
-        # menggambar kedua lengan + kapak seperti biasa, lalu kepala menimpanya
-        # - bagus untuk idle, tapi kapak yang diayun jadi "hilang" di balik
-        # helm/tanduk tepat pada frame IMPACT, padahal itu frame yang paling
-        # dibaca pemain. Karena itu setelah kepala ada pass kedua (late=True)
-        # yang hanya menggambar sisi DEPAN (bilah + tangan penggenggam); pass
-        # ini melukis ulang piksel yang sama, bukan menambah lapisan baru, jadi
-        # siluetnya identik dan biayanya cuma sebagian dari satu pass.
         NS._draw_beast_cape(surface, ox, oy, f, phase, action, cape_lag)
         NS._draw_hawk_companion(surface, ox - 27 * f, oy - 50, f, phase,
                                 action, rage)
@@ -5649,7 +5794,7 @@ class _NS_khalros:
             NS._draw_idle_arms(surface, ox, oy, f, phase, action=action)
         NS._draw_khalros_head(surface, ox, oy - 58, f, phase, action=action,
                               rage=rage, beard_lag=beard_lag, ap=ap)
-        # ── pass depan: senjata di atas kepala (lihat catatan `late`) ──
+        # ── pass depan: senjata di atas kepala ──
         if action in ("attack", "charge"):
             NS._draw_attack_arms(surface, ox, oy, f, phase,
                                  ap if attack else 0.0, action=action,
@@ -5658,117 +5803,99 @@ class _NS_khalros:
             NS._draw_idle_arms(surface, ox, oy, f, phase, action=action,
                                late=True)
 
-    # ===================================================================
-    # ANATOMI (ruang native rig 1.5x)
-    # ===================================================================
     def _draw_beast_cape(surface, cx, cy, facing, phase, action, lag=0.0):
-        """Jubah kulit serigala di punggung - siluet bergerigi + mata jahit."""
+        """Jubah serigala doodle: blok flat biru-abu + outline tebal + arsir.
+
+        Menjulur ke belakang (berlawanan arah hadap), ikut inersia `lag`.
+        """
         NS = _NS_khalros
         P = NS.PALETTE
         f = facing
         sway = lag + math.sin(phase * 0.65) * 2.0
-        top_y = cy - 46
-        hem = cy + 10 + abs(lag) * 0.6
-        spine = [(cx - 4 * f, top_y),
-                 (cx - 27 * f, top_y + 7),
-                 (cx - 30 * f + sway, cy - 12),
-                 (cx - 21 * f + sway * 1.4, hem - 4),
-                 (cx - 11 * f + sway * 1.6, hem),
-                 (cx + 2 * f + sway * 1.2, hem - 3),
-                 (cx + 12 * f, cy - 6),
-                 (cx + 16 * f, top_y + 6)]
-        edge = NS._tuft_points(spine[1:-2], depth=3.4, min_len=8.0, seed=5)
-        shape = [spine[0]] + edge + spine[-2:]
-        NS._poly(surface, (*P["shadow_deep"], 235),
-                 [(p[0] + f, p[1] + 1) for p in shape])
-        NS._poly(surface, P["wolf_darkest"], shape)
-        inner = [(cx + (p[0] - cx) * 0.9, cy + (p[1] - cy) * 0.9)
-                 for p in shape]
-        NS._poly(surface, P["wolf_dark"], inner)
-        # lembar bulu di sisi cahaya - terang hanya selebar 3-4 px supaya
-        # jubah tidak terbaca sebagai blob abu-abu di belakang badan
-        NS._poly(surface, P["wolf_mid"],
-                 [(cx - 17 * f, top_y + 10), (cx - 20 * f, cy - 10),
-                  (cx - 13 * f, cy - 2), (cx - 8 * f, top_y + 12)])
-        NS._poly(surface, P["wolf_light"],
-                 [(cx - 14 * f, top_y + 12), (cx - 16 * f, cy - 12),
-                  (cx - 12 * f, cy - 8), (cx - 10 * f, top_y + 13)])
-        # dither di transisi bulu
-        dith = [(cx - (8 + k * 3) * f, top_y + 14 + k * 5) for k in range(5)]
-        NS._dither_dots(surface, P["wolf_high"], dith, alpha=52)
-        # kepala serigala sebagai pengikat (di bahu) + mata jahit
-        hx = cx + 6 * f
-        NS._poly(surface, P["wolf_darkest"],
-                 [(hx, top_y - 4), (hx + 9 * f, top_y - 1),
-                  (hx + 6 * f, top_y + 7), (hx - 2 * f, top_y + 5)])
-        NS._poly(surface, P["wolf_mid"],
-                 [(hx + 1 * f, top_y - 2), (hx + 7 * f, top_y),
-                  (hx + 5 * f, top_y + 5), (hx, top_y + 4)])
-        NS._aacircle(surface, P["fire_mid"], (hx + 4 * f, top_y + 1), 1)
+        top = cy - 46
+        hem = cy + 12 + abs(lag) * 0.6
+        pts = [(cx - 4 * f, top), (cx - 28 * f, top + 8),
+               (cx - 31 * f + sway, cy - 12),
+               (cx - 22 * f + sway * 1.4, hem - 4),
+               (cx - 11 * f + sway * 1.6, hem),
+               (cx + 3 * f + sway * 1.2, hem - 3),
+               (cx + 13 * f, cy - 6), (cx + 16 * f, top + 8)]
+        # isi flat + outline spidol tebal
+        NS._doodle_poly(surface, P["wolf_mid"], P["shadow"], pts,
+                        width=5, seed=19, wobble=1.5)
+        # bayangan sisi dalam
+        NS._doodle_poly(surface, P["wolf_dark"], None,
+                        [(cx + (p[0] - cx) * 0.78, cy + (p[1] - cy) * 0.82)
+                         for p in pts], width=0)
+        # arsir bulu
+        NS._doodle_hatch(surface, P["wolf_high"],
+                         [(cx - 26 * f, top + 10), (cx - 28 * f, cy - 8),
+                          (cx - 14 * f, cy - 4), (cx - 10 * f, top + 12)],
+                         spacing=6, alpha=120)
+        # kepala serigala sebagai penutup bahu + telinga
+        hx, hy = cx + 7 * f, top - 3
+        head = [(hx, hy - 10), (hx + 12 * f, hy - 6),
+                (hx + 10 * f, hy + 6), (hx - 3 * f, hy + 5)]
+        NS._doodle_poly(surface, P["wolf_dark"], P["shadow"], head,
+                        width=4, seed=20)
+        NS._doodle_dot(surface, P["fire_glow"], [(hx + 6 * f, hy - 2)], 2)
+        # jahitan melintang (garis putus doodle)
         for i in range(4):
-            yy = top_y + 8 + i * 9
-            NS._aaline(surface, P["bone_mid"],
-                       (cx - (24 - i) * f, yy), (cx - (18 - i) * f, yy + 2), 1)
+            yy = top + 9 + i * 10
+            NS._doodle_line(surface, P["bone_mid"],
+                            [(cx - (23 - i) * f, yy),
+                             (cx - (16 - i) * f, yy + 2)], 2, seed=21 + i)
+
 
     def _draw_hawk_companion(surface, cx, cy, facing, phase, action, rage):
-        """Elang pendamping di bahu belakang - hidup: kedip, regang, goyang."""
+        """Elang pendamping doodle di bahu belakang - kepak & kedip."""
         NS = _NS_khalros
         P = NS.PALETTE
         f = facing
-        u = 0.52
         blink = int(phase * 1.7) % 11 == 0
-        ruffle = math.sin(phase * 1.9) * (1.6 if action == "idle" else 2.6)
-        flap = max(0.0, math.sin(phase * (2.6 if rage else 1.2))) * (
-            5 if rage else 2)
-        # cakar mencengkeram bahu
-        NS._aaline(surface, P["gold_mid"], (cx + 3 * f, cy + 8),
-                   (cx + 6 * f, cy + 12), 2)
-        NS._aaline(surface, P["gold_mid"], (cx - 1 * f, cy + 8),
-                   (cx + 2 * f, cy + 12), 2)
-        # sayap terlipat (bergerigi)
-        wing = [(cx - 6 * f, cy - 3), (cx - 14 * f, cy - 1 - ruffle * .5),
-                (cx - 16 * f, cy + 6), (cx - 5 * f, cy + 6)]
-        NS._poly(surface, P["hawk_dark"],
-                 [wing[0]] + NS._tuft_points(wing[1:], depth=1.8,
-                                             min_len=4.0, seed=2) + [wing[3]])
-        NS._poly(surface, P["hawk_mid"],
-                 [(cx - 7 * f, cy - 1), (cx - 12 * f, cy),
-                  (cx - 11 * f, cy + 4), (cx - 6 * f, cy + 4)])
-        if flap > 0.4:      # regang sayap saat marah / skill
-            NS._poly(surface, P["hawk_light"],
-                     [(cx - 8 * f, cy - 2), (cx - 18 * f, cy - 6 - flap),
-                      (cx - 14 * f, cy + 1)])
+        ruffle = math.sin(phase * 1.9) * (1.6 if action == "idle" else 2.4)
+        flap = math.sin(phase * (2.6 if rage else 1.2)) * (5 if rage else 2)
+        # sayap terlipat doodle
+        wing = [(cx - 5 * f, cy - 2), (cx - 15 * f, cy - 1 - ruffle * .5),
+                (cx - 18 * f, cy + 7), (cx - 4 * f, cy + 7)]
+        NS._doodle_poly(surface, P["hawk_mid"], P["shadow"], wing,
+                        width=3, seed=24)
+        if flap > 0.4:   # regang saat rage
+            NS._doodle_poly(surface, P["hawk_light"], None,
+                            [(cx - 8 * f, cy - 2),
+                             (cx - 20 * f, cy - 7 - flap),
+                             (cx - 15 * f, cy + 1)], width=0)
         # badan + dada
-        NS._ellipse(surface, P["hawk_darkest"],
-                    (cx - 5 * u * 2 - 1, cy - 6, 5 * u * 2 + 4, 13))
-        NS._aacircle(surface, P["hawk_mid"], (cx, cy), 5)
-        NS._aacircle(surface, P["hawk_light"], (cx - 1 * f, cy - 1), 3)
+        body = [(cx - 6 * f, cy - 9), (cx + 6 * f, cy - 7),
+                (cx + 5 * f, cy + 4), (cx - 5 * f, cy + 4)]
+        NS._doodle_poly(surface, P["hawk_dark"], P["shadow"], body,
+                        width=3, seed=25)
         # kepala + paruh + mata
-        hx, hy = cx + 4 * f, cy - 6
-        NS._aacircle(surface, P["hawk_dark"], (hx, hy), 4)
-        NS._aacircle(surface, P["hawk_high"], (hx - f, hy - 1), 2)
-        NS._poly(surface, P["hawk_beak"],
-                 [(hx + 3 * f, hy), (hx + 7 * f, hy + 2), (hx + 3 * f, hy + 3)])
-        NS._aacircle(surface, (*P["fire_hot"], 235), (hx + f, hy - 1), 1)
+        hx, hy = cx + 4 * f, cy - 7
+        NS._doodle_poly(surface, P["hawk_light"], P["shadow"],
+                        [(hx - 4 * f, hy - 4), (hx + 4 * f, hy - 4),
+                         (hx + 4 * f, hy + 3), (hx - 4 * f, hy + 3)],
+                        width=3, seed=26)
+        NS._doodle_poly(surface, P["hawk_beak"], P["shadow"],
+                        [(hx + 3 * f, hy), (hx + 8 * f, hy + 2),
+                         (hx + 3 * f, hy + 3)], width=2, seed=27)
         if blink:
-            NS._aaline(surface, P["hawk_darkest"], (hx - f, hy - 1),
-                       (hx + 2 * f, hy - 1), 1)
-        # tungging bulu di kepala (siluet bergerigi)
-        NS._poly(surface, P["hawk_darkest"],
-                 NS._tuft_points([(hx - 3 * f, hy - 4), (hx - 7 * f, hy - 7)],
-                                 depth=1.8, min_len=3.0, seed=9))
+            NS._doodle_line(surface, P["shadow"],
+                            [(hx - 2 * f, hy - 1), (hx + 2 * f, hy - 1)],
+                            2, seed=28)
+        else:
+            NS._doodle_dot(surface, P["fire_glow"], [(hx + f, hy - 2)], 2)
+        # tungging bulu di kepala
+        NS._doodle_line(surface, P["hawk_darkest"],
+                        [(hx - 3 * f, hy - 4), (hx - 8 * f, hy - 9)], 3,
+                        seed=29)
+
 
     def _draw_legs(surface, cx, cy, facing, phase, action, stride):
-        """Dua kaki berat: paha kuadrisep, pelindung lutut, betis bulu, boot.
+        """Kaki barbar doodle: chunky, boot besar, outline tebal flat.
 
-        Proporsi adalah bagian yang paling mudah salah di sini: badan Khalros
-        lebar (sabuk 36 px rig + pauldron), jadi kalau pahanya 16 px dia
-        terbaca sebagai tong dengan dua tusuk gigi. Kaki diambil ~23 px lebar
-        di paha dan boot-nya melebar ke bawah supaya ada tempat berpijak.
-
-        Jangkar vertikal TIDAK diubah (paha cy+8, lutut cy+30, pergelangan
-        cy+48, sol cy+60) - `GROUND_DY`, solver langkah, dan penyempitan
-        bayangan saat melayang bergantung padanya.
+        Jangkar vertikal dijaga (paha cy+8, lutut cy+30, pergelangan
+        cy+48, sol cy+60..66) supaya GROUND_DY & bayangan tetap menapak.
         """
         NS = _NS_khalros
         P = NS.PALETTE
@@ -5776,10 +5903,9 @@ class _NS_khalros:
         sw_a, sw_b, lift_a, lift_b, _contact = stride
         for i, (swing, lift, back) in enumerate(((sw_a, lift_a, 1),
                                                  (sw_b, lift_b, 0))):
-            # kaki belakang: lebih gelap & sedikit lebih ramping (depth cue)
-            shade = P["skin_darkest"] if back else P["skin_dark"]
-            mid = P["skin_dark"] if back else P["skin_mid"]
-            k = 0.9 if back else 1.0
+            fill = P["skin_dark"] if back else P["skin_mid"]
+            boot = P["leather_dark"] if back else P["leather_mid"]
+            k = 0.92 if back else 1.0
             hipx = cx + (14 - i * 28) * f * 0.46
             hipy = cy + 8
             kx = hipx + swing * 12 * f
@@ -5787,517 +5913,330 @@ class _NS_khalros:
             ax = hipx + swing * 17 * f
             ay = cy + 48 - lift
             my = (ky + ay) / 2.0
-            th, kn, ca, an = 11.5 * k, 8.5 * k, 9.5 * k, 6.5 * k
-            pts = [(hipx - th, hipy - 3), (kx - kn, ky - 1),
-                   (ax - ca, my + 2), (ax - an, ay),
-                   (ax + an, ay), (ax + ca, my + 2),
-                   (kx + kn, ky - 1), (hipx + th, hipy - 3)]
-            NS._selout_poly(surface, (*P["shadow_deep"], 255), pts, f)
-            NS._poly(surface, shade, pts)
-            inner = [(cx + (p[0] - cx) * 0.87, cy + (p[1] - cy) * 0.92)
-                     for p in pts]
-            NS._poly(surface, mid, inner)
-            # kuadrisep di sisi cahaya, meruncing ke lutut
-            NS._poly(surface, P["skin_light"] if not back else P["skin_mid"],
-                     [(hipx - 8 * f, hipy + 1), (hipx + 2 * f, hipy),
-                      (kx + 1 * f, ky - 5), (kx - 5 * f, ky - 3)])
-            NS._poly(surface, (*P["shadow_deep"], 72),
-                     [(hipx + th - 3 * f, hipy + 1), (kx + kn - 2 * f, ky),
-                      (ax + an, ay - 2), (ax + an - 4 * f, ay - 2),
-                      (kx + kn - 7 * f, ky - 3)])
-            # pelindung lutut kulit + paku kuningan
-            NS._poly(surface, P["leather_darkest"],
-                     [(kx - 6.5 * k, ky - 4), (kx + 6.5 * k, ky - 4),
-                      (kx + 5.5 * k, ky + 4.5), (kx - 5.5 * k, ky + 4.5)])
-            NS._poly(surface, P["leather_mid"],
-                     [(kx - 4.5 * k, ky - 2.5), (kx + 3.5 * k, ky - 2.5),
-                      (kx + 3 * k, ky + 2), (kx - 3.5 * k, ky + 2)])
-            NS._aacircle(surface, P["skin_high"] if not back
-                         else P["skin_light"], (int(kx - 1.5 * f),
-                         int(ky - 2)), 2)
-            NS._aacircle(surface, P["gold_shine"], (int(kx - 4 * f), int(ky - 1)), 1)
-            # tali paha: kulit melintang + gesper emas
-            sx = (hipx + kx) / 2.0
-            sy = (hipy + ky) / 2.0 + 1.5
-            NS._poly(surface, P["leather_darkest"],
-                     [(sx - th + 1, sy - 2.5), (sx + th - 1, sy - 2.5),
-                      (sx + th - 2, sy + 2.5), (sx - th + 2, sy + 2.5)])
-            NS._poly(surface, P["leather_light"],
-                     [(sx - th + 2.5, sy - 1.5), (sx + 1, sy - 1.5),
-                      (sx + 1, sy + 0.5), (sx - th + 3.5, sy + 0.5)])
-            NS._aacircle(surface, P["gold_mid"], (int(sx - 3 * f), int(sy)), 2)
-            # betis berbulu + dither transisi
-            fur = NS._tuft_points([(ax - ca + 1, my + 3), (ax + ca - 1, my + 3)],
-                                  depth=2.4, min_len=3.4, seed=12 + i)
-            NS._poly(surface, P["hair_darkest"], fur)
-            NS._dither_dots(surface, P["skin_high"],
-                            [(int(ax - ca + 2 + j * 3.4), int(my + 6.5))
-                             for j in range(4)], alpha=70)
-            # sepatu bulu: melebar ke bawah, bukan mengecil jadi titik
-            boot = [(ax - an - 2.5 * k, ay - 3), (ax + an + 2.5 * k, ay - 3),
-                    (ax + 10.5 * k * f, ay + 12), (ax - 8.5 * k * f, ay + 12)]
-            NS._poly(surface, P["leather_darkest"], boot)
-            NS._poly(surface, P["leather_mid"],
-                     [(ax - an - 1 * k, ay - 1), (ax + an + 1 * k, ay - 1),
-                      (ax + 9.5 * k * f, ay + 10), (ax - 8 * k * f, ay + 10)])
-            NS._poly(surface, P["leather_high"],
-                     [(ax - an, ay - 1.5), (ax - 1 * f, ay - 1),
-                      (ax - 1 * f, ay + 8), (ax - 7 * k * f, ay + 9)])
-            cuff = NS._tuft_points([(ax - an - 2, ay - 2), (ax + an + 2, ay - 2)],
-                                   depth=2.8, min_len=4.2, seed=4 + i)
-            NS._poly(surface, P["boar_dark"], cuff)
-            # sol + cakar. Solnya TIDAK boleh ditulis `(ax - c * f)`: lebar
-            # rect tidak ikut ter-mirror, jadi saat facing=-1 sol bergeser
-            # seluruhnya ke satu sisi dan kelihatan seperti goresan lepas di
-            # samping kaki. Jarak tumit/ujung kaki dihitung terpisah.
-            heel = 8.5 * k
-            toe = 10.5 * k
-            sole_x = ax - (heel if f > 0 else toe)
-            sole_w = heel + toe
-            NS._rect(surface, P["metal_dark"], (sole_x, ay + 12, sole_w, 3))
-            NS._rect(surface, P["metal_light"], (sole_x, ay + 12, sole_w, 1))
+            th, an = 12.5 * k, 8.0 * k
+            # paha kuadrisep doodle
+            thigh = [(hipx - th, hipy - 3), (kx - an, ky - 1),
+                     (kx + an, ky - 1), (hipx + th, hipy - 3)]
+            NS._doodle_poly(surface, fill, P["shadow"], thigh,
+                            width=4, seed=30 + i)
+            # betis doodle
+            shin = [(kx - an + 1, ky), (ax - an, ay - 2),
+                    (ax + an, ay - 2), (kx + an - 1, ky)]
+            NS._doodle_poly(surface, fill, P["shadow"], shin,
+                            width=4, seed=32 + i)
+            # pelindung lutut kulit + paku
+            knee = [(kx - 6.5 * k, ky - 4), (kx + 6.5 * k, ky - 4),
+                    (kx + 5.0 * k, ky + 4), (kx - 5.0 * k, ky + 4)]
+            NS._doodle_poly(surface, boot, P["shadow"], knee,
+                            width=3, seed=34 + i)
+            NS._doodle_dot(surface, P["gold_light"],
+                           [(kx - 3 * f, ky - 1), (kx + 3 * f, ky + 1)], 1)
+            # otot paha garis
+            NS._doodle_line(surface, P["skin_light"],
+                            [(hipx - 4 * f, hipy), (kx - 4 * f, ky - 3)],
+                            2, seed=36 + i)
+            # boot fur doodle (melebar)
+            bx0 = ax - an - 3 * k
+            bx1 = ax + an + 3 * k
+            toe = 10.5 * k * f
+            boot_pts = [(bx0, ay - 4), (bx1, ay - 4),
+                        (ax + toe, ay + 12), (ax - toe, ay + 12)]
+            NS._doodle_poly(surface, boot, P["shadow"], boot_pts,
+                            width=4, seed=38 + i)
+            NS._doodle_line(surface, P["leather_light"],
+                            [(bx0 + 2, ay - 1), (bx1 - 2, ay - 1)], 2,
+                            seed=40 + i)
+            # sol + cakar (garis kuku)
+            heel = 9.0 * k
+            sole_x = ax - (heel if f > 0 else 10.5 * k)
+            sole_w = heel + 10.5 * k
+            NS._doodle_poly(surface, P["metal_dark"], P["shadow"],
+                            [(sole_x, ay + 12), (sole_x + sole_w, ay + 12),
+                             (sole_x + sole_w, ay + 15),
+                             (sole_x, ay + 15)], width=2, seed=42 + i)
             for c in range(4):
-                NS._aaline(surface, P["bone_light"],
-                           (ax + (7 - c * 4.6) * f, ay + 13),
-                           (ax + (10.5 - c * 4.6) * f, ay + 16), 2)
+                NS._doodle_line(surface, P["bone_light"],
+                                [(ax + (7 - c * 4.6) * f, ay + 13),
+                                 (ax + (10.5 - c * 4.6) * f, ay + 16)],
+                                2, seed=44 + i, wobble=0.6)
+
+
     def _draw_loincloth(surface, cx, cy, phase, sway, action="idle"):
-        """Rok bulu babi hutan dengan hem robek bergerigi + sabuk tulang."""
+        """Cawat babi hutan doodle: blok bulu + ikat pinggang tulang."""
         NS = _NS_khalros
         P = NS.PALETTE
-        f = 1
         lag = math.sin(phase * 0.9) * (2.0 if action == "walk" else 0.8)
-        # panel depan
-        # hem sengaja berhenti di ATAS lutut: kalau panelnya panjang, kaki
-        # hanya menyisakan betis + boot dan badan terbaca berjalan di atas dua
-        # tusuk gigi.
-        spine = [(cx - 16, cy + 2), (cx - 18, cy + 17),
-                 (cx - 9, cy + 24 + lag), (cx, cy + 26 + lag * 1.2),
-                 (cx + 10, cy + 23 + lag), (cx + 18, cy + 16),
-                 (cx + 16, cy + 2)]
-        hem = NS._tuft_points(spine[1:6], depth=3.6, min_len=6.0, seed=8)
-        shape = [spine[0]] + hem + [spine[-1]]
-        NS._poly(surface, (*P["shadow_deep"], 255),
-                 [(p[0] + 1, p[1] + 1) for p in shape])
-        NS._poly(surface, P["boar_darkest"], shape)
-        NS._poly(surface, P["boar_dark"],
-                 [(cx + (p[0] - cx) * 0.88, cy + (p[1] - cy) * 0.86)
-                  for p in shape])
-        NS._poly(surface, P["boar_mid"],
-                 [(cx - 10, cy + 4), (cx + 10, cy + 4), (cx + 7, cy + 16),
-                  (cx - 7, cy + 16)])
-        NS._poly(surface, P["boar_light"],
-                 [(cx - 6, cy + 4), (cx + 2, cy + 5), (cx + 1, cy + 14),
-                  (cx - 5, cy + 13)])
-        # dither transisi
-        NS._dither_dots(surface, P["boar_high"],
-                        [(cx - 9 + k * 5, cy + 19) for k in range(4)],
-                        alpha=80)
-        # dua untai bulu menggantung di sisi
+        # panel depan ber-hem
+        pts = [(cx - 17, cy + 2), (cx - 19, cy + 16),
+               (cx - 9, cy + 24 + lag), (cx, cy + 26 + lag * 1.2),
+               (cx + 9, cy + 24 + lag), (cx + 19, cy + 16),
+               (cx + 17, cy + 2)]
+        NS._doodle_poly(surface, P["boar_mid"], P["shadow"], pts,
+                        width=4, seed=50, wobble=1.4)
+        NS._doodle_poly(surface, P["boar_light"], None,
+                        [(cx - 11, cy + 4), (cx + 8, cy + 4),
+                         (cx + 6, cy + 15), (cx - 9, cy + 15)], width=0)
+        NS._doodle_hatch(surface, P["boar_high"],
+                         [(cx - 14, cy + 6), (cx + 14, cy + 6),
+                          (cx + 6, cy + 20), (cx - 6, cy + 20)],
+                         spacing=6, angle=0.4, alpha=110)
+        # dua untai bulu menggantung
         for sgn in (-1, 1):
-            strand = [(cx + sgn * 16, cy + 4), (cx + sgn * 20, cy + 16 + lag),
-                      (cx + sgn * 17, cy + 26 + lag * 1.4)]
-            NS._poly(surface, P["leather_darkest"],
-                     [(p[0] - sgn * 2, p[1]) for p in strand] +
-                     [(p[0] + sgn * 2, p[1] + 1) for p in strand[::-1]])
-        # sabuk: kulit + geligi + gesper emas kepala binatang
-        NS._rect(surface, P["leather_darkest"], (cx - 18, cy - 5, 36, 9))
-        NS._rect(surface, P["leather_light"], (cx - 17, cy - 4, 34, 4))
-        NS._rect(surface, P["leather_high"], (cx - 16, cy - 4, 12, 2))
+            strand = [(cx + sgn * 16, cy + 4),
+                      (cx + sgn * 21, cy + 15 + lag),
+                      (cx + sgn * 18, cy + 25 + lag * 1.4)]
+            NS._doodle_poly(surface, P["leather_darkest"], P["shadow"],
+                            strand, width=3, seed=52 + sgn)
+        # ikat pinggang doodle
+        belt = [(cx - 20, cy - 6), (cx + 20, cy - 6), (cx + 20, cy + 1),
+                (cx - 20, cy + 1)]
+        NS._doodle_poly(surface, P["leather_dark"], P["shadow"], belt,
+                        width=3, seed=54)
         for i in range(5):
             xx = cx - 14 + i * 7
-            NS._poly(surface, P["bone_light"],
-                     [(xx, cy + 3), (xx + 3, cy + 3), (xx + 1, cy + 8)])
-        NS._aacircle(surface, P["gold_dark"], (cx, cy - 1), 6)
-        NS._aacircle(surface, P["gold_mid"], (cx - 1, cy - 2), 5)
-        NS._aacircle(surface, P["gold_light"], (cx - 2, cy - 3), 2)
-        NS._aacircle(surface, P["gold_shine"], (cx - 2, cy - 3), 1)
-        # taring boar di sabuk
-        NS._poly(surface, P["bone_mid"], [(cx + 12, cy - 3), (cx + 18, cy + 2),
-                                          (cx + 13, cy + 1)])
+            NS._doodle_poly(surface, P["bone_light"], P["shadow"],
+                            [(xx, cy + 1), (xx + 3, cy + 1),
+                             (xx + 1, cy + 6)], width=1, seed=56 + i)
+        NS._doodle_poly(surface, P["gold_mid"], P["shadow"],
+                        [(cx - 5, cy - 4), (cx + 5, cy - 4),
+                         (cx + 4, cy + 1), (cx - 4, cy + 1)],
+                        width=2, seed=58)
+
 
     def _draw_torso(surface, cx, cy, phase, sway, action="idle", rage=False,
                     ap=0.0):
-        """Torso 6-band: dada bidah, otot, war paint merah, luka parut."""
+        """Torso barbar doodle: dada lebar flat + otot garis + war paint."""
         NS = _NS_khalros
         P = NS.PALETTE
-        breath = math.sin(phase * 0.72) * (1.6 if action != "attack" else 0.8)
-        # siluet dada lebar -> pinggang (trapezoid) + selout
-        sh_y = cy - 40
-        waist = cy - 2
-        pts = [(cx - 29, sh_y - 3), (cx + 29, sh_y - 3),
-               (cx + 23, sh_y + 16), (cx + 13, waist),
-               (cx - 13, waist), (cx - 23, sh_y + 16)]
-        NS._poly(surface, (*P["shadow_deep"], 255),
-                 [(p[0] + 2, p[1] + 2) for p in pts])
-        NS._poly(surface, P["skin_dark"], pts)
-        # 6 band ramp (bayangan -> highlight) dengan hue-shift
-        b2 = [(cx - 24, sh_y), (cx + 24, sh_y), (cx + 17, sh_y + 18),
-              (cx - 17, sh_y + 18)]
-        NS._poly(surface, P["skin_mid"], b2)
-        b3 = [(cx - 16, sh_y + 3), (cx + 15, sh_y + 2), (cx + 10, sh_y + 16),
-              (cx - 11, sh_y + 15)]
-        NS._poly(surface, P["skin_light"], b3)
-        b4 = [(cx - 12, sh_y + 4), (cx + 6, sh_y + 3), (cx + 4, sh_y + 13),
-              (cx - 9, sh_y + 12)]
-        NS._poly(surface, P["skin_high"], b4)
-        NS._poly(surface, P["skin_shine"],
-                 [(cx - 8, sh_y + 5), (cx - 1, sh_y + 4), (cx - 2, sh_y + 8),
-                  (cx - 7, sh_y + 9)])
-        # garis tengah dada + otot perut (VALUE, bukan outline)
-        NS._aaline(surface, P["skin_darkest"], (cx - 1, sh_y + 2),
-                   (cx - 1, cy - 6), 2)
-        NS._aaline(surface, P["skin_dark"], (cx - 1, sh_y + 3),
-                   (cx - 1, cy - 7), 1)
+        breath = math.sin(phase * 0.72) * (1.4 if action != "attack" else 0.7)
+        sh_y = cy - 38
+        waist = cy
+        # dada trapezoid doodle
+        pts = [(cx - 30, sh_y - 3), (cx + 30, sh_y - 3),
+               (cx + 22, sh_y + 16), (cx + 12, waist),
+               (cx - 12, waist), (cx - 22, sh_y + 16)]
+        NS._doodle_poly(surface, P["skin_mid"], P["shadow"], pts,
+                        width=5, seed=60, wobble=1.4)
+        # highlight dada (sisi cahaya kiri-atas)
+        NS._doodle_poly(surface, P["skin_light"], None,
+                        [(cx - 25, sh_y), (cx + 24, sh_y),
+                         (cx + 14, sh_y + 15), (cx - 17, sh_y + 15)],
+                        width=0)
+        # bayangan bawah perut
+        NS._doodle_poly(surface, P["skin_dark"], None,
+                        [(cx - 11, waist - 8), (cx + 11, waist - 8),
+                         (cx + 8, waist + 1), (cx - 8, waist + 1)],
+                        width=0)
+        # garis dada tengah + otot perut
+        NS._doodle_line(surface, P["skin_darkest"],
+                        [(cx, sh_y + 3), (cx, waist - 6)], 2, seed=61)
         for i in range(3):
-            yy = sh_y + 21 + i * 5
-            w = 11 - i * 2
-            NS._aaline(surface, (*P["skin_darkest"], 190), (cx - w, yy),
-                       (cx + w, yy), 1)
-            NS._aaline(surface, (*P["skin_high"], 120), (cx - w, yy - 2),
-                       (cx + w, yy - 2), 1)
-        # perut bawah (nilai lebih gelap) + dither transisi
-        NS._poly(surface, (*P["skin_dark"], 210),
-                 [(cx - 11, cy - 8), (cx + 11, cy - 8), (cx + 8, cy - 1),
-                  (cx - 8, cy - 1)])
-        NS._dither_dots(surface, P["skin_mid"],
-                        [(cx - 9 + k * 5, cy - 3) for k in range(4)], alpha=90)
-        # war paint: telapak tangan merah di dada + garis pipi
-        paint = 235 if not rage else 255
-        NS._poly(surface, (*P["red_mid"], paint),
-                 [(cx - 17, sh_y + 6), (cx - 8, sh_y + 4), (cx - 7, sh_y + 15),
-                  (cx - 16, sh_y + 17)])
-        for i in range(3):
-            NS._aaline(surface, (*P["red_bright"], 190),
-                       (cx - 16 + i * 3, sh_y + 6), (cx - 15 + i * 3,
-                                                     sh_y + 15), 1)
-        NS._poly(surface, (*P["red_mid"], paint),
-                 [(cx + 8, sh_y + 5), (cx + 16, sh_y + 7), (cx + 15,
-                                                             sh_y + 16),
-                  (cx + 9, sh_y + 14)])
-        # silang dada (harness kulit tipis ber-jahitan)
-        NS._aaline(surface, (*P["leather_darkest"], 235), (cx - 23, sh_y - 1),
-                   (cx + 13, cy - 5), 4)
-        NS._aaline(surface, (*P["leather_mid"], 235), (cx - 23, sh_y - 1),
-                   (cx + 13, cy - 5), 2)
-        NS._aaline(surface, (*P["leather_darkest"], 225), (cx + 23, sh_y - 1),
-                   (cx - 12, cy - 4), 4)
-        NS._aaline(surface, (*P["leather_light"], 210), (cx + 22, sh_y - 1),
-                   (cx - 12, cy - 4), 1)
-        for i in range(5):
-            t = i / 5.0
-            NS._aacircle(surface, (*P["leather_high"], 180),
-                         (int(cx - 24 + t * 38), int(sh_y - 2 + t * 36)), 1)
-        # kalung taring di leher
+            yy = sh_y + 19 + i * 5
+            w = 10 - i * 2
+            NS._doodle_line(surface, P["skin_darkest"],
+                            [(cx - w, yy), (cx + w, yy)], 2, seed=62 + i,
+                            wobble=0.7)
+        # harness silang + rivet
+        NS._doodle_line(surface, P["leather_darkest"],
+                        [(cx - 24, sh_y), (cx + 13, waist - 4)], 4,
+                        seed=66, wobble=0.9)
+        NS._doodle_line(surface, P["leather_darkest"],
+                        [(cx + 24, sh_y), (cx - 12, waist - 3)], 4,
+                        seed=67, wobble=0.9)
+        # war paint merah
+        NS._doodle_poly(surface, P["red_mid"], None,
+                        [(cx - 17, sh_y + 6), (cx - 8, sh_y + 4),
+                         (cx - 7, sh_y + 15), (cx - 16, sh_y + 17)],
+                        width=0)
+        NS._doodle_poly(surface, P["red_mid"], None,
+                        [(cx + 8, sh_y + 5), (cx + 16, sh_y + 7),
+                         (cx + 15, sh_y + 16), (cx + 9, sh_y + 14)],
+                        width=0)
+        # kalung taring
         for i in range(5):
             tx = cx - 10 + i * 5
-            NS._poly(surface, P["bone_light"],
-                     [(tx, sh_y + 1), (tx + 3, sh_y + 1), (tx + 1, sh_y + 6)])
-        NS._aacircle(surface, P["bone_shine"], (cx + 2, sh_y + 2), 1)
-        # bara primal menempel di dada saat skill
-        if rage or action == "attack":
-            glow = 200 if not rage else 255
-            for i in range(3):
-                t = (phase * 0.6 + i * 0.33) % 1.0
-                gx = cx + (NS._hash01(i * 7.7) - 0.5) * 26
-                gy = sh_y + 20 - t * 26
-                NS._aacircle(surface, (*P["fire_bright"], int(glow * (1 - t))),
-                             (int(gx), int(gy)), 2 if i % 2 else 1)
-        # bekas luka (garis pucat diagonal)
-        NS._aaline(surface, (*P["skin_shine"], 150), (cx + 4, sh_y + 8),
-                   (cx + 18, sh_y + 18), 2)
-        NS._aaline(surface, (*P["skin_darkest"], 150), (cx + 4, sh_y + 10),
-                   (cx + 17, sh_y + 20), 1)
+            NS._doodle_poly(surface, P["bone_light"], P["shadow"],
+                            [(tx, sh_y + 1), (tx + 3, sh_y + 1),
+                             (tx + 1, sh_y + 6)], width=1, seed=70 + i)
+
 
     def _draw_shoulders(surface, cx, cy, phase, facing=1, action="idle",
                         rage=False):
-        """Pauldron: bahu depan = bulu babi hutan berduri, belakang = besi."""
+        """Pauldron doodle: bulu babi berduri (depan) + pelat besi (blk)."""
         NS = _NS_khalros
         P = NS.PALETTE
         f = 1 if facing >= 0 else -1
         sh_y = cy - 36
         for side in (1, -1):
             front = side > 0
-            bx = cx + side * 27 * f * (1 if front else 0.94)
+            bx = cx + side * 28 * f * (1 if front else 0.92)
             by = sh_y + (0 if front else 1)
             if front:
-                # bulu babi + duri tulang
-                spike = [(bx - 11, by - 5), (bx + 10, by - 8),
-                         (bx + 14, by + 3), (bx + 6, by + 11),
-                         (bx - 10, by + 8)]
-                edge = NS._tuft_points(spike[1:4], depth=3.0, min_len=5.0,
-                                       seed=12)
-                NS._poly(surface, (*P["shadow_deep"], 255),
-                         [(p[0] + 2, p[1] + 2) for p in spike])
-                NS._poly(surface, P["boar_dark"], spike)
-                NS._poly(surface, P["boar_mid"],
-                         [(bx + (p[0] - bx) * 0.8, by + (p[1] - by) * 0.78)
-                          for p in spike[:3] + edge])
-                NS._poly(surface, P["boar_light"],
-                         [(bx - 6, by - 3), (bx + 6, by - 5),
-                          (bx + 4, by + 1), (bx - 5, by + 2)])
-                NS._poly(surface, P["bone_light"],
-                         [(bx + 4, by - 7), (bx + 12, by - 17),
-                          (bx + 9, by - 6)])
-                NS._poly(surface, P["bone_mid"],
-                         [(bx - 5, by - 5), (bx + 1, by - 14),
-                          (bx - 1, by - 4)])
-                NS._aacircle(surface, P["bone_shine"], (bx + 10, by - 14), 1)
-                NS._dither_dots(surface, P["boar_high"],
-                                [(bx - 7 + k * 4, by + 6) for k in range(4)],
-                                alpha=80)
+                # bulu babi doodle + duri tulang
+                pts = [(bx - 12, by - 6), (bx + 10, by - 9),
+                       (bx + 15, by + 2), (bx + 7, by + 11),
+                       (bx - 11, by + 8)]
+                NS._doodle_poly(surface, P["boar_mid"], P["shadow"], pts,
+                                width=4, seed=72, wobble=1.5)
+                # duri tulang
+                NS._doodle_poly(surface, P["bone_light"], P["shadow"],
+                                [(bx + 4, by - 7), (bx + 13, by - 18),
+                                 (bx + 9, by - 6)], width=2, seed=73)
+                NS._doodle_poly(surface, P["bone_light"], P["shadow"],
+                                [(bx - 5, by - 5), (bx + 1, by - 15),
+                                 (bx - 1, by - 4)], width=2, seed=74)
                 # rivet emas
-                for i in range(3):
-                    NS._aacircle(surface, P["gold_mid"],
-                                 (int(bx - 5 + i * 6), int(by + 6)), 2)
-                    NS._aacircle(surface, P["gold_shine"],
-                                 (int(bx - 5.5 + i * 6), int(by + 5)), 1)
+                NS._doodle_dot(surface, P["gold_light"],
+                               [(bx - 5 + i * 6, by + 6) for i in range(3)],
+                               2)
             else:
-                # pelat besi bertingkat
-                plate = [(bx - 12, by - 4), (bx + 9, by - 7),
-                         (bx + 12, by + 4), (bx + 3, by + 11),
-                         (bx - 11, by + 8)]
-                NS._poly(surface, (*P["shadow_deep"], 255),
-                         [(p[0] + 2, p[1] + 2) for p in plate])
-                NS._poly(surface, P["metal_dark"], plate)
-                NS._poly(surface, P["metal_mid"],
-                         [(bx + (p[0] - bx) * 0.82, by + (p[1] - by) * 0.8)
-                          for p in plate])
-                NS._poly(surface, P["metal_light"],
-                         [(bx - 8, by - 2), (bx + 4, by - 4),
-                          (bx + 3, by + 2), (bx - 7, by + 3)])
-                NS._poly(surface, P["metal_shine"],
-                         [(bx - 5, by - 2), (bx - 1, by - 3),
-                          (bx - 2, by + 1)])
+                # pelat besi doodle
+                pts = [(bx - 13, by - 5), (bx + 10, by - 8),
+                       (bx + 13, by + 4), (bx + 3, by + 11),
+                       (bx - 12, by + 8)]
+                NS._doodle_poly(surface, P["metal_mid"], P["shadow"], pts,
+                                width=4, seed=75, wobble=1.4)
+                NS._doodle_poly(surface, P["metal_light"], None,
+                                [(bx - 9, by - 2), (bx + 4, by - 5),
+                                 (bx + 2, by + 2), (bx - 8, by + 3)],
+                                width=0)
                 for i in range(3):
-                    NS._aacircle(surface, P["metal_darkest"],
-                                 (int(bx - 6 + i * 6), int(by + 6)), 2)
-                    NS._aacircle(surface, P["metal_shine"],
-                                 (int(bx - 6.5 + i * 6), int(by + 5)), 1)
-            if rage:
-                NS._aacircle(surface, (*P["fire_bright"], 90),
-                             (int(bx), int(by)), 9)
+                    NS._doodle_dot(surface, P["metal_shine"],
+                                   [(bx - 6 + i * 6, by + 6)], 1)
+
 
     def _draw_khalros_head(surface, cx, cy, facing, phase, action="idle",
                            rage=False, beard_lag=0.0, ap=0.0):
-        """Kepala: tengkorak, rahang bergeraut, janggut berkepang, helm.
-
-        ``cy`` = pusat kepala (ruang native). Mata menyala di balik celah
-        helm; kedip & geram mengikuti fase.
-        """
+        """Kepala barbar doodle: helm bertanduk + mata nyala + janggut."""
         NS = _NS_khalros
         P = NS.PALETTE
         f = 1 if facing >= 0 else -1
         growl = 1.0 if action == "attack" else (0.6 if rage else 0.0)
         tilt = -2 if action == "attack" else 0
+        ey = cy + tilt
 
-        # ── leher ──
-        NS._poly(surface, P["skin_darkest"],
-                 [(cx - 8, cy + 8), (cx + 8, cy + 8), (cx + 10, cy + 18),
-                  (cx - 10, cy + 18)])
-        NS._poly(surface, P["skin_dark"],
-                 [(cx - 7, cy + 9), (cx + 6, cy + 9), (cx + 8, cy + 16),
-                  (cx - 8, cy + 16)])
-
-        # ── tengkorak (6 band + selout) ──
-        skull = [(cx - 12 * f + 1, cy - 10 + tilt), (cx + 12 * f, cy - 12 + tilt),
-                 (cx + 14 * f, cy - 1 + tilt), (cx + 9 * f, cy + 10 + tilt),
-                 (cx - 6 * f, cy + 12 + tilt), (cx - 13 * f, cy + 2 + tilt)]
-        NS._poly(surface, (*P["shadow_deep"], 255),
-                 [(p[0] + f, p[1] + 2) for p in skull])
-        NS._poly(surface, P["skin_dark"], skull)
-        NS._poly(surface, P["skin_mid"],
-                 [(cx + (p[0] - cx) * 0.86, cy + (p[1] - cy) * 0.84)
-                  for p in skull])
-        NS._poly(surface, P["skin_light"],
-                 [(cx - 9 * f, cy - 7 + tilt), (cx + 7 * f, cy - 9 + tilt),
-                  (cx + 5 * f, cy + 2 + tilt), (cx - 8 * f, cy + 3 + tilt)])
-        NS._poly(surface, P["skin_high"],
-                 [(cx - 6 * f, cy - 6 + tilt), (cx + 1 * f, cy - 7 + tilt),
-                  (cx + 1, cy - 1 + tilt), (cx - 5 * f, cy + 0 + tilt)])
-        NS._aacircle(surface, P["skin_shine"], (int(cx - 3 * f),
-                                                int(cy - 5 + tilt)), 2)
-
-        # ── war paint pipi ──
-        for i in range(3):
-            NS._aaline(surface, (*P["red_bright"], 210),
-                       (cx - 8 * f + i * 3 * f, cy + 2 + tilt),
-                       (cx - 6 * f + i * 3 * f, cy + 7 + tilt), 2)
-
-        # ── rahang & geretan gigi (makin garang saat serang) ──
+        # leher doodle
+        NS._doodle_poly(surface, P["skin_dark"], P["shadow"],
+                        [(cx - 9, ey + 8), (cx + 9, ey + 8),
+                         (cx + 11, ey + 18), (cx - 11, ey + 18)],
+                        width=3, seed=78, wobble=0.8)
+        # tengkorak doodle (blok flat)
+        skull = [(cx - 13 * f, ey - 10), (cx + 13 * f, ey - 12),
+                 (cx + 15 * f, ey - 1), (cx + 9 * f, ey + 11),
+                 (cx - 7 * f, ey + 13), (cx - 14 * f, ey + 2)]
+        NS._doodle_poly(surface, P["skin_mid"], P["shadow"], skull,
+                        width=4, seed=79, wobble=1.3)
+        NS._doodle_poly(surface, P["skin_light"], None,
+                        [(cx - 10 * f, ey - 7), (cx + 7 * f, ey - 9),
+                         (cx + 5 * f, ey + 2), (cx - 9 * f, ey + 3)],
+                        width=0)
+        # rahang + geretan gigi
         jaw_drop = int(1 + growl * 2)
-        NS._poly(surface, P["skin_darkest"],
-                 [(cx + 2 * f, cy + 5 + tilt), (cx + 12 * f, cy + 3 + tilt),
-                  (cx + 11 * f, cy + 9 + jaw_drop + tilt),
-                  (cx + 2 * f, cy + 11 + jaw_drop + tilt)])
-        teeth = [(cx + 4 * f, cy + 6 + tilt), (cx + 10 * f, cy + 5 + tilt)]
-        for i, (tx, ty) in enumerate(teeth):
-            NS._poly(surface, P["bone_light"],
-                     [(tx, ty), (tx + 2 * f, ty), (tx + f, ty + 3)])
-        if growl:
-            NS._poly(surface, (*P["red_hot"], 160),
-                     [(cx + 3 * f, cy + 7 + tilt), (cx + 11 * f, cy + 6 + tilt),
-                      (cx + 10 * f, cy + 8 + tilt), (cx + 3 * f, cy + 9 + tilt)])
-        # hidung
-        NS._aaline(surface, P["skin_darkest"], (cx + 11 * f, cy - 2 + tilt),
-                   (cx + 13 * f, cy + 3 + tilt), 3)
-        NS._aacircle(surface, P["skin_high"], (int(cx + 12 * f),
-                                               int(cy - 3 + tilt)), 1)
-
-        # ── janggut berkepang, tepi bergerigi, ikut inersia ──
+        NS._doodle_poly(surface, P["skin_darkest"], P["shadow"],
+                        [(cx + 2 * f, ey + 6), (cx + 13 * f, ey + 4),
+                         (cx + 12 * f, ey + 10 + jaw_drop),
+                         (cx + 2 * f, ey + 12 + jaw_drop)],
+                        width=3, seed=80)
+        for i in range(2):
+            tx = cx + (4 + i * 6) * f
+            NS._doodle_poly(surface, P["bone_light"], P["shadow"],
+                            [(tx, ey + 6), (tx + 2 * f, ey + 6),
+                             (tx + f, ey + 10)], width=1, seed=81 + i)
+        # kumis doodle
+        NS._doodle_poly(surface, P["hair_mid"], P["shadow"],
+                        [(cx + 6 * f, ey + 1), (cx + 17 * f, ey + 2),
+                         (cx + 14 * f, ey + 7), (cx + 5 * f, ey + 5)],
+                        width=3, seed=83)
+        # janggut berkepang (blok + arsir)
         bL = beard_lag
-        braid = [(cx + 1 * f, cy + 9 + tilt),
-                 (cx + 11 * f, cy + 12 + tilt),
-                 (cx + 8 * f + bL, cy + 22 + tilt),
-                 (cx + 2 * f + bL * 1.4, cy + 30 + tilt),
-                 (cx - 6 * f + bL * 1.2, cy + 24 + tilt),
-                 (cx - 9 * f, cy + 12 + tilt)]
-        edge = NS._tuft_points(braid[2:5], depth=2.8, min_len=4.5, seed=3)
-        NS._poly(surface, P["hair_darkest"],
-                 [braid[0], braid[1]] + edge + [braid[4], braid[5]])
-        NS._poly(surface, P["hair_dark"],
-                 [(cx + (p[0] - cx) * 0.88, cy + (p[1] - cy) * 0.9)
-                  for p in braid])
-        NS._poly(surface, P["hair_mid"],
-                 [(cx - 2 * f, cy + 13 + tilt), (cx + 6 * f, cy + 14 + tilt),
-                  (cx + 4 * f + bL, cy + 24 + tilt), (cx - 3 * f + bL, cy + 22 + tilt)])
-        # jahitan kepang + cincin emas di ujung
-        for i in range(3):
-            yy = cy + 16 + i * 5 + tilt
-            NS._aaline(surface, P["hair_high"], (cx - 4 * f + bL * i / 2, yy),
-                       (cx + 6 * f + bL * i / 2, yy + 2), 1)
-        NS._aacircle(surface, P["gold_mid"], (int(cx + 2 * f + bL * 1.2),
-                                             int(cy + 29 + tilt)), 3)
-        NS._aacircle(surface, P["gold_shine"], (int(cx + 1.5 * f + bL * 1.2),
-                                               int(cy + 28 + tilt)), 1)
-
-        # ── kumis & brew (menumpuk di atas janggut) ──
-        NS._poly(surface, P["hair_darkest"],
-                 [(cx + 6 * f, cy + 1 + tilt), (cx + 16 * f, cy + 2 + tilt),
-                  (cx + 13 * f, cy + 7 + tilt), (cx + 5 * f, cy + 5 + tilt)])
-        NS._poly(surface, P["hair_mid"],
-                 [(cx + 7 * f, cy + 2 + tilt), (cx + 14 * f, cy + 3 + tilt),
-                  (cx + 12 * f, cy + 5 + tilt)])
-
-        # ── helm bertanduk ──
-        NS._draw_helm(surface, cx, cy + tilt, f, phase, action=action,
-                      rage=rage)
-
-        # ── mata menyala di celah helm (digambar setelah helm) ──
+        beard = [(cx + 1 * f, ey + 9), (cx + 12 * f, ey + 13),
+                 (cx + 9 * f + bL, ey + 23),
+                 (cx + 2 * f + bL * 1.4, ey + 31),
+                 (cx - 7 * f + bL * 1.2, ey + 25),
+                 (cx - 10 * f, ey + 13)]
+        NS._doodle_poly(surface, P["hair_dark"], P["shadow"], beard,
+                        width=4, seed=84, wobble=1.3)
+        NS._doodle_hatch(surface, P["hair_mid"], beard, spacing=6,
+                         angle=0.6, alpha=110)
+        NS._doodle_dot(surface, P["gold_light"],
+                       [(cx + 2 * f + bL * 1.2, ey + 29)], 2)
+        # mata nyala di celah helm
+        eye_x, eye_y = cx + 9 * f, ey - 3
         blink = int(phase * 1.55) % 13 == 0 and not growl
-        eye_x, eye_y = cx + 9 * f, cy - 3 + tilt
         if blink:
-            NS._aaline(surface, P["metal_darkest"], (eye_x - 3, eye_y),
-                       (eye_x + 3, eye_y), 2)
+            NS._doodle_line(surface, P["shadow"],
+                            [(eye_x - 3, eye_y), (eye_x + 3, eye_y)],
+                            2, seed=85)
         else:
             col = P["eye_hot"] if (growl or rage) else P["eye_bright"]
-            NS._aacircle(surface, (*P["eye_dark"], 235), (eye_x, eye_y), 4)
-            NS._aacircle(surface, (*col, 255), (eye_x, eye_y), 3)
-            NS._aacircle(surface, (*P["fire_glow"], 200),
-                         (eye_x - 1 * f, eye_y - 1), 2)
-            NS._aacircle(surface, P["white"], (eye_x - f, eye_y - 1), 1)
-            # seberkas cahaya mata
-            NS._aaline(surface, (*col, 110), (eye_x, eye_y),
-                       (eye_x + 6 * f, eye_y + 1), 2)
+            NS._doodle_dot(surface, col, [(eye_x, eye_y)], 4)
+            NS._doodle_dot(surface, P["fire_glow"], [(eye_x - 1, eye_y - 1)],
+                           2)
+        # helm doodle
+        NS._draw_helm(surface, cx, ey, f, phase, action=action, rage=rage)
+
 
     def _draw_helm(surface, cx, cy, facing=1, phase=0.0, action="idle",
                    rage=False):
-        """Helm tempur: kubah baja ber-ring, linggis hidung, buah bulu,
-        dua taring babi hutan melengkung, dan bulu elang di punggungan."""
+        """Helm doodle bertanduk babi: kubah baja + dua taring melengkung."""
         NS = _NS_khalros
         P = NS.PALETTE
         f = 1 if facing >= 0 else -1
         crown = cy - 10
-        # dome baja 5 band
-        dome = [(cx - 13, crown + 2), (cx - 10, crown - 6), (cx, crown - 9),
-                (cx + 10, crown - 6), (cx + 13, crown + 2), (cx + 11, crown + 6),
-                (cx - 11, crown + 6)]
-        NS._poly(surface, (*P["shadow_deep"], 255),
-                 [(p[0] + f, p[1] + 2) for p in dome])
-        NS._poly(surface, P["metal_dark"], dome)
-        NS._poly(surface, P["metal_mid"],
-                 [(cx + (p[0] - cx) * 0.84, cy + (p[1] - cy) * 0.84)
-                  for p in dome])
-        NS._poly(surface, P["metal_light"],
-                 [(cx - 10, crown - 3), (cx - 1, crown - 7), (cx - 2, crown + 3),
-                  (cx - 9, crown + 4)])
-        NS._poly(surface, P["metal_shine"],
-                 [(cx - 7, crown - 3), (cx - 3, crown - 5), (cx - 4, crown + 0),
-                  (cx - 7, crown + 1)])
+        # kubah baja doodle
+        dome = [(cx - 14, crown + 2), (cx - 10, crown - 7),
+                (cx, crown - 10), (cx + 10, crown - 7),
+                (cx + 14, crown + 2), (cx + 12, crown + 7),
+                (cx - 12, crown + 7)]
+        NS._doodle_poly(surface, P["metal_mid"], P["shadow"], dome,
+                        width=4, seed=87, wobble=1.3)
+        NS._doodle_poly(surface, P["metal_light"], None,
+                        [(cx - 9, crown - 2), (cx - 1, crown - 7),
+                         (cx - 2, crown + 4), (cx - 8, crown + 4)],
+                        width=0)
         # palang tengah + rivet
-        NS._aaline(surface, P["metal_darkest"], (cx, crown - 8), (cx, crown + 6), 3)
-        NS._aaline(surface, P["metal_light"], (cx - 1, crown - 7), (cx - 1,
-                                                                    crown + 5), 1)
-        for i in range(5):
-            rx = cx - 10 + i * 5
-            NS._aacircle(surface, P["metal_darkest"], (rx, crown + 6), 2)
-            NS._aacircle(surface, P["gold_mid"], (rx - 1, crown + 5), 1)
-            NS._aacircle(surface, P["gold_shine"], (rx - 1, crown + 5), 1)
-        # linggis hidung (nose guard)
-        NS._poly(surface, P["metal_dark"],
-                 [(cx + 8 * f, crown + 5), (cx + 14 * f, crown + 6),
-                  (cx + 13 * f, crown + 14), (cx + 8 * f, crown + 12)])
-        NS._poly(surface, P["metal_light"],
-                 [(cx + 9 * f, crown + 7), (cx + 12 * f, crown + 8),
-                  (cx + 11 * f, crown + 11), (cx + 9 * f, crown + 10)])
-        NS._aacircle(surface, P["metal_edge"], (int(cx + 11 * f),
-                                                int(crown + 8)), 1)
-        # trim bulu di pinggiran helm (bergerigi)
-        fur_spine = [(cx - 14, crown + 4), (cx - 6, crown + 7),
-                     (cx + 6, crown + 7), (cx + 14, crown + 4)]
-        NS._poly(surface, P["boar_darkest"],
-                 NS._tuft_points(fur_spine, depth=3.2, min_len=5.0, seed=17))
-        NS._poly(surface, P["boar_mid"],
-                 [(cx - 12, crown + 4), (cx + 12, crown + 4),
-                  (cx + 6, crown + 7), (cx - 6, crown + 7)])
-        NS._dither_dots(surface, P["boar_high"],
-                        [(cx - 10 + k * 5, crown + 5) for k in range(5)],
-                        alpha=90)
-        # dua taring babi sebagai tanduk (ivory 3 band + bayangan)
+        NS._doodle_line(surface, P["metal_darkest"],
+                        [(cx, crown - 8), (cx, crown + 6)], 3, seed=88)
+        NS._doodle_dot(surface, P["gold_light"],
+                       [(cx - 10 + i * 5, crown + 5) for i in range(5)], 1)
+        # linggis hidung
+        NS._doodle_poly(surface, P["metal_dark"], P["shadow"],
+                        [(cx + 8 * f, crown + 5), (cx + 15 * f, crown + 6),
+                         (cx + 14 * f, crown + 14), (cx + 8 * f, crown + 12)],
+                        width=2, seed=89)
+        # dua taring babi (tanduk) doodle
         for sgn in (-1, 1):
             bx = cx + sgn * 12
             by = crown - 2
-            tipx, tipy = bx + sgn * 17, by - 22
-            midx, midy = bx + sgn * 11, by - 10
-            horn = [(bx - sgn * 2, by + 2), (midx - sgn, midy + 2),
-                    (tipx, tipy), (tipx + sgn * 3, tipy + 2),
-                    (midx + 3 * sgn, midy + 5), (bx + sgn * 4, by + 5)]
-            NS._poly(surface, (*P["shadow_deep"], 255),
-                     [(p[0] + f, p[1] + 2) for p in horn])
-            NS._poly(surface, P["bone_dark"], horn)
-            NS._poly(surface, P["bone_mid"],
-                     [(bx + (p[0] - bx) * 0.8, by + (p[1] - by) * 0.86)
-                      for p in horn])
-            NS._poly(surface, P["bone_light"],
-                     [(bx + sgn * 1, by), (midx + sgn, midy + 1),
-                      (tipx + sgn, tipy + 1), (tipx - sgn, tipy + 3),
-                      (midx - sgn * 2, midy + 4)])
-            NS._aacircle(surface, P["bone_shine"], (int(tipx), int(tipy + 1)), 1)
-            # guratan taring
-            for i in range(2):
-                NS._aaline(surface, (*P["bone_darkest"], 190),
-                           (bx + sgn * (3 + i * 3), by - i * 5 - 2),
-                           (bx + sgn * (5 + i * 3), by - i * 5 + 1), 1)
-        # bulu elang di punggungan (bergoyang)
+            horn = [(bx - sgn * 3, by + 3), (bx + sgn * 11, by - 10),
+                    (bx + sgn * 18, by - 23), (bx + sgn * 22, by - 21),
+                    (bx + sgn * 15, by - 6), (bx + sgn * 4, by + 6)]
+            NS._doodle_poly(surface, P["bone_mid"], P["shadow"], horn,
+                            width=4, seed=90 + sgn, wobble=1.4)
+            NS._doodle_poly(surface, P["bone_light"], None,
+                            [(bx + sgn * 1, by), (bx + sgn * 12, by - 11),
+                             (bx + sgn * 16, by - 19),
+                             (bx + sgn * 13, by - 7), (bx + sgn * 3, by + 2)],
+                            width=0)
+            NS._doodle_line(surface, P["bone_darkest"],
+                            [(bx + sgn * 4, by - 2),
+                             (bx + sgn * 12, by - 15)], 2,
+                            seed=92 + sgn, wobble=0.7)
+        # bulu elang di punggungan bergoyang
         sway = math.sin(phase * 1.4) * 2
-        plume = [(cx - 2 * f, crown - 8), (cx - 10 * f + sway, crown - 20),
-                 (cx - 16 * f + sway * 1.5, crown - 16)]
-        NS._aaline(surface, P["hawk_dark"], plume[0], plume[1], 3)
-        NS._aaline(surface, P["hawk_mid"], plume[0], plume[1], 2)
-        NS._poly(surface, P["hawk_light"],
-                 [(plume[1][0], plume[1][1]),
-                  (plume[2][0], plume[2][1] + 2),
-                  (plume[2][0] + 3 * f, plume[2][1])])
-        NS._poly(surface, P["hawk_high"],
-                 [(plume[1][0], plume[1][1]), (plume[2][0] + f, plume[2][1] + 1),
-                  (plume[2][0] + 2 * f, plume[2][1] + 3)])
-        if rage:
-            NS._glow(surface, cx, crown - 2, 22, P["fire_mid"], 90)
+        NS._doodle_line(surface, P["hawk_dark"],
+                        [(cx, crown - 8), (cx - 10 * f + sway,
+                                           crown - 22)], 4, seed=94,
+                        wobble=0.8)
+        NS._doodle_poly(surface, P["hawk_light"], None,
+                        [(cx - 2 * f + sway, crown - 12),
+                         (cx - 11 * f + sway * 1.4, crown - 24),
+                         (cx - 16 * f + sway * 1.5, crown - 18)],
+                        width=0)
 
-    # ===================================================================
-    # LENGAN + KAPAK
-    # ===================================================================
+
     def _draw_arm_segment(surface, x1, y1, x2, y2, wrap=True, bulk=9):
-        """Segmen lengan: 3 band ramp + lilitan kulit (v1 signature)."""
+        """Segmen lengan doodle: sosis flat + outline + lilitan kulit."""
         NS = _NS_khalros
         P = NS.PALETTE
         dx, dy = x2 - x1, y2 - y1
@@ -6305,50 +6244,34 @@ class _NS_khalros:
         nx, ny = -dy / ln, dx / ln
         a = (x1 + nx * bulk, y1 + ny * bulk)
         b = (x1 - nx * bulk, y1 - ny * bulk)
-        c = (x2 - nx * bulk * 0.62, y2 - ny * bulk * 0.62)
-        d = (x2 + nx * bulk * 0.62, y2 + ny * bulk * 0.62)
-        NS._poly(surface, (*P["shadow_deep"], 255),
-                 [(p[0] + 1, p[1] + 1) for p in (a, b, c, d)])
-        NS._poly(surface, P["skin_dark"], [a, b, c, d])
-        inner = [((a[0] + x1) / 2, (a[1] + y1) / 2),
-                 ((b[0] + x1) / 2, (b[1] + y1) / 2),
-                 ((c[0] + x2) / 2, (c[1] + y2) / 2),
-                 ((d[0] + x2) / 2, (d[1] + y2) / 2)]
-        NS._poly(surface, P["skin_mid"], inner)
-        NS._poly(surface, P["skin_light"],
-                 [(inner[0][0] * .5 + inner[3][0] * .5,
-                   inner[0][1] * .5 + inner[3][1] * .5 - 1),
-                  inner[0], inner[1],
-                  (inner[1][0] + nx * 2, inner[1][1] + ny * 2)])
+        c = (x2 - nx * bulk * 0.6, y2 - ny * bulk * 0.6)
+        d = (x2 + nx * bulk * 0.6, y2 + ny * bulk * 0.6)
+        NS._doodle_poly(surface, P["skin_mid"], P["shadow"],
+                        [a, b, c, d], width=5, seed=100, wobble=1.1)
         if wrap:
-            # lilitan kulit di lengan bawah (3 gelang + jahitan)
             for i in range(3):
                 t = 0.42 + i * 0.16
                 px, py = x1 + dx * t, y1 + dy * t
-                NS._aaline(surface, P["leather_darkest"],
-                           (px + nx * bulk * .75, py + ny * bulk * .75),
-                           (px - nx * bulk * .75, py - ny * bulk * .75), 3)
-                NS._aaline(surface, P["leather_light"],
-                           (px + nx * bulk * .7, py + ny * bulk * .7 - 1),
-                           (px - nx * bulk * .7, py - ny * bulk * .7 - 1), 1)
-                NS._aacircle(surface, P["gold_mid"], (int(px + nx * 4),
-                                                     int(py + ny * 4)), 1)
+                NS._doodle_line(surface, P["leather_darkest"],
+                                [(px + nx * bulk * .7, py + ny * bulk * .7),
+                                 (px - nx * bulk * .7, py - ny * bulk * .7)],
+                                3, seed=102 + i, wobble=0.7)
+
 
     def _draw_hand(surface, x, y, facing=1, grip=False):
-        """Kekepalkan tangan: 3 band + buku-buku jari + cincin."""
+        """Tangan doodle: kepalan bulat + buku jari."""
         NS = _NS_khalros
         P = NS.PALETTE
         f = 1 if facing >= 0 else -1
-        NS._ellipse(surface, (*P["shadow_deep"], 255), (x - 6 + f, y - 5 + 1, 12, 11))
-        NS._aacircle(surface, P["skin_dark"], (x, y), 6)
-        NS._aacircle(surface, P["skin_mid"], (x - 1, y - 1), 5)
-        NS._aacircle(surface, P["skin_light"], (x - 2, y - 2), 3)
-        for i in range(3):
-            NS._aacircle(surface, P["skin_darkest"], (x + 3 * f, y - 3 + i * 3), 1)
-            NS._aacircle(surface, P["skin_high"], (x + 2 * f, y - 4 + i * 3), 1)
+        NS._doodle_poly(surface, P["skin_mid"], P["shadow"],
+                        [(x - 7, y - 6), (x + 7, y - 6), (x + 8, y + 5),
+                         (x - 8, y + 5)], width=4, seed=105, wobble=1.0)
+        NS._doodle_dot(surface, P["skin_light"],
+                       [(x - 3 * f, y - 2), (x + 2 * f, y - 3),
+                        (x, y + 2)], 2)
         if grip:
-            NS._aacircle(surface, P["gold_light"], (x + 4 * f, y + 2), 2)
-            NS._aacircle(surface, P["gold_shine"], (x + 4 * f, y + 1), 1)
+            NS._doodle_dot(surface, P["gold_light"], [(x + 4 * f, y + 1)], 2)
+
 
     def _axe_blade_shape(cx, cy, ang, size=1.0):
         """Titik bilah kapak (native) untuk sudut ``ang`` di (cx,cy)."""
@@ -6361,16 +6284,10 @@ class _NS_khalros:
 
     def _draw_axe_swinging(surface, hx, hy, facing, angle, size=1.0,
                            hot=0.0):
-        """Kapak tempur berputar di tangan: gagang + bilah bergerigi 5 band.
+        """Kapak doodle besar: gagang + bilah kipas + mata emas.
 
-        ``hot`` 0..1 = bilah membara (state rage / frame impact).
-
-        ATURAN CERMIN: yang berubah saat `facing` balik adalah HADAP, bukan
-        atas-bawah. `ang = angle * f` membalik sumbu Y (kapak idle yang harusnya
-        menengadah ke kiri malah menukik ke kanan bawah) - jadi arah bilah
-        dihitung dari (cos*face, sin) dan sudutnya diambil dari vektor itu.
-        Konvensi ini sama dengan `_axe_tip_local`, sehingga trail ayunan dan
-        bintang impact mendarat DI BILAH, bukan di udara.
+        Cermin horizontal (lihat aturan masterwork): sudut dihitung dari
+        (cos*facing, sin) supaya bilah & trail satu arah.
         """
         NS = _NS_khalros
         P = NS.PALETTE
@@ -6379,123 +6296,91 @@ class _NS_khalros:
         ang = math.atan2(sa0, ca0)
         bx, by, nx, ny, L = NS._axe_blade_shape(hx, hy, ang, size)
         tipx, tipy = bx + math.cos(ang) * L, by + math.sin(ang) * L
-        # gagang kulit: 3 band + lilitan
-        NS._aaline(surface, P["leather_darkest"],
-                   (hx - math.cos(ang) * 8 * size, hy - math.sin(ang) * 8 * size),
-                   (bx, by), max(3, int(5 * size)))
-        NS._aaline(surface, P["leather_mid"],
-                   (hx - math.cos(ang) * 7 * size, hy - math.sin(ang) * 7 * size),
-                   (bx, by), max(2, int(3 * size)))
-        NS._aaline(surface, P["leather_high"],
-                   (hx - math.cos(ang) * 7 * size, hy - math.sin(ang) * 7 * size - 1),
-                   (bx - nx * 1.5, by - ny * 1.5), 1)
+        # gagang kulit doodle (tebal)
+        NS._doodle_line(surface, P["leather_mid"],
+                        [(hx - math.cos(ang) * 8 * size,
+                          hy - math.sin(ang) * 8 * size), (bx, by)],
+                        int(6 * size), seed=110, wobble=0.8)
+        NS._doodle_line(surface, P["leather_darkest"],
+                        [(hx - math.cos(ang) * 8 * size,
+                          hy - math.sin(ang) * 8 * size), (bx, by)],
+                        int(2 * size), seed=111, wobble=0.8)
         for i in range(3):
             t = 0.2 + i * 0.22
-            px = hx - math.cos(ang) * 8 * size + (bx - hx + math.cos(ang) * 8 * size) * t
-            py = hy - math.sin(ang) * 8 * size + (by - hy + math.sin(ang) * 8 * size) * t
-            NS._aaline(surface, P["leather_light"], (px + nx * 2, py + ny * 2),
-                       (px - nx * 2, py - ny * 2), 1)
-        # bilah: kipas bergerigi dengan notch (siluet khas)
-        half = L * 0.52
-        outer = [(bx + nx * half * 0.35, by + ny * half * 0.35),
+            px = hx - math.cos(ang) * 8 * size +                 (bx - hx + math.cos(ang) * 8 * size) * t
+            py = hy - math.sin(ang) * 8 * size +                 (by - hy + math.sin(ang) * 8 * size) * t
+            NS._doodle_line(surface, P["leather_light"],
+                            [(px + nx * 2, py + ny * 2),
+                             (px - nx * 2, py - ny * 2)], 1, seed=112 + i)
+        # bilah kipas bergerigi doodle
+        half = L * 0.55
+        shape = [(bx - nx * half * 0.3, by - ny * half * 0.3),
                  (bx + math.cos(ang) * L * 0.5 + nx * half,
                   by + math.sin(ang) * L * 0.5 + ny * half),
-                 (tipx + nx * half * 0.55, tipy + ny * half * 0.55),
-                 (tipx - nx * half * 0.45, tipy - ny * half * 0.45),
-                 (bx + math.cos(ang) * L * 0.45 - nx * half * 0.85,
-                  by + math.sin(ang) * L * 0.45 - ny * half * 0.85),
-                 (bx - nx * half * 0.3, by - ny * half * 0.3)]
-        edge = NS._tuft_points(outer[1:4], depth=2.4 * size, min_len=5.0, seed=6)
-        shape = [outer[0]] + edge + outer[3:]
-        NS._poly(surface, (*P["shadow_deep"], 255),
-                 [(p[0] + f, p[1] + 2) for p in shape])
-        NS._poly(surface, P["metal_dark"], shape)
-        NS._poly(surface, P["metal_mid"],
-                 [(bx + (p[0] - bx) * 0.86, by + (p[1] - by) * 0.88)
-                  for p in shape])
-        NS._poly(surface, P["metal_light"],
-                 [(bx + (p[0] - bx) * 0.66, by + (p[1] - by) * 0.68)
-                  for p in shape[:3]])
+                 (tipx + nx * half * 0.5, tipy + ny * half * 0.5),
+                 (tipx - nx * half * 0.4, tipy - ny * half * 0.4),
+                 (bx + math.cos(ang) * L * 0.45 - nx * half * 0.9,
+                  by + math.sin(ang) * L * 0.45 - ny * half * 0.9)]
+        NS._doodle_poly(surface, P["metal_mid"], P["shadow"], shape,
+                        width=5, seed=114, wobble=1.2)
+        NS._doodle_poly(surface, P["metal_light"], None,
+                        [(bx + math.cos(ang) * L * 0.2 + nx * half * 0.4,
+                          by + math.sin(ang) * L * 0.2 + ny * half * 0.4),
+                         (bx + math.cos(ang) * L * 0.7 + nx * half * 0.5,
+                          by + math.sin(ang) * L * 0.7 + ny * half * 0.5),
+                         (tipx - nx * half * 0.1, tipy - ny * half * 0.1)],
+                        width=0)
         # fuller gelap + tepi tajam
-        NS._aaline(surface, P["metal_darkest"],
-                   (bx + math.cos(ang) * L * 0.15, by + math.sin(ang) * L * 0.15),
-                   (tipx - nx * half * 0.1, tipy - ny * half * 0.1),
-                   max(2, int(3 * size)))
-        NS._aaline(surface, P["metal_shine"], outer[1], outer[2],
-                   max(1, int(2 * size)))
-        NS._aaline(surface, P["metal_edge"],
-                   (outer[2][0] - nx, outer[2][1] - ny),
-                   (outer[3][0] - nx, outer[3][1] - ny), 1)
-        # paku emas + mata kapak (specular cluster)
-        NS._aacircle(surface, P["gold_mid"],
-                     (int(bx + math.cos(ang) * 4 * size),
-                      int(by + math.sin(ang) * 4 * size)), max(2, int(3 * size)))
-        NS._aacircle(surface, P["gold_shine"],
-                     (int(bx + math.cos(ang) * 3.5 * size),
-                      int(by + math.sin(ang) * 3.5 * size - 1)),
-                     max(1, int(1.4 * size)))
-        # membara saat rage / impact
+        NS._doodle_line(surface, P["metal_darkest"],
+                        [(bx + math.cos(ang) * L * 0.15,
+                          by + math.sin(ang) * L * 0.15),
+                         (tipx - nx * 2, tipy - ny * 2)], 3, seed=115,
+                        wobble=0.6)
+        NS._doodle_dot(surface, P["gold_mid"],
+                       [(bx + math.cos(ang) * 4 * size,
+                         by + math.sin(ang) * 4 * size)], 3)
+        # membara saat rage/impact
         if hot > 0.02:
             a = NS._alpha(230 * hot)
-            NS._aaline(surface, (*P["fire_bright"], a), outer[1], outer[2],
-                       max(1, int(3 * size)))
-            NS._aacircle(surface, (*P["fire_hot"], a),
-                         (int(tipx), int(tipy)), max(2, int(4 * size)))
-            NS._aacircle(surface, (*P["fire_glow"], a),
-                         (int(tipx), int(tipy)), max(1, int(2 * size)))
+            NS._doodle_dot(surface, (*P["fire_glow"], a),
+                           [(int(tipx), int(tipy))], 5)
         return tipx, tipy
 
+
     def _draw_axe_held(surface, hx, hy, side, phase, hot=0.0):
-        """Kapak kedua yang tersandang di punggung (side = -1 belakang)."""
+        """Kapak cadangan tersandang doodle - kepala bilah di atas bahu."""
         NS = _NS_khalros
         P = NS.PALETTE
-        # -1.32 rad = hampir tegak: yang kelihatan hanya kepala bilah di atas
-        # bahu. Kalau sudutnya landai, gagang kapak cadangan jadi tombak yang
-        # melebarkan siluet 13 px dan mencuri tempat dari elang.
         ang = -1.32 + math.sin(phase * 0.5) * 0.03
         f = 1 if side >= 0 else -1
-        # cermin horizontal (lihat `_draw_axe_swinging`); seluruh jarak
-        # sepanjang sumbu bilah dikalikan f supaya bentuknya ikut terbalik
         ca, sa = math.cos(ang) * f, math.sin(ang)
         ang = math.atan2(sa, ca)
         bx, by, nx, ny, L = NS._axe_blade_shape(hx, hy, ang, 0.68)
-        NS._aaline(surface, P["leather_darkest"],
-                   (hx - ca * 10, hy - sa * 10), (bx, by), 4)
-        NS._aaline(surface, P["leather_mid"],
-                   (hx - ca * 9, hy - sa * 9), (bx, by), 2)
+        NS._doodle_line(surface, P["leather_mid"],
+                        [(hx - ca * 10, hy - sa * 10), (bx, by)], 4,
+                        seed=118, wobble=0.8)
         shape = [(bx + nx * 6, by + ny * 6), (bx + f * L * 0.5, by - 4),
-                 (bx + f * L * 0.75, by + 3), (bx + nx * 2, by + ny * 8),
+                 (bx + f * L * 0.78, by + 3), (bx + nx * 2, by + ny * 8),
                  (bx - nx * 5, by - ny * 5)]
-        NS._poly(surface, P["metal_darkest"], shape)
-        NS._poly(surface, P["metal_mid"],
-                 [(bx + (p[0] - bx) * 0.8, by + (p[1] - by) * 0.8)
-                  for p in shape])
-        NS._poly(surface, P["metal_light"],
-                 [(bx + f, by - 3), (bx + f * L * 0.6, by - 2),
-                  (bx + f * L * 0.5, by + 1)])
-        NS._aacircle(surface, P["metal_shine"],
-                     (int(bx + f * L * 0.55), int(by - 1)), 1)
+        NS._doodle_poly(surface, P["metal_mid"], P["shadow"], shape,
+                        width=4, seed=119, wobble=1.0)
+        NS._doodle_poly(surface, P["metal_light"], None,
+                        [(bx + f, by - 3), (bx + f * L * 0.6, by - 2),
+                         (bx + f * L * 0.5, by + 1)], width=0)
         if hot > 0.02:
-            NS._aacircle(surface, (*P["fire_bright"], NS._alpha(180 * hot)),
-                         (int(bx + f * L * 0.5), int(by)), 4)
+            NS._doodle_dot(surface, P["fire_glow"],
+                           [(int(bx + f * L * 0.5), int(by))], 3)
+
 
     def _draw_idle_arms(surface, cx, cy, facing, phase, action="idle",
                         late=False):
-        """Dua lengan: depan memegang kapak tempur, belakang kapak cadangan.
-
-        ``cx/cy`` = jangkar panggul rig; bahu di cy-42. ``late=True`` =
-        second pass dari `_draw_khalros_body_raw` yang mengulang sisi DEPAN
-        saja (kapak idle di atas kepala/tanduk) - lihat catatan `late` di
-        sana; bagian belakang sengaja tidak dilukis ulang supaya janggut dan
-        helm tetap menutupi bahu.
-        """
+        """Dua lengan doodle: depan pegang kapak, belakang kapak cadangan."""
         NS = _NS_khalros
         P = NS.PALETTE
         f = 1 if facing >= 0 else -1
         sway = int(math.sin(phase * 0.7) * 1.6)
         sh_y = cy - 42
         if late:
-            # pass depan saja - lihat `_draw_khalros_body_raw`
             gx, gy = NS._axe_grip_local(action, phase, 0.0, f)
             fx, fy = cx + gx * f, cy + gy
             if action == "cast":
@@ -6507,7 +6392,7 @@ class _NS_khalros:
             NS._draw_axe_swinging(surface, fx, fy, f, ang, 1.0, hot=hot)
             NS._draw_hand(surface, int(fx), int(fy), f, grip=True)
             return
-        # lengan belakang (lebih gelap, di belakang badan)
+        # lengan belakang
         be_sx = cx - 22 * f
         be_hx = be_sx - 8 * f
         be_hy = sh_y + 30 + sway
@@ -6516,7 +6401,7 @@ class _NS_khalros:
         NS._draw_hand(surface, int(be_hx - 2 * f), int(be_hy), f)
         NS._draw_axe_held(surface, int(be_hx - 1 * f), int(be_hy - 4), -f,
                           phase)
-        # lengan depan -> grip kapak (sinkron `_axe_grip_local`)
+        # lengan depan -> grip kapak
         gx, gy = NS._axe_grip_local(action, phase, 0.0, f)
         fx, fy = cx + gx * f, cy + gy
         fe_sx = cx + 22 * f
@@ -6534,14 +6419,10 @@ class _NS_khalros:
         NS._draw_axe_swinging(surface, fx, fy, f, ang, 1.0, hot=hot)
         NS._draw_hand(surface, int(fx), int(fy), f, grip=True)
 
+
     def _draw_attack_arms(surface, cx, cy, facing, phase, progress,
                           action="attack", late=False):
-        """Lengan saat ayunan: keyframe `arm_a` menggerakkan grip + kapak.
-
-        ``late=True`` = pass depan untuk bilah + tangan penggenggam saja,
-        supaya kepala tidak menutupi kapak pada frame IMPACT (lihat catatan
-        `late` di `_draw_khalros_body_raw`).
-        """
+        """Lengan saat ayunan doodle (keyframe arm_a menggerakkan kapak)."""
         NS = _NS_khalros
         P = NS.PALETTE
         f = 1 if facing >= 0 else -1
@@ -6550,7 +6431,6 @@ class _NS_khalros:
         gx, gy = NS._axe_grip_local(action, phase, progress, f)
         fx, fy = cx + gx * f, cy + gy
         if late:
-            # pass depan: bilah tidak pernah hilang di balik helm/tanduk
             NS._draw_axe_swinging(surface, fx, fy, f, pose["arm_a"] + 0.72,
                                   1.0,
                                   hot=pose["impact"] if action == "attack"
@@ -6559,7 +6439,7 @@ class _NS_khalros:
             return
         fe_sx = cx + 21 * f
         elbow = ((fe_sx + fx) / 2 + 4 * f, (sh_y + fy) / 2 + 4)
-        # lengan belakang mengayuh ke belakang untuk keseimbangan
+        # lengan belakang keseimbangan
         be_sx = cx - 21 * f
         be_hx = be_sx - 13 * f
         be_hy = sh_y + 26 - pose["lean"] * 0.5
@@ -6573,28 +6453,21 @@ class _NS_khalros:
         hot = pose["impact"] if action == "attack" else 0.55
         NS._draw_axe_swinging(surface, fx, fy, f, ang, 1.0, hot=hot)
         NS._draw_hand(surface, int(fx), int(fy), f, grip=True)
-        # ketegangan otot bergetar di fase tension
-        if pose["tremble"]:
-            NS._aacircle(surface, (*P["skin_shine"], 90), (int(fe_sx),
-                                                           int(sh_y + 2)), 3)
+
 
     def _draw_deltoid(surface, x, y, facing=1):
-        """Bahu berotot: 3 band + sorot cahaya kiri-atas."""
+        """Bahu berotot doodle: lingkaran besar + outline tebal."""
         NS = _NS_khalros
         P = NS.PALETTE
         f = 1 if facing >= 0 else -1
-        NS._aacircle(surface, (*P["shadow_deep"], 235), (x + f, y + 1), 9)
-        NS._aacircle(surface, P["skin_dark"], (x, y), 9)
-        NS._aacircle(surface, P["skin_mid"], (x - 1, y - 1), 7)
-        NS._aacircle(surface, P["skin_light"], (x - 2 * f, y - 3), 4)
-        NS._aacircle(surface, P["skin_high"], (x - 2 * f, y - 3), 2)
-        NS._aaline(surface, P["skin_darkest"], (x - 6 * f, y + 3),
-                   (x + 5 * f, y + 6), 2)
+        NS._doodle_poly(surface, P["skin_mid"], P["shadow"],
+                        [(x - 9, y - 8), (x + 9, y - 8), (x + 11, y + 2),
+                         (x + 5, y + 8), (x - 8, y + 7), (x - 11, y - 1)],
+                        width=5, seed=107, wobble=1.2)
+        NS._doodle_dot(surface, P["skin_light"],
+                       [(x - 4 * f, y - 3), (x - 2, y + 2)], 2)
 
-    # ===================================================================
-    # SMEME AYUNAN + BENTURAN (canvas fallback; lapisan hidup memakainya
-    # lewat geometri yang sama -> trail di layar)
-    # ===================================================================
+
     def _draw_axe_swing_arc(surface, x, y, facing, progress):
         """Smear sabit baja 3 lapis + tepi menyala, mengikuti busur kapak."""
         NS = _NS_khalros
