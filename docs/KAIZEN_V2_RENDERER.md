@@ -1,60 +1,49 @@
-# Kaizen v5 — Renderer Pixel-Art + Skill FX + Swing + Projectile
+# Kaizen — Doodle Renderer Masterwork + Skill FX + Swing + Projectile
 
 > Rewrite penuh namespace `_NS_kaizen` di `heroes/_bundle.py`.
-> Standar **Thorne v2 Pixel Masterwork + Grimjaw v2.1 Skill FX / swing trail**.
+> Standar **Grimjaw v4 Doodle Sketchbook + Skill FX / swing trail**.
 > Tetap **100% prosedural** — tidak ada PNG / sprite-sheet / `image.load`.
 
-> **v5 (rig rewrite from zero)**: `_draw_kaizen_elite` ditulis ulang supaya
-> siluet bersih dan mudah dibaca di ukuran arena. Perubahan utama:
-> wajah ¾ depan dengan dua mata jelas di bawah hachimaki (bukan profil yang
-> kepalanya tampak besar), rambut kompak terjumbai di belakang kepala,
-> badan tertutup rapi dengan kerah V dan sash, pauldron pindah ke belakang
-> bahu, hakama/kaki memakai panel besar yang rapi, saya pendek dan bersih,
-> dan aura/rim di ground di-render tipis supaya badan menonjol.
+> **Doodle rewrite (dari pixel-art)**: `_draw_kaizen_elite` ditulis ulang
+> dari nol ke bahasa gambar "buku sketsa". Sebelumnya Kaizen adalah
+> pixel-art masterwork yang rata dan kaku; sekarang digambar tangan dengan
+> pulpen tinta + spidol + krayon di atas kertas. Siluet, landmark, geometri
+> bilah, controller serangan, dan jembatan lapisan FX hidup **dipertahankan
+> penuh** sehingga `heroes/kaizen_fx.py` dan pipeline sprite-cache bekerja
+> tanpa perubahan.
 
-## Apa yang berubah (v3 rewrite)
+## Gaya baru: DOODLE / SKETCHBOOK
 
-| Aspek | v2 | v3 (sekarang) |
+| Aspek | v5 pixel-art (lama) | Doodle (sekarang) |
 |---|---|---|
-| Rig native (bbox idle) | 157 × 168 px | **157 × 168 px** (landmark sama) |
-| Ukuran di arena | ~70 px | ~70 px (pipeline menormalkan) |
-| Swing smear | ghost poligon + arc kaku | **jejak ujung-bilah 10 langkah, 3-band** (`_draw_katana_swing_trail`) |
-| Projectile Q | arc + trail titik | **sabit terisi 3-lapis + pita trail + burst kematian** |
-| Skill timer | hardcoded `/60 /90 /60 /100` | `SKILL_VISUAL_DURATION` + `_skill_progress` / `_ring_r` |
-| Performa | Surface baru per primitif alpha | **scratch pool** + `_clamp` fast-path; aura tanpa `copy()` |
-| Biaya skill cache-miss | ~2.1–3.2 ms | idle **1.2 ms**, Q/W/E **2.6–2.9 ms**, R **3.2 ms** (budget 3.5) |
+| Outline | selout solid (1 px rim) | **garis tinta bergoyang** (`_ink_stroke`/`_ink_polyline`) — jitter deterministik hash, 2 pass |
+| Isi | ramp 4–5 band hue-shift | **isi spidol bercelah kertas** (`_marker_poly` + `_inset_pts`) — celah kertas ~1.5 px ke centroid antara fill & tinta |
+| Bayangan | dither band | **arsiran pensil** (`_hatch_patch`) + **skribel loop** (`_scribble`) |
+| Highlight | specular cluster 1–2 px | **goresan gel-pen putih** (`ink_stroke` warna terang) |
+| Rambut/pita | tuft_points bergerigi | **gumpalan blob ber-tinta + lock terjumbai** + arsir gel-pen |
+| Angin (FX) | cincin/arc kaku halus | **lidah teardrop doodle** (`_wind_tongue`) + skribel sian + bintang gambar-tangan + awan "poof" |
+| Baja katana | ramp baja dingin | **isi spidol baja + garis tinta tepi + hamon bergoyang + gel-pen shine** |
 
-Memperbesar rig TIDAK memperbesar hero di arena: `heroes/__init__.py`
-mengukur badan lalu men-scale agar tinggi final tetap ~70 px
-(`_get_hero_scale("kaizen")` ≈ 0.416). Yang berubah adalah
-**resolusi efektif**.
+Semua jitter adalah **fungsi murni dari pose/seed** (`_seed_q` kuantisasi
+fase → seed stabil), sehingga sprite cache tetap valid; ganti fase animasi
+= garis "mendidih" (boiling lines) seperti animasi tangan.
 
-## Disiplin pixel-art
+## Anatomi (tetap, kontrak dipertahankan)
 
-1. **Ramp 4–5 nilai per material dengan hue-shift**
-2. **Selout** — outline gelap hanya sisi bayangan; sisi cahaya + rim 1 px
-3. **Siluet bergerigi** — `_tuft_points()` deterministik (aman cache)
-4. **Specular cluster** 1–2 px, bukan gradien
-5. **Dither band** di hakama dan dada
-6. **Key light kiri-atas** (`lighting.py` `LIGHT_DIR = (-1, -1)`)
-
-## Anatomi (tetap)
-
-- Kepala ¾, hachimaki + manik, topknot, ponytail tuft, parut pipi, iris amber
-- Jaket terbuka, X-strap, obi, pauldron baja + sode, scarf inersia
+- Kepala ¾, hachimaki + manik, topknot, ponytail tuft, iris amber
+- Jaket tertutup, kerah V, obi, pauldron belakang, scarf inersia
 - Saya lacquer + sageo, hakama pleat, kyahan + tabi, foot solver
-- Katana: sori, hamon, kissaki, tsuba 4-lobe, ito, kashira, glint spekular
+- Katana: sori, hamon, kissaki, tsuba 4-lobe, ito, kashira, glint gel-pen
 
 ## Animasi + swing attack
 
 - **Foot solver** + debu tapak
 - **Inersia** ponytail / scarf / pita hachimaki
-- **Idle hidup** — napas, sway, blink, daun angin, mote
-- **Serangan 7 keyframe** (`_attack_pose`): wind-up → tension (gemetar) →
-  strike → **IMPACT 0.54** → follow → recover. Sudut wind-up `< 0 <` IMPACT.
+- **Idle hidup** — napas, sway, blink, lidah angin naik, mote
+- **Serangan 7 keyframe** (`_attack_pose`): wind-up → tension → strike →
+  **IMPACT 0.54** → follow → recover. Sudut wind-up `< 0 <` IMPACT.
 - **Smear ujung-bilah** (`_draw_katana_swing_trail`): 10 sampel progress
-  sebelumnya, 3-band sian + leading edge putih + bintang IMPACT.
-  Kepala smear **menempel di kissaki**. Wind-up tetap bersih.
+  sebelumnya, 3-band sian + leading edge putih + bintang doodle IMPACT.
 - Loop closure: progress 0.00 == 1.00 (9 pose unik dari 10 sampel).
 
 ## Projectile — `WindSlashProjectile`
@@ -62,15 +51,15 @@ mengukur badan lalu men-scale agar tinggi final tetap ~70 px
 - Homing world-space (`source` + `_world_to_local`, anti orb-acak)
 - Trail pita 3-lapis + sabit mini
 - Kepala: sabit terisi 3 band + glint berputar di ujung + speed line
-- Burst kematian 8 frame (`dead_frames`, bukan `age` beku)
-- Spawn di jendela swing 0.45–0.55 jika `range > 80`
+- Burst kematian 8 frame (`dead_frames`) — awan "poof" + bintang doodle
 
-## Skill FX v3 — world-space, 3 fase
+## Skill FX — world-space, 3 fase
 
 `SKILL_VISUAL_DURATION = {q:60, w:90, e:60, r:100}` (sinkron gameplay).
 `_fx_scale` = `1/_render_scale` (cap 2.6). Telegraph E/R memakai `_ring_r`
-(radius dunia **tanpa** cap) + `_aoe_marks` (tick radial + 4 bracket,
-**bukan** cincin/dashed-ring amateur).
+(radius dunia **tanpa** cap) + `_aoe_marks` (tick radial + bracket,
+**bukan** cincin/dashed-ring amateur) yang kini digambar dengan
+outline-tinta (`_skill_outlined_line`) agar tegas di terrain terang.
 
 | Skill | Radius dunia | Visual |
 |---|---|---|
@@ -86,21 +75,27 @@ Body reaction: `gale` (W) menyalakan scarf/bilah; `storm` (R) mata + bead.
 Semua nama publik lama dipertahankan (`PALETTE`, `draw_kaizen`, `draw_boss`,
 `WindSlashProjectile`, pose, skill FX, helper `_aacircle/_aaline/_poly/...`,
 `_world_to_local`, `_target_position`, `_attack_pose`, `_fx_scale`, …).
-
 Kwarg baru opsional: `_draw_elite_katana(..., progress=0.0)`.
+
+Palet doodle menambah kunci `ink`, `ink_soft`, `paper` dan mempertahankan
+semua kunci yang disinkronkan `heroes/kaizen_fx.py` (`wind_*`, `steel_*`,
+`saya_*`, `cord_mid`, `ink`).
 
 ## Verifikasi
 
 - `tools/test_kaizen_masterwork.py` — 9 tes (prosedural, swatch, 7-keyframe,
   portrait LOD, Q/W/E/R, **ring E=100 / R=150 world-space**, gale/storm, selout)
+- `tools/test_kaizen_fx_combat.py` — **49 tes** (kontrak FX hidup, trail,
+  projectile, lifecycle skill, hit-stop, shake, supresi ganda)
 - `tools/test_swing_anim.py` — swing terpicu di 60/30/15/8/5 FPS
-- `tools/_audit_kaizen_v2.py` — skala, frame unik, budget 3.5 ms, FX di luar
-  badan, 5 lembar preview
+- `tools/_audit_kaizen_v2.py` — skala, frame unik, budget 3.5 ms (idle 0.86,
+  skill ≤ 3.1 ms), FX di luar badan, 5 lembar preview
 
 ## Alat / preview
 
-- `docs/kaizen_v2_review.png`
-- `docs/kaizen_v2_anim_strip.png`
-- `docs/kaizen_v2_ingame.png`
-- `docs/kaizen_v2_skills.png`
-- `docs/kaizen_v2_before_after.png` (jika baseline git tersedia)
+- `tools/_shot_kaizen_doodle.py` → `docs/kaizen_doodle_preview.png` (lembar 4 pose)
+- `tools/_shot_kaizen_doodle_closeup.py` → `docs/kaizen_doodle_closeup.png`
+- `tools/_shot_kaizen_fx.py` → `docs/kaizen_v3_combat_fx.png` (6 momen tempur)
+- `tools/_shot_kaizen_masterwork.py` → `docs/kaizen_masterwork_preview.png`
+- `tools/_audit_kaizen_v2.py` → `docs/kaizen_v2_review.png` +
+  `kaizen_v2_anim_strip.png` + `kaizen_v2_ingame.png` + `kaizen_v2_skills.png`
