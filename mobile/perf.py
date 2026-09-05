@@ -216,13 +216,12 @@ POOL = SurfacePool()
 
 
 # ═══════════════════════════════════════════════════════
-# 2b. OVERLAY WARNA SOLID (di-cache)
+# 2b. OVERLAY WARNA SOLID
 #     Pola "buat Surface layar penuh -> fill -> blit" muncul di
-#     belasan tempat dan dijalankan TIAP FRAME. Surface-nya selalu
-#     sama; yang berubah cuma alpha. Jadi cukup dibuat sekali.
+#     belasan tempat dan dijalankan TIAP FRAME. darken()/flash()
+#     di bawah menggantinya dengan satu fill beralpha langsung,
+#     tanpa surface perantara sama sekali.
 # ═══════════════════════════════════════════════════════
-_overlay_cache = {}
-_OVERLAY_CACHE_MAX = 6      # surface layar penuh = 3,5 MB/entri!
 
 
 def darken(target, alpha):
@@ -250,24 +249,6 @@ def flash(target, alpha, color=(255, 255, 255)):
     r, g, b = color[:3]
     target.fill((r * a // 255, g * a // 255, b * a // 255),
                 special_flags=pygame.BLEND_RGB_ADD)
-
-
-def solid_overlay(width, height, rgb, alpha=255):
-    """
-    Surface polos berwarna dengan alpha yang sudah dipanggang.
-    Untuk area KECIL. Untuk overlay layar penuh pakai darken()/flash()
-    - jauh lebih cepat dan tidak memakan RAM.
-    """
-    a = ((max(0, min(255, int(alpha))) + 4) // 8) * 8
-    key = (int(width), int(height), tuple(rgb[:3]), a)
-    surf = _overlay_cache.get(key)
-    if surf is None:
-        surf = pygame.Surface((int(width), int(height)), pygame.SRCALPHA)
-        surf.fill((rgb[0], rgb[1], rgb[2], a))
-        if len(_overlay_cache) >= _OVERLAY_CACHE_MAX:
-            _overlay_cache.clear()
-        _overlay_cache[key] = surf
-    return surf
 
 
 _static_cache = {}
@@ -347,14 +328,6 @@ def display_alpha_masks(screen=None):
         return (r, g, b, a)
     except Exception:
         return None
-
-
-def matched_alpha_surface(width, height):
-    """Surface SRCALPHA dengan format yang memicu jalur SIMD."""
-    if _matched_masks:
-        return _ORIG_SURFACE((int(width), int(height)), pygame.SRCALPHA,
-                             32, _matched_masks)
-    return _ORIG_SURFACE((int(width), int(height)), pygame.SRCALPHA)
 
 
 def _surface_factory(size, flags=0, depth=0, masks=None):
@@ -461,7 +434,6 @@ def to_colorkey_sprite(surf, bg=(0, 0, 0)):
 
 def clear_static_caches():
     _static_cache.clear()
-    _overlay_cache.clear()
     POOL.clear()
 
 

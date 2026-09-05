@@ -446,21 +446,6 @@ class AdaptiveQuality:
     def get_fps(self):
         return self.clock.get_fps()
 
-    @property
-    def skip_glow_effects(self):
-        """Skip glow/particle effects saat FPS rendah"""
-        return self.quality == 'low'
-
-    @property
-    def skip_shadow_effects(self):
-        """Skip shadow saat FPS medium/low"""
-        return self.quality in ('medium', 'low')
-
-    @property
-    def reduce_particles(self):
-        """Kurangi jumlah particles"""
-        return self.quality != 'high'
-
 
 # ====================================================================
 # sound_manager.py
