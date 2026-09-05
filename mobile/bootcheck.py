@@ -39,15 +39,7 @@ def _flag_file():
 
 
 def should_show():
-    # Aktif lagi secara default di Android (sebelum splash screen).
-    # Matikan permanen lewat tombol JANGAN TAMPILKAN LAGI (flag file)
-    # atau sementara lewat MYSTIC_BOOTCHECK=0. Di desktop perlu
-    # MYSTIC_BOOTCHECK=1.
-    if os.environ.get("MYSTIC_BOOTCHECK") == "0":
-        return False
-    if os.path.exists(_flag_file()):
-        return False
-    return plat.IS_ANDROID or os.environ.get("MYSTIC_BOOTCHECK") == "1"
+    return os.environ.get("MYSTIC_BOOTCHECK") == "1"
 
 
 def _disable_forever():
