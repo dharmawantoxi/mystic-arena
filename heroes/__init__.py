@@ -881,15 +881,46 @@ def _skill_quant():
     (1-2 hero) tidak ada alasan mengorbankan kehalusan animasi.
     Maka granularitas mengikuti jumlah unit yang sedang bertarung —
     persis pola governor FX yang sudah dipakai untuk partikel.
+
+    ═══ LANTAI BERDASAR PRESET (v32) ═══
+    Governor di atas baru agresif kalau combat ramai; di preset LOW
+    lantai dinaikkan supaya HP kentang TIDAK PERNAH membayar miss
+    2,8-4,4 ms per pose walau hero-nya cuma dua. Yang dikorbankan hanya
+    kehalusan pose BADAN saat cast - lapisan FX hidup (partikel, trail,
+    proyektil,impact) tetap digambar penuh 60 fps di luar cache, jadi
+    skill tetap terlihat hidup. Di preset HIGH lantai tetap 2 (tidak
+    ada perubahan perilaku sama sekali).
     """
     n = _FX_BUSY_COUNT
     if n <= 2:
-        return HERO_SKILL_QUANT           # 2  - combat sepi, animasi halus
-    if n <= 4:
-        return 4
-    if n <= 6:
-        return 8
-    return 12                             # wave besar: FPS diprioritaskan
+        q = HERO_SKILL_QUANT           # 2  - combat sepi, animasi halus
+    elif n <= 4:
+        q = 4
+    elif n <= 6:
+        q = 8
+    else:
+        q = 12                         # wave besar: FPS diprioritaskan
+    try:
+        from mobile.perf import Quality as _Qs
+        floor = int(getattr(_Qs, "skill_quant_floor", 2))
+    except Exception:
+        floor = 2
+    return q if q > floor else floor
+
+
+def _atk_quant():
+    """Granularitas pose serangan, mengikuti preset kualitas.
+
+    Pose attack adalah pose yang paling sering DIPAKAI ULANG (tiap
+    28-46 frame hero menyerang lagi dengan urutan bucket yang sama),
+    jadi quant kasar di sini hampir gratis: bucket yang sama akan
+    diminta lagi dan cache-nya HIT. Lihat _hero_cache_key.
+    """
+    try:
+        from mobile.perf import Quality as _Qa
+        return int(getattr(_Qa, "atk_quant_floor", HERO_ATK_QUANT))
+    except Exception:
+        return HERO_ATK_QUANT
 
 
 def begin_fx_frame(active_count=0):
@@ -903,6 +934,18 @@ def begin_fx_frame(active_count=0):
     try:
         from mobile import perf as _perf
         _perf.set_fx_load(active_count)
+    except Exception:
+        pass
+    # Jatah render penuh hero + lapisan FX tanah juga per frame (lihat
+    # ANGGARAN RENDER PENUH HERO PER FRAME dan ANGGARAN LAPISAN FX TANAH
+    # di bawah). Diletakkan di sini karena fungsi ini satu-satunya
+    # penanda "frame baru" di jalur gambar hero.
+    try:
+        _reset_hero_render_budget()
+    except Exception:
+        pass
+    try:
+        _reset_fx_ground_budget()
     except Exception:
         pass
     for _mod in _LIVE_FX_MODULES.values():
@@ -954,6 +997,52 @@ def count_busy_fx_heroes(heroes):
     return n
 
 
+# ═══════════════════════════════════════════════════════
+# ANGGARAN LAPISAN FX TANAH (v32)
+#
+# Terukur (tools/_scratch_fxmods.py -> tools/bench_fx_layers.py,
+# 10 hero bertarung, preset LOW, PC):
+#
+#     lapisan FX hero total  6,56 ms/frame  = 51% dari seluruh frame
+#       lapisan atas (skill/trail/proyektil)  3,99 ms
+#       lapisan tanah (aura/cincin/decal)     2,57 ms
+#
+# Governor partikel (Quality.particle_ratio) sudah memangkas partikel
+# sampai ~6% di skenario ini, jadi biaya yang tersisa BUKAN partikel -
+# ini ratusan panggilan pygame.draw.* dan blit per hero per frame
+# (profil: 18 blit + 27 circle + 20 line + 14 polygon per hero). Di HP,
+# kode Python 3-5x lebih lambat, jadi 6,56 ms di PC = 20-33 ms di HP:
+# inilah sumber lag terbesar yang tersisa.
+#
+# Yang dibatasi di sini HANYA lapisan tanah - aura, cincin, dan decal
+# di bawah kaki hero. Lapisan ATAS (visual skill, trail, proyektil,
+# impact) tetap digambar penuh untuk SEMUA hero setiap frame, jadi
+# tidak ada skill yang kehilangan gambarnya dan tidak ada yang
+# berkedip: yang hilang hanya hiasan lantai pada sebagian hero saat
+# combat ramai. Urutan gambar hero stabil (hero pemain lebih dulu),
+# jadi hero yang selalu dapat jatah juga stabil - tidak ada hero yang
+# hiasannya hilang-timbul antar frame.
+# ═══════════════════════════════════════════════════════
+_FX_GROUND_LEFT = [99]
+
+
+# MYSTIC_FX_GROUND=0 -> lapisan tanah tanpa batas (pembanding untuk
+# tools/bench_fx_layers.py).
+_FX_GROUND_ON = _os.environ.get("MYSTIC_FX_GROUND", "1") != "0"
+
+
+def _reset_fx_ground_budget():
+    """Isi ulang jatah lapisan tanah (sekali per frame)."""
+    if not _FX_GROUND_ON:
+        _FX_GROUND_LEFT[0] = 99
+        return
+    try:
+        from mobile.perf import Quality as _Qg
+        _FX_GROUND_LEFT[0] = int(getattr(_Qg, "fx_ground_budget", 99))
+    except Exception:
+        _FX_GROUND_LEFT[0] = 99
+
+
 def _live_fx_pre(hero_type, surface, hero, x, y):
     """Lapisan FX di BAWAH sprite hero (ground FX, back particles).
 
@@ -969,6 +1058,30 @@ def _live_fx_pre(hero_type, surface, hero, x, y):
     mod = _live_fx_module(hero_type)
     if mod is None:
         return
+    # ── ANGGARAN LAPISAN TANAH (v32) ──
+    # Lihat catatan di _reset_fx_ground_budget().
+    #
+    # PENTING: yang dilewati HANYA gambarnya. ``draw_ground_layer`` di
+    # semua 27 modul heroes/*_fx.py berisi tiga hal - attach(hero),
+    # tick(), lalu draw_ground(). Kalau seluruh fungsinya dilewati,
+    # SIMULASI FX hero itu ikut membeku dan lapisan atasnya pun ikut
+    # mati (terukur: biaya lapisan atas jatuh dari 3,99 ke 0,03
+    # ms/frame - artinya FX skill hilang, bukan cuma hiasan lantai).
+    # Karena itu attach + tick tetap dijalankan di sini; hanya
+    # draw_ground yang tidak. tick() semua modul bertanda tangan
+    # tick(dt=None) dan didokumentasikan aman dipanggil berulang.
+    if _FX_GROUND_LEFT[0] <= 0:
+        try:
+            _attach = getattr(mod, "attach", None)
+            if _attach is not None and not _attach(hero):
+                return
+            _tick = getattr(mod, "tick", None)
+            if _tick is not None:
+                _tick()
+        except Exception:
+            pass
+        return
+    _FX_GROUND_LEFT[0] -= 1
     try:
         mod.draw_ground_layer(surface, hero, x, y)
     except Exception:
@@ -1424,7 +1537,9 @@ HERO_CACHE_ENABLED = True
 from collections import OrderedDict as _OD
 _hero_sprite_cache = _OD()
 _HERO_CACHE_MAX = 600
-_hero_cache_stats = {'hits': 0, 'misses': 0}
+_hero_cache_stats = {'hits': 0, 'misses': 0,
+                     'geom_hits': 0, 'geom_measure': 0, 'geom_grow': 0,
+                     'deferred': 0}
 
 # ═══ DUA CACHE TERPISAH: POSE BIASA vs POSE SKILL (v31) ═══
 # Terukur (tools/bench_hero_cache.py, 10 hero + 120 minion, PC):
@@ -1473,6 +1588,13 @@ def hero_cache_bytes():
                 total += _sprite_pixels(entry) * 4
             except Exception:
                 pass
+    # Canvas pakai-ulang (lihat _hero_canvas) juga memori nyata dan
+    # bertahan selama match, jadi ikut dilaporkan - di HP ber-RAM kecil
+    # angka ini yang dilihat pemain lewat overlay debug.
+    try:
+        total += _HERO_CANVAS_POOL_PX[0] * 4
+    except Exception:
+        pass
     return total / (1024.0 * 1024.0)
 
 
@@ -1480,13 +1602,22 @@ def hero_cache_stats():
     """Statistik cache, berguna untuk cek efektivitas."""
     h = _hero_cache_stats['hits']
     m = _hero_cache_stats['misses']
-    tot = h + m
+    d = _hero_cache_stats['deferred']
+    tot = h + m + d
     return {
         'entries': len(_hero_sprite_cache) + len(_hero_skill_cache),
         'hits': h,
         'misses': m,
+        'deferred': d,
         'hit_rate': f"{(h / tot * 100) if tot else 0:.1f}%",
     }
+
+
+def reset_hero_stats():
+    """Nolkan penghitung cache (dipakai alat ukur sebelum jendela ukur)."""
+    for k in ('hits', 'misses', 'deferred',
+              'geom_hits', 'geom_measure', 'geom_grow'):
+        _hero_cache_stats[k] = 0
 
 
 def clear_hero_sprite_cache():
@@ -1495,6 +1626,14 @@ def clear_hero_sprite_cache():
     _hero_skill_cache.clear()
     _hero_cache_stats['hits'] = 0
     _hero_cache_stats['misses'] = 0
+    _hero_cache_stats['deferred'] = 0
+    # Geometri crop ikut dibuang: kotak crop diturunkan dari skala hero,
+    # jadi kalau resolusi/skala berubah angka lama tidak berlaku lagi.
+    # Canvas pakai-ulang ikut dilepas supaya memori kembali ke pemain.
+    try:
+        clear_hero_geom_cache()
+    except Exception:
+        pass
 
 
 # ═══ PARK RENDERER PROJECTILES SAAT CANVAS CACHE ═══
@@ -1630,7 +1769,7 @@ def _hero_cache_key(hero_type, hero):
         # target).  Tanpa ini, dua pose berbeda memakai key yang sama
         # dan cache menyajikan sprite basi.
         return (hero_type, team, level, facing, 'atk',
-                timer // (HERO_ATK_QUANT * _q),
+                timer // (_atk_quant() * _q),
                 int(getattr(hero, '_pose_variant', 0) or 0))
 
     phase = int(getattr(hero, 'pulse', 0.0) * 2.0) % HERO_ANIM_PHASES
@@ -1751,12 +1890,38 @@ def _finish_hd_sprite(sprite, team='blue'):
             sprite.get_height() <= 1:
         return sprite, 0
 
+    # ═══ GERBANG KUALITAS (v32) ═══
+    # Di preset LOW kedua pass dilewati: sprite dipakai apa adanya hasil
+    # smoothscale. Badan, warna tim, dan animasi tidak berubah - yang
+    # hilang hanya rim light 1 px dan garis tepi gelap. Di HP lambat
+    # operasi pygame.mask inilah yang membuat cache-miss hero mahal.
     try:
+        from mobile.perf import Quality as _Qhd
+        _want_light = bool(getattr(_Qhd, "hero_lighting", True))
+        _want_edge = bool(getattr(_Qhd, "hd_edge", True))
+    except Exception:
+        _want_light = _want_edge = True
+
+    if not _want_light and not _want_edge:
+        return sprite, 0
+
+    try:
+        if not _want_edge:
+            # Hanya cahaya yang diminta: tidak perlu mask sama sekali
+            # (mask.from_surface memindai SELURUH piksel sprite).
+            if HD_LIGHTING_ENABLED and _lighting is not None:
+                red = team == 'red'
+                _lighting.apply_to_rig(
+                    sprite,
+                    rim_add=_HD_RIM_ADD_RED if red else _HD_RIM_ADD,
+                    shade_mul=_HD_SHADE_MUL_RED if red else _HD_SHADE_MUL)
+            return sprite, 0
+
         solid = pygame.mask.from_surface(sprite, _HD_EDGE_ALPHA)
         if solid.count() == 0:
             return sprite, 0
 
-        if HD_LIGHTING_ENABLED and _lighting is not None:
+        if HD_LIGHTING_ENABLED and _want_light and _lighting is not None:
             red = team == 'red'
             _lighting.apply_to_rig(
                 sprite,
@@ -1786,6 +1951,323 @@ def _finish_hd_sprite(sprite, team='blue'):
         # Renderer tidak boleh gagal hanya karena backend SDL tertentu
         # tidak mendukung operasi mask/to_surface.
         return sprite, 0
+
+
+# ═══════════════════════════════════════════════════════
+# GEOMETRI CROP PER POSE + CANVAS PAKAI-ULANG (v32)
+#
+# Terukur (tools/bench_hero_miss.py, PC, pygame-ce 2.5.8, 12 tipe hero,
+# satu cache-MISS render hero):
+#
+#     renderer prosedural          1,394 ms   49,7%
+#     canvas.get_bounding_rect()   1,076 ms   38,4%   <-- pemborosan
+#     _finish_hd_sprite            0,223 ms    8,0%
+#     smoothscale                  0,039 ms    1,4%
+#     alokasi Surface              0,049 ms    1,8%
+#     subsurface().copy()          0,022 ms    0,8%
+#     ─────────────────────────────────────────────────
+#     TOTAL                        2,803 ms
+#
+# Penyebab baris kedua: ukuran canvas diturunkan dari RANGE SERANG
+# (rata-rata terukur 434x434 = 188.584 px) sedangkan isi sprite-nya
+# hanya ~7.875 px (sekitar 89x89). get_bounding_rect(min_alpha=8)
+# memindai SEMUA piksel canvas untuk menemukan kotak 89x89 itu, jadi
+# 38% biaya satu miss habis untuk memindai ruang kosong. Di HP (CPU
+# 3-5x lebih lambat untuk kode Python + memori lebih lambat) satu miss
+# = 8-20 ms, dan miss datang bergerombol saat wave besar.
+#
+# Kunci sprite cache sudah menjamin "key sama = gambar identik", jadi
+# kotak crop sebuah pose cukup dihitung SEKALI lalu dipakai ulang pada
+# miss berikutnya (pose attack/idle berulang terus sepanjang match).
+# Canvas-nya dipakai ulang juga, dan yang dibersihkan hanya bekas
+# tinta pose sebelumnya - bukan seluruh 188.584 px.
+#
+# Keamanan visual dijaga cincin penjaga: setiap miss, 4 strip selebar
+# HERO_RING_GUARD px tepat di luar kotak crop diperiksa. Ada tinta di
+# sana = isi melebar, kotak dihitung ulang. Polanya sama dengan cache
+# sprite BOSS yang sudah terbukti (_boss_render_sprite_fast).
+# ═══════════════════════════════════════════════════════
+HERO_CROP_MARGIN = 8       # px kelonggaran di sekeliling isi sprite
+HERO_RING_GUARD = 8        # px cincin deteksi "isi melebar" per miss
+HERO_GEOM_MAX = 1200       # entri geometri (LRU); kunci = kunci sprite
+# Batas memori canvas pakai-ulang (piksel; 4 byte/px SRCALPHA).
+# Ukuran canvas diturunkan dari range serang hero, jadi bisa ada puluhan
+# ukuran berbeda. 6 juta px = 24 MB - cukup untuk semua ukuran yang
+# muncul di satu match tanpa membebani HP ber-RAM kecil.
+HERO_CANVAS_POOL_PX = 6 * 1000 * 1000
+
+_HERO_GEOM = _OD()          # kunci sprite -> kotak crop (Rect)
+_HERO_CANVAS_HALF = {}      # (tipe hero, jenis pose) -> setengah canvas
+_HERO_CANVAS_POOL = {}
+_HERO_CANVAS_POOL_PX = [0]
+
+# Saklar pembanding untuk alat ukur (tools/bench_phase.py):
+#   MYSTIC_HERO_GEOM=0   -> kotak crop dihitung ulang setiap miss
+#   MYSTIC_HERO_DEFER=0  -> tanpa anggaran render penuh per frame
+_HERO_GEOM_ON = _os.environ.get("MYSTIC_HERO_GEOM", "1") != "0"
+_HERO_DEFER_ON = _os.environ.get("MYSTIC_HERO_DEFER", "1") != "0"
+_HERO_CANVAS_LEARN_ON = _os.environ.get("MYSTIC_HERO_CANVAS", "1") != "0"
+
+
+def _hero_canvas(size):
+    """Canvas SRCALPHA pakai-ulang per ukuran.
+
+    Alokasi ``Surface(SRCALPHA)`` 434x434 terukur 0,049 ms di PC dan
+    jauh lebih mahal di HP. Yang dikembalikan dijamin BERSIH: hanya
+    bekas tinta pemakaian sebelumnya yang di-fill ulang, jadi biaya
+    pembersihan ikut menyusut bersama kotaknya.
+    """
+    slot = _HERO_CANVAS_POOL.get(size)
+    if slot is None:
+        px = size * size
+        if _HERO_CANVAS_POOL_PX[0] + px > HERO_CANVAS_POOL_PX:
+            # Anggaran memori habis: pakai canvas sekali pakai. Tetap
+            # benar, hanya tidak sehemat jalur pakai-ulang.
+            return pygame.Surface((size, size), pygame.SRCALPHA)
+        slot = [pygame.Surface((size, size), pygame.SRCALPHA), None]
+        _HERO_CANVAS_POOL[size] = slot
+        _HERO_CANVAS_POOL_PX[0] += px
+    canvas, dirty = slot
+    if dirty is not None:
+        canvas.fill((0, 0, 0, 0), dirty)
+        slot[1] = None
+    return canvas
+
+
+def _hero_mark_dirty(size, rect):
+    """Catat area canvas yang baru digambari (dibersihkan sebelum dipakai)."""
+    slot = _HERO_CANVAS_POOL.get(size)
+    if slot is None:
+        return
+    prev = slot[1]
+    slot[1] = rect if prev is None else prev.union(rect)
+
+
+def _hero_ring_ink(canvas, rect, guard=HERO_RING_GUARD):
+    """True kalau ada tinta di CINCIN tepat di luar kotak crop.
+
+    Empat strip sempit (total ~2.000 px untuk sprite 100x100) - sekitar
+    0,01 ms, bandingkan 1,08 ms untuk memindai seluruh canvas 434x434.
+    """
+    cw, ch = canvas.get_size()
+    left = max(0, rect.left - guard)
+    top = max(0, rect.top - guard)
+    right = min(cw, rect.right + guard)
+    bottom = min(ch, rect.bottom + guard)
+    strips = ((left, top, rect.left - left, bottom - top),
+              (rect.right, top, right - rect.right, bottom - top),
+              (rect.left, top, rect.width, rect.top - top),
+              (rect.left, rect.bottom, rect.width, bottom - rect.bottom))
+    for sx, sy, sw, sh in strips:
+        if sw <= 0 or sh <= 0:
+            continue
+        if canvas.subsurface(sx, sy, sw, sh) \
+                .get_bounding_rect(min_alpha=8).width > 0:
+            return True
+    return False
+
+
+def clear_hero_geom_cache():
+    """Kosongkan geometri crop + canvas pakai-ulang (ganti level/memori)."""
+    _HERO_GEOM.clear()
+    _HERO_CANVAS_HALF.clear()
+    _HERO_CANVAS_POOL.clear()
+    _HERO_CANVAS_POOL_PX[0] = 0
+
+
+def hero_geom_stats():
+    """Statistik geometri crop (debug overlay / alat uji)."""
+    return {"poses": len(_HERO_GEOM),
+            "canvas": len(_HERO_CANVAS_POOL),
+            "hits": _hero_cache_stats["geom_hits"],
+            "measure": _hero_cache_stats["geom_measure"],
+            "grow": _hero_cache_stats["geom_grow"]}
+
+
+def _hero_finish_sprite(canvas, rect, c, hero_type, hero):
+    """Crop -> scale -> pass HD -> ``(sprite, ax, ay)``.
+
+    ``ax``/``ay`` = letak titik jangkar (pusat canvas) di dalam sprite,
+    sehingga ``blit(sprite, (x - ax, y - ay))`` mendarat persis di
+    ``(x, y)``. Rumusnya identik dengan jalur lama; hanya sumber
+    ``rect``-nya yang sekarang bisa berasal dari cache geometri.
+    """
+    scale = _get_hero_scale(hero_type)
+    sub = canvas.subsurface(rect).copy()
+    if abs(scale - 1.0) >= 0.02:
+        nw = max(1, int(rect.width * scale))
+        nh = max(1, int(rect.height * scale))
+        sub = pygame.transform.smoothscale(sub, (nw, nh))
+
+    # Outline dibuat SETELAH smoothscale agar tepinya benar-benar 1 px
+    # tajam pada resolusi layar, bukan ikut diredupkan resize.
+    sub, edge_pad = _finish_hd_sprite(sub, getattr(hero, 'team', 'blue'))
+    return sub, (c - rect.x) * scale + edge_pad, (c - rect.y) * scale + edge_pad
+
+
+def _hero_render_sprite(key, hero_type, hero, renderer):
+    """Render badan hero ke sprite cache (dipanggil saat cache miss).
+
+    Return:
+      ``(sprite, ax, ay)`` - sukses
+      ``None``              - canvas kosong (tidak ada tinta sama sekali)
+      ``False``             - renderer gagal -> pemanggil pakai hero generik
+
+    Dua hal yang dihemat di sini, keduanya terukur:
+
+    1. UKURAN CANVAS. Canvas lama selalu sebesar jangkauan serang hero
+       (rata-rata 434x434 = 188.584 px) padahal isi sprite-nya cuma
+       ~89x89. ``get_bounding_rect`` memindai SEMUA piksel itu, jadi
+       38% biaya satu miss terbuang untuk ruang kosong. Sekarang ukuran
+       canvas DIPELAJARI per (tipe hero, jenis pose) - bukan per pose -
+       sehingga pose skill berikutnya (kuncinya selalu baru) tetap
+       memakai canvas kecil hasil belajar pose sebelumnya. Konten yang
+       menyentuh tepi membesarkan canvas lagi, jadi tidak ada FX yang
+       terpotong.
+
+    2. KOTAK CROP. Untuk pose yang kuncinya berulang (attack/idle)
+       kotaknya disimpan, sehingga ``get_bounding_rect`` tidak dipanggil
+       lagi - cukup cek cincin 4 strip (~0,01 ms).
+    """
+    kind = key[4]
+    lk = (hero_type, kind)
+    full_half = _canvas_size_for(hero) // 2
+    half = (_HERO_CANVAS_HALF.get(lk, full_half)
+            if _HERO_CANVAS_LEARN_ON else full_half)
+    if half > full_half:
+        half = full_half
+
+    for _attempt in range(4):
+        size = half * 2
+        canvas = _hero_canvas(size)
+        c = half
+
+        _adapt_hero_to_boss(hero)
+        try:
+            hero._render_scale = _get_hero_scale(hero_type)
+            # Beam-pass hero: beam TIDAK ikut di-cache - digambar live
+            # (pixel-perfect seperti mini boss).
+            hero._skip_beam = hero_type in _BEAM_PASS_HEROES
+            _call_renderer_on_canvas(renderer, canvas, hero, c, c)
+        except Exception:
+            _hero_mark_dirty(size, canvas.get_rect())
+            return False
+        finally:
+            hero._skip_beam = False
+
+        cached_rect = _HERO_GEOM.get(key) if _HERO_GEOM_ON else None
+        if (cached_rect is not None
+                and canvas.get_rect().contains(cached_rect)):
+            # ── JALUR CEPAT: kotak crop pose ini sudah dikenal ──
+            if not _hero_ring_ink(canvas, cached_rect):
+                _hero_cache_stats['geom_hits'] += 1
+                _hero_mark_dirty(
+                    size, cached_rect.inflate(HERO_RING_GUARD * 2,
+                                              HERO_RING_GUARD * 2))
+                return _hero_finish_sprite(canvas, cached_rect, c,
+                                           hero_type, hero)
+            cached_rect = None
+            _hero_cache_stats['geom_grow'] += 1
+
+        box = canvas.get_bounding_rect(min_alpha=8)
+        if box.width <= 0 or box.height <= 0:
+            _hero_mark_dirty(size, canvas.get_rect())
+            return None
+
+        m = HERO_CROP_MARGIN
+        if (half < full_half
+                and (box.left <= m or box.top <= m
+                     or box.right >= size - 1 - m
+                     or box.bottom >= size - 1 - m)):
+            # Isi menyentuh tepi canvas kecil ini: besarkan lalu render
+            # ulang. Terjadi hanya saat ukuran yang dipelajari belum
+            # cukup untuk pose ini (mis. skill yang melebar jauh).
+            _hero_mark_dirty(size, canvas.get_rect())
+            half = min(full_half, half + half // 2 + 24)
+            _HERO_CANVAS_HALF[lk] = half
+            _hero_cache_stats['geom_grow'] += 1
+            continue
+
+        if _HERO_GEOM_ON:
+            if len(_HERO_GEOM) >= HERO_GEOM_MAX:
+                _HERO_GEOM.pop(next(iter(_HERO_GEOM)), None)
+            # Kotak DISIMPAN PERSIS sebesar isi (tanpa padding), supaya
+            # sprite hasilnya identik piksel-per-piksel dengan jalur
+            # lama - diuji tools/test_hero_sprite_parity.py. Padding
+            # hanya dipakai untuk (a) cincin penjaga di bawah dan
+            # (b) kelonggaran ukuran canvas, bukan untuk sprite-nya.
+            # clip (irisan) dipakai sebagai jaring pengaman: beberapa
+            # hero (vex, razak, gornak, morgath - terukur) punya isi
+            # yang menyentuh tepi canvas, dan subsurface() melempar
+            # ValueError kalau kotaknya keluar area.
+            rect = box.clip(canvas.get_rect())
+            _HERO_GEOM[key] = rect
+        else:
+            rect = box
+
+        # ── PELAJARI UKURAN CANVAS UNTUK (TIPE, JENIS POSE) ──
+        # Diambil dari jangkauan isi yang benar-benar tergambar, bukan
+        # dari jangkauan serang. Diambil nilai TERBESAR yang pernah
+        # terlihat supaya pose berikutnya yang sedikit lebih lebar tidak
+        # perlu render ulang; kelonggaran HERO_RING_GUARD menyerap
+        # selisih kecil antar pose.
+        need = max(c - box.left, box.right - c,
+                   c - box.top, box.bottom - c) + m + HERO_RING_GUARD
+        if _HERO_CANVAS_LEARN_ON:
+            prev = _HERO_CANVAS_HALF.get(lk, 0)
+            if need > prev:
+                _HERO_CANVAS_HALF[lk] = min(need, full_half)
+        _hero_cache_stats['geom_measure'] += 1
+        # Seluruh canvas ditandai kotor: pengukuran hanya sekali per pose
+        # dan ini menjamin tidak ada sisa tinta (termasuk yang alpha-nya
+        # di bawah ambang bounding rect) terbawa ke pose lain yang
+        # kebetulan memakai canvas berukuran sama.
+        _hero_mark_dirty(size, canvas.get_rect())
+        return _hero_finish_sprite(canvas, rect, c, hero_type, hero)
+
+    # Tidak pernah terjadi (loop selalu return/continue maksimal 4x),
+    # tetapi jangan sampai sebuah pose membuat hero hilang dari layar.
+    return False
+
+
+# ═══════════════════════════════════════════════════════
+# ANGGARAN RENDER PENUH HERO PER FRAME (v32)
+#
+# Cache-miss hero terukur 2,8 ms di PC (8-20 ms di HP) dan datang
+# bergerombol: begitu wave masuk, banyak hero ganti pose di frame yang
+# sama. bench_wave.py merekam draw p95 18,9 ms padahal rata-ratanya
+# 10,8 ms - selisih itulah yang dirasakan pemain sebagai "patah".
+#
+# Anggaran ini membatasi berapa hero yang boleh render penuh dalam satu
+# frame. Yang kehabisan jatah memakai ulang sprite terakhirnya (1-2
+# frame lebih tua; lapisan FX tetap digambar penuh setiap frame, jadi
+# skill/trail/proyektil tidak pernah membeku). Hasilnya bukan sekadar
+# lebih cepat: waktu frame jadi DATAR, dan frame datar terasa jauh
+# lebih lancar daripada frame cepat yang diselingi hentakan.
+#
+# Hero yang BELUM pernah punya sprite tidak pernah ditunda - kalau
+# ditunda dia hilang dari layar.
+# ═══════════════════════════════════════════════════════
+_HERO_RENDER_LEFT = [99]
+
+
+def _reset_hero_render_budget():
+    """Isi ulang jatah render penuh (dipanggil sekali per frame)."""
+    try:
+        from mobile.perf import Quality as _Qb
+        _HERO_RENDER_LEFT[0] = int(getattr(_Qb, "max_hero_render", 6))
+    except Exception:
+        _HERO_RENDER_LEFT[0] = 6
+
+
+def _claim_hero_render():
+    """Ambil 1 jatah render penuh hero. False = pakai sprite terakhir."""
+    if not _HERO_DEFER_ON:
+        return True
+    if _HERO_RENDER_LEFT[0] <= 0:
+        return False
+    _HERO_RENDER_LEFT[0] -= 1
+    return True
 
 
 def _blit_scaled(surface, canvas, cx, cy, scale, x, y, team='blue'):
@@ -1876,59 +2358,46 @@ def render_hero(hero_type, surface, hero, x, y):
 
         surface.blit(sprite, (int(x - ax), int(y - ay)))
     else:
-        # Cache miss -> render ke canvas sendiri, simpan
-        _hero_cache_stats['misses'] += 1
-        canvas_w = _canvas_size_for(hero)
-        canvas = pygame.Surface((canvas_w, canvas_w), pygame.SRCALPHA)
-        c = canvas_w // 2
-
         renderer = HERO_RENDERERS.get(hero_type) or \
             BOSS_RENDERERS.get(hero_type)
 
-        if renderer is None:
-            _draw_generic_hero(surface, hero, x, y)
+        # ── JATAH RENDER PENUH HABIS? ──
+        # Lihat "ANGGARAN RENDER PENUH HERO PER FRAME". Hanya berlaku
+        # kalau hero ini SUDAH punya sprite untuk dipakai ulang; kalau
+        # belum, menunda berarti hero hilang dari layar.
+        last = getattr(hero, "_sprite_last", None)
+        if renderer is not None and last is not None \
+                and not _claim_hero_render():
+            _hero_cache_stats['deferred'] += 1
+            # Controller pose tetap dimajukan (renderer tidak dipanggil)
+            # - alasan sama seperti jalur cache-hit di atas, supaya
+            #   animasi serangan tidak pernah membeku.
+            _tick_pose_controller(hero_type, hero)
+            surface.blit(last[0], (int(x - last[1]), int(y - last[2])))
         else:
-            _adapt_hero_to_boss(hero)
-            try:
-                hero._render_scale = _get_hero_scale(hero_type)
-                # Beam-pass hero: beam TIDAK ikut di-cache -
-                # digambar live (pixel-perfect seperti mini boss).
-                hero._skip_beam = hero_type in _BEAM_PASS_HEROES
-                _call_renderer_on_canvas(renderer, canvas, hero, c, c)
-            except Exception:
+            # Cache miss -> render ke canvas sendiri, simpan
+            _hero_cache_stats['misses'] += 1
+
+            if renderer is None:
                 _draw_generic_hero(surface, hero, x, y)
-            finally:
-                hero._skip_beam = False
+            else:
+                out = _hero_render_sprite(key, hero_type, hero, renderer)
+                if out is False:
+                    _draw_generic_hero(surface, hero, x, y)
+                elif out is None:
+                    _live_fx_post(hero_type, surface, hero, x, y)
+                    return
+                else:
+                    sub, ax, ay = out
+                    hero._sprite_last = (sub, ax, ay)
 
-            rect = canvas.get_bounding_rect(min_alpha=8)
-            if rect.width <= 0 or rect.height <= 0:
-                _live_fx_post(hero_type, surface, hero, x, y)
-                return
+                    if len(cache) >= cache_max:
+                        cache.pop(next(iter(cache)))
 
-            scale = _get_hero_scale(hero_type)
-            sub = canvas.subsurface(rect).copy()
-            if abs(scale - 1.0) >= 0.02:
-                nw = max(1, int(rect.width * scale))
-                nh = max(1, int(rect.height * scale))
-                sub = pygame.transform.smoothscale(sub, (nw, nh))
-
-            # Outline dibuat SETELAH smoothscale agar tepinya benar-benar
-            # 1 px tajam pada resolusi layar, bukan ikut diredupkan resize.
-            sub, edge_pad = _finish_hd_sprite(
-                sub, getattr(hero, 'team', 'blue'))
-
-            # anchor = posisi titik (c, c) di dalam sprite hasil.
-            # Tambahkan padding edge supaya posisi kaki tidak bergeser.
-            ax = (c - rect.x) * scale + edge_pad
-            ay = (c - rect.y) * scale + edge_pad
-
-            if len(cache) >= cache_max:
-                cache.pop(next(iter(cache)))
-
-            # Simpan apa adanya dulu; konversi colorkey menyusul pada
-            # pemakaian kedua (lihat jalur "hit" di atas).
-            cache[key] = (sub, ax, ay, 1)
-            surface.blit(sub, (int(x - ax), int(y - ay)))
+                    # Simpan apa adanya dulu; konversi colorkey menyusul
+                    # pada pemakaian kedua (lihat jalur "hit" di atas).
+                    cache[key] = (sub, ax, ay, 1)
+                    surface.blit(sub, (int(x - ax), int(y - ay)))
 
     # ═══ BEAM PASS LIVE (hero ranged seperti morgath) ═══
     # Beam digambar langsung ke layar skala 1.0 setiap frame ->

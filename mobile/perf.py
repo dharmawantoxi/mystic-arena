@@ -526,6 +526,53 @@ class _Quality:
         self.max_damage_numbers = 8 if low else (16 if med else 32)
         self.target_fps = 30 if low else 60
 
+        # ══ PASS "HD" PADA SPRITE HERO (v32) ══
+        # Diukur (tools/bench_hero_miss.py, PC, pygame-ce 2.5.8):
+        # satu cache-MISS render hero = 2,80 ms, dan _finish_hd_sprite
+        # (mask.from_surface + 8 mask draw + to_surface + rim light)
+        # menyumbang 0,22 ms (8%) dari situ. Pass ini jalan HANYA saat
+        # miss, tetapi di ARM operasi pygame.mask jauh lebih mahal
+        # sehingga kontribusinya naik, dan miss justru paling sering
+        # terjadi saat combat ramai (persis saat HP sudah kewalahan).
+        # Outline/rim adalah kosmetik: badan, warna, dan animasi hero
+        # tidak berubah sama sekali ketika dimatikan.
+        self.hd_edge = not low
+        self.hero_lighting = not low
+
+        # ══ ANGGARAN RENDER PENUH HERO PER FRAME (v32) ══
+        # Cache-miss hero = 2,8-4,4 ms di PC (3-5x lebih mahal di HP).
+        # Miss datang BERGEROMBOL: satu wave membuat banyak hero ganti
+        # pose di frame yang sama, sehingga waktu frame melonjak
+        # (terukur draw p95 18,9 ms vs rata-rata 10,8 ms). Lonjakan
+        # itulah yang dirasakan pemain sebagai "lag/patah".
+        # Anggaran ini membatasi berapa hero yang boleh render penuh
+        # dalam satu frame; sisanya memakai ulang sprite terakhirnya
+        # (1-2 frame lebih tua - tidak terlihat untuk badan hero, dan
+        # lapisan FX tetap digambar penuh setiap frame).
+        self.max_hero_render = 2 if low else (3 if med else 6)
+
+        # ══ LANTAI KUANTISASI POSE HERO (v32) ══
+        # Pose skill/attack yang di-cache diperbarui tiap N frame. Makin
+        # besar N, makin sedikit pose unik -> makin sedikit cache-MISS
+        # (2,8-4,4 ms di PC, 8-20 ms di HP) dan makin tinggi hit rate.
+        #   skill quant 2  : hit rate 78,5%  (terukur bench_hero_cache)
+        #   skill quant 12 : hit rate 95,2%
+        # Yang dikorbankan hanya kehalusan pose BADAN; lapisan FX hidup
+        # (partikel/trail/proyektil/impact) tetap digambar penuh 60 fps
+        # di luar cache, jadi skill tetap terlihat hidup.
+        # Preset HIGH tidak berubah sama sekali (lantai = nilai lama).
+        self.skill_quant_floor = 12 if low else (6 if med else 2)
+        self.atk_quant_floor = 4 if low else 2
+
+        # ══ ANGGARAN LAPISAN FX TANAH (v32) ══
+        # Berapa hero yang boleh menggambar lapisan dekorasi di bawah
+        # kakinya (aura / cincin / decal) dalam satu frame. Lapisan ATAS
+        # (visual skill, trail, proyektil, impact) TIDAK dibatasi.
+        # Terukur: lapisan tanah = 2,57 ms/frame untuk 10 hero di PC
+        # (~8-13 ms di HP). 99 = tidak pernah membatasi.
+        # Lihat ANGGARAN LAPISAN FX TANAH di heroes/__init__.py.
+        self.fx_ground_budget = 3 if low else (6 if med else 99)
+
         _apply_aa_switch(self.aa_circles)
 
     def __repr__(self):
