@@ -11,6 +11,12 @@ menyisakan clear color). Checks:
   3. tiap $A/B (onready) dan get_node*(^"A/B") literal harus ada di scene
      yang memasang script itu (dilewati kalau script dipakai >1 scene)
   4. [connection] from/to harus merujuk node yang ada
+  5. SceneTree method dipanggil di self tanpa get_tree() (Parser Error
+     "Function get_nodes_in_group() not found in base self." — Autoload
+     yang extends Node tidak punya method SceneTree)
+  6. draw_ellipse() tidak ada di Godot 4.3 (baru di 4.6 dengan signature
+     (Vector2, float, float, Color)); project target 4.3 harus pakai
+     draw_colored_polygon / draw_circle fallback
 
 Usage: python3 godot/tools/check_refs.py godot
 Exit 0 = bersih, 1 = ada masalah.
@@ -27,10 +33,26 @@ ONREADY_RE = re.compile(r'@onready\s+var\s+\w+(?:\s*:\s*[\w.\[\]]+)?\s*=\s*\$([A
 GETNODE_RE = re.compile(r'get_node(?:_or_null)?\(\s*\^?"([^"]+)"')
 DYNAMIC = re.compile(r'[%{}()]')
 
+# 5 — SceneTree methods yang hanya ada di SceneTree, bukan di Node/self
+SCENE_TREE_METHODS = [
+    "get_nodes_in_group",
+    "get_first_node_in_group",
+    "call_group",
+    "create_timer",
+    "quit",
+    "change_scene_to_file",
+    "reload_current_scene",
+]
+# pre-compile bare-call regex: not preceded by '.' or alphanum/_
+SCENE_TREE_RE = [
+    (m, re.compile(r'(?<![A-Za-z0-9_\.])' + re.escape(m) + r'\s*\('))
+    for m in SCENE_TREE_METHODS
+]
+DRAW_ELLIPSE_RE = re.compile(r'(?<![A-Za-z0-9_\.])draw_ellipse\s*\(')
+
 
 def res_to_fs(root, res_path):
     return os.path.normpath(os.path.join(root, res_path[len("res://"):]))
-
 
 def parse_tags(text):
     out = []
@@ -40,7 +62,6 @@ def parse_tags(text):
             attrs[name] = raw.strip('"')
         out.append((m.group(1), attrs))
     return out
-
 
 def scene_nodes(path):
     """NodePaths yang ada di scene ini (root = ""), termasuk node instanced."""
@@ -58,7 +79,6 @@ def scene_nodes(path):
             names.add(f"{parent}/{name}")
             names.add(name)  # sering diakses pakai nama saja
     return names, text
-
 
 def script_of_scene(text):
     for tag, a in parse_tags(text):
@@ -134,6 +154,68 @@ def check(root):
                     continue
                 if pat not in names:
                     problems.append(f"{rel}: node '{pat}' tidak ada di {os.path.relpath(scenes_for[0], root)}")
+
+        # 5 & 6: static GDScript checks (tanpa engine) — kelas bug Parser Error
+        # a) count_alive() harus lewat get_tree() dengan guard tree == null
+        if re.search(r'\bfunc\s+count_alive\s*\(', text):
+            # guard harus ada: get_tree() dan pengecekan null di fungsi tersebut
+            # Ekstrak block fungsi count_alive (hingga func berikutnya atau akhir file)
+            m = re.search(r'func\s+count_alive\s*\(.*?\)\s*(?:->\s*\w+\s*)?:\s*\n(.*?)(?=\nfunc\s|\Z)', text, re.S)
+            block = m.group(1) if m else ""
+            if 'get_tree()' not in block:
+                problems.append(
+                    f"{rel}: count_alive() harus lewat get_tree() (contoh: var tree := get_tree(); if tree == null: return 0; tree.get_nodes_in_group(...)) — "
+                    f"tanpa get_tree() akan Parser Error 'Function \"get_nodes_in_group()\" not found in base self.'"
+                )
+            elif '== null' not in block and '==null' not in block and 'tree == null' not in block:
+                problems.append(
+                    f"{rel}: count_alive() harus guard kalau tree == null (autoload bisa terpanggil sebelum SceneTree siap) — "
+                    f"tambahkan 'var tree := get_tree(); if tree == null: return 0'"
+                )
+            elif 'get_nodes_in_group' in block and 'tree.get_nodes_in_group' not in block and 'get_tree().get_nodes_in_group' not in block:
+                problems.append(
+                    f"{rel}: count_alive() masih memanggil get_nodes_in_group() di self — ganti dengan tree.get_nodes_in_group() / get_tree().get_nodes_in_group()"
+                )
+        # b) baris-per-baris: SceneTree method di self + draw_ellipse 4.3
+        # Strip string literals dulu supaya pola di dalam string tidak ke-flag,
+        # lalu buang komentar '#' supaya tidak false positive di comment.
+        lines = text.splitlines()
+        for idx, raw_line in enumerate(lines, start=1):
+            # hapus string literals " ... " dan ' ... ' (ganti dengan "")
+            no_str = re.sub(r'"(?:\\.|[^"\\])*"', '""', raw_line)
+            no_str = re.sub(r"'(?:\\.|[^'\\])*'", "''", no_str)
+            code = no_str.split('#', 1)[0]
+            if not code.strip():
+                continue
+            # 5: SceneTree method dipanggil di self (tanpa get_tree() / tree.)
+            # Deteksi bare call: tidak diawali '.' (artinya bukan tree.get_nodes... atau get_tree().get_nodes...)
+            # Jika ada get_tree() di baris yang sama tapi panggilan tetap bare (tanpa dot), itu tetap bug.
+            for method, pat in SCENE_TREE_RE:
+                if not pat.search(code):
+                    continue
+                # skip kalau ini definisi fungsi: "func get_nodes_in_group(...)"
+                if re.search(r'\bfunc\s+' + re.escape(method) + r'\b', code):
+                    continue
+                # skip kalau ada prefix yang sah: "get_tree().method" sudah tidak match karena dot,
+                # tapi "tree.method" juga tidak match. Jadi bare match = error.
+                # Untuk pesan yang lebih jelas, tambahkan hint.
+                # Khusus quit: bare quit() -> harus get_tree().quit(), jangan flag Engine.quit()
+                # Engine.quit() punya dot, jadi sudah ter-filter.
+                problems.append(
+                    f"{rel}:{idx}: SceneTree.{method}() dipanggil di self (tanpa get_tree()) — "
+                    f"Parser Error 'Function \"{method}()\" not found in base self.' "
+                    f"(Autoload extends Node, method ada di SceneTree -> pakai get_tree().{method}() atau var tree := get_tree(); if tree == null: return)"
+                )
+            # 6: draw_ellipse() kompatibilitas Godot 4.3
+            if DRAW_ELLIPSE_RE.search(code):
+                # skip definisi func draw_ellipse jika ada (tidak ada di project, tapi jaga)
+                if re.search(r'\bfunc\s+draw_ellipse\b', code):
+                    continue
+                problems.append(
+                    f"{rel}:{idx}: draw_ellipse() tidak ada di Godot 4.3 (baru di 4.6 dengan signature (Vector2, float, float, Color)) "
+                    f"— ganti dengan draw_colored_polygon/draw_arc fallback (contoh: PackedVector2Array 32 titik + draw_colored_polygon) "
+                    f"atau upgrade project ke 4.6"
+                )
     return problems
 
 

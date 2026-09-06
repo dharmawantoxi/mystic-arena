@@ -170,8 +170,11 @@ func container_or_root(container: Node) -> Node:
 	return get_tree().root
 
 func count_alive(group: String, team: String) -> int:
+	var tree := get_tree()
+	if tree == null:
+		return 0
 	var n := 0
-	for node in get_nodes_in_group(group):
+	for node in tree.get_nodes_in_group(group):
 		if is_instance_valid(node) and node.get("team") == team and not bool(node.get("is_dead")):
 			n += 1
 	return n

@@ -87,8 +87,17 @@ func _draw():
 		draw_line(Vector2(x, 36), Vector2(x, 116), Color(0.18, 0.19, 0.22, 1), 1.0)
 	for y in range(36, 117, 20):
 		draw_line(Vector2(-600, y), Vector2(600, y), Color(0.18, 0.19, 0.22, 0.45), 1.0)
-	# Center shadow ellipse
-	draw_ellipse(Vector2(0, 38), Vector2(26, 9), Color(0, 0, 0, 0.22))
+	# Center shadow ellipse — Godot 4.3 tidak punya CanvasItem.draw_ellipse
+	# (baru di 4.6 dengan signature Vector2,float,float,Color). Fallback pakai polygon.
+	var _ellipse_center := Vector2(0, 38)
+	var _ellipse_rx := 26.0
+	var _ellipse_ry := 9.0
+	var _ellipse_col := Color(0, 0, 0, 0.22)
+	var _ellipse_pts := PackedVector2Array()
+	for _i in 32:
+		var _a := _i * TAU / 32.0
+		_ellipse_pts.append(_ellipse_center + Vector2(cos(_a) * _ellipse_rx, sin(_a) * _ellipse_ry))
+	draw_colored_polygon(_ellipse_pts, _ellipse_col)
 
 func _input(event):
 	if event is InputEventKey and event.pressed:
