@@ -42,11 +42,13 @@ godot/
     ui/SkillBar.gd       # bar QWER + panel hero terpilih + 6 chip item (dibangun dari kode)
     ui/SkillButton.gd    # satu tombol skill dengan overlay cooldown
     ui/ShopPanel.gd      # toko 4 tab: MENARA / ITEM / HERO / NEXUS (dibangun dari kode)
+    ui/MainMenu.gd       # menu utama paritas MenuState pygame (MAIN..PAUSE, dari kode)
     fx/DamageNumber.tscn # Menggantikan FloatingText pygame
     demo/KaizenDemo.tscn # Showcase isolasi rig Kaizen (Run Current Scene)
   scripts/
-    autoload/GameManager.gd  # Port _core.Game: ekonomi, wave, spawn, seleksi, toko, menang/kalah
-    autoload/SaveManager.gd  # Port mobile/cloud_save (user:// + Play Games)
+    autoload/GameManager.gd  # Port _core.Game: ekonomi, wave, spawn, seleksi, toko, menang/kalah, meta reward, enemy scaling
+    autoload/SaveManager.gd  # Port mobile/cloud_save + kunci meta (meta_gold, replay_reward_counts, unlocked_bosses)
+    autoload/AudioManager.gd # Hook BGM per level + SFX + volume dari settings save
     core/HeroDB.gd       # Port _core.HERO_TYPES + HERO_LEVELS (Lv1-15, boss hero ×1.6)
     core/BossDB.gd       # Port bosses/boss_data.py + levels (mini boss/true boss schedule)
     core/TowerDB.gd      # Port TOWER_UPGRADE_PATHS + NEXUS_LEVELS + konstanta menara
@@ -97,11 +99,14 @@ python tools/convert_to_godot.py
 ```bash
 godot godot/project.godot
 # atau double-click project.godot
-# Tekan F5 — Main scene langsung jalan: map forest (fallback prosedural, tanpa TileSet),
-# 2 nexus + 18 slot menara, 6 hero Radiant + 6 hero Dire, wave minion tiap 25 detik,
-# mini boss wave 10/15/25, true boss setelah 6 menara Dire hancur, HUD emas+wave+bar nexus.
+# Tekan F5 — MENU UTAMA muncul (state machine paritas MenuState pygame).
+# MULAI GAME -> kartu LEVEL 1 -> MAIN:
+#   map forest (fallback prosedural, tanpa TileSet), 2 nexus + 18 slot menara,
+#   6 hero Radiant + 6 hero Dire, wave minion tiap 25 detik,
+#   mini boss wave 10/15/25, true boss setelah 6 menara Dire hancur.
 # Kontrol: klik = pilih unit/slot · QWER = skill · B = toko · D = difficulty ·
-#          ENTER = ulang setelah menang/kalah · P/ESC = pause
+#          ENTER setelah menang = LANJUT LEVEL BERIKUTNYA (kalah = ulang) ·
+#          R = replay (reward 1500/200) · P/ESC = menu PAUSE
 # Debug:   F1 respawn roster · T ganti tema · SPASI beli hero random
 #
 # Kalau yang muncul masih layar hitam: cek urutan autoload & nama file di godot/
@@ -190,6 +195,8 @@ Build time: Pygame 8-12 menit (p4a clone + compile) → **Godot 45 detik**.
 | **Fase 4** | CombatSystem + 54 level config + waves (sudah ada data JSON) | ✅ DONE (2026-09-06): tema per level dari `levels.json`, `MINION_TYPES` + `NEXUS_WAVE_COMPOSITION` di `GameManager`, pipeline damage penuh (armor/MR, block, evade, shield, reflect, lifesteal, cleave, aura) di `scripts/systems/CombatSystem.gd` + `StatusEffects.gd` |
 | **Fase 4b** | Menara 4 jalur + nexus/castle + menang-kalah | ✅ DONE (2026-09-06): `scenes/tower/Tower.gd` + `TowerBullet.gd` + `scenes/base/Nexus.gd`, 18 slot bangun dari lane path (`Main._generate_build_slots`), AI Dire membangun menara, banner VICTORY/DEFEAT + meta reward ke save |
 | **Fase 4c** | Skill QWER + toko item + level hero + ekonomi pygame | ✅ DONE (2026-09-06): `scripts/skills/SkillBook.gd` (6 hero starter + generik), `scripts/items/ItemDB.gd` + `ItemInventory.gd` (33 item, 6 slot), `data/hero_levels.json` (Lv1-15), ekonomi `(3 + 0.3×level) × difficulty` + milli-gold, UI `SkillBar.gd` + `ShopPanel.gd` |
+| **Fase 4d** | Menu utama + progresi level + meta reward | ✅ DONE (2026-09-06): `scenes/ui/MainMenu.gd` (state machine MAIN/LEVEL_SELECT/HERO_SHOP/SETTINGS/HOW_TO_PLAY/CREDITS/PAUSE paritas `MenuState` `_core.py:3097`), 54 kartu level + kunci `unlock_after_level`, HERO SHOP meta gold, volume SFX/BGM dari save. `GameManager.next_level()` + `is_replay` (ENTER setelah menang lanjut level, paritas `main.py:566-586`), meta reward paritas `_grant_meta_reward` (`_core.py:2365-2456`: 3000/1500/200/0 → kunci `meta_gold` + `replay_reward_counts`), castle awal `starting_castle_level`/`castle_start_level` (`_core.py:1504-1508`), enemy scaling hard (`enemy_hp_mult`×1.15 dsb., `_core.py:1476-1483` → minion merah 1792-1796 + boss 1822/2097), auto-unlock hero boss saat menang (`_core.py:2322`) |
+| **Fase 4e** | Audio (awal) | 🟡 parsial (2026-09-06): `scripts/autoload/AudioManager.gd` — hook `bgm_track` per level, SFX ui/victory/defeat, volume dari `SaveManager.data["settings"]`; 24 file .wav disalin converter ke `godot/assets/sounds/` (di-gitignore). SFX tempur unit + ambient belum |
 | **Fase 5** | 200+ boss hero import batch (Opsi A) | 2 minggu |
 | **Fase 5b** | Item aktif (17), `on_attack`/`bash`/`multishot`, AIPlayer penuh (retreat/build item), proyektil skill | belum — lihat "Deviasi yang disengaja" di `godot/README.md` |
 | **Fase 6** | Android AAB final + Play Store (preset sudah ada) | 2 hari |
@@ -208,7 +215,8 @@ Build time: Pygame 8-12 menit (p4a clone + compile) → **Godot 45 detik**.
 - `godot/scripts/core/TowerDB.gd` + `godot/data/towers.json` — keseimbangan 4 jalur menara (stat per level, biaya upgrade, Regen Shield)
 - `godot/scripts/core/ItemDB.gd` + `godot/data/items.json` — item baru cukup ditambah di `hero_items.py` lalu jalankan converter
 - `godot/scenes/ui/ShopPanel.gd` — tab toko (MENARA/ITEM/HERO/NEXUS), semua aksi lewat `GameManager.try_*()`
-- `godot/scripts/autoload/GameManager.gd` — ekonomi, state menang/kalah, seleksi, gold AI
+- `godot/scenes/ui/MainMenu.gd` — layar menu + level select + hero shop; satu file, tanpa .tscn
+- `godot/scripts/autoload/GameManager.gd` — ekonomi, state menang/kalah, seleksi, gold AI, meta reward (`_grant_meta_reward`), `next_level()`/`is_replay`, enemy scaling
 - `godot/assets/shaders/outline.gdshader` — tweak outline_width/color
 - `hero_archetypes.json` → `godot/data/hero_archetypes.json` via convert script
 

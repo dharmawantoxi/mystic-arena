@@ -5,12 +5,29 @@
 #   • EKONOMI paritas _core.py: GOLD_PER_SECOND 3 (+0.3/level), starting gold
 #     base + 100/level, multiplier difficulty (easy 1.25 / normal 1.0 / hard 0.75),
 #     akumulasi pecahan lewat _gold_income_milli (bukan int() per detik).
-#   • STATE MATCH: "playing" / "victory" / "defeat" — nexus hancur menentukan
-#     hasil (paritas Game.update 2281-2292), wave & gold berhenti saat match usai.
+#   • STATE MATCH: "playing" / "victory" / "defeat" / "idle" — nexus hancur
+#     menentukan hasil (paritas Game.update 2281-2292), wave & gold berhenti
+#     saat match usai; "idle" = sedang di menu utama (in_menu).
 #   • MINION_TYPES + komposisi wave dibaca dari data/economy.json (hasil convert),
 #     bukan hardcode; late-wave scale mengikuti wave.
 #   • gold AI (tim red) terpisah supaya AI bisa membangun/meng-upgrade menara.
 #   • aura item diproses 4×/detik (paritas hero_items.update_auras).
+#
+# Update sesi progresi level + menu utama:
+#   • PROGRESI LEVEL: is_replay + next_level() (ENTER setelah menang lanjut ke
+#     level berikutnya, paritas get_next_level main.py:566-576), restart_match()
+#     kini is_replay=true, return_to_menu() (paritas main.py:582-586).
+#   • META REWARD paritas _grant_meta_reward (_core.py:2365-2456): menang
+#     pertama meta_gold_reward_win (3000), replay 1500 sekali lalu 200
+#     unlimited lewat save replay_reward_counts, kalah 0 — ditulis ke kunci
+#     save "meta_gold" (bukan "gold"), di-guard _meta_reward_granted.
+#   • ENEMY SCALING (paritas _core.py:1460/1476-1483): aktif hanya difficulty
+#     hard; enemy_hp_mult x1.15, damage x1.10 dari levels.json — diterapkan
+#     Main ke minion merah (1792-1796) dan boss (1822/2097) saat spawn.
+#   • AUTO-UNLOCK HERO BOSS (paritas _auto_unlock_defeated_boss_heroes
+#     _core.py:2322): boss yang dikalahkan + match menang -> hero gratis masuk
+#     SaveManager.unlocked_heroes (muncul di HERO SHOP + tab HERO toko).
+#   • Hook BGM per level: levels.json["bgm_track"] -> AudioManager.play_bgm.
 extends Node
 
 signal level_started(level_num: int)
@@ -79,10 +96,35 @@ var gold: int = 1000:
 		gold = v
 		gold_changed.emit(v)
 var is_paused: bool = false
-## "playing" | "victory" | "defeat" — paritas Game.state
-var state: String = "playing"
+## "playing" | "victory" | "defeat" | "idle" — paritas Game.state; "idle" =
+## sedang di menu utama (belum/tidak ada match berjalan).
+var state: String = "idle"
 ## "easy" | "normal" | "hard"
 var difficulty: String = "normal"
+
+# ── PROGRESI LEVEL + MENU (paritas _core.py 1578-1584) ──
+## True kalau level ini dimulai ULANG padahal sudah pernah ditamatkan
+## (pygame: Game(screen, level_number, is_replay=True) dari main.py:576).
+## Menentukan reward replay di end_match() (_core.py:2387).
+var is_replay: bool = false
+## True saat menu utama terbuka (boot + MAIN MENU dari pause/menang-kalah).
+## _process gold/wave berhenti; pygame menjalankan menu di state terpisah.
+var in_menu: bool = true
+## Reward meta yang TERAKHIR diberikan (dibaca HUD; paritas Game.meta_reward_earned)
+var meta_reward_earned: int = 0
+## Guard anti dobel reward (paritas _meta_reward_granted _core.py:1581/2456)
+var _meta_reward_granted: bool = false
+## Boss (mini/true) yang dikalahkan di match INI — baru di-unlock gratis
+## kalau match dimenangkan (paritas bosses_defeated_this_match _core.py:1594).
+var bosses_defeated_this_match: Array = []
+
+# ── ENEMY SCALING (Hard mode; paritas _core.py:1460 + 1476-1483) ──
+## enemy_scaling_enabled = (difficulty == "hard"); multiplier HP/dmg/speed
+## musuh (merah) diambil dari levels.json lalu dikali 1.15/1.10/1.0.
+var enemy_scaling_enabled: bool = false
+var enemy_hp_mult: float = 1.0
+var enemy_damage_mult: float = 1.0
+var enemy_speed_mult: float = 1.0
 
 # Referensi node yang di-set oleh Main.tscn (lewat GameManagerConnector)
 var hero_container: Node
@@ -203,9 +245,25 @@ func set_difficulty(d: String) -> void:
 	difficulty = d
 	# Gold/s mengikuti kesulitan langsung; starting gold hanya saat match mulai.
 	gold_per_second = compute_gold_per_second(level_number)
+	# Enemy scaling ikut kesulitan (paritas _core.py:1460: aktif hanya "hard").
+	# Di pygame difficulty dikunci per run (reset Game); di sini pergantian
+	# mid-match (tombol D) hanya memengaruhi unit yang DI-SPAWN berikutnya —
+	# minion/boss lama mempertahankan stat spawn-nya (pygame juga menerapkan
+	# scaling saat spawn: _core.py:1792 dan 1822).
+	var lv_data: Dictionary = BossDB.get_level(level_number)
+	enemy_scaling_enabled = (difficulty == "hard")
+	if enemy_scaling_enabled:
+		enemy_hp_mult = float(lv_data.get("enemy_hp_mult", 1.0)) * 1.15
+		enemy_damage_mult = float(lv_data.get("enemy_damage_mult", 1.0)) * 1.10
+		enemy_speed_mult = float(lv_data.get("enemy_speed_mult", 1.0))
+	else:
+		enemy_hp_mult = 1.0
+		enemy_damage_mult = 1.0
+		enemy_speed_mult = 1.0
 	difficulty_changed.emit(difficulty)
-	print("[GameManager] difficulty -> %s (gold/s %s)" % [
-		difficulty, format_gold_rate(gold_per_second)])
+	print("[GameManager] difficulty -> %s (gold/s %s)%s" % [
+		difficulty, format_gold_rate(gold_per_second),
+		" · enemy scaling AKTIF" if enemy_scaling_enabled else ""])
 
 
 func cycle_difficulty() -> String:
@@ -222,7 +280,7 @@ func cycle_difficulty() -> String:
 func _process(delta):
 	# Watchdog hit-stop DULU: Engine.time_scale tidak boleh bisa "nyangkut" kecil
 	_watch_hit_stop()
-	if is_paused:
+	if is_paused or in_menu:
 		return
 	if state != "playing":
 		return
@@ -254,9 +312,11 @@ func _process(delta):
 			CombatSystem.update_auras()
 
 
-func start_level(lv: int):
+func start_level(lv: int, replay: bool = false):
 	level_number = lv
 	state = "playing"
+	in_menu = false
+	is_replay = replay
 	var lv_data = BossDB.get_level(lv)
 	# paritas Game.reset: gold awal & laju pasif dihitung dari level + difficulty
 	starting_gold = compute_starting_gold(lv_data, lv)
@@ -268,16 +328,95 @@ func start_level(lv: int):
 	_gold_timer = 0.0
 	_wave_timer = 0.0
 	wave_number = 0
-	print("[GameManager] Start Level %d — gold %d (%s/s, %s)" % [
-		lv, gold, format_gold_rate(gold_per_second), difficulty])
+	# ── Meta reward match ini direset (paritas _core.py:1578-1581) ──
+	meta_reward_earned = 0
+	_meta_reward_granted = false
+	bosses_defeated_this_match.clear()
+	# ── ENEMY SCALING (paritas _core.py:1460 + 1476-1483): hanya Hard ──
+	enemy_scaling_enabled = (difficulty == "hard")
+	if enemy_scaling_enabled:
+		enemy_hp_mult = float(lv_data.get("enemy_hp_mult", 1.0)) * 1.15
+		enemy_damage_mult = float(lv_data.get("enemy_damage_mult", 1.0)) * 1.10
+		enemy_speed_mult = float(lv_data.get("enemy_speed_mult", 1.0))
+	else:
+		enemy_hp_mult = 1.0
+		enemy_damage_mult = 1.0
+		enemy_speed_mult = 1.0
+	# Hook BGM per level (levels.json["bgm_track"]; pygame main.py:521).
+	# AudioManager no-op + log kalau aset wav belum disalin converter.
+	AudioManager.play_bgm(str(lv_data.get("bgm_track", "bgm_battle.wav")))
+	print("[GameManager] Start Level %d%s — gold %d (%s/s, %s)%s" % [
+		lv, " (replay)" if replay else "", gold, format_gold_rate(gold_per_second),
+		difficulty, " · enemy scaling x%.2f HP" % enemy_hp_mult if enemy_scaling_enabled else ""])
 	level_started.emit(lv)
-	next_wave() # wave 1 langsung jalan -> arena terisi begitu scene siap
+	# call_deferred: antrian deferred itu FIFO — Main._on_level_started sudah
+	# mengantri _start_battle (bersihkan arena lama + spawn nexus/hero) lebih
+	# dulu, jadi wave 1 baru spawn SETELAH medan bersih. Kalau dipanggil
+	# langsung, minion wave 1 lahir di arena lama lalu terhapus bersama
+	# sisa match sebelumnya (arena kosong sampai wave 2, 25 detik).
+	next_wave.call_deferred()
 
 
-## Mulai ulang match yang sama (dipakai HUD/tombol ENTER setelah victory/defeat)
+## Mulai ulang match yang sama (R setelah menang/kalah, atau ENTER saat kalah).
+## Replay level yang sudah ditamatkan -> is_replay=true (paritas main.py:576:
+## Game(screen, level_number=..., is_replay=True)) sehingga end_match()
+## membayar reward replay, bukan reward menang pertama.
 func restart_match() -> void:
-	print("[GameManager] restart match level %d" % level_number)
-	start_level(level_number)
+	print("[GameManager] replay level %d" % level_number)
+	start_level(level_number, true)
+
+
+## Lanjut ke level berikutnya setelah VICTORY (ENTER). Paritas
+## levels/level_data.py get_next_level (2340-2346): level+1 kalau masih ada
+## konfigurasinya, kalau terakhir -> balik False dan pemain tinggal replay.
+func next_level() -> bool:
+	var nxt := next_level_number(level_number)
+	if nxt <= 0:
+		print("[GameManager] sudah level terakhir (%d) — tidak ada level berikutnya" % level_number)
+		return false
+	print("[GameManager] lanjut ke level %d" % nxt)
+	start_level(nxt, false)
+	return true
+
+
+## Nomor level berikutnya (0 = tidak ada) — paritas get_next_level.
+func next_level_number(after: int = -1) -> int:
+	var cur := level_number if after < 0 else after
+	var nxt := cur + 1
+	var cfg: Dictionary = BossDB.get_level(nxt)
+	if cfg.is_empty():
+		return 0
+	return nxt
+
+
+## Total level (paritas levels/level_data.py get_level_count).
+func level_count() -> int:
+	return BossDB.levels.size()
+
+
+## Kunci level di LEVEL_SELECT (paritas is_level_unlocked level_data.py:2318-2337):
+## unlock_after_level == null -> selalu terbuka; selain itu butuh level itu
+## ada di SaveManager.completed_levels.
+func is_level_unlocked(level_num: int) -> bool:
+	var cfg: Dictionary = BossDB.get_level(level_num)
+	if cfg.is_empty():
+		return false
+	var required = cfg.get("unlock_after_level")
+	if required == null:
+		return true
+	return SaveManager.is_level_completed(int(required))
+
+
+## Kembali ke menu utama dari dalam match (PAUSE -> MAIN MENU, atau ESC
+## setelah menang/kalah; paritas return_to_menu_requested main.py:582-586).
+func return_to_menu() -> void:
+	in_menu = true
+	is_paused = false
+	state = "idle"
+	wave_number = 0
+	shop_open = false
+	AudioManager.stop_bgm()
+	print("[GameManager] kembali ke menu utama")
 
 
 func next_wave() -> void:
@@ -476,19 +615,83 @@ func end_match(victory: bool, killer_team: String = "") -> void:
 	if state != "playing":
 		return
 	state = "victory" if victory else "defeat"
-	# Meta reward (paritas _grant_meta_reward): gold tabungan dibawa ke save
-	var reward := 0
-	if victory:
-		reward = 3000 + level_number * 100
-		SaveManager.data["gold"] = int(SaveManager.data.get("gold", 0)) + reward
-		if not SaveManager.data.has("completed_levels"):
-			SaveManager.data["completed_levels"] = []
-		SaveManager.complete_level(level_number)
-	SaveManager.save()
+	_grant_meta_reward(victory)
+	AudioManager.stop_bgm()
+	AudioManager.play_sfx("victory" if victory else "defeat")
 	print("[GameManager] %s — %s menang (meta reward %d gold)" % [
 		state.to_upper(), killer_team if killer_team != "" else ("blue" if victory else "red"),
-		reward])
+		meta_reward_earned])
 	game_over.emit(victory)
+
+
+## Port _grant_meta_reward (_core.py:2365-2456). KEBIJAKAN REWARD (flat):
+##   - Kalah                          : 0 gold
+##   - Menang pertama kali level ini  : meta_gold_reward_win  (default 3000)
+##   - Replay menang (pertama kali)   : meta_gold_reward_replay (1500, SEKALI)
+##   - Replay menang berikutnya       : meta_gold_reward_replay_repeat (200, unlimited)
+## Semua ditulis ke save kunci "meta_gold" (bukan "gold"), di-guard
+## _meta_reward_granted supaya nexus ganda tidak membayar dua kali.
+func _grant_meta_reward(victory: bool) -> void:
+	if _meta_reward_granted:
+		return
+	var reward := 0
+	if victory:
+		var cfg: Dictionary = BossDB.get_level(level_number)
+		var win_reward := int(cfg.get("meta_gold_reward_win", 3000))
+		var replay_reward := int(cfg.get("meta_gold_reward_replay", 1500))
+		# default 200 = META_REPLAY_REPEAT_REWARD (_core.py:75)
+		var repeat_reward := int(cfg.get("meta_gold_reward_replay_repeat", 200))
+		var replay_key := str(level_number)
+		if not (SaveManager.data["replay_reward_counts"] is Dictionary):
+			SaveManager.data["replay_reward_counts"] = {}
+		var replay_counts: Dictionary = SaveManager.data["replay_reward_counts"]
+		var replay_count := int(replay_counts.get(replay_key, 0))
+		# "replay" = sengaja mengulang (is_replay) ATAU level ini memang sudah
+		# pernah ditamatkan (paritas _core.py:2387-2389).
+		if is_replay or SaveManager.is_level_completed(level_number):
+			reward = replay_reward if replay_count == 0 else repeat_reward
+			replay_counts[replay_key] = replay_count + 1
+		else:
+			reward = win_reward
+	meta_reward_earned = reward
+	SaveManager.data["meta_gold"] = SaveManager.meta_gold() + reward
+
+	if victory:
+		# ═══ AUTO-UNLOCK HERO BOSS YANG DIKALAHKAN (GRATIS) ═══
+		# Paritas _auto_unlock_defeated_boss_heroes (_core.py:2322-2355, dipanggil
+		# dari _grant_meta_reward 2406): boss yang mati di match ini masuk
+		# unlocked_bosses + unlocked_heroes HANYA kalau castle musuh juga jatuh.
+		_auto_unlock_defeated_boss_heroes()
+		# Tandai level tamat (paritas 2408-2414) -> level berikutnya (yang
+		# memasang unlock_after_level = level ini) terbuka di LEVEL_SELECT.
+		SaveManager.complete_level(level_number)
+	SaveManager.save()
+	_meta_reward_granted = true
+
+
+## Port _auto_unlock_defeated_boss_heroes (_core.py:2322): boss (mini/true)
+## yang dikalahkan di match yang DIMENANGKAN langsung jadi hero milik pemain
+## tanpa memotong meta gold — di Hero Shop statusnya "OWNED".
+func _auto_unlock_defeated_boss_heroes() -> void:
+	var newly: Array = []
+	for boss_type in bosses_defeated_this_match:
+		var bt := str(boss_type)
+		SaveManager.unlock_boss(bt)
+		if not SaveManager.is_unlocked(bt):
+			SaveManager.unlock_hero(bt)
+			newly.append(bt)
+	if not newly.is_empty():
+		var names: Array = []
+		for bt in newly:
+			names.append(str(HeroDB.get_hero(bt).get("name", bt)))
+		print("[HERO UNLOCK] gratis karena castle musuh jatuh: %s" % ", ".join(names))
+
+
+## Dicatat Main._boss_tick saat boss mati; baru dicairkan jadi hero kalau
+## match dimenangkan (paritas bosses_defeated_this_match _core.py:1594-1597).
+func record_boss_defeated(boss_type: String) -> void:
+	if not bosses_defeated_this_match.has(boss_type):
+		bosses_defeated_this_match.append(boss_type)
 
 
 func nexus_hp(team: String) -> Array:

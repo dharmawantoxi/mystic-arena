@@ -250,14 +250,29 @@ func die():
 	target = null
 	if aura != null:
 		aura.emitting = false
+	# Catat kekalahan buat reward akhir match (paritas _core.py:1594-1597
+	# bosses_defeated_this_match). Hero-nya baru dibuka GRATIS kalau match
+	# ini dimenangkan — lihat GameManager._auto_unlock_defeated_boss_heroes
+	# (_core.py:2322). Jadi kalah = tidak dapat hero.
+	GameManager.record_boss_defeated(boss_type)
 	# Death: scale squash + fade (GPU, bukan ellipse manual)
 	var tw := create_tween()
 	tw.parallel().tween_property(visual, "scale", Vector2(1.9, 0.18), 0.45).set_trans(Tween.TRANS_BACK)
 	tw.parallel().tween_property(self, "modulate:a", 0.0, 0.5)
 	tw.tween_callback(queue_free)
-	# Drop hero unlock (SaveManager)
-	SaveManager.unlock_hero(boss_type)
 	print("[Boss] %s mati — tim %s menang wave" % [display_name, "blue" if team == "red" else "red"])
+
+
+## Port bosses/base_boss.py apply_scaling (513-525): pengali difficulty Hard
+## diterapkan ke stat yang SUDAH diisi BossDB (dipanggil Main._boss_tick tepat
+## setelah spawn, paritas _core.py:1822 mini boss / 2097 true boss).
+## HP dipotong int seperti pygame; speed mengikuti pengali apa adanya.
+func apply_scaling(hp_mult: float = 1.0, dmg_mult: float = 1.0, spd_mult: float = 1.0) -> void:
+	max_hp = float(int(max_hp * hp_mult))
+	hp = max_hp
+	damage = float(int(damage * dmg_mult))
+	move_speed = move_speed * spd_mult
+	update_ui()
 
 func update_ui():
 	if hp_bar:

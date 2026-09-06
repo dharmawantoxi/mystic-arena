@@ -74,6 +74,19 @@ func apply_minion_data():
 	dmg_school = "physical"
 
 
+## Port blok enemy scaling _core.py:1792-1796 (hanya minion merah, Hard mode):
+## max_hp & damage dikali lalu dipotong int persis pygame, speed dikali
+## pengali speed (base_speed pygame = move_speed kita, sudah tanpa status).
+## Dipanggil Main._on_wave_started SETELAH add_child (stat wave via stat_scale
+## sudah diterapkan _ready -> apply_minion_data).
+func apply_enemy_scaling(hp_mult: float, dmg_mult: float, speed_mult: float) -> void:
+	max_hp = float(int(max_hp * hp_mult))
+	hp = max_hp
+	damage = float(int(damage * dmg_mult))
+	move_speed = move_speed * speed_mult
+	update_ui()
+
+
 # Bangun siluet minion dari radius + warna palette (0 file PNG dibutuhkan)
 func build_visual():
 	var r := radius
