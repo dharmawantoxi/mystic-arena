@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3 uid="uid://b8enemydummy"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_dummy.gd" id="1_dummy"]
+
+[sub_resource type="CircleShape2D" id="CircleShape_dummy"]
+radius = 18.0
+
+[sub_resource type="CircleShape2D" id="CircleShape_dummy_hit"]
+radius = 28.0
+
+[node name="EnemyDummy" type="CharacterBody2D"]
+collision_layer = 16
+collision_mask = 1
+script = ExtResource("1_dummy")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -10)
+shape = SubResource("CircleShape_dummy")
+
+[node name="Body" type="Node2D" parent="."]
+position = Vector2(0, -30)
+
+[node name="Hitbox" type="Area2D" parent="."]
+collision_layer = 32
+collision_mask = 0
+monitorable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
+position = Vector2(0, -10)
+shape = SubResource("CircleShape_dummy_hit")

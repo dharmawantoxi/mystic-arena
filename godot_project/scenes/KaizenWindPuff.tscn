@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8vfxpuff"]
+
+[ext_resource type="Script" path="res://scripts/fx/kaizen_wind_puff.gd" id="1_puff"]
+
+[node name="KaizenWindPuff" type="Node2D"]
+script = ExtResource("1_puff")
+lifetime = 0.45

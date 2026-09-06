@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8vfxsweep"]
+
+[ext_resource type="Script" path="res://scripts/fx/kaizen_sweep.gd" id="1_sweep"]
+
+[node name="KaizenSweep" type="Node2D"]
+script = ExtResource("1_sweep")
+lifetime = 0.5

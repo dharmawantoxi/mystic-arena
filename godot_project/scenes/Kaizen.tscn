@@ -1,0 +1,91 @@
+[gd_scene load_steps=10 format=3 uid="uid://b8kaizen1"]
+
+[ext_resource type="Script" path="res://scripts/characters/kaizen/kaizen.gd" id="1_kaizen"]
+[ext_resource type="Script" path="res://scripts/characters/kaizen/kaizen_skill_q.gd" id="3_skill_q"]
+[ext_resource type="Script" path="res://scripts/characters/kaizen/kaizen_skill_w.gd" id="4_skill_w"]
+[ext_resource type="Script" path="res://scripts/characters/kaizen/kaizen_skill_e.gd" id="5_skill_e"]
+[ext_resource type="Script" path="res://scripts/characters/kaizen/kaizen_skill_r.gd" id="6_skill_r"]
+[ext_resource type="PackedScene" uid="uid://b8windwall" path="res://scenes/WindWall.tscn" id="7_windwall"]
+
+[sub_resource type="CircleShape2D" id="CircleShape_body"]
+radius = 18.0
+
+[sub_resource type="CircleShape2D" id="CircleShape_hit"]
+radius = 42.0
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimStateMachine_kaizen"]
+
+[sub_resource type="AnimationLibrary" id="AnimLibrary_kaizen"]
+
+[node name="Kaizen" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_kaizen")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -10)
+shape = SubResource("CircleShape_body")
+
+[node name="Body" type="Node2D" parent="."]
+position = Vector2(0, -36)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimLibrary_kaizen")
+}
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+tree_root = SubResource("AnimStateMachine_kaizen")
+anim_player = NodePath("../AnimationPlayer")
+active = true
+
+[node name="Hitbox" type="Area2D" parent="."]
+collision_layer = 4
+collision_mask = 32
+monitoring = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
+position = Vector2(28, -28)
+shape = SubResource("CircleShape_hit")
+
+[node name="Skills" type="Node" parent="."]
+
+[node name="Q" type="Node" parent="Skills"]
+script = ExtResource("3_skill_q")
+cooldown_max = 5.0
+cast_time = 0.0
+active_time = 0.4
+q1_range = 90.0
+q2_radius = 80.0
+q2_dash_distance = 200.0
+q2_dash_speed = 1200.0
+q1_damage_mult = 1.0
+q2_damage_mult = 1.5
+combo_window = 3.0
+q2_stun = 0.5
+
+[node name="W" type="Node" parent="Skills"]
+script = ExtResource("4_skill_w")
+cooldown_max = 12.0
+wall_scene = ExtResource("7_windwall")
+wall_lifetime = 1.5
+wall_offset = 80.0
+wall_width = 220.0
+wall_height = 110.0
+
+[node name="E" type="Node" parent="Skills"]
+script = ExtResource("5_skill_e")
+cooldown_max = 7.0
+range = 100.0
+half_arc_deg = 110.0
+damage_mult = 1.0
+knockback = 180.0
+
+[node name="R" type="Node" parent="Skills"]
+script = ExtResource("6_skill_r")
+cooldown_max = 30.0
+range = 150.0
+damage_mult = 2.0
+pull_strength = 220.0
+pull_duration = 0.4
+tier = 3
