@@ -24,35 +24,59 @@
 
 ```
 godot/
-  project.godot          # Forward+, glow, viewport 1280x720
+  project.godot          # Forward+, glow, viewport 1280x720, autoload + input map
   scenes/
-    main.tscn            # Root: ArenaMap + Containers + Camera + HUD
+    main.tscn            # Root: ArenaMap + Containers + Camera + FX + UI(HUD) + Connector
+    main/Main.gd         # Port sisi layout Game: nexus, 18 slot menara, jadwal boss, AI, input
     hero/Hero.tscn       # CharacterBody2D + AnimatedSprite2D + shader + GPUParticles2D
-    hero/Hero.gd         # Port _entity.Hero (stats, AI hunt, damage school, skill delegate)
-    map/ArenaMap.tscn    # TileMapLayer Ground/River/Lanes/Decor + Light
-    map/ArenaMap.gd      # Port map_components/ (theme, lane path)
+    hero/Hero.gd         # Port _entity.Hero (stat + level, item, skill QWER, AI hunt/retreat)
+    hero/kaizen/         # KaizenSkeleton.tscn/.gd — rig Skeleton2D 19 tulang + hamon shader
+    map/ArenaMap.tscn    # map prosedural (ground/river/lane/base/shop/decor digambar _draw)
+    map/ArenaMap.gd      # Port map_components/ (theme, lane path, base & spawn point)
     boss/Boss.tscn       # Mirip Hero.tscn tapi boss_class
-    tower/Tower.tscn
+    minion/Minion.tscn   # Minion per lane (stat dari MINION_TYPES × skala wave)
+    tower/Tower.tscn     # Menara 4 jalur (Archer/Cannon/Ice/Mage) Lv1-6 + shield + regen
+    tower/TowerBullet.gd # Peluru menara/nexus/hero ranged (splash, burn, slow, chain)
+    base/Nexus.tscn      # Castle: HP + shield 88% DR + upgrade Lv1-5 → menang/kalah
+    ui/HUD.tscn          # gold chip, level/wave badge, announcer, bar nexus, banner menang
+    ui/SkillBar.gd       # bar QWER + panel hero terpilih + 6 chip item (dibangun dari kode)
+    ui/SkillButton.gd    # satu tombol skill dengan overlay cooldown
+    ui/ShopPanel.gd      # toko 4 tab: MENARA / ITEM / HERO / NEXUS (dibangun dari kode)
     fx/DamageNumber.tscn # Menggantikan FloatingText pygame
+    demo/KaizenDemo.tscn # Showcase isolasi rig Kaizen (Run Current Scene)
   scripts/
-    autoload/GameManager.gd  # Port _core.Game (gold, wave, spawn)
+    autoload/GameManager.gd  # Port _core.Game: ekonomi, wave, spawn, seleksi, toko, menang/kalah
     autoload/SaveManager.gd  # Port mobile/cloud_save (user:// + Play Games)
-    core/HeroDB.gd       # Port _core.HERO_TYPES + hero_archetypes.json
-    core/BossDB.gd       # Port bosses/boss_data.py
-    systems/CombatSystem.gd # Port _entity damage school mitigation
-    utils/DamageSchool.gd
+    core/HeroDB.gd       # Port _core.HERO_TYPES + HERO_LEVELS (Lv1-15, boss hero ×1.6)
+    core/BossDB.gd       # Port bosses/boss_data.py + levels (mini boss/true boss schedule)
+    core/TowerDB.gd      # Port TOWER_UPGRADE_PATHS + NEXUS_LEVELS + konstanta menara
+    core/ItemDB.gd       # Port hero_items.ITEM_CATALOG + SHOP_PAGES/CATEGORY_INFO
+    core/GameManagerConnector.gd # Jembatan Main.tscn → autoload (container + start_level)
+    items/ItemInventory.gd # Port HeroItemInventory: 6 slot, cap stat, pasif, aura, crit
+    skills/SkillBook.gd  # Port hero_skills/_bundle.py (6 hero starter + fallback generik)
+    systems/CombatSystem.gd # Pipeline damage penuh + heal + aura + damage number
+    systems/StatusEffects.gd # Port TowerDebuffMixin/buff: slow, burn, stun, blind, buff skill
+    utils/DamageSchool.gd # resolve_damage_school + mitigasi armor/magic resist
     render/UnitSilhouette.gd # baseline pygame blob (circle/polygon, 4.3-safe)
-    render/RendererRegistry.gd # dict kosong; isi key = PackedScene custom per unit
+    render/RendererRegistry.gd # Kaizen terdaftar; hero lain menyusul (1 baris per hero)
+  shaders/hamon.gdshader # temper katana Kaizen (wave + cloud + attack pulse)
+  tools/                 # tscn_lint.py + check_refs.py (verifikasi tanpa binary Godot)
   assets/
     shaders/outline.gdshader  # 1-pass outline + hit flash + rim (ganti 5 blit pygame)
     shaders/bloom.gdshader    # Skill glow
     heroes/<hero>/SpriteFrames.tres # Aseprite export (belum ada, fallback warna)
     tilesets/<theme>.tres
-  data/                  # Hasil tools/convert_to_godot.py
-    heroes.json
-    bosses.json
-    levels.json
+  data/                  # Hasil tools/convert_to_godot.py (10 file)
+    heroes.json          # 222 hero + field skill_*
+    bosses.json          # 216 boss
+    levels.json          # 54 level + mini_bosses/true_boss + map_theme
     hero_archetypes.json
+    hero_levels.json     # HERO_LEVELS Lv1-15 (hp/dmg/skill mult + biaya upgrade)
+    items.json           # 33 item (stat, pasif, aura)
+    items_meta.json      # max_slots, flat_cost, urutan toko, kategori
+    towers.json          # 4 jalur menara Lv1-6 + biaya + Regen Shield + warna
+    nexus.json           # NEXUS_LEVELS + Castle Shield
+    economy.json         # gold awal, gold/s, bonus per level, pengali difficulty
 ```
 
 ---
@@ -74,8 +98,11 @@ python tools/convert_to_godot.py
 godot godot/project.godot
 # atau double-click project.godot
 # Tekan F5 — Main scene langsung jalan: map forest (fallback prosedural, tanpa TileSet),
-# 6 hero Radiant + 6 hero Dire + mini boss, wave minion tiap 25 detik, HUD emas+wave.
-# Tombol debug saat run: R respawn · T ganti tema · SPASI beli hero · P/ESC pause.
+# 2 nexus + 18 slot menara, 6 hero Radiant + 6 hero Dire, wave minion tiap 25 detik,
+# mini boss wave 10/15/25, true boss setelah 6 menara Dire hancur, HUD emas+wave+bar nexus.
+# Kontrol: klik = pilih unit/slot · QWER = skill · B = toko · D = difficulty ·
+#          ENTER = ulang setelah menang/kalah · P/ESC = pause
+# Debug:   F1 respawn roster · T ganti tema · SPASI beli hero random
 #
 # Kalau yang muncul masih layar hitam: cek urutan autoload & nama file di godot/
 # (lihat godot/README.md bagian "F5 cuma layar hitam" — 6 penyebab yang sudah diperbaiki
@@ -160,11 +187,14 @@ Build time: Pygame 8-12 menit (p4a clone + compile) → **Godot 45 detik**.
 | **Fase 2a** | **Kaizen flagship: Skeleton2D 25 bones + hamon shader + wind ribbon** (`scenes/hero/kaizen/`) | ✅ DONE (2026-09-06) — lihat `godot/scenes/demo/KaizenDemo.tscn` |
 | **Fase 2b** | Import 5 hero masterwork PNG → SpriteFrames + anim (template Kaizen) | 1 minggu |
 | **Fase 3** | Map TileSet + 1 tema forest + lane path | 🟡 parsial (2026-09-06): lane/river/base digambar prosedural dari palette `themes.py` + Catmull-Rom `PathGenerator` di `ArenaMap.gd._draw()`; TileSet `.tres` masih tugas lanjutan |
-| **Fase 4** | CombatSystem + 54 level config + waves (sudah ada data JSON) | 🟡 mulai (2026-09-06): tema per level dari `levels.json`, `MINION_TYPES` + `NEXUS_WAVE_COMPOSITION` diport ke `GameManager`, `Minion.tscn` + gold reward; nexus/castle & tower masih TODO |
+| **Fase 4** | CombatSystem + 54 level config + waves (sudah ada data JSON) | ✅ DONE (2026-09-06): tema per level dari `levels.json`, `MINION_TYPES` + `NEXUS_WAVE_COMPOSITION` di `GameManager`, pipeline damage penuh (armor/MR, block, evade, shield, reflect, lifesteal, cleave, aura) di `scripts/systems/CombatSystem.gd` + `StatusEffects.gd` |
+| **Fase 4b** | Menara 4 jalur + nexus/castle + menang-kalah | ✅ DONE (2026-09-06): `scenes/tower/Tower.gd` + `TowerBullet.gd` + `scenes/base/Nexus.gd`, 18 slot bangun dari lane path (`Main._generate_build_slots`), AI Dire membangun menara, banner VICTORY/DEFEAT + meta reward ke save |
+| **Fase 4c** | Skill QWER + toko item + level hero + ekonomi pygame | ✅ DONE (2026-09-06): `scripts/skills/SkillBook.gd` (6 hero starter + generik), `scripts/items/ItemDB.gd` + `ItemInventory.gd` (33 item, 6 slot), `data/hero_levels.json` (Lv1-15), ekonomi `(3 + 0.3×level) × difficulty` + milli-gold, UI `SkillBar.gd` + `ShopPanel.gd` |
 | **Fase 5** | 200+ boss hero import batch (Opsi A) | 2 minggu |
+| **Fase 5b** | Item aktif (17), `on_attack`/`bash`/`multishot`, AIPlayer penuh (retreat/build item), proyektil skill | belum — lihat "Deviasi yang disengaja" di `godot/README.md` |
 | **Fase 6** | Android AAB final + Play Store (preset sudah ada) | 2 hari |
 
-**Baseline arena (2026-09-06):** semua hero/boss/minion memakai `scripts/render/UnitSilhouette.gd` (pygame.draw.circle/polygon). Kaizen Skeleton2D **tidak** otomatis di arena — daftar dulu di `scripts/render/RendererRegistry.gd` (`HERO["kaizen"] = preload(...)`) baru `spawn_hero("kaizen", ...)` pakai tulang. Showcase tetap: `scenes/demo/KaizenDemo.tscn` → **F5 (Run Current Scene)**.
+**Baseline arena (2026-09-06):** hero/boss/minion memakai `scripts/render/UnitSilhouette.gd` (pygame.draw.circle/polygon) — **kecuali Kaizen**, yang sudah terdaftar di `scripts/render/RendererRegistry.gd` (`HERO["kaizen"] = preload("res://scenes/hero/kaizen/KaizenSkeleton.tscn")`), jadi `spawn_hero("kaizen", ...)` langsung memakai rig 19 tulang + shader hamon + wind ribbon di lane mid. Hero lain ikut naik kelas dengan menambah satu baris di dict yang sama. Showcase isolasi tetap ada: `scenes/demo/KaizenDemo.tscn` → **F5 (Run Current Scene)**.
 
 ![Kaizen Skeleton blueprint](kaizen_skeleton_preview.png)
 *Blueprint 25 tulang: 2.9ms CPU polygon → 0.4ms GPU bones, 6-frame swing → 60fps interpolasi.*
@@ -173,8 +203,23 @@ Build time: Pygame 8-12 menit (p4a clone + compile) → **Godot 45 detik**.
 
 ## 8. File Penting untuk Diedit Pertama
 
-- `godot/scenes/hero/Hero.gd` — tambah skill QWER kamu
+- `godot/scripts/skills/SkillBook.gd` — tambah/ubah skill QWER per hero (tabel `SKILL_NAMES` + `_cast_<hero>()`); hero tanpa tabel otomatis memakai `_cast_generic()`
+- `godot/scripts/render/RendererRegistry.gd` — daftarkan hero berikutnya yang sudah punya renderer custom (Kaizen sudah)
+- `godot/scripts/core/TowerDB.gd` + `godot/data/towers.json` — keseimbangan 4 jalur menara (stat per level, biaya upgrade, Regen Shield)
+- `godot/scripts/core/ItemDB.gd` + `godot/data/items.json` — item baru cukup ditambah di `hero_items.py` lalu jalankan converter
+- `godot/scenes/ui/ShopPanel.gd` — tab toko (MENARA/ITEM/HERO/NEXUS), semua aksi lewat `GameManager.try_*()`
+- `godot/scripts/autoload/GameManager.gd` — ekonomi, state menang/kalah, seleksi, gold AI
 - `godot/assets/shaders/outline.gdshader` — tweak outline_width/color
 - `hero_archetypes.json` → `godot/data/hero_archetypes.json` via convert script
+
+### Verifikasi tanpa binary Godot
+
+Sandbox/CI tidak selalu punya Godot, jadi tiga pemeriksa statis tersedia:
+
+```bash
+python3 godot/tools/tscn_lint.py $(find godot -name "*.tscn")   # grammar .tscn/.tres
+python3 godot/tools/check_refs.py godot                          # path resource/preload/node
+gdparse godot/**/*.gd   # pip install gdtoolkit==4.*  -> parser GDScript 4 asli
+```
 
 Pertanyaan? Buka `godot/project.godot` dan tanya.

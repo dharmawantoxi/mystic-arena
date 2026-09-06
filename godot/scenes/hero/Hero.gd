@@ -1,31 +1,87 @@
 # Hero.gd — Port dari _entity.py Hero class
 # Visual baseline: UnitSilhouette (pygame.draw.circle/polygon). Upgrade
 # satu-satu lewat RendererRegistry.HERO[hero_type] = PackedScene custom.
+#
+# Yang ditambahkan di sesi port ini (sebelumnya hanya stats + AI hunt):
+#   • ItemInventory (6 slot, 33 item) — damage/HP/armor/crit/lifesteal/cleave/
+#     attack speed/CDR/spell vamp/skill amp/evasion, semua cap sama dengan pygame.
+#   • SkillBook QWER — 6 hero starter port 1:1 dari hero_skills/, sisanya generik.
+#   • StatusEffects — slow/atk_slow/burn/skill_down/anti_heal/stun dari menara,
+#     plus buff skill (Warpath, Focus Fire, Windrun, Bristleback, Shadow Realm).
+#   • Level hero 1..15 (HERO_LEVELS: hp/dmg/skill multiplier + upgrade_cost).
+#   • Regen: 180 HP/s di dekat base sendiri, 9 HP/s di luar (paritas 3.0 & 0.15/frame).
+#   • Retreat: HP < 20% mundur ke base sampai 60% (paritas is_retreating sederhana).
+#   • Serangan ranged = proyektil (bukan damage instan) supaya Wind Wall berguna.
 extends CharacterBody2D
+
+const UnitSilhouetteScript = preload("res://scripts/render/UnitSilhouette.gd")
+const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
+const StatusEffectsScript = preload("res://scripts/systems/StatusEffects.gd")
+const ItemInventoryScript = preload("res://scripts/items/ItemInventory.gd")
+const SkillBookScript = preload("res://scripts/skills/SkillBook.gd")
+const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
+
+const FPS := 60.0
+## paritas _entity.Hero 3467-3472
+const HUNT_RANGE := 900.0
+const AGGRO_RANGE := 250.0
+const BASE_HEAL_PER_SEC := 3.0 * FPS      # base_heal_rate 3.0/frame
+const PASSIVE_HEAL_PER_SEC := 0.15 * FPS  # passive_heal_rate 0.15/frame
+const BASE_HEAL_RADIUS := 100.0
+const RETREAT_BELOW := 0.20
+const RETREAT_UNTIL := 0.60
 
 @export var hero_type: String = "kaizen"
 @export var team: String = "blue"
 
-# Stats (diisi dari HeroDB)
-var max_hp: float = 850
-var hp: float = 850
-var damage: float = 72
+# ── Stat dasar (dari HeroDB, sebelum level & item) ──
+var base_hp: float = 850.0
+var base_damage: float = 72.0
+var base_speed: float = 180.0        # px/s (pygame speed × 60)
+var base_attack_cd: float = 0.52     # detik (frame / 60)
+var base_range: float = 70.0
+var skill_damage_base: float = 80.0
+
+# ── Stat efektif ──
+var max_hp: float = 850.0
+var hp: float = 850.0
+var damage: float = 72.0
 var move_speed: float = 180.0
 var attack_range: float = 70.0
-var attack_cooldown: float = 0.52 # detik (32/60)
+var attack_cooldown: float = 0.52
+var skill_damage: float = 80.0
+var skill_range: float = 100.0
+var skill_cooldown_frames: float = 300.0
+var skill_name: String = ""
 var dmg_school: String = "physical"
-var radius: float = 16.0 # paritas _entity.Hero.radius
+var armor: float = 0.0
+var magic_resist: float = 0.0
+var radius: float = 16.0
 var role: String = ""
+var level: int = 1
+var is_melee_hero: bool = true
 var fill_color: Color = Color("#c8c8c8")
 var fill_dark: Color = Color("#646464")
 
-# State
+# ── State ──
 var target: Node2D = null
 var attack_timer: float = 0.0
 var is_dead: bool = false
 var facing: int = 1
+var selected: bool = false
+var is_retreating: bool = false
+var combat_timer: float = 0.0        # di-reset CombatSystem saat kena damage
+var combat_reset: float = 5.0
+var auto_cast_timer: float = 0.0
+## Hero milik pemain yang sedang dipilih -> skill tidak di-auto-cast
+var player_controlled: bool = false
 
-# Visual nodes (di-assign di _ready)
+# ── Sistem ──
+var status = null      # StatusEffects
+var items = null       # ItemInventory
+var skills = null      # SkillBook
+
+# ── Visual nodes (di-assign di _ready) ──
 @onready var sprite: AnimatedSprite2D = $Visual/AnimatedSprite2D
 @onready var visual_root: Node2D = $Visual
 @onready var shadow: Node2D = $Shadow # Polygon2D ellipse (0 asset)
@@ -35,41 +91,78 @@ var facing: int = 1
 @onready var skill_particles: GPUParticles2D = $FX/SkillParticles
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
 
-# Renderer: silhouette pygame (default) ATAU scene custom dari registry
-const UnitSilhouetteScript = preload("res://scripts/render/UnitSilhouette.gd")
-const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
 var silhouette = null
 var custom_visual = null
 var anim_phase: float = 0.0
-
-# Shader material untuk hit flash + outline (menggantikan hurt_flash_timer di pygame)
 var hit_flash_mat: ShaderMaterial
+
+# ── FX ring skill (digambar di _draw, tanpa butuh asset partikel) ──
+var _ring_radius: float = 0.0
+var _ring_alpha: float = 0.0
+var _ring_color: Color = Color(1, 0.9, 0.5)
+
 
 func _ready():
 	apply_hero_data()
+	items = ItemInventoryScript.new(self)
+	status = StatusEffectsScript.new(self)
+	skills = SkillBookScript.new()
+	skills.setup(self)
+	_recalc_derived(true)
 	setup_visual()
 	update_ui()
 	# Godot physics: collision layer beda per team (blue=2, red=4)
 	collision_layer = 2 if team == "blue" else 4
 	collision_mask = 4 if team == "blue" else 2
 
+
 func apply_hero_data():
 	var s = HeroDB.get_balanced_stats(hero_type)
 	if s.is_empty():
 		push_warning("Unknown hero: %s" % hero_type)
 		return
-	max_hp = s["hp"]
-	hp = max_hp
-	damage = s["damage"]
-	move_speed = s["speed"] * 60.0 # pygame speed 1.6 -> Godot 96 px/s, scale 60
-	attack_range = s["range"]
-	attack_cooldown = s["attack_cooldown"] / 60.0
-	dmg_school = s.get("dmg_school", "physical")
+	base_hp = float(s["hp"])
+	base_damage = float(s["damage"])
+	base_speed = float(s["speed"]) * FPS   # pygame speed 1.6 -> Godot 96 px/s
+	base_attack_cd = float(s["attack_cooldown"]) / FPS
+	base_range = float(s["range"])
+	skill_damage_base = float(s.get("skill_damage", 80))
+	skill_range = float(s.get("skill_range", 100))
+	skill_cooldown_frames = float(s.get("skill_cooldown", 300))
+	skill_name = str(s.get("skill_name", ""))
+	dmg_school = str(s.get("dmg_school", "physical"))
 	role = str(s.get("role", ""))
 	name = s.get("name", hero_type)
 	fill_color = _parse_color(s.get("color", "#c8c8c8"), Color("#c8c8c8"))
 	fill_dark = _parse_color(s.get("color_dark", ""), fill_color.darkened(0.35))
 	radius = 16.0
+	if skills != null:
+		skills.setup(self)
+
+
+## Hitung ulang stat turunan dari level + item (paritas _apply_level_stats +
+## _recalc_item_stats). `full_heal` hanya saat spawn pertama.
+func _recalc_derived(full_heal: bool = false) -> void:
+	var lvl: Dictionary = HeroDB.level_data(level)
+	damage = float(int(base_damage * float(lvl.get("dmg_mult", 1.0))))
+	skill_damage = float(int(skill_damage_base * float(lvl.get("skill_mult", 1.0))))
+	var base_max := float(int(base_hp * float(lvl.get("hp_mult", 1.0))))
+	var old_max := max_hp
+	max_hp = float(items.get_max_hp(base_max)) if items != null else base_max
+	if full_heal or old_max <= 0.0:
+		hp = max_hp
+	elif max_hp > old_max:
+		hp = minf(max_hp, hp + (max_hp - old_max))
+	elif hp > max_hp:
+		hp = max_hp
+	# Armor hero HANYA dari item/aura (paritas Hero.take_damage pygame 4640-4650)
+	armor = float(items.get_armor()) if items != null else 0.0
+	attack_range = base_range + (float(items.get_range_bonus()) if items != null else 0.0)
+	is_melee_hero = attack_range < 110.0
+	move_speed = base_speed
+	attack_cooldown = base_attack_cd
+	update_ui()
+
 
 func setup_visual():
 	# Baseline pygame: kotak/sprite/tulang DIMATIKAN. Silhouette menggambar
@@ -90,86 +183,150 @@ func setup_visual():
 	silhouette = UnitSilhouetteScript.new()
 	silhouette.name = "Silhouette"
 	visual_root.add_child(silhouette)
-	var ranged := attack_range >= 110.0
 	silhouette.configure(
 		UnitSilhouetteScript.Kind.HERO, hero_type, team, fill_color, fill_dark,
-		radius, role, dmg_school, ranged)
+		radius, role, dmg_school, not is_melee_hero)
 
-func _create_procedural_animations():
-	# Buat animasi procedural kalau belum ada SpriteFrames anim
-	# Idle: subtle scale bob (mirip _head_bob di pygame)
-	var idle = Animation.new()
-	idle.length = 1.0
-	idle.loop_mode = Animation.LOOP_LINEAR
-	var track = idle.add_track(Animation.TYPE_VALUE)
-	# Path track relatif ke root scene (AnimationPlayer.root_node = hero),
-	# jadi "Visual:scale" — BUKAN absolute NodePath (kalau absolute, Godot
-	# spam error "Node not found" tiap frame anim).
-	idle.track_set_path(track, ^"Visual:scale")
-	idle.track_insert_key(track, 0.0, Vector2(1,1))
-	idle.track_insert_key(track, 0.5, Vector2(1, 1.04))
-	idle.track_insert_key(track, 1.0, Vector2(1,1))
-	var lib = AnimationLibrary.new()
-	lib.add_animation("idle", idle)
-	anim_player.add_animation_library("", lib)
-	anim_player.play("idle")
+
+# ══════════════════════════════════════════════════════════
+#  LOOP
+# ══════════════════════════════════════════════════════════
 
 func _physics_process(delta):
 	if is_dead:
 		return
-	attack_timer = max(0, attack_timer - delta)
+	if status != null:
+		status.tick(delta)
+	if skills != null:
+		skills.tick(delta)
+	attack_timer = maxf(0.0, attack_timer - delta)
+	combat_timer = maxf(0.0, combat_timer - delta)
 	anim_phase += delta * 6.0  # phase untuk Skeleton2D (breath + stride)
 
+	_regen(delta)
+	_auto_cast(delta)
+
 	# AI sederhana: cari target terdekat (port dari Hero._find_hunt_target)
-	if not target or not is_instance_valid(target) or target.is_dead:
-		target = find_nearest_enemy()
+	if not target or not is_instance_valid(target) or bool(target.get("is_dead")):
+		target = CombatSystem.nearest_enemy(self, HUNT_RANGE)
 
 	var is_moving := false
-	if target:
+	var eff_speed := _eff_speed()
+
+	if is_retreating:
+		is_moving = _move_to(own_base(), eff_speed)
+		if hp >= max_hp * RETREAT_UNTIL:
+			is_retreating = false
+	elif target != null:
 		var dist = global_position.distance_to(target.global_position)
 		facing = 1 if target.global_position.x > global_position.x else -1
 		visual_root.scale.x = facing # flip sprite / skeleton
-
 		if dist <= attack_range:
 			velocity = Vector2.ZERO
-			is_moving = false
 			try_attack()
 		else:
-			# Move toward target (menggantikan _move_toward pygame)
-			var dir = (target.global_position - global_position).normalized()
-			velocity = dir * move_speed
-			is_moving = true
-			if sprite.sprite_frames and sprite.sprite_frames.has_animation("walk"):
-				sprite.play("walk")
-			move_and_slide()
+			is_moving = _move_to(target.global_position, eff_speed)
 	else:
 		# Push ke base musuh (mirip pygame PUSH) — titiknya diambil dari ArenaMap
-		# supaya tidak hardcode dan tetap benar kalau ukuran/lane map berubah.
-		var push_target = enemy_base()
-		var dir = (push_target - global_position).normalized()
-		velocity = dir * move_speed * 0.6
-		is_moving = velocity.length() > 5.0
-		move_and_slide()
-		if sprite.sprite_frames and sprite.sprite_frames.has_animation("walk"):
-			sprite.play("walk")
+		is_moving = _move_to(enemy_base(), eff_speed * 0.6)
+
+	# Mundur kalau HP kritis (paritas is_retreating pygame)
+	if not is_retreating and max_hp > 0.0 and hp < max_hp * RETREAT_BELOW:
+		is_retreating = true
 
 	# Painter's algorithm pygame: unit lebih bawah menutupi yang di atas
 	z_index = int(global_position.y)
 	_drive_visual(is_moving, delta)
+	if _ring_alpha > 0.0 or selected:
+		queue_redraw()
+
+
+func _move_to(dest: Vector2, speed: float) -> bool:
+	if speed <= 1.0:
+		velocity = Vector2.ZERO
+		return false
+	var to := dest - global_position
+	if to.length() <= 8.0:
+		velocity = Vector2.ZERO
+		return false
+	velocity = to.normalized() * speed
+	facing = 1 if velocity.x >= 0.0 else -1
+	visual_root.scale.x = facing
+	move_and_slide()
+	return true
+
+
+## Speed efektif: slow menara, buff Windrun, item move speed, stun (paritas _eff_speed)
+func _eff_speed() -> float:
+	var mult := 1.0
+	if status != null:
+		mult = status.move_speed_mult()
+	return move_speed * mult
+
+
+## Attack cooldown efektif: atk_slow menara, attack speed item, buff skill
+func _eff_attack_cd() -> float:
+	if status != null:
+		return status.attack_cd(attack_cooldown)
+	return attack_cooldown
+
+
+## Regen: 180 HP/s di base sendiri, 9 HP/s di luar + hp_regen item (per detik)
+func _regen(delta: float) -> void:
+	if hp >= max_hp:
+		return
+	var rate := PASSIVE_HEAL_PER_SEC
+	if global_position.distance_to(own_base()) < BASE_HEAL_RADIUS:
+		rate = BASE_HEAL_PER_SEC
+	if items != null:
+		rate += float(items.get_hp_regen())
+	if rate <= 0.0:
+		return
+	CombatSystem.heal_unit(self, rate * delta)
+
+
+## AI memakai skill sendiri; hero yang dipilih pemain menunggu input Q/W/E/R
+func _auto_cast(delta: float) -> void:
+	if player_controlled or skills == null:
+		return
+	auto_cast_timer -= delta
+	if auto_cast_timer > 0.0:
+		return
+	auto_cast_timer = 0.4
+	var enemies := CombatSystem.enemies_in_radius(team, global_position, skill_range)
+	if enemies.is_empty():
+		return
+	# Ultimate dulu kalau kena banyak musuh, lalu Q; W/E untuk situasi khusus
+	if enemies.size() >= 3 and skills.is_ready("r"):
+		skills.cast("r")
+		return
+	if skills.is_ready("q"):
+		skills.cast("q")
+		return
+	if hp < max_hp * 0.5 and skills.is_ready("w"):
+		skills.cast("w")
+		return
+	if skills.is_ready("e"):
+		skills.cast("e")
+
 
 func _drive_visual(is_moving: bool, delta: float) -> void:
 	var ap := 0.0
+	var cd := _eff_attack_cd()
 	if attack_timer > 0.0:
-		ap = 1.0 - attack_timer / maxf(0.001, attack_cooldown)
+		ap = 1.0 - attack_timer / maxf(0.001, cd)
 	var act := "idle"
 	if attack_timer > 0.0:
 		act = "attack"
 	elif is_moving:
 		act = "walk"
+	var skill_key := ""
+	if skills != null:
+		skill_key = str(skills.active_skill)
 	if silhouette != null and is_instance_valid(silhouette) and silhouette.has_method("drive"):
 		silhouette.drive(anim_phase, act, ap, facing)
 	elif custom_visual != null and is_instance_valid(custom_visual) and custom_visual.has_method("drive"):
-		custom_visual.drive(anim_phase, act, ap, facing, is_moving, "", delta)
+		custom_visual.drive(anim_phase, act, ap, facing, is_moving, skill_key, delta)
 
 
 static func _parse_color(v, fallback: Color) -> Color:
@@ -186,60 +343,75 @@ static func _parse_color(v, fallback: Color) -> Color:
 	return c
 
 
+func own_base() -> Vector2:
+	var am = get_tree().get_first_node_in_group("arena_map")
+	if am != null and am.has_method("get_own_base"):
+		return am.get_own_base(team)
+	return Vector2(100, 620) if team == "blue" else Vector2(1180, 100)
+
+
 func enemy_base() -> Vector2:
 	var am = get_tree().get_first_node_in_group("arena_map")
 	if am != null and am.has_method("get_enemy_base"):
 		return am.get_enemy_base(team)
 	return Vector2(1180, 100) if team == "blue" else Vector2(100, 620)
 
-func find_nearest_enemy() -> Node2D:
-	var best = null
-	var best_dist = 900.0
-	# Cari di group "heroes" + "bosses" + "minions" + "towers"
-	for group in ["heroes", "bosses", "minions", "towers"]:
-		for n in get_tree().get_nodes_in_group(group):
-			if n == self or not is_instance_valid(n):
-				continue
-			if not n.has_method("take_damage"):
-				continue
-			if n.get("team") == team:
-				continue
-			# `is_dead` itu properti, BUKAN method — has_method("is_dead") selalu
-			# false, jadi mayat yang masih ada di queue_free ikut jadi target.
-			if bool(n.get("is_dead")):
-				continue
-			var d := global_position.distance_to(n.global_position)
-			if d < best_dist:
-				best_dist = d
-				best = n
-	return best
+
+# ══════════════════════════════════════════════════════════
+#  SERANG
+# ══════════════════════════════════════════════════════════
 
 func try_attack():
 	if attack_timer > 0:
 		return
-	if not target or target.is_dead:
+	if not target or not is_instance_valid(target) or bool(target.get("is_dead")):
 		return
-	attack_timer = attack_cooldown
+	attack_timer = _eff_attack_cd()
 	# Animasi attack (5x lebih smooth dari pygame 6 frame)
-	if hero_type != "kaizen" and sprite.sprite_frames and sprite.sprite_frames.has_animation("attack"):
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation("attack"):
 		sprite.play("attack")
 		if not sprite.animation_finished.is_connected(func(): sprite.play("idle")):
 			sprite.animation_finished.connect(func(): sprite.play("idle"), CONNECT_ONE_SHOT)
 	# Hit-stop + screenshake (menggantikan combat_feel.hit_stop pygame)
-	_hit_stop(0.03)
+	GameManager.request_hit_stop(0.03)
 	if get_tree() and get_tree().has_group("camera"):
-		get_tree().call_group("camera","add_trauma", 0.15)
+		get_tree().call_group("camera", "add_trauma", 0.15)
 
-	# Damage (hitung crit, lifesteal, dll. via CombatSystem)
-	var dmg = CombatSystem.calc_damage(self, target, damage, dmg_school)
-	target.take_damage(dmg, team, "normal", self, dmg_school)
-	# GPU particles = upgrade. Baseline pygame: damage number di take_damage.
+	var dmg := CombatSystem.calc_damage(self, target, damage, dmg_school)
+	if is_melee_hero:
+		CombatSystem.apply_damage(target, dmg, team, "normal", self, dmg_school)
+	else:
+		_shoot_projectile(target, dmg)
 
-func take_damage(amount: float, from_team: String, dmg_type: String = "normal", source = null, school: String = ""):
-	if is_dead: return
-	# School mitigation (armor/magic_resist) via CombatSystem
-	var mitigated = CombatSystem.mitigate_damage(self, amount, school if school != "" else dmg_school)
-	hp -= mitigated
+
+## Hero ranged menembak proyektil (paritas Bullet pygame): bisa ditangkis
+## Wind Wall Kaizen dan bisa meleset karena evasion.
+func _shoot_projectile(t: Node2D, dmg: float) -> void:
+	var b = TowerBulletScript.new()
+	b.setup(t, dmg, team, "normal", {}, 520.0,
+		fill_color.lightened(0.35), self, dmg_school)
+	b.global_position = global_position + Vector2(0, -10)
+	GameManager.attach_fx(b)
+
+
+# ══════════════════════════════════════════════════════════
+#  DAMAGE & MATI
+# ══════════════════════════════════════════════════════════
+
+func take_damage(amount: float, from_team: String, dmg_type: String = "normal",
+		source = null, school: String = ""):
+	if is_dead:
+		return
+	var before := hp
+	CombatSystem.apply_damage(self, amount, from_team, dmg_type, source, school)
+	if hp < before:
+		_flash()
+	if hp <= 0:
+		die(source)
+	update_ui()
+
+
+func _flash() -> void:
 	if silhouette != null and is_instance_valid(silhouette):
 		silhouette.flash_amount = 1.0
 		create_tween().tween_property(silhouette, "flash_amount", 0.0, 0.12)
@@ -249,18 +421,14 @@ func take_damage(amount: float, from_team: String, dmg_type: String = "normal", 
 	elif hit_flash_mat:
 		hit_flash_mat.set_shader_parameter("flash_amount", 1.0)
 		create_tween().tween_property(hit_flash_mat, "shader_parameter/flash_amount", 0.0, 0.12)
-	# Damage number (menggantikan FloatingText pygame)
-	var num = preload("res://scenes/fx/DamageNumber.tscn").instantiate()
-	num.setup(str(int(mitigated)), mitigated > max_hp*0.2)
-	num.global_position = global_position + Vector2(randf_range(-10,10), -30)
-	if get_tree().current_scene:
-		get_tree().current_scene.add_child(num)
-	else:
-		add_child(num)
 
-	if hp <= 0:
-		die(source)
+
+func heal(amount: float) -> void:
+	if is_dead:
+		return
+	CombatSystem.heal_unit(self, amount)
 	update_ui()
+
 
 func die(killer = null):
 	is_dead = true
@@ -270,37 +438,158 @@ func die(killer = null):
 	collision_layer = 0
 	collision_mask = 0
 	target = null
+	if skills != null:
+		skills.tickers.clear()
+	if status != null:
+		status.clear()
 	# Death animation GPU (bukan fade ellipse manual pygame)
-	if anim_player.has_animation("death"):
+	if anim_player != null and anim_player.has_animation("death"):
 		anim_player.play("death")
 	else:
 		var tw = create_tween()
-		tw.parallel().tween_property(visual_root, "scale", Vector2(1.4,0.2), 0.25)
+		tw.parallel().tween_property(visual_root, "scale", Vector2(1.4, 0.2), 0.25)
 		tw.parallel().tween_property(self, "modulate:a", 0.0, 0.35)
 		tw.tween_callback(queue_free)
 	GameManager.hero_died.emit(self)
+
 
 func update_ui():
 	if hp_bar:
 		hp_bar.max_value = max_hp
 		hp_bar.value = hp
 	if name_label:
-		name_label.text = "%s Lv%d" % [name, 1]
+		name_label.text = "%s Lv%d" % [name, level]
 
-# Hit-stop: dulu `duration * Engine.time_scale` (0.03 * 0.05 = 1.5 ms) dan
-# time-scale dipulihkan lewat await DI NODE INI -> kalau hero mati di tengah
-# await, Engine.time_scale bisa tertinggal 0.05 (game kelihatan freeze/black).
-# Sekarang request ke autoload GameManager yang punya watchdog real-time.
-func _hit_stop(duration: float):
-	GameManager.request_hit_stop(duration)
 
-# Skill QWER — delegate ke HeroSkills (port dari hero_skills/)
-func cast_q(): _cast_skill("q")
-func cast_w(): _cast_skill("w")
-func cast_e(): _cast_skill("e")
-func cast_r(): _cast_skill("r")
+# ══════════════════════════════════════════════════════════
+#  SKILL (dipanggil HUD / tombol Q W E R)
+# ══════════════════════════════════════════════════════════
 
-func _cast_skill(key: String):
-	var skill_node = get_node_or_null("Skills/%s" % key.to_upper())
-	if skill_node and skill_node.has_method("cast"):
-		skill_node.cast(self, target)
+func cast_q(): return _cast_skill("q")
+func cast_w(): return _cast_skill("w")
+func cast_e(): return _cast_skill("e")
+func cast_r(): return _cast_skill("r")
+
+
+func _cast_skill(key: String) -> bool:
+	if is_dead or skills == null:
+		return false
+	var ok: bool = skills.cast(key)
+	if ok:
+		play_skill_fx(key)
+	return ok
+
+
+## FX skill: ring memancar + partikel (material dibuat runtime kalau .tscn kosong)
+func play_skill_fx(key: String) -> void:
+	var col := Color(1.0, 0.85, 0.4)
+	match key:
+		"w": col = Color(0.5, 0.9, 1.0)
+		"e": col = Color(0.6, 1.0, 0.6)
+		"r": col = Color(1.0, 0.45, 0.8)
+	_ring_color = col
+	_ring_radius = 12.0
+	_ring_alpha = 0.95
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(self, "_ring_radius", skill_range if key == "r" else 90.0, 0.32) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "_ring_alpha", 0.0, 0.34)
+	var particles := skill_particles
+	if particles != null:
+		if particles.process_material == null:
+			var mat := ParticleProcessMaterial.new()
+			mat.direction = Vector3(0, -1, 0)
+			mat.spread = 180.0
+			mat.initial_velocity_min = 40.0
+			mat.initial_velocity_max = 120.0
+			mat.gravity = Vector3.ZERO
+			mat.scale_min = 1.2
+			mat.scale_max = 2.6
+			mat.color = col
+			particles.process_material = mat
+		particles.amount = 36 if key == "r" else 20
+		particles.restart()
+		particles.emitting = true
+	queue_redraw()
+
+
+## Dipanggil StatusEffects saat buff habis (Warpath/Focus Fire sudah otomatis
+## lewat buff multiplier, jadi tidak ada stat yang perlu dipulihkan manual).
+func on_buff_expired(_id: String) -> void:
+	queue_redraw()
+
+
+# ══════════════════════════════════════════════════════════
+#  LEVEL & ITEM (dipanggil ShopPanel)
+# ══════════════════════════════════════════════════════════
+
+func can_upgrade() -> bool:
+	return level < HeroDB.max_hero_level
+
+
+func upgrade_cost() -> int:
+	return HeroDB.upgrade_cost(hero_type, level)
+
+
+func upgrade() -> bool:
+	if not can_upgrade():
+		return false
+	level += 1
+	_recalc_derived()
+	print("[Hero] %s naik ke level %d" % [name, level])
+	return true
+
+
+func buy_item(item_id: String) -> bool:
+	if items == null or not items.can_equip(item_id):
+		return false
+	if not items.add_item(item_id):
+		return false
+	_recalc_derived()
+	print("[Hero] %s membeli %s" % [name, ItemDB.item_name(item_id)])
+	return true
+
+
+# ══════════════════════════════════════════════════════════
+#  SELEKSI & GAMBAR TAMBAHAN
+# ══════════════════════════════════════════════════════════
+
+func set_selected(value: bool) -> void:
+	if selected == value:
+		return
+	selected = value
+	player_controlled = value and team == "blue"
+	queue_redraw()
+
+
+func _draw() -> void:
+	# ring seleksi di tanah
+	if selected:
+		draw_arc(Vector2(0, 14), radius * 1.5, 0.0, TAU, 28,
+			Color(1, 0.92, 0.5, 0.9), 2.0)
+	# ring skill memancar
+	if _ring_alpha > 0.01:
+		draw_arc(Vector2(0, 6), _ring_radius, 0.0, TAU, 40,
+			Color(_ring_color.r, _ring_color.g, _ring_color.b, _ring_alpha), 3.0)
+	# indikator buff/debuff aktif (titik kecil di atas kepala)
+	if status == null:
+		return
+	var i := 0
+	for id in status.buffs:
+		var c := Color(0.55, 1.0, 0.65, 0.9)
+		match str(id):
+			"wind_wall": c = Color(0.6, 0.9, 1.0, 0.9)
+			"bristleback": c = Color(0.8, 1.0, 0.5, 0.9)
+			"invis": c = Color(0.7, 0.6, 1.0, 0.9)
+			"crit", "damage", "attack_speed": c = Color(1.0, 0.7, 0.35, 0.9)
+		draw_circle(Vector2(-14 + float(i) * 7, -46), 2.6, c)
+		i += 1
+		if i > 4:
+			break
+	var j := 0
+	for icon in status.active_icon_list():
+		draw_circle(Vector2(-14 + float(j) * 7, -52), 2.2, Color(1.0, 0.35, 0.35, 0.9))
+		j += 1
+		if j > 4:
+			break

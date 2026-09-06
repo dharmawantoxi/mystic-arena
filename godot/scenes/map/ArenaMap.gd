@@ -380,6 +380,11 @@ func _draw_walls(d: Dictionary):
 func get_enemy_base(team: String) -> Vector2:
 	return RED_BASE if team == "blue" else BLUE_BASE
 
+
+## Base sendiri (dipakai Hero untuk retreat + regen 180 HP/s di radius 100)
+func get_own_base(team: String) -> Vector2:
+	return BLUE_BASE if team == "blue" else RED_BASE
+
 func get_spawn_point(team: String, index: int, lane: String = "mid") -> Vector2:
 	var pts := get_lane_path(lane)
 	if pts.size() < 4:

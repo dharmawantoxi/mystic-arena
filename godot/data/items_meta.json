@@ -1,0 +1,141 @@
+{
+  "max_slots": 6,
+  "flat_cost": 4500,
+  "shop_order": [
+    "dead_edge",
+    "holy_rapier",
+    "demon_maw",
+    "cleave_axe",
+    "moon_shard",
+    "monarch_wings",
+    "corroder",
+    "fenrir_chain",
+    "sanguine_thorn",
+    "thunder_coil",
+    "sundering_cudgel",
+    "frostbound_eye",
+    "gale_pike",
+    "basilisk_breath",
+    "octarine_core",
+    "runic_gavel",
+    "astral_codex",
+    "sage_scepter",
+    "fulgur_scepter",
+    "hex_idol",
+    "rift_veil",
+    "vital_stone",
+    "vine_rod",
+    "spectral_charm",
+    "leviathan_heart",
+    "steel_aegis",
+    "scarlet_bulwark",
+    "tempest_vane",
+    "abyss_breaker",
+    "razor_carapace",
+    "everfrost_guard",
+    "solar_brand",
+    "searbrand"
+  ],
+  "categories": {
+    "crit": {
+      "label": "CRIT",
+      "color": "#ff6464"
+    },
+    "damage": {
+      "label": "DAMAGE",
+      "color": "#ffc850"
+    },
+    "lifesteal": {
+      "label": "LIFESTEAL",
+      "color": "#c83c3c"
+    },
+    "tank": {
+      "label": "TANK",
+      "color": "#5ac878"
+    },
+    "splash": {
+      "label": "CLEAVE",
+      "color": "#96c8ff"
+    },
+    "as_armor": {
+      "label": "AURA",
+      "color": "#82aaff"
+    },
+    "attack_speed": {
+      "label": "SPEED",
+      "color": "#82dcff"
+    },
+    "caster": {
+      "label": "CASTER",
+      "color": "#be78ff"
+    },
+    "guard": {
+      "label": "GUARD",
+      "color": "#ff7878"
+    },
+    "agility": {
+      "label": "AGILITY",
+      "color": "#ffbefa"
+    },
+    "shred": {
+      "label": "SHRED",
+      "color": "#beff8c"
+    },
+    "utility": {
+      "label": "UTILITY",
+      "color": "#b4f0ff"
+    },
+    "control": {
+      "label": "CONTROL",
+      "color": "#ffc86e"
+    },
+    "burst": {
+      "label": "BURST",
+      "color": "#ff78a0"
+    },
+    "static": {
+      "label": "STATIC",
+      "color": "#fff5a0"
+    },
+    "thorn": {
+      "label": "THORN",
+      "color": "#e6e6ff"
+    },
+    "frost": {
+      "label": "FROST",
+      "color": "#b4e6ff"
+    },
+    "pierce": {
+      "label": "PIERCE",
+      "color": "#ffdc82"
+    },
+    "ice": {
+      "label": "ICE",
+      "color": "#b4f0ff"
+    },
+    "reach": {
+      "label": "REACH",
+      "color": "#c8ffe6"
+    },
+    "poison": {
+      "label": "POISON",
+      "color": "#beff82"
+    },
+    "inferno": {
+      "label": "INFERNO",
+      "color": "#ffd278"
+    },
+    "arcane": {
+      "label": "ARCANE",
+      "color": "#ebb4ff"
+    },
+    "mortal": {
+      "label": "MORTAL",
+      "color": "#ff8c64"
+    },
+    "mystic": {
+      "label": "MYSTIC",
+      "color": "#d29bff"
+    }
+  }
+}

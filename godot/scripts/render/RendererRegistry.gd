@@ -5,17 +5,22 @@
 # Upgrade satu-satu dengan mengisi dict di bawah — Hero.gd / Boss.gd
 # / Minion.gd otomatis instantiate scene custom kalau key-nya ada.
 #
-# Contoh nanti, setelah renderer Kaizen siap dipakai di arena:
-#   const HERO := {
-#       "kaizen": preload("res://scenes/hero/kaizen/KaizenSkeleton.tscn"),
-#   }
 # Scene custom boleh punya method drive(phase, action, attack_progress,
 # facing, is_moving, skill, delta) — kalau ada, Hero.gd memanggilnya
 # tiap frame (paritas KaizenSkeleton.gd).
 extends Object
 
-## hero_type -> PackedScene. Kosong = semua pakai silhouette pygame.
-const HERO := {}
+## hero_type -> PackedScene. Key yang tidak terdaftar tetap memakai
+## silhouette pygame — jadi Kaizen bisa "naik kelas" sendiri tanpa
+## mengganggu 221 hero lain.
+##
+## Kaizen terdaftar: rig Skeleton2D 19 tulang (port _NS_kaizen 2906 baris)
+## sudah punya drive() dengan signature persis yang dipanggil Hero.gd,
+## sehingga di arena ia tampil sebagai karakter bertulang + shader hamon
+## + wind ribbon, bukan lingkaran generik.
+const HERO := {
+	"kaizen": preload("res://scenes/hero/kaizen/KaizenSkeleton.tscn"),
+}
 ## boss_type -> PackedScene.
 const BOSS := {}
 ## minion_type -> PackedScene.

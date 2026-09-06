@@ -9,11 +9,15 @@ Usage:
     python tools/convert_to_godot.py
 
 Output:
-    godot/data/heroes.json
+    godot/data/heroes.json            (+ field skill_* untuk SkillBook.gd)
     godot/data/bosses.json
     godot/data/levels.json
     godot/data/hero_archetypes.json
     godot/data/items.json
+    godot/data/items_meta.json        (slot, harga flat, urutan toko)
+    godot/data/towers.json            (ARCHER/CANNON/ICE/MAGE_LEVELS + konstanta)
+    godot/data/nexus.json             (NEXUS_LEVELS + castle shield)
+    godot/data/economy.json           (gold/s, bonus level, multiplier difficulty, wave)
 """
 import json, os, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -52,6 +56,13 @@ def export_heroes():
                 "is_boss_hero": v.get("is_boss_hero", False),
                 "dmg_type": v.get("dmg_type", "PHYSICAL"),
                 "description": v.get("description", ""),
+                # ── Skill Q/W/E/R (dibaca SkillBook.gd) ──
+                # pygame: HERO_TYPES[*]["skill_*"] + hero_skills/_bundle.py
+                "skill_name": v.get("skill_name", ""),
+                "skill_desc": v.get("skill_desc", ""),
+                "skill_cooldown": v.get("skill_cooldown", 300),
+                "skill_range": v.get("skill_range", 100),
+                "skill_duration": v.get("skill_duration", 0),
             }
         write_json("heroes.json", simple)
     except Exception as e:
@@ -118,10 +129,162 @@ def export_items():
     except Exception as e:
         print(f"[convert] items failed: {e}", file=sys.stderr)
 
+
+def _hex(c, fallback="#ffffff"):
+    """(r,g,b) tuple pygame -> '#rrggbb' (Color('#..') wajib di Godot)."""
+    if isinstance(c, (tuple, list)) and len(c) >= 3:
+        return "#%02x%02x%02x" % (int(c[0]) & 255, int(c[1]) & 255, int(c[2]) & 255)
+    if isinstance(c, str):
+        return c if c.startswith("#") else "#" + c
+    return fallback
+
+
+def export_items_meta():
+    """Slot/harga/urutan toko item — dibaca ItemDB.gd + ShopPanel.gd."""
+    try:
+        import hero_items as hi
+        cat_info = {}
+        for k, v in getattr(hi, "CATEGORY_INFO", {}).items():
+            cat_info[k] = {"label": v[0], "color": _hex(v[1])}
+        out = {
+            "max_slots": hi.MAX_ITEM_SLOTS,
+            "flat_cost": hi.ITEM_FLAT_COST,
+            "shop_order": hi.ITEM_SHOP_ORDER,
+            "categories": cat_info,
+        }
+        write_json("items_meta.json", out)
+    except Exception as e:
+        print(f"[convert] items_meta failed: {e}", file=sys.stderr)
+
+
+def export_hero_levels():
+    """Kurva level hero (HERO_LEVELS) — dibaca HeroDB.gd untuk upgrade hero."""
+    try:
+        import _core
+        levels = {str(lv): dict(d) for lv, d in _core.HERO_LEVELS.items()}
+        out = {
+            "max_level": _core.MAX_HERO_LEVEL,
+            "boss_hero_upgrade_cost_mult": float(
+                getattr(_core, "BOSS_HERO_UPGRADE_COST_MULT", 1.0)),
+            "levels": levels,
+        }
+        write_json("hero_levels.json", out)
+    except Exception as e:
+        print(f"[convert] hero_levels failed: {e}", file=sys.stderr)
+
+
+def export_towers():
+    """Tabel upgrade 4 jalur menara + konstanta — dibaca TowerDB.gd."""
+    try:
+        import _core
+        paths = {}
+        for ttype, levels in _core.TOWER_UPGRADE_PATHS.items():
+            paths[ttype] = {str(lv): dict(stats) for lv, stats in levels.items()}
+        colors = {}
+        for ttype, c in _core.TOWER_TYPE_COLORS.items():
+            colors[ttype] = {"main": _hex(c["main"]), "dark": _hex(c["dark"])}
+        out = {
+            "max_level": _core.TOWER_MAX_LEVEL,
+            "hp_multiplier": _core.TOWER_HP_MULTIPLIER,
+            "shield_hp_ratio": _core.TOWER_SHIELD_HP_RATIO,
+            # paritas Game.try_build_tower: menara L1 (archer) = 100 gold
+            "build_cost": 100,
+            "slot_size": _core.SLOT_SIZE,
+            "bullet_speed": _core.BULLET_SPEED,
+            "bullet_radius": _core.BULLET_RADIUS,
+            "regen_shield_cost": _core.TOWER_REGEN_SHIELD_COST,
+            "regen_shield_min_level": _core.TOWER_REGEN_SHIELD_MIN_LEVEL,
+            # Fitur berbayar: shield menara ikut regen setelah jeda tanpa damage
+            # (paritas Tower.activate_regen_shield + blok REGEN SHIELD di update)
+            "regen_shield": {
+                "enabled": _core.TOWER_REGEN_SHIELD_ENABLED,
+                "delay_frames": _core.TOWER_REGEN_SHIELD_DELAY,
+                "rate_per_frame": _core.TOWER_REGEN_SHIELD_RATE,
+            },
+            "hp_regen": {
+                "enabled": _core.TOWER_HP_REGEN_ENABLED,
+                "delay_frames": _core.TOWER_HP_REGEN_DELAY,
+                "rate_per_frame": _core.TOWER_HP_REGEN_RATE,
+                "max_ratio": _core.TOWER_HP_REGEN_MAX_RATIO,
+            },
+            "colors": colors,
+            "info": _core.TOWER_TYPE_INFO,
+            "paths": paths,
+        }
+        write_json("towers.json", out)
+    except Exception as e:
+        print(f"[convert] towers failed: {e}", file=sys.stderr)
+        import traceback; traceback.print_exc()
+
+
+def export_nexus():
+    """NEXUS_LEVELS (castle) + castle shield — dibaca Nexus.gd."""
+    try:
+        import _core
+        levels = {}
+        for lv, data in _core.NEXUS_LEVELS.items():
+            d = dict(data)
+            if "color_accent" in d:
+                d["color_accent"] = _hex(d["color_accent"])
+            levels[str(lv)] = d
+        out = {
+            "levels": levels,
+            "max_level": _core.MAX_NEXUS_LEVEL,
+            "base_radius": _core.BASE_RADIUS,
+            "shield": {
+                "enabled": _core.CASTLE_SHIELD_ENABLED,
+                "free_waves": _core.CASTLE_SHIELD_FREE_WAVES,
+                "cost": _core.CASTLE_SHIELD_COST,
+                "damage_reduction": _core.CASTLE_SHIELD_DAMAGE_REDUCTION,
+                "hp_ratio": _core.CASTLE_SHIELD_HP_RATIO,
+                "regen_delay_frames": _core.CASTLE_SHIELD_REGEN_DELAY,
+                "regen_rate_per_frame": _core.CASTLE_SHIELD_REGEN_RATE,
+                "color_blue": _hex(_core.CASTLE_SHIELD_COLOR_BLUE, "#64c8ff"),
+                "color_red": _hex(_core.CASTLE_SHIELD_COLOR_RED, "#ff7878"),
+            },
+        }
+        write_json("nexus.json", out)
+    except Exception as e:
+        print(f"[convert] nexus failed: {e}", file=sys.stderr)
+        import traceback; traceback.print_exc()
+
+
+def export_economy():
+    """Konstanta ekonomi + wave — dibaca GameManager.gd (paritas _core.py)."""
+    try:
+        import _core
+        minions = {}
+        for k, v in _core.MINION_TYPES.items():
+            d = dict(v)
+            if "color" in d:
+                d["color"] = _hex(d["color"], "#c8c8c8")
+            minions[k] = d
+        out = {
+            "starting_gold": _core.STARTING_GOLD,
+            "gold_per_second": _core.GOLD_PER_SECOND,
+            "gold_per_second_level_bonus": _core.GOLD_PER_SECOND_LEVEL_BONUS,
+            "gold_per_level_bonus": _core.GOLD_PER_LEVEL_BONUS,
+            "difficulty_gold_mult": _core.DIFFICULTY_GOLD_MULT,
+            "minion_wave_interval_frames": _core.MINION_WAVE_INTERVAL,
+            "wave_composition": {str(k): list(v)
+                                 for k, v in _core.NEXUS_WAVE_COMPOSITION.items()},
+            "minion_types": minions,
+        }
+        write_json("economy.json", out)
+    except Exception as e:
+        print(f"[convert] economy failed: {e}", file=sys.stderr)
+        import traceback; traceback.print_exc()
+
+
 if __name__ == "__main__":
     export_heroes()
     export_bosses()
     export_levels()
     export_archetypes()
     export_items()
+    export_items_meta()
+    export_hero_levels()
+    export_towers()
+    export_nexus()
+    export_economy()
     print("[convert] Done. Copy godot/data/*.json ke Godot res://data/")
