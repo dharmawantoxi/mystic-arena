@@ -211,7 +211,7 @@ func _trigger_cooldown(key: String) -> void:
 			cds[key] = maxf(0.0, float(cds[key]) * (1.0 - cdr))
 	active_skill = key
 	active_skill_timer = _visual_duration(key)
-	var shake := {"q": 8.0, "w": 5.0, "e": 6.0, "r": 15.0}[key]
+	var shake: float = {"q": 8.0, "w": 5.0, "e": 6.0, "r": 15.0}[key]
 	_shake(shake)
 	# Spell vamp (Octarine Core): heal instan sebesar % skill_damage
 	if inv != null:
@@ -642,7 +642,7 @@ func _damage(target, mult: float) -> void:
 	var cs = _combat()
 	if cs == null or target == null or not is_instance_valid(target):
 		return
-	var amount := cs.calc_skill_damage(hero, mult)
+	var amount: float = cs.calc_skill_damage(hero, mult)
 	if amount <= 0.0:
 		return
 	cs.apply_damage(target, amount, str(hero.get("team")), "normal", hero,

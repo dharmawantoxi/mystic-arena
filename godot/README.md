@@ -74,6 +74,29 @@ Catatan kecil yang juga sudah dibereskan:
   `python3 godot/tools/tscn_lint.py godot/scenes/*.tscn` dan
   `python3 godot/tools/check_refs.py godot` (ext_resource, preload, dan `$Node/Path`).
 
+## Parse error: `Cannot infer the type` / autoload gagal dikompilasi
+
+`var nilai := ekspresi` hanya aman kalau tipe ekspresi diketahui saat compile.
+Hasil lookup `Dictionary` atau pemanggilan method lewat variabel dinamis
+(seperti `db`, `cs`, atau `status`) tidak selalu bisa diinfer. Gunakan tipe
+hasil yang eksplisit, misalnya `var p: Dictionary = db.passive(item_id)` atau
+`var amount: float = cs.calc_skill_damage(hero, mult)`.
+
+Deklarasi terkait sudah diperbaiki di `ItemInventory`, `SkillBook`, `CombatSystem`,
+`TowerDB`, dan `Main`. Error kompilasi pada `Hero.gd` / `Tower.gd` serta kegagalan
+autoload adalah efek berantai dari script dependensi, bukan scene yang hilang.
+
+Validasi dengan **binary Godot** dari root repository (pemeriksa statis di atas
+mengecek sintaks/referensi, bukan inferensi tipe GDScript):
+
+```bash
+godot --headless --path godot --editor --import
+godot --headless --path godot --quit-after 120
+```
+
+Pastikan log tidak mengandung `SCRIPT ERROR`, `Parse Error`, atau `Compile Error`;
+exit code editor saja tidak cukup karena Godot bisa tetap keluar dengan kode 0.
+
 ## Gameplay yang sudah diport (2026-09-06)
 
 | Sistem pygame | Port Godot | Catatan |
@@ -134,5 +157,19 @@ Tip katana: `get_katana_tip_global()`.
 `Project → Export → Android → Export AAB` → `godot/build/MysticArena.aab` (1-2 menit, bukan 8-12 menit buildozer).
 
 Package: `io.github.dharmawantoxi.mysticarena` (sama, save cloud tetap kebaca).
+
+### `Unable to open Android 'build-tools' directory`
+
+Ini masalah SDK lokal, terpisah dari parse error GDScript:
+
+1. Di Android Studio → **SDK Manager → SDK Tools**, install **Android SDK Build-Tools**
+   sesuai kebutuhan versi Godot yang dipakai.
+2. Di Godot → **Editor Settings → Export → Android → Android SDK Path**, pilih
+   direktori **root SDK** yang berisi `build-tools/` dan `platform-tools/`, bukan
+   direktori `build-tools/` atau subdirektori versinya. Pastikan foldernya bisa dibaca.
+3. Buka ulang project setelah SDK/path diperbaiki. Untuk F5 desktop saja, SDK Android
+   tidak diperlukan; jangan mengubah script atau menghapus preset export untuk menutupi pesan ini.
+
+Path SDK adalah pengaturan editor per mesin, bukan path yang perlu disimpan di repository.
 
 Lihat `docs/GODOT_MIGRATION.md` untuk roadmap lengkap.

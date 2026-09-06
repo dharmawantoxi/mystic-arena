@@ -523,7 +523,7 @@ func _on_selection_changed() -> void:
 	for h in get_tree().get_nodes_in_group("heroes"):
 		if not is_instance_valid(h) or not h.has_method("set_selected"):
 			continue
-		var is_pick := (h == hero)
+		var is_pick: bool = (h == hero)
 		h.set_selected(is_pick)
 		if "player_controlled" in h:
 			h.player_controlled = is_pick and str(h.get("team")) == "blue"

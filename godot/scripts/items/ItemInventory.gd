@@ -241,7 +241,7 @@ func get_cleave() -> Array:
 	for s in slots:
 		if str(s) == "":
 			continue
-		var p := db.passive(str(s))
+		var p: Dictionary = db.passive(str(s))
 		if str(p.get("name", "")) == "Cleave":
 			return [float(p.get("cleave_pct", 0.5)), float(p.get("cleave_radius", 110))]
 	return []
@@ -256,7 +256,7 @@ func get_armor_shred() -> float:
 	for s in slots:
 		if str(s) == "":
 			continue
-		var p := db.passive(str(s))
+		var p: Dictionary = db.passive(str(s))
 		total += float(p.get("armor_shred", 0.0))
 	return total
 
@@ -326,7 +326,7 @@ func get_emitted_auras() -> Array:
 	for s in slots:
 		if str(s) == "":
 			continue
-		var a := db.aura(str(s))
+		var a: Dictionary = db.aura(str(s))
 		if not a.is_empty():
 			out.append(a)
 	return out
