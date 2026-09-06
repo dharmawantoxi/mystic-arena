@@ -378,6 +378,11 @@ func try_attack():
 		get_tree().call_group("camera", "add_trauma", 0.15)
 
 	var dmg := CombatSystem.calc_damage(self, target, damage, dmg_school)
+	# Suara serangan dasar: tebasan (melee) atau lesatan (ranged). Paritas
+	# combat_audio.play_hero_basic dipanggil dari Hero._attack _entity.py:4412-4418:
+	# flag is_melee_hero lebih dulu, kalau tidak ada pakai ambang jarak 100.
+	# Berlaku untuk hero tim biru MAUPUN merah (pygame tidak membedakan tim).
+	AudioManager.play_combat(AudioManager.basic_attack_sfx(is_melee_hero, attack_range))
 	if is_melee_hero:
 		CombatSystem.apply_damage(target, dmg, team, "normal", self, dmg_school)
 	else:
@@ -477,6 +482,12 @@ func _cast_skill(key: String) -> bool:
 	var ok: bool = skills.cast(key)
 	if ok:
 		play_skill_fx(key)
+	else:
+		# Cast gagal (cooldown belum siap / tidak ada target / kena stun):
+		# umpan balik "tidak bisa" paritas _cast_hero_skill _core.py:8441
+		# (ui_error volume_mult 0.3). Suara skill yang berhasil dibunyikan
+		# SkillBook._trigger_cooldown.
+		AudioManager.play_sfx("ui_error", 0.3)
 	return ok
 
 

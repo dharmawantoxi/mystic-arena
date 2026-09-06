@@ -9,10 +9,12 @@ Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 
 ## Quick Start
 
 ```bash
-# 1. Convert data pygame -> Godot JSON (sudah jalan, 222 hero, 216 boss, 54 level)
+# 1. Convert data pygame -> Godot JSON (222 hero, 216 boss, 54 level, 54 tema map)
 #    Sekaligus menyalin assets/sounds/*.wav -> godot/assets/sounds/ (untuk AudioManager;
-#    folder itu di-gitignore, jalankan ulang converter setelah clone)
-python tools/convert_to_godot.py
+#    folder itu di-gitignore, jalankan ulang converter setelah clone).
+#    Butuh pygame + SDL dummy (export_themes membaca map_components/themes.py):
+python3 -m venv ~/.venv-mystic && ~/.venv-mystic/bin/pip install "pygame-ce==2.5.*"   # sekali saja
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ~/.venv-mystic/bin/python tools/convert_to_godot.py
 
 # 2. Buka di Godot 4.3+ (diuji di 4.7.2 Forward+)
 godot godot/project.godot
@@ -42,7 +44,7 @@ Hero Radiant yang tidak dipilih tetap bertarung sendiri (AI + auto-cast skill); 
 | Tombol | Efek |
 |---|---|
 | `F1` | respawn roster (reset pertempuran, nexus & slot ikut dibuat ulang) |
-| `T` | ganti tema map: forest → desert → ice → abyss |
+| `T` | ganti tema map: siklus 54 palet dari `data/themes.json` (forest → desert → ice → volcanic → …) |
 | `SPASI` | "beli" 1 hero random untuk Radiant (lewat `GameManager.try_buy_hero`) |
 
 Untuk Kaizen showcase saja: double-click `godot/scenes/demo/KaizenDemo.tscn` → **Run Current Scene**.
@@ -58,7 +60,8 @@ crash: memang tidak ada satu node pun yang menggambar. Yang hilang (dan sekarang
 2. `ArenaMap.tscn` berisi 4 `TileMapLayer` tanpa `tile_set` (`assets/tilesets/*.tres` belum dibuat),
    dan 2 `Sprite2D` toko tanpa texture → 0 piksel tergambar. → `ArenaMap.gd._draw()` sekarang
    menggambar terrain/lane/river/base/toko/decor prosedural memakai palette asli
-   `map_components/themes.py`. Begitu `assets/tilesets/<tema>.tres` di-import, fallback otomatis mati.
+   `map_components/themes.py` (54 tema via `data/themes.json`). Begitu
+   `assets/tilesets/<tema>.tres` di-import, fallback otomatis mati.
 3. `Camera2D` ada di (0,0), padahal arena 0..1280 × 0..720 → isi arena (mis. base Radiant di
    y=620) berada di luar view. → kamera dipusatkan ke (640,360) + `limit_*` dikunci ke ukuran arena.
 4. `Boss.tscn` tidak punya visual sama sekali (AnimatedSprite2D kosong, partikel tanpa material) →
@@ -113,7 +116,9 @@ exit code editor saja tidak cukup karena Godot bisa tetap keluar dengan kode 0.
 | progresi level | `GameManager.next_level()` / `is_replay` + `GameManagerConnector.starting_level` | ENTER setelah menang → `get_next_level` paritas (`level_data.py:2340`); replay → `is_replay=true` (paritas `main.py:576`). Connector tidak lagi hardcoded level 1: `start_match(n)` dipanggil menu |
 | enemy scaling hard | `GameManager.enemy_*_mult` + `Main`/`Boss`/`Minion` | `enemy_scaling_enabled = (difficulty == "hard")`; hp ×1.15, damage ×1.10 dari levels.json (`_core.py:1476-1483`). Diterapkan saat spawn: minion merah `apply_enemy_scaling` (`_core.py:1792-1796`), mini/true boss `apply_scaling` (`_core.py:1822/2097`) |
 | unlock hero boss | `GameManager._auto_unlock_defeated_boss_heroes()` | Boss yang dikalahkan di match yang DIMENANGKAN → hero-nya gratis masuk `unlocked_heroes` + `unlocked_bosses` (paritas `_core.py:2322-2355`); kalah = tidak dapat. Boss yang dikalahkan tapi belum dimenangkan → bisa DIBELI 4500 meta gold di HERO SHOP |
-| `SoundManager` (awal) | `scripts/autoload/AudioManager.gd` | Hook `bgm_track` per level (`start_level` → `play_bgm`), SFX ui/victory/defeat, volume sfx/bgm dari `SaveManager.data["settings"]`. Aset 24 .wav disalin converter ke `godot/assets/sounds/` (di-gitignore) |
+| `SoundManager` + `mobile/combat_audio.py` | `scripts/autoload/AudioManager.gd` | BGM `bgm_track` per level (`start_level` → `play_bgm`), SFX UI/victory/defeat, **suara tempur penuh** (lihat baris berikut). Volume = `MASTER_VOLUME 0.7` × slider sfx/bgm dari `SaveManager.data["settings"]` — paritas `SoundManager.play` (`_system.py:589-598`), dibaca dari memory jadi tidak ada tulis file per frame. Aset 24 .wav disalin converter ke `godot/assets/sounds/` (di-gitignore) |
+| suara tempur (`combat_audio.py` skema v35) | `AudioManager.play_combat()` + 14 call site | 7 jenis suara: `hero_melee`/`hero_ranged` (Hero **dan** Boss, ambang jarak 100), `tower_archer`/`tower_cannon`/`tower_ice`/`tower_mage` (tim biru 1.0 / merah 0.8), `minion_hit` (semua jenis minion). Tiga pengaman pygame ikut: jeda per jenis 90/110/140 ms, anggaran 4 suara/frame, volume dasar 0.50-0.78. Ditambah `minion_death` 0.7 (throttle 120 ms), `goblin_spawn` 0.7, `hero_spawn`, `hero_skill` (volume per tombol q .8/w .6/e .7/r 1.0), `wave_start` 0.6, `nexus_hit` 0.7 (hanya castle biru, hanya kalau HP benar-benar turun), `tower_destroyed` 0.8, `explosion` (boss 1.5/1.0 `force`, splash cannon 0.3), `ui_sell`/`ui_upgrade`/`ui_buy`/`ui_error` dari `ShopPanel._run()`. Statistik penolakan dicetak 10 detik sekali, bukan per event |
+| `map_components/themes.py` (54 palet) | `data/themes.json` + `ArenaMap._load_themes()` | `export_themes()` di converter mengubah tuple RGB pygame → hex; `ArenaMap` merge ke palet runtime saat `_ready` (const `THEMES` tidak bisa di-merge langsung: Dictionary const Godot 4 read-only rekursif). Warna palet dari JSON, `modulate`/`light`/`energy` tetap kurasi manual untuk 4 tema pertama. Nama tak dikenal → forest (paritas `get_theme`). Dekor ikut tema: kristal (`has_ice_crystals`) & nisan (`has_gravestones`) |
 | `Game._generate_build_slots_from_lanes` | `Main._generate_build_slots()` | 3 slot × 3 lane × 2 tim, fraksi persis pygame (top/bot 0.15/0.30/0.45, mid 0.10/0.25/0.40, Dire dicerminkan) |
 | `hero_skills/_bundle.py` (6 kelas skill) | `scripts/skills/SkillBook.gd` | Q = `skill_cooldown` hero (Kaizen 300f, Grimjaw 420f, Sylara 360f), W 4s, E 7s, R 15s + CDR item. Hero tanpa tabel memakai skill generik |
 | `hero_items.py` (33 item, 6 slot) | `scripts/items/ItemDB.gd` + `ItemInventory.gd` + `data/items*.json` | Harga flat 4500g, cap atk speed 0.2-2.5 / lifesteal 1.75 / CDR 0.5 / skill amp 0.5 / evasion 0.5 / move speed 0.4, pasif Cleave + Corroder, 4 aura (Steel Aegis, Everfrost, Solar Brand, Searbrand) |
@@ -125,7 +130,6 @@ exit code editor saja tidak cukup karena Godot bisa tetap keluar dengan kode 0.
 ### Deviasi yang disengaja (dicatat, bukan bug)
 
 - **Menu utama disederhanakan dari pygame.** Tidak diport: multi-slot save (SLOT_SELECT), dialog TOP UP hero gold + voucher, cloud save Play Games, slider master/voice volume, dan kunci difficulty `run_difficulty` (di Godot difficulty bebas diganti; pygame menguncinya sampai semua level tamat — `_core.py:2416-2430`). Sisanya (state, kunci level, reward, hero shop) paritas.
-- **54 nama tema di levels.json, 4 palette yang tergambar.** `ArenaMap.gd` baru mem-port FOREST/DESERT/ICE/ABYSS dari `map_components/_bundle.py` (21 tema); tema lain jatuh ke fallback forest persis seperti `THEMES.get(t, FOREST_THEME)` pygame. Level 1→forest dan 2→desert jadi tetap terlihat berbeda.
 - **`hp_regen` item sekarang benar-benar dipakai.** Di pygame `HeroItemInventory.get_hp_regen()` ada tapi tidak pernah dipanggil `_entity.py`; di Godot diterapkan sebagai HP/detik (dekat base 180 HP/s, di luar base 9 HP/s + regen item).
 - **17 item aktif, `on_attack`, `bash`, dan `multishot` belum diport.** Efek pasif/aura/stat sudah; item aktif butuh lapisan input + cooldown UI sendiri.
 - **Proyektil skill instan** (damage langsung + FX partikel), bukan entitas proyektil terpisah seperti `_spawn_skill_projectile` pygame. Basic attack hero ranged, menara, dan minion ranged tetap memakai proyektil (`TowerBullet.gd`).
@@ -134,7 +138,12 @@ exit code editor saja tidak cukup karena Godot bisa tetap keluar dengan kode 0.
 
 ## Asset Pipeline
 
-- `godot/data/*.json` — hasil convert, dibaca `HeroDB`/`BossDB`.
+- `godot/data/*.json` — hasil convert, dibaca `HeroDB`/`BossDB`/`ArenaMap`. Ikut repo (bukan
+  gitignore), jadi port jalan tanpa menjalankan converter dulu; `themes.json` tidak ada →
+  `ArenaMap` mundur ke 4 palet const `THEMES`.
+- `godot/assets/sounds/*.wav` — **di-gitignore** (duplikat 15 MB dari `assets/sounds/`, sumber
+  kebenaran tetap di sana). Jalankan converter setelah clone, kalau belum `AudioManager`
+  no-op + log sekali dan game tetap jalan tanpa suara.
 - `godot/assets/heroes/<hero>/SpriteFrames.tres` — buat dari Aseprite: `File → Export Sprite Sheet` → import ke Godot `AnimatedSprite2D`.
 - `godot/assets/shaders/outline.gdshader` — outline 1-pass + hit flash + rim light (ganti 5 blit manual pygame).
 - `godot/shaders/hamon.gdshader` — hamon temper katana Kaizen (wave + temper cloud + attack pulse).

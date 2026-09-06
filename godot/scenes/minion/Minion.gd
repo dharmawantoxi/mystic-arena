@@ -50,6 +50,11 @@ func _ready():
 	status = StatusEffectsScript.new(self)
 	build_visual()
 	update_ui()
+	# Teriakan spawn khusus goblin (paritas Minion.__init__ _entity.py:5495-5496,
+	# volume_mult 0.7, throttle 200 ms). Jenis minion lain lahir tanpa suara —
+	# suara serangan mereka baru berbunyi saat memukul (lihat try_attack).
+	if minion_type == "goblin":
+		AudioManager.play_sfx("goblin_spawn", 0.7)
 	# Paritas Hero: layer per tim (blue=2, red=4) supaya barisan saling dorong
 	collision_layer = 2 if team == "blue" else 4
 	collision_mask = 4 if team == "blue" else 2
@@ -217,6 +222,10 @@ func try_attack():
 	if attack_timer > 0.0 or target == null:
 		return
 	attack_timer = _eff_attack_cd()
+	# Pukulan SEMUA jenis minion memakai satu suara global (paritas
+	# Minion.update _entity.py:5585-5591 — combat_audio.MINION_HIT, volume
+	# dasar 0.50, jeda 140 ms). Dulu hanya goblin yang berbunyi.
+	AudioManager.play_combat("minion_hit")
 	var dmg := CombatSystem.calc_damage(self, target, damage, dmg_school)
 	if attack_range >= 80.0:
 		# Undead = ranged: proyektil (bisa ditangkis Wind Wall)
@@ -264,6 +273,9 @@ func die(killer_team: String = ""):
 	collision_layer = 0
 	collision_mask = 0
 	target = null
+	# Suara kematian GLOBAL semua jenis minion (paritas Minion.take_damage
+	# _entity.py:5854-5856, volume_mult 0.7, throttle 120 ms).
+	AudioManager.play_sfx("minion_death", 0.7)
 	if status != null:
 		status.clear()
 	GameManager.award_kill(killer_team, gold_reward)
