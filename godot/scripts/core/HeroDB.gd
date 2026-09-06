@@ -27,14 +27,15 @@ func load_heroes():
 		return
 	var f = FileAccess.open(path, FileAccess.READ)
 	var data = JSON.parse_string(f.get_as_text())
-	heroes = data if data else {}
+	heroes = data if data is Dictionary else {}
 	print("[HeroDB] Loaded %d heroes" % heroes.size())
 
 func load_archetypes():
 	var path = "res://data/hero_archetypes.json"
 	if FileAccess.file_exists(path):
 		var f = FileAccess.open(path, FileAccess.READ)
-		archetypes = JSON.parse_string(f.get_as_text()) or {}
+		var parsed = JSON.parse_string(f.get_as_text())
+		archetypes = parsed if parsed is Dictionary else {}
 		print("[HeroDB] Loaded %d archetypes" % archetypes.size())
 
 func get_hero(hero_type: String) -> Dictionary:

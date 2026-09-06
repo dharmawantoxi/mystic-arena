@@ -19,7 +19,8 @@ func load_bosses():
 		}
 		return
 	var f = FileAccess.open(path, FileAccess.READ)
-	bosses = JSON.parse_string(f.get_as_text()) or {}
+	var parsed = JSON.parse_string(f.get_as_text())
+	bosses = parsed if parsed is Dictionary else {}
 	print("[BossDB] Loaded %d bosses" % bosses.size())
 
 func load_levels():
