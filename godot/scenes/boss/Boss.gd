@@ -85,7 +85,18 @@ func setup_visual(s: Dictionary) -> void:
 	sprite.animation = &"idle"
 	sprite.play("idle")
 	if aura != null:
-		aura.color = light
+		# GPUParticles2D tidak punya properti `color` — sumber error
+		# "Invalid assignment of property or key 'color'". Warna partikel
+		# ada di ParticleProcessMaterial. Sub-resource .tscn di-share
+		# antar instance scene, jadi duplikat dulu supaya tiap boss
+		# punya warna auranya sendiri-sendiri.
+		var mat := aura.process_material as ParticleProcessMaterial
+		if mat != null:
+			mat = mat.duplicate() as ParticleProcessMaterial
+		else:
+			mat = ParticleProcessMaterial.new()
+		mat.color = light
+		aura.process_material = mat
 
 func _physics_process(delta):
 	if is_dead:
