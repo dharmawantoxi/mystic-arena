@@ -267,7 +267,7 @@ func _boss_tick(_delta: float) -> void:
 		return
 	if active_boss != null:
 		if not is_instance_valid(active_boss) or bool(active_boss.get("is_dead")):
-			active_boss = None
+			active_boss = null
 		else:
 			return # satu boss aktif pada satu waktu, sama seperti pygame
 	if not pending_mini_bosses.is_empty():

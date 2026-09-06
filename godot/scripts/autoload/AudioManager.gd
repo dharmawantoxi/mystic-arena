@@ -61,8 +61,11 @@ func _ready() -> void:
 func _scan_sounds() -> void:
 	var dir := DirAccess.open(SOUNDS_DIR)
 	if dir == null:
-		push_warning("[AudioManager] %s belum ada — jalankan tools/convert_to_godot.py "
-			+ "agar 24 file .wav disalin. Audio no-op sampai itu." % SOUNDS_DIR)
+		# Catatan: tanda kurung WAJIB — di GDScript '%' mengikat lebih kuat
+		# daripada '+', jadi tanpa kurung '%s' di baris pertama tak terisi
+		# ("not all arguments converted during string formatting").
+		push_warning(("[AudioManager] %s belum ada — jalankan tools/convert_to_godot.py "
+			+ "agar 24 file .wav disalin. Audio no-op sampai itu.") % SOUNDS_DIR)
 		return
 	dir.list_dir_begin()
 	var file := dir.get_next()
