@@ -53,11 +53,11 @@ DEBUG_CHARACTER = False
 VOKRAHN_FX_ENABLED = True
 
 #: Cap keras — tidak ada satu pun sistem yang boleh tumbuh tanpa batas.
-MAX_PARTICLES = 200
-MAX_PROJECTILES = 22
-TRAIL_SAMPLES = 10
-MAX_IMPACTS = 9
-MAX_SKILLS = 5
+MAX_PARTICLES = 120
+MAX_PROJECTILES = 13
+TRAIL_SAMPLES = 6
+MAX_IMPACTS = 5
+MAX_SKILLS = 3
 MAX_AFTERIMAGES = 7
 
 FIXED_DT = 1.0 / 60.0
@@ -902,7 +902,7 @@ def flame_poly(surface, cx, cy, h, seed=0, alpha=255, phase=0.0, w=None):
     pygame.draw.polygon(surface, (*P["fire_glow"], a), core)
 
 
-def spark_star(surface, cx, cy, size, color, alpha, spikes=8, rot=0.3,
+def spark_star(surface, cx, cy, size, color, alpha, spikes=4, rot=0.3,
                core=None):
     """Kilat bintang berujung tajam (impact flash)."""
     if size <= 0 or alpha <= 2:
@@ -960,7 +960,7 @@ def star_poly_points(cx, cy, radius, points=5, rot=0.0, squash=0.42):
     return out
 
 
-def chaos_star_points(cx, cy, radius, spikes=8, rot=0.0, squash=0.42,
+def chaos_star_points(cx, cy, radius, spikes=4, rot=0.0, squash=0.42,
                       inner=0.45):
     """Bintang kekacauan bersudut tajam (simbol chaos Vokrahn)."""
     out = []
@@ -1400,7 +1400,7 @@ class ImpactFX:
         if t < 0.34:
             ft = 1.0 - t / 0.34
             spark_star(surface, x, y, (8 + 14 * pw) * (0.4 + 0.6 * ft),
-                       P["fire_hot"], int(195 * ft), spikes=8,
+                       P["fire_hot"], int(195 * ft), spikes=4,
                        rot=self.angle, core=P["fire_white"])
             _blit_faded(surface,
                         glow_surface(int((10 + 16 * pw) * ft + 4),
@@ -1880,22 +1880,22 @@ class ProjectileSystem:
         if projectile.kind == "brand":
             self._push_impact(ImpactFX(px, py, "brand", ang, 1.4,
                                        P["chaos_hot"], 56.0))
-            self.particles.burst(px, py, 16, speed=(90, 300),
+            self.particles.burst(px, py, 8, speed=(90, 300),
                                  life=(0.3, 0.7), size=(2, 4.6),
                                  colors=(P["chaos_mid"], P["chaos_bright"],
                                          P["fire_bright"], P["ember"]),
                                  gravity=260, drag=0.8, shape="ember")
-            self.particles.burst(px, py, 6, speed=(60, 190),
+            self.particles.burst(px, py, 3, speed=(60, 190),
                                  life=(0.3, 0.7), size=(1.6, 3.2),
                                  colors=(P["arm_mid"], P["metal_light"]),
                                  gravity=520, shape="shard",
                                  rotation_speed=(-8, 8), additive=False)
-            _feel_shake(6.5, 0.18)
-            _feel_hit_stop(0.05)
+            _feel_shake(3.2, 0.18)
+            _feel_hit_stop(0.030)
         else:
             self._push_impact(ImpactFX(px, py, "bolt", ang, 1.0,
                                        P["chaos_bright"], 36.0))
-            self.particles.burst(px, py, 12, speed=(80, 250),
+            self.particles.burst(px, py, 6, speed=(80, 250),
                                  life=(0.2, 0.48), size=(1.6, 3.8),
                                  colors=(P["chaos_bright"], P["fire_bright"],
                                          P["fire_hot"], P["ember"]),
@@ -1905,8 +1905,8 @@ class ProjectileSystem:
                                  life=(0.35, 0.75), size=(2.5, 5),
                                  colors=(P["ash"], P["dust"]),
                                  gravity=-50, shape="smoke", additive=False)
-            _feel_shake(3.8, 0.12)
-            _feel_hit_stop(0.032)
+            _feel_shake(1.9, 0.12)
+            _feel_hit_stop(0.020)
         if self.on_impact_cb:
             try:
                 self.on_impact_cb(projectile)
@@ -2092,7 +2092,7 @@ class SkillFX:
         t = self.t
         ax, ay = self.aim()
         if t < 0.16 and self._once("cast"):
-            particles.burst(self.x, self.y + 26, 10, speed=(50, 170),
+            particles.burst(self.x, self.y + 26, 5, speed=(50, 170),
                             life=(0.25, 0.5), size=(2, 4),
                             colors=(P["dust"], P["ash"]), spread=math.pi,
                             direction=-math.pi / 2, gravity=180,
@@ -2132,18 +2132,18 @@ class SkillFX:
                 lp[0], lp[1], ax, ay, speed=BOLT_SPEED, radius=10.0,
                 target=self.target, owner=self.director.unit,
                 scale=self.scale)
-            particles.burst(lp[0], lp[1], 9, speed=(90, 260),
+            particles.burst(lp[0], lp[1], 4, speed=(90, 260),
                             life=(0.12, 0.3), size=(1.4, 3.0),
                             colors=(P["chaos_hot"], P["fire_hot"],
                                     P["fire_bright"]),
                             spread=1.1, direction=math.atan2(ay - lp[1],
                                                              ax - lp[0]),
                             drag=1.6, shape="streak")
-            _feel_shake(2.6, 0.10)
+            _feel_shake(1.3, 0.10)
         # IMPACT visual (bolt-nya membawa impact-nya sendiri saat
         # menabrak; ini menambah gema di titik bidik)
         if t >= 0.74 and self._once("impact"):
-            particles.burst(ax, ay, 10, speed=(70, 240), life=(0.25, 0.55),
+            particles.burst(ax, ay, 5, speed=(70, 240), life=(0.25, 0.55),
                             size=(1.8, 4.0),
                             colors=(P["chaos_bright"], P["ember"]),
                             gravity=280, drag=0.9, shape="ember")
@@ -2152,12 +2152,12 @@ class SkillFX:
     def _upd_w(self, dt, particles, projectiles):
         t = self.t
         if t < 0.10 and self._once("cast"):
-            particles.burst(self.x, self.y + 22, 16, speed=(80, 250),
+            particles.burst(self.x, self.y + 22, 8, speed=(80, 250),
                             life=(0.3, 0.75), size=(2.5, 6),
                             colors=(P["dust"], P["ash"], P["chaos_dark"]),
                             spread=math.tau, gravity=-30, drag=0.9,
                             shape="dust", additive=False, layer="back")
-            _feel_shake(4.5, 0.15)
+            _feel_shake(2.2, 0.15)
         # CHARGE: bara merayap di sepanjang cincin
         if 0.10 <= t < 0.40:
             self._acc += dt
@@ -2189,15 +2189,15 @@ class SkillFX:
                                         P["fire_hot"]),
                                 spread=0.9, direction=-math.pi / 2 + a * 0.2,
                                 gravity=420, drag=0.6, shape="flame")
-            particles.burst(self.x, self.y + 8, 20, speed=(200, 460),
+            particles.burst(self.x, self.y + 8, 10, speed=(200, 460),
                             life=(0.3, 0.8), size=(1.8, 4.6),
                             colors=(P["chaos_bright"], P["fire_bright"],
                                     P["ember"]),
                             spread=math.tau, gravity=300, drag=0.7,
                             shape="ember")
             self._scorched = True
-            _feel_shake(8.0, 0.24)
-            _feel_hit_stop(0.045)
+            _feel_shake(4.0, 0.24)
+            _feel_hit_stop(0.027)
         # AFTER: asap & bara sisa
         if t > 0.5:
             self._acc += dt
@@ -2242,13 +2242,13 @@ class SkillFX:
             self._dash_impact(ax, ay, particles)
 
     def _dash_impact(self, ax, ay, particles):
-        particles.burst(ax, ay, 14, speed=(120, 360), life=(0.25, 0.6),
+        particles.burst(ax, ay, 7, speed=(120, 360), life=(0.25, 0.6),
                         size=(2, 4.6),
                         colors=(P["chaos_bright"], P["fire_bright"],
                                 P["ember"]),
                         spread=math.tau, gravity=300, drag=0.8,
                         shape="ember")
-        particles.burst(ax, ay + 8, 10, speed=(80, 220), life=(0.3, 0.7),
+        particles.burst(ax, ay + 8, 5, speed=(80, 220), life=(0.3, 0.7),
                         size=(2.5, 5.5),
                         colors=(P["dust"], P["ash"]),
                         spread=1.4, direction=self.facing * math.pi / 2,
@@ -2258,20 +2258,20 @@ class SkillFX:
                                      0.0 if self.facing > 0 else math.pi,
                                      1.5, P["chaos_bright"],
                                      max(30.0, self.r_screen(0.5)))
-        _feel_shake(9.0, 0.24)
-        _feel_hit_stop(0.055)
+        _feel_shake(4.5, 0.24)
+        _feel_hit_stop(0.033)
 
     # -- R: Phantasm ----------------------------------------------------
     def _upd_r(self, dt, particles, projectiles):
         t = self.t
         if t < 0.10 and self._once("cast"):
-            particles.burst(self.x, self.y + 20, 18, speed=(80, 250),
+            particles.burst(self.x, self.y + 20, 9, speed=(80, 250),
                             life=(0.4, 0.9), size=(3, 6.5),
                             colors=(P["smoke_mid"], P["smoke_light"],
                                     P["ash"]),
                             spread=math.tau, gravity=-40, drag=0.9,
                             shape="smoke", additive=False, layer="back")
-            _feel_shake(5.0, 0.16)
+            _feel_shake(2.5, 0.16)
         # RELEASE: hantu-materialize (momentum damage)
         if t >= 0.16 and self._once("release"):
             for i in range(PHANTOM_COUNT):
@@ -2281,7 +2281,7 @@ class SkillFX:
                     "seed": self.seed + i * 31,
                     "born": self.age,
                 })
-            particles.burst(self.x, self.y - 6, 18, speed=(90, 280),
+            particles.burst(self.x, self.y - 6, 9, speed=(90, 280),
                             life=(0.35, 0.8), size=(1.8, 4.0),
                             colors=(P["smoke_light"], P["smoke_glow"],
                                     P["chaos_bright"]),
@@ -2290,7 +2290,7 @@ class SkillFX:
             if self.director is not None:
                 self.director.add_impact(self.x, self.y, "skill", 0.0, 1.2,
                                          P["smoke_glow"], 60.0)
-            _feel_shake(6.0, 0.20)
+            _feel_shake(3.0, 0.20)
         # AREA: hantu melayang + bara ungu
         if 0.16 <= t < 0.85:
             self._acc += dt
@@ -2431,7 +2431,7 @@ class SkillFX:
         _blit_faded(surface, ring_surface(r, 2, P["smoke_light"], 255),
                     self.x, cy, a255, additive=True)
         # 2) bintang chaos 8 titik (bukan lingkaran)
-        pts = chaos_star_points(self.x, cy, r * 0.8, spikes=8,
+        pts = chaos_star_points(self.x, cy, r * 0.8, spikes=4,
                                 rot=self.age * 0.5, squash=0.42, inner=0.45)
         if len(pts) > 2:
             pygame.draw.polygon(surface,
@@ -2901,26 +2901,26 @@ class VokrahnFXDirector:
         py = hi_tip[1] + math.sin(ang) * 4.0
         self.last_impact_point = (px, py)
         self.add_impact(px, py, "melee", ang, 1.1, P["fire_bright"], 34.0)
-        self.particles.burst(px, py, 13, speed=(120, 330),
+        self.particles.burst(px, py, 6, speed=(120, 330),
                              life=(0.18, 0.44), size=(1.7, 4.2),
                              colors=(P["fire_bright"], P["fire_hot"],
                                      P["ember"]),
                              spread=1.5, direction=ang, gravity=310,
                              drag=1.1, shape="ember")
-        self.particles.burst(px, py, 6, speed=(60, 180),
+        self.particles.burst(px, py, 3, speed=(60, 180),
                              life=(0.25, 0.55), size=(1.6, 3.6),
                              colors=(P["metal_light"], P["arm_light"],
                                      P["ash"]),
                              spread=2.0, direction=ang, gravity=520,
                              shape="shard", rotation_speed=(-10, 10),
                              additive=False)
-        self.particles.burst(x, y + 26, 6, speed=(50, 150),
+        self.particles.burst(x, y + 26, 3, speed=(50, 150),
                              life=(0.3, 0.6), size=(2.6, 5.4),
                              colors=(P["dust"], P["ash"]), spread=1.0,
                              direction=0.0 if hi_tip[0] >= x else math.pi,
                              gravity=140, shape="dust", additive=False)
-        _feel_shake(6.5, 0.18)
-        _feel_hit_stop(0.05)
+        _feel_shake(3.2, 0.18)
+        _feel_hit_stop(0.030)
 
     def start_skill(self, boss, key, x, y):
         """Mulai lifecycle FX untuk satu skill."""
@@ -2953,7 +2953,7 @@ class VokrahnFXDirector:
             target=getattr(boss, "target", None), owner=boss,
             scale=body_scale(boss))
         ang = math.atan2(ty - lp[1], tx - lp[0])
-        self.particles.burst(lp[0], lp[1], 9, speed=(70, 210),
+        self.particles.burst(lp[0], lp[1], 4, speed=(70, 210),
                              life=(0.12, 0.32), size=(1.4, 3.2),
                              colors=(P["chaos_hot"], P["fire_hot"],
                                      P["fire_bright"]),
@@ -2961,12 +2961,12 @@ class VokrahnFXDirector:
                              shape="streak")
         self.add_impact(lp[0], lp[1], "skill", ang, 0.45, P["chaos_hot"],
                         16.0)
-        _feel_shake(2.2, 0.09)
+        _feel_shake(1.1, 0.09)
         return pr
 
     def spawn_hurt(self, boss, x, y):
         facing = 1 if getattr(boss, "direction", 1) >= 0 else -1
-        self.particles.burst(x - facing * 7, y - 14, 10, speed=(90, 230),
+        self.particles.burst(x - facing * 7, y - 14, 5, speed=(90, 230),
                              life=(0.2, 0.45), size=(1.5, 3.4),
                              colors=(P["metal_light"], P["fire_bright"],
                                      P["chaos_bright"]),
@@ -3257,12 +3257,12 @@ def notify_melee_impact(unit, target=None, damage=0, crit=False,
     if angle is None:
         angle = math.atan2(float(y) - d.y, float(x) - d.x)
     d.add_impact(x, y, "melee", angle, power, P["fire_bright"], 34.0)
-    d.particles.burst(x, y, 13, speed=(120, 330), life=(0.18, 0.44),
+    d.particles.burst(x, y, 6, speed=(120, 330), life=(0.18, 0.44),
                       size=(1.7, 4.2),
                       colors=(P["fire_bright"], P["fire_hot"], P["ember"]),
                       spread=1.5, direction=angle, gravity=310, drag=1.1,
                       shape="ember")
-    d.particles.burst(x, y, 6, speed=(60, 180), life=(0.25, 0.55),
+    d.particles.burst(x, y, 3, speed=(60, 180), life=(0.25, 0.55),
                       size=(1.6, 3.6),
                       colors=(P["metal_light"], P["ash"], P["dust"]),
                       spread=2.0, direction=angle, gravity=520,
@@ -3288,7 +3288,7 @@ def notify_projectile_impact(unit, x, y, angle=0.0, damage=0, crit=False,
     d.add_impact(x, y, "brand" if is_brand else "bolt", angle, power,
                  P["chaos_hot"] if is_brand else P["chaos_bright"],
                  52.0 if is_brand else 36.0)
-    d.particles.burst(x, y, 12, speed=(80, 250), life=(0.2, 0.5),
+    d.particles.burst(x, y, 6, speed=(80, 250), life=(0.2, 0.5),
                       size=(1.6, 4.0),
                       colors=(P["chaos_bright"], P["fire_bright"],
                               P["fire_hot"], P["ember"]),
@@ -3402,23 +3402,23 @@ def notify_death(unit, x=None, y=None):
             return
         x, y = d.x, d.y
     d.add_impact(x, y, "brand", 0.0, 1.8, P["chaos_hot"], 120.0)
-    d.particles.burst(x, y, 28, speed=(120, 420), life=(0.4, 1.0),
+    d.particles.burst(x, y, 14, speed=(120, 420), life=(0.4, 1.0),
                       size=(2, 6),
                       colors=(P["fire_hot"], P["fire_bright"], P["ember"],
                               P["chaos_bright"]),
                       spread=math.tau, gravity=340, drag=0.7, shape="ember")
-    d.particles.burst(x, y, 14, speed=(70, 260), life=(0.5, 1.1),
+    d.particles.burst(x, y, 7, speed=(70, 260), life=(0.5, 1.1),
                       size=(1.8, 4.0),
                       colors=(P["metal_light"], P["arm_mid"],
                               P["arm_high"]),
                       spread=math.tau, gravity=620, shape="shard",
                       rotation_speed=(-12, 12), additive=False)
-    d.particles.burst(x, y, 8, speed=(30, 120), life=(0.6, 1.2),
+    d.particles.burst(x, y, 4, speed=(30, 120), life=(0.6, 1.2),
                       size=(4, 8), colors=(P["ash"], P["smoke_mid"]),
                       spread=math.tau, gravity=-40, shape="smoke",
                       additive=False)
-    _feel_shake(15.0, 0.48)
-    _feel_hit_stop(0.08)
+    _feel_shake(7.5, 0.48)
+    _feel_hit_stop(0.040)
 
 
 def _feel_shake(strength, duration):

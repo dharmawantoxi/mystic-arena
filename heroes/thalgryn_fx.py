@@ -50,11 +50,11 @@ THALGRYN_FX_ENABLED = True
 DEBUG_CHARACTER = False
 
 # ── anggaran & batas ───────────────────────────────────────────────────────
-MAX_PARTICLES = 170
-MAX_PROJECTILES = 16
-TRAIL_SAMPLES = 14
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_PARTICLES = 102
+MAX_PROJECTILES = 9
+TRAIL_SAMPLES = 9
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 
 #: jarak (piksel dunia) tebasan bilah vs lemparan spear
 MELEE_REACH = 78
@@ -910,7 +910,7 @@ class ThalgrynFXDirector(object):
             self.trail.sample(tx, ty, swinging, 1.0, dt)
             # whoosh droplet saat tebasan (tanpa impact FX: aturan proyek)
             if swinging and not self._swing_was:
-                self.particles.burst(tx, ty, 5, 90 * scale,
+                self.particles.burst(tx, ty, 2, 90 * scale,
                                      P["water_high"], K_DROP, life=0.3,
                                      size=2, grav=240, drag=1.5)
             self._swing_was = swinging
@@ -940,10 +940,10 @@ class ThalgrynFXDirector(object):
 
     # ------------------------------------------------------------------
     def _death_burst(self, x, y, scale):
-        self.particles.burst(x, y - 18 * scale, 26, 150 * scale,
+        self.particles.burst(x, y - 18 * scale, 13, 150 * scale,
                              P["water_high"], K_DROP, life=0.7, size=2,
                              grav=320, drag=1.2)
-        self.particles.burst(x, y - 14 * scale, 12, 90 * scale,
+        self.particles.burst(x, y - 14 * scale, 6, 90 * scale,
                              P["water_mid"], K_SMOK, life=0.9, size=3,
                              grav=-40, drag=1.6)
         self.impacts.spawn(x, y - 14 * scale, 1.4, kind="death")
@@ -1082,7 +1082,7 @@ class ThalgrynFXDirector(object):
                                            heavy=True)
                     # muzzle flash + recoil droplet
                     self.impacts.spawn(gx, gy, 0.55, kind="muzzle")
-                    self.particles.burst(gx, gy, 8, 120 * scale,
+                    self.particles.burst(gx, gy, 4, 120 * scale,
                                          P["water_shine"], K_SPARK,
                                          life=0.25, size=2, drag=2.5)
                     _shake(3.0, 0.14)
@@ -1135,14 +1135,14 @@ class ThalgrynFXDirector(object):
         r = fx.radius * scale
         if sk == "q":
             self.impacts.spawn(ix, iy - 12 * scale, 1.5, kind="wave")
-            self.particles.burst(ix, iy - 12 * scale, 20, 190 * scale,
+            self.particles.burst(ix, iy - 12 * scale, 10, 190 * scale,
                                  P["water_high"], K_DROP, life=0.55,
                                  size=2, grav=300, drag=1.2)
-            self.particles.burst(ix, iy - 10 * scale, 8, 70 * scale,
+            self.particles.burst(ix, iy - 10 * scale, 4, 70 * scale,
                                  P["water_mid"], K_SMOK, life=0.7, size=3,
                                  grav=-50, drag=1.6)
             # geyser column
-            for i in range(7):
+            for i in range(3):
                 self.particles.spawn(ix + random.uniform(-6, 6) * scale,
                                      iy - 4 * scale,
                                      random.uniform(-15, 15),
@@ -1153,10 +1153,10 @@ class ThalgrynFXDirector(object):
             _shake(8.0, 0.28)
         elif sk == "w":
             self.impacts.spawn(ix, iy - 8 * scale, 1.7, kind="spear")
-            self.particles.burst(ix, iy - 8 * scale, 18, 210 * scale,
+            self.particles.burst(ix, iy - 8 * scale, 9, 210 * scale,
                                  P["water_shine"], K_SHARD, life=0.5,
                                  size=2, grav=340, drag=1.1)
-            self.particles.burst(ix, iy - 8 * scale, 10, 120 * scale,
+            self.particles.burst(ix, iy - 8 * scale, 5, 120 * scale,
                                  P["water_high"], K_DROP, life=0.6,
                                  size=2, grav=300, drag=1.2)
             _hit_stop(0.06)
@@ -1165,20 +1165,20 @@ class ThalgrynFXDirector(object):
             self.impacts.spawn(ix, iy - 14 * scale, 1.2, kind="morph")
             cols = (P["str_hot"], P["agi_hot"], P["int_hot"])
             col = cols[int(getattr(self.hero, "morph_cycle", 0) or 0) % 3]
-            self.particles.burst(ix, iy - 14 * scale, 16, 130 * scale,
+            self.particles.burst(ix, iy - 14 * scale, 8, 130 * scale,
                                  col, K_SPARK, life=0.6, size=2, grav=-60,
                                  drag=1.6)
-            self.particles.burst(ix, iy - 10 * scale, 10, 60 * scale,
+            self.particles.burst(ix, iy - 10 * scale, 5, 60 * scale,
                                  P["core_light"], K_BUBB, life=0.8, size=2,
                                  grav=-120, drag=0.8)
             _hit_stop(0.04)
             _shake(5.0, 0.24)
         else:  # r
             self.impacts.spawn(ix, iy - 14 * scale, 2.1, kind="replicate")
-            self.particles.burst(ix, iy - 14 * scale, 30, 240 * scale,
+            self.particles.burst(ix, iy - 14 * scale, 15, 240 * scale,
                                  P["water_high"], K_DROP, life=0.7,
                                  size=2, grav=320, drag=1.1)
-            self.particles.burst(ix, iy - 12 * scale, 14, 110 * scale,
+            self.particles.burst(ix, iy - 12 * scale, 7, 110 * scale,
                                  P["water_mid"], K_SMOK, life=0.9, size=4,
                                  grav=-40, drag=1.5)
             for i in range(10):
@@ -1250,7 +1250,7 @@ class ThalgrynFXDirector(object):
         timer = int(getattr(boss, "active_skill_timer", 0) or 0)
         # puddle basah permanen (dither, murah: 8 pixel)
         gy = int(y) + 2
-        for i in range(8):
+        for i in range(4):
             aa = i * 0.785 + self.time * 0.4
             rr = 20 * scale
             px_ = int(x + math.cos(aa) * rr)

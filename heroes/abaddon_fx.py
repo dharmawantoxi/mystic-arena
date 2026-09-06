@@ -143,7 +143,7 @@ def _seg(surface, color, alpha, x0, y0, x1, y1, w=1):
             (int(x0), int(y0)), (int(x1), int(y1)), max(1, int(w)))
 
 
-def _star(surface, cx, cy, size, color, alpha, spikes=8, rot=0.0,
+def _star(surface, cx, cy, size, color, alpha, spikes=4, rot=0.0,
           core=None):
     """Bintang kilat chunky (spike panjang-pendang selang-seling)."""
     if alpha <= 0 or size <= 0:
@@ -183,7 +183,7 @@ def _shard(surface, cx, cy, ang, length, width, color, alpha, core=None):
 
 
 def _dash_ring(surface, cx, cy, radius, color, alpha, phase,
-               segments=12, thick=3, squash=0.5):
+               segments=6, thick=3, squash=0.5):
     """Cincin PUTUS-PUTUS chunky (bukan lingkaran vektor halus)."""
     if alpha <= 0 or radius <= 1:
         return
@@ -200,7 +200,7 @@ def _dash_ring(surface, cx, cy, radius, color, alpha, phase,
 # 1. PARTICLE SYSTEM
 # ============================================================================
 
-MAX_PARTICLES = 96
+MAX_PARTICLES = 57
 
 
 class Particle(object):
@@ -311,7 +311,7 @@ class ParticleSystem(object):
 # 2. PROJECTILE (live, layar 1:1) - lifecycle: SPAWN->TRAVEL->HIT->IMPACT
 # ============================================================================
 
-MAX_PROJECTILES = 10
+MAX_PROJECTILES = 6
 
 
 class AbaddonProjectile(object):
@@ -458,7 +458,7 @@ class AbaddonProjectile(object):
                 _rect4(surface, P["flame_light"], _a(a * 0.9),
                        xx - w // 2 + 1, yy - 1, max(1, w - 2), 2)
         # leading edge putih-panas di depan
-        for i in range(7):
+        for i in range(3):
             t = i / 6.0
             yy = py - 14 + t * 28
             bow = (1.0 - abs(t - 0.5) * 2) ** 1.6
@@ -518,7 +518,7 @@ class AbaddonProjectile(object):
 # 3. IMPACT FX - flash + cincin chunky + serpihan + shock + scorch
 # ============================================================================
 
-MAX_IMPACTS = 14
+MAX_IMPACTS = 8
 
 
 class ImpactFX(object):
@@ -550,18 +550,18 @@ class ImpactFX(object):
         if t < 0.35:
             s = int((14 + t * 26) * self.power * (1.0 - t / 0.35 * 0.4))
             _star(surface, self.x, self.y, s, self.c2,
-                  _a(245 * (1 - t / 0.35)), spikes=8,
+                  _a(245 * (1 - t / 0.35)), spikes=4,
                   rot=self.ang + t * 4.0, core=P["white"])
         # cincin chunky mengembang (putus-putus, bukan lingkaran halus)
         r = int((10 + t * 46) * self.power)
         _dash_ring(surface, self.x, self.y, r, self.c1, _a(200 * k),
-                   t * 3.0 + self.ang, segments=12,
+                   t * 3.0 + self.ang, segments=6,
                    thick=max(2, int(3 * self.power)), squash=0.55)
         _dash_ring(surface, self.x, self.y, int(r * 0.62), self.c2,
-                   _a(150 * k), -t * 4.0, segments=8, thick=2,
+                   _a(150 * k), -t * 4.0, segments=4, thick=2,
                    squash=0.55)
         # serpihan beterbangan (deterministik dari seed per impact)
-        for i in range(7):
+        for i in range(3):
             u = t * (0.55 + 0.75 * _hash01(i * 7 + 11))
             a = self.ang + (0.5 - _hash01(i * 13)) * 2.6
             d = u * 58 * self.power
@@ -793,22 +793,22 @@ class AbaddonFXDirector(object):
                                   _PALETTE["magic_mid"] if kind in
                                   ("sever", "coil") else
                                   _PALETTE["flame_mid"]))
-        self.particles.burst(tx, ty, 9, speed=3.0, life=0.5, size=4,
+        self.particles.burst(tx, ty, 4, speed=3.0, life=0.5, size=4,
                              color=_PALETTE["magic_mid"] if kind in
                              ("sever", "coil") else _PALETTE["flame_mid"],
                              kind="shard", g=0.5)
-        self.particles.burst(tx, ty, 6, speed=2.0, life=0.45, size=3,
+        self.particles.burst(tx, ty, 3, speed=2.0, life=0.45, size=3,
                              color=_PALETTE["flame_bright"], kind="spark",
                              g=0.2, add=True)
         if kind == "sever":
-            _feel_hit_stop(0.06)
-            _feel_shake(9.0, 0.4)
-        elif kind == "coil":
             _feel_hit_stop(0.036)
-            _feel_shake(4.5, 0.18)
+            _feel_shake(4.5, 0.4)
+        elif kind == "coil":
+            _feel_hit_stop(0.022)
+            _feel_shake(2.2, 0.18)
         else:
-            _feel_hit_stop(0.035)
-            _feel_shake(5.0, 0.2)
+            _feel_hit_stop(0.021)
+            _feel_shake(2.5, 0.2)
 
     # ------------------------------------------------------------------
     def on_cast(self, hx, hy, skill, timer):
@@ -835,9 +835,9 @@ class AbaddonFXDirector(object):
                 self._schedule("sever", spawn_at, hx + 34 * d, hy - 12,
                                tx, ty, d, speed=10.0, life=1.5, radius=16)
         if skill == "r":
-            _feel_shake(6.0, 0.3)
+            _feel_shake(3.0, 0.3)
         # kilat cast (tanda baca universal: skill baru saja keluar)
-        self.particles.burst(hx, hy - 18, 5, speed=2.2, life=0.4,
+        self.particles.burst(hx, hy - 18, 2, speed=2.2, life=0.4,
                              size=3, color=_PALETTE["flame_light"],
                              kind="spark", g=-0.1, add=True)
 
@@ -851,7 +851,7 @@ class AbaddonFXDirector(object):
     def on_swing_impact(self, x, y, ang, power=1.0, hot=False):
         """Tebasan basic attack mendarat (dipanggil saat frame impact)."""
         self.impacts.append(ImpactFX(x, y, ang, power, "blade"))
-        self.particles.burst(x, y, 7, speed=2.8, life=0.45, size=4,
+        self.particles.burst(x, y, 3, speed=2.8, life=0.45, size=4,
                              color=_PALETTE["flame_mid"], kind="shard",
                              g=0.6)
         self.particles.burst(x, y, 4, speed=1.8, life=0.5, size=5,

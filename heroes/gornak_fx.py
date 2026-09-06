@@ -61,17 +61,17 @@ DEBUG_CHARACTER = False
 GORNAK_FX_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 170
+MAX_PARTICLES = 102
 
 #: Batas keras proyektil visual per director.
-MAX_PROJECTILES = 16
+MAX_PROJECTILES = 9
 
 #: Panjang histori trail senjata (jumlah sample posisi bilah).
-TRAIL_SAMPLES = 14
+TRAIL_SAMPLES = 9
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -1219,7 +1219,7 @@ class ImpactFX:
             ln = (10 + 21 * pw) * ft          # pendek & tebal, bukan benang
             buf = _scratch(int(ln * 2 + 8), int(ln * 2 + 8))
             c = int(ln + 4)
-            for k in range(8):
+            for i in range(4):
                 a = self.angle + k * math.pi / 4
                 L = ln if k % 2 == 0 else ln * 0.40
                 # garis panjang 2 px, garis pendek 1 px: tetap terbaca
@@ -1257,7 +1257,7 @@ class ImpactFX:
         if t < 0.58:
             st = 1.0 - t / 0.58
             r0 = int((6 + 19 * pw) * (0.3 + 1.05 * t))
-            for k in range(8):
+            for i in range(4):
                 ang = self.angle + k * math.pi / 4 + 0.19
                 L = (7 + 14 * pw) * st * (1.0 if k % 2 else 0.55)
                 pygame.draw.line(
@@ -1686,20 +1686,20 @@ class SkillFX:
             self._released = True
             if kind == "q":
                 ps.burst(self.x + math.cos(ang) * 6,
-                         self.y + math.sin(ang) * 6, 12,
+                         self.y + math.sin(ang) * 6, 6,
                          speed=(140, 340), life=(0.16, 0.34), size=(2, 4),
                          colors=(P["fx_white"], self.TINT["q"][1],
                                  P["fx_light"]),
                          spread=1.15, direction=ang, drag=3.4,
                          shape="streak", additive=True)
             elif kind == "w":
-                ps.burst(self.x, self.y + self.ground * 0.7, 14,
+                ps.burst(self.x, self.y + self.ground * 0.7, 7,
                          speed=(90, 260), life=(0.2, 0.46), size=(2, 5),
                          colors=(P["dust"], P["ash"], self.TINT["w"][1]),
                          spread=math.tau, gravity=210.0, drag=1.6,
                          shape="dust", layer="back")
             else:
-                ps.burst(self.x, self.y + self.ground * 0.35, 16,
+                ps.burst(self.x, self.y + self.ground * 0.35, 8,
                          speed=(120, 320), life=(0.2, 0.5), size=(2, 5),
                          colors=(self.TINT[kind][1], P["fx_light"],
                                  P["brass_hot"]),
@@ -1733,7 +1733,7 @@ class SkillFX:
         # IMPACT: retakan + serpihan jatuh
         elif self.phase == "impact" and not self._impacted:
             self._impacted = True
-            ps.burst(self.x, self.y + self.ground * 0.2, 12,
+            ps.burst(self.x, self.y + self.ground * 0.2, 6,
                      speed=(90, 240), life=(0.28, 0.6), size=(2, 5),
                      colors=(self.TINT[kind][1], P["steel_mid"], P["ash"]),
                      gravity=430.0, drag=1.0, shape="shard",
@@ -2092,7 +2092,7 @@ class GornakFXDirector:
         self.swing_active = True
         gy = y + _ground_dy(self.hero)
         self.particles.burst(
-            x + facing * 7, gy, 5,
+            x + facing * 7, gy, 2,
             speed=(28, 92), life=(0.18, 0.4), size=(2, 4),
             colors=(P["dust"], P["ash"], P["smoke"]),
             spread=1.2, direction=math.pi if facing > 0 else 0.0,
@@ -2108,7 +2108,7 @@ class GornakFXDirector:
         _gb, tip_b = blade_points(self.hero, x, y, True)
         ang = math.atan2(tip.y - _g.y, tip.x - _g.x) - math.pi / 2
         self.particles.burst(
-            tip.x, tip.y, 7,
+            tip.x, tip.y, 3,
             speed=(110, 250), life=(0.1, 0.24), size=(1, 3),
             colors=(P["steel_hot"], P["fx_bright"], P["fx_light"]),
             spread=1.5, direction=ang, drag=3.6, shape="streak",
@@ -2147,8 +2147,8 @@ class GornakFXDirector:
             self.spawn_mana_break(x, y, aim)
         elif heavy and G is not None:
             # R: pilarnya lahir dari dada -> satu beat freeze
-            _feel_hit_stop(0.06)
-        self.particles.burst(x, y + gy * 0.4, 10,
+            _feel_hit_stop(0.036)
+        self.particles.burst(x, y + gy * 0.4, 5,
                              speed=(60, 190), life=(0.2, 0.5), size=(2, 4),
                              colors=(SkillFX.TINT.get(skill, P["fx_dark"])[0],
                                      P["ash"], P["dust"]),
@@ -2170,7 +2170,7 @@ class GornakFXDirector:
                                                p.rotation, 1.15, False,
                                                kind="mana"))
         if pr is not None:
-            self.particles.burst(tip.x, tip.y, 6,
+            self.particles.burst(tip.x, tip.y, 3,
                                  speed=(90, 220), life=(0.12, 0.3),
                                  size=(1, 3),
                                  colors=(P["fx_white"], P["fx_bright"]),
@@ -2206,7 +2206,7 @@ class GornakFXDirector:
             rotation_speed=(-16.0, 16.0))
         if crit:
             self.particles.burst(
-                x, y, 8, speed=(180, 380), life=(0.22, 0.5), size=(2, 4),
+                x, y, 4, speed=(180, 380), life=(0.22, 0.5), size=(2, 4),
                 colors=(P["brass_hot"], P["brass"], spark),
                 spread=math.tau, gravity=120.0, drag=2.0, shape="spark",
                 additive=True)
@@ -2222,7 +2222,7 @@ class GornakFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 8, 7, speed=(80, 210), life=(0.16, 0.34), size=(2, 4),
+            hx, hy - 8, 3, speed=(80, 210), life=(0.16, 0.34), size=(2, 4),
             colors=(P["steel_edge"], P["brass_hot"], P["fx_light"]),
             drag=3.0, shape="streak", additive=True)
         self.particles.burst(
@@ -2297,20 +2297,20 @@ class GornakFXDirector:
             spread=math.tau, gravity=260.0, drag=1.4, shape="shard",
             rotation_speed=(-13.0, 13.0))
         self.particles.burst(
-            sx, sy + _ground_dy(h) * 0.6, 10,
+            sx, sy + _ground_dy(h) * 0.6, 5,
             speed=(60, 170), life=(0.4, 0.8), size=(4, 9),
             colors=(P["smoke"], P["ash"]), gravity=-30.0, drag=1.0,
             shape="smoke", layer="back")
         if shake_allowed():
-            _feel_shake(9.5, 0.42)
-        _feel_hit_stop(0.07)
+            _feel_shake(4.8, 0.42)
+        _feel_hit_stop(0.040)
 
     def on_blink(self, x, y, old_x, old_y):
         """Blink mendarat: cincin kedatangan + puing ruang di titik asal."""
         gy = _ground_dy(self.hero)
         self.impacts.append(ImpactFX(x, y + gy * 0.5, 0.0, 0.9, False,
                                      kind="ward", seed=int(self.frames)))
-        self.particles.burst(x, y + gy * 0.6, 12,
+        self.particles.burst(x, y + gy * 0.6, 6,
                              speed=(90, 240), life=(0.2, 0.5), size=(2, 5),
                              colors=(P["dust"], P["ash"], P["steel_edge"]),
                              spread=math.tau, gravity=240.0, drag=1.8,
@@ -2320,7 +2320,7 @@ class GornakFXDirector:
                               colors=(P["fx_light"], P["fx_bright"],
                                       P["fx_mid"]), bow=14.0)
         if shake_allowed():
-            _feel_shake(3.4, 0.12)
+            _feel_shake(1.7, 0.12)
 
     def on_death(self, x, y):
         """Kematian: bilah jatuh, segel pecah, debu tanah naik sekali."""
@@ -2332,19 +2332,19 @@ class GornakFXDirector:
         self.particles.clear()
         self.impacts.append(ImpactFX(x, y + gy * 0.35, -math.pi / 2, 2.2,
                                      True, kind="void", seed=7))
-        self.particles.burst(x, y, 22, speed=(90, 320), life=(0.5, 1.1),
+        self.particles.burst(x, y, 11, speed=(90, 320), life=(0.5, 1.1),
                              size=(2, 6),
                              colors=(P["fx_mid"], P["steel_mid"], P["robe"],
                                      P["brass"]),
                              spread=math.tau, gravity=430.0, drag=1.1,
                              shape="shard", rotation_speed=(-18.0, 18.0))
-        self.particles.burst(x, y + gy, 16, speed=(40, 150),
+        self.particles.burst(x, y + gy, 8, speed=(40, 150),
                              life=(0.5, 1.0), size=(3, 7),
                              colors=(P["dust"], P["smoke"], P["ash"]),
                              spread=math.tau, gravity=-30.0, drag=1.5,
                              shape="dust", layer="back")
         if shake_allowed():
-            _feel_shake(9.0, 0.42)
+            _feel_shake(4.5, 0.42)
 
     # ------------------------------------------------------------------
     # State machine

@@ -49,15 +49,15 @@ DEBUG_CHARACTER = False
 GORATH_FX_ENABLED = True
 
 #: Anggaran partikel per unit (cap dihormati, tidak pernah grow tak hingga).
-MAX_PARTICLES = 170
+MAX_PARTICLES = 102
 #: Cap proyektil hidup per unit.
-MAX_PROJECTILES = 16
+MAX_PROJECTILES = 9
 #: Panjang histori trail ayunan.
-TRAIL_SAMPLES = 14
+TRAIL_SAMPLES = 9
 #: Cap effect impact serentak.
-MAX_IMPACTS = 8
+MAX_IMPACTS = 4
 #: Cap skill FX serentak.
-MAX_SKILLS = 4
+MAX_SKILLS = 2
 
 #: Langkah simulasi game (frame tetap 1/60 s).
 FIXED_DT = 1.0 / 60.0
@@ -1118,7 +1118,7 @@ class ImpactFX:
             ln = (10 + 21 * pw) * ft
             buf = _scratch(int(ln * 2 + 8), int(ln * 2 + 8))
             c = int(ln + 4)
-            for k in range(8):
+            for i in range(4):
                 a = self.angle + k * math.pi / 4
                 L = ln if k % 2 == 0 else ln * 0.40
                 pygame.draw.line(buf, (*P["fx_white"], int(232 * ft)),
@@ -1150,7 +1150,7 @@ class ImpactFX:
         if t < 0.58:
             st = 1.0 - t / 0.58
             r0 = int((6 + 19 * pw) * (0.3 + 1.05 * t))
-            for k in range(8):
+            for i in range(4):
                 ang = self.angle + k * math.pi / 4 + 0.19
                 L = (7 + 14 * pw) * st * (1.0 if k % 2 else 0.55)
                 pygame.draw.line(
@@ -1365,7 +1365,7 @@ class GorathProjectile:
         ps = self.particles
         if ps is not None:
             self._emit_acc += dt
-            if self._emit_acc >= 0.035:
+            if self._emit_acc >= 0.07:
                 self._emit_acc = 0.0
                 ang = self.rotation + math.pi + (random.random() - .5) * 1.1
                 spd = random.uniform(22, 70)
@@ -1860,7 +1860,7 @@ class SkillFX:
                          y - 8 + int(math.sin(a) * rr * 0.5 * pulse + ln * 0.4)),
                         2 if i % 2 else 1)
             self._star(surface, x, y - 10, int(26 * (self.radius / 90.0)),
-                       P["blood_glow"], int(190 * pulse), spikes=8,
+                       P["blood_glow"], int(190 * pulse), spikes=4,
                        rot=self.age * 1.4, core=P["fx_white"], hollow=0.5)
             for k in range(3):
                 a = self.age * 2.1 + k * math.tau / 3
@@ -1951,9 +1951,9 @@ class SkillFX:
                              special_flags=pygame.BLEND_RGB_ADD)
             # hollow: ledakan berpusat di badan Gorath sendiri
             self._star(surface, x, y, int(rr * 1.05), P["blood_hot"],
-                       int(230 * st), spikes=8, rot=self.age * 2.2,
+                       int(230 * st), spikes=4, rot=self.age * 2.2,
                        core=P["fx_white"], hollow=0.55)
-            for i in range(8):
+            for i in range(4):
                 a = self.seed * 0.4 + i * math.tau / 8
                 L = int(rr * (0.8 + 0.5 * _hash01(self.seed + i)))
                 pygame.draw.line(surface, (*P["blood_bright"], int(200 * st)),
@@ -2035,7 +2035,7 @@ class SkillFX:
                                  (x, y),
                                  (x + int(math.cos(a) * L),
                                   y + int(math.sin(a) * L * 0.8)), 2)
-            for i in range(8):
+            for i in range(4):
                 a = self.seed + i * math.tau / 8 + 0.3
                 L = int(rr * (0.6 + 1.0 * st))
                 pygame.draw.polygon(surface, (*P["blood_darkest"],
@@ -2048,7 +2048,7 @@ class SkillFX:
                                       y + int(math.sin(a - 0.14) * L * 0.8))])
 
     # ------------------------------------------------------------------
-    def _star(self, surface, x, y, radius, color, alpha, spikes=8, rot=0.0,
+    def _star(self, surface, x, y, radius, color, alpha, spikes=4, rot=0.0,
               core=None, hollow=0.0):
         """Bintang tajam ber-spike (bukan lingkaran).
 
@@ -2141,7 +2141,7 @@ class GorathFXDirector:
         budget = particle_budget()
         if budget > 0:
             self.particles.burst(
-                x + facing * 8, gy, 5,
+                x + facing * 8, gy, 2,
                 speed=(26, 80), life=(0.18, 0.4), size=(2, 4),
                 colors=(P["dust"], P["blood_dark"], P["smoke"]),
                 spread=1.2, direction=math.pi if facing > 0 else 0.0,
@@ -2162,7 +2162,7 @@ class GorathFXDirector:
             return
         ang = math.atan2(tip.y - y, tip.x - x)
         self.particles.burst(
-            tip.x, tip.y, 7,
+            tip.x, tip.y, 3,
             speed=(110, 250), life=(0.1, 0.24), size=(1, 3),
             colors=(P["blood_hot"], P["blood_glow"], P["fx_white"]),
             spread=1.5, direction=ang, drag=3.6, shape="streak",
@@ -2211,8 +2211,8 @@ class GorathFXDirector:
             self.spawn_blood_volley(x, y, aim)
         elif heavy and G is not None:
             # R: ledakan besar -> satu beat freeze
-            _feel_hit_stop(0.06)
-        self.particles.burst(x, y + gy * 0.4, 10,
+            _feel_hit_stop(0.036)
+        self.particles.burst(x, y + gy * 0.4, 5,
                              speed=(60, 190), life=(0.2, 0.5), size=(2, 4),
                              colors=(P["blood_dark"], P["smoke"],
                                      P["dust"]),
@@ -2325,18 +2325,18 @@ class GorathFXDirector:
         budget = particle_budget()
         if budget > 0:
             self.particles.burst(
-                x, y - 10, 26, speed=(90, 300), life=(0.4, 0.9),
+                x, y - 10, 13, speed=(90, 300), life=(0.4, 0.9),
                 size=(2, 5), colors=(P["blood_bright"], P["blood_hot"],
                                      P["blood_glow"]),
                 spread=math.tau, gravity=260.0, drag=1.2, shape="streak")
             self.particles.burst(
-                x, y - 10, 14, speed=(60, 200), life=(0.5, 1.1),
+                x, y - 10, 7, speed=(60, 200), life=(0.5, 1.1),
                 size=(2, 5), colors=(P["bone_mid"], P["blood_dark"],
                                      P["metal_mid"]),
                 spread=math.tau, gravity=520.0, drag=0.8, shape="shard",
                 rotation_speed=(-18.0, 18.0))
             self.particles.burst(
-                x, y - 6, 12, speed=(30, 120), life=(0.6, 1.3),
+                x, y - 6, 6, speed=(30, 120), life=(0.6, 1.3),
                 size=(3, 6), colors=(P["smoke"], P["blood_darkest"]),
                 spread=math.tau, gravity=-60.0, drag=1.8, shape="smoke",
                 layer="back")
@@ -2344,8 +2344,8 @@ class GorathFXDirector:
             self.impacts.append(ImpactFX(x, y - 10, 0.0, 2.0, True,
                                          kind="rupture"))
         if shake_allowed():
-            _feel_shake(16.0, 0.5)
-        _feel_hit_stop(0.07)
+            _feel_shake(8.0, 0.5)
+        _feel_hit_stop(0.040)
 
     # ------------------------------------------------------------------
     # Watcher engine (edge trigger — tidak menyentuh gameplay)
@@ -2392,7 +2392,7 @@ class GorathFXDirector:
                 budget = particle_budget()
                 if budget > 0:
                     self.particles.burst(
-                        self.last_x, self.last_y + 4, 8,
+                        self.last_x, self.last_y + 4, 4,
                         speed=(40, 130), life=(0.2, 0.45), size=(2, 4),
                         colors=(P["blood_bright"], P["dust"]),
                         spread=math.tau, gravity=180.0, drag=2.0,

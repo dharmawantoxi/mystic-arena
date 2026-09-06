@@ -67,17 +67,17 @@ VEX_FX_ENABLED = True
 HIT_STOP_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 170
+MAX_PARTICLES = 102
 
 #: Batas keras proyektil visual per director.
-MAX_PROJECTILES = 18
+MAX_PROJECTILES = 10
 
 #: Panjang histori trail senjata (jumlah sample posisi staff).
-TRAIL_SAMPLES = 12
+TRAIL_SAMPLES = 7
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -610,7 +610,7 @@ def chevron_surface(size, color, thick=2):
     return _cache_put(key, surf)
 
 
-def dashed_ring_surface(radius, thickness, color, segments=8, span=0.42,
+def dashed_ring_surface(radius, thickness, color, segments=4, span=0.42,
                         rot_step=0):
     """Cincin putus-putus berputar (rune halo) — cached."""
     radius = max(4, int(radius))
@@ -1373,7 +1373,7 @@ class ImpactFX:
         if t < 0.55:
             st = 1.0 - t / 0.55
             r0 = int((7 + 19 * pw) * (0.3 + 1.1 * t))
-            for k in range(8):
+            for i in range(4):
                 ang = self.angle + k * math.pi / 4 + 0.19
                 L = (6 + 15 * pw) * st * (1.0 if k % 2 else 0.55)
                 pygame.draw.line(
@@ -1491,7 +1491,7 @@ class ImpactFX:
                 rad = int((16 + 60 * pw) * (0.35 + 0.95 * t))
                 surface.blit(dashed_ring_surface(
                     max(5, rad), max(2, int(3 * st) + 1), P["gold"],
-                    segments=10, span=0.38,
+                    segments=5, span=0.38,
                     rot_step=math.degrees(self.angle) + t * 90.0),
                     (x - rad - 8, y - rad - 8))
                 ln = int((22 + 34 * pw) * st)
@@ -1847,12 +1847,12 @@ def draw_arcane_orb(surface, px, py, angle=0.0, age=0, kind="attack",
     surface.blit(
         dashed_ring_surface(rad + 5, 2, P["fx_light"] if not hot
                             else P["rune_light"],
-                            segments=8, span=0.40,
+                            segments=4, span=0.40,
                             rot_step=math.degrees(-angle) + age * 5.0),
         (x - rad - 9, y - rad - 9))
     surface.blit(
         dashed_ring_surface(rad + 11, 1, P["fx_deep"],
-                            segments=10, span=0.26,
+                            segments=5, span=0.26,
                             rot_step=math.degrees(angle) - age * 3.0),
         (x - rad - 15, y - rad - 15))
 
@@ -1970,7 +1970,7 @@ class SkillFX:
     def _update_q(self, dt, p):
         if p < self.P_CAST and not self.impacted:
             self.particles.burst(
-                self.x + self.facing * 14, self.y - 34, 8,
+                self.x + self.facing * 14, self.y - 34, 4,
                 speed=(40, 130), life=(0.2, 0.42), size=(1, 3),
                 colors=(P["fx_pale"], P["fx_light"], P["fx_bright"]),
                 spread=math.tau, drag=2.4, shape="mote")
@@ -1993,7 +1993,7 @@ class SkillFX:
             self.impacted = True
             tx = self.x + self.facing * self.radius * 0.6
             self.particles.burst(
-                self.x + self.facing * 18, self.y - 34, 9,
+                self.x + self.facing * 18, self.y - 34, 4,
                 speed=(150, 320), life=(0.16, 0.34), size=(1, 3),
                 colors=(P["fx_pale"], P["fx_bright"], P["rune_light"]),
                 spread=0.7, direction=0.0 if self.facing > 0 else math.pi,
@@ -2083,7 +2083,7 @@ class SkillFX:
 
     def _astral_shatter(self):
         self.particles.burst(
-            self.x, self.y - 6, 12,
+            self.x, self.y - 6, 6,
             speed=(90, 240), life=(0.24, 0.5), size=(2, 4),
             colors=(P["astral_bright"], P["astral_light"],
                     P["astral_hot"]),
@@ -2275,7 +2275,7 @@ class SkillFX:
             rr = int(self.radius * (1.0 - 0.72 * t))
             surface.blit(
                 dashed_ring_surface(max(5, rr), max(2, int(3 * (1 - t)) + 1),
-                                    P["fx_mid"], segments=12, span=0.34,
+                                    P["fx_mid"], segments=6, span=0.34,
                                     rot_step=-self.age * 140.0),
                 (int(self.x) - rr - 8, int(self.y) + 20 - rr - 8))
             return
@@ -2332,7 +2332,7 @@ class SkillFX:
             rr = int(6 + 30 * (1.0 - t))
             surface.blit(
                 dashed_ring_surface(max(5, rr), 2, P["fx_light"],
-                                    segments=8, span=0.42,
+                                    segments=4, span=0.42,
                                     rot_step=self.age * 220.0),
                 (int(fx) - rr - 8, int(fy) - rr - 8))
             if p > self.P_CAST:
@@ -2472,7 +2472,7 @@ class SkillFX:
             rr = int(self.radius * (0.2 + 1.05 * _ease_out(t)))
             surface.blit(
                 dashed_ring_surface(max(6, rr), max(2, int(4 * st) + 1),
-                                    P["gold"], segments=10, span=0.36,
+                                    P["gold"], segments=5, span=0.36,
                                     rot_step=self.age * 200.0),
                 (int(self.x) - rr - 8, int(self.y) + 8 - rr - 8))
             # glif rune melayang keluar
@@ -2873,7 +2873,7 @@ class VexFXDirector:
             spread=1.1, direction=math.pi if facing > 0 else 0.0,
             gravity=90.0, drag=2.6, shape="pixel", back=True)
         self.particles.burst(
-            x, y - 44, 5,
+            x, y - 44, 2,
             speed=(30, 90), life=(0.18, 0.38), size=(1, 3),
             colors=(P["fx_light"], P["fx_mid"]),
             spread=math.tau, drag=2.4, shape="mote", swirl=2.0)
@@ -2897,7 +2897,7 @@ class VexFXDirector:
             self.impacts.pop(0)
         self.impacts.append(ImpactFX(ox, oy, ang, 0.45, kind="orb"))
         self.particles.burst(
-            ox, oy, 6,
+            ox, oy, 3,
             speed=(90, 210), life=(0.14, 0.32), size=(1, 3),
             colors=(P["fx_pale"], P["fx_bright"], P["rune_light"]),
             spread=1.2, direction=ang, drag=3.4, shape="streak")
@@ -2905,7 +2905,7 @@ class VexFXDirector:
             ox, oy, 8, 7, life=(0.16, 0.32), size=(1, 3),
             colors=(P["fx_light"], P["fx_mid"], P["fx_bright"]),
             speed=(40, 100), squash=0.9, shape="mote", swirl=1.6)
-        shake(2.6, 0.14)
+        shake(1.3, 0.14)
 
     def on_cast(self, x, y, skill):
         """Skill dilepas: buat SkillFX + bahasa per-skill + shake."""
@@ -2932,13 +2932,13 @@ class VexFXDirector:
         if skill == "q":
             # Q Arcane Orb: aperture + stream + conduit
             self.particles.burst(
-                x + f * 16, y - 34, 10, speed=(120, 280),
+                x + f * 16, y - 34, 5, speed=(120, 280),
                 life=(0.16, 0.36), size=(1, 3),
                 colors=(P["fx_pale"], P["fx_bright"], P["rune_light"]),
                 spread=0.9, direction=0.0 if f > 0 else math.pi,
                 drag=3.0, shape="streak")
-            shake(4.2, 0.20)
-            hit_stop(0.035)
+            shake(2.1, 0.20)
+            hit_stop(0.021)
         elif skill == "w":
             # W Sanity's Eclipse: cincin kristal + debu tanah
             self.particles.ring(
@@ -2947,37 +2947,37 @@ class VexFXDirector:
                 colors=(P["crystal_light"], P["crystal_mid"]),
                 speed=(60, 150), squash=0.55, shape="crystal")
             self.particles.burst(
-                x, y + 30, 8, speed=(50, 140), life=(0.3, 0.6),
+                x, y + 30, 4, speed=(50, 140), life=(0.3, 0.6),
                 size=(2, 4), colors=(P["dust"], P["dust_light"]),
                 spread=2.6, direction=-math.pi / 2, gravity=240.0,
                 drag=1.6, shape="pixel", back=True)
-            shake(5.5, 0.24)
-            hit_stop(0.042)
+            shake(2.8, 0.24)
+            hit_stop(0.025)
         elif skill == "e":
             # E Astral Imprisonment: kurungan ungu + rune
             tx = float(getattr(target, "x", x + f * 90.0))
             ty = float(getattr(target, "y", y))
             self.particles.burst(
-                tx, ty - 6, 10, speed=(60, 170), life=(0.25, 0.55),
+                tx, ty - 6, 5, speed=(60, 170), life=(0.25, 0.55),
                 size=(1, 3),
                 colors=(P["astral_bright"], P["astral_light"],
                         P["astral_hot"]),
                 spread=math.tau, drag=2.0, shape="mote", swirl=2.4)
-            shake(3.4, 0.18)
+            shake(1.7, 0.18)
         elif skill == "r":
             # R Essence Flux: hisapan + ledakan (lihat SkillFX._flux_burst)
             self.particles.burst(
-                x, y + 12, 12, speed=(120, 260), life=(0.2, 0.45),
+                x, y + 12, 6, speed=(120, 260), life=(0.2, 0.45),
                 size=(2, 4),
                 colors=(P["fx_bright"], P["fx_light"], P["gold"]),
                 spread=math.tau, drag=1.0, shape="streak", swirl=2.2)
             self.particles.burst(
-                x, y + 30, 10, speed=(40, 130), life=(0.4, 0.85),
+                x, y + 30, 5, speed=(40, 130), life=(0.4, 0.85),
                 size=(3, 6), colors=(P["dust"], P["smoke"]),
                 spread=2.6, direction=-math.pi / 2, gravity=-18.0,
                 drag=1.5, shape="smoke", back=True)
-            shake(11.0, 0.42)
-            hit_stop(0.075)
+            shake(5.5, 0.42)
+            hit_stop(0.040)
 
     def on_impact(self, x, y, angle=0.0, power=1.0, crit=False,
                   kind="orb"):
@@ -3026,7 +3026,7 @@ class VexFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 14, 6, speed=(70, 190), life=(0.18, 0.36),
+            hx, hy - 14, 3, speed=(70, 190), life=(0.18, 0.36),
             size=(1, 3), colors=(P["fx_bright"], P["fx_light"]),
             drag=3.0, shape="streak")
 
@@ -3036,24 +3036,24 @@ class VexFXDirector:
         x = float(getattr(h, "x", 0.0))
         y = float(getattr(h, "y", 0.0))
         self.particles.burst(
-            x, y - 18, 14, speed=(50, 180), life=(0.5, 1.05),
+            x, y - 18, 7, speed=(50, 180), life=(0.5, 1.05),
             size=(2, 4),
             colors=(P["fx_light"], P["fx_dark"], P["fx_deep"]),
             spread=math.tau, drag=1.4, shape="mote", swirl=1.6,
             fade_pow=1.4)
         self.particles.burst(
-            x, y - 40, 8, speed=(40, 130), life=(0.5, 0.95),
+            x, y - 40, 4, speed=(40, 130), life=(0.5, 0.95),
             size=(2, 4),
             colors=(P["astral_light"], P["astral_mid"]),
             spread=math.tau, drag=1.6, shape="rune",
             rotation_speed=(-8.0, 8.0))
         self.particles.burst(
-            x, y + 32, 8, speed=(30, 95), life=(0.5, 0.9),
+            x, y + 32, 4, speed=(30, 95), life=(0.5, 0.9),
             size=(3, 6), colors=(P["dust"], P["smoke"]),
             spread=2.6, direction=-math.pi / 2, gravity=-16.0,
             drag=1.5, shape="smoke", back=True)
         self.trail.reset()
-        shake(4.5, 0.32)
+        shake(2.2, 0.32)
 
     # ------------------------------------------------------------------
     # State machine (prioritas + transisi)

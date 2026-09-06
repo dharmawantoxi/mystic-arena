@@ -264,7 +264,7 @@ def _poly(surface, color, pts, alpha=255):
         pygame.draw.polygon(surface, (c[0], c[1], c[2], a), ip)
 
 
-def _star(surface, cx, cy, size, color, alpha, spikes=8, rot=0.0, core=None):
+def _star(surface, cx, cy, size, color, alpha, spikes=4, rot=0.0, core=None):
     """Bintang kilat chunky (spike panjang-pendek selang-seling)."""
     if alpha <= 0 or size <= 0:
         return
@@ -303,7 +303,7 @@ def _shard(surface, cx, cy, ang, length, width, color, alpha, core=None):
 
 
 def _dash_ring(surface, cx, cy, radius, color, alpha, phase,
-               segments=12, thick=3, squash=0.5):
+               segments=6, thick=3, squash=0.5):
     """Cincin PUTUS-PUTUS chunky (bukan lingkaran vektor halus)."""
     if alpha <= 0 or radius <= 1:
         return
@@ -346,7 +346,7 @@ def _filled_crescent(surface, cx, cy, r, ang, sweep, color, alpha):
 # 1. PARTICLE SYSTEM (reusable, berbatas)
 # ============================================================================
 
-MAX_PARTICLES = 120
+MAX_PARTICLES = 72
 
 
 class Particle(object):
@@ -457,7 +457,7 @@ class ParticleSystem(object):
 # 2. PROJECTILE (modular, lifecycle SPAWN->TRAVEL->HIT->IMPACT->DESTROY)
 # ============================================================================
 
-MAX_PROJECTILES = 12
+MAX_PROJECTILES = 7
 
 
 class KhalrosProjectile(object):
@@ -615,7 +615,7 @@ class KhalrosProjectile(object):
 # 3. IMPACT FX - flash + cincin chunky + serpihan + shock + scorch
 # ============================================================================
 
-MAX_IMPACTS = 16
+MAX_IMPACTS = 9
 
 
 class ImpactFX(object):
@@ -648,17 +648,17 @@ class ImpactFX(object):
         if t < 0.35:
             s = int((12 + t * 24) * self.power * (1.0 - t / 0.35 * 0.4))
             _star(surface, self.x, self.y, s, self.c2,
-                  _a(245 * (1 - t / 0.35)), spikes=8,
+                  _a(245 * (1 - t / 0.35)), spikes=4,
                   rot=self.ang + t * 4.0, core=P["white"])
         # cincin chunky mengembang
         r = int((9 + t * 44) * self.power)
         _dash_ring(surface, self.x, self.y, r, self.c1, _a(200 * k),
-                   t * 3.0 + self.ang, segments=12,
+                   t * 3.0 + self.ang, segments=6,
                    thick=max(2, int(3 * self.power)), squash=0.55)
         _dash_ring(surface, self.x, self.y, int(r * 0.62), self.c2,
-                   _a(150 * k), -t * 4.0, segments=8, thick=2, squash=0.55)
+                   _a(150 * k), -t * 4.0, segments=4, thick=2, squash=0.55)
         # serpihan beterbangan
-        for i in range(7):
+        for i in range(3):
             u = t * (0.55 + 0.75 * _hash01(i * 7 + 11))
             a = self.ang + (0.5 - _hash01(i * 13)) * 2.6
             d = u * 54 * self.power
@@ -832,15 +832,15 @@ class KhalrosSkillFX(object):
             rt = (t - self.release) / (1.0 - self.release)
             r = int((6 + rt * 60) * self.power)
             _dash_ring(surface, self.tx, self.ty, r, P["fire_mid"],
-                       _a(200 * (1 - rt)), self._spin, segments=12,
+                       _a(200 * (1 - rt)), self._spin, segments=6,
                        thick=max(2, int(3 * self.power)), squash=0.5)
             _dash_ring(surface, self.tx, self.ty, int(r * 0.6),
                        P["fire_bright"], _a(150 * (1 - rt)), -self._spin,
-                       segments=8, thick=2, squash=0.5)
+                       segments=4, thick=2, squash=0.5)
             if rt < 0.4:
                 _star(surface, self.tx, self.ty,
                       int((10 + rt * 30) * self.power), P["fire_bright"],
-                      _a(240 * (1 - rt / 0.4)), spikes=8,
+                      _a(240 * (1 - rt / 0.4)), spikes=4,
                       rot=self._spin, core=P["white"])
 
     def _mini_axe(self, surface, ax, ay, spin, fade):
@@ -865,11 +865,11 @@ class KhalrosSkillFX(object):
         # ground crack + shockwave radial
         r = int((8 + t * 130) * self.power)
         _dash_ring(surface, self.x, self.y + 6, r, P["fire_dark"],
-                   _a(200 * (1 - t)), self._spin, segments=16,
+                   _a(200 * (1 - t)), self._spin, segments=6,
                    thick=max(3, int(5 * self.power)), squash=0.4)
         _dash_ring(surface, self.x, self.y + 6, int(r * 0.7),
                    P["fire_mid"], _a(170 * (1 - t)), -self._spin,
-                   segments=12, thick=3, squash=0.4)
+                   segments=6, thick=3, squash=0.4)
         # pak binatang (boar/wolf) menjulang dari tanah
         for k in range(4):
             a = k * math.pi * 2.0 / 4 + 0.4
@@ -916,14 +916,14 @@ class KhalrosSkillFX(object):
             rt = (t - self.release) / (1.0 - self.release)
             r = int((6 + rt * 46) * self.power)
             _dash_ring(surface, ex, self.y + 6, r, P["dust_dark"],
-                       _a(200 * (1 - rt)), self._spin, segments=12,
+                       _a(200 * (1 - rt)), self._spin, segments=6,
                        thick=3, squash=0.45)
             _dash_ring(surface, ex, self.y + 6, int(r * 0.6),
                        P["dust_light"], _a(160 * (1 - rt)), -self._spin,
-                       segments=8, thick=2, squash=0.45)
+                       segments=4, thick=2, squash=0.45)
             if rt < 0.4:
                 _star(surface, ex, self.y, int((10 + rt * 26) * self.power),
-                      P["fire_bright"], _a(230 * (1 - rt / 0.4)), spikes=8,
+                      P["fire_bright"], _a(230 * (1 - rt / 0.4)), spikes=4,
                       rot=self._spin, core=P["white"])
 
     def _boar(self, surface, bx, by, d, fade):
@@ -966,10 +966,10 @@ class KhalrosSkillFX(object):
                        thick=max(3, int(6 * self.power)), squash=0.38)
             _dash_ring(surface, self.x, self.y + 6, int(r * 0.66),
                        P["fire_mid"], _a(170 * (1 - rt)), -self._spin,
-                       segments=12, thick=3, squash=0.38)
+                       segments=6, thick=3, squash=0.38)
             if rt < 0.5 and particles is not None:
                 if len(particles.items) < MAX_PARTICLES - 6:
-                    particles.burst(self.x, self.y, 6, speed=4.0, life=0.6,
+                    particles.burst(self.x, self.y, 3, speed=4.0, life=0.6,
                                     size=4, color=P["hawk_light"], kind="shard",
                                     g=0.3)
                     particles.burst(self.x, self.y, 4, speed=2.5, life=0.5,
@@ -1395,18 +1395,18 @@ class KhalrosFXDirector(object):
         self.scorch.append(Scorch(tx, ty + 14, 22,
                                   PALETTE["fire_mid"] if kind == "axe"
                                   else PALETTE["hawk_mid"]))
-        self.particles.burst(tx, ty, 9, speed=3.0, life=0.5, size=4,
+        self.particles.burst(tx, ty, 4, speed=3.0, life=0.5, size=4,
                              color=PALETTE["fire_mid"] if kind == "axe"
                              else PALETTE["hawk_mid"], kind="shard", g=0.5)
-        self.particles.burst(tx, ty, 6, speed=2.0, life=0.45, size=3,
+        self.particles.burst(tx, ty, 3, speed=2.0, life=0.45, size=3,
                              color=PALETTE["fire_bright"], kind="spark",
                              g=0.2, add=True)
         if kind == "hawk":
-            _feel_hit_stop(0.06)
-            _feel_shake(9.0, 0.4)
-        else:
             _feel_hit_stop(0.036)
-            _feel_shake(4.5, 0.18)
+            _feel_shake(4.5, 0.4)
+        else:
+            _feel_hit_stop(0.022)
+            _feel_shake(2.2, 0.18)
 
     def _on_skill_impact(self, sk):
         x, y = sk.x, sk.y
@@ -1415,23 +1415,23 @@ class KhalrosFXDirector(object):
         kind = {"q": "axe", "w": "roar", "e": "charge", "r": "hawk"}[sk.kind]
         self.impacts.append(ImpactFX(x, y, 0.0, sk.power, kind))
         self.scorch.append(Scorch(x, y + 14, 26, PALETTE["fire_dark"]))
-        self.particles.burst(x, y, 10, speed=3.4, life=0.55, size=4,
+        self.particles.burst(x, y, 5, speed=3.4, life=0.55, size=4,
                              color=PALETTE["fire_mid"], kind="shard", g=0.5)
-        self.particles.burst(x, y, 6, speed=2.4, life=0.45, size=3,
+        self.particles.burst(x, y, 3, speed=2.4, life=0.45, size=3,
                              color=PALETTE["fire_bright"], kind="spark",
                              g=0.2, add=True)
         if sk.kind == "r":
-            _feel_hit_stop(0.07)
-            _feel_shake(14.0, 0.5)
+            _feel_hit_stop(0.040)
+            _feel_shake(7.0, 0.5)
         elif sk.kind == "e":
-            _feel_hit_stop(0.045)
-            _feel_shake(9.0, 0.32)
+            _feel_hit_stop(0.027)
+            _feel_shake(4.5, 0.32)
         elif sk.kind == "w":
-            _feel_hit_stop(0.04)
-            _feel_shake(8.0, 0.3)
+            _feel_hit_stop(0.024)
+            _feel_shake(4.0, 0.3)
         else:
-            _feel_hit_stop(0.04)
-            _feel_shake(6.0, 0.24)
+            _feel_hit_stop(0.024)
+            _feel_shake(3.0, 0.24)
 
     # ------------------------------------------------------------------
     def on_cast(self, hx, hy, skill, timer):
@@ -1441,13 +1441,13 @@ class KhalrosFXDirector(object):
         d = int(getattr(self.hero, "direction", 1)) or 1
         self.skills.append(KhalrosSkillFX(skill, hx, hy, tx, ty, d, 1.0))
         # kilat cast
-        self.particles.burst(hx, hy - 18, 5, speed=2.2, life=0.4,
+        self.particles.burst(hx, hy - 18, 2, speed=2.2, life=0.4,
                              size=3, color=PALETTE["fire_light"],
                              kind="spark", g=-0.1, add=True)
 
     def on_swing_impact(self, x, y, ang, power=1.0, hot=False):
         self.impacts.append(ImpactFX(x, y, ang, power, "blade"))
-        self.particles.burst(x, y, 7, speed=2.8, life=0.45, size=4,
+        self.particles.burst(x, y, 3, speed=2.8, life=0.45, size=4,
                              color=PALETTE["fire_mid"], kind="shard", g=0.6)
         self.particles.burst(x, y, 4, speed=1.8, life=0.5, size=5,
                              color=PALETTE["ash_dark"], kind="puff", g=-0.3)

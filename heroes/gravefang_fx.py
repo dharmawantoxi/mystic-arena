@@ -54,11 +54,11 @@ DEBUG_CHARACTER = False
 GRAVEFANG_FX_ENABLED = True
 
 #: Cap keras — tidak ada satu pun sistem yang boleh tumbuh tanpa batas.
-MAX_PARTICLES = 240
-MAX_PROJECTILES = 10
-TRAIL_SAMPLES = 12
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_PARTICLES = 144
+MAX_PROJECTILES = 6
+TRAIL_SAMPLES = 7
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 MAX_AFTERIMAGES = 8
 
 FIXED_DT = 1.0 / 60.0
@@ -557,7 +557,7 @@ def shard_poly(surface, cx, cy, ang, length, width, color, alpha=255):
                         pts)
 
 
-def spark_star(surface, cx, cy, size, color, alpha, spikes=8, rot=0.3):
+def spark_star(surface, cx, cy, size, color, alpha, spikes=4, rot=0.3):
     """Bintang kilat benturan (polygon berduri — bukan lingkaran)."""
     cx, cy = int(cx), int(cy)
     pts = []
@@ -1033,7 +1033,7 @@ class ImpactFX:
         if t < 0.18:
             s = (12.0 + 30.0 * k) * (1.0 - t / 0.18)
             spark_star(surface, self.x, self.y, s, c["grave_white"],
-                       int(235 * (1.0 - t / 0.18)), spikes=6, rot=ang + 0.4)
+                       int(235 * (1.0 - t / 0.18)), spikes=3, rot=ang + 0.4)
 
     # ── benturan pecahan tulang ────────────────────────────────────
     def _draw_grave(self, surface, t, inv, k):
@@ -1060,7 +1060,7 @@ class ImpactFX:
         if t < 0.3:
             s = (16.0 + 32.0 * k) * inv
             spark_star(surface, self.x, self.y, s, c["grave_white"],
-                       int(240 * inv), spikes=8, rot=self.angle + 0.2)
+                       int(240 * inv), spikes=4, rot=self.angle + 0.2)
         rr = (16.0 + t * 120.0) * k
         a = int(190 * inv)
         _blit_faded(surface, ring_surface(int(rr), 3, c["grave_light"], a,
@@ -1391,31 +1391,31 @@ class ProjectileSystem:
         c = _P
         if proj.kind == "boulder":
             self.particles.burst(
-                hp.x, hp.y, 20, speed=(90, 360), life=(0.22, 0.55),
+                hp.x, hp.y, 10, speed=(90, 360), life=(0.22, 0.55),
                 size=(1.8, 4.0),
                 colors=(c["rock_light"], c["rock_mid"], c["bone_light"]),
                 shape="rubble", drag=1.8, gravity=300.0,
                 rotation_speed=(-9, 9))
             self.particles.burst(
-                hp.x, hp.y, 10, speed=(60, 200), life=(0.2, 0.5),
+                hp.x, hp.y, 5, speed=(60, 200), life=(0.2, 0.5),
                 size=(2.0, 4.5),
                 colors=(c["grave_dark"], c["rock_dark"]),
                 shape="dust", drag=2.2, layer="back")
             if _feel is not None:
-                _feel.hit_stop(0.065)
+                _feel.hit_stop(0.023)
                 if shake_allowed():
-                    _feel.shake(8.0, 0.28)
+                    _feel.shake(2.0, 0.28)
         else:
             self.particles.burst(
-                hp.x, hp.y, 12, speed=(60, 250), life=(0.2, 0.45),
+                hp.x, hp.y, 6, speed=(60, 250), life=(0.2, 0.45),
                 size=(1.5, 3.0),
                 colors=(c["bone_light"], c["grave_bright"],
                         c["grave_white"]),
                 shape="shard", drag=2.4, rotation_speed=(-7, 7))
             if _feel is not None:
-                _feel.hit_stop(0.04)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(4.5, 0.2)
+                    _feel.shake(1.1, 0.2)
 
     def update(self, dt):
         for p in self.projectiles:
@@ -1542,20 +1542,20 @@ class SkillFX:
         if ph == "RELEASE" and self._once("q_burst"):
             gy = self.y + 34 * self.scale
             particles.burst(
-                self.x, gy, 24, speed=(120, 380), life=(0.25, 0.6),
+                self.x, gy, 12, speed=(120, 380), life=(0.25, 0.6),
                 size=(2.0, 4.5),
                 colors=(c["rock_light"], c["rock_mid"], c["bone_light"]),
                 shape="rubble", drag=1.6, gravity=340.0,
                 rotation_speed=(-10, 10))
             particles.burst(
-                self.x, gy, 14, speed=(60, 220), life=(0.3, 0.7),
+                self.x, gy, 7, speed=(60, 220), life=(0.3, 0.7),
                 size=(2.5, 5.0),
                 colors=(c["grave_dark"], c["rock_dark"]),
                 shape="dust", drag=2.2, layer="back")
             if _feel is not None:
-                _feel.hit_stop(0.06)
+                _feel.hit_stop(0.022)
                 if shake_allowed():
-                    _feel.shake(8.5, 0.30)
+                    _feel.shake(2.1, 0.30)
         # AREA: bara kubur naik dari retakan
         if ph in ("AREA", "IMPACT"):
             if random.random() < dt * 26.0:
@@ -1651,16 +1651,16 @@ class SkillFX:
         ph = skill_phase(t)
         if ph in ("CAST", "CHARGE") and self._once("w_cast"):
             particles.burst(
-                self.x, self.y + 20, 12, speed=(50, 170), life=(0.25, 0.5),
+                self.x, self.y + 20, 6, speed=(50, 170), life=(0.25, 0.5),
                 size=(2.0, 4.0),
                 colors=(c["rock_mid"], c["rock_light"]),
                 shape="rubble", drag=1.8, gravity=240.0,
                 rotation_speed=(-6, 6))
         if ph == "RELEASE" and self._once("w_rel"):
             if _feel is not None:
-                _feel.hit_stop(0.05)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(6.0, 0.26)
+                    _feel.shake(1.5, 0.26)
         # AREA: debu sepanjang lintasan boulder
         if ph in ("RELEASE", "AREA", "IMPACT"):
             tx, ty = self._target_xy()
@@ -1739,15 +1739,15 @@ class SkillFX:
         if ph == "RELEASE" and self._once("e_slam"):
             gy = self.y + 34 * self.scale
             particles.burst(
-                self.x, gy, 16, speed=(90, 280), life=(0.25, 0.55),
+                self.x, gy, 8, speed=(90, 280), life=(0.25, 0.55),
                 size=(1.8, 3.8),
                 colors=(c["bone_light"], c["rock_light"]),
                 shape="rubble", drag=1.8, gravity=320.0,
                 rotation_speed=(-9, 9))
             if _feel is not None:
-                _feel.hit_stop(0.05)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(6.0, 0.24)
+                    _feel.shake(1.5, 0.24)
         # AREA: energi merambat dari pasak ke target
         if ph in ("AREA", "IMPACT"):
             tx, ty = self._target_xy()
@@ -1828,23 +1828,23 @@ class SkillFX:
         ph = skill_phase(t)
         if ph in ("CAST", "CHARGE") and self._once("r_cast"):
             particles.burst(
-                self.x, self.y - 24, 16, speed=(50, 180), life=(0.3, 0.6),
+                self.x, self.y - 24, 8, speed=(50, 180), life=(0.3, 0.6),
                 size=(1.8, 3.8),
                 colors=(c["grave_light"], c["grave_bright"]),
                 shape="wisp", drag=2.0, additive=True)
             if _feel is not None and shake_allowed():
-                _feel.shake(4.5, 0.22)
+                _feel.shake(1.1, 0.22)
         if ph == "RELEASE" and self._once("r_rel"):
             particles.burst(
-                self.x, self.y, 26, speed=(140, 420), life=(0.3, 0.7),
+                self.x, self.y, 13, speed=(140, 420), life=(0.3, 0.7),
                 size=(2.0, 4.5),
                 colors=(c["rock_light"], c["bone_light"], c["grave_bright"]),
                 shape="rubble", drag=1.6, gravity=280.0,
                 rotation_speed=(-11, 11))
             if _feel is not None:
-                _feel.hit_stop(0.075)
+                _feel.hit_stop(0.024)
                 if shake_allowed():
-                    _feel.shake(10.0, 0.34)
+                    _feel.shake(2.5, 0.34)
         # AREA: puing tersedot MASUK ke Gravefang (arah penting)
         if ph in ("RELEASE", "AREA", "IMPACT"):
             if random.random() < dt * 52.0:
@@ -1914,7 +1914,7 @@ def _skillfx_postinit(fx):
     rng = random.Random(int(fx.x * 7 + fx.y * 13))
     if fx.skill == "q":
         cracks = []
-        for i in range(7):
+        for i in range(3):
             ang = i * math.tau / 7 + rng.uniform(-0.18, 0.18)
             cracks.append((ang, rng.uniform(48.0, 76.0),
                            rng.randint(0, 9999)))
@@ -2178,7 +2178,7 @@ class GravefangFXDirector:
             target=tgt, ground=ground_dy(u),
             on_impact=lambda b: self._on_proj_hit(b))
         self.particles.burst(
-            tip.x, tip.y, 7, speed=(90, 220), life=(0.12, 0.3),
+            tip.x, tip.y, 3, speed=(90, 220), life=(0.12, 0.3),
             size=(1.5, 3.0),
             colors=(_P["bone_light"], _P["grave_bright"]),
             shape="shard", drag=2.6, rotation_speed=(-8, 8))
@@ -2199,13 +2199,13 @@ class GravefangFXDirector:
             damage=0.0, target=tgt, ground=ground_dy(u),
             on_impact=lambda b: self._on_proj_hit(b))
         self.particles.burst(
-            self.x + f * 26.0, gy, 12, speed=(70, 230), life=(0.2, 0.45),
+            self.x + f * 26.0, gy, 6, speed=(70, 230), life=(0.2, 0.45),
             size=(2.0, 4.0),
             colors=(_P["rock_light"], _P["rock_mid"], _P["grave_dark"]),
             shape="rubble", drag=2.0, gravity=280.0,
             rotation_speed=(-9, 9))
         if _feel is not None and shake_allowed():
-            _feel.shake(4.5, 0.2)
+            _feel.shake(1.1, 0.2)
 
     def _on_proj_hit(self, proj):
         self.projectiles.on_impact(proj)
@@ -2226,7 +2226,7 @@ class GravefangFXDirector:
                                1.25, False, kind="club")
         # debu tanah walau meleset (feel hantaman berat)
         self.particles.burst(
-            tip.x, tip.y + 18, 8, speed=(40, 140), life=(0.18, 0.4),
+            tip.x, tip.y + 18, 4, speed=(40, 140), life=(0.18, 0.4),
             size=(1.5, 3.2), colors=(_P["rock_dark"], _P["grave_dark"]),
             shape="dust", drag=2.0, layer="back")
         self._release_pending()
@@ -2247,36 +2247,36 @@ class GravefangFXDirector:
         c = _P
         if kind == "club":
             self.particles.burst(
-                x, y, 16, speed=(110, 360), life=(0.2, 0.5),
+                x, y, 8, speed=(110, 360), life=(0.2, 0.5),
                 size=(1.8, 4.0),
                 colors=(c["rock_light"], c["bone_light"],
                         c["grave_bright"]),
                 shape="rubble", drag=2.0, gravity=300.0,
                 rotation_speed=(-10, 10))
             self.particles.burst(
-                x, y, 7, speed=(50, 170), life=(0.35, 0.7),
+                x, y, 3, speed=(50, 170), life=(0.35, 0.7),
                 size=(1.5, 2.5), colors=(c["bone_mid"], c["bone_light"]),
                 shape="bone", gravity=320.0, drag=0.7,
                 rotation_speed=(-9, 9))
             if _feel is not None:
-                _feel.hit_stop(0.062)
+                _feel.hit_stop(0.022)
                 if shake_allowed():
-                    _feel.shake(7.5, 0.26)
+                    _feel.shake(1.9, 0.26)
         else:
             self.particles.burst(
-                x, y, 11, speed=(60, 240), life=(0.18, 0.4),
+                x, y, 5, speed=(60, 240), life=(0.18, 0.4),
                 size=(1.5, 3.0),
                 colors=(c["bone_light"], c["grave_bright"]),
                 shape="shard", drag=2.6, rotation_speed=(-7, 7))
             if _feel is not None:
-                _feel.hit_stop(0.038)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(4.0, 0.18)
+                    _feel.shake(1.0, 0.18)
 
     def on_hurt(self, x, y):
         """Kena pukul: serpihan tulang + recoil kecil."""
         self.particles.burst(
-            x, y - 16, 9, speed=(50, 190), life=(0.15, 0.35),
+            x, y - 16, 4, speed=(50, 190), life=(0.15, 0.35),
             size=(1.5, 3.0),
             colors=(_P["bone_light"], _P["hide_light"]),
             shape="bone", drag=2.2, gravity=200.0,
@@ -2286,20 +2286,20 @@ class GravefangFXDirector:
         """Mati: kerangka berhamburan (FX global via bus)."""
         c = _P
         self.particles.burst(
-            x, y - 16, 30, speed=(60, 330), life=(0.4, 0.9),
+            x, y - 16, 15, speed=(60, 330), life=(0.4, 0.9),
             size=(1.8, 4.2),
             colors=(c["bone_light"], c["bone_mid"], c["rock_light"],
                     c["grave_bright"]),
             shape="bone", drag=1.4, gravity=280.0,
             rotation_speed=(-11, 11))
         self.particles.burst(
-            x, y - 16, 12, speed=(40, 150), life=(0.5, 1.0),
+            x, y - 16, 6, speed=(40, 150), life=(0.5, 1.0),
             size=(2.5, 5.0), colors=(c["grave_dark"], c["rock_dark"]),
             shape="dust", drag=1.8, layer="back")
         if _feel is not None:
-            _feel.hit_stop(0.08)
+            _feel.hit_stop(0.024)
             if shake_allowed():
-                _feel.shake(10.0, 0.34)
+                _feel.shake(2.5, 0.34)
 
     def on_cast(self, x, y, skill):
         fx = SkillFX(skill, x, y,
@@ -2635,7 +2635,7 @@ def notify_skill_impact(unit, x, y, radius=None, skill="q"):
     if radius:
         c = _P
         d.particles.burst(
-            float(x), float(y), 16, speed=(80, 280), life=(0.2, 0.55),
+            float(x), float(y), 8, speed=(80, 280), life=(0.2, 0.55),
             size=(1.8, 4.0),
             colors=(c["rock_light"], c["bone_light"], c["grave_bright"]),
             shape="rubble", drag=2.0, gravity=300.0,

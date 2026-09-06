@@ -57,11 +57,11 @@ DEBUG_CHARACTER = False
 NYXARA_FX_ENABLED = True
 
 #: Cap keras — tidak ada satu pun sistem yang boleh tumbuh tanpa batas.
-MAX_PARTICLES = 220
-MAX_PROJECTILES = 10
-TRAIL_SAMPLES = 12
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_PARTICLES = 132
+MAX_PROJECTILES = 6
+TRAIL_SAMPLES = 7
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 MAX_AFTERIMAGES = 8
 
 FIXED_DT = 1.0 / 60.0
@@ -501,7 +501,7 @@ def shard_poly(surface, cx, cy, ang, length, width, color, alpha=255):
                         pts)
 
 
-def spark_star(surface, cx, cy, size, color, alpha, spikes=8, rot=0.3):
+def spark_star(surface, cx, cy, size, color, alpha, spikes=4, rot=0.3):
     """Bintang kilat benturan (polygon berduri — bukan lingkaran)."""
     cx, cy = int(cx), int(cy)
     pts = []
@@ -936,7 +936,7 @@ class ImpactFX:
         if t < 0.18:
             s = (10.0 + 26.0 * k) * (1.0 - t / 0.18)
             spark_star(surface, self.x, self.y, s, c["nether_white"],
-                       int(235 * (1.0 - t / 0.18)), spikes=6, rot=ang + 0.4)
+                       int(235 * (1.0 - t / 0.18)), spikes=3, rot=ang + 0.4)
 
     # ── benturan nether orb ────────────────────────────────────────
     def _draw_nether(self, surface, t, inv, k):
@@ -963,7 +963,7 @@ class ImpactFX:
         if t < 0.3:
             s = (14.0 + 30.0 * k) * inv
             spark_star(surface, self.x, self.y, s, c["nether_white"],
-                       int(240 * inv), spikes=8, rot=self.angle + 0.2)
+                       int(240 * inv), spikes=4, rot=self.angle + 0.2)
         rr = (14.0 + t * 110.0) * k
         a = int(190 * inv)
         _blit_faded(surface, ring_surface(int(rr), 3, c["nether_light"], a,
@@ -1273,31 +1273,31 @@ class ProjectileSystem:
         c = _P
         if proj.kind == "blast":
             self.particles.burst(
-                hp.x, hp.y, 18, speed=(90, 340), life=(0.2, 0.5),
+                hp.x, hp.y, 9, speed=(90, 340), life=(0.2, 0.5),
                 size=(1.5, 3.5),
                 colors=(c["nether_bright"], c["nether_hot"], c["nether_white"]),
                 shape="shard", drag=2.2, additive=True,
                 rotation_speed=(-8, 8))
             self.particles.burst(
-                hp.x, hp.y, 7, speed=(50, 150), life=(0.4, 0.8),
+                hp.x, hp.y, 3, speed=(50, 150), life=(0.4, 0.8),
                 size=(1.5, 2.5), colors=(c["bone_mid"], c["bone_light"]),
                 shape="bone", gravity=340.0, drag=0.6,
                 rotation_speed=(-9, 9))
             if _feel is not None:
-                _feel.hit_stop(0.06)
+                _feel.hit_stop(0.022)
                 if shake_allowed():
-                    _feel.shake(7.0, 0.26)
+                    _feel.shake(1.8, 0.26)
         else:
             self.particles.burst(
-                hp.x, hp.y, 12, speed=(60, 240), life=(0.2, 0.45),
+                hp.x, hp.y, 6, speed=(60, 240), life=(0.2, 0.45),
                 size=(1.5, 3.0),
                 colors=(c["nether_light"], c["nether_bright"],
                         c["nether_white"]),
                 shape="wisp", drag=2.4, additive=True)
             if _feel is not None:
-                _feel.hit_stop(0.04)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(4.5, 0.2)
+                    _feel.shake(1.1, 0.2)
 
     def update(self, dt):
         for p in self.projectiles:
@@ -1421,22 +1421,22 @@ class SkillFX:
         # RELEASE: ledakan keluar + shockwave + serpihan
         if ph == "RELEASE" and self._once("q_burst"):
             particles.burst(
-                self.x, self.y - 14, 26, speed=(120, 420),
+                self.x, self.y - 14, 13, speed=(120, 420),
                 life=(0.25, 0.6), size=(1.5, 4.0),
                 colors=(c["nether_light"], c["nether_bright"],
                         c["nether_hot"], c["nether_white"]),
                 shape="shard", drag=2.6, additive=True,
                 rotation_speed=(-8, 8))
             particles.burst(
-                self.x, self.y - 14, 10, speed=(40, 120),
+                self.x, self.y - 14, 5, speed=(40, 120),
                 life=(0.5, 0.9), size=(2.0, 3.5),
                 colors=(c["bone_mid"], c["bone_light"]),
                 shape="bone", gravity=300.0, drag=0.8,
                 rotation_speed=(-9, 9))
             if _feel is not None:
-                _feel.hit_stop(0.05)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(6.0, 0.24)
+                    _feel.shake(1.5, 0.24)
         # AREA: bara naik dari tanah
         if ph in ("AREA", "IMPACT") and random.random() < dt * 30.0:
             rr = WORLD_RADIUS["q"] * random.uniform(0.2, 0.9)
@@ -1532,21 +1532,21 @@ class SkillFX:
         tx, ty = self._target_xy()
         if ph in ("CAST", "CHARGE") and self._once("w_cast"):
             particles.burst(
-                self.x, self.y - 22, 10, speed=(50, 150), life=(0.25, 0.5),
+                self.x, self.y - 22, 5, speed=(50, 150), life=(0.25, 0.5),
                 size=(1.5, 3.0),
                 colors=(c["robe_light"], c["nether_light"]),
                 shape="wisp", drag=2.0, additive=True)
         if ph == "RELEASE" and self._once("w_rel"):
             ang = math.atan2(ty - (self.y - 20), tx - self.x)
             particles.burst(
-                self.x, self.y - 20, 14, speed=(160, 320), life=(0.2, 0.45),
+                self.x, self.y - 20, 7, speed=(160, 320), life=(0.2, 0.45),
                 size=(1.5, 3.0), direction=ang, spread=0.7,
                 colors=(c["nether_light"], c["nether_bright"]),
                 shape="streak", drag=2.0, additive=True)
             if _feel is not None:
-                _feel.hit_stop(0.035)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(3.5, 0.18)
+                    _feel.shake(0.9, 0.18)
         # AREA: gelembung kutukan mengambang di target (melambatkan)
         if ph in ("AREA", "IMPACT") and random.random() < dt * 26.0:
             particles.spawn(
@@ -1625,22 +1625,22 @@ class SkillFX:
         ph = skill_phase(t)
         if ph in ("CAST", "CHARGE") and self._once("e_cast"):
             particles.burst(
-                self.x, self.y + 20, 12, speed=(40, 130), life=(0.3, 0.6),
+                self.x, self.y + 20, 6, speed=(40, 130), life=(0.3, 0.6),
                 size=(1.5, 3.0),
                 colors=(c["nether_dark"], c["nether_mid"]),
                 shape="dust", drag=1.8, layer="back")
         if ph == "RELEASE" and self._once("e_rel"):
             # tanah pecah saat totem menancap
             particles.burst(
-                self.x, self.y + 30, 18, speed=(90, 260), life=(0.3, 0.7),
+                self.x, self.y + 30, 9, speed=(90, 260), life=(0.3, 0.7),
                 size=(1.5, 3.5),
                 colors=(c["bone_mid"], c["bone_light"], c["nether_light"]),
                 shape="shard", gravity=420.0, drag=1.0,
                 rotation_speed=(-8, 8))
             if _feel is not None:
-                _feel.hit_stop(0.045)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(5.5, 0.24)
+                    _feel.shake(1.4, 0.24)
         # AREA: setiap ward memuntahkan percikan nether
         if ph in ("AREA", "IMPACT") and self._wards \
                 and random.random() < dt * 26.0:
@@ -1705,17 +1705,17 @@ class SkillFX:
         tx, ty = self._target_xy()
         if ph in ("CAST", "CHARGE") and self._once("r_cast"):
             particles.burst(
-                self.x, self.y - 24, 14, speed=(50, 170), life=(0.3, 0.6),
+                self.x, self.y - 24, 7, speed=(50, 170), life=(0.3, 0.6),
                 size=(1.5, 3.5),
                 colors=(c["nether_light"], c["nether_bright"]),
                 shape="wisp", drag=2.0, additive=True)
             if _feel is not None and shake_allowed():
-                _feel.shake(4.0, 0.2)
+                _feel.shake(1.0, 0.2)
         if ph == "RELEASE" and self._once("r_rel"):
             if _feel is not None:
-                _feel.hit_stop(0.06)
+                _feel.hit_stop(0.022)
                 if shake_allowed():
-                    _feel.shake(7.5, 0.3)
+                    _feel.shake(1.9, 0.3)
         # AREA: jiwa mengalir DARI target KE Nyxara (arah penting)
         if ph in ("RELEASE", "AREA", "IMPACT"):
             if random.random() < dt * 46.0:
@@ -2064,7 +2064,7 @@ class NyxaraFXDirector:
             target=tgt, ground=ground_dy(u),
             on_impact=lambda b: self._on_orb_hit(b))
         self.particles.burst(
-            tip.x, tip.y, 7, speed=(90, 220), life=(0.12, 0.3),
+            tip.x, tip.y, 3, speed=(90, 220), life=(0.12, 0.3),
             size=(1.5, 3.0),
             colors=(_P["nether_bright"], _P["nether_white"]),
             shape="spark", drag=2.6, additive=True)
@@ -2084,13 +2084,13 @@ class NyxaraFXDirector:
             target=tgt, ground=ground_dy(u),
             on_impact=lambda b: self._on_orb_hit(b))
         self.particles.burst(
-            tip.x, tip.y, 10, speed=(80, 240), life=(0.15, 0.35),
+            tip.x, tip.y, 5, speed=(80, 240), life=(0.15, 0.35),
             size=(1.5, 3.0),
             colors=(_P["nether_hot"], _P["nether_bright"],
                     _P["nether_white"]),
             shape="spark", drag=2.6, additive=True)
         if _feel is not None and shake_allowed():
-            _feel.shake(4.0, 0.18)
+            _feel.shake(1.0, 0.18)
 
     def _on_orb_hit(self, proj):
         self.projectiles.on_impact(proj)
@@ -2111,7 +2111,7 @@ class NyxaraFXDirector:
                                1.2, False, kind="staff")
         # percikan tanah walau meleset (feel sapuan)
         self.particles.burst(
-            tip.x, tip.y + 20, 5, speed=(30, 110), life=(0.15, 0.35),
+            tip.x, tip.y + 20, 2, speed=(30, 110), life=(0.15, 0.35),
             size=(1.0, 2.2), colors=(_P["nether_dark"], _P["nether_mid"]),
             shape="dust", drag=2.0, layer="back")
         self._release_pending()
@@ -2132,35 +2132,35 @@ class NyxaraFXDirector:
         c = _P
         if kind == "staff":
             self.particles.burst(
-                x, y, 15, speed=(100, 340), life=(0.18, 0.45),
+                x, y, 7, speed=(100, 340), life=(0.18, 0.45),
                 size=(1.5, 3.5),
                 colors=(c["nether_bright"], c["nether_hot"],
                         c["nether_white"]),
                 shape="spark", drag=2.4, additive=True)
             self.particles.burst(
-                x, y, 6, speed=(50, 160), life=(0.35, 0.7),
+                x, y, 3, speed=(50, 160), life=(0.35, 0.7),
                 size=(1.5, 2.5), colors=(c["bone_mid"], c["bone_light"]),
                 shape="bone", gravity=320.0, drag=0.7,
                 rotation_speed=(-9, 9))
             if _feel is not None:
-                _feel.hit_stop(0.055)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(6.5, 0.24)
+                    _feel.shake(1.6, 0.24)
         else:
             self.particles.burst(
-                x, y, 11, speed=(60, 240), life=(0.18, 0.4),
+                x, y, 5, speed=(60, 240), life=(0.18, 0.4),
                 size=(1.5, 3.0),
                 colors=(c["nether_light"], c["nether_bright"]),
                 shape="wisp", drag=2.6, additive=True)
             if _feel is not None:
-                _feel.hit_stop(0.038)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
-                    _feel.shake(4.0, 0.18)
+                    _feel.shake(1.0, 0.18)
 
     def on_hurt(self, x, y):
         """Kena pukul: serpihan nether + recoil kecil."""
         self.particles.burst(
-            x, y - 16, 9, speed=(50, 190), life=(0.15, 0.35),
+            x, y - 16, 4, speed=(50, 190), life=(0.15, 0.35),
             size=(1.5, 3.0),
             colors=(_P["nether_light"], _P["robe_light"]),
             shape="wisp", drag=2.2, additive=True)
@@ -2169,20 +2169,20 @@ class NyxaraFXDirector:
         """Mati: energi nether meledak keluar (FX global via bus)."""
         c = _P
         self.particles.burst(
-            x, y - 16, 30, speed=(60, 320), life=(0.4, 0.9),
+            x, y - 16, 15, speed=(60, 320), life=(0.4, 0.9),
             size=(1.5, 4.0),
             colors=(c["nether_light"], c["nether_bright"], c["bone_light"],
                     c["nether_white"]),
             shape="wisp", drag=1.4, additive=True)
         self.particles.burst(
-            x, y - 16, 8, speed=(40, 130), life=(0.6, 1.1),
+            x, y - 16, 4, speed=(40, 130), life=(0.6, 1.1),
             size=(2.0, 3.5), colors=(c["bone_mid"], c["bone_light"]),
             shape="bone", gravity=260.0, drag=0.5,
             rotation_speed=(-9, 9))
         if _feel is not None:
-            _feel.hit_stop(0.08)
+            _feel.hit_stop(0.024)
             if shake_allowed():
-                _feel.shake(10.0, 0.34)
+                _feel.shake(2.5, 0.34)
 
     def on_cast(self, x, y, skill):
         fx = SkillFX(skill, x, y,
@@ -2518,7 +2518,7 @@ def notify_skill_impact(unit, x, y, radius=None, skill="q"):
     if radius:
         c = _P
         d.particles.burst(
-            float(x), float(y), 14, speed=(80, 260), life=(0.2, 0.5),
+            float(x), float(y), 7, speed=(80, 260), life=(0.2, 0.5),
             size=(1.5, 3.5),
             colors=(c["nether_light"], c["nether_bright"], c["nether_hot"]),
             shape="shard", drag=2.2, additive=True,

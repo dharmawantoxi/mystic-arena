@@ -68,17 +68,17 @@ APPARITION_FX_ENABLED = True
 HIT_STOP_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti bocor FPS).
-MAX_PARTICLES = 170
+MAX_PARTICLES = 102
 
 #: Batas keras proyektil visual per director.
-MAX_PROJECTILES = 16
+MAX_PROJECTILES = 9
 
 #: Panjang histori trail cakar (jumlah sampel posisi).
-TRAIL_SAMPLES = 12
+TRAIL_SAMPLES = 7
 
 #: Batas dampak & FX skill aktif per director (yang tertua dibuang).
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -1287,15 +1287,15 @@ class ImpactFX:
         # ── feedback game-feel SEKALI di spawn ──
         if _feel is not None:
             if self.kind == "blast":
-                _feel.hit_stop(0.06)
+                _feel.hit_stop(0.022)
                 if shake_allowed():
                     _feel.shake(7.5 + self.power, 0.34)
             elif self.kind == "erupt":
-                _feel.hit_stop(0.07)
+                _feel.hit_stop(0.024)
                 if shake_allowed():
                     _feel.shake(9.0 + self.power, 0.46)
             elif self.kind == "hit":
-                _feel.hit_stop(0.038)
+                _feel.hit_stop(0.020)
                 if shake_allowed():
                     _feel.shake(3.2 + self.power * 1.6, 0.2)
 
@@ -1309,26 +1309,26 @@ class ImpactFX:
                            spread=2.4, direction=self.angle,
                            shape="spark", rotation_speed=0, add=True,
                            drag=2.2)
-                psys.burst(self.x, self.y, 5, speed=(30, 90),
+                psys.burst(self.x, self.y, 2, speed=(30, 90),
                            life=(0.3, 0.55), size=(2, 3),
                            colors=(P("ice_light"),), spread=math.tau,
                            shape="snow", rotation_speed=(-6, 6), back=True)
                 if self.crit:
-                    psys.burst(self.x, self.y, 8, speed=(60, 200),
+                    psys.burst(self.x, self.y, 4, speed=(60, 200),
                                life=(0.25, 0.5), size=(2, 3),
                                colors=(P("white"), P("fx")),
                                spread=math.tau, shape="star", add=True)
             elif self.kind == "blast":
-                psys.burst(self.x, self.y, 22, speed=(120, 430),
+                psys.burst(self.x, self.y, 11, speed=(120, 430),
                            life=(0.3, 0.75), size=(1, 3),
                            colors=(P("ice_hot"), P("ice_bright"), P("white")),
                            spread=math.tau, shape="spark", add=True, drag=1.8)
-                psys.burst(self.x, self.y, 14, speed=(70, 260),
+                psys.burst(self.x, self.y, 7, speed=(70, 260),
                            life=(0.4, 0.8), size=(2, 4),
                            colors=(P("ice_mid"), P("ice_light")),
                            spread=math.tau, shape="shard",
                            rotation_speed=(-9, 9), gravity=240, drag=1.2)
-                psys.burst(self.x, self.y, 10, speed=(20, 70),
+                psys.burst(self.x, self.y, 5, speed=(20, 70),
                            life=(0.6, 1.1), size=(4, 7),
                            colors=(P("frost_mid"),), spread=math.tau,
                            shape="smoke", back=True, gravity=-30)
@@ -1337,17 +1337,17 @@ class ImpactFX:
                           size=(2, 4),
                           colors=(P("ice_bright"), P("ice_hot")),
                           shape="shard", rotation_speed=(-7, 7), add=True)
-                psys.burst(self.x, self.y, 16, speed=(140, 420),
+                psys.burst(self.x, self.y, 8, speed=(140, 420),
                            life=(0.3, 0.7), size=(1, 2),
                            colors=(P("white"), P("ice_hot")),
                            spread=math.pi, direction=-math.pi / 2,
                            shape="spark", add=True, gravity=420, drag=0.8)
-                psys.burst(self.x, self.y, 10, speed=(15, 60),
+                psys.burst(self.x, self.y, 5, speed=(15, 60),
                            life=(0.7, 1.2), size=(5, 8),
                            colors=(P("frost_mid"),), spread=math.tau,
                            shape="smoke", back=True, gravity=-24)
             else:  # frost
-                psys.burst(self.x, self.y, 6, speed=(20, 90),
+                psys.burst(self.x, self.y, 3, speed=(20, 90),
                            life=(0.25, 0.5), size=(1, 3),
                            colors=(P("ice_bright"),), spread=math.tau,
                            shape="snow", rotation_speed=(-6, 6))
@@ -1549,13 +1549,13 @@ class SkillFX:
                             shape="snow", rotation_speed=(-6, 6))
                 elif ph == "RELEASE" and not self._released:
                     self._released = True
-                    ps.burst(self.x, self.y, 14, speed=(80, 260),
+                    ps.burst(self.x, self.y, 7, speed=(80, 260),
                              life=(0.3, 0.6), size=(2, 4),
                              colors=(P("ice_light"), P("ice_bright")),
                              spread=math.tau, shape="shard",
                              rotation_speed=(-8, 8), gravity=140, drag=1.4)
                     if _feel is not None and shake_allowed():
-                        _feel.shake(5.5, 0.3)
+                        _feel.shake(1.4, 0.3)
                 elif ph == "AREA":
                     # salju menghisap ke dalam vortex (spiral dalam)
                     if random.random() < 0.5:
@@ -1598,9 +1598,9 @@ class SkillFX:
                 elif ph == "RELEASE" and not self._released:
                     self._released = True
                     if _feel is not None:
-                        _feel.hit_stop(0.04)
+                        _feel.hit_stop(0.020)
                         if shake_allowed():
-                            _feel.shake(4.0, 0.24)
+                            _feel.shake(1.0, 0.24)
             elif self.skill == "e":
                 if ph == "CHARGE":
                     ps.stream(self.x + random.uniform(-70, 70),
@@ -1619,7 +1619,7 @@ class SkillFX:
                             self.x + math.cos(self.angle) * dist,
                             self.y + math.sin(self.angle) * dist,
                             kind="bolt", lifetime=1.1)
-                    ps.burst(self.x, self.y, 10, speed=(60, 220),
+                    ps.burst(self.x, self.y, 5, speed=(60, 220),
                              life=(0.2, 0.5), size=(1, 3),
                              colors=(P("ice_hot"), P("white")),
                              spread=math.tau, shape="spark", add=True)
@@ -1633,9 +1633,9 @@ class SkillFX:
                 elif ph == "RELEASE" and not self._released:
                     self._released = True
                     if _feel is not None:
-                        _feel.hit_stop(0.07)
+                        _feel.hit_stop(0.024)
                         if shake_allowed():
-                            _feel.shake(9.0, 0.5)
+                            _feel.shake(2.2, 0.5)
                     ps.ring(self.x, self.y, 30.0, 20, life=(0.3, 0.6),
                             size=(2, 4),
                             colors=(P("ice_bright"), P("ice_hot")),
@@ -2159,30 +2159,30 @@ class ApparitionFXDirector:
         hx = float(getattr(h, "x", 0.0))
         hy = float(getattr(h, "y", 0.0))
         # serpihan es lepas dari badan
-        self.particles.burst(hx, hy - 18, 8, speed=(50, 190),
+        self.particles.burst(hx, hy - 18, 4, speed=(50, 190),
                              life=(0.25, 0.55), size=(1, 3),
                              colors=(P("ice_light"), P("ice_bright")),
                              spread=math.tau, shape="shard",
                              rotation_speed=(-8, 8), gravity=210, drag=1.2)
         if _feel is not None and shake_allowed():
-            _feel.shake(2.6, 0.16)
+            _feel.shake(0.7, 0.16)
 
     def on_death(self):
         h = self.hero
         hx = float(getattr(h, "x", 0.0))
         hy = float(getattr(h, "y", 0.0))
         # SHATTER: badan es pecah — shard besar + salju + mist + nova
-        self.particles.burst(hx, hy - 22, 26, speed=(60, 320),
+        self.particles.burst(hx, hy - 22, 13, speed=(60, 320),
                              life=(0.5, 1.0), size=(2, 5),
                              colors=(P("ice_mid"), P("ice_light"),
                                      P("ice_bright")),
                              spread=math.tau, shape="shard",
                              rotation_speed=(-10, 10), gravity=260, drag=1.0)
-        self.particles.burst(hx, hy - 22, 16, speed=(30, 120),
+        self.particles.burst(hx, hy - 22, 8, speed=(30, 120),
                              life=(0.7, 1.3), size=(4, 8),
                              colors=(P("frost_mid"),), spread=math.tau,
                              shape="smoke", back=True, gravity=-20)
-        self.particles.burst(hx, hy - 22, 14, speed=(40, 160),
+        self.particles.burst(hx, hy - 22, 7, speed=(40, 160),
                              life=(0.4, 0.8), size=(1, 3),
                              colors=(P("ice_hot"), P("white")),
                              spread=math.tau, shape="snow",
@@ -2366,7 +2366,7 @@ class ApparitionFXDirector:
                                    kind="shard", target=h.target,
                                    lifetime=1.4)
             # muzzle flash kecil di cakar
-            self.particles.burst(tip[0], tip[1], 5, speed=(40, 160),
+            self.particles.burst(tip[0], tip[1], 2, speed=(40, 160),
                                  life=(0.12, 0.3), size=(1, 2),
                                  colors=(P("ice_hot"), P("white")),
                                  spread=1.6,

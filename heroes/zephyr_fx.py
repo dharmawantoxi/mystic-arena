@@ -48,13 +48,13 @@ ZEPHYR_FX_ENABLED = True
 HIT_STOP_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 160
+MAX_PARTICLES = 96
 
 #: Batas keras projectile visual per director.
-MAX_PROJECTILES = 24
+MAX_PROJECTILES = 14
 
 #: Panjang histori trail senjata (jumlah sample posisi lama).
-TRAIL_SAMPLES = 12
+TRAIL_SAMPLES = 7
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -791,7 +791,7 @@ class ImpactFX:
             ln = (16 + 34 * pw) * ft
             fl = _scratch(int(ln * 2 + 8), int(ln * 2 + 8))
             c = int(ln + 4)
-            for k in range(8):
+            for i in range(4):
                 a = self.angle + k * math.pi / 4
                 L = ln if k % 2 == 0 else ln * 0.42
                 pygame.draw.line(
@@ -822,7 +822,7 @@ class ImpactFX:
         if t < 0.6:
             st = 1.0 - t / 0.6
             r0 = int((6 + 20 * pw) * (0.3 + 1.1 * t))
-            for k in range(8):
+            for i in range(4):
                 ang = self.angle + k * math.pi / 4 + 0.19
                 L = (7 + 15 * pw) * st * (1.0 if k % 2 else 0.55)
                 pygame.draw.line(
@@ -1164,12 +1164,12 @@ class SkillFX:
         # RELEASE: ledakan keluar + bara
         elif self.phase == "release" and not self._released:
             self._released = True
-            ps.burst(self.x, self.y, 16,
+            ps.burst(self.x, self.y, 8,
                      speed=(120, 320), life=(0.24, 0.55),
                      size=(2, 4), colors=(P["fx_white"], P["fx_hot"],
                                           P["fx_light"]),
                      drag=3.2, shape="streak")
-            ps.burst(self.x, self.y + 6, 8,
+            ps.burst(self.x, self.y + 6, 4,
                      speed=(50, 150), life=(0.4, 0.8), size=(2, 5),
                      colors=(P["ash"], P["smoke"]),
                      gravity=-40.0, drag=1.6, shape="pixel")
@@ -1191,7 +1191,7 @@ class SkillFX:
         # IMPACT: pecahan + debu
         elif self.phase == "impact" and not self._impacted:
             self._impacted = True
-            ps.burst(self.x, self.y, 14,
+            ps.burst(self.x, self.y, 7,
                      speed=(90, 260), life=(0.3, 0.62), size=(2, 5),
                      colors=(P["thorn_lit"], P["fx_light"], P["ash"]),
                      gravity=420.0, drag=1.0, shape="shard",
@@ -1565,7 +1565,7 @@ class ZephyrFXDirector:
         self.trail.reset()
         self.swing_active = True
         self.particles.burst(
-            x + facing * 6, y + 42, 5,
+            x + facing * 6, y + 42, 2,
             speed=(30, 90), life=(0.2, 0.4), size=(2, 4),
             colors=(P["ash"], P["smoke"]),
             spread=1.1, direction=math.pi if facing > 0 else 0.0,
@@ -1611,7 +1611,7 @@ class ZephyrFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 8, 7, speed=(80, 210), life=(0.2, 0.4),
+            hx, hy - 8, 3, speed=(80, 210), life=(0.2, 0.4),
             size=(2, 4), colors=(P["fx_light"], P["highlight"]),
             drag=3.0, shape="streak")
 

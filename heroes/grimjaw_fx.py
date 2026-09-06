@@ -71,13 +71,13 @@ GRIMJAW_FX_ENABLED = True
 HIT_STOP_ENABLED = True
 
 #: Batas keras jumlah partikel hidup per director (anti-kebocoran FPS).
-MAX_PARTICLES = 180
+MAX_PARTICLES = 108
 
 #: Batas keras projectile visual per director.
-MAX_PROJECTILES = 20
+MAX_PROJECTILES = 12
 
 #: Panjang histori trail senjata (jumlah sample posisi lama).
-TRAIL_SAMPLES = 12
+TRAIL_SAMPLES = 7
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -1152,7 +1152,7 @@ class ImpactFX:
             ln = (16 + 34 * pw) * ft
             fl = _scratch(int(ln * 2 + 8), int(ln * 2 + 8))
             c = int(ln + 4)
-            for k in range(8):
+            for i in range(4):
                 a = self.angle + k * math.pi / 4
                 L = ln if k % 2 == 0 else ln * 0.42
                 pygame.draw.line(
@@ -1184,7 +1184,7 @@ class ImpactFX:
         if t < 0.6:
             st = 1.0 - t / 0.6
             r0 = int((6 + 20 * pw) * (0.3 + 1.1 * t))
-            for k in range(8):
+            for i in range(4):
                 ang = self.angle + k * math.pi / 4 + 0.19
                 L = (7 + 15 * pw) * st * (1.0 if k % 2 else 0.55)
                 pygame.draw.line(
@@ -1661,19 +1661,19 @@ class SkillFX:
             self._released = True
             if self.kind == "w":
                 # ward: kelopak lembut, bukan ledakan
-                ps.burst(self.x, self.y, 10,
+                ps.burst(self.x, self.y, 5,
                          speed=(40, 120), life=(0.4, 0.8), size=(2, 4),
                          colors=(P["heal_mid"], P["heal_light"],
                                  P["heal_core"]),
                          drag=2.2, shape="pixel", gravity=-30.0)
             else:
-                ps.burst(self.x, self.y, 16,
+                ps.burst(self.x, self.y, 8,
                          speed=(130, 330), life=(0.24, 0.55),
                          size=(2, 4),
                          colors=(P["fx_white"], self.col_b, P["fx_light"]),
                          drag=3.2, shape="streak",
                          direction=0.0, spread=math.tau)
-                ps.burst(self.x, self.y + 6, 8,
+                ps.burst(self.x, self.y + 6, 4,
                          speed=(50, 150), life=(0.4, 0.8), size=(2, 5),
                          colors=(P["ash"], P["smoke"]),
                          gravity=-40.0, drag=1.6, shape="smoke", back=True)
@@ -1744,7 +1744,7 @@ class SkillFX:
         elif self.phase == "impact" and not self._impacted:
             self._impacted = True
             if self.kind != "w":
-                ps.burst(self.x, self.y, 14,
+                ps.burst(self.x, self.y, 7,
                          speed=(90, 260), life=(0.3, 0.62), size=(2, 5),
                          colors=(self.col_b, P["fx_light"], P["ash"]),
                          gravity=420.0, drag=1.0, shape="shard",
@@ -2264,7 +2264,7 @@ class GrimjawFXDirector:
         self.swing_active = True
         self._blade_landed = False
         self.particles.burst(
-            x - facing * 6, y + 40, 5,
+            x - facing * 6, y + 40, 2,
             speed=(30, 90), life=(0.2, 0.4), size=(2, 4),
             colors=(P["dust"], P["ash"]),
             spread=1.1, direction=math.pi if facing > 0 else 0.0,
@@ -2292,12 +2292,12 @@ class GrimjawFXDirector:
             x + facing * 30, y + 16, math.atan2(0.35, facing),
             0.55, crit=crit, kind="crit" if crit else "blade"))
         self.particles.burst(
-            x + facing * 30, y + 18, 6,
+            x + facing * 30, y + 18, 3,
             speed=(60, 170), life=(0.16, 0.34), size=(1, 3),
             colors=(P["fx_light"], P["ember"]),
             spread=1.5, direction=math.atan2(0.2, facing), drag=3.4,
             shape="streak")
-        shake(2.6, 0.14)
+        shake(1.3, 0.14)
 
     def on_cast(self, x, y, skill):
         """Skill dilepas: buat SkillFX + bahasa per-skill + shake."""
@@ -2314,28 +2314,28 @@ class GrimjawFXDirector:
 
         if skill == "q":
             # Q Blade Fury: ledakan bara awal + recoil dust
-            self.particles.burst(x, y - 6, 14,
+            self.particles.burst(x, y - 6, 7,
                                  speed=(120, 300), life=(0.25, 0.5),
                                  size=(2, 4),
                                  colors=(P["fx_light"], P["fx_hot"],
                                          P["fx_white"]),
                                  drag=3.0, shape="streak")
-            self.particles.burst(x, y + 8, 8,
+            self.particles.burst(x, y + 8, 4,
                                  speed=(40, 120), life=(0.4, 0.8),
                                  size=(3, 6), colors=(P["smoke"], P["ash"]),
                                  gravity=-30.0, drag=1.6, shape="smoke",
                                  back=True)
             self.trail.reset()
             self.trail.spin_mode = True
-            shake(6.0, 0.26)
-            hit_stop(0.045)
+            shake(3.0, 0.26)
+            hit_stop(0.027)
         elif skill == "w":
             # W Healing Ward: kelopak hijau lembut dari titik ward
-            shake(2.0, 0.14)
+            shake(1.0, 0.14)
         elif skill == "e":
             # E Critical Strike: suatan emas + 3 gelombang bilah ke depan
             f = 1.0 if getattr(self.hero, "facing", 1) >= 0 else -1.0
-            self.particles.burst(x, y - 14, 12,
+            self.particles.burst(x, y - 14, 6,
                                  speed=(150, 330), life=(0.2, 0.42),
                                  size=(2, 4),
                                  colors=(P["gold_hot"], P["gold"],
@@ -2354,17 +2354,17 @@ class GrimjawFXDirector:
                     radius=7.0 + (1 if i == 1 else 0),
                     kind="wave",
                     on_impact=self._wave_impact)
-            shake(4.0, 0.18)
-            hit_stop(0.04)
+            shake(2.0, 0.18)
+            hit_stop(0.024)
         elif skill == "r":
             # R Omnislash: pilar rage + nova + shard + gelombang pembuka
-            self.particles.burst(x, y - 10, 18,
+            self.particles.burst(x, y - 10, 9,
                                  speed=(140, 360), life=(0.25, 0.55),
                                  size=(2, 5),
                                  colors=(P["rage_bright"], P["rage_light"],
                                          P["fx_white"]),
                                  drag=2.8, shape="streak")
-            self.particles.burst(x, y - 10, 10,
+            self.particles.burst(x, y - 10, 5,
                                  speed=(60, 180), life=(0.4, 0.8),
                                  size=(2, 5),
                                  colors=(P["rage_light"], P["rage_dark"]),
@@ -2376,8 +2376,8 @@ class GrimjawFXDirector:
                     x, y - 16, float(tgt.x), float(tgt.y) - 10,
                     speed=520.0, target=tgt, radius=9.0, kind="bolt",
                     on_impact=self._wave_impact)
-            shake(8.0, 0.42)
-            hit_stop(0.07)
+            shake(4.0, 0.42)
+            hit_stop(0.040)
 
     def _wave_impact(self, proj):
         """Callback projectile: paket impact di titik benturan."""
@@ -2388,7 +2388,7 @@ class GrimjawFXDirector:
             0.8, crit=proj.kind != "wave",
             kind="crit" if proj.kind != "wave" else "blade"))
         self.particles.burst(
-            proj.hit_pos.x, proj.hit_pos.y, 9,
+            proj.hit_pos.x, proj.hit_pos.y, 4,
             speed=(110, 280), life=(0.18, 0.4), size=(2, 4),
             colors=(P["fx_white"], P["fx_hot"], P["fx_light"]),
             spread=2.2, direction=proj.rotation, drag=3.4, shape="streak")
@@ -2431,16 +2431,16 @@ class GrimjawFXDirector:
             x, y - 14, random.random() * math.tau, 0.8,
             kind="spin"))
         self.particles.burst(
-            x, y - 12, 10,
+            x, y - 12, 5,
             speed=(150, 320), life=(0.2, 0.45), size=(2, 4),
             colors=(P["fx_light"], P["fx_hot"], P["ember"]),
             spread=math.tau, drag=2.8, shape="ember",
             rotation_speed=(-10.0, 10.0))
-        shake(2.4, 0.14)
+        shake(1.2, 0.14)
         # hit-stop hanya tiap tick ke-3: 12 tick × 0.03 s akan membuat
         # game patah-patah; tick biasa cukup shake.
         if self._fury_tick_count % 3 == 0:
-            hit_stop(0.03)
+            hit_stop(0.020)
 
     def on_omni_strike(self, x, y):
         """Satu tebasan Omnislash mengenai target yang terkunci."""
@@ -2451,12 +2451,12 @@ class GrimjawFXDirector:
             x, y - 12, random.uniform(-2.6, -0.6), 1.2,
             kind="omni"))
         self.particles.burst(
-            x, y - 12, 8,
+            x, y - 12, 4,
             speed=(140, 330), life=(0.16, 0.36), size=(2, 4),
             colors=(P["rage_bright"], P["fx_white"], P["rage_light"]),
             spread=2.6, drag=3.4, shape="streak")
-        shake(5.0, 0.16)
-        hit_stop(0.032)
+        shake(2.5, 0.16)
+        hit_stop(0.020)
 
     def on_hurt(self, amount=1.0):
         """Grimjaw terkena serangan: hit flash + percikan bara."""
@@ -2464,7 +2464,7 @@ class GrimjawFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 10, 7, speed=(80, 210), life=(0.2, 0.4),
+            hx, hy - 10, 3, speed=(80, 210), life=(0.2, 0.4),
             size=(2, 4), colors=(P["fx_light"], P["ember"]),
             drag=3.0, shape="streak")
 
@@ -2474,15 +2474,15 @@ class GrimjawFXDirector:
         x = float(getattr(h, "x", 0.0))
         y = float(getattr(h, "y", 0.0))
         self.particles.burst(
-            x, y - 12, 16, speed=(60, 220), life=(0.4, 0.9),
+            x, y - 12, 8, speed=(60, 220), life=(0.4, 0.9),
             size=(2, 5), colors=(P["ember"], P["fx_light"]),
             gravity=240.0, drag=1.4, shape="ember",
             rotation_speed=(-9.0, 9.0))
         self.particles.burst(
-            x, y, 10, speed=(30, 90), life=(0.6, 1.1), size=(4, 8),
+            x, y, 5, speed=(30, 90), life=(0.6, 1.1), size=(4, 8),
             colors=(P["smoke"], P["ash"]), gravity=-36.0, drag=1.2,
             shape="smoke", back=True)
-        shake(6.0, 0.3)
+        shake(3.0, 0.3)
 
     # ------------------------------------------------------------------
     # State machine (prioritas + transisi)

@@ -36,11 +36,11 @@ KUNKKA_FX_ENABLED = True
 DEBUG_CHARACTER = False
 
 # ── Anggaran & batas ───────────────────────────────────────────────────────
-MAX_PARTICLES = 170
-MAX_PROJECTILES = 16
-TRAIL_SAMPLES = 14
-MAX_IMPACTS = 8
-MAX_SKILLS = 4
+MAX_PARTICLES = 102
+MAX_PROJECTILES = 9
+TRAIL_SAMPLES = 9
+MAX_IMPACTS = 4
+MAX_SKILLS = 2
 
 #: Jarak (piksel dunia) di bawah ini serangan dasar Kunkka dibaca sebagai
 #: tebasan cutlass (melee swing). Kunkka adalah true boss MELEE.
@@ -1073,7 +1073,7 @@ class ImpactFX:
             ln = (10 + 21 * pw) * ft
             buf = _scratch(int(ln * 2 + 8), int(ln * 2 + 8))
             c = int(ln + 4)
-            for k in range(8):
+            for i in range(4):
                 a = self.angle + k * math.pi / 4
                 L = ln if k % 2 == 0 else ln * 0.40
                 pygame.draw.line(buf, (*P["fx_white"], int(232 * ft)),
@@ -1111,7 +1111,7 @@ class ImpactFX:
         if t < 0.58:
             st = 1.0 - t / 0.58
             r0 = int((6 + 19 * pw) * (0.3 + 1.05 * t))
-            for k in range(8):
+            for i in range(4):
                 ang = self.angle + k * math.pi / 4 + 0.19
                 L = (7 + 14 * pw) * st * (1.0 if k % 2 else 0.55)
                 pygame.draw.line(
@@ -1482,7 +1482,7 @@ class SkillFX:
                           colors=(P["ghost_light"], P["ghost_mid"],
                                   P["ghost_dark"]), bow=20.0, layer="back")
             elif kind == "w":
-                ps.burst(self.x, self.y, 8, speed=(60, 160),
+                ps.burst(self.x, self.y, 4, speed=(60, 160),
                          life=(0.2, 0.5), size=(2, 4),
                          colors=(P["water_bright"], P["red_hot"],
                                  P["water_light"]),
@@ -1499,7 +1499,7 @@ class SkillFX:
                          spread=math.tau, gravity=-160.0, drag=1.1,
                          shape="pixel", additive=True, layer="front")
             elif kind == "e":
-                ps.burst(self.x, self.y, 10, speed=(40, 130),
+                ps.burst(self.x, self.y, 5, speed=(40, 130),
                          life=(0.3, 0.7), size=(2, 5),
                          colors=(P["ghost_light"], P["ghost_mid"],
                                  P["ghost_dark"]),
@@ -1718,7 +1718,7 @@ class KunkkaFXDirector:
         self.swing_active = True
         gy = y + _ground_dy(self.hero)
         self.particles.burst(
-            x + facing * 7, gy, 5,
+            x + facing * 7, gy, 2,
             speed=(28, 92), life=(0.18, 0.4), size=(2, 4),
             colors=(P["dust"], P["ash"], P["smoke"]),
             spread=1.2, direction=math.pi if facing > 0 else 0.0,
@@ -1748,7 +1748,7 @@ class KunkkaFXDirector:
                                          kind="blade", ground=0.0,
                                          seed=int(self.frames)))
         self.particles.burst(
-            tip.x, tip.y, 7,
+            tip.x, tip.y, 3,
             speed=(110, 250), life=(0.1, 0.24), size=(1, 3),
             colors=(P["blade_shine"], P["fx_white"], P["water_bright"]),
             spread=1.5, direction=ang, drag=3.6, shape="streak",
@@ -1784,8 +1784,8 @@ class KunkkaFXDirector:
                                                    p.rotation, 1.2, False,
                                                    kind="tide"))
         elif skill == "r":
-            _feel_hit_stop(0.055)
-        self.particles.burst(x, y + gy * 0.4, 10,
+            _feel_hit_stop(0.033)
+        self.particles.burst(x, y + gy * 0.4, 5,
                              speed=(60, 190), life=(0.2, 0.5), size=(2, 4),
                              colors=(SkillFX.TINT.get(skill, P["fx_dark"])[0],
                                      P["ash"], P["dust"]),
@@ -1817,7 +1817,7 @@ class KunkkaFXDirector:
             rotation_speed=(-16.0, 16.0))
         if crit:
             self.particles.burst(
-                x, y, 8, speed=(180, 380), life=(0.22, 0.5), size=(2, 4),
+                x, y, 4, speed=(180, 380), life=(0.22, 0.5), size=(2, 4),
                 colors=(P["gold_light"], P["gold_mid"], spark),
                 spread=math.tau, gravity=120.0, drag=2.0, shape="spark",
                 additive=True)
@@ -1832,7 +1832,7 @@ class KunkkaFXDirector:
         hx = float(getattr(self.hero, "x", 0.0))
         hy = float(getattr(self.hero, "y", 0.0))
         self.particles.burst(
-            hx, hy - 8, 7, speed=(80, 210), life=(0.16, 0.34), size=(2, 4),
+            hx, hy - 8, 3, speed=(80, 210), life=(0.16, 0.34), size=(2, 4),
             colors=(P["water_light"], P["water_bright"], P["fx_white"]),
             drag=3.0, shape="streak", additive=True)
         self.particles.burst(
@@ -1849,19 +1849,19 @@ class KunkkaFXDirector:
         self.particles.clear()
         self.impacts.append(ImpactFX(x, y + gy * 0.35, -math.pi / 2, 2.2,
                                      True, kind="torrent", seed=7))
-        self.particles.burst(x, y, 22, speed=(90, 320), life=(0.5, 1.1),
+        self.particles.burst(x, y, 11, speed=(90, 320), life=(0.5, 1.1),
                              size=(2, 6),
                              colors=(P["water_light"], P["water_mid"],
                                      P["water_bright"], P["gold_mid"]),
                              spread=math.tau, gravity=430.0, drag=1.1,
                              shape="shard", rotation_speed=(-18.0, 18.0))
-        self.particles.burst(x, y + gy, 16, speed=(40, 150),
+        self.particles.burst(x, y + gy, 8, speed=(40, 150),
                              life=(0.5, 1.0), size=(3, 7),
                              colors=(P["dust"], P["smoke"], P["ash"]),
                              spread=math.tau, gravity=-30.0, drag=1.5,
                              shape="dust", layer="back")
         if shake_allowed():
-            _feel_shake(9.0, 0.42)
+            _feel_shake(4.5, 0.42)
 
     # ── State machine ─────────────────────────────────────────────────
     def _resolve_state(self):

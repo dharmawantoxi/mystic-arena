@@ -113,7 +113,7 @@ class _NS_grimjaw:
 
     # Durasi visual skill (frame @60fps) - renderer memakai ini untuk
     # progress FX, BUKAN timer gameplay (lihat hero_skills GrimjawSkills).
-    SKILL_VISUAL_DURATION = {"q": 180, "w": 90, "e": 60, "r": 90}
+    SKILL_VISUAL_DURATION = {"q": 118, "w": 59, "e": 39, "r": 59}
 
     # ------------------------------------------------------------------
     # TIMELINE BASIC ATTACK (kontrak bersama rig + FX + test arah tebasan)
@@ -814,7 +814,7 @@ class _NS_grimjaw:
         margin = min(surface.get_width(), surface.get_height()) // 2 - 10
         return int(max(4, min(r, margin)))
 
-    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=2, rot=0.4,
                     width=2, seed=0):
         """Bintang kilau doodle (kosakata keluarga masterwork)."""
         _NS_grimjaw._doodle_star(surface, cx, cy, size, color, alpha,
@@ -3109,7 +3109,7 @@ class _NS_sylara:
     # DI LAYAR setara dunia.  Semua radius di-clamp ke dalam canvas cache
     # (_ring_r) supaya efek tidak terpotong di tepi.
     # ---------------------------------------------------------------------------
-    SKILL_VISUAL_DURATION = {"q": 180, "w": 180, "e": 150, "r": 60}
+    SKILL_VISUAL_DURATION = {"q": 118, "w": 118, "e": 99, "r": 39}
 
     # Cache surface statis (aura / mist / ground glow) — dibangun SEKALI,
     # tanpa alokasi surface per frame.
@@ -3565,7 +3565,7 @@ class _NS_sylara:
         margin = min(surface.get_width(), surface.get_height()) // 2 - 10
         return int(max(4, min(r, margin)))
 
-    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=2, rot=0.4,
                     core=None):
         """Bintang kilat: spike panjang-pendek selang-seling + inti."""
         if alpha <= 0 or size <= 0:
@@ -3597,7 +3597,7 @@ class _NS_sylara:
                 (int(tipx), int(tipy)), width)
 
     def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
-                     segments=10, thick=3, span=0.6, squash=.92):
+                     segments=5, thick=3, span=0.6, squash=.92):
         """Cincin putus-putus yang berputar (marker AOE / rune ring)."""
         if alpha <= 0 or radius <= 1:
             return
@@ -5611,7 +5611,7 @@ class _NS_sylara:
         surface.blit(ring, (x - 100, y - 34))
 
         # Spoke rune berputar (12) + tip hot — signature ground Drakar
-        for i in range(12):
+        for i in range(6):
             angle = phase * 0.3 + i * math.pi / 6
             x1 = x + int(math.cos(angle) * 55)
             y1 = y + int(math.sin(angle) * 10)
@@ -6030,7 +6030,7 @@ class _NS_sylara:
         mark_r = max(24, int(rng * 0.62))
         _skill_outlined_circle(surface, (x, y), mark_r, 2,
                                p["wind_mid"], int(110 + 50 * pulse))
-        for i in range(10):
+        for i in range(5):
             a = phase * 0.4 + i * math.tau / 10
             px = x + math.cos(a) * mark_r
             py = y + math.sin(a) * mark_r * 0.55
@@ -6137,7 +6137,7 @@ class _NS_kaizen:
     HAS_AACIRCLE = hasattr(pygame.draw, "aacircle")
     _STATIC_SURFACES = {}
     _SCRATCH_POOL = {}
-    SKILL_VISUAL_DURATION = {"q": 60, "w": 90, "e": 60, "r": 100}
+    SKILL_VISUAL_DURATION = {"q": 39, "w": 59, "e": 39, "r": 66}
     BLADE_LEN = 62
     ATTACK_WINDUP_END = 0.28
     ATTACK_SWING_END = 0.72
@@ -6829,7 +6829,7 @@ class _NS_kaizen:
             _NS_kaizen._draw_wind_arc(surface, cx, cy, size, angle_start,
                                       angle_end, col, width=1, segments=6)
 
-    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=2, rot=0.4,
                     core=None):
         """Bintang doodle: goresan gel-pen + tinta di bawahnya."""
         if alpha <= 0 or size <= 0:
@@ -6878,7 +6878,7 @@ class _NS_kaizen:
                 (int(tipx), int(tipy)), width)
 
     def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
-                     segments=10, thick=3, span=0.6, squash=.92):
+                     segments=5, thick=3, span=0.6, squash=.92):
         if alpha <= 0 or radius <= 1:
             return
         for i in range(segments):
@@ -8168,7 +8168,7 @@ class _NS_kaizen:
             pygame.draw.ellipse(ring, (*_NS_kaizen.PALETTE["wind_mid"], 90),
                                 (28, 20, 134, 24), 1)
             # goresan arsir di tepi lingkar (doodle)
-            for i in range(8):
+            for i in range(4):
                 a = i * math.tau / 8
                 x0 = 95 + math.cos(a) * 82
                 y0 = 32 + math.sin(a) * 15
@@ -8275,7 +8275,7 @@ class _NS_kaizen:
         dist = math.sqrt(dx * dx + dy * dy) or 1
         dx, dy = dx / dist, dy / dist
         px, py = -dy, dx
-        for i in range(8):
+        for i in range(4):
             off = (i - 4) * 5
             sx = x + px * off
             sy = y + py * off + 6
@@ -8416,7 +8416,7 @@ class _NS_kaizen:
                 surface, x, y + 10, phase * 2.2, int(28 * fs + t * 20),
                 int(12 * fs), 1.2, (*p["wind_mid"], int(170 * (1 - t))), 7)
 
-        for i in range(10):
+        for i in range(5):
             angle = i * math.pi / 5 + phase * 0.2
             px = x + int(math.cos(angle) * rng)
             py = y + 28 + int(math.sin(angle) * rng * 0.32)
@@ -8465,7 +8465,7 @@ class _NS_kaizen:
                 surface, x, y + 10, phase * 2.2, int(28 * fs + t * 20),
                 int(12 * fs), 1.2, (*p["wind_mid"], int(170 * (1 - t))), 7)
 
-        for i in range(10):
+        for i in range(5):
             angle = i * math.pi / 5 + phase * 0.2
             px = x + int(math.cos(angle) * rng)
             py = y + 28 + int(math.sin(angle) * rng * 0.32)
@@ -10397,7 +10397,7 @@ class _NS_thorne:
         surface.blit(ring, (x - 97, y - 31))
 
         # Small quills embedded around ring
-        for i in range(10):
+        for i in range(5):
             angle = phase * 0.2 + i * math.pi / 5
             sx = x + int(math.cos(angle) * 82)
             sy = y + int(math.sin(angle) * 15)
@@ -10428,7 +10428,7 @@ class _NS_thorne:
         return max(1.0, min(2.6, 1.0 / float(scale)))
 
 
-    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=2, rot=0.4,
                     core=None):
         """Bintang kilat: spike panjang-pendek selang-seling + inti."""
         if alpha <= 0 or size <= 0:
@@ -10462,7 +10462,7 @@ class _NS_thorne:
 
 
     def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
-                     segments=10, thick=3, span=0.6, squash=.92):
+                     segments=5, thick=3, span=0.6, squash=.92):
         """Cincin putus-putus yang berputar (marker AOE / rune ring)."""
         if alpha <= 0 or radius <= 1:
             return
@@ -10674,7 +10674,7 @@ class _NS_thorne:
                     (cx + math.cos(aa1) * rr, cy + math.sin(aa1) * rr * .9), 2)
 
         # ── mote emas naik + glint orbit ──
-        for i in range(8):
+        for i in range(4):
             t = (phase * .32 + i / 8) % 1.0
             mx = cx + math.sin(i * 2.4) * 60 * fs
             my = cy + 30 - t * 90 * fs
@@ -10867,7 +10867,7 @@ class _NS_thorne:
                                          (int(px), int(fy)), max(1, 2 - h // 2))
 
         # ── kolom bara naik (sway per-ember) ──
-        for i in range(8):
+        for i in range(4):
             t = (phase * .3 + i / 8) % 1.0
             ex = cx + math.sin(i * 2.1 + phase) * (14 + i * 5) * fs * .5
             ey = cy + 24 - t * 110 * fs
@@ -10990,7 +10990,7 @@ class _NS_vex:
     RIG_SCALE = 1.52
 
     # Durasi visual diselaraskan dengan hero_skills/vex_skills.py.
-    SKILL_VISUAL_DURATION = {"q": 40, "w": 100, "e": 60, "r": 80}
+    SKILL_VISUAL_DURATION = {"q": 30, "w": 66, "e": 39, "r": 52}
 
     # Surface statis (aura/mist/platform/shadow) dibangun sekali lalu
     # dipakai ulang; animasi hanya mengubah alpha/overlay ringan.
@@ -11272,7 +11272,7 @@ class _NS_vex:
         return int(max(4, min(r, margin)))
 
 
-    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=2, rot=0.4,
                     core=None):
         """Bintang spike selang-seling untuk impact/aktivasi."""
         if alpha <= 0 or size <= 0:
@@ -11307,7 +11307,7 @@ class _NS_vex:
 
 
     def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
-                     segments=10, thick=3, span=0.6, squash=.92):
+                     segments=5, thick=3, span=0.6, squash=.92):
         """Cincin rune putus-putus yang berputar."""
         if alpha <= 0 or radius <= 1:
             return
@@ -11779,9 +11779,9 @@ class _NS_vex:
 
             # Halo rune: dashed kontra-rotasi + 2 glyph + 2 bintang orbit.
             _NS_vex._dashed_ring(surface, px, py, 12, p["void_bright"], 210,
-                                 phase * 2.8, segments=8, thick=2, span=.40)
+                                 phase * 2.8, segments=4, thick=2, span=.40)
             _NS_vex._dashed_ring(surface, px, py, 18, p["void_mid"], 125,
-                                 -phase * 1.7, segments=10, thick=1, span=.28)
+                                 -phase * 1.7, segments=5, thick=1, span=.28)
             for i in range(2):
                 a = phase * 3 + i * math.pi
                 rr = 10 + int(math.sin(phase * 4 + i) * 2)
@@ -11807,7 +11807,7 @@ class _NS_vex:
                               p["void_white"], 235, 1, 6)
             _NS_vex._aacircle(surface, p["white"], (px - 2, py - 2), 1)
             _NS_vex._spark_star(surface, fx, fy, 7,
-                                p["void_hot"], 240, spikes=4,
+                                p["void_hot"], 240, spikes=2,
                                 rot=self.angle, core=p["white"])
 
 
@@ -11959,7 +11959,7 @@ class _NS_vex:
                                         p["astral_bright"], int(230 * grow),
                                         spikes=8, rot=phase, core=p["white"])
                 # Partikel energi naik di dalam sangkar.
-                for i in range(8):
+                for i in range(4):
                     pt = (phase * 0.4 + i * 0.125) % 1.0
                     py_off = int(-pt * radius * 1.6 + radius * 0.5)
                     px_off = int(math.sin(phase * 2 + i) * (radius // 3))
@@ -11999,11 +11999,11 @@ class _NS_vex:
                                      p["astral_bright"], 140)
                 _NS_vex._dashed_ring(surface, px, py, 15,
                                      p["astral_bright"], 210,
-                                     phase * 2.8, segments=8, thick=2,
+                                     phase * 2.8, segments=4, thick=2,
                                      span=.42)
                 _NS_vex._dashed_ring(surface, px, py, 22,
                                      p["astral_mid"], 115,
-                                     -phase * 1.6, segments=10, thick=1,
+                                     -phase * 1.6, segments=5, thick=1,
                                      span=.28)
                 _NS_vex._aacircle(surface, (*p["astral_mid"], 205), (px, py), 12)
                 _NS_vex._aacircle(surface, (*p["astral_light"], 220), (px, py), 8)
@@ -12027,7 +12027,7 @@ class _NS_vex:
                                         rot=a2, core=p["astral_hot"])
                 _NS_vex._spark_star(surface, fx, fy, 7,
                                     p["astral_hot"], 245,
-                                    spikes=4, rot=self.angle, core=p["white"])
+                                    spikes=2, rot=self.angle, core=p["white"])
 
 
     # ---------------------------------------------------------------------------
@@ -12938,7 +12938,7 @@ class _NS_vex:
             (p["void_light"], 5, 190),
             (p["void_hot"] if overcharged else p["void_bright"], 3, 235),
         )
-        for i in range(10):
+        for i in range(5):
             t = (i + 1) / 10.0
             p_back = max(0.0, ap - span * (1.0 - t))
             hx, hy = _NS_vex._staff_orb_position(cx, cy, facing, phase,
@@ -13111,7 +13111,7 @@ class _NS_vex:
         ring = _NS_vex._static("vex_platform_v2", build_platform)
         surface.blit(ring, (x - 95, y - 32))
 
-        for i in range(10):
+        for i in range(5):
             angle = phase * 0.22 + i * math.tau / 10
             x1 = x + int(math.cos(angle) * 34)
             y1 = y + int(math.sin(angle) * 8)
@@ -13228,12 +13228,12 @@ class _NS_vex:
         ang = math.atan2(dy, dx)
         nx, ny = -dy / dist, dx / dist
         pts = []
-        for i in range(13):
+        for i in range(6):
             t1 = i / 12.0
             wob = math.sin(phase * 3.0 + i * .8) * 3.2 * fs
             pts.append((sx + dx * t1 + nx * wob, sy + dy * t1 + ny * wob))
         beam_a = int((120 + 70 * pulse) * steady)
-        for i in range(12):
+        for i in range(6):
             _NS_vex._beam3(surface, pts[i], pts[i + 1], 2,
                            (p["void_light"], p["void_dark"], p["void_hot"]),
                            beam_a)
@@ -13327,7 +13327,7 @@ class _NS_vex:
         pulse = math.sin(phase * 5.0) * .5 + .5
 
         # Mote konvergen: titik + ekor radial menuju ujung staff.
-        for i in range(12):
+        for i in range(6):
             t = (progress + i / 12.0 + phase * .08) % 1.0
             a = phase * 3.2 + i * math.tau / 12
             r = (38 - 24 * progress) * fs * (0.75 + 0.25 *
@@ -13577,7 +13577,7 @@ class _NS_vex:
                 (p["astral_darkest"], p["astral_mid"], p["astral_bright"],
                  p["astral_hot"]),
                 int(190 * pulse * depth))
-        for i in range(8):
+        for i in range(4):
             t = (phase * .38 + i / 8.0) % 1.0
             mx = tx + int(math.sin(phase * 2 + i) * radius * .42)
             my = ty + int(radius * .45) - int(t * radius * 1.3)
@@ -13751,7 +13751,7 @@ class _NS_vex:
                     int((160 + 55 * pulse) * steady),
                     glint=1 if i % 4 == 0 else 0)
         # Mote jiwa spiral masuk — tersedot ke portal.
-        for i in range(10):
+        for i in range(5):
             t = (phase * .34 + i / 10.0) % 1.0
             ang = _NS_vex._hash01(i * 29) * math.tau + phase * .5 + t * 1.2
             rr = rng * (.85 - .75 * t)
@@ -13948,7 +13948,7 @@ class _NS_vex:
                           int((34 + t * 66) * fs), 8, phase * .08,
                           (p["void_magma"], p["void_gold"]),
                           int(180 * (1 - t * .55) * envelope))
-            for i in range(8):
+            for i in range(4):
                 angle = i * math.tau / 8 + phase * .08
                 ray_len = int((34 + t * 70) * fs *
                               (1.25 if i % 2 == 0 else .85))
@@ -13967,7 +13967,7 @@ class _NS_vex:
                     _NS_vex._aacircle(surface, (*p["void_hot"], alpha),
                                       (int(tip[0]), int(tip[1])), 2)
 
-        for i in range(10):
+        for i in range(5):
             t = (phase * .32 + i / 10.0) % 1.0
             a = i * math.tau / 10 + math.sin(phase * .5) * .12
             r = min(rng * .55, 100 * fs) * (.35 + .65 *
@@ -14098,7 +14098,7 @@ class _NS_zephyr:
     }
 
     # Durasi visual (frames) — renderer memakai ini, bukan gameplay timer
-    SKILL_VISUAL_DURATION = {"q": 240, "w": 180, "e": 180, "r": 240}
+    SKILL_VISUAL_DURATION = {"q": 158, "w": 118, "e": 118, "r": 158}
 
     # ---------------------------------------------------------------
     # HD Color Palette — Dark Willow / fey mage, ramp 4-5 band
@@ -14385,7 +14385,7 @@ class _NS_zephyr:
         margin = min(surface.get_width(), surface.get_height()) // 2 - 10
         return int(max(4, min(r, margin)))
 
-    def _spark_star(surface, cx, cy, size, color, alpha, spikes=6, rot=0.4,
+    def _spark_star(surface, cx, cy, size, color, alpha, spikes=2, rot=0.4,
                     core=None):
         """Bintang kilat: spike panjang-pendek selang-seling + inti."""
         if alpha <= 0 or size <= 0:
@@ -14417,7 +14417,7 @@ class _NS_zephyr:
                 (int(tipx), int(tipy)), width)
 
     def _dashed_ring(surface, cx, cy, radius, color, alpha, phase,
-                     segments=10, thick=3, span=0.6, squash=.92):
+                     segments=5, thick=3, span=0.6, squash=.92):
         """Cincin putus-putus yang berputar (marker AOE / rune ring)."""
         if alpha <= 0 or radius <= 1:
             return
@@ -14714,7 +14714,7 @@ class _NS_zephyr:
             _NS_zephyr._ellipse(s, (*p["rune_mid"], 140),
                                 (cx-40, cy-12, 80, 24), 2)
             # 8 rune dots
-            for i in range(8):
+            for i in range(4):
                 a = i * math.pi / 4
                 rx, ry = int(cx + math.cos(a) * 46), int(cy + math.sin(a) * 14)
                 _NS_zephyr._aacircle(s, p["rune_light"], (rx, ry), 2)
@@ -14766,7 +14766,7 @@ class _NS_zephyr:
             # 6-spike star burst
             Z._spark_star(surface, tip[0], tip[1],
                           r + 8, p["magic_light"], alpha,
-                          spikes=6, rot=phase * 2.1,
+                          spikes=3, rot=phase * 2.1,
                           core=p["magic_white"])
 
     # ---------------------------------------------------------------
@@ -15540,7 +15540,7 @@ class _NS_zephyr:
         # ── Attack orb orbiting particles ───────────────────────────
         if attack:
             orb_x, orb_y = pt(*staff_top)
-            for i in range(8):
+            for i in range(4):
                 ang_ = phase * 2.2 + i * math.pi / 4
                 r_   = 8 + int(math.sin(phase + i) * 2)
                 _NS_zephyr._aacircle(surface, (*p["magic_hot"], 200),
@@ -15998,7 +15998,7 @@ class _NS_zephyr:
                     _NS_zephyr._aacircle(surface, (*col_, al_),
                                          (int(self.tx), int(self.ty)), r_)
                 # Dust sparks
-                for i in range(12):
+                for i in range(6):
                     sa_ = i * math.pi * 2 / 12 + phase*0.3
                     sr_ = int(t_ * 46)
                     sx_, sy_ = (int(self.tx + math.cos(sa_)*sr_),
@@ -16133,7 +16133,7 @@ class _NS_zephyr:
         outer_al = int(180 + math.sin(phase * 2.2) * 40)
         _NS_zephyr._dashed_ring(surface, tx_, ty_+16, rng,
                                 p["thorn_mid"], outer_al, phase,
-                                segments=12, thick=3)
+                                segments=6, thick=3)
         conv_r = int(rng * (1.0 - (progress % .25) * 4))
         _NS_zephyr._aacircle(surface, (*p["magic_dark"], 90),
                              (tx_, ty_+16), max(2, conv_r), 2)
@@ -16161,7 +16161,7 @@ class _NS_zephyr:
         rng = _NS_zephyr._ring_r(boss, 60, surface)
 
         # 12 thorn spines around ring
-        for i in range(12):
+        for i in range(6):
             ang_ = phase * .6 + i * math.tau / 12
             rx_, ry_ = (int(tx_ + math.cos(ang_)*rng),
                         int(ty_ + 16 + math.sin(ang_)*rng*.34))
@@ -16176,7 +16176,7 @@ class _NS_zephyr:
                                  (ex_, ey_), 1)
 
         # Rising thorn motes
-        for i in range(8):
+        for i in range(4):
             t = (phase * .30 + i / 8.0) % 1.0
             mr = rng * (.5 + _NS_zephyr._hash01(i*13) * .5)
             ang_ = _NS_zephyr._hash01(i*17) * math.tau
@@ -16210,7 +16210,7 @@ class _NS_zephyr:
         # Rune ring rotating
         _NS_zephyr._dashed_ring(surface, x, y+31, radius,
                                 p["rune_mid"], 180, phase*.7,
-                                segments=8, thick=2)
+                                segments=4, thick=2)
         for i in range(6):
             a_ = phase*.7 + i*math.tau/6
             _NS_zephyr._aacircle(surface, p["rune_light"],
@@ -16265,7 +16265,7 @@ class _NS_zephyr:
         # Glass highlight + petal reflections
         _NS_zephyr._aacircle(surface, p["magic_hot"],
                              (cx_-radius//2, cy_-radius//2), 3)
-        for i in range(8):
+        for i in range(4):
             a_ = phase*2.0 + i*math.tau/8
             r_ = radius*(.52 + (i%2)*.16)
             _NS_zephyr._aacircle(surface, (*p["wing_shine"], 170),
@@ -16303,7 +16303,7 @@ class _NS_zephyr:
         dx_, dy_ = tx_-sx_, ty_-sy_
         dist_ = max(1.0, math.hypot(dx_, dy_))
         nx_, ny_ = -dy_/dist_, dx_/dist_
-        for i in range(10):
+        for i in range(5):
             t1 = i / 10.0
             t2 = min(1.0, (i+.55)/10.0)
             w1 = math.sin(phase*3 + i)*3.5
@@ -16393,7 +16393,7 @@ class _NS_zephyr:
                                  (x, y+16), conv_r, 2)
 
         # Radial chevrons at ground level
-        for i in range(8):
+        for i in range(4):
             a_ = phase*.5 + i*math.tau/8
             cx__ = int(x + math.cos(a_)*radius*.72)
             cy__ = int(y+31 + math.sin(a_)*radius*.22)
@@ -16403,7 +16403,7 @@ class _NS_zephyr:
                                 int(140 + math.sin(phase*2+i)*40), 2)
 
         # Rune dots orbiting
-        for i in range(10):
+        for i in range(5):
             a_ = phase*.95 + i*math.tau/10
             _NS_zephyr._aacircle(surface, p["rune_light"],
                                  (int(x + math.cos(a_)*(radius-5)),
@@ -16449,7 +16449,7 @@ class _NS_zephyr:
                                      (*p["magic_hot"], 190-i*38), 1, 14)
 
         # Outer orbit glints (24 pts)
-        for i in range(24):
+        for i in range(12):
             a_ = phase*1.4 + i*math.tau/24
             r_ = int((52 + math.sin(phase*2+i)*6)*fs)
             _NS_zephyr._aacircle(surface, p["magic_white"],
