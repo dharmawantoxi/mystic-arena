@@ -1,0 +1,1102 @@
+{
+  "dead_edge": {
+    "name": "Dead Edge",
+    "category": "crit",
+    "cost": 4500,
+    "icon": "dead_edge.png",
+    "color": [
+      220,
+      60,
+      60
+    ],
+    "glow": [
+      255,
+      90,
+      90
+    ],
+    "stats": {
+      "damage": 52,
+      "crit_chance": 0.25,
+      "crit_mult": 2.0
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+52 Damage. 25% peluang Critical Strike (200% damage).",
+    "desc_en": "+52 Damage. 25% chance to Critical Strike (200% damage).",
+    "flavor": "Tebasan maut yang berdentang di ujung setiap medan tempur."
+  },
+  "holy_rapier": {
+    "name": "Holy Rapier",
+    "category": "damage",
+    "cost": 4500,
+    "icon": "holy_rapier.png",
+    "color": [
+      255,
+      220,
+      80
+    ],
+    "glow": [
+      255,
+      245,
+      150
+    ],
+    "stats": {
+      "damage": 120
+    },
+    "melee_only": false,
+    "drops_on_death": true,
+    "desc": "+120 Damage. HILANG saat hero mati (tidak dijatuhkan).",
+    "desc_en": "+120 Damage. LOST when the hero dies (not dropped).",
+    "flavor": "Kilau cahaya yang hanya pantas dipegang oleh yang hidup."
+  },
+  "demon_maw": {
+    "name": "Demon Maw",
+    "category": "lifesteal",
+    "cost": 4500,
+    "icon": "demon_maw.png",
+    "color": [
+      180,
+      30,
+      30
+    ],
+    "glow": [
+      255,
+      70,
+      70
+    ],
+    "stats": {
+      "damage": 20,
+      "armor": 4,
+      "lifesteal": 0.2
+    },
+    "active": {
+      "name": "Blood Frenzy",
+      "hp_threshold": 0.35,
+      "lifesteal_bonus": 1.2,
+      "duration": 300,
+      "cooldown": 1500
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+20 Damage, +4 Armor, 20% Lifesteal. Saat HP < 35%: aktif Blood Frenzy, lifesteal 140% selama 5 detik.",
+    "desc_en": "+20 Damage, +4 Armor, 20% Lifesteal. Below 35% HP: Blood Frenzy activates, 140% lifesteal for 5 seconds.",
+    "flavor": "Topeng iblis yang lapar akan darah lawan."
+  },
+  "leviathan_heart": {
+    "name": "Leviathan Heart",
+    "category": "tank",
+    "cost": 4500,
+    "icon": "leviathan_heart.png",
+    "color": [
+      80,
+      220,
+      120
+    ],
+    "glow": [
+      130,
+      255,
+      160
+    ],
+    "stats": {
+      "hp_pct": 0.35,
+      "hp_regen": 6.0
+    },
+    "passive": {
+      "name": "Leviathan Vitality",
+      "out_of_combat_regen_pct": 0.015,
+      "combat_timeout": 300
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+35% Max HP, +6 HP/reg. Di luar pertempuran (5 dtk tanpa damage): regenerasi 1.5% Max HP per detik.",
+    "desc_en": "+35% Max HP, +6 HP regen. Out of combat (5s without damage): regenerate 1.5% Max HP per second.",
+    "flavor": "Jantung purba yang berdegup menyamai lautan."
+  },
+  "cleave_axe": {
+    "name": "Cleave Axe",
+    "category": "splash",
+    "cost": 4500,
+    "icon": "cleave_axe.png",
+    "color": [
+      200,
+      220,
+      240
+    ],
+    "glow": [
+      150,
+      210,
+      255
+    ],
+    "stats": {
+      "damage": 34,
+      "hp_regen": 3.0
+    },
+    "passive": {
+      "name": "Cleave",
+      "cleave_pct": 0.5,
+      "cleave_radius": 110
+    },
+    "melee_only": true,
+    "drops_on_death": false,
+    "desc": "+34 Damage, +3 HP/reg. Serangan melee membelah: 50% damage ke musuh dalam radius 110 (hanya melee).",
+    "desc_en": "+34 Damage, +3 HP regen. Melee attacks cleave: 50% damage to enemies within 110 radius (melee only).",
+    "flavor": "Kapak berukir yang menebas apapun di depannya."
+  },
+  "steel_aegis": {
+    "name": "Steel Aegis",
+    "category": "as_armor",
+    "cost": 4500,
+    "icon": "steel_aegis.png",
+    "color": [
+      180,
+      200,
+      230
+    ],
+    "glow": [
+      120,
+      170,
+      255
+    ],
+    "stats": {
+      "armor": 6,
+      "attack_speed": 30
+    },
+    "aura": {
+      "name": "Steel Aura",
+      "ally_radius": 320,
+      "ally_armor": 2,
+      "ally_attack_speed": 10,
+      "enemy_radius": 320,
+      "enemy_armor_reduction": 2
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+4 Armor, +30 Attack Speed. Aura: sekutu di dekat dapat +2 Armor & +10 AS; musuh di dekat kehilangan 2 Armor.",
+    "desc_en": "+4 Armor, +30 Attack Speed. Aura: nearby allies gain +2 Armor & +10 AS; nearby enemies lose 2 Armor.",
+    "flavor": "Zirah baja yang berdenyut memberi semangat kawan."
+  },
+  "moon_shard": {
+    "name": "Moon Shard",
+    "category": "attack_speed",
+    "cost": 4500,
+    "icon": "moon_shard.png",
+    "color": [
+      130,
+      220,
+      255
+    ],
+    "glow": [
+      180,
+      240,
+      255
+    ],
+    "stats": {
+      "attack_speed": 75
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+75 Attack Speed. Serangan secepat cahaya bulan.",
+    "desc_en": "+75 Attack Speed. Strikes as fast as moonlight.",
+    "flavor": "Serpihan rembulan yang membeku jadi kristal."
+  },
+  "octarine_core": {
+    "name": "Octarine Core",
+    "category": "caster",
+    "cost": 4500,
+    "icon": "octarine_core.png",
+    "color": [
+      180,
+      80,
+      230
+    ],
+    "glow": [
+      220,
+      130,
+      255
+    ],
+    "stats": {
+      "hp": 300,
+      "cooldown_reduction": 0.15,
+      "spell_vamp": 0.1,
+      "hp_regen": 2.0
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+300 HP, +2 HP/reg, 15% Cooldown Reduction, 10% Spell Lifesteal (heal = 10% damage skill yang dikeluarkan).",
+    "desc_en": "+300 HP, +2 HP regen, 15% Cooldown Reduction, 10% Spell Lifesteal (heal = 10% of skill damage dealt).",
+    "flavor": "Inti ungu yang berputar dengan kekuatan arcane."
+  },
+  "scarlet_bulwark": {
+    "name": "Scarlet Bulwark",
+    "category": "guard",
+    "cost": 5000,
+    "icon": "scarlet_bulwark.png",
+    "color": [
+      200,
+      60,
+      60
+    ],
+    "glow": [
+      255,
+      110,
+      110
+    ],
+    "stats": {
+      "hp": 250,
+      "hp_regen": 8,
+      "armor": 6
+    },
+    "block": {
+      "chance": 0.55,
+      "melee_block": 25,
+      "ranged_block": 14
+    },
+    "active": {
+      "name": "Bulwark Guard",
+      "hp_threshold": 0.45,
+      "ally_radius": 320,
+      "base_block": 35,
+      "max_hp_block_pct": 0.02,
+      "duration": 420,
+      "cooldown": 2400
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+250 HP, +8 HP/reg, +6 Armor. Blok pasif 55% (25 dmg). Saat HP < 45%: Guard 7 dtk, kamu & sekutu dekat blokir 35+2% Max HP per serangan.",
+    "desc_en": "+250 HP, +8 HP regen, +6 Armor. Passive block 55% (25 dmg). Below 45% HP: Guard for 7s, you & nearby allies block 35 + 2% Max HP per attack.",
+    "flavor": "Perisai kirmizi penahan amukan Tahun Kegelapan."
+  },
+  "monarch_wings": {
+    "name": "Monarch Wings",
+    "category": "agility",
+    "cost": 5000,
+    "icon": "monarch_wings.png",
+    "color": [
+      230,
+      140,
+      220
+    ],
+    "glow": [
+      255,
+      190,
+      250
+    ],
+    "stats": {
+      "damage": 38,
+      "attack_speed": 30,
+      "evasion": 0.28
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+38 Damage, +30 Attack Speed, 28% Evasion (peluang menghindari serangan fisik sepenuhnya).",
+    "desc_en": "+38 Damage, +30 Attack Speed, 28% Evasion (chance to fully dodge physical attacks).",
+    "flavor": "Sayap raja kupu-kupu yang menolak setiap bilah."
+  },
+  "corroder": {
+    "name": "Corroder",
+    "category": "shred",
+    "cost": 4500,
+    "icon": "corroder.png",
+    "color": [
+      140,
+      220,
+      90
+    ],
+    "glow": [
+      190,
+      255,
+      140
+    ],
+    "stats": {
+      "damage": 65
+    },
+    "passive": {
+      "name": "Corrosion",
+      "armor_shred": 6,
+      "duration": 360
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+65 Damage. Serangan mengikis 6 Armor target selama 6 detik (target menerima damage lebih besar).",
+    "desc_en": "+65 Damage. Attacks shred 6 Armor from the target for 6 seconds (target takes more damage).",
+    "flavor": "Bilah berkarat yang melarutkan zirah dan daging."
+  },
+  "tempest_vane": {
+    "name": "Tempest Vane",
+    "category": "utility",
+    "cost": 5500,
+    "icon": "tempest_vane.png",
+    "color": [
+      120,
+      210,
+      230
+    ],
+    "glow": [
+      180,
+      240,
+      255
+    ],
+    "stats": {
+      "hp": 250,
+      "hp_regen": 4,
+      "move_speed_pct": 0.12
+    },
+    "active": {
+      "name": "Tempest Veil",
+      "hp_threshold": 0.4,
+      "duration": 150,
+      "cooldown": 1800
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+250 HP, +4 HP/reg, +12% Move Speed. Saat HP < 40%: kebal semua damage 2.5 dtk (tidak bisa menyerang), cooldown 30 dtk.",
+    "desc_en": "+250 HP, +4 HP regen, +12% Move Speed. Below 40% HP: immune to all damage for 2.5s (cannot attack), 30s cooldown.",
+    "flavor": "Baling-baling angin yang menyembunyikan pemakainya."
+  },
+  "fenrir_chain": {
+    "name": "Fenrir Chain",
+    "category": "control",
+    "cost": 5250,
+    "icon": "fenrir_chain.png",
+    "color": [
+      240,
+      190,
+      90
+    ],
+    "glow": [
+      255,
+      230,
+      150
+    ],
+    "stats": {
+      "damage": 30,
+      "attack_speed": 30,
+      "hp": 250
+    },
+    "on_attack": {
+      "name": "Arc Chain",
+      "chance": 0.2,
+      "damage": 45,
+      "targets": 3,
+      "radius": 240
+    },
+    "active": {
+      "name": "Binding Chains",
+      "trigger_enemies": 2,
+      "trigger_radius": 220,
+      "root_radius": 220,
+      "root_duration": 72,
+      "damage": 80,
+      "cooldown": 1080
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+30 Damage, +30 AS, +250 HP. 20% serangan menyambar 3 musuh (45 dmg). Saat >=2 musuh dekat: rantai mengikat mereka 1.2 dtk + 80 dmg.",
+    "desc_en": "+30 Damage, +30 AS, +250 HP. 20% of attacks chain to 3 enemies (45 dmg). When 2+ enemies are near: chains root them for 1.2s + 80 dmg.",
+    "flavor": "Rantai para dewa yang membelenggu serigala purba."
+  },
+  "sanguine_thorn": {
+    "name": "Sanguine Thorn",
+    "category": "burst",
+    "cost": 6000,
+    "icon": "sanguine_thorn.png",
+    "color": [
+      230,
+      60,
+      110
+    ],
+    "glow": [
+      255,
+      120,
+      160
+    ],
+    "stats": {
+      "damage": 25,
+      "attack_speed": 60,
+      "hp_regen": 5
+    },
+    "active": {
+      "name": "Soul Rend",
+      "duration": 300,
+      "crit_mult": 1.5,
+      "damage_amp": 0.3,
+      "cooldown": 1080
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+25 Damage, +60 AS, +5 HP/reg. Soul Rend (auto): silence target 5 dtk, seranganmu ke target crit 150%, target menerima +30% damage.",
+    "desc_en": "+25 Damage, +60 AS, +5 HP regen. Soul Rend (auto): silences the target for 5s, your attacks on it crit for 150%, target takes +30% damage.",
+    "flavor": "Duri darah yang menagih nyawa setiap korbannya."
+  },
+  "abyss_breaker": {
+    "name": "Abyss Breaker",
+    "category": "control",
+    "cost": 5500,
+    "icon": "abyss_breaker.png",
+    "color": [
+      90,
+      130,
+      220
+    ],
+    "glow": [
+      140,
+      180,
+      255
+    ],
+    "stats": {
+      "damage": 35,
+      "hp": 300,
+      "hp_regen": 3,
+      "heal_amp": 0.16,
+      "slow_resist": 0.3
+    },
+    "bash": {
+      "chance": 0.22,
+      "damage": 55,
+      "stun": 54,
+      "cooldown": 140
+    },
+    "active": {
+      "name": "Overwhelm",
+      "stun": 72,
+      "cooldown": 1500
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+35 Damage, +300 HP, +16% heal diterima, +30% tahan slow. Bash 22%: stun 0.9 dtk + 55 dmg. Overwhelm (auto): stun target 1.2 dtk.",
+    "desc_en": "+35 Damage, +300 HP, +16% incoming heal, +30% slow resist. Bash 22%: stun 0.9s + 55 dmg. Overwhelm (auto): stuns the target for 1.2s.",
+    "flavor": "Pedang Komandan Jurang yang memutus jiwa."
+  },
+  "thunder_coil": {
+    "name": "Thunder Coil",
+    "category": "static",
+    "cost": 5250,
+    "icon": "thunder_coil.png",
+    "color": [
+      250,
+      220,
+      90
+    ],
+    "glow": [
+      255,
+      245,
+      160
+    ],
+    "stats": {
+      "damage": 25,
+      "attack_speed": 65
+    },
+    "on_attack": {
+      "name": "Arc Lightning",
+      "chance": 0.22,
+      "damage": 40,
+      "targets": 3,
+      "radius": 240
+    },
+    "active": {
+      "name": "Static Charge",
+      "proc_chance": 0.2,
+      "duration": 480,
+      "tick": 30,
+      "damage": 65,
+      "targets": 4,
+      "radius": 260,
+      "cooldown": 1200
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+25 Damage, +65 AS. 22% serangan menyambar 3 musuh (40 dmg). Saat dipukul: 20% perisai statis 8 dtk, menyambar 4 musuh tiap 0.5 dtk (65 dmg).",
+    "desc_en": "+25 Damage, +65 AS. 22% of attacks chain to 3 enemies (40 dmg). When hit: 20% chance of a static shield for 8s, zapping 4 enemies every 0.5s (65 dmg).",
+    "flavor": "Kumparan badai yang ditempa palu dewa guntur."
+  },
+  "razor_carapace": {
+    "name": "Razor Carapace",
+    "category": "thorn",
+    "cost": 5000,
+    "icon": "razor_carapace.png",
+    "color": [
+      180,
+      180,
+      200
+    ],
+    "glow": [
+      230,
+      230,
+      255
+    ],
+    "stats": {
+      "damage": 18,
+      "armor": 8,
+      "cooldown_reduction": 0.1
+    },
+    "active": {
+      "name": "Thornmail",
+      "hp_threshold": 0.55,
+      "reflect_pct": 0.85,
+      "duration": 270,
+      "cooldown": 1500
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+18 Damage, +8 Armor, 10% CDR. Saat HP < 55%: Thornmail 4.5 dtk - pantulkan 85% damage yang kamu terima ke penyerang.",
+    "desc_en": "+18 Damage, +8 Armor, 10% CDR. Below 55% HP: Thornmail for 4.5s - reflect 85% of damage you take back to the attacker.",
+    "flavor": "Cangkang bergerigi yang membalas setiap luka."
+  },
+  "everfrost_guard": {
+    "name": "Everfrost Guard",
+    "category": "frost",
+    "cost": 5500,
+    "icon": "everfrost_guard.png",
+    "color": [
+      120,
+      190,
+      230
+    ],
+    "glow": [
+      180,
+      230,
+      255
+    ],
+    "stats": {
+      "armor": 10,
+      "hp_regen": 5,
+      "cooldown_reduction": 0.1
+    },
+    "aura": {
+      "name": "Freezing Aura",
+      "enemy_radius": 300,
+      "enemy_atk_slow": 0.3,
+      "enemy_anti_heal": 0.4
+    },
+    "active": {
+      "name": "Arctic Blast",
+      "trigger_enemies": 2,
+      "radius": 280,
+      "damage": 130,
+      "slow": 0.45,
+      "slow_duration": 210,
+      "cooldown": 1440
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+10 Armor, +5 HP/reg, 10% CDR. Aura: musuh dekat -30% AS & heal -40%. Saat >=2 musuh dekat: Arctic Blast 130 dmg + slow 45% (3.5 dtk).",
+    "desc_en": "+10 Armor, +5 HP regen, 10% CDR. Aura: nearby enemies lose 30% AS & 40% healing. When 2+ enemies are near: Arctic Blast 130 dmg + 45% slow for 3.5s.",
+    "flavor": "Bongkahan es abadi yang membekukan setiap denyut nadi."
+  },
+  "sundering_cudgel": {
+    "name": "Sundering Cudgel",
+    "category": "pierce",
+    "cost": 5000,
+    "icon": "sundering_cudgel.png",
+    "color": [
+      230,
+      180,
+      70
+    ],
+    "glow": [
+      255,
+      220,
+      130
+    ],
+    "stats": {
+      "damage": 48,
+      "attack_speed": 25
+    },
+    "bash": {
+      "name": "Piercing Bash",
+      "chance": 0.28,
+      "damage": 55,
+      "stun": 15,
+      "cooldown": 120
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+45 Damage, +25 AS. Serangan TIDAK PERNAH meleset (True Strike). 28% serangan memukul mundir target: stun 0.25 dtk + 55 dmg (CD 2 dtk).",
+    "desc_en": "+45 Damage, +25 AS. Your attacks NEVER miss (True Strike). 28% of attacks bash the target: 0.25s stun + 55 dmg (2s cooldown).",
+    "flavor": "Tongkat pemukul legendaris yang menembus segala kilah."
+  },
+  "frostbound_eye": {
+    "name": "Frostbound Eye",
+    "category": "ice",
+    "cost": 5250,
+    "icon": "frostbound_eye.png",
+    "color": [
+      120,
+      200,
+      220
+    ],
+    "glow": [
+      180,
+      240,
+      255
+    ],
+    "stats": {
+      "damage": 20,
+      "hp": 250,
+      "hp_regen": 4
+    },
+    "on_attack": {
+      "name": "Frostbite",
+      "slow": 0.28,
+      "atk_slow": 0.28,
+      "anti_heal": 0.45,
+      "duration": 180
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+20 Damage, +250 HP, +4 HP/reg. Tiap serangan memperlambat 28% (gerak & serang) + anti-heal 45% selama 3 detik.",
+    "desc_en": "+20 Damage, +250 HP, +4 HP regen. Each attack slows by 28% (move & attack) and applies 45% anti-heal for 3 seconds.",
+    "flavor": "Mata es yang membekukan darah di setiap luka."
+  },
+  "gale_pike": {
+    "name": "Gale Pike",
+    "category": "reach",
+    "cost": 5250,
+    "icon": "gale_pike.png",
+    "color": [
+      150,
+      230,
+      200
+    ],
+    "glow": [
+      200,
+      255,
+      230
+    ],
+    "stats": {
+      "damage": 18,
+      "attack_speed": 25,
+      "hp": 200,
+      "hp_regen": 3,
+      "range_bonus": 90
+    },
+    "active": {
+      "name": "Gale Leap",
+      "hp_threshold": 0.4,
+      "dash_distance": 130,
+      "as_bonus": 55,
+      "duration": 180,
+      "cooldown": 1500
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+18 Damage, +25 AS, +200 HP, +3 HP/reg, +90 jangkauan (ranged). Saat HP < 40%: Gale Leap - mundur 130px + +55 AS selama 3 dtk (CD 25 dtk).",
+    "desc_en": "+18 Damage, +25 AS, +200 HP, +3 HP regen, +90 attack range (ranged). Below 40% HP: Gale Leap - dash back 130px + +55 AS for 3s (25s CD).",
+    "flavor": "Tombak angin yang mengulur jarak secepat kilat."
+  },
+  "basilisk_breath": {
+    "name": "Basilisk Breath",
+    "category": "poison",
+    "cost": 5750,
+    "icon": "basilisk_breath.png",
+    "color": [
+      140,
+      210,
+      90
+    ],
+    "glow": [
+      190,
+      255,
+      130
+    ],
+    "stats": {
+      "damage": 26,
+      "attack_speed": 30,
+      "hp": 260,
+      "hp_regen": 3
+    },
+    "on_attack": {
+      "name": "Miasma",
+      "max_hp_pct_per_tick": 0.022,
+      "tick": 30,
+      "duration": 180,
+      "cap_damage": 60
+    },
+    "multishot": {
+      "name": "Polycephaly",
+      "chance": 0.3,
+      "targets": 2,
+      "radius": 200,
+      "damage_pct": 0.7
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+26 Damage, +30 AS, +260 HP, +3 HP/reg. Serangan meracuni: 2.2% Max HP/0.5 dtk selama 3 dtk (maks 60/tick). 30% tembakan menyambar 2 musuh lain (70% dmg).",
+    "desc_en": "+26 Damage, +30 AS, +260 HP, +3 HP regen. Attacks poison: 2.2% Max HP per 0.5s for 3s (cap 60/tick). 30% of shots hit 2 other enemies (70% damage).",
+    "flavor": "Embun racun hydra yang merayap di setiap luka."
+  },
+  "solar_brand": {
+    "name": "Solar Brand",
+    "category": "inferno",
+    "cost": 5500,
+    "icon": "solar_brand.png",
+    "color": [
+      255,
+      190,
+      60
+    ],
+    "glow": [
+      255,
+      230,
+      140
+    ],
+    "stats": {
+      "damage": 30,
+      "hp": 280,
+      "hp_regen": 5
+    },
+    "aura": {
+      "name": "Scorched Earth",
+      "enemy_radius": 280,
+      "burn_dps": 28,
+      "blind": 0.18
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+30 Damage, +280 HP, +5 HP/reg. Aura: musuh dalam 280px terbakar 28 dmg/dtk & serangannya 18% lebih sering meleset.",
+    "desc_en": "+30 Damage, +280 HP, +5 HP regen. Aura: enemies within 280px burn for 28 dmg/s and have 18% more chance to miss.",
+    "flavor": "Cap matahari yang membakar apa pun yang mendekat."
+  },
+  "runic_gavel": {
+    "name": "Runic Gavel",
+    "category": "arcane",
+    "cost": 5250,
+    "icon": "runic_gavel.png",
+    "color": [
+      200,
+      130,
+      240
+    ],
+    "glow": [
+      235,
+      180,
+      255
+    ],
+    "stats": {
+      "damage": 28,
+      "hp": 250,
+      "hp_regen": 4,
+      "cooldown_reduction": 0.15
+    },
+    "passive": {
+      "name": "Empower Strike",
+      "charge_time": 540,
+      "damage": 130
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+28 Damage, +250 HP, +4 HP/reg, 15% CDR. Setiap 9 dtk: serangan berikutnya menambah 130 magic damage ke target (Empower Strike).",
+    "desc_en": "+28 Damage, +250 HP, +4 HP regen, 15% CDR. Every 9s your next attack adds 130 magic damage to the target (Empower Strike).",
+    "flavor": "Palu runik yang menyimpan muatan sihir tiap hembusan."
+  },
+  "searbrand": {
+    "name": "Searbrand",
+    "category": "mortal",
+    "cost": 5750,
+    "icon": "searbrand.png",
+    "color": [
+      235,
+      95,
+      60
+    ],
+    "glow": [
+      255,
+      150,
+      110
+    ],
+    "stats": {
+      "damage": 20,
+      "hp": 320,
+      "hp_regen": 6,
+      "cooldown_reduction": 0.15
+    },
+    "aura": {
+      "name": "Cauterize",
+      "enemy_radius": 300,
+      "enemy_anti_heal": 0.5,
+      "burn_dps": 6
+    },
+    "active": {
+      "name": "Brand Burst",
+      "trigger_enemies": 2,
+      "radius": 320,
+      "damage": 110,
+      "burn_dps": 22,
+      "burn_duration": 180,
+      "cooldown": 1080
+    },
+    "melee_only": false,
+    "drops_on_death": false,
+    "desc": "+12 Damage, +320 HP, +6 HP/reg, 15% CDR. AURA CAUTERIZE (300px): musuh di dekat HILANG 50% kemampuan heal-nya + bakar 6 dmg/dtk. Saat >=2 musuh dekat: Brand Burst, 110 magic dmg + bakar 22 dmg/dtk selama 3 dtk (CD 18 dtk).",
+    "desc_en": "+12 Damage, +320 HP, +6 HP regen, 15% CDR. CAUTERIZE AURA (300px): nearby enemies LOSE 50% of their healing + take 6 dmg/s burn. When 2+ enemies are near: Brand Burst deals 110 magic dmg and burns 22 dmg/s for 3s (18s CD).",
+    "flavor": "Besi berpijar yang mencauter luka - apa pun yang menerima bekasnya tak akan pernah utuh kembali."
+  },
+  "astral_codex": {
+    "name": "Astral Codex",
+    "category": "mystic",
+    "cost": 6000,
+    "icon": "astral_codex.png",
+    "color": [
+      155,
+      90,
+      235
+    ],
+    "glow": [
+      210,
+      155,
+      255
+    ],
+    "stats": {
+      "hp": 280,
+      "hp_regen": 4,
+      "cooldown_reduction": 0.18,
+      "spell_vamp": 0.12,
+      "skill_amp": 0.25
+    },
+    "active": {
+      "name": "Arcane Nova",
+      "trigger_enemies": 2,
+      "radius": 260,
+      "damage": 150,
+      "silence_duration": 90,
+      "cooldown": 1440
+    },
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false,
+    "desc": "+280 HP, +4 HP/reg, 18% CDR, 12% Spell Lifesteal. SKILL AMP: +25% damage semua skill. Saat >=2 musuh dekat: Arcane Nova, 150 magic dmg + silence 1.5 dtk (CD 24 dtk). HANYA untuk hero beratribut Magic.",
+    "desc_en": "+280 HP, +4 HP regen, 18% CDR, 12% Spell Lifesteal. SKILL AMP: +25% damage to all skills. When 2+ enemies are near: Arcane Nova, 150 magic dmg + 1.5s silence (24s CD). MAGIC-attribute heroes ONLY.",
+    "flavor": "Kitab bintang yang halamannya menulis ulang hukum arus sihir setiap kali dibuka."
+  },
+  "sage_scepter": {
+    "name": "Sage Scepter",
+    "category": "caster",
+    "cost": 5000,
+    "icon": "sage_scepter.png",
+    "color": [
+      120,
+      190,
+      255
+    ],
+    "glow": [
+      170,
+      220,
+      255
+    ],
+    "stats": {
+      "hp": 200,
+      "hp_regen": 3,
+      "skill_amp": 0.15,
+      "spell_vamp": 0.08,
+      "cooldown_reduction": 0.08
+    },
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false,
+    "desc": "+200 HP, +3 HP/reg, 15% SKILL AMP, 8% Spell Lifesteal, 8% CDR. Penambat arus sihir murni bagi sang bijak. HANYA hero Magic.",
+    "desc_en": "+200 HP, +3 HP regen, 15% SKILL AMP, 8% Spell Lifesteal, 8% CDR. A pure conduit of arcane current for the wise. MAGIC heroes ONLY.",
+    "flavor": "Tongkat bijak yang mendengar denyut setiap mantra."
+  },
+  "fulgur_scepter": {
+    "name": "Fulgur Scepter",
+    "category": "burst",
+    "cost": 6000,
+    "icon": "fulgur_scepter.png",
+    "color": [
+      255,
+      180,
+      60
+    ],
+    "glow": [
+      255,
+      220,
+      120
+    ],
+    "stats": {
+      "damage": 15,
+      "hp": 200,
+      "skill_amp": 0.1,
+      "spell_vamp": 0.08
+    },
+    "active": {
+      "name": "Energy Blast",
+      "damage": 300,
+      "cooldown": 1080
+    },
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false,
+    "desc": "+15 Damage, +200 HP, 10% SKILL AMP, 8% Spell Lifesteal. Saat menyerang (auto): Energy Blast - hantam target dengan 300 magic damage (CD 18 dtk). HANYA hero Magic.",
+    "desc_en": "+15 Damage, +200 HP, 10% SKILL AMP, 8% Spell Lifesteal. When attacking (auto): Energy Blast - slams your target for 300 magic damage (18s CD). MAGIC heroes ONLY.",
+    "flavor": "Tongkat petir yang menyimpan satu badai di ujungnya."
+  },
+  "hex_idol": {
+    "name": "Hex Idol",
+    "category": "control",
+    "cost": 5750,
+    "icon": "hex_idol.png",
+    "color": [
+      170,
+      220,
+      90
+    ],
+    "glow": [
+      210,
+      255,
+      140
+    ],
+    "stats": {
+      "hp": 250,
+      "hp_regen": 4,
+      "spell_vamp": 0.06,
+      "cooldown_reduction": 0.1
+    },
+    "active": {
+      "name": "Hexcraft",
+      "stun": 150,
+      "silence": 150,
+      "cooldown": 1800
+    },
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false,
+    "desc": "+250 HP, +4 HP/reg, 6% Spell Lifesteal, 10% CDR. Saat menyerang (auto): HEX target - stun + silence selama 2.5 dtk (CD 30 dtk). HANYA hero Magic.",
+    "desc_en": "+250 HP, +4 HP regen, 6% Spell Lifesteal, 10% CDR. When attacking (auto): HEX the target - stun + silence for 2.5s (30s CD). MAGIC heroes ONLY.",
+    "flavor": "Arca vodu yang mengubah musuh jadi boneka bisu."
+  },
+  "rift_veil": {
+    "name": "Rift Veil",
+    "category": "burst",
+    "cost": 5500,
+    "icon": "rift_veil.png",
+    "color": [
+      130,
+      120,
+      240
+    ],
+    "glow": [
+      180,
+      170,
+      255
+    ],
+    "stats": {
+      "hp": 260,
+      "hp_regen": 4,
+      "spell_vamp": 0.06
+    },
+    "active": {
+      "name": "Discord Field",
+      "trigger_enemies": 2,
+      "radius": 320,
+      "damage_amp": 0.15,
+      "duration": 360,
+      "cooldown": 1200
+    },
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false,
+    "desc": "+260 HP, +4 HP/reg, 6% Spell Lifesteal. Saat >=2 musuh dekat (auto): Discord Field - musuh dalam 320px menerima +15% damage selama 6 dtk (CD 20 dtk). HANYA hero Magic.",
+    "desc_en": "+260 HP, +4 HP regen, 6% Spell Lifesteal. When 2+ enemies are near (auto): Discord Field - enemies within 320px take +15% damage for 6s (20s CD). MAGIC heroes ONLY.",
+    "flavor": "Cadar retakan yang menyingkap sisi rapuh musuh."
+  },
+  "vital_stone": {
+    "name": "Vital Stone",
+    "category": "lifesteal",
+    "cost": 5250,
+    "icon": "vital_stone.png",
+    "color": [
+      230,
+      80,
+      110
+    ],
+    "glow": [
+      255,
+      140,
+      170
+    ],
+    "stats": {
+      "hp": 320,
+      "hp_regen": 6,
+      "spell_vamp": 0.2
+    },
+    "active": {
+      "name": "Vitality Pact",
+      "hp_threshold": 0.35,
+      "heal_pct": 0.25,
+      "cooldown": 2700
+    },
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false,
+    "desc": "+320 HP, +6 HP/reg, 20% Spell Lifesteal. Saat HP < 35% (auto): Vitality Pact - pulihkan 25% Max HP seketika (CD 45 dtk). HANYA hero Magic.",
+    "desc_en": "+320 HP, +6 HP regen, 20% Spell Lifesteal. Below 35% HP (auto): Vitality Pact - instantly restore 25% Max HP (45s CD). MAGIC heroes ONLY.",
+    "flavor": "Batu darah yang berdegup menyamai jantung pemakainya."
+  },
+  "vine_rod": {
+    "name": "Vine Rod",
+    "category": "control",
+    "cost": 5000,
+    "icon": "vine_rod.png",
+    "color": [
+      90,
+      200,
+      120
+    ],
+    "glow": [
+      150,
+      240,
+      170
+    ],
+    "stats": {
+      "damage": 15,
+      "hp": 240,
+      "hp_regen": 3,
+      "spell_vamp": 0.05
+    },
+    "on_attack": {
+      "name": "Entangle",
+      "root_duration": 60,
+      "cooldown": 540
+    },
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false,
+    "desc": "+15 Damage, +240 HP, +3 HP/reg, 5% Spell Lifesteal. Serangannya men-ROOT target 1 dtk (tak bisa bergerak; CD internal 9 dtk). HANYA hero Magic.",
+    "desc_en": "+15 Damage, +240 HP, +3 HP regen, 5% Spell Lifesteal. Your attacks ROOT the target for 1s (cannot move; 9s internal CD). MAGIC heroes ONLY.",
+    "flavor": "Tongkat sulur hidup yang tak pernah melepaskan cengkeramannya."
+  },
+  "spectral_charm": {
+    "name": "Spectral Charm",
+    "category": "utility",
+    "cost": 5500,
+    "icon": "spectral_charm.png",
+    "color": [
+      190,
+      220,
+      255
+    ],
+    "glow": [
+      225,
+      240,
+      255
+    ],
+    "stats": {
+      "hp": 230,
+      "hp_regen": 3,
+      "move_speed_pct": 0.1,
+      "spell_vamp": 0.06
+    },
+    "active": {
+      "name": "Spectral Form",
+      "hp_threshold": 0.3,
+      "duration": 150,
+      "cooldown": 1500
+    },
+    "melee_only": false,
+    "magic_only": true,
+    "drops_on_death": false,
+    "desc": "+230 HP, +3 HP/reg, +10% Move Speed, 6% Spell Lifesteal. Saat HP < 30% (auto): Spectral Form 2.5 dtk - semua serangan FISIK meleset (sihir tetap kena) (CD 25 dtk). HANYA hero Magic.",
+    "desc_en": "+230 HP, +3 HP regen, +10% Move Speed, 6% Spell Lifesteal. Below 30% HP (auto): Spectral Form for 2.5s - all PHYSICAL attacks miss (magic still hits) (25s CD). MAGIC heroes ONLY.",
+    "flavor": "Jimat kabut yang membuat tubuhmu seketika tanpa wujud."
+  }
+}

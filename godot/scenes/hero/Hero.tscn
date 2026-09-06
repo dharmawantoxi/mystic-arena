@@ -1,0 +1,85 @@
+[gd_scene load_steps=6 format=3 uid="uid://hero_mystic"]
+
+[ext_resource type="Script" path="res://scripts/core/HeroDB.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/hero/Hero.gd" id="2"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
+radius = 18.0
+height = 40.0
+
+[sub_resource type="Shader" id="Shader_outline"]
+code = "shader_type canvas_item;\nuniform vec4 outline_color : source_color = vec4(1.0, 0.9, 0.4, 1.0);\nuniform float outline_width : hint_range(0.0, 4.0) = 1.5;\nuniform float flash_amount : hint_range(0.0, 1.0) = 0.0;\n\nvoid fragment() {\n    vec4 c = texture(TEXTURE, UV);\n    // outline: sample 4 neighbours\n    float a = c.a;\n    float outline = 0.0;\n    outline += texture(TEXTURE, UV + vec2(outline_width*TEXTURE_PIXEL_SIZE.x, 0.0)).a;\n    outline += texture(TEXTURE, UV + vec2(-outline_width*TEXTURE_PIXEL_SIZE.x, 0.0)).a;\n    outline += texture(TEXTURE, UV + vec2(0.0, outline_width*TEXTURE_PIXEL_SIZE.y)).a;\n    outline += texture(TEXTURE, UV + vec2(0.0, -outline_width*TEXTURE_PIXEL_SIZE.y)).a;\n    outline = clamp(outline - a, 0.0, 1.0);\n    vec4 col = mix(c, outline_color, outline * (1.0 - a));\n    // hit flash\n    col.rgb = mix(col.rgb, vec3(1.0), flash_amount * a);\n    COLOR = col;\n}\n"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+shader = SubResource("Shader_outline")
+shader_parameter/outline_color = Color(1, 0.9, 0.4, 1)
+shader_parameter/outline_width = 1.5
+shader_parameter/flash_amount = 0.0
+
+[node name="Hero" type="CharacterBody2D" groups=["heroes"]]
+script = ExtResource("2")
+metadata/hero_type = "kaizen"
+
+[node name="Shadow" type="Sprite2D" parent="."]
+position = Vector2(0, 22)
+scale = Vector2(1.4, 0.6)
+texture = null
+modulate = Color(0, 0, 0, 0.35)
+# Shadow pakai GradientTexture2D ellipse di editor
+
+[node name="Visual" type="Node2D" parent="."]
+position = Vector2(0, 0)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visual"]
+material = SubResource("ShaderMaterial_outline")
+centered = true
+sprite_frames = null
+animation = &"idle"
+autoplay = "idle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 4)
+shape = SubResource("CapsuleShape2D_1")
+
+[node name="UI" type="CanvasGroup" parent="."]
+visible = true
+
+[node name="HPBar" type="ProgressBar" parent="UI"]
+offset_left = -26.0
+offset_top = -42.0
+offset_right = 26.0
+offset_bottom = -36.0
+show_percentage = false
+max_value = 100.0
+step = 1.0
+value = 100.0
+
+[node name="NameLabel" type="Label" parent="UI"]
+offset_left = -40.0
+offset_top = -58.0
+offset_right = 40.0
+offset_bottom = -44.0
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 10
+
+[node name="FX" type="Node2D" parent="."]
+
+[node name="HitParticles" type="GPUParticles2D" parent="FX"]
+emitting = false
+amount = 12
+lifetime = 0.35
+one_shot = true
+explosiveness = 0.9
+process_material = null
+# Di editor: assign ParticleProcessMaterial dengan scale + velocity radial
+
+[node name="SkillParticles" type="GPUParticles2D" parent="FX"]
+emitting = false
+amount = 32
+lifetime = 0.6
+one_shot = true
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+autoplay = "idle"
+
+[node name="Skills" type="Node" parent="."]

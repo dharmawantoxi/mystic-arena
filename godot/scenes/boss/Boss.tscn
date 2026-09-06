@@ -1,0 +1,28 @@
+[gd_scene load_steps=2 format=3 uid="uid://boss_mystic"]
+
+[ext_resource type="Script" path="res://scenes/boss/Boss.gd" id="1"]
+
+[node name="Boss" type="CharacterBody2D" groups=["bosses"]]
+script = ExtResource("1")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visual"]
+centered = true
+
+[node name="FX" type="Node2D" parent="."]
+
+[node name="Aura" type="GPUParticles2D" parent="FX"]
+emitting = true
+amount = 24
+lifetime = 1.2
+
+[node name="UI" type="CanvasGroup" parent="."]
+
+[node name="HPBar" type="ProgressBar" parent="UI"]
+offset_left = -40.0
+offset_top = -52.0
+offset_right = 40.0
+offset_bottom = -44.0
+max_value = 100.0
+value = 100.0

@@ -1,0 +1,1334 @@
+{
+  "aelyrion": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 56
+  },
+  "aeralith": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 27
+  },
+  "akahime": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 46
+  },
+  "akaroth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 79
+  },
+  "akashari": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 23
+  },
+  "akiraze": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 81
+  },
+  "astraelion": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 51
+  },
+  "aurelian": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 85
+  },
+  "aurelix": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 25
+  },
+  "aurelyssa": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 37
+  },
+  "aurex": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 33
+  },
+  "auroth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 37
+  },
+  "azkharion": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 68
+  },
+  "azureth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 29
+  },
+  "bhorgathul": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 55
+  },
+  "broggmar": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 75
+  },
+  "brumhar": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 71
+  },
+  "celwynn": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 49
+  },
+  "cryssalia": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 36
+  },
+  "dorakai": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 68
+  },
+  "drakar": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 19
+  },
+  "drav": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 42
+  },
+  "emberwick": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 57
+  },
+  "garumenshi": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 67
+  },
+  "ghrakmaal": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 50
+  },
+  "gorath": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 21
+  },
+  "gornak": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 19
+  },
+  "gravefang": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 25
+  },
+  "gravewake": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 24
+  },
+  "grimjack": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "A",
+    "power": 59
+  },
+  "grimstalker": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 55
+  },
+  "grondarthul": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 56
+  },
+  "hitokage": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 97
+  },
+  "ignakhor": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 60
+  },
+  "ignirus": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 33
+  },
+  "infrakzaar": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 51
+  },
+  "kaedrin": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "CARRY",
+    "tier": "A",
+    "power": 61
+  },
+  "kaeldris": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 35
+  },
+  "kaelthar": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 48
+  },
+  "kaelthorn": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 44
+  },
+  "kaelthys": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 86
+  },
+  "kaelvyrn": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 50
+  },
+  "kaerissa": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 74
+  },
+  "kaervosth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 58
+  },
+  "kairenji": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 90
+  },
+  "kaizoku_raijin": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 66
+  },
+  "kaoruken": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 74
+  },
+  "karzhul": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 68
+  },
+  "kassadin": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 60
+  },
+  "kazreth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 58
+  },
+  "kazuren": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 95
+  },
+  "kazureth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "A",
+    "power": 61
+  },
+  "kenshiro": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 31
+  },
+  "khalros": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 22
+  },
+  "khalzaredh": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 56
+  },
+  "khazan": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 32
+  },
+  "korokai": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 69
+  },
+  "krognarr": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 31
+  },
+  "kryvoxar": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 43
+  },
+  "kurogari": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 52
+  },
+  "kyumirra": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 45
+  },
+  "leoric": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 40
+  },
+  "luminar": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 30
+  },
+  "lyrenya": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 59
+  },
+  "lyrienne": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 43
+  },
+  "malzareth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 21
+  },
+  "morgath": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 14
+  },
+  "morkhaera": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 37
+  },
+  "morkhelvis": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 54
+  },
+  "morthyrax": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 46
+  },
+  "morvaenthir": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 39
+  },
+  "morvaeth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 57
+  },
+  "morvaeth2": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 60
+  },
+  "morvakhul": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 45
+  },
+  "morvath": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 64
+  },
+  "morvein": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 40
+  },
+  "morvekhar": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 48
+  },
+  "morvyssk": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 54
+  },
+  "nixweaver": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "CARRY",
+    "tier": "A",
+    "power": 62
+  },
+  "nyxallaria": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 53
+  },
+  "nyxara": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 21
+  },
+  "nyxareva": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 35
+  },
+  "nyxariel": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 58
+  },
+  "nyxaroth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 43
+  },
+  "nyxraal": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 61
+  },
+  "nyxthrael": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 39
+  },
+  "nyzrak": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 20
+  },
+  "obanai": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 91
+  },
+  "pyraklos": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 33
+  },
+  "pyrenth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 25
+  },
+  "pyrhaan": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 74
+  },
+  "rakzhan": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "A",
+    "power": 67
+  },
+  "raz": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 34
+  },
+  "razak": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 20
+  },
+  "rynvara": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "CARRY",
+    "tier": "A",
+    "power": 65
+  },
+  "sanguire": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 67
+  },
+  "sanguiveth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 48
+  },
+  "sasori": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 69
+  },
+  "selunara": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 51
+  },
+  "sethrakhar": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 47
+  },
+  "shimorakh": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 60
+  },
+  "shirotaka": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 44
+  },
+  "sirakzan": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "CARRY",
+    "tier": "A",
+    "power": 69
+  },
+  "solara": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 38
+  },
+  "solvanth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 35
+  },
+  "sylvantheros": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 38
+  },
+  "syrentha": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 19
+  },
+  "syrindra": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 48
+  },
+  "thalgryn": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 20
+  },
+  "thargoroth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 53
+  },
+  "thoraz": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 80
+  },
+  "thorgaruk": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 65
+  },
+  "thornvaegrim": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 39
+  },
+  "thorvak": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 38
+  },
+  "thorvin": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 46
+  },
+  "urgharun": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 76
+  },
+  "ursath": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 63
+  },
+  "vaelkorr": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 64
+  },
+  "vaerith": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 29
+  },
+  "valekris": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 50
+  },
+  "valthar": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 42
+  },
+  "vardrok": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 57
+  },
+  "vargrath": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 35
+  },
+  "vargroth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 55
+  },
+  "varkul": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 19
+  },
+  "varkuthar": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 54
+  },
+  "velmyrth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 40
+  },
+  "verdanix": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 59
+  },
+  "veshtrax": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 47
+  },
+  "vessyra": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 48
+  },
+  "vhaerinth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 54
+  },
+  "vhaerith": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 66
+  },
+  "vhalzun": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 20
+  },
+  "vhyssarion": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 22
+  },
+  "vokrahn": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 25
+  },
+  "vorenmarr": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 21
+  },
+  "vorgath": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 43
+  },
+  "vorthakul": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 70
+  },
+  "vraskhan": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 36
+  },
+  "vulkareth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 44
+  },
+  "vyraeth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 60
+  },
+  "wiro": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 32
+  },
+  "xaerissa": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 49
+  },
+  "xareth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 70
+  },
+  "xarnathul": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 50
+  },
+  "xarnthuul": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 56
+  },
+  "xerakhotep": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 45
+  },
+  "xerakkuth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 78
+  },
+  "xerathis": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 17
+  },
+  "xharokh": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 52
+  },
+  "xirthalis": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 31
+  },
+  "xyrael": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 47
+  },
+  "yhoranth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 56
+  },
+  "zahkareth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 58
+  },
+  "zhaeris": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 88
+  },
+  "zharok": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 18
+  },
+  "zhyrakaan": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 68
+  },
+  "zhyvrek": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 72
+  },
+  "zorashi": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 59
+  },
+  "zorathiel": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 52
+  },
+  "zorothrax": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 58
+  },
+  "zulkhaven": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 57
+  },
+  "grimjaw": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 8
+  },
+  "kaizen": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "A",
+    "power": 9
+  },
+  "sylara": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 6
+  },
+  "thorne": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 11
+  },
+  "vex": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 6
+  },
+  "zephyr": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 6
+  },
+  "abaddon": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 24
+  },
+  "akirakumo": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 100
+  },
+  "alchemist": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 24
+  },
+  "ancient_apparition": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 19
+  },
+  "aurelion": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 41
+  },
+  "aurethzar": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 33
+  },
+  "cogsworth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 83
+  },
+  "deidara": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 79
+  },
+  "grimkor": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 85
+  },
+  "grondmauris": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 60
+  },
+  "hollowbane": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 100
+  },
+  "ignis_drachorn": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 26
+  },
+  "kaerinya": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 81
+  },
+  "kagetsuka": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 95
+  },
+  "kaineroth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 74
+  },
+  "kaithros": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 100
+  },
+  "krobellus": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 24
+  },
+  "kunkka": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 30
+  },
+  "kyrenzai": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 84
+  },
+  "lyssarethys": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 63
+  },
+  "malzeroth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 58
+  },
+  "molgravar": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 45
+  },
+  "morthraxis": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 53
+  },
+  "naraka": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 39
+  },
+  "nazulmor": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 41
+  },
+  "nexthyrius": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 46
+  },
+  "nyrellieth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 54
+  },
+  "nyrethzalv": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 52
+  },
+  "nyxarath": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 24
+  },
+  "nyxareth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 40
+  },
+  "nyxaris": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 90
+  },
+  "nyxharr": {
+    "dmg_type": "MAGIC",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 58
+  },
+  "okeanora": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 48
+  },
+  "pyraena": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 81
+  },
+  "pyraethis": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 38
+  },
+  "ravokkar": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "CARRY",
+    "tier": "B",
+    "power": 58
+  },
+  "seiryukong": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 40
+  },
+  "seraphienne": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 56
+  },
+  "solareth": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 58
+  },
+  "solvarin": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 41
+  },
+  "sunakage": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 80
+  },
+  "thalakryon": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 40
+  },
+  "thalryndel": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 72
+  },
+  "tsukiyora": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 92
+  },
+  "vaelindra": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 43
+  },
+  "vaelmyrra": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 61
+  },
+  "vhorethzir": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "D",
+    "power": 24
+  },
+  "xaelmoran": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "A",
+    "power": 69
+  },
+  "xelnarath": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 66
+  },
+  "yamako": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "C",
+    "power": 39
+  },
+  "yomigetsu": {
+    "dmg_type": "PHYSICAL",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 100
+  },
+  "zarethyr": {
+    "dmg_type": "MAGIC",
+    "playstyle": "FIGHTER",
+    "tier": "B",
+    "power": 51
+  },
+  "zharakzuul": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "B",
+    "power": 60
+  },
+  "zyvareth": {
+    "dmg_type": "MAGIC",
+    "playstyle": "TANK",
+    "tier": "S",
+    "power": 93
+  }
+}

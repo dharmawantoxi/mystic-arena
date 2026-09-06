@@ -1,0 +1,90 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+name="Mystic Arena"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+config/icon="res://assets/icon.png"
+boot_splash/bg_color=Color(0.0431373, 0.0392157, 0.0705882, 1)
+
+[autoload]
+
+GameManager="*res://scripts/autoload/GameManager.gd"
+SaveManager="*res://scripts/autoload/SaveManager.gd"
+HeroDB="*res://scripts/core/HeroDB.gd"
+BossDB="*res://scripts/core/BossDB.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/resizable=false
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/vsync/vsync_mode=1
+
+[input]
+
+move_up={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194320,"physical_keycode":0,"key_label":0,"unicode":0,"echo":false,"script":null)
+, Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":0,"button_index":12,"pressure":0.0,"pressed":false,"pressed_before":false,"strength":0.0,"script":null)
+]
+}
+skill_q={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194330,"physical_keycode":0,"key_label":0,"unicode":113,"echo":false,"script":null)
+]
+}
+skill_w={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194331,"physical_keycode":0,"key_label":0,"unicode":119,"echo":false,"script":null)
+]
+}
+skill_e={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194332,"physical_keycode":0,"key_label":0,"unicode":101,"echo":false,"script":null)
+]
+}
+skill_r={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194333,"physical_keycode":0,"key_label":0,"unicode":114,"echo":false,"script":null)
+]
+}
+pause={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194305,"physical_keycode":0,"key_label":0,"unicode":0,"echo":false,"script":null)
+]
+}
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+environment/defaults/default_clear_color=Color(0.0431373, 0.0392157, 0.0705882, 1)
+textures/canvas_textures/default_texture_filter=2
+textures/canvas_textures/default_texture_repeat=0
+renderer/viewport/hdr_2d=true
+
+[rendering/environment]
+
+glow/enabled=true
+glow/strength=0.8
+glow/bloom=0.15
+glow/hdr_threshold=0.9
+
+[physics]
+
+common/physics_ticks_per_second=60
