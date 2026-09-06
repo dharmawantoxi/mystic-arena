@@ -1,5 +1,6 @@
 # Boss.gd — Port dari bosses/base_boss.py
-# Visual sama seperti Hero.tscn tapi scale 1.4x + aura + boss bar
+# Visual baseline: UnitSilhouette pygame (lebih besar + tanduk). Upgrade
+# satu-satu lewat RendererRegistry.BOSS[boss_type].
 extends CharacterBody2D
 
 @export var boss_type: String = "abaddon"
@@ -19,6 +20,17 @@ var target: Node2D = null
 var attack_timer: float = 0.0
 var is_dead: bool = false
 var anim_phase: float = 0.0
+var facing: int = 1
+var radius: float = 22.0
+var role: String = ""
+var fill_color: Color = Color("#8c64dc")
+var fill_dark: Color = Color("#4a3278")
+var boss_class: String = "mini"
+
+const UnitSilhouetteScript = preload("res://scripts/render/UnitSilhouette.gd")
+const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
+var silhouette = null
+var custom_visual = null
 
 @onready var visual: Node2D = $Visual
 @onready var sprite: AnimatedSprite2D = $Visual/AnimatedSprite2D
@@ -41,62 +53,38 @@ func _ready():
 		attack_cooldown = float(s.get("attack_cooldown", 43)) / 60.0
 		dmg_school = "magic" if str(s.get("boss_class", "")) == "true" else "physical"
 	add_to_group("bosses")
-	# Boss scale lebih besar (menggantikan SCALE=1.32 di pygame)
-	visual.scale = Vector2(1.4, 1.4)
+	role = str(s.get("title", s.get("role", "")))
+	boss_class = str(s.get("boss_class", "mini"))
+	fill_color = _parse_color(s.get("color", "#8c64dc"), Color("#8c64dc"))
+	fill_dark = fill_color.darkened(0.4)
+	radius = 26.0 if boss_class == "true" else 22.0
 	if shadow != null:
-		shadow.scale = Vector2(1.9, 0.7)
+		shadow.visible = false
 	setup_visual(s)
 	update_ui()
 	collision_layer = 2 if team == "blue" else 4
 	collision_mask = 4 if team == "blue" else 2
 
-func setup_visual(s: Dictionary) -> void:
-	# 1. Sprite sheet HD kalau sudah di-import (Fase 5 — import 200+ boss)
-	var frames_path = "res://assets/bosses/%s/SpriteFrames.tres" % boss_type
-	if ResourceLoader.exists(frames_path):
-		sprite.sprite_frames = load(frames_path)
-		if sprite.sprite_frames.has_animation("idle"):
-			sprite.animation = &"idle"
-			sprite.play("idle")
-		return
-	# 2. Fallback: kotak warna sewarna `color` bosses.json.
-	#    Dulu TIDAK ada visual sama sekali di sini -> boss yang di-spawn
-	#    `GameManager.spawn_boss()` benar-benar tak terlihat (bagian dari bug
-	#    "layar hitam"), meski node-nya ada dan menghajar hero.
-	var w := 88
-	var h := 104
-	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	var col := Color(s.get("color", "#8c64dc"))
-	var dark := col.darkened(0.45)
-	var light := col.lightened(0.35)
-	for y in h:
-		for x in w:
-			var c := col
-			if y < h * 0.28:
-				c = light # kepala / helm
-			elif x < 6 or x > w - 7 or y > h - 8:
-				c = dark # siluet + rim
-			img.set_pixel(x, y, c)
-	var frames := SpriteFrames.new()
-	frames.add_animation("idle")
-	frames.add_frame("idle", ImageTexture.create_from_image(img))
-	sprite.sprite_frames = frames
-	sprite.offset = Vector2(0, -h * 0.5)
-	sprite.animation = &"idle"
-	sprite.play("idle")
+func setup_visual(_s: Dictionary) -> void:
+	if sprite:
+		sprite.visible = false
 	if aura != null:
-		# GPUParticles2D tidak punya properti `color` — sumber error
-		# "Invalid assignment of property or key 'color'". Warna partikel
-		# ada di ParticleProcessMaterial. Sub-resource .tscn di-share
-		# antar instance scene, jadi duplikat dulu supaya tiap boss
-		# punya warna auranya sendiri-sendiri.
-		var mat := aura.process_material as ParticleProcessMaterial
-		if mat != null:
-			mat = mat.duplicate() as ParticleProcessMaterial
-		else:
-			mat = ParticleProcessMaterial.new()
-		mat.color = light
-		aura.process_material = mat
+		aura.emitting = false # partikel = upgrade, bukan baseline pygame
+	visual.scale = Vector2.ONE # tscn lama 1.4x untuk kotak placeholder
+	z_as_relative = false
+	var packed: PackedScene = RendererRegistry.boss_scene(boss_type)
+	if packed != null:
+		custom_visual = packed.instantiate()
+		custom_visual.name = "CustomVisual"
+		visual.add_child(custom_visual)
+		return
+	silhouette = UnitSilhouetteScript.new()
+	silhouette.name = "Silhouette"
+	visual.add_child(silhouette)
+	var ranged := attack_range >= 110.0
+	silhouette.configure(
+		UnitSilhouetteScript.Kind.BOSS, boss_type, team, fill_color, fill_dark,
+		radius, role, dmg_school, ranged, boss_class)
 
 func _physics_process(delta):
 	if is_dead:
@@ -106,15 +94,48 @@ func _physics_process(delta):
 	if target == null or not is_instance_valid(target) or bool(target.get("is_dead")):
 		target = find_nearest_enemy()
 	if target == null:
+		z_index = int(global_position.y)
+		_drive_visual(false)
 		return
 	var dist := global_position.distance_to(target.global_position)
-	visual.scale.x = 1.4 * (1 if target.global_position.x >= global_position.x else -1)
+	facing = 1 if target.global_position.x >= global_position.x else -1
+	visual.scale.x = facing
+	var is_moving := false
 	if dist <= attack_range:
 		velocity = Vector2.ZERO
 		try_attack()
 	else:
 		velocity = (target.global_position - global_position).normalized() * move_speed
+		is_moving = true
 		move_and_slide()
+	z_index = int(global_position.y)
+	_drive_visual(is_moving)
+
+func _drive_visual(is_moving: bool) -> void:
+	var ap := 0.0
+	if attack_timer > 0.0:
+		ap = 1.0 - attack_timer / maxf(0.001, attack_cooldown)
+	var act := "idle"
+	if attack_timer > 0.0:
+		act = "attack"
+	elif is_moving:
+		act = "walk"
+	if silhouette != null and is_instance_valid(silhouette) and silhouette.has_method("drive"):
+		silhouette.drive(anim_phase, act, ap, facing)
+	elif custom_visual != null and is_instance_valid(custom_visual) and custom_visual.has_method("drive"):
+		custom_visual.drive(anim_phase, act, ap, facing, is_moving, "", 0.016)
+
+
+static func _parse_color(v, fallback: Color) -> Color:
+	if v is Color:
+		return v
+	var s := str(v).strip_edges()
+	if s.is_empty():
+		return fallback
+	if not s.begins_with("#"):
+		s = "#" + s
+	return Color(s)
+
 
 func find_nearest_enemy() -> Node2D:
 	var best: Node2D = null
@@ -142,8 +163,6 @@ func try_attack():
 	var dmg := CombatSystem.calc_damage(self, target, damage, dmg_school)
 	target.take_damage(dmg, team, "normal", self, dmg_school)
 	GameManager.request_hit_stop(0.045) # boss feel: sedikit lebih lama dari hero
-	if aura != null:
-		aura.restart()
 
 func take_damage(amount: float, from_team: String = "", dmg_type: String = "normal",
 		source = null, school: String = ""):
@@ -151,12 +170,13 @@ func take_damage(amount: float, from_team: String = "", dmg_type: String = "norm
 		return
 	var mitigated := CombatSystem.mitigate_damage(self, amount, school if school != "" else dmg_school)
 	hp -= mitigated
-	# hit flash via shader sama seperti Hero
-	var mat = sprite.material as ShaderMaterial
-	if mat:
-		mat.set_shader_parameter("flash_amount", 1.0)
-		create_tween().tween_property(mat, "shader_parameter/flash_amount", 0.0, 0.12)
-	else:
+	if silhouette != null and is_instance_valid(silhouette):
+		silhouette.flash_amount = 1.0
+		create_tween().tween_property(silhouette, "flash_amount", 0.0, 0.12)
+	elif custom_visual != null and is_instance_valid(custom_visual):
+		custom_visual.modulate = Color(1.8, 1.8, 1.8, 1)
+		create_tween().tween_property(custom_visual, "modulate", Color(1, 1, 1, 1), 0.12)
+	elif sprite:
 		sprite.modulate = Color(1.8, 1.8, 1.8, 1)
 		create_tween().tween_property(sprite, "modulate", Color(1, 1, 1, 1), 0.12)
 	_spawn_damage_number(mitigated)

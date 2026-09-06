@@ -1,5 +1,6 @@
 # Hero.gd — Port dari _entity.py Hero class
-# Visual: Skeleton2D + AnimatedSprite2D + Shader + Particles (DRAMATIC UPGRADE dari pygame.draw.polygon)
+# Visual baseline: UnitSilhouette (pygame.draw.circle/polygon). Upgrade
+# satu-satu lewat RendererRegistry.HERO[hero_type] = PackedScene custom.
 extends CharacterBody2D
 
 @export var hero_type: String = "kaizen"
@@ -13,6 +14,10 @@ var move_speed: float = 180.0
 var attack_range: float = 70.0
 var attack_cooldown: float = 0.52 # detik (32/60)
 var dmg_school: String = "physical"
+var radius: float = 16.0 # paritas _entity.Hero.radius
+var role: String = ""
+var fill_color: Color = Color("#c8c8c8")
+var fill_dark: Color = Color("#646464")
 
 # State
 var target: Node2D = null
@@ -30,9 +35,11 @@ var facing: int = 1
 @onready var skill_particles: GPUParticles2D = $FX/SkillParticles
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
 
-# Kaizen Skeleton2D (Dramatic upgrade — Spine-like GPU bones)
-const KaizenSkeletonScene = preload("res://scenes/hero/kaizen/KaizenSkeleton.tscn")
-var kaizen_skeleton: Node2D = null
+# Renderer: silhouette pygame (default) ATAU scene custom dari registry
+const UnitSilhouetteScript = preload("res://scripts/render/UnitSilhouette.gd")
+const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
+var silhouette = null
+var custom_visual = null
 var anim_phase: float = 0.0
 
 # Shader material untuk hit flash + outline (menggantikan hurt_flash_timer di pygame)
@@ -58,66 +65,35 @@ func apply_hero_data():
 	attack_range = s["range"]
 	attack_cooldown = s["attack_cooldown"] / 60.0
 	dmg_school = s.get("dmg_school", "physical")
+	role = str(s.get("role", ""))
 	name = s.get("name", hero_type)
+	fill_color = _parse_color(s.get("color", "#c8c8c8"), Color("#c8c8c8"))
+	fill_dark = _parse_color(s.get("color_dark", ""), fill_color.darkened(0.35))
+	radius = 16.0
 
 func setup_visual():
-	# === KAIZEN Skeleton2D — case khusus: GPU bones, bukan sprite sheet ===
-	if hero_type == "kaizen":
+	# Baseline pygame: kotak/sprite/tulang DIMATIKAN. Silhouette menggambar
+	# lewat _draw(). Scene custom (Kaizen Skeleton2D, SpriteFrames HD) hanya
+	# hidup kalau didaftarkan di RendererRegistry — upgrade satu-satu.
+	if sprite:
 		sprite.visible = false
-		kaizen_skeleton = KaizenSkeletonScene.instantiate()
-		kaizen_skeleton.name = "KaizenSkeleton"
-		visual_root.add_child(kaizen_skeleton)
-		kaizen_skeleton.position = Vector2(0, -6)
-		shadow.position = Vector2(0, 28)
-		shadow.scale = Vector2(1.6, 0.55)
-		# skeleton sudah punya hamon shader sendiri; outline fallback tidak perlu
-		if anim_player and not anim_player.has_animation("idle"):
-			_create_procedural_animations()
-		shadow.modulate.a = 0.35
+	if shadow:
+		shadow.visible = false
+	z_as_relative = false
+	var packed: PackedScene = RendererRegistry.hero_scene(hero_type)
+	if packed != null:
+		custom_visual = packed.instantiate()
+		custom_visual.name = "CustomVisual"
+		visual_root.add_child(custom_visual)
+		custom_visual.position = Vector2(0, -6)
 		return
-
-	# === UPGRADE VISUAL DRASTIS vs pygame (hero lain pakai sprite sheet HD) ===
-	# 1. AnimatedSprite2D: ganti pygame.draw.* procedural dengan sprite sheet HD
-	#    SpriteFrames diisi dari res://assets/heroes/<hero_type>/ (Aseprite export)
-	var frames_path = "res://assets/heroes/%s/SpriteFrames.tres" % hero_type
-	if ResourceLoader.exists(frames_path):
-		sprite.sprite_frames = load(frames_path)
-		if sprite.sprite_frames.has_animation("idle"):
-			sprite.play("idle")
-	else:
-		# Fallback: warna solid + shader (kalau asset belum ada)
-		# Tetap terlihat premium karena shader outline + shadow
-		sprite.modulate = HeroDB.get_hero_color(hero_type)
-		# Buat placeholder texture 64x64
-		var img = Image.create(64, 64, false, Image.FORMAT_RGBA8)
-		img.fill(HeroDB.get_hero_color(hero_type))
-		sprite.sprite_frames = SpriteFrames.new()
-		sprite.sprite_frames.add_animation("idle")
-		sprite.sprite_frames.add_frame("idle", ImageTexture.create_from_image(img))
-		# Wajib di-play eksplisit: tanpa SpriteFrames.tres, `autoplay` di .tscn
-		# sudah keburu kosong saat _ready -> tanpa ini hero tidak tergambar
-		# (penyebab kedua "layar hitam": unit ada, tapi tidak ada yang di-render).
-		sprite.offset = Vector2(0, -32) # kaki menapak di titik origin hero
-		sprite.animation = &"idle"
-		sprite.play("idle")
-
-	# 2. Outline shader (menggantikan 5x blit outline di pygame)
-	#    Shader: res://assets/shaders/outline.gdshader
-	if ResourceLoader.exists("res://assets/shaders/outline.gdshader"):
-		hit_flash_mat = ShaderMaterial.new()
-		hit_flash_mat.shader = load("res://assets/shaders/outline.gdshader")
-		hit_flash_mat.set_shader_parameter("outline_color", Color(1,1,1,1) if team=="blue" else Color(1,0.2,0.2,1))
-		hit_flash_mat.set_shader_parameter("outline_width", 1.5)
-		sprite.material = hit_flash_mat
-
-	# 3. AnimationPlayer: idle bob, walk cycle, attack swing, hurt flash
-	#    (menggantikan _update_attack_anim + walk_cycle manual di pygame)
-	if anim_player and not anim_player.has_animation("idle"):
-		_create_procedural_animations()
-
-	# 4. Shadow + Lighting
-	#    Di Godot: PointLight2D + CanvasModulate, bukan ellipse hitam manual
-	shadow.modulate.a = 0.35
+	silhouette = UnitSilhouetteScript.new()
+	silhouette.name = "Silhouette"
+	visual_root.add_child(silhouette)
+	var ranged := attack_range >= 110.0
+	silhouette.configure(
+		UnitSilhouetteScript.Kind.HERO, hero_type, team, fill_color, fill_dark,
+		radius, role, dmg_school, ranged)
 
 func _create_procedural_animations():
 	# Buat animasi procedural kalau belum ada SpriteFrames anim
@@ -177,17 +153,38 @@ func _physics_process(delta):
 		if sprite.sprite_frames and sprite.sprite_frames.has_animation("walk"):
 			sprite.play("walk")
 
-	# === Drive Kaizen Skeleton2D setiap frame ===
-	if kaizen_skeleton and kaizen_skeleton.has_method("drive"):
-		var ap: float = 0.0
-		if attack_timer > 0.0:
-			ap = 1.0 - attack_timer / attack_cooldown
-		var kaizen_action := "idle"
-		if attack_timer > 0.0:
-			kaizen_action = "attack"
-		elif is_moving:
-			kaizen_action = "walk"
-		kaizen_skeleton.drive(anim_phase, kaizen_action, ap, facing, is_moving, "", delta)
+	# Painter's algorithm pygame: unit lebih bawah menutupi yang di atas
+	z_index = int(global_position.y)
+	_drive_visual(is_moving, delta)
+
+func _drive_visual(is_moving: bool, delta: float) -> void:
+	var ap := 0.0
+	if attack_timer > 0.0:
+		ap = 1.0 - attack_timer / maxf(0.001, attack_cooldown)
+	var act := "idle"
+	if attack_timer > 0.0:
+		act = "attack"
+	elif is_moving:
+		act = "walk"
+	if silhouette != null and is_instance_valid(silhouette) and silhouette.has_method("drive"):
+		silhouette.drive(anim_phase, act, ap, facing)
+	elif custom_visual != null and is_instance_valid(custom_visual) and custom_visual.has_method("drive"):
+		custom_visual.drive(anim_phase, act, ap, facing, is_moving, "", delta)
+
+
+static func _parse_color(v, fallback: Color) -> Color:
+	if v is Color:
+		return v
+	var s := str(v).strip_edges()
+	if s.is_empty():
+		return fallback
+	if not s.begins_with("#"):
+		s = "#" + s
+	var c := Color(s)
+	if c.a == 0.0 and s != "#00000000":
+		return fallback
+	return c
+
 
 func enemy_base() -> Vector2:
 	var am = get_tree().get_first_node_in_group("arena_map")
@@ -236,30 +233,22 @@ func try_attack():
 	# Damage (hitung crit, lifesteal, dll. via CombatSystem)
 	var dmg = CombatSystem.calc_damage(self, target, damage, dmg_school)
 	target.take_damage(dmg, team, "normal", self, dmg_school)
-	# VFX
-	if hit_particles:
-		hit_particles.global_position = target.global_position
-		hit_particles.emitting = true
-		hit_particles.restart()
+	# GPU particles = upgrade. Baseline pygame: damage number di take_damage.
 
 func take_damage(amount: float, from_team: String, dmg_type: String = "normal", source = null, school: String = ""):
 	if is_dead: return
 	# School mitigation (armor/magic_resist) via CombatSystem
 	var mitigated = CombatSystem.mitigate_damage(self, amount, school if school != "" else dmg_school)
 	hp -= mitigated
-	# Hit flash shader (menggantikan hurt_flash_timer 8 frame pygame)
-	if hit_flash_mat:
+	if silhouette != null and is_instance_valid(silhouette):
+		silhouette.flash_amount = 1.0
+		create_tween().tween_property(silhouette, "flash_amount", 0.0, 0.12)
+	elif custom_visual != null and is_instance_valid(custom_visual):
+		custom_visual.modulate = Color(1, 0.85, 0.85, 1)
+		create_tween().tween_property(custom_visual, "modulate", Color(1, 1, 1, 1), 0.14)
+	elif hit_flash_mat:
 		hit_flash_mat.set_shader_parameter("flash_amount", 1.0)
 		create_tween().tween_property(hit_flash_mat, "shader_parameter/flash_amount", 0.0, 0.12)
-	# Kaizen skeleton flash (GPU modulate, tanpa shader outline)
-	if kaizen_skeleton:
-		kaizen_skeleton.modulate = Color(1, 0.85, 0.85, 1)
-		create_tween().tween_property(kaizen_skeleton, "modulate", Color(1,1,1,1), 0.14)
-		# wind puff on hit
-		if skill_particles:
-			skill_particles.global_position = global_position + Vector2(0, -12)
-			skill_particles.emitting = true
-			skill_particles.restart()
 	# Damage number (menggantikan FloatingText pygame)
 	var num = preload("res://scenes/fx/DamageNumber.tscn").instantiate()
 	num.setup(str(int(mitigated)), mitigated > max_hp*0.2)
