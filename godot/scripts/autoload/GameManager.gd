@@ -2,6 +2,7 @@
 # Menggantikan Game loop pygame (60 FPS) dengan Godot SceneTree
 extends Node
 
+signal level_started(level_num: int)
 signal wave_started(wave_num: int)
 signal boss_spawned(boss_type: String)
 signal hero_died(hero: Node)
@@ -45,6 +46,7 @@ func start_level(lv: int):
 	gold = starting_gold
 	wave_number = 1
 	print("[GameManager] Start Level %d — gold %d" % [lv, gold])
+	level_started.emit(lv)
 
 func spend_gold(amount: int) -> bool:
 	if gold >= amount:

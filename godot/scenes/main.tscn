@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" path="res://scenes/map/ArenaMap.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="2"]
+[ext_resource type="Script" path="res://scripts/core/GameManagerConnector.gd" id="3"]
 
 [node name="Main" type="Node2D"]
 
@@ -32,4 +33,4 @@ layer = 20
 [node name="HUD" parent="UI" instance=ExtResource("2")]
 
 [node name="GameManagerConnector" type="Node" parent="."]
-script = ExtResource("2")
+script = ExtResource("3")
