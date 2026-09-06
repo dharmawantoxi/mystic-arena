@@ -1,0 +1,72 @@
+{
+  "levels": {
+    "1": {
+      "hp": 4000,
+      "damage": 35,
+      "range": 150,
+      "attack_cooldown": 45,
+      "minion_scale": 1.0,
+      "minion_ai_level": 1,
+      "upgrade_cost": 500,
+      "color_accent": "#ffffff",
+      "description": "Basic Outpost"
+    },
+    "2": {
+      "hp": 6000,
+      "damage": 55,
+      "range": 165,
+      "attack_cooldown": 40,
+      "minion_scale": 1.2,
+      "minion_ai_level": 2,
+      "upgrade_cost": 900,
+      "color_accent": "#96ff96",
+      "description": "+20% Power"
+    },
+    "3": {
+      "hp": 8500,
+      "damage": 80,
+      "range": 180,
+      "attack_cooldown": 35,
+      "minion_scale": 1.4,
+      "minion_ai_level": 3,
+      "upgrade_cost": 1500,
+      "color_accent": "#64c8ff",
+      "description": "+40% Power"
+    },
+    "4": {
+      "hp": 11500,
+      "damage": 115,
+      "range": 195,
+      "attack_cooldown": 30,
+      "minion_scale": 1.7,
+      "minion_ai_level": 4,
+      "upgrade_cost": 2400,
+      "color_accent": "#ff64ff",
+      "description": "Elite Stronghold"
+    },
+    "5": {
+      "hp": 15000,
+      "damage": 160,
+      "range": 210,
+      "attack_cooldown": 25,
+      "minion_scale": 2.0,
+      "minion_ai_level": 5,
+      "upgrade_cost": 0,
+      "color_accent": "#ffc832",
+      "description": "MAX - Royal Castle"
+    }
+  },
+  "max_level": 5,
+  "base_radius": 45,
+  "shield": {
+    "enabled": true,
+    "free_waves": 10,
+    "cost": 850,
+    "damage_reduction": 0.88,
+    "hp_ratio": 1.0,
+    "regen_delay_frames": 120,
+    "regen_rate_per_frame": 3.5,
+    "color_blue": "#64c8ff",
+    "color_red": "#ff7878"
+  }
+}

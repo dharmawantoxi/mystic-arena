@@ -14,7 +14,12 @@
     "cost": 400,
     "is_boss_hero": false,
     "dmg_type": "PHYSICAL",
-    "description": "Agile samurai assassin"
+    "description": "Agile samurai assassin",
+    "skill_name": "Wind Slash",
+    "skill_desc": "Dash & slash AOE",
+    "skill_cooldown": 300,
+    "skill_range": 100,
+    "skill_duration": 0
   },
   "grimjaw": {
     "name": "Grimjaw",
@@ -31,7 +36,12 @@
     "cost": 450,
     "is_boss_hero": false,
     "dmg_type": "PHYSICAL",
-    "description": "Berserker spin blade"
+    "description": "Berserker spin blade",
+    "skill_name": "Blade Fury",
+    "skill_desc": "Spin AOE damage",
+    "skill_cooldown": 420,
+    "skill_range": 70,
+    "skill_duration": 120
   },
   "sylara": {
     "name": "Sylara",
@@ -48,7 +58,12 @@
     "cost": 380,
     "is_boss_hero": false,
     "dmg_type": "PHYSICAL",
-    "description": "Mid-range marksman"
+    "description": "Mid-range marksman",
+    "skill_name": "Focus Fire",
+    "skill_desc": "Attack speed buff + piercing shot",
+    "skill_cooldown": 360,
+    "skill_range": 180,
+    "skill_duration": 0
   },
   "vex": {
     "name": "Vex",
@@ -65,7 +80,12 @@
     "cost": 420,
     "is_boss_hero": false,
     "dmg_type": "PHYSICAL",
-    "description": "Void mage, high burst"
+    "description": "Void mage, high burst",
+    "skill_name": "Arcane Orb",
+    "skill_desc": "Long-range missile + line",
+    "skill_cooldown": 330,
+    "skill_range": 250,
+    "skill_duration": 0
   },
   "thorne": {
     "name": "Thorne",
@@ -82,7 +102,12 @@
     "cost": 500,
     "is_boss_hero": false,
     "dmg_type": "PHYSICAL",
-    "description": "Tanky porcupine warrior"
+    "description": "Tanky porcupine warrior",
+    "skill_name": "Viscous Nose",
+    "skill_desc": "Goop cone + slow",
+    "skill_cooldown": 300,
+    "skill_range": 100,
+    "skill_duration": 0
   },
   "zephyr": {
     "name": "Zephyr",
@@ -99,7 +124,12 @@
     "cost": 420,
     "is_boss_hero": false,
     "dmg_type": "PHYSICAL",
-    "description": "Dark fairy trickster"
+    "description": "Dark fairy trickster",
+    "skill_name": "Bramble Maze",
+    "skill_desc": "Thorn trap + slow",
+    "skill_cooldown": 300,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "gornak": {
     "name": "Gornak",
@@ -116,7 +146,12 @@
     "cost": 500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Anti-Mage warrior ditaklukkan"
+    "description": "Anti-Mage warrior ditaklukkan",
+    "skill_name": "Mana Break",
+    "skill_desc": "Purple energy burst + Blink",
+    "skill_cooldown": 180,
+    "skill_range": 100,
+    "skill_duration": 0
   },
   "morgath": {
     "name": "Morgath",
@@ -133,7 +168,12 @@
     "cost": 550,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Temporal mage ditaklukkan"
+    "description": "Temporal mage ditaklukkan",
+    "skill_name": "Spark Wraith",
+    "skill_desc": "Purple orb + Tempest Double clones",
+    "skill_cooldown": 200,
+    "skill_range": 200,
+    "skill_duration": 0
   },
   "drakar": {
     "name": "Drakar",
@@ -150,7 +190,12 @@
     "cost": 600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Red berserker ditaklukkan"
+    "description": "Red berserker ditaklukkan",
+    "skill_name": "Counter Helix",
+    "skill_desc": "Spin attack + Culling Blade",
+    "skill_cooldown": 240,
+    "skill_range": 100,
+    "skill_duration": 0
   },
   "razak": {
     "name": "Razak",
@@ -167,7 +212,12 @@
     "cost": 650,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Goblin rider pembakar langit"
+    "description": "Goblin rider pembakar langit",
+    "skill_name": "Sticky Napalm",
+    "skill_desc": "Napalm burn + Flamebreak + Firestorm",
+    "skill_cooldown": 220,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "khalros": {
     "name": "Khalros",
@@ -184,7 +234,12 @@
     "cost": 700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa binatang liar"
+    "description": "Penguasa binatang liar",
+    "skill_name": "Wild Axes",
+    "skill_desc": "Axes + boar charge + hawk storm",
+    "skill_cooldown": 220,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "gorath": {
     "name": "Gorath",
@@ -201,7 +256,12 @@
     "cost": 750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pejuang darah haus pembantaian"
+    "description": "Pejuang darah haus pembantaian",
+    "skill_name": "Bloodrage",
+    "skill_desc": "Blood buff + dash + rupture",
+    "skill_cooldown": 420,
+    "skill_range": 180,
+    "skill_duration": 0
   },
   "varkul": {
     "name": "Varkul",
@@ -218,7 +278,12 @@
     "cost": 750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Frostbound sorcerer ditaklukkan"
+    "description": "Frostbound sorcerer ditaklukkan",
+    "skill_name": "Frost Blast",
+    "skill_desc": "Ice arrow + Frostbite + Chain Frost",
+    "skill_cooldown": 240,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "xerathis": {
     "name": "Xerathis",
@@ -235,7 +300,12 @@
     "cost": 800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Crystal sorceress ditaklukkan"
+    "description": "Crystal sorceress ditaklukkan",
+    "skill_name": "Crystal Nova",
+    "skill_desc": "Ice crystals + Freeze beam + Freezing Field",
+    "skill_cooldown": 260,
+    "skill_range": 240,
+    "skill_duration": 0
   },
   "nyzrak": {
     "name": "Nyzrak",
@@ -252,7 +322,12 @@
     "cost": 850,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Wyvern rider dari utara ditaklukkan"
+    "description": "Wyvern rider dari utara ditaklukkan",
+    "skill_name": "Arctic Burn",
+    "skill_desc": "Ice beam + Splinter Blast + Cold Embrace",
+    "skill_cooldown": 240,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "zharok": {
     "name": "Zharok",
@@ -269,7 +344,12 @@
     "cost": 650,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Flaming skeleton archer ditaklukkan"
+    "description": "Flaming skeleton archer ditaklukkan",
+    "skill_name": "Strafe",
+    "skill_desc": "Multiple fire arrows + Burning Army",
+    "skill_cooldown": 200,
+    "skill_range": 250,
+    "skill_duration": 0
   },
   "pyrenth": {
     "name": "Pyrenth",
@@ -286,7 +366,12 @@
     "cost": 750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Demon lord of primordial rage ditaklukkan"
+    "description": "Demon lord of primordial rage ditaklukkan",
+    "skill_name": "DOOM",
+    "skill_desc": "Fiery chain + devour + scorched earth + infernal blade",
+    "skill_cooldown": 240,
+    "skill_range": 200,
+    "skill_duration": 0
   },
   "vokrahn": {
     "name": "Vokrahn",
@@ -303,7 +388,12 @@
     "cost": 850,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Chaos knight ditaklukkan"
+    "description": "Chaos knight ditaklukkan",
+    "skill_name": "Chaos Bolt",
+    "skill_desc": "Chaos bolt + realm + strike + phantasm",
+    "skill_cooldown": 220,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "nyxara": {
     "name": "Nyxara",
@@ -320,7 +410,12 @@
     "cost": 950,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Nether caster dari Haunted Veil"
+    "description": "Nether caster dari Haunted Veil",
+    "skill_name": "Nether Blast",
+    "skill_desc": "Toxic orb, ward, decrepify and life drain",
+    "skill_cooldown": 220,
+    "skill_range": 300,
+    "skill_duration": 0
   },
   "gravefang": {
     "name": "Gravefang",
@@ -337,7 +432,12 @@
     "cost": 1100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Stone guardian dari Haunted Veil"
+    "description": "Stone guardian dari Haunted Veil",
+    "skill_name": "Boulder Smash",
+    "skill_desc": "Stone slam, rolling boulder and magnetize",
+    "skill_cooldown": 240,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "vhalzun": {
     "name": "Vhalzun",
@@ -354,7 +454,12 @@
     "cost": 1200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Soul reaper dari Haunted Veil"
+    "description": "Soul reaper dari Haunted Veil",
+    "skill_name": "Death Pulse",
+    "skill_desc": "Soul pulse, scythe, aura and ghost shroud",
+    "skill_cooldown": 220,
+    "skill_range": 500,
+    "skill_duration": 0
   },
   "gravewake": {
     "name": "Gravewake",
@@ -371,7 +476,12 @@
     "cost": 1000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Kraken tidehunter dari Admiral's Cove"
+    "description": "Kraken tidehunter dari Admiral's Cove",
+    "skill_name": "Anchor Smash",
+    "skill_desc": "Anchor slam + tidebringer totems + kraken shell + ravage",
+    "skill_cooldown": 240,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "syrentha": {
     "name": "Syrentha",
@@ -388,7 +498,12 @@
     "cost": 1100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Naga siren dari Admiral's Cove"
+    "description": "Naga siren dari Admiral's Cove",
+    "skill_name": "Riptide",
+    "skill_desc": "Wave slash + enchanting song + mirror image + song of siren",
+    "skill_cooldown": 240,
+    "skill_range": 240,
+    "skill_duration": 0
   },
   "thalgryn": {
     "name": "Thalgryn",
@@ -405,7 +520,12 @@
     "cost": 1200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Water elemental dari Admiral's Cove"
+    "description": "Water elemental dari Admiral's Cove",
+    "skill_name": "Waveform",
+    "skill_desc": "Wave surge + adaptive strike + morph + replicate",
+    "skill_cooldown": 300,
+    "skill_range": 260,
+    "skill_duration": 0
   },
   "malzareth": {
     "name": "Malzareth",
@@ -422,7 +542,12 @@
     "cost": 1100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Shadow demon dari Shadow Abyss"
+    "description": "Shadow demon dari Shadow Abyss",
+    "skill_name": "Disruption",
+    "skill_desc": "Void portal + soul catcher + shadow poison + disillusion",
+    "skill_cooldown": 240,
+    "skill_range": 240,
+    "skill_duration": 0
   },
   "akashari": {
     "name": "Akashari",
@@ -439,7 +564,12 @@
     "cost": 1200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Succubus queen dari Shadow Abyss"
+    "description": "Succubus queen dari Shadow Abyss",
+    "skill_name": "Shadow Strike",
+    "skill_desc": "Shadow strike + blink + scream of pain + sonic wave",
+    "skill_cooldown": 220,
+    "skill_range": 240,
+    "skill_duration": 0
   },
   "vorenmarr": {
     "name": "Vorenmarr",
@@ -456,7 +586,12 @@
     "cost": 1300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Chaos warlock dari Shadow Abyss"
+    "description": "Chaos warlock dari Shadow Abyss",
+    "skill_name": "Fatal Bonds",
+    "skill_desc": "Fatal bonds + power coggle + upheaval + chaos golem",
+    "skill_cooldown": 240,
+    "skill_range": 240,
+    "skill_duration": 0
   },
   "vaerith": {
     "name": "Vaerith",
@@ -473,7 +608,12 @@
     "cost": 1200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Web Matriarch dari Nethervenom Expanse"
+    "description": "Web Matriarch dari Nethervenom Expanse",
+    "skill_name": "Spawn Spiderlings",
+    "skill_desc": "Spiderling + spin web + insatiable hunger + brood",
+    "skill_cooldown": 200,
+    "skill_range": 200,
+    "skill_duration": 0
   },
   "xirthalis": {
     "name": "Xir'thalis",
@@ -490,7 +630,12 @@
     "cost": 1200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Timeslip Skitterer dari Nethervenom Expanse"
+    "description": "Timeslip Skitterer dari Nethervenom Expanse",
+    "skill_name": "Time Lapse",
+    "skill_desc": "Shukuchi + the swarm + geminate attack + time lapse",
+    "skill_cooldown": 180,
+    "skill_range": 210,
+    "skill_duration": 0
   },
   "vhyssarion": {
     "name": "Vhyssarion",
@@ -507,7 +652,12 @@
     "cost": 1200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Plague Serpent dari Nethervenom Expanse"
+    "description": "Plague Serpent dari Nethervenom Expanse",
+    "skill_name": "Poison Nova",
+    "skill_desc": "Noxious plague + poison sting + gale + poison nova",
+    "skill_cooldown": 240,
+    "skill_range": 230,
+    "skill_duration": 0
   },
   "kenshiro": {
     "name": "Kenshiro",
@@ -524,7 +674,12 @@
     "cost": 1300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ronin mengambang dari Level 9"
+    "description": "Ronin mengambang dari Level 9",
+    "skill_name": "Swift Slash",
+    "skill_desc": "Swift slash + assault dash + gale AOE + supreme gale",
+    "skill_cooldown": 200,
+    "skill_range": 130,
+    "skill_duration": 0
   },
   "khazan": {
     "name": "Khazan",
@@ -541,7 +696,12 @@
     "cost": 1350,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Algojo berantai dari Level 9"
+    "description": "Algojo berantai dari Level 9",
+    "skill_name": "Chained Blade",
+    "skill_desc": "Chained blade + leap smash + spin + vanishing execution",
+    "skill_cooldown": 200,
+    "skill_range": 130,
+    "skill_duration": 0
   },
   "wiro": {
     "name": "Wiro",
@@ -558,7 +718,12 @@
     "cost": 1300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pendekar angin dari Level 9"
+    "description": "Pendekar angin dari Level 9",
+    "skill_name": "Wind Cut",
+    "skill_desc": "Wind cut + whirl kick + gale dash + typhoon",
+    "skill_cooldown": 190,
+    "skill_range": 130,
+    "skill_duration": 0
   },
   "krognarr": {
     "name": "Krognarr",
@@ -575,7 +740,12 @@
     "cost": 1400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Golem kristal dari Level 10"
+    "description": "Golem kristal dari Level 10",
+    "skill_name": "Stone Strike",
+    "skill_desc": "Stone strike + seismic tremor + crystal rampart + eruption",
+    "skill_cooldown": 210,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "raz": {
     "name": "Raz",
@@ -592,7 +762,12 @@
     "cost": 1400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Biksu api dari Level 10"
+    "description": "Biksu api dari Level 10",
+    "skill_name": "Overdrive",
+    "skill_desc": "Overdrive + searing fist + energy surge + death gloom",
+    "skill_cooldown": 190,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "vraskhan": {
     "name": "Vraskhan",
@@ -609,7 +784,12 @@
     "cost": 1400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Asesin void dari Level 10"
+    "description": "Asesin void dari Level 10",
+    "skill_name": "Thorned Assault",
+    "skill_desc": "Thorned assault + shadow leap + death slash + omni arms",
+    "skill_cooldown": 190,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "aeralith": {
     "name": "Aeralith",
@@ -626,7 +806,12 @@
     "cost": 1450,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Angin barat dari Level 11"
+    "description": "Angin barat dari Level 11",
+    "skill_name": "Tailwind",
+    "skill_desc": "Tailwind + wind blade + vacuum + sky rider",
+    "skill_cooldown": 190,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "aurex": {
     "name": "Aurex",
@@ -643,7 +828,12 @@
     "cost": 1500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ksatria omega dari Level 11"
+    "description": "Ksatria omega dari Level 11",
+    "skill_name": "Shield Crash",
+    "skill_desc": "Shield crash + volt blast + aegis barrier + destructive spin",
+    "skill_cooldown": 200,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "nyxareva": {
     "name": "Nyxareva",
@@ -660,7 +850,12 @@
     "cost": 1500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ratu kegelapan dari Level 11"
+    "description": "Ratu kegelapan dari Level 11",
+    "skill_name": "Dark Slash",
+    "skill_desc": "Dark slash + mortal wound + whirling sacrifice + avatar",
+    "skill_cooldown": 190,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "aurelix": {
     "name": "Aurelix",
@@ -677,7 +872,12 @@
     "cost": 1550,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa waktu dari Level 12"
+    "description": "Penguasa waktu dari Level 12",
+    "skill_name": "Time Bomb",
+    "skill_desc": "Time bomb + will shield + shockwave + transcend",
+    "skill_cooldown": 200,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "aurelyssa": {
     "name": "Aurelyssa",
@@ -694,7 +894,12 @@
     "cost": 1550,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penari pedang emas dari Level 12"
+    "description": "Penari pedang emas dari Level 12",
+    "skill_name": "Whirlwind",
+    "skill_desc": "Whirlwind + lightning sweep + golden wings + phantom assault",
+    "skill_cooldown": 190,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "vargrath": {
     "name": "Vargrath",
@@ -711,7 +916,12 @@
     "cost": 1600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Panglima iblis dari Level 12"
+    "description": "Panglima iblis dari Level 12",
+    "skill_name": "Bloodthirst",
+    "skill_desc": "Bloodthirst + charge + devil strike + soul dom",
+    "skill_cooldown": 200,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "kaeldris": {
     "name": "Kaeldris",
@@ -728,7 +938,12 @@
     "cost": 1650,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Komandan perang dari Level 13"
+    "description": "Komandan perang dari Level 13",
+    "skill_name": "Overwhelming",
+    "skill_desc": "Overwhelming + press + moment + duel",
+    "skill_cooldown": 200,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "pyraklos": {
     "name": "Pyraklos",
@@ -745,7 +960,12 @@
     "cost": 1700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Juara spartan dari Level 13"
+    "description": "Juara spartan dari Level 13",
+    "skill_name": "Spear of Mars",
+    "skill_desc": "Spear of mars + rebuke + bulwark + arena",
+    "skill_cooldown": 200,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "velmyrth": {
     "name": "Velmyrth",
@@ -762,7 +982,12 @@
     "cost": 1700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Asesin hantu dari Level 13"
+    "description": "Asesin hantu dari Level 13",
+    "skill_name": "Stifling Dagger",
+    "skill_desc": "Stifling dagger + phantom strike + blur + coup de grace",
+    "skill_cooldown": 190,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "azureth": {
     "name": "Azureth",
@@ -779,7 +1004,12 @@
     "cost": 1700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Mage arcane dari Level 14"
+    "description": "Mage arcane dari Level 14",
+    "skill_name": "Arcane Bolt",
+    "skill_desc": "Arcane bolt + concussive blast + ancient seal + mystic flare",
+    "skill_cooldown": 200,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "luminar": {
     "name": "Luminar",
@@ -796,7 +1026,12 @@
     "cost": 1750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penjaga cahaya abadi dari Level 14"
+    "description": "Penjaga cahaya abadi dari Level 14",
+    "skill_name": "Illuminate",
+    "skill_desc": "Illuminate + blinding light + wisp + spirit form",
+    "skill_cooldown": 205,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "solara": {
     "name": "Solara",
@@ -813,7 +1048,12 @@
     "cost": 1800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ksatria fajar dari Level 14"
+    "description": "Ksatria fajar dari Level 14",
+    "skill_name": "Starbreaker",
+    "skill_desc": "Starbreaker + celestial hammer + luminosity + solar guardian",
+    "skill_cooldown": 210,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "auroth": {
     "name": "Auroth",
@@ -830,7 +1070,12 @@
     "cost": 1850,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Titan bastion langit dari Level 15"
+    "description": "Titan bastion langit dari Level 15",
+    "skill_name": "Ionic Edge",
+    "skill_desc": "Ionic edge + ward + consecration + guardian",
+    "skill_cooldown": 215,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "morvein": {
     "name": "Morvein",
@@ -847,7 +1092,12 @@
     "cost": 1900,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ksatria tombak hantu dari Level 15"
+    "description": "Ksatria tombak hantu dari Level 15",
+    "skill_name": "Puncture",
+    "skill_desc": "Puncture + violent strike + spectral charge + phantom form",
+    "skill_cooldown": 215,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "thorvak": {
     "name": "Thorvak",
@@ -864,7 +1114,12 @@
     "cost": 1950,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Treant penjaga hutan purba dari Level 15"
+    "description": "Treant penjaga hutan purba dari Level 15",
+    "skill_name": "Seed",
+    "skill_desc": "Seed + nature's wrath + vengeance + dryad",
+    "skill_cooldown": 220,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "ignirus": {
     "name": "Ignirus",
@@ -881,7 +1136,12 @@
     "cost": 2000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Mage api neraka dari Level 16"
+    "description": "Mage api neraka dari Level 16",
+    "skill_name": "Searing Torrent",
+    "skill_desc": "Searing torrent + flame shot + burst fireball + vengeance",
+    "skill_cooldown": 225,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "leoric": {
     "name": "Leoric",
@@ -898,7 +1158,12 @@
     "cost": 2050,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ksatria hati singa dari Level 16"
+    "description": "Ksatria hati singa dari Level 16",
+    "skill_name": "Fearless Charge",
+    "skill_desc": "Fearless charge + sacred hammer + conceal blast + immortality",
+    "skill_cooldown": 225,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "shirotaka": {
     "name": "Shirotaka",
@@ -915,7 +1180,12 @@
     "cost": 2100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Shinobi taktik pasang surut dari Level 16"
+    "description": "Shinobi taktik pasang surut dari Level 16",
+    "skill_name": "Hiraishin",
+    "skill_desc": "Hiraishin + water boundary + shadow clones + paper bomb",
+    "skill_cooldown": 220,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "kaelthorn": {
     "name": "Kaelthorn",
@@ -932,7 +1202,12 @@
     "cost": 2150,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ksatria azure dari Level 17"
+    "description": "Ksatria azure dari Level 17",
+    "skill_name": "Bravest Fighter",
+    "skill_desc": "Bravest fighter + justice blade + defender's assault + chivalry fists",
+    "skill_cooldown": 230,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "solvanth": {
     "name": "Solvanth",
@@ -949,7 +1224,12 @@
     "cost": 2200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Centaur penjaga cahaya dari Level 17"
+    "description": "Centaur penjaga cahaya dari Level 17",
+    "skill_name": "Ring Punishment",
+    "skill_desc": "Ring punishment + glorious pathway + law & order + wrath",
+    "skill_cooldown": 235,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "xyrael": {
     "name": "Xy'rael",
@@ -966,7 +1246,12 @@
     "cost": 2250,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Asesin hantu cyan dari Level 17"
+    "description": "Asesin hantu cyan dari Level 17",
+    "skill_name": "Finch",
+    "skill_desc": "Finch + defiant + tempest + lightness",
+    "skill_cooldown": 225,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "cryssalia": {
     "name": "Cryssalia",
@@ -983,7 +1268,12 @@
     "cost": 2300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ratu es glasial dari Level 18"
+    "description": "Ratu es glasial dari Level 18",
+    "skill_name": "Frostshock",
+    "skill_desc": "Frostshock + bitter frost + frostbites + coldest",
+    "skill_cooldown": 235,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "kaelthar": {
     "name": "Kaelthar",
@@ -1000,7 +1290,12 @@
     "cost": 2350,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Petarung tinju badai dari Level 18"
+    "description": "Petarung tinju badai dari Level 18",
+    "skill_name": "Charging Fist",
+    "skill_desc": "Charging fist + quake + fist crack + fist break",
+    "skill_cooldown": 230,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "morkhaera": {
     "name": "Mor'khaera",
@@ -1017,7 +1312,12 @@
     "cost": 2400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penyihir bulu darah dari Level 18"
+    "description": "Penyihir bulu darah dari Level 18",
+    "skill_name": "Spirit Burst",
+    "skill_desc": "Spirit burst + air strike + energy impact + ethereal",
+    "skill_cooldown": 235,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "akahime": {
     "name": "Akahime",
@@ -1034,7 +1334,12 @@
     "cost": 2450,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Kunoichi merah dari Level 19"
+    "description": "Kunoichi merah dari Level 19",
+    "skill_name": "Petal Barrage",
+    "skill_desc": "Petal barrage + soul scroll + shadow + higanbana",
+    "skill_cooldown": 240,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "nyxthrael": {
     "name": "Nyxthrael",
@@ -1051,7 +1356,12 @@
     "cost": 2500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Algojo terkutuk dari Level 19"
+    "description": "Algojo terkutuk dari Level 19",
+    "skill_name": "Ambush",
+    "skill_desc": "Ambush + nightfall + dark nightfall + shadowbringer",
+    "skill_cooldown": 235,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "sylvantheros": {
     "name": "Sylvantheros",
@@ -1068,7 +1378,12 @@
     "cost": 2550,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Peramal hijau dari Level 19"
+    "description": "Peramal hijau dari Level 19",
+    "skill_name": "Sprout",
+    "skill_desc": "Sprout + teleport + treants + wrath",
+    "skill_cooldown": 240,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "astraelion": {
     "name": "Astraelion",
@@ -1085,7 +1400,12 @@
     "cost": 2600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pedang bintang dari Level 20"
+    "description": "Pedang bintang dari Level 20",
+    "skill_name": "Swordfall",
+    "skill_desc": "Swordfall + spirit blade + force escape + zero return",
+    "skill_cooldown": 240,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "morvaenthir": {
     "name": "Morvaenthir",
@@ -1102,7 +1422,12 @@
     "cost": 2650,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penuai jiwa dari Level 20"
+    "description": "Penuai jiwa dari Level 20",
+    "skill_name": "Soul Fragment",
+    "skill_desc": "Soul fragment + spirit bind + essence + shadow realm",
+    "skill_cooldown": 245,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "thornvaegrim": {
     "name": "Thornvaegrim",
@@ -1119,7 +1444,12 @@
     "cost": 2700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Treant purba bengkok dari Level 20"
+    "description": "Treant purba bengkok dari Level 20",
+    "skill_name": "Bramble",
+    "skill_desc": "Bramble + twisted advance + sapling throw + grasp",
+    "skill_cooldown": 245,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "kurogari": {
     "name": "Kurogari",
@@ -1136,7 +1466,12 @@
     "cost": 2800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Reaper bayangan dari Level 21"
+    "description": "Reaper bayangan dari Level 21",
+    "skill_name": "Soul Reap",
+    "skill_desc": "Soul reap + shadow mist + pinpoint + demonic feast",
+    "skill_cooldown": 250,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "morvekhar": {
     "name": "Morvekhar",
@@ -1153,7 +1488,12 @@
     "cost": 3000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Raksasa besi dari Level 21"
+    "description": "Raksasa besi dari Level 21",
+    "skill_name": "Soul Cleave",
+    "skill_desc": "Soul cleave + ironbound + juggernaut dash + shadow realm",
+    "skill_cooldown": 255,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "vorgath": {
     "name": "Vorgath",
@@ -1170,7 +1510,12 @@
     "cost": 2900,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penjaga iblis dari Level 21"
+    "description": "Penjaga iblis dari Level 21",
+    "skill_name": "Demonic Gaze",
+    "skill_desc": "Demonic gaze + demonic impact + demon purge + demonic domain",
+    "skill_cooldown": 250,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "grimstalker": {
     "name": "Grimstalker",
@@ -1187,7 +1532,12 @@
     "cost": 2950,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Werewolf beracun dari Level 22"
+    "description": "Werewolf beracun dari Level 22",
+    "skill_name": "Toxic Claw",
+    "skill_desc": "Toxic claw + venom cloud + chem rampage + bio doom",
+    "skill_cooldown": 255,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "kryvoxar": {
     "name": "Kryvoxar",
@@ -1204,7 +1554,12 @@
     "cost": 3000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Wraith kristal dari Level 22"
+    "description": "Wraith kristal dari Level 22",
+    "skill_name": "Crystal Shard",
+    "skill_desc": "Crystal shard + crystal storm + phase shift + prism burst",
+    "skill_cooldown": 255,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "vargroth": {
     "name": "Vargroth",
@@ -1221,7 +1576,12 @@
     "cost": 3100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Alpha werewolf dari Level 22"
+    "description": "Alpha werewolf dari Level 22",
+    "skill_name": "Blood Rend",
+    "skill_desc": "Blood rend + moon howl + alpha strike + bloodmoon frenzy",
+    "skill_cooldown": 260,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "drav": {
     "name": "Drav",
@@ -1238,7 +1598,12 @@
     "cost": 3100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penjaga laut dari Level 23"
+    "description": "Penjaga laut dari Level 23",
+    "skill_name": "Anchor Slam",
+    "skill_desc": "Anchor slam + tidal wave + chain pull + ocean's wrath",
+    "skill_cooldown": 260,
+    "skill_range": 160,
+    "skill_duration": 0
   },
   "lyrienne": {
     "name": "Lyrienne",
@@ -1255,7 +1620,12 @@
     "cost": 3200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penyanyi senja dari Level 23"
+    "description": "Penyanyi senja dari Level 23",
+    "skill_name": "Vesper Bolt",
+    "skill_desc": "Vesper bolt + twilight chorus + harmonic shift + symphony of dusk",
+    "skill_cooldown": 265,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "valthar": {
     "name": "Valthar",
@@ -1272,7 +1642,12 @@
     "cost": 3300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penjaga emas dari Level 23"
+    "description": "Penjaga emas dari Level 23",
+    "skill_name": "Royal Sunder",
+    "skill_desc": "Royal sunder + golden ward + crownfall + judgment of kings",
+    "skill_cooldown": 270,
+    "skill_range": 170,
+    "skill_duration": 0
   },
   "khalzaredh": {
     "name": "Khal'zaredh",
@@ -1289,7 +1664,12 @@
     "cost": 3250,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pangeran pasir dari Level 24"
+    "description": "Pangeran pasir dari Level 24",
+    "skill_name": "Sand Slash",
+    "skill_desc": "Sand slash + dune surge + sandstorm + desert's wrath",
+    "skill_cooldown": 265,
+    "skill_range": 160,
+    "skill_duration": 0
   },
   "nyxaroth": {
     "name": "Nyxaroth",
@@ -1306,7 +1686,12 @@
     "cost": 3350,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penenun bintang dari Level 24"
+    "description": "Penenun bintang dari Level 24",
+    "skill_name": "Star Bolt",
+    "skill_desc": "Star bolt + void constellation + starfall + singularity",
+    "skill_cooldown": 270,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "veshtrax": {
     "name": "Veshtrax",
@@ -1323,7 +1708,12 @@
     "cost": 3400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Eksekutor bangsawan dari Level 24"
+    "description": "Eksekutor bangsawan dari Level 24",
+    "skill_name": "Sapphire Lunge",
+    "skill_desc": "Sapphire lunge + royal barrier + executioner's flurry + judgment blade",
+    "skill_cooldown": 275,
+    "skill_range": 165,
+    "skill_duration": 0
   },
   "grimjack": {
     "name": "Grimjack",
@@ -1340,7 +1730,12 @@
     "cost": 3450,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Iblis cekikikan dari Level 25"
+    "description": "Iblis cekikikan dari Level 25",
+    "skill_name": "Venom Stab",
+    "skill_desc": "Venom stab + cackling blight + shadow step + fiendish carnival",
+    "skill_cooldown": 275,
+    "skill_range": 165,
+    "skill_duration": 0
   },
   "morvaeth": {
     "name": "Morvaeth",
@@ -1357,7 +1752,12 @@
     "cost": 3500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Perobek merah dari Level 25"
+    "description": "Perobek merah dari Level 25",
+    "skill_name": "Crimson Slash",
+    "skill_desc": "Crimson slash + blood reap + reaver's charge + crimson tempest",
+    "skill_cooldown": 280,
+    "skill_range": 170,
+    "skill_duration": 0
   },
   "vulkareth": {
     "name": "Vulkareth",
@@ -1374,7 +1774,12 @@
     "cost": 3550,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Titan api dari Level 25"
+    "description": "Titan api dari Level 25",
+    "skill_name": "Ember Fist",
+    "skill_desc": "Ember fist + magma eruption + titan charge + emberborn fury",
+    "skill_cooldown": 285,
+    "skill_range": 175,
+    "skill_duration": 0
   },
   "aelyrion": {
     "name": "Aelyrion",
@@ -1391,7 +1796,12 @@
     "cost": 3600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Guardian baja dari Level 26"
+    "description": "Guardian baja dari Level 26",
+    "skill_name": "Divine Lance",
+    "skill_desc": "Divine lance + sacred bulwark + heaven's charge + gate of dawn",
+    "skill_cooldown": 285,
+    "skill_range": 175,
+    "skill_duration": 0
   },
   "kaervosth": {
     "name": "Kaervosth",
@@ -1408,7 +1818,12 @@
     "cost": 3650,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ksatria badai dari Level 26"
+    "description": "Ksatria badai dari Level 26",
+    "skill_name": "Storm Slash",
+    "skill_desc": "Storm slash + thunder ward + lightning charge + tempest blade",
+    "skill_cooldown": 285,
+    "skill_range": 180,
+    "skill_duration": 0
   },
   "morvyssk": {
     "name": "Morvyssk",
@@ -1425,7 +1840,12 @@
     "cost": 3700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Lumpur asam dari Level 26"
+    "description": "Lumpur asam dari Level 26",
+    "skill_name": "Acid Splash",
+    "skill_desc": "Acid splash + ooze bloom + corrosive surge + devouring mire",
+    "skill_cooldown": 290,
+    "skill_range": 170,
+    "skill_duration": 0
   },
   "kyumirra": {
     "name": "Kyumirra",
@@ -1442,7 +1862,12 @@
     "cost": 3750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Rubah sembilan ekor dari Level 27"
+    "description": "Rubah sembilan ekor dari Level 27",
+    "skill_name": "Charm Orb",
+    "skill_desc": "Charm orb + nine-tail flare + foxfire dash + spirit fox",
+    "skill_cooldown": 290,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "morvakhul": {
     "name": "Morvakhul",
@@ -1459,7 +1884,12 @@
     "cost": 3800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Algojo abadi dari Level 27"
+    "description": "Algojo abadi dari Level 27",
+    "skill_name": "Cursed Cleave",
+    "skill_desc": "Cursed cleave + death's grasp + executioner's march + undying judgment",
+    "skill_cooldown": 290,
+    "skill_range": 180,
+    "skill_duration": 0
   },
   "nyxariel": {
     "name": "Nyxariel",
@@ -1476,7 +1906,12 @@
     "cost": 3850,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Trikster abyssal dari Level 27"
+    "description": "Trikster abyssal dari Level 27",
+    "skill_name": "Trident Thrust",
+    "skill_desc": "Trident thrust + tide's jest + bubbling escape + shark summon",
+    "skill_cooldown": 295,
+    "skill_range": 180,
+    "skill_duration": 0
   },
   "morthyrax": {
     "name": "Morthyrax",
@@ -1493,7 +1928,12 @@
     "cost": 3950,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Nabi pembusuk dari Level 28"
+    "description": "Nabi pembusuk dari Level 28",
+    "skill_name": "Rot Claw",
+    "skill_desc": "Rot claw + plague breath + decaying march + prophet's blight",
+    "skill_cooldown": 300,
+    "skill_range": 185,
+    "skill_duration": 0
   },
   "sanguiveth": {
     "name": "Sanguiveth",
@@ -1510,7 +1950,12 @@
     "cost": 4000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Paceklik berdarah dari Level 28"
+    "description": "Paceklik berdarah dari Level 28",
+    "skill_name": "Blood Harvest",
+    "skill_desc": "Blood harvest + famine's grasp + sanguine leap + starvation",
+    "skill_cooldown": 300,
+    "skill_range": 185,
+    "skill_duration": 0
   },
   "xerakhotep": {
     "name": "Xerakhotep",
@@ -1527,7 +1972,12 @@
     "cost": 4050,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa matahari dari Level 28"
+    "description": "Penguasa matahari dari Level 28",
+    "skill_name": "Sun Bolt",
+    "skill_desc": "Sun bolt + solar aegis + sunfire charge + sovereign's eclipse",
+    "skill_cooldown": 305,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "ignakhor": {
     "name": "Ignakhor",
@@ -1544,7 +1994,12 @@
     "cost": 4100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Berserker tempa dari Level 29"
+    "description": "Berserker tempa dari Level 29",
+    "skill_name": "Furnace Cleave",
+    "skill_desc": "Furnace cleave + molten rage + berserker charge + forge's wrath",
+    "skill_cooldown": 305,
+    "skill_range": 190,
+    "skill_duration": 0
   },
   "kazureth": {
     "name": "Kazureth",
@@ -1561,7 +2016,12 @@
     "cost": 4200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pendekar petir dari Level 29"
+    "description": "Pendekar petir dari Level 29",
+    "skill_name": "Thunderclap Flash",
+    "skill_desc": "Thunderclap flash + lightning cloak + distant thunder + honoikazuchi",
+    "skill_cooldown": 305,
+    "skill_range": 185,
+    "skill_duration": 0
   },
   "sethrakhar": {
     "name": "Seth'rakhaar",
@@ -1578,7 +2038,12 @@
     "cost": 4250,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Tukang daging matahari dari Level 29"
+    "description": "Tukang daging matahari dari Level 29",
+    "skill_name": "Sunforged Chop",
+    "skill_desc": "Sunforged chop + butcher's fury + blood rage march + sunforged judgment",
+    "skill_cooldown": 310,
+    "skill_range": 190,
+    "skill_duration": 0
   },
   "kaelvyrn": {
     "name": "Kaelvyrn",
@@ -1595,7 +2060,12 @@
     "cost": 4300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Perampok emas dari Level 30"
+    "description": "Perampok emas dari Level 30",
+    "skill_name": "Gilded Slash",
+    "skill_desc": "Gilded slash + treasure storm + marauder's dash + golden plunder",
+    "skill_cooldown": 315,
+    "skill_range": 195,
+    "skill_duration": 0
   },
   "thorvin": {
     "name": "Thorvin",
@@ -1612,7 +2082,12 @@
     "cost": 4350,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penjaga besi dari Level 30"
+    "description": "Penjaga besi dari Level 30",
+    "skill_name": "Ironbound Slam",
+    "skill_desc": "Ironbound slam + warden's bulwark + fortress march + unbreakable oath",
+    "skill_cooldown": 315,
+    "skill_range": 195,
+    "skill_duration": 0
   },
   "xaerissa": {
     "name": "Xaerissa",
@@ -1629,7 +2104,12 @@
     "cost": 4400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penenun sutra darah dari Level 30"
+    "description": "Penenun sutra darah dari Level 30",
+    "skill_name": "Silk Thread",
+    "skill_desc": "Silk thread + crimson cocoon + web weaver + arachnid queen",
+    "skill_cooldown": 320,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "celwynn": {
     "name": "Celwynn",
@@ -1646,7 +2126,12 @@
     "cost": 4500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penjaga bintang dari Level 31"
+    "description": "Penjaga bintang dari Level 31",
+    "skill_name": "Star Bolt",
+    "skill_desc": "Star bolt + constellation veil + meteor shower + celestial flame",
+    "skill_cooldown": 320,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "rynvara": {
     "name": "Rynvara",
@@ -1663,7 +2148,12 @@
     "cost": 4550,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Badai liar dari Level 31"
+    "description": "Badai liar dari Level 31",
+    "skill_name": "Primal Rend",
+    "skill_desc": "Primal rend + onslaught's roar + wild stampede + untamed wrath",
+    "skill_cooldown": 325,
+    "skill_range": 200,
+    "skill_duration": 0
   },
   "syrindra": {
     "name": "Syrindra",
@@ -1680,7 +2170,12 @@
     "cost": 4600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa kegelapan dari Level 31"
+    "description": "Penguasa kegelapan dari Level 31",
+    "skill_name": "Dark Bolt",
+    "skill_desc": "Dark bolt + sovereign's wrath + shadow court + dark ascension",
+    "skill_cooldown": 330,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "ghrakmaal": {
     "name": "Ghrakmaal",
@@ -1697,7 +2192,12 @@
     "cost": 4700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Kolosus bumi dari Level 32"
+    "description": "Kolosus bumi dari Level 32",
+    "skill_name": "Earth Shatter",
+    "skill_desc": "Earth shatter + sundered ground + colossal charge + worldbreaker",
+    "skill_cooldown": 330,
+    "skill_range": 205,
+    "skill_duration": 0
   },
   "selunara": {
     "name": "Selunara",
@@ -1714,7 +2214,12 @@
     "cost": 4750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pemburu bulan dari Level 32"
+    "description": "Pemburu bulan dari Level 32",
+    "skill_name": "Moon Arrow",
+    "skill_desc": "Moon arrow + lunar halo + crescent dash + eclipse barrage",
+    "skill_cooldown": 335,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "vessyra": {
     "name": "Vessyra",
@@ -1731,7 +2236,12 @@
     "cost": 4800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ratu gorgon dari Level 32"
+    "description": "Ratu gorgon dari Level 32",
+    "skill_name": "Serpent Bite",
+    "skill_desc": "Serpent bite + petrify gaze + snake swarm + medusa's wrath",
+    "skill_cooldown": 340,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "rakzhan": {
     "name": "Rakzhan",
@@ -1748,7 +2258,12 @@
     "cost": 4900,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Petarung bara dari Level 33"
+    "description": "Petarung bara dari Level 33",
+    "skill_name": "Ember Jab",
+    "skill_desc": "Ember jab + cinder storm + blazing step + prodigy's inferno",
+    "skill_cooldown": 340,
+    "skill_range": 210,
+    "skill_duration": 0
   },
   "sirakzan": {
     "name": "Sirakzan",
@@ -1765,7 +2280,12 @@
     "cost": 4950,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Duelis berputar dari Level 33"
+    "description": "Duelis berputar dari Level 33",
+    "skill_name": "Blade Roll",
+    "skill_desc": "Blade roll + duelist's flourish + spin slash + endless waltz",
+    "skill_cooldown": 345,
+    "skill_range": 210,
+    "skill_duration": 0
   },
   "valekris": {
     "name": "Valekris",
@@ -1782,7 +2302,12 @@
     "cost": 5000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Hantu pendendam dari Level 33"
+    "description": "Hantu pendendam dari Level 33",
+    "skill_name": "Wraith Bolt",
+    "skill_desc": "Wraith bolt + vengeful shade + spectral veil + haunting revenge",
+    "skill_cooldown": 350,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "infrakzaar": {
     "name": "Infrakzaar",
@@ -1799,7 +2324,12 @@
     "cost": 5100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pyromancer bara dari Level 34"
+    "description": "Pyromancer bara dari Level 34",
+    "skill_name": "Ember Lance",
+    "skill_desc": "Ember lance + fleshfire ring + scorch step + cataclysm meteor",
+    "skill_cooldown": 350,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "xarnathul": {
     "name": "Xarnathul",
@@ -1816,7 +2346,12 @@
     "cost": 5150,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penyanyi kematian dari Level 34"
+    "description": "Penyanyi kematian dari Level 34",
+    "skill_name": "Death Note",
+    "skill_desc": "Death note + requiem ring + soul dirge + finale of ruin",
+    "skill_cooldown": 355,
+    "skill_range": 225,
+    "skill_duration": 0
   },
   "zhyrakaan": {
     "name": "Zhyrakaan",
@@ -1833,7 +2368,12 @@
     "cost": 5200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penombak hantu dari Level 34"
+    "description": "Penombak hantu dari Level 34",
+    "skill_name": "Phantom Thrust",
+    "skill_desc": "Phantom thrust + weave step + spectral spiral + phantomweave storm",
+    "skill_cooldown": 360,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "kaerissa": {
     "name": "Kaerissa",
@@ -1850,7 +2390,12 @@
     "cost": 5300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pusaran darah dari Level 35"
+    "description": "Pusaran darah dari Level 35",
+    "skill_name": "Blood Stab",
+    "skill_desc": "Blood stab + whirlwind blood + crimson step + bloodwhirl finale",
+    "skill_cooldown": 360,
+    "skill_range": 225,
+    "skill_duration": 0
   },
   "thorgaruk": {
     "name": "Thorgaruk",
@@ -1867,7 +2412,12 @@
     "cost": 5350,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Tanduk langit dari Level 35"
+    "description": "Tanduk langit dari Level 35",
+    "skill_name": "Skyfall Axe",
+    "skill_desc": "Skyfall axe + thunder horn + storm skewer + skyhorn's judgment",
+    "skill_cooldown": 365,
+    "skill_range": 230,
+    "skill_duration": 0
   },
   "zorathiel": {
     "name": "Zorathiel",
@@ -1884,7 +2434,12 @@
     "cost": 5400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Arcanis dari Level 35"
+    "description": "Arcanis dari Level 35",
+    "skill_name": "Arcane Bolt",
+    "skill_desc": "Arcane bolt + weave prison + arcane travel + grand arcanum",
+    "skill_cooldown": 370,
+    "skill_range": 235,
+    "skill_duration": 0
   },
   "nyxallaria": {
     "name": "Nyxallaria",
@@ -1901,7 +2456,12 @@
     "cost": 5500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa jurang dari Level 36"
+    "description": "Penguasa jurang dari Level 36",
+    "skill_name": "Abyss Bolt",
+    "skill_desc": "Abyss bolt + moonlit depths + abyssal step + sovereign's drown",
+    "skill_cooldown": 375,
+    "skill_range": 240,
+    "skill_duration": 0
   },
   "vhaerinth": {
     "name": "Vhaerinth",
@@ -1918,7 +2478,12 @@
     "cost": 5550,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penenun tinta dari Level 36"
+    "description": "Penenun tinta dari Level 36",
+    "skill_name": "Ink Splash",
+    "skill_desc": "Ink splash + ink veil + brushstroke dash + masterpiece of ruin",
+    "skill_cooldown": 380,
+    "skill_range": 240,
+    "skill_duration": 0
   },
   "xharokh": {
     "name": "Xharokh",
@@ -1935,7 +2500,12 @@
     "cost": 5600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pengikat kekosongan dari Level 36"
+    "description": "Pengikat kekosongan dari Level 36",
+    "skill_name": "Void Bind",
+    "skill_desc": "Void bind + null prison + void shift + binder's eclipse",
+    "skill_cooldown": 385,
+    "skill_range": 245,
+    "skill_duration": 0
   },
   "kazreth": {
     "name": "Kazreth",
@@ -1952,7 +2522,12 @@
     "cost": 5700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Perobek darah dari Level 37"
+    "description": "Perobek darah dari Level 37",
+    "skill_name": "Blood Cleave",
+    "skill_desc": "Blood cleave + reaver's gash + blood wings + blood harvest",
+    "skill_cooldown": 385,
+    "skill_range": 245,
+    "skill_duration": 0
   },
   "varkuthar": {
     "name": "Varkuthar",
@@ -1969,7 +2544,12 @@
     "cost": 5750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Fanatik api darah dari Level 37"
+    "description": "Fanatik api darah dari Level 37",
+    "skill_name": "Bloodfire Smash",
+    "skill_desc": "Bloodfire smash + zealot's pyre + bloodflame charge + sacred inferno",
+    "skill_cooldown": 390,
+    "skill_range": 250,
+    "skill_duration": 0
   },
   "zhyvrek": {
     "name": "Zhyvrek",
@@ -1986,7 +2566,12 @@
     "cost": 5800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penebas kekosongan dari Level 37"
+    "description": "Penebas kekosongan dari Level 37",
+    "skill_name": "Void Slash",
+    "skill_desc": "Void slash + shadow reap + null step + reaper's void",
+    "skill_cooldown": 395,
+    "skill_range": 245,
+    "skill_duration": 0
   },
   "azkharion": {
     "name": "Azkharion",
@@ -2003,7 +2588,12 @@
     "cost": 5900,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Tuan perang abu dari Level 38"
+    "description": "Tuan perang abu dari Level 38",
+    "skill_name": "Ashen Cleave",
+    "skill_desc": "Ashen cleave + cinder warlord + ash march + warlord's pyre",
+    "skill_cooldown": 400,
+    "skill_range": 255,
+    "skill_duration": 0
   },
   "thargoroth": {
     "name": "Thargoroth",
@@ -2020,7 +2610,12 @@
     "cost": 5950,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Kolosus purba dari Level 38"
+    "description": "Kolosus purba dari Level 38",
+    "skill_name": "Primordial Slam",
+    "skill_desc": "Primordial slam + ancient rage + colossal stomp + world ender",
+    "skill_cooldown": 405,
+    "skill_range": 260,
+    "skill_duration": 0
   },
   "zahkareth": {
     "name": "Zahkareth",
@@ -2037,7 +2632,12 @@
     "cost": 6000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Tiran emas dari Level 38"
+    "description": "Tiran emas dari Level 38",
+    "skill_name": "Tyrant's Smash",
+    "skill_desc": "Tyrant's smash + golden edict + tyrant's march + gilded judgment",
+    "skill_cooldown": 410,
+    "skill_range": 260,
+    "skill_duration": 0
   },
   "bhorgathul": {
     "name": "Bhor'gathul",
@@ -2054,7 +2654,12 @@
     "cost": 6100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Perobek bumi dari Level 39"
+    "description": "Perobek bumi dari Level 39",
+    "skill_name": "Earth Rend",
+    "skill_desc": "Earth rend + tectonic rage + render's charge + worldrender",
+    "skill_cooldown": 415,
+    "skill_range": 265,
+    "skill_duration": 0
   },
   "morkhelvis": {
     "name": "Mor'khelvis",
@@ -2071,7 +2676,12 @@
     "cost": 6150,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Gargoyle kematian dari Level 39"
+    "description": "Gargoyle kematian dari Level 39",
+    "skill_name": "Stone Rend",
+    "skill_desc": "Stone rend + necro veil + gargoyle dive + eternal statue",
+    "skill_cooldown": 420,
+    "skill_range": 265,
+    "skill_duration": 0
   },
   "vorthakul": {
     "name": "Vor'thakul",
@@ -2088,7 +2698,12 @@
     "cost": 6200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Teror jurang dari Level 39"
+    "description": "Teror jurang dari Level 39",
+    "skill_name": "Abyss Bolt",
+    "skill_desc": "Abyss bolt + terror wave + abyssal step + dread abyss",
+    "skill_cooldown": 425,
+    "skill_range": 270,
+    "skill_duration": 0
   },
   "urgharun": {
     "name": "Ur'gharun",
@@ -2105,7 +2720,12 @@
     "cost": 6300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Amarah liar dari Level 40"
+    "description": "Amarah liar dari Level 40",
+    "skill_name": "Feral Rend",
+    "skill_desc": "Feral rend + wrath howl + beast rush + feral cataclysm",
+    "skill_cooldown": 425,
+    "skill_range": 270,
+    "skill_duration": 0
   },
   "yhoranth": {
     "name": "Yh'oranth",
@@ -2122,7 +2742,12 @@
     "cost": 6350,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Hantu tak terampuni dari Level 40"
+    "description": "Hantu tak terampuni dari Level 40",
+    "skill_name": "Wraith Bolt",
+    "skill_desc": "Wraith bolt + unforgiven shade + spectral drift + eternal grudge",
+    "skill_cooldown": 430,
+    "skill_range": 275,
+    "skill_duration": 0
   },
   "zulkhaven": {
     "name": "Zul'khaven",
@@ -2139,7 +2764,12 @@
     "cost": 6400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pelahap dari Level 40"
+    "description": "Pelahap dari Level 40",
+    "skill_name": "Devour Bite",
+    "skill_desc": "Devour bite + maw of ruin + hungry charge + endless feast",
+    "skill_cooldown": 435,
+    "skill_range": 275,
+    "skill_duration": 0
   },
   "emberwick": {
     "name": "Emberwick",
@@ -2156,7 +2786,12 @@
     "cost": 6500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Matron api dari Level 41"
+    "description": "Matron api dari Level 41",
+    "skill_name": "Fire Lance",
+    "skill_desc": "Fire lance + matron's pyre + gnashfang bite + blazing judgment",
+    "skill_cooldown": 435,
+    "skill_range": 280,
+    "skill_duration": 0
   },
   "grondarthul": {
     "name": "Grondarthul",
@@ -2173,7 +2808,12 @@
     "cost": 6550,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Raja troll dari Level 41"
+    "description": "Raja troll dari Level 41",
+    "skill_name": "Troll Smash",
+    "skill_desc": "Troll smash + king's roar + frozen charge + troll king's wrath",
+    "skill_cooldown": 440,
+    "skill_range": 280,
+    "skill_duration": 0
   },
   "xareth": {
     "name": "Xareth",
@@ -2190,7 +2830,12 @@
     "cost": 6600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Perobek waktu dari Level 41"
+    "description": "Perobek waktu dari Level 41",
+    "skill_name": "Time Bolt",
+    "skill_desc": "Time bolt + chrono rupture + void step + timebreak",
+    "skill_cooldown": 445,
+    "skill_range": 285,
+    "skill_duration": 0
   },
   "kaedrin": {
     "name": "Kaedrin",
@@ -2207,7 +2852,12 @@
     "cost": 6700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Taring bulan dari Level 42"
+    "description": "Taring bulan dari Level 42",
+    "skill_name": "Moon Slash",
+    "skill_desc": "Moon slash + fang crescent + moonstep + fang of the moon",
+    "skill_cooldown": 445,
+    "skill_range": 285,
+    "skill_duration": 0
   },
   "morvaeth2": {
     "name": "Morvaeth",
@@ -2224,7 +2874,12 @@
     "cost": 6750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Iblis cermin dari Level 42"
+    "description": "Iblis cermin dari Level 42",
+    "skill_name": "Mirror Slash",
+    "skill_desc": "Mirror slash + demon reflection + marauder's march + mirrorborn cataclysm",
+    "skill_cooldown": 450,
+    "skill_range": 285,
+    "skill_duration": 0
   },
   "vardrok": {
     "name": "Vardrok",
@@ -2241,7 +2896,12 @@
     "cost": 6800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Raja kapak dari Level 42"
+    "description": "Raja kapak dari Level 42",
+    "skill_name": "King's Chop",
+    "skill_desc": "King's chop + executioner's cry + axe charge + glorious guillotine",
+    "skill_cooldown": 455,
+    "skill_range": 290,
+    "skill_duration": 0
   },
   "nixweaver": {
     "name": "Nixweaver",
@@ -2258,7 +2918,12 @@
     "cost": 6900,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Trikster hutan dari Level 43"
+    "description": "Trikster hutan dari Level 43",
+    "skill_name": "Trick Bolt",
+    "skill_desc": "Trick bolt + forest mirage + leaf step + woodland carnival",
+    "skill_cooldown": 455,
+    "skill_range": 290,
+    "skill_duration": 0
   },
   "nyxraal": {
     "name": "Nyxraal",
@@ -2275,7 +2940,12 @@
     "cost": 6950,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pangeran jurang dari Level 43"
+    "description": "Pangeran jurang dari Level 43",
+    "skill_name": "Abyss Thrust",
+    "skill_desc": "Abyss thrust + prince's tide + dark charge + abyssal coronation",
+    "skill_cooldown": 460,
+    "skill_range": 290,
+    "skill_duration": 0
   },
   "xarnthuul": {
     "name": "Xarn'thuul",
@@ -2292,7 +2962,12 @@
     "cost": 7000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa kekosongan dari Level 43"
+    "description": "Penguasa kekosongan dari Level 43",
+    "skill_name": "Void Lance",
+    "skill_desc": "Void lance + null throne + void drift + sovereign's void",
+    "skill_cooldown": 465,
+    "skill_range": 295,
+    "skill_duration": 0
   },
   "lyrenya": {
     "name": "Lyrenya",
@@ -2309,7 +2984,12 @@
     "cost": 7100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Bisikan hijau dari Level 44"
+    "description": "Bisikan hijau dari Level 44",
+    "skill_name": "Vine Whip",
+    "skill_desc": "Vine whip + verdant bloom + nature step + whisper of the forest",
+    "skill_cooldown": 465,
+    "skill_range": 295,
+    "skill_duration": 0
   },
   "vyraeth": {
     "name": "Vyraeth",
@@ -2326,7 +3006,12 @@
     "cost": 7150,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Hantu penghantui dari Level 44"
+    "description": "Hantu penghantui dari Level 44",
+    "skill_name": "Haunt Bolt",
+    "skill_desc": "Haunt bolt + spectral veil + ghost drift + eternal haunting",
+    "skill_cooldown": 470,
+    "skill_range": 300,
+    "skill_duration": 0
   },
   "zorothrax": {
     "name": "Zorothrax",
@@ -2343,7 +3028,12 @@
     "cost": 7200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa rune dari Level 44"
+    "description": "Penguasa rune dari Level 44",
+    "skill_name": "Rune Bolt",
+    "skill_desc": "Rune bolt + arcane rune field + rune shift + sovereign's rune",
+    "skill_cooldown": 475,
+    "skill_range": 300,
+    "skill_duration": 0
   },
   "akiraze": {
     "name": "Akiraze",
@@ -2360,7 +3050,12 @@
     "cost": 7300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Badai emas dari Level 45"
+    "description": "Badai emas dari Level 45",
+    "skill_name": "Golden Slash",
+    "skill_desc": "Golden slash + tempest flash + thunder step + golden cataclysm",
+    "skill_cooldown": 475,
+    "skill_range": 300,
+    "skill_duration": 0
   },
   "brumhar": {
     "name": "Brumhar",
@@ -2377,7 +3072,12 @@
     "cost": 7350,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Perobek gletser dari Level 45"
+    "description": "Perobek gletser dari Level 45",
+    "skill_name": "Glacier Chop",
+    "skill_desc": "Glacier chop + frozen wrath + ice reave + glacier cataclysm",
+    "skill_cooldown": 480,
+    "skill_range": 305,
+    "skill_duration": 0
   },
   "zorashi": {
     "name": "Zorashi",
@@ -2394,7 +3094,12 @@
     "cost": 7400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Bijak ular dari Level 45"
+    "description": "Bijak ular dari Level 45",
+    "skill_name": "Serpent Fang",
+    "skill_desc": "Serpent fang + snake storm + serpent step + sage's serpents",
+    "skill_cooldown": 485,
+    "skill_range": 305,
+    "skill_duration": 0
   },
   "akaroth": {
     "name": "Akaroth",
@@ -2411,7 +3116,12 @@
     "cost": 7500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Tinju merah dari Level 46"
+    "description": "Tinju merah dari Level 46",
+    "skill_name": "Crimson Jab",
+    "skill_desc": "Crimson jab + fist storm + blood step + crimson cataclysm",
+    "skill_cooldown": 485,
+    "skill_range": 310,
+    "skill_duration": 0
   },
   "kassadin": {
     "name": "Kassadin",
@@ -2428,7 +3138,12 @@
     "cost": 7550,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pejalan kekosongan dari Level 46"
+    "description": "Pejalan kekosongan dari Level 46",
+    "skill_name": "Null Blade",
+    "skill_desc": "Null blade + void pulse + rift step + voidwalk",
+    "skill_cooldown": 490,
+    "skill_range": 310,
+    "skill_duration": 0
   },
   "shimorakh": {
     "name": "Shimorakh",
@@ -2445,7 +3160,12 @@
     "cost": 7600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Akar bayangan dari Level 46"
+    "description": "Akar bayangan dari Level 46",
+    "skill_name": "Shadow Root",
+    "skill_desc": "Shadow root + dark bloom + root grasp + shadowforest",
+    "skill_cooldown": 495,
+    "skill_range": 315,
+    "skill_duration": 0
   },
   "kaizoku_raijin": {
     "name": "Kaizoku Raijin",
@@ -2462,7 +3182,12 @@
     "cost": 7700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Petir festival dari Level 47"
+    "description": "Petir festival dari Level 47",
+    "skill_name": "Thunder Blade",
+    "skill_desc": "Thunder blade + festival storm + raijin step + thunder festival",
+    "skill_cooldown": 495,
+    "skill_range": 315,
+    "skill_duration": 0
   },
   "korokai": {
     "name": "Korokai",
@@ -2479,7 +3204,12 @@
     "cost": 7750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pedang cermin dari Level 47"
+    "description": "Pedang cermin dari Level 47",
+    "skill_name": "Mirror Slash",
+    "skill_desc": "Mirror slash + reflective edge + shinobi step + mirror world",
+    "skill_cooldown": 500,
+    "skill_range": 315,
+    "skill_duration": 0
   },
   "verdanix": {
     "name": "Verdanix",
@@ -2496,7 +3226,12 @@
     "cost": 7800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Amarah hijau dari Level 47"
+    "description": "Amarah hijau dari Level 47",
+    "skill_name": "Nature Bolt",
+    "skill_desc": "Nature bolt + verdant storm + wild step + fury of the forest",
+    "skill_cooldown": 505,
+    "skill_range": 320,
+    "skill_duration": 0
   },
   "broggmar": {
     "name": "Broggmar",
@@ -2513,7 +3248,12 @@
     "cost": 7900,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pemecah tong dari Level 48"
+    "description": "Pemecah tong dari Level 48",
+    "skill_name": "Cask Smash",
+    "skill_desc": "Cask smash + barrel blast + brew charge + caskbreaker's boom",
+    "skill_cooldown": 505,
+    "skill_range": 320,
+    "skill_duration": 0
   },
   "ursath": {
     "name": "Ursath",
@@ -2530,7 +3270,12 @@
     "cost": 7950,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pemanggil liar dari Level 48"
+    "description": "Pemanggil liar dari Level 48",
+    "skill_name": "Thorn Roar",
+    "skill_desc": "Thorn roar + beast stampede + wild step + call of the wild",
+    "skill_cooldown": 510,
+    "skill_range": 325,
+    "skill_duration": 0
   },
   "zhaeris": {
     "name": "Zhaeris",
@@ -2547,7 +3292,12 @@
     "cost": 8000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pedang bayangan dari Level 48"
+    "description": "Pedang bayangan dari Level 48",
+    "skill_name": "Shadow Slash",
+    "skill_desc": "Shadow slash + dark flurry + void step + shadowblade's dusk",
+    "skill_cooldown": 515,
+    "skill_range": 320,
+    "skill_duration": 0
   },
   "kairenji": {
     "name": "Kairenji",
@@ -2564,7 +3314,12 @@
     "cost": 8150,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Bayangan void dari Level 49"
+    "description": "Bayangan void dari Level 49",
+    "skill_name": "Void Slash",
+    "skill_desc": "Void slash + shadowclone flurry + void step + moonless night",
+    "skill_cooldown": 520,
+    "skill_range": 330,
+    "skill_duration": 0
   },
   "karzhul": {
     "name": "Karzhul",
@@ -2581,7 +3336,12 @@
     "cost": 8200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Serigala pemburu dari Level 49"
+    "description": "Serigala pemburu dari Level 49",
+    "skill_name": "Fang Ripper",
+    "skill_desc": "Fang ripper + blood frenzy + wild leap + lunar rampage",
+    "skill_cooldown": 525,
+    "skill_range": 335,
+    "skill_duration": 0
   },
   "xerakkuth": {
     "name": "Xerakkuth",
@@ -2598,7 +3358,12 @@
     "cost": 8100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Kalajengking pasir dari Level 49"
+    "description": "Kalajengking pasir dari Level 49",
+    "skill_name": "Venom Sting",
+    "skill_desc": "Venom sting + sandstorm + burrow strike + dune cataclysm",
+    "skill_cooldown": 515,
+    "skill_range": 340,
+    "skill_duration": 0
   },
   "kaelthys": {
     "name": "Kaelthys",
@@ -2615,7 +3380,12 @@
     "cost": 8300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pedang air dari Level 50"
+    "description": "Pedang air dari Level 50",
+    "skill_name": "Stillwater Slash",
+    "skill_desc": "Stillwater slash + waterfall flurry + ripple step + tidal blade",
+    "skill_cooldown": 530,
+    "skill_range": 340,
+    "skill_duration": 0
   },
   "kaoruken": {
     "name": "Kaoruken",
@@ -2632,7 +3402,12 @@
     "cost": 8350,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Prodigi chakra dari Level 50"
+    "description": "Prodigi chakra dari Level 50",
+    "skill_name": "Chakra Palm",
+    "skill_desc": "Chakra palm + gentle fist flurry + byakugan step + eight trigrams",
+    "skill_cooldown": 535,
+    "skill_range": 345,
+    "skill_duration": 0
   },
   "vaelkorr": {
     "name": "Vaelkorr",
@@ -2649,7 +3424,12 @@
     "cost": 8250,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Abadi pengikat benang dari Level 50"
+    "description": "Abadi pengikat benang dari Level 50",
+    "skill_name": "Thread Lance",
+    "skill_desc": "Thread lance + stitch storm + thread step + immortal weave",
+    "skill_cooldown": 525,
+    "skill_range": 350,
+    "skill_duration": 0
   },
   "aurelian": {
     "name": "Aurelian",
@@ -2666,7 +3446,12 @@
     "cost": 8450,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Sovereign tombak emas dari Level 51"
+    "description": "Sovereign tombak emas dari Level 51",
+    "skill_name": "Golden Spear",
+    "skill_desc": "Golden spear + vanguard banner + sovereign dash + cataclysm of gold",
+    "skill_cooldown": 540,
+    "skill_range": 350,
+    "skill_duration": 0
   },
   "morvath": {
     "name": "Morvath",
@@ -2683,7 +3468,12 @@
     "cost": 8500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Leviathan jurang dari Level 51"
+    "description": "Leviathan jurang dari Level 51",
+    "skill_name": "Shark Blade",
+    "skill_desc": "Shark blade + water prison + trench dive + leviathan's wake",
+    "skill_cooldown": 545,
+    "skill_range": 355,
+    "skill_duration": 0
   },
   "pyrhaan": {
     "name": "Pyrhaan",
@@ -2700,7 +3490,12 @@
     "cost": 8400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Adept api dari Level 51"
+    "description": "Adept api dari Level 51",
+    "skill_name": "Cinder Fist",
+    "skill_desc": "Cinder fist + flame guard + searing dash + cinder storm",
+    "skill_cooldown": 535,
+    "skill_range": 345,
+    "skill_duration": 0
   },
   "garumenshi": {
     "name": "Garumenshi",
@@ -2717,7 +3512,12 @@
     "cost": 8550,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pertapa kodok dari Level 52"
+    "description": "Pertapa kodok dari Level 52",
+    "skill_name": "Toad Strike",
+    "skill_desc": "Toad strike + oil splash + toad leap + toad mountain",
+    "skill_cooldown": 545,
+    "skill_range": 355,
+    "skill_duration": 0
   },
   "thoraz": {
     "name": "Thoraz",
@@ -2734,7 +3534,12 @@
     "cost": 8600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penghancur gunung dari Level 52"
+    "description": "Penghancur gunung dari Level 52",
+    "skill_name": "Mountain Slam",
+    "skill_desc": "Mountain slam + avalanche + charging boulder + cataclysm break",
+    "skill_cooldown": 550,
+    "skill_range": 360,
+    "skill_duration": 0
   },
   "vhaerith": {
     "name": "Vhaerith",
@@ -2751,7 +3556,12 @@
     "cost": 8500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penuai hampa dari Level 52"
+    "description": "Penuai hampa dari Level 52",
+    "skill_name": "Hollow Bolt",
+    "skill_desc": "Hollow bolt + reaping storm + hollow step + harvest of the damned",
+    "skill_cooldown": 535,
+    "skill_range": 360,
+    "skill_duration": 0
   },
   "dorakai": {
     "name": "Dorakai",
@@ -2768,7 +3578,12 @@
     "cost": 8650,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Oni gendang darah dari Level 53"
+    "description": "Oni gendang darah dari Level 53",
+    "skill_name": "Drum Wave",
+    "skill_desc": "Drum wave + bloodbeat storm + drum step + oni's war drum",
+    "skill_cooldown": 550,
+    "skill_range": 365,
+    "skill_duration": 0
   },
   "hitokage": {
     "name": "Hitokage",
@@ -2785,7 +3600,12 @@
     "cost": 8700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Master pedang matahari dari Level 53"
+    "description": "Master pedang matahari dari Level 53",
+    "skill_name": "Sunfire Slash",
+    "skill_desc": "Sunfire slash + rising sun + sun step + sun dragon",
+    "skill_cooldown": 555,
+    "skill_range": 355,
+    "skill_duration": 0
   },
   "kazuren": {
     "name": "Kazuren",
@@ -2802,7 +3622,12 @@
     "cost": 8600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Bayangan kekosongan dari Level 53"
+    "description": "Bayangan kekosongan dari Level 53",
+    "skill_name": "Void Slash",
+    "skill_desc": "Void slash + kamui storm + void phase + eye of the void",
+    "skill_cooldown": 540,
+    "skill_range": 350,
+    "skill_duration": 0
   },
   "obanai": {
     "name": "Obanai",
@@ -2819,7 +3644,12 @@
     "cost": 8750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Hashira ular dari Level 54"
+    "description": "Hashira ular dari Level 54",
+    "skill_name": "Serpent Fang",
+    "skill_desc": "Serpent fang + serpent coil + venom step + serpent breathing final",
+    "skill_cooldown": 555,
+    "skill_range": 355,
+    "skill_duration": 0
   },
   "sanguire": {
     "name": "Sanguire Voxthal",
@@ -2836,7 +3666,12 @@
     "cost": 8700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pengendali darah dari Level 54"
+    "description": "Pengendali darah dari Level 54",
+    "skill_name": "Blood Bolt",
+    "skill_desc": "Blood bolt + crimson storm + blood step + blood ritual",
+    "skill_cooldown": 545,
+    "skill_range": 370,
+    "skill_duration": 0
   },
   "sasori": {
     "name": "Sasori",
@@ -2853,7 +3688,12 @@
     "cost": 8800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Dalang pasir merah dari Level 54"
+    "description": "Dalang pasir merah dari Level 54",
+    "skill_name": "Puppet Slash",
+    "skill_desc": "Puppet slash + puppet storm + string step + red secret technique",
+    "skill_cooldown": 560,
+    "skill_range": 360,
+    "skill_duration": 0
   },
   "abaddon": {
     "name": "Abaddon",
@@ -2870,7 +3710,12 @@
     "cost": 700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Fallen knight ditaklukkan"
+    "description": "Fallen knight ditaklukkan",
+    "skill_name": "Mist Coil",
+    "skill_desc": "Teal projectile + Aphotic Shield",
+    "skill_cooldown": 240,
+    "skill_range": 100,
+    "skill_duration": 0
   },
   "alchemist": {
     "name": "Alchemist",
@@ -2887,7 +3732,12 @@
     "cost": 750,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Duo alchemist ditaklukkan"
+    "description": "Duo alchemist ditaklukkan",
+    "skill_name": "Acid Spray",
+    "skill_desc": "Toxic acid + concoction bomb",
+    "skill_cooldown": 210,
+    "skill_range": 180,
+    "skill_duration": 0
   },
   "ancient_apparition": {
     "name": "Ancient Apparition",
@@ -2904,7 +3754,12 @@
     "cost": 800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ancient ice spirit ditaklukkan"
+    "description": "Ancient ice spirit ditaklukkan",
+    "skill_name": "Ice Vortex",
+    "skill_desc": "Freeze enemies + AOE ice",
+    "skill_cooldown": 300,
+    "skill_range": 250,
+    "skill_duration": 0
   },
   "ignis_drachorn": {
     "name": "Ignis Drachorn",
@@ -2921,7 +3776,12 @@
     "cost": 850,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Dragon knight sovereign ditaklukkan"
+    "description": "Dragon knight sovereign ditaklukkan",
+    "skill_name": "Dragon Breath",
+    "skill_desc": "Fire cone + tail sweep + dragon form",
+    "skill_cooldown": 240,
+    "skill_range": 200,
+    "skill_duration": 0
   },
   "krobellus": {
     "name": "Krobellus",
@@ -2938,7 +3798,12 @@
     "cost": 1500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Death Prophet dari Haunted Veil"
+    "description": "Death Prophet dari Haunted Veil",
+    "skill_name": "Exorcism",
+    "skill_desc": "Summons spirits and drains enemy life",
+    "skill_cooldown": 220,
+    "skill_range": 260,
+    "skill_duration": 0
   },
   "kunkka": {
     "name": "Kunkka",
@@ -2955,7 +3820,12 @@
     "cost": 900,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Admiral of the Fleet dari Admiral's Cove"
+    "description": "Admiral of the Fleet dari Admiral's Cove",
+    "skill_name": "Tide Bringer",
+    "skill_desc": "Cleaving water slash + ghost ship + torrent",
+    "skill_cooldown": 240,
+    "skill_range": 200,
+    "skill_duration": 0
   },
   "nyxarath": {
     "name": "Nyxarath",
@@ -2972,7 +3842,12 @@
     "cost": 1000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Soul Eater dari Shadow Abyss"
+    "description": "Soul Eater dari Shadow Abyss",
+    "skill_name": "Shadowraze",
+    "skill_desc": "Hellfire beam + necromastery + presence + requiem of souls",
+    "skill_cooldown": 240,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "vhorethzir": {
     "name": "Vhoreth'zir",
@@ -2989,7 +3864,12 @@
     "cost": 1000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Nethervenom Wyrm dari Nethervenom Expanse"
+    "description": "Nethervenom Wyrm dari Nethervenom Expanse",
+    "skill_name": "Viper Strike",
+    "skill_desc": "Poison attack + nethertoxin + corrosive skin + viper strike",
+    "skill_cooldown": 240,
+    "skill_range": 230,
+    "skill_duration": 0
   },
   "naraka": {
     "name": "Naraka",
@@ -3006,7 +3886,12 @@
     "cost": 2000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Jiwa terkutuk dari Level 9"
+    "description": "Jiwa terkutuk dari Level 9",
+    "skill_name": "Chaos Strike",
+    "skill_desc": "Chaos strike + shadowstep + chain hammer + final execution",
+    "skill_cooldown": 220,
+    "skill_range": 140,
+    "skill_duration": 0
   },
   "aurethzar": {
     "name": "Aureth'zar",
@@ -3023,7 +3908,12 @@
     "cost": 2100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pemanah surya dari Level 10"
+    "description": "Pemanah surya dari Level 10",
+    "skill_name": "Marksman",
+    "skill_desc": "Marksman + piercing arrow + frost shot + distant thunder",
+    "skill_cooldown": 210,
+    "skill_range": 200,
+    "skill_duration": 0
   },
   "thalakryon": {
     "name": "Thalakryon",
@@ -3040,7 +3930,12 @@
     "cost": 2200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa abisal dari Level 11"
+    "description": "Penguasa abisal dari Level 11",
+    "skill_name": "Abyssal Bolt",
+    "skill_desc": "Abyssal bolt + aqua shield + tidal rage + metamorph",
+    "skill_cooldown": 210,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "nazulmor": {
     "name": "Nazulmor",
@@ -3057,7 +3952,12 @@
     "cost": 2300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Herald dari kedalaman Level 12"
+    "description": "Herald dari kedalaman Level 12",
+    "skill_name": "Typhoon",
+    "skill_desc": "Typhoon + aqua shield + tidal rage + chaotic",
+    "skill_cooldown": 210,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "solvarin": {
     "name": "Solvarin",
@@ -3074,7 +3974,12 @@
     "cost": 2400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Paladin suci dari Level 13"
+    "description": "Paladin suci dari Level 13",
+    "skill_name": "Purification",
+    "skill_desc": "Purification + repel + degen aura + guardian",
+    "skill_cooldown": 210,
+    "skill_range": 150,
+    "skill_duration": 0
   },
   "pyraethis": {
     "name": "Pyraethis",
@@ -3091,7 +3996,12 @@
     "cost": 2500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Burung api abadi dari Level 14"
+    "description": "Burung api abadi dari Level 14",
+    "skill_name": "Icarus Dive",
+    "skill_desc": "Icarus dive + fire spirits + sun ray + supernova",
+    "skill_cooldown": 220,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "yamako": {
     "name": "Yamako",
@@ -3108,7 +4018,12 @@
     "cost": 2600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pembentuk kayu purba dari Level 15"
+    "description": "Pembentuk kayu purba dari Level 15",
+    "skill_name": "Deep Forest",
+    "skill_desc": "Deep forest + wood creation + wood golem + kannon",
+    "skill_cooldown": 225,
+    "skill_range": 160,
+    "skill_duration": 0
   },
   "seiryukong": {
     "name": "Seiryukong",
@@ -3125,7 +4040,12 @@
     "cost": 2700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Raja kera langit dari Level 16"
+    "description": "Raja kera langit dari Level 16",
+    "skill_name": "Boundless",
+    "skill_desc": "Boundless + tree dance + jingu soldiers + wukong",
+    "skill_cooldown": 230,
+    "skill_range": 160,
+    "skill_duration": 0
   },
   "nyxareth": {
     "name": "Nyxareth",
@@ -3142,7 +4062,12 @@
     "cost": 2800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa kosmik dari Level 17"
+    "description": "Penguasa kosmik dari Level 17",
+    "skill_name": "Starsplit",
+    "skill_desc": "Starsplit + realworld + spacetime + astro realm",
+    "skill_cooldown": 235,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "aurelion": {
     "name": "Aurelion",
@@ -3159,7 +4084,12 @@
     "cost": 2900,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Raja emas dari Level 18"
+    "description": "Raja emas dari Level 18",
+    "skill_name": "Call Courage",
+    "skill_desc": "Call courage + guardian assault + king's command + king's summon",
+    "skill_cooldown": 240,
+    "skill_range": 160,
+    "skill_duration": 0
   },
   "vaelindra": {
     "name": "Vaelindra",
@@ -3176,7 +4106,12 @@
     "cost": 3000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa violet dari Level 19"
+    "description": "Penguasa violet dari Level 19",
+    "skill_name": "Energy Wave",
+    "skill_desc": "Energy wave + space ring + violet requiem + realm",
+    "skill_cooldown": 245,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "morthraxis": {
     "name": "Morthraxis",
@@ -3193,7 +4128,12 @@
     "cost": 3100,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Raja vampir merah dari Level 20"
+    "description": "Raja vampir merah dari Level 20",
+    "skill_name": "Bat Impale",
+    "skill_desc": "Bat impale + sanguine + phantom mob + baleful",
+    "skill_cooldown": 250,
+    "skill_range": 160,
+    "skill_duration": 0
   },
   "nexthyrius": {
     "name": "Nexthyrius",
@@ -3210,7 +4150,12 @@
     "cost": 3200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penjaga rantai spectral dari Level 21"
+    "description": "Penjaga rantai spectral dari Level 21",
+    "skill_name": "Chain Hook",
+    "skill_desc": "Chain hook + soul lantern + spectral reap + soul prison",
+    "skill_cooldown": 260,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "molgravar": {
     "name": "Molgravar",
@@ -3227,7 +4172,12 @@
     "cost": 3300,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Golem batu raksasa dari Level 22"
+    "description": "Golem batu raksasa dari Level 22",
+    "skill_name": "Seismic Slam",
+    "skill_desc": "Seismic slam + lava fissure + boulder toss + unstoppable",
+    "skill_cooldown": 270,
+    "skill_range": 180,
+    "skill_duration": 0
   },
   "seraphienne": {
     "name": "Seraphienne",
@@ -3244,7 +4194,12 @@
     "cost": 3400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Eksekutor surgawi dari Level 23"
+    "description": "Eksekutor surgawi dari Level 23",
+    "skill_name": "Divine Verdict",
+    "skill_desc": "Divine verdict + holy radiance + seraph wings + divine intervention",
+    "skill_cooldown": 280,
+    "skill_range": 190,
+    "skill_duration": 0
   },
   "solareth": {
     "name": "Solareth",
@@ -3261,7 +4216,12 @@
     "cost": 3500,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Herald matahari dari Level 24"
+    "description": "Herald matahari dari Level 24",
+    "skill_name": "Solar Cleave",
+    "skill_desc": "Solar cleave + radiant aegis + sunflare charge + dawn's judgment",
+    "skill_cooldown": 285,
+    "skill_range": 190,
+    "skill_duration": 0
   },
   "okeanora": {
     "name": "Okeanora",
@@ -3278,7 +4238,12 @@
     "cost": 3600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Peramal laut dalam dari Level 25"
+    "description": "Peramal laut dalam dari Level 25",
+    "skill_name": "Tidal Verdict",
+    "skill_desc": "Tidal verdict + kraken's embrace + abyssal surge + leviathan's wrath",
+    "skill_cooldown": 290,
+    "skill_range": 195,
+    "skill_duration": 0
   },
   "vaelmyrra": {
     "name": "Vaelmyrra",
@@ -3295,7 +4260,12 @@
     "cost": 3700,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Matriark darah dari Level 26"
+    "description": "Matriark darah dari Level 26",
+    "skill_name": "Blood Verdict",
+    "skill_desc": "Blood verdict + obsidian aegis + crimson charge + matriarch's wrath",
+    "skill_cooldown": 295,
+    "skill_range": 200,
+    "skill_duration": 0
   },
   "zarethyr": {
     "name": "Zarethyr",
@@ -3312,7 +4282,12 @@
     "cost": 3800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa kosmos dari Level 27"
+    "description": "Penguasa kosmos dari Level 27",
+    "skill_name": "Astral Bolt",
+    "skill_desc": "Astral bolt + cosmic veil + star surge + sovereign's nova",
+    "skill_cooldown": 300,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "nyrethzalv": {
     "name": "Nyreth'zalvarin",
@@ -3329,7 +4304,12 @@
     "cost": 3900,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Permaisuri bayangan dari Level 28"
+    "description": "Permaisuri bayangan dari Level 28",
+    "skill_name": "Shadow Chain",
+    "skill_desc": "Shadow chain + empress's veil + forsaken surge + eternal bond",
+    "skill_cooldown": 305,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "nyrellieth": {
     "name": "Nyrellieth",
@@ -3346,7 +4326,12 @@
     "cost": 4000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pemburu es dari Level 29"
+    "description": "Pemburu es dari Level 29",
+    "skill_name": "Frost Arrow",
+    "skill_desc": "Frost arrow + veil of frost + ice walk + eternal winter",
+    "skill_cooldown": 310,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "nyxharr": {
     "name": "Nyxharr",
@@ -3363,7 +4348,12 @@
     "cost": 4200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Bayangan perang dari Level 30"
+    "description": "Bayangan perang dari Level 30",
+    "skill_name": "Spirit Charge",
+    "skill_desc": "Spirit charge + war banner + ghost lance + eternal war",
+    "skill_cooldown": 315,
+    "skill_range": 220,
+    "skill_duration": 0
   },
   "ravokkar": {
     "name": "Ravokkar",
@@ -3380,7 +4370,12 @@
     "cost": 4400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Raja penjahat dari Level 31"
+    "description": "Raja penjahat dari Level 31",
+    "skill_name": "Quickdraw Barrage",
+    "skill_desc": "Quickdraw barrage + smoke veil + dynamite toss + last stand",
+    "skill_cooldown": 320,
+    "skill_range": 225,
+    "skill_duration": 0
   },
   "malzeroth": {
     "name": "Malzeroth",
@@ -3397,7 +4392,12 @@
     "cost": 4600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa hex dari Level 32"
+    "description": "Penguasa hex dari Level 32",
+    "skill_name": "Hex Bolt",
+    "skill_desc": "Hex bolt + cursed ground + hexbound chains + sovereign's curse",
+    "skill_cooldown": 330,
+    "skill_range": 230,
+    "skill_duration": 0
   },
   "zharakzuul": {
     "name": "Zharakzuul",
@@ -3414,7 +4414,12 @@
     "cost": 4800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa kekosongan dari Level 33"
+    "description": "Penguasa kekosongan dari Level 33",
+    "skill_name": "Void Lance",
+    "skill_desc": "Void lance + null field + void step + sovereign's void",
+    "skill_cooldown": 335,
+    "skill_range": 235,
+    "skill_duration": 0
   },
   "grondmauris": {
     "name": "Grondmauris",
@@ -3431,7 +4436,12 @@
     "cost": 5000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Raksasa bumi dari Level 34"
+    "description": "Raksasa bumi dari Level 34",
+    "skill_name": "Earth Break",
+    "skill_desc": "Earth break + moss bind + colossus stampede + world awakening",
+    "skill_cooldown": 340,
+    "skill_range": 240,
+    "skill_duration": 0
   },
   "lyssarethys": {
     "name": "Lyssarethys",
@@ -3448,7 +4458,12 @@
     "cost": 5200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pemutus hati dari Level 35"
+    "description": "Pemutus hati dari Level 35",
+    "skill_name": "Heartbreak Lance",
+    "skill_desc": "Heartbreak lance + last caress + soul whip + heartbane's embrace",
+    "skill_cooldown": 345,
+    "skill_range": 250,
+    "skill_duration": 0
   },
   "kaerinya": {
     "name": "Kaerinya",
@@ -3465,7 +4480,12 @@
     "cost": 5400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Tinju matahari dari Level 36"
+    "description": "Tinju matahari dari Level 36",
+    "skill_name": "Solar Jab",
+    "skill_desc": "Solar jab + blazing guard + sunstep + sunfist cataclysm",
+    "skill_cooldown": 350,
+    "skill_range": 255,
+    "skill_duration": 0
   },
   "xelnarath": {
     "name": "Xel'Narath",
@@ -3482,7 +4502,12 @@
     "cost": 5600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa kekosongan dari Level 37"
+    "description": "Penguasa kekosongan dari Level 37",
+    "skill_name": "Void Lance",
+    "skill_desc": "Void lance + magenta eclipse + void wing dive + sovereign's voidfall",
+    "skill_cooldown": 355,
+    "skill_range": 260,
+    "skill_duration": 0
   },
   "kyrenzai": {
     "name": "Kyrenzai",
@@ -3499,7 +4524,12 @@
     "cost": 5800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pelahap merah dari Level 38"
+    "description": "Pelahap merah dari Level 38",
+    "skill_name": "Kagune Pierce",
+    "skill_desc": "Kagune pierce + blood feast + tentacle sweep + devourer's hunger",
+    "skill_cooldown": 360,
+    "skill_range": 265,
+    "skill_duration": 0
   },
   "xaelmoran": {
     "name": "Xael'moran",
@@ -3516,7 +4546,12 @@
     "cost": 6000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penenun elemen dari Level 39"
+    "description": "Penenun elemen dari Level 39",
+    "skill_name": "Cold Snap",
+    "skill_desc": "Cold snap + tornado + sun strike + cataclysm",
+    "skill_cooldown": 365,
+    "skill_range": 270,
+    "skill_duration": 0
   },
   "thalryndel": {
     "name": "Thal'ryndel",
@@ -3533,7 +4568,12 @@
     "cost": 6200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penenun badai dari Level 40"
+    "description": "Penenun badai dari Level 40",
+    "skill_name": "Lightning Bolt",
+    "skill_desc": "Lightning bolt + storm veil + tempest step + eye of the storm",
+    "skill_cooldown": 370,
+    "skill_range": 275,
+    "skill_duration": 0
   },
   "grimkor": {
     "name": "Grimkor",
@@ -3550,7 +4590,12 @@
     "cost": 6400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Tuan perang penggergajian dari Level 41"
+    "description": "Tuan perang penggergajian dari Level 41",
+    "skill_name": "Sawblade Spin",
+    "skill_desc": "Sawblade spin + lumberjack's wrath + timber charge + mill of ruin",
+    "skill_cooldown": 375,
+    "skill_range": 280,
+    "skill_duration": 0
   },
   "kaineroth": {
     "name": "Kaineroth",
@@ -3567,7 +4612,12 @@
     "cost": 6600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Prodigi merah dari Level 42"
+    "description": "Prodigi merah dari Level 42",
+    "skill_name": "Crimson Gaze",
+    "skill_desc": "Crimson gaze + crow storm + shadow step + crow-eyed judgment",
+    "skill_cooldown": 380,
+    "skill_range": 285,
+    "skill_duration": 0
   },
   "zyvareth": {
     "name": "Zyvareth",
@@ -3584,7 +4634,12 @@
     "cost": 6800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Herald badai kristal dari Level 43"
+    "description": "Herald badai kristal dari Level 43",
+    "skill_name": "Crystal Bolt",
+    "skill_desc": "Crystal bolt + stormfall + thunder horn + crystal tempest",
+    "skill_cooldown": 385,
+    "skill_range": 295,
+    "skill_duration": 0
   },
   "kagetsuka": {
     "name": "Kagetsuka",
@@ -3601,7 +4656,12 @@
     "cost": 7000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Tuan perang abadi dari Level 44"
+    "description": "Tuan perang abadi dari Level 44",
+    "skill_name": "Crimson Slash",
+    "skill_desc": "Crimson slash + fire aura + warlord's charge + eternal judgment",
+    "skill_cooldown": 390,
+    "skill_range": 300,
+    "skill_duration": 0
   },
   "deidara": {
     "name": "Deidara",
@@ -3618,7 +4678,12 @@
     "cost": 7200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Seniman peledak dari Level 45"
+    "description": "Seniman peledak dari Level 45",
+    "skill_name": "Clay Bird",
+    "skill_desc": "Clay bird + c1 bomb cluster + artful step + c4 karura",
+    "skill_cooldown": 395,
+    "skill_range": 310,
+    "skill_duration": 0
   },
   "sunakage": {
     "name": "Sunakage",
@@ -3635,7 +4700,12 @@
     "cost": 7400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Bayangan pasir dari Level 46"
+    "description": "Bayangan pasir dari Level 46",
+    "skill_name": "Sand Blade",
+    "skill_desc": "Sand blade + dune storm + sand step + shadow of the dunes",
+    "skill_cooldown": 400,
+    "skill_range": 320,
+    "skill_duration": 0
   },
   "pyraena": {
     "name": "Pyraena",
@@ -3652,7 +4722,12 @@
     "cost": 7600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penenun bara dari Level 47"
+    "description": "Penenun bara dari Level 47",
+    "skill_name": "Ember Lance",
+    "skill_desc": "Ember lance + flame weave + ember step + emberweaver's inferno",
+    "skill_cooldown": 405,
+    "skill_range": 330,
+    "skill_duration": 0
   },
   "cogsworth": {
     "name": "Cogsworth",
@@ -3669,7 +4744,12 @@
     "cost": 7800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Mesin langit dari Level 48"
+    "description": "Mesin langit dari Level 48",
+    "skill_name": "Sky Cannon",
+    "skill_desc": "Sky cannon + copper storm + rocket dash + skyfury cataclysm",
+    "skill_cooldown": 410,
+    "skill_range": 340,
+    "skill_duration": 0
   },
   "yomigetsu": {
     "name": "Yomigetsu",
@@ -3686,7 +4766,12 @@
     "cost": 8000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penuai bulan dari Level 49"
+    "description": "Penuai bulan dari Level 49",
+    "skill_name": "Crescent Slash",
+    "skill_desc": "Crescent slash + lunar eclipse + moon step + reaper's moonfall",
+    "skill_cooldown": 415,
+    "skill_range": 350,
+    "skill_duration": 0
   },
   "akirakumo": {
     "name": "Akirakumo",
@@ -3703,7 +4788,12 @@
     "cost": 8200,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pangeran serigala bulan dari Level 50"
+    "description": "Pangeran serigala bulan dari Level 50",
+    "skill_name": "Moonfang Slash",
+    "skill_desc": "Moonfang slash + silver storm + fang step + prince's moonfall",
+    "skill_cooldown": 420,
+    "skill_range": 360,
+    "skill_duration": 0
   },
   "kaithros": {
     "name": "Kaithros",
@@ -3720,7 +4810,12 @@
     "cost": 8400,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Ronin singa api dari Level 51"
+    "description": "Ronin singa api dari Level 51",
+    "skill_name": "Ember Slash",
+    "skill_desc": "Ember slash + flame breathing + lion's step + emberlion's final flame",
+    "skill_cooldown": 425,
+    "skill_range": 250,
+    "skill_duration": 0
   },
   "nyxaris": {
     "name": "Nyxaris",
@@ -3737,7 +4832,12 @@
     "cost": 8600,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Pembawa pesan bulan dari Level 52"
+    "description": "Pembawa pesan bulan dari Level 52",
+    "skill_name": "Moonfire Shot",
+    "skill_desc": "Moonfire shot + crescent volley + lunar step + herald's eclipse",
+    "skill_cooldown": 430,
+    "skill_range": 370,
+    "skill_duration": 0
   },
   "tsukiyora": {
     "name": "Tsukiyora",
@@ -3754,7 +4854,12 @@
     "cost": 8800,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Penguasa lahir-bulan dari Level 53"
+    "description": "Penguasa lahir-bulan dari Level 53",
+    "skill_name": "Moon Chakra Blast",
+    "skill_desc": "Moon chakra blast + truth-seeking storm + lunar shift + all-killing ash bone",
+    "skill_cooldown": 435,
+    "skill_range": 380,
+    "skill_duration": 0
   },
   "hollowbane": {
     "name": "Kurosaki Hollowbane",
@@ -3771,6 +4876,11 @@
     "cost": 9000,
     "is_boss_hero": true,
     "dmg_type": "PHYSICAL",
-    "description": "Shinigami pengganti dari Level 54"
+    "description": "Shinigami pengganti dari Level 54",
+    "skill_name": "Getsuga Tensho",
+    "skill_desc": "Getsuga tensho + bankai storm + flash step + final getsuga",
+    "skill_cooldown": 440,
+    "skill_range": 260,
+    "skill_duration": 0
   }
 }

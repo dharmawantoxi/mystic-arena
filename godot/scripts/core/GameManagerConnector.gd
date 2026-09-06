@@ -19,6 +19,9 @@ func _ready():
 	GameManager.boss_container = _containers.get_node_or_null(^"Bosses")
 	GameManager.minion_container = _containers.get_node_or_null(^"Minions")
 	GameManager.tower_container = _containers.get_node_or_null(^"Towers")
+	# FX (peluru menara, damage number) hidup di CanvasLayer sendiri supaya selalu
+	# di atas unit — tanpa ini attach_fx() jatuh ke current_scene.
+	GameManager.fx_container = _containers.get_parent().get_node_or_null(^"FX")
 	if start_level_on_ready:
 		# call_deferred supaya level_started dipancarkan SETELAH seluruh _ready
 		# selesai (parent/child) — pendengar signal (Main.gd, HUD.gd) dijamin siap.

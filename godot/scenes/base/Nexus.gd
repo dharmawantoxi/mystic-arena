@@ -1,0 +1,311 @@
+# Nexus.gd — port _entity.Castle (base yang harus dihancurkan).
+#
+# Inilah kondisi menang/kalah yang sebelumnya tidak ada di versi Godot:
+#   red nexus hancur  -> GameManager.state = "victory"
+#   blue nexus hancur -> GameManager.state = "defeat"
+# (paritas _core.Game.update 2281-2292)
+#
+# Statistik per level castle dibaca dari TowerDB (godot/data/nexus.json =
+# NEXUS_LEVELS pygame): L1 4000 HP / 35 dmg / 150 range / 45f cd ... L5 15000 HP.
+# Castle Shield: gratis sampai wave 10, sesudah itu harus dibeli (850 gold),
+# menyerap 1:1 lalu memotong sisa damage 88%.
+extends Node2D
+
+const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
+const FPS := 60.0
+
+@export var team: String = "blue"
+
+var level: int = 1
+var max_hp: float = 4000.0
+var hp: float = 4000.0
+var damage: float = 35.0
+var attack_range: float = 150.0
+var attack_cooldown: float = 45.0 / FPS
+var minion_scale: float = 1.0
+var radius: float = 45.0
+var armor: float = 0.0
+var magic_resist: float = 0.0
+var dmg_school: String = "physical"
+var color_accent: Color = Color(1, 1, 1)
+
+# ── shield (Castle Shield) ──
+var shield: float = 0.0
+var shield_max: float = 0.0
+var shield_active: bool = true
+var shield_damage_reduction: float = 0.88
+var free_shield_active: bool = true
+var castle_shield_purchased: bool = false
+var no_damage_timer: float = 0.0
+
+# ── state ──
+var is_dead: bool = false
+var target: Node2D = null
+var attack_timer: float = 0.0
+var angle: float = 0.0
+var selected: bool = false
+var pulse: float = 0.0
+var display_name: String = "Nexus"
+
+
+
+func _ready() -> void:
+	add_to_group("nexus")
+	z_as_relative = false
+	z_index = 40
+	radius = TowerDB.base_radius()
+	_apply_level_stats()
+	var cfg: Dictionary = TowerDB.shield_cfg()
+	shield_damage_reduction = float(cfg.get("damage_reduction", 0.88))
+	set_wave(0)
+	display_name = "Radiant Nexus" if team == "blue" else "Dire Nexus"
+	GameManager.register_nexus(self)
+
+
+func _exit_tree() -> void:
+	GameManager.unregister_nexus(self)
+
+
+## CombatSystem itu autoload singleton -> boleh dirujuk langsung sebagai
+## identifier global (gaya yang sama dengan Hero.gd/Minion.gd). Helper ini
+## dipertahankan supaya call site tetap `var cs = _combat()` dan mudah
+## di-mock kalau suatu saat combat dipisah per-scene.
+func _combat():
+	return CombatSystem
+
+
+# ══════════════════════════════════════════════════════════
+#  STAT & SHIELD
+# ══════════════════════════════════════════════════════════
+
+func _apply_level_stats() -> void:
+	var s: Dictionary = TowerDB.nexus_stats(level)
+	var old_max := max_hp
+	var old_hp := hp
+	var old_shield_max := shield_max
+	var old_shield := shield
+	max_hp = float(s["hp"])
+	if old_max > 0.0 and old_hp > 0.0:
+		# paritas Castle._apply_level_stats: pertahankan rasio + bonus 500
+		var ratio := old_hp / old_max
+		hp = minf(max_hp, max_hp * ratio + 500.0)
+	else:
+		hp = max_hp
+	damage = float(s["damage"])
+	attack_range = float(s["range"])
+	attack_cooldown = float(s["cooldown"])
+	minion_scale = float(s["minion_scale"])
+	color_accent = s["color_accent"]
+	var cfg: Dictionary = TowerDB.shield_cfg()
+	shield_max = max_hp * float(cfg.get("hp_ratio", 1.0))
+	# Upgrade castle mempertahankan persentase shield yang tersisa
+	if old_shield_max > 0.0:
+		shield = shield_max * clampf(old_shield / old_shield_max, 0.0, 1.0)
+	else:
+		shield = shield_max if shield_active else 0.0
+	queue_redraw()
+
+
+func set_wave(wave_number: int) -> void:
+	# paritas Castle.set_wave: perlindungan gratis sampai wave 10
+	var cfg: Dictionary = TowerDB.shield_cfg()
+	if not bool(cfg.get("enabled", true)):
+		shield_active = false
+		return
+	free_shield_active = wave_number <= int(cfg.get("free_waves", 10))
+	if free_shield_active:
+		shield_active = true
+		if shield <= 0.0:
+			shield = shield_max
+	elif not castle_shield_purchased:
+		shield_active = false
+		shield = 0.0
+	else:
+		shield_active = true
+	queue_redraw()
+
+
+func can_buy_shield() -> bool:
+	return not free_shield_active and not castle_shield_purchased and not is_dead
+
+
+func shield_cost() -> int:
+	return int(TowerDB.shield_cfg().get("cost", 850))
+
+
+func activate_castle_shield() -> bool:
+	if not can_buy_shield():
+		return false
+	castle_shield_purchased = true
+	free_shield_active = false
+	shield_active = true
+	shield_max = max_hp * float(TowerDB.shield_cfg().get("hp_ratio", 1.0))
+	shield = shield_max
+	no_damage_timer = 0.0
+	queue_redraw()
+	return true
+
+
+func can_upgrade() -> bool:
+	return level < TowerDB.nexus_max_level() and not is_dead
+
+
+func upgrade_cost() -> int:
+	if not can_upgrade():
+		return 0
+	return int(TowerDB.nexus_stats(level).get("upgrade_cost", 0))
+
+
+func upgrade() -> bool:
+	if not can_upgrade():
+		return false
+	level += 1
+	_apply_level_stats()
+	GameManager.nexus_upgraded.emit(team, level)
+	return true
+
+
+func _update_shield_regen(delta: float) -> void:
+	if not shield_active:
+		return
+	no_damage_timer += delta
+	var cfg: Dictionary = TowerDB.shield_cfg()
+	var delay := float(cfg.get("regen_delay_frames", 120)) / FPS
+	var rate := float(cfg.get("regen_rate_per_frame", 3.5)) * FPS
+	if no_damage_timer >= delay and shield < shield_max:
+		shield = minf(shield_max, shield + rate * delta)
+
+
+# ══════════════════════════════════════════════════════════
+#  LOOP
+# ══════════════════════════════════════════════════════════
+
+func _physics_process(delta: float) -> void:
+	if is_dead or GameManager.state != "playing":
+		return
+	pulse += delta * 3.0
+	attack_timer = maxf(0.0, attack_timer - delta)
+	_update_shield_regen(delta)
+
+	var cs = _combat()
+	if cs != null:
+		target = cs.nearest_enemy(self, attack_range)
+	if target != null:
+		angle = (target.global_position - global_position).angle()
+		if attack_timer <= 0.0:
+			_shoot()
+			attack_timer = attack_cooldown
+	queue_redraw()
+
+
+func _shoot() -> void:
+	if target == null:
+		return
+	var b = TowerBulletScript.new()
+	b.setup(target, damage, team, "normal", {}, TowerDB.bullet_speed() * 0.85,
+		color_accent, self)
+	b.global_position = global_position + Vector2(cos(angle), sin(angle)) * 26.0
+	GameManager.attach_fx(b)
+
+
+# ══════════════════════════════════════════════════════════
+#  DAMAGE
+# ══════════════════════════════════════════════════════════
+
+func take_damage(amount: float, from_team: String = "", dmg_type: String = "normal",
+		source = null, school: String = "") -> void:
+	if is_dead:
+		return
+	no_damage_timer = 0.0
+	var cs = _combat()
+	if cs != null:
+		cs.apply_damage(self, amount, from_team, dmg_type, source, school)
+	else:
+		hp -= amount
+	queue_redraw()
+	if hp <= 0.0:
+		die(from_team)
+
+
+func heal(amount: float) -> void:
+	if is_dead:
+		return
+	hp = minf(max_hp, hp + amount)
+
+
+func die(killer_team: String = "") -> void:
+	if is_dead:
+		return
+	is_dead = true
+	hp = 0.0
+	shield = 0.0
+	shield_active = false
+	target = null
+	print("[Nexus] %s hancur oleh %s" % [display_name, killer_team])
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(self, "modulate:a", 0.25, 0.9)
+	tw.tween_property(self, "scale", Vector2(1.15, 0.7), 0.9)
+	GameManager.nexus_destroyed.emit(team, killer_team)
+
+
+# ══════════════════════════════════════════════════════════
+#  GAMBAR
+# ══════════════════════════════════════════════════════════
+
+func _draw() -> void:
+	var team_col := Color(0.30, 0.55, 1.0) if team == "blue" else Color(0.92, 0.30, 0.28)
+	var cfg: Dictionary = TowerDB.shield_cfg()
+	# halaman batu
+	draw_circle(Vector2.ZERO, radius * 1.55, Color(0.22, 0.21, 0.2, 0.85))
+	draw_arc(Vector2.ZERO, radius * 1.55, 0.0, TAU, 44,
+		Color(team_col.r, team_col.g, team_col.b, 0.45), 2.0)
+	# 4 turret penjuru (paritas ArenaMap._draw_base)
+	for i in range(4):
+		var a := TAU * float(i) / 4.0 + PI * 0.25
+		var p := Vector2(cos(a), sin(a)) * radius * 1.18
+		draw_circle(p, 11.0, Color(0.45, 0.43, 0.4, 1))
+		draw_arc(p, 11.0, 0.0, TAU, 16, team_col, 2.0)
+	# badan castle
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-28, 18), Vector2(28, 18), Vector2(24, -22), Vector2(-24, -22)]),
+		Color(0.36, 0.34, 0.33, 1))
+	# gerigi atas
+	for i in range(5):
+		var x := -24.0 + float(i) * 12.0
+		draw_rect(Rect2(Vector2(x, -32), Vector2(8, 10)), Color(0.44, 0.42, 0.4, 1), true)
+	# nexus kristal (denyut)
+	var glow := 0.65 + 0.35 * sin(pulse)
+	draw_circle(Vector2(0, -4), 15.0, Color(team_col.r, team_col.g, team_col.b, 0.35 * glow))
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(0, -20), Vector2(11, -4), Vector2(0, 12), Vector2(-11, -4)]),
+		color_accent.darkened(0.15))
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(0, -16), Vector2(6, -4), Vector2(0, 8), Vector2(-6, -4)]),
+		Color(color_accent.r, color_accent.g, color_accent.b, glow))
+	# shield bubble
+	if shield_active and shield > 0.0:
+		var ratio := clampf(shield / maxf(1.0, shield_max), 0.0, 1.0)
+		var sc: Color = cfg.get("color_blue", Color("#64c8ff")) if team == "blue" \
+			else cfg.get("color_red", Color("#ff7878"))
+		draw_arc(Vector2.ZERO, radius * 1.9, 0.0, TAU, 56,
+			Color(sc.r, sc.g, sc.b, 0.30 + 0.45 * ratio), 3.0)
+		draw_circle(Vector2.ZERO, radius * 1.9, Color(sc.r, sc.g, sc.b, 0.06 + 0.05 * ratio))
+	# bar HP + shield di atas castle
+	var w := 84.0
+	var hp_ratio := clampf(hp / maxf(1.0, max_hp), 0.0, 1.0)
+	draw_rect(Rect2(Vector2(-w * 0.5, -56), Vector2(w, 7)), Color(0, 0, 0, 0.6), true)
+	draw_rect(Rect2(Vector2(-w * 0.5, -56), Vector2(w * hp_ratio, 7)), team_col, true)
+	draw_rect(Rect2(Vector2(-w * 0.5, -56), Vector2(w, 7)), Color(1, 1, 1, 0.25), false, 1.0)
+	if shield_max > 0.0 and shield_active:
+		var sh_ratio := clampf(shield / shield_max, 0.0, 1.0)
+		draw_rect(Rect2(Vector2(-w * 0.5, -62), Vector2(w * sh_ratio, 4)),
+			Color(0.55, 0.85, 1, 0.9), true)
+	# pip level castle
+	for i in range(level):
+		draw_circle(Vector2(-w * 0.5 + 6.0 + float(i) * 9.0, -68), 2.6,
+			Color(1, 0.85, 0.35, 0.95))
+	if selected:
+		draw_arc(Vector2.ZERO, radius * 1.7, 0.0, TAU, 40, Color(1, 0.92, 0.5, 0.85), 2.0)
+	if is_dead:
+		draw_rect(Rect2(Vector2(-40, -40), Vector2(80, 80)), Color(0, 0, 0, 0.45), true)
