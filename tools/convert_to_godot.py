@@ -63,6 +63,15 @@ def export_heroes():
                 "skill_cooldown": v.get("skill_cooldown", 300),
                 "skill_range": v.get("skill_range", 100),
                 "skill_duration": v.get("skill_duration", 0),
+                # ── HERO SHOP meta (dibaca MainMenu.gd; paritas
+                #    _unlock_hero_in_meta_shop _core.py:5298-5328) ──
+                # unlock_cost = harga meta gold final (starter 0 / boss 4500 —
+                # STARTER/MINI/TRUE_BOSS_HERO_UNLOCK_COST _core.py:1248-1250),
+                # unlock_require_boss = boss yang harus dikalahkan dulu,
+                # boss_class = tab shop (mini/true).
+                "unlock_cost": int(v.get("unlock_cost", 600)),
+                "unlock_require_boss": v.get("unlock_require_boss"),
+                "boss_class": v.get("boss_class", ""),
             }
         write_json("heroes.json", simple)
     except Exception as e:
@@ -276,6 +285,31 @@ def export_economy():
         import traceback; traceback.print_exc()
 
 
+def export_sounds():
+    """Salin 24 file .wav assets/sounds/ -> godot/assets/sounds/.
+
+    AudioManager.gd memuat dari res://assets/sounds/ — res:// tidak bisa
+    keluar dari root project Godot, jadi aset harus diduplikasi. Folder
+    tujuan sengaja di-gitignore (duplikat 15 MB; sumber kebenaran tetap
+    assets/sounds/ pygame). Jalankan converter = audio siap dipakai.
+    """
+    import shutil
+    src_dir = os.path.join(ROOT, "assets", "sounds")
+    dst_dir = os.path.join(ROOT, "godot", "assets", "sounds")
+    if not os.path.isdir(src_dir):
+        print("[convert] sounds: assets/sounds/ tidak ada — dilewati", file=sys.stderr)
+        return
+    os.makedirs(dst_dir, exist_ok=True)
+    copied = 0
+    for fname in sorted(os.listdir(src_dir)):
+        src = os.path.join(src_dir, fname)
+        dst = os.path.join(dst_dir, fname)
+        if os.path.isfile(src) and fname.lower().endswith((".wav", ".txt", ".ogg")):
+            shutil.copy2(src, dst)
+            copied += 1
+    print(f"[convert] sounds: {copied} file -> {dst_dir}")
+
+
 if __name__ == "__main__":
     export_heroes()
     export_bosses()
@@ -287,4 +321,5 @@ if __name__ == "__main__":
     export_towers()
     export_nexus()
     export_economy()
+    export_sounds()
     print("[convert] Done. Copy godot/data/*.json ke Godot res://data/")

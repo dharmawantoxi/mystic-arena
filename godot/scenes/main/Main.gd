@@ -10,16 +10,20 @@
 # layout map — GameManager tetap memegang state, Main yang memegang medan):
 #   1. membingkai kamera ke arena 1280x720,
 #   2. menukar tema map dari levels.json["map_theme"],
-#   3. spawn 2 NEXUS (Radiant/Dire) -> match bisa MENANG/KALAH,
+#   3. spawn 2 NEXUS (Radiant/Dire) -> match bisa MENANG/KALAH, dengan level
+#      castle awal dari levels.json (starting_castle_level / castle_start_level
+#      — paritas _core.py:1504-1508),
 #   4. bangun 18 SLOT menara dari lane path (paritas
 #      Game._generate_build_slots_from_lanes) + menggambarnya,
 #   5. spawn roster starter 6 hero per tim, hero blue pertama jadi milik pemain
 #      (QWER + toko),
 #   6. jadwal boss: mini boss per wave (levels.json["mini_bosses"]) dan true boss
-#      setelah 6 menara Dire hancur (paritas _core.py 2089),
+#      setelah 6 menara Dire hancur (paritas _core.py 2089), keduanya kena
+#      enemy scaling hard mode saat spawn (paritas _core.py 1822/2097),
 #   7. AI tim red membangun/meng-upgrade menara memakai GameManager.ai_gold,
 #   8. input: klik = pilih unit/slot, QWER = skill, B = toko, D = difficulty,
-#      ENTER = mulai ulang setelah menang/kalah, P/ESC = pause,
+#      ENTER setelah menang = LANJUT LEVEL BERIKUTNYA (kalah = ulang),
+#      R = replay, ESC setelah menang/kalah = menu utama, P/ESC = menu PAUSE,
 #      F1 = debug respawn roster, T = ganti tema, SPASI = beli hero random.
 extends Node2D
 
@@ -102,6 +106,13 @@ func _ready():
 	_camera = get_node_or_null(^"Camera2D")
 	_frame_camera()
 	_build_slot_layer()
+	# Sambungkan sinyal menu utama (node UI/MainMenu siap lebih dulu karena
+	# anak diproses sebelum parent; koneksi di sini juga aman diulang).
+	var menu = _main_menu()
+	if menu != null:
+		_connect_once(menu.play_requested, _on_menu_play)
+		_connect_once(menu.resume_requested, _on_menu_resume)
+		_connect_once(menu.main_menu_requested, _on_menu_main_menu)
 	# Tetap dapat kunci walau SceneTree di-pause (P/ESC). Karena anak men-inherit,
 	# node yang mensimulasikan unit harus dipaksa PAUSABLE supaya get_tree().paused
 	# sungguh-sungguh membekukan hero/minion.
@@ -178,11 +189,27 @@ func _reset_boss_schedule() -> void:
 	true_boss_spawned = false
 	_ai_timer = 0.0
 
-## Nexus = kondisi menang/kalah (paritas Castle di _entity.py)
+## Nexus = kondisi menang/kalah (paritas Castle di _entity.py).
+## Level castle awal dibaca levels.json (paritas _core.py:1504-1508):
+##   blue : starting_castle_level (bonus pemain)
+##   red  : castle_start_level HANYA kalau enemy scaling aktif (hard),
+##          selain itu 1 — di easy/normal menara nexus merah polos.
 func _spawn_nexuses() -> void:
+	var lv: Dictionary = BossDB.get_level(GameManager.level_number)
+	var blue_start := clampi(int(lv.get("starting_castle_level", 1)), 1, TowerDB.nexus_max_level())
+	var red_start := 1
+	if GameManager.enemy_scaling_enabled:
+		red_start = clampi(int(lv.get("castle_start_level", 1)), 1, TowerDB.nexus_max_level())
 	for team in ["blue", "red"]:
 		var nexus = GameManager.spawn_nexus(team, _base_center(team))
+		# Naikkan level SEBELUM register (stat level + shield shield wave 0
+		# dihitung di _ready/_apply_level_stats, jadi upgrade dulu = stat final).
+		var target := blue_start if team == "blue" else red_start
+		while int(nexus.get("level")) < target and nexus.has_method("upgrade"):
+			nexus.upgrade()
 		GameManager.register_nexus(nexus)
+	if blue_start > 1 or red_start > 1:
+		print("[Main] castle awal: Radiant Lv%d · Dire Lv%d" % [blue_start, red_start])
 
 ## Slot bangun menara: 3 lane x 3 slot x 2 tim = 18 slot
 func _generate_build_slots() -> void:
@@ -211,7 +238,12 @@ func _on_wave_started(wave_num: int) -> void:
 			GameManager.spawn_minion(comp[i], "blue", _spawn_point("blue", i, lane), scale)
 			spawned += 1
 		if GameManager.count_alive("minions", "red") < GameManager.max_minions_per_team:
-			GameManager.spawn_minion(comp[i], "red", _spawn_point("red", i, lane), scale)
+			var m = GameManager.spawn_minion(comp[i], "red", _spawn_point("red", i, lane), scale)
+			# ENEMY SCALING (Hard only) — paritas _core.py:1792-1796: hanya
+			# antrean spawn MERAH yang dikali enemy_hp/damage/speed_mult.
+			if GameManager.enemy_scaling_enabled:
+				m.apply_enemy_scaling(GameManager.enemy_hp_mult,
+					GameManager.enemy_damage_mult, GameManager.enemy_speed_mult)
 			spawned += 1
 	_queue_mini_boss(wave_num)
 	print("[Main] wave %d -> %d minion (skala %.2fx) | menara hancur: %d" % [
@@ -235,14 +267,19 @@ func _boss_tick(_delta: float) -> void:
 		return
 	if active_boss != null:
 		if not is_instance_valid(active_boss) or bool(active_boss.get("is_dead")):
-			active_boss = null
+			active_boss = None
 		else:
 			return # satu boss aktif pada satu waktu, sama seperti pygame
 	if not pending_mini_bosses.is_empty():
 		var boss_type: String = pending_mini_bosses.pop_front()
 		active_boss = GameManager.spawn_boss(boss_type, "red",
 			_spawn_point("red", ENEMY_ROSTER.size() + 1))
-		print("[Main] MINI BOSS %s turun ke mid lane" % boss_type)
+		# ENEMY SCALING (Hard only) — paritas _core.py:1822-1823
+		if GameManager.enemy_scaling_enabled:
+			active_boss.apply_scaling(GameManager.enemy_hp_mult,
+				GameManager.enemy_damage_mult, GameManager.enemy_speed_mult)
+		print("[Main] MINI BOSS %s turun ke mid lane%s" % [boss_type,
+			" (scaling x%.2f)" % GameManager.enemy_hp_mult if GameManager.enemy_scaling_enabled else ""])
 		return
 	if not true_boss_spawned and red_towers_destroyed >= TRUE_BOSS_TOWER_KILLS:
 		var lv: Dictionary = BossDB.get_level(GameManager.level_number)
@@ -251,6 +288,10 @@ func _boss_tick(_delta: float) -> void:
 			return
 		active_boss = GameManager.spawn_boss(true_boss, "red",
 			_spawn_point("red", ENEMY_ROSTER.size() + 1))
+		# ENEMY SCALING (Hard only) — paritas _core.py:2097-2098
+		if GameManager.enemy_scaling_enabled:
+			active_boss.apply_scaling(GameManager.enemy_hp_mult,
+				GameManager.enemy_damage_mult, GameManager.enemy_speed_mult)
 		true_boss_spawned = true
 		print("[Main] TRUE BOSS %s turun (%d menara Dire hancur)" % [
 			true_boss, red_towers_destroyed])
@@ -399,15 +440,43 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_key(key: InputEventKey) -> void:
 	if not key.pressed or key.echo:
 		return
+	var menu = _main_menu()
 	# P/ESC dicek paling awal: justru dibutuhkan untuk RESUME saat tree di-pause
 	if key.keycode == KEY_P or key.keycode == KEY_ESCAPE:
 		if GameManager.shop_open:
 			GameManager.close_shop()
+		elif menu != null and menu.is_open():
+			# menu PAUSE menangani ESC sendiri (resume / kembali)
+			return
+		elif key.keycode == KEY_ESCAPE and GameManager.state != "playing" \
+				and not GameManager.in_menu:
+			# ESC setelah menang/kalah -> menu utama (paritas handle_key
+			# _core.py:8333-8336: return_to_menu_requested).
+			_on_menu_main_menu()
 		else:
 			_toggle_pause()
 		return
+	# Menu utama terbuka -> semua input gameplay milik menu (pygame memisahkan
+	# STATE_MENU / STATE_GAME di main.py).
+	if menu != null and menu.is_open():
+		return
 	if get_tree().paused:
 		return # sisa aksi adalah aksi gameplay -> ikut beku
+	# ── SETELAH MATCH USAI: paritas InputHandler.handle_key _core.py:8320-8336 ──
+	# ENTER: victory -> level berikutnya (main.py:566), defeat -> ulang level.
+	# R: replay level yang sama. ESC/P sudah ditangani di atas -> menu utama.
+	if GameManager.state != "playing":
+		if key.keycode == KEY_ENTER or key.keycode == KEY_KP_ENTER \
+				or key.is_action_pressed("restart_match"):
+			if GameManager.state == "victory":
+				if not GameManager.next_level():
+					GameManager.restart_match() # level terakhir: tinggal replay
+			else:
+				GameManager.restart_match()
+			return
+		if key.keycode == KEY_R:
+			GameManager.restart_match()
+			return
 	# Skill hero terpilih — action sudah ada di project.godot (Q/W/E/R)
 	if key.is_action_pressed("skill_q"):
 		_cast_skill("q")
@@ -427,10 +496,6 @@ func _on_key(key: InputEventKey) -> void:
 		return
 	if key.is_action_pressed("cycle_difficulty"):
 		print("[Main] difficulty -> %s" % GameManager.cycle_difficulty())
-		return
-	if key.is_action_pressed("restart_match"):
-		if GameManager.state != "playing":
-			GameManager.restart_match()
 		return
 	if key.is_action_pressed("debug_respawn"):
 		# restart penuh: gold, wave, state menang/kalah, nexus, dan slot direset
@@ -559,7 +624,11 @@ func _on_game_over(victory: bool) -> void:
 	_respawn_pending = true # jangan respawn roster lagi: match sudah selesai
 	GameManager.clear_selection()
 	GameManager.close_shop()
-	print("[Main] %s — tekan ENTER untuk main lagi" % ("MENANG" if victory else "KALAH"))
+	var nxt := GameManager.next_level_number()
+	if victory and nxt > 0:
+		print("[Main] MENANG — ENTER lanjut level %d · R ulang · ESC menu" % nxt)
+	else:
+		print("[Main] %s — ENTER/R ulang level · ESC menu" % ("MENANG" if victory else "KALAH"))
 
 # ═══ respawn roster setelah satu tim disapu bersih (arena tidak pernah kosong) ═══
 func _on_hero_died(_hero: Node) -> void:
@@ -588,10 +657,66 @@ func _alive_count(team: String) -> int:
 	return n
 
 # ═══ debug / util ═══
+
+## P/ESC sekarang membuka MENU PAUSE (paritas MenuState.PAUSE pygame:
+## RESUME / SETTINGS / MAIN MENU / QUIT, _core.py:6930), bukan sekadar
+## membekukan tree tanpa antarmuka.
 func _toggle_pause() -> void:
-	get_tree().paused = not get_tree().paused
-	GameManager.set_paused(get_tree().paused)
-	print("[Main] %s" % ("PAUSE (tree beku)" if get_tree().paused else "RESUME"))
+	var menu = _main_menu()
+	if get_tree().paused:
+		# sudah pause (via menu) -> resume
+		get_tree().paused = false
+		GameManager.set_paused(false)
+		AudioManager.pause_bgm(false)
+		if menu != null:
+			menu.close()
+		return
+	get_tree().paused = true
+	GameManager.set_paused(true)
+	AudioManager.pause_bgm(true)
+	if menu != null:
+		menu.open_pause()
+	print("[Main] PAUSE — menu pause terbuka")
+
+## Node MainMenu hidup di UI/MainMenu (dibangun dari kode; lihat MainMenu.gd).
+## Dicari lewat grup supaya scene lain pun bisa memasang menu tanpa path kaku.
+func _main_menu():
+	var menu = get_tree().get_first_node_in_group("main_menu")
+	if menu != null and is_instance_valid(menu):
+		return menu
+	return get_node_or_null(^"UI/MainMenu")
+
+func _on_menu_play(level_num: int) -> void:
+	# Mulai match dari LEVEL_SELECT. Connector dipakai supaya starting_level
+	# (property yang dulu hardcoded 1) mengikuti pilihan pemain.
+	get_tree().paused = false
+	GameManager.set_paused(false)
+	var connector := get_tree().get_first_node_in_group("game_connector")
+	if connector != null and connector.has_method("start_match"):
+		connector.start_match(level_num)
+	else:
+		GameManager.start_level(level_num, false)
+
+func _on_menu_resume() -> void:
+	get_tree().paused = false
+	GameManager.set_paused(false)
+	AudioManager.pause_bgm(false)
+	print("[Main] RESUME")
+
+func _on_menu_main_menu() -> void:
+	# Paritas return_to_menu_requested (main.py:582-586): match dibuang,
+	# arena dibersihkan, state balik "idle", menu tampil di MAIN.
+	# Dipanggil dari: tombol PAUSE "MENU UTAMA", ESC setelah menang/kalah,
+	# dan tombol "MENU UTAMA" di panel game-over HUD (lewat grup "main").
+	get_tree().paused = false
+	GameManager.set_paused(false)
+	GameManager.return_to_menu()
+	_clear_field()
+	_reset_boss_schedule()
+	var menu = _main_menu()
+	if menu != null and menu.has_method("show_main"):
+		menu.show_main()
+	print("[Main] kembali ke menu utama")
 
 func _cycle_theme() -> void:
 	if _arena_map == null or not _arena_map.has_method("cycle_theme"):

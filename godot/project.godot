@@ -25,6 +25,7 @@ BossDB="*res://scripts/core/BossDB.gd"
 TowerDB="*res://scripts/core/TowerDB.gd"
 ItemDB="*res://scripts/core/ItemDB.gd"
 CombatSystem="*res://scripts/systems/CombatSystem.gd"
+AudioManager="*res://scripts/autoload/AudioManager.gd"
 
 [display]
 

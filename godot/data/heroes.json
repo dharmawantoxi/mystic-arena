@@ -19,7 +19,10 @@
     "skill_desc": "Dash & slash AOE",
     "skill_cooldown": 300,
     "skill_range": 100,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 0,
+    "unlock_require_boss": null,
+    "boss_class": ""
   },
   "grimjaw": {
     "name": "Grimjaw",
@@ -41,7 +44,10 @@
     "skill_desc": "Spin AOE damage",
     "skill_cooldown": 420,
     "skill_range": 70,
-    "skill_duration": 120
+    "skill_duration": 120,
+    "unlock_cost": 0,
+    "unlock_require_boss": null,
+    "boss_class": ""
   },
   "sylara": {
     "name": "Sylara",
@@ -63,7 +69,10 @@
     "skill_desc": "Attack speed buff + piercing shot",
     "skill_cooldown": 360,
     "skill_range": 180,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 0,
+    "unlock_require_boss": null,
+    "boss_class": ""
   },
   "vex": {
     "name": "Vex",
@@ -85,7 +94,10 @@
     "skill_desc": "Long-range missile + line",
     "skill_cooldown": 330,
     "skill_range": 250,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 0,
+    "unlock_require_boss": null,
+    "boss_class": ""
   },
   "thorne": {
     "name": "Thorne",
@@ -107,7 +119,10 @@
     "skill_desc": "Goop cone + slow",
     "skill_cooldown": 300,
     "skill_range": 100,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 0,
+    "unlock_require_boss": null,
+    "boss_class": ""
   },
   "zephyr": {
     "name": "Zephyr",
@@ -129,7 +144,10 @@
     "skill_desc": "Thorn trap + slow",
     "skill_cooldown": 300,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 0,
+    "unlock_require_boss": null,
+    "boss_class": ""
   },
   "gornak": {
     "name": "Gornak",
@@ -151,7 +169,10 @@
     "skill_desc": "Purple energy burst + Blink",
     "skill_cooldown": 180,
     "skill_range": 100,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "gornak",
+    "boss_class": "mini"
   },
   "morgath": {
     "name": "Morgath",
@@ -173,7 +194,10 @@
     "skill_desc": "Purple orb + Tempest Double clones",
     "skill_cooldown": 200,
     "skill_range": 200,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morgath",
+    "boss_class": "mini"
   },
   "drakar": {
     "name": "Drakar",
@@ -195,7 +219,10 @@
     "skill_desc": "Spin attack + Culling Blade",
     "skill_cooldown": 240,
     "skill_range": 100,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "drakar",
+    "boss_class": "mini"
   },
   "razak": {
     "name": "Razak",
@@ -217,7 +244,10 @@
     "skill_desc": "Napalm burn + Flamebreak + Firestorm",
     "skill_cooldown": 220,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "razak",
+    "boss_class": "mini"
   },
   "khalros": {
     "name": "Khalros",
@@ -239,7 +269,10 @@
     "skill_desc": "Axes + boar charge + hawk storm",
     "skill_cooldown": 220,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "khalros",
+    "boss_class": "mini"
   },
   "gorath": {
     "name": "Gorath",
@@ -261,7 +294,10 @@
     "skill_desc": "Blood buff + dash + rupture",
     "skill_cooldown": 420,
     "skill_range": 180,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "gorath",
+    "boss_class": "mini"
   },
   "varkul": {
     "name": "Varkul",
@@ -283,7 +319,10 @@
     "skill_desc": "Ice arrow + Frostbite + Chain Frost",
     "skill_cooldown": 240,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "varkul",
+    "boss_class": "mini"
   },
   "xerathis": {
     "name": "Xerathis",
@@ -305,7 +344,10 @@
     "skill_desc": "Ice crystals + Freeze beam + Freezing Field",
     "skill_cooldown": 260,
     "skill_range": 240,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xerathis",
+    "boss_class": "mini"
   },
   "nyzrak": {
     "name": "Nyzrak",
@@ -327,7 +369,10 @@
     "skill_desc": "Ice beam + Splinter Blast + Cold Embrace",
     "skill_cooldown": 240,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyzrak",
+    "boss_class": "mini"
   },
   "zharok": {
     "name": "Zharok",
@@ -349,7 +394,10 @@
     "skill_desc": "Multiple fire arrows + Burning Army",
     "skill_cooldown": 200,
     "skill_range": 250,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zharok",
+    "boss_class": "mini"
   },
   "pyrenth": {
     "name": "Pyrenth",
@@ -371,7 +419,10 @@
     "skill_desc": "Fiery chain + devour + scorched earth + infernal blade",
     "skill_cooldown": 240,
     "skill_range": 200,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "pyrenth",
+    "boss_class": "mini"
   },
   "vokrahn": {
     "name": "Vokrahn",
@@ -393,7 +444,10 @@
     "skill_desc": "Chaos bolt + realm + strike + phantasm",
     "skill_cooldown": 220,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vokrahn",
+    "boss_class": "mini"
   },
   "nyxara": {
     "name": "Nyxara",
@@ -415,7 +469,10 @@
     "skill_desc": "Toxic orb, ward, decrepify and life drain",
     "skill_cooldown": 220,
     "skill_range": 300,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxara",
+    "boss_class": "mini"
   },
   "gravefang": {
     "name": "Gravefang",
@@ -437,7 +494,10 @@
     "skill_desc": "Stone slam, rolling boulder and magnetize",
     "skill_cooldown": 240,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "gravefang",
+    "boss_class": "mini"
   },
   "vhalzun": {
     "name": "Vhalzun",
@@ -459,7 +519,10 @@
     "skill_desc": "Soul pulse, scythe, aura and ghost shroud",
     "skill_cooldown": 220,
     "skill_range": 500,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vhalzun",
+    "boss_class": "mini"
   },
   "gravewake": {
     "name": "Gravewake",
@@ -481,7 +544,10 @@
     "skill_desc": "Anchor slam + tidebringer totems + kraken shell + ravage",
     "skill_cooldown": 240,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "gravewake",
+    "boss_class": "mini"
   },
   "syrentha": {
     "name": "Syrentha",
@@ -503,7 +569,10 @@
     "skill_desc": "Wave slash + enchanting song + mirror image + song of siren",
     "skill_cooldown": 240,
     "skill_range": 240,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "syrentha",
+    "boss_class": "mini"
   },
   "thalgryn": {
     "name": "Thalgryn",
@@ -525,7 +594,10 @@
     "skill_desc": "Wave surge + adaptive strike + morph + replicate",
     "skill_cooldown": 300,
     "skill_range": 260,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "thalgryn",
+    "boss_class": "mini"
   },
   "malzareth": {
     "name": "Malzareth",
@@ -547,7 +619,10 @@
     "skill_desc": "Void portal + soul catcher + shadow poison + disillusion",
     "skill_cooldown": 240,
     "skill_range": 240,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "malzareth",
+    "boss_class": "mini"
   },
   "akashari": {
     "name": "Akashari",
@@ -569,7 +644,10 @@
     "skill_desc": "Shadow strike + blink + scream of pain + sonic wave",
     "skill_cooldown": 220,
     "skill_range": 240,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "akashari",
+    "boss_class": "mini"
   },
   "vorenmarr": {
     "name": "Vorenmarr",
@@ -591,7 +669,10 @@
     "skill_desc": "Fatal bonds + power coggle + upheaval + chaos golem",
     "skill_cooldown": 240,
     "skill_range": 240,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vorenmarr",
+    "boss_class": "mini"
   },
   "vaerith": {
     "name": "Vaerith",
@@ -613,7 +694,10 @@
     "skill_desc": "Spiderling + spin web + insatiable hunger + brood",
     "skill_cooldown": 200,
     "skill_range": 200,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vaerith",
+    "boss_class": "mini"
   },
   "xirthalis": {
     "name": "Xir'thalis",
@@ -635,7 +719,10 @@
     "skill_desc": "Shukuchi + the swarm + geminate attack + time lapse",
     "skill_cooldown": 180,
     "skill_range": 210,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xirthalis",
+    "boss_class": "mini"
   },
   "vhyssarion": {
     "name": "Vhyssarion",
@@ -657,7 +744,10 @@
     "skill_desc": "Noxious plague + poison sting + gale + poison nova",
     "skill_cooldown": 240,
     "skill_range": 230,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vhyssarion",
+    "boss_class": "mini"
   },
   "kenshiro": {
     "name": "Kenshiro",
@@ -679,7 +769,10 @@
     "skill_desc": "Swift slash + assault dash + gale AOE + supreme gale",
     "skill_cooldown": 200,
     "skill_range": 130,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kenshiro",
+    "boss_class": "mini"
   },
   "khazan": {
     "name": "Khazan",
@@ -701,7 +794,10 @@
     "skill_desc": "Chained blade + leap smash + spin + vanishing execution",
     "skill_cooldown": 200,
     "skill_range": 130,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "khazan",
+    "boss_class": "mini"
   },
   "wiro": {
     "name": "Wiro",
@@ -723,7 +819,10 @@
     "skill_desc": "Wind cut + whirl kick + gale dash + typhoon",
     "skill_cooldown": 190,
     "skill_range": 130,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "wiro",
+    "boss_class": "mini"
   },
   "krognarr": {
     "name": "Krognarr",
@@ -745,7 +844,10 @@
     "skill_desc": "Stone strike + seismic tremor + crystal rampart + eruption",
     "skill_cooldown": 210,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "krognarr",
+    "boss_class": "mini"
   },
   "raz": {
     "name": "Raz",
@@ -767,7 +869,10 @@
     "skill_desc": "Overdrive + searing fist + energy surge + death gloom",
     "skill_cooldown": 190,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "raz",
+    "boss_class": "mini"
   },
   "vraskhan": {
     "name": "Vraskhan",
@@ -789,7 +894,10 @@
     "skill_desc": "Thorned assault + shadow leap + death slash + omni arms",
     "skill_cooldown": 190,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vraskhan",
+    "boss_class": "mini"
   },
   "aeralith": {
     "name": "Aeralith",
@@ -811,7 +919,10 @@
     "skill_desc": "Tailwind + wind blade + vacuum + sky rider",
     "skill_cooldown": 190,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "aeralith",
+    "boss_class": "mini"
   },
   "aurex": {
     "name": "Aurex",
@@ -833,7 +944,10 @@
     "skill_desc": "Shield crash + volt blast + aegis barrier + destructive spin",
     "skill_cooldown": 200,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "aurex",
+    "boss_class": "mini"
   },
   "nyxareva": {
     "name": "Nyxareva",
@@ -855,7 +969,10 @@
     "skill_desc": "Dark slash + mortal wound + whirling sacrifice + avatar",
     "skill_cooldown": 190,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxareva",
+    "boss_class": "mini"
   },
   "aurelix": {
     "name": "Aurelix",
@@ -877,7 +994,10 @@
     "skill_desc": "Time bomb + will shield + shockwave + transcend",
     "skill_cooldown": 200,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "aurelix",
+    "boss_class": "mini"
   },
   "aurelyssa": {
     "name": "Aurelyssa",
@@ -899,7 +1019,10 @@
     "skill_desc": "Whirlwind + lightning sweep + golden wings + phantom assault",
     "skill_cooldown": 190,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "aurelyssa",
+    "boss_class": "mini"
   },
   "vargrath": {
     "name": "Vargrath",
@@ -921,7 +1044,10 @@
     "skill_desc": "Bloodthirst + charge + devil strike + soul dom",
     "skill_cooldown": 200,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vargrath",
+    "boss_class": "mini"
   },
   "kaeldris": {
     "name": "Kaeldris",
@@ -943,7 +1069,10 @@
     "skill_desc": "Overwhelming + press + moment + duel",
     "skill_cooldown": 200,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaeldris",
+    "boss_class": "mini"
   },
   "pyraklos": {
     "name": "Pyraklos",
@@ -965,7 +1094,10 @@
     "skill_desc": "Spear of mars + rebuke + bulwark + arena",
     "skill_cooldown": 200,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "pyraklos",
+    "boss_class": "mini"
   },
   "velmyrth": {
     "name": "Velmyrth",
@@ -987,7 +1119,10 @@
     "skill_desc": "Stifling dagger + phantom strike + blur + coup de grace",
     "skill_cooldown": 190,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "velmyrth",
+    "boss_class": "mini"
   },
   "azureth": {
     "name": "Azureth",
@@ -1009,7 +1144,10 @@
     "skill_desc": "Arcane bolt + concussive blast + ancient seal + mystic flare",
     "skill_cooldown": 200,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "azureth",
+    "boss_class": "mini"
   },
   "luminar": {
     "name": "Luminar",
@@ -1031,7 +1169,10 @@
     "skill_desc": "Illuminate + blinding light + wisp + spirit form",
     "skill_cooldown": 205,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "luminar",
+    "boss_class": "mini"
   },
   "solara": {
     "name": "Solara",
@@ -1053,7 +1194,10 @@
     "skill_desc": "Starbreaker + celestial hammer + luminosity + solar guardian",
     "skill_cooldown": 210,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "solara",
+    "boss_class": "mini"
   },
   "auroth": {
     "name": "Auroth",
@@ -1075,7 +1219,10 @@
     "skill_desc": "Ionic edge + ward + consecration + guardian",
     "skill_cooldown": 215,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "auroth",
+    "boss_class": "mini"
   },
   "morvein": {
     "name": "Morvein",
@@ -1097,7 +1244,10 @@
     "skill_desc": "Puncture + violent strike + spectral charge + phantom form",
     "skill_cooldown": 215,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morvein",
+    "boss_class": "mini"
   },
   "thorvak": {
     "name": "Thorvak",
@@ -1119,7 +1269,10 @@
     "skill_desc": "Seed + nature's wrath + vengeance + dryad",
     "skill_cooldown": 220,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "thorvak",
+    "boss_class": "mini"
   },
   "ignirus": {
     "name": "Ignirus",
@@ -1141,7 +1294,10 @@
     "skill_desc": "Searing torrent + flame shot + burst fireball + vengeance",
     "skill_cooldown": 225,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "ignirus",
+    "boss_class": "mini"
   },
   "leoric": {
     "name": "Leoric",
@@ -1163,7 +1319,10 @@
     "skill_desc": "Fearless charge + sacred hammer + conceal blast + immortality",
     "skill_cooldown": 225,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "leoric",
+    "boss_class": "mini"
   },
   "shirotaka": {
     "name": "Shirotaka",
@@ -1185,7 +1344,10 @@
     "skill_desc": "Hiraishin + water boundary + shadow clones + paper bomb",
     "skill_cooldown": 220,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "shirotaka",
+    "boss_class": "mini"
   },
   "kaelthorn": {
     "name": "Kaelthorn",
@@ -1207,7 +1369,10 @@
     "skill_desc": "Bravest fighter + justice blade + defender's assault + chivalry fists",
     "skill_cooldown": 230,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaelthorn",
+    "boss_class": "mini"
   },
   "solvanth": {
     "name": "Solvanth",
@@ -1229,7 +1394,10 @@
     "skill_desc": "Ring punishment + glorious pathway + law & order + wrath",
     "skill_cooldown": 235,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "solvanth",
+    "boss_class": "mini"
   },
   "xyrael": {
     "name": "Xy'rael",
@@ -1251,7 +1419,10 @@
     "skill_desc": "Finch + defiant + tempest + lightness",
     "skill_cooldown": 225,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xyrael",
+    "boss_class": "mini"
   },
   "cryssalia": {
     "name": "Cryssalia",
@@ -1273,7 +1444,10 @@
     "skill_desc": "Frostshock + bitter frost + frostbites + coldest",
     "skill_cooldown": 235,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "cryssalia",
+    "boss_class": "mini"
   },
   "kaelthar": {
     "name": "Kaelthar",
@@ -1295,7 +1469,10 @@
     "skill_desc": "Charging fist + quake + fist crack + fist break",
     "skill_cooldown": 230,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaelthar",
+    "boss_class": "mini"
   },
   "morkhaera": {
     "name": "Mor'khaera",
@@ -1317,7 +1494,10 @@
     "skill_desc": "Spirit burst + air strike + energy impact + ethereal",
     "skill_cooldown": 235,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morkhaera",
+    "boss_class": "mini"
   },
   "akahime": {
     "name": "Akahime",
@@ -1339,7 +1519,10 @@
     "skill_desc": "Petal barrage + soul scroll + shadow + higanbana",
     "skill_cooldown": 240,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "akahime",
+    "boss_class": "mini"
   },
   "nyxthrael": {
     "name": "Nyxthrael",
@@ -1361,7 +1544,10 @@
     "skill_desc": "Ambush + nightfall + dark nightfall + shadowbringer",
     "skill_cooldown": 235,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxthrael",
+    "boss_class": "mini"
   },
   "sylvantheros": {
     "name": "Sylvantheros",
@@ -1383,7 +1569,10 @@
     "skill_desc": "Sprout + teleport + treants + wrath",
     "skill_cooldown": 240,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "sylvantheros",
+    "boss_class": "mini"
   },
   "astraelion": {
     "name": "Astraelion",
@@ -1405,7 +1594,10 @@
     "skill_desc": "Swordfall + spirit blade + force escape + zero return",
     "skill_cooldown": 240,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "astraelion",
+    "boss_class": "mini"
   },
   "morvaenthir": {
     "name": "Morvaenthir",
@@ -1427,7 +1619,10 @@
     "skill_desc": "Soul fragment + spirit bind + essence + shadow realm",
     "skill_cooldown": 245,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morvaenthir",
+    "boss_class": "mini"
   },
   "thornvaegrim": {
     "name": "Thornvaegrim",
@@ -1449,7 +1644,10 @@
     "skill_desc": "Bramble + twisted advance + sapling throw + grasp",
     "skill_cooldown": 245,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "thornvaegrim",
+    "boss_class": "mini"
   },
   "kurogari": {
     "name": "Kurogari",
@@ -1471,7 +1669,10 @@
     "skill_desc": "Soul reap + shadow mist + pinpoint + demonic feast",
     "skill_cooldown": 250,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kurogari",
+    "boss_class": "mini"
   },
   "morvekhar": {
     "name": "Morvekhar",
@@ -1493,7 +1694,10 @@
     "skill_desc": "Soul cleave + ironbound + juggernaut dash + shadow realm",
     "skill_cooldown": 255,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morvekhar",
+    "boss_class": "mini"
   },
   "vorgath": {
     "name": "Vorgath",
@@ -1515,7 +1719,10 @@
     "skill_desc": "Demonic gaze + demonic impact + demon purge + demonic domain",
     "skill_cooldown": 250,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vorgath",
+    "boss_class": "mini"
   },
   "grimstalker": {
     "name": "Grimstalker",
@@ -1537,7 +1744,10 @@
     "skill_desc": "Toxic claw + venom cloud + chem rampage + bio doom",
     "skill_cooldown": 255,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "grimstalker",
+    "boss_class": "mini"
   },
   "kryvoxar": {
     "name": "Kryvoxar",
@@ -1559,7 +1769,10 @@
     "skill_desc": "Crystal shard + crystal storm + phase shift + prism burst",
     "skill_cooldown": 255,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kryvoxar",
+    "boss_class": "mini"
   },
   "vargroth": {
     "name": "Vargroth",
@@ -1581,7 +1794,10 @@
     "skill_desc": "Blood rend + moon howl + alpha strike + bloodmoon frenzy",
     "skill_cooldown": 260,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vargroth",
+    "boss_class": "mini"
   },
   "drav": {
     "name": "Drav",
@@ -1603,7 +1819,10 @@
     "skill_desc": "Anchor slam + tidal wave + chain pull + ocean's wrath",
     "skill_cooldown": 260,
     "skill_range": 160,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "drav",
+    "boss_class": "mini"
   },
   "lyrienne": {
     "name": "Lyrienne",
@@ -1625,7 +1844,10 @@
     "skill_desc": "Vesper bolt + twilight chorus + harmonic shift + symphony of dusk",
     "skill_cooldown": 265,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "lyrienne",
+    "boss_class": "mini"
   },
   "valthar": {
     "name": "Valthar",
@@ -1647,7 +1869,10 @@
     "skill_desc": "Royal sunder + golden ward + crownfall + judgment of kings",
     "skill_cooldown": 270,
     "skill_range": 170,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "valthar",
+    "boss_class": "mini"
   },
   "khalzaredh": {
     "name": "Khal'zaredh",
@@ -1669,7 +1894,10 @@
     "skill_desc": "Sand slash + dune surge + sandstorm + desert's wrath",
     "skill_cooldown": 265,
     "skill_range": 160,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "khalzaredh",
+    "boss_class": "mini"
   },
   "nyxaroth": {
     "name": "Nyxaroth",
@@ -1691,7 +1919,10 @@
     "skill_desc": "Star bolt + void constellation + starfall + singularity",
     "skill_cooldown": 270,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxaroth",
+    "boss_class": "mini"
   },
   "veshtrax": {
     "name": "Veshtrax",
@@ -1713,7 +1944,10 @@
     "skill_desc": "Sapphire lunge + royal barrier + executioner's flurry + judgment blade",
     "skill_cooldown": 275,
     "skill_range": 165,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "veshtrax",
+    "boss_class": "mini"
   },
   "grimjack": {
     "name": "Grimjack",
@@ -1735,7 +1969,10 @@
     "skill_desc": "Venom stab + cackling blight + shadow step + fiendish carnival",
     "skill_cooldown": 275,
     "skill_range": 165,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "grimjack",
+    "boss_class": "mini"
   },
   "morvaeth": {
     "name": "Morvaeth",
@@ -1757,7 +1994,10 @@
     "skill_desc": "Crimson slash + blood reap + reaver's charge + crimson tempest",
     "skill_cooldown": 280,
     "skill_range": 170,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morvaeth",
+    "boss_class": "mini"
   },
   "vulkareth": {
     "name": "Vulkareth",
@@ -1779,7 +2019,10 @@
     "skill_desc": "Ember fist + magma eruption + titan charge + emberborn fury",
     "skill_cooldown": 285,
     "skill_range": 175,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vulkareth",
+    "boss_class": "mini"
   },
   "aelyrion": {
     "name": "Aelyrion",
@@ -1801,7 +2044,10 @@
     "skill_desc": "Divine lance + sacred bulwark + heaven's charge + gate of dawn",
     "skill_cooldown": 285,
     "skill_range": 175,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "aelyrion",
+    "boss_class": "mini"
   },
   "kaervosth": {
     "name": "Kaervosth",
@@ -1823,7 +2069,10 @@
     "skill_desc": "Storm slash + thunder ward + lightning charge + tempest blade",
     "skill_cooldown": 285,
     "skill_range": 180,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaervosth",
+    "boss_class": "mini"
   },
   "morvyssk": {
     "name": "Morvyssk",
@@ -1845,7 +2094,10 @@
     "skill_desc": "Acid splash + ooze bloom + corrosive surge + devouring mire",
     "skill_cooldown": 290,
     "skill_range": 170,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morvyssk",
+    "boss_class": "mini"
   },
   "kyumirra": {
     "name": "Kyumirra",
@@ -1867,7 +2119,10 @@
     "skill_desc": "Charm orb + nine-tail flare + foxfire dash + spirit fox",
     "skill_cooldown": 290,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kyumirra",
+    "boss_class": "mini"
   },
   "morvakhul": {
     "name": "Morvakhul",
@@ -1889,7 +2144,10 @@
     "skill_desc": "Cursed cleave + death's grasp + executioner's march + undying judgment",
     "skill_cooldown": 290,
     "skill_range": 180,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morvakhul",
+    "boss_class": "mini"
   },
   "nyxariel": {
     "name": "Nyxariel",
@@ -1911,7 +2169,10 @@
     "skill_desc": "Trident thrust + tide's jest + bubbling escape + shark summon",
     "skill_cooldown": 295,
     "skill_range": 180,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxariel",
+    "boss_class": "mini"
   },
   "morthyrax": {
     "name": "Morthyrax",
@@ -1933,7 +2194,10 @@
     "skill_desc": "Rot claw + plague breath + decaying march + prophet's blight",
     "skill_cooldown": 300,
     "skill_range": 185,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morthyrax",
+    "boss_class": "mini"
   },
   "sanguiveth": {
     "name": "Sanguiveth",
@@ -1955,7 +2219,10 @@
     "skill_desc": "Blood harvest + famine's grasp + sanguine leap + starvation",
     "skill_cooldown": 300,
     "skill_range": 185,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "sanguiveth",
+    "boss_class": "mini"
   },
   "xerakhotep": {
     "name": "Xerakhotep",
@@ -1977,7 +2244,10 @@
     "skill_desc": "Sun bolt + solar aegis + sunfire charge + sovereign's eclipse",
     "skill_cooldown": 305,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xerakhotep",
+    "boss_class": "mini"
   },
   "ignakhor": {
     "name": "Ignakhor",
@@ -1999,7 +2269,10 @@
     "skill_desc": "Furnace cleave + molten rage + berserker charge + forge's wrath",
     "skill_cooldown": 305,
     "skill_range": 190,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "ignakhor",
+    "boss_class": "mini"
   },
   "kazureth": {
     "name": "Kazureth",
@@ -2021,7 +2294,10 @@
     "skill_desc": "Thunderclap flash + lightning cloak + distant thunder + honoikazuchi",
     "skill_cooldown": 305,
     "skill_range": 185,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kazureth",
+    "boss_class": "mini"
   },
   "sethrakhar": {
     "name": "Seth'rakhaar",
@@ -2043,7 +2319,10 @@
     "skill_desc": "Sunforged chop + butcher's fury + blood rage march + sunforged judgment",
     "skill_cooldown": 310,
     "skill_range": 190,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "sethrakhar",
+    "boss_class": "mini"
   },
   "kaelvyrn": {
     "name": "Kaelvyrn",
@@ -2065,7 +2344,10 @@
     "skill_desc": "Gilded slash + treasure storm + marauder's dash + golden plunder",
     "skill_cooldown": 315,
     "skill_range": 195,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaelvyrn",
+    "boss_class": "mini"
   },
   "thorvin": {
     "name": "Thorvin",
@@ -2087,7 +2369,10 @@
     "skill_desc": "Ironbound slam + warden's bulwark + fortress march + unbreakable oath",
     "skill_cooldown": 315,
     "skill_range": 195,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "thorvin",
+    "boss_class": "mini"
   },
   "xaerissa": {
     "name": "Xaerissa",
@@ -2109,7 +2394,10 @@
     "skill_desc": "Silk thread + crimson cocoon + web weaver + arachnid queen",
     "skill_cooldown": 320,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xaerissa",
+    "boss_class": "mini"
   },
   "celwynn": {
     "name": "Celwynn",
@@ -2131,7 +2419,10 @@
     "skill_desc": "Star bolt + constellation veil + meteor shower + celestial flame",
     "skill_cooldown": 320,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "celwynn",
+    "boss_class": "mini"
   },
   "rynvara": {
     "name": "Rynvara",
@@ -2153,7 +2444,10 @@
     "skill_desc": "Primal rend + onslaught's roar + wild stampede + untamed wrath",
     "skill_cooldown": 325,
     "skill_range": 200,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "rynvara",
+    "boss_class": "mini"
   },
   "syrindra": {
     "name": "Syrindra",
@@ -2175,7 +2469,10 @@
     "skill_desc": "Dark bolt + sovereign's wrath + shadow court + dark ascension",
     "skill_cooldown": 330,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "syrindra",
+    "boss_class": "mini"
   },
   "ghrakmaal": {
     "name": "Ghrakmaal",
@@ -2197,7 +2494,10 @@
     "skill_desc": "Earth shatter + sundered ground + colossal charge + worldbreaker",
     "skill_cooldown": 330,
     "skill_range": 205,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "ghrakmaal",
+    "boss_class": "mini"
   },
   "selunara": {
     "name": "Selunara",
@@ -2219,7 +2519,10 @@
     "skill_desc": "Moon arrow + lunar halo + crescent dash + eclipse barrage",
     "skill_cooldown": 335,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "selunara",
+    "boss_class": "mini"
   },
   "vessyra": {
     "name": "Vessyra",
@@ -2241,7 +2544,10 @@
     "skill_desc": "Serpent bite + petrify gaze + snake swarm + medusa's wrath",
     "skill_cooldown": 340,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vessyra",
+    "boss_class": "mini"
   },
   "rakzhan": {
     "name": "Rakzhan",
@@ -2263,7 +2569,10 @@
     "skill_desc": "Ember jab + cinder storm + blazing step + prodigy's inferno",
     "skill_cooldown": 340,
     "skill_range": 210,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "rakzhan",
+    "boss_class": "mini"
   },
   "sirakzan": {
     "name": "Sirakzan",
@@ -2285,7 +2594,10 @@
     "skill_desc": "Blade roll + duelist's flourish + spin slash + endless waltz",
     "skill_cooldown": 345,
     "skill_range": 210,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "sirakzan",
+    "boss_class": "mini"
   },
   "valekris": {
     "name": "Valekris",
@@ -2307,7 +2619,10 @@
     "skill_desc": "Wraith bolt + vengeful shade + spectral veil + haunting revenge",
     "skill_cooldown": 350,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "valekris",
+    "boss_class": "mini"
   },
   "infrakzaar": {
     "name": "Infrakzaar",
@@ -2329,7 +2644,10 @@
     "skill_desc": "Ember lance + fleshfire ring + scorch step + cataclysm meteor",
     "skill_cooldown": 350,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "infrakzaar",
+    "boss_class": "mini"
   },
   "xarnathul": {
     "name": "Xarnathul",
@@ -2351,7 +2669,10 @@
     "skill_desc": "Death note + requiem ring + soul dirge + finale of ruin",
     "skill_cooldown": 355,
     "skill_range": 225,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xarnathul",
+    "boss_class": "mini"
   },
   "zhyrakaan": {
     "name": "Zhyrakaan",
@@ -2373,7 +2694,10 @@
     "skill_desc": "Phantom thrust + weave step + spectral spiral + phantomweave storm",
     "skill_cooldown": 360,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zhyrakaan",
+    "boss_class": "mini"
   },
   "kaerissa": {
     "name": "Kaerissa",
@@ -2395,7 +2719,10 @@
     "skill_desc": "Blood stab + whirlwind blood + crimson step + bloodwhirl finale",
     "skill_cooldown": 360,
     "skill_range": 225,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaerissa",
+    "boss_class": "mini"
   },
   "thorgaruk": {
     "name": "Thorgaruk",
@@ -2417,7 +2744,10 @@
     "skill_desc": "Skyfall axe + thunder horn + storm skewer + skyhorn's judgment",
     "skill_cooldown": 365,
     "skill_range": 230,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "thorgaruk",
+    "boss_class": "mini"
   },
   "zorathiel": {
     "name": "Zorathiel",
@@ -2439,7 +2769,10 @@
     "skill_desc": "Arcane bolt + weave prison + arcane travel + grand arcanum",
     "skill_cooldown": 370,
     "skill_range": 235,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zorathiel",
+    "boss_class": "mini"
   },
   "nyxallaria": {
     "name": "Nyxallaria",
@@ -2461,7 +2794,10 @@
     "skill_desc": "Abyss bolt + moonlit depths + abyssal step + sovereign's drown",
     "skill_cooldown": 375,
     "skill_range": 240,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxallaria",
+    "boss_class": "mini"
   },
   "vhaerinth": {
     "name": "Vhaerinth",
@@ -2483,7 +2819,10 @@
     "skill_desc": "Ink splash + ink veil + brushstroke dash + masterpiece of ruin",
     "skill_cooldown": 380,
     "skill_range": 240,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vhaerinth",
+    "boss_class": "mini"
   },
   "xharokh": {
     "name": "Xharokh",
@@ -2505,7 +2844,10 @@
     "skill_desc": "Void bind + null prison + void shift + binder's eclipse",
     "skill_cooldown": 385,
     "skill_range": 245,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xharokh",
+    "boss_class": "mini"
   },
   "kazreth": {
     "name": "Kazreth",
@@ -2527,7 +2869,10 @@
     "skill_desc": "Blood cleave + reaver's gash + blood wings + blood harvest",
     "skill_cooldown": 385,
     "skill_range": 245,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kazreth",
+    "boss_class": "mini"
   },
   "varkuthar": {
     "name": "Varkuthar",
@@ -2549,7 +2894,10 @@
     "skill_desc": "Bloodfire smash + zealot's pyre + bloodflame charge + sacred inferno",
     "skill_cooldown": 390,
     "skill_range": 250,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "varkuthar",
+    "boss_class": "mini"
   },
   "zhyvrek": {
     "name": "Zhyvrek",
@@ -2571,7 +2919,10 @@
     "skill_desc": "Void slash + shadow reap + null step + reaper's void",
     "skill_cooldown": 395,
     "skill_range": 245,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zhyvrek",
+    "boss_class": "mini"
   },
   "azkharion": {
     "name": "Azkharion",
@@ -2593,7 +2944,10 @@
     "skill_desc": "Ashen cleave + cinder warlord + ash march + warlord's pyre",
     "skill_cooldown": 400,
     "skill_range": 255,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "azkharion",
+    "boss_class": "mini"
   },
   "thargoroth": {
     "name": "Thargoroth",
@@ -2615,7 +2969,10 @@
     "skill_desc": "Primordial slam + ancient rage + colossal stomp + world ender",
     "skill_cooldown": 405,
     "skill_range": 260,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "thargoroth",
+    "boss_class": "mini"
   },
   "zahkareth": {
     "name": "Zahkareth",
@@ -2637,7 +2994,10 @@
     "skill_desc": "Tyrant's smash + golden edict + tyrant's march + gilded judgment",
     "skill_cooldown": 410,
     "skill_range": 260,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zahkareth",
+    "boss_class": "mini"
   },
   "bhorgathul": {
     "name": "Bhor'gathul",
@@ -2659,7 +3019,10 @@
     "skill_desc": "Earth rend + tectonic rage + render's charge + worldrender",
     "skill_cooldown": 415,
     "skill_range": 265,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "bhorgathul",
+    "boss_class": "mini"
   },
   "morkhelvis": {
     "name": "Mor'khelvis",
@@ -2681,7 +3044,10 @@
     "skill_desc": "Stone rend + necro veil + gargoyle dive + eternal statue",
     "skill_cooldown": 420,
     "skill_range": 265,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morkhelvis",
+    "boss_class": "mini"
   },
   "vorthakul": {
     "name": "Vor'thakul",
@@ -2703,7 +3069,10 @@
     "skill_desc": "Abyss bolt + terror wave + abyssal step + dread abyss",
     "skill_cooldown": 425,
     "skill_range": 270,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vorthakul",
+    "boss_class": "mini"
   },
   "urgharun": {
     "name": "Ur'gharun",
@@ -2725,7 +3094,10 @@
     "skill_desc": "Feral rend + wrath howl + beast rush + feral cataclysm",
     "skill_cooldown": 425,
     "skill_range": 270,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "urgharun",
+    "boss_class": "mini"
   },
   "yhoranth": {
     "name": "Yh'oranth",
@@ -2747,7 +3119,10 @@
     "skill_desc": "Wraith bolt + unforgiven shade + spectral drift + eternal grudge",
     "skill_cooldown": 430,
     "skill_range": 275,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "yhoranth",
+    "boss_class": "mini"
   },
   "zulkhaven": {
     "name": "Zul'khaven",
@@ -2769,7 +3144,10 @@
     "skill_desc": "Devour bite + maw of ruin + hungry charge + endless feast",
     "skill_cooldown": 435,
     "skill_range": 275,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zulkhaven",
+    "boss_class": "mini"
   },
   "emberwick": {
     "name": "Emberwick",
@@ -2791,7 +3169,10 @@
     "skill_desc": "Fire lance + matron's pyre + gnashfang bite + blazing judgment",
     "skill_cooldown": 435,
     "skill_range": 280,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "emberwick",
+    "boss_class": "mini"
   },
   "grondarthul": {
     "name": "Grondarthul",
@@ -2813,7 +3194,10 @@
     "skill_desc": "Troll smash + king's roar + frozen charge + troll king's wrath",
     "skill_cooldown": 440,
     "skill_range": 280,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "grondarthul",
+    "boss_class": "mini"
   },
   "xareth": {
     "name": "Xareth",
@@ -2835,7 +3219,10 @@
     "skill_desc": "Time bolt + chrono rupture + void step + timebreak",
     "skill_cooldown": 445,
     "skill_range": 285,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xareth",
+    "boss_class": "mini"
   },
   "kaedrin": {
     "name": "Kaedrin",
@@ -2857,7 +3244,10 @@
     "skill_desc": "Moon slash + fang crescent + moonstep + fang of the moon",
     "skill_cooldown": 445,
     "skill_range": 285,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaedrin",
+    "boss_class": "mini"
   },
   "morvaeth2": {
     "name": "Morvaeth",
@@ -2879,7 +3269,10 @@
     "skill_desc": "Mirror slash + demon reflection + marauder's march + mirrorborn cataclysm",
     "skill_cooldown": 450,
     "skill_range": 285,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morvaeth2",
+    "boss_class": "mini"
   },
   "vardrok": {
     "name": "Vardrok",
@@ -2901,7 +3294,10 @@
     "skill_desc": "King's chop + executioner's cry + axe charge + glorious guillotine",
     "skill_cooldown": 455,
     "skill_range": 290,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vardrok",
+    "boss_class": "mini"
   },
   "nixweaver": {
     "name": "Nixweaver",
@@ -2923,7 +3319,10 @@
     "skill_desc": "Trick bolt + forest mirage + leaf step + woodland carnival",
     "skill_cooldown": 455,
     "skill_range": 290,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nixweaver",
+    "boss_class": "mini"
   },
   "nyxraal": {
     "name": "Nyxraal",
@@ -2945,7 +3344,10 @@
     "skill_desc": "Abyss thrust + prince's tide + dark charge + abyssal coronation",
     "skill_cooldown": 460,
     "skill_range": 290,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxraal",
+    "boss_class": "mini"
   },
   "xarnthuul": {
     "name": "Xarn'thuul",
@@ -2967,7 +3369,10 @@
     "skill_desc": "Void lance + null throne + void drift + sovereign's void",
     "skill_cooldown": 465,
     "skill_range": 295,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xarnthuul",
+    "boss_class": "mini"
   },
   "lyrenya": {
     "name": "Lyrenya",
@@ -2989,7 +3394,10 @@
     "skill_desc": "Vine whip + verdant bloom + nature step + whisper of the forest",
     "skill_cooldown": 465,
     "skill_range": 295,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "lyrenya",
+    "boss_class": "mini"
   },
   "vyraeth": {
     "name": "Vyraeth",
@@ -3011,7 +3419,10 @@
     "skill_desc": "Haunt bolt + spectral veil + ghost drift + eternal haunting",
     "skill_cooldown": 470,
     "skill_range": 300,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vyraeth",
+    "boss_class": "mini"
   },
   "zorothrax": {
     "name": "Zorothrax",
@@ -3033,7 +3444,10 @@
     "skill_desc": "Rune bolt + arcane rune field + rune shift + sovereign's rune",
     "skill_cooldown": 475,
     "skill_range": 300,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zorothrax",
+    "boss_class": "mini"
   },
   "akiraze": {
     "name": "Akiraze",
@@ -3055,7 +3469,10 @@
     "skill_desc": "Golden slash + tempest flash + thunder step + golden cataclysm",
     "skill_cooldown": 475,
     "skill_range": 300,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "akiraze",
+    "boss_class": "mini"
   },
   "brumhar": {
     "name": "Brumhar",
@@ -3077,7 +3494,10 @@
     "skill_desc": "Glacier chop + frozen wrath + ice reave + glacier cataclysm",
     "skill_cooldown": 480,
     "skill_range": 305,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "brumhar",
+    "boss_class": "mini"
   },
   "zorashi": {
     "name": "Zorashi",
@@ -3099,7 +3519,10 @@
     "skill_desc": "Serpent fang + snake storm + serpent step + sage's serpents",
     "skill_cooldown": 485,
     "skill_range": 305,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zorashi",
+    "boss_class": "mini"
   },
   "akaroth": {
     "name": "Akaroth",
@@ -3121,7 +3544,10 @@
     "skill_desc": "Crimson jab + fist storm + blood step + crimson cataclysm",
     "skill_cooldown": 485,
     "skill_range": 310,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "akaroth",
+    "boss_class": "mini"
   },
   "kassadin": {
     "name": "Kassadin",
@@ -3143,7 +3569,10 @@
     "skill_desc": "Null blade + void pulse + rift step + voidwalk",
     "skill_cooldown": 490,
     "skill_range": 310,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kassadin",
+    "boss_class": "mini"
   },
   "shimorakh": {
     "name": "Shimorakh",
@@ -3165,7 +3594,10 @@
     "skill_desc": "Shadow root + dark bloom + root grasp + shadowforest",
     "skill_cooldown": 495,
     "skill_range": 315,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "shimorakh",
+    "boss_class": "mini"
   },
   "kaizoku_raijin": {
     "name": "Kaizoku Raijin",
@@ -3187,7 +3619,10 @@
     "skill_desc": "Thunder blade + festival storm + raijin step + thunder festival",
     "skill_cooldown": 495,
     "skill_range": 315,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaizoku_raijin",
+    "boss_class": "mini"
   },
   "korokai": {
     "name": "Korokai",
@@ -3209,7 +3644,10 @@
     "skill_desc": "Mirror slash + reflective edge + shinobi step + mirror world",
     "skill_cooldown": 500,
     "skill_range": 315,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "korokai",
+    "boss_class": "mini"
   },
   "verdanix": {
     "name": "Verdanix",
@@ -3231,7 +3669,10 @@
     "skill_desc": "Nature bolt + verdant storm + wild step + fury of the forest",
     "skill_cooldown": 505,
     "skill_range": 320,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "verdanix",
+    "boss_class": "mini"
   },
   "broggmar": {
     "name": "Broggmar",
@@ -3253,7 +3694,10 @@
     "skill_desc": "Cask smash + barrel blast + brew charge + caskbreaker's boom",
     "skill_cooldown": 505,
     "skill_range": 320,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "broggmar",
+    "boss_class": "mini"
   },
   "ursath": {
     "name": "Ursath",
@@ -3275,7 +3719,10 @@
     "skill_desc": "Thorn roar + beast stampede + wild step + call of the wild",
     "skill_cooldown": 510,
     "skill_range": 325,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "ursath",
+    "boss_class": "mini"
   },
   "zhaeris": {
     "name": "Zhaeris",
@@ -3297,7 +3744,10 @@
     "skill_desc": "Shadow slash + dark flurry + void step + shadowblade's dusk",
     "skill_cooldown": 515,
     "skill_range": 320,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zhaeris",
+    "boss_class": "mini"
   },
   "kairenji": {
     "name": "Kairenji",
@@ -3319,7 +3769,10 @@
     "skill_desc": "Void slash + shadowclone flurry + void step + moonless night",
     "skill_cooldown": 520,
     "skill_range": 330,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kairenji",
+    "boss_class": "mini"
   },
   "karzhul": {
     "name": "Karzhul",
@@ -3341,7 +3794,10 @@
     "skill_desc": "Fang ripper + blood frenzy + wild leap + lunar rampage",
     "skill_cooldown": 525,
     "skill_range": 335,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "karzhul",
+    "boss_class": "mini"
   },
   "xerakkuth": {
     "name": "Xerakkuth",
@@ -3363,7 +3819,10 @@
     "skill_desc": "Venom sting + sandstorm + burrow strike + dune cataclysm",
     "skill_cooldown": 515,
     "skill_range": 340,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xerakkuth",
+    "boss_class": "mini"
   },
   "kaelthys": {
     "name": "Kaelthys",
@@ -3385,7 +3844,10 @@
     "skill_desc": "Stillwater slash + waterfall flurry + ripple step + tidal blade",
     "skill_cooldown": 530,
     "skill_range": 340,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaelthys",
+    "boss_class": "mini"
   },
   "kaoruken": {
     "name": "Kaoruken",
@@ -3407,7 +3869,10 @@
     "skill_desc": "Chakra palm + gentle fist flurry + byakugan step + eight trigrams",
     "skill_cooldown": 535,
     "skill_range": 345,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaoruken",
+    "boss_class": "mini"
   },
   "vaelkorr": {
     "name": "Vaelkorr",
@@ -3429,7 +3894,10 @@
     "skill_desc": "Thread lance + stitch storm + thread step + immortal weave",
     "skill_cooldown": 525,
     "skill_range": 350,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vaelkorr",
+    "boss_class": "mini"
   },
   "aurelian": {
     "name": "Aurelian",
@@ -3451,7 +3919,10 @@
     "skill_desc": "Golden spear + vanguard banner + sovereign dash + cataclysm of gold",
     "skill_cooldown": 540,
     "skill_range": 350,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "aurelian",
+    "boss_class": "mini"
   },
   "morvath": {
     "name": "Morvath",
@@ -3473,7 +3944,10 @@
     "skill_desc": "Shark blade + water prison + trench dive + leviathan's wake",
     "skill_cooldown": 545,
     "skill_range": 355,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morvath",
+    "boss_class": "mini"
   },
   "pyrhaan": {
     "name": "Pyrhaan",
@@ -3495,7 +3969,10 @@
     "skill_desc": "Cinder fist + flame guard + searing dash + cinder storm",
     "skill_cooldown": 535,
     "skill_range": 345,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "pyrhaan",
+    "boss_class": "mini"
   },
   "garumenshi": {
     "name": "Garumenshi",
@@ -3517,7 +3994,10 @@
     "skill_desc": "Toad strike + oil splash + toad leap + toad mountain",
     "skill_cooldown": 545,
     "skill_range": 355,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "garumenshi",
+    "boss_class": "mini"
   },
   "thoraz": {
     "name": "Thoraz",
@@ -3539,7 +4019,10 @@
     "skill_desc": "Mountain slam + avalanche + charging boulder + cataclysm break",
     "skill_cooldown": 550,
     "skill_range": 360,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "thoraz",
+    "boss_class": "mini"
   },
   "vhaerith": {
     "name": "Vhaerith",
@@ -3561,7 +4044,10 @@
     "skill_desc": "Hollow bolt + reaping storm + hollow step + harvest of the damned",
     "skill_cooldown": 535,
     "skill_range": 360,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vhaerith",
+    "boss_class": "mini"
   },
   "dorakai": {
     "name": "Dorakai",
@@ -3583,7 +4069,10 @@
     "skill_desc": "Drum wave + bloodbeat storm + drum step + oni's war drum",
     "skill_cooldown": 550,
     "skill_range": 365,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "dorakai",
+    "boss_class": "mini"
   },
   "hitokage": {
     "name": "Hitokage",
@@ -3605,7 +4094,10 @@
     "skill_desc": "Sunfire slash + rising sun + sun step + sun dragon",
     "skill_cooldown": 555,
     "skill_range": 355,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "hitokage",
+    "boss_class": "mini"
   },
   "kazuren": {
     "name": "Kazuren",
@@ -3627,7 +4119,10 @@
     "skill_desc": "Void slash + kamui storm + void phase + eye of the void",
     "skill_cooldown": 540,
     "skill_range": 350,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kazuren",
+    "boss_class": "mini"
   },
   "obanai": {
     "name": "Obanai",
@@ -3649,7 +4144,10 @@
     "skill_desc": "Serpent fang + serpent coil + venom step + serpent breathing final",
     "skill_cooldown": 555,
     "skill_range": 355,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "obanai",
+    "boss_class": "mini"
   },
   "sanguire": {
     "name": "Sanguire Voxthal",
@@ -3671,7 +4169,10 @@
     "skill_desc": "Blood bolt + crimson storm + blood step + blood ritual",
     "skill_cooldown": 545,
     "skill_range": 370,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "sanguire",
+    "boss_class": "mini"
   },
   "sasori": {
     "name": "Sasori",
@@ -3693,7 +4194,10 @@
     "skill_desc": "Puppet slash + puppet storm + string step + red secret technique",
     "skill_cooldown": 560,
     "skill_range": 360,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "sasori",
+    "boss_class": "mini"
   },
   "abaddon": {
     "name": "Abaddon",
@@ -3715,7 +4219,10 @@
     "skill_desc": "Teal projectile + Aphotic Shield",
     "skill_cooldown": 240,
     "skill_range": 100,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "abaddon",
+    "boss_class": "true"
   },
   "alchemist": {
     "name": "Alchemist",
@@ -3737,7 +4244,10 @@
     "skill_desc": "Toxic acid + concoction bomb",
     "skill_cooldown": 210,
     "skill_range": 180,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "alchemist",
+    "boss_class": "true"
   },
   "ancient_apparition": {
     "name": "Ancient Apparition",
@@ -3759,7 +4269,10 @@
     "skill_desc": "Freeze enemies + AOE ice",
     "skill_cooldown": 300,
     "skill_range": 250,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "ancient_apparition",
+    "boss_class": "true"
   },
   "ignis_drachorn": {
     "name": "Ignis Drachorn",
@@ -3781,7 +4294,10 @@
     "skill_desc": "Fire cone + tail sweep + dragon form",
     "skill_cooldown": 240,
     "skill_range": 200,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "ignis_drachorn",
+    "boss_class": "true"
   },
   "krobellus": {
     "name": "Krobellus",
@@ -3803,7 +4319,10 @@
     "skill_desc": "Summons spirits and drains enemy life",
     "skill_cooldown": 220,
     "skill_range": 260,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "krobellus",
+    "boss_class": "true"
   },
   "kunkka": {
     "name": "Kunkka",
@@ -3825,7 +4344,10 @@
     "skill_desc": "Cleaving water slash + ghost ship + torrent",
     "skill_cooldown": 240,
     "skill_range": 200,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kunkka",
+    "boss_class": "true"
   },
   "nyxarath": {
     "name": "Nyxarath",
@@ -3847,7 +4369,10 @@
     "skill_desc": "Hellfire beam + necromastery + presence + requiem of souls",
     "skill_cooldown": 240,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxarath",
+    "boss_class": "true"
   },
   "vhorethzir": {
     "name": "Vhoreth'zir",
@@ -3869,7 +4394,10 @@
     "skill_desc": "Poison attack + nethertoxin + corrosive skin + viper strike",
     "skill_cooldown": 240,
     "skill_range": 230,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vhorethzir",
+    "boss_class": "true"
   },
   "naraka": {
     "name": "Naraka",
@@ -3891,7 +4419,10 @@
     "skill_desc": "Chaos strike + shadowstep + chain hammer + final execution",
     "skill_cooldown": 220,
     "skill_range": 140,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "naraka",
+    "boss_class": "true"
   },
   "aurethzar": {
     "name": "Aureth'zar",
@@ -3913,7 +4444,10 @@
     "skill_desc": "Marksman + piercing arrow + frost shot + distant thunder",
     "skill_cooldown": 210,
     "skill_range": 200,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "aurethzar",
+    "boss_class": "true"
   },
   "thalakryon": {
     "name": "Thalakryon",
@@ -3935,7 +4469,10 @@
     "skill_desc": "Abyssal bolt + aqua shield + tidal rage + metamorph",
     "skill_cooldown": 210,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "thalakryon",
+    "boss_class": "true"
   },
   "nazulmor": {
     "name": "Nazulmor",
@@ -3957,7 +4494,10 @@
     "skill_desc": "Typhoon + aqua shield + tidal rage + chaotic",
     "skill_cooldown": 210,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nazulmor",
+    "boss_class": "true"
   },
   "solvarin": {
     "name": "Solvarin",
@@ -3979,7 +4519,10 @@
     "skill_desc": "Purification + repel + degen aura + guardian",
     "skill_cooldown": 210,
     "skill_range": 150,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "solvarin",
+    "boss_class": "true"
   },
   "pyraethis": {
     "name": "Pyraethis",
@@ -4001,7 +4544,10 @@
     "skill_desc": "Icarus dive + fire spirits + sun ray + supernova",
     "skill_cooldown": 220,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "pyraethis",
+    "boss_class": "true"
   },
   "yamako": {
     "name": "Yamako",
@@ -4023,7 +4569,10 @@
     "skill_desc": "Deep forest + wood creation + wood golem + kannon",
     "skill_cooldown": 225,
     "skill_range": 160,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "yamako",
+    "boss_class": "true"
   },
   "seiryukong": {
     "name": "Seiryukong",
@@ -4045,7 +4594,10 @@
     "skill_desc": "Boundless + tree dance + jingu soldiers + wukong",
     "skill_cooldown": 230,
     "skill_range": 160,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "seiryukong",
+    "boss_class": "true"
   },
   "nyxareth": {
     "name": "Nyxareth",
@@ -4067,7 +4619,10 @@
     "skill_desc": "Starsplit + realworld + spacetime + astro realm",
     "skill_cooldown": 235,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxareth",
+    "boss_class": "true"
   },
   "aurelion": {
     "name": "Aurelion",
@@ -4089,7 +4644,10 @@
     "skill_desc": "Call courage + guardian assault + king's command + king's summon",
     "skill_cooldown": 240,
     "skill_range": 160,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "aurelion",
+    "boss_class": "true"
   },
   "vaelindra": {
     "name": "Vaelindra",
@@ -4111,7 +4669,10 @@
     "skill_desc": "Energy wave + space ring + violet requiem + realm",
     "skill_cooldown": 245,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vaelindra",
+    "boss_class": "true"
   },
   "morthraxis": {
     "name": "Morthraxis",
@@ -4133,7 +4694,10 @@
     "skill_desc": "Bat impale + sanguine + phantom mob + baleful",
     "skill_cooldown": 250,
     "skill_range": 160,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "morthraxis",
+    "boss_class": "true"
   },
   "nexthyrius": {
     "name": "Nexthyrius",
@@ -4155,7 +4719,10 @@
     "skill_desc": "Chain hook + soul lantern + spectral reap + soul prison",
     "skill_cooldown": 260,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nexthyrius",
+    "boss_class": "true"
   },
   "molgravar": {
     "name": "Molgravar",
@@ -4177,7 +4744,10 @@
     "skill_desc": "Seismic slam + lava fissure + boulder toss + unstoppable",
     "skill_cooldown": 270,
     "skill_range": 180,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "molgravar",
+    "boss_class": "true"
   },
   "seraphienne": {
     "name": "Seraphienne",
@@ -4199,7 +4769,10 @@
     "skill_desc": "Divine verdict + holy radiance + seraph wings + divine intervention",
     "skill_cooldown": 280,
     "skill_range": 190,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "seraphienne",
+    "boss_class": "true"
   },
   "solareth": {
     "name": "Solareth",
@@ -4221,7 +4794,10 @@
     "skill_desc": "Solar cleave + radiant aegis + sunflare charge + dawn's judgment",
     "skill_cooldown": 285,
     "skill_range": 190,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "solareth",
+    "boss_class": "true"
   },
   "okeanora": {
     "name": "Okeanora",
@@ -4243,7 +4819,10 @@
     "skill_desc": "Tidal verdict + kraken's embrace + abyssal surge + leviathan's wrath",
     "skill_cooldown": 290,
     "skill_range": 195,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "okeanora",
+    "boss_class": "true"
   },
   "vaelmyrra": {
     "name": "Vaelmyrra",
@@ -4265,7 +4844,10 @@
     "skill_desc": "Blood verdict + obsidian aegis + crimson charge + matriarch's wrath",
     "skill_cooldown": 295,
     "skill_range": 200,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "vaelmyrra",
+    "boss_class": "true"
   },
   "zarethyr": {
     "name": "Zarethyr",
@@ -4287,7 +4869,10 @@
     "skill_desc": "Astral bolt + cosmic veil + star surge + sovereign's nova",
     "skill_cooldown": 300,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zarethyr",
+    "boss_class": "true"
   },
   "nyrethzalv": {
     "name": "Nyreth'zalvarin",
@@ -4309,7 +4894,10 @@
     "skill_desc": "Shadow chain + empress's veil + forsaken surge + eternal bond",
     "skill_cooldown": 305,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyrethzalv",
+    "boss_class": "true"
   },
   "nyrellieth": {
     "name": "Nyrellieth",
@@ -4331,7 +4919,10 @@
     "skill_desc": "Frost arrow + veil of frost + ice walk + eternal winter",
     "skill_cooldown": 310,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyrellieth",
+    "boss_class": "true"
   },
   "nyxharr": {
     "name": "Nyxharr",
@@ -4353,7 +4944,10 @@
     "skill_desc": "Spirit charge + war banner + ghost lance + eternal war",
     "skill_cooldown": 315,
     "skill_range": 220,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxharr",
+    "boss_class": "true"
   },
   "ravokkar": {
     "name": "Ravokkar",
@@ -4375,7 +4969,10 @@
     "skill_desc": "Quickdraw barrage + smoke veil + dynamite toss + last stand",
     "skill_cooldown": 320,
     "skill_range": 225,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "ravokkar",
+    "boss_class": "true"
   },
   "malzeroth": {
     "name": "Malzeroth",
@@ -4397,7 +4994,10 @@
     "skill_desc": "Hex bolt + cursed ground + hexbound chains + sovereign's curse",
     "skill_cooldown": 330,
     "skill_range": 230,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "malzeroth",
+    "boss_class": "true"
   },
   "zharakzuul": {
     "name": "Zharakzuul",
@@ -4419,7 +5019,10 @@
     "skill_desc": "Void lance + null field + void step + sovereign's void",
     "skill_cooldown": 335,
     "skill_range": 235,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zharakzuul",
+    "boss_class": "true"
   },
   "grondmauris": {
     "name": "Grondmauris",
@@ -4441,7 +5044,10 @@
     "skill_desc": "Earth break + moss bind + colossus stampede + world awakening",
     "skill_cooldown": 340,
     "skill_range": 240,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "grondmauris",
+    "boss_class": "true"
   },
   "lyssarethys": {
     "name": "Lyssarethys",
@@ -4463,7 +5069,10 @@
     "skill_desc": "Heartbreak lance + last caress + soul whip + heartbane's embrace",
     "skill_cooldown": 345,
     "skill_range": 250,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "lyssarethys",
+    "boss_class": "true"
   },
   "kaerinya": {
     "name": "Kaerinya",
@@ -4485,7 +5094,10 @@
     "skill_desc": "Solar jab + blazing guard + sunstep + sunfist cataclysm",
     "skill_cooldown": 350,
     "skill_range": 255,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaerinya",
+    "boss_class": "true"
   },
   "xelnarath": {
     "name": "Xel'Narath",
@@ -4507,7 +5119,10 @@
     "skill_desc": "Void lance + magenta eclipse + void wing dive + sovereign's voidfall",
     "skill_cooldown": 355,
     "skill_range": 260,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xelnarath",
+    "boss_class": "true"
   },
   "kyrenzai": {
     "name": "Kyrenzai",
@@ -4529,7 +5144,10 @@
     "skill_desc": "Kagune pierce + blood feast + tentacle sweep + devourer's hunger",
     "skill_cooldown": 360,
     "skill_range": 265,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kyrenzai",
+    "boss_class": "true"
   },
   "xaelmoran": {
     "name": "Xael'moran",
@@ -4551,7 +5169,10 @@
     "skill_desc": "Cold snap + tornado + sun strike + cataclysm",
     "skill_cooldown": 365,
     "skill_range": 270,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "xaelmoran",
+    "boss_class": "true"
   },
   "thalryndel": {
     "name": "Thal'ryndel",
@@ -4573,7 +5194,10 @@
     "skill_desc": "Lightning bolt + storm veil + tempest step + eye of the storm",
     "skill_cooldown": 370,
     "skill_range": 275,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "thalryndel",
+    "boss_class": "true"
   },
   "grimkor": {
     "name": "Grimkor",
@@ -4595,7 +5219,10 @@
     "skill_desc": "Sawblade spin + lumberjack's wrath + timber charge + mill of ruin",
     "skill_cooldown": 375,
     "skill_range": 280,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "grimkor",
+    "boss_class": "true"
   },
   "kaineroth": {
     "name": "Kaineroth",
@@ -4617,7 +5244,10 @@
     "skill_desc": "Crimson gaze + crow storm + shadow step + crow-eyed judgment",
     "skill_cooldown": 380,
     "skill_range": 285,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaineroth",
+    "boss_class": "true"
   },
   "zyvareth": {
     "name": "Zyvareth",
@@ -4639,7 +5269,10 @@
     "skill_desc": "Crystal bolt + stormfall + thunder horn + crystal tempest",
     "skill_cooldown": 385,
     "skill_range": 295,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "zyvareth",
+    "boss_class": "true"
   },
   "kagetsuka": {
     "name": "Kagetsuka",
@@ -4661,7 +5294,10 @@
     "skill_desc": "Crimson slash + fire aura + warlord's charge + eternal judgment",
     "skill_cooldown": 390,
     "skill_range": 300,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kagetsuka",
+    "boss_class": "true"
   },
   "deidara": {
     "name": "Deidara",
@@ -4683,7 +5319,10 @@
     "skill_desc": "Clay bird + c1 bomb cluster + artful step + c4 karura",
     "skill_cooldown": 395,
     "skill_range": 310,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "deidara",
+    "boss_class": "true"
   },
   "sunakage": {
     "name": "Sunakage",
@@ -4705,7 +5344,10 @@
     "skill_desc": "Sand blade + dune storm + sand step + shadow of the dunes",
     "skill_cooldown": 400,
     "skill_range": 320,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "sunakage",
+    "boss_class": "true"
   },
   "pyraena": {
     "name": "Pyraena",
@@ -4727,7 +5369,10 @@
     "skill_desc": "Ember lance + flame weave + ember step + emberweaver's inferno",
     "skill_cooldown": 405,
     "skill_range": 330,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "pyraena",
+    "boss_class": "true"
   },
   "cogsworth": {
     "name": "Cogsworth",
@@ -4749,7 +5394,10 @@
     "skill_desc": "Sky cannon + copper storm + rocket dash + skyfury cataclysm",
     "skill_cooldown": 410,
     "skill_range": 340,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "cogsworth",
+    "boss_class": "true"
   },
   "yomigetsu": {
     "name": "Yomigetsu",
@@ -4771,7 +5419,10 @@
     "skill_desc": "Crescent slash + lunar eclipse + moon step + reaper's moonfall",
     "skill_cooldown": 415,
     "skill_range": 350,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "yomigetsu",
+    "boss_class": "true"
   },
   "akirakumo": {
     "name": "Akirakumo",
@@ -4793,7 +5444,10 @@
     "skill_desc": "Moonfang slash + silver storm + fang step + prince's moonfall",
     "skill_cooldown": 420,
     "skill_range": 360,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "akirakumo",
+    "boss_class": "true"
   },
   "kaithros": {
     "name": "Kaithros",
@@ -4815,7 +5469,10 @@
     "skill_desc": "Ember slash + flame breathing + lion's step + emberlion's final flame",
     "skill_cooldown": 425,
     "skill_range": 250,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "kaithros",
+    "boss_class": "true"
   },
   "nyxaris": {
     "name": "Nyxaris",
@@ -4837,7 +5494,10 @@
     "skill_desc": "Moonfire shot + crescent volley + lunar step + herald's eclipse",
     "skill_cooldown": 430,
     "skill_range": 370,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "nyxaris",
+    "boss_class": "true"
   },
   "tsukiyora": {
     "name": "Tsukiyora",
@@ -4859,7 +5519,10 @@
     "skill_desc": "Moon chakra blast + truth-seeking storm + lunar shift + all-killing ash bone",
     "skill_cooldown": 435,
     "skill_range": 380,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "tsukiyora",
+    "boss_class": "true"
   },
   "hollowbane": {
     "name": "Kurosaki Hollowbane",
@@ -4881,6 +5544,9 @@
     "skill_desc": "Getsuga tensho + bankai storm + flash step + final getsuga",
     "skill_cooldown": 440,
     "skill_range": 260,
-    "skill_duration": 0
+    "skill_duration": 0,
+    "unlock_cost": 4500,
+    "unlock_require_boss": "hollowbane",
+    "boss_class": "true"
   }
 }

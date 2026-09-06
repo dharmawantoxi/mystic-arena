@@ -52,3 +52,7 @@ docs/_boss_cache_*.png
 # ═══ Godot 4 ═══
 # Cache editor / import (shader cache, .import, uid_cache) — dibuat ulang otomatis
 godot/.godot/
+
+# ═══ Duplikat aset audio untuk project Godot (hasil tools/convert_to_godot.py;
+# sumber kebenaran tetap assets/sounds/ pygame, 15 MB tidak perlu 2x di git) ═══
+godot/assets/sounds/

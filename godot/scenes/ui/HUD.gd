@@ -19,6 +19,7 @@ var _difficulty_label: Label = null
 var _over_panel: PanelContainer = null
 var _over_title: Label = null
 var _over_body: Label = null
+var _next_button: Button = null
 
 @onready var gold_label: Label = $TopLeft/GoldChip/GoldRow/GoldValue
 @onready var income_label: Label = $TopLeft/GoldChip/GoldRow/IncomeValue
@@ -70,6 +71,9 @@ func _on_gold_changed(new_gold: int):
 	income_label.text = "+%s/s" % _format_gold_rate(GameManager.gold_per_second)
 
 func _on_level_started(_level_num: int):
+	# Level baru (PLAY/ENTER-next/R) -> sembunyikan panel menang/kalah lama.
+	if _over_panel != null:
+		_over_panel.visible = false
 	refresh()
 	_refresh_field()
 
@@ -328,12 +332,52 @@ func _build_game_over_panel() -> void:
 	_over_body.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
 	vbox.add_child(_over_body)
 
+	# Tombol alur setelah match (paritas tombol pygame: play_next_level /
+	# replay / main menu — _core.py:7734-7743 + 8320-8336). Keyboard tetap
+	# jalan (ENTER/R/ESC di Main._on_key), tombol ini untuk mouse/touch.
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	actions.add_theme_constant_override("separation", 10)
+	vbox.add_child(actions)
+	_next_button = Button.new()
+	_next_button.text = "LANJUT KE LEVEL 2  (ENTER)"
+	_next_button.custom_minimum_size = Vector2(210, 34)
+	_next_button.pressed.connect(func(): GameManager.next_level())
+	actions.add_child(_next_button)
+	var replay_btn := Button.new()
+	replay_btn.text = "ULANGI  (R)"
+	replay_btn.custom_minimum_size = Vector2(130, 34)
+	replay_btn.pressed.connect(func(): GameManager.restart_match())
+	actions.add_child(replay_btn)
+	var menu_btn := Button.new()
+	menu_btn.text = "MENU UTAMA  (ESC)"
+	menu_btn.custom_minimum_size = Vector2(160, 34)
+	menu_btn.pressed.connect(_goto_main_menu)
+	actions.add_child(menu_btn)
+
 	var hint := Label.new()
-	hint.text = "ENTER = main lagi level ini   ·   ESC/B = tutup toko"
+	hint.text = "ENTER = lanjut level berikutnya  ·  R = ulangi  ·  ESC = menu utama"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", Color(0.7, 0.76, 0.9, 0.85))
 	vbox.add_child(hint)
+
+
+## Tombol MENU UTAMA pada panel game over: jalankan alur yang sama dengan
+## Main._on_menu_main_menu (unpause + buang match + tampilkan menu MAIN)
+## supaya klik mouse dan keyboard ESC identik.
+func _goto_main_menu() -> void:
+	if _over_panel != null:
+		_over_panel.visible = false
+	var main = get_tree().get_first_node_in_group("main")
+	if main != null and is_instance_valid(main) and main.has_method("_on_menu_main_menu"):
+		main.call("_on_menu_main_menu")
+		return
+	# fallback kalau scene uji tidak memasang Main.gd
+	GameManager.return_to_menu()
+	var menu = get_tree().get_first_node_in_group("main_menu")
+	if menu != null and is_instance_valid(menu) and menu.has_method("show_main"):
+		menu.show_main()
 
 
 func _on_game_over(victory: bool) -> void:
@@ -343,11 +387,27 @@ func _on_game_over(victory: bool) -> void:
 	_over_title.text = "VICTORY" if victory else "DEFEAT"
 	_over_title.add_theme_color_override("font_color",
 		Color(1, 0.9, 0.45) if victory else Color(1, 0.45, 0.45))
-	var reward := (3000 + GameManager.level_number * 100) if victory else 0
+	# Reward yang BENAR-BENAR diberikan (paritas _grant_meta_reward: menang
+	# pertama 3000 / replay 1500 sekali / 200 berikutnya / kalah 0), bukan
+	# lagi rumusan 3000 + level*100.
+	var reward: int = GameManager.meta_reward_earned
+	var replay_txt := ""
+	if victory:
+		if reward >= 3000:
+			replay_txt = "menang pertama"
+		elif reward >= 1500:
+			replay_txt = "replay pertama"
+		else:
+			replay_txt = "replay berulang"
 	_over_body.text = "%s menang di level %d (wave %d).\n%s" % [
 		"Radiant" if victory else "Dire", GameManager.level_number, GameManager.wave_number,
-		"Meta reward: %d gold tersimpan di save." % reward if victory
-			else "Nexus Radiant hancur — gold tabungan tidak disimpan."]
+		"Meta reward: +%d gold (%s) tersimpan ke save." % [reward, replay_txt] if victory
+			else "Nexus Radiant hancur — meta reward 0 (kalah tidak dibayar)."]
+	var nxt := GameManager.next_level_number()
+	if _next_button != null:
+		_next_button.visible = victory and nxt > 0
+		if nxt > 0:
+			_next_button.text = "LANJUT KE LEVEL %d  (ENTER)" % nxt
 	_over_panel.pivot_offset = _over_panel.size / 2.0
 	_over_panel.scale = Vector2(0.85, 0.85)
 	_over_panel.modulate.a = 0.0

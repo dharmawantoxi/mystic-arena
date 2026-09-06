@@ -4,19 +4,23 @@ Port GPU dari versi `pygame-ce`. **Baseline visual = silhouette pygame** (`scrip
 
 Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 slot bangun**, **nexus/castle dengan shield → menang/kalah**, **skill QWER**, **toko item 6 slot (33 item)**, dan **ekonomi identik pygame** (3 gold/s + 0.3/level, pengali difficulty, milli-gold). Lihat bagian "Gameplay yang sudah diport" di bawah.
 
+**Menu utama + progresi level** juga jalan (sesi 2026-09-06 kedua): boot jatuh ke **MENU UTAMA** (`scenes/ui/MainMenu.gd`, state machine paritas `MenuState` pygame: MAIN / LEVEL_SELECT / HERO_SHOP / SETTINGS / HOW_TO_PLAY / CREDITS / PAUSE), pilih level 1–54 dari `levels.json` (nama, deskripsi, tema, mini boss, true boss, kunci `unlock_after_level`), HERO SHOP pakai meta gold, volume SFX/BGM tersimpan di save, dan setelah VICTORY tekan **ENTER** untuk lanjut ke level berikutnya (tema map + boss berbeda).
+
 ## Quick Start
 
 ```bash
 # 1. Convert data pygame -> Godot JSON (sudah jalan, 222 hero, 216 boss, 54 level)
+#    Sekaligus menyalin assets/sounds/*.wav -> godot/assets/sounds/ (untuk AudioManager;
+#    folder itu di-gitignore, jalankan ulang converter setelah clone)
 python tools/convert_to_godot.py
 
 # 2. Buka di Godot 4.3+ (diuji di 4.7.2 Forward+)
 godot godot/project.godot
-# F5 -> arena 1280x720 langsung terisi: map forest digambar prosedural,
-# 2 nexus (Radiant/Dire) + 18 slot menara di 3 lane, 6 hero Radiant + 6 hero Dire,
-# wave minion tiap 25 detik, mini boss turun sesuai levels.json (wave 10/15/25),
-# true boss Abaddon turun setelah 6 menara Dire hancur,
-# HUD emas/wave/announcer + bar nexus + skill bar QWER + toko (B), damage number.
+# F5 -> MENU UTAMA -> MULAI GAME -> pilih kartu LEVEL 1 -> MAIN.
+# Arena 1280x720: map forest, 2 nexus, 18 slot menara di 3 lane, 6 hero per tim,
+# wave minion tiap 25 detik, mini boss sesuai levels.json (wave 10/15/25),
+# true boss Abaddon setelah 6 menara Dire hancur, HUD + skill bar QWER + toko (B).
+# Menang -> ENTER lanjut LEVEL 2 (tema desert, boss razak/khalros/gorath/alchemist).
 ```
 
 ### Kontrol pemain
@@ -26,9 +30,10 @@ godot godot/project.godot
 | **klik kiri** | pilih unit: hero Radiant (→ skill bar + toko) · menara milikmu (→ tab MENARA) · nexus (→ tab NEXUS) · lingkaran slot di lane (→ bangun menara) |
 | `Q` `W` `E` `R` | cast skill hero yang sedang dipilih (bisa juga lewat tombol di skill bar) |
 | `B` | buka/tutup toko (MENARA · ITEM · HERO · NEXUS) |
-| `D` | ganti difficulty: easy (gold ×1.25) → normal (×1.0) → hard (×0.75) |
-| `ENTER` | setelah VICTORY/DEFEAT: mulai ulang level yang sama |
-| `P` / `ESC` | pause (`get_tree().paused`; hero & minion ikut beku). `ESC` juga menutup toko |
+| `D` | ganti difficulty: easy (gold ×1.25) → normal (×1.0) → hard (×0.75 + enemy scaling) |
+| `ENTER` | setelah VICTORY: **lanjut level berikutnya** · setelah DEFEAT: ulangi level |
+| `R` | setelah menang/kalah: replay level yang sama (is_replay → reward 1500/200, bukan 3000) |
+| `P` / `ESC` | menu PAUSE (RESUME / PENGATURAN / MENU UTAMA / KELUAR — paritas `MenuState.PAUSE`); ESC setelah menang/kalah = menu utama |
 
 Hero Radiant yang tidak dipilih tetap bertarung sendiri (AI + auto-cast skill); yang dipilih berhenti auto-cast dan menunggu input QWER — sama seperti pygame.
 
@@ -102,8 +107,13 @@ exit code editor saja tidak cukup karena Godot bisa tetap keluar dengan kode 0.
 | Sistem pygame | Port Godot | Catatan |
 |---|---|---|
 | `Tower` + `TOWER_UPGRADE_PATHS` (4 jalur, Lv1-6) | `scenes/tower/Tower.gd` + `scripts/core/TowerDB.gd` + `data/towers.json` | Archer (Lv6 double shot) · Cannon (splash + burn) · Ice (slow + atk slow, Lv6 AOE) · Mage (chain + skill down + anti-heal). Build 100g, upgrade 175/325/550/850/1300, shield = 40% HP, HP regen 0.3/frame setelah 5s tanpa damage, Regen Shield 850g (Lv4+) |
-| `Castle` + `NEXUS_LEVELS` | `scenes/base/Nexus.gd` + `data/nexus.json` | Lv1 4000 HP → Lv5 15000 HP, Castle Shield menyerap 1:1 lalu sisa damage −88%, shield gratis sampai wave 10 lalu 850g, upgrade mempertahankan rasio HP + shield |
-| menang/kalah | `GameManager.end_match()` + `HUD` banner | Nexus Dire hancur = VICTORY (meta reward 3000 + 100×level disimpan ke save), nexus Radiant hancur = DEFEAT. `ENTER` = main lagi |
+| `Castle` + `NEXUS_LEVELS` | `scenes/base/Nexus.gd` + `data/nexus.json` | Lv1 4000 HP → Lv5 15000 HP, Castle Shield menyerap 1:1 lalu sisa damage −88%, shield gratis sampai wave 10 lalu 850g, upgrade mempertahankan rasio HP + shield. Level castle awal dari levels.json: Radiant `starting_castle_level`, Dire `castle_start_level` **hanya di hard** (paritas `_core.py:1504-1508`) |
+| menang/kalah | `GameManager.end_match()` + `HUD` banner | Nexus Dire hancur = VICTORY, nexus Radiant hancur = DEFEAT. Meta reward paritas `_grant_meta_reward` (`_core.py:2365-2456`): menang pertama `meta_gold_reward_win` (3000), replay win 1500 sekali lalu 200 unlimited (via `replay_reward_counts`), kalah 0 — ditulis ke save kunci `meta_gold`, guard `_meta_reward_granted`. `ENTER` = level berikutnya |
+| `MenuState` + Menu pygame | `scenes/ui/MainMenu.gd` | State machine MAIN/LEVEL_SELECT/HERO_SHOP/SETTINGS/HOW_TO_PLAY/CREDITS/PAUSE, dibangun 100% dari kode (pola HUD/ShopPanel). LEVEL_SELECT: 54 kartu dari `BossDB.levels` + kunci `unlock_after_level` (`is_level_unlocked` paritas `level_data.py:2318`) + pemilih difficulty. HERO_SHOP: unlock hero pakai meta gold (paritas `_unlock_hero_in_meta_shop` `_core.py:5298`) → `SaveManager.unlock_hero()` |
+| progresi level | `GameManager.next_level()` / `is_replay` + `GameManagerConnector.starting_level` | ENTER setelah menang → `get_next_level` paritas (`level_data.py:2340`); replay → `is_replay=true` (paritas `main.py:576`). Connector tidak lagi hardcoded level 1: `start_match(n)` dipanggil menu |
+| enemy scaling hard | `GameManager.enemy_*_mult` + `Main`/`Boss`/`Minion` | `enemy_scaling_enabled = (difficulty == "hard")`; hp ×1.15, damage ×1.10 dari levels.json (`_core.py:1476-1483`). Diterapkan saat spawn: minion merah `apply_enemy_scaling` (`_core.py:1792-1796`), mini/true boss `apply_scaling` (`_core.py:1822/2097`) |
+| unlock hero boss | `GameManager._auto_unlock_defeated_boss_heroes()` | Boss yang dikalahkan di match yang DIMENANGKAN → hero-nya gratis masuk `unlocked_heroes` + `unlocked_bosses` (paritas `_core.py:2322-2355`); kalah = tidak dapat. Boss yang dikalahkan tapi belum dimenangkan → bisa DIBELI 4500 meta gold di HERO SHOP |
+| `SoundManager` (awal) | `scripts/autoload/AudioManager.gd` | Hook `bgm_track` per level (`start_level` → `play_bgm`), SFX ui/victory/defeat, volume sfx/bgm dari `SaveManager.data["settings"]`. Aset 24 .wav disalin converter ke `godot/assets/sounds/` (di-gitignore) |
 | `Game._generate_build_slots_from_lanes` | `Main._generate_build_slots()` | 3 slot × 3 lane × 2 tim, fraksi persis pygame (top/bot 0.15/0.30/0.45, mid 0.10/0.25/0.40, Dire dicerminkan) |
 | `hero_skills/_bundle.py` (6 kelas skill) | `scripts/skills/SkillBook.gd` | Q = `skill_cooldown` hero (Kaizen 300f, Grimjaw 420f, Sylara 360f), W 4s, E 7s, R 15s + CDR item. Hero tanpa tabel memakai skill generik |
 | `hero_items.py` (33 item, 6 slot) | `scripts/items/ItemDB.gd` + `ItemInventory.gd` + `data/items*.json` | Harga flat 4500g, cap atk speed 0.2-2.5 / lifesteal 1.75 / CDR 0.5 / skill amp 0.5 / evasion 0.5 / move speed 0.4, pasif Cleave + Corroder, 4 aura (Steel Aegis, Everfrost, Solar Brand, Searbrand) |
@@ -114,6 +124,8 @@ exit code editor saja tidak cukup karena Godot bisa tetap keluar dengan kode 0.
 
 ### Deviasi yang disengaja (dicatat, bukan bug)
 
+- **Menu utama disederhanakan dari pygame.** Tidak diport: multi-slot save (SLOT_SELECT), dialog TOP UP hero gold + voucher, cloud save Play Games, slider master/voice volume, dan kunci difficulty `run_difficulty` (di Godot difficulty bebas diganti; pygame menguncinya sampai semua level tamat — `_core.py:2416-2430`). Sisanya (state, kunci level, reward, hero shop) paritas.
+- **54 nama tema di levels.json, 4 palette yang tergambar.** `ArenaMap.gd` baru mem-port FOREST/DESERT/ICE/ABYSS dari `map_components/_bundle.py` (21 tema); tema lain jatuh ke fallback forest persis seperti `THEMES.get(t, FOREST_THEME)` pygame. Level 1→forest dan 2→desert jadi tetap terlihat berbeda.
 - **`hp_regen` item sekarang benar-benar dipakai.** Di pygame `HeroItemInventory.get_hp_regen()` ada tapi tidak pernah dipanggil `_entity.py`; di Godot diterapkan sebagai HP/detik (dekat base 180 HP/s, di luar base 9 HP/s + regen item).
 - **17 item aktif, `on_attack`, `bash`, dan `multishot` belum diport.** Efek pasif/aura/stat sudah; item aktif butuh lapisan input + cooldown UI sendiri.
 - **Proyektil skill instan** (damage langsung + FX partikel), bukan entitas proyektil terpisah seperti `_spawn_skill_projectile` pygame. Basic attack hero ranged, menara, dan minion ranged tetap memakai proyektil (`TowerBullet.gd`).
