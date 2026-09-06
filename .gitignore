@@ -48,3 +48,7 @@ tools/_out/
 
 # PNG banding cache boss (hasil tools/_diag_boss_cache_visual.py)
 docs/_boss_cache_*.png
+
+# ═══ Godot 4 ═══
+# Cache editor / import (shader cache, .import, uid_cache) — dibuat ulang otomatis
+godot/.godot/
