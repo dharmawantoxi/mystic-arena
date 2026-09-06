@@ -25,7 +25,7 @@ position = Vector2(0, 22)
 scale = Vector2(1.4, 0.6)
 texture = null
 modulate = Color(0, 0, 0, 0.35)
-# Shadow pakai GradientTexture2D ellipse di editor
+; Shadow pakai GradientTexture2D ellipse di editor
 
 [node name="Visual" type="Node2D" parent="."]
 position = Vector2(0, 0)
@@ -71,7 +71,7 @@ lifetime = 0.35
 one_shot = true
 explosiveness = 0.9
 process_material = null
-# Di editor: assign ParticleProcessMaterial dengan scale + velocity radial
+; Di editor: assign ParticleProcessMaterial dengan scale + velocity radial
 
 [node name="SkillParticles" type="GPUParticles2D" parent="FX"]
 emitting = false
