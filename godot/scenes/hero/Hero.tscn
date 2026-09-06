@@ -20,12 +20,12 @@ shader_parameter/flash_amount = 0.0
 script = ExtResource("2")
 metadata/hero_type = "kaizen"
 
-[node name="Shadow" type="Sprite2D" parent="."]
+[node name="Shadow" type="Polygon2D" parent="."]
 position = Vector2(0, 22)
 scale = Vector2(1.4, 0.6)
-texture = null
-modulate = Color(0, 0, 0, 0.35)
-; Shadow pakai GradientTexture2D ellipse di editor
+color = Color(0, 0, 0, 1)
+; ellipse prosedural — tidak butuh PNG/GradientTexture, jadi bayangan selalu ada
+polygon = PackedVector2Array(19, 0, 17.6, 2.7, 13.4, 4.9, 7.3, 6.5, 0, 7, -7.3, 6.5, -13.4, 4.9, -17.6, 2.7, -19, 0, -17.6, -2.7, -13.4, -4.9, -7.3, -6.5, 0, -7, 7.3, -6.5, 13.4, -4.9, 17.6, -2.7)
 
 [node name="Visual" type="Node2D" parent="."]
 position = Vector2(0, 0)
@@ -35,7 +35,11 @@ material = SubResource("ShaderMaterial_outline")
 centered = true
 sprite_frames = null
 animation = &"idle"
-autoplay = "idle"
+; autoplay SENGAJA tidak diisi: saat .tscn di-load `sprite_frames` masih null,
+; AnimatedSprite2D::set_autoplay akan ERR_FAIL (pesan error tiap spawn).
+; Hero.gd -> setup_visual() yang menyalakan play("idle") setelah fallback
+; SpriteFrames dibuat.
+
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, 4)
@@ -60,6 +64,9 @@ offset_top = -58.0
 offset_right = 40.0
 offset_bottom = -44.0
 horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 0.95, 0.82, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.08, 0.9)
+theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 10
 
 [node name="FX" type="Node2D" parent="."]
@@ -80,6 +87,7 @@ lifetime = 0.6
 one_shot = true
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
-autoplay = "idle"
+; autoplay sengaja tidak diset: Hero.gd membuat library
+; "idle" prosedural di _ready (autoplay tanpa library = error spam tiap spawn)
 
 [node name="Skills" type="Node" parent="."]

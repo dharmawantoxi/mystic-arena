@@ -71,7 +71,14 @@ python tools/convert_to_godot.py
 ```bash
 godot godot/project.godot
 # atau double-click project.godot
-# Tekan F5 — Main scene langsung jalan dengan 6 hero fallback (kotak warna)
+# Tekan F5 — Main scene langsung jalan: map forest (fallback prosedural, tanpa TileSet),
+# 6 hero Radiant + 6 hero Dire + mini boss, wave minion tiap 25 detik, HUD emas+wave.
+# Tombol debug saat run: R respawn · T ganti tema · SPASI beli hero · P/ESC pause.
+#
+# Kalau yang muncul masih layar hitam: cek urutan autoload & nama file di godot/
+# (lihat godot/README.md bagian "F5 cuma layar hitam" — 6 penyebab yang sudah diperbaiki
+# 2026-09-06: tanpa Main.gd, map tanpa TileSet, kamera di (0,0), Boss tanpa visual,
+# Hero fallback tidak di-play(), time_scale hit-stop).
 ```
 
 ---
@@ -147,11 +154,11 @@ Build time: Pygame 8-12 menit (p4a clone + compile) → **Godot 45 detik**.
 | Fase | Task | Status / Estimasi |
 |---|---|---|
 | **Fase 0** | `convert_to_godot.py` + `godot/` skeleton | ✅ DONE (222 hero, 216 boss, 54 level — 2026-09-06) |
-| **Fase 1** | 6 hero starter jalan di Godot (fallback warna + shader) + Boss + DamageNumber + export AAB | ✅ DONE |
+| **Fase 1** | 6 hero starter jalan di Godot (fallback warna + shader) + Boss + DamageNumber + export AAB | ✅ DONE (dihidupkan 2026-09-06 — sebelumnya F5 hanya layar hitam, lihat `godot/README.md`) |
 | **Fase 2a** | **Kaizen flagship: Skeleton2D 25 bones + hamon shader + wind ribbon** (`scenes/hero/kaizen/`) | ✅ DONE (2026-09-06) — lihat `godot/scenes/demo/KaizenDemo.tscn` |
 | **Fase 2b** | Import 5 hero masterwork PNG → SpriteFrames + anim (template Kaizen) | 1 minggu |
-| **Fase 3** | Map TileSet + 1 tema forest + lane path | 3 hari |
-| **Fase 4** | CombatSystem + 54 level config + waves (sudah ada data JSON) | 1 minggu |
+| **Fase 3** | Map TileSet + 1 tema forest + lane path | 🟡 parsial (2026-09-06): lane/river/base digambar prosedural dari palette `themes.py` + Catmull-Rom `PathGenerator` di `ArenaMap.gd._draw()`; TileSet `.tres` masih tugas lanjutan |
+| **Fase 4** | CombatSystem + 54 level config + waves (sudah ada data JSON) | 🟡 mulai (2026-09-06): tema per level dari `levels.json`, `MINION_TYPES` + `NEXUS_WAVE_COMPOSITION` diport ke `GameManager`, `Minion.tscn` + gold reward; nexus/castle & tower masih TODO |
 | **Fase 5** | 200+ boss hero import batch (Opsi A) | 2 minggu |
 | **Fase 6** | Android AAB final + Play Store (preset sudah ada) | 2 hari |
 
