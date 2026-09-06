@@ -119,6 +119,33 @@ theme_override_colors/font_color = Color(1, 0.92, 0.45, 1)
 theme_override_font_sizes/font_size = 13
 text = "WAVE 1"
 
+[node name="FieldStatus" type="Label" parent="TopLeft"]
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.72, 0.78, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.08, 0.85)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 12
+text = "arena: -"
+
+[node name="HintLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = -46.0
+offset_right = 620.0
+offset_bottom = -18.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.85, 0.88, 1, 0.85)
+theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.08, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 13
+text = "R respawn roster   |   T ganti tema map   |   SPASI beli hero random   |   P / ESC pause"
+
 [node name="WaveBanner" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
 layout_mode = 1

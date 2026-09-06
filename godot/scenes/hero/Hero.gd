@@ -23,7 +23,7 @@ var facing: int = 1
 # Visual nodes (di-assign di _ready)
 @onready var sprite: AnimatedSprite2D = $Visual/AnimatedSprite2D
 @onready var visual_root: Node2D = $Visual
-@onready var shadow: Sprite2D = $Shadow
+@onready var shadow: Node2D = $Shadow # Polygon2D ellipse (0 asset)
 @onready var hp_bar: ProgressBar = $UI/HPBar
 @onready var name_label: Label = $UI/NameLabel
 @onready var hit_particles: GPUParticles2D = $FX/HitParticles
@@ -82,7 +82,8 @@ func setup_visual():
 	var frames_path = "res://assets/heroes/%s/SpriteFrames.tres" % hero_type
 	if ResourceLoader.exists(frames_path):
 		sprite.sprite_frames = load(frames_path)
-		sprite.play("idle")
+		if sprite.sprite_frames.has_animation("idle"):
+			sprite.play("idle")
 	else:
 		# Fallback: warna solid + shader (kalau asset belum ada)
 		# Tetap terlihat premium karena shader outline + shadow
@@ -93,6 +94,12 @@ func setup_visual():
 		sprite.sprite_frames = SpriteFrames.new()
 		sprite.sprite_frames.add_animation("idle")
 		sprite.sprite_frames.add_frame("idle", ImageTexture.create_from_image(img))
+		# Wajib di-play eksplisit: tanpa SpriteFrames.tres, `autoplay` di .tscn
+		# sudah keburu kosong saat _ready -> tanpa ini hero tidak tergambar
+		# (penyebab kedua "layar hitam": unit ada, tapi tidak ada yang di-render).
+		sprite.offset = Vector2(0, -32) # kaki menapak di titik origin hero
+		sprite.animation = &"idle"
+		sprite.play("idle")
 
 	# 2. Outline shader (menggantikan 5x blit outline di pygame)
 	#    Shader: res://assets/shaders/outline.gdshader
@@ -119,7 +126,10 @@ func _create_procedural_animations():
 	idle.length = 1.0
 	idle.loop_mode = Animation.LOOP_LINEAR
 	var track = idle.add_track(Animation.TYPE_VALUE)
-	idle.track_set_path(track, "%s:scale" % visual_root.get_path())
+	# Path track relatif ke root scene (AnimationPlayer.root_node = hero),
+	# jadi "Visual:scale" — BUKAN absolute NodePath (kalau absolute, Godot
+	# spam error "Node not found" tiap frame anim).
+	idle.track_set_path(track, ^"Visual:scale")
 	idle.track_insert_key(track, 0.0, Vector2(1,1))
 	idle.track_insert_key(track, 0.5, Vector2(1, 1.04))
 	idle.track_insert_key(track, 1.0, Vector2(1,1))
@@ -157,8 +167,9 @@ func _physics_process(delta):
 				sprite.play("walk")
 			move_and_slide()
 	else:
-		# Push ke base musuh (mirip pygame PUSH)
-		var push_target = Vector2(1100, 360) if team=="blue" else Vector2(100, 360)
+		# Push ke base musuh (mirip pygame PUSH) — titiknya diambil dari ArenaMap
+		# supaya tidak hardcode dan tetap benar kalau ukuran/lane map berubah.
+		var push_target = enemy_base()
 		var dir = (push_target - global_position).normalized()
 		velocity = dir * move_speed * 0.6
 		is_moving = velocity.length() > 5.0
@@ -178,17 +189,29 @@ func _physics_process(delta):
 			kaizen_action = "walk"
 		kaizen_skeleton.drive(anim_phase, kaizen_action, ap, facing, is_moving, "", delta)
 
+func enemy_base() -> Vector2:
+	var am = get_tree().get_first_node_in_group("arena_map")
+	if am != null and am.has_method("get_enemy_base"):
+		return am.get_enemy_base(team)
+	return Vector2(1180, 100) if team == "blue" else Vector2(100, 620)
+
 func find_nearest_enemy() -> Node2D:
 	var best = null
 	var best_dist = 900.0
-	# Cari di group "heroes" + "bosses" + "minions"
-	for group in ["heroes","bosses","minions","towers"]:
+	# Cari di group "heroes" + "bosses" + "minions" + "towers"
+	for group in ["heroes", "bosses", "minions", "towers"]:
 		for n in get_tree().get_nodes_in_group(group):
-			if n == self: continue
-			if n.team == team: continue
-			if n.has_method("is_dead") and n.is_dead: continue
-			if not n.has_method("take_damage"): continue
-			var d = global_position.distance_to(n.global_position)
+			if n == self or not is_instance_valid(n):
+				continue
+			if not n.has_method("take_damage"):
+				continue
+			if n.get("team") == team:
+				continue
+			# `is_dead` itu properti, BUKAN method — has_method("is_dead") selalu
+			# false, jadi mayat yang masih ada di queue_free ikut jadi target.
+			if bool(n.get("is_dead")):
+				continue
+			var d := global_position.distance_to(n.global_position)
 			if d < best_dist:
 				best_dist = d
 				best = n
@@ -253,6 +276,11 @@ func take_damage(amount: float, from_team: String, dmg_type: String = "normal", 
 func die(killer = null):
 	is_dead = true
 	add_to_group("dead")
+	# Matikan fisika dulu: mayat tidak boleh menahan langkah unit lain
+	set_physics_process(false)
+	collision_layer = 0
+	collision_mask = 0
+	target = null
 	# Death animation GPU (bukan fade ellipse manual pygame)
 	if anim_player.has_animation("death"):
 		anim_player.play("death")
@@ -270,10 +298,12 @@ func update_ui():
 	if name_label:
 		name_label.text = "%s Lv%d" % [name, 1]
 
+# Hit-stop: dulu `duration * Engine.time_scale` (0.03 * 0.05 = 1.5 ms) dan
+# time-scale dipulihkan lewat await DI NODE INI -> kalau hero mati di tengah
+# await, Engine.time_scale bisa tertinggal 0.05 (game kelihatan freeze/black).
+# Sekarang request ke autoload GameManager yang punya watchdog real-time.
 func _hit_stop(duration: float):
-	Engine.time_scale = 0.05
-	await get_tree().create_timer(duration * Engine.time_scale, true, false, true).timeout
-	Engine.time_scale = 1.0
+	GameManager.request_hit_stop(duration)
 
 # Skill QWER — delegate ke HeroSkills (port dari hero_skills/)
 func cast_q(): _cast_skill("q")

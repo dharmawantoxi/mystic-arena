@@ -20,7 +20,9 @@ func _ready():
 	GameManager.minion_container = _containers.get_node_or_null(^"Minions")
 	GameManager.tower_container = _containers.get_node_or_null(^"Towers")
 	if start_level_on_ready:
-		GameManager.start_level(starting_level)
+		# call_deferred supaya level_started dipancarkan SETELAH seluruh _ready
+		# selesai (parent/child) — pendengar signal (Main.gd, HUD.gd) dijamin siap.
+		GameManager.start_level.call_deferred(starting_level)
 
 func _exit_tree():
 	# Cegah dangling reference di autoload saat Main scene di-unload

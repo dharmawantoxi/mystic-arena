@@ -14,14 +14,14 @@ const ATTACK_ARC_END: float = ATTACK_ARC_START + ATTACK_ARC_SWEEP
 
 # Palette (menggantikan _NS_kaizen.PALETTE dict pygame → Color Godot)
 const PALETTE := {
-	"skin_dark": Color("9e7256"), "skin_mid": Color("c49670"), "skin_light": Color("e2ba92"),
-	"hair_dark": Color("342a22"), "hair_mid": Color("566846"), "hair_light": Color("8c6a46"),
-	"cloth_dark": Color("263256"), "cloth_mid": Color("3e5486"), "cloth_light": Color("668ac2"),
-	"scarf_dark": Color("2e4c94"), "scarf_mid": Color("5482ce"), "scarf_light": Color("88b6f2"),
-	"steel_dark": Color("4c525e"), "steel_mid": Color("7e8694"), "steel_light": Color("b8beca"), "steel_shine": Color("e6ecf6"),
-	"gold_mid": Color("a87e2c"), "gold_light": Color("e2ba52"),
-	"wind_mid": Color("70b2e6"), "wind_light": Color("b0defa"), "wind_bright": Color("d8f2ff"),
-	"ink": Color("141116"),
+	"skin_dark": Color("#9e7256"), "skin_mid": Color("#c49670"), "skin_light": Color("#e2ba92"),
+	"hair_dark": Color("#342a22"), "hair_mid": Color("#566846"), "hair_light": Color("#8c6a46"),
+	"cloth_dark": Color("#263256"), "cloth_mid": Color("#3e5486"), "cloth_light": Color("#668ac2"),
+	"scarf_dark": Color("#2e4c94"), "scarf_mid": Color("#5482ce"), "scarf_light": Color("#88b6f2"),
+	"steel_dark": Color("#4c525e"), "steel_mid": Color("#7e8694"), "steel_light": Color("#b8beca"), "steel_shine": Color("#e6ecf6"),
+	"gold_mid": Color("#a87e2c"), "gold_light": Color("#e2ba52"),
+	"wind_mid": Color("#70b2e6"), "wind_light": Color("#b0defa"), "wind_bright": Color("#d8f2ff"),
+	"ink": Color("#141116"),
 }
 
 # State (di-drive oleh Hero.gd tiap frame)
