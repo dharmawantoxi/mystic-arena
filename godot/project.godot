@@ -22,6 +22,7 @@ GameManager="*res://scripts/autoload/GameManager.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
 HeroDB="*res://scripts/core/HeroDB.gd"
 BossDB="*res://scripts/core/BossDB.gd"
+CombatSystem="*res://scripts/systems/CombatSystem.gd"
 
 [display]
 
