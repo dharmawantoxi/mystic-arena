@@ -336,7 +336,7 @@ func nexus_stats(level: int) -> Dictionary:
 func shield_cfg() -> Dictionary:
 	var cfg = nexus_data.get("shield")
 	if cfg is Dictionary and not cfg.is_empty():
-		var out := cfg.duplicate()
+		var out: Dictionary = cfg.duplicate()
 		out["color_blue"] = _color_from(cfg.get("color_blue", ""), FALLBACK_SHIELD["color_blue"])
 		out["color_red"] = _color_from(cfg.get("color_red", ""), FALLBACK_SHIELD["color_red"])
 		return out

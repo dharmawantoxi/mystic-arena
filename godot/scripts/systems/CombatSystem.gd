@@ -176,7 +176,7 @@ func apply_damage(target, amount: float, from_team: String = "",
 			_float_text(target, "WIND", false)
 			return 0.0
 		# evasion item + blind aura
-		var miss := st.miss_chance(is_physical)
+		var miss: float = st.miss_chance(is_physical)
 		if miss > 0.0 and randf() < miss:
 			_float_text(target, "MISS", false)
 			return 0.0
