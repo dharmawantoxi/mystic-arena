@@ -345,9 +345,10 @@ func start_level(lv: int, replay: bool = false):
 	# Hook BGM per level (levels.json["bgm_track"]; pygame main.py:521).
 	# AudioManager no-op + log kalau aset wav belum disalin converter.
 	AudioManager.play_bgm(str(lv_data.get("bgm_track", "bgm_battle.wav")))
+	var scaling_txt: String = (" · enemy scaling x%.2f HP" % enemy_hp_mult) if enemy_scaling_enabled else ""
 	print("[GameManager] Start Level %d%s — gold %d (%s/s, %s)%s" % [
 		lv, " (replay)" if replay else "", gold, format_gold_rate(gold_per_second),
-		difficulty, " · enemy scaling x%.2f HP" % enemy_hp_mult if enemy_scaling_enabled else ""])
+		difficulty, scaling_txt])
 	level_started.emit(lv)
 	# call_deferred: antrian deferred itu FIFO — Main._on_level_started sudah
 	# mengantri _start_battle (bersihkan arena lama + spawn nexus/hero) lebih

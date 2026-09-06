@@ -289,9 +289,7 @@ func _build_tower_tab() -> void:
 			var ti: Dictionary = TowerDB.type_info(str(tt))
 			var b := _make_button("%s %s — %d g" % [
 					str(ti.get("icon", "")), str(ti.get("name", tt)), cost],
-				"%s\n%s\nCatatan: stat Lv1 semua jalur sama (Archer Lv1); "
-				% [str(ti.get("desc", "")), str(ti.get("special", ""))]
-				+ "kekuatannya baru muncul setelah upgrade ke Lv2.",
+				"%s\n%s\nCatatan: stat Lv1 semua jalur sama (Archer Lv1); kekuatannya baru muncul setelah upgrade ke Lv2." % [str(ti.get("desc", "")), str(ti.get("special", ""))],
 				_build_tower.bind(str(tt)), GameManager.gold >= cost)
 			b.custom_minimum_size = Vector2(320, 34)
 			grid.add_child(b)
@@ -474,9 +472,7 @@ func _build_hero_tab() -> void:
 			_buy_hero.bind(htype), GameManager.gold >= cost)
 		b.custom_minimum_size = Vector2(320, 30)
 		grid.add_child(b)
-	_add_label("Hero lain (%d total di heroes.json) terbuka lewat progres level — "
-		% HeroDB.get_all_types().size()
-		+ "lihat SaveManager.unlocked_heroes.", COL_DIM, 11)
+	_add_label("Hero lain (%d total di heroes.json) terbuka lewat progres level — lihat SaveManager.unlocked_heroes." % HeroDB.get_all_types().size(), COL_DIM, 11)
 
 
 func _buy_hero(hero_type: String) -> void:
@@ -507,8 +503,7 @@ func _build_nexus_tab() -> void:
 	else:
 		_add_label("Nexus sudah level maksimum.", COL_DIM)
 	if bool(nx.get("shield_active")) and bool(nx.get("free_shield_active")):
-		_add_label("Castle Shield GRATIS aktif (sampai wave 10) — damage tersisa "
-			+ "dikurangi %.0f%%." % (float(nx.get("shield_damage_reduction")) * 100.0),
+		_add_label("Castle Shield GRATIS aktif (sampai wave 10) — damage tersisa dikurangi %.0f%%." % (float(nx.get("shield_damage_reduction")) * 100.0),
 			Color(0.6, 0.85, 1.0), 11)
 	if nx.can_buy_shield():
 		var cost: int = nx.shield_cost()

@@ -267,7 +267,7 @@ func _boss_tick(_delta: float) -> void:
 		return
 	if active_boss != null:
 		if not is_instance_valid(active_boss) or bool(active_boss.get("is_dead")):
-			active_boss = None
+			active_boss = null
 		else:
 			return # satu boss aktif pada satu waktu, sama seperti pygame
 	if not pending_mini_bosses.is_empty():
@@ -278,8 +278,8 @@ func _boss_tick(_delta: float) -> void:
 		if GameManager.enemy_scaling_enabled:
 			active_boss.apply_scaling(GameManager.enemy_hp_mult,
 				GameManager.enemy_damage_mult, GameManager.enemy_speed_mult)
-		print("[Main] MINI BOSS %s turun ke mid lane%s" % [boss_type,
-			" (scaling x%.2f)" % GameManager.enemy_hp_mult if GameManager.enemy_scaling_enabled else ""])
+		var scaling_txt: String = (" (scaling x%.2f)" % GameManager.enemy_hp_mult) if GameManager.enemy_scaling_enabled else ""
+		print("[Main] MINI BOSS %s turun ke mid lane%s" % [boss_type, scaling_txt])
 		return
 	if not true_boss_spawned and red_towers_destroyed >= TRUE_BOSS_TOWER_KILLS:
 		var lv: Dictionary = BossDB.get_level(GameManager.level_number)
