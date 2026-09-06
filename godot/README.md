@@ -1,6 +1,6 @@
 # Mystic Arena — Godot Edition
 
-Port GPU dari versi `pygame-ce`. Visual hero naik drastis via `AnimatedSprite2D` + **`Skeleton2D` Kaizen 25 bones + hamon shader** + `GPUParticles2D` + `PointLight2D`.
+Port GPU dari versi `pygame-ce`. **Baseline visual = silhouette pygame** (`scripts/render/UnitSilhouette.gd`: circle/polygon, 0 sprite, 0 tulang). Upgrade satu-satu lewat `RendererRegistry` (contoh flagship: Kaizen Skeleton2D di `scenes/demo/KaizenDemo.tscn`, **bukan** default arena).
 
 ## Quick Start
 
@@ -41,11 +41,9 @@ crash: memang tidak ada satu node pun yang menggambar. Yang hilang (dan sekarang
 3. `Camera2D` ada di (0,0), padahal arena 0..1280 × 0..720 → isi arena (mis. base Radiant di
    y=620) berada di luar view. → kamera dipusatkan ke (640,360) + `limit_*` dikunci ke ukuran arena.
 4. `Boss.tscn` tidak punya visual sama sekali (AnimatedSprite2D kosong, partikel tanpa material) →
-   boss tak terlihat walau menghajar hero. → fallback kotak warna + aura `ParticleProcessMaterial`
-   + boss bar + AI pendekat/serang.
-5. `Hero.gd` fallback kotak warna tidak pernah di-`play()` (autoplay .tscn menunjuk `sprite_frames`
-   yang masih null) → hero spawned tapi tak ter-render. → fallback membuat `SpriteFrames` lalu
-   `play("idle")`; `autoplay` dihapus dari .tscn (menghilangkan error spam tiap spawn).
+   boss tak terlihat walau menghajar hero. → `UnitSilhouette` (badan + tanduk) + boss bar + AI.
+5. `Hero.gd` fallback kotak/`SpriteFrames` null tidak pernah tergambar. → default `UnitSilhouette`
+   pygame; `autoplay` dihapus dari .tscn (menghilangkan error spam tiap spawn).
 6. `Engine.time_scale` di-hit-stop diubah dari node unit yang bisa `queue_free()` di tengah `await`
    (game bisa "nyangkut" 0.05 ≈ layar tampak beku). → hit-stop pindah ke `GameManager` dengan
    watchdog waktu nyata.
@@ -67,14 +65,30 @@ Catatan kecil yang juga sudah dibereskan:
 - `godot/assets/shaders/outline.gdshader` — outline 1-pass + hit flash + rim light (ganti 5 blit manual pygame).
 - `godot/shaders/hamon.gdshader` — hamon temper katana Kaizen (wave + temper cloud + attack pulse).
 
-## Kaizen Skeleton2D (contoh flagship)
+## Renderer (pygame dulu, upgrade satu-satu)
+
+Default arena: `scripts/render/UnitSilhouette.gd` — shadow, kaki, torso, kepala, senjata kit
+(hash `hero_type`), flash hit. Godot 4.3-safe (tanpa `draw_ellipse`).
+
+Custom per unit: isi `scripts/render/RendererRegistry.gd`
+
+```
+const HERO := {
+    "kaizen": preload("res://scenes/hero/kaizen/KaizenSkeleton.tscn"),
+}
+```
+
+Kalau key tidak ada, tetap silhouette. Gameplay (`Hero.gd` AI/damage) tidak berubah.
+
+## Kaizen Skeleton2D (contoh flagship — **bukan** default arena)
 
 ```
 godot/scenes/hero/kaizen/KaizenSkeleton.tscn  — 25 Bone2D (Root→Hips→Torso→Chest→Head/Ponytail 3×/Scarf 3×/Katana + Arms/Legs)
 godot/scenes/hero/kaizen/KaizenSkeleton.gd   — drive(phase, action, attack_progress, facing) — busur 1 sumber kebenaran (ATTACK_ARC_*), inertia scarf/ponytail, hamon shader time, wind ribbon Line2D
 godot/scenes/demo/KaizenDemo.tscn/.gd       — showcase isolasi: F5 Run Current Scene untuk lihat 60fps bone interpolasi vs pygame 6-frame patah
 ```
-Integrasi `Hero.gd`: `hero_type == "kaizen"` → `sprite.visible=false` → `KaizenSkeletonScene` di `Visual`, `anim_phase` → `skeleton.drive(...)` tiap `_physics_process`. Tip katana untuk damage/ FX via `get_katana_tip_global()`.
+Untuk memakai Kaizen di arena, daftar `"kaizen"` di `RendererRegistry.HERO` (lihat di atas).
+Tip katana: `get_katana_tip_global()`.
 
 ## Android Build
 

@@ -1,7 +1,6 @@
 # Minion.gd — Port dari minions/ + _entity.Minion (goblin/orc/troll/undead/dark_rider)
-# Data stats dibaca dari GameManager.MINION_TYPES (paritas _core.MINION_TYPES),
-# sama seperti Hero yang membaca HeroDB. Perilakunya: cari musuh terdekat -> serang
-# dalam range -> kalau tidak ada musuh, push ke base lawan (mirip PUSH pygame).
+# Visual baseline: UnitSilhouette pygame (telinga goblin, taring orc, ...).
+# Upgrade satu-satu lewat RendererRegistry.MINION[minion_type].
 extends CharacterBody2D
 
 @export var minion_type: String = "goblin"
@@ -24,6 +23,12 @@ var target: Node2D = null
 var attack_timer: float = 0.0
 var is_dead: bool = false
 var facing: int = 1
+var anim_phase: float = 0.0
+
+const UnitSilhouetteScript = preload("res://scripts/render/UnitSilhouette.gd")
+const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
+var silhouette = null
+var custom_visual = null
 
 @onready var visual: Node2D = $Visual
 @onready var body: Polygon2D = $Visual/Body
@@ -60,25 +65,41 @@ func apply_minion_data():
 # Bangun siluet minion dari radius + warna palette (0 file PNG dibutuhkan)
 func build_visual():
 	var r := radius
-	body.polygon = PackedVector2Array([
-		Vector2(-r, 0), Vector2(-r * 0.8, -r * 2.2), Vector2(0, -r * 2.8),
-		Vector2(r * 0.8, -r * 2.2), Vector2(r, 0),
-	])
-	var d: Dictionary = GameManager.MINION_TYPES.get(minion_type, {})
-	body.color = Color(d.get("color", "#c8c8c8"))
-	# Bar HP sewarna tim biar terbaca di kerumunan
+	if body:
+		body.visible = false
+	var shadow := get_node_or_null(^"Shadow")
+	if shadow:
+		shadow.visible = false
 	hp_fill.color = Color(0.42, 0.9, 0.42, 1) if team == "blue" else Color(0.95, 0.35, 0.3, 1)
 	var col := get_node_or_null(^"CollisionShape2D") as CollisionShape2D
 	if col != null and col.shape is CircleShape2D:
 		(col.shape as CircleShape2D).radius = maxf(6.0, r)
+	z_as_relative = false
+	var packed: PackedScene = RendererRegistry.minion_scene(minion_type)
+	if packed != null:
+		custom_visual = packed.instantiate()
+		custom_visual.name = "CustomVisual"
+		visual.add_child(custom_visual)
+		return
+	var d: Dictionary = GameManager.MINION_TYPES.get(minion_type, {})
+	var fill := Color(d.get("color", "#c8c8c8"))
+	silhouette = UnitSilhouetteScript.new()
+	silhouette.name = "Silhouette"
+	visual.add_child(silhouette)
+	var ranged := attack_range >= 80.0
+	silhouette.configure(
+		UnitSilhouetteScript.Kind.MINION, minion_type, team, fill, fill.darkened(0.35),
+		r, display_name, dmg_school, ranged)
 
 func _physics_process(delta):
 	if is_dead:
 		return
 	attack_timer = maxf(0.0, attack_timer - delta)
+	anim_phase += delta * 8.0
 	if target == null or not is_instance_valid(target) or bool(target.get("is_dead")):
 		target = find_nearest_enemy()
 
+	var is_moving := false
 	if target != null:
 		var dist := global_position.distance_to(target.global_position)
 		facing = 1 if target.global_position.x >= global_position.x else -1
@@ -88,17 +109,37 @@ func _physics_process(delta):
 			try_attack()
 		else:
 			velocity = (target.global_position - global_position).normalized() * move_speed
+			is_moving = true
 			move_and_slide()
 	else:
 		# Tidak ada musuh dalam aggro -> jalan ke base lawan
 		var dest := enemy_base()
 		if global_position.distance_to(dest) > 24.0:
 			velocity = (dest - global_position).normalized() * move_speed
-			visual.scale.x = 1 if velocity.x >= 0.0 else -1
+			facing = 1 if velocity.x >= 0.0 else -1
+			visual.scale.x = facing
+			is_moving = true
 			move_and_slide()
 		else:
 			velocity = Vector2.ZERO
 			# TODO Fase 4: ratakan nexus musuh (port _entity.Nexus.take_damage)
+	z_index = int(global_position.y)
+	_drive_visual(is_moving)
+
+func _drive_visual(is_moving: bool) -> void:
+	var ap := 0.0
+	if attack_timer > 0.0:
+		ap = 1.0 - attack_timer / maxf(0.001, attack_cooldown)
+	var act := "idle"
+	if attack_timer > 0.0:
+		act = "attack"
+	elif is_moving:
+		act = "walk"
+	if silhouette != null and is_instance_valid(silhouette) and silhouette.has_method("drive"):
+		silhouette.drive(anim_phase, act, ap, facing)
+	elif custom_visual != null and is_instance_valid(custom_visual) and custom_visual.has_method("drive"):
+		custom_visual.drive(anim_phase, act, ap, facing, is_moving, "", 0.016)
+
 
 func find_nearest_enemy() -> Node2D:
 	var best: Node2D = null
@@ -138,9 +179,12 @@ func take_damage(amount: float, from_team: String = "", dmg_type: String = "norm
 		return
 	var mitigated := CombatSystem.mitigate_damage(self, amount, school if school != "" else dmg_school)
 	hp -= mitigated
-	# flash putih pendek — modulate saja, tidak perlu material shader baru per hit
-	body.modulate = Color(1.7, 1.7, 1.7, 1)
-	create_tween().tween_property(body, "modulate", Color(1, 1, 1, 1), 0.1)
+	if silhouette != null and is_instance_valid(silhouette):
+		silhouette.flash_amount = 1.0
+		create_tween().tween_property(silhouette, "flash_amount", 0.0, 0.1)
+	elif body:
+		body.modulate = Color(1.7, 1.7, 1.7, 1)
+		create_tween().tween_property(body, "modulate", Color(1, 1, 1, 1), 0.1)
 	if mitigated >= 1.0:
 		var num = preload("res://scenes/fx/DamageNumber.tscn").instantiate()
 		num.setup(str(int(mitigated)), mitigated > max_hp * 0.35)

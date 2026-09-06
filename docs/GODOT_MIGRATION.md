@@ -41,6 +41,8 @@ godot/
     core/BossDB.gd       # Port bosses/boss_data.py
     systems/CombatSystem.gd # Port _entity damage school mitigation
     utils/DamageSchool.gd
+    render/UnitSilhouette.gd # baseline pygame blob (circle/polygon, 4.3-safe)
+    render/RendererRegistry.gd # dict kosong; isi key = PackedScene custom per unit
   assets/
     shaders/outline.gdshader  # 1-pass outline + hit flash + rim (ganti 5 blit pygame)
     shaders/bloom.gdshader    # Skill glow
@@ -162,7 +164,7 @@ Build time: Pygame 8-12 menit (p4a clone + compile) → **Godot 45 detik**.
 | **Fase 5** | 200+ boss hero import batch (Opsi A) | 2 minggu |
 | **Fase 6** | Android AAB final + Play Store (preset sudah ada) | 2 hari |
 
-**Coba Kaizen sekarang:** `godot godot/project.godot` → di FileSystem klik `scenes/demo/KaizenDemo.tscn` → **F5 (Run Current Scene)** — siklus idle→walk→attack dengan hamon kilat & wind ribbon 60fps. Di Main arena: `GameManager.spawn_hero("kaizen", "blue", Vector2(200,300))` otomatis pakai Skeleton2D.
+**Baseline arena (2026-09-06):** semua hero/boss/minion memakai `scripts/render/UnitSilhouette.gd` (pygame.draw.circle/polygon). Kaizen Skeleton2D **tidak** otomatis di arena — daftar dulu di `scripts/render/RendererRegistry.gd` (`HERO["kaizen"] = preload(...)`) baru `spawn_hero("kaizen", ...)` pakai tulang. Showcase tetap: `scenes/demo/KaizenDemo.tscn` → **F5 (Run Current Scene)**.
 
 ![Kaizen Skeleton blueprint](kaizen_skeleton_preview.png)
 *Blueprint 25 tulang: 2.9ms CPU polygon → 0.4ms GPU bones, 6-frame swing → 60fps interpolasi.*
