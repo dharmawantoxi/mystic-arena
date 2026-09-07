@@ -195,10 +195,10 @@ func _snapshot(boss, probes: Array) -> Dictionary:
 ## Diff state per frame — CERMIN persis _run_smart_scenario pygame.
 func _diff(boss, probes: Array, prev: Dictionary, frame: int, out: Array) -> void:
 	if boss.hp != prev["hp"]:
-		out.append(["bhp", frame, roundf(float(boss.hp), 3)])
+		out.append(["bhp", frame, _round3(float(boss.hp))])
 	var pos: Vector2 = boss.global_position
 	if absf(pos.x - prev["pos"].x) > 0.001 or absf(pos.y - prev["pos"].y) > 0.001:
-		out.append(["bmove", frame, roundf(pos.x, 3), roundf(pos.y, 3)])
+		out.append(["bmove", frame, _round3(pos.x), _round3(pos.y)])
 	var ast := float(boss.kit.get("active_skill_timer", -1))
 	if ast > prev["ast"]:
 		# nyxareth memakai angka combo (1..4); drakar/gorath merekam cast
@@ -206,7 +206,7 @@ func _diff(boss, probes: Array, prev: Dictionary, frame: int, out: Array) -> voi
 		# JSON float 4.0 == int 4 dan null == null di kedua sisi.
 		out.append(["cast", frame, _canon(boss.kit.get("active_skill", null))])
 	if boss.move_speed / 60.0 != prev["spd"]:
-		out.append(["bspd", frame, roundf(boss.move_speed / 60.0, 5)])
+		out.append(["bspd", frame, _round5(boss.move_speed / 60.0)])
 	if boss.damage != prev["dmg"]:
 		out.append(["bdmg", frame, int(boss.damage)])
 	if boss.facing != prev["face"]:
@@ -217,15 +217,15 @@ func _diff(boss, probes: Array, prev: Dictionary, frame: int, out: Array) -> voi
 		var p: Probe = probes[i]
 		var d := float(prev["probe_hp"][i]) - p.hp
 		if d > 0:
-			out.append(["dmg", frame, i, roundf(d, 3)])
+			out.append(["dmg", frame, i, _round3(d)])
 		if p.attack_timer != prev["probe_atk"][i]:
-			out.append(["alock", frame, i, roundf(p.attack_timer * 60.0, 3)])
+			out.append(["alock", frame, i, _round3(p.attack_timer * 60.0)])
 		var xy: Vector2 = prev["probe_xy"][i]
 		if p.global_position.x != xy.x or p.global_position.y != xy.y:
 			out.append(["emove", frame, i,
-				roundf(p.global_position.x, 3), roundf(p.global_position.y, 3)])
+				_round3(p.global_position.x), _round3(p.global_position.y)])
 		for rec in p.status.slow_records:
-			out.append(["slow", frame, i, float(rec[0]), roundf(float(rec[1]), 3)])
+			out.append(["slow", frame, i, float(rec[0]), _round3(float(rec[1]))])
 		p.status.slow_records.clear()
 
 
@@ -344,7 +344,7 @@ func _compare_final(boss_type: String, sc_name: String, expected: Dictionary,
 		# referensi probe oracle ("P<idx>") menunjuk node probe replay
 		if want is String and str(want).begins_with("P") and str(want).length() > 1:
 			var idx := int(str(want).substr(1))
-			var ok := idx >= 0 and idx < probes.size() and probes[idx] == got
+			var ok: bool = idx >= 0 and idx < probes.size() and probes[idx] == got
 			_expect(ok, "%s.kit.%s == probe %d" % [tag, k, idx])
 		elif want is float or (want is int and got is float):
 			_near(float(want), float(got), "%s.kit.%s" % [tag, k], 0.51)
@@ -379,6 +379,16 @@ func _array_eq(want: Array, got) -> bool:
 		elif not _same_variant(w, g):
 			return false
 	return true
+
+
+## round(x, n) gaya Python untuk jejak event — hanya kosmetik (pembulatan
+## pesan); perbandingan nilai tetap lewat toleransi _near_v.
+func _round3(v: float) -> float:
+	return snappedf(v, 0.001)
+
+
+func _round5(v: float) -> float:
+	return snappedf(v, 0.00001)
 
 
 func _near_v(a, b, eps: float) -> bool:
