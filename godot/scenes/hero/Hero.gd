@@ -20,6 +20,7 @@ const StatusEffectsScript = preload("res://scripts/systems/StatusEffects.gd")
 const ItemInventoryScript = preload("res://scripts/items/ItemInventory.gd")
 const SkillBookScript = preload("res://scripts/skills/SkillBook.gd")
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
+const SkillProjectileScript = preload("res://scenes/fx/SkillProjectile.gd")
 
 const FPS := 60.0
 ## paritas _entity.Hero 3467-3472
@@ -502,6 +503,39 @@ func _shoot_projectile(t: Node2D, dmg: float) -> void:
 		fill_color.lightened(0.35), self, dmg_school)
 	b.global_position = global_position + Vector2(0, -10)
 	GameManager.attach_fx(b)
+
+
+## Proyektil skill visual-only (paritas _spawn_skill_projectile
+## _entity.py:4509-4530). Damage otoritatif tetap instan di SkillBook —
+## sama seperti pygame; proyektil ini HANYA memberi visual homing terarah.
+func spawn_skill_projectile(t: Node2D) -> void:
+	if t == null or not is_instance_valid(t) or bool(t.get("is_dead")):
+		# Paritas _spawn_projectile _entity.py:4460-4462: target hilang/mati
+		# -> tidak ada proyektil sama sekali.
+		return
+	# Batas 6 proyektil per hero (paritas _HERO_PROJ_MAX _entity.py:3225-3232).
+	# pygame saat penuh MEMBUANG proyektil skill paling tua (4474-4482), jadi di
+	# sini yang di-drop juga proyektil skill tertua milik hero ini. Deviasi
+	# kecil: peluru basic attack (TowerBullet) tidak ikut dihitung — node
+	# terpisah dengan batas umur sendiri (4 detik) dan mati saat target mati.
+	if get_tree() != null:
+		var owned: Array = []
+		for p in get_tree().get_nodes_in_group("skill_projectiles"):
+			if p.get("source") == self:
+				owned.append(p)
+		if owned.size() >= 6:
+			var oldest = null
+			for p in owned:
+				if oldest == null or float(p.get("age")) > float(oldest.get("age")):
+					oldest = p
+			if oldest != null:
+				(oldest as Node).queue_free()
+	var p = SkillProjectileScript.new()
+	p.setup(t, hero_type, self)
+	# Spawn sedikit di atas hero (paritas oy = self.y - 5, arah awal langsung
+	# ke target _entity.py:4491-4493).
+	p.global_position = global_position + Vector2(0, -5)
+	GameManager.attach_fx(p)
 
 
 # ══════════════════════════════════════════════════════════

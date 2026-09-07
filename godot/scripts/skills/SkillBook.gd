@@ -435,6 +435,9 @@ func _cast_vex(key: String) -> bool:
 			if t == null:
 				return false
 			hero.target = t
+			# Visual: arcane orb homing terarah ke target (paritas _bundle.py:
+			# 4818-4821 — spawn SEBELUM damage; damage otoritatif instan).
+			_spawn_skill_projectile(t)
 			_damage(t, 1.2)
 			# musuh lain di sepanjang garis (perp < 18) kena ×0.5
 			var dir: Vector2 = ((t as Node2D).global_position - hero.global_position)
@@ -455,6 +458,8 @@ func _cast_vex(key: String) -> bool:
 			if t == null:
 				return false
 			hero.target = t
+			# Visual: astral orb homing (paritas _bundle.py:4920-4923).
+			_spawn_skill_projectile(t)
 			_buff("astral_prison", 150.0 / FPS)
 			_apply_stun(t, 150.0 / FPS)
 			_damage(t, 0.6)
@@ -626,6 +631,10 @@ func _release_powershot() -> void:
 				continue
 			var falloff := maxf(0.6, 1.0 - (proj / max_range) * 0.4)
 			_damage(e, 1.0 * falloff)
+			# Visual: panah homing ke musuh yang kena (paritas _bundle.py:4459-4461
+			# — spawn SETELAH damage; kalau damage instan membunuh musuh, _spawn
+			# tidak membuat proyektil, sama seperti pygame cek target.alive).
+			_spawn_skill_projectile(e)
 			hit.append(e)
 
 
@@ -777,3 +786,13 @@ func _fx_burst() -> void:
 	if hero == null or not hero.has_method("play_skill_fx"):
 		return
 	hero.play_skill_fx(active_skill)
+
+
+## Proyektil skill visual-only (paritas h._spawn_skill_projectile
+## _entity.py:4509-4530): homing, damage=0, impact FX saat mendarat.
+## Hero yang tidak punya metode ini (mis. boss) diabaikan dengan aman.
+func _spawn_skill_projectile(t) -> void:
+	if t == null or not is_instance_valid(t):
+		return
+	if hero != null and hero.has_method("spawn_skill_projectile"):
+		hero.spawn_skill_projectile(t)

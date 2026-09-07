@@ -177,7 +177,8 @@ func _start_battle() -> void:
 ## Aman karena _start_battle selalu jalan dari deferred call / input / timer,
 ## tidak pernah dari dalam _physics_process unit.
 func _clear_field() -> void:
-	for group in ["heroes", "bosses", "minions", "towers", "nexus", "bullets"]:
+	for group in ["heroes", "bosses", "minions", "towers", "nexus", "bullets",
+			"skill_projectiles"]:
 		for n in get_tree().get_nodes_in_group(group):
 			if is_instance_valid(n):
 				n.free()
