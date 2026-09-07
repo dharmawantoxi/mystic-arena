@@ -15,24 +15,17 @@
 #      — paritas _core.py:1504-1508),
 #   4. bangun 18 SLOT menara dari lane path (paritas
 #      Game._generate_build_slots_from_lanes) + menggambarnya,
-#   5. spawn roster starter 6 hero per tim, hero blue pertama jadi milik pemain
-#      (QWER + toko),
-#   6. jadwal boss: mini boss per wave (levels.json["mini_bosses"]) dan true boss
+#   5. mulai dengan roster kosong; pemain/AI membeli hero dengan gold,
+#   6. jadwal mini boss diacak sesuai difficulty; true boss
 #      setelah 6 menara Dire hancur (paritas _core.py 2089), keduanya kena
 #      enemy scaling hard mode saat spawn (paritas _core.py 1822/2097),
 #   7. AI tim red membangun/meng-upgrade menara memakai GameManager.ai_gold,
-#   8. input: klik = pilih unit/slot, QWER = skill, B = toko, D = difficulty,
+#   8. input: klik = pilih unit/slot, QWER = skill, B = toko,
 #      ENTER setelah menang = LANJUT LEVEL BERIKUTNYA (kalah = ulang),
 #      R = replay, ESC setelah menang/kalah = menu utama, P/ESC = menu PAUSE,
-#      F1 = debug respawn roster, T = ganti tema, SPASI = beli hero random.
+#      kontrol demo hanya aktif bila enable_debug_controls diaktifkan.
 extends Node2D
 
-## Roster radiant (kiri-bawah) — paritas SaveManager.unlocked_heroes
-const STARTER_ROSTER: Array = ["kaizen", "grimjaw", "sylara", "thorne", "vex", "zephyr"]
-## Roster dire (kanan-atas) — cerminan supaya brawl seimbang
-const ENEMY_ROSTER: Array = ["grimjaw", "thorne", "vex", "zephyr", "sylara", "kaizen"]
-## Sebaran lane minion per index (biar arena kelihatan MOBA, bukan 1 garis lurus)
-const LANES: Array = ["mid", "top", "bot"]
 ## Urutan lane saat membuat slot bangun (paritas pygame: top, mid, bot)
 const LANE_ORDER: Array = ["top", "mid", "bot"]
 ## Fraksi posisi sepanjang lane path — angka persis dari _core.py 1660-1676
@@ -44,21 +37,16 @@ const LANE_SLOT_PCT := {
 ## Menara Dire yang harus hancur sebelum true boss turun (paritas _core.py 2089)
 const TRUE_BOSS_TOWER_KILLS := 6
 
-@export var respawn_after_wipe: bool = true
-@export var respawn_delay: float = 3.0
 ## true = kamera mengikuti pusat pertempuran, false = kamera diam membingkai arena
 @export var camera_follows_action: bool = false
-## Boss demo langsung turun saat battle mulai — dimatikan default karena sekarang
-## ada jadwal mini boss/true boss sungguhan dari levels.json.
-@export var spawn_demo_boss: bool = false
-@export var demo_boss_type: String = "gornak"
+## Debug tidak boleh mengubah match normal tanpa sengaja.
+@export var enable_debug_controls: bool = false
 
 var _arena_map = null
 var _camera: Camera2D = null
 ## Node2D khusus menggambar slot bangun (anak Main digambar SETELAH Main, jadi
 ## _draw() milik Main sendiri akan tertutup ArenaMap)
 var _slot_layer: Node2D = null
-var _respawn_pending: bool = false
 ## AIPlayer telur (port _entity.AIPlayer — dibuat di _ready, dikelola sendiri)
 var _ai = null
 var _slot_redraw_timer: float = 0.0
@@ -66,6 +54,7 @@ var _slot_pulse: float = 0.0
 
 ## Jadwal boss level ini (port Game.pending_mini_bosses / true_boss_spawned)
 var pending_mini_bosses: Array = []
+var mini_boss_schedule: Dictionary = {}
 var active_boss = null
 var red_towers_destroyed: int = 0
 var true_boss_spawned: bool = false
@@ -82,7 +71,6 @@ func _enter_tree():
 	# signal level_started walau Connector memanggil start_level() di _ready()-nya.
 	_connect_once(GameManager.level_started, _on_level_started)
 	_connect_once(GameManager.wave_started, _on_wave_started)
-	_connect_once(GameManager.hero_died, _on_hero_died)
 	_connect_once(GameManager.game_over, _on_game_over)
 	_connect_once(GameManager.tower_destroyed, _on_tower_destroyed)
 	_connect_once(GameManager.selection_changed, _on_selection_changed)
@@ -93,7 +81,6 @@ func _exit_tree():
 	# reload scene tidak meninggalkan connection ganda / dangling reference.
 	for pair in [[GameManager.level_started, _on_level_started],
 			[GameManager.wave_started, _on_wave_started],
-			[GameManager.hero_died, _on_hero_died],
 			[GameManager.game_over, _on_game_over],
 			[GameManager.tower_destroyed, _on_tower_destroyed],
 			[GameManager.selection_changed, _on_selection_changed]]:
@@ -159,28 +146,16 @@ func _start_battle() -> void:
 	# diganti saat cinematic kematian masih memegang pause).
 	get_tree().paused = false
 	GameManager.set_paused(false)
-	_respawn_pending = false
 	_clear_field()
 	_reset_boss_schedule()
 	_spawn_nexuses()
 	_generate_build_slots()
-	for i in range(STARTER_ROSTER.size()):
-		GameManager.spawn_hero(STARTER_ROSTER[i], "blue", _base_spawn("blue", i))
-	for i in range(ENEMY_ROSTER.size()):
-		GameManager.spawn_hero(ENEMY_ROSTER[i], "red", _base_spawn("red", i))
-	if spawn_demo_boss and not demo_boss_type.is_empty():
-		active_boss = GameManager.spawn_boss(demo_boss_type, "red",
-			_spawn_point("red", ENEMY_ROSTER.size() + 1))
-	# Hero pertama Radiant = milik pemain (QWER + item + upgrade lewat toko)
-	var first = _first_blue_hero()
-	if first != null:
-		GameManager.select_hero(first)
-	else:
-		GameManager.clear_selection()
+	# Game.reset pygame membuat self.heroes dan self.ai.heroes KOSONG.
+	# Unlock meta berarti boleh DIBELI, bukan otomatis hadir di arena.
+	GameManager.clear_selection()
 	GameManager.close_shop()
 	_on_selection_changed()
-	print("[Main] battle siap: %d hero, 2 nexus, %d slot menara" % [
-		STARTER_ROSTER.size() + ENEMY_ROSTER.size(), GameManager.build_slots.size()])
+	print("[Main] battle siap: roster kosong, 2 nexus, %d slot menara" % GameManager.build_slots.size())
 	_show_level_intro()
 
 ## Layar intro split-screen sebelum battle (paritas LevelIntroScreen dibuat di
@@ -201,8 +176,8 @@ func _show_level_intro() -> void:
 	print("[Main] LEVEL INTRO — SPACE/ENTER/klik untuk mulai")
 
 ## `free()` langsung (bukan `queue_free()`): arena harus sudah bersih SEBELUM
-## unit baru di-spawn pada frame yang sama, kalau tidak _first_blue_hero() bisa
-## memilih hero lama yang masih menunggu dihapus di akhir frame.
+## unit baru di-spawn pada frame yang sama; seleksi/roster tidak boleh
+## menemukan unit match lama yang masih menunggu dihapus di akhir frame.
 ## Aman karena _start_battle selalu jalan dari deferred call / input / timer,
 ## tidak pernah dari dalam _physics_process unit.
 func _clear_field() -> void:
@@ -230,6 +205,7 @@ func _free_cinematics() -> void:
 
 func _reset_boss_schedule() -> void:
 	pending_mini_bosses.clear()
+	mini_boss_schedule = _roll_mini_boss_schedule()
 	active_boss = null
 	red_towers_destroyed = 0
 	true_boss_spawned = false
@@ -276,32 +252,32 @@ func _generate_build_slots() -> void:
 				GameManager.add_build_slot(path[idx], str(team), str(lane))
 
 func _on_wave_started(wave_num: int) -> void:
-	# Komposisi per wave ada di GameManager (port NEXUS_WAVE_COMPOSITION); Main yang
-	# memutuskan POSISI-nya karena Main yang punya ArenaMap / layout lane.
-	var comp: Array = GameManager.wave_composition(wave_num)
-	var scale := GameManager.minion_scale_for(wave_num)
-	var spawned := 0
-	for i in range(comp.size()):
-		var lane: String = LANES[i % LANES.size()]
-		if GameManager.count_alive("minions", "blue") < GameManager.max_minions_per_team:
-			GameManager.spawn_minion(comp[i], "blue", _spawn_point("blue", i, lane), scale, lane)
-			spawned += 1
-		if GameManager.count_alive("minions", "red") < GameManager.max_minions_per_team:
-			var m = GameManager.spawn_minion(comp[i], "red", _spawn_point("red", i, lane), scale, lane)
-			# ENEMY SCALING (Hard only) — paritas _core.py:1792-1796: hanya
-			# antrean spawn MERAH yang dikali enemy_hp/damage/speed_mult.
-			if GameManager.enemy_scaling_enabled:
-				m.apply_enemy_scaling(GameManager.enemy_hp_mult,
-					GameManager.enemy_damage_mult, GameManager.enemy_speed_mult)
-			spawned += 1
+	# GameManager menguras antrean minion setiap 20 frame, bukan sekaligus.
 	_queue_mini_boss(wave_num)
-	print("[Main] wave %d -> %d minion (skala %.2fx) | menara hancur: %d" % [
-		wave_num, spawned, scale, red_towers_destroyed])
+
+
+## Game._roll_mini_boss_schedule: tipe/urutan boss tetap, wave unik diacak.
+func _roll_mini_boss_schedule() -> Dictionary:
+	var cfg: Dictionary = BossDB.get_level(GameManager.level_number)
+	var source: Dictionary = cfg.get("mini_bosses", {})
+	var bosses := source.values()
+	var low := 20 if GameManager.difficulty == "easy" else 11
+	var high := 40 if GameManager.difficulty == "easy" else 30
+	if high - low + 1 < bosses.size():
+		high = low + bosses.size() * 5
+	var waves := range(low, high + 1)
+	waves.shuffle()
+	waves.resize(bosses.size())
+	waves.sort()
+	var schedule: Dictionary = {}
+	for i in range(bosses.size()):
+		schedule[str(waves[i])] = bosses[i]
+	return schedule
+
 
 ## Mini boss level ini masuk antrean begitu wave-nya lewat (paritas _core 1745)
 func _queue_mini_boss(wave_num: int) -> void:
-	var lv: Dictionary = BossDB.get_level(GameManager.level_number)
-	var mini: Dictionary = lv.get("mini_bosses", {})
+	var mini := mini_boss_schedule
 	var key := str(wave_num)
 	if not mini.has(key):
 		return
@@ -322,7 +298,7 @@ func _boss_tick(_delta: float) -> void:
 	if not pending_mini_bosses.is_empty():
 		var boss_type: String = pending_mini_bosses.pop_front()
 		active_boss = GameManager.spawn_boss(boss_type, "red",
-			_spawn_point("red", ENEMY_ROSTER.size() + 1))
+			_boss_spawn_point())
 		# ENEMY SCALING (Hard only) — paritas _core.py:1822-1823
 		if GameManager.enemy_scaling_enabled:
 			active_boss.apply_scaling(GameManager.enemy_hp_mult,
@@ -337,7 +313,7 @@ func _boss_tick(_delta: float) -> void:
 		if true_boss.is_empty():
 			return
 		active_boss = GameManager.spawn_boss(true_boss, "red",
-			_spawn_point("red", ENEMY_ROSTER.size() + 1))
+			_boss_spawn_point())
 		# ENEMY SCALING (Hard only) — paritas _core.py:2097-2098
 		if GameManager.enemy_scaling_enabled:
 			active_boss.apply_scaling(GameManager.enemy_hp_mult,
@@ -366,27 +342,12 @@ func _base_center(team: String) -> Vector2:
 		return _arena_map.get_own_base(team)
 	return Vector2(150, 590) if team == "blue" else Vector2(1130, 130)
 
-func _spawn_point(team: String, index: int, lane: String = "mid") -> Vector2:
-	if _arena_map != null and _arena_map.has_method("get_spawn_point"):
-		return _arena_map.get_spawn_point(team, index, lane)
-	# fallback kalau ArenaMap tidak ada (scene ditelakkan sendiri di project lain)
-	var side := Vector2(260, 480) if team == "blue" else Vector2(1020, 240)
-	return side + Vector2(0, float(index % 3) * 26.0)
-
-## Formasi setengah lingkaran di depan base sendiri (bukan menumpuk di 1 titik)
-func _base_spawn(team: String, index: int) -> Vector2:
-	var center := _base_center(team)
-	var dir := Vector2(1, -0.45).normalized() if team == "blue" else Vector2(-1, 0.45).normalized()
-	var spread := float(index) * 0.42 - 1.05
-	var angle := spread * 0.9
-	var offset := dir.rotated(angle) * (74.0 + float(index % 2) * 22.0)
-	return center + offset
-
-func _first_blue_hero():
-	for h in get_tree().get_nodes_in_group("heroes"):
-		if is_instance_valid(h) and str(h.get("team")) == "blue" and not bool(h.get("is_dead")):
-			return h
-	return null
+func _boss_spawn_point() -> Vector2:
+	if _arena_map != null:
+		var path: PackedVector2Array = _arena_map.get_lane_path("mid")
+		if not path.is_empty():
+			return path[path.size() - 1]
+	return _base_center("red")
 
 # ══════════════════════════════════════════════════════════
 #  KAMERA
@@ -578,6 +539,8 @@ func _on_key(key: InputEventKey) -> void:
 		GameManager.toggle_shop()
 		print("[Main] toko %s" % ("dibuka (B)" if GameManager.shop_open else "ditutup"))
 		return
+	if not enable_debug_controls:
+		return
 	if key.is_action_pressed("cycle_difficulty"):
 		print("[Main] difficulty -> %s" % GameManager.cycle_difficulty())
 		return
@@ -705,7 +668,6 @@ func _on_tower_destroyed(tower: Node, _killer_team: String) -> void:
 			red_towers_destroyed, TRUE_BOSS_TOWER_KILLS])
 
 func _on_game_over(victory: bool) -> void:
-	_respawn_pending = true # jangan respawn roster lagi: match sudah selesai
 	GameManager.clear_selection()
 	GameManager.close_shop()
 	var nxt := GameManager.next_level_number()
@@ -713,32 +675,6 @@ func _on_game_over(victory: bool) -> void:
 		print("[Main] MENANG — ENTER lanjut level %d · R ulang · ESC menu" % nxt)
 	else:
 		print("[Main] %s — ENTER/R ulang level · ESC menu" % ("MENANG" if victory else "KALAH"))
-
-# ═══ respawn roster setelah satu tim disapu bersih (arena tidak pernah kosong) ═══
-func _on_hero_died(_hero: Node) -> void:
-	if not respawn_after_wipe or _respawn_pending:
-		return
-	if GameManager.state != "playing":
-		return
-	var blue := _alive_count("blue")
-	var red := _alive_count("red")
-	if blue > 0 and red > 0:
-		return
-	_respawn_pending = true
-	var loser := "Radiant (blue)" if blue == 0 else "Dire (red)"
-	print("[Main] %s habis — roster di-respawn dalam %.1fs" % [loser, respawn_delay])
-	await get_tree().create_timer(respawn_delay).timeout
-	_respawn_pending = false
-	if is_inside_tree() and GameManager.state == "playing":
-		_start_battle()
-
-func _alive_count(team: String) -> int:
-	var n := 0
-	for hero in get_tree().get_nodes_in_group("heroes"):
-		if is_instance_valid(hero) and hero.has_method("take_damage") and not hero.is_dead \
-				and hero.team == team:
-			n += 1
-	return n
 
 # ═══ debug / util ═══
 
@@ -813,7 +749,7 @@ func _cycle_theme() -> void:
 	print("[Main] tema map -> %s" % _arena_map.cycle_theme())
 
 func _buy_random_hero() -> void:
-	var types: Array = HeroDB.get_all_types()
+	var types: Array = SaveManager.data.get("unlocked_heroes", [])
 	if types.is_empty():
 		return
 	var pick: String = types[randi() % types.size()]

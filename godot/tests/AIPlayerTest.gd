@@ -61,18 +61,15 @@ func _test_spawn_lanes(main) -> void:
 	_expect(float(minion.get("stat_scale")) == 2.0, "Stat multiplier must remain compatible")
 	minion.free()
 
-	main._on_wave_started(1)
-	var expected_lanes := ["mid", "top", "bot"]
-	var counts := {"blue": 0, "red": 0}
-	for m in get_tree().get_nodes_in_group("minions"):
-		var team := str(m.get("team"))
-		var index := int(counts[team])
-		_expect(str(m.get("lane")) == expected_lanes[index % expected_lanes.size()],
-			"Wave must preserve the spawn lane for %s minion %d" % [team, index])
-		counts[team] = index + 1
-	for team in counts:
-		_expect(int(counts[team]) == GameManager.wave_composition(1).size(),
-			"Wave must spawn the full %s roster" % team)
+	# Queue timing/full wave composition live in GameplayParityTest. This
+	# small regression isolates the public spawn API and lane tags for AI.
+	for team in ["blue", "red"]:
+		for lane in ["top", "mid", "bot"]:
+			var pos: Vector2 = main._arena_map.get_spawn_point(team, 0, lane)
+			var spawned = GameManager.spawn_minion("goblin", team, pos, 1.0, lane)
+			_expect(spawned.lane == lane, "Explicit lane must reach the live minion")
+			_expect(spawned.team == team, "Minion must keep its spawn team")
+
 	_clear_minions()
 
 
@@ -115,10 +112,10 @@ func _test_kill_attribution(hero) -> void:
 	# Regression for Object.get("kills", 0) parse/runtime error inside Hero.die.
 	var before := int(hero.get("kills"))
 	var victim = GameManager.spawn_hero("zephyr", "blue", Vector2(200, 380))
-	# state stays idle so Main._on_hero_died will not schedule a wipe-respawn.
+	# State stays idle so GameManager does not schedule a match respawn.
 	victim.die(hero)
 	_expect(int(hero.get("kills")) == before + 1, "Hero kill must increment killer.kills")
-	# die() schedules queue_free via tween; free immediately so main.free() is clean.
+	# Dead heroes retain their node until respawn; release this test fixture explicitly.
 	if is_instance_valid(victim):
 		victim.free()
 

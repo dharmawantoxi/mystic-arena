@@ -17,16 +17,9 @@
 #                    hero_items.suggest_item_for_hero)
 #
 # PENYEDERHANAAN terdokumentasi vs pygame:
-#   1. Pygame AI mulai dengan roster KOSONG dan membeli semua hero sendiri
-#      (AI_THINK_INTERVAL dsb. _entity.py:6008). Godot sudah meng-seed 6 hero
-#      merah di Main._start_battle (ENEMY_ROSTER) — keputusan port sebelumnya
-#      yang mempertahankan alur battle existing. Karena 6 >= AI_MAX_HEROES (5),
-#      cabang _try_buy_hero tetap ada untuk paritas tetapi tidak menambah hero
-#      baru sampai jumlah roster turun di bawah 5.
-#   2. Jumlah hero AI diambil dari group "heroes" (scene tree), bukan list
-#      sendiri — jadi respawn roster (_on_hero_died) tidak membuat referensi
-#      basi. Statistik total_built/total_upgraded/dst. pygame TIDAK diport
-#      (dipakai hanya untuk debug/HUD, tidak memengaruhi keputusan).
+#   1. Roster dimulai kosong, seperti pygame. Kepemilikan diambil dari group
+#      "heroes", termasuk yang mati; AI tidak membeli duplikat saat respawn.
+#   2. Statistik total_built/total_upgraded/dst. belum diport (hanya debug/HUD).
 #   3. Auto-cast skill ditangani Hero._auto_cast sendiri (paritas
 #      hero._try_auto_cast dengan pemeriksaan tiap 20 frame);
 #      _control_heroes di sini hanya menugaskan jalur, seperti kondisi
@@ -357,13 +350,7 @@ func _try_upgrade_nexus() -> bool:
 # ══════════════════════════════════════════════════════════
 
 func _red_heroes() -> Array:
-	var out: Array = []
-	for h in get_tree().get_nodes_in_group("heroes"):
-		if not is_instance_valid(h) or str(h.get("team")) != "red" \
-				or bool(h.get("is_dead")):
-			continue
-		out.append(h)
-	return out
+	return GameManager.owned_heroes("red")
 
 
 ## Kontrol hero per frame (paritas _control_heroes _entity.py:6246-6262).
@@ -372,6 +359,8 @@ func _red_heroes() -> Array:
 ## jadi yang tersisa adalah penugasan jalur untuk hero yang menganggur.
 func _control_heroes() -> void:
 	for hero in _red_heroes():
+		if hero.is_dead:
+			continue
 		if hero.get("target") == null and not hero.has_destination():
 			_assign_hero_lane(hero)
 
@@ -524,6 +513,8 @@ static func _weighted_choice(items: Array, weights: Array) -> String:
 ## RED_BASE_X-60, RED_BASE_Y+30+offset (offset = jumlah hero * 40 - 40).
 func _try_buy_hero() -> bool:
 	var heroes := _red_heroes()
+	if heroes.size() >= AI_MAX_HEROES:
+		return false
 	var owned: Array = []
 	for h in heroes:
 		owned.append(str(h.get("hero_type")))

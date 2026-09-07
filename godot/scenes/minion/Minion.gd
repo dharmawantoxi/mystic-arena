@@ -18,8 +18,12 @@ const FPS := 60.0
 @export var team: String = "blue"
 ## Jalur asal wave, dipakai AIPlayer untuk menghitung ancaman per lane.
 @export var lane: String = "mid"
-## Skala HP/damage untuk wave tinggi (paritas minion_scale NEXUS_LEVELS)
+## Skala dari nexus tim sendiri, bukan wave atau nexus tim lawan.
 @export var stat_scale: float = 1.0
+var ai_level: int = 1
+var lane_path: PackedVector2Array = PackedVector2Array()
+var waypoint_index: int = 0
+var regen_per_second: float = 0.0
 
 var display_name: String = "Goblin"
 var max_hp: float = 45.0
@@ -45,11 +49,12 @@ var status = null
 @onready var body: Polygon2D = $Visual/Body
 @onready var hp_fill: Polygon2D = $UI/HPFill
 
-const AGGRO_RADIUS := 260.0
+const WAYPOINT_REACH := 15.0
 
 
 func _ready():
 	apply_minion_data()
+	waypoint_index = 0 if team == "blue" else lane_path.size() - 1
 	status = StatusEffectsScript.new(self)
 	build_visual()
 	hurt_flash = HurtFlashScript.new(self, body) # setelah build_visual
@@ -70,13 +75,15 @@ func apply_minion_data():
 		push_warning("[Minion] tipe tidak dikenal: %s" % minion_type)
 		return
 	display_name = s.get("name", minion_type)
-	max_hp = float(s.get("hp", 45)) * stat_scale
+	max_hp = float(int(float(s.get("hp", 45)) * stat_scale))
 	hp = max_hp
-	damage = float(s.get("damage", 5)) * stat_scale
-	move_speed = float(s.get("speed", 1.5)) * FPS # pygame speed -> px/s (sama dgn Hero)
-	attack_range = float(s.get("range", 25)) + 8.0
-	attack_cooldown = float(s.get("attack_cooldown", 45)) / FPS
-	gold_reward = int(s.get("gold_reward", 8))
+	damage = float(int(float(s.get("damage", 5)) * stat_scale))
+	move_speed = float(s.get("speed", 1.5)) * (1.0 + (stat_scale - 1.0) * 0.3) * FPS
+	attack_range = float(s.get("range", 25))
+	attack_cooldown = maxi(10, int(float(s.get("attack_cooldown", 45))
+		/ (1.0 + (stat_scale - 1.0) * 0.2))) / FPS
+	gold_reward = int(float(s.get("gold_reward", 8)) * stat_scale)
+	regen_per_second = float(s.get("regen", 0.0)) * stat_scale * FPS
 	radius = float(s.get("radius", 9))
 	armor = float(s.get("armor", 0))
 	magic_resist = float(s.get("magic_resist", 0))
@@ -86,7 +93,7 @@ func apply_minion_data():
 ## Port blok enemy scaling _core.py:1792-1796 (hanya minion merah, Hard mode):
 ## max_hp & damage dikali lalu dipotong int persis pygame, speed dikali
 ## pengali speed (base_speed pygame = move_speed kita, sudah tanpa status).
-## Dipanggil Main._on_wave_started SETELAH add_child (stat wave via stat_scale
+## Dipanggil GameManager._spawn_wave_minion SETELAH add_child (stat nexus via stat_scale
 ## sudah diterapkan _ready -> apply_minion_data).
 func apply_enemy_scaling(hp_mult: float, dmg_mult: float, speed_mult: float) -> void:
 	max_hp = float(int(max_hp * hp_mult))
@@ -107,6 +114,9 @@ func build_visual():
 	hp_fill.color = Color(0.42, 0.9, 0.42, 1) if team == "blue" else Color(0.95, 0.35, 0.3, 1)
 	var col := get_node_or_null(^"CollisionShape2D") as CollisionShape2D
 	if col != null and col.shape is CircleShape2D:
+		# PackedScene shares resources; changing one troll must not enlarge
+		# every goblin collider already on the field.
+		col.shape = col.shape.duplicate()
 		(col.shape as CircleShape2D).radius = maxf(6.0, r)
 	z_as_relative = false
 	var packed: PackedScene = RendererRegistry.minion_scene(minion_type)
@@ -133,16 +143,20 @@ var hurt_flash = null
 
 
 func _physics_process(delta):
-	if is_dead:
+	if is_dead or GameManager.state != "playing":
 		return
 	if hurt_flash != null:
 		hurt_flash.tick(self, delta)
 	if status != null:
 		status.tick(delta)
+	if is_dead:
+		return
+	if regen_per_second > 0.0:
+		CombatSystem.heal_unit(self, regen_per_second * delta)
 	attack_timer = maxf(0.0, attack_timer - delta)
 	anim_phase += delta * 8.0
-	if target == null or not is_instance_valid(target) or bool(target.get("is_dead")):
-		target = CombatSystem.nearest_enemy(self, AGGRO_RADIUS)
+	# Pilih ulang tiap tick supaya tidak mengejar target keluar dari lane.
+	target = _find_target_smart()
 
 	var is_moving := false
 	var eff_speed := _eff_speed()
@@ -156,15 +170,69 @@ func _physics_process(delta):
 		else:
 			is_moving = _move_to(target.global_position, eff_speed)
 	else:
-		# Tidak ada musuh dalam aggro -> jalan ke base lawan (nexus masuk group
-		# "nexus", jadi begitu dekat dia otomatis jadi target dan dihajar)
-		var dest := enemy_base()
-		if global_position.distance_to(dest) > 24.0:
-			is_moving = _move_to(dest, eff_speed)
-		else:
-			velocity = Vector2.ZERO
+		is_moving = _follow_lane(eff_speed)
 	z_index = int(global_position.y)
 	_drive_visual(is_moving)
+
+
+## _entity.Minion._move_forward: blue mengikuti path dari awal, red dari akhir.
+## Setelah ujung lane, lanjut ke nexus lawan. Bukan shortcut diagonal semua lane.
+func _follow_lane(speed: float) -> bool:
+	var dest := enemy_base()
+	if waypoint_index >= 0 and waypoint_index < lane_path.size():
+		dest = lane_path[waypoint_index]
+	if global_position.distance_to(dest) < WAYPOINT_REACH:
+		waypoint_index += 1 if team == "blue" else -1
+		velocity = Vector2.ZERO
+		return false
+	return _move_to(dest, speed)
+
+
+## Radius aggro = range + 30; prioritas naik bersama level nexus.
+func _find_target_smart() -> Node2D:
+	var nearby: Array = CombatSystem.enemies_in_radius(team, global_position, attack_range + 30.0)
+	if nearby.is_empty():
+		return null
+	var in_range: Array = []
+	for enemy in nearby:
+		if global_position.distance_to(enemy.global_position) <= attack_range:
+			in_range.append(enemy)
+	if in_range.is_empty():
+		return _nearest(nearby)
+	match ai_level:
+		1:
+			return _nearest(in_range)
+		2:
+			for enemy in in_range:
+				if enemy.is_in_group("minions") and enemy.lane == lane:
+					return enemy
+		3:
+			return _lowest_hp(in_range)
+		4, 5:
+			if ai_level == 5:
+				for enemy in in_range:
+					if enemy.max_hp >= 1500:
+						return enemy
+				var towers := in_range.filter(func(e): return e.is_in_group("towers"))
+				if not towers.is_empty():
+					return _lowest_hp(towers)
+			var minions := in_range.filter(func(e): return e.is_in_group("minions"))
+			if not minions.is_empty():
+				return _lowest_hp(minions)
+			if ai_level == 4:
+				return _nearest(in_range)
+	return in_range[0]
+
+
+func _nearest(units: Array) -> Node2D:
+	units.sort_custom(func(a, b): return global_position.distance_squared_to(a.global_position) \
+		< global_position.distance_squared_to(b.global_position))
+	return units[0]
+
+
+func _lowest_hp(units: Array) -> Node2D:
+	units.sort_custom(func(a, b): return a.hp < b.hp)
+	return units[0]
 
 
 func _move_to(dest: Vector2, speed: float) -> bool:

@@ -76,6 +76,15 @@ func setup(p_hero) -> void:
 	cds["q"] = 0.0
 
 
+## Batalkan cast/charge tertunda saat mati, tanpa menghapus cooldown QWER.
+func cancel_active() -> void:
+	tickers.clear()
+	active_skill = ""
+	active_skill_timer = 0.0
+	charge_action = ""
+	charge_timer = 0.0
+
+
 func _combat():
 	if _cs != null and is_instance_valid(_cs):
 		return _cs

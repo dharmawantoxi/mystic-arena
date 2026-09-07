@@ -39,17 +39,13 @@ func _boot() -> void:
 	else:
 		GameManager.start_level(1, false)
 
-	# Wait until battle is playing and wave 1 has spawned.
-	var guard := 0
-	while guard < 90:
+	# Only the arena/intro is immediate. Pygame starts with an empty roster
+	# and wave 0; the player and AI must actually purchase their heroes.
+	for _i in range(3):
 		await get_tree().process_frame
-		guard += 1
-		if GameManager.state == "playing" and GameManager.wave_number >= 1:
-			var heroes := _count_group("heroes")
-			var minions := _count_group("minions")
-			var nexus := _count_group("nexus")
-			if heroes >= 10 and minions >= 2 and nexus >= 2:
-				break
+	_expect(GameManager.owned_heroes("blue").is_empty(), "No free player heroes at match start")
+	_expect(GameManager.owned_heroes("red").is_empty(), "No free AI heroes at match start")
+	_expect(GameManager.wave_number == 0, "Wave cannot start during the level intro")
 
 	_expect(GameManager.state == "playing", "Level 1 must enter playing state")
 
@@ -78,10 +74,22 @@ func _boot() -> void:
 	else:
 		_expect(false, "Level intro should be active after start_level")
 	_expect(GameManager.level_number == 1, "Level number must be 1")
-	_expect(GameManager.wave_number >= 1, "Wave 1 must have started")
-	_expect(_count_group("heroes") >= 10, "Starter + enemy rosters must spawn heroes")
 	_expect(_count_group("nexus") == 2, "Both nexuses must spawn")
-	_expect(_count_group("minions") >= 2, "Wave must spawn minions for both teams")
+	_expect(GameManager.try_buy_hero("kaizen"), "Player must be able to buy the unlocked starter")
+	# Fast-forward preparation and the spawn queue without making CI wait
+	# eight wall-clock seconds. Timing edge cases are in GameplayParityTest.
+	GameManager.waves_enabled = false
+	for _i in range(510):
+		GameManager._update_waves(1.0 / 60.0)
+	_expect(GameManager.wave_number == 1, "Wave 1 starts after preparation")
+	_expect(_count_group("minions") == 18, "Wave 1 supplies three minions per lane per team")
+	GameManager.waves_enabled = true
+	# Give the AI a purchase budget, not a free seeded roster. Then exercise
+	# the same draft/spawn path used by its normal think loop.
+	GameManager.ai_gold = 10000
+	if is_instance_valid(ai):
+		_expect(ai._try_buy_hero(), "AI must be able to draft a hero")
+	_expect(_count_group("heroes") == 2, "One purchased hero per team")
 
 	# Lane tags on live minions must be top/mid/bot (not empty).
 	var lane_ok := true
@@ -94,7 +102,7 @@ func _boot() -> void:
 			lane_ok = false
 		lanes_seen[lane] = true
 	_expect(lane_ok, "Every live minion must carry a valid lane")
-	_expect(lanes_seen.size() >= 1, "At least one lane must be occupied")
+	_expect(lanes_seen.size() == 3, "All three lanes must be occupied")
 
 	# AI red heroes idle without destination should pick a lane when threats exist.
 	if is_instance_valid(ai):

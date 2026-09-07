@@ -33,9 +33,9 @@ position = Vector2(0, 0)
 material = SubResource("ShaderMaterial_outline")
 centered = true
 sprite_frames = null
-animation = &"idle"
 ; autoplay SENGAJA tidak diisi: saat .tscn di-load `sprite_frames` masih null,
 ; AnimatedSprite2D::set_autoplay akan ERR_FAIL (pesan error tiap spawn).
+; Jangan set animation="idle" juga: SpriteFrames belum berisi animasi itu.
 ; Hero.gd -> setup_visual() yang menyalakan play("idle") setelah fallback
 ; SpriteFrames dibuat.
 

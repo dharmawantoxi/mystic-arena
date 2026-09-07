@@ -25,6 +25,12 @@ on:
   pull_request:
     paths:
       - 'godot/**'
+      - '_core.py'
+      - '_entity.py'
+      - 'levels/**'
+      - 'map_components/**'
+      - 'tools/convert_to_godot.py'
+      - 'tools/test_godot_match_parity.py'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
       - '.github/workflows/godot-check.yml'
@@ -32,6 +38,12 @@ on:
     branches: [main]
     paths:
       - 'godot/**'
+      - '_core.py'
+      - '_entity.py'
+      - 'levels/**'
+      - 'map_components/**'
+      - 'tools/convert_to_godot.py'
+      - 'tools/test_godot_match_parity.py'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
       - '.github/workflows/godot-check.yml'
@@ -160,6 +172,23 @@ jobs:
           else
             cat /tmp/smoke.gate
             echo "::error::SMOKE-FAIL-TAIL: $(tail -8 /tmp/smoke.log | tr '\n' ' | ' | cut -c1-400)"
+            exit 1
+          fi
+
+      # Golden data comes from the actual Pygame methods, not a second
+      # copy of the Godot formulas. Changes to either implementation run CI.
+      - name: GameplayParityTest (Pygame oracle + match lifecycle)
+        run: |
+          set -o pipefail
+          python -m pip install --quiet pygame-ce
+          python3 tools/test_godot_match_parity.py
+          godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 300 2>&1 | tee /tmp/parity.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/parity.log --label "GameplayParityTest" \
+              --require "[GameplayParityTest] PASS" > /tmp/parity.gate 2>&1; then
+            cat /tmp/parity.gate
+          else
+            cat /tmp/parity.gate
+            echo "::error::PARITY-FAIL-TAIL: $(tail -12 /tmp/parity.log | tr '\n' ' | ' | cut -c1-400)"
             exit 1
           fi
 
