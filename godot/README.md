@@ -88,8 +88,18 @@ Catatan kecil yang juga sudah dibereskan:
 - `Color8()` tidak boleh dipakai di dalam `const` (bukan konstanta yang dikenali GDScript) —
   pakai `Color("#...")`.
 - Cek statis tanpa engine:
-  `python3 godot/tools/tscn_lint.py godot/scenes/*.tscn` dan
-  `python3 godot/tools/check_refs.py godot` (ext_resource, preload, dan `$Node/Path`).
+  `python3 godot/tools/tscn_lint.py godot/scenes/*.tscn`,
+  `python3 godot/tools/check_refs.py godot` (ext_resource, preload, dan `$Node/Path`), dan
+  `python3 godot/tools/particles_lint.py godot` (properti CPUParticles2D vs GPUParticles2D).
+- **CPUParticles2D ≠ GPUParticles2D.** Node CPU tidak punya `process_material`:
+  semua parameter emisi adalah properti node (`direction`/`gravity` = **Vector2**,
+  skala = `scale_amount_min/max`). Node GPU kebalikannya — semua di
+  `ParticleProcessMaterial` (Vector3, `scale_min/max`). Tertukar = tidak ketahuan
+  saat parse, tapi runtime melempar
+  `Invalid assignment of property or key 'process_material' ... on a base object of type 'CPUParticles2D'`
+  tepat saat FX dipakai. Semua partikel game (cuaca map, aura boss, burst hero,
+  impact proyektil skill, wind Kaizen) memakai CPU supaya aman di renderer
+  Compatibility Android/GLES; `particles_lint.py` menjaganya.
 
 ## Parse error: `Cannot infer the type` / autoload gagal dikompilasi
 

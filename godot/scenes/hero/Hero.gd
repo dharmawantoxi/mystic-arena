@@ -101,8 +101,10 @@ var skills = null      # SkillBook
 @onready var shadow: Node2D = $Shadow # Polygon2D ellipse (0 asset)
 @onready var hp_bar: ProgressBar = $UI/HPBar
 @onready var name_label: Label = $UI/NameLabel
-@onready var hit_particles: GPUParticles2D = $FX/HitParticles
-@onready var skill_particles: GPUParticles2D = $FX/SkillParticles
+# CPUParticles2D (bukan GPU) — lihat catatan di Hero.tscn: aman di
+# Compatibility renderer Android/GLES dan tidak butuh shader partikel.
+@onready var hit_particles: CPUParticles2D = $FX/HitParticles
+@onready var skill_particles: CPUParticles2D = $FX/SkillParticles
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
 
 var silhouette = null
@@ -653,7 +655,7 @@ func _cast_skill(key: String) -> bool:
 	return ok
 
 
-## FX skill: ring memancar + partikel (material dibuat runtime kalau .tscn kosong)
+## FX skill: ring memancar + burst CPUParticles2D (warna mengikuti tombol)
 func play_skill_fx(key: String) -> void:
 	var col := Color(1.0, 0.85, 0.4)
 	match key:
@@ -670,17 +672,18 @@ func play_skill_fx(key: String) -> void:
 	tw.tween_property(self, "_ring_alpha", 0.0, 0.34)
 	var particles := skill_particles
 	if particles != null:
-		if particles.process_material == null:
-			var mat := ParticleProcessMaterial.new()
-			mat.direction = Vector3(0, -1, 0)
-			mat.spread = 180.0
-			mat.initial_velocity_min = 40.0
-			mat.initial_velocity_max = 120.0
-			mat.gravity = Vector3.ZERO
-			mat.scale_min = 1.2
-			mat.scale_max = 2.6
-			mat.color = col
-			particles.process_material = mat
+		# CPUParticles2D: parameter emisi = properti node (tidak ada
+		# process_material). Diset ULANG tiap cast, bukan sekali saja,
+		# supaya warna partikel ikut warna skill — dulu `if process_material
+		# == null` bikin Q/W/E/R semua memakai warna cast pertama.
+		particles.direction = Vector2(0, -1)
+		particles.spread = 180.0
+		particles.initial_velocity_min = 40.0
+		particles.initial_velocity_max = 120.0
+		particles.gravity = Vector2.ZERO
+		particles.scale_amount_min = 1.2
+		particles.scale_amount_max = 2.6
+		particles.color = col
 		particles.amount = 36 if key == "r" else 20
 		particles.restart()
 		particles.emitting = true

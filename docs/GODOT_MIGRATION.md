@@ -11,7 +11,7 @@
 | **Render** | CPU `blit` per-pixel. `ambient_tint` fullscreen = 204ms (3 FPS di HP). Aura & bayangan = 14 `Surface` SRCALPHA | **GPU Forward+**. 1 draw call batched. Bloom/glow = 1 shader |
 | **Hero visual** | `pygame.draw.polygon` procedural, `smoothscale` CPU, outline 5x blit manual | `AnimatedSprite2D` + `SpriteFrames.tres` HD + `Skeleton2D` tulang + `outline.gdshader` 1 pass |
 | **Animasi** | `_update_attack_anim` + `walk_cycle` manual, kuantisasi 2 frame (patah) | `AnimationPlayer` 60fps interpolasi, `Skeleton2D` IK, `AnimationTree` blend |
-| **FX tempur** | `heroes/gornak_fx.py` live layer 1:1 tapi tetap CPU particles (170 max) | `GPUParticles2D` 10.000 partikel @0.5ms, `hit_stop` + `Camera trauma` native |
+| **FX tempur** | `heroes/gornak_fx.py` live layer 1:1 tapi tetap CPU particles (170 max) | Partikel node Godot (`CPUParticles2D` untuk burst kecil / cuaca supaya aman di Compatibility renderer Android; `GPUParticles2D` disediakan untuk desktop bila butuh puluhan ribu partikel), `hit_stop` + `Camera trauma` native |
 | **Lighting** | `lighting.py` GRAD_BOX + rim manual 7 blit | `DirectionalLight2D` + `CanvasModulate` + `PointLight2D` per hero (Shadow + rim gratis) |
 | **Map** | 6 layer `Surface` cache + `blit` tiap frame | `TileMapLayer` GPU + `TileSet` per tema (forest/desert/ice/abyss...) |
 | **Android** | `buildozer` + `p4a` + `pygame-ce` recipe, build 8-12 menit, sering merah | Export **AAB** 1 klik, `gradle` native, 1-2 menit, Play Games plugin resmi |
@@ -28,7 +28,7 @@ godot/
   scenes/
     main.tscn            # Root: ArenaMap + Containers + Camera + FX + UI(HUD) + Connector
     main/Main.gd         # Port sisi layout Game: nexus, 18 slot menara, jadwal boss, AI, input
-    hero/Hero.tscn       # CharacterBody2D + AnimatedSprite2D + shader + GPUParticles2D
+    hero/Hero.tscn       # CharacterBody2D + AnimatedSprite2D + shader + CPUParticles2D
     hero/Hero.gd         # Port _entity.Hero (stat + level, item, skill QWER, AI hunt/retreat)
     hero/kaizen/         # KaizenSkeleton.tscn/.gd — rig Skeleton2D 19 tulang + hamon shader
     map/ArenaMap.tscn    # map prosedural (ground/river/lane/base/shop/decor digambar _draw)
@@ -65,7 +65,7 @@ godot/
     render/BakedUnitDB.gd  # manifest baked_units.json + tekstur lazy FIFO 64 (Fase 5)
     render/RendererRegistry.gd # 3 tingkat: rig custom (Kaizen) > strip bake > silhouette
   shaders/hamon.gdshader # temper katana Kaizen (wave + cloud + attack pulse)
-  tools/                 # tscn_lint.py + check_refs.py (verifikasi tanpa binary Godot)
+  tools/                 # tscn_lint.py + check_refs.py + particles_lint.py (verifikasi tanpa binary Godot)
   assets/
     shaders/outline.gdshader  # 1-pass outline + hit flash + rim (ganti 5 blit pygame)
     shaders/bloom.gdshader    # Skill glow
@@ -149,7 +149,7 @@ Hero (CharacterBody2D)
   ├─ Shadow (Sprite2D, modulate.a=0.35)
   ├─ Visual (Node2D, scale.x = facing)
   │   └─ AnimatedSprite2D (SpriteFrames.tres, material=outline.gdshader)
-  ├─ FX/HitParticles (GPUParticles2D, 12 radial, one_shot)
+  ├─ FX/HitParticles (CPUParticles2D, 12 radial, one_shot — CPU: aman GLES)
   └─ AnimationPlayer (idle bob, walk, attack 0.18s, death)
 ```
 ```gdscript
@@ -234,11 +234,12 @@ Build time: Pygame 8-12 menit (p4a clone + compile) → **Godot 45 detik**.
 
 ### Verifikasi tanpa binary Godot
 
-Sandbox/CI tidak selalu punya Godot, jadi tiga pemeriksa statis tersedia:
+Sandbox/CI tidak selalu punya Godot, jadi empat pemeriksa statis tersedia:
 
 ```bash
 python3 godot/tools/tscn_lint.py $(find godot -name "*.tscn")   # grammar .tscn/.tres
 python3 godot/tools/check_refs.py godot                          # path resource/preload/node
+python3 godot/tools/particles_lint.py godot                      # CPUParticles2D vs GPUParticles2D
 gdparse godot/**/*.gd   # pip install gdtoolkit==4.*  -> parser GDScript 4 asli
 ```
 

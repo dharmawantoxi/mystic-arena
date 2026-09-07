@@ -44,7 +44,7 @@ var combat_reset: float = 5.0
 @onready var visual: Node2D = $Visual
 @onready var sprite: AnimatedSprite2D = $Visual/AnimatedSprite2D
 @onready var shadow: Polygon2D = $Shadow
-@onready var aura: GPUParticles2D = $FX/Aura
+@onready var aura: CPUParticles2D = $FX/Aura # CPU: aman di Android/GLES
 @onready var hp_bar: ProgressBar = $UI/HPBar
 @onready var name_label: Label = $UI/NameLabel
 

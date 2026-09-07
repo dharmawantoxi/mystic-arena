@@ -70,20 +70,41 @@ theme_override_font_sizes/font_size = 10
 
 [node name="FX" type="Node2D" parent="."]
 
-[node name="HitParticles" type="GPUParticles2D" parent="FX"]
+; Partikel hero memakai CPUParticles2D, bukan GPUParticles2D: GPUParticles
+; butuh compute/shader partikel yang di renderer Compatibility (Android/GLES)
+; di-fallback — alasan yang sama dengan partikel cuaca ArenaMap.gd:128-140.
+; Untuk burst kecil (12-32 partikel, one_shot) CPU justru lebih murah karena
+; tidak ada kompilasi shader saat hero pertama kali kena pukul / cast skill.
+; CATATAN: node CPU TIDAK punya `process_material`; parameter emisi diset
+; langsung di sini — direction/gravity Vector2 dan scale_amount_min/max.
+[node name="HitParticles" type="CPUParticles2D" parent="FX"]
 emitting = false
 amount = 12
 lifetime = 0.35
 one_shot = true
 explosiveness = 0.9
-process_material = null
-; Di editor: assign ParticleProcessMaterial dengan scale + velocity radial
+direction = Vector2(0, -1)
+spread = 180.0
+initial_velocity_min = 50.0
+initial_velocity_max = 130.0
+gravity = Vector2(0, 0)
+scale_amount_min = 1.0
+scale_amount_max = 2.2
+color = Color(1, 0.72, 0.55, 0.9)
 
-[node name="SkillParticles" type="GPUParticles2D" parent="FX"]
+[node name="SkillParticles" type="CPUParticles2D" parent="FX"]
 emitting = false
 amount = 32
 lifetime = 0.6
 one_shot = true
+explosiveness = 1.0
+direction = Vector2(0, -1)
+spread = 180.0
+initial_velocity_min = 40.0
+initial_velocity_max = 120.0
+gravity = Vector2(0, 0)
+scale_amount_min = 1.2
+scale_amount_max = 2.6
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 ; autoplay sengaja tidak diset: Hero.gd membuat library
