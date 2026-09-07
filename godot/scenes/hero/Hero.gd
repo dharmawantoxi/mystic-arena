@@ -192,7 +192,14 @@ func setup_visual():
 		custom_visual = packed.instantiate()
 		custom_visual.name = "CustomVisual"
 		visual_root.add_child(custom_visual)
-		custom_visual.position = Vector2(0, -6)
+		if custom_visual.has_method("configure_baked"):
+			# Strip bake Fase 5: anchor sprite = telapak kaki, sama
+			# seperti UnitSilhouette — offset -6 di bawah hanya untuk
+			# rig tulang hand-made (Kaizen), jadi dibalikkan ke 0.
+			custom_visual.position = Vector2.ZERO
+			custom_visual.configure_baked(hero_type, "hero", team)
+		else:
+			custom_visual.position = Vector2(0, -6)
 		return
 	silhouette = UnitSilhouetteScript.new()
 	silhouette.name = "Silhouette"
