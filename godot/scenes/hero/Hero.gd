@@ -21,6 +21,7 @@ const ItemInventoryScript = preload("res://scripts/items/ItemInventory.gd")
 const SkillBookScript = preload("res://scripts/skills/SkillBook.gd")
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
 const SkillProjectileScript = preload("res://scenes/fx/SkillProjectile.gd")
+const HurtFlashScript = preload("res://scripts/render/HurtFlash.gd")
 
 const FPS := 60.0
 ## paritas _entity.Hero 3467-3472
@@ -115,6 +116,9 @@ var silhouette = null
 var custom_visual = null
 var anim_phase: float = 0.0
 var hit_flash_mat: ShaderMaterial
+## Flash putih bersama Minion/Boss (scripts/render/HurtFlash.gd). watch_hp =
+## false: hero HANYA berkedip lewat trigger() — lihat play_hit_fx().
+var hurt_flash = null
 
 # ── FX ring skill (digambar di _draw, tanpa butuh asset partikel) ──
 var _ring_radius: float = 0.0
@@ -130,6 +134,9 @@ func _ready():
 	skills.setup(self)
 	_recalc_derived(true)
 	setup_visual()
+	# Setelah setup_visual supaya silhouette/custom_visual/hit_flash_mat
+	# yang dipilih renderer sudah ada saat HurtFlash memilih target tint.
+	hurt_flash = HurtFlashScript.new(self, hit_flash_mat, false)
 	update_ui()
 	# Godot physics: collision layer beda per team (blue=2, red=4)
 	collision_layer = 2 if team == "blue" else 4
@@ -190,6 +197,12 @@ func setup_visual():
 	# hidup kalau didaftarkan di RendererRegistry — upgrade satu-satu.
 	if sprite:
 		sprite.visible = false
+		# Material outline Hero.tscn punya uniform `flash_amount`; disimpan
+		# supaya HurtFlash punya jalur ketiga kalau suatu saat sprite HD
+		# dipakai (silhouette/custom_visual tetap prioritas). Sebelumnya
+		# `hit_flash_mat` dideklarasikan tapi tidak pernah diisi = cabang mati.
+		if sprite.material is ShaderMaterial:
+			hit_flash_mat = sprite.material
 	if shadow:
 		shadow.visible = false
 	z_as_relative = false
@@ -234,6 +247,8 @@ func _physics_process(delta):
 	attack_timer = maxf(0.0, attack_timer - delta)
 	combat_timer = maxf(0.0, combat_timer - delta)
 	_hit_fx_cd = maxf(0.0, _hit_fx_cd - delta)
+	if hurt_flash != null:
+		hurt_flash.tick(self, delta)
 	anim_phase += delta * 6.0  # phase untuk Skeleton2D (breath + stride)
 
 	_regen(delta)
@@ -599,16 +614,11 @@ func play_hit_fx(col: Color = Color(1.0, 0.72, 0.55)) -> void:
 		hit_particles.emitting = true
 
 
+## Flash putih 8 frame. Dipanggil take_damage() dan play_hit_fx() — TIDAK
+## dari deteksi hp seperti minion/boss (lihat watch_hp di HurtFlash.gd).
 func _flash() -> void:
-	if silhouette != null and is_instance_valid(silhouette):
-		silhouette.flash_amount = 1.0
-		create_tween().tween_property(silhouette, "flash_amount", 0.0, 0.12)
-	elif custom_visual != null and is_instance_valid(custom_visual):
-		custom_visual.modulate = Color(1, 0.85, 0.85, 1)
-		create_tween().tween_property(custom_visual, "modulate", Color(1, 1, 1, 1), 0.14)
-	elif hit_flash_mat:
-		hit_flash_mat.set_shader_parameter("flash_amount", 1.0)
-		create_tween().tween_property(hit_flash_mat, "shader_parameter/flash_amount", 0.0, 0.12)
+	if hurt_flash != null:
+		hurt_flash.trigger()
 
 
 func heal(amount: float) -> void:

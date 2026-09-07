@@ -28,11 +28,15 @@ var fill_dark: Color = Color("#4a3278")
 var boss_class: String = "mini"
 
 const UnitSilhouetteScript = preload("res://scripts/render/UnitSilhouette.gd")
+const HurtFlashScript = preload("res://scripts/render/HurtFlash.gd")
 const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
 const StatusEffectsScript = preload("res://scripts/systems/StatusEffects.gd")
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
 var silhouette = null
 var custom_visual = null
+## Flash putih hurt_flash_timer pygame (bosses/base_boss.py:6039, dibaca
+## _draw_generic_body :6307) — lihat scripts/render/HurtFlash.gd
+var hurt_flash = null
 ## StatusEffects: boss kena slow/burn/stun menara (paritas TowerDebuffMixin di
 ## bosses/base_boss.py). Stun boss dipotong 55% supaya tidak di-stunlock.
 var status = null
@@ -73,6 +77,9 @@ func _ready():
 	if shadow != null:
 		shadow.visible = false
 	setup_visual(s)
+	# Dibuat SETELAH setup_visual: HurtFlash memilih target tint dari
+	# silhouette / custom_visual yang baru saja dipasang.
+	hurt_flash = HurtFlashScript.new(self, sprite)
 	update_ui()
 	collision_layer = 2 if team == "blue" else 4
 	collision_mask = 4 if team == "blue" else 2
@@ -105,6 +112,8 @@ func setup_visual(_s: Dictionary) -> void:
 func _physics_process(delta):
 	if is_dead:
 		return
+	if hurt_flash != null:
+		hurt_flash.tick(self, delta)
 	if status != null:
 		status.tick(delta)
 	attack_timer = maxf(0.0, attack_timer - delta)
@@ -230,16 +239,10 @@ func heal(amount: float) -> void:
 	update_ui()
 
 
+## Lihat catatan di Minion._flash(): deteksi utama ada di HurtFlash.tick().
 func _flash() -> void:
-	if silhouette != null and is_instance_valid(silhouette):
-		silhouette.flash_amount = 1.0
-		create_tween().tween_property(silhouette, "flash_amount", 0.0, 0.12)
-	elif custom_visual != null and is_instance_valid(custom_visual):
-		custom_visual.modulate = Color(1.8, 1.8, 1.8, 1)
-		create_tween().tween_property(custom_visual, "modulate", Color(1, 1, 1, 1), 0.12)
-	elif sprite:
-		sprite.modulate = Color(1.8, 1.8, 1.8, 1)
-		create_tween().tween_property(sprite, "modulate", Color(1, 1, 1, 1), 0.12)
+	if hurt_flash != null:
+		hurt_flash.trigger()
 
 func _spawn_damage_number(amount: float) -> void:
 	var num = preload("res://scenes/fx/DamageNumber.tscn").instantiate()
