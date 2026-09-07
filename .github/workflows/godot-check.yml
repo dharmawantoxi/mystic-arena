@@ -122,21 +122,14 @@ jobs:
           RC=$?
           cat /tmp/gate.out
           if [ $RC -ne 0 ]; then
-            # DEBUG (sementara): taruh baris error di commit status supaya
-            # bisa dibaca lewat API tanpa mengunduh log (host log diblok
-            # di sandbox pengembang).
-            i=1
-            grep '|' /tmp/gate.out | sed 's/^[[:space:]]*[0-9]* |[[:space:]]*//' | head -3 | while read -r LINE; do
+            # DEBUG (sementara): pantulkan baris error sebagai anotasi ::error::
+            # supaya terbaca lewat API check-run tanpa mengunduh log
+            # (host log/artifact diblok di sandbox pengembang).
+            grep '|' /tmp/gate.out | sed 's/^[[:space:]]*[0-9]* |[[:space:]]*//' | head -5 | while read -r LINE; do
               [ -z "$LINE" ] && continue
-              gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
-                -f state=error -f context="import-error-$i" \
-                -f description="$(printf '%s' "$LINE" | cut -c1-130)" || true
-              i=$((i+1))
+              echo "::error::IMPORT-FAIL: $LINE"
             done
-            # fallback: ekor log mentah kalau gate tidak sempat daftar baris
-            gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
-              -f state=error -f context="import-error-tail" \
-              -f description="$(tail -5 /tmp/import.log | tr '\n' ' ' | cut -c1-130)" || true
+            echo "::error::IMPORT-FAIL-TAIL: $(tail -6 /tmp/import.log | tr '\n' ' | ' | cut -c1-400)"
             exit $RC
           fi
 
