@@ -221,7 +221,8 @@ jobs:
             cat /tmp/boss.gate
           else
             cat /tmp/boss.gate
-            echo "::error::BOSS-FAIL-TAIL: $(tail -12 /tmp/boss.log | tr '\n' ' | ' | cut -c1-400)"
+            echo "::error::BOSS-FAIL-TAIL: $(tail -60 /tmp/boss.log | tr '\n' ' | ' | cut -c1-3500)"
+            echo "::error::BOSS-FAIL-LINES: $(grep -m8 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/boss.log | tr '\n' ' | ' | cut -c1-2000)"
             exit 1
           fi
 

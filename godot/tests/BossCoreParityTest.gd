@@ -25,6 +25,10 @@ var _fixture: Dictionary = {}
 var _failures: int = 0
 var _checks: int = 0
 var _done: bool = false
+## Semua pesan kegagalan dikumpulkan di sini supaya tercetak ke STDOUT pada
+## akhir run (tail log CI langsung memuat alasannya — tidak bergantung pada
+## anotasi ::error:: yang dipotong 400 karakter oleh workflow).
+var _error_messages: Array[String] = []
 
 
 func _ready() -> void:
@@ -292,15 +296,19 @@ func _row(boss_type: String) -> Dictionary:
 func _near(a: float, b: float, message: String, eps: float = 0.02) -> void:
 	_checks += 1
 	if absf(a - b) > eps:
+		var line := "[BossCoreParityTest] %s: %.4f != %.4f" % [message, a, b]
+		_error_messages.append(line)
 		_failures += 1
-		push_error("[BossCoreParityTest] %s: %.4f != %.4f" % [message, a, b])
+		push_error(line)
 
 
 func _expect(condition: bool, message: String) -> void:
 	_checks += 1
 	if not condition:
+		var line := "[BossCoreParityTest] " + message
+		_error_messages.append(line)
 		_failures += 1
-		push_error("[BossCoreParityTest] " + message)
+		push_error(line)
 
 
 func _finish() -> void:
@@ -314,5 +322,10 @@ func _finish() -> void:
 	if _failures == 0:
 		print("[BossCoreParityTest] PASS: data export + inti boss (%d checks)" % _checks)
 	else:
+		# Cetak SETIAP kegagalan ke stdout (bukan hanya push_error) supaya tail
+		# log CI memuat alasan lengkapnya — debug tidak butuh anotasi error.
+		for msg in _error_messages:
+			print(msg)
 		push_error("[BossCoreParityTest] %d failures dari %d checks" % [_failures, _checks])
+		print("[BossCoreParityTest] FAIL: %d failures dari %d checks" % [_failures, _checks])
 	get_tree().quit(0 if _failures == 0 else 1)
