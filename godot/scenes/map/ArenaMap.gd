@@ -121,6 +121,49 @@ const FALLBACK_THEME := "forest"
 ## sana akan error "Cannot assign a new value to a constant".
 var themes: Dictionary = {}
 
+# ═══ CUACA / ATMOSFER — port DynamicRenderer partikel + fog ═══
+# pygame: _init_particles (_bundle.py:5370-5422), update() (:5453-5503),
+# _draw_particles (:5666-5737), _init_fog (:5424-5447), _draw_fog (:5542-5560).
+# Di sana partikel adalah dict Python yang diblit satu per satu tiap frame;
+# di Godot dua CPUParticles2D sudah cukup (satu batch draw, tidak ada loop
+# per partikel di GDScript).
+#
+# KENAPA CPUParticles2D, bukan GPUParticles2D: GPUParticles butuh
+# ParticleProcessMaterial + (di beberapa backend) shader compile saat runtime,
+# dan target port ini termasuk Android/GLES di mana GPU particles sering
+# di-fallback. CPUParticles2D memberi hasil identik untuk jumlah kecil
+# (30-60 partikel, sama seperti particle_count pygame) dan bisa diatur
+# sepenuhnya dari kode tanpa resource tambahan.
+#
+# Kunci parity-nya BUKAN warna, tapi GERAK — pygame memilih kecepatan per
+# particle_type (_bundle.py:5397-5412): snow turun (vy 0.3..0.8), ember naik
+# (vy -0.8..-0.3), sand menyapu horizontal, firefly melayang acak. Itu yang
+# ditiru _weather_profile() di bawah, jadi level 3 (ice/snow), 4 (volcanic/
+# ember) dan 5 (haunted/spirit) terasa beda gerakannya.
+#
+# Skala kecepatan: pygame menambah vx/vy per FRAME pada 60 FPS, sedangkan
+# CPUParticles2D memakai piksel/DETIK — karena itu semua nilai pygame
+# dikalikan PYGAME_FPS.
+const PYGAME_FPS := 60.0
+## particle_count default kalau themes.json belum punya kunci itu
+## (paritas default pygame _init_particles).
+const PARTICLE_COUNT_DEFAULT := 40
+## Jumlah gumpalan kabut default (_init_fog: fog_count 15)
+const FOG_COUNT_DEFAULT := 15
+## Sisi tekstur bulat prosedural (px). Tanpa tekstur, CPUParticles2D
+## menggambar kotak 1x1 px sehingga salju/bara terlihat seperti piksel keras;
+## pygame menggambar titik + lingkaran glow (_draw_particles :5680-5737) dan
+## kabut sebagai ELIPS lembut (_draw_fog :5551-5556). Dua tekstur gradien
+## radial di bawah meniru itu tanpa file aset apa pun.
+const DOT_TEX_SIZE := 16
+const FOG_TEX_SIZE := 64
+
+var _dot_tex: Texture2D = null
+var _fog_tex: Texture2D = null
+
+var _particles: CPUParticles2D = null
+var _fog: CPUParticles2D = null
+
 var _decor_points: PackedFloat32Array = PackedFloat32Array() # [x, y, size, kind] x N
 ## kind 2/3 hanya muncul kalau tema punya kristal / nisan (flag has_* pygame)
 var _decor_wants_crystal: bool = false
@@ -133,6 +176,7 @@ func _ready():
 	# jadi tidak ada koordinat arena yang di-hardcode di AI.
 	add_to_group("arena_map")
 	_load_themes()
+	_setup_weather_nodes()
 	apply_theme(theme_name)
 
 ## Gabungkan 54 palet themes.json ke palet runtime.
@@ -212,8 +256,195 @@ func apply_theme(t: String):
 	if ResourceLoader.exists(ts_path) and ground:
 		ground.tile_set = load(ts_path)
 		procedural_fallback = false
+	# Cuaca ikut tema: particle_type + fog_* dari themes.json (data itu sudah
+	# lama ada di pygame tapi belum pernah dipakai port ini).
+	_apply_weather(d)
 	_build_decor()
 	queue_redraw()
+
+# ══════════════════════════════════════════════════════════
+#  CUACA: partikel atmosfer + kabut per tema
+# ══════════════════════════════════════════════════════════
+
+## Buat dua node partikel sekali saja (bukan per ganti tema) supaya
+## cycle_theme() tidak menumpuk node. Keduanya anak ArenaMap, jadi ikut
+## z_index map — kabut sengaja di atas partikel (pygame juga menggambar fog
+## setelah particles, _bundle.py draw order).
+func _setup_weather_nodes() -> void:
+	_dot_tex = _make_soft_dot(DOT_TEX_SIZE, 1.6)
+	# Kabut pakai gradien yang jauh lebih landai supaya tepinya tidak kelihatan
+	# sebagai lingkaran, persis kesan elips tipis pygame.
+	_fog_tex = _make_soft_dot(FOG_TEX_SIZE, 2.6)
+	_particles = CPUParticles2D.new()
+	_particles.name = "WeatherParticles"
+	_particles.texture = _dot_tex
+	_particles.z_index = 5
+	add_child(_particles)
+	_fog = CPUParticles2D.new()
+	_fog.name = "WeatherFog"
+	_fog.texture = _fog_tex
+	_fog.z_index = 6
+	add_child(_fog)
+
+
+## Bikin tekstur bulat lembut (putih, alpha memudar ke tepi) langsung di kode.
+## `falloff` besar = tepi lebih cepat hilang (kabut), kecil = inti lebih padat
+## (partikel + glow). Warna diambil dari properti `color` CPUParticles2D, jadi
+## tekstur ini cukup putih sekali dipakai semua tema.
+static func _make_soft_dot(size: int, falloff: float) -> Texture2D:
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var c := float(size) * 0.5
+	for y in range(size):
+		for x in range(size):
+			var dist := Vector2(float(x) + 0.5 - c, float(y) + 0.5 - c).length() / c
+			var a: float = pow(clampf(1.0 - dist, 0.0, 1.0), falloff)
+			img.set_pixel(x, y, Color(1, 1, 1, a))
+	return ImageTexture.create_from_image(img)
+
+
+## Profil gerak per particle_type — INI yang membedakan tema, bukan warnanya.
+## Angka vx/vy diambil dari _init_particles pygame (_bundle.py:5397-5412)
+## dalam piksel/frame; dikali PYGAME_FPS jadi piksel/detik untuk Godot.
+##
+## Kunci:
+##   dir      arah utama (Godot: +y ke bawah, sama seperti pygame)
+##   speed    kecepatan rata-rata piksel/detik
+##   spread   sebaran sudut (derajat) di sekitar dir
+##   damping  perlambatan (partikel melayang lebih terasa "berat")
+##   scale    ukuran titik (pygame size 1-2 px, ember/spirit diberi glow)
+##   life     umur detik — dihitung supaya partikel menyeberangi arena
+##   palette  kunci palet tema untuk warna (pygame memakai
+##            particle_colors_radiant/dire; di Godot satu warna aksen per
+##            tema sudah cukup karena partikel kecil dan ada glow HDR)
+##   glow     >1.0 = warna dilebihkan supaya kena bloom (project.godot
+##            glow/enabled=true) — dipakai ember/spirit/firefly.
+##
+## Tipe yang di pygame TIDAK tergambar sama sekali (ash/spirit/mist/acid —
+## _draw_particles hanya punya cabang firefly/snow/sand/ember, lihat catatan
+## _bundle.py:809) tetap diberi profil di sini: datanya sudah ada di tema dan
+## di Godot tidak ada alasan membiarkannya mati. Gerakannya dipilih sesuai
+## nama: ash melayang turun pelan, spirit naik berombak, mist menyapu
+## mendatar, acid naik seperti ember.
+static func _weather_profile(kind: String) -> Dictionary:
+	match kind:
+		"snow":
+			# vy 0.3..0.8 px/frame turun + goyang sin (update() :5471-5476)
+			return {"dir": Vector2(0, 1), "speed": 0.55 * PYGAME_FPS, "spread": 12.0,
+				"damping": 0.0, "scale": 2.4, "life": 14.0,
+				"palette": "river_foam", "glow": 1.0}
+		"ember":
+			# vy -0.8..-0.3 px/frame NAIK (bara api) :5405-5408
+			return {"dir": Vector2(0, -1), "speed": 0.55 * PYGAME_FPS, "spread": 18.0,
+				"damping": 4.0, "scale": 2.0, "life": 9.0,
+				"palette": "river_glow", "glow": 1.6}
+		"acid":
+			# tema racun: sengaja memakai "ember" di pygame agar spora NAIK
+			# (komentar _bundle.py:812-813) — profil sama, warna dari moss.
+			return {"dir": Vector2(0, -1), "speed": 0.5 * PYGAME_FPS, "spread": 22.0,
+				"damping": 6.0, "scale": 2.2, "life": 10.0,
+				"palette": "moss", "glow": 1.4}
+		"sand":
+			# vx 0.5..1.5 px/frame menyapu mendatar + gelombang vertikal :5401-5404
+			return {"dir": Vector2(1, 0), "speed": 1.0 * PYGAME_FPS, "spread": 10.0,
+				"damping": 0.0, "scale": 1.8, "life": 8.0,
+				"palette": "path_bright", "glow": 1.0}
+		"mist":
+			# kabut laut: seperti sand tapi jauh lebih lambat & besar
+			return {"dir": Vector2(1, 0), "speed": 0.35 * PYGAME_FPS, "spread": 8.0,
+				"damping": 0.0, "scale": 4.0, "life": 16.0,
+				"palette": "river_light", "glow": 1.0}
+		"spirit":
+			# arwah: naik pelan, sebaran lebar + damping besar = melayang
+			return {"dir": Vector2(0, -1), "speed": 0.28 * PYGAME_FPS, "spread": 45.0,
+				"damping": 8.0, "scale": 3.0, "life": 12.0,
+				"palette": "river_glow", "glow": 1.7}
+		"ash":
+			# abu: turun sangat pelan, sebaran lebar (melayang tak tentu arah)
+			return {"dir": Vector2(0, 1), "speed": 0.25 * PYGAME_FPS, "spread": 60.0,
+				"damping": 5.0, "scale": 2.2, "life": 16.0,
+				"palette": "ash", "glow": 1.0}
+		_:
+			# firefly (default pygame): melayang acak ke segala arah,
+			# vx/vy -0.4..0.4 px/frame :5410-5412
+			return {"dir": Vector2(0, -1), "speed": 0.4 * PYGAME_FPS, "spread": 180.0,
+				"damping": 2.0, "scale": 2.2, "life": 6.0,
+				"palette": "river_glow", "glow": 1.5}
+
+
+## Terapkan particle_type + fog_* tema aktif ke dua node CPUParticles2D.
+## Dipanggil dari apply_theme(), jadi cycle_theme() (tombol debug T) langsung
+## mengganti cuaca juga.
+func _apply_weather(d: Dictionary) -> void:
+	if _particles == null or _fog == null:
+		return # scene dipakai tanpa _ready (unit test) — jangan crash
+	var kind := str(d.get("particle_type", "firefly"))
+	var prof := _weather_profile(kind)
+	var base: Color = d.get(prof["palette"], d.get("river_glow", Color.WHITE))
+	var glow := float(prof["glow"])
+	var col := Color(base.r * glow, base.g * glow, base.b * glow, 0.85)
+
+	# Jumlah partikel: particle_count tema (pygame _init_particles memakainya
+	# apa adanya; di sana ada juga preset kualitas mobile.perf.Quality yang
+	# TIDAK diport — Godot punya rendering/quality sendiri).
+	_particles.emitting = false
+	_particles.amount = maxi(4, int(d.get("particle_count", PARTICLE_COUNT_DEFAULT)))
+	_particles.lifetime = float(prof["life"])
+	# preprocess = arena sudah penuh partikel sejak frame pertama, bukan
+	# kosong lalu terisi pelan-pelan (pygame menaburnya acak saat init).
+	_particles.preprocess = float(prof["life"])
+	_particles.local_coords = false
+	_particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_particles.emission_rect_extents = arena_size * 0.5
+	_particles.position = arena_size * 0.5
+	_particles.direction = prof["dir"] as Vector2
+	_particles.spread = float(prof["spread"])
+	_particles.initial_velocity_min = float(prof["speed"]) * 0.6
+	_particles.initial_velocity_max = float(prof["speed"]) * 1.4
+	# CPUParticles2D memakai pasangan min/max (tidak ada properti "damping"
+	# tunggal seperti ParticleProcessMaterial) — salah nama di sini tidak
+	# ketahuan gdparse, tapi jadi error "Invalid assignment" saat jalan.
+	_particles.damping_min = float(prof["damping"]) * 0.5
+	_particles.damping_max = float(prof["damping"])
+	_particles.gravity = Vector2.ZERO # semua gerak sudah dari direction/speed
+	# scale_amount = PENGALI ukuran tekstur, bukan piksel — profil menyimpan
+	# diameter yang diinginkan (pygame: size 1-2 px + glow ~3-4 px), jadi
+	# dibagi DOT_TEX_SIZE dulu.
+	var dot_scale := float(prof["scale"]) / float(DOT_TEX_SIZE)
+	_particles.scale_amount_min = dot_scale * 0.7
+	_particles.scale_amount_max = dot_scale
+	_particles.color = col
+	_particles.emitting = true
+
+	# ── KABUT (fog_enabled / fog_color / fog_alpha / fog_count) ──
+	# pygame: gumpalan elips besar yang menyapu mendatar sangat pelan
+	# (_init_fog vx -0.1..0.1 px/frame, _draw_fog ellipse size 30-60).
+	var fog_on := bool(d.get("fog_enabled", true))
+	_fog.emitting = false
+	if not fog_on:
+		return
+	var fog_col: Color = d.get("fog_color", Color(0.31, 0.24, 0.24))
+	var fog_alpha := float(d.get("fog_alpha", 0.12))
+	_fog.amount = maxi(3, int(d.get("fog_count", FOG_COUNT_DEFAULT)))
+	_fog.lifetime = 26.0
+	_fog.preprocess = 26.0
+	_fog.local_coords = false
+	_fog.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_fog.emission_rect_extents = Vector2(arena_size.x * 0.5, arena_size.y * 0.35)
+	_fog.position = Vector2(arena_size.x * 0.5, arena_size.y * 0.45)
+	_fog.direction = Vector2(1, 0)
+	_fog.spread = 6.0
+	_fog.initial_velocity_min = 0.05 * PYGAME_FPS
+	_fog.initial_velocity_max = 0.1 * PYGAME_FPS
+	_fog.damping_min = 0.0
+	_fog.damping_max = 0.0
+	_fog.gravity = Vector2.ZERO
+	# Gumpalan besar & tipis: lebar elips pygame 60-120 px (_init_fog size
+	# 30-60, _draw_fog menggambar size*2 mendatar) -> pengali tekstur 64 px.
+	_fog.scale_amount_min = 60.0 / float(FOG_TEX_SIZE)
+	_fog.scale_amount_max = 120.0 / float(FOG_TEX_SIZE)
+	_fog.color = Color(fog_col.r, fog_col.g, fog_col.b, fog_alpha)
+	_fog.emitting = true
+
 
 ## Ganti ke tema berikutnya dalam palette (dipakai tombol debug T di Main.gd)
 func cycle_theme() -> String:

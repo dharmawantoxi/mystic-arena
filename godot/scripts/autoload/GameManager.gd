@@ -345,6 +345,10 @@ func start_level(lv: int, replay: bool = false):
 	# Hook BGM per level (levels.json["bgm_track"]; pygame main.py:521).
 	# AudioManager no-op + log kalau aset wav belum disalin converter.
 	AudioManager.play_bgm(str(lv_data.get("bgm_track", "bgm_battle.wav")))
+	# Ambient loop hutan (paritas main.py:164 sound_mgr.play_ambient(
+	# 'ambient_forest', volume_mult=0.8)). Kanal terpisah dari BGM, jadi
+	# musik dan suara lingkungan berbunyi bersamaan seperti di pygame.
+	AudioManager.play_ambient()
 	print("[GameManager] Start Level %d%s — gold %d (%s/s, %s)%s" % [
 		lv, " (replay)" if replay else "", gold, format_gold_rate(gold_per_second),
 		difficulty, " · enemy scaling x%.2f HP" % enemy_hp_mult if enemy_scaling_enabled else ""])
@@ -416,6 +420,9 @@ func return_to_menu() -> void:
 	wave_number = 0
 	shop_open = false
 	AudioManager.stop_bgm()
+	# Ambient ikut mati di menu — pygame memulainya sekali di main() dan
+	# hanya hidup selama sesi match; di sini pasangan stop-nya eksplisit.
+	AudioManager.stop_ambient()
 	print("[GameManager] kembali ke menu utama")
 
 
@@ -620,6 +627,7 @@ func end_match(victory: bool, killer_team: String = "") -> void:
 	state = "victory" if victory else "defeat"
 	_grant_meta_reward(victory)
 	AudioManager.stop_bgm()
+	AudioManager.stop_ambient()
 	AudioManager.play_sfx("victory" if victory else "defeat")
 	print("[GameManager] %s — %s menang (meta reward %d gold)" % [
 		state.to_upper(), killer_team if killer_team != "" else ("blue" if victory else "red"),

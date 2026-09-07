@@ -668,12 +668,16 @@ func _toggle_pause() -> void:
 		get_tree().paused = false
 		GameManager.set_paused(false)
 		AudioManager.pause_bgm(false)
+		AudioManager.pause_ambient(false)
 		if menu != null:
 			menu.close()
 		return
 	get_tree().paused = true
 	GameManager.set_paused(true)
 	AudioManager.pause_bgm(true)
+	# Ambient ikut dibekukan bersama BGM: pygame tidak punya menu pause yang
+	# menyisakan suara hutan, dan tanpa ini loop tetap berbunyi saat tree pause.
+	AudioManager.pause_ambient(true)
 	if menu != null:
 		menu.open_pause()
 	print("[Main] PAUSE — menu pause terbuka")
@@ -701,6 +705,7 @@ func _on_menu_resume() -> void:
 	get_tree().paused = false
 	GameManager.set_paused(false)
 	AudioManager.pause_bgm(false)
+	AudioManager.pause_ambient(false)
 	print("[Main] RESUME")
 
 func _on_menu_main_menu() -> void:
