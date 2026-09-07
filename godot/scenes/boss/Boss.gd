@@ -147,9 +147,11 @@ func _ready():
 	min_distance = float(s.get("min_distance", 200.0))
 	prefer_distance = float(s.get("prefer_distance", 280.0))
 	# Boss yang punya rantai smart-AI spesifik di Boss.update pygame memakai
-	# per-skill AI (belum diport); yang TIDAK punya memakai ability generik
-	# _use_ability. Bendera dibaca dari bosses.json (diekspor converter dari
-	# AST Boss.update — jangan disalin manual ke daftar konstan).
+	# per-skill AI Q/W/E/R (port-nya masih terbuka — lihat "Smart-AI boss
+	# musuh" di docs/GODOT_PARITY.md); yang TIDAK punya memakai ability
+	# generik _use_ability. Bendera dibaca dari bosses.json (diekspor
+	# converter dari AST Boss.update — jangan disalin manual ke daftar
+	# konstan, supaya daftar smart-AI tidak pernah tidak sinkron).
 	has_smart_ai = bool(s.get("uses_smart_ai", false))
 	# Entrance freeze: mini 120 frame (2 s), true 180 frame (3 s) — :478.
 	# Satu-satunya efek yang TIDAK ikut membeku adalah entrance (banner 100
