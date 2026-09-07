@@ -114,9 +114,12 @@ jobs:
           if grep -qi "unknown command line option" /tmp/import1.log; then
             # Jaga-jaga kalau versi Godot yang dipakai belum punya --import:
             # --editor --quit juga mengimpor lalu keluar.
-            godot --headless --path godot --editor --quit 2>&1 | tee /tmp/import.log
+            godot --headless --path godot --editor --quit 2>&1 | tee /tmp/import.log || true
           else
-            godot --headless --path godot --import 2>&1 | tee /tmp/import.log
+            # || true: bash runner default -e + pipefail; godot bisa exit != 0
+            # saat ada script error — yang menilai lulus/gagal adalah gate,
+            # bukan exit code (lihat komentar langkah "Versi Godot" di README).
+            godot --headless --path godot --import 2>&1 | tee /tmp/import.log || true
           fi
           python3 godot/tools/godot_log_gate.py /tmp/import.log --label "import" > /tmp/gate.out 2>&1
           RC=$?
