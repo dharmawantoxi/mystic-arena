@@ -1,86 +1,146 @@
-name: Godot check
+name: Godot Check
 
-# Lint statis + Godot headless. Exit code Godot sering 0 meski ada
-# SCRIPT ERROR — godot/tools/godot_log_gate.py yang menggagalkan job.
+# ═══════════════════════════════════════════════════════
+# VERIFIKASI PORT GODOT TANPA PERLU GODOT DI MESIN SENDIRI
+#
+# Kenapa ada: banyak bug port hanya muncul SAAT DIJALANKAN, bukan saat
+# parse. Contoh nyata yang lolos semua cek statis:
+#
+#   Invalid assignment of property or key 'process_material' with value of
+#   type 'ParticleProcessMaterial' on a base object of type 'CPUParticles2D'.
+#
+# Runner GitHub punya internet penuh, jadi di sinilah Godot betulan
+# diunduh dan project benar-benar dijalankan headless.
+#
+# HEMAT KUOTA (pelajaran dari build-android.yml yang dibuat manual-only):
+#   * hanya jalan kalau berkas Godot/tool yang berubah (filter `paths`),
+#   * binary Godot di-cache antar run (unduh ~40 MB sekali saja),
+#   * concurrency: push beruntun membatalkan run yang lama,
+#   * timeout 15 menit; run normal ±2-3 menit.
+#
+# Jalan manual: tab Actions -> "Godot Check" -> Run workflow.
+# ═══════════════════════════════════════════════════════
 
 on:
-  push:
-    paths:
-      - "godot/**"
-      - ".github/workflows/godot-check.yml"
   pull_request:
     paths:
-      - "godot/**"
-      - ".github/workflows/godot-check.yml"
+      - 'godot/**'
+      - 'tools/test_boss_true_aura_parity.py'
+      - 'tools/test_basic_attack_no_impact_fx.py'
+      - '.github/workflows/godot-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'godot/**'
+      - 'tools/test_boss_true_aura_parity.py'
+      - 'tools/test_basic_attack_no_impact_fx.py'
+      - '.github/workflows/godot-check.yml'
   workflow_dispatch:
 
 concurrency:
   group: godot-check-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+env:
+  # Harus sama dengan config/features di godot/project.godot
+  GODOT_VERSION: '4.3'
+  GODOT_RELEASE: 'stable'
+
 jobs:
-  lint:
-    name: Lint statis
+  check:
+    name: Import + smoke test headless
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: tscn_lint
-        run: python3 godot/tools/tscn_lint.py godot
-      - name: check_refs
-        run: python3 godot/tools/check_refs.py godot
-      - name: particles_lint
-        run: python3 godot/tools/particles_lint.py godot
+          python-version: '3.11'
 
-  headless:
-    name: Import + smoke headless
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # ── 1. Cek statis (tidak butuh engine, hitungan detik) ──
+      - name: Linter statis
+        run: |
+          python -m pip install --quiet "gdtoolkit==4.*"
+          echo "::group::gdparse (parser GDScript 4 asli)"
+          gdparse $(find godot -name '*.gd')
+          echo "::endgroup::"
+          python3 godot/tools/tscn_lint.py $(find godot -name '*.tscn' -o -name '*.tres')
+          python3 godot/tools/check_refs.py godot
+          python3 godot/tools/particles_lint.py godot
+
+      # ── 2. Godot binary (di-cache) ──
+      - name: Cache Godot ${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+        id: cache-godot
+        uses: actions/cache@v4
         with:
-          python-version: "3.11"
+          path: ~/godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}-linux-x86_64
 
-      - name: Install Godot
+      - name: Unduh Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          GODOT_VERSION=4.3-stable
-          curl -fsSL -o godot.zip \
-            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v4.3-stable_linux.x86_64.zip"
-          unzip -q godot.zip
-          sudo install -m 755 Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
-          godot --version
+          V="${GODOT_VERSION}-${GODOT_RELEASE}"
+          URL="https://github.com/godotengine/godot/releases/download/${V}/Godot_v${V}_linux.x86_64.zip"
+          mkdir -p ~/godot-bin
+          curl -fsSL -o /tmp/godot.zip "$URL"
+          unzip -q -o /tmp/godot.zip -d /tmp/godot
+          mv /tmp/godot/Godot_v${V}_linux.x86_64 ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
 
+      - name: Versi Godot
+        run: |
+          echo "$HOME/godot-bin" >> "$GITHUB_PATH"
+          ~/godot-bin/godot --headless --version
+
+      # ── 3. Import project: di sinilah .tscn/.tres/shader benar-benar dimuat ──
+      # Import pertama pada checkout bersih memang mengeluarkan pesan "editor
+      # needs to restart"; karena itu dijalankan dua kali, dan log yang dinilai
+      # adalah yang KEDUA.
       - name: Import project
-        working-directory: ${{ github.workspace }}
         run: |
           set -o pipefail
-          godot --headless --path godot --editor --import --quit 2>&1 | tee import.log || true
-          python3 godot/tools/godot_log_gate.py import.log --label import --require ""
+          godot --headless --path godot --import 2>&1 | tee /tmp/import1.log || true
+          if grep -qi "unknown command line option" /tmp/import1.log; then
+            # Jaga-jaga kalau versi Godot yang dipakai belum punya --import:
+            # --editor --quit juga mengimpor lalu keluar.
+            godot --headless --path godot --editor --quit 2>&1 | tee /tmp/import.log
+          else
+            godot --headless --path godot --import 2>&1 | tee /tmp/import.log
+          fi
+          python3 godot/tools/godot_log_gate.py /tmp/import.log --label "import"
 
-      - name: AIPlayerTest
+      # ── 4. Smoke test yang sudah ada di repo (keduanya self-quit + PASS line) ──
+      - name: AIPlayerTest (menu, tanpa combat)
         run: |
           set -o pipefail
-          godot --headless --path godot res://tests/AIPlayerTest.tscn --quit-after 120 2>&1 | tee ai.log || true
-          python3 godot/tools/godot_log_gate.py ai.log --label AIPlayerTest --require "[AIPlayerTest] PASS"
+          godot --headless --path godot res://tests/AIPlayerTest.tscn --quit-after 120 2>&1 | tee /tmp/ai.log
+          python3 godot/tools/godot_log_gate.py /tmp/ai.log --label "AIPlayerTest" \
+            --require "[AIPlayerTest] PASS"
 
-      - name: BattleSmokeTest
+      - name: BattleSmokeTest (menu → level 1 → wave + AI)
         run: |
           set -o pipefail
-          godot --headless --path godot res://tests/BattleSmokeTest.tscn --quit-after 180 2>&1 | tee smoke.log || true
-          python3 godot/tools/godot_log_gate.py smoke.log --label BattleSmokeTest --require "[BattleSmokeTest] PASS"
+          godot --headless --path godot res://tests/BattleSmokeTest.tscn --quit-after 180 2>&1 | tee /tmp/smoke.log
+          python3 godot/tools/godot_log_gate.py /tmp/smoke.log --label "BattleSmokeTest" \
+            --require "[BattleSmokeTest] PASS"
 
-      - name: Unggah log
-        if: always()
+      # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
+      - name: Test paritas pygame
+        run: |
+          python -m pip install --quiet pygame-ce
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_boss_true_aura_parity.py
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_basic_attack_no_impact_fx.py
+
+      - name: Simpan log kalau gagal
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: godot-headless-logs
-          path: |
-            import.log
-            ai.log
-            smoke.log
-          if-no-files-found: ignore
+          name: godot-logs
+          path: /tmp/*.log
           retention-days: 7
