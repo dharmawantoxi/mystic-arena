@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://bkaizen_skel_01a075b1"]
+[gd_scene load_steps=4 format=3 uid="uid://bkaizen_skel_01a075b1"]
 
 [ext_resource type="Script" path="res://scenes/hero/kaizen/KaizenSkeleton.gd" id="1_kaizen"]
 [ext_resource type="Shader" path="res://shaders/hamon.gdshader" id="2_hamon"]
@@ -15,16 +15,6 @@ shader_parameter/hamon_color = Color(0.823529, 0.933333, 1, 1)
 [sub_resource type="Gradient" id="Gradient_wind"]
 offsets = PackedFloat32Array(0, 0.45, 1)
 colors = PackedColorArray(0.878431, 0.933333, 1, 0, 0.439216, 0.698039, 0.901961, 0.55, 0.439216, 0.698039, 0.901961, 0)
-
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_wind"]
-direction = Vector3(1, -0.2, 0)
-spread = 14.0
-initial_velocity_min = 18.0
-initial_velocity_max = 34.0
-gravity = Vector3(0, 0, 0)
-scale_min = 1.0
-scale_max = 2.2
-color = Color(0.68, 0.85, 1, 0.42)
 
 [node name="KaizenSkeleton" type="Node2D" groups=["kaizen_skeleton"]]
 script = ExtResource("1_kaizen")
@@ -353,8 +343,18 @@ color = Color(0.14902, 0.129412, 0.141176, 1)
 polygon = PackedVector2Array(-7, -2, 5, -2, 5, 3, -7, 3)
 z_index = 0
 
-[node name="WindParticles" type="GPUParticles2D" parent="."]
+; 14 partikel angin -> CPUParticles2D (lihat catatan ArenaMap.gd:128-140):
+; aman di Android/GLES, tanpa shader partikel. direction/gravity Vector2,
+; skala scale_amount_min/max — CPUParticles2D tidak punya process_material.
+[node name="WindParticles" type="CPUParticles2D" parent="."]
 emitting = true
 amount = 14
 lifetime = 0.9
-process_material = SubResource("ParticleProcessMaterial_wind")
+direction = Vector2(1, -0.2)
+spread = 14.0
+initial_velocity_min = 18.0
+initial_velocity_max = 34.0
+gravity = Vector2(0, 0)
+scale_amount_min = 1.0
+scale_amount_max = 2.2
+color = Color(0.68, 0.85, 1, 0.42)

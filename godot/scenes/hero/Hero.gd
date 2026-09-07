@@ -21,6 +21,7 @@ const ItemInventoryScript = preload("res://scripts/items/ItemInventory.gd")
 const SkillBookScript = preload("res://scripts/skills/SkillBook.gd")
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
 const SkillProjectileScript = preload("res://scenes/fx/SkillProjectile.gd")
+const HurtFlashScript = preload("res://scripts/render/HurtFlash.gd")
 
 const FPS := 60.0
 ## paritas _entity.Hero 3467-3472
@@ -101,14 +102,23 @@ var skills = null      # SkillBook
 @onready var shadow: Node2D = $Shadow # Polygon2D ellipse (0 asset)
 @onready var hp_bar: ProgressBar = $UI/HPBar
 @onready var name_label: Label = $UI/NameLabel
-@onready var hit_particles: GPUParticles2D = $FX/HitParticles
-@onready var skill_particles: GPUParticles2D = $FX/SkillParticles
+# CPUParticles2D (bukan GPU) — lihat catatan di Hero.tscn: aman di
+# Compatibility renderer Android/GLES dan tidak butuh shader partikel.
+@onready var hit_particles: CPUParticles2D = $FX/HitParticles
+@onready var skill_particles: CPUParticles2D = $FX/SkillParticles
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
+
+## Jeda minimum antar burst HitParticles (detik) — lihat play_hit_fx()
+const HIT_FX_COOLDOWN := 0.08
+var _hit_fx_cd: float = 0.0
 
 var silhouette = null
 var custom_visual = null
 var anim_phase: float = 0.0
 var hit_flash_mat: ShaderMaterial
+## Flash putih bersama Minion/Boss (scripts/render/HurtFlash.gd). watch_hp =
+## false: hero HANYA berkedip lewat trigger() — lihat play_hit_fx().
+var hurt_flash = null
 
 # ── FX ring skill (digambar di _draw, tanpa butuh asset partikel) ──
 var _ring_radius: float = 0.0
@@ -124,6 +134,9 @@ func _ready():
 	skills.setup(self)
 	_recalc_derived(true)
 	setup_visual()
+	# Setelah setup_visual supaya silhouette/custom_visual/hit_flash_mat
+	# yang dipilih renderer sudah ada saat HurtFlash memilih target tint.
+	hurt_flash = HurtFlashScript.new(self, hit_flash_mat, false)
 	update_ui()
 	# Godot physics: collision layer beda per team (blue=2, red=4)
 	collision_layer = 2 if team == "blue" else 4
@@ -184,6 +197,12 @@ func setup_visual():
 	# hidup kalau didaftarkan di RendererRegistry — upgrade satu-satu.
 	if sprite:
 		sprite.visible = false
+		# Material outline Hero.tscn punya uniform `flash_amount`; disimpan
+		# supaya HurtFlash punya jalur ketiga kalau suatu saat sprite HD
+		# dipakai (silhouette/custom_visual tetap prioritas). Sebelumnya
+		# `hit_flash_mat` dideklarasikan tapi tidak pernah diisi = cabang mati.
+		if sprite.material is ShaderMaterial:
+			hit_flash_mat = sprite.material
 	if shadow:
 		shadow.visible = false
 	z_as_relative = false
@@ -227,6 +246,9 @@ func _physics_process(delta):
 		items.tick(delta)
 	attack_timer = maxf(0.0, attack_timer - delta)
 	combat_timer = maxf(0.0, combat_timer - delta)
+	_hit_fx_cd = maxf(0.0, _hit_fx_cd - delta)
+	if hurt_flash != null:
+		hurt_flash.tick(self, delta)
 	anim_phase += delta * 6.0  # phase untuk Skeleton2D (breath + stride)
 
 	_regen(delta)
@@ -568,16 +590,35 @@ func take_damage(amount: float, from_team: String, dmg_type: String = "normal",
 	update_ui()
 
 
+## Burst partikel + flash saat hero KENA damage SKILL.
+##
+## KENAPA tidak dipanggil dari take_damage/CombatSystem.apply_damage:
+## kontrak pemilik game (dikunci tools/test_basic_attack_no_impact_fx.py dan
+## komentar _entity.py:4376-4384) = SERANGAN DASAR tidak boleh punya impact FX
+## sama sekali, karena tumpukan flash+spark tiap pukulan bikin combat ramai
+## kedap-kedip. Impact FX eksklusif milik SKILL (paritas notify_skill_impact
+## hero_skills/_bundle.py), jadi pemanggilnya SkillBook._damage().
+func play_hit_fx(col: Color = Color(1.0, 0.72, 0.55)) -> void:
+	if is_dead:
+		return
+	# Skill AoE + ticker DoT bisa memanggil ini beberapa kali dalam satu
+	# frame; restart() beruntun justru MEMBATALKAN burst sebelumnya (dan
+	# boros). Satu burst per 0,08 detik sudah terbaca sebagai "kena".
+	if _hit_fx_cd > 0.0:
+		return
+	_hit_fx_cd = HIT_FX_COOLDOWN
+	_flash()
+	if hit_particles != null:
+		hit_particles.color = Color(col.r, col.g, col.b, 0.9)
+		hit_particles.restart()
+		hit_particles.emitting = true
+
+
+## Flash putih 8 frame. Dipanggil take_damage() dan play_hit_fx() — TIDAK
+## dari deteksi hp seperti minion/boss (lihat watch_hp di HurtFlash.gd).
 func _flash() -> void:
-	if silhouette != null and is_instance_valid(silhouette):
-		silhouette.flash_amount = 1.0
-		create_tween().tween_property(silhouette, "flash_amount", 0.0, 0.12)
-	elif custom_visual != null and is_instance_valid(custom_visual):
-		custom_visual.modulate = Color(1, 0.85, 0.85, 1)
-		create_tween().tween_property(custom_visual, "modulate", Color(1, 1, 1, 1), 0.14)
-	elif hit_flash_mat:
-		hit_flash_mat.set_shader_parameter("flash_amount", 1.0)
-		create_tween().tween_property(hit_flash_mat, "shader_parameter/flash_amount", 0.0, 0.12)
+	if hurt_flash != null:
+		hurt_flash.trigger()
 
 
 func heal(amount: float) -> void:
@@ -653,7 +694,7 @@ func _cast_skill(key: String) -> bool:
 	return ok
 
 
-## FX skill: ring memancar + partikel (material dibuat runtime kalau .tscn kosong)
+## FX skill: ring memancar + burst CPUParticles2D (warna mengikuti tombol)
 func play_skill_fx(key: String) -> void:
 	var col := Color(1.0, 0.85, 0.4)
 	match key:
@@ -670,17 +711,18 @@ func play_skill_fx(key: String) -> void:
 	tw.tween_property(self, "_ring_alpha", 0.0, 0.34)
 	var particles := skill_particles
 	if particles != null:
-		if particles.process_material == null:
-			var mat := ParticleProcessMaterial.new()
-			mat.direction = Vector3(0, -1, 0)
-			mat.spread = 180.0
-			mat.initial_velocity_min = 40.0
-			mat.initial_velocity_max = 120.0
-			mat.gravity = Vector3.ZERO
-			mat.scale_min = 1.2
-			mat.scale_max = 2.6
-			mat.color = col
-			particles.process_material = mat
+		# CPUParticles2D: parameter emisi = properti node (tidak ada
+		# process_material). Diset ULANG tiap cast, bukan sekali saja,
+		# supaya warna partikel ikut warna skill — dulu `if process_material
+		# == null` bikin Q/W/E/R semua memakai warna cast pertama.
+		particles.direction = Vector2(0, -1)
+		particles.spread = 180.0
+		particles.initial_velocity_min = 40.0
+		particles.initial_velocity_max = 120.0
+		particles.gravity = Vector2.ZERO
+		particles.scale_amount_min = 1.2
+		particles.scale_amount_max = 2.6
+		particles.color = col
 		particles.amount = 36 if key == "r" else 20
 		particles.restart()
 		particles.emitting = true

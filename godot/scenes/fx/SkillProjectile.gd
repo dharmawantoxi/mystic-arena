@@ -145,16 +145,22 @@ func _impact() -> void:
 	p.amount = 12
 	p.lifetime = 0.32
 	p.position = Vector2(0, -10)
-	var mat := ParticleProcessMaterial.new()
-	mat.direction = Vector3(0, -1, 0)
-	mat.spread = 180.0
-	mat.initial_velocity_min = 60.0
-	mat.initial_velocity_max = 150.0
-	mat.gravity = Vector3.ZERO
-	mat.scale_min = 1.0
-	mat.scale_max = 2.4
-	mat.color = _impact_color
-	p.process_material = mat
+	# CPUParticles2D TIDAK punya `process_material` — itu milik GPUParticles2D.
+	# Parameter emisinya diset langsung sebagai properti node, dengan tipe 2D
+	# (Vector2, bukan Vector3) dan nama `scale_amount_*`, bukan `scale_*`.
+	# Salah satu saja -> "Invalid assignment of property ... on a base object
+	# of type 'CPUParticles2D'" saat proyektil skill membentur target.
+	# CPU dipilih (bukan GPU) supaya burst 12 partikel sekali pakai ini tidak
+	# perlu kompilasi shader partikel — aman juga di Android/GLES, sama
+	# alasannya dengan partikel cuaca ArenaMap.gd.
+	p.direction = Vector2(0, -1)
+	p.spread = 180.0
+	p.initial_velocity_min = 60.0
+	p.initial_velocity_max = 150.0
+	p.gravity = Vector2.ZERO
+	p.scale_amount_min = 1.0
+	p.scale_amount_max = 2.4
+	p.color = _impact_color
 	add_child(p)
 	p.emitting = true
 	queue_redraw()

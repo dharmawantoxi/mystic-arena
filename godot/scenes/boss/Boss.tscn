@@ -1,22 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://boss_mystic"]
+[gd_scene load_steps=4 format=3 uid="uid://boss_mystic"]
 
 [ext_resource type="Script" path="res://scenes/boss/Boss.gd" id="1"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_boss"]
 radius = 26.0
 height = 66.0
-
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_aura"]
-lifetime_randomness = 0.35
-emission_shape = 1
-emission_sphere_radius = 26.0
-direction = Vector3(0, -1, 0)
-spread = 55.0
-initial_velocity_min = 12.0
-initial_velocity_max = 34.0
-gravity = Vector3(0, -8, 0)
-scale_min = 0.35
-scale_max = 1.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_boss_fill"]
 bg_color = Color(0.95, 0.28, 0.24, 1)
@@ -41,11 +29,25 @@ centered = true
 
 [node name="FX" type="Node2D" parent="."]
 
-[node name="Aura" type="GPUParticles2D" parent="FX"]
+; Aura CPUParticles2D (bukan GPU): GPUParticles butuh compute/shader partikel
+; yang di renderer Compatibility Android/GLES di-fallback, sama alasannya
+; dengan partikel cuaca ArenaMap.gd. Untuk 24 partikel CPU lebih murah
+; daripada satu draw pass shader. Parameter emisi = properti node langsung
+; (Vector2 + scale_amount_*), BUKAN ParticleProcessMaterial.
+[node name="Aura" type="CPUParticles2D" parent="FX"]
 emitting = true
 amount = 24
 lifetime = 1.2
-process_material = SubResource("ParticleProcessMaterial_aura")
+lifetime_randomness = 0.35
+emission_shape = 1
+emission_sphere_radius = 26.0
+direction = Vector2(0, -1)
+spread = 55.0
+initial_velocity_min = 12.0
+initial_velocity_max = 34.0
+gravity = Vector2(0, -8)
+scale_amount_min = 0.35
+scale_amount_max = 1.0
 
 [node name="UI" type="CanvasGroup" parent="."]
 

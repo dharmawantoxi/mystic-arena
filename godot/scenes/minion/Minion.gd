@@ -11,6 +11,7 @@ const UnitSilhouetteScript = preload("res://scripts/render/UnitSilhouette.gd")
 const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
 const StatusEffectsScript = preload("res://scripts/systems/StatusEffects.gd")
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
+const HurtFlashScript = preload("res://scripts/render/HurtFlash.gd")
 const FPS := 60.0
 
 @export var minion_type: String = "goblin"
@@ -51,6 +52,7 @@ func _ready():
 	apply_minion_data()
 	status = StatusEffectsScript.new(self)
 	build_visual()
+	hurt_flash = HurtFlashScript.new(self, body) # setelah build_visual
 	update_ui()
 	# Teriakan spawn khusus goblin (paritas Minion.__init__ _entity.py:5495-5496,
 	# volume_mult 0.7, throttle 200 ms). Jenis minion lain lahir tanpa suara —
@@ -126,11 +128,15 @@ func build_visual():
 
 var silhouette = null
 var custom_visual = null
+## Flash putih hurt_flash_timer pygame (_entity.py:5545-5551) — lihat HurtFlash.gd
+var hurt_flash = null
 
 
 func _physics_process(delta):
 	if is_dead:
 		return
+	if hurt_flash != null:
+		hurt_flash.tick(self, delta)
 	if status != null:
 		status.tick(delta)
 	attack_timer = maxf(0.0, attack_timer - delta)
@@ -253,13 +259,13 @@ func take_damage(amount: float, from_team: String = "", dmg_type: String = "norm
 		die(from_team)
 
 
+## Nyalakan flash manual (dipertahankan untuk pemanggil lama seperti
+## take_damage). Sebenarnya sudah redundan: HurtFlash.tick() memantau `hp`
+## sehingga damage dari jalur MANA PUN — termasuk CombatSystem.apply_damage
+## yang dipakai serangan hero/menara — tetap memicu flash.
 func _flash() -> void:
-	if silhouette != null and is_instance_valid(silhouette):
-		silhouette.flash_amount = 1.0
-		create_tween().tween_property(silhouette, "flash_amount", 0.0, 0.1)
-	elif body:
-		body.modulate = Color(1.7, 1.7, 1.7, 1)
-		create_tween().tween_property(body, "modulate", Color(1, 1, 1, 1), 0.1)
+	if hurt_flash != null:
+		hurt_flash.trigger()
 
 
 func heal(amount: float) -> void:
