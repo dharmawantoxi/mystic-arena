@@ -48,10 +48,6 @@ const TRUE_BOSS_TOWER_KILLS := 6
 @export var respawn_delay: float = 3.0
 ## true = kamera mengikuti pusat pertempuran, false = kamera diam membingkai arena
 @export var camera_follows_action: bool = false
-## Selang antar keputusan AI (tim red) untuk membangun/meng-upgrade menara
-@export var ai_think_interval: float = 5.0
-## Peluang AI benar-benar memakai gold-nya tiap siklus (0..1)
-@export var ai_aggression: float = 0.9
 ## Boss demo langsung turun saat battle mulai — dimatikan default karena sekarang
 ## ada jadwal mini boss/true boss sungguhan dari levels.json.
 @export var spawn_demo_boss: bool = false
@@ -63,7 +59,8 @@ var _camera: Camera2D = null
 ## _draw() milik Main sendiri akan tertutup ArenaMap)
 var _slot_layer: Node2D = null
 var _respawn_pending: bool = false
-var _ai_timer: float = 0.0
+## AIPlayer telur (port _entity.AIPlayer — dibuat di _ready, dikelola sendiri)
+var _ai = null
 var _slot_redraw_timer: float = 0.0
 var _slot_pulse: float = 0.0
 
@@ -123,6 +120,12 @@ func _ready():
 			node.process_mode = Node.PROCESS_MODE_PAUSABLE
 	if _slot_layer != null:
 		_slot_layer.process_mode = Node.PROCESS_MODE_PAUSABLE
+	# AIPlayer Dire (port penuh _entity.AIPlayer): auto-reset lewat signal
+	# level_started, self-managed via _process — Main tidak lagi punya _ai_tick.
+	_ai = preload("res://scripts/systems/AIPlayer.gd").new()
+	_ai.name = "AIPlayer"
+	add_child(_ai)
+	_ai.process_mode = Node.PROCESS_MODE_PAUSABLE
 
 func _build_slot_layer() -> void:
 	_slot_layer = Node2D.new()
@@ -174,7 +177,8 @@ func _start_battle() -> void:
 ## Aman karena _start_battle selalu jalan dari deferred call / input / timer,
 ## tidak pernah dari dalam _physics_process unit.
 func _clear_field() -> void:
-	for group in ["heroes", "bosses", "minions", "towers", "nexus", "bullets"]:
+	for group in ["heroes", "bosses", "minions", "towers", "nexus", "bullets",
+			"skill_projectiles"]:
 		for n in get_tree().get_nodes_in_group(group):
 			if is_instance_valid(n):
 				n.free()
@@ -296,18 +300,6 @@ func _boss_tick(_delta: float) -> void:
 		print("[Main] TRUE BOSS %s turun (%d menara Dire hancur)" % [
 			true_boss, red_towers_destroyed])
 
-## AI tim red: menabung di GameManager.ai_gold, dibelanjakan di sini
-func _ai_tick(delta: float) -> void:
-	if GameManager.state != "playing":
-		return
-	_ai_timer += delta
-	if _ai_timer < ai_think_interval:
-		return
-	_ai_timer = 0.0
-	if randf() > ai_aggression:
-		return
-	GameManager.ai_try_build_or_upgrade()
-
 # ══════════════════════════════════════════════════════════
 #  POSISI
 # ══════════════════════════════════════════════════════════
@@ -367,11 +359,11 @@ func _arena_size() -> Vector2:
 
 func _process(delta: float) -> void:
 	# Main PROCESS_MODE_ALWAYS (supaya P/ESC bisa resume) -> jadwal boss, AI, dan
-	# redraw slot harus ikut beku saat pause.
+	# redraw slot harus ikut beku saat pause. AI Dire dijalankan oleh node
+	# AIPlayer sendiri (PROCESS_MODE_PAUSABLE).
 	if get_tree().paused:
 		return
 	_boss_tick(delta)
-	_ai_tick(delta)
 	_slot_pulse += delta
 	# redraw slot 10x/detik: cukup halus untuk pulse, jauh lebih murah dari 60fps
 	_slot_redraw_timer += delta

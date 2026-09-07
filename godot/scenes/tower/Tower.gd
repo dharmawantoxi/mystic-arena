@@ -164,10 +164,15 @@ func sell_value() -> int:
 ## dan belum aktif (paritas Tower.can_activate_regen_shield)
 func can_activate_regen_shield() -> bool:
 	var cfg: Dictionary = TowerDB.regen_shield_cfg()
+	# Paritas pygame: Regen Shield tersedia untuk SEMUA tim (_entity.py:6232
+	# AIPlayer._try_activate_regen_shield memakai tower merah). `is_player_built`
+	# hanya menandai tower yang dibeli pemain untuk bisa dijual, bukan gerbang
+	# fitur — jadi tower Dire (AI) juga boleh membelinya.
+	var owned: bool = is_player_built or str(team) == "red"
 	return bool(cfg.get("enabled", true)) \
 			and level >= TowerDB.regen_shield_min_level() \
 			and not regen_shield_active and not is_dead \
-			and is_player_built
+			and owned
 
 
 func regen_shield_cost() -> int:

@@ -20,6 +20,7 @@ const StatusEffectsScript = preload("res://scripts/systems/StatusEffects.gd")
 const ItemInventoryScript = preload("res://scripts/items/ItemInventory.gd")
 const SkillBookScript = preload("res://scripts/skills/SkillBook.gd")
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
+const SkillProjectileScript = preload("res://scenes/fx/SkillProjectile.gd")
 
 const FPS := 60.0
 ## paritas _entity.Hero 3467-3472
@@ -28,8 +29,12 @@ const AGGRO_RANGE := 250.0
 const BASE_HEAL_PER_SEC := 3.0 * FPS      # base_heal_rate 3.0/frame
 const PASSIVE_HEAL_PER_SEC := 0.15 * FPS  # passive_heal_rate 0.15/frame
 const BASE_HEAL_RADIUS := 100.0
+## Retreat: masuk saat HP < 20%, keluar saat HP >= 80% — paritas
+## retreat_hp_ratio / heal_target_ratio _entity.py:3469-3473. Godot lama
+## keluar di 60% (RETREAT_UNTIL 0.60) sehingga hero kembali bertarung 170 HP
+## lebih cepat dari pygame; sekarang disamakan 1:1.
 const RETREAT_BELOW := 0.20
-const RETREAT_UNTIL := 0.60
+const RETREAT_UNTIL := 0.80
 
 @export var hero_type: String = "kaizen"
 @export var team: String = "blue"
@@ -75,6 +80,15 @@ var combat_reset: float = 5.0
 var auto_cast_timer: float = 0.0
 ## Hero milik pemain yang sedang dipilih -> skill tidak di-auto-cast
 var player_controlled: bool = false
+## Destination AI (paritas destination / destination_auto _entity.py:4045-4085).
+## `destination_auto` = perintah dari AIPlayer (bukan ketukan pemain): dibatalkan
+## segera setelah ada musuh dalam aggro_range supaya hero menyergap target di
+## perjalanan, bukan berbaris lurus ke titik jalur (fix _entity.py:4038-4048).
+var destination: Vector2 = Vector2.INF
+var destination_auto: bool = false
+## Kill hero-vs-hero (paritas _core.py:2506-2515 _process_hero_kill) — dipakai
+## AIPlayer sebagai prioritas upgrade & beli item (sort by kills pygame).
+var kills: int = 0
 
 # ── Sistem ──
 var status = null      # StatusEffects
@@ -215,13 +229,50 @@ func _physics_process(delta):
 	if not target or not is_instance_valid(target) or bool(target.get("is_dead")):
 		target = CombatSystem.nearest_enemy(self, HUNT_RANGE)
 
+	# ═══ RETREAT MASUK/KELUAR (paritas _entity.py:3983-3994) ═══
+	# Dicek SEBELUM state machine supaya transisi terjadi di frame yang sama:
+	# masuk saat hp_ratio < 0.20, keluar saat sudah >= 0.80.
+	var hp_ratio := hp / max_hp if max_hp > 0.0 else 0.0
+	if hp_ratio < RETREAT_BELOW:
+		is_retreating = true
+	if is_retreating and hp_ratio >= RETREAT_UNTIL:
+		is_retreating = false
+
 	var is_moving := false
 	var eff_speed := _eff_speed()
 
+	# ── 1. RETREAT + HEAL (paritas _entity.py:4006-4028) ──
+	# Jalan ke base; di dekat base berhenti dan heal 180 HP/s (_regen);
+	# sambil jalan ATAU heal, tetap serang musuh yang masuk attack range.
 	if is_retreating:
-		is_moving = _move_to(own_base(), eff_speed)
-		if hp >= max_hp * RETREAT_UNTIL:
-			is_retreating = false
+		var base := own_base()
+		var foe := CombatSystem.nearest_enemy(self, attack_range)
+		if foe != null:
+			target = foe
+			try_attack()
+		else:
+			target = null
+		if global_position.distance_to(base) > BASE_HEAL_RADIUS:
+			is_moving = _move_to(base, eff_speed)
+
+	# ── 2. DESTINATION AI / pemain (paritas _entity.py:4040-4085) ──
+	# Destination auto (dari AIPlayer._assign_hero_lane) dibuang begitu ada
+	# musuh dalam aggro_range sehingga hero menyergap di perjalanan. Sambil
+	# jalan tetap menyerang musuh dalam range.
+	elif has_destination():
+		var dpos := destination
+		if destination_auto and CombatSystem.nearest_enemy(self, AGGRO_RANGE) != null:
+			clear_destination()
+		else:
+			var dist := global_position.distance_to(dpos)
+			if dist <= 8.0:
+				clear_destination()
+			else:
+				var dfoe := CombatSystem.nearest_enemy(self, attack_range)
+				if dfoe != null:
+					target = dfoe
+					try_attack()
+				is_moving = _move_to(dpos, eff_speed)
 	elif target != null:
 		var dist = global_position.distance_to(target.global_position)
 		facing = 1 if target.global_position.x > global_position.x else -1
@@ -234,10 +285,6 @@ func _physics_process(delta):
 	else:
 		# Push ke base musuh (mirip pygame PUSH) — titiknya diambil dari ArenaMap
 		is_moving = _move_to(enemy_base(), eff_speed * 0.6)
-
-	# Mundur kalau HP kritis (paritas is_retreating pygame)
-	if not is_retreating and max_hp > 0.0 and hp < max_hp * RETREAT_BELOW:
-		is_retreating = true
 
 	# Painter's algorithm pygame: unit lebih bawah menutupi yang di atas
 	z_index = int(global_position.y)
@@ -259,6 +306,23 @@ func _move_to(dest: Vector2, speed: float) -> bool:
 	visual_root.scale.x = facing
 	move_and_slide()
 	return true
+
+
+## Posisi tujuan AI/pemain (paritas move_to(x, y, auto) _entity.py:
+## destination tuple + destination_auto). `auto=true` = perintah AIPlayer,
+## dibatalkan oleh aggro (lihat _physics_process state 2).
+func set_destination(dest: Vector2, auto: bool = false) -> void:
+	destination = dest
+	destination_auto = auto
+
+
+func clear_destination() -> void:
+	destination = Vector2.INF
+	destination_auto = false
+
+
+func has_destination() -> bool:
+	return destination != Vector2.INF
 
 
 ## Speed efektif: slow menara, buff Windrun, item move speed, stun (paritas _eff_speed)
@@ -293,29 +357,55 @@ func _regen(delta: float) -> void:
 	CombatSystem.heal_unit(self, rate * delta)
 
 
-## AI memakai skill sendiri; hero yang dipilih pemain menunggu input Q/W/E/R
+## AI memakai skill sendiri; hero yang dipilih pemain menunggu input Q/W/E/R.
+## Paritas _try_auto_cast _entity.py:4149-4240 — kombo prioritas:
+##   R (kapan pun siap) → E (2+ musuh di skill_range) → W (HP < 40%) → Q.
+## Godot lama salah urut (R butuh 3+ musuh, Q didahulukan) sehingga
+## ultimate & skill defensive nyaris tidak pernah dipakai AI.
 func _auto_cast(delta: float) -> void:
 	if player_controlled or skills == null:
+		return
+	# pygame _disabled = stun atau Tempest Veil (_entity.py:3801-3802):
+	# keduanya menonaktifkan pencarian auto-cast sepenuhnya.
+	if status != null and status.has_method("is_stunned") and status.is_stunned():
+		return
+	if items != null and items.is_veiled():
 		return
 	auto_cast_timer -= delta
 	if auto_cast_timer > 0.0:
 		return
 	auto_cast_timer = 0.4
+	# Musuh hidup dalam skill_range; kalau tidak ada, JANGAN cast apa pun
+	# (aturan ketat anti buang skill ke area kosong, _entity.py:4161-4164).
 	var enemies := CombatSystem.enemies_in_radius(team, global_position, skill_range)
 	if enemies.is_empty():
 		return
-	# Ultimate dulu kalau kena banyak musuh, lalu Q; W/E untuk situasi khusus
-	if enemies.size() >= 3 and skills.is_ready("r"):
-		skills.cast("r")
+	# Target = musuh TERDEKAT dalam skill_range (bukan target serangan yang
+	# bisa berada di luar jangkauan skill) — paritas _entity.py:4173-4177.
+	var nearest: Node2D = null
+	var nd := 1e18
+	for e in enemies:
+		var d: float = global_position.distance_to((e as Node2D).global_position)
+		if d < nd:
+			nd = d
+			nearest = e as Node2D
+	target = nearest
+	# 1. R: ultimate dipakai kapan pun cooldown siap — kondisi 3+ musuh yang
+	# hampir tidak pernah terpenuhi membuat R terdengar mati (_entity.py:4179).
+	if skills.is_ready("r"):
+		if skills.cast("r"):
+			return
+	# 2. E: hanya kalau 2+ musuh dekat (AI_SKILL_USE_MIN_ENEMIES _core.py:1097).
+	if skills.is_ready("e") and enemies.size() >= 2:
+		skills.cast("e")
 		return
-	if skills.is_ready("q"):
-		skills.cast("q")
-		return
-	if hp < max_hp * 0.5 and skills.is_ready("w"):
+	# 3. W: defensive, hanya saat HP < 40%.
+	if skills.is_ready("w") and hp < max_hp * 0.4:
 		skills.cast("w")
 		return
-	if skills.is_ready("e"):
-		skills.cast("e")
+	# 4. Q: basic, paling sering.
+	if skills.is_ready("q"):
+		skills.cast("q")
 
 
 func _drive_visual(is_moving: bool, delta: float) -> void:
@@ -415,6 +505,39 @@ func _shoot_projectile(t: Node2D, dmg: float) -> void:
 	GameManager.attach_fx(b)
 
 
+## Proyektil skill visual-only (paritas _spawn_skill_projectile
+## _entity.py:4509-4530). Damage otoritatif tetap instan di SkillBook —
+## sama seperti pygame; proyektil ini HANYA memberi visual homing terarah.
+func spawn_skill_projectile(t: Node2D) -> void:
+	if t == null or not is_instance_valid(t) or bool(t.get("is_dead")):
+		# Paritas _spawn_projectile _entity.py:4460-4462: target hilang/mati
+		# -> tidak ada proyektil sama sekali.
+		return
+	# Batas 6 proyektil per hero (paritas _HERO_PROJ_MAX _entity.py:3225-3232).
+	# pygame saat penuh MEMBUANG proyektil skill paling tua (4474-4482), jadi di
+	# sini yang di-drop juga proyektil skill tertua milik hero ini. Deviasi
+	# kecil: peluru basic attack (TowerBullet) tidak ikut dihitung — node
+	# terpisah dengan batas umur sendiri (4 detik) dan mati saat target mati.
+	if get_tree() != null:
+		var owned: Array = []
+		for p in get_tree().get_nodes_in_group("skill_projectiles"):
+			if p.get("source") == self:
+				owned.append(p)
+		if owned.size() >= 6:
+			var oldest = null
+			for p in owned:
+				if oldest == null or float(p.get("age")) > float(oldest.get("age")):
+					oldest = p
+			if oldest != null:
+				(oldest as Node).queue_free()
+	var p = SkillProjectileScript.new()
+	p.setup(t, hero_type, self)
+	# Spawn sedikit di atas hero (paritas oy = self.y - 5, arah awal langsung
+	# ke target _entity.py:4491-4493).
+	p.global_position = global_position + Vector2(0, -5)
+	GameManager.attach_fx(p)
+
+
 # ══════════════════════════════════════════════════════════
 #  DAMAGE & MATI
 # ══════════════════════════════════════════════════════════
@@ -458,6 +581,14 @@ func heal(amount: float) -> void:
 
 
 func die(killer = null):
+	# Atribusi kill hero-vs-hero (paritas _core.py:2490-2515
+	# _process_hero_kill): hanya hero yang mencatat kills (dipakai AIPlayer
+	# untuk prioritas upgrade & beli item). Kill oleh tower/minion tidak
+	# dihitung — sama seperti pygame.
+	if killer != null and is_instance_valid(killer) and killer != self \
+			and "hero_type" in killer and "skills" in killer \
+			and str(killer.get("team")) != team:
+		killer.kills = int(killer.get("kills", 0)) + 1
 	is_dead = true
 	add_to_group("dead")
 	# Matikan fisika dulu: mayat tidak boleh menahan langkah unit lain

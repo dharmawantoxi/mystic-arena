@@ -139,6 +139,104 @@ func is_melee_only(item_id: String) -> bool:
 	return bool(get_item(item_id).get("melee_only", false))
 
 
+func is_magic_only(item_id: String) -> bool:
+	return bool(get_item(item_id).get("magic_only", false))
+
+
+## Kata kunci role yang dianggap beratribut MAGIC — paritas
+## hero_items.MAGIC_ROLE_KEYWORDS (hero_items.py:151-163). "Anti-Mage"
+## sengaja dikecualikan di is_magic_hero(): dia pemburu penyihir, bukan
+## penyihir.
+const MAGIC_ROLE_KEYWORDS: Array = [
+	"mage", "magic", "sorcer", "caster", "warlock", "witch",
+	"sage", "prophet", "priestess", "pyro", "necro", "shaman",
+	"summoner", "chorister", "farseer", "starweaver", "hex",
+	"eldritch",
+]
+
+
+## True kalau `hero` beratribut Magic — paritas hero_items.is_magic_hero
+## (hero_items.py:166-187). Dipakai saran item AI & validasi magic_only,
+## jadi harus dicek dari ROLE (bukan dmg_school) supaya angka AI = pygame.
+func is_magic_hero(hero) -> bool:
+	if hero == null:
+		return false
+	var role := str(hero.get("role", "")).to_lower()
+	if role.is_empty():
+		return false
+	if "anti-mage" in role:
+		return false
+	for kw in MAGIC_ROLE_KEYWORDS:
+		if kw in role:
+			return true
+	return false
+
+
+## Item berikutnya terbaik untuk hero AI — paritas 1:1
+## hero_items.suggest_item_for_hero (hero_items.py:2936-3006).
+## `owned` = daftar item yang sudah dimiliki, pool disaring per role,
+## lalu cleave_axe ditaruh paling depan untuk hero melee dan
+## holy_rapier di belakang untuk semua (persis pygame).
+func suggest_item(hero, owned: Array) -> String:
+	if hero == null:
+		return ""
+	var rng := float(hero.get("base_range")) if "base_range" in hero \
+		else float(hero.get("range", 100))
+	var is_melee := rng <= 80.0
+	# Pygame memakai hero.range (base, tanpa bonus item); Godot padanannya
+	# adalah base_range — attack_range sudah termasuk bonus Gale Pike dll.
+	var role := str(hero.get("role", "")).to_lower()
+	var pool: Array = []
+	if "tank" in role or "bruiser" in role or "fighter" in role:
+		pool = ["leviathan_heart", "scarlet_bulwark", "searbrand",
+			"razor_carapace", "everfrost_guard", "steel_aegis",
+			"abyss_breaker", "solar_brand", "demon_maw",
+			"corroder", "fenrir_chain", "octarine_core",
+			"moon_shard"]
+	elif "marksman" in role or "assassin" in role:
+		pool = ["dead_edge", "basilisk_breath", "gale_pike",
+			"frostbound_eye", "sundering_cudgel", "searbrand",
+			"monarch_wings", "thunder_coil", "sanguine_thorn",
+			"moon_shard", "runic_gavel", "corroder", "demon_maw",
+			"octarine_core", "steel_aegis"]
+	elif "mage" in role or "trickster" in role or is_magic_hero(hero):
+		# Catatan paritas: pygame mengecek "mage" in role APA ADANYA, jadi
+		# "Boss/Anti-Mage" masuk pool Magic di sini — walau is_magic_hero
+		# menolak "anti-mage". Efek akhirnya sama: item magic_only ditolak
+		# hero_items.HeroItemInventory.add (_entity path) karena
+		# is_magic_hero-nya False.
+		pool = ["astral_codex", "fulgur_scepter", "sage_scepter",
+			"hex_idol", "rift_veil", "vital_stone",
+			"spectral_charm", "vine_rod", "octarine_core",
+			"runic_gavel", "searbrand", "solar_brand",
+			"frostbound_eye", "everfrost_guard", "tempest_vane",
+			"corroder", "moon_shard", "thunder_coil",
+			"steel_aegis", "demon_maw", "dead_edge"]
+	else:
+		pool = ["steel_aegis", "searbrand", "sundering_cudgel",
+			"frostbound_eye", "razor_carapace", "moon_shard",
+			"demon_maw", "leviathan_heart", "scarlet_bulwark",
+			"solar_brand", "thunder_coil", "monarch_wings",
+			"octarine_core", "gale_pike", "dead_edge", "corroder",
+			"everfrost_guard"]
+	if is_melee:
+		pool = ["cleave_axe"] + pool + ["holy_rapier"]
+	else:
+		pool = pool + ["holy_rapier"]
+	for sid in pool:
+		if owned.has(sid):
+			continue
+		var data := get_item(sid)
+		if data.is_empty():
+			continue
+		if bool(data.get("melee_only", false)) and not is_melee:
+			continue
+		if bool(data.get("magic_only", false)) and not is_magic_hero(hero):
+			continue
+		return sid
+	return ""
+
+
 func drops_on_death(item_id: String) -> bool:
 	return bool(get_item(item_id).get("drops_on_death", false))
 

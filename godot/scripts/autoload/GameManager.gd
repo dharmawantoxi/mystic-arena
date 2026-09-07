@@ -1063,41 +1063,4 @@ func try_buy_nexus_shield() -> bool:
 	return true
 
 
-## AI (tim red) membangun/meng-upgrade menara dengan saldo sendiri.
-## Penyederhanaan dari _entity.AIPlayer (6000+ baris): AI hanya mengurus menara.
-func ai_try_build_or_upgrade() -> bool:
-	if state != "playing":
-		return false
-	# 1. coba upgrade menara yang sudah ada (jalur dipilih acak)
-	var candidates: Array = []
-	for n in get_tree().get_nodes_in_group("towers"):
-		if is_instance_valid(n) and str(n.get("team")) == "red" and not bool(n.get("is_dead")):
-			candidates.append(n)
-	if not candidates.is_empty():
-		var t = candidates[randi() % candidates.size()]
-		if t.can_upgrade():
-			var path := str(t.get("tower_type"))
-			if int(t.get("level")) <= 1:
-				var types: Array = TowerDB.tower_types()
-				path = str(types[randi() % types.size()])
-			var cost: int = t.upgrade_cost(path)
-			if cost > 0 and ai_spend(cost):
-				t.upgrade(path)
-				return true
-	# 2. bangun menara baru di slot kosong
-	var free := free_slots_for("red")
-	if free.is_empty():
-		return false
-	var build := TowerDB.build_cost()
-	if not ai_spend(build):
-		return false
-	var idx: int = free[randi() % free.size()]
-	var s: Dictionary = build_slots[idx]
-	s["taken"] = true
-	# AI memilih jalur acak sejak awal (pygame AIPlayer juga membangun campuran)
-	var types: Array = TowerDB.tower_types()
-	var pick := str(types[randi() % types.size()])
-	var tower = spawn_tower("red", s["pos"], str(s["lane"]), "outer", pick, 1)
-	s["tower"] = tower
-	tower_built.emit(tower)
-	return true
+
