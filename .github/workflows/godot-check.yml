@@ -209,6 +209,23 @@ jobs:
             exit 1
           fi
 
+      # ── 4b. BossCoreParityTest: paritas inti boss (resilience/anti-burst,
+      # entrance, enrage/frenzy, tenacity, heal true boss, cleave, ability
+      # generik) vs fixture boss_core dari Pygame Boss.update yang asli.
+      - name: BossCoreParityTest (data 216 boss + perilaku inti boss)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/BossCoreParityTest.tscn --quit-after 420 2>&1 | tee /tmp/boss.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/boss.log --label "BossCoreParityTest" \
+              --require "[BossCoreParityTest] PASS" > /tmp/boss.gate 2>&1; then
+            cat /tmp/boss.gate
+          else
+            cat /tmp/boss.gate
+            echo "::error::BOSS-FAIL-TAIL: $(tail -60 /tmp/boss.log | tr '\n' ' | ' | cut -c1-3500)"
+            echo "::error::BOSS-FAIL-LINES: $(grep -m8 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/boss.log | tr '\n' ' | ' | cut -c1-2000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |

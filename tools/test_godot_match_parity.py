@@ -44,6 +44,82 @@ def ai_income_expression(core):
     raise AssertionError("Pygame AI passive income disappeared")
 
 
+def smart_ai_boss_types():
+    """Boss types yang punya rantai smart-AI di Boss.update pygame.
+
+    Diekstrak dari AST method update() (rantai `elif self.boss_type == "..."`),
+    bukan disalin manual — jadi kalau Pygame menambah kit boss, fixture Godot
+    ikut berubah dan BossCoreParityTest mendeteksinya.
+    """
+    import bosses.base_boss as bb
+    tree = ast.parse(textwrap.dedent(inspect.getsource(bb.Boss.update)))
+    chain = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.If):
+            test = node.test
+            if (isinstance(test, ast.Compare) and len(test.ops) == 1
+                    and isinstance(test.ops[0], ast.Eq)):
+                left = test.left
+                comp = test.comparators[0]
+                if (isinstance(left, ast.Attribute) and left.attr == "boss_type"
+                        and isinstance(comp, ast.Constant)
+                        and isinstance(comp.value, str)):
+                    chain.add(comp.value)
+    return chain
+
+
+def make_boss_fixture():
+    """Golden data inti boss, dievaluasi dari Boss pygame ASLI (base_boss.py):
+    stat awal + hasil update() dengan enrage yang benar-benar terpicu."""
+    from bosses.base_boss import Boss
+    from bosses import boss_data as bd
+    all_bosses = bd.get_all_boss_types()
+    fps = 60
+    smart = smart_ai_boss_types()
+    rows = []
+    for boss_type in sorted(all_bosses):
+        b = Boss(boss_type)
+        row = {
+            "boss_type": boss_type,
+            "boss_class": b.boss_class,
+            "hp": int(b.max_hp),
+            "damage": int(b.damage),
+            "speed": float(b.speed),
+            "range": int(b.range),
+            "attack_cooldown_frames": int(b.attack_cooldown),
+            "radius": int(b.radius),
+            "armor": int(b.armor),
+            "magic_resist": float(b.magic_resist),
+            "damage_reduction": float(b.damage_reduction),
+            "max_damage_per_hit": int(b.max_damage_per_hit),
+            "tenacity": float(b.tenacity),
+            "entrance_frames": int(b.entrance_timer),
+            "cleave_radius": int(b.cleave_radius),
+            "cleave_ratio": float(b.cleave_ratio),
+            "ability_cooldown_frames": int(b.ability_cooldown_max),
+            "ability_damage": int(b.ability_damage),
+            "ability_range": int(b.ability_range),
+            "ability2_cooldown_frames": int(b.ability2_cooldown_max),
+            "ability2_heal_pct": float(b.ability2_heal_pct),
+            "uses_smart_ai": boss_type in smart,
+            # `_get_boss_stats` menyediakan kiting ranged (min/prefer distance)
+            "min_distance": int(b._get_boss_stats().get("min_distance", 200)),
+            "prefer_distance": int(b._get_boss_stats().get("prefer_distance", 280)),
+        }
+        # ── Enrage: jalankan update() pygame beneran dengan HP di ambang.
+        #    update([], [], []) cukup — cek enrage terjadi sebelum pencarian
+        #    target. Data setelah enrage dipakai Godot sebagai oracle.
+        b.entrance_timer = 0
+        b.hp = int(b.max_hp * (0.50 if b.boss_class == "true" else 0.40))
+        b.update([], [], [])
+        row["enraged"] = bool(b.is_enraged)
+        row["enraged_speed"] = float(b.speed)
+        row["enraged_damage"] = int(b.damage)
+        row["enraged_attack_cd_frames"] = int(b.attack_cooldown)
+        rows.append(row)
+    return {"bosses": rows, "smart_ai_count": len(smart)}
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -63,6 +139,7 @@ def make_fixture(core, entity, levels, paths):
         "ai_income": [],
         "minions": [],
         "lane_endpoints": {},
+        "boss_core": make_boss_fixture(),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -150,7 +227,8 @@ def main():
             "Pygame gameplay changed. Review the Godot implementation, then run "
             "tools/test_godot_match_parity.py --write-fixture")
         print("[PygameMatchParity] PASS: fixture matches Pygame rules, all 54 levels, "
-              "50 wave compositions and 25 minion/nexus combinations")
+              "50 wave compositions, 25 minion/nexus combinations and "
+              f"{len(actual['boss_core']['bosses'])} boss-core records")
 
 
 if __name__ == "__main__":

@@ -51,6 +51,55 @@ var magic_resist: float = 0.0
 var combat_timer: float = 0.0
 var combat_reset: float = 5.0
 
+# ══════════════════════════════════════════════════════════
+#  INTI BOSS — paritas Boss.__init__ bosses/base_boss.py:375-475
+#  (Fase 6). Semua field ini dibaca dari BossDB/bosses.json yang
+#  diekspor converter dari bosses/boss_data.py + hero_archetypes.
+# ══════════════════════════════════════════════════════════
+## Inherent damage reduction (True Boss 30%, Mini Boss 20%) — base_boss.py:443
+var damage_reduction: float = 0.20
+## Tenacity: slow magnitude & duration dikurangi 50% (base_boss.py:444)
+var tenacity: float = 0.50
+## Anti-burst: cap damage per hit (True 8% max HP, Mini 12%) — :445
+var max_damage_per_hit: float = 0.0
+## Ability generik (fallback boss tanpa smart-AI) — base_boss.py:388-390
+var ability_cooldown_max: int = 0
+var ability_damage: int = 0
+var ability_range: float = 0.0
+var ability_timer: float = 0.0
+var ability_active: bool = false
+var ability_active_timer: float = 0.0
+## Ability kedua true boss (heal saat HP < 30%) — base_boss.py:391-393
+var ability2_cooldown_max: int = 0
+var ability2_heal_pct: float = 0.0
+var ability2_timer: float = 0.0
+## Enrage / Frenzy — base_boss.py:467-469
+var is_enraged: bool = false
+var enrage_triggered: bool = false
+var enrage_pulse: float = 0.0
+## Entrance freeze (True 180 frame = 3 s, Mini 120 frame = 2 s) — :478
+var entrance_timer: float = 0.0
+## Cleave splash serangan dasar — base_boss.py:471-472
+var cleave_radius: float = 80.0
+var cleave_ratio: float = 0.40
+## Jarak kiting ranged (histeresis) — dipakai kalau boss masuk daftar
+## RANGED_KITE (base_boss.py update :778-797; stat di _get_boss_stats :5921)
+var min_distance: float = 200.0
+var prefer_distance: float = 280.0
+var kite_mode: String = "hold"
+## Penghitung frame animasi (enrage mempercepat recovery cooldown 1.5x —
+## base_boss.py:652-657: timer/ability_timer turun ekstra tiap 2 frame)
+var _anim_frame: int = 0
+var _enrage_extra_timer: float = 0.0
+## True saat boss_type punya smart-AI spesifik di Pygame
+## (bosses/base_boss.py update: rantai elif per boss_type). Boss yang TIDAK
+## punya smart-AI memakai ability generik _use_ability (:1071-1106).
+var has_smart_ai: bool = false
+## Defense boost (hero Drakar W): menaikkan damage_reduction ke 45% selama
+## aktif (base_boss.py take_damage :6026-6028).
+var defense_boost: bool = false
+
+
 @onready var visual: Node2D = $Visual
 @onready var sprite: AnimatedSprite2D = $Visual/AnimatedSprite2D
 @onready var shadow: Polygon2D = $Shadow
@@ -58,7 +107,12 @@ var combat_reset: float = 5.0
 @onready var hp_bar: ProgressBar = $UI/HPBar
 @onready var name_label: Label = $UI/NameLabel
 
-const AGGRO_RADIUS := 460.0
+const FPS := 60.0
+const AGGRO_MARGIN := 100.0
+## Boss ranged yang kiting dengan histeresis (base_boss.py:778-781)
+const RANGED_KITE: Array = ["ancient_apparition", "morgath", "razak", "varkul",
+	"xerathis", "nyzrak", "syrentha", "thalgryn", "nyxarath", "malzareth",
+	"akashari", "vorenmarr"]
 
 func _ready():
 	var s: Dictionary = BossDB.get_boss(boss_type)
@@ -70,7 +124,7 @@ func _ready():
 		move_speed = float(s.get("speed", 0.85)) * 60.0
 		attack_range = float(s.get("range", 50)) + 15.0
 		attack_cooldown = float(s.get("attack_cooldown", 43)) / 60.0
-		dmg_school = "magic" if str(s.get("boss_class", "")) == "true" else "physical"
+		dmg_school = "physical" # serangan dasar boss SELALU fisik (base_boss.py:707)
 		armor = float(s.get("armor", 0))
 		magic_resist = float(s.get("magic_resist", 0.0))
 	status = StatusEffectsScript.new(self)
@@ -81,7 +135,29 @@ func _ready():
 	fill_dark = fill_color.darkened(0.4)
 	entrance_color = _parse_color(s.get("entrance_color", ""), fill_color)
 	gold_reward = int(s.get("gold_reward", 0))
-	radius = 26.0 if boss_class == "true" else 22.0
+	radius = float(s.get("radius", 42.0 if boss_class == "true" else 30.0))
+	# ── INTI BOSS (paritas Boss.__init__ base_boss.py:375-475) ──
+	damage_reduction = 0.30 if boss_class == "true" else 0.20
+	max_damage_per_hit = max_hp * (0.08 if boss_class == "true" else 0.12)
+	ability_cooldown_max = int(s.get("ability_cooldown", 0))
+	ability_damage = int(s.get("ability_damage", 0))
+	ability_range = float(s.get("ability_range", 0))
+	ability2_cooldown_max = int(s.get("ability2_cooldown", 0))
+	ability2_heal_pct = float(s.get("ability2_heal_pct", 0))
+	min_distance = float(s.get("min_distance", 200.0))
+	prefer_distance = float(s.get("prefer_distance", 280.0))
+	# Boss yang punya rantai smart-AI spesifik di Boss.update pygame memakai
+	# per-skill AI Q/W/E/R (port-nya masih terbuka — lihat "Smart-AI boss
+	# musuh" di docs/GODOT_PARITY.md); yang TIDAK punya memakai ability
+	# generik _use_ability. Bendera dibaca dari bosses.json (diekspor
+	# converter dari AST Boss.update — jangan disalin manual ke daftar
+	# konstan, supaya daftar smart-AI tidak pernah tidak sinkron).
+	has_smart_ai = bool(s.get("uses_smart_ai", false))
+	# Entrance freeze: mini 120 frame (2 s), true 180 frame (3 s) — :478.
+	# Satu-satunya efek yang TIDAK ikut membeku adalah entrance (banner 100
+	# frame digambar di atasnya; Pygame menjalankan boss.update selama banner,
+	# dan entrance_timer membuat boss diam sampai timer habis).
+	entrance_timer = (180.0 if boss_class == "true" else 120.0) / FPS
 	if shadow != null:
 		shadow.visible = false
 	setup_visual(s)
@@ -128,11 +204,43 @@ func _physics_process(delta):
 		hurt_flash.tick(self, delta)
 	if status != null:
 		status.tick(delta)
-	attack_timer = maxf(0.0, attack_timer - delta)
 	combat_timer = maxf(0.0, combat_timer - delta)
+	_anim_frame += 1
 	anim_phase += delta * 5.0
+
+	# ── STUN: boss membeku total (base_boss.py:604-609). Status sudah di-tick
+	# di atas, jadi stun_timer mengecil; entrance/timer/gerak tidak jalan.
+	if status != null and status.is_stunned():
+		_drive_visual(false)
+		return
+
+	# ── ENTRANCE FREEZE (base_boss.py:612-614): diam sampai timer habis.
+	if entrance_timer > 0.0:
+		entrance_timer -= delta
+		_drive_visual(false)
+		return
+
+	# ── ENRAGE / FRENZY (base_boss.py:617-650) ──
+	_tick_enrage(delta)
+
+	# ── TICK TIMER (base_boss.py:663-668) + extra recovery 1.5x saat enraged
+	#    (base_boss.py:651-657: attack_timer & ability_timer turun ekstra tiap
+	#    2 frame — ability2/heal dan aura ability TIDAK ikut dipercepat)
+	_tick_shared_timers(delta)
+	if is_enraged and _anim_frame % 2 == 0:
+		attack_timer = maxf(0.0, attack_timer - 1.0 / FPS)
+		if ability_timer > 0.0:
+			ability_timer = maxf(0.0, ability_timer - 1.0 / FPS)
+
+	# ── TRUE BOSS: ability kedua (heal) saat HP < 30% (base_boss.py:670-673)
+	if boss_class == "true" and ability2_cooldown_max > 0 and ability2_timer <= 0.0 \
+			and hp < max_hp * 0.30:
+		_use_heal_ability()
+
+	# ── Cari target terdekat dalam aggro (base_boss.py:676-697:
+	#    best_dist = range + 100; jarak aggro mengikuti jangkauan boss)
 	if target == null or not is_instance_valid(target) or bool(target.get("is_dead")):
-		target = CombatSystem.nearest_enemy(self, AGGRO_RADIUS)
+		target = CombatSystem.nearest_enemy(self, _aggro_radius())
 	if target == null:
 		# Tidak ada musuh dalam aggro: dorong ke base lawan (nexus bisa dihancurkan)
 		var dest := enemy_base()
@@ -145,22 +253,174 @@ func _physics_process(delta):
 			z_index = int(global_position.y)
 			_drive_visual(true)
 		else:
+			velocity = Vector2.ZERO
 			z_index = int(global_position.y)
 			_drive_visual(false)
 		return
 	var dist := global_position.distance_to(target.global_position)
 	facing = 1 if target.global_position.x >= global_position.x else -1
 	visual.scale.x = facing
+	var prev := global_position
 	var is_moving := false
 	if dist <= attack_range:
 		velocity = Vector2.ZERO
 		try_attack()
+		_after_attack()
 	else:
-		velocity = (target.global_position - global_position).normalized() * _eff_speed()
-		is_moving = true
-		move_and_slide()
+		_move_toward_target(dist)
+		# Pose WALK/IDLE dari perpindahan NYATA (base_boss.py:584-588):
+		# kiter ranged yang "hold" diam -> idle, bukan animasi jalan.
+		is_moving = global_position.distance_to(prev) > 0.05
 	z_index = int(global_position.y)
 	_drive_visual(is_moving)
+
+
+## Jarak aggro boss = jangkauan serang + 100, diukur pada skala Godot
+## (attack_range Godot = range pygame + 15 — kompensasi origin lama — jadi
+## aggro = attack_range + 85). base_boss.py:676.
+func _aggro_radius() -> float:
+	return attack_range + (AGGRO_MARGIN - 15.0)
+
+
+## Timers bersama: attack_timer (serangan dasar), ability_timer (ability
+## generik), ability2_timer (heal true boss), ability_active_timer (aura).
+func _tick_shared_timers(delta: float) -> void:
+	attack_timer = maxf(0.0, attack_timer - delta)
+	if ability_timer > 0.0:
+		ability_timer = maxf(0.0, ability_timer - delta)
+	if ability2_timer > 0.0:
+		ability2_timer = maxf(0.0, ability2_timer - delta)
+	if ability_active_timer > 0.0:
+		ability_active_timer = maxf(0.0, ability_active_timer - delta)
+		if ability_active_timer <= 0.0:
+			ability_active = false
+
+
+## ENRAGE / FRENZY — base_boss.py:617-650. True boss 50% HP (speed ×1.25,
+## damage ×1.25, cooldown ×0.75 min 18 frame); mini 40% (×1.15 / ×1.20 /
+## ×0.80 min 20 frame). Callout ENRAGED!/FRENZY! + shake.
+func _tick_enrage(delta: float) -> void:
+	if not enrage_triggered and not is_dead:
+		if boss_class == "true" and hp <= max_hp * 0.50:
+			enrage_triggered = true
+			is_enraged = true
+			move_speed = move_speed * 1.25
+			damage = float(int(damage * 1.25))
+			attack_cooldown = _scale_attack_cd(0.75, 18)
+			_shake(25.0)
+			_callout("ENRAGED!")
+			update_ui()
+		elif boss_class == "mini" and hp <= max_hp * 0.40:
+			enrage_triggered = true
+			is_enraged = true
+			move_speed = move_speed * 1.15
+			damage = float(int(damage * 1.20))
+			attack_cooldown = _scale_attack_cd(0.80, 20)
+			_shake(15.0)
+			_callout("FRENZY!")
+			update_ui()
+	if is_enraged:
+		# +0.08/frame (base_boss.py:649) -> 4,8 rad/s
+		enrage_pulse += 0.08 * FPS * delta
+		queue_redraw()
+
+
+## attack_cooldown (detik) × `mult`, minimal `min_frames` frame (pygame
+## memakai frame: max(18, int(cd*0.75)) base_boss.py:621/631).
+func _scale_attack_cd(mult: float, min_frames: int) -> float:
+	var frames := int(attack_cooldown * FPS)
+	frames = maxi(min_frames, int(frames * mult))
+	return frames / FPS
+
+
+## True boss heal ability2 (base_boss.py:5956-5975): cooldown ability2, heal
+## max_hp × ability2_heal_pct, callout "+N".
+func _use_heal_ability() -> void:
+	ability2_timer = float(ability2_cooldown_max) / FPS
+	var heal_amount := int(max_hp * ability2_heal_pct)
+	hp = minf(max_hp, hp + heal_amount)
+	_callout("+%d" % heal_amount, false)
+	_shake(8.0)
+	update_ui()
+
+
+## Callout damage number di atas boss (ENRAGED! / FRENZY! / +heal).
+func _callout(text: String, critical: bool = true) -> void:
+	var num = preload("res://scenes/fx/DamageNumber.tscn").instantiate()
+	num.setup(text, critical)
+	num.global_position = global_position + Vector2(0.0, -radius - 30.0)
+	var host := get_tree().current_scene
+	if host != null and is_instance_valid(host):
+		host.add_child(num)
+
+
+func _shake(amount: float) -> void:
+	var tree := Engine.get_main_loop()
+	if tree is SceneTree:
+		(tree as SceneTree).call_group("camera", "add_trauma", amount / 60.0)
+
+
+## Gerak kejar target (base_boss.py:746-756): clamp langkah ke jarak tersisa
+## supaya tidak osilasi 1 px; face target. Boss ranged memakai band histeresis
+## (base_boss.py:778-822) supaya tidak gemetar di batas min/prefer distance.
+func _move_toward_target(dist: float) -> void:
+	var dx := target.global_position.x - global_position.x
+	var dy := target.global_position.y - global_position.y
+	var d := maxf(1e-6, dist)
+	var sp := _eff_speed()
+	if sp <= 0.0:
+		velocity = Vector2.ZERO
+		return
+	if is_ranged_kiter():
+		if d < min_distance:
+			kite_mode = "back"
+		elif d > prefer_distance:
+			kite_mode = "in"
+		elif kite_mode == "back" and d < min_distance + 12.0:
+			pass # terus mundur sampai aman
+		elif kite_mode == "in" and d > prefer_distance - 12.0:
+			pass # terus maju sampai masuk
+		else:
+			kite_mode = "hold"
+		if kite_mode == "back":
+			var step := minf(sp, maxf(0.0, (min_distance + 12.0) - d))
+			if step > 0.0:
+				velocity = Vector2(-dx / d, -dy / d) * step
+				_face(-dx, -dy)
+				move_and_slide()
+				return
+			velocity = Vector2.ZERO
+			return
+		elif kite_mode == "in":
+			var step := minf(sp, maxf(0.0, d - (prefer_distance - 12.0)))
+			if step > 0.0:
+				velocity = Vector2(dx / d, dy / d) * step
+				_face(dx, dy)
+				move_and_slide()
+				return
+			velocity = Vector2.ZERO
+			return
+		velocity = Vector2.ZERO # hold: diam di jarak tembak ideal
+		return
+	var step := minf(sp, d)
+	if step > 0.0:
+		velocity = Vector2(dx / d, dy / d) * step
+		_face(dx, dy)
+		move_and_slide()
+	else:
+		velocity = Vector2.ZERO
+
+
+## Daftar boss ranged kiting — paritas set literal update() base_boss.py:778.
+func is_ranged_kiter() -> bool:
+	return boss_type in RANGED_KITE
+
+
+func _face(dx: float, dy: float) -> void:
+	if absf(dx) < 0.35 * maxf(1e-6, absf(dy)):
+		return
+	facing = 1 if dx > 0 else -1
+	visual.scale.x = facing
 
 
 func _eff_speed() -> float:
@@ -230,27 +490,40 @@ const AURA_ALPHA_STEP := 5.0
 
 
 func _draw() -> void:
-	if is_dead or boss_class != "true":
+	if is_dead:
 		return
-	var pulse := sin(_pulse) * 0.3 + 0.7
-	var aura_r := radius + AURA_MARGIN
-	# pygame memusatkan aura di (x, y) = TENGAH badan; origin unit Godot ada di
-	# telapak kaki (UnitSilhouette._draw), jadi digeser naik ke torso.
 	var center := Vector2(0.0, -radius * 0.7)
-	# 1) cakram inti: alpha maksimum, rata sampai aura_r - 14
-	var inner_r := aura_r - float(AURA_RINGS - 1) * AURA_STEP
-	var inner_a: float = float(AURA_RINGS - 1) * AURA_STEP * AURA_ALPHA_STEP * pulse / 255.0
-	draw_circle(center, inner_r, Color(fill_color.r, fill_color.g, fill_color.b, inner_a))
-	# 2) cincin luar, makin ke luar makin transparan (i = 0 alpha 0 -> dilewati)
-	for i in range(1, AURA_RINGS - 1):
-		var r_off := aura_r - float(i) * AURA_STEP
-		var a := (aura_r - r_off) * AURA_ALPHA_STEP * pulse / 255.0
-		if a <= 0.0:
-			continue
-		# draw_arc menaruh garis DI TENGAH radius -> mid = r_off - step/2
-		# menutup pita (r_off - step, r_off], persis satu langkah pygame.
-		draw_arc(center, r_off - AURA_STEP * 0.5, 0.0, TAU, 32,
-			Color(fill_color.r, fill_color.g, fill_color.b, a), AURA_STEP)
+	if boss_class == "true":
+		var pulse := sin(_pulse) * 0.3 + 0.7
+		var aura_r := radius + AURA_MARGIN
+		# pygame memusatkan aura di (x, y) = TENGAH badan; origin unit Godot ada di
+		# telapak kaki (UnitSilhouette._draw), jadi digeser naik ke torso.
+		# 1) cakram inti: alpha maksimum, rata sampai aura_r - 14
+		var inner_r := aura_r - float(AURA_RINGS - 1) * AURA_STEP
+		var inner_a: float = float(AURA_RINGS - 1) * AURA_STEP * AURA_ALPHA_STEP * pulse / 255.0
+		draw_circle(center, inner_r, Color(fill_color.r, fill_color.g, fill_color.b, inner_a))
+		# 2) cincin luar, makin ke luar makin transparan (i = 0 alpha 0 -> dilewati)
+		for i in range(1, AURA_RINGS - 1):
+			var r_off := aura_r - float(i) * AURA_STEP
+			var a := (aura_r - r_off) * AURA_ALPHA_STEP * pulse / 255.0
+			if a <= 0.0:
+				continue
+			# draw_arc menaruh garis DI TENGAH radius -> mid = r_off - step/2
+			# menutup pita (r_off - step, r_off], persis satu langkah pygame.
+			draw_arc(center, r_off - AURA_STEP * 0.5, 0.0, TAU, 32,
+				Color(fill_color.r, fill_color.g, fill_color.b, a), AURA_STEP)
+	# ── AURA ENRAGE / FRENZY (base_boss.py:6277-6300) ──
+	# Pygame menggambar cincin garis (bukan cakram) radius = radius + 14*pulse,
+	# warna merah untuk true boss / oranye untuk mini. Pendekatan draw_arc
+	# lebar 2 px menyamai stroke pygame; profil alpha/pixel belum diverifikasi
+	# screenshot — dicatat di docs/GODOT_PARITY_CHECKLIST.md (visual stage).
+	if is_enraged:
+		var epulse := sin(enrage_pulse) * 0.3 + 0.7
+		var era := radius + 14.0 * epulse
+		var ecol := Color(1.0, 0.196, 0.157) if boss_class == "true" else Color(1.0, 0.55, 0.118)
+		draw_arc(center, era, 0.0, TAU, 40, ecol, 2.0)
+		draw_arc(center, era - 3.0, 0.0, TAU, 40,
+			Color(ecol.r, ecol.g, ecol.b, 0.6), 2.0)
 
 
 static func _parse_color(v, fallback: Color) -> Color:
@@ -267,11 +540,16 @@ static func _parse_color(v, fallback: Color) -> Color:
 ## Dicari lewat CombatSystem supaya nexus/menara ikut jadi target dan unit
 ## yang sedang Shadow Realm (invis) dilewati.
 func find_nearest_enemy() -> Node2D:
-	return CombatSystem.nearest_enemy(self, AGGRO_RADIUS)
+	return CombatSystem.nearest_enemy(self, _aggro_radius())
 
-func try_attack():
-	if attack_timer > 0.0 or target == null:
-		return
+## Serangan dasar boss (base_boss.py:707-755). Sekolah damage SELALU fisik.
+## Cleave splash dieksekusi di sini (hanya saat serangan benar-benar dilepas,
+## base_boss.py:719-726) — bukan tiap frame.
+func try_attack() -> bool:
+	if attack_timer > 0.0 or target == null or is_dead:
+		return false
+	if status != null and status.is_stunned():
+		return false
 	attack_timer = _eff_attack_cd()
 	# Boss memakai DUA suara global yang sama seperti hero (paritas
 	# BaseBoss._suara_serangan + update bosses/base_boss.py:552-566/746-752):
@@ -280,7 +558,9 @@ func try_attack():
 	AudioManager.play_combat(AudioManager.basic_attack_sfx(null, attack_range))
 	var dmg := CombatSystem.calc_damage(self, target, damage, dmg_school)
 	if attack_range >= 110.0:
-		# Boss ranged (Morgath/Vex-like): proyektil sihir, tembus armor
+		# Boss ranged: proyektil (visual Godot; damage diserap target saat
+		# impact). Cleave tetap dihitung dari posisi boss saat ayunan — sama
+		# seperti pygame yang menghitung splash di momen serangan.
 		var b = TowerBulletScript.new()
 		b.setup(target, dmg, team, "normal", {}, 380.0,
 			fill_color.lightened(0.3), self, dmg_school)
@@ -288,7 +568,75 @@ func try_attack():
 		GameManager.attach_fx(b)
 	else:
 		CombatSystem.apply_damage(target, dmg, team, "normal", self, dmg_school)
+	_do_cleave()
 	GameManager.request_hit_stop(0.045) # boss feel: sedikit lebih lama dari hero
+	return true
+
+
+## Setelah ayunan (dipanggil tiap frame saat target dalam jangkauan, sama
+## seperti pygame): ability generik untuk boss tanpa smart-AI
+## (base_boss.py:822-824 → _use_ability).
+func _after_attack() -> void:
+	if not has_smart_ai and ability_timer <= 0.0 and ability_range > 0.0:
+		_use_ability()
+
+
+## Cleave: 40% damage ke musuh LAIN dalam cleave_radius (80 px) dari posisi
+## boss — target utama tidak kena dua kali (base_boss.py:719-726).
+func _do_cleave() -> void:
+	var cleave_dmg := int(damage * cleave_ratio)
+	if cleave_dmg <= 0:
+		return
+	var center: Vector2 = global_position
+	for e in CombatSystem.enemies_of(team):
+		if e == target or not is_instance_valid(e):
+			continue
+		if (e as Node2D).global_position.distance_to(center) <= cleave_radius:
+			# Cleave netral sekolah (base_boss.py:722-725: take_damage tanpa
+			# source/school) — dulu "physical" membuat cleave boss salah
+			# diredam armor hero.
+			CombatSystem.apply_damage(e, float(cleave_dmg), team, "normal", null, "")
+
+
+## Ability generik fallback boss tanpa smart-AI (base_boss.py:1071-1106):
+## damage ability_damage ke semua musuh dalam ability_range + kunci serangan
+## 60 frame (attack_timer, bukan stun gerak) + aura ability 60 frame.
+func _use_ability() -> void:
+	if is_dead:
+		return
+	ability_timer = float(ability_cooldown_max) / FPS
+	ability_active = true
+	ability_active_timer = 1.0 # 60 frame
+	queue_redraw()
+	var hits := 0
+	for e in CombatSystem.enemies_of(team):
+		if not is_instance_valid(e):
+			continue
+		var dist := (e as Node2D).global_position.distance_to(global_position)
+		if dist > ability_range:
+			continue
+		# Netral sekolah (base_boss.py _use_ability:1082-1091: take_damage
+		# tanpa source/school, jadi armor/MR hero tidak meredam ability).
+		CombatSystem.apply_damage(e, float(ability_damage), team, "normal", null, "")
+		if "attack_timer" in e:
+			e.attack_timer = maxf(float(e.get("attack_timer")), 1.0)
+		hits += 1
+	if hits > 0:
+		_shake(15.0 if boss_class == "true" else 12.0)
+
+
+## Resilience + anti-burst boss — base_boss.py take_damage 6025-6037, dipanggil
+## CombatSystem.apply_damage tepat SETELAH mitigasi armor/MR (dan sebelum HP
+## berkurang). Defense boost (skill hero Drakar W) menaikkan ke 45%.
+func apply_boss_inherent_mitigation(raw: float) -> float:
+	if raw <= 0.0 or is_dead:
+		return raw
+	var dr := damage_reduction
+	if defense_boost:
+		dr = maxf(dr, 0.45)
+	var eff := int(raw * (1.0 - dr))
+	eff = mini(eff, int(max_damage_per_hit))
+	return float(maxi(1, eff))
 
 func take_damage(amount: float, from_team: String = "", dmg_type: String = "normal",
 		source = null, school: String = ""):
@@ -386,7 +734,11 @@ func apply_scaling(hp_mult: float = 1.0, dmg_mult: float = 1.0, spd_mult: float 
 	max_hp = float(int(max_hp * hp_mult))
 	hp = max_hp
 	damage = float(int(damage * dmg_mult))
+	# Ability generik ikut skala damage (base_boss.py:522 apply_scaling)
+	ability_damage = int(ability_damage * dmg_mult)
 	move_speed = move_speed * spd_mult
+	# Cap anti-burst ikut skala max_hp baru (base_boss.py:524-525)
+	max_damage_per_hit = max_hp * (0.08 if boss_class == "true" else 0.12)
 	update_ui()
 
 func update_ui():
@@ -394,4 +746,10 @@ func update_ui():
 		hp_bar.max_value = 100.0
 		hp_bar.value = clampf(hp / maxf(1.0, max_hp) * 100.0, 0.0, 100.0)
 	if name_label:
-		name_label.text = "%s  %d/%d" % [display_name, int(maxf(0.0, hp)), int(max_hp)]
+		var tag := ""
+		if is_enraged:
+			tag = " [ENRAGED]" if boss_class == "true" else " [FRENZY]"
+		name_label.text = "%s%s  %d/%d" % [display_name, tag, int(maxf(0.0, hp)), int(max_hp)]
+		# Label memerah saat enrage (base_boss.py:6254 label_color merah)
+		name_label.add_theme_color_override("font_color",
+			Color(1.0, 0.235, 0.235) if is_enraged else Color(1, 0.86, 0.6))

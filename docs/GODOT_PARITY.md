@@ -26,6 +26,12 @@ sertifikasi paritas seluruh game.
 | Ekonomi AI | Gold awal dan income sama dengan pemain | Mulai dengan `STARTING_GOLD` (350), income `GOLD_PER_SECOND + wave_number`. AI membangun/draft memakai saldo ini (`AIPlayer.__init__`, `Game.update`). |
 | Nexus AI | Tidak ada eskalasi wave otomatis | Naik ke level 2/3/4/5 pada wave 4/7/10/13, sebelum menghitung komposisi baru (`Game._auto_scale_ai_castle`). |
 | Mini boss | Wave tetap dari JSON | Wave unik diacak tiap match: easy 20–40, normal/hard 11–30, urutan dan tipe boss tetap (`Game._roll_mini_boss_schedule`). |
+| Data boss | BossDB hanya hp/damage/speed/range/cooldown/radius | `bosses.json` diekspor converter dari `boss_data.py` + `hero_archetypes`: armor/MR tematik, ability/ability2 (cooldown, damage, range, heal), jarak kiting, dan bendera `uses_smart_ai` hasil AST `Boss.update` — 216 baris cocok dengan oracle Pygame (`BossCoreParityTest`). |
+| Resilience boss | Tidak ada; hit besar menembus | `damage_reduction` 30% (true) / 20% (mini), anti-burst cap 8% / 12% max HP, tenacity slow/atk_slow (×0.5, cap 0.35) dan resist stun 55% (`Boss.__init__`, `Boss.take_damage`, `Boss.apply_slow/apply_debuff`). |
+| Enrage / Frenzy | Tidak ada | True boss enrage di HP ≤50% (×1.25/×1.25/cd ×0.75 min 18), mini frenzy di HP ≤40% (×1.15/×1.20/cd ×0.80 min 20) + callout + shake; nilai dibandingkan dengan hasil `Boss.update()` Pygame sungguhan di fixture. |
+| Entrance boss | Langsung bergerak/menyerang | Freeze entrance 3 s (true) / 2 s (mini); cooldown serangan tidak jalan selama entrance. |
+| True boss ability2 | Tidak ada | Heal `max_hp × ability2_heal_pct` saat HP < 30% dengan cooldown ability2. |
+| Cleave & ability generik | Serangan dasar hanya kena target | Cleave 40% radius 80 ke musuh lain (netral sekolah); boss tanpa smart-AI memakai `_use_ability` (damage/range/cooldown dari data, lock serangan 60 frame, shake) persis `base_boss.py`. |
 | Kaizen | Rig buatan ulang selalu mengalahkan sprite Pygame | Arena normal memakai bake renderer Pygame. Rig alternatif tetap ada di `KaizenDemo.tscn`, atau opt-in `mystic/rendering/experimental_hero_rigs`. |
 | Kontrol demo | D/F1/T/SPACE mengubah match normal | Dinonaktifkan default; hanya aktif dengan `Main.enable_debug_controls`. Pilih difficulty di menu sebelum bermain. |
 
@@ -38,8 +44,15 @@ sertifikasi paritas seluruh game.
   Kuantisasi pose, lighting, cuaca dan efek skill juga belum lolos perbandingan
   screenshot menyeluruh.
 - **Skill:** enam starter punya implementasi khusus, tetapi masih perlu audit
-  koefisien, target dan timing. Banyak boss-hero memakai skill generik. Skill
-  dan enrage boss musuh belum mengikuti seluruh implementasi Python.
+  koefisien, target dan timing. Banyak boss-hero memakai skill generik.
+- **Smart-AI boss musuh (79 tipe):** rantai `elif self.boss_type ==` pada
+  `Boss.update` belum diport — Q/W/E/R per boss, efek khas (summon, dash,
+  transform, dot/debuff area, dst.) dan visualnya belum ada di Godot. Yang
+  sudah setara dan diuji: data 216 boss, resilience + anti-burst, tenacity,
+  entrance, enrage/frenzy, heal true boss, cleave, dan ability generik boss
+  tanpa smart-AI. Aura ability/enrage gambar Godot belum diverifikasi
+  piksel-per-piksel (test `test_boss_true_aura_parity` baru mencakup aura true
+  boss).
 - **Perintah taktis dan kontrol pemain:** `tactical_commands.py` belum diport;
   kontrol gerak/target dan overlay sentuh Android belum lengkap.
 - **Progresi/settings:** kunci difficulty sepanjang run, reset progresi karena
@@ -62,6 +75,7 @@ godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 3
 godot --headless --path godot res://tests/BattleSmokeTest.tscn --quit-after 180
 godot --headless --path godot res://tests/AIPlayerTest.tscn --quit-after 120
 godot --headless --path godot res://tests/CinematicTest.tscn --quit-after 960
+godot --headless --path godot res://tests/BossCoreParityTest.tscn --quit-after 420
 ```
 
 `GameplayParityTest` membaca `godot/tests/fixtures/match_parity.json`: ekonomi
@@ -70,6 +84,13 @@ nexus AI dan titik spawn. Tes runtime juga memeriksa pembelian/duplikat/cap,
 respawn individu dan team wipe, pause, antrean wave, jalur, restart dan menu.
 `BattleSmokeTest` membeli hero melalui API yang sebenarnya, bukan lagi
 menganggap roster demo sebagai syarat sukses.
+
+`BossCoreParityTest` membandingkan `godot/data/bosses.json` dengan 216 baris
+oracle `boss_core` (stat boss + flag smart-AI dari `Boss.update`, dan nilai
+enrage dari pemanggilan `update()` Pygame yang sebenarnya), lalu menguji
+perilaku runtime node Boss.gd: resilience/anti-burst, entrance freeze, aggro,
+tenacity (slow/atk_slow/stun), heal true boss, cleave, dan ability generik
+boss tanpa smart-AI.
 
 Jika aturan Pygame memang berubah, sesuaikan Godot, **kemudian** regenerasi:
 
@@ -88,8 +109,10 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
   easy-mode Pygame juga lulus.
 - Godot 4.3: `GameplayParityTest` **1.453 pemeriksaan lulus**;
   `BattleSmokeTest`, `AIPlayerTest`, dan `CinematicTest` juga `PASS`, tanpa
-  error script/kompilasi/animasi. Gate kini turut menolak animasi yang tidak
-  ada dan body fisika yang belum terdaftar di space.
+  error script/kompilasi/animasi. `BossCoreParityTest` lulus di CI dengan
+  3.717 pemeriksaan (data 216 boss + perilaku inti boss). Gate kini turut
+  menolak animasi yang tidak ada dan body fisika yang belum terdaftar di
+  space.
 - Engine lokal dibangun dari source untuk **headless saja**, tanpa backend
   Vulkan/OpenGL. Pesan engine `No renderers available` pada lingkungan ini
   adalah batasan build pengujian; hasil di atas **bukan** validasi gambar GPU,

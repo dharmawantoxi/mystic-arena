@@ -194,7 +194,11 @@ def main():
     check("draw_circle dipakai maksimal 1x (cakram inti)",
           draw_body.count("draw_circle(") <= 1,
           "%d kali" % draw_body.count("draw_circle("))
-    check("hanya untuk boss_class true", 'boss_class != "true"' in draw_body)
+    # Aura dasar true-boss harus tetap di dalam guard `if boss_class == "true"`
+    # supaya mini boss tidak menggambar aura denyut ungu. (Mini boss kini hanya
+    # menggambar aura enrage oranye saat frenzy — paritas _draw_enrage_aura
+    # base_boss.py:6277 yang berlaku untuk kedua kelas.)
+    check("aura dasar hanya untuk boss_class true", 'if boss_class == "true":' in draw_body)
 
     if "--shot" in sys.argv:
         pygame.font.init()
