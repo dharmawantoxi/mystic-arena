@@ -34,6 +34,7 @@ func _boot() -> void:
 	else:
 		GameManager.start_level(1, false)
 	await _wait_frames(3)
+	print("[CinematicTest] tahap 1: level intro")
 
 	# ── 1. LEVEL INTRO ──
 	var intro = _main.get("_level_intro")
@@ -52,6 +53,7 @@ func _boot() -> void:
 	_expect(not get_tree().paused, "Skip intro harus melepas pause")
 	_expect(not GameManager.is_paused, "Skip intro harus melepas is_paused")
 
+	print("[CinematicTest] tahap 2: banner mini boss")
 	# ── 2. BANNER MINI BOSS ──
 	_main.pending_mini_bosses.append("gornak")
 	_main.active_boss = null
@@ -70,6 +72,7 @@ func _boot() -> void:
 		_main.active_boss.free()
 		_main.active_boss = null
 
+	print("[CinematicTest] tahap 3: kematian true boss")
 	# ── 3. KEMATIAN TRUE BOSS: fase kematian pause -> perayaan -> skip ──
 	var boss = GameManager.spawn_boss("abaddon", "red", Vector2(640, 360))
 	_expect(boss != null, "True boss harus bisa di-spawn")
@@ -101,6 +104,7 @@ func _boot() -> void:
 	_expect(not get_tree().paused, "Tidak boleh ada pause tersisa setelah perayaan")
 	GameManager.set_paused(false)
 
+	print("[CinematicTest] tahap 4: kematian mini boss")
 	# ── 4. KEMATIAN MINI BOSS: tanpa perayaan, selesai sendiri ──
 	var mini = GameManager.spawn_boss("gornak", "red", Vector2(700, 300))
 	mini.hp = 1.0
