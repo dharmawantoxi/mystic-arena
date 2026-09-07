@@ -121,10 +121,12 @@ jobs:
             # bukan exit code (lihat komentar langkah "Versi Godot" di README).
             godot --headless --path godot --import 2>&1 | tee /tmp/import.log || true
           fi
-          python3 godot/tools/godot_log_gate.py /tmp/import.log --label "import" > /tmp/gate.out 2>&1
-          RC=$?
-          cat /tmp/gate.out
-          if [ $RC -ne 0 ]; then
+          # if (bukan RC=$?): bash runner default -e menghentikan langkah
+          # tepat di perintah yang gagal sebelum baris berikutnya jalan.
+          if python3 godot/tools/godot_log_gate.py /tmp/import.log --label "import" > /tmp/gate.out 2>&1; then
+            cat /tmp/gate.out
+          else
+            cat /tmp/gate.out
             # DEBUG (sementara): pantulkan baris error sebagai anotasi ::error::
             # supaya terbaca lewat API check-run tanpa mengunduh log
             # (host log/artifact diblok di sandbox pengembang).
@@ -133,7 +135,7 @@ jobs:
               echo "::error::IMPORT-FAIL: $LINE"
             done
             echo "::error::IMPORT-FAIL-TAIL: $(tail -6 /tmp/import.log | tr '\n' ' | ' | cut -c1-400)"
-            exit $RC
+            exit 1
           fi
 
       # ── 4. Smoke test yang sudah ada di repo (keduanya self-quit + PASS line) ──
