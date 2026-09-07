@@ -43,9 +43,6 @@ concurrency:
 
 permissions:
   contents: read
-  # Sementara: langkah debug menaruh baris error pertama di commit status
-  # (baca lewat API) karena log artifact tidak selalu bisa diunduh.
-  statuses: write
 
 env:
   # Harus sama dengan config/features di godot/project.godot
@@ -106,8 +103,6 @@ jobs:
       # needs to restart"; karena itu dijalankan dua kali, dan log yang dinilai
       # adalah yang KEDUA.
       - name: Import project
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -o pipefail
           godot --headless --path godot --import 2>&1 | tee /tmp/import1.log || true
@@ -127,9 +122,9 @@ jobs:
             cat /tmp/gate.out
           else
             cat /tmp/gate.out
-            # DEBUG (sementara): pantulkan baris error sebagai anotasi ::error::
-            # supaya terbaca lewat API check-run tanpa mengunduh log
-            # (host log/artifact diblok di sandbox pengembang).
+            # Pantulkan baris error sebagai anotasi ::error:: supaya penyebab
+            # kegagalan terbaca langsung di tab Checks / API check-run tanpa
+            # harus mengunduh log artifact.
             grep '|' /tmp/gate.out | sed 's/^[[:space:]]*[0-9]* |[[:space:]]*//' | head -5 | while read -r LINE; do
               [ -z "$LINE" ] && continue
               echo "::error::IMPORT-FAIL: $LINE"
@@ -139,8 +134,9 @@ jobs:
           fi
 
       # ── 4. Smoke test yang sudah ada di repo (keduanya self-quit + PASS line) ──
-      # Langkah tes: || true + gate; kalau gagal, pantulkan ekor log sebagai
-      # anotasi ::error:: (log artifact tidak bisa diunduh dari sandbox).
+      # Langkah tes: || true + gate (exit code godot tidak bisa dipercaya —
+      # lihat README bagian "F5 cuma layar hitam"); kalau gagal, pantulkan
+      # ekor log sebagai anotasi ::error:: di tab Checks.
       - name: AIPlayerTest (menu, tanpa combat)
         run: |
           set -o pipefail
