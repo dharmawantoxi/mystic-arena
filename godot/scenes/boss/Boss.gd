@@ -12,7 +12,7 @@ var max_hp: float = 30000.0
 var hp: float = 30000.0
 var damage: float = 120.0
 var move_speed: float = 60.0
-var attack_range: float = 65.0
+var attack_range: float = 50.0  # = range pygame (px, tanpa kompensasi)
 var attack_cooldown: float = 0.7
 var dmg_school: String = "physical"
 
@@ -20,7 +20,11 @@ var target: Node2D = null
 var attack_timer: float = 0.0
 var is_dead: bool = false
 var anim_phase: float = 0.0
-var facing: int = 1
+var facing: int = -1  # paritas Boss.__init__ pygame (base_boss.py:419)
+# Kunci arah hadap selama ayunan serangan dasar (base_boss.py:594-598,
+# 746-752): _attack_facing 0 = sentinel None pygame.
+var _attack_lock_timer := 0.0 # detik (frame pygame ÷ 60)
+var _attack_facing := 0
 var radius: float = 22.0
 var role: String = ""
 var fill_color: Color = Color("#8c64dc")
@@ -36,6 +40,9 @@ const HurtFlashScript = preload("res://scripts/render/HurtFlash.gd")
 const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
 const StatusEffectsScript = preload("res://scripts/systems/StatusEffects.gd")
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
+## Kit smart-AI Q/W/E/R 79 boss — transpile 1:1 dari bosses/base_boss.py
+## (lihat header BossKit.gd; state kit hidup di `kit`).
+const BossKit = preload("res://scenes/boss/BossKit.gd")
 var silhouette = null
 var custom_visual = null
 ## Flash putih hurt_flash_timer pygame (bosses/base_boss.py:6039, dibaca
@@ -98,6 +105,20 @@ var has_smart_ai: bool = false
 ## Defense boost (hero Drakar W): menaikkan damage_reduction ke 45% selama
 ## aktif (base_boss.py take_damage :6026-6028).
 var defense_boost: bool = false
+## Timer frame defense boost (Drakar W, 180 frame) — di-tick kit smart-AI
+## (paritas self.defense_timer base_boss.py:2838-2867).
+var defense_timer: float = 0.0
+## Damage dasar sebelum buff kit (arcane/rum/dragon blood mengalikan ini).
+## Paritas self.base_damage base_boss.py:389 (diperbarui apply_scaling :522;
+## enrage TIDAK mengubahnya).
+var base_damage: float = 0.0
+## Pengali damage skill kesulitan Hard (paritas self.dmg_scaling_mult
+## base_boss.py:477/516 — dipakai _get_boss_stats untuk SEMUA key *damage*).
+var dmg_scaling_mult: float = 1.0
+## State kit smart-AI (timer Q/W/E/R frame, buff, target bertanda, dsb.)
+## — diisi salinan BossKit.DEFAULT_KIT di _ready; struktur kuncinya
+## dibangkitkan tools/gen_boss_smart_ai.py dari AST base_boss.py.
+var kit: Dictionary = {}
 
 
 @onready var visual: Node2D = $Visual
@@ -122,11 +143,16 @@ func _ready():
 		hp = max_hp
 		damage = float(s.get("damage", 120))
 		move_speed = float(s.get("speed", 0.85)) * 60.0
-		attack_range = float(s.get("range", 50)) + 15.0
+		attack_range = float(s.get("range", 50))
 		attack_cooldown = float(s.get("attack_cooldown", 43)) / 60.0
 		dmg_school = "physical" # serangan dasar boss SELALU fisik (base_boss.py:707)
 		armor = float(s.get("armor", 0))
 		magic_resist = float(s.get("magic_resist", 0.0))
+	# Paritas Boss.__init__ base_boss.py:389: base_damage = damage mentah
+	# (sebelum enrage/buff kit; hanya apply_scaling yang memperbaruinya).
+	base_damage = damage
+	# State kit smart-AI fresh per instans (timers 0, buff mati).
+	kit = BossKit.DEFAULT_KIT.duplicate(true)
 	status = StatusEffectsScript.new(self)
 	add_to_group("bosses")
 	role = str(s.get("title", s.get("role", "")))
@@ -188,7 +214,7 @@ func setup_visual(_s: Dictionary) -> void:
 	silhouette = UnitSilhouetteScript.new()
 	silhouette.name = "Silhouette"
 	visual.add_child(silhouette)
-	var ranged := attack_range >= 110.0
+	var ranged := attack_range >= 100.0 # AMBANG_RANGED combat_audio.py
 	silhouette.configure(
 		UnitSilhouetteScript.Kind.BOSS, boss_type, team, fill_color, fill_dark,
 		radius, role, dmg_school, ranged, boss_class)
@@ -207,6 +233,12 @@ func _physics_process(delta):
 	combat_timer = maxf(0.0, combat_timer - delta)
 	_anim_frame += 1
 	anim_phase += delta * 5.0
+	# Kunci arah hadap selama ayunan (base_boss.py:594-598) — di-tick DI ATAS
+	# cek stun/entrance supaya kunci tetap melepas walau boss dibekukan.
+	if _attack_lock_timer > 0.0:
+		_attack_lock_timer = maxf(0.0, _attack_lock_timer - delta)
+		if _attack_lock_timer <= 0.0:
+			_attack_facing = 0
 
 	# ── STUN: boss membeku total (base_boss.py:604-609). Status sudah di-tick
 	# di atas, jadi stun_timer mengecil; entrance/timer/gerak tidak jalan.
@@ -247,8 +279,7 @@ func _physics_process(delta):
 		if global_position.distance_to(dest) > 40.0:
 			var dir := (dest - global_position).normalized()
 			velocity = dir * _eff_speed()
-			facing = 1 if dir.x >= 0.0 else -1
-			visual.scale.x = facing
+			_face(dir.x, dir.y)
 			move_and_slide()
 			z_index = int(global_position.y)
 			_drive_visual(true)
@@ -258,14 +289,18 @@ func _physics_process(delta):
 			_drive_visual(false)
 		return
 	var dist := global_position.distance_to(target.global_position)
-	facing = 1 if target.global_position.x >= global_position.x else -1
-	visual.scale.x = facing
 	var prev := global_position
 	var is_moving := false
 	if dist <= attack_range:
 		velocity = Vector2.ZERO
+		# Hadap sasaran SEBELUM memukul (base_boss.py:733-738). pygame
+		# memanggil _face() HANYA di cabang dalam-jangkauan: kiter yang
+		# "hold" atau boss yang diam di luar jangkauan TIDAK berbalik —
+		# jejak bface oracle smart-AI bergantung pada detail ini.
+		_face(target.global_position.x - global_position.x,
+			target.global_position.y - global_position.y)
 		try_attack()
-		_after_attack()
+		_after_attack(dist)
 	else:
 		_move_toward_target(dist)
 		# Pose WALK/IDLE dari perpindahan NYATA (base_boss.py:584-588):
@@ -275,11 +310,9 @@ func _physics_process(delta):
 	_drive_visual(is_moving)
 
 
-## Jarak aggro boss = jangkauan serang + 100, diukur pada skala Godot
-## (attack_range Godot = range pygame + 15 — kompensasi origin lama — jadi
-## aggro = attack_range + 85). base_boss.py:676.
+## Jarak aggro boss = jangkauan serang + 100 (base_boss.py:676).
 func _aggro_radius() -> float:
-	return attack_range + (AGGRO_MARGIN - 15.0)
+	return attack_range + AGGRO_MARGIN
 
 
 ## Timers bersama: attack_timer (serangan dasar), ability_timer (ability
@@ -364,6 +397,13 @@ func _shake(amount: float) -> void:
 ## supaya tidak osilasi 1 px; face target. Boss ranged memakai band histeresis
 ## (base_boss.py:778-822) supaya tidak gemetar di batas min/prefer distance.
 func _move_toward_target(dist: float) -> void:
+	# CATATAN SATUAN: pygame `step = min(sp, d)` membandingkan kecepatan
+	# px/frame dengan jarak px. Di sini sp adalah px/DETIK (move_and_slide
+	# mengalikan delta 1/60), jadi jarak px harus dikalikan FPS dulu —
+	# tanpa ini clamp "menang" 60x terlalu cepat: begitu d < sp, displacement
+	# perdetik jadi d/60 px (meluruh geometris) dan boss tidak pernah
+	# menyusul target (ketidaksesuaian jejak BossSmartAIParityTest
+	# ignis_drachorn: 605.577 vs 605.625).
 	var dx := target.global_position.x - global_position.x
 	var dy := target.global_position.y - global_position.y
 	var d := maxf(1e-6, dist)
@@ -383,7 +423,7 @@ func _move_toward_target(dist: float) -> void:
 		else:
 			kite_mode = "hold"
 		if kite_mode == "back":
-			var step := minf(sp, maxf(0.0, (min_distance + 12.0) - d))
+			var step := minf(sp, maxf(0.0, (min_distance + 12.0) - d) * FPS)
 			if step > 0.0:
 				velocity = Vector2(-dx / d, -dy / d) * step
 				_face(-dx, -dy)
@@ -392,7 +432,7 @@ func _move_toward_target(dist: float) -> void:
 			velocity = Vector2.ZERO
 			return
 		elif kite_mode == "in":
-			var step := minf(sp, maxf(0.0, d - (prefer_distance - 12.0)))
+			var step := minf(sp, maxf(0.0, d - (prefer_distance - 12.0)) * FPS)
 			if step > 0.0:
 				velocity = Vector2(dx / d, dy / d) * step
 				_face(dx, dy)
@@ -402,7 +442,7 @@ func _move_toward_target(dist: float) -> void:
 			return
 		velocity = Vector2.ZERO # hold: diam di jarak tembak ideal
 		return
-	var step := minf(sp, d)
+	var step := minf(sp, d * FPS)
 	if step > 0.0:
 		velocity = Vector2(dx / d, dy / d) * step
 		_face(dx, dy)
@@ -417,6 +457,13 @@ func is_ranged_kiter() -> bool:
 
 
 func _face(dx: float, dy: float) -> void:
+	# Selama kunci ayunan aktif, arah TIDAK diubah (pose swing tidak boleh
+	# terbalik di tengah animasi) — paritas _face base_boss.py:1394-1408.
+	if _attack_lock_timer > 0.0:
+		if _attack_facing != 0:
+			facing = _attack_facing
+			visual.scale.x = facing
+		return
 	if absf(dx) < 0.35 * maxf(1e-6, absf(dy)):
 		return
 	facing = 1 if dx > 0 else -1
@@ -551,13 +598,17 @@ func try_attack() -> bool:
 	if status != null and status.is_stunned():
 		return false
 	attack_timer = _eff_attack_cd()
+	# Kunci arah hadap seumur wind-up s/d impact (base_boss.py:746-752:
+	# min 6 / max 15 frame = attack_cooldown // 3, digenggam saat swing).
+	_attack_facing = facing
+	_attack_lock_timer = clampf(attack_cooldown / 3.0, 6.0 / FPS, 15.0 / FPS)
 	# Boss memakai DUA suara global yang sama seperti hero (paritas
 	# BaseBoss._suara_serangan + update bosses/base_boss.py:552-566/746-752):
 	# melee vs ranged dipilih dari jangkauan, ambang 100 (AMBANG_RANGED).
 	# is_melee=null -> AudioManager memakai ambang jarak, bukan flag.
 	AudioManager.play_combat(AudioManager.basic_attack_sfx(null, attack_range))
 	var dmg := CombatSystem.calc_damage(self, target, damage, dmg_school)
-	if attack_range >= 110.0:
+	if attack_range >= 100.0: # AMBANG_RANGED (base_boss._suara_serangan)
 		# Boss ranged: proyektil (visual Godot; damage diserap target saat
 		# impact). Cleave tetap dihitung dari posisi boss saat ayunan — sama
 		# seperti pygame yang menghitung splash di momen serangan.
@@ -574,11 +625,177 @@ func try_attack() -> bool:
 
 
 ## Setelah ayunan (dipanggil tiap frame saat target dalam jangkauan, sama
-## seperti pygame): ability generik untuk boss tanpa smart-AI
-## (base_boss.py:822-824 → _use_ability).
-func _after_attack() -> void:
-	if not has_smart_ai and ability_timer <= 0.0 and ability_range > 0.0:
+## seperti pygame): boss ber-smart-AI menjalankan kit Q/W/E/R; boss tanpa
+## smart-AI memakai ability generik (base_boss.py:757-920 → _use_ability).
+func _after_attack(dist: float) -> void:
+	if has_smart_ai:
+		# Daftar musuh TIDAK difilter targetabilitas (paritas update()
+		# pygame: all_units + towers + bases hanya disaring tim & hidup —
+		# hero Shadow Realm tetap kena skill boss).
+		BossKit.dispatch(self, boss_type, kit_enemies(), dist)
+	elif ability_timer <= 0.0 and ability_range > 0.0:
 		_use_ability()
+
+
+# ══════════════════════════════════════════════════════════
+#  JEMBATAN KIT SMART-AI (dipanggil BossKit.gd — lihat header file itu).
+#  Semua konversi frame pygame ↔ detik Godot terjadi DI SINI, satu tempat.
+# ══════════════════════════════════════════════════════════
+
+## Musuh dari sudut pandang boss — persis blok `enemies` Boss.update
+## pygame (base_boss.py:676-687): semua unit + tower + base tim lawan yang
+## hidup, TANPA filter targetabilitas dan tanpa pemotongan jarak.
+func kit_enemies() -> Array:
+	var out: Array = []
+	for group in ["heroes", "bosses", "minions", "towers", "nexus"]:
+		for n in get_tree().get_nodes_in_group(group):
+			if not is_instance_valid(n) or not (n is Node2D):
+				continue
+			if str(n.get("team")) == team:
+				continue
+			if bool(n.get("is_dead")):
+				continue
+			out.append(n)
+	return out
+
+
+## Port _get_boss_stats base_boss.py:5921-5946: stat mentah boss_data,
+## lalu SEMUA key numerik ber-*damage* dikalikan (skill_down Mage Tower,
+## dmg_scaling_mult Hard, enrage ×1.25) dengan int(round()) Python
+## (round-half-even — round() Godot memotong ke atas, beda!).
+func kit_get_stats() -> Dictionary:
+	var stats := kit_stats_full()
+	var mult := 1.0
+	if status != null and status.skill_down_timer > 0.0:
+		mult *= maxf(0.0, 1.0 - status.skill_down_amount)
+	if dmg_scaling_mult != 1.0: # pygame: != eksak, bukan approx
+		mult *= dmg_scaling_mult
+	if is_enraged:
+		mult *= 1.25
+	if mult != 1.0 and not stats.is_empty():
+		var scaled := stats.duplicate()
+		for k in stats.keys():
+			var v = stats[k]
+			var t := typeof(v)
+			if (t == TYPE_INT or t == TYPE_FLOAT) and String(k).find("damage") != -1:
+				scaled[k] = _py_round(float(v) * mult)
+		return scaled
+	return stats
+
+
+## round() Python: half-to-EVEN (banker's). round() GDScript: half-away.
+## _get_boss_stats pygame memakai int(round(v*mult)) — hasilnya harus sama.
+static func _py_round(v: float) -> int:
+	var f := floorf(v)
+	var diff := v - f
+	if diff > 0.5:
+		return int(f) + 1
+	if diff < 0.5:
+		return int(f)
+	return int(f) if int(f) % 2 == 0 else int(f) + 1
+
+
+## Stat mentah boss_data (paritas _l9_stats base_boss.py:6450-6455 — tanpa
+## pengali apa pun). Cache statis: file dibaca sekali per proses.
+static var _full_stats_cache: Dictionary = {}
+static func _load_full_stats() -> Dictionary:
+	if _full_stats_cache.is_empty():
+		var f := FileAccess.open("res://data/boss_stats_full.json", FileAccess.READ)
+		if f != null:
+			var parsed = JSON.parse_string(f.get_as_text())
+			if parsed is Dictionary:
+				_full_stats_cache = parsed
+		if _full_stats_cache.is_empty():
+			push_error("[Boss] boss_stats_full.json tidak terbaca — regenerasi "
+				+ "tools/convert_to_godot.py")
+	return _full_stats_cache
+
+
+func kit_stats_full() -> Dictionary:
+	return _load_full_stats().get(boss_type, {})
+
+
+## e.take_damage(dmg, self.team) pygame — netral sekolah, tanpa source
+## (blind/reflect tidak berlaku; armor/MR target ikut pipeline umum).
+func kit_skill_hit(e, amount) -> void:
+	if e == null or not is_instance_valid(e):
+		return
+	CombatSystem.apply_damage(e, float(amount), team, "normal", null, "")
+
+
+## e.apply_slow(amount, durasi_frame) pygame — hanya unit yang punya
+## apply_slow (hero/minion/boss; tower & nexus pygame tidak punya).
+func kit_apply_slow(e, amount: float, dur_frames: float) -> void:
+	if e == null or not is_instance_valid(e):
+		return
+	if not kit_has_slow(e):
+		return
+	e.status.apply_slow(amount, dur_frames / 60.0)
+
+
+## e.attack_timer = max(e.attack_timer, F_frame) pygame (kunci serangan).
+func kit_lock_attack(e, frames: float) -> void:
+	if e == null or not is_instance_valid(e):
+		return
+	if not ("attack_timer" in e):
+		return
+	e.attack_timer = maxf(float(e.get("attack_timer")), frames / 60.0)
+
+
+## Baca attack_timer musuh dalam FRAME (penggunaan: max(...) di kit).
+func kit_atk_timer(e) -> float:
+	if e == null or not is_instance_valid(e) or not ("attack_timer" in e):
+		return 0.0
+	return float(e.get("attack_timer")) * 60.0
+
+
+## e.alive pygame.
+func kit_unit_alive(e) -> bool:
+	if e == null or not is_instance_valid(e):
+		return false
+	return not bool(e.get("is_dead"))
+
+
+## hasattr(e, 'apply_slow') pygame — tower/nexus tidak punya status.
+func kit_has_slow(e) -> bool:
+	if e == null or not is_instance_valid(e):
+		return false
+	var st = e.get("status")
+	return st != null
+
+
+## hasattr(e, 'speed') pygame — hanya unit bergerak (bukan tower/nexus).
+func kit_can_move(e) -> bool:
+	if e == null or not is_instance_valid(e):
+		return false
+	return "move_speed" in e
+
+
+## Pengganti lapisan FX heroes/<boss>_fx pygame (notify_skill_cast):
+## callout nama skill + denyut ring di posisi boss. Lapisan visual
+## aproksimasi — koefisien/timing perilaku dijamin BossSmartAIParityTest,
+## bukan audit piksel FX (lihat docs/GODOT_PARITY.md).
+func kit_fx_cast(skill: String) -> void:
+	_callout(str(skill).to_upper() + "!")
+	_kit_ring(global_position, radius + 18.0, fill_color.lightened(0.25))
+
+
+## Pengganti notify_skill_impact(self, x, y, radius, skill) pygame:
+## cincin ekspansi senyala di titik impact (radius sama dengan pygame).
+func kit_fx_impact(x: float, y: float, r: float, skill: String) -> void:
+	_kit_ring(Vector2(x, y), maxf(10.0, r), fill_color.lightened(0.4))
+	if skill == "r":
+		_kit_ring(Vector2(x, y), maxf(10.0, r) * 0.6, Color(1.0, 0.85, 0.4))
+
+
+## Cincin ekspansi sederhana (draw_arc + fade, CPU-only, aman Android).
+func _kit_ring(center: Vector2, r: float, col: Color) -> void:
+	var host := get_tree().current_scene
+	if host == null or not is_instance_valid(host):
+		return
+	var ring = preload("res://scenes/fx/KitShockRing.gd").new()
+	ring.setup(center, r, col)
+	host.add_child(ring)
 
 
 ## Cleave: 40% damage ke musuh LAIN dalam cleave_radius (80 px) dari posisi
@@ -734,7 +951,12 @@ func apply_scaling(hp_mult: float = 1.0, dmg_mult: float = 1.0, spd_mult: float 
 	max_hp = float(int(max_hp * hp_mult))
 	hp = max_hp
 	damage = float(int(damage * dmg_mult))
-	# Ability generik ikut skala damage (base_boss.py:522 apply_scaling)
+	# Paritas apply_scaling base_boss.py:513-526: base_damage ikut nilai baru
+	# dan dmg_scaling_mult membuat SEMUA key *damage* stat skill ter-skala
+	# lewat _get_boss_stats (sebelumnya skill boss tidak ter-skala di Godot).
+	base_damage = damage
+	dmg_scaling_mult = dmg_mult
+	# Ability generik ikut skala damage (base_boss.py:521 apply_scaling)
 	ability_damage = int(ability_damage * dmg_mult)
 	move_speed = move_speed * spd_mult
 	# Cap anti-burst ikut skala max_hp baru (base_boss.py:524-525)

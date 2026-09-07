@@ -11,6 +11,7 @@ Usage:
 Output:
     godot/data/heroes.json            (+ field skill_* untuk SkillBook.gd)
     godot/data/bosses.json
+    godot/data/boss_stats_full.json  (stat mentah boss_data utk kit smart-AI)
     godot/data/levels.json
     godot/data/hero_archetypes.json
     godot/data/items.json
@@ -198,6 +199,36 @@ def export_bosses():
     except Exception as e:
         print(f"[convert] bosses failed: {e}", file=sys.stderr)
         import traceback; traceback.print_exc()
+
+def export_boss_stats_full():
+    """Stat boss_data MENTAH lengkap (semua key) untuk kit smart-AI Godot.
+
+    bosses.json hanya mengekspor subset; kit Q/W/E/R boss membaca key lain
+    (mis. `damage` untuk buff, `skill_w_shield`, `min_distance`) langsung
+    dari dict boss_data via Boss._get_boss_stats pygame. File ini adalah
+    sumber Boss.gd.kit_stats_full() — JANGAN memotong key supaya kit tidak
+    pernah kehilangan `stats.get(k, default)` yang jatuh ke default.
+    Tuple warna diubah ke string hex (JSON tidak punya tuple).
+    """
+    try:
+        from bosses import boss_data as bd
+        all_bosses = bd.get_all_boss_types()
+    except Exception as e:
+        print(f"[convert] boss_stats_full failed: {e}", file=sys.stderr)
+        return
+    def _jsonify(v):
+        if isinstance(v, tuple):
+            return "#%02x%02x%02x" % v if len(v) == 3 and all(
+                isinstance(c, int) and 0 <= c <= 255 for c in v) else list(v)
+        if isinstance(v, list):
+            return [_jsonify(x) for x in v]
+        if isinstance(v, dict):
+            return {k: _jsonify(x) for k, x in v.items()}
+        return v
+    out = {k: {ik: _jsonify(iv) for ik, iv in v.items()}
+           for k, v in all_bosses.items() if isinstance(v, dict)}
+    write_json("boss_stats_full.json", out)
+
 
 def export_levels():
     try:
@@ -1726,6 +1757,7 @@ if __name__ == "__main__":
     else:
         export_heroes()
         export_bosses()
+        export_boss_stats_full()
         export_levels()
         export_archetypes()
         export_items()

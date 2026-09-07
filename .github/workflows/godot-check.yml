@@ -29,8 +29,10 @@ on:
       - '_entity.py'
       - 'levels/**'
       - 'map_components/**'
+      - 'bosses/**'
       - 'tools/convert_to_godot.py'
       - 'tools/test_godot_match_parity.py'
+      - 'tools/gen_boss_smart_ai.py'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
       - '.github/workflows/godot-check.yml'
@@ -42,8 +44,10 @@ on:
       - '_entity.py'
       - 'levels/**'
       - 'map_components/**'
+      - 'bosses/**'
       - 'tools/convert_to_godot.py'
       - 'tools/test_godot_match_parity.py'
+      - 'tools/gen_boss_smart_ai.py'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
       - '.github/workflows/godot-check.yml'
@@ -84,6 +88,10 @@ jobs:
           python3 godot/tools/tscn_lint.py $(find godot -name '*.tscn' -o -name '*.tres')
           python3 godot/tools/check_refs.py godot
           python3 godot/tools/particles_lint.py godot
+          # BossKit.gd adalah HASIL GENERATE dari bosses/base_boss.py —
+          # gagal di sini berarti ada perubahan smart-AI pygame yang belum
+          # ditranspile (regenerasi: python3 tools/gen_boss_smart_ai.py).
+          python3 tools/gen_boss_smart_ai.py --check
 
       # ── 2. Godot binary (di-cache) ──
       - name: Cache Godot ${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
@@ -223,6 +231,25 @@ jobs:
             cat /tmp/boss.gate
             echo "::error::BOSS-FAIL-TAIL: $(tail -60 /tmp/boss.log | tr '\n' ' | ' | cut -c1-3500)"
             echo "::error::BOSS-FAIL-LINES: $(grep -m8 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/boss.log | tr '\n' ' | ' | cut -c1-2000)"
+            exit 1
+          fi
+
+      # ── 4c. BossSmartAIParityTest: paritas smart-AI Q/W/E/R 79 boss
+      # (summon, dash, transform, dot/debuff, buff, heal, knockback) vs
+      # oracle Boss.update pygame asli — 3 skenario × 79 boss, jejak event
+      # per frame + state kit final. Serangan dasar dimatikan kedua sisi
+      # supaya jejak murni kit (kadens dasar diuji BossCoreParityTest).
+      - name: BossSmartAIParityTest (smart-AI 79 boss vs oracle Pygame)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/BossSmartAIParityTest.tscn --quit-after 2400 2>&1 | tee /tmp/smartai.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/smartai.log --label "BossSmartAIParityTest" \
+              --require "[BossSmartAIParityTest] PASS" > /tmp/smartai.gate 2>&1; then
+            cat /tmp/smartai.gate
+          else
+            cat /tmp/smartai.gate
+            echo "::error::SMARTAI-FAIL-TAIL: $(tail -40 /tmp/smartai.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::SMARTAI-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/smartai.log | tr '\n' ' | ' | cut -c1-2500)"
             exit 1
           fi
 

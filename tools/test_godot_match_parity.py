@@ -120,6 +120,261 @@ def make_boss_fixture():
     return {"bosses": rows, "smart_ai_count": len(smart)}
 
 
+# ══════════════════════════════════════════════════════════
+#  ORACLE SMART-AI BOSS — jejak eksekusi Boss.update pygame ASLI
+# ══════════════════════════════════════════════════════════
+#
+# Untuk tiap boss ber-smart-AI, update() pygame asli dijalankan frame demi
+# frame melawan probe musuh deterministik. Probe HANYA data + perekam state
+# (posisi/attack_timer dibaca lewat property, apply_slow direkam), jadi
+# yang diukur adalah efek nyata, bukan panggilan yang di-mock.
+#
+# Serangan dasar sengaja DILUARWAKKAI (boss.timer = 10**9) di KEDUA sisi:
+# paritas kadens serangan dasar sudah diuji BossCoreParityTest, dan versi
+# Godot boss ranged menyerang lewat proyektil yang sampai beberapa frame
+# kemudian — jejak di sini mengisolasi perilaku Q/W/E/R murni.
+
+SMART_AI_SCENARIOS = (
+    # (nama, offset probe relatif (None = dalam jangkauan), skrip HP, frame)
+    # A: gerombolan 4 musuh; HP turun bertahap (enrage + ability2 heal +
+    #    prioritas HP-kritis menyala di tengah jalan).
+    ("cluster", ((None, 0.0), (130.0, 40.0), (250.0, -70.0), (650.0, 280.0)),
+     {0: 1.0, 200: 0.28, 320: 0.28, 400: 0.20}, 420),
+    # B: dua musuh, HP dipaksa rendah TIAP frame (menutup heal ability2
+    #    supaya cabang HP-kritis terlihat lama oleh kit).
+    ("duo_low", ((None, 0.0), (150.0, 30.0)), "low", 420),
+    # C: satu musuh di tepi jangkauan (cabang target_dist jauh untuk boss
+    #    ranged; HP penuh).
+    ("solo_edge", ((None, 0.0),), "full", 240),
+)
+
+
+class _SmartProbe:
+    """Musuh dummy deterministik untuk oracle smart-AI."""
+
+    def __init__(self, idx, x, y, recorder):
+        self.idx = idx
+        self._x = float(x)
+        self._y = float(y)
+        self.recorder = recorder
+        self.team = "blue"
+        self.alive = True
+        self.hp = 1_000_000_000.0
+        self.max_hp = 1_000_000_000.0
+        self._attack_timer = 0.0
+        self.slow_amount = 0.0
+        self.slow_timer = 0.0
+        self.speed = 2.0  # px/frame — unit (bukan bangunan), bisa di-knockback
+
+    @property
+    def x(self):
+        return self._x
+
+    @x.setter
+    def x(self, value):
+        self._x = float(value)
+
+    @property
+    def y(self):
+        return self._y
+
+    @y.setter
+    def y(self, value):
+        self._y = float(value)
+
+    @property
+    def attack_timer(self):
+        return self._attack_timer
+
+    @attack_timer.setter
+    def attack_timer(self, value):
+        self._attack_timer = float(value)
+
+    def take_damage(self, amount, from_team, **_kw):
+        # HP raksasa: tidak pernah mati. Damage diverifikasi lewat diff HP
+        # per frame — satu-satunya titik yang juga bisa dibaca simetris di
+        # Godot (CombatSystem.apply_damage menulis hp langsung).
+        self.hp -= float(amount)
+        if self.hp <= 0:
+            self.alive = False
+
+    def apply_slow(self, amount, duration):
+        # Rekam PANGGILAN (bukan diff state): aturan stack "terkuat menang"
+        # bisa menelan panggilan lebih lemah; Godot merekam di titik yang
+        # sama lewat status shim probe.
+        self.recorder("slow", self.idx, float(amount), float(duration))
+        if amount > self.slow_amount or self.slow_timer < duration:
+            self.slow_amount = amount
+            self.slow_timer = duration
+
+
+def _kit_final_state(boss):
+    """State kit akhir — diff vars(boss) vs Boss() segar.
+
+    Menangkap SEMUA state kit apa pun namanya (timer Q/W/E/R, buff, target
+    bertanda) tanpa daftar kunci yang harus dirawat manual.
+    """
+    from bosses.base_boss import Boss as _B
+    fresh = vars(_B(boss.boss_type))
+    # state mesin pygame yang BUKAN milik kit (posisi/HP/gerak/animasi/
+    # enrage dibandingkan terpisah lewat event + field final eksplisit).
+    skip = {"x", "y", "hp", "damage", "speed", "direction", "is_enraged",
+            "target", "max_hp", "ability_damage", "ability2_timer",
+            "_hp_value", "_speed_value",
+            "_prev_x", "_prev_y", "anim_time", "attack_cooldown",
+            "enrage_pulse", "enrage_triggered", "timer", "pulse",
+            "entrance_timer", "lane_path", "waypoint_index",
+            "max_damage_per_hit", "is_moving", "_moving_cached",
+            "_attack_lock_timer", "_attack_facing", "hurt_flash_timer",
+            "boss_type", "_jenis_suara", "ability_timer", "ability_active",
+            "ability_active_timer"}
+    out = {}
+    for k, v in vars(boss).items():
+        if k in skip:
+            continue
+        # atribut mesin yang tidak berubah -> bukan kit; atribut KIT
+        # (dibuat dinamis oleh smart-AI, tidak ada di instance segar)
+        # selalu disertakan dengan nilainya.
+        if k in fresh and v == fresh[k]:
+            continue
+        if isinstance(v, _SmartProbe):
+            out[k] = "P%d" % v.idx
+        elif isinstance(v, (int, float, str, bool)) or v is None:
+            out[k] = v
+        elif isinstance(v, (list, tuple)):
+            # tuple dalam list juga diubah ke list: JSON round-trip
+            # mengubah tuple jadi list, dan verify membandingkan objek
+            # Python hasil hitung dengan hasil parse (tuple != list).
+            out[k] = [_serialize_kit_value(x) for x in v]
+    return out
+
+
+def _serialize_kit_value(x):
+    if isinstance(x, float):
+        return round(x, 4)
+    if isinstance(x, (list, tuple)):
+        return [_serialize_kit_value(i) for i in x]
+    return x
+
+
+def _run_smart_scenario(boss_type, probes_cfg, hp_script, frames):
+    """Jalankan update() pygame asli dan kumpulkan jejak event."""
+    from bosses.base_boss import Boss
+    boss = Boss(boss_type)
+    boss.x, boss.y = 600.0, 400.0
+    boss.entrance_timer = 0
+    boss.timer = 10 ** 9  # matikan serangan dasar (lihat catatan blok ini)
+
+    events = []
+    cur_frame = [0]
+
+    def rec(kind, *a):
+        # frame selalu ikut disimpan: perbandingan Godot mem-bucket per frame
+        # sehingga lokasi ketidaksesuaian (frame ke berapa, event apa) presisi.
+        events.append((kind, cur_frame[0]) + a)
+
+    probes = []
+    spawn_offsets = []  # offset AWAL (None sudah diselesaikan) — dipakai
+    # test Godot untuk spawn replay; posisi final tersirat dari event emove.
+    for i, (off, oy) in enumerate(probes_cfg):
+        if off is None:  # musuh utama: dalam jangkauan serang boss
+            off = max(5.0, min(40.0, boss.range - 10.0))
+        spawn_offsets.append((off, oy))
+        probes.append(_SmartProbe(i, 600.0 + off, 400.0 + oy, rec))
+
+    prev = {
+        "hp": boss.hp, "x": boss.x, "y": boss.y,
+        "ast": getattr(boss, "active_skill_timer", -1),
+        "spd": boss.speed, "dmg": boss.damage,
+        "dir": boss.direction, "enr": False,
+        "probe_hp": [p.hp for p in probes],
+        "probe_atk": [p.attack_timer for p in probes],
+        "probe_xy": [(p.x, p.y) for p in probes],
+    }
+
+    hp_mode = hp_script
+    if hp_script == "low":
+        hp_script = {f: 0.28 for f in range(frames)}
+    elif hp_script == "full":
+        hp_script = {f: 1.0 for f in range(frames)}
+
+    for frame in range(frames):
+        cur_frame[0] = frame
+        if frame in hp_script:
+            boss.hp = int(boss.max_hp * hp_script[frame])
+        boss.update(probes, [], [])
+        # ── diff state boss ──
+        if boss.hp != prev["hp"]:
+            rec("bhp", round(float(boss.hp), 3))
+        if abs(boss.x - prev["x"]) > 0.001 or abs(boss.y - prev["y"]) > 0.001:
+            rec("bmove", round(boss.x, 3), round(boss.y, 3))
+        ast = getattr(boss, "active_skill_timer", -1)
+        if ast > prev["ast"]:
+            rec("cast", getattr(boss, "active_skill", "?"))
+        if boss.speed != prev["spd"]:
+            rec("bspd", round(float(boss.speed), 5))
+        if boss.damage != prev["dmg"]:
+            rec("bdmg", int(boss.damage))
+        if boss.direction != prev["dir"]:
+            rec("bface", int(boss.direction))
+        if boss.is_enraged and not prev["enr"]:
+            rec("enrage")
+        # ── diff state probe ──
+        for p in probes:
+            d = prev["probe_hp"][p.idx] - p.hp
+            if d > 0:
+                rec("dmg", p.idx, round(d, 3))
+            if p.attack_timer != prev["probe_atk"][p.idx]:
+                rec("alock", p.idx, round(p.attack_timer, 3))
+            if (p.x, p.y) != prev["probe_xy"][p.idx]:
+                rec("emove", p.idx, round(p.x, 3), round(p.y, 3))
+        prev = {
+            "hp": boss.hp, "x": boss.x, "y": boss.y, "ast": ast,
+            "spd": boss.speed, "dmg": boss.damage,
+            "dir": boss.direction, "enr": boss.is_enraged,
+            "probe_hp": [p.hp for p in probes],
+            "probe_atk": [p.attack_timer for p in probes],
+            "probe_xy": [(p.x, p.y) for p in probes],
+        }
+
+    final = {
+        "hp": round(float(boss.hp), 3),
+        "x": round(boss.x, 4), "y": round(boss.y, 4),
+        "damage": int(boss.damage),
+        "speed": round(float(boss.speed), 5),
+        "direction": int(boss.direction),
+        "is_enraged": bool(boss.is_enraged),
+        "ability2_timer": int(getattr(boss, "ability2_timer", 0)),
+        "kit": _kit_final_state(boss),
+    }
+    # Event list (bukan dict) supaya fixture kompak. hp_script ikut disimpan
+    # supaya test Godot memutar ulang skenario yang PERSIS sama tanpa salin
+    # definisi dua tempat.
+    return {"frames": frames,
+            "probes": [[round(off, 2), round(oy, 2)]
+                       for off, oy in spawn_offsets],
+            "hp_script": hp_mode if isinstance(hp_mode, str)
+            else [[f, p] for f, p in sorted(hp_script.items())],
+            "events": [list(e) for e in events],
+            "final": final}
+
+
+def make_boss_smart_ai_fixture():
+    """Jejak eksekusi smart-AI dari Boss.update pygame ASLI, per skenario."""
+    smart = sorted(smart_ai_boss_types())
+    rows = []
+    for boss_type in smart:
+        row = {"boss_type": boss_type, "scenarios": {}}
+        for name, probes_cfg, hp_script, frames in SMART_AI_SCENARIOS:
+            row["scenarios"][name] = _run_smart_scenario(
+                boss_type, probes_cfg, hp_script, frames)
+        rows.append(row)
+    return {"bosses": rows,
+            "scenario_names": [s[0] for s in SMART_AI_SCENARIOS],
+            "note": "serangan dasar dimatikan di kedua sisi supaya jejak "
+                    "murni perilaku Q/W/E/R (lihat blok ini di atas)"}
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -140,6 +395,7 @@ def make_fixture(core, entity, levels, paths):
         "minions": [],
         "lane_endpoints": {},
         "boss_core": make_boss_fixture(),
+        "boss_smart_ai": make_boss_smart_ai_fixture(),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -227,8 +483,11 @@ def main():
             "Pygame gameplay changed. Review the Godot implementation, then run "
             "tools/test_godot_match_parity.py --write-fixture")
         print("[PygameMatchParity] PASS: fixture matches Pygame rules, all 54 levels, "
-              "50 wave compositions, 25 minion/nexus combinations and "
-              f"{len(actual['boss_core']['bosses'])} boss-core records")
+              "50 wave compositions, 25 minion/nexus combinations, "
+              f"{len(actual['boss_core']['bosses'])} boss-core records and "
+              f"{len(actual['boss_smart_ai']['bosses'])} boss smart-AI records "
+              f"({sum(len(b['scenarios']) for b in actual['boss_smart_ai']['bosses'])} "
+              "skenario)")
 
 
 if __name__ == "__main__":

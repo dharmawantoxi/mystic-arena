@@ -282,7 +282,9 @@ func _test_cleave_and_generic_ability() -> void:
 	krobellus.target = victim
 	krobellus.attack_timer = 0.0
 	krobellus.ability_timer = 0.0
-	krobellus._after_attack() # cleave (tidak ada musuh lain) + ability generik
+	# dist eksplisit (paritas pygame: rantai smart-AI/ability selalu menerima
+	# jarak target aktual dari update()).
+	krobellus._after_attack(krobellus.global_position.distance_to(victim.global_position)) # cleave + ability generik
 	_expect(krobellus.ability_active, "Ability generik mengaktifkan aura/state")
 	_expect(victim.hp < v_before, "Ability generik melukai musuh dalam ability_range")
 	krobellus.queue_free()
