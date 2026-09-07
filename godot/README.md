@@ -163,6 +163,17 @@ godot --headless --path godot res://tests/BattleSmokeTest.tscn --quit-after 180
 
 Harus muncul `[BattleSmokeTest] PASS` tanpa error script.
 
+Cinematic (Fase 5d: intro level pause+skip, banner boss, FX kematian +
+perayaan true boss), setelah import yang sama:
+
+```bash
+godot --headless --path godot res://tests/CinematicTest.tscn --quit-after 960
+```
+
+Harus muncul `[CinematicTest] PASS`. `--quit-after` dihitung FRAMES (bukan
+detik); tes menunggu animasi berbasis waktu nyata (fase kematian 60/90 frame
++ perayaan), jadi jangan turunkan di bawah ~900.
+
 `Unable to open Android 'build-tools' directory` adalah masalah konfigurasi SDK
 editor yang **terpisah**. Jika ingin export Android, instal Android SDK Build-Tools
 melalui SDK Manager dan arahkan **Editor Settings → Export → Android → Android SDK
