@@ -70,6 +70,13 @@ var active_boss = null
 var red_towers_destroyed: int = 0
 var true_boss_spawned: bool = false
 
+## Cinematic aktif (Fase 5d — port efek _render.py): intro level membekukan
+## gameplay, banner boss & perayaan kematian tidak. Urutan cek skip = urutan
+## pygame Game.handle_key (_core.py:2674-2686): level_intro -> boss_intro
+## -> boss_death celebration. Referensi eksplisit supaya prioritas deterministik.
+var _level_intro = null
+var _boss_banner = null
+
 func _enter_tree():
 	# _enter_tree (bukan _ready): parent didahulukan, jadi kita tetap kebagian
 	# signal level_started walau Connector memanggil start_level() di _ready()-nya.
@@ -148,6 +155,10 @@ func _on_level_started(level_num: int) -> void:
 	_start_battle.call_deferred()
 
 func _start_battle() -> void:
+	# Jaga-jaga: battle baru tidak boleh mulai dalam keadaan beku (mis. level
+	# diganti saat cinematic kematian masih memegang pause).
+	get_tree().paused = false
+	GameManager.set_paused(false)
 	_respawn_pending = false
 	_clear_field()
 	_reset_boss_schedule()
@@ -170,6 +181,24 @@ func _start_battle() -> void:
 	_on_selection_changed()
 	print("[Main] battle siap: %d hero, 2 nexus, %d slot menara" % [
 		STARTER_ROSTER.size() + ENEMY_ROSTER.size(), GameManager.build_slots.size()])
+	_show_level_intro()
+
+## Layar intro split-screen sebelum battle (paritas LevelIntroScreen dibuat di
+## Game.reset _core.py:1608): gameplay beku sampai SPACE/ENTER/klik.
+func _show_level_intro() -> void:
+	if GameManager.in_menu:
+		return
+	var lv: Dictionary = BossDB.get_level(GameManager.level_number)
+	if lv.is_empty():
+		return
+	var intro = preload("res://scenes/ui/LevelIntro.gd").new()
+	intro.setup(lv, GameManager.level_number)
+	add_child(intro)
+	intro.take_pause_ownership()
+	_level_intro = intro
+	get_tree().paused = true
+	GameManager.set_paused(true)
+	print("[Main] LEVEL INTRO — SPACE/ENTER/klik untuk mulai")
 
 ## `free()` langsung (bukan `queue_free()`): arena harus sudah bersih SEBELUM
 ## unit baru di-spawn pada frame yang sama, kalau tidak _first_blue_hero() bisa
@@ -182,9 +211,22 @@ func _clear_field() -> void:
 		for n in get_tree().get_nodes_in_group(group):
 			if is_instance_valid(n):
 				n.free()
+	_free_cinematics()
 	GameManager.blue_nexus = null
 	GameManager.red_nexus = null
 	GameManager.clear_selection()
+
+## Buang semua cinematic aktif (intro level / banner boss / FX kematian).
+## finish() melepas pause kalau cinematic itu yang memegangnya, jadi arena
+## baru tidak pernah mulai dalam keadaan beku.
+func _free_cinematics() -> void:
+	for n in get_tree().get_nodes_in_group("cinematic"):
+		if is_instance_valid(n) and n.has_method("finish"):
+			n.finish()
+		elif is_instance_valid(n):
+			n.free()
+	_level_intro = null
+	_boss_banner = null
 
 func _reset_boss_schedule() -> void:
 	pending_mini_bosses.clear()
@@ -285,6 +327,7 @@ func _boss_tick(_delta: float) -> void:
 		if GameManager.enemy_scaling_enabled:
 			active_boss.apply_scaling(GameManager.enemy_hp_mult,
 				GameManager.enemy_damage_mult, GameManager.enemy_speed_mult)
+		_show_boss_banner(boss_type) # paritas BossIntroCinematic _core.py:1826
 		print("[Main] MINI BOSS %s turun ke mid lane%s" % [boss_type,
 			" (scaling x%.2f)" % GameManager.enemy_hp_mult if GameManager.enemy_scaling_enabled else ""])
 		return
@@ -300,8 +343,19 @@ func _boss_tick(_delta: float) -> void:
 			active_boss.apply_scaling(GameManager.enemy_hp_mult,
 				GameManager.enemy_damage_mult, GameManager.enemy_speed_mult)
 		true_boss_spawned = true
+		_show_boss_banner(true_boss) # paritas BossIntroCinematic _core.py:2105
 		print("[Main] TRUE BOSS %s turun (%d menara Dire hancur)" % [
 			true_boss, red_towers_destroyed])
+
+## Banner nama boss meluncur dari atas (paritas BossIntroCinematic
+## _render.py:2152): 100 frame, gameplay TIDAK pause, skip SPACE/ESC/klik.
+func _show_boss_banner(boss_type: String) -> void:
+	if is_instance_valid(_boss_banner):
+		_boss_banner.finish()
+	var banner = preload("res://scenes/ui/BossIntroBanner.gd").new()
+	banner.setup(BossDB.get_boss(boss_type))
+	add_child(banner)
+	_boss_banner = banner
 
 # ══════════════════════════════════════════════════════════
 #  POSISI
@@ -427,13 +481,48 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			# Klik selama cinematic = skip + DITELAN (paritas Game.handle_click
+			# _core.py:2563-2575: cek intro sebelum InputHandler, lalu return).
+			if _cinematic_click():
+				return
 			_on_click(get_global_mouse_position())
 		return
 	if event is InputEventKey:
 		_on_key(event as InputEventKey)
 
+## Skip cinematic lewat klik, urutan paritas pygame: level intro -> banner
+## boss -> perayaan kematian boss.
+func _cinematic_click() -> bool:
+	if is_instance_valid(_level_intro) and _level_intro.cinematic_active():
+		return _level_intro.skip_click()
+	if is_instance_valid(_boss_banner) and _boss_banner.cinematic_active():
+		return _boss_banner.skip_click()
+	for fx in get_tree().get_nodes_in_group("cinematic"):
+		if is_instance_valid(fx) and fx.has_method("skip_click") \
+				and fx.cinematic_active():
+			return fx.skip_click()
+	return false
+
+## Skip cinematic lewat tombol; true = event dikonsumsi (jangan lanjut ke
+## pause/gameplay). Tombol yang tidak diterima cinematic jatuh ke handler
+## normal — paritas handle_skip pygame mengembalikan False untuk tombol lain.
+func _cinematic_key(key: InputEventKey) -> bool:
+	if is_instance_valid(_level_intro) and _level_intro.cinematic_active():
+		return _level_intro.skip_key(key)
+	if is_instance_valid(_boss_banner) and _boss_banner.cinematic_active():
+		return _boss_banner.skip_key(key)
+	for fx in get_tree().get_nodes_in_group("cinematic"):
+		if is_instance_valid(fx) and fx.has_method("skip_key") \
+				and fx.cinematic_active():
+			return fx.skip_key(key)
+	return false
+
 func _on_key(key: InputEventKey) -> void:
 	if not key.pressed or key.echo:
+		return
+	# Cinematic dicek SEBELUM pause/gameplay (paritas Game.handle_key
+	# _core.py:2673-2686): ESC saat banner/perayaan = skip, bukan menu pause.
+	if _cinematic_key(key):
 		return
 	var menu = _main_menu()
 	# P/ESC dicek paling awal: justru dibutuhkan untuk RESUME saat tree di-pause

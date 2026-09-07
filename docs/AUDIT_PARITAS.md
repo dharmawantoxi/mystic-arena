@@ -52,7 +52,7 @@ varian abu-abu.
 |---|---|
 | `has_torch_stones` | ada di 54 tema, **tidak pernah dibaca** `DecorationRenderer` — dead code di pygame |
 | `burnt`, `earth_high` | hasil `THEME_KEY_MAP` (`dire_burnt`/`dire_earth_4`); dipakai `_draw_terrain` Godot lewat `d.get("grass_high", ...)` pola dinamis, dan `burnt` memang cadangan palet |
-| `entrance_color` (bosses) | milik layar intro boss `_render.py:1645-2275` — layar itu belum diport, sudah tercatat di roadmap |
+| `entrance_color` (bosses) | ~~milik layar intro boss — belum diport~~ ✅ **DIPAKAI** sejak Fase 5d (2026-09-07): `BossIntroBanner.gd`, siluet `LevelIntro.gd`, dan ledakan/perayaan `BossDeathFX.gd` |
 | `skill_desc`, `skill_duration` | teks UI + durasi AI; `SkillBook.gd` memakai tabel cooldown sendiri (deviasi terdokumentasi) |
 | `playstyle`, `power`, `tier` | metadata arketipe untuk balancing, tidak dipakai runtime pygame |
 | 23 field `items.json` (`proc_chance`, `dash_distance`, `root_radius`, …) | milik **17 item aktif** + `on_attack`/`bash`/`multishot` — sudah tercatat sebagai Fase 5b |
@@ -95,6 +95,12 @@ dari grep literal:
 **Semua temuan A1-A6 sudah ditutup.** Sisa pekerjaan paritas berikutnya bukan
 lagi "data mati", melainkan fitur yang memang belum diport (Fase 5b item aktif,
 AIPlayer penuh, TileSet `.tres`).
+
+**Update 2026-09-07 (Fase 5d):** cinematic intro/celebration selesai diport —
+`entrance_color` (tabel B) kini dipakai `LevelIntro/BossIntroBanner/BossDeathFX`,
+layar intro boss & kematian boss `_render.py:1622-3300` tidak lagi "belum diport".
+Field BARU `gold_reward` ditambahkan ke export `bosses.json` (dibaca perayaan
+"BOSS DEFEATED!" — paritas `boss.gold_reward` `bosses/base_boss.py:394`).
 
 Catatan verifikasi: tanpa binary Godot di sandbox, nomor 1-3 hanya bisa
 divalidasi lewat `gdparse` + `tscn_lint` + `check_refs` (sintaks & konsistensi

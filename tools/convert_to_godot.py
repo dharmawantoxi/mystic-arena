@@ -112,6 +112,10 @@ def export_bosses():
                 "range": v.get("range", 50),
                 "attack_cooldown": v.get("attack_cooldown", 40),
                 "boss_class": v.get("boss_class", "mini"),
+                # gold_reward: dibaca BossDeathFX Godot (fase 5d) untuk teks
+                # "+ X GOLD" di perayaan true boss (paritas boss.gold_reward
+                # bosses/base_boss.py:394).
+                "gold_reward": v.get("gold_reward", 0),
                 "color": "#%02x%02x%02x" % v.get("color", (150,100,200)) if isinstance(v.get("color"), tuple) else v.get("color","#aaaaaa"),
                 "entrance_color": "#%02x%02x%02x" % v.get("entrance_color", (200,150,255)) if isinstance(v.get("entrance_color"), tuple) else v.get("entrance_color","#ffffff"),
             }

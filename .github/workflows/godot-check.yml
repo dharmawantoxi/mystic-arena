@@ -130,6 +130,13 @@ jobs:
           python3 godot/tools/godot_log_gate.py /tmp/smoke.log --label "BattleSmokeTest" \
             --require "[BattleSmokeTest] PASS"
 
+      - name: CinematicTest (level intro, banner boss, death FX + perayaan)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/CinematicTest.tscn --quit-after 240 2>&1 | tee /tmp/cine.log
+          python3 godot/tools/godot_log_gate.py /tmp/cine.log --label "CinematicTest" \
+            --require "[CinematicTest] PASS"
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |

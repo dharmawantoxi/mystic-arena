@@ -15,6 +15,8 @@ Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 
 
 **Menu utama + progresi level** juga jalan (sesi 2026-09-06 kedua): boot jatuh ke **MENU UTAMA** (`scenes/ui/MainMenu.gd`, state machine paritas `MenuState` pygame: MAIN / LEVEL_SELECT / HERO_SHOP / SETTINGS / HOW_TO_PLAY / CREDITS / PAUSE), pilih level 1–54 dari `levels.json` (nama, deskripsi, tema, mini boss, true boss, kunci `unlock_after_level`), HERO SHOP pakai meta gold, volume SFX/BGM tersimpan di save, dan setelah VICTORY tekan **ENTER** untuk lanjut ke level berikutnya (tema map + boss berbeda).
 
+**Cinematic juga sudah diport** (Fase 5d, 2026-09-07): layar intro split-screen sebelum tiap level (pause sampai SPACE/ENTER/klik), banner nama boss yang meluncur saat mini/true boss turun, dan urutan kematian boss — ledakan + dissolve + pecahan, ditutup perayaan "BOSS DEFEATED!" untuk true boss. Lihat bagian "Cinematic (Fase 5d)" di bawah.
+
 ## Quick Start
 
 ```bash
@@ -45,6 +47,7 @@ godot godot/project.godot
 | `ENTER` | setelah VICTORY: **lanjut level berikutnya** · setelah DEFEAT: ulangi level |
 | `R` | setelah menang/kalah: replay level yang sama (is_replay → reward 1500/200, bukan 3000) |
 | `P` / `ESC` | menu PAUSE (RESUME / PENGATURAN / MENU UTAMA / KELUAR — paritas `MenuState.PAUSE`); ESC setelah menang/kalah = menu utama |
+| `SPACE` / `ENTER` / klik | lewati layar intro level (gameplay beku sampai dilewati); SPACE/ESC/klik juga menutup banner nama boss & perayaan "BOSS DEFEATED!" |
 
 Hero Radiant yang tidak dipilih tetap bertarung sendiri (AI + auto-cast skill); yang dipilih berhenti auto-cast dan menunggu input QWER — sama seperti pygame.
 
@@ -332,6 +335,29 @@ terdokumentasi, lalu stabil (446 file identik antar dua run penuh).
 File penting: `scripts/render/BakedUnitDB.gd` (manifest + tekstur lazy,
 FIFO cap 64), `scenes/render/BakedSprite.tscn` + `.gd` (SpriteFrames
 dibangun runtime via AtlasTexture — tanpa 222 file .tres).
+
+## Cinematic (Fase 5d — intro level, banner boss, kematian boss)
+
+Tiga layar cinematic pygame (`_render.py`) sudah diport penuh; semuanya
+masuk grup `"cinematic"` dan diprioritaskan di `Main._on_key` persis urutan
+`Game.handle_key` pygame (`_core.py:2674-2686`): level intro → banner boss
+→ perayaan kematian.
+
+| File | Paritas pygame | Perilaku |
+|---|---|---|
+| `scenes/ui/LevelIntro.gd` | `LevelIntroScreen` (`:2679`), dibuat di `Game.reset` (`_core.py:1608`) | Split-screen: kiri angka level Cinzel 200 + nama + deskripsi + bar kesulitan + reward/starting gold/passive income (rumus `compute_starting_gold` yang sama dengan `Game.reset`), kanan FINAL BOSS + siluet prosedural (aura pulse, 12 sinar, mahkota, mata menyala). Tint 34 tema + vignette. **Pause gameplay** sampai SPACE/ENTER/klik; SFX `wave_start` |
+| `scenes/ui/BossIntroBanner.gd` | `BossIntroCinematic` (`:2152`) | Strip 600×92 slide ease-out dari kiri, 100 frame, tag TRUE/MINI BOSS + nama warna `entrance_color` + HP bar preview + sudut emas. **Tidak pause**; dipicu `Main._boss_tick` saat mini/true boss turun; skip SPACE/ESC/klik; SFX `nexus_hit` |
+| `scenes/fx/BossDeathFX.gd` | `BossDeathAnimation` (`:1622`) | Dipanggil `Boss.die()`: white flash + gelombang cincin + dissolve + pecahan + partikel roh. Fase kematian (60f mini / 90f true) **pause gameplay** (paritas `_core.py:1995`), lalu perayaan true boss 120f ("BOSS DEFEATED!" + "+ X GOLD" dari field `gold_reward` bosses.json + "HERO UNLOCKED!" + bintang berputar) tanpa pause + fanfare `victory`. Skip hanya fase perayaan |
+
+Font Cinzel + Barlow kini ikut repo di `assets/fonts/` (salinan
+`assets/fonts/` akar repo) supaya tipografi cinematic paritas dengan
+`title_font()`/`get_font()` pygame — tanpa perlu menjalankan converter.
+Uji regresinya: `tests/CinematicTest.tscn` (dijalankan godot-check CI);
+`BattleSmokeTest` kini men-skip intro dulu sebelum mengamati combat.
+
+Deviasi terdokumentasi: ikon vektor `ui_theme.draw_icon` (segitiga/bintang)
+digambar langsung dengan draw API; bayangan teks multi-lapis pygame menjadi
+shadow Label bawaan Godot.
 
 ## Kaizen Skeleton2D (flagship — **sudah** dipakai di arena)
 
