@@ -128,7 +128,7 @@ func _find_death_fx():
 
 
 func _key(code: Key) -> InputEventKey:
-	var ev := InputEventKey.new()
+	var ev: InputEventKey = InputEventKey.new()
 	ev.keycode = code
 	ev.pressed = true
 	return ev

@@ -400,21 +400,26 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, dsz / 2.0, Color(entrance_color.r,
 			entrance_color.g, entrance_color.b, da / 2.0))
 	# ── Pecahan shatter (paritas :1908-1946) ──
+	# Semua angka dari Dictionary = Variant -> konversi eksplisit; proyek ini
+	# menganggap "infer dari Variant" sebagai error (lihat README bagian
+	# "Cannot infer the type").
 	for f in _fragments:
 		var life: float = f["life"]
 		if life <= 0.0:
 			continue
-		var lr := life / f["max_life"]
-		var a := lr
+		var lr: float = life / float(f["max_life"])
+		var a: float = lr
 		if a * 255.0 < 10.0:
 			continue
 		var sz: float = f["size"]
-		var cos_r := cos(f["rotation"])
-		var sin_r := sin(f["rotation"])
+		var fx: float = f["x"]
+		var fy: float = f["y"]
+		var cos_r := cos(float(f["rotation"]))
+		var sin_r := sin(float(f["rotation"]))
 		var pts := PackedVector2Array()
 		for corner in [Vector2(-sz, -sz), Vector2(sz, -sz), Vector2(sz, sz), Vector2(-sz, sz)]:
-			pts.append(Vector2(f["x"] + corner.x * cos_r - corner.y * sin_r,
-				f["y"] + corner.x * sin_r + corner.y * cos_r))
+			pts.append(Vector2(fx + corner.x * cos_r - corner.y * sin_r,
+				fy + corner.x * sin_r + corner.y * cos_r))
 		var fc: Color = f["color"]
 		draw_colored_polygon(pts, Color(fc.r, fc.g, fc.b, a))
 		# Tepi terang warna entrance (pygame: polygon outline 1px)
@@ -425,15 +430,15 @@ func _draw() -> void:
 		var life: float = p["life"]
 		if life <= 0.0:
 			continue
-		var lr := life / p["max_life"]
-		var a := 200.0 * lr / 255.0
+		var lr: float = life / float(p["max_life"])
+		var a: float = 200.0 * lr / 255.0
 		if a * 255.0 < 10.0:
 			continue
 		var sz: float = p["size"]
-		var pos := Vector2(p["x"], p["y"])
+		var pos := Vector2(float(p["x"]), float(p["y"]))
 		var gr := sz + 2.0
 		while gr > 0.0:
-			var ga := a * (1.0 - gr / (sz + 2.0))
+			var ga: float = a * (1.0 - gr / (sz + 2.0))
 			if ga > 0.0:
 				draw_circle(pos, gr, Color(entrance_color.r, entrance_color.g,
 					entrance_color.b, ga))

@@ -57,7 +57,7 @@ func _boot() -> void:
 	# Smoke test butuh combat berjalan -> skip lewat jalur input Main.
 	var intro = _main.get("_level_intro")
 	if is_instance_valid(intro) and intro.cinematic_active():
-		var ev := InputEventKey.new()
+		var ev: InputEventKey = InputEventKey.new()
 		ev.keycode = KEY_SPACE
 		ev.pressed = true
 		_main._on_key(ev)
