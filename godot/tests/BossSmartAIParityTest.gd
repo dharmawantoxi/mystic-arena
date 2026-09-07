@@ -347,7 +347,12 @@ func _compare_final(boss_type: String, sc_name: String, expected: Dictionary,
 			var ok: bool = idx >= 0 and idx < probes.size() and probes[idx] == got
 			_expect(ok, "%s.kit.%s == probe %d" % [tag, k, idx])
 		elif want is float or (want is int and got is float):
-			_near(float(want), float(got), "%s.kit.%s" % [tag, k], 0.51)
+			if got is float or got is int:
+				_near(float(want), float(got), "%s.kit.%s" % [tag, k], 0.51)
+			else:
+				# jangan float(null) — gagal rapi dengan pesan tipe
+				_expect(false, "%s.kit.%s: oracle %s (%s) vs Godot %s"
+					% [tag, k, str(want), typeof(want), str(got)])
 		elif want is Array:
 			_expect(_array_eq(want, got), "%s.kit.%s (%s vs %s)"
 				% [tag, k, str(want), str(got)])

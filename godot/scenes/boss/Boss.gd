@@ -12,7 +12,7 @@ var max_hp: float = 30000.0
 var hp: float = 30000.0
 var damage: float = 120.0
 var move_speed: float = 60.0
-var attack_range: float = 65.0
+var attack_range: float = 50.0  # = range pygame (px, tanpa kompensasi)
 var attack_cooldown: float = 0.7
 var dmg_school: String = "physical"
 
@@ -143,7 +143,7 @@ func _ready():
 		hp = max_hp
 		damage = float(s.get("damage", 120))
 		move_speed = float(s.get("speed", 0.85)) * 60.0
-		attack_range = float(s.get("range", 50)) + 15.0
+		attack_range = float(s.get("range", 50))
 		attack_cooldown = float(s.get("attack_cooldown", 43)) / 60.0
 		dmg_school = "physical" # serangan dasar boss SELALU fisik (base_boss.py:707)
 		armor = float(s.get("armor", 0))
@@ -214,7 +214,7 @@ func setup_visual(_s: Dictionary) -> void:
 	silhouette = UnitSilhouetteScript.new()
 	silhouette.name = "Silhouette"
 	visual.add_child(silhouette)
-	var ranged := attack_range >= 110.0
+	var ranged := attack_range >= 100.0 # AMBANG_RANGED combat_audio.py
 	silhouette.configure(
 		UnitSilhouetteScript.Kind.BOSS, boss_type, team, fill_color, fill_dark,
 		radius, role, dmg_school, ranged, boss_class)
@@ -310,11 +310,9 @@ func _physics_process(delta):
 	_drive_visual(is_moving)
 
 
-## Jarak aggro boss = jangkauan serang + 100, diukur pada skala Godot
-## (attack_range Godot = range pygame + 15 — kompensasi origin lama — jadi
-## aggro = attack_range + 85). base_boss.py:676.
+## Jarak aggro boss = jangkauan serang + 100 (base_boss.py:676).
 func _aggro_radius() -> float:
-	return attack_range + (AGGRO_MARGIN - 15.0)
+	return attack_range + AGGRO_MARGIN
 
 
 ## Timers bersama: attack_timer (serangan dasar), ability_timer (ability
@@ -603,7 +601,7 @@ func try_attack() -> bool:
 	# is_melee=null -> AudioManager memakai ambang jarak, bukan flag.
 	AudioManager.play_combat(AudioManager.basic_attack_sfx(null, attack_range))
 	var dmg := CombatSystem.calc_damage(self, target, damage, dmg_school)
-	if attack_range >= 110.0:
+	if attack_range >= 100.0: # AMBANG_RANGED (base_boss._suara_serangan)
 		# Boss ranged: proyektil (visual Godot; damage diserap target saat
 		# impact). Cleave tetap dihitung dari posisi boss saat ayunan — sama
 		# seperti pygame yang menghitung splash di momen serangan.

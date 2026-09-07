@@ -274,9 +274,12 @@ def _run_smart_scenario(boss_type, probes_cfg, hp_script, frames):
         events.append((kind, cur_frame[0]) + a)
 
     probes = []
+    spawn_offsets = []  # offset AWAL (None sudah diselesaikan) — dipakai
+    # test Godot untuk spawn replay; posisi final tersirat dari event emove.
     for i, (off, oy) in enumerate(probes_cfg):
         if off is None:  # musuh utama: dalam jangkauan serang boss
             off = max(5.0, min(40.0, boss.range - 10.0))
+        spawn_offsets.append((off, oy))
         probes.append(_SmartProbe(i, 600.0 + off, 400.0 + oy, rec))
 
     prev = {
@@ -348,8 +351,8 @@ def _run_smart_scenario(boss_type, probes_cfg, hp_script, frames):
     # supaya test Godot memutar ulang skenario yang PERSIS sama tanpa salin
     # definisi dua tempat.
     return {"frames": frames,
-            "probes": [[round(p.x - 600.0, 2), round(p.y - 400.0, 2)]
-                       for p in probes],
+            "probes": [[round(off, 2), round(oy, 2)]
+                       for off, oy in spawn_offsets],
             "hp_script": hp_mode if isinstance(hp_mode, str)
             else [[f, p] for f, p in sorted(hp_script.items())],
             "events": [list(e) for e in events],
