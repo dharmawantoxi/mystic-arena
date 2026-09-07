@@ -191,7 +191,10 @@ func _reset_boss_schedule() -> void:
 	active_boss = null
 	red_towers_destroyed = 0
 	true_boss_spawned = false
-	_ai_timer = 0.0
+	# Timer AI TIDAK di-reset di sini: AIPlayer self-managed dan mereset diri
+	# lewat signal level_started (AIPlayer._on_level_started -> reset()).
+	# Memaksa reset dari sini juga akan menghapus draft _hero_purchase_target
+	# yang justru harus bertahan sampai gold cukup.
 
 ## Nexus = kondisi menang/kalah (paritas Castle di _entity.py).
 ## Level castle awal dibaca levels.json (paritas _core.py:1504-1508):

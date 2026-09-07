@@ -175,7 +175,9 @@ func _build_skill_anims(frames: SpriteFrames, e: Dictionary) -> void:
 	var fpr: int = max(1, int(e.get("skill_frames_per_row", 8)))
 	var anchor: Array = e.get("skill_anchor", e.get("anchor", [cw / 2, ch]))
 	_offset_skill = Vector2(-float(anchor[0]), -float(anchor[1]))
-	for key in ["q", "w", "e", "r"]:
+	# `key: String` (bukan `key` polos): iterator array literal bertipe Variant,
+	# jadi `"skill_" + key` di bawah tidak bisa di-infer oleh `:=`.
+	for key: String in ["q", "w", "e", "r"]:
 		var spec: Array = BakedUnitDB.skill_anim(unit_type, key)
 		if spec.size() < 2:
 			continue
@@ -216,7 +218,9 @@ func _build_rage_anims(frames: SpriteFrames, e: Dictionary) -> void:
 	var first := 0
 	var fps := int(e.get("fps_boss", 12)) if kind == "boss" \
 			else int(e.get("fps_hero", 6))
-	for anim in ["idle", "walk", "attack"]:
+	# `anim: String` — sama seperti _build_skill_anims: tanpa tipe eksplisit
+	# `"rage_" + anim` bertipe Variant dan `:=` gagal infer.
+	for anim: String in ["idle", "walk", "attack"]:
 		var count: int = int(fc.get(anim, 8))
 		var ranim := "rage_" + anim
 		frames.add_animation(StringName(ranim))
