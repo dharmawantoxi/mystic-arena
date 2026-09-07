@@ -242,10 +242,10 @@ func _on_wave_started(wave_num: int) -> void:
 	for i in range(comp.size()):
 		var lane: String = LANES[i % LANES.size()]
 		if GameManager.count_alive("minions", "blue") < GameManager.max_minions_per_team:
-			GameManager.spawn_minion(comp[i], "blue", _spawn_point("blue", i, lane), scale)
+			GameManager.spawn_minion(comp[i], "blue", _spawn_point("blue", i, lane), scale, lane)
 			spawned += 1
 		if GameManager.count_alive("minions", "red") < GameManager.max_minions_per_team:
-			var m = GameManager.spawn_minion(comp[i], "red", _spawn_point("red", i, lane), scale)
+			var m = GameManager.spawn_minion(comp[i], "red", _spawn_point("red", i, lane), scale, lane)
 			# ENEMY SCALING (Hard only) — paritas _core.py:1792-1796: hanya
 			# antrean spawn MERAH yang dikali enemy_hp/damage/speed_mult.
 			if GameManager.enemy_scaling_enabled:

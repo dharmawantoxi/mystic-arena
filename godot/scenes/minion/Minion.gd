@@ -15,6 +15,8 @@ const FPS := 60.0
 
 @export var minion_type: String = "goblin"
 @export var team: String = "blue"
+## Jalur asal wave, dipakai AIPlayer untuk menghitung ancaman per lane.
+@export var lane: String = "mid"
 ## Skala HP/damage untuk wave tinggi (paritas minion_scale NEXUS_LEVELS)
 @export var stat_scale: float = 1.0
 

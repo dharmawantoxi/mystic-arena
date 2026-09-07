@@ -386,7 +386,8 @@ func _assign_hero_lane(hero) -> void:
 		if not is_instance_valid(m) or str(m.get("team")) == "red" \
 				or bool(m.get("is_dead")):
 			continue
-		var lane := str(m.get("lane", ""))
+		# m adalah Node: Object.get() tidak menerima default seperti Dictionary.get().
+		var lane := str(m.get("lane"))
 		if threats.has(lane):
 			threats[lane] = int(threats[lane]) + 1
 	var max_lane := "mid"
@@ -401,7 +402,7 @@ func _assign_hero_lane(hero) -> void:
 		var best_d := 1e18
 		for m in get_tree().get_nodes_in_group("minions"):
 			if not is_instance_valid(m) or str(m.get("team")) != "blue" \
-					or bool(m.get("is_dead")) or str(m.get("lane", "")) != max_lane:
+					or bool(m.get("is_dead")) or str(m.get("lane")) != max_lane:
 				continue
 			var d: float = hero.global_position.distance_to(m.global_position)
 			if d < best_d:

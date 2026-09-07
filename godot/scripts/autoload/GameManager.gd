@@ -523,11 +523,12 @@ func spawn_boss(boss_type: String, team: String, pos: Vector2):
 
 
 func spawn_minion(minion_type: String, team: String, pos: Vector2,
-		scale_mult: float = 1.0) -> Node2D:
+		scale_mult: float = 1.0, lane: String = "mid") -> Node2D:
 	var minion_scene = preload("res://scenes/minion/Minion.tscn")
 	var m = minion_scene.instantiate()
 	m.minion_type = minion_type
 	m.team = team
+	m.lane = lane
 	m.position = pos
 	if scale_mult != 1.0 and "stat_scale" in m:
 		m.stat_scale = scale_mult
