@@ -114,14 +114,18 @@ godot --headless --path godot --quit-after 120
 Pastikan log tidak mengandung `SCRIPT ERROR`, `Parse Error`, atau `Compile Error`;
 exit code editor saja tidak cukup karena Godot bisa tetap keluar dengan kode 0.
 
-### Parse error: `Too many arguments for "get()"` di AIPlayer
+### Parse error: `Too many arguments for "get()"` di AIPlayer / Node
 
 `Dictionary.get(key, default)` boleh menerima dua argumen, tetapi `Object.get(property)`
-(hanya satu argumen) yang dipakai untuk node dari `get_nodes_in_group()`. Dua lookup
-lane minion di `AIPlayer._assign_hero_lane()` sekarang memakai `m.get("lane")`.
-Minion juga menyimpan `lane`, diteruskan oleh `Main` lewat `GameManager.spawn_minion()`
-untuk kedua tim; jika tidak diberikan, lane tetap `"mid"` dan argumen keempat tetap
-pengali stat seperti sebelumnya.
+(hanya satu argumen) yang dipakai untuk node dari `get_nodes_in_group()` atau hero
+hidup. Perbaikan terkait:
+
+1. Lane minion di `AIPlayer._assign_hero_lane()` memakai `m.get("lane")` (bukan default).
+2. Minion menyimpan `lane`, diteruskan `Main` lewat `GameManager.spawn_minion()` untuk
+   kedua tim; default `"mid"`, argumen keempat tetap pengali stat.
+3. `Hero.die` menaikkan `killer.kills` lewat `killer.get("kills")` (satu argumen).
+4. `ItemDB.is_magic_hero` / `suggest_item` membaca role & range lewat helper yang aman
+   untuk Node **dan** Dictionary (dipakai AI saat beli item).
 
 Error `Main.gd: Failed to compile depended scripts` dan `Nonexistent function 'new'
 in base 'GDScript'` adalah efek berantai karena script AI gagal dikompilasi — jangan
@@ -133,8 +137,18 @@ godot --headless --path godot res://tests/AIPlayerTest.tscn --quit-after 120
 
 Harus muncul `[AIPlayerTest] PASS` tanpa error script. Tes memuat Main, memeriksa lane
 wave kedua tim, dan memastikan AI memilih minion biru hidup terdekat di lane paling
-ramai (atau menara terdekat jika tidak ada minion). Tes tidak memulai match atau
-menulis save.
+ramai (atau menara terdekat jika tidak ada minion). Juga menutup regresi
+`Object.get(prop, default)` pada `Hero.die` (atribusi kill) dan
+`ItemDB.suggest_item` / `is_magic_hero` (dipakai AI beli item). Tes tidak memulai
+match atau menulis save.
+
+Smoke battle (menu → level 1 → hero/minion/wave/AI), setelah import yang sama:
+
+```bash
+godot --headless --path godot res://tests/BattleSmokeTest.tscn --quit-after 180
+```
+
+Harus muncul `[BattleSmokeTest] PASS` tanpa error script.
 
 `Unable to open Android 'build-tools' directory` adalah masalah konfigurasi SDK
 editor yang **terpisah**. Jika ingin export Android, instal Android SDK Build-Tools
