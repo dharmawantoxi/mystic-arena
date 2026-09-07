@@ -126,7 +126,7 @@ func _on_hit() -> void:
 	if bool(target.get("is_dead")):
 		return
 
-	var dealt := cs.apply_damage(target, damage, team, "projectile", source, school)
+	var dealt: float = cs.apply_damage(target, damage, team, "projectile", source, school)
 
 	# Proyektil hero ranged juga memicu efek on-attack item, paritas
 	# on_ranged_attack_hit (hero_items.py:2506-2517). Di pygame fungsi itu

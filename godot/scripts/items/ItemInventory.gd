@@ -725,7 +725,7 @@ func _bash_procs(db, target) -> void:
 	for item_id in ["abyss_breaker", "sundering_cudgel"]:
 		if not has(item_id):
 			continue
-		var key := item_id + ":bash"
+		var key: String = str(item_id) + ":bash"
 		if float(_proc_cd.get(key, 0.0)) > 0.0:
 			continue
 		var b = db.get_item(item_id).get("bash")
