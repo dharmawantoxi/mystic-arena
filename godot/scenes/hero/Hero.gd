@@ -1,6 +1,6 @@
 # Hero.gd — Port dari _entity.py Hero class
-# Visual baseline: UnitSilhouette (pygame.draw.circle/polygon). Upgrade
-# satu-satu lewat RendererRegistry.HERO[hero_type] = PackedScene custom.
+# Visual default: strip bake renderer Pygame, termasuk Kaizen.
+# UnitSilhouette adalah fallback; rig RendererRegistry.HERO bersifat opt-in.
 #
 # Yang ditambahkan di sesi port ini (sebelumnya hanya stats + AI hunt):
 #   • ItemInventory (6 slot, 33 item) — damage/HP/armor/crit/lifesteal/cleave/
@@ -192,9 +192,8 @@ func _recalc_derived(full_heal: bool = false) -> void:
 
 
 func setup_visual():
-	# Baseline pygame: kotak/sprite/tulang DIMATIKAN. Silhouette menggambar
-	# lewat _draw(). Scene custom (Kaizen Skeleton2D, SpriteFrames HD) hanya
-	# hidup kalau didaftarkan di RendererRegistry — upgrade satu-satu.
+	# Sprite kosong legacy dimatikan. Registry memilih bake asli, rig
+	# opt-in, atau silhouette bila resource visual belum tersedia.
 	if sprite:
 		sprite.visible = false
 		# Material outline Hero.tscn punya uniform `flash_amount`; disimpan
@@ -233,10 +232,12 @@ func setup_visual():
 # ══════════════════════════════════════════════════════════
 
 func _physics_process(delta):
-	if is_dead:
+	if is_dead or GameManager.state != "playing":
 		return
 	if status != null:
 		status.tick(delta)
+	if is_dead:
+		return
 	if skills != null:
 		skills.tick(delta)
 	# Item aktif auto-trigger (paritas inv.update(1, enemies) _entity.py:3801).
@@ -629,6 +630,8 @@ func heal(amount: float) -> void:
 
 
 func die(killer = null):
+	if is_dead:
+		return
 	# Atribusi kill hero-vs-hero (paritas _core.py:2490-2515
 	# _process_hero_kill): hanya hero yang mencatat kills (dipakai AIPlayer
 	# untuk prioritas upgrade & beli item). Kill oleh tower/minion tidak
@@ -640,25 +643,58 @@ func die(killer = null):
 		# Hero selalu punya `kills`; tambah langsung supaya kill AI terhitung.
 		killer.kills = int(killer.get("kills")) + 1
 	is_dead = true
+	hp = 0.0
 	add_to_group("dead")
 	# Matikan fisika dulu: mayat tidak boleh menahan langkah unit lain
 	set_physics_process(false)
 	collision_layer = 0
 	collision_mask = 0
 	target = null
-	if skills != null:
-		skills.tickers.clear()
+	velocity = Vector2.ZERO
+	_cancel_active_skills()
 	if status != null:
 		status.clear()
-	# Death animation GPU (bukan fade ellipse manual pygame)
-	if anim_player != null and anim_player.has_animation("death"):
-		anim_player.play("death")
-	else:
-		var tw = create_tween()
-		tw.parallel().tween_property(visual_root, "scale", Vector2(1.4, 0.2), 0.25)
-		tw.parallel().tween_property(self, "modulate:a", 0.0, 0.35)
-		tw.tween_callback(queue_free)
+	if items != null:
+		items.clear_on_death()
+	# Hero mati tidak digambar oleh pygame. Node dipertahankan agar level,
+	# item dan kepemilikan tetap utuh; GameManager mengelola timer 10 detik.
+	hide()
 	GameManager.hero_died.emit(self)
+
+
+func _cancel_active_skills() -> void:
+	if skills != null:
+		skills.cancel_active()
+	_ring_alpha = 0.0
+	if hit_particles != null:
+		hit_particles.emitting = false
+	if skill_particles != null:
+		skill_particles.emitting = false
+
+
+## _entity.Hero.respawn: instance sama, HP penuh, kembali ke base sendiri.
+func respawn() -> void:
+	if not is_dead:
+		return
+	if status != null:
+		status.clear()
+	_cancel_active_skills()
+	_recalc_derived(true)
+	is_dead = false
+	remove_from_group("dead")
+	is_retreating = false
+	target = null
+	clear_destination()
+	velocity = Vector2.ZERO
+	combat_timer = 0.0
+	global_position = own_base() + (Vector2(60, -30) if team == "blue" else Vector2(-60, 30))
+	collision_layer = 2 if team == "blue" else 4
+	collision_mask = 4 if team == "blue" else 2
+	modulate = Color.WHITE
+	show()
+	set_physics_process(true)
+	update_ui()
+	queue_redraw()
 
 
 func update_ui():

@@ -9,6 +9,8 @@
     "hard": 0.75
   },
   "minion_wave_interval_frames": 1500,
+  "minion_spawn_delay_frames": 20,
+  "max_heroes_owned": 5,
   "wave_composition": {
     "1": [
       "goblin",

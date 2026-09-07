@@ -1,5 +1,9 @@
 # Mystic Arena — Godot Edition
 
+> **Status: port masih parsial, belum sama sepenuhnya dengan Pygame.**
+> Audit dan daftar selisih yang tersisa: [GODOT_PARITY.md](../docs/GODOT_PARITY.md).
+> Bake visual dan keberhasilan export Android bukan bukti paritas seluruh game.
+
 Port GPU dari versi `pygame-ce`. **Visual 222 unit kini hasil bake renderer
 pygame asli** (Fase 5, Opsi A): `tools/convert_to_godot.py --units-png`
 me-render 6 hero masterwork + 216 boss lewat choke point cache sprite game
@@ -7,9 +11,9 @@ me-render 6 hero masterwork + 216 boss lewat choke point cache sprite game
 per unit di `assets/units/`, lalu `BakedSprite` (scene generik + manifest
 `data/baked_units.json`) mengirisnya jadi animasi idle/walk/attack — jadi
 pose, warna, dan proporsi identik dengan pygame tanpa port ribuan baris
-renderer per boss. Kaizen tetap tertinggi kelasnya: rig `Skeleton2D` 19
-tulang + shader hamon via `RendererRegistry.HERO` (urutan lookup: rig
-custom > strip bake > `UnitSilhouette`).
+renderer per boss. Kaizen di arena normal juga memakai bake Pygame.
+Rig `Skeleton2D` tetap tersedia sebagai showcase/opt-in, bukan pengganti default.
+Live FX, UI, minion/tower/nexus, dan mekanik skill belum semuanya setara.
 
 Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 slot bangun**, **nexus/castle dengan shield → menang/kalah**, **skill QWER**, **toko item 6 slot (33 item)**, dan **ekonomi identik pygame** (3 gold/s + 0.3/level, pengali difficulty, milli-gold). Lihat bagian "Gameplay yang sudah diport" di bawah.
 
@@ -17,7 +21,23 @@ Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 
 
 **Cinematic juga sudah diport** (Fase 5d, 2026-09-07): layar intro split-screen sebelum tiap level (pause sampai SPACE/ENTER/klik), banner nama boss yang meluncur saat mini/true boss turun, dan urutan kematian boss — ledakan + dissolve + pecahan, ditutup perayaan "BOSS DEFEATED!" untuk true boss. Lihat bagian "Cinematic (Fase 5d)" di bawah.
 
-**Map kini bake dari renderer pygame sendiri** (Fase 3, 2026-09-07): `tools/convert_to_godot.py --maps-png` membake 6 layer `static_map` (terrain+details, river, 3 lane, dekor, shop, border wall) jadi SATU tekstur 1280×720 per tema — 54 tema, ±3,2 MB di `assets/maps/` — lalu `ArenaMap` menampilkannya lewat Sprite2D (padanan persis arsitektur cache `static_map` + blit pygame). Paritas sempurna dengan konstruksi; fallback prosedural tetap hidup sebagai jaring kalau bake belum ada. Lihat bagian "Bake map statik (Fase 3)" di bawah.
+**Map kini bake dari renderer pygame sendiri** (Fase 3, 2026-09-07): `tools/convert_to_godot.py --maps-png` membake 6 layer `static_map` (terrain+details, river, 3 lane, dekor, shop, border wall) jadi SATU tekstur 1280×720 per tema — 54 tema, ±3,2 MB di `assets/maps/` — lalu `ArenaMap` menampilkannya lewat Sprite2D (padanan persis arsitektur cache `static_map` + blit pygame). Gambar statik bersumber dari renderer asli; cuaca/lighting live tetap implementasi Godot. Fallback prosedural hidup kalau bake belum ada. Lihat bagian "Bake map statik (Fase 3)" di bawah.
+
+## Koreksi paritas pertandingan (2026-09-07)
+
+- Match mulai tanpa hero. Buka **B → HERO** untuk membeli; save baru membuka
+  Kaizen saja. Maksimal 5 hero unik, termasuk hero yang menunggu respawn.
+- Respawn **per hero setelah 10 detik**, tanpa reset arena; level/item biasa
+  tetap, Holy Rapier rontok. Pause membekukan timer.
+- Persiapan wave pertama 5 detik setelah intro. Wave berikutnya menunggu
+  minimal 25 detik **dan** minion sebelumnya habis. Spawn bertahap tiap
+  20 frame, satu komposisi penuh pada setiap lane, mengikuti waypoint.
+- Komposisi/stat berasal dari nexus tim sendiri; nexus AI naik pada wave
+  4/7/10/13. AI mulai 350 gold, income 3 + nomor wave. Mini boss diacak:
+  easy 20–40, normal/hard 11–30, urutan tipe tetap.
+- Tes baru membandingkan dengan output fungsi Pygame asli:
+  `python tools/test_godot_match_parity.py` dan
+  `godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 300`.
 
 ## Quick Start
 
@@ -32,8 +52,9 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ~/.venv-mystic/bin/python tools/conv
 # 2. Buka di Godot 4.3+ (diuji di 4.7.2 Forward+)
 godot godot/project.godot
 # F5 -> MENU UTAMA -> MULAI GAME -> pilih kartu LEVEL 1 -> MAIN.
-# Arena 1280x720: map forest, 2 nexus, 18 slot menara di 3 lane, 6 hero per tim,
-# wave minion tiap 25 detik, mini boss sesuai levels.json (wave 10/15/25),
+# Arena 1280x720: map forest, 2 nexus, 18 slot menara, roster kosong.
+# Lewati intro, B -> HERO -> beli Kaizen. Wave pertama setelah 5 detik,
+# wave berikutnya minimal 25 detik + tunggu field clear; mini boss wave acak,
 # true boss Abaddon setelah 6 menara Dire hancur, HUD + skill bar QWER + toko (B).
 # Menang -> ENTER lanjut LEVEL 2 (tema desert, boss razak/khalros/gorath/alchemist).
 ```
@@ -45,7 +66,6 @@ godot godot/project.godot
 | **klik kiri** | pilih unit: hero Radiant (→ skill bar + toko) · menara milikmu (→ tab MENARA) · nexus (→ tab NEXUS) · lingkaran slot di lane (→ bangun menara) |
 | `Q` `W` `E` `R` | cast skill hero yang sedang dipilih (bisa juga lewat tombol di skill bar) |
 | `B` | buka/tutup toko (MENARA · ITEM · HERO · NEXUS) |
-| `D` | ganti difficulty: easy (gold ×1.25) → normal (×1.0) → hard (×0.75 + enemy scaling) |
 | `ENTER` | setelah VICTORY: **lanjut level berikutnya** · setelah DEFEAT: ulangi level |
 | `R` | setelah menang/kalah: replay level yang sama (is_replay → reward 1500/200, bukan 3000) |
 | `P` / `ESC` | menu PAUSE (RESUME / PENGATURAN / MENU UTAMA / KELUAR — paritas `MenuState.PAUSE`); ESC setelah menang/kalah = menu utama |
@@ -53,11 +73,16 @@ godot godot/project.godot
 
 Hero Radiant yang tidak dipilih tetap bertarung sendiri (AI + auto-cast skill); yang dipilih berhenti auto-cast dan menunggu input QWER — sama seperti pygame.
 
+Pilih difficulty di menu PILIH LEVEL sebelum match.
+
 ### Tombol debug
+
+Hanya aktif bila `Main.enable_debug_controls = true` (default **false**).
 
 | Tombol | Efek |
 |---|---|
-| `F1` | respawn roster (reset pertempuran, nexus & slot ikut dibuat ulang) |
+| `F1` | ulang match penuh (bukan respawn hero normal) |
+| `D` | ganti difficulty untuk pengujian |
 | `T` | ganti tema map: siklus 54 palet dari `data/themes.json` (forest → desert → ice → volcanic → …) |
 | `SPASI` | "beli" 1 hero random untuk Radiant (lewat `GameManager.try_buy_hero`) |
 
@@ -218,7 +243,7 @@ itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan
 - **Efek on-attack** (Bash, Piercing Bash, Arc Chain/Lightning, Frostbite, Miasma + Polycephaly multishot, Empower Strike, Entangle) dipanggil dari `Hero.try_attack` untuk melee dan `TowerBullet._on_hit` untuk proyektil hero — meniru dua pintu pygame (`on_basic_attack_hit` / `on_ranged_attack_hit`). Keduanya bermuara ke `ItemInventory.on_attack_hit()`, padanan `_on_hit_common` (`hero_items.py:2519-2666`), dengan urutan proc yang sama persis. Lifesteal & cleave TIDAK ikut di jalur ranged karena di pygame sudah dibayar saat proyektil dilepas.
 - **`on_attack`, `bash`, `multishot`, dan pasif sudah diport** (Fase 5b): Arc Chain/Lightning, Frostbite, Miasma + Polycephaly multishot, Entangle, Bash/Piercing Bash, Empower Strike, Leviathan Vitality — semuanya lewat `ItemInventory.on_attack_hit()`.
 - **Proyektil skill = visual homing, damage tetap instan** — paritas `_spawn_skill_projectile` pygame (`_entity.py:4509-4530`): proyektil `damage=0` + `is_skill` hanya memberi visual terarah, damage otoritatif tetap instan di `SkillBook` (sama seperti pygame — `hero_skills/_bundle.py` yang menghitung damage). Implementasi: `scenes/fx/SkillProjectile.gd` (Node2D self-drawn, pola `TowerBullet`), dipanggil dari 3 call site paritas — Sylara R Powershot per musuh kena (`_bundle.py:4461`), Vex Q Arcane Orb (`:4820`), Vex E Astral Imprisonment (`:4924`). Batas 6/hero, umur 72f (target mati 36f), jarak 380px, snap ke target + impact FX hanya kalau target masih hidup — semua `_entity.py:3225-3232 / 3827-3943`. Satu deviasi kecil: peluru basic attack (`TowerBullet`) tidak ikut dihitung dalam cap-6; node terpisah dengan umur 4 detik + mati saat target mati. Gambar panah/orb = port fallback `_draw_projectile` (`_entity.py:4976-5210`); ornamen per-hero `heroes/*_fx.draw_arcane_orb` adalah fase visual terpisah.
-- **AI dire**: port `AIPlayer` pygame di `scripts/systems/AIPlayer.gd` — tapi ada dua deviasi yang dicatat: (1) pygame AI mulai dengan roster KOSONG dan membeli semua hero dengan gold sendiri; Godot tetap meng-seed 6 hero merah (`ENEMY_ROSTER`) sesuai alur battle yang sudah ada, dan karena 6 ≥ `AI_MAX_HEROES` (5) cabang beli hero aktif lagi kalau roster turun di bawah 5; (2) statistik `total_built`/`total_upgraded`/`total_skills_cast` dkk. tidak diport (hanya untuk HUD/debug pygame, tidak memengaruhi keputusan). Saldo AI: pygame `AIPlayer.gold` dimulai 350, Godot `GameManager.ai_gold` = gold awal pemain (keputusan port ekonomi sebelumnya).
+- **AI dire**: roster kosong, saldo awal 350, income 3 + nomor wave; pembelian mempertahankan kepemilikan hero yang mati agar tidak duplikat. Statistik `total_built`/`total_upgraded`/`total_skills_cast` belum diport. Lihat audit paritas untuk batasan lain.
 - **`play_positional` (`_system.py:615-629`) sengaja TIDAK diport.** Tidak ada satu pun call site di repo pygame — dead code, jadi tidak ada yang bisa dijaga paritasnya.
 - **Preset kualitas `mobile.perf.Quality`** (yang di pygame mengurangi jumlah partikel/fog di HP kentang) tidak ikut diport ke cuaca Godot: pengurangan beban di sana urusan setelan render Godot, bukan cabang `try/except import` per tema.
 - **Aura TRUE BOSS sekarang digambar** (`Boss.gd::_draw`, paritas `_draw_true_boss_aura` `bosses/base_boss.py:6351-6375`): penanda kelas yang di pygame menyala setiap frame selama true boss hidup — `aura_r = radius + 15`, 8 langkah 2 px, alpha `(aura_r - r) * 5 * pulse`, denyut `sin(pulse) * 0.3 + 0.7` dengan `pulse += 0.1`/frame (= `PULSE_SPEED` 6 rad/detik). Mini boss tidak punya. **Jebakan yang perlu diingat:** `pygame.draw.circle` TIDAK mem-blend — ia menimpa piksel di surface SRCALPHA, jadi 8 lingkaran itu gradien BERPITA, bukan tumpukan. `draw_circle()` Godot mem-blend, sehingga port naif membuat pusat aura ~3x lebih pekat (144/255 vs 49/255 pada pulse 0,7). Implementasi Godot memakai 1 cakram inti + 6 cincin `draw_arc` yang tidak saling menimpa; profilnya diuji melawan surface pygame asli di `tools/test_boss_true_aura_parity.py` (46 cek, plus `tools/boss_true_aura_parity.png` lewat `--shot`). Aura `ability_active` dan `is_enraged` belum diport karena mekanik enrage/ability boss memang belum ada di Godot. Node `FX/Aura` (partikel) tetap mati — itu upgrade, bukan baseline pygame.
@@ -244,31 +269,18 @@ itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan
 - `godot/assets/shaders/outline.gdshader` — outline 1-pass + hit flash + rim light (ganti 5 blit manual pygame).
 - `godot/shaders/hamon.gdshader` — hamon temper katana Kaizen (wave + temper cloud + attack pulse).
 
-## Renderer (pygame dulu, upgrade satu-satu)
+## Renderer (Pygame sebagai default)
 
-Default arena: `scripts/render/UnitSilhouette.gd` — shadow, kaki, torso, kepala, senjata kit
-(hash `hero_type`), flash hit. Godot 4.3-safe (tanpa `draw_ellipse`).
+`RendererRegistry.hero_scene()` mengutamakan strip bake untuk semua hero yang
+memilikinya, **termasuk Kaizen** (`BakedSprite.tscn` + `baked_units.json`).
+`UnitSilhouette` tetap fallback jika bake dan scene custom tidak tersedia;
+minion masih memakai silhouette.
 
-Urutan lookup `RendererRegistry` sejak Fase 5 (semua di
-`scripts/render/RendererRegistry.gd`):
-
-1. **Scene custom** (`HERO`/`BOSS` dict) — rig hand-made menang selalu.
-   Kaizen terdaftar:
-   ```
-   const HERO := {
-       "kaizen": preload("res://scenes/hero/kaizen/KaizenSkeleton.tscn"),
-   }
-   ```
-2. **Strip bake** (`BakedUnitDB.has_unit`) — 222 unit hasil
-   `tools/convert_to_godot.py --units-png` memakai scene generik
-   `scenes/render/BakedSprite.tscn`.
-3. **UnitSilhouette** — fallback kalau 1 dan 2 tidak ada (mis. clone
-   tanpa hasil bake).
-
-Custom per unit: isi `scripts/render/RendererRegistry.gd` — satu baris
-preload per hero, otomatis mengungguli strip bake.
-
-Kalau key tidak ada, tetap silhouette. Gameplay (`Hero.gd` AI/damage/skill) tidak berubah — `Hero._drive_visual()` memanggil `drive(phase, action, attack_progress, facing, is_moving, skill, delta)` tiap frame, jadi skill QWER Kaizen ikut menggerakkan tulang (Steel Wind / Dash Strike / Wind Wall / Sweep / Tornado).
+Rig hand-made di `RendererRegistry.HERO` bisa dicoba dengan
+`Project Settings → mystic/rendering/experimental_hero_rigs = true`, atau
+jalankan `scenes/demo/KaizenDemo.tscn` langsung. Default **false** supaya
+visual Kaizen tidak diganti dengan desain lain ketika bermain normal.
+Renderer boss memakai strip bake kecuali ada override di `BOSS`.
 
 ## Strip bake 222 unit (Fase 5 — Opsi A)
 
@@ -410,14 +422,15 @@ Deviasi terdokumentasi: ikon vektor `ui_theme.draw_icon` (segitiga/bintang)
 digambar langsung dengan draw API; bayangan teks multi-lapis pygame menjadi
 shadow Label bawaan Godot.
 
-## Kaizen Skeleton2D (flagship — **sudah** dipakai di arena)
+## Kaizen Skeleton2D (showcase / opt-in)
 
 ```
 godot/scenes/hero/kaizen/KaizenSkeleton.tscn  — 25 Bone2D (Root→Hips→Torso→Chest→Head/Ponytail 3×/Scarf 3×/Katana + Arms/Legs)
 godot/scenes/hero/kaizen/KaizenSkeleton.gd   — drive(phase, action, attack_progress, facing) — busur 1 sumber kebenaran (ATTACK_ARC_*), inertia scarf/ponytail, hamon shader time, wind ribbon Line2D
 godot/scenes/demo/KaizenDemo.tscn/.gd       — showcase isolasi: F5 Run Current Scene untuk lihat 60fps bone interpolasi vs pygame 6-frame patah
 ```
-Kaizen sudah terdaftar di `RendererRegistry.HERO`, jadi F5 langsung menampilkan rig bertulang di lane mid.
+Rig Kaizen ada di `RendererRegistry.HERO`, tetapi arena default memakai bake asli.
+Aktifkan `mystic/rendering/experimental_hero_rigs` untuk mencoba rig di arena.
 Tip katana: `get_katana_tip_global()`.
 
 ## Android Build (Fase 6 — siap Play Store)

@@ -289,6 +289,8 @@ def export_economy():
             "gold_per_level_bonus": _core.GOLD_PER_LEVEL_BONUS,
             "difficulty_gold_mult": _core.DIFFICULTY_GOLD_MULT,
             "minion_wave_interval_frames": _core.MINION_WAVE_INTERVAL,
+            "minion_spawn_delay_frames": _core.MINION_SPAWN_DELAY,
+            "max_heroes_owned": _core.MAX_HEROES_OWNED,
             "wave_composition": {str(k): list(v)
                                  for k, v in _core.NEXUS_WAVE_COMPOSITION.items()},
             "minion_types": minions,

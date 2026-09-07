@@ -18,7 +18,7 @@ const SAVE_PATH := "user://mystic_save.json"
 ## "unlocked_heroes" adalah padanan purchased_heroes pygame (kaizen granted
 ## sebagai starter, _core.py:1603-1608).
 var data: Dictionary = {
-	"unlocked_heroes": ["kaizen","grimjaw","sylara","thorne","vex","zephyr"],
+	"unlocked_heroes": ["kaizen"],
 	"completed_levels": [],
 	"gold": 0,
 	"settings": {"sfx": 0.6, "bgm": 0.35, "quality": "medium"},
@@ -55,12 +55,15 @@ func _backfill() -> void:
 		"unlocked_bosses": [],
 		"last_played_level": 1,
 		"completed_levels": [],
-		"unlocked_heroes": [],
+		"unlocked_heroes": ["kaizen"],
 		"settings": {"sfx": 0.6, "bgm": 0.35, "quality": "medium"},
 	}
 	for key in defaults:
 		if not data.has(key) or data[key] == null:
 			data[key] = defaults[key]
+	# Starter hanya Kaizen. Unlock lama tidak pernah dicabut saat upgrade port.
+	if not (data["unlocked_heroes"] is Array) or data["unlocked_heroes"].is_empty():
+		data["unlocked_heroes"] = ["kaizen"]
 
 func save():
 	_backfill()

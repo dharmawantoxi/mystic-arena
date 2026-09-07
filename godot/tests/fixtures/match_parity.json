@@ -1,0 +1,2055 @@
+{
+  "_generated_by": "tools/test_godot_match_parity.py --write-fixture",
+  "rules": {
+    "first_wave_delay": 5.0,
+    "hero_respawn_delay": 10.0,
+    "wave_interval": 25.0,
+    "spawn_delay": 0.3333333333333333,
+    "max_heroes_owned": 5,
+    "ai_starting_gold": 350
+  },
+  "economy": [
+    {
+      "level": 1,
+      "difficulty": "easy",
+      "gold": 1250,
+      "income": 3.75
+    },
+    {
+      "level": 1,
+      "difficulty": "normal",
+      "gold": 1000,
+      "income": 3.0
+    },
+    {
+      "level": 1,
+      "difficulty": "hard",
+      "gold": 750,
+      "income": 2.25
+    },
+    {
+      "level": 2,
+      "difficulty": "easy",
+      "gold": 1375,
+      "income": 4.125
+    },
+    {
+      "level": 2,
+      "difficulty": "normal",
+      "gold": 1100,
+      "income": 3.3
+    },
+    {
+      "level": 2,
+      "difficulty": "hard",
+      "gold": 825,
+      "income": 2.4749999999999996
+    },
+    {
+      "level": 3,
+      "difficulty": "easy",
+      "gold": 1500,
+      "income": 4.5
+    },
+    {
+      "level": 3,
+      "difficulty": "normal",
+      "gold": 1200,
+      "income": 3.6
+    },
+    {
+      "level": 3,
+      "difficulty": "hard",
+      "gold": 900,
+      "income": 2.7
+    },
+    {
+      "level": 4,
+      "difficulty": "easy",
+      "gold": 1625,
+      "income": 4.875
+    },
+    {
+      "level": 4,
+      "difficulty": "normal",
+      "gold": 1300,
+      "income": 3.9
+    },
+    {
+      "level": 4,
+      "difficulty": "hard",
+      "gold": 975,
+      "income": 2.925
+    },
+    {
+      "level": 5,
+      "difficulty": "easy",
+      "gold": 1750,
+      "income": 5.25
+    },
+    {
+      "level": 5,
+      "difficulty": "normal",
+      "gold": 1400,
+      "income": 4.2
+    },
+    {
+      "level": 5,
+      "difficulty": "hard",
+      "gold": 1050,
+      "income": 3.1500000000000004
+    },
+    {
+      "level": 6,
+      "difficulty": "easy",
+      "gold": 1875,
+      "income": 5.625
+    },
+    {
+      "level": 6,
+      "difficulty": "normal",
+      "gold": 1500,
+      "income": 4.5
+    },
+    {
+      "level": 6,
+      "difficulty": "hard",
+      "gold": 1125,
+      "income": 3.375
+    },
+    {
+      "level": 7,
+      "difficulty": "easy",
+      "gold": 2000,
+      "income": 6.0
+    },
+    {
+      "level": 7,
+      "difficulty": "normal",
+      "gold": 1600,
+      "income": 4.8
+    },
+    {
+      "level": 7,
+      "difficulty": "hard",
+      "gold": 1200,
+      "income": 3.5999999999999996
+    },
+    {
+      "level": 8,
+      "difficulty": "easy",
+      "gold": 2125,
+      "income": 6.375
+    },
+    {
+      "level": 8,
+      "difficulty": "normal",
+      "gold": 1700,
+      "income": 5.1
+    },
+    {
+      "level": 8,
+      "difficulty": "hard",
+      "gold": 1275,
+      "income": 3.8249999999999997
+    },
+    {
+      "level": 9,
+      "difficulty": "easy",
+      "gold": 2250,
+      "income": 6.75
+    },
+    {
+      "level": 9,
+      "difficulty": "normal",
+      "gold": 1800,
+      "income": 5.4
+    },
+    {
+      "level": 9,
+      "difficulty": "hard",
+      "gold": 1350,
+      "income": 4.050000000000001
+    },
+    {
+      "level": 10,
+      "difficulty": "easy",
+      "gold": 2375,
+      "income": 7.124999999999999
+    },
+    {
+      "level": 10,
+      "difficulty": "normal",
+      "gold": 1900,
+      "income": 5.699999999999999
+    },
+    {
+      "level": 10,
+      "difficulty": "hard",
+      "gold": 1425,
+      "income": 4.2749999999999995
+    },
+    {
+      "level": 11,
+      "difficulty": "easy",
+      "gold": 2500,
+      "income": 7.5
+    },
+    {
+      "level": 11,
+      "difficulty": "normal",
+      "gold": 2000,
+      "income": 6.0
+    },
+    {
+      "level": 11,
+      "difficulty": "hard",
+      "gold": 1500,
+      "income": 4.5
+    },
+    {
+      "level": 12,
+      "difficulty": "easy",
+      "gold": 2625,
+      "income": 7.875
+    },
+    {
+      "level": 12,
+      "difficulty": "normal",
+      "gold": 2100,
+      "income": 6.3
+    },
+    {
+      "level": 12,
+      "difficulty": "hard",
+      "gold": 1575,
+      "income": 4.725
+    },
+    {
+      "level": 13,
+      "difficulty": "easy",
+      "gold": 2750,
+      "income": 8.25
+    },
+    {
+      "level": 13,
+      "difficulty": "normal",
+      "gold": 2200,
+      "income": 6.6
+    },
+    {
+      "level": 13,
+      "difficulty": "hard",
+      "gold": 1650,
+      "income": 4.949999999999999
+    },
+    {
+      "level": 14,
+      "difficulty": "easy",
+      "gold": 2875,
+      "income": 8.625
+    },
+    {
+      "level": 14,
+      "difficulty": "normal",
+      "gold": 2300,
+      "income": 6.9
+    },
+    {
+      "level": 14,
+      "difficulty": "hard",
+      "gold": 1725,
+      "income": 5.175000000000001
+    },
+    {
+      "level": 15,
+      "difficulty": "easy",
+      "gold": 3000,
+      "income": 9.0
+    },
+    {
+      "level": 15,
+      "difficulty": "normal",
+      "gold": 2400,
+      "income": 7.2
+    },
+    {
+      "level": 15,
+      "difficulty": "hard",
+      "gold": 1800,
+      "income": 5.4
+    },
+    {
+      "level": 16,
+      "difficulty": "easy",
+      "gold": 3125,
+      "income": 9.375
+    },
+    {
+      "level": 16,
+      "difficulty": "normal",
+      "gold": 2500,
+      "income": 7.5
+    },
+    {
+      "level": 16,
+      "difficulty": "hard",
+      "gold": 1875,
+      "income": 5.625
+    },
+    {
+      "level": 17,
+      "difficulty": "easy",
+      "gold": 3250,
+      "income": 9.75
+    },
+    {
+      "level": 17,
+      "difficulty": "normal",
+      "gold": 2600,
+      "income": 7.8
+    },
+    {
+      "level": 17,
+      "difficulty": "hard",
+      "gold": 1950,
+      "income": 5.85
+    },
+    {
+      "level": 18,
+      "difficulty": "easy",
+      "gold": 3375,
+      "income": 10.125
+    },
+    {
+      "level": 18,
+      "difficulty": "normal",
+      "gold": 2700,
+      "income": 8.1
+    },
+    {
+      "level": 18,
+      "difficulty": "hard",
+      "gold": 2025,
+      "income": 6.074999999999999
+    },
+    {
+      "level": 19,
+      "difficulty": "easy",
+      "gold": 3500,
+      "income": 10.499999999999998
+    },
+    {
+      "level": 19,
+      "difficulty": "normal",
+      "gold": 2800,
+      "income": 8.399999999999999
+    },
+    {
+      "level": 19,
+      "difficulty": "hard",
+      "gold": 2100,
+      "income": 6.299999999999999
+    },
+    {
+      "level": 20,
+      "difficulty": "easy",
+      "gold": 3625,
+      "income": 10.875
+    },
+    {
+      "level": 20,
+      "difficulty": "normal",
+      "gold": 2900,
+      "income": 8.7
+    },
+    {
+      "level": 20,
+      "difficulty": "hard",
+      "gold": 2175,
+      "income": 6.5249999999999995
+    },
+    {
+      "level": 21,
+      "difficulty": "easy",
+      "gold": 3750,
+      "income": 11.25
+    },
+    {
+      "level": 21,
+      "difficulty": "normal",
+      "gold": 3000,
+      "income": 9.0
+    },
+    {
+      "level": 21,
+      "difficulty": "hard",
+      "gold": 2250,
+      "income": 6.75
+    },
+    {
+      "level": 22,
+      "difficulty": "easy",
+      "gold": 3875,
+      "income": 11.625
+    },
+    {
+      "level": 22,
+      "difficulty": "normal",
+      "gold": 3100,
+      "income": 9.3
+    },
+    {
+      "level": 22,
+      "difficulty": "hard",
+      "gold": 2325,
+      "income": 6.9750000000000005
+    },
+    {
+      "level": 23,
+      "difficulty": "easy",
+      "gold": 4000,
+      "income": 12.0
+    },
+    {
+      "level": 23,
+      "difficulty": "normal",
+      "gold": 3200,
+      "income": 9.6
+    },
+    {
+      "level": 23,
+      "difficulty": "hard",
+      "gold": 2400,
+      "income": 7.199999999999999
+    },
+    {
+      "level": 24,
+      "difficulty": "easy",
+      "gold": 4125,
+      "income": 12.374999999999998
+    },
+    {
+      "level": 24,
+      "difficulty": "normal",
+      "gold": 3300,
+      "income": 9.899999999999999
+    },
+    {
+      "level": 24,
+      "difficulty": "hard",
+      "gold": 2475,
+      "income": 7.424999999999999
+    },
+    {
+      "level": 25,
+      "difficulty": "easy",
+      "gold": 4250,
+      "income": 12.75
+    },
+    {
+      "level": 25,
+      "difficulty": "normal",
+      "gold": 3400,
+      "income": 10.2
+    },
+    {
+      "level": 25,
+      "difficulty": "hard",
+      "gold": 2550,
+      "income": 7.6499999999999995
+    },
+    {
+      "level": 26,
+      "difficulty": "easy",
+      "gold": 4375,
+      "income": 13.125
+    },
+    {
+      "level": 26,
+      "difficulty": "normal",
+      "gold": 3500,
+      "income": 10.5
+    },
+    {
+      "level": 26,
+      "difficulty": "hard",
+      "gold": 2625,
+      "income": 7.875
+    },
+    {
+      "level": 27,
+      "difficulty": "easy",
+      "gold": 4500,
+      "income": 13.5
+    },
+    {
+      "level": 27,
+      "difficulty": "normal",
+      "gold": 3600,
+      "income": 10.8
+    },
+    {
+      "level": 27,
+      "difficulty": "hard",
+      "gold": 2700,
+      "income": 8.100000000000001
+    },
+    {
+      "level": 28,
+      "difficulty": "easy",
+      "gold": 4625,
+      "income": 13.875
+    },
+    {
+      "level": 28,
+      "difficulty": "normal",
+      "gold": 3700,
+      "income": 11.1
+    },
+    {
+      "level": 28,
+      "difficulty": "hard",
+      "gold": 2775,
+      "income": 8.325
+    },
+    {
+      "level": 29,
+      "difficulty": "easy",
+      "gold": 4750,
+      "income": 14.25
+    },
+    {
+      "level": 29,
+      "difficulty": "normal",
+      "gold": 3800,
+      "income": 11.4
+    },
+    {
+      "level": 29,
+      "difficulty": "hard",
+      "gold": 2850,
+      "income": 8.55
+    },
+    {
+      "level": 30,
+      "difficulty": "easy",
+      "gold": 4875,
+      "income": 14.625
+    },
+    {
+      "level": 30,
+      "difficulty": "normal",
+      "gold": 3900,
+      "income": 11.7
+    },
+    {
+      "level": 30,
+      "difficulty": "hard",
+      "gold": 2925,
+      "income": 8.774999999999999
+    },
+    {
+      "level": 31,
+      "difficulty": "easy",
+      "gold": 5000,
+      "income": 15.0
+    },
+    {
+      "level": 31,
+      "difficulty": "normal",
+      "gold": 4000,
+      "income": 12.0
+    },
+    {
+      "level": 31,
+      "difficulty": "hard",
+      "gold": 3000,
+      "income": 9.0
+    },
+    {
+      "level": 32,
+      "difficulty": "easy",
+      "gold": 5125,
+      "income": 15.374999999999998
+    },
+    {
+      "level": 32,
+      "difficulty": "normal",
+      "gold": 4100,
+      "income": 12.299999999999999
+    },
+    {
+      "level": 32,
+      "difficulty": "hard",
+      "gold": 3075,
+      "income": 9.225
+    },
+    {
+      "level": 33,
+      "difficulty": "easy",
+      "gold": 5250,
+      "income": 15.75
+    },
+    {
+      "level": 33,
+      "difficulty": "normal",
+      "gold": 4200,
+      "income": 12.6
+    },
+    {
+      "level": 33,
+      "difficulty": "hard",
+      "gold": 3150,
+      "income": 9.45
+    },
+    {
+      "level": 34,
+      "difficulty": "easy",
+      "gold": 5375,
+      "income": 16.125
+    },
+    {
+      "level": 34,
+      "difficulty": "normal",
+      "gold": 4300,
+      "income": 12.9
+    },
+    {
+      "level": 34,
+      "difficulty": "hard",
+      "gold": 3225,
+      "income": 9.675
+    },
+    {
+      "level": 35,
+      "difficulty": "easy",
+      "gold": 5500,
+      "income": 16.5
+    },
+    {
+      "level": 35,
+      "difficulty": "normal",
+      "gold": 4400,
+      "income": 13.2
+    },
+    {
+      "level": 35,
+      "difficulty": "hard",
+      "gold": 3300,
+      "income": 9.899999999999999
+    },
+    {
+      "level": 36,
+      "difficulty": "easy",
+      "gold": 5625,
+      "income": 16.875
+    },
+    {
+      "level": 36,
+      "difficulty": "normal",
+      "gold": 4500,
+      "income": 13.5
+    },
+    {
+      "level": 36,
+      "difficulty": "hard",
+      "gold": 3375,
+      "income": 10.125
+    },
+    {
+      "level": 37,
+      "difficulty": "easy",
+      "gold": 5750,
+      "income": 17.25
+    },
+    {
+      "level": 37,
+      "difficulty": "normal",
+      "gold": 4600,
+      "income": 13.799999999999999
+    },
+    {
+      "level": 37,
+      "difficulty": "hard",
+      "gold": 3450,
+      "income": 10.35
+    },
+    {
+      "level": 38,
+      "difficulty": "easy",
+      "gold": 5875,
+      "income": 17.625
+    },
+    {
+      "level": 38,
+      "difficulty": "normal",
+      "gold": 4700,
+      "income": 14.1
+    },
+    {
+      "level": 38,
+      "difficulty": "hard",
+      "gold": 3525,
+      "income": 10.575
+    },
+    {
+      "level": 39,
+      "difficulty": "easy",
+      "gold": 6000,
+      "income": 18.0
+    },
+    {
+      "level": 39,
+      "difficulty": "normal",
+      "gold": 4800,
+      "income": 14.4
+    },
+    {
+      "level": 39,
+      "difficulty": "hard",
+      "gold": 3600,
+      "income": 10.8
+    },
+    {
+      "level": 40,
+      "difficulty": "easy",
+      "gold": 6125,
+      "income": 18.375
+    },
+    {
+      "level": 40,
+      "difficulty": "normal",
+      "gold": 4900,
+      "income": 14.7
+    },
+    {
+      "level": 40,
+      "difficulty": "hard",
+      "gold": 3675,
+      "income": 11.024999999999999
+    },
+    {
+      "level": 41,
+      "difficulty": "easy",
+      "gold": 6250,
+      "income": 18.75
+    },
+    {
+      "level": 41,
+      "difficulty": "normal",
+      "gold": 5000,
+      "income": 15.0
+    },
+    {
+      "level": 41,
+      "difficulty": "hard",
+      "gold": 3750,
+      "income": 11.25
+    },
+    {
+      "level": 42,
+      "difficulty": "easy",
+      "gold": 6375,
+      "income": 19.125
+    },
+    {
+      "level": 42,
+      "difficulty": "normal",
+      "gold": 5100,
+      "income": 15.299999999999999
+    },
+    {
+      "level": 42,
+      "difficulty": "hard",
+      "gold": 3825,
+      "income": 11.475
+    },
+    {
+      "level": 43,
+      "difficulty": "easy",
+      "gold": 6500,
+      "income": 19.5
+    },
+    {
+      "level": 43,
+      "difficulty": "normal",
+      "gold": 5200,
+      "income": 15.6
+    },
+    {
+      "level": 43,
+      "difficulty": "hard",
+      "gold": 3900,
+      "income": 11.7
+    },
+    {
+      "level": 44,
+      "difficulty": "easy",
+      "gold": 6625,
+      "income": 19.875
+    },
+    {
+      "level": 44,
+      "difficulty": "normal",
+      "gold": 5300,
+      "income": 15.9
+    },
+    {
+      "level": 44,
+      "difficulty": "hard",
+      "gold": 3975,
+      "income": 11.925
+    },
+    {
+      "level": 45,
+      "difficulty": "easy",
+      "gold": 6750,
+      "income": 20.25
+    },
+    {
+      "level": 45,
+      "difficulty": "normal",
+      "gold": 5400,
+      "income": 16.2
+    },
+    {
+      "level": 45,
+      "difficulty": "hard",
+      "gold": 4050,
+      "income": 12.149999999999999
+    },
+    {
+      "level": 46,
+      "difficulty": "easy",
+      "gold": 6875,
+      "income": 20.625
+    },
+    {
+      "level": 46,
+      "difficulty": "normal",
+      "gold": 5500,
+      "income": 16.5
+    },
+    {
+      "level": 46,
+      "difficulty": "hard",
+      "gold": 4125,
+      "income": 12.375
+    },
+    {
+      "level": 47,
+      "difficulty": "easy",
+      "gold": 7000,
+      "income": 20.999999999999996
+    },
+    {
+      "level": 47,
+      "difficulty": "normal",
+      "gold": 5600,
+      "income": 16.799999999999997
+    },
+    {
+      "level": 47,
+      "difficulty": "hard",
+      "gold": 4200,
+      "income": 12.599999999999998
+    },
+    {
+      "level": 48,
+      "difficulty": "easy",
+      "gold": 7125,
+      "income": 21.375
+    },
+    {
+      "level": 48,
+      "difficulty": "normal",
+      "gold": 5700,
+      "income": 17.1
+    },
+    {
+      "level": 48,
+      "difficulty": "hard",
+      "gold": 4275,
+      "income": 12.825000000000001
+    },
+    {
+      "level": 49,
+      "difficulty": "easy",
+      "gold": 7250,
+      "income": 21.75
+    },
+    {
+      "level": 49,
+      "difficulty": "normal",
+      "gold": 5800,
+      "income": 17.4
+    },
+    {
+      "level": 49,
+      "difficulty": "hard",
+      "gold": 4350,
+      "income": 13.049999999999999
+    },
+    {
+      "level": 50,
+      "difficulty": "easy",
+      "gold": 7375,
+      "income": 22.125
+    },
+    {
+      "level": 50,
+      "difficulty": "normal",
+      "gold": 5900,
+      "income": 17.7
+    },
+    {
+      "level": 50,
+      "difficulty": "hard",
+      "gold": 4425,
+      "income": 13.274999999999999
+    },
+    {
+      "level": 51,
+      "difficulty": "easy",
+      "gold": 7500,
+      "income": 22.5
+    },
+    {
+      "level": 51,
+      "difficulty": "normal",
+      "gold": 6000,
+      "income": 18.0
+    },
+    {
+      "level": 51,
+      "difficulty": "hard",
+      "gold": 4500,
+      "income": 13.5
+    },
+    {
+      "level": 52,
+      "difficulty": "easy",
+      "gold": 7625,
+      "income": 22.874999999999996
+    },
+    {
+      "level": 52,
+      "difficulty": "normal",
+      "gold": 6100,
+      "income": 18.299999999999997
+    },
+    {
+      "level": 52,
+      "difficulty": "hard",
+      "gold": 4575,
+      "income": 13.724999999999998
+    },
+    {
+      "level": 53,
+      "difficulty": "easy",
+      "gold": 7750,
+      "income": 23.25
+    },
+    {
+      "level": 53,
+      "difficulty": "normal",
+      "gold": 6200,
+      "income": 18.6
+    },
+    {
+      "level": 53,
+      "difficulty": "hard",
+      "gold": 4650,
+      "income": 13.950000000000001
+    },
+    {
+      "level": 54,
+      "difficulty": "easy",
+      "gold": 7875,
+      "income": 23.625
+    },
+    {
+      "level": 54,
+      "difficulty": "normal",
+      "gold": 6300,
+      "income": 18.9
+    },
+    {
+      "level": 54,
+      "difficulty": "hard",
+      "gold": 4725,
+      "income": 14.174999999999999
+    }
+  ],
+  "waves": [
+    {
+      "castle_level": 1,
+      "wave": 1,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin"
+      ]
+    },
+    {
+      "castle_level": 1,
+      "wave": 3,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin"
+      ]
+    },
+    {
+      "castle_level": 1,
+      "wave": 4,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 1,
+      "wave": 6,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 1,
+      "wave": 7,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 1,
+      "wave": 9,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 1,
+      "wave": 10,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "troll",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 1,
+      "wave": 12,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "troll",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 1,
+      "wave": 13,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "troll",
+        "troll",
+        "dark_rider",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 1,
+      "wave": 20,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "troll",
+        "troll",
+        "dark_rider",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 2,
+      "wave": 1,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 2,
+      "wave": 3,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 2,
+      "wave": 4,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 2,
+      "wave": 6,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 2,
+      "wave": 7,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 2,
+      "wave": 9,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 2,
+      "wave": 10,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc",
+        "troll",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 2,
+      "wave": 12,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc",
+        "troll",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 2,
+      "wave": 13,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc",
+        "troll",
+        "troll",
+        "dark_rider",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 2,
+      "wave": 20,
+      "composition": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc",
+        "troll",
+        "troll",
+        "dark_rider",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 3,
+      "wave": 1,
+      "composition": [
+        "goblin",
+        "orc",
+        "goblin",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 3,
+      "wave": 3,
+      "composition": [
+        "goblin",
+        "orc",
+        "goblin",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 3,
+      "wave": 4,
+      "composition": [
+        "goblin",
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 3,
+      "wave": 6,
+      "composition": [
+        "goblin",
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 3,
+      "wave": 7,
+      "composition": [
+        "goblin",
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 3,
+      "wave": 9,
+      "composition": [
+        "goblin",
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 3,
+      "wave": 10,
+      "composition": [
+        "goblin",
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "troll",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 3,
+      "wave": 12,
+      "composition": [
+        "goblin",
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "troll",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 3,
+      "wave": 13,
+      "composition": [
+        "goblin",
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "troll",
+        "troll",
+        "dark_rider",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 3,
+      "wave": 20,
+      "composition": [
+        "goblin",
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "troll",
+        "troll",
+        "dark_rider",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 4,
+      "wave": 1,
+      "composition": [
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "goblin",
+        "goblin"
+      ]
+    },
+    {
+      "castle_level": 4,
+      "wave": 3,
+      "composition": [
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "goblin",
+        "goblin"
+      ]
+    },
+    {
+      "castle_level": 4,
+      "wave": 4,
+      "composition": [
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "goblin",
+        "goblin",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 4,
+      "wave": 6,
+      "composition": [
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "goblin",
+        "goblin",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 4,
+      "wave": 7,
+      "composition": [
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "goblin",
+        "goblin",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 4,
+      "wave": 9,
+      "composition": [
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "goblin",
+        "goblin",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 4,
+      "wave": 10,
+      "composition": [
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "goblin",
+        "goblin",
+        "troll",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 4,
+      "wave": 12,
+      "composition": [
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "goblin",
+        "goblin",
+        "troll",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 4,
+      "wave": 13,
+      "composition": [
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "goblin",
+        "goblin",
+        "troll",
+        "troll",
+        "dark_rider",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 4,
+      "wave": 20,
+      "composition": [
+        "orc",
+        "goblin",
+        "orc",
+        "undead",
+        "goblin",
+        "goblin",
+        "troll",
+        "troll",
+        "dark_rider",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 5,
+      "wave": 1,
+      "composition": [
+        "orc",
+        "orc",
+        "undead",
+        "troll",
+        "goblin",
+        "goblin"
+      ]
+    },
+    {
+      "castle_level": 5,
+      "wave": 3,
+      "composition": [
+        "orc",
+        "orc",
+        "undead",
+        "troll",
+        "goblin",
+        "goblin"
+      ]
+    },
+    {
+      "castle_level": 5,
+      "wave": 4,
+      "composition": [
+        "orc",
+        "orc",
+        "undead",
+        "troll",
+        "goblin",
+        "goblin",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 5,
+      "wave": 6,
+      "composition": [
+        "orc",
+        "orc",
+        "undead",
+        "troll",
+        "goblin",
+        "goblin",
+        "orc"
+      ]
+    },
+    {
+      "castle_level": 5,
+      "wave": 7,
+      "composition": [
+        "orc",
+        "orc",
+        "undead",
+        "troll",
+        "goblin",
+        "goblin",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 5,
+      "wave": 9,
+      "composition": [
+        "orc",
+        "orc",
+        "undead",
+        "troll",
+        "goblin",
+        "goblin",
+        "orc",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 5,
+      "wave": 10,
+      "composition": [
+        "orc",
+        "orc",
+        "undead",
+        "troll",
+        "goblin",
+        "goblin",
+        "troll",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 5,
+      "wave": 12,
+      "composition": [
+        "orc",
+        "orc",
+        "undead",
+        "troll",
+        "goblin",
+        "goblin",
+        "troll",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 5,
+      "wave": 13,
+      "composition": [
+        "orc",
+        "orc",
+        "undead",
+        "troll",
+        "goblin",
+        "goblin",
+        "troll",
+        "troll",
+        "dark_rider",
+        "dark_rider",
+        "undead"
+      ]
+    },
+    {
+      "castle_level": 5,
+      "wave": 20,
+      "composition": [
+        "orc",
+        "orc",
+        "undead",
+        "troll",
+        "goblin",
+        "goblin",
+        "troll",
+        "troll",
+        "dark_rider",
+        "dark_rider",
+        "undead"
+      ]
+    }
+  ],
+  "ai_castle": [
+    {
+      "wave": 1,
+      "level": 1
+    },
+    {
+      "wave": 3,
+      "level": 1
+    },
+    {
+      "wave": 4,
+      "level": 2
+    },
+    {
+      "wave": 6,
+      "level": 2
+    },
+    {
+      "wave": 7,
+      "level": 3
+    },
+    {
+      "wave": 9,
+      "level": 3
+    },
+    {
+      "wave": 10,
+      "level": 4
+    },
+    {
+      "wave": 12,
+      "level": 4
+    },
+    {
+      "wave": 13,
+      "level": 5
+    },
+    {
+      "wave": 20,
+      "level": 5
+    }
+  ],
+  "ai_income": [
+    {
+      "wave": 1,
+      "gold": 4
+    },
+    {
+      "wave": 3,
+      "gold": 6
+    },
+    {
+      "wave": 4,
+      "gold": 7
+    },
+    {
+      "wave": 6,
+      "gold": 9
+    },
+    {
+      "wave": 7,
+      "gold": 10
+    },
+    {
+      "wave": 9,
+      "gold": 12
+    },
+    {
+      "wave": 10,
+      "gold": 13
+    },
+    {
+      "wave": 12,
+      "gold": 15
+    },
+    {
+      "wave": 13,
+      "gold": 16
+    },
+    {
+      "wave": 20,
+      "gold": 23
+    }
+  ],
+  "minions": [
+    {
+      "type": "goblin",
+      "castle_level": 1,
+      "max_hp": 45,
+      "damage": 5,
+      "move_speed": 90.0,
+      "attack_range": 25,
+      "attack_cooldown": 0.75,
+      "gold_reward": 8,
+      "regen_per_second": 0.0,
+      "ai_level": 1
+    },
+    {
+      "type": "orc",
+      "castle_level": 1,
+      "max_hp": 110,
+      "damage": 13,
+      "move_speed": 57.0,
+      "attack_range": 30,
+      "attack_cooldown": 1.0,
+      "gold_reward": 18,
+      "regen_per_second": 0.0,
+      "ai_level": 1
+    },
+    {
+      "type": "troll",
+      "castle_level": 1,
+      "max_hp": 320,
+      "damage": 18,
+      "move_speed": 39.0,
+      "attack_range": 28,
+      "attack_cooldown": 1.25,
+      "gold_reward": 45,
+      "regen_per_second": 36.0,
+      "ai_level": 1
+    },
+    {
+      "type": "undead",
+      "castle_level": 1,
+      "max_hp": 65,
+      "damage": 11,
+      "move_speed": 51.0,
+      "attack_range": 100,
+      "attack_cooldown": 1.0,
+      "gold_reward": 16,
+      "regen_per_second": 0.0,
+      "ai_level": 1
+    },
+    {
+      "type": "dark_rider",
+      "castle_level": 1,
+      "max_hp": 280,
+      "damage": 32,
+      "move_speed": 120.0,
+      "attack_range": 35,
+      "attack_cooldown": 0.8333333333333334,
+      "gold_reward": 65,
+      "regen_per_second": 0.0,
+      "ai_level": 1
+    },
+    {
+      "type": "goblin",
+      "castle_level": 2,
+      "max_hp": 54,
+      "damage": 6,
+      "move_speed": 95.4,
+      "attack_range": 25,
+      "attack_cooldown": 0.7166666666666667,
+      "gold_reward": 9,
+      "regen_per_second": 0.0,
+      "ai_level": 2
+    },
+    {
+      "type": "orc",
+      "castle_level": 2,
+      "max_hp": 132,
+      "damage": 15,
+      "move_speed": 60.419999999999995,
+      "attack_range": 30,
+      "attack_cooldown": 0.95,
+      "gold_reward": 21,
+      "regen_per_second": 0.0,
+      "ai_level": 2
+    },
+    {
+      "type": "troll",
+      "castle_level": 2,
+      "max_hp": 384,
+      "damage": 21,
+      "move_speed": 41.34,
+      "attack_range": 28,
+      "attack_cooldown": 1.2,
+      "gold_reward": 54,
+      "regen_per_second": 43.199999999999996,
+      "ai_level": 2
+    },
+    {
+      "type": "undead",
+      "castle_level": 2,
+      "max_hp": 78,
+      "damage": 13,
+      "move_speed": 54.06,
+      "attack_range": 100,
+      "attack_cooldown": 0.95,
+      "gold_reward": 19,
+      "regen_per_second": 0.0,
+      "ai_level": 2
+    },
+    {
+      "type": "dark_rider",
+      "castle_level": 2,
+      "max_hp": 336,
+      "damage": 38,
+      "move_speed": 127.2,
+      "attack_range": 35,
+      "attack_cooldown": 0.8,
+      "gold_reward": 78,
+      "regen_per_second": 0.0,
+      "ai_level": 2
+    },
+    {
+      "type": "goblin",
+      "castle_level": 3,
+      "max_hp": 62,
+      "damage": 7,
+      "move_speed": 100.79999999999998,
+      "attack_range": 25,
+      "attack_cooldown": 0.6833333333333333,
+      "gold_reward": 11,
+      "regen_per_second": 0.0,
+      "ai_level": 3
+    },
+    {
+      "type": "orc",
+      "castle_level": 3,
+      "max_hp": 154,
+      "damage": 18,
+      "move_speed": 63.83999999999999,
+      "attack_range": 30,
+      "attack_cooldown": 0.9166666666666666,
+      "gold_reward": 25,
+      "regen_per_second": 0.0,
+      "ai_level": 3
+    },
+    {
+      "type": "troll",
+      "castle_level": 3,
+      "max_hp": 448,
+      "damage": 25,
+      "move_speed": 43.68,
+      "attack_range": 28,
+      "attack_cooldown": 1.15,
+      "gold_reward": 62,
+      "regen_per_second": 50.4,
+      "ai_level": 3
+    },
+    {
+      "type": "undead",
+      "castle_level": 3,
+      "max_hp": 91,
+      "damage": 15,
+      "move_speed": 57.11999999999999,
+      "attack_range": 100,
+      "attack_cooldown": 0.9166666666666666,
+      "gold_reward": 22,
+      "regen_per_second": 0.0,
+      "ai_level": 3
+    },
+    {
+      "type": "dark_rider",
+      "castle_level": 3,
+      "max_hp": 392,
+      "damage": 44,
+      "move_speed": 134.39999999999998,
+      "attack_range": 35,
+      "attack_cooldown": 0.7666666666666667,
+      "gold_reward": 91,
+      "regen_per_second": 0.0,
+      "ai_level": 3
+    },
+    {
+      "type": "goblin",
+      "castle_level": 4,
+      "max_hp": 76,
+      "damage": 8,
+      "move_speed": 108.89999999999999,
+      "attack_range": 25,
+      "attack_cooldown": 0.65,
+      "gold_reward": 13,
+      "regen_per_second": 0.0,
+      "ai_level": 4
+    },
+    {
+      "type": "orc",
+      "castle_level": 4,
+      "max_hp": 187,
+      "damage": 22,
+      "move_speed": 68.97,
+      "attack_range": 30,
+      "attack_cooldown": 0.8666666666666667,
+      "gold_reward": 30,
+      "regen_per_second": 0.0,
+      "ai_level": 4
+    },
+    {
+      "type": "troll",
+      "castle_level": 4,
+      "max_hp": 544,
+      "damage": 30,
+      "move_speed": 47.19,
+      "attack_range": 28,
+      "attack_cooldown": 1.0833333333333333,
+      "gold_reward": 76,
+      "regen_per_second": 61.2,
+      "ai_level": 4
+    },
+    {
+      "type": "undead",
+      "castle_level": 4,
+      "max_hp": 110,
+      "damage": 18,
+      "move_speed": 61.71,
+      "attack_range": 100,
+      "attack_cooldown": 0.8666666666666667,
+      "gold_reward": 27,
+      "regen_per_second": 0.0,
+      "ai_level": 4
+    },
+    {
+      "type": "dark_rider",
+      "castle_level": 4,
+      "max_hp": 476,
+      "damage": 54,
+      "move_speed": 145.2,
+      "attack_range": 35,
+      "attack_cooldown": 0.7166666666666667,
+      "gold_reward": 110,
+      "regen_per_second": 0.0,
+      "ai_level": 4
+    },
+    {
+      "type": "goblin",
+      "castle_level": 5,
+      "max_hp": 90,
+      "damage": 10,
+      "move_speed": 117.00000000000001,
+      "attack_range": 25,
+      "attack_cooldown": 0.6166666666666667,
+      "gold_reward": 16,
+      "regen_per_second": 0.0,
+      "ai_level": 5
+    },
+    {
+      "type": "orc",
+      "castle_level": 5,
+      "max_hp": 220,
+      "damage": 26,
+      "move_speed": 74.1,
+      "attack_range": 30,
+      "attack_cooldown": 0.8333333333333334,
+      "gold_reward": 36,
+      "regen_per_second": 0.0,
+      "ai_level": 5
+    },
+    {
+      "type": "troll",
+      "castle_level": 5,
+      "max_hp": 640,
+      "damage": 36,
+      "move_speed": 50.7,
+      "attack_range": 28,
+      "attack_cooldown": 1.0333333333333334,
+      "gold_reward": 90,
+      "regen_per_second": 72.0,
+      "ai_level": 5
+    },
+    {
+      "type": "undead",
+      "castle_level": 5,
+      "max_hp": 130,
+      "damage": 22,
+      "move_speed": 66.3,
+      "attack_range": 100,
+      "attack_cooldown": 0.8333333333333334,
+      "gold_reward": 32,
+      "regen_per_second": 0.0,
+      "ai_level": 5
+    },
+    {
+      "type": "dark_rider",
+      "castle_level": 5,
+      "max_hp": 560,
+      "damage": 64,
+      "move_speed": 156.0,
+      "attack_range": 35,
+      "attack_cooldown": 0.6833333333333333,
+      "gold_reward": 130,
+      "regen_per_second": 0.0,
+      "ai_level": 5
+    }
+  ],
+  "lane_endpoints": {
+    "top": {
+      "blue": [
+        90,
+        590
+      ],
+      "red": [
+        1180,
+        180
+      ]
+    },
+    "mid": {
+      "blue": [
+        170,
+        550
+      ],
+      "red": [
+        1110,
+        170
+      ]
+    },
+    "bot": {
+      "blue": [
+        130,
+        630
+      ],
+      "red": [
+        1180,
+        180
+      ]
+    }
+  }
+}

@@ -117,6 +117,21 @@ func remove_at(index: int) -> String:
 	return old
 
 
+## Holy Rapier rontok saat mati; item biasa tetap di slot yang sama.
+## Paritas HeroItemInventory.clear_on_death, memakai metadata catalog.
+func clear_on_death() -> bool:
+	var dropped := false
+	var db = _db()
+	if db == null:
+		return false
+	for i in range(slots.size()):
+		var item: Dictionary = db.get_item(str(slots[i]))
+		if bool(item.get("drops_on_death", false)):
+			remove_at(i)
+			dropped = true
+	return dropped
+
+
 ## Jual kembali: pygame tidak punya refund item, jadi 0 (dijaga eksplisit).
 func sell_value(_index: int) -> int:
 	return 0

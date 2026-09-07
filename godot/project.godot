@@ -120,3 +120,8 @@ glow/hdr_threshold=0.9
 [physics]
 
 common/physics_ticks_per_second=60
+
+[mystic]
+
+; Keep the normal arena faithful to Pygame; KaizenDemo still uses the rig.
+rendering/experimental_hero_rigs=false

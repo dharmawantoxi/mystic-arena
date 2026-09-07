@@ -1,9 +1,8 @@
 # RendererRegistry.gd — daftar renderer CUSTOM per unit.
 #
-# Lookup 3 tingkat sejak Fase 5 (bake batch 222 unit):
-#   1. scene custom di dict HERO/BOSS di bawah (rig hand-made),
-#   2. strip bake pygame (BakedSprite.tscn + baked_units.json),
-#   3. UnitSilhouette (pygame.draw.circle/polygon, fallback).
+# Default arena mengutamakan strip bake renderer pygame. Rig hand-made
+# (Kaizen) adalah showcase/opt-in, bukan pengganti visual asli secara diam-diam.
+# Aktifkan mystic/rendering/experimental_hero_rigs untuk mencoba rig custom.
 # Minion belum punya jalur bake (tetap silhouette).
 #
 # Scene custom boleh punya method drive(phase, action, attack_progress,
@@ -18,19 +17,8 @@ const BakedUnitDB = preload("res://scripts/render/BakedUnitDB.gd")
 ## mengembalikan scene yang sama untuk semua unit ter-bake.
 const BakedSpriteScene = preload("res://scenes/render/BakedSprite.tscn")
 
-## hero_type -> PackedScene. Key yang tidak terdaftar tetap memakai
-## silhouette pygame — jadi Kaizen bisa "naik kelas" sendiri tanpa
-## mengganggu 221 hero lain.
-##
-## Kaizen terdaftar: rig Skeleton2D 19 tulang (port _NS_kaizen 2906 baris)
-## sudah punya drive() dengan signature persis yang dipanggil Hero.gd,
-## sehingga di arena ia tampil sebagai karakter bertulang + shader hamon
-## + wind ribbon, bukan lingkaran generik.
-##
-## URUTAN lookup hero_scene(): scene custom di atas > strip bake >
-## silhouette. Rig hand-made selalu menang karena itu upgrade yang lebih
-## tinggi dari bake; bake menang dari silhouette karena pose-nya berasal
-## dari renderer pygame asli (tools/convert_to_godot.py --units-png).
+## Renderer alternatif. KaizenDemo.tscn tetap memakai rig langsung;
+## arena hanya memakainya bila experimental_hero_rigs aktif atau bake absen.
 const HERO := {
 	"kaizen": preload("res://scenes/hero/kaizen/KaizenSkeleton.tscn"),
 }
@@ -41,6 +29,9 @@ const MINION := {}
 
 
 static func hero_scene(hero_type: String) -> PackedScene:
+	if BakedUnitDB.has_unit(hero_type) and not bool(ProjectSettings.get_setting(
+			"mystic/rendering/experimental_hero_rigs", false)):
+		return BakedSpriteScene
 	var custom: PackedScene = HERO.get(hero_type) as PackedScene
 	if custom != null:
 		return custom

@@ -457,7 +457,8 @@ func _build_hero_tab() -> void:
 	else:
 		_add_label("Pilih hero Radiant untuk melihat status & upgrade.", COL_TEXT, 14)
 
-	_add_label("Beli hero (yang sudah di-unlock):", COL_TEXT, 13)
+	_add_label("Beli hero (%d/%d dimiliki, termasuk yang respawn):" % [
+		GameManager.owned_heroes().size(), GameManager.max_heroes_owned], COL_TEXT, 13)
 	var unlocked = SaveManager.data.get("unlocked_heroes", [])
 	if not (unlocked is Array):
 		unlocked = []
@@ -477,7 +478,9 @@ func _build_hero_tab() -> void:
 			"%s\nHP %d · DMG %d · RANGE %d · %s" % [str(d.get("description", "")),
 				int(d.get("hp", 0)), int(d.get("damage", 0)), int(d.get("range", 0)),
 				str(d.get("dmg_type", "PHYSICAL"))],
-			_buy_hero.bind(htype), GameManager.gold >= cost)
+			_buy_hero.bind(htype), GameManager.can_buy_hero(htype))
+		if GameManager.owns_hero(htype):
+			b.text += " · DIMILIKI"
 		b.custom_minimum_size = Vector2(320, 30)
 		grid.add_child(b)
 	_add_label("Hero lain (%d total di heroes.json) terbuka lewat progres level — "

@@ -9,7 +9,7 @@
 #     menentukan hasil (paritas Game.update 2281-2292), wave & gold berhenti
 #     saat match usai; "idle" = sedang di menu utama (in_menu).
 #   • MINION_TYPES + komposisi wave dibaca dari data/economy.json (hasil convert),
-#     bukan hardcode; late-wave scale mengikuti wave.
+#     komposisi berdasarkan nexus + elite wave, stat berdasarkan nexus sendiri.
 #   • gold AI (tim red) terpisah supaya AI bisa membangun/meng-upgrade menara.
 #   • aura item diproses 4×/detik (paritas hero_items.update_auras).
 #
@@ -23,7 +23,7 @@
 #     save "meta_gold" (bukan "gold"), di-guard _meta_reward_granted.
 #   • ENEMY SCALING (paritas _core.py:1460/1476-1483): aktif hanya difficulty
 #     hard; enemy_hp_mult x1.15, damage x1.10 dari levels.json — diterapkan
-#     Main ke minion merah (1792-1796) dan boss (1822/2097) saat spawn.
+#     ke minion merah (1792-1796) dan boss (1822/2097) saat spawn.
 #   • AUTO-UNLOCK HERO BOSS (paritas _auto_unlock_defeated_boss_heroes
 #     _core.py:2322): boss yang dikalahkan + match menang -> hero gratis masuk
 #     SaveManager.unlocked_heroes (muncul di HERO SHOP + tab HERO toko).
@@ -34,6 +34,7 @@ signal level_started(level_num: int)
 signal wave_started(wave_num: int)
 signal boss_spawned(boss_type: String)
 signal hero_died(hero: Node)
+signal hero_respawned(hero: Node)
 signal gold_changed(new_gold: int)
 signal minion_died(minion: Node, killer_team: String)
 signal tower_destroyed(tower: Node, killer_team: String)
@@ -56,7 +57,7 @@ const FALLBACK_MINION_TYPES: Dictionary = {
 		"attack_cooldown": 60, "gold_reward": 18, "radius": 12, "color": "#c8643c"},
 	"troll": {"name": "Troll", "hp": 320, "damage": 18, "speed": 0.65, "range": 28,
 		"attack_cooldown": 75, "gold_reward": 45, "radius": 14, "color": "#648caa",
-		"armor": 2, "magic_resist": 0.05},
+		"armor": 2, "magic_resist": 0.05, "regen": 0.6},
 	"undead": {"name": "Undead", "hp": 65, "damage": 11, "speed": 0.85, "range": 100,
 		"attack_cooldown": 60, "gold_reward": 16, "radius": 10, "color": "#c8c8dc",
 		"armor": 0, "magic_resist": 0.15},
@@ -65,7 +66,7 @@ const FALLBACK_MINION_TYPES: Dictionary = {
 		"armor": 1, "magic_resist": 0.05},
 }
 
-# ═══ FALLBACK NEXUS_WAVE_COMPOSITION (wave 1-5) ═══
+# ═══ FALLBACK NEXUS_WAVE_COMPOSITION (level nexus 1-5) ═══
 const FALLBACK_WAVE_COMPOSITION: Dictionary = {
 	1: ["goblin", "goblin", "goblin"],
 	2: ["goblin", "goblin", "goblin", "orc"],
@@ -73,8 +74,11 @@ const FALLBACK_WAVE_COMPOSITION: Dictionary = {
 	4: ["orc", "goblin", "orc", "undead", "goblin", "goblin"],
 	5: ["orc", "orc", "undead", "troll", "goblin", "goblin"],
 }
-## Wave > 5: pygame memakai komposisi wave 5 terus + minion_scale naik per level
-const LATE_WAVE_MIX: Array = ["orc", "undead", "troll", "goblin", "dark_rider", "orc"]
+## Game.reset: persiapan 300 frame; hero yang mati kembali setelah 600 frame.
+const FIRST_WAVE_DELAY := 300.0 / FPS
+const HERO_RESPAWN_DELAY := 600.0 / FPS
+const WAVE_LANES: Array = ["top", "mid", "bot"]
+const WAVE_TEAMS: Array = ["blue", "red"]
 
 # ═══ FALLBACK EKONOMI — paritas _core.py 209-229, 253 ═══
 const FALLBACK_ECONOMY: Dictionary = {
@@ -84,13 +88,15 @@ const FALLBACK_ECONOMY: Dictionary = {
 	"gold_per_level_bonus": 100,
 	"difficulty_gold_mult": {"easy": 1.25, "normal": 1.0, "hard": 0.75},
 	"minion_wave_interval_frames": 1500,
+	"minion_spawn_delay_frames": 20,
+	"max_heroes_owned": 5,
 }
 
 const ECONOMY_PATH := "res://data/economy.json"
 
 # State global (mirip _core.Game)
 var level_number: int = 1
-var wave_number: int = 1
+var wave_number: int = 0
 var gold: int = 1000:
 	set(v):
 		gold = v
@@ -152,11 +158,16 @@ var ai_gold: int = 0
 # Gelombang minion — paritas _core.MINION_WAVE_INTERVAL = 1500 frame @60fps
 @export var waves_enabled: bool = true
 @export var wave_interval: float = 25.0
-@export var max_minions_per_team: int = 24
+var minion_spawn_delay: float = 20.0 / FPS
+var max_heroes_owned: int = 5
+## Antrean terpisah per tim; satu komposisi LENGKAP untuk SETIAP lane.
+## Tidak ada cap 24: itu dulu memotong wave elite dan menghilangkan bot lane.
+var spawn_queues: Dictionary = {"blue": [], "red": []}
+var _spawn_timers: Dictionary = {"blue": 0.0, "red": 0.0}
+var _hero_respawn_timers: Dictionary = {}
 
 var _gold_timer: float = 0.0
 var _gold_income_milli: int = 0
-var _ai_gold_milli: int = 0
 var _wave_timer: float = 0.0
 var _aura_timer: float = 0.0
 var _hit_stop_active: bool = false
@@ -170,6 +181,7 @@ func _ready():
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	load_economy()
 	nexus_destroyed.connect(_on_nexus_destroyed)
+	hero_died.connect(_on_hero_died)
 
 
 func load_economy() -> void:
@@ -190,6 +202,9 @@ func load_economy() -> void:
 		for k in FALLBACK_WAVE_COMPOSITION:
 			wave_composition_table[str(k)] = FALLBACK_WAVE_COMPOSITION[k]
 	wave_interval = float(economy.get("minion_wave_interval_frames", 1500)) / FPS
+	minion_spawn_delay = maxf(1.0 / FPS,
+		float(economy.get("minion_spawn_delay_frames", 20)) / FPS)
+	max_heroes_owned = maxi(1, int(economy.get("max_heroes_owned", 5)))
 	print("[GameManager] ekonomi: %s gold/s · wave tiap %.0fs · %d tipe minion" % [
 		format_gold_rate(float(economy.get("gold_per_second", 3))),
 		wave_interval, minion_types.size()])
@@ -280,30 +295,25 @@ func cycle_difficulty() -> String:
 func _process(delta):
 	# Watchdog hit-stop DULU: Engine.time_scale tidak boleh bisa "nyangkut" kecil
 	_watch_hit_stop()
-	if is_paused or in_menu:
+	if is_paused or in_menu or get_tree().paused:
 		return
 	if state != "playing":
 		return
 	# Passive gold (paritas Game: tiap 60 frame, pecahan disimpan di milli)
 	_gold_timer += delta
-	if _gold_timer >= 1.0:
+	while _gold_timer >= 1.0:
 		_gold_timer -= 1.0
 		_gold_income_milli += int(round(gold_per_second * 1000.0))
 		var gain: int = _gold_income_milli / 1000
 		_gold_income_milli = _gold_income_milli % 1000
 		if gain > 0:
 			gold += gain
-		# AI (tim red) menabung dengan laju yang sama
-		_ai_gold_milli += int(round(gold_per_second * 1000.0))
-		var ai_gain: int = _ai_gold_milli / 1000
-		_ai_gold_milli = _ai_gold_milli % 1000
-		ai_gold += ai_gain
-	# Wave timer -> emit wave_started, yang spawn-nya ditangani scene (Main.gd)
+		# _core.Game.update: AI mulai dari STARTING_GOLD, lalu
+		# menerima GOLD_PER_SECOND + wave, bukan income pemain × difficulty.
+		ai_gold += int(economy.get("gold_per_second", 3)) + maxi(0, wave_number)
 	if waves_enabled and get_tree().current_scene != null:
-		_wave_timer += delta
-		if _wave_timer >= wave_interval:
-			_wave_timer = 0.0
-			next_wave()
+		_update_waves(delta)
+	_update_hero_respawns(delta)
 	# Aura item (Steel Aegis / Everfrost / Solar Brand / Searbrand)
 	_aura_timer += delta
 	if _aura_timer >= 0.25:
@@ -322,11 +332,11 @@ func start_level(lv: int, replay: bool = false):
 	starting_gold = compute_starting_gold(lv_data, lv)
 	gold_per_second = compute_gold_per_second(lv)
 	gold = starting_gold
-	ai_gold = starting_gold
+	ai_gold = int(economy.get("starting_gold", 350))
 	_gold_income_milli = 0
-	_ai_gold_milli = 0
 	_gold_timer = 0.0
-	_wave_timer = 0.0
+	_reset_wave_state(FIRST_WAVE_DELAY)
+	_hero_respawn_timers.clear()
 	wave_number = 0
 	# ── Meta reward match ini direset (paritas _core.py:1578-1581) ──
 	meta_reward_earned = 0
@@ -353,12 +363,8 @@ func start_level(lv: int, replay: bool = false):
 		lv, " (replay)" if replay else "", gold, format_gold_rate(gold_per_second),
 		difficulty, " · enemy scaling x%.2f HP" % enemy_hp_mult if enemy_scaling_enabled else ""])
 	level_started.emit(lv)
-	# call_deferred: antrian deferred itu FIFO — Main._on_level_started sudah
-	# mengantri _start_battle (bersihkan arena lama + spawn nexus/hero) lebih
-	# dulu, jadi wave 1 baru spawn SETELAH medan bersih. Kalau dipanggil
-	# langsung, minion wave 1 lahir di arena lama lalu terhapus bersama
-	# sisa match sebelumnya (arena kosong sampai wave 2, 25 detik).
-	next_wave.call_deferred()
+	# Wave 1 TIDAK dibuat selama intro. Countdown 5 detik baru berjalan
+	# setelah cinematic dilewati, persis Game.reset + update_waves pygame.
 
 
 ## Mulai ulang match yang sama (R setelah menang/kalah, atau ENTER saat kalah).
@@ -418,6 +424,8 @@ func return_to_menu() -> void:
 	is_paused = false
 	state = "idle"
 	wave_number = 0
+	_reset_wave_state()
+	_hero_respawn_timers.clear()
 	shop_open = false
 	AudioManager.stop_bgm()
 	# Ambient ikut mati di menu — pygame memulainya sekali di main() dan
@@ -426,49 +434,144 @@ func return_to_menu() -> void:
 	print("[GameManager] kembali ke menu utama")
 
 
-func next_wave() -> void:
+func _reset_wave_state(delay: float = 0.0) -> void:
+	_wave_timer = delay
+	for team in WAVE_TEAMS:
+		spawn_queues[team].clear()
+		_spawn_timers[team] = 0.0
+
+
+func can_start_wave() -> bool:
+	if state != "playing" or in_menu or is_paused or get_tree().paused:
+		return false
+	if _wave_timer > 0.000001:
+		return false
+	for team in WAVE_TEAMS:
+		if not spawn_queues[team].is_empty() or count_alive("minions", team) > 0:
+			return false
+	return true
+
+
+## Countdown menahan wave BERIKUTNYA, bukan antrean wave yang sedang keluar.
+## Minion wave lama harus bersih dahulu (Game.update_waves pygame).
+func _update_waves(delta: float) -> void:
+	_wave_timer = maxf(0.0, _wave_timer - delta)
+	for team in WAVE_TEAMS:
+		_spawn_timers[team] = float(_spawn_timers[team]) + delta
+		# Clamp BEFORE a new queue is populated: idle time permits its first
+		# minion immediately, not a whole-wave burst or a shortened second gap.
+		if spawn_queues[team].is_empty():
+			_spawn_timers[team] = minf(float(_spawn_timers[team]), minion_spawn_delay)
+	if can_start_wave():
+		next_wave()
+	for team in WAVE_TEAMS:
+		while not spawn_queues[team].is_empty() \
+				and float(_spawn_timers[team]) + 0.000001 >= minion_spawn_delay:
+			_spawn_timers[team] = maxf(0.0, float(_spawn_timers[team]) - minion_spawn_delay)
+			_spawn_wave_minion(team, spawn_queues[team].pop_front())
+		if spawn_queues[team].is_empty():
+			_spawn_timers[team] = minf(float(_spawn_timers[team]), minion_spawn_delay)
+
+
+func next_wave() -> bool:
+	if not can_start_wave():
+		return false
 	wave_number += 1
-	# Terompet wave baru (paritas Game.update _core.py:1740, volume_mult 0.6 —
-	# dipelankan karena berbunyi tiap 25 detik dan tidak boleh menutupi SFX tempur).
+	_wave_timer = wave_interval
+	for nexus in [blue_nexus, red_nexus]:
+		if is_instance_valid(nexus):
+			nexus.set_wave(wave_number)
+	_auto_scale_ai_nexus()
+	for team in WAVE_TEAMS:
+		var composition := wave_composition(wave_number, team)
+		for lane in WAVE_LANES:
+			for minion_type in composition:
+				spawn_queues[team].append({"type": minion_type, "lane": lane})
 	AudioManager.play_sfx("wave_start", 0.6)
 	print("[GameManager] Wave %d" % wave_number)
 	wave_started.emit(wave_number)
-	# Castle shield gratis hanya sampai wave 10 (paritas Castle.set_wave)
-	for nexus in [blue_nexus, red_nexus]:
-		if nexus != null and is_instance_valid(nexus) and nexus.has_method("set_wave"):
-			nexus.set_wave(wave_number)
+	return true
 
 
-## Komposisi minion untuk wave ini (sudah di-scale untuk wave > 5)
-func wave_composition(wave: int) -> Array:
-	var key := str(wave)
-	if wave_composition_table.has(key):
-		var c = wave_composition_table[key]
-		if c is Array:
-			return c.duplicate()
-	if wave <= 5 and FALLBACK_WAVE_COMPOSITION.has(wave):
-		return FALLBACK_WAVE_COMPOSITION[wave].duplicate()
-	# Late game: ulang LATE_WAVE_MIX, tambah 1 unit tiap 2 wave (maks 10 per tim)
-	var reps := clampi(1 + (wave - 5) / 2, 1, 2)
-	var out: Array = []
-	for _r in reps:
-		out.append_array(LATE_WAVE_MIX)
-	while out.size() > 10:
-		out.remove_at(out.size() - 1)
-	return out
+## _auto_scale_ai_castle: Lv2/3/4/5 pada wave 4/7/10/13, tanpa biaya.
+func _auto_scale_ai_nexus() -> void:
+	if not is_instance_valid(red_nexus):
+		return
+	var target_level := mini(5, 1 + maxi(0, wave_number - 1) / 3)
+	while red_nexus.level < target_level and red_nexus.can_upgrade():
+		red_nexus.upgrade()
 
 
-## Skala HP/damage minion untuk wave tinggi (paritas minion_scale NEXUS_LEVELS)
-func minion_scale_for(wave: int) -> float:
-	var base := 1.0
-	if blue_nexus != null and is_instance_valid(blue_nexus):
-		base = maxf(base, float(blue_nexus.get("minion_scale")))
-	if red_nexus != null and is_instance_valid(red_nexus):
-		base = maxf(base, float(red_nexus.get("minion_scale")))
-	# wave > 5: +8% per wave (aproksimasi eskalasi late-game pygame)
-	if wave > 5:
-		base *= 1.0 + 0.08 * float(wave - 5)
-	return base
+## NEXUS_WAVE_COMPOSITION diindeks LEVEL CASTLE, BUKAN nomor wave.
+## Tambahan elite per wave persis Game._get_wave_composition (_core.py).
+func wave_composition(wave: int, team: String = "blue") -> Array:
+	var nexus = blue_nexus if team == "blue" else red_nexus
+	var castle_level := int(nexus.level) if is_instance_valid(nexus) else 1
+	var base: Array = wave_composition_table.get(str(castle_level),
+		FALLBACK_WAVE_COMPOSITION.get(castle_level, FALLBACK_WAVE_COMPOSITION[1]))
+	var result := base.duplicate()
+	if wave >= 13:
+		result.append_array(["troll", "troll", "dark_rider", "dark_rider", "undead"])
+	elif wave >= 10:
+		result.append_array(["troll", "dark_rider", "undead"])
+	elif wave >= 7:
+		result.append_array(["orc", "undead"])
+	elif wave >= 4:
+		result.append("orc")
+	return result
+
+
+## Hanya level nexus TIM SENDIRI yang mengubah stat minion.
+func minion_scale_for(team: String = "blue") -> float:
+	var nexus = blue_nexus if team == "blue" else red_nexus
+	return float(nexus.minion_scale) if is_instance_valid(nexus) else 1.0
+
+
+func _spawn_wave_minion(team: String, entry: Dictionary) -> void:
+	var lane := str(entry["lane"])
+	var path := PackedVector2Array()
+	var arena = get_tree().get_first_node_in_group("arena_map")
+	if arena != null:
+		path = arena.get_lane_path(lane)
+	var pos := base_spawn_point(team)
+	if not path.is_empty():
+		pos = path[0] if team == "blue" else path[path.size() - 1]
+	var minion = spawn_minion(str(entry["type"]), team, pos,
+		minion_scale_for(team), lane, path)
+	var nexus = blue_nexus if team == "blue" else red_nexus
+	minion.ai_level = int(nexus.level) if is_instance_valid(nexus) else 1
+	if team == "red" and enemy_scaling_enabled:
+		minion.apply_enemy_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
+
+
+# ══════════════════════════════════════════════════════════
+#  HERO RESPAWN — satu hero, bukan reset seluruh arena
+# ══════════════════════════════════════════════════════════
+
+func _on_hero_died(hero: Node) -> void:
+	if state != "playing" or in_menu or _hero_respawn_timers.has(hero):
+		return
+	_hero_respawn_timers[hero] = HERO_RESPAWN_DELAY
+	if selected_hero == hero:
+		clear_selection()
+
+
+func hero_respawn_remaining(hero: Node) -> float:
+	return float(_hero_respawn_timers.get(hero, 0.0))
+
+
+func _update_hero_respawns(delta: float) -> void:
+	for hero in _hero_respawn_timers.keys():
+		if not is_instance_valid(hero) or not hero.is_dead:
+			_hero_respawn_timers.erase(hero)
+			continue
+		var remaining := float(_hero_respawn_timers[hero]) - delta
+		if remaining <= 0.000001:
+			_hero_respawn_timers.erase(hero)
+			hero.respawn()
+			hero_respawned.emit(hero)
+		else:
+			_hero_respawn_timers[hero] = remaining
 
 
 # ══════════════════════════════════════════════════════════
@@ -523,12 +626,14 @@ func spawn_boss(boss_type: String, team: String, pos: Vector2):
 
 
 func spawn_minion(minion_type: String, team: String, pos: Vector2,
-		scale_mult: float = 1.0, lane: String = "mid") -> Node2D:
+		scale_mult: float = 1.0, lane: String = "mid",
+		lane_path: PackedVector2Array = PackedVector2Array()) -> Node2D:
 	var minion_scene = preload("res://scenes/minion/Minion.tscn")
 	var m = minion_scene.instantiate()
 	m.minion_type = minion_type
 	m.team = team
 	m.lane = lane
+	m.lane_path = lane_path
 	m.position = pos
 	if scale_mult != 1.0 and "stat_scale" in m:
 		m.stat_scale = scale_mult
@@ -959,21 +1064,44 @@ func try_buy_tower_regen_shield() -> bool:
 
 # ── HERO ──────────────────────────────────────────────────
 
+## Roster milik tim, termasuk hero yang sedang menunggu respawn.
+func owned_heroes(team: String = "blue") -> Array:
+	var result: Array = []
+	for hero in get_tree().get_nodes_in_group("heroes"):
+		if is_instance_valid(hero) and not hero.is_queued_for_deletion() and hero.team == team:
+			result.append(hero)
+	return result
+
+
+func owns_hero(hero_type: String, team: String = "blue") -> bool:
+	for hero in owned_heroes(team):
+		if hero.hero_type == hero_type:
+			return true
+	return false
+
+
+func can_buy_hero(hero_type: String) -> bool:
+	var data: Dictionary = HeroDB.get_hero(hero_type)
+	return state == "playing" and not in_menu and not is_paused and not get_tree().paused \
+		and not data.is_empty() \
+		and SaveManager.is_unlocked(hero_type) and not owns_hero(hero_type) \
+		and owned_heroes().size() < max_heroes_owned \
+		and gold >= int(data.get("cost", 400))
+
+
 func try_buy_hero(hero_type: String) -> bool:
-	if state != "playing":
+	if not can_buy_hero(hero_type):
 		return false
 	var cost := int(HeroDB.get_hero(hero_type).get("cost", 400))
 	if not spend_gold(cost):
-		print("[Shop] gold kurang: %s butuh %d (punya %d)" % [hero_type, cost, gold])
 		return false
-	var index := count_alive("heroes", "blue")
-	var h = spawn_hero(hero_type, "blue", base_spawn_point("blue", index))
-	# Seruan hero baru masuk medan (paritas Game.try_buy_hero _core.py:2637-2638:
-	# ui_buy dibunyikan ShopPanel._run, hero_spawn di sini). Hanya hero yang
-	# DIBELI pemain — hero AI lahir tanpa suara, sama seperti pygame.
+	# Game.try_buy_hero: summon di depan toko Radiant, bukan hero gratis di base.
+	var index := owned_heroes().size()
+	var arena = get_tree().get_first_node_in_group("arena_map")
+	var shop_pos: Vector2 = arena.radiant_shop_pos if arena != null else Vector2(340, 540)
+	spawn_hero(hero_type, "blue", shop_pos + Vector2(50 + index * 30, 10))
 	AudioManager.play_sfx("hero_spawn")
-	select_hero(h)
-	shop_changed.emit()
+	close_shop()
 	print("[Shop] %s dibeli (-%d gold)" % [HeroDB.get_hero(hero_type).get("name", hero_type), cost])
 	return true
 

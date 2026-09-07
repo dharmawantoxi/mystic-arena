@@ -39,6 +39,8 @@ FATAL_PATTERNS = [
     r"Cyclic resource inclusion",
     r"Invalid type in function",
     r"Nonexistent signal",
+    r"There is no animation with name",
+    r'Parameter "body->get_space\(\)" is null',
     r"Node not found",
 ]
 

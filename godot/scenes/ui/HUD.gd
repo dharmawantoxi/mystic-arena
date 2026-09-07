@@ -279,7 +279,7 @@ func _build_difficulty_label() -> void:
 func _on_difficulty_changed(d: String) -> void:
 	if _difficulty_label == null:
 		return
-	_difficulty_label.text = "difficulty: %s  ·  gold x%.2f  ·  D = ganti" % [
+	_difficulty_label.text = "difficulty: %s  ·  gold x%.2f" % [
 		str(d).to_upper(), GameManager.difficulty_mult(d)]
 
 

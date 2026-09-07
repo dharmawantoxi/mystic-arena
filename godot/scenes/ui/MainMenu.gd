@@ -754,7 +754,7 @@ func _build_settings() -> void:
 	var note := Label.new()
 	note.text = "Volume disimpan di SaveManager.data[\"settings\"] dan langsung " \
 		+ "diterapkan ke AudioManager. Difficulty diganti di layar PILIH LEVEL " \
-		+ "(paritas pygame yang menguncinya sampai semua level selesai)."
+		+ "(sebelum mulai pertandingan)."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_font_size_override("font_size", 11)
 	note.add_theme_color_override("font_color", COL_DIM)
@@ -828,8 +828,13 @@ func _build_how_to_play() -> void:
 			"Klik lingkaran slot kosong (+) di lane lalu bangun menara (100 gold).",
 			"4 jalur: Archer / Cannon / Ice / Mage. Upgrade Lv1→Lv2 memilih jalur."]],
 		["HERO & SKILL", [
+			"Mulai tanpa hero. Buka B → HERO untuk membeli hero yang sudah di-unlock.",
+			"Maksimal 5 hero unik. Hero mati respawn setelah 10 detik dengan level/item tetap.",
 			"Klik hero Radiant untuk memilihnya, lalu Q/W/E/R untuk skill (R = ultimate).",
 			"Hero yang tidak dipilih bertarung sendiri (auto-cast)."]],
+		["WAVE MINION", [
+			"Wave pertama setelah 5 detik. Minion keluar bertahap di ketiga lane.",
+			"Wave berikutnya menunggu 25 detik dan semua minion wave lama habis."]],
 		["TOKO (B)", [
 			"4 tab: MENARA / ITEM / HERO / NEXUS. Item = 6 slot per hero.",
 			"Upgrade nexus menaikkan HP + skala minion timmu."]],
