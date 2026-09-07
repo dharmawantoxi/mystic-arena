@@ -12,6 +12,8 @@
 # visual Healing Ward (logika heal-nya jalan, gambarnya menyusul).
 extends RefCounted
 
+const BakedUnitDB = preload("res://scripts/render/BakedUnitDB.gd")
+
 const FPS := 60.0
 
 # ── Cooldown universal (paritas _entity.Hero 3444-3449) ──
@@ -238,7 +240,15 @@ func _trigger_cooldown(key: String) -> void:
 
 
 func _visual_duration(key: String) -> float:
-	# SKILL_VISUAL_DURATION pygame (frame) -> detik
+	# SKILL_VISUAL_DURATION pygame (frame) -> detik. Sumber utama =
+	# manifest bake (skill_dur, dibaca dari tabel cast hero_skills/
+	# _bundle.py saat bake) supaya SEMUA 222 unit — bukan cuma 3 hero
+	# di bawah — memakai countdown cast yang sama dengan renderer
+	# pygame DAN sweep bake strip skill (durasi anchor BakedSprite).
+	var dur_f := BakedUnitDB.skill_duration_frames(
+			str(hero.get("hero_type")), key)
+	if dur_f > 0.0:
+		return dur_f / FPS
 	match str(hero.get("hero_type")):
 		"kaizen":
 			return {"q": 60.0, "w": 90.0, "e": 60.0, "r": 100.0}[key] / FPS

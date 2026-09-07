@@ -16,9 +16,15 @@
 #   attack    -> frame DIPAKSA dari attack_progress (deterministik),
 #     meniru controller pygame yang menurunkan frame serang dari sisa
 #     timer, bukan dari jam playback (bosses/level1.py:841-842).
-#   skill     -> belum ada pose bake tersendiri (fase lanjutan); badan
-#     memakai pose terakhir + FX proyektil Godot (SkillProjectile.gd)
-#     yang memang jalur visual skill sejak Fase 5b.
+#   skill_*   -> Fase 5c: 6 frame/pose dari <type>.skill.png, frame
+#     DIPAKSA dari countdown cast (progress = 1-sisa/dur) seperti
+#     renderer pygame (mis. _skill_progress heroes/_bundle.py:6807).
+#     Prioritas DI ATAS attack; pose yang tidak lolos gerbang bake
+#     (statis/rusak) fallback ke attack. FX proyektil Godot
+#     (SkillProjectile.gd) tetap jalan di atasnya seperti Fase 5b.
+#   rage_*    -> Fase 5c: varian idle/walk/attack dari <type>.rage.png
+#     selama flag rage aktif (drakar: 300 frame sejak cast q —
+#     paritas rage_active hero_skills/_bundle.py).
 #
 # Anchor: origin node = telapak kaki (sama dengan UnitSilhouette.gd).
 # Semua frame strip sudah diratakan pada anchor yang sama saat bake,
@@ -33,7 +39,23 @@ var unit_type := ""
 var kind := "hero" # "hero" | "boss" — menentukan skala + fps (manifest)
 var _built := false
 var _attack_frames := 0
+var _skill_frames := 0
 var _action := ""
+# Countdown cast skill (detik, cermin active_skill_timer SkillBook) +
+# countdown flag rage. Di-tick di drive() — bukan _process — supaya
+# pose tidak maju saat game dijeda (drive hanya dipanggil physics).
+var _skill_key := ""
+var _skill_t := 0.0
+var _skill_dur := 1.0
+var _rage_t := 0.0
+var _rage_skill := ""
+var _rage_dur := 0.0
+# Offset per strip (sel skill/rage ukurannya beda dari sel dasar —
+# satu AnimatedSprite2D hanya punya satu offset, jadi diganti tiap
+# ganti strip, bukan tiap frame).
+var _offset_base := Vector2.ZERO
+var _offset_skill := Vector2.ZERO
+var _offset_rage := Vector2.ZERO
 
 
 ## Dipanggil Hero.gd/Boss.gd setelah instantiate (pola configure()
@@ -86,22 +108,19 @@ func configure_baked(p_type: String, p_kind: String, p_team: String) -> void:
 		# jadi flag loop hanya berarti untuk idle/walk.
 		frames.set_animation_loop(StringName(anim), true)
 		frames.set_animation_speed(StringName(anim), fps)
-		for i in count:
-			# Indeks frame global -> (baris, kolom) grid strip.
-			var idx := first + i
-			var at := AtlasTexture.new()
-			at.atlas = tex
-			at.region = Rect2((idx % fpr) * cw, (idx / fpr) * ch, cw, ch)
-			frames.add_frame(StringName(anim), at)
+		_add_strip_frames(frames, anim, tex, first, count, cw, ch, fpr)
 		if anim == "attack":
 			_attack_frames = count
+	_build_skill_anims(frames, e)
+	_build_rage_anims(frames, e)
 
 	sprite.sprite_frames = frames
 	var anchor: Array = e.get("anchor", [cw / 2, ch])
 	# centered=false + offset negatif = titik anchor jatuh tepat di
 	# origin node (telapak kaki), apa pun ukuran sel.
 	sprite.centered = false
-	sprite.offset = Vector2(-float(anchor[0]), -float(anchor[1]))
+	_offset_base = Vector2(-float(anchor[0]), -float(anchor[1]))
+	sprite.offset = _offset_base
 	sprite.scale = Vector2.ONE * scale_val
 
 	# Pasca-pass pygame hanya berlaku di jalur HERO lane: outline gelap
@@ -131,25 +150,158 @@ func configure_baked(p_type: String, p_kind: String, p_team: String) -> void:
 	_action = "idle"
 
 
+## Iris [first, first+count) dari strip grid ke animasi SpriteFrames.
+func _add_strip_frames(frames: SpriteFrames, anim: String, tex: Texture2D,
+		first: int, count: int, cw: int, ch: int, fpr: int) -> void:
+	for i in count:
+		# Indeks frame global -> (baris, kolom) grid strip.
+		var idx := first + i
+		var at := AtlasTexture.new()
+		at.atlas = tex
+		at.region = Rect2((idx % fpr) * cw, (idx / fpr) * ch, cw, ch)
+		frames.add_frame(StringName(anim), at)
+
+
+## Animasi skill_q/w/e/r dari strip skill (Fase 5c, skema 2). Pose yang
+## tidak ada di skill_anims dilewati — drive() fallback ke attack.
+func _build_skill_anims(frames: SpriteFrames, e: Dictionary) -> void:
+	var stex: Texture2D = BakedUnitDB.texture_skill(unit_type)
+	if stex == null:
+		return
+	var cw: int = int(e.get("skill_frame_w", 0))
+	var ch: int = int(e.get("skill_frame_h", 0))
+	if cw <= 0 or ch <= 0:
+		return
+	var fpr: int = max(1, int(e.get("skill_frames_per_row", 8)))
+	var anchor: Array = e.get("skill_anchor", e.get("anchor", [cw / 2, ch]))
+	_offset_skill = Vector2(-float(anchor[0]), -float(anchor[1]))
+	for key in ["q", "w", "e", "r"]:
+		var spec: Array = BakedUnitDB.skill_anim(unit_type, key)
+		if spec.size() < 2:
+			continue
+		var count: int = int(spec[1])
+		if count <= 0:
+			continue
+		var anim := "skill_" + key
+		frames.add_animation(StringName(anim))
+		frames.set_animation_loop(StringName(anim), true)
+		# Speed = panjang cast (frame dirata-rata ke durasi), tapi
+		# drive() memaksa frame dari countdown — speed hanya cadangan
+		# kalau anim sempat ter-play tanpa pause (tidak boleh terjadi).
+		var dur_f := BakedUnitDB.skill_duration_frames(unit_type, key)
+		var speed := float(count) / maxf(dur_f / 60.0, 0.01) \
+				if dur_f > 0.0 else 6.0
+		frames.set_animation_speed(StringName(anim), speed)
+		_add_strip_frames(frames, anim, stex, int(spec[0]), count,
+				cw, ch, fpr)
+		_skill_frames = maxi(_skill_frames, count)
+
+
+## Animasi rage_idle/walk/attack dari strip rage (Fase 5c). Tata letak
+## strip rage = strip dasar (idle|walk|attack berurutan, 8 frame
+## per aksi) karena dibake oleh fungsi yang sama dengan flag
+## rage_active menyala (tools/convert_to_godot.py).
+func _build_rage_anims(frames: SpriteFrames, e: Dictionary) -> void:
+	var rtex: Texture2D = BakedUnitDB.texture_rage(unit_type)
+	if rtex == null:
+		return
+	var cw: int = int(e.get("rage_frame_w", 0))
+	var ch: int = int(e.get("rage_frame_h", 0))
+	if cw <= 0 or ch <= 0:
+		return
+	var fpr: int = max(1, int(e.get("rage_frames_per_row", 8)))
+	var anchor: Array = e.get("rage_anchor", e.get("anchor", [cw / 2, ch]))
+	_offset_rage = Vector2(-float(anchor[0]), -float(anchor[1]))
+	var fc: Dictionary = BakedUnitDB.frame_counts()
+	var first := 0
+	var fps := int(e.get("fps_boss", 12)) if kind == "boss" \
+			else int(e.get("fps_hero", 6))
+	for anim in ["idle", "walk", "attack"]:
+		var count: int = int(fc.get(anim, 8))
+		var ranim := "rage_" + anim
+		frames.add_animation(StringName(ranim))
+		frames.set_animation_loop(StringName(ranim), true)
+		frames.set_animation_speed(StringName(ranim), fps)
+		_add_strip_frames(frames, ranim, rtex, first, count, cw, ch, fpr)
+		first += count
+	var rage: Dictionary = BakedUnitDB.rage_info(unit_type)
+	_rage_skill = str(rage.get("skill", ""))
+	_rage_dur = float(rage.get("duration", 0.0)) / 60.0
+
+
 func drive(_phase: float, action: String, attack_progress: float,
-		_facing: int, _is_moving: bool, _skill: String,
-		_delta: float) -> void:
+	_facing: int, _is_moving: bool, skill: String,
+	delta: float) -> void:
 	if not _built:
 		return
+	_tick_skill(skill, delta)
 	var want := "idle"
 	if action == "walk" or action == "attack":
 		want = action
+	# Skill DI ATAS attack (paritas pygame: cabang skill digambar
+	# sebagai lapisan pose sendiri saat active_skill menyala —
+	# heroes/__init__.py:1750-1766). Tanpa pose bake = fallback attack.
+	var skill_anim := "skill_" + _skill_key
+	if _skill_key != "" \
+			and sprite.sprite_frames.has_animation(StringName(skill_anim)):
+		want = skill_anim
+	elif _rage_t > 0.0 \
+			and sprite.sprite_frames.has_animation(
+				StringName("rage_" + want)):
+		# Varian rage menggantikan pose dasar selama flag aktif.
+		want = "rage_" + want
 	if want != _action:
 		_action = want
+		if want.begins_with("skill_"):
+			sprite.offset = _offset_skill
+		elif want.begins_with("rage_"):
+			sprite.offset = _offset_rage
+		else:
+			sprite.offset = _offset_base
 		sprite.play(StringName(want))
-	if _action == "attack" and _attack_frames > 1:
+	if _action.begins_with("skill_") and _skill_frames > 1:
+		# Frame skill dari countdown cast (progress 0->1), meniru
+		# renderer pygame — bukan dari jam playback.
+		sprite.pause()
+		var sprogress := 1.0 - _skill_t / maxf(_skill_dur, 0.001)
+		_set_forced_frame(sprogress, _skill_frames)
+	elif (_action == "attack" or _action == "rage_attack") \
+			and _attack_frames > 1:
 		# Frame deterministik dari progress serangan (0..1) — bukan jam.
 		sprite.pause()
-		var idx := clampi(int(round(
-				clampf(attack_progress, 0.0, 1.0)
-				* (_attack_frames - 1))), 0, _attack_frames - 1)
-		if sprite.frame != idx:
-			sprite.set_frame(idx)
+		_set_forced_frame(attack_progress, _attack_frames)
 	elif not sprite.is_playing():
-		# Kembali dari pause attack ke loop idle/walk.
+		# Kembali dari pause attack/skill ke loop idle/walk.
 		sprite.play(StringName(_action))
+
+
+## Frame paksa dari progress 0..1 (attack & skill, paritas countdown).
+func _set_forced_frame(progress: float, count: int) -> void:
+	var idx := clampi(int(round(
+			clampf(progress, 0.0, 1.0) * (count - 1))), 0, count - 1)
+	if sprite.frame != idx:
+		sprite.set_frame(idx)
+
+
+## Countdown cast + pemicu rage. Cermin active_skill_timer SkillBook
+## (keduanya di-tick per physics frame dari durasi manifest yang sama,
+## jadi berakhir bersamaan; frame dihitung dari countdown ini karena
+## drive() tidak menerima sisa timer).
+func _tick_skill(skill: String, delta: float) -> void:
+	if skill != _skill_key:
+		_skill_key = skill
+		if skill == "":
+			_skill_t = 0.0
+		else:
+			var dur_f := BakedUnitDB.skill_duration_frames(
+					unit_type, skill)
+			_skill_dur = dur_f / 60.0 if dur_f > 0.0 else 0.6
+			_skill_t = _skill_dur
+			# Cast skill pemicu menyalakan flag rage (drakar q -> 300
+			# frame), paritas cast_flags hero_skills/_bundle.py.
+			if _rage_skill != "" and skill == _rage_skill:
+				_rage_t = _rage_dur
+	if _skill_t > 0.0:
+		_skill_t = maxf(0.0, _skill_t - delta)
+	if _rage_t > 0.0:
+		_rage_t = maxf(0.0, _rage_t - delta)
