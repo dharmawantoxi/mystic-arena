@@ -6,10 +6,13 @@
 #
 # Yang SUDAH: seluruh stat flat/persen, crit, cleave, corrosion (armor shred),
 #   block, aura (Steel/Freezing/Scorched/Cauterize) lewat CombatSystem.update_auras,
-#   dan 17 ITEM AKTIF (lihat blok "ITEM AKTIF" di bawah — semuanya auto-trigger,
-#   pygame tidak punya tombol untuk item).
-# Yang BELUM diport: on_attack / bash / multishot, pasif Empower Strike
-#   (runic_gavel) & Leviathan Vitality (leviathan_heart).
+#   17 ITEM AKTIF (lihat blok "ITEM AKTIF" di bawah — semuanya auto-trigger,
+#   pygame tidak punya tombol untuk item), serta seluruh efek ON-ATTACK
+#   (bash x2, chain x2, Frostbite, Miasma + multishot, Empower Strike,
+#   Entangle) dan pasif Leviathan Vitality.
+# Dengan itu Fase 5b lengkap: tidak ada lagi kunci di items.json yang
+#   ("active"/"on_attack"/"bash"/"multishot"/"block"/"aura"/"passive")
+#   tidak punya pembaca di sisi Godot.
 extends RefCounted
 
 const FPS := 60.0
@@ -441,6 +444,8 @@ func tick(delta: float) -> void:
 		_active_cd[k] = maxf(0.0, float(_active_cd[k]) - delta)
 	for k in _active_timer.keys():
 		_active_timer[k] = maxf(0.0, float(_active_timer[k]) - delta)
+	# Cooldown proc on-attack + racun Miasma (blok ON-ATTACK di bawah).
+	_tick_procs(delta)
 	if hero == null or bool(hero.get("is_dead")):
 		return
 	var db = _db()
@@ -650,3 +655,235 @@ func _amp_one(target, amount: float, seconds: float) -> void:
 func _notify(text: String) -> void:
 	if CombatSystem != null and CombatSystem.has_method("_float_text"):
 		CombatSystem._float_text(hero, text.to_upper() + "!", true)
+
+
+# ══════════════════════════════════════════════════════════
+#  ON-ATTACK / BASH / MULTISHOT — port _on_hit_common()
+#  (hero_items.py:2519-2666, dipanggil tiap basic attack kena)
+# ══════════════════════════════════════════════════════════
+#
+# Berbeda dari item aktif di atas yang terpicu HP/jumlah-musuh, kelompok ini
+# terpicu SETIAP SERANGAN DASAR yang mengenai target. pygame memanggilnya dari
+# dua tempat (on_basic_attack_hit untuk melee, on_ranged_attack_hit untuk
+# proyektil) yang keduanya bermuara ke _on_hit_common — jadi di Godot cukup
+# satu pintu: CombatSystem._on_attacker_hit().
+#
+# Cooldown internal (bash 140 frame, pierce 120, vine 540) DIPISAH dari
+# _active_cd item aktif supaya tidak saling menimpa: abyss_breaker punya
+# `active` (Overwhelm) DAN `bash` sekaligus, dua-duanya pakai item_id sama.
+var _proc_cd: Dictionary = {}
+## Racun Miasma yang sedang berjalan: [target, sisa_detik, tick_cd, damage]
+## Paritas _MIASMA global pygame (hero_items.py:209-234) — di sana global
+## karena inventory tidak punya referensi ke semua target; di sini cukup
+## per-inventory sebab yang nge-tick adalah pemilik itemnya.
+var _miasma: Array = []
+
+
+## Turunkan cooldown proc + jalankan racun Miasma. Dipanggil dari tick().
+func _tick_procs(delta: float) -> void:
+	for k in _proc_cd.keys():
+		_proc_cd[k] = maxf(0.0, float(_proc_cd[k]) - delta)
+	if _miasma.is_empty():
+		return
+	var still: Array = []
+	for m in _miasma:
+		var tgt = m[0]
+		if tgt == null or not is_instance_valid(tgt) or bool(tgt.get("is_dead")):
+			continue
+		m[1] -= delta
+		m[2] -= delta
+		if m[2] <= 0.0:
+			m[2] = 0.5  # tick 30 frame = 0.5 dtk (hero_items.py:224)
+			_damage_one(tgt, float(m[3]))
+		if m[1] > 0.0:
+			still.append(m)
+	_miasma = still
+
+
+## Dipanggil CombatSystem._on_attacker_hit setiap serangan dasar kena.
+## `damage` = damage yang benar-benar masuk, dipakai multishot (damage_pct).
+func on_attack_hit(target, damage: float) -> void:
+	if hero == null or target == null or not is_instance_valid(target):
+		return
+	if bool(target.get("is_dead")):
+		return
+	var db = _db()
+	if db == null:
+		return
+	_bash_procs(db, target)
+	_chain_proc(db, target)
+	_frostbite(db, target)
+	_miasma_proc(db, target, damage)
+	_empower(db, target)
+	_entangle(db, target)
+
+
+## Bash (abyss_breaker 22% / sundering_cudgel 28%): stun singkat + damage.
+## Dua item terpisah dengan cooldown sendiri — pygame memakai bash_cd dan
+## pierce_bash_cd yang berbeda, jadi hero ber-dua-duanya bisa proc keduanya.
+func _bash_procs(db, target) -> void:
+	for item_id in ["abyss_breaker", "sundering_cudgel"]:
+		if not has(item_id):
+			continue
+		var key := item_id + ":bash"
+		if float(_proc_cd.get(key, 0.0)) > 0.0:
+			continue
+		var b = db.get_item(item_id).get("bash")
+		if not (b is Dictionary):
+			continue
+		if randf() >= float(b.get("chance", 0.0)):
+			continue
+		_proc_cd[key] = _sec(float(b.get("cooldown", 0.0)))
+		_stun_one(target, _sec(float(b.get("stun", 0.0))))
+		_damage_one(target, float(b.get("damage", 0.0)))
+		_notify_at(target, "BASH" if item_id == "abyss_breaker" else "PIERCE")
+
+
+## Arc Chain (fenrir_chain 20%) / Arc Lightning (thunder_coil 22%):
+## sambaran berantai ke N musuh sekitar TARGET (bukan sekitar hero).
+func _chain_proc(db, target) -> void:
+	var chain: Dictionary = {}
+	# pygame get_on_attack_chain: thunder_coil menang kalau punya dua-duanya
+	for item_id in ["thunder_coil", "fenrir_chain"]:
+		if has(item_id):
+			var oa = db.get_item(item_id).get("on_attack")
+			if oa is Dictionary and oa.has("chance"):
+				chain = oa
+				break
+	if chain.is_empty() or randf() >= float(chain.get("chance", 0.0)):
+		return
+	var limit := int(chain.get("targets", 3))
+	var dmg := float(chain.get("damage", 0.0))
+	_damage_one(target, dmg)
+	var hit := 1
+	for e in _enemies_near_point((target as Node2D).global_position,
+			float(chain.get("radius", 240.0))):
+		if hit >= limit:
+			break
+		if e == target:
+			continue
+		_damage_one(e, dmg)
+		hit += 1
+
+
+## Frostbite (frostbound_eye): slow + attack-slow + anti-heal sekaligus.
+## Tanpa peluang & tanpa cooldown — tiap serangan kena (hero_items.py:2596-2615).
+func _frostbite(db, target) -> void:
+	if not has("frostbound_eye"):
+		return
+	var oa = db.get_item("frostbound_eye").get("on_attack")
+	if not (oa is Dictionary):
+		return
+	var st = target.get("status")
+	if st == null:
+		return
+	var dur := _sec(float(oa.get("duration", 0.0)))
+	if st.has_method("apply_slow"):
+		st.apply_slow(float(oa.get("slow", 0.0)), dur)
+	if st.has_method("apply_attack_slow"):
+		st.apply_attack_slow(float(oa.get("atk_slow", 0.0)), dur)
+	if st.has_method("apply_anti_heal"):
+		st.apply_anti_heal(float(oa.get("anti_heal", 0.0)), dur)
+
+
+## Miasma (basilisk_breath): racun % Max HP target per tick, di-cap cap_damage.
+## Sekalian Polycephaly (multishot 30%) — tembakan ekstra ke musuh terdekat,
+## HANYA untuk hero ranged (hero_items.py:2621-2641).
+func _miasma_proc(db, target, damage: float) -> void:
+	if not has("basilisk_breath"):
+		return
+	var data: Dictionary = db.get_item("basilisk_breath")
+	var oa = data.get("on_attack")
+	if oa is Dictionary:
+		_apply_miasma(target, oa)
+	var ms = data.get("multishot")
+	if not (ms is Dictionary) or is_melee():
+		return
+	if randf() >= float(ms.get("chance", 0.0)):
+		return
+	var extra := int(ms.get("targets", 2))
+	var pct := float(ms.get("damage_pct", 0.0))
+	var n := 0
+	for e in _enemies_near_point((target as Node2D).global_position,
+			float(ms.get("radius", 200.0))):
+		if n >= extra:
+			break
+		if e == target:
+			continue
+		_damage_one(e, damage * pct)
+		if oa is Dictionary:
+			_apply_miasma(e, oa)
+		n += 1
+
+
+## Pasang/refresh racun pada satu target (cap damage per tick).
+func _apply_miasma(target, oa: Dictionary) -> void:
+	var per_tick: float = float(target.get("max_hp")) * float(oa.get("max_hp_pct_per_tick", 0.0))
+	per_tick = minf(per_tick, float(oa.get("cap_damage", 60.0)))
+	for m in _miasma:
+		if m[0] == target:
+			m[1] = _sec(float(oa.get("duration", 0.0)))
+			m[3] = per_tick
+			return
+	_miasma.append([target, _sec(float(oa.get("duration", 0.0))), 0.5, per_tick])
+
+
+## Empower Strike (runic_gavel): serangan pertama setelah charge penuh
+## memberi bonus magic damage, lalu charge diisi ulang (charge_time 540 frame).
+func _empower(db, target) -> void:
+	if not has("runic_gavel"):
+		return
+	if float(_proc_cd.get("runic_gavel:empower", 0.0)) > 0.0:
+		return
+	var p = db.get_item("runic_gavel").get("passive")
+	if not (p is Dictionary):
+		return
+	_proc_cd["runic_gavel:empower"] = _sec(float(p.get("charge_time", 540.0)))
+	_damage_one(target, float(p.get("damage", 0.0)))
+	_notify_at(target, "EMPOWER")
+
+
+## Entangle (vine_rod): ROOT = slow 100%. Target masih bisa menyerang &
+## pakai skill, hanya tak bisa berpindah (catatan eksplisit hero_items.py:2660).
+func _entangle(db, target) -> void:
+	if not has("vine_rod"):
+		return
+	if float(_proc_cd.get("vine_rod:root", 0.0)) > 0.0:
+		return
+	var vr = db.get_item("vine_rod").get("on_attack")
+	if not (vr is Dictionary):
+		return
+	_proc_cd["vine_rod:root"] = _sec(float(vr.get("cooldown", 540.0)))
+	var st = target.get("status")
+	if st != null and st.has_method("apply_slow"):
+		st.apply_slow(1.0, _sec(float(vr.get("root_duration", 0.0))))
+		_notify_at(target, "ROOT")
+
+
+## Bonus regen Leviathan Vitality: % Max HP per detik saat LUAR tempur.
+## pygame memakai last_damage_timer sendiri (combat_timeout 300 frame);
+## Hero.combat_timer Godot sudah melakukan hal yang sama (di-reset
+## CombatSystem tiap kena damage), jadi dipakai ulang — tidak ada timer kedua.
+func get_out_of_combat_regen() -> float:
+	if not has("leviathan_heart") or hero == null:
+		return 0.0
+	if float(hero.get("combat_timer")) > 0.0:
+		return 0.0
+	var db = _db()
+	if db == null:
+		return 0.0
+	var p = db.get_item("leviathan_heart").get("passive")
+	if not (p is Dictionary):
+		return 0.0
+	return float(hero.get("max_hp")) * float(p.get("out_of_combat_regen_pct", 0.0))
+
+
+func _enemies_near_point(center: Vector2, radius: float) -> Array:
+	if CombatSystem == null or hero == null:
+		return []
+	return CombatSystem.enemies_in_radius(str(hero.get("team")), center, radius)
+
+
+func _notify_at(target, text: String) -> void:
+	if CombatSystem != null and CombatSystem.has_method("_float_text"):
+		CombatSystem._float_text(target, text + "!", false)

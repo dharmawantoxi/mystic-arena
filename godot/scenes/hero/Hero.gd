@@ -285,6 +285,9 @@ func _regen(delta: float) -> void:
 		rate = BASE_HEAL_PER_SEC
 	if items != null:
 		rate += float(items.get_hp_regen())
+		# Leviathan Vitality hanya menyembuhkan saat luar tempur
+		# (hero_items.py:2428-2437), memakai combat_timer yang sudah ada.
+		rate += float(items.get_out_of_combat_regen())
 	if rate <= 0.0:
 		return
 	CombatSystem.heal_unit(self, rate * delta)
@@ -389,7 +392,15 @@ func try_attack():
 	# Berlaku untuk hero tim biru MAUPUN merah (pygame tidak membedakan tim).
 	AudioManager.play_combat(AudioManager.basic_attack_sfx(is_melee_hero, attack_range))
 	if is_melee_hero:
-		CombatSystem.apply_damage(target, dmg, team, "normal", self, dmg_school)
+		var t = target
+		var dealt := CombatSystem.apply_damage(t, dmg, team, "normal", self, dmg_school)
+		# Efek on-attack item (bash/chain/frostbite/miasma/empower/entangle).
+		# Sengaja dipanggil DI SINI, bukan di CombatSystem.apply_damage: pygame
+		# hanya memicunya dari on_basic_attack_hit / on_ranged_attack_hit
+		# (hero_items.py:2484-2517), jadi damage skill & DoT tidak boleh ikut
+		# nge-proc bash/chain. Pasangan ranged-nya ada di TowerBullet._hit.
+		if dealt > 0.0 and items != null and items.has_method("on_attack_hit"):
+			items.on_attack_hit(t, dealt)
 	else:
 		_shoot_projectile(target, dmg)
 
