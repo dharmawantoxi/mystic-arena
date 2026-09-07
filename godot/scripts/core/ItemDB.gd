@@ -161,7 +161,8 @@ const MAGIC_ROLE_KEYWORDS: Array = [
 func is_magic_hero(hero) -> bool:
 	if hero == null:
 		return false
-	var role := str(hero.get("role", "")).to_lower()
+	# hero adalah Node: Object.get() hanya 1 argumen (bukan Dictionary.get).
+	var role := _hero_role(hero)
 	if role.is_empty():
 		return false
 	if "anti-mage" in role:
@@ -172,6 +173,28 @@ func is_magic_hero(hero) -> bool:
 	return false
 
 
+## Role hero lowercase; aman untuk Node maupun Dictionary.
+func _hero_role(hero) -> String:
+	if hero is Dictionary:
+		return str(hero.get("role", "")).to_lower()
+	var v = hero.get("role") if hero != null else null
+	return str(v).to_lower() if v != null else ""
+
+
+## Base attack range hero (tanpa bonus item). Node Hero memakai base_range;
+## Dictionary/fallback memakai "range" atau 100.
+func _hero_base_range(hero) -> float:
+	if hero is Dictionary:
+		if hero.has("base_range"):
+			return float(hero["base_range"])
+		return float(hero.get("range", 100))
+	if hero != null and "base_range" in hero and hero.get("base_range") != null:
+		return float(hero.get("base_range"))
+	if hero != null and "range" in hero and hero.get("range") != null:
+		return float(hero.get("range"))
+	return 100.0
+
+
 ## Item berikutnya terbaik untuk hero AI — paritas 1:1
 ## hero_items.suggest_item_for_hero (hero_items.py:2936-3006).
 ## `owned` = daftar item yang sudah dimiliki, pool disaring per role,
@@ -180,12 +203,11 @@ func is_magic_hero(hero) -> bool:
 func suggest_item(hero, owned: Array) -> String:
 	if hero == null:
 		return ""
-	var rng := float(hero.get("base_range")) if "base_range" in hero \
-		else float(hero.get("range", 100))
+	var rng := _hero_base_range(hero)
 	var is_melee := rng <= 80.0
 	# Pygame memakai hero.range (base, tanpa bonus item); Godot padanannya
 	# adalah base_range — attack_range sudah termasuk bonus Gale Pike dll.
-	var role := str(hero.get("role", "")).to_lower()
+	var role := _hero_role(hero)
 	var pool: Array = []
 	if "tank" in role or "bruiser" in role or "fighter" in role:
 		pool = ["leviathan_heart", "scarlet_bulwark", "searbrand",

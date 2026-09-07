@@ -29,6 +29,7 @@ func _run() -> void:
 	_expect(ai.get_script() == AIPlayerScript, "Main must use the AIPlayer script")
 
 	_test_spawn_lanes(main)
+	_test_object_get_safe_helpers()
 	var hero = GameManager.spawn_hero("grimjaw", "red", Vector2(1000, 380))
 	ai._assign_hero_lane(hero)
 	_expect(not hero.has_destination(), "Empty battlefield must leave the hero idle")
@@ -43,6 +44,9 @@ func _run() -> void:
 	ai._assign_hero_lane(hero)
 	_expect(hero.destination == Vector2(560, 380), "Stop 60px from the nearest blue tower")
 	_expect(hero.destination_auto, "Tower fallback must remain an automatic destination")
+
+	_test_kill_attribution(hero)
+	_test_itemdb_suggest(hero)
 
 	main.free()
 	if _failures == 0:
@@ -93,6 +97,37 @@ func _test_lane_targeting(ai, hero, lane: String) -> void:
 		"Must choose the nearest live blue minion in the busiest lane: %s" % lane)
 	_expect(hero.destination_auto, "Lane assignment must remain automatic")
 	_clear_minions()
+
+
+## Regression: Object.get() must never be called with a Dictionary-style default
+## on Node heroes (parse/runtime "Too many arguments for get()").
+func _test_object_get_safe_helpers() -> void:
+	var dummy := {"role": "Tank/Bruiser", "base_range": 50.0}
+	_expect(ItemDB.is_magic_hero(dummy) == false, "Tank dict must not be magic")
+	_expect(ItemDB._hero_base_range(dummy) == 50.0, "Dict base_range must be read")
+	var mage := {"role": "Mage/Caster"}
+	_expect(ItemDB.is_magic_hero(mage), "Mage dict must be magic")
+	var anti := {"role": "Boss/Anti-Mage"}
+	_expect(ItemDB.is_magic_hero(anti) == false, "Anti-Mage must not be magic")
+
+
+func _test_kill_attribution(hero) -> void:
+	# Regression for Object.get("kills", 0) parse/runtime error inside Hero.die.
+	var before := int(hero.get("kills"))
+	var victim = GameManager.spawn_hero("zephyr", "blue", Vector2(200, 380))
+	# state stays idle so Main._on_hero_died will not schedule a wipe-respawn.
+	victim.die(hero)
+	_expect(int(hero.get("kills")) == before + 1, "Hero kill must increment killer.kills")
+	# die() schedules queue_free via tween; free immediately so main.free() is clean.
+	if is_instance_valid(victim):
+		victim.free()
+
+
+func _test_itemdb_suggest(hero) -> void:
+	# Must not throw SCRIPT ERROR from Object.get(prop, default) on a live hero node.
+	var sid := ItemDB.suggest_item(hero, [])
+	_expect(sid != "", "ItemDB.suggest_item must return a catalog id for a live hero")
+	_expect(ItemDB.has_item(sid), "Suggested item must exist in ItemDB")
 
 
 func _spawn_minion(lane: String, pos: Vector2, team: String = "blue") -> Node2D:

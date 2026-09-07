@@ -595,7 +595,9 @@ func die(killer = null):
 	if killer != null and is_instance_valid(killer) and killer != self \
 			and "hero_type" in killer and "skills" in killer \
 			and str(killer.get("team")) != team:
-		killer.kills = int(killer.get("kills", 0)) + 1
+		# Object.get() hanya menerima nama properti (bukan default ala Dictionary).
+		# Hero selalu punya `kills`; tambah langsung supaya kill AI terhitung.
+		killer.kills = int(killer.get("kills")) + 1
 	is_dead = true
 	add_to_group("dead")
 	# Matikan fisika dulu: mayat tidak boleh menahan langkah unit lain
