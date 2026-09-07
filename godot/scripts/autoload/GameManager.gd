@@ -646,8 +646,15 @@ func _grant_meta_reward(victory: bool) -> void:
 	if _meta_reward_granted:
 		return
 	var reward := 0
+	var cfg: Dictionary = BossDB.get_level(level_number)
+	if not victory:
+		# Kalah: pygame membaca meta_gold_reward_lose dari config level
+		# (_core.py:2378-2380 pola cfg.get yang sama dengan jalur menang),
+		# BUKAN angka 0 mati. Saat ini 54/54 level memang bernilai 0, tapi
+		# meng-hardcode-nya membuat Godot diam-diam menyimpang begitu ada
+		# satu level pygame yang memberi hadiah hiburan saat kalah.
+		reward = int(cfg.get("meta_gold_reward_lose", 0))
 	if victory:
-		var cfg: Dictionary = BossDB.get_level(level_number)
 		var win_reward := int(cfg.get("meta_gold_reward_win", 3000))
 		var replay_reward := int(cfg.get("meta_gold_reward_replay", 1500))
 		# default 200 = META_REPLAY_REPEAT_REWARD (_core.py:75)

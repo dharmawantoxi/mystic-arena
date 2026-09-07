@@ -659,6 +659,34 @@ func _draw_lane(pts: PackedVector2Array, d: Dictionary):
 		for s in [-1, 1]:
 			draw_circle(p + perp * s * LANE_HALF_WIDTH * 0.55, 2.4,
 				Color(cobble.r, cobble.g, cobble.b, 0.5))
+	# ── LUMUT + RETAKAN JALUR (path_moss / path_crack) ──
+	# Dua warna ini sudah lama diekspor converter tapi tidak pernah dibaca,
+	# padahal pygame memakainya di _draw_cobblestone_tile (_bundle.py:5206-5207)
+	# sebagai varian tiap ubin. Yang paling terasa: tema volcanic memberi
+	# path_crack = (255,100,20) alias RETAKAN LAVA MENYALA — tanpa ini semua
+	# jalur di 54 tema terlihat abu-abu seragam.
+	#
+	# pygame memilih varian dengan `(tx * 3 + ty * 7) % 100` per ubin
+	# (deterministik, bukan acak). Di sini rumus yang sama dipakai pada
+	# koordinat titik jalur, jadi polanya tetap stabil antar frame tanpa
+	# perlu menyimpan state.
+	var moss: Color = d.get("path_moss", d["path"])
+	var crack: Color = d.get("path_crack", d["path_border"])
+	for i in range(0, pts.size(), 3):
+		var p: Vector2 = pts[i]
+		var n: Vector2 = pts[min(i + 1, pts.size() - 1)]
+		var fwd := (n - p).normalized()
+		var perp := fwd.orthogonal()
+		var variant := int(p.x * 3.0 + p.y * 7.0) % 100
+		var off := perp * (float((variant % 7) - 3) / 3.0) * LANE_HALF_WIDTH * 0.7
+		if variant < 22:
+			# bercak lumut: elips kecil menempel di tepi jalur
+			draw_circle(p + off, 3.2, Color(moss.r, moss.g, moss.b, 0.45))
+		elif variant < 34:
+			# retakan: garis pendek searah jalur. Alpha tinggi supaya lava
+			# crack benar-benar menyala kena bloom (glow HDR project.godot).
+			draw_line(p + off - fwd * 5.0, p + off + fwd * 5.0,
+				Color(crack.r, crack.g, crack.b, 0.7), 1.6)
 
 func _draw_bases(d: Dictionary):
 	# Radiant (blue) kiri-bawah, Dire (red) kanan-atas — paritas _core base positions
