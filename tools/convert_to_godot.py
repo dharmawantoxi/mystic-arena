@@ -100,9 +100,60 @@ def export_bosses():
                 v = getattr(bd, name)
                 if isinstance(v, dict) and "hp" in v and "boss_class" in str(v):
                     bosses[name.lower()] = v
+        # armor/magic_resist BUKAN di boss_data — dihitung Boss.__init__
+        # (bosses/base_boss.py:427-457) lewat hero_archetypes
+        # get_boss_resistances + clamp (armor 0..40, MR 0..0.45). Ekspor di
+        # sini memakai fungsi Pygame yang sama supaya Boss.gd membaca nilai
+        # yang benar-benar dipakai match, bukan default 0.
+        try:
+            import hero_archetypes as _ha
+        except Exception:
+            _ha = None
+        # Boss yang punya smart-AI spesifik di rantai `elif self.boss_type ==`
+        # Boss.update (bosses/base_boss.py). Diekstrak dari AST method update
+        # — sumber tunggal yang sama dengan tools/test_godot_match_parity.py,
+        # jadi Boss.gd tidak perlu daftar 79 nama yang disalin tangan.
+        smart_ai = set()
+        try:
+            import ast as _ast
+            _base = os.path.join(ROOT, "bosses", "base_boss.py")
+            _src = open(_base, encoding="utf-8").read()
+            for _node in _ast.walk(_ast.parse(_src)):
+                if isinstance(_node, _ast.If):
+                    _t = _node.test
+                    if (isinstance(_t, _ast.Compare) and len(_t.ops) == 1
+                            and isinstance(_t.ops[0], _ast.Eq)):
+                        _l = _t.left
+                        _c = _t.comparators[0]
+                        if (isinstance(_l, _ast.Attribute)
+                                and _l.attr == "boss_type"
+                                and isinstance(_c, _ast.Constant)
+                                and isinstance(_c.value, str)):
+                            smart_ai.add(_c.value)
+        except Exception:
+            smart_ai = set()
         simple = {}
         for k, v in bosses.items():
             if not isinstance(v, dict): continue
+            boss_class = v.get("boss_class", "mini")
+            armor = v.get("armor")
+            magic_resist = v.get("magic_resist")
+            if armor is None or magic_resist is None:
+                if _ha is not None:
+                    try:
+                        _armor, _mr = _ha.get_boss_resistances(k, boss_class)
+                        armor = int(_armor)
+                        magic_resist = float(_mr)
+                    except Exception:
+                        armor = 18 if boss_class == "true" else 12
+                        magic_resist = 0.20 if boss_class == "true" else 0.10
+                else:
+                    armor = 18 if boss_class == "true" else 12
+                    magic_resist = 0.20 if boss_class == "true" else 0.10
+            # Clamp identik Boss.__init__ (base_boss.py:455-457).
+            armor = max(0, min(40, int(armor)))
+            magic_resist = max(0.0, min(0.45, float(magic_resist)))
+            radius = v.get("radius", 42 if boss_class == "true" else 30)
             simple[k] = {
                 "name": v.get("name", k),
                 "title": v.get("title", ""),
@@ -111,11 +162,35 @@ def export_bosses():
                 "speed": v.get("speed", 1.0),
                 "range": v.get("range", 50),
                 "attack_cooldown": v.get("attack_cooldown", 40),
-                "boss_class": v.get("boss_class", "mini"),
+                "boss_class": boss_class,
                 # gold_reward: dibaca BossDeathFX Godot (fase 5d) untuk teks
                 # "+ X GOLD" di perayaan true boss (paritas boss.gold_reward
                 # bosses/base_boss.py:394).
                 "gold_reward": v.get("gold_reward", 0),
+                # ── Fase 6 paritas inti boss (dibaca Boss.gd) ──
+                "radius": radius,
+                "armor": armor,
+                "magic_resist": magic_resist,
+                "ability_cooldown": v.get("ability_cooldown", 0),
+                "ability_damage": v.get("ability_damage", 0),
+                "ability_range": v.get("ability_range", 0),
+                "ability2_cooldown": v.get("ability2_cooldown", 0),
+                "ability2_heal_pct": v.get("ability2_heal_pct", 0),
+                "min_distance": v.get("min_distance", 200),
+                "prefer_distance": v.get("prefer_distance", 280),
+                # True kalau boss punya rantai smart-AI di Boss.update pygame
+                # (kalau false, Boss.gd memakai ability generik _use_ability).
+                "uses_smart_ai": k in smart_ai,
+                # Skill Q/W/E/R field-boss (smart-AI per boss; 0 kalau boss
+                # tidak punya kit khusus dan memakai ability generik).
+                "skill_q_damage": v.get("skill_q_damage", 0),
+                "skill_q_cooldown": v.get("skill_q_cooldown", 0),
+                "skill_w_damage": v.get("skill_w_damage", 0),
+                "skill_w_cooldown": v.get("skill_w_cooldown", 0),
+                "skill_e_damage": v.get("skill_e_damage", 0),
+                "skill_e_cooldown": v.get("skill_e_cooldown", 0),
+                "skill_r_damage": v.get("skill_r_damage", 0),
+                "skill_r_cooldown": v.get("skill_r_cooldown", 0),
                 "color": "#%02x%02x%02x" % v.get("color", (150,100,200)) if isinstance(v.get("color"), tuple) else v.get("color","#aaaaaa"),
                 "entrance_color": "#%02x%02x%02x" % v.get("entrance_color", (200,150,255)) if isinstance(v.get("entrance_color"), tuple) else v.get("entrance_color","#ffffff"),
             }

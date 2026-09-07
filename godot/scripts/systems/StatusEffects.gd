@@ -94,6 +94,11 @@ func apply_slow(amount: float, duration: float) -> void:
 	# Slow resist item (paritas apply_slow: amount *= 1 - get_slow_resist())
 	if owner != null and owner.get("items") != null:
 		amount *= 1.0 - float(owner.items.get_slow_resist())
+	# Boss tenacity (base_boss.py Boss.apply_slow 528-538): magnitude &
+	# durasi dipotong 50%, magnitude maks 35% (0.35).
+	if owner != null and str(owner.get("boss_class", "")) != "":
+		amount = minf(0.35, amount * (1.0 - 0.50))
+		duration *= 0.5
 	if amount > slow_amount or slow_timer < duration:
 		slow_amount = amount
 		slow_timer = duration
@@ -102,6 +107,10 @@ func apply_slow(amount: float, duration: float) -> void:
 func apply_attack_slow(amount: float, duration: float) -> void:
 	if not _alive():
 		return
+	# Boss tenacity untuk atk_slow (base_boss.py apply_debuff 540-550)
+	if owner != null and str(owner.get("boss_class", "")) != "":
+		amount = minf(0.35, amount * (1.0 - 0.50))
+		duration *= 0.5
 	if amount > atk_slow_amount or atk_slow_timer < duration:
 		atk_slow_amount = amount
 		atk_slow_timer = duration

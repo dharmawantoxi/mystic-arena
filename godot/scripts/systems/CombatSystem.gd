@@ -210,6 +210,13 @@ func apply_damage(target, amount: float, from_team: String = "",
 		var keep := 0.70 if eff_school != "magic" else 0.85
 		dmg = maxf(1.0, round(dmg * keep))
 
+	# ── 5b. BOSS resilience + anti-burst (base_boss.py take_damage 6025-6037):
+	# damage_reduction (true 30% / mini 20%) lalu cap per hit (8% / 12% max
+	# HP). Boss adalah satu-satunya unit yang punya metode ini.
+	if target != null and is_instance_valid(target) \
+			and target.has_method("apply_boss_inherent_mitigation"):
+		dmg = target.apply_boss_inherent_mitigation(dmg)
+
 	dmg = maxf(0.0, dmg)
 	if dmg <= 0.0:
 		return 0.0
