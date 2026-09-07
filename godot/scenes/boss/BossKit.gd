@@ -340,12 +340,6 @@ static func dispatch(b, boss_type: String, enemies: Array, target_dist: float) -
 	return
 
 
-## Stat mentah boss_data (pemetaan _l9_stats pygame: TANPA pengali
-## enrage/skill_down — beda dengan kit_get_stats).
-static func stats_full_raw(boss_type: String) -> Dictionary:
-	return b.kit_stats_full()
-
-
 # ══════════════════════════════════════════════════════════
 #  SMART AI PER BOSS — transpile 1:1 dari bosses/base_boss.py
 # ══════════════════════════════════════════════════════════

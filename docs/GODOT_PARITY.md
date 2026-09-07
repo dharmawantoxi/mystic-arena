@@ -32,6 +32,8 @@ sertifikasi paritas seluruh game.
 | Entrance boss | Langsung bergerak/menyerang | Freeze entrance 3 s (true) / 2 s (mini); cooldown serangan tidak jalan selama entrance. |
 | True boss ability2 | Tidak ada | Heal `max_hp × ability2_heal_pct` saat HP < 30% dengan cooldown ability2. |
 | Cleave & ability generik | Serangan dasar hanya kena target | Cleave 40% radius 80 ke musuh lain (netral sekolah); boss tanpa smart-AI memakai `_use_ability` (damage/range/cooldown dari data, lock serangan 60 frame, shake) persis `base_boss.py`. |
+| Smart-AI boss musuh (79 tipe) | Rantai `elif boss_type` di `Boss.update` pygame tidak diport; semua boss memakai ability generik | `BossKit.gd` dihasilkan `tools/gen_boss_smart_ai.py` dari AST `bosses/base_boss.py`: dispatch 79 boss + 116 helper Q/W/E/R — koefisien, target, timing, dan urutan kondisi persis sumber (summon, dash, transform, dot/debuff area, buff, heal, knockback, combo angka). State kit per instans; jembatan frame↔detik satu tempat di `Boss.gd` (`kit_enemies`/`kit_get_stats`/`kit_skill_hit`/`kit_apply_slow`/`kit_lock_attack`/…). `gen_boss_smart_ai.py --check` di CI menjaga hasil generate tidak drift diam-diam. Boss tanpa smart-AI tetap ability generik. |
+| Facing boss | Arah hadap di-update tiap frame walau boss diam di luar jangkauan | `_face()` dipanggil hanya di cabang dalam-jangkauan `update` pygame (kiter yang hold tidak berbalik); facing awal -1 (`Boss.__init__`); kunci arah hadap selama ayunan serangan dasar 6–15 frame (`_attack_lock_timer`). |
 | Kaizen | Rig buatan ulang selalu mengalahkan sprite Pygame | Arena normal memakai bake renderer Pygame. Rig alternatif tetap ada di `KaizenDemo.tscn`, atau opt-in `mystic/rendering/experimental_hero_rigs`. |
 | Kontrol demo | D/F1/T/SPACE mengubah match normal | Dinonaktifkan default; hanya aktif dengan `Main.enable_debug_controls`. Pilih difficulty di menu sebelum bermain. |
 
@@ -45,14 +47,14 @@ sertifikasi paritas seluruh game.
   screenshot menyeluruh.
 - **Skill:** enam starter punya implementasi khusus, tetapi masih perlu audit
   koefisien, target dan timing. Banyak boss-hero memakai skill generik.
-- **Smart-AI boss musuh (79 tipe):** rantai `elif self.boss_type ==` pada
-  `Boss.update` belum diport — Q/W/E/R per boss, efek khas (summon, dash,
-  transform, dot/debuff area, dst.) dan visualnya belum ada di Godot. Yang
-  sudah setara dan diuji: data 216 boss, resilience + anti-burst, tenacity,
-  entrance, enrage/frenzy, heal true boss, cleave, dan ability generik boss
-  tanpa smart-AI. Aura ability/enrage gambar Godot belum diverifikasi
-  piksel-per-piksel (test `test_boss_true_aura_parity` baru mencakup aura true
-  boss).
+- **Visual skill smart-AI boss:** blok `heroes/<boss>_fx` pygame
+  (notify_skill_cast/impact: flash, shockwave, serpihan, beam per boss)
+  diganti aproksimasi Godot — callout nama skill + cincin ekspansi
+  `KitShockRing.gd` pada posisi/radius panggilan yang sama. **Perilaku**
+  (koefisien, target, timing, frame) diverifikasi `BossSmartAIParityTest`;
+  tampilan visualnya belum diaudit piksel-per-piksel dan dibiarkan terbuka.
+  Aura ability/enrage juga belum (test `test_boss_true_aura_parity` baru
+  mencakup aura true boss).
 - **Perintah taktis dan kontrol pemain:** `tactical_commands.py` belum diport;
   kontrol gerak/target dan overlay sentuh Android belum lengkap.
 - **Progresi/settings:** kunci difficulty sepanjang run, reset progresi karena
@@ -69,13 +71,17 @@ Dari root repository, dengan `pygame-ce` dan Godot 4.3+ terpasang:
 # Fixture dievaluasi dari fungsi Pygame asli, bukan salinan rumus Godot:
 python tools/test_godot_match_parity.py
 
-# Import resource lalu jalankan empat scene regresi:
+# BossKit.gd adalah hasil generate — tidak boleh drift dari base_boss.py:
+python3 tools/gen_boss_smart_ai.py --check
+
+# Import resource lalu jalankan scene regresi:
 godot --headless --path godot --editor --import
 godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 300
 godot --headless --path godot res://tests/BattleSmokeTest.tscn --quit-after 180
 godot --headless --path godot res://tests/AIPlayerTest.tscn --quit-after 120
 godot --headless --path godot res://tests/CinematicTest.tscn --quit-after 960
 godot --headless --path godot res://tests/BossCoreParityTest.tscn --quit-after 420
+godot --headless --path godot res://tests/BossSmartAIParityTest.tscn --quit-after 2400
 ```
 
 `GameplayParityTest` membaca `godot/tests/fixtures/match_parity.json`: ekonomi
@@ -91,6 +97,16 @@ enrage dari pemanggilan `update()` Pygame yang sebenarnya), lalu menguji
 perilaku runtime node Boss.gd: resilience/anti-burst, entrance freeze, aggro,
 tenacity (slow/atk_slow/stun), heal true boss, cleave, dan ability generik
 boss tanpa smart-AI.
+
+`BossSmartAIParityTest` memutar ulang 237 skenario oracle `boss_smart_ai`
+(3 skenario × 79 boss: gerombolan dengan HP bertahap, duo HP rendah, target
+tunggal di tepi jangkauan) pada node `Boss.gd` asli yang menjalankan
+`BossKit.gd`, lalu membandingkan jejak event per frame — cast skill, damage,
+heal/shield, slow, kunci serangan, knockback, dash, enrage, facing, buff
+speed/damage — plus state kit final (timer Q/W/E/R, buff, posisi clone,
+target). Serangan dasar dimatikan di KEDUA sisi supaya jejak murni Q/W/E/R;
+oracle dihasilkan dari `Boss.update` Pygame sungguhan lewat
+`python tools/test_godot_match_parity.py --write-fixture`.
 
 Jika aturan Pygame memang berubah, sesuaikan Godot, **kemudian** regenerasi:
 
@@ -113,6 +129,14 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
   3.717 pemeriksaan (data 216 boss + perilaku inti boss). Gate kini turut
   menolak animasi yang tidak ada dan body fisika yang belum terdaftar di
   space.
+- Fase smart-AI: oracle Pygame `boss_smart_ai` lulus lokal
+  (`tools/test_godot_match_parity.py` — 79 boss, 237 skenario, 3.867 event),
+  `gdparse`/`tscn_lint`/`check_refs`/`particles_lint` lulus, plus scope
+  checker lokal `tools/check_bosskit_scope.py` (mencegat kelas Parse Error
+  "Identifier not declared" yang lolos gdparse). Replay Godot
+  (`BossSmartAIParityTest`) diverifikasi lewat CI `godot-check.yml` pada PR —
+  gate lulus = penanda `PASS` dan tanpa `SCRIPT ERROR`/`Parse Error`/
+  `Compile Error`.
 - Engine lokal dibangun dari source untuk **headless saja**, tanpa backend
   Vulkan/OpenGL. Pesan engine `No renderers available` pada lingkungan ini
   adalah batasan build pengujian; hasil di atas **bukan** validasi gambar GPU,

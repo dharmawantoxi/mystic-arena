@@ -159,9 +159,15 @@ func _replay_and_compare(boss_type: String, sc_name: String, sc: Dictionary) -> 
 	_compare_events(boss_type, sc_name, sc["events"], events)
 	_compare_final(boss_type, sc_name, sc["final"], boss, probes)
 
+	# free() SEKARANG, bukan queue_free(): _boot adalah satu panggilan
+	# sinkron — engine tidak pernah idle di antara skenario, jadi queue_free
+	# tidak akan diproses dan probe biru skenario lama akan TETAP hidup di
+	# group "minions" (ditemukan kit_enemies/nearest_enemy skenario
+	# berikutnya -> jejak rusak). Bandingkan final SEBELUM free (referensi
+	# probe P<idx> masih dipakai di sana).
 	for p in probes:
-		p.queue_free()
-	boss.queue_free()
+		p.free()
+	boss.free()
 
 
 func _snapshot(boss, probes: Array) -> Dictionary:
