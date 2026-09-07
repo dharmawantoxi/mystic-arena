@@ -19,6 +19,15 @@ extends Node
 const BossScene = preload("res://scenes/boss/Boss.tscn")
 const FIXTURE := "res://tests/fixtures/match_parity.json"
 
+## Kunci kit oracle yang di Godot hidup sebagai ANGGOTA NODE Boss.gd, bukan
+## b.kit — dipakai pipeline di luar kit (defense_boost/defense_timer:
+## take_damage DR 45% Drakar W, Boss.gd:107-110). defense_timer tetap satuan
+## frame (di-tick kit). Tanpa pemetaan ini compare kit membaca null.
+const KIT_NODE_MEMBERS := {
+	"defense_boost": "defense_boost",
+	"defense_timer": "defense_timer",
+}
+
 var _fixture: Dictionary = {}
 var _failures: int = 0
 var _checks: int = 0
@@ -340,7 +349,11 @@ func _compare_final(boss_type: String, sc_name: String, expected: Dictionary,
 		tag + ".ability2_timer", 0.51)
 	for k in expected["kit"]:
 		var want = expected["kit"][k]
-		var got = boss.kit.get(k)
+		var got
+		if KIT_NODE_MEMBERS.has(k):
+			got = boss.get(String(KIT_NODE_MEMBERS[k]))
+		else:
+			got = boss.kit.get(k)
 		# referensi probe oracle ("P<idx>") menunjuk node probe replay
 		if want is String and str(want).begins_with("P") and str(want).length() > 1:
 			var idx := int(str(want).substr(1))

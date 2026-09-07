@@ -397,6 +397,13 @@ func _shake(amount: float) -> void:
 ## supaya tidak osilasi 1 px; face target. Boss ranged memakai band histeresis
 ## (base_boss.py:778-822) supaya tidak gemetar di batas min/prefer distance.
 func _move_toward_target(dist: float) -> void:
+	# CATATAN SATUAN: pygame `step = min(sp, d)` membandingkan kecepatan
+	# px/frame dengan jarak px. Di sini sp adalah px/DETIK (move_and_slide
+	# mengalikan delta 1/60), jadi jarak px harus dikalikan FPS dulu —
+	# tanpa ini clamp "menang" 60x terlalu cepat: begitu d < sp, displacement
+	# perdetik jadi d/60 px (meluruh geometris) dan boss tidak pernah
+	# menyusul target (ketidaksesuaian jejak BossSmartAIParityTest
+	# ignis_drachorn: 605.577 vs 605.625).
 	var dx := target.global_position.x - global_position.x
 	var dy := target.global_position.y - global_position.y
 	var d := maxf(1e-6, dist)
@@ -416,7 +423,7 @@ func _move_toward_target(dist: float) -> void:
 		else:
 			kite_mode = "hold"
 		if kite_mode == "back":
-			var step := minf(sp, maxf(0.0, (min_distance + 12.0) - d))
+			var step := minf(sp, maxf(0.0, (min_distance + 12.0) - d) * FPS)
 			if step > 0.0:
 				velocity = Vector2(-dx / d, -dy / d) * step
 				_face(-dx, -dy)
@@ -425,7 +432,7 @@ func _move_toward_target(dist: float) -> void:
 			velocity = Vector2.ZERO
 			return
 		elif kite_mode == "in":
-			var step := minf(sp, maxf(0.0, d - (prefer_distance - 12.0)))
+			var step := minf(sp, maxf(0.0, d - (prefer_distance - 12.0)) * FPS)
 			if step > 0.0:
 				velocity = Vector2(dx / d, dy / d) * step
 				_face(dx, dy)
@@ -435,7 +442,7 @@ func _move_toward_target(dist: float) -> void:
 			return
 		velocity = Vector2.ZERO # hold: diam di jarak tembak ideal
 		return
-	var step := minf(sp, d)
+	var step := minf(sp, d * FPS)
 	if step > 0.0:
 		velocity = Vector2(dx / d, dy / d) * step
 		_face(dx, dy)
