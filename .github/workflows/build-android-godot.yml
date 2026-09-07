@@ -1,0 +1,331 @@
+name: Build Android (Godot)
+
+# ═══════════════════════════════════════════════════════════════════════
+# BUILD AAB/APK GODOT (Fase 6 migrasi Pygame → Godot)
+#
+# Pengganti build-android.yml (buildozer) untuk port Godot. Perbandingan:
+#   * engine Godot 4.7.2 — template Android-nya targetSdk 36, sesuai aturan
+#     Google Play 2026-08-31 (app baru/upgrade WAJIB target API 36).
+#     Template Godot 4.3 (yang dipakai godot-check.yml) hanya 34, TIDAK
+#     bisa dipakai untuk Play Store — makanya workflow ini pin 4.7.2.
+#   * build ±1-3 menit, bukan 8-12 menit buildozer.
+#   * keystore release = secret yang SAMA dengan workflow lama
+#     (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEYALIAS, KEYALIAS_PASSWORD),
+#     jadi package tetap `io.github.dharmawantoxi.mysticarena` dan
+#     Play Console mengenali aplikasi yang sama.
+#
+# Godot 4.7 membaca keystore dari ENV (GODOT_ANDROID_KEYSTORE_RELEASE_PATH/
+# USER/PASSWORD) sehingga secret tidak pernah ditulis ke export_presets.cfg.
+#
+# Cara menjalankan:
+#   Manual : tab Actions -> "Build Android (Godot)" -> "Run workflow"
+#              - debug   -> APK (keystore buang, untuk sideload ke HP)
+#              - release -> AAB (ditandatangani keystore secret; untuk
+#                           verifikasi sebelum upload Play Console)
+#   Otomatis: git tag v1.2.0 && git push origin v1.2.0
+#              -> AAB release; version code = major*10000+minor*100+patch
+#              -> artefak + GitHub Release.
+#
+# Hasil: artefak Actions `mystic-arena-godot-<type>` berisi
+#        godot/build/MysticArena.aab (release) / .apk (debug).
+# Langkah upload ke Play Console: docs/PLAYSTORE_RELEASE.md
+# ═══════════════════════════════════════════════════════════════════════
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Jenis build'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+
+  push:
+    tags: ['v*']
+
+# Build baru membatalkan build lama yang masih jalan di ref sama
+concurrency:
+  group: android-godot-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build AAB/APK (Godot)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write   # softprops/action-gh-release (build dari tag)
+
+    env:
+      # Versi Godot untuk EXPORT. 4.7.2 dipilih karena template Android-nya
+      # DEFAULT_TARGET_SDK_VERSION = 36 (platform/android/export/
+      # export_plugin.cpp, tag 4.7-stable) — wajib sejak 2026-08-31.
+      # godot-check.yml tetap pin 4.3 = versi minimum feature project.
+      GODOT_VERSION: '4.7.2'
+      GODOT_RELEASE: 'stable'
+      # build-tools harus tersedia versi 36: Godot mencari apksigner yang
+      # cocok dengan target SDK (lihat get_apksigner_path di export_plugin.cpp)
+      ANDROID_BUILD_TOOLS: '36.0.0'
+      ANDROID_PLATFORM: 'android-36'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tentukan jenis build
+        id: cfg
+        run: |
+          if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+            echo "type=release" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=${{ inputs.build_type || 'debug' }}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Jenis build: $(cat "$GITHUB_OUTPUT")"
+
+      - name: Java 17 (keytool + apksigner; direkomendasikan Godot)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK
+        uses: actions/setup-android@v4
+
+      - name: Paket Android (build-tools versi target SDK)
+        run: |
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" \
+                     "build-tools;${ANDROID_BUILD_TOOLS}" \
+                     "platforms;${ANDROID_PLATFORM}"
+
+      # ── 1. Binary Godot (di-cache) ──
+      - name: Cache Godot ${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}-linux-x86_64
+
+      - name: Unduh Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          V="${GODOT_VERSION}-${GODOT_RELEASE}"
+          mkdir -p ~/godot-bin
+          curl -fsSL -o /tmp/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${V}/Godot_v${V}_linux.x86_64.zip"
+          unzip -q -o /tmp/godot.zip -d /tmp/godot
+          mv "/tmp/godot/Godot_v${V}_linux.x86_64" ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
+
+      # ── 2. Export templates (wajib untuk --export-release/debug) ──
+      - name: Cache export templates
+        id: cache-tpl
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates
+          key: godot-templates-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+
+      - name: Unduh export templates
+        if: steps.cache-tpl.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          V="${GODOT_VERSION}-${GODOT_RELEASE}"
+          TPL_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p "$HOME/.local/share/godot/export_templates"
+          curl -fsSL -o /tmp/tpl.tpz \
+            "https://github.com/godotengine/godot/releases/download/${V}/Godot_v${V}_export_templates.tpz"
+          # .tpz = zip; isi ber-root folder <versi>.<channel>/
+          unzip -q -o /tmp/tpl.tpz -d "$HOME/.local/share/godot/export_templates"
+          ls "$TPL_DIR" | grep -q "android_release.apk" \
+            || { echo "::error::template android tidak ditemukan di $TPL_DIR"; exit 1; }
+
+      # ── 3. Arahkan Godot ke SDK/Java (editor settings per mesin) ──
+      # Path SDK adalah pengaturan EDITOR (bukan project), jadi tidak ada di
+      # repo; di sini ditulis langsung ke file editor settings.
+      - name: Editor settings (path Android SDK + Java)
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.local/share/godot
+          F=~/.local/share/godot/editor_settings-4.tres
+          {
+            echo '[gd_resource type="EditorSettings" format=3]'
+            echo ""
+            echo "[resource]"
+            echo '"export/android/android_sdk_path": {'
+            echo "\"global\": \"${ANDROID_SDK_ROOT}\""
+            echo '}'
+            echo '"export/android/java_sdk_path": {'
+            echo "\"global\": \"${JAVA_HOME}\""
+            echo '}'
+          } > "$F"
+          cat "$F"
+
+      # ── 4. Aset yang di-gitignore tapi WAJIB masuk AAB ──
+      # godot/assets/sounds/ hasil salinan converter (sumber: assets/sounds/
+      # yang ikut repo). Tanpa langkah ini AAB jalan tapi SUNGGUHAN sunyi.
+      - name: Salin file suara (gitignored)
+        run: |
+          set -euo pipefail
+          mkdir -p godot/assets/sounds
+          cp -n assets/sounds/*.wav godot/assets/sounds/
+          echo "$(ls godot/assets/sounds | wc -l) file suara -> godot/assets/sounds/"
+
+      # ── 5. Versi + format export (tambal export_presets.cfg) ──
+      # version/name & code dari tag vX.Y.Z (code = major*10000+minor*100+patch).
+      # Manual: debug=APK, release=AAB verifikasi (version 0.0.x, code=tanggal).
+      # ext (nama file hasil) dikirim lewat GITHUB_OUTPUT dari Python.
+      - name: Versi & format export
+        id: patch
+        env:
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+          BUILD_TYPE: ${{ steps.cfg.outputs.type }}
+        run: python3 tools/godot_export_patch.py
+
+      # ── 6. Keystore ──
+      - name: Keystore debug (buang, untuk sideload)
+        if: steps.cfg.outputs.type == 'debug'
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/godot-keystores"
+          # alias & password = default keystore debug Godot sendiri
+          keytool -genkey -v \
+            -keystore "$HOME/godot-keystores/debug.keystore" \
+            -storepass android -keypass android -alias androiddebugkey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "cn=Godot, ou=Godot Engine, o=Stichting Godot, c=NL"
+          {
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/godot-keystores/debug.keystore"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android"
+          } >> "$GITHUB_ENV"
+
+      - name: Keystore release (secret — validasi dini)
+        if: steps.cfg.outputs.type == 'release'
+        env:
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEYALIAS }}
+          KS_ALIAS_PASS: ${{ secrets.KEYALIAS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/godot-keystores"
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$HOME/godot-keystores/release.keystore"
+          # Gagal di SINI (bukan saat export) kalau secret salah/alias berubah
+          keytool -list -keystore "$HOME/godot-keystores/release.keystore" \
+            -storepass "$KS_PASS" -alias "$KS_ALIAS" > /dev/null
+          echo "Keystore release terbaca, alias=$KS_ALIAS"
+          {
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$HOME/godot-keystores/release.keystore"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KS_ALIAS"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KS_ALIAS_PASS"
+          } >> "$GITHUB_ENV"
+
+      # ── 7. Import (pass pertama; quirk checkout bersih — lihat
+      #      komentar godot-check.yml) lalu export (strict) ──
+      - name: Import project
+        run: |
+          ~/godot-bin/godot --headless --path godot --import 2>&1 | tee /tmp/import.log || true
+
+      - name: Export ${{ steps.cfg.outputs.type }} (Godot ${{ env.GODOT_VERSION }})
+        run: |
+          set -o pipefail
+          mkdir -p godot/build
+          ~/godot-bin/godot --headless --path godot \
+            --export-${{ steps.cfg.outputs.type }} "Android" \
+            "godot/build/MysticArena.${{ steps.patch.outputs.ext }}" 2>&1 | tee /tmp/export.log
+
+      # ── 8. GERBANG MUTU: hasilnya harus benar-benar layak Play ──
+      - name: Gerbang mutu (script error, tanda tangan, targetSdk >= 36)
+        run: |
+          set -euo pipefail
+          FILE="godot/build/MysticArena.${{ steps.patch.outputs.ext }}"
+          BT="$ANDROID_SDK_ROOT/build-tools/$ANDROID_BUILD_TOOLS"
+
+          # 8a. Log import+export bebas error script (game langsung error
+          #     di device kalau ada — semangat gate yang sama dengan
+          #     godot-check.yml / godot_log_gate.py)
+          if grep -HnE "SCRIPT ERROR|Parse Error|Compile Error" /tmp/import.log /tmp/export.log > /tmp/script_errors.txt; then
+            cat /tmp/script_errors.txt
+            echo "::error::Script error di log import/export — build sengaja digagalkan"
+            exit 1
+          fi
+
+          # 8b. File hasil export ada
+          [ -s "$FILE" ] || { echo "::error::file export kosong/tidak ada: $FILE"; exit 1; }
+          SIZE=$(du -h "$FILE" | cut -f1)
+
+          # 8c. Tanda tangan valid + cetak DN sertifikat
+          "$BT/apksigner" verify --print-certs "$FILE" > /tmp/verify.txt
+          grep -q "Verifies" /tmp/verify.txt || { echo "::error::apksigner verify gagal:"; cat /tmp/verify.txt; exit 1; }
+          CERT_DN=$(grep -o "Signer #1 certificate DN:.*" /tmp/verify.txt | sed 's/^Signer #1 certificate DN: *//' || echo "(tidak tercetak)")
+
+          # 8d. Manifest: package benar + targetSdkVersion >= 36
+          #     (aturan Play 2026-08-31; template Godot 4.7.2 = 36)
+          if [ "${{ steps.patch.outputs.ext }}" = "aab" ]; then
+            unzip -p "$FILE" BaseManifest.xml > /tmp/manifest.bin
+          else
+            unzip -p "$FILE" AndroidManifest.xml > /tmp/manifest.bin
+          fi
+          "$BT/aapt2" dump xmltree /tmp/manifest.bin > /tmp/manifest.tree
+          # format aapt2: 'A: nama(0x..)=(type=0x..)nilai' -> nilai = field
+          # terakhir. `|| true`: pipefail+set -e boleh membunuh step sebelum
+          # pengecekan eksplisit di bawahnya sempat mencetak errornya.
+          PKG=$(grep 'A: package' /tmp/manifest.tree | head -1 | awk '{print $NF}' || true)
+          TS=$(grep 'targetSdkVersion' /tmp/manifest.tree | head -1 | awk '{print $NF}' || true)
+          MS=$(grep 'minSdkVersion' /tmp/manifest.tree | head -1 | awk '{print $NF}' || true)
+          echo "package=$PKG targetSdk=$TS minSdk=$MS"
+          [ "$PKG" = "io.github.dharmawantoxi.mysticarena" ] \
+            || { echo "::error::package salah: $PKG (harus io.github.dharmawantoxi.mysticarena)"; exit 1; }
+          [ -n "$TS" ] && [ "$TS" -ge 36 ] \
+            || { echo "::error::targetSdkVersion=$TS < 36 — Play Console akan MENOLAK upload (aturan 2026-08-31)"; exit 1; }
+
+          # 8e. Ringkasan
+          {
+            echo "### Build Android (Godot)"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Jenis | ${{ steps.cfg.outputs.type }} |"
+            echo "| Commit | \`${GITHUB_SHA:0:7}\` |"
+            echo "| File | \`$FILE\` ($SIZE) |"
+            echo "| Package | $PKG |"
+            echo "| targetSdk | $TS (min $MS) |"
+            echo "| Sertifikat | $CERT_DN |"
+            echo ""
+            echo "Langkah upload ke Play Console: [docs/PLAYSTORE_RELEASE.md](docs/PLAYSTORE_RELEASE.md)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ── 9. Artefak + GitHub Release ──
+      - name: Unggah artefak
+        uses: actions/upload-artifact@v4
+        with:
+          name: mystic-arena-godot-${{ steps.cfg.outputs.type }}
+          path: godot/build/MysticArena.*
+          retention-days: ${{ steps.cfg.outputs.type == 'debug' && 14 || 90 }}
+
+      - name: Buat GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: godot/build/MysticArena.aab
+          generate_release_notes: true
+
+      - name: Simpan log kalau gagal
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-export-logs
+          path: |
+            /tmp/import.log
+            /tmp/export.log
+            /tmp/script_errors.txt
+            /tmp/verify.txt
+            /tmp/manifest.bin
+            /tmp/manifest.tree
+          retention-days: 7

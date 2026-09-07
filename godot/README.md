@@ -420,11 +420,38 @@ godot/scenes/demo/KaizenDemo.tscn/.gd       — showcase isolasi: F5 Run Current
 Kaizen sudah terdaftar di `RendererRegistry.HERO`, jadi F5 langsung menampilkan rig bertulang di lane mid.
 Tip katana: `get_katana_tip_global()`.
 
-## Android Build
+## Android Build (Fase 6 — siap Play Store)
 
-`Project → Export → Android → Export AAB` → `godot/build/MysticArena.aab` (1-2 menit, bukan 8-12 menit buildozer).
+**Jalur utama = CI**: `git tag vX.Y.Z && git push origin vX.Y.Z` →
+`.github/workflows/build-android-godot.yml` mengekspor **AAB** ditandatangani
+(keystore = secret lama `KEYSTORE_BASE64`, package tetap
+`io.github.dharmawantoxi.mysticarena` sehingga Play mengenali app yang sama
+dan save player tidak hilang) → artefak + GitHub Release. Manual: tab
+Actions → "Build Android (Godot)" (`debug` = APK sideload, `release` = AAB
+verifikasi). Runbook lengkap: `docs/PLAYSTORE_RELEASE.md`.
 
-Package: `io.github.dharmawantoxi.mysticarena` (sama, save cloud tetap kebaca).
+Keputusan teknis Fase 6:
+
+- **Godot 4.7.2 untuk export** (bukan 4.3): aturan Play 2026-08-31 mewajibkan
+  `targetSdkVersion` 36; konstanta `DEFAULT_TARGET_SDK_VERSION` template
+  Android baru 36 mulai Godot 4.7 (4.3 = 34, ditolak Play). CI
+  `godot-check.yml` tetap 4.3 = versi minimum feature project.
+- **Renderer Mobile di Android**: `project.godot` menambah
+  `renderer/rendering_method.mobile="mobile"` (override platform).
+  Forward+ tidak didukung Android, dan Mobile mendukung semua fitur 2D yang
+  dipakai project (lighting, glow, shader canvas_item, 2D HDR); tanpa Vulkan
+  engine otomatis jatuh ke OpenGL ES 3.0 (`fallback_to_opengl3` default) →
+  minSdk 24, jangkauan perangkat sama dengan versi pygame. Desktop F5 tetap
+  Forward+.
+- **Ikon launcher** di `assets/android/` (192 main + 432 adaptive fg/bg dari
+  `assets/icon.png` master 512); `assets/icon.png` project kini 512.
+- **Suara**: `assets/sounds/` di-gitignore; CI menyalin dari `assets/sounds/`
+  sebelum export. Build lokal: jalankan converter dulu (Quick Start).
+- Keystore diisi via env `GODOT_ANDROID_KEYSTORE_RELEASE_PATH/USER/PASSWORD`
+  (fitur Godot ≥ 4.7) — secret tidak pernah tersimpan di repo.
+
+Lokal (editor): `Project → Export → Android → Export AAB` →
+`godot/build/MysticArena.aab` (1-2 menit, bukan 8-12 menit buildozer).
 
 ### `Unable to open Android 'build-tools' directory`
 
