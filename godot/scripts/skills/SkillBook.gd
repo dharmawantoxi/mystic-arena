@@ -680,8 +680,20 @@ func _damage(target, mult: float) -> void:
 	var amount: float = cs.calc_skill_damage(hero, mult)
 	if amount <= 0.0:
 		return
-	cs.apply_damage(target, amount, str(hero.get("team")), "normal", hero,
+	var dealt: float = cs.apply_damage(target, amount, str(hero.get("team")), "normal", hero,
 		str(hero.get("dmg_school")))
+	# IMPACT FX SKILL (paritas notify_skill_impact hero_skills/_bundle.py):
+	# hanya damage SKILL yang memicu burst di korban — serangan dasar sengaja
+	# tidak (kontrak tools/test_basic_attack_no_impact_fx.py, karena itu
+	# hook-nya di sini dan bukan di CombatSystem.apply_damage yang dipakai
+	# semua jalur damage). Warnanya ikut warna caster supaya terbaca siapa
+	# yang memukul di team fight.
+	if dealt > 0.0 and target.has_method("play_hit_fx"):
+		var col = hero.get("fill_color")
+		if col is Color:
+			target.play_hit_fx((col as Color).lightened(0.35))
+		else:
+			target.play_hit_fx()
 
 
 func _heal(amount: float) -> void:

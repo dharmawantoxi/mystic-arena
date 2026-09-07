@@ -107,6 +107,10 @@ var skills = null      # SkillBook
 @onready var skill_particles: CPUParticles2D = $FX/SkillParticles
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
 
+## Jeda minimum antar burst HitParticles (detik) — lihat play_hit_fx()
+const HIT_FX_COOLDOWN := 0.08
+var _hit_fx_cd: float = 0.0
+
 var silhouette = null
 var custom_visual = null
 var anim_phase: float = 0.0
@@ -229,6 +233,7 @@ func _physics_process(delta):
 		items.tick(delta)
 	attack_timer = maxf(0.0, attack_timer - delta)
 	combat_timer = maxf(0.0, combat_timer - delta)
+	_hit_fx_cd = maxf(0.0, _hit_fx_cd - delta)
 	anim_phase += delta * 6.0  # phase untuk Skeleton2D (breath + stride)
 
 	_regen(delta)
@@ -568,6 +573,30 @@ func take_damage(amount: float, from_team: String, dmg_type: String = "normal",
 	if hp <= 0:
 		die(source)
 	update_ui()
+
+
+## Burst partikel + flash saat hero KENA damage SKILL.
+##
+## KENAPA tidak dipanggil dari take_damage/CombatSystem.apply_damage:
+## kontrak pemilik game (dikunci tools/test_basic_attack_no_impact_fx.py dan
+## komentar _entity.py:4376-4384) = SERANGAN DASAR tidak boleh punya impact FX
+## sama sekali, karena tumpukan flash+spark tiap pukulan bikin combat ramai
+## kedap-kedip. Impact FX eksklusif milik SKILL (paritas notify_skill_impact
+## hero_skills/_bundle.py), jadi pemanggilnya SkillBook._damage().
+func play_hit_fx(col: Color = Color(1.0, 0.72, 0.55)) -> void:
+	if is_dead:
+		return
+	# Skill AoE + ticker DoT bisa memanggil ini beberapa kali dalam satu
+	# frame; restart() beruntun justru MEMBATALKAN burst sebelumnya (dan
+	# boros). Satu burst per 0,08 detik sudah terbaca sebagai "kena".
+	if _hit_fx_cd > 0.0:
+		return
+	_hit_fx_cd = HIT_FX_COOLDOWN
+	_flash()
+	if hit_particles != null:
+		hit_particles.color = Color(col.r, col.g, col.b, 0.9)
+		hit_particles.restart()
+		hit_particles.emitting = true
 
 
 func _flash() -> void:
