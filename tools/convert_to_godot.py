@@ -346,6 +346,30 @@ THEME_KEY_MAP = {
     "river_foam": "river_foam",
 }
 
+def _fog_from_theme(t, out):
+    """fog_enabled / fog_color / fog_count pygame -> kunci Godot.
+
+    pygame menyimpan kabut sebagai daftar elips semi-transparan
+    (DynamicRenderer._init_fog map_components/_bundle.py:5424-5447 dan
+    _draw_fog :5542-5560): fog_color adalah tuple RGBA 0-255 di mana ALPHA
+    (elemen ke-4) yang menentukan tebalnya, dan fog_count = jumlah gumpalan.
+
+    Godot Color() dari string hanya menerima '#rrggbb' yang enak dibaca,
+    jadi RGB dan alpha DIPISAH di sini: 'fog_color' hex + 'fog_alpha' float
+    0..1. Kalau digabung jadi '#rrggbbaa', tiap pembaca di GDScript harus
+    tahu urutan alpha Godot vs pygame — dipisah lebih sulit salah.
+
+    Nilai default menyalin default pygame di kedua fungsi itu:
+    fog_enabled True, fog_color (80,60,60,30), fog_count 15.
+    """
+    fog = t.get("fog_color", (80, 60, 60, 30))
+    out["fog_enabled"] = bool(t.get("fog_enabled", True))
+    out["fog_color"] = _hex(fog, "#503c3c")
+    alpha = fog[3] if isinstance(fog, (tuple, list)) and len(fog) > 3 else 30
+    out["fog_alpha"] = round(float(alpha) / 255.0, 4)
+    out["fog_count"] = int(t.get("fog_count", 15))
+
+
 ## Flag dekorasi yang dipakai ArenaMap._build_decor/_draw_decor untuk memilih
 ## jenis dekor per tema (pohon / batu / kristal / nisan). pygame memakainya
 ## di DecorationRenderer; di Godot hanya 4 jenis yang digambar prosedural.
@@ -452,7 +476,12 @@ def export_themes():
                     missing.append("%s.%s" % (name, src))
             for flag in THEME_DECOR_FLAGS:
                 entry[flag] = bool(t.get(flag, False))
+            # particle_type: jenis partikel atmosfer (firefly/snow/sand/
+            # ember/ash/spirit/mist/acid). Dipakai ArenaMap._apply_weather()
+            # untuk memilih arah gerak partikel, bukan cuma warnanya.
             entry["particle_type"] = str(t.get("particle_type", "ash"))
+            entry["particle_count"] = int(t.get("particle_count", 40))
+            _fog_from_theme(t, entry)
             _derive_theme_extras(t, entry)
             themes_out[name] = entry
 
@@ -462,7 +491,9 @@ def export_themes():
                        % len(mc.THEMES),
             "_note": "Nilai warna '#rrggbb' (Color() Godot). Kunci tanpa "
                      "padanan pygame (tree/tree_light/stone/light/energy/"
-                     "modulate) diturunkan — lihat _derive_theme_extras().",
+                     "modulate) diturunkan — lihat _derive_theme_extras(). "
+                     "fog_color dipisah jadi hex + fog_alpha 0..1 "
+                     "(pygame menyimpan RGBA 0-255).",
             "fallback": "forest",
             "themes": themes_out,
         }

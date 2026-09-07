@@ -121,10 +121,69 @@ const FALLBACK_THEME := "forest"
 ## sana akan error "Cannot assign a new value to a constant".
 var themes: Dictionary = {}
 
+# ═══ CUACA / ATMOSFER — port DynamicRenderer partikel + fog ═══
+# pygame: _init_particles (_bundle.py:5370-5422), update() (:5453-5503),
+# _draw_particles (:5666-5737), _init_fog (:5424-5447), _draw_fog (:5542-5560).
+# Di sana partikel adalah dict Python yang diblit satu per satu tiap frame;
+# di Godot dua CPUParticles2D sudah cukup (satu batch draw, tidak ada loop
+# per partikel di GDScript).
+#
+# KENAPA CPUParticles2D, bukan GPUParticles2D: GPUParticles butuh
+# ParticleProcessMaterial + (di beberapa backend) shader compile saat runtime,
+# dan target port ini termasuk Android/GLES di mana GPU particles sering
+# di-fallback. CPUParticles2D memberi hasil identik untuk jumlah kecil
+# (30-60 partikel, sama seperti particle_count pygame) dan bisa diatur
+# sepenuhnya dari kode tanpa resource tambahan.
+#
+# Kunci parity-nya BUKAN warna, tapi GERAK — pygame memilih kecepatan per
+# particle_type (_bundle.py:5397-5412): snow turun (vy 0.3..0.8), ember naik
+# (vy -0.8..-0.3), sand menyapu horizontal, firefly melayang acak. Itu yang
+# ditiru _weather_profile() di bawah, jadi level 3 (ice/snow), 4 (volcanic/
+# ember) dan 5 (haunted/spirit) terasa beda gerakannya.
+#
+# Skala kecepatan: pygame menambah vx/vy per FRAME pada 60 FPS, sedangkan
+# CPUParticles2D memakai piksel/DETIK — karena itu semua nilai pygame
+# dikalikan PYGAME_FPS.
+const PYGAME_FPS := 60.0
+## particle_count default kalau themes.json belum punya kunci itu
+## (paritas default pygame _init_particles).
+const PARTICLE_COUNT_DEFAULT := 40
+## Jumlah gumpalan kabut default (_init_fog: fog_count 15)
+const FOG_COUNT_DEFAULT := 15
+## Sisi tekstur bulat prosedural (px). Tanpa tekstur, CPUParticles2D
+## menggambar kotak 1x1 px sehingga salju/bara terlihat seperti piksel keras;
+## pygame menggambar titik + lingkaran glow (_draw_particles :5680-5737) dan
+## kabut sebagai ELIPS lembut (_draw_fog :5551-5556). Dua tekstur gradien
+## radial di bawah meniru itu tanpa file aset apa pun.
+const DOT_TEX_SIZE := 16
+const FOG_TEX_SIZE := 64
+
+var _dot_tex: Texture2D = null
+var _fog_tex: Texture2D = null
+
+var _particles: CPUParticles2D = null
+var _fog: CPUParticles2D = null
+
 var _decor_points: PackedFloat32Array = PackedFloat32Array() # [x, y, size, kind] x N
 ## kind 2/3 hanya muncul kalau tema punya kristal / nisan (flag has_* pygame)
 var _decor_wants_crystal: bool = false
 var _decor_wants_grave: bool = false
+## Flag dekor lain yang pygame pakai di DecorationRenderer.draw_all
+## (_bundle.py:6088-6107) tapi port ini belum pernah baca.
+var _decor_wants_dead_tree: bool = false
+var _decor_wants_dark_tree: bool = false
+var _decor_wants_bones: bool = false
+var _decor_wants_moss_rock: bool = false
+
+## Jenis dekor (nilai `kind` di _decor_points). Dulu angka telanjang 0-3
+## tersebar di _build_decor + _draw_decor; dinamai supaya penambahan jenis
+## tidak salah cocok antara yang menaruh dan yang menggambar.
+const DECOR_TREE := 0
+const DECOR_ROCK := 1
+const DECOR_CRYSTAL := 2
+const DECOR_GRAVE := 3
+const DECOR_DEAD_TREE := 4
+const DECOR_BONES := 5
 var _lane_cache: Dictionary = {}
 
 func _ready():
@@ -133,6 +192,7 @@ func _ready():
 	# jadi tidak ada koordinat arena yang di-hardcode di AI.
 	add_to_group("arena_map")
 	_load_themes()
+	_setup_weather_nodes()
 	apply_theme(theme_name)
 
 ## Gabungkan 54 palet themes.json ke palet runtime.
@@ -212,8 +272,195 @@ func apply_theme(t: String):
 	if ResourceLoader.exists(ts_path) and ground:
 		ground.tile_set = load(ts_path)
 		procedural_fallback = false
+	# Cuaca ikut tema: particle_type + fog_* dari themes.json (data itu sudah
+	# lama ada di pygame tapi belum pernah dipakai port ini).
+	_apply_weather(d)
 	_build_decor()
 	queue_redraw()
+
+# ══════════════════════════════════════════════════════════
+#  CUACA: partikel atmosfer + kabut per tema
+# ══════════════════════════════════════════════════════════
+
+## Buat dua node partikel sekali saja (bukan per ganti tema) supaya
+## cycle_theme() tidak menumpuk node. Keduanya anak ArenaMap, jadi ikut
+## z_index map — kabut sengaja di atas partikel (pygame juga menggambar fog
+## setelah particles, _bundle.py draw order).
+func _setup_weather_nodes() -> void:
+	_dot_tex = _make_soft_dot(DOT_TEX_SIZE, 1.6)
+	# Kabut pakai gradien yang jauh lebih landai supaya tepinya tidak kelihatan
+	# sebagai lingkaran, persis kesan elips tipis pygame.
+	_fog_tex = _make_soft_dot(FOG_TEX_SIZE, 2.6)
+	_particles = CPUParticles2D.new()
+	_particles.name = "WeatherParticles"
+	_particles.texture = _dot_tex
+	_particles.z_index = 5
+	add_child(_particles)
+	_fog = CPUParticles2D.new()
+	_fog.name = "WeatherFog"
+	_fog.texture = _fog_tex
+	_fog.z_index = 6
+	add_child(_fog)
+
+
+## Bikin tekstur bulat lembut (putih, alpha memudar ke tepi) langsung di kode.
+## `falloff` besar = tepi lebih cepat hilang (kabut), kecil = inti lebih padat
+## (partikel + glow). Warna diambil dari properti `color` CPUParticles2D, jadi
+## tekstur ini cukup putih sekali dipakai semua tema.
+static func _make_soft_dot(size: int, falloff: float) -> Texture2D:
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var c := float(size) * 0.5
+	for y in range(size):
+		for x in range(size):
+			var dist := Vector2(float(x) + 0.5 - c, float(y) + 0.5 - c).length() / c
+			var a: float = pow(clampf(1.0 - dist, 0.0, 1.0), falloff)
+			img.set_pixel(x, y, Color(1, 1, 1, a))
+	return ImageTexture.create_from_image(img)
+
+
+## Profil gerak per particle_type — INI yang membedakan tema, bukan warnanya.
+## Angka vx/vy diambil dari _init_particles pygame (_bundle.py:5397-5412)
+## dalam piksel/frame; dikali PYGAME_FPS jadi piksel/detik untuk Godot.
+##
+## Kunci:
+##   dir      arah utama (Godot: +y ke bawah, sama seperti pygame)
+##   speed    kecepatan rata-rata piksel/detik
+##   spread   sebaran sudut (derajat) di sekitar dir
+##   damping  perlambatan (partikel melayang lebih terasa "berat")
+##   scale    ukuran titik (pygame size 1-2 px, ember/spirit diberi glow)
+##   life     umur detik — dihitung supaya partikel menyeberangi arena
+##   palette  kunci palet tema untuk warna (pygame memakai
+##            particle_colors_radiant/dire; di Godot satu warna aksen per
+##            tema sudah cukup karena partikel kecil dan ada glow HDR)
+##   glow     >1.0 = warna dilebihkan supaya kena bloom (project.godot
+##            glow/enabled=true) — dipakai ember/spirit/firefly.
+##
+## Tipe yang di pygame TIDAK tergambar sama sekali (ash/spirit/mist/acid —
+## _draw_particles hanya punya cabang firefly/snow/sand/ember, lihat catatan
+## _bundle.py:809) tetap diberi profil di sini: datanya sudah ada di tema dan
+## di Godot tidak ada alasan membiarkannya mati. Gerakannya dipilih sesuai
+## nama: ash melayang turun pelan, spirit naik berombak, mist menyapu
+## mendatar, acid naik seperti ember.
+static func _weather_profile(kind: String) -> Dictionary:
+	match kind:
+		"snow":
+			# vy 0.3..0.8 px/frame turun + goyang sin (update() :5471-5476)
+			return {"dir": Vector2(0, 1), "speed": 0.55 * PYGAME_FPS, "spread": 12.0,
+				"damping": 0.0, "scale": 2.4, "life": 14.0,
+				"palette": "river_foam", "glow": 1.0}
+		"ember":
+			# vy -0.8..-0.3 px/frame NAIK (bara api) :5405-5408
+			return {"dir": Vector2(0, -1), "speed": 0.55 * PYGAME_FPS, "spread": 18.0,
+				"damping": 4.0, "scale": 2.0, "life": 9.0,
+				"palette": "river_glow", "glow": 1.6}
+		"acid":
+			# tema racun: sengaja memakai "ember" di pygame agar spora NAIK
+			# (komentar _bundle.py:812-813) — profil sama, warna dari moss.
+			return {"dir": Vector2(0, -1), "speed": 0.5 * PYGAME_FPS, "spread": 22.0,
+				"damping": 6.0, "scale": 2.2, "life": 10.0,
+				"palette": "moss", "glow": 1.4}
+		"sand":
+			# vx 0.5..1.5 px/frame menyapu mendatar + gelombang vertikal :5401-5404
+			return {"dir": Vector2(1, 0), "speed": 1.0 * PYGAME_FPS, "spread": 10.0,
+				"damping": 0.0, "scale": 1.8, "life": 8.0,
+				"palette": "path_bright", "glow": 1.0}
+		"mist":
+			# kabut laut: seperti sand tapi jauh lebih lambat & besar
+			return {"dir": Vector2(1, 0), "speed": 0.35 * PYGAME_FPS, "spread": 8.0,
+				"damping": 0.0, "scale": 4.0, "life": 16.0,
+				"palette": "river_light", "glow": 1.0}
+		"spirit":
+			# arwah: naik pelan, sebaran lebar + damping besar = melayang
+			return {"dir": Vector2(0, -1), "speed": 0.28 * PYGAME_FPS, "spread": 45.0,
+				"damping": 8.0, "scale": 3.0, "life": 12.0,
+				"palette": "river_glow", "glow": 1.7}
+		"ash":
+			# abu: turun sangat pelan, sebaran lebar (melayang tak tentu arah)
+			return {"dir": Vector2(0, 1), "speed": 0.25 * PYGAME_FPS, "spread": 60.0,
+				"damping": 5.0, "scale": 2.2, "life": 16.0,
+				"palette": "ash", "glow": 1.0}
+		_:
+			# firefly (default pygame): melayang acak ke segala arah,
+			# vx/vy -0.4..0.4 px/frame :5410-5412
+			return {"dir": Vector2(0, -1), "speed": 0.4 * PYGAME_FPS, "spread": 180.0,
+				"damping": 2.0, "scale": 2.2, "life": 6.0,
+				"palette": "river_glow", "glow": 1.5}
+
+
+## Terapkan particle_type + fog_* tema aktif ke dua node CPUParticles2D.
+## Dipanggil dari apply_theme(), jadi cycle_theme() (tombol debug T) langsung
+## mengganti cuaca juga.
+func _apply_weather(d: Dictionary) -> void:
+	if _particles == null or _fog == null:
+		return # scene dipakai tanpa _ready (unit test) — jangan crash
+	var kind := str(d.get("particle_type", "firefly"))
+	var prof := _weather_profile(kind)
+	var base: Color = d.get(prof["palette"], d.get("river_glow", Color.WHITE))
+	var glow := float(prof["glow"])
+	var col := Color(base.r * glow, base.g * glow, base.b * glow, 0.85)
+
+	# Jumlah partikel: particle_count tema (pygame _init_particles memakainya
+	# apa adanya; di sana ada juga preset kualitas mobile.perf.Quality yang
+	# TIDAK diport — Godot punya rendering/quality sendiri).
+	_particles.emitting = false
+	_particles.amount = maxi(4, int(d.get("particle_count", PARTICLE_COUNT_DEFAULT)))
+	_particles.lifetime = float(prof["life"])
+	# preprocess = arena sudah penuh partikel sejak frame pertama, bukan
+	# kosong lalu terisi pelan-pelan (pygame menaburnya acak saat init).
+	_particles.preprocess = float(prof["life"])
+	_particles.local_coords = false
+	_particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_particles.emission_rect_extents = arena_size * 0.5
+	_particles.position = arena_size * 0.5
+	_particles.direction = prof["dir"] as Vector2
+	_particles.spread = float(prof["spread"])
+	_particles.initial_velocity_min = float(prof["speed"]) * 0.6
+	_particles.initial_velocity_max = float(prof["speed"]) * 1.4
+	# CPUParticles2D memakai pasangan min/max (tidak ada properti "damping"
+	# tunggal seperti ParticleProcessMaterial) — salah nama di sini tidak
+	# ketahuan gdparse, tapi jadi error "Invalid assignment" saat jalan.
+	_particles.damping_min = float(prof["damping"]) * 0.5
+	_particles.damping_max = float(prof["damping"])
+	_particles.gravity = Vector2.ZERO # semua gerak sudah dari direction/speed
+	# scale_amount = PENGALI ukuran tekstur, bukan piksel — profil menyimpan
+	# diameter yang diinginkan (pygame: size 1-2 px + glow ~3-4 px), jadi
+	# dibagi DOT_TEX_SIZE dulu.
+	var dot_scale := float(prof["scale"]) / float(DOT_TEX_SIZE)
+	_particles.scale_amount_min = dot_scale * 0.7
+	_particles.scale_amount_max = dot_scale
+	_particles.color = col
+	_particles.emitting = true
+
+	# ── KABUT (fog_enabled / fog_color / fog_alpha / fog_count) ──
+	# pygame: gumpalan elips besar yang menyapu mendatar sangat pelan
+	# (_init_fog vx -0.1..0.1 px/frame, _draw_fog ellipse size 30-60).
+	var fog_on := bool(d.get("fog_enabled", true))
+	_fog.emitting = false
+	if not fog_on:
+		return
+	var fog_col: Color = d.get("fog_color", Color(0.31, 0.24, 0.24))
+	var fog_alpha := float(d.get("fog_alpha", 0.12))
+	_fog.amount = maxi(3, int(d.get("fog_count", FOG_COUNT_DEFAULT)))
+	_fog.lifetime = 26.0
+	_fog.preprocess = 26.0
+	_fog.local_coords = false
+	_fog.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_fog.emission_rect_extents = Vector2(arena_size.x * 0.5, arena_size.y * 0.35)
+	_fog.position = Vector2(arena_size.x * 0.5, arena_size.y * 0.45)
+	_fog.direction = Vector2(1, 0)
+	_fog.spread = 6.0
+	_fog.initial_velocity_min = 0.05 * PYGAME_FPS
+	_fog.initial_velocity_max = 0.1 * PYGAME_FPS
+	_fog.damping_min = 0.0
+	_fog.damping_max = 0.0
+	_fog.gravity = Vector2.ZERO
+	# Gumpalan besar & tipis: lebar elips pygame 60-120 px (_init_fog size
+	# 30-60, _draw_fog menggambar size*2 mendatar) -> pengali tekstur 64 px.
+	_fog.scale_amount_min = 60.0 / float(FOG_TEX_SIZE)
+	_fog.scale_amount_max = 120.0 / float(FOG_TEX_SIZE)
+	_fog.color = Color(fog_col.r, fog_col.g, fog_col.b, fog_alpha)
+	_fog.emitting = true
+
 
 ## Ganti ke tema berikutnya dalam palette (dipakai tombol debug T di Main.gd)
 func cycle_theme() -> String:
@@ -316,6 +563,13 @@ func _build_decor():
 	_decor_wants_crystal = bool(d.get("has_ice_crystals", false)) \
 		or bool(d.get("has_crystals_blue", false)) or bool(d.get("has_crystals_red", false))
 	_decor_wants_grave = bool(d.get("has_gravestones", false))
+	# Empat flag di bawah sudah lama diekspor converter tapi tak pernah
+	# dibaca (lihat docs/AUDIT_PARITAS.md A1-A4): tanpa ini tema tulang dan
+	# tema hutan mati sama-sama tampil "pohon + batu" walau warnanya beda.
+	_decor_wants_dead_tree = bool(d.get("has_dead_trees", false))
+	_decor_wants_dark_tree = bool(d.get("has_dark_trees", false))
+	_decor_wants_bones = bool(d.get("has_bones", false))
+	_decor_wants_moss_rock = bool(d.get("has_rocks_mossy", false))
 	var lane_pts := PackedVector2Array()
 	for l in ["top", "mid", "bot"]:
 		lane_pts.append_array(get_lane_path(l))
@@ -328,22 +582,63 @@ func _build_decor():
 		if p.distance_to(BLUE_BASE) < 130.0 or p.distance_to(RED_BASE) < 130.0:
 			continue
 		var size := rng.randf_range(11.0, 21.0)
-		# Jenis dekor ikut tema (flag has_* pygame dipakai DecorationRenderer
-		# di sana; di Godot hanya 4 bentuk yang digambar prosedural). Tanpa
-		# ini level es dan level kuburan sama-sama "pohon + batu" walau
-		# warnanya sudah beda.
-		var roll := rng.randf()
-		var kind := 1.0 # 1 = batu
-		if roll < 0.60:
-			kind = 0.0 # 0 = pohon
-		elif _decor_wants_grave and roll < 0.76:
-			kind = 3.0 # 3 = nisan
-		elif _decor_wants_crystal and roll < 0.90:
-			kind = 2.0 # 2 = kristal
 		_decor_points.append(p.x)
 		_decor_points.append(p.y)
 		_decor_points.append(size)
-		_decor_points.append(kind)
+		_decor_points.append(float(_pick_decor_kind(rng.randf(), p)))
+
+## Pilih jenis dekor untuk satu titik.
+##
+## PENTING — pygame membedakan SISI PETA, bukan cuma tema: pohon gelap hanya
+## di belahan Radiant dan pohon mati/tulang hanya di belahan Dire
+## (_bundle.py:4767-4821, generate_all memakai _is_radiant()/_is_dire()).
+## Tanpa itu peta terasa simetris dan sisi Dire kehilangan kesan gersang.
+func _pick_decor_kind(roll: float, p: Vector2) -> int:
+	# Ambang DITUMPUK (bukan rentang tetap) supaya jenis opsional jadi AKSEN,
+	# bukan mendominasi. Versi pertama memakai ambang tetap dan tema ice
+	# keluar 49 kristal dari 70 dekor — kristal menelan porsi batu karena
+	# rentangnya melar saat jenis lain mati.
+	var t := 0.0
+	if _is_dire(p):
+		# ── sisi Dire (kanan-atas): gersang, tanpa pohon rimbun ──
+		if _decor_wants_dead_tree:
+			t += 0.40
+			if roll < t:
+				return DECOR_DEAD_TREE
+		if _decor_wants_bones:
+			t += 0.16
+			if roll < t:
+				return DECOR_BONES
+		if _decor_wants_grave:
+			t += 0.14
+			if roll < t:
+				return DECOR_GRAVE
+		if _decor_wants_crystal:
+			t += 0.12
+			if roll < t:
+				return DECOR_CRYSTAL
+		return DECOR_ROCK
+	# ── sisi Radiant (kiri-bawah): vegetasi ──
+	# Tema tanpa has_dark_trees (gurun/es) tetap dapat sedikit vegetasi,
+	# porsinya lebih kecil daripada tema hutan.
+	t += 0.60 if _decor_wants_dark_tree else 0.32
+	if roll < t:
+		return DECOR_TREE
+	if _decor_wants_crystal:
+		t += 0.16
+		if roll < t:
+			return DECOR_CRYSTAL
+	if _decor_wants_grave:
+		t += 0.08
+		if roll < t:
+			return DECOR_GRAVE
+	return DECOR_ROCK
+
+## Belahan Dire (kanan-atas) — paritas _is_dire (_bundle.py:4870-4872):
+## garis batas miring dari kiri-atas ke kanan-bawah, bukan diagonal lurus.
+func _is_dire(p: Vector2) -> bool:
+	var threshold_y := 200.0 + (arena_size.y - 400.0) * p.x / arena_size.x
+	return p.y < threshold_y - 20.0
 
 static func _min_dist_to(points: PackedVector2Array, p: Vector2) -> float:
 	var best := 1e9
@@ -428,6 +723,34 @@ func _draw_lane(pts: PackedVector2Array, d: Dictionary):
 		for s in [-1, 1]:
 			draw_circle(p + perp * s * LANE_HALF_WIDTH * 0.55, 2.4,
 				Color(cobble.r, cobble.g, cobble.b, 0.5))
+	# ── LUMUT + RETAKAN JALUR (path_moss / path_crack) ──
+	# Dua warna ini sudah lama diekspor converter tapi tidak pernah dibaca,
+	# padahal pygame memakainya di _draw_cobblestone_tile (_bundle.py:5206-5207)
+	# sebagai varian tiap ubin. Yang paling terasa: tema volcanic memberi
+	# path_crack = (255,100,20) alias RETAKAN LAVA MENYALA — tanpa ini semua
+	# jalur di 54 tema terlihat abu-abu seragam.
+	#
+	# pygame memilih varian dengan `(tx * 3 + ty * 7) % 100` per ubin
+	# (deterministik, bukan acak). Di sini rumus yang sama dipakai pada
+	# koordinat titik jalur, jadi polanya tetap stabil antar frame tanpa
+	# perlu menyimpan state.
+	var moss: Color = d.get("path_moss", d["path"])
+	var crack: Color = d.get("path_crack", d["path_border"])
+	for i in range(0, pts.size(), 3):
+		var p: Vector2 = pts[i]
+		var n: Vector2 = pts[min(i + 1, pts.size() - 1)]
+		var fwd := (n - p).normalized()
+		var perp := fwd.orthogonal()
+		var variant := int(p.x * 3.0 + p.y * 7.0) % 100
+		var off := perp * (float((variant % 7) - 3) / 3.0) * LANE_HALF_WIDTH * 0.7
+		if variant < 22:
+			# bercak lumut: elips kecil menempel di tepi jalur
+			draw_circle(p + off, 3.2, Color(moss.r, moss.g, moss.b, 0.45))
+		elif variant < 34:
+			# retakan: garis pendek searah jalur. Alpha tinggi supaya lava
+			# crack benar-benar menyala kena bloom (glow HDR project.godot).
+			draw_line(p + off - fwd * 5.0, p + off + fwd * 5.0,
+				Color(crack.r, crack.g, crack.b, 0.7), 1.6)
 
 func _draw_bases(d: Dictionary):
 	# Radiant (blue) kiri-bawah, Dire (red) kanan-atas — paritas _core base positions
@@ -465,12 +788,12 @@ func _draw_decor(d: Dictionary):
 		var p := Vector2(_decor_points[i], _decor_points[i + 1])
 		var size := _decor_points[i + 2]
 		var kind := int(_decor_points[i + 3])
-		if kind == 0:
+		if kind == DECOR_TREE:
 			draw_circle(p + Vector2(0, size * 0.35), size * 0.9, Color(0, 0, 0, 0.22)) # shadow
 			draw_rect(Rect2(p + Vector2(-2, 0), Vector2(4, size * 0.8)), d["earth_dark"], true) # trunk
 			draw_circle(p, size, d["tree"])
 			draw_circle(p + Vector2(-size * 0.3, -size * 0.35), size * 0.62, d["tree_light"])
-		elif kind == 2:
+		elif kind == DECOR_CRYSTAL:
 			# Kristal (has_ice_crystals / has_crystals_*): belah ketupat memakai
 			# warna aksen tema (river_glow/river_foam) biar ikut palet.
 			var glow: Color = d.get("river_glow", d["stone"])
@@ -484,7 +807,7 @@ func _draw_decor(d: Dictionary):
 				p + Vector2(0, -size), p + Vector2(size * 0.22, -size * 0.1),
 				p + Vector2(0, size * 0.35), p + Vector2(-size * 0.22, -size * 0.1),
 			]), Color(foam.r, foam.g, foam.b, 0.7))
-		elif kind == 3:
+		elif kind == DECOR_GRAVE:
 			# Nisan (has_gravestones): lempeng batu + salib gelap
 			var stone_col: Color = d["stone"]
 			draw_circle(p + Vector2(2, size * 0.4), size * 0.7, Color(0, 0, 0, 0.2))
@@ -499,11 +822,65 @@ func _draw_decor(d: Dictionary):
 				Vector2(size * 0.16, size * 0.55)), d["earth_dark"], true)
 			draw_rect(Rect2(p + Vector2(-size * 0.26, -size * 0.16),
 				Vector2(size * 0.52, size * 0.14)), d["earth_dark"], true)
+		elif kind == DECOR_DEAD_TREE:
+			# Pohon mati (has_dead_trees): batang gundul + 4 cabang menjulur,
+			# paritas _draw_dead_trees (_bundle.py:6213-6252) yang memang
+			# menggambar batang persegi + daftar 4 garis cabang, tanpa kanopi.
+			# Warna dari earth_dark/ash supaya ikut palet tema (pygame memakai
+			# DEAD_TREE_1/2 global, tapi di sini palet tema lebih konsisten).
+			var bark: Color = d["earth_dark"]
+			var bark_hi: Color = d.get("ash", d["earth_light"])
+			draw_circle(p + Vector2(0, size * 0.35), size * 0.7, Color(0, 0, 0, 0.2))
+			draw_rect(Rect2(p + Vector2(-2.0, -size), Vector2(4.0, size * 1.3)), bark, true)
+			draw_rect(Rect2(p + Vector2(-2.0, -size), Vector2(1.5, size * 1.3)), bark_hi, true)
+			var limbs := [
+				[Vector2(0, -size * 0.5), Vector2(-size * 0.5, -size + 4.0), 2.4],
+				[Vector2(0, -size * 0.5 + 4.0), Vector2(size * 0.5, -size + 4.0), 2.4],
+				[Vector2(0, -size + 4.0), Vector2(-size * 0.33, -size - 4.0), 1.6],
+				[Vector2(0, -size + 4.0), Vector2(size * 0.33, -size - 2.0), 1.6],
+			]
+			for limb in limbs:
+				# Cast eksplisit: elemen Array campuran bertipe Variant, dan
+				# draw_line() menuntut Vector2/float. Tanpa cast Godot 4 baru
+				# mengeluh saat runtime, bukan saat parse.
+				draw_line(p + (limb[0] as Vector2), p + (limb[1] as Vector2),
+					bark, float(limb[2]))
+		elif kind == DECOR_BONES:
+			# Tulang (has_bones): tengkorak + tulang rusuk bergantian, paritas
+			# _draw_bones (_bundle.py:6275-6297). Warna tulang sengaja TIDAK
+			# dari palet tema — pygame memakai BONE_C/BONE_D tetap, dan tulang
+			# yang ikut berubah warna per tema malah tidak terbaca sebagai tulang.
+			var bone: Color = Color("#dcd2be")
+			var bone_d: Color = Color("#a09682")
+			draw_circle(p + Vector2(0, size * 0.25), size * 0.45, Color(0, 0, 0, 0.18))
+			if int(p.x) % 2 == 0:
+				# tengkorak: batok + dua rongga mata
+				draw_circle(p, size * 0.34, bone)
+				draw_circle(p + Vector2(0, size * 0.08), size * 0.26, bone_d)
+				draw_circle(p + Vector2(-size * 0.13, -size * 0.05), size * 0.07, Color(0.1, 0.09, 0.08))
+				draw_circle(p + Vector2(size * 0.13, -size * 0.05), size * 0.07, Color(0.1, 0.09, 0.08))
+				draw_rect(Rect2(p + Vector2(-size * 0.2, size * 0.2),
+					Vector2(size * 0.4, size * 0.13)), bone, true)
+			else:
+				# rusuk: tulang punggung mendatar + iga vertikal
+				draw_line(p + Vector2(-size * 0.45, 0), p + Vector2(size * 0.45, 0), bone, 2.2)
+				for r in range(-2, 3):
+					var rx := float(r) * size * 0.2
+					draw_line(p + Vector2(rx, -size * 0.18), p + Vector2(rx, size * 0.18), bone_d, 1.4)
 		else:
 			draw_circle(p + Vector2(2, 3), size * 0.8, Color(0, 0, 0, 0.2))
 			draw_circle(p, size * 0.75, d["stone"])
 			var hl: Color = d["stone"].lightened(0.25)
 			draw_circle(p + Vector2(-size * 0.2, -size * 0.25), size * 0.35, hl)
+			# Lumut di puncak batu (has_rocks_mossy): pygame menempelkan strip
+			# lumut + 3 tetesan ke bawah (_draw_rocks :6366-6373), dan hanya
+			# di belahan RADIANT (has_moss = _is_radiant, :4843).
+			if _decor_wants_moss_rock and not _is_dire(p):
+				var moss: Color = d.get("moss", d["grass_dark"])
+				draw_circle(p + Vector2(-size * 0.18, -size * 0.42), size * 0.3,
+					Color(moss.r, moss.g, moss.b, 0.85))
+				draw_circle(p + Vector2(size * 0.16, -size * 0.34), size * 0.2,
+					Color(moss.r, moss.g, moss.b, 0.7))
 		i += 4
 
 func _draw_walls(d: Dictionary):

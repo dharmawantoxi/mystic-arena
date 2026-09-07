@@ -126,7 +126,18 @@ func _on_hit() -> void:
 	if bool(target.get("is_dead")):
 		return
 
-	cs.apply_damage(target, damage, team, "projectile", source, school)
+	var dealt := cs.apply_damage(target, damage, team, "projectile", source, school)
+
+	# Proyektil hero ranged juga memicu efek on-attack item, paritas
+	# on_ranged_attack_hit (hero_items.py:2506-2517). Di pygame fungsi itu
+	# HANYA memanggil _on_hit_common — lifesteal & cleave sudah dibayar saat
+	# proyektil dilepas, jadi jangan panggil _on_attacker_hit di sini.
+	# Penyaring "ini peluru hero": bullet_type "normal" juga dipakai minion,
+	# boss, dan nexus, jadi yang dicek adalah adanya inventory item.
+	if dealt > 0.0 and source != null and is_instance_valid(source):
+		var sinv = source.get("items")
+		if sinv != null and sinv.has_method("on_attack_hit"):
+			sinv.on_attack_hit(target, dealt)
 
 	var st = target.get("status")
 	match bullet_type:

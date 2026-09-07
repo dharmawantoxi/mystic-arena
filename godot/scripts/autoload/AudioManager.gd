@@ -50,6 +50,21 @@ const THROTTLE_DEFAULT := 50
 ## Godot terdengar ~43% lebih keras daripada pygame.
 const MASTER_VOLUME := 0.7
 
+## Volume kategori 'ambient' pygame (SoundManager.ambient_volume
+## _system.py:497). Sengaja TIDAK dibaca dari SaveManager: pygame juga tidak
+## punya slider ambient, hanya master/sfx/bgm.
+const AMBIENT_VOLUME := 0.25
+## Nama berkas ambient satu-satunya di repo pygame
+## (load_all: load('ambient_forest', 'ambient_forest.wav', 'ambient')
+## _system.py:551, dipanggil main.py:164).
+const AMBIENT_TRACK := "ambient_forest"
+## volume_mult di call site main.py:164 — play_ambient(..., volume_mult=0.8)
+const AMBIENT_MULT := 0.8
+## fade_ms pygame: masuk 2000 ms (channel.play fade_ms=2000, _system.py:704),
+## keluar 1500 ms (stop_ambient fade_ms=1500, _system.py:706-710).
+const AMBIENT_FADE_IN := 2.0
+const AMBIENT_FADE_OUT := 1.5
+
 # ══════════════════════════════════════════════════════════
 #  SUARA TEMPUR — port mobile/combat_audio.py (skema v35)
 # ══════════════════════════════════════════════════════════
@@ -78,6 +93,14 @@ var sfx_volume: float = 0.6
 var bgm_volume: float = 0.35
 
 var _bgm_player: AudioStreamPlayer = null
+## Player ambient TERPISAH dari BGM — paritas pygame yang memakai
+## ambient_channel sendiri (_system.py:504/701) supaya musik dan suara
+## lingkungan bisa hidup bersamaan dan di-fade sendiri-sendiri.
+var _ambient_player: AudioStreamPlayer = null
+## Tween fade ambient yang sedang jalan; disimpan supaya start cepat setelah
+## stop tidak diserobot fade lama (tween Godot tetap jalan walau player
+## sudah di-play ulang).
+var _ambient_tween: Tween = null
 var _sfx_players: Array = []
 var _streams: Dictionary = {}
 var _last_played_ms: Dictionary = {}
@@ -96,6 +119,9 @@ func _ready() -> void:
 	_bgm_player = AudioStreamPlayer.new()
 	_bgm_player.name = "BGM"
 	add_child(_bgm_player)
+	_ambient_player = AudioStreamPlayer.new()
+	_ambient_player.name = "Ambient"
+	add_child(_ambient_player)
 	# Pool 16 kanal SFX (pygame: mixer 32 kanal; 16 cukup untuk suara tempur
 	# yang sudah dibatasi anggaran 4/frame + throttle per jenis).
 	for i in range(16):
@@ -103,6 +129,8 @@ func _ready() -> void:
 		p.name = "SFX%d" % i
 		add_child(p)
 		_sfx_players.append(p)
+	# Loop ambient dikendalikan sendiri (lihat _on_ambient_finished).
+	_ambient_player.finished.connect(_on_ambient_finished)
 	_scan_sounds()
 	apply_settings()
 
@@ -157,6 +185,8 @@ func apply_settings() -> void:
 ## slider SETTINGS tidak memicu I/O per frame.
 func _apply_playing_volumes() -> void:
 	_bgm_player.volume_db = _db(MASTER_VOLUME * bgm_volume)
+	if _ambient_player != null and _ambient_player.playing:
+		_ambient_player.volume_db = _ambient_db()
 	for p in _sfx_players:
 		p.volume_db = _db(MASTER_VOLUME * sfx_volume)
 
@@ -216,6 +246,81 @@ func pause_bgm(paused: bool) -> void:
 	# menyala ulang aneh — menu PAUSE tetap ingin musik pelan (pygame juga
 	# hanya mem-pause BGM saat menu pause, bukan mematikannya).
 	_bgm_player.stream_paused = paused
+
+
+# ══════════════════════════════════════════════════════════
+#  AMBIENT LOOP — port SoundManager.play_ambient (_system.py:688-710)
+# ══════════════════════════════════════════════════════════
+# pygame memutar 'ambient_forest' sekali saat masuk match (main.py:164) di
+# kanal khusus, loop tanpa henti, volume master × ambient_volume × 0.8.
+# Di Godot: AudioStreamPlayer sendiri + loop dipaksa lewat finished ->
+# play() (stream .wav hasil import belum tentu punya loop=true, jadi jangan
+# bergantung pada properti resource).
+#
+# CATATAN: play_positional (_system.py:615-629) SENGAJA tidak diport —
+# tidak ada satu pun call site di repo pygame, jadi itu dead code.
+
+## Volume akhir ambient dalam dB (master × ambient × volume_mult call site).
+func _ambient_db(mult: float = AMBIENT_MULT) -> float:
+	return _db(MASTER_VOLUME * AMBIENT_VOLUME * mult)
+
+
+## Mulai loop ambient. GameManager.start_level() memanggilnya tiap masuk
+## match, sama seperti main.py:164 yang memanggil sekali saat game mulai.
+## Kalau track sudah berbunyi, panggilan berikutnya diabaikan (pygame
+## menghentikan kanal lama lalu memutar ulang; di sini tidak perlu karena
+## track-nya cuma satu dan restart bikin loop "meloncat").
+func play_ambient(track_name: String = AMBIENT_TRACK, volume_mult: float = AMBIENT_MULT) -> void:
+	if not _sounds_available or not _streams.has(track_name):
+		# HOOK sama seperti play_bgm: aset belum disalin -> jangan error.
+		print("[AudioManager] ambient '%s' belum tersedia (aset belum disalin)" % track_name)
+		return
+	if _ambient_player.playing and _ambient_player.stream == _streams[track_name]:
+		return
+	_kill_ambient_tween()
+	_ambient_player.stream = _streams[track_name]
+	var target := _ambient_db(volume_mult)
+	# fade-in 2 detik (pygame fade_ms=2000): mulai pelan lalu naik.
+	_ambient_player.volume_db = target - 18.0
+	_ambient_player.play()
+	_ambient_tween = create_tween()
+	_ambient_tween.tween_property(_ambient_player, "volume_db", target, AMBIENT_FADE_IN)
+
+
+## Loop manual: sinyal finished -> putar lagi (pygame loops=-1).
+## Disambung di _ready supaya berlaku untuk semua track ambient.
+func _on_ambient_finished() -> void:
+	if _ambient_player.stream != null:
+		_ambient_player.play()
+
+
+## Paritas stop_ambient(fade_ms=1500) — dipanggil GameManager.end_match()
+## dan return_to_menu(), pasangan dari stop_bgm().
+func stop_ambient(fade_sec: float = AMBIENT_FADE_OUT) -> void:
+	if _ambient_player == null or not _ambient_player.playing:
+		return
+	_kill_ambient_tween()
+	_ambient_tween = create_tween()
+	_ambient_tween.tween_property(_ambient_player, "volume_db", -60.0, fade_sec)
+	_ambient_tween.tween_callback(_ambient_stop_now)
+
+
+func _ambient_stop_now() -> void:
+	_ambient_player.stop()
+	_ambient_player.volume_db = _ambient_db()
+
+
+## Hentikan fade yang sedang jalan supaya tidak dua tween menulis volume_db
+## player yang sama (mis. return_to_menu lalu start_level cepat).
+func _kill_ambient_tween() -> void:
+	if _ambient_tween != null and _ambient_tween.is_valid():
+		_ambient_tween.kill()
+	_ambient_tween = null
+
+
+## Ambient ikut senyap saat menu PAUSE (sama seperti pause_bgm).
+func pause_ambient(paused: bool) -> void:
+	_ambient_player.stream_paused = paused
 
 
 # ══════════════════════════════════════════════════════════
