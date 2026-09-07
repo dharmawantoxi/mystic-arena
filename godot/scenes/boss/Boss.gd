@@ -37,6 +37,8 @@ var custom_visual = null
 ## Flash putih hurt_flash_timer pygame (bosses/base_boss.py:6039, dibaca
 ## _draw_generic_body :6307) — lihat scripts/render/HurtFlash.gd
 var hurt_flash = null
+## Fase denyut aura true boss (paritas self.pulse base_boss.py:482/580)
+var _pulse: float = 0.0
 ## StatusEffects: boss kena slow/burn/stun menara (paritas TowerDebuffMixin di
 ## bosses/base_boss.py). Stun boss dipotong 55% supaya tidak di-stunlock.
 var status = null
@@ -112,6 +114,10 @@ func setup_visual(_s: Dictionary) -> void:
 func _physics_process(delta):
 	if is_dead:
 		return
+	if boss_class == "true":
+		# pygame: self.pulse += 0.1 tiap frame (base_boss.py:580) -> 6 rad/detik.
+		_pulse += delta * PULSE_SPEED
+		queue_redraw() # aura true boss menyala terus (lihat _draw)
 	if hurt_flash != null:
 		hurt_flash.tick(self, delta)
 	if status != null:
@@ -178,6 +184,67 @@ func _drive_visual(is_moving: bool) -> void:
 		silhouette.drive(anim_phase, act, ap, facing)
 	elif custom_visual != null and is_instance_valid(custom_visual) and custom_visual.has_method("drive"):
 		custom_visual.drive(anim_phase, act, ap, facing, is_moving, "", 0.016)
+
+
+# ══════════════════════════════════════════════════════════
+#  AURA TRUE BOSS (_draw_true_boss_aura bosses/base_boss.py:6351-6375)
+# ══════════════════════════════════════════════════════════
+# pygame menggambarnya SETIAP frame selama true boss hidup — bukan efek skill,
+# melainkan penanda kelas. Mini boss TIDAK punya ini. Resep pygame:
+#   pulse  = sin(self.pulse) * 0.3 + 0.7      (self.pulse += 0.1/frame :580)
+#   aura_r = radius + 15
+#   for r_off in range(aura_r, aura_r - 15, -2):        -> 8 lingkaran
+#       alpha = (aura_r - r_off) * 5 * pulse            -> 0,10,20..70 x pulse
+#
+# JEBAKAN YANG DIVERIFIKASI ULANG: `pygame.draw.circle` TIDAK melakukan alpha
+# blending — ia MENIMPA piksel (termasuk kanal alpha) di surface SRCALPHA.
+# Jadi 8 lingkaran itu bukan tumpukan yang makin pekat, melainkan gradien
+# BERPITA: tiap piksel memakai alpha lingkaran TERKECIL yang menutupinya, dan
+# bagian dalam (d <= aura_r - 14) rata di alpha 70 * pulse.
+# `draw_circle()` Godot sebaliknya MEM-BLEND; menyalinnya mentah-mentah
+# membuat pusat aura ~3x lebih pekat (144/255 vs 49/255 pada pulse 0,7 —
+# diukur di tools/test_boss_true_aura_parity.py). Karena itu di sini: satu
+# cakram inti + 7 cincin `draw_arc` selebar AURA_STEP yang TIDAK saling
+# menimpa, sehingga profil alpha-nya sama dengan pygame.
+#
+# Aura ability (`ability_active`) dan aura enrage (`is_enraged`) pygame belum
+# diport karena mekanik enrage/ability boss memang belum ada di Godot; begitu
+# diport, tempatnya di sini juga.
+#
+# Digambar di node Boss (bukan child) supaya otomatis BERADA DI BAWAH
+# Visual/Silhouette: CanvasItem menggambar dirinya dulu, anaknya belakangan.
+## rad/detik = 0.1 per frame pygame x 60 fps
+const PULSE_SPEED := 6.0
+## jumlah lingkaran pygame: range(aura_r, aura_r - 15, -2) -> 8
+const AURA_RINGS := 8
+const AURA_STEP := 2.0
+const AURA_MARGIN := 15.0
+## kenaikan alpha per langkah (0..70) sebelum dikali pulse, /255 -> 0..1
+const AURA_ALPHA_STEP := 5.0
+
+
+func _draw() -> void:
+	if is_dead or boss_class != "true":
+		return
+	var pulse := sin(_pulse) * 0.3 + 0.7
+	var aura_r := radius + AURA_MARGIN
+	# pygame memusatkan aura di (x, y) = TENGAH badan; origin unit Godot ada di
+	# telapak kaki (UnitSilhouette._draw), jadi digeser naik ke torso.
+	var center := Vector2(0.0, -radius * 0.7)
+	# 1) cakram inti: alpha maksimum, rata sampai aura_r - 14
+	var inner_r := aura_r - float(AURA_RINGS - 1) * AURA_STEP
+	var inner_a: float = float(AURA_RINGS - 1) * AURA_STEP * AURA_ALPHA_STEP * pulse / 255.0
+	draw_circle(center, inner_r, Color(fill_color.r, fill_color.g, fill_color.b, inner_a))
+	# 2) cincin luar, makin ke luar makin transparan (i = 0 alpha 0 -> dilewati)
+	for i in range(1, AURA_RINGS - 1):
+		var r_off := aura_r - float(i) * AURA_STEP
+		var a := (aura_r - r_off) * AURA_ALPHA_STEP * pulse / 255.0
+		if a <= 0.0:
+			continue
+		# draw_arc menaruh garis DI TENGAH radius -> mid = r_off - step/2
+		# menutup pita (r_off - step, r_off], persis satu langkah pygame.
+		draw_arc(center, r_off - AURA_STEP * 0.5, 0.0, TAU, 32,
+			Color(fill_color.r, fill_color.g, fill_color.b, a), AURA_STEP)
 
 
 static func _parse_color(v, fallback: Color) -> Color:
