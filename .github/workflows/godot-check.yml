@@ -118,15 +118,26 @@ jobs:
           else
             godot --headless --path godot --import 2>&1 | tee /tmp/import.log
           fi
-          if ! python3 godot/tools/godot_log_gate.py /tmp/import.log --label "import"; then
-            # DEBUG (sementara): taruh baris error pertama di commit status
-            # supaya bisa dibaca lewat API tanpa mengunduh log.
-            LINE="$(grep -m1 -E 'SCRIPT ERROR|Parse Error|Compile Error|Invalid|Cannot open|not found' /tmp/import.log | cut -c1-130)"
-            if [ -n "$LINE" ]; then
+          python3 godot/tools/godot_log_gate.py /tmp/import.log --label "import" > /tmp/gate.out 2>&1
+          RC=$?
+          cat /tmp/gate.out
+          if [ $RC -ne 0 ]; then
+            # DEBUG (sementara): taruh baris error di commit status supaya
+            # bisa dibaca lewat API tanpa mengunduh log (host log diblok
+            # di sandbox pengembang).
+            i=1
+            grep '|' /tmp/gate.out | sed 's/^[[:space:]]*[0-9]* |[[:space:]]*//' | head -3 | while read -r LINE; do
+              [ -z "$LINE" ] && continue
               gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
-                -f state=error -f context=import-error-detail -f description="$LINE" || true
-            fi
-            exit 1
+                -f state=error -f context="import-error-$i" \
+                -f description="$(printf '%s' "$LINE" | cut -c1-130)" || true
+              i=$((i+1))
+            done
+            # fallback: ekor log mentah kalau gate tidak sempat daftar baris
+            gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+              -f state=error -f context="import-error-tail" \
+              -f description="$(tail -5 /tmp/import.log | tr '\n' ' ' | cut -c1-130)" || true
+            exit $RC
           fi
 
       # ── 4. Smoke test yang sudah ada di repo (keduanya self-quit + PASS line) ──
