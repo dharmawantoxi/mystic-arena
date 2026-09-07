@@ -165,6 +165,15 @@ func apply_damage(target, amount: float, from_team: String = "",
 	var eff_school := DamageSchool.resolve(school, dmg_type, source)
 	var is_physical := DamageSchool.is_physical_hit(dmg_type, eff_school)
 
+	# ── 0. Tempest Veil: KEBAL total selama aktif ──
+	# Item aktif auto-trigger saat HP < 40% (hero_items.py:2188-2194). pygame
+	# memotong damage paling awal dan menampilkan "IMMUNE" alih-alih angka
+	# (_entity.py:4589-4600), jadi dicek sebelum mitigasi apa pun.
+	var tv = target.get("items")
+	if tv != null and tv.has_method("is_veiled") and tv.is_veiled():
+		_float_text(target, "IMMUNE", false)
+		return 0.0
+
 	# ── 1. buff penghindar ──
 	if st != null:
 		# Wind Wall (Kaizen W): projectile fisik dipantulkan mentah-mentah
@@ -225,6 +234,19 @@ func apply_damage(target, amount: float, from_team: String = "",
 			and str(source.get("team")) != str(target.get("team")):
 		apply_damage(source, maxf(1.0, floor(dealt * 0.25)), str(target.get("team")),
 			"normal", null, "")
+
+	# ── 8b. Thornmail (razor_carapace) — pantulkan reflect_pct damage ──
+	# Item aktif auto-trigger saat HP < 55% (hero_items.py:2266-2273). Sama
+	# seperti Bristleback di atas, `source` diputus (pakai "" bukan source)
+	# supaya pantulan tidak memantul balik jadi loop tak berujung.
+	var tinv = target.get("items")
+	if tinv != null and dealt > 0.0 and source != null and is_instance_valid(source) \
+			and source != target and str(source.get("team")) != str(target.get("team")) \
+			and tinv.has_method("get_active_reflect_pct"):
+		var rpct := float(tinv.get_active_reflect_pct())
+		if rpct > 0.0:
+			apply_damage(source, maxf(1.0, floor(dealt * rpct)),
+				str(target.get("team")), "normal", null, "")
 
 	# ── 9. lifesteal + cleave penyerang ──
 	if source != null and is_instance_valid(source) and dealt > 0.0:
@@ -320,6 +342,36 @@ func update_auras() -> void:
 		inv.aura_anti_heal = 0.0
 		inv.aura_burn_dps = 0.0
 		inv.aura_blind = 0.0
+		inv.aura_guard_block = 0.0
+	# ── Bulwark Guard lebih dulu, sebelum aura biasa ──
+	# pygame menghitungnya DULUAN dan terpisah dari Steel Aegis
+	# (hero_items.py:2774-2795): hero ber-scarlet_bulwark yang guard-nya
+	# menyala memberi block ke DIRINYA + sekutu dalam ally_radius.
+	# aura_guard_block sudah lama ada di ItemInventory.get_block() tapi tak
+	# pernah diisi siapa pun — nilainya selalu 0 sampai sekarang.
+	for u in all:
+		var ginv = u.get("items")
+		if ginv == null or not ginv.has_method("is_guarding") or not ginv.is_guarding():
+			continue
+		var gdb = ItemDB.get_item("scarlet_bulwark")
+		var gact = gdb.get("active")
+		if not (gact is Dictionary):
+			continue
+		var g_radius := float(gact.get("ally_radius", 320.0))
+		var g_team := str(u.get("team"))
+		var g_pos: Vector2 = u.global_position
+		for ally in all:
+			if str(ally.get("team")) != g_team:
+				continue
+			if (ally as Node2D).global_position.distance_to(g_pos) > g_radius:
+				continue
+			var ainv = ally.get("items")
+			if ainv == null:
+				continue
+			# block = base_block + max_hp_block_pct × Max HP sekutu
+			var amt := float(gact.get("base_block", 0.0)) \
+				+ float(gact.get("max_hp_block_pct", 0.0)) * float(ally.get("max_hp"))
+			ainv.aura_guard_block = maxf(float(ainv.aura_guard_block), amt)
 	# pancarkan
 	for u in all:
 		var inv = u.get("items")

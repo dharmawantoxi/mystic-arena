@@ -39,6 +39,12 @@ var burn_accum: float = 0.0
 var burn_tick_cd: float = BURN_TICK
 var burn_team: String = ""
 var stun_timer: float = 0.0
+## SILENCE — hanya memblokir skill QWER; korban tetap bisa bergerak &
+## menyerang biasa. Sengaja TERPISAH dari stun_timer: item Hexcraft
+## (hex_idol) memberi stun 150 DAN silence 150 sekaligus, dan Soul Rend
+## (sanguine_thorn) memberi silence TANPA stun — kalau digabung, Soul Rend
+## akan ikut membekukan target dan itu jauh lebih kuat dari pygame.
+var silence_timer: float = 0.0
 var armor_shred_amount: float = 0.0
 var armor_shred_timer: float = 0.0
 var dmg_amp_amount: float = 0.0
@@ -64,6 +70,7 @@ func clear() -> void:
 	burn_dps = 0.0; burn_timer = 0.0; burn_accum = 0.0
 	burn_tick_cd = BURN_TICK; burn_team = ""
 	stun_timer = 0.0
+	silence_timer = 0.0
 	armor_shred_amount = 0.0; armor_shred_timer = 0.0
 	dmg_amp_amount = 0.0; dmg_amp_timer = 0.0
 	heal_amp_amount = 0.0; heal_amp_timer = 0.0
@@ -174,6 +181,19 @@ func apply_stun(duration: float) -> void:
 		stun_timer = duration
 
 
+## Silence: blokir cast skill selama `duration` detik (paritas
+## _apply_silence_to hero_items.py — dipakai Soul Rend & Hexcraft).
+func apply_silence(duration: float) -> void:
+	if not _alive() or duration <= 0.0:
+		return
+	if duration > silence_timer:
+		silence_timer = duration
+
+
+func is_silenced() -> bool:
+	return silence_timer > 0.0
+
+
 ## Debuff menara dalam satu panggilan (dipakai TowerBullet.on_hit)
 func apply_debuff(kind: String, amount: float, duration: float,
 		source_team: String = "") -> void:
@@ -188,6 +208,7 @@ func apply_debuff(kind: String, amount: float, duration: float,
 		"heal_amp": apply_heal_amp(amount, duration)
 		"blind": apply_blind(amount, duration)
 		"stun": apply_stun(duration)
+		"silence": apply_silence(duration)
 
 
 # ══════════════════════════════════════════════════════════
@@ -356,6 +377,8 @@ func tick(delta: float) -> void:
 			anti_heal_amount = 0.0
 	if stun_timer > 0.0:
 		stun_timer -= delta
+	if silence_timer > 0.0:
+		silence_timer -= delta
 	if armor_shred_timer > 0.0:
 		armor_shred_timer -= delta
 		if armor_shred_timer <= 0.0:

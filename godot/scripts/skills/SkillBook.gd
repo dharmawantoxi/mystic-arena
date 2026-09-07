@@ -186,8 +186,12 @@ func cast(key: String) -> bool:
 		return false
 	if not is_ready(key):
 		return false
-	# Stun membatalkan cast (paritas Hero.cast_skill: `if self.is_stunned: return`)
+	# Stun DAN silence membatalkan cast. Silence (item Soul Rend / Hexcraft)
+	# hanya mengunci skill — korban tetap bisa jalan & serang biasa, jadi
+	# dicek terpisah dari stun (paritas hero_items._apply_silence_to).
 	var st = hero.get("status")
+	if st != null and st.has_method("is_silenced") and st.is_silenced():
+		return false
 	if st != null and st.has_method("is_stunned") and st.is_stunned():
 		return false
 	var ok := false

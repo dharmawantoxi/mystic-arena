@@ -199,6 +199,11 @@ func _physics_process(delta):
 		status.tick(delta)
 	if skills != null:
 		skills.tick(delta)
+	# Item aktif auto-trigger (paritas inv.update(1, enemies) _entity.py:3801).
+	# 17 item "aktif" pygame tidak punya tombol — semuanya terpicu sendiri
+	# dari HP/jumlah musuh/target, jadi cukup dipanggil di sini.
+	if items != null:
+		items.tick(delta)
 	attack_timer = maxf(0.0, attack_timer - delta)
 	combat_timer = maxf(0.0, combat_timer - delta)
 	anim_phase += delta * 6.0  # phase untuk Skeleton2D (breath + stride)
@@ -411,6 +416,12 @@ func take_damage(amount: float, from_team: String, dmg_type: String = "normal",
 	CombatSystem.apply_damage(self, amount, from_team, dmg_type, source, school)
 	if hp < before:
 		_flash()
+		# Hook item yang bereaksi saat pemilik KENA damage — Static Charge
+		# (thunder_coil) proc 20% di sini, bukan saat menyerang
+		# (paritas on_damage_taken hero_items.py:2440-2457). Dipanggil dengan
+		# damage yang benar-benar mengurangi HP (setelah armor/block/shield).
+		if items != null:
+			items.on_damage_taken(before - hp)
 	if hp <= 0:
 		die(source)
 	update_ui()
