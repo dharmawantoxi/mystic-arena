@@ -96,7 +96,10 @@ func apply_slow(amount: float, duration: float) -> void:
 		amount *= 1.0 - float(owner.items.get_slow_resist())
 	# Boss tenacity (base_boss.py Boss.apply_slow 528-538): magnitude &
 	# durasi dipotong 50%, magnitude maks 35% (0.35).
-	if owner != null and str(owner.get("boss_class", "")) != "":
+	# Catatan: `owner` bisa Node (Boss/Hero/Minion). Object.get() hanya
+	# menerima SATU argumen — jangan pakai get("boss_class", "") (error
+	# runtime); cek keberadaan properti dulu lewat operator `in`.
+	if owner != null and "boss_class" in owner and str(owner.get("boss_class")) != "":
 		amount = minf(0.35, amount * (1.0 - 0.50))
 		duration *= 0.5
 	if amount > slow_amount or slow_timer < duration:
@@ -108,7 +111,7 @@ func apply_attack_slow(amount: float, duration: float) -> void:
 	if not _alive():
 		return
 	# Boss tenacity untuk atk_slow (base_boss.py apply_debuff 540-550)
-	if owner != null and str(owner.get("boss_class", "")) != "":
+	if owner != null and "boss_class" in owner and str(owner.get("boss_class")) != "":
 		amount = minf(0.35, amount * (1.0 - 0.50))
 		duration *= 0.5
 	if amount > atk_slow_amount or atk_slow_timer < duration:
