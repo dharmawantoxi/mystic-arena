@@ -53,6 +53,17 @@ func _boot() -> void:
 
 	_expect(GameManager.state == "playing", "Level 1 must enter playing state")
 
+	# Fase 3: bake map statik (tekstur tunggal dari renderer pygame) harus
+	# AKTIF — asetnya ikut repo, jadi headless CI pun wajib memakainya dan
+	# bukan fallback prosedural.
+	var amap = get_tree().get_first_node_in_group("arena_map")
+	_expect(amap != null, "ArenaMap must be in group arena_map")
+	if amap != null:
+		_expect(amap.procedural_fallback == false,
+				"static map bake must be active (procedural_fallback == false)")
+		_expect(amap._baked_map != null and amap._baked_map.visible,
+				"BakedMap sprite must exist and be visible")
+
 	# Fase 5d: level intro kini membekukan gameplay sampai SPACE/ENTER/klik.
 	# Smoke test butuh combat berjalan -> skip lewat jalur input Main.
 	var intro = _main.get("_level_intro")

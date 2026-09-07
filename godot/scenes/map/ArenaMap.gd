@@ -1,13 +1,22 @@
 # ArenaMap.gd — Port dari map_components/ + _render.MapRenderer
 # Di Pygame: 6 layer blit manual (terrain, river, lane, decor, shop, wall) + cache static_map
-# Di Godot: TileMapLayer GPU + Parallax + Light2D — 0 blit manual, semua batched
+# Di Godot (Fase 3): SATU tekstur statik per tema — bake output pygame sendiri
+# (_render.MapRenderer._render_static_map via tools/convert_to_godot.py --maps-png),
+# ditampilkan lewat Sprite2D + cache GPU. Cuaca (partikel+kabut) & layer dinamis
+# tetap digambar live di atasnya, persis urutan draw pygame.
 #
-# PENTING (kenapa dulu layar hitam): TileMapLayer Ground/River/Lanes/Decor belum
-# punya TileSet (res://assets/tilesets/*.tres belum dibuat — Fase 3 roadmap), jadi
-# scene utama tidak menggambar apa-apa sama sekali. Sementara TileSet belum ada,
-# map digambar prosedural di _draw() memakai palette ASLI dari
+# Kenapa tekstur tunggal, bukan TileSet .tres (rencana awal Fase 3)? Diukur:
+# 533 dari 576 sel 40px di 1280x720 adalah tile UNIK (speckle terrain + kurva
+# river/lane) — atlas TileSet akan sama besar dengan peta itu sendiri dan
+# TileMapLayer 576 sel hanya menambah overhead. Arsitektur pygame sendiri =
+# satu Surface statik di-cache lalu blit tiap frame (_render.py:141/196);
+# padanan persisnya di Godot ya Texture2D + Sprite2D ini. Paritas sempurna
+# dengan konstruksi karena bake memakai renderer asli.
+#
+# JARING PENGAMAN: selama bake belum ada (converter belum dijalankan), map
+# digambar prosedural di _draw() memakai palette ASLI dari
 # map_components/themes.py + lane path dari PathGenerator.generate_lanes().
-# Begitu TileSet di-assign, fallback otomatis mati.
+# apply_theme() menyalakan fallback ini otomatis kalau tekstur tidak ketemu.
 #
 # TEMA PER LEVEL: const THEMES di bawah hanya 4 palet kurasi manual
 # (forest/desert/ice/abyss) — itu yang bikin level >= 3 semua jatuh ke fallback
@@ -27,10 +36,6 @@ extends Node2D
 ## true = gambar fallback prosedural; otomatis false begitu Ground punya TileSet
 @export var procedural_fallback: bool = true
 
-@onready var ground: TileMapLayer = $Ground
-@onready var river: TileMapLayer = $River
-@onready var lanes: TileMapLayer = $Lanes
-@onready var decor: TileMapLayer = $Decor
 @onready var light: DirectionalLight2D = $SunLight
 @onready var canvas_modulate: CanvasModulate = $CanvasModulate
 
@@ -163,6 +168,8 @@ var _fog_tex: Texture2D = null
 
 var _particles: CPUParticles2D = null
 var _fog: CPUParticles2D = null
+## Sprite2D map statik bake (Fase 3); null sampai bake pertama kali ketemu.
+var _baked_map: Sprite2D = null
 
 var _decor_points: PackedFloat32Array = PackedFloat32Array() # [x, y, size, kind] x N
 ## kind 2/3 hanya muncul kalau tema punya kristal / nisan (flag has_* pygame)
@@ -266,17 +273,45 @@ func apply_theme(t: String):
 	if light:
 		light.color = d["light"]
 		light.energy = d["energy"]
-	# Load TileSet tema kalau ada (Fase 3). Kalau ketemu, fallback prosedural mundur
-	# teratur supaya tidak ada gambar dobel.
-	var ts_path = "res://assets/tilesets/%s.tres" % t
-	if ResourceLoader.exists(ts_path) and ground:
-		ground.tile_set = load(ts_path)
+	# Fase 3: bake map statik pygame (lihat header). Tekstur ada = tekstur itu
+	# sendiri yang jadi map (paritas sempurna, satu blit — padanan cache
+	# static_map pygame); tidak ada = fallback prosedural menggambar sendiri.
+	var bake_path := "res://assets/maps/%s.png" % t
+	if ResourceLoader.exists(bake_path):
+		_show_baked_map(bake_path)
 		procedural_fallback = false
+	else:
+		_hide_baked_map()
+		procedural_fallback = true
 	# Cuaca ikut tema: particle_type + fog_* dari themes.json (data itu sudah
 	# lama ada di pygame tapi belum pernah dipakai port ini).
 	_apply_weather(d)
-	_build_decor()
+	# Dekor hanya perlu dibangkitkan untuk fallback prosedural — pada bake
+	# dekor sudah terpanggang di dalam tekstur.
+	if procedural_fallback:
+		_build_decor()
 	queue_redraw()
+
+## Pasang tekstur map statik hasil bake converter sebagai Sprite2D (anak
+## pertama, di bawah partikel cuaca). Lazy-create supaya _ready tidak perlu
+## menyentuh aset yang boleh belum ada.
+func _show_baked_map(path: String) -> void:
+	var tex = load(path)
+	if tex == null:
+		push_warning("[ArenaMap] bake %s gagal dimuat — fallback prosedural" % path)
+		return
+	if _baked_map == null:
+		_baked_map = Sprite2D.new()
+		_baked_map.name = "BakedMap"
+		_baked_map.centered = false # piksel (0,0) bake = sudut arena, sama dengan _draw()
+		add_child(_baked_map)
+		move_child(_baked_map, 0)
+	_baked_map.texture = tex
+	_baked_map.visible = true
+
+func _hide_baked_map() -> void:
+	if _baked_map != null:
+		_baked_map.visible = false
 
 # ══════════════════════════════════════════════════════════
 #  CUACA: partikel atmosfer + kabut per tema

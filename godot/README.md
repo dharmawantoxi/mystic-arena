@@ -17,6 +17,8 @@ Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 
 
 **Cinematic juga sudah diport** (Fase 5d, 2026-09-07): layar intro split-screen sebelum tiap level (pause sampai SPACE/ENTER/klik), banner nama boss yang meluncur saat mini/true boss turun, dan urutan kematian boss — ledakan + dissolve + pecahan, ditutup perayaan "BOSS DEFEATED!" untuk true boss. Lihat bagian "Cinematic (Fase 5d)" di bawah.
 
+**Map kini bake dari renderer pygame sendiri** (Fase 3, 2026-09-07): `tools/convert_to_godot.py --maps-png` membake 6 layer `static_map` (terrain+details, river, 3 lane, dekor, shop, border wall) jadi SATU tekstur 1280×720 per tema — 54 tema, ±3,2 MB di `assets/maps/` — lalu `ArenaMap` menampilkannya lewat Sprite2D (padanan persis arsitektur cache `static_map` + blit pygame). Paritas sempurna dengan konstruksi; fallback prosedural tetap hidup sebagai jaring kalau bake belum ada. Lihat bagian "Bake map statik (Fase 3)" di bawah.
+
 ## Quick Start
 
 ```bash
@@ -74,6 +76,10 @@ crash: memang tidak ada satu node pun yang menggambar. Yang hilang (dan sekarang
    menggambar terrain/lane/river/base/toko/decor prosedural memakai palette asli
    `map_components/themes.py` (54 tema via `data/themes.json`). Begitu
    `assets/tilesets/<tema>.tres` di-import, fallback otomatis mati.
+   *(Update Fase 3, 2026-09-07: rencana TileSet `.tres` diganti **bake tekstur tunggal** —
+   diukur 533/576 sel 40px unik sehingga atlas TileSet sama besar dengan peta sendiri.
+   `--maps-png` membake `assets/maps/<tema>.png`; `apply_theme()` menampilkannya sebagai
+   Sprite2D `BakedMap`, fallback otomatis mati, dan 4 TileMapLayer kosong dihapus dari .tscn.)*
 3. `Camera2D` ada di (0,0), padahal arena 0..1280 × 0..720 → isi arena (mis. base Radiant di
    y=620) berada di luar view. → kamera dipusatkan ke (640,360) + `limit_*` dikunci ke ukuran arena.
 4. `Boss.tscn` tidak punya visual sama sekali (AnimatedSprite2D kosong, partikel tanpa material) →
@@ -229,6 +235,9 @@ itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan
   (Fase 5, lihat bagian "Strip bake 222 unit" di atas). **Ikut repo** — bukan duplikat
   file yang sudah ada (suara) melainkan satu-satunya salinan visual ter-bake; tanpa ini
   arena kembali ke `UnitSilhouette`, bukan error.
+- `godot/assets/maps/*.png` + `godot/data/map_bakes.json` — bake map statik 54 tema
+  (Fase 3, lihat bagian "Bake map statik (Fase 3)" di bawah). **Ikut repo** dengan alasan
+  yang sama; tanpa ini `ArenaMap` mundur ke gambar prosedural, bukan error.
 - `godot/assets/sounds/*.wav` — **di-gitignore** (duplikat 15 MB dari `assets/sounds/`, sumber
   kebenaran tetap di sana). Jalankan converter setelah clone, kalau belum `AudioManager`
   no-op + log sekali dan game tetap jalan tanpa suara.
@@ -346,6 +355,37 @@ terdokumentasi, lalu stabil (446 file identik antar dua run penuh).
 File penting: `scripts/render/BakedUnitDB.gd` (manifest + tekstur lazy,
 FIFO cap 64), `scenes/render/BakedSprite.tscn` + `.gd` (SpriteFrames
 dibangun runtime via AtlasTexture — tanpa 222 file .tres).
+
+## Bake map statik (Fase 3 — tekstur tunggal, TileSet ditinggalkan)
+
+Rencana awal Fase 3 = `TileMapLayer` + `TileSet` `.tres` per tema. Diukur
+dulu sebelum membangun: map statik pygame di-grid 40px (ukuran tile
+`draw_terrain`) menghasilkan **533 tile unik dari 576 sel** 1280×720 —
+speckle terrain + kurva river/lane membuat hampir semua sel berbeda, jadi
+atlas TileSet akan sama besar dengan peta itu sendiri dan 576 sel TileMapLayer
+hanya menambah overhead. Arsitektur pygame sendiri adalah SATU Surface
+`static_map` di-cache lalu di-blit tiap frame (`_render.py:141/196`); padanan
+persisnya di Godot = satu `Texture2D` + `Sprite2D` (1 draw call, di-cache GPU).
+
+`tools/convert_to_godot.py --maps-png` (ikut batch default) membake
+`_render.MapRenderer._render_static_map()` — 6 layer dalam urutan persis game
+(terrain+details, river, 3 lane, dekor, shop, border wall) — untuk 54 tema ke
+`godot/assets/maps/<tema>.png` (opaque 1280×720, palet 256 warna, total ±3,2 MB)
++ manifest `godot/data/map_bakes.json`. `ArenaMap.apply_theme()` memuat tekstur
+kalau ada (Sprite2D `BakedMap`, `procedural_fallback = false`); kalau belum ada,
+fallback prosedural lama menggambar sendiri — jadi port jalan bahkan sebelum
+converter dijalankan, sama seperti pola `UnitSilhouette`.
+
+Determinisme: game aslinya mengacak speckle/jitter dekor (dua `random.seed()`
+tanpa argumen di `_bundle.py:4889/:5074` — tiap match beda). Bake membekukan
+kedua re-seed itu ke `MAP_BAKE_SEED` (pola "jam virtual" Fase 5) supaya dua run
+converter byte-identik; distribusinya identik dengan game. Layer yang tetap
+prosedural/live di Godot: cuaca (partikel + kabut, di atas tekstur — urutan yang
+sama dengan pygame), `CanvasModulate`/`Light2D` (tint ambient), dan lane path
+untuk gameplay (`get_lane_path`/`get_river_path` — AI/minion, bukan visual).
+4 `TileMapLayer` kosong yang dulu placeholder dihapus dari `ArenaMap.tscn`.
+`BattleSmokeTest` meng-assert bake aktif di headless CI
+(`procedural_fallback == false` + `BakedMap` visible).
 
 ## Cinematic (Fase 5d — intro level, banner boss, kematian boss)
 

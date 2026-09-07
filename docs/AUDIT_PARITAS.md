@@ -96,6 +96,19 @@ dari grep literal:
 lagi "data mati", melainkan fitur yang memang belum diport (Fase 5b item aktif,
 AIPlayer penuh, TileSet `.tres`).
 
+**Update 2026-09-07 (Fase 3 ditutup):** sisa item "TileSet `.tres`" ditutup lewat
+penggantian metode yang terukur: map statik pygame di-grid 40px menghasilkan
+533/576 tile unik di 1280×720, jadi atlas TileSet sama besar dengan peta itu
+sendiri dan TileMapLayer hanya overhead. Padanan setia arsitektur pygame
+(`static_map` cache + blit tiap frame, `_render.py:141/196`) adalah satu
+`Texture2D` + `Sprite2D`. Bake memakai renderer pygame ASLI
+(`_render.MapRenderer._render_static_map`, 6 layer urutan persis game) → paritas
+sempurna dengan konstruksi, bukan port prosedural yang bisa melenceng; fallback
+prosedural lama tetap hidup sebagai jaring pengaman dan `BattleSmokeTest`
+meng-assert bake aktif di headless CI. Re-seed entropi pygame
+(`_bundle.py:4889/:5074` — game memang mengacak speckle/jitter tiap match)
+dibekukan ke seed tetap supaya bake reproducible.
+
 **Update 2026-09-07 (Fase 5d):** cinematic intro/celebration selesai diport —
 `entrance_color` (tabel B) kini dipakai `LevelIntro/BossIntroBanner/BossDeathFX`,
 layar intro boss & kematian boss `_render.py:1622-3300` tidak lagi "belum diport".
