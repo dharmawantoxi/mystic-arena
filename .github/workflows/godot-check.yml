@@ -1,0 +1,86 @@
+name: Godot check
+
+# Lint statis + Godot headless. Exit code Godot sering 0 meski ada
+# SCRIPT ERROR — godot/tools/godot_log_gate.py yang menggagalkan job.
+
+on:
+  push:
+    paths:
+      - "godot/**"
+      - ".github/workflows/godot-check.yml"
+  pull_request:
+    paths:
+      - "godot/**"
+      - ".github/workflows/godot-check.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: godot-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint statis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: tscn_lint
+        run: python3 godot/tools/tscn_lint.py godot
+      - name: check_refs
+        run: python3 godot/tools/check_refs.py godot
+      - name: particles_lint
+        run: python3 godot/tools/particles_lint.py godot
+
+  headless:
+    name: Import + smoke headless
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Godot
+        run: |
+          set -euo pipefail
+          GODOT_VERSION=4.3-stable
+          curl -fsSL -o godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v4.3-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo install -m 755 Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version
+
+      - name: Import project
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -o pipefail
+          godot --headless --path godot --editor --import --quit 2>&1 | tee import.log || true
+          python3 godot/tools/godot_log_gate.py import.log --label import --require ""
+
+      - name: AIPlayerTest
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/AIPlayerTest.tscn --quit-after 120 2>&1 | tee ai.log || true
+          python3 godot/tools/godot_log_gate.py ai.log --label AIPlayerTest --require "[AIPlayerTest] PASS"
+
+      - name: BattleSmokeTest
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/BattleSmokeTest.tscn --quit-after 180 2>&1 | tee smoke.log || true
+          python3 godot/tools/godot_log_gate.py smoke.log --label BattleSmokeTest --require "[BattleSmokeTest] PASS"
+
+      - name: Unggah log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-headless-logs
+          path: |
+            import.log
+            ai.log
+            smoke.log
+          if-no-files-found: ignore
+          retention-days: 7
