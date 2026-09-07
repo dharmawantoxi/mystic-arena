@@ -1,6 +1,15 @@
 # Mystic Arena — Godot Edition
 
-Port GPU dari versi `pygame-ce`. **Baseline visual = silhouette pygame** (`scripts/render/UnitSilhouette.gd`: circle/polygon, 0 sprite, 0 tulang); Kaizen sudah "naik kelas" — terdaftar di `RendererRegistry.HERO`, jadi di arena ia tampil sebagai rig `Skeleton2D` 19 tulang + shader hamon + wind ribbon, sementara 221 hero lain tetap silhouette.
+Port GPU dari versi `pygame-ce`. **Visual 222 unit kini hasil bake renderer
+pygame asli** (Fase 5, Opsi A): `tools/convert_to_godot.py --units-png`
+me-render 6 hero masterwork + 216 boss lewat choke point cache sprite game
+(`_call_renderer_on_canvas`, `heroes/__init__.py:1729`) menjadi strip PNG
+per unit di `assets/units/`, lalu `BakedSprite` (scene generik + manifest
+`data/baked_units.json`) mengirisnya jadi animasi idle/walk/attack — jadi
+pose, warna, dan proporsi identik dengan pygame tanpa port ribuan baris
+renderer per boss. Kaizen tetap tertinggi kelasnya: rig `Skeleton2D` 19
+tulang + shader hamon via `RendererRegistry.HERO` (urutan lookup: rig
+custom > strip bake > `UnitSilhouette`).
 
 Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 slot bangun**, **nexus/castle dengan shield → menang/kalah**, **skill QWER**, **toko item 6 slot (33 item)**, dan **ekonomi identik pygame** (3 gold/s + 0.3/level, pengali difficulty, milli-gold). Lihat bagian "Gameplay yang sudah diport" di bawah.
 
@@ -147,10 +156,13 @@ exit code editor saja tidak cukup karena Godot bisa tetap keluar dengan kode 0.
 - `godot/data/*.json` — hasil convert, dibaca `HeroDB`/`BossDB`/`ArenaMap`. Ikut repo (bukan
   gitignore), jadi port jalan tanpa menjalankan converter dulu; `themes.json` tidak ada →
   `ArenaMap` mundur ke 4 palet const `THEMES`.
+- `godot/assets/units/*.png` + `godot/data/baked_units.json` — strip bake 222 unit
+  (Fase 5, lihat bagian "Strip bake 222 unit" di atas). **Ikut repo** — bukan duplikat
+  file yang sudah ada (suara) melainkan satu-satunya salinan visual ter-bake; tanpa ini
+  arena kembali ke `UnitSilhouette`, bukan error.
 - `godot/assets/sounds/*.wav` — **di-gitignore** (duplikat 15 MB dari `assets/sounds/`, sumber
   kebenaran tetap di sana). Jalankan converter setelah clone, kalau belum `AudioManager`
   no-op + log sekali dan game tetap jalan tanpa suara.
-- `godot/assets/heroes/<hero>/SpriteFrames.tres` — buat dari Aseprite: `File → Export Sprite Sheet` → import ke Godot `AnimatedSprite2D`.
 - `godot/assets/shaders/outline.gdshader` — outline 1-pass + hit flash + rim light (ganti 5 blit manual pygame).
 - `godot/shaders/hamon.gdshader` — hamon temper katana Kaizen (wave + temper cloud + attack pulse).
 
@@ -159,15 +171,82 @@ exit code editor saja tidak cukup karena Godot bisa tetap keluar dengan kode 0.
 Default arena: `scripts/render/UnitSilhouette.gd` — shadow, kaki, torso, kepala, senjata kit
 (hash `hero_type`), flash hit. Godot 4.3-safe (tanpa `draw_ellipse`).
 
-Custom per unit: isi `scripts/render/RendererRegistry.gd` — **Kaizen sudah terdaftar**:
+Urutan lookup `RendererRegistry` sejak Fase 5 (semua di
+`scripts/render/RendererRegistry.gd`):
 
-```
-const HERO := {
-    "kaizen": preload("res://scenes/hero/kaizen/KaizenSkeleton.tscn"),
-}
-```
+1. **Scene custom** (`HERO`/`BOSS` dict) — rig hand-made menang selalu.
+   Kaizen terdaftar:
+   ```
+   const HERO := {
+       "kaizen": preload("res://scenes/hero/kaizen/KaizenSkeleton.tscn"),
+   }
+   ```
+2. **Strip bake** (`BakedUnitDB.has_unit`) — 222 unit hasil
+   `tools/convert_to_godot.py --units-png` memakai scene generik
+   `scenes/render/BakedSprite.tscn`.
+3. **UnitSilhouette** — fallback kalau 1 dan 2 tidak ada (mis. clone
+   tanpa hasil bake).
+
+Custom per unit: isi `scripts/render/RendererRegistry.gd` — satu baris
+preload per hero, otomatis mengungguli strip bake.
 
 Kalau key tidak ada, tetap silhouette. Gameplay (`Hero.gd` AI/damage/skill) tidak berubah — `Hero._drive_visual()` memanggil `drive(phase, action, attack_progress, facing, is_moving, skill, delta)` tiap frame, jadi skill QWER Kaizen ikut menggerakkan tulang (Steel Wind / Dash Strike / Wind Wall / Sweep / Tornado).
+
+## Strip bake 222 unit (Fase 5 — Opsi A)
+
+**Kenapa bake PNG, bukan port renderer prosedural per-hero ke GDScript?**
+216 renderer boss (`bosses/level1..54.py`) + 6 hero masterwork
+(`heroes/_bundle.py`, 16.723 baris) tidak realistis di-port 1:1 (Bulan +
+tidak bisa diverifikasi paritasnya). Bake memakai **renderer pygame asli**
+sebagai sumber kebenaran, jadi geometri/warna/pose tidak bisa drift.
+
+```bash
+# Hasil: godot/assets/units/<type>.png (222 strip, ±6,5 MB, ikut repo)
+#        + godot/data/baked_units.json (manifest: frame/anchor/skala/fps)
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+    ~/.venv-mystic/bin/python tools/convert_to_godot.py --units-png
+# --only gornak,sylara = debug 1 unit (manifest TIDAK ditimpa)
+```
+
+Per unit, strip berisi grid **[idle 8 | walk 8 | attack 8]** frame, 8
+frame per baris (lebar maks 2.216 px — aman untuk batas tekstur 4096 px
+GPU mobile), **anchor = telapak kaki** yang diratakan antar frame saat
+bake (AnimatedSprite2D cuma punya satu offset untuk semua frame).
+Mekanika pose mengikuti pygame persis:
+
+| Aspek | Sumber pygame | Implementasi bake |
+|---|---|---|
+| fase idle/walk | `int(pulse*2) % 8` (`heroes/__init__.py:1777`, `HERO_ANIM_PHASES` `:1483`) | 8 sampel pulse rata |
+| deteksi jalan | `_detect_moving` delta > 0.3 px (`bosses/level1.py:947-962`) | probe digeser 1.4 px/frame |
+| pose serang | **mode manual** controller — "alat preview/tes ... hormati" (`bosses/level1.py:873-898`) | set `_XX_attack_progress` per frame |
+| frame serang | diturunkan dari sisa timer, bukan jam (`bosses/level1.py:841-842`) | `drive()` memaksa frame dari `attack_progress` |
+| skala hero lane | `_get_hero_scale` (`heroes/__init__.py:2148`, target tinggi 65 × global 0.78) | `hero_scale` di manifest → `sprite.scale` |
+| skala boss | native 1.0 (`heroes/__init__.py:2873-2878`) | `boss_scale: 1.0` |
+| fps idle/walk | fase baru tiap 10 frame hero / 5 frame boss (`_entity.py:1681` vs `base_boss.py:580`) | 6 fps hero / 12 fps boss |
+| outline+rim | `_finish_hd_sprite` hanya jalur hero (`heroes/__init__.py:1866+`) | shader outline di `BakedSprite.tscn`, mati untuk boss |
+| beam morgath | digambar live, di-skip saat cache (`heroes/__init__.py:2149-2151`) | tidak ikut strip (proyektil Godot yang menggambar) |
+
+Kompresi: PNG palet 256 warna + alpha diperbaiki per entri palet (entri
+alpha < 16 dipaksa 0) — 21 MB RGBA → 6,5 MB tanpa halo kotak samar di
+area pad. Deterministik: seed per-frame + dt controller ter-jepit 1/60
+(`bosses/level1.py:824-826`) → dua kali bake menghasilkan hash PNG
+identik (diverifikasi saat pengembangan).
+
+Deviasi yang disengaja:
+
+- **Pose skill (q/w/e/r) belum dibake** — selama cast, badan memakai
+  pose attack terakhir + FX proyektil Godot (`SkillProjectile.gd`,
+  jalur visual skill sejak Fase 5b). Bake pose skill = fase lanjutan
+  (timeline per skill beda-beda, `SKILL_VISUAL_DURATION` per namespace).
+- **Elite/level tinggi tidak dibake** — bake memakai `boss_class`
+  asli dari `boss_data.py` (168 mini + 54 true) pada level 1; bentuk
+  elite (mis. `_draw_grimjaw_elite`) menyusul kalau diperlukan.
+- **Rim cahaya tim** disederhanakan jadi 2 nilai shader (biru/merah)
+  dari 2 tabel RGB pygame (`_HD_RIM_ADD*`, `heroes/__init__.py:1880-1883`).
+
+File penting: `scripts/render/BakedUnitDB.gd` (manifest + tekstur lazy,
+FIFO cap 64), `scenes/render/BakedSprite.tscn` + `.gd` (SpriteFrames
+dibangun runtime via AtlasTexture — tanpa 222 file .tres).
 
 ## Kaizen Skeleton2D (flagship — **sudah** dipakai di arena)
 

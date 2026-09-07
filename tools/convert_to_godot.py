@@ -536,17 +536,456 @@ def export_sounds():
     print(f"[convert] sounds: {copied} file -> {dst_dir}")
 
 
+# ═══════════════════════════════════════════════════════════════════
+# FASE 5 (Opsi A) — BAKE STRIP PNG PER UNIT DARI RENDERER PYGAME
+# ═══════════════════════════════════════════════════════════════════
+#
+# Mengapa bake PNG, bukan port renderer prosedural per-hero ke GDScript?
+#   1. Skala: 216 renderer boss (bosses/level1..54.py) + 6 hero masterwork
+#      (heroes/_bundle.py 16.723 baris) adalah ~ratusan ribu baris kode
+#      gambar. Port 1:1 ke GDScript butuh berbulan-bulan dan tidak bisa
+#      diverifikasi paritas tanpa me-render keduanya. Bake memakai
+#      RENDERER ASLI sebagai sumber kebenaran — geometri/warna/pose
+#      identik karena melewati choke point yang sama dengan cache sprite
+#      game (_call_renderer_on_canvas heroes/__init__.py:1729, termasuk
+#      _park_renderer_fx :1671 yang memark proyektil renderer).
+#   2. Struktur Godot yang ada memang data-driven: RendererRegistry.gd
+#      memetakkan unit_type -> PackedScene, jadi cukup SATU scene generik
+#      BakedSprite.tscn + manifest JSON; tidak perlu 222 file .tres.
+#
+# Rekam jejak pose (semua sitasi = sumber pygame):
+#   * idle/walk : fase = int(pulse*2.0) % 8 (HERO_ANIM_PHASES = 8,
+#      heroes/__init__.py:1483; kunci cache idle heroes/__init__.py:1777-
+#      1781). Hero menambah pulse 0.05/frame (_entity.py:1681) -> fase
+#      baru tiap 10 frame = 6 fps; boss 0.1/frame (base_boss.py:580) ->
+#      5 frame/fase = 12 fps. Keduanya disimpan di manifest, Godot
+#      memilih sesuai jenis node.
+#   * walk      : _detect_moving membandingkan delta posisi > 0.3 px
+#      (bosses/level1.py:947-962) — probe digeser 1.4 px antar frame.
+#   * attack    : pose serang dijalankan lewat MODE MANUAL yang memang
+#      disediakan untuk alat preview/tes: set _<prefix>_attack_active
+#      = True + _<prefix>_attack_progress = p dengan timer 0, controller
+#      menghormati nilai pemanggil (bosses/level1.py:873-880 deteksi
+#      manual, :892-898 "Alat preview / tes menggerakkan ... jangan
+#      dilawan"). Unit tanpa controller pose-nya murni fungsi timer —
+#      jendela serang `timer > attack_cooldown - 15` (bosses/level1.py:
+#      983-985) di-sweep langsung.
+#   * beam      : morgath melewatkan pass beam (_skip_beam) sama seperti
+#      jalur cache hero (heroes/__init__.py:2149-2151, _BEAM_PASS_HEROES
+#      :607) supaya beam jarak jauh tidak ikut membeku di strip.
+#
+# Output:
+#   godot/assets/units/<type>.png   strip horizontal idle|walk|attack
+#   godot/data/baked_units.json     manifest (frame, anchor, skala, fps)
+#
+# Determinisme: random di-seed per frame; dt controller ter-jepit 1/60
+# (bosses/level1.py:824-826) untuk panggilan cepat beruntun, jadi dua
+# kali bake menghasilkan PNG identik (diverifikasi lewat hash).
+
+UNIT_CANVAS = 512          # kanvas bake; crop bbox dipakai untuk strip
+UNIT_SEED = 20260907       # seed deterministik bake
+UNIT_IDLE_FRAMES = 8       # = HERO_ANIM_PHASES (heroes/__init__.py:1483)
+UNIT_WALK_FRAMES = 8       # kuantisasi sama dengan idle (kunci :1777)
+UNIT_ATTACK_FRAMES = 8     # > HERO_ATK_QUANT 4 (:1496) -> lebih halus,
+                           # tapi pose tetap dari kurva timeline yang sama
+# Padding antar sel di strip. Shader outline Godot (BakedSprite.tscn)
+# sampling 4 tetangga ±1 px untuk garis tepi; tanpa padding, sampling di
+# tepi sel bisa menyentuh frame SEBELAHNYA di strip (AtlasTexture satu
+# tekstur besar) dan menghasilkan artefak garis. 2 px cukup untuk
+# outline_width 1.0 + anti-blur import.
+UNIT_CELL_PAD = 2
+# Frame per baris strip. 24 frame berjajar = sampai 6.648 px lebar
+# (akiraze) — melewati batas tekstur 4096 px GPU mobile low-end, lihat
+# docs/PERF_ANDROID_LOWEND.md. Dibungkus 8 frame per baris, lebar
+# maksimum turun ke ~2,2 ribu px (aman) dan tinggi cuma 3 baris.
+UNIT_FRAMES_PER_ROW = 8
+
+
+def _unit_probe(hero_type, stats):
+    """Entity probe + stat asli dari boss_data (radius/range/cooldown)."""
+    from heroes import _ProbeEntity, _adapt_hero_to_boss
+    probe = _ProbeEntity(hero_type, UNIT_CANVAS // 2, UNIT_CANVAS // 2)
+    if stats:
+        # Stat asli supaya proporsi rig (jangkauan ayunan, ukuran)
+        # sama dengan yang digambar game — _ProbeEntity cuma default.
+        probe.radius = int(stats.get("radius", probe.radius))
+        probe.range = int(stats.get("range", probe.range))
+        probe.attack_cooldown = max(2, int(stats.get(
+            "attack_cooldown", probe.attack_cooldown)))
+        probe.speed = float(stats.get("speed", probe.speed))
+        probe.damage = int(stats.get("damage", probe.damage))
+    probe.boss_class = str(stats.get("boss_class", "mini")) if stats else "mini"
+    probe.facing = 1
+    probe.direction = 1
+    _adapt_hero_to_boss(probe)
+    return probe
+
+
+def _render_unit_frame(renderer, probe):
+    """Satu render ke canvas SRCALPHA, lalu crop bbox (alpha>=8).
+
+    Crop mengikuti _blit_scaled (heroes/__init__.py:2282) dan
+    _measure_native_size (:1393): min_alpha=8 membuang area kosong
+    tanpa memotong tinta lembut.
+    """
+    import pygame
+    import random
+    random.seed(UNIT_SEED)
+    c = UNIT_CANVAS // 2
+    canvas = pygame.Surface((UNIT_CANVAS, UNIT_CANVAS), pygame.SRCALPHA)
+    probe.x = probe.y = c
+    probe._render_scale = 1.0
+    from heroes import _call_renderer_on_canvas, _BEAM_PASS_HEROES
+    # Beam morgath TIDAK ikut strip — di pygame digambar live tiap frame
+    # pada skala 1.0 (heroes/__init__.py:2149-2151). Godot menirunya
+    # lewat TowerBullet/SkillProjectile, bukan sprite badan.
+    probe._skip_beam = probe.hero_type in _BEAM_PASS_HEROES
+    try:
+        _call_renderer_on_canvas(renderer, canvas, probe, c, c)
+    finally:
+        probe._skip_beam = False
+    return canvas.get_bounding_rect(min_alpha=8), canvas
+
+
+def _find_attack_attrs(probe):
+    """Cari pasangan atribut pose serang manual (mode preview/tes).
+
+    Controller menulis _<prefix>_attack_progress (mis. _gnk_, _ab_,
+    _kz_) — bosses/level1.py:800-804. Ambil nama terpanjang supaya
+    bentuk umum `_attack_progress` kalah dari yang spesifik.
+    """
+    names = [n for n in vars(probe)
+             if n.endswith("_attack_progress") and n != "_attack_raw"]
+    if not names:
+        return None, None
+    prog = max(names, key=len)
+    act = prog[:-len("progress")] + "active"
+    return prog, act
+
+
+def _bake_unit_frames(hero_type, renderer, stats):
+    """Render daftar (rect, canvas) untuk idle/walk/attack.
+
+    Return (frames, info). frames = list (rect, surface-crop). Setiap
+    elemen SUDAH dicrop ke bbox masing-masing; perataan anchor (kaki)
+    dilakukan saat menyusun strip.
+    """
+    import pygame
+    probe = _unit_probe(hero_type, stats)
+    frames = []
+
+    # ── IDLE: pulse dirata-rata 8 fase (int(pulse*2)%8, :1777) ──
+    for k in range(UNIT_IDLE_FRAMES):
+        probe.pulse = (k + 0.5) / 2.0
+        probe.timer = 0
+        probe.attack_timer = 0
+        probe.active_skill = None
+        probe.active_skill_timer = 0
+        # Frame pertama double-render: panggilan pertama memasang
+        # baseline _detect_moving (bosses/level1.py:950-954) sehingga
+        # frame berikut benar-benar "tidak bergerak".
+        _render_unit_frame(renderer, probe)
+        rect, canvas = _render_unit_frame(renderer, probe)
+        frames.append(("idle", rect, canvas.subsurface(rect)))
+
+    # ── WALK: probe digeser 1.4 px per frame (> ambang 0.3 px, :958) ──
+    for k in range(UNIT_WALK_FRAMES):
+        probe.pulse = (k + 0.5) / 2.0
+        probe.timer = 0
+        probe.attack_timer = 0
+        probe.active_skill = None
+        probe.active_skill_timer = 0
+        probe.x = UNIT_CANVAS // 2 + 1 + k * 1.4
+        probe.y = UNIT_CANVAS // 2
+        rect, canvas = _render_unit_frame(renderer, probe)
+        frames.append(("walk", rect, canvas.subsurface(rect)))
+
+    # ── ATTACK: mode manual preview (bosses/level1.py:873-898) ──
+    prog_attr, act_attr = None, None
+    probe.x = probe.y = UNIT_CANVAS // 2
+    probe.pulse = 1.0
+    # Warm-up: panggilan pertama membuat atribut controller lahir
+    # (_gnk_previous_timer dsb.) sehingga _find_attack_attrs bisa melihat
+    # pasangan progress/active milik unit ini.
+    _render_unit_frame(renderer, probe)
+    prog_attr, act_attr = _find_attack_attrs(probe)
+    for k in range(UNIT_ATTACK_FRAMES):
+        p = (k + 0.5) / float(UNIT_ATTACK_FRAMES)
+        probe.timer = 0
+        probe.attack_timer = 0
+        probe.active_skill = None
+        probe.active_skill_timer = 0
+        if prog_attr is not None:
+            # Mode manual: timer 0 + active + progress>0 -> controller
+            # menghormati nilai pemanggil (bosses/level1.py:873-880).
+            setattr(probe, act_attr, True)
+            setattr(probe, prog_attr, p)
+        else:
+            # Tanpa controller: pose murni fungsi timer — sweep jendela
+            # serang `timer > cooldown-15` (bosses/level1.py:983-985).
+            cd = int(probe.attack_cooldown)
+            probe.timer = max(1, int(round(cd - 14 + 13.999 * p)))
+            probe.attack_timer = probe.timer
+        rect, canvas = _render_unit_frame(renderer, probe)
+        frames.append(("attack", rect, canvas.subsurface(rect)))
+    return frames, {"prog_attr": prog_attr}
+
+
+def _compose_strip(hero_type, frames):
+    """Susun crop ber-anchor kaki menjadi strip (8 frame per baris).
+
+    Anchor = titik (c, c) kanvas bake (telapak kaki). Tiap crop
+    diletakkan di sel seragam sehingga SEMUA frame punya anchor sel
+    yang sama — AnimatedSprite2D hanya punya satu offset untuk semua
+    frame, jadi perataan ini wajib dilakukan saat bake, bukan runtime.
+
+    Multi-baris (UNIT_FRAMES_PER_ROW): satu baris 24 frame melebihi
+    4096 px untuk unit besar; GPU mobile low-end bisa menolak tekstur
+    sebesar itu. Indeks frame global (dipakai manifest) = urutan
+    raster: baris * UNIT_FRAMES_PER_ROW + kolom.
+    """
+    import pygame
+    c = UNIT_CANVAS // 2
+    left_pad = max(c - r.x for _, r, _ in frames)
+    right_pad = max(r.right - c for _, r, _ in frames)
+    top_pad = max(c - r.y for _, r, _ in frames)
+    bottom_pad = max(r.bottom - c for _, r, _ in frames)
+    cell_w = max(1, left_pad + right_pad) + UNIT_CELL_PAD * 2
+    cell_h = max(1, top_pad + bottom_pad) + UNIT_CELL_PAD * 2
+    rows = (len(frames) + UNIT_FRAMES_PER_ROW - 1) // UNIT_FRAMES_PER_ROW
+    strip = pygame.Surface((cell_w * UNIT_FRAMES_PER_ROW, cell_h * rows),
+                           pygame.SRCALPHA)
+    for i, (_, rect, crop) in enumerate(frames):
+        col = i % UNIT_FRAMES_PER_ROW
+        row = i // UNIT_FRAMES_PER_ROW
+        ox = col * cell_w + UNIT_CELL_PAD + (left_pad - (c - rect.x))
+        oy = row * cell_h + UNIT_CELL_PAD + (top_pad - (c - rect.y))
+        strip.blit(crop, (ox, oy))
+    # Anchor sel = kaki + padding (offset Godot dipakai untuk ini).
+    return strip, cell_w, cell_h, left_pad + UNIT_CELL_PAD, \
+        top_pad + UNIT_CELL_PAD
+
+
+def _frame_diff(a, b):
+    """Rata selisih kecerahan per piksel (detektor pose beku).
+
+    Dipakai gerbang kualitas: frame attack yang identik dengan idle
+    berarti pose serang gagal dipicu (lihat laporan distribusi).
+    """
+    w = min(a.get_width(), b.get_width())
+    h = min(a.get_height(), b.get_height())
+    if w <= 0 or h <= 0:
+        return 0.0
+    step = 3
+    total = n = 0
+    for y in range(0, h, step):
+        for x in range(0, w, step):
+            ar, ag, ab, aa = a.get_at((x, y))
+            br, bg, bb, ba = b.get_at((x, y))
+            total += abs(ar - br) + abs(ag - bg) + abs(ab - bb)
+            total += abs(aa - ba)
+            n += 1
+    return total / float(max(1, n * 4))
+
+
+def _save_strip(strip, png_path):
+    """Simpan strip PNG — 256 warna palet + alpha diperbaiki per entri.
+
+    Kenapa palet (PNG8): strip RGBA penuh = 21 MB untuk 222 unit; palet
+    256 warna memangkasnya ~4-5x TANPA mengubah piksel RGB yang terlihat
+    (prosedural pygame per unit memakai jauh lebih sedikit dari 256
+    warna). Jebakannya: kuantisasi FASTOCTREE RGBA membocorkan alpha
+    samar (1..15) ke entri palet yang dipakai area pad transparan ->
+    halo kotak samar di arena. Perbaikannya: entri palet dengan alpha
+    < 16 dipaksa 0 (ambang sama dengan min_alpha=8 crop + guard, lihat
+    _render_unit_frame); alpha 16..255 (aura lembut) tetap utuh.
+
+    Pillow opsional: kalau tidak ada, fallback pygame.image.save penuh
+    (file lebih besar tapi identik secara visual — bukan error).
+    """
+    import pygame
+    try:
+        from PIL import Image
+        pil = Image.frombytes("RGBA", strip.get_size(),
+                              pygame.image.tobytes(strip, "RGBA"))
+        q = pil.quantize(colors=256, method=Image.FASTOCTREE)
+        pal = bytearray(q.getpalette(rawmode="RGBA"))
+        for i in range(len(pal) // 4):
+            if pal[i * 4 + 3] < 16:
+                pal[i * 4 + 3] = 0
+        q.putpalette(bytes(pal), rawmode="RGBA")
+        q.save(png_path, optimize=True)
+    except ImportError:
+        pygame.image.save(strip, png_path)
+
+
+def export_unit_sprites(only=None):
+    """Bake strip PNG 222 unit -> godot/assets/units/ + manifest JSON.
+
+    Jalankan: SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+        ~/.venv-mystic/bin/python tools/convert_to_godot.py --units-png
+    """
+    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+    os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+    # _core DULU (aturan port): memasang alias modul "settings"
+    # (_core.py:1283-1287) yang dibutuhkan map_components/_bundle.
+    import _core  # noqa: F401
+    import pygame
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    import random
+    from heroes import HERO_RENDERERS, BOSS_RENDERERS, _get_hero_scale
+    from bosses.boss_data import MINI_BOSS_TYPES, TRUE_BOSS_TYPES
+
+    stats_all = {}
+    stats_all.update(MINI_BOSS_TYPES)
+    stats_all.update(TRUE_BOSS_TYPES)
+
+    # Semesta bake = renderer yang benar-benar terdaftar (6 hero
+    # masterwork + 216 boss) — persis himpunan yang bisa digambar game.
+    types = sorted(set(HERO_RENDERERS) | set(BOSS_RENDERERS))
+    if only:
+        types = [t for t in types if t in set(only)]
+
+    out_dir = os.path.join(ROOT, "godot", "assets", "units")
+    os.makedirs(out_dir, exist_ok=True)
+
+    manifest = {}
+    report = {"fail": [], "static_attack": [], "bytes": [],
+              "opaque": [], "atk_diff": [], "manual": 0, "timer_sweep": 0}
+    import time as _time
+    t0 = _time.time()
+    for idx, t in enumerate(types):
+        renderer = HERO_RENDERERS.get(t) or BOSS_RENDERERS.get(t)
+        try:
+            frames, info = _bake_unit_frames(t, renderer, stats_all.get(t))
+            if not frames:
+                raise RuntimeError("0 frame")
+            strip, cw, ch, ax, ay = _compose_strip(t, frames)
+            png = os.path.join(out_dir, t + ".png")
+            _save_strip(strip, png)
+            entry = {
+                "png": "res://assets/units/%s.png" % t,
+                "frame_w": cw,
+                "frame_h": ch,
+                # Grid 8 frame per baris (bukan 1 baris panjang) —
+                # aman untuk batas tekstur GPU mobile 4096 px.
+                "frames_per_row": UNIT_FRAMES_PER_ROW,
+                "anchor": [ax, ay],
+                # Skala tampilan per peran, paritas pygame: hero lane
+                # di-scale _get_hero_scale (heroes/__init__.py:2148),
+                # boss native 1.0 (heroes/__init__.py:2873-2878).
+                "hero_scale": round(float(_get_hero_scale(t)), 4),
+                "boss_scale": 1.0,
+                # fps loop idle/walk: fase baru tiap 10 frame hero /
+                # 5 frame boss (pulse 0.05 vs 0.1 — _entity.py:1681,
+                # bosses/base_boss.py:580; kunci 8 fase :1777-1781).
+                "fps_hero": 6,
+                "fps_boss": 12,
+                "anims": {
+                    "idle":   [0, UNIT_IDLE_FRAMES],
+                    "walk":   [UNIT_IDLE_FRAMES, UNIT_WALK_FRAMES],
+                    "attack": [UNIT_IDLE_FRAMES + UNIT_WALK_FRAMES,
+                               UNIT_ATTACK_FRAMES],
+                },
+                "boss_class": str(stats_all.get(t, {}).get(
+                    "boss_class", "mini")),
+                "renderer": "hero" if t in HERO_RENDERERS else "boss",
+            }
+            manifest[t] = entry
+
+            # ── Gerbang kualitas (distribusi dicetak di ringkasan) ──
+            report["bytes"].append(os.path.getsize(png))
+            idle_surf = frames[0][2]
+            atk_surf = frames[-1][2]
+            report["atk_diff"].append(_frame_diff(idle_surf, atk_surf))
+            if info["prog_attr"]:
+                report["manual"] += 1
+            else:
+                report["timer_sweep"] += 1
+            opaque = 0
+            n = 0
+            for y in range(0, idle_surf.get_height(), 3):
+                for x in range(0, idle_surf.get_width(), 3):
+                    opaque += 1 if idle_surf.get_at((x, y))[3] > 200 else 0
+                    n += 1
+            report["opaque"].append(100.0 * opaque / max(1, n))
+        except Exception as e:
+            report["fail"].append((t, "%s: %s" % (type(e).__name__, e)))
+        if (idx + 1) % 40 == 0:
+            print("[convert] units %d/%d (%.1fs)"
+                  % (idx + 1, len(types), _time.time() - t0))
+
+    total_kb = sum(report["bytes"]) / 1024.0
+    print("[convert] units: %d strip OK, %d gagal, %.1f KB total (%.1fs)"
+          % (len(manifest), len(report["fail"]), total_kb,
+             _time.time() - t0))
+    # Distribusi gerbang kualitas — cetak eksplisit supaya regresi
+    # (strip kosong / pose beku / ukuran membengkak) terlihat saat PR.
+    for key in ("bytes", "opaque", "atk_diff"):
+        vals = sorted(report[key])
+        if vals:
+            print("[convert]   %s: min=%.1f p50=%.1f max=%.1f"
+                  % (key, vals[0], vals[len(vals) // 2], vals[-1]))
+    print("[convert]   attack pose: %d mode-manual, %d timer-sweep"
+          % (report["manual"], report["timer_sweep"]))
+    # Deteksi attack yang mirip idle (kemungkinan pose tidak terpicu).
+    # report["atk_diff"] sejajar urutan `types` (iterasi yang sama dengan
+    # pengisian di atas), bukan urutan kunci manifest.
+    static_list = [t for t, d in zip(types, report["atk_diff"]) if d < 1.0]
+    if static_list:
+        print("[convert]   WARNING attack~idle (<1.0): %s"
+              % ", ".join(static_list[:12]))
+    if report["fail"]:
+        print("[convert]   GAGAL: %s"
+              % ", ".join("%s(%s)" % fv for fv in report["fail"][:12]),
+              file=sys.stderr)
+
+    if only:
+        # Mode --only = kalibrasi/debug satu unit: JANGAN menimpa
+        # manifest 222 unit dengan 4 entri (pernah terjadi — manifest
+        # penuh harus dibake ulang). PNG tetap ditulis supaya bisa
+        # dilihat, manifestnya tidak.
+        print("[convert] units: mode --only — baked_units.json TIDAK "
+              "ditulis ulang (manifest penuh dari run tanpa --only)")
+        return
+    out = {
+        "_generated_by": "tools/convert_to_godot.py export_unit_sprites()",
+        "_source": "renderer pygame via HERO_RENDERERS/BOSS_RENDERERS "
+                   "(heroes/__init__.py) — pose idle/walk/attack",
+        "_note": "Strip per unit: grid [idle 8 | walk 8 | attack 8] "
+                 "frame seragam, 8 frame per baris (batas tekstur GPU "
+                 "mobile), anchor = telapak kaki. Attack Godot di-drive "
+                 "dari attack_progress (bukan playback). Skill pose belum "
+                 "dibake (fase lanjutan); selama cast dipakai pose "
+                 "attack terakhir + FX proyektil Godot.",
+        "frame_counts": {"idle": UNIT_IDLE_FRAMES, "walk": UNIT_WALK_FRAMES,
+                         "attack": UNIT_ATTACK_FRAMES},
+        "units": manifest,
+    }
+    write_json("baked_units.json", out)
+
+
 if __name__ == "__main__":
-    export_heroes()
-    export_bosses()
-    export_levels()
-    export_archetypes()
-    export_items()
-    export_items_meta()
-    export_hero_levels()
-    export_towers()
-    export_nexus()
-    export_economy()
-    export_themes()
-    export_sounds()
-    print("[convert] Done. Copy godot/data/*.json ke Godot res://data/")
+    _argv = sys.argv[1:]
+    if "--units-png" in _argv:
+        # Fase 5 Opsi A: bake strip PNG saja (data JSON tidak disentuh).
+        _only = None
+        if "--only" in _argv:
+            _val = _argv[_argv.index("--only") + 1]
+            _only = [s.strip() for s in _val.split(",") if s.strip()]
+        export_unit_sprites(only=_only)
+    else:
+        export_heroes()
+        export_bosses()
+        export_levels()
+        export_archetypes()
+        export_items()
+        export_items_meta()
+        export_hero_levels()
+        export_towers()
+        export_nexus()
+        export_economy()
+        export_themes()
+        export_sounds()
+        print("[convert] Done. Copy godot/data/*.json ke Godot res://data/")

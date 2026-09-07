@@ -1,0 +1,6672 @@
+{
+  "_generated_by": "tools/convert_to_godot.py export_unit_sprites()",
+  "_source": "renderer pygame via HERO_RENDERERS/BOSS_RENDERERS (heroes/__init__.py) — pose idle/walk/attack",
+  "_note": "Strip per unit: grid [idle 8 | walk 8 | attack 8] frame seragam, 8 frame per baris (batas tekstur GPU mobile), anchor = telapak kaki. Attack Godot di-drive dari attack_progress (bukan playback). Skill pose belum dibake (fase lanjutan); selama cast dipakai pose attack terakhir + FX proyektil Godot.",
+  "frame_counts": {
+    "idle": 8,
+    "walk": 8,
+    "attack": 8
+  },
+  "units": {
+    "abaddon": {
+      "png": "res://assets/units/abaddon.png",
+      "frame_w": 167,
+      "frame_h": 164,
+      "frames_per_row": 8,
+      "anchor": [
+        85,
+        82
+      ],
+      "hero_scale": 0.5511,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "aelyrion": {
+      "png": "res://assets/units/aelyrion.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.975,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "aeralith": {
+      "png": "res://assets/units/aeralith.png",
+      "frame_w": 214,
+      "frame_h": 191,
+      "frames_per_row": 8,
+      "anchor": [
+        118,
+        107
+      ],
+      "hero_scale": 0.8311,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "akahime": {
+      "png": "res://assets/units/akahime.png",
+      "frame_w": 154,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        72
+      ],
+      "hero_scale": 1.2366,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "akaroth": {
+      "png": "res://assets/units/akaroth.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.6036,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "akashari": {
+      "png": "res://assets/units/akashari.png",
+      "frame_w": 125,
+      "frame_h": 125,
+      "frames_per_row": 8,
+      "anchor": [
+        62,
+        62
+      ],
+      "hero_scale": 0.7456,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "akirakumo": {
+      "png": "res://assets/units/akirakumo.png",
+      "frame_w": 174,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        82
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "akiraze": {
+      "png": "res://assets/units/akiraze.png",
+      "frame_w": 277,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        82
+      ],
+      "hero_scale": 0.975,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "alchemist": {
+      "png": "res://assets/units/alchemist.png",
+      "frame_w": 168,
+      "frame_h": 179,
+      "frames_per_row": 8,
+      "anchor": [
+        84,
+        97
+      ],
+      "hero_scale": 0.4568,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "ancient_apparition": {
+      "png": "res://assets/units/ancient_apparition.png",
+      "frame_w": 148,
+      "frame_h": 148,
+      "frames_per_row": 8,
+      "anchor": [
+        74,
+        74
+      ],
+      "hero_scale": 0.6259,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "astraelion": {
+      "png": "res://assets/units/astraelion.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 1.2675,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "aurelian": {
+      "png": "res://assets/units/aurelian.png",
+      "frame_w": 154,
+      "frame_h": 135,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        67
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "aurelion": {
+      "png": "res://assets/units/aurelion.png",
+      "frame_w": 221,
+      "frame_h": 221,
+      "frames_per_row": 8,
+      "anchor": [
+        110,
+        110
+      ],
+      "hero_scale": 0.6851,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "aurelix": {
+      "png": "res://assets/units/aurelix.png",
+      "frame_w": 164,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        77
+      ],
+      "hero_scale": 0.6338,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "aurelyssa": {
+      "png": "res://assets/units/aurelyssa.png",
+      "frame_w": 144,
+      "frame_h": 135,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        67
+      ],
+      "hero_scale": 1.0563,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "aurethzar": {
+      "png": "res://assets/units/aurethzar.png",
+      "frame_w": 215,
+      "frame_h": 215,
+      "frames_per_row": 8,
+      "anchor": [
+        107,
+        107
+      ],
+      "hero_scale": 0.8311,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "aurex": {
+      "png": "res://assets/units/aurex.png",
+      "frame_w": 138,
+      "frame_h": 113,
+      "frames_per_row": 8,
+      "anchor": [
+        69,
+        54
+      ],
+      "hero_scale": 0.78,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "auroth": {
+      "png": "res://assets/units/auroth.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.975,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "azkharion": {
+      "png": "res://assets/units/azkharion.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 1.1267,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "azureth": {
+      "png": "res://assets/units/azureth.png",
+      "frame_w": 154,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        72
+      ],
+      "hero_scale": 0.9941,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "bhorgathul": {
+      "png": "res://assets/units/bhorgathul.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 1.1267,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "broggmar": {
+      "png": "res://assets/units/broggmar.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.9389,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "brumhar": {
+      "png": "res://assets/units/brumhar.png",
+      "frame_w": 200,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        102,
+        82
+      ],
+      "hero_scale": 0.5281,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "celwynn": {
+      "png": "res://assets/units/celwynn.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.6945,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "cogsworth": {
+      "png": "res://assets/units/cogsworth.png",
+      "frame_w": 174,
+      "frame_h": 151,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        75
+      ],
+      "hero_scale": 1.1791,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "cryssalia": {
+      "png": "res://assets/units/cryssalia.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 0.7456,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "deidara": {
+      "png": "res://assets/units/deidara.png",
+      "frame_w": 144,
+      "frame_h": 135,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        67
+      ],
+      "hero_scale": 0.7243,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "dorakai": {
+      "png": "res://assets/units/dorakai.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "drakar": {
+      "png": "res://assets/units/drakar.png",
+      "frame_w": 190,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        95,
+        80
+      ],
+      "hero_scale": 0.5394,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "drav": {
+      "png": "res://assets/units/drav.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "emberwick": {
+      "png": "res://assets/units/emberwick.png",
+      "frame_w": 184,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        82
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "garumenshi": {
+      "png": "res://assets/units/garumenshi.png",
+      "frame_w": 124,
+      "frame_h": 86,
+      "frames_per_row": 8,
+      "anchor": [
+        62,
+        28
+      ],
+      "hero_scale": 1.2071,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "ghrakmaal": {
+      "png": "res://assets/units/ghrakmaal.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.78,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "gorath": {
+      "png": "res://assets/units/gorath.png",
+      "frame_w": 124,
+      "frame_h": 124,
+      "frames_per_row": 8,
+      "anchor": [
+        62,
+        62
+      ],
+      "hero_scale": 0.7243,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "gornak": {
+      "png": "res://assets/units/gornak.png",
+      "frame_w": 123,
+      "frame_h": 146,
+      "frames_per_row": 8,
+      "anchor": [
+        41,
+        82
+      ],
+      "hero_scale": 0.7348,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "gravefang": {
+      "png": "res://assets/units/gravefang.png",
+      "frame_w": 137,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        66,
+        96
+      ],
+      "hero_scale": 0.5281,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "gravewake": {
+      "png": "res://assets/units/gravewake.png",
+      "frame_w": 164,
+      "frame_h": 164,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.7456,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "grimjack": {
+      "png": "res://assets/units/grimjack.png",
+      "frame_w": 164,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        72
+      ],
+      "hero_scale": 0.845,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "grimjaw": {
+      "png": "res://assets/units/grimjaw.png",
+      "frame_w": 131,
+      "frame_h": 197,
+      "frames_per_row": 8,
+      "anchor": [
+        64,
+        112
+      ],
+      "hero_scale": 0.4156,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "hero"
+    },
+    "grimkor": {
+      "png": "res://assets/units/grimkor.png",
+      "frame_w": 164,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        72
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "grimstalker": {
+      "png": "res://assets/units/grimstalker.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.5895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "grondarthul": {
+      "png": "res://assets/units/grondarthul.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.7682,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "grondmauris": {
+      "png": "res://assets/units/grondmauris.png",
+      "frame_w": 184,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        87
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "hitokage": {
+      "png": "res://assets/units/hitokage.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 1.2675,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "hollowbane": {
+      "png": "res://assets/units/hollowbane.png",
+      "frame_w": 145,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        72
+      ],
+      "hero_scale": 0.8895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "ignakhor": {
+      "png": "res://assets/units/ignakhor.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.8593,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "ignirus": {
+      "png": "res://assets/units/ignirus.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "ignis_drachorn": {
+      "png": "res://assets/units/ignis_drachorn.png",
+      "frame_w": 129,
+      "frame_h": 151,
+      "frames_per_row": 8,
+      "anchor": [
+        47,
+        87
+      ],
+      "hero_scale": 0.6036,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "infrakzaar": {
+      "png": "res://assets/units/infrakzaar.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8177,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kaedrin": {
+      "png": "res://assets/units/kaedrin.png",
+      "frame_w": 174,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        82
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kaeldris": {
+      "png": "res://assets/units/kaeldris.png",
+      "frame_w": 164,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        77
+      ],
+      "hero_scale": 0.6945,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kaelthar": {
+      "png": "res://assets/units/kaelthar.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.0563,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kaelthorn": {
+      "png": "res://assets/units/kaelthorn.png",
+      "frame_w": 145,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        72
+      ],
+      "hero_scale": 1.1267,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kaelthys": {
+      "png": "res://assets/units/kaelthys.png",
+      "frame_w": 144,
+      "frame_h": 124,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        57
+      ],
+      "hero_scale": 0.9941,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kaelvyrn": {
+      "png": "res://assets/units/kaelvyrn.png",
+      "frame_w": 144,
+      "frame_h": 135,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        67
+      ],
+      "hero_scale": 1.1791,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kaerinya": {
+      "png": "res://assets/units/kaerinya.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "kaerissa": {
+      "png": "res://assets/units/kaerissa.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kaervosth": {
+      "png": "res://assets/units/kaervosth.png",
+      "frame_w": 164,
+      "frame_h": 131,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        62
+      ],
+      "hero_scale": 0.975,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kagetsuka": {
+      "png": "res://assets/units/kagetsuka.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.6945,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "kaineroth": {
+      "png": "res://assets/units/kaineroth.png",
+      "frame_w": 186,
+      "frame_h": 192,
+      "frames_per_row": 8,
+      "anchor": [
+        98,
+        104
+      ],
+      "hero_scale": 0.4447,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "kairenji": {
+      "png": "res://assets/units/kairenji.png",
+      "frame_w": 154,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        72
+      ],
+      "hero_scale": 0.9218,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kaithros": {
+      "png": "res://assets/units/kaithros.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.7243,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "kaizen": {
+      "png": "res://assets/units/kaizen.png",
+      "frame_w": 189,
+      "frame_h": 178,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        93
+      ],
+      "hero_scale": 0.4738,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "hero"
+    },
+    "kaizoku_raijin": {
+      "png": "res://assets/units/kaizoku_raijin.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.9941,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kaoruken": {
+      "png": "res://assets/units/kaoruken.png",
+      "frame_w": 164,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        77
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "karzhul": {
+      "png": "res://assets/units/karzhul.png",
+      "frame_w": 164,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        77
+      ],
+      "hero_scale": 0.9941,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kassadin": {
+      "png": "res://assets/units/kassadin.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8048,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kazreth": {
+      "png": "res://assets/units/kazreth.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kazuren": {
+      "png": "res://assets/units/kazuren.png",
+      "frame_w": 134,
+      "frame_h": 88,
+      "frames_per_row": 8,
+      "anchor": [
+        67,
+        29
+      ],
+      "hero_scale": 1.1791,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kazureth": {
+      "png": "res://assets/units/kazureth.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8593,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kenshiro": {
+      "png": "res://assets/units/kenshiro.png",
+      "frame_w": 169,
+      "frame_h": 169,
+      "frames_per_row": 8,
+      "anchor": [
+        84,
+        84
+      ],
+      "hero_scale": 1.0347,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "khalros": {
+      "png": "res://assets/units/khalros.png",
+      "frame_w": 160,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        80,
+        69
+      ],
+      "hero_scale": 0.6108,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "khalzaredh": {
+      "png": "res://assets/units/khalzaredh.png",
+      "frame_w": 154,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        72
+      ],
+      "hero_scale": 0.9054,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "khazan": {
+      "png": "res://assets/units/khazan.png",
+      "frame_w": 149,
+      "frame_h": 149,
+      "frames_per_row": 8,
+      "anchor": [
+        74,
+        74
+      ],
+      "hero_scale": 1.1267,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "korokai": {
+      "png": "res://assets/units/korokai.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.6036,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "krobellus": {
+      "png": "res://assets/units/krobellus.png",
+      "frame_w": 161,
+      "frame_h": 157,
+      "frames_per_row": 8,
+      "anchor": [
+        78,
+        73
+      ],
+      "hero_scale": 0.7243,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "krognarr": {
+      "png": "res://assets/units/krognarr.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8177,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kryvoxar": {
+      "png": "res://assets/units/kryvoxar.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.9566,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kunkka": {
+      "png": "res://assets/units/kunkka.png",
+      "frame_w": 124,
+      "frame_h": 120,
+      "frames_per_row": 8,
+      "anchor": [
+        62,
+        60
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "kurogari": {
+      "png": "res://assets/units/kurogari.png",
+      "frame_w": 144,
+      "frame_h": 139,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        69
+      ],
+      "hero_scale": 0.9389,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "kyrenzai": {
+      "png": "res://assets/units/kyrenzai.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.845,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "kyumirra": {
+      "png": "res://assets/units/kyumirra.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.9941,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "leoric": {
+      "png": "res://assets/units/leoric.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 1.1267,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "luminar": {
+      "png": "res://assets/units/luminar.png",
+      "frame_w": 174,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        82
+      ],
+      "hero_scale": 0.7348,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "lyrenya": {
+      "png": "res://assets/units/lyrenya.png",
+      "frame_w": 215,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.7348,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "lyrienne": {
+      "png": "res://assets/units/lyrienne.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.9941,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "lyssarethys": {
+      "png": "res://assets/units/lyssarethys.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8311,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "malzareth": {
+      "png": "res://assets/units/malzareth.png",
+      "frame_w": 125,
+      "frame_h": 125,
+      "frames_per_row": 8,
+      "anchor": [
+        62,
+        62
+      ],
+      "hero_scale": 0.7456,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "malzeroth": {
+      "png": "res://assets/units/malzeroth.png",
+      "frame_w": 154,
+      "frame_h": 135,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        67
+      ],
+      "hero_scale": 0.7141,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "molgravar": {
+      "png": "res://assets/units/molgravar.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 0.8895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "morgath": {
+      "png": "res://assets/units/morgath.png",
+      "frame_w": 134,
+      "frame_h": 134,
+      "frames_per_row": 8,
+      "anchor": [
+        67,
+        67
+      ],
+      "hero_scale": 0.65,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morkhaera": {
+      "png": "res://assets/units/morkhaera.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 0.7456,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morkhelvis": {
+      "png": "res://assets/units/morkhelvis.png",
+      "frame_w": 165,
+      "frame_h": 168,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        88
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morthraxis": {
+      "png": "res://assets/units/morthraxis.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8177,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "morthyrax": {
+      "png": "res://assets/units/morthyrax.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.8048,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morvaenthir": {
+      "png": "res://assets/units/morvaenthir.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.7348,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morvaeth": {
+      "png": "res://assets/units/morvaeth.png",
+      "frame_w": 164,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        77
+      ],
+      "hero_scale": 0.9389,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morvaeth2": {
+      "png": "res://assets/units/morvaeth2.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morvakhul": {
+      "png": "res://assets/units/morvakhul.png",
+      "frame_w": 174,
+      "frame_h": 138,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        67
+      ],
+      "hero_scale": 0.9218,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morvath": {
+      "png": "res://assets/units/morvath.png",
+      "frame_w": 154,
+      "frame_h": 136,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        67
+      ],
+      "hero_scale": 0.9054,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morvein": {
+      "png": "res://assets/units/morvein.png",
+      "frame_w": 174,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        82
+      ],
+      "hero_scale": 1.2071,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morvekhar": {
+      "png": "res://assets/units/morvekhar.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.845,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "morvyssk": {
+      "png": "res://assets/units/morvyssk.png",
+      "frame_w": 164,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        77
+      ],
+      "hero_scale": 1.1022,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "naraka": {
+      "png": "res://assets/units/naraka.png",
+      "frame_w": 205,
+      "frame_h": 205,
+      "frames_per_row": 8,
+      "anchor": [
+        102,
+        102
+      ],
+      "hero_scale": 0.8593,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "nazulmor": {
+      "png": "res://assets/units/nazulmor.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.6671,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "nexthyrius": {
+      "png": "res://assets/units/nexthyrius.png",
+      "frame_w": 215,
+      "frame_h": 215,
+      "frames_per_row": 8,
+      "anchor": [
+        107,
+        107
+      ],
+      "hero_scale": 0.845,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "nixweaver": {
+      "png": "res://assets/units/nixweaver.png",
+      "frame_w": 232,
+      "frame_h": 121,
+      "frames_per_row": 8,
+      "anchor": [
+        67,
+        60
+      ],
+      "hero_scale": 0.9389,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "nyrellieth": {
+      "png": "res://assets/units/nyrellieth.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "nyrethzalv": {
+      "png": "res://assets/units/nyrethzalv.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 0.8048,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "nyxallaria": {
+      "png": "res://assets/units/nyxallaria.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.7456,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "nyxara": {
+      "png": "res://assets/units/nyxara.png",
+      "frame_w": 120,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        60,
+        90
+      ],
+      "hero_scale": 0.5281,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "nyxarath": {
+      "png": "res://assets/units/nyxarath.png",
+      "frame_w": 125,
+      "frame_h": 125,
+      "frames_per_row": 8,
+      "anchor": [
+        62,
+        62
+      ],
+      "hero_scale": 0.6945,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "nyxareth": {
+      "png": "res://assets/units/nyxareth.png",
+      "frame_w": 221,
+      "frame_h": 221,
+      "frames_per_row": 8,
+      "anchor": [
+        110,
+        110
+      ],
+      "hero_scale": 0.78,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "nyxareva": {
+      "png": "res://assets/units/nyxareva.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.8593,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "nyxariel": {
+      "png": "res://assets/units/nyxariel.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 1.1523,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "nyxaris": {
+      "png": "res://assets/units/nyxaris.png",
+      "frame_w": 154,
+      "frame_h": 135,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        67
+      ],
+      "hero_scale": 0.78,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "nyxaroth": {
+      "png": "res://assets/units/nyxaroth.png",
+      "frame_w": 164,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        77
+      ],
+      "hero_scale": 0.8895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "nyxharr": {
+      "png": "res://assets/units/nyxharr.png",
+      "frame_w": 211,
+      "frame_h": 211,
+      "frames_per_row": 8,
+      "anchor": [
+        105,
+        105
+      ],
+      "hero_scale": 0.975,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "nyxraal": {
+      "png": "res://assets/units/nyxraal.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.6851,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "nyxthrael": {
+      "png": "res://assets/units/nyxthrael.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 1.0563,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "nyzrak": {
+      "png": "res://assets/units/nyzrak.png",
+      "frame_w": 182,
+      "frame_h": 172,
+      "frames_per_row": 8,
+      "anchor": [
+        110,
+        106
+      ],
+      "hero_scale": 0.4225,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "obanai": {
+      "png": "res://assets/units/obanai.png",
+      "frame_w": 84,
+      "frame_h": 99,
+      "frames_per_row": 8,
+      "anchor": [
+        42,
+        37
+      ],
+      "hero_scale": 0.9941,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "okeanora": {
+      "png": "res://assets/units/okeanora.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 0.5761,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "pyraena": {
+      "png": "res://assets/units/pyraena.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.676,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "pyraethis": {
+      "png": "res://assets/units/pyraethis.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 1.1267,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "pyraklos": {
+      "png": "res://assets/units/pyraklos.png",
+      "frame_w": 168,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        77
+      ],
+      "hero_scale": 0.845,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "pyrenth": {
+      "png": "res://assets/units/pyrenth.png",
+      "frame_w": 188,
+      "frame_h": 188,
+      "frames_per_row": 8,
+      "anchor": [
+        94,
+        94
+      ],
+      "hero_scale": 0.6036,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "pyrhaan": {
+      "png": "res://assets/units/pyrhaan.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.8311,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "rakzhan": {
+      "png": "res://assets/units/rakzhan.png",
+      "frame_w": 164,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        77
+      ],
+      "hero_scale": 0.8593,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "ravokkar": {
+      "png": "res://assets/units/ravokkar.png",
+      "frame_w": 211,
+      "frame_h": 211,
+      "frames_per_row": 8,
+      "anchor": [
+        105,
+        105
+      ],
+      "hero_scale": 0.9941,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "raz": {
+      "png": "res://assets/units/raz.png",
+      "frame_w": 169,
+      "frame_h": 169,
+      "frames_per_row": 8,
+      "anchor": [
+        84,
+        84
+      ],
+      "hero_scale": 0.975,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "razak": {
+      "png": "res://assets/units/razak.png",
+      "frame_w": 148,
+      "frame_h": 148,
+      "frames_per_row": 8,
+      "anchor": [
+        74,
+        74
+      ],
+      "hero_scale": 0.845,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "rynvara": {
+      "png": "res://assets/units/rynvara.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 1.0347,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "sanguire": {
+      "png": "res://assets/units/sanguire.png",
+      "frame_w": 145,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        72
+      ],
+      "hero_scale": 0.8593,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "sanguiveth": {
+      "png": "res://assets/units/sanguiveth.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.9566,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "sasori": {
+      "png": "res://assets/units/sasori.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "seiryukong": {
+      "png": "res://assets/units/seiryukong.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 0.9054,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "selunara": {
+      "png": "res://assets/units/selunara.png",
+      "frame_w": 174,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        77
+      ],
+      "hero_scale": 0.845,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "seraphienne": {
+      "png": "res://assets/units/seraphienne.png",
+      "frame_w": 215,
+      "frame_h": 215,
+      "frames_per_row": 8,
+      "anchor": [
+        107,
+        107
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "sethrakhar": {
+      "png": "res://assets/units/sethrakhar.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.9389,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "shimorakh": {
+      "png": "res://assets/units/shimorakh.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.9566,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "shirotaka": {
+      "png": "res://assets/units/shirotaka.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 1.1022,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "sirakzan": {
+      "png": "res://assets/units/sirakzan.png",
+      "frame_w": 164,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        77
+      ],
+      "hero_scale": 0.7243,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "solara": {
+      "png": "res://assets/units/solara.png",
+      "frame_w": 154,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        72
+      ],
+      "hero_scale": 0.8311,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "solareth": {
+      "png": "res://assets/units/solareth.png",
+      "frame_w": 200,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        100,
+        97
+      ],
+      "hero_scale": 0.8048,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "solvanth": {
+      "png": "res://assets/units/solvanth.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.7682,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "solvarin": {
+      "png": "res://assets/units/solvarin.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.7141,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "sunakage": {
+      "png": "res://assets/units/sunakage.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.6259,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "sylara": {
+      "png": "res://assets/units/sylara.png",
+      "frame_w": 194,
+      "frame_h": 174,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        87
+      ],
+      "hero_scale": 0.5452,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "hero"
+    },
+    "sylvantheros": {
+      "png": "res://assets/units/sylvantheros.png",
+      "frame_w": 145,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        72
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "syrentha": {
+      "png": "res://assets/units/syrentha.png",
+      "frame_w": 167,
+      "frame_h": 148,
+      "frames_per_row": 8,
+      "anchor": [
+        74,
+        74
+      ],
+      "hero_scale": 0.7922,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "syrindra": {
+      "png": "res://assets/units/syrindra.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "thalakryon": {
+      "png": "res://assets/units/thalakryon.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.6584,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "thalgryn": {
+      "png": "res://assets/units/thalgryn.png",
+      "frame_w": 154,
+      "frame_h": 182,
+      "frames_per_row": 8,
+      "anchor": [
+        46,
+        148
+      ],
+      "hero_scale": 0.3521,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "thalryndel": {
+      "png": "res://assets/units/thalryndel.png",
+      "frame_w": 175,
+      "frame_h": 179,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        95
+      ],
+      "hero_scale": 0.8895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "thargoroth": {
+      "png": "res://assets/units/thargoroth.png",
+      "frame_w": 205,
+      "frame_h": 205,
+      "frames_per_row": 8,
+      "anchor": [
+        102,
+        102
+      ],
+      "hero_scale": 0.975,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "thoraz": {
+      "png": "res://assets/units/thoraz.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.78,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "thorgaruk": {
+      "png": "res://assets/units/thorgaruk.png",
+      "frame_w": 185,
+      "frame_h": 184,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "thorne": {
+      "png": "res://assets/units/thorne.png",
+      "frame_w": 185,
+      "frame_h": 204,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        112
+      ],
+      "hero_scale": 0.4056,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "hero"
+    },
+    "thornvaegrim": {
+      "png": "res://assets/units/thornvaegrim.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 1.2366,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "thorvak": {
+      "png": "res://assets/units/thorvak.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.8895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "thorvin": {
+      "png": "res://assets/units/thorvin.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 1.1791,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "tsukiyora": {
+      "png": "res://assets/units/tsukiyora.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.9218,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "urgharun": {
+      "png": "res://assets/units/urgharun.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "ursath": {
+      "png": "res://assets/units/ursath.png",
+      "frame_w": 185,
+      "frame_h": 184,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.8311,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vaelindra": {
+      "png": "res://assets/units/vaelindra.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "vaelkorr": {
+      "png": "res://assets/units/vaelkorr.png",
+      "frame_w": 144,
+      "frame_h": 135,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        67
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vaelmyrra": {
+      "png": "res://assets/units/vaelmyrra.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 0.8895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "vaerith": {
+      "png": "res://assets/units/vaerith.png",
+      "frame_w": 135,
+      "frame_h": 134,
+      "frames_per_row": 8,
+      "anchor": [
+        67,
+        67
+      ],
+      "hero_scale": 0.6259,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "valekris": {
+      "png": "res://assets/units/valekris.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "valthar": {
+      "png": "res://assets/units/valthar.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vardrok": {
+      "png": "res://assets/units/vardrok.png",
+      "frame_w": 184,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        82
+      ],
+      "hero_scale": 0.8593,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vargrath": {
+      "png": "res://assets/units/vargrath.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.8593,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vargroth": {
+      "png": "res://assets/units/vargroth.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.9941,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "varkul": {
+      "png": "res://assets/units/varkul.png",
+      "frame_w": 128,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        64,
+        81
+      ],
+      "hero_scale": 0.7141,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "varkuthar": {
+      "png": "res://assets/units/varkuthar.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.9941,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "velmyrth": {
+      "png": "res://assets/units/velmyrth.png",
+      "frame_w": 154,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        72
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "verdanix": {
+      "png": "res://assets/units/verdanix.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.6671,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "veshtrax": {
+      "png": "res://assets/units/veshtrax.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vessyra": {
+      "png": "res://assets/units/vessyra.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.0563,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vex": {
+      "png": "res://assets/units/vex.png",
+      "frame_w": 180,
+      "frame_h": 180,
+      "frames_per_row": 8,
+      "anchor": [
+        90,
+        92
+      ],
+      "hero_scale": 0.4922,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "hero"
+    },
+    "vhaerinth": {
+      "png": "res://assets/units/vhaerinth.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.8177,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vhaerith": {
+      "png": "res://assets/units/vhaerith.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8048,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vhalzun": {
+      "png": "res://assets/units/vhalzun.png",
+      "frame_w": 154,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        62,
+        100
+      ],
+      "hero_scale": 0.5452,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vhorethzir": {
+      "png": "res://assets/units/vhorethzir.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "vhyssarion": {
+      "png": "res://assets/units/vhyssarion.png",
+      "frame_w": 129,
+      "frame_h": 129,
+      "frames_per_row": 8,
+      "anchor": [
+        64,
+        64
+      ],
+      "hero_scale": 0.8895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vokrahn": {
+      "png": "res://assets/units/vokrahn.png",
+      "frame_w": 168,
+      "frame_h": 168,
+      "frames_per_row": 8,
+      "anchor": [
+        84,
+        84
+      ],
+      "hero_scale": 0.6851,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vorenmarr": {
+      "png": "res://assets/units/vorenmarr.png",
+      "frame_w": 125,
+      "frame_h": 125,
+      "frames_per_row": 8,
+      "anchor": [
+        62,
+        62
+      ],
+      "hero_scale": 0.7348,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vorgath": {
+      "png": "res://assets/units/vorgath.png",
+      "frame_w": 155,
+      "frame_h": 155,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        77
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vorthakul": {
+      "png": "res://assets/units/vorthakul.png",
+      "frame_w": 175,
+      "frame_h": 179,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        94
+      ],
+      "hero_scale": 0.9054,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vraskhan": {
+      "png": "res://assets/units/vraskhan.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8048,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vulkareth": {
+      "png": "res://assets/units/vulkareth.png",
+      "frame_w": 154,
+      "frame_h": 139,
+      "frames_per_row": 8,
+      "anchor": [
+        77,
+        69
+      ],
+      "hero_scale": 0.8048,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "vyraeth": {
+      "png": "res://assets/units/vyraeth.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 1.1523,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "wiro": {
+      "png": "res://assets/units/wiro.png",
+      "frame_w": 169,
+      "frame_h": 169,
+      "frames_per_row": 8,
+      "anchor": [
+        84,
+        84
+      ],
+      "hero_scale": 1.1523,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "xaelmoran": {
+      "png": "res://assets/units/xaelmoran.png",
+      "frame_w": 165,
+      "frame_h": 169,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        92
+      ],
+      "hero_scale": 0.9218,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "xaerissa": {
+      "png": "res://assets/units/xaerissa.png",
+      "frame_w": 263,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        131,
+        92
+      ],
+      "hero_scale": 0.845,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "xareth": {
+      "png": "res://assets/units/xareth.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 1.0563,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "xarnathul": {
+      "png": "res://assets/units/xarnathul.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.845,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "xarnthuul": {
+      "png": "res://assets/units/xarnthuul.png",
+      "frame_w": 220,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "xelnarath": {
+      "png": "res://assets/units/xelnarath.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "xerakhotep": {
+      "png": "res://assets/units/xerakhotep.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.8177,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "xerakkuth": {
+      "png": "res://assets/units/xerakkuth.png",
+      "frame_w": 184,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        87
+      ],
+      "hero_scale": 1.1022,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "xerathis": {
+      "png": "res://assets/units/xerathis.png",
+      "frame_w": 128,
+      "frame_h": 141,
+      "frames_per_row": 8,
+      "anchor": [
+        64,
+        77
+      ],
+      "hero_scale": 0.5895,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "xharokh": {
+      "png": "res://assets/units/xharokh.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 0.8311,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "xirthalis": {
+      "png": "res://assets/units/xirthalis.png",
+      "frame_w": 115,
+      "frame_h": 115,
+      "frames_per_row": 8,
+      "anchor": [
+        57,
+        57
+      ],
+      "hero_scale": 0.7141,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "xyrael": {
+      "png": "res://assets/units/xyrael.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 1.1022,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "yamako": {
+      "png": "res://assets/units/yamako.png",
+      "frame_w": 195,
+      "frame_h": 195,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        97
+      ],
+      "hero_scale": 0.7567,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "yhoranth": {
+      "png": "res://assets/units/yhoranth.png",
+      "frame_w": 166,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.65,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "yomigetsu": {
+      "png": "res://assets/units/yomigetsu.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.0347,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "zahkareth": {
+      "png": "res://assets/units/zahkareth.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 1.1267,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "zarethyr": {
+      "png": "res://assets/units/zarethyr.png",
+      "frame_w": 184,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        82
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "zephyr": {
+      "png": "res://assets/units/zephyr.png",
+      "frame_w": 148,
+      "frame_h": 192,
+      "frames_per_row": 8,
+      "anchor": [
+        74,
+        104
+      ],
+      "hero_scale": 0.4297,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "hero"
+    },
+    "zhaeris": {
+      "png": "res://assets/units/zhaeris.png",
+      "frame_w": 145,
+      "frame_h": 145,
+      "frames_per_row": 8,
+      "anchor": [
+        72,
+        72
+      ],
+      "hero_scale": 1.1022,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "zharakzuul": {
+      "png": "res://assets/units/zharakzuul.png",
+      "frame_w": 205,
+      "frame_h": 205,
+      "frames_per_row": 8,
+      "anchor": [
+        102,
+        102
+      ],
+      "hero_scale": 0.975,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    },
+    "zharok": {
+      "png": "res://assets/units/zharok.png",
+      "frame_w": 96,
+      "frame_h": 136,
+      "frames_per_row": 8,
+      "anchor": [
+        48,
+        50
+      ],
+      "hero_scale": 0.7922,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "zhyrakaan": {
+      "png": "res://assets/units/zhyrakaan.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.014,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "zhyvrek": {
+      "png": "res://assets/units/zhyvrek.png",
+      "frame_w": 185,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        92,
+        92
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "zorashi": {
+      "png": "res://assets/units/zorashi.png",
+      "frame_w": 220,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.1022,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "zorathiel": {
+      "png": "res://assets/units/zorathiel.png",
+      "frame_w": 175,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 0.9054,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "zorothrax": {
+      "png": "res://assets/units/zorothrax.png",
+      "frame_w": 204,
+      "frame_h": 175,
+      "frames_per_row": 8,
+      "anchor": [
+        87,
+        87
+      ],
+      "hero_scale": 1.0787,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "zulkhaven": {
+      "png": "res://assets/units/zulkhaven.png",
+      "frame_w": 165,
+      "frame_h": 165,
+      "frames_per_row": 8,
+      "anchor": [
+        82,
+        82
+      ],
+      "hero_scale": 0.5571,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "mini",
+      "renderer": "boss"
+    },
+    "zyvareth": {
+      "png": "res://assets/units/zyvareth.png",
+      "frame_w": 194,
+      "frame_h": 185,
+      "frames_per_row": 8,
+      "anchor": [
+        97,
+        92
+      ],
+      "hero_scale": 0.8741,
+      "boss_scale": 1.0,
+      "fps_hero": 6,
+      "fps_boss": 12,
+      "anims": {
+        "idle": [
+          0,
+          8
+        ],
+        "walk": [
+          8,
+          8
+        ],
+        "attack": [
+          16,
+          8
+        ]
+      },
+      "boss_class": "true",
+      "renderer": "boss"
+    }
+  }
+}

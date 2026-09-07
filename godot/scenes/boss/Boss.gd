@@ -89,6 +89,10 @@ func setup_visual(_s: Dictionary) -> void:
 		custom_visual = packed.instantiate()
 		custom_visual.name = "CustomVisual"
 		visual.add_child(custom_visual)
+		if custom_visual.has_method("configure_baked"):
+			# Strip bake Fase 5 (skala native 1.0, paritas jalur boss
+			# heroes/__init__.py:2873-2878) — boss tanpa offset ekstra.
+			custom_visual.configure_baked(boss_type, "boss", team)
 		return
 	silhouette = UnitSilhouetteScript.new()
 	silhouette.name = "Silhouette"

@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3 uid="uid://bakedsprite_mystic"]
+
+[ext_resource type="Script" path="res://scenes/render/BakedSprite.gd" id="1"]
+
+[sub_resource type="Shader" id="Shader_baked_outline"]
+code = "shader_type canvas_item;\nuniform vec4 outline_color : source_color = vec4(0.05, 0.04, 0.08, 1.0);\nuniform float outline_width : hint_range(0.0, 4.0) = 1.0;\nuniform vec4 rim_color : source_color = vec4(0.13, 0.12, 0.19, 1.0);\n\nvoid fragment() {\n    vec4 c = texture(TEXTURE, UV);\n    float a = c.a;\n    float o = 0.0;\n    o += texture(TEXTURE, UV + vec2(outline_width * TEXTURE_PIXEL_SIZE.x, 0.0)).a;\n    o += texture(TEXTURE, UV + vec2(-outline_width * TEXTURE_PIXEL_SIZE.x, 0.0)).a;\n    o += texture(TEXTURE, UV + vec2(0.0, outline_width * TEXTURE_PIXEL_SIZE.y)).a;\n    o += texture(TEXTURE, UV + vec2(0.0, -outline_width * TEXTURE_PIXEL_SIZE.y)).a;\n    o = clamp(o - a, 0.0, 1.0);\n    vec4 col = mix(c, outline_color, o * (1.0 - a));\n    vec2 light_dir = normalize(vec2(-0.6, -0.8));\n    float rim = max(0.0, dot(normalize(UV - 0.5), -light_dir)) * 0.18 * a;\n    col.rgb += rim * rim_color.rgb;\n    COLOR = col;\n}\n"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_baked"]
+shader = SubResource("Shader_baked_outline")
+shader_parameter/outline_color = Color(0.05, 0.04, 0.08, 1)
+shader_parameter/outline_width = 1.0
+shader_parameter/rim_color = Color(0.13, 0.12, 0.19, 1)
+
+[node name="BakedSprite" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+material = SubResource("ShaderMaterial_baked")
+centered = false
+; sprite_frames diisi BakedSprite.configure_baked() dari strip bake
+; (AtlasTexture per frame). autoplay sengaja tidak diisi — pola yang
+; sama dengan Hero.tscn untuk menghindari error saat sprite_frames
+; masih null saat scene di-load.
