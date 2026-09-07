@@ -35,10 +35,10 @@ tidak ada di sumber kebenaran.
 
 | # | Kunci | Status pygame | Status Godot | Dampak |
 |---|---|---|---|---|
-| A1 | `has_dark_trees` (42/54 tema) | `DecorationRenderer.draw_all` `_bundle.py:6106` → `_draw_dark_trees` | tidak dibaca | dekor pohon gelap seragam |
-| A2 | `has_dead_trees` (38/54) | `:6102` → `_draw_dead_trees` (cabang `elif` setelah `has_frozen_trees`) | tidak dibaca | pohon mati/kering tidak pernah muncul |
-| A3 | `has_bones` (32/54) | `:6092` → `_draw_bones` | tidak dibaca | tema tulang-belulang hilang |
-| A4 | `has_rocks_mossy` (54/54) | `:6088` → `_draw_rocks` | tidak dibaca | batu berlumut selalu batu polos |
+| A1 | `has_dark_trees` (42/54 tema) | `DecorationRenderer.draw_all` `_bundle.py:6106` → `_draw_dark_trees` | ✅ **DIPERBAIKI** | dekor pohon gelap seragam |
+| A2 | `has_dead_trees` (38/54) | `:6102` → `_draw_dead_trees` (cabang `elif` setelah `has_frozen_trees`) | ✅ **DIPERBAIKI** | pohon mati/kering tidak pernah muncul |
+| A3 | `has_bones` (32/54) | `:6092` → `_draw_bones` | ✅ **DIPERBAIKI** | tema tulang-belulang hilang |
+| A4 | `has_rocks_mossy` (54/54) | `:6088` → `_draw_rocks` | ✅ **DIPERBAIKI** | batu berlumut selalu batu polos |
 | A5 | `path_moss`, `path_crack` | `_draw_cobblestone_tile` `:5206-5207` — `path_crack` volcanic = `(255,100,20)` **retakan lava menyala** | ✅ **DIPERBAIKI** `_draw_lane()` | jalur semua tema tampak sama; lava crack hilang |
 | A6 | `meta_gold_reward_lose` | `_grant_meta_reward` `_core.py:2378-2380` baca dari cfg level | ✅ **DIPERBAIKI** `_grant_meta_reward()` | saat ini aman (54/54 level = 0), tapi ubah satu level di pygame → Godot diam-diam menyimpang |
 
@@ -80,10 +80,21 @@ dari grep literal:
    menutupi jalur).
 2. ~~**A6 `meta_gold_reward_lose`**~~ — ✅ selesai, `cfg.get(...)` menggantikan
    angka 0 hardcode.
-3. **A1-A4 flag dekor** — perluas `_build_decor()`/`_draw_decor()` dengan jenis
-   `pohon mati`, `tulang`, `batu berlumut` (pola `kind` 0-3 yang sudah ada).
-   **Belum dikerjakan** — ini yang paling menyentuh visual dan paling butuh
-   dilihat langsung di editor, jadi saya tahan dulu.
+3. ~~**A1-A4 flag dekor**~~ — ✅ selesai. `_build_decor()`/`_draw_decor()` kini
+   punya `DECOR_DEAD_TREE` + `DECOR_BONES` dan lumut di batu, dan yang paling
+   penting: **membedakan sisi peta**. pygame menaruh pohon gelap hanya di
+   Radiant, pohon mati/tulang hanya di Dire (`generate_all` `_bundle.py:4767-4821`
+   memakai `_is_radiant()`/`_is_dire()`), jadi `_is_dire()` ikut diport —
+   tanpa itu peta terasa simetris dan sisi Dire kehilangan kesan gersang.
+
+   Ambang jenis **ditumpuk**, bukan rentang tetap. Versi pertama memakai ambang
+   tetap dan simulasi memberi tema `ice` 49 kristal dari 70 dekor: rentang
+   kristal melar mengisi jatah jenis yang mati. Setelah ditumpuk: ice 11
+   kristal / 11 pohon / 46 batu, forest 20 pohon / 17 pohon mati / 6 tulang.
+
+**Semua temuan A1-A6 sudah ditutup.** Sisa pekerjaan paritas berikutnya bukan
+lagi "data mati", melainkan fitur yang memang belum diport (Fase 5b item aktif,
+AIPlayer penuh, TileSet `.tres`).
 
 Catatan verifikasi: tanpa binary Godot di sandbox, nomor 1-3 hanya bisa
 divalidasi lewat `gdparse` + `tscn_lint` + `check_refs` (sintaks & konsistensi

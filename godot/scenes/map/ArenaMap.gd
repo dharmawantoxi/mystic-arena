@@ -168,6 +168,22 @@ var _decor_points: PackedFloat32Array = PackedFloat32Array() # [x, y, size, kind
 ## kind 2/3 hanya muncul kalau tema punya kristal / nisan (flag has_* pygame)
 var _decor_wants_crystal: bool = false
 var _decor_wants_grave: bool = false
+## Flag dekor lain yang pygame pakai di DecorationRenderer.draw_all
+## (_bundle.py:6088-6107) tapi port ini belum pernah baca.
+var _decor_wants_dead_tree: bool = false
+var _decor_wants_dark_tree: bool = false
+var _decor_wants_bones: bool = false
+var _decor_wants_moss_rock: bool = false
+
+## Jenis dekor (nilai `kind` di _decor_points). Dulu angka telanjang 0-3
+## tersebar di _build_decor + _draw_decor; dinamai supaya penambahan jenis
+## tidak salah cocok antara yang menaruh dan yang menggambar.
+const DECOR_TREE := 0
+const DECOR_ROCK := 1
+const DECOR_CRYSTAL := 2
+const DECOR_GRAVE := 3
+const DECOR_DEAD_TREE := 4
+const DECOR_BONES := 5
 var _lane_cache: Dictionary = {}
 
 func _ready():
@@ -547,6 +563,13 @@ func _build_decor():
 	_decor_wants_crystal = bool(d.get("has_ice_crystals", false)) \
 		or bool(d.get("has_crystals_blue", false)) or bool(d.get("has_crystals_red", false))
 	_decor_wants_grave = bool(d.get("has_gravestones", false))
+	# Empat flag di bawah sudah lama diekspor converter tapi tak pernah
+	# dibaca (lihat docs/AUDIT_PARITAS.md A1-A4): tanpa ini tema tulang dan
+	# tema hutan mati sama-sama tampil "pohon + batu" walau warnanya beda.
+	_decor_wants_dead_tree = bool(d.get("has_dead_trees", false))
+	_decor_wants_dark_tree = bool(d.get("has_dark_trees", false))
+	_decor_wants_bones = bool(d.get("has_bones", false))
+	_decor_wants_moss_rock = bool(d.get("has_rocks_mossy", false))
 	var lane_pts := PackedVector2Array()
 	for l in ["top", "mid", "bot"]:
 		lane_pts.append_array(get_lane_path(l))
@@ -559,22 +582,63 @@ func _build_decor():
 		if p.distance_to(BLUE_BASE) < 130.0 or p.distance_to(RED_BASE) < 130.0:
 			continue
 		var size := rng.randf_range(11.0, 21.0)
-		# Jenis dekor ikut tema (flag has_* pygame dipakai DecorationRenderer
-		# di sana; di Godot hanya 4 bentuk yang digambar prosedural). Tanpa
-		# ini level es dan level kuburan sama-sama "pohon + batu" walau
-		# warnanya sudah beda.
-		var roll := rng.randf()
-		var kind := 1.0 # 1 = batu
-		if roll < 0.60:
-			kind = 0.0 # 0 = pohon
-		elif _decor_wants_grave and roll < 0.76:
-			kind = 3.0 # 3 = nisan
-		elif _decor_wants_crystal and roll < 0.90:
-			kind = 2.0 # 2 = kristal
 		_decor_points.append(p.x)
 		_decor_points.append(p.y)
 		_decor_points.append(size)
-		_decor_points.append(kind)
+		_decor_points.append(float(_pick_decor_kind(rng.randf(), p)))
+
+## Pilih jenis dekor untuk satu titik.
+##
+## PENTING — pygame membedakan SISI PETA, bukan cuma tema: pohon gelap hanya
+## di belahan Radiant dan pohon mati/tulang hanya di belahan Dire
+## (_bundle.py:4767-4821, generate_all memakai _is_radiant()/_is_dire()).
+## Tanpa itu peta terasa simetris dan sisi Dire kehilangan kesan gersang.
+func _pick_decor_kind(roll: float, p: Vector2) -> int:
+	# Ambang DITUMPUK (bukan rentang tetap) supaya jenis opsional jadi AKSEN,
+	# bukan mendominasi. Versi pertama memakai ambang tetap dan tema ice
+	# keluar 49 kristal dari 70 dekor — kristal menelan porsi batu karena
+	# rentangnya melar saat jenis lain mati.
+	var t := 0.0
+	if _is_dire(p):
+		# ── sisi Dire (kanan-atas): gersang, tanpa pohon rimbun ──
+		if _decor_wants_dead_tree:
+			t += 0.40
+			if roll < t:
+				return DECOR_DEAD_TREE
+		if _decor_wants_bones:
+			t += 0.16
+			if roll < t:
+				return DECOR_BONES
+		if _decor_wants_grave:
+			t += 0.14
+			if roll < t:
+				return DECOR_GRAVE
+		if _decor_wants_crystal:
+			t += 0.12
+			if roll < t:
+				return DECOR_CRYSTAL
+		return DECOR_ROCK
+	# ── sisi Radiant (kiri-bawah): vegetasi ──
+	# Tema tanpa has_dark_trees (gurun/es) tetap dapat sedikit vegetasi,
+	# porsinya lebih kecil daripada tema hutan.
+	t += 0.60 if _decor_wants_dark_tree else 0.32
+	if roll < t:
+		return DECOR_TREE
+	if _decor_wants_crystal:
+		t += 0.16
+		if roll < t:
+			return DECOR_CRYSTAL
+	if _decor_wants_grave:
+		t += 0.08
+		if roll < t:
+			return DECOR_GRAVE
+	return DECOR_ROCK
+
+## Belahan Dire (kanan-atas) — paritas _is_dire (_bundle.py:4870-4872):
+## garis batas miring dari kiri-atas ke kanan-bawah, bukan diagonal lurus.
+func _is_dire(p: Vector2) -> bool:
+	var threshold_y := 200.0 + (arena_size.y - 400.0) * p.x / arena_size.x
+	return p.y < threshold_y - 20.0
 
 static func _min_dist_to(points: PackedVector2Array, p: Vector2) -> float:
 	var best := 1e9
@@ -724,12 +788,12 @@ func _draw_decor(d: Dictionary):
 		var p := Vector2(_decor_points[i], _decor_points[i + 1])
 		var size := _decor_points[i + 2]
 		var kind := int(_decor_points[i + 3])
-		if kind == 0:
+		if kind == DECOR_TREE:
 			draw_circle(p + Vector2(0, size * 0.35), size * 0.9, Color(0, 0, 0, 0.22)) # shadow
 			draw_rect(Rect2(p + Vector2(-2, 0), Vector2(4, size * 0.8)), d["earth_dark"], true) # trunk
 			draw_circle(p, size, d["tree"])
 			draw_circle(p + Vector2(-size * 0.3, -size * 0.35), size * 0.62, d["tree_light"])
-		elif kind == 2:
+		elif kind == DECOR_CRYSTAL:
 			# Kristal (has_ice_crystals / has_crystals_*): belah ketupat memakai
 			# warna aksen tema (river_glow/river_foam) biar ikut palet.
 			var glow: Color = d.get("river_glow", d["stone"])
@@ -743,7 +807,7 @@ func _draw_decor(d: Dictionary):
 				p + Vector2(0, -size), p + Vector2(size * 0.22, -size * 0.1),
 				p + Vector2(0, size * 0.35), p + Vector2(-size * 0.22, -size * 0.1),
 			]), Color(foam.r, foam.g, foam.b, 0.7))
-		elif kind == 3:
+		elif kind == DECOR_GRAVE:
 			# Nisan (has_gravestones): lempeng batu + salib gelap
 			var stone_col: Color = d["stone"]
 			draw_circle(p + Vector2(2, size * 0.4), size * 0.7, Color(0, 0, 0, 0.2))
@@ -758,11 +822,65 @@ func _draw_decor(d: Dictionary):
 				Vector2(size * 0.16, size * 0.55)), d["earth_dark"], true)
 			draw_rect(Rect2(p + Vector2(-size * 0.26, -size * 0.16),
 				Vector2(size * 0.52, size * 0.14)), d["earth_dark"], true)
+		elif kind == DECOR_DEAD_TREE:
+			# Pohon mati (has_dead_trees): batang gundul + 4 cabang menjulur,
+			# paritas _draw_dead_trees (_bundle.py:6213-6252) yang memang
+			# menggambar batang persegi + daftar 4 garis cabang, tanpa kanopi.
+			# Warna dari earth_dark/ash supaya ikut palet tema (pygame memakai
+			# DEAD_TREE_1/2 global, tapi di sini palet tema lebih konsisten).
+			var bark: Color = d["earth_dark"]
+			var bark_hi: Color = d.get("ash", d["earth_light"])
+			draw_circle(p + Vector2(0, size * 0.35), size * 0.7, Color(0, 0, 0, 0.2))
+			draw_rect(Rect2(p + Vector2(-2.0, -size), Vector2(4.0, size * 1.3)), bark, true)
+			draw_rect(Rect2(p + Vector2(-2.0, -size), Vector2(1.5, size * 1.3)), bark_hi, true)
+			var limbs := [
+				[Vector2(0, -size * 0.5), Vector2(-size * 0.5, -size + 4.0), 2.4],
+				[Vector2(0, -size * 0.5 + 4.0), Vector2(size * 0.5, -size + 4.0), 2.4],
+				[Vector2(0, -size + 4.0), Vector2(-size * 0.33, -size - 4.0), 1.6],
+				[Vector2(0, -size + 4.0), Vector2(size * 0.33, -size - 2.0), 1.6],
+			]
+			for limb in limbs:
+				# Cast eksplisit: elemen Array campuran bertipe Variant, dan
+				# draw_line() menuntut Vector2/float. Tanpa cast Godot 4 baru
+				# mengeluh saat runtime, bukan saat parse.
+				draw_line(p + (limb[0] as Vector2), p + (limb[1] as Vector2),
+					bark, float(limb[2]))
+		elif kind == DECOR_BONES:
+			# Tulang (has_bones): tengkorak + tulang rusuk bergantian, paritas
+			# _draw_bones (_bundle.py:6275-6297). Warna tulang sengaja TIDAK
+			# dari palet tema — pygame memakai BONE_C/BONE_D tetap, dan tulang
+			# yang ikut berubah warna per tema malah tidak terbaca sebagai tulang.
+			var bone: Color = Color("#dcd2be")
+			var bone_d: Color = Color("#a09682")
+			draw_circle(p + Vector2(0, size * 0.25), size * 0.45, Color(0, 0, 0, 0.18))
+			if int(p.x) % 2 == 0:
+				# tengkorak: batok + dua rongga mata
+				draw_circle(p, size * 0.34, bone)
+				draw_circle(p + Vector2(0, size * 0.08), size * 0.26, bone_d)
+				draw_circle(p + Vector2(-size * 0.13, -size * 0.05), size * 0.07, Color(0.1, 0.09, 0.08))
+				draw_circle(p + Vector2(size * 0.13, -size * 0.05), size * 0.07, Color(0.1, 0.09, 0.08))
+				draw_rect(Rect2(p + Vector2(-size * 0.2, size * 0.2),
+					Vector2(size * 0.4, size * 0.13)), bone, true)
+			else:
+				# rusuk: tulang punggung mendatar + iga vertikal
+				draw_line(p + Vector2(-size * 0.45, 0), p + Vector2(size * 0.45, 0), bone, 2.2)
+				for r in range(-2, 3):
+					var rx := float(r) * size * 0.2
+					draw_line(p + Vector2(rx, -size * 0.18), p + Vector2(rx, size * 0.18), bone_d, 1.4)
 		else:
 			draw_circle(p + Vector2(2, 3), size * 0.8, Color(0, 0, 0, 0.2))
 			draw_circle(p, size * 0.75, d["stone"])
 			var hl: Color = d["stone"].lightened(0.25)
 			draw_circle(p + Vector2(-size * 0.2, -size * 0.25), size * 0.35, hl)
+			# Lumut di puncak batu (has_rocks_mossy): pygame menempelkan strip
+			# lumut + 3 tetesan ke bawah (_draw_rocks :6366-6373), dan hanya
+			# di belahan RADIANT (has_moss = _is_radiant, :4843).
+			if _decor_wants_moss_rock and not _is_dire(p):
+				var moss: Color = d.get("moss", d["grass_dark"])
+				draw_circle(p + Vector2(-size * 0.18, -size * 0.42), size * 0.3,
+					Color(moss.r, moss.g, moss.b, 0.85))
+				draw_circle(p + Vector2(size * 0.16, -size * 0.34), size * 0.2,
+					Color(moss.r, moss.g, moss.b, 0.7))
 		i += 4
 
 func _draw_walls(d: Dictionary):
