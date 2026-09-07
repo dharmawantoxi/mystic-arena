@@ -12,7 +12,7 @@ config_version=5
 
 name="Mystic Arena"
 run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("4.3", "Forward Plus")
+config/features=PackedStringArray("4.3", "Forward Plus", "Mobile")
 config/icon="res://assets/icon.png"
 boot_splash/bg_color=Color(0.0431373, 0.0392157, 0.0705882, 1)
 
@@ -97,7 +97,14 @@ pointing/emulate_touch_from_mouse=true
 
 [rendering]
 
+; Desktop (F5, CI headless) tetap Forward+. Forward+ TIDAK didukung Android,
+; jadi Android/iOS dipaksa renderer Mobile via override platform di bawah —
+; Mobile mendukung semua fitur 2D yang dipakai project (CanvasModulate/Light2D,
+; glow, shader canvas_item, 2D HDR); memakai Vulkan bila ada, otomatis jatuh
+; ke OpenGL ES 3.0 kalau tidak (fallback_to_opengl3 default true), minSdk 24.
+; Lihat docs/PLAYSTORE_RELEASE.md (Fase 6).
 renderer/rendering_method="forward_plus"
+renderer/rendering_method.mobile="mobile"
 environment/defaults/default_clear_color=Color(0.0431373, 0.0392157, 0.0705882, 1)
 textures/canvas_textures/default_texture_filter=2
 textures/canvas_textures/default_texture_repeat=0
