@@ -139,26 +139,48 @@ jobs:
           fi
 
       # ── 4. Smoke test yang sudah ada di repo (keduanya self-quit + PASS line) ──
+      # Langkah tes: || true + gate; kalau gagal, pantulkan ekor log sebagai
+      # anotasi ::error:: (log artifact tidak bisa diunduh dari sandbox).
       - name: AIPlayerTest (menu, tanpa combat)
         run: |
           set -o pipefail
-          godot --headless --path godot res://tests/AIPlayerTest.tscn --quit-after 120 2>&1 | tee /tmp/ai.log
-          python3 godot/tools/godot_log_gate.py /tmp/ai.log --label "AIPlayerTest" \
-            --require "[AIPlayerTest] PASS"
+          godot --headless --path godot res://tests/AIPlayerTest.tscn --quit-after 120 2>&1 | tee /tmp/ai.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/ai.log --label "AIPlayerTest" \
+              --require "[AIPlayerTest] PASS" > /tmp/ai.gate 2>&1; then
+            cat /tmp/ai.gate
+          else
+            cat /tmp/ai.gate
+            echo "::error::AI-FAIL-TAIL: $(tail -8 /tmp/ai.log | tr '\n' ' | ' | cut -c1-400)"
+            exit 1
+          fi
 
       - name: BattleSmokeTest (menu → level 1 → wave + AI)
         run: |
           set -o pipefail
-          godot --headless --path godot res://tests/BattleSmokeTest.tscn --quit-after 180 2>&1 | tee /tmp/smoke.log
-          python3 godot/tools/godot_log_gate.py /tmp/smoke.log --label "BattleSmokeTest" \
-            --require "[BattleSmokeTest] PASS"
+          godot --headless --path godot res://tests/BattleSmokeTest.tscn --quit-after 180 2>&1 | tee /tmp/smoke.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/smoke.log --label "BattleSmokeTest" \
+              --require "[BattleSmokeTest] PASS" > /tmp/smoke.gate 2>&1; then
+            cat /tmp/smoke.gate
+          else
+            cat /tmp/smoke.gate
+            echo "::error::SMOKE-FAIL-TAIL: $(tail -8 /tmp/smoke.log | tr '\n' ' | ' | cut -c1-400)"
+            exit 1
+          fi
 
       - name: CinematicTest (level intro, banner boss, death FX + perayaan)
         run: |
           set -o pipefail
-          godot --headless --path godot res://tests/CinematicTest.tscn --quit-after 240 2>&1 | tee /tmp/cine.log
-          python3 godot/tools/godot_log_gate.py /tmp/cine.log --label "CinematicTest" \
-            --require "[CinematicTest] PASS"
+          godot --headless --path godot res://tests/CinematicTest.tscn --quit-after 240 2>&1 | tee /tmp/cine.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/cine.log --label "CinematicTest" \
+              --require "[CinematicTest] PASS" > /tmp/cine.gate 2>&1; then
+            cat /tmp/cine.gate
+          else
+            cat /tmp/cine.gate
+            echo "::error::CINE-FAIL-GATE: $(grep -m3 'FAIL\|ERROR' /tmp/cine.gate | tr '\n' ' | ' | cut -c1-300)"
+            echo "::error::CINE-FAIL-TAIL: $(tail -12 /tmp/cine.log | tr '\n' ' | ' | cut -c1-400)"
+            echo "::error::CINE-EXPECT: $(grep -m3 'CinematicTest' /tmp/cine.log | tr '\n' ' | ' | cut -c1-400)"
+            exit 1
+          fi
 
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
